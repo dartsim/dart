@@ -54,8 +54,12 @@ TEST_F(FrameAllocatorTest, Construction)
 {
   FrameAllocator allocator;
   EXPECT_EQ(allocator.capacity(), 65536u);
+  EXPECT_LE(allocator.usableCapacity(), allocator.capacity());
+  EXPECT_GE(allocator.usableCapacity() + 32u, allocator.capacity());
+  EXPECT_EQ(allocator.usableCapacity() % 32u, 0u);
   EXPECT_EQ(allocator.used(), 0u);
   EXPECT_EQ(allocator.overflowCount(), 0u);
+  EXPECT_EQ(allocator.overflowBytes(), 0u);
 }
 
 //=============================================================================
@@ -70,6 +74,23 @@ TEST_F(FrameAllocatorTest, BasicAllocate)
     EXPECT_GT(allocator.used(), previousUsed);
     previousUsed = allocator.used();
   }
+}
+
+//=============================================================================
+TEST_F(FrameAllocatorTest, UsableCapacityMatchesFastPathBudget)
+{
+  FrameAllocator allocator(MemoryAllocator::GetDefault(), 128);
+  const size_t usableCapacity = allocator.usableCapacity();
+  EXPECT_LE(usableCapacity, allocator.capacity());
+  EXPECT_GE(usableCapacity + 32u, allocator.capacity());
+  ASSERT_GT(usableCapacity, 0u);
+  EXPECT_EQ(usableCapacity % 32u, 0u);
+
+  void* ptr = allocator.allocate(usableCapacity);
+  EXPECT_NE(ptr, nullptr);
+  EXPECT_EQ(allocator.used(), usableCapacity);
+  EXPECT_EQ(allocator.overflowCount(), 0u);
+  EXPECT_EQ(allocator.overflowBytes(), 0u);
 }
 
 //=============================================================================
@@ -145,9 +166,11 @@ TEST_F(FrameAllocatorTest, Overflow)
   void* ptr = allocator.allocate(300);
   EXPECT_NE(ptr, nullptr);
   EXPECT_EQ(allocator.overflowCount(), 1u);
+  EXPECT_GE(allocator.overflowBytes(), 300u);
 
   allocator.reset();
   EXPECT_EQ(allocator.overflowCount(), 0u);
+  EXPECT_EQ(allocator.overflowBytes(), 0u);
   EXPECT_GE(allocator.capacity(), 556u);
 }
 
@@ -160,9 +183,11 @@ TEST_F(FrameAllocatorTest, OverflowMultiple)
     EXPECT_NE(ptr, nullptr);
   }
   EXPECT_GE(allocator.overflowCount(), 1u);
+  EXPECT_GE(allocator.overflowBytes(), 64u);
 
   allocator.reset();
   EXPECT_EQ(allocator.overflowCount(), 0u);
+  EXPECT_EQ(allocator.overflowBytes(), 0u);
   EXPECT_GE(allocator.capacity(), 576u);
 }
 
@@ -220,6 +245,7 @@ TEST_F(FrameAllocatorTest, BaseAllocator)
 
   EXPECT_EQ(&allocator.getBaseAllocator(), &defaultAlloc);
   EXPECT_EQ(allocator.capacity(), 512u);
+  EXPECT_LE(allocator.usableCapacity(), allocator.capacity());
 
   void* ptr = allocator.allocate(64);
   EXPECT_NE(ptr, nullptr);
@@ -249,12 +275,14 @@ TEST_F(FrameAllocatorTest, ZeroCapacity)
 {
   FrameAllocator allocator(MemoryAllocator::GetDefault(), 0);
   EXPECT_EQ(allocator.capacity(), 0u);
+  EXPECT_EQ(allocator.usableCapacity(), 0u);
   EXPECT_EQ(allocator.used(), 0u);
 
   // allocate() must not crash — it falls back to overflow allocation.
   void* ptr = allocator.allocate(64);
   EXPECT_NE(ptr, nullptr);
   EXPECT_EQ(allocator.overflowCount(), 1u);
+  EXPECT_GE(allocator.overflowBytes(), 64u);
 
   // allocateAligned() must not crash either.
   void* aligned = allocator.allocateAligned(32, 64);
@@ -262,6 +290,7 @@ TEST_F(FrameAllocatorTest, ZeroCapacity)
   const uintptr_t addr = reinterpret_cast<uintptr_t>(aligned);
   EXPECT_EQ(addr % 64, 0u);
   EXPECT_EQ(allocator.overflowCount(), 2u);
+  EXPECT_GE(allocator.overflowBytes(), 96u);
 
   // Zero-byte requests return nullptr, consistent with other DART allocators.
   EXPECT_EQ(allocator.allocate(0), nullptr);
@@ -273,10 +302,13 @@ TEST_F(FrameAllocatorTest, ZeroCapacity)
   // reset() must not crash; it should grow the buffer via resetSlow().
   allocator.reset();
   EXPECT_EQ(allocator.overflowCount(), 0u);
+  EXPECT_EQ(allocator.overflowBytes(), 0u);
   EXPECT_GT(allocator.capacity(), 0u);
+  EXPECT_GT(allocator.usableCapacity(), 0u);
 
   // After reset, the buffer is now valid — fast path should work.
   void* after = allocator.allocate(64);
   EXPECT_NE(after, nullptr);
   EXPECT_EQ(allocator.overflowCount(), 0u);
+  EXPECT_EQ(allocator.overflowBytes(), 0u);
 }

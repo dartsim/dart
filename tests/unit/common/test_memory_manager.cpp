@@ -40,6 +40,7 @@
 
 #include <gtest/gtest.h>
 
+#include <cstddef>
 #include <cstdint>
 
 using namespace dart;
@@ -72,6 +73,28 @@ TEST(MemoryManagerTest, BaseAllocator)
 
   EXPECT_EQ(&freeListAllocator.getBaseAllocator(), &baseAllocator);
   EXPECT_EQ(&poolAllocator.getBaseAllocator(), &freeListAllocator);
+}
+
+//==============================================================================
+TEST(MemoryManagerTest, BaseAllocatorConstructorUsesDefaultFrameCapacity)
+{
+  auto& baseAllocator = MemoryAllocator::GetDefault();
+  auto mm = MemoryManager(baseAllocator);
+
+  EXPECT_EQ(&mm.getBaseAllocator(), &baseAllocator);
+  EXPECT_EQ(&mm.getFrameAllocator().getBaseAllocator(), &baseAllocator);
+  EXPECT_EQ(mm.getFrameAllocator().capacity(), static_cast<std::size_t>(65536));
+}
+
+//==============================================================================
+TEST(MemoryManagerTest, BaseAllocatorConstructorAcceptsFrameCapacity)
+{
+  auto& baseAllocator = MemoryAllocator::GetDefault();
+  auto mm = MemoryManager(baseAllocator, 4096);
+
+  EXPECT_EQ(&mm.getBaseAllocator(), &baseAllocator);
+  EXPECT_EQ(&mm.getFrameAllocator().getBaseAllocator(), &baseAllocator);
+  EXPECT_EQ(mm.getFrameAllocator().capacity(), static_cast<std::size_t>(4096));
 }
 
 //==============================================================================
