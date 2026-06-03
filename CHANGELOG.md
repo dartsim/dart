@@ -75,7 +75,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     flags and a `DART_PY_DEMOS_GPU` env override (default `auto`: on when a CUDA
     device is present), an in-viewer GPU toggle panel, and a startup status
     line. The `config-py` build task forwards the experimental CUDA opt-in so
-    the lean compute-only `build-cuda`/`test-cuda` paths are unaffected.
+    the lean compute-only `build-cuda`/`test-cuda` paths are unaffected, and it
+    resets stale CMake compiler cache metadata before CMake can auto-rerun with
+    default options and drop the `dartpy` target.
   - Made `dart::gui` UI scaling DPI-aware: `--gui-scale` now acts as a manual
     user multiplier on top of GLFW content-scale detection, `DART_GUI_DPI_SCALE`
     can override misreported DPI, implicit interactive app windows now use a
@@ -711,6 +713,12 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     `world.gravity`, applying a uniform gravitational acceleration (default
     `(0, 0, -9.81)`) to dynamic rigid bodies through a transient step force
     buffer without storing it in any per-body force accumulator.
+  - Added experimental World memory hooks:
+    `WorldOptions::baseAllocator`, `WorldOptions::frameScratchInitialCapacity`,
+    `World::getMemoryManager()`, and `World::getMemoryDiagnostics()` give each
+    experimental World a `MemoryManager` root and report per-step frame-scratch
+    usable capacity, usage, peak usage, overflow count, overflow bytes, and
+    reset count.
   - Made experimental rigid-body external force/torque components persistent
     applied loads: each step reads them into the transient force buffer and
     leaves the components intact for callers to clear or update explicitly.
