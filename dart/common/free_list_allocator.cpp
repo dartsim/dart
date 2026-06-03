@@ -94,7 +94,11 @@ FreeListAllocator::~FreeListAllocator()
   }
 
   for (const auto& block : mAllocatedBlocks) {
-    mBaseAllocator.deallocate(block.pointer, block.size);
+    if (block.alignment <= alignof(std::max_align_t)) {
+      mBaseAllocator.deallocate(block.pointer, block.size);
+    } else {
+      mBaseAllocator.deallocate(block.pointer, block.size, block.alignment);
+    }
   }
   mAllocatedBlocks.clear();
 }
@@ -195,7 +199,15 @@ void* FreeListAllocator::allocate(size_t bytes, size_t alignment) noexcept
     return allocate(bytes);
   }
 
-  return mBaseAllocator.allocate(bytes, alignment);
+  void* pointer = mBaseAllocator.allocate(bytes, alignment);
+  if (pointer == nullptr) {
+    return nullptr;
+  }
+
+  mAllocatedBlocks.push_back(AllocatedBlock{pointer, bytes, alignment, true});
+  mTotalAllocatedSize += bytes;
+
+  return pointer;
 }
 
 //==============================================================================
@@ -254,7 +266,10 @@ void FreeListAllocator::deallocate(
     return;
   }
 
-  mBaseAllocator.deallocate(pointer, bytes, alignment);
+  if (!releaseDelegatedAllocation(pointer, bytes, alignment)) {
+    DART_ASSERT(false);
+    return;
+  }
 }
 
 //==============================================================================
@@ -280,7 +295,11 @@ bool FreeListAllocator::allocateMemoryBlock(size_t sizeToAllocate)
   );
 
   mAllocatedBlocks.push_back(
-      AllocatedBlock{memory, sizeToAllocate + sizeof(MemoryBlockHeader)});
+      AllocatedBlock{
+          memory,
+          sizeToAllocate + sizeof(MemoryBlockHeader),
+          alignof(std::max_align_t),
+          false});
 
   // Set the new memory block as free block
   mFreeBlock = mFirstMemoryBlock;
@@ -289,6 +308,33 @@ bool FreeListAllocator::allocateMemoryBlock(size_t sizeToAllocate)
   mTotalAllocatedBlockSize += sizeToAllocate;
 
   return true;
+}
+
+//==============================================================================
+bool FreeListAllocator::releaseDelegatedAllocation(
+    void* pointer, size_t bytes, size_t alignment)
+{
+  DART_UNUSED(bytes, alignment);
+
+  for (auto it = mAllocatedBlocks.begin(); it != mAllocatedBlocks.end(); ++it) {
+    if (!it->isOutstandingAllocation || it->pointer != pointer) {
+      continue;
+    }
+
+    DART_ASSERT(it->size == bytes);
+    DART_ASSERT(it->alignment == alignment);
+
+    const auto block = *it;
+    mAllocatedBlocks.erase(it);
+
+    mBaseAllocator.deallocate(pointer, block.size, block.alignment);
+    mTotalAllocatedSize -= block.size;
+
+    DART_TRACE("Deallocated {} bytes.", block.size);
+    return true;
+  }
+
+  return false;
 }
 
 //==============================================================================

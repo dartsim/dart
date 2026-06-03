@@ -32,7 +32,9 @@
 
 #include "../../helpers/gtest_utils.hpp"
 
+#include <dart/common/callocator.hpp>
 #include <dart/common/free_list_allocator.hpp>
+#include <dart/common/memory_allocator_debugger.hpp>
 
 #include <gtest/gtest.h>
 
@@ -76,6 +78,23 @@ TEST(FreeListAllocatorTest, Constructors)
 
   EXPECT_TRUE(a.isEmpty());
   EXPECT_TRUE(b.isEmpty());
+}
+
+//==============================================================================
+TEST(FreeListAllocatorTest, DestructorReleasesLeakedDelegatedAlignedAllocations)
+{
+  MemoryAllocatorDebugger<CAllocator> baseAllocator;
+
+  {
+    FreeListAllocator allocator(baseAllocator);
+
+    auto* ptr = allocator.allocate(
+        sizeof(OverAlignedObject), alignof(OverAlignedObject));
+    ASSERT_NE(ptr, nullptr);
+    EXPECT_TRUE(baseAllocator.hasAllocated(ptr, sizeof(OverAlignedObject)));
+  }
+
+  EXPECT_TRUE(baseAllocator.isEmpty());
 }
 
 //==============================================================================
