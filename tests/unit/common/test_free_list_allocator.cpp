@@ -40,6 +40,7 @@
 #include <utility>
 #include <vector>
 
+#include <cstddef>
 #include <cstdint>
 
 using namespace dart;
@@ -50,6 +51,11 @@ namespace {
 struct alignas(64) OverAlignedObject
 {
   double values[8] = {};
+};
+
+struct alignas(std::max_align_t) MaxAlignedObject
+{
+  unsigned char values[sizeof(std::max_align_t)] = {};
 };
 
 } // namespace
@@ -81,6 +87,25 @@ TEST(FreeListAllocatorTest, AllocateAlignedFallsBackToBaseAllocator)
   EXPECT_EQ(reinterpret_cast<std::uintptr_t>(ptr) % 64u, 0u);
 
   allocator.deallocate(ptr, sizeof(OverAlignedObject), 64);
+}
+
+//==============================================================================
+TEST(FreeListAllocatorTest, AllocateAlignedSatisfiesMaxAlignment)
+{
+  FreeListAllocator allocator;
+
+  auto* oddSized = allocator.allocate(1);
+  ASSERT_NE(oddSized, nullptr);
+
+  auto* ptr
+      = allocator.allocate(sizeof(MaxAlignedObject), alignof(MaxAlignedObject));
+  ASSERT_NE(ptr, nullptr);
+  EXPECT_EQ(
+      reinterpret_cast<std::uintptr_t>(ptr) % alignof(MaxAlignedObject), 0u);
+
+  allocator.deallocate(
+      ptr, sizeof(MaxAlignedObject), alignof(MaxAlignedObject));
+  allocator.deallocate(oddSized, 1);
 }
 
 //==============================================================================

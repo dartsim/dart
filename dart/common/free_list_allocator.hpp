@@ -100,7 +100,7 @@ public:
   void print(std::ostream& os = std::cout, int indent = 0) const override;
 
 private:
-  struct MemoryBlockHeader
+  struct alignas(std::max_align_t) MemoryBlockHeader
   {
     /// Memory block size in bytes
     size_t mSize;
