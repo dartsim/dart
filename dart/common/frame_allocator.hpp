@@ -119,10 +119,13 @@ public:
   [[nodiscard]] inline void* allocateAligned(
       size_t bytes, size_t alignment = 32) noexcept
   {
-    if (bytes == 0 || alignment == 0 || !mCur) [[unlikely]] {
-      return (bytes == 0 || alignment == 0)
-                 ? nullptr
-                 : allocateAlignedSlow(bytes, alignment);
+    if (bytes == 0 || alignment == 0 || (alignment & (alignment - 1)) != 0)
+        [[unlikely]] {
+      return nullptr;
+    }
+
+    if (!mCur) [[unlikely]] {
+      return allocateAlignedSlow(bytes, alignment);
     }
 
     const auto cur = reinterpret_cast<uintptr_t>(mCur);

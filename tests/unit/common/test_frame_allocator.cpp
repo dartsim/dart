@@ -86,6 +86,16 @@ TEST_F(FrameAllocatorTest, Alignment)
 }
 
 //=============================================================================
+TEST_F(FrameAllocatorTest, RejectsInvalidAlignment)
+{
+  FrameAllocator allocator;
+  EXPECT_EQ(allocator.allocateAligned(32, 24), nullptr);
+  EXPECT_EQ(allocator.allocate(32, 24), nullptr);
+  EXPECT_EQ(allocator.used(), 0u);
+  EXPECT_EQ(allocator.overflowCount(), 0u);
+}
+
+//=============================================================================
 TEST_F(FrameAllocatorTest, MixedAllocatePreserves32ByteAlignment)
 {
   FrameAllocator allocator;
@@ -257,6 +267,8 @@ TEST_F(FrameAllocatorTest, ZeroCapacity)
   EXPECT_EQ(allocator.allocate(0), nullptr);
   EXPECT_EQ(allocator.allocateAligned(0, 32), nullptr);
   EXPECT_EQ(allocator.allocateAligned(32, 0), nullptr);
+  EXPECT_EQ(allocator.allocateAligned(32, 24), nullptr);
+  EXPECT_EQ(allocator.overflowCount(), 2u);
 
   // reset() must not crash; it should grow the buffer via resetSlow().
   allocator.reset();
