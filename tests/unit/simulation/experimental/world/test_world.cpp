@@ -5765,3 +5765,67 @@ TEST(World, RigidBodyModelBatchIntegration)
       compute::integrateRigidBodyStateBatchLinear(viaModel, wrong, force, dt),
       sx::InvalidArgumentException);
 }
+
+// Test opt-in replay recording and in-place restore of rigid-body runtime
+// state.
+TEST(World, ReplayRecordingRestoresRigidBodyState)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  sx::RigidBodyOptions options;
+  options.position = Eigen::Vector3d(0.0, 0.0, 1.0);
+  options.linearVelocity = Eigen::Vector3d(1.0, 0.0, 0.0);
+  sx::RigidBody body = world.addRigidBody("body", options);
+
+  EXPECT_FALSE(world.isReplayRecordingEnabled());
+  EXPECT_EQ(world.getReplayFrameCount(), 0u);
+  EXPECT_FALSE(world.getReplayCursor().has_value());
+
+  world.setReplayRecordingEnabled(true);
+  ASSERT_TRUE(world.isReplayRecordingEnabled());
+  ASSERT_EQ(world.getReplayFrameCount(), 1u);
+  ASSERT_TRUE(world.getReplayCursor().has_value());
+  EXPECT_EQ(*world.getReplayCursor(), 0u);
+  EXPECT_DOUBLE_EQ(world.getReplayFrameTime(0), 0.0);
+  EXPECT_EQ(world.getReplaySimulationFrame(0), 0u);
+
+  world.step(3);
+  ASSERT_EQ(world.getReplayFrameCount(), 4u);
+  ASSERT_TRUE(world.getReplayCursor().has_value());
+  EXPECT_EQ(*world.getReplayCursor(), 3u);
+  EXPECT_EQ(world.getFrame(), 3u);
+  EXPECT_DOUBLE_EQ(world.getTime(), 0.3);
+  EXPECT_NEAR(body.getTranslation().x(), 0.3, 1e-12);
+
+  world.restoreReplayFrame(1);
+  EXPECT_EQ(world.getFrame(), 1u);
+  EXPECT_DOUBLE_EQ(world.getTime(), 0.1);
+  EXPECT_NEAR(body.getTranslation().x(), 0.1, 1e-12);
+  EXPECT_NEAR(body.getTranslation().z(), 1.0, 1e-12);
+  EXPECT_TRUE(body.getLinearVelocity().isApprox(Eigen::Vector3d::UnitX()));
+  ASSERT_TRUE(world.getReplayCursor().has_value());
+  EXPECT_EQ(*world.getReplayCursor(), 1u);
+
+  // Branching from an earlier replay cursor drops stale future frames before
+  // appending the newly simulated state.
+  world.step();
+  ASSERT_EQ(world.getReplayFrameCount(), 3u);
+  ASSERT_TRUE(world.getReplayCursor().has_value());
+  EXPECT_EQ(*world.getReplayCursor(), 2u);
+  EXPECT_EQ(world.getReplaySimulationFrame(2), 2u);
+  EXPECT_DOUBLE_EQ(world.getReplayFrameTime(2), 0.2);
+  EXPECT_NEAR(body.getTranslation().x(), 0.2, 1e-12);
+
+  world.clearReplayRecording();
+  EXPECT_EQ(world.getReplayFrameCount(), 1u);
+  ASSERT_TRUE(world.getReplayCursor().has_value());
+  EXPECT_EQ(*world.getReplayCursor(), 0u);
+
+  world.setReplayRecordingEnabled(false);
+  world.step();
+  EXPECT_EQ(world.getReplayFrameCount(), 1u);
+}

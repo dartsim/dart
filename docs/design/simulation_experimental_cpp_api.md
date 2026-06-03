@@ -776,6 +776,15 @@ types:
 - contact data: typed buffers/views produced by collision generation and
   consumed by solvers.
 
+Replay and scrubber workflows follow the same split. Opt-in live-world replay
+should store only the mutable runtime state needed to restore an
+already-simulated frame: time/frame metadata, active solver mode, positions,
+velocities, forces, controls, diagnostics, and solver work values that affect
+continuation from that frame. It should not duplicate topology, geometry,
+material, asset, or static construction data per frame. If that static layout
+changes after recording, restore should fail with a clear layout-incompatibility
+error instead of attempting best-effort partial replay.
+
 Contact buffers should declare optional attributes before allocation when those
 attributes change memory layout or cost. Public contact views should document
 ordering, lifetime, matching behavior, and whether they remain valid after

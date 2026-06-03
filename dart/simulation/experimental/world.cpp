@@ -157,7 +157,138 @@ struct World::CollisionQueryCache
   std::vector<std::size_t> entryByObjectId;
 };
 
+struct World::ReplayState
+{
+  template <typename Component>
+  using ComponentSnapshot = std::vector<std::pair<entt::entity, Component>>;
+
+  struct JointState
+  {
+    entt::entity entity = entt::null;
+    Eigen::VectorXd position;
+    Eigen::VectorXd velocity;
+    Eigen::VectorXd acceleration;
+    Eigen::VectorXd torque;
+    Eigen::VectorXd commandVelocity;
+  };
+
+  struct LinkState
+  {
+    entt::entity entity = entt::null;
+    Eigen::Matrix<double, 6, 1> externalForce
+        = Eigen::Matrix<double, 6, 1>::Zero();
+  };
+
+  struct RigidBodyState
+  {
+    entt::entity entity = entt::null;
+    comps::Transform transform;
+    comps::Velocity velocity;
+    comps::Force force;
+  };
+
+  struct Frame
+  {
+    bool simulationMode = false;
+    Eigen::Vector3d gravity{0.0, 0.0, -9.81};
+    RigidBodySolver rigidBodySolver{RigidBodySolver::SequentialImpulse};
+    double timeStep = 0.001;
+    bool differentiable = false;
+    ContactSolverMethod contactSolverMethod{
+        ContactSolverMethod::SequentialImpulse};
+    ContactGradientMode contactGradientMode{ContactGradientMode::Analytic};
+    double time = 0.0;
+    std::size_t frame = 0;
+    DeformableSolverDiagnostics deformableSolverDiagnostics{};
+    MultibodyIntegrationMethod multibodyIntegrationMethod{
+        MultibodyIntegrationMethod::SemiImplicit};
+    std::optional<StepDerivatives> stepDerivatives;
+    std::vector<std::pair<entt::entity, PhysicalParameter>>
+        differentiableParameters;
+
+    ComponentSnapshot<comps::DeformableNodeState> deformableNodeStates;
+    ComponentSnapshot<compute::MultibodyVariationalState>
+        multibodyVariationalStates;
+    ComponentSnapshot<comps::VariationalContactDualState>
+        variationalContactDualStates;
+    std::vector<JointState> joints;
+    std::vector<LinkState> links;
+    std::vector<RigidBodyState> rigidBodies;
+  };
+
+  bool recordingEnabled = false;
+  std::vector<Frame> frames;
+  std::optional<std::size_t> cursor;
+};
+
 namespace {
+
+template <typename View>
+std::size_t countReplayView(const View& view)
+{
+  std::size_t count = 0;
+  for (auto entity : view) {
+    static_cast<void>(entity);
+    ++count;
+  }
+  return count;
+}
+
+template <typename Component>
+std::vector<std::pair<entt::entity, Component>> captureReplayComponents(
+    const entt::registry& registry)
+{
+  std::vector<std::pair<entt::entity, Component>> snapshot;
+  auto view = registry.view<Component>();
+  snapshot.reserve(countReplayView(view));
+  for (auto entity : view) {
+    snapshot.emplace_back(entity, view.template get<Component>(entity));
+  }
+  std::ranges::sort(snapshot, [](const auto& lhs, const auto& rhs) {
+    return static_cast<std::uint32_t>(lhs.first)
+           < static_cast<std::uint32_t>(rhs.first);
+  });
+  return snapshot;
+}
+
+template <typename Component, typename Snapshot>
+void restoreReplayComponents(
+    entt::registry& registry,
+    const Snapshot& snapshot,
+    std::string_view componentName)
+{
+  auto view = registry.view<Component>();
+  DART_EXPERIMENTAL_THROW_T_IF(
+      countReplayView(view) != snapshot.size(),
+      InvalidOperationException,
+      "Cannot restore replay frame: {} component count changed",
+      componentName);
+
+  for (const auto& [entity, component] : snapshot) {
+    DART_EXPERIMENTAL_THROW_T_IF(
+        !registry.valid(entity),
+        InvalidOperationException,
+        "Cannot restore replay frame: {} references an entity that no longer "
+        "exists",
+        componentName);
+    DART_EXPERIMENTAL_THROW_T_IF(
+        !registry.all_of<Component>(entity),
+        InvalidOperationException,
+        "Cannot restore replay frame: {} references an entity with changed "
+        "component layout",
+        componentName);
+    registry.replace<Component>(entity, component);
+  }
+}
+
+void markFrameCachesDirty(entt::registry& registry)
+{
+  auto frameView = registry.view<comps::FrameCache>();
+  for (auto entity : frameView) {
+    auto& cache = frameView.get<comps::FrameCache>(entity);
+    cache.needTransformUpdate = true;
+  }
+}
 
 //==============================================================================
 // Folds the full internal solver stats into the curated public diagnostics.
@@ -1231,6 +1362,11 @@ void World::clear()
   if (m_collisionQueryCache) {
     m_collisionQueryCache->clear();
   }
+  if (m_replay) {
+    m_replay->recordingEnabled = false;
+    m_replay->frames.clear();
+    m_replay->cursor.reset();
+  }
 }
 
 //==============================================================================
@@ -2186,6 +2322,7 @@ void World::step(
 
   m_time += m_timeStep;
   ++m_frame;
+  recordReplayFrame();
 }
 
 //==============================================================================
@@ -2306,6 +2443,280 @@ const DeformableSolverDiagnostics& World::getLastDeformableSolverDiagnostics()
     const
 {
   return m_lastDeformableSolverDiagnostics;
+}
+
+//==============================================================================
+void World::setReplayRecordingEnabled(bool enabled)
+{
+  if (!m_replay) {
+    m_replay = std::make_unique<ReplayState>();
+  }
+
+  if (enabled == m_replay->recordingEnabled) {
+    return;
+  }
+
+  m_replay->recordingEnabled = enabled;
+  if (enabled) {
+    m_replay->frames.clear();
+    m_replay->cursor.reset();
+    recordReplayFrame();
+  }
+}
+
+//==============================================================================
+bool World::isReplayRecordingEnabled() const noexcept
+{
+  return m_replay && m_replay->recordingEnabled;
+}
+
+//==============================================================================
+void World::clearReplayRecording()
+{
+  if (!m_replay) {
+    return;
+  }
+
+  m_replay->frames.clear();
+  m_replay->cursor.reset();
+  if (m_replay->recordingEnabled) {
+    recordReplayFrame();
+  }
+}
+
+//==============================================================================
+std::size_t World::getReplayFrameCount() const noexcept
+{
+  return m_replay ? m_replay->frames.size() : 0u;
+}
+
+//==============================================================================
+std::optional<std::size_t> World::getReplayCursor() const noexcept
+{
+  if (!m_replay) {
+    return std::nullopt;
+  }
+  return m_replay->cursor;
+}
+
+//==============================================================================
+double World::getReplayFrameTime(std::size_t index) const
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !m_replay || index >= m_replay->frames.size(),
+      InvalidArgumentException,
+      "Replay frame index {} is out of range",
+      index);
+  return m_replay->frames[index].time;
+}
+
+//==============================================================================
+std::size_t World::getReplaySimulationFrame(std::size_t index) const
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !m_replay || index >= m_replay->frames.size(),
+      InvalidArgumentException,
+      "Replay frame index {} is out of range",
+      index);
+  return m_replay->frames[index].frame;
+}
+
+//==============================================================================
+void World::restoreReplayFrame(std::size_t index)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !m_replay || index >= m_replay->frames.size(),
+      InvalidArgumentException,
+      "Replay frame index {} is out of range",
+      index);
+
+  const ReplayState::Frame& replayFrame = m_replay->frames[index];
+
+  restoreReplayComponents<comps::DeformableNodeState>(
+      m_registry, replayFrame.deformableNodeStates, "DeformableNodeState");
+  restoreReplayComponents<compute::MultibodyVariationalState>(
+      m_registry,
+      replayFrame.multibodyVariationalStates,
+      "MultibodyVariationalState");
+  restoreReplayComponents<comps::VariationalContactDualState>(
+      m_registry,
+      replayFrame.variationalContactDualStates,
+      "VariationalContactDualState");
+
+  DART_EXPERIMENTAL_THROW_T_IF(
+      countReplayView(m_registry.view<comps::Joint>())
+          != replayFrame.joints.size(),
+      InvalidOperationException,
+      "Cannot restore replay frame: Joint component count changed");
+  for (const auto& state : replayFrame.joints) {
+    DART_EXPERIMENTAL_THROW_T_IF(
+        !m_registry.valid(state.entity)
+            || !m_registry.all_of<comps::Joint>(state.entity),
+        InvalidOperationException,
+        "Cannot restore replay frame: Joint entity layout changed");
+    auto& joint = m_registry.get<comps::Joint>(state.entity);
+    joint.position = state.position;
+    joint.velocity = state.velocity;
+    joint.acceleration = state.acceleration;
+    joint.torque = state.torque;
+    joint.commandVelocity = state.commandVelocity;
+  }
+
+  DART_EXPERIMENTAL_THROW_T_IF(
+      countReplayView(m_registry.view<comps::Link>())
+          != replayFrame.links.size(),
+      InvalidOperationException,
+      "Cannot restore replay frame: Link component count changed");
+  for (const auto& state : replayFrame.links) {
+    DART_EXPERIMENTAL_THROW_T_IF(
+        !m_registry.valid(state.entity)
+            || !m_registry.all_of<comps::Link>(state.entity),
+        InvalidOperationException,
+        "Cannot restore replay frame: Link entity layout changed");
+    m_registry.get<comps::Link>(state.entity).externalForce
+        = state.externalForce;
+  }
+
+  DART_EXPERIMENTAL_THROW_T_IF(
+      countReplayView(m_registry.view<
+                      comps::RigidBodyTag,
+                      comps::Transform,
+                      comps::Velocity,
+                      comps::Force>())
+          != replayFrame.rigidBodies.size(),
+      InvalidOperationException,
+      "Cannot restore replay frame: RigidBody component count changed");
+  for (const auto& state : replayFrame.rigidBodies) {
+    const bool layoutChanged = !m_registry.valid(state.entity)
+                               || !m_registry.all_of<
+                                   comps::RigidBodyTag,
+                                   comps::Transform,
+                                   comps::Velocity,
+                                   comps::Force>(state.entity);
+    DART_EXPERIMENTAL_THROW_T_IF(
+        layoutChanged,
+        InvalidOperationException,
+        "Cannot restore replay frame: RigidBody entity layout changed");
+    RigidBody(state.entity, this)
+        .setTransform(
+            toIsometry(state.transform.position, state.transform.orientation));
+    m_registry.replace<comps::Velocity>(state.entity, state.velocity);
+    m_registry.replace<comps::Force>(state.entity, state.force);
+  }
+
+  m_simulationMode = replayFrame.simulationMode;
+  m_gravity = replayFrame.gravity;
+  m_rigidBodySolver = replayFrame.rigidBodySolver;
+  m_timeStep = replayFrame.timeStep;
+  m_differentiable = replayFrame.differentiable;
+  m_contactSolverMethod = replayFrame.contactSolverMethod;
+  m_contactGradientMode = replayFrame.contactGradientMode;
+  m_time = replayFrame.time;
+  m_frame = replayFrame.frame;
+  m_lastDeformableSolverDiagnostics = replayFrame.deformableSolverDiagnostics;
+  m_multibodyIntegrationMethod = replayFrame.multibodyIntegrationMethod;
+  m_stepDerivatives = replayFrame.stepDerivatives;
+  m_differentiableParameters = replayFrame.differentiableParameters;
+
+  if (m_collisionQueryCache) {
+    m_collisionQueryCache->clear();
+  }
+  markFrameCachesDirty(m_registry);
+  if (m_simulationMode) {
+    updateKinematics();
+  }
+
+  m_replay->cursor = index;
+}
+
+//==============================================================================
+void World::recordReplayFrame()
+{
+  if (!m_replay || !m_replay->recordingEnabled) {
+    return;
+  }
+
+  if (m_replay->cursor && *m_replay->cursor + 1u < m_replay->frames.size()) {
+    m_replay->frames.erase(
+        m_replay->frames.begin()
+            + static_cast<std::ptrdiff_t>(*m_replay->cursor + 1u),
+        m_replay->frames.end());
+  }
+
+  ReplayState::Frame replayFrame;
+  replayFrame.simulationMode = m_simulationMode;
+  replayFrame.gravity = m_gravity;
+  replayFrame.rigidBodySolver = m_rigidBodySolver;
+  replayFrame.timeStep = m_timeStep;
+  replayFrame.differentiable = m_differentiable;
+  replayFrame.contactSolverMethod = m_contactSolverMethod;
+  replayFrame.contactGradientMode = m_contactGradientMode;
+  replayFrame.time = m_time;
+  replayFrame.frame = m_frame;
+  replayFrame.deformableSolverDiagnostics = m_lastDeformableSolverDiagnostics;
+  replayFrame.multibodyIntegrationMethod = m_multibodyIntegrationMethod;
+  replayFrame.stepDerivatives = m_stepDerivatives;
+  replayFrame.differentiableParameters = m_differentiableParameters;
+
+  replayFrame.deformableNodeStates
+      = captureReplayComponents<comps::DeformableNodeState>(m_registry);
+  replayFrame.multibodyVariationalStates
+      = captureReplayComponents<compute::MultibodyVariationalState>(m_registry);
+  replayFrame.variationalContactDualStates
+      = captureReplayComponents<comps::VariationalContactDualState>(m_registry);
+
+  auto jointView = m_registry.view<comps::Joint>();
+  replayFrame.joints.reserve(countReplayView(jointView));
+  for (auto entity : jointView) {
+    const auto& joint = jointView.get<comps::Joint>(entity);
+    replayFrame.joints.push_back(
+        ReplayState::JointState{
+            entity,
+            joint.position,
+            joint.velocity,
+            joint.acceleration,
+            joint.torque,
+            joint.commandVelocity});
+  }
+  std::ranges::sort(replayFrame.joints, [](const auto& lhs, const auto& rhs) {
+    return static_cast<std::uint32_t>(lhs.entity)
+           < static_cast<std::uint32_t>(rhs.entity);
+  });
+
+  auto linkView = m_registry.view<comps::Link>();
+  replayFrame.links.reserve(countReplayView(linkView));
+  for (auto entity : linkView) {
+    const auto& link = linkView.get<comps::Link>(entity);
+    replayFrame.links.push_back(
+        ReplayState::LinkState{entity, link.externalForce});
+  }
+  std::ranges::sort(replayFrame.links, [](const auto& lhs, const auto& rhs) {
+    return static_cast<std::uint32_t>(lhs.entity)
+           < static_cast<std::uint32_t>(rhs.entity);
+  });
+
+  auto rigidBodyView = m_registry.view<
+      comps::RigidBodyTag,
+      comps::Transform,
+      comps::Velocity,
+      comps::Force>();
+  replayFrame.rigidBodies.reserve(countReplayView(rigidBodyView));
+  for (auto entity : rigidBodyView) {
+    replayFrame.rigidBodies.push_back(
+        ReplayState::RigidBodyState{
+            entity,
+            rigidBodyView.get<comps::Transform>(entity),
+            rigidBodyView.get<comps::Velocity>(entity),
+            rigidBodyView.get<comps::Force>(entity)});
+  }
+  std::ranges::sort(
+      replayFrame.rigidBodies, [](const auto& lhs, const auto& rhs) {
+        return static_cast<std::uint32_t>(lhs.entity)
+               < static_cast<std::uint32_t>(rhs.entity);
+      });
+
+  m_replay->frames.push_back(std::move(replayFrame));
+  m_replay->cursor = m_replay->frames.size() - 1u;
 }
 
 //==============================================================================

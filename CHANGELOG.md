@@ -586,6 +586,15 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     `clang-format` version changes under an existing build tree.
 
 - Simulation
+  - Added opt-in runtime replay recording to the experimental `World`, with C++
+    and dartpy controls for enabling recording, querying recorded timestep
+    metadata, clearing the buffer, and restoring a recorded frame in place
+    without re-running physics. Replay frames deliberately store only mutable
+    runtime state needed to restore an already-simulated frame, not topology,
+    geometry, material, or static construction data, and layout changes are
+    rejected on restore. Added focused C++/Python regressions and an
+    `sx_replay_scrubber` `py-demos` scene with timestep-resolution
+    slider/controller playback.
   - Added opt-in analytic differentiable simulation to the experimental `World`
     (the Nimble method, arXiv:2103.16021): a build-time `DART_BUILD_DIFF` option
     plus a runtime `WorldOptions::differentiable` flag (off by default, with
