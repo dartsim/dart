@@ -36,6 +36,7 @@
 #include "dart/simulation/experimental/space/vector_mapper.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
+#include <Eigen/Core>
 #include <entt/entt.hpp>
 #include <gtest/gtest.h>
 
@@ -50,6 +51,11 @@ struct Position
   double x{0.0};
   double y{0.0};
   double z{0.0};
+};
+
+struct VectorField
+{
+  Eigen::Vector3d value{Eigen::Vector3d::Zero()};
 };
 
 // Simple mapper for Position component
@@ -218,6 +224,108 @@ TEST(VectorMapper, RoundTripWithWorldRegistryFieldMapper)
 
   const auto& pos = registry.get<Position>(entity);
   EXPECT_DOUBLE_EQ(pos.x, 9.0);
+}
+
+TEST(VectorMapper, FieldMapperHandlesEnttRegistryScalarAndEigenFields)
+{
+  StateSpace space;
+  space.addVariable("position_x", 1);
+  space.addVariable("field", 3);
+  space.finalize();
+
+  VectorMapper mapper(space);
+  mapper.addMapper(
+      "position_x",
+      std::make_unique<FieldMapper<Position, double>>(&Position::x));
+  mapper.addMapper(
+      "field",
+      std::make_unique<FieldMapper<VectorField, Eigen::Vector3d>>(
+          &VectorField::value));
+
+  entt::registry registry;
+  auto entity = registry.create();
+  registry.emplace<Position>(entity, Position{1.0, 2.0, 3.0});
+  registry.emplace<VectorField>(
+      entity, VectorField{Eigen::Vector3d(4.0, 5.0, 6.0)});
+
+  auto vec = mapper.toVector(registry);
+
+  ASSERT_EQ(vec.size(), 4);
+  EXPECT_DOUBLE_EQ(vec[0], 1.0);
+  EXPECT_DOUBLE_EQ(vec[1], 4.0);
+  EXPECT_DOUBLE_EQ(vec[2], 5.0);
+  EXPECT_DOUBLE_EQ(vec[3], 6.0);
+
+  const std::vector<double> updated{7.0, 8.0, 9.0, 10.0};
+  mapper.fromVector(registry, std::span<const double>(updated));
+
+  const auto& pos = registry.get<Position>(entity);
+  const auto& field = registry.get<VectorField>(entity);
+  EXPECT_DOUBLE_EQ(pos.x, 7.0);
+  EXPECT_DOUBLE_EQ(field.value.x(), 8.0);
+  EXPECT_DOUBLE_EQ(field.value.y(), 9.0);
+  EXPECT_DOUBLE_EQ(field.value.z(), 10.0);
+}
+
+TEST(VectorMapper, WorldRegistryFieldMapperCoversEigenAndSizeGuards)
+{
+  StateSpace space;
+  space.addVariable("field", 3);
+  space.finalize();
+
+  VectorMapper mapper(space);
+  mapper.addMapper(
+      "field",
+      std::make_unique<FieldMapper<VectorField, Eigen::Vector3d>>(
+          &VectorField::value));
+
+  World world;
+  auto& registry = detail::registryOf(world);
+  auto entity = registry.create();
+  registry.emplace<VectorField>(
+      entity, VectorField{Eigen::Vector3d(1.0, 2.0, 3.0)});
+
+  std::vector<double> output(3);
+  mapper.toVector(registry, output);
+  EXPECT_DOUBLE_EQ(output[0], 1.0);
+  EXPECT_DOUBLE_EQ(output[1], 2.0);
+  EXPECT_DOUBLE_EQ(output[2], 3.0);
+
+  Eigen::VectorXd eigenOutput(3);
+  mapper.toEigen(registry, eigenOutput);
+  EXPECT_DOUBLE_EQ(eigenOutput[0], 1.0);
+  EXPECT_DOUBLE_EQ(eigenOutput[1], 2.0);
+  EXPECT_DOUBLE_EQ(eigenOutput[2], 3.0);
+
+  std::vector<double> tooSmallOutput(2);
+  EXPECT_THROW(
+      mapper.toVector(registry, tooSmallOutput), std::invalid_argument);
+
+  Eigen::VectorXd tooSmallEigenOutput(2);
+  EXPECT_THROW(
+      mapper.toEigen(registry, tooSmallEigenOutput), std::invalid_argument);
+
+  const std::vector<double> updated{4.0, 5.0, 6.0};
+  mapper.fromVector(registry, std::span<const double>(updated));
+  EXPECT_DOUBLE_EQ(registry.get<VectorField>(entity).value.x(), 4.0);
+  EXPECT_DOUBLE_EQ(registry.get<VectorField>(entity).value.y(), 5.0);
+  EXPECT_DOUBLE_EQ(registry.get<VectorField>(entity).value.z(), 6.0);
+
+  const std::vector<double> tooSmallInput{7.0, 8.0};
+  EXPECT_THROW(
+      mapper.fromVector(registry, std::span<const double>(tooSmallInput)),
+      std::invalid_argument);
+
+  Eigen::VectorXd eigenUpdated(3);
+  eigenUpdated << 9.0, 10.0, 11.0;
+  mapper.fromEigen(registry, eigenUpdated);
+  EXPECT_DOUBLE_EQ(registry.get<VectorField>(entity).value.x(), 9.0);
+  EXPECT_DOUBLE_EQ(registry.get<VectorField>(entity).value.y(), 10.0);
+  EXPECT_DOUBLE_EQ(registry.get<VectorField>(entity).value.z(), 11.0);
+
+  Eigen::VectorXd tooSmallEigenInput(2);
+  EXPECT_THROW(
+      mapper.fromEigen(registry, tooSmallEigenInput), std::invalid_argument);
 }
 
 TEST(VectorMapper, WorldRegistryScalarMapperPreservesGenericCallbacks)

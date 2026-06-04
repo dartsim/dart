@@ -74,6 +74,13 @@ struct Transform
   Eigen::Isometry3d pose{Eigen::Isometry3d::Identity()};
 };
 
+struct Orientation
+{
+  static constexpr ComponentCategory category = ComponentCategory::Property;
+
+  Eigen::Quaterniond rotation{Eigen::Quaterniond::Identity()};
+};
+
 struct JointState
 {
   static constexpr ComponentCategory category = ComponentCategory::Property;
@@ -205,6 +212,58 @@ TEST(AutoMapper, IsometryField)
   double qw = vec[3], qx = vec[4], qy = vec[5], qz = vec[6];
   double norm = std::sqrt(qw * qw + qx * qx + qy * qy + qz * qz);
   EXPECT_NEAR(norm, 1.0, 1e-10);
+
+  const std::vector<double> updated{
+      4.0,
+      5.0,
+      6.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+  };
+  mapper.fromVector(registry, std::span<const double>(updated));
+
+  const auto& modified = registry.get<Transform>(entity);
+  EXPECT_DOUBLE_EQ(modified.pose.translation().x(), 4.0);
+  EXPECT_DOUBLE_EQ(modified.pose.translation().y(), 5.0);
+  EXPECT_DOUBLE_EQ(modified.pose.translation().z(), 6.0);
+  EXPECT_TRUE(modified.pose.linear().isIdentity(1e-12));
+}
+
+TEST(AutoMapper, QuaternionFieldRoundTrip)
+{
+  StateSpace space;
+  space.addVariable("orientations", 4);
+  space.finalize();
+
+  VectorMapper mapper(std::move(space));
+  mapper.addMapper("orientations", makeAutoMapper<Orientation>());
+
+  entt::registry registry;
+  auto entity = registry.create();
+
+  Orientation orientation;
+  orientation.rotation = Eigen::Quaterniond(
+      Eigen::AngleAxisd(pi / 2.0, Eigen::Vector3d::UnitX()));
+  registry.emplace<Orientation>(entity, orientation);
+
+  auto vec = mapper.toVector(registry);
+
+  ASSERT_EQ(vec.size(), 4);
+  EXPECT_NEAR(vec[0], orientation.rotation.w(), 1e-12);
+  EXPECT_NEAR(vec[1], orientation.rotation.x(), 1e-12);
+  EXPECT_NEAR(vec[2], orientation.rotation.y(), 1e-12);
+  EXPECT_NEAR(vec[3], orientation.rotation.z(), 1e-12);
+
+  const std::vector<double> updated{0.0, 0.0, 1.0, 0.0};
+  mapper.fromVector(registry, std::span<const double>(updated));
+
+  const auto& modified = registry.get<Orientation>(entity);
+  EXPECT_DOUBLE_EQ(modified.rotation.w(), 0.0);
+  EXPECT_DOUBLE_EQ(modified.rotation.x(), 0.0);
+  EXPECT_DOUBLE_EQ(modified.rotation.y(), 1.0);
+  EXPECT_DOUBLE_EQ(modified.rotation.z(), 0.0);
 }
 
 TEST(AutoMapper, RoundTripMultipleFields)
@@ -276,6 +335,13 @@ TEST(AutoMapper, RoundTripWithWorldRegistry)
   EXPECT_DOUBLE_EQ(vec[2], 3.0);
   EXPECT_DOUBLE_EQ(vec[3], 4.0);
 
+  const auto eigenVec = mapper.toEigen(registry);
+  ASSERT_EQ(eigenVec.size(), 4);
+  EXPECT_DOUBLE_EQ(eigenVec[0], 1.0);
+  EXPECT_DOUBLE_EQ(eigenVec[1], 2.0);
+  EXPECT_DOUBLE_EQ(eigenVec[2], 3.0);
+  EXPECT_DOUBLE_EQ(eigenVec[3], 4.0);
+
   const std::vector<double> updated{10.0, 20.0, 30.0, 40.0};
   mapper.fromVector(registry, std::span<const double>(updated));
 
@@ -284,6 +350,16 @@ TEST(AutoMapper, RoundTripWithWorldRegistry)
   EXPECT_DOUBLE_EQ(modified.velocity, 20.0);
   EXPECT_DOUBLE_EQ(modified.acceleration, 30.0);
   EXPECT_DOUBLE_EQ(modified.effort, 40.0);
+
+  Eigen::VectorXd eigenUpdated(4);
+  eigenUpdated << 50.0, 60.0, 70.0, 80.0;
+  mapper.fromEigen(registry, eigenUpdated);
+
+  const auto& eigenModified = registry.get<JointState>(entity);
+  EXPECT_DOUBLE_EQ(eigenModified.position, 50.0);
+  EXPECT_DOUBLE_EQ(eigenModified.velocity, 60.0);
+  EXPECT_DOUBLE_EQ(eigenModified.acceleration, 70.0);
+  EXPECT_DOUBLE_EQ(eigenModified.effort, 80.0);
 }
 
 TEST(AutoMapper, NestedStructs)
