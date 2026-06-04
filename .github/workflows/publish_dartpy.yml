@@ -168,31 +168,25 @@ jobs:
             exit 1
           fi
 
-      - name: Set up Vcpkg
+      - name: Set up pixi (Windows)
         if: ${{ matrix.os == 'windows-latest' && (matrix.release_only == false || env.DARTPY_REF == 'refs/heads/main' || env.DARTPY_REF == 'main' || startsWith(env.DARTPY_REF, 'refs/heads/release-') || startsWith(env.DARTPY_REF, 'release-') || startsWith(env.DARTPY_REF, 'refs/tags/v') || startsWith(env.DARTPY_REF, 'v')) }}
-        uses: johnwason/vcpkg-action@v7
+        uses: prefix-dev/setup-pixi@v0.9.6
         with:
-          # TODO: Add ode and coin-or-ipopt
-          pkgs: >-
-            assimp
-            eigen3
-            fcl
-            fmt
-            spdlog
-            bullet3
-            freeglut
-            glfw3
-            imgui[opengl2-binding]
-            nlopt
-            opengl
-            osg
-            pagmo2
-            tinyxml2
-            tracy
-            urdfdom
-          triplet: x64-windows
-          revision: "2025.09.17"
-          token: ${{ github.token }}
+          cache: true
+
+      - name: Expose pixi dependencies (Windows)
+        if: ${{ matrix.os == 'windows-latest' && (matrix.release_only == false || env.DARTPY_REF == 'refs/heads/main' || env.DARTPY_REF == 'main' || startsWith(env.DARTPY_REF, 'refs/heads/release-') || startsWith(env.DARTPY_REF, 'release-') || startsWith(env.DARTPY_REF, 'refs/tags/v') || startsWith(env.DARTPY_REF, 'v')) }}
+        shell: pwsh
+        run: |
+          $pixiEnv = Join-Path $env:GITHUB_WORKSPACE ".pixi\envs\default"
+          $pixiLibrary = Join-Path $pixiEnv "Library"
+
+          $pixiEnv | Out-File -FilePath $env:GITHUB_PATH -Append
+          (Join-Path $pixiEnv "Scripts") | Out-File -FilePath $env:GITHUB_PATH -Append
+          (Join-Path $pixiLibrary "bin") | Out-File -FilePath $env:GITHUB_PATH -Append
+
+          "CMAKE_PREFIX_PATH=$pixiEnv;$pixiLibrary" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "CMAKE_ARGS=-DCMAKE_PREFIX_PATH=$pixiEnv;$pixiLibrary" | Out-File -FilePath $env:GITHUB_ENV -Append
 
       - name: Build wheels
         if: ${{ matrix.os != 'windows-latest' && (matrix.release_only == false || env.DARTPY_REF == 'refs/heads/main' || env.DARTPY_REF == 'main' || startsWith(env.DARTPY_REF, 'refs/heads/release-') || startsWith(env.DARTPY_REF, 'release-') || startsWith(env.DARTPY_REF, 'refs/tags/v') || startsWith(env.DARTPY_REF, 'v')) }}
@@ -212,7 +206,8 @@ jobs:
           MACOSX_DEPLOYMENT_TARGET: 15.0
 
           # Windows
-          CMAKE_TOOLCHAIN_FILE: ${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
+          CMAKE_TOOLCHAIN_FILE: ""
+          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: python -m pip install delvewheel && delvewheel repair -w {dest_dir} {wheel}
 
       - uses: actions/upload-artifact@v4
         with:
