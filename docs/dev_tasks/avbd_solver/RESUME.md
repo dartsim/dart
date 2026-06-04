@@ -70,11 +70,27 @@ fixed-joint rows with or without active contacts. A private helper now derives
 the AVBD fixed-joint config from the current rigid-body pair pose, preserving
 the child-origin anchor and relative orientation for rigid-body-linked fixed
 joints while rejecting multibody link endpoints. Public multibody joint
-extraction is still not wired.
+extraction is still not wired. The current local slice adds private per-axis
+linear and angular masks to those point-joint builders, preserving all-axis
+fixed-joint behavior while letting later hinge/revolute and limited-DOF configs
+reuse the same descriptors, row inventory, and alpha-regularized warm starts.
+It also adds named private revolute and prismatic point-joint builders that
+construct arbitrary joint-axis bases, leave the hinge or translation axis free,
+and preserve configured axes/masks through World point-joint input, snapshot
+assembly, and solve coverage. Simulation-entry current-pose initialization and
+extraction now also cover private rigid-body ECS revolute/prismatic joint
+entities, deriving the same axes/masks from their configured joint axis while
+keeping multibody link endpoints unsupported until articulated AVBD state
+exists. Public experimental `World` facades now expose free rigid-body
+revolute and prismatic joints through C++ and dartpy, with generated stubs,
+focused C++/Python tests, and the categorized `sx_rigid_limited_joints`
+py-demo. This is still a narrow free-rigid-body path only: no motor row,
+fracture row, articulated multibody state path, GPU path, paper-corpus demo, or
+benchmark packet is complete.
 
 ## Current Branch
 
-`feature/avbd-plan104-multibody-fixed-joint-bridge` - checkpoint branch based on
+`feature/avbd-plan104-joint-axis-masks` - checkpoint branch based on
 current `origin/main`, including the scalar-row foundation, mass-spring AVBD row
 families, standalone tet-material rows, and World wiring for supported pure-tet
 finite-stiffness material rows, plus supported World static-contact friction
@@ -105,13 +121,19 @@ fixed-joint pose bridge that converts a rigid-body-linked fixed joint's current
 pose into AVBD local anchors and target relative orientation, initializes
 missing private AVBD fixed-joint configs for opt-in rigid bodies at simulation
 entry, and adds regression coverage that multibody links are not silently
-treated as rigid AVBD bodies.
+treated as rigid AVBD bodies. It also adds masked private point-joint row
+generation for constrained linear/angular axes, plus named private
+revolute/prismatic point-joint configs with arbitrary joint-axis bases and
+private rigid-body ECS current-pose extraction for those one-DOF joint
+entities. The current checkpoint adds public free rigid-body revolute/prismatic
+facades, dartpy bindings/stubs, focused C++/Python coverage, and the
+`sx_rigid_limited_joints` py-demo on top of that private path.
 
 ## Immediate Next Step
 
 Continue the next bounded AVBD contact/friction or rigid-block slice:
-contact-complete rigid joint rows, full narrow-phase feature extraction, or
-true rigid/articulated World wiring are the preferred row-family gaps now that
+true rigid/articulated World wiring, full narrow-phase feature extraction,
+or the next motor/fracture row family are the preferred row-family gaps now that
 private dynamic/rigid contact feature IDs, canonical two-endpoint row keys, and
 normal/friction row descriptor helpers plus private rigid contact/friction
 point-pair constructors, paired friction-cone helpers, and a private serial
@@ -123,7 +145,12 @@ features, and private point-joint linear/angular/combined rows with step-start
 previous constraint values and private World snapshot/step append/solve/apply
 coverage plus fixed-joint ECS extraction through the step helper and an
 explicit current-pose rigid-body fixed-joint config bridge plus simulation-entry
-config initialization for opt-in rigid bodies exist.
+config initialization for opt-in rigid bodies, masked private point-joint row
+generation for constrained linear/angular axes, and named private
+revolute/prismatic point-joint configs with arbitrary joint-axis bases plus
+private rigid-body ECS current-pose extraction for those one-DOF joint
+entities, and public free rigid-body revolute/prismatic facades with dartpy
+bindings, stubs, tests, and py-demo coverage exist.
 Keep the supported envelope narrow and preserve fallback coverage for topology
 mixes,
 damping/acceleration, parallel solves, and unsupported requested row
@@ -183,12 +210,15 @@ combinations.
   endpoint features for rigid snapshots, scope row ordinals per canonical
   endpoint pair, and create normal/friction/joint-linear/joint-angular row
   descriptors, with private point-joint rows now seeding step-start previous
-  constraint values and
-  participating in the private World snapshot/solve/apply wrapper and combined
-  step helper from world-space point-joint inputs, plus private fixed-joint ECS
-  extraction through the step helper and internal contact-stage velocity
-  projection for rigid-body-linked joint entities with or without active
-  contacts, but full narrow-phase feature extraction and public articulated
+  constraint values and participating in the private World snapshot/solve/apply
+  wrapper and combined step helper from world-space point-joint inputs, plus
+  private fixed-joint ECS extraction through the step helper and internal
+  contact-stage velocity projection for rigid-body-linked joint entities with
+  or without active contacts. Named private revolute and prismatic point-joint
+  configs now preserve arbitrary joint-axis bases and leave one rotational or
+  translational axis free, and private rigid-body ECS revolute/prismatic joint
+  entities now initialize and extract through the same current-pose bridge, but
+  full narrow-phase feature extraction, motors/fracture, and public articulated
   World joint wiring are not solved yet.
 
 ## How to Resume
