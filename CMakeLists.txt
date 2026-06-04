@@ -937,14 +937,16 @@ if(TARGET dart)
     endif()
 
     if(DART_BUILD_SIMULATION_EXPERIMENTAL)
-      if(
-        NOT
-          EXISTS
-            "${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/simulation/experimental/CMakeLists.txt"
-      )
-        if(NOT TARGET dart_experimental_tests)
-          add_custom_target(dart_experimental_tests)
-        endif()
+      # The experimental test meta-target is normally defined by the experimental
+      # test subdirectory. It can be absent here for two reasons while the option
+      # is still ON: the test CMakeLists does not exist, or the experimental
+      # module was gracefully skipped because a core sibling component
+      # (dart-io/dart-collision-native) is not built. In either case define an
+      # empty stub so option-keyed build/test entry points
+      # (pixi build-simulation-experimental-tests, scripts/test_all.py) resolve
+      # the target and skip gracefully instead of failing on an unknown target.
+      if(NOT TARGET dart_experimental_tests)
+        add_custom_target(dart_experimental_tests)
       endif()
     endif()
   elseif(NOT DART_BUILD_TESTS)
