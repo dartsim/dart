@@ -123,7 +123,6 @@ BENCHMARK(BM_Pool_DART)
     ->Args({32, 64})
     ->Args({256, 256})
     ->Args({32, 1024})
-    ->Repetitions(5)
     ->ReportAggregatesOnly(true);
 
 static void BM_Pool_Foonathan(benchmark::State& state)
@@ -149,7 +148,6 @@ BENCHMARK(BM_Pool_Foonathan)
     ->Args({32, 64})
     ->Args({256, 256})
     ->Args({32, 1024})
-    ->Repetitions(5)
     ->ReportAggregatesOnly(true);
 
 static void BM_Pool_StdPmr(benchmark::State& state)
@@ -177,7 +175,6 @@ BENCHMARK(BM_Pool_StdPmr)
     ->Args({32, 64})
     ->Args({256, 256})
     ->Args({32, 1024})
-    ->Repetitions(5)
     ->ReportAggregatesOnly(true);
 
 // =============================================================================
@@ -208,7 +205,6 @@ BENCHMARK(BM_Stack_DART)
     ->Args({256, 256})
     ->Args({256, 1024})
     ->Args({32, 4096})
-    ->Repetitions(5)
     ->ReportAggregatesOnly(true);
 
 static void BM_Stack_Foonathan(benchmark::State& state)
@@ -233,7 +229,6 @@ BENCHMARK(BM_Stack_Foonathan)
     ->Args({256, 256})
     ->Args({256, 1024})
     ->Args({32, 4096})
-    ->Repetitions(5)
     ->ReportAggregatesOnly(true);
 
 static void BM_Stack_StdPmr(benchmark::State& state)
@@ -259,7 +254,6 @@ BENCHMARK(BM_Stack_StdPmr)
     ->Args({256, 256})
     ->Args({256, 1024})
     ->Args({32, 4096})
-    ->Repetitions(5)
     ->ReportAggregatesOnly(true);
 
 // =============================================================================
@@ -291,7 +285,7 @@ static void BM_MultiPool_DART(benchmark::State& state)
   }
   state.SetItemsProcessed(static_cast<int64_t>(state.iterations() * kMultiOps));
 }
-BENCHMARK(BM_MultiPool_DART)->Repetitions(5)->ReportAggregatesOnly(true);
+BENCHMARK(BM_MultiPool_DART)->ReportAggregatesOnly(true);
 
 static void BM_MultiPool_Foonathan(benchmark::State& state)
 {
@@ -312,7 +306,7 @@ static void BM_MultiPool_Foonathan(benchmark::State& state)
   }
   state.SetItemsProcessed(static_cast<int64_t>(state.iterations() * kMultiOps));
 }
-BENCHMARK(BM_MultiPool_Foonathan)->Repetitions(5)->ReportAggregatesOnly(true);
+BENCHMARK(BM_MultiPool_Foonathan)->ReportAggregatesOnly(true);
 
 static void BM_MultiPool_StdPmr(benchmark::State& state)
 {
@@ -335,7 +329,7 @@ static void BM_MultiPool_StdPmr(benchmark::State& state)
   }
   state.SetItemsProcessed(static_cast<int64_t>(state.iterations() * kMultiOps));
 }
-BENCHMARK(BM_MultiPool_StdPmr)->Repetitions(5)->ReportAggregatesOnly(true);
+BENCHMARK(BM_MultiPool_StdPmr)->ReportAggregatesOnly(true);
 
 // =============================================================================
 // Section 4: Realistic Mixed Workload
@@ -370,10 +364,7 @@ static void BM_Realistic_DART(benchmark::State& state)
   state.SetItemsProcessed(
       static_cast<int64_t>(state.iterations() * kRealisticOps));
 }
-BENCHMARK(BM_Realistic_DART)
-    ->Repetitions(5)
-    ->ReportAggregatesOnly(true)
-    ->MinTime(0.1);
+BENCHMARK(BM_Realistic_DART)->ReportAggregatesOnly(true)->MinTime(0.1);
 
 static void BM_Realistic_Foonathan(benchmark::State& state)
 {
@@ -398,10 +389,7 @@ static void BM_Realistic_Foonathan(benchmark::State& state)
   state.SetItemsProcessed(
       static_cast<int64_t>(state.iterations() * kRealisticOps));
 }
-BENCHMARK(BM_Realistic_Foonathan)
-    ->Repetitions(5)
-    ->ReportAggregatesOnly(true)
-    ->MinTime(0.1);
+BENCHMARK(BM_Realistic_Foonathan)->ReportAggregatesOnly(true)->MinTime(0.1);
 
 static void BM_Realistic_StdPmr(benchmark::State& state)
 {
@@ -428,10 +416,7 @@ static void BM_Realistic_StdPmr(benchmark::State& state)
   state.SetItemsProcessed(
       static_cast<int64_t>(state.iterations() * kRealisticOps));
 }
-BENCHMARK(BM_Realistic_StdPmr)
-    ->Repetitions(5)
-    ->ReportAggregatesOnly(true)
-    ->MinTime(0.1);
+BENCHMARK(BM_Realistic_StdPmr)->ReportAggregatesOnly(true)->MinTime(0.1);
 
 // =============================================================================
 // Section 5: Steady-State — Pre-Filled Pool + Random Replace
@@ -470,7 +455,6 @@ static void BM_SteadyState_DART(benchmark::State& state)
 BENCHMARK(BM_SteadyState_DART)
     ->Args({64, 1024})
     ->Args({256, 512})
-    ->Repetitions(5)
     ->ReportAggregatesOnly(true);
 
 static void BM_SteadyState_Foonathan(benchmark::State& state)
@@ -504,7 +488,6 @@ static void BM_SteadyState_Foonathan(benchmark::State& state)
 BENCHMARK(BM_SteadyState_Foonathan)
     ->Args({64, 1024})
     ->Args({256, 512})
-    ->Repetitions(5)
     ->ReportAggregatesOnly(true);
 
 static void BM_SteadyState_StdPmr(benchmark::State& state)
@@ -540,7 +523,6 @@ static void BM_SteadyState_StdPmr(benchmark::State& state)
 BENCHMARK(BM_SteadyState_StdPmr)
     ->Args({64, 1024})
     ->Args({256, 512})
-    ->Repetitions(5)
     ->ReportAggregatesOnly(true);
 
 // =============================================================================
@@ -574,7 +556,6 @@ BENCHMARK(BM_FrameBulk_DART)
     ->Arg(256)
     ->Arg(1024)
     ->Arg(4096)
-    ->Repetitions(5)
     ->ReportAggregatesOnly(true);
 
 static void BM_FrameBulk_Foonathan(benchmark::State& state)
@@ -599,7 +580,6 @@ BENCHMARK(BM_FrameBulk_Foonathan)
     ->Arg(256)
     ->Arg(1024)
     ->Arg(4096)
-    ->Repetitions(5)
     ->ReportAggregatesOnly(true);
 
 static void BM_FrameBulk_StdPmr(benchmark::State& state)
@@ -624,7 +604,6 @@ BENCHMARK(BM_FrameBulk_StdPmr)
     ->Arg(256)
     ->Arg(1024)
     ->Arg(4096)
-    ->Repetitions(5)
     ->ReportAggregatesOnly(true);
 
 // =============================================================================
@@ -658,11 +637,7 @@ static void BM_StlVector_DART(benchmark::State& state)
   }
   state.SetItemsProcessed(static_cast<int64_t>(state.iterations() * n));
 }
-BENCHMARK(BM_StlVector_DART)
-    ->Arg(1000)
-    ->Arg(10000)
-    ->Repetitions(5)
-    ->ReportAggregatesOnly(true);
+BENCHMARK(BM_StlVector_DART)->Arg(1000)->Arg(10000)->ReportAggregatesOnly(true);
 
 static void BM_StlVector_Foonathan(benchmark::State& state)
 {
@@ -692,7 +667,6 @@ static void BM_StlVector_Foonathan(benchmark::State& state)
 BENCHMARK(BM_StlVector_Foonathan)
     ->Arg(1000)
     ->Arg(10000)
-    ->Repetitions(5)
     ->ReportAggregatesOnly(true);
 
 static void BM_StlVector_StdPmr(benchmark::State& state)
@@ -722,7 +696,6 @@ static void BM_StlVector_StdPmr(benchmark::State& state)
 BENCHMARK(BM_StlVector_StdPmr)
     ->Arg(1000)
     ->Arg(10000)
-    ->Repetitions(5)
     ->ReportAggregatesOnly(true);
 
 // =============================================================================
@@ -841,7 +814,6 @@ BENCHMARK(BM_EnttRegistry_DART)
     ->Arg(256)
     ->Arg(512)
     ->Arg(2048)
-    ->Repetitions(5)
     ->ReportAggregatesOnly(true);
 
 static void BM_EnttRegistry_Foonathan(benchmark::State& state)
@@ -870,7 +842,6 @@ BENCHMARK(BM_EnttRegistry_Foonathan)
     ->Arg(256)
     ->Arg(512)
     ->Arg(2048)
-    ->Repetitions(5)
     ->ReportAggregatesOnly(true);
 
 static void BM_EnttRegistry_Std(benchmark::State& state)
@@ -891,7 +862,6 @@ BENCHMARK(BM_EnttRegistry_Std)
     ->Arg(256)
     ->Arg(512)
     ->Arg(2048)
-    ->Repetitions(5)
     ->ReportAggregatesOnly(true);
 
 BENCHMARK_MAIN();

@@ -78,8 +78,12 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     )
     parser.add_argument(
         "--benchmark-min-time",
-        default="0.05s",
-        help="Minimum benchmark time passed to Google Benchmark.",
+        default="1.0s",
+        help=(
+            "Minimum benchmark time passed to Google Benchmark. The default "
+            "keeps the strict manual comparison gate focused on sustained "
+            "allocator timings instead of short-run noise."
+        ),
     )
     parser.add_argument(
         "--repetitions",

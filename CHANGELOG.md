@@ -108,6 +108,8 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Extended the comparative allocator benchmarks with opt-in allocator-aware
     EnTT registry/component storage churn against foonathan/memory and
     standard-registry baselines.
+  - Optimized the frame allocator reset/accounting fast path and normal-aligned
+    `FrameStlAllocator` allocations while preserving over-aligned STL storage.
   - Added the standalone `dartsim/` GUI simulator (a runtime executable, not a
     library) built only on the experimental World API. Its headless editor
     engine (`dartsim/engine`) provides scene/object, selection, command

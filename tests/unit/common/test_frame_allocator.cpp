@@ -45,6 +45,11 @@
 
 using namespace dart::common;
 
+struct alignas(64) OverAlignedStlValue
+{
+  double values[8] = {};
+};
+
 class FrameAllocatorTest : public ::testing::Test
 {
 };
@@ -235,6 +240,24 @@ TEST_F(FrameAllocatorTest, StlAllocatorUsesArena)
 
   EXPECT_EQ(values.size(), 2u);
   EXPECT_GT(arena.used(), 0u);
+}
+
+//=============================================================================
+TEST_F(FrameAllocatorTest, StlAllocatorPreservesOverAlignedValues)
+{
+  FrameAllocator arena(MemoryAllocator::GetDefault(), 512);
+  FrameStlAllocator<OverAlignedStlValue> allocator(arena);
+
+  auto* raw = allocator.allocate(2);
+  ASSERT_NE(raw, nullptr);
+  EXPECT_EQ(reinterpret_cast<std::uintptr_t>(raw) % 64u, 0u);
+  allocator.deallocate(raw, 2);
+
+  std::vector<OverAlignedStlValue, FrameStlAllocator<OverAlignedStlValue>>
+      values(allocator);
+  values.resize(2);
+  ASSERT_EQ(values.size(), 2u);
+  EXPECT_EQ(reinterpret_cast<std::uintptr_t>(values.data()) % 64u, 0u);
 }
 
 //=============================================================================

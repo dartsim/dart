@@ -8,8 +8,12 @@
       allocators against standard C++ allocators and foonathan/memory.
       Alignment-aware allocation is implemented; fixed-size pool comparison now
       has a DART `FixedPoolAllocator` path that beats foonathan/memory and
-      `std::pmr` locally. The strict benchmark gate and broader correctness
-      matrix still need to land before this phase is complete.
+      `std::pmr` locally. The comparative benchmark binary now honors the
+      checker-requested repetition count instead of forcing five repetitions.
+      The strict benchmark gate and broader correctness matrix still need to
+      land before this phase is complete; narrow fixed-pool/STL-vector rows
+      remain sensitive to host load and must not be treated as merge evidence
+      without an idle-host rerun.
 - [ ] Phase 3: EnTT registry/component storage allocation is configurable from
       the World memory hierarchy and covered by no-growth ECS tests.
 - [ ] Phase 4: Built-in simulation stages borrow world memory for transient
