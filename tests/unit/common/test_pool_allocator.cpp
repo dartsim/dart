@@ -53,6 +53,74 @@ struct alignas(64) OverAlignedObject
   double values[8] = {};
 };
 
+class CountingMemoryAllocator final : public MemoryAllocator
+{
+public:
+  [[nodiscard]] std::string_view getType() const override
+  {
+    return "CountingMemoryAllocator";
+  }
+
+  [[nodiscard]] void* allocate(size_t bytes) noexcept override
+  {
+    ++allocationAttempts;
+    if (allocationCount >= allocationLimit) {
+      return nullptr;
+    }
+
+    void* ptr = MemoryAllocator::GetDefault().allocate(bytes);
+    if (ptr != nullptr) {
+      ++allocationCount;
+    }
+    return ptr;
+  }
+
+  [[nodiscard]] void* allocate(size_t bytes, size_t alignment) noexcept override
+  {
+    ++allocationAttempts;
+    ++alignedAllocationAttempts;
+    if (allocationCount >= allocationLimit) {
+      return nullptr;
+    }
+
+    void* ptr = MemoryAllocator::GetDefault().allocate(bytes, alignment);
+    if (ptr != nullptr) {
+      ++allocationCount;
+      ++alignedAllocationCount;
+    }
+    return ptr;
+  }
+
+  void deallocate(void* pointer, size_t bytes) override
+  {
+    if (pointer == nullptr) {
+      return;
+    }
+
+    ++deallocationCount;
+    MemoryAllocator::GetDefault().deallocate(pointer, bytes);
+  }
+
+  void deallocate(void* pointer, size_t bytes, size_t alignment) override
+  {
+    if (pointer == nullptr) {
+      return;
+    }
+
+    ++deallocationCount;
+    ++alignedDeallocationCount;
+    MemoryAllocator::GetDefault().deallocate(pointer, bytes, alignment);
+  }
+
+  size_t allocationLimit = std::numeric_limits<size_t>::max();
+  size_t allocationAttempts = 0;
+  size_t alignedAllocationAttempts = 0;
+  size_t allocationCount = 0;
+  size_t alignedAllocationCount = 0;
+  size_t deallocationCount = 0;
+  size_t alignedDeallocationCount = 0;
+};
+
 } // namespace
 
 //==============================================================================
@@ -131,6 +199,23 @@ TEST(FixedPoolAllocatorTest, AllocateUsesFixedSizeBlocks)
 }
 
 //==============================================================================
+TEST(FixedPoolAllocatorTest, ReusesFreedSlotWithoutGrowing)
+{
+  FixedPoolAllocator allocator(32, MemoryAllocator::GetDefault(), 32 * 4);
+
+  void* ptr1 = allocator.allocate();
+  ASSERT_NE(ptr1, nullptr);
+  EXPECT_EQ(allocator.getNumAllocatedMemoryBlocks(), 1);
+
+  allocator.deallocate(ptr1);
+
+  void* ptr2 = allocator.allocate();
+  EXPECT_EQ(ptr2, ptr1);
+  EXPECT_EQ(allocator.getNumAllocatedMemoryBlocks(), 1);
+  allocator.deallocate(ptr2);
+}
+
+//==============================================================================
 TEST(FixedPoolAllocatorTest, AllocateAlignedUsesAlignedSlots)
 {
   FixedPoolAllocator allocator(
@@ -141,6 +226,124 @@ TEST(FixedPoolAllocatorTest, AllocateAlignedUsesAlignedSlots)
   EXPECT_EQ(reinterpret_cast<std::uintptr_t>(ptr) % 64u, 0u);
 
   allocator.deallocate(ptr, sizeof(OverAlignedObject), 64);
+}
+
+//==============================================================================
+TEST(FixedPoolAllocatorTest, OverSizedRequestsUseBaseAllocator)
+{
+  CountingMemoryAllocator base;
+  FixedPoolAllocator allocator(32, base, 32 * 4);
+  const size_t allocationsAfterConstruction = base.allocationCount;
+
+  void* ptr = allocator.allocate(64);
+  ASSERT_NE(ptr, nullptr);
+  EXPECT_EQ(allocator.getNumAllocatedMemoryBlocks(), 0);
+  EXPECT_EQ(base.allocationCount, allocationsAfterConstruction + 1);
+
+  allocator.deallocate(ptr, 64);
+  EXPECT_EQ(base.deallocationCount, 1u);
+}
+
+//==============================================================================
+TEST(FixedPoolAllocatorTest, OverAlignedRequestsUseBaseAllocator)
+{
+  CountingMemoryAllocator base;
+  FixedPoolAllocator allocator(32, base, 32 * 4);
+  const size_t allocationsAfterConstruction = base.allocationCount;
+
+  void* ptr = allocator.allocate(16, 64);
+  ASSERT_NE(ptr, nullptr);
+  EXPECT_EQ(reinterpret_cast<std::uintptr_t>(ptr) % 64u, 0u);
+  EXPECT_EQ(allocator.getNumAllocatedMemoryBlocks(), 0);
+  EXPECT_EQ(base.allocationCount, allocationsAfterConstruction + 1);
+  EXPECT_EQ(base.alignedAllocationCount, 1u);
+
+  allocator.deallocate(ptr, 16, 64);
+  EXPECT_EQ(base.deallocationCount, 1u);
+  EXPECT_EQ(base.alignedDeallocationCount, 1u);
+}
+
+//==============================================================================
+TEST(FixedPoolAllocatorTest, RejectsInvalidAlignedRequests)
+{
+  CountingMemoryAllocator base;
+  FixedPoolAllocator allocator(32, base, 32 * 4);
+  const size_t allocationAttemptsAfterConstruction = base.allocationAttempts;
+
+  EXPECT_EQ(allocator.allocate(16, 3), nullptr);
+  EXPECT_EQ(base.allocationAttempts, allocationAttemptsAfterConstruction);
+}
+
+//==============================================================================
+TEST(FixedPoolAllocatorTest, HandlesBaseAllocatorFailureForBlockTable)
+{
+  CountingMemoryAllocator base;
+  base.allocationLimit = 0;
+
+  FixedPoolAllocator allocator(32, base, 32 * 4);
+  EXPECT_EQ(allocator.allocate(), nullptr);
+  EXPECT_EQ(allocator.getNumAllocatedMemoryBlocks(), 0);
+  EXPECT_EQ(base.allocationAttempts, 1u);
+  EXPECT_EQ(base.allocationCount, 0u);
+  EXPECT_EQ(base.deallocationCount, 0u);
+}
+
+//==============================================================================
+TEST(FixedPoolAllocatorTest, HandlesBaseAllocatorFailureForMemoryBlock)
+{
+  CountingMemoryAllocator base;
+  base.allocationLimit = 1;
+
+  FixedPoolAllocator allocator(32, base, 32 * 4);
+  EXPECT_EQ(allocator.allocate(), nullptr);
+  EXPECT_EQ(allocator.getNumAllocatedMemoryBlocks(), 0);
+  EXPECT_EQ(base.allocationAttempts, 2u);
+  EXPECT_EQ(base.allocationCount, 1u);
+  EXPECT_EQ(base.deallocationCount, 0u);
+}
+
+//==============================================================================
+TEST(FixedPoolAllocatorTest, KeepsExistingBlocksWhenBlockTableGrowthFails)
+{
+  CountingMemoryAllocator base;
+  base.allocationLimit = 65;
+  FixedPoolAllocator allocator(32, base, 32);
+
+  std::vector<void*> allocations;
+  allocations.reserve(64);
+  for (int i = 0; i < 64; ++i) {
+    void* ptr = allocator.allocate();
+    ASSERT_NE(ptr, nullptr) << "allocation " << i;
+    allocations.push_back(ptr);
+  }
+
+  EXPECT_EQ(allocator.getNumAllocatedMemoryBlocks(), 64);
+  EXPECT_EQ(allocator.allocate(), nullptr);
+  EXPECT_EQ(allocator.getNumAllocatedMemoryBlocks(), 64);
+
+  for (void* ptr : allocations) {
+    allocator.deallocate(ptr);
+  }
+}
+
+//==============================================================================
+TEST(FixedPoolAllocatorTest, DebugRejectsMismatchedAndDoubleFree)
+{
+  auto allocator = FixedPoolAllocator::Debug(32);
+
+  void* ptr = allocator.allocate(16);
+  ASSERT_NE(ptr, nullptr);
+  EXPECT_TRUE(allocator.hasAllocated(ptr, 16));
+
+  allocator.deallocate(ptr, 8);
+  EXPECT_TRUE(allocator.hasAllocated(ptr, 16));
+  EXPECT_FALSE(allocator.isEmpty());
+
+  allocator.deallocate(ptr, 16);
+  EXPECT_TRUE(allocator.isEmpty());
+
+  allocator.deallocate(ptr, 16);
+  EXPECT_TRUE(allocator.isEmpty());
 }
 
 //==============================================================================
