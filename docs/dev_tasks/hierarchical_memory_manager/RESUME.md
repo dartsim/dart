@@ -33,7 +33,9 @@ baseline gap is resolved or a documented dependency/policy decision replaces the
 in-house route. The reserved-registry unit test now proves the prewarmed churn
 loop makes zero calls through the configured DART allocator, so the remaining
 timing gap is allocator-aware EnTT registry/storage overhead or benchmark noise
-rather than one-time pool growth.
+rather than one-time pool growth. The DART EnTT benchmark row now reports
+allocator-call counters and fails if reserved churn calls the configured
+allocator after prewarm.
 
 ## Latest Local Validation
 
@@ -63,6 +65,14 @@ rather than one-time pool growth.
   `StlAllocatorTest.ReservedEnttRegistryChurnDoesNotAllocate`, which asserts no
   DART allocator calls during reserved EnTT create/emplace/read/destroy churn
   after the prewarm pass.
+- The focused benchmark probe
+  `.benchmark_results/entt_registry_dart_no_growth_counter_probe.json` reports
+  `dart_allocator_allocations=0` and `dart_allocator_deallocations=0` for the
+  DART EnTT rows at 256, 512, and 2048 entities.
+- The relaxed focused registry checker over
+  `.benchmark_results/entt_registry_no_growth_counter_checker_probe.json`
+  passed with those counters present, while still showing that strict standard
+  registry timing remains a separate performance gap.
 
 ## Context That Would Be Lost
 

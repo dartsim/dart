@@ -109,7 +109,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     EnTT registry/component storage churn against foonathan/memory and
     standard-registry baselines, and added a CV/noise guard so strict allocator
     comparisons do not treat noisy benchmark rows as evidence. Added a focused
-    EnTT-registry-only checker mode for allocator-policy optimization loops.
+    EnTT-registry-only checker mode for allocator-policy optimization loops and
+    benchmark counters that fail the DART EnTT row if reserved churn calls the
+    configured allocator after prewarm.
   - Optimized the frame allocator reset/accounting fast path and normal-aligned
     `FrameStlAllocator` allocations while preserving over-aligned STL storage.
   - Optimized normal-aligned `StlAllocator` allocation and deallocation to use

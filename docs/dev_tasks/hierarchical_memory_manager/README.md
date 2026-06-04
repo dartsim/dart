@@ -25,7 +25,9 @@
       the World memory hierarchy and covered by no-growth ECS tests.
       Allocator-aware EnTT storage now has a focused `StlAllocator` unit test
       showing that reserved create/emplace/read/destroy churn makes no DART
-      allocator calls after the prewarm pass.
+      allocator calls after the prewarm pass. The DART comparative EnTT
+      benchmark row also reports configured-allocator allocation/deallocation
+      counters and fails if reserved churn calls that allocator after prewarm.
 - [ ] Phase 4: Built-in simulation stages borrow world memory for transient
       buffers and avoid growth after simulation is baked.
 - [ ] Phase 5: Add allocation/debug accounting gates for "no dynamic allocation
@@ -124,9 +126,10 @@ debugging, profiling, optimization experiments, and ImGui visualization.
 
    The generic pool-backed `StlAllocator` route is evidence-only until it
    consistently wins those rows. The current no-growth unit test confirms the
-   prewarmed loop is allocation-free, so remaining benchmark misses should be
-   treated as allocator-aware registry/storage overhead or noise rather than as
-   raw allocator-call latency.
+   prewarmed loop is allocation-free, and the DART benchmark row now enforces
+   the same invariant with allocator-call counters. Remaining benchmark misses
+   should be treated as allocator-aware registry/storage overhead or noise
+   rather than as raw allocator-call latency.
 
 4. Start replacing per-step `std::vector`/`Eigen` temporaries in hot stages with
    world-frame or world-pool backed storage only after the allocator evidence
