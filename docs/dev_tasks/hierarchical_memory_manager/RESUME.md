@@ -28,14 +28,14 @@ coverage and EnTT allocator benchmarks remain open.
 ## Current Branch
 
 `feature/world-registry-allocator` - stacked PR #2872 branch for the
-allocator-backed experimental World registry slice. It builds on PR #2871
-(`feature/aligned-memory-allocator`).
+allocator-backed experimental World registry slice. PR #2871 has merged to
+`main`, and this branch is being merged forward from `main`.
 
 ## Immediate Next Step
 
-Finish review/CI for PR #2871, keep this stacked branch rebased-by-merge onto
-that allocator branch, and resolve any #2872 CI failures. Next allocator work
-should land the strict comparative benchmark gate, broaden
+Resolve any #2872 CI failures after the `main` merge, then propagate the updated
+registry branch through the stacked no-growth and inline-pipeline PRs. Next
+allocator work should land the strict comparative benchmark gate, broaden
 `FixedPoolAllocator` correctness coverage, benchmark allocator-backed EnTT
 registry/component storage, and extend no-growth ECS tests to broader contact
 and remaining solver scratch step paths.
@@ -87,6 +87,6 @@ git status -sb
 git diff --stat
 ```
 
-Then continue the stacked PRs: #2871 allocator correctness/performance, #2872
-allocator-backed experimental World registry, and the comparative benchmark
-gate branch.
+Then continue from the open PR stack: #2872 allocator-backed experimental World
+registry, #2879 no-growth ECS guard, #2880 inline pipeline storage, and the
+comparative benchmark gate branch.
