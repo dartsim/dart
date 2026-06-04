@@ -36,11 +36,13 @@
 #include <dart/common/memory_allocator.hpp>
 
 #include <Eigen/Core>
+#include <entt/entity/registry.hpp>
 #include <gtest/gtest.h>
 
 #include <array>
 #include <vector>
 
+#include <cstddef>
 #include <cstdint>
 
 using namespace dart::common;
@@ -49,6 +51,52 @@ struct alignas(64) OverAlignedStlValue
 {
   double values[8] = {};
 };
+
+struct ArenaRegistryTag
+{
+};
+
+struct ArenaRegistryVelocity
+{
+  double values[3] = {};
+};
+
+template <typename Registry>
+void reserveArenaRegistryStorage(Registry& registry, const size_t entityCount)
+{
+  registry.template storage<ArenaRegistryTag>().reserve(entityCount);
+  registry.template storage<ArenaRegistryVelocity>().reserve(entityCount);
+  registry.template storage<OverAlignedStlValue>().reserve(entityCount);
+}
+
+template <typename Registry>
+void runArenaRegistryChurn(
+    Registry& registry,
+    std::vector<entt::entity>& entities,
+    const size_t entityCount)
+{
+  for (size_t i = 0; i < entityCount; ++i) {
+    const auto entity = registry.create();
+    entities[i] = entity;
+    registry.template emplace<ArenaRegistryTag>(entity);
+    auto& velocity = registry.template emplace<ArenaRegistryVelocity>(entity);
+    velocity.values[0] = static_cast<double>(i);
+    auto& value = registry.template emplace<OverAlignedStlValue>(entity);
+    value.values[0] = static_cast<double>(i + 1);
+  }
+
+  double total = 0.0;
+  for (size_t i = 0; i < entityCount; ++i) {
+    const auto entity = entities[i];
+    total += registry.template get<ArenaRegistryVelocity>(entity).values[0];
+    total += registry.template get<OverAlignedStlValue>(entity).values[0];
+  }
+  EXPECT_GT(total, 0.0);
+
+  for (size_t i = entityCount; i > 0; --i) {
+    registry.destroy(entities[i - 1]);
+  }
+}
 
 class FrameAllocatorTest : public ::testing::Test
 {
@@ -258,6 +306,31 @@ TEST_F(FrameAllocatorTest, StlAllocatorPreservesOverAlignedValues)
   values.resize(2);
   ASSERT_EQ(values.size(), 2u);
   EXPECT_EQ(reinterpret_cast<std::uintptr_t>(values.data()) % 64u, 0u);
+}
+
+//=============================================================================
+TEST_F(
+    FrameAllocatorTest, FrameStlAllocatorSupportsReservedEnttRegistryNoGrowth)
+{
+  constexpr size_t entityCount = 128;
+  FrameAllocator arena(
+      MemoryAllocator::GetDefault(), entityCount * 4096 + 1024 * 1024);
+  FrameStlAllocator<entt::entity> allocator(arena);
+  entt::basic_registry<entt::entity, FrameStlAllocator<entt::entity>> registry(
+      allocator);
+  std::vector<entt::entity> entities(entityCount);
+
+  reserveArenaRegistryStorage(registry, entityCount);
+  runArenaRegistryChurn(registry, entities, entityCount);
+
+  const size_t usedAfterPrewarm = arena.used();
+  const size_t overflowCountAfterPrewarm = arena.overflowCount();
+  const size_t overflowBytesAfterPrewarm = arena.overflowBytes();
+  runArenaRegistryChurn(registry, entities, entityCount);
+
+  EXPECT_EQ(arena.used(), usedAfterPrewarm);
+  EXPECT_EQ(arena.overflowCount(), overflowCountAfterPrewarm);
+  EXPECT_EQ(arena.overflowBytes(), overflowBytesAfterPrewarm);
 }
 
 //=============================================================================

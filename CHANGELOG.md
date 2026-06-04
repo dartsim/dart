@@ -112,7 +112,8 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     EnTT-registry-only checker mode for allocator-policy optimization loops,
     benchmark counters that fail the DART EnTT row if reserved churn calls the
     configured allocator after prewarm, and separate EnTT build/growth rows for
-    bake-time registry storage allocation.
+    bake-time registry storage allocation. Added `FrameStlAllocator` no-growth
+    EnTT coverage for world-lifetime arena policy exploration.
   - Optimized the frame allocator reset/accounting fast path and normal-aligned
     `FrameStlAllocator` allocations while preserving over-aligned STL storage.
   - Kept `StlAllocator` allocation and deallocation alignment-aware for

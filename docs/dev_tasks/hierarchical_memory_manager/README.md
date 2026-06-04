@@ -22,15 +22,19 @@
       storage allocation. The free-list-backed DART registry path beats the
       corrected foonathan/memory registry build/growth baseline locally, but it
       does not yet beat all corrected standard-registry baselines consistently.
+      A world-lifetime arena-backed probe also proves no-growth behavior, but
+      its timing has not yet been stable enough to replace the free-list-backed
+      row as the production policy.
 - [ ] Phase 3: EnTT registry/component storage allocation is configurable from
       the World memory hierarchy and covered by no-growth ECS tests.
-      Allocator-aware EnTT storage now has a focused `StlAllocator` unit test
-      showing that reserved create/emplace/read/destroy churn makes no DART
-      allocator calls after the prewarm pass. The DART comparative EnTT
-      benchmark row also reports configured-allocator allocation/deallocation
-      counters and fails if reserved churn calls that allocator after prewarm.
-      Separate EnTT build/growth rows measure the bake-time storage allocation
-      phase instead of conflating that cost with the no-growth simulation loop.
+      Allocator-aware EnTT storage now has focused `StlAllocator` and
+      `FrameStlAllocator` unit tests showing that reserved
+      create/emplace/read/destroy churn makes no configured allocator calls or
+      arena growth after the prewarm pass. The DART comparative EnTT benchmark
+      row also reports configured-allocator allocation/deallocation counters
+      and fails if reserved churn calls that allocator after prewarm. Separate
+      EnTT build/growth rows measure the bake-time storage allocation phase
+      instead of conflating that cost with the no-growth simulation loop.
 - [ ] Phase 4: Built-in simulation stages borrow world memory for transient
       buffers and avoid growth after simulation is baked.
 - [ ] Phase 5: Add allocation/debug accounting gates for "no dynamic allocation
@@ -127,12 +131,11 @@ debugging, profiling, optimization experiments, and ImGui visualization.
      --baseline foonathan --baseline std
    ```
 
-   The generic pool-backed `StlAllocator` route is evidence-only until it
-   consistently wins those rows. The current no-growth unit test confirms the
-   prewarmed loop is allocation-free, and the DART benchmark row now enforces
-   the same invariant with allocator-call counters. Remaining benchmark misses
-   should be treated as allocator-aware registry/storage overhead or noise
-   rather than as raw allocator-call latency.
+   The generic free-list-backed `StlAllocator` route is evidence-only until it
+   consistently wins those rows. A separate `FrameStlAllocator` no-growth unit
+   test models persistent world registry storage allocated during bake/build and
+   reset only on rebuild/destruction; use it as correctness evidence for an
+   arena policy, not as a passing timing claim.
 
 4. Start replacing per-step `std::vector`/`Eigen` temporaries in hot stages with
    world-frame or world-pool backed storage only after the allocator evidence
