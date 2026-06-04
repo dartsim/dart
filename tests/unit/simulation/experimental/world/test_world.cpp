@@ -6782,6 +6782,46 @@ TEST(World, StepAcceptsMultiDomainSolverPipeline)
   EXPECT_EQ(world.getFrame(), 1u);
 }
 
+// Test that the fixed-size pipeline stage storage covers the advertised
+// capacity and rejects overflow without growing heap-backed state.
+TEST(World, StepPipelineRejectsMoreThanInlineStageCapacity)
+{
+  namespace sx = dart::simulation::experimental;
+  namespace compute = dart::simulation::experimental::compute;
+
+  std::vector<std::string> order;
+  RecordingWorldStage stage0("stage0", {}, order);
+  RecordingWorldStage stage1("stage1", {}, order);
+  RecordingWorldStage stage2("stage2", {}, order);
+  RecordingWorldStage stage3("stage3", {}, order);
+  RecordingWorldStage stage4("stage4", {}, order);
+  RecordingWorldStage stage5("stage5", {}, order);
+  RecordingWorldStage stage6("stage6", {}, order);
+  RecordingWorldStage stage7("stage7", {}, order);
+  RecordingWorldStage overflow("overflow", {}, order);
+
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage0)
+      .addStage(stage1)
+      .addStage(stage2)
+      .addStage(stage3)
+      .addStage(stage4)
+      .addStage(stage5)
+      .addStage(stage6)
+      .addStage(stage7);
+
+  EXPECT_EQ(
+      pipeline.getStageCount(), compute::WorldStepPipeline::kMaxStageCount);
+  EXPECT_THROW(pipeline.addStage(overflow), sx::InvalidArgumentException);
+  EXPECT_EQ(
+      pipeline.getStageCount(), compute::WorldStepPipeline::kMaxStageCount);
+  EXPECT_EQ(&pipeline.getStage(7), &stage7);
+
+  pipeline.clear();
+  EXPECT_TRUE(pipeline.isEmpty());
+  EXPECT_EQ(pipeline.getStageCount(), 0u);
+}
+
 // Test that repeated stepping can reuse a caller-owned executor and pipeline.
 TEST(World, StepCountAcceptsMultiDomainSolverPipeline)
 {

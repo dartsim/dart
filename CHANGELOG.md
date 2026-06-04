@@ -762,6 +762,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     EnTT registry/component storage and private multibody/deformable
     step-scratch storage at `enterSimulationMode()`, including no-growth
     coverage for repeated IPC kinematic, multibody, and deformable steps.
+  - Updated experimental `WorldStepPipeline` to store its non-owning stage list
+    inline with an eight-stage capacity, eliminating stage-list heap allocation
+    during default step pipeline assembly and rejecting overflow with
+    `InvalidArgumentException`.
   - Made experimental rigid-body external force/torque components persistent
     applied loads: each step reads them into the transient force buffer and
     leaves the components intact for callers to clear or update explicitly.

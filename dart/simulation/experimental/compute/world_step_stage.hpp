@@ -37,9 +37,9 @@
 #include <dart/simulation/experimental/compute/compute_stage_metadata.hpp>
 #include <dart/simulation/experimental/export.hpp>
 
+#include <array>
 #include <memory>
 #include <string_view>
-#include <vector>
 
 #include <cstddef>
 
@@ -241,6 +241,8 @@ public:
   WorldStepPipeline(WorldStepPipeline&&) noexcept = default;
   WorldStepPipeline& operator=(WorldStepPipeline&&) noexcept = default;
 
+  static constexpr std::size_t kMaxStageCount = 8;
+
   WorldStepPipeline& addStage(WorldStepStage& stage);
   void clear() noexcept;
 
@@ -251,7 +253,8 @@ public:
   void execute(World& world, ComputeExecutor& executor);
 
 private:
-  std::vector<WorldStepStage*> m_stages;
+  std::array<WorldStepStage*, kMaxStageCount> m_stages{};
+  std::size_t m_stageCount = 0;
 };
 
 /// Default kinematics/cache update stage for the experimental World.

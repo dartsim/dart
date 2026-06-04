@@ -17,7 +17,10 @@
       first multibody/deformable private step-scratch components are
       implemented; broader solver scratch coverage remains open.
 - [ ] Phase 4: Built-in simulation stages borrow world memory for transient
-      buffers and avoid growth after simulation is baked.
+      buffers and avoid growth after simulation is baked. The default
+      `WorldStepPipeline` now stores non-owning stage pointers inline, removing
+      its per-build `std::vector` allocation from the step path; solver-owned
+      transient buffers still need allocator-backed storage.
 - [ ] Phase 5: Add allocation/debug accounting gates for "no dynamic allocation
       during the step loop" on representative rigid, multibody, contact, and
       deformable scenes. Initial World base-allocator no-growth guards now
@@ -118,4 +121,6 @@ debugging, profiling, optimization experiments, and ImGui visualization.
    standard C++ allocators and foonathan/memory on DART-relevant workloads.
 5. Start replacing per-step `std::vector`/`Eigen` temporaries in hot stages with
    world-frame or world-pool backed storage only after the allocator evidence
-   gate proves the DART allocator path is better for that workload.
+   gate proves the DART allocator path is better for that workload. The
+   non-owning `WorldStepPipeline` stage list is already inline; focus next on
+   solver-owned scratch and contact/deformable candidate buffers.
