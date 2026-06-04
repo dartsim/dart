@@ -11,8 +11,10 @@
       `std::pmr` locally. `FreeListAllocator` now has a fixed-capacity mode for
       deterministic bounded failure after preallocation, and `MemoryManager` /
       experimental `WorldOptions` can construct the World free-list hierarchy
-      with a fixed-capacity policy. The strict benchmark gate and broader
-      correctness matrix still need to land before this phase is complete.
+      with a fixed-capacity policy. Fixed-capacity free-list arenas can also
+      satisfy over-aligned pool chunks from reserved bytes without growing from
+      the base allocator. The strict benchmark gate and broader correctness
+      matrix still need to land before this phase is complete.
 - [ ] Phase 3: EnTT registry/component storage allocation is configurable from
       the World memory hierarchy and covered by no-growth ECS tests.
 - [ ] Phase 4: Built-in simulation stages borrow world memory for transient

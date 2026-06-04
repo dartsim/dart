@@ -172,7 +172,22 @@ private:
     bool isOutstandingAllocation;
   };
 
+  struct alignas(std::max_align_t) AlignedAllocationHeader
+  {
+    size_t magic;
+    void* allocationPointer;
+    size_t allocationSize;
+    size_t requestedSize;
+    size_t alignment;
+  };
+
+  [[nodiscard]] void* allocateFromReservedBlockAligned(
+      size_t bytes, size_t alignment) noexcept;
+
   bool releaseDelegatedAllocation(
+      void* pointer, size_t bytes, size_t alignment);
+
+  bool releaseReservedAlignedAllocation(
       void* pointer, size_t bytes, size_t alignment);
 
   /// The base allocator

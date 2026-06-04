@@ -110,6 +110,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     from the base allocator after bake/build, and exposed construction-time
     free-list capacity/policy knobs through `MemoryManager` and experimental
     `WorldOptions`.
+  - Fixed fixed-capacity `FreeListAllocator` aligned allocations so
+    `PoolAllocator` can satisfy aligned size-class chunks from reserved arena
+    bytes without growing from the base allocator.
   - Added the standalone `dartsim/` GUI simulator (a runtime executable, not a
     library) built only on the experimental World API. Its headless editor
     engine (`dartsim/engine`) provides scene/object, selection, command

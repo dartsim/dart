@@ -10,7 +10,10 @@ preallocated free-list arena can fail deterministically instead of growing from
 its base allocator after world creation or bake/build. The same slice now wires
 free-list initial capacity and growth policy through `MemoryManager::Options`
 and experimental `WorldOptions`, making the policy reachable from the World
-memory hierarchy.
+memory hierarchy. The current review-fix slice also lets fixed-capacity
+free-list arenas satisfy over-aligned allocations from reserved bytes, which is
+required for `PoolAllocator` size-class chunks backed by a fixed-capacity
+`MemoryManager`.
 
 ## Current Branch
 
@@ -20,17 +23,21 @@ experimental `WorldOptions` policy wiring. It is published as draft PR #2892.
 
 ## Immediate Next Step
 
-Push the validated `MemoryManager::Options` / `WorldOptions` policy wiring onto
-PR #2892. The next broader allocator-policy work remains optimizing or replacing
-the allocator-aware EnTT registry path until it beats both foonathan/memory and
-standard-registry baselines, and expanding no-growth world-step guards beyond
-the current baked kinematic IPC slice.
+Keep PR #2892 draft until CI and Codex review are clean after the fixed-capacity
+aligned-allocation review fix. The next broader allocator-policy work remains
+optimizing or replacing the allocator-aware EnTT registry path until it beats
+both foonathan/memory and standard-registry baselines, and expanding no-growth
+world-step guards beyond the current baked kinematic IPC slice.
 
 ## Latest Local Validation
 
+- Pre-lint review fix: `cmake --build build/default/cpp/Release --target UNIT_common_free_list_allocator UNIT_common_memory_manager -j2`
+- Pre-lint review fix: `ctest --test-dir build/default/cpp/Release -R '^(UNIT_common_free_list_allocator|UNIT_common_memory_manager)$' --output-on-failure`
 - Pre-lint: `cmake --build build/default/cpp/Release --target UNIT_common_memory_manager test_world -j2`
 - Pre-lint: `ctest --test-dir build/default/cpp/Release -R '^(UNIT_common_memory_manager|test_world)$' --output-on-failure`
 - `pixi run lint`
+- Post-lint review fix: `cmake --build build/default/cpp/Release --target UNIT_common_free_list_allocator UNIT_common_memory_manager -j2`
+- Post-lint review fix: `ctest --test-dir build/default/cpp/Release -R '^(UNIT_common_free_list_allocator|UNIT_common_memory_manager)$' --output-on-failure`
 - Post-lint: `cmake --build build/default/cpp/Release --target UNIT_common_memory_manager test_world -j2`
 - Post-lint: `ctest --test-dir build/default/cpp/Release -R '^(UNIT_common_memory_manager|test_world)$' --output-on-failure`
 - `git diff --check`

@@ -39,6 +39,7 @@
 #include <memory>
 
 #include <cstddef>
+#include <cstdint>
 
 namespace dart::common {
 
@@ -59,6 +60,18 @@ bool roundUpToAlignment(size_t bytes, size_t alignment, size_t& rounded)
   rounded = (bytes + mask) & ~mask;
   return true;
 }
+
+bool checkedAdd(size_t lhs, size_t rhs, size_t& result)
+{
+  if (lhs > std::numeric_limits<size_t>::max() - rhs) {
+    return false;
+  }
+
+  result = lhs + rhs;
+  return true;
+}
+
+constexpr size_t kAlignedAllocationMagic = 0xDA771A11u;
 
 } // namespace
 
@@ -223,7 +236,7 @@ void* FreeListAllocator::allocate(size_t bytes, size_t alignment) noexcept
   }
 
   if (mGrowthPolicy == GrowthPolicy::FixedCapacity) {
-    return nullptr;
+    return allocateFromReservedBlockAligned(bytes, alignment);
   }
 
   void* pointer = mBaseAllocator.allocate(bytes, alignment);
@@ -235,6 +248,39 @@ void* FreeListAllocator::allocate(size_t bytes, size_t alignment) noexcept
   mTotalAllocatedSize += bytes;
 
   return pointer;
+}
+
+//==============================================================================
+void* FreeListAllocator::allocateFromReservedBlockAligned(
+    size_t bytes, size_t alignment) noexcept
+{
+  size_t allocationSize = 0;
+  if (!checkedAdd(bytes, sizeof(AlignedAllocationHeader), allocationSize)
+      || !checkedAdd(allocationSize, alignment - 1, allocationSize)) {
+    return nullptr;
+  }
+
+  auto* allocation = static_cast<unsigned char*>(allocate(allocationSize));
+  if (allocation == nullptr) {
+    return nullptr;
+  }
+
+  const auto payloadBegin = reinterpret_cast<uintptr_t>(allocation)
+                            + sizeof(AlignedAllocationHeader);
+  const auto alignedPayload
+      = (payloadBegin + alignment - 1) & ~(uintptr_t{alignment} - 1);
+  auto* header = reinterpret_cast<AlignedAllocationHeader*>(
+      alignedPayload - sizeof(AlignedAllocationHeader));
+  std::construct_at(
+      header,
+      AlignedAllocationHeader{
+          kAlignedAllocationMagic,
+          allocation,
+          allocationSize,
+          bytes,
+          alignment});
+
+  return reinterpret_cast<void*>(alignedPayload);
 }
 
 //==============================================================================
@@ -294,6 +340,11 @@ void FreeListAllocator::deallocate(
   }
 
   if (!releaseDelegatedAllocation(pointer, bytes, alignment)) {
+    if (mGrowthPolicy == GrowthPolicy::FixedCapacity
+        && releaseReservedAlignedAllocation(pointer, bytes, alignment)) {
+      return;
+    }
+
     DART_ASSERT(false);
     return;
   }
@@ -362,6 +413,29 @@ bool FreeListAllocator::releaseDelegatedAllocation(
   }
 
   return false;
+}
+
+//==============================================================================
+bool FreeListAllocator::releaseReservedAlignedAllocation(
+    void* pointer, size_t bytes, size_t alignment)
+{
+  DART_UNUSED(bytes, alignment);
+
+  auto* header = reinterpret_cast<AlignedAllocationHeader*>(
+      static_cast<unsigned char*>(pointer) - sizeof(AlignedAllocationHeader));
+  if (header->magic != kAlignedAllocationMagic) {
+    return false;
+  }
+
+  DART_ASSERT(header->requestedSize == bytes);
+  DART_ASSERT(header->alignment == alignment);
+
+  void* allocationPointer = header->allocationPointer;
+  const size_t allocationSize = header->allocationSize;
+  std::destroy_at(header);
+  deallocate(allocationPointer, allocationSize);
+
+  return true;
 }
 
 //==============================================================================
