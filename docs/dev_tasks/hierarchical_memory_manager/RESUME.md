@@ -31,17 +31,23 @@ deformable paths do not request more World base-allocator allocations or
 deallocations during repeated `World::step()` calls. This is not the final
 global zero-allocation proof; it covers the World-owned memory hierarchy only.
 
+The current stacked pipeline slice removes `WorldStepPipeline`'s heap-backed
+stage pointer vector. Pipelines now keep a fixed inline list of non-owning stage
+pointers sized for the current default World stage compositions plus headroom,
+and overflow is a deterministic `InvalidArgumentException`.
+
 ## Current Branch
 
-`feature/world-registry-allocator` - stacked PR #2872 branch for the
-allocator-backed experimental World registry slice. It builds on PR #2871
+`feature/world-step-pipeline-inline-storage` - stacked on PR #2879
+(`feature/world-memory-step-no-growth`), which is itself stacked on PR #2872
+(`feature/world-registry-allocator`) and PR #2871
 (`feature/aligned-memory-allocator`).
 
 ## Immediate Next Step
 
-Finish review/CI for PR #2871, keep this stacked branch rebased-by-merge onto
-that allocator branch, and resolve any #2872 CI failures. Next allocator work
-should land the strict comparative benchmark gate, broaden
+Finish review/CI for PR #2871, keep the stacked registry and no-growth branches
+merged forward from their bases, and resolve any #2872/#2879 CI failures. Next
+allocator work should land the strict comparative benchmark gate, broaden
 `FixedPoolAllocator` correctness coverage, benchmark allocator-backed EnTT
 registry/component storage, extend no-growth ECS tests to broader contact and
 remaining solver scratch step paths, and add a separate global heap allocation
@@ -63,6 +69,9 @@ guard before claiming zero dynamic allocation for the full simulation loop.
 - `pixi run test-simulation-experimental` (61/61 passed)
 - `cmake --build build/default/cpp/Release --target test_world -j2`
 - `ctest --test-dir build/default/cpp/Release -R '^test_world$' --output-on-failure`
+- On `feature/world-step-pipeline-inline-storage` after the inline pipeline
+  storage change: `cmake --build build/default/cpp/Release --target test_world -j2`
+  and `ctest --test-dir build/default/cpp/Release -R '^test_world$' --output-on-failure`
 
 ## Context That Would Be Lost
 
