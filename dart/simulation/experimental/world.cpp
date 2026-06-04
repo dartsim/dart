@@ -168,9 +168,35 @@ struct World::ReplayState
   template <typename Component>
   using ComponentSnapshot = std::vector<std::pair<entt::entity, Component>>;
 
+  struct JointLayoutState
+  {
+    comps::JointType type = comps::JointType::Revolute;
+    comps::ActuatorType actuatorType = comps::ActuatorType::Force;
+    std::string name;
+    Eigen::VectorXd springStiffness;
+    Eigen::VectorXd dampingCoefficient;
+    Eigen::VectorXd restPosition;
+    Eigen::VectorXd armature;
+    Eigen::VectorXd coulombFriction;
+    comps::JointLimits limits;
+    Eigen::Vector3d axis = Eigen::Vector3d::UnitZ();
+    Eigen::Vector3d axis2 = Eigen::Vector3d::UnitX();
+    double pitch = 0.0;
+    entt::entity parentLink = entt::null;
+    entt::entity childLink = entt::null;
+    bool hasRigidBodyFixedJointAnchors = false;
+    Eigen::Vector3d rigidBodyFixedJointLocalAnchorParent
+        = Eigen::Vector3d::Zero();
+    Eigen::Vector3d rigidBodyFixedJointLocalAnchorChild
+        = Eigen::Vector3d::Zero();
+    Eigen::Quaterniond rigidBodyFixedJointTargetRelativeOrientation
+        = Eigen::Quaterniond::Identity();
+  };
+
   struct JointState
   {
     entt::entity entity = entt::null;
+    JointLayoutState layout;
     Eigen::VectorXd position;
     Eigen::VectorXd velocity;
     Eigen::VectorXd acceleration;
@@ -248,6 +274,51 @@ std::size_t countReplayView(const View& view)
     ++count;
   }
   return count;
+}
+
+bool sameReplayVector(const Eigen::VectorXd& lhs, const Eigen::VectorXd& rhs)
+{
+  return lhs.size() == rhs.size() && (lhs.array() == rhs.array()).all();
+}
+
+bool sameReplayJointLimits(
+    const comps::JointLimits& lhs, const comps::JointLimits& rhs)
+{
+  return sameReplayVector(lhs.lower, rhs.lower)
+         && sameReplayVector(lhs.upper, rhs.upper)
+         && sameReplayVector(lhs.velocityLower, rhs.velocityLower)
+         && sameReplayVector(lhs.velocityUpper, rhs.velocityUpper)
+         && sameReplayVector(lhs.effortLower, rhs.effortLower)
+         && sameReplayVector(lhs.effortUpper, rhs.effortUpper);
+}
+
+template <typename JointLayout>
+bool sameReplayJointLayout(const comps::Joint& joint, const JointLayout& layout)
+{
+  return joint.type == layout.type && joint.actuatorType == layout.actuatorType
+         && joint.name == layout.name
+         && sameReplayVector(joint.springStiffness, layout.springStiffness)
+         && sameReplayVector(
+             joint.dampingCoefficient, layout.dampingCoefficient)
+         && sameReplayVector(joint.restPosition, layout.restPosition)
+         && sameReplayVector(joint.armature, layout.armature)
+         && sameReplayVector(joint.coulombFriction, layout.coulombFriction)
+         && sameReplayJointLimits(joint.limits, layout.limits)
+         && joint.axis.isApprox(layout.axis, 0.0)
+         && joint.axis2.isApprox(layout.axis2, 0.0)
+         && joint.pitch == layout.pitch && joint.parentLink == layout.parentLink
+         && joint.childLink == layout.childLink
+         && joint.hasRigidBodyFixedJointAnchors
+                == layout.hasRigidBodyFixedJointAnchors
+         && joint.rigidBodyFixedJointLocalAnchorParent.isApprox(
+             layout.rigidBodyFixedJointLocalAnchorParent, 0.0)
+         && joint.rigidBodyFixedJointLocalAnchorChild.isApprox(
+             layout.rigidBodyFixedJointLocalAnchorChild, 0.0)
+         && joint.rigidBodyFixedJointTargetRelativeOrientation.coeffs()
+                .isApprox(
+                    layout.rigidBodyFixedJointTargetRelativeOrientation
+                        .coeffs(),
+                    0.0);
 }
 
 template <typename Component>
@@ -3140,6 +3211,11 @@ void World::restoreReplayFrame(std::size_t index)
             || !m_storage->registry.all_of<comps::Joint>(state.entity),
         InvalidOperationException,
         "Cannot restore replay frame: Joint entity layout changed");
+    DART_EXPERIMENTAL_THROW_T_IF(
+        !sameReplayJointLayout(
+            m_storage->registry.get<comps::Joint>(state.entity), state.layout),
+        InvalidOperationException,
+        "Cannot restore replay frame: Joint entity layout changed");
   }
 
   DART_EXPERIMENTAL_THROW_T_IF(
@@ -3329,6 +3405,25 @@ void World::recordReplayFrame()
     replayFrame.joints.push_back(
         ReplayState::JointState{
             entity,
+            ReplayState::JointLayoutState{
+                joint.type,
+                joint.actuatorType,
+                joint.name,
+                joint.springStiffness,
+                joint.dampingCoefficient,
+                joint.restPosition,
+                joint.armature,
+                joint.coulombFriction,
+                joint.limits,
+                joint.axis,
+                joint.axis2,
+                joint.pitch,
+                joint.parentLink,
+                joint.childLink,
+                joint.hasRigidBodyFixedJointAnchors,
+                joint.rigidBodyFixedJointLocalAnchorParent,
+                joint.rigidBodyFixedJointLocalAnchorChild,
+                joint.rigidBodyFixedJointTargetRelativeOrientation},
             joint.position,
             joint.velocity,
             joint.acceleration,

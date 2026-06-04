@@ -7265,6 +7265,63 @@ TEST(World, ReplayRecordingRejectsRigidBodyConstructionEdits)
       parentWorld.restoreReplayFrame(0), sx::InvalidOperationException);
 }
 
+// Test that replay restore rejects joint dynamics/configuration edits that are
+// not mutable per-frame state.
+TEST(World, ReplayRecordingRejectsJointDynamicsChanges)
+{
+  namespace sx = dart::simulation::experimental;
+
+  const auto expectJointMutationRejected = [](auto mutate) {
+    sx::World world;
+    auto robot = world.addMultibody("robot");
+    auto base = robot.addLink("base");
+
+    sx::JointSpec spec;
+    spec.name = "joint";
+    spec.type = sx::JointType::Revolute;
+    auto link = robot.addLink("link", base, spec);
+    auto joint = link.getParentJoint();
+
+    world.setReplayRecordingEnabled(true);
+    EXPECT_EQ(world.getReplayFrameCount(), 1u);
+
+    mutate(joint);
+
+    EXPECT_THROW(world.restoreReplayFrame(0), sx::InvalidOperationException);
+  };
+
+  expectJointMutationRejected([](sx::Joint& joint) {
+    joint.setSpringStiffness(Eigen::VectorXd::Constant(1, 1.0));
+  });
+  expectJointMutationRejected([](sx::Joint& joint) {
+    joint.setDampingCoefficient(Eigen::VectorXd::Constant(1, 0.1));
+  });
+  expectJointMutationRejected([](sx::Joint& joint) {
+    joint.setRestPosition(Eigen::VectorXd::Constant(1, 0.25));
+  });
+  expectJointMutationRejected([](sx::Joint& joint) {
+    joint.setArmature(Eigen::VectorXd::Constant(1, 0.05));
+  });
+  expectJointMutationRejected([](sx::Joint& joint) {
+    joint.setCoulombFriction(Eigen::VectorXd::Constant(1, 0.2));
+  });
+  expectJointMutationRejected([](sx::Joint& joint) {
+    joint.setPositionLimits(
+        Eigen::VectorXd::Constant(1, -0.5), Eigen::VectorXd::Constant(1, 0.5));
+  });
+  expectJointMutationRejected([](sx::Joint& joint) {
+    joint.setVelocityLimits(
+        Eigen::VectorXd::Constant(1, -1.0), Eigen::VectorXd::Constant(1, 1.0));
+  });
+  expectJointMutationRejected([](sx::Joint& joint) {
+    joint.setEffortLimits(
+        Eigen::VectorXd::Constant(1, -2.0), Eigen::VectorXd::Constant(1, 2.0));
+  });
+  expectJointMutationRejected([](sx::Joint& joint) {
+    joint.setActuatorType(sx::ActuatorType::Passive);
+  });
+}
+
 // Test that a layout-incompatible restore fails before mutating earlier replay
 // state such as articulated joint values.
 TEST(World, ReplayRecordingRejectsLayoutBeforeMutatingState)
