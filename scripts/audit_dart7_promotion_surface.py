@@ -78,11 +78,17 @@ PROMOTE_DIRS = (
 )
 
 # Specific headers under an otherwise-internal directory that ARE part of the
-# promoted public surface, because public World methods return them by value
-# (so consumers including only world.hpp must get a complete type). Keep this
-# list minimal and explicit; the rest of the directory stays internal. These
-# headers are themselves audited as promotion targets (they must not leak ECS).
+# promoted public surface. Keep this list minimal and explicit; the rest of the
+# directory stays internal. These headers are themselves audited as promotion
+# targets (they must not leak ECS). Reasons:
+#   * diff/rollout.hpp is the public differentiable-simulation entry point
+#     (diff::rollout / RolloutTrajectory / RolloutGradient), demonstrated by the
+#     experimental_differentiable_gui example and intended for standalone use.
+#   * diff/step_derivatives.hpp / diff/step_gradient.hpp are pulled into the
+#     public include closure by value (world.hpp / rollout.hpp), so consumers
+#     including only those headers need the complete types.
 PROMOTE_FILES = {
+    "diff/rollout.hpp",
     "diff/step_derivatives.hpp",
     "diff/step_gradient.hpp",
 }

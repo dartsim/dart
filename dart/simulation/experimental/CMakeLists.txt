@@ -245,10 +245,14 @@ endif()
 # with the promotion allowlist in scripts/audit_dart7_promotion_surface.py
 # (PROMOTE_*).
 # Only these headers are installed; the implementation-internal directories
-# (comps/, compute/, common/, detail/, diff/, ecs/, io/, space/) stay hidden.
-# diff/step_derivatives.hpp and diff/step_gradient.hpp are not promotion targets
-# in their own right, but world.hpp includes them by value, so they are part of
-# the public include closure and must ship too.
+# (comps/, compute/, common/, detail/, ecs/, io/, space/) stay hidden.
+# The diff/ directory is mostly internal, but three headers ship: diff/rollout.hpp
+# is the public differentiable-simulation entry point (diff::rollout /
+# RolloutTrajectory / RolloutGradient), demonstrated by the
+# experimental_differentiable_gui example and consumable standalone; and
+# diff/step_derivatives.hpp / diff/step_gradient.hpp, which are not promotion
+# targets in their own right but are pulled into the public include closure by
+# value (world.hpp / rollout.hpp), so they must ship too.
 set(
   dart_experimental_public_headers_toplevel
   world.hpp
@@ -293,6 +297,7 @@ set(
 )
 set(
   dart_experimental_public_headers_diff
+  diff/rollout.hpp
   diff/step_derivatives.hpp
   diff/step_gradient.hpp
 )
