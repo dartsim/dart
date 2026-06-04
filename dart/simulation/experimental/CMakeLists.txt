@@ -115,10 +115,21 @@ target_include_directories(
 
 target_compile_features(${target_name} PUBLIC cxx_std_20)
 
+# spdlog is an internal implementation dependency (logging): no promoted public
+# header and no in-tree consumer of the public API includes <spdlog/...>, so it
+# is linked PRIVATE rather than PUBLIC. This keeps it out of the installed
+# component's public link interface for shared builds; for static builds it is
+# re-registered below (like EnTT/Taskflow) so a downstream find_package can still
+# resolve the $<LINK_ONLY:...> entry. Eigen3 stays PUBLIC: promoted headers use
+# Eigen types in their API.
 target_link_libraries(
   ${target_name}
-  PUBLIC dart Eigen3::Eigen spdlog::spdlog
-  PRIVATE EnTT::EnTT ${PROJECT_NAME}-collision-native ${PROJECT_NAME}-io
+  PUBLIC dart Eigen3::Eigen
+  PRIVATE
+    EnTT::EnTT
+    spdlog::spdlog
+    ${PROJECT_NAME}-collision-native
+    ${PROJECT_NAME}-io
 )
 
 if(TARGET Taskflow::Taskflow)
@@ -203,21 +214,27 @@ endif()
 add_component(${PROJECT_NAME} ${component_name})
 add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
 add_component_dependencies(${PROJECT_NAME} ${component_name} dart io)
-# EnTT and Taskflow are PRIVATE implementation dependencies (the promoted public
-# headers do not include or name them, verified by
+# EnTT, Taskflow and spdlog are PRIVATE implementation dependencies (no promoted
+# public header includes or names them, verified by
 # scripts/audit_dart7_promotion_surface.py --strict and the public-header
 # smoke). How they appear in the installed component interface depends on the
 # library kind:
 #   * Shared builds drop PRIVATE link deps from INTERFACE_LINK_LIBRARIES, so a
-#     downstream find_package(dart) needs neither finder; we deliberately do NOT
+#     downstream find_package(dart) needs no finder; we deliberately do NOT
 #     register them as component dependency packages (the common case).
 #   * Static builds export a target's PRIVATE link deps as $<LINK_ONLY:...> in
 #     the component interface, so a downstream find_package(dart) needs the
-#     EnTT::EnTT / Taskflow imported targets to exist for linking. This is
-#     link-only: it carries no include/usage requirements, so it does not
-#     re-expose any entt/taskflow headers on the public surface.
+#     EnTT::EnTT / Taskflow::Taskflow / spdlog::spdlog imported targets to exist
+#     for linking. This is link-only: it carries no include/usage requirements,
+#     so it does not re-expose any of those headers on the public surface.
 if(NOT BUILD_SHARED_LIBS)
-  add_component_dependency_packages(${PROJECT_NAME} ${component_name} EnTT Taskflow)
+  add_component_dependency_packages(
+    ${PROJECT_NAME}
+    ${component_name}
+    EnTT
+    Taskflow
+    spdlog
+  )
 endif()
 
 # Promoted public surface for dart::simulation::experimental. This is the single
