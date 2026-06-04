@@ -2606,6 +2606,9 @@ void World::setMultibodyOptions(const MultibodyOptions& options)
     m_multibodyIntegrationMethod = MultibodyIntegrationMethod::SemiImplicit;
   } else if (family == "variational integrator" || family == "variational") {
     m_multibodyIntegrationMethod = MultibodyIntegrationMethod::Variational;
+    if (m_simulationMode) {
+      reserveRegistryStorageForSimulation();
+    }
   } else {
     DART_EXPERIMENTAL_THROW_T(
         InvalidArgumentException,
