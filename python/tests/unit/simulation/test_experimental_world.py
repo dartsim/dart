@@ -184,6 +184,12 @@ def test_experimental_api_exposes_python_names_only():
             "getMultibodyCount",
             "addRigidBody",
             "addRigidBodyFixedJoint",
+            "addRigidBodyRevoluteJoint",
+            "addRigidBodyPrismaticJoint",
+            "getRigidBodyJoint",
+            "hasRigidBodyJoint",
+            "getRigidBodyJoints",
+            "getRigidBodyJointCount",
             "getRigidBodyFixedJoint",
             "hasRigidBodyFixedJoint",
             "getRigidBodyFixedJoints",
@@ -283,7 +289,13 @@ def test_experimental_stub_tracks_public_runtime_symbols():
         "shape_index_a",
         "local_point_a",
         "has_multibody",
+        "add_rigid_body_revolute_joint",
+        "add_rigid_body_prismatic_joint",
+        "get_rigid_body_joint",
+        "get_rigid_body_joints",
         "has_rigid_body_fixed_joint",
+        "has_rigid_body_joint",
+        "num_rigid_body_joints",
         "num_rigid_body_fixed_joints",
         "is_valid",
     ):
@@ -299,6 +311,12 @@ def test_experimental_stub_tracks_public_runtime_symbols():
         "def getMultibody(",
         "def hasMultibody(",
         "def addRigidBodyFixedJoint(",
+        "def addRigidBodyRevoluteJoint(",
+        "def addRigidBodyPrismaticJoint(",
+        "def getRigidBodyJoint(",
+        "def hasRigidBodyJoint(",
+        "def getRigidBodyJoints(",
+        "def getRigidBodyJointCount(",
         "def getRigidBodyFixedJoint(",
         "def hasRigidBodyFixedJoint(",
         "def getRigidBodyFixedJoints(",
@@ -503,6 +521,55 @@ def test_experimental_world_rigid_body_fixed_joint_projects_captured_pose():
     assert float(link.linear_velocity[0]) < 0.0
     with pytest.raises(Exception, match="simulation mode"):
         world.add_rigid_body_fixed_joint("late_joint", base, link)
+
+
+def test_experimental_world_rigid_body_one_dof_joints_project_supported_axes():
+    sx = _simulation_experimental()
+
+    hinge_world = sx.World(time_step=0.005, gravity=(0.0, 0.0, 0.0))
+    hinge_base = hinge_world.add_rigid_body("base")
+    hinge_base.is_static = True
+    hinge_link = hinge_world.add_rigid_body("link", position=(1.0, 0.0, 0.0))
+    hinge = hinge_world.add_rigid_body_revolute_joint(
+        "base_to_link_hinge", hinge_base, hinge_link, axis=(0.0, 0.0, 1.0)
+    )
+    assert hinge.type == sx.JointType.REVOLUTE
+    assert hinge.num_dofs == 1
+    assert np.asarray(hinge.axis, dtype=float)[2] == pytest.approx(1.0)
+    assert hinge_world.has_rigid_body_joint("base_to_link_hinge")
+    assert not hinge_world.has_rigid_body_fixed_joint("base_to_link_hinge")
+    assert hinge_world.num_rigid_body_joints == 1
+    assert hinge_world.num_rigid_body_fixed_joints == 0
+    assert hinge_world.get_rigid_body_joint("base_to_link_hinge").type == (
+        sx.JointType.REVOLUTE
+    )
+    assert hinge_world.get_rigid_body_joint("missing") is None
+    assert len(hinge_world.get_rigid_body_joints()) == 1
+
+    drifted_hinge = np.eye(4)
+    drifted_hinge[:3, 3] = (1.25, 0.25, 0.0)
+    hinge_link.transform = drifted_hinge
+    hinge_world.enter_simulation_mode()
+    hinge_world.step()
+    assert float(hinge_link.translation[0]) == pytest.approx(1.0, abs=0.05)
+    assert float(hinge_link.translation[1]) == pytest.approx(0.0, abs=0.05)
+
+    slider_world = sx.World(time_step=0.005, gravity=(0.0, 0.0, 0.0))
+    slider_base = slider_world.add_rigid_body("base")
+    slider_base.is_static = True
+    slider = slider_world.add_rigid_body("slider", position=(0.0, 0.0, 1.0))
+    joint = slider_world.add_rigid_body_prismatic_joint(
+        "base_to_slider", slider_base, slider, axis=(0.0, 0.0, 1.0)
+    )
+    assert joint.type == sx.JointType.PRISMATIC
+    assert joint.num_dofs == 1
+    drifted_slider = np.eye(4)
+    drifted_slider[:3, 3] = (0.25, 0.0, 1.5)
+    slider.transform = drifted_slider
+    slider_world.enter_simulation_mode()
+    slider_world.step()
+    assert float(slider.translation[0]) == pytest.approx(0.0, abs=0.05)
+    assert float(slider.translation[2]) == pytest.approx(1.5, abs=0.05)
 
 
 def test_experimental_world_rigid_body_fixed_joint_list_keeps_world_alive():

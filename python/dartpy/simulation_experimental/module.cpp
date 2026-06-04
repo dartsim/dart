@@ -2677,6 +2677,60 @@ void defSimulationExperimentalModule(nb::module_& m)
           nb::arg("child"),
           nb::keep_alive<0, 1>())
       .def(
+          "add_rigid_body_revolute_joint",
+          [](sim::World& self,
+             const std::string& name,
+             const sim::RigidBody& parent,
+             const sim::RigidBody& child,
+             const nb::handle& axis) {
+            return self.addRigidBodyRevoluteJoint(
+                name, parent, child, toVector3(axis));
+          },
+          nb::arg("name"),
+          nb::arg("parent"),
+          nb::arg("child"),
+          nb::arg("axis") = nb::make_tuple(0.0, 0.0, 1.0),
+          nb::keep_alive<0, 1>())
+      .def(
+          "add_rigid_body_prismatic_joint",
+          [](sim::World& self,
+             const std::string& name,
+             const sim::RigidBody& parent,
+             const sim::RigidBody& child,
+             const nb::handle& axis) {
+            return self.addRigidBodyPrismaticJoint(
+                name, parent, child, toVector3(axis));
+          },
+          nb::arg("name"),
+          nb::arg("parent"),
+          nb::arg("child"),
+          nb::arg("axis") = nb::make_tuple(0.0, 0.0, 1.0),
+          nb::keep_alive<0, 1>())
+      .def(
+          "get_rigid_body_joint",
+          [](sim::World& self, const std::string& name) -> nb::object {
+            auto joint = self.getRigidBodyJoint(name);
+            if (!joint.has_value()) {
+              return nb::none();
+            }
+            return nb::cast(*joint, nb::rv_policy::move);
+          },
+          nb::arg("name"),
+          nb::keep_alive<0, 1>())
+      .def(
+          "has_rigid_body_joint",
+          [](const sim::World& self, const std::string& name) {
+            return self.hasRigidBodyJoint(name);
+          },
+          nb::arg("name"))
+      .def(
+          "get_rigid_body_joints",
+          [](const nb::object& worldObject) {
+            auto& self = nb::cast<sim::World&>(worldObject);
+            return castJointsKeepingWorldAlive(
+                self.getRigidBodyJoints(), worldObject);
+          })
+      .def(
           "get_rigid_body_fixed_joint",
           [](sim::World& self, const std::string& name) -> nb::object {
             auto joint = self.getRigidBodyFixedJoint(name);
@@ -2809,6 +2863,7 @@ void defSimulationExperimentalModule(nb::module_& m)
       .def_prop_ro("num_multibodies", &sim::World::getMultibodyCount)
       .def_prop_ro("num_loop_closures", &sim::World::getLoopClosureCount)
       .def_prop_ro("num_rigid_bodies", &sim::World::getRigidBodyCount)
+      .def_prop_ro("num_rigid_body_joints", &sim::World::getRigidBodyJointCount)
       .def_prop_ro(
           "num_rigid_body_fixed_joints",
           &sim::World::getRigidBodyFixedJointCount)
