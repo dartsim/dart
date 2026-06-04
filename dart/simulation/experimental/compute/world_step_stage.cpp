@@ -77,6 +77,7 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <limits>
 #include <map>
 #include <memory>
@@ -582,6 +583,30 @@ void WorldStepPipeline::execute(World& world, ComputeExecutor& executor)
   for (auto* stage : m_stages) {
     stage->execute(world, executor);
   }
+}
+
+//==============================================================================
+WorldStepProfile WorldStepPipeline::executeProfiled(
+    World& world, ComputeExecutor& executor)
+{
+  WorldStepProfile profile;
+  profile.stepCount = 1;
+  profile.stages.reserve(m_stages.size());
+
+  const auto stepStart = std::chrono::steady_clock::now();
+  for (auto* stage : m_stages) {
+    const auto stageStart = std::chrono::steady_clock::now();
+    stage->execute(world, executor);
+    const auto stageEnd = std::chrono::steady_clock::now();
+
+    auto& entry = profile.stages.emplace_back();
+    entry.name = stage->getName();
+    entry.domain = stage->getMetadata().domain;
+    entry.duration = stageEnd - stageStart;
+  }
+  profile.wallTime = std::chrono::steady_clock::now() - stepStart;
+
+  return profile;
 }
 
 //==============================================================================

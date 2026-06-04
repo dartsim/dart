@@ -719,6 +719,19 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     experimental World a `MemoryManager` root and report per-step frame-scratch
     usable capacity, usage, peak usage, overflow count, overflow bytes, and
     reset count.
+  - Added opt-in per-stage step profiling to the experimental `World`, a
+    non-GUI text-first performance surface for tools and AI agents:
+    `World::setStepProfilingEnabled()` records each pipeline stage's wall-clock
+    time, and `World::getLastStepProfile()` returns a `compute::WorldStepProfile`
+    (per-stage name, domain, and duration plus total wall time) with a
+    `toSummaryText()` breakdown. Exposed to dartpy as
+    `world.step_profiling_enabled`, `world.last_step_profile`, and
+    `WorldStepProfile.summary()`. Off by default with zero added step overhead.
+    Removed the unused, never-built `dart::simulation::experimental::common`
+    `ScopedTimer`/`Stopwatch`/`ProfileStats` profiler (its
+    `DART_EXPERIMENTAL_ENABLE_PROFILING` macros were wired into no build and
+    duplicated `dart::common::profile`) so the World step profile is the single
+    experimental profiling surface.
   - Made experimental rigid-body external force/torque components persistent
     applied loads: each step reads them into the transient force buffer and
     leaves the components intact for callers to clear or update explicitly.

@@ -85,6 +85,7 @@ This onboarding guide is organized into several focused documents:
 - **[api-documentation.md](api-documentation.md)** - Publishing strategy for RTD and GitHub Pages API docs
 - **[build-system.md](build-system.md)** - CMake internals and dependency analysis
 - **[io-parsing.md](io-parsing.md)** - Unified model loading API (`dart::io`)
+- **[profiling.md](profiling.md)** - Text-first profiling of the experimental World (per-stage step profile + built-in scope profiler)
 
 ### Feature Workflows
 

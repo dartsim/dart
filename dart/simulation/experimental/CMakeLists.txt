@@ -41,7 +41,6 @@ add_library(
   body/rigid_body.cpp
   common/diagnostics.cpp
   common/exceptions.cpp
-  common/profiling.cpp
   compute/compute_graph.cpp
   compute/compute_graph_visualization.cpp
   compute/compute_node.cpp
@@ -58,6 +57,7 @@ add_library(
   compute/sequential_executor.cpp
   compute/world_batch.cpp
   compute/world_kinematics_graph.cpp
+  compute/world_step_profile.cpp
   compute/world_step_stage.cpp
   constraint/loop_closure.cpp
   comps/collision_geometry.cpp

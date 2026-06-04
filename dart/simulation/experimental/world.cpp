@@ -2460,7 +2460,14 @@ void World::step(
     captureStepDerivatives();
   }
 
-  pipeline.execute(*this, executor);
+  // Step profiling is opt-in (setStepProfilingEnabled). When off, the original
+  // untimed execute path runs with no added overhead; when on, each stage is
+  // timed and the per-stage breakdown is retained for getLastStepProfile().
+  if (m_stepProfilingEnabled) {
+    m_lastStepProfile = pipeline.executeProfiled(*this, executor);
+  } else {
+    pipeline.execute(*this, executor);
+  }
 
   m_time += m_timeStep;
   ++m_frame;
@@ -2608,6 +2615,24 @@ const DeformableSolverDiagnostics& World::getLastDeformableSolverDiagnostics()
     const
 {
   return m_lastDeformableSolverDiagnostics;
+}
+
+//==============================================================================
+void World::setStepProfilingEnabled(bool enabled) noexcept
+{
+  m_stepProfilingEnabled = enabled;
+}
+
+//==============================================================================
+bool World::isStepProfilingEnabled() const noexcept
+{
+  return m_stepProfilingEnabled;
+}
+
+//==============================================================================
+const compute::WorldStepProfile& World::getLastStepProfile() const noexcept
+{
+  return m_lastStepProfile;
 }
 
 //==============================================================================

@@ -42,7 +42,9 @@
 #include <dart/simulation/experimental/body/rigid_body.hpp>
 #include <dart/simulation/experimental/body/rigid_body_options.hpp>
 #include <dart/simulation/experimental/common/exceptions.hpp>
+#include <dart/simulation/experimental/compute/compute_stage_metadata.hpp>
 #include <dart/simulation/experimental/compute/deformable_psd_backend.hpp>
+#include <dart/simulation/experimental/compute/world_step_profile.hpp>
 #include <dart/simulation/experimental/constraint/loop_closure.hpp>
 #include <dart/simulation/experimental/constraint/loop_closure_spec.hpp>
 #include <dart/simulation/experimental/diff/physical_parameter.hpp>
@@ -86,7 +88,9 @@
 #include <nanobind/stl/vector.h>
 
 #include <array>
+#include <chrono>
 #include <limits>
+#include <optional>
 #include <span>
 #include <string>
 #include <utility>
@@ -1935,6 +1939,86 @@ void defSimulationExperimentalModule(nb::module_& m)
           "converged_active_contact_count",
           &sim::DeformableSolverDiagnostics::convergedActiveContactCount);
 
+  nb::class_<sim::compute::WorldStepStageProfile>(m, "WorldStepStageProfile")
+      .def_ro(
+          "name",
+          &sim::compute::WorldStepStageProfile::name,
+          "Stage name, e.g. \"rigid_body_contact\".")
+      .def_prop_ro(
+          "domain",
+          [](const sim::compute::WorldStepStageProfile& self) {
+            return std::string(sim::compute::toString(self.domain));
+          },
+          "Broad compute domain of the stage, e.g. \"rigid_body\".")
+      .def_prop_ro(
+          "duration_us",
+          [](const sim::compute::WorldStepStageProfile& self) {
+            return std::chrono::duration_cast<std::chrono::microseconds>(
+                       self.duration)
+                .count();
+          },
+          "Wall-clock time spent in this stage, in microseconds.")
+      .def_prop_ro(
+          "duration_ms",
+          [](const sim::compute::WorldStepStageProfile& self) {
+            return std::chrono::duration<double, std::milli>(self.duration)
+                .count();
+          },
+          "Wall-clock time spent in this stage, in milliseconds.");
+
+  nb::class_<sim::compute::WorldStepProfile>(m, "WorldStepProfile")
+      .def_ro(
+          "step_count",
+          &sim::compute::WorldStepProfile::stepCount,
+          "Number of steps captured (1 for the most recent step).")
+      .def_ro(
+          "stages",
+          &sim::compute::WorldStepProfile::stages,
+          "Per-stage timings, in pipeline execution order.")
+      .def_prop_ro(
+          "wall_time_us",
+          [](const sim::compute::WorldStepProfile& self) {
+            return std::chrono::duration_cast<std::chrono::microseconds>(
+                       self.wallTime)
+                .count();
+          },
+          "End-to-end wall time of the profiled step, in microseconds.")
+      .def_prop_ro(
+          "wall_time_ms",
+          [](const sim::compute::WorldStepProfile& self) {
+            return std::chrono::duration<double, std::milli>(self.wallTime)
+                .count();
+          },
+          "End-to-end wall time of the profiled step, in milliseconds.")
+      .def_prop_ro(
+          "total_stage_time_us",
+          [](const sim::compute::WorldStepProfile& self) {
+            return std::chrono::duration_cast<std::chrono::microseconds>(
+                       self.totalStageTime())
+                .count();
+          },
+          "Sum of per-stage durations, in microseconds.")
+      .def("is_empty", &sim::compute::WorldStepProfile::isEmpty)
+      .def(
+          "get_stage",
+          [](const sim::compute::WorldStepProfile& self,
+             const std::string& name)
+              -> std::optional<sim::compute::WorldStepStageProfile> {
+            const auto* stage = self.getStage(name);
+            if (stage == nullptr) {
+              return std::nullopt;
+            }
+            return *stage;
+          },
+          nb::arg("name"),
+          "Returns a stage profile copy with the given name, or None.")
+      .def(
+          "summary",
+          &sim::compute::WorldStepProfile::toSummaryText,
+          "Compact, sorted, human- and agent-readable per-stage timing table.")
+      .def("__repr__", &sim::compute::WorldStepProfile::toSummaryText)
+      .def("__str__", &sim::compute::WorldStepProfile::toSummaryText);
+
   nb::class_<sim::DeformableMaterialProperties>(
       m, "DeformableMaterialProperties")
       .def(nb::init<>())
@@ -2716,6 +2800,21 @@ void defSimulationExperimentalModule(nb::module_& m)
           "Curated diagnostics from the deformable solve on the most recent "
           "step that used the built-in pipeline (mesh sizes, projected-Newton "
           "convergence, self-contact activity, contact closest-approach).")
+      .def_prop_rw(
+          "step_profiling_enabled",
+          &sim::World::isStepProfilingEnabled,
+          &sim::World::setStepProfilingEnabled,
+          "Enable or disable per-stage step profiling. Off by default; when "
+          "off "
+          "the step path is unchanged and adds no overhead. When on, each step "
+          "records a per-stage wall-clock breakdown in last_step_profile.")
+      .def_prop_ro(
+          "last_step_profile",
+          &sim::World::getLastStepProfile,
+          nb::rv_policy::reference_internal,
+          "Per-stage wall-clock profile of the most recent step taken while "
+          "step profiling was enabled (empty otherwise). Call .summary() for a "
+          "compact text breakdown of where the step spent its time.")
       .def_prop_rw(
           "time_step", &sim::World::getTimeStep, &sim::World::setTimeStep)
       .def_prop_rw("time", &sim::World::getTime, &sim::World::setTime)

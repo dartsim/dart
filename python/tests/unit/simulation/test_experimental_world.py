@@ -251,6 +251,8 @@ def test_experimental_stub_tracks_public_runtime_symbols():
         "ReadOptions",
         "StateSpace",
         "StateVariable",
+        "WorldStepProfile",
+        "WorldStepStageProfile",
     )
     for symbol in public_symbols:
         assert hasattr(sx, symbol), symbol
@@ -280,6 +282,10 @@ def test_experimental_stub_tracks_public_runtime_symbols():
         "local_point_a",
         "has_multibody",
         "is_valid",
+        "step_profiling_enabled",
+        "last_step_profile",
+        "def get_stage(",
+        "def summary(",
     ):
         assert member in stub
 
@@ -3596,3 +3602,73 @@ def test_experimental_deformable_scene_loader_python_api(tmp_path):
     assert diagnostics.tetrahedron_count == 1
     # Unit corner tetrahedron volume 1/6 at density 6 has total mass 1.
     assert diagnostics.total_mass == pytest.approx(1.0)
+
+
+def test_experimental_world_step_profiling_disabled_by_default():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+    assert world.step_profiling_enabled is False
+
+    world.step()
+
+    # Off by default: no per-stage profile is captured.
+    assert world.last_step_profile.is_empty()
+
+
+def test_experimental_world_step_profiling_records_stages():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+    world.step_profiling_enabled = True
+    assert world.step_profiling_enabled is True
+
+    world.step()
+
+    profile = world.last_step_profile
+    assert not profile.is_empty()
+    assert profile.step_count == 1
+    assert profile.wall_time_us >= 0
+    assert len(profile.stages) >= 2
+
+    names = [stage.name for stage in profile.stages]
+    # The default pipeline always integrates rigid-body velocities and ends
+    # with the kinematics/cache-refresh stage.
+    assert "rigid_body_velocity" in names
+    assert "kinematics" in names
+
+    kinematics = profile.get_stage("kinematics")
+    assert kinematics is not None
+    assert kinematics.name == "kinematics"
+    assert kinematics.duration_us >= 0
+    assert kinematics.domain  # non-empty domain string
+    assert profile.get_stage("does_not_exist") is None
+
+    # get_stage() returns a copy, so it remains valid after the retained
+    # World snapshot is overwritten by another profiled step.
+    world.step()
+    assert kinematics.name == "kinematics"
+    assert kinematics.duration_us >= 0
+
+    # The text summary is the AI-/human-facing surface for perf analysis.
+    summary = profile.summary()
+    assert "World Step Profile" in summary
+    assert "kinematics" in summary
+
+
+def test_experimental_world_step_profiling_can_be_disabled():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+    world.step_profiling_enabled = True
+    world.step()
+    captured_stage_count = len(world.last_step_profile.stages)
+    assert captured_stage_count > 0
+
+    # Disabling freezes the retained snapshot; later steps must not touch it.
+    world.step_profiling_enabled = False
+    for _ in range(3):
+        world.step()
+
+    assert world.step_profiling_enabled is False
+    assert len(world.last_step_profile.stages) == captured_stage_count

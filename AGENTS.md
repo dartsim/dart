@@ -47,6 +47,7 @@ portable source of truth.
 | Python bindings             | `docs/onboarding/python-bindings.md`                                                                                                                               |
 | Model loading               | `docs/onboarding/io-parsing.md`                                                                                                                                    |
 | Build system                | `docs/onboarding/build-system.md`                                                                                                                                  |
+| Profiling / performance     | `docs/onboarding/profiling.md`                                                                                                                                     |
 | AI tools                    | `docs/ai/README.md`, `docs/ai/principles.md`, `docs/ai/north-star.md`, `docs/onboarding/ai-tools.md`                                                               |
 | Planning                    | `docs/ai/principles.md`, `docs/ai/north-star.md`, `docs/plans/README.md`, `docs/plans/dashboard.md`, `docs/plans/north-star-roadmap.md`, `docs/ai/verification.md` |
 | PR reviews                  | `docs/onboarding/ai-tools.md` (AI review handling rules)                                                                                                           |
