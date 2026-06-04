@@ -90,6 +90,10 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || needs.changes.outputs.code == 'true'
     name: Wheels | ${{ matrix.os }} Py${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
+    # Fail fast on a regression instead of waiting for the ~6h default kill.
+    # Sized generously for a first cold-sccache Windows Ninja wheel build; Linux/macOS
+    # wheels already use Ninja and finish well under this bound.
+    timeout-minutes: 120
     defaults:
       run:
         shell: bash
@@ -116,6 +120,17 @@ jobs:
 
       - name: Configure environment for compiler cache
         uses: ./.github/actions/configure-compiler-cache
+
+      # Keep the experimental simulation module OFF for Windows wheels only. The
+      # shared pyproject.toml [tool.scikit-build.cmake.define] block leaves
+      # DART_BUILD_SIMULATION_EXPERIMENTAL at its global default (ON) so Linux/macOS
+      # wheels still build it. scikit-build-core honors SKBUILD_CMAKE_DEFINE, which
+      # merges into cmake.define; exporting it here (Windows-gated) overrides the
+      # default for the Windows wheel build without affecting other platforms.
+      - name: Disable experimental simulation for Windows wheels
+        if: runner.os == 'Windows'
+        shell: bash
+        run: echo "SKBUILD_CMAKE_DEFINE=DART_BUILD_SIMULATION_EXPERIMENTAL=OFF" >> "$GITHUB_ENV"
 
       - name: Build wheel
         env:

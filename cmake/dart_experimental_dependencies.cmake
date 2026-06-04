@@ -100,38 +100,89 @@ if(DART_EXPERIMENTAL_VERBOSE)
 endif()
 
 # Eigen3 - Linear algebra library
-dart_experimental_find_package(
-  NAME Eigen3
-  PACKAGE Eigen3
-  REQUIRED
-)
-if(Eigen3_VERSION VERSION_LESS 3.4)
+# Reuse core DART's already-resolved Eigen3::Eigen target (core finds it as a
+# hard requirement before this module is added) instead of a brittle REQUIRED
+# re-find. Mirrors the EnTT/Taskflow/spdlog pattern below.
+if(NOT TARGET Eigen3::Eigen)
+  dart_find_package(Eigen3)
+endif()
+if(NOT TARGET Eigen3::Eigen)
+  message(FATAL_ERROR "Eigen3 is required for simulation-experimental")
+endif()
+if(DEFINED Eigen3_VERSION AND Eigen3_VERSION VERSION_LESS 3.4)
   message(
     FATAL_ERROR
     "Eigen version>=3.4 is required, but found ${Eigen3_VERSION}"
   )
 endif()
+# Keep Eigen3 in the tracked-deps summary so the status line still prints it.
+list(APPEND DART_EXPERIMENTAL_DEPS_FOUND Eigen3)
+set(
+  DART_EXPERIMENTAL_DEPS_FOUND
+  "${DART_EXPERIMENTAL_DEPS_FOUND}"
+  CACHE INTERNAL
+  "List of found dependencies"
+)
 
 # EnTT - Entity Component System library
-dart_experimental_find_package(
-  NAME EnTT
-  PACKAGE EnTT
-  VERSION 3.14
-  REQUIRED
+# Use the fallback-capable finder so clean environments (containers, wheel
+# builds) auto-fetch EnTT instead of FATAL_ERRORing on a plain
+# find_package(... REQUIRED). Mirrors dart/collision/native/CMakeLists.txt.
+if(NOT TARGET EnTT::EnTT)
+  dart_find_package(EnTT)
+endif()
+if(NOT TARGET EnTT::EnTT)
+  message(FATAL_ERROR "EnTT >= 3.14 is required for simulation-experimental")
+endif()
+# Keep EnTT in the tracked-deps summary so the status line still prints it.
+list(APPEND DART_EXPERIMENTAL_DEPS_FOUND EnTT)
+set(
+  DART_EXPERIMENTAL_DEPS_FOUND
+  "${DART_EXPERIMENTAL_DEPS_FOUND}"
+  CACHE INTERNAL
+  "List of found dependencies"
 )
 
 # spdlog - Logging library
-dart_experimental_find_package(
-  NAME spdlog
-  PACKAGE spdlog
-  REQUIRED
+# spdlog is optional for core DART (core links it only if found and otherwise
+# builds with DART_HAVE_spdlog=0), but the experimental module hard-requires the
+# spdlog::spdlog target (logging.hpp includes spdlog unconditionally and the
+# library links it PRIVATE -- registered for static export below). A plain
+# find_package(... REQUIRED) HARD-FAILS in clean environments lacking
+# spdlogConfig.cmake (e.g. the Alt Linux Docker lane). Route through the
+# fallback-capable finder, which reuses core's target when present and otherwise
+# FetchContent-fetches spdlog. Mirrors EnTT/Taskflow.
+if(NOT TARGET spdlog::spdlog)
+  dart_find_package(spdlog)
+endif()
+if(NOT TARGET spdlog::spdlog)
+  message(FATAL_ERROR "spdlog is required for simulation-experimental")
+endif()
+# Keep spdlog in the tracked-deps summary so the status line still prints it.
+list(APPEND DART_EXPERIMENTAL_DEPS_FOUND spdlog)
+set(
+  DART_EXPERIMENTAL_DEPS_FOUND
+  "${DART_EXPERIMENTAL_DEPS_FOUND}"
+  CACHE INTERNAL
+  "List of found dependencies"
 )
 
 # Taskflow - Parallel task programming library
-dart_experimental_find_package(
-  NAME Taskflow
-  PACKAGE Taskflow
-  REQUIRED
+# Use the fallback-capable finder so clean environments auto-fetch Taskflow
+# instead of FATAL_ERRORing on a plain find_package(... REQUIRED).
+if(NOT TARGET Taskflow::Taskflow)
+  dart_find_package(Taskflow)
+endif()
+if(NOT TARGET Taskflow::Taskflow)
+  message(FATAL_ERROR "Taskflow is required for simulation-experimental")
+endif()
+# Keep Taskflow in the tracked-deps summary so the status line still prints it.
+list(APPEND DART_EXPERIMENTAL_DEPS_FOUND Taskflow)
+set(
+  DART_EXPERIMENTAL_DEPS_FOUND
+  "${DART_EXPERIMENTAL_DEPS_FOUND}"
+  CACHE INTERNAL
+  "List of found dependencies"
 )
 
 #==============================================================================

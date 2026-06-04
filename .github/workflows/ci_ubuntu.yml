@@ -53,6 +53,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      # The Debug + --coverage build instruments every translation unit, so its
+      # object files (debug info + gcov arcs) are several times larger than a
+      # normal build. With the simulation-experimental module now built by
+      # default, core + experimental + all tests no longer fit in the
+      # GitHub-hosted runner's free space and compilation fails with
+      # "No space left on device". Reclaim the large preinstalled toolchains we
+      # do not use (~25 GB) before configuring.
+      - name: Free up disk space
+        run: |
+          set -x
+          df -h /
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup \
+            /usr/local/lib/android /opt/hostedtoolcache/CodeQL \
+            /usr/local/share/boost "$AGENT_TOOLSDIRECTORY" || true
+          sudo docker image prune --all --force || true
+          df -h /
+
       - name: Setup pixi (CI)
         uses: ./.github/actions/setup-pixi-ci
         with:

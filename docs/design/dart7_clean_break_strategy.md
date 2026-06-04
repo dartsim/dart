@@ -11,7 +11,7 @@ PLAN-040 in [`docs/plans/dashboard.md`](../plans/dashboard.md#plan-040-dart-7-re
 
 DART 7 is the clean-break major release for the DART 6 to DART 7 transition.
 DART 7 does not serve as a long-lived compatibility bridge for the DART 6 API.
-`release-6.16` remains the compatibility lane for the established API and for
+`release-6.17` remains the compatibility lane for the established API and for
 Gazebo / gz-physics users that need it.
 
 The experimental simulation stack is the public API target for the clean break,
@@ -31,7 +31,7 @@ dual-maintenance window. Main would need to carry the DART 6 API, the classic
 Skeleton-backed simulation path, and the new experimental world while the
 robotics simulation landscape is moving quickly.
 
-Parking gz-physics support on `release-6.16` removes the main reason to keep the
+Parking gz-physics support on `release-6.17` removes the main reason to keep the
 classic DART 6 surface on main. The compatibility surface is broad: classic
 `World` ownership, `Skeleton` / `BodyNode` / `Joint` concepts, deprecated
 collision and constraint APIs, and package-config behavior used by pinned
@@ -46,7 +46,7 @@ API depends on them.
 
 ## Release Topology
 
-- **DART 6.16.x**: maintained compatibility line for DART 6 API users and
+- **DART 6.17.x**: maintained compatibility line for DART 6 API users and
   Gazebo / gz-physics. Backport critical bug fixes, build fixes, security
   fixes, and gz-required compatibility fixes. Do not backport normal DART 7
   features by default.
@@ -63,11 +63,11 @@ Do not build a broad `dart6-compat` shim into main. A future shim is acceptable
 only if it is separate from the DART 7 core, inventory-driven by a concrete
 downstream migration, limited to the calls that downstream uses, and sunset
 dated. The default compatibility answer for gz-physics is the maintained
-`release-6.16` line.
+`release-6.17` line.
 
 ## Open Decisions
 
-- Final DART 6.16 Gazebo support window or sunset trigger.
+- Final DART 6.17 Gazebo support window or sunset trigger.
 - Whether yanked `dartpy` 7.0.0 artifacts can be reused safely, or whether the
   first published clean-break package should use a later patch/pre-release
   number.
