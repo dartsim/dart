@@ -1114,7 +1114,8 @@ extractAvbdRigidWorldPointJointInputs(const entt::registry& registry)
     }
 
     if (!config.localAnchorA.allFinite() || !config.localAnchorB.allFinite()
-        || !config.targetRelativeOrientation.coeffs().allFinite()) {
+        || !config.targetRelativeOrientation.coeffs().allFinite()
+        || !config.linearAxes.allFinite() || !config.angularAxes.allFinite()) {
       continue;
     }
 
@@ -1132,8 +1133,9 @@ extractAvbdRigidWorldPointJointInputs(const entt::registry& registry)
     input.anchorB = worldB * config.localAnchorB;
     input.targetRelativeOrientation
         = normalizeAvbdRigidOrientation(config.targetRelativeOrientation);
-    input.linearAxes = config.linearAxes;
-    input.angularAxes = config.angularAxes;
+    const Eigen::Matrix3d parentRotation = worldA.linear();
+    input.linearAxes = parentRotation * config.linearAxes;
+    input.angularAxes = parentRotation * config.angularAxes;
     input.linearAxisMask = config.linearAxisMask;
     input.angularAxisMask = config.angularAxisMask;
     input.startStiffness = config.startStiffness;

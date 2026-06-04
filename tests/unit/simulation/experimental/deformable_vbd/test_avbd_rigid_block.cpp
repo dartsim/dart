@@ -2178,6 +2178,87 @@ TEST(AvbdRigidBlock, RigidWorldExtractsFixedJointInputs)
 }
 
 //==============================================================================
+TEST(AvbdRigidBlock, RigidWorldPointJointInputsRotateAxesWithParentFrame)
+{
+  sx::World world;
+  world.setGravity(Vec3::Zero());
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world.addRigidBody("base", baseOptions);
+
+  sx::RigidBodyOptions sliderOptions;
+  sliderOptions.mass = 1.0;
+  sliderOptions.position = Vec3::UnitZ();
+  auto slider = world.addRigidBody("slider", sliderOptions);
+  sx::Joint sliderJoint = world.addRigidBodyPrismaticJoint(
+      "slider_joint", base, slider, Vec3::UnitZ());
+
+  sx::RigidBodyOptions hingeOptions;
+  hingeOptions.mass = 1.0;
+  hingeOptions.position = 2.0 * Vec3::UnitZ();
+  auto hinge = world.addRigidBody("hinge", hingeOptions);
+  sx::Joint hingeJoint = world.addRigidBodyRevoluteJoint(
+      "hinge_joint", base, hinge, Vec3::UnitZ());
+
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
+  const entt::entity sliderJointEntity
+      = sx::detail::toRegistryEntity(sliderJoint.getEntity());
+  const entt::entity hingeJointEntity
+      = sx::detail::toRegistryEntity(hingeJoint.getEntity());
+  const auto& sliderConfig
+      = registry.get<vbd::AvbdRigidWorldPointJointConfig>(sliderJointEntity);
+  const auto& hingeConfig
+      = registry.get<vbd::AvbdRigidWorldPointJointConfig>(hingeJointEntity);
+
+  Eigen::Isometry3d baseTransform = Eigen::Isometry3d::Identity();
+  baseTransform.linear()
+      = rotationY(0.5 * vbd::kAvbdRigidPi).toRotationMatrix();
+  base.setTransform(baseTransform);
+
+  const std::vector<vbd::AvbdRigidWorldPointJointInput> joints
+      = vbd::extractAvbdRigidWorldPointJointInputs(registry);
+  ASSERT_EQ(joints.size(), 2u);
+
+  const auto findJointInput = [&](const sx::RigidBody& child) {
+    const entt::entity childEntity
+        = sx::detail::toRegistryEntity(child.getEntity());
+    const auto it = std::find_if(
+        joints.begin(),
+        joints.end(),
+        [&](const vbd::AvbdRigidWorldPointJointInput& input) {
+          return input.bodyB == childEntity;
+        });
+    EXPECT_NE(it, joints.end());
+    return it;
+  };
+
+  const Eigen::Matrix3d parentRotation = baseTransform.linear();
+  const auto sliderInput = findJointInput(slider);
+  ASSERT_NE(sliderInput, joints.end());
+  EXPECT_NEAR(
+      (sliderInput->linearAxes - parentRotation * sliderConfig.linearAxes)
+          .norm(),
+      0.0,
+      1e-12);
+  EXPECT_NEAR(
+      (sliderInput->angularAxes - parentRotation * sliderConfig.angularAxes)
+          .norm(),
+      0.0,
+      1e-12);
+  EXPECT_NEAR(sliderInput->linearAxes.col(2).dot(Vec3::UnitX()), 1.0, 1e-12);
+
+  const auto hingeInput = findJointInput(hinge);
+  ASSERT_NE(hingeInput, joints.end());
+  EXPECT_NEAR(
+      (hingeInput->angularAxes - parentRotation * hingeConfig.angularAxes)
+          .norm(),
+      0.0,
+      1e-12);
+  EXPECT_NEAR(hingeInput->angularAxes.col(2).dot(Vec3::UnitX()), 1.0, 1e-12);
+}
+
+//==============================================================================
 TEST(AvbdRigidBlock, RigidWorldFixedJointHelperDerivesCurrentPoseConfig)
 {
   sx::World world;

@@ -262,7 +262,7 @@ public:
   /// The current relative pose is captured when the joint is created. During
   /// simulation steps the experimental rigid-body constraint path projects the
   /// child body back toward that captured anchor while leaving rotation around
-  /// `axis` free. This is design-mode only.
+  /// the parent-frame `axis` free. This is design-mode only.
   Joint addRigidBodyRevoluteJoint(
       std::string_view name,
       const RigidBody& parent,
@@ -273,7 +273,7 @@ public:
   /// The current relative pose is captured when the joint is created. During
   /// simulation steps the experimental rigid-body constraint path projects the
   /// child body back toward that captured anchor while leaving translation
-  /// along `axis` free. This is design-mode only.
+  /// along the parent-frame `axis` free. This is design-mode only.
   Joint addRigidBodyPrismaticJoint(
       std::string_view name,
       const RigidBody& parent,
