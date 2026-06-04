@@ -179,25 +179,14 @@ if(DART_EXPERIMENTAL_BUILD_TESTS)
     )
   endif()
 
-  # These in-tree tests intentionally poke ECS internals and include
-  # <entt/entt.hpp> directly. The experimental library no longer re-exports
-  # EnTT (it is a PRIVATE dependency now that the public surface is entt-free),
-  # so link it explicitly here for the targets that need it. Guard each with
-  # if(TARGET ...) because some are gated by DART_BUILD_DIFF.
-  foreach(
-    _entt_test
-    test_multibody_link_contact
-    test_unified_constraint
-    test_variational_integration
-    test_auto_mapper
-    test_vector_mapper
-    test_vbd_world_solver
-    test_diff_smooth_jacobian
-  )
-    if(TARGET ${_entt_test})
-      target_link_libraries(${_entt_test} PRIVATE EnTT::EnTT)
-    endif()
-  endforeach()
+  # In-tree tests that poke ECS internals include <entt/entt.hpp> directly.
+  # EnTT is a PRIVATE dependency of the experimental library (the public surface
+  # is entt-free), so test targets do not inherit it. Rather than maintain a
+  # per-target list here -- which silently rots as new ECS-internal tests are
+  # added and only breaks in clean/FetchContent builds -- dart_add_simulation_test
+  # links EnTT::EnTT into every test target it creates. The public-header poison
+  # smoke test below is built directly (not via that helper) and stays EnTT-free
+  # on purpose.
 
   # Negative public-header self-containment smoke test.
   #
