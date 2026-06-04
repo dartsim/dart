@@ -24,13 +24,13 @@ pixi run bm-allocator-comparative-check --only-entt-registry \
   --baseline foonathan --baseline std --verbose
 ```
 
-The normal-aligned `StlAllocator` fast path now makes the focused STL-vector
-probe pass against both foonathan/memory and `std::pmr`, but the
-free-list-backed registry route still does not consistently beat both
-foonathan/memory and the standard registry on steady-state
-create/emplace/read/destroy churn. Keep the PR draft until that registry
-baseline gap is resolved or a documented dependency/policy decision replaces the
-in-house route. The reserved-registry unit test now proves the prewarmed churn
+`StlAllocator` now keeps allocator-backed STL storage alignment-aware,
+including fixed-pool-backed max-aligned values. The free-list-backed registry
+route still does not consistently beat both foonathan/memory and the standard
+registry on steady-state create/emplace/read/destroy churn. Keep the PR draft
+until that registry baseline gap is resolved or a documented dependency/policy
+decision replaces the in-house route. The reserved-registry unit test now proves
+the prewarmed churn
 loop makes zero calls through the configured DART allocator, so the remaining
 timing gap is allocator-aware EnTT registry/storage overhead or benchmark noise
 rather than one-time pool growth. The DART EnTT benchmark row now reports
@@ -54,23 +54,27 @@ allocator after prewarm.
   justify an allocator-code change.
 - The focused STL-vector checker over
   `.benchmark_results/stlvector_default_align_fastpath_probe.json` passed
-  against both foonathan and `std::pmr` after the normal-aligned
-  `StlAllocator` fast path.
+  against both foonathan and `std::pmr` before the fixed-pool max-aligned
+  correctness fix; rerun this probe before treating it as current performance
+  evidence.
 - The focused EnTT checker over
   `.benchmark_results/entt_registry_stl_default_align_fastpath_probe.json`
   still failed against the standard registry and one foonathan row, confirming
   that the registry hot loop needs allocator-policy work beyond the generic
-  STL adapter fast path.
+  STL adapter route.
 - The focused `UNIT_common_stl_allocator` ctest passes with
+  `StlAllocatorTest.SupportsFixedPoolBackedMaxAlignedStorage`, which preserves
+  max-aligned STL values on fixed-pool-backed storage, and
   `StlAllocatorTest.ReservedEnttRegistryChurnDoesNotAllocate`, which asserts no
   DART allocator calls during reserved EnTT create/emplace/read/destroy churn
   after the prewarm pass.
 - The focused benchmark probe
-  `.benchmark_results/entt_registry_dart_no_growth_counter_probe.json` reports
+  `.benchmark_results/entt_registry_dart_alignment_fix_counter_probe.json`
+  reports
   `dart_allocator_allocations=0` and `dart_allocator_deallocations=0` for the
   DART EnTT rows at 256, 512, and 2048 entities.
 - The relaxed focused registry checker over
-  `.benchmark_results/entt_registry_no_growth_counter_checker_probe.json`
+  `.benchmark_results/entt_registry_alignment_fix_checker_probe.json`
   passed with those counters present, while still showing that strict standard
   registry timing remains a separate performance gap.
 

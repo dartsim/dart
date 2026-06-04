@@ -114,8 +114,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     configured allocator after prewarm.
   - Optimized the frame allocator reset/accounting fast path and normal-aligned
     `FrameStlAllocator` allocations while preserving over-aligned STL storage.
-  - Optimized normal-aligned `StlAllocator` allocation and deallocation to use
-    the default-aligned allocator path while preserving over-aligned storage.
+  - Kept `StlAllocator` allocation and deallocation alignment-aware for
+    allocator-backed STL storage, including fixed-pool-backed max-aligned
+    values.
   - Added the standalone `dartsim/` GUI simulator (a runtime executable, not a
     library) built only on the experimental World API. Its headless editor
     engine (`dartsim/engine`) provides scene/object, selection, command

@@ -70,11 +70,7 @@ typename StlAllocator<T>::pointer StlAllocator<T>::allocate(
   (void)hint;
   void* memory = nullptr;
   const size_type bytes = n * sizeof(T);
-  if constexpr (alignof(T) <= alignof(std::max_align_t)) {
-    memory = mBaseAllocator->allocate(bytes);
-  } else {
-    memory = mBaseAllocator->allocate(bytes, alignof(T));
-  }
+  memory = mBaseAllocator->allocate(bytes, alignof(T));
   pointer ptr = reinterpret_cast<pointer>(memory);
 
   // Throw std::bad_alloc to comply 23.10.9.1
@@ -91,11 +87,7 @@ template <typename T>
 void StlAllocator<T>::deallocate(pointer pointer, size_type n) noexcept
 {
   const size_type bytes = n * sizeof(T);
-  if constexpr (alignof(T) <= alignof(std::max_align_t)) {
-    mBaseAllocator->deallocate(pointer, bytes);
-  } else {
-    mBaseAllocator->deallocate(pointer, bytes, alignof(T));
-  }
+  mBaseAllocator->deallocate(pointer, bytes, alignof(T));
 }
 
 //==============================================================================

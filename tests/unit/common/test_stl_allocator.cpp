@@ -32,6 +32,7 @@
 
 #include "../../helpers/gtest_utils.hpp"
 
+#include <dart/common/fixed_pool_allocator.hpp>
 #include <dart/common/free_list_allocator.hpp>
 #include <dart/common/pool_allocator.hpp>
 #include <dart/common/stl_allocator.hpp>
@@ -42,6 +43,7 @@
 #include <string_view>
 #include <vector>
 
+#include <cstddef>
 #include <cstdint>
 
 using namespace dart;
@@ -52,6 +54,11 @@ namespace {
 struct alignas(64) OverAlignedComponent
 {
   double values[8] = {};
+};
+
+struct alignas(std::max_align_t) MaxAlignedComponent
+{
+  double values[2] = {};
 };
 
 struct RegistryTag
@@ -221,6 +228,24 @@ TEST(StlAllocatorTest, SupportsPoolBackedOverAlignedVectorStorage)
   for (auto& value : values) {
     expectAligned(&value);
   }
+}
+
+//==============================================================================
+TEST(StlAllocatorTest, SupportsFixedPoolBackedMaxAlignedStorage)
+{
+  const size_t underAlignedUnitSize
+      = sizeof(MaxAlignedComponent) + alignof(MaxAlignedComponent) / 2;
+  FixedPoolAllocator backing(underAlignedUnitSize);
+  StlAllocator<MaxAlignedComponent> allocator(backing);
+
+  auto* first = allocator.allocate(1);
+  auto* second = allocator.allocate(1);
+
+  expectAligned(first);
+  expectAligned(second);
+
+  allocator.deallocate(second, 1);
+  allocator.deallocate(first, 1);
 }
 
 //==============================================================================
