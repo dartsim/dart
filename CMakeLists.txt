@@ -895,7 +895,25 @@ endif()
 add_subdirectory(dart)
 
 if(DART_BUILD_SIMULATION_EXPERIMENTAL)
-  add_subdirectory(dart/simulation/experimental)
+  # The experimental module links and component-depends on core DART siblings
+  # (dart, dart-collision-native, dart-io). Those can be legitimately absent in
+  # minimal configurations -- e.g. the Alt Linux repro disables dart-io when its
+  # dart-utils prerequisite (a tinyxml2 CMake config package) is unavailable.
+  # Skip the module gracefully in that case, mirroring how dart-io disables
+  # itself when dart-utils is missing, instead of failing configure with a hard
+  # "io is not a component" error. Downstream consumers already guard on
+  # TARGET dart-simulation-experimental.
+  if(TARGET dart AND TARGET dart-collision-native AND TARGET dart-io)
+    add_subdirectory(dart/simulation/experimental)
+  else()
+    message(
+      WARNING
+      "Skipping dart-simulation-experimental: it requires the dart, "
+      "dart-collision-native and dart-io components, which are not all being "
+      "built in this configuration. Install the missing prerequisites or set "
+      "DART_BUILD_SIMULATION_EXPERIMENTAL=OFF to silence this warning."
+    )
+  endif()
 endif()
 
 set(DART_IN_SOURCE_BUILD TRUE)
