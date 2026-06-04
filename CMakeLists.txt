@@ -409,7 +409,7 @@ dart_option(
 dart_option(
   DART_BUILD_SIMULATION_EXPERIMENTAL
   "Build experimental simulation module (dart::simulation::experimental)"
-  OFF
+  ON
   CATEGORY build
 )
 dart_option(
@@ -895,7 +895,39 @@ endif()
 add_subdirectory(dart)
 
 if(DART_BUILD_SIMULATION_EXPERIMENTAL)
-  add_subdirectory(dart/simulation/experimental)
+  # The experimental module links and component-depends on core DART siblings
+  # (dart, dart-collision-native, dart-io). Those can be legitimately absent in
+  # minimal configurations -- e.g. the Alt Linux repro disables dart-io when its
+  # dart-utils prerequisite (a tinyxml2 CMake config package) is unavailable.
+  # Skip the module gracefully in that case, mirroring how dart-io disables
+  # itself when dart-utils is missing, instead of failing configure with a hard
+  # "io is not a component" error. Downstream consumers already guard on
+  # TARGET dart-simulation-experimental.
+  if(TARGET dart AND TARGET dart-collision-native AND TARGET dart-io)
+    add_subdirectory(dart/simulation/experimental)
+  elseif(DART_BUILD_DIFF OR DART_ENABLE_EXPERIMENTAL_CUDA)
+    # The graceful skip below is only appropriate for the now-default experimental
+    # module. The opt-in diff/CUDA subfeatures (both default OFF) were explicitly
+    # requested by the user and have no build product without the experimental
+    # module, and the earlier validation only checked DART_BUILD_SIMULATION_EXPERIMENTAL.
+    # Fail loudly rather than silently produce no diff/CUDA target.
+    message(
+      FATAL_ERROR
+      "DART_BUILD_DIFF/DART_ENABLE_EXPERIMENTAL_CUDA require the "
+      "simulation-experimental module, but it cannot be built: it needs the "
+      "dart, dart-collision-native and dart-io components, which are not all "
+      "being built in this configuration. Install the missing prerequisites "
+      "(e.g. dart-io's tinyxml2) or disable the opt-in subfeature."
+    )
+  else()
+    message(
+      WARNING
+      "Skipping dart-simulation-experimental: it requires the dart, "
+      "dart-collision-native and dart-io components, which are not all being "
+      "built in this configuration. Install the missing prerequisites or set "
+      "DART_BUILD_SIMULATION_EXPERIMENTAL=OFF to silence this warning."
+    )
+  endif()
 endif()
 
 set(DART_IN_SOURCE_BUILD TRUE)
@@ -919,14 +951,16 @@ if(TARGET dart)
     endif()
 
     if(DART_BUILD_SIMULATION_EXPERIMENTAL)
-      if(
-        NOT
-          EXISTS
-            "${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/simulation/experimental/CMakeLists.txt"
-      )
-        if(NOT TARGET dart_experimental_tests)
-          add_custom_target(dart_experimental_tests)
-        endif()
+      # The experimental test meta-target is normally defined by the experimental
+      # test subdirectory. It can be absent here for two reasons while the option
+      # is still ON: the test CMakeLists does not exist, or the experimental
+      # module was gracefully skipped because a core sibling component
+      # (dart-io/dart-collision-native) is not built. In either case define an
+      # empty stub so option-keyed build/test entry points
+      # (pixi build-simulation-experimental-tests, scripts/test_all.py) resolve
+      # the target and skip gracefully instead of failing on an unknown target.
+      if(NOT TARGET dart_experimental_tests)
+        add_custom_target(dart_experimental_tests)
       endif()
     endif()
   elseif(NOT DART_BUILD_TESTS)
