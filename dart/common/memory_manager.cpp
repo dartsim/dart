@@ -184,6 +184,36 @@ void* MemoryManager::allocate(Type type, size_t bytes)
 }
 
 //==============================================================================
+void* MemoryManager::allocate(Type type, size_t bytes, size_t alignment)
+{
+  switch (type) {
+    using enum Type;
+    case Base:
+      return mBaseAllocator.allocate(bytes, alignment);
+    case Free:
+      if (mUseDebugAllocators) {
+        DART_ASSERT(mFreeListAllocatorWithDebug != nullptr);
+        return mFreeListAllocatorWithDebug->allocate(bytes, alignment);
+      }
+
+      DART_ASSERT(mFreeListAllocator != nullptr);
+      return mFreeListAllocator->allocate(bytes, alignment);
+    case Pool:
+      if (mUseDebugAllocators) {
+        DART_ASSERT(mPoolAllocatorWithDebug != nullptr);
+        return mPoolAllocatorWithDebug->allocate(bytes, alignment);
+      }
+
+      DART_ASSERT(mPoolAllocator != nullptr);
+      return mPoolAllocator->allocate(bytes, alignment);
+    case Frame:
+      DART_ASSERT(mFrameAllocator != nullptr);
+      return mFrameAllocator->allocate(bytes, alignment);
+  }
+  return nullptr;
+}
+
+//==============================================================================
 void* MemoryManager::allocateUsingFree(size_t bytes)
 {
   return allocate(Type::Free, bytes);
@@ -226,6 +256,42 @@ void MemoryManager::deallocate(Type type, void* pointer, size_t bytes)
     case Frame:
       DART_ASSERT(mFrameAllocator != nullptr);
       mFrameAllocator->deallocate(pointer, bytes);
+      break;
+  }
+}
+
+//==============================================================================
+void MemoryManager::deallocate(
+    Type type, void* pointer, size_t bytes, size_t alignment)
+{
+  switch (type) {
+    using enum Type;
+    case Base:
+      mBaseAllocator.deallocate(pointer, bytes, alignment);
+      break;
+    case Free:
+      if (mUseDebugAllocators) {
+        DART_ASSERT(mFreeListAllocatorWithDebug != nullptr);
+        mFreeListAllocatorWithDebug->deallocate(pointer, bytes, alignment);
+        break;
+      }
+
+      DART_ASSERT(mFreeListAllocator != nullptr);
+      mFreeListAllocator->deallocate(pointer, bytes, alignment);
+      break;
+    case Pool:
+      if (mUseDebugAllocators) {
+        DART_ASSERT(mPoolAllocatorWithDebug != nullptr);
+        mPoolAllocatorWithDebug->deallocate(pointer, bytes, alignment);
+        break;
+      }
+
+      DART_ASSERT(mPoolAllocator != nullptr);
+      mPoolAllocator->deallocate(pointer, bytes, alignment);
+      break;
+    case Frame:
+      DART_ASSERT(mFrameAllocator != nullptr);
+      mFrameAllocator->deallocate(pointer, bytes, alignment);
       break;
   }
 }

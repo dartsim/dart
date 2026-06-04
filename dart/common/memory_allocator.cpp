@@ -35,13 +35,45 @@
 #include "dart/common/callocator.hpp"
 #include "dart/common/logging.hpp"
 
+#include <cstddef>
+
 namespace dart::common {
+
+namespace {
+
+bool isPowerOfTwo(size_t value)
+{
+  return value != 0 && (value & (value - 1)) == 0;
+}
+
+} // namespace
 
 //==============================================================================
 MemoryAllocator& MemoryAllocator::GetDefault()
 {
   static CAllocator defaultAllocator;
   return defaultAllocator;
+}
+
+//==============================================================================
+void* MemoryAllocator::allocate(size_t bytes, size_t alignment) noexcept
+{
+  if (bytes == 0 || !isPowerOfTwo(alignment)) {
+    return nullptr;
+  }
+
+  if (alignment <= alignof(std::max_align_t)) {
+    return allocate(bytes);
+  }
+
+  return nullptr;
+}
+
+//==============================================================================
+void MemoryAllocator::deallocate(
+    void* pointer, size_t bytes, size_t /*alignment*/)
+{
+  deallocate(pointer, bytes);
 }
 
 //==============================================================================
