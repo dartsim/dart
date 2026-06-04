@@ -2041,7 +2041,15 @@ void GenericJoint<ConfigSpaceT>::updateInvProjArtInertiaImplicitDynamic(
   mInvProjArtInertiaImplicit = math::inverse<ConfigSpaceT>(projAI);
 
   // Verification
-  DART_ASSERT(!math::isNan(mInvProjArtInertiaImplicit));
+  if (math::isNan(mInvProjArtInertiaImplicit)
+      || math::isInf(mInvProjArtInertiaImplicit)) {
+    dtwarn << "[GenericJoint::updateInvProjArtInertiaImplicitDynamic] "
+              "Non-finite inverse projected articulated inertia detected for "
+              "joint ["
+           << this->getName()
+           << "]. Setting inverse inertia to zero to avoid instability.\n";
+    mInvProjArtInertiaImplicit.setZero();
+  }
 }
 
 //==============================================================================

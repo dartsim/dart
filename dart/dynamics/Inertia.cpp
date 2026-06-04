@@ -35,6 +35,8 @@
 #include "dart/common/Console.hpp"
 #include "dart/math/Geometry.hpp"
 
+#include <cmath>
+
 namespace dart {
 namespace dynamics {
 
@@ -112,6 +114,15 @@ double Inertia::getParameter(Param _param) const
 //==============================================================================
 void Inertia::setMass(double _mass)
 {
+  // Reject non-finite mass at the ingest boundary. A NaN/Inf mass propagates
+  // into the spatial inertia tensor and then poisons the forward-dynamics
+  // recursion (bias force, articulated inertia), aborting asserts-enabled
+  // builds. See https://github.com/gazebosim/gz-physics/issues/854
+  if (!std::isfinite(_mass)) {
+    dtwarn << "[Inertia::setMass] Attempting to set a non-finite mass ["
+           << _mass << "]. Ignoring request.\n";
+    return;
+  }
   mMass = _mass;
   computeSpatialTensor();
 }
@@ -138,6 +149,15 @@ const Eigen::Vector3d& Inertia::getLocalCOM() const
 //==============================================================================
 void Inertia::setMoment(const Eigen::Matrix3d& _moment)
 {
+  // Reject a non-finite moment of inertia at the ingest boundary so NaN/Inf
+  // never reaches the forward-dynamics recursion.
+  // See https://github.com/gazebosim/gz-physics/issues/854
+  if (!_moment.allFinite()) {
+    dtwarn << "[Inertia::setMoment] Attempting to set a non-finite moment of "
+              "inertia matrix. Ignoring request.\n";
+    return;
+  }
+
   if (!verifyMoment(_moment, true))
     dtwarn << "[Inertia::setMoment] Passing in an invalid moment of inertia "
            << "matrix. Results might not by physically accurate or "
@@ -162,6 +182,16 @@ void Inertia::setMoment(
     double _Ixz,
     double _Iyz)
 {
+  // Reject a non-finite moment of inertia at the ingest boundary so NaN/Inf
+  // never reaches the forward-dynamics recursion.
+  // See https://github.com/gazebosim/gz-physics/issues/854
+  if (!std::isfinite(_Ixx) || !std::isfinite(_Iyy) || !std::isfinite(_Izz)
+      || !std::isfinite(_Ixy) || !std::isfinite(_Ixz) || !std::isfinite(_Iyz)) {
+    dtwarn << "[Inertia::setMoment] Attempting to set a non-finite moment of "
+              "inertia. Ignoring request.\n";
+    return;
+  }
+
   mMoment[I_XX - 4] = _Ixx;
   mMoment[I_YY - 4] = _Iyy;
   mMoment[I_ZZ - 4] = _Izz;
