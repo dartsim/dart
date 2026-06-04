@@ -187,6 +187,20 @@ def load_benchmark_rows(path: Path) -> list[dict]:
     return rows
 
 
+def filter_benchmark_rows_for_mode(
+    rows: list[dict], *, include_entt_registry: bool, only_entt_registry: bool
+) -> list[dict]:
+    benchmark_filter = re.compile(
+        benchmark_filter_for_mode(
+            include_entt_registry=include_entt_registry,
+            only_entt_registry=only_entt_registry,
+        )
+    )
+    return [
+        row for row in rows if benchmark_filter.search(_canonical_name(_row_name(row)))
+    ]
+
+
 def _select_rows(rows: list[dict]) -> list[dict]:
     medians = [
         row
@@ -447,7 +461,11 @@ def main(argv: list[str]) -> int:
 
     try:
         failures, passes = evaluate_comparisons(
-            load_benchmark_rows(json_path),
+            filter_benchmark_rows_for_mode(
+                load_benchmark_rows(json_path),
+                include_entt_registry=args.include_entt_registry,
+                only_entt_registry=args.only_entt_registry,
+            ),
             baseline_allocators=baseline_allocators,
             max_ratio=args.max_ratio,
             max_cv=args.max_cv,

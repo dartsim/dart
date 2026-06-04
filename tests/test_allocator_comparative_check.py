@@ -36,6 +36,15 @@ def stl_vector_rows(*, dart_time, foonathan_time, dart_cv, foonathan_cv):
     ]
 
 
+def entt_registry_rows(*, dart_time, foonathan_time, dart_cv, foonathan_cv):
+    return [
+        aggregate_row("BM_EnttRegistry_DART/256", "median", dart_time),
+        aggregate_row("BM_EnttRegistry_DART/256", "cv", dart_cv),
+        aggregate_row("BM_EnttRegistry_Foonathan/256", "median", foonathan_time),
+        aggregate_row("BM_EnttRegistry_Foonathan/256", "cv", foonathan_cv),
+    ]
+
+
 def test_noisy_rows_fail_before_timing_ratio_is_used():
     module = load_allocator_check_module()
 
@@ -123,6 +132,63 @@ def test_benchmark_filter_modes_are_explicit():
         )
         == module.ENTT_REGISTRY_ONLY_FILTER
     )
+
+
+def test_input_rows_are_filtered_by_entt_registry_mode():
+    module = load_allocator_check_module()
+    rows = stl_vector_rows(
+        dart_time=90.0,
+        foonathan_time=100.0,
+        dart_cv=0.02,
+        foonathan_cv=0.02,
+    ) + entt_registry_rows(
+        dart_time=130.0,
+        foonathan_time=100.0,
+        dart_cv=0.02,
+        foonathan_cv=0.02,
+    )
+
+    default_rows = module.filter_benchmark_rows_for_mode(
+        rows,
+        include_entt_registry=False,
+        only_entt_registry=False,
+    )
+    failures, passes = module.evaluate_comparisons(
+        default_rows,
+        baseline_allocators=[("Foonathan",)],
+        max_cv=0.10,
+    )
+
+    assert failures == []
+    assert [result["benchmark"] for result in passes] == ["BM_StlVector/10000"]
+
+    include_rows = module.filter_benchmark_rows_for_mode(
+        rows,
+        include_entt_registry=True,
+        only_entt_registry=False,
+    )
+    failures, passes = module.evaluate_comparisons(
+        include_rows,
+        baseline_allocators=[("Foonathan",)],
+        max_cv=0.10,
+    )
+
+    assert [result["benchmark"] for result in passes] == ["BM_StlVector/10000"]
+    assert [result["benchmark"] for result in failures] == ["BM_EnttRegistry/256"]
+
+    only_rows = module.filter_benchmark_rows_for_mode(
+        rows,
+        include_entt_registry=False,
+        only_entt_registry=True,
+    )
+    failures, passes = module.evaluate_comparisons(
+        only_rows,
+        baseline_allocators=[("Foonathan",)],
+        max_cv=0.10,
+    )
+
+    assert passes == []
+    assert [result["benchmark"] for result in failures] == ["BM_EnttRegistry/256"]
 
 
 def test_entt_registry_modes_are_mutually_exclusive():
