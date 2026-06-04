@@ -20,7 +20,10 @@
       buffers and avoid growth after simulation is baked.
 - [ ] Phase 5: Add allocation/debug accounting gates for "no dynamic allocation
       during the step loop" on representative rigid, multibody, contact, and
-      deformable scenes.
+      deformable scenes. Initial World base-allocator no-growth guards now
+      cover baked kinematic IPC rigid-body, multibody variational, and
+      deformable ECS paths; global heap allocation guards and broader solver
+      coverage remain open.
 - [ ] Phase 6: Add memory-layout profiler/debugger surfaces and GUI
       visualization.
 
@@ -107,8 +110,10 @@ debugging, profiling, optimization experiments, and ImGui visualization.
 2. Extend allocator correctness tests for `FixedPoolAllocator` and the existing
    pool/free-list/frame allocators across invalid sizes, over-alignment,
    overflow, reuse-after-free, leak/debug accounting, and bounded failure.
-3. Extend bake-time registry/component storage reservation and no-growth ECS
-   tests to broader contact and remaining solver scratch step paths.
+3. Extend bake-time registry/component storage reservation and no-growth
+   allocation tests to contact-heavy scenes and remaining solver scratch step
+   paths, then add a separate global heap guard for the full zero-allocation
+   claim.
 4. Benchmark the allocator-backed EnTT registry/component-storage path against
    standard C++ allocators and foonathan/memory on DART-relevant workloads.
 5. Start replacing per-step `std::vector`/`Eigen` temporaries in hot stages with

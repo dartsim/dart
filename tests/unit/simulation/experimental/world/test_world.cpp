@@ -204,8 +204,28 @@ public:
 
   [[nodiscard]] void* allocate(std::size_t bytes) noexcept override
   {
+    if (bytes == 0) {
+      return nullptr;
+    }
+
     ++allocationCount;
     return ::operator new(bytes, std::nothrow);
+  }
+
+  [[nodiscard]] void* allocate(
+      std::size_t bytes, std::size_t alignment) noexcept override
+  {
+    if (bytes == 0 || alignment == 0 || (alignment & (alignment - 1)) != 0) {
+      return nullptr;
+    }
+
+    ++allocationCount;
+    ++alignedAllocationCount;
+    if (alignment <= __STDCPP_DEFAULT_NEW_ALIGNMENT__) {
+      return ::operator new(bytes, std::nothrow);
+    }
+
+    return ::operator new(bytes, std::align_val_t(alignment), std::nothrow);
   }
 
   void deallocate(void* pointer, std::size_t /*bytes*/) override
@@ -214,8 +234,23 @@ public:
     ::operator delete(pointer);
   }
 
+  void deallocate(
+      void* pointer, std::size_t /*bytes*/, std::size_t alignment) override
+  {
+    ++deallocationCount;
+    ++alignedDeallocationCount;
+    if (alignment <= __STDCPP_DEFAULT_NEW_ALIGNMENT__) {
+      ::operator delete(pointer);
+      return;
+    }
+
+    ::operator delete(pointer, std::align_val_t(alignment));
+  }
+
   std::size_t allocationCount{0};
+  std::size_t alignedAllocationCount{0};
   std::size_t deallocationCount{0};
+  std::size_t alignedDeallocationCount{0};
 };
 
 class FrameScratchStage final
@@ -292,6 +327,36 @@ void expectRegistryStorageCapacitiesUnchanged(
     ASSERT_NE(it, actual.end()) << "missing storage id " << id;
     EXPECT_EQ(it->second, capacity) << "storage id " << id;
   }
+}
+
+template <typename ConfigureScene>
+void expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+    std::string_view scene, ConfigureScene&& configureScene)
+{
+  namespace sx = dart::simulation::experimental;
+
+  SCOPED_TRACE(scene);
+  CountingMemoryAllocator allocator;
+  sx::WorldOptions worldOptions;
+  worldOptions.baseAllocator = &allocator;
+  sx::World world(worldOptions);
+
+  configureScene(world);
+  world.enterSimulationMode();
+
+  const auto allocationsAfterBake = allocator.allocationCount;
+  const auto deallocationsAfterBake = allocator.deallocationCount;
+  const auto alignedAllocationsAfterBake = allocator.alignedAllocationCount;
+  const auto alignedDeallocationsAfterBake = allocator.alignedDeallocationCount;
+
+  for (int i = 0; i < 4; ++i) {
+    world.step();
+  }
+
+  EXPECT_EQ(allocator.allocationCount, allocationsAfterBake);
+  EXPECT_EQ(allocator.deallocationCount, deallocationsAfterBake);
+  EXPECT_EQ(allocator.alignedAllocationCount, alignedAllocationsAfterBake);
+  EXPECT_EQ(allocator.alignedDeallocationCount, alignedDeallocationsAfterBake);
 }
 
 } // namespace
@@ -456,6 +521,43 @@ TEST(World, EnterSimulationModeReservesRegistryStorageForDeformableSteps)
     world.step();
     expectRegistryStorageCapacitiesUnchanged(capacities, registry);
   }
+}
+
+TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
+{
+  namespace sx = dart::simulation::experimental;
+
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "kinematic IPC rigid body", [](sx::World& world) {
+        world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+        auto body = world.addRigidBody("kinematic");
+        body.setKinematic(true);
+        body.setLinearVelocity(Eigen::Vector3d(1.0, 0.0, 0.0));
+      });
+
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "multibody variational scratch", [](sx::World& world) {
+        auto robot = world.addMultibody("slider");
+        auto base = robot.addLink("base");
+        sx::JointSpec spec;
+        spec.name = "rail";
+        spec.type = sx::JointType::Prismatic;
+        spec.axis = Eigen::Vector3d::UnitZ();
+        auto carriage = robot.addLink("carriage", base, spec);
+        carriage.setMass(3.0);
+        world.setMultibodyOptions({"variational integrator"});
+        world.setTimeStep(0.01);
+      });
+
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "single deformable particle", [](sx::World& world) {
+        sx::DeformableBodyOptions options;
+        options.positions = {Eigen::Vector3d(0.0, 0.0, 1.0)};
+        options.masses = {1.0};
+        options.edgeStiffness = 0.0;
+        world.addDeformableBody("particle", options);
+        world.setTimeStep(0.01);
+      });
 }
 
 TEST(World, FrameScratchCapacityReportsUsableArenaBytes)
