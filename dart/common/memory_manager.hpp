@@ -58,6 +58,20 @@ public:
     Frame,
   };
 
+  /// Construction options for the internal allocator hierarchy.
+  struct Options
+  {
+    /// Bytes to reserve for the free-list allocator during construction.
+    size_t freeListInitialAllocation = 1048576 /* 1 MB */;
+
+    /// Whether the free-list allocator may grow after the initial reservation.
+    FreeListAllocator::GrowthPolicy freeListGrowthPolicy
+        = FreeListAllocator::GrowthPolicy::Expand;
+
+    /// Initial frame allocator arena capacity in bytes.
+    size_t frameAllocatorInitialCapacity = 65536;
+  };
+
   /// Returns the default memory manager
   [[nodiscard]] static MemoryManager& GetDefault();
 
@@ -76,6 +90,15 @@ public:
   /// capacity in bytes.
   explicit MemoryManager(
       MemoryAllocator& baseAllocator, size_t frameAllocatorInitialCapacity);
+
+  /// Constructor using explicit allocator hierarchy options.
+  ///
+  /// @param[in] baseAllocator: The most low level allocator to be used by all
+  /// the underlying memory allocators.
+  /// @param[in] options: Initial capacity and growth policy for the internal
+  /// allocator hierarchy.
+  explicit MemoryManager(
+      MemoryAllocator& baseAllocator, const Options& options);
 
   /// Destructor
   ~MemoryManager();

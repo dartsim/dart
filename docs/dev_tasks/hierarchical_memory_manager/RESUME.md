@@ -7,27 +7,32 @@ allocator-performance evidence, allocator-backed EnTT registry integration, and
 focused no-growth world-step guards. The current fixed-capacity free-list slice
 adds an explicit `FreeListAllocator::GrowthPolicy::FixedCapacity` mode so a
 preallocated free-list arena can fail deterministically instead of growing from
-its base allocator after world creation or bake/build.
+its base allocator after world creation or bake/build. The same slice now wires
+free-list initial capacity and growth policy through `MemoryManager::Options`
+and experimental `WorldOptions`, making the policy reachable from the World
+memory hierarchy.
 
 ## Current Branch
 
 `feature/free-list-fixed-capacity` - local branch for fixed-capacity
-`FreeListAllocator` behavior. It is intended to become a small DART 7 allocator
-correctness PR once validated and pushed.
+`FreeListAllocator` behavior and construction-time `MemoryManager` /
+experimental `WorldOptions` policy wiring. It is published as draft PR #2892.
 
 ## Immediate Next Step
 
-Validate the fixed-capacity free-list slice, then publish it as a small PR if
-the tests pass. The next broader allocator-policy work remains optimizing or
-replacing the allocator-aware EnTT registry path until it beats both
-foonathan/memory and standard-registry baselines, and expanding no-growth
-world-step guards beyond the current baked kinematic IPC slice.
+Push the validated `MemoryManager::Options` / `WorldOptions` policy wiring onto
+PR #2892. The next broader allocator-policy work remains optimizing or replacing
+the allocator-aware EnTT registry path until it beats both foonathan/memory and
+standard-registry baselines, and expanding no-growth world-step guards beyond
+the current baked kinematic IPC slice.
 
 ## Latest Local Validation
 
-- `cmake --build build/default/cpp/Release --target UNIT_common_free_list_allocator -j2`
-- `ctest --test-dir build/default/cpp/Release -R '^UNIT_common_free_list_allocator$' --output-on-failure`
+- Pre-lint: `cmake --build build/default/cpp/Release --target UNIT_common_memory_manager test_world -j2`
+- Pre-lint: `ctest --test-dir build/default/cpp/Release -R '^(UNIT_common_memory_manager|test_world)$' --output-on-failure`
 - `pixi run lint`
+- Post-lint: `cmake --build build/default/cpp/Release --target UNIT_common_memory_manager test_world -j2`
+- Post-lint: `ctest --test-dir build/default/cpp/Release -R '^(UNIT_common_memory_manager|test_world)$' --output-on-failure`
 - `git diff --check`
 
 ## Context That Would Be Lost
@@ -50,7 +55,8 @@ world-step guards beyond the current baked kinematic IPC slice.
   workloads.
 - Use fixed-capacity `FreeListAllocator` when runtime growth is prohibited by a
   precomputed memory budget; keep the default expandable policy for heap-like
-  use.
+  use. The policy now flows through `MemoryManager::Options` and experimental
+  `WorldOptions`.
 - EnTT registry/storage allocation is first-class scope. Future work should
   inspect the active EnTT version's `basic_registry` and `basic_storage`
   allocator hooks and keep EnTT allocator types hidden from public World API.

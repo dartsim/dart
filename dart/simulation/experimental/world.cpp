@@ -735,6 +735,19 @@ common::MemoryAllocator& resolveBaseAllocator(const WorldOptions& options)
 }
 
 //==============================================================================
+common::MemoryManager::Options makeMemoryManagerOptions(
+    const WorldOptions& options)
+{
+  common::MemoryManager::Options memoryOptions;
+  memoryOptions.frameAllocatorInitialCapacity
+      = validateFrameScratchInitialCapacity(
+          options.frameScratchInitialCapacity);
+  memoryOptions.freeListInitialAllocation = options.freeListInitialAllocation;
+  memoryOptions.freeListGrowthPolicy = options.freeListGrowthPolicy;
+  return memoryOptions;
+}
+
+//==============================================================================
 bool boundaryRangesOverlap(
     double startA, double endA, double startB, double endB)
 {
@@ -1252,9 +1265,7 @@ World::World() : m_storage(std::make_unique<detail::WorldStorage>())
 //==============================================================================
 World::World(const WorldOptions& options)
   : m_memoryManager(
-        resolveBaseAllocator(options),
-        validateFrameScratchInitialCapacity(
-            options.frameScratchInitialCapacity)),
+        resolveBaseAllocator(options), makeMemoryManagerOptions(options)),
     m_storage(std::make_unique<detail::WorldStorage>()),
     m_gravity(options.gravity),
     m_timeStep(options.timeStep),

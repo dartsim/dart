@@ -98,6 +98,31 @@ TEST(MemoryManagerTest, BaseAllocatorConstructorAcceptsFrameCapacity)
 }
 
 //==============================================================================
+TEST(MemoryManagerTest, OptionsConfigureFreeListGrowthPolicy)
+{
+  auto& baseAllocator = MemoryAllocator::GetDefault();
+  MemoryManager::Options options;
+  options.freeListInitialAllocation = 64;
+  options.freeListGrowthPolicy = FreeListAllocator::GrowthPolicy::FixedCapacity;
+  options.frameAllocatorInitialCapacity = 4096;
+
+  auto mm = MemoryManager(baseAllocator, options);
+
+  EXPECT_EQ(&mm.getBaseAllocator(), &baseAllocator);
+  EXPECT_EQ(mm.getFrameAllocator().capacity(), static_cast<std::size_t>(4096));
+  EXPECT_EQ(
+      mm.getFreeListAllocator().getGrowthPolicy(),
+      FreeListAllocator::GrowthPolicy::FixedCapacity);
+  EXPECT_EQ(mm.allocateUsingPool(sizeof(double)), nullptr);
+
+  auto* first = mm.allocateUsingFree(64);
+  ASSERT_NE(first, nullptr);
+  EXPECT_EQ(mm.allocateUsingFree(16), nullptr);
+
+  mm.deallocateUsingFree(first, 64);
+}
+
+//==============================================================================
 TEST(MemoryManagerTest, Allocate)
 {
   auto mm = MemoryManager();

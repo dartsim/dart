@@ -282,6 +282,30 @@ TEST(World, MemoryManagerOptionsAndDiagnostics)
       sx::InvalidArgumentException);
 }
 
+TEST(World, MemoryManagerOptionsConfigureFreeListPolicy)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::WorldOptions options;
+  options.freeListInitialAllocation = 64;
+  options.freeListGrowthPolicy
+      = dart::common::FreeListAllocator::GrowthPolicy::FixedCapacity;
+
+  sx::World world(options);
+  auto& memoryManager = world.getMemoryManager();
+
+  EXPECT_EQ(
+      memoryManager.getFreeListAllocator().getGrowthPolicy(),
+      dart::common::FreeListAllocator::GrowthPolicy::FixedCapacity);
+  EXPECT_EQ(memoryManager.allocateUsingPool(sizeof(double)), nullptr);
+
+  auto* first = memoryManager.allocateUsingFree(64);
+  ASSERT_NE(first, nullptr);
+  EXPECT_EQ(memoryManager.allocateUsingFree(16), nullptr);
+
+  memoryManager.deallocateUsingFree(first, 64);
+}
+
 TEST(World, FrameScratchCapacityReportsUsableArenaBytes)
 {
   namespace sx = dart::simulation::experimental;

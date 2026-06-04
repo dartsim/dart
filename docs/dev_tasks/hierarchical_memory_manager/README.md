@@ -9,9 +9,10 @@
       Alignment-aware allocation is implemented; fixed-size pool comparison now
       has a DART `FixedPoolAllocator` path that beats foonathan/memory and
       `std::pmr` locally. `FreeListAllocator` now has a fixed-capacity mode for
-      deterministic bounded failure after preallocation. The strict benchmark
-      gate and broader correctness matrix still need to land before this phase
-      is complete.
+      deterministic bounded failure after preallocation, and `MemoryManager` /
+      experimental `WorldOptions` can construct the World free-list hierarchy
+      with a fixed-capacity policy. The strict benchmark gate and broader
+      correctness matrix still need to land before this phase is complete.
 - [ ] Phase 3: EnTT registry/component storage allocation is configurable from
       the World memory hierarchy and covered by no-growth ECS tests.
 - [ ] Phase 4: Built-in simulation stages borrow world memory for transient
@@ -63,7 +64,9 @@ debugging, profiling, optimization experiments, and ImGui visualization.
 - Use fixed-capacity `FreeListAllocator` instances when the allocator budget was
   established during world creation or bake/build and runtime growth would
   violate the no-dynamic-allocation contract. The default free-list policy
-  remains expandable for general heap-like use.
+  remains expandable for general heap-like use. Route the policy through
+  `MemoryManager::Options` and `WorldOptions` rather than exposing EnTT or
+  solver storage types.
 
 ## Required Allocator Evidence
 
