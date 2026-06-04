@@ -30,7 +30,10 @@ free-list-backed registry route still does not consistently beat both
 foonathan/memory and the standard registry on steady-state
 create/emplace/read/destroy churn. Keep the PR draft until that registry
 baseline gap is resolved or a documented dependency/policy decision replaces the
-in-house route.
+in-house route. The reserved-registry unit test now proves the prewarmed churn
+loop makes zero calls through the configured DART allocator, so the remaining
+timing gap is allocator-aware EnTT registry/storage overhead or benchmark noise
+rather than one-time pool growth.
 
 ## Latest Local Validation
 
@@ -56,6 +59,10 @@ in-house route.
   still failed against the standard registry and one foonathan row, confirming
   that the registry hot loop needs allocator-policy work beyond the generic
   STL adapter fast path.
+- The focused `UNIT_common_stl_allocator` ctest passes with
+  `StlAllocatorTest.ReservedEnttRegistryChurnDoesNotAllocate`, which asserts no
+  DART allocator calls during reserved EnTT create/emplace/read/destroy churn
+  after the prewarm pass.
 
 ## Context That Would Be Lost
 

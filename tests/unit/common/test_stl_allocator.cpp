@@ -39,6 +39,7 @@
 #include <entt/entity/registry.hpp>
 #include <gtest/gtest.h>
 
+#include <string_view>
 #include <vector>
 
 #include <cstdint>
@@ -62,11 +63,101 @@ struct RegistryVelocity
   double values[3] = {};
 };
 
+class CountingMemoryAllocator final : public MemoryAllocator
+{
+public:
+  explicit CountingMemoryAllocator(size_t initialAllocation)
+    : mBacking(MemoryAllocator::GetDefault(), initialAllocation)
+  {
+  }
+
+  std::string_view getType() const override
+  {
+    return "CountingMemoryAllocator";
+  }
+
+  void* allocate(size_t bytes) noexcept override
+  {
+    ++allocationCount;
+    return mBacking.allocate(bytes);
+  }
+
+  void* allocate(size_t bytes, size_t alignment) noexcept override
+  {
+    ++allocationCount;
+    return mBacking.allocate(bytes, alignment);
+  }
+
+  void deallocate(void* pointer, size_t bytes) override
+  {
+    ++deallocationCount;
+    mBacking.deallocate(pointer, bytes);
+  }
+
+  void deallocate(void* pointer, size_t bytes, size_t alignment) override
+  {
+    ++deallocationCount;
+    mBacking.deallocate(pointer, bytes, alignment);
+  }
+
+  void resetCounts()
+  {
+    allocationCount = 0;
+    deallocationCount = 0;
+  }
+
+  size_t allocationCount{0};
+  size_t deallocationCount{0};
+
+private:
+  FreeListAllocator mBacking;
+};
+
 template <typename T>
 void expectAligned(T* pointer)
 {
   ASSERT_NE(pointer, nullptr);
   EXPECT_EQ(reinterpret_cast<std::uintptr_t>(pointer) % alignof(T), 0u);
+}
+
+template <typename Registry>
+void reserveRegistryStorage(Registry& registry, const size_t entityCount)
+{
+  registry.template storage<RegistryTag>().reserve(entityCount);
+  registry.template storage<RegistryVelocity>().reserve(entityCount);
+  registry.template storage<OverAlignedComponent>().reserve(entityCount);
+}
+
+template <typename Registry>
+void runRegistryChurn(
+    Registry& registry,
+    std::vector<entt::entity>& entities,
+    const size_t entityCount)
+{
+  for (size_t i = 0; i < entityCount; ++i) {
+    const auto entity = registry.create();
+    entities[i] = entity;
+
+    registry.template emplace<RegistryTag>(entity);
+
+    auto& velocity = registry.template emplace<RegistryVelocity>(entity);
+    velocity.values[0] = static_cast<double>(i);
+
+    auto& component = registry.template emplace<OverAlignedComponent>(entity);
+    component.values[0] = static_cast<double>(i + 1);
+  }
+
+  double total = 0.0;
+  for (const auto entity : entities) {
+    total += registry.template get<RegistryVelocity>(entity).values[0];
+    total += registry.template get<OverAlignedComponent>(entity).values[0];
+    EXPECT_TRUE(registry.template all_of<RegistryTag>(entity));
+  }
+  EXPECT_GT(total, 0.0);
+
+  for (size_t i = entityCount; i > 0; --i) {
+    registry.destroy(entities[i - 1]);
+  }
 }
 
 } // namespace
@@ -170,4 +261,25 @@ TEST(StlAllocatorTest, SupportsAllocatorAwareEnttRegistryViews)
   EXPECT_EQ(view.size_hint(), 1u);
 
   registry.destroy(entity);
+}
+
+//==============================================================================
+TEST(StlAllocatorTest, ReservedEnttRegistryChurnDoesNotAllocate)
+{
+  constexpr size_t entityCount = 128;
+
+  CountingMemoryAllocator backing(entityCount * 4096 + 1024 * 1024);
+  StlAllocator<entt::entity> registryAllocator(backing);
+  entt::basic_registry<entt::entity, StlAllocator<entt::entity>> registry(
+      registryAllocator);
+  std::vector<entt::entity> entities(entityCount);
+
+  reserveRegistryStorage(registry, entityCount);
+  runRegistryChurn(registry, entities, entityCount);
+
+  backing.resetCounts();
+  runRegistryChurn(registry, entities, entityCount);
+
+  EXPECT_EQ(backing.allocationCount, 0u);
+  EXPECT_EQ(backing.deallocationCount, 0u);
 }
