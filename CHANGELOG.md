@@ -102,6 +102,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     rebuilt correctly by cached GUI renderable extraction.
   - Added a renderer-neutral `dart::gui` panel callback surface for examples
     that need custom controls without including backend UI headers.
+  - Added `pixi run bm-allocator-comparative-check`, a strict allocator
+    benchmark gate that compares DART allocator workloads against
+    foonathan/memory and `std::pmr` baselines.
   - Added the standalone `dartsim/` GUI simulator (a runtime executable, not a
     library) built only on the experimental World API. Its headless editor
     engine (`dartsim/engine`) provides scene/object, selection, command
