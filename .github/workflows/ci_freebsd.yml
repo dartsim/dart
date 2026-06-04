@@ -104,4 +104,7 @@ jobs:
               -DDART_USE_SYSTEM_GOOGLETEST=ON \
               -DDART_VERBOSE=ON
             cmake --build build/freebsd/cpp/Release --target tests -j2
-            ctest --test-dir build/freebsd/cpp/Release --output-on-failure --timeout 600
+            # Some dynamics tests are much slower under hosted-runner VM
+            # emulation; keep the test coverage but avoid the inherited
+            # 10-minute per-test cap from failing a still-progressing run.
+            ctest --test-dir build/freebsd/cpp/Release --output-on-failure --timeout 1800
