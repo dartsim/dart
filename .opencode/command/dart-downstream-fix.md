@@ -28,7 +28,7 @@ Use for downstream issues in gz-physics, Gazebo, or gz-sim that trace back to DA
 5. Decide whether the bug applies to the active release line. For applicable
    bug fixes, implement on `release-6.17` first, then cherry-pick or reapply to
    `main` for DART 7:
-   - branch: `fix/<downstream-project>-<issue-number>-<brief-description>-6.16`
+   - branch: `fix/<downstream-project>-<issue-number>-<brief-description>-6.17`
    - add a regression test that reproduces the downstream symptom
    - keep the fix minimal; no unrelated refactors
 6. Run `pixi run lint` and relevant tests; use `pixi run test-all` when
