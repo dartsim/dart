@@ -147,10 +147,11 @@ set(
 # spdlog is optional for core DART (core links it only if found and otherwise
 # builds with DART_HAVE_spdlog=0), but the experimental module hard-requires the
 # spdlog::spdlog target (logging.hpp includes spdlog unconditionally and the
-# library links it PUBLIC). A plain find_package(... REQUIRED) HARD-FAILS in
-# clean environments lacking spdlogConfig.cmake (e.g. the Alt Linux Docker lane).
-# Route through the fallback-capable finder, which reuses core's target when
-# present and otherwise FetchContent-fetches spdlog. Mirrors EnTT/Taskflow.
+# library links it PRIVATE -- registered for static export below). A plain
+# find_package(... REQUIRED) HARD-FAILS in clean environments lacking
+# spdlogConfig.cmake (e.g. the Alt Linux Docker lane). Route through the
+# fallback-capable finder, which reuses core's target when present and otherwise
+# FetchContent-fetches spdlog. Mirrors EnTT/Taskflow.
 if(NOT TARGET spdlog::spdlog)
   dart_find_package(spdlog)
 endif()
