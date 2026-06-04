@@ -8,14 +8,20 @@
 
 find_package(spdlog 1.9.2 QUIET CONFIG)
 
-if(NOT spdlog_FOUND AND NOT TARGET spdlog::spdlog)
-  # Clean environments (containers, wheel/source builds such as the Alt Linux
-  # Docker lane) may lack a packaged spdlogConfig.cmake. spdlog is optional for
-  # core DART but hard-required by the default-on simulation-experimental module,
-  # so provide a FetchContent fallback that builds the upstream spdlog::spdlog /
-  # spdlog::spdlog_header_only targets consumers link against. System packages are
-  # still preferred; this only triggers when find_package fails. Mirrors
-  # dart_find_entt.cmake / dart_find_taskflow.cmake.
+# spdlog is OPTIONAL for core DART (it builds with DART_HAVE_spdlog=0 when absent)
+# but HARD-REQUIRED by the simulation-experimental module. Only fall back to
+# FetchContent when that module is enabled and a packaged spdlogConfig.cmake is
+# missing (clean containers / wheel / source builds such as the Alt Linux Docker
+# lane). Gating on DART_BUILD_SIMULATION_EXPERIMENTAL preserves the original quiet
+# optional probe for core-only and offline configures -- they neither fail nor
+# unexpectedly vendor spdlog. System packages are still preferred; this only
+# triggers when find_package fails. Mirrors dart_find_entt.cmake /
+# dart_find_taskflow.cmake (which are experimental-only finders).
+if(
+  DART_BUILD_SIMULATION_EXPERIMENTAL
+  AND NOT spdlog_FOUND
+  AND NOT TARGET spdlog::spdlog
+)
   include(FetchContent)
 
   FetchContent_Declare(
