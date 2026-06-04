@@ -45,7 +45,7 @@ template <typename T, typename... Args>
 T* MemoryManager::construct(Type type, Args&&... args) noexcept
 {
   // Allocate new memory for a new object (without calling the constructor)
-  void* object = allocate(type, sizeof(T));
+  void* object = allocate(type, sizeof(T), alignof(T));
   if (!object) {
     return nullptr;
   }
@@ -55,7 +55,7 @@ T* MemoryManager::construct(Type type, Args&&... args) noexcept
   try {
     return std::construct_at(typedObject, std::forward<Args>(args)...);
   } catch (...) {
-    deallocate(type, object, sizeof(T));
+    deallocate(type, object, sizeof(T), alignof(T));
     return nullptr;
   }
 }
@@ -89,7 +89,7 @@ void MemoryManager::destroy(Type type, T* object) noexcept
     return;
   }
   std::destroy_at(object);
-  deallocate(type, object, sizeof(T));
+  deallocate(type, object, sizeof(T), alignof(T));
 }
 
 //==============================================================================

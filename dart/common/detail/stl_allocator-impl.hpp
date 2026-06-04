@@ -38,7 +38,7 @@ namespace dart::common {
 //==============================================================================
 template <typename T>
 StlAllocator<T>::StlAllocator(MemoryAllocator& baseAllocator) noexcept
-  : mBaseAllocator(baseAllocator)
+  : mBaseAllocator(&baseAllocator)
 {
   // Do nothing
 }
@@ -66,8 +66,8 @@ typename StlAllocator<T>::pointer StlAllocator<T>::allocate(
     size_type n, const void* hint)
 {
   (void)hint;
-  pointer ptr
-      = reinterpret_cast<pointer>(mBaseAllocator.allocate(n * sizeof(T)));
+  pointer ptr = reinterpret_cast<pointer>(
+      mBaseAllocator->allocate(n * sizeof(T), alignof(T)));
 
   // Throw std::bad_alloc to comply 23.10.9.1
   // Reference: https://stackoverflow.com/a/50326956/3122234
@@ -82,7 +82,23 @@ typename StlAllocator<T>::pointer StlAllocator<T>::allocate(
 template <typename T>
 void StlAllocator<T>::deallocate(pointer pointer, size_type n) noexcept
 {
-  mBaseAllocator.deallocate(pointer, n * sizeof(T));
+  mBaseAllocator->deallocate(pointer, n * sizeof(T), alignof(T));
+}
+
+//==============================================================================
+template <typename T>
+template <typename U>
+bool StlAllocator<T>::operator==(const StlAllocator<U>& other) const noexcept
+{
+  return mBaseAllocator == other.mBaseAllocator;
+}
+
+//==============================================================================
+template <typename T>
+template <typename U>
+bool StlAllocator<T>::operator!=(const StlAllocator<U>& other) const noexcept
+{
+  return !(*this == other);
 }
 
 //==============================================================================
@@ -94,7 +110,7 @@ void StlAllocator<T>::print(std::ostream& os, int indent) const
   }
   const std::string spaces(indent, ' ');
   os << spaces << "base_allocator:\n";
-  mBaseAllocator.print(os, indent + 2);
+  mBaseAllocator->print(os, indent + 2);
 }
 
 //==============================================================================

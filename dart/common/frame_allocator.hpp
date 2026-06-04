@@ -97,7 +97,19 @@ public:
     return allocateAlignedSlow(bytes, 32);
   }
 
+  [[nodiscard]] inline void* allocate(
+      size_t bytes, size_t alignment) noexcept override
+  {
+    return allocateAligned(bytes, alignment);
+  }
+
   inline void deallocate(void* /*pointer*/, size_t /*bytes*/) override
+  {
+    // Arena semantics: memory is freed in bulk on reset()
+  }
+
+  inline void deallocate(
+      void* /*pointer*/, size_t /*bytes*/, size_t /*alignment*/) override
   {
     // Arena semantics: memory is freed in bulk on reset()
   }
@@ -107,10 +119,13 @@ public:
   [[nodiscard]] inline void* allocateAligned(
       size_t bytes, size_t alignment = 32) noexcept
   {
-    if (bytes == 0 || alignment == 0 || !mCur) [[unlikely]] {
-      return (bytes == 0 || alignment == 0)
-                 ? nullptr
-                 : allocateAlignedSlow(bytes, alignment);
+    if (bytes == 0 || alignment == 0 || (alignment & (alignment - 1)) != 0)
+        [[unlikely]] {
+      return nullptr;
+    }
+
+    if (!mCur) [[unlikely]] {
+      return allocateAlignedSlow(bytes, alignment);
     }
 
     const auto cur = reinterpret_cast<uintptr_t>(mCur);
