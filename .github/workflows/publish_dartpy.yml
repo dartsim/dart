@@ -121,25 +121,16 @@ jobs:
       - name: Configure environment for compiler cache
         uses: ./.github/actions/configure-compiler-cache
 
-      # Windows wheels build with Ninja, which needs cl.exe and the MSVC environment
-      # on PATH; the action exports the x64 MSVC env to $GITHUB_ENV / $GITHUB_PATH for
-      # the later wheel-build step. Linux/macOS wheels already use Ninja with their
-      # native toolchains and need no vcvars activation.
-      - name: Activate MSVC environment (x64)
-        if: runner.os == 'Windows'
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: x64
-
-      # Force scikit-build-core to use Ninja on Windows instead of the slow MSBuild
-      # default. Set via the CMAKE_GENERATOR env var only (exported to later steps) --
-      # pyproject.toml must NOT carry a cmake.generator key (that key was the regression
-      # we removed). Defining this only on Windows leaves the Linux/macOS wheel builds,
-      # which auto-detect Ninja, untouched.
-      - name: Select Ninja generator for Windows wheels
+      # Keep the experimental simulation module OFF for Windows wheels only. The
+      # shared pyproject.toml [tool.scikit-build.cmake.define] block leaves
+      # DART_BUILD_SIMULATION_EXPERIMENTAL at its global default (ON) so Linux/macOS
+      # wheels still build it. scikit-build-core honors SKBUILD_CMAKE_DEFINE, which
+      # merges into cmake.define; exporting it here (Windows-gated) overrides the
+      # default for the Windows wheel build without affecting other platforms.
+      - name: Disable experimental simulation for Windows wheels
         if: runner.os == 'Windows'
         shell: bash
-        run: echo "CMAKE_GENERATOR=Ninja" >> "$GITHUB_ENV"
+        run: echo "SKBUILD_CMAKE_DEFINE=DART_BUILD_SIMULATION_EXPERIMENTAL=OFF" >> "$GITHUB_ENV"
 
       - name: Build wheel
         env:
