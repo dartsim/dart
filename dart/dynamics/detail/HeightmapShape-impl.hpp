@@ -74,9 +74,18 @@ const std::string& HeightmapShape<S>::getStaticType()
 template <typename S>
 void HeightmapShape<S>::setScale(const Vector3& scale)
 {
-  DART_ASSERT(scale[0] > 0.0);
-  DART_ASSERT(scale[1] > 0.0);
-  DART_ASSERT(scale[2] > 0.0);
+  // Reject non-finite or non-positive scales. DART_ASSERT is compiled out in
+  // release builds (NDEBUG), so without this runtime guard a NaN/Inf or
+  // non-positive scale would flow into the collision backend (e.g. ODE) and
+  // trigger an internal assertion or undefined behavior.
+  // See https://github.com/gazebosim/gz-physics/issues/847
+  if (!scale.allFinite() || (scale.array() <= S(0)).any()) {
+    dtwarn << "[HeightmapShape::setScale] Invalid scale [" << scale[0] << ", "
+           << scale[1] << ", " << scale[2]
+           << "]. Each component must be a positive finite value. Ignoring "
+              "request.\n";
+    return;
+  }
   mScale = scale;
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
@@ -119,6 +128,19 @@ void HeightmapShape<S>::setHeightField(
 template <typename S>
 void HeightmapShape<S>::setHeightField(const HeightField& heights)
 {
+  if (heights.size() == 0) {
+    dtwarn << "[HeightmapShape::setHeightField] Empty height field makes no "
+              "sense. Ignoring request.\n";
+    return;
+  }
+  // Reject non-finite height values so they never reach the collision backend.
+  // See https://github.com/gazebosim/gz-physics/issues/847
+  if (!heights.allFinite()) {
+    dtwarn << "[HeightmapShape::setHeightField] Height field contains "
+              "non-finite values (NaN or Inf). Ignoring request.\n";
+    return;
+  }
+
   mHeights = heights;
 
   mMinHeight = heights.minCoeff();
