@@ -15,10 +15,11 @@ commands. OpenCode receives the same commands through `.opencode/command/`.
 
 ## Branches and Milestones
 
-| Target Branch  | Milestone                     |
-| -------------- | ----------------------------- |
-| `main`         | `DART 7.0`                    |
-| `release-6.16` | `DART 6.16.x` or patch target |
+| Target Branch / Scope        | Milestone                         |
+| ---------------------------- | --------------------------------- |
+| `main`                       | `DART 7.0`                        |
+| `release-6.17`               | `DART 6.17.1` or later 6.17 patch |
+| Next DART 6 feature planning | `DART 6.18`                       |
 
 Bug fixes that apply to released users need two PRs: one for the active release
 branch and one for `main`. Prefer fixing or verifying on `main`, then backport

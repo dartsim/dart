@@ -22,7 +22,7 @@ Use for downstream issues in gz-physics, Gazebo, or gz-sim that trace back to DA
 3. Search for related validation and recovery patterns in DART.
 4. Plan the smallest fix and the regression test location.
 5. Decide whether the bug applies to the active release line. For applicable
-   bug fixes, implement on `release-6.16` first, then cherry-pick or reapply to
+   bug fixes, implement on `release-6.17` first, then cherry-pick or reapply to
    `main` for DART 7:
    - branch: `fix/<downstream-project>-<issue-number>-<brief-description>-6.16`
    - add a regression test that reproduces the downstream symptom
@@ -31,7 +31,7 @@ Use for downstream issues in gz-physics, Gazebo, or gz-sim that trace back to DA
    feasible, and also `pixi run -e cuda test-all` on Linux hosts with a visible
    NVIDIA CUDA runtime.
 7. Ask for explicit maintainer/user approval before pushing or creating PRs.
-   After approval, create the release-branch PR with milestone `DART 6.16.x`
+   After approval, create the release-branch PR with milestone `DART 6.17.1`
    and reference the downstream issue.
 8. Create the matching `main` PR with milestone `DART 7.0`; adapt API
    differences if needed.
@@ -39,7 +39,7 @@ Use for downstream issues in gz-physics, Gazebo, or gz-sim that trace back to DA
 ## Release-Line Differences
 
 - DART 7 commonly uses `DART_WARN()` and `<dart/All.hpp>`.
-- DART 6.16 may use `dtwarn << ...`, `<dart/dart.hpp>`, and older test CMake patterns.
+- DART 6.17 may use `dtwarn << ...`, `<dart/dart.hpp>`, and older test CMake patterns.
 
 ## Output
 
