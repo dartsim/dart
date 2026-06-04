@@ -98,6 +98,20 @@ TEST(WorldStepProfileIntegration, DisablingFreezesTheLastSnapshot)
   EXPECT_EQ(world.getLastStepProfile().stages.size(), stageCount);
 }
 
+TEST(WorldStepProfileIntegration, ClearResetsProfilingStateAndSnapshot)
+{
+  sx::World world;
+  world.setStepProfilingEnabled(true);
+  world.step();
+
+  ASSERT_FALSE(world.getLastStepProfile().isEmpty());
+
+  world.clear();
+
+  EXPECT_FALSE(world.isStepProfilingEnabled());
+  EXPECT_TRUE(world.getLastStepProfile().isEmpty());
+}
+
 TEST(WorldStepProfileIntegration, MultiStepReflectsLastStep)
 {
   sx::World world;

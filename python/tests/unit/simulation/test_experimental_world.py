@@ -3709,3 +3709,18 @@ def test_experimental_world_step_profiling_can_be_disabled():
 
     assert world.step_profiling_enabled is False
     assert len(world.last_step_profile.stages) == captured_stage_count
+
+
+def test_experimental_world_step_profiling_clear_resets_snapshot():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+    world.step_profiling_enabled = True
+    world.step()
+
+    assert not world.last_step_profile.is_empty()
+
+    world.clear()
+
+    assert world.step_profiling_enabled is False
+    assert world.last_step_profile.is_empty()

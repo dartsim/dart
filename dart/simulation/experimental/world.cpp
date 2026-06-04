@@ -1344,6 +1344,8 @@ void World::clear()
   m_frame = 0;
   m_memoryManager.getFrameAllocator().reset();
   m_memoryDiagnostics = {};
+  m_stepProfilingEnabled = false;
+  m_lastStepProfile.reset();
   m_freeFrameCounter = 0;
   m_fixedFrameCounter = 0;
   m_multibodyCounter = 0;
