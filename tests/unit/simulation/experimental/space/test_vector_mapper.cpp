@@ -256,6 +256,30 @@ TEST(VectorMapper, WorldRegistryScalarMapperPreservesGenericCallbacks)
   EXPECT_DOUBLE_EQ(pos.x, 8.0);
 }
 
+TEST(VectorMapper, WorldRegistryRejectsEnttOnlyScalarMapper)
+{
+  StateSpace space;
+  space.addVariable("position_x", 1);
+  space.finalize();
+
+  VectorMapper mapper(space);
+  mapper.addMapper(
+      "position_x",
+      std::make_unique<ScalarMapper>(
+          [](const entt::registry&) { return 1.0; },
+          [](entt::registry&, double) {}));
+
+  World world;
+  auto& registry = detail::registryOf(world);
+
+  EXPECT_THROW((void)mapper.toVector(registry), std::invalid_argument);
+
+  const std::vector<double> updated{2.0};
+  EXPECT_THROW(
+      mapper.fromVector(registry, std::span<const double>(updated)),
+      std::invalid_argument);
+}
+
 TEST(VectorMapper, WorldRegistryRequiresWorldCapableMapper)
 {
   StateSpace space;

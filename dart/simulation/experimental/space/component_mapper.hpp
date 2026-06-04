@@ -149,6 +149,12 @@ public:
       detail::WorldRegistry& registry,
       std::span<const double> vec,
       size_t offset) = 0;
+
+  /// Whether this mapper instance can currently dispatch on WorldRegistry.
+  [[nodiscard]] virtual bool supportsWorldRegistry() const noexcept
+  {
+    return true;
+  }
 };
 
 /// Mapper for a single scalar variable
@@ -260,6 +266,11 @@ public:
 
     m_setWorldValue(registry, vec[offset]);
     return 1;
+  }
+
+  [[nodiscard]] bool supportsWorldRegistry() const noexcept override
+  {
+    return m_getWorldValue && m_setWorldValue;
   }
 
   [[nodiscard]] size_t getDimension() const override
