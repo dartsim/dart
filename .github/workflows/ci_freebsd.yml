@@ -2,10 +2,16 @@
 #
 # This replaces the former Docker-wrapped QEMU harness (docker/freebsd/* +
 # scripts/freebsd.py, which built and ran a `dartsim/freebsd-vm` image). The
-# vmactions/freebsd-vm action boots a real FreeBSD VM directly on the hosted
+# cross-platform-actions action boots a real FreeBSD VM directly on the hosted
 # runner with no Docker, syncs the checkout in, and runs the build/test inline.
 # Dependencies come from pkg; the cmake/ctest invocation mirrors the previous
 # job's configuration.
+#
+# Uses cross-platform-actions rather than vmactions/freebsd-vm: the latter
+# downloads its `anyvm` provisioning helper at run time, which started failing
+# the host dependency install with a fast `sudo` exit 1. cross-platform-actions
+# provisions from a pinned, prebuilt VM image instead, so there is no run-time
+# download of a mutable helper.
 
 name: CI FreeBSD (VM)
 
@@ -31,7 +37,13 @@ concurrency:
 jobs:
   freebsd:
     name: FreeBSD repro (VM)
-    runs-on: ubuntu-latest
+    # Pin the versioned GitHub-hosted label, NOT `ubuntu-latest`: the dartsim
+    # self-hosted runners are *also* labeled `ubuntu-latest`, so an
+    # `ubuntu-latest` job can be scheduled onto those locked-down Docker
+    # containers (no fdisk, no usable apt, no nested virtualization) and fail in
+    # host setup. They do not carry the `ubuntu-24.04` label, so pinning it keeps
+    # this job on GitHub-hosted runners where the VM action works.
+    runs-on: ubuntu-24.04
     # Advisory: hosted runners lack nested KVM so the VM runs under slower TCG
     # emulation, and a few tests are known-flaky under emulation. Keep it
     # non-blocking, as the former job was.
@@ -41,20 +53,42 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      # cross-platform-actions invokes `fdisk` on the host to size the VM disk.
+      # It is present on GitHub-hosted runners; install it only as a fallback,
+      # and make sure /usr/sbin is on PATH for the action.
+      - name: Ensure fdisk is available for the FreeBSD VM
+        run: |
+          command -v fdisk >/dev/null 2>&1 || { sudo apt-get update && sudo apt-get install -y fdisk; }
+          echo /usr/sbin >> "$GITHUB_PATH"
+
       - name: Build and test DART on FreeBSD
-        uses: vmactions/freebsd-vm@v1
+        uses: cross-platform-actions/action@v1.2.0
         with:
-          release: "15.0"
-          usesh: true
-          copyback: false
-          prepare: |
-            ASSUME_ALWAYS_YES=yes pkg update -f
-            ASSUME_ALWAYS_YES=yes pkg install -y \
+          operating_system: freebsd
+          # Latest FreeBSD 14.x production release. The action's pinned builder
+          # publishes a 14.4 image, and matching the current production minor
+          # keeps `pkg install` aligned with the binary package repository
+          # (older minors can hit pkg OS-version mismatches once the repo is
+          # rebuilt for a newer minor).
+          version: "14.4"
+          memory: 6G
+          # Sync the checkout into the VM only; nothing downstream consumes the
+          # build tree, so skip the (slow, timeout-risking under TCG) copy back
+          # from the VM. Mirrors the former vmactions `copyback: false`.
+          sync_files: runner-to-vm
+          # Run the build script under sh: the action otherwise uses the guest
+          # account's default shell (csh on FreeBSD), which cannot execute this
+          # POSIX `set -e` script. Mirrors the former vmactions `usesh: true`.
+          shell: sh
+          # Commands run as a passwordless-sudo user.
+          run: |
+            set -e
+            # Install build dependencies from pkg.
+            sudo pkg update -f
+            sudo pkg install -y \
               assimp boost-libs cmake eigen fcl libfmt git gmake googletest \
               libccd ninja octomap ode-double pkgconf spdlog tinyxml2 \
               ros-urdfdom ros-urdfdom_headers
-          run: |
-            set -e
             # DART's source tree does not natively target FreeBSD, so apply the
             # FreeBSD source-compatibility patches (formerly applied by the
             # docker/freebsd harness) before configuring. They are -p0 patches
@@ -70,4 +104,7 @@ jobs:
               -DDART_USE_SYSTEM_GOOGLETEST=ON \
               -DDART_VERBOSE=ON
             cmake --build build/freebsd/cpp/Release --target tests -j2
-            ctest --test-dir build/freebsd/cpp/Release --output-on-failure --timeout 600
+            # Some dynamics tests are much slower under hosted-runner VM
+            # emulation; keep the test coverage but avoid the inherited
+            # 10-minute per-test cap from failing a still-progressing run.
+            ctest --test-dir build/freebsd/cpp/Release --output-on-failure --timeout 1800

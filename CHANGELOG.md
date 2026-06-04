@@ -2,7 +2,7 @@
 
 ## DART 6
 
-### [DART 6.17.0 (2026-06-01)](https://github.com/dartsim/dart/milestone/85?closed=1)
+### [DART 6.17.0 (2026-06-03)](https://github.com/dartsim/dart/milestone/85?closed=1)
 
 DART 6.17.0 is a maintenance release on the DART 6 LTS compatibility line. It
 backports bug fixes and additive improvements to the classic DART 6 API that were
