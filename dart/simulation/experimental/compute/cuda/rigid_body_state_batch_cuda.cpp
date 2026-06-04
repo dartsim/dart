@@ -33,6 +33,8 @@
 #include <dart/simulation/experimental/common/exceptions.hpp>
 
 #include <cuda_runtime_api.h>
+#include <dart/simulation/experimental/compute/cuda/cuda_runtime.cuh>
+#include <dart/simulation/experimental/compute/cuda/device_buffer.cuh>
 #include <dart/simulation/experimental/compute/cuda/rigid_body_state_batch_cuda.cuh>
 
 #include <string_view>
@@ -69,98 +71,8 @@ namespace {
 constexpr std::size_t kLinearComponents = 3;
 constexpr std::size_t kOrientationComponents = 4;
 
-void throwIfCudaError(cudaError_t status, std::string_view operation)
-{
-  if (status == cudaSuccess) {
-    return;
-  }
-
-  DART_EXPERIMENTAL_THROW_T(
-      sx::InvalidOperationException,
-      "CUDA {} failed: {}",
-      operation,
-      cudaGetErrorString(status));
-}
-
-class DeviceDoubleBuffer
-{
-public:
-  explicit DeviceDoubleBuffer(std::size_t count) : m_count(count)
-  {
-    if (m_count == 0) {
-      return;
-    }
-
-    throwIfCudaError(
-        cudaMalloc(reinterpret_cast<void**>(&m_data), m_count * sizeof(double)),
-        "allocation");
-  }
-
-  ~DeviceDoubleBuffer()
-  {
-    if (m_data != nullptr) {
-      (void)cudaFree(m_data);
-    }
-  }
-
-  DeviceDoubleBuffer(const DeviceDoubleBuffer&) = delete;
-  DeviceDoubleBuffer& operator=(const DeviceDoubleBuffer&) = delete;
-
-  [[nodiscard]] double* data() noexcept
-  {
-    return m_data;
-  }
-
-  [[nodiscard]] const double* data() const noexcept
-  {
-    return m_data;
-  }
-
-  [[nodiscard]] std::size_t byteSize() const noexcept
-  {
-    return m_count * sizeof(double);
-  }
-
-private:
-  double* m_data = nullptr;
-  std::size_t m_count = 0;
-};
-
-void copyToDevice(
-    DeviceDoubleBuffer& target,
-    const std::vector<double>& source,
-    std::string_view operation)
-{
-  if (source.empty()) {
-    return;
-  }
-
-  throwIfCudaError(
-      cudaMemcpy(
-          target.data(),
-          source.data(),
-          target.byteSize(),
-          cudaMemcpyHostToDevice),
-      operation);
-}
-
-void copyFromDevice(
-    std::vector<double>& target,
-    const DeviceDoubleBuffer& source,
-    std::string_view operation)
-{
-  if (target.empty()) {
-    return;
-  }
-
-  throwIfCudaError(
-      cudaMemcpy(
-          target.data(),
-          source.data(),
-          source.byteSize(),
-          cudaMemcpyDeviceToHost),
-      operation);
-}
+// CUDA runtime probing, error mapping, and the owning device buffer now live in
+// the shared substrate (cuda_runtime.cuh / device_buffer.cuh).
 
 std::size_t validateLinearInputs(
     const RigidBodyStateBatch& state,
@@ -226,14 +138,6 @@ void throwIfCudaRuntimeUnavailable()
 } // namespace
 
 //==============================================================================
-bool isCudaRuntimeAvailable() noexcept
-{
-  int deviceCount = 0;
-  const auto status = cudaGetDeviceCount(&deviceCount);
-  return status == cudaSuccess && deviceCount > 0;
-}
-
-//==============================================================================
 void integrateRigidBodyStateBatchLinearCuda(
     RigidBodyStateBatch& state,
     const RigidBodyModelBatch& model,
@@ -249,19 +153,17 @@ void integrateRigidBodyStateBatchLinearCuda(
 
   throwIfCudaRuntimeUnavailable();
 
-  DeviceDoubleBuffer devicePosition(state.position.size());
-  DeviceDoubleBuffer deviceLinearVelocity(state.linearVelocity.size());
-  DeviceDoubleBuffer deviceForce(force.size());
-  DeviceDoubleBuffer deviceInverseMass(model.inverseMass.size());
+  DeviceBuffer<double> devicePosition(state.position.size());
+  DeviceBuffer<double> deviceLinearVelocity(state.linearVelocity.size());
+  DeviceBuffer<double> deviceForce(force.size());
+  DeviceBuffer<double> deviceInverseMass(model.inverseMass.size());
 
-  copyToDevice(devicePosition, state.position, "position copy to device");
-  copyToDevice(
-      deviceLinearVelocity,
-      state.linearVelocity,
-      "linear velocity copy to device");
-  copyToDevice(deviceForce, force, "force copy to device");
-  copyToDevice(
-      deviceInverseMass, model.inverseMass, "inverse mass copy to device");
+  devicePosition.copyToDevice(state.position, "position copy to device");
+  deviceLinearVelocity.copyToDevice(
+      state.linearVelocity, "linear velocity copy to device");
+  deviceForce.copyToDevice(force, "force copy to device");
+  deviceInverseMass.copyToDevice(
+      model.inverseMass, "inverse mass copy to device");
 
   throwIfCudaError(
       detail::launchRigidBodyStateBatchLinearKernel(
@@ -274,11 +176,9 @@ void integrateRigidBodyStateBatchLinearCuda(
       "rigid-body linear kernel");
   throwIfCudaError(cudaDeviceSynchronize(), "rigid-body linear synchronize");
 
-  copyFromDevice(state.position, devicePosition, "position copy from device");
-  copyFromDevice(
-      state.linearVelocity,
-      deviceLinearVelocity,
-      "linear velocity copy from device");
+  devicePosition.copyFromDevice(state.position, "position copy from device");
+  deviceLinearVelocity.copyFromDevice(
+      state.linearVelocity, "linear velocity copy from device");
 }
 
 //==============================================================================
@@ -298,19 +198,17 @@ void rolloutRigidBodyStateBatchLinearCuda(
 
   throwIfCudaRuntimeUnavailable();
 
-  DeviceDoubleBuffer devicePosition(state.position.size());
-  DeviceDoubleBuffer deviceLinearVelocity(state.linearVelocity.size());
-  DeviceDoubleBuffer deviceForce(force.size());
-  DeviceDoubleBuffer deviceInverseMass(model.inverseMass.size());
+  DeviceBuffer<double> devicePosition(state.position.size());
+  DeviceBuffer<double> deviceLinearVelocity(state.linearVelocity.size());
+  DeviceBuffer<double> deviceForce(force.size());
+  DeviceBuffer<double> deviceInverseMass(model.inverseMass.size());
 
-  copyToDevice(devicePosition, state.position, "position copy to device");
-  copyToDevice(
-      deviceLinearVelocity,
-      state.linearVelocity,
-      "linear velocity copy to device");
-  copyToDevice(deviceForce, force, "force copy to device");
-  copyToDevice(
-      deviceInverseMass, model.inverseMass, "inverse mass copy to device");
+  devicePosition.copyToDevice(state.position, "position copy to device");
+  deviceLinearVelocity.copyToDevice(
+      state.linearVelocity, "linear velocity copy to device");
+  deviceForce.copyToDevice(force, "force copy to device");
+  deviceInverseMass.copyToDevice(
+      model.inverseMass, "inverse mass copy to device");
 
   for (std::size_t step = 0; step < stepCount; ++step) {
     throwIfCudaError(
@@ -325,11 +223,9 @@ void rolloutRigidBodyStateBatchLinearCuda(
   }
   throwIfCudaError(cudaDeviceSynchronize(), "rigid-body rollout synchronize");
 
-  copyFromDevice(state.position, devicePosition, "position copy from device");
-  copyFromDevice(
-      state.linearVelocity,
-      deviceLinearVelocity,
-      "linear velocity copy from device");
+  devicePosition.copyFromDevice(state.position, "position copy from device");
+  deviceLinearVelocity.copyFromDevice(
+      state.linearVelocity, "linear velocity copy from device");
 }
 
 //==============================================================================
@@ -359,27 +255,23 @@ void rolloutRigidBodyStateBatchCuda(
 
   throwIfCudaRuntimeUnavailable();
 
-  DeviceDoubleBuffer devicePosition(state.position.size());
-  DeviceDoubleBuffer deviceLinearVelocity(state.linearVelocity.size());
-  DeviceDoubleBuffer deviceOrientation(state.orientation.size());
-  DeviceDoubleBuffer deviceAngularVelocity(state.angularVelocity.size());
-  DeviceDoubleBuffer deviceForce(force.size());
-  DeviceDoubleBuffer deviceInverseMass(model.inverseMass.size());
+  DeviceBuffer<double> devicePosition(state.position.size());
+  DeviceBuffer<double> deviceLinearVelocity(state.linearVelocity.size());
+  DeviceBuffer<double> deviceOrientation(state.orientation.size());
+  DeviceBuffer<double> deviceAngularVelocity(state.angularVelocity.size());
+  DeviceBuffer<double> deviceForce(force.size());
+  DeviceBuffer<double> deviceInverseMass(model.inverseMass.size());
 
-  copyToDevice(devicePosition, state.position, "position copy to device");
-  copyToDevice(
-      deviceLinearVelocity,
-      state.linearVelocity,
-      "linear velocity copy to device");
-  copyToDevice(
-      deviceOrientation, state.orientation, "orientation copy to device");
-  copyToDevice(
-      deviceAngularVelocity,
-      state.angularVelocity,
-      "angular velocity copy to device");
-  copyToDevice(deviceForce, force, "force copy to device");
-  copyToDevice(
-      deviceInverseMass, model.inverseMass, "inverse mass copy to device");
+  devicePosition.copyToDevice(state.position, "position copy to device");
+  deviceLinearVelocity.copyToDevice(
+      state.linearVelocity, "linear velocity copy to device");
+  deviceOrientation.copyToDevice(
+      state.orientation, "orientation copy to device");
+  deviceAngularVelocity.copyToDevice(
+      state.angularVelocity, "angular velocity copy to device");
+  deviceForce.copyToDevice(force, "force copy to device");
+  deviceInverseMass.copyToDevice(
+      model.inverseMass, "inverse mass copy to device");
 
   for (std::size_t step = 0; step < stepCount; ++step) {
     throwIfCudaError(
@@ -396,13 +288,11 @@ void rolloutRigidBodyStateBatchCuda(
   }
   throwIfCudaError(cudaDeviceSynchronize(), "rigid-body full synchronize");
 
-  copyFromDevice(state.position, devicePosition, "position copy from device");
-  copyFromDevice(
-      state.linearVelocity,
-      deviceLinearVelocity,
-      "linear velocity copy from device");
-  copyFromDevice(
-      state.orientation, deviceOrientation, "orientation copy from device");
+  devicePosition.copyFromDevice(state.position, "position copy from device");
+  deviceLinearVelocity.copyFromDevice(
+      state.linearVelocity, "linear velocity copy from device");
+  deviceOrientation.copyFromDevice(
+      state.orientation, "orientation copy from device");
 }
 
 } // namespace dart::simulation::experimental::compute::cuda

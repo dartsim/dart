@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include <dart/simulation/experimental/compute/cuda/cuda_runtime.cuh>
+
 #include <vector>
 
 #include <cstddef>
@@ -45,11 +47,8 @@ namespace dart::simulation::experimental::compute::cuda {
 /// block the solver emits today.
 inline constexpr std::size_t kMaxPsdBlockDimension = 12;
 
-/// Return whether the CUDA runtime currently exposes at least one device.
-///
-/// This build-tree-only header intentionally uses a .cuh suffix so the
-/// experimental install rule does not expose CUDA names in installed headers.
-[[nodiscard]] bool isCudaRuntimeAvailable() noexcept;
+// isCudaRuntimeAvailable() is declared once in cuda_runtime.cuh (included
+// above).
 
 /// Project a batch of symmetric blocks onto the nearest positive-semidefinite
 /// matrices on the GPU, in place.
