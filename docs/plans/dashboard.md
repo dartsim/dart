@@ -133,6 +133,50 @@ its own line so status updates remain git-history friendly.
   backend-neutral, CUDA remains private/non-required, and classic World behavior
   stays untouched.
 
+### PLAN-031: Shared Experimental CUDA Device Substrate
+
+- Owner doc:
+  [`../design/shared_cuda_device_substrate.md`](../design/shared_cuda_device_substrate.md)
+- Status: Active
+- Horizon: Now
+- Dimension: Scalable compute
+- Next step: The build-now scope is implemented locally and verified (pending
+  maintainer review/commit). It de-duplicates the three existing experimental
+  CUDA modules (`rigid_body_state_batch_cuda`, `vbd_block_descent_cuda`,
+  `deformable_psd_projection_cuda`) before AVBD-CUDA (PLAN-104), rigid-IPC GPU
+  (PLAN-082), and PD-IPC GPU (PLAN-081) multiply the duplication. Landed: a shared
+  `compute/cuda/cuda_runtime.cuh` + host `cuda_runtime.cpp` (one
+  `isCudaRuntimeAvailable`, one `throwIfCudaError`, `checkLastError`, inline
+  `launchGrid1D`), replacing the triplicated probe, three error helpers (VBD's
+  divergent `std::runtime_error` unified onto `InvalidOperationException`), and
+  7+ hand-rolled launch sites; `compute/cuda/device_buffer.cuh`
+  (`DeviceBuffer<T=double>` with opt-in resident `ensure()`/`allocationCount()`)
+  subsuming `DeviceDoubleBuffer`/`DeviceArray<T>`/`ResidentDeviceBuffer`; and a
+  per-body `__host__ __device__` orientation core in
+  `compute/detail/rigid_integration_core.hpp` (macro `DART_EXPERIMENTAL_HD`) that
+  the CPU `rigid_body_integration_kernel.hpp` loop and the CUDA kernel now share,
+  deleting the drifted `__device__ integrateOrientation`. Deferred behind
+  documented second-use triggers: rollout/graph-capture/precision/colored-sweep, a
+  generic accelerator registry, a device IPC barrier/distance mirror, a residency
+  owner, and device reductions; the existing `deformable_psd_backend.hpp`
+  registrar is reused by example. No new general library — `dart/math`,
+  `dart/optimizer`, `detail/newton_barrier`, and `deformable_psd_backend` are
+  reused, and device IPC math will promote the same PLAN-083 cores
+  host/device-portable rather than forking a GPU copy. Remaining: maintainer
+  review and the dual-commit split (the VBD thrown-type change as its own
+  reviewed commit).
+- Gate: Verified locally — the three module CUDA parity tests pass within the
+  recorded tolerance (`pixi run -e cuda test-cuda`, 3/3), the default no-GPU
+  experimental suite passes (`pixi run test-simulation-experimental`, 61/61,
+  including `test_compute_graph` over the single-sourced kernel), and
+  `check-api-boundaries`, `check-compute-backend-boundaries`, and
+  `check-no-gpu-runtime-dependencies` stay green. Shared device code stays
+  `.cuh`/`.cpp`-only under `compute/cuda/` (plus the `detail/` core header) in the
+  build-only `dart-simulation-experimental-cuda` STATIC library (never added to
+  `add_component_targets`, never installed/exported, never in a default Pixi
+  feature or wheel manifest); and the VBD thrown-type change is reviewed
+  separately with any downstream catcher updated in the same PR.
+
 ### PLAN-080: Rigid-Body Dynamics Solver
 
 - Owner doc:

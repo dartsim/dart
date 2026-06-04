@@ -36,7 +36,9 @@
 #include <Eigen/Dense>
 #include <Eigen/Eigenvalues>
 #include <cuda_runtime_api.h>
+#include <dart/simulation/experimental/compute/cuda/cuda_runtime.cuh>
 #include <dart/simulation/experimental/compute/cuda/deformable_psd_projection_cuda.cuh>
+#include <dart/simulation/experimental/compute/cuda/device_buffer.cuh>
 
 #include <algorithm>
 #include <string_view>
@@ -55,79 +57,19 @@ cudaError_t launchProjectSymmetricBlocksToPsdKernel(
 } // namespace detail
 namespace {
 
-void throwIfCudaError(cudaError_t status, std::string_view operation)
-{
-  if (status == cudaSuccess) {
-    return;
-  }
-
-  DART_EXPERIMENTAL_THROW_T(
-      sx::InvalidOperationException,
-      "CUDA {} failed: {}",
-      operation,
-      cudaGetErrorString(status));
-}
-
-// A device buffer that persists across projection calls. It reuses its
-// allocation whenever the requested element count fits the current capacity and
-// only reallocates (and frees the old storage) when a larger batch arrives, so
-// the per-call cudaMalloc/cudaFree round trip is removed from the solver's
-// projected-Newton hot path. Single-threaded use only (the PSD backend is a
-// process-global function pointer driven by the sequential deformable stage).
-class ResidentDeviceBuffer
-{
-public:
-  ResidentDeviceBuffer() = default;
-
-  ~ResidentDeviceBuffer()
-  {
-    release();
-  }
-
-  ResidentDeviceBuffer(const ResidentDeviceBuffer&) = delete;
-  ResidentDeviceBuffer& operator=(const ResidentDeviceBuffer&) = delete;
-
-  // Returns device storage for at least `count` doubles, reusing the existing
-  // allocation when it is already large enough.
-  [[nodiscard]] double* ensure(std::size_t count)
-  {
-    if (count <= m_capacity) {
-      return m_data;
-    }
-    release();
-    throwIfCudaError(
-        cudaMalloc(reinterpret_cast<void**>(&m_data), count * sizeof(double)),
-        "allocation");
-    m_capacity = count;
-    ++m_allocationCount;
-    return m_data;
-  }
-
-  void release() noexcept
-  {
-    if (m_data != nullptr) {
-      (void)cudaFree(m_data);
-      m_data = nullptr;
-    }
-    m_capacity = 0;
-  }
-
-  [[nodiscard]] std::size_t allocationCount() const noexcept
-  {
-    return m_allocationCount;
-  }
-
-private:
-  double* m_data = nullptr;
-  std::size_t m_capacity = 0;
-  std::size_t m_allocationCount = 0;
-};
+// CUDA runtime probing and error mapping now live in the shared substrate
+// (cuda_runtime.cuh). The resident grow-and-reuse device scratch is the shared
+// DeviceBuffer<double> with its opt-in ensure()/allocationCount()/release()
+// path (device_buffer.cuh), so the per-call cudaMalloc/cudaFree round trip
+// stays out of the projected-Newton hot path.
 
 // The resident device buffer reused across GPU projections (a function-local
-// static so it is constructed on first use and torn down at exit).
-ResidentDeviceBuffer& residentDeviceBuffer()
+// static so it is constructed on first use and torn down at exit). Single-
+// threaded use only (the PSD backend is a process-global function pointer
+// driven by the sequential deformable stage).
+DeviceBuffer<double>& residentDeviceBuffer()
 {
-  static ResidentDeviceBuffer buffer;
+  static DeviceBuffer<double> buffer;
   return buffer;
 }
 
@@ -198,10 +140,6 @@ void projectSymmetricBlocksToPsdCudaInPlace(
 }
 
 } // namespace
-
-// isCudaRuntimeAvailable() is defined once for the experimental CUDA target in
-// rigid_body_state_batch_cuda.cpp; this file declares it via the .cuh and links
-// against that single definition (both sources live in the same -cuda library).
 
 //==============================================================================
 void projectSymmetricBlocksToPsdReference(
