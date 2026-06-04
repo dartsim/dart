@@ -207,6 +207,8 @@ struct World::ReplayState
   struct LinkState
   {
     entt::entity entity = entt::null;
+    comps::MassProperties massProperties;
+    std::optional<comps::CollisionGeometry> collisionGeometry;
     Eigen::Matrix<double, 6, 1> externalForce
         = Eigen::Matrix<double, 6, 1>::Zero();
   };
@@ -3286,6 +3288,15 @@ void World::restoreReplayFrame(std::size_t index)
             || !m_storage->registry.all_of<comps::Link>(state.entity),
         InvalidOperationException,
         "Cannot restore replay frame: Link entity layout changed");
+    const auto& link = m_storage->registry.get<comps::Link>(state.entity);
+    DART_EXPERIMENTAL_THROW_T_IF(
+        !sameReplayMassProperties(link.mass, state.massProperties)
+            || !sameReplayCollisionGeometry(
+                state.collisionGeometry,
+                m_storage->registry.try_get<comps::CollisionGeometry>(
+                    state.entity)),
+        InvalidOperationException,
+        "Cannot restore replay frame: Link entity layout changed");
   }
 
   DART_EXPERIMENTAL_THROW_T_IF(
@@ -3423,6 +3434,7 @@ void World::restoreReplayFrame(std::size_t index)
           state.entity, *state.fixedFrameProperties);
     }
   }
+  markFrameCachesDirty(m_storage->registry);
 
   for (const auto stateIndex : rigidBodyRestoreOrder) {
     const auto& state = replayFrame.rigidBodies[stateIndex];
@@ -3543,7 +3555,12 @@ void World::recordReplayFrame()
   for (auto entity : linkView) {
     const auto& link = linkView.get<comps::Link>(entity);
     replayFrame.links.push_back(
-        ReplayState::LinkState{entity, link.externalForce});
+        ReplayState::LinkState{
+            entity,
+            link.mass,
+            captureReplayOptionalComponent<comps::CollisionGeometry>(
+                m_storage->registry, entity),
+            link.externalForce});
   }
   std::ranges::sort(replayFrame.links, [](const auto& lhs, const auto& rhs) {
     return static_cast<std::uint32_t>(lhs.entity)

@@ -7160,6 +7160,48 @@ TEST(World, ReplayRecordingRestoresPublicFrameState)
       recordedParentTransform * recordedChildOffset));
 }
 
+// Test that public-frame replay restore dirties caches before restoring rigid
+// bodies whose parent transform is a restored public frame.
+TEST(World, ReplayRecordingRestoresRigidBodyThroughPublicFrameWithDirtyCache)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+
+  auto mount = world.addFreeFrame("mount");
+  Eigen::Isometry3d recordedMountTransform = Eigen::Isometry3d::Identity();
+  recordedMountTransform.translation() = Eigen::Vector3d(1.0, 0.0, 0.0);
+  mount.setLocalTransform(recordedMountTransform);
+
+  sx::RigidBodyOptions bodyOptions;
+  bodyOptions.position = Eigen::Vector3d(2.0, 0.0, 0.0);
+  auto body = world.addRigidBody("body", bodyOptions);
+  body.setParentFrame(mount);
+
+  Eigen::Isometry3d recordedBodyTransform = Eigen::Isometry3d::Identity();
+  recordedBodyTransform.translation() = Eigen::Vector3d(2.0, 0.0, 0.0);
+  body.setTransform(recordedBodyTransform);
+
+  world.setReplayRecordingEnabled(true);
+  ASSERT_EQ(world.getReplayFrameCount(), 1u);
+
+  Eigen::Isometry3d movedMountTransform = Eigen::Isometry3d::Identity();
+  movedMountTransform.translation() = Eigen::Vector3d(10.0, 0.0, 0.0);
+  mount.setLocalTransform(movedMountTransform);
+  EXPECT_TRUE(mount.getTransform().isApprox(movedMountTransform));
+
+  Eigen::Isometry3d movedBodyTransform = Eigen::Isometry3d::Identity();
+  movedBodyTransform.translation() = Eigen::Vector3d(12.0, 0.0, 0.0);
+  body.setTransform(movedBodyTransform);
+
+  world.restoreReplayFrame(0);
+
+  EXPECT_TRUE(mount.getTransform().isApprox(recordedMountTransform));
+  EXPECT_TRUE(body.getTransform().isApprox(recordedBodyTransform));
+  EXPECT_TRUE(body.getLocalTransform().isApprox(
+      recordedMountTransform.inverse() * recordedBodyTransform));
+}
+
 // Test replay control edge cases and invalid frame queries.
 TEST(World, ReplayRecordingRejectsInvalidQueriesAndClears)
 {
@@ -7363,6 +7405,61 @@ TEST(World, ReplayRecordingRejectsJointDynamicsChanges)
   expectJointMutationRejected([](sx::Joint& joint) {
     joint.setActuatorType(sx::ActuatorType::Passive);
   });
+}
+
+// Test that replay restore rejects link physical/collision layout edits that
+// are not mutable per-frame state.
+TEST(World, ReplayRecordingRejectsLinkPhysicalLayoutChanges)
+{
+  namespace sx = dart::simulation::experimental;
+
+  const auto expectLinkMutationRejected = [](auto configure, auto mutate) {
+    sx::World world;
+    auto robot = world.addMultibody("robot");
+    auto base = robot.addLink("base");
+
+    sx::JointSpec spec;
+    spec.name = "joint";
+    spec.type = sx::JointType::Revolute;
+    auto link = robot.addLink("link", base, spec);
+
+    configure(link);
+    world.setReplayRecordingEnabled(true);
+    EXPECT_EQ(world.getReplayFrameCount(), 1u);
+
+    mutate(link);
+
+    EXPECT_THROW(world.restoreReplayFrame(0), sx::InvalidOperationException);
+  };
+
+  expectLinkMutationRejected(
+      [](sx::Link&) {}, [](sx::Link& link) { link.setMass(2.0); });
+
+  expectLinkMutationRejected(
+      [](sx::Link&) {},
+      [](sx::Link& link) {
+        link.setInertia(2.0 * Eigen::Matrix3d::Identity());
+      });
+
+  expectLinkMutationRejected(
+      [](sx::Link&) {},
+      [](sx::Link& link) {
+        link.setCenterOfMass(Eigen::Vector3d(0.1, 0.0, 0.0));
+      });
+
+  expectLinkMutationRejected(
+      [](sx::Link& link) {
+        link.setCollisionShape(sx::CollisionShape::makeSphere(0.25));
+      },
+      [](sx::Link& link) {
+        link.setCollisionShape(sx::CollisionShape::makeBox({0.1, 0.2, 0.3}));
+      });
+
+  expectLinkMutationRejected(
+      [](sx::Link&) {},
+      [](sx::Link& link) {
+        link.addCollisionShape(sx::CollisionShape::makeSphere(0.25));
+      });
 }
 
 // Test that a layout-incompatible restore fails before mutating earlier replay
