@@ -4,7 +4,7 @@
 - Outcome: the ECS-backed simulation world becomes the official DART 7 C++ and
   dartpy simulation API, with the experimental namespace/module removed from the
   promoted public contract and the source tree reorganized only after the stable
-  facade is in place. DART 6 API compatibility remains on the DART 6.16 support
+  facade is in place. DART 6 API compatibility remains on the DART 6.17 support
   lane; main moves as a DART 7 clean break.
 - Current evidence: the experimental world already owns the DART 7 simulation
   direction, but its current public shape still exposes experimental paths,
@@ -46,7 +46,7 @@ renames on its own.
 - `main` targets DART 7 and should not carry the DART 6 public API as a long-term
   compatibility layer.
 - gz-physics and Gazebo compatibility work remains important, but compatibility
-  fixes for the existing DART 6 API belong on `release-6.16` unless a maintainer
+  fixes for the existing DART 6 API belong on `release-6.17` unless a maintainer
   explicitly scopes a main-branch migration canary.
 - DART 8 is reserved for debt introduced during the DART 7 line. It is not the
   default place to remove DART 6 simulation APIs or the experimental-world name.
@@ -306,7 +306,7 @@ Current intended sequence:
    state. Gate with `pixi run test-py`, `pixi run generate-stubs`,
    `pixi run api-docs-py`, package/export smokes, and a wheel import smoke.
 7. **Compatibility documentation (acceptance + clean-break strategy).** Record
-   DART 6 / gz-physics support expectations on the DART 6.16 lane, including
+   DART 6 / gz-physics support expectations on the DART 6.17 lane, including
    the Gazebo branch/version matrix, support window, and sunset trigger in the
    compatibility owner docs referenced by
    [`../design/dart7_clean_break_strategy.md`](../design/dart7_clean_break_strategy.md)
@@ -379,7 +379,7 @@ Review these before implementation PRs:
   import behavior.
 - In-repo examples, tutorials, tests, and docs use the official path unless they
   are explicitly testing a migration alias.
-- DART 6/gz-physics compatibility expectations are documented on the DART 6.16
+- DART 6/gz-physics compatibility expectations are documented on the DART 6.17
   lane, including the Gazebo branch/version matrix, support window, and sunset
   date or trigger before main removes legacy API surfaces.
 - Source-tree moves happen after facade promotion and are isolated enough that
@@ -420,6 +420,6 @@ For implementation PRs, select by touched scope:
 - A maintainer chooses a different final C++ namespace, Python import path, or
   CMake component shape.
 - Parity gates expose a blocker that prevents official promotion in DART 7.
-- gz-physics or Gazebo compatibility requires a DART 6.16 support-lane update.
+- gz-physics or Gazebo compatibility requires a DART 6.17 support-lane update.
 - A physical move PR conflicts heavily with active solver/model-loading work and
   needs to be split or delayed.
