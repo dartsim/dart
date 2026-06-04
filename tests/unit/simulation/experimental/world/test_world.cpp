@@ -7022,6 +7022,59 @@ TEST(World, ReplayRecordingRestoresRigidBodyState)
   EXPECT_EQ(world.getReplayFrameCount(), 1u);
 }
 
+// Test that replay restores rigid IPC's adaptive barrier continuation state, so
+// a branch from an earlier contact frame matches an uninterrupted rollout.
+TEST(World, ReplayRecordingRestoresRigidIpcAdaptiveBranchState)
+{
+  namespace sx = dart::simulation::experimental;
+
+  const auto addSlidingContactScene = [](sx::World& world) {
+    world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+    world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+    world.setTimeStep(0.01);
+
+    sx::RigidBodyOptions groundOptions;
+    groundOptions.isStatic = true;
+    groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.25);
+    auto ground = world.addRigidBody("ground", groundOptions);
+    ground.setCollisionShape(sx::CollisionShape::makeBox({2.0, 2.0, 0.25}));
+
+    sx::RigidBodyOptions boxOptions;
+    boxOptions.mass = 1.0;
+    boxOptions.position = Eigen::Vector3d(0.0, 0.0, 0.258);
+    boxOptions.linearVelocity = Eigen::Vector3d(1.0, 0.0, 0.0);
+    auto box = world.addRigidBody("box", boxOptions);
+    box.setCollisionShape(sx::CollisionShape::makeBox({0.25, 0.25, 0.25}));
+    return box;
+  };
+
+  sx::World reference;
+  auto referenceBox = addSlidingContactScene(reference);
+  reference.step();
+  reference.step();
+
+  sx::World replay;
+  auto replayBox = addSlidingContactScene(replay);
+  replay.setReplayRecordingEnabled(true);
+  replay.step();
+  ASSERT_EQ(replay.getReplayFrameCount(), 2u);
+
+  Eigen::Isometry3d farPose = Eigen::Isometry3d::Identity();
+  farPose.translation() = Eigen::Vector3d(0.0, 0.0, 10.0);
+  replayBox.setTransform(farPose);
+  replayBox.setLinearVelocity(Eigen::Vector3d::Zero());
+  replay.step();
+  ASSERT_EQ(replay.getReplayFrameCount(), 3u);
+
+  replay.restoreReplayFrame(1);
+  replay.step();
+
+  EXPECT_TRUE(replayBox.getTranslation().isApprox(
+      referenceBox.getTranslation(), 1e-10));
+  EXPECT_TRUE(replayBox.getLinearVelocity().isApprox(
+      referenceBox.getLinearVelocity(), 1e-10));
+}
+
 // Test replay control edge cases and invalid frame queries.
 TEST(World, ReplayRecordingRejectsInvalidQueriesAndClears)
 {

@@ -206,6 +206,7 @@ struct World::ReplayState
     double time = 0.0;
     std::size_t frame = 0;
     DeformableSolverDiagnostics deformableSolverDiagnostics{};
+    double rigidIpcAdaptiveBarrierStiffnessLowerBound = 1.0;
     MultibodyIntegrationMethod multibodyIntegrationMethod{
         MultibodyIntegrationMethod::SemiImplicit};
     std::optional<StepDerivatives> stepDerivatives;
@@ -2933,6 +2934,8 @@ void World::restoreReplayFrame(std::size_t index)
   m_time = replayFrame.time;
   m_frame = replayFrame.frame;
   m_lastDeformableSolverDiagnostics = replayFrame.deformableSolverDiagnostics;
+  m_rigidIpcAdaptiveBarrierStiffnessLowerBound
+      = replayFrame.rigidIpcAdaptiveBarrierStiffnessLowerBound;
   m_multibodyIntegrationMethod = replayFrame.multibodyIntegrationMethod;
   m_storage->stepDerivatives = replayFrame.stepDerivatives;
   m_storage->differentiableParameters = replayFrame.differentiableParameters;
@@ -2973,6 +2976,8 @@ void World::recordReplayFrame()
   replayFrame.time = m_time;
   replayFrame.frame = m_frame;
   replayFrame.deformableSolverDiagnostics = m_lastDeformableSolverDiagnostics;
+  replayFrame.rigidIpcAdaptiveBarrierStiffnessLowerBound
+      = m_rigidIpcAdaptiveBarrierStiffnessLowerBound;
   replayFrame.multibodyIntegrationMethod = m_multibodyIntegrationMethod;
   replayFrame.stepDerivatives = m_storage->stepDerivatives;
   replayFrame.differentiableParameters = m_storage->differentiableParameters;
