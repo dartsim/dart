@@ -7152,6 +7152,28 @@ Eigen::Quaterniond quaternionFromRotationVector(const Eigen::Vector3d& rotation)
 }
 
 //==============================================================================
+void resetRigidIpcRuntimeBodyPreservingSurface(
+    RigidIpcRuntimeBody& body) noexcept
+{
+  body.entity = entt::null;
+  body.kinematic = false;
+  body.hasSupportedSurface = false;
+  body.surfaceIndex = std::numeric_limits<std::size_t>::max();
+  body.initialPose = sxdetail::RigidIpcPose{};
+  body.initialVelocity.setZero();
+  body.dynamicsTerm = sxdetail::RigidIpcBodyDynamicsTerm{};
+
+  body.surface.body = 0u;
+  body.surface.pose = sxdetail::RigidIpcPose{};
+  body.surface.vertices.clear();
+  body.surface.triangles.clear();
+  body.surface.frictionCoefficient = 1.0;
+  body.surface.dynamic = true;
+  body.surface.kinematic = false;
+  body.surface.kinematicStartPose = sxdetail::RigidIpcPose{};
+}
+
+//==============================================================================
 sxdetail::RigidIpcPose toRigidIpcPose(const comps::Transform& transform)
 {
   sxdetail::RigidIpcPose pose;
@@ -7471,8 +7493,8 @@ void collectRigidIpcRuntimeBodies(
       comps::FreeFrameProperties,
       comps::FrameCache>();
 
-  bodies.clear();
   bodies.reserve(view.size_hint());
+  std::size_t outputCount = 0u;
   for (const auto entity : view) {
     const bool isStatic = registry.all_of<comps::StaticBodyTag>(entity);
     const bool isKinematic = registry.all_of<comps::KinematicBodyTag>(entity);
@@ -7482,17 +7504,21 @@ void collectRigidIpcRuntimeBodies(
     }
 
     ++stats.bodyCount;
+    if (outputCount == bodies.size()) {
+      bodies.emplace_back();
+    }
+    RigidIpcRuntimeBody& body = bodies[outputCount];
+    resetRigidIpcRuntimeBodyPreservingSurface(body);
 
     const auto& transform = view.get<comps::Transform>(entity);
     const auto& velocity = view.get<comps::Velocity>(entity);
 
-    RigidIpcRuntimeBody body;
     body.entity = entity;
     body.kinematic = isKinematic;
     body.initialPose = toRigidIpcPose(transform);
     body.initialVelocity.head<3>() = velocity.linear;
     body.initialVelocity.tail<3>() = velocity.angular;
-    body.surface.body = bodies.size();
+    body.surface.body = outputCount;
     body.surface.pose = body.initialPose;
     body.surface.dynamic = !isStatic && !isKinematic;
     body.surface.kinematic = isKinematic;
@@ -7531,8 +7557,9 @@ void collectRigidIpcRuntimeBodies(
       }
       ++stats.surfaceCount;
     }
-    bodies.push_back(std::move(body));
+    ++outputCount;
   }
+  bodies.resize(outputCount);
 }
 
 //==============================================================================
@@ -8399,6 +8426,9 @@ void RigidIpcContactStage::prepare(World& world)
   m_scratch->writebackEntities.reserve(bodyCount);
   m_scratch->orderedEntities.reserve(bodyCount);
   m_scratch->visitState.reserve(bodyCount);
+
+  RigidIpcSolverStats warmupStats;
+  collectRigidIpcRuntimeBodies(world, warmupStats, m_scratch->runtimeBodies);
 }
 
 //==============================================================================

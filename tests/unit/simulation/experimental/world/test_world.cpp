@@ -789,6 +789,15 @@ TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
         body.setKinematic(true);
         body.setLinearVelocity(Eigen::Vector3d(1.0, 0.0, 0.0));
       });
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "kinematic IPC box obstacle", [](sx::World& world) {
+        world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+        auto body = world.addRigidBody("kinematic_box");
+        body.setKinematic(true);
+        body.setCollisionShape(
+            sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.5)));
+        body.setLinearVelocity(Eigen::Vector3d(1.0, 0.0, 0.0));
+      });
 
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "multibody variational scratch", [](sx::World& world) {
@@ -824,6 +833,15 @@ TEST(World, BakedKinematicIpcStepsDoNotAllocateGlobalHeap)
         world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
         auto body = world.addRigidBody("kinematic");
         body.setKinematic(true);
+        body.setLinearVelocity(Eigen::Vector3d(1.0, 0.0, 0.0));
+      });
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "kinematic IPC box obstacle", [](sx::World& world) {
+        world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+        auto body = world.addRigidBody("kinematic_box");
+        body.setKinematic(true);
+        body.setCollisionShape(
+            sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.5)));
         body.setLinearVelocity(Eigen::Vector3d(1.0, 0.0, 0.0));
       });
 }
