@@ -32,12 +32,14 @@
 
 #include <dart/common/callocator.hpp>
 #include <dart/common/memory_allocator.hpp>
+#include <dart/common/memory_allocator_debugger.hpp>
 #include <dart/common/platform.hpp>
 
 #include <gtest/gtest.h>
 
 #include <sstream>
 #include <string>
+#include <string_view>
 
 #include <cstdint>
 
@@ -159,4 +161,77 @@ TEST(MemoryAllocatorTest, BaseAlignedFallbackRejectsUnsupportedOverAlignment)
   MemoryAllocator& base = allocator;
 
   EXPECT_EQ(base.allocate(sizeof(OverAlignedObject), 64), nullptr);
+}
+
+TEST(MemoryAllocatorTest, DebuggerTracksLiveAllocationsAndPeakBytes)
+{
+  MemoryAllocatorDebugger<CAllocator> allocator;
+
+  EXPECT_TRUE(allocator.isEmpty());
+  EXPECT_EQ(
+      allocator.getType(),
+      std::string_view("MemoryAllocatorDebugger<CAllocator>"));
+
+  auto* first = allocator.allocate(8);
+  auto* second = allocator.allocate(16);
+  ASSERT_NE(first, nullptr);
+  ASSERT_NE(second, nullptr);
+
+  EXPECT_FALSE(allocator.isEmpty());
+  EXPECT_TRUE(allocator.hasAllocated(first, 8));
+  EXPECT_TRUE(allocator.hasAllocated(second, 16));
+  EXPECT_FALSE(allocator.hasAllocated(first, 16));
+
+  std::ostringstream withBoth;
+  allocator.print(withBoth);
+  EXPECT_NE(withBoth.str().find("size_in_bytes: 24"), std::string::npos);
+  EXPECT_NE(withBoth.str().find("peak: 24"), std::string::npos);
+
+  allocator.deallocate(first, 8);
+  EXPECT_FALSE(allocator.hasAllocated(first, 8));
+  EXPECT_TRUE(allocator.hasAllocated(second, 16));
+
+  std::ostringstream afterFirstFree;
+  allocator.print(afterFirstFree);
+  EXPECT_NE(afterFirstFree.str().find("size_in_bytes: 16"), std::string::npos);
+  EXPECT_NE(afterFirstFree.str().find("peak: 24"), std::string::npos);
+
+  allocator.deallocate(second, 16);
+  EXPECT_TRUE(allocator.isEmpty());
+}
+
+TEST(MemoryAllocatorTest, DebuggerRejectsForeignAndMismatchedDeallocations)
+{
+  MemoryAllocatorDebugger<CAllocator> allocator;
+  CAllocator rawAllocator;
+
+  auto* tracked = allocator.allocate(32);
+  auto* foreign = rawAllocator.allocate(32);
+  ASSERT_NE(tracked, nullptr);
+  ASSERT_NE(foreign, nullptr);
+
+  allocator.deallocate(foreign, 32);
+  EXPECT_FALSE(allocator.hasAllocated(foreign, 32));
+  EXPECT_TRUE(allocator.hasAllocated(tracked, 32));
+
+  allocator.deallocate(tracked, 16);
+  EXPECT_TRUE(allocator.hasAllocated(tracked, 32));
+
+  allocator.deallocate(tracked, 32);
+  rawAllocator.deallocate(foreign, 32);
+  EXPECT_TRUE(allocator.isEmpty());
+}
+
+TEST(MemoryAllocatorTest, DebuggerTracksAlignedAllocationOverload)
+{
+  MemoryAllocatorDebugger<CAllocator> allocator;
+
+  auto* raw = static_cast<OverAlignedObject*>(allocator.allocate(
+      sizeof(OverAlignedObject), alignof(OverAlignedObject)));
+  expectAligned(raw);
+
+  EXPECT_TRUE(allocator.hasAllocated(raw, sizeof(OverAlignedObject)));
+  allocator.deallocate(
+      raw, sizeof(OverAlignedObject), alignof(OverAlignedObject));
+  EXPECT_TRUE(allocator.isEmpty());
 }
