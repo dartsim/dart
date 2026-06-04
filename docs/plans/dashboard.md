@@ -407,11 +407,12 @@ its own line so status updates remain git-history friendly.
   enabling limited-DOF configs to reuse the same descriptor and warm-start path.
   Named private revolute and prismatic point-joint configs now build arbitrary
   joint-axis bases, leave one rotational or translational axis free, and
-  preserve axes/masks through World point-joint input and solve coverage. Public
-  multibody joint extraction is not wired yet. The next local slice is
-  public/current-pose extraction for non-fixed ECS joints, full narrow-phase
-  feature extraction, motor/fracture rows, or broader rigid/articulated World
-  integration.
+  preserve axes/masks through World point-joint input and solve coverage.
+  Simulation-entry current-pose initialization and extraction also cover
+  private rigid-body ECS revolute/prismatic joint entities. Public multibody
+  joint extraction is not wired yet. The next local slice is full narrow-phase
+  feature extraction, public rigid-body limited-DOF facades with py-demo
+  coverage, motor/fracture rows, or broader rigid/articulated World integration.
 - Gate: VBD progress is not complete until the implementation distinguishes
   each internal kernel slice from a wired solver, keeps VBD naming
   backend-neutral, proves per-vertex force/Hessian correctness, PD Hessian

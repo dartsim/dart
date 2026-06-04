@@ -170,7 +170,14 @@ inline Eigen::Isometry3d avbdRigidWorldContactToIsometry(
 }
 
 //==============================================================================
-inline bool configureAvbdRigidWorldFixedJointFromCurrentPose(
+inline bool isAvbdRigidWorldPointJointType(comps::JointType type)
+{
+  return type == comps::JointType::Fixed || type == comps::JointType::Revolute
+         || type == comps::JointType::Prismatic;
+}
+
+//==============================================================================
+inline bool configureAvbdRigidWorldPointJointFromCurrentPose(
     entt::registry& registry,
     entt::entity jointEntity,
     double startStiffness = 1.0,
@@ -183,7 +190,7 @@ inline bool configureAvbdRigidWorldFixedJointFromCurrentPose(
   }
 
   auto* joint = registry.try_get<comps::Joint>(jointEntity);
-  if (joint == nullptr || joint->type != comps::JointType::Fixed
+  if (joint == nullptr || !isAvbdRigidWorldPointJointType(joint->type)
       || joint->parentLink == entt::null || joint->childLink == entt::null
       || joint->parentLink == joint->childLink) {
     return false;
@@ -245,19 +252,62 @@ inline bool configureAvbdRigidWorldFixedJointFromCurrentPose(
         = targetRelativeOrientation;
   }
 
+  Eigen::Matrix3d linearAxes = Eigen::Matrix3d::Identity();
+  Eigen::Matrix3d angularAxes = Eigen::Matrix3d::Identity();
+  std::uint8_t linearAxisMask = kAvbdRigidJointAllAxesMask;
+  std::uint8_t angularAxisMask = kAvbdRigidJointAllAxesMask;
+  if (joint->type == comps::JointType::Fixed) {
+    // Defaults already represent a fixed joint.
+  } else {
+    if (!joint->axis.allFinite() || joint->axis.squaredNorm() <= 0.0) {
+      return false;
+    }
+
+    const Eigen::Matrix3d jointAxes
+        = avbdRigidJointAxesFromFreeAxis(joint->axis);
+    if (joint->type == comps::JointType::Revolute) {
+      angularAxes = jointAxes;
+      angularAxisMask = avbdRigidJointAllButAxisMask(/*freeAxis=*/2u);
+    } else {
+      linearAxes = jointAxes;
+      angularAxes = jointAxes;
+      linearAxisMask = avbdRigidJointAllButAxisMask(/*freeAxis=*/2u);
+    }
+  }
+
   auto& config = registry.emplace_or_replace<AvbdRigidWorldPointJointConfig>(
       jointEntity);
   config.enabled = true;
   config.localAnchorA = localAnchorA;
   config.localAnchorB = localAnchorB;
   config.targetRelativeOrientation = targetRelativeOrientation;
+  config.linearAxes = linearAxes;
+  config.angularAxes = angularAxes;
+  config.linearAxisMask = linearAxisMask;
+  config.angularAxisMask = angularAxisMask;
   config.startStiffness = startStiffness;
   config.maxStiffness = maxStiffness;
   return true;
 }
 
 //==============================================================================
-inline std::size_t configureAvbdRigidWorldFixedJointsFromCurrentPoses(
+inline bool configureAvbdRigidWorldFixedJointFromCurrentPose(
+    entt::registry& registry,
+    entt::entity jointEntity,
+    double startStiffness = 1.0,
+    double maxStiffness = std::numeric_limits<double>::infinity())
+{
+  const auto* joint = registry.try_get<comps::Joint>(jointEntity);
+  if (joint == nullptr || joint->type != comps::JointType::Fixed) {
+    return false;
+  }
+
+  return configureAvbdRigidWorldPointJointFromCurrentPose(
+      registry, jointEntity, startStiffness, maxStiffness);
+}
+
+//==============================================================================
+inline std::size_t configureAvbdRigidWorldPointJointsFromCurrentPoses(
     entt::registry& registry)
 {
   std::size_t configured = 0;
@@ -266,8 +316,8 @@ inline std::size_t configureAvbdRigidWorldFixedJointsFromCurrentPoses(
 
   for (const entt::entity entity : view) {
     const auto& joint = view.get<comps::Joint>(entity);
-    if (joint.type != comps::JointType::Fixed || joint.parentLink == entt::null
-        || joint.childLink == entt::null
+    if (!isAvbdRigidWorldPointJointType(joint.type)
+        || joint.parentLink == entt::null || joint.childLink == entt::null
         || joint.parentLink == joint.childLink) {
       continue;
     }
@@ -313,7 +363,7 @@ inline std::size_t configureAvbdRigidWorldFixedJointsFromCurrentPoses(
       maxStiffness = startStiffness;
     }
 
-    if (configureAvbdRigidWorldFixedJointFromCurrentPose(
+    if (configureAvbdRigidWorldPointJointFromCurrentPose(
             registry, entity, startStiffness, maxStiffness)) {
       ++configured;
     }
@@ -1043,7 +1093,7 @@ extractAvbdRigidWorldPointJointInputs(const entt::registry& registry)
   for (const entt::entity entity : view) {
     const auto& joint = view.get<comps::Joint>(entity);
     const auto& config = view.get<AvbdRigidWorldPointJointConfig>(entity);
-    if (!config.enabled || joint.type != comps::JointType::Fixed) {
+    if (!config.enabled || !isAvbdRigidWorldPointJointType(joint.type)) {
       continue;
     }
 

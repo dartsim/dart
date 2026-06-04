@@ -133,8 +133,10 @@ rows with or without active contacts. The private point-joint builders now
 accept per-axis linear and angular masks, keeping all-axis fixed-joint rows as
 the default. Named private revolute and prismatic point-joint configs now build
 arbitrary joint-axis bases, leave one rotational or translational axis free, and
-preserve axes/masks through World point-joint input and solve coverage. Public
-multibody joint extraction and articulated World joint wiring are not solved yet.
+preserve axes/masks through World point-joint input and solve coverage.
+Simulation-entry current-pose initialization and extraction also cover private
+rigid-body ECS revolute/prismatic joint entities. Public multibody joint
+extraction and articulated World joint wiring are not solved yet.
 Explicit fallback coverage keeps unsupported mixed spring-plus-tet,
 mass-spring self-contact without the self-contact AVBD flag,
 finite-stiffness-only friction scenes, Chebyshev, Rayleigh-damped, parallel,

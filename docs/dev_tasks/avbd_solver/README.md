@@ -198,7 +198,11 @@ Paper audit:
     private row path now has named revolute and prismatic point-joint builders
     that construct arbitrary joint-axis bases, leave the hinge or translation
     axis free, and preserve the configured axes/masks through World point-joint
-    input, snapshot assembly, and solve coverage.
+    input, snapshot assembly, and solve coverage. Simulation-entry
+    current-pose initialization and extraction now also cover private
+    rigid-body ECS revolute/prismatic joint entities, deriving the same
+    axes/masks from their configured joint axis while preserving explicit
+    multibody rejection until articulated AVBD state exists.
     Public multibody joint extraction is still not wired.
     Unsupported envelopes still fall back to sequential impulses. This is not
     full narrow-phase feature extraction, not full rigid contact/joint rows, and
@@ -242,10 +246,10 @@ numbers.
 ## Immediate Next Steps
 
 1. Continue the next bounded AVBD contact/friction or rigid-block slice:
-   public/current-pose extraction for non-fixed ECS joints,
-   true rigid/articulated World wiring, full narrow-phase feature extraction, or
-   the next motor/fracture row family are the preferred next gaps now that
-   static box feature IDs,
+   true rigid/articulated World wiring, full narrow-phase feature extraction,
+   public rigid-body limited-DOF facades with py-demo coverage, or the next
+   motor/fracture row family are the preferred next gaps now that static box
+   feature IDs,
    private dynamic/rigid contact feature IDs and descriptor
    helpers, static half-space tangent dual projection, self-contact
    tangent dual projection, static contact/friction, attachments,
@@ -267,8 +271,9 @@ numbers.
    fixed-joint current-pose config bridge and simulation-entry config
    initialization for opt-in rigid bodies, masked private point-joint row
    generation for constrained linear/angular axes, and private
-   revolute/prismatic point-joint configs with arbitrary joint-axis bases, have
-   narrow CPU paths.
+   revolute/prismatic point-joint configs with arbitrary joint-axis bases plus
+   private rigid-body ECS current-pose extraction for those one-DOF joint
+   entities, have narrow CPU paths.
 2. In parallel planning, keep full friction cones, rigid/articulated rows, GPU
    parity, demos, and benchmark packets as open AVBD parity gates rather than
    completion claims.

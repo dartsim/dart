@@ -2016,7 +2016,7 @@ void World::enterSimulationMode()
 
   // Initial bake so that cached transforms are up-to-date.
   updateKinematics();
-  detail::deformable_vbd::configureAvbdRigidWorldFixedJointsFromCurrentPoses(
+  detail::deformable_vbd::configureAvbdRigidWorldPointJointsFromCurrentPoses(
       m_storage->registry);
 }
 
@@ -2988,7 +2988,7 @@ void World::loadBinary(std::istream& input)
 
   if (m_simulationMode) {
     updateKinematics();
-    detail::deformable_vbd::configureAvbdRigidWorldFixedJointsFromCurrentPoses(
+    detail::deformable_vbd::configureAvbdRigidWorldPointJointsFromCurrentPoses(
         m_storage->registry);
   }
 }
