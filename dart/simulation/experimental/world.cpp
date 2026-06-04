@@ -446,8 +446,8 @@ std::vector<std::pair<entt::entity, Component>> captureReplayComponents(
 }
 
 template <typename Component, typename Snapshot>
-void restoreReplayComponents(
-    entt::registry& registry,
+void validateReplayComponents(
+    const entt::registry& registry,
     const Snapshot& snapshot,
     std::string_view componentName)
 {
@@ -471,6 +471,18 @@ void restoreReplayComponents(
         "Cannot restore replay frame: {} references an entity with changed "
         "component layout",
         componentName);
+  }
+}
+
+template <typename Component, typename Snapshot>
+void restoreReplayComponents(
+    entt::registry& registry,
+    const Snapshot& snapshot,
+    std::string_view componentName)
+{
+  validateReplayComponents<Component>(registry, snapshot, componentName);
+
+  for (const auto& [entity, component] : snapshot) {
     registry.replace<Component>(entity, component);
   }
 }
@@ -3104,15 +3116,15 @@ void World::restoreReplayFrame(std::size_t index)
 
   const ReplayState::Frame& replayFrame = m_replay->frames[index];
 
-  restoreReplayComponents<comps::DeformableNodeState>(
+  validateReplayComponents<comps::DeformableNodeState>(
       m_storage->registry,
       replayFrame.deformableNodeStates,
       "DeformableNodeState");
-  restoreReplayComponents<compute::MultibodyVariationalState>(
+  validateReplayComponents<compute::MultibodyVariationalState>(
       m_storage->registry,
       replayFrame.multibodyVariationalStates,
       "MultibodyVariationalState");
-  restoreReplayComponents<comps::VariationalContactDualState>(
+  validateReplayComponents<comps::VariationalContactDualState>(
       m_storage->registry,
       replayFrame.variationalContactDualStates,
       "VariationalContactDualState");
@@ -3128,12 +3140,6 @@ void World::restoreReplayFrame(std::size_t index)
             || !m_storage->registry.all_of<comps::Joint>(state.entity),
         InvalidOperationException,
         "Cannot restore replay frame: Joint entity layout changed");
-    auto& joint = m_storage->registry.get<comps::Joint>(state.entity);
-    joint.position = state.position;
-    joint.velocity = state.velocity;
-    joint.acceleration = state.acceleration;
-    joint.torque = state.torque;
-    joint.commandVelocity = state.commandVelocity;
   }
 
   DART_EXPERIMENTAL_THROW_T_IF(
@@ -3147,8 +3153,6 @@ void World::restoreReplayFrame(std::size_t index)
             || !m_storage->registry.all_of<comps::Link>(state.entity),
         InvalidOperationException,
         "Cannot restore replay frame: Link entity layout changed");
-    m_storage->registry.get<comps::Link>(state.entity).externalForce
-        = state.externalForce;
   }
 
   DART_EXPERIMENTAL_THROW_T_IF(
@@ -3213,6 +3217,34 @@ void World::restoreReplayFrame(std::size_t index)
 
   const auto rigidBodyRestoreOrder = orderReplayRigidBodiesParentBeforeChild(
       m_storage->registry, replayFrame.rigidBodies);
+
+  restoreReplayComponents<comps::DeformableNodeState>(
+      m_storage->registry,
+      replayFrame.deformableNodeStates,
+      "DeformableNodeState");
+  restoreReplayComponents<compute::MultibodyVariationalState>(
+      m_storage->registry,
+      replayFrame.multibodyVariationalStates,
+      "MultibodyVariationalState");
+  restoreReplayComponents<comps::VariationalContactDualState>(
+      m_storage->registry,
+      replayFrame.variationalContactDualStates,
+      "VariationalContactDualState");
+
+  for (const auto& state : replayFrame.joints) {
+    auto& joint = m_storage->registry.get<comps::Joint>(state.entity);
+    joint.position = state.position;
+    joint.velocity = state.velocity;
+    joint.acceleration = state.acceleration;
+    joint.torque = state.torque;
+    joint.commandVelocity = state.commandVelocity;
+  }
+
+  for (const auto& state : replayFrame.links) {
+    m_storage->registry.get<comps::Link>(state.entity).externalForce
+        = state.externalForce;
+  }
+
   for (const auto stateIndex : rigidBodyRestoreOrder) {
     const auto& state = replayFrame.rigidBodies[stateIndex];
     RigidBody(detail::fromRegistryEntity(state.entity), this)

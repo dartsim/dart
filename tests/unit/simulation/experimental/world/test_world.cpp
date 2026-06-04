@@ -7265,6 +7265,39 @@ TEST(World, ReplayRecordingRejectsRigidBodyConstructionEdits)
       parentWorld.restoreReplayFrame(0), sx::InvalidOperationException);
 }
 
+// Test that a layout-incompatible restore fails before mutating earlier replay
+// state such as articulated joint values.
+TEST(World, ReplayRecordingRejectsLayoutBeforeMutatingState)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  auto robot = world.addMultibody("robot");
+  auto base = robot.addLink("base");
+
+  sx::JointSpec spec;
+  spec.name = "joint";
+  spec.type = sx::JointType::Revolute;
+  auto link = robot.addLink("link", base, spec);
+  auto joint = link.getParentJoint();
+
+  const Eigen::VectorXd recordedPosition = Eigen::VectorXd::Constant(1, 0.25);
+  joint.setPosition(recordedPosition);
+
+  auto body = world.addRigidBody("body");
+  body.setCollisionShape(sx::CollisionShape::makeSphere(0.25));
+
+  world.setReplayRecordingEnabled(true);
+
+  const Eigen::VectorXd mutatedPosition = Eigen::VectorXd::Constant(1, -1.0);
+  joint.setPosition(mutatedPosition);
+  body.setCollisionShape(sx::CollisionShape::makeBox({0.1, 0.2, 0.3}));
+
+  EXPECT_THROW(world.restoreReplayFrame(0), sx::InvalidOperationException);
+  EXPECT_TRUE(joint.getPosition().isApprox(mutatedPosition));
+  EXPECT_FALSE(joint.getPosition().isApprox(recordedPosition));
+}
+
 // Test replay recording and restore for articulated runtime state.
 TEST(World, ReplayRecordingRestoresMultibodyRuntimeState)
 {
