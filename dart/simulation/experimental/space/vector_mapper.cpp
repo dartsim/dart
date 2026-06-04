@@ -57,12 +57,13 @@ const WorldRegistryComponentMapper* requireWorldRegistryMapper(
 {
   const auto* worldMapper
       = dynamic_cast<const WorldRegistryComponentMapper*>(&mapper);
-  if (worldMapper == nullptr) {
+  if (worldMapper == nullptr || !worldMapper->supportsWorldRegistry()) {
     throw std::invalid_argument(
         std::format(
             "Mapper for variable '{}' does not support WorldRegistry; "
-            "custom mappers used with World-owned registries must also "
-            "implement WorldRegistryComponentMapper",
+            "mappers used with World-owned registries must implement "
+            "WorldRegistryComponentMapper and provide WorldRegistry-capable "
+            "callbacks",
             variableName));
   }
 
@@ -73,12 +74,13 @@ WorldRegistryComponentMapper* requireWorldRegistryMapper(
     ComponentMapper& mapper, const std::string& variableName)
 {
   auto* worldMapper = dynamic_cast<WorldRegistryComponentMapper*>(&mapper);
-  if (worldMapper == nullptr) {
+  if (worldMapper == nullptr || !worldMapper->supportsWorldRegistry()) {
     throw std::invalid_argument(
         std::format(
             "Mapper for variable '{}' does not support WorldRegistry; "
-            "custom mappers used with World-owned registries must also "
-            "implement WorldRegistryComponentMapper",
+            "mappers used with World-owned registries must implement "
+            "WorldRegistryComponentMapper and provide WorldRegistry-capable "
+            "callbacks",
             variableName));
   }
 
