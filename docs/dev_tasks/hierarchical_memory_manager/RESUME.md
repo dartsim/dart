@@ -25,6 +25,12 @@ World's active free allocator. It also adds initial
 storage and first private step-scratch component paths. Broader solver scratch
 coverage and EnTT allocator benchmarks remain open.
 
+The next stacked no-growth guard adds a counting base allocator test proving
+that baked kinematic IPC rigid-body, multibody variational, and single
+deformable paths do not request more World base-allocator allocations or
+deallocations during repeated `World::step()` calls. This is not the final
+global zero-allocation proof; it covers the World-owned memory hierarchy only.
+
 ## Current Branch
 
 `feature/world-registry-allocator` - stacked PR #2872 branch for the
@@ -37,8 +43,9 @@ Finish review/CI for PR #2871, keep this stacked branch rebased-by-merge onto
 that allocator branch, and resolve any #2872 CI failures. Next allocator work
 should land the strict comparative benchmark gate, broaden
 `FixedPoolAllocator` correctness coverage, benchmark allocator-backed EnTT
-registry/component storage, and extend no-growth ECS tests to broader contact
-and remaining solver scratch step paths.
+registry/component storage, extend no-growth ECS tests to broader contact and
+remaining solver scratch step paths, and add a separate global heap allocation
+guard before claiming zero dynamic allocation for the full simulation loop.
 
 ## Latest Local Validation
 
@@ -54,6 +61,8 @@ and remaining solver scratch step paths.
   vector workloads.
 - `cmake --build build/default/cpp/Release --target dartsim -j2`
 - `pixi run test-simulation-experimental` (61/61 passed)
+- `cmake --build build/default/cpp/Release --target test_world -j2`
+- `ctest --test-dir build/default/cpp/Release -R '^test_world$' --output-on-failure`
 
 ## Context That Would Be Lost
 
