@@ -7117,6 +7117,49 @@ TEST(World, ReplayRecordingRestoresParentedRigidBodiesParentBeforeChild)
       Eigen::Vector3d(3.0, 0.0, 0.0)));
 }
 
+// Test that replay restores standalone public frame hierarchy state instead of
+// leaving user-visible frames at transforms edited after recording.
+TEST(World, ReplayRecordingRestoresPublicFrameState)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+
+  auto parent = world.addFreeFrame("parent");
+  Eigen::Isometry3d recordedParentTransform = Eigen::Isometry3d::Identity();
+  recordedParentTransform.translation() = Eigen::Vector3d(1.0, 2.0, 3.0);
+  parent.setLocalTransform(recordedParentTransform);
+
+  Eigen::Isometry3d recordedChildOffset = Eigen::Isometry3d::Identity();
+  recordedChildOffset.translation() = Eigen::Vector3d(0.0, 0.5, 0.0);
+  auto child = world.addFixedFrame("child", parent, recordedChildOffset);
+
+  auto alternateParent = world.addFreeFrame("alternate_parent");
+  Eigen::Isometry3d alternateParentTransform = Eigen::Isometry3d::Identity();
+  alternateParentTransform.translation() = Eigen::Vector3d(10.0, 0.0, 0.0);
+  alternateParent.setLocalTransform(alternateParentTransform);
+
+  world.setReplayRecordingEnabled(true);
+  ASSERT_EQ(world.getReplayFrameCount(), 1u);
+
+  Eigen::Isometry3d movedParentTransform = Eigen::Isometry3d::Identity();
+  movedParentTransform.translation() = Eigen::Vector3d(-1.0, -2.0, -3.0);
+  parent.setLocalTransform(movedParentTransform);
+
+  Eigen::Isometry3d movedChildOffset = Eigen::Isometry3d::Identity();
+  movedChildOffset.translation() = Eigen::Vector3d(0.0, -4.0, 0.0);
+  child.setParentFrame(alternateParent);
+  child.setLocalTransform(movedChildOffset);
+
+  world.restoreReplayFrame(0);
+
+  EXPECT_TRUE(parent.getLocalTransform().isApprox(recordedParentTransform));
+  EXPECT_EQ(child.getParentFrame().getEntity(), parent.getEntity());
+  EXPECT_TRUE(child.getLocalTransform().isApprox(recordedChildOffset));
+  EXPECT_TRUE(child.getTransform().isApprox(
+      recordedParentTransform * recordedChildOffset));
+}
+
 // Test replay control edge cases and invalid frame queries.
 TEST(World, ReplayRecordingRejectsInvalidQueriesAndClears)
 {

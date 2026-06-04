@@ -211,6 +211,14 @@ struct World::ReplayState
         = Eigen::Matrix<double, 6, 1>::Zero();
   };
 
+  struct PublicFrameState
+  {
+    entt::entity entity = entt::null;
+    comps::FrameState frameState;
+    std::optional<comps::FreeFrameProperties> freeFrameProperties;
+    std::optional<comps::FixedFrameProperties> fixedFrameProperties;
+  };
+
   struct RigidBodyState
   {
     entt::entity entity = entt::null;
@@ -255,6 +263,7 @@ struct World::ReplayState
         variationalContactDualStates;
     std::vector<JointState> joints;
     std::vector<LinkState> links;
+    std::vector<PublicFrameState> publicFrames;
     std::vector<RigidBodyState> rigidBodies;
   };
 
@@ -420,15 +429,37 @@ std::size_t findReplayRigidBodyStateIndex(
   return states.size();
 }
 
-template <typename RigidBodyStates>
+template <typename PublicFrameStates>
+std::size_t findReplayPublicFrameStateIndex(
+    const PublicFrameStates& states, entt::entity entity)
+{
+  for (std::size_t i = 0; i < states.size(); ++i) {
+    if (states[i].entity == entity) {
+      return i;
+    }
+  }
+
+  return states.size();
+}
+
+template <typename RigidBodyStates, typename PublicFrameStates>
 entt::entity findNearestReplayRigidBodyAncestor(
     const entt::registry& registry,
     entt::entity entity,
-    const RigidBodyStates& states)
+    const RigidBodyStates& rigidBodyStates,
+    const PublicFrameStates& publicFrameStates)
 {
   while (entity != entt::null) {
-    if (findReplayRigidBodyStateIndex(states, entity) != states.size()) {
+    if (findReplayRigidBodyStateIndex(rigidBodyStates, entity)
+        != rigidBodyStates.size()) {
       return entity;
+    }
+
+    const auto publicFrameStateIndex
+        = findReplayPublicFrameStateIndex(publicFrameStates, entity);
+    if (publicFrameStateIndex != publicFrameStates.size()) {
+      entity = publicFrameStates[publicFrameStateIndex].frameState.parentFrame;
+      continue;
     }
 
     const auto* frameState = registry.try_get<comps::FrameState>(entity);
@@ -443,10 +474,11 @@ entt::entity findNearestReplayRigidBodyAncestor(
   return entt::null;
 }
 
-template <typename RigidBodyStates>
+template <typename RigidBodyStates, typename PublicFrameStates>
 void appendReplayRigidBodyParentBeforeChild(
     const entt::registry& registry,
     const RigidBodyStates& states,
+    const PublicFrameStates& publicFrameStates,
     std::vector<int>& visitState,
     std::vector<std::size_t>& ordered,
     std::size_t index)
@@ -463,10 +495,8 @@ void appendReplayRigidBodyParentBeforeChild(
 
   visitState[index] = 1;
 
-  const auto entity = states[index].entity;
-  const auto& frameState = registry.get<comps::FrameState>(entity);
   const auto parentRigidBody = findNearestReplayRigidBodyAncestor(
-      registry, frameState.parentFrame, states);
+      registry, states[index].parentFrame, states, publicFrameStates);
   if (parentRigidBody != entt::null) {
     const auto parentIndex
         = findReplayRigidBodyStateIndex(states, parentRigidBody);
@@ -476,16 +506,18 @@ void appendReplayRigidBodyParentBeforeChild(
         "Cannot restore replay frame: RigidBody ancestor is missing");
 
     appendReplayRigidBodyParentBeforeChild(
-        registry, states, visitState, ordered, parentIndex);
+        registry, states, publicFrameStates, visitState, ordered, parentIndex);
   }
 
   visitState[index] = 2;
   ordered.push_back(index);
 }
 
-template <typename RigidBodyStates>
+template <typename RigidBodyStates, typename PublicFrameStates>
 std::vector<std::size_t> orderReplayRigidBodiesParentBeforeChild(
-    const entt::registry& registry, const RigidBodyStates& states)
+    const entt::registry& registry,
+    const RigidBodyStates& states,
+    const PublicFrameStates& publicFrameStates)
 {
   std::vector<std::size_t> ordered;
   ordered.reserve(states.size());
@@ -493,7 +525,7 @@ std::vector<std::size_t> orderReplayRigidBodiesParentBeforeChild(
   std::vector<int> visitState(states.size(), 0);
   for (std::size_t i = 0; i < states.size(); ++i) {
     appendReplayRigidBodyParentBeforeChild(
-        registry, states, visitState, ordered, i);
+        registry, states, publicFrameStates, visitState, ordered, i);
   }
 
   return ordered;
@@ -556,6 +588,31 @@ void restoreReplayComponents(
   for (const auto& [entity, component] : snapshot) {
     registry.replace<Component>(entity, component);
   }
+}
+
+bool isReplayPublicFrameEntity(
+    const entt::registry& registry, entt::entity entity)
+{
+  return registry.all_of<comps::FrameState, comps::FrameCache>(entity)
+         && !registry.all_of<comps::RigidBodyTag>(entity)
+         && !registry.all_of<comps::Link>(entity)
+         && (registry.all_of<comps::FreeFrameTag, comps::FreeFrameProperties>(
+                 entity)
+             || registry
+                    .all_of<comps::FixedFrameTag, comps::FixedFrameProperties>(
+                        entity));
+}
+
+std::size_t countReplayPublicFrameEntities(const entt::registry& registry)
+{
+  std::size_t count = 0;
+  auto frameView = registry.view<comps::FrameState>();
+  for (auto entity : frameView) {
+    if (isReplayPublicFrameEntity(registry, entity)) {
+      ++count;
+    }
+  }
+  return count;
 }
 
 void markFrameCachesDirty(entt::registry& registry)
@@ -3232,6 +3289,39 @@ void World::restoreReplayFrame(std::size_t index)
   }
 
   DART_EXPERIMENTAL_THROW_T_IF(
+      countReplayPublicFrameEntities(m_storage->registry)
+          != replayFrame.publicFrames.size(),
+      InvalidOperationException,
+      "Cannot restore replay frame: public Frame component count changed");
+  for (const auto& state : replayFrame.publicFrames) {
+    const bool expectedFree = state.freeFrameProperties.has_value();
+    const bool expectedFixed = state.fixedFrameProperties.has_value();
+    const bool entityValid = m_storage->registry.valid(state.entity);
+    const bool currentFree
+        = entityValid
+          && m_storage->registry
+                 .all_of<comps::FreeFrameTag, comps::FreeFrameProperties>(
+                     state.entity);
+    const bool currentFixed
+        = entityValid
+          && m_storage->registry
+                 .all_of<comps::FixedFrameTag, comps::FixedFrameProperties>(
+                     state.entity);
+    const bool layoutChanged
+        = !entityValid
+          || !m_storage->registry.all_of<comps::FrameState, comps::FrameCache>(
+              state.entity)
+          || m_storage->registry.all_of<comps::RigidBodyTag>(state.entity)
+          || m_storage->registry.all_of<comps::Link>(state.entity)
+          || currentFree != expectedFree || currentFixed != expectedFixed
+          || currentFree == currentFixed;
+    DART_EXPERIMENTAL_THROW_T_IF(
+        layoutChanged,
+        InvalidOperationException,
+        "Cannot restore replay frame: public Frame entity layout changed");
+  }
+
+  DART_EXPERIMENTAL_THROW_T_IF(
       countReplayView(m_storage->registry.view<
                       comps::RigidBodyTag,
                       comps::FrameState,
@@ -3292,7 +3382,7 @@ void World::restoreReplayFrame(std::size_t index)
   }
 
   const auto rigidBodyRestoreOrder = orderReplayRigidBodiesParentBeforeChild(
-      m_storage->registry, replayFrame.rigidBodies);
+      m_storage->registry, replayFrame.rigidBodies, replayFrame.publicFrames);
 
   restoreReplayComponents<comps::DeformableNodeState>(
       m_storage->registry,
@@ -3319,6 +3409,19 @@ void World::restoreReplayFrame(std::size_t index)
   for (const auto& state : replayFrame.links) {
     m_storage->registry.get<comps::Link>(state.entity).externalForce
         = state.externalForce;
+  }
+
+  for (const auto& state : replayFrame.publicFrames) {
+    m_storage->registry.replace<comps::FrameState>(
+        state.entity, state.frameState);
+    if (state.freeFrameProperties) {
+      m_storage->registry.replace<comps::FreeFrameProperties>(
+          state.entity, *state.freeFrameProperties);
+    }
+    if (state.fixedFrameProperties) {
+      m_storage->registry.replace<comps::FixedFrameProperties>(
+          state.entity, *state.fixedFrameProperties);
+    }
   }
 
   for (const auto stateIndex : rigidBodyRestoreOrder) {
@@ -3446,6 +3549,29 @@ void World::recordReplayFrame()
     return static_cast<std::uint32_t>(lhs.entity)
            < static_cast<std::uint32_t>(rhs.entity);
   });
+
+  auto publicFrameView = m_storage->registry.view<comps::FrameState>();
+  replayFrame.publicFrames.reserve(
+      countReplayPublicFrameEntities(m_storage->registry));
+  for (auto entity : publicFrameView) {
+    if (!isReplayPublicFrameEntity(m_storage->registry, entity)) {
+      continue;
+    }
+
+    replayFrame.publicFrames.push_back(
+        ReplayState::PublicFrameState{
+            entity,
+            publicFrameView.get<comps::FrameState>(entity),
+            captureReplayOptionalComponent<comps::FreeFrameProperties>(
+                m_storage->registry, entity),
+            captureReplayOptionalComponent<comps::FixedFrameProperties>(
+                m_storage->registry, entity)});
+  }
+  std::ranges::sort(
+      replayFrame.publicFrames, [](const auto& lhs, const auto& rhs) {
+        return static_cast<std::uint32_t>(lhs.entity)
+               < static_cast<std::uint32_t>(rhs.entity);
+      });
 
   auto rigidBodyView = m_storage->registry.view<
       comps::RigidBodyTag,
