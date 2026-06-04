@@ -191,6 +191,8 @@ struct World::ReplayState
     comps::Transform transform;
     comps::Velocity velocity;
     comps::Force force;
+    bool isStatic = false;
+    bool isKinematic = false;
   };
 
   struct Frame
@@ -239,6 +241,98 @@ std::size_t countReplayView(const View& view)
     ++count;
   }
   return count;
+}
+
+template <typename RigidBodyStates>
+std::size_t findReplayRigidBodyStateIndex(
+    const RigidBodyStates& states, entt::entity entity)
+{
+  for (std::size_t i = 0; i < states.size(); ++i) {
+    if (states[i].entity == entity) {
+      return i;
+    }
+  }
+
+  return states.size();
+}
+
+template <typename RigidBodyStates>
+entt::entity findNearestReplayRigidBodyAncestor(
+    const entt::registry& registry,
+    entt::entity entity,
+    const RigidBodyStates& states)
+{
+  while (entity != entt::null) {
+    if (findReplayRigidBodyStateIndex(states, entity) != states.size()) {
+      return entity;
+    }
+
+    const auto* frameState = registry.try_get<comps::FrameState>(entity);
+    DART_EXPERIMENTAL_THROW_T_IF(
+        !frameState,
+        InvalidOperationException,
+        "Cannot restore replay frame: RigidBody frame hierarchy changed");
+
+    entity = frameState->parentFrame;
+  }
+
+  return entt::null;
+}
+
+template <typename RigidBodyStates>
+void appendReplayRigidBodyParentBeforeChild(
+    const entt::registry& registry,
+    const RigidBodyStates& states,
+    std::vector<int>& visitState,
+    std::vector<std::size_t>& ordered,
+    std::size_t index)
+{
+  if (visitState[index] == 2) {
+    return;
+  }
+
+  DART_EXPERIMENTAL_THROW_T_IF(
+      visitState[index] == 1,
+      InvalidOperationException,
+      "Cannot restore replay frame: RigidBody frame hierarchy contains a "
+      "cycle");
+
+  visitState[index] = 1;
+
+  const auto entity = states[index].entity;
+  const auto& frameState = registry.get<comps::FrameState>(entity);
+  const auto parentRigidBody = findNearestReplayRigidBodyAncestor(
+      registry, frameState.parentFrame, states);
+  if (parentRigidBody != entt::null) {
+    const auto parentIndex
+        = findReplayRigidBodyStateIndex(states, parentRigidBody);
+    DART_EXPERIMENTAL_THROW_T_IF(
+        parentIndex == states.size(),
+        InvalidOperationException,
+        "Cannot restore replay frame: RigidBody ancestor is missing");
+
+    appendReplayRigidBodyParentBeforeChild(
+        registry, states, visitState, ordered, parentIndex);
+  }
+
+  visitState[index] = 2;
+  ordered.push_back(index);
+}
+
+template <typename RigidBodyStates>
+std::vector<std::size_t> orderReplayRigidBodiesParentBeforeChild(
+    const entt::registry& registry, const RigidBodyStates& states)
+{
+  std::vector<std::size_t> ordered;
+  ordered.reserve(states.size());
+
+  std::vector<int> visitState(states.size(), 0);
+  for (std::size_t i = 0; i < states.size(); ++i) {
+    appendReplayRigidBodyParentBeforeChild(
+        registry, states, visitState, ordered, i);
+  }
+
+  return ordered;
 }
 
 template <typename Component>
@@ -369,6 +463,19 @@ bool hasMultibodyStructures(const World& world)
 }
 
 //==============================================================================
+bool isRigidBodyFixedJoint(
+    const entt::registry& registry, const comps::Joint& joint)
+{
+  if (joint.type != comps::JointType::Fixed || joint.parentLink == entt::null
+      || joint.childLink == entt::null || joint.parentLink == joint.childLink) {
+    return false;
+  }
+
+  return registry.all_of<comps::RigidBodyTag>(joint.parentLink)
+         && registry.all_of<comps::RigidBodyTag>(joint.childLink);
+}
+
+//==============================================================================
 bool hasRigidBodyFixedJoints(const World& world)
 {
   const auto& registry = detail::registryOf(world);
@@ -376,13 +483,7 @@ bool hasRigidBodyFixedJoints(const World& world)
   for (auto entity : view) {
     (void)entity;
     const auto& joint = view.get<comps::Joint>(entity);
-    if (joint.type != comps::JointType::Fixed || joint.parentLink == entt::null
-        || joint.childLink == entt::null) {
-      continue;
-    }
-
-    if (registry.all_of<comps::RigidBodyTag>(joint.parentLink)
-        && registry.all_of<comps::RigidBodyTag>(joint.childLink)) {
+    if (isRigidBodyFixedJoint(registry, joint)) {
       return true;
     }
   }
@@ -1930,6 +2031,66 @@ Joint World::addRigidBodyFixedJoint(
 }
 
 //==============================================================================
+std::optional<Joint> World::getRigidBodyFixedJoint(std::string_view name)
+{
+  auto view = m_storage->registry.view<comps::Joint, comps::Name>();
+  for (auto entity : view) {
+    const auto& joint = view.get<comps::Joint>(entity);
+    const auto& info = view.get<comps::Name>(entity);
+    if (info.name == name
+        && isRigidBodyFixedJoint(m_storage->registry, joint)) {
+      return Joint(detail::fromRegistryEntity(entity), this);
+    }
+  }
+  return std::nullopt;
+}
+
+//==============================================================================
+bool World::hasRigidBodyFixedJoint(std::string_view name) const
+{
+  const auto view = m_storage->registry.view<comps::Joint, comps::Name>();
+  for (auto entity : view) {
+    const auto& joint = view.get<comps::Joint>(entity);
+    const auto& info = view.get<comps::Name>(entity);
+    if (info.name == name
+        && isRigidBodyFixedJoint(m_storage->registry, joint)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+//==============================================================================
+std::size_t World::getRigidBodyFixedJointCount() const
+{
+  std::size_t count = 0;
+  const auto view = m_storage->registry.view<comps::Joint>();
+  for (auto entity : view) {
+    (void)entity;
+    const auto& joint = view.get<comps::Joint>(entity);
+    if (isRigidBodyFixedJoint(m_storage->registry, joint)) {
+      ++count;
+    }
+  }
+  return count;
+}
+
+//==============================================================================
+std::vector<Joint> World::getRigidBodyFixedJoints()
+{
+  std::vector<Joint> joints;
+  joints.reserve(getRigidBodyFixedJointCount());
+  const auto view = m_storage->registry.view<comps::Joint>();
+  for (auto entity : view) {
+    const auto& joint = view.get<comps::Joint>(entity);
+    if (isRigidBodyFixedJoint(m_storage->registry, joint)) {
+      joints.emplace_back(detail::fromRegistryEntity(entity), this);
+    }
+  }
+  return joints;
+}
+
+//==============================================================================
 std::optional<RigidBody> World::getRigidBody(std::string_view name)
 {
   auto view = m_storage->registry.view<comps::RigidBodyTag, comps::Name>();
@@ -2910,6 +3071,7 @@ void World::restoreReplayFrame(std::size_t index)
     const bool layoutChanged = !m_storage->registry.valid(state.entity)
                                || !m_storage->registry.all_of<
                                    comps::RigidBodyTag,
+                                   comps::FrameState,
                                    comps::Transform,
                                    comps::Velocity,
                                    comps::Force>(state.entity);
@@ -2917,6 +3079,19 @@ void World::restoreReplayFrame(std::size_t index)
         layoutChanged,
         InvalidOperationException,
         "Cannot restore replay frame: RigidBody entity layout changed");
+    DART_EXPERIMENTAL_THROW_T_IF(
+        m_storage->registry.all_of<comps::StaticBodyTag>(state.entity)
+                != state.isStatic
+            || m_storage->registry.all_of<comps::KinematicBodyTag>(state.entity)
+                   != state.isKinematic,
+        InvalidOperationException,
+        "Cannot restore replay frame: RigidBody entity mode changed");
+  }
+
+  const auto rigidBodyRestoreOrder = orderReplayRigidBodiesParentBeforeChild(
+      m_storage->registry, replayFrame.rigidBodies);
+  for (const auto stateIndex : rigidBodyRestoreOrder) {
+    const auto& state = replayFrame.rigidBodies[stateIndex];
     RigidBody(detail::fromRegistryEntity(state.entity), this)
         .setTransform(
             toIsometry(state.transform.position, state.transform.orientation));
@@ -3034,7 +3209,9 @@ void World::recordReplayFrame()
             entity,
             rigidBodyView.get<comps::Transform>(entity),
             rigidBodyView.get<comps::Velocity>(entity),
-            rigidBodyView.get<comps::Force>(entity)});
+            rigidBodyView.get<comps::Force>(entity),
+            m_storage->registry.all_of<comps::StaticBodyTag>(entity),
+            m_storage->registry.all_of<comps::KinematicBodyTag>(entity)});
   }
   std::ranges::sort(
       replayFrame.rigidBodies, [](const auto& lhs, const auto& rhs) {

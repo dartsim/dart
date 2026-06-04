@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include <dart/simulation/experimental/compute/detail/rigid_integration_core.hpp>
+
 #include <cmath>
 #include <cstddef>
 
@@ -116,64 +118,12 @@ void integrateOrientationsSemiImplicit(
     Scalar timeStep,
     std::size_t bodyCount)
 {
-  using std::cos;
-  using std::isfinite;
-  using std::sin;
-  using std::sqrt;
-  const Scalar half = static_cast<Scalar>(0.5);
+  // Per-body orientation math is single-sourced in
+  // detail/rigid_integration_core.hpp so the CPU batch loop here and the
+  // experimental CUDA kernel run one body of code (no divergent re-derivation).
   for (std::size_t b = 0; b < bodyCount; ++b) {
-    const Scalar w = orientations[4 * b + 0];
-    const Scalar x = orientations[4 * b + 1];
-    const Scalar y = orientations[4 * b + 2];
-    const Scalar z = orientations[4 * b + 3];
-    const Scalar ox = angularVelocities[3 * b + 0];
-    const Scalar oy = angularVelocities[3 * b + 1];
-    const Scalar oz = angularVelocities[3 * b + 2];
-
-    Scalar nw = w;
-    Scalar nx = x;
-    Scalar ny = y;
-    Scalar nz = z;
-
-    const Scalar speed = sqrt(ox * ox + oy * oy + oz * oz);
-    if (speed > static_cast<Scalar>(0)) {
-      // Angle-axis delta dq = (cos(a/2), sin(a/2) * axis); the sin(a/2)/|omega|
-      // factor folds the axis normalization in without a separate divide.
-      const Scalar halfAngle = half * speed * timeStep;
-      const Scalar axisScale = sin(halfAngle) / speed;
-      const Scalar dw = cos(halfAngle);
-      const Scalar dx = ox * axisScale;
-      const Scalar dy = oy * axisScale;
-      const Scalar dz = oz * axisScale;
-
-      // dq * q (Hamilton product), left-multiplying the world-frame delta.
-      nw = dw * w - dx * x - dy * y - dz * z;
-      nx = dw * x + dx * w + dy * z - dz * y;
-      ny = dw * y - dx * z + dy * w + dz * x;
-      nz = dw * z + dx * y - dy * x + dz * w;
-    }
-
-    const Scalar norm = sqrt(nw * nw + nx * nx + ny * ny + nz * nz);
-    if (norm > static_cast<Scalar>(0) && isfinite(norm)) {
-      const Scalar inverse = static_cast<Scalar>(1) / norm;
-      nw *= inverse;
-      nx *= inverse;
-      ny *= inverse;
-      nz *= inverse;
-    } else {
-      // A non-normalizable (zero-norm or non-finite) quaternion maps to
-      // identity, matching the per-entity normalizeOrIdentity so a degenerate
-      // input can never propagate an invalid rotation.
-      nw = static_cast<Scalar>(1);
-      nx = static_cast<Scalar>(0);
-      ny = static_cast<Scalar>(0);
-      nz = static_cast<Scalar>(0);
-    }
-
-    orientations[4 * b + 0] = nw;
-    orientations[4 * b + 1] = nx;
-    orientations[4 * b + 2] = ny;
-    orientations[4 * b + 3] = nz;
+    detail::integrateOrientationSemiImplicitBody(
+        orientations, angularVelocities, timeStep, b);
   }
 }
 

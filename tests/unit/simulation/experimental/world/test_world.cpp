@@ -7075,6 +7075,48 @@ TEST(World, ReplayRecordingRestoresRigidIpcAdaptiveBranchState)
       referenceBox.getLinearVelocity(), 1e-10));
 }
 
+// Test that replay restores parented rigid bodies in frame-hierarchy order even
+// when entity id order would visit the child first.
+TEST(World, ReplayRecordingRestoresParentedRigidBodiesParentBeforeChild)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+
+  sx::RigidBodyOptions childOptions;
+  childOptions.position = Eigen::Vector3d(3.0, 0.0, 0.0);
+  auto child = world.addRigidBody("child", childOptions);
+
+  sx::RigidBodyOptions parentOptions;
+  parentOptions.position = Eigen::Vector3d(10.0, 0.0, 0.0);
+  auto parent = world.addRigidBody("parent", parentOptions);
+
+  child.setParentFrame(parent);
+
+  Eigen::Isometry3d recordedChildTransform = Eigen::Isometry3d::Identity();
+  recordedChildTransform.translation() = Eigen::Vector3d(13.0, 0.0, 0.0);
+  child.setTransform(recordedChildTransform);
+
+  world.setReplayRecordingEnabled(true);
+  ASSERT_EQ(world.getReplayFrameCount(), 1u);
+
+  Eigen::Isometry3d movedParentTransform = Eigen::Isometry3d::Identity();
+  movedParentTransform.translation() = Eigen::Vector3d(20.0, 0.0, 0.0);
+  parent.setTransform(movedParentTransform);
+
+  Eigen::Isometry3d movedChildTransform = Eigen::Isometry3d::Identity();
+  movedChildTransform.translation() = Eigen::Vector3d(25.0, 0.0, 0.0);
+  child.setTransform(movedChildTransform);
+
+  world.restoreReplayFrame(0);
+
+  EXPECT_TRUE(
+      parent.getTranslation().isApprox(Eigen::Vector3d(10.0, 0.0, 0.0)));
+  EXPECT_TRUE(child.getTranslation().isApprox(Eigen::Vector3d(13.0, 0.0, 0.0)));
+  EXPECT_TRUE(child.getLocalTransform().translation().isApprox(
+      Eigen::Vector3d(3.0, 0.0, 0.0)));
+}
+
 // Test replay control edge cases and invalid frame queries.
 TEST(World, ReplayRecordingRejectsInvalidQueriesAndClears)
 {
@@ -7132,6 +7174,27 @@ TEST(World, ReplayRecordingRejectsRigidBodyLayoutChanges)
   world.addRigidBody("added_after_recording");
 
   EXPECT_THROW(world.restoreReplayFrame(0), sx::InvalidOperationException);
+}
+
+// Test that replay restore rejects rigid body static/kinematic mode drift.
+// These tags affect solver participation and are not runtime replay state.
+TEST(World, ReplayRecordingRejectsRigidBodyModeChanges)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World staticWorld;
+  auto staticBody = staticWorld.addRigidBody("body");
+  staticWorld.setReplayRecordingEnabled(true);
+  staticBody.setStatic(true);
+  EXPECT_THROW(
+      staticWorld.restoreReplayFrame(0), sx::InvalidOperationException);
+
+  sx::World kinematicWorld;
+  auto kinematicBody = kinematicWorld.addRigidBody("body");
+  kinematicWorld.setReplayRecordingEnabled(true);
+  kinematicBody.setKinematic(true);
+  EXPECT_THROW(
+      kinematicWorld.restoreReplayFrame(0), sx::InvalidOperationException);
 }
 
 // Test replay recording and restore for articulated runtime state.
