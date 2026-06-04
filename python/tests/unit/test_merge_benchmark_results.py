@@ -82,3 +82,43 @@ def test_merge_empty_raises(tmp_path):
     )
     with pytest.raises(SystemExit):
         module.merge([tmp_path / "empty.json"])
+
+
+def test_merge_keeps_raw_names_without_humanize(tmp_path):
+    module = _load_module()
+    _write(tmp_path / "a.json", ["BM_WorldStepParallel/128/32"])
+
+    merged = module.merge([tmp_path])
+
+    assert [b["name"] for b in merged["benchmarks"]] == ["BM_WorldStepParallel/128/32"]
+
+
+def test_merge_humanize_rewrites_names(tmp_path):
+    module = _load_module()
+    _write(
+        tmp_path / "a.json",
+        ["BM_WorldStepParallel/128/32", "BM_RigidWorldStep_Ipc/4"],
+    )
+
+    merged = module.merge([tmp_path], humanize=True)
+
+    names = [b["name"] for b in merged["benchmarks"]]
+    assert names == [
+        "World step (parallel) · 128 parents · 32 children/parent",
+        "Rigid world step (IPC barrier) · 4 boxes",
+    ]
+
+
+def test_main_humanize_flag(tmp_path):
+    module = _load_module()
+    src = tmp_path / "a.json"
+    _write(src, ["BM_VbdWorldStepVbd/16"])
+    out = tmp_path / "out" / "combined.json"
+
+    rc = module.main([str(src), "--output", str(out), "--humanize"])
+
+    assert rc == 0
+    data = json.loads(out.read_text(encoding="utf-8"))
+    assert [b["name"] for b in data["benchmarks"]] == [
+        "Deformable world step (VBD) · 16×16 grid"
+    ]

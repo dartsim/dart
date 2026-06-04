@@ -53,6 +53,7 @@
 ///         --benchmark_out=.benchmark_results/comparative.json
 ///         --benchmark_out_format=json
 
+#include <dart/common/fixed_pool_allocator.hpp>
 #include <dart/common/frame_allocator.hpp>
 #include <dart/common/free_list_allocator.hpp>
 #include <dart/common/memory_allocator.hpp>
@@ -98,16 +99,17 @@ static void BM_Pool_DART(benchmark::State& state)
 {
   const auto size = static_cast<size_t>(state.range(0));
   const auto count = static_cast<size_t>(state.range(1));
-  PoolAllocator alloc(MemoryAllocator::GetDefault());
+  const size_t blockSize = (size + 16) * count + 4096;
+  FixedPoolAllocator alloc(size, MemoryAllocator::GetDefault(), blockSize);
   std::vector<void*> ptrs(count);
 
   for (auto _ : state) {
     for (size_t i = 0; i < count; ++i) {
-      ptrs[i] = alloc.allocate(size);
+      ptrs[i] = alloc.allocate();
       benchmark::DoNotOptimize(ptrs[i]);
     }
     for (size_t i = count; i > 0; --i) {
-      alloc.deallocate(ptrs[i - 1], size);
+      alloc.deallocate(ptrs[i - 1]);
     }
   }
   state.SetItemsProcessed(static_cast<int64_t>(state.iterations() * count));

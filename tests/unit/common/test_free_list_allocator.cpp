@@ -32,16 +32,36 @@
 
 #include "../../helpers/gtest_utils.hpp"
 
+#include <dart/common/callocator.hpp>
 #include <dart/common/free_list_allocator.hpp>
+#include <dart/common/memory_allocator_debugger.hpp>
 
 #include <gtest/gtest.h>
 
+#include <limits>
 #include <sstream>
 #include <utility>
 #include <vector>
 
+#include <cstddef>
+#include <cstdint>
+
 using namespace dart;
 using namespace common;
+
+namespace {
+
+struct alignas(64) OverAlignedObject
+{
+  double values[8] = {};
+};
+
+struct alignas(std::max_align_t) MaxAlignedObject
+{
+  unsigned char values[sizeof(std::max_align_t)] = {};
+};
+
+} // namespace
 
 //==============================================================================
 TEST(FreeListAllocatorTest, Constructors)
@@ -58,6 +78,63 @@ TEST(FreeListAllocatorTest, Constructors)
 
   EXPECT_TRUE(a.isEmpty());
   EXPECT_TRUE(b.isEmpty());
+}
+
+//==============================================================================
+TEST(FreeListAllocatorTest, AllocateAlignedFallsBackToBaseAllocator)
+{
+  FreeListAllocator allocator;
+
+  auto* ptr = allocator.allocate(sizeof(OverAlignedObject), 64);
+  ASSERT_NE(ptr, nullptr);
+  EXPECT_EQ(reinterpret_cast<std::uintptr_t>(ptr) % 64u, 0u);
+
+  allocator.deallocate(ptr, sizeof(OverAlignedObject), 64);
+}
+
+//==============================================================================
+TEST(FreeListAllocatorTest, DestructorReleasesLeakedDelegatedAlignedAllocations)
+{
+  MemoryAllocatorDebugger<CAllocator> baseAllocator;
+
+  {
+    FreeListAllocator allocator(baseAllocator);
+
+    auto* ptr = allocator.allocate(
+        sizeof(OverAlignedObject), alignof(OverAlignedObject));
+    ASSERT_NE(ptr, nullptr);
+    EXPECT_TRUE(baseAllocator.hasAllocated(ptr, sizeof(OverAlignedObject)));
+  }
+
+  EXPECT_TRUE(baseAllocator.isEmpty());
+}
+
+//==============================================================================
+TEST(FreeListAllocatorTest, AllocateAlignedSatisfiesMaxAlignment)
+{
+  FreeListAllocator allocator;
+
+  auto* oddSized = allocator.allocate(1);
+  ASSERT_NE(oddSized, nullptr);
+
+  auto* ptr
+      = allocator.allocate(sizeof(MaxAlignedObject), alignof(MaxAlignedObject));
+  ASSERT_NE(ptr, nullptr);
+  EXPECT_EQ(
+      reinterpret_cast<std::uintptr_t>(ptr) % alignof(MaxAlignedObject), 0u);
+
+  allocator.deallocate(
+      ptr, sizeof(MaxAlignedObject), alignof(MaxAlignedObject));
+  allocator.deallocate(oddSized, 1);
+}
+
+//==============================================================================
+TEST(FreeListAllocatorTest, AllocateRejectsAlignmentRoundingOverflow)
+{
+  FreeListAllocator allocator;
+
+  EXPECT_EQ(
+      allocator.allocate(std::numeric_limits<std::size_t>::max()), nullptr);
 }
 
 //==============================================================================

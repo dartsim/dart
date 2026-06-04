@@ -30,13 +30,19 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/simulation/experimental/compute/detail/rigid_integration_core.hpp>
+
 #include <cuda_runtime.h>
+#include <dart/simulation/experimental/compute/cuda/cuda_runtime.cuh>
 
 #include <cmath>
 #include <cstddef>
 
 namespace dart::simulation::experimental::compute::cuda::detail {
 namespace {
+
+// Shared per-body integration cores (host/device single source).
+namespace core = ::dart::simulation::experimental::compute::detail;
 
 __global__ void integrateRigidBodyStateBatchLinearKernel(
     double* position,
@@ -62,63 +68,6 @@ __global__ void integrateRigidBodyStateBatchLinearKernel(
   position[base] += linearVelocity[base] * timeStep;
   position[base + 1] += linearVelocity[base + 1] * timeStep;
   position[base + 2] += linearVelocity[base + 2] * timeStep;
-}
-
-__device__ void integrateOrientation(
-    double* orientation,
-    const double* angularVelocity,
-    double timeStep,
-    std::size_t body)
-{
-  const std::size_t orientationBase = 4 * body;
-  const std::size_t velocityBase = 3 * body;
-
-  const double w = orientation[orientationBase + 0];
-  const double x = orientation[orientationBase + 1];
-  const double y = orientation[orientationBase + 2];
-  const double z = orientation[orientationBase + 3];
-  const double ox = angularVelocity[velocityBase + 0];
-  const double oy = angularVelocity[velocityBase + 1];
-  const double oz = angularVelocity[velocityBase + 2];
-
-  double nw = w;
-  double nx = x;
-  double ny = y;
-  double nz = z;
-
-  const double speed = sqrt(ox * ox + oy * oy + oz * oz);
-  if (speed > 0.0) {
-    const double halfAngle = 0.5 * speed * timeStep;
-    const double axisScale = sin(halfAngle) / speed;
-    const double dw = cos(halfAngle);
-    const double dx = ox * axisScale;
-    const double dy = oy * axisScale;
-    const double dz = oz * axisScale;
-
-    nw = dw * w - dx * x - dy * y - dz * z;
-    nx = dw * x + dx * w + dy * z - dz * y;
-    ny = dw * y - dx * z + dy * w + dz * x;
-    nz = dw * z + dx * y - dy * x + dz * w;
-  }
-
-  const double norm = sqrt(nw * nw + nx * nx + ny * ny + nz * nz);
-  if (norm > 0.0 && isfinite(norm)) {
-    const double inverse = 1.0 / norm;
-    nw *= inverse;
-    nx *= inverse;
-    ny *= inverse;
-    nz *= inverse;
-  } else {
-    nw = 1.0;
-    nx = 0.0;
-    ny = 0.0;
-    nz = 0.0;
-  }
-
-  orientation[orientationBase + 0] = nw;
-  orientation[orientationBase + 1] = nx;
-  orientation[orientationBase + 2] = ny;
-  orientation[orientationBase + 3] = nz;
 }
 
 __global__ void integrateRigidBodyStateBatchKernel(
@@ -148,7 +97,8 @@ __global__ void integrateRigidBodyStateBatchKernel(
   position[base + 1] += linearVelocity[base + 1] * timeStep;
   position[base + 2] += linearVelocity[base + 2] * timeStep;
 
-  integrateOrientation(orientation, angularVelocity, timeStep, body);
+  core::integrateOrientationSemiImplicitBody<double>(
+      orientation, angularVelocity, timeStep, body);
 }
 
 } // namespace
@@ -166,10 +116,8 @@ cudaError_t launchRigidBodyStateBatchLinearKernel(
     return cudaSuccess;
   }
 
-  constexpr int blockSize = 256;
-  const auto gridSize = static_cast<unsigned int>(
-      (bodies + static_cast<std::size_t>(blockSize) - 1)
-      / static_cast<std::size_t>(blockSize));
+  constexpr unsigned int blockSize = 256;
+  const unsigned int gridSize = launchGrid1D(bodies, blockSize);
 
   integrateRigidBodyStateBatchLinearKernel<<<gridSize, blockSize>>>(
       position, linearVelocity, force, inverseMass, timeStep, bodies);
@@ -197,10 +145,8 @@ cudaError_t launchRigidBodyStateBatchKernel(
     return cudaSuccess;
   }
 
-  constexpr int blockSize = 256;
-  const auto gridSize = static_cast<unsigned int>(
-      (bodies + static_cast<std::size_t>(blockSize) - 1)
-      / static_cast<std::size_t>(blockSize));
+  constexpr unsigned int blockSize = 256;
+  const unsigned int gridSize = launchGrid1D(bodies, blockSize);
 
   integrateRigidBodyStateBatchKernel<<<gridSize, blockSize>>>(
       position,

@@ -30,67 +30,47 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/memory_allocator.hpp"
+#include <dart/simulation/experimental/common/exceptions.hpp>
 
-#include "dart/common/callocator.hpp"
-#include "dart/common/logging.hpp"
+#include <cuda_runtime_api.h>
+#include <dart/simulation/experimental/compute/cuda/cuda_runtime.cuh>
 
-#include <cstddef>
+#include <string_view>
 
-namespace dart::common {
+// Host translation unit (compiled by the host compiler, not nvcc) so the single
+// throwIfCudaError definition can use DART_EXPERIMENTAL_THROW_T (std::format +
+// std::source_location) without requiring every caller's .cu to compile it.
 
-namespace {
+namespace sx = dart::simulation::experimental;
 
-bool isPowerOfTwo(size_t value)
-{
-  return value != 0 && (value & (value - 1)) == 0;
-}
-
-} // namespace
+namespace dart::simulation::experimental::compute::cuda {
 
 //==============================================================================
-MemoryAllocator& MemoryAllocator::GetDefault()
+bool isCudaRuntimeAvailable() noexcept
 {
-  static CAllocator defaultAllocator;
-  return defaultAllocator;
+  int deviceCount = 0;
+  const auto status = cudaGetDeviceCount(&deviceCount);
+  return status == cudaSuccess && deviceCount > 0;
 }
 
 //==============================================================================
-void* MemoryAllocator::allocate(size_t bytes, size_t alignment) noexcept
+void throwIfCudaError(cudaError_t status, std::string_view operation)
 {
-  if (bytes == 0 || !isPowerOfTwo(alignment)) {
-    return nullptr;
+  if (status == cudaSuccess) {
+    return;
   }
 
-  if (alignment <= alignof(std::max_align_t)) {
-    return allocate(bytes);
-  }
-
-  return nullptr;
+  DART_EXPERIMENTAL_THROW_T(
+      sx::InvalidOperationException,
+      "CUDA {} failed: {}",
+      operation,
+      cudaGetErrorString(status));
 }
 
 //==============================================================================
-void MemoryAllocator::deallocate(
-    void* pointer, size_t bytes, size_t /*alignment*/)
+void checkLastError(std::string_view operation)
 {
-  deallocate(pointer, bytes);
+  throwIfCudaError(cudaGetLastError(), operation);
 }
 
-//==============================================================================
-void MemoryAllocator::print(std::ostream& os, int indent) const
-{
-  if (indent == 0) {
-    os << "[*::print is not implemented]\n";
-  }
-  const std::string spaces(indent, ' ');
-  os << spaces << "*::print is not implemented:\n";
-}
-
-//==============================================================================
-std::ostream& operator<<(std::ostream& os, const MemoryAllocator& allocator)
-{
-  allocator.print(os);
-  return os;
-}
-
-} // namespace dart::common
+} // namespace dart::simulation::experimental::compute::cuda

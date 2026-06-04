@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include <dart/simulation/experimental/compute/cuda/cuda_runtime.cuh>
+
 #include <vector>
 
 #include <cstddef>
@@ -39,10 +41,8 @@
 
 namespace dart::simulation::experimental::compute::cuda {
 
-/// Return whether the CUDA runtime currently exposes at least one device.
-/// Defined in the experimental CUDA target (shared with the rigid-body path);
-/// this build-tree-only `.cuh` keeps CUDA names out of installed headers.
-[[nodiscard]] bool isCudaRuntimeAvailable() noexcept;
+// isCudaRuntimeAvailable() is declared once in cuda_runtime.cuh (included
+// above).
 
 /// A flattened single-body mass-spring Vertex Block Descent problem laid out
 /// for the GPU: structure-of-arrays node state, a spring list, per-vertex

@@ -32,15 +32,28 @@
 
 #include "../../helpers/gtest_utils.hpp"
 
+#include <dart/common/fixed_pool_allocator.hpp>
 #include <dart/common/pool_allocator.hpp>
 
 #include <gtest/gtest.h>
 
+#include <limits>
 #include <utility>
 #include <vector>
 
+#include <cstdint>
+
 using namespace dart;
 using namespace common;
+
+namespace {
+
+struct alignas(64) OverAlignedObject
+{
+  double values[8] = {};
+};
+
+} // namespace
 
 //==============================================================================
 TEST(PoolAllocatorTest, Constructors)
@@ -59,6 +72,75 @@ TEST(PoolAllocatorTest, Constructors)
 
   EXPECT_TRUE(a.isEmpty());
   EXPECT_TRUE(b.isEmpty());
+}
+
+//==============================================================================
+TEST(PoolAllocatorTest, AllocateAlignedUsesAlignedSlots)
+{
+  PoolAllocator allocator;
+
+  auto* ptr = allocator.allocate(sizeof(OverAlignedObject), 64);
+  ASSERT_NE(ptr, nullptr);
+  EXPECT_EQ(reinterpret_cast<std::uintptr_t>(ptr) % 64u, 0u);
+
+  allocator.deallocate(ptr, sizeof(OverAlignedObject), 64);
+}
+
+//==============================================================================
+TEST(FixedPoolAllocatorTest, Constructors)
+{
+  FixedPoolAllocator allocator(32);
+  EXPECT_EQ(&allocator.getBaseAllocator(), &MemoryAllocator::GetDefault());
+  EXPECT_EQ(allocator.getUnitSize(), 32u);
+  EXPECT_EQ(allocator.getNumAllocatedMemoryBlocks(), 0);
+
+  FixedPoolAllocator zeroSizedAllocator(0);
+  EXPECT_EQ(zeroSizedAllocator.getUnitSize(), 0u);
+  EXPECT_EQ(zeroSizedAllocator.allocate(1), nullptr);
+  EXPECT_EQ(zeroSizedAllocator.allocate(), nullptr);
+}
+
+//==============================================================================
+TEST(FixedPoolAllocatorTest, ExtremeUnitSizeConstructor)
+{
+  constexpr size_t unitSize = size_t{1}
+                              << (std::numeric_limits<size_t>::digits - 1);
+  FixedPoolAllocator allocator(unitSize, MemoryAllocator::GetDefault(), 0);
+  EXPECT_EQ(allocator.getUnitSize(), unitSize);
+  EXPECT_EQ(allocator.getNumAllocatedMemoryBlocks(), 0);
+}
+
+//==============================================================================
+TEST(FixedPoolAllocatorTest, AllocateUsesFixedSizeBlocks)
+{
+  FixedPoolAllocator allocator(32, MemoryAllocator::GetDefault(), 32 * 4);
+
+  void* ptr1 = allocator.allocate(1);
+  void* ptr2 = allocator.allocate(32);
+  ASSERT_NE(ptr1, nullptr);
+  ASSERT_NE(ptr2, nullptr);
+  EXPECT_EQ(allocator.getNumAllocatedMemoryBlocks(), 1);
+
+  allocator.deallocate(ptr1, 1);
+  allocator.deallocate(ptr2, 32);
+
+  void* ptr3 = allocator.allocate();
+  ASSERT_NE(ptr3, nullptr);
+  EXPECT_EQ(allocator.getNumAllocatedMemoryBlocks(), 1);
+  allocator.deallocate(ptr3);
+}
+
+//==============================================================================
+TEST(FixedPoolAllocatorTest, AllocateAlignedUsesAlignedSlots)
+{
+  FixedPoolAllocator allocator(
+      sizeof(OverAlignedObject), MemoryAllocator::GetDefault(), 4096);
+
+  auto* ptr = allocator.allocate(sizeof(OverAlignedObject), 64);
+  ASSERT_NE(ptr, nullptr);
+  EXPECT_EQ(reinterpret_cast<std::uintptr_t>(ptr) % 64u, 0u);
+
+  allocator.deallocate(ptr, sizeof(OverAlignedObject), 64);
 }
 
 //==============================================================================

@@ -38,11 +38,13 @@ def test_dashboard_surface_runner_dry_run_lists_bounded_specs(tmp_path):
     )
 
     lines = result.stdout.strip().splitlines()
-    assert len(lines) == 1
+    # One bounded command per curated DART 7 experimental-World surface.
+    assert len(lines) == 5
     assert all("scripts/run_cpp_benchmark.py" in line for line in lines)
     assert all("--benchmark_out_format=json" in line for line in lines)
     assert all("--benchmark_min_time=1ms" in line for line in lines)
     assert all("--benchmark_repetitions=3" in line for line in lines)
+    # Core experimental World step & scaling surface (bm_compute_graph).
     assert "dashboard_experimental_world.json" in result.stdout
     assert "BM_WorldUpdateKinematics" in result.stdout
     assert "BM_WorldStep(Sequential|Parallel)/.*" in result.stdout
@@ -50,9 +52,22 @@ def test_dashboard_surface_runner_dry_run_lists_bounded_specs(tmp_path):
     assert "BM_ContactShaped(Sequential|Parallel)/.*" in result.stdout
     assert "BM_ContactIslandShaped(Sequential|Parallel)/.*" in result.stdout
     assert "BM_Phase5RigidBodyBatchCpuBaseline/1024/128/10" in result.stdout
+    # New DART 7 solver-family end-to-end World-step surfaces.
+    assert "dashboard_rigid_world.json" in result.stdout
+    assert "BM_RigidWorldStep_(SequentialImpulse|Ipc)/.*" in result.stdout
+    assert "dashboard_vbd_world.json" in result.stdout
+    assert "BM_VbdWorldStep(Default|Vbd)/.*" in result.stdout
+    assert "dashboard_deformable_world.json" in result.stdout
+    assert "BM_DeformableFemBarStep/.*" in result.stdout
+    assert "dashboard_avbd_world.json" in result.stdout
+    assert "BM_AvbdRigidFixedJointStep/.*" in result.stdout
+    # Still excludes unrelated solver, SIMD, and robot-loader surfaces, and the
+    # CUDA/GPU and DART_BUILD_DIFF rows the hosted runner cannot produce.
     assert "BM_Robot_(KR5|Atlas)_WorldStep" not in result.stdout
     assert "BM_LCP_COMPARE_SMOKE" not in result.stdout
     assert "BM_Add_DART_f32(_Baseline)?/1024(/.*)?$" not in result.stdout
+    assert "Cuda" not in result.stdout
+    assert "bm_diff_gradient" not in result.stdout
 
 
 def test_dashboard_surface_runner_can_select_specific_surfaces(tmp_path):

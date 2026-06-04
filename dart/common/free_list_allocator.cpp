@@ -35,9 +35,32 @@
 #include "dart/common/logging.hpp"
 #include "dart/common/macros.hpp"
 
+#include <limits>
 #include <memory>
 
+#include <cstddef>
+
 namespace dart::common {
+
+namespace {
+
+bool isPowerOfTwo(size_t value)
+{
+  return value != 0 && (value & (value - 1)) == 0;
+}
+
+bool roundUpToAlignment(size_t bytes, size_t alignment, size_t& rounded)
+{
+  const size_t mask = alignment - 1;
+  if (bytes > std::numeric_limits<size_t>::max() - mask) {
+    return false;
+  }
+
+  rounded = (bytes + mask) & ~mask;
+  return true;
+}
+
+} // namespace
 
 //==============================================================================
 FreeListAllocator::FreeListAllocator(
@@ -71,7 +94,11 @@ FreeListAllocator::~FreeListAllocator()
   }
 
   for (const auto& block : mAllocatedBlocks) {
-    mBaseAllocator.deallocate(block.pointer, block.size);
+    if (block.alignment <= alignof(std::max_align_t)) {
+      mBaseAllocator.deallocate(block.pointer, block.size);
+    } else {
+      mBaseAllocator.deallocate(block.pointer, block.size, block.alignment);
+    }
   }
   mAllocatedBlocks.clear();
 }
@@ -95,6 +122,12 @@ void* FreeListAllocator::allocate(size_t bytes) noexcept
   if (bytes == 0) {
     return nullptr;
   }
+
+  size_t roundedBytes = 0;
+  if (!roundUpToAlignment(bytes, alignof(std::max_align_t), roundedBytes)) {
+    return nullptr;
+  }
+  bytes = roundedBytes;
 
   // Ensure that the first memory block doesn't have the previous block
   DART_ASSERT(mFirstMemoryBlock->mPrev == nullptr);
@@ -156,6 +189,28 @@ void* FreeListAllocator::allocate(size_t bytes) noexcept
 }
 
 //==============================================================================
+void* FreeListAllocator::allocate(size_t bytes, size_t alignment) noexcept
+{
+  if (bytes == 0 || !isPowerOfTwo(alignment)) {
+    return nullptr;
+  }
+
+  if (alignment <= alignof(std::max_align_t)) {
+    return allocate(bytes);
+  }
+
+  void* pointer = mBaseAllocator.allocate(bytes, alignment);
+  if (pointer == nullptr) {
+    return nullptr;
+  }
+
+  mAllocatedBlocks.push_back(AllocatedBlock{pointer, bytes, alignment, true});
+  mTotalAllocatedSize += bytes;
+
+  return pointer;
+}
+
+//==============================================================================
 void FreeListAllocator::deallocate(void* pointer, size_t bytes)
 {
   DART_UNUSED(bytes, pointer);
@@ -164,6 +219,13 @@ void FreeListAllocator::deallocate(void* pointer, size_t bytes)
   if (pointer == nullptr || bytes == 0) {
     return;
   }
+
+  size_t roundedBytes = 0;
+  if (!roundUpToAlignment(bytes, alignof(std::max_align_t), roundedBytes)) {
+    DART_ASSERT(false);
+    return;
+  }
+  bytes = roundedBytes;
 
   unsigned char* block_addr
       = static_cast<unsigned char*>(pointer) - sizeof(MemoryBlockHeader);
@@ -192,6 +254,25 @@ void FreeListAllocator::deallocate(void* pointer, size_t bytes)
 }
 
 //==============================================================================
+void FreeListAllocator::deallocate(
+    void* pointer, size_t bytes, size_t alignment)
+{
+  if (pointer == nullptr || bytes == 0) {
+    return;
+  }
+
+  if (alignment <= alignof(std::max_align_t)) {
+    deallocate(pointer, bytes);
+    return;
+  }
+
+  if (!releaseDelegatedAllocation(pointer, bytes, alignment)) {
+    DART_ASSERT(false);
+    return;
+  }
+}
+
+//==============================================================================
 bool FreeListAllocator::allocateMemoryBlock(size_t sizeToAllocate)
 {
   // Allocate memory chunk for header and the actual requested size
@@ -214,7 +295,11 @@ bool FreeListAllocator::allocateMemoryBlock(size_t sizeToAllocate)
   );
 
   mAllocatedBlocks.push_back(
-      AllocatedBlock{memory, sizeToAllocate + sizeof(MemoryBlockHeader)});
+      AllocatedBlock{
+          memory,
+          sizeToAllocate + sizeof(MemoryBlockHeader),
+          alignof(std::max_align_t),
+          false});
 
   // Set the new memory block as free block
   mFreeBlock = mFirstMemoryBlock;
@@ -223,6 +308,33 @@ bool FreeListAllocator::allocateMemoryBlock(size_t sizeToAllocate)
   mTotalAllocatedBlockSize += sizeToAllocate;
 
   return true;
+}
+
+//==============================================================================
+bool FreeListAllocator::releaseDelegatedAllocation(
+    void* pointer, size_t bytes, size_t alignment)
+{
+  DART_UNUSED(bytes, alignment);
+
+  for (auto it = mAllocatedBlocks.begin(); it != mAllocatedBlocks.end(); ++it) {
+    if (!it->isOutstandingAllocation || it->pointer != pointer) {
+      continue;
+    }
+
+    DART_ASSERT(it->size == bytes);
+    DART_ASSERT(it->alignment == alignment);
+
+    const auto block = *it;
+    mAllocatedBlocks.erase(it);
+
+    mBaseAllocator.deallocate(pointer, block.size, block.alignment);
+    mTotalAllocatedSize -= block.size;
+
+    DART_TRACE("Deallocated {} bytes.", block.size);
+    return true;
+  }
+
+  return false;
 }
 
 //==============================================================================
