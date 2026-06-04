@@ -94,7 +94,7 @@ enum class ComputeAccessMode : std::uint8_t
 /// A declared access to a named resource by a compute stage.
 ///
 /// Resource identifiers are stable strings in this first iteration, for example
-/// component or stage names such as "comps::Transform" or "comps::FrameCache".
+/// component or stage names such as "Transform" or "FrameCache".
 struct DART_EXPERIMENTAL_API ComputeResourceAccess
 {
   std::string resource;

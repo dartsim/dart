@@ -252,7 +252,9 @@ endif()
 # experimental_differentiable_gui example and consumable standalone; and
 # diff/step_derivatives.hpp / diff/step_gradient.hpp, which are not promotion
 # targets in their own right but are pulled into the public include closure by
-# value (world.hpp / rollout.hpp), so they must ship too.
+# value (world.hpp / rollout.hpp), so they must ship too. The compute/ directory
+# remains internal except for the backend-neutral stage metadata and
+# WorldStepProfile value types pulled into world.hpp.
 set(
   dart_experimental_public_headers_toplevel
   world.hpp
@@ -300,6 +302,11 @@ set(
   diff/step_derivatives.hpp
   diff/step_gradient.hpp
 )
+set(
+  dart_experimental_public_headers_compute
+  compute/compute_stage_metadata.hpp
+  compute/world_step_profile.hpp
+)
 # diff/rollout.hpp is the public differentiable-simulation entry point, but its
 # implementation (diff/rollout.cpp) is compiled only under DART_BUILD_DIFF. Keep
 # it in its own literal set() so the promotion audit always cross-checks it (leak
@@ -315,6 +322,7 @@ set(
   ${dart_experimental_public_headers_multibody}
   ${dart_experimental_public_headers_frame}
   ${dart_experimental_public_headers_constraint}
+  ${dart_experimental_public_headers_compute}
   ${dart_experimental_public_headers_diff}
 )
 if(DART_BUILD_DIFF)
@@ -356,6 +364,11 @@ install(
 install(
   FILES ${dart_experimental_public_headers_constraint}
   DESTINATION include/dart/simulation/experimental/constraint
+  COMPONENT headers
+)
+install(
+  FILES ${dart_experimental_public_headers_compute}
+  DESTINATION include/dart/simulation/experimental/compute
   COMPONENT headers
 )
 install(
