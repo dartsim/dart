@@ -11,10 +11,10 @@
       `std::pmr` locally. The comparative benchmark binary now honors the
       checker-requested repetition count instead of forcing five repetitions.
       The strict checker now rejects high-CV rows before treating ratios as
-      evidence. The benchmark gate and broader correctness matrix still need to
-      land before this phase is complete; narrow fixed-pool/STL-vector rows
-      remain sensitive to host load and must not be treated as merge evidence
-      without an idle-host rerun.
+      evidence. The default foonathan/memory comparative gate passes on the
+      current benchmark branch with the CV guard enabled. The broader
+      correctness matrix and opt-in EnTT/std registry allocator evidence still
+      need to land before this phase is complete.
 - [ ] Phase 3: EnTT registry/component storage allocation is configurable from
       the World memory hierarchy and covered by no-growth ECS tests.
 - [ ] Phase 4: Built-in simulation stages borrow world memory for transient
@@ -96,7 +96,8 @@ debugging, profiling, optimization experiments, and ImGui visualization.
 
 1. Land the strict allocator comparative benchmark gate and keep the
    fixed-size, mixed-pool, frame, STL, and realistic workloads below
-   foonathan/memory and standard allocator baselines.
+   foonathan/memory, then extend the passing envelope to standard allocator and
+   opt-in EnTT registry baselines.
 2. Extend allocator correctness tests for `FixedPoolAllocator` and the existing
    pool/free-list/frame allocators across invalid sizes, over-alignment,
    overflow, reuse-after-free, leak/debug accounting, and bounded failure.
