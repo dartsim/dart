@@ -2,73 +2,73 @@
 
 ## Last Session Summary
 
-The first memory-manager slice has landed: experimental `World` owns a
-`dart::common::MemoryManager`, accepts root allocator/frame-scratch options,
-exposes memory diagnostics, and resets frame scratch at step boundaries. The
-allocator-quality gate is active: DART allocators must beat standard C++
-allocators and foonathan/memory on DART-relevant workloads before broad
-hot-loop adoption. Follow-up allocator work added alignment-aware
-`MemoryAllocator`/`StlAllocator` paths for over-aligned objects and
-allocator-aware EnTT registries, fixed free-list split alignment and overflow
-edge cases, and added `FixedPoolAllocator` for fixed-size slot workloads. The
-local comparative allocator benchmark now passes all DART/Foonathan median
-ratios when the fixed-size pool row uses `FixedPoolAllocator`, while mixed
-size-classed workloads remain on `PoolAllocator`.
+The memory-manager work is now in a PR stack rather than a single allocator
+branch. PR #2872 routes experimental `World` registry/storage through the World
+memory hierarchy and has focused no-growth coverage. PR #2890 adds comparative
+allocator benchmark coverage, a CV/noise guard, and focused EnTT registry
+benchmark modes for allocator-policy work.
 
 ## Current Branch
 
-`feature/aligned-memory-allocator` - PR #2871 branch for allocator correctness
-and fixed-size pool performance. The stacked
-`feature/world-registry-allocator` branch for PR #2872 builds on this branch.
+`bench/entt-registry-allocator` - PR #2890 draft branch for allocator
+benchmark evidence and EnTT registry benchmark loops. The branch is published
+and should merge latest `origin/main` before every push.
 
 ## Immediate Next Step
 
-Finish review/CI for PR #2871, then merge it into the stacked World registry
-branch and keep PR #2872's EnTT allocator/no-growth tests current. Next
-allocator work should land the strict comparative benchmark gate, broaden
-`FixedPoolAllocator` correctness coverage, and add EnTT registry/storage
-allocator benchmarks before replacing more per-step hot-loop temporaries.
+Optimize the allocator-aware EnTT registry path until the focused registry gate
+beats both foonathan/memory and the standard registry:
+
+```bash
+pixi run bm-allocator-comparative-check --only-entt-registry \
+  --baseline foonathan --baseline std --verbose
+```
+
+The current pool-backed `StlAllocator` registry route beats foonathan/memory in
+focused local probes, but it still trails the standard registry on steady-state
+create/emplace/read/destroy churn. Keep the PR draft until that standard
+baseline gap is resolved or a documented dependency/policy decision replaces the
+in-house route.
 
 ## Latest Local Validation
 
-- `pixi run lint`
-- `cmake --build build/default/cpp/Release --target bm_allocators_comparative UNIT_common_pool_allocator -j2`
-- `ctest --test-dir build/default/cpp/Release -R '^UNIT_common_pool_allocator$' --output-on-failure`
-- `build/default/cpp/Release/bin/bm_allocators_comparative --benchmark_min_time=0.1s --benchmark_out=.benchmark_results/allocator-comparative-current-head.json --benchmark_out_format=json`
-- Local parser over `.benchmark_results/allocator-comparative-current-head.json`:
-  all DART/Foonathan and DART/StdPmr median ratios passed (`< 1.0`),
-  including fixed pool, mixed pool, frame, realistic, steady-state, and STL
-  vector workloads.
+- `pixi run bm-allocator-comparative-check --verbose` passed the default
+  foonathan/memory gate on the current benchmark branch.
+- The full opt-in checker with EnTT registry coverage and both foonathan and std
+  baselines showed DART passing the foonathan EnTT registry rows but failing
+  standard-registry rows, with one unrelated noisy std stack row.
+- The focused registry checker over
+  `.benchmark_results/entt_registry_focused_serial_1s_9.json` confirmed the
+  current gap: DART beats foonathan but trails the standard registry at 256,
+  512, and 2048 entities.
+- The focused STL-vector checker over
+  `.benchmark_results/stlvector_focused_serial_1s_9.json` passed against both
+  foonathan and std, so the earlier 10k vector miss was not stable enough to
+  justify an allocator-code change.
 
 ## Context That Would Be Lost
 
-- The classic `dart::simulation::World` already owns a `common::MemoryManager`;
-  experimental `World` did not.
-- `dart/common/AGENTS.md` says World owns the memory manager and components
-  borrow allocators from it.
-- Frame scratch should reset at the start of each simulation step, leaving the
-  previous step's scratch usage visible until the next step.
-- The full user goal remains broader than this slice: route simulation data
-  through allocator styles, prove no dynamic allocations during the loop, add
-  memory debugging/profiling, and eventually visualize the hierarchy in GUI.
+- The full user goal remains broader than the current benchmark PR: route
+  simulation data through allocator styles, prove zero dynamic allocation in
+  representative simulation loops, add memory debugging/profiling, and
+  eventually visualize the hierarchy in GUI.
 - The existing allocator implementations are not assumed to be good enough.
-  Compare against `std::allocator`/`std::pmr` and foonathan/memory; if DART
-  cannot beat foonathan/memory for required DART workloads, record a dependency
+  Compare against standard C++ allocators and foonathan/memory; if DART cannot
+  beat foonathan/memory for required DART workloads, record a dependency
   decision instead of forcing an inferior in-house allocator.
-- Use `FixedPoolAllocator` for fixed-size node/slot workloads. Keep
-  `PoolAllocator` as the size-classed small-object allocator for mixed
-  workloads.
-- EnTT registry/storage allocation is first-class scope. Future work should
-  inspect the active EnTT version's `basic_registry` and `basic_storage`
-  allocator hooks and keep EnTT allocator types hidden from public World API.
+- Treat EnTT registry/storage allocation as first-class scope. The ECS storage
+  layer is a dominant owner of world/component memory, but EnTT allocator types
+  must remain hidden from promoted public World APIs.
+- The steady-state EnTT registry benchmark prewarms storage before timing.
+  A std-registry miss there points at allocator-aware registry/storage overhead,
+  not one-time pool growth.
 
 ## How to Resume
 
 ```bash
 git status -sb
 git diff --stat
+gh pr view 2890 --repo dartsim/dart --json state,isDraft,mergeStateStatus,headRefOid,statusCheckRollup
 ```
 
-Then continue from the open PR stack: #2871 allocator correctness/performance,
-#2872 allocator-backed experimental World registry, and the comparative
-benchmark gate branch.
+Then continue from PR #2890 and the focused EnTT registry benchmark gate.

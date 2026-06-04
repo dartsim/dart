@@ -334,7 +334,8 @@ not valid evidence for strict allocator decisions.
 Pass `--include-entt-registry` to add allocator-aware EnTT registry/component
 storage churn rows. Those rows are an evidence surface for registry allocator
 policy work until the production registry allocator path consistently beats the
-selected baselines.
+selected baselines. Use `--only-entt-registry` for focused registry allocator
+optimization loops without rerunning the broader allocator benchmark set.
 
 ## Adding New Tests
 

@@ -39,6 +39,7 @@ ENTT_REGISTRY_FILTER = (
     "BM_(Pool|Stack|MultiPool|Realistic|SteadyState|FrameBulk|StlVector|"
     "EnttRegistry)_(DART|Foonathan|StdPmr|Std)"
 )
+ENTT_REGISTRY_ONLY_FILTER = "BM_EnttRegistry_(DART|Foonathan|Std)"
 
 _COMPARATIVE_RE = re.compile(
     r"^(BM_(?:Pool|Stack|MultiPool|Realistic|SteadyState|FrameBulk|StlVector|"
@@ -101,7 +102,8 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
             "than once. Defaults to foonathan."
         ),
     )
-    parser.add_argument(
+    entt_mode = parser.add_mutually_exclusive_group()
+    entt_mode.add_argument(
         "--include-entt-registry",
         action="store_true",
         help=(
@@ -109,6 +111,15 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
             "These rows are an evidence surface for allocator-policy work and "
             "are intentionally opt-in until the production registry allocator "
             "policy consistently beats the baselines."
+        ),
+    )
+    entt_mode.add_argument(
+        "--only-entt-registry",
+        action="store_true",
+        help=(
+            "Run only allocator-aware EnTT registry/component storage rows. "
+            "Use this for focused registry allocator optimization loops without "
+            "rerunning the broader allocator benchmark set."
         ),
     )
     parser.add_argument(
@@ -322,12 +333,23 @@ def evaluate_comparisons(
     return failures, passes
 
 
+def benchmark_filter_for_mode(
+    *, include_entt_registry: bool, only_entt_registry: bool
+) -> str:
+    if only_entt_registry:
+        return ENTT_REGISTRY_ONLY_FILTER
+    if include_entt_registry:
+        return ENTT_REGISTRY_FILTER
+    return DEFAULT_FILTER
+
+
 def run_benchmark(
     output: Path,
     *,
     build_type: str,
     benchmark_min_time: str,
     include_entt_registry: bool,
+    only_entt_registry: bool,
     repetitions: int,
 ) -> Path:
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -341,7 +363,10 @@ def run_benchmark(
             "--build-type",
             build_type,
             "--benchmark_filter={}".format(
-                ENTT_REGISTRY_FILTER if include_entt_registry else DEFAULT_FILTER
+                benchmark_filter_for_mode(
+                    include_entt_registry=include_entt_registry,
+                    only_entt_registry=only_entt_registry,
+                )
             ),
             "--benchmark_min_time={}".format(benchmark_min_time),
             "--benchmark_repetitions={}".format(repetitions),
@@ -415,6 +440,7 @@ def main(argv: list[str]) -> int:
             build_type=args.build_type,
             benchmark_min_time=args.benchmark_min_time,
             include_entt_registry=args.include_entt_registry,
+            only_entt_registry=args.only_entt_registry,
             repetitions=args.repetitions,
         )
         print("Results saved to: {}".format(json_path))

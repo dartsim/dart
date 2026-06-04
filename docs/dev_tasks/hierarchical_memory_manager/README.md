@@ -13,8 +13,10 @@
       The strict checker now rejects high-CV rows before treating ratios as
       evidence. The default foonathan/memory comparative gate passes on the
       current benchmark branch with the CV guard enabled. The broader
-      correctness matrix and opt-in EnTT/std registry allocator evidence still
-      need to land before this phase is complete.
+      correctness matrix and standard-library registry allocator evidence still
+      need to land before this phase is complete. Focused EnTT registry probes
+      now show the pool-backed DART registry path beating foonathan/memory but
+      still trailing the standard registry in steady-state churn.
 - [ ] Phase 3: EnTT registry/component storage allocation is configurable from
       the World memory hierarchy and covered by no-growth ECS tests.
 - [ ] Phase 4: Built-in simulation stages borrow world memory for transient
@@ -102,11 +104,17 @@ debugging, profiling, optimization experiments, and ImGui visualization.
    pool/free-list/frame allocators across invalid sizes, over-alignment,
    overflow, reuse-after-free, leak/debug accounting, and bounded failure.
 3. Design and benchmark EnTT registry/storage allocator integration before
-   claiming zero allocations for ECS-backed world data. Use the opt-in
-   `bm-allocator-comparative-check --include-entt-registry` rows to compare the
-   active registry allocator policy against foonathan/memory and the standard
-   registry; the generic pool-backed `StlAllocator` route is evidence-only
-   until it consistently wins those rows.
+   claiming zero allocations for ECS-backed world data. Use the registry-only
+   checker for focused allocator-policy loops:
+
+   ```bash
+   pixi run bm-allocator-comparative-check --only-entt-registry \
+     --baseline foonathan --baseline std
+   ```
+
+   The generic pool-backed `StlAllocator` route is evidence-only until it
+   consistently wins those rows.
+
 4. Start replacing per-step `std::vector`/`Eigen` temporaries in hot stages with
    world-frame or world-pool backed storage only after the allocator evidence
    gate proves the DART allocator path is better for that workload.

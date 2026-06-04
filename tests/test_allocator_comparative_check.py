@@ -1,6 +1,8 @@
 import importlib.util
 from pathlib import Path
 
+import pytest
+
 
 def load_allocator_check_module():
     repo_root = Path(__file__).resolve().parents[1]
@@ -95,3 +97,36 @@ def test_noise_guard_allows_clean_fast_rows_to_pass():
 
     assert failures == []
     assert passes[0]["status"] == "PASS"
+
+
+def test_benchmark_filter_modes_are_explicit():
+    module = load_allocator_check_module()
+
+    assert (
+        module.benchmark_filter_for_mode(
+            include_entt_registry=False,
+            only_entt_registry=False,
+        )
+        == module.DEFAULT_FILTER
+    )
+    assert (
+        module.benchmark_filter_for_mode(
+            include_entt_registry=True,
+            only_entt_registry=False,
+        )
+        == module.ENTT_REGISTRY_FILTER
+    )
+    assert (
+        module.benchmark_filter_for_mode(
+            include_entt_registry=False,
+            only_entt_registry=True,
+        )
+        == module.ENTT_REGISTRY_ONLY_FILTER
+    )
+
+
+def test_entt_registry_modes_are_mutually_exclusive():
+    module = load_allocator_check_module()
+
+    with pytest.raises(SystemExit):
+        module.parse_args(["--include-entt-registry", "--only-entt-registry"])
