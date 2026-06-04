@@ -181,3 +181,44 @@ TEST(InvalidDynamicsInputs, ZeroMassContactDoesNotCrash)
   EXPECT_TRUE(dynamicBox->getPositions().allFinite());
   EXPECT_TRUE(zeroMassBox->getPositions().allFinite());
 }
+
+// A non-finite moment of inertia must not abort forward dynamics. Without the
+// guard in GenericJoint::updateInvProjArtInertiaImplicitDynamic, the NaN
+// inertia produces a non-finite inverse projected articulated inertia that
+// trips a raw assertion in asserts-enabled builds.
+// See https://github.com/gazebosim/gz-physics/issues/854
+TEST(InvalidDynamicsInputs, NanInertiaDoesNotCrash)
+{
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+  auto world = World::create();
+  auto skeleton = createTwoLinkSkeleton(1.0, nan);
+  world->addSkeleton(skeleton);
+
+  EXPECT_NO_THROW({
+    for (int i = 0; i < 5; ++i) {
+      world->step();
+    }
+  });
+
+  EXPECT_TRUE(skeleton->getPositions().allFinite());
+  EXPECT_TRUE(skeleton->getVelocities().allFinite());
+}
+
+// A non-finite (infinite) mass must not abort forward dynamics.
+// See https://github.com/gazebosim/gz-physics/issues/854
+TEST(InvalidDynamicsInputs, InfMassDoesNotCrash)
+{
+  const double inf = std::numeric_limits<double>::infinity();
+  auto world = World::create();
+  auto skeleton = createTwoLinkSkeleton(inf, 1.0);
+  world->addSkeleton(skeleton);
+
+  EXPECT_NO_THROW({
+    for (int i = 0; i < 5; ++i) {
+      world->step();
+    }
+  });
+
+  EXPECT_TRUE(skeleton->getPositions().allFinite());
+  EXPECT_TRUE(skeleton->getVelocities().allFinite());
+}
