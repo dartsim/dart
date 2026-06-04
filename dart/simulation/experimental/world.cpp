@@ -3171,6 +3171,7 @@ void World::loadBinary(std::istream& input)
     updateKinematics();
     detail::deformable_vbd::configureAvbdRigidWorldFixedJointsFromCurrentPoses(
         m_storage->registry);
+    reserveRegistryStorageForSimulation();
   }
 }
 

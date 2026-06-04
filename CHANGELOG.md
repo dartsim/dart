@@ -534,7 +534,8 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Added an Eigen 64-byte over-alignment CI/local test task to catch allocator, placement-new, and Eigen storage assumptions without requiring AVX-512 hardware. ([#2541](https://github.com/dartsim/dart/pull/2541))
   - Added alignment-aware `dart::common::MemoryAllocator` and `StlAllocator`
     paths so over-aligned objects and allocator-aware EnTT registries can be
-    backed by DART allocators.
+    backed by DART allocators, including simulation-mode checkpoint reloads
+    that reserve registry storage before the first resumed step.
   - Added `dart::common::FixedPoolAllocator` for fixed-size slot workloads and
     routed the fixed-size allocator comparison benchmark through it, while
     keeping mixed-size pool workloads on `PoolAllocator`.
