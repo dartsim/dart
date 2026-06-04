@@ -52,7 +52,7 @@ template <typename T, typename... Args>
 T* MemoryAllocator::construct(Args&&... args) noexcept
 {
   // Allocate new memory for a new object (without calling the constructor)
-  void* object = allocate(sizeof(T));
+  void* object = allocate(sizeof(T), alignof(T));
   if (!object) {
     return nullptr;
   }
@@ -62,7 +62,7 @@ T* MemoryAllocator::construct(Args&&... args) noexcept
   try {
     return std::construct_at(typedObject, std::forward<Args>(args)...);
   } catch (...) {
-    deallocate(object, sizeof(T));
+    deallocate(object, sizeof(T), alignof(T));
     return nullptr;
   }
 }
@@ -90,7 +90,7 @@ void MemoryAllocator::destroy(T* object) noexcept
     return;
   }
   std::destroy_at(object);
-  deallocate(object, sizeof(T));
+  deallocate(object, sizeof(T), alignof(T));
 }
 
 } // namespace dart::common

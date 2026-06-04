@@ -8,10 +8,11 @@
 
 - `MemoryAllocator` base class (`dart/common/memory_allocator.hpp`): `allocate(bytes)`, `deallocate(ptr, bytes)` -- virtual interface for all allocators
 - `MemoryManager` (`dart/common/memory_manager.hpp`): composite containing FreeListAllocator + PoolAllocator, accepts a base `MemoryAllocator&`
-- `PoolAllocator`: fast fixed-size pool (max 1024 bytes per object)
+- `PoolAllocator`: size-classed small-object pool (max 1024 bytes per object)
+- `FixedPoolAllocator`: single-size slot pool for fixed-node workloads
 - `FreeListAllocator`: arbitrary size allocations with coalescing
 
-Both exist but are **unused by dynamics or constraint modules**.
+These allocators exist but are **unused by dynamics or constraint modules**.
 
 ### Recent Additions (Cache-Friendliness Optimizations)
 
