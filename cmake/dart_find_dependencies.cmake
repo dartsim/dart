@@ -71,7 +71,17 @@ endif()
 
 option(DART_SKIP_spdlog "If ON, do not use spdlog even if it is found." OFF)
 mark_as_advanced(DART_SKIP_spdlog)
-dart_find_package(spdlog)
+# spdlog is OPTIONAL for core DART, so probe for it here WITHOUT the FetchContent
+# fallback in dart_find_spdlog.cmake. That fallback exists for the experimental
+# module's hard requirement and is invoked later by
+# dart_experimental_dependencies.cmake, which runs only when the module is
+# actually added -- its add_subdirectory is gated at the top level on dart-io /
+# dart-collision-native. Probing plainly here keeps core-only, offline and
+# minimal/graceful-skip configurations (where experimental ends up skipped) from
+# fetching spdlog during this global dependency pass, before the build has decided
+# whether experimental can be built. A plain probe still sets spdlog_FOUND, which
+# is all of core's DART_HAVE_spdlog logic consumes.
+find_package(spdlog 1.9.2 QUIET CONFIG)
 
 # Only fetch ODE/Bullet if the corresponding collision module is enabled
 # and system libraries are not being used.
