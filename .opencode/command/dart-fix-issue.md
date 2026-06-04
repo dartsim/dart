@@ -17,11 +17,11 @@ Fix GitHub issue: $ARGUMENTS
 ## Workflow
 
 1. `gh issue view $1` - Validate issue
-2. Classify whether the issue is a bug fix that applies to `release-6.16`.
-   For applicable bug fixes, start from `origin/release-6.16`; otherwise start
+2. Classify whether the issue is a bug fix that applies to `release-6.17`.
+   For applicable bug fixes, start from `origin/release-6.17`; otherwise start
    from `origin/main`.
 3. Fix with minimal changes + add regression test. For dual-PR bug fixes, fix
-   `release-6.16` first, then cherry-pick or reapply to `main`.
+   `release-6.17` first, then cherry-pick or reapply to `main`.
 4. `pixi run lint`, then run the smallest relevant tests; use
    `pixi run test-all` before finalizing when feasible, and also
    `pixi run -e cuda test-all` on Linux hosts with a visible NVIDIA CUDA runtime
@@ -32,4 +32,4 @@ Fix GitHub issue: $ARGUMENTS
 
 ## CRITICAL: Dual-PR for Bug Fixes
 
-PRs to BOTH `release-6.16` AND `main`. See `docs/onboarding/contributing.md`.
+PRs to BOTH `release-6.17` AND `main`. See `docs/onboarding/contributing.md`.

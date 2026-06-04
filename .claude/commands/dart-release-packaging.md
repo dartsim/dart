@@ -28,7 +28,7 @@ Create release packaging PR after explicit maintainer/user approval: $ARGUMENTS
 9. Ask for explicit maintainer/user approval before pushing, creating the PR,
    or setting milestones.
 10. After approval, create the PR against the release branch with the release
-    milestone, for example `DART 6.16.x` or the specific version milestone if
+    milestone, for example `DART 6.17.1` or the specific version milestone if
     available.
 
 ## Output
