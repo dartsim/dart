@@ -78,6 +78,11 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     the lean compute-only `build-cuda`/`test-cuda` paths are unaffected, and it
     resets stale CMake compiler cache metadata before CMake can auto-rerun with
     default options and drop the `dartpy` target.
+  - Added public `World` lookup/list/count accessors for experimental
+    rigid-body fixed joints, plus matching dartpy bindings and py-demo
+    diagnostics, so users can recover fixed-joint handles and inspect their
+    rigid endpoints after construction or save/load without touching ECS
+    internals.
   - Made `dart::gui` UI scaling DPI-aware: `--gui-scale` now acts as a manual
     user multiplier on top of GLFW content-scale detection, `DART_GUI_DPI_SCALE`
     can override misreported DPI, implicit interactive app windows now use a
@@ -601,6 +606,20 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     `clang-format` version changes under an existing build tree.
 
 - Simulation
+  - Consolidated the experimental CUDA solver modules (rigid-body batch, vertex
+    block descent, deformable PSD projection) onto a shared device-runtime
+    substrate so new GPU solvers reuse common blocks instead of reinventing them:
+    one `isCudaRuntimeAvailable`/`throwIfCudaError`/`checkLastError`/`launchGrid1D`
+    (`compute/cuda/cuda_runtime.cuh`), one owning `DeviceBuffer<T>`
+    (`compute/cuda/device_buffer.cuh`), and a single-sourced per-body
+    `__host__ __device__` orientation integration core
+    (`compute/detail/rigid_integration_core.hpp`) shared by the CPU batch kernel
+    and the CUDA kernel (deleting a divergent device re-derivation). The
+    build-only `-cuda` static library, backend-neutral public API, and
+    no-GPU-runtime-dependency packaging are unchanged; the experimental CUDA
+    failure path now throws `InvalidOperationException` (backward compatible — it
+    derives from `std::runtime_error`) for one consistent error contract. Design:
+    `docs/design/shared_cuda_device_substrate.md` (PLAN-031).
   - Added opt-in analytic differentiable simulation to the experimental `World`
     (the Nimble method, arXiv:2103.16021): a build-time `DART_BUILD_DIFF` option
     plus a runtime `WorldOptions::differentiable` flag (off by default, with
