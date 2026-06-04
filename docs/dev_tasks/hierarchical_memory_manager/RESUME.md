@@ -24,9 +24,11 @@ pixi run bm-allocator-comparative-check --only-entt-registry \
   --baseline foonathan --baseline std --verbose
 ```
 
-The current pool-backed `StlAllocator` registry route beats foonathan/memory in
-focused local probes, but it still trails the standard registry on steady-state
-create/emplace/read/destroy churn. Keep the PR draft until that standard
+The normal-aligned `StlAllocator` fast path now makes the focused STL-vector
+probe pass against both foonathan/memory and `std::pmr`, but the
+free-list-backed registry route still does not consistently beat both
+foonathan/memory and the standard registry on steady-state
+create/emplace/read/destroy churn. Keep the PR draft until that registry
 baseline gap is resolved or a documented dependency/policy decision replaces the
 in-house route.
 
@@ -45,6 +47,15 @@ in-house route.
   `.benchmark_results/stlvector_focused_serial_1s_9.json` passed against both
   foonathan and std, so the earlier 10k vector miss was not stable enough to
   justify an allocator-code change.
+- The focused STL-vector checker over
+  `.benchmark_results/stlvector_default_align_fastpath_probe.json` passed
+  against both foonathan and `std::pmr` after the normal-aligned
+  `StlAllocator` fast path.
+- The focused EnTT checker over
+  `.benchmark_results/entt_registry_stl_default_align_fastpath_probe.json`
+  still failed against the standard registry and one foonathan row, confirming
+  that the registry hot loop needs allocator-policy work beyond the generic
+  STL adapter fast path.
 
 ## Context That Would Be Lost
 

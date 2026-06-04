@@ -11,8 +11,11 @@
       `std::pmr` locally. The comparative benchmark binary now honors the
       checker-requested repetition count instead of forcing five repetitions.
       The strict checker now rejects high-CV rows before treating ratios as
-      evidence. The default foonathan/memory comparative gate passes on the
-      current benchmark branch with the CV guard enabled. The broader
+      evidence. `StlAllocator` now uses the default-aligned allocator fast path
+      for normal-aligned STL storage, and the focused STL-vector probe passes
+      against foonathan/memory and `std::pmr`. The default foonathan/memory
+      comparative gate passes on the current benchmark branch with the CV guard
+      enabled. The broader
       correctness matrix and standard-library registry allocator evidence still
       need to land before this phase is complete. Focused EnTT registry probes
       now cover foonathan/memory's array-capable pool baseline and the standard
