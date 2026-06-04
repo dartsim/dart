@@ -345,6 +345,17 @@ endif()
 
 if(TARGET dart-simulation-experimental)
   target_link_libraries(dartpy PRIVATE dart-simulation-experimental)
+  # The dartpy experimental bindings compile internal (non-promoted) experimental
+  # headers directly. EnTT is a PRIVATE dependency of dart-simulation-experimental
+  # (the public surface is entt-free), so its include directory is not propagated
+  # through the library. Link it defensively for this in-tree internal consumer so
+  # that clean builds -- where EnTT is provided only via dart_find_entt.cmake /
+  # FetchContent rather than a global include directory -- stay robust as the
+  # bindings reach into more internals over time. Guarded so it is a no-op in
+  # standalone builds, where EnTT (a private dep) is not an exported target.
+  if(TARGET EnTT::EnTT)
+    target_link_libraries(dartpy PRIVATE EnTT::EnTT)
+  endif()
   foreach(prop INCLUDE_DIRECTORIES INTERFACE_INCLUDE_DIRECTORIES)
     get_target_property(
       _simulation_experimental_includes

@@ -2560,6 +2560,19 @@ function(dart_add_simulation_test TEST_NAME TEST_PATH)
     PRIVATE ${ARG_LIBRARY} GTest::gtest GTest::gtest_main
   )
 
+  # In-tree simulation-experimental tests routinely include ECS-internal headers
+  # that pull in <entt/entt.hpp>. EnTT is a PRIVATE dependency of
+  # dart-simulation-experimental (the public surface is entt-free), so test
+  # targets do not inherit its include directories. Link it here for every test
+  # this helper creates so clean builds -- where EnTT is provided only via
+  # dart_find_entt.cmake/FetchContent rather than a global include dir -- still
+  # compile, without hand-maintaining a per-target list. The public-header
+  # poison smoke test is built directly (not via this helper) and so stays
+  # deliberately EnTT-free.
+  if(TARGET EnTT::EnTT)
+    target_link_libraries(${TEST_NAME} PRIVATE EnTT::EnTT)
+  endif()
+
   # Add to CTest with label for easy filtering
   add_test(NAME ${TEST_NAME} COMMAND $<TARGET_FILE:${TEST_NAME}>)
   set_tests_properties(${TEST_NAME} PROPERTIES LABELS "${ARG_LABEL}")

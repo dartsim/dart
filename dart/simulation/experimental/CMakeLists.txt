@@ -115,10 +115,21 @@ target_include_directories(
 
 target_compile_features(${target_name} PUBLIC cxx_std_20)
 
+# spdlog is an internal implementation dependency (logging): no promoted public
+# header and no in-tree consumer of the public API includes <spdlog/...>, so it
+# is linked PRIVATE rather than PUBLIC. This keeps it out of the installed
+# component's public link interface for shared builds; for static builds it is
+# re-registered below (like EnTT/Taskflow) so a downstream find_package can still
+# resolve the $<LINK_ONLY:...> entry. Eigen3 stays PUBLIC: promoted headers use
+# Eigen types in their API.
 target_link_libraries(
   ${target_name}
-  PUBLIC dart Eigen3::Eigen EnTT::EnTT spdlog::spdlog
-  PRIVATE ${PROJECT_NAME}-collision-native ${PROJECT_NAME}-io
+  PUBLIC dart Eigen3::Eigen
+  PRIVATE
+    EnTT::EnTT
+    spdlog::spdlog
+    ${PROJECT_NAME}-collision-native
+    ${PROJECT_NAME}-io
 )
 
 if(TARGET Taskflow::Taskflow)
@@ -203,12 +214,162 @@ endif()
 add_component(${PROJECT_NAME} ${component_name})
 add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
 add_component_dependencies(${PROJECT_NAME} ${component_name} dart io)
-add_component_dependency_packages(${PROJECT_NAME} ${component_name} EnTT Taskflow)
+# EnTT, Taskflow and spdlog are PRIVATE implementation dependencies (no promoted
+# public header includes or names them, verified by
+# scripts/audit_dart7_promotion_surface.py --strict and the public-header
+# smoke). How they appear in the installed component interface depends on the
+# library kind:
+#   * Shared builds drop PRIVATE link deps from INTERFACE_LINK_LIBRARIES, so a
+#     downstream find_package(dart) needs no finder; we deliberately do NOT
+#     register them as component dependency packages (the common case).
+#   * Static builds export a target's PRIVATE link deps as $<LINK_ONLY:...> in
+#     the component interface, so a downstream find_package(dart) needs the
+#     EnTT::EnTT / Taskflow::Taskflow / spdlog::spdlog imported targets to exist
+#     for linking. This is link-only: it carries no include/usage requirements,
+#     so it does not re-expose any of those headers on the public surface.
+if(NOT BUILD_SHARED_LIBS)
+  add_component_dependency_packages(
+    ${PROJECT_NAME}
+    ${component_name}
+    EnTT
+    Taskflow
+    spdlog
+  )
+endif()
+
+# Promoted public surface for dart::simulation::experimental. This is the single
+# source of truth for which headers ship in the installed package; it is shared
+# (via the DART_EXPERIMENTAL_PUBLIC_HEADERS cache variable below) with the
+# public-header self-containment smoke test in
+# tests/unit/simulation/experimental/public_headers. It must stay in lockstep
+# with the promotion allowlist in scripts/audit_dart7_promotion_surface.py
+# (PROMOTE_*).
+# Only these headers are installed; the implementation-internal directories
+# (comps/, compute/, common/, detail/, ecs/, io/, space/) stay hidden.
+# The diff/ directory is mostly internal, but three headers ship: diff/rollout.hpp
+# is the public differentiable-simulation entry point (diff::rollout /
+# RolloutTrajectory / RolloutGradient), demonstrated by the
+# experimental_differentiable_gui example and consumable standalone; and
+# diff/step_derivatives.hpp / diff/step_gradient.hpp, which are not promotion
+# targets in their own right but are pulled into the public include closure by
+# value (world.hpp / rollout.hpp), so they must ship too.
+set(
+  dart_experimental_public_headers_toplevel
+  world.hpp
+  world_options.hpp
+  world_sync_stage.hpp
+  entity.hpp
+  fwd.hpp
+  export.hpp
+  version.hpp
+)
+set(
+  dart_experimental_public_headers_body
+  body/collision_body.hpp
+  body/collision_shape.hpp
+  body/contact.hpp
+  body/deformable_body.hpp
+  body/deformable_body_options.hpp
+  body/rigid_body.hpp
+  body/rigid_body_options.hpp
+)
+set(
+  dart_experimental_public_headers_multibody
+  multibody/joint.hpp
+  multibody/joint_type.hpp
+  multibody/link.hpp
+  multibody/multibody.hpp
+  multibody/multibody_options.hpp
+)
+set(
+  dart_experimental_public_headers_frame
+  frame/fixed_frame.hpp
+  frame/frame.hpp
+  frame/free_frame.hpp
+)
+set(
+  dart_experimental_public_headers_constraint
+  constraint/loop_closure.hpp
+  constraint/loop_closure_family.hpp
+  constraint/loop_closure_residual.hpp
+  constraint/loop_closure_runtime_policy.hpp
+  constraint/loop_closure_spec.hpp
+)
+set(
+  dart_experimental_public_headers_diff
+  diff/step_derivatives.hpp
+  diff/step_gradient.hpp
+)
+# diff/rollout.hpp is the public differentiable-simulation entry point, but its
+# implementation (diff/rollout.cpp) is compiled only under DART_BUILD_DIFF. Keep
+# it in its own literal set() so the promotion audit always cross-checks it (leak
+# scan + allowlist), but only fold it into the installed/public header set when
+# the diff feature is actually built -- otherwise a default install would
+# advertise diff::rollout()/rolloutVjp() symbols it never compiled, breaking
+# downstream links.
+set(dart_experimental_public_headers_diff_optin diff/rollout.hpp)
+set(
+  dart_experimental_public_headers
+  ${dart_experimental_public_headers_toplevel}
+  ${dart_experimental_public_headers_body}
+  ${dart_experimental_public_headers_multibody}
+  ${dart_experimental_public_headers_frame}
+  ${dart_experimental_public_headers_constraint}
+  ${dart_experimental_public_headers_diff}
+)
+if(DART_BUILD_DIFF)
+  list(
+    APPEND dart_experimental_public_headers
+    ${dart_experimental_public_headers_diff_optin}
+  )
+endif()
+# Export the allowlist (relative to this dir) so the public-header
+# self-containment smoke test in the test tree can include exactly the same set
+# without the lists drifting apart.
+set(
+  DART_EXPERIMENTAL_PUBLIC_HEADERS
+  ${dart_experimental_public_headers}
+  CACHE INTERNAL
+  "Promoted public headers of dart::simulation::experimental (allowlist)"
+)
 
 install(
-  DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/
+  FILES ${dart_experimental_public_headers_toplevel}
   DESTINATION include/dart/simulation/experimental
   COMPONENT headers
-  FILES_MATCHING
-  PATTERN "*.hpp"
 )
+install(
+  FILES ${dart_experimental_public_headers_body}
+  DESTINATION include/dart/simulation/experimental/body
+  COMPONENT headers
+)
+install(
+  FILES ${dart_experimental_public_headers_multibody}
+  DESTINATION include/dart/simulation/experimental/multibody
+  COMPONENT headers
+)
+install(
+  FILES ${dart_experimental_public_headers_frame}
+  DESTINATION include/dart/simulation/experimental/frame
+  COMPONENT headers
+)
+install(
+  FILES ${dart_experimental_public_headers_constraint}
+  DESTINATION include/dart/simulation/experimental/constraint
+  COMPONENT headers
+)
+install(
+  FILES ${dart_experimental_public_headers_diff}
+  DESTINATION include/dart/simulation/experimental/diff
+  COMPONENT headers
+)
+# Ship the differentiable entry-point header only when its implementation is
+# compiled (DART_BUILD_DIFF), so a default install never advertises diff symbols
+# it did not build.
+if(DART_BUILD_DIFF)
+  install(
+    FILES ${dart_experimental_public_headers_diff_optin}
+    DESTINATION include/dart/simulation/experimental/diff
+    COMPONENT headers
+  )
+endif()
