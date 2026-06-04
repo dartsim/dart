@@ -46,7 +46,9 @@
 ///   3. Multi-pool: mixed-size alloc/dealloc
 ///   4. Realistic mixed workload (multi-size, random order)
 ///   5. Steady-state: pre-filled pool with random replace
-///   6. STL container workload
+///   6. Frame bulk varying workload
+///   7. STL container workload
+///   8. EnTT registry workload
 ///
 /// Run:  pixi run bm -- allocators-comparative
 /// JSON: pixi run bm -- allocators-comparative
@@ -58,14 +60,17 @@
 #include <dart/common/free_list_allocator.hpp>
 #include <dart/common/memory_allocator.hpp>
 #include <dart/common/pool_allocator.hpp>
+#include <dart/common/stl_allocator.hpp>
 
 #include <benchmark/benchmark.h>
+#include <entt/entity/registry.hpp>
 #include <foonathan/memory/memory_pool.hpp>
 #include <foonathan/memory/memory_pool_collection.hpp>
 #include <foonathan/memory/memory_stack.hpp>
 #include <foonathan/memory/namespace_alias.hpp>
 #include <foonathan/memory/std_allocator.hpp>
 
+#include <algorithm>
 #include <array>
 #include <memory_resource>
 #include <vector>
@@ -717,6 +722,175 @@ static void BM_StlVector_StdPmr(benchmark::State& state)
 BENCHMARK(BM_StlVector_StdPmr)
     ->Arg(1000)
     ->Arg(10000)
+    ->Repetitions(5)
+    ->ReportAggregatesOnly(true);
+
+// =============================================================================
+// Section 8: EnTT Registry — Component storage through allocator adapters
+//
+// Benchmark: create entities, attach multiple World-like components, read them
+// back through registry lookups, then destroy the entities. The registry is
+// pre-warmed so the measured loop represents steady-state simulation churn
+// instead of one-time storage discovery.
+// =============================================================================
+
+struct EnttRegistryTransform
+{
+  double position[3] = {};
+  double rotation[4] = {};
+};
+
+struct EnttRegistryVelocity
+{
+  double linear[3] = {};
+  double angular[3] = {};
+};
+
+struct EnttRegistryMass
+{
+  double value = 1.0;
+  double inertia[9] = {};
+};
+
+struct EnttRegistryTag
+{
+};
+
+template <typename Registry>
+void reserveEnttRegistryStorage(Registry& registry, const size_t entityCount)
+{
+  registry.template storage<EnttRegistryTransform>().reserve(entityCount);
+  registry.template storage<EnttRegistryVelocity>().reserve(entityCount);
+  registry.template storage<EnttRegistryMass>().reserve(entityCount);
+  registry.template storage<EnttRegistryTag>().reserve(entityCount);
+}
+
+template <typename Registry>
+void runEnttRegistryChurn(
+    Registry& registry,
+    std::vector<entt::entity>& entities,
+    const size_t entityCount)
+{
+  for (size_t i = 0; i < entityCount; ++i) {
+    const auto entity = registry.create();
+    entities[i] = entity;
+
+    auto& transform = registry.template emplace<EnttRegistryTransform>(entity);
+    transform.position[0] = static_cast<double>(i);
+    transform.position[1] = static_cast<double>(i + 1);
+    transform.position[2] = static_cast<double>(i + 2);
+    transform.rotation[3] = 1.0;
+
+    auto& velocity = registry.template emplace<EnttRegistryVelocity>(entity);
+    velocity.linear[0] = static_cast<double>(i & 7u);
+    velocity.angular[2] = static_cast<double>((i + 3u) & 15u);
+
+    auto& mass = registry.template emplace<EnttRegistryMass>(entity);
+    mass.value = 1.0 + static_cast<double>(i % 17u);
+    mass.inertia[0] = mass.value;
+
+    registry.template emplace<EnttRegistryTag>(entity);
+  }
+
+  double total = 0.0;
+  for (size_t i = 0; i < entityCount; ++i) {
+    const auto entity = entities[i];
+    const auto& transform
+        = registry.template get<EnttRegistryTransform>(entity);
+    const auto& velocity = registry.template get<EnttRegistryVelocity>(entity);
+    const auto& mass = registry.template get<EnttRegistryMass>(entity);
+    total += transform.position[0] + velocity.linear[0] + mass.value;
+    benchmark::DoNotOptimize(registry.template all_of<EnttRegistryTag>(entity));
+  }
+  benchmark::DoNotOptimize(total);
+
+  for (size_t i = entityCount; i > 0; --i) {
+    registry.destroy(entities[i - 1]);
+  }
+  benchmark::ClobberMemory();
+}
+
+template <typename Registry>
+void prewarmEnttRegistry(
+    Registry& registry,
+    std::vector<entt::entity>& entities,
+    const size_t entityCount)
+{
+  reserveEnttRegistryStorage(registry, entityCount);
+  runEnttRegistryChurn(registry, entities, entityCount);
+}
+
+static void BM_EnttRegistry_DART(benchmark::State& state)
+{
+  const auto entityCount = static_cast<size_t>(state.range(0));
+  PoolAllocator backing;
+  StlAllocator<entt::entity> allocator(backing);
+  entt::basic_registry<entt::entity, StlAllocator<entt::entity>> registry(
+      allocator);
+  std::vector<entt::entity> entities(entityCount);
+
+  prewarmEnttRegistry(registry, entities, entityCount);
+
+  for (auto _ : state) {
+    runEnttRegistryChurn(registry, entities, entityCount);
+  }
+  state.SetItemsProcessed(
+      static_cast<int64_t>(state.iterations() * entityCount));
+}
+BENCHMARK(BM_EnttRegistry_DART)
+    ->Arg(256)
+    ->Arg(512)
+    ->Arg(2048)
+    ->Repetitions(5)
+    ->ReportAggregatesOnly(true);
+
+static void BM_EnttRegistry_Foonathan(benchmark::State& state)
+{
+  const auto entityCount = static_cast<size_t>(state.range(0));
+  const size_t maxNodeSize = std::max<size_t>(sizeof(EnttRegistryMass), 8192);
+  const size_t blockSize = entityCount * 4096 + 16 * 1024 * 1024;
+  fm::memory_pool_collection<fm::node_pool, fm::log2_buckets> pool(
+      maxNodeSize, blockSize);
+  fm::std_allocator<
+      entt::entity,
+      fm::memory_pool_collection<fm::node_pool, fm::log2_buckets>>
+      allocator(pool);
+  entt::basic_registry<entt::entity, decltype(allocator)> registry(allocator);
+  std::vector<entt::entity> entities(entityCount);
+
+  prewarmEnttRegistry(registry, entities, entityCount);
+
+  for (auto _ : state) {
+    runEnttRegistryChurn(registry, entities, entityCount);
+  }
+  state.SetItemsProcessed(
+      static_cast<int64_t>(state.iterations() * entityCount));
+}
+BENCHMARK(BM_EnttRegistry_Foonathan)
+    ->Arg(256)
+    ->Arg(512)
+    ->Arg(2048)
+    ->Repetitions(5)
+    ->ReportAggregatesOnly(true);
+
+static void BM_EnttRegistry_Std(benchmark::State& state)
+{
+  const auto entityCount = static_cast<size_t>(state.range(0));
+  entt::registry registry;
+  std::vector<entt::entity> entities(entityCount);
+
+  prewarmEnttRegistry(registry, entities, entityCount);
+
+  for (auto _ : state) {
+    runEnttRegistryChurn(registry, entities, entityCount);
+  }
+  state.SetItemsProcessed(
+      static_cast<int64_t>(state.iterations() * entityCount));
+}
+BENCHMARK(BM_EnttRegistry_Std)
+    ->Arg(256)
+    ->Arg(512)
+    ->Arg(2048)
     ->Repetitions(5)
     ->ReportAggregatesOnly(true);
 

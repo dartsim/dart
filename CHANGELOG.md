@@ -105,6 +105,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Added `pixi run bm-allocator-comparative-check`, a strict allocator
     benchmark gate that compares DART allocator workloads against
     foonathan/memory and `std::pmr` baselines.
+  - Extended the comparative allocator benchmarks with opt-in allocator-aware
+    EnTT registry/component storage churn against foonathan/memory and
+    standard-registry baselines.
   - Added the standalone `dartsim/` GUI simulator (a runtime executable, not a
     library) built only on the experimental World API. Its headless editor
     engine (`dartsim/engine`) provides scene/object, selection, command

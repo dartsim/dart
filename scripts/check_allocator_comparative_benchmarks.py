@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check allocator benchmarks against foonathan/memory and std::pmr.
+"""Check allocator benchmarks against foonathan/memory and standard allocators.
 
 Runs bm_allocators_comparative (or reads an existing Google Benchmark JSON)
 and fails when DART allocator timings do not beat the selected baseline
@@ -13,7 +13,7 @@ simulation-loop adoption.
 Usage:
     python scripts/check_allocator_comparative_benchmarks.py
     python scripts/check_allocator_comparative_benchmarks.py --input result.json
-    python scripts/check_allocator_comparative_benchmarks.py --baseline stdpmr
+    python scripts/check_allocator_comparative_benchmarks.py --baseline std
 """
 
 from __future__ import annotations
@@ -35,15 +35,21 @@ DEFAULT_FILTER = (
     "(DART|Foonathan|StdPmr)"
 )
 
+ENTT_REGISTRY_FILTER = (
+    "BM_(Pool|Stack|MultiPool|Realistic|SteadyState|FrameBulk|StlVector|"
+    "EnttRegistry)_(DART|Foonathan|StdPmr|Std)"
+)
+
 _COMPARATIVE_RE = re.compile(
-    r"^(BM_(?:Pool|Stack|MultiPool|Realistic|SteadyState|FrameBulk|StlVector))"
-    r"_(DART|Foonathan|StdPmr)(/.*)?$"
+    r"^(BM_(?:Pool|Stack|MultiPool|Realistic|SteadyState|FrameBulk|StlVector|"
+    r"EnttRegistry))_(DART|Foonathan|StdPmr|Std)(/.*)?$"
 )
 _AGGREGATE_SUFFIX_RE = re.compile(r"_(?:mean|median|stddev|cv)$")
 _REPEATS_SUFFIX_RE = re.compile(r"/repeats:\d+")
 _BASELINE_ALLOCATORS = {
-    "foonathan": "Foonathan",
-    "stdpmr": "StdPmr",
+    "foonathan": ("Foonathan",),
+    "std": ("StdPmr", "Std"),
+    "stdpmr": ("StdPmr", "Std"),
 }
 
 
@@ -72,7 +78,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     )
     parser.add_argument(
         "--benchmark-min-time",
-        default="10ms",
+        default="0.05s",
         help="Minimum benchmark time passed to Google Benchmark.",
     )
     parser.add_argument(
@@ -89,6 +95,16 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         help=(
             "Baseline allocator family to compare against. May be passed more "
             "than once. Defaults to foonathan."
+        ),
+    )
+    parser.add_argument(
+        "--include-entt-registry",
+        action="store_true",
+        help=(
+            "Include allocator-aware EnTT registry/component storage rows. "
+            "These rows are an evidence surface for allocator-policy work and "
+            "are intentionally opt-in until the production registry allocator "
+            "policy consistently beats the baselines."
         ),
     )
     parser.add_argument(
@@ -181,12 +197,12 @@ def collect_timings(
 def evaluate_comparisons(
     rows: list[dict],
     *,
-    baseline_allocators: list[str],
+    baseline_allocators: list[tuple[str, ...]],
     max_ratio: float = 1.0,
     metric: str = "cpu_time",
 ) -> tuple[list[dict], list[dict]]:
     if not baseline_allocators:
-        baseline_allocators = ["Foonathan"]
+        baseline_allocators = [("Foonathan",)]
 
     timings = collect_timings(rows, metric)
     failures = []
@@ -208,13 +224,17 @@ def evaluate_comparisons(
             )
             continue
 
-        for baseline in baseline_allocators:
-            baseline_time = allocs.get(baseline)
+        for candidates in baseline_allocators:
+            baseline = next(
+                (candidate for candidate in candidates if candidate in allocs),
+                None,
+            )
+            baseline_time = allocs.get(baseline) if baseline is not None else None
             if baseline_time is None:
                 failures.append(
                     {
                         "benchmark": key,
-                        "baseline": baseline,
+                        "baseline": "/".join(candidates),
                         "status": "MISSING_BASELINE",
                     }
                 )
@@ -244,6 +264,7 @@ def run_benchmark(
     *,
     build_type: str,
     benchmark_min_time: str,
+    include_entt_registry: bool,
     repetitions: int,
 ) -> Path:
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -256,7 +277,9 @@ def run_benchmark(
             "allocators-comparative",
             "--build-type",
             build_type,
-            "--benchmark_filter={}".format(DEFAULT_FILTER),
+            "--benchmark_filter={}".format(
+                ENTT_REGISTRY_FILTER if include_entt_registry else DEFAULT_FILTER
+            ),
             "--benchmark_min_time={}".format(benchmark_min_time),
             "--benchmark_repetitions={}".format(repetitions),
             "--benchmark_report_aggregates_only=true",
@@ -310,6 +333,7 @@ def main(argv: list[str]) -> int:
             args.output,
             build_type=args.build_type,
             benchmark_min_time=args.benchmark_min_time,
+            include_entt_registry=args.include_entt_registry,
             repetitions=args.repetitions,
         )
         print("Results saved to: {}".format(json_path))
@@ -328,7 +352,7 @@ def main(argv: list[str]) -> int:
     print(
         "\n{} comparative allocator checks performed against {}.".format(
             len(failures) + len(passes),
-            ", ".join(baseline_allocators),
+            ", ".join("/".join(group) for group in baseline_allocators),
         )
     )
 

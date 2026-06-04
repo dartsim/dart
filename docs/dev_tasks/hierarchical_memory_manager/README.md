@@ -96,7 +96,11 @@ debugging, profiling, optimization experiments, and ImGui visualization.
    pool/free-list/frame allocators across invalid sizes, over-alignment,
    overflow, reuse-after-free, leak/debug accounting, and bounded failure.
 3. Design and benchmark EnTT registry/storage allocator integration before
-   claiming zero allocations for ECS-backed world data.
+   claiming zero allocations for ECS-backed world data. Use the opt-in
+   `bm-allocator-comparative-check --include-entt-registry` rows to compare the
+   active registry allocator policy against foonathan/memory and the standard
+   registry; the generic pool-backed `StlAllocator` route is evidence-only
+   until it consistently wins those rows.
 4. Start replacing per-step `std::vector`/`Eigen` temporaries in hot stages with
    world-frame or world-pool backed storage only after the allocator evidence
    gate proves the DART allocator path is better for that workload.
