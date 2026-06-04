@@ -105,6 +105,26 @@ def _install_simulation_experimental_diff() -> None:
 _install_simulation_experimental_diff()
 
 
+def _install_world_render_bridge() -> None:
+  """Attach the pure-Python ``WorldRenderBridge`` helper onto ``dartpy.gui``.
+
+  ``WorldRenderBridge`` mirrors an ECS ``dartpy.simulation`` World into a
+  parallel classic render World that the C++ Filament viewer draws (the ECS
+  World has no direct viewer path). It is a supported GUI helper; because
+  ``dartpy.gui`` is a C++ extension submodule, the pure-Python class is attached
+  here. Requires the GUI build; skipped when ``dartpy.gui`` is absent.
+  """
+  gui = sys.modules.get(f"{__name__}.gui")
+  if gui is None:
+    return
+  from . import _world_render_bridge as _bridge_impl
+
+  gui.WorldRenderBridge = _bridge_impl.WorldRenderBridge
+
+
+_install_world_render_bridge()
+
+
 def __getattr__(name: str):
   """Expose pure-Python submodules (e.g., gui) via attribute access."""
   import importlib
