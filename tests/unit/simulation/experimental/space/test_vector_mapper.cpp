@@ -670,4 +670,48 @@ TEST(VectorMapper, NoMapperFillsZeros)
   EXPECT_DOUBLE_EQ(vec[0], 0.0);
   EXPECT_DOUBLE_EQ(vec[1], 0.0);
   EXPECT_DOUBLE_EQ(vec[2], 0.0);
+
+  std::vector<double> output{1.0, 2.0, 3.0};
+  mapper.toVector(registry, output);
+  EXPECT_DOUBLE_EQ(output[0], 0.0);
+  EXPECT_DOUBLE_EQ(output[1], 0.0);
+  EXPECT_DOUBLE_EQ(output[2], 0.0);
+}
+
+TEST(VectorMapper, WorldRegistryNoMapperFillsZerosAndSkipsInput)
+{
+  StateSpace space;
+  space.addVariable("unmapped_scalar", 1);
+  space.addVariable("unmapped_vector", 2);
+  space.finalize();
+
+  VectorMapper mapper(space);
+  World world;
+  auto& registry = detail::registryOf(world);
+
+  auto vec = mapper.toVector(registry);
+  ASSERT_EQ(vec.size(), 3);
+  EXPECT_DOUBLE_EQ(vec[0], 0.0);
+  EXPECT_DOUBLE_EQ(vec[1], 0.0);
+  EXPECT_DOUBLE_EQ(vec[2], 0.0);
+
+  std::vector<double> output{1.0, 2.0, 3.0};
+  mapper.toVector(registry, output);
+  EXPECT_DOUBLE_EQ(output[0], 0.0);
+  EXPECT_DOUBLE_EQ(output[1], 0.0);
+  EXPECT_DOUBLE_EQ(output[2], 0.0);
+
+  const auto eigenVec = mapper.toEigen(registry);
+  ASSERT_EQ(eigenVec.size(), 3);
+  EXPECT_DOUBLE_EQ(eigenVec[0], 0.0);
+  EXPECT_DOUBLE_EQ(eigenVec[1], 0.0);
+  EXPECT_DOUBLE_EQ(eigenVec[2], 0.0);
+
+  const std::vector<double> updated{4.0, 5.0, 6.0};
+  EXPECT_NO_THROW(
+      mapper.fromVector(registry, std::span<const double>(updated)));
+
+  Eigen::VectorXd eigenUpdated(3);
+  eigenUpdated << 7.0, 8.0, 9.0;
+  EXPECT_NO_THROW(mapper.fromEigen(registry, eigenUpdated));
 }

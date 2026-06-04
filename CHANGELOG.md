@@ -759,6 +759,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     and differentiable-parameter list through the World free allocator, with
     state mapper support for World-owned registries and free-list alignment
     fixes for Eigen-backed component storage.
+  - Fixed experimental `VectorMapper::toVector()` in-place output so unmapped
+    state-space variables are zero-filled even when no mapper slot has been
+    registered.
   - Added bake-time reservation for the experimental World's current
     EnTT registry/component storage and private multibody/deformable
     step-scratch storage at `enterSimulationMode()`, including no-growth
