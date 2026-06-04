@@ -41,12 +41,14 @@
 #include <dart/simulation/experimental/comps/frame_types.hpp>
 #include <dart/simulation/experimental/comps/joint.hpp>
 #include <dart/simulation/experimental/comps/link.hpp>
+#include <dart/simulation/experimental/comps/variational_contact_dual_state.hpp>
 #include <dart/simulation/experimental/compute/compute_executor.hpp>
 #include <dart/simulation/experimental/compute/compute_graph.hpp>
 #include <dart/simulation/experimental/compute/detail/deformable_avbd_replay_state.hpp>
 #include <dart/simulation/experimental/compute/parallel_executor.hpp>
 #include <dart/simulation/experimental/compute/rigid_body_state_batch.hpp>
 #include <dart/simulation/experimental/compute/sequential_executor.hpp>
+#include <dart/simulation/experimental/compute/variational_integration.hpp>
 #include <dart/simulation/experimental/compute/world_batch.hpp>
 #include <dart/simulation/experimental/compute/world_step_stage.hpp>
 #include <dart/simulation/experimental/constraint/loop_closure_spec.hpp>
@@ -7138,6 +7140,118 @@ TEST(World, ReplayRecordingRestoresDeformableAvbdWarmStartState)
 
   world.restoreReplayFrame(1);
   EXPECT_DOUBLE_EQ(springRowStiffness(), frame1Stiffness);
+}
+
+// Test that replay restores transient variational solver-history components to
+// match the target frame, including removing lazily-created state when
+// scrubbing back before the first variational step.
+TEST(World, ReplayRecordingRestoresTransientVariationalComponents)
+{
+  namespace sx = dart::simulation::experimental;
+  namespace compute = dart::simulation::experimental::compute;
+
+  sx::World world;
+  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(1e-3);
+
+  auto robot = world.addMultibody("slider");
+  auto base = robot.addLink("base");
+
+  sx::JointSpec spec;
+  spec.name = "rail";
+  spec.type = sx::JointType::Prismatic;
+  spec.axis = Eigen::Vector3d::UnitZ();
+  auto carriage = robot.addLink("carriage", base, spec);
+  carriage.setMass(1.0);
+  carriage.setInertia(Eigen::Vector3d(0.01, 0.01, 0.01).asDiagonal());
+  carriage.getParentJoint().setPosition(Eigen::VectorXd::Constant(1, -0.001));
+
+  robot.setGroundContact(
+      Eigen::Vector3d::UnitZ(),
+      Eigen::Vector3d::Zero(),
+      1.0e4,
+      /*frictionCoefficient=*/0.0,
+      /*frictionRegularization=*/1.0e-4,
+      /*dampingCoefficient=*/20.0,
+      /*dualUpdateCadence=*/1);
+  robot.addGroundContactPoint(carriage, Eigen::Vector3d::Zero());
+
+  auto& registry = sx::detail::registryOf(world);
+  const auto countVariationalStates = [&]() {
+    std::size_t count = 0;
+    for (auto entity : registry.view<compute::MultibodyVariationalState>()) {
+      static_cast<void>(entity);
+      ++count;
+    }
+    return count;
+  };
+  const auto countDualStates = [&]() {
+    std::size_t count = 0;
+    for (auto entity :
+         registry.view<sx::comps::VariationalContactDualState>()) {
+      static_cast<void>(entity);
+      ++count;
+    }
+    return count;
+  };
+
+  world.setReplayRecordingEnabled(true);
+  ASSERT_EQ(world.getReplayFrameCount(), 1u);
+  EXPECT_EQ(countVariationalStates(), 0u);
+  EXPECT_EQ(countDualStates(), 0u);
+
+  world.step();
+  ASSERT_EQ(world.getReplayFrameCount(), 2u);
+  EXPECT_EQ(countVariationalStates(), 1u);
+  EXPECT_EQ(countDualStates(), 1u);
+
+  world.restoreReplayFrame(0);
+  EXPECT_EQ(countVariationalStates(), 0u);
+  EXPECT_EQ(countDualStates(), 0u);
+
+  world.step();
+  EXPECT_EQ(countVariationalStates(), 1u);
+  EXPECT_EQ(countDualStates(), 1u);
+}
+
+// Test that replay restore rejects loop-closure topology and runtime-policy
+// edits rather than restoring into a different constraint graph.
+TEST(World, ReplayRecordingRejectsLoopClosureLayoutChanges)
+{
+  namespace sx = dart::simulation::experimental;
+
+  {
+    sx::World world;
+    auto robot = world.addMultibody("robot");
+    auto base = robot.addLink("base");
+    auto link
+        = robot.addLink("link", {.parentLink = base, .jointName = "joint"});
+    world.addLoopClosure("closure", {.frameA = base, .frameB = link});
+
+    world.setReplayRecordingEnabled(true);
+    world.addLoopClosure("added", {.frameA = link, .frameB = base});
+
+    EXPECT_THROW(world.restoreReplayFrame(0), sx::InvalidOperationException);
+  }
+
+  {
+    sx::World world;
+    auto robot = world.addMultibody("robot");
+    auto base = robot.addLink("base");
+    auto link
+        = robot.addLink("link", {.parentLink = base, .jointName = "joint"});
+    auto closure
+        = world.addLoopClosure("closure", {.frameA = base, .frameB = link});
+
+    world.setReplayRecordingEnabled(true);
+    closure.setRuntimePolicy(
+        {.enabled = false,
+         .kinematics = sx::ClosureKinematicsPolicy::ResidualOnly,
+         .dynamics = sx::ClosureDynamicsPolicy::ResidualOnly});
+
+    EXPECT_THROW(world.restoreReplayFrame(0), sx::InvalidOperationException);
+  }
 }
 
 // Test that replay restores parented rigid bodies in frame-hierarchy order even

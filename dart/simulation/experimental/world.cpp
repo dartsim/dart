@@ -222,6 +222,13 @@ struct World::ReplayState
     std::optional<comps::FixedFrameProperties> fixedFrameProperties;
   };
 
+  struct LoopClosureState
+  {
+    entt::entity entity = entt::null;
+    std::string name;
+    comps::LoopClosure loopClosure;
+  };
+
   struct RigidBodyState
   {
     entt::entity entity = entt::null;
@@ -269,6 +276,7 @@ struct World::ReplayState
     std::vector<JointState> joints;
     std::vector<LinkState> links;
     std::vector<PublicFrameState> publicFrames;
+    std::vector<LoopClosureState> loopClosures;
     std::vector<RigidBodyState> rigidBodies;
   };
 
@@ -419,6 +427,25 @@ bool sameReplayCollisionGeometry(
   }
 
   return true;
+}
+
+bool sameReplayLoopClosureRuntimePolicy(
+    const LoopClosureRuntimePolicy& lhs, const LoopClosureRuntimePolicy& rhs)
+{
+  return lhs.enabled == rhs.enabled && lhs.kinematics == rhs.kinematics
+         && lhs.dynamics == rhs.dynamics;
+}
+
+bool sameReplayLoopClosure(
+    const comps::LoopClosure& lhs, const comps::LoopClosure& rhs)
+{
+  return lhs.family == rhs.family && lhs.frameA == rhs.frameA
+         && lhs.frameB == rhs.frameB
+         && lhs.offsetA.matrix().isApprox(rhs.offsetA.matrix(), 0.0)
+         && lhs.offsetB.matrix().isApprox(rhs.offsetB.matrix(), 0.0)
+         && sameReplayLoopClosureRuntimePolicy(
+             lhs.runtimePolicy, rhs.runtimePolicy)
+         && lhs.distance == rhs.distance;
 }
 
 template <typename RigidBodyStates>
@@ -582,6 +609,30 @@ void validateReplayComponents(
   }
 }
 
+template <typename Component, typename Snapshot, typename EntityPredicate>
+void validateReplayTransientComponents(
+    const entt::registry& registry,
+    const Snapshot& snapshot,
+    std::string_view componentName,
+    EntityPredicate&& entityPredicate)
+{
+  for (const auto& [entity, component] : snapshot) {
+    static_cast<void>(component);
+    DART_EXPERIMENTAL_THROW_T_IF(
+        !registry.valid(entity),
+        InvalidOperationException,
+        "Cannot restore replay frame: {} references an entity that no longer "
+        "exists",
+        componentName);
+    DART_EXPERIMENTAL_THROW_T_IF(
+        !entityPredicate(registry, entity),
+        InvalidOperationException,
+        "Cannot restore replay frame: {} references an entity with changed "
+        "component layout",
+        componentName);
+  }
+}
+
 template <typename Component, typename Snapshot>
 void restoreReplayComponents(
     entt::registry& registry,
@@ -592,6 +643,41 @@ void restoreReplayComponents(
 
   for (const auto& [entity, component] : snapshot) {
     registry.replace<Component>(entity, component);
+  }
+}
+
+template <typename Component, typename Snapshot, typename EntityPredicate>
+void restoreReplayTransientComponents(
+    entt::registry& registry,
+    const Snapshot& snapshot,
+    std::string_view componentName,
+    EntityPredicate&& entityPredicate)
+{
+  validateReplayTransientComponents<Component>(
+      registry, snapshot, componentName, entityPredicate);
+
+  std::vector<std::uint32_t> snapshotEntities;
+  snapshotEntities.reserve(snapshot.size());
+  for (const auto& [entity, component] : snapshot) {
+    static_cast<void>(component);
+    snapshotEntities.push_back(static_cast<std::uint32_t>(entity));
+  }
+  std::ranges::sort(snapshotEntities);
+
+  std::vector<entt::entity> staleEntities;
+  auto view = registry.view<Component>();
+  for (auto entity : view) {
+    if (!std::ranges::binary_search(
+            snapshotEntities, static_cast<std::uint32_t>(entity))) {
+      staleEntities.push_back(entity);
+    }
+  }
+  for (auto entity : staleEntities) {
+    registry.remove<Component>(entity);
+  }
+
+  for (const auto& [entity, component] : snapshot) {
+    registry.emplace_or_replace<Component>(entity, component);
   }
 }
 
@@ -618,6 +704,56 @@ std::size_t countReplayPublicFrameEntities(const entt::registry& registry)
     }
   }
   return count;
+}
+
+template <typename LoopClosureState>
+std::vector<LoopClosureState> captureReplayLoopClosures(
+    const entt::registry& registry)
+{
+  std::vector<LoopClosureState> states;
+  auto view = registry.view<comps::LoopClosure, comps::Name>();
+  states.reserve(countReplayView(view));
+  for (auto entity : view) {
+    states.push_back(
+        LoopClosureState{
+            entity,
+            view.get<comps::Name>(entity).name,
+            view.get<comps::LoopClosure>(entity)});
+  }
+  std::ranges::sort(states, [](const auto& lhs, const auto& rhs) {
+    return static_cast<std::uint32_t>(lhs.entity)
+           < static_cast<std::uint32_t>(rhs.entity);
+  });
+  return states;
+}
+
+template <typename LoopClosureStates>
+void validateReplayLoopClosures(
+    const entt::registry& registry, const LoopClosureStates& states)
+{
+  auto view = registry.view<comps::LoopClosure>();
+  DART_EXPERIMENTAL_THROW_T_IF(
+      countReplayView(view) != states.size(),
+      InvalidOperationException,
+      "Cannot restore replay frame: LoopClosure component count changed");
+
+  for (const auto& state : states) {
+    const bool layoutChanged
+        = !registry.valid(state.entity)
+          || !registry.all_of<comps::LoopClosure, comps::Name>(state.entity);
+    DART_EXPERIMENTAL_THROW_T_IF(
+        layoutChanged,
+        InvalidOperationException,
+        "Cannot restore replay frame: LoopClosure entity layout changed");
+
+    const auto& name = registry.get<comps::Name>(state.entity);
+    const auto& loopClosure = registry.get<comps::LoopClosure>(state.entity);
+    DART_EXPERIMENTAL_THROW_T_IF(
+        name.name != state.name
+            || !sameReplayLoopClosure(loopClosure, state.loopClosure),
+        InvalidOperationException,
+        "Cannot restore replay frame: LoopClosure entity layout changed");
+  }
 }
 
 void markFrameCachesDirty(entt::registry& registry)
@@ -3253,14 +3389,22 @@ void World::restoreReplayFrame(std::size_t index)
       m_storage->registry,
       replayFrame.deformableNodeStates,
       "DeformableNodeState");
-  validateReplayComponents<compute::MultibodyVariationalState>(
+  validateReplayTransientComponents<compute::MultibodyVariationalState>(
       m_storage->registry,
       replayFrame.multibodyVariationalStates,
-      "MultibodyVariationalState");
-  validateReplayComponents<comps::VariationalContactDualState>(
+      "MultibodyVariationalState",
+      [](const entt::registry& registry, entt::entity entity) {
+        return registry.all_of<comps::MultibodyStructure>(entity);
+      });
+  validateReplayTransientComponents<comps::VariationalContactDualState>(
       m_storage->registry,
       replayFrame.variationalContactDualStates,
-      "VariationalContactDualState");
+      "VariationalContactDualState",
+      [](const entt::registry& registry, entt::entity entity) {
+        return registry
+            .all_of<comps::MultibodyStructure, comps::VariationalContact>(
+                entity);
+      });
 
   DART_EXPERIMENTAL_THROW_T_IF(
       countReplayView(m_storage->registry.view<comps::Joint>())
@@ -3335,6 +3479,8 @@ void World::restoreReplayFrame(std::size_t index)
         "Cannot restore replay frame: public Frame entity layout changed");
   }
 
+  validateReplayLoopClosures(m_storage->registry, replayFrame.loopClosures);
+
   DART_EXPERIMENTAL_THROW_T_IF(
       countReplayView(m_storage->registry.view<
                       comps::RigidBodyTag,
@@ -3405,14 +3551,22 @@ void World::restoreReplayFrame(std::size_t index)
       m_storage->registry,
       replayFrame.deformableNodeStates,
       "DeformableNodeState");
-  restoreReplayComponents<compute::MultibodyVariationalState>(
+  restoreReplayTransientComponents<compute::MultibodyVariationalState>(
       m_storage->registry,
       replayFrame.multibodyVariationalStates,
-      "MultibodyVariationalState");
-  restoreReplayComponents<comps::VariationalContactDualState>(
+      "MultibodyVariationalState",
+      [](const entt::registry& registry, entt::entity entity) {
+        return registry.all_of<comps::MultibodyStructure>(entity);
+      });
+  restoreReplayTransientComponents<comps::VariationalContactDualState>(
       m_storage->registry,
       replayFrame.variationalContactDualStates,
-      "VariationalContactDualState");
+      "VariationalContactDualState",
+      [](const entt::registry& registry, entt::entity entity) {
+        return registry
+            .all_of<comps::MultibodyStructure, comps::VariationalContact>(
+                entity);
+      });
 
   for (const auto& state : replayFrame.joints) {
     auto& joint = m_storage->registry.get<comps::Joint>(state.entity);
@@ -3598,6 +3752,10 @@ void World::recordReplayFrame()
         return static_cast<std::uint32_t>(lhs.entity)
                < static_cast<std::uint32_t>(rhs.entity);
       });
+
+  replayFrame.loopClosures
+      = captureReplayLoopClosures<ReplayState::LoopClosureState>(
+          m_storage->registry);
 
   auto rigidBodyView = m_storage->registry.view<
       comps::RigidBodyTag,
