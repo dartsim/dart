@@ -78,6 +78,11 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     the lean compute-only `build-cuda`/`test-cuda` paths are unaffected, and it
     resets stale CMake compiler cache metadata before CMake can auto-rerun with
     default options and drop the `dartpy` target.
+  - Added public `World` lookup/list/count accessors for experimental
+    rigid-body fixed joints, plus matching dartpy bindings and py-demo
+    diagnostics, so users can recover fixed-joint handles and inspect their
+    rigid endpoints after construction or save/load without touching ECS
+    internals.
   - Made `dart::gui` UI scaling DPI-aware: `--gui-scale` now acts as a manual
     user multiplier on top of GLFW content-scale detection, `DART_GUI_DPI_SCALE`
     can override misreported DPI, implicit interactive app windows now use a
@@ -536,6 +541,13 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     `benchmark-action/github-action-benchmark`, with a local
     `pixi run bm-dashboard-preview` to render the same dashboard before it is
     published.
+  - Expanded the performance dashboard to track the new DART 7 solver families'
+    end-to-end `World::step` surfaces (rigid-body sequential-impulse/IPC, VBD and
+    default deformable grid, FEM bar, AVBD fixed-joint) and made the charts
+    human-readable: `scripts/benchmark_display_names.py` rewrites raw Google
+    Benchmark names into readable titles (merge `--humanize`), and the local
+    preview groups charts by solver family with labelled, thousands-formatted
+    axes (commit on x, time-per-op on y, lower is better).
   - Added an opt-in `pixi run abi-check` task (Linux only) that builds two refs
     with identical options and compares shared libraries with libabigail's
     `abidiff`. The task is diagnostic only and is not wired into CI; ABI

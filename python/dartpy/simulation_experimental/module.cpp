@@ -340,6 +340,18 @@ nb::list castMultibodiesKeepingWorldAlive(
   return result;
 }
 
+nb::list castJointsKeepingWorldAlive(
+    std::vector<sim::Joint> joints, const nb::handle& world)
+{
+  nb::list result;
+  for (auto& joint : joints) {
+    nb::object jointObject = nb::cast(std::move(joint), nb::rv_policy::move);
+    nb::detail::keep_alive(jointObject.ptr(), world.ptr());
+    result.append(jointObject);
+  }
+  return result;
+}
+
 bool isSymmetricPositiveDefinite(const Eigen::Matrix3d& matrix)
 {
   if (!matrix.allFinite() || !matrix.isApprox(matrix.transpose(), 1e-12)) {
@@ -2665,6 +2677,30 @@ void defSimulationExperimentalModule(nb::module_& m)
           nb::arg("child"),
           nb::keep_alive<0, 1>())
       .def(
+          "get_rigid_body_fixed_joint",
+          [](sim::World& self, const std::string& name) -> nb::object {
+            auto joint = self.getRigidBodyFixedJoint(name);
+            if (!joint.has_value()) {
+              return nb::none();
+            }
+            return nb::cast(*joint, nb::rv_policy::move);
+          },
+          nb::arg("name"),
+          nb::keep_alive<0, 1>())
+      .def(
+          "has_rigid_body_fixed_joint",
+          [](const sim::World& self, const std::string& name) {
+            return self.hasRigidBodyFixedJoint(name);
+          },
+          nb::arg("name"))
+      .def(
+          "get_rigid_body_fixed_joints",
+          [](const nb::object& worldObject) {
+            auto& self = nb::cast<sim::World&>(worldObject);
+            return castJointsKeepingWorldAlive(
+                self.getRigidBodyFixedJoints(), worldObject);
+          })
+      .def(
           "has_rigid_body",
           [](const sim::World& self, const std::string& name) {
             return self.hasRigidBody(name);
@@ -2739,6 +2775,9 @@ void defSimulationExperimentalModule(nb::module_& m)
       .def_prop_ro("num_multibodies", &sim::World::getMultibodyCount)
       .def_prop_ro("num_loop_closures", &sim::World::getLoopClosureCount)
       .def_prop_ro("num_rigid_bodies", &sim::World::getRigidBodyCount)
+      .def_prop_ro(
+          "num_rigid_body_fixed_joints",
+          &sim::World::getRigidBodyFixedJointCount)
       .def_prop_ro("is_differentiable", &sim::World::isDifferentiable)
       .def_prop_ro("contact_solver_method", &sim::World::getContactSolverMethod)
       .def_prop_rw(
@@ -2805,6 +2844,9 @@ void defSimulationExperimentalModule(nb::module_& m)
             "loop_closures", std::to_string(self.getLoopClosureCount()));
         fields.emplace_back(
             "rigid_bodies", std::to_string(self.getRigidBodyCount()));
+        fields.emplace_back(
+            "rigid_body_fixed_joints",
+            std::to_string(self.getRigidBodyFixedJointCount()));
         fields.emplace_back("time", repr_double(self.getTime()));
         fields.emplace_back("time_step", repr_double(self.getTimeStep()));
         fields.emplace_back(
