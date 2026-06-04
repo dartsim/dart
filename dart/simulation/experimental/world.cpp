@@ -378,6 +378,7 @@ struct WorldStepPipelineStages
       bool variationalSelected,
       bool useUnifiedConstraints)
   {
+    pipeline.clear();
     DART_EXPERIMENTAL_THROW_T_IF(
         !isValidRigidBodySolver(rigidBodySolver),
         InvalidArgumentException,
@@ -394,7 +395,7 @@ struct WorldStepPipelineStages
         }
         break;
       case RigidBodySolver::Ipc:
-        appendIpcDynamicsStages(variationalSelected);
+        appendIpcDynamicsStages(variationalSelected, useUnifiedConstraints);
         break;
     }
     pipeline.addStage(kinematics);
@@ -407,6 +408,7 @@ struct WorldStepPipelineStages
       bool useUnifiedConstraints,
       compute::WorldStepStage& finalStage)
   {
+    pipeline.clear();
     DART_EXPERIMENTAL_THROW_T_IF(
         !isValidRigidBodySolver(rigidBodySolver),
         InvalidArgumentException,
@@ -423,11 +425,17 @@ struct WorldStepPipelineStages
         }
         break;
       case RigidBodySolver::Ipc:
-        appendIpcDynamicsStages(variationalSelected);
+        appendIpcDynamicsStages(variationalSelected, useUnifiedConstraints);
         break;
     }
     pipeline.addStage(finalStage);
     return pipeline;
+  }
+
+  void prepare(World& world)
+  {
+    rigidIpcContact.prepare(world);
+    kinematics.prepare(world);
   }
 
 private:
@@ -443,15 +451,18 @@ private:
         .addStage(rigidBodyPosition);
   }
 
-  void appendIpcDynamicsStages(bool variationalSelected)
+  void appendIpcDynamicsStages(
+      bool variationalSelected, bool includeMultibodyStage)
   {
-    compute::WorldStepStage& multibodyStage
-        = variationalSelected
-              ? static_cast<compute::WorldStepStage&>(multibodyVariational)
-              : static_cast<compute::WorldStepStage&>(multibodyDynamics);
-    pipeline.addStage(rigidIpcContact)
-        .addStage(multibodyStage)
-        .addStage(deformableDynamics);
+    pipeline.addStage(rigidIpcContact);
+    if (includeMultibodyStage) {
+      compute::WorldStepStage& multibodyStage
+          = variationalSelected
+                ? static_cast<compute::WorldStepStage&>(multibodyVariational)
+                : static_cast<compute::WorldStepStage&>(multibodyDynamics);
+      pipeline.addStage(multibodyStage);
+    }
+    pipeline.addStage(deformableDynamics);
   }
 
   void appendSemiImplicitRigidBodyStages()
@@ -1300,10 +1311,17 @@ Eigen::Isometry3d toIsometry(
 
 } // namespace
 
+//==============================================================================
+struct World::StepPipelineCache
+{
+  WorldStepPipelineStages stages;
+};
+
 World::World()
   : m_storage(
         std::make_unique<detail::WorldStorage>(
-            m_memoryManager.getFreeAllocator()))
+            m_memoryManager.getFreeAllocator())),
+    m_stepPipelineCache(std::make_unique<StepPipelineCache>())
 {
   // Empty.
 }
@@ -1321,7 +1339,8 @@ World::World(const WorldOptions& options)
     m_timeStep(options.timeStep),
     m_differentiable(options.differentiable),
     m_contactSolverMethod(options.contactSolverMethod),
-    m_contactGradientMode(options.contactGradientMode)
+    m_contactGradientMode(options.contactGradientMode),
+    m_stepPipelineCache(std::make_unique<StepPipelineCache>())
 {
   DART_EXPERIMENTAL_THROW_T_IF(
       !std::isfinite(options.timeStep) || options.timeStep <= 0.0,
@@ -1424,6 +1443,7 @@ void World::clear()
   if (m_collisionQueryCache) {
     m_collisionQueryCache->clear();
   }
+  m_stepPipelineCache = std::make_unique<StepPipelineCache>();
 }
 
 //==============================================================================
@@ -2200,6 +2220,7 @@ void World::enterSimulationMode()
   detail::deformable_vbd::configureAvbdRigidWorldFixedJointsFromCurrentPoses(
       m_storage->registry);
   reserveRegistryStorageForSimulation();
+  m_stepPipelineCache->stages.prepare(*this);
 }
 
 //==============================================================================
@@ -2629,7 +2650,7 @@ MultibodyOptions World::getMultibodyOptions() const
 //==============================================================================
 void World::step(compute::ComputeExecutor& executor)
 {
-  WorldStepPipelineStages stages;
+  auto& stages = m_stepPipelineCache->stages;
   compute::WorldStepPipeline& pipeline = stages.buildDefault(
       m_rigidBodySolver,
       m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational,
@@ -2642,7 +2663,7 @@ void World::step(compute::ComputeExecutor& executor)
 //==============================================================================
 void World::step(std::size_t count, compute::ComputeExecutor& executor)
 {
-  WorldStepPipelineStages stages;
+  auto& stages = m_stepPipelineCache->stages;
   compute::WorldStepPipeline& pipeline = stages.buildDefault(
       m_rigidBodySolver,
       m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational,

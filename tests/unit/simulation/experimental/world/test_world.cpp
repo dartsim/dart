@@ -64,7 +64,13 @@
 #include <Eigen/Geometry>
 #include <gtest/gtest.h>
 
+#include <atomic>
 #include <limits>
+
+#include <cstdlib>
+#if defined(_WIN32)
+  #include <malloc.h>
+#endif
 #include <map>
 #include <new>
 #include <numbers>
@@ -76,6 +82,231 @@
 #include <cstdint>
 
 namespace {
+
+std::atomic<bool> g_heapAllocationTrackingEnabled{false};
+std::atomic<std::size_t> g_heapAllocationCount{0};
+std::atomic<std::size_t> g_heapAllocationBytes{0};
+
+void recordHeapAllocation(std::size_t bytes) noexcept
+{
+  if (g_heapAllocationTrackingEnabled.load(std::memory_order_relaxed)) {
+    g_heapAllocationCount.fetch_add(1, std::memory_order_relaxed);
+    g_heapAllocationBytes.fetch_add(bytes, std::memory_order_relaxed);
+  }
+}
+
+[[nodiscard]] void* allocateRaw(std::size_t bytes) noexcept
+{
+  return std::malloc(bytes == 0 ? 1 : bytes);
+}
+
+[[nodiscard]] void* allocateAlignedRaw(
+    std::size_t bytes, std::size_t alignment) noexcept
+{
+  if (alignment <= __STDCPP_DEFAULT_NEW_ALIGNMENT__) {
+    return allocateRaw(bytes);
+  }
+
+#if defined(_WIN32)
+  return _aligned_malloc(bytes == 0 ? 1 : bytes, alignment);
+#else
+  const auto requested = bytes == 0 ? 1 : bytes;
+  if (alignment == 0 || (alignment & (alignment - 1)) != 0) {
+    return nullptr;
+  }
+  if (alignment < alignof(void*)) {
+    alignment = alignof(void*);
+  }
+  void* pointer = nullptr;
+  return posix_memalign(&pointer, alignment, requested) == 0 ? pointer
+                                                             : nullptr;
+#endif
+}
+
+void deallocateAlignedRaw(void* pointer, std::size_t alignment) noexcept
+{
+  if (alignment <= __STDCPP_DEFAULT_NEW_ALIGNMENT__) {
+    std::free(pointer);
+    return;
+  }
+
+#if defined(_WIN32)
+  _aligned_free(pointer);
+#else
+  std::free(pointer);
+#endif
+}
+
+} // namespace
+
+void* operator new(std::size_t bytes)
+{
+  recordHeapAllocation(bytes);
+  if (auto* ptr = allocateRaw(bytes)) {
+    return ptr;
+  }
+  throw std::bad_alloc();
+}
+
+void* operator new[](std::size_t bytes)
+{
+  recordHeapAllocation(bytes);
+  if (auto* ptr = allocateRaw(bytes)) {
+    return ptr;
+  }
+  throw std::bad_alloc();
+}
+
+void* operator new(std::size_t bytes, const std::nothrow_t&) noexcept
+{
+  recordHeapAllocation(bytes);
+  return allocateRaw(bytes);
+}
+
+void* operator new[](std::size_t bytes, const std::nothrow_t&) noexcept
+{
+  recordHeapAllocation(bytes);
+  return allocateRaw(bytes);
+}
+
+void* operator new(std::size_t bytes, std::align_val_t alignment)
+{
+  recordHeapAllocation(bytes);
+  if (auto* ptr
+      = allocateAlignedRaw(bytes, static_cast<std::size_t>(alignment))) {
+    return ptr;
+  }
+  throw std::bad_alloc();
+}
+
+void* operator new[](std::size_t bytes, std::align_val_t alignment)
+{
+  recordHeapAllocation(bytes);
+  if (auto* ptr
+      = allocateAlignedRaw(bytes, static_cast<std::size_t>(alignment))) {
+    return ptr;
+  }
+  throw std::bad_alloc();
+}
+
+void* operator new(
+    std::size_t bytes,
+    std::align_val_t alignment,
+    const std::nothrow_t&) noexcept
+{
+  recordHeapAllocation(bytes);
+  return allocateAlignedRaw(bytes, static_cast<std::size_t>(alignment));
+}
+
+void* operator new[](
+    std::size_t bytes,
+    std::align_val_t alignment,
+    const std::nothrow_t&) noexcept
+{
+  recordHeapAllocation(bytes);
+  return allocateAlignedRaw(bytes, static_cast<std::size_t>(alignment));
+}
+
+void operator delete(void* pointer) noexcept
+{
+  std::free(pointer);
+}
+
+void operator delete[](void* pointer) noexcept
+{
+  std::free(pointer);
+}
+
+void operator delete(void* pointer, std::size_t) noexcept
+{
+  std::free(pointer);
+}
+
+void operator delete[](void* pointer, std::size_t) noexcept
+{
+  std::free(pointer);
+}
+
+void operator delete(void* pointer, const std::nothrow_t&) noexcept
+{
+  std::free(pointer);
+}
+
+void operator delete[](void* pointer, const std::nothrow_t&) noexcept
+{
+  std::free(pointer);
+}
+
+void operator delete(void* pointer, std::align_val_t alignment) noexcept
+{
+  deallocateAlignedRaw(pointer, static_cast<std::size_t>(alignment));
+}
+
+void operator delete[](void* pointer, std::align_val_t alignment) noexcept
+{
+  deallocateAlignedRaw(pointer, static_cast<std::size_t>(alignment));
+}
+
+void operator delete(
+    void* pointer, std::size_t, std::align_val_t alignment) noexcept
+{
+  deallocateAlignedRaw(pointer, static_cast<std::size_t>(alignment));
+}
+
+void operator delete[](
+    void* pointer, std::size_t, std::align_val_t alignment) noexcept
+{
+  deallocateAlignedRaw(pointer, static_cast<std::size_t>(alignment));
+}
+
+void operator delete(
+    void* pointer, std::align_val_t alignment, const std::nothrow_t&) noexcept
+{
+  deallocateAlignedRaw(pointer, static_cast<std::size_t>(alignment));
+}
+
+void operator delete[](
+    void* pointer, std::align_val_t alignment, const std::nothrow_t&) noexcept
+{
+  deallocateAlignedRaw(pointer, static_cast<std::size_t>(alignment));
+}
+
+namespace {
+
+class ScopedHeapAllocationCounter final
+{
+public:
+  ScopedHeapAllocationCounter()
+  {
+    g_heapAllocationCount.store(0, std::memory_order_relaxed);
+    g_heapAllocationBytes.store(0, std::memory_order_relaxed);
+    g_heapAllocationTrackingEnabled.store(true, std::memory_order_relaxed);
+  }
+
+  ~ScopedHeapAllocationCounter()
+  {
+    stop();
+  }
+
+  ScopedHeapAllocationCounter(const ScopedHeapAllocationCounter&) = delete;
+  ScopedHeapAllocationCounter& operator=(const ScopedHeapAllocationCounter&)
+      = delete;
+
+  void stop() noexcept
+  {
+    g_heapAllocationTrackingEnabled.store(false, std::memory_order_relaxed);
+  }
+
+  [[nodiscard]] std::size_t allocationCount() const noexcept
+  {
+    return g_heapAllocationCount.load(std::memory_order_relaxed);
+  }
+
+  [[nodiscard]] std::size_t allocationBytes() const noexcept
+  {
+    return g_heapAllocationBytes.load(std::memory_order_relaxed);
+  }
+};
 
 class CountingKinematicsStage final
   : public dart::simulation::experimental::compute::WorldStepStage
@@ -359,6 +590,30 @@ void expectNoWorldBaseAllocatorActivityDuringBakedSteps(
   EXPECT_EQ(allocator.alignedDeallocationCount, alignedDeallocationsAfterBake);
 }
 
+template <typename ConfigureScene>
+void expectNoGlobalHeapAllocationsDuringBakedSteps(
+    std::string_view scene, ConfigureScene&& configureScene)
+{
+  namespace sx = dart::simulation::experimental;
+
+  SCOPED_TRACE(scene);
+  sx::World world;
+
+  configureScene(world);
+  world.enterSimulationMode();
+
+  ScopedHeapAllocationCounter heapCounter;
+  for (int i = 0; i < 4; ++i) {
+    world.step();
+  }
+  heapCounter.stop();
+
+  EXPECT_EQ(heapCounter.allocationCount(), 0u)
+      << "global heap bytes allocated during baked steps: "
+      << heapCounter.allocationBytes();
+  EXPECT_EQ(heapCounter.allocationBytes(), 0u);
+}
+
 } // namespace
 
 // Test World construction
@@ -557,6 +812,19 @@ TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
         options.edgeStiffness = 0.0;
         world.addDeformableBody("particle", options);
         world.setTimeStep(0.01);
+      });
+}
+
+TEST(World, BakedKinematicIpcStepsDoNotAllocateGlobalHeap)
+{
+  namespace sx = dart::simulation::experimental;
+
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "kinematic IPC rigid body", [](sx::World& world) {
+        world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+        auto body = world.addRigidBody("kinematic");
+        body.setKinematic(true);
+        body.setLinearVelocity(Eigen::Vector3d(1.0, 0.0, 0.0));
       });
 }
 

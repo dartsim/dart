@@ -218,6 +218,8 @@ void WorldKinematicsGraph::rebuild()
       m_graph.addDependency(*parentNode, *entityNode.node);
     }
   }
+
+  (void)m_graph.getTopologicalOrderView();
 }
 
 //==============================================================================

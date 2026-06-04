@@ -598,6 +598,7 @@ private:
 
   Frame resolveParentFrame(const Frame& parent) const;
   struct CollisionQueryCache;
+  struct StepPipelineCache;
   Entity createFrameEntity(
       std::string_view name,
       const Frame& parentFrame,
@@ -667,6 +668,7 @@ private:
   std::size_t m_linkCounter{0};
   std::size_t m_jointCounter{0};
   mutable std::unique_ptr<CollisionQueryCache> m_collisionQueryCache;
+  std::unique_ptr<StepPipelineCache> m_stepPipelineCache;
 };
 
 } // namespace dart::simulation::experimental
