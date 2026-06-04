@@ -30,8 +30,8 @@ For code style: `docs/onboarding/code-style.md`
 # Features, docs, and non-bugfix refactors start from main
 git checkout -b <type>/<topic> origin/main
 
-# Bug fixes that apply to the current release line start from release-6.16
-git checkout -b fix/<topic>-6.16 origin/release-6.16
+# Bug fixes that apply to the current release line start from release-6.17
+git checkout -b fix/<topic>-6.17 origin/release-6.17
 
 # Make changes, then
 pixi run lint
@@ -45,7 +45,7 @@ gh pr create --draft --base <target-branch> --milestone "<milestone>"
 ```
 
 Use `--base main --milestone "DART 7.0"` for main PRs and
-`--base release-6.16 --milestone "DART 6.16.x"` for release-line PRs.
+`--base release-6.17 --milestone "DART 6.17.1"` for release-line PRs.
 
 Rule of thumb: run `pixi run lint` before committing so auto-fixes are included.
 
@@ -72,7 +72,7 @@ approval:
 | Target Branch  | Milestone                     |
 | -------------- | ----------------------------- |
 | `main`         | `DART 7.0` (or next major)    |
-| `release-6.16` | `DART 6.16.x` (current patch) |
+| `release-6.17` | `DART 6.17.1` (current patch) |
 
 ```bash
 # After explicit maintainer/user approval, set milestone on existing PR
@@ -86,12 +86,12 @@ gh api repos/dartsim/dart/milestones --jq '.[] | .title'
 
 Bug fixes require PRs to **BOTH** branches:
 
-1. **`release-6.16`** - Current release
+1. **`release-6.17`** - Current release
 2. **`main`** - Next release
 
 Steps:
 
-1. Fix on `release-6.16` first
+1. Fix on `release-6.17` first
 2. Cherry-pick to `main`
 3. After explicit maintainer/user approval, create separate PRs for each
 
