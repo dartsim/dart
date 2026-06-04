@@ -16,8 +16,8 @@
       correctness matrix and standard-library registry allocator evidence still
       need to land before this phase is complete. Focused EnTT registry probes
       now cover foonathan/memory's array-capable pool baseline and the standard
-      registry, but the pool-backed DART registry path does not yet beat those
-      corrected steady-state churn baselines consistently.
+      registry, but the free-list-backed DART registry path does not yet beat
+      those corrected steady-state churn baselines consistently.
 - [ ] Phase 3: EnTT registry/component storage allocation is configurable from
       the World memory hierarchy and covered by no-growth ECS tests.
 - [ ] Phase 4: Built-in simulation stages borrow world memory for transient

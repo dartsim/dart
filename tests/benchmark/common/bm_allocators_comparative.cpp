@@ -796,7 +796,8 @@ void prewarmEnttRegistry(
 static void BM_EnttRegistry_DART(benchmark::State& state)
 {
   const auto entityCount = static_cast<size_t>(state.range(0));
-  PoolAllocator backing;
+  FreeListAllocator backing(
+      MemoryAllocator::GetDefault(), entityCount * 4096 + 1024 * 1024);
   StlAllocator<entt::entity> allocator(backing);
   entt::basic_registry<entt::entity, StlAllocator<entt::entity>> registry(
       allocator);
