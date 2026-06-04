@@ -13,12 +13,20 @@ import json
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from benchmark_display_names import humanize_name  # noqa: E402
+
 
 def _iter_inputs(inputs: list[Path]) -> list[Path]:
     files: list[Path] = []
     for entry in inputs:
         if entry.is_dir():
-            files.extend(sorted(entry.glob("*.json")))
+            # Skip a previously written combined.json so re-running the merge in
+            # place does not fold the merged output back into itself.
+            files.extend(
+                sorted(p for p in entry.glob("*.json") if p.name != "combined.json")
+            )
         else:
             files.append(entry)
     return files
@@ -51,7 +59,9 @@ def _select(benchmarks: list[dict], aggregate: str) -> list[dict]:
     return selected
 
 
-def merge(inputs: list[Path], aggregate: str = "median") -> dict:
+def merge(
+    inputs: list[Path], aggregate: str = "median", humanize: bool = False
+) -> dict:
     files = _iter_inputs(inputs)
     context: dict | None = None
     benchmarks: list[dict] = []
@@ -63,6 +73,14 @@ def merge(inputs: list[Path], aggregate: str = "median") -> dict:
     benchmarks = _select(benchmarks, aggregate)
     if not benchmarks:
         raise SystemExit("No benchmark rows found in inputs.")
+    if humanize:
+        # Rewrite the raw Google Benchmark name into a readable chart title for
+        # the published dashboard. This is the dashboard's series key, so it is
+        # opt-in (the workflow passes --humanize) and kept downstream of both the
+        # run-time --benchmark_filter and the correctness gate, which keep using
+        # the raw names.
+        for row in benchmarks:
+            row["name"] = humanize_name(row.get("name", ""))
     return {"context": context or {}, "benchmarks": benchmarks}
 
 
@@ -87,12 +105,20 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         default="median",
         help="Which repetition aggregate to keep per benchmark (default: median).",
     )
+    parser.add_argument(
+        "--humanize",
+        action="store_true",
+        help=(
+            "Rewrite raw Google Benchmark names into readable dashboard titles "
+            "(see scripts/benchmark_display_names.py)."
+        ),
+    )
     return parser.parse_args(argv)
 
 
 def main(argv: list[str]) -> int:
     args = parse_args(argv)
-    merged = merge(args.inputs, args.aggregate)
+    merged = merge(args.inputs, args.aggregate, humanize=args.humanize)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(merged, indent=2) + "\n", encoding="utf-8")
     print(f"Merged {len(merged['benchmarks'])} rows into {args.output}")

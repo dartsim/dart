@@ -517,6 +517,14 @@ its own line so status updates remain git-history friendly.
   PR to confirm the comment posts, tune `--alert-threshold`, then consider
   widening the trigger and the benchmark slice once review-noise tradeoffs are
   visible. A secondary backend (Bencher/CodSpeed) remains optional future work.
+  The tracked slice now covers the new DART 7 solver families' end-to-end
+  `World::step` surfaces (rigid-body sequential-impulse/IPC, VBD + default
+  deformable grid, FEM bar, AVBD fixed-joint) alongside the original core
+  step/scaling rows, and `scripts/benchmark_display_names.py` rewrites the raw
+  Google Benchmark names into readable chart titles (merge `--humanize`) with
+  family-grouped, axis-labelled local preview. Add new surfaces by extending
+  both `run_performance_dashboard_benchmarks.py` (CPU-only, end-to-end filter)
+  and the `SURFACES` map.
 - Gate: `pixi run bm-dashboard-preview` renders the dashboard locally from real
   Google Benchmark JSON; each `main` publish updates the hosted per-benchmark
   history.
@@ -528,13 +536,13 @@ its own line so status updates remain git-history friendly.
 - Horizon: Now
 - Dimension: Release transition
 - Next step: Follow the DART 7 implementation order in the release roadmap:
-  finish policy alignment and Gazebo lane split, publish the DART 6.16 support
+  finish policy alignment and Gazebo lane split, publish the DART 6.17 support
   packet, then settle PLAN-042 public API/source-layout topology before freezing
   PLAN-041 official simulation API promotion. Keep research-solver breadth out
   of the DART 7 release blocker set unless a promoted API depends on it.
 - Gate: DART 7 is not release-ready until the clean-break gates in the release
   roadmap have direct evidence, package metadata no longer implies DART
-  6/gz-physics compatibility, and DART 6.16 support scope plus sunset trigger
+  6/gz-physics compatibility, and DART 6.17 support scope plus sunset trigger
   are published.
 
 ### PLAN-041: Official Simulation API Promotion

@@ -23,7 +23,7 @@ concepts.
 ## Current Evidence
 
 - [`README.md`](../../README.md#installation) says the quick-start snippets
-  target `main` and DART 7, but package managers may still resolve DART 6.16
+  target `main` and DART 7, but package managers may still resolve DART 6.17
   until DART 7 package artifacts are published.
 - The [PyPI `dartpy` page](https://pypi.org/project/dartpy/) listed 6.16.7 as
   the current release on 2026-05-21, with 7.0.0 yanked. Stable cloud notebooks

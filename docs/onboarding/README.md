@@ -36,7 +36,7 @@ Filament-backed 3D visualization with GLFW3 windowing and Dear ImGui overlays.
 ### Release & Branch Strategy
 
 - `main`: active development targeting DART 7 (Python-first API).
-- `release-6.16`: maintenance branch for DART 6 (critical fixes only).
+- `release-6.17`: maintenance branch for DART 6 (critical fixes only).
 
 See [release-roadmap.md](release-roadmap.md) for the detailed roadmap, compatibility, and deprecation policy.
 

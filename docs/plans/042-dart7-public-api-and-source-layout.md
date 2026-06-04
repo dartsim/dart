@@ -104,7 +104,7 @@ Before implementation, collect and reconcile these review perspectives:
 - **Research extensibility**: where algorithm families, state spaces, compute
   stages, solver choices, and multi-physics components live without exposing
   backend or storage implementation.
-- **Migration/release**: DART 6.16 compatibility lane, examples/tutorials,
+- **Migration/release**: DART 6.17 compatibility lane, examples/tutorials,
   changelog/migration notes, and downstream canaries.
 
 External API surveys may inform the review, but DART-owned docs should record
@@ -152,7 +152,7 @@ the resulting principles and DART vocabulary, not the source projects' names.
    `check-dartpy-public-layout` gate or fold the same runtime/stub/docs checks
    into `check-api-boundaries`.
 10. **Package compatibility policy.** Decide how DART 7 package config/version
-    behavior, wheel defaults, migration notes, DART 6.16 support, and gz-physics
+    behavior, wheel defaults, migration notes, DART 6.17 support, and gz-physics
     lane policy line up so clean-break packages are not accidentally consumed as
     old DART 6-compatible packages.
 
@@ -293,7 +293,7 @@ The accepted Python decision must define each row before implementation:
   installed C++ package, and a release wheel without the old experimental option
   or component, and scans installed config/component files for private dependency
   leakage.
-- DART 7 package metadata, migration notes, DART 6.16 support window, and
+- DART 7 package metadata, migration notes, DART 6.17 support window, and
   gz-physics lane policy agree before release publication.
 
 ## Verification Gates

@@ -102,6 +102,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     rebuilt correctly by cached GUI renderable extraction.
   - Added a renderer-neutral `dart::gui` panel callback surface for examples
     that need custom controls without including backend UI headers.
+  - Added `pixi run bm-allocator-comparative-check`, a strict allocator
+    benchmark gate that compares DART allocator workloads against
+    foonathan/memory and `std::pmr` baselines.
   - Added the standalone `dartsim/` GUI simulator (a runtime executable, not a
     library) built only on the experimental World API. Its headless editor
     engine (`dartsim/engine`) provides scene/object, selection, command
@@ -541,6 +544,13 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     `benchmark-action/github-action-benchmark`, with a local
     `pixi run bm-dashboard-preview` to render the same dashboard before it is
     published.
+  - Expanded the performance dashboard to track the new DART 7 solver families'
+    end-to-end `World::step` surfaces (rigid-body sequential-impulse/IPC, VBD and
+    default deformable grid, FEM bar, AVBD fixed-joint) and made the charts
+    human-readable: `scripts/benchmark_display_names.py` rewrites raw Google
+    Benchmark names into readable titles (merge `--humanize`), and the local
+    preview groups charts by solver family with labelled, thousands-formatted
+    axes (commit on x, time-per-op on y, lower is better).
   - Added an opt-in `pixi run abi-check` task (Linux only) that builds two refs
     with identical options and compares shared libraries with libabigail's
     `abidiff`. The task is diagnostic only and is not wired into CI; ABI

@@ -15,12 +15,12 @@ assignees: ""
 
 **Environment:**
 
-- DART version: [e.g., main, 6.16.x]
+- DART version: [e.g., main, 6.17.x]
 - OS: [e.g., Ubuntu 24.04, macOS Sequoia, Windows 11]
 - Installation: [e.g., pixi, conda, apt, homebrew, vcpkg, source]
 - Compiler (if source): [e.g., GCC 13.2.0, Clang 18.0.0, MSVC 2022]
 
-> **Note:** Bug fixes are only accepted for `main` and `release-6.16`. If using 6.15 or older, please upgrade to 6.16.x first and verify the issue still exists.
+> **Note:** Bug fixes are only accepted for `main` and `release-6.17`. If using 6.16 or older, please upgrade to 6.17.x first and verify the issue still exists.
 
 **Expected vs Current Behavior:**
 Describe what you expected and what actually happens.

@@ -99,9 +99,9 @@ Use these practices:
    | Target         | Milestone     |
    | -------------- | ------------- |
    | `main`         | `DART 7.0`    |
-   | `release-6.16` | `DART 6.16.x` |
+   | `release-6.17` | `DART 6.17.1` |
 
-4. For bug fixes, use the dual-PR flow: fix `release-6.16` first, then
+4. For bug fixes, use the dual-PR flow: fix `release-6.17` first, then
    cherry-pick or reapply to `main`.
 5. Before every commit, run:
    ```bash
