@@ -31,10 +31,9 @@
  */
 
 #include <cuda_runtime.h>
+#include <dart/simulation/experimental/compute/cuda/cuda_runtime.cuh>
+#include <dart/simulation/experimental/compute/cuda/device_buffer.cuh>
 #include <dart/simulation/experimental/compute/cuda/vbd_block_descent_cuda.cuh>
-
-#include <stdexcept>
-#include <string>
 
 #include <cmath>
 
@@ -434,64 +433,13 @@ __global__ void vbdTetColorSweepKernel(
 }
 
 //==============================================================================
-void throwIfCudaError(cudaError_t status, const char* operation)
-{
-  if (status != cudaSuccess) {
-    throw std::runtime_error(
-        std::string("CUDA VBD ") + operation
-        + " failed: " + cudaGetErrorString(status));
-  }
-}
-
-//==============================================================================
-template <typename T>
-class DeviceArray
-{
-public:
-  explicit DeviceArray(const std::vector<T>& host) : m_count(host.size())
-  {
-    if (m_count == 0) {
-      return;
-    }
-    throwIfCudaError(
-        cudaMalloc(reinterpret_cast<void**>(&m_data), m_count * sizeof(T)),
-        "cudaMalloc");
-    throwIfCudaError(
-        cudaMemcpy(
-            m_data, host.data(), m_count * sizeof(T), cudaMemcpyHostToDevice),
-        "cudaMemcpy H2D");
-  }
-
-  ~DeviceArray()
-  {
-    if (m_data != nullptr) {
-      (void)cudaFree(m_data);
-    }
-  }
-
-  DeviceArray(const DeviceArray&) = delete;
-  DeviceArray& operator=(const DeviceArray&) = delete;
-
-  [[nodiscard]] T* get() const noexcept
-  {
-    return m_data;
-  }
-
-  void download(std::vector<T>& host) const
-  {
-    if (m_count == 0) {
-      return;
-    }
-    throwIfCudaError(
-        cudaMemcpy(
-            host.data(), m_data, m_count * sizeof(T), cudaMemcpyDeviceToHost),
-        "cudaMemcpy D2H");
-  }
-
-private:
-  std::size_t m_count = 0;
-  T* m_data = nullptr;
-};
+// CUDA error mapping (throwIfCudaError) and the owning device array now come
+// from the shared substrate (cuda_runtime.cuh / device_buffer.cuh); this module
+// uses DeviceBuffer<T> for both its double and single-precision rollouts. The
+// thrown type is now sx::InvalidOperationException with the shared
+// "CUDA <op> failed: <error>" message (previously a VBD-local
+// std::runtime_error with a "CUDA VBD ..." message), unifying the experimental
+// CUDA error contract.
 
 //==============================================================================
 // Drive a device-resident rollout on `stream`. `recordStep` issues exactly one
@@ -542,16 +490,16 @@ void vbdStepMassSpringCuda(VbdCudaMassSpringProblem& problem)
     return;
   }
 
-  DeviceArray<double> dPositions(problem.positions);
-  DeviceArray<double> dInertial(problem.inertialTargets);
-  DeviceArray<double> dMasses(problem.masses);
-  DeviceArray<std::uint8_t> dFixed(problem.fixed);
-  DeviceArray<std::uint32_t> dSpringA(problem.springA);
-  DeviceArray<std::uint32_t> dSpringB(problem.springB);
-  DeviceArray<double> dSpringRest(problem.springRest);
-  DeviceArray<std::uint32_t> dIncidentOffsets(problem.incidentOffsets);
-  DeviceArray<std::uint32_t> dIncidentSprings(problem.incidentSprings);
-  DeviceArray<std::uint32_t> dColorVertices(problem.colorVertices);
+  DeviceBuffer<double> dPositions(problem.positions);
+  DeviceBuffer<double> dInertial(problem.inertialTargets);
+  DeviceBuffer<double> dMasses(problem.masses);
+  DeviceBuffer<std::uint8_t> dFixed(problem.fixed);
+  DeviceBuffer<std::uint32_t> dSpringA(problem.springA);
+  DeviceBuffer<std::uint32_t> dSpringB(problem.springB);
+  DeviceBuffer<double> dSpringRest(problem.springRest);
+  DeviceBuffer<std::uint32_t> dIncidentOffsets(problem.incidentOffsets);
+  DeviceBuffer<std::uint32_t> dIncidentSprings(problem.incidentSprings);
+  DeviceBuffer<std::uint32_t> dColorVertices(problem.colorVertices);
 
   const double invDt2 = 1.0 / (problem.timeStep * problem.timeStep);
   const std::size_t colorCount = problem.colorOffsets.size() - 1;
@@ -565,18 +513,18 @@ void vbdStepMassSpringCuda(VbdCudaMassSpringProblem& problem)
         continue;
       }
       const unsigned int count = end - begin;
-      const unsigned int blocks = (count + kThreads - 1) / kThreads;
+      const unsigned int blocks = launchGrid1D(count, kThreads);
       vbdColorSweepKernel<double><<<blocks, kThreads>>>(
-          dPositions.get(),
-          dInertial.get(),
-          dMasses.get(),
-          dFixed.get(),
-          dSpringA.get(),
-          dSpringB.get(),
-          dSpringRest.get(),
-          dIncidentOffsets.get(),
-          dIncidentSprings.get(),
-          dColorVertices.get(),
+          dPositions.data(),
+          dInertial.data(),
+          dMasses.data(),
+          dFixed.data(),
+          dSpringA.data(),
+          dSpringB.data(),
+          dSpringRest.data(),
+          dIncidentOffsets.data(),
+          dIncidentSprings.data(),
+          dColorVertices.data(),
           begin,
           end,
           problem.stiffness,
@@ -586,7 +534,7 @@ void vbdStepMassSpringCuda(VbdCudaMassSpringProblem& problem)
 
   throwIfCudaError(cudaGetLastError(), "kernel launch");
   throwIfCudaError(cudaDeviceSynchronize(), "synchronize");
-  dPositions.download(problem.positions);
+  dPositions.copyFromDevice(problem.positions, "download");
 }
 
 namespace {
@@ -607,21 +555,21 @@ void rolloutMassSpringImpl(VbdCudaRolloutProblem& problem)
   const std::vector<T> hSpringRest(
       problem.springRest.begin(), problem.springRest.end());
 
-  DeviceArray<T> dPositions(hPositions);
-  DeviceArray<T> dVelocities(hVelocities);
-  DeviceArray<T> dMasses(hMasses);
-  DeviceArray<std::uint8_t> dFixed(problem.fixed);
-  DeviceArray<std::uint32_t> dSpringA(problem.springA);
-  DeviceArray<std::uint32_t> dSpringB(problem.springB);
-  DeviceArray<T> dSpringRest(hSpringRest);
-  DeviceArray<std::uint32_t> dIncidentOffsets(problem.incidentOffsets);
-  DeviceArray<std::uint32_t> dIncidentSprings(problem.incidentSprings);
-  DeviceArray<std::uint32_t> dColorVertices(problem.colorVertices);
+  DeviceBuffer<T> dPositions(hPositions);
+  DeviceBuffer<T> dVelocities(hVelocities);
+  DeviceBuffer<T> dMasses(hMasses);
+  DeviceBuffer<std::uint8_t> dFixed(problem.fixed);
+  DeviceBuffer<std::uint32_t> dSpringA(problem.springA);
+  DeviceBuffer<std::uint32_t> dSpringB(problem.springB);
+  DeviceBuffer<T> dSpringRest(hSpringRest);
+  DeviceBuffer<std::uint32_t> dIncidentOffsets(problem.incidentOffsets);
+  DeviceBuffer<std::uint32_t> dIncidentSprings(problem.incidentSprings);
+  DeviceBuffer<std::uint32_t> dColorVertices(problem.colorVertices);
 
   // Per-step scratch kept resident on the device for the whole rollout.
   const std::vector<T> zeros(3 * nodeCount, T(0));
-  DeviceArray<T> dStepStart(zeros);
-  DeviceArray<T> dInertial(zeros);
+  DeviceBuffer<T> dStepStart(zeros);
+  DeviceBuffer<T> dInertial(zeros);
 
   const T invDt2 = T(1) / (T(problem.timeStep) * T(problem.timeStep));
   const T timeStep = T(problem.timeStep);
@@ -631,19 +579,18 @@ void rolloutMassSpringImpl(VbdCudaRolloutProblem& problem)
   const T gz = T(problem.gravity[2]);
   const std::size_t colorCount = problem.colorOffsets.size() - 1;
   constexpr unsigned int kThreads = 128;
-  const unsigned int vertexBlocks
-      = (static_cast<unsigned int>(nodeCount) + kThreads - 1) / kThreads;
+  const unsigned int vertexBlocks = launchGrid1D(nodeCount, kThreads);
 
   cudaStream_t stream = nullptr;
   throwIfCudaError(cudaStreamCreate(&stream), "stream create");
 
   const auto recordStep = [&]() {
     vbdInertialTargetKernel<T><<<vertexBlocks, kThreads, 0, stream>>>(
-        dPositions.get(),
-        dVelocities.get(),
-        dStepStart.get(),
-        dInertial.get(),
-        dFixed.get(),
+        dPositions.data(),
+        dVelocities.data(),
+        dStepStart.data(),
+        dInertial.data(),
+        dFixed.data(),
         gx,
         gy,
         gz,
@@ -659,18 +606,18 @@ void rolloutMassSpringImpl(VbdCudaRolloutProblem& problem)
           continue;
         }
         const unsigned int count = end - begin;
-        const unsigned int blocks = (count + kThreads - 1) / kThreads;
+        const unsigned int blocks = launchGrid1D(count, kThreads);
         vbdColorSweepKernel<T><<<blocks, kThreads, 0, stream>>>(
-            dPositions.get(),
-            dInertial.get(),
-            dMasses.get(),
-            dFixed.get(),
-            dSpringA.get(),
-            dSpringB.get(),
-            dSpringRest.get(),
-            dIncidentOffsets.get(),
-            dIncidentSprings.get(),
-            dColorVertices.get(),
+            dPositions.data(),
+            dInertial.data(),
+            dMasses.data(),
+            dFixed.data(),
+            dSpringA.data(),
+            dSpringB.data(),
+            dSpringRest.data(),
+            dIncidentOffsets.data(),
+            dIncidentSprings.data(),
+            dColorVertices.data(),
             begin,
             end,
             stiffness,
@@ -679,10 +626,10 @@ void rolloutMassSpringImpl(VbdCudaRolloutProblem& problem)
     }
 
     vbdVelocityUpdateKernel<T><<<vertexBlocks, kThreads, 0, stream>>>(
-        dPositions.get(),
-        dVelocities.get(),
-        dStepStart.get(),
-        dFixed.get(),
+        dPositions.data(),
+        dVelocities.data(),
+        dStepStart.data(),
+        dFixed.data(),
         timeStep,
         static_cast<std::uint32_t>(nodeCount));
   };
@@ -690,8 +637,8 @@ void rolloutMassSpringImpl(VbdCudaRolloutProblem& problem)
   runDeviceRollout(stream, recordStep, problem.stepCount, problem.useCudaGraph);
 
   (void)cudaStreamDestroy(stream);
-  dPositions.download(hPositions);
-  dVelocities.download(hVelocities);
+  dPositions.copyFromDevice(hPositions, "download");
+  dVelocities.copyFromDevice(hVelocities, "download");
   problem.positions.assign(hPositions.begin(), hPositions.end());
   problem.velocities.assign(hVelocities.begin(), hVelocities.end());
 }
@@ -719,17 +666,17 @@ void vbdStepTetMeshCuda(VbdCudaTetProblem& problem)
     return;
   }
 
-  DeviceArray<double> dPositions(problem.positions);
-  DeviceArray<double> dInertial(problem.inertialTargets);
-  DeviceArray<double> dMasses(problem.masses);
-  DeviceArray<std::uint8_t> dFixed(problem.fixed);
-  DeviceArray<std::uint32_t> dTetVertices(problem.tetVertices);
-  DeviceArray<double> dTetRestShapeInverse(problem.tetRestShapeInverse);
-  DeviceArray<double> dTetRestVolume(problem.tetRestVolume);
-  DeviceArray<std::uint32_t> dIncidentTetOffsets(problem.incidentTetOffsets);
-  DeviceArray<std::uint32_t> dIncidentTetIndex(problem.incidentTetIndex);
-  DeviceArray<std::uint8_t> dIncidentLocalVertex(problem.incidentLocalVertex);
-  DeviceArray<std::uint32_t> dColorVertices(problem.colorVertices);
+  DeviceBuffer<double> dPositions(problem.positions);
+  DeviceBuffer<double> dInertial(problem.inertialTargets);
+  DeviceBuffer<double> dMasses(problem.masses);
+  DeviceBuffer<std::uint8_t> dFixed(problem.fixed);
+  DeviceBuffer<std::uint32_t> dTetVertices(problem.tetVertices);
+  DeviceBuffer<double> dTetRestShapeInverse(problem.tetRestShapeInverse);
+  DeviceBuffer<double> dTetRestVolume(problem.tetRestVolume);
+  DeviceBuffer<std::uint32_t> dIncidentTetOffsets(problem.incidentTetOffsets);
+  DeviceBuffer<std::uint32_t> dIncidentTetIndex(problem.incidentTetIndex);
+  DeviceBuffer<std::uint8_t> dIncidentLocalVertex(problem.incidentLocalVertex);
+  DeviceBuffer<std::uint32_t> dColorVertices(problem.colorVertices);
 
   const double invDt2 = 1.0 / (problem.timeStep * problem.timeStep);
   const std::size_t colorCount = problem.colorOffsets.size() - 1;
@@ -743,19 +690,19 @@ void vbdStepTetMeshCuda(VbdCudaTetProblem& problem)
         continue;
       }
       const unsigned int count = end - begin;
-      const unsigned int blocks = (count + kThreads - 1) / kThreads;
+      const unsigned int blocks = launchGrid1D(count, kThreads);
       vbdTetColorSweepKernel<double><<<blocks, kThreads>>>(
-          dPositions.get(),
-          dInertial.get(),
-          dMasses.get(),
-          dFixed.get(),
-          dTetVertices.get(),
-          dTetRestShapeInverse.get(),
-          dTetRestVolume.get(),
-          dIncidentTetOffsets.get(),
-          dIncidentTetIndex.get(),
-          dIncidentLocalVertex.get(),
-          dColorVertices.get(),
+          dPositions.data(),
+          dInertial.data(),
+          dMasses.data(),
+          dFixed.data(),
+          dTetVertices.data(),
+          dTetRestShapeInverse.data(),
+          dTetRestVolume.data(),
+          dIncidentTetOffsets.data(),
+          dIncidentTetIndex.data(),
+          dIncidentLocalVertex.data(),
+          dColorVertices.data(),
           begin,
           end,
           problem.mu,
@@ -766,7 +713,7 @@ void vbdStepTetMeshCuda(VbdCudaTetProblem& problem)
 
   throwIfCudaError(cudaGetLastError(), "tet kernel launch");
   throwIfCudaError(cudaDeviceSynchronize(), "tet synchronize");
-  dPositions.download(problem.positions);
+  dPositions.copyFromDevice(problem.positions, "download");
 }
 
 namespace {
@@ -789,22 +736,22 @@ void rolloutTetMeshImpl(VbdCudaTetRolloutProblem& problem)
   const std::vector<T> hRestVolume(
       problem.tetRestVolume.begin(), problem.tetRestVolume.end());
 
-  DeviceArray<T> dPositions(hPositions);
-  DeviceArray<T> dVelocities(hVelocities);
-  DeviceArray<T> dMasses(hMasses);
-  DeviceArray<std::uint8_t> dFixed(problem.fixed);
-  DeviceArray<std::uint32_t> dTetVertices(problem.tetVertices);
-  DeviceArray<T> dTetRestShapeInverse(hRestShapeInverse);
-  DeviceArray<T> dTetRestVolume(hRestVolume);
-  DeviceArray<std::uint32_t> dIncidentTetOffsets(problem.incidentTetOffsets);
-  DeviceArray<std::uint32_t> dIncidentTetIndex(problem.incidentTetIndex);
-  DeviceArray<std::uint8_t> dIncidentLocalVertex(problem.incidentLocalVertex);
-  DeviceArray<std::uint32_t> dColorVertices(problem.colorVertices);
+  DeviceBuffer<T> dPositions(hPositions);
+  DeviceBuffer<T> dVelocities(hVelocities);
+  DeviceBuffer<T> dMasses(hMasses);
+  DeviceBuffer<std::uint8_t> dFixed(problem.fixed);
+  DeviceBuffer<std::uint32_t> dTetVertices(problem.tetVertices);
+  DeviceBuffer<T> dTetRestShapeInverse(hRestShapeInverse);
+  DeviceBuffer<T> dTetRestVolume(hRestVolume);
+  DeviceBuffer<std::uint32_t> dIncidentTetOffsets(problem.incidentTetOffsets);
+  DeviceBuffer<std::uint32_t> dIncidentTetIndex(problem.incidentTetIndex);
+  DeviceBuffer<std::uint8_t> dIncidentLocalVertex(problem.incidentLocalVertex);
+  DeviceBuffer<std::uint32_t> dColorVertices(problem.colorVertices);
 
   // Per-step scratch kept resident on the device for the whole rollout.
   const std::vector<T> zeros(3 * nodeCount, T(0));
-  DeviceArray<T> dStepStart(zeros);
-  DeviceArray<T> dInertial(zeros);
+  DeviceBuffer<T> dStepStart(zeros);
+  DeviceBuffer<T> dInertial(zeros);
 
   const T invDt2 = T(1) / (T(problem.timeStep) * T(problem.timeStep));
   const T timeStep = T(problem.timeStep);
@@ -815,19 +762,18 @@ void rolloutTetMeshImpl(VbdCudaTetRolloutProblem& problem)
   const T gz = T(problem.gravity[2]);
   const std::size_t colorCount = problem.colorOffsets.size() - 1;
   constexpr unsigned int kThreads = 128;
-  const unsigned int vertexBlocks
-      = (static_cast<unsigned int>(nodeCount) + kThreads - 1) / kThreads;
+  const unsigned int vertexBlocks = launchGrid1D(nodeCount, kThreads);
 
   cudaStream_t stream = nullptr;
   throwIfCudaError(cudaStreamCreate(&stream), "stream create");
 
   const auto recordStep = [&]() {
     vbdInertialTargetKernel<T><<<vertexBlocks, kThreads, 0, stream>>>(
-        dPositions.get(),
-        dVelocities.get(),
-        dStepStart.get(),
-        dInertial.get(),
-        dFixed.get(),
+        dPositions.data(),
+        dVelocities.data(),
+        dStepStart.data(),
+        dInertial.data(),
+        dFixed.data(),
         gx,
         gy,
         gz,
@@ -843,19 +789,19 @@ void rolloutTetMeshImpl(VbdCudaTetRolloutProblem& problem)
           continue;
         }
         const unsigned int count = end - begin;
-        const unsigned int blocks = (count + kThreads - 1) / kThreads;
+        const unsigned int blocks = launchGrid1D(count, kThreads);
         vbdTetColorSweepKernel<T><<<blocks, kThreads, 0, stream>>>(
-            dPositions.get(),
-            dInertial.get(),
-            dMasses.get(),
-            dFixed.get(),
-            dTetVertices.get(),
-            dTetRestShapeInverse.get(),
-            dTetRestVolume.get(),
-            dIncidentTetOffsets.get(),
-            dIncidentTetIndex.get(),
-            dIncidentLocalVertex.get(),
-            dColorVertices.get(),
+            dPositions.data(),
+            dInertial.data(),
+            dMasses.data(),
+            dFixed.data(),
+            dTetVertices.data(),
+            dTetRestShapeInverse.data(),
+            dTetRestVolume.data(),
+            dIncidentTetOffsets.data(),
+            dIncidentTetIndex.data(),
+            dIncidentLocalVertex.data(),
+            dColorVertices.data(),
             begin,
             end,
             mu,
@@ -865,10 +811,10 @@ void rolloutTetMeshImpl(VbdCudaTetRolloutProblem& problem)
     }
 
     vbdVelocityUpdateKernel<T><<<vertexBlocks, kThreads, 0, stream>>>(
-        dPositions.get(),
-        dVelocities.get(),
-        dStepStart.get(),
-        dFixed.get(),
+        dPositions.data(),
+        dVelocities.data(),
+        dStepStart.data(),
+        dFixed.data(),
         timeStep,
         static_cast<std::uint32_t>(nodeCount));
   };
@@ -876,8 +822,8 @@ void rolloutTetMeshImpl(VbdCudaTetRolloutProblem& problem)
   runDeviceRollout(stream, recordStep, problem.stepCount, problem.useCudaGraph);
 
   (void)cudaStreamDestroy(stream);
-  dPositions.download(hPositions);
-  dVelocities.download(hVelocities);
+  dPositions.copyFromDevice(hPositions, "download");
+  dVelocities.copyFromDevice(hVelocities, "download");
   problem.positions.assign(hPositions.begin(), hPositions.end());
   problem.velocities.assign(hVelocities.begin(), hVelocities.end());
 }
