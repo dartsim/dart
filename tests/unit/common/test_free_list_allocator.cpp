@@ -81,6 +81,18 @@ TEST(FreeListAllocatorTest, Constructors)
 }
 
 //==============================================================================
+TEST(FreeListAllocatorTest, AllocateAlignedFallsBackToBaseAllocator)
+{
+  FreeListAllocator allocator;
+
+  auto* ptr = allocator.allocate(sizeof(OverAlignedObject), 64);
+  ASSERT_NE(ptr, nullptr);
+  EXPECT_EQ(reinterpret_cast<std::uintptr_t>(ptr) % 64u, 0u);
+
+  allocator.deallocate(ptr, sizeof(OverAlignedObject), 64);
+}
+
+//==============================================================================
 TEST(FreeListAllocatorTest, DestructorReleasesLeakedDelegatedAlignedAllocations)
 {
   MemoryAllocatorDebugger<CAllocator> baseAllocator;
@@ -114,18 +126,6 @@ TEST(FreeListAllocatorTest, AllocateAlignedSatisfiesMaxAlignment)
   allocator.deallocate(
       ptr, sizeof(MaxAlignedObject), alignof(MaxAlignedObject));
   allocator.deallocate(oddSized, 1);
-}
-
-//==============================================================================
-TEST(FreeListAllocatorTest, AllocateAlignedFallsBackToBaseAllocator)
-{
-  FreeListAllocator allocator;
-
-  auto* ptr = allocator.allocate(sizeof(OverAlignedObject), 64);
-  ASSERT_NE(ptr, nullptr);
-  EXPECT_EQ(reinterpret_cast<std::uintptr_t>(ptr) % 64u, 0u);
-
-  allocator.deallocate(ptr, sizeof(OverAlignedObject), 64);
 }
 
 //==============================================================================

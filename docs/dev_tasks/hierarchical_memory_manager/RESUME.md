@@ -40,13 +40,13 @@ and overflow is a deterministic `InvalidArgumentException`.
 
 `feature/world-step-pipeline-inline-storage` - stacked on PR #2879
 (`feature/world-memory-step-no-growth`), which is itself stacked on PR #2872
-(`feature/world-registry-allocator`) and PR #2871
-(`feature/aligned-memory-allocator`).
+(`feature/world-registry-allocator`). PR #2871 has merged to `main`, and #2872
+has been merged forward from `main`.
 
 ## Immediate Next Step
 
-Finish review/CI for PR #2871, keep the stacked registry and no-growth branches
-merged forward from their bases, and resolve any #2872/#2879 CI failures. Next
+Monitor #2872/#2879/#2880 CI after the base-propagation merge and resolve any
+failures. Next
 allocator work should land the strict comparative benchmark gate, broaden
 `FixedPoolAllocator` correctness coverage, benchmark allocator-backed EnTT
 registry/component storage, extend no-growth ECS tests to broader contact and
@@ -105,6 +105,6 @@ git status -sb
 git diff --stat
 ```
 
-Then continue the stacked PRs: #2871 allocator correctness/performance, #2872
-allocator-backed experimental World registry, and the comparative benchmark
-gate branch.
+Then continue from the open PR stack: #2872 allocator-backed experimental World
+registry, #2879 no-growth ECS guard, #2880 inline pipeline storage, and the
+comparative benchmark gate branch.
