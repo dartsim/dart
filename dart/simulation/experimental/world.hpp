@@ -649,6 +649,8 @@ private:
 
   void ensureDesignMode() const;
   void resetCountersFromRegistry();
+  void stepPipelineOnce(
+      compute::ComputeExecutor& executor, compute::WorldStepPipeline& pipeline);
   void recordReplayFrame();
   void resetFrameScratchForStep();
   void refreshMemoryDiagnostics();

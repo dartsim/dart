@@ -38,6 +38,7 @@
 #include <dart/simulation/experimental/comps/dynamics.hpp>
 #include <dart/simulation/experimental/comps/frame_types.hpp>
 #include <dart/simulation/experimental/comps/joint.hpp>
+#include <dart/simulation/experimental/comps/link.hpp>
 #include <dart/simulation/experimental/compute/compute_executor.hpp>
 #include <dart/simulation/experimental/compute/compute_graph.hpp>
 #include <dart/simulation/experimental/compute/parallel_executor.hpp>
@@ -7019,4 +7020,115 @@ TEST(World, ReplayRecordingRestoresRigidBodyState)
   world.setReplayRecordingEnabled(false);
   world.step();
   EXPECT_EQ(world.getReplayFrameCount(), 1u);
+}
+
+// Test replay control edge cases and invalid frame queries.
+TEST(World, ReplayRecordingRejectsInvalidQueriesAndClears)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+
+  world.clearReplayRecording();
+  EXPECT_FALSE(world.isReplayRecordingEnabled());
+  EXPECT_EQ(world.getReplayFrameCount(), 0u);
+  EXPECT_FALSE(world.getReplayCursor().has_value());
+
+  EXPECT_THROW(
+      static_cast<void>(world.getReplayFrameTime(0)),
+      sx::InvalidArgumentException);
+  EXPECT_THROW(
+      static_cast<void>(world.getReplaySimulationFrame(0)),
+      sx::InvalidArgumentException);
+  EXPECT_THROW(world.restoreReplayFrame(0), sx::InvalidArgumentException);
+
+  world.setReplayRecordingEnabled(false);
+  EXPECT_FALSE(world.isReplayRecordingEnabled());
+  EXPECT_EQ(world.getReplayFrameCount(), 0u);
+  EXPECT_FALSE(world.getReplayCursor().has_value());
+
+  world.setReplayRecordingEnabled(true);
+  world.setReplayRecordingEnabled(true);
+  ASSERT_TRUE(world.isReplayRecordingEnabled());
+  ASSERT_EQ(world.getReplayFrameCount(), 1u);
+  ASSERT_TRUE(world.getReplayCursor().has_value());
+  EXPECT_EQ(*world.getReplayCursor(), 0u);
+  EXPECT_THROW(
+      static_cast<void>(world.getReplayFrameTime(1)),
+      sx::InvalidArgumentException);
+  EXPECT_THROW(
+      static_cast<void>(world.getReplaySimulationFrame(1)),
+      sx::InvalidArgumentException);
+  EXPECT_THROW(world.restoreReplayFrame(1), sx::InvalidArgumentException);
+
+  world.clear();
+  EXPECT_FALSE(world.isReplayRecordingEnabled());
+  EXPECT_EQ(world.getReplayFrameCount(), 0u);
+  EXPECT_FALSE(world.getReplayCursor().has_value());
+}
+
+// Test that replay restore rejects topology/layout changes instead of trying
+// partial best-effort replay.
+TEST(World, ReplayRecordingRejectsRigidBodyLayoutChanges)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.addRigidBody("recorded");
+  world.setReplayRecordingEnabled(true);
+  world.addRigidBody("added_after_recording");
+
+  EXPECT_THROW(world.restoreReplayFrame(0), sx::InvalidOperationException);
+}
+
+// Test replay recording and restore for articulated runtime state.
+TEST(World, ReplayRecordingRestoresMultibodyRuntimeState)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  auto robot = world.addMultibody("robot");
+  auto base = robot.addLink("base");
+
+  sx::JointSpec spec;
+  spec.name = "joint";
+  spec.type = sx::JointType::Revolute;
+  auto link = robot.addLink("link", base, spec);
+  auto joint = link.getParentJoint();
+
+  const Eigen::VectorXd initialPosition = Eigen::VectorXd::Constant(1, 0.25);
+  const Eigen::VectorXd initialVelocity = Eigen::VectorXd::Constant(1, 0.5);
+  const Eigen::VectorXd initialTorque = Eigen::VectorXd::Constant(1, 1.5);
+  const Eigen::VectorXd initialCommandVelocity
+      = Eigen::VectorXd::Constant(1, -0.75);
+  joint.setPosition(initialPosition);
+  joint.setVelocity(initialVelocity);
+  joint.setForce(initialTorque);
+  joint.setCommandVelocity(initialCommandVelocity);
+
+  auto& registry = sx::detail::registryOf(world);
+  const entt::entity linkEntity
+      = sx::detail::toRegistryEntity(link.getEntity());
+  auto& linkComponent = registry.get<sx::comps::Link>(linkEntity);
+  const Eigen::Matrix<double, 6, 1> initialExternalForce
+      = (Eigen::Matrix<double, 6, 1>() << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0)
+            .finished();
+  linkComponent.externalForce = initialExternalForce;
+
+  world.setReplayRecordingEnabled(true);
+
+  joint.setPosition(Eigen::VectorXd::Constant(1, -1.0));
+  joint.setVelocity(Eigen::VectorXd::Constant(1, -2.0));
+  joint.setForce(Eigen::VectorXd::Constant(1, -3.0));
+  joint.setCommandVelocity(Eigen::VectorXd::Constant(1, -4.0));
+  linkComponent.externalForce.setZero();
+
+  world.restoreReplayFrame(0);
+
+  EXPECT_TRUE(joint.getPosition().isApprox(initialPosition));
+  EXPECT_TRUE(joint.getVelocity().isApprox(initialVelocity));
+  EXPECT_TRUE(joint.getForce().isApprox(initialTorque));
+  EXPECT_TRUE(joint.getCommandVelocity().isApprox(initialCommandVelocity));
+  EXPECT_TRUE(registry.get<sx::comps::Link>(linkEntity)
+                  .externalForce.isApprox(initialExternalForce));
 }

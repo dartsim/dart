@@ -2522,9 +2522,10 @@ void World::step(compute::ComputeExecutor& executor)
       m_rigidBodySolver,
       m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational,
       hasMultibodyStructures(*this));
-  step(executor, pipeline);
+  stepPipelineOnce(executor, pipeline);
   m_lastDeformableSolverDiagnostics = makeDeformableSolverDiagnostics(
       stages.deformableDynamics.getLastStats());
+  recordReplayFrame();
 }
 
 //==============================================================================
@@ -2535,9 +2536,12 @@ void World::step(std::size_t count, compute::ComputeExecutor& executor)
       m_rigidBodySolver,
       m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational,
       hasMultibodyStructures(*this));
-  step(count, executor, pipeline);
-  m_lastDeformableSolverDiagnostics = makeDeformableSolverDiagnostics(
-      stages.deformableDynamics.getLastStats());
+  for (std::size_t i = 0; i < count; ++i) {
+    stepPipelineOnce(executor, pipeline);
+    m_lastDeformableSolverDiagnostics = makeDeformableSolverDiagnostics(
+        stages.deformableDynamics.getLastStats());
+    recordReplayFrame();
+  }
 }
 
 //==============================================================================
@@ -2550,9 +2554,10 @@ void World::step(
       m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational,
       hasMultibodyStructures(*this),
       stage);
-  step(executor, pipeline);
+  stepPipelineOnce(executor, pipeline);
   m_lastDeformableSolverDiagnostics = makeDeformableSolverDiagnostics(
       stages.deformableDynamics.getLastStats());
+  recordReplayFrame();
 }
 
 //==============================================================================
@@ -2567,13 +2572,24 @@ void World::step(
       m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational,
       hasMultibodyStructures(*this),
       stage);
-  step(count, executor, pipeline);
-  m_lastDeformableSolverDiagnostics = makeDeformableSolverDiagnostics(
-      stages.deformableDynamics.getLastStats());
+  for (std::size_t i = 0; i < count; ++i) {
+    stepPipelineOnce(executor, pipeline);
+    m_lastDeformableSolverDiagnostics = makeDeformableSolverDiagnostics(
+        stages.deformableDynamics.getLastStats());
+    recordReplayFrame();
+  }
 }
 
 //==============================================================================
 void World::step(
+    compute::ComputeExecutor& executor, compute::WorldStepPipeline& pipeline)
+{
+  stepPipelineOnce(executor, pipeline);
+  recordReplayFrame();
+}
+
+//==============================================================================
+void World::stepPipelineOnce(
     compute::ComputeExecutor& executor, compute::WorldStepPipeline& pipeline)
 {
   validateLoopClosureKinematicsPolicySupport(*this);
@@ -2601,7 +2617,6 @@ void World::step(
   m_time += m_timeStep;
   ++m_frame;
   refreshMemoryDiagnostics();
-  recordReplayFrame();
 }
 
 //==============================================================================
