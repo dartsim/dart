@@ -64,8 +64,10 @@ bool roundUpToAlignment(size_t bytes, size_t alignment, size_t& rounded)
 
 //==============================================================================
 FreeListAllocator::FreeListAllocator(
-    MemoryAllocator& baseAllocator, size_t initialAllocation)
-  : mBaseAllocator(baseAllocator)
+    MemoryAllocator& baseAllocator,
+    size_t initialAllocation,
+    GrowthPolicy growthPolicy)
+  : mBaseAllocator(baseAllocator), mGrowthPolicy(growthPolicy)
 {
   allocateMemoryBlock(initialAllocation);
 }
@@ -116,6 +118,12 @@ MemoryAllocator& FreeListAllocator::getBaseAllocator()
 }
 
 //==============================================================================
+FreeListAllocator::GrowthPolicy FreeListAllocator::getGrowthPolicy() const
+{
+  return mGrowthPolicy;
+}
+
+//==============================================================================
 void* FreeListAllocator::allocate(size_t bytes) noexcept
 {
   // Not allowed to allocate zero bytes
@@ -129,6 +137,17 @@ void* FreeListAllocator::allocate(size_t bytes) noexcept
   }
   bytes = roundedBytes;
 
+  if (mFirstMemoryBlock == nullptr) {
+    if (mGrowthPolicy == GrowthPolicy::FixedCapacity) {
+      return nullptr;
+    }
+
+    if (!allocateMemoryBlock(bytes)) {
+      return nullptr;
+    }
+  }
+
+  DART_ASSERT(mFirstMemoryBlock != nullptr);
   // Ensure that the first memory block doesn't have the previous block
   DART_ASSERT(mFirstMemoryBlock->mPrev == nullptr);
 
@@ -160,6 +179,10 @@ void* FreeListAllocator::allocate(size_t bytes) noexcept
 
   // If failed to find an available memory block, allocate a new memory block
   if (curr == nullptr) {
+    if (mGrowthPolicy == GrowthPolicy::FixedCapacity) {
+      return nullptr;
+    }
+
     // Allocate a sufficient size
     if (!allocateMemoryBlock((mTotalAllocatedBlockSize + bytes) * 2)) {
       return nullptr;
@@ -197,6 +220,10 @@ void* FreeListAllocator::allocate(size_t bytes, size_t alignment) noexcept
 
   if (alignment <= alignof(std::max_align_t)) {
     return allocate(bytes);
+  }
+
+  if (mGrowthPolicy == GrowthPolicy::FixedCapacity) {
+    return nullptr;
   }
 
   void* pointer = mBaseAllocator.allocate(bytes, alignment);
@@ -347,6 +374,9 @@ void FreeListAllocator::print(std::ostream& os, int indent) const
   if (indent != 0) {
     os << spaces << "type: " << getType() << "\n";
   }
+  os << spaces << "growth_policy: "
+     << (mGrowthPolicy == GrowthPolicy::Expand ? "expand" : "fixed_capacity")
+     << "\n";
   os << spaces << "reserved_size: " << mTotalAllocatedBlockSize << "\n";
   os << spaces << "memory_blocks:\n";
   auto curr = mFirstMemoryBlock;

@@ -8,8 +8,10 @@
       allocators against standard C++ allocators and foonathan/memory.
       Alignment-aware allocation is implemented; fixed-size pool comparison now
       has a DART `FixedPoolAllocator` path that beats foonathan/memory and
-      `std::pmr` locally. The strict benchmark gate and broader correctness
-      matrix still need to land before this phase is complete.
+      `std::pmr` locally. `FreeListAllocator` now has a fixed-capacity mode for
+      deterministic bounded failure after preallocation. The strict benchmark
+      gate and broader correctness matrix still need to land before this phase
+      is complete.
 - [ ] Phase 3: EnTT registry/component storage allocation is configurable from
       the World memory hierarchy and covered by no-growth ECS tests.
 - [ ] Phase 4: Built-in simulation stages borrow world memory for transient
@@ -58,6 +60,10 @@ debugging, profiling, optimization experiments, and ImGui visualization.
   `PoolAllocator` focused on mixed size-classed small-object workloads. The
   comparative benchmark must not compare DART's generic size-classed pool
   against foonathan's fixed-size pool when a DART fixed-size allocator exists.
+- Use fixed-capacity `FreeListAllocator` instances when the allocator budget was
+  established during world creation or bake/build and runtime growth would
+  violate the no-dynamic-allocation contract. The default free-list policy
+  remains expandable for general heap-like use.
 
 ## Required Allocator Evidence
 
