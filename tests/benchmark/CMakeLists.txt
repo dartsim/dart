@@ -344,6 +344,11 @@ if(foonathan_memory_FOUND)
     foonathan_memory
     benchmark::benchmark
   )
+  if(NOT TARGET EnTT::EnTT)
+    # Use CONFIG mode so this benchmark can discover an installed EnTT package
+    # without invoking DART's FetchContent-backed dependency helper.
+    find_package(EnTT CONFIG QUIET)
+  endif()
   if(TARGET EnTT::EnTT)
     target_link_libraries(bm_allocators_comparative EnTT::EnTT)
     target_compile_definitions(

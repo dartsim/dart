@@ -34,7 +34,10 @@
       row also reports configured-allocator allocation/deallocation counters
       and fails if reserved churn calls that allocator after prewarm. Separate
       EnTT build/growth rows measure the bake-time storage allocation phase
-      instead of conflating that cost with the no-growth simulation loop.
+      instead of conflating that cost with the no-growth simulation loop. The
+      comparative benchmark now discovers installed EnTT package metadata for
+      these rows without invoking DART's FetchContent-backed dependency helper,
+      and the checker reports a clear error if a requested result file is empty.
 - [ ] Phase 4: Built-in simulation stages borrow world memory for transient
       buffers and avoid growth after simulation is baked.
 - [ ] Phase 5: Add allocation/debug accounting gates for "no dynamic allocation

@@ -179,8 +179,15 @@ def _timing_ns(row: dict, metric: str) -> float:
 
 
 def load_benchmark_rows(path: Path) -> list[dict]:
-    with path.open(encoding="utf-8") as f:
-        data = json.load(f)
+    try:
+        with path.open(encoding="utf-8") as f:
+            data = json.load(f)
+    except FileNotFoundError as exc:
+        raise BenchmarkCheckError(f"benchmark JSON not found: {path}") from exc
+    except json.JSONDecodeError as exc:
+        raise BenchmarkCheckError(
+            f"benchmark JSON is empty or invalid: {path}"
+        ) from exc
     rows = data.get("benchmarks", [])
     if not isinstance(rows, list):
         raise BenchmarkCheckError("benchmark JSON has no benchmark row list")

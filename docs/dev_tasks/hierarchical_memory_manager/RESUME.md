@@ -41,6 +41,23 @@ instead of conflating that cost with the no-growth simulation loop.
 
 ## Latest Local Validation
 
+- The common comparative benchmark now discovers installed EnTT package
+  metadata before configuring `bm_allocators_comparative`. Local
+  `bm_allocators_comparative --benchmark_list_tests` lists all DART,
+  foonathan/memory, and standard EnTT registry/build rows at 256, 512, and 2048
+  entities.
+- The short focused checker
+  `.benchmark_results/entt_registry_probe.json` passed against both
+  foonathan/memory and the standard registry after the EnTT discovery fix, with
+  `dart_allocator_allocations=0` and `dart_allocator_deallocations=0` on warmed
+  DART registry rows.
+- The default focused checker
+  `.benchmark_results/entt_registry_default_probe.json` passed every foonathan
+  comparison but still failed every standard-registry comparison. Current median
+  DART/std ratios were `BM_EnttRegistry/{256,512,2048}` =
+  `1.075`, `1.036`, `1.052` and `BM_EnttRegistryBuild/{256,512,2048}` =
+  `1.062`, `1.053`, `1.057`, so the strict standard-registry performance gate
+  remains open.
 - `pixi run bm-allocator-comparative-check --verbose` passed the default
   foonathan/memory gate on the current benchmark branch.
 - The full opt-in checker with EnTT registry coverage and both foonathan and std

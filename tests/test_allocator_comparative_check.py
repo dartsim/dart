@@ -235,6 +235,18 @@ def test_requested_entt_registry_rows_must_be_available():
         )
 
 
+def test_empty_benchmark_json_reports_clear_error(tmp_path):
+    module = load_allocator_check_module()
+    output = tmp_path / "empty.json"
+    output.write_text("", encoding="utf-8")
+
+    with pytest.raises(
+        module.BenchmarkCheckError,
+        match="benchmark JSON is empty or invalid",
+    ):
+        module.load_benchmark_rows(output)
+
+
 def test_entt_registry_modes_are_mutually_exclusive():
     module = load_allocator_check_module()
 
