@@ -10,7 +10,7 @@
 - Binding Python? Expose only the user-facing API unless a legacy exception is
   explicitly allowlisted by `scripts/check_api_boundaries.py` with a
   replacement and removal condition.
-- Changing DART 6.16 compatibility API? Run the Gazebo workflow from
+- Changing DART 6.17 compatibility API? Run the Gazebo workflow from
   [build-system.md](build-system.md#gazebo-integration-feature) on the affected
   support branch.
 - Changing a `detail` or `internal` type that appears in an installed public
@@ -21,7 +21,7 @@
 
 DART 7 intentionally refactors large parts of the codebase as a clean break
 from the DART 6 API. Released downstream compatibility where there is evidence,
-especially gz-physics, is maintained on `release-6.16` unless a maintainer
+especially gz-physics, is maintained on `release-6.17` unless a maintainer
 explicitly scopes a bounded migration adapter. The project needs a small,
 stable user-facing API and a larger internal API that can change quickly for
 dependency removal, collision backend work, performance, and new simulation
@@ -62,12 +62,12 @@ Compatibility API is retained for existing users or downstreams on a documented
 support lane even when it is not the preferred DART 7 interface. Keep it
 source-compatible until the documented removal point, add `DART_DEPRECATED` or
 `[[deprecated]]` where possible, and mention the replacement. Gz-physics
-compatibility shims belong on `release-6.16` by default; a DART 7 shim must be
+compatibility shims belong on `release-6.17` by default; a DART 7 shim must be
 bounded, inventory-driven, and sunset dated.
 
 Each compatibility entry needs downstream evidence, replacement API, first
 deprecated release, earliest removal release, blocking migration condition, and
-release-note or changelog requirement. For gz-physics on the DART 6.16 support
+release-note or changelog requirement. For gz-physics on the DART 6.17 support
 lane, removal requires evidence from the pinned gz-physics integration or an
 accepted upstream migration; a version target alone is not enough.
 
@@ -84,7 +84,7 @@ Before changing exposed implementation debt:
   symbols.
 - Provide a supported replacement API or wrapper and migration notes.
 - Run the downstream gate for touched support-lane surfaces, especially
-  gz-physics on `release-6.16`.
+  gz-physics on `release-6.17`.
 - Review ABI risk when exported class layout, virtual bases, inline methods, or
   exported data are involved.
 

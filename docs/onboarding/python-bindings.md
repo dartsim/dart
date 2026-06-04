@@ -61,7 +61,7 @@ dartpy/
 
 - Core classes/functions (dynamics, collision, math, simulation, constraint,
   optimizer) are promoted onto `dartpy` directly.
-- Legacy submodules remain available on the DART 6.16 support lane. Main keeps
+- Legacy submodules remain available on the DART 6.17 support lane. Main keeps
   migration warnings only while the DART 7 clean-break gates are being closed;
   the DART 7 public contract should not carry the legacy dartpy 6 API surface.
   Toggle deprecation handling with `DARTPY_WARN_ON_LEGACY_MODULES` or

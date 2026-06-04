@@ -22,14 +22,14 @@ Read these files first:
 3. **Setup** - Choose the target branch before creating a topic branch:
    - features/docs/non-bugfix refactors: branch from `origin/main`
    - bug fixes that apply to the current release line: branch from
-     `origin/release-6.16` first, then cherry-pick or reapply to `main`
+     `origin/release-6.17` first, then cherry-pick or reapply to `main`
 4. **Implement** - Keep commits focused, follow code style
 5. **Verify** - Run `pixi run lint` before committing, then
    `pixi run test-all`; on Linux hosts with a visible NVIDIA CUDA runtime, also
    run `pixi run -e cuda test-all`
 6. **PR** - After explicit maintainer/user approval, `git push -u origin HEAD`
    then `gh pr create --draft --base <target-branch> --milestone "<milestone>"`
-   (`DART 7.0` for `main`, `DART 6.16.x` for `release-6.16`); follow
+   (`DART 7.0` for `main`, `DART 6.17.1` for `release-6.17`); follow
    `.github/PULL_REQUEST_TEMPLATE.md`
 7. **Cleanup** - Before PR: if task used `docs/dev_tasks/<task>/`, first
    promote durable dashboards, evidence matrices, API inventories, migration
@@ -39,7 +39,7 @@ Read these files first:
 
 ## Type-Specific
 
-- **Bugfix**: Requires PRs to BOTH `release-6.16` AND `main`
+- **Bugfix**: Requires PRs to BOTH `release-6.17` AND `main`
 - **Refactor**: No behavior changes
 - **Feature**: Add tests + docs
 - **New solver/paper implementation**: Derive an evidence matrix from the
