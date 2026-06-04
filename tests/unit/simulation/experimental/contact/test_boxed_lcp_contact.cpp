@@ -511,6 +511,92 @@ TEST(AvbdContact, PublicRigidBodyFixedJointProjectsFromCapturedPose)
 }
 
 //==============================================================================
+// The public one-DOF rigid-body facade should expose a revolute joint that
+// projects the captured anchor while leaving the hinge axis free.
+TEST(AvbdContact, PublicRigidBodyRevoluteJointProjectsAnchor)
+{
+  sx::WorldOptions options;
+  options.timeStep = 0.005;
+  options.gravity = Eigen::Vector3d::Zero();
+  sx::World world(options);
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world.addRigidBody("base", baseOptions);
+
+  sx::RigidBodyOptions linkOptions;
+  linkOptions.position = Eigen::Vector3d::UnitX();
+  auto link = world.addRigidBody("link", linkOptions);
+
+  auto joint = world.addRigidBodyRevoluteJoint(
+      "base_to_link_hinge", base, link, Eigen::Vector3d::UnitZ());
+  EXPECT_EQ(joint.getType(), sx::JointType::Revolute);
+  EXPECT_EQ(joint.getDOFCount(), 1u);
+  EXPECT_EQ(joint.getParentRigidBody().getName(), "base");
+  EXPECT_EQ(joint.getChildRigidBody().getName(), "link");
+  EXPECT_TRUE(world.hasRigidBodyJoint("base_to_link_hinge"));
+  EXPECT_FALSE(world.hasRigidBodyFixedJoint("base_to_link_hinge"));
+  EXPECT_EQ(world.getRigidBodyJointCount(), 1u);
+  EXPECT_EQ(world.getRigidBodyFixedJointCount(), 0u);
+  auto foundJoint = world.getRigidBodyJoint("base_to_link_hinge");
+  ASSERT_TRUE(foundJoint.has_value());
+  EXPECT_EQ(foundJoint->getType(), sx::JointType::Revolute);
+  const auto rigidBodyJoints = world.getRigidBodyJoints();
+  ASSERT_EQ(rigidBodyJoints.size(), 1u);
+  EXPECT_EQ(rigidBodyJoints.front().getName(), "base_to_link_hinge");
+
+  Eigen::Isometry3d driftedPose = Eigen::Isometry3d::Identity();
+  driftedPose.translation() = Eigen::Vector3d(1.25, 0.25, 0.0);
+  driftedPose.linear()
+      = Eigen::AngleAxisd(0.5, Eigen::Vector3d::UnitZ()).toRotationMatrix();
+  link.setTransform(driftedPose);
+
+  world.enterSimulationMode();
+  world.step();
+
+  EXPECT_LT(std::abs(link.getTranslation().x() - 1.0), 0.05);
+  EXPECT_LT(std::abs(link.getTranslation().y()), 0.05);
+  EXPECT_TRUE(base.getTranslation().isApprox(Eigen::Vector3d::Zero()));
+}
+
+//==============================================================================
+// The public prismatic facade should project drift orthogonal to the slide axis
+// while leaving translation along that axis unconstrained.
+TEST(AvbdContact, PublicRigidBodyPrismaticJointProjectsOrthogonalDrift)
+{
+  sx::WorldOptions options;
+  options.timeStep = 0.005;
+  options.gravity = Eigen::Vector3d::Zero();
+  sx::World world(options);
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world.addRigidBody("base", baseOptions);
+
+  sx::RigidBodyOptions linkOptions;
+  linkOptions.position = Eigen::Vector3d::UnitZ();
+  auto link = world.addRigidBody("link", linkOptions);
+
+  auto joint = world.addRigidBodyPrismaticJoint(
+      "base_to_link_slider", base, link, Eigen::Vector3d::UnitZ());
+  EXPECT_EQ(joint.getType(), sx::JointType::Prismatic);
+  EXPECT_EQ(joint.getDOFCount(), 1u);
+  EXPECT_EQ(world.getRigidBodyJointCount(), 1u);
+  EXPECT_FALSE(world.hasRigidBodyFixedJoint("base_to_link_slider"));
+
+  Eigen::Isometry3d driftedPose = Eigen::Isometry3d::Identity();
+  driftedPose.translation() = Eigen::Vector3d(0.25, 0.0, 1.5);
+  link.setTransform(driftedPose);
+
+  world.enterSimulationMode();
+  world.step();
+
+  EXPECT_LT(std::abs(link.getTranslation().x()), 0.05);
+  EXPECT_NEAR(link.getTranslation().z(), 1.5, 0.05);
+  EXPECT_TRUE(base.getTranslation().isApprox(Eigen::Vector3d::Zero()));
+}
+
+//==============================================================================
 // Saving a public fixed joint before simulation should not lose the AVBD row
 // config permanently; loading and entering simulation mode restores it from the
 // saved rigid-body poses.

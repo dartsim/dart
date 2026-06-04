@@ -257,6 +257,36 @@ public:
   ///         configuration fails.
   Joint addRigidBodyFixedJoint(
       std::string_view name, const RigidBody& parent, const RigidBody& child);
+  /// Create a revolute constraint between two free rigid bodies.
+  ///
+  /// The current relative pose is captured when the joint is created. During
+  /// simulation steps the experimental rigid-body constraint path projects the
+  /// child body back toward that captured anchor while leaving rotation around
+  /// `axis` free. This is design-mode only.
+  Joint addRigidBodyRevoluteJoint(
+      std::string_view name,
+      const RigidBody& parent,
+      const RigidBody& child,
+      const Eigen::Vector3d& axis = Eigen::Vector3d::UnitZ());
+  /// Create a prismatic constraint between two free rigid bodies.
+  ///
+  /// The current relative pose is captured when the joint is created. During
+  /// simulation steps the experimental rigid-body constraint path projects the
+  /// child body back toward that captured anchor while leaving translation
+  /// along `axis` free. This is design-mode only.
+  Joint addRigidBodyPrismaticJoint(
+      std::string_view name,
+      const RigidBody& parent,
+      const RigidBody& child,
+      const Eigen::Vector3d& axis = Eigen::Vector3d::UnitZ());
+  /// Get any supported public joint between free rigid bodies by name.
+  ///
+  /// This returns fixed, revolute, and prismatic rigid-body joints. It does not
+  /// return multibody joints; use Multibody::getJoint() for articulated links.
+  std::optional<Joint> getRigidBodyJoint(std::string_view name);
+  bool hasRigidBodyJoint(std::string_view name) const;
+  std::size_t getRigidBodyJointCount() const;
+  std::vector<Joint> getRigidBodyJoints();
   /// Get a public fixed joint between free rigid bodies by name.
   ///
   /// This does not return multibody joints; use Multibody::getJoint() for
@@ -605,6 +635,12 @@ private:
       std::string_view autoNamePrefix,
       bool isFixedFrame,
       std::string& outName);
+  Joint addRigidBodyJoint(
+      std::string_view name,
+      const RigidBody& parent,
+      const RigidBody& child,
+      JointType type,
+      const Eigen::Vector3d& axis);
 
   void ensureDesignMode() const;
   void resetCountersFromRegistry();

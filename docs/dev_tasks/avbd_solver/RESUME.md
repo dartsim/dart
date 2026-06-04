@@ -81,9 +81,12 @@ assembly, and solve coverage. Simulation-entry current-pose initialization and
 extraction now also cover private rigid-body ECS revolute/prismatic joint
 entities, deriving the same axes/masks from their configured joint axis while
 keeping multibody link endpoints unsupported until articulated AVBD state
-exists. This is still an internal row primitive only: no public
-revolute/limited joint facade, motor row, fracture row, articulated multibody
-state path, GPU path, demo, or benchmark packet is complete.
+exists. Public experimental `World` facades now expose free rigid-body
+revolute and prismatic joints through C++ and dartpy, with generated stubs,
+focused C++/Python tests, and the categorized `sx_rigid_limited_joints`
+py-demo. This is still a narrow free-rigid-body path only: no motor row,
+fracture row, articulated multibody state path, GPU path, paper-corpus demo, or
+benchmark packet is complete.
 
 ## Current Branch
 
@@ -121,14 +124,16 @@ entry, and adds regression coverage that multibody links are not silently
 treated as rigid AVBD bodies. It also adds masked private point-joint row
 generation for constrained linear/angular axes, plus named private
 revolute/prismatic point-joint configs with arbitrary joint-axis bases and
-private rigid-body ECS current-pose extraction for those one-DOF joint entities.
+private rigid-body ECS current-pose extraction for those one-DOF joint
+entities. The current checkpoint adds public free rigid-body revolute/prismatic
+facades, dartpy bindings/stubs, focused C++/Python coverage, and the
+`sx_rigid_limited_joints` py-demo on top of that private path.
 
 ## Immediate Next Step
 
 Continue the next bounded AVBD contact/friction or rigid-block slice:
 true rigid/articulated World wiring, full narrow-phase feature extraction,
-public rigid-body limited-DOF facades with py-demo coverage, or the next
-motor/fracture row family are the preferred row-family gaps now that
+or the next motor/fracture row family are the preferred row-family gaps now that
 private dynamic/rigid contact feature IDs, canonical two-endpoint row keys, and
 normal/friction row descriptor helpers plus private rigid contact/friction
 point-pair constructors, paired friction-cone helpers, and a private serial
@@ -143,8 +148,9 @@ explicit current-pose rigid-body fixed-joint config bridge plus simulation-entry
 config initialization for opt-in rigid bodies, masked private point-joint row
 generation for constrained linear/angular axes, and named private
 revolute/prismatic point-joint configs with arbitrary joint-axis bases plus
-private rigid-body ECS current-pose extraction for those one-DOF joint entities
-exist.
+private rigid-body ECS current-pose extraction for those one-DOF joint
+entities, and public free rigid-body revolute/prismatic facades with dartpy
+bindings, stubs, tests, and py-demo coverage exist.
 Keep the supported envelope narrow and preserve fallback coverage for topology
 mixes,
 damping/acceleration, parallel solves, and unsupported requested row
@@ -212,8 +218,8 @@ combinations.
   configs now preserve arbitrary joint-axis bases and leave one rotational or
   translational axis free, and private rigid-body ECS revolute/prismatic joint
   entities now initialize and extract through the same current-pose bridge, but
-  full narrow-phase feature extraction and public articulated World joint wiring
-  are not solved yet.
+  full narrow-phase feature extraction, motors/fracture, and public articulated
+  World joint wiring are not solved yet.
 
 ## How to Resume
 

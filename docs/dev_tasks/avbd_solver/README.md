@@ -203,10 +203,13 @@ Paper audit:
     rigid-body ECS revolute/prismatic joint entities, deriving the same
     axes/masks from their configured joint axis while preserving explicit
     multibody rejection until articulated AVBD state exists.
+    Public experimental `World` facades now expose free rigid-body revolute and
+    prismatic joints through C++ and dartpy, including generated stubs,
+    focused tests, and the categorized `sx_rigid_limited_joints` py-demo.
     Public multibody joint extraction is still not wired.
     Unsupported envelopes still fall back to sequential impulses. This is not
-    full narrow-phase feature extraction, not full rigid contact/joint rows, and
-    not articulated joint support yet.
+    full narrow-phase feature extraction, not full rigid contact/joint rows, not
+    motor/fracture support, and not articulated joint support yet.
 - [ ] Phase A4: contact/friction bounds, static/dynamic friction switching, and
       quasi-Newton Hessian approximation.
 - [ ] Phase A5: joints, motors, fracture, and breakable constraints.
@@ -247,9 +250,8 @@ numbers.
 
 1. Continue the next bounded AVBD contact/friction or rigid-block slice:
    true rigid/articulated World wiring, full narrow-phase feature extraction,
-   public rigid-body limited-DOF facades with py-demo coverage, or the next
-   motor/fracture row family are the preferred next gaps now that static box
-   feature IDs,
+   or the next motor/fracture row family are the preferred next gaps now that
+   static box feature IDs,
    private dynamic/rigid contact feature IDs and descriptor
    helpers, static half-space tangent dual projection, self-contact
    tangent dual projection, static contact/friction, attachments,
@@ -273,7 +275,8 @@ numbers.
    generation for constrained linear/angular axes, and private
    revolute/prismatic point-joint configs with arbitrary joint-axis bases plus
    private rigid-body ECS current-pose extraction for those one-DOF joint
-   entities, have narrow CPU paths.
+   entities, and public free rigid-body revolute/prismatic facades with dartpy
+   bindings, stubs, focused tests, and py-demo coverage have narrow CPU paths.
 2. In parallel planning, keep full friction cones, rigid/articulated rows, GPU
    parity, demos, and benchmark packets as open AVBD parity gates rather than
    completion claims.

@@ -409,10 +409,13 @@ its own line so status updates remain git-history friendly.
   joint-axis bases, leave one rotational or translational axis free, and
   preserve axes/masks through World point-joint input and solve coverage.
   Simulation-entry current-pose initialization and extraction also cover
-  private rigid-body ECS revolute/prismatic joint entities. Public multibody
-  joint extraction is not wired yet. The next local slice is full narrow-phase
-  feature extraction, public rigid-body limited-DOF facades with py-demo
-  coverage, motor/fracture rows, or broader rigid/articulated World integration.
+  private rigid-body ECS revolute/prismatic joint entities. Public experimental
+  `World` facades now expose free rigid-body revolute and prismatic joints
+  through C++ and dartpy, backed by generated stubs, focused C++/Python tests,
+  and the categorized `sx_rigid_limited_joints` py-demo. Public multibody joint
+  extraction is not wired yet. The next local slice is full narrow-phase feature
+  extraction, motor/fracture rows, or broader rigid/articulated World
+  integration.
 - Gate: VBD progress is not complete until the implementation distinguishes
   each internal kernel slice from a wired solver, keeps VBD naming
   backend-neutral, proves per-vertex force/Hessian correctness, PD Hessian
