@@ -360,6 +360,17 @@ TEST(AvbdContact, PublicRigidBodyFixedJointProjectsFromCapturedPose)
   EXPECT_EQ(joint.getDOFCount(), 0u);
   EXPECT_EQ(joint.getParentRigidBody().getName(), "base");
   EXPECT_EQ(joint.getChildRigidBody().getName(), "link");
+  EXPECT_TRUE(world.hasRigidBodyFixedJoint("base_to_link"));
+  EXPECT_FALSE(world.hasRigidBodyFixedJoint("missing"));
+  EXPECT_EQ(world.getRigidBodyFixedJointCount(), 1u);
+  auto foundJoint = world.getRigidBodyFixedJoint("base_to_link");
+  ASSERT_TRUE(foundJoint.has_value());
+  EXPECT_EQ(foundJoint->getParentRigidBody().getName(), "base");
+  EXPECT_EQ(foundJoint->getChildRigidBody().getName(), "link");
+  EXPECT_FALSE(world.getRigidBodyFixedJoint("missing").has_value());
+  const auto fixedJoints = world.getRigidBodyFixedJoints();
+  ASSERT_EQ(fixedJoints.size(), 1u);
+  EXPECT_EQ(fixedJoints.front().getName(), "base_to_link");
   EXPECT_THROW(
       {
         auto parentLink = joint.getParentLink();
@@ -426,20 +437,14 @@ TEST(AvbdContact, PublicRigidBodyFixedJointSurvivesSaveLoad)
   ASSERT_TRUE(restoredLink.has_value());
 
   auto& registry = dart::simulation::experimental::detail::registryOf(restored);
-  entt::entity jointEntity = entt::null;
-  auto jointView = registry.view<sx::comps::Joint, sx::comps::Name>();
-  for (const entt::entity entity : jointView) {
-    const auto& name = jointView.get<sx::comps::Name>(entity);
-    if (name.name == "base_to_link") {
-      jointEntity = entity;
-      break;
-    }
-  }
-  ASSERT_TRUE(jointEntity != entt::null);
-  sx::Joint restoredJoint(
-      sx::detail::fromRegistryEntity(jointEntity), &restored);
-  EXPECT_EQ(restoredJoint.getParentRigidBody().getName(), "base");
-  EXPECT_EQ(restoredJoint.getChildRigidBody().getName(), "link");
+  EXPECT_EQ(restored.getRigidBodyFixedJointCount(), 1u);
+  EXPECT_TRUE(restored.hasRigidBodyFixedJoint("base_to_link"));
+  auto restoredJoint = restored.getRigidBodyFixedJoint("base_to_link");
+  ASSERT_TRUE(restoredJoint.has_value());
+  const entt::entity jointEntity
+      = sx::detail::toRegistryEntity(restoredJoint->getEntity());
+  EXPECT_EQ(restoredJoint->getParentRigidBody().getName(), "base");
+  EXPECT_EQ(restoredJoint->getChildRigidBody().getName(), "link");
   ASSERT_FALSE(
       registry.all_of<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity));
 
@@ -495,16 +500,14 @@ TEST(AvbdContact, PublicRigidBodyFixedJointSurvivesSimulationModeSaveLoad)
   ASSERT_TRUE(restoredLink.has_value());
 
   auto& registry = dart::simulation::experimental::detail::registryOf(restored);
-  entt::entity jointEntity = entt::null;
-  auto jointView = registry.view<sx::comps::Joint, sx::comps::Name>();
-  for (const entt::entity entity : jointView) {
-    const auto& name = jointView.get<sx::comps::Name>(entity);
-    if (name.name == "base_to_link") {
-      jointEntity = entity;
-      break;
-    }
-  }
-  ASSERT_TRUE(jointEntity != entt::null);
+  EXPECT_EQ(restored.getRigidBodyFixedJointCount(), 1u);
+  EXPECT_TRUE(restored.hasRigidBodyFixedJoint("base_to_link"));
+  auto restoredJoint = restored.getRigidBodyFixedJoint("base_to_link");
+  ASSERT_TRUE(restoredJoint.has_value());
+  const entt::entity jointEntity
+      = sx::detail::toRegistryEntity(restoredJoint->getEntity());
+  EXPECT_EQ(restoredJoint->getParentRigidBody().getName(), "base");
+  EXPECT_EQ(restoredJoint->getChildRigidBody().getName(), "link");
   ASSERT_TRUE(
       registry.all_of<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity));
   const auto& config

@@ -214,6 +214,48 @@ TEST(VectorMapper, RoundTripWithWorldRegistryFieldMapper)
   EXPECT_DOUBLE_EQ(pos.x, 9.0);
 }
 
+TEST(VectorMapper, WorldRegistryScalarMapperPreservesGenericCallbacks)
+{
+  StateSpace space;
+  space.addVariable("position_x", 1);
+  space.finalize();
+
+  VectorMapper mapper(space);
+  mapper.addMapper(
+      "position_x",
+      std::make_unique<ScalarMapper>(
+          [](const auto& registry) {
+            auto view = registry.template view<Position>();
+            for (auto entity : view) {
+              return registry.template get<Position>(entity).x;
+            }
+            return 0.0;
+          },
+          [](auto& registry, double value) {
+            auto view = registry.template view<Position>();
+            for (auto entity : view) {
+              registry.template get<Position>(entity).x = value;
+              return;
+            }
+          }));
+
+  World world;
+  auto& registry = detail::registryOf(world);
+  auto entity = registry.create();
+  registry.emplace<Position>(entity, Position{2.0, 3.0, 4.0});
+
+  auto vec = mapper.toVector(registry);
+
+  ASSERT_EQ(vec.size(), 1);
+  EXPECT_DOUBLE_EQ(vec[0], 2.0);
+
+  const std::vector<double> updated{8.0};
+  mapper.fromVector(registry, std::span<const double>(updated));
+
+  const auto& pos = registry.get<Position>(entity);
+  EXPECT_DOUBLE_EQ(pos.x, 8.0);
+}
+
 TEST(VectorMapper, WorldRegistryRequiresWorldCapableMapper)
 {
   StateSpace space;

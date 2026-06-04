@@ -22,8 +22,19 @@ class BenchmarkSpec:
 
 # The dashboard is intentionally scoped to experimental World performance. Keep
 # the published history focused on end-to-end experimental World update/step
-# cases instead of mixing in unrelated solver, SIMD, or robot-loader surfaces.
+# cases for the new DART 7 simulation APIs (the experimental World and its
+# solver families) instead of mixing in unrelated SIMD or robot-loader surfaces.
+#
+# Each surface tracks the *end-to-end World step* of a DART 7 solver family so
+# the headline charts stay comparable. Internal micro-kernels (distance, barrier,
+# tangent-stencil, candidate-set, etc.) and CUDA/GPU-only or DART_BUILD_DIFF-gated
+# rows are deliberately excluded: they either need hardware the GitHub-hosted
+# runner lacks or a build flag the dashboard build does not set, and they would
+# bury the World-step throughput signal. Filters are bounded so a run stays cheap.
 BENCHMARK_SPECS = [
+    # Core experimental World step & scaling (kinematics, sequential/parallel
+    # World step, rigid-body step scaling, the contact-shaped/contact-island
+    # scalable-compute proxies, and the Phase 5 CPU baseline row).
     BenchmarkSpec(
         surface="experimental-world",
         target="bm_compute_graph",
@@ -36,6 +47,40 @@ BENCHMARK_SPECS = [
             "BM_Phase5RigidBodyBatchCpuBaseline/1024/128/10"
         ),
         output_name="dashboard_experimental_world.json",
+    ),
+    # Rigid-body dynamics solver (PLAN-080 / PLAN-082): end-to-end World step
+    # with the default sequential-impulse contact solve and the opt-in IPC
+    # barrier solve, over a small stacked-box scene.
+    BenchmarkSpec(
+        surface="rigid-world",
+        target="bm_rigid_ipc_solver",
+        benchmark_filter="BM_RigidWorldStep_(SequentialImpulse|Ipc)/.*",
+        output_name="dashboard_rigid_world.json",
+    ),
+    # Deformable Vertex Block Descent solver (PLAN-104): end-to-end World step
+    # of a square deformable grid with the default gradient-descent solver and
+    # the VBD solver.
+    BenchmarkSpec(
+        surface="vbd-world",
+        target="bm_vbd_world_solver",
+        benchmark_filter="BM_VbdWorldStep(Default|Vbd)/.*",
+        output_name="dashboard_vbd_world.json",
+    ),
+    # Deformable FEM solver (PLAN-081): end-to-end World step of a neo-Hookean
+    # FEM beam under gravity via the sparse projected-Newton solve.
+    BenchmarkSpec(
+        surface="deformable-world",
+        target="bm_deformable_body",
+        benchmark_filter="BM_DeformableFemBarStep/.*",
+        output_name="dashboard_deformable_world.json",
+    ),
+    # Augmented VBD rigid (PLAN-104): end-to-end World step of a fixed-joint
+    # rigid chain routed through the AVBD contact projection.
+    BenchmarkSpec(
+        surface="avbd-world",
+        target="bm_avbd_rigid_fixed_joint",
+        benchmark_filter="BM_AvbdRigidFixedJointStep/.*",
+        output_name="dashboard_avbd_world.json",
     ),
 ]
 

@@ -78,6 +78,11 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     the lean compute-only `build-cuda`/`test-cuda` paths are unaffected, and it
     resets stale CMake compiler cache metadata before CMake can auto-rerun with
     default options and drop the `dartpy` target.
+  - Added public `World` lookup/list/count accessors for experimental
+    rigid-body fixed joints, plus matching dartpy bindings and py-demo
+    diagnostics, so users can recover fixed-joint handles and inspect their
+    rigid endpoints after construction or save/load without touching ECS
+    internals.
   - Made `dart::gui` UI scaling DPI-aware: `--gui-scale` now acts as a manual
     user multiplier on top of GLFW content-scale detection, `DART_GUI_DPI_SCALE`
     can override misreported DPI, implicit interactive app windows now use a
@@ -97,6 +102,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     rebuilt correctly by cached GUI renderable extraction.
   - Added a renderer-neutral `dart::gui` panel callback surface for examples
     that need custom controls without including backend UI headers.
+  - Added `pixi run bm-allocator-comparative-check`, a strict allocator
+    benchmark gate that compares DART allocator workloads against
+    foonathan/memory and `std::pmr` baselines.
   - Added the standalone `dartsim/` GUI simulator (a runtime executable, not a
     library) built only on the experimental World API. Its headless editor
     engine (`dartsim/engine`) provides scene/object, selection, command
@@ -536,6 +544,13 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     `benchmark-action/github-action-benchmark`, with a local
     `pixi run bm-dashboard-preview` to render the same dashboard before it is
     published.
+  - Expanded the performance dashboard to track the new DART 7 solver families'
+    end-to-end `World::step` surfaces (rigid-body sequential-impulse/IPC, VBD and
+    default deformable grid, FEM bar, AVBD fixed-joint) and made the charts
+    human-readable: `scripts/benchmark_display_names.py` rewrites raw Google
+    Benchmark names into readable titles (merge `--humanize`), and the local
+    preview groups charts by solver family with labelled, thousands-formatted
+    axes (commit on x, time-per-op on y, lower is better).
   - Added an opt-in `pixi run abi-check` task (Linux only) that builds two refs
     with identical options and compares shared libraries with libabigail's
     `abidiff`. The task is diagnostic only and is not wired into CI; ABI
@@ -594,6 +609,20 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     `clang-format` version changes under an existing build tree.
 
 - Simulation
+  - Consolidated the experimental CUDA solver modules (rigid-body batch, vertex
+    block descent, deformable PSD projection) onto a shared device-runtime
+    substrate so new GPU solvers reuse common blocks instead of reinventing them:
+    one `isCudaRuntimeAvailable`/`throwIfCudaError`/`checkLastError`/`launchGrid1D`
+    (`compute/cuda/cuda_runtime.cuh`), one owning `DeviceBuffer<T>`
+    (`compute/cuda/device_buffer.cuh`), and a single-sourced per-body
+    `__host__ __device__` orientation integration core
+    (`compute/detail/rigid_integration_core.hpp`) shared by the CPU batch kernel
+    and the CUDA kernel (deleting a divergent device re-derivation). The
+    build-only `-cuda` static library, backend-neutral public API, and
+    no-GPU-runtime-dependency packaging are unchanged; the experimental CUDA
+    failure path now throws `InvalidOperationException` (backward compatible — it
+    derives from `std::runtime_error`) for one consistent error contract. Design:
+    `docs/design/shared_cuda_device_substrate.md` (PLAN-031).
   - Added opt-in analytic differentiable simulation to the experimental `World`
     (the Nimble method, arXiv:2103.16021): a build-time `DART_BUILD_DIFF` option
     plus a runtime `WorldOptions::differentiable` flag (off by default, with

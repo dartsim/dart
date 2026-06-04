@@ -39,6 +39,7 @@
 
 #include <concepts>
 #include <functional>
+#include <memory>
 #include <span>
 #include <stdexcept>
 #include <type_traits>
@@ -58,6 +59,18 @@ concept EigenVectorField = requires(Field field, Eigen::Index i) {
   field.data();
   field[i];
 };
+
+template <typename Callable, typename Registry>
+concept ScalarGetter
+    = requires(const Callable& callable, const Registry& registry) {
+        { std::invoke(callable, registry) } -> std::convertible_to<double>;
+      };
+
+template <typename Callable, typename Registry>
+concept ScalarSetter
+    = requires(Callable& callable, Registry& registry, double value) {
+        std::invoke(callable, registry, value);
+      };
 
 } // namespace detail
 
@@ -143,6 +156,38 @@ public:
 class ScalarMapper : public ComponentMapper, public WorldRegistryComponentMapper
 {
 public:
+  template <typename GetValue, typename SetValue>
+    requires detail::
+                 ScalarGetter<std::remove_reference_t<GetValue>, entt::registry>
+             && detail::
+                 ScalarSetter<std::remove_reference_t<SetValue>, entt::registry>
+  ScalarMapper(GetValue&& getValue, SetValue&& setValue)
+  {
+    using Get = std::decay_t<GetValue>;
+    using Set = std::decay_t<SetValue>;
+
+    auto get = std::make_shared<Get>(std::forward<GetValue>(getValue));
+    auto set = std::make_shared<Set>(std::forward<SetValue>(setValue));
+
+    m_getValue = [get](const entt::registry& registry) {
+      return static_cast<double>(std::invoke(*get, registry));
+    };
+    m_setValue = [set](entt::registry& registry, double value) {
+      std::invoke(*set, registry, value);
+    };
+
+    if constexpr (
+        detail::ScalarGetter<Get, detail::WorldRegistry>
+        && detail::ScalarSetter<Set, detail::WorldRegistry>) {
+      m_getWorldValue = [get](const detail::WorldRegistry& registry) {
+        return static_cast<double>(std::invoke(*get, registry));
+      };
+      m_setWorldValue = [set](detail::WorldRegistry& registry, double value) {
+        std::invoke(*set, registry, value);
+      };
+    }
+  }
+
   /// Constructor
   /// @param getValue Function to extract value from registry
   /// @param setValue Function to set value in registry
