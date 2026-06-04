@@ -87,10 +87,11 @@ int main() {
 ## Installation
 
 The quick-start snippets above target the current `main` branch and DART 7 API.
-Until DART 7 package artifacts are published, package managers may resolve the
-latest DART 6.17 packages instead. Use the file-free package smoke checks below
-for currently published packages, or use the source checkout path for the DART 7
-quick starts.
+Until DART 7 package artifacts are published, package managers resolve the
+latest published DART 6 artifacts instead. During the 6.17 rollout, some indexes
+may still serve 6.16.x until their packages finish publishing; use the file-free
+package smoke checks below for the installed package version, or use the source
+checkout path for the DART 7 quick starts.
 
 ### Python (Recommended)
 
