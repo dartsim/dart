@@ -307,10 +307,7 @@ set(
 # the diff feature is actually built -- otherwise a default install would
 # advertise diff::rollout()/rolloutVjp() symbols it never compiled, breaking
 # downstream links.
-set(
-  dart_experimental_public_headers_diff_optin
-  diff/rollout.hpp
-)
+set(dart_experimental_public_headers_diff_optin diff/rollout.hpp)
 set(
   dart_experimental_public_headers
   ${dart_experimental_public_headers_toplevel}
@@ -322,8 +319,7 @@ set(
 )
 if(DART_BUILD_DIFF)
   list(
-    APPEND
-    dart_experimental_public_headers
+    APPEND dart_experimental_public_headers
     ${dart_experimental_public_headers_diff_optin}
   )
 endif()
