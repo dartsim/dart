@@ -35,7 +35,9 @@ loop makes zero calls through the configured DART allocator, so the remaining
 timing gap is allocator-aware EnTT registry/storage overhead or benchmark noise
 rather than one-time pool growth. The DART EnTT benchmark row now reports
 allocator-call counters and fails if reserved churn calls the configured
-allocator after prewarm.
+allocator after prewarm. Separate EnTT build/growth rows now measure bake-time
+registry storage allocation directly instead of conflating that cost with the
+no-growth simulation loop.
 
 ## Latest Local Validation
 
@@ -77,6 +79,14 @@ allocator after prewarm.
   `.benchmark_results/entt_registry_alignment_fix_checker_probe.json`
   passed with those counters present, while still showing that strict standard
   registry timing remains a separate performance gap.
+- The relaxed focused checker over
+  `.benchmark_results/entt_registry_with_build_growth_post_lint_probe.json`
+  included both no-growth and build/growth EnTT rows. The new DART build/growth
+  rows beat the foonathan/memory build/growth rows at all measured sizes, but
+  the strict check on the same JSON still failed one no-growth foonathan row
+  (`BM_EnttRegistry/512`) and standard-registry comparisons at
+  `BM_EnttRegistry/{256,512,2048}` and
+  `BM_EnttRegistryBuild/{256,512,2048}`.
 
 ## Context That Would Be Lost
 
@@ -94,6 +104,9 @@ allocator after prewarm.
 - The steady-state EnTT registry benchmark prewarms storage before timing.
   A std-registry miss there points at allocator-aware registry/storage overhead,
   not one-time pool growth.
+- The EnTT build/growth benchmark creates a fresh registry, reserves component
+  storage, runs one churn pass, and destroys the registry inside each measured
+  iteration. A miss there points at bake/build allocator and storage setup cost.
 
 ## How to Resume
 

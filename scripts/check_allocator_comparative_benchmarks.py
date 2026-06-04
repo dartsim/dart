@@ -37,13 +37,13 @@ DEFAULT_FILTER = (
 
 ENTT_REGISTRY_FILTER = (
     "BM_(Pool|Stack|MultiPool|Realistic|SteadyState|FrameBulk|StlVector|"
-    "EnttRegistry)_(DART|Foonathan|StdPmr|Std)"
+    "EnttRegistry|EnttRegistryBuild)_(DART|Foonathan|StdPmr|Std)"
 )
-ENTT_REGISTRY_ONLY_FILTER = "BM_EnttRegistry_(DART|Foonathan|Std)"
+ENTT_REGISTRY_ONLY_FILTER = "BM_(EnttRegistry|EnttRegistryBuild)_(DART|Foonathan|Std)"
 
 _COMPARATIVE_RE = re.compile(
     r"^(BM_(?:Pool|Stack|MultiPool|Realistic|SteadyState|FrameBulk|StlVector|"
-    r"EnttRegistry))_(DART|Foonathan|StdPmr|Std)(/.*)?$"
+    r"EnttRegistry|EnttRegistryBuild))_(DART|Foonathan|StdPmr|Std)(/.*)?$"
 )
 _AGGREGATE_SUFFIX_RE = re.compile(r"_(?:mean|median|stddev|cv)$")
 _REPEATS_SUFFIX_RE = re.compile(r"/repeats:\d+")
