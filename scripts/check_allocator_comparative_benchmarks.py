@@ -201,6 +201,27 @@ def filter_benchmark_rows_for_mode(
     ]
 
 
+def require_requested_entt_registry_rows(
+    rows: list[dict], *, include_entt_registry: bool, only_entt_registry: bool
+) -> None:
+    if not include_entt_registry and not only_entt_registry:
+        return
+
+    if any(
+        _canonical_name(_row_name(row)).startswith(
+            ("BM_EnttRegistry_", "BM_EnttRegistryBuild_")
+        )
+        for row in rows
+    ):
+        return
+
+    raise BenchmarkCheckError(
+        "EnTT registry benchmark rows were requested but are unavailable. "
+        "Configure this benchmark in an environment where EnTT::EnTT is already "
+        "available, for example with DART_BUILD_SIMULATION_EXPERIMENTAL=ON."
+    )
+
+
 def _select_rows(rows: list[dict]) -> list[dict]:
     medians = [
         row
@@ -460,12 +481,18 @@ def main(argv: list[str]) -> int:
         print("Results saved to: {}".format(json_path))
 
     try:
+        rows = filter_benchmark_rows_for_mode(
+            load_benchmark_rows(json_path),
+            include_entt_registry=args.include_entt_registry,
+            only_entt_registry=args.only_entt_registry,
+        )
+        require_requested_entt_registry_rows(
+            rows,
+            include_entt_registry=args.include_entt_registry,
+            only_entt_registry=args.only_entt_registry,
+        )
         failures, passes = evaluate_comparisons(
-            filter_benchmark_rows_for_mode(
-                load_benchmark_rows(json_path),
-                include_entt_registry=args.include_entt_registry,
-                only_entt_registry=args.only_entt_registry,
-            ),
+            rows,
             baseline_allocators=baseline_allocators,
             max_ratio=args.max_ratio,
             max_cv=args.max_cv,

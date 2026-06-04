@@ -215,6 +215,26 @@ def test_input_rows_are_filtered_by_entt_registry_mode():
     ]
 
 
+def test_requested_entt_registry_rows_must_be_available():
+    module = load_allocator_check_module()
+    rows = stl_vector_rows(
+        dart_time=90.0,
+        foonathan_time=100.0,
+        dart_cv=0.02,
+        foonathan_cv=0.02,
+    )
+
+    with pytest.raises(
+        module.BenchmarkCheckError,
+        match="EnTT registry benchmark rows were requested",
+    ):
+        module.require_requested_entt_registry_rows(
+            rows,
+            include_entt_registry=True,
+            only_entt_registry=False,
+        )
+
+
 def test_entt_registry_modes_are_mutually_exclusive():
     module = load_allocator_check_module()
 

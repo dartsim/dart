@@ -63,12 +63,15 @@
 #include <dart/common/stl_allocator.hpp>
 
 #include <benchmark/benchmark.h>
-#include <entt/entity/registry.hpp>
 #include <foonathan/memory/memory_pool.hpp>
 #include <foonathan/memory/memory_pool_collection.hpp>
 #include <foonathan/memory/memory_stack.hpp>
 #include <foonathan/memory/namespace_alias.hpp>
 #include <foonathan/memory/std_allocator.hpp>
+
+#if defined(DART_BENCHMARK_HAS_ENTT) && DART_BENCHMARK_HAS_ENTT
+  #include <entt/entity/registry.hpp>
+#endif
 
 #include <algorithm>
 #include <array>
@@ -757,6 +760,7 @@ BENCHMARK(BM_StlVector_StdPmr)
 // pre-warmed so the measured loop represents steady-state simulation churn
 // instead of one-time storage discovery.
 // =============================================================================
+#if defined(DART_BENCHMARK_HAS_ENTT) && DART_BENCHMARK_HAS_ENTT
 
 struct EnttRegistryTransform
 {
@@ -1004,5 +1008,7 @@ BENCHMARK(BM_EnttRegistryBuild_Std)
     ->Arg(512)
     ->Arg(2048)
     ->ReportAggregatesOnly(true);
+
+#endif
 
 BENCHMARK_MAIN();
