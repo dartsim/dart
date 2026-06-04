@@ -74,9 +74,12 @@ extraction is still not wired. The current local slice adds private per-axis
 linear and angular masks to those point-joint builders, preserving all-axis
 fixed-joint behavior while letting later hinge/revolute and limited-DOF configs
 reuse the same descriptors, row inventory, and alpha-regularized warm starts.
-This is still an internal row primitive only: no public revolute/limited joint
-facade, motor row, fracture row, articulated multibody state path, GPU path,
-demo, or benchmark packet is complete.
+It also adds named private revolute and prismatic point-joint builders that
+construct arbitrary joint-axis bases, leave the hinge or translation axis free,
+and preserve configured axes/masks through World point-joint input, snapshot
+assembly, and solve coverage. This is still an internal row primitive only: no
+public revolute/limited joint facade, motor row, fracture row, articulated
+multibody state path, GPU path, demo, or benchmark packet is complete.
 
 ## Current Branch
 
@@ -112,14 +115,15 @@ pose into AVBD local anchors and target relative orientation, initializes
 missing private AVBD fixed-joint configs for opt-in rigid bodies at simulation
 entry, and adds regression coverage that multibody links are not silently
 treated as rigid AVBD bodies. It also adds masked private point-joint row
-generation for constrained linear/angular axes.
+generation for constrained linear/angular axes, plus named private
+revolute/prismatic point-joint configs with arbitrary joint-axis bases.
 
 ## Immediate Next Step
 
 Continue the next bounded AVBD contact/friction or rigid-block slice:
-private revolute/limited-DOF joint configs on top of the masked row primitive,
-full narrow-phase feature extraction, or true rigid/articulated World wiring are
-the preferred row-family gaps now that
+public/current-pose extraction for non-fixed ECS joints, true
+rigid/articulated World wiring, full narrow-phase feature extraction, or the
+next motor/fracture row family are the preferred row-family gaps now that
 private dynamic/rigid contact feature IDs, canonical two-endpoint row keys, and
 normal/friction row descriptor helpers plus private rigid contact/friction
 point-pair constructors, paired friction-cone helpers, and a private serial
@@ -131,8 +135,9 @@ features, and private point-joint linear/angular/combined rows with step-start
 previous constraint values and private World snapshot/step append/solve/apply
 coverage plus fixed-joint ECS extraction through the step helper and an
 explicit current-pose rigid-body fixed-joint config bridge plus simulation-entry
-config initialization for opt-in rigid bodies and masked private point-joint row
-generation for constrained linear/angular axes exist.
+config initialization for opt-in rigid bodies, masked private point-joint row
+generation for constrained linear/angular axes, and named private
+revolute/prismatic point-joint configs with arbitrary joint-axis bases exist.
 Keep the supported envelope narrow and preserve fallback coverage for topology
 mixes,
 damping/acceleration, parallel solves, and unsupported requested row
@@ -192,13 +197,14 @@ combinations.
   endpoint features for rigid snapshots, scope row ordinals per canonical
   endpoint pair, and create normal/friction/joint-linear/joint-angular row
   descriptors, with private point-joint rows now seeding step-start previous
-  constraint values and
-  participating in the private World snapshot/solve/apply wrapper and combined
-  step helper from world-space point-joint inputs, plus private fixed-joint ECS
-  extraction through the step helper and internal contact-stage velocity
-  projection for rigid-body-linked joint entities with or without active
-  contacts, but full narrow-phase feature extraction and public articulated
-  World joint wiring are not solved yet.
+  constraint values and participating in the private World snapshot/solve/apply
+  wrapper and combined step helper from world-space point-joint inputs, plus
+  private fixed-joint ECS extraction through the step helper and internal
+  contact-stage velocity projection for rigid-body-linked joint entities with
+  or without active contacts. Named private revolute and prismatic point-joint
+  configs now preserve arbitrary joint-axis bases and leave one rotational or
+  translational axis free, but full narrow-phase feature extraction and public
+  articulated World joint wiring are not solved yet.
 
 ## How to Resume
 

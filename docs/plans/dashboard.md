@@ -404,11 +404,14 @@ its own line so status updates remain git-history friendly.
   internal contact-stage AVBD opt-in can project those fixed-joint rows with or
   without active contacts. The private point-joint builders now accept per-axis
   linear and angular masks, preserving all-axis fixed-joint behavior while
-  enabling future hinge/revolute and limited-DOF row configs to reuse the same
-  descriptor and warm-start path. Public multibody joint extraction is not wired
-  yet. The next local slice is private revolute/limited-DOF joint configs on top
-  of the masked row primitive, full narrow-phase feature extraction, or broader
-  rigid/articulated World integration.
+  enabling limited-DOF configs to reuse the same descriptor and warm-start path.
+  Named private revolute and prismatic point-joint configs now build arbitrary
+  joint-axis bases, leave one rotational or translational axis free, and
+  preserve axes/masks through World point-joint input and solve coverage. Public
+  multibody joint extraction is not wired yet. The next local slice is
+  public/current-pose extraction for non-fixed ECS joints, full narrow-phase
+  feature extraction, motor/fracture rows, or broader rigid/articulated World
+  integration.
 - Gate: VBD progress is not complete until the implementation distinguishes
   each internal kernel slice from a wired solver, keeps VBD naming
   backend-neutral, proves per-vertex force/Hessian correctness, PD Hessian

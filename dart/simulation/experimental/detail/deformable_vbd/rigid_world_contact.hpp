@@ -71,6 +71,10 @@ struct AvbdRigidWorldPointJointInput
   Eigen::Vector3d anchorA = Eigen::Vector3d::Zero();
   Eigen::Vector3d anchorB = Eigen::Vector3d::Zero();
   Eigen::Quaterniond targetRelativeOrientation = Eigen::Quaterniond::Identity();
+  Eigen::Matrix3d linearAxes = Eigen::Matrix3d::Identity();
+  Eigen::Matrix3d angularAxes = Eigen::Matrix3d::Identity();
+  std::uint8_t linearAxisMask = kAvbdRigidJointAllAxesMask;
+  std::uint8_t angularAxisMask = kAvbdRigidJointAllAxesMask;
   double startStiffness = 1.0;
   double maxStiffness = std::numeric_limits<double>::infinity();
 };
@@ -81,6 +85,10 @@ struct AvbdRigidWorldPointJointConfig
   Eigen::Vector3d localAnchorA = Eigen::Vector3d::Zero();
   Eigen::Vector3d localAnchorB = Eigen::Vector3d::Zero();
   Eigen::Quaterniond targetRelativeOrientation = Eigen::Quaterniond::Identity();
+  Eigen::Matrix3d linearAxes = Eigen::Matrix3d::Identity();
+  Eigen::Matrix3d angularAxes = Eigen::Matrix3d::Identity();
+  std::uint8_t linearAxisMask = kAvbdRigidJointAllAxesMask;
+  std::uint8_t angularAxisMask = kAvbdRigidJointAllAxesMask;
   double startStiffness = 1.0;
   double maxStiffness = std::numeric_limits<double>::infinity();
 };
@@ -677,6 +685,10 @@ inline std::size_t appendAvbdRigidWorldPointJoints(
         = avbdRigidBodyLocalPoint(snapshot.states[bodyB], input.anchorB);
     joint.targetRelativeOrientation
         = normalizeAvbdRigidOrientation(input.targetRelativeOrientation);
+    joint.linearAxes = input.linearAxes;
+    joint.angularAxes = input.angularAxes;
+    joint.linearAxisMask = input.linearAxisMask;
+    joint.angularAxisMask = input.angularAxisMask;
     joint.startStiffness = std::max(0.0, input.startStiffness);
     joint.maxStiffness = std::max(joint.startStiffness, input.maxStiffness);
 
@@ -1070,6 +1082,10 @@ extractAvbdRigidWorldPointJointInputs(const entt::registry& registry)
     input.anchorB = worldB * config.localAnchorB;
     input.targetRelativeOrientation
         = normalizeAvbdRigidOrientation(config.targetRelativeOrientation);
+    input.linearAxes = config.linearAxes;
+    input.angularAxes = config.angularAxes;
+    input.linearAxisMask = config.linearAxisMask;
+    input.angularAxisMask = config.angularAxisMask;
     input.startStiffness = config.startStiffness;
     input.maxStiffness = config.maxStiffness;
     inputs.push_back(input);
