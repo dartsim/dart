@@ -7197,6 +7197,74 @@ TEST(World, ReplayRecordingRejectsRigidBodyModeChanges)
       kinematicWorld.restoreReplayFrame(0), sx::InvalidOperationException);
 }
 
+// Test that replay restore rejects rigid body construction/layout edits that
+// are not captured as mutable per-frame state.
+TEST(World, ReplayRecordingRejectsRigidBodyConstructionEdits)
+{
+  namespace sx = dart::simulation::experimental;
+
+  const auto expectBodyMutationRejected = [](auto configure, auto mutate) {
+    sx::World world;
+    auto body = world.addRigidBody("body");
+    configure(world, body);
+    world.setReplayRecordingEnabled(true);
+    EXPECT_EQ(world.getReplayFrameCount(), 1u);
+
+    mutate(world, body);
+
+    EXPECT_THROW(world.restoreReplayFrame(0), sx::InvalidOperationException);
+  };
+
+  expectBodyMutationRejected(
+      [](sx::World&, sx::RigidBody& body) {
+        body.setCollisionShape(sx::CollisionShape::makeSphere(0.25));
+      },
+      [](sx::World&, sx::RigidBody& body) {
+        body.setCollisionShape(sx::CollisionShape::makeBox({0.1, 0.2, 0.3}));
+      });
+
+  expectBodyMutationRejected(
+      [](sx::World&, sx::RigidBody&) {},
+      [](sx::World&, sx::RigidBody& body) {
+        body.addCollisionShape(sx::CollisionShape::makeSphere(0.25));
+      });
+
+  expectBodyMutationRejected(
+      [](sx::World&, sx::RigidBody&) {},
+      [](sx::World&, sx::RigidBody& body) { body.setFriction(0.25); });
+
+  expectBodyMutationRejected(
+      [](sx::World&, sx::RigidBody&) {},
+      [](sx::World&, sx::RigidBody& body) { body.setRestitution(0.5); });
+
+  expectBodyMutationRejected(
+      [](sx::World&, sx::RigidBody&) {},
+      [](sx::World&, sx::RigidBody& body) { body.setMass(2.0); });
+
+  expectBodyMutationRejected(
+      [](sx::World&, sx::RigidBody&) {},
+      [](sx::World&, sx::RigidBody& body) {
+        body.setInertia(2.0 * Eigen::Matrix3d::Identity());
+      });
+
+  expectBodyMutationRejected(
+      [](sx::World&, sx::RigidBody&) {},
+      [](sx::World&, sx::RigidBody& body) {
+        body.setDeformableGroundBarrier(true);
+      });
+
+  sx::World parentWorld;
+  auto child = parentWorld.addRigidBody("child");
+  auto parent = parentWorld.addRigidBody("parent");
+  parentWorld.setReplayRecordingEnabled(true);
+  EXPECT_EQ(parentWorld.getReplayFrameCount(), 1u);
+
+  child.setParentFrame(parent);
+
+  EXPECT_THROW(
+      parentWorld.restoreReplayFrame(0), sx::InvalidOperationException);
+}
+
 // Test replay recording and restore for articulated runtime state.
 TEST(World, ReplayRecordingRestoresMultibodyRuntimeState)
 {

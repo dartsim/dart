@@ -191,8 +191,15 @@ struct World::ReplayState
     comps::Transform transform;
     comps::Velocity velocity;
     comps::Force force;
+    comps::MassProperties massProperties;
+    entt::entity parentFrame = entt::null;
+    std::optional<comps::ContactMaterial> contactMaterial;
+    std::optional<comps::CollisionGeometry> collisionGeometry;
     bool isStatic = false;
     bool isKinematic = false;
+    bool hasDeformableGroundBarrier = false;
+    bool hasDeformableSurfaceCcdObstacle = false;
+    bool hasDeformableObstacleNoCcd = false;
   };
 
   struct Frame
@@ -241,6 +248,92 @@ std::size_t countReplayView(const View& view)
     ++count;
   }
   return count;
+}
+
+template <typename Component>
+std::optional<Component> captureReplayOptionalComponent(
+    const entt::registry& registry, entt::entity entity)
+{
+  if (const auto* component = registry.try_get<Component>(entity)) {
+    return *component;
+  }
+
+  return std::nullopt;
+}
+
+bool sameReplayMassProperties(
+    const comps::MassProperties& lhs, const comps::MassProperties& rhs)
+{
+  return lhs.mass == rhs.mass && lhs.inertia.isApprox(rhs.inertia, 0.0)
+         && lhs.localCenterOfMass.isApprox(rhs.localCenterOfMass, 0.0);
+}
+
+bool sameReplayContactMaterial(
+    const std::optional<comps::ContactMaterial>& lhs,
+    const comps::ContactMaterial* rhs)
+{
+  if (lhs.has_value() != (rhs != nullptr)) {
+    return false;
+  }
+
+  if (!lhs) {
+    return true;
+  }
+
+  return lhs->restitution == rhs->restitution && lhs->friction == rhs->friction;
+}
+
+bool sameReplayCollisionShape(
+    const CollisionShape& lhs, const CollisionShape& rhs)
+{
+  if (lhs.type != rhs.type || lhs.radius != rhs.radius
+      || !lhs.halfExtents.isApprox(rhs.halfExtents, 0.0)
+      || !lhs.localTransform.matrix().isApprox(rhs.localTransform.matrix(), 0.0)
+      || !lhs.normal.isApprox(rhs.normal, 0.0) || lhs.offset != rhs.offset
+      || lhs.vertices.size() != rhs.vertices.size()
+      || lhs.triangles.size() != rhs.triangles.size()) {
+    return false;
+  }
+
+  for (std::size_t i = 0; i < lhs.vertices.size(); ++i) {
+    if (!lhs.vertices[i].isApprox(rhs.vertices[i], 0.0)) {
+      return false;
+    }
+  }
+
+  for (std::size_t i = 0; i < lhs.triangles.size(); ++i) {
+    if (!(lhs.triangles[i].array() == rhs.triangles[i].array()).all()) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+bool sameReplayCollisionGeometry(
+    const std::optional<comps::CollisionGeometry>& lhs,
+    const comps::CollisionGeometry* rhs)
+{
+  if (lhs.has_value() != (rhs != nullptr)) {
+    return false;
+  }
+
+  if (!lhs) {
+    return true;
+  }
+
+  if (lhs->revision != rhs->revision
+      || lhs->shapes.size() != rhs->shapes.size()) {
+    return false;
+  }
+
+  for (std::size_t i = 0; i < lhs->shapes.size(); ++i) {
+    if (!sameReplayCollisionShape(lhs->shapes[i], rhs->shapes[i])) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 template <typename RigidBodyStates>
@@ -3061,9 +3154,11 @@ void World::restoreReplayFrame(std::size_t index)
   DART_EXPERIMENTAL_THROW_T_IF(
       countReplayView(m_storage->registry.view<
                       comps::RigidBodyTag,
+                      comps::FrameState,
                       comps::Transform,
                       comps::Velocity,
-                      comps::Force>())
+                      comps::Force,
+                      comps::MassProperties>())
           != replayFrame.rigidBodies.size(),
       InvalidOperationException,
       "Cannot restore replay frame: RigidBody component count changed");
@@ -3074,9 +3169,37 @@ void World::restoreReplayFrame(std::size_t index)
                                    comps::FrameState,
                                    comps::Transform,
                                    comps::Velocity,
-                                   comps::Force>(state.entity);
+                                   comps::Force,
+                                   comps::MassProperties>(state.entity);
     DART_EXPERIMENTAL_THROW_T_IF(
         layoutChanged,
+        InvalidOperationException,
+        "Cannot restore replay frame: RigidBody entity layout changed");
+    const auto& frameState
+        = m_storage->registry.get<comps::FrameState>(state.entity);
+    const auto& massProperties
+        = m_storage->registry.get<comps::MassProperties>(state.entity);
+    DART_EXPERIMENTAL_THROW_T_IF(
+        frameState.parentFrame != state.parentFrame
+            || !sameReplayMassProperties(massProperties, state.massProperties)
+            || !sameReplayContactMaterial(
+                state.contactMaterial,
+                m_storage->registry.try_get<comps::ContactMaterial>(
+                    state.entity))
+            || !sameReplayCollisionGeometry(
+                state.collisionGeometry,
+                m_storage->registry.try_get<comps::CollisionGeometry>(
+                    state.entity))
+            || m_storage->registry.all_of<comps::DeformableGroundBarrierTag>(
+                   state.entity)
+                   != state.hasDeformableGroundBarrier
+            || m_storage->registry
+                       .all_of<comps::DeformableSurfaceCcdObstacleTag>(
+                           state.entity)
+                   != state.hasDeformableSurfaceCcdObstacle
+            || m_storage->registry.all_of<comps::DeformableObstacleNoCcdTag>(
+                   state.entity)
+                   != state.hasDeformableObstacleNoCcd,
         InvalidOperationException,
         "Cannot restore replay frame: RigidBody entity layout changed");
     DART_EXPERIMENTAL_THROW_T_IF(
@@ -3199,9 +3322,11 @@ void World::recordReplayFrame()
 
   auto rigidBodyView = m_storage->registry.view<
       comps::RigidBodyTag,
+      comps::FrameState,
       comps::Transform,
       comps::Velocity,
-      comps::Force>();
+      comps::Force,
+      comps::MassProperties>();
   replayFrame.rigidBodies.reserve(countReplayView(rigidBodyView));
   for (auto entity : rigidBodyView) {
     replayFrame.rigidBodies.push_back(
@@ -3210,8 +3335,20 @@ void World::recordReplayFrame()
             rigidBodyView.get<comps::Transform>(entity),
             rigidBodyView.get<comps::Velocity>(entity),
             rigidBodyView.get<comps::Force>(entity),
+            rigidBodyView.get<comps::MassProperties>(entity),
+            rigidBodyView.get<comps::FrameState>(entity).parentFrame,
+            captureReplayOptionalComponent<comps::ContactMaterial>(
+                m_storage->registry, entity),
+            captureReplayOptionalComponent<comps::CollisionGeometry>(
+                m_storage->registry, entity),
             m_storage->registry.all_of<comps::StaticBodyTag>(entity),
-            m_storage->registry.all_of<comps::KinematicBodyTag>(entity)});
+            m_storage->registry.all_of<comps::KinematicBodyTag>(entity),
+            m_storage->registry.all_of<comps::DeformableGroundBarrierTag>(
+                entity),
+            m_storage->registry.all_of<comps::DeformableSurfaceCcdObstacleTag>(
+                entity),
+            m_storage->registry.all_of<comps::DeformableObstacleNoCcdTag>(
+                entity)});
   }
   std::ranges::sort(
       replayFrame.rigidBodies, [](const auto& lhs, const auto& rhs) {
