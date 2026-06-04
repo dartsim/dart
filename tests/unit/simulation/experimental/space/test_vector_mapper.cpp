@@ -39,6 +39,7 @@
 #include <entt/entt.hpp>
 #include <gtest/gtest.h>
 
+#include <functional>
 #include <span>
 #include <stdexcept>
 using namespace dart::simulation::experimental;
@@ -207,6 +208,11 @@ TEST(VectorMapper, RoundTripWithWorldRegistryFieldMapper)
   ASSERT_EQ(vec.size(), 1);
   EXPECT_DOUBLE_EQ(vec[0], 1.0);
 
+  EXPECT_EQ(mapper.getDimension(), 1);
+  const auto eigenVec = mapper.toEigen(registry);
+  ASSERT_EQ(eigenVec.size(), 1);
+  EXPECT_DOUBLE_EQ(eigenVec[0], 1.0);
+
   const std::vector<double> updated{9.0};
   mapper.fromVector(registry, std::span<const double>(updated));
 
@@ -256,6 +262,87 @@ TEST(VectorMapper, WorldRegistryScalarMapperPreservesGenericCallbacks)
   EXPECT_DOUBLE_EQ(pos.x, 8.0);
 }
 
+TEST(VectorMapper, WorldRegistryScalarMapperSupportsWorldOnlyCallbacks)
+{
+  StateSpace space;
+  space.addVariable("position_x", 1);
+  space.finalize();
+
+  VectorMapper mapper(space);
+  mapper.addMapper(
+      "position_x",
+      std::make_unique<ScalarMapper>(
+          std::function<double(const detail::WorldRegistry&)>(
+              [](const detail::WorldRegistry& registry) {
+                auto view = registry.view<Position>();
+                for (auto entity : view) {
+                  return registry.get<Position>(entity).x;
+                }
+                return 0.0;
+              }),
+          std::function<void(detail::WorldRegistry&, double)>(
+              [](detail::WorldRegistry& registry, double value) {
+                auto view = registry.view<Position>();
+                for (auto entity : view) {
+                  registry.get<Position>(entity).x = value;
+                  return;
+                }
+              })));
+
+  World world;
+  auto& registry = detail::registryOf(world);
+  auto entity = registry.create();
+  registry.emplace<Position>(entity, Position{3.0, 4.0, 5.0});
+
+  std::vector<double> output(1);
+  mapper.toVector(registry, output);
+  EXPECT_DOUBLE_EQ(output[0], 3.0);
+
+  const auto eigenVec = mapper.toEigen(registry);
+  ASSERT_EQ(eigenVec.size(), 1);
+  EXPECT_DOUBLE_EQ(eigenVec[0], 3.0);
+
+  Eigen::VectorXd updated(1);
+  updated << 12.0;
+  mapper.fromEigen(registry, updated);
+
+  const auto& pos = registry.get<Position>(entity);
+  EXPECT_DOUBLE_EQ(pos.x, 12.0);
+}
+
+TEST(VectorMapper, ScalarMapperRejectsUnsupportedRegistryDirectly)
+{
+  ScalarMapper enttOnlyMapper(
+      [](const entt::registry&) { return 1.0; },
+      [](entt::registry&, double) {});
+
+  World world;
+  auto& worldRegistry = detail::registryOf(world);
+  std::vector<double> output(1);
+  EXPECT_THROW(
+      enttOnlyMapper.toVector(worldRegistry, output, 0), std::invalid_argument);
+
+  const std::vector<double> input{2.0};
+  EXPECT_THROW(
+      enttOnlyMapper.fromVector(
+          worldRegistry, std::span<const double>(input), 0),
+      std::invalid_argument);
+
+  ScalarMapper worldOnlyMapper(
+      std::function<double(const detail::WorldRegistry&)>(
+          [](const detail::WorldRegistry&) { return 3.0; }),
+      std::function<void(detail::WorldRegistry&, double)>(
+          [](detail::WorldRegistry&, double) {}));
+
+  entt::registry enttRegistry;
+  EXPECT_THROW(
+      worldOnlyMapper.toVector(enttRegistry, output, 0), std::invalid_argument);
+  EXPECT_THROW(
+      worldOnlyMapper.fromVector(
+          enttRegistry, std::span<const double>(input), 0),
+      std::invalid_argument);
+}
+
 TEST(VectorMapper, WorldRegistryRejectsEnttOnlyScalarMapper)
 {
   StateSpace space;
@@ -295,6 +382,11 @@ TEST(VectorMapper, WorldRegistryRequiresWorldCapableMapper)
   registry.emplace<Position>(entity, Position{1.0, 2.0, 3.0});
 
   EXPECT_THROW((void)mapper.toVector(registry), std::invalid_argument);
+
+  const std::vector<double> updated{1.0, 2.0, 3.0};
+  EXPECT_THROW(
+      mapper.fromVector(registry, std::span<const double>(updated)),
+      std::invalid_argument);
 }
 
 TEST(VectorMapper, ToEigenConversion)
