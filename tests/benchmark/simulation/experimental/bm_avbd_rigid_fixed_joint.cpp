@@ -139,6 +139,50 @@ static void BM_AvbdRigidFixedJointEndpointAccess(benchmark::State& state)
 BENCHMARK(BM_AvbdRigidFixedJointEndpointAccess)->Arg(1)->Arg(8)->Arg(32);
 
 //==============================================================================
+static void BM_AvbdRigidFixedJointWorldLookup(benchmark::State& state)
+{
+  sx::World world;
+  const auto jointCount = static_cast<std::size_t>(state.range(0));
+  (void)makeRigidFixedJoints(world, jointCount);
+
+  std::vector<std::string> names;
+  names.reserve(jointCount);
+  for (std::size_t i = 0; i < jointCount; ++i) {
+    names.push_back("endpoint_fixed_" + std::to_string(i));
+  }
+
+  for (auto _ : state) {
+    for (const std::string& name : names) {
+      auto joint = world.getRigidBodyFixedJoint(name);
+      benchmark::DoNotOptimize(joint.has_value());
+      if (joint.has_value()) {
+        benchmark::DoNotOptimize(joint->getParentRigidBody().isValid());
+        benchmark::DoNotOptimize(joint->getChildRigidBody().isValid());
+      }
+    }
+    benchmark::DoNotOptimize(world.getRigidBodyFixedJointCount());
+  }
+  state.counters["fixed_joints"] = static_cast<double>(jointCount);
+}
+BENCHMARK(BM_AvbdRigidFixedJointWorldLookup)->Arg(1)->Arg(8)->Arg(32);
+
+//==============================================================================
+static void BM_AvbdRigidFixedJointWorldList(benchmark::State& state)
+{
+  sx::World world;
+  const auto jointCount = static_cast<std::size_t>(state.range(0));
+  (void)makeRigidFixedJoints(world, jointCount);
+
+  for (auto _ : state) {
+    const auto joints = world.getRigidBodyFixedJoints();
+    benchmark::DoNotOptimize(joints.data());
+    benchmark::DoNotOptimize(joints.size());
+  }
+  state.counters["fixed_joints"] = static_cast<double>(jointCount);
+}
+BENCHMARK(BM_AvbdRigidFixedJointWorldList)->Arg(1)->Arg(8)->Arg(32);
+
+//==============================================================================
 static void BM_AvbdRigidFixedJointStep(benchmark::State& state)
 {
   const auto linkCount = static_cast<std::size_t>(state.range(0));

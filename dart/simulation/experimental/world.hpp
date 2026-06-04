@@ -258,6 +258,14 @@ public:
   ///         configuration fails.
   Joint addRigidBodyFixedJoint(
       std::string_view name, const RigidBody& parent, const RigidBody& child);
+  /// Get a public fixed joint between free rigid bodies by name.
+  ///
+  /// This does not return multibody joints; use Multibody::getJoint() for
+  /// articulated links.
+  std::optional<Joint> getRigidBodyFixedJoint(std::string_view name);
+  bool hasRigidBodyFixedJoint(std::string_view name) const;
+  std::size_t getRigidBodyFixedJointCount() const;
+  std::vector<Joint> getRigidBodyFixedJoints();
   std::optional<RigidBody> getRigidBody(std::string_view name);
   bool hasRigidBody(std::string_view name) const;
   std::size_t getRigidBodyCount() const;

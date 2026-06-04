@@ -155,6 +155,7 @@ if(DART_ENABLE_EXPERIMENTAL_CUDA)
   add_library(
     ${cuda_target_name}
     STATIC
+    compute/cuda/cuda_runtime.cpp
     compute/cuda/rigid_body_state_batch_cuda.cpp
     compute/cuda/rigid_body_state_batch_cuda.cu
     compute/cuda/deformable_psd_projection_cuda.cpp

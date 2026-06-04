@@ -30,23 +30,30 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/pool_allocator.hpp"
+#include "dart/common/fixed_pool_allocator.hpp"
 
 #include "dart/common/logging.hpp"
 #include "dart/common/macros.hpp"
+
+#include <algorithm>
 
 #include <cstring>
 
 namespace dart::common {
 
 //==============================================================================
-PoolAllocator::PoolAllocator(MemoryAllocator& baseAllocator)
+FixedPoolAllocator::FixedPoolAllocator(
+    size_t unitSize, MemoryAllocator& baseAllocator, size_t blockSize)
   : mBaseAllocator(baseAllocator)
 {
   static_assert(
       8 <= sizeof(MemoryUnit),
       "sizeof(MemoryUnit) should be equal to or greater than 8.");
 
+  mUnitSize = effectiveUnitSize(unitSize, alignof(MemoryUnit));
+  mBlockSize = std::max(blockSize, mUnitSize);
+  mBlockAlignment = mUnitSize == 0 ? alignof(MemoryUnit)
+                                   : blockAlignmentForUnitSize(mUnitSize);
   mCurrentMemoryBlockIndex = 0;
 
   mMemoryBlocksSize = 64;
@@ -54,41 +61,53 @@ PoolAllocator::PoolAllocator(MemoryAllocator& baseAllocator)
   const size_t allocatedSize = mMemoryBlocksSize * sizeof(MemoryBlock);
   std::memset(mMemoryBlocks, 0, allocatedSize);
 
-  mFreeMemoryUnits.fill(nullptr);
+  mFreeMemoryUnits = nullptr;
 }
 
 //==============================================================================
-PoolAllocator::~PoolAllocator()
+FixedPoolAllocator::~FixedPoolAllocator()
 {
   for (int i = 0; i < mCurrentMemoryBlockIndex; ++i) {
     mBaseAllocator.deallocate(
-        mMemoryBlocks[i].mMemoryUnits, BLOCK_SIZE, mMemoryBlocks[i].mAlignment);
+        mMemoryBlocks[i].mMemoryUnits,
+        mMemoryBlocks[i].mSize,
+        mMemoryBlocks[i].mAlignment);
   }
   mBaseAllocator.deallocate(
       mMemoryBlocks, mMemoryBlocksSize * sizeof(MemoryBlock));
 }
 
 //==============================================================================
-const MemoryAllocator& PoolAllocator::getBaseAllocator() const
+const MemoryAllocator& FixedPoolAllocator::getBaseAllocator() const
 {
   return mBaseAllocator;
 }
 
 //==============================================================================
-MemoryAllocator& PoolAllocator::getBaseAllocator()
+MemoryAllocator& FixedPoolAllocator::getBaseAllocator()
 {
   return mBaseAllocator;
 }
 
 //==============================================================================
-int PoolAllocator::getNumAllocatedMemoryBlocks() const
+size_t FixedPoolAllocator::getUnitSize() const
+{
+  return mUnitSize;
+}
+
+//==============================================================================
+int FixedPoolAllocator::getNumAllocatedMemoryBlocks() const
 {
   return mCurrentMemoryBlockIndex;
 }
 
 //==============================================================================
-void* PoolAllocator::allocateSlow(int heapIndex) noexcept
+void* FixedPoolAllocator::allocateSlow() noexcept
 {
+  if (mUnitSize == 0) {
+    return nullptr;
+  }
+
   if (mCurrentMemoryBlockIndex == mMemoryBlocksSize) {
     MemoryBlock* currentMemoryBlocks = mMemoryBlocks;
     const int currentMemoryBlocksSize = mMemoryBlocksSize;
@@ -105,46 +124,47 @@ void* PoolAllocator::allocateSlow(int heapIndex) noexcept
   }
 
   MemoryBlock* newBlock = mMemoryBlocks + mCurrentMemoryBlockIndex;
-  const size_t unitSize = mUnitSizes[heapIndex];
-  DART_ASSERT(unitSize > 0);
-  const size_t blockAlignment = blockAlignmentForUnitSize(unitSize);
   newBlock->mMemoryUnits = static_cast<MemoryUnit*>(
-      mBaseAllocator.allocate(BLOCK_SIZE, blockAlignment));
+      mBaseAllocator.allocate(mBlockSize, mBlockAlignment));
   if (newBlock->mMemoryUnits == nullptr) {
     return nullptr;
   }
-  newBlock->mAlignment = blockAlignment;
-  const unsigned int unitCount = BLOCK_SIZE / unitSize;
+  newBlock->mSize = mBlockSize;
+  newBlock->mAlignment = mBlockAlignment;
+
+  const size_t unitCount = mBlockSize / mUnitSize;
   DART_ASSERT(unitCount > 0);
   auto* memoryUnitsBeginChar = reinterpret_cast<char*>(newBlock->mMemoryUnits);
-  for (std::size_t i = 0; i < unitCount - 1; ++i) {
+  for (size_t i = 0; i < unitCount - 1; ++i) {
     auto* unit
-        = reinterpret_cast<MemoryUnit*>(memoryUnitsBeginChar + unitSize * i);
+        = reinterpret_cast<MemoryUnit*>(memoryUnitsBeginChar + mUnitSize * i);
     auto* nextUnit = reinterpret_cast<MemoryUnit*>(
-        memoryUnitsBeginChar + unitSize * (i + 1));
+        memoryUnitsBeginChar + mUnitSize * (i + 1));
     unit->mNext = nextUnit;
   }
 
   auto* lastUnit = reinterpret_cast<MemoryUnit*>(
-      memoryUnitsBeginChar + unitSize * (unitCount - 1));
+      memoryUnitsBeginChar + mUnitSize * (unitCount - 1));
   lastUnit->mNext = nullptr;
 
-  mFreeMemoryUnits[heapIndex] = newBlock->mMemoryUnits->mNext;
+  mFreeMemoryUnits = newBlock->mMemoryUnits->mNext;
   mCurrentMemoryBlockIndex++;
 
   return newBlock->mMemoryUnits;
 }
 
 //==============================================================================
-void PoolAllocator::print(std::ostream& os, int indent) const
+void FixedPoolAllocator::print(std::ostream& os, int indent) const
 {
   if (indent == 0) {
-    os << "[PoolAllocator]\n";
+    os << "[FixedPoolAllocator]\n";
   }
   const std::string spaces(indent, ' ');
   if (indent != 0) {
     os << spaces << "type: " << getType() << "\n";
   }
+  os << spaces << "unit_size: " << mUnitSize << "\n";
+  os << spaces << "block_size: " << mBlockSize << "\n";
   os << spaces << "allocated_memory_block_count: " << mMemoryBlocksSize << "\n";
   os << spaces << "current_memory_blocks_count: " << mCurrentMemoryBlockIndex
      << "\n";

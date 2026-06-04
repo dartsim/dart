@@ -184,6 +184,10 @@ def test_experimental_api_exposes_python_names_only():
             "getMultibodyCount",
             "addRigidBody",
             "addRigidBodyFixedJoint",
+            "getRigidBodyFixedJoint",
+            "hasRigidBodyFixedJoint",
+            "getRigidBodyFixedJoints",
+            "getRigidBodyFixedJointCount",
             "getRigidBody",
             "hasRigidBody",
             "getRigidBodyCount",
@@ -281,6 +285,8 @@ def test_experimental_stub_tracks_public_runtime_symbols():
         "shape_index_a",
         "local_point_a",
         "has_multibody",
+        "has_rigid_body_fixed_joint",
+        "num_rigid_body_fixed_joints",
         "is_valid",
         "step_profiling_enabled",
         "last_step_profile",
@@ -299,6 +305,10 @@ def test_experimental_stub_tracks_public_runtime_symbols():
         "def getMultibody(",
         "def hasMultibody(",
         "def addRigidBodyFixedJoint(",
+        "def getRigidBodyFixedJoint(",
+        "def hasRigidBodyFixedJoint(",
+        "def getRigidBodyFixedJoints(",
+        "def getRigidBodyFixedJointCount(",
         "def get_parent_rigid_body(",
         "def get_child_rigid_body(",
         "def has_multibody_count(",
@@ -473,6 +483,14 @@ def test_experimental_world_rigid_body_fixed_joint_projects_captured_pose():
     assert joint.num_dofs == 0
     assert joint.parent_rigid_body.name == "base"
     assert joint.child_rigid_body.name == "link"
+    assert world.has_rigid_body_fixed_joint("base_to_link")
+    assert not world.has_rigid_body_fixed_joint("missing")
+    assert world.num_rigid_body_fixed_joints == 1
+    assert world.get_rigid_body_fixed_joint("base_to_link").child_rigid_body == link
+    assert world.get_rigid_body_fixed_joint("missing") is None
+    fixed_joints = world.get_rigid_body_fixed_joints()
+    assert len(fixed_joints) == 1
+    assert fixed_joints[0].parent_rigid_body == base
     with pytest.raises(Exception, match="not a multibody Link"):
         _ = joint.parent_link
     with pytest.raises(Exception, match="not a multibody Link"):
@@ -491,6 +509,25 @@ def test_experimental_world_rigid_body_fixed_joint_projects_captured_pose():
     assert float(link.linear_velocity[0]) < 0.0
     with pytest.raises(Exception, match="simulation mode"):
         world.add_rigid_body_fixed_joint("late_joint", base, link)
+
+
+def test_experimental_world_rigid_body_fixed_joint_list_keeps_world_alive():
+    sx = _simulation_experimental()
+
+    def build_joints_from_temporary_world():
+        world = sx.World()
+        base = world.add_rigid_body("base")
+        link = world.add_rigid_body("link")
+        world.add_rigid_body_fixed_joint("base_to_link", base, link)
+        return world.get_rigid_body_fixed_joints()
+
+    fixed_joints = build_joints_from_temporary_world()
+    gc.collect()
+
+    assert len(fixed_joints) == 1
+    assert fixed_joints[0].name == "base_to_link"
+    assert fixed_joints[0].parent_rigid_body.name == "base"
+    assert fixed_joints[0].child_rigid_body.name == "link"
 
 
 def test_experimental_multibody_link_joint_common_path():

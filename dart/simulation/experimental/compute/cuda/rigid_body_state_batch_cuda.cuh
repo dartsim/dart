@@ -34,15 +34,14 @@
 
 #include <dart/simulation/experimental/compute/rigid_body_state_batch.hpp>
 
+#include <dart/simulation/experimental/compute/cuda/cuda_runtime.cuh>
+
 #include <vector>
 
 namespace dart::simulation::experimental::compute::cuda {
 
-/// Return whether the CUDA runtime currently exposes at least one device.
-///
-/// This build-tree-only header intentionally uses a .cuh suffix so the
-/// experimental install rule does not expose CUDA names in installed headers.
-[[nodiscard]] bool isCudaRuntimeAvailable() noexcept;
+// isCudaRuntimeAvailable() is declared once in cuda_runtime.cuh (included
+// above).
 
 /// Integrate the linear SoA rigid-body batch path through CUDA.
 ///
