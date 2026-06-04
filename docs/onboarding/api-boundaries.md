@@ -10,7 +10,7 @@
 - Binding Python? Expose only the user-facing API unless a legacy exception is
   explicitly allowlisted by `scripts/check_api_boundaries.py` with a
   replacement and removal condition.
-- Changing DART 6.16 compatibility API? Run the Gazebo workflow from
+- Changing DART 6.17 compatibility API? Run the Gazebo workflow from
   [build-system.md](build-system.md#gazebo-integration-feature) on the affected
   support branch.
 - Changing a `detail` or `internal` type that appears in an installed public
@@ -21,7 +21,7 @@
 
 DART 7 intentionally refactors large parts of the codebase as a clean break
 from the DART 6 API. Released downstream compatibility where there is evidence,
-especially gz-physics, is maintained on `release-6.16` unless a maintainer
+especially gz-physics, is maintained on `release-6.17` unless a maintainer
 explicitly scopes a bounded migration adapter. The project needs a small,
 stable user-facing API and a larger internal API that can change quickly for
 dependency removal, collision backend work, performance, and new simulation
@@ -62,12 +62,12 @@ Compatibility API is retained for existing users or downstreams on a documented
 support lane even when it is not the preferred DART 7 interface. Keep it
 source-compatible until the documented removal point, add `DART_DEPRECATED` or
 `[[deprecated]]` where possible, and mention the replacement. Gz-physics
-compatibility shims belong on `release-6.16` by default; a DART 7 shim must be
+compatibility shims belong on `release-6.17` by default; a DART 7 shim must be
 bounded, inventory-driven, and sunset dated.
 
 Each compatibility entry needs downstream evidence, replacement API, first
 deprecated release, earliest removal release, blocking migration condition, and
-release-note or changelog requirement. For gz-physics on the DART 6.16 support
+release-note or changelog requirement. For gz-physics on the DART 6.17 support
 lane, removal requires evidence from the pinned gz-physics integration or an
 accepted upstream migration; a version target alone is not enough.
 
@@ -84,7 +84,7 @@ Before changing exposed implementation debt:
   symbols.
 - Provide a supported replacement API or wrapper and migration notes.
 - Run the downstream gate for touched support-lane surfaces, especially
-  gz-physics on `release-6.16`.
+  gz-physics on `release-6.17`.
 - Review ABI risk when exported class layout, virtual bases, inline methods, or
   exported data are involved.
 
@@ -111,6 +111,31 @@ feasibility barriers, and backend/project names stay internal. Static collision
 geometry must be modeled explicitly through public world objects; do not add
 hidden default contact surfaces or expose contact-barrier tuning on body options
 without a design update.
+
+#### Experimental package shape (`dart::simulation::experimental`)
+
+The experimental simulation module builds by default
+(`DART_BUILD_SIMULATION_EXPERIMENTAL=ON`) and ships only a small, explicit
+public subset:
+
+- Only the promoted public headers are installed, via an explicit
+  `install(FILES ...)` allowlist in
+  `dart/simulation/experimental/CMakeLists.txt`
+  (`dart_experimental_public_headers`). The implementation-internal directories
+  (`comps/`, `compute/`, `common/`, `detail/`, `diff/`, `ecs/`, `io/`,
+  `space/`) are not installed. New internal directories are excluded by default;
+  promoting a header means adding it to the allowlist on purpose.
+- `EnTT` and `Taskflow` are PRIVATE implementation dependencies. They are not in
+  the link interface and are not registered as component dependency packages, so
+  a downstream `find_package(dart)` does not need or re-run their finders. The
+  promoted headers must not include or name them.
+- Two guards keep this true:
+  `pixi run check-dart7-promotion-surface` (strict source-level audit, fails if
+  any promoted header reintroduces an ECS/EnTT leak) and
+  `pixi run check-experimental-public-header-smoke` (a build-tree TU that
+  includes every promoted header but is compiled without entt/taskflow on its
+  include path, so a leaked `<entt/...>` include fails with "file not found").
+  `pixi run check-experimental-public-headers` runs both.
 
 ### Internal API
 

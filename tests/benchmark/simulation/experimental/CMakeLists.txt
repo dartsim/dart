@@ -105,6 +105,15 @@ if(DART_EXPERIMENTAL_BUILD_BENCHMARKS)
     )
   endif()
 
+  # These benchmarks include <entt/entt.hpp> directly to exercise ECS internals.
+  # The experimental library now keeps EnTT PRIVATE, so it no longer re-exports
+  # the entt include path; link it explicitly for the benchmarks that need it.
+  foreach(_entt_bm bm_ecs_safety bm_variational_integration bm_vbd_world_solver)
+    if(TARGET ${_entt_bm})
+      target_link_libraries(${_entt_bm} PRIVATE EnTT::EnTT)
+    endif()
+  endforeach()
+
   if(TARGET ${PROJECT_NAME}-simulation-experimental-cuda)
     dart_experimental_add_benchmark(
       bm_cuda_rigid_body_state_batch

@@ -23,7 +23,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        base: [main, release-6.16]
+        base: [main, release-6.17]
     steps:
       - uses: actions/checkout@v6
         with:

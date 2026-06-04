@@ -56,16 +56,16 @@ git checkout -b feature/my-awesome-feature
 
 ### Bug Fix Workflow (Two PRs Required)
 
-**Bug fixes must be applied to both `release-6.16` AND `main` branches** to ensure fixes are available in both DART 6 and DART 7.
+**Bug fixes must be applied to both `release-6.17` AND `main` branches** to ensure fixes are available in both DART 6 and DART 7.
 
 1. **Fix on release branch first**:
 
    ```bash
-   git checkout release-6.16
-   git pull upstream release-6.16
-   git checkout -b fix/issue-XXXX-description-6.16
+   git checkout release-6.17
+   git pull upstream release-6.17
+   git checkout -b fix/issue-XXXX-description-6.17
    # Make your fix, commit, and push
-   # Create PR targeting release-6.16 with title: "Fix: description (DART 6.16)"
+   # Create PR targeting release-6.17 with title: "Fix: description (DART 6.17)"
    ```
 
 2. **Cherry-pick to main** (or reapply if conflicts):
@@ -77,7 +77,7 @@ git checkout -b feature/my-awesome-feature
    # Push and create PR targeting main with title: "Fix: description (DART 7)"
    ```
 
-**PR Title Convention**: Use version numbers ("DART 6.16", "DART 7") rather than branch names for clarity.
+**PR Title Convention**: Use version numbers ("DART 6.17", "DART 7") rather than branch names for clarity.
 
 ### 3. Make Your Changes
 
@@ -120,7 +120,7 @@ git push origin feature/my-awesome-feature
 Use the PR template in `.github/PULL_REQUEST_TEMPLATE.md` and set the milestone for the target branch:
 
 - `main`: `DART 7.0` (or the next major milestone)
-- `release-6.16`: `DART 6.16.x` (current patch line)
+- `release-6.17`: `DART 6.17.1` (current patch target)
 
 ## Testing Requirements
 
@@ -296,10 +296,10 @@ Before submitting your pull request, verify:
 - [ ] PR description includes summary, motivation, and testing notes
 - [ ] PR description uses `.github/PULL_REQUEST_TEMPLATE.md`
 - [ ] Milestone is set for the target branch (`DART 7.0` for `main`,
-      `DART 6.16.x` for `release-6.16`)
+      `DART 6.17.1` for `release-6.17`)
 - [ ] `CHANGELOG.md` is updated when required, or the PR records why no entry is
       needed
-- [ ] Bug fixes that apply to the release line have a `release-6.16` PR first,
+- [ ] Bug fixes that apply to the release line have a `release-6.17` PR first,
       then a `main` PR
 - [ ] Any `docs/dev_tasks/<task>/` folder used for tracking is removed after
       durable notes move to developer docs

@@ -27,6 +27,21 @@ target_link_libraries(
   demos_scenes
   PUBLIC dart-gui dart-io dart-collision-native dart-simulation-experimental
 )
+# deformable_body.cpp compiles an internal (non-promoted) experimental header,
+# detail/world_registry_access.hpp, which includes <entt/entt.hpp>. EnTT is a
+# PRIVATE dependency of dart-simulation-experimental (the public surface is
+# entt-free) and so is not propagated to consumers, so this scene fails to
+# compile in clean builds where EnTT is supplied only via
+# dart_find_entt.cmake/FetchContent rather than a global include directory.
+# Link EnTT explicitly (PRIVATE: an implementation detail of this scene, not
+# part of the demos_scenes interface) when it is available in this in-tree build.
+if(TARGET EnTT::EnTT)
+  target_link_libraries(demos_scenes PRIVATE EnTT::EnTT)
+endif()
+target_compile_definitions(
+  demos_scenes
+  PUBLIC DART_DEMOS_HAS_SIMULATION_EXPERIMENTAL
+)
 target_compile_features(demos_scenes PUBLIC cxx_std_20)
 set_target_properties(demos_scenes PROPERTIES POSITION_INDEPENDENT_CODE ON)
 if(DART_IN_SOURCE_BUILD AND COMMAND dart_format_add)
