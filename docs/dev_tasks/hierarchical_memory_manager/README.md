@@ -6,6 +6,10 @@
       frame-scratch diagnostics.
 - [ ] Phase 2: Allocator correctness and performance gates cover DART
       allocators against standard C++ allocators and foonathan/memory.
+      Alignment-aware allocation is implemented; fixed-size pool comparison now
+      has a DART `FixedPoolAllocator` path that beats foonathan/memory and
+      `std::pmr` locally. The strict benchmark gate and broader correctness
+      matrix still need to land before this phase is complete.
 - [ ] Phase 3: EnTT registry/component storage allocation is configurable from
       the World memory hierarchy and covered by no-growth ECS tests.
 - [ ] Phase 4: Built-in simulation stages borrow world memory for transient
@@ -50,6 +54,10 @@ debugging, profiling, optimization experiments, and ImGui visualization.
   foonathan/memory on DART-relevant workloads. If DART cannot beat
   foonathan/memory for required features and workloads, prefer an explicit
   dependency decision over shipping a weaker in-house allocator.
+- Use `FixedPoolAllocator` for fixed-size node/slot workloads and keep
+  `PoolAllocator` focused on mixed size-classed small-object workloads. The
+  comparative benchmark must not compare DART's generic size-classed pool
+  against foonathan's fixed-size pool when a DART fixed-size allocator exists.
 
 ## Required Allocator Evidence
 
@@ -81,10 +89,14 @@ debugging, profiling, optimization experiments, and ImGui visualization.
 
 ## Immediate Next Steps
 
-1. Add allocator correctness tests and benchmark coverage for DART allocators
-   against `std::allocator`/`std::pmr` and foonathan/memory.
-2. Design and benchmark EnTT registry/storage allocator integration before
+1. Land the strict allocator comparative benchmark gate and keep the
+   fixed-size, mixed-pool, frame, STL, and realistic workloads below
+   foonathan/memory and standard allocator baselines.
+2. Extend allocator correctness tests for `FixedPoolAllocator` and the existing
+   pool/free-list/frame allocators across invalid sizes, over-alignment,
+   overflow, reuse-after-free, leak/debug accounting, and bounded failure.
+3. Design and benchmark EnTT registry/storage allocator integration before
    claiming zero allocations for ECS-backed world data.
-3. Start replacing per-step `std::vector`/`Eigen` temporaries in hot stages with
+4. Start replacing per-step `std::vector`/`Eigen` temporaries in hot stages with
    world-frame or world-pool backed storage only after the allocator evidence
    gate proves the DART allocator path is better for that workload.

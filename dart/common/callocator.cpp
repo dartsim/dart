@@ -35,7 +35,23 @@
 #include "dart/common/logging.hpp"
 #include "dart/common/macros.hpp"
 
+#include <cstddef>
+#include <cstdlib>
+
+#ifdef _WIN32
+  #include <malloc.h>
+#endif
+
 namespace dart::common {
+
+namespace {
+
+bool isPowerOfTwo(size_t value)
+{
+  return value != 0 && (value & (value - 1)) == 0;
+}
+
+} // namespace
 
 //==============================================================================
 CAllocator::CAllocator() noexcept
@@ -61,11 +77,56 @@ void* CAllocator::allocate(size_t bytes) noexcept
 }
 
 //==============================================================================
+void* CAllocator::allocate(size_t bytes, size_t alignment) noexcept
+{
+  if (bytes == 0 || !isPowerOfTwo(alignment)) {
+    return nullptr;
+  }
+
+  if (alignment <= alignof(std::max_align_t)) {
+    return allocate(bytes);
+  }
+
+#ifdef _WIN32
+  return _aligned_malloc(bytes, alignment);
+#else
+  void* pointer = nullptr;
+  if (posix_memalign(&pointer, alignment, bytes) != 0) {
+    return nullptr;
+  }
+
+  return pointer;
+#endif
+}
+
+//==============================================================================
 void CAllocator::deallocate(void* pointer, size_t bytes)
 {
   DART_UNUSED(bytes);
   std::free(pointer);
   DART_TRACE("Deallocated.");
+}
+
+//==============================================================================
+void CAllocator::deallocate(void* pointer, size_t bytes, size_t alignment)
+{
+  if (pointer == nullptr) {
+    return;
+  }
+
+  if (alignment <= alignof(std::max_align_t)) {
+    deallocate(pointer, bytes);
+    return;
+  }
+
+#ifdef _WIN32
+  DART_UNUSED(bytes);
+  _aligned_free(pointer);
+#else
+  DART_UNUSED(bytes);
+  std::free(pointer);
+#endif
+  DART_TRACE("Deallocated aligned memory.");
 }
 
 //==============================================================================

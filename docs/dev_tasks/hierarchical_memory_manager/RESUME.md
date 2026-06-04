@@ -2,39 +2,43 @@
 
 ## Last Session Summary
 
-Started the zero-allocation simulation-loop work by creating a dev-task tracker
-and landing the first implementation slice: experimental `World` now owns a
+The first memory-manager slice has landed: experimental `World` owns a
 `dart::common::MemoryManager`, accepts root allocator/frame-scratch options,
 exposes memory diagnostics, and resets frame scratch at step boundaries. The
-tracker records the hard allocator-quality gate: DART allocators need
-correctness tests and benchmarks proving they beat standard C++ allocators and
-foonathan/memory on DART-relevant workloads before broad hot-loop adoption. It
-also records EnTT registry/component-storage allocation as a required
-integration workstream. A follow-up on PR #2869 added frame allocator overflow
-byte accounting so World diagnostics report total frame-scratch demand rather
-than primary-arena usage alone. A second review follow-up made diagnostic
-capacity report the usable aligned arena budget so sizing from diagnostics does
-not hide alignment padding.
+allocator-quality gate is active: DART allocators must beat standard C++
+allocators and foonathan/memory on DART-relevant workloads before broad
+hot-loop adoption. Follow-up allocator work added alignment-aware
+`MemoryAllocator`/`StlAllocator` paths for over-aligned objects and
+allocator-aware EnTT registries, fixed free-list split alignment and overflow
+edge cases, and added `FixedPoolAllocator` for fixed-size slot workloads. The
+local comparative allocator benchmark now passes all DART/Foonathan median
+ratios when the fixed-size pool row uses `FixedPoolAllocator`, while mixed
+size-classed workloads remain on `PoolAllocator`.
 
 ## Current Branch
 
-`feature/hierarchical-memory-manager-world-root` - PR #2869 branch for the
-first memory-manager slice. The branch is published and currently tracks
-`origin/feature/hierarchical-memory-manager-world-root`.
+`feature/aligned-memory-allocator` - PR #2871 branch for allocator correctness
+and fixed-size pool performance. The stacked
+`feature/world-registry-allocator` branch for PR #2872 builds on this branch.
 
 ## Immediate Next Step
 
-Finish PR #2869 review/CI for the first slice, then start allocator correctness
-and benchmark work against `std::allocator`/`std::pmr` and foonathan/memory
-before expanding hot-loop allocator use.
+Finish review/CI for PR #2871, then merge it into the stacked World registry
+branch and keep PR #2872's EnTT allocator/no-growth tests current. Next
+allocator work should land the strict comparative benchmark gate, broaden
+`FixedPoolAllocator` correctness coverage, and add EnTT registry/storage
+allocator benchmarks before replacing more per-step hot-loop temporaries.
 
 ## Latest Local Validation
 
 - `pixi run lint`
-- `pixi run build`
-- `cmake --build build/default/cpp/Release --target UNIT_common_frame_allocator UNIT_common_memory_manager test_world`
-- `ctest --test-dir build/default/cpp/Release -R '^(UNIT_common_frame_allocator|UNIT_common_memory_manager|test_world)$' --output-on-failure`
-- `pixi run test-simulation-experimental` (61/61 passed)
+- `cmake --build build/default/cpp/Release --target bm_allocators_comparative UNIT_common_pool_allocator -j2`
+- `ctest --test-dir build/default/cpp/Release -R '^UNIT_common_pool_allocator$' --output-on-failure`
+- `build/default/cpp/Release/bin/bm_allocators_comparative --benchmark_min_time=0.1s --benchmark_out=.benchmark_results/allocator-comparative-current-head.json --benchmark_out_format=json`
+- Local parser over `.benchmark_results/allocator-comparative-current-head.json`:
+  all DART/Foonathan and DART/StdPmr median ratios passed (`< 1.0`),
+  including fixed pool, mixed pool, frame, realistic, steady-state, and STL
+  vector workloads.
 
 ## Context That Would Be Lost
 
@@ -51,6 +55,9 @@ before expanding hot-loop allocator use.
   Compare against `std::allocator`/`std::pmr` and foonathan/memory; if DART
   cannot beat foonathan/memory for required DART workloads, record a dependency
   decision instead of forcing an inferior in-house allocator.
+- Use `FixedPoolAllocator` for fixed-size node/slot workloads. Keep
+  `PoolAllocator` as the size-classed small-object allocator for mixed
+  workloads.
 - EnTT registry/storage allocation is first-class scope. Future work should
   inspect the active EnTT version's `basic_registry` and `basic_storage`
   allocator hooks and keep EnTT allocator types hidden from public World API.
@@ -62,5 +69,6 @@ git status -sb
 git diff --stat
 ```
 
-Then continue the first slice: inspect `dart/simulation/experimental/world.*`,
-`dart/simulation/experimental/world_options.hpp`, and the focused world tests.
+Then continue from the open PR stack: #2871 allocator correctness/performance,
+#2872 allocator-backed experimental World registry, and the comparative
+benchmark gate branch.
