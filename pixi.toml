@@ -2304,13 +2304,9 @@ test = { cmd = [
 test-no-plane = { cmd = [
   "bash",
   "-lc",
-  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp --build-config ${BUILD_TYPE} --output-on-failure --exclude-regex \"test_plane_shape_collision\"",
+  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp --build-config ${BUILD_TYPE} --output-on-failure --exclude-regex \"test_plane_shape_collision\" --label-exclude simulation-experimental",
 ], depends-on = [
   { task = "build-tests", args = [
-    "{{ dartpy }}",
-    "{{ build_type }}",
-  ] },
-  { task = "build-simulation-experimental-tests", args = [
     "{{ dartpy }}",
     "{{ build_type }}",
   ] },
