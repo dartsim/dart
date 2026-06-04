@@ -24,7 +24,10 @@
       does not yet beat all corrected standard-registry baselines consistently.
       A world-lifetime arena-backed probe also proves no-growth behavior, but
       its timing has not yet been stable enough to replace the free-list-backed
-      row as the production policy.
+      row as the production policy. The strict checker now prints DART
+      benchmark counters alongside pass/fail ratios, so EnTT no-growth misses
+      explicitly show whether timing lost despite zero configured allocator
+      calls.
 - [ ] Phase 3: EnTT registry/component storage allocation is configurable from
       the World memory hierarchy and covered by no-growth ECS tests.
       Allocator-aware EnTT storage now has focused `StlAllocator` and

@@ -287,6 +287,33 @@ def collect_coefficients_of_variation(
     return dict(cvs)
 
 
+def collect_dart_counters(rows: list[dict]) -> dict[str, dict[str, float]]:
+    counters: dict[str, dict[str, float]] = defaultdict(dict)
+
+    for row in _select_rows(rows):
+        name = _canonical_name(_row_name(row))
+        match = _COMPARATIVE_RE.match(name)
+        if match is None:
+            continue
+
+        family, allocator, args = match.groups()
+        if allocator != "DART":
+            continue
+
+        key = family + (args or "")
+        for counter_name, value in row.items():
+            if not counter_name.startswith("dart_"):
+                continue
+            try:
+                counter = float(value)
+            except (TypeError, ValueError):
+                continue
+            if math.isfinite(counter):
+                counters[key][counter_name] = counter
+
+    return dict(counters)
+
+
 def evaluate_comparisons(
     rows: list[dict],
     *,
@@ -300,6 +327,7 @@ def evaluate_comparisons(
 
     timings = collect_timings(rows, metric)
     cvs = collect_coefficients_of_variation(rows, metric)
+    dart_counters = collect_dart_counters(rows)
     failures = []
     passes = []
 
@@ -365,6 +393,8 @@ def evaluate_comparisons(
                 "ratio": round(ratio, 4),
                 "max_ratio": max_ratio,
             }
+            if key in dart_counters:
+                result["dart_counters"] = dart_counters[key]
             if ratio < max_ratio:
                 result["status"] = "PASS"
                 passes.append(result)
@@ -422,6 +452,23 @@ def run_benchmark(
     return output
 
 
+def _format_counter_value(value: float) -> str:
+    rounded = round(value)
+    if math.isclose(value, rounded, rel_tol=0.0, abs_tol=1e-9):
+        return str(int(rounded))
+    return "{:.3g}".format(value)
+
+
+def _format_dart_counters(result: dict) -> str:
+    counters = result.get("dart_counters")
+    if not counters:
+        return ""
+    return ", ".join(
+        "{}={}".format(name, _format_counter_value(value))
+        for name, value in sorted(counters.items())
+    )
+
+
 def _print_result(prefix: str, result: dict) -> None:
     if result["status"].startswith("MISSING"):
         print(
@@ -447,7 +494,7 @@ def _print_result(prefix: str, result: dict) -> None:
         )
         return
 
-    print(
+    message = (
         "  {}  {} vs {}: DART {:.1f} ns, baseline {:.1f} ns, "
         "ratio {:.3f} (max {:.3f})".format(
             prefix,
@@ -459,6 +506,10 @@ def _print_result(prefix: str, result: dict) -> None:
             result["max_ratio"],
         )
     )
+    counters = _format_dart_counters(result)
+    if counters:
+        message += "; DART counters: {}".format(counters)
+    print(message)
 
 
 def main(argv: list[str]) -> int:

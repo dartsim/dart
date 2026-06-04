@@ -41,6 +41,20 @@ instead of conflating that cost with the no-growth simulation loop.
 
 ## Latest Local Validation
 
+- The focused strict checker over
+  `.benchmark_results/entt_registry_goal_probe.json` now prints DART counters
+  with every pass/fail result. The current no-growth EnTT failures show
+  `dart_allocator_allocations=0` and `dart_allocator_deallocations=0`, so the
+  steady-state miss is allocator-aware registry/storage overhead rather than
+  configured allocator traffic. The same run shows the build/growth rows still
+  allocate/deallocate through the DART adapter 39, 40, and 45 times per
+  iteration at 256, 512, and 2048 entities.
+- A refreshed world-lifetime arena-backed benchmark experiment over
+  `.benchmark_results/entt_registry_arena_policy_probe.json` also failed the
+  strict gate. It drove backing allocator calls to zero for the build/growth
+  rows, but still lost all no-growth rows and all standard-registry rows, so do
+  not replace the current free-list-backed DART EnTT benchmark policy with
+  `FrameStlAllocator` timing evidence.
 - The common comparative benchmark now discovers installed EnTT package
   metadata before configuring `bm_allocators_comparative`. Local
   `bm_allocators_comparative --benchmark_list_tests` lists all DART,
