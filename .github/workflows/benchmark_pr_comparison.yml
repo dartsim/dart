@@ -102,10 +102,13 @@ jobs:
         # If every surface failed (no rows), fall back to an empty result so the
         # comparison step still posts a graceful "no rows" comment instead of
         # failing the job with a red check.
+        #
+        # --humanize must match the published dashboard's merge step so the
+        # readable names line up with the gh-pages baseline keyed by name.
         run: |
           pixi run --locked -e collision-reference \
             python scripts/merge_benchmark_results.py .benchmark_results \
-            --output .benchmark_results/combined.json \
+            --output .benchmark_results/combined.json --humanize \
             || echo '{"benchmarks": []}' > .benchmark_results/combined.json
 
       - name: Render comparison comment

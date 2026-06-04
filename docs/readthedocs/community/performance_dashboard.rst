@@ -17,12 +17,28 @@ the first publication), open it directly with the link above.
            width="100%" height="720" loading="lazy"
            style="border: 1px solid #d0d7de; border-radius: 6px;"></iframe>
 
-It is scoped to experimental World performance only: kinematics updates,
-world-step throughput with sequential vs parallel compute executors,
-rigid-body step scaling, the contact-shaped and contact-island scalable-compute
-proxies, and the Phase 5 CPU baseline row. It intentionally excludes unrelated
-solver, SIMD, and robot-loader benchmark surfaces so the headline charts stay
-focused on the experimental World.
+It is scoped to the DART 7 experimental World and its solver families, tracking
+their end-to-end ``World::step`` (and kinematics-update) throughput:
+
+* **Core step & scaling** — kinematics updates, world-step throughput with
+  sequential vs parallel compute executors, rigid-body step scaling, the
+  contact-shaped and contact-island scalable-compute proxies, and the Phase 5
+  CPU baseline row.
+* **Rigid-body dynamics solver** — a stacked-box World step with the default
+  sequential-impulse contact solve and the opt-in IPC barrier solve.
+* **Deformable solver (Vertex Block Descent)** — a deformable-grid World step
+  with the default gradient-descent solver and the VBD solver.
+* **Deformable solver (FEM)** — a neo-Hookean FEM beam World step through the
+  sparse projected-Newton solve.
+* **Augmented VBD rigid** — a fixed-joint rigid-chain World step routed through
+  the AVBD contact projection.
+
+It deliberately excludes internal micro-kernels (distance, barrier,
+tangent-stencil, candidate-set, …), CUDA/GPU-only rows, and
+``DART_BUILD_DIFF``-gated rows — they either need hardware or a build flag the
+GitHub-hosted runner does not provide — along with unrelated SIMD and
+robot-loader surfaces, so the headline charts stay focused on experimental
+World step throughput.
 
 The dashboard is built entirely on GitHub infrastructure. A GitHub Actions
 workflow runs DART's benchmark suites and hands the Google Benchmark JSON to
@@ -34,6 +50,21 @@ There is no external account, API token, or third-party service to maintain.
 The dashboard URL returns ``404`` until a ``main`` push, scheduled, or manually
 dispatched run of the **Performance Dashboard** workflow has published to
 ``gh-pages`` and GitHub Pages has finished building the branch.
+
+Readable labels
+---------------
+
+Raw Google Benchmark names like ``BM_VbdWorldStepVbd/16`` are rewritten into
+readable chart titles such as ``Deformable world step (VBD) · 16×16 grid`` by
+``scripts/benchmark_display_names.py``. The merge step applies this with
+``--humanize`` so the published chart titles (and the per-PR comparison table)
+read in plain language; the local preview groups the charts into the solver
+families above and labels the axes (commit on x, time-per-op on y, lower is
+better). Because ``github-action-benchmark`` keys history by the series name,
+the first publish after this change starts fresh history lines under the new
+readable names. The run-time ``--benchmark_filter`` and the
+``check_compute_graph_benchmarks.py`` gate keep using the raw names, so the
+rename is purely cosmetic.
 
 How it works
 ------------
@@ -74,8 +105,11 @@ Add a benchmark to the dashboard
 The dashboard reuses DART's existing Google Benchmark targets. To track a new
 surface, add a ``BenchmarkSpec`` entry to
 ``scripts/run_performance_dashboard_benchmarks.py`` pointing at the target and a
-bounded ``--benchmark_filter``. No dashboard code changes are required; the
-action picks up whatever rows appear in the merged JSON.
+bounded ``--benchmark_filter`` (prefer the CPU-only, end-to-end ``World::step``
+rows). For readable chart titles, add a matching entry to ``SURFACES`` in
+``scripts/benchmark_display_names.py``; unmapped names still render via a generic
+fallback. No dashboard code changes are required; the action picks up whatever
+rows appear in the merged JSON.
 
 Setup (maintainers)
 -------------------

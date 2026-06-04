@@ -74,11 +74,13 @@ def build() -> SceneSetup:
         speed = float(np.linalg.norm(np.asarray(payload.linear_velocity, dtype=float)))
         error_history.append(error)
         speed_history.append(speed)
+        found_joint = world.get_rigid_body_fixed_joint(fixed_joint.name) or fixed_joint
 
         builder.text("joint: fixed")
-        builder.text(f"name: {fixed_joint.name}")
-        builder.text(f"parent: {fixed_joint.parent_rigid_body.name}")
-        builder.text(f"child: {fixed_joint.child_rigid_body.name}")
+        builder.text(f"name: {found_joint.name}")
+        builder.text(f"fixed joints: {world.num_rigid_body_fixed_joints}")
+        builder.text(f"parent: {found_joint.parent_rigid_body.name}")
+        builder.text(f"child: {found_joint.child_rigid_body.name}")
         builder.text(f"world time: {world.time:.3f} s")
         builder.text(f"offset error: {error:.4f} m")
         builder.text(f"payload speed: {speed:.3f} m/s")
