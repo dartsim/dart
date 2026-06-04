@@ -109,7 +109,7 @@ class WorldRenderBridge:
         # The render world steps too (the viewer's pump calls world.step()
         # each frame). With no skeletons it's a no-op + a time advance.
         self.render_world.set_time_step(getattr(physics_world, "time_step", 0.001))
-        self._mappings: list[tuple[Any, dart.SimpleFrame]] = []
+        self._mappings: list[tuple[Any, dart.SimpleFrame, np.ndarray]] = []
         # (deformable_body, line_shape, node_count) deforming wireframes.
         self._surfaces: list[tuple[Any, Any, int]] = []
         # (deformable_body, [(node_index, SimpleFrame)]) pinned-node markers.
@@ -155,13 +155,15 @@ class WorldRenderBridge:
         shape: "dart.Shape",
         color: tuple[float, float, float],
         name: str | None = None,
+        local_transform: Any | None = None,
     ) -> "dart.SimpleFrame":
         frame_name = name or f"world_link_{len(self._mappings)}"
         frame = dart.SimpleFrame(dart.Frame.world(), frame_name, np.eye(4))
         frame.set_shape(shape)
         frame.create_visual_aspect().set_color(list(color))
         actual_name = self._register_frame(frame, physics_link)
-        self._mappings.append((physics_link, frame))
+        local = np.eye(4) if local_transform is None else _isometry_to_matrix(local_transform)
+        self._mappings.append((physics_link, frame, local))
         self._by_name[actual_name] = physics_link
         return frame
 
@@ -171,8 +173,15 @@ class WorldRenderBridge:
         shape: "dart.Shape",
         color: tuple[float, float, float],
         name: str | None = None,
+        local_transform: Any | None = None,
     ) -> "dart.SimpleFrame":
-        return self.add_link_visual(physics_body, shape, color, name=name)
+        return self.add_link_visual(
+            physics_body,
+            shape,
+            color,
+            name=name,
+            local_transform=local_transform,
+        )
 
     def add_deformable_visual(
         self,
@@ -229,12 +238,12 @@ class WorldRenderBridge:
     def sync(self) -> None:
         """Copy each physics body's world transform onto its SimpleFrame."""
 
-        for physics_object, frame in self._mappings:
+        for physics_object, frame, local_transform in self._mappings:
             tf = getattr(physics_object, "transform", None)
             if tf is None:
                 continue
             try:
-                frame.set_transform(_isometry_to_matrix(tf))
+                frame.set_transform(_isometry_to_matrix(tf) @ local_transform)
             except Exception:  # noqa: BLE001
                 pass
 

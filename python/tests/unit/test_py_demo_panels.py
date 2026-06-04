@@ -15,6 +15,7 @@ from examples.demos.runner import (
 )
 from examples.demos.scenes import (
     articulated,
+    atlas_simbicon,
     contact,
     diff_cartpole_trajopt,
     diff_drone_liftoff,
@@ -48,6 +49,7 @@ from examples.demos.scenes import (
     rigid_ipc_incline,
     rigid_ipc_pile,
     rigid_ipc_tunnel,
+    robot_puppets,
     variational_chain,
     variational_tumbler,
     vbd_beam,
@@ -216,6 +218,7 @@ def test_high_value_world_scenes_expose_custom_panels() -> None:
         (rigid_ipc_incline, "Rigid IPC Incline"),
         (rigid_ipc_pile, "Rigid IPC Pile"),
         (rigid_ipc_tunnel, "Rigid IPC Tunnel"),
+        (atlas_simbicon, "Atlas SIMBICON"),
         (variational_chain, "Variational Chain"),
         (variational_tumbler, "Variational Tumbler"),
     ]
@@ -235,6 +238,45 @@ def test_high_value_world_scenes_expose_custom_panels() -> None:
         assert "text:External force" in builder.events
         assert any(event.startswith("text:drag target: ") for event in builder.events)
         assert "checkbox:Enable external force" in builder.events
+
+
+def test_robot_puppet_world_scenes_expose_pose_panels() -> None:
+    _require_simulation_experimental_symbols("World", "add_skeleton", "ReadOptions")
+
+    for scene, expected_title in (
+        (robot_puppets.ATLAS_PUPPET, "Atlas Puppet"),
+        (robot_puppets.HUBO_PUPPET, "Hubo Puppet"),
+    ):
+        setup = scene.build()
+        builder = _FakePanelBuilder()
+
+        assert setup.force_drag is not None
+        assert [panel.title for panel in setup.panels] == [expected_title]
+        assert setup.info["dofs"] > 0
+        assert setup.info["visual_links"] > 0
+
+        setup.panels[0].build(builder, object())
+
+        assert "slider:Pose blend:0.0:1.0" in builder.events
+        assert "button:Reach pose" in builder.events
+        assert "button:Crouch pose" in builder.events
+        assert "button:Neutral pose" in builder.events
+        assert any(event.startswith("plot:Root height:") for event in builder.events)
+        assert "text:External force" in builder.events
+
+
+def test_g1_puppet_stays_asset_gated_placeholder() -> None:
+    setup = robot_puppets.G1_PUPPET.build()
+    builder = _FakePanelBuilder()
+
+    assert [panel.title for panel in setup.panels] == ["G1 Puppet"]
+    assert setup.info["planned_world_port"] == "g1_puppet"
+
+    setup.panels[0].build(builder, object())
+
+    assert "text:status: planned World demo" in builder.events
+    assert "text:legacy seed: g1_puppet" in builder.events
+    assert any(event.startswith("text:target: ") for event in builder.events)
 
 
 def test_planned_world_port_placeholders_expose_status_panels() -> None:

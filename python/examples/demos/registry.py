@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from .runner import PythonDemoScene
 from .scenes.articulated import SCENE as ARTICULATED
+from .scenes.atlas_simbicon import SCENE as ATLAS_SIMBICON
 from .scenes.contact import SCENE as CONTACT
 from .scenes.diff_cartpole_trajopt import SCENE as DIFF_CARTPOLE_TRAJOPT
 from .scenes.diff_drone_liftoff import SCENE as DIFF_DRONE_LIFTOFF
@@ -39,7 +40,6 @@ from .scenes.planned import COLLISION_SANDBOX as PLANNED_COLLISION_SANDBOX
 from .scenes.planned import INVERSE_KINEMATICS as PLANNED_INVERSE_KINEMATICS
 from .scenes.planned import MOBILE_MANIPULATION as PLANNED_MOBILE_MANIPULATION
 from .scenes.planned import OPERATIONAL_SPACE_CONTROL as PLANNED_OSC
-from .scenes.planned import ROBOT_PUPPETS as PLANNED_ROBOT_PUPPETS
 from .scenes.planned import SIMBICON_WALKING as PLANNED_SIMBICON_WALKING
 from .scenes.rigid_body import SCENE as RIGID_BODY
 from .scenes.rigid_fixed_joint import SCENE as RIGID_FIXED_JOINT
@@ -49,6 +49,9 @@ from .scenes.rigid_ipc_incline import SCENE as RIGID_IPC_INCLINE
 from .scenes.rigid_ipc_pile import SCENE as RIGID_IPC_PILE
 from .scenes.rigid_ipc_slide import SCENE as RIGID_IPC_SLIDE
 from .scenes.rigid_ipc_tunnel import SCENE as RIGID_IPC_TUNNEL
+from .scenes.robot_puppets import ATLAS_PUPPET
+from .scenes.robot_puppets import G1_PUPPET
+from .scenes.robot_puppets import HUBO_PUPPET
 from .scenes.variational_chain import SCENE as VARIATIONAL_CHAIN
 from .scenes.variational_contact import SCENE as VARIATIONAL_CONTACT
 from .scenes.variational_tumbler import SCENE as VARIATIONAL_TUMBLER
@@ -72,9 +75,12 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         # These lightweight placeholders keep the roadmap visible without
         # keeping legacy DART 6 scene implementations in the catalog.
         PLANNED_INVERSE_KINEMATICS,
+        ATLAS_PUPPET,
+        HUBO_PUPPET,
+        G1_PUPPET,
+        ATLAS_SIMBICON,
         PLANNED_SIMBICON_WALKING,
         PLANNED_OSC,
-        PLANNED_ROBOT_PUPPETS,
         PLANNED_COLLISION_SANDBOX,
         PLANNED_MOBILE_MANIPULATION,
         # Rigid IPC (PLAN-082) contact-dynamics showcase, grouped by capability:
