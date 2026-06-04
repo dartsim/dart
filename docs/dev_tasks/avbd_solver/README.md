@@ -191,7 +191,10 @@ Paper audit:
     rigid-body-linked fixed joints. Missing private AVBD fixed-joint configs are
     initialized from the simulation-entry pose only for opt-in rigid bodies, and
     multibody link endpoints are explicitly rejected until those bodies have a
-    real articulated AVBD state path.
+    real articulated AVBD state path. The private point-joint builders now also
+    accept per-axis linear and angular masks, preserving the all-axis
+    fixed-joint behavior while letting future hinge/revolute and limited-DOF row
+    configs reuse the same descriptors and warm-start inventory.
     Public multibody joint extraction is still not wired.
     Unsupported envelopes still fall back to sequential impulses. This is not
     full narrow-phase feature extraction, not full rigid contact/joint rows, and
@@ -235,9 +238,10 @@ numbers.
 ## Immediate Next Steps
 
 1. Continue the next bounded AVBD contact/friction or rigid-block slice:
-   contact-complete rigid joint rows, full narrow-phase feature extraction, or
-   true rigid/articulated World wiring are the preferred next gaps now that static
-   box feature IDs, private dynamic/rigid contact feature IDs and descriptor
+   private revolute/limited-DOF joint configs on top of the masked row
+   primitive, full narrow-phase feature extraction, or true rigid/articulated
+   World wiring are the preferred next gaps now that static box feature IDs,
+   private dynamic/rigid contact feature IDs and descriptor
    helpers, static half-space tangent dual projection, self-contact
    tangent dual projection, static contact/friction, attachments,
    finite-stiffness rows, self-contact normals, pairwise static/dynamic friction
@@ -256,7 +260,8 @@ numbers.
    extraction through the step helper and the internal contact-stage velocity
    projection with or without active contacts, plus an explicit rigid-body
    fixed-joint current-pose config bridge and simulation-entry config
-   initialization for opt-in rigid bodies, have narrow CPU paths.
+   initialization for opt-in rigid bodies, and masked private point-joint row
+   generation for constrained linear/angular axes, have narrow CPU paths.
 2. In parallel planning, keep full friction cones, rigid/articulated rows, GPU
    parity, demos, and benchmark packets as open AVBD parity gates rather than
    completion claims.

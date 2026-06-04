@@ -129,8 +129,11 @@ rows can now be appended to the World rigid snapshot/solve/apply wrapper and
 combined step helper from world-space point-joint inputs, and a private
 fixed-joint ECS extractor can feed the step helper for rigid-body-linked joint
 entities. The internal contact-stage AVBD opt-in can project those fixed-joint
-rows with or without active contacts. Public multibody joint extraction and
-articulated World joint wiring are not solved yet.
+rows with or without active contacts. The private point-joint builders now
+accept per-axis linear and angular masks, keeping all-axis fixed-joint rows as
+the default while enabling future hinge/revolute and limited-DOF row configs to
+reuse the same descriptor and warm-start path. Public multibody joint extraction
+and articulated World joint wiring are not solved yet.
 Explicit fallback coverage keeps unsupported mixed spring-plus-tet,
 mass-spring self-contact without the self-contact AVBD flag,
 finite-stiffness-only friction scenes, Chebyshev, Rayleigh-damped, parallel,

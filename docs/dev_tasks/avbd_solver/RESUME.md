@@ -70,11 +70,17 @@ fixed-joint rows with or without active contacts. A private helper now derives
 the AVBD fixed-joint config from the current rigid-body pair pose, preserving
 the child-origin anchor and relative orientation for rigid-body-linked fixed
 joints while rejecting multibody link endpoints. Public multibody joint
-extraction is still not wired.
+extraction is still not wired. The current local slice adds private per-axis
+linear and angular masks to those point-joint builders, preserving all-axis
+fixed-joint behavior while letting later hinge/revolute and limited-DOF configs
+reuse the same descriptors, row inventory, and alpha-regularized warm starts.
+This is still an internal row primitive only: no public revolute/limited joint
+facade, motor row, fracture row, articulated multibody state path, GPU path,
+demo, or benchmark packet is complete.
 
 ## Current Branch
 
-`feature/avbd-plan104-multibody-fixed-joint-bridge` - checkpoint branch based on
+`feature/avbd-plan104-joint-axis-masks` - checkpoint branch based on
 current `origin/main`, including the scalar-row foundation, mass-spring AVBD row
 families, standalone tet-material rows, and World wiring for supported pure-tet
 finite-stiffness material rows, plus supported World static-contact friction
@@ -105,13 +111,15 @@ fixed-joint pose bridge that converts a rigid-body-linked fixed joint's current
 pose into AVBD local anchors and target relative orientation, initializes
 missing private AVBD fixed-joint configs for opt-in rigid bodies at simulation
 entry, and adds regression coverage that multibody links are not silently
-treated as rigid AVBD bodies.
+treated as rigid AVBD bodies. It also adds masked private point-joint row
+generation for constrained linear/angular axes.
 
 ## Immediate Next Step
 
 Continue the next bounded AVBD contact/friction or rigid-block slice:
-contact-complete rigid joint rows, full narrow-phase feature extraction, or
-true rigid/articulated World wiring are the preferred row-family gaps now that
+private revolute/limited-DOF joint configs on top of the masked row primitive,
+full narrow-phase feature extraction, or true rigid/articulated World wiring are
+the preferred row-family gaps now that
 private dynamic/rigid contact feature IDs, canonical two-endpoint row keys, and
 normal/friction row descriptor helpers plus private rigid contact/friction
 point-pair constructors, paired friction-cone helpers, and a private serial
@@ -123,7 +131,8 @@ features, and private point-joint linear/angular/combined rows with step-start
 previous constraint values and private World snapshot/step append/solve/apply
 coverage plus fixed-joint ECS extraction through the step helper and an
 explicit current-pose rigid-body fixed-joint config bridge plus simulation-entry
-config initialization for opt-in rigid bodies exist.
+config initialization for opt-in rigid bodies and masked private point-joint row
+generation for constrained linear/angular axes exist.
 Keep the supported envelope narrow and preserve fallback coverage for topology
 mixes,
 damping/acceleration, parallel solves, and unsupported requested row
