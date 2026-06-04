@@ -76,6 +76,7 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <format>
 #include <istream>
 #include <limits>
@@ -2509,6 +2510,11 @@ void World::step(
 void World::step(
     compute::ComputeExecutor& executor, compute::WorldStepPipeline& pipeline)
 {
+  using Clock = std::chrono::steady_clock;
+  const bool profilingEnabled = m_stepProfilingEnabled;
+  const auto profileStepStart
+      = profilingEnabled ? Clock::now() : Clock::time_point{};
+
   validateLoopClosureKinematicsPolicySupport(*this);
   validateLoopClosureDynamicsPolicySupport(
       *this,
@@ -2530,9 +2536,11 @@ void World::step(
   }
 
   // Step profiling is opt-in (setStepProfilingEnabled). When off, the original
-  // untimed execute path runs with no added overhead; when on, each stage is
-  // timed and the per-stage breakdown is retained for getLastStepProfile().
-  if (m_stepProfilingEnabled) {
+  // untimed execute path runs with no timers or per-stage instrumentation; when
+  // on, each stage is timed and the per-stage breakdown is retained for
+  // getLastStepProfile(). The wall-time snapshot covers the whole core step,
+  // including pre-stage differentiable capture and post-stage bookkeeping.
+  if (profilingEnabled) {
     m_lastStepProfile = pipeline.executeProfiled(*this, executor);
   } else {
     pipeline.execute(*this, executor);
@@ -2541,6 +2549,10 @@ void World::step(
   m_time += m_timeStep;
   ++m_frame;
   refreshMemoryDiagnostics();
+
+  if (profilingEnabled) {
+    m_lastStepProfile.wallTime = Clock::now() - profileStepStart;
+  }
 }
 
 //==============================================================================
