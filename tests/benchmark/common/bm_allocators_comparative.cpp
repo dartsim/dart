@@ -821,11 +821,11 @@ static void BM_EnttRegistry_Foonathan(benchmark::State& state)
   const auto entityCount = static_cast<size_t>(state.range(0));
   const size_t maxNodeSize = std::max<size_t>(sizeof(EnttRegistryMass), 8192);
   const size_t blockSize = entityCount * 4096 + 16 * 1024 * 1024;
-  fm::memory_pool_collection<fm::node_pool, fm::log2_buckets> pool(
+  fm::memory_pool_collection<fm::array_pool, fm::log2_buckets> pool(
       maxNodeSize, blockSize);
   fm::std_allocator<
       entt::entity,
-      fm::memory_pool_collection<fm::node_pool, fm::log2_buckets>>
+      fm::memory_pool_collection<fm::array_pool, fm::log2_buckets>>
       allocator(pool);
   entt::basic_registry<entt::entity, decltype(allocator)> registry(allocator);
   std::vector<entt::entity> entities(entityCount);

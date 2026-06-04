@@ -337,6 +337,10 @@ dart_format_add(common/bm_allocators.cpp)
 
 find_package(foonathan_memory QUIET)
 if(foonathan_memory_FOUND)
+  if(NOT TARGET EnTT::EnTT)
+    dart_find_package(EnTT)
+  endif()
+
   add_executable(bm_allocators_comparative common/bm_allocators_comparative.cpp)
   target_link_libraries(
     bm_allocators_comparative
@@ -344,6 +348,9 @@ if(foonathan_memory_FOUND)
     foonathan_memory
     benchmark::benchmark
   )
+  if(TARGET EnTT::EnTT)
+    target_link_libraries(bm_allocators_comparative EnTT::EnTT)
+  endif()
   dart_format_add(common/bm_allocators_comparative.cpp)
 endif()
 
