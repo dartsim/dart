@@ -18,6 +18,7 @@ on:
       - "dart/**"
       - "pixi.lock"
       - "pixi.toml"
+      - "scripts/benchmark_display_names.py"
       - "scripts/check_compute_graph_benchmarks.py"
       - "scripts/merge_benchmark_results.py"
       - "scripts/run_cpp_benchmark.py"
@@ -92,10 +93,13 @@ jobs:
               --output build/compute_graph_check.json
 
       - name: Merge benchmark results
+        # --humanize rewrites raw Google Benchmark names into readable chart
+        # titles for the published dashboard (the run-time --benchmark_filter and
+        # the compute-graph gate above keep using the raw names).
         run: |
           pixi run --locked -e collision-reference \
             python scripts/merge_benchmark_results.py .benchmark_results \
-            --output .benchmark_results/combined.json
+            --output .benchmark_results/combined.json --humanize
 
       - name: Publish to dashboard
         uses: benchmark-action/github-action-benchmark@v1
