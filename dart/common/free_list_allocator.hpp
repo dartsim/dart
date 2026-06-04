@@ -87,13 +87,20 @@ public:
   [[nodiscard]] void* allocate(size_t bytes) noexcept override;
 
   // Documentation inherited
+  [[nodiscard]] void* allocate(
+      size_t bytes, size_t alignment) noexcept override;
+
+  // Documentation inherited
   void deallocate(void* pointer, size_t bytes) override;
+
+  // Documentation inherited
+  void deallocate(void* pointer, size_t bytes, size_t alignment) override;
 
   // Documentation inherited
   void print(std::ostream& os = std::cout, int indent = 0) const override;
 
 private:
-  struct MemoryBlockHeader
+  struct alignas(std::max_align_t) MemoryBlockHeader
   {
     /// Memory block size in bytes
     size_t mSize;
@@ -146,7 +153,12 @@ private:
   {
     void* pointer;
     size_t size;
+    size_t alignment;
+    bool isOutstandingAllocation;
   };
+
+  bool releaseDelegatedAllocation(
+      void* pointer, size_t bytes, size_t alignment);
 
   /// The base allocator
   MemoryAllocator& mBaseAllocator;

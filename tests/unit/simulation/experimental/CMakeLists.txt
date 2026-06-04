@@ -87,11 +87,18 @@ if(DART_EXPERIMENTAL_BUILD_TESTS)
     endif()
   endif()
 
-  # These rigid IPC gates remain active in normal CI, but coverage
-  # instrumentation can make the paper-sized rollouts exceed the default ctest
-  # timeout. Keep compiling the target under Codecov, then skip the heavyweight
-  # runtime corpus and give test_world access to coverage-specific guards.
+  # These rigid IPC and deformable gates remain active in normal CI, but
+  # coverage instrumentation can make their long runtime corpora exceed the
+  # default ctest timeout. Keep compiling the targets under Codecov, then skip
+  # the heavyweight paper-sized target and give long-running targets enough
+  # coverage-specific headroom.
   if(DART_CODECOV)
+    if(TEST test_deformable_body)
+      set_tests_properties(test_deformable_body PROPERTIES TIMEOUT 3600)
+    endif()
+    if(TEST test_rigid_ipc_fixture)
+      set_tests_properties(test_rigid_ipc_fixture PROPERTIES TIMEOUT 3600)
+    endif()
     if(TEST test_rigid_ipc_paper_experiments)
       set_tests_properties(
         test_rigid_ipc_paper_experiments

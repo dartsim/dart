@@ -12,7 +12,8 @@ Hierarchical allocation system for cache-friendly simulation:
 
 - **MemoryManager** — Owns all allocators; World creates one per instance
 - **FreeListAllocator** — General-purpose allocation with coalescing
-- **PoolAllocator** — Fixed-size block allocation (built on FreeListAllocator)
+- **PoolAllocator** — Size-classed small-object pool allocation
+- **FixedPoolAllocator** — Single-size slot allocation for fixed-node workloads
 - **FrameAllocator** — Bump/arena allocator for per-step scratch memory (reset each step)
 - **CAllocator** — Thin wrapper around `malloc`/`free` (default fallback)
 
