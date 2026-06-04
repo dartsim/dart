@@ -1,0 +1,56 @@
+// Copyright (c) 2011, The DART development contributors
+// All rights reserved.
+//
+// The list of contributors can be found at:
+//   https://github.com/dartsim/dart/blob/main/LICENSE
+//
+// This file is provided under the "BSD-style" License.
+
+// AUTO-GENERATED at configure time from
+// public_header_smoke.cpp.in via configure_file(). Do not edit the generated
+// copy; edit the template and the dart_experimental_public_headers list in
+// dart/simulation/experimental/CMakeLists.txt.
+//
+// Negative self-containment smoke test for the promoted public surface of
+// dart::simulation::experimental. It includes EVERY installed public header and
+// is compiled by a target that links the experimental library's PUBLIC usage
+// requirements but NOT EnTT::EnTT/Taskflow. Because EnTT and Taskflow are
+// PRIVATE dependencies, the entt/taskflow include directories are absent from
+// this TU's include path. If any promoted header (transitively) pulled in
+// <entt/...> or <taskflow/...>, this TU would fail to compile with a hard
+// "file not found" error -- proving the public surface leaks no ECS storage.
+
+// clang-format off
+@DART_EXPERIMENTAL_PUBLIC_HEADER_INCLUDES@
+// clang-format on
+
+// Compile-time type-completeness checks for representative promoted value/handle
+// types. These instantiate sizeof() on complete value types reachable entt-free,
+// so they fail to compile if a promoted type ever regresses to an incomplete
+// (forward-declared only) public surface -- complementing the World instantiation
+// below, which exercises the keystone header.
+static_assert(
+    sizeof(dart::simulation::experimental::RigidBodyOptions) > 0,
+    "RigidBodyOptions must be a complete value type in the public surface");
+static_assert(
+    sizeof(dart::simulation::experimental::WorldOptions) > 0,
+    "WorldOptions must be a complete value type in the public surface");
+static_assert(
+    sizeof(dart::simulation::experimental::MultibodyOptions) > 0,
+    "MultibodyOptions must be a complete value type in the public surface");
+static_assert(
+    sizeof(dart::simulation::experimental::Contact) > 0,
+    "Contact must be a complete value type in the public surface");
+static_assert(
+    sizeof(dart::simulation::experimental::StepDerivatives) > 0,
+    "StepDerivatives must be a complete value type in the public surface");
+static_assert(
+    sizeof(dart::simulation::experimental::JointType) > 0,
+    "JointType must be a complete value type in the public surface");
+
+int main()
+{
+  dart::simulation::experimental::World w;
+  (void)w;
+  return 0;
+}

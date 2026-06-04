@@ -506,7 +506,10 @@ dart_add_test("unit" UNIT_simulation_WorldConfig simulation/test_world_config.cp
 # ==============================================================================
 # Simulation-Experimental Tests
 # ==============================================================================
-if(DART_BUILD_SIMULATION_EXPERIMENTAL)
+# Guard on the target, not just the option: the experimental module skips itself
+# in minimal configurations where its core sibling components (e.g. dart-io) are
+# unavailable, leaving the option ON but the target absent.
+if(DART_BUILD_SIMULATION_EXPERIMENTAL AND TARGET dart-simulation-experimental)
   add_subdirectory(simulation/experimental)
 endif()
 

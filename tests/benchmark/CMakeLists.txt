@@ -351,7 +351,10 @@ endif()
 # Component Benchmarks (organized in subdirectories)
 # ==============================================================================
 add_subdirectory(lcpsolver)
-if(DART_BUILD_SIMULATION_EXPERIMENTAL)
+# Guard on the target, not just the option: the experimental module skips itself
+# in minimal configurations where its core sibling components (e.g. dart-io) are
+# unavailable, leaving the option ON but the target absent.
+if(DART_BUILD_SIMULATION_EXPERIMENTAL AND TARGET dart-simulation-experimental)
   add_subdirectory(simulation/experimental)
 endif()
 
