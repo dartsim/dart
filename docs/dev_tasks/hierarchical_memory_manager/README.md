@@ -10,7 +10,8 @@
       has a DART `FixedPoolAllocator` path that beats foonathan/memory and
       `std::pmr` locally. The comparative benchmark binary now honors the
       checker-requested repetition count instead of forcing five repetitions.
-      The strict benchmark gate and broader correctness matrix still need to
+      The strict checker now rejects high-CV rows before treating ratios as
+      evidence. The benchmark gate and broader correctness matrix still need to
       land before this phase is complete; narrow fixed-pool/STL-vector rows
       remain sensitive to host load and must not be treated as merge evidence
       without an idle-host rerun.

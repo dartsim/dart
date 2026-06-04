@@ -121,6 +121,16 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--max-cv",
+        type=float,
+        default=0.10,
+        help=(
+            "Maximum allowed coefficient of variation for compared aggregate "
+            "rows. The default 0.10 rejects rows noisier than 10%% before "
+            "treating timing ratios as evidence."
+        ),
+    )
+    parser.add_argument(
         "--metric",
         choices=("cpu_time", "real_time"),
         default="cpu_time",
@@ -198,17 +208,45 @@ def collect_timings(
     return dict(timings)
 
 
+def collect_coefficients_of_variation(
+    rows: list[dict], metric: str = "cpu_time"
+) -> dict[str, dict[str, float]]:
+    cvs: dict[str, dict[str, float]] = defaultdict(dict)
+
+    for row in rows:
+        if row.get("run_type") != "aggregate" or row.get("aggregate_name") != "cv":
+            continue
+
+        name = _canonical_name(_row_name(row))
+        match = _COMPARATIVE_RE.match(name)
+        if match is None:
+            continue
+
+        family, allocator, args = match.groups()
+        key = family + (args or "")
+        try:
+            cv = float(row.get(metric))
+        except (TypeError, ValueError):
+            continue
+        if math.isfinite(cv) and cv >= 0.0:
+            cvs[key][allocator] = cv
+
+    return dict(cvs)
+
+
 def evaluate_comparisons(
     rows: list[dict],
     *,
     baseline_allocators: list[tuple[str, ...]],
     max_ratio: float = 1.0,
+    max_cv: float | None = 0.10,
     metric: str = "cpu_time",
 ) -> tuple[list[dict], list[dict]]:
     if not baseline_allocators:
         baseline_allocators = [("Foonathan",)]
 
     timings = collect_timings(rows, metric)
+    cvs = collect_coefficients_of_variation(rows, metric)
     failures = []
     passes = []
 
@@ -240,6 +278,27 @@ def evaluate_comparisons(
                         "benchmark": key,
                         "baseline": "/".join(candidates),
                         "status": "MISSING_BASELINE",
+                    }
+                )
+                continue
+
+            noisy_allocators = []
+            if max_cv is not None:
+                dart_cv = cvs.get(key, {}).get("DART")
+                baseline_cv = cvs.get(key, {}).get(baseline)
+                if dart_cv is not None and dart_cv > max_cv:
+                    noisy_allocators.append(("DART", dart_cv))
+                if baseline_cv is not None and baseline_cv > max_cv:
+                    noisy_allocators.append((baseline, baseline_cv))
+
+            if noisy_allocators:
+                failures.append(
+                    {
+                        "benchmark": key,
+                        "baseline": baseline,
+                        "noisy_allocators": noisy_allocators,
+                        "max_cv": max_cv,
+                        "status": "NOISY",
                     }
                 )
                 continue
@@ -305,6 +364,22 @@ def _print_result(prefix: str, result: dict) -> None:
         )
         return
 
+    if result["status"] == "NOISY":
+        details = ", ".join(
+            "{} cv {:.2%}".format(allocator, cv)
+            for allocator, cv in result["noisy_allocators"]
+        )
+        print(
+            "  {}  {} vs {} (NOISY: {}, max {:.2%})".format(
+                prefix,
+                result["benchmark"],
+                result["baseline"],
+                details,
+                result["max_cv"],
+            )
+        )
+        return
+
     print(
         "  {}  {} vs {}: DART {:.1f} ns, baseline {:.1f} ns, "
         "ratio {:.3f} (max {:.3f})".format(
@@ -323,6 +398,8 @@ def main(argv: list[str]) -> int:
     args = parse_args(argv)
     if args.max_ratio <= 0.0 or not math.isfinite(args.max_ratio):
         raise SystemExit("--max-ratio must be a finite positive number")
+    if args.max_cv <= 0.0 or not math.isfinite(args.max_cv):
+        raise SystemExit("--max-cv must be a finite positive number")
 
     baseline_allocators = [
         _BASELINE_ALLOCATORS[name] for name in (args.baseline or ["foonathan"])
@@ -347,6 +424,7 @@ def main(argv: list[str]) -> int:
             load_benchmark_rows(json_path),
             baseline_allocators=baseline_allocators,
             max_ratio=args.max_ratio,
+            max_cv=args.max_cv,
             metric=args.metric,
         )
     except BenchmarkCheckError as exc:
