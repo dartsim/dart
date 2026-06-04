@@ -535,9 +535,16 @@ def test_world_scenes_use_solver_focused_categories() -> None:
             "planned_inverse_kinematics",
             "planned_simbicon_walking",
             "planned_operational_space_control",
-            "planned_robot_puppets",
+            "g1_puppet",
             "planned_collision_sandbox",
             "planned_mobile_manipulation",
+        },
+        "Robot Models": {
+            "atlas_puppet",
+            "hubo_puppet",
+        },
+        "Control & IK": {
+            "atlas_simbicon",
         },
         "Rigid IPC": {
             "rigid_ipc",
