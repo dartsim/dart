@@ -905,6 +905,20 @@ if(DART_BUILD_SIMULATION_EXPERIMENTAL)
   # TARGET dart-simulation-experimental.
   if(TARGET dart AND TARGET dart-collision-native AND TARGET dart-io)
     add_subdirectory(dart/simulation/experimental)
+  elseif(DART_BUILD_DIFF OR DART_ENABLE_EXPERIMENTAL_CUDA)
+    # The graceful skip below is only appropriate for the now-default experimental
+    # module. The opt-in diff/CUDA subfeatures (both default OFF) were explicitly
+    # requested by the user and have no build product without the experimental
+    # module, and the earlier validation only checked DART_BUILD_SIMULATION_EXPERIMENTAL.
+    # Fail loudly rather than silently produce no diff/CUDA target.
+    message(
+      FATAL_ERROR
+      "DART_BUILD_DIFF/DART_ENABLE_EXPERIMENTAL_CUDA require the "
+      "simulation-experimental module, but it cannot be built: it needs the "
+      "dart, dart-collision-native and dart-io components, which are not all "
+      "being built in this configuration. Install the missing prerequisites "
+      "(e.g. dart-io's tinyxml2) or disable the opt-in subfeature."
+    )
   else()
     message(
       WARNING
