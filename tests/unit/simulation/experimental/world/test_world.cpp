@@ -32,15 +32,18 @@
 
 #include <dart/simulation/experimental/body/collision_shape.hpp>
 #include <dart/simulation/experimental/body/contact.hpp>
+#include <dart/simulation/experimental/body/deformable_body.hpp>
 #include <dart/simulation/experimental/body/rigid_body.hpp>
 #include <dart/simulation/experimental/common/exceptions.hpp>
 #include <dart/simulation/experimental/comps/collision_geometry.hpp>
+#include <dart/simulation/experimental/comps/deformable_body.hpp>
 #include <dart/simulation/experimental/comps/dynamics.hpp>
 #include <dart/simulation/experimental/comps/frame_types.hpp>
 #include <dart/simulation/experimental/comps/joint.hpp>
 #include <dart/simulation/experimental/comps/link.hpp>
 #include <dart/simulation/experimental/compute/compute_executor.hpp>
 #include <dart/simulation/experimental/compute/compute_graph.hpp>
+#include <dart/simulation/experimental/compute/detail/deformable_avbd_replay_state.hpp>
 #include <dart/simulation/experimental/compute/parallel_executor.hpp>
 #include <dart/simulation/experimental/compute/rigid_body_state_batch.hpp>
 #include <dart/simulation/experimental/compute/sequential_executor.hpp>
@@ -1172,7 +1175,6 @@ TEST(World, StepRefreshesFrameHierarchy)
 TEST(World, StepAcceptsParallelExecutor)
 {
   namespace sx = dart::simulation::experimental;
-  namespace compute = dart::simulation::experimental::compute;
 
   sx::World world;
   auto parent = world.addFreeFrame("parent");
@@ -1187,7 +1189,7 @@ TEST(World, StepAcceptsParallelExecutor)
   updatedParentTransform.translate(Eigen::Vector3d(2.0, 0.0, 0.0));
   parent.setLocalTransform(updatedParentTransform);
 
-  compute::ParallelExecutor executor(1);
+  sx::compute::ParallelExecutor executor(1);
   world.step(executor);
 
   EXPECT_TRUE(
@@ -7073,6 +7075,69 @@ TEST(World, ReplayRecordingRestoresRigidIpcAdaptiveBranchState)
       referenceBox.getTranslation(), 1e-10));
   EXPECT_TRUE(replayBox.getLinearVelocity().isApprox(
       referenceBox.getLinearVelocity(), 1e-10));
+}
+
+// Test that replay restores deformable AVBD warm-start inventories, so a branch
+// from an earlier frame does not keep later lambda/stiffness continuation
+// state.
+TEST(World, ReplayRecordingRestoresDeformableAvbdWarmStartState)
+{
+  namespace sx = dart::simulation::experimental;
+  namespace compute = dart::simulation::experimental::compute;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.02);
+
+  sx::DeformableBodyOptions options;
+  options.positions
+      = {Eigen::Vector3d::Zero(), Eigen::Vector3d(0.0, 0.0, -1.5)};
+  options.masses = {1.0, 1.0};
+  options.fixedNodes = {0};
+  options.edges = {sx::DeformableEdge{0, 1, 1.0}};
+  options.edgeStiffness = 1000.0;
+  world.addDeformableBody("spring", options);
+
+  auto& registry = sx::detail::registryOf(world);
+  for (const auto entity : registry.view<sx::comps::DeformableBodyTag>()) {
+    sx::comps::DeformableVbdConfig cfg;
+    cfg.enabled = true;
+    cfg.iterations = 1;
+    cfg.useAvbdFiniteStiffnessRows = true;
+    cfg.avbdFiniteStiffnessStart = 1.0;
+    cfg.avbdBeta = 100.0;
+    cfg.avbdGamma = 1.0;
+    cfg.avbdMaxStiffness = 1000.0;
+    registry.emplace_or_replace<sx::comps::DeformableVbdConfig>(entity, cfg);
+  }
+
+  const auto springRowStiffness = [&]() {
+    const auto states
+        = sx::compute::avbd_replay::captureDeformableAvbdWarmStartReplayState(
+            registry);
+    EXPECT_EQ(states.size(), 1u);
+    if (states.empty()) {
+      return 0.0;
+    }
+    EXPECT_EQ(states[0].springRows.size(), 1u);
+    if (states[0].springRows.empty()) {
+      return 0.0;
+    }
+    return states[0].springRows[0].state.stiffness;
+  };
+
+  world.setReplayRecordingEnabled(true);
+  world.step();
+  ASSERT_EQ(world.getReplayFrameCount(), 2u);
+  const double frame1Stiffness = springRowStiffness();
+
+  world.step();
+  ASSERT_EQ(world.getReplayFrameCount(), 3u);
+  const double frame2Stiffness = springRowStiffness();
+  ASSERT_GT(frame2Stiffness, frame1Stiffness);
+
+  world.restoreReplayFrame(1);
+  EXPECT_DOUBLE_EQ(springRowStiffness(), frame1Stiffness);
 }
 
 // Test that replay restores parented rigid bodies in frame-hierarchy order even

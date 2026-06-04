@@ -44,6 +44,7 @@
 #include "dart/simulation/experimental/common/ecs_utils.hpp"
 #include "dart/simulation/experimental/common/exceptions.hpp"
 #include "dart/simulation/experimental/comps/all.hpp"
+#include "dart/simulation/experimental/compute/detail/deformable_avbd_replay_state.hpp"
 #include "dart/simulation/experimental/compute/multibody_dynamics.hpp"
 #include "dart/simulation/experimental/compute/sequential_executor.hpp"
 #include "dart/simulation/experimental/compute/variational_integration.hpp"
@@ -259,6 +260,8 @@ struct World::ReplayState
         differentiableParameters;
 
     ComponentSnapshot<comps::DeformableNodeState> deformableNodeStates;
+    std::vector<compute::avbd_replay::DeformableAvbdWarmStartReplayState>
+        deformableAvbdWarmStartStates;
     ComponentSnapshot<compute::MultibodyVariationalState>
         multibodyVariationalStates;
     ComponentSnapshot<comps::VariationalContactDualState>
@@ -3395,6 +3398,9 @@ void World::restoreReplayFrame(std::size_t index)
   const auto rigidBodyRestoreOrder = orderReplayRigidBodiesParentBeforeChild(
       m_storage->registry, replayFrame.rigidBodies, replayFrame.publicFrames);
 
+  compute::avbd_replay::restoreDeformableAvbdWarmStartReplayState(
+      m_storage->registry, replayFrame.deformableAvbdWarmStartStates);
+
   restoreReplayComponents<comps::DeformableNodeState>(
       m_storage->registry,
       replayFrame.deformableNodeStates,
@@ -3505,6 +3511,9 @@ void World::recordReplayFrame()
 
   replayFrame.deformableNodeStates
       = captureReplayComponents<comps::DeformableNodeState>(
+          m_storage->registry);
+  replayFrame.deformableAvbdWarmStartStates
+      = compute::avbd_replay::captureDeformableAvbdWarmStartReplayState(
           m_storage->registry);
   replayFrame.multibodyVariationalStates
       = captureReplayComponents<compute::MultibodyVariationalState>(
