@@ -529,6 +529,12 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Tightened GitHub Actions CI workflows with granular platform checks, single-pass docs validation, targeted pixi environment installs, shared SIMD compiler-cache setup, protected-branch push triggers, retrying Alt Linux package bootstrap, importable Ubuntu Debug dartpy test builds, and macOS Debug C++ coverage without multi-hour Debug dartpy rebuilds. ([#2539](https://github.com/dartsim/dart/pull/2539))
   - CI workflow optimizations, caching, and scheduling controls (including compiler cache guards). ([#2055](https://github.com/dartsim/dart/pull/2055), [#2079](https://github.com/dartsim/dart/pull/2079), [#2135](https://github.com/dartsim/dart/pull/2135), [#2160](https://github.com/dartsim/dart/pull/2160), [#2165](https://github.com/dartsim/dart/pull/2165), [#2192](https://github.com/dartsim/dart/pull/2192), [#2313](https://github.com/dartsim/dart/pull/2313), [#2129](https://github.com/dartsim/dart/pull/2129), [#2265](https://github.com/dartsim/dart/pull/2265), [#2267](https://github.com/dartsim/dart/pull/2267), [#2180](https://github.com/dartsim/dart/pull/2180))
   - Added an Eigen 64-byte over-alignment CI/local test task to catch allocator, placement-new, and Eigen storage assumptions without requiring AVX-512 hardware. ([#2541](https://github.com/dartsim/dart/pull/2541))
+  - Added alignment-aware `dart::common::MemoryAllocator` and `StlAllocator`
+    paths so over-aligned objects and allocator-aware EnTT registries can be
+    backed by DART allocators.
+  - Added `dart::common::FixedPoolAllocator` for fixed-size slot workloads and
+    routed the fixed-size allocator comparison benchmark through it, while
+    keeping mixed-size pool workloads on `PoolAllocator`.
   - Fixed the scheduled/manual collision benchmark guard artifact upload so `.benchmark_results/collision_check_*.json` files are retained by GitHub Actions.
   - Added a performance dashboard that runs DART's Google Benchmark suites and
     publishes per-benchmark history to GitHub Pages via

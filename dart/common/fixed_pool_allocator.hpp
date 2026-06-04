@@ -30,73 +30,88 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_POOLALLOCATOR_HPP_
-#define DART_COMMON_POOLALLOCATOR_HPP_
+#ifndef DART_COMMON_FIXEDPOOLALLOCATOR_HPP_
+#define DART_COMMON_FIXEDPOOLALLOCATOR_HPP_
 
 #include <dart/common/memory_allocator.hpp>
 #include <dart/common/memory_allocator_debugger.hpp>
 
 #include <dart/export.hpp>
 
-#include <array>
 #include <limits>
+
+#include <cstddef>
 
 namespace dart::common {
 
-/// Memory allocator optimized for allocating many objects of the same or
-/// similar sizes
-class DART_API PoolAllocator : public MemoryAllocator
+/// Memory allocator optimized for one fixed allocation size.
+class DART_API FixedPoolAllocator : public MemoryAllocator
 {
 public:
-  using Debug = MemoryAllocatorDebugger<PoolAllocator>;
+  using Debug = MemoryAllocatorDebugger<FixedPoolAllocator>;
 
   /// Constructor
   ///
-  /// @param[in] baseAllocator: (optional) Base memory allocator.
-  /// @param[in] initialAllocation: (optional) Bytes to initially allocate.
-  explicit PoolAllocator(
-      MemoryAllocator& baseAllocator = MemoryAllocator::GetDefault());
+  /// @param[in] unitSize: Maximum byte size served by each fixed slot.
+  /// @param[in] baseAllocator: Base memory allocator.
+  /// @param[in] blockSize: Bytes reserved from the base allocator per block.
+  explicit FixedPoolAllocator(
+      size_t unitSize,
+      MemoryAllocator& baseAllocator = MemoryAllocator::GetDefault(),
+      size_t blockSize = 16384);
 
   /// Destructor
-  ~PoolAllocator() override;
+  ~FixedPoolAllocator() override;
 
-  DART_STRING_TYPE(PoolAllocator);
+  DART_STRING_TYPE(FixedPoolAllocator);
 
-  /// Returns the base allocator
+  /// Returns the base allocator.
   [[nodiscard]] const MemoryAllocator& getBaseAllocator() const;
 
-  /// Returns the base allocator
+  /// Returns the base allocator.
   [[nodiscard]] MemoryAllocator& getBaseAllocator();
 
-  /// Returns the count of allocated memory blocks
+  /// Returns the rounded fixed slot size.
+  [[nodiscard]] size_t getUnitSize() const;
+
+  /// Returns the count of allocated memory blocks.
   [[nodiscard]] int getNumAllocatedMemoryBlocks() const;
 
-  // PERF: These fast paths MUST stay inline. Moving them out-of-line causes
-  // 2-5x regression from function-call overhead (benchmarked). Do NOT move
-  // to .cpp — see tests/benchmark/common/bm_allocators.cpp.
+  /// Allocates one fixed-size slot.
+  [[nodiscard]] inline void* allocate() noexcept
+  {
+    if (MemoryUnit* unit = mFreeMemoryUnits) [[likely]] {
+      mFreeMemoryUnits = unit->mNext;
+      return unit;
+    }
+
+    return allocateSlow();
+  }
+
+  /// Deallocates one fixed-size slot.
+  inline void deallocate(void* pointer) noexcept
+  {
+    if (pointer == nullptr) [[unlikely]] {
+      return;
+    }
+
+    MemoryUnit* releasedUnit = static_cast<MemoryUnit*>(pointer);
+    releasedUnit->mNext = mFreeMemoryUnits;
+    mFreeMemoryUnits = releasedUnit;
+  }
 
   // Documentation inherited
   [[nodiscard]] inline void* allocate(size_t bytes) noexcept override
   {
-    if (bytes == 0) [[unlikely]] {
+    if (bytes == 0 || mUnitSize == 0) [[unlikely]] {
       return nullptr;
     }
 
-    if (bytes > MAX_UNIT_SIZE) [[unlikely]] {
-      if (defaultUnitSize(bytes) == 0) {
-        return nullptr;
-      }
+    if (bytes > mUnitSize) [[unlikely]] {
       return mBaseAllocator.allocate(bytes);
     }
 
-    const int heapIndex = heapIndexForDefaultBytes(bytes);
-
-    if (MemoryUnit* unit = mFreeMemoryUnits[heapIndex]) [[likely]] {
-      mFreeMemoryUnits[heapIndex] = unit->mNext;
-      return unit;
-    }
-
-    return allocateSlow(heapIndex);
+    return allocate();
   }
 
   // Documentation inherited
@@ -104,62 +119,50 @@ public:
       size_t bytes, size_t alignment) noexcept override
   {
     const size_t unitSize = effectiveUnitSize(bytes, alignment);
-    if (unitSize == 0) [[unlikely]] {
+    if (unitSize == 0 || mUnitSize == 0) [[unlikely]] {
       return nullptr;
     }
 
-    if (unitSize > MAX_UNIT_SIZE) [[unlikely]] {
+    if (unitSize > mUnitSize || alignment > mBlockAlignment) [[unlikely]] {
       return mBaseAllocator.allocate(bytes, alignment);
     }
 
-    const int heapIndex = heapIndexForUnitSize(unitSize);
-
-    if (MemoryUnit* unit = mFreeMemoryUnits[heapIndex]) [[likely]] {
-      mFreeMemoryUnits[heapIndex] = unit->mNext;
-      return unit;
-    }
-
-    return allocateSlow(heapIndex);
+    return allocate();
   }
 
   // Documentation inherited
   inline void deallocate(void* pointer, size_t bytes) override
   {
-    if (pointer == nullptr || bytes == 0) [[unlikely]] {
+    if (pointer == nullptr || bytes == 0 || mUnitSize == 0) [[unlikely]] {
       return;
     }
 
-    if (bytes > MAX_UNIT_SIZE) [[unlikely]] {
-      if (defaultUnitSize(bytes) == 0) {
-        return;
-      }
+    if (bytes > mUnitSize) [[unlikely]] {
       mBaseAllocator.deallocate(pointer, bytes);
       return;
     }
 
-    const int heapIndex = heapIndexForDefaultBytes(bytes);
-    MemoryUnit* releasedUnit = static_cast<MemoryUnit*>(pointer);
-    releasedUnit->mNext = mFreeMemoryUnits[heapIndex];
-    mFreeMemoryUnits[heapIndex] = releasedUnit;
+    deallocate(pointer);
   }
 
   // Documentation inherited
   inline void deallocate(void* pointer, size_t bytes, size_t alignment) override
   {
-    const size_t unitSize = effectiveUnitSize(bytes, alignment);
-    if (pointer == nullptr || unitSize == 0) [[unlikely]] {
+    if (pointer == nullptr || bytes == 0 || mUnitSize == 0) [[unlikely]] {
       return;
     }
 
-    if (unitSize > MAX_UNIT_SIZE) [[unlikely]] {
+    const size_t unitSize = effectiveUnitSize(bytes, alignment);
+    if (unitSize == 0) [[unlikely]] {
+      return;
+    }
+
+    if (unitSize > mUnitSize || alignment > mBlockAlignment) [[unlikely]] {
       mBaseAllocator.deallocate(pointer, bytes, alignment);
       return;
     }
 
-    const int heapIndex = heapIndexForUnitSize(unitSize);
-    MemoryUnit* releasedUnit = static_cast<MemoryUnit*>(pointer);
-    releasedUnit->mNext = mFreeMemoryUnits[heapIndex];
-    mFreeMemoryUnits[heapIndex] = releasedUnit;
+    deallocate(pointer);
   }
 
   // Documentation inherited
@@ -174,10 +177,11 @@ private:
   struct MemoryBlock
   {
     MemoryUnit* mMemoryUnits;
+    size_t mSize;
     size_t mAlignment;
   };
 
-  [[nodiscard]] void* allocateSlow(int heapIndex) noexcept;
+  [[nodiscard]] void* allocateSlow() noexcept;
 
   [[nodiscard]] static constexpr bool isPowerOfTwo(size_t value) noexcept
   {
@@ -189,8 +193,6 @@ private:
   {
     return (bytes + alignment - 1) & ~(alignment - 1);
   }
-
-  inline static constexpr size_t UNIT_GRANULARITY = 8;
 
   [[nodiscard]] static constexpr size_t effectiveUnitSize(
       size_t bytes, size_t alignment) noexcept
@@ -210,58 +212,24 @@ private:
     return roundUp(minimumSize, effectiveAlignment);
   }
 
-  [[nodiscard]] static constexpr size_t defaultUnitSize(size_t bytes) noexcept
-  {
-    if (bytes == 0) {
-      return 0;
-    }
-
-    const size_t minimumSize
-        = bytes < sizeof(MemoryUnit) ? sizeof(MemoryUnit) : bytes;
-    if (minimumSize
-        > std::numeric_limits<size_t>::max() - (UNIT_GRANULARITY - 1)) {
-      return 0;
-    }
-    return roundUp(minimumSize, UNIT_GRANULARITY);
-  }
-
-  [[nodiscard]] static constexpr int heapIndexForUnitSize(
-      size_t unitSize) noexcept
-  {
-    return static_cast<int>(unitSize / UNIT_GRANULARITY - 1);
-  }
-
-  [[nodiscard]] static constexpr int heapIndexForDefaultBytes(
-      size_t bytes) noexcept
-  {
-    return static_cast<int>((bytes - 1) / UNIT_GRANULARITY);
-  }
-
   [[nodiscard]] static constexpr size_t blockAlignmentForUnitSize(
       size_t unitSize) noexcept
   {
     size_t alignment = alignof(MemoryUnit);
-    while (unitSize % (alignment * 2) == 0) {
+    while (alignment <= std::numeric_limits<size_t>::max() / 2
+           && unitSize % (alignment * 2) == 0) {
       alignment *= 2;
     }
     return alignment;
   }
 
-  inline static constexpr int HEAP_COUNT = 128;
-
-  inline static constexpr size_t MAX_UNIT_SIZE = 1024;
-
-  inline static constexpr size_t BLOCK_SIZE = 16 * MAX_UNIT_SIZE;
-
-  inline static constexpr std::array<size_t, HEAP_COUNT> mUnitSizes = [] {
-    std::array<size_t, HEAP_COUNT> sizes{};
-    for (size_t i = 0; i < sizes.size(); ++i) {
-      sizes[i] = (i + 1) * UNIT_GRANULARITY;
-    }
-    return sizes;
-  }();
-
   MemoryAllocator& mBaseAllocator;
+
+  size_t mUnitSize;
+
+  size_t mBlockSize;
+
+  size_t mBlockAlignment;
 
   MemoryBlock* mMemoryBlocks;
 
@@ -269,9 +237,9 @@ private:
 
   int mCurrentMemoryBlockIndex;
 
-  std::array<MemoryUnit*, HEAP_COUNT> mFreeMemoryUnits;
+  MemoryUnit* mFreeMemoryUnits;
 };
 
 } // namespace dart::common
 
-#endif // DART_COMMON_POOLALLOCATOR_HPP_
+#endif // DART_COMMON_FIXEDPOOLALLOCATOR_HPP_
