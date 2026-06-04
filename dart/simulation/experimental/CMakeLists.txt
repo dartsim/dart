@@ -297,9 +297,19 @@ set(
 )
 set(
   dart_experimental_public_headers_diff
-  diff/rollout.hpp
   diff/step_derivatives.hpp
   diff/step_gradient.hpp
+)
+# diff/rollout.hpp is the public differentiable-simulation entry point, but its
+# implementation (diff/rollout.cpp) is compiled only under DART_BUILD_DIFF. Keep
+# it in its own literal set() so the promotion audit always cross-checks it (leak
+# scan + allowlist), but only fold it into the installed/public header set when
+# the diff feature is actually built -- otherwise a default install would
+# advertise diff::rollout()/rolloutVjp() symbols it never compiled, breaking
+# downstream links.
+set(
+  dart_experimental_public_headers_diff_optin
+  diff/rollout.hpp
 )
 set(
   dart_experimental_public_headers
@@ -310,6 +320,13 @@ set(
   ${dart_experimental_public_headers_constraint}
   ${dart_experimental_public_headers_diff}
 )
+if(DART_BUILD_DIFF)
+  list(
+    APPEND
+    dart_experimental_public_headers
+    ${dart_experimental_public_headers_diff_optin}
+  )
+endif()
 # Export the allowlist (relative to this dir) so the public-header
 # self-containment smoke test in the test tree can include exactly the same set
 # without the lists drifting apart.
@@ -350,3 +367,13 @@ install(
   DESTINATION include/dart/simulation/experimental/diff
   COMPONENT headers
 )
+# Ship the differentiable entry-point header only when its implementation is
+# compiled (DART_BUILD_DIFF), so a default install never advertises diff symbols
+# it did not build.
+if(DART_BUILD_DIFF)
+  install(
+    FILES ${dart_experimental_public_headers_diff_optin}
+    DESTINATION include/dart/simulation/experimental/diff
+    COMPONENT headers
+  )
+endif()

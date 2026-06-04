@@ -84,6 +84,10 @@ PROMOTE_DIRS = (
 #   * diff/rollout.hpp is the public differentiable-simulation entry point
 #     (diff::rollout / RolloutTrajectory / RolloutGradient), demonstrated by the
 #     experimental_differentiable_gui example and intended for standalone use.
+#     It is audited unconditionally (leak scan + allowlist cross-check), but the
+#     CMake install ships it only under DART_BUILD_DIFF, since its implementation
+#     (diff/rollout.cpp) is compiled only then; this static audit is
+#     config-agnostic by design.
 #   * diff/step_derivatives.hpp / diff/step_gradient.hpp are pulled into the
 #     public include closure by value (world.hpp / rollout.hpp), so consumers
 #     including only those headers need the complete types.
