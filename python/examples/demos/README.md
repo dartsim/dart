@@ -68,6 +68,12 @@ capture is active, the `Simulation` panel also exposes a timeline scrubber over
 the recorded PPM sequence with first/previous/play/next/last controls and the
 selected frame path.
 
+World-backed scenes also get a bottom `Replay` panel. `Save replay` is enabled
+by default and records bounded experimental-World state snapshots while the
+scene runs. Use the replay transport or scrubber to pause the live simulation,
+restore a saved frame, and play the saved states without stepping physics again;
+`Resume live` continues simulation from the selected restored state.
+
 Capture a short frame sequence and request MP4 encoding when `ffmpeg` is
 available:
 
@@ -160,6 +166,12 @@ track, transport controls, loop/rate controls, and cursor details. The scene
 uses the reusable `PanelBuilder.timeline(...)` widget from `dartpy.gui` for the
 timeline lanes. Moving the scrubber calls `World.restore_replay_frame(...)` at
 timestep resolution and does not re-run physics.
+
+The same saved-state replay path is injected by the runner into every
+`SceneSetup` that exposes an experimental `World` in `info["sx_world"]` or
+`info["physics_world"]`. The shared panel stores only bounded mutable World
+snapshots; static topology, geometry, materials, and scene construction data
+remain owned by the scene and render bridge.
 
 The shared demos toolbar uses the same timeline widget for captured-frame
 playback after `Capture` records viewer frames. That path stores only the

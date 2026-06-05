@@ -43,6 +43,8 @@ are required.
 `dartpy.gui.run_demos` opens the same Filament multi-scene viewer used by C++
 `dart-demos`. Scene modules can attach custom `ScenePanel` callbacks for
 per-example controls and diagnostics; the runner renders them through DART's
-renderer-neutral `PanelBuilder`. Use `--headless` for deterministic
-screenshot/frame capture and the C++ `dartsim` editor (PLAN-101) for scene
-authoring.
+renderer-neutral `PanelBuilder`. Experimental-World scenes also receive the
+shared bottom `Replay` panel, which records bounded saved states during normal
+playback and can scrub or play them back without re-running physics. Use
+`--headless` for deterministic screenshot/frame capture and the C++ `dartsim`
+editor (PLAN-101) for scene authoring.

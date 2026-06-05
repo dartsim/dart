@@ -127,7 +127,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     bottom-docked scrubber. The shared demos GUI now keeps bottom scene panels
     visible by default, uses clearer `Rebuild`/`Restart`/`Capture` toolbar
     labels, and exposes a bounded captured-frame timeline when recording
-    viewer frames.
+    viewer frames. Python demos backed by an experimental `World` now also get
+    a shared bottom-docked `Replay` panel: `Save replay` records bounded World
+    state snapshots during normal playback, and the same timeline widget can
+    scrub or play those saved states without re-running physics.
   - Added `pixi run bm-allocator-comparative-check`, a strict allocator
     benchmark gate that compares DART allocator workloads against
     foonathan/memory and `std::pmr` baselines.
@@ -688,8 +691,8 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     without re-running physics. Replay frames deliberately store only mutable
     runtime state needed to restore an already-simulated frame, not topology,
     geometry, material, or static construction data, and layout changes are
-    rejected on restore. Added focused C++/Python regressions and an
-    `sx_replay_scrubber` `py-demos` scene with timestep-resolution
+    rejected on restore. Added focused C++/Python regressions and a
+    `replay_scrubber` `py-demos` scene with timestep-resolution
     slider/controller playback.
   - Consolidated the experimental CUDA solver modules (rigid-body batch, vertex
     block descent, deformable PSD projection) onto a shared device-runtime

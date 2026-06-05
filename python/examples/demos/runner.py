@@ -43,6 +43,15 @@ DEFAULT_INITIAL_SCENE_ID = "replay_scrubber"
 SCENE_BUILD_TIMEOUT_ENV = "DART_PY_DEMO_SCENE_BUILD_TIMEOUT_MS"
 DEMO_SCENE_STARTUP_TIMEOUT_ENV = "DART_DEMO_SCENE_STARTUP_TIMEOUT_MS"
 DEFAULT_SCENE_BUILD_TIMEOUT_MS = 5000.0
+DEFAULT_REPLAY_MAX_FRAMES = 900
+REPLAY_WORLD_INFO_KEYS = ("sx_world", "physics_world")
+_REPLAY_RATE_LABELS = (
+    "1 frame/tick",
+    "2 frames/tick",
+    "4 frames/tick",
+    "8 frames/tick",
+)
+_REPLAY_RATE_STEPS = (1, 2, 4, 8)
 
 
 @dataclass
@@ -114,6 +123,414 @@ class PythonDemoScene:
     category: str
     summary: str
     build: Callable[[], SceneSetup]
+
+
+def _has_world_replay_api(world: Any) -> bool:
+    return all(
+        hasattr(world, name)
+        for name in (
+            "replay_recording_enabled",
+            "replay_frame_count",
+            "replay_cursor",
+            "restore_replay_frame",
+            "clear_replay_recording",
+            "get_replay_frame_time",
+            "get_replay_simulation_frame",
+        )
+    )
+
+
+def _replay_world_from_setup(setup: SceneSetup) -> Any | None:
+    for key in REPLAY_WORLD_INFO_KEYS:
+        world = setup.info.get(key)
+        if world is not None and _has_world_replay_api(world):
+            return world
+    if _has_world_replay_api(setup.world):
+        return setup.world
+    return None
+
+
+def _sync_callback_from_pre_step(
+    pre_step: Callable[[], None] | None, replay_world: Any
+) -> Callable[[], None] | None:
+    """Find a WorldRenderBridge.sync callback captured by a scene pre-step."""
+
+    def sync_from_object(value: Any) -> Callable[[], None] | None:
+        if (
+            getattr(value, "_physics_world", None) is replay_world
+            and hasattr(value, "sync")
+        ):
+            return getattr(value, "sync")
+        return None
+
+    if pre_step is None:
+        return None
+
+    bound_sync = sync_from_object(getattr(pre_step, "__self__", None))
+    if bound_sync is not None:
+        return bound_sync
+
+    for cell in getattr(pre_step, "__closure__", ()) or ():
+        try:
+            value = cell.cell_contents
+        except ValueError:
+            continue
+        cell_sync = sync_from_object(value)
+        if cell_sync is not None:
+            return cell_sync
+    return None
+
+
+def _timeline_sample_count(frame_count: int) -> int:
+    return max(0, min(int(frame_count), 1024))
+
+
+def _frame_for_timeline_sample(
+    sample_index: int, sample_count: int, frame_count: int
+) -> int:
+    if sample_count <= 1 or frame_count <= 1:
+        return 0
+    normalized = float(sample_index) / float(sample_count - 1)
+    return int(round(normalized * float(frame_count - 1)))
+
+
+def _frame_mark_series(frame_count: int) -> list[float]:
+    sample_count = _timeline_sample_count(frame_count)
+    if sample_count <= 0:
+        return []
+    marker_interval = max(1, int(frame_count) // 12)
+    values = [0.0] * sample_count
+    for sample in range(sample_count):
+        frame = _frame_for_timeline_sample(sample, sample_count, frame_count)
+        if frame == 0 or frame + 1 == frame_count or frame % marker_interval == 0:
+            values[sample] = 1.0
+    return values
+
+
+def _cursor_series(frame_count: int, frame: int) -> list[float]:
+    sample_count = _timeline_sample_count(frame_count)
+    if sample_count <= 0:
+        return []
+    clamped = max(0, min(int(frame), max(0, int(frame_count) - 1)))
+    if frame_count <= 1:
+        cursor_sample = 0
+    else:
+        cursor_sample = int(
+            round(float(clamped) * float(sample_count - 1) / float(frame_count - 1))
+        )
+    values = [0.0] * sample_count
+    values[max(0, min(cursor_sample, sample_count - 1))] = 1.0
+    return values
+
+
+class _ReplayController:
+    """Shared replay recorder/scrubber for py-demos experimental worlds."""
+
+    def __init__(
+        self,
+        world: Any,
+        sync: Callable[[], None] | None,
+        *,
+        max_frames: int = DEFAULT_REPLAY_MAX_FRAMES,
+    ) -> None:
+        self._world = world
+        self._sync = sync or (lambda: None)
+        self._max_frames = max(1, int(max_frames))
+        self.save_replay = True
+        self.replay_active = False
+        self.playing = False
+        self.loop = False
+        self.rate_index = 0
+        self.selected_frame = 0
+        self.status = "recording"
+        self._set_recording(True)
+        self.selected_frame = self._current_frame()
+        self._sync()
+
+    @property
+    def panel(self) -> ScenePanel:
+        return ScenePanel(
+            "Replay",
+            self.build_panel,
+            dock_side="bottom",
+            initial_size=(960.0, 260.0),
+            horizontal_scrollbar=True,
+        )
+
+    @property
+    def frame_count(self) -> int:
+        try:
+            return int(self._world.replay_frame_count)
+        except Exception:  # noqa: BLE001
+            return 0
+
+    def _set_recording(self, enabled: bool) -> None:
+        try:
+            self._world.replay_recording_enabled = bool(enabled)
+        except Exception:  # noqa: BLE001
+            self.save_replay = False
+
+    def _recording_enabled(self) -> bool:
+        try:
+            return bool(self._world.replay_recording_enabled)
+        except Exception:  # noqa: BLE001
+            return False
+
+    def _current_frame(self) -> int:
+        try:
+            cursor = self._world.replay_cursor
+        except Exception:  # noqa: BLE001
+            cursor = None
+        if cursor is None:
+            return max(0, min(self.selected_frame, max(0, self.frame_count - 1)))
+        return max(0, min(int(cursor), max(0, self.frame_count - 1)))
+
+    def _frame_time(self, frame: int) -> float:
+        if self.frame_count <= 0:
+            return 0.0
+        try:
+            return float(
+                self._world.get_replay_frame_time(
+                    max(0, min(int(frame), self.frame_count - 1))
+                )
+            )
+        except Exception:  # noqa: BLE001
+            return float(getattr(self._world, "time", 0.0))
+
+    def _simulation_frame(self, frame: int) -> int:
+        if self.frame_count <= 0:
+            return 0
+        try:
+            return int(
+                self._world.get_replay_simulation_frame(
+                    max(0, min(int(frame), self.frame_count - 1))
+                )
+            )
+        except Exception:  # noqa: BLE001
+            return int(getattr(self._world, "frame", 0))
+
+    def _pause_viewer(self, context: Any) -> None:
+        if hasattr(context, "set_paused"):
+            context.set_paused(True)
+
+    def _resume_viewer(self, context: Any) -> None:
+        if hasattr(context, "set_paused"):
+            context.set_paused(False)
+
+    def restore_frame(self, index: int) -> None:
+        count = self.frame_count
+        if count <= 0:
+            self.replay_active = False
+            self.playing = False
+            self.selected_frame = 0
+            return
+        clamped = max(0, min(int(index), count - 1))
+        self._world.restore_replay_frame(clamped)
+        self.selected_frame = clamped
+        self.replay_active = True
+        self.status = "replay"
+        self._sync()
+
+    def on_live_step_complete(self) -> None:
+        if not self.save_replay:
+            self.status = "live"
+            return
+        self.selected_frame = self._current_frame()
+        if self.frame_count >= self._max_frames:
+            self._set_recording(False)
+            self.save_replay = False
+            self.status = f"saved {self.frame_count} frames"
+        else:
+            self.status = "recording"
+
+    def pre_step(self, live_step: Callable[[], None] | None) -> None:
+        if self.replay_active:
+            self._advance_replay()
+            return
+        if live_step is not None:
+            live_step()
+        self.on_live_step_complete()
+
+    def _advance_replay(self) -> None:
+        count = self.frame_count
+        if count <= 0:
+            self.replay_active = False
+            self.playing = False
+            return
+        if not self.playing:
+            self.restore_frame(self.selected_frame)
+            return
+        rate = _REPLAY_RATE_STEPS[
+            max(0, min(int(self.rate_index), len(_REPLAY_RATE_STEPS) - 1))
+        ]
+        next_frame = self.selected_frame + rate
+        if next_frame >= count:
+            if self.loop:
+                next_frame = next_frame % count
+            else:
+                next_frame = count - 1
+                self.playing = False
+        self.restore_frame(next_frame)
+
+    def _set_save_replay(self, enabled: bool) -> None:
+        self.save_replay = bool(enabled)
+        if self.save_replay:
+            self.replay_active = False
+            self.playing = False
+            self._set_recording(True)
+            self.selected_frame = self._current_frame()
+            self.status = "recording"
+        else:
+            self._set_recording(False)
+            self.status = "live"
+
+    def _clear(self) -> None:
+        self.playing = False
+        self.replay_active = False
+        self._world.clear_replay_recording()
+        self.selected_frame = self._current_frame()
+        self._sync()
+
+    def _resume_live(self, context: Any) -> None:
+        self.playing = False
+        self.replay_active = False
+        if self.save_replay and not self._recording_enabled():
+            self._set_recording(True)
+        self.status = "recording" if self.save_replay else "live"
+        self._resume_viewer(context)
+
+    def build_panel(self, builder: Any, context: Any) -> None:
+        count = self.frame_count
+        current = max(0, min(self.selected_frame, max(0, count - 1)))
+        if not self.replay_active:
+            current = self._current_frame()
+            self.selected_frame = current
+        status = "replaying" if self.replay_active else self.status
+        if self.save_replay and self._recording_enabled() and not self.replay_active:
+            status = "recording"
+        builder.text(
+            f"{status} | frames {count}/{self._max_frames} | "
+            f"time {self._frame_time(current):.3f} s | "
+            f"sim frame {self._simulation_frame(current)}"
+        )
+
+        changed, save = builder.checkbox("Save replay", bool(self.save_replay))
+        builder.item_tooltip(
+            "Record experimental World states while the demo runs; disabling it "
+            "keeps existing replay frames but stops storing new states."
+        )
+        if changed:
+            self._set_save_replay(bool(save))
+            current = self.selected_frame
+            count = self.frame_count
+
+        builder.same_line()
+        if builder.button("Clear replay"):
+            self._clear()
+            count = self.frame_count
+            current = self.selected_frame
+        builder.item_tooltip("Discard saved frames and restart from the current state.")
+        builder.same_line()
+        if builder.button("Resume live"):
+            self._resume_live(context)
+            current = self.selected_frame
+        builder.item_tooltip("Leave replay mode and continue simulating from this state.")
+
+        if count <= 0:
+            builder.separator()
+            builder.text("No replay frames saved yet.")
+            return
+
+        builder.separator()
+        if builder.button("|<##replay_first"):
+            self.playing = False
+            self.restore_frame(0)
+            self._pause_viewer(context)
+        builder.item_tooltip("First replay frame.")
+        builder.same_line()
+        if builder.button("<##replay_previous"):
+            self.playing = False
+            self.restore_frame(current - 1)
+            self._pause_viewer(context)
+        builder.item_tooltip("Previous replay frame.")
+        builder.same_line()
+        if builder.button("Pause##replay_pause" if self.playing else "Play##replay_play"):
+            self.replay_active = True
+            self.playing = not self.playing
+            if self.playing:
+                self._resume_viewer(context)
+            else:
+                self._pause_viewer(context)
+        builder.item_tooltip("Play or pause saved-state replay.")
+        builder.same_line()
+        if builder.button(">##replay_next"):
+            self.playing = False
+            self.restore_frame(current + 1)
+            self._pause_viewer(context)
+        builder.item_tooltip("Next replay frame.")
+        builder.same_line()
+        if builder.button(">|##replay_last"):
+            self.playing = False
+            self.restore_frame(count - 1)
+            self._pause_viewer(context)
+        builder.item_tooltip("Last replay frame.")
+        builder.same_line()
+        changed, loop = builder.checkbox("Loop replay", bool(self.loop))
+        if changed:
+            self.loop = bool(loop)
+        builder.same_line()
+        changed, rate_index = builder.select(
+            "Rate", int(self.rate_index), list(_REPLAY_RATE_LABELS)
+        )
+        if changed:
+            self.rate_index = max(
+                0, min(int(rate_index), len(_REPLAY_RATE_STEPS) - 1)
+            )
+
+        current = max(0, min(self.selected_frame, count - 1))
+        selected = float(current)
+        changed, selected = builder.timeline(
+            "Saved states##py_demo_replay_timeline",
+            selected,
+            0.0,
+            float(max(0, count - 1)),
+            value_track=[],
+            marker_track=_frame_mark_series(count),
+            cursor_track=_cursor_series(count, current),
+            value_track_label="Saved states",
+        )
+        if changed:
+            self.playing = False
+            self.restore_frame(int(round(selected)))
+            self._pause_viewer(context)
+
+        builder.text(f"selected {self.selected_frame + 1}/{count}")
+
+
+def _attach_replay_controls(scene: PythonDemoScene, setup: SceneSetup) -> SceneSetup:
+    if setup.info.get("disable_shared_replay"):
+        return setup
+
+    replay_world = _replay_world_from_setup(setup)
+    if replay_world is None:
+        return setup
+
+    sync = setup.info.get("replay_sync")
+    if sync is None:
+        sync = _sync_callback_from_pre_step(setup.pre_step, replay_world)
+    controller = _ReplayController(replay_world, sync)
+    live_pre_step = setup.pre_step
+
+    def replay_pre_step() -> None:
+        controller.pre_step(live_pre_step)
+
+    setup.pre_step = replay_pre_step
+    setup.panels = [*setup.panels, controller.panel]
+    setup.info["replay_world"] = replay_world
+    setup.info["replay_controller"] = controller
+    setup.info["replay_panel_title"] = controller.panel.title
+    setup.info["replay_scene_id"] = scene.id
+    return setup
 
 
 def _step(setup: SceneSetup, frames: int) -> None:
@@ -249,6 +666,7 @@ def _make_world_factory(
     def factory() -> Any:
         with _bounded_scene_build(scene.id):
             setup = scene.build()
+        setup = _attach_replay_controls(scene, setup)
         pre_step = setup.pre_step
         if pre_step is not None:
             original_pre_step = pre_step

@@ -4,13 +4,16 @@ import dartpy as dart
 import numpy as np
 import pytest
 from examples.demos._world_bridge import WorldRenderBridge
+from examples.demos.registry import make_demo_scenes
 from examples.demos.runner import (
     DEFAULT_INITIAL_SCENE_ID,
     DEFAULT_SCENE_BUILD_TIMEOUT_MS,
     PythonDemoScene,
     ScenePanel,
     SceneSetup,
+    _attach_replay_controls,
     _default_initial_scene_args,
+    _has_world_replay_api,
     _make_world_factory,
     _scene_build_timeout_ms,
     _validate_scene,
@@ -101,6 +104,192 @@ def test_make_world_factory_returns_panels_tuple() -> None:
     assert result == (result[0], None, None, [panel])
 
 
+def test_make_world_factory_injects_shared_replay_panel_for_world_scenes() -> None:
+    replay_world = _FakeReplayWorld()
+    bridge = _FakeReplayBridge(replay_world)
+    captured_setup: dict[str, SceneSetup] = {}
+
+    def build() -> SceneSetup:
+        setup = SceneSetup(
+            world=bridge.render_world,
+            pre_step=bridge.pre_step,
+            panels=[],
+            info={"sx_world": replay_world},
+        )
+        captured_setup["value"] = setup
+        return setup
+
+    scene = PythonDemoScene(
+        id="replayable",
+        title="Replayable",
+        category="Tests",
+        summary="Uses an experimental World.",
+        build=build,
+    )
+
+    result = _make_world_factory(scene)()
+
+    assert isinstance(result, tuple)
+    world, pre_step, force_drag, panels = result
+    assert world is bridge.render_world
+    assert force_drag is None
+    assert [panel.title for panel in panels] == ["Replay"]
+    assert replay_world.replay_recording_enabled is True
+    assert replay_world.replay_frame_count == 1
+    assert bridge.sync_calls == 1
+
+    pre_step()
+
+    assert replay_world.steps == 1
+    assert replay_world.replay_frame_count == 2
+    assert bridge.sync_calls == 2
+    assert captured_setup["value"].info["replay_panel_title"] == "Replay"
+
+
+def test_shared_replay_panel_scrubs_and_replays_saved_world_states() -> None:
+    replay_world = _FakeReplayWorld()
+    sync_calls = {"count": 0}
+
+    def sync() -> None:
+        sync_calls["count"] += 1
+
+    def live_pre_step() -> None:
+        replay_world.step()
+
+    scene = PythonDemoScene(
+        id="replayable",
+        title="Replayable",
+        category="Tests",
+        summary="Uses an experimental World.",
+        build=lambda: SceneSetup(
+            world=object(),
+            pre_step=live_pre_step,
+            info={"sx_world": replay_world, "replay_sync": sync},
+        ),
+    )
+    setup = _attach_replay_controls(scene, scene.build())
+    panel = setup.panels[-1]
+    context = _FakePanelContext()
+
+    setup.pre_step()
+    setup.pre_step()
+    assert replay_world.replay_frame_count == 3
+    assert replay_world.frame == 2
+
+    scrub_builder = _ScriptedPanelBuilder(
+        timeline_values={"Saved states##py_demo_replay_timeline": 1.0}
+    )
+    panel.build(scrub_builder, context)
+
+    assert replay_world.replay_cursor == 1
+    assert replay_world.frame == 1
+    assert context.paused is True
+    assert any(
+        event.startswith("timeline:Saved states##py_demo_replay_timeline")
+        for event in scrub_builder.events
+    )
+
+    play_builder = _ScriptedPanelBuilder(clicked_buttons={"Play##replay_play"})
+    panel.build(play_builder, context)
+    assert context.paused is False
+
+    setup.pre_step()
+
+    assert replay_world.replay_cursor == 2
+    assert replay_world.frame == 2
+    assert replay_world.steps == 2
+
+    resume_builder = _ScriptedPanelBuilder(clicked_buttons={"Resume live"})
+    panel.build(resume_builder, context)
+    setup.pre_step()
+
+    assert replay_world.steps == 3
+    assert replay_world.frame == 3
+    assert sync_calls["count"] >= 3
+
+
+def test_shared_replay_panel_honors_scene_opt_out() -> None:
+    replay_world = _FakeReplayWorld()
+    setup = SceneSetup(
+        world=object(),
+        info={"sx_world": replay_world, "disable_shared_replay": True},
+    )
+    scene = PythonDemoScene(
+        id="custom_replay",
+        title="Custom Replay",
+        category="Tests",
+        summary="Already owns replay UI.",
+        build=lambda: setup,
+    )
+
+    assert _attach_replay_controls(scene, setup) is setup
+    assert setup.panels == []
+    assert "replay_controller" not in setup.info
+
+
+def test_shared_replay_panel_accepts_physics_world_info_key() -> None:
+    replay_world = _FakeReplayWorld()
+    setup = SceneSetup(world=object(), info={"physics_world": replay_world})
+    scene = PythonDemoScene(
+        id="physics_world_scene",
+        title="Physics World Scene",
+        category="Tests",
+        summary="Uses the alternate replay world key.",
+        build=lambda: setup,
+    )
+
+    _attach_replay_controls(scene, setup)
+
+    assert [panel.title for panel in setup.panels] == ["Replay"]
+    assert setup.info["replay_world"] is replay_world
+
+
+def test_registered_world_scenes_receive_shared_replay_controls() -> None:
+    _require_simulation_experimental_symbols("World")
+    render_only_scene_ids = {
+        "planned_inverse_kinematics",
+        "g1_puppet",
+        "planned_simbicon_walking",
+        "planned_operational_space_control",
+        "planned_collision_sandbox",
+        "planned_mobile_manipulation",
+        "diff_throw_to_target",
+        "diff_cartpole_trajopt",
+        "diff_drone_liftoff",
+    }
+    replay_attached: set[str] = set()
+    replay_opt_out: set[str] = set()
+    render_only_seen: set[str] = set()
+
+    for scene in make_demo_scenes():
+        setup = scene.build()
+        has_replay_world = any(
+            _has_world_replay_api(setup.info.get(key))
+            for key in ("sx_world", "physics_world")
+        ) or _has_world_replay_api(setup.world)
+
+        setup = _attach_replay_controls(scene, setup)
+        attached = "replay_controller" in setup.info
+
+        if has_replay_world and setup.info.get("disable_shared_replay"):
+            assert scene.id == "replay_scrubber"
+            assert not attached
+            replay_opt_out.add(scene.id)
+        elif has_replay_world:
+            assert attached, scene.id
+            assert setup.info["replay_panel_title"] == "Replay"
+            assert any(panel.title == "Replay" for panel in setup.panels)
+            assert setup.info["replay_controller"].frame_count >= 1
+            replay_attached.add(scene.id)
+        else:
+            assert not attached, scene.id
+            render_only_seen.add(scene.id)
+
+    assert replay_attached
+    assert replay_opt_out == {"replay_scrubber"}
+    assert render_only_seen == render_only_scene_ids
+
+
 def test_validate_scene_accepts_hyphenated_scene_id_alias() -> None:
     scene = PythonDemoScene(
         id="rigid_ipc_slide",
@@ -162,6 +351,94 @@ class _FakeWorld:
 
     def step(self) -> None:
         self.steps += 1
+
+
+class _FakeReplayWorld(_FakeWorld):
+    def __init__(self) -> None:
+        super().__init__()
+        self.time = 0.0
+        self.frame = 0
+        self._recording_enabled = False
+        self._frames: list[tuple[float, int]] = []
+        self._cursor: int | None = None
+
+    @property
+    def replay_recording_enabled(self) -> bool:
+        return self._recording_enabled
+
+    @replay_recording_enabled.setter
+    def replay_recording_enabled(self, enabled: bool) -> None:
+        enabled = bool(enabled)
+        if enabled == self._recording_enabled:
+            return
+        self._recording_enabled = enabled
+        if enabled:
+            self._frames.clear()
+            self._cursor = None
+            self._record_frame()
+
+    @property
+    def replay_frame_count(self) -> int:
+        return len(self._frames)
+
+    @property
+    def replay_cursor(self) -> int | None:
+        return self._cursor
+
+    def _record_frame(self) -> None:
+        if self._cursor is not None and self._cursor + 1 < len(self._frames):
+            del self._frames[self._cursor + 1 :]
+        self._frames.append((self.time, self.frame))
+        self._cursor = len(self._frames) - 1
+
+    def step(self) -> None:
+        super().step()
+        self.frame += 1
+        self.time += self.time_step
+        if self._recording_enabled:
+            self._record_frame()
+
+    def restore_replay_frame(self, index: int) -> None:
+        self._cursor = max(0, min(int(index), len(self._frames) - 1))
+        self.time, self.frame = self._frames[self._cursor]
+
+    def clear_replay_recording(self) -> None:
+        self._frames.clear()
+        self._cursor = None
+        if self._recording_enabled:
+            self._record_frame()
+
+    def get_replay_frame_time(self, index: int) -> float:
+        return self._frames[index][0]
+
+    def get_replay_simulation_frame(self, index: int) -> int:
+        return self._frames[index][1]
+
+
+class _FakeReplayBridge:
+    def __init__(self, world: _FakeReplayWorld) -> None:
+        self._physics_world = world
+        self.render_world = object()
+        self.sync_calls = 0
+
+    def sync(self) -> None:
+        self.sync_calls += 1
+
+    def pre_step(self) -> None:
+        self._physics_world.step()
+        self.sync()
+
+
+class _FakePanelContext:
+    def __init__(self) -> None:
+        self.paused = False
+        self.single_step_requests = 0
+
+    def set_paused(self, paused: bool) -> None:
+        self.paused = bool(paused)
+
+    def request_single_step(self) -> None:
+        self.single_step_requests += 1
 
 
 class _FakeRigidBody:
@@ -241,6 +518,9 @@ class _FakePanelBuilder:
     def same_line(self) -> None:
         self.events.append("same_line")
 
+    def item_tooltip(self, text: str) -> None:
+        self.events.append(f"tooltip:{text}")
+
     def plot_lines(self, label: str, values: list[float]) -> None:
         self.events.append(f"plot:{label}:{len(values)}")
 
@@ -264,6 +544,50 @@ class _FakePanelBuilder:
 
     def end_table(self) -> None:
         self.events.append("end_table")
+
+
+class _ScriptedPanelBuilder(_FakePanelBuilder):
+    def __init__(
+        self,
+        *,
+        clicked_buttons: set[str] | None = None,
+        checkbox_values: dict[str, bool] | None = None,
+        timeline_values: dict[str, float] | None = None,
+    ) -> None:
+        super().__init__()
+        self.clicked_buttons = clicked_buttons or set()
+        self.checkbox_values = checkbox_values or {}
+        self.timeline_values = timeline_values or {}
+
+    def button(self, label: str) -> bool:
+        self.events.append(f"button:{label}")
+        return label in self.clicked_buttons
+
+    def checkbox(self, label: str, value: bool) -> tuple[bool, bool]:
+        self.events.append(f"checkbox:{label}")
+        if label in self.checkbox_values:
+            return True, self.checkbox_values[label]
+        return False, value
+
+    def timeline(
+        self,
+        label: str,
+        value: float,
+        minimum: float,
+        maximum: float,
+        value_track: list[float] | tuple[float, ...] = (),
+        marker_track: list[float] | tuple[float, ...] = (),
+        cursor_track: list[float] | tuple[float, ...] = (),
+        value_track_label: str = "Values",
+    ) -> tuple[bool, float]:
+        self.events.append(
+            f"timeline:{label}:{minimum}:{maximum}:"
+            f"{len(value_track)}:{len(marker_track)}:{len(cursor_track)}:"
+            f"{value_track_label}"
+        )
+        if label in self.timeline_values:
+            return True, self.timeline_values[label]
+        return False, value
 
 
 def test_high_value_world_scenes_expose_custom_panels() -> None:

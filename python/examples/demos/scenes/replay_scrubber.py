@@ -281,6 +281,7 @@ def build() -> SceneSetup:
             "timeline_frame_count": len(samples),
             "timeline_duration": duration,
             "timeline_ball_height": height_values,
+            "disable_shared_replay": True,
         },
     )
 
