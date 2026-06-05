@@ -242,8 +242,8 @@ public:
   WorldStepPipeline(WorldStepPipeline&&) noexcept = default;
   WorldStepPipeline& operator=(WorldStepPipeline&&) noexcept = default;
 
+  /// Number of stage pointers stored inline before custom pipelines spill over.
   static constexpr std::size_t kInlineStageCount = 8;
-  static constexpr std::size_t kMaxStageCount = kInlineStageCount;
 
   WorldStepPipeline& addStage(WorldStepStage& stage);
   void clear() noexcept;
