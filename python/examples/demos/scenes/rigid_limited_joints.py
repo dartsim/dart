@@ -1,4 +1,4 @@
-"""Rigid-body one-DOF joint scene for the experimental World facade."""
+"""Rigid-body one-DOF joint scene for the World facade."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ import numpy as np
 import dartpy as dart
 import dartpy.simulation_experimental as sx
 
-from .._sx_bridge import SxRenderBridge
+from .._world_bridge import WorldRenderBridge
 from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
 _BASE_HALF = np.array([0.16, 0.16, 0.16])
@@ -62,7 +62,7 @@ def build() -> SceneSetup:
 
     world.enter_simulation_mode()
 
-    bridge = SxRenderBridge(world, name="sx_rigid_limited_joints_render")
+    bridge = WorldRenderBridge(world, name="rigid_limited_joints_render")
     bridge.add_rigid_body_visual(
         hinge_base,
         dart.BoxShape(_full(_BASE_HALF)),
@@ -148,9 +148,9 @@ def build() -> SceneSetup:
 
 
 SCENE = PythonDemoScene(
-    id="sx_rigid_limited_joints",
-    title="Rigid One-DOF Joints (sx)",
-    category="Experimental Rigid Body (sx)",
+    id="rigid_limited_joints",
+    title="Rigid One-DOF Joints",
+    category="World Rigid Body",
     summary="Revolute and prismatic rigid-body joints use captured AVBD rows.",
     build=build,
 )

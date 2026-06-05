@@ -530,9 +530,7 @@ def test_world_scenes_use_solver_focused_categories() -> None:
             "floating_base",
             "contact",
             "rigid_body",
-        },
-        "Experimental Rigid Body (sx)": {
-            "sx_rigid_limited_joints",
+            "rigid_limited_joints",
         },
         "AVBD Rigid Constraints (sx)": {
             "avbd_rigid_fixed_joint_contact",
@@ -581,6 +579,7 @@ def test_world_scenes_use_solver_focused_categories() -> None:
             assert by_id[scene_id].category == category
 
     assert not any(scene.category == "Experimental" for scene in scenes)
+    assert not any(scene.id.startswith("sx_") for scene in scenes)
 
 
 def test_avbd_fixed_joint_contact_demo_exercises_contact_path() -> None:
