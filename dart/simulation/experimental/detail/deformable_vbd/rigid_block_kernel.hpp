@@ -203,6 +203,7 @@ struct AvbdRigidPointJoint
   std::uint8_t angularAxisMask = kAvbdRigidJointAllAxesMask;
   double startStiffness = 1.0;
   double maxStiffness = std::numeric_limits<double>::infinity();
+  double fractureThreshold = 0.0;
   std::uint32_t row = 0;
 };
 

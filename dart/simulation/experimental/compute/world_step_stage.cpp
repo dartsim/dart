@@ -8062,6 +8062,8 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
             m_avbdScratch->motorInventory,
             timeStep,
             solveOptions);
+    (void)dvbd::markAvbdRigidWorldFracturedPointJoints(
+        registry, snapshot, solveResult.fracturedJointIndices);
     if (solveResult.jointLinearRows == 0u && solveResult.jointAngularRows == 0u
         && solveResult.motorRows == 0u) {
       return false;
@@ -8137,6 +8139,8 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
               m_avbdScratch->motorInventory,
               timeStep,
               solveOptions);
+      (void)dvbd::markAvbdRigidWorldFracturedPointJoints(
+          registry, snapshot, solveResult.fracturedJointIndices);
       if (solveResult.normalRows != 0u || solveResult.frictionRows != 0u
           || solveResult.jointLinearRows != 0u
           || solveResult.jointAngularRows != 0u

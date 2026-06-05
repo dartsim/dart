@@ -93,10 +93,14 @@ public rigid-body revolute velocity actuators into those bounded AVBD motor
 rows with persistent contact-stage motor inventory, focused C++ coverage, and
 the categorized `avbd_rigid_revolute_motor` py-demo. The AVBD dashboard
 benchmark target also has a first end-to-end public-World
-`BM_AvbdRigidRevoluteMotorStep` row for that motor path. This is still a narrow
-free-rigid-body path only: no public fracture lifecycle, articulated multibody
-state path, GPU path, paper-corpus demo, broad motor lifecycle coverage, or
-paper/reference benchmark packet is complete.
+`BM_AvbdRigidRevoluteMotorStep` row for that motor path. The narrow public
+fracture lifecycle now exposes `Joint` break-force and broken-state accessors,
+marks free rigid-body AVBD point joints broken when solved row load exceeds the
+threshold, skips broken joints on later extraction, and adds a categorized
+`avbd_rigid_breakable_joint` py-demo. This is still a narrow free-rigid-body
+path only: no articulated multibody state path, GPU path, paper-corpus demo,
+broad motor/fracture lifecycle coverage, or paper/reference benchmark packet is
+complete.
 
 ## Current Branch
 
@@ -169,7 +173,8 @@ revolute/prismatic point-joint configs with arbitrary joint-axis bases plus
 private rigid-body ECS current-pose extraction for those one-DOF joint
 entities, and public free rigid-body revolute/prismatic facades with dartpy
 bindings, stubs, tests, and py-demo coverage, plus fixed-joint/contact and
-revolute-motor AVBD py-demos exist and private fracture helpers are starting.
+revolute-motor AVBD py-demos, the breakable-joint py-demo, and the narrow
+free-rigid-body break-force lifecycle exist.
 Keep the supported envelope narrow and preserve fallback coverage for topology
 mixes,
 damping/acceleration, parallel solves, and unsupported requested row

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from .runner import PythonDemoScene
 from .scenes.add_delete_skels import SCENE as ADD_DELETE_SKELS
+from .scenes.avbd_rigid_breakable_joint import SCENE as AVBD_RIGID_BREAKABLE_JOINT
 from .scenes.avbd_rigid_fixed_joint_contact import (
     SCENE as AVBD_RIGID_FIXED_JOINT_CONTACT,
 )
@@ -156,11 +157,12 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         SX_RIGID_FIXED_JOINT,
         SX_RIGID_LIMITED_JOINTS,
         # AVBD rigid constraints (PLAN-104) start with fixed-joint rows in
-        # contact and a bounded revolute motor. Broader articulated joints,
-        # fracture, and soft/rigid coupling remain tracked by the AVBD dev
-        # task.
+        # contact, a bounded revolute motor, and a public breakable-joint
+        # lifecycle. Broader articulated joints and soft/rigid coupling remain
+        # tracked by the AVBD dev task.
         AVBD_RIGID_FIXED_JOINT_CONTACT,
         AVBD_RIGID_REVOLUTE_MOTOR,
+        AVBD_RIGID_BREAKABLE_JOINT,
         # Rigid IPC (PLAN-082) contact-dynamics showcase, grouped by capability:
         # a drop, friction (flat + inclined), a multi-body pile, then the
         # intersection-free (no-tunneling) guarantee. Only scenes that run in

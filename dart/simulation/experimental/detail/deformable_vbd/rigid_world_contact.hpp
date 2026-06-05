@@ -67,6 +67,7 @@ struct AvbdRigidWorldContactOptions
 
 struct AvbdRigidWorldPointJointInput
 {
+  entt::entity joint = entt::null;
   entt::entity bodyA = entt::null;
   entt::entity bodyB = entt::null;
   Eigen::Vector3d anchorA = Eigen::Vector3d::Zero();
@@ -81,6 +82,7 @@ struct AvbdRigidWorldPointJointInput
   double motorMaxTorque = std::numeric_limits<double>::infinity();
   double startStiffness = 1.0;
   double maxStiffness = std::numeric_limits<double>::infinity();
+  double fractureThreshold = 0.0;
 };
 
 struct AvbdRigidWorldPointJointConfig
@@ -107,6 +109,7 @@ struct AvbdRigidWorldContactSnapshot
   std::vector<std::uint8_t> fixed;
   std::vector<AvbdRigidContactManifoldPoint> contacts;
   std::vector<AvbdRigidPointJoint> joints;
+  std::vector<entt::entity> jointEntities;
   std::vector<AvbdRigidAngularMotor> motors;
 };
 
@@ -126,6 +129,8 @@ struct AvbdRigidWorldContactSolveResult
   std::size_t jointLinearRows = 0;
   std::size_t jointAngularRows = 0;
   std::size_t motorRows = 0;
+  std::size_t fracturedJoints = 0;
+  std::vector<std::size_t> fracturedJointIndices;
 };
 
 struct AvbdRigidWorldContactApplyResult
@@ -146,6 +151,7 @@ struct AvbdRigidWorldContactStepResult
   std::size_t contacts = 0;
   std::size_t joints = 0;
   std::size_t motors = 0;
+  std::size_t fracturedJoints = 0;
   AvbdRigidWorldContactSolveResult solve;
   AvbdRigidWorldContactApplyResult apply;
 };
@@ -154,6 +160,27 @@ struct AvbdRigidWorldContactStepResult
 inline std::uint64_t avbdRigidWorldContactObjectId(entt::entity entity) noexcept
 {
   return static_cast<std::uint64_t>(entt::to_integral(entity)) + 1u;
+}
+
+//==============================================================================
+inline std::size_t avbdRigidWorldActiveJointAxisCount(std::uint8_t mask)
+{
+  std::size_t count = 0;
+  for (std::uint8_t axis = 0; axis < 3u; ++axis) {
+    if (detail::avbdRigidJointAxisEnabled(mask, axis)) {
+      ++count;
+    }
+  }
+  return count;
+}
+
+//==============================================================================
+inline double avbdRigidWorldJointRowLambdaSquared(double lambda)
+{
+  if (!std::isfinite(lambda)) {
+    return std::numeric_limits<double>::infinity();
+  }
+  return lambda * lambda;
 }
 
 //==============================================================================
@@ -776,6 +803,7 @@ inline std::size_t appendAvbdRigidWorldPointJoints(
     joint.angularAxisMask = input.angularAxisMask;
     joint.startStiffness = std::max(0.0, input.startStiffness);
     joint.maxStiffness = std::max(joint.startStiffness, input.maxStiffness);
+    joint.fractureThreshold = input.fractureThreshold;
 
     const auto rowKey
         = canonicalizeAvbdContactEndpoints(joint.endpointA, joint.endpointB);
@@ -807,6 +835,7 @@ inline std::size_t appendAvbdRigidWorldPointJoints(
     }
 
     snapshot.joints.push_back(joint);
+    snapshot.jointEntities.push_back(input.joint);
     ++appended;
   }
 
@@ -971,6 +1000,42 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
     frictionInventory[second].state = frictionRows[i].second.state;
   }
 
+  std::size_t linearCursor = 0;
+  std::size_t angularCursor = 0;
+  for (std::size_t jointIndex = 0; jointIndex < snapshot.joints.size();
+       ++jointIndex) {
+    const AvbdRigidPointJoint& joint = snapshot.joints[jointIndex];
+    if (!detail::isValidAvbdRigidPointJoint(joint, snapshot.states.size())) {
+      continue;
+    }
+
+    const std::size_t linearRows
+        = avbdRigidWorldActiveJointAxisCount(joint.linearAxisMask);
+    const std::size_t angularRowsForJoint
+        = avbdRigidWorldActiveJointAxisCount(joint.angularAxisMask);
+    double lambdaSquared = 0.0;
+    for (std::size_t i = 0;
+         i < linearRows && linearCursor + i < jointLinearRows.size();
+         ++i) {
+      lambdaSquared += avbdRigidWorldJointRowLambdaSquared(
+          pointPairRows[jointLinearOffset + linearCursor + i].row.state.lambda);
+    }
+    for (std::size_t i = 0;
+         i < angularRowsForJoint && angularCursor + i < jointAngularRows.size();
+         ++i) {
+      lambdaSquared += avbdRigidWorldJointRowLambdaSquared(
+          angularRows[angularCursor + i].row.state.lambda);
+    }
+    if (joint.fractureThreshold > 0.0 && std::isfinite(joint.fractureThreshold)
+        && std::sqrt(lambdaSquared) >= joint.fractureThreshold) {
+      result.fracturedJointIndices.push_back(jointIndex);
+    }
+
+    linearCursor += linearRows;
+    angularCursor += angularRowsForJoint;
+  }
+  result.fracturedJoints = result.fracturedJointIndices.size();
+
   return result;
 }
 
@@ -1067,6 +1132,33 @@ applyAvbdRigidWorldContactVelocityProjection(
   }
 
   return result;
+}
+
+//==============================================================================
+inline std::size_t markAvbdRigidWorldFracturedPointJoints(
+    entt::registry& registry,
+    const AvbdRigidWorldContactSnapshot& snapshot,
+    std::span<const std::size_t> fracturedJointIndices)
+{
+  std::size_t marked = 0;
+  for (const std::size_t jointIndex : fracturedJointIndices) {
+    if (jointIndex >= snapshot.jointEntities.size()) {
+      continue;
+    }
+
+    const entt::entity jointEntity = snapshot.jointEntities[jointIndex];
+    if (jointEntity == entt::null
+        || !registry.all_of<comps::Joint>(jointEntity)) {
+      continue;
+    }
+
+    auto& joint = registry.get<comps::Joint>(jointEntity);
+    if (!joint.broken) {
+      joint.broken = true;
+      ++marked;
+    }
+  }
+  return marked;
 }
 
 //==============================================================================
@@ -1176,6 +1268,8 @@ inline AvbdRigidWorldContactStepResult runAvbdRigidWorldContactStep(
       motorInventory,
       timeStep,
       options.solve);
+  result.fracturedJoints = markAvbdRigidWorldFracturedPointJoints(
+      registry, snapshot, result.solve.fracturedJointIndices);
   if (result.solve.normalRows == 0u && result.solve.frictionRows == 0u
       && result.solve.jointLinearRows == 0u
       && result.solve.jointAngularRows == 0u && result.solve.motorRows == 0u) {
@@ -1226,7 +1320,8 @@ extractAvbdRigidWorldPointJointInputs(
   for (const entt::entity entity : view) {
     const auto& joint = view.get<comps::Joint>(entity);
     const auto& config = view.get<AvbdRigidWorldPointJointConfig>(entity);
-    if (!config.enabled || !isAvbdRigidWorldPointJointType(joint.type)) {
+    if (!config.enabled || joint.broken
+        || !isAvbdRigidWorldPointJointType(joint.type)) {
       continue;
     }
 
@@ -1260,6 +1355,7 @@ extractAvbdRigidWorldPointJointInputs(
         AvbdRigidBodyState{transformB.position, transformB.orientation});
 
     AvbdRigidWorldPointJointInput input;
+    input.joint = entity;
     input.bodyA = joint.parentLink;
     input.bodyB = joint.childLink;
     input.anchorA = worldA * config.localAnchorA;
@@ -1284,6 +1380,7 @@ extractAvbdRigidWorldPointJointInputs(
     }
     input.startStiffness = config.startStiffness;
     input.maxStiffness = config.maxStiffness;
+    input.fractureThreshold = joint.breakForce;
     inputs.push_back(input);
   }
 

@@ -526,6 +526,7 @@ def test_experimental_world_scenes_use_solver_focused_categories() -> None:
         "AVBD Rigid Constraints (sx)": {
             "avbd_rigid_fixed_joint_contact",
             "avbd_rigid_revolute_motor",
+            "avbd_rigid_breakable_joint",
         },
         "Rigid IPC (sx)": {
             "sx_rigid_ipc",
@@ -640,6 +641,38 @@ def test_avbd_revolute_motor_demo_drives_hinge() -> None:
     )
     assert measured_speed > initial_speed + 0.05
     assert measured_speed == pytest.approx(target_speed, abs=0.7)
+
+
+def test_avbd_breakable_joint_demo_marks_joint_broken() -> None:
+    import numpy as np
+
+    _require_simulation_experimental_symbols("World")
+
+    from examples.demos.scenes.avbd_rigid_breakable_joint import build
+
+    setup = build()
+    sx_world = setup.info["sx_world"]
+    joint = setup.info["joint"]
+    base = setup.info["base"]
+    payload = setup.info["payload"]
+    break_force = float(setup.info["break_force"])
+
+    assert sx_world.num_rigid_body_fixed_joints == 1
+    assert joint.break_force == pytest.approx(break_force)
+    assert not joint.is_broken
+
+    initial_base = np.asarray(base.translation, dtype=float).reshape(3)
+    initial_payload = np.asarray(payload.translation, dtype=float).reshape(3)
+    for _ in range(45):
+        assert setup.pre_step is not None
+        setup.pre_step()
+        setup.world.step()
+
+    assert joint.is_broken
+    base_translation = np.asarray(base.translation, dtype=float).reshape(3)
+    payload_translation = np.asarray(payload.translation, dtype=float).reshape(3)
+    assert np.linalg.norm(base_translation - initial_base) < 1.0e-9
+    assert np.linalg.norm(payload_translation - initial_payload) > 1.0e-2
 
 
 def test_runner_screenshot_writes_ppm(tmp_path: pathlib.Path) -> None:

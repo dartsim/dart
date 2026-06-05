@@ -221,22 +221,28 @@ Paper audit:
     path alongside the existing fixed-joint/contact showcase. The performance
     dashboard's AVBD World slice now also records an end-to-end
     `BM_AvbdRigidRevoluteMotorStep` row for the same public revolute velocity
-    actuator path.
+    actuator path. The narrow public fracture lifecycle now exposes a
+    non-negative `Joint` break-force threshold and broken-state reset/accessors,
+    maps that threshold into free rigid-body AVBD point-joint rows, marks joints
+    broken when the solved row load reaches the threshold, skips broken joints on
+    later extraction, and adds the categorized `avbd_rigid_breakable_joint`
+    py-demo.
     Articulated multibody joint extraction is still not wired.
     Unsupported envelopes still fall back to sequential impulses. This is not
     full narrow-phase feature extraction, not full rigid contact/joint rows, not
-    public fracture lifecycle support, not broad motor lifecycle or
-    paper/reference benchmark-packet coverage, and not articulated joint support
-    yet.
+    broad fracture-corpus support, not broad motor lifecycle or paper/reference
+    benchmark-packet coverage, and not articulated joint support yet.
 - [ ] Phase A4: contact/friction bounds, static/dynamic friction switching, and
       quasi-Newton Hessian approximation.
 - [ ] Phase A5: joints, motors, fracture, and breakable constraints.
   - First private angular-motor row and fracture threshold/reset helper slice
     started in the rigid 6-DOF kernel. Public free-rigid-body revolute velocity
     motors now have narrow World wiring, a categorized py-demo, and one
-    end-to-end AVBD World benchmark row; broad motor lifecycle coverage, public
-    fracture/breakable constraints, articulated wiring, GPU parity, and
-    reference/paper benchmark packets are still missing.
+    end-to-end AVBD World benchmark row. Public free-rigid-body fixed/revolute/
+    prismatic point joints now also have a narrow break-force/broken-state
+    lifecycle with C++/dartpy tests and a categorized py-demo; broad motor
+    lifecycle coverage, articulated wiring, GPU parity, and reference/paper
+    benchmark packets are still missing.
 - [ ] Phase A6: unified soft/rigid AVBD coupling.
 - [ ] Phase G: GPU parity for all row families, candidate generation, and
       benchmark scenes.
@@ -302,8 +308,10 @@ numbers.
    private rigid-body ECS current-pose extraction for those one-DOF joint
    entities, and public free rigid-body revolute/prismatic facades with dartpy
    bindings, stubs, focused tests, and py-demo coverage, plus the first
-   `avbd_rigid_fixed_joint_contact` fixed-joint/contact AVBD demo, have narrow
-   CPU/user-visible paths.
+   `avbd_rigid_fixed_joint_contact` fixed-joint/contact AVBD demo, the
+   `avbd_rigid_revolute_motor` motor demo, and the
+   `avbd_rigid_breakable_joint` break-force demo, have narrow CPU/user-visible
+   paths.
 2. In parallel planning, keep full friction cones, rigid/articulated rows, GPU
    parity, demos, and benchmark packets as open AVBD parity gates rather than
    completion claims.

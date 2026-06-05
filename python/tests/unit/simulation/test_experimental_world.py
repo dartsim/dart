@@ -493,6 +493,16 @@ def test_experimental_world_rigid_body_fixed_joint_projects_captured_pose():
     assert joint.name == "base_to_link"
     assert joint.type == sx.JointType.FIXED
     assert joint.num_dofs == 0
+    assert joint.break_force == pytest.approx(0.0)
+    assert not joint.is_broken
+    joint.break_force = 12.5
+    assert joint.break_force == pytest.approx(12.5)
+    joint.reset_breakage()
+    assert not joint.is_broken
+    with pytest.raises(Exception, match="finite and non-negative"):
+        joint.break_force = -1.0
+    with pytest.raises(Exception, match="finite and non-negative"):
+        joint.break_force = math.inf
     assert joint.parent_rigid_body.name == "base"
     assert joint.child_rigid_body.name == "link"
     assert world.has_rigid_body_fixed_joint("base_to_link")
