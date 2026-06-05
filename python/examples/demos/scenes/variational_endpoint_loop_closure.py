@@ -1,4 +1,4 @@
-"""Articulated endpoint loop-closure preview for the experimental World facade."""
+"""Articulated public loop-closure preview for the experimental World facade."""
 
 from __future__ import annotations
 
@@ -46,7 +46,7 @@ def build() -> SceneSetup:
     world.gravity = (0.0, 0.0, -9.81)
     world.time_step = 0.005
 
-    robot = world.add_multibody("avbd_endpoint_chain")
+    robot = world.add_multibody("variational_endpoint_chain")
     base = robot.add_link("base")
 
     links = []
@@ -78,7 +78,7 @@ def build() -> SceneSetup:
 
     tip_target = tip_target_transform[:3, 3]
     closure = world.add_loop_closure(
-        "avbd_endpoint_tip_bridge",
+        "variational_endpoint_tip_closure",
         sx.LoopClosureSpec(
             frame_a=links[-1],
             frame_b=base,
@@ -95,7 +95,7 @@ def build() -> SceneSetup:
         base,
         dart.BoxShape(np.array([0.18, 0.18, 0.18])),
         (0.38, 0.40, 0.44),
-        name="avbd_endpoint_base_visual",
+        name="variational_endpoint_base_visual",
     )
     palette = [
         (0.20, 0.55, 0.90),
@@ -109,11 +109,11 @@ def build() -> SceneSetup:
             link,
             link_shape,
             palette[i % len(palette)],
-            name=f"avbd_endpoint_link{i}_visual",
+            name=f"variational_endpoint_link{i}_visual",
         )
     target_frame = dart.SimpleFrame(
         _dyn.Frame.world(),
-        "avbd_endpoint_target_visual",
+        "variational_endpoint_target_visual",
         _isometry(_translation(*tip_target)),
     )
     target_frame.set_shape(dart.BoxShape(np.array([0.11, 0.11, 0.11])))
@@ -132,10 +132,10 @@ def build() -> SceneSetup:
         ]
         tip_position = np.asarray(links[-1].translation, dtype=float).reshape(3)
         tip_height = float(tip_position[2])
-        bridge_residual = float(np.linalg.norm(tip_position - tip_target))
+        closure_residual = float(np.linalg.norm(tip_position - tip_target))
         tip_height_history.append(tip_height)
         joint_speed_history.append(max(speeds) if speeds else 0.0)
-        residual_history.append(bridge_residual)
+        residual_history.append(closure_residual)
 
         builder.text("solver: articulated sx world")
         builder.text("endpoint class: multibody link")
@@ -145,10 +145,10 @@ def build() -> SceneSetup:
         builder.text(f"dofs: {robot.num_dofs}")
         builder.text(f"world time: {world.time:.3f} s")
         builder.text(f"tip height: {tip_height:.3f} m")
-        builder.text(f"bridge residual: {bridge_residual:.4f} m")
+        builder.text(f"closure residual: {closure_residual:.4f} m")
         builder.plot_lines("Tip height", list(tip_height_history))
         builder.plot_lines("Max joint speed", list(joint_speed_history))
-        builder.plot_lines("Bridge residual", list(residual_history))
+        builder.plot_lines("Closure residual", list(residual_history))
         builder.separator()
         bridge.build_control_panel(builder, context)
 
@@ -156,7 +156,7 @@ def build() -> SceneSetup:
         world=bridge.render_world,
         pre_step=bridge.pre_step,
         force_drag=bridge.force_drag,
-        panels=[ScenePanel("AVBD Articulated Endpoint", build_panel)],
+        panels=[ScenePanel("Variational Endpoint Closure", build_panel)],
         info={
             "sx_world": world,
             "endpoint_kind": "multibody_link",

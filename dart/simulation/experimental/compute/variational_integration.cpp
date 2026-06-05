@@ -335,7 +335,8 @@ void appendAvbdRigidWorldArticulatedPointJointConstraints(
     const auto& config
         = view.get<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
 
-    if (!config.enabled || joint.broken || joint.type != comps::JointType::Fixed
+    if (!config.enabled || joint.broken || joint.breakForce > 0.0
+        || joint.type != comps::JointType::Fixed
         || isTopologyMultibodyJoint(registry, jointEntity, joint)) {
       continue;
     }

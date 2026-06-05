@@ -1267,6 +1267,56 @@ TEST(VariationalIntegration, AvbdFixedPointJointConfigSolvesLinkEndpoint)
   EXPECT_GT(motion, 1e-3);
 }
 
+// Breakable AVBD point-joint rows need fracture bookkeeping that
+// VariationalLoopConstraint does not own. Until that exists, the articulated
+// bridge must not turn them into unbreakable hard loop closures.
+TEST(VariationalIntegration, AvbdBreakablePointJointConfigSkipsLinkEndpoint)
+{
+  sx::World world;
+  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  auto robot = world.addMultibody("pendulum");
+  auto base = robot.addLink("base");
+
+  sx::JointSpec spec;
+  spec.name = "hinge";
+  spec.type = sx::JointType::Revolute;
+  spec.axis = Eigen::Vector3d::UnitY();
+  spec.transformFromParent.translation() = Eigen::Vector3d(0.5, 0.0, 0.0);
+  auto link = robot.addLink("link", base, spec);
+  link.setMass(1.0);
+  link.setInertia(Eigen::Vector3d(0.03, 0.03, 0.03).asDiagonal());
+
+  Eigen::Isometry3d target = Eigen::Isometry3d::Identity();
+  target.translation() = spec.transformFromParent.translation();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
+  const entt::entity jointEntity = registry.create();
+  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  joint.type = sx::comps::JointType::Fixed;
+  joint.parentLink = sx::detail::toRegistryEntity(link.getEntity());
+  joint.childLink = entt::null;
+  joint.breakForce = 1.0;
+  auto& config
+      = registry.emplace<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
+  config.localAnchorA = Eigen::Vector3d::Zero();
+  config.localAnchorB = target.translation();
+  config.targetRelativeOrientation
+      = Eigen::Quaterniond(target.linear()).conjugate();
+
+  world.setTimeStep(1e-3);
+  world.enterSimulationMode();
+
+  double maxPositionResidual = 0.0;
+  for (int k = 0; k < 500; ++k) {
+    world.step();
+    maxPositionResidual = std::max(
+        maxPositionResidual,
+        (link.getWorldTransform().translation() - target.translation()).norm());
+  }
+
+  EXPECT_GT(maxPositionResidual, 1e-3);
+  EXPECT_FALSE(registry.get<sx::comps::Joint>(jointEntity).broken);
+}
+
 // Topology joints are the multibody tree itself, not external AVBD point-joint
 // rows. Even if a private config is attached accidentally, the articulated
 // bridge must not duplicate the tree joint as a rigid closure.
