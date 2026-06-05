@@ -203,7 +203,7 @@ def build_hubo() -> SceneSetup:
 def build_g1_placeholder() -> SceneSetup:
     world = dart.gui.RenderWorld("g1_puppet_planned")
     world.set_time_step(1.0 / 60.0)
-    frame = dart.SimpleFrame(dart.Frame.world(), "g1_puppet_marker", np.eye(4))
+    frame = dart.SimpleFrame(dart.gui.world_render_frame(), "g1_puppet_marker", np.eye(4))
     frame.set_shape(dart.BoxShape(np.array([0.42, 0.42, 0.14])))
     frame.create_visual_aspect().set_color([0.35, 0.56, 0.86])
     world.add_simple_frame(frame)

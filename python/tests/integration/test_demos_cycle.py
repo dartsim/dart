@@ -679,7 +679,7 @@ def test_show_ui_uses_docked_workspace_regions(
     def build_scene() -> SceneSetup:
         world = dart.gui.RenderWorld("docked_smoke")
         world.set_time_step(0.001)
-        frame = dart.SimpleFrame(dart.Frame.world(), "box")
+        frame = dart.SimpleFrame(dart.gui.world_render_frame(), "box")
         frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
         frame.create_visual_aspect().set_color([0.2, 0.7, 0.9])
         world.add_simple_frame(frame)
@@ -814,7 +814,7 @@ def test_scripted_demo_switch_restores_previous_scene_on_factory_error(
     def build_good() -> SceneSetup:
         world = dart.gui.RenderWorld("good")
         world.set_time_step(0.001)
-        frame = dart.SimpleFrame(dart.Frame.world(), "good_box")
+        frame = dart.SimpleFrame(dart.gui.world_render_frame(), "good_box")
         frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
         frame.create_visual_aspect().set_color([0.2, 0.7, 0.9])
         world.add_simple_frame(frame)
@@ -889,7 +889,7 @@ def test_scripted_demo_switch_restores_previous_scene_on_startup_timeout(
             return good_setup
         world = dart.gui.RenderWorld("good")
         world.set_time_step(0.001)
-        frame = dart.SimpleFrame(dart.Frame.world(), "good_box")
+        frame = dart.SimpleFrame(dart.gui.world_render_frame(), "good_box")
         frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
         frame.create_visual_aspect().set_color([0.2, 0.7, 0.9])
         world.add_simple_frame(frame)
@@ -972,7 +972,7 @@ def test_scripted_demo_switch_restores_previous_scene_on_render_state_failure(
     def build_good() -> SceneSetup:
         world = dart.gui.RenderWorld("good")
         world.set_time_step(0.001)
-        frame = dart.SimpleFrame(dart.Frame.world(), "good_box")
+        frame = dart.SimpleFrame(dart.gui.world_render_frame(), "good_box")
         frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
         frame.create_visual_aspect().set_color([0.2, 0.7, 0.9])
         world.add_simple_frame(frame)
@@ -1054,7 +1054,7 @@ def test_scripted_demo_switch_restores_previous_scene_when_python_factory_stalls
     def build_good() -> SceneSetup:
         world = dart.gui.RenderWorld("good")
         world.set_time_step(0.001)
-        frame = dart.SimpleFrame(dart.Frame.world(), "good_box")
+        frame = dart.SimpleFrame(dart.gui.world_render_frame(), "good_box")
         frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
         frame.create_visual_aspect().set_color([0.2, 0.7, 0.9])
         world.add_simple_frame(frame)
@@ -1142,7 +1142,7 @@ def test_scripted_demo_switch_restores_previous_scene_when_python_pre_step_stall
     def build_good() -> SceneSetup:
         world = dart.gui.RenderWorld("good")
         world.set_time_step(0.001)
-        frame = dart.SimpleFrame(dart.Frame.world(), "good_box")
+        frame = dart.SimpleFrame(dart.gui.world_render_frame(), "good_box")
         frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
         frame.create_visual_aspect().set_color([0.2, 0.7, 0.9])
         world.add_simple_frame(frame)
@@ -1151,7 +1151,7 @@ def test_scripted_demo_switch_restores_previous_scene_when_python_pre_step_stall
     def build_stalled_step() -> SceneSetup:
         world = dart.gui.RenderWorld("stalled_step")
         world.set_time_step(0.001)
-        frame = dart.SimpleFrame(dart.Frame.world(), "stalled_box")
+        frame = dart.SimpleFrame(dart.gui.world_render_frame(), "stalled_box")
         frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
         frame.create_visual_aspect().set_color([0.8, 0.3, 0.2])
         world.add_simple_frame(frame)
@@ -1230,7 +1230,7 @@ def test_scripted_demo_switch_restores_previous_scene_on_slow_first_frame(
     def build_good() -> SceneSetup:
         world = dart.gui.RenderWorld("good")
         world.set_time_step(0.001)
-        frame = dart.SimpleFrame(dart.Frame.world(), "good_box")
+        frame = dart.SimpleFrame(dart.gui.world_render_frame(), "good_box")
         frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
         frame.create_visual_aspect().set_color([0.2, 0.7, 0.9])
         world.add_simple_frame(frame)
@@ -1239,7 +1239,7 @@ def test_scripted_demo_switch_restores_previous_scene_on_slow_first_frame(
     def build_slow_step() -> SceneSetup:
         world = dart.gui.RenderWorld("slow_step")
         world.set_time_step(0.001)
-        frame = dart.SimpleFrame(dart.Frame.world(), "slow_box")
+        frame = dart.SimpleFrame(dart.gui.world_render_frame(), "slow_box")
         frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
         frame.create_visual_aspect().set_color([0.8, 0.3, 0.2])
         world.add_simple_frame(frame)

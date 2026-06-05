@@ -130,7 +130,7 @@ def add_ground_visual(
     z: float = 0.0,
     size: tuple[float, float, float] = (2.4, 1.6, 0.02),
 ) -> None:
-    frame = dart.SimpleFrame(dart.Frame.world(), name, translation(0.0, 0.0, z))
+    frame = dart.SimpleFrame(dart.gui.world_render_frame(), name, translation(0.0, 0.0, z))
     frame.set_shape(dart.BoxShape(np.array(size)))
     frame.create_visual_aspect().set_color([0.45, 0.47, 0.50])
     bridge.render_world.add_simple_frame(frame)

@@ -297,7 +297,7 @@ def test_build_multibody_branching_tree_matches_legacy():
 def test_build_multibodies_from_world():
     sx = _simulation_experimental()
 
-    legacy_world = dart.World()
+    legacy_world = dart.gui.RenderWorld()
     legacy_world.add_skeleton(_two_link_revolute_skeleton())  # "double_pendulum"
 
     slider = dart.Skeleton("slider")

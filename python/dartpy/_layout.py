@@ -33,17 +33,15 @@ _LEGACY_MODULES: tuple[str, ...] = (
     "optimizer",
     "utils",
 )
-# Flatten order matters: _promote_symbols is first-wins. The official ECS
-# simulation facade contributes 54 flat names; 51 are uncontested. The three
-# that collide with the legacy `dynamics` module -- Frame, Joint, ActuatorType --
-# are intentionally left to `dynamics` (promoted earlier): the dynamics Frame is
-# pervasively used to build the classic render world (dart.SimpleFrame +
-# dart.Frame.world()), while no consumer uses the bare ECS Frame/Joint/
-# ActuatorType flat (the ECS API is reached via World/RigidBody/Link/Multibody/
-# JointSpec/JointType, all uncontested). The ECS Frame/Joint/ActuatorType remain
-# reachable via the (deprecated) dartpy.simulation.* path if ever needed.
-_PROMOTE_MODULES: tuple[str, ...] = tuple(
-    name for name in _LEGACY_MODULES if name != "utils"
+# Flatten order matters: _promote_symbols is first-wins. Promote `simulation`
+# FIRST so the official DART 7 ECS facade owns the canonical flat names. Three of
+# its names collide with the legacy `dynamics` module -- Frame, Joint,
+# ActuatorType -- and the ECS versions win: dartpy.Frame is the DART 7 ECS Frame.
+# DART 6 dynamics types are not part of the public DART 7 surface; the classic
+# Frame survives only as render plumbing, reached by the render bridge via
+# dartpy.gui.world_render_frame(), never the flat name.
+_PROMOTE_MODULES: tuple[str, ...] = ("simulation",) + tuple(
+    name for name in _LEGACY_MODULES if name not in ("utils", "simulation")
 )
 
 _WARNED: set[str] = set()

@@ -161,7 +161,7 @@ class WorldRenderBridge:
         local_transform: Any | None = None,
     ) -> "dart.SimpleFrame":
         frame_name = name or f"world_link_{len(self._mappings)}"
-        frame = dart.SimpleFrame(dart.Frame.world(), frame_name, np.eye(4))
+        frame = dart.SimpleFrame(dart.gui.world_render_frame(), frame_name, np.eye(4))
         frame.set_shape(shape)
         frame.create_visual_aspect().set_color(list(color))
         actual_name = self._register_frame(frame, physics_link)
@@ -215,7 +215,7 @@ class WorldRenderBridge:
             line.add_connection(node_a, node_b)
 
         frame = dart.SimpleFrame(
-            dart.Frame.world(), f"world_surface_{len(self._surfaces)}", np.eye(4)
+            dart.gui.world_render_frame(), f"world_surface_{len(self._surfaces)}", np.eye(4)
         )
         frame.set_shape(line)
         frame.create_visual_aspect().set_color(list(color))
@@ -229,7 +229,7 @@ class WorldRenderBridge:
             if not _is_fixed_node(body, i):
                 continue
             sphere = dart.SimpleFrame(
-                dart.Frame.world(), f"world_pin_{group}_{i}", np.eye(4)
+                dart.gui.world_render_frame(), f"world_pin_{group}_{i}", np.eye(4)
             )
             sphere.set_shape(dart.SphereShape(radius))
             sphere.create_visual_aspect().set_color(list(pin_color))

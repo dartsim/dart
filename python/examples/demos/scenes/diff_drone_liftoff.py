@@ -179,7 +179,7 @@ def _make_marker(
     color: tuple[float, float, float],
     position: Any,
 ) -> Any:
-    frame = dart.SimpleFrame(dart.Frame.world(), name, _translation(position))
+    frame = dart.SimpleFrame(dart.gui.world_render_frame(), name, _translation(position))
     frame.set_shape(shape)
     frame.create_visual_aspect().set_color(list(color))
     render_world.add_simple_frame(frame)

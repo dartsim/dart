@@ -164,7 +164,7 @@ def _make_marker(
     color: tuple[float, float, float],
     position: Any,
 ) -> None:
-    frame = dart.SimpleFrame(dart.Frame.world(), name, _translation(position))
+    frame = dart.SimpleFrame(dart.gui.world_render_frame(), name, _translation(position))
     frame.set_shape(shape)
     frame.create_visual_aspect().set_color(list(color))
     render_world.add_simple_frame(frame)
@@ -257,7 +257,7 @@ def build() -> SceneSetup:
     # Animated projectile sphere replaying the converged rollout.
     start = trail[0] if trail else np.array([0.0, 0.0, 5.0])
     projectile_frame = dart.SimpleFrame(
-        dart.Frame.world(), "projectile_visual", _translation(start)
+        dart.gui.world_render_frame(), "projectile_visual", _translation(start)
     )
     projectile_frame.set_shape(dart.SphereShape(_PROJECTILE_RADIUS))
     projectile_frame.create_visual_aspect().set_color([0.93, 0.30, 0.22])

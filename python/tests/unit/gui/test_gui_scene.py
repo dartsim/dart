@@ -463,7 +463,7 @@ def test_gui_extract_renderables_from_simple_frame():
     world = dart.World.create("world")
     transform = dart.Isometry3()
     transform.set_translation(np.array([1.0, -2.0, 0.5]))
-    frame = dart.SimpleFrame(dart.Frame.world(), "interactive_target", transform)
+    frame = dart.SimpleFrame(dart.gui.world_render_frame(), "interactive_target", transform)
     frame.set_shape(dart.BoxShape(np.array([0.4, 0.5, 0.6])))
     frame.get_visual_aspect(True).set_rgba(np.array([0.9, 0.2, 0.1, 0.8]))
     world.add_simple_frame(frame)
