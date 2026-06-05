@@ -796,9 +796,7 @@ void reserveEnttRegistryStorage(Registry& registry, const size_t entityCount)
 
 template <typename Registry>
 void runEnttRegistryChurn(
-    Registry& registry,
-    std::vector<entt::entity>& entities,
-    const size_t entityCount)
+    Registry& registry, auto& entities, const size_t entityCount)
 {
   // World systems know their component set. Cache storage handles so the hot
   // path measures storage allocation/layout rather than repeated type lookups.
@@ -855,9 +853,7 @@ void runEnttRegistryChurn(
 
 template <typename Registry>
 void prewarmEnttRegistry(
-    Registry& registry,
-    std::vector<entt::entity>& entities,
-    const size_t entityCount)
+    Registry& registry, auto& entities, const size_t entityCount)
 {
   reserveEnttRegistryStorage(registry, entityCount);
   runEnttRegistryChurn(registry, entities, entityCount);
