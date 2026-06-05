@@ -567,6 +567,8 @@ def test_experimental_world_scenes_use_solver_focused_categories() -> None:
 def test_avbd_fixed_joint_contact_demo_exercises_contact_path() -> None:
     import numpy as np
 
+    _require_simulation_experimental_symbols("World")
+
     from examples.demos.scenes.avbd_rigid_fixed_joint_contact import build
 
     setup = build()
