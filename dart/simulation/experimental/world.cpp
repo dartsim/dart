@@ -245,10 +245,43 @@ bool hasMultibodyStructures(const World& world)
 }
 
 //==============================================================================
-template <typename Registry>
-bool isRigidBodyFixedJoint(const Registry& registry, const comps::Joint& joint)
+bool isRigidBodyJointType(comps::JointType type)
 {
-  if (joint.type != comps::JointType::Fixed || joint.parentLink == entt::null
+  return type == comps::JointType::Fixed || type == comps::JointType::Revolute
+         || type == comps::JointType::Prismatic;
+}
+
+//==============================================================================
+comps::JointType toRigidBodyComponentJointType(JointType type)
+{
+  switch (type) {
+    case JointType::Fixed:
+      return comps::JointType::Fixed;
+    case JointType::Revolute:
+      return comps::JointType::Revolute;
+    case JointType::Prismatic:
+      return comps::JointType::Prismatic;
+    case JointType::Screw:
+    case JointType::Universal:
+    case JointType::Spherical:
+    case JointType::Planar:
+    case JointType::Floating:
+    case JointType::Custom:
+      break;
+  }
+
+  DART_EXPERIMENTAL_THROW_T(
+      InvalidArgumentException,
+      "Rigid-body joints currently support only fixed, revolute, and "
+      "prismatic joint types");
+  return comps::JointType::Custom;
+}
+
+//==============================================================================
+template <typename Registry>
+bool isRigidBodyJoint(const Registry& registry, const comps::Joint& joint)
+{
+  if (!isRigidBodyJointType(joint.type) || joint.parentLink == entt::null
       || joint.childLink == entt::null || joint.parentLink == joint.childLink) {
     return false;
   }
@@ -258,14 +291,25 @@ bool isRigidBodyFixedJoint(const Registry& registry, const comps::Joint& joint)
 }
 
 //==============================================================================
-bool hasRigidBodyFixedJoints(const World& world)
+template <typename Registry>
+bool isRigidBodyFixedJoint(const Registry& registry, const comps::Joint& joint)
+{
+  if (joint.type != comps::JointType::Fixed) {
+    return false;
+  }
+
+  return isRigidBodyJoint(registry, joint);
+}
+
+//==============================================================================
+bool hasRigidBodyJoints(const World& world)
 {
   const auto& registry = detail::registryOf(world);
   const auto view = registry.view<comps::Joint>();
   for (auto entity : view) {
     (void)entity;
     const auto& joint = view.get<comps::Joint>(entity);
-    if (isRigidBodyFixedJoint(registry, joint)) {
+    if (isRigidBodyJoint(registry, joint)) {
       return true;
     }
   }
@@ -273,24 +317,24 @@ bool hasRigidBodyFixedJoints(const World& world)
 }
 
 //==============================================================================
-void validateRigidBodyFixedJointPipelineSupport(
+void validateRigidBodyJointPipelineSupport(
     const World& world, RigidBodySolver solver)
 {
-  if (!hasRigidBodyFixedJoints(world)) {
+  if (!hasRigidBodyJoints(world)) {
     return;
   }
 
   if (solver == RigidBodySolver::Ipc) {
     DART_EXPERIMENTAL_THROW_T(
         InvalidOperationException,
-        "Rigid-body fixed joints are not supported by the IPC rigid-body "
+        "Rigid-body joints are not supported by the IPC rigid-body "
         "solver");
   }
 
   DART_EXPERIMENTAL_THROW_T_IF(
       hasMultibodyStructures(world),
       InvalidOperationException,
-      "Rigid-body fixed joints are not supported in worlds with multibody "
+      "Rigid-body joints are not supported in worlds with multibody "
       "structures");
 }
 
@@ -1694,10 +1738,10 @@ Multibody World::addMultibody(std::string_view name)
 {
   ensureDesignMode();
   DART_EXPERIMENTAL_THROW_T_IF(
-      hasRigidBodyFixedJoints(*this),
+      hasRigidBodyJoints(*this),
       InvalidOperationException,
       "Multibody structures are not supported in worlds with rigid-body "
-      "fixed joints");
+      "joints");
 
   std::string candidateName;
   if (name.empty()) {
@@ -1877,24 +1921,62 @@ RigidBody World::addRigidBody(
 Joint World::addRigidBodyFixedJoint(
     std::string_view name, const RigidBody& parent, const RigidBody& child)
 {
+  return addRigidBodyJoint(
+      name, parent, child, JointType::Fixed, Eigen::Vector3d::UnitZ());
+}
+
+//==============================================================================
+Joint World::addRigidBodyRevoluteJoint(
+    std::string_view name,
+    const RigidBody& parent,
+    const RigidBody& child,
+    const Eigen::Vector3d& axis)
+{
+  return addRigidBodyJoint(name, parent, child, JointType::Revolute, axis);
+}
+
+//==============================================================================
+Joint World::addRigidBodyPrismaticJoint(
+    std::string_view name,
+    const RigidBody& parent,
+    const RigidBody& child,
+    const Eigen::Vector3d& axis)
+{
+  return addRigidBodyJoint(name, parent, child, JointType::Prismatic, axis);
+}
+
+//==============================================================================
+Joint World::addRigidBodyJoint(
+    std::string_view name,
+    const RigidBody& parent,
+    const RigidBody& child,
+    JointType type,
+    const Eigen::Vector3d& axis)
+{
   ensureDesignMode();
 
+  const comps::JointType componentType = toRigidBodyComponentJointType(type);
+  DART_EXPERIMENTAL_THROW_T_IF(
+      componentType != comps::JointType::Fixed
+          && (!axis.allFinite() || axis.squaredNorm() <= 0.0),
+      InvalidArgumentException,
+      "Rigid-body joint axis must be finite and non-zero");
   DART_EXPERIMENTAL_THROW_T_IF(
       !parent.isValid(),
       InvalidArgumentException,
-      "Fixed-joint parent rigid body is invalid or has been destroyed");
+      "Joint parent rigid body is invalid or has been destroyed");
   DART_EXPERIMENTAL_THROW_T_IF(
       !child.isValid(),
       InvalidArgumentException,
-      "Fixed-joint child rigid body is invalid or has been destroyed");
+      "Joint child rigid body is invalid or has been destroyed");
   DART_EXPERIMENTAL_THROW_T_IF(
       parent.getWorld() != this || child.getWorld() != this,
       InvalidArgumentException,
-      "Fixed-joint rigid bodies must belong to this World");
+      "Joint rigid bodies must belong to this World");
   DART_EXPERIMENTAL_THROW_T_IF(
       parent.getEntity() == child.getEntity(),
       InvalidArgumentException,
-      "Fixed-joint parent and child rigid bodies must be distinct");
+      "Joint parent and child rigid bodies must be distinct");
 
   const entt::entity parentEntity
       = detail::toRegistryEntity(parent.getEntity());
@@ -1910,15 +1992,15 @@ Joint World::addRigidBodyFixedJoint(
   DART_EXPERIMENTAL_THROW_T_IF(
       !parentIsRigidBody || !childIsRigidBody,
       InvalidArgumentException,
-      "Fixed-joint endpoints must be valid rigid bodies");
+      "Joint endpoints must be valid rigid bodies");
   DART_EXPERIMENTAL_THROW_T_IF(
       m_rigidBodySolver == RigidBodySolver::Ipc,
       InvalidOperationException,
-      "Rigid-body fixed joints are not supported by the IPC rigid-body solver");
+      "Rigid-body joints are not supported by the IPC rigid-body solver");
   DART_EXPERIMENTAL_THROW_T_IF(
       hasMultibodyStructures(*this),
       InvalidOperationException,
-      "Rigid-body fixed joints are not supported in worlds with multibody "
+      "Rigid-body joints are not supported in worlds with multibody "
       "structures");
 
   std::string actualName;
@@ -1939,10 +2021,13 @@ Joint World::addRigidBodyFixedJoint(
   m_storage->registry.emplace<comps::Name>(jointEntity, actualName);
 
   auto& joint = m_storage->registry.emplace<comps::Joint>(jointEntity);
-  joint.type = comps::JointType::Fixed;
+  joint.type = componentType;
   joint.name = std::move(actualName);
   joint.parentLink = parentEntity;
   joint.childLink = childEntity;
+  if (componentType != comps::JointType::Fixed) {
+    joint.axis = axis.normalized();
+  }
 
   const Eigen::Index dof = static_cast<Eigen::Index>(joint.getDOF());
   joint.position = Eigen::VectorXd::Zero(dof);
@@ -1965,7 +2050,7 @@ Joint World::addRigidBodyFixedJoint(
   joint.limits.effortUpper = Eigen::VectorXd::Constant(dof, infinity);
 
   const comps::RigidAvbdContactConfig defaultAvbdConfig;
-  if (!detail::deformable_vbd::configureAvbdRigidWorldFixedJointFromCurrentPose(
+  if (!detail::deformable_vbd::configureAvbdRigidWorldPointJointFromCurrentPose(
           m_storage->registry,
           jointEntity,
           defaultAvbdConfig.startStiffness,
@@ -1973,11 +2058,69 @@ Joint World::addRigidBodyFixedJoint(
     m_storage->registry.destroy(jointEntity);
     DART_EXPERIMENTAL_THROW_T(
         InvalidOperationException,
-        "Failed to configure fixed joint '{}' from current rigid-body poses",
+        "Failed to configure rigid-body joint '{}' from current poses",
         name);
   }
 
   return Joint(detail::fromRegistryEntity(jointEntity), this);
+}
+
+//==============================================================================
+std::optional<Joint> World::getRigidBodyJoint(std::string_view name)
+{
+  auto view = m_storage->registry.view<comps::Joint, comps::Name>();
+  for (auto entity : view) {
+    const auto& joint = view.get<comps::Joint>(entity);
+    const auto& info = view.get<comps::Name>(entity);
+    if (info.name == name && isRigidBodyJoint(m_storage->registry, joint)) {
+      return Joint(detail::fromRegistryEntity(entity), this);
+    }
+  }
+  return std::nullopt;
+}
+
+//==============================================================================
+bool World::hasRigidBodyJoint(std::string_view name) const
+{
+  const auto view = m_storage->registry.view<comps::Joint, comps::Name>();
+  for (auto entity : view) {
+    const auto& joint = view.get<comps::Joint>(entity);
+    const auto& info = view.get<comps::Name>(entity);
+    if (info.name == name && isRigidBodyJoint(m_storage->registry, joint)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+//==============================================================================
+std::size_t World::getRigidBodyJointCount() const
+{
+  std::size_t count = 0;
+  const auto view = m_storage->registry.view<comps::Joint>();
+  for (auto entity : view) {
+    (void)entity;
+    const auto& joint = view.get<comps::Joint>(entity);
+    if (isRigidBodyJoint(m_storage->registry, joint)) {
+      ++count;
+    }
+  }
+  return count;
+}
+
+//==============================================================================
+std::vector<Joint> World::getRigidBodyJoints()
+{
+  std::vector<Joint> joints;
+  joints.reserve(getRigidBodyJointCount());
+  const auto view = m_storage->registry.view<comps::Joint>();
+  for (auto entity : view) {
+    const auto& joint = view.get<comps::Joint>(entity);
+    if (isRigidBodyJoint(m_storage->registry, joint)) {
+      joints.emplace_back(detail::fromRegistryEntity(entity), this);
+    }
+  }
+  return joints;
 }
 
 //==============================================================================
@@ -2192,12 +2335,12 @@ void World::enterSimulationMode()
       "World is already in simulation mode");
 
   validateLoopClosureKinematicsPolicySupport(*this);
-  validateRigidBodyFixedJointPipelineSupport(*this, m_rigidBodySolver);
+  validateRigidBodyJointPipelineSupport(*this, m_rigidBodySolver);
   m_simulationMode = true;
 
   // Initial bake so that cached transforms are up-to-date.
   updateKinematics();
-  detail::deformable_vbd::configureAvbdRigidWorldFixedJointsFromCurrentPoses(
+  detail::deformable_vbd::configureAvbdRigidWorldPointJointsFromCurrentPoses(
       m_storage->registry);
   reserveRegistryStorageForSimulation();
 }
@@ -2227,7 +2370,7 @@ void World::setRigidBodySolver(RigidBodySolver solver)
       InvalidArgumentException,
       "Rigid-body solver is invalid");
 
-  validateRigidBodyFixedJointPipelineSupport(*this, solver);
+  validateRigidBodyJointPipelineSupport(*this, solver);
   m_rigidBodySolver = solver;
 }
 
@@ -2695,7 +2838,7 @@ void World::step(
   validateLoopClosureDynamicsPolicySupport(
       *this,
       m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational);
-  validateRigidBodyFixedJointPipelineSupport(*this, m_rigidBodySolver);
+  validateRigidBodyJointPipelineSupport(*this, m_rigidBodySolver);
 
   if (!m_simulationMode) {
     enterSimulationMode();
@@ -3172,7 +3315,7 @@ void World::loadBinary(std::istream& input)
 
   if (m_simulationMode) {
     updateKinematics();
-    detail::deformable_vbd::configureAvbdRigidWorldFixedJointsFromCurrentPoses(
+    detail::deformable_vbd::configureAvbdRigidWorldPointJointsFromCurrentPoses(
         m_storage->registry);
     reserveRegistryStorageForSimulation();
   }
