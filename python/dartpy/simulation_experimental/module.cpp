@@ -70,6 +70,7 @@
 
 #include <dart/dynamics/skeleton.hpp>
 
+#include <dart/common/memory_manager.hpp>
 #include <dart/common/uri.hpp>
 
 #include <dart/io/read.hpp>
@@ -1951,6 +1952,69 @@ void defSimulationExperimentalModule(nb::module_& m)
           "converged_active_contact_count",
           &sim::DeformableSolverDiagnostics::convergedActiveContactCount);
 
+  nb::class_<dart::common::MemoryManager::AllocatorDebugDiagnostics>(
+      m, "AllocatorDebugDiagnostics")
+      .def_ro(
+          "live_bytes",
+          &dart::common::MemoryManager::AllocatorDebugDiagnostics::liveBytes)
+      .def_ro(
+          "peak_live_bytes",
+          &dart::common::MemoryManager::AllocatorDebugDiagnostics::
+              peakLiveBytes)
+      .def_ro(
+          "live_allocation_count",
+          &dart::common::MemoryManager::AllocatorDebugDiagnostics::
+              liveAllocationCount);
+
+  nb::class_<dart::common::MemoryManager::DebugDiagnostics>(
+      m, "MemoryManagerDebugDiagnostics")
+      .def_ro(
+          "enabled", &dart::common::MemoryManager::DebugDiagnostics::enabled)
+      .def_ro(
+          "free_allocator",
+          &dart::common::MemoryManager::DebugDiagnostics::freeAllocator)
+      .def_ro(
+          "pool_allocator",
+          &dart::common::MemoryManager::DebugDiagnostics::poolAllocator);
+
+  nb::class_<sim::WorldEcsStorageDiagnostics>(m, "WorldEcsStorageDiagnostics")
+      .def_ro("storage_id", &sim::WorldEcsStorageDiagnostics::storageId)
+      .def_ro("size", &sim::WorldEcsStorageDiagnostics::size)
+      .def_ro("capacity", &sim::WorldEcsStorageDiagnostics::capacity);
+
+  nb::class_<sim::WorldEcsDiagnostics>(m, "WorldEcsDiagnostics")
+      .def_ro("entity_count", &sim::WorldEcsDiagnostics::entityCount)
+      .def_ro("entity_capacity", &sim::WorldEcsDiagnostics::entityCapacity)
+      .def_ro("storage_count", &sim::WorldEcsDiagnostics::storageCount)
+      .def_ro("component_count", &sim::WorldEcsDiagnostics::componentCount)
+      .def_ro(
+          "component_capacity", &sim::WorldEcsDiagnostics::componentCapacity)
+      .def_ro("storages", &sim::WorldEcsDiagnostics::storages);
+
+  nb::class_<sim::WorldMemoryDiagnostics>(m, "WorldMemoryDiagnostics")
+      .def_ro(
+          "allocator_debug_diagnostics",
+          &sim::WorldMemoryDiagnostics::allocatorDebugDiagnostics)
+      .def_ro("ecs_diagnostics", &sim::WorldMemoryDiagnostics::ecsDiagnostics)
+      .def_ro(
+          "frame_scratch_capacity_bytes",
+          &sim::WorldMemoryDiagnostics::frameScratchCapacityBytes)
+      .def_ro(
+          "frame_scratch_used_bytes",
+          &sim::WorldMemoryDiagnostics::frameScratchUsedBytes)
+      .def_ro(
+          "frame_scratch_peak_used_bytes",
+          &sim::WorldMemoryDiagnostics::frameScratchPeakUsedBytes)
+      .def_ro(
+          "frame_scratch_overflow_count",
+          &sim::WorldMemoryDiagnostics::frameScratchOverflowCount)
+      .def_ro(
+          "frame_scratch_overflow_bytes",
+          &sim::WorldMemoryDiagnostics::frameScratchOverflowBytes)
+      .def_ro(
+          "frame_scratch_reset_count",
+          &sim::WorldMemoryDiagnostics::frameScratchResetCount);
+
   nb::class_<sim::DeformableMaterialProperties>(
       m, "DeformableMaterialProperties")
       .def(nb::init<>())
@@ -2844,6 +2908,11 @@ void defSimulationExperimentalModule(nb::module_& m)
           "Curated diagnostics from the deformable solve on the most recent "
           "step that used the built-in pipeline (mesh sizes, projected-Newton "
           "convergence, self-contact activity, contact closest-approach).")
+      .def_prop_ro(
+          "memory_diagnostics",
+          &sim::World::getMemoryDiagnostics,
+          nb::rv_policy::copy,
+          "Snapshot of World-owned allocator and ECS storage diagnostics.")
       .def_prop_rw(
           "time_step", &sim::World::getTimeStep, &sim::World::setTimeStep)
       .def_prop_rw("time", &sim::World::getTime, &sim::World::setTime)
