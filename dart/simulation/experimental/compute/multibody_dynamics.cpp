@@ -2883,8 +2883,12 @@ bool tryResolveSequentialMultibodyContacts(
   for (auto entity : view) {
     const auto& structure = view.get<comps::MultibodyStructure>(entity);
     auto& scratch = registry.get<MultibodyDynamicsScratch>(entity);
-    if (scratch.linkContacts.empty() && !isRequiredCrossMultibody(entity)) {
+    const bool hasOwnedLinkContacts = !scratch.linkContacts.empty();
+    if (!hasOwnedLinkContacts && !isRequiredCrossMultibody(entity)) {
       continue;
+    }
+    if (!hasOwnedLinkContacts) {
+      scratch.activeContactRowCount = 0;
     }
 
     auto* pendingVelocity = registry.try_get<PendingMultibodyVelocity>(entity);
