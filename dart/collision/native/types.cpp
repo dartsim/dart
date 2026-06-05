@@ -40,7 +40,11 @@ void CollisionResult::addManifold(ContactManifold manifold)
 {
   contactCount_ += manifold.numContacts();
   if (manifoldCount_ == 0u) {
-    firstManifold_ = std::make_unique<ContactManifold>(std::move(manifold));
+    if (firstManifold_ != nullptr) {
+      *firstManifold_ = std::move(manifold);
+    } else {
+      firstManifold_ = std::make_unique<ContactManifold>(std::move(manifold));
+    }
     firstEntryIsContact_ = false;
     manifoldCount_ = 1u;
   } else {

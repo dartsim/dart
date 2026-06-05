@@ -76,7 +76,11 @@ struct WorldStorage;
 } // namespace detail
 
 namespace compute {
+class MultibodyContactStage;
+class MultibodyForwardDynamicsStage;
+class RigidBodyContactStage;
 class RigidIpcContactStage;
+class UnifiedConstraintStage;
 } // namespace compute
 
 struct WorldOptions;
@@ -731,8 +735,12 @@ private:
   friend class RigidBody;
   friend class DeformableBody;
   friend class io::detail::SkeletonLoaderWorldAccess;
+  friend class compute::MultibodyContactStage;
+  friend class compute::MultibodyForwardDynamicsStage;
+  friend class compute::RigidBodyContactStage;
   friend class compute::WorldKinematicsGraph;
   friend class compute::RigidIpcContactStage;
+  friend class compute::UnifiedConstraintStage;
 
   /// Internal storage seam. `detail::storageOf` reaches the privately-held,
   /// ECS-typed `WorldStorage` without exposing it on the public surface; the
@@ -761,6 +769,8 @@ private:
       const Eigen::Vector3d& axis);
 
   void ensureDesignMode() const;
+  [[nodiscard]] const std::vector<Contact>& queryContacts(
+      const CollisionQueryOptions& options);
   void markFrameTopologyChanged() noexcept;
   [[nodiscard]] std::uint64_t getFrameTopologyRevision() const noexcept;
   void reserveRegistryStorageForSimulation();

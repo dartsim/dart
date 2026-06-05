@@ -125,12 +125,12 @@ void integrateMultibodyPositions(
       continue;
     }
 
-    const Eigen::VectorXd previousVelocity = joint.velocity;
+    joint.acceleration = joint.velocity;
     joint.velocity = nextVelocity.segment(velocityOffset, dof);
     velocityOffset += dof;
 
     const auto updateAccelerationFromVelocityDelta = [&]() {
-      joint.acceleration = (joint.velocity - previousVelocity) / timeStep;
+      joint.acceleration = (joint.velocity - joint.acceleration) / timeStep;
     };
 
     if (joint.type == comps::JointType::Spherical) {

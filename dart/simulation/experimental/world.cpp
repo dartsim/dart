@@ -189,18 +189,41 @@ struct World::CollisionQueryCache
     ncol::CollisionObject object;
   };
 
-  void clear()
+  struct ShapeEntrySpec
   {
+    Key key;
+    const CollisionShape* shape;
+    Eigen::Isometry3d pose;
+  };
+
+  void clearObjectsAndResultsPreservingSpecs()
+  {
+    // queryContacts() rebuilds native objects from `specs` after this call, so
+    // keep that vector intact while clearing the derived native/query state.
     collisionWorld.clear();
     keys.clear();
     entries.clear();
     entryByObjectId.clear();
+    candidatePairs.pairs.clear();
+    candidatePairs.numObjects = 0;
+    contacts.clear();
+    pairResult.clear();
+  }
+
+  void clear()
+  {
+    clearObjectsAndResultsPreservingSpecs();
+    specs.clear();
   }
 
   ncol::CollisionWorld collisionWorld;
   std::vector<Key> keys;
   std::vector<ObjectEntry> entries;
   std::vector<std::size_t> entryByObjectId;
+  std::vector<ShapeEntrySpec> specs;
+  ncol::BroadPhaseSnapshot candidatePairs;
+  std::vector<Contact> contacts;
+  ncol::CollisionResult pairResult;
 };
 
 struct World::ReplayState
@@ -1144,22 +1167,36 @@ struct WorldStepPipelineStages
     return pipeline;
   }
 
-  void prepare(World& world, RigidBodySolver rigidBodySolver)
-  {
-    prepareRigidIpcContact(world, rigidBodySolver);
-    kinematics.prepare(world);
-  }
-
-  void prepareRigidIpcContact(World& world, RigidBodySolver rigidBodySolver)
+  void prepare(
+      World& world,
+      RigidBodySolver rigidBodySolver,
+      bool variationalSelected,
+      bool includeMultibodyStage)
   {
     DART_EXPERIMENTAL_THROW_T_IF(
         !isValidRigidBodySolver(rigidBodySolver),
         InvalidArgumentException,
         "Rigid-body solver is invalid");
 
-    if (rigidBodySolver == RigidBodySolver::Ipc) {
-      rigidIpcContact.prepare(world);
+    switch (rigidBodySolver) {
+      case RigidBodySolver::SequentialImpulse:
+        rigidBodyVelocity.prepare(world);
+        if (variationalSelected) {
+          rigidBodyContact.prepare(world);
+          multibodyVariational.prepare(world);
+        } else if (!includeMultibodyStage) {
+          rigidBodyContact.prepare(world);
+        }
+        break;
+      case RigidBodySolver::Ipc:
+        rigidIpcContact.prepare(world);
+        if (variationalSelected && includeMultibodyStage) {
+          multibodyVariational.prepare(world);
+        }
+        break;
     }
+    deformableDynamics.prepare(world);
+    kinematics.prepare(world);
   }
 
 private:
@@ -3080,7 +3117,11 @@ void World::enterSimulationMode()
   detail::deformable_vbd::configureAvbdRigidWorldPointJointsFromCurrentPoses(
       m_storage->registry);
   reserveRegistryStorageForSimulation();
-  m_stepPipelineCache->stages.prepare(*this, m_rigidBodySolver);
+  m_stepPipelineCache->stages.prepare(
+      *this,
+      m_rigidBodySolver,
+      m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational,
+      hasMultibodyStructures(*this));
 }
 
 //==============================================================================
@@ -3111,7 +3152,11 @@ void World::setRigidBodySolver(RigidBodySolver solver)
   validateRigidBodyJointPipelineSupport(*this, solver);
   m_rigidBodySolver = solver;
   if (m_simulationMode) {
-    m_stepPipelineCache->stages.prepareRigidIpcContact(*this, solver);
+    m_stepPipelineCache->stages.prepare(
+        *this,
+        m_rigidBodySolver,
+        m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational,
+        hasMultibodyStructures(*this));
   }
 }
 
@@ -3494,6 +3539,8 @@ void World::setMultibodyOptions(const MultibodyOptions& options)
     m_multibodyIntegrationMethod = MultibodyIntegrationMethod::Variational;
     if (m_simulationMode) {
       reserveRegistryStorageForSimulation();
+      m_stepPipelineCache->stages.prepare(
+          *this, m_rigidBodySolver, true, hasMultibodyStructures(*this));
     }
   } else {
     DART_EXPERIMENTAL_THROW_T(
@@ -4355,13 +4402,19 @@ std::vector<Contact> World::collide()
 //==============================================================================
 std::vector<Contact> World::collide(const CollisionQueryOptions& options)
 {
-  struct ShapeEntrySpec
-  {
-    CollisionQueryCache::Key key;
-    const CollisionShape* shape;
-    Eigen::Isometry3d pose;
-  };
-  std::vector<ShapeEntrySpec> specs;
+  return queryContacts(options);
+}
+
+//==============================================================================
+const std::vector<Contact>& World::queryContacts(
+    const CollisionQueryOptions& options)
+{
+  if (!m_collisionQueryCache) {
+    m_collisionQueryCache = std::make_unique<CollisionQueryCache>();
+  }
+  auto& cache = *m_collisionQueryCache;
+  auto& specs = cache.specs;
+  specs.clear();
 
   const auto findMultibodyOwningLink = [&](entt::entity linkEntity) {
     auto view = m_storage->registry.view<comps::MultibodyStructure>();
@@ -4405,6 +4458,19 @@ std::vector<Contact> World::collide(const CollisionQueryOptions& options)
     return shape;
   };
 
+  const auto supportsNativeShape = [](const CollisionShape& collisionShape) {
+    switch (collisionShape.type) {
+      case CollisionShapeType::Sphere:
+      case CollisionShapeType::Box:
+      case CollisionShapeType::Capsule:
+      case CollisionShapeType::Cylinder:
+      case CollisionShapeType::Plane:
+      case CollisionShapeType::Mesh:
+        return true;
+    }
+    return false;
+  };
+
   const auto addSpecs = [&](entt::entity entity,
                             entt::entity multibody,
                             bool isLink,
@@ -4412,8 +4478,11 @@ std::vector<Contact> World::collide(const CollisionQueryOptions& options)
                             const Eigen::Isometry3d& pose) {
     for (std::size_t i = 0; i < geometry.shapes.size(); ++i) {
       const auto& shape = geometry.shapes[i];
+      if (!supportsNativeShape(shape)) {
+        continue;
+      }
       specs.push_back(
-          ShapeEntrySpec{
+          CollisionQueryCache::ShapeEntrySpec{
               CollisionQueryCache::Key{
                   entity, i, geometry.revision, multibody, isLink},
               &shape,
@@ -4467,23 +4536,24 @@ std::vector<Contact> World::collide(const CollisionQueryOptions& options)
     addSpecs(entity, multibody, true, geometry, link.getWorldTransform());
   }
 
-  if (!m_collisionQueryCache) {
-    m_collisionQueryCache = std::make_unique<CollisionQueryCache>();
+  if (specs.empty()) {
+    cache.contacts.clear();
+    return cache.contacts;
   }
-  auto& cache = *m_collisionQueryCache;
 
-  const bool rebuildCache = cache.keys.size() != specs.size()
-                            || !std::equal(
-                                specs.begin(),
-                                specs.end(),
-                                cache.keys.begin(),
-                                [](const ShapeEntrySpec& spec,
-                                   const CollisionQueryCache::Key& key) {
-                                  return spec.key == key;
-                                });
+  const bool rebuildCache
+      = cache.keys.size() != specs.size()
+        || !std::equal(
+            specs.begin(),
+            specs.end(),
+            cache.keys.begin(),
+            [](const CollisionQueryCache::ShapeEntrySpec& spec,
+               const CollisionQueryCache::Key& key) {
+              return spec.key == key;
+            });
 
   if (rebuildCache) {
-    cache.clear();
+    cache.clearObjectsAndResultsPreservingSpecs();
     cache.collisionWorld.reserveObjects(specs.size());
     cache.keys.reserve(specs.size());
     cache.entries.reserve(specs.size());
@@ -4514,9 +4584,10 @@ std::vector<Contact> World::collide(const CollisionQueryOptions& options)
   // known here, so the contacts map back to the right experimental bodies
   // without relying on the result carrying object identity.
   const auto option = ncol::CollisionOption::fullContacts();
-  const auto candidatePairs = cache.collisionWorld.buildBroadPhaseSnapshot();
-  std::vector<Contact> contacts;
-  for (const auto& pair : candidatePairs.pairs) {
+  cache.collisionWorld.buildBroadPhaseSnapshot(cache.candidatePairs);
+  auto& contacts = cache.contacts;
+  contacts.clear();
+  for (const auto& pair : cache.candidatePairs.pairs) {
     if (pair.first >= cache.entryByObjectId.size()
         || pair.second >= cache.entryByObjectId.size()) {
       continue;
@@ -4530,14 +4601,14 @@ std::vector<Contact> World::collide(const CollisionQueryOptions& options)
       continue;
     }
 
-    ncol::CollisionResult result;
+    auto& result = cache.pairResult;
+    result.clear();
     if (!cache.collisionWorld.collide(
             cache.entries[i].object, cache.entries[j].object, option, result)) {
       continue;
     }
 
-    for (std::size_t k = 0; k < result.numContacts(); ++k) {
-      const auto& point = result.getContact(k);
+    result.forEachContact([&](const ncol::ContactPoint& point) {
       // The native narrow phase reports the normal pointing from the second
       // object toward the first; the public Contact convention points from
       // bodyA (entries[i]) toward bodyB (entries[j]), so negate it.
@@ -4554,7 +4625,7 @@ std::vector<Contact> World::collide(const CollisionQueryOptions& options)
               specs[j].key.shapeIndex,
               specs[i].pose.inverse() * point.position,
               specs[j].pose.inverse() * point.position});
-    }
+    });
   }
 
   return contacts;
