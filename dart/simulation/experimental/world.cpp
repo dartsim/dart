@@ -4021,6 +4021,7 @@ void World::restoreReplayFrame(std::size_t index)
           state.entity, *state.fixedFrameProperties);
     }
   }
+  markFrameTopologyChanged();
   markFrameCachesDirty(m_storage->registry);
 
   for (const auto stateIndex : rigidBodyRestoreOrder) {
