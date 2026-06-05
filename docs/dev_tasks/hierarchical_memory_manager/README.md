@@ -33,7 +33,13 @@
       kinematic IPC rigid-body and box-obstacle steps. Broader solver coverage
       remains open before making a full zero-allocation claim.
 - [ ] Phase 6: Add memory-layout profiler/debugger surfaces and GUI
-      visualization.
+      visualization. `MemoryAllocatorDebugger` now exposes structured live
+      bytes, peak live bytes, and live allocation count; `MemoryManager` and
+      experimental `World` diagnostics now surface direct free/pool allocator
+      debug counters. `WorldMemoryDiagnostics` also reports aggregate and
+      per-storage ECS registry layout counters without exposing EnTT types, and
+      dartpy exposes the same read-only snapshot through
+      `World.memory_diagnostics`. GUI visualization remains future work.
 
 ## Goal
 
@@ -47,8 +53,9 @@ debugging, profiling, optimization experiments, and ImGui visualization.
 
 - Do not claim zero allocations for every experimental solver path yet.
 - Do not replace Eigen's internal heap behavior in one pass.
-- Do not expose ECS storage, solver registries, or backend resource types in
-  public memory diagnostics.
+- Do not expose raw EnTT storage, solver registries, or backend resource types
+  in public memory diagnostics; surface only DART-owned counters and diagnostic
+  IDs.
 
 ## Key Decisions
 

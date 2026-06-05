@@ -809,6 +809,39 @@ DeformableSolverDiagnostics makeDeformableSolverDiagnostics(
 }
 
 //==============================================================================
+template <typename Registry>
+WorldEcsDiagnostics makeWorldEcsDiagnostics(const Registry& registry)
+{
+  WorldEcsDiagnostics diagnostics;
+
+  const auto* entityStorage = registry.template storage<entt::entity>();
+  if (entityStorage != nullptr) {
+    for (auto entity : *entityStorage) {
+      if (registry.valid(entity)) {
+        ++diagnostics.entityCount;
+      }
+    }
+    diagnostics.entityCapacity = entityStorage->capacity();
+  }
+
+  for (auto&& [id, storage] : registry.storage()) {
+    const auto size = storage.size();
+    const auto capacity = storage.capacity();
+    diagnostics.storages.push_back(
+        WorldEcsStorageDiagnostics{
+            static_cast<std::size_t>(id),
+            size,
+            capacity,
+        });
+    diagnostics.componentCount += size;
+    diagnostics.componentCapacity += capacity;
+  }
+
+  diagnostics.storageCount = diagnostics.storages.size();
+  return diagnostics;
+}
+
+//==============================================================================
 void executeKinematicsGraph(World& world, compute::ComputeExecutor& executor)
 {
   compute::WorldKinematicsGraph graph(world);
@@ -2060,6 +2093,9 @@ const common::MemoryManager& World::getMemoryManager() const
 WorldMemoryDiagnostics World::getMemoryDiagnostics() const
 {
   WorldMemoryDiagnostics diagnostics = m_memoryDiagnostics;
+  diagnostics.allocatorDebugDiagnostics = m_memoryManager.getDebugDiagnostics();
+  diagnostics.ecsDiagnostics
+      = makeWorldEcsDiagnostics(detail::registryOf(*this));
   const auto& frameAllocator = m_memoryManager.getFrameAllocator();
   const auto overflowBytes = frameAllocator.overflowBytes();
   diagnostics.frameScratchCapacityBytes = frameAllocator.usableCapacity();
@@ -3369,6 +3405,8 @@ void World::resetFrameScratchForStep()
 //==============================================================================
 void World::refreshMemoryDiagnostics()
 {
+  m_memoryDiagnostics.allocatorDebugDiagnostics
+      = m_memoryManager.getDebugDiagnostics();
   const auto& frameAllocator = m_memoryManager.getFrameAllocator();
   const auto overflowBytes = frameAllocator.overflowBytes();
   m_memoryDiagnostics.frameScratchCapacityBytes

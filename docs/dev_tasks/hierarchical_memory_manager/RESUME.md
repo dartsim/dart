@@ -44,20 +44,30 @@ fixed inline list of non-owning stage pointers sized for the current default
 World stage compositions plus headroom, while longer custom pipelines preserve
 the previous arbitrary-stage behavior through an overflow path.
 
+The memory-debugger correctness slice exposes structured live-byte, peak-byte,
+and allocation-count queries from the allocator debug path and from the
+manager-owned free-list/pool allocators. `MemoryManager::DebugDiagnostics` and
+experimental `WorldMemoryDiagnostics` now include typed borrowed allocator use,
+so diagnostics cover callers that borrow `getFreeListAllocator()` or
+`getPoolAllocator()` directly. The same branch also keeps the aggregate and
+per-storage ECS registry layout counters available for profiler/debugger
+tooling and dartpy's read-only `World.memory_diagnostics` snapshot.
+
 ## Current Branch
 
 `feature/world-step-global-heap-guard` - PR #2888 branch for the first global
 heap allocation guard on top of the registry, no-growth, and inline-pipeline
-work that has merged to `main`.
+work that has merged to `main`, plus the merged allocator-debugger diagnostics
+slice from PR #2893.
 
 ## Immediate Next Step
 
-Monitor #2888 CI and resolve any failures. Next allocator work should
-land the strict comparative benchmark gate, broaden `FixedPoolAllocator`
-correctness coverage, benchmark allocator-backed EnTT registry/component
-storage, extend no-growth ECS tests to broader contact and remaining solver
-scratch step paths, and broaden the global heap allocation guard before
-claiming zero dynamic allocation for the full simulation loop.
+Monitor #2888 CI and resolve any failures after the latest `origin/main` merge.
+Next allocator work should land the strict comparative benchmark gate, broaden
+`FixedPoolAllocator` correctness coverage, benchmark allocator-backed EnTT
+registry/component storage, extend no-growth ECS tests to broader contact and
+remaining solver scratch step paths, and broaden the global heap allocation
+guard before claiming zero dynamic allocation for the full simulation loop.
 
 ## Latest Local Validation
 
@@ -81,6 +91,9 @@ claiming zero dynamic allocation for the full simulation loop.
 - On `feature/world-step-global-heap-guard` before this handoff:
   `cmake --build build/default/cpp/Release --target test_world -j2` and
   `ctest --test-dir build/default/cpp/Release -R '^test_world$' --output-on-failure`
+- On `test/memory-allocator-debugger-correctness` after borrowed-allocator
+  diagnostics: `cmake --build build/default/cpp/Release --target UNIT_common_memory_manager test_world -j2`
+  and `ctest --test-dir build/default/cpp/Release -R '^(UNIT_common_memory_manager|test_world)$' --output-on-failure`
 
 ## Context That Would Be Lost
 
@@ -115,6 +128,5 @@ git status -sb
 git diff --stat
 ```
 
-Then continue from the open PR stack: #2872 allocator-backed experimental World
-registry, #2879 no-growth ECS guard, #2880 inline pipeline storage, and the
-comparative benchmark gate branch.
+Then continue from the open PRs for allocator diagnostics, comparative
+benchmarks, EnTT registry/storage allocation evidence, and global heap guards.
