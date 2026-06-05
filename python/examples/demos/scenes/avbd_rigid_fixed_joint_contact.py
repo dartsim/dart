@@ -173,6 +173,7 @@ def build() -> SceneSetup:
             "ground": ground,
             "connector": connector,
             "replay_sync": replay_sync,
+            "replay_live_step_is_stateless": True,
         },
     )
 

@@ -164,7 +164,11 @@ def test_shared_replay_panel_scrubs_and_replays_saved_world_states() -> None:
         build=lambda: SceneSetup(
             world=object(),
             pre_step=live_pre_step,
-            info={"sx_world": replay_world, "replay_sync": sync},
+            info={
+                "sx_world": replay_world,
+                "replay_sync": sync,
+                "replay_live_step_is_stateless": True,
+            },
         ),
     )
     setup = _attach_replay_controls(scene, scene.build())
@@ -206,6 +210,88 @@ def test_shared_replay_panel_scrubs_and_replays_saved_world_states() -> None:
     assert replay_world.steps == 3
     assert replay_world.frame == 3
     assert sync_calls["count"] >= 3
+
+
+def test_shared_replay_panel_restores_scene_replay_state() -> None:
+    replay_world = _FakeReplayWorld()
+    controller_state = {"phase": 0}
+
+    def live_pre_step() -> None:
+        controller_state["phase"] += 1
+        replay_world.step()
+
+    def capture_state() -> dict[str, int]:
+        return dict(controller_state)
+
+    def restore_state(snapshot: dict[str, int]) -> None:
+        controller_state["phase"] = int(snapshot["phase"])
+
+    scene = PythonDemoScene(
+        id="stateful_replay",
+        title="Stateful Replay",
+        category="Tests",
+        summary="Keeps Python controller state outside the World.",
+        build=lambda: SceneSetup(
+            world=object(),
+            pre_step=live_pre_step,
+            info={
+                "sx_world": replay_world,
+                "replay_capture_state": capture_state,
+                "replay_restore_state": restore_state,
+            },
+        ),
+    )
+    setup = _attach_replay_controls(scene, scene.build())
+    panel = setup.panels[-1]
+    context = _FakePanelContext()
+
+    setup.pre_step()
+    setup.pre_step()
+    assert replay_world.replay_frame_count == 3
+    assert controller_state["phase"] == 2
+
+    panel.build(
+        _ScriptedPanelBuilder(
+            timeline_values={"Saved states##py_demo_replay_timeline": 1.0}
+        ),
+        context,
+    )
+    assert replay_world.frame == 1
+    assert controller_state["phase"] == 1
+
+    panel.build(_ScriptedPanelBuilder(clicked_buttons={"Resume live"}), context)
+    setup.pre_step()
+
+    assert replay_world.frame == 2
+    assert controller_state["phase"] == 2
+
+
+def test_custom_replay_pre_step_requires_state_hooks_or_stateless_flag() -> None:
+    replay_world = _FakeReplayWorld()
+
+    def live_pre_step() -> None:
+        replay_world.step()
+
+    setup = SceneSetup(
+        world=object(),
+        pre_step=live_pre_step,
+        info={"sx_world": replay_world},
+    )
+    scene = PythonDemoScene(
+        id="stateful_without_hooks",
+        title="Stateful Without Hooks",
+        category="Tests",
+        summary="Has a custom live pre-step without replay state hooks.",
+        build=lambda: setup,
+    )
+
+    _attach_replay_controls(scene, setup)
+
+    assert setup.panels == []
+    assert "replay_controller" not in setup.info
+    assert "custom pre_step needs replay_capture_state" in setup.info[
+        "shared_replay_skipped_reason"
+    ]
 
 
 def test_shared_replay_panel_honors_scene_opt_out() -> None:

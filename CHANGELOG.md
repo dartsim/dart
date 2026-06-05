@@ -129,8 +129,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     labels, and exposes a bounded captured-frame timeline when recording
     viewer frames. Python demos backed by an experimental `World` now also get
     a shared bottom-docked `Replay` panel: `Save replay` records bounded World
-    state snapshots during normal playback, and the same timeline widget can
-    scrub or play those saved states without re-running physics.
+    state snapshots during normal playback, optional scene replay-state hooks
+    capture small Python controller state beside the World frames, and the same
+    timeline widget can scrub or play those saved states without re-running
+    physics.
   - Added `pixi run bm-allocator-comparative-check`, a strict allocator
     benchmark gate that compares DART allocator workloads against
     foonathan/memory and `std::pmr` baselines.

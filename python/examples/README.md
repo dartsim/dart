@@ -45,6 +45,8 @@ are required.
 per-example controls and diagnostics; the runner renders them through DART's
 renderer-neutral `PanelBuilder`. Experimental-World scenes also receive the
 shared bottom `Replay` panel, which records bounded saved states during normal
-playback and can scrub or play them back without re-running physics. Use
+playback and can scrub or play them back without re-running physics. Scene
+modules with Python-side controller state can add small replay capture/restore
+callbacks while static geometry and render setup stay scene-owned. Use
 `--headless` for deterministic screenshot/frame capture and the C++ `dartsim`
 editor (PLAN-101) for scene authoring.

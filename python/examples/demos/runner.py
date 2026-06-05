@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import copy
 import os
 import signal
 import sys
@@ -181,6 +182,31 @@ def _sync_callback_from_pre_step(
     return None
 
 
+def _is_bridge_pre_step(pre_step: Callable[[], None] | None, replay_world: Any) -> bool:
+    if pre_step is None:
+        return False
+    owner = getattr(pre_step, "__self__", None)
+    return (
+        getattr(owner, "_physics_world", None) is replay_world
+        and getattr(pre_step, "__name__", "") == "pre_step"
+    )
+
+
+def _replay_state_callbacks(
+    setup: SceneSetup,
+) -> tuple[Callable[[], Any] | None, Callable[[Any], None] | None]:
+    capture = setup.info.get("replay_capture_state")
+    restore = setup.info.get("replay_restore_state")
+    if capture is None and restore is None:
+        return None, None
+    if callable(capture) and callable(restore):
+        return capture, restore
+    setup.info["shared_replay_skipped_reason"] = (
+        "replay_capture_state and replay_restore_state must both be callable"
+    )
+    return None, None
+
+
 def _timeline_sample_count(frame_count: int) -> int:
     return max(0, min(int(frame_count), 1024))
 
@@ -230,11 +256,16 @@ class _ReplayController:
         self,
         world: Any,
         sync: Callable[[], None] | None,
+        capture_state: Callable[[], Any] | None = None,
+        restore_state: Callable[[Any], None] | None = None,
         *,
         max_frames: int = DEFAULT_REPLAY_MAX_FRAMES,
     ) -> None:
         self._world = world
         self._sync = sync or (lambda: None)
+        self._capture_state = capture_state
+        self._restore_state = restore_state
+        self._scene_states: list[Any] = []
         self._max_frames = max(1, int(max_frames))
         self.save_replay = True
         self.replay_active = False
@@ -245,6 +276,7 @@ class _ReplayController:
         self.status = "recording"
         self._set_recording(True)
         self.selected_frame = self._current_frame()
+        self._capture_scene_state()
         self._sync()
 
     @property
@@ -317,6 +349,48 @@ class _ReplayController:
         if hasattr(context, "set_paused"):
             context.set_paused(False)
 
+    def _copy_state(self, state: Any) -> Any:
+        try:
+            return copy.deepcopy(state)
+        except Exception:  # noqa: BLE001
+            return state
+
+    def _capture_scene_state(self) -> None:
+        if self._capture_state is None:
+            return
+        count = self.frame_count
+        if count <= 0:
+            self._scene_states.clear()
+            return
+
+        current = self._current_frame()
+        if len(self._scene_states) > count:
+            del self._scene_states[count:]
+        while len(self._scene_states) < count:
+            self._scene_states.append(None)
+        try:
+            self._scene_states[current] = self._copy_state(self._capture_state())
+        except Exception:  # noqa: BLE001
+            self.save_replay = False
+            self.playing = False
+            self._set_recording(False)
+            self.status = "replay state capture failed"
+
+    def _restore_scene_state(self, frame: int) -> None:
+        if self._restore_state is None:
+            return
+        if frame < 0 or frame >= len(self._scene_states):
+            return
+        snapshot = self._scene_states[frame]
+        if snapshot is None:
+            return
+        try:
+            self._restore_state(self._copy_state(snapshot))
+        except Exception:  # noqa: BLE001
+            self.playing = False
+            self.replay_active = False
+            self.status = "replay state restore failed"
+
     def restore_frame(self, index: int) -> None:
         count = self.frame_count
         if count <= 0:
@@ -326,6 +400,7 @@ class _ReplayController:
             return
         clamped = max(0, min(int(index), count - 1))
         self._world.restore_replay_frame(clamped)
+        self._restore_scene_state(clamped)
         self.selected_frame = clamped
         self.replay_active = True
         self.status = "replay"
@@ -336,6 +411,7 @@ class _ReplayController:
             self.status = "live"
             return
         self.selected_frame = self._current_frame()
+        self._capture_scene_state()
         if self.frame_count >= self._max_frames:
             self._set_recording(False)
             self.save_replay = False
@@ -379,6 +455,7 @@ class _ReplayController:
             self.playing = False
             self._set_recording(True)
             self.selected_frame = self._current_frame()
+            self._capture_scene_state()
             self.status = "recording"
         else:
             self._set_recording(False)
@@ -389,6 +466,7 @@ class _ReplayController:
         self.replay_active = False
         self._world.clear_replay_recording()
         self.selected_frame = self._current_frame()
+        self._capture_scene_state()
         self._sync()
 
     def _resume_live(self, context: Any) -> None:
@@ -515,10 +593,28 @@ def _attach_replay_controls(scene: PythonDemoScene, setup: SceneSetup) -> SceneS
     if replay_world is None:
         return setup
 
+    capture_state, restore_state = _replay_state_callbacks(setup)
+    if (
+        setup.pre_step is not None
+        and not _is_bridge_pre_step(setup.pre_step, replay_world)
+        and capture_state is None
+        and not setup.info.get("replay_live_step_is_stateless")
+    ):
+        setup.info["shared_replay_skipped_reason"] = (
+            "custom pre_step needs replay_capture_state/replay_restore_state "
+            "or replay_live_step_is_stateless"
+        )
+        return setup
+
     sync = setup.info.get("replay_sync")
     if sync is None:
         sync = _sync_callback_from_pre_step(setup.pre_step, replay_world)
-    controller = _ReplayController(replay_world, sync)
+    controller = _ReplayController(
+        replay_world,
+        sync,
+        capture_state=capture_state,
+        restore_state=restore_state,
+    )
     live_pre_step = setup.pre_step
 
     def replay_pre_step() -> None:
