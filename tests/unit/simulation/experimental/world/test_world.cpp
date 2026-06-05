@@ -65,6 +65,7 @@
 #include <Eigen/Geometry>
 #include <gtest/gtest.h>
 
+#include <array>
 #include <atomic>
 #include <limits>
 
@@ -701,6 +702,57 @@ TEST(World, RegistryUsesWorldFreeAllocator)
   EXPECT_EQ(
       storage.differentiableParameters.get_allocator(),
       expectedParameterAllocator);
+}
+
+TEST(World, ReservedRegistryStorageReusesComponentCapacity)
+{
+  namespace common = dart::common;
+  namespace sx = dart::simulation::experimental;
+
+  CountingMemoryAllocator allocator;
+  common::MemoryManager memoryManager(allocator);
+  sx::detail::WorldRegistry registry(
+      sx::detail::WorldRegistryAllocator{memoryManager.getFreeAllocator()});
+
+  constexpr std::size_t kEntityCount = 16;
+  registry.storage<entt::entity>().reserve(kEntityCount);
+  registry.storage<sx::comps::RigidBodyTag>().reserve(kEntityCount);
+  registry.storage<sx::comps::Transform>().reserve(kEntityCount);
+  registry.storage<sx::comps::Velocity>().reserve(kEntityCount);
+  registry.storage<sx::comps::Force>().reserve(kEntityCount);
+
+  const auto capacities = registryStorageCapacities(registry);
+  const auto allocationsAfterReserve = allocator.allocationCount;
+  const auto alignedAllocationsAfterReserve = allocator.alignedAllocationCount;
+
+  std::array<entt::entity, kEntityCount> entities{};
+  for (int cycle = 0; cycle < 3; ++cycle) {
+    for (std::size_t i = 0; i < kEntityCount; ++i) {
+      const auto entity = registry.create();
+      entities[i] = entity;
+      registry.emplace<sx::comps::RigidBodyTag>(entity);
+      auto& transform = registry.emplace<sx::comps::Transform>(entity);
+      transform.position.x() = static_cast<double>(i);
+      registry.emplace<sx::comps::Velocity>(entity);
+      registry.emplace<sx::comps::Force>(entity);
+    }
+
+    EXPECT_EQ(registry.storage<sx::comps::Velocity>().size(), kEntityCount);
+    registry.clear<sx::comps::Velocity>();
+    expectRegistryStorageCapacitiesUnchanged(capacities, registry);
+    for (const auto entity : entities) {
+      registry.emplace<sx::comps::Velocity>(entity);
+    }
+    expectRegistryStorageCapacitiesUnchanged(capacities, registry);
+
+    for (const auto entity : entities) {
+      registry.destroy(entity);
+    }
+    expectRegistryStorageCapacitiesUnchanged(capacities, registry);
+  }
+
+  EXPECT_EQ(allocator.allocationCount, allocationsAfterReserve);
+  EXPECT_EQ(allocator.alignedAllocationCount, alignedAllocationsAfterReserve);
 }
 
 TEST(World, EnterSimulationModeReservesRegistryStorageForKinematicIpcSteps)
@@ -7116,13 +7168,15 @@ TEST(World, StepAcceptsMultiDomainSolverPipeline)
   EXPECT_EQ(world.getFrame(), 1u);
 }
 
-// Test that the fixed-size pipeline stage storage covers the advertised
-// capacity and rejects overflow without growing heap-backed state.
-TEST(World, StepPipelineRejectsMoreThanInlineStageCapacity)
+// Test that custom pipelines can exceed the inline storage threshold while
+// built-in pipelines keep the inline no-allocation fast path.
+TEST(World, StepPipelineAllowsMoreThanInlineStageCapacity)
 {
   namespace sx = dart::simulation::experimental;
   namespace compute = dart::simulation::experimental::compute;
 
+  sx::World world;
+  world.setTimeStep(0.25);
   std::vector<std::string> order;
   RecordingWorldStage stage0("stage0", {}, order);
   RecordingWorldStage stage1("stage1", {}, order);
@@ -7132,7 +7186,7 @@ TEST(World, StepPipelineRejectsMoreThanInlineStageCapacity)
   RecordingWorldStage stage5("stage5", {}, order);
   RecordingWorldStage stage6("stage6", {}, order);
   RecordingWorldStage stage7("stage7", {}, order);
-  RecordingWorldStage overflow("overflow", {}, order);
+  RecordingWorldStage stage8("stage8", {}, order);
 
   compute::WorldStepPipeline pipeline;
   pipeline.addStage(stage0)
@@ -7142,14 +7196,32 @@ TEST(World, StepPipelineRejectsMoreThanInlineStageCapacity)
       .addStage(stage4)
       .addStage(stage5)
       .addStage(stage6)
-      .addStage(stage7);
+      .addStage(stage7)
+      .addStage(stage8);
 
   EXPECT_EQ(
-      pipeline.getStageCount(), compute::WorldStepPipeline::kMaxStageCount);
-  EXPECT_THROW(pipeline.addStage(overflow), sx::InvalidArgumentException);
-  EXPECT_EQ(
-      pipeline.getStageCount(), compute::WorldStepPipeline::kMaxStageCount);
+      pipeline.getStageCount(),
+      compute::WorldStepPipeline::kInlineStageCount + 1u);
   EXPECT_EQ(&pipeline.getStage(7), &stage7);
+  EXPECT_EQ(&pipeline.getStage(8), &stage8);
+  EXPECT_THROW({ (void)pipeline.getStage(9); }, sx::OutOfRangeException);
+
+  compute::SequentialExecutor executor;
+  world.step(executor, pipeline);
+  EXPECT_EQ(
+      order,
+      (std::vector<std::string>{
+          "stage0",
+          "stage1",
+          "stage2",
+          "stage3",
+          "stage4",
+          "stage5",
+          "stage6",
+          "stage7",
+          "stage8"}));
+  EXPECT_DOUBLE_EQ(world.getTime(), 0.25);
+  EXPECT_EQ(world.getFrame(), 1u);
 
   pipeline.clear();
   EXPECT_TRUE(pipeline.isEmpty());

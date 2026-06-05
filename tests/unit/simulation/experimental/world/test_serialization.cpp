@@ -134,6 +134,46 @@ public:
   std::size_t alignedDeallocationCount{0};
 };
 
+struct VersionedLoadFallbackComponent
+{
+  std::uint32_t value{0};
+};
+
+class LegacyLoadFallbackSerializer final
+  : public dart::simulation::experimental::io::ComponentSerializer
+{
+public:
+  [[nodiscard]] std::string_view getTypeName() const override
+  {
+    return "test::VersionedLoadFallbackComponent";
+  }
+
+  void save(
+      std::ostream&,
+      entt::entity,
+      const dart::simulation::experimental::detail::WorldRegistry&,
+      const dart::simulation::experimental::io::EntityMap&) const override
+  {
+  }
+
+  void load(
+      std::istream&,
+      entt::entity entity,
+      dart::simulation::experimental::detail::WorldRegistry& registry)
+      const override
+  {
+    registry.emplace<VersionedLoadFallbackComponent>(entity, 123u);
+  }
+
+  [[nodiscard]] bool hasComponent(
+      entt::entity entity,
+      const dart::simulation::experimental::detail::WorldRegistry& registry)
+      const override
+  {
+    return registry.all_of<VersionedLoadFallbackComponent>(entity);
+  }
+};
+
 using RegistryStorageCapacities = std::map<entt::id_type, std::size_t>;
 
 RegistryStorageCapacities registryStorageCapacities(
@@ -393,6 +433,23 @@ TEST(Serialization, EmptyWorld)
   EXPECT_EQ(world2.getMultibodyCount(), 0);
   EXPECT_EQ(world2.getRigidBodyCount(), 0);
   EXPECT_FALSE(world2.isSimulationMode());
+}
+
+TEST(Serialization, ComponentSerializerVersionedLoadFallsBackToLegacyLoad)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  auto& registry = sx::detail::registryOf(world);
+  const auto entity = registry.create();
+  std::stringstream input;
+
+  LegacyLoadFallbackSerializer serializer;
+  const sx::io::ComponentSerializer& baseSerializer = serializer;
+  baseSerializer.load(input, entity, registry, 99u);
+
+  ASSERT_TRUE(registry.all_of<VersionedLoadFallbackComponent>(entity));
+  EXPECT_EQ(registry.get<VersionedLoadFallbackComponent>(entity).value, 123u);
 }
 
 // Test deformable custom serializers are restored after registry reset.

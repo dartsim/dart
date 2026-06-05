@@ -40,6 +40,7 @@
 #include <array>
 #include <memory>
 #include <string_view>
+#include <vector>
 
 #include <cstddef>
 
@@ -243,7 +244,8 @@ public:
   WorldStepPipeline(WorldStepPipeline&&) noexcept = default;
   WorldStepPipeline& operator=(WorldStepPipeline&&) noexcept = default;
 
-  static constexpr std::size_t kMaxStageCount = 8;
+  /// Number of stage pointers stored inline before custom pipelines spill over.
+  static constexpr std::size_t kInlineStageCount = 8;
 
   WorldStepPipeline& addStage(WorldStepStage& stage);
   void clear() noexcept;
@@ -255,7 +257,8 @@ public:
   void execute(World& world, ComputeExecutor& executor);
 
 private:
-  std::array<WorldStepStage*, kMaxStageCount> m_stages{};
+  std::array<WorldStepStage*, kInlineStageCount> m_stages{};
+  std::vector<WorldStepStage*> m_overflowStages;
   std::size_t m_stageCount = 0;
 };
 
