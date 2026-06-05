@@ -96,6 +96,7 @@ set(
   common/module.hpp
   common/logging.hpp
   common/observer.hpp
+  common/profile.hpp
   common/repr.hpp
   common/resource.hpp
   common/resource_retriever.hpp
@@ -175,6 +176,7 @@ set(
   common/module.cpp
   common/logging.cpp
   common/observer.cpp
+  common/profile.cpp
   common/resource.cpp
   common/resource_retriever.cpp
   common/stopwatch.cpp

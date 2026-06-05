@@ -3,6 +3,7 @@
 #include "common/composite.hpp"
 #include "common/logging.hpp"
 #include "common/observer.hpp"
+#include "common/profile.hpp"
 #include "common/resource.hpp"
 #include "common/resource_retriever.hpp"
 #include "common/stopwatch.hpp"
@@ -18,6 +19,7 @@ void defCommonModule(nanobind::module_& m)
   defObserver(m);
   defSubject(m);
   defComposite(m);
+  defProfile(m);
   defResource(m);
   defResourceRetriever(m);
   defStopwatch(m);

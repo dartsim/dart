@@ -861,7 +861,12 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     non-experimental `dart::common::profile` text backend now also exposes
     `Profiler::toSummaryText()` and `DART_PROFILE_TEXT_SUMMARY()` so existing
     collision, constraint, and GUI profiling scopes can be consumed as text
-    without printing directly to `std::cout`.
+    without printing directly to `std::cout`. The same backend is now reachable
+    through no-op-safe C++ helpers (`isProfilingEnabled()`,
+    `isTextProfilingEnabled()`, `resetProfile()`, `markProfileFrame()`,
+    `getProfileSummaryText()`) and dartpy flat functions such as
+    `dartpy.get_profile_summary_text()`, making text profiling usable outside
+    the experimental World API.
   - Routed the experimental World's internal EnTT registry, component storage,
     and differentiable-parameter list through the World free allocator, with
     state mapper support for World-owned registries and free-list alignment

@@ -14,7 +14,17 @@ __all__: list[str] = [
     "debug",
     "error",
     "fatal",
+    "getProfileSummaryText",
+    "get_profile_summary_text",
     "info",
+    "isProfileEnabled",
+    "isTextProfileEnabled",
+    "is_profile_enabled",
+    "is_text_profile_enabled",
+    "markProfileFrame",
+    "mark_profile_frame",
+    "resetProfile",
+    "reset_profile",
     "split",
     "tic",
     "toLower",
@@ -98,6 +108,16 @@ class Composite:
     set_composite_properties = setCompositeProperties
 
     set_composite_state = setCompositeState
+
+def isProfileEnabled(*args, **kwargs): ...
+
+def isTextProfileEnabled(*args, **kwargs): ...
+
+def markProfileFrame(*args, **kwargs): ...
+
+def resetProfile(*args, **kwargs): ...
+
+def getProfileSummaryText(*args, **kwargs): ...
 
 class ResourceSeekType(enum.Enum):
     SEEKTYPE_CUR = 0
@@ -338,6 +358,16 @@ class Uri:
     def m_scheme(self, arg: "dart::common::UriComponent", /) -> None: ...
 
     to_string = toString
+
+get_profile_summary_text = getProfileSummaryText
+
+is_profile_enabled = isProfileEnabled
+
+is_text_profile_enabled = isTextProfileEnabled
+
+mark_profile_frame = markProfileFrame
+
+reset_profile = resetProfile
 
 to_lower = toLower
 

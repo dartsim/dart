@@ -34,12 +34,13 @@
 
 #include <gtest/gtest.h>
 
+#include <sstream>
+#include <string>
+
 #if DART_BUILD_PROFILE && DART_PROFILE_ENABLE_TEXT
   #include <dart/common/detail/profiler.hpp>
 
   #include <chrono>
-  #include <sstream>
-  #include <string>
   #include <thread>
   #include <version>
 
@@ -110,6 +111,28 @@ TEST_F(ProfileTest, TextSummaryMacroReturnsString)
   EXPECT_NE(summary.find("DART profiler (text backend)"), std::string::npos);
 }
 
+TEST_F(ProfileTest, CommonHelperApiReturnsTextSummary)
+{
+  EXPECT_TRUE(dart::common::profile::isProfilingEnabled());
+  EXPECT_TRUE(dart::common::profile::isTextProfilingEnabled());
+
+  dart::common::profile::resetProfile();
+  {
+    DART_PROFILE_SCOPED_N("helper-api-summary");
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+  }
+  dart::common::profile::markProfileFrame();
+
+  std::stringstream ss;
+  dart::common::profile::printProfileSummary(ss);
+  const auto printed = ss.str();
+  const auto summary = dart::common::profile::getProfileSummaryText();
+
+  EXPECT_NE(printed.find("helper-api-summary"), std::string::npos);
+  EXPECT_NE(summary.find("helper-api-summary"), std::string::npos);
+  EXPECT_NE(summary.find("DART profiler (text backend)"), std::string::npos);
+}
+
 TEST_F(ProfileTest, CapturesMultipleThreads)
 {
   {
@@ -144,6 +167,17 @@ TEST_F(ProfileTest, CapturesMultipleThreads)
 
 TEST(ProfileBackendDisabled, TextProfilerUnavailable)
 {
+  EXPECT_EQ(
+      dart::common::profile::isProfilingEnabled(),
+      static_cast<bool>(DART_BUILD_PROFILE));
+  EXPECT_FALSE(dart::common::profile::isTextProfilingEnabled());
+  dart::common::profile::resetProfile();
+  dart::common::profile::markProfileFrame();
+
+  std::stringstream ss;
+  dart::common::profile::printProfileSummary(ss);
+  EXPECT_TRUE(ss.str().empty());
+  EXPECT_TRUE(dart::common::profile::getProfileSummaryText().empty());
   EXPECT_TRUE(DART_PROFILE_TEXT_SUMMARY().empty());
   GTEST_SKIP() << "Text profiling backend disabled at build time.";
 }
