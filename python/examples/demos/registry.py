@@ -43,6 +43,7 @@ from .scenes.planned import OPERATIONAL_SPACE_CONTROL as PLANNED_OSC
 from .scenes.planned import SIMBICON_WALKING as PLANNED_SIMBICON_WALKING
 from .scenes.rigid_body import SCENE as RIGID_BODY
 from .scenes.rigid_fixed_joint import SCENE as RIGID_FIXED_JOINT
+from .scenes.rigid_limited_joints import SCENE as RIGID_LIMITED_JOINTS
 from .scenes.rigid_ipc import SCENE as RIGID_IPC
 from .scenes.rigid_ipc_edge_drop import SCENE as RIGID_IPC_EDGE_DROP
 from .scenes.rigid_ipc_incline import SCENE as RIGID_IPC_INCLINE
@@ -71,6 +72,7 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         CONTACT,
         RIGID_BODY,
         RIGID_FIXED_JOINT,
+        RIGID_LIMITED_JOINTS,
         # High-value DART 6 examples that should return as World-native demos.
         # These lightweight placeholders keep the roadmap visible without
         # keeping legacy DART 6 scene implementations in the catalog.
