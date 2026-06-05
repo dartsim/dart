@@ -476,6 +476,11 @@ void reportContacts(
   }
 
   if (sliding) {
+    // The pair is moving tangentially, so the cached world-space contacts no
+    // longer describe the current contact patch. Drop them instead of leaving
+    // stale points that a later resting query could resurface far from the new
+    // patch.
+    pastContacsVec.clear();
     return;
   }
 
@@ -834,10 +839,20 @@ double computeTangentialSpeed(const Contact& contact)
 bool shouldUseContactHistory(
     const CollisionObject* object1, const CollisionObject* object2)
 {
-  // Persist contacts for any shape pair so resting contacts stay stable across
-  // detector runs. The sliding/tangential-speed checks later will filter cases
-  // where the cache should not be re-used.
-  return object1 != nullptr && object2 != nullptr;
+  // Only persist contacts for pairs whose tangential motion we can actually
+  // track: both objects must be ShapeNodes backed by a BodyNode. The
+  // sliding/tangential-speed check that filters stale cache entries relies on
+  // body velocities (computeTangentialSpeed), so for frames without a BodyNode
+  // (e.g. a kinematically moved SimpleFrame) it always reads zero speed and
+  // could resurface world-space contact points from a previous pose.
+  const auto hasTrackedBody = [](const CollisionObject* object) {
+    if (object == nullptr)
+      return false;
+    const auto* frame = object->getShapeFrame();
+    return frame != nullptr && frame->isShapeNode()
+           && frame->asShapeNode()->getBodyNodePtr() != nullptr;
+  };
+  return hasTrackedBody(object1) && hasTrackedBody(object2);
 }
 
 } // anonymous namespace
