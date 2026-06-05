@@ -83,6 +83,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     diagnostics, so users can recover fixed-joint handles and inspect their
     rigid endpoints after construction or save/load without touching ECS
     internals.
+  - Added public experimental `World` rigid-body revolute and prismatic joint
+    facades with C++ and dartpy bindings, generated stubs, tests, and a
+    `sx_rigid_limited_joints` py-demo so users can exercise the narrow AVBD
+    one-DOF rigid-joint path without touching ECS internals.
   - Made `dart::gui` UI scaling DPI-aware: `--gui-scale` now acts as a manual
     user multiplier on top of GLFW content-scale detection, `DART_GUI_DPI_SCALE`
     can override misreported DPI, implicit interactive app windows now use a
