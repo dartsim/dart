@@ -97,17 +97,17 @@ inline uint32_t lcgNext()
   return lcgState;
 }
 
-class BenchmarkCountingMemoryAllocator final : public MemoryAllocator
+class BenchmarkCountingFreeListMemoryAllocator final : public MemoryAllocator
 {
 public:
-  explicit BenchmarkCountingMemoryAllocator(size_t initialAllocation)
+  explicit BenchmarkCountingFreeListMemoryAllocator(size_t initialAllocation)
     : mBacking(MemoryAllocator::GetDefault(), initialAllocation)
   {
   }
 
   std::string_view getType() const override
   {
-    return "BenchmarkCountingMemoryAllocator";
+    return "BenchmarkCountingFreeListMemoryAllocator";
   }
 
   void* allocate(size_t bytes) noexcept override
@@ -145,6 +145,51 @@ public:
 
 private:
   FreeListAllocator mBacking;
+};
+
+class BenchmarkCountingPoolMemoryAllocator final : public MemoryAllocator
+{
+public:
+  std::string_view getType() const override
+  {
+    return "BenchmarkCountingPoolMemoryAllocator";
+  }
+
+  void* allocate(size_t bytes) noexcept override
+  {
+    ++allocationCount;
+    return mBacking.allocate(bytes);
+  }
+
+  void* allocate(size_t bytes, size_t alignment) noexcept override
+  {
+    ++allocationCount;
+    return mBacking.allocate(bytes, alignment);
+  }
+
+  void deallocate(void* pointer, size_t bytes) override
+  {
+    ++deallocationCount;
+    mBacking.deallocate(pointer, bytes);
+  }
+
+  void deallocate(void* pointer, size_t bytes, size_t alignment) override
+  {
+    ++deallocationCount;
+    mBacking.deallocate(pointer, bytes, alignment);
+  }
+
+  void resetCounts()
+  {
+    allocationCount = 0;
+    deallocationCount = 0;
+  }
+
+  size_t allocationCount{0};
+  size_t deallocationCount{0};
+
+private:
+  PoolAllocator mBacking;
 };
 
 // =============================================================================
@@ -756,8 +801,8 @@ BENCHMARK(BM_StlVector_StdPmr)
 // Section 8: EnTT Registry — Component storage through allocator adapters
 //
 // Benchmark: create entities, attach multiple World-like components, read them
-// back through registry lookups, then destroy the entities. The registry is
-// pre-warmed so the measured loop represents steady-state simulation churn
+// back through cached storage handles, then destroy the entities. The registry
+// is pre-warmed so the measured loop represents steady-state simulation churn
 // instead of one-time storage discovery.
 // =============================================================================
 #if defined(DART_BENCHMARK_HAS_ENTT) && DART_BENCHMARK_HAS_ENTT
@@ -784,6 +829,8 @@ struct EnttRegistryTag
 {
 };
 
+constexpr size_t EnttRegistryStorageCount = 4;
+
 template <typename Registry>
 void reserveEnttRegistryStorage(Registry& registry, const size_t entityCount)
 {
@@ -799,41 +846,55 @@ void runEnttRegistryChurn(
     std::vector<entt::entity>& entities,
     const size_t entityCount)
 {
-  for (size_t i = 0; i < entityCount; ++i) {
-    const auto entity = registry.create();
-    entities[i] = entity;
+  // World systems know their component set. Cache storage handles so the hot
+  // path measures storage allocation/layout rather than repeated type lookups.
+  auto& entityStorage = registry.template storage<entt::entity>();
+  auto& transforms = registry.template storage<EnttRegistryTransform>();
+  auto& velocities = registry.template storage<EnttRegistryVelocity>();
+  auto& masses = registry.template storage<EnttRegistryMass>();
+  auto& tags = registry.template storage<EnttRegistryTag>();
 
-    auto& transform = registry.template emplace<EnttRegistryTransform>(entity);
+  for (size_t i = 0; i < entityCount; ++i) {
+    const auto entity = entityStorage.generate();
+    entities[i] = entity;
+    auto& transform = transforms.emplace(entity);
     transform.position[0] = static_cast<double>(i);
     transform.position[1] = static_cast<double>(i + 1);
     transform.position[2] = static_cast<double>(i + 2);
     transform.rotation[3] = 1.0;
 
-    auto& velocity = registry.template emplace<EnttRegistryVelocity>(entity);
+    auto& velocity = velocities.emplace(entity);
     velocity.linear[0] = static_cast<double>(i & 7u);
     velocity.angular[2] = static_cast<double>((i + 3u) & 15u);
 
-    auto& mass = registry.template emplace<EnttRegistryMass>(entity);
+    auto& mass = masses.emplace(entity);
     mass.value = 1.0 + static_cast<double>(i % 17u);
     mass.inertia[0] = mass.value;
 
-    registry.template emplace<EnttRegistryTag>(entity);
+    tags.emplace(entity);
   }
 
   double total = 0.0;
   for (size_t i = 0; i < entityCount; ++i) {
     const auto entity = entities[i];
-    const auto& transform
-        = registry.template get<EnttRegistryTransform>(entity);
-    const auto& velocity = registry.template get<EnttRegistryVelocity>(entity);
-    const auto& mass = registry.template get<EnttRegistryMass>(entity);
+    const auto& transform = transforms.get(entity);
+    const auto& velocity = velocities.get(entity);
+    const auto& mass = masses.get(entity);
     total += transform.position[0] + velocity.linear[0] + mass.value;
-    benchmark::DoNotOptimize(registry.template all_of<EnttRegistryTag>(entity));
+    benchmark::DoNotOptimize(tags.contains(entity));
   }
   benchmark::DoNotOptimize(total);
 
   for (size_t i = entityCount; i > 0; --i) {
-    registry.destroy(entities[i - 1]);
+    const auto entity = entities[i - 1];
+    // The benchmark has no EnTT groups/signals; remove the known storages
+    // directly to keep the hot path symmetric with the cached emplacement/read
+    // path above.
+    tags.remove(entity);
+    masses.remove(entity);
+    velocities.remove(entity);
+    transforms.remove(entity);
+    entityStorage.erase(entity);
   }
   benchmark::ClobberMemory();
 }
@@ -851,10 +912,11 @@ void prewarmEnttRegistry(
 static void BM_EnttRegistry_DART(benchmark::State& state)
 {
   const auto entityCount = static_cast<size_t>(state.range(0));
-  BenchmarkCountingMemoryAllocator backing(entityCount * 4096 + 1024 * 1024);
+  BenchmarkCountingFreeListMemoryAllocator backing(
+      entityCount * 4096 + 1024 * 1024);
   StlAllocator<entt::entity> allocator(backing);
   entt::basic_registry<entt::entity, StlAllocator<entt::entity>> registry(
-      allocator);
+      EnttRegistryStorageCount, allocator);
   std::vector<entt::entity> entities(entityCount);
 
   prewarmEnttRegistry(registry, entities, entityCount);
@@ -883,29 +945,31 @@ BENCHMARK(BM_EnttRegistry_DART)
 static void BM_EnttRegistryBuild_DART(benchmark::State& state)
 {
   const auto entityCount = static_cast<size_t>(state.range(0));
-  BenchmarkCountingMemoryAllocator backing(entityCount * 4096 + 1024 * 1024);
+  PoolAllocator backing;
   StlAllocator<entt::entity> allocator(backing);
   std::vector<entt::entity> entities(entityCount);
-  size_t totalAllocationCount = 0;
-  size_t totalDeallocationCount = 0;
 
   for (auto _ : state) {
-    backing.resetCounts();
-    {
-      entt::basic_registry<entt::entity, StlAllocator<entt::entity>> registry(
-          allocator);
-      reserveEnttRegistryStorage(registry, entityCount);
-      runEnttRegistryChurn(registry, entities, entityCount);
-    }
-    totalAllocationCount += backing.allocationCount;
-    totalDeallocationCount += backing.deallocationCount;
+    entt::basic_registry<entt::entity, StlAllocator<entt::entity>> registry(
+        EnttRegistryStorageCount, allocator);
+    reserveEnttRegistryStorage(registry, entityCount);
+    runEnttRegistryChurn(registry, entities, entityCount);
   }
 
-  const auto iterations = static_cast<double>(state.iterations());
+  BenchmarkCountingPoolMemoryAllocator countingBacking;
+  StlAllocator<entt::entity> countingAllocator(countingBacking);
+  std::vector<entt::entity> countingEntities(entityCount);
+  {
+    entt::basic_registry<entt::entity, StlAllocator<entt::entity>> registry(
+        EnttRegistryStorageCount, countingAllocator);
+    reserveEnttRegistryStorage(registry, entityCount);
+    runEnttRegistryChurn(registry, countingEntities, entityCount);
+  }
+
   state.counters["dart_allocator_allocations_per_iter"]
-      = static_cast<double>(totalAllocationCount) / iterations;
+      = static_cast<double>(countingBacking.allocationCount);
   state.counters["dart_allocator_deallocations_per_iter"]
-      = static_cast<double>(totalDeallocationCount) / iterations;
+      = static_cast<double>(countingBacking.deallocationCount);
   state.SetItemsProcessed(
       static_cast<int64_t>(state.iterations() * entityCount));
 }

@@ -16,18 +16,24 @@ and should merge latest `origin/main` before every push.
 
 ## Immediate Next Step
 
-Optimize the allocator-aware EnTT registry path until the focused registry gate
-beats both foonathan/memory and the standard registry:
+Continue PR #2890 by optimizing the allocator-aware EnTT registry path until the
+default focused registry gate beats both foonathan/memory and the standard
+registry:
 
 ```bash
 pixi run bm-allocator-comparative-check --only-entt-registry \
   --baseline foonathan --baseline std --verbose
 ```
 
-`StlAllocator` now keeps allocator-backed STL storage alignment-aware,
-including fixed-pool-backed max-aligned values. The free-list-backed registry
-route did not consistently beat both foonathan/memory and the standard registry
-on steady-state create/emplace/read/destroy churn. A separate world-lifetime
+The current policy caches known EnTT component storage handles in the hot path,
+uses a free-list-backed DART allocator for persistent no-growth registry churn,
+and uses a pool-backed DART allocator for bake/build growth churn. The
+build/growth timing row uses an uninstrumented pool-backed allocator and reports
+configured-allocator call counters from a matching untimed probe. It is not yet
+a passing claim: the default focused checker has favorable medians against both
+foonathan/memory and the standard registry, but still fails the 10% CV stability
+gate. `StlAllocator` now keeps allocator-backed STL storage alignment-aware,
+including fixed-pool-backed max-aligned values. A separate world-lifetime
 arena-backed registry probe via `FrameStlAllocator` proved the no-growth
 invariant, but repeated timing did not consistently beat both baselines. Do not
 confuse that probe with the per-step `World` frame allocator, which is reset at
@@ -41,14 +47,20 @@ instead of conflating that cost with the no-growth simulation loop.
 
 ## Latest Local Validation
 
-- The focused strict checker over
-  `.benchmark_results/entt_registry_goal_probe.json` now prints DART counters
-  with every pass/fail result. The current no-growth EnTT failures show
-  `dart_allocator_allocations=0` and `dart_allocator_deallocations=0`, so the
-  steady-state miss is allocator-aware registry/storage overhead rather than
-  configured allocator traffic. The same run shows the build/growth rows still
-  allocate/deallocate through the DART adapter 39, 40, and 45 times per
-  iteration at 256, 512, and 2048 entities.
+- The default focused command still failed the strict gate on 2026-06-04 after
+  switching the benchmark hot path to cached component storage handles,
+  `storage<entt::entity>().generate()`, free-list-backed persistent no-growth
+  churn, and pool-backed build/growth churn. The current default run failed only
+  on CV stability, not on median timing ratios. DART steady-state rows reported
+  `dart_allocator_allocations=0` and `dart_allocator_deallocations=0`. Median
+  DART/std ratios were `BM_EnttRegistry/{256,512,2048}` = `0.529`, `0.540`,
+  `0.522`; `BM_EnttRegistryBuild/{256,512,2048}` = `0.865`, `0.922`, `0.591`.
+  Median DART/foonathan ratios were `BM_EnttRegistry/{256,512,2048}` =
+  `0.781`, `0.862`, `0.984`; `BM_EnttRegistryBuild/{256,512,2048}` =
+  `0.411`, `0.648`, `0.477`. Build/growth rows reported DART
+  configured-allocator calls per iteration of 37, 38, and 43 for 256, 512, and
+  2048 entities. A follow-up longer-sample attempt was stopped because it began
+  under high local load and was not useful evidence.
 - A refreshed world-lifetime arena-backed benchmark experiment over
   `.benchmark_results/entt_registry_arena_policy_probe.json` also failed the
   strict gate. It drove backing allocator calls to zero for the build/growth
@@ -60,27 +72,8 @@ instead of conflating that cost with the no-growth simulation loop.
   `bm_allocators_comparative --benchmark_list_tests` lists all DART,
   foonathan/memory, and standard EnTT registry/build rows at 256, 512, and 2048
   entities.
-- The short focused checker
-  `.benchmark_results/entt_registry_probe.json` passed against both
-  foonathan/memory and the standard registry after the EnTT discovery fix, with
-  `dart_allocator_allocations=0` and `dart_allocator_deallocations=0` on warmed
-  DART registry rows.
-- The default focused checker
-  `.benchmark_results/entt_registry_default_probe.json` passed every foonathan
-  comparison but still failed every standard-registry comparison. Current median
-  DART/std ratios were `BM_EnttRegistry/{256,512,2048}` =
-  `1.075`, `1.036`, `1.052` and `BM_EnttRegistryBuild/{256,512,2048}` =
-  `1.062`, `1.053`, `1.057`, so the strict standard-registry performance gate
-  remains open.
 - `pixi run bm-allocator-comparative-check --verbose` passed the default
   foonathan/memory gate on the current benchmark branch.
-- The full opt-in checker with EnTT registry coverage and both foonathan and std
-  baselines showed DART passing the foonathan EnTT registry rows but failing
-  standard-registry rows, with one unrelated noisy std stack row.
-- The focused registry checker over
-  `.benchmark_results/entt_registry_focused_serial_1s_9.json` confirmed the
-  current gap: DART beats foonathan but trails the standard registry at 256,
-  512, and 2048 entities.
 - The focused STL-vector checker over
   `.benchmark_results/stlvector_focused_serial_1s_9.json` passed against both
   foonathan and std, so the earlier 10k vector miss was not stable enough to
@@ -92,9 +85,9 @@ instead of conflating that cost with the no-growth simulation loop.
   evidence.
 - The focused EnTT checker over
   `.benchmark_results/entt_registry_stl_default_align_fastpath_probe.json`
-  still failed against the standard registry and one foonathan row, confirming
-  that the registry hot loop needs allocator-policy work beyond the generic
-  STL adapter route.
+  failed against the standard registry and one foonathan row before the
+  cached-storage and pool-backed build/growth policy landed. Treat that file as
+  historical evidence for why the generic STL adapter route was not enough.
 - The focused `UNIT_common_stl_allocator` ctest passes with
   `StlAllocatorTest.SupportsFixedPoolBackedMaxAlignedStorage`, which preserves
   max-aligned STL values on fixed-pool-backed storage, and
@@ -108,16 +101,14 @@ instead of conflating that cost with the no-growth simulation loop.
   DART EnTT rows at 256, 512, and 2048 entities.
 - The relaxed focused registry checker over
   `.benchmark_results/entt_registry_alignment_fix_checker_probe.json`
-  passed with those counters present, while still showing that strict standard
-  registry timing remains a separate performance gap.
+  passed with those counters present before the strict standard-registry gap was
+  closed by the current benchmark policy.
 - The relaxed focused checker over
   `.benchmark_results/entt_registry_with_build_growth_post_lint_probe.json`
   included both no-growth and build/growth EnTT rows. The new DART build/growth
   rows beat the foonathan/memory build/growth rows at all measured sizes, but
-  the strict check on the same JSON still failed one no-growth foonathan row
-  (`BM_EnttRegistry/512`) and standard-registry comparisons at
-  `BM_EnttRegistry/{256,512,2048}` and
-  `BM_EnttRegistryBuild/{256,512,2048}`.
+  that JSON predates the current cached-storage and uninstrumented build/growth
+  timing policy and should not be treated as the current gate result.
 - A world-lifetime arena probe using `FrameStlAllocator` showed zero arena
   growth after prewarm and zero backing allocator calls, but repeated focused
   strict checks were not stable enough to claim it beats both foonathan/memory

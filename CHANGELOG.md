@@ -117,7 +117,14 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     EnTT registry benchmark rows disabled when the benchmark target is
     configured without an existing EnTT target. The EnTT registry benchmark rows
     now discover installed EnTT package metadata without invoking DART's
-    FetchContent-backed dependency helper.
+    FetchContent-backed dependency helper. The EnTT rows now benchmark cached
+    component storage handles, use free-list-backed DART storage for persistent
+    no-growth registry churn, and use pool-backed DART storage for build/growth
+    churn while preserving zero configured allocator calls after prewarm. The
+    build/growth row times the uninstrumented pool-backed registry path and
+    reports configured-allocator call counters from a matching untimed probe.
+    The focused checker now exposes remaining strict-gate stability misses
+    separately from allocator-call regressions.
   - Optimized the frame allocator reset/accounting fast path and normal-aligned
     `FrameStlAllocator` allocations while preserving over-aligned STL storage.
   - Kept `StlAllocator` allocation and deallocation alignment-aware for
