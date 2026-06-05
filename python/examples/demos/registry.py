@@ -7,6 +7,9 @@ order. Add a scene by importing its ``SCENE`` constant and appending it here.
 from __future__ import annotations
 
 from .runner import PythonDemoScene
+from .scenes.avbd_articulated_endpoint_bridge import (
+    SCENE as AVBD_ARTICULATED_ENDPOINT_BRIDGE,
+)
 from .scenes.avbd_rigid_breakable_joint import SCENE as AVBD_RIGID_BREAKABLE_JOINT
 from .scenes.avbd_rigid_fixed_joint_contact import (
     SCENE as AVBD_RIGID_FIXED_JOINT_CONTACT,
@@ -86,6 +89,7 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         AVBD_RIGID_FIXED_JOINT_CONTACT,
         AVBD_RIGID_REVOLUTE_MOTOR,
         AVBD_RIGID_BREAKABLE_JOINT,
+        AVBD_ARTICULATED_ENDPOINT_BRIDGE,
         # High-value DART 6 examples that should return as World-native demos.
         # These lightweight placeholders keep the roadmap visible without
         # keeping legacy DART 6 scene implementations in the catalog.

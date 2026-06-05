@@ -154,7 +154,11 @@ extraction into AVBD motor rows, persistent motor inventory in the contact
 stage, the `avbd_rigid_revolute_motor` py-demo, and the AVBD dashboard
 `BM_AvbdRigidRevoluteMotorStep` benchmark row. The public free-rigid-body
 break-force lifecycle and `avbd_rigid_breakable_joint` py-demo are merged on
-`main`; the next branch should not treat that narrow lifecycle as pending.
+`main`; the next branch should not treat that narrow lifecycle as pending. The
+current branch adds the private free-rigid versus multibody-link endpoint
+classifier, `BM_AvbdRigidEndpointClassification`, and
+`avbd_articulated_endpoint_bridge` py-demo preview; the articulated state/solve
+path is still missing.
 
 ## Immediate Next Step
 
@@ -181,7 +185,8 @@ entities, and public free rigid-body revolute/prismatic facades with dartpy
 bindings, stubs, tests, and py-demo coverage, plus fixed-joint/contact and
 revolute-motor AVBD py-demos, the breakable-joint py-demo, and the narrow
 free-rigid-body break-force lifecycle plus private free-rigid versus
-multibody-link endpoint classification exist.
+multibody-link endpoint classification, endpoint benchmark row, and articulated
+endpoint py-demo preview exist.
 Keep the supported envelope narrow and preserve fallback coverage for topology
 mixes,
 damping/acceleration, parallel solves, and unsupported requested row
@@ -251,10 +256,11 @@ combinations.
   entities now initialize and extract through the same current-pose bridge.
   Public rigid-body revolute velocity actuators now extract to AVBD motor rows,
   and the private extractor now classifies free-rigid endpoints separately from
-  multibody links, but full narrow-phase feature extraction, articulated AVBD
-  state/solve, broad motor/fracture lifecycle and benchmark coverage, public articulated
-  World joint wiring, paper/source-demo py-demos, and CPU/GPU parity are not
-  solved yet.
+  multibody links with benchmark and py-demo preview coverage, but full
+  narrow-phase feature extraction, articulated AVBD state/solve, broad
+  motor/fracture lifecycle and benchmark coverage, public articulated World
+  joint wiring, paper/source-demo py-demos, and CPU/GPU parity are not solved
+  yet.
 
 ## How to Resume
 

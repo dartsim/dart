@@ -148,7 +148,10 @@ py-demo and one end-to-end dashboard benchmark row for the public motor path.
 Public free-rigid-body AVBD point joints now also expose a narrow break-force
 and broken-state lifecycle through C++/dartpy, with solved-row fracture marking,
 later extraction skip behavior, and a categorized `avbd_rigid_breakable_joint`
-py-demo.
+py-demo. The private endpoint classifier now separates free rigid-body endpoints
+from multibody links, with `BM_AvbdRigidEndpointClassification` and the
+categorized `avbd_articulated_endpoint_bridge` py-demo making that conservative
+articulated fallback point visible.
 Explicit fallback coverage keeps unsupported mixed spring-plus-tet,
 mass-spring self-contact without the self-contact AVBD flag,
 finite-stiffness-only friction scenes, Chebyshev, Rayleigh-damped, parallel,

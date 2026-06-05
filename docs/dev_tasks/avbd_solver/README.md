@@ -230,6 +230,9 @@ Paper audit:
     broken when the solved row load reaches the threshold, skips broken joints on
     later extraction, and adds the categorized `avbd_rigid_breakable_joint`
     py-demo.
+    The private endpoint classifier now separates free rigid-body endpoints from
+    multibody links, with a `BM_AvbdRigidEndpointClassification` benchmark row
+    and categorized `avbd_articulated_endpoint_bridge` py-demo preview.
     Articulated multibody joint extraction is still not wired.
     Unsupported envelopes still fall back to sequential impulses. This is not
     full narrow-phase feature extraction, not full rigid contact/joint rows, not
@@ -314,7 +317,8 @@ numbers.
    `avbd_rigid_fixed_joint_contact` fixed-joint/contact AVBD demo, the
    `avbd_rigid_revolute_motor` motor demo, and the
    `avbd_rigid_breakable_joint` break-force demo, plus the private free-rigid
-   versus multibody-link endpoint classifier, have narrow CPU/user-visible or
+   versus multibody-link endpoint classifier, endpoint benchmark row, and
+   articulated endpoint py-demo preview, have narrow CPU/user-visible or
    extractor-foundation paths. The next code slice should fill the articulated
    AVBD state/solve path behind that classifier so multibody link endpoints stop
    being skipped by all AVBD row families, while retaining explicit fallback
