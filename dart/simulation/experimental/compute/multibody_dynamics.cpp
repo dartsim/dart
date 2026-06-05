@@ -1839,17 +1839,6 @@ void collectMultibodyLinkContactsInto(
   }
 }
 
-std::vector<LinkContact> collectMultibodyLinkContacts(
-    detail::WorldRegistry& registry,
-    const comps::MultibodyStructure& structure,
-    const std::vector<Contact>& contacts)
-{
-  std::vector<LinkContact> linkContacts;
-  collectMultibodyLinkContactsInto(registry, structure, contacts, linkContacts);
-  return linkContacts;
-}
-
-//==============================================================================
 void clearMultibodyExternalForces(
     detail::WorldRegistry& registry, const comps::MultibodyStructure& structure)
 {
@@ -2776,10 +2765,34 @@ void reserveMultibodyDynamicsRegistryStorage(
 }
 
 //==============================================================================
+struct UnifiedConstraintStage::Scratch
+{
+  RigidBodyContactProblem rigidProblem;
+  std::vector<entt::entity> multibodyEntities;
+  std::vector<std::vector<LinkContact>> contactsByMultibody;
+  std::vector<char> requiredMultibody;
+  std::vector<UnifiedMultibodyContact> multibodyContacts;
+  std::vector<Eigen::VectorXd> multibodyVelocities;
+  UnifiedConstraintProblem problem;
+};
+
+//==============================================================================
 UnifiedConstraintStage::UnifiedConstraintStage(std::size_t frictionIterations)
-  : m_frictionIterations(std::max<std::size_t>(1, frictionIterations))
+  : m_frictionIterations(std::max<std::size_t>(1, frictionIterations)),
+    m_scratch(std::make_unique<Scratch>())
 {
 }
+
+//==============================================================================
+UnifiedConstraintStage::~UnifiedConstraintStage() = default;
+
+//==============================================================================
+UnifiedConstraintStage::UnifiedConstraintStage(
+    UnifiedConstraintStage&&) noexcept = default;
+
+//==============================================================================
+UnifiedConstraintStage& UnifiedConstraintStage::operator=(
+    UnifiedConstraintStage&&) noexcept = default;
 
 //==============================================================================
 std::string_view UnifiedConstraintStage::getName() const noexcept
@@ -3005,8 +3018,8 @@ void UnifiedConstraintStage::execute(
 
   // Rigid-rigid block. The rigid assembler filters to rigid-rigid pairs, so it
   // is given the full contact set.
-  RigidBodyContactProblem rigidProblem
-      = assembleRigidBodyContactProblem(registry, contacts);
+  auto& scratch = *m_scratch;
+  scratch.rigidProblem = assembleRigidBodyContactProblem(registry, contacts);
 
   // Per-multibody link blocks. Recompute each multibody's dynamics tree and
   // inverse mass in-stage (never cached across stages). Mirror
@@ -3015,39 +3028,58 @@ void UnifiedConstraintStage::execute(
   // multibody link rows are owned by bodyA's multibody, but the other
   // multibody still needs a block and staged velocity so the solved impulse can
   // update both articulated ends.
-  std::vector<entt::entity> multibodyEntities;
-  std::unordered_map<entt::entity, std::vector<LinkContact>>
-      contactsByMultibody;
-  std::unordered_map<entt::entity, bool> requiredMultibody;
+  scratch.multibodyEntities.clear();
   auto view = registry.view<comps::MultibodyStructure>();
   for (auto entity : view) {
-    multibodyEntities.push_back(entity);
-    const auto& structure = view.get<comps::MultibodyStructure>(entity);
-    std::vector<LinkContact> linkContacts
-        = collectMultibodyLinkContacts(registry, structure, contacts);
-    for (const auto& contact : linkContacts) {
-      if (contact.otherMultibody != entt::null) {
-        requiredMultibody[contact.otherMultibody] = true;
-      }
-    }
-    if (!linkContacts.empty()) {
-      requiredMultibody[entity] = true;
-    }
-    contactsByMultibody.emplace(entity, std::move(linkContacts));
+    scratch.multibodyEntities.push_back(entity);
   }
 
-  std::vector<UnifiedMultibodyContact> multibodyContacts;
-  std::vector<Eigen::VectorXd> multibodyVelocities;
-  for (auto entity : multibodyEntities) {
-    auto contactsIt = contactsByMultibody.find(entity);
-    const std::vector<LinkContact>& linkContacts = contactsIt->second;
-    if (linkContacts.empty()
-        && requiredMultibody.find(entity) == requiredMultibody.end()) {
+  scratch.contactsByMultibody.resize(scratch.multibodyEntities.size());
+  scratch.requiredMultibody.assign(scratch.multibodyEntities.size(), 0);
+
+  const auto findMultibodyIndex = [&](entt::entity multibody) {
+    const auto it = std::find(
+        scratch.multibodyEntities.begin(),
+        scratch.multibodyEntities.end(),
+        multibody);
+    if (it == scratch.multibodyEntities.end()) {
+      return scratch.multibodyEntities.size();
+    }
+    return static_cast<std::size_t>(it - scratch.multibodyEntities.begin());
+  };
+
+  for (std::size_t k = 0; k < scratch.multibodyEntities.size(); ++k) {
+    const auto entity = scratch.multibodyEntities[k];
+    const auto& structure = view.get<comps::MultibodyStructure>(entity);
+    auto& linkContacts = scratch.contactsByMultibody[k];
+    collectMultibodyLinkContactsInto(
+        registry, structure, contacts, linkContacts);
+    if (!linkContacts.empty()) {
+      scratch.requiredMultibody[k] = 1;
+    }
+  }
+  for (const auto& linkContacts : scratch.contactsByMultibody) {
+    for (const auto& contact : linkContacts) {
+      if (contact.otherMultibody != entt::null) {
+        const auto otherIndex = findMultibodyIndex(contact.otherMultibody);
+        if (otherIndex < scratch.requiredMultibody.size()) {
+          scratch.requiredMultibody[otherIndex] = 1;
+        }
+      }
+    }
+  }
+
+  scratch.multibodyContacts.clear();
+  scratch.multibodyVelocities.clear();
+  for (std::size_t k = 0; k < scratch.multibodyEntities.size(); ++k) {
+    const auto entity = scratch.multibodyEntities[k];
+    const auto& linkContacts = scratch.contactsByMultibody[k];
+    if (linkContacts.empty() && scratch.requiredMultibody[k] == 0) {
       continue;
     }
 
     const auto& structure = registry.get<comps::MultibodyStructure>(entity);
-    Eigen::VectorXd stagedVelocity;
+    auto& stagedVelocity = scratch.multibodyVelocities.emplace_back();
     auto* pendingVelocity = registry.try_get<PendingMultibodyVelocity>(entity);
     if (pendingVelocity != nullptr && pendingVelocity->active) {
       stagedVelocity = pendingVelocity->velocity;
@@ -3058,42 +3090,41 @@ void UnifiedConstraintStage::execute(
     MultibodyLinkContactProblem linkProblem
         = assembleMultibodyLinkContactProblem(
             registry, structure, stagedVelocity, timeStep, linkContacts);
-    multibodyVelocities.push_back(std::move(stagedVelocity));
-    multibodyContacts.push_back({entity, std::move(linkProblem)});
+    scratch.multibodyContacts.push_back({entity, std::move(linkProblem)});
   }
   completeCrossMultibodyLinkRows(
-      registry, multibodyContacts, multibodyVelocities);
+      registry, scratch.multibodyContacts, scratch.multibodyVelocities);
 
   bool hasActiveLinkRows = false;
-  for (const auto& contact : multibodyContacts) {
+  for (const auto& contact : scratch.multibodyContacts) {
     for (const auto& row : contact.problem.rows) {
       hasActiveLinkRows = hasActiveLinkRows || row.active;
     }
   }
-  if (rigidProblem.constraints.empty() && !hasActiveLinkRows) {
+  if (scratch.rigidProblem.constraints.empty() && !hasActiveLinkRows) {
     return;
   }
 
-  const UnifiedConstraintProblem problem
-      = assembleUnifiedConstraintProblem(rigidProblem, multibodyContacts);
+  assembleUnifiedConstraintProblemInto(
+      scratch.problem, scratch.rigidProblem, scratch.multibodyContacts);
 
   resolveUnifiedConstraints(
       registry,
-      problem,
-      std::span<Eigen::VectorXd>(multibodyVelocities),
+      scratch.problem,
+      std::span<Eigen::VectorXd>(scratch.multibodyVelocities),
       m_frictionIterations);
 
   // Write each multibody's resolved generalized velocity back to its staging
   // component so the position stage integrates the post-contact velocity. The
   // blocks are in the same order the staged velocities were collected.
-  for (std::size_t k = 0; k < problem.multibodyBlocks.size(); ++k) {
+  for (std::size_t k = 0; k < scratch.problem.multibodyBlocks.size(); ++k) {
     auto& pendingVelocity = registry.get_or_emplace<PendingMultibodyVelocity>(
-        problem.multibodyBlocks[k].multibody);
-    if (multibodyVelocities[k].size() == 0) {
+        scratch.problem.multibodyBlocks[k].multibody);
+    if (scratch.multibodyVelocities[k].size() == 0) {
       pendingVelocity.active = false;
       continue;
     }
-    pendingVelocity.velocity = std::move(multibodyVelocities[k]);
+    pendingVelocity.velocity = scratch.multibodyVelocities[k];
     pendingVelocity.active = true;
   }
 
@@ -3101,7 +3132,7 @@ void UnifiedConstraintStage::execute(
   // allowance without injecting velocity (verbatim from RigidBodyContactStage).
   constexpr double allowance = 1e-4;
   constexpr double correctionFactor = 0.2;
-  for (const auto& constraint : problem.rigidConstraints) {
+  for (const auto& constraint : scratch.problem.rigidConstraints) {
     const double penetration = constraint.depth - allowance;
     if (penetration <= 0.0) {
       continue;
