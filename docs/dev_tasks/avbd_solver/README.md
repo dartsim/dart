@@ -211,13 +211,38 @@ Paper audit:
     preserving a captured rigid offset while ordinary rigid contact acts on the
     payload; this is only a narrow AVBD rigid-constraint showcase, not a
     source-demo or paper-scene reproduction.
-    Public multibody joint extraction is still not wired.
+    The next motor/fracture slice started with `AvbdRigidAngularMotor`, a
+    bounded angular-motor row descriptor/builder, and rigid fracture
+    dual-threshold/reset helpers in the same 6-DOF row kernel, with focused
+    `AvbdRigidBlock.*` coverage. Public rigid-body revolute velocity actuators
+    now extract to those private AVBD motor rows, the contact-stage AVBD
+    velocity projection keeps a persistent motor row inventory, and the
+    categorized `avbd_rigid_revolute_motor` py-demo shows the public actuator
+    path alongside the existing fixed-joint/contact showcase. The performance
+    dashboard's AVBD World slice now also records an end-to-end
+    `BM_AvbdRigidRevoluteMotorStep` row for the same public revolute velocity
+    actuator path. The narrow public fracture lifecycle now exposes a
+    non-negative `Joint` break-force threshold and broken-state reset/accessors,
+    maps that threshold into free rigid-body AVBD point-joint rows, marks joints
+    broken when the solved row load reaches the threshold, skips broken joints on
+    later extraction, and adds the categorized `avbd_rigid_breakable_joint`
+    py-demo.
+    Articulated multibody joint extraction is still not wired.
     Unsupported envelopes still fall back to sequential impulses. This is not
     full narrow-phase feature extraction, not full rigid contact/joint rows, not
-    motor/fracture support, and not articulated joint support yet.
+    broad fracture-corpus support, not broad motor lifecycle or paper/reference
+    benchmark-packet coverage, and not articulated joint support yet.
 - [ ] Phase A4: contact/friction bounds, static/dynamic friction switching, and
       quasi-Newton Hessian approximation.
 - [ ] Phase A5: joints, motors, fracture, and breakable constraints.
+  - First private angular-motor row and fracture threshold/reset helper slice
+    started in the rigid 6-DOF kernel. Public free-rigid-body revolute velocity
+    motors now have narrow World wiring, a categorized py-demo, and one
+    end-to-end AVBD World benchmark row. Public free-rigid-body fixed/revolute/
+    prismatic point joints now also have a narrow break-force/broken-state
+    lifecycle with C++/dartpy tests and a categorized py-demo; broad motor
+    lifecycle coverage, articulated wiring, GPU parity, and reference/paper
+    benchmark packets are still missing.
 - [ ] Phase A6: unified soft/rigid AVBD coupling.
 - [ ] Phase G: GPU parity for all row families, candidate generation, and
       benchmark scenes.
@@ -255,7 +280,8 @@ numbers.
 
 1. Continue the next bounded AVBD contact/friction or rigid-block slice:
    true rigid/articulated World wiring, full narrow-phase feature extraction,
-   or the next motor/fracture row family are the preferred next gaps now that
+   or World wiring for the motor/fracture row family are the preferred next gaps
+   now that
    static box feature IDs,
    private dynamic/rigid contact feature IDs and descriptor
    helpers, static half-space tangent dual projection, self-contact
@@ -282,8 +308,10 @@ numbers.
    private rigid-body ECS current-pose extraction for those one-DOF joint
    entities, and public free rigid-body revolute/prismatic facades with dartpy
    bindings, stubs, focused tests, and py-demo coverage, plus the first
-   `avbd_rigid_fixed_joint_contact` fixed-joint/contact AVBD demo, have narrow
-   CPU/user-visible paths.
+   `avbd_rigid_fixed_joint_contact` fixed-joint/contact AVBD demo, the
+   `avbd_rigid_revolute_motor` motor demo, and the
+   `avbd_rigid_breakable_joint` break-force demo, have narrow CPU/user-visible
+   paths.
 2. In parallel planning, keep full friction cones, rigid/articulated rows, GPU
    parity, demos, and benchmark packets as open AVBD parity gates rather than
    completion claims.

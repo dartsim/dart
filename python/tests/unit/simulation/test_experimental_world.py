@@ -299,6 +299,8 @@ def test_experimental_stub_tracks_public_runtime_symbols():
         "ReadOptions",
         "StateSpace",
         "StateVariable",
+        "WorldStepProfile",
+        "WorldStepStageProfile",
         "AllocatorDebugDiagnostics",
         "MemoryManagerDebugDiagnostics",
         "WorldEcsStorageDiagnostics",
@@ -342,6 +344,10 @@ def test_experimental_stub_tracks_public_runtime_symbols():
         "num_rigid_body_fixed_joints",
         "memory_diagnostics",
         "is_valid",
+        "step_profiling_enabled",
+        "last_step_profile",
+        "def get_stage(",
+        "def summary(",
     ):
         assert member in stub
 
@@ -537,6 +543,16 @@ def test_experimental_world_rigid_body_fixed_joint_projects_captured_pose():
     assert joint.name == "base_to_link"
     assert joint.type == sx.JointType.FIXED
     assert joint.num_dofs == 0
+    assert joint.break_force == pytest.approx(0.0)
+    assert not joint.is_broken
+    joint.break_force = 12.5
+    assert joint.break_force == pytest.approx(12.5)
+    joint.reset_breakage()
+    assert not joint.is_broken
+    with pytest.raises(Exception, match="finite and non-negative"):
+        joint.break_force = -1.0
+    with pytest.raises(Exception, match="finite and non-negative"):
+        joint.break_force = math.inf
     assert joint.parent_rigid_body.name == "base"
     assert joint.child_rigid_body.name == "link"
     assert world.has_rigid_body_fixed_joint("base_to_link")
@@ -3743,6 +3759,69 @@ def test_experimental_world_replay_recording_python_api():
 
     with pytest.raises(Exception):
         world.restore_replay_frame(-1)
+
+
+def test_experimental_world_step_profiling_disabled_by_default():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+    assert world.step_profiling_enabled is False
+
+    world.step()
+
+    # Off by default: no per-stage profile is captured.
+    assert world.last_step_profile.is_empty()
+
+
+def _enable_step_profiling_or_skip(world):
+    world.step_profiling_enabled = True
+    if not world.step_profiling_enabled:
+        pytest.skip("DART_BUILD_PROFILE=OFF: World step profiling is compiled out")
+
+
+def test_experimental_world_step_profiling_records_stages():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+    _enable_step_profiling_or_skip(world)
+
+    world.step()
+
+    profile = world.last_step_profile
+    assert isinstance(profile, sx.WorldStepProfile)
+    assert profile.is_empty() is False
+    assert profile.step_count == 1
+    assert profile.wall_time_us >= profile.total_stage_time_us
+    assert len(profile.stages) > 0
+
+    stage = profile.get_stage("kinematics")
+    assert isinstance(stage, sx.WorldStepStageProfile)
+    assert stage.name == "kinematics"
+    assert stage.domain == "kinematics"
+    assert stage.duration_us >= 0
+    assert stage.duration_ms >= 0.0
+    assert profile.get_stage("missing") is None
+
+    summary = profile.summary()
+    assert "World Step Profile" in summary
+    assert "kinematics" in summary
+    assert "(unattributed overhead)" in summary
+    assert str(profile) == summary
+
+
+def test_experimental_world_step_profiling_captures_last_step_for_counts():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+    _enable_step_profiling_or_skip(world)
+
+    world.step(3)
+
+    profile = world.last_step_profile
+    assert profile.step_count == 1
+    assert profile.wall_time_us >= profile.total_stage_time_us
+    assert len(profile.stages) > 0
+    assert world.frame == 3
 
 
 def test_experimental_deformable_scene_loader_python_api(tmp_path):

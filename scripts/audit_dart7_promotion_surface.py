@@ -91,7 +91,14 @@ PROMOTE_DIRS = (
 #   * diff/step_derivatives.hpp / diff/step_gradient.hpp are pulled into the
 #     public include closure by value (world.hpp / rollout.hpp), so consumers
 #     including only those headers need the complete types.
+#   * compute/compute_stage_metadata.hpp carries backend-neutral stage domain
+#     metadata. It is intentionally public because World step profiles report a
+#     stage domain without exposing concrete executor/backend details.
+#   * compute/world_step_profile.hpp is the experimental World's public
+#     text-first profiling value type, returned by World::getLastStepProfile().
 PROMOTE_FILES = {
+    "compute/compute_stage_metadata.hpp",
+    "compute/world_step_profile.hpp",
     "diff/rollout.hpp",
     "diff/step_derivatives.hpp",
     "diff/step_gradient.hpp",

@@ -533,12 +533,13 @@ its own line so status updates remain git-history friendly.
   visible. A secondary backend (Bencher/CodSpeed) remains optional future work.
   The tracked slice now covers the new DART 7 solver families' end-to-end
   `World::step` surfaces (rigid-body sequential-impulse/IPC, VBD + default
-  deformable grid, FEM bar, AVBD fixed-joint) alongside the original core
-  step/scaling rows, and `scripts/benchmark_display_names.py` rewrites the raw
-  Google Benchmark names into readable chart titles (merge `--humanize`) with
-  family-grouped, axis-labelled local preview. Add new surfaces by extending
-  both `run_performance_dashboard_benchmarks.py` (CPU-only, end-to-end filter)
-  and the `SURFACES` map.
+  deformable grid, FEM bar, AVBD fixed-joint and revolute-motor rows)
+  alongside the original core step/scaling rows, and
+  `scripts/benchmark_display_names.py` rewrites the raw Google Benchmark names
+  into readable chart titles (merge `--humanize`) with family-grouped,
+  axis-labelled local preview. Add new surfaces by extending both
+  `run_performance_dashboard_benchmarks.py` (CPU-only, end-to-end filter) and
+  the `SURFACES` map.
 - Gate: `pixi run bm-dashboard-preview` renders the dashboard locally from real
   Google Benchmark JSON; each `main` publish updates the hosted per-benchmark
   history.
