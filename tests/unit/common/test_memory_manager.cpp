@@ -36,6 +36,8 @@
 #include <dart/common/memory_manager.hpp>
 #undef private
 
+#include <dart/common/callocator.hpp>
+
 #include <dart/all.hpp>
 
 #include <gtest/gtest.h>
@@ -60,6 +62,43 @@ void usePlainAllocators(MemoryManager& mm)
       = std::make_unique<FreeListAllocator>(mm.mBaseAllocator);
   mm.mPoolAllocator = std::make_unique<PoolAllocator>(*mm.mFreeListAllocator);
 }
+
+class CountingMemoryAllocator final : public MemoryAllocator
+{
+public:
+  std::string_view getType() const override
+  {
+    return "CountingMemoryAllocator";
+  }
+
+  void* allocate(size_t bytes) noexcept override
+  {
+    ++allocationCount;
+    return backing.allocate(bytes);
+  }
+
+  void* allocate(size_t bytes, size_t alignment) noexcept override
+  {
+    ++allocationCount;
+    return backing.allocate(bytes, alignment);
+  }
+
+  void deallocate(void* pointer, size_t bytes) override
+  {
+    ++deallocationCount;
+    backing.deallocate(pointer, bytes);
+  }
+
+  void deallocate(void* pointer, size_t bytes, size_t alignment) override
+  {
+    ++deallocationCount;
+    backing.deallocate(pointer, bytes, alignment);
+  }
+
+  CAllocator backing;
+  std::size_t allocationCount{0};
+  std::size_t deallocationCount{0};
+};
 
 void useDebugAllocators(MemoryManager& mm)
 {
@@ -133,6 +172,51 @@ TEST(MemoryManagerTest, BaseAllocatorConstructorAcceptsFrameCapacity)
   EXPECT_EQ(&mm.getBaseAllocator(), &baseAllocator);
   EXPECT_EQ(&mm.getFrameAllocator().getBaseAllocator(), &baseAllocator);
   EXPECT_EQ(mm.getFrameAllocator().capacity(), static_cast<std::size_t>(4096));
+}
+
+//==============================================================================
+TEST(MemoryManagerTest, OptionsConfigureFreeListGrowthPolicy)
+{
+  auto& baseAllocator = MemoryAllocator::GetDefault();
+  MemoryManager::Options options;
+  options.freeListInitialAllocation = 64;
+  options.freeListGrowthPolicy = FreeListAllocator::GrowthPolicy::FixedCapacity;
+  options.frameAllocatorInitialCapacity = 4096;
+
+  auto mm = MemoryManager(baseAllocator, options);
+
+  EXPECT_EQ(&mm.getBaseAllocator(), &baseAllocator);
+  EXPECT_EQ(mm.getFrameAllocator().capacity(), static_cast<std::size_t>(4096));
+  EXPECT_EQ(
+      mm.getFreeListAllocator().getGrowthPolicy(),
+      FreeListAllocator::GrowthPolicy::FixedCapacity);
+  EXPECT_EQ(mm.allocateUsingPool(sizeof(double)), nullptr);
+
+  auto* first = mm.allocateUsingFree(64);
+  ASSERT_NE(first, nullptr);
+  EXPECT_EQ(mm.allocateUsingFree(16), nullptr);
+
+  mm.deallocateUsingFree(first, 64);
+}
+
+//==============================================================================
+TEST(MemoryManagerTest, FixedCapacityPoolUsesReservedAlignedChunks)
+{
+  CountingMemoryAllocator baseAllocator;
+  MemoryManager::Options options;
+  options.freeListInitialAllocation = 64 * 1024;
+  options.freeListGrowthPolicy = FreeListAllocator::GrowthPolicy::FixedCapacity;
+  options.frameAllocatorInitialCapacity = 4096;
+
+  auto mm = MemoryManager(baseAllocator, options);
+
+  const auto initialBaseAllocations = baseAllocator.allocationCount;
+  auto* ptr = mm.allocateUsingPool(32);
+  ASSERT_NE(ptr, nullptr);
+  EXPECT_EQ(reinterpret_cast<std::uintptr_t>(ptr) % 32u, 0u);
+  EXPECT_EQ(baseAllocator.allocationCount, initialBaseAllocations);
+
+  mm.deallocateUsingPool(ptr, 32);
 }
 
 //==============================================================================

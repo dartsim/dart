@@ -66,13 +66,25 @@ class DART_API FreeListAllocator : public MemoryAllocator
 public:
   using Debug = MemoryAllocatorDebugger<FreeListAllocator>;
 
+  enum class GrowthPolicy
+  {
+    /// Allocate more blocks from the base allocator when existing blocks are
+    /// exhausted.
+    Expand,
+    /// Use only the initially reserved block and return nullptr when exhausted.
+    FixedCapacity,
+  };
+
   /// Constructor
   ///
   /// @param[in] baseAllocator: (optional) Base memory allocator.
   /// @param[in] initialAllocation: (optional) Bytes to initially allocate.
+  /// @param[in] growthPolicy: Whether to grow from the base allocator after
+  /// the initial block is exhausted.
   explicit FreeListAllocator(
       MemoryAllocator& baseAllocator = MemoryAllocator::GetDefault(),
-      size_t initialAllocation = 1048576 /* 1 MB */);
+      size_t initialAllocation = 1048576 /* 1 MB */,
+      GrowthPolicy growthPolicy = GrowthPolicy::Expand);
 
   /// Destructor
   ~FreeListAllocator() override;
@@ -84,6 +96,9 @@ public:
 
   /// Returns the base allocator
   [[nodiscard]] MemoryAllocator& getBaseAllocator();
+
+  /// Returns whether this allocator can grow from its base allocator.
+  [[nodiscard]] GrowthPolicy getGrowthPolicy() const;
 
   // Documentation inherited
   [[nodiscard]] void* allocate(size_t bytes) noexcept override;
@@ -170,7 +185,22 @@ private:
     bool isOutstandingAllocation;
   };
 
+  struct alignas(std::max_align_t) AlignedAllocationHeader
+  {
+    size_t magic;
+    void* allocationPointer;
+    size_t allocationSize;
+    size_t requestedSize;
+    size_t alignment;
+  };
+
+  [[nodiscard]] void* allocateFromReservedBlockAligned(
+      size_t bytes, size_t alignment) noexcept;
+
   bool releaseDelegatedAllocation(
+      void* pointer, size_t bytes, size_t alignment);
+
+  bool releaseReservedAlignedAllocation(
       void* pointer, size_t bytes, size_t alignment);
 
   void recordAllocation(size_t bytes) noexcept;
@@ -179,6 +209,9 @@ private:
 
   /// The base allocator
   MemoryAllocator& mBaseAllocator;
+
+  /// Whether this allocator can grow after its initial allocation is exhausted.
+  GrowthPolicy mGrowthPolicy{GrowthPolicy::Expand};
 
   /// Tracks the raw memory blocks reserved from the base allocator
   std::vector<AllocatedBlock> mAllocatedBlocks;

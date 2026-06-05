@@ -409,6 +409,48 @@ TEST(World, MemoryManagerOptionsAndDiagnostics)
       sx::InvalidArgumentException);
 }
 
+TEST(World, MemoryManagerOptionsConfigureFreeListPolicy)
+{
+  namespace sx = dart::simulation::experimental;
+
+  constexpr std::size_t kFreeListInitialAllocation = 65536;
+  constexpr std::size_t kProbeBytes = 1024;
+
+  sx::WorldOptions options;
+  options.freeListInitialAllocation = kFreeListInitialAllocation;
+  options.freeListGrowthPolicy
+      = dart::common::FreeListAllocator::GrowthPolicy::FixedCapacity;
+
+  sx::World world(options);
+  auto& memoryManager = world.getMemoryManager();
+
+  EXPECT_EQ(
+      memoryManager.getFreeListAllocator().getGrowthPolicy(),
+      dart::common::FreeListAllocator::GrowthPolicy::FixedCapacity);
+
+  std::vector<void*> allocations;
+  for (std::size_t i = 0; i < kFreeListInitialAllocation / kProbeBytes + 16;
+       ++i) {
+    auto* allocation = memoryManager.allocateUsingFree(kProbeBytes);
+    if (allocation == nullptr) {
+      break;
+    }
+    allocations.push_back(allocation);
+  }
+
+  EXPECT_FALSE(allocations.empty());
+  auto* overflow = memoryManager.allocateUsingFree(kProbeBytes);
+  EXPECT_EQ(overflow, nullptr);
+  if (overflow != nullptr) {
+    memoryManager.deallocateUsingFree(overflow, kProbeBytes);
+  }
+  EXPECT_EQ(memoryManager.allocateUsingPool(sizeof(double)), nullptr);
+
+  for (auto* allocation : allocations) {
+    memoryManager.deallocateUsingFree(allocation, kProbeBytes);
+  }
+}
+
 TEST(World, MemoryDiagnosticsMirrorAllocatorDebugCounters)
 {
   namespace sx = dart::simulation::experimental;

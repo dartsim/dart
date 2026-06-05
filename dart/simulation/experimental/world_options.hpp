@@ -32,6 +32,7 @@
 
 #pragma once
 
+#include <dart/common/free_list_allocator.hpp>
 #include <dart/common/memory_allocator.hpp>
 
 #include <Eigen/Core>
@@ -137,6 +138,16 @@ struct WorldOptions
   /// grow if a step exceeds this size; a later bake/build reserve path should
   /// size this high enough that steady-state simulation does not grow it.
   std::size_t frameScratchInitialCapacity = 65536;
+
+  /// Initial bytes reserved for the World's free-list allocator. This is the
+  /// persistent heap-like arena used by the World memory hierarchy.
+  std::size_t freeListInitialAllocation = 1048576 /* 1 MB */;
+
+  /// Whether the World's free-list allocator may grow after construction.
+  /// `FixedCapacity` is intended for bake/build-sized worlds where runtime
+  /// growth would violate a no-dynamic-allocation contract.
+  common::FreeListAllocator::GrowthPolicy freeListGrowthPolicy
+      = common::FreeListAllocator::GrowthPolicy::Expand;
 };
 
 } // namespace dart::simulation::experimental
