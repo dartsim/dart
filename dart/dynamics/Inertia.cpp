@@ -45,8 +45,14 @@ Inertia::Inertia(
     double _mass,
     const Eigen::Vector3d& _com,
     const Eigen::Matrix3d& _momentOfInertia)
-  : mMass(_mass), mCenterOfMass(_com)
+  : mMass(_mass), mCenterOfMass(_com), mMoment{1.0, 1.0, 1.0, 0.0, 0.0, 0.0}
 {
+  // Initialize mMoment to a valid default above and derive the spatial tensor
+  // from it, so that if _momentOfInertia is rejected as non-finite by
+  // setMoment() the object is left in a consistent state rather than with
+  // indeterminate members. See
+  // https://github.com/gazebosim/gz-physics/issues/854
+  computeSpatialTensor();
   setMoment(_momentOfInertia);
 }
 
@@ -150,9 +156,13 @@ const Eigen::Vector3d& Inertia::getLocalCOM() const
 void Inertia::setMoment(const Eigen::Matrix3d& _moment)
 {
   // Reject a non-finite moment of inertia at the ingest boundary so NaN/Inf
-  // never reaches the forward-dynamics recursion.
+  // never reaches the forward-dynamics recursion. Only the diagonal and the
+  // upper-triangle entries are consumed below, so a non-finite value in an
+  // ignored lower-triangle entry must not reject an otherwise valid moment.
   // See https://github.com/gazebosim/gz-physics/issues/854
-  if (!_moment.allFinite()) {
+  if (!std::isfinite(_moment(0, 0)) || !std::isfinite(_moment(1, 1))
+      || !std::isfinite(_moment(2, 2)) || !std::isfinite(_moment(0, 1))
+      || !std::isfinite(_moment(0, 2)) || !std::isfinite(_moment(1, 2))) {
     dtwarn << "[Inertia::setMoment] Attempting to set a non-finite moment of "
               "inertia matrix. Ignoring request.\n";
     return;
