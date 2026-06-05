@@ -104,9 +104,13 @@ def _install_simulation_diff() -> None:
       if _name not in diff_module.__all__:
         diff_module.__all__.append(_name)
   experimental.diff = diff_module
-  # Expose the diff bridge on the canonical flat namespace too: dartpy.diff
-  # (dartpy.simulation.diff still resolves via the legacy wrapper, deprecated).
+  # Expose the diff bridge on the canonical flat namespace too: the dartpy.diff
+  # attribute plus a sys.modules entry so it is importable as a real module
+  # (`import dartpy.diff` / `from dartpy.diff import timestep`), matching the
+  # generated dartpy/diff.pyi stub. dartpy.simulation.diff stays the underlying
+  # module object (same object, registered above).
   setattr(sys.modules[__name__], "diff", diff_module)
+  sys.modules[f"{__name__}.diff"] = diff_module
 
 
 _install_simulation_diff()
