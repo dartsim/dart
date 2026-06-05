@@ -63,6 +63,8 @@
 
 #include <gtest/gtest.h>
 
+#include <numbers>
+
 using namespace dart;
 using namespace dart::dynamics;
 using namespace dart::simulation;
@@ -91,7 +93,7 @@ SkeletonPtr createNonAxisAlignedFourBar(
   const Eigen::Vector3d arbitraryAxis
       = Eigen::Vector3d(1.0, 2.0, 3.0).normalized();
   const Eigen::AngleAxisd linkageRotation(
-      math::constantsd::pi() / 6.0, arbitraryAxis); // ~30 degrees
+      std::numbers::pi_v<double> / 6.0, arbitraryAxis); // ~30 degrees
 
   Eigen::Isometry3d baseTf = Eigen::Isometry3d::Identity();
   baseTf.linear() = linkageRotation.toRotationMatrix();
