@@ -31,6 +31,7 @@
 #include <functional>
 #include <iomanip>
 #include <iostream>
+#include <limits>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -1239,6 +1240,8 @@ TEST(VariationalIntegration, AvbdFixedPointJointConfigSolvesLinkEndpoint)
   config.localAnchorB = tipFromBase.translation();
   config.targetRelativeOrientation
       = Eigen::Quaterniond(tipFromBase.linear()).conjugate();
+  config.startStiffness = std::numeric_limits<double>::infinity();
+  config.maxStiffness = std::numeric_limits<double>::infinity();
 
   world.setTimeStep(1e-3);
   world.enterSimulationMode();
@@ -1315,6 +1318,56 @@ TEST(VariationalIntegration, AvbdBreakablePointJointConfigSkipsLinkEndpoint)
 
   EXPECT_GT(maxPositionResidual, 1e-3);
   EXPECT_FALSE(registry.get<sx::comps::Joint>(jointEntity).broken);
+}
+
+// Compliant AVBD point-joint rows have finite-stiffness state that
+// VariationalLoopConstraint does not carry. The bridge accepts only explicitly
+// hard configs until compliance is represented in the articulated solve path.
+TEST(VariationalIntegration, AvbdCompliantPointJointConfigSkipsLinkEndpoint)
+{
+  sx::World world;
+  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  auto robot = world.addMultibody("pendulum");
+  auto base = robot.addLink("base");
+
+  sx::JointSpec spec;
+  spec.name = "hinge";
+  spec.type = sx::JointType::Revolute;
+  spec.axis = Eigen::Vector3d::UnitY();
+  spec.transformFromParent.translation() = Eigen::Vector3d(0.5, 0.0, 0.0);
+  auto link = robot.addLink("link", base, spec);
+  link.setMass(1.0);
+  link.setInertia(Eigen::Vector3d(0.03, 0.03, 0.03).asDiagonal());
+
+  Eigen::Isometry3d target = Eigen::Isometry3d::Identity();
+  target.translation() = spec.transformFromParent.translation();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
+  const entt::entity jointEntity = registry.create();
+  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  joint.type = sx::comps::JointType::Fixed;
+  joint.parentLink = sx::detail::toRegistryEntity(link.getEntity());
+  joint.childLink = entt::null;
+  auto& config
+      = registry.emplace<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
+  config.localAnchorA = Eigen::Vector3d::Zero();
+  config.localAnchorB = target.translation();
+  config.targetRelativeOrientation
+      = Eigen::Quaterniond(target.linear()).conjugate();
+  config.startStiffness = 1e3;
+  config.maxStiffness = 1e4;
+
+  world.setTimeStep(1e-3);
+  world.enterSimulationMode();
+
+  double maxPositionResidual = 0.0;
+  for (int k = 0; k < 500; ++k) {
+    world.step();
+    maxPositionResidual = std::max(
+        maxPositionResidual,
+        (link.getWorldTransform().translation() - target.translation()).norm());
+  }
+
+  EXPECT_GT(maxPositionResidual, 1e-3);
 }
 
 // Topology joints are the multibody tree itself, not external AVBD point-joint

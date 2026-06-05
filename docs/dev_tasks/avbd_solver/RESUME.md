@@ -82,7 +82,7 @@ extraction now also cover private rigid-body ECS revolute/prismatic joint
 entities, deriving the same axes/masks from their configured joint axis while
 keeping masked multibody link endpoints unsupported until articulated AVBD rows
 exist. The private endpoint layer now classifies free rigid bodies separately
-from multibody links, and fixed multibody-link point-joint configs can bridge
+from multibody links, and hard fixed multibody-link point-joint configs can bridge
 into the variational articulated solve path. Public experimental `World`
 facades now expose free rigid-body
 revolute and prismatic joints through C++ and dartpy, with generated stubs,
@@ -156,12 +156,13 @@ stage, the `avbd_rigid_revolute_motor` py-demo, and the AVBD dashboard
 break-force lifecycle and `avbd_rigid_breakable_joint` py-demo are merged on
 `main`; the next branch should not treat that narrow lifecycle as pending. The
 current branch adds the private free-rigid versus multibody-link endpoint
-classifier, `BM_AvbdRigidEndpointClassification`, and a fixed multibody-link
+classifier, `BM_AvbdRigidEndpointClassification`, and a hard fixed multibody-link
 point-joint bridge into the variational articulated solve path, with
 focused C++ bridge coverage plus a related
 `variational_endpoint_loop_closure` public loop-closure py-demo. That py-demo
 does not exercise the private AVBD point-joint config extractor. Masked
-articulated revolute/prismatic, motor, and breakable rows are still missing.
+articulated revolute/prismatic, compliant fixed, motor, and breakable rows are
+still missing.
 
 ## Immediate Next Step
 
@@ -188,7 +189,7 @@ entities, and public free rigid-body revolute/prismatic facades with dartpy
 bindings, stubs, tests, and py-demo coverage, plus fixed-joint/contact and
 revolute-motor AVBD py-demos, the breakable-joint py-demo, and the narrow
 free-rigid-body break-force lifecycle plus private free-rigid versus
-multibody-link endpoint classification, endpoint benchmark row, focused fixed
+multibody-link endpoint classification, endpoint benchmark row, focused hard fixed
 articulated endpoint bridge tests, and related public variational endpoint
 loop-closure py-demo exist.
 Keep the supported envelope narrow and preserve fallback coverage for topology

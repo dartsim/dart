@@ -150,7 +150,7 @@ and broken-state lifecycle through C++/dartpy, with solved-row fracture marking,
 later extraction skip behavior, and a categorized `avbd_rigid_breakable_joint`
 py-demo. The private endpoint classifier now separates free rigid-body endpoints
 from multibody links, with `BM_AvbdRigidEndpointClassification` and the
-focused C++ tests covering the first fixed link endpoint bridge into the
+focused C++ tests covering the first hard fixed link endpoint bridge into the
 variational articulated solve path while masked articulated rows remain on the
 conservative fallback path. The `variational_endpoint_loop_closure` py-demo is a
 related public loop-closure preview, not coverage for the private AVBD config
@@ -253,10 +253,11 @@ implementation work should prefer one of these gaps, in order:
 
 1. **Articulated multibody AVBD extraction** — the private extractor now
    classifies free rigid-body endpoints separately from multibody links, and
-   fixed multibody-link point-joint configs can bridge into the variational
-   articulated solve path without entering the free-rigid 6-DOF snapshot
-   writeback. Extend that bridge to the masked revolute/prismatic, motor, and
-   breakable row families on articulated chains.
+   explicitly hard fixed multibody-link point-joint configs can bridge into the
+   variational articulated solve path without entering the free-rigid 6-DOF
+   snapshot writeback. Extend that bridge to compliant fixed rows, masked
+   revolute/prismatic rows, motor rows, and breakable row families on articulated
+   chains.
 2. **Rigid contact persistence completeness** — broaden narrow-phase endpoint
    feature extraction and row identity so box/cylinder/capsule/compound contact
    manifolds persist across realistic rigid stacks and piles, then connect that

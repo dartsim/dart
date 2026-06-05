@@ -323,6 +323,12 @@ bool isTopologyMultibodyJoint(
   return childLink != nullptr && childLink->parentJoint == jointEntity;
 }
 
+bool isHardAvbdRigidWorldPointJointConfig(
+    const dvbd::AvbdRigidWorldPointJointConfig& config)
+{
+  return std::isinf(config.startStiffness) && std::isinf(config.maxStiffness);
+}
+
 void appendAvbdRigidWorldArticulatedPointJointConstraints(
     const detail::WorldRegistry& registry,
     entt::entity structureEntity,
@@ -335,7 +341,8 @@ void appendAvbdRigidWorldArticulatedPointJointConstraints(
     const auto& config
         = view.get<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
 
-    if (!config.enabled || joint.broken || joint.breakForce > 0.0
+    if (!config.enabled || !isHardAvbdRigidWorldPointJointConfig(config)
+        || joint.broken || joint.breakForce > 0.0
         || joint.type != comps::JointType::Fixed
         || isTopologyMultibodyJoint(registry, jointEntity, joint)) {
       continue;
