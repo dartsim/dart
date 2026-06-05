@@ -446,7 +446,11 @@ void reportContacts(
     return;
   }
 
-  if (!history || !shouldUseContactHistory(b1, b2)) {
+  // Skip the contact-history path entirely for binary queries
+  // (enableContact == false): convertContact() leaves point/normal/depth at
+  // their defaults for those, so caching them would later supplement a real
+  // manifold with stale zero-depth contacts at the world origin.
+  if (!history || !option.enableContact || !shouldUseContactHistory(b1, b2)) {
     return;
   }
 
