@@ -1413,6 +1413,66 @@ TEST_F(Collision, testHeightmapBox)
 }
 
 //==============================================================================
+// A finite-but-astronomical heightmap scale must not abort ODE heightfield
+// collision. A scale like 1e308 is finite (so it passes the shape-level
+// validation guard), but (width-1)*scale, the vertical scale, and
+// maxHeight*scale.z then overflow to +/-Inf inside ODE, which collapses the
+// per-cell index range and trips dIASSERT((nMinX < nMaxX) && (nMinZ < nMaxZ))
+// in dCollideHeightfield. DART now clamps the extents/scale/bounds handed to
+// ODE to a finite value. See https://github.com/gazebosim/gz-physics/issues/847
+TEST_F(Collision, testHeightmapHugeScaleNoAbort)
+{
+#if HAVE_ODE
+  auto ode = OdeCollisionDetector::create();
+  const double huge = 1e308; // finite but astronomical; passes the shape guard
+
+  auto collideWithBox
+      = [&](const std::shared_ptr<HeightmapShape<double>>& terrain) {
+          auto terrainFrame = SimpleFrame::createShared(Frame::World());
+          auto boxFrame = SimpleFrame::createShared(Frame::World());
+          terrainFrame->setShape(terrain);
+          boxFrame->setShape(
+              std::make_shared<BoxShape>(Eigen::Vector3d::Constant(0.1)));
+          boxFrame->setTranslation(Eigen::Vector3d(0.0, 0.0, 2.0));
+
+          auto group
+              = ode->createCollisionGroup(terrainFrame.get(), boxFrame.get());
+          collision::CollisionOption option;
+          option.enableContact = true;
+          collision::CollisionResult result;
+          // The bug aborted the process here; reaching the next line proves the
+          // extents/scale/bounds were clamped to finite values.
+          EXPECT_NO_FATAL_FAILURE(group->collide(option, &result));
+          for (auto i = 0u; i < result.getNumContacts(); ++i)
+            EXPECT_TRUE(result.getContact(i).point.allFinite());
+        };
+
+  // Extents-overflow path: a >= 3 sample dimension makes (width-1)*scale
+  // overflow ((3-1)*1e308 == Inf).
+  {
+    auto terrain = std::make_shared<HeightmapShape<double>>();
+    std::vector<double> heights = {1.0, 1.0, 1.0, 1.0, 2.0, 1.0, 1.0, 1.0, 1.0};
+    terrain->setHeightField(3u, 3u, heights);
+    terrain->setScale(Eigen::Vector3d(huge, huge, huge));
+    // The finite-but-astronomical scale is accepted by the shape-level guard.
+    EXPECT_TRUE(
+        terrain->getScale().isApprox(Eigen::Vector3d(huge, huge, huge)));
+    collideWithBox(terrain);
+  }
+
+  // Bounds/vertical-overflow path: a huge z-scale makes maxHeight*scale.z
+  // overflow even for a 2x2 field.
+  {
+    auto terrain = std::make_shared<HeightmapShape<double>>();
+    std::vector<double> heights = {1.0, 2.0, 2.0, 3.0};
+    terrain->setHeightField(2u, 2u, heights);
+    terrain->setScale(Eigen::Vector3d(2.0, 2.0, huge));
+    collideWithBox(terrain);
+  }
+#endif
+}
+
+//==============================================================================
 // Tests HeightmapShape::flipY();
 TEST_F(Collision, testHeightmapFlipY)
 {
