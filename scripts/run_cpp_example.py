@@ -84,8 +84,8 @@ EXAMPLE_SPECS = {
     "dartsim": ExampleSpec(
         "dartsim", "dartsim", ("filament", "simulation-experimental")
     ),
-    # The consolidated demos app. Its scenes that drive the experimental World
-    # need that component built as well.
+    # The consolidated World demos app needs the current World implementation
+    # component built as well.
     "demos": ExampleSpec(
         "dart-demos", "dart-demos", ("filament", "simulation-experimental")
     ),
@@ -95,47 +95,75 @@ EXAMPLE_SPECS = {
     },
 }
 
-# Former standalone GUI examples that are now scenes in `dart-demos`.
+# World-scene demos hosted by `dart-demos`.
 _DEMOS_SCENE_IDS = (
-    "empty",
-    "shapes",
-    "simple_frames",
-    "drag_and_drop",
-    "polyhedron_visual",
-    "imgui",
-    "heightmap",
-    "point_cloud",
-    "boxes",
-    "rigid_cubes",
+    "rigid_body",
+    "planned_inverse_kinematics",
+    "planned_simbicon_walking",
+    "planned_operational_space_control",
+    "planned_robot_puppets",
+    "planned_collision_sandbox",
+    "planned_mobile_manipulation",
+    "deformable_body",
+    "vbd_deformable",
+)
+
+_DART6_DEMO_PLACEHOLDER_SCENE_IDS = {
+    "atlas_puppet": "planned_robot_puppets",
+    "atlas_simbicon": "planned_simbicon_walking",
+    "biped_stand": "planned_simbicon_walking",
+    "collision_sandbox": "planned_collision_sandbox",
+    "fetch": "planned_mobile_manipulation",
+    "g1_puppet": "planned_robot_puppets",
+    "hubo_puppet": "planned_robot_puppets",
+    "operational_space_control": "planned_operational_space_control",
+    "point_cloud": "planned_collision_sandbox",
+    "polyhedron_visual": "planned_collision_sandbox",
+    "vehicle": "planned_mobile_manipulation",
+    "wam_ikfast": "planned_inverse_kinematics",
+}
+
+_REMOVED_DART6_DEMOS_SCENE_IDS = (
     "add_delete_skels",
-    "rigid_chain",
-    "simulation_event_handler",
-    "rigid_shapes",
-    "experimental_rigid_body",
-    "experimental_deformable",
-    "capsule_ground_contact",
-    "hardcoded_design",
-    "box_stacking",
-    "coupler_constraint",
-    "mimic_pendulums",
-    "rigid_loop",
-    "free_joint_cases",
-    "lcp_physics",
-    "tinkertoy",
-    "hybrid_dynamics",
-    "joint_constraints",
-    "biped_stand",
-    "operational_space_control",
     "atlas_puppet",
     "atlas_simbicon",
-    "hubo_puppet",
-    "mixed_chain",
-    "soft_bodies",
-    "fetch",
-    "vehicle",
-    "g1_puppet",
-    "human_joint_limits",
+    "biped_stand",
+    "box_stacking",
+    "boxes",
+    "capsule_ground_contact",
     "collision_sandbox",
+    "coupler_constraint",
+    "drag_and_drop",
+    "empty",
+    "experimental_deformable",
+    "experimental_rigid_body",
+    "experimental_vbd",
+    "fetch",
+    "free_joint_cases",
+    "g1_puppet",
+    "hardcoded_design",
+    "heightmap",
+    "hubo_puppet",
+    "human_joint_limits",
+    "hybrid_dynamics",
+    "imgui",
+    "joint_constraints",
+    "lcp_physics",
+    "mimic_pendulums",
+    "mixed_chain",
+    "operational_space_control",
+    "point_cloud",
+    "polyhedron_visual",
+    "rigid_chain",
+    "rigid_cubes",
+    "rigid_loop",
+    "rigid_shapes",
+    "shapes",
+    "simple_frames",
+    "simulation_event_handler",
+    "soft_bodies",
+    "tinkertoy",
+    "vehicle",
     "wam_ikfast",
 )
 
@@ -211,10 +239,30 @@ def _normalize_target(target: str) -> str:
             "  pixi run py-demos -- --scene <id> # launch a specific scene\n"
             "The C++ demos viewer is a separate app: pixi run ex demos"
         )
-    if target in _DEMOS_SCENE_IDS:
+    # DART 6 demo ids were historically spelled with hyphens (the spelling
+    # FILAMENT_ALL_SCENES still uses), so canonicalize to the underscore scene-id
+    # form before the demo-scene lookups below. Without this, e.g.
+    # `pixi run ex rigid-cubes` would skip the removal guidance and fall through
+    # to building a nonexistent CMake target.
+    canonical = target.replace("-", "_")
+    placeholder_scene = _DART6_DEMO_PLACEHOLDER_SCENE_IDS.get(canonical)
+    if placeholder_scene is not None:
+        raise SystemExit(
+            f"The '{target}' DART 6 demo scene has been removed from "
+            "dart-demos. A planned World-native placeholder is available:\n"
+            f"  pixi run demos -- --scene {placeholder_scene}\n"
+            "Run `pixi run demos -- --list` for the current World demo catalog."
+        )
+    if canonical in _REMOVED_DART6_DEMOS_SCENE_IDS:
+        raise SystemExit(
+            f"The '{target}' DART 6 demo scene has been removed from "
+            "dart-demos. Run `pixi run demos -- --list` for the current "
+            "World demo catalog."
+        )
+    if canonical in _DEMOS_SCENE_IDS:
         raise SystemExit(
             f"The '{target}' GUI example is now a scene in the dart-demos app. "
-            f"Run it with: pixi run demos -- --scene {target}"
+            f"Run it with: pixi run demos -- --scene {canonical}"
         )
     return target
 
@@ -445,7 +493,15 @@ def _filament_screenshot_path(scene: str) -> Path:
     return Path("build") / env_name / f"dartsim_{scene_suffix}.ppm"
 
 
-def _split_filament_scenes(run_args: list[str]) -> tuple[list[str], list[str], bool]:
+def _all_scene_ids_for_spec(spec: ExampleSpec) -> tuple[str, ...]:
+    if spec.binary_name == "dart-demos":
+        return _DEMOS_SCENE_IDS
+    return FILAMENT_ALL_SCENES
+
+
+def _split_filament_scenes(
+    run_args: list[str], all_scene_ids: tuple[str, ...] = FILAMENT_ALL_SCENES
+) -> tuple[list[str], list[str], bool]:
     """Return scenes, remaining args, and whether --scene was user-supplied."""
     args = list(run_args)
     for index, arg in enumerate(args):
@@ -454,7 +510,7 @@ def _split_filament_scenes(run_args: list[str]) -> tuple[list[str], list[str], b
         scene = args[index + 1]
         del args[index : index + 2]
         if scene == "all":
-            return list(FILAMENT_ALL_SCENES), args, True
+            return list(all_scene_ids), args, True
         return [scene], args, True
     return ["mvp"], args, False
 
@@ -665,7 +721,9 @@ def _run_example_binary(
         subprocess.run([str(binary), *run_args], check=True, env=runtime_env)
         return
 
-    scenes, base_args, scene_option_explicit = _split_filament_scenes(run_args)
+    scenes, base_args, scene_option_explicit = _split_filament_scenes(
+        run_args, _all_scene_ids_for_spec(spec)
+    )
     multiple_scenes = len(scenes) > 1
     for scene in scenes:
         prepared_args = _prepare_filament_run_args(

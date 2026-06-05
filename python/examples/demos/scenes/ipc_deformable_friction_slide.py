@@ -1,4 +1,4 @@
-"""Frictional slide-to-rest (experimental IPC deformable solver).
+"""Frictional slide-to-rest (IPC deformable solver).
 
 A point-mass/spring mat starts resting inside the ground barrier's activation
 band with a horizontal launch velocity and skids to a halt as the lagged
@@ -98,7 +98,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="ipc_deformable_friction_slide",
     title="Deformable Friction Slide (IPC)",
-    category="IPC Deformable (sx)",
+    category="IPC Deformable",
     summary="A launched mat skids to rest under lagged Coulomb ground friction.",
     build=build,
 )

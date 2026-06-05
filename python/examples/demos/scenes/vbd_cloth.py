@@ -2,7 +2,7 @@
 
 Mirrors the C++ ``experimental_vbd`` demo scene. The pinned top row holds a
 spring-net curtain that billows out of plane from an initial gust and settles
-under gravity. Because the body is contact-free, the experimental World routes
+under gravity. Because the body is contact-free, the World routes
 it through the VBD inner solver (selected with the public, solver-agnostic
 ``World.configure_deformable_solver``).
 """
@@ -16,7 +16,7 @@ import numpy as np
 
 import dartpy.simulation_experimental as sx
 
-from .._sx_bridge import SxRenderBridge
+from .._world_bridge import WorldRenderBridge
 from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
 
@@ -83,7 +83,7 @@ def build() -> SceneSetup:
     world.configure_deformable_solver("vbd_cloth", solver)
     world.enter_simulation_mode()
 
-    bridge = SxRenderBridge(world, name="vbd_cloth_render")
+    bridge = WorldRenderBridge(world, name="vbd_cloth_render")
     body = world.get_deformable_body("vbd_cloth")
     bridge.add_deformable_visual(
         body, (0.12, 0.57, 0.91), fixed_color=(0.95, 0.50, 0.16))
@@ -140,8 +140,8 @@ def build() -> SceneSetup:
 
 SCENE = PythonDemoScene(
     id="vbd_cloth",
-    title="VBD Cloth (sx)",
-    category="Vertex Block Descent (sx)",
+    title="VBD Cloth",
+    category="Vertex Block Descent",
     summary="A contact-free hanging cloth solved by Vertex Block Descent.",
     build=build,
 )

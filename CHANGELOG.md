@@ -35,6 +35,18 @@
     `dart::gui::runDemos`. `hello_world` stays a standalone minimal CMake
     template, and the headless `csv_logger`, `headless_simulation`,
     `speed_test`, and `unified_loading` examples stay standalone.
+  - Pruned `pixi run demos` and `pixi run py-demos` to the DART 7 World demo
+    catalog. The old DART 6 demo scene modules and cross-language golden parity
+    fixtures were removed; remaining scene ids/categories use World, IPC,
+    differentiable, variational, and VBD names without experimental/sx labels.
+    High-value DART 6 examples that still need full World-native ports now
+    appear as lightweight `Planned World Ports` placeholders or conservative
+    previews: `atlas_puppet` and `hubo_puppet` load bundled humanoids through
+    the experimental World with pose controls, `g1_puppet` remains asset-gated,
+    `atlas_simbicon` cycles SIMBICON target poses, and IK, full walking
+    balance, operational-space control, collision sandbox, and
+    mobile-manipulation follow-ups stay visible without keeping legacy scene
+    implementations.
   - Added runtime rendering-backend (graphics API) selection through
     `dart::gui::RunOptions::renderBackend`, the `--render-backend` flag, and the
     `DART_FILAMENT_BACKEND` environment variable (`default`/`opengl`/`vulkan`

@@ -1,10 +1,10 @@
-"""Shared bridge + grid builder for the experimental IPC deformable demos.
+"""Shared bridge + grid builder for the IPC deformable demos.
 
-The Filament viewer renders a `dart.simulation.World`, not the experimental
-`dartpy.simulation_experimental` (sx) world that owns the deformable physics.
-`_sx_bridge.SxRenderBridge` mirrors *rigid* sx bodies onto SimpleFrames by
-syncing a single transform per body. Deformable bodies instead move every
-node independently, so this bridge mirrors each deformable as:
+The Filament viewer renders a `dart.simulation.World`, while these demos build
+deformable physics through the current World API. `_world_bridge.WorldRenderBridge`
+mirrors rigid bodies onto SimpleFrames by syncing a single transform per body.
+Deformable bodies instead move every node independently, so this bridge mirrors
+each deformable as:
 
 - one `dart.SphereShape` SimpleFrame per node (orange for fixed/scripted nodes,
   blue for free nodes), its transform synced from ``body.node_position(i)``;
@@ -13,13 +13,13 @@ node independently, so this bridge mirrors each deformable as:
 
 This is the Python equivalent of the C++ ``appendDeformableVisual`` /
 ``syncRenderFrames`` layers in
-``examples/demos/scenes/experimental_deformable.cpp`` (per-node spheres + edge
+``examples/demos/scenes/deformable_body.cpp`` (per-node spheres + edge
 wireframe). The dynamic *surface mesh* layer (``makeDeformableSurfaceRenderable``)
 is not reachable through ``dartpy.gui.run_demos`` today, so it is intentionally
 omitted; the spheres + wireframe convey sag, drape, and scripted motion.
 
 Scenes build a deformable grid with :func:`build_grid_options`, add it to an
-sx world, then register it with an :class:`IpcDeformableBridge` and return
+World, then register it with an :class:`IpcDeformableBridge` and return
 ``SceneSetup(world=bridge.render_world, pre_step=bridge.pre_step, ...)``.
 """
 
@@ -401,7 +401,7 @@ def build_cloth_from_obj(
     """Build a mass-spring cloth membrane from a Wavefront ``.obj`` surface mesh.
 
     Loads the triangle mesh via :func:`sx.load_obj_triangle_mesh`, then derives
-    the mass-spring topology the experimental solver needs: one structural spring
+    the mass-spring topology the World solver needs: one structural spring
     per unique triangle edge (rest length = the loaded inter-node distance), a
     uniform nodal ``mass``, and the surface triangles (kept for self-contact and
     rendering). ``translate`` offsets every vertex (e.g. to lift the sheet above
@@ -497,14 +497,16 @@ def build_particles_from_pt(
 
 
 class IpcDeformableBridge:
-    """Mirrors sx deformable bodies onto a render `dart.simulation.World`."""
+    """Mirrors deformable bodies onto a render `dart.simulation.World`."""
 
-    def __init__(self, sx_world: Any, name: str = "ipc_deformable_render") -> None:
-        self._sx_world = sx_world
+    def __init__(
+        self, physics_world: Any, name: str = "ipc_deformable_render"
+    ) -> None:
+        self._physics_world = physics_world
         self._name = name
         self.render_world = dart.World(name)
         self.render_world.set_gravity([0.0, 0.0, 0.0])
-        self.render_world.set_time_step(getattr(sx_world, "time_step", 0.005))
+        self.render_world.set_time_step(getattr(physics_world, "time_step", 0.005))
         # (body, [node SimpleFrame, ...], edge LineSegmentShape) per deformable.
         self._deformables: list[tuple[Any, list[Any], Any]] = []
         self._step_failed = False
@@ -622,11 +624,11 @@ class IpcDeformableBridge:
         )
         positions = self._node_positions()
         builder.text("solver: deformable IPC")
-        builder.text(f"world time: {self._sx_world.time:.3f} s")
-        builder.text(f"time step: {self._sx_world.time_step:.4f} s")
+        builder.text(f"world time: {self._physics_world.time:.3f} s")
+        builder.text(f"time step: {self._physics_world.time_step:.4f} s")
         builder.text(f"nodes: {node_count} | fixed: {self._fixed_node_count()}")
         diagnostics = getattr(
-            self._sx_world, "last_deformable_solver_diagnostics", None
+            self._physics_world, "last_deformable_solver_diagnostics", None
         )
         if diagnostics is not None:
             builder.text(
@@ -655,7 +657,7 @@ class IpcDeformableBridge:
             builder.plot_lines("Min z", list(self._min_height_history))
 
     def pre_step(self) -> None:
-        """Advance the sx deformable physics one step, then sync the render.
+        """Advance deformable physics one step, then sync the render.
 
         A solver failure (e.g. a divergent stiff-barrier solve) is reported
         once to stderr rather than silently swallowed, so a wedged demo is
@@ -663,7 +665,7 @@ class IpcDeformableBridge:
         """
 
         try:
-            self._sx_world.step()
+            self._physics_world.step()
         except Exception as error:  # noqa: BLE001
             if not self._step_failed:
                 self._step_failed = True
