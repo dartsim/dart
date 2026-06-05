@@ -19,8 +19,8 @@ There are two complementary text profilers:
 The World step profile requires a build configured with `DART_BUILD_PROFILE=ON`.
 The standard `pixi` build and test tasks enable that option for developer
 workflows. When `DART_BUILD_PROFILE=OFF`, the runtime toggle is a no-op,
-`last_step_profile` stays empty, and the normal `World::step` path has no
-compiled profiling branch or clock reads.
+`last_step_profile` stays empty, and `World` carries no profiling cache fields;
+the normal `World::step` path has no compiled profiling branch or clock reads.
 
 The experimental World step runs an ordered pipeline of named stages
 (`rigid_body_velocity`, `rigid_body_contact`, `multibody_forward_dynamics`,

@@ -2999,9 +2999,10 @@ void defSimulationExperimentalModule(nb::module_& m)
           &sim::World::setStepProfilingEnabled,
           "Enable or disable per-stage step profiling. Requires a "
           "DART_BUILD_PROFILE=ON build; profile-off builds report false and "
-          "leave last_step_profile empty. Off by default; when off the step "
-          "path is unchanged and adds no overhead. When on, each step records "
-          "a per-stage wall-clock breakdown in last_step_profile.")
+          "leave last_step_profile empty without storing per-World profiling "
+          "cache fields. Off by default; when off the step path is unchanged "
+          "and adds no overhead. When on, each step records a per-stage "
+          "wall-clock breakdown in last_step_profile.")
       .def_prop_ro(
           "last_step_profile",
           &sim::World::getLastStepProfile,

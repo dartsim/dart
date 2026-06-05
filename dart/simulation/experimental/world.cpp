@@ -3778,7 +3778,12 @@ bool World::isStepProfilingEnabled() const noexcept
 //==============================================================================
 const compute::WorldStepProfile& World::getLastStepProfile() const noexcept
 {
+#if DART_BUILD_PROFILE
   return m_lastStepProfile;
+#else
+  static const compute::WorldStepProfile kEmptyProfile;
+  return kEmptyProfile;
+#endif
 }
 
 //==============================================================================

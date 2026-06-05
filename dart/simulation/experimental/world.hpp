@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include <dart/config.hpp>
+
 #include <dart/simulation/experimental/fwd.hpp>
 
 #include <dart/simulation/experimental/body/deformable_body_options.hpp>
@@ -648,8 +650,9 @@ public:
   /// retrievable via ``getLastStepProfile``. This is the experimental World's
   /// non-GUI, text-first performance surface, intended for tools, bindings, and
   /// AI agents optimizing a step. Requires ``DART_BUILD_PROFILE=ON``; when that
-  /// build option is off this toggle is a no-op and the step path has no
-  /// compiled profiling branch. Disabled by default in profiling-enabled
+  /// build option is off this toggle is a no-op, ``World`` stores no profiling
+  /// cache fields, and the step path has no compiled profiling branch. Disabled
+  /// by default in profiling-enabled
   /// builds; when off the step path is unchanged and adds no profiling
   /// overhead.
   void setStepProfilingEnabled(bool enabled) noexcept;
@@ -798,8 +801,10 @@ private:
   double m_time{0.0};
   DeformableSolverDiagnostics m_lastDeformableSolverDiagnostics{};
   WorldMemoryDiagnostics m_memoryDiagnostics{};
+#if DART_BUILD_PROFILE
   bool m_stepProfilingEnabled{false};
   compute::WorldStepProfile m_lastStepProfile{};
+#endif
   double m_rigidIpcAdaptiveBarrierStiffnessLowerBound{1.0};
   enum class MultibodyIntegrationMethod
   {

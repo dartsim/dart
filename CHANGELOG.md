@@ -813,7 +813,8 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     `world.step_profiling_enabled`, `world.last_step_profile`, and
     `WorldStepProfile.summary()`. Requires `DART_BUILD_PROFILE=ON`; when the
     profiling build option is off, the runtime toggle is a no-op and the step
-    path compiles without profile branches or clock reads.
+    path compiles without profile cache fields, profile branches, or clock
+    reads.
     Removed the unused, never-built `dart::simulation::experimental::common`
     `ScopedTimer`/`Stopwatch`/`ProfileStats` profiler (its
     `DART_EXPERIMENTAL_ENABLE_PROFILING` macros were wired into no build and
