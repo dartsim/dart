@@ -167,9 +167,10 @@ TEST(MemoryManagerTest, DebugDiagnosticsTrackFreeAndPoolAllocations)
 
   auto diagnostics = mm.getDebugDiagnostics();
   EXPECT_TRUE(diagnostics.enabled);
-  EXPECT_EQ(diagnostics.freeAllocator.liveBytes, 0u);
-  EXPECT_EQ(diagnostics.freeAllocator.peakLiveBytes, 0u);
-  EXPECT_EQ(diagnostics.freeAllocator.liveAllocationCount, 0u);
+  const auto initialDiagnostics = diagnostics;
+  EXPECT_GE(
+      diagnostics.freeAllocator.peakLiveBytes,
+      diagnostics.freeAllocator.liveBytes);
   EXPECT_EQ(diagnostics.poolAllocator.liveBytes, 0u);
   EXPECT_EQ(diagnostics.poolAllocator.peakLiveBytes, 0u);
   EXPECT_EQ(diagnostics.poolAllocator.liveAllocationCount, 0u);
@@ -181,24 +182,95 @@ TEST(MemoryManagerTest, DebugDiagnosticsTrackFreeAndPoolAllocations)
 
   diagnostics = mm.getDebugDiagnostics();
   EXPECT_TRUE(diagnostics.enabled);
-  EXPECT_EQ(diagnostics.freeAllocator.liveBytes, 16u);
-  EXPECT_EQ(diagnostics.freeAllocator.peakLiveBytes, 16u);
-  EXPECT_EQ(diagnostics.freeAllocator.liveAllocationCount, 1u);
-  EXPECT_EQ(diagnostics.poolAllocator.liveBytes, 32u);
-  EXPECT_EQ(diagnostics.poolAllocator.peakLiveBytes, 32u);
-  EXPECT_EQ(diagnostics.poolAllocator.liveAllocationCount, 1u);
+  EXPECT_GE(
+      diagnostics.freeAllocator.liveBytes,
+      initialDiagnostics.freeAllocator.liveBytes + 16u);
+  EXPECT_GE(
+      diagnostics.freeAllocator.peakLiveBytes,
+      diagnostics.freeAllocator.liveBytes);
+  EXPECT_GE(
+      diagnostics.freeAllocator.liveAllocationCount,
+      initialDiagnostics.freeAllocator.liveAllocationCount + 1u);
+  EXPECT_EQ(
+      diagnostics.poolAllocator.liveBytes,
+      initialDiagnostics.poolAllocator.liveBytes + 32u);
+  EXPECT_EQ(
+      diagnostics.poolAllocator.peakLiveBytes,
+      initialDiagnostics.poolAllocator.peakLiveBytes + 32u);
+  EXPECT_EQ(
+      diagnostics.poolAllocator.liveAllocationCount,
+      initialDiagnostics.poolAllocator.liveAllocationCount + 1u);
 
   mm.deallocate(MemoryManager::Type::Free, freePtr, 16);
   mm.deallocate(MemoryManager::Type::Pool, poolPtr, 32);
 
   diagnostics = mm.getDebugDiagnostics();
   EXPECT_TRUE(diagnostics.enabled);
-  EXPECT_EQ(diagnostics.freeAllocator.liveBytes, 0u);
-  EXPECT_EQ(diagnostics.freeAllocator.peakLiveBytes, 16u);
-  EXPECT_EQ(diagnostics.freeAllocator.liveAllocationCount, 0u);
-  EXPECT_EQ(diagnostics.poolAllocator.liveBytes, 0u);
-  EXPECT_EQ(diagnostics.poolAllocator.peakLiveBytes, 32u);
-  EXPECT_EQ(diagnostics.poolAllocator.liveAllocationCount, 0u);
+  EXPECT_GE(
+      diagnostics.freeAllocator.liveBytes,
+      initialDiagnostics.freeAllocator.liveBytes);
+  EXPECT_GE(
+      diagnostics.freeAllocator.peakLiveBytes,
+      diagnostics.freeAllocator.liveBytes);
+  EXPECT_GE(
+      diagnostics.freeAllocator.liveAllocationCount,
+      initialDiagnostics.freeAllocator.liveAllocationCount);
+  EXPECT_EQ(
+      diagnostics.poolAllocator.liveBytes,
+      initialDiagnostics.poolAllocator.liveBytes);
+  EXPECT_EQ(
+      diagnostics.poolAllocator.liveAllocationCount,
+      initialDiagnostics.poolAllocator.liveAllocationCount);
+
+  const auto beforeBorrowedFree = mm.getDebugDiagnostics();
+  auto* borrowedFreePtr = mm.getFreeListAllocator().allocate(24);
+  ASSERT_NE(borrowedFreePtr, nullptr);
+
+  diagnostics = mm.getDebugDiagnostics();
+  EXPECT_EQ(
+      diagnostics.freeAllocator.liveBytes,
+      beforeBorrowedFree.freeAllocator.liveBytes + 24u);
+  EXPECT_GE(
+      diagnostics.freeAllocator.peakLiveBytes,
+      diagnostics.freeAllocator.liveBytes);
+  EXPECT_EQ(
+      diagnostics.freeAllocator.liveAllocationCount,
+      beforeBorrowedFree.freeAllocator.liveAllocationCount + 1u);
+
+  mm.getFreeListAllocator().deallocate(borrowedFreePtr, 24);
+
+  diagnostics = mm.getDebugDiagnostics();
+  EXPECT_EQ(
+      diagnostics.freeAllocator.liveBytes,
+      beforeBorrowedFree.freeAllocator.liveBytes);
+  EXPECT_EQ(
+      diagnostics.freeAllocator.liveAllocationCount,
+      beforeBorrowedFree.freeAllocator.liveAllocationCount);
+
+  const auto beforeBorrowedPool = mm.getDebugDiagnostics();
+  auto* borrowedPoolPtr = mm.getPoolAllocator().allocate(40);
+  ASSERT_NE(borrowedPoolPtr, nullptr);
+
+  diagnostics = mm.getDebugDiagnostics();
+  EXPECT_GE(
+      diagnostics.freeAllocator.liveBytes,
+      beforeBorrowedPool.freeAllocator.liveBytes);
+  EXPECT_EQ(
+      diagnostics.poolAllocator.liveBytes,
+      beforeBorrowedPool.poolAllocator.liveBytes + 40u);
+  EXPECT_EQ(
+      diagnostics.poolAllocator.liveAllocationCount,
+      beforeBorrowedPool.poolAllocator.liveAllocationCount + 1u);
+
+  mm.getPoolAllocator().deallocate(borrowedPoolPtr, 40);
+
+  diagnostics = mm.getDebugDiagnostics();
+  EXPECT_EQ(
+      diagnostics.poolAllocator.liveBytes,
+      beforeBorrowedPool.poolAllocator.liveBytes);
+  EXPECT_EQ(
+      diagnostics.poolAllocator.liveAllocationCount,
+      beforeBorrowedPool.poolAllocator.liveAllocationCount);
 }
 
 //==============================================================================

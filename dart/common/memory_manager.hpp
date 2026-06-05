@@ -77,10 +77,16 @@ public:
     /// Whether free/pool allocations route through debug wrappers.
     bool enabled = false;
 
-    /// Debug counters for direct FreeListAllocator allocations.
+    /// Debug counters for the manager-owned free-list allocator.
+    ///
+    /// This includes typed borrowed-allocator use and child allocator backing
+    /// allocations because the free-list allocator owns that live memory.
     AllocatorDebugDiagnostics freeAllocator;
 
-    /// Debug counters for direct PoolAllocator allocations.
+    /// Debug counters for the manager-owned pool allocator.
+    ///
+    /// This includes typed borrowed-allocator use as well as direct
+    /// MemoryManager pool allocations.
     AllocatorDebugDiagnostics poolAllocator;
   };
 

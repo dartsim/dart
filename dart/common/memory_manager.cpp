@@ -39,9 +39,9 @@ namespace dart::common {
 namespace {
 
 //==============================================================================
-template <typename DebugAllocator>
-MemoryManager::AllocatorDebugDiagnostics getAllocatorDebugDiagnostics(
-    const DebugAllocator* allocator)
+template <typename Allocator>
+MemoryManager::AllocatorDebugDiagnostics getAllocatorDiagnostics(
+    const Allocator* allocator)
 {
   if (allocator == nullptr) {
     return {};
@@ -368,8 +368,10 @@ MemoryManager::DebugDiagnostics MemoryManager::getDebugDiagnostics() const
 
   return {
       true,
-      getAllocatorDebugDiagnostics(mFreeListAllocatorWithDebug.get()),
-      getAllocatorDebugDiagnostics(mPoolAllocatorWithDebug.get())};
+      getAllocatorDiagnostics(
+          &mFreeListAllocatorWithDebug->getInternalAllocator()),
+      getAllocatorDiagnostics(
+          &mPoolAllocatorWithDebug->getInternalAllocator())};
 }
 
 //==============================================================================

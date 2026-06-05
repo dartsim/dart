@@ -299,8 +299,15 @@ TEST(World, MemoryDiagnosticsMirrorAllocatorDebugCounters)
 
   sx::World world;
 
+#if !defined(NDEBUG)
+  const auto baselineDiagnostics
+      = world.getMemoryManager().getDebugDiagnostics();
+#endif
   auto* freePtr = world.getMemoryManager().allocateUsingFree(24);
   ASSERT_NE(freePtr, nullptr);
+  auto* borrowedPoolPtr
+      = world.getMemoryManager().getPoolAllocator().allocate(40);
+  ASSERT_NE(borrowedPoolPtr, nullptr);
 
   const auto worldDiagnostics = world.getMemoryDiagnostics();
   const auto managerDiagnostics
@@ -332,16 +339,25 @@ TEST(World, MemoryDiagnosticsMirrorAllocatorDebugCounters)
 #if !defined(NDEBUG)
   EXPECT_TRUE(worldDiagnostics.allocatorDebugDiagnostics.enabled);
   EXPECT_EQ(
-      worldDiagnostics.allocatorDebugDiagnostics.freeAllocator.liveBytes, 24u);
+      worldDiagnostics.allocatorDebugDiagnostics.poolAllocator.liveBytes,
+      baselineDiagnostics.poolAllocator.liveBytes + 40u);
   EXPECT_EQ(
+      worldDiagnostics.allocatorDebugDiagnostics.poolAllocator
+          .liveAllocationCount,
+      baselineDiagnostics.poolAllocator.liveAllocationCount + 1u);
+  EXPECT_GE(
+      worldDiagnostics.allocatorDebugDiagnostics.freeAllocator.liveBytes,
+      baselineDiagnostics.freeAllocator.liveBytes + 24u);
+  EXPECT_GE(
       worldDiagnostics.allocatorDebugDiagnostics.freeAllocator.peakLiveBytes,
-      24u);
-  EXPECT_EQ(
+      worldDiagnostics.allocatorDebugDiagnostics.freeAllocator.liveBytes);
+  EXPECT_GE(
       worldDiagnostics.allocatorDebugDiagnostics.freeAllocator
           .liveAllocationCount,
-      1u);
+      baselineDiagnostics.freeAllocator.liveAllocationCount + 1u);
 #endif
 
+  world.getMemoryManager().getPoolAllocator().deallocate(borrowedPoolPtr, 40);
   world.getMemoryManager().deallocateUsingFree(freePtr, 24);
 }
 
