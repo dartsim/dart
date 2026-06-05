@@ -493,7 +493,15 @@ def _filament_screenshot_path(scene: str) -> Path:
     return Path("build") / env_name / f"dartsim_{scene_suffix}.ppm"
 
 
-def _split_filament_scenes(run_args: list[str]) -> tuple[list[str], list[str], bool]:
+def _all_scene_ids_for_spec(spec: ExampleSpec) -> tuple[str, ...]:
+    if spec.binary_name == "dart-demos":
+        return _DEMOS_SCENE_IDS
+    return FILAMENT_ALL_SCENES
+
+
+def _split_filament_scenes(
+    run_args: list[str], all_scene_ids: tuple[str, ...] = FILAMENT_ALL_SCENES
+) -> tuple[list[str], list[str], bool]:
     """Return scenes, remaining args, and whether --scene was user-supplied."""
     args = list(run_args)
     for index, arg in enumerate(args):
@@ -502,7 +510,7 @@ def _split_filament_scenes(run_args: list[str]) -> tuple[list[str], list[str], b
         scene = args[index + 1]
         del args[index : index + 2]
         if scene == "all":
-            return list(FILAMENT_ALL_SCENES), args, True
+            return list(all_scene_ids), args, True
         return [scene], args, True
     return ["mvp"], args, False
 
@@ -713,7 +721,9 @@ def _run_example_binary(
         subprocess.run([str(binary), *run_args], check=True, env=runtime_env)
         return
 
-    scenes, base_args, scene_option_explicit = _split_filament_scenes(run_args)
+    scenes, base_args, scene_option_explicit = _split_filament_scenes(
+        run_args, _all_scene_ids_for_spec(spec)
+    )
     multiple_scenes = len(scenes) > 1
     for scene in scenes:
         prepared_args = _prepare_filament_run_args(

@@ -253,6 +253,22 @@ def test_split_filament_scene_all_uses_smoke_scene_list(run_cpp_example):
     assert "g1" not in scenes
 
 
+def test_split_demos_scene_all_uses_world_catalog(run_cpp_example):
+    spec = run_cpp_example._resolve_example("demos")
+    all_scene_ids = run_cpp_example._all_scene_ids_for_spec(spec)
+    scenes, args, scene_option_explicit = run_cpp_example._split_filament_scenes(
+        ["--frames", "1", "--scene", "all", "--width", "320"],
+        all_scene_ids,
+    )
+
+    assert all_scene_ids == run_cpp_example._DEMOS_SCENE_IDS
+    assert tuple(scenes) == run_cpp_example._DEMOS_SCENE_IDS
+    assert args == ["--frames", "1", "--width", "320"]
+    assert scene_option_explicit is True
+    assert "mvp" not in scenes
+    assert "hello-world" not in scenes
+
+
 def test_split_filament_scenes_marks_implicit_editor_default(run_cpp_example):
     scenes, args, scene_option_explicit = run_cpp_example._split_filament_scenes([])
 
