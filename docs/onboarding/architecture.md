@@ -1,5 +1,15 @@
 # DART Core Architecture Analysis
 
+> **Scope:** This document analyzes the **classic, stable DART 6 core**
+> (`dart::simulation::World`, `Skeleton`/`BodyNode`/`Joint`, `ConstraintSolver`)
+> — the production engine. For the **DART 7 direction** — how the experimental
+> simulation pipeline is generalized for multi-physics, multi-solver, and
+> multi-backend simulation, with the available options at each abstraction seam —
+> see the one-page map in
+> [`docs/readthedocs/architecture.md`](../readthedocs/architecture.md) and the
+> design rationale in
+> [`docs/design/simulation_solver_architecture.md`](../design/simulation_solver_architecture.md).
+
 ## Start here next time
 
 - Modifying dynamics/kinematics? Start with [Dynamics Layer](#3-dynamics-layer-dartdynamics)
