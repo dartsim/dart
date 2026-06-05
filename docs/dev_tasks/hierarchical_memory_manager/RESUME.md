@@ -6,83 +6,71 @@ The first memory-manager slice has landed: experimental `World` owns a
 `dart::common::MemoryManager`, accepts root allocator/frame-scratch options,
 exposes memory diagnostics, and resets frame scratch at step boundaries. The
 allocator-quality gate remains active: DART allocators must beat standard C++
-allocators and foonathan/memory on DART-relevant workloads before broad
-hot-loop adoption.
+allocators and foonathan/memory on DART-relevant workloads before broad hot-loop
+adoption.
 
 Follow-up allocator work added alignment-aware `MemoryAllocator`/`StlAllocator`
 paths for over-aligned objects and allocator-aware EnTT registries, fixed
 free-list split alignment and overflow edge cases, allowed EnTT view internals
 to default-construct `StlAllocator` under Clang, and added `FixedPoolAllocator`
-for fixed-size slot workloads. The local comparative allocator benchmark now
-passes all DART/Foonathan and DART/StdPmr median ratios when fixed-size pool
-rows use `FixedPoolAllocator`, while mixed size-classed workloads remain on
+for fixed-size slot workloads. The comparative allocator benchmark passes local
+DART/Foonathan and DART/StdPmr median ratios when fixed-size pool rows use
+`FixedPoolAllocator`, while mixed size-classed workloads remain on
 `PoolAllocator`.
 
-The stacked registry branch wires the experimental World's internal EnTT
-registry, component storage, and differentiable-parameter list through the
-World's active free allocator. It also adds initial
-`enterSimulationMode()` reservation/no-growth tests for current World-owned ECS
-storage and first private step-scratch component paths. Direct EnTT
-create/emplace/clear/re-emplace/destroy/reuse storage cycling is also covered
-after explicit entity/component reserve. Broader solver scratch coverage and
-EnTT allocator benchmarks remain open.
-
-The next stacked no-growth guard adds a counting base allocator test proving
-that baked kinematic IPC rigid-body, multibody variational, and single
-deformable paths do not request more World base-allocator allocations or
-deallocations during repeated `World::step()` calls. This is not the final
-global zero-allocation proof; it covers the World-owned memory hierarchy only.
-
-The current stacked pipeline slice removes `WorldStepPipeline`'s heap-backed
-stage pointer vector from default/built-in step composition. Pipelines now keep
-a fixed inline list of non-owning stage pointers sized for the current default
-World stage compositions plus headroom, while longer custom pipelines preserve
-the previous arbitrary-stage behavior through an overflow path.
+The fixed-capacity free-list slice adds
+`FreeListAllocator::GrowthPolicy::FixedCapacity` so a preallocated free-list
+arena can fail deterministically instead of growing from its base allocator
+after world creation or bake/build. The same slice wires free-list initial
+capacity and growth policy through `MemoryManager::Options` and experimental
+`WorldOptions`, making the policy reachable from the World memory hierarchy.
+Fixed-capacity free-list arenas also satisfy over-aligned allocations from
+reserved bytes, which is required for `PoolAllocator` size-class chunks backed
+by a fixed-capacity `MemoryManager`.
 
 The memory-debugger correctness slice exposes structured live-byte, peak-byte,
 and allocation-count queries from the allocator debug path and from the
 manager-owned free-list/pool allocators. `MemoryManager::DebugDiagnostics` and
-experimental `WorldMemoryDiagnostics` now include typed borrowed allocator use,
-so diagnostics cover callers that borrow `getFreeListAllocator()` or
-`getPoolAllocator()` directly. The same branch also keeps the aggregate and
-per-storage ECS registry layout counters available for profiler/debugger
-tooling and dartpy's read-only `World.memory_diagnostics` snapshot.
+experimental `WorldMemoryDiagnostics` include typed borrowed allocator use, so
+diagnostics cover callers that borrow `getFreeListAllocator()` or
+`getPoolAllocator()` directly.
+
+The registry/no-growth slices wire the experimental World's internal EnTT
+registry, component storage, differentiable-parameter list, and first
+World-owned ECS scratch paths through the World memory hierarchy. They also add
+base-allocator no-growth guards for baked kinematic IPC rigid-body, multibody
+variational, and single-deformable step loops, plus inline default step-pipeline
+storage. These are not the final global zero-allocation proof.
 
 ## Current Branch
 
-`test/memory-allocator-debugger-correctness` - PR #2893 branch for allocator
-debugger accounting coverage, structured MemoryManager/World diagnostics, ECS
-storage-layout diagnostics, and dartpy memory-diagnostics exposure.
+`feature/free-list-fixed-capacity` - PR #2892 branch for fixed-capacity
+`FreeListAllocator` behavior and construction-time `MemoryManager` /
+experimental `WorldOptions` policy wiring. It is published and should merge
+latest `origin/main` before every push.
 
 ## Immediate Next Step
 
-Keep PR #2893 draft until hosted CI and review are clean after the structured
-borrowed-allocator diagnostics update. Next allocator work should land the
-strict comparative benchmark gate, broaden `FixedPoolAllocator` correctness
-coverage, benchmark allocator-backed EnTT registry/component storage, extend
-no-growth ECS tests to broader contact and remaining solver scratch step paths,
-and add a separate global heap allocation guard before claiming zero dynamic
-allocation for the full simulation loop.
+Keep PR #2892 focused on fixed-capacity free-list correctness, current-main
+merge cleanup, and review/CI fixes. Next allocator work should land the strict
+comparative benchmark gate, broaden allocator correctness coverage, benchmark
+allocator-backed EnTT registry/component storage, extend no-growth tests to
+contact-heavy scenes and remaining solver scratch paths, and continue
+optimizing allocator paths until DART beats standard C++ allocators and
+foonathan/memory on required workloads.
 
 ## Latest Local Validation
 
+- Pre-lint review fix: `cmake --build build/default/cpp/Release --target UNIT_common_free_list_allocator UNIT_common_memory_manager -j2`
+- Pre-lint review fix: `ctest --test-dir build/default/cpp/Release -R '^(UNIT_common_free_list_allocator|UNIT_common_memory_manager)$' --output-on-failure`
+- Pre-lint: `cmake --build build/default/cpp/Release --target UNIT_common_memory_manager test_world -j2`
+- Pre-lint: `ctest --test-dir build/default/cpp/Release -R '^(UNIT_common_memory_manager|test_world)$' --output-on-failure`
 - `pixi run lint`
-- `cmake --build build/default/cpp/Release --target UNIT_common_stl_allocator -j2 && ctest --test-dir build/default/cpp/Release -R '^UNIT_common_stl_allocator$' --output-on-failure`
-- `clang++ --gcc-toolchain=/usr -std=gnu++20 -I. -Ibuild/default/cpp/Release -I.pixi/envs/default/include -fsyntax-only` with an allocator-aware `entt::basic_registry` multi-component `view` instantiation.
-- `cmake --build build/default/cpp/Release --target bm_allocators_comparative UNIT_common_pool_allocator -j2`
-- `ctest --test-dir build/default/cpp/Release -R '^UNIT_common_pool_allocator$' --output-on-failure`
-- `build/default/cpp/Release/bin/bm_allocators_comparative --benchmark_min_time=0.1s --benchmark_out=.benchmark_results/allocator-comparative-current-head.json --benchmark_out_format=json`
-- Local parser over `.benchmark_results/allocator-comparative-current-head.json`:
-  all DART/Foonathan and DART/StdPmr median ratios passed (`< 1.0`),
-  including fixed pool, mixed pool, frame, realistic, steady-state, and STL
-  vector workloads.
-- `cmake --build build/default/cpp/Release --target dartsim -j2`
-- `pixi run test-simulation-experimental` (61/61 passed)
-- `cmake --build build/default/cpp/Release --target test_world -j2`
-- `ctest --test-dir build/default/cpp/Release -R '^test_world$' --output-on-failure`
-- On `feature/world-step-pipeline-inline-storage` after the inline pipeline
-  storage change: `cmake --build build/default/cpp/Release --target test_world -j2`
-  and `ctest --test-dir build/default/cpp/Release -R '^test_world$' --output-on-failure`
+- Post-lint review fix: `cmake --build build/default/cpp/Release --target UNIT_common_free_list_allocator UNIT_common_memory_manager -j2`
+- Post-lint review fix: `ctest --test-dir build/default/cpp/Release -R '^(UNIT_common_free_list_allocator|UNIT_common_memory_manager)$' --output-on-failure`
+- Post-lint: `cmake --build build/default/cpp/Release --target UNIT_common_memory_manager test_world -j2`
+- Post-lint: `ctest --test-dir build/default/cpp/Release -R '^(UNIT_common_memory_manager|test_world)$' --output-on-failure`
+- `git diff --check`
 - On `test/memory-allocator-debugger-correctness` after borrowed-allocator
   diagnostics: `cmake --build build/default/cpp/Release --target UNIT_common_memory_manager test_world -j2`
   and `ctest --test-dir build/default/cpp/Release -R '^(UNIT_common_memory_manager|test_world)$' --output-on-failure`
@@ -96,15 +84,20 @@ allocation for the full simulation loop.
 - Frame scratch should reset at the start of each simulation step, leaving the
   previous step's scratch usage visible until the next step.
 - The full user goal remains broader than this slice: route simulation data
-  through allocator styles, prove no dynamic allocations during the loop, add
-  memory debugging/profiling, and eventually visualize the hierarchy in GUI.
+  through allocator styles, prove zero dynamic allocation in representative
+  simulation loops, add memory debugging/profiling, and eventually visualize the
+  hierarchy in GUI.
 - The existing allocator implementations are not assumed to be good enough.
-  Compare against `std::allocator`/`std::pmr` and foonathan/memory; if DART
-  cannot beat foonathan/memory for required DART workloads, record a dependency
+  Compare against standard C++ allocators and foonathan/memory; if DART cannot
+  beat foonathan/memory for required DART workloads, record a dependency
   decision instead of forcing an inferior in-house allocator.
 - Use `FixedPoolAllocator` for fixed-size node/slot workloads. Keep
   `PoolAllocator` as the size-classed small-object allocator for mixed
   workloads.
+- Use fixed-capacity `FreeListAllocator` when runtime growth is prohibited by a
+  precomputed memory budget; keep the default expandable policy for heap-like
+  use. The policy now flows through `MemoryManager::Options` and experimental
+  `WorldOptions`.
 - EnTT registry/storage allocation is first-class scope. Future work should
   inspect the active EnTT version's `basic_registry` and `basic_storage`
   allocator hooks and keep EnTT allocator types hidden from public World API.
@@ -118,7 +111,7 @@ allocation for the full simulation loop.
 ```bash
 git status -sb
 git diff --stat
+gh pr view 2892 --repo dartsim/dart --json state,isDraft,mergeStateStatus,headRefOid,statusCheckRollup
 ```
 
-Then continue from the open PRs for allocator diagnostics, comparative
-benchmarks, EnTT registry/storage allocation evidence, and global heap guards.
+Then continue from PR #2892 and the remaining allocator dirty PR cleanup.

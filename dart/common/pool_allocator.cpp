@@ -51,8 +51,12 @@ PoolAllocator::PoolAllocator(MemoryAllocator& baseAllocator)
 
   mMemoryBlocksSize = 64;
   mMemoryBlocks = mBaseAllocator.allocateAs<MemoryBlock>(mMemoryBlocksSize);
-  const size_t allocatedSize = mMemoryBlocksSize * sizeof(MemoryBlock);
-  std::memset(mMemoryBlocks, 0, allocatedSize);
+  if (mMemoryBlocks == nullptr) {
+    mMemoryBlocksSize = 0;
+  } else {
+    const size_t allocatedSize = mMemoryBlocksSize * sizeof(MemoryBlock);
+    std::memset(mMemoryBlocks, 0, allocatedSize);
+  }
 
   mFreeMemoryUnits.fill(nullptr);
 }
@@ -64,8 +68,10 @@ PoolAllocator::~PoolAllocator()
     mBaseAllocator.deallocate(
         mMemoryBlocks[i].mMemoryUnits, BLOCK_SIZE, mMemoryBlocks[i].mAlignment);
   }
-  mBaseAllocator.deallocate(
-      mMemoryBlocks, mMemoryBlocksSize * sizeof(MemoryBlock));
+  if (mMemoryBlocks != nullptr) {
+    mBaseAllocator.deallocate(
+        mMemoryBlocks, mMemoryBlocksSize * sizeof(MemoryBlock));
+  }
 }
 
 //==============================================================================
@@ -110,16 +116,27 @@ void* PoolAllocator::allocateSlow(int heapIndex) noexcept
   if (mCurrentMemoryBlockIndex == mMemoryBlocksSize) {
     MemoryBlock* currentMemoryBlocks = mMemoryBlocks;
     const int currentMemoryBlocksSize = mMemoryBlocksSize;
-    mMemoryBlocksSize += 64;
-    mMemoryBlocks = mBaseAllocator.allocateAs<MemoryBlock>(mMemoryBlocksSize);
-    std::memcpy(
-        mMemoryBlocks,
-        currentMemoryBlocks,
-        mCurrentMemoryBlockIndex * sizeof(MemoryBlock));
+    const int nextMemoryBlocksSize = mMemoryBlocksSize + 64;
+    MemoryBlock* nextMemoryBlocks
+        = mBaseAllocator.allocateAs<MemoryBlock>(nextMemoryBlocksSize);
+    if (nextMemoryBlocks == nullptr) {
+      return nullptr;
+    }
+
+    if (currentMemoryBlocks != nullptr) {
+      std::memcpy(
+          nextMemoryBlocks,
+          currentMemoryBlocks,
+          mCurrentMemoryBlockIndex * sizeof(MemoryBlock));
+      mBaseAllocator.deallocate(
+          currentMemoryBlocks, currentMemoryBlocksSize * sizeof(MemoryBlock));
+    }
     std::memset(
-        mMemoryBlocks + mCurrentMemoryBlockIndex, 0, 64 * sizeof(MemoryBlock));
-    mBaseAllocator.deallocate(
-        currentMemoryBlocks, currentMemoryBlocksSize * sizeof(MemoryBlock));
+        nextMemoryBlocks + mCurrentMemoryBlockIndex,
+        0,
+        64 * sizeof(MemoryBlock));
+    mMemoryBlocks = nextMemoryBlocks;
+    mMemoryBlocksSize = nextMemoryBlocksSize;
   }
 
   MemoryBlock* newBlock = mMemoryBlocks + mCurrentMemoryBlockIndex;
