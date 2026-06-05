@@ -676,7 +676,8 @@ void KinematicsStage::prepare(World& world)
 //==============================================================================
 void KinematicsStage::execute(World& world, ComputeExecutor& executor)
 {
-  if (!m_cachedGraph || m_cachedWorld != &world || !world.isSimulationMode()) {
+  if (!m_cachedGraph || m_cachedWorld != &world || !world.isSimulationMode()
+      || !m_cachedGraph->isTopologyCurrent()) {
     prepare(world);
   }
   m_cachedGraph->execute(executor);

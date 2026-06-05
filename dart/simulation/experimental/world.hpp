@@ -57,6 +57,7 @@
 #include <vector>
 
 #include <cstddef>
+#include <cstdint>
 
 namespace dart::simulation::experimental {
 
@@ -623,6 +624,7 @@ private:
   friend class compute::MultibodyContactStage;
   friend class compute::MultibodyForwardDynamicsStage;
   friend class compute::RigidBodyContactStage;
+  friend class compute::WorldKinematicsGraph;
   friend class compute::RigidIpcContactStage;
   friend class compute::UnifiedConstraintStage;
 
@@ -655,6 +657,8 @@ private:
   void ensureDesignMode() const;
   [[nodiscard]] const std::vector<Contact>& queryContacts(
       const CollisionQueryOptions& options);
+  void markFrameTopologyChanged() noexcept;
+  [[nodiscard]] std::uint64_t getFrameTopologyRevision() const noexcept;
   void reserveRegistryStorageForSimulation();
   void resetCountersFromRegistry();
   void resetFrameScratchForStep();
@@ -696,6 +700,7 @@ private:
   DeformableSolverDiagnostics m_lastDeformableSolverDiagnostics{};
   WorldMemoryDiagnostics m_memoryDiagnostics{};
   double m_rigidIpcAdaptiveBarrierStiffnessLowerBound{1.0};
+  std::uint64_t m_frameTopologyRevision{0};
   enum class MultibodyIntegrationMethod
   {
     SemiImplicit,

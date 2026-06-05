@@ -1506,6 +1506,7 @@ WorldMemoryDiagnostics World::getMemoryDiagnostics() const
 void World::clear()
 {
   m_storage->registry.clear();
+  markFrameTopologyChanged();
   m_simulationMode = false;
   m_gravity = Eigen::Vector3d(0.0, 0.0, -9.81);
   m_rigidBodySolver = RigidBodySolver::SequentialImpulse;
@@ -1541,6 +1542,18 @@ void World::ensureDesignMode() const
       m_simulationMode,
       InvalidOperationException,
       "World modifications are not allowed while in simulation mode");
+}
+
+//==============================================================================
+void World::markFrameTopologyChanged() noexcept
+{
+  ++m_frameTopologyRevision;
+}
+
+//==============================================================================
+std::uint64_t World::getFrameTopologyRevision() const noexcept
+{
+  return m_frameTopologyRevision;
 }
 
 //==============================================================================
@@ -1774,6 +1787,7 @@ Entity World::createFrameEntity(
   }
 
   outName = actualName;
+  markFrameTopologyChanged();
   return detail::fromRegistryEntity(entity);
 }
 

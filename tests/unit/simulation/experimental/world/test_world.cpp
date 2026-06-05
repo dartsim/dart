@@ -7255,6 +7255,34 @@ TEST(World, StepAcceptsCustomStage)
       child.getTransform().isApprox(updatedParentTransform * childOffset));
 }
 
+TEST(World, StepRebuildsCachedKinematicsAfterFrameReparenting)
+{
+  namespace sx = dart::simulation::experimental;
+  namespace compute = dart::simulation::experimental::compute;
+
+  sx::World world;
+  auto oldParent = world.addFreeFrame("old_parent");
+
+  Eigen::Isometry3d childOffset = Eigen::Isometry3d::Identity();
+  childOffset.translate(Eigen::Vector3d(0.0, 1.0, 0.0));
+  auto child = world.addFixedFrame("child", oldParent, childOffset);
+
+  auto newParent = world.addFreeFrame("new_parent");
+
+  world.enterSimulationMode();
+
+  Eigen::Isometry3d updatedParentTransform = Eigen::Isometry3d::Identity();
+  updatedParentTransform.translate(Eigen::Vector3d(2.0, 0.0, 0.0));
+  newParent.setLocalTransform(updatedParentTransform);
+  child.setParentFrame(newParent);
+
+  compute::SequentialExecutor executor;
+  world.step(executor);
+
+  EXPECT_TRUE(
+      child.getTransform().isApprox(updatedParentTransform * childOffset));
+}
+
 // Test that custom-stage step overloads keep the same default dynamics baseline
 // as World::step(), with the caller-provided stage replacing the final stage.
 TEST(World, StepWithCustomStageUsesDefaultDynamicsBaseline)

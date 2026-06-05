@@ -220,6 +220,13 @@ void WorldKinematicsGraph::rebuild()
   }
 
   (void)m_graph.getTopologicalOrderView();
+  m_frameTopologyRevision = m_world.getFrameTopologyRevision();
+}
+
+//==============================================================================
+bool WorldKinematicsGraph::isTopologyCurrent() const noexcept
+{
+  return m_frameTopologyRevision == m_world.getFrameTopologyRevision();
 }
 
 //==============================================================================
