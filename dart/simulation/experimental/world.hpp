@@ -57,6 +57,7 @@
 #include <vector>
 
 #include <cstddef>
+#include <cstdint>
 
 namespace dart::simulation::experimental {
 
@@ -616,6 +617,7 @@ private:
   friend class RigidBody;
   friend class DeformableBody;
   friend class io::detail::SkeletonLoaderWorldAccess;
+  friend class compute::WorldKinematicsGraph;
   friend class compute::RigidIpcContactStage;
 
   /// Internal storage seam. `detail::storageOf` reaches the privately-held,
@@ -645,6 +647,8 @@ private:
       const Eigen::Vector3d& axis);
 
   void ensureDesignMode() const;
+  void markFrameTopologyChanged() noexcept;
+  [[nodiscard]] std::uint64_t getFrameTopologyRevision() const noexcept;
   void reserveRegistryStorageForSimulation();
   void resetCountersFromRegistry();
   void resetFrameScratchForStep();
@@ -686,6 +690,7 @@ private:
   DeformableSolverDiagnostics m_lastDeformableSolverDiagnostics{};
   WorldMemoryDiagnostics m_memoryDiagnostics{};
   double m_rigidIpcAdaptiveBarrierStiffnessLowerBound{1.0};
+  std::uint64_t m_frameTopologyRevision{0};
   enum class MultibodyIntegrationMethod
   {
     SemiImplicit,
