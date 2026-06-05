@@ -99,10 +99,14 @@ PROMOTE_DIRS = (
 #     captured graph profiles by value.
 #   * compute/world_step_profile.hpp is the experimental World's public
 #     text-first profiling value type, returned by World::getLastStepProfile().
+#   * compute/execution_profile.hpp holds the per-stage execution-timing value
+#     types embedded in world_step_profile.hpp's public profile, so it is public
+#     by inclusion; it is backend- and ECS-agnostic (std types only).
 PROMOTE_FILES = {
     "compute/compute_stage_metadata.hpp",
     "compute/execution_profile.hpp",
     "compute/world_step_profile.hpp",
+    "compute/execution_profile.hpp",
     "diff/rollout.hpp",
     "diff/step_derivatives.hpp",
     "diff/step_gradient.hpp",
