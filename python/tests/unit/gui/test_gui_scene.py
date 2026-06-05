@@ -40,7 +40,7 @@ def test_gui_stub_surface_is_backend_hidden():
 
 @requires_gui_bindings
 def test_gui_extract_renderables_from_world():
-    world = dart.World.create("world")
+    world = dart.gui.RenderWorld.create("world")
     skeleton = dart.Skeleton("robot")
     _, body = skeleton.create_free_joint_and_body_node_pair()
     shape = dart.BoxShape(np.array([1.0, 2.0, 3.0]))
@@ -157,7 +157,7 @@ def test_gui_plan_renderable_set_update():
 
 @requires_gui_bindings
 def test_gui_pick_sphere_uses_surface_normal():
-    world = dart.World.create("world")
+    world = dart.gui.RenderWorld.create("world")
     skeleton = dart.Skeleton("sphere_robot")
     _, body = skeleton.create_free_joint_and_body_node_pair()
     shape_node = body.create_shape_node(dart.SphereShape(1.0))
@@ -460,7 +460,7 @@ def test_gui_pick_voxel_grid_uses_per_voxel_box_surface():
 
 @requires_gui_bindings
 def test_gui_extract_renderables_from_simple_frame():
-    world = dart.World.create("world")
+    world = dart.gui.RenderWorld.create("world")
     transform = dart.Isometry3()
     transform.set_translation(np.array([1.0, -2.0, 0.5]))
     frame = dart.SimpleFrame(dart.gui.world_render_frame(), "interactive_target", transform)
@@ -514,7 +514,7 @@ def test_gui_debug_grid_lines():
 
 @requires_gui_bindings
 def test_gui_translate_free_joint_renderable():
-    world = dart.World.create("world")
+    world = dart.gui.RenderWorld.create("world")
     skeleton = dart.Skeleton("robot")
     _, body = skeleton.create_free_joint_and_body_node_pair()
     shape = dart.BoxShape(np.array([1.0, 1.0, 1.0]))
@@ -595,7 +595,7 @@ def test_gui_axis_drag_helpers():
 
 @requires_gui_bindings
 def test_gui_center_of_mass_debug_lines():
-    world = dart.World.create("world")
+    world = dart.gui.RenderWorld.create("world")
     skeleton = dart.Skeleton("robot")
     _, body = skeleton.create_free_joint_and_body_node_pair()
     body.get_inertia().set_mass(2.0)
@@ -618,7 +618,7 @@ def test_gui_center_of_mass_debug_lines():
 
 @requires_gui_bindings
 def test_gui_inertia_debug_options():
-    world = dart.World.create("world")
+    world = dart.gui.RenderWorld.create("world")
     skeleton = dart.Skeleton("robot")
     _, body = skeleton.create_free_joint_and_body_node_pair()
     body.get_inertia().set_mass(12.0)
@@ -647,7 +647,7 @@ def test_gui_inertia_debug_options():
 
 @requires_gui_bindings
 def test_gui_collision_shape_debug_lines():
-    world = dart.World.create("world")
+    world = dart.gui.RenderWorld.create("world")
     skeleton = dart.Skeleton("robot")
     _, body = skeleton.create_free_joint_and_body_node_pair()
     shape_node = body.create_shape_node(dart.BoxShape(np.array([2.0, 4.0, 6.0])))

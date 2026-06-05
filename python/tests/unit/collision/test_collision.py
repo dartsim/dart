@@ -141,7 +141,7 @@ def test_filter(name, cd_factory):
     shape_node1.create_collision_aspect()
 
     # Create a world and add the created skeleton
-    world = dart.World()
+    world = dart.gui.RenderWorld()
     world.add_skeleton(skel)
 
     # Set a new collision detector
