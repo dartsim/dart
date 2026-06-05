@@ -64,28 +64,28 @@ _naming.install_aliases(_ext)
 _layout.install_layout(sys.modules[__name__])
 
 
-def _install_simulation_experimental_diff() -> None:
-  """Attach the pure-Python ``diff`` (PyTorch bridge) onto the experimental module.
+def _install_simulation_diff() -> None:
+  """Attach the pure-Python ``diff`` (PyTorch bridge) onto ``dartpy.simulation``.
 
-  ``dartpy.simulation_experimental`` is a C++ extension submodule, so its
-  PyTorch autograd bridge lives in a pure-Python module attached here as the
-  ``diff`` attribute. This import is torch-free; ``sx.diff.timestep`` imports
-  torch lazily, so ``import dartpy.simulation_experimental`` succeeds without
-  torch and ``sx.diff`` always exists.
+  ``dartpy.simulation`` is a C++ extension submodule (the official ECS-backed
+  simulation API), so its PyTorch autograd bridge lives in a pure-Python module
+  attached here as the ``diff`` attribute. This import is torch-free;
+  ``dartpy.simulation.diff.timestep`` imports torch lazily, so ``import
+  dartpy.simulation`` succeeds without torch and ``diff`` always exists.
   """
-  experimental = sys.modules.get(f"{__name__}.simulation_experimental")
+  experimental = sys.modules.get(f"{__name__}.simulation")
   if experimental is None:
     return
   from . import _simulation_experimental_diff as _diff_impl
 
-  module_name = f"{__name__}.simulation_experimental.diff"
+  module_name = f"{__name__}.simulation.diff"
   diff_module = sys.modules.get(module_name)
   if diff_module is None:
     import types
 
     diff_module = types.ModuleType(module_name)
     diff_module.__doc__ = _diff_impl.__doc__
-    diff_module.__package__ = f"{__name__}.simulation_experimental"
+    diff_module.__package__ = f"{__name__}.simulation"
     diff_module.timestep = _diff_impl.timestep
     diff_module.__all__ = list(_diff_impl.__all__)
     sys.modules[module_name] = diff_module
@@ -102,7 +102,7 @@ def _install_simulation_experimental_diff() -> None:
   experimental.diff = diff_module
 
 
-_install_simulation_experimental_diff()
+_install_simulation_diff()
 
 
 def _install_world_render_bridge() -> None:

@@ -83,15 +83,14 @@ NB_MODULE(_dartpy, m)
       = m.def_submodule("collision", "Collision utilities backed by nanobind");
   dart::python_nb::defCollisionModule(collision);
 
+  // The official DART 7 simulation API is the ECS-backed facade, registered
+  // directly into `simulation` (dartpy.simulation) and promoted to the flat
+  // top-level dartpy.World by _layout.py. The legacy DART 6 World binding is no
+  // longer exposed here (it is retained only as the GUI render target below).
   auto simulation = m.def_submodule(
-      "simulation", "Simulation utilities backed by nanobind");
-  dart::python_nb::defSimulationModule(simulation);
-
+      "simulation", "ECS-backed simulation API (official DART 7 simulation)");
 #if defined(DARTPY_HAS_SIMULATION_EXPERIMENTAL)
-  auto simulation_experimental = m.def_submodule(
-      "simulation_experimental",
-      "Experimental ECS-backed simulation utilities");
-  dart::python_nb::defSimulationExperimentalModule(simulation_experimental);
+  dart::python_nb::defSimulationExperimentalModule(simulation);
 #endif
 
   auto constraint = m.def_submodule(
@@ -104,5 +103,12 @@ NB_MODULE(_dartpy, m)
 #if defined(DARTPY_HAS_GUI)
   auto gui = m.def_submodule("gui", "GUI utilities backed by nanobind");
   dart::python_nb::defGuiModule(gui);
+  // The classic dart::simulation::World is retained ONLY as the GUI render
+  // target for WorldRenderBridge -- the ECS simulation World has no direct
+  // viewer path, so demos mirror it into a parallel classic World that the
+  // Filament viewer draws. Bound here as dartpy.gui.RenderWorld (plus its
+  // WorldConfig/enums and ConstraintSolver); it is NOT part of the official
+  // simulation API.
+  dart::python_nb::defSimulationModule(gui);
 #endif
 }

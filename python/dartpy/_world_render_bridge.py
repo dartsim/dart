@@ -104,7 +104,10 @@ class WorldRenderBridge:
 
     def __init__(self, physics_world: Any, name: str = "world_render") -> None:
         self._physics_world = physics_world
-        self.render_world = dart.World(name)
+        # The render world is the legacy classic World, retained only for the
+        # Filament viewer (dartpy.gui.RenderWorld). The physics_world is the
+        # official ECS dartpy.simulation World.
+        self.render_world = dart.gui.RenderWorld(name)
         self.render_world.set_gravity([0.0, 0.0, 0.0])
         # The render world steps too (the viewer's pump calls world.step()
         # each frame). With no skeletons it's a no-op + a time advance.
