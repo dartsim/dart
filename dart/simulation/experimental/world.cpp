@@ -1136,28 +1136,33 @@ struct WorldStepPipelineStages
   void prepare(
       World& world,
       RigidBodySolver rigidBodySolver,
-      bool variationalStageActive)
-  {
-    prepareRigidIpcContact(world, rigidBodySolver);
-    rigidBodyVelocity.prepare(world);
-    rigidBodyContact.prepare(world);
-    if (variationalStageActive) {
-      multibodyVariational.prepare(world);
-    }
-    deformableDynamics.prepare(world);
-    kinematics.prepare(world);
-  }
-
-  void prepareRigidIpcContact(World& world, RigidBodySolver rigidBodySolver)
+      bool variationalSelected,
+      bool includeMultibodyStage)
   {
     DART_EXPERIMENTAL_THROW_T_IF(
         !isValidRigidBodySolver(rigidBodySolver),
         InvalidArgumentException,
         "Rigid-body solver is invalid");
 
-    if (rigidBodySolver == RigidBodySolver::Ipc) {
-      rigidIpcContact.prepare(world);
+    switch (rigidBodySolver) {
+      case RigidBodySolver::SequentialImpulse:
+        rigidBodyVelocity.prepare(world);
+        if (variationalSelected) {
+          rigidBodyContact.prepare(world);
+          multibodyVariational.prepare(world);
+        } else if (!includeMultibodyStage) {
+          rigidBodyContact.prepare(world);
+        }
+        break;
+      case RigidBodySolver::Ipc:
+        rigidIpcContact.prepare(world);
+        if (variationalSelected && includeMultibodyStage) {
+          multibodyVariational.prepare(world);
+        }
+        break;
     }
+    deformableDynamics.prepare(world);
+    kinematics.prepare(world);
   }
 
 private:
@@ -3077,8 +3082,8 @@ void World::enterSimulationMode()
   m_stepPipelineCache->stages.prepare(
       *this,
       m_rigidBodySolver,
-      m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational
-          && hasMultibodyStructures(*this));
+      m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational,
+      hasMultibodyStructures(*this));
 }
 
 //==============================================================================
@@ -3109,7 +3114,11 @@ void World::setRigidBodySolver(RigidBodySolver solver)
   validateRigidBodyJointPipelineSupport(*this, solver);
   m_rigidBodySolver = solver;
   if (m_simulationMode) {
-    m_stepPipelineCache->stages.prepareRigidIpcContact(*this, solver);
+    m_stepPipelineCache->stages.prepare(
+        *this,
+        m_rigidBodySolver,
+        m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational,
+        hasMultibodyStructures(*this));
   }
 }
 
@@ -3493,7 +3502,7 @@ void World::setMultibodyOptions(const MultibodyOptions& options)
     if (m_simulationMode) {
       reserveRegistryStorageForSimulation();
       m_stepPipelineCache->stages.prepare(
-          *this, m_rigidBodySolver, hasMultibodyStructures(*this));
+          *this, m_rigidBodySolver, true, hasMultibodyStructures(*this));
     }
   } else {
     DART_EXPERIMENTAL_THROW_T(

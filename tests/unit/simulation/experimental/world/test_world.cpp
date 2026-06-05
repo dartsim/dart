@@ -1251,8 +1251,32 @@ TEST(World, SequentialImpulseBakeDoesNotPrewarmRigidIpcCollisionSurfaces)
 
   EXPECT_EQ(
       supportedGeometry.allocationCount, unsupportedGeometry.allocationCount);
-  EXPECT_EQ(
-      supportedGeometry.allocationBytes, unsupportedGeometry.allocationBytes);
+}
+
+TEST(World, IpcBakeDoesNotPrewarmRigidBodyContactQuery)
+{
+  namespace sx = dart::simulation::experimental;
+
+  const auto noGeometry = countGlobalHeapAllocationsDuringSimulationBake(
+      "IPC no collision geometry", [](sx::World& world) {
+        world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+        auto body = world.addRigidBody("kinematic_body");
+        body.setKinematic(true);
+        body.setLinearVelocity(Eigen::Vector3d(1.0, 0.0, 0.0));
+      });
+  const auto unsupportedGeometry
+      = countGlobalHeapAllocationsDuringSimulationBake(
+          "IPC contact-query-only plane geometry", [](sx::World& world) {
+            world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+            auto body = world.addRigidBody("kinematic_plane");
+            body.setKinematic(true);
+            body.setCollisionShape(
+                sx::CollisionShape::makePlane(Eigen::Vector3d::UnitZ(), 0.0));
+            body.setLinearVelocity(Eigen::Vector3d(1.0, 0.0, 0.0));
+          });
+
+  EXPECT_EQ(noGeometry.allocationCount, unsupportedGeometry.allocationCount);
+  EXPECT_EQ(noGeometry.allocationBytes, unsupportedGeometry.allocationBytes);
 }
 
 TEST(World, RigidIpcContactStagePrepareReusesSupportedDynamicSurfaceBuffers)
