@@ -9,7 +9,7 @@ import numpy as np
 import dartpy as dart
 import dartpy.simulation_experimental as sx
 
-from .._sx_bridge import SxRenderBridge
+from .._world_bridge import WorldRenderBridge
 from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
 _HUB_HALF = np.array([0.16, 0.16, 0.16])
@@ -51,7 +51,7 @@ def build() -> SceneSetup:
 
     world.enter_simulation_mode()
 
-    bridge = SxRenderBridge(world, name="avbd_rigid_revolute_motor_render")
+    bridge = WorldRenderBridge(world, name="avbd_rigid_revolute_motor_render")
     bridge.add_rigid_body_visual(
         hub,
         dart.BoxShape(_full(_HUB_HALF)),

@@ -98,7 +98,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="ipc_deformable_pt_particles",
     title="Deformable .pt Particles (IPC)",
-    category="IPC Deformable (sx)",
+    category="IPC Deformable",
     summary="A cloud of point particles loaded from a .pt file falls and stacks "
     "on the ground barrier.",
     build=build,

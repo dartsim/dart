@@ -9,7 +9,7 @@ import numpy as np
 import dartpy as dart
 import dartpy.simulation_experimental as sx
 
-from .._sx_bridge import SxRenderBridge
+from .._world_bridge import WorldRenderBridge
 from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
 _BASE_HALF = np.array([0.18, 0.18, 0.18])
@@ -83,7 +83,7 @@ def build() -> SceneSetup:
     payload.transform = _translation(payload_position + _PAYLOAD_PRESTRAIN)
     world.enter_simulation_mode()
 
-    bridge = SxRenderBridge(world, name="avbd_rigid_breakable_joint_render")
+    bridge = WorldRenderBridge(world, name="avbd_rigid_breakable_joint_render")
     bridge.add_rigid_body_visual(
         ground,
         dart.BoxShape(_full(_GROUND_HALF)),
