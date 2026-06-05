@@ -31,10 +31,8 @@ def test_basic_functionality():
         import dartpy as dart
 
         # dartpy.World is the DART 7 ECS World, promoted to the flat namespace
-        # from the simulation module. That module is not built in reduced
-        # configurations (e.g. Windows wheels set
-        # DART_BUILD_SIMULATION_EXPERIMENTAL=OFF), so dartpy.World is absent
-        # there. Exercise the full simulation surface wherever it exists.
+        # from the simulation module. Wheels are expected to ship it on every
+        # platform, including Windows.
         if hasattr(dart, "World"):
             world = dart.World()
             print(f"✓ Created World: {world}")
@@ -53,33 +51,11 @@ def test_basic_functionality():
             print("✓ Stepped world")
             return True
 
-        # World must exist anywhere the simulation module is expected to ship;
-        # only Windows wheels intentionally omit it for now, so keep the gate
-        # strong everywhere else rather than silently masking a packaging
-        # regression that drops the simulation module.
-        if sys.platform != "win32":
-            print(
-                "✗ dartpy.World is missing on a platform where the simulation "
-                "module is expected to be built"
-            )
-            return False
-
-        # Reduced build (no ECS simulation module): verify the wheel still
-        # exposes the core dynamics surface and the classic render world, so a
-        # genuinely broken wheel still fails here.
         print(
-            "ℹ dartpy.World unavailable (simulation module not built; "
-            "DART_BUILD_SIMULATION_EXPERIMENTAL=OFF). Verifying the reduced "
-            "surface instead."
+            "✗ dartpy.World is missing; dartpy wheels must include the "
+            "experimental simulation module"
         )
-        skeleton = dart.Skeleton("box")
-        skeleton.create_free_joint_and_body_node_pair()
-        print(f"✓ Created Skeleton: {skeleton.get_name()}")
-
-        if hasattr(dart, "gui") and hasattr(dart.gui, "RenderWorld"):
-            render_world = dart.gui.RenderWorld("render")
-            print(f"✓ Created render World: {render_world}")
-        return True
+        return False
     except ImportError as e:
         print(f"✗ Basic functionality test failed: {e}")
         return False
