@@ -8486,6 +8486,51 @@ TEST(World, ReplayRecordingRestoresPublicFrameState)
       recordedParentTransform * recordedChildOffset));
 }
 
+// Test that replay restore invalidates the cached kinematics graph when it
+// restores a public-frame parent relationship captured in the replay frame.
+TEST(World, ReplayRestoreRebuildsCachedKinematicsAfterFrameParentRestore)
+{
+  namespace sx = dart::simulation::experimental;
+  namespace compute = dart::simulation::experimental::compute;
+
+  sx::World world;
+
+  auto oldParent = world.addFreeFrame("old_parent");
+  Eigen::Isometry3d oldParentTransform = Eigen::Isometry3d::Identity();
+  oldParentTransform.translation() = Eigen::Vector3d(-10.0, 0.0, 0.0);
+  oldParent.setLocalTransform(oldParentTransform);
+
+  Eigen::Isometry3d childOffset = Eigen::Isometry3d::Identity();
+  childOffset.translation() = Eigen::Vector3d(0.0, 1.0, 0.0);
+  auto child = world.addFixedFrame("child", oldParent, childOffset);
+
+  auto replayParent = world.addFreeFrame("replay_parent");
+  Eigen::Isometry3d recordedParentTransform = Eigen::Isometry3d::Identity();
+  recordedParentTransform.translation() = Eigen::Vector3d(2.0, 0.0, 0.0);
+  replayParent.setLocalTransform(recordedParentTransform);
+  child.setParentFrame(replayParent);
+
+  world.enterSimulationMode();
+  world.setReplayRecordingEnabled(true);
+  ASSERT_EQ(world.getReplayFrameCount(), 1u);
+
+  compute::SequentialExecutor executor;
+  world.step(executor);
+
+  Eigen::Isometry3d movedReplayParentTransform = Eigen::Isometry3d::Identity();
+  movedReplayParentTransform.translation() = Eigen::Vector3d(20.0, 0.0, 0.0);
+  replayParent.setLocalTransform(movedReplayParentTransform);
+  child.setParentFrame(oldParent);
+  world.step(executor);
+
+  world.restoreReplayFrame(0);
+  world.step(executor);
+
+  EXPECT_EQ(child.getParentFrame().getEntity(), replayParent.getEntity());
+  EXPECT_TRUE(
+      child.getTransform().isApprox(recordedParentTransform * childOffset));
+}
+
 // Test that public-frame replay restore dirties caches before restoring rigid
 // bodies whose parent transform is a restored public frame.
 TEST(World, ReplayRecordingRestoresRigidBodyThroughPublicFrameWithDirtyCache)
