@@ -64,6 +64,8 @@
 #include "dart/simulation/experimental/world.hpp"
 #include "dart/simulation/experimental/world_options.hpp"
 
+#include <dart/config.hpp>
+
 #include <dart/math/lcp/lcp_types.hpp>
 #include <dart/math/lcp/pivoting/dantzig_solver.hpp>
 
@@ -78,7 +80,6 @@
 
 #include <algorithm>
 #include <array>
-#include <chrono>
 #include <limits>
 #include <map>
 #include <memory>
@@ -90,6 +91,10 @@
 
 #include <cmath>
 #include <cstdint>
+
+#if DART_BUILD_PROFILE
+  #include <chrono>
+#endif
 
 namespace dart::simulation::experimental::compute {
 
@@ -607,6 +612,8 @@ WorldStepProfile WorldStepPipeline::executeProfiled(
     World& world, ComputeExecutor& executor)
 {
   WorldStepProfile profile;
+
+#if DART_BUILD_PROFILE
   profile.stepCount = 1;
   profile.stages.reserve(m_stageCount);
 
@@ -623,6 +630,9 @@ WorldStepProfile WorldStepPipeline::executeProfiled(
     entry.duration = stageEnd - stageStart;
   }
   profile.wallTime = std::chrono::steady_clock::now() - stepStart;
+#else
+  execute(world, executor);
+#endif
 
   return profile;
 }

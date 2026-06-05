@@ -64,10 +64,13 @@ struct DART_EXPERIMENTAL_API WorldStepStageProfile
 ///
 /// This is the experimental World's text-first profiling surface: an opt-in,
 /// allocation-light breakdown of where one `World::step` spent its time, stage
-/// by stage. It is produced only when step profiling is enabled
-/// (`World::setStepProfilingEnabled`) and is intended for non-GUI performance
-/// analysis -- including by AI agents -- through `toSummaryText()` or the
-/// individual fields. It is empty before the first profiled step.
+/// by stage. It is produced only when DART is built with `DART_BUILD_PROFILE`
+/// and step profiling is enabled at runtime (`World::setStepProfilingEnabled`);
+/// when the build option is off, the runtime toggle is a no-op and the hot step
+/// path compiles back to the normal pipeline. The profile is intended for
+/// non-GUI performance analysis -- including by AI agents -- through
+/// `toSummaryText()` or the individual fields. It is empty before the first
+/// profiled step.
 ///
 /// The stage breakdown is the same domain-neutral pipeline surface the executor
 /// runs (rigid-body, multibody, deformable, kinematics, ...), so the report is

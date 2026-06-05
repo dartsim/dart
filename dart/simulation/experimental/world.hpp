@@ -647,11 +647,15 @@ public:
   /// records the wall-clock time of each pipeline stage into a snapshot
   /// retrievable via ``getLastStepProfile``. This is the experimental World's
   /// non-GUI, text-first performance surface, intended for tools, bindings, and
-  /// AI agents optimizing a step. Disabled by default; when off the step path
-  /// is unchanged and adds no profiling overhead.
+  /// AI agents optimizing a step. Requires ``DART_BUILD_PROFILE=ON``; when that
+  /// build option is off this toggle is a no-op and the step path has no
+  /// compiled profiling branch. Disabled by default in profiling-enabled
+  /// builds; when off the step path is unchanged and adds no profiling
+  /// overhead.
   void setStepProfilingEnabled(bool enabled) noexcept;
 
-  /// Whether per-stage step profiling is currently enabled.
+  /// Whether per-stage step profiling is currently enabled. Always false when
+  /// DART was built with ``DART_BUILD_PROFILE=OFF``.
   [[nodiscard]] bool isStepProfilingEnabled() const noexcept;
 
   /// Per-stage wall-clock profile of the most recent ``step`` taken while

@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/config.hpp>
+
 #include <dart/simulation/experimental/compute/world_step_profile.hpp>
 #include <dart/simulation/experimental/world.hpp>
 
@@ -48,6 +50,8 @@ TEST(WorldStepProfileIntegration, DisabledByDefaultLeavesProfileEmpty)
 
   EXPECT_TRUE(world.getLastStepProfile().isEmpty());
 }
+
+#if DART_BUILD_PROFILE
 
 TEST(WorldStepProfileIntegration, EnabledStepRecordsPipelineStages)
 {
@@ -72,6 +76,7 @@ TEST(WorldStepProfileIntegration, EnabledStepRecordsPipelineStages)
     EXPECT_FALSE(stage.name.empty());
   }
   EXPECT_GE(profile.wallTime.count(), 0);
+  EXPECT_GE(profile.wallTime, profile.totalStageTime());
 
   // The text summary is the AI-/human-facing surface; it names the stages.
   const std::string summary = profile.toSummaryText();
@@ -112,6 +117,23 @@ TEST(WorldStepProfileIntegration, ClearResetsProfilingStateAndSnapshot)
   EXPECT_TRUE(world.getLastStepProfile().isEmpty());
 }
 
+TEST(WorldStepProfileIntegration, WallTimeCoversReplayRecordingBookkeeping)
+{
+  sx::World world;
+  world.setReplayRecordingEnabled(true);
+  world.setStepProfilingEnabled(true);
+
+  world.step();
+
+  const auto& profile = world.getLastStepProfile();
+  ASSERT_FALSE(profile.isEmpty());
+  EXPECT_GE(world.getReplayFrameCount(), 2u);
+  EXPECT_GE(profile.wallTime, profile.totalStageTime());
+
+  const std::string summary = profile.toSummaryText();
+  EXPECT_NE(summary.find("(unattributed overhead)"), std::string::npos);
+}
+
 TEST(WorldStepProfileIntegration, MultiStepReflectsLastStep)
 {
   sx::World world;
@@ -125,3 +147,19 @@ TEST(WorldStepProfileIntegration, MultiStepReflectsLastStep)
   // the most recent step, not an accumulation across the five.
   EXPECT_EQ(profile.stepCount, 1u);
 }
+
+#else
+
+TEST(WorldStepProfileIntegration, BuildProfileOffMakesRuntimeToggleANoop)
+{
+  sx::World world;
+  world.setStepProfilingEnabled(true);
+
+  EXPECT_FALSE(world.isStepProfilingEnabled());
+
+  world.step();
+
+  EXPECT_TRUE(world.getLastStepProfile().isEmpty());
+}
+
+#endif

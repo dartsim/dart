@@ -2,8 +2,8 @@
 
 DART 7 is built so an AI agent (or a human) can find where simulation time goes
 **without a GUI profiler** — by reading a plain-text breakdown of a step. This
-page is the how-to for that workflow. It maps to real, tracked APIs and needs no
-special build flags.
+page is the how-to for that workflow. It maps to real, tracked APIs and uses the
+same build switch as the rest of DART's profiling support.
 
 There are two complementary text profilers:
 
@@ -16,13 +16,20 @@ There are two complementary text profilers:
 
 ## 1. World step profile
 
+The World step profile requires a build configured with `DART_BUILD_PROFILE=ON`.
+The standard `pixi` build and test tasks enable that option for developer
+workflows. When `DART_BUILD_PROFILE=OFF`, the runtime toggle is a no-op,
+`last_step_profile` stays empty, and the normal `World::step` path has no
+compiled profiling branch or clock reads.
+
 The experimental World step runs an ordered pipeline of named stages
 (`rigid_body_velocity`, `rigid_body_contact`, `multibody_forward_dynamics`,
 `deformable_dynamics`, `rigid_body_position`, `kinematics`, ...). Step profiling
 times each stage and keeps the most recent breakdown.
 
-It is **opt-in and off by default**: when disabled the step path is unchanged
-and adds no overhead. Enable it, take one or more steps, then read the profile.
+It is **opt-in and off by default** inside profiling-enabled builds: when the
+runtime toggle is disabled the step path uses the same unprofiled pipeline
+execution as before. Enable it, take one or more steps, then read the profile.
 
 ### Python (dartpy)
 
