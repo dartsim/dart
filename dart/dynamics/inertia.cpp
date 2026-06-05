@@ -37,6 +37,8 @@
 
 #include <ranges>
 
+#include <cmath>
+
 namespace dart {
 namespace dynamics {
 
@@ -45,8 +47,14 @@ Inertia::Inertia(
     double _mass,
     const Eigen::Vector3d& _com,
     const Eigen::Matrix3d& _momentOfInertia)
-  : mMass(_mass), mCenterOfMass(_com)
+  : mMass(_mass), mCenterOfMass(_com), mMoment{1.0, 1.0, 1.0, 0.0, 0.0, 0.0}
 {
+  // Initialize mMoment to a valid default above and derive the spatial tensor
+  // from it, so that if _momentOfInertia is rejected as non-finite by
+  // setMoment() the object is left in a consistent state rather than with
+  // indeterminate members. See
+  // https://github.com/gazebosim/gz-physics/issues/854
+  computeSpatialTensor();
   setMoment(_momentOfInertia);
 }
 
@@ -119,6 +127,17 @@ double Inertia::getParameter(Param _param) const
 //==============================================================================
 void Inertia::setMass(double _mass)
 {
+  // Reject non-finite mass at the ingest boundary. A NaN/Inf mass propagates
+  // into the spatial inertia tensor and then poisons the forward-dynamics
+  // recursion (bias force, articulated inertia), aborting asserts-enabled
+  // builds. See https://github.com/gazebosim/gz-physics/issues/854
+  if (!std::isfinite(_mass)) {
+    DART_WARN(
+        "[Inertia::setMass] Attempting to set a non-finite mass [{}]. Ignoring "
+        "request.",
+        _mass);
+    return;
+  }
   mMass = _mass;
   computeSpatialTensor();
 }
@@ -145,6 +164,21 @@ const Eigen::Vector3d& Inertia::getLocalCOM() const
 //==============================================================================
 void Inertia::setMoment(const Eigen::Matrix3d& _moment)
 {
+  // Reject a non-finite moment of inertia at the ingest boundary so NaN/Inf
+  // never reaches the forward-dynamics recursion.
+  // See https://github.com/gazebosim/gz-physics/issues/854
+  // Only the diagonal and the upper-triangle entries are consumed below, so a
+  // non-finite value in an ignored lower-triangle entry must not reject an
+  // otherwise valid moment.
+  if (!std::isfinite(_moment(0, 0)) || !std::isfinite(_moment(1, 1))
+      || !std::isfinite(_moment(2, 2)) || !std::isfinite(_moment(0, 1))
+      || !std::isfinite(_moment(0, 2)) || !std::isfinite(_moment(1, 2))) {
+    DART_WARN(
+        "[Inertia::setMoment] Attempting to set a non-finite moment of inertia "
+        "matrix. Ignoring request.");
+    return;
+  }
+
   DART_WARN_IF(
       !verifyMoment(_moment, true),
       "Passing in an invalid moment of inertia matrix. Results might not by "
@@ -170,6 +204,17 @@ void Inertia::setMoment(
     double _Ixz,
     double _Iyz)
 {
+  // Reject a non-finite moment of inertia at the ingest boundary so NaN/Inf
+  // never reaches the forward-dynamics recursion.
+  // See https://github.com/gazebosim/gz-physics/issues/854
+  if (!std::isfinite(_Ixx) || !std::isfinite(_Iyy) || !std::isfinite(_Izz)
+      || !std::isfinite(_Ixy) || !std::isfinite(_Ixz) || !std::isfinite(_Iyz)) {
+    DART_WARN(
+        "[Inertia::setMoment] Attempting to set a non-finite moment of "
+        "inertia. Ignoring request.");
+    return;
+  }
+
   mMoment[I_XX - 4] = _Ixx;
   mMoment[I_YY - 4] = _Iyy;
   mMoment[I_ZZ - 4] = _Izz;
