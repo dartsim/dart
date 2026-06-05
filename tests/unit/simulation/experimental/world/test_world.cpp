@@ -46,6 +46,7 @@
 #include <dart/simulation/experimental/compute/parallel_executor.hpp>
 #include <dart/simulation/experimental/compute/rigid_body_state_batch.hpp>
 #include <dart/simulation/experimental/compute/sequential_executor.hpp>
+#include <dart/simulation/experimental/compute/variational_integration.hpp>
 #include <dart/simulation/experimental/compute/world_batch.hpp>
 #include <dart/simulation/experimental/compute/world_step_stage.hpp>
 #include <dart/simulation/experimental/constraint/loop_closure_spec.hpp>
@@ -753,6 +754,53 @@ TEST(World, EnterSimulationModeReservesRegistryStorageForMultibodySteps)
     world.step();
     expectRegistryStorageCapacitiesUnchanged(capacities, registry);
   }
+}
+
+TEST(World, SetMultibodyOptionsReservesVariationalStateAfterBake)
+{
+  namespace sx = dart::simulation::experimental;
+
+  CountingMemoryAllocator allocator;
+  sx::WorldOptions options;
+  options.baseAllocator = &allocator;
+  sx::World world(options);
+
+  auto robot = world.addMultibody("slider");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "rail";
+  spec.type = sx::JointType::Prismatic;
+  spec.axis = Eigen::Vector3d::UnitZ();
+  auto carriage = robot.addLink("carriage", base, spec);
+  carriage.setMass(3.0);
+
+  world.setTimeStep(0.01);
+  world.enterSimulationMode();
+  world.setMultibodyOptions({"variational integrator"});
+
+  const auto& registry = sx::detail::registryOf(world);
+  const auto capacities = registryStorageCapacities(registry);
+  const auto stateStorageId
+      = entt::type_hash<sx::compute::MultibodyVariationalState>::value();
+  ASSERT_TRUE(capacities.contains(stateStorageId));
+  EXPECT_GE(capacities.at(stateStorageId), 1u);
+
+  const auto allocationsAfterSwitch = allocator.allocationCount;
+  const auto deallocationsAfterSwitch = allocator.deallocationCount;
+  const auto alignedAllocationsAfterSwitch = allocator.alignedAllocationCount;
+  const auto alignedDeallocationsAfterSwitch
+      = allocator.alignedDeallocationCount;
+
+  for (int i = 0; i < 4; ++i) {
+    world.step();
+    expectRegistryStorageCapacitiesUnchanged(capacities, registry);
+  }
+
+  EXPECT_EQ(allocator.allocationCount, allocationsAfterSwitch);
+  EXPECT_EQ(allocator.deallocationCount, deallocationsAfterSwitch);
+  EXPECT_EQ(allocator.alignedAllocationCount, alignedAllocationsAfterSwitch);
+  EXPECT_EQ(
+      allocator.alignedDeallocationCount, alignedDeallocationsAfterSwitch);
 }
 
 TEST(World, EnterSimulationModeReservesRegistryStorageForDeformableSteps)

@@ -128,8 +128,8 @@ void VectorMapper::toVectorImpl(
   size_t offset = 0;
   const auto& variables = m_space.getVariables();
 
-  for (size_t i = 0; i < m_mappers.size(); ++i) {
-    if (m_mappers[i]) {
+  for (size_t i = 0; i < variables.size(); ++i) {
+    if (i < m_mappers.size() && m_mappers[i]) {
       size_t written = 0;
       if constexpr (IsWorldRegistry<Registry>) {
         const auto* worldMapper = requireWorldRegistryMapper(
@@ -185,8 +185,8 @@ void VectorMapper::fromVectorImpl(
   size_t offset = 0;
   const auto& variables = m_space.getVariables();
 
-  for (size_t i = 0; i < m_mappers.size(); ++i) {
-    if (m_mappers[i]) {
+  for (size_t i = 0; i < variables.size(); ++i) {
+    if (i < m_mappers.size() && m_mappers[i]) {
       size_t read = 0;
       if constexpr (IsWorldRegistry<Registry>) {
         auto* worldMapper
