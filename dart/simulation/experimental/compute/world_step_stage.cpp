@@ -4487,6 +4487,23 @@ Eigen::Vector3d boundaryVelocity(
 }
 
 //==============================================================================
+void reserveDeformableSolverScratch(
+    const comps::DeformableNodeState& state,
+    comps::DeformableSolverScratch& scratch)
+{
+  const auto nodeCount = state.positions.size();
+  scratch.inertialTargets.reserve(nodeCount);
+  scratch.next.reserve(nodeCount);
+  scratch.gradient.reserve(nodeCount);
+  scratch.direction.reserve(nodeCount);
+  scratch.candidate.reserve(nodeCount);
+  scratch.previousStepPositions.reserve(nodeCount);
+  scratch.externalAccelerations.reserve(nodeCount);
+  scratch.activeFixed.reserve(nodeCount);
+  scratch.activeDirichlet.reserve(nodeCount);
+}
+
+//==============================================================================
 void prepareDeformableBoundaryConditions(
     comps::DeformableNodeState& state,
     const comps::DeformableBoundaryConditions* boundaryConditions,
@@ -4496,6 +4513,7 @@ void prepareDeformableBoundaryConditions(
     DeformableSolverStats& stats)
 {
   const auto nodeCount = state.positions.size();
+  reserveDeformableSolverScratch(state, scratch);
   scratch.previousStepPositions = state.positions;
   scratch.externalAccelerations.assign(nodeCount, Eigen::Vector3d::Zero());
   scratch.activeFixed = state.fixed;
@@ -8726,6 +8744,38 @@ ComputeStageMetadata DeformableDynamicsStage::getMetadata() const noexcept
        {"deformable_body.boundary_conditions", ComputeAccessMode::Read},
        {"rigid_body.kinematic_step_trace", ComputeAccessMode::Read},
        {"static_collision_geometry", ComputeAccessMode::Read}}};
+}
+
+//==============================================================================
+void DeformableDynamicsStage::prepare(World& world)
+{
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
+  auto view = registry.view<
+      comps::DeformableBodyTag,
+      comps::DeformableNodeState,
+      comps::DeformableMeshTopology>();
+
+  for (const auto entity : view) {
+    const auto& state = view.get<comps::DeformableNodeState>(entity);
+    const auto& topology = view.get<comps::DeformableMeshTopology>(entity);
+    auto& solverScratch
+        = registry.get_or_emplace<comps::DeformableSolverScratch>(entity);
+    reserveDeformableSolverScratch(state, solverScratch);
+    solverScratch.previousStepPositions = state.positions;
+    solverScratch.externalAccelerations.assign(
+        state.positions.size(), Eigen::Vector3d::Zero());
+    solverScratch.activeFixed = state.fixed;
+    solverScratch.activeDirichlet.assign(state.positions.size(), 0u);
+
+    auto& contactScratch
+        = registry.get_or_emplace<DeformableContactSolverScratch>(entity);
+    syncSurfaceContactTopology(
+        topology.surfaceTriangles,
+        state.positions.size(),
+        !topology.tetrahedra.empty(),
+        contactScratch);
+    (void)registry.get_or_emplace<DeformableVbdScratch>(entity);
+  }
 }
 
 //==============================================================================

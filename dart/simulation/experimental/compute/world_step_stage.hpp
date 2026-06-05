@@ -494,6 +494,7 @@ class DART_EXPERIMENTAL_API DeformableDynamicsStage final
 public:
   [[nodiscard]] std::string_view getName() const noexcept override;
   [[nodiscard]] ComputeStageMetadata getMetadata() const noexcept override;
+  void prepare(World& world);
   void execute(World& world, ComputeExecutor& executor) override;
 
   [[nodiscard]] const DeformableSolverStats& getLastStats() const noexcept;

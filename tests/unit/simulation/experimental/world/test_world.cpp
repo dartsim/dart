@@ -894,6 +894,35 @@ TEST(World, BakedKinematicIpcStepsDoNotAllocateGlobalHeap)
       });
 }
 
+TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
+{
+  namespace sx = dart::simulation::experimental;
+
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "multibody variational scratch", [](sx::World& world) {
+        auto robot = world.addMultibody("slider");
+        auto base = robot.addLink("base");
+        sx::JointSpec spec;
+        spec.name = "rail";
+        spec.type = sx::JointType::Prismatic;
+        spec.axis = Eigen::Vector3d::UnitZ();
+        auto carriage = robot.addLink("carriage", base, spec);
+        carriage.setMass(3.0);
+        world.setMultibodyOptions({"variational integrator"});
+        world.setTimeStep(0.01);
+      });
+
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "single deformable particle", [](sx::World& world) {
+        sx::DeformableBodyOptions options;
+        options.positions = {Eigen::Vector3d(0.0, 0.0, 1.0)};
+        options.masses = {1.0};
+        options.edgeStiffness = 0.0;
+        world.addDeformableBody("particle", options);
+        world.setTimeStep(0.01);
+      });
+}
+
 TEST(World, FrameScratchCapacityReportsUsableArenaBytes)
 {
   namespace sx = dart::simulation::experimental;

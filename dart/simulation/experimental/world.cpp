@@ -476,9 +476,13 @@ struct WorldStepPipelineStages
     return pipeline;
   }
 
-  void prepare(World& world)
+  void prepare(World& world, bool variationalStageActive)
   {
     rigidIpcContact.prepare(world);
+    if (variationalStageActive) {
+      multibodyVariational.prepare(world);
+    }
+    deformableDynamics.prepare(world);
     kinematics.prepare(world);
   }
 
@@ -2363,7 +2367,10 @@ void World::enterSimulationMode()
   detail::deformable_vbd::configureAvbdRigidWorldPointJointsFromCurrentPoses(
       m_storage->registry);
   reserveRegistryStorageForSimulation();
-  m_stepPipelineCache->stages.prepare(*this);
+  m_stepPipelineCache->stages.prepare(
+      *this,
+      m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational
+          && hasMultibodyStructures(*this));
 }
 
 //==============================================================================
@@ -2772,6 +2779,7 @@ void World::setMultibodyOptions(const MultibodyOptions& options)
     m_multibodyIntegrationMethod = MultibodyIntegrationMethod::Variational;
     if (m_simulationMode) {
       reserveRegistryStorageForSimulation();
+      m_stepPipelineCache->stages.prepare(*this, hasMultibodyStructures(*this));
     }
   } else {
     DART_EXPERIMENTAL_THROW_T(
@@ -3144,6 +3152,10 @@ std::vector<Contact> World::collide(const CollisionQueryOptions& options)
     const Link link(detail::fromRegistryEntity(entity), this);
     const entt::entity multibody = findMultibodyOwningLink(entity);
     addSpecs(entity, multibody, true, geometry, link.getWorldTransform());
+  }
+
+  if (specs.empty()) {
+    return {};
   }
 
   if (!m_collisionQueryCache) {
