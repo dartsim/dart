@@ -73,7 +73,11 @@ def _install_simulation_diff() -> None:
   ``dartpy.simulation.diff.timestep`` imports torch lazily, so ``import
   dartpy.simulation`` succeeds without torch and ``diff`` always exists.
   """
-  experimental = sys.modules.get(f"{__name__}.simulation")
+  # Use the RAW C++ simulation module, not the deprecated dartpy.simulation
+  # legacy wrapper installed by install_layout above -- attribute access on the
+  # wrapper emits a DeprecationWarning, which would fire at import time (and fail
+  # under -W error).
+  experimental = getattr(_ext, "simulation", None)
   if experimental is None:
     return
   from . import _simulation_experimental_diff as _diff_impl
@@ -90,7 +94,7 @@ def _install_simulation_diff() -> None:
     diff_module.__all__ = list(_diff_impl.__all__)
     sys.modules[module_name] = diff_module
   # Re-export the framework-neutral C++ rollout (PLAN-110 rollout item) onto the
-  # ``sx.diff`` namespace when differentiable support is compiled. The torch
+  # ``diff`` namespace when differentiable support is compiled. The torch
   # ``timestep`` chaining bridge above stays as-is; ``rollout`` is the torch-free
   # path. Present only in DART_BUILD_DIFF=ON builds.
   for _name in ("rollout", "RolloutTrajectory"):
@@ -100,6 +104,9 @@ def _install_simulation_diff() -> None:
       if _name not in diff_module.__all__:
         diff_module.__all__.append(_name)
   experimental.diff = diff_module
+  # Expose the diff bridge on the canonical flat namespace too: dartpy.diff
+  # (dartpy.simulation.diff still resolves via the legacy wrapper, deprecated).
+  setattr(sys.modules[__name__], "diff", diff_module)
 
 
 _install_simulation_diff()

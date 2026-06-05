@@ -33,8 +33,12 @@ _LEGACY_MODULES: tuple[str, ...] = (
     "optimizer",
     "utils",
 )
-_PROMOTE_MODULES: tuple[str, ...] = tuple(
-    name for name in _LEGACY_MODULES if name != "utils"
+# Flatten order matters: _promote_symbols is first-wins. Promote `simulation`
+# FIRST so the official DART 7 ECS facade wins flat-name collisions with the
+# legacy `dynamics` module (Frame, Joint, ActuatorType) -- i.e. dartpy.Frame is
+# the ECS Frame, not the dynamics one. The remaining modules keep their order.
+_PROMOTE_MODULES: tuple[str, ...] = ("simulation",) + tuple(
+    name for name in _LEGACY_MODULES if name not in ("utils", "simulation")
 )
 
 _WARNED: set[str] = set()
