@@ -2634,6 +2634,29 @@ bool tryResolveSequentialMultibodyContacts(
     }
 
     auto* pendingVelocity = registry.try_get<PendingMultibodyVelocity>(entity);
+    if (pendingVelocity != nullptr && pendingVelocity->active) {
+      continue;
+    }
+
+    buildDynamicsTreeInto(
+        registry,
+        structure,
+        scratch.tree,
+        scratch.linkIndexOf,
+        scratch.jointFrameSubspace);
+    if (scratch.tree.dofCount == 0) {
+      return false;
+    }
+  }
+
+  for (auto entity : view) {
+    const auto& structure = view.get<comps::MultibodyStructure>(entity);
+    auto& scratch = registry.get<MultibodyDynamicsScratch>(entity);
+    if (scratch.linkContacts.empty()) {
+      continue;
+    }
+
+    auto* pendingVelocity = registry.try_get<PendingMultibodyVelocity>(entity);
     if (pendingVelocity == nullptr || !pendingVelocity->active) {
       buildDynamicsTreeInto(
           registry,
