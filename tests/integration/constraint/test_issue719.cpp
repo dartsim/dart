@@ -91,7 +91,7 @@ SkeletonPtr createNonAxisAlignedFourBar(
   const Eigen::Vector3d arbitraryAxis
       = Eigen::Vector3d(1.0, 2.0, 3.0).normalized();
   const Eigen::AngleAxisd linkageRotation(
-      math::constantsd::pi() / 6.0, arbitraryAxis); // ~30 degrees
+      math::pi / 6.0, arbitraryAxis); // ~30 degrees
 
   Eigen::Isometry3d baseTf = Eigen::Isometry3d::Identity();
   baseTf.linear() = linkageRotation.toRotationMatrix();
