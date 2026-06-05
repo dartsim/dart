@@ -78,6 +78,20 @@ The lower-level viewer still accepts `--screenshot` and `--out` directly when
 you need raw PPM output. Inspect the generated PNG or MP4 before calling a
 visual change done.
 
+## AVBD Rigid Constraints (sx)
+
+The dedicated **`AVBD Rigid Constraints (sx)`** category groups the first
+user-visible Augmented VBD rigid-constraint scenes from PLAN-104:
+
+| Scene id                         | Shows                                                | AVBD capability exercised                     |
+| -------------------------------- | ---------------------------------------------------- | --------------------------------------------- |
+| `avbd_rigid_fixed_joint_contact` | A fixed rigid payload sliding against static contact | Public fixed-joint rows plus ordinary contact |
+
+This is an early AVBD rigid-row showcase, not a paper-complete reproduction.
+The remaining AVBD corpus still needs the full 2D/3D reference demos, paper
+figures, video/headline scenes, CPU/GPU benchmark packets, and performance
+comparisons recorded in PLAN-104.
+
 ## IPC Deformable (sx) scenes
 
 The dedicated **`IPC Deformable (sx)`** category groups the deformable-body

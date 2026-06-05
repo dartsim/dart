@@ -523,6 +523,9 @@ def test_experimental_world_scenes_use_solver_focused_categories() -> None:
             "sx_contact",
             "experimental_rigid_body_gui",
         },
+        "AVBD Rigid Constraints (sx)": {
+            "avbd_rigid_fixed_joint_contact",
+        },
         "Rigid IPC (sx)": {
             "sx_rigid_ipc",
             "sx_rigid_ipc_slide",
@@ -559,6 +562,30 @@ def test_experimental_world_scenes_use_solver_focused_categories() -> None:
         or scene_id == "experimental_rigid_body_gui"
         for scene_id in old_experimental
     )
+
+
+def test_avbd_fixed_joint_contact_demo_exercises_contact_path() -> None:
+    import numpy as np
+
+    from examples.demos.scenes.avbd_rigid_fixed_joint_contact import build
+
+    setup = build()
+    sx_world = setup.info["sx_world"]
+    base = setup.info["base"]
+    payload = setup.info["payload"]
+
+    assert sx_world.num_rigid_body_fixed_joints == 1
+    assert len(sx_world.collide()) > 0
+
+    for _ in range(10):
+        assert setup.pre_step is not None
+        setup.pre_step()
+        setup.world.step()
+
+    assert len(sx_world.collide()) > 0
+    offset = np.asarray(payload.translation) - np.asarray(base.translation)
+    expected_offset = np.array([0.72, 0.0, -0.34])
+    assert np.linalg.norm(offset - expected_offset) < 2.0e-2
 
 
 def test_runner_screenshot_writes_ppm(tmp_path: pathlib.Path) -> None:

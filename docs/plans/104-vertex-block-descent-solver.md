@@ -138,8 +138,10 @@ Simulation-entry current-pose initialization and extraction also cover private
 rigid-body ECS revolute/prismatic joint entities. Public experimental `World`
 facades now expose rigid-body revolute and prismatic joints for free rigid
 bodies through C++ and dartpy, with generated stubs, focused C++/Python tests,
-and a categorized `sx_rigid_limited_joints` py-demo. Public multibody joint
-extraction and articulated World joint wiring are not solved yet.
+and a categorized `sx_rigid_limited_joints` py-demo. The first AVBD rigid-constraint
+`py-demos` scene, `avbd_rigid_fixed_joint_contact`, shows the public
+fixed-joint/contact slice for users. Public multibody joint extraction and
+articulated World joint wiring are not solved yet.
 Explicit fallback coverage keeps unsupported mixed spring-plus-tet,
 mass-spring self-contact without the self-contact AVBD flag,
 finite-stiffness-only friction scenes, Chebyshev, Rayleigh-damped, parallel,
