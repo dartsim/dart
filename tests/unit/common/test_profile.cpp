@@ -98,6 +98,18 @@ TEST_F(ProfileTest, CapturesHierarchyAndHotspots)
   std::cout << summary;
 }
 
+TEST_F(ProfileTest, TextSummaryMacroReturnsString)
+{
+  {
+    DART_PROFILE_SCOPED_N("macro-summary");
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+  }
+
+  const auto summary = DART_PROFILE_TEXT_SUMMARY();
+  EXPECT_NE(summary.find("macro-summary"), std::string::npos);
+  EXPECT_NE(summary.find("DART profiler (text backend)"), std::string::npos);
+}
+
 TEST_F(ProfileTest, CapturesMultipleThreads)
 {
   {
@@ -132,6 +144,7 @@ TEST_F(ProfileTest, CapturesMultipleThreads)
 
 TEST(ProfileBackendDisabled, TextProfilerUnavailable)
 {
+  EXPECT_TRUE(DART_PROFILE_TEXT_SUMMARY().empty());
   GTEST_SKIP() << "Text profiling backend disabled at build time.";
 }
 

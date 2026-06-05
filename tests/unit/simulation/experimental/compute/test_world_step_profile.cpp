@@ -39,6 +39,8 @@
 #include <string>
 
 using namespace std::chrono_literals;
+using dart::simulation::experimental::compute::ComputeExecutionProfile;
+using dart::simulation::experimental::compute::ComputeStageAcceleration;
 using dart::simulation::experimental::compute::ComputeStageDomain;
 using dart::simulation::experimental::compute::WorldStepProfile;
 using dart::simulation::experimental::compute::WorldStepStageProfile;
@@ -50,11 +52,21 @@ WorldStepProfile makeProfile()
   WorldStepProfile profile;
   profile.stepCount = 1;
   profile.wallTime = 10ms;
-  profile.stages.push_back(
-      {"rigid_body_contact", ComputeStageDomain::RigidBody, 6ms});
-  profile.stages.push_back(
-      {"deformable_dynamics", ComputeStageDomain::DeformableBody, 3ms});
-  profile.stages.push_back({"kinematics", ComputeStageDomain::Kinematics, 1ms});
+  auto& contact = profile.stages.emplace_back();
+  contact.name = "rigid_body_contact";
+  contact.domain = ComputeStageDomain::RigidBody;
+  contact.duration = 6ms;
+  auto& deformable = profile.stages.emplace_back();
+  deformable.name = "deformable_dynamics";
+  deformable.domain = ComputeStageDomain::DeformableBody;
+  deformable.duration = 3ms;
+  deformable.acceleration
+      = ComputeStageAcceleration::TaskParallel | ComputeStageAcceleration::Gpu;
+  deformable.acceleratedBackendEnabled = true;
+  auto& kinematics = profile.stages.emplace_back();
+  kinematics.name = "kinematics";
+  kinematics.domain = ComputeStageDomain::Kinematics;
+  kinematics.duration = 1ms;
   return profile;
 }
 
@@ -89,6 +101,30 @@ TEST(WorldStepProfile, GetStageFindsByName)
   EXPECT_EQ(profile.getStage("does_not_exist"), nullptr);
 }
 
+TEST(WorldStepProfile, StageGraphHelpersSummarizeNestedGraphProfiles)
+{
+  WorldStepStageProfile stage;
+  stage.name = "kinematics";
+  stage.domain = ComputeStageDomain::Kinematics;
+  stage.duration = 5ms;
+
+  ComputeExecutionProfile first;
+  first.workerCount = 2;
+  first.wallTime = 2ms;
+  first.maxParallelism = 1;
+  stage.graphProfiles.push_back(first);
+
+  ComputeExecutionProfile second;
+  second.workerCount = 4;
+  second.wallTime = 3ms;
+  second.maxParallelism = 3;
+  stage.graphProfiles.push_back(second);
+
+  EXPECT_EQ(stage.totalGraphWallTime(), 5ms);
+  EXPECT_EQ(stage.maxGraphWorkerCount(), 4u);
+  EXPECT_EQ(stage.maxGraphParallelism(), 3u);
+}
+
 TEST(WorldStepProfile, SummaryTextListsStagesSlowestFirst)
 {
   const WorldStepProfile profile = makeProfile();
@@ -100,6 +136,9 @@ TEST(WorldStepProfile, SummaryTextListsStagesSlowestFirst)
   EXPECT_NE(summary.find("deformable_dynamics"), std::string::npos);
   EXPECT_NE(summary.find("kinematics"), std::string::npos);
   EXPECT_NE(summary.find("unattributed overhead"), std::string::npos);
+  EXPECT_NE(summary.find("Execution details"), std::string::npos);
+  EXPECT_NE(summary.find("acceleration=task_parallel|gpu"), std::string::npos);
+  EXPECT_NE(summary.find("backend=accelerated"), std::string::npos);
 
   // Slowest-first ordering: the contact stage precedes the cheaper stages.
   const auto contactPos = summary.find("rigid_body_contact");

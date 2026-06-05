@@ -647,6 +647,47 @@ void WorldStepPipeline::execute(World& world, ComputeExecutor& executor)
   }
 }
 
+#if DART_BUILD_PROFILE
+namespace {
+
+/// Executor adapter used only by World step profiling. It preserves the stage's
+/// normal executor injection while capturing any nested compute graph profiles
+/// the stage runs.
+class WorldStepProfilingExecutor final : public ComputeExecutor
+{
+public:
+  WorldStepProfilingExecutor(
+      ComputeExecutor& delegate, WorldStepStageProfile& stageProfile)
+    : m_delegate(delegate), m_stageProfile(stageProfile)
+  {
+  }
+
+  void execute(const ComputeGraph& graph) override
+  {
+    m_stageProfile.graphProfiles.push_back(m_delegate.executeProfiled(graph));
+  }
+
+  [[nodiscard]] ComputeExecutionProfile executeProfiled(
+      const ComputeGraph& graph) override
+  {
+    auto profile = m_delegate.executeProfiled(graph);
+    m_stageProfile.graphProfiles.push_back(profile);
+    return profile;
+  }
+
+  [[nodiscard]] std::size_t getWorkerCount() const override
+  {
+    return m_delegate.getWorkerCount();
+  }
+
+private:
+  ComputeExecutor& m_delegate;
+  WorldStepStageProfile& m_stageProfile;
+};
+
+} // namespace
+#endif
+
 //==============================================================================
 WorldStepProfile WorldStepPipeline::executeProfiled(
     World& world, ComputeExecutor& executor)
@@ -660,14 +701,27 @@ WorldStepProfile WorldStepPipeline::executeProfiled(
   const auto stepStart = std::chrono::steady_clock::now();
   for (std::size_t i = 0; i < m_stageCount; ++i) {
     auto& stage = getStage(i);
-    const auto stageStart = std::chrono::steady_clock::now();
-    stage.execute(world, executor);
-    const auto stageEnd = std::chrono::steady_clock::now();
+    const auto metadata = stage.getMetadata();
 
     auto& entry = profile.stages.emplace_back();
     entry.name = stage.getName();
-    entry.domain = stage.getMetadata().domain;
+    entry.domain = metadata.domain;
+    entry.acceleration = metadata.acceleration;
+
+    const bool stageCanUseGpuBackend
+        = hasAcceleration(metadata.acceleration, ComputeStageAcceleration::Gpu);
+    const bool acceleratedBackendBefore
+        = stageCanUseGpuBackend && isDeformablePsdAccelerated();
+
+    WorldStepProfilingExecutor profilingExecutor(executor, entry);
+    const auto stageStart = std::chrono::steady_clock::now();
+    stage.execute(world, profilingExecutor);
+    const auto stageEnd = std::chrono::steady_clock::now();
+
     entry.duration = stageEnd - stageStart;
+    entry.acceleratedBackendEnabled
+        = acceleratedBackendBefore
+          || (stageCanUseGpuBackend && isDeformablePsdAccelerated());
   }
   profile.wallTime = std::chrono::steady_clock::now() - stepStart;
 #else
@@ -9010,7 +9064,8 @@ ComputeStageMetadata DeformableDynamicsStage::getMetadata() const noexcept
   return {
       ComputeStageDomain::DeformableBody,
       ComputeStageAcceleration::TaskParallel
-          | ComputeStageAcceleration::DataLocality,
+          | ComputeStageAcceleration::DataLocality
+          | ComputeStageAcceleration::Gpu,
       {{"deformable_body.state", ComputeAccessMode::ReadWrite},
        {"deformable_body.model", ComputeAccessMode::Read},
        {"deformable_body.topology", ComputeAccessMode::Read},
