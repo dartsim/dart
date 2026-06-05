@@ -73,9 +73,10 @@
       kinematic IPC rigid-body, box-obstacle, multibody variational,
       deformable, rigid-body resting-contact, and non-cross articulated
       resting-contact steps. The default sequential articulated contact path
-      also covers a same-DOF cross-multibody link contact scene without global
-      heap allocation, while mixed/different-DOF and stacked cross-contact
-      scenes stay on the boxed-LCP fallback. Broader solver coverage, including
+      also covers an isolated same-DOF cross-multibody link contact scene
+      without global heap allocation, while mixed/different-DOF, stacked, and
+      coupled multi-row cross-contact scenes stay on the boxed-LCP fallback.
+      Broader solver coverage, including
       boxed-LCP unified contact assembly, larger contact sets, and remaining
       solver-owned scratch, remains open before making a full zero-allocation
       claim.
@@ -208,9 +209,10 @@ debugging, profiling, optimization experiments, and ImGui visualization.
    allocation tests to contact-heavy scenes and remaining solver scratch step
    paths. The initial rigid-body, non-cross articulated, and same-DOF
    sequential cross-articulated resting-contact global heap guards are in
-   place; mixed/different-DOF and stacked cross-articulated contacts stay on
-   the boxed-LCP fallback. Continue broadening boxed-LCP unified contact
-   assembly, larger contact sets, and remaining
+   place; mixed/different-DOF, stacked, and coupled multi-row
+   cross-articulated contacts stay on the boxed-LCP fallback. Continue
+   broadening boxed-LCP unified contact assembly, larger contact sets, and
+   remaining
    solver/deformable candidate buffers before making the full zero-allocation
    claim.
 5. Start replacing per-step `std::vector`/`Eigen` temporaries in hot stages with
