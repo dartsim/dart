@@ -868,6 +868,37 @@ TEST(DeformableBody, ExposesDeformableSolverDiagnostics)
 }
 
 //==============================================================================
+// Replay frames captured by built-in steps include the diagnostics folded from
+// that same step, so restoring a recorded post-step frame restores solver state
+// rather than the previous frame's diagnostics.
+TEST(DeformableBody, ReplayRecordingRestoresPostStepDiagnostics)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.01);
+  world.addDeformableBody("fem", makeFemTetrahedronBody());
+
+  world.setReplayRecordingEnabled(true);
+  world.step();
+
+  const auto expected = world.getLastDeformableSolverDiagnostics();
+  ASSERT_EQ(expected.bodyCount, 1u);
+  ASSERT_EQ(expected.nodeCount, 4u);
+  ASSERT_GE(expected.solverIterations, 1u);
+
+  ASSERT_EQ(world.getReplayFrameCount(), 2u);
+  world.restoreReplayFrame(0);
+  ASSERT_EQ(world.getLastDeformableSolverDiagnostics().bodyCount, 0u);
+
+  world.restoreReplayFrame(1);
+  const auto& restored = world.getLastDeformableSolverDiagnostics();
+  EXPECT_EQ(restored.bodyCount, expected.bodyCount);
+  EXPECT_EQ(restored.nodeCount, expected.nodeCount);
+  EXPECT_EQ(restored.solverIterations, expected.solverIterations);
+  EXPECT_EQ(restored.objectiveEvaluations, expected.objectiveEvaluations);
+}
+
+//==============================================================================
 // The isolated third node contributes only its three inertial diagonal entries
 // to the sparse projected-Newton Hessian; the spring-connected pair contributes
 // a full 6x6 block that drives the solve.

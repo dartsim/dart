@@ -37,12 +37,16 @@
 #include <dart/simulation/experimental/body/rigid_body.hpp>
 #include <dart/simulation/experimental/common/exceptions.hpp>
 #include <dart/simulation/experimental/comps/collision_geometry.hpp>
+#include <dart/simulation/experimental/comps/deformable_body.hpp>
 #include <dart/simulation/experimental/comps/dynamics.hpp>
 #include <dart/simulation/experimental/comps/frame_types.hpp>
 #include <dart/simulation/experimental/comps/joint.hpp>
+#include <dart/simulation/experimental/comps/link.hpp>
 #include <dart/simulation/experimental/comps/rigid_body.hpp>
+#include <dart/simulation/experimental/comps/variational_contact_dual_state.hpp>
 #include <dart/simulation/experimental/compute/compute_executor.hpp>
 #include <dart/simulation/experimental/compute/compute_graph.hpp>
+#include <dart/simulation/experimental/compute/detail/deformable_avbd_replay_state.hpp>
 #include <dart/simulation/experimental/compute/parallel_executor.hpp>
 #include <dart/simulation/experimental/compute/rigid_body_state_batch.hpp>
 #include <dart/simulation/experimental/compute/sequential_executor.hpp>
@@ -1549,7 +1553,6 @@ TEST(World, StepRefreshesFrameHierarchy)
 TEST(World, StepAcceptsParallelExecutor)
 {
   namespace sx = dart::simulation::experimental;
-  namespace compute = dart::simulation::experimental::compute;
 
   sx::World world;
   auto parent = world.addFreeFrame("parent");
@@ -1564,7 +1567,7 @@ TEST(World, StepAcceptsParallelExecutor)
   updatedParentTransform.translate(Eigen::Vector3d(2.0, 0.0, 0.0));
   parent.setLocalTransform(updatedParentTransform);
 
-  compute::ParallelExecutor executor(1);
+  sx::compute::ParallelExecutor executor(1);
   world.step(executor);
 
   EXPECT_TRUE(
@@ -7393,4 +7396,768 @@ TEST(World, RigidBodyModelBatchIntegration)
   EXPECT_THROW(
       compute::integrateRigidBodyStateBatchLinear(viaModel, wrong, force, dt),
       sx::InvalidArgumentException);
+}
+
+// Test opt-in replay recording and in-place restore of rigid-body runtime
+// state.
+TEST(World, ReplayRecordingRestoresRigidBodyState)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  sx::RigidBodyOptions options;
+  options.position = Eigen::Vector3d(0.0, 0.0, 1.0);
+  options.linearVelocity = Eigen::Vector3d(1.0, 0.0, 0.0);
+  sx::RigidBody body = world.addRigidBody("body", options);
+
+  EXPECT_FALSE(world.isReplayRecordingEnabled());
+  EXPECT_EQ(world.getReplayFrameCount(), 0u);
+  EXPECT_FALSE(world.getReplayCursor().has_value());
+
+  world.setReplayRecordingEnabled(true);
+  ASSERT_TRUE(world.isReplayRecordingEnabled());
+  ASSERT_EQ(world.getReplayFrameCount(), 1u);
+  ASSERT_TRUE(world.getReplayCursor().has_value());
+  EXPECT_EQ(*world.getReplayCursor(), 0u);
+  EXPECT_DOUBLE_EQ(world.getReplayFrameTime(0), 0.0);
+  EXPECT_EQ(world.getReplaySimulationFrame(0), 0u);
+
+  world.step(3);
+  ASSERT_EQ(world.getReplayFrameCount(), 4u);
+  ASSERT_TRUE(world.getReplayCursor().has_value());
+  EXPECT_EQ(*world.getReplayCursor(), 3u);
+  EXPECT_EQ(world.getFrame(), 3u);
+  EXPECT_DOUBLE_EQ(world.getTime(), 0.3);
+  EXPECT_NEAR(body.getTranslation().x(), 0.3, 1e-12);
+
+  world.restoreReplayFrame(1);
+  EXPECT_EQ(world.getFrame(), 1u);
+  EXPECT_DOUBLE_EQ(world.getTime(), 0.1);
+  EXPECT_NEAR(body.getTranslation().x(), 0.1, 1e-12);
+  EXPECT_NEAR(body.getTranslation().z(), 1.0, 1e-12);
+  EXPECT_TRUE(body.getLinearVelocity().isApprox(Eigen::Vector3d::UnitX()));
+  ASSERT_TRUE(world.getReplayCursor().has_value());
+  EXPECT_EQ(*world.getReplayCursor(), 1u);
+
+  // Branching from an earlier replay cursor drops stale future frames before
+  // appending the newly simulated state.
+  world.step();
+  ASSERT_EQ(world.getReplayFrameCount(), 3u);
+  ASSERT_TRUE(world.getReplayCursor().has_value());
+  EXPECT_EQ(*world.getReplayCursor(), 2u);
+  EXPECT_EQ(world.getReplaySimulationFrame(2), 2u);
+  EXPECT_DOUBLE_EQ(world.getReplayFrameTime(2), 0.2);
+  EXPECT_NEAR(body.getTranslation().x(), 0.2, 1e-12);
+
+  world.clearReplayRecording();
+  EXPECT_EQ(world.getReplayFrameCount(), 1u);
+  ASSERT_TRUE(world.getReplayCursor().has_value());
+  EXPECT_EQ(*world.getReplayCursor(), 0u);
+
+  world.setReplayRecordingEnabled(false);
+  world.step();
+  EXPECT_EQ(world.getReplayFrameCount(), 1u);
+}
+
+// Test that replay restores rigid IPC's adaptive barrier continuation state, so
+// a branch from an earlier contact frame matches an uninterrupted rollout.
+TEST(World, ReplayRecordingRestoresRigidIpcAdaptiveBranchState)
+{
+  namespace sx = dart::simulation::experimental;
+
+  const auto addSlidingContactScene = [](sx::World& world) {
+    world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+    world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+    world.setTimeStep(0.01);
+
+    sx::RigidBodyOptions groundOptions;
+    groundOptions.isStatic = true;
+    groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.25);
+    auto ground = world.addRigidBody("ground", groundOptions);
+    ground.setCollisionShape(sx::CollisionShape::makeBox({2.0, 2.0, 0.25}));
+
+    sx::RigidBodyOptions boxOptions;
+    boxOptions.mass = 1.0;
+    boxOptions.position = Eigen::Vector3d(0.0, 0.0, 0.258);
+    boxOptions.linearVelocity = Eigen::Vector3d(1.0, 0.0, 0.0);
+    auto box = world.addRigidBody("box", boxOptions);
+    box.setCollisionShape(sx::CollisionShape::makeBox({0.25, 0.25, 0.25}));
+    return box;
+  };
+
+  sx::World reference;
+  auto referenceBox = addSlidingContactScene(reference);
+  reference.step();
+  reference.step();
+
+  sx::World replay;
+  auto replayBox = addSlidingContactScene(replay);
+  replay.setReplayRecordingEnabled(true);
+  replay.step();
+  ASSERT_EQ(replay.getReplayFrameCount(), 2u);
+
+  Eigen::Isometry3d farPose = Eigen::Isometry3d::Identity();
+  farPose.translation() = Eigen::Vector3d(0.0, 0.0, 10.0);
+  replayBox.setTransform(farPose);
+  replayBox.setLinearVelocity(Eigen::Vector3d::Zero());
+  replay.step();
+  ASSERT_EQ(replay.getReplayFrameCount(), 3u);
+
+  replay.restoreReplayFrame(1);
+  replay.step();
+
+  EXPECT_TRUE(replayBox.getTranslation().isApprox(
+      referenceBox.getTranslation(), 1e-10));
+  EXPECT_TRUE(replayBox.getLinearVelocity().isApprox(
+      referenceBox.getLinearVelocity(), 1e-10));
+}
+
+// Test that replay restores deformable AVBD warm-start inventories, so a branch
+// from an earlier frame does not keep later lambda/stiffness continuation
+// state.
+TEST(World, ReplayRecordingRestoresDeformableAvbdWarmStartState)
+{
+  namespace sx = dart::simulation::experimental;
+  namespace compute = dart::simulation::experimental::compute;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.02);
+
+  sx::DeformableBodyOptions options;
+  options.positions
+      = {Eigen::Vector3d::Zero(), Eigen::Vector3d(0.0, 0.0, -1.5)};
+  options.masses = {1.0, 1.0};
+  options.fixedNodes = {0};
+  options.edges = {sx::DeformableEdge{0, 1, 1.0}};
+  options.edgeStiffness = 1000.0;
+  world.addDeformableBody("spring", options);
+
+  auto& registry = sx::detail::registryOf(world);
+  for (const auto entity : registry.view<sx::comps::DeformableBodyTag>()) {
+    sx::comps::DeformableVbdConfig cfg;
+    cfg.enabled = true;
+    cfg.iterations = 1;
+    cfg.useAvbdFiniteStiffnessRows = true;
+    cfg.avbdFiniteStiffnessStart = 1.0;
+    cfg.avbdBeta = 100.0;
+    cfg.avbdGamma = 1.0;
+    cfg.avbdMaxStiffness = 1000.0;
+    registry.emplace_or_replace<sx::comps::DeformableVbdConfig>(entity, cfg);
+  }
+
+  const auto springRowStiffness = [&]() {
+    const auto states
+        = sx::compute::avbd_replay::captureDeformableAvbdWarmStartReplayState(
+            registry);
+    EXPECT_EQ(states.size(), 1u);
+    if (states.empty()) {
+      return 0.0;
+    }
+    EXPECT_EQ(states[0].springRows.size(), 1u);
+    if (states[0].springRows.empty()) {
+      return 0.0;
+    }
+    return states[0].springRows[0].state.stiffness;
+  };
+
+  world.setReplayRecordingEnabled(true);
+  world.step();
+  ASSERT_EQ(world.getReplayFrameCount(), 2u);
+  const double frame1Stiffness = springRowStiffness();
+
+  world.step();
+  ASSERT_EQ(world.getReplayFrameCount(), 3u);
+  const double frame2Stiffness = springRowStiffness();
+  ASSERT_GT(frame2Stiffness, frame1Stiffness);
+
+  world.restoreReplayFrame(1);
+  EXPECT_DOUBLE_EQ(springRowStiffness(), frame1Stiffness);
+}
+
+// Test that replay restores transient variational solver-history components to
+// match the target frame, including removing lazily-created state when
+// scrubbing back before the first variational step.
+TEST(World, ReplayRecordingRestoresTransientVariationalComponents)
+{
+  namespace sx = dart::simulation::experimental;
+  namespace compute = dart::simulation::experimental::compute;
+
+  sx::World world;
+  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(1e-3);
+
+  auto robot = world.addMultibody("slider");
+  auto base = robot.addLink("base");
+
+  sx::JointSpec spec;
+  spec.name = "rail";
+  spec.type = sx::JointType::Prismatic;
+  spec.axis = Eigen::Vector3d::UnitZ();
+  auto carriage = robot.addLink("carriage", base, spec);
+  carriage.setMass(1.0);
+  carriage.setInertia(Eigen::Vector3d(0.01, 0.01, 0.01).asDiagonal());
+  carriage.getParentJoint().setPosition(Eigen::VectorXd::Constant(1, -0.001));
+
+  robot.setGroundContact(
+      Eigen::Vector3d::UnitZ(),
+      Eigen::Vector3d::Zero(),
+      1.0e4,
+      /*frictionCoefficient=*/0.0,
+      /*frictionRegularization=*/1.0e-4,
+      /*dampingCoefficient=*/20.0,
+      /*dualUpdateCadence=*/1);
+  robot.addGroundContactPoint(carriage, Eigen::Vector3d::Zero());
+
+  auto& registry = sx::detail::registryOf(world);
+  const auto countVariationalStates = [&]() {
+    std::size_t count = 0;
+    for (auto entity : registry.view<compute::MultibodyVariationalState>()) {
+      static_cast<void>(entity);
+      ++count;
+    }
+    return count;
+  };
+  const auto countDualStates = [&]() {
+    std::size_t count = 0;
+    for (auto entity :
+         registry.view<sx::comps::VariationalContactDualState>()) {
+      static_cast<void>(entity);
+      ++count;
+    }
+    return count;
+  };
+
+  world.setReplayRecordingEnabled(true);
+  ASSERT_EQ(world.getReplayFrameCount(), 1u);
+  EXPECT_EQ(countVariationalStates(), 0u);
+  EXPECT_EQ(countDualStates(), 0u);
+
+  world.step();
+  ASSERT_EQ(world.getReplayFrameCount(), 2u);
+  EXPECT_EQ(countVariationalStates(), 1u);
+  EXPECT_EQ(countDualStates(), 1u);
+
+  world.restoreReplayFrame(0);
+  EXPECT_EQ(countVariationalStates(), 0u);
+  EXPECT_EQ(countDualStates(), 0u);
+
+  world.step();
+  EXPECT_EQ(countVariationalStates(), 1u);
+  EXPECT_EQ(countDualStates(), 1u);
+}
+
+// Test that replay restore rejects loop-closure topology and runtime-policy
+// edits rather than restoring into a different constraint graph.
+TEST(World, ReplayRecordingRejectsLoopClosureLayoutChanges)
+{
+  namespace sx = dart::simulation::experimental;
+
+  {
+    sx::World world;
+    auto robot = world.addMultibody("robot");
+    auto base = robot.addLink("base");
+    auto link
+        = robot.addLink("link", {.parentLink = base, .jointName = "joint"});
+    world.addLoopClosure("closure", {.frameA = base, .frameB = link});
+
+    world.setReplayRecordingEnabled(true);
+    world.addLoopClosure("added", {.frameA = link, .frameB = base});
+
+    EXPECT_THROW(world.restoreReplayFrame(0), sx::InvalidOperationException);
+  }
+
+  {
+    sx::World world;
+    auto robot = world.addMultibody("robot");
+    auto base = robot.addLink("base");
+    auto link
+        = robot.addLink("link", {.parentLink = base, .jointName = "joint"});
+    auto closure
+        = world.addLoopClosure("closure", {.frameA = base, .frameB = link});
+
+    world.setReplayRecordingEnabled(true);
+    closure.setRuntimePolicy(
+        {.enabled = false,
+         .kinematics = sx::ClosureKinematicsPolicy::ResidualOnly,
+         .dynamics = sx::ClosureDynamicsPolicy::ResidualOnly});
+
+    EXPECT_THROW(world.restoreReplayFrame(0), sx::InvalidOperationException);
+  }
+}
+
+// Test that replay restores parented rigid bodies in frame-hierarchy order even
+// when entity id order would visit the child first.
+TEST(World, ReplayRecordingRestoresParentedRigidBodiesParentBeforeChild)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+
+  sx::RigidBodyOptions childOptions;
+  childOptions.position = Eigen::Vector3d(3.0, 0.0, 0.0);
+  auto child = world.addRigidBody("child", childOptions);
+
+  sx::RigidBodyOptions parentOptions;
+  parentOptions.position = Eigen::Vector3d(10.0, 0.0, 0.0);
+  auto parent = world.addRigidBody("parent", parentOptions);
+
+  child.setParentFrame(parent);
+
+  Eigen::Isometry3d recordedChildTransform = Eigen::Isometry3d::Identity();
+  recordedChildTransform.translation() = Eigen::Vector3d(13.0, 0.0, 0.0);
+  child.setTransform(recordedChildTransform);
+
+  world.setReplayRecordingEnabled(true);
+  ASSERT_EQ(world.getReplayFrameCount(), 1u);
+
+  Eigen::Isometry3d movedParentTransform = Eigen::Isometry3d::Identity();
+  movedParentTransform.translation() = Eigen::Vector3d(20.0, 0.0, 0.0);
+  parent.setTransform(movedParentTransform);
+
+  Eigen::Isometry3d movedChildTransform = Eigen::Isometry3d::Identity();
+  movedChildTransform.translation() = Eigen::Vector3d(25.0, 0.0, 0.0);
+  child.setTransform(movedChildTransform);
+
+  world.restoreReplayFrame(0);
+
+  EXPECT_TRUE(
+      parent.getTranslation().isApprox(Eigen::Vector3d(10.0, 0.0, 0.0)));
+  EXPECT_TRUE(child.getTranslation().isApprox(Eigen::Vector3d(13.0, 0.0, 0.0)));
+  EXPECT_TRUE(child.getLocalTransform().translation().isApprox(
+      Eigen::Vector3d(3.0, 0.0, 0.0)));
+}
+
+// Test that replay restores standalone public frame hierarchy state instead of
+// leaving user-visible frames at transforms edited after recording.
+TEST(World, ReplayRecordingRestoresPublicFrameState)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+
+  auto parent = world.addFreeFrame("parent");
+  Eigen::Isometry3d recordedParentTransform = Eigen::Isometry3d::Identity();
+  recordedParentTransform.translation() = Eigen::Vector3d(1.0, 2.0, 3.0);
+  parent.setLocalTransform(recordedParentTransform);
+
+  Eigen::Isometry3d recordedChildOffset = Eigen::Isometry3d::Identity();
+  recordedChildOffset.translation() = Eigen::Vector3d(0.0, 0.5, 0.0);
+  auto child = world.addFixedFrame("child", parent, recordedChildOffset);
+
+  auto alternateParent = world.addFreeFrame("alternate_parent");
+  Eigen::Isometry3d alternateParentTransform = Eigen::Isometry3d::Identity();
+  alternateParentTransform.translation() = Eigen::Vector3d(10.0, 0.0, 0.0);
+  alternateParent.setLocalTransform(alternateParentTransform);
+
+  world.setReplayRecordingEnabled(true);
+  ASSERT_EQ(world.getReplayFrameCount(), 1u);
+
+  Eigen::Isometry3d movedParentTransform = Eigen::Isometry3d::Identity();
+  movedParentTransform.translation() = Eigen::Vector3d(-1.0, -2.0, -3.0);
+  parent.setLocalTransform(movedParentTransform);
+
+  Eigen::Isometry3d movedChildOffset = Eigen::Isometry3d::Identity();
+  movedChildOffset.translation() = Eigen::Vector3d(0.0, -4.0, 0.0);
+  child.setParentFrame(alternateParent);
+  child.setLocalTransform(movedChildOffset);
+
+  world.restoreReplayFrame(0);
+
+  EXPECT_TRUE(parent.getLocalTransform().isApprox(recordedParentTransform));
+  EXPECT_EQ(child.getParentFrame().getEntity(), parent.getEntity());
+  EXPECT_TRUE(child.getLocalTransform().isApprox(recordedChildOffset));
+  EXPECT_TRUE(child.getTransform().isApprox(
+      recordedParentTransform * recordedChildOffset));
+}
+
+// Test that public-frame replay restore dirties caches before restoring rigid
+// bodies whose parent transform is a restored public frame.
+TEST(World, ReplayRecordingRestoresRigidBodyThroughPublicFrameWithDirtyCache)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+
+  auto mount = world.addFreeFrame("mount");
+  Eigen::Isometry3d recordedMountTransform = Eigen::Isometry3d::Identity();
+  recordedMountTransform.translation() = Eigen::Vector3d(1.0, 0.0, 0.0);
+  mount.setLocalTransform(recordedMountTransform);
+
+  sx::RigidBodyOptions bodyOptions;
+  bodyOptions.position = Eigen::Vector3d(2.0, 0.0, 0.0);
+  auto body = world.addRigidBody("body", bodyOptions);
+  body.setParentFrame(mount);
+
+  Eigen::Isometry3d recordedBodyTransform = Eigen::Isometry3d::Identity();
+  recordedBodyTransform.translation() = Eigen::Vector3d(2.0, 0.0, 0.0);
+  body.setTransform(recordedBodyTransform);
+
+  world.setReplayRecordingEnabled(true);
+  ASSERT_EQ(world.getReplayFrameCount(), 1u);
+
+  Eigen::Isometry3d movedMountTransform = Eigen::Isometry3d::Identity();
+  movedMountTransform.translation() = Eigen::Vector3d(10.0, 0.0, 0.0);
+  mount.setLocalTransform(movedMountTransform);
+  EXPECT_TRUE(mount.getTransform().isApprox(movedMountTransform));
+
+  Eigen::Isometry3d movedBodyTransform = Eigen::Isometry3d::Identity();
+  movedBodyTransform.translation() = Eigen::Vector3d(12.0, 0.0, 0.0);
+  body.setTransform(movedBodyTransform);
+
+  world.restoreReplayFrame(0);
+
+  EXPECT_TRUE(mount.getTransform().isApprox(recordedMountTransform));
+  EXPECT_TRUE(body.getTransform().isApprox(recordedBodyTransform));
+  EXPECT_TRUE(body.getLocalTransform().isApprox(
+      recordedMountTransform.inverse() * recordedBodyTransform));
+}
+
+// Test replay control edge cases and invalid frame queries.
+TEST(World, ReplayRecordingRejectsInvalidQueriesAndClears)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+
+  world.clearReplayRecording();
+  EXPECT_FALSE(world.isReplayRecordingEnabled());
+  EXPECT_EQ(world.getReplayFrameCount(), 0u);
+  EXPECT_FALSE(world.getReplayCursor().has_value());
+
+  EXPECT_THROW(
+      static_cast<void>(world.getReplayFrameTime(0)),
+      sx::InvalidArgumentException);
+  EXPECT_THROW(
+      static_cast<void>(world.getReplaySimulationFrame(0)),
+      sx::InvalidArgumentException);
+  EXPECT_THROW(world.restoreReplayFrame(0), sx::InvalidArgumentException);
+
+  world.setReplayRecordingEnabled(false);
+  EXPECT_FALSE(world.isReplayRecordingEnabled());
+  EXPECT_EQ(world.getReplayFrameCount(), 0u);
+  EXPECT_FALSE(world.getReplayCursor().has_value());
+
+  world.setReplayRecordingEnabled(true);
+  world.setReplayRecordingEnabled(true);
+  ASSERT_TRUE(world.isReplayRecordingEnabled());
+  ASSERT_EQ(world.getReplayFrameCount(), 1u);
+  ASSERT_TRUE(world.getReplayCursor().has_value());
+  EXPECT_EQ(*world.getReplayCursor(), 0u);
+  EXPECT_THROW(
+      static_cast<void>(world.getReplayFrameTime(1)),
+      sx::InvalidArgumentException);
+  EXPECT_THROW(
+      static_cast<void>(world.getReplaySimulationFrame(1)),
+      sx::InvalidArgumentException);
+  EXPECT_THROW(world.restoreReplayFrame(1), sx::InvalidArgumentException);
+
+  world.clear();
+  EXPECT_FALSE(world.isReplayRecordingEnabled());
+  EXPECT_EQ(world.getReplayFrameCount(), 0u);
+  EXPECT_FALSE(world.getReplayCursor().has_value());
+}
+
+// Test that replay restore rejects topology/layout changes instead of trying
+// partial best-effort replay.
+TEST(World, ReplayRecordingRejectsRigidBodyLayoutChanges)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.addRigidBody("recorded");
+  world.setReplayRecordingEnabled(true);
+  world.addRigidBody("added_after_recording");
+
+  EXPECT_THROW(world.restoreReplayFrame(0), sx::InvalidOperationException);
+}
+
+// Test that replay restore rejects rigid body static/kinematic mode drift.
+// These tags affect solver participation and are not runtime replay state.
+TEST(World, ReplayRecordingRejectsRigidBodyModeChanges)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World staticWorld;
+  auto staticBody = staticWorld.addRigidBody("body");
+  staticWorld.setReplayRecordingEnabled(true);
+  staticBody.setStatic(true);
+  EXPECT_THROW(
+      staticWorld.restoreReplayFrame(0), sx::InvalidOperationException);
+
+  sx::World kinematicWorld;
+  auto kinematicBody = kinematicWorld.addRigidBody("body");
+  kinematicWorld.setReplayRecordingEnabled(true);
+  kinematicBody.setKinematic(true);
+  EXPECT_THROW(
+      kinematicWorld.restoreReplayFrame(0), sx::InvalidOperationException);
+}
+
+// Test that replay restore rejects rigid body construction/layout edits that
+// are not captured as mutable per-frame state.
+TEST(World, ReplayRecordingRejectsRigidBodyConstructionEdits)
+{
+  namespace sx = dart::simulation::experimental;
+
+  const auto expectBodyMutationRejected = [](auto configure, auto mutate) {
+    sx::World world;
+    auto body = world.addRigidBody("body");
+    configure(world, body);
+    world.setReplayRecordingEnabled(true);
+    EXPECT_EQ(world.getReplayFrameCount(), 1u);
+
+    mutate(world, body);
+
+    EXPECT_THROW(world.restoreReplayFrame(0), sx::InvalidOperationException);
+  };
+
+  expectBodyMutationRejected(
+      [](sx::World&, sx::RigidBody& body) {
+        body.setCollisionShape(sx::CollisionShape::makeSphere(0.25));
+      },
+      [](sx::World&, sx::RigidBody& body) {
+        body.setCollisionShape(sx::CollisionShape::makeBox({0.1, 0.2, 0.3}));
+      });
+
+  expectBodyMutationRejected(
+      [](sx::World&, sx::RigidBody&) {},
+      [](sx::World&, sx::RigidBody& body) {
+        body.addCollisionShape(sx::CollisionShape::makeSphere(0.25));
+      });
+
+  expectBodyMutationRejected(
+      [](sx::World&, sx::RigidBody&) {},
+      [](sx::World&, sx::RigidBody& body) { body.setFriction(0.25); });
+
+  expectBodyMutationRejected(
+      [](sx::World&, sx::RigidBody&) {},
+      [](sx::World&, sx::RigidBody& body) { body.setRestitution(0.5); });
+
+  expectBodyMutationRejected(
+      [](sx::World&, sx::RigidBody&) {},
+      [](sx::World&, sx::RigidBody& body) { body.setMass(2.0); });
+
+  expectBodyMutationRejected(
+      [](sx::World&, sx::RigidBody&) {},
+      [](sx::World&, sx::RigidBody& body) {
+        body.setInertia(2.0 * Eigen::Matrix3d::Identity());
+      });
+
+  expectBodyMutationRejected(
+      [](sx::World&, sx::RigidBody&) {},
+      [](sx::World&, sx::RigidBody& body) {
+        body.setDeformableGroundBarrier(true);
+      });
+
+  sx::World parentWorld;
+  auto child = parentWorld.addRigidBody("child");
+  auto parent = parentWorld.addRigidBody("parent");
+  parentWorld.setReplayRecordingEnabled(true);
+  EXPECT_EQ(parentWorld.getReplayFrameCount(), 1u);
+
+  child.setParentFrame(parent);
+
+  EXPECT_THROW(
+      parentWorld.restoreReplayFrame(0), sx::InvalidOperationException);
+}
+
+// Test that replay restore rejects joint dynamics/configuration edits that are
+// not mutable per-frame state.
+TEST(World, ReplayRecordingRejectsJointDynamicsChanges)
+{
+  namespace sx = dart::simulation::experimental;
+
+  const auto expectJointMutationRejected = [](auto mutate) {
+    sx::World world;
+    auto robot = world.addMultibody("robot");
+    auto base = robot.addLink("base");
+
+    sx::JointSpec spec;
+    spec.name = "joint";
+    spec.type = sx::JointType::Revolute;
+    auto link = robot.addLink("link", base, spec);
+    auto joint = link.getParentJoint();
+
+    world.setReplayRecordingEnabled(true);
+    EXPECT_EQ(world.getReplayFrameCount(), 1u);
+
+    mutate(joint);
+
+    EXPECT_THROW(world.restoreReplayFrame(0), sx::InvalidOperationException);
+  };
+
+  expectJointMutationRejected([](sx::Joint& joint) {
+    joint.setSpringStiffness(Eigen::VectorXd::Constant(1, 1.0));
+  });
+  expectJointMutationRejected([](sx::Joint& joint) {
+    joint.setDampingCoefficient(Eigen::VectorXd::Constant(1, 0.1));
+  });
+  expectJointMutationRejected([](sx::Joint& joint) {
+    joint.setRestPosition(Eigen::VectorXd::Constant(1, 0.25));
+  });
+  expectJointMutationRejected([](sx::Joint& joint) {
+    joint.setArmature(Eigen::VectorXd::Constant(1, 0.05));
+  });
+  expectJointMutationRejected([](sx::Joint& joint) {
+    joint.setCoulombFriction(Eigen::VectorXd::Constant(1, 0.2));
+  });
+  expectJointMutationRejected([](sx::Joint& joint) {
+    joint.setPositionLimits(
+        Eigen::VectorXd::Constant(1, -0.5), Eigen::VectorXd::Constant(1, 0.5));
+  });
+  expectJointMutationRejected([](sx::Joint& joint) {
+    joint.setVelocityLimits(
+        Eigen::VectorXd::Constant(1, -1.0), Eigen::VectorXd::Constant(1, 1.0));
+  });
+  expectJointMutationRejected([](sx::Joint& joint) {
+    joint.setEffortLimits(
+        Eigen::VectorXd::Constant(1, -2.0), Eigen::VectorXd::Constant(1, 2.0));
+  });
+  expectJointMutationRejected([](sx::Joint& joint) {
+    joint.setActuatorType(sx::ActuatorType::Passive);
+  });
+}
+
+// Test that replay restore rejects link physical/collision layout edits that
+// are not mutable per-frame state.
+TEST(World, ReplayRecordingRejectsLinkPhysicalLayoutChanges)
+{
+  namespace sx = dart::simulation::experimental;
+
+  const auto expectLinkMutationRejected = [](auto configure, auto mutate) {
+    sx::World world;
+    auto robot = world.addMultibody("robot");
+    auto base = robot.addLink("base");
+
+    sx::JointSpec spec;
+    spec.name = "joint";
+    spec.type = sx::JointType::Revolute;
+    auto link = robot.addLink("link", base, spec);
+
+    configure(link);
+    world.setReplayRecordingEnabled(true);
+    EXPECT_EQ(world.getReplayFrameCount(), 1u);
+
+    mutate(link);
+
+    EXPECT_THROW(world.restoreReplayFrame(0), sx::InvalidOperationException);
+  };
+
+  expectLinkMutationRejected(
+      [](sx::Link&) {}, [](sx::Link& link) { link.setMass(2.0); });
+
+  expectLinkMutationRejected(
+      [](sx::Link&) {},
+      [](sx::Link& link) {
+        link.setInertia(2.0 * Eigen::Matrix3d::Identity());
+      });
+
+  expectLinkMutationRejected(
+      [](sx::Link&) {},
+      [](sx::Link& link) {
+        link.setCenterOfMass(Eigen::Vector3d(0.1, 0.0, 0.0));
+      });
+
+  expectLinkMutationRejected(
+      [](sx::Link& link) {
+        link.setCollisionShape(sx::CollisionShape::makeSphere(0.25));
+      },
+      [](sx::Link& link) {
+        link.setCollisionShape(sx::CollisionShape::makeBox({0.1, 0.2, 0.3}));
+      });
+
+  expectLinkMutationRejected(
+      [](sx::Link&) {},
+      [](sx::Link& link) {
+        link.addCollisionShape(sx::CollisionShape::makeSphere(0.25));
+      });
+}
+
+// Test that a layout-incompatible restore fails before mutating earlier replay
+// state such as articulated joint values.
+TEST(World, ReplayRecordingRejectsLayoutBeforeMutatingState)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  auto robot = world.addMultibody("robot");
+  auto base = robot.addLink("base");
+
+  sx::JointSpec spec;
+  spec.name = "joint";
+  spec.type = sx::JointType::Revolute;
+  auto link = robot.addLink("link", base, spec);
+  auto joint = link.getParentJoint();
+
+  const Eigen::VectorXd recordedPosition = Eigen::VectorXd::Constant(1, 0.25);
+  joint.setPosition(recordedPosition);
+
+  auto body = world.addRigidBody("body");
+  body.setCollisionShape(sx::CollisionShape::makeSphere(0.25));
+
+  world.setReplayRecordingEnabled(true);
+
+  const Eigen::VectorXd mutatedPosition = Eigen::VectorXd::Constant(1, -1.0);
+  joint.setPosition(mutatedPosition);
+  body.setCollisionShape(sx::CollisionShape::makeBox({0.1, 0.2, 0.3}));
+
+  EXPECT_THROW(world.restoreReplayFrame(0), sx::InvalidOperationException);
+  EXPECT_TRUE(joint.getPosition().isApprox(mutatedPosition));
+  EXPECT_FALSE(joint.getPosition().isApprox(recordedPosition));
+}
+
+// Test replay recording and restore for articulated runtime state.
+TEST(World, ReplayRecordingRestoresMultibodyRuntimeState)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  auto robot = world.addMultibody("robot");
+  auto base = robot.addLink("base");
+
+  sx::JointSpec spec;
+  spec.name = "joint";
+  spec.type = sx::JointType::Revolute;
+  auto link = robot.addLink("link", base, spec);
+  auto joint = link.getParentJoint();
+
+  const Eigen::VectorXd initialPosition = Eigen::VectorXd::Constant(1, 0.25);
+  const Eigen::VectorXd initialVelocity = Eigen::VectorXd::Constant(1, 0.5);
+  const Eigen::VectorXd initialTorque = Eigen::VectorXd::Constant(1, 1.5);
+  const Eigen::VectorXd initialCommandVelocity
+      = Eigen::VectorXd::Constant(1, -0.75);
+  joint.setPosition(initialPosition);
+  joint.setVelocity(initialVelocity);
+  joint.setForce(initialTorque);
+  joint.setCommandVelocity(initialCommandVelocity);
+
+  auto& registry = sx::detail::registryOf(world);
+  const entt::entity linkEntity
+      = sx::detail::toRegistryEntity(link.getEntity());
+  auto& linkComponent = registry.get<sx::comps::Link>(linkEntity);
+  const Eigen::Matrix<double, 6, 1> initialExternalForce
+      = (Eigen::Matrix<double, 6, 1>() << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0)
+            .finished();
+  linkComponent.externalForce = initialExternalForce;
+
+  world.setReplayRecordingEnabled(true);
+
+  joint.setPosition(Eigen::VectorXd::Constant(1, -1.0));
+  joint.setVelocity(Eigen::VectorXd::Constant(1, -2.0));
+  joint.setForce(Eigen::VectorXd::Constant(1, -3.0));
+  joint.setCommandVelocity(Eigen::VectorXd::Constant(1, -4.0));
+  linkComponent.externalForce.setZero();
+
+  world.restoreReplayFrame(0);
+
+  EXPECT_TRUE(joint.getPosition().isApprox(initialPosition));
+  EXPECT_TRUE(joint.getVelocity().isApprox(initialVelocity));
+  EXPECT_TRUE(joint.getForce().isApprox(initialTorque));
+  EXPECT_TRUE(joint.getCommandVelocity().isApprox(initialCommandVelocity));
+  EXPECT_TRUE(registry.get<sx::comps::Link>(linkEntity)
+                  .externalForce.isApprox(initialExternalForce));
 }

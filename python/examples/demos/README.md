@@ -139,6 +139,14 @@ minimum-height plot to custom scene panels. Add another deformable scene by
 building its `DeformableBodyOptions` with `build_grid_options(...)` and
 rendering it through `IpcDeformableBridge`.
 
+## Simulation Replay (sx)
+
+`sx_replay_scrubber` demonstrates the experimental `World` replay recorder:
+the scene records a rigid-body rollout once, restores the first frame, and
+exposes a `Replay frame` slider plus first/previous/play/next/last controls.
+Moving the slider calls `World.restore_replay_frame(...)` at timestep
+resolution and does not re-run physics.
+
 ## Add a scene
 
 1. Create `scenes/<name>.py` defining a module-level `SCENE` of type

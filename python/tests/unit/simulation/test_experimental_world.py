@@ -3648,6 +3648,59 @@ def test_experimental_deformable_body_boundary_conditions_python_api():
     assert body.node_position(1)[2] < 0.0
 
 
+def test_experimental_world_replay_recording_python_api():
+    sx = _simulation_experimental()
+    world = sx.World(time_step=0.1)
+    world.gravity = np.zeros(3)
+    body = world.add_rigid_body(
+        "body",
+        position=np.array([0.0, 0.0, 1.0]),
+        linear_velocity=np.array([1.0, 0.0, 0.0]),
+    )
+
+    assert world.replay_recording_enabled is False
+    assert world.replay_frame_count == 0
+    assert world.replay_cursor is None
+
+    world.replay_recording_enabled = True
+    assert world.replay_recording_enabled is True
+    assert world.replay_frame_count == 1
+    assert world.replay_cursor == 0
+    assert world.get_replay_frame_time(0) == pytest.approx(0.0)
+    assert world.get_replay_simulation_frame(0) == 0
+
+    world.step(3)
+    assert world.replay_frame_count == 4
+    assert world.replay_cursor == 3
+    assert world.time == pytest.approx(0.3)
+    assert world.frame == 3
+    assert body.translation[0] == pytest.approx(0.3)
+
+    world.restore_replay_frame(1)
+    assert world.time == pytest.approx(0.1)
+    assert world.frame == 1
+    assert body.translation.tolist() == pytest.approx([0.1, 0.0, 1.0])
+    assert body.linear_velocity.tolist() == pytest.approx([1.0, 0.0, 0.0])
+
+    world.step()
+    assert world.replay_frame_count == 3
+    assert world.replay_cursor == 2
+    assert world.get_replay_simulation_frame(2) == 2
+    assert world.get_replay_frame_time(2) == pytest.approx(0.2)
+    assert body.translation[0] == pytest.approx(0.2)
+
+    world.clear_replay_recording()
+    assert world.replay_frame_count == 1
+    assert world.replay_cursor == 0
+
+    world.replay_recording_enabled = False
+    world.step()
+    assert world.replay_frame_count == 1
+
+    with pytest.raises(Exception):
+        world.restore_replay_frame(-1)
+
+
 def test_experimental_deformable_scene_loader_python_api(tmp_path):
     sx = _simulation_experimental()
 
