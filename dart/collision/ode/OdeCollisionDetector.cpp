@@ -119,7 +119,7 @@ void refreshHistoryTransforms(OdeCollisionDetector::ContactHistoryItem& item)
   const auto& transform1 = item.pair.first->getTransform();
   const auto& transform2 = item.pair.second->getTransform();
 
-  if (!item.hasTransforms) {
+  if (!item.hasTransforms || item.history.empty()) {
     item.transform1 = transform1;
     item.transform2 = transform2;
     item.hasTransforms = true;
@@ -128,11 +128,13 @@ void refreshHistoryTransforms(OdeCollisionDetector::ContactHistoryItem& item)
 
   const bool moved = hasTransformMoved(item.transform1, transform1)
                      || hasTransformMoved(item.transform2, transform2);
-  if (moved)
+  if (moved) {
     item.history.clear();
-
-  item.transform1 = transform1;
-  item.transform2 = transform2;
+    item.transform1 = transform1;
+    item.transform2 = transform2;
+  }
+  // Otherwise keep the previous transforms as the contact-history anchor so
+  // several small kinematic pose changes still invalidate stale world points.
 }
 
 OdeCollisionDetector::ContactHistoryItem& FindPairInHist(

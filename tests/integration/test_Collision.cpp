@@ -2115,6 +2115,55 @@ TEST(Issue1654, OdeContactHistoryClearsAfterKinematicPoseJump)
 }
 
 //==============================================================================
+TEST(Issue1654, OdeContactHistoryClearsAfterIncrementalKinematicPoseChanges)
+{
+  auto detector = OdeCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+
+  CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 4u;
+
+  auto skeleton1 = Skeleton::create("incremental_pose1");
+  auto skeleton2 = Skeleton::create("incremental_pose2");
+
+  auto pair1 = skeleton1->createJointAndBodyNodePair<FreeJoint>();
+  auto pair2 = skeleton2->createJointAndBodyNodePair<FreeJoint>();
+  auto* joint1 = pair1.first;
+  auto* body1 = pair1.second;
+  auto* joint2 = pair2.first;
+  auto* body2 = pair2.second;
+
+  auto sphere = std::make_shared<SphereShape>(1.0);
+  body1->createShapeNodeWith<CollisionAspect>(sphere);
+  body2->createShapeNodeWith<CollisionAspect>(sphere);
+
+  Eigen::Isometry3d pose1 = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d pose2 = Eigen::Isometry3d::Identity();
+  pose2.translate(Eigen::Vector3d::UnitX() * 0.4);
+  joint1->setRelativeTransform(pose1);
+  joint2->setRelativeTransform(pose2);
+
+  group->addShapeFramesOf(body1);
+  group->addShapeFramesOf(body2);
+
+  CollisionResult result;
+  ASSERT_TRUE(group->collide(option, &result));
+  ASSERT_EQ(1u, result.getNumContacts());
+
+  for (auto step = 0u; step < 3u; ++step) {
+    pose1.translation() += Eigen::Vector3d::UnitY() * 0.04;
+    pose2.translation() += Eigen::Vector3d::UnitY() * 0.04;
+    joint1->setRelativeTransform(pose1);
+    joint2->setRelativeTransform(pose2);
+
+    result.clear();
+    ASSERT_TRUE(group->collide(option, &result));
+    EXPECT_EQ(1u, result.getNumContacts());
+  }
+}
+
+//==============================================================================
 TEST(Issue1654, OdeHonorsMaxNumContacts)
 {
   auto detector = OdeCollisionDetector::create();
