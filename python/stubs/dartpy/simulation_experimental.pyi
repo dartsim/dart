@@ -39,10 +39,10 @@ __all__: list[str] = [
     "LoopClosureResidualCoordinates",
     "LoopClosureRuntimePolicy",
     "LoopClosureSpec",
+    "MemoryManagerDebugDiagnostics",
     "ModelFormat",
     "Multibody",
     "MultibodyOptions",
-    "MemoryManagerDebugDiagnostics",
     "PhysicalParameter",
     "ReadOptions",
     "RigidBody",
@@ -59,6 +59,8 @@ __all__: list[str] = [
     "WorldEcsDiagnostics",
     "WorldEcsStorageDiagnostics",
     "WorldMemoryDiagnostics",
+    "WorldStepProfile",
+    "WorldStepStageProfile",
     "WorldSyncStage",
     "add_skeleton",
     "add_world",
@@ -1137,6 +1139,45 @@ class DeformableSolverDiagnostics:
     @property
     def converged_active_contact_count(self) -> int: ...
 
+class WorldStepStageProfile:
+    @property
+    def name(self) -> str: ...
+
+    @property
+    def domain(self) -> str: ...
+
+    @property
+    def duration_us(self) -> int: ...
+
+    @property
+    def duration_ms(self) -> float: ...
+
+class WorldStepProfile:
+    @property
+    def step_count(self) -> int: ...
+
+    @property
+    def stages(self) -> list[WorldStepStageProfile]: ...
+
+    @property
+    def wall_time_us(self) -> int: ...
+
+    @property
+    def wall_time_ms(self) -> float: ...
+
+    @property
+    def total_stage_time_us(self) -> int: ...
+
+    def is_empty(self) -> bool: ...
+
+    def get_stage(self, name: str) -> WorldStepStageProfile | None: ...
+
+    def summary(self) -> str: ...
+
+    def __repr__(self) -> str: ...
+
+    def __str__(self) -> str: ...
+
 class AllocatorDebugDiagnostics:
     @property
     def live_bytes(self) -> int: ...
@@ -1861,10 +1902,39 @@ class World:
     def step(self, n: int = ...) -> None: ...
 
     @property
+    def replay_recording_enabled(self) -> bool: ...
+
+    @replay_recording_enabled.setter
+    def replay_recording_enabled(self, arg: bool, /) -> None: ...
+
+    def clear_replay_recording(self) -> None: ...
+
+    @property
+    def replay_frame_count(self) -> int: ...
+
+    @property
+    def replay_cursor(self) -> int | None: ...
+
+    def get_replay_frame_time(self, index: int) -> float: ...
+
+    def get_replay_simulation_frame(self, index: int) -> int: ...
+
+    def restore_replay_frame(self, index: int) -> None: ...
+
+    @property
     def last_deformable_solver_diagnostics(self) -> DeformableSolverDiagnostics: ...
 
     @property
     def memory_diagnostics(self) -> WorldMemoryDiagnostics: ...
+
+    @property
+    def step_profiling_enabled(self) -> bool: ...
+
+    @step_profiling_enabled.setter
+    def step_profiling_enabled(self, arg: bool, /) -> None: ...
+
+    @property
+    def last_step_profile(self) -> WorldStepProfile: ...
 
     @property
     def time_step(self) -> float: ...

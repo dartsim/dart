@@ -64,6 +64,8 @@
 #include "dart/simulation/experimental/world.hpp"
 #include "dart/simulation/experimental/world_options.hpp"
 
+#include <dart/config.hpp>
+
 #include <dart/math/lcp/lcp_types.hpp>
 #include <dart/math/lcp/pivoting/dantzig_solver.hpp>
 
@@ -89,6 +91,10 @@
 
 #include <cmath>
 #include <cstdint>
+
+#if DART_BUILD_PROFILE
+  #include <chrono>
+#endif
 
 namespace dart::simulation::experimental::compute {
 
@@ -639,6 +645,36 @@ void WorldStepPipeline::execute(World& world, ComputeExecutor& executor)
   for (std::size_t i = 0; i < m_stageCount; ++i) {
     getStage(i).execute(world, executor);
   }
+}
+
+//==============================================================================
+WorldStepProfile WorldStepPipeline::executeProfiled(
+    World& world, ComputeExecutor& executor)
+{
+  WorldStepProfile profile;
+
+#if DART_BUILD_PROFILE
+  profile.stepCount = 1;
+  profile.stages.reserve(m_stageCount);
+
+  const auto stepStart = std::chrono::steady_clock::now();
+  for (std::size_t i = 0; i < m_stageCount; ++i) {
+    auto& stage = getStage(i);
+    const auto stageStart = std::chrono::steady_clock::now();
+    stage.execute(world, executor);
+    const auto stageEnd = std::chrono::steady_clock::now();
+
+    auto& entry = profile.stages.emplace_back();
+    entry.name = stage.getName();
+    entry.domain = stage.getMetadata().domain;
+    entry.duration = stageEnd - stageStart;
+  }
+  profile.wallTime = std::chrono::steady_clock::now() - stepStart;
+#else
+  execute(world, executor);
+#endif
+
+  return profile;
 }
 
 //==============================================================================
