@@ -15,7 +15,7 @@ from __future__ import annotations
 from collections import deque
 import math
 
-import dartpy.simulation_experimental as sx
+import dartpy as sx
 import numpy as np
 
 from .._ipc_deformable_bridge import IpcDeformableBridge

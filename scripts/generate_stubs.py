@@ -26,10 +26,6 @@ STUB_MODULES = (
     ("dartpy._dartpy.simulation", Path("dartpy/simulation.pyi")),
     ("dartpy._dartpy.constraint", Path("dartpy/constraint.pyi")),
     ("dartpy._dartpy.optimizer", Path("dartpy/optimizer.pyi")),
-    (
-        "dartpy._dartpy.simulation_experimental",
-        Path("dartpy/simulation_experimental.pyi"),
-    ),
     ("dartpy._dartpy.gui", Path("dartpy/gui/__init__.pyi")),
     ("dartpy._dartpy.utils", Path("dartpy/utils/__init__.pyi")),
     ("dartpy._dartpy.utils.MjcfParser", Path("dartpy/utils/MjcfParser.pyi")),
@@ -39,7 +35,10 @@ STUB_MODULES = (
 
 OPTIONAL_STUB_MODULES = frozenset(
     (
-        "dartpy._dartpy.simulation_experimental",
+        # simulation (the ECS facade) is absent when the experimental module is
+        # not built (e.g. DART_BUILD_SIMULATION_EXPERIMENTAL=OFF); gui is absent
+        # in non-GUI builds.
+        "dartpy._dartpy.simulation",
         "dartpy._dartpy.gui",
     )
 )
@@ -54,7 +53,6 @@ SUBMODULES = (
     "math",
     "optimizer",
     "simulation",
-    "simulation_experimental",
     "utils",
 )
 

@@ -87,7 +87,7 @@ def _mean_luminance(
 
 def _simulation_experimental_has(*names: str) -> bool:
     try:
-        import dartpy.simulation_experimental as sx
+        import dartpy as sx
     except Exception:  # pragma: no cover - reduced build without the submodule
         return False
     return all(hasattr(sx, name) for name in names)
@@ -95,9 +95,9 @@ def _simulation_experimental_has(*names: str) -> bool:
 
 def _require_simulation_experimental_symbols(*names: str):
     try:
-        import dartpy.simulation_experimental as sx
+        import dartpy as sx
     except Exception as exc:  # pragma: no cover - reduced build without submodule
-        pytest.skip(f"dartpy.simulation_experimental unavailable: {exc}")
+        pytest.skip(f"dartpy unavailable: {exc}")
     missing = [name for name in names if not hasattr(sx, name)]
     if missing:
         formatted = ", ".join(f"simulation_experimental.{name}" for name in missing)
@@ -109,7 +109,7 @@ def _deformable_bindings_available() -> bool:
     """True when the experimental deformable bindings are compiled in.
 
     Builds with ``DART_BUILD_SIMULATION_EXPERIMENTAL=OFF`` ship a reduced
-    ``dartpy.simulation_experimental`` without the deformable types, so the
+    ``dartpy`` without the deformable types, so the
     solver-free grid-builder check skips there rather than erroring.
     """
 

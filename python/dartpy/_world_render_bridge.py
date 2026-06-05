@@ -2,7 +2,7 @@
 
 The Filament viewer renders `dart.simulation.World`, while the current DART 7
 World demos still build their physics state through
-`dartpy.simulation_experimental.World`. The C++ scenes solve this by keeping
+`dartpy.World`. The C++ scenes solve this by keeping
 both worlds: one for physics, plus a parallel `dart.simulation.World` whose
 SimpleFrames are synced from physics body transforms each frame for rendering.
 This module provides the same pattern in Python.

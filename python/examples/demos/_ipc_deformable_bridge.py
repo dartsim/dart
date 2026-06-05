@@ -31,7 +31,7 @@ from collections import deque
 from typing import Any, Callable, Iterable, Sequence
 
 import dartpy as dart
-import dartpy.simulation_experimental as sx
+import dartpy as sx
 import numpy as np
 
 # Node-sphere radii and colors mirror the C++ deformable demo.

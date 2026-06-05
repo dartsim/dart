@@ -43,7 +43,7 @@ class _FakeBuilder:
 
 
 class _FakeSx:
-    """Stand-in for dartpy.simulation_experimental's GPU control functions."""
+    """Stand-in for dartpy's GPU control functions."""
 
     def __init__(self, available: bool, enabled: bool = False) -> None:
         self._available = available
@@ -151,7 +151,7 @@ def test_world_factory_without_gpu_panel_is_unchanged():
 
 
 def test_dartpy_gpu_bindings_are_safe_noops_without_cuda():
-    sx = dart.simulation_experimental
+    sx = dart
     if not hasattr(sx, "set_accelerated_deformable_solve"):
         pytest.skip("simulation_experimental is disabled in this build")
     if sx.is_accelerated_deformable_solve_available():

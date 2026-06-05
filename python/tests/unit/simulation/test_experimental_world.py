@@ -48,19 +48,19 @@ def _cache_reports_experimental_disabled() -> bool:
 
 def _simulation_experimental():
     try:
-        module = importlib.import_module("dartpy.simulation_experimental")
+        module = importlib.import_module("dartpy")
     except ModuleNotFoundError as exc:
         if _cache_reports_experimental_disabled():
             pytest.skip("DART_BUILD_SIMULATION_EXPERIMENTAL is disabled")
         raise AssertionError(
-            "dartpy.simulation_experimental should be available when "
+            "dartpy should be available when "
             "dart-simulation-experimental is built"
         ) from exc
     if not hasattr(module, "World"):
         if _cache_reports_experimental_disabled():
             pytest.skip("DART_BUILD_SIMULATION_EXPERIMENTAL is disabled")
         raise AssertionError(
-            "dartpy.simulation_experimental imported but did not expose "
+            "dartpy imported but did not expose "
             "the experimental World binding"
         )
     return module
@@ -78,7 +78,7 @@ def _translation_transform(x: float, y: float, z: float):
 def test_experimental_world_module_is_separate_from_legacy_simulation():
     sx = _simulation_experimental()
 
-    assert dart.simulation_experimental is sx
+    assert dart is sx
     assert sx is not dart.simulation
     assert not hasattr(dart, "next")
 

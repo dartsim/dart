@@ -14,7 +14,7 @@ import math
 from collections import deque
 
 import dartpy as dart
-import dartpy.simulation_experimental as sx
+import dartpy as sx
 import numpy as np
 
 from .._world_bridge import WorldRenderBridge

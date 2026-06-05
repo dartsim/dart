@@ -13,7 +13,7 @@ from collections import deque
 
 import numpy as np
 
-import dartpy.simulation_experimental as sx
+import dartpy as sx
 
 from .._world_bridge import WorldRenderBridge
 from ..runner import PythonDemoScene, ScenePanel, SceneSetup

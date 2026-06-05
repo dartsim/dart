@@ -20,7 +20,7 @@ from __future__ import annotations
 import numpy as np
 
 import dartpy as dart
-import dartpy.simulation_experimental as sx
+import dartpy as sx
 
 from .._world_bridge import WorldRenderBridge
 from ..runner import PythonDemoScene, SceneSetup

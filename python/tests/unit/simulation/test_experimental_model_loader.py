@@ -49,19 +49,19 @@ def _cache_reports_experimental_disabled() -> bool:
 
 def _simulation_experimental():
     try:
-        module = importlib.import_module("dartpy.simulation_experimental")
+        module = importlib.import_module("dartpy")
     except ModuleNotFoundError as exc:
         if _cache_reports_experimental_disabled():
             pytest.skip("DART_BUILD_SIMULATION_EXPERIMENTAL is disabled")
         raise AssertionError(
-            "dartpy.simulation_experimental should be available when "
+            "dartpy should be available when "
             "dart-simulation-experimental is built"
         ) from exc
     if not hasattr(module, "build_multibody_from_skeleton"):
         if _cache_reports_experimental_disabled():
             pytest.skip("DART_BUILD_SIMULATION_EXPERIMENTAL is disabled")
         raise AssertionError(
-            "dartpy.simulation_experimental imported but did not expose "
+            "dartpy imported but did not expose "
             "build_multibody_from_skeleton"
         )
     return module
