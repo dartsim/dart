@@ -677,7 +677,7 @@ def test_show_ui_uses_docked_workspace_regions(
     monkeypatch.setenv("MESA_LOADER_DRIVER_OVERRIDE", "llvmpipe")
 
     def build_scene() -> SceneSetup:
-        world = dart.World("docked_smoke")
+        world = dart.gui.RenderWorld("docked_smoke")
         world.set_time_step(0.001)
         frame = dart.SimpleFrame(dart.Frame.world(), "box")
         frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
@@ -812,7 +812,7 @@ def test_scripted_demo_switch_restores_previous_scene_on_factory_error(
     from examples.demos.runner import PythonDemoScene, SceneSetup
 
     def build_good() -> SceneSetup:
-        world = dart.World("good")
+        world = dart.gui.RenderWorld("good")
         world.set_time_step(0.001)
         frame = dart.SimpleFrame(dart.Frame.world(), "good_box")
         frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
@@ -887,7 +887,7 @@ def test_scripted_demo_switch_restores_previous_scene_on_startup_timeout(
         nonlocal good_setup
         if good_setup is not None:
             return good_setup
-        world = dart.World("good")
+        world = dart.gui.RenderWorld("good")
         world.set_time_step(0.001)
         frame = dart.SimpleFrame(dart.Frame.world(), "good_box")
         frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
@@ -898,7 +898,7 @@ def test_scripted_demo_switch_restores_previous_scene_on_startup_timeout(
 
     def build_slow() -> SceneSetup:
         time.sleep(0.25)
-        world = dart.World("slow")
+        world = dart.gui.RenderWorld("slow")
         world.set_time_step(0.001)
         return SceneSetup(world=world)
 
@@ -970,7 +970,7 @@ def test_scripted_demo_switch_restores_previous_scene_on_render_state_failure(
     from examples.demos.runner import PythonDemoScene, SceneSetup
 
     def build_good() -> SceneSetup:
-        world = dart.World("good")
+        world = dart.gui.RenderWorld("good")
         world.set_time_step(0.001)
         frame = dart.SimpleFrame(dart.Frame.world(), "good_box")
         frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
@@ -979,7 +979,7 @@ def test_scripted_demo_switch_restores_previous_scene_on_render_state_failure(
         return SceneSetup(world=world)
 
     def build_empty() -> SceneSetup:
-        world = dart.World("empty")
+        world = dart.gui.RenderWorld("empty")
         world.set_time_step(0.001)
         return SceneSetup(world=world)
 
@@ -1052,7 +1052,7 @@ def test_scripted_demo_switch_restores_previous_scene_when_python_factory_stalls
     from examples.demos.runner import PythonDemoScene, SceneSetup
 
     def build_good() -> SceneSetup:
-        world = dart.World("good")
+        world = dart.gui.RenderWorld("good")
         world.set_time_step(0.001)
         frame = dart.SimpleFrame(dart.Frame.world(), "good_box")
         frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
@@ -1062,7 +1062,7 @@ def test_scripted_demo_switch_restores_previous_scene_when_python_factory_stalls
 
     def build_stalled() -> SceneSetup:
         time.sleep(60.0)
-        world = dart.World("stalled")
+        world = dart.gui.RenderWorld("stalled")
         world.set_time_step(0.001)
         return SceneSetup(world=world)
 
@@ -1140,7 +1140,7 @@ def test_scripted_demo_switch_restores_previous_scene_when_python_pre_step_stall
     from examples.demos.runner import PythonDemoScene, SceneSetup
 
     def build_good() -> SceneSetup:
-        world = dart.World("good")
+        world = dart.gui.RenderWorld("good")
         world.set_time_step(0.001)
         frame = dart.SimpleFrame(dart.Frame.world(), "good_box")
         frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
@@ -1149,7 +1149,7 @@ def test_scripted_demo_switch_restores_previous_scene_when_python_pre_step_stall
         return SceneSetup(world=world)
 
     def build_stalled_step() -> SceneSetup:
-        world = dart.World("stalled_step")
+        world = dart.gui.RenderWorld("stalled_step")
         world.set_time_step(0.001)
         frame = dart.SimpleFrame(dart.Frame.world(), "stalled_box")
         frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
@@ -1228,7 +1228,7 @@ def test_scripted_demo_switch_restores_previous_scene_on_slow_first_frame(
     from examples.demos.runner import PythonDemoScene, SceneSetup
 
     def build_good() -> SceneSetup:
-        world = dart.World("good")
+        world = dart.gui.RenderWorld("good")
         world.set_time_step(0.001)
         frame = dart.SimpleFrame(dart.Frame.world(), "good_box")
         frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
@@ -1237,7 +1237,7 @@ def test_scripted_demo_switch_restores_previous_scene_on_slow_first_frame(
         return SceneSetup(world=world)
 
     def build_slow_step() -> SceneSetup:
-        world = dart.World("slow_step")
+        world = dart.gui.RenderWorld("slow_step")
         world.set_time_step(0.001)
         frame = dart.SimpleFrame(dart.Frame.world(), "slow_box")
         frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))

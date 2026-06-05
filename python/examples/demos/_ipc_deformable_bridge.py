@@ -504,7 +504,8 @@ class IpcDeformableBridge:
     ) -> None:
         self._physics_world = physics_world
         self._name = name
-        self.render_world = dart.World(name)
+        # Render world is the classic World, retained for the Filament viewer.
+        self.render_world = dart.gui.RenderWorld(name)
         self.render_world.set_gravity([0.0, 0.0, 0.0])
         self.render_world.set_time_step(getattr(physics_world, "time_step", 0.005))
         # (body, [node SimpleFrame, ...], edge LineSegmentShape) per deformable.

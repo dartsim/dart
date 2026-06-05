@@ -861,7 +861,7 @@ def test_experimental_add_skeleton_uri_accepts_read_options():
 def test_experimental_add_world_imports_legacy_world():
     sx = _simulation_experimental()
 
-    legacy_world = dart.World("py_legacy_world")
+    legacy_world = dart.gui.RenderWorld("py_legacy_world")
     skeleton = dart.Skeleton("py_world_loader")
     properties = dart.RevoluteJointProperties()
     properties.mAxis = np.asarray([0.0, 1.0, 0.0], dtype=float)
@@ -893,7 +893,7 @@ def test_experimental_add_world_imports_legacy_world():
 def test_experimental_add_world_rejects_unsupported_world_without_mutation():
     sx = _simulation_experimental()
 
-    legacy_world = dart.World("py_unsupported_world")
+    legacy_world = dart.gui.RenderWorld("py_unsupported_world")
     supported = dart.Skeleton("py_supported_world_loader")
     supported.create_revolute_joint_and_body_node_pair()
     legacy_world.add_skeleton(supported)
@@ -911,7 +911,7 @@ def test_experimental_add_world_rejects_unsupported_world_without_mutation():
 def test_experimental_add_world_rejects_name_conflict_without_mutation():
     sx = _simulation_experimental()
 
-    legacy_world = dart.World("py_conflict_world")
+    legacy_world = dart.gui.RenderWorld("py_conflict_world")
     first = dart.Skeleton("py_first_world_loader")
     first.create_revolute_joint_and_body_node_pair()
     legacy_world.add_skeleton(first)
@@ -932,7 +932,7 @@ def test_experimental_add_world_rejects_name_conflict_without_mutation():
 def test_experimental_add_world_rejects_joint_axis_conflict_without_mutation():
     sx = _simulation_experimental()
 
-    legacy_world = dart.World("py_axis_conflict_world")
+    legacy_world = dart.gui.RenderWorld("py_axis_conflict_world")
     supported = dart.Skeleton("py_supported_world_loader")
     supported.create_revolute_joint_and_body_node_pair()
     legacy_world.add_skeleton(supported)
@@ -954,7 +954,7 @@ def test_experimental_add_world_rejects_joint_axis_conflict_without_mutation():
 def test_experimental_add_world_rejects_invalid_body_inertia_without_mutation():
     sx = _simulation_experimental()
 
-    legacy_world = dart.World("py_invalid_inertia_world")
+    legacy_world = dart.gui.RenderWorld("py_invalid_inertia_world")
     supported = dart.Skeleton("py_supported_world_loader")
     supported.create_revolute_joint_and_body_node_pair()
     legacy_world.add_skeleton(supported)
