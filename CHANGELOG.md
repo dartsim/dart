@@ -103,6 +103,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     wired free rigid-body AVBD point joints to mark and skip broken joints, and
     added an `avbd_rigid_breakable_joint` py-demo for the narrow breakable-joint
     lifecycle.
+  - Bridged private fixed-link AVBD point-joint endpoints into the articulated
+    variational solve path and added an `avbd_articulated_endpoint_bridge`
+    py-demo showing the multibody-link endpoint behavior.
   - Made `dart::gui` UI scaling DPI-aware: `--gui-scale` now acts as a manual
     user multiplier on top of GLFW content-scale detection, `DART_GUI_DPI_SCALE`
     can override misreported DPI, implicit interactive app windows now use a

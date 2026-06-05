@@ -7,7 +7,8 @@ from collections import deque
 import numpy as np
 
 import dartpy as dart
-import dartpy.simulation_experimental as sx
+import dartpy as sx
+from dartpy._dartpy import dynamics as _dyn
 
 from .._world_bridge import WorldRenderBridge
 from ..runner import PythonDemoScene, ScenePanel, SceneSetup
@@ -29,6 +30,12 @@ def _rotation_y(angle: float) -> np.ndarray:
     s = float(np.sin(angle))
     transform[:3, :3] = ((c, 0.0, s), (0.0, 1.0, 0.0), (-s, 0.0, c))
     return transform
+
+
+def _isometry(transform: np.ndarray) -> dart.Isometry3:
+    isometry = dart.Isometry3()
+    isometry.set_matrix(transform)
+    return isometry
 
 
 def build() -> SceneSetup:
@@ -105,7 +112,9 @@ def build() -> SceneSetup:
             name=f"avbd_endpoint_link{i}_visual",
         )
     target_frame = dart.SimpleFrame(
-        dart.Frame.world(), "avbd_endpoint_target_visual", _translation(*tip_target)
+        _dyn.Frame.world(),
+        "avbd_endpoint_target_visual",
+        _isometry(_translation(*tip_target)),
     )
     target_frame.set_shape(dart.BoxShape(np.array([0.11, 0.11, 0.11])))
     target_frame.create_visual_aspect().set_color([0.92, 0.86, 0.22])
