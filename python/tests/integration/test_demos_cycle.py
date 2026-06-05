@@ -573,6 +573,7 @@ def test_avbd_fixed_joint_contact_demo_exercises_contact_path() -> None:
     sx_world = setup.info["sx_world"]
     base = setup.info["base"]
     payload = setup.info["payload"]
+    connector = setup.info["connector"]
 
     assert sx_world.num_rigid_body_fixed_joints == 1
     assert len(sx_world.collide()) > 0
@@ -592,6 +593,10 @@ def test_avbd_fixed_joint_contact_demo_exercises_contact_path() -> None:
     offset = payload_translation - base_translation
     expected_offset = np.array([0.72, 0.0, -0.34])
     assert np.linalg.norm(offset - expected_offset) < 2.0e-2
+    connector_transform = np.asarray(connector.get_transform().matrix())
+    assert connector_transform[:3, 0] == pytest.approx(
+        offset / np.linalg.norm(offset), abs=1.0e-6
+    )
     assert np.linalg.norm(base_translation - initial_base) > 1.0e-3
     assert np.linalg.norm(payload_translation - initial_payload) > 1.0e-3
 

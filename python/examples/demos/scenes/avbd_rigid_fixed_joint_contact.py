@@ -28,6 +28,28 @@ def _translation(position: np.ndarray) -> np.ndarray:
     return transform
 
 
+def _normalized_or(vector: np.ndarray, fallback: np.ndarray) -> np.ndarray:
+    norm = float(np.linalg.norm(vector))
+    if norm < 1.0e-12:
+        return fallback
+    return vector / norm
+
+
+def _connector_transform(start: np.ndarray, end: np.ndarray) -> np.ndarray:
+    x_axis = _normalized_or(end - start, np.array([1.0, 0.0, 0.0]))
+    reference = np.array([0.0, 0.0, 1.0])
+    if abs(float(reference @ x_axis)) > 0.95:
+        reference = np.array([0.0, 1.0, 0.0])
+    y_axis = _normalized_or(np.cross(reference, x_axis), np.array([0.0, 1.0, 0.0]))
+    z_axis = np.cross(x_axis, y_axis)
+
+    transform = _translation(0.5 * (start + end))
+    transform[:3, 0] = x_axis
+    transform[:3, 1] = y_axis
+    transform[:3, 2] = z_axis
+    return transform
+
+
 def build() -> SceneSetup:
     world = sx.World(time_step=0.004, gravity=(0.0, 0.0, -9.81))
 
@@ -86,7 +108,7 @@ def build() -> SceneSetup:
     connector = dart.SimpleFrame(
         dart.Frame.world(),
         "avbd_fixed_joint_connector_visual",
-        _translation(base_position + 0.5 * _CAPTURED_OFFSET),
+        _connector_transform(base_position, payload_position),
     )
     connector.set_shape(
         dart.BoxShape(np.array([np.linalg.norm(_CAPTURED_OFFSET), 0.035, 0.035]))
@@ -97,7 +119,7 @@ def build() -> SceneSetup:
     def sync_connector() -> None:
         base_pos = np.asarray(base.translation, dtype=float).reshape(3)
         payload_pos = np.asarray(payload.translation, dtype=float).reshape(3)
-        connector.set_transform(_translation(0.5 * (base_pos + payload_pos)))
+        connector.set_transform(_connector_transform(base_pos, payload_pos))
 
     def pre_step() -> None:
         bridge.pre_step()
@@ -145,6 +167,7 @@ def build() -> SceneSetup:
             "base": base,
             "payload": payload,
             "ground": ground,
+            "connector": connector,
         },
     )
 
