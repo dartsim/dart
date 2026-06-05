@@ -268,6 +268,7 @@ endif()
 
 dart_add_test("integration" INTEGRATION_constraint_ContactConstraint constraint/test_contact_constraint.cpp)
 dart_add_test("integration" INTEGRATION_constraint_SplitImpulse constraint/test_split_impulse.cpp)
+dart_add_test("integration" INTEGRATION_constraint_Issue719 constraint/test_issue719.cpp)
 if(DART_BUILD_COLLISION_REFERENCE_TESTS)
   dart_force_link_collision_backend(INTEGRATION_constraint_ContactConstraint dart-test-reference-fcl)
   dart_force_link_collision_backend(INTEGRATION_constraint_SplitImpulse dart-test-reference-fcl)
