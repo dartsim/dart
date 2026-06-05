@@ -2761,6 +2761,60 @@ void defSimulationExperimentalModule(nb::module_& m)
           nb::arg("child"),
           nb::keep_alive<0, 1>())
       .def(
+          "add_rigid_body_revolute_joint",
+          [](sim::World& self,
+             const std::string& name,
+             const sim::RigidBody& parent,
+             const sim::RigidBody& child,
+             const nb::handle& axis) {
+            return self.addRigidBodyRevoluteJoint(
+                name, parent, child, toVector3(axis));
+          },
+          nb::arg("name"),
+          nb::arg("parent"),
+          nb::arg("child"),
+          nb::arg("axis") = nb::make_tuple(0.0, 0.0, 1.0),
+          nb::keep_alive<0, 1>())
+      .def(
+          "add_rigid_body_prismatic_joint",
+          [](sim::World& self,
+             const std::string& name,
+             const sim::RigidBody& parent,
+             const sim::RigidBody& child,
+             const nb::handle& axis) {
+            return self.addRigidBodyPrismaticJoint(
+                name, parent, child, toVector3(axis));
+          },
+          nb::arg("name"),
+          nb::arg("parent"),
+          nb::arg("child"),
+          nb::arg("axis") = nb::make_tuple(0.0, 0.0, 1.0),
+          nb::keep_alive<0, 1>())
+      .def(
+          "get_rigid_body_joint",
+          [](sim::World& self, const std::string& name) -> nb::object {
+            auto joint = self.getRigidBodyJoint(name);
+            if (!joint.has_value()) {
+              return nb::none();
+            }
+            return nb::cast(*joint, nb::rv_policy::move);
+          },
+          nb::arg("name"),
+          nb::keep_alive<0, 1>())
+      .def(
+          "has_rigid_body_joint",
+          [](const sim::World& self, const std::string& name) {
+            return self.hasRigidBodyJoint(name);
+          },
+          nb::arg("name"))
+      .def(
+          "get_rigid_body_joints",
+          [](const nb::object& worldObject) {
+            auto& self = nb::cast<sim::World&>(worldObject);
+            return castJointsKeepingWorldAlive(
+                self.getRigidBodyJoints(), worldObject);
+          })
+      .def(
           "get_rigid_body_fixed_joint",
           [](sim::World& self, const std::string& name) -> nb::object {
             auto joint = self.getRigidBodyFixedJoint(name);
@@ -2829,6 +2883,40 @@ void defSimulationExperimentalModule(nb::module_& m)
           },
           nb::arg("n") = 1,
           nb::call_guard<nb::gil_scoped_release>())
+      .def_prop_rw(
+          "replay_recording_enabled",
+          &sim::World::isReplayRecordingEnabled,
+          &sim::World::setReplayRecordingEnabled,
+          "Opt-in simulation replay recording. When enabled, the current "
+          "state is frame zero and each completed timestep appends another "
+          "restorable frame.")
+      .def(
+          "clear_replay_recording",
+          &sim::World::clearReplayRecording,
+          "Clear recorded replay frames. If recording is enabled, the current "
+          "state is captured as the new frame zero.")
+      .def_prop_ro("replay_frame_count", &sim::World::getReplayFrameCount)
+      .def_prop_ro("replay_cursor", &sim::World::getReplayCursor)
+      .def(
+          "get_replay_frame_time",
+          &sim::World::getReplayFrameTime,
+          nb::arg("index"))
+      .def(
+          "get_replay_simulation_frame",
+          &sim::World::getReplaySimulationFrame,
+          nb::arg("index"))
+      .def(
+          "restore_replay_frame",
+          [](sim::World& self, std::ptrdiff_t index) {
+            DART_EXPERIMENTAL_THROW_T_IF(
+                index < 0,
+                sim::InvalidArgumentException,
+                "World.restore_replay_frame(index) requires a non-negative "
+                "index");
+            self.restoreReplayFrame(static_cast<std::size_t>(index));
+          },
+          nb::arg("index"),
+          nb::call_guard<nb::gil_scoped_release>())
       .def_prop_ro(
           "last_deformable_solver_diagnostics",
           &sim::World::getLastDeformableSolverDiagnostics,
@@ -2841,9 +2929,8 @@ void defSimulationExperimentalModule(nb::module_& m)
           &sim::World::isStepProfilingEnabled,
           &sim::World::setStepProfilingEnabled,
           "Enable or disable per-stage step profiling. Off by default; when "
-          "off "
-          "the step path is unchanged and adds no overhead. When on, each step "
-          "records a per-stage wall-clock breakdown in last_step_profile.")
+          "off the step path is unchanged and adds no overhead. When on, each "
+          "step records a per-stage wall-clock breakdown in last_step_profile.")
       .def_prop_ro(
           "last_step_profile",
           &sim::World::getLastStepProfile,
@@ -2874,6 +2961,7 @@ void defSimulationExperimentalModule(nb::module_& m)
       .def_prop_ro("num_multibodies", &sim::World::getMultibodyCount)
       .def_prop_ro("num_loop_closures", &sim::World::getLoopClosureCount)
       .def_prop_ro("num_rigid_bodies", &sim::World::getRigidBodyCount)
+      .def_prop_ro("num_rigid_body_joints", &sim::World::getRigidBodyJointCount)
       .def_prop_ro(
           "num_rigid_body_fixed_joints",
           &sim::World::getRigidBodyFixedJointCount)

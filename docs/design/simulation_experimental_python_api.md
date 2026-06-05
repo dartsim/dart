@@ -1029,6 +1029,14 @@ Advanced APIs should distinguish at least four concepts:
 | Control      | Commands, targets, efforts, and inputs.            | Object or collection properties first, explicit values later. |
 | Contact data | Collision results and constraint data for solvers. | Deferred until public contact buffers/views exist.            |
 
+Replay and scrubber APIs should expose recording controls, frame metadata, and
+explicit restore calls, not raw component snapshots. Per-frame replay storage is
+runtime-state-only: time/frame metadata, active solver mode, positions,
+velocities, forces, controls, diagnostics, and solver work values that affect
+continuation. Topology, geometry, materials, assets, and static construction
+options are not duplicated per frame; if they change after recording, restore
+should reject the frame as layout-incompatible.
+
 A future state-view workflow should look like:
 
 ```python

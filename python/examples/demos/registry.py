@@ -8,6 +8,9 @@ from __future__ import annotations
 
 from .runner import PythonDemoScene
 from .scenes.add_delete_skels import SCENE as ADD_DELETE_SKELS
+from .scenes.avbd_rigid_fixed_joint_contact import (
+    SCENE as AVBD_RIGID_FIXED_JOINT_CONTACT,
+)
 from .scenes.arm_push_box import SCENE as ARM_PUSH_BOX
 from .scenes.atlas_simbicon import SCENE as ATLAS_SIMBICON
 from .scenes.biped_stand import SCENE as BIPED_STAND
@@ -73,6 +76,7 @@ from .scenes.sx_articulated import SCENE as SX_ARTICULATED
 from .scenes.sx_contact import SCENE as SX_CONTACT
 from .scenes.sx_floating_base import SCENE as SX_FLOATING_BASE
 from .scenes.sx_rigid_fixed_joint import SCENE as SX_RIGID_FIXED_JOINT
+from .scenes.sx_rigid_limited_joints import SCENE as SX_RIGID_LIMITED_JOINTS
 from .scenes.sx_loop_closure import SCENE as SX_LOOP_CLOSURE
 from .scenes.sx_rigid_ipc import SCENE as SX_RIGID_IPC
 from .scenes.sx_rigid_ipc_edge_drop import SCENE as SX_RIGID_IPC_EDGE_DROP
@@ -80,6 +84,7 @@ from .scenes.sx_rigid_ipc_incline import SCENE as SX_RIGID_IPC_INCLINE
 from .scenes.sx_rigid_ipc_pile import SCENE as SX_RIGID_IPC_PILE
 from .scenes.sx_rigid_ipc_slide import SCENE as SX_RIGID_IPC_SLIDE
 from .scenes.sx_rigid_ipc_tunnel import SCENE as SX_RIGID_IPC_TUNNEL
+from .scenes.sx_replay_scrubber import SCENE as SX_REPLAY_SCRUBBER
 from .scenes.sx_variational_chain import SCENE as SX_VARIATIONAL_CHAIN
 from .scenes.sx_variational_contact import SCENE as SX_VARIATIONAL_CONTACT
 from .scenes.sx_variational_tumbler import SCENE as SX_VARIATIONAL_TUMBLER
@@ -148,6 +153,11 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         SX_CONTACT,
         EXPERIMENTAL_RIGID_BODY_GUI,
         SX_RIGID_FIXED_JOINT,
+        SX_RIGID_LIMITED_JOINTS,
+        # AVBD rigid constraints (PLAN-104) start with fixed-joint rows in
+        # contact. Broader articulated joints, motors, fracture, and soft/rigid
+        # coupling remain tracked by the AVBD dev task.
+        AVBD_RIGID_FIXED_JOINT_CONTACT,
         # Rigid IPC (PLAN-082) contact-dynamics showcase, grouped by capability:
         # a drop, friction (flat + inclined), a multi-body pile, then the
         # intersection-free (no-tunneling) guarantee. Only scenes that run in
@@ -161,6 +171,7 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         SX_RIGID_IPC_EDGE_DROP,
         SX_RIGID_IPC_PILE,
         SX_RIGID_IPC_TUNNEL,
+        SX_REPLAY_SCRUBBER,
         SX_VARIATIONAL_CHAIN,
         SX_VARIATIONAL_TUMBLER,
         SX_VARIATIONAL_CONTACT,

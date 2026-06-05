@@ -191,11 +191,30 @@ Paper audit:
     rigid-body-linked fixed joints. Missing private AVBD fixed-joint configs are
     initialized from the simulation-entry pose only for opt-in rigid bodies, and
     multibody link endpoints are explicitly rejected until those bodies have a
-    real articulated AVBD state path.
+    real articulated AVBD state path. The private point-joint builders now also
+    accept per-axis linear and angular masks, preserving the all-axis
+    fixed-joint behavior while letting future hinge/revolute and limited-DOF row
+    configs reuse the same descriptors and warm-start inventory. The same
+    private row path now has named revolute and prismatic point-joint builders
+    that construct arbitrary joint-axis bases, leave the hinge or translation
+    axis free, and preserve the configured axes/masks through World point-joint
+    input, snapshot assembly, and solve coverage. Simulation-entry
+    current-pose initialization and extraction now also cover private
+    rigid-body ECS revolute/prismatic joint entities, deriving the same
+    axes/masks from their configured joint axis while preserving explicit
+    multibody rejection until articulated AVBD state exists.
+    Public experimental `World` facades now expose free rigid-body revolute and
+    prismatic joints through C++ and dartpy, including generated stubs,
+    focused tests, and the categorized `sx_rigid_limited_joints` py-demo.
+    A first user-visible AVBD-specific `py-demos` scene,
+    `avbd_rigid_fixed_joint_contact`, now shows the public fixed-joint rows
+    preserving a captured rigid offset while ordinary rigid contact acts on the
+    payload; this is only a narrow AVBD rigid-constraint showcase, not a
+    source-demo or paper-scene reproduction.
     Public multibody joint extraction is still not wired.
     Unsupported envelopes still fall back to sequential impulses. This is not
-    full narrow-phase feature extraction, not full rigid contact/joint rows, and
-    not articulated joint support yet.
+    full narrow-phase feature extraction, not full rigid contact/joint rows, not
+    motor/fracture support, and not articulated joint support yet.
 - [ ] Phase A4: contact/friction bounds, static/dynamic friction switching, and
       quasi-Newton Hessian approximation.
 - [ ] Phase A5: joints, motors, fracture, and breakable constraints.
@@ -235,9 +254,10 @@ numbers.
 ## Immediate Next Steps
 
 1. Continue the next bounded AVBD contact/friction or rigid-block slice:
-   contact-complete rigid joint rows, full narrow-phase feature extraction, or
-   true rigid/articulated World wiring are the preferred next gaps now that static
-   box feature IDs, private dynamic/rigid contact feature IDs and descriptor
+   true rigid/articulated World wiring, full narrow-phase feature extraction,
+   or the next motor/fracture row family are the preferred next gaps now that
+   static box feature IDs,
+   private dynamic/rigid contact feature IDs and descriptor
    helpers, static half-space tangent dual projection, self-contact
    tangent dual projection, static contact/friction, attachments,
    finite-stiffness rows, self-contact normals, pairwise static/dynamic friction
@@ -256,7 +276,14 @@ numbers.
    extraction through the step helper and the internal contact-stage velocity
    projection with or without active contacts, plus an explicit rigid-body
    fixed-joint current-pose config bridge and simulation-entry config
-   initialization for opt-in rigid bodies, have narrow CPU paths.
+   initialization for opt-in rigid bodies, masked private point-joint row
+   generation for constrained linear/angular axes, and private
+   revolute/prismatic point-joint configs with arbitrary joint-axis bases plus
+   private rigid-body ECS current-pose extraction for those one-DOF joint
+   entities, and public free rigid-body revolute/prismatic facades with dartpy
+   bindings, stubs, focused tests, and py-demo coverage, plus the first
+   `avbd_rigid_fixed_joint_contact` fixed-joint/contact AVBD demo, have narrow
+   CPU/user-visible paths.
 2. In parallel planning, keep full friction cones, rigid/articulated rows, GPU
    parity, demos, and benchmark packets as open AVBD parity gates rather than
    completion claims.

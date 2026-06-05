@@ -917,6 +917,152 @@ TEST(AvbdRigidBlock, RigidPointJointBuilderCreatesWarmStartedAngularRows)
 }
 
 //==============================================================================
+TEST(AvbdRigidBlock, RigidPointJointBuilderHonorsAxisMasks)
+{
+  std::vector<vbd::AvbdRigidBodyState> states(2);
+  states[1].position = Vec3(1.0, 2.0, 3.0);
+  states[1].orientation = rotationX(0.2) * rotationY(-0.3);
+
+  std::vector<vbd::AvbdRigidPointJoint> joints(1);
+  joints[0].bodyA = 0;
+  joints[0].bodyB = 1;
+  joints[0].endpointA = {
+      12, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Body, 0)};
+  joints[0].endpointB = {
+      3, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Body, 0)};
+  joints[0].linearAxisMask = static_cast<std::uint8_t>((1u << 0) | (1u << 2));
+  joints[0].angularAxisMask = static_cast<std::uint8_t>(1u << 1);
+  joints[0].startStiffness = 70.0;
+  joints[0].maxStiffness = 500.0;
+  joints[0].row = 4;
+
+  vbd::AvbdScalarRowInventory linearInventory;
+  vbd::AvbdScalarRowInventory angularInventory;
+  std::vector<vbd::AvbdRigidBodyPointPairRow> linearRows;
+  std::vector<vbd::AvbdRigidBodyAngularPairRow> angularRows;
+  vbd::buildAvbdRigidPointJointConstraintRows(
+      states,
+      joints,
+      linearInventory,
+      angularInventory,
+      linearRows,
+      angularRows);
+
+  ASSERT_EQ(linearInventory.size(), 2u);
+  ASSERT_EQ(linearRows.size(), 2u);
+  EXPECT_EQ(linearInventory[0].descriptor.key.axis, 0u);
+  EXPECT_EQ(linearInventory[1].descriptor.key.axis, 2u);
+  EXPECT_NEAR((linearRows[0].row.axis - Vec3::UnitX()).norm(), 0.0, 1e-12);
+  EXPECT_NEAR((linearRows[1].row.axis - Vec3::UnitZ()).norm(), 0.0, 1e-12);
+
+  ASSERT_EQ(angularInventory.size(), 1u);
+  ASSERT_EQ(angularRows.size(), 1u);
+  EXPECT_EQ(angularInventory[0].descriptor.key.axis, 1u);
+  EXPECT_NEAR((angularRows[0].row.axis - Vec3::UnitY()).norm(), 0.0, 1e-12);
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, RigidRevolutePointJointConfigLeavesHingeAxisFree)
+{
+  std::vector<vbd::AvbdRigidBodyState> states(2);
+  const Vec3 hingeAxis = Vec3(1.0, 2.0, 3.0).normalized();
+  const vbd::AvbdContactEndpointId endpointA{
+      12, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Body, 0)};
+  const vbd::AvbdContactEndpointId endpointB{
+      3, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Body, 0)};
+  const vbd::AvbdRigidPointJoint joint = vbd::makeAvbdRigidRevolutePointJoint(
+      /*bodyA=*/0,
+      /*bodyB=*/1,
+      endpointA,
+      endpointB,
+      Vec3::Zero(),
+      Vec3::Zero(),
+      Eigen::Quaterniond::Identity(),
+      hingeAxis,
+      /*startStiffness=*/70.0,
+      /*maxStiffness=*/500.0,
+      /*row=*/4);
+
+  EXPECT_EQ(joint.linearAxisMask, vbd::kAvbdRigidJointAllAxesMask);
+  EXPECT_EQ(joint.angularAxisMask, vbd::avbdRigidJointAllButAxisMask(2u));
+  EXPECT_NEAR(joint.angularAxes.col(0).dot(hingeAxis), 0.0, 1e-12);
+  EXPECT_NEAR(joint.angularAxes.col(1).dot(hingeAxis), 0.0, 1e-12);
+  EXPECT_NEAR(std::abs(joint.angularAxes.col(2).dot(hingeAxis)), 1.0, 1e-12);
+  EXPECT_NEAR(
+      joint.angularAxes.col(0).dot(joint.angularAxes.col(1)), 0.0, 1e-12);
+
+  vbd::AvbdScalarRowInventory linearInventory;
+  vbd::AvbdScalarRowInventory angularInventory;
+  std::vector<vbd::AvbdRigidBodyPointPairRow> linearRows;
+  std::vector<vbd::AvbdRigidBodyAngularPairRow> angularRows;
+  const std::vector<vbd::AvbdRigidPointJoint> joints{joint};
+  vbd::buildAvbdRigidPointJointConstraintRows(
+      states,
+      joints,
+      linearInventory,
+      angularInventory,
+      linearRows,
+      angularRows);
+
+  ASSERT_EQ(linearRows.size(), 3u);
+  ASSERT_EQ(angularRows.size(), 2u);
+  EXPECT_EQ(angularInventory[0].descriptor.key.axis, 0u);
+  EXPECT_EQ(angularInventory[1].descriptor.key.axis, 1u);
+  EXPECT_NEAR(angularRows[0].row.axis.dot(hingeAxis), 0.0, 1e-12);
+  EXPECT_NEAR(angularRows[1].row.axis.dot(hingeAxis), 0.0, 1e-12);
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, RigidPrismaticPointJointConfigLeavesTranslationAxisFree)
+{
+  std::vector<vbd::AvbdRigidBodyState> states(2);
+  const Vec3 translationAxis = Vec3(-0.25, 0.5, 1.0).normalized();
+  const vbd::AvbdContactEndpointId endpointA{
+      12, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Body, 0)};
+  const vbd::AvbdContactEndpointId endpointB{
+      3, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Body, 0)};
+  const vbd::AvbdRigidPointJoint joint = vbd::makeAvbdRigidPrismaticPointJoint(
+      /*bodyA=*/0,
+      /*bodyB=*/1,
+      endpointA,
+      endpointB,
+      Vec3::Zero(),
+      Vec3::Zero(),
+      Eigen::Quaterniond::Identity(),
+      translationAxis,
+      /*startStiffness=*/70.0,
+      /*maxStiffness=*/500.0,
+      /*row=*/4);
+
+  EXPECT_EQ(joint.linearAxisMask, vbd::avbdRigidJointAllButAxisMask(2u));
+  EXPECT_EQ(joint.angularAxisMask, vbd::kAvbdRigidJointAllAxesMask);
+  EXPECT_NEAR(joint.linearAxes.col(0).dot(translationAxis), 0.0, 1e-12);
+  EXPECT_NEAR(joint.linearAxes.col(1).dot(translationAxis), 0.0, 1e-12);
+  EXPECT_NEAR(
+      std::abs(joint.linearAxes.col(2).dot(translationAxis)), 1.0, 1e-12);
+
+  vbd::AvbdScalarRowInventory linearInventory;
+  vbd::AvbdScalarRowInventory angularInventory;
+  std::vector<vbd::AvbdRigidBodyPointPairRow> linearRows;
+  std::vector<vbd::AvbdRigidBodyAngularPairRow> angularRows;
+  const std::vector<vbd::AvbdRigidPointJoint> joints{joint};
+  vbd::buildAvbdRigidPointJointConstraintRows(
+      states,
+      joints,
+      linearInventory,
+      angularInventory,
+      linearRows,
+      angularRows);
+
+  ASSERT_EQ(linearRows.size(), 2u);
+  ASSERT_EQ(angularRows.size(), 3u);
+  EXPECT_EQ(linearInventory[0].descriptor.key.axis, 0u);
+  EXPECT_EQ(linearInventory[1].descriptor.key.axis, 1u);
+  EXPECT_NEAR(linearRows[0].row.axis.dot(translationAxis), 0.0, 1e-12);
+  EXPECT_NEAR(linearRows[1].row.axis.dot(translationAxis), 0.0, 1e-12);
+}
+
+//==============================================================================
 TEST(AvbdRigidBlock, RigidAngularPairTargetUsesParentLocalOrientation)
 {
   vbd::AvbdRigidBodyState parent;
@@ -998,6 +1144,81 @@ TEST(AvbdRigidBlock, RigidPointJointAngularRowsDriveOrientationsTogether)
   EXPECT_NEAR(error.x(), 0.0, 1e-12);
   EXPECT_NEAR(error.y(), 0.0, 1e-12);
   EXPECT_LT(std::abs(error.z()), 0.05);
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, RigidPointJointAxisMasksLeaveHingeAxisFree)
+{
+  std::vector<vbd::AvbdRigidBodyState> states(2);
+  states[0].position = Vec3::Zero();
+  states[0].orientation = Eigen::Quaterniond::Identity();
+  states[1].position = Vec3::UnitX();
+  states[1].orientation = rotationZ(0.6);
+  const std::vector<vbd::AvbdRigidBodyState> inertialTargets = states;
+  const std::vector<double> masses = {1.0, 1.0};
+  const std::vector<Eigen::Matrix3d> inertias
+      = {Eigen::Matrix3d::Identity(), Eigen::Matrix3d::Identity()};
+  const std::vector<std::uint8_t> fixed = {1u, 0u};
+
+  std::vector<vbd::AvbdRigidPointJoint> joints(1);
+  joints[0].bodyA = 0;
+  joints[0].bodyB = 1;
+  joints[0].endpointA = {
+      1, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Body, 0)};
+  joints[0].endpointB = {
+      2, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Body, 0)};
+  joints[0].linearAxisMask = vbd::kAvbdRigidJointAllAxesMask;
+  joints[0].angularAxisMask = static_cast<std::uint8_t>((1u << 0) | (1u << 1));
+  joints[0].startStiffness = 100.0;
+  joints[0].maxStiffness = 1000.0;
+
+  vbd::AvbdScalarRowInventory linearInventory;
+  vbd::AvbdScalarRowInventory angularInventory;
+  std::vector<vbd::AvbdRigidBodyPointPairRow> linearRows;
+  std::vector<vbd::AvbdRigidBodyAngularPairRow> angularRows;
+  vbd::buildAvbdRigidPointJointConstraintRows(
+      states,
+      joints,
+      linearInventory,
+      angularInventory,
+      linearRows,
+      angularRows);
+  ASSERT_EQ(linearRows.size(), 3u);
+  ASSERT_EQ(angularRows.size(), 2u);
+
+  std::vector<vbd::AvbdRigidBodyPointAttachmentRow> attachments;
+  std::vector<vbd::AvbdRigidBodyPointPairFrictionRows> frictionRows;
+  vbd::AvbdRigidBlockDescentOptions options;
+  options.iterations = 8;
+  options.regularization = 1e-12;
+  vbd::AvbdRigidPointAttachmentOptions rowOptions;
+  rowOptions.beta = 1000.0;
+  rowOptions.maxStiffness = 1000.0;
+  vbd::AvbdRigidPointPairFrictionOptions frictionOptions;
+
+  const vbd::AvbdRigidBlockDescentStats stats
+      = vbd::blockDescentRigidBodiesAvbdRows(
+          states,
+          masses,
+          inertias,
+          fixed,
+          inertialTargets,
+          /*timeStep=*/1.0,
+          attachments,
+          linearRows,
+          angularRows,
+          frictionRows,
+          options,
+          rowOptions,
+          frictionOptions);
+
+  const Vec3 error = vbd::avbdRigidBodyOrientationError(
+      states[1].orientation, states[0].orientation);
+  EXPECT_GT(stats.bodyUpdates, 0u);
+  EXPECT_LT(states[1].position.x(), 0.25);
+  EXPECT_NEAR(error.x(), 0.0, 1e-12);
+  EXPECT_NEAR(error.y(), 0.0, 1e-12);
+  EXPECT_GT(std::abs(error.z()), 0.4);
 }
 
 //==============================================================================
@@ -1800,6 +2021,83 @@ TEST(AvbdRigidBlock, RigidWorldContactStepSolvesPointJointRows)
 }
 
 //==============================================================================
+TEST(AvbdRigidBlock, RigidWorldPointJointInputPreservesAxisConfig)
+{
+  sx::World world;
+  world.setGravity(Vec3::Zero());
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world.addRigidBody("base", baseOptions);
+
+  sx::RigidBodyOptions linkOptions;
+  linkOptions.mass = 1.0;
+  linkOptions.position = Vec3::UnitX();
+  auto link = world.addRigidBody("link", linkOptions);
+
+  vbd::AvbdRigidWorldContactSnapshot snapshot
+      = vbd::buildAvbdRigidWorldContactSnapshot(
+          dart::simulation::experimental::detail::registryOf(world),
+          std::span<const sx::Contact>());
+
+  const Vec3 freeAxis = Vec3(0.25, 0.5, 1.0).normalized();
+  const Eigen::Matrix3d jointAxes
+      = vbd::avbdRigidJointAxesFromFreeAxis(freeAxis);
+  std::vector<vbd::AvbdRigidWorldPointJointInput> joints(1);
+  joints[0].bodyA = dart::simulation::experimental::detail::toRegistryEntity(
+      base.getEntity());
+  joints[0].bodyB = dart::simulation::experimental::detail::toRegistryEntity(
+      link.getEntity());
+  joints[0].anchorA = Vec3::Zero();
+  joints[0].anchorB = Vec3::UnitX();
+  joints[0].linearAxes = jointAxes;
+  joints[0].angularAxes = jointAxes;
+  joints[0].linearAxisMask = vbd::avbdRigidJointAllButAxisMask(2u);
+  joints[0].angularAxisMask = vbd::avbdRigidJointAllButAxisMask(2u);
+  joints[0].startStiffness = 100.0;
+  joints[0].maxStiffness = 1000.0;
+
+  EXPECT_EQ(
+      vbd::appendAvbdRigidWorldPointJoints(
+          dart::simulation::experimental::detail::registryOf(world),
+          joints,
+          snapshot),
+      1u);
+
+  ASSERT_EQ(snapshot.joints.size(), 1u);
+  EXPECT_EQ(snapshot.joints[0].linearAxisMask, joints[0].linearAxisMask);
+  EXPECT_EQ(snapshot.joints[0].angularAxisMask, joints[0].angularAxisMask);
+  EXPECT_NEAR((snapshot.joints[0].linearAxes - jointAxes).norm(), 0.0, 1e-12);
+  EXPECT_NEAR((snapshot.joints[0].angularAxes - jointAxes).norm(), 0.0, 1e-12);
+
+  vbd::AvbdRigidWorldContactSolveOptions solveOptions;
+  solveOptions.descent.iterations = 1;
+  solveOptions.descent.regularization = 1e-12;
+  vbd::AvbdScalarRowInventory normalInventory;
+  vbd::AvbdScalarRowInventory frictionInventory;
+  vbd::AvbdScalarRowInventory jointLinearInventory;
+  vbd::AvbdScalarRowInventory jointAngularInventory;
+  const vbd::AvbdRigidWorldContactSolveResult solveResult
+      = vbd::solveAvbdRigidWorldContactSnapshot(
+          snapshot,
+          normalInventory,
+          frictionInventory,
+          jointLinearInventory,
+          jointAngularInventory,
+          /*timeStep=*/1.0,
+          solveOptions);
+
+  EXPECT_EQ(solveResult.jointLinearRows, 2u);
+  EXPECT_EQ(solveResult.jointAngularRows, 2u);
+  ASSERT_EQ(jointLinearInventory.size(), 2u);
+  ASSERT_EQ(jointAngularInventory.size(), 2u);
+  EXPECT_EQ(jointLinearInventory[0].descriptor.key.axis, 0u);
+  EXPECT_EQ(jointLinearInventory[1].descriptor.key.axis, 1u);
+  EXPECT_EQ(jointAngularInventory[0].descriptor.key.axis, 0u);
+  EXPECT_EQ(jointAngularInventory[1].descriptor.key.axis, 1u);
+}
+
+//==============================================================================
 TEST(AvbdRigidBlock, RigidWorldExtractsFixedJointInputs)
 {
   sx::World world;
@@ -1877,6 +2175,87 @@ TEST(AvbdRigidBlock, RigidWorldExtractsFixedJointInputs)
       Eigen::Quaterniond(link.getTransform().linear()),
       Eigen::Quaterniond::Identity());
   EXPECT_LT(std::abs(error.z()), 0.05);
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, RigidWorldPointJointInputsRotateAxesWithParentFrame)
+{
+  sx::World world;
+  world.setGravity(Vec3::Zero());
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world.addRigidBody("base", baseOptions);
+
+  sx::RigidBodyOptions sliderOptions;
+  sliderOptions.mass = 1.0;
+  sliderOptions.position = Vec3::UnitZ();
+  auto slider = world.addRigidBody("slider", sliderOptions);
+  sx::Joint sliderJoint = world.addRigidBodyPrismaticJoint(
+      "slider_joint", base, slider, Vec3::UnitZ());
+
+  sx::RigidBodyOptions hingeOptions;
+  hingeOptions.mass = 1.0;
+  hingeOptions.position = 2.0 * Vec3::UnitZ();
+  auto hinge = world.addRigidBody("hinge", hingeOptions);
+  sx::Joint hingeJoint = world.addRigidBodyRevoluteJoint(
+      "hinge_joint", base, hinge, Vec3::UnitZ());
+
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
+  const entt::entity sliderJointEntity
+      = sx::detail::toRegistryEntity(sliderJoint.getEntity());
+  const entt::entity hingeJointEntity
+      = sx::detail::toRegistryEntity(hingeJoint.getEntity());
+  const auto& sliderConfig
+      = registry.get<vbd::AvbdRigidWorldPointJointConfig>(sliderJointEntity);
+  const auto& hingeConfig
+      = registry.get<vbd::AvbdRigidWorldPointJointConfig>(hingeJointEntity);
+
+  Eigen::Isometry3d baseTransform = Eigen::Isometry3d::Identity();
+  baseTransform.linear()
+      = rotationY(0.5 * vbd::kAvbdRigidPi).toRotationMatrix();
+  base.setTransform(baseTransform);
+
+  const std::vector<vbd::AvbdRigidWorldPointJointInput> joints
+      = vbd::extractAvbdRigidWorldPointJointInputs(registry);
+  ASSERT_EQ(joints.size(), 2u);
+
+  const auto findJointInput = [&](const sx::RigidBody& child) {
+    const entt::entity childEntity
+        = sx::detail::toRegistryEntity(child.getEntity());
+    const auto it = std::find_if(
+        joints.begin(),
+        joints.end(),
+        [&](const vbd::AvbdRigidWorldPointJointInput& input) {
+          return input.bodyB == childEntity;
+        });
+    EXPECT_NE(it, joints.end());
+    return it;
+  };
+
+  const Eigen::Matrix3d parentRotation = baseTransform.linear();
+  const auto sliderInput = findJointInput(slider);
+  ASSERT_NE(sliderInput, joints.end());
+  EXPECT_NEAR(
+      (sliderInput->linearAxes - parentRotation * sliderConfig.linearAxes)
+          .norm(),
+      0.0,
+      1e-12);
+  EXPECT_NEAR(
+      (sliderInput->angularAxes - parentRotation * sliderConfig.angularAxes)
+          .norm(),
+      0.0,
+      1e-12);
+  EXPECT_NEAR(sliderInput->linearAxes.col(2).dot(Vec3::UnitX()), 1.0, 1e-12);
+
+  const auto hingeInput = findJointInput(hinge);
+  ASSERT_NE(hingeInput, joints.end());
+  EXPECT_NEAR(
+      (hingeInput->angularAxes - parentRotation * hingeConfig.angularAxes)
+          .norm(),
+      0.0,
+      1e-12);
+  EXPECT_NEAR(hingeInput->angularAxes.col(2).dot(Vec3::UnitX()), 1.0, 1e-12);
 }
 
 //==============================================================================

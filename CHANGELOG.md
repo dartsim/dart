@@ -83,6 +83,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     diagnostics, so users can recover fixed-joint handles and inspect their
     rigid endpoints after construction or save/load without touching ECS
     internals.
+  - Added public experimental `World` rigid-body revolute and prismatic joint
+    facades with C++ and dartpy bindings, generated stubs, tests, and a
+    `sx_rigid_limited_joints` py-demo so users can exercise the narrow AVBD
+    one-DOF rigid-joint path without touching ECS internals.
   - Made `dart::gui` UI scaling DPI-aware: `--gui-scale` now acts as a manual
     user multiplier on top of GLFW content-scale detection, `DART_GUI_DPI_SCALE`
     can override misreported DPI, implicit interactive app windows now use a
@@ -534,7 +538,8 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Added an Eigen 64-byte over-alignment CI/local test task to catch allocator, placement-new, and Eigen storage assumptions without requiring AVX-512 hardware. ([#2541](https://github.com/dartsim/dart/pull/2541))
   - Added alignment-aware `dart::common::MemoryAllocator` and `StlAllocator`
     paths so over-aligned objects and allocator-aware EnTT registries can be
-    backed by DART allocators.
+    backed by DART allocators, including simulation-mode checkpoint reloads
+    that reserve registry storage before the first resumed step.
   - Added `dart::common::FixedPoolAllocator` for fixed-size slot workloads and
     routed the fixed-size allocator comparison benchmark through it, while
     keeping mixed-size pool workloads on `PoolAllocator`.
@@ -767,6 +772,21 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     `DART_EXPERIMENTAL_ENABLE_PROFILING` macros were wired into no build and
     duplicated `dart::common::profile`) so the World step profile is the single
     experimental profiling surface.
+  - Routed the experimental World's internal EnTT registry, component storage,
+    and differentiable-parameter list through the World free allocator, with
+    state mapper support for World-owned registries and free-list alignment
+    fixes for Eigen-backed component storage.
+  - Fixed experimental `VectorMapper::toVector()` in-place output so unmapped
+    state-space variables are zero-filled even when no mapper slot has been
+    registered.
+  - Added bake-time reservation for the experimental World's current
+    EnTT registry/component storage and private multibody/deformable
+    step-scratch storage at `enterSimulationMode()`, including no-growth
+    coverage for repeated IPC kinematic, multibody, and deformable steps.
+  - Updated experimental `WorldStepPipeline` to store its non-owning stage list
+    inline with an eight-stage capacity, eliminating stage-list heap allocation
+    during default step pipeline assembly and rejecting overflow with
+    `InvalidArgumentException`.
   - Made experimental rigid-body external force/torque components persistent
     applied loads: each step reads them into the transient force buffer and
     leaves the components intact for callers to clear or update explicitly.

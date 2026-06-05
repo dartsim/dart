@@ -78,6 +78,20 @@ The lower-level viewer still accepts `--screenshot` and `--out` directly when
 you need raw PPM output. Inspect the generated PNG or MP4 before calling a
 visual change done.
 
+## AVBD Rigid Constraints (sx)
+
+The dedicated **`AVBD Rigid Constraints (sx)`** category groups the first
+user-visible Augmented VBD rigid-constraint scenes from PLAN-104:
+
+| Scene id                         | Shows                                                | AVBD capability exercised                     |
+| -------------------------------- | ---------------------------------------------------- | --------------------------------------------- |
+| `avbd_rigid_fixed_joint_contact` | A fixed rigid payload sliding against static contact | Public fixed-joint rows plus ordinary contact |
+
+This is an early AVBD rigid-row showcase, not a paper-complete reproduction.
+The remaining AVBD corpus still needs the full 2D/3D reference demos, paper
+figures, video/headline scenes, CPU/GPU benchmark packets, and performance
+comparisons recorded in PLAN-104.
+
 ## IPC Deformable (sx) scenes
 
 The dedicated **`IPC Deformable (sx)`** category groups the deformable-body
@@ -124,6 +138,14 @@ adds shared solver diagnostics such as node counts, fixed nodes, z-range, and a
 minimum-height plot to custom scene panels. Add another deformable scene by
 building its `DeformableBodyOptions` with `build_grid_options(...)` and
 rendering it through `IpcDeformableBridge`.
+
+## Simulation Replay (sx)
+
+`sx_replay_scrubber` demonstrates the experimental `World` replay recorder:
+the scene records a rigid-body rollout once, restores the first frame, and
+exposes a `Replay frame` slider plus first/previous/play/next/last controls.
+Moving the slider calls `World.restore_replay_frame(...)` at timestep
+resolution and does not re-run physics.
 
 ## Add a scene
 

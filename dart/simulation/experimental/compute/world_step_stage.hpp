@@ -38,6 +38,7 @@
 #include <dart/simulation/experimental/compute/world_step_profile.hpp>
 #include <dart/simulation/experimental/export.hpp>
 
+#include <array>
 #include <memory>
 #include <string_view>
 #include <vector>
@@ -242,6 +243,9 @@ public:
   WorldStepPipeline(WorldStepPipeline&&) noexcept = default;
   WorldStepPipeline& operator=(WorldStepPipeline&&) noexcept = default;
 
+  /// Number of stage pointers stored inline before custom pipelines spill over.
+  static constexpr std::size_t kInlineStageCount = 8;
+
   WorldStepPipeline& addStage(WorldStepStage& stage);
   void clear() noexcept;
 
@@ -250,15 +254,13 @@ public:
   [[nodiscard]] WorldStepStage& getStage(std::size_t index) const;
 
   void execute(World& world, ComputeExecutor& executor);
-
-  /// Executes every stage in order and returns a per-stage wall-clock profile
-  /// of this step. Behaves like `execute` with lightweight timing added around
-  /// each stage; `World` uses this when step profiling is enabled.
   [[nodiscard]] WorldStepProfile executeProfiled(
       World& world, ComputeExecutor& executor);
 
 private:
-  std::vector<WorldStepStage*> m_stages;
+  std::array<WorldStepStage*, kInlineStageCount> m_stages{};
+  std::vector<WorldStepStage*> m_overflowStages;
+  std::size_t m_stageCount = 0;
 };
 
 /// Default kinematics/cache update stage for the experimental World.

@@ -41,6 +41,7 @@
 // is not part of the DART 7 public-facade promotion target. In-tree tests may
 // include it directly.
 
+#include <dart/simulation/experimental/detail/world_registry_types.hpp>
 #include <dart/simulation/experimental/diff/step_derivatives.hpp>
 #include <dart/simulation/experimental/export.hpp>
 
@@ -104,7 +105,7 @@ namespace dart::simulation::experimental::detail {
 /// @return The assembled state and control Jacobians. Both matrices are empty
 ///         when the multibody has no movable degrees of freedom.
 [[nodiscard]] DART_EXPERIMENTAL_API StepDerivatives contactFreeStepDerivatives(
-    entt::registry& registry,
+    detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     const Eigen::Vector3d& gravity,
     double timeStep,

@@ -41,6 +41,7 @@
 #include <dart/simulation/experimental/comps/rigid_body.hpp>
 #include <dart/simulation/experimental/detail/deformable_vbd/rigid_block_kernel.hpp>
 #include <dart/simulation/experimental/detail/entity_conversion.hpp>
+#include <dart/simulation/experimental/detail/world_registry_types.hpp>
 
 #include <entt/entt.hpp>
 
@@ -71,6 +72,10 @@ struct AvbdRigidWorldPointJointInput
   Eigen::Vector3d anchorA = Eigen::Vector3d::Zero();
   Eigen::Vector3d anchorB = Eigen::Vector3d::Zero();
   Eigen::Quaterniond targetRelativeOrientation = Eigen::Quaterniond::Identity();
+  Eigen::Matrix3d linearAxes = Eigen::Matrix3d::Identity();
+  Eigen::Matrix3d angularAxes = Eigen::Matrix3d::Identity();
+  std::uint8_t linearAxisMask = kAvbdRigidJointAllAxesMask;
+  std::uint8_t angularAxisMask = kAvbdRigidJointAllAxesMask;
   double startStiffness = 1.0;
   double maxStiffness = std::numeric_limits<double>::infinity();
 };
@@ -81,6 +86,10 @@ struct AvbdRigidWorldPointJointConfig
   Eigen::Vector3d localAnchorA = Eigen::Vector3d::Zero();
   Eigen::Vector3d localAnchorB = Eigen::Vector3d::Zero();
   Eigen::Quaterniond targetRelativeOrientation = Eigen::Quaterniond::Identity();
+  Eigen::Matrix3d linearAxes = Eigen::Matrix3d::Identity();
+  Eigen::Matrix3d angularAxes = Eigen::Matrix3d::Identity();
+  std::uint8_t linearAxisMask = kAvbdRigidJointAllAxesMask;
+  std::uint8_t angularAxisMask = kAvbdRigidJointAllAxesMask;
   double startStiffness = 1.0;
   double maxStiffness = std::numeric_limits<double>::infinity();
 };
@@ -162,8 +171,15 @@ inline Eigen::Isometry3d avbdRigidWorldContactToIsometry(
 }
 
 //==============================================================================
-inline bool configureAvbdRigidWorldFixedJointFromCurrentPose(
-    entt::registry& registry,
+inline bool isAvbdRigidWorldPointJointType(comps::JointType type)
+{
+  return type == comps::JointType::Fixed || type == comps::JointType::Revolute
+         || type == comps::JointType::Prismatic;
+}
+
+//==============================================================================
+inline bool configureAvbdRigidWorldPointJointFromCurrentPose(
+    ::dart::simulation::experimental::detail::WorldRegistry& registry,
     entt::entity jointEntity,
     double startStiffness = 1.0,
     double maxStiffness = std::numeric_limits<double>::infinity())
@@ -175,7 +191,7 @@ inline bool configureAvbdRigidWorldFixedJointFromCurrentPose(
   }
 
   auto* joint = registry.try_get<comps::Joint>(jointEntity);
-  if (joint == nullptr || joint->type != comps::JointType::Fixed
+  if (joint == nullptr || !isAvbdRigidWorldPointJointType(joint->type)
       || joint->parentLink == entt::null || joint->childLink == entt::null
       || joint->parentLink == joint->childLink) {
     return false;
@@ -237,20 +253,63 @@ inline bool configureAvbdRigidWorldFixedJointFromCurrentPose(
         = targetRelativeOrientation;
   }
 
+  Eigen::Matrix3d linearAxes = Eigen::Matrix3d::Identity();
+  Eigen::Matrix3d angularAxes = Eigen::Matrix3d::Identity();
+  std::uint8_t linearAxisMask = kAvbdRigidJointAllAxesMask;
+  std::uint8_t angularAxisMask = kAvbdRigidJointAllAxesMask;
+  if (joint->type == comps::JointType::Fixed) {
+    // Defaults already represent a fixed joint.
+  } else {
+    if (!joint->axis.allFinite() || joint->axis.squaredNorm() <= 0.0) {
+      return false;
+    }
+
+    const Eigen::Matrix3d jointAxes
+        = avbdRigidJointAxesFromFreeAxis(joint->axis);
+    if (joint->type == comps::JointType::Revolute) {
+      angularAxes = jointAxes;
+      angularAxisMask = avbdRigidJointAllButAxisMask(/*freeAxis=*/2u);
+    } else {
+      linearAxes = jointAxes;
+      angularAxes = jointAxes;
+      linearAxisMask = avbdRigidJointAllButAxisMask(/*freeAxis=*/2u);
+    }
+  }
+
   auto& config = registry.emplace_or_replace<AvbdRigidWorldPointJointConfig>(
       jointEntity);
   config.enabled = true;
   config.localAnchorA = localAnchorA;
   config.localAnchorB = localAnchorB;
   config.targetRelativeOrientation = targetRelativeOrientation;
+  config.linearAxes = linearAxes;
+  config.angularAxes = angularAxes;
+  config.linearAxisMask = linearAxisMask;
+  config.angularAxisMask = angularAxisMask;
   config.startStiffness = startStiffness;
   config.maxStiffness = maxStiffness;
   return true;
 }
 
 //==============================================================================
-inline std::size_t configureAvbdRigidWorldFixedJointsFromCurrentPoses(
-    entt::registry& registry)
+inline bool configureAvbdRigidWorldFixedJointFromCurrentPose(
+    ::dart::simulation::experimental::detail::WorldRegistry& registry,
+    entt::entity jointEntity,
+    double startStiffness = 1.0,
+    double maxStiffness = std::numeric_limits<double>::infinity())
+{
+  const auto* joint = registry.try_get<comps::Joint>(jointEntity);
+  if (joint == nullptr || joint->type != comps::JointType::Fixed) {
+    return false;
+  }
+
+  return configureAvbdRigidWorldPointJointFromCurrentPose(
+      registry, jointEntity, startStiffness, maxStiffness);
+}
+
+//==============================================================================
+inline std::size_t configureAvbdRigidWorldPointJointsFromCurrentPoses(
+    ::dart::simulation::experimental::detail::WorldRegistry& registry)
 {
   std::size_t configured = 0;
   const auto view = registry.view<comps::Joint>(
@@ -258,8 +317,8 @@ inline std::size_t configureAvbdRigidWorldFixedJointsFromCurrentPoses(
 
   for (const entt::entity entity : view) {
     const auto& joint = view.get<comps::Joint>(entity);
-    if (joint.type != comps::JointType::Fixed || joint.parentLink == entt::null
-        || joint.childLink == entt::null
+    if (!isAvbdRigidWorldPointJointType(joint.type)
+        || joint.parentLink == entt::null || joint.childLink == entt::null
         || joint.parentLink == joint.childLink) {
       continue;
     }
@@ -305,7 +364,7 @@ inline std::size_t configureAvbdRigidWorldFixedJointsFromCurrentPoses(
       maxStiffness = startStiffness;
     }
 
-    if (configureAvbdRigidWorldFixedJointFromCurrentPose(
+    if (configureAvbdRigidWorldPointJointFromCurrentPose(
             registry, entity, startStiffness, maxStiffness)) {
       ++configured;
     }
@@ -316,7 +375,8 @@ inline std::size_t configureAvbdRigidWorldFixedJointsFromCurrentPoses(
 
 //==============================================================================
 inline Eigen::Isometry3d avbdRigidWorldContactFrameLocalTransform(
-    const entt::registry& registry, entt::entity entity)
+    const ::dart::simulation::experimental::detail::WorldRegistry& registry,
+    entt::entity entity)
 {
   if (const auto* props
       = registry.try_get<comps::FreeFrameProperties>(entity)) {
@@ -333,7 +393,8 @@ inline Eigen::Isometry3d avbdRigidWorldContactFrameLocalTransform(
 
 //==============================================================================
 inline Eigen::Isometry3d avbdRigidWorldContactFrameWorldTransform(
-    const entt::registry& registry, entt::entity entity)
+    const ::dart::simulation::experimental::detail::WorldRegistry& registry,
+    entt::entity entity)
 {
   if (entity == entt::null || !registry.valid(entity)) {
     return Eigen::Isometry3d::Identity();
@@ -360,7 +421,8 @@ inline Eigen::Isometry3d avbdRigidWorldContactFrameWorldTransform(
 
 //==============================================================================
 inline void avbdRigidWorldContactMarkFrameSubtreeDirty(
-    entt::registry& registry, entt::entity root)
+    ::dart::simulation::experimental::detail::WorldRegistry& registry,
+    entt::entity root)
 {
   if (root == entt::null || !registry.valid(root)) {
     return;
@@ -402,7 +464,8 @@ namespace detail {
 
 //==============================================================================
 inline double avbdRigidWorldContactFriction(
-    const entt::registry& registry, entt::entity entity)
+    const ::dart::simulation::experimental::detail::WorldRegistry& registry,
+    entt::entity entity)
 {
   const auto* material = registry.try_get<comps::ContactMaterial>(entity);
   if (material == nullptr || !std::isfinite(material->friction)) {
@@ -413,7 +476,7 @@ inline double avbdRigidWorldContactFriction(
 
 //==============================================================================
 inline Eigen::Vector3d avbdRigidWorldContactLocalPoint(
-    const entt::registry& registry,
+    const ::dart::simulation::experimental::detail::WorldRegistry& registry,
     entt::entity entity,
     const Eigen::Vector3d& point)
 {
@@ -428,7 +491,7 @@ inline Eigen::Vector3d avbdRigidWorldContactLocalPoint(
 
 //==============================================================================
 inline AvbdContactEndpointId avbdRigidWorldContactEndpointId(
-    const entt::registry& registry,
+    const ::dart::simulation::experimental::detail::WorldRegistry& registry,
     entt::entity entity,
     std::size_t shapeIndex,
     const Eigen::Vector3d& localPoint,
@@ -514,7 +577,7 @@ inline std::uint32_t findAvbdRigidWorldBodyIndex(
 
 //==============================================================================
 inline std::uint32_t ensureAvbdRigidWorldBodyIndex(
-    const entt::registry& registry,
+    const ::dart::simulation::experimental::detail::WorldRegistry& registry,
     AvbdRigidWorldContactSnapshot& snapshot,
     entt::entity entity)
 {
@@ -549,7 +612,7 @@ inline std::uint32_t ensureAvbdRigidWorldBodyIndex(
 
 //==============================================================================
 inline AvbdRigidWorldContactSnapshot buildAvbdRigidWorldContactSnapshot(
-    const entt::registry& registry,
+    const ::dart::simulation::experimental::detail::WorldRegistry& registry,
     std::span<const Contact> contacts,
     const AvbdRigidWorldContactOptions& options = {})
 {
@@ -630,7 +693,7 @@ inline AvbdRigidWorldContactSnapshot buildAvbdRigidWorldContactSnapshot(
 
 //==============================================================================
 inline std::size_t appendAvbdRigidWorldPointJoints(
-    const entt::registry& registry,
+    const ::dart::simulation::experimental::detail::WorldRegistry& registry,
     std::span<const AvbdRigidWorldPointJointInput> inputs,
     AvbdRigidWorldContactSnapshot& snapshot)
 {
@@ -677,6 +740,10 @@ inline std::size_t appendAvbdRigidWorldPointJoints(
         = avbdRigidBodyLocalPoint(snapshot.states[bodyB], input.anchorB);
     joint.targetRelativeOrientation
         = normalizeAvbdRigidOrientation(input.targetRelativeOrientation);
+    joint.linearAxes = input.linearAxes;
+    joint.angularAxes = input.angularAxes;
+    joint.linearAxisMask = input.linearAxisMask;
+    joint.angularAxisMask = input.angularAxisMask;
     joint.startStiffness = std::max(0.0, input.startStiffness);
     joint.maxStiffness = std::max(joint.startStiffness, input.maxStiffness);
 
@@ -697,7 +764,7 @@ inline std::size_t appendAvbdRigidWorldPointJoints(
 
 //==============================================================================
 inline void predictAvbdRigidWorldContactInertialTargets(
-    const entt::registry& registry,
+    const ::dart::simulation::experimental::detail::WorldRegistry& registry,
     AvbdRigidWorldContactSnapshot& snapshot,
     double timeStep)
 {
@@ -857,7 +924,7 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
 //==============================================================================
 inline AvbdRigidWorldContactApplyResult
 applyAvbdRigidWorldContactVelocityProjection(
-    entt::registry& registry,
+    ::dart::simulation::experimental::detail::WorldRegistry& registry,
     const AvbdRigidWorldContactSnapshot& snapshot,
     double timeStep)
 {
@@ -907,7 +974,7 @@ applyAvbdRigidWorldContactVelocityProjection(
 
 //==============================================================================
 inline AvbdRigidWorldContactApplyResult applyAvbdRigidWorldContactSnapshot(
-    entt::registry& registry,
+    ::dart::simulation::experimental::detail::WorldRegistry& registry,
     const AvbdRigidWorldContactSnapshot& snapshot,
     double timeStep)
 {
@@ -976,7 +1043,7 @@ inline AvbdRigidWorldContactApplyResult applyAvbdRigidWorldContactSnapshot(
 
 //==============================================================================
 inline AvbdRigidWorldContactStepResult runAvbdRigidWorldContactStep(
-    entt::registry& registry,
+    ::dart::simulation::experimental::detail::WorldRegistry& registry,
     std::span<const Contact> contacts,
     std::span<const AvbdRigidWorldPointJointInput> joints,
     AvbdScalarRowInventory& normalInventory,
@@ -1021,7 +1088,8 @@ inline AvbdRigidWorldContactStepResult runAvbdRigidWorldContactStep(
 
 //==============================================================================
 inline std::vector<AvbdRigidWorldPointJointInput>
-extractAvbdRigidWorldPointJointInputs(const entt::registry& registry)
+extractAvbdRigidWorldPointJointInputs(
+    const ::dart::simulation::experimental::detail::WorldRegistry& registry)
 {
   std::vector<AvbdRigidWorldPointJointInput> inputs;
   const auto view
@@ -1031,7 +1099,7 @@ extractAvbdRigidWorldPointJointInputs(const entt::registry& registry)
   for (const entt::entity entity : view) {
     const auto& joint = view.get<comps::Joint>(entity);
     const auto& config = view.get<AvbdRigidWorldPointJointConfig>(entity);
-    if (!config.enabled || joint.type != comps::JointType::Fixed) {
+    if (!config.enabled || !isAvbdRigidWorldPointJointType(joint.type)) {
       continue;
     }
 
@@ -1052,7 +1120,8 @@ extractAvbdRigidWorldPointJointInputs(const entt::registry& registry)
     }
 
     if (!config.localAnchorA.allFinite() || !config.localAnchorB.allFinite()
-        || !config.targetRelativeOrientation.coeffs().allFinite()) {
+        || !config.targetRelativeOrientation.coeffs().allFinite()
+        || !config.linearAxes.allFinite() || !config.angularAxes.allFinite()) {
       continue;
     }
 
@@ -1070,6 +1139,11 @@ extractAvbdRigidWorldPointJointInputs(const entt::registry& registry)
     input.anchorB = worldB * config.localAnchorB;
     input.targetRelativeOrientation
         = normalizeAvbdRigidOrientation(config.targetRelativeOrientation);
+    const Eigen::Matrix3d parentRotation = worldA.linear();
+    input.linearAxes = parentRotation * config.linearAxes;
+    input.angularAxes = parentRotation * config.angularAxes;
+    input.linearAxisMask = config.linearAxisMask;
+    input.angularAxisMask = config.angularAxisMask;
     input.startStiffness = config.startStiffness;
     input.maxStiffness = config.maxStiffness;
     inputs.push_back(input);
@@ -1080,7 +1154,7 @@ extractAvbdRigidWorldPointJointInputs(const entt::registry& registry)
 
 //==============================================================================
 inline AvbdRigidWorldContactStepResult runAvbdRigidWorldContactStep(
-    entt::registry& registry,
+    ::dart::simulation::experimental::detail::WorldRegistry& registry,
     std::span<const Contact> contacts,
     AvbdScalarRowInventory& normalInventory,
     AvbdScalarRowInventory& frictionInventory,
@@ -1106,7 +1180,7 @@ inline AvbdRigidWorldContactStepResult runAvbdRigidWorldContactStep(
 
 //==============================================================================
 inline AvbdRigidWorldContactStepResult runAvbdRigidWorldContactStep(
-    entt::registry& registry,
+    ::dart::simulation::experimental::detail::WorldRegistry& registry,
     std::span<const Contact> contacts,
     AvbdScalarRowInventory& normalInventory,
     AvbdScalarRowInventory& frictionInventory,
