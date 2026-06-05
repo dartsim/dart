@@ -18,7 +18,7 @@ from collections import deque
 
 import numpy as np
 
-import dartpy.simulation_experimental as sx
+import dartpy as sx
 
 from .._ipc_deformable_bridge import (
     IpcDeformableBridge,

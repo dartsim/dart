@@ -14,7 +14,7 @@ reproduction (no FEM/codimensional elasticity).
 
 from __future__ import annotations
 
-import dartpy.simulation_experimental as sx
+import dartpy as sx
 
 from .._ipc_deformable_bridge import IpcDeformableBridge, build_grid_options
 from ..runner import PythonDemoScene, ScenePanel, SceneSetup

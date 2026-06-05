@@ -166,6 +166,28 @@ public:
 
   [[nodiscard]] const ContactPoint& getContact(std::size_t i) const;
 
+  template <typename Callback>
+  void forEachContact(Callback&& callback) const
+  {
+    if (manifoldCount_ == 0u) {
+      return;
+    }
+
+    if (firstEntryIsContact_) {
+      callback(firstContact_);
+    } else {
+      for (const auto& contact : firstManifold_->getContacts()) {
+        callback(contact);
+      }
+    }
+
+    for (std::size_t i = 1u; i < manifoldCount_; ++i) {
+      for (const auto& contact : extraManifolds_[i - 1u].getContacts()) {
+        callback(contact);
+      }
+    }
+  }
+
 private:
   ContactPoint firstContact_;
   std::unique_ptr<ContactManifold> firstManifold_;

@@ -7,7 +7,7 @@ from collections import deque
 import numpy as np
 
 import dartpy as dart
-import dartpy.simulation_experimental as sx
+import dartpy as sx
 
 from .._world_bridge import WorldRenderBridge
 from ..runner import PythonDemoScene, ScenePanel, SceneSetup
@@ -89,7 +89,7 @@ def build() -> SceneSetup:
     )
 
     hinge_axis = dart.SimpleFrame(
-        dart.Frame.world(),
+        dart.gui.world_render_frame(),
         "hinge_axis_visual",
         _translation(*(_HINGE_ANCHOR + np.array([0.0, 0.0, 0.35]))),
     )
@@ -98,7 +98,7 @@ def build() -> SceneSetup:
     bridge.render_world.add_simple_frame(hinge_axis)
 
     slider_axis = dart.SimpleFrame(
-        dart.Frame.world(),
+        dart.gui.world_render_frame(),
         "slider_axis_visual",
         _translation(*(_SLIDER_ANCHOR + np.array([0.0, 0.0, 0.55]))),
     )

@@ -23,11 +23,11 @@ def _build_placeholder(
     legacy_seeds: Iterable[str],
     target: str,
 ) -> SceneSetup:
-    world = dart.World(f"planned_{scene_id}")
+    world = dart.gui.RenderWorld(f"planned_{scene_id}")
     world.set_time_step(1.0 / 60.0)
 
     frame = dart.SimpleFrame(
-        dart.Frame.world(), f"{scene_id}_marker", _translation(0.0, 0.0, 0.08)
+        dart.gui.world_render_frame(), f"{scene_id}_marker", _translation(0.0, 0.0, 0.08)
     )
     frame.set_shape(dart.BoxShape(np.array([0.56, 0.56, 0.16])))
     frame.create_visual_aspect().set_color([0.35, 0.56, 0.86])

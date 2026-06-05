@@ -30,20 +30,55 @@ def test_basic_functionality():
     try:
         import dartpy as dart
 
-        # Exercise the DART 7 first-simulation surface without relying on
-        # sample assets being present in the installed package.
-        world = dart.World()
-        print(f"✓ Created World: {world}")
+        # dartpy.World is the DART 7 ECS World, promoted to the flat namespace
+        # from the simulation module. That module is not built in reduced
+        # configurations (e.g. Windows wheels set
+        # DART_BUILD_SIMULATION_EXPERIMENTAL=OFF), so dartpy.World is absent
+        # there. Exercise the full simulation surface wherever it exists.
+        if hasattr(dart, "World"):
+            world = dart.World()
+            print(f"✓ Created World: {world}")
 
+            skeleton = dart.Skeleton("box")
+            skeleton.create_free_joint_and_body_node_pair()
+            print(f"✓ Created Skeleton: {skeleton.get_name()}")
+
+            # The ECS World ingests a dynamics Skeleton via the module-level
+            # add_skeleton(world, skeleton) -> Multibody facade function (not a
+            # World method); stepping then advances the ECS simulation.
+            multibody = dart.add_skeleton(world, skeleton)
+            print(f"✓ Added skeleton as multibody with {multibody.num_dofs} DoF(s)")
+
+            world.step()
+            print("✓ Stepped world")
+            return True
+
+        # World must exist anywhere the simulation module is expected to ship;
+        # only Windows wheels intentionally omit it for now, so keep the gate
+        # strong everywhere else rather than silently masking a packaging
+        # regression that drops the simulation module.
+        if sys.platform != "win32":
+            print(
+                "✗ dartpy.World is missing on a platform where the simulation "
+                "module is expected to be built"
+            )
+            return False
+
+        # Reduced build (no ECS simulation module): verify the wheel still
+        # exposes the core dynamics surface and the classic render world, so a
+        # genuinely broken wheel still fails here.
+        print(
+            "ℹ dartpy.World unavailable (simulation module not built; "
+            "DART_BUILD_SIMULATION_EXPERIMENTAL=OFF). Verifying the reduced "
+            "surface instead."
+        )
         skeleton = dart.Skeleton("box")
         skeleton.create_free_joint_and_body_node_pair()
         print(f"✓ Created Skeleton: {skeleton.get_name()}")
 
-        world.add_skeleton(skeleton)
-        world.step()
-        positions = skeleton.get_positions()
-        print(f"✓ Stepped world with {positions.shape[0]} position(s)")
-
+        if hasattr(dart, "gui") and hasattr(dart.gui, "RenderWorld"):
+            render_world = dart.gui.RenderWorld("render")
+            print(f"✓ Created render World: {render_world}")
         return True
     except ImportError as e:
         print(f"✗ Basic functionality test failed: {e}")

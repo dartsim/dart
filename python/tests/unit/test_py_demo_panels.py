@@ -63,9 +63,9 @@ from examples.demos.scenes import (
 
 def _require_simulation_experimental_symbols(*names: str):
     try:
-        import dartpy.simulation_experimental as sx
+        import dartpy as sx
     except Exception as exc:  # pragma: no cover - reduced build without submodule
-        pytest.skip(f"dartpy.simulation_experimental unavailable: {exc}")
+        pytest.skip(f"dartpy unavailable: {exc}")
     missing = [name for name in names if not hasattr(sx, name)]
     if missing:
         formatted = ", ".join(f"simulation_experimental.{name}" for name in missing)

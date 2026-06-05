@@ -7,7 +7,7 @@ from collections import deque
 import numpy as np
 
 import dartpy as dart
-import dartpy.simulation_experimental as sx
+import dartpy as sx
 
 from .._world_bridge import WorldRenderBridge
 from ..runner import PythonDemoScene, ScenePanel, SceneSetup
@@ -104,7 +104,7 @@ def build() -> SceneSetup:
     )
 
     connector = dart.SimpleFrame(
-        dart.Frame.world(),
+        dart.gui.world_render_frame(),
         "avbd_breakable_joint_connector_visual",
         _connector_transform(_BASE_POS, payload_position + _PAYLOAD_PRESTRAIN),
     )

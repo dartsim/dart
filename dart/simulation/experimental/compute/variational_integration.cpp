@@ -337,6 +337,110 @@ void gatherState(
   }
 }
 
+//==============================================================================
+std::optional<VariationalSolveReport> tryIntegrateSinglePrismaticVariational(
+    detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure,
+    const Eigen::Vector3d& gravity,
+    double timeStep,
+    MultibodyVariationalState& state,
+    const std::vector<VariationalLoopConstraint>& constraints,
+    const VariationalContactHook& contactHook)
+{
+  if (!constraints.empty() || contactHook || structure.links.size() != 2u
+      || structure.joints.size() != 1u) {
+    return std::nullopt;
+  }
+
+  const entt::entity baseEntity = structure.links[0];
+  const entt::entity childEntity = structure.links[1];
+  const auto& baseLink = registry.get<comps::Link>(baseEntity);
+  const auto& childLink = registry.get<comps::Link>(childEntity);
+  if (baseLink.parentJoint != entt::null
+      || childLink.parentJoint == entt::null) {
+    return std::nullopt;
+  }
+
+  auto& joint = registry.get<comps::Joint>(childLink.parentJoint);
+  if (joint.type != comps::JointType::Prismatic || joint.position.size() != 1
+      || joint.velocity.size() != 1 || joint.acceleration.size() != 1
+      || joint.parentLink != baseEntity || joint.childLink != childEntity) {
+    return std::nullopt;
+  }
+
+  Vector6 jointFrameSubspace = Vector6::Zero();
+  jointFrameSubspace.tail<3>() = joint.axis;
+  const Vector6 linkFrameSubspace
+      = adjoint(childLink.transformFromParentJoint.inverse())
+        * jointFrameSubspace;
+  const Matrix6 inertia = spatialInertia(childLink.mass);
+  const double effectiveMass
+      = linkFrameSubspace.dot(inertia * linkFrameSubspace);
+  if (!(effectiveMass > 0.0) || !std::isfinite(effectiveMass)) {
+    return std::nullopt;
+  }
+
+  double effort = 0.0;
+  if (joint.actuatorType == comps::ActuatorType::Force
+      && joint.torque.size() == 1) {
+    effort = joint.torque[0];
+    if (joint.limits.effortLower.size() == 1
+        && joint.limits.effortUpper.size() == 1) {
+      effort = std::clamp(
+          effort, joint.limits.effortLower[0], joint.limits.effortUpper[0]);
+    }
+  }
+  if (joint.springStiffness.size() == 1 && joint.restPosition.size() == 1) {
+    effort -= joint.springStiffness[0]
+              * (joint.position[0] - joint.restPosition[0]);
+  }
+  if (joint.dampingCoefficient.size() == 1) {
+    effort -= joint.dampingCoefficient[0] * joint.velocity[0];
+  }
+
+  const auto& baseCache = registry.get<comps::FrameCache>(baseEntity);
+  const Eigen::Vector3d axisWorld
+      = baseCache.worldTransform.linear()
+        * childLink.transformFromParentToJoint.linear() * joint.axis;
+  const double generalizedGravity = effectiveMass * axisWorld.dot(gravity);
+  const double generalizedExternal
+      = linkFrameSubspace.dot(childLink.externalForce);
+  const double acceleration
+      = (effort + generalizedExternal + generalizedGravity) / effectiveMass;
+
+  const double previousPosition = joint.position[0];
+  const double previousVelocity = joint.velocity[0];
+  const double nextVelocity = previousVelocity + timeStep * acceleration;
+  const double nextPosition = previousPosition + timeStep * previousVelocity
+                              + timeStep * timeStep * acceleration;
+
+  joint.position[0] = nextPosition;
+  joint.velocity[0] = nextVelocity;
+  joint.acceleration[0] = acceleration;
+
+  state.previousDeltaTransform.resize(
+      structure.links.size(), Eigen::Isometry3d::Identity());
+  state.previousMomentum.resize(structure.links.size(), Vector6::Zero());
+  state.previousDeltaTransform[0] = Eigen::Isometry3d::Identity();
+  state.previousMomentum[0].setZero();
+
+  Eigen::Isometry3d jointDelta = Eigen::Isometry3d::Identity();
+  jointDelta.translation() = joint.axis * (nextPosition - previousPosition);
+  state.previousDeltaTransform[1] = childLink.transformFromParentJoint.inverse()
+                                    * jointDelta
+                                    * childLink.transformFromParentJoint;
+  const Vector6 averageVelocity = linkFrameSubspace * nextVelocity;
+  state.previousMomentum[1] = dm::dexpInvTranspose(
+      timeStep * averageVelocity, inertia * averageVelocity);
+  state.bootstrapped = true;
+
+  VariationalSolveReport report;
+  report.iterations = 1;
+  report.residualNorm = 0.0;
+  report.converged = true;
+  return report;
+}
+
 // Forward velocity recursion at the current configuration: body spatial
 // velocity V_i = Ad(T_i^{-1}) V_parent + S_i qdot_i.
 std::vector<Vector6> currentSpatialVelocities(
@@ -1253,6 +1357,17 @@ VariationalSolveReport integrateMultibodyVariational(
     return report;
   }
 
+  if (auto fastReport = tryIntegrateSinglePrismaticVariational(
+          registry,
+          structure,
+          gravity,
+          timeStep,
+          state,
+          constraints,
+          contactHook)) {
+    return *fastReport;
+  }
+
   VarTree tree = buildVarTree(registry, structure);
   if (tree.dofCount == 0) {
     return report;
@@ -1829,6 +1944,19 @@ ComputeStageMetadata MultibodyVariationalIntegrationStage::getMetadata()
   return {
       ComputeStageDomain::ArticulatedBody,
       toMask(ComputeStageAcceleration::TaskParallel)};
+}
+
+//==============================================================================
+void MultibodyVariationalIntegrationStage::prepare(World& world)
+{
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
+  auto view = registry.view<comps::MultibodyStructure>();
+  for (auto entity : view) {
+    const auto& structure = view.get<comps::MultibodyStructure>(entity);
+    auto& state = registry.get_or_emplace<MultibodyVariationalState>(entity);
+    state.previousDeltaTransform.reserve(structure.links.size());
+    state.previousMomentum.reserve(structure.links.size());
+  }
 }
 
 //==============================================================================
