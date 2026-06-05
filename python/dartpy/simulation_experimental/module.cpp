@@ -2863,6 +2863,40 @@ void defSimulationExperimentalModule(nb::module_& m)
           },
           nb::arg("n") = 1,
           nb::call_guard<nb::gil_scoped_release>())
+      .def_prop_rw(
+          "replay_recording_enabled",
+          &sim::World::isReplayRecordingEnabled,
+          &sim::World::setReplayRecordingEnabled,
+          "Opt-in simulation replay recording. When enabled, the current "
+          "state is frame zero and each completed timestep appends another "
+          "restorable frame.")
+      .def(
+          "clear_replay_recording",
+          &sim::World::clearReplayRecording,
+          "Clear recorded replay frames. If recording is enabled, the current "
+          "state is captured as the new frame zero.")
+      .def_prop_ro("replay_frame_count", &sim::World::getReplayFrameCount)
+      .def_prop_ro("replay_cursor", &sim::World::getReplayCursor)
+      .def(
+          "get_replay_frame_time",
+          &sim::World::getReplayFrameTime,
+          nb::arg("index"))
+      .def(
+          "get_replay_simulation_frame",
+          &sim::World::getReplaySimulationFrame,
+          nb::arg("index"))
+      .def(
+          "restore_replay_frame",
+          [](sim::World& self, std::ptrdiff_t index) {
+            DART_EXPERIMENTAL_THROW_T_IF(
+                index < 0,
+                sim::InvalidArgumentException,
+                "World.restore_replay_frame(index) requires a non-negative "
+                "index");
+            self.restoreReplayFrame(static_cast<std::size_t>(index));
+          },
+          nb::arg("index"),
+          nb::call_guard<nb::gil_scoped_release>())
       .def_prop_ro(
           "last_deformable_solver_diagnostics",
           &sim::World::getLastDeformableSolverDiagnostics,

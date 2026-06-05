@@ -1,4 +1,4 @@
-"""Differentiable drone lift-off / saddle-escape scene (paper experiment, sx::World).
+"""Differentiable drone lift-off / saddle-escape scene (paper experiment, World).
 
 Reproduces the Nimble paper's complementarity-aware saddle-escape experiment
 (arXiv:2103.16021, Section VII-C, Fig 8) from
@@ -42,7 +42,7 @@ import numpy as np
 import dartpy as dart
 import dartpy.simulation_experimental as sx
 
-from .._sx_bridge import SxRenderBridge
+from .._world_bridge import WorldRenderBridge
 from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
 # Mirror the C++ test physics. Iterations/lr match optimizeDrone(..., 400, 4.0).
@@ -224,8 +224,8 @@ def build() -> SceneSetup:
     naive_z = float(naive.get("final_z", _REST_Z))
 
     # Render-only world; replay the precomputed heights through a playhead. Reuse
-    # SxRenderBridge only for its zero-gravity render_world plumbing.
-    bridge = SxRenderBridge(sx.World(), name="diff_drone_render")
+    # WorldRenderBridge only for its zero-gravity render_world plumbing.
+    bridge = WorldRenderBridge(sx.World(), name="diff_drone_render")
     render_world = bridge.render_world
     render_world.set_time_step(_TIME_STEP)
 
@@ -336,8 +336,8 @@ def build() -> SceneSetup:
 
 SCENE = PythonDemoScene(
     id="diff_drone_liftoff",
-    title="Differentiable Drone Lift-Off / Saddle Escape (sx)",
-    category="Differentiable (sx)",
+    title="Differentiable Drone Lift-Off / Saddle Escape",
+    category="Differentiable",
     summary=(
         "Reproduces the Nimble paper's complementarity-aware saddle-escape "
         "experiment (VII-C, Fig 8): a drone resting on the ground optimizes a "

@@ -374,7 +374,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Capture a Python demo through the real Filament viewer."
     )
-    parser.add_argument("--scene", default="hello_world")
+    parser.add_argument("--scene", default="articulated")
     parser.add_argument("--frames", type=int, default=24)
     parser.add_argument("--width", type=int, default=640)
     parser.add_argument("--height", type=int, default=360)
