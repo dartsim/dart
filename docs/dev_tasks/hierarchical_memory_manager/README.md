@@ -72,9 +72,12 @@
       deformable ECS paths; a first global heap guard now covers baked
       kinematic IPC rigid-body, box-obstacle, multibody variational,
       deformable, rigid-body resting-contact, and non-cross articulated
-      resting-contact steps. Broader solver coverage, including boxed-LCP/cross
-      articulated contact assembly, remains open before making a full
-      zero-allocation claim.
+      resting-contact steps. The default sequential articulated contact path
+      also covers a same-DOF cross-multibody link contact scene without global
+      heap allocation. Broader solver coverage, including boxed-LCP unified
+      contact assembly, mixed/different-DOF cross contacts, larger contact
+      stacks, and remaining solver-owned scratch, remains open before making a
+      full zero-allocation claim.
 - [ ] Phase 6: Add memory-layout profiler/debugger surfaces and GUI
       visualization. `MemoryAllocatorDebugger` now exposes structured live
       bytes, peak live bytes, and live allocation count; `MemoryManager` and
@@ -202,10 +205,12 @@ debugging, profiling, optimization experiments, and ImGui visualization.
 
 4. Extend bake-time registry/component storage reservation and no-growth
    allocation tests to contact-heavy scenes and remaining solver scratch step
-   paths. The initial rigid-body and non-cross articulated resting-contact
-   global heap guards are in place; continue broadening to larger stacks,
-   boxed-LCP/cross articulated contacts, and remaining solver/deformable
-   candidate buffers before making the full zero-allocation claim.
+   paths. The initial rigid-body, non-cross articulated, and same-DOF
+   sequential cross-articulated resting-contact global heap guards are in
+   place; continue broadening to larger stacks, boxed-LCP unified contact
+   assembly, mixed/different-DOF cross articulated contacts, and remaining
+   solver/deformable candidate buffers before making the full zero-allocation
+   claim.
 5. Start replacing per-step `std::vector`/`Eigen` temporaries in hot stages with
    world-frame or world-pool backed storage only after the allocator evidence
    gate proves the DART allocator path is better for that workload. The

@@ -872,6 +872,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Reused baked semi-implicit multibody dynamics/contact scratch and persistent
     staged velocity buffers, extending the baked global-heap guard to
     articulated link resting-contact steps.
+  - Added a default sequential shortcut for cross-multibody articulated link
+    contact impulses, keeping repeated baked cross-link contact steps off the
+    global heap while leaving the boxed-LCP unified solve path opt-in.
   - Made experimental rigid-body external force/torque components persistent
     applied loads: each step reads them into the transient force buffer and
     leaves the components intact for callers to clear or update explicitly.
