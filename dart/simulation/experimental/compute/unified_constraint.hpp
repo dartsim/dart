@@ -152,6 +152,16 @@ struct UnifiedConstraintProblem
 /// in their block's relative Jacobian. A shared dynamic rigid obstacle is the
 /// only remaining accepted cross-body coupling, so the assembled system is the
 /// complete Delassus for the accepted contact set.
+///
+/// The in-place overload preserves vector and Eigen storage owned by `problem`
+/// whenever the row/block shapes are unchanged, allowing step-pipeline stages
+/// to reuse bake-time or previous-frame capacity instead of rebuilding every
+/// transient container on the global heap.
+DART_EXPERIMENTAL_API void assembleUnifiedConstraintProblemInto(
+    UnifiedConstraintProblem& problem,
+    const RigidBodyContactProblem& rigidProblem,
+    std::span<const UnifiedMultibodyContact> multibodyContacts);
+
 [[nodiscard]] DART_EXPERIMENTAL_API UnifiedConstraintProblem
 assembleUnifiedConstraintProblem(
     const RigidBodyContactProblem& rigidProblem,

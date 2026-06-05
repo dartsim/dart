@@ -63,8 +63,10 @@
       Longer custom pipelines keep the previous arbitrary-stage behavior through
       an overflow path. The default rigid-body velocity/contact stages and
       semi-implicit multibody velocity/contact path now reuse baked scratch for
-      the covered rigid and articulated resting-contact scenes; broader
-      solver-owned transient buffers still need allocator-backed storage.
+      the covered rigid and articulated resting-contact scenes. The boxed-LCP
+      unified constraint stage now reuses stage-owned assembly containers and
+      unified problem storage; solver-local and remaining assembler-local
+      transient buffers still need allocator-backed storage.
 - [ ] Phase 5: Add allocation/debug accounting gates for "no dynamic allocation
       during the step loop" on representative rigid, multibody, contact, and
       deformable scenes. Initial World base-allocator no-growth guards now
@@ -73,7 +75,7 @@
       kinematic IPC rigid-body, box-obstacle, multibody variational,
       deformable, rigid-body resting-contact, and non-cross articulated
       resting-contact steps. Broader solver coverage, including boxed-LCP/cross
-      articulated contact assembly, remains open before making a full
+      articulated contact solve scratch, remains open before making a full
       zero-allocation claim.
 - [ ] Phase 6: Add memory-layout profiler/debugger surfaces and GUI
       visualization. `MemoryAllocatorDebugger` now exposes structured live
@@ -204,8 +206,9 @@ debugging, profiling, optimization experiments, and ImGui visualization.
    allocation tests to contact-heavy scenes and remaining solver scratch step
    paths. The initial rigid-body and non-cross articulated resting-contact
    global heap guards are in place; continue broadening to larger stacks,
-   boxed-LCP/cross articulated contacts, and remaining solver/deformable
-   candidate buffers before making the full zero-allocation claim.
+   boxed-LCP solver-local scratch, assembler-local vectors/matrices, and
+   remaining solver/deformable candidate buffers before making the full
+   zero-allocation claim.
 5. Start replacing per-step `std::vector`/`Eigen` temporaries in hot stages with
    world-frame or world-pool backed storage only after the allocator evidence
    gate proves the DART allocator path is better for that workload. The

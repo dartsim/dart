@@ -45,6 +45,7 @@
                                   // link-contact structs below
 #include <entt/fwd.hpp>
 
+#include <memory>
 #include <span>
 #include <string_view>
 #include <vector>
@@ -349,6 +350,12 @@ class DART_EXPERIMENTAL_API UnifiedConstraintStage final : public WorldStepStage
 {
 public:
   explicit UnifiedConstraintStage(std::size_t frictionIterations = 8);
+  ~UnifiedConstraintStage() override;
+
+  UnifiedConstraintStage(const UnifiedConstraintStage&) = delete;
+  UnifiedConstraintStage& operator=(const UnifiedConstraintStage&) = delete;
+  UnifiedConstraintStage(UnifiedConstraintStage&&) noexcept;
+  UnifiedConstraintStage& operator=(UnifiedConstraintStage&&) noexcept;
 
   [[nodiscard]] std::string_view getName() const noexcept override;
   [[nodiscard]] ComputeStageMetadata getMetadata() const noexcept override;
@@ -357,7 +364,10 @@ public:
   [[nodiscard]] std::size_t getFrictionIterations() const noexcept;
 
 private:
+  struct Scratch;
+
   std::size_t m_frictionIterations;
+  std::unique_ptr<Scratch> m_scratch;
 };
 
 } // namespace dart::simulation::experimental::compute

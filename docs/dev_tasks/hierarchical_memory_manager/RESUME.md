@@ -47,21 +47,31 @@ reports DART counters, and keeps EnTT rows opt-in. PR #2890 has merged to
 `main`; keep its benchmark evidence as the baseline for future allocator-policy
 loops.
 
-The current broader no-allocation slice, PR #2899, extends the merged #2888
-guard to baked rigid-body and non-cross articulated resting-contact scenes by
+The broader no-allocation slice, PR #2899, has merged to `main`. It extends the
+merged #2888 guard to baked rigid-body and non-cross articulated resting-contact
+scenes by
 reusing collision-query/contact result storage, default rigid-body
 velocity/contact stage scratch, and semi-implicit multibody
 dynamics/contact/staged-velocity scratch.
 
+The current boxed-LCP scratch slice starts reusing
+`UnifiedConstraintStage`-owned assembly containers and unified problem storage
+for cross-body articulated contact paths. It reduces transient container churn
+but does not claim the boxed-LCP solve is globally allocation-free; solver-local
+and remaining assembler-local scratch are still open.
+
 ## Current Branch
 
-`feature/world-step-global-heap-guard-broader` - PR #2899, now based on `main`
-after PR #2888, PR #2890, PR #2892, and PR #2893 landed.
+`feature/world-unified-constraint-scratch` - starts boxed-LCP unified scratch
+reuse from the post-#2906 `main` state.
 
 ## Immediate Next Step
 
-Resolve any remaining PR #2899 CI/review fallout after merging the post-#2888
-`origin/main` state and fixing the zero-DOF link-contact review finding.
+Finish the current branch, run `pixi run lint`, open the PR, and request a
+fresh Codex review. The next allocator slice should move remaining boxed-LCP
+assembler-local vectors/matrices and solver-local scratch toward reusable
+world-owned storage.
+
 Do not treat the benchmark-only frame-backed no-growth policy as production
 `WorldRegistry` bake/build allocation yet. Production integration needs a
 persistent world-registry arena or bake allocator that resets on
@@ -85,6 +95,10 @@ resting-contact scenes before making a full zero-dynamic-allocation claim.
 
 ## Latest Local Validation
 
+- On `feature/world-unified-constraint-scratch`:
+  `cmake --build build/default/cpp/Release --target test_unified_constraint test_unified_constraint_stage test_world -j8 && build/default/cpp/Release/bin/test_unified_constraint --gtest_color=no && build/default/cpp/Release/bin/test_unified_constraint_stage --gtest_color=no && build/default/cpp/Release/bin/test_world --gtest_color=no --gtest_filter='World.ZeroDofMultibodyLinkContactStopsRigidBody:World.ZeroDofMultibodyFallbackDoesNotDoubleApplyShortcutImpulses'`
+  (17/17 unified constraint tests, 2/2 unified constraint stage tests, and 2/2
+  focused World zero-DOF contact tests passed).
 - On `feature/world-step-global-heap-guard` after merging #2890-updated
   `origin/main`: `pixi run lint`,
   `cmake --build build/default/cpp/Release --target test_world -j8`, and
