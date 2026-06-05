@@ -576,16 +576,24 @@ def test_avbd_fixed_joint_contact_demo_exercises_contact_path() -> None:
 
     assert sx_world.num_rigid_body_fixed_joints == 1
     assert len(sx_world.collide()) > 0
+    assert not base.is_static
 
-    for _ in range(10):
+    initial_base = np.asarray(base.translation, dtype=float).reshape(3)
+    initial_payload = np.asarray(payload.translation, dtype=float).reshape(3)
+
+    for _ in range(20):
         assert setup.pre_step is not None
         setup.pre_step()
         setup.world.step()
 
     assert len(sx_world.collide()) > 0
-    offset = np.asarray(payload.translation) - np.asarray(base.translation)
+    base_translation = np.asarray(base.translation, dtype=float).reshape(3)
+    payload_translation = np.asarray(payload.translation, dtype=float).reshape(3)
+    offset = payload_translation - base_translation
     expected_offset = np.array([0.72, 0.0, -0.34])
     assert np.linalg.norm(offset - expected_offset) < 2.0e-2
+    assert np.linalg.norm(base_translation - initial_base) > 1.0e-3
+    assert np.linalg.norm(payload_translation - initial_payload) > 1.0e-3
 
 
 def test_runner_screenshot_writes_ppm(tmp_path: pathlib.Path) -> None:

@@ -39,11 +39,14 @@ def build() -> SceneSetup:
     ground.set_collision_shape(sx.CollisionShape.box(_GROUND_HALF))
     ground.friction = 0.55
 
-    base_position = np.array([0.0, 0.0, 0.49])
+    base_position = np.array([0.0, 0.0, 0.50])
     base = world.add_rigid_body(
         "avbd_fixed_joint_base", position=tuple(base_position)
     )
-    base.is_static = True
+    base.mass = 1.5
+    base.set_collision_shape(sx.CollisionShape.box(_BASE_HALF))
+    base.friction = 0.55
+    base.linear_velocity = (0.45, 0.0, 0.0)
 
     payload_position = base_position + _CAPTURED_OFFSET
     payload = world.add_rigid_body(
@@ -52,7 +55,7 @@ def build() -> SceneSetup:
     payload.mass = 1.0
     payload.set_collision_shape(sx.CollisionShape.box(_PAYLOAD_HALF))
     payload.friction = 0.55
-    payload.linear_velocity = (0.45, 0.0, -0.25)
+    payload.linear_velocity = (0.45, 0.0, 0.0)
     payload.angular_velocity = (0.0, 0.0, 0.6)
 
     fixed_joint = world.add_rigid_body_fixed_joint(
@@ -90,7 +93,18 @@ def build() -> SceneSetup:
     )
     connector.create_visual_aspect().set_color([0.78, 0.78, 0.70])
     bridge.render_world.add_simple_frame(connector)
+
+    def sync_connector() -> None:
+        base_pos = np.asarray(base.translation, dtype=float).reshape(3)
+        payload_pos = np.asarray(payload.translation, dtype=float).reshape(3)
+        connector.set_transform(_translation(0.5 * (base_pos + payload_pos)))
+
+    def pre_step() -> None:
+        bridge.pre_step()
+        sync_connector()
+
     bridge.sync()
+    sync_connector()
 
     offset_history: deque[float] = deque(maxlen=120)
     clearance_history: deque[float] = deque(maxlen=120)
@@ -122,7 +136,7 @@ def build() -> SceneSetup:
 
     return SceneSetup(
         world=bridge.render_world,
-        pre_step=bridge.pre_step,
+        pre_step=pre_step,
         force_drag=bridge.force_drag,
         panels=[ScenePanel("AVBD Fixed Joint Contact", build_panel)],
         info={
