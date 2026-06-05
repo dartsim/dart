@@ -6,6 +6,7 @@ from __future__ import annotations
 from . import collision
 from . import common
 from . import constraint
+from . import diff
 from . import dynamics
 from . import gui
 from . import io
@@ -520,6 +521,7 @@ __all__: list[str] = [
     "create_simple_frame",
     "debug",
     "deg2rad",
+    "diff",
     "dynamics",
     "eps",
     "error",

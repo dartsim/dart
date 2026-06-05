@@ -87,7 +87,7 @@ from numpy.typing import NDArray
 
 import dartpy.dynamics
 import dartpy.gui
-import dartpy.simulation.diff as diff
+from dartpy import diff as diff
 
 
 class JointType(enum.Enum):
