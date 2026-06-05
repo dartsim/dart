@@ -409,6 +409,125 @@ TEST(World, MemoryManagerOptionsAndDiagnostics)
       sx::InvalidArgumentException);
 }
 
+TEST(World, MemoryDiagnosticsMirrorAllocatorDebugCounters)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+
+#if !defined(NDEBUG)
+  const auto baselineDiagnostics
+      = world.getMemoryManager().getDebugDiagnostics();
+#endif
+  auto* freePtr = world.getMemoryManager().allocateUsingFree(24);
+  ASSERT_NE(freePtr, nullptr);
+  auto* borrowedPoolPtr
+      = world.getMemoryManager().getPoolAllocator().allocate(40);
+  ASSERT_NE(borrowedPoolPtr, nullptr);
+
+  const auto worldDiagnostics = world.getMemoryDiagnostics();
+  const auto managerDiagnostics
+      = world.getMemoryManager().getDebugDiagnostics();
+  EXPECT_EQ(
+      worldDiagnostics.allocatorDebugDiagnostics.enabled,
+      managerDiagnostics.enabled);
+  EXPECT_EQ(
+      worldDiagnostics.allocatorDebugDiagnostics.freeAllocator.liveBytes,
+      managerDiagnostics.freeAllocator.liveBytes);
+  EXPECT_EQ(
+      worldDiagnostics.allocatorDebugDiagnostics.freeAllocator.peakLiveBytes,
+      managerDiagnostics.freeAllocator.peakLiveBytes);
+  EXPECT_EQ(
+      worldDiagnostics.allocatorDebugDiagnostics.freeAllocator
+          .liveAllocationCount,
+      managerDiagnostics.freeAllocator.liveAllocationCount);
+  EXPECT_EQ(
+      worldDiagnostics.allocatorDebugDiagnostics.poolAllocator.liveBytes,
+      managerDiagnostics.poolAllocator.liveBytes);
+  EXPECT_EQ(
+      worldDiagnostics.allocatorDebugDiagnostics.poolAllocator.peakLiveBytes,
+      managerDiagnostics.poolAllocator.peakLiveBytes);
+  EXPECT_EQ(
+      worldDiagnostics.allocatorDebugDiagnostics.poolAllocator
+          .liveAllocationCount,
+      managerDiagnostics.poolAllocator.liveAllocationCount);
+
+#if !defined(NDEBUG)
+  EXPECT_TRUE(worldDiagnostics.allocatorDebugDiagnostics.enabled);
+  EXPECT_EQ(
+      worldDiagnostics.allocatorDebugDiagnostics.poolAllocator.liveBytes,
+      baselineDiagnostics.poolAllocator.liveBytes + 40u);
+  EXPECT_EQ(
+      worldDiagnostics.allocatorDebugDiagnostics.poolAllocator
+          .liveAllocationCount,
+      baselineDiagnostics.poolAllocator.liveAllocationCount + 1u);
+  EXPECT_GE(
+      worldDiagnostics.allocatorDebugDiagnostics.freeAllocator.liveBytes,
+      baselineDiagnostics.freeAllocator.liveBytes + 24u);
+  EXPECT_GE(
+      worldDiagnostics.allocatorDebugDiagnostics.freeAllocator.peakLiveBytes,
+      worldDiagnostics.allocatorDebugDiagnostics.freeAllocator.liveBytes);
+  EXPECT_GE(
+      worldDiagnostics.allocatorDebugDiagnostics.freeAllocator
+          .liveAllocationCount,
+      baselineDiagnostics.freeAllocator.liveAllocationCount + 1u);
+#endif
+
+  world.getMemoryManager().getPoolAllocator().deallocate(borrowedPoolPtr, 40);
+  world.getMemoryManager().deallocateUsingFree(freePtr, 24);
+}
+
+TEST(World, MemoryDiagnosticsReportEcsStorageLayout)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+
+  const auto empty = world.getMemoryDiagnostics();
+  EXPECT_EQ(empty.ecsDiagnostics.entityCount, 0u);
+  EXPECT_EQ(empty.ecsDiagnostics.componentCount, 0u);
+  EXPECT_EQ(
+      empty.ecsDiagnostics.storageCount, empty.ecsDiagnostics.storages.size());
+
+  auto frame = world.addFreeFrame("diagnostic_frame");
+  (void)frame;
+
+  const auto diagnostics = world.getMemoryDiagnostics();
+  EXPECT_EQ(diagnostics.ecsDiagnostics.entityCount, 1u);
+  EXPECT_GE(
+      diagnostics.ecsDiagnostics.entityCapacity,
+      diagnostics.ecsDiagnostics.entityCount);
+  ASSERT_GT(diagnostics.ecsDiagnostics.storageCount, 0u);
+  EXPECT_EQ(
+      diagnostics.ecsDiagnostics.storageCount,
+      diagnostics.ecsDiagnostics.storages.size());
+
+  std::size_t componentCount = 0;
+  std::size_t componentCapacity = 0;
+  bool hasLiveStorage = false;
+  for (const auto& storage : diagnostics.ecsDiagnostics.storages) {
+    EXPECT_GE(storage.capacity, storage.size);
+    componentCount += storage.size;
+    componentCapacity += storage.capacity;
+    hasLiveStorage = hasLiveStorage || storage.size > 0u;
+  }
+
+  EXPECT_TRUE(hasLiveStorage);
+  EXPECT_EQ(diagnostics.ecsDiagnostics.componentCount, componentCount);
+  EXPECT_EQ(diagnostics.ecsDiagnostics.componentCapacity, componentCapacity);
+
+  world.clear();
+  const auto cleared = world.getMemoryDiagnostics();
+  EXPECT_EQ(cleared.ecsDiagnostics.entityCount, 0u);
+  EXPECT_EQ(cleared.ecsDiagnostics.componentCount, 0u);
+  EXPECT_EQ(
+      cleared.ecsDiagnostics.storageCount,
+      cleared.ecsDiagnostics.storages.size());
+  for (const auto& storage : cleared.ecsDiagnostics.storages) {
+    EXPECT_EQ(storage.size, 0u);
+  }
+}
+
 TEST(World, RegistryUsesWorldFreeAllocator)
 {
   namespace common = dart::common;

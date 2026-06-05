@@ -161,13 +161,49 @@ struct DeformableSolverDiagnostics
   std::size_t convergedActiveContactCount = 0;
 };
 
+/// Per-component-storage ECS memory diagnostics. Storage IDs are internal
+/// diagnostic tokens for grouping one snapshot; callers should not persist them
+/// as stable public component identifiers.
+struct WorldEcsStorageDiagnostics
+{
+  /// Internal diagnostic ID for this component storage.
+  std::size_t storageId = 0;
+  /// Number of live components in this storage.
+  std::size_t size = 0;
+  /// Current storage capacity before another component insertion may grow it.
+  std::size_t capacity = 0;
+};
+
+/// Aggregate ECS registry storage diagnostics for profiler/debugger surfaces.
+struct WorldEcsDiagnostics
+{
+  /// Number of live entities in the World registry.
+  std::size_t entityCount = 0;
+  /// Current registry entity storage capacity.
+  std::size_t entityCapacity = 0;
+  /// Number of component storages currently materialized by the registry.
+  std::size_t storageCount = 0;
+  /// Sum of live component counts across materialized component storages.
+  std::size_t componentCount = 0;
+  /// Sum of component capacities across materialized component storages.
+  std::size_t componentCapacity = 0;
+  /// Per-storage live/capacity counters for layout debugging and UI grouping.
+  std::vector<WorldEcsStorageDiagnostics> storages;
+};
+
 /// Snapshot of the experimental World's CPU memory hierarchy diagnostics.
 ///
-/// This first slice reports only the World-owned frame allocator used for
-/// per-step scratch. Persistent allocator and ECS storage diagnostics are
-/// intentionally left for the allocator/EnTT integration workstream.
+/// This snapshot reports the World-owned frame allocator used for per-step
+/// scratch, structured debug counters for direct free/pool allocations, and
+/// ECS registry storage layout counters for memory debugger/profiler tools.
 struct WorldMemoryDiagnostics
 {
+  /// Debug counters for the World-owned MemoryManager hierarchy.
+  common::MemoryManager::DebugDiagnostics allocatorDebugDiagnostics;
+
+  /// ECS registry/component storage diagnostics.
+  WorldEcsDiagnostics ecsDiagnostics;
+
   /// Current usable frame-scratch arena capacity after alignment padding.
   std::size_t frameScratchCapacityBytes = 0;
   /// Bytes consumed in the current simulation frame, including overflow blocks.
