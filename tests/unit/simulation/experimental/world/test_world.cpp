@@ -1049,6 +1049,33 @@ TEST(World, SequentialImpulseBakeDoesNotPrewarmRigidIpcCollisionSurfaces)
       supportedGeometry.allocationCount, unsupportedGeometry.allocationCount);
 }
 
+TEST(World, RigidIpcContactStagePrepareReusesSupportedDynamicSurfaceBuffers)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  sx::RigidBodyOptions options;
+  options.mass = 2.0;
+  options.position = Eigen::Vector3d(0.0, 0.0, 0.5);
+  auto body = world.addRigidBody("dynamic_box", options);
+  body.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.5)));
+
+  sx::compute::RigidIpcContactStage ipcStage;
+  ipcStage.prepare(world);
+
+  ScopedHeapAllocationCounter heapCounter;
+  for (int i = 0; i < 4; ++i) {
+    ipcStage.prepare(world);
+  }
+  heapCounter.stop();
+
+  EXPECT_EQ(heapCounter.allocationCount(), 0u)
+      << "global heap bytes allocated while preparing dynamic IPC scratch: "
+      << heapCounter.allocationBytes();
+  EXPECT_EQ(heapCounter.allocationBytes(), 0u);
+}
+
 TEST(World, SetRigidBodySolverPreparesIpcScratchAfterSimulationBake)
 {
   namespace sx = dart::simulation::experimental;
