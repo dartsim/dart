@@ -51,7 +51,7 @@
 
 namespace {
 
-void markSubtreeCacheDirty(entt::registry& registry, entt::entity root)
+void markSubtreeCacheDirty(auto& registry, entt::entity root)
 {
   if (root == entt::null) {
     return;
@@ -65,7 +65,8 @@ void markSubtreeCacheDirty(entt::registry& registry, entt::entity root)
   stack.push_back(root);
 
   auto frameStateView
-      = registry.view<dart::simulation::experimental::comps::FrameState>();
+      = registry
+            .template view<dart::simulation::experimental::comps::FrameState>();
 
   while (!stack.empty()) {
     auto entity = stack.back();
@@ -76,15 +77,14 @@ void markSubtreeCacheDirty(entt::registry& registry, entt::entity root)
     }
 
     if (auto* cache
-        = registry.try_get<dart::simulation::experimental::comps::FrameCache>(
-            entity)) {
+        = registry.template try_get<
+            dart::simulation::experimental::comps::FrameCache>(entity)) {
       cache->needTransformUpdate = true;
     }
 
     for (auto child : frameStateView) {
-      const auto& state
-          = frameStateView
-                .get<dart::simulation::experimental::comps::FrameState>(child);
+      const auto& state = frameStateView.template get<
+          dart::simulation::experimental::comps::FrameState>(child);
       if (state.parentFrame == entity) {
         stack.push_back(child);
       }
@@ -163,11 +163,12 @@ Eigen::Isometry3d getJointTransform(const comps::Joint& joint)
 
 //==============================================================================
 Eigen::Isometry3d getFrameLocalTransform(
-    const entt::registry& registry, entt::entity entity)
+    const auto& registry, entt::entity entity)
 {
-  if (const auto* link = registry.try_get<comps::Link>(entity)) {
+  if (const auto* link = registry.template try_get<comps::Link>(entity)) {
     if (link->parentJoint != entt::null) {
-      const auto* joint = registry.try_get<comps::Joint>(link->parentJoint);
+      const auto* joint
+          = registry.template try_get<comps::Joint>(link->parentJoint);
       DART_EXPERIMENTAL_THROW_T_IF(
           !joint,
           InvalidOperationException,
@@ -179,16 +180,16 @@ Eigen::Isometry3d getFrameLocalTransform(
   }
 
   if (const auto* props
-      = registry.try_get<comps::FreeFrameProperties>(entity)) {
+      = registry.template try_get<comps::FreeFrameProperties>(entity)) {
     return props->localTransform;
   }
 
   if (const auto* props
-      = registry.try_get<comps::FixedFrameProperties>(entity)) {
+      = registry.template try_get<comps::FixedFrameProperties>(entity)) {
     return props->localTransform;
   }
 
-  if (const auto* link = registry.try_get<comps::Link>(entity)) {
+  if (const auto* link = registry.template try_get<comps::Link>(entity)) {
     return link->transformFromParentToJoint * link->transformFromParentJoint;
   }
 

@@ -90,6 +90,30 @@ TEST(MemoryManagerTest, BaseAllocator)
 }
 
 //==============================================================================
+TEST(MemoryManagerTest, FreeAllocatorPreservesDebugRouting)
+{
+  auto mm = MemoryManager();
+  auto& freeAllocator = mm.getFreeAllocator();
+  const auto& constMm = mm;
+  const auto& constFreeAllocator = constMm.getFreeAllocator();
+
+  auto* ptr = freeAllocator.allocate(sizeof(double), alignof(double));
+  ASSERT_NE(ptr, nullptr);
+#if !defined(NDEBUG)
+  EXPECT_NE(
+      &constFreeAllocator,
+      static_cast<const MemoryAllocator*>(&mm.getFreeListAllocator()));
+  EXPECT_TRUE(mm.hasAllocated(ptr, sizeof(double)));
+#else
+  EXPECT_EQ(
+      &constFreeAllocator,
+      static_cast<const MemoryAllocator*>(&mm.getFreeListAllocator()));
+  EXPECT_FALSE(mm.hasAllocated(ptr, sizeof(double)));
+#endif
+  freeAllocator.deallocate(ptr, sizeof(double), alignof(double));
+}
+
+//==============================================================================
 TEST(MemoryManagerTest, BaseAllocatorConstructorUsesDefaultFrameCapacity)
 {
   auto& baseAllocator = MemoryAllocator::GetDefault();
@@ -587,6 +611,9 @@ TEST(MemoryManagerTest, PlainAllocatorRouting)
 
   auto& freeListAllocator = mm.getFreeListAllocator();
   auto& poolAllocator = mm.getPoolAllocator();
+  EXPECT_EQ(
+      &mm.getFreeAllocator(),
+      static_cast<MemoryAllocator*>(&freeListAllocator));
   EXPECT_EQ(&freeListAllocator.getBaseAllocator(), &mm.getBaseAllocator());
   EXPECT_EQ(&poolAllocator.getBaseAllocator(), &freeListAllocator);
 

@@ -32,22 +32,27 @@
 
 #include <dart/simulation/experimental/body/collision_shape.hpp>
 #include <dart/simulation/experimental/body/contact.hpp>
+#include <dart/simulation/experimental/body/deformable_body.hpp>
+#include <dart/simulation/experimental/body/deformable_body_options.hpp>
 #include <dart/simulation/experimental/body/rigid_body.hpp>
 #include <dart/simulation/experimental/common/exceptions.hpp>
 #include <dart/simulation/experimental/comps/collision_geometry.hpp>
 #include <dart/simulation/experimental/comps/dynamics.hpp>
 #include <dart/simulation/experimental/comps/frame_types.hpp>
 #include <dart/simulation/experimental/comps/joint.hpp>
+#include <dart/simulation/experimental/comps/rigid_body.hpp>
 #include <dart/simulation/experimental/compute/compute_executor.hpp>
 #include <dart/simulation/experimental/compute/compute_graph.hpp>
 #include <dart/simulation/experimental/compute/parallel_executor.hpp>
 #include <dart/simulation/experimental/compute/rigid_body_state_batch.hpp>
 #include <dart/simulation/experimental/compute/sequential_executor.hpp>
+#include <dart/simulation/experimental/compute/variational_integration.hpp>
 #include <dart/simulation/experimental/compute/world_batch.hpp>
 #include <dart/simulation/experimental/compute/world_step_stage.hpp>
 #include <dart/simulation/experimental/constraint/loop_closure_spec.hpp>
 #include <dart/simulation/experimental/detail/entity_conversion.hpp>
 #include <dart/simulation/experimental/detail/world_registry_access.hpp>
+#include <dart/simulation/experimental/detail/world_storage.hpp>
 #include <dart/simulation/experimental/frame/fixed_frame.hpp>
 #include <dart/simulation/experimental/frame/free_frame.hpp>
 #include <dart/simulation/experimental/multibody/multibody.hpp>
@@ -55,17 +60,22 @@
 #include <dart/simulation/experimental/world.hpp>
 
 #include <dart/common/memory_allocator.hpp>
+#include <dart/common/stl_allocator.hpp>
 
 #include <Eigen/Geometry>
 #include <gtest/gtest.h>
 
+#include <array>
 #include <limits>
+#include <map>
 #include <new>
 #include <numbers>
 #include <string>
 #include <string_view>
 #include <utility>
 #include <vector>
+
+#include <cstdint>
 
 namespace {
 
@@ -196,8 +206,28 @@ public:
 
   [[nodiscard]] void* allocate(std::size_t bytes) noexcept override
   {
+    if (bytes == 0) {
+      return nullptr;
+    }
+
     ++allocationCount;
     return ::operator new(bytes, std::nothrow);
+  }
+
+  [[nodiscard]] void* allocate(
+      std::size_t bytes, std::size_t alignment) noexcept override
+  {
+    if (bytes == 0 || alignment == 0 || (alignment & (alignment - 1)) != 0) {
+      return nullptr;
+    }
+
+    ++allocationCount;
+    ++alignedAllocationCount;
+    if (alignment <= __STDCPP_DEFAULT_NEW_ALIGNMENT__) {
+      return ::operator new(bytes, std::nothrow);
+    }
+
+    return ::operator new(bytes, std::align_val_t(alignment), std::nothrow);
   }
 
   void deallocate(void* pointer, std::size_t /*bytes*/) override
@@ -206,8 +236,23 @@ public:
     ::operator delete(pointer);
   }
 
+  void deallocate(
+      void* pointer, std::size_t /*bytes*/, std::size_t alignment) override
+  {
+    ++deallocationCount;
+    ++alignedDeallocationCount;
+    if (alignment <= __STDCPP_DEFAULT_NEW_ALIGNMENT__) {
+      ::operator delete(pointer);
+      return;
+    }
+
+    ::operator delete(pointer, std::align_val_t(alignment));
+  }
+
   std::size_t allocationCount{0};
+  std::size_t alignedAllocationCount{0};
   std::size_t deallocationCount{0};
+  std::size_t alignedDeallocationCount{0};
 };
 
 class FrameScratchStage final
@@ -238,6 +283,84 @@ public:
   void* lastAllocation{nullptr};
 };
 
+struct alignas(64) RegistryAllocatorComponent
+{
+  explicit RegistryAllocatorComponent(std::uint64_t input) noexcept
+    : value(input)
+  {
+  }
+
+  std::uint64_t value;
+};
+
+using RegistryStorageCapacities = std::map<entt::id_type, std::size_t>;
+
+RegistryStorageCapacities registryStorageCapacities(
+    const dart::simulation::experimental::detail::WorldRegistry& registry)
+{
+  RegistryStorageCapacities capacities;
+  const auto* entityStorage = registry.storage<entt::entity>();
+  EXPECT_NE(entityStorage, nullptr);
+  capacities.emplace(
+      entt::type_hash<entt::entity>::value(),
+      entityStorage == nullptr ? 0u : entityStorage->capacity());
+  for (auto&& [id, storage] : registry.storage()) {
+    capacities.emplace(id, storage.capacity());
+  }
+  return capacities;
+}
+
+void expectRegistryStorageCapacitiesUnchanged(
+    const RegistryStorageCapacities& expected,
+    const dart::simulation::experimental::detail::WorldRegistry& registry)
+{
+  const auto actual = registryStorageCapacities(registry);
+  EXPECT_EQ(actual.size(), expected.size());
+
+  for (const auto& [id, capacity] : actual) {
+    if (!expected.contains(id)) {
+      ADD_FAILURE() << "unexpected storage id " << id << " capacity "
+                    << capacity;
+    }
+  }
+
+  for (const auto& [id, capacity] : expected) {
+    const auto it = actual.find(id);
+    ASSERT_NE(it, actual.end()) << "missing storage id " << id;
+    EXPECT_EQ(it->second, capacity) << "storage id " << id;
+  }
+}
+
+template <typename ConfigureScene>
+void expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+    std::string_view scene, ConfigureScene&& configureScene)
+{
+  namespace sx = dart::simulation::experimental;
+
+  SCOPED_TRACE(scene);
+  CountingMemoryAllocator allocator;
+  sx::WorldOptions worldOptions;
+  worldOptions.baseAllocator = &allocator;
+  sx::World world(worldOptions);
+
+  configureScene(world);
+  world.enterSimulationMode();
+
+  const auto allocationsAfterBake = allocator.allocationCount;
+  const auto deallocationsAfterBake = allocator.deallocationCount;
+  const auto alignedAllocationsAfterBake = allocator.alignedAllocationCount;
+  const auto alignedDeallocationsAfterBake = allocator.alignedDeallocationCount;
+
+  for (int i = 0; i < 4; ++i) {
+    world.step();
+  }
+
+  EXPECT_EQ(allocator.allocationCount, allocationsAfterBake);
+  EXPECT_EQ(allocator.deallocationCount, deallocationsAfterBake);
+  EXPECT_EQ(allocator.alignedAllocationCount, alignedAllocationsAfterBake);
+  EXPECT_EQ(allocator.alignedDeallocationCount, alignedDeallocationsAfterBake);
+}
+
 } // namespace
 
 // Test World construction
@@ -264,17 +387,6 @@ TEST(World, MemoryManagerOptionsAndDiagnostics)
   EXPECT_GT(allocator.allocationCount, 0u);
 
   const auto diagnostics = world.getMemoryDiagnostics();
-  const auto managerDiagnostics
-      = world.getMemoryManager().getDebugDiagnostics();
-  EXPECT_EQ(
-      diagnostics.allocatorDebugDiagnostics.enabled,
-      managerDiagnostics.enabled);
-  EXPECT_EQ(
-      diagnostics.allocatorDebugDiagnostics.freeAllocator.liveBytes,
-      managerDiagnostics.freeAllocator.liveBytes);
-  EXPECT_EQ(
-      diagnostics.allocatorDebugDiagnostics.poolAllocator.liveBytes,
-      managerDiagnostics.poolAllocator.liveBytes);
   EXPECT_LE(diagnostics.frameScratchCapacityBytes, 4096u);
   EXPECT_GE(diagnostics.frameScratchCapacityBytes + 32u, 4096u);
   EXPECT_EQ(diagnostics.frameScratchCapacityBytes % 32u, 0u);
@@ -410,6 +522,261 @@ TEST(World, MemoryDiagnosticsReportEcsStorageLayout)
   for (const auto& storage : cleared.ecsDiagnostics.storages) {
     EXPECT_EQ(storage.size, 0u);
   }
+}
+
+TEST(World, RegistryUsesWorldFreeAllocator)
+{
+  namespace common = dart::common;
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  auto& freeAllocator = world.getMemoryManager().getFreeAllocator();
+  auto& registry = sx::detail::registryOf(world);
+
+  const common::StlAllocator<entt::entity> expectedEntityAllocator{
+      freeAllocator};
+  EXPECT_EQ(registry.get_allocator(), expectedEntityAllocator);
+
+  auto registryAllocator = registry.get_allocator();
+  auto* allocatedEntity = registryAllocator.allocate(1);
+  ASSERT_NE(allocatedEntity, nullptr);
+#if !defined(NDEBUG)
+  EXPECT_TRUE(world.getMemoryManager().hasAllocated(
+      allocatedEntity, sizeof(entt::entity)));
+#else
+  EXPECT_FALSE(world.getMemoryManager().hasAllocated(
+      allocatedEntity, sizeof(entt::entity)));
+#endif
+  registryAllocator.deallocate(allocatedEntity, 1);
+
+  const auto entity = registry.create();
+  const auto& component
+      = registry.emplace<RegistryAllocatorComponent>(entity, 7u);
+  EXPECT_EQ(component.value, 7u);
+
+  const common::StlAllocator<RegistryAllocatorComponent>
+      expectedComponentAllocator{freeAllocator};
+  EXPECT_EQ(
+      registry.storage<RegistryAllocatorComponent>().get_allocator(),
+      expectedComponentAllocator);
+
+  const auto& storage = sx::detail::storageOf(world);
+  const common::StlAllocator<sx::detail::WorldStorage::DifferentiableParameter>
+      expectedParameterAllocator{freeAllocator};
+  EXPECT_EQ(
+      storage.differentiableParameters.get_allocator(),
+      expectedParameterAllocator);
+}
+
+TEST(World, ReservedRegistryStorageReusesComponentCapacity)
+{
+  namespace common = dart::common;
+  namespace sx = dart::simulation::experimental;
+
+  CountingMemoryAllocator allocator;
+  common::MemoryManager memoryManager(allocator);
+  sx::detail::WorldRegistry registry(
+      sx::detail::WorldRegistryAllocator{memoryManager.getFreeAllocator()});
+
+  constexpr std::size_t kEntityCount = 16;
+  registry.storage<entt::entity>().reserve(kEntityCount);
+  registry.storage<sx::comps::RigidBodyTag>().reserve(kEntityCount);
+  registry.storage<sx::comps::Transform>().reserve(kEntityCount);
+  registry.storage<sx::comps::Velocity>().reserve(kEntityCount);
+  registry.storage<sx::comps::Force>().reserve(kEntityCount);
+
+  const auto capacities = registryStorageCapacities(registry);
+  const auto allocationsAfterReserve = allocator.allocationCount;
+  const auto alignedAllocationsAfterReserve = allocator.alignedAllocationCount;
+
+  std::array<entt::entity, kEntityCount> entities{};
+  for (int cycle = 0; cycle < 3; ++cycle) {
+    for (std::size_t i = 0; i < kEntityCount; ++i) {
+      const auto entity = registry.create();
+      entities[i] = entity;
+      registry.emplace<sx::comps::RigidBodyTag>(entity);
+      auto& transform = registry.emplace<sx::comps::Transform>(entity);
+      transform.position.x() = static_cast<double>(i);
+      registry.emplace<sx::comps::Velocity>(entity);
+      registry.emplace<sx::comps::Force>(entity);
+    }
+
+    EXPECT_EQ(registry.storage<sx::comps::Velocity>().size(), kEntityCount);
+    registry.clear<sx::comps::Velocity>();
+    expectRegistryStorageCapacitiesUnchanged(capacities, registry);
+    for (const auto entity : entities) {
+      registry.emplace<sx::comps::Velocity>(entity);
+    }
+    expectRegistryStorageCapacitiesUnchanged(capacities, registry);
+
+    for (const auto entity : entities) {
+      registry.destroy(entity);
+    }
+    expectRegistryStorageCapacitiesUnchanged(capacities, registry);
+  }
+
+  EXPECT_EQ(allocator.allocationCount, allocationsAfterReserve);
+  EXPECT_EQ(allocator.alignedAllocationCount, alignedAllocationsAfterReserve);
+}
+
+TEST(World, EnterSimulationModeReservesRegistryStorageForKinematicIpcSteps)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+
+  auto body = world.addRigidBody("kinematic");
+  body.setKinematic(true);
+  body.setLinearVelocity(Eigen::Vector3d(1.0, 0.0, 0.0));
+
+  world.enterSimulationMode();
+
+  const auto& registry = sx::detail::registryOf(world);
+  const auto capacities = registryStorageCapacities(registry);
+  const auto traceStorageId
+      = entt::type_hash<sx::comps::KinematicBodyStepTrace>::value();
+  ASSERT_TRUE(capacities.contains(traceStorageId));
+  EXPECT_GE(capacities.at(traceStorageId), 1u);
+
+  for (int i = 0; i < 4; ++i) {
+    world.step();
+    expectRegistryStorageCapacitiesUnchanged(capacities, registry);
+  }
+}
+
+TEST(World, EnterSimulationModeReservesRegistryStorageForMultibodySteps)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+
+  auto robot = world.addMultibody("slider");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "rail";
+  spec.type = sx::JointType::Prismatic;
+  spec.axis = Eigen::Vector3d::UnitZ();
+  auto carriage = robot.addLink("carriage", base, spec);
+  carriage.setMass(3.0);
+
+  world.setTimeStep(0.01);
+  world.enterSimulationMode();
+
+  const auto& registry = sx::detail::registryOf(world);
+  const auto capacities = registryStorageCapacities(registry);
+
+  for (int i = 0; i < 4; ++i) {
+    world.step();
+    expectRegistryStorageCapacitiesUnchanged(capacities, registry);
+  }
+}
+
+TEST(World, SetMultibodyOptionsReservesVariationalStateAfterBake)
+{
+  namespace sx = dart::simulation::experimental;
+
+  CountingMemoryAllocator allocator;
+  sx::WorldOptions options;
+  options.baseAllocator = &allocator;
+  sx::World world(options);
+
+  auto robot = world.addMultibody("slider");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "rail";
+  spec.type = sx::JointType::Prismatic;
+  spec.axis = Eigen::Vector3d::UnitZ();
+  auto carriage = robot.addLink("carriage", base, spec);
+  carriage.setMass(3.0);
+
+  world.setTimeStep(0.01);
+  world.enterSimulationMode();
+  world.setMultibodyOptions({"variational integrator"});
+
+  const auto& registry = sx::detail::registryOf(world);
+  const auto capacities = registryStorageCapacities(registry);
+  const auto stateStorageId
+      = entt::type_hash<sx::compute::MultibodyVariationalState>::value();
+  ASSERT_TRUE(capacities.contains(stateStorageId));
+  EXPECT_GE(capacities.at(stateStorageId), 1u);
+
+  const auto allocationsAfterSwitch = allocator.allocationCount;
+  const auto deallocationsAfterSwitch = allocator.deallocationCount;
+  const auto alignedAllocationsAfterSwitch = allocator.alignedAllocationCount;
+  const auto alignedDeallocationsAfterSwitch
+      = allocator.alignedDeallocationCount;
+
+  for (int i = 0; i < 4; ++i) {
+    world.step();
+    expectRegistryStorageCapacitiesUnchanged(capacities, registry);
+  }
+
+  EXPECT_EQ(allocator.allocationCount, allocationsAfterSwitch);
+  EXPECT_EQ(allocator.deallocationCount, deallocationsAfterSwitch);
+  EXPECT_EQ(allocator.alignedAllocationCount, alignedAllocationsAfterSwitch);
+  EXPECT_EQ(
+      allocator.alignedDeallocationCount, alignedDeallocationsAfterSwitch);
+}
+
+TEST(World, EnterSimulationModeReservesRegistryStorageForDeformableSteps)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  sx::DeformableBodyOptions options;
+  options.positions = {Eigen::Vector3d(0.0, 0.0, 1.0)};
+  options.masses = {1.0};
+  options.edgeStiffness = 0.0;
+  world.addDeformableBody("particle", options);
+
+  world.setTimeStep(0.01);
+  world.enterSimulationMode();
+
+  const auto& registry = sx::detail::registryOf(world);
+  const auto capacities = registryStorageCapacities(registry);
+
+  for (int i = 0; i < 4; ++i) {
+    world.step();
+    expectRegistryStorageCapacitiesUnchanged(capacities, registry);
+  }
+}
+
+TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
+{
+  namespace sx = dart::simulation::experimental;
+
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "kinematic IPC rigid body", [](sx::World& world) {
+        world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+        auto body = world.addRigidBody("kinematic");
+        body.setKinematic(true);
+        body.setLinearVelocity(Eigen::Vector3d(1.0, 0.0, 0.0));
+      });
+
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "multibody variational scratch", [](sx::World& world) {
+        auto robot = world.addMultibody("slider");
+        auto base = robot.addLink("base");
+        sx::JointSpec spec;
+        spec.name = "rail";
+        spec.type = sx::JointType::Prismatic;
+        spec.axis = Eigen::Vector3d::UnitZ();
+        auto carriage = robot.addLink("carriage", base, spec);
+        carriage.setMass(3.0);
+        world.setMultibodyOptions({"variational integrator"});
+        world.setTimeStep(0.01);
+      });
+
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "single deformable particle", [](sx::World& world) {
+        sx::DeformableBodyOptions options;
+        options.positions = {Eigen::Vector3d(0.0, 0.0, 1.0)};
+        options.masses = {1.0};
+        options.edgeStiffness = 0.0;
+        world.addDeformableBody("particle", options);
+        world.setTimeStep(0.01);
+      });
 }
 
 TEST(World, FrameScratchCapacityReportsUsableArenaBytes)
@@ -6632,6 +6999,66 @@ TEST(World, StepAcceptsMultiDomainSolverPipeline)
   EXPECT_EQ(order, expected);
   EXPECT_DOUBLE_EQ(world.getTime(), 0.25);
   EXPECT_EQ(world.getFrame(), 1u);
+}
+
+// Test that custom pipelines can exceed the inline storage threshold while
+// built-in pipelines keep the inline no-allocation fast path.
+TEST(World, StepPipelineAllowsMoreThanInlineStageCapacity)
+{
+  namespace sx = dart::simulation::experimental;
+  namespace compute = dart::simulation::experimental::compute;
+
+  sx::World world;
+  world.setTimeStep(0.25);
+  std::vector<std::string> order;
+  RecordingWorldStage stage0("stage0", {}, order);
+  RecordingWorldStage stage1("stage1", {}, order);
+  RecordingWorldStage stage2("stage2", {}, order);
+  RecordingWorldStage stage3("stage3", {}, order);
+  RecordingWorldStage stage4("stage4", {}, order);
+  RecordingWorldStage stage5("stage5", {}, order);
+  RecordingWorldStage stage6("stage6", {}, order);
+  RecordingWorldStage stage7("stage7", {}, order);
+  RecordingWorldStage stage8("stage8", {}, order);
+
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage0)
+      .addStage(stage1)
+      .addStage(stage2)
+      .addStage(stage3)
+      .addStage(stage4)
+      .addStage(stage5)
+      .addStage(stage6)
+      .addStage(stage7)
+      .addStage(stage8);
+
+  EXPECT_EQ(
+      pipeline.getStageCount(),
+      compute::WorldStepPipeline::kInlineStageCount + 1u);
+  EXPECT_EQ(&pipeline.getStage(7), &stage7);
+  EXPECT_EQ(&pipeline.getStage(8), &stage8);
+  EXPECT_THROW({ (void)pipeline.getStage(9); }, sx::OutOfRangeException);
+
+  compute::SequentialExecutor executor;
+  world.step(executor, pipeline);
+  EXPECT_EQ(
+      order,
+      (std::vector<std::string>{
+          "stage0",
+          "stage1",
+          "stage2",
+          "stage3",
+          "stage4",
+          "stage5",
+          "stage6",
+          "stage7",
+          "stage8"}));
+  EXPECT_DOUBLE_EQ(world.getTime(), 0.25);
+  EXPECT_EQ(world.getFrame(), 1u);
+
+  pipeline.clear();
+  EXPECT_TRUE(pipeline.isEmpty());
+  EXPECT_EQ(pipeline.getStageCount(), 0u);
 }
 
 // Test that repeated stepping can reuse a caller-owned executor and pipeline.

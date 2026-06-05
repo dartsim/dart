@@ -666,7 +666,7 @@ SerializerRegistry::getSerializers() const
 //==============================================================================
 void SerializerRegistry::saveAllEntities(
     std::ostream& output,
-    const entt::registry& registry,
+    const ::dart::simulation::experimental::detail::WorldRegistry& registry,
     EntityMap& entityMap) const
 {
   // Collect entities in a deterministic order
@@ -721,7 +721,7 @@ void SerializerRegistry::saveAllEntities(
 //==============================================================================
 void SerializerRegistry::loadAllEntities(
     std::istream& input,
-    entt::registry& registry,
+    ::dart::simulation::experimental::detail::WorldRegistry& registry,
     EntityMap& entityMap,
     std::uint32_t formatVersion) const
 {
