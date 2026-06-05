@@ -39,6 +39,15 @@ namespace dart::common {
 namespace {
 
 //==============================================================================
+MemoryManager::Options makeOptionsWithFrameCapacity(
+    size_t frameAllocatorInitialCapacity)
+{
+  MemoryManager::Options options;
+  options.frameAllocatorInitialCapacity = frameAllocatorInitialCapacity;
+  return options;
+}
+
+//==============================================================================
 template <typename Allocator>
 MemoryManager::AllocatorDebugDiagnostics getAllocatorDiagnostics(
     const Allocator* allocator)
@@ -64,7 +73,7 @@ MemoryManager& MemoryManager::GetDefault()
 
 //==============================================================================
 MemoryManager::MemoryManager(MemoryAllocator& baseAllocator)
-  : MemoryManager(baseAllocator, 65536)
+  : MemoryManager(baseAllocator, Options{})
 {
   // Do nothing
 }
@@ -72,6 +81,16 @@ MemoryManager::MemoryManager(MemoryAllocator& baseAllocator)
 //==============================================================================
 MemoryManager::MemoryManager(
     MemoryAllocator& baseAllocator, size_t frameAllocatorInitialCapacity)
+  : MemoryManager(
+        baseAllocator,
+        makeOptionsWithFrameCapacity(frameAllocatorInitialCapacity))
+{
+  // Do nothing
+}
+
+//==============================================================================
+MemoryManager::MemoryManager(
+    MemoryAllocator& baseAllocator, const Options& options)
   : mBaseAllocator(baseAllocator)
 {
 #if !defined(NDEBUG)
@@ -79,17 +98,22 @@ MemoryManager::MemoryManager(
 #endif
 
   if (mUseDebugAllocators) {
-    mFreeListAllocatorWithDebug
-        = std::make_unique<FreeListAllocator::Debug>(mBaseAllocator);
+    mFreeListAllocatorWithDebug = std::make_unique<FreeListAllocator::Debug>(
+        mBaseAllocator,
+        options.freeListInitialAllocation,
+        options.freeListGrowthPolicy);
     mPoolAllocatorWithDebug = std::make_unique<PoolAllocator::Debug>(
         mFreeListAllocatorWithDebug->getInternalAllocator());
   } else {
-    mFreeListAllocator = std::make_unique<FreeListAllocator>(mBaseAllocator);
+    mFreeListAllocator = std::make_unique<FreeListAllocator>(
+        mBaseAllocator,
+        options.freeListInitialAllocation,
+        options.freeListGrowthPolicy);
     mPoolAllocator = std::make_unique<PoolAllocator>(*mFreeListAllocator);
   }
 
   mFrameAllocator = std::make_unique<FrameAllocator>(
-      mBaseAllocator, frameAllocatorInitialCapacity);
+      mBaseAllocator, options.frameAllocatorInitialCapacity);
 }
 
 //==============================================================================
