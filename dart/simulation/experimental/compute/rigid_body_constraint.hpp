@@ -34,6 +34,7 @@
 
 #include <dart/simulation/experimental/body/contact.hpp>
 #include <dart/simulation/experimental/comps/dynamics.hpp>
+#include <dart/simulation/experimental/detail/world_registry_types.hpp>
 #include <dart/simulation/experimental/export.hpp>
 
 #include <Eigen/Dense>
@@ -99,11 +100,11 @@ DART_EXPERIMENTAL_API Eigen::Vector3d computeRigidBodyContactPointVelocity(
 /// output row order is exactly three rows per accepted rigid contact: normal,
 /// first tangent, second tangent.
 DART_EXPERIMENTAL_API RigidBodyContactProblem assembleRigidBodyContactProblem(
-    const entt::registry& registry, std::span<const Contact> contacts);
+    const detail::WorldRegistry& registry, std::span<const Contact> contacts);
 
 /// Apply one world-space contact impulse to both rigid-body ends.
 DART_EXPERIMENTAL_API void applyRigidBodyContactImpulse(
-    entt::registry& registry,
+    detail::WorldRegistry& registry,
     const RigidBodyContactConstraint& constraint,
     const Eigen::Vector3d& impulse);
 

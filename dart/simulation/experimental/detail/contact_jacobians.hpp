@@ -48,6 +48,7 @@
 
 #include <dart/simulation/experimental/fwd.hpp>
 
+#include <dart/simulation/experimental/detail/world_registry_types.hpp>
 #include <dart/simulation/experimental/diff/physical_parameter.hpp>
 #include <dart/simulation/experimental/diff/step_derivatives.hpp>
 #include <dart/simulation/experimental/export.hpp>
@@ -132,7 +133,7 @@ namespace dart::simulation::experimental::detail {
 ///         constraint the result equals the contact-free (free-fall) Jacobian
 ///         (except under `PreContactSurrogate`, which adds a surrogate block).
 [[nodiscard]] DART_EXPERIMENTAL_API StepDerivatives contactStepDerivatives(
-    entt::registry& registry,
+    detail::WorldRegistry& registry,
     const std::vector<Contact>& contacts,
     const Eigen::Vector3d& gravity,
     double timeStep,
@@ -186,7 +187,7 @@ using ParameterRegistration = std::pair<entt::entity, PhysicalParameter>;
 ///         rigid body in scope.
 [[nodiscard]] DART_EXPERIMENTAL_API StepDerivatives
 contactStepDerivativesWithParameters(
-    entt::registry& registry,
+    detail::WorldRegistry& registry,
     const std::vector<Contact>& contacts,
     const Eigen::Vector3d& gravity,
     double timeStep,

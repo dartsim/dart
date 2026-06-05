@@ -52,13 +52,13 @@ namespace dart::simulation::experimental {
 
 namespace {
 
-template <typename Component>
+template <typename Component, typename Registry>
 bool hasOtherEntityWithName(
-    const entt::registry& registry,
+    const Registry& registry,
     entt::entity excludedEntity,
     std::string_view name)
 {
-  auto view = registry.view<Component, comps::Name>();
+  auto view = registry.template view<Component, comps::Name>();
   for (auto entity : view) {
     if (entity == excludedEntity) {
       continue;
@@ -80,8 +80,9 @@ bool containsEntity(
          != entities.end();
 }
 
+template <typename Registry>
 bool containsName(
-    const entt::registry& registry,
+    const Registry& registry,
     const std::vector<entt::entity>& entities,
     std::string_view name)
 {
