@@ -321,9 +321,17 @@ public:
 class DART_EXPERIMENTAL_API RigidBodyVelocityStage final : public WorldStepStage
 {
 public:
+  RigidBodyVelocityStage();
+  ~RigidBodyVelocityStage() override;
+
   [[nodiscard]] std::string_view getName() const noexcept override;
   [[nodiscard]] ComputeStageMetadata getMetadata() const noexcept override;
+  void prepare(World& world);
   void execute(World& world, ComputeExecutor& executor) override;
+
+private:
+  struct Scratch;
+  std::unique_ptr<Scratch> m_scratch;
 };
 
 /// Advances free rigid-body poses from their current velocities and refreshes
@@ -358,15 +366,18 @@ public:
 
   [[nodiscard]] std::string_view getName() const noexcept override;
   [[nodiscard]] ComputeStageMetadata getMetadata() const noexcept override;
+  void prepare(World& world);
   void execute(World& world, ComputeExecutor& executor) override;
 
   [[nodiscard]] std::size_t getIterations() const noexcept;
 
 private:
   struct AvbdScratch;
+  struct ContactScratch;
 
   std::size_t m_iterations;
   std::unique_ptr<AvbdScratch> m_avbdScratch;
+  std::unique_ptr<ContactScratch> m_contactScratch;
 };
 
 /// Terminal state of the most recent opt-in rigid IPC solver execution.

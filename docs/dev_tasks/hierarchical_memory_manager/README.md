@@ -19,14 +19,17 @@
 - [ ] Phase 4: Built-in simulation stages borrow world memory for transient
       buffers and avoid growth after simulation is baked. The default
       `WorldStepPipeline` now stores non-owning stage pointers inline, removing
-      its per-build `std::vector` allocation from the step path; solver-owned
-      transient buffers still need allocator-backed storage.
+      its per-build `std::vector` allocation from the step path; the default
+      rigid-body velocity/contact stages now reuse baked force/contact scratch
+      for the covered rigid contact scene; broader solver-owned transient
+      buffers still need allocator-backed storage.
 - [ ] Phase 5: Add allocation/debug accounting gates for "no dynamic allocation
       during the step loop" on representative rigid, multibody, contact, and
       deformable scenes. Initial World base-allocator no-growth guards now
       cover baked kinematic IPC rigid-body, multibody variational, and
       deformable ECS paths; a first global heap guard now covers baked
-      kinematic IPC rigid-body and box-obstacle steps. Broader solver coverage
+      kinematic IPC rigid-body, box-obstacle, multibody variational,
+      deformable, and rigid-body resting-contact steps. Broader solver coverage
       remains open before making a full zero-allocation claim.
 - [ ] Phase 6: Add memory-layout profiler/debugger surfaces and GUI
       visualization.
@@ -116,8 +119,10 @@ debugging, profiling, optimization experiments, and ImGui visualization.
    overflow, reuse-after-free, leak/debug accounting, and bounded failure.
 3. Extend bake-time registry/component storage reservation and no-growth
    allocation tests to contact-heavy scenes and remaining solver scratch step
-   paths, then broaden the global heap guard beyond the initial baked
-   kinematic IPC scenes before making the full zero-allocation claim.
+   paths. The initial rigid-body resting-contact global heap guard is in place;
+   continue broadening to articulated contacts, larger stacks, and remaining
+   solver/deformable candidate buffers before making the full zero-allocation
+   claim.
 4. Benchmark the allocator-backed EnTT registry/component-storage path against
    standard C++ allocators and foonathan/memory on DART-relevant workloads.
 5. Start replacing per-step `std::vector`/`Eigen` temporaries in hot stages with

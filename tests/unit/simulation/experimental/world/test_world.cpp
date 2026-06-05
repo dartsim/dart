@@ -894,6 +894,32 @@ TEST(World, BakedKinematicIpcStepsDoNotAllocateGlobalHeap)
       });
 }
 
+TEST(World, BakedRigidBodyContactStepsDoNotAllocateGlobalHeap)
+{
+  namespace sx = dart::simulation::experimental;
+
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "rigid body resting contact", [](sx::World& world) {
+        world.setGravity(Eigen::Vector3d::Zero());
+
+        sx::RigidBodyOptions groundOptions;
+        groundOptions.isStatic = true;
+        groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.25);
+        auto ground = world.addRigidBody("ground", groundOptions);
+        ground.setCollisionShape(
+            sx::CollisionShape::makeBox(Eigen::Vector3d(2.0, 2.0, 0.25)));
+
+        sx::RigidBodyOptions boxOptions;
+        boxOptions.position = Eigen::Vector3d(0.0, 0.0, 0.2);
+        auto box = world.addRigidBody("box", boxOptions);
+        box.setMass(1.0);
+        box.setCollisionShape(
+            sx::CollisionShape::makeBox(Eigen::Vector3d(0.2, 0.2, 0.2)));
+
+        world.setTimeStep(0.001);
+      });
+}
+
 TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
 {
   namespace sx = dart::simulation::experimental;

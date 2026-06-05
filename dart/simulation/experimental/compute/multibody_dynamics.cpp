@@ -1732,6 +1732,10 @@ void MultibodyForwardDynamicsStage::execute(
   auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const Eigen::Vector3d gravity = world.getGravity();
   const double timeStep = world.getTimeStep();
+  auto view = registry.view<comps::MultibodyStructure>();
+  if (view.begin() == view.end()) {
+    return;
+  }
 
   // Collision query once per step; route each contact that touches a link to
   // the multibody that owns it. Link-vs-rigid-body contacts are resolved here:
@@ -1739,9 +1743,8 @@ void MultibodyForwardDynamicsStage::execute(
   // equal-and-opposite impulse (two-sided). Same-multibody link-vs-link
   // contacts use one relative-Jacobian row; cross-multibody link-vs-link
   // contacts remain a later unified-solve slice.
-  const std::vector<Contact> contacts = world.collide();
+  const auto& contacts = world.queryContacts(CollisionQueryOptions{});
 
-  auto view = registry.view<comps::MultibodyStructure>();
   for (auto entity : view) {
     const auto& structure = view.get<comps::MultibodyStructure>(entity);
     const std::vector<LinkContact> linkContacts
@@ -1818,9 +1821,12 @@ void MultibodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
 {
   auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const double timeStep = world.getTimeStep();
-  const std::vector<Contact> contacts = world.collide();
-
   auto view = registry.view<comps::MultibodyStructure>();
+  if (view.begin() == view.end()) {
+    return;
+  }
+
+  const auto& contacts = world.queryContacts(CollisionQueryOptions{});
   for (auto entity : view) {
     const auto& structure = view.get<comps::MultibodyStructure>(entity);
     const std::vector<LinkContact> linkContacts
@@ -1945,7 +1951,7 @@ void UnifiedConstraintStage::execute(
 {
   auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const double timeStep = world.getTimeStep();
-  const std::vector<Contact> contacts = world.collide();
+  const auto& contacts = world.queryContacts(CollisionQueryOptions{});
   if (contacts.empty()) {
     return;
   }

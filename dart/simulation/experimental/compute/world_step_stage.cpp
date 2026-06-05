@@ -783,24 +783,30 @@ namespace {
 //==============================================================================
 struct RigidBodyForceBatch
 {
+  void clearAndReserve(std::size_t bodyCount)
+  {
+    entities.clear();
+    force.clear();
+    torque.clear();
+    entities.reserve(bodyCount);
+    force.reserve(3 * bodyCount);
+    torque.reserve(3 * bodyCount);
+  }
+
   std::vector<entt::entity> entities;
   std::vector<double> force;
   std::vector<double> torque;
 };
 
 //==============================================================================
-RigidBodyForceBatch assembleRigidBodyForces(
-    const World& world, bool includeGravity)
+void assembleRigidBodyForces(
+    const World& world, bool includeGravity, RigidBodyForceBatch& batch)
 {
   const auto& registry
       = dart::simulation::experimental::detail::registryOf(world);
   auto view
       = registry.view<comps::RigidBodyTag, comps::Transform, comps::Velocity>();
-
-  RigidBodyForceBatch batch;
-  batch.entities.reserve(view.size_hint());
-  batch.force.reserve(3 * view.size_hint());
-  batch.torque.reserve(3 * view.size_hint());
+  batch.clearAndReserve(view.size_hint());
 
   const Eigen::Vector3d gravity
       = includeGravity ? world.getGravity() : Eigen::Vector3d::Zero();
@@ -828,7 +834,14 @@ RigidBodyForceBatch assembleRigidBodyForces(
     batch.torque.push_back(assembledTorque.y());
     batch.torque.push_back(assembledTorque.z());
   }
+}
 
+//==============================================================================
+RigidBodyForceBatch assembleRigidBodyForces(
+    const World& world, bool includeGravity)
+{
+  RigidBodyForceBatch batch;
+  assembleRigidBodyForces(world, includeGravity, batch);
   return batch;
 }
 
@@ -7891,6 +7904,21 @@ bool canApplyRestingContactNoOp(
 } // namespace
 
 //==============================================================================
+struct RigidBodyVelocityStage::Scratch
+{
+  RigidBodyForceBatch forces;
+};
+
+//==============================================================================
+RigidBodyVelocityStage::RigidBodyVelocityStage()
+  : m_scratch(std::make_unique<Scratch>())
+{
+}
+
+//==============================================================================
+RigidBodyVelocityStage::~RigidBodyVelocityStage() = default;
+
+//==============================================================================
 std::string_view RigidBodyVelocityStage::getName() const noexcept
 {
   return "rigid_body_velocity";
@@ -7906,12 +7934,26 @@ ComputeStageMetadata RigidBodyVelocityStage::getMetadata() const noexcept
 }
 
 //==============================================================================
+void RigidBodyVelocityStage::prepare(World& world)
+{
+  if (m_scratch == nullptr) {
+    m_scratch = std::make_unique<Scratch>();
+  }
+
+  assembleRigidBodyForces(world, true, m_scratch->forces);
+}
+
+//==============================================================================
 void RigidBodyVelocityStage::execute(
     World& world, ComputeExecutor& /*executor*/)
 {
   auto& registry = dart::simulation::experimental::detail::registryOf(world);
   const auto timeStep = world.getTimeStep();
-  const auto forces = assembleRigidBodyForces(world, true);
+  if (m_scratch == nullptr) {
+    m_scratch = std::make_unique<Scratch>();
+  }
+  auto& forces = m_scratch->forces;
+  assembleRigidBodyForces(world, true, forces);
 
   for (std::size_t i = 0; i < forces.entities.size(); ++i) {
     const auto entity = forces.entities[i];
@@ -7988,9 +8030,42 @@ struct RigidBodyContactStage::AvbdScratch
 };
 
 //==============================================================================
+struct RigidBodyContactStage::ContactScratch
+{
+  struct NormalConstraint
+  {
+    entt::entity bodyA;
+    entt::entity bodyB;
+    Eigen::Vector3d normal;
+    Eigen::Vector3d armA;
+    Eigen::Vector3d armB;
+    bool staticA;
+    bool staticB;
+    double invMassA;
+    double invMassB;
+    Eigen::Matrix3d invInertiaA;
+    Eigen::Matrix3d invInertiaB;
+    double effectiveMass;
+    double depth;
+    double restitutionVelocity;
+    double normalImpulse;
+    Eigen::Vector3d tangent1;
+    Eigen::Vector3d tangent2;
+    double tangentMass1;
+    double tangentMass2;
+    double tangentImpulse1;
+    double tangentImpulse2;
+    double friction;
+  };
+
+  std::vector<NormalConstraint> constraints;
+};
+
+//==============================================================================
 RigidBodyContactStage::RigidBodyContactStage(std::size_t iterations)
   : m_iterations(std::max<std::size_t>(1, iterations)),
-    m_avbdScratch(std::make_unique<AvbdScratch>())
+    m_avbdScratch(std::make_unique<AvbdScratch>()),
+    m_contactScratch(std::make_unique<ContactScratch>())
 {
 }
 
@@ -8013,9 +8088,20 @@ ComputeStageMetadata RigidBodyContactStage::getMetadata() const noexcept
 }
 
 //==============================================================================
+void RigidBodyContactStage::prepare(World& world)
+{
+  if (m_contactScratch == nullptr) {
+    m_contactScratch = std::make_unique<ContactScratch>();
+  }
+
+  const auto& contacts = world.queryContacts(CollisionQueryOptions{});
+  m_contactScratch->constraints.reserve(contacts.size());
+}
+
+//==============================================================================
 void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
 {
-  const auto contacts = world.collide();
+  const auto& contacts = world.queryContacts(CollisionQueryOptions{});
   auto& registry = dart::simulation::experimental::detail::registryOf(world);
 
   const auto projectAvbdRigidPointJoints = [&]() {
@@ -8159,33 +8245,6 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
     return;
   }
 
-  // Precompute per-contact constants for a sequential-impulse normal solve.
-  struct NormalConstraint
-  {
-    entt::entity bodyA;
-    entt::entity bodyB;
-    Eigen::Vector3d normal;
-    Eigen::Vector3d armA;
-    Eigen::Vector3d armB;
-    bool staticA;
-    bool staticB;
-    double invMassA;
-    double invMassB;
-    Eigen::Matrix3d invInertiaA;
-    Eigen::Matrix3d invInertiaB;
-    double effectiveMass;
-    double depth;
-    double restitutionVelocity;
-    double normalImpulse;
-    Eigen::Vector3d tangent1;
-    Eigen::Vector3d tangent2;
-    double tangentMass1;
-    double tangentMass2;
-    double tangentImpulse1;
-    double tangentImpulse2;
-    double friction;
-  };
-
   const auto contactPointVelocity = [](const comps::Velocity& velocity,
                                        const Eigen::Vector3d& arm,
                                        bool isStatic) -> Eigen::Vector3d {
@@ -8195,7 +8254,11 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
     return velocity.linear + velocity.angular.cross(arm);
   };
 
-  std::vector<NormalConstraint> constraints;
+  if (m_contactScratch == nullptr) {
+    m_contactScratch = std::make_unique<ContactScratch>();
+  }
+  auto& constraints = m_contactScratch->constraints;
+  constraints.clear();
   constraints.reserve(contacts.size());
   for (const auto& contact : contacts) {
     const auto entityA = detail::toRegistryEntity(contact.bodyA.getEntity());
@@ -8218,7 +8281,7 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
     const bool staticB
         = hasPrescribedRigidBodyContactResponse(registry, entityB);
 
-    NormalConstraint constraint;
+    ContactScratch::NormalConstraint constraint;
     constraint.bodyA = entityA;
     constraint.bodyB = entityB;
     constraint.normal = contact.normal;

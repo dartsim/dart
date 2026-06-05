@@ -35,22 +35,25 @@ The current stacked no-allocation slice pre-bakes the default step stage bundle
 and kinematics graph cache at `enterSimulationMode()`, reuses rigid IPC
 kinematic scratch storage, and adds a global `operator new` guard proving baked
 kinematic IPC rigid-body and box-obstacle steps do not allocate from the global
-heap.
+heap. The broader follow-up extends that guard to a baked rigid-body
+resting-contact scene by reusing collision-query/contact result storage and
+default rigid-body velocity/contact stage scratch.
 
 ## Current Branch
 
-`feature/world-step-global-heap-guard` - stacked on PR #2872
+`feature/world-step-global-heap-guard-broader` - stacked on PR #2888
+(`feature/world-step-global-heap-guard`), which is stacked on PR #2872
 (`feature/world-registry-allocator`). PRs #2879 and #2880 have merged to
-`main`; this branch has merged the current #2872 head.
+`main`; this branch has merged the current #2872/#2888 heads.
 
 ## Immediate Next Step
 
-Monitor #2872/#2888 CI and resolve any failures. Next allocator work should
-land the strict comparative benchmark gate, broaden `FixedPoolAllocator`
-correctness coverage, benchmark allocator-backed EnTT registry/component
-storage, extend no-growth ECS tests to broader contact and remaining solver
-scratch step paths, and broaden the global heap allocation guard before
-claiming zero dynamic allocation for the full simulation loop.
+Monitor #2872/#2888/#2899 CI and resolve any failures. Next allocator work
+should land the strict comparative benchmark gate, broaden
+`FixedPoolAllocator` correctness coverage, benchmark allocator-backed EnTT
+registry/component storage, extend no-growth ECS tests to articulated contacts
+and remaining solver scratch step paths, and broaden the global heap allocation
+guard before claiming zero dynamic allocation for the full simulation loop.
 
 ## Latest Local Validation
 
@@ -74,6 +77,16 @@ claiming zero dynamic allocation for the full simulation loop.
 - On `feature/world-step-global-heap-guard` before this handoff:
   `cmake --build build/default/cpp/Release --target test_world -j2` and
   `ctest --test-dir build/default/cpp/Release -R '^test_world$' --output-on-failure`
+- On `feature/world-step-global-heap-guard-broader` after the rigid contact
+  heap guard:
+  `cmake --build build/default/cpp/Release --target test_world -j2`
+- On `feature/world-step-global-heap-guard-broader`:
+  `./build/default/cpp/Release/bin/test_world --gtest_filter='World.BakedRigidBodyContactStepsDoNotAllocateGlobalHeap'`
+- On `feature/world-step-global-heap-guard-broader`:
+  `./build/default/cpp/Release/bin/test_world --gtest_filter='World.Baked*DoNotAllocateGlobalHeap:World.BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths'`
+- On `feature/world-step-global-heap-guard-broader`:
+  `cmake --build build/default/cpp/Release --target test_world test_collision_world test_collision_filter_core test_world_contact_parity -j2 && ./build/default/cpp/Release/bin/test_world --gtest_filter='World.Baked*DoNotAllocateGlobalHeap:World.BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths' && ./build/default/cpp/Release/bin/test_world_contact_parity && ./build/default/cpp/Release/bin/test_collision_world && ./build/default/cpp/Release/bin/test_collision_filter_core`
+- On `feature/world-step-global-heap-guard-broader`: `pixi run lint`
 
 ## Context That Would Be Lost
 
@@ -108,5 +121,5 @@ git diff --stat
 ```
 
 Then continue from the open PR stack: #2872 allocator-backed experimental World
-registry, #2879 no-growth ECS guard, #2880 inline pipeline storage, and the
-comparative benchmark gate branch.
+registry, #2888 initial global heap guard, #2899 broader global heap guard, and
+the comparative benchmark gate branch.
