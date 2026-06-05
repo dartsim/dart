@@ -206,6 +206,11 @@ Paper audit:
     Public experimental `World` facades now expose free rigid-body revolute and
     prismatic joints through C++ and dartpy, including generated stubs,
     focused tests, and the categorized `sx_rigid_limited_joints` py-demo.
+    A first user-visible AVBD-specific `py-demos` scene,
+    `avbd_rigid_fixed_joint_contact`, now shows the public fixed-joint rows
+    preserving a captured rigid offset while ordinary rigid contact acts on the
+    payload; this is only a narrow AVBD rigid-constraint showcase, not a
+    source-demo or paper-scene reproduction.
     Public multibody joint extraction is still not wired.
     Unsupported envelopes still fall back to sequential impulses. This is not
     full narrow-phase feature extraction, not full rigid contact/joint rows, not
@@ -276,7 +281,9 @@ numbers.
    revolute/prismatic point-joint configs with arbitrary joint-axis bases plus
    private rigid-body ECS current-pose extraction for those one-DOF joint
    entities, and public free rigid-body revolute/prismatic facades with dartpy
-   bindings, stubs, focused tests, and py-demo coverage have narrow CPU paths.
+   bindings, stubs, focused tests, and py-demo coverage, plus the first
+   `avbd_rigid_fixed_joint_contact` fixed-joint/contact AVBD demo, have narrow
+   CPU/user-visible paths.
 2. In parallel planning, keep full friction cones, rigid/articulated rows, GPU
    parity, demos, and benchmark packets as open AVBD parity gates rather than
    completion claims.
