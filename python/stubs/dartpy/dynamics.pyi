@@ -25,6 +25,7 @@ __all__: list[str] = [
     "Frame",
     "FreeJoint",
     "FreeJointProperties",
+    "HeightmapShape",
     "HierarchicalIK",
     "Inertia",
     "InverseKinematics",
@@ -45,6 +46,7 @@ __all__: list[str] = [
     "PASSIVE",
     "PlanarJoint",
     "PlaneShape",
+    "PointCloudShape",
     "PrismaticJoint",
     "PrismaticJointProperties",
     "PyramidShape",
@@ -2070,6 +2072,146 @@ class MeshShape(Shape):
 
     def getType(*args, **kwargs) -> Any: ...
 
+class HeightmapShape(Shape):
+    def __init__(self) -> None: ...
+
+    def setHeightField(*args, **kwargs) -> Any: ...
+
+    def getHeightField(*args, **kwargs) -> Any: ...
+
+    def setScale(*args, **kwargs) -> Any: ...
+
+    def getScale(*args, **kwargs) -> Any: ...
+
+    def getWidth(*args, **kwargs) -> Any: ...
+
+    def getDepth(*args, **kwargs) -> Any: ...
+
+    def getMinHeight(*args, **kwargs) -> Any: ...
+
+    def getMaxHeight(*args, **kwargs) -> Any: ...
+
+    def flipY(*args, **kwargs) -> Any: ...
+
+    def getStaticType(*args, **kwargs): ...
+
+    compute_inertia = computeInertia
+
+    def computeInertia(*args, **kwargs) -> Any: ...
+
+    flip_y = flipY
+
+    get_depth = getDepth
+
+    get_height_field = getHeightField
+
+    get_max_height = getMaxHeight
+
+    get_min_height = getMinHeight
+
+    get_scale = getScale
+
+    get_static_type = getStaticType
+
+    get_type = getType
+
+    def getType(*args, **kwargs) -> Any: ...
+
+    get_width = getWidth
+
+    set_height_field = setHeightField
+
+    set_scale = setScale
+
+class PointCloudShape(Shape):
+    def __init__(self, visual_size: float = ...) -> None: ...
+
+    def reserve(self, size: int) -> None: ...
+
+    def addPoint(*args, **kwargs) -> Any: ...
+
+    def addPoints(*args, **kwargs) -> Any: ...
+
+    def setPoints(*args, **kwargs) -> Any: ...
+
+    def getPoints(*args, **kwargs) -> Any: ...
+
+    def getNumPoints(*args, **kwargs) -> Any: ...
+
+    def removeAllPoints(*args, **kwargs) -> Any: ...
+
+    def setPointShapeType(*args, **kwargs) -> Any: ...
+
+    def getPointShapeType(*args, **kwargs) -> Any: ...
+
+    def setColorMode(*args, **kwargs) -> Any: ...
+
+    def getColorMode(*args, **kwargs) -> Any: ...
+
+    def setOverallColor(*args, **kwargs) -> Any: ...
+
+    def getOverallColor(*args, **kwargs) -> Any: ...
+
+    def setVisualSize(*args, **kwargs) -> Any: ...
+
+    def getVisualSize(*args, **kwargs) -> Any: ...
+
+    def getStaticType(*args, **kwargs): ...
+
+    class ColorMode(enum.Enum):
+        USE_SHAPE_COLOR = 0
+
+        BIND_OVERALL = 1
+
+        BIND_PER_POINT = 2
+
+    class PointShapeType(enum.Enum):
+        BOX = 0
+
+        BILLBOARD_SQUARE = 1
+
+        BILLBOARD_CIRCLE = 2
+
+        POINT = 3
+
+    add_point = addPoint
+
+    add_points = addPoints
+
+    compute_inertia = computeInertia
+
+    def computeInertia(*args, **kwargs) -> Any: ...
+
+    get_color_mode = getColorMode
+
+    get_num_points = getNumPoints
+
+    get_overall_color = getOverallColor
+
+    get_point_shape_type = getPointShapeType
+
+    get_points = getPoints
+
+    get_static_type = getStaticType
+
+    get_type = getType
+
+    def getType(*args, **kwargs) -> Any: ...
+
+    get_visual_size = getVisualSize
+
+    remove_all_points = removeAllPoints
+
+    set_color_mode = setColorMode
+
+    set_overall_color = setOverallColor
+
+    set_point_shape_type = setPointShapeType
+
+    set_points = setPoints
+
+    set_visual_size = setVisualSize
+
 class Frame:
     def getRelativeTransform(*args, **kwargs) -> Any: ...
 
@@ -2363,6 +2505,12 @@ class BodyNode(JacobianNode):
 
     def setInertia(*args, **kwargs) -> Any: ...
 
+    def addExtForce(*args, **kwargs) -> Any: ...
+
+    def setExtForce(*args, **kwargs) -> Any: ...
+
+    def clearExternalForces(*args, **kwargs) -> Any: ...
+
     def getOrCreateIK(*args, **kwargs) -> Any: ...
 
     def getIK(*args, **kwargs) -> Any: ...
@@ -2376,6 +2524,10 @@ class BodyNode(JacobianNode):
     world = World
 
     def World(*args, **kwargs): ...
+
+    add_ext_force = addExtForce
+
+    clear_external_forces = clearExternalForces
 
     clear_ik = clearIK
 
@@ -2506,6 +2658,8 @@ class BodyNode(JacobianNode):
     is_world = isWorld
 
     def isWorld(*args, **kwargs) -> Any: ...
+
+    set_ext_force = setExtForce
 
     set_inertia = setInertia
 
@@ -3260,6 +3414,12 @@ class Skeleton(MetaSkeleton):
 
     def setForces(*args, **kwargs) -> Any: ...
 
+    def getConstraintForces(*args, **kwargs) -> Any: ...
+
+    def getCOM(*args, **kwargs) -> Any: ...
+
+    def clearExternalForces(*args, **kwargs) -> Any: ...
+
     def enableSelfCollisionCheck(*args, **kwargs) -> Any: ...
 
     def disableSelfCollisionCheck(*args, **kwargs) -> Any: ...
@@ -3300,6 +3460,8 @@ class Skeleton(MetaSkeleton):
 
     def getEndEffector(*args, **kwargs) -> Any: ...
 
+    clear_external_forces = clearExternalForces
+
     create_ball_joint_and_body_node_pair = createBallJointAndBodyNodePair
 
     create_euler_joint_and_body_node_pair = createEulerJointAndBodyNodePair
@@ -3329,6 +3491,10 @@ class Skeleton(MetaSkeleton):
     enable_adjacent_body_check = enableAdjacentBodyCheck
 
     enable_self_collision_check = enableSelfCollisionCheck
+
+    get_com = getCOM
+
+    get_constraint_forces = getConstraintForces
 
     get_coriolis_and_gravity_forces = getCoriolisAndGravityForces
 
