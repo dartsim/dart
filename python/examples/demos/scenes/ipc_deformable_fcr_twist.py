@@ -1,4 +1,4 @@
-"""FEM twisting bar with the fixed-corotational material (experimental IPC).
+"""FEM twisting bar with the fixed-corotational material (IPC).
 
 Same gripped-and-counter-rotated tetrahedral beam as the stable neo-Hookean
 twist demo, but driven by the *fixed-corotational* material -- the IPC paper's
@@ -99,7 +99,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="ipc_deformable_fcr_twist",
     title="Deformable FCR Twist (IPC)",
-    category="IPC Deformable (sx)",
+    category="IPC Deformable",
     summary="A tetrahedral fixed-corotational FEM bar is twisted at both ends "
     "and untwists elastically.",
     build=build,

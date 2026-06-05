@@ -17,7 +17,7 @@ import dartpy as dart
 import dartpy.simulation_experimental as sx
 import numpy as np
 
-from .._sx_bridge import SxRenderBridge
+from .._world_bridge import WorldRenderBridge
 from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
 _SPHERE_RADIUS = 0.32
@@ -111,7 +111,7 @@ def build() -> SceneSetup:
     world.configure_deformable_solver("drape", solver)
     world.enter_simulation_mode()
 
-    bridge = SxRenderBridge(world, name="vbd_obstacle_drape")
+    bridge = WorldRenderBridge(world, name="vbd_obstacle_drape")
     body = world.get_deformable_body("drape")
     bridge.add_deformable_visual(body, (0.25, 0.62, 0.85), radius=0.02, thickness=3.0)
     _add_static_visual(
@@ -189,8 +189,8 @@ def build() -> SceneSetup:
 
 SCENE = PythonDemoScene(
     id="vbd_obstacle_drape",
-    title="VBD Cloth over Sphere (sx)",
-    category="Vertex Block Descent (sx)",
+    title="VBD Cloth over Sphere",
+    category="Vertex Block Descent",
     summary="A VBD cloth drapes over a static sphere obstacle without sinking through it.",
     build=build,
 )

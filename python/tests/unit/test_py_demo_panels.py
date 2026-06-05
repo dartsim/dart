@@ -1,11 +1,9 @@
 from __future__ import annotations
 
-from types import SimpleNamespace
-
 import dartpy as dart
 import numpy as np
 import pytest
-from examples.demos._sx_bridge import SxRenderBridge
+from examples.demos._world_bridge import WorldRenderBridge
 from examples.demos.runner import (
     DEFAULT_SCENE_BUILD_TIMEOUT_MS,
     PythonDemoScene,
@@ -15,19 +13,14 @@ from examples.demos.runner import (
     _scene_build_timeout_ms,
     _validate_scene,
 )
-from examples.demos.scenes._simbicon_robots import make_simbicon_panel
-
 from examples.demos.scenes import (
-    arm_push_box,
+    articulated,
     atlas_simbicon,
-    biped_stand,
-    cartpole_gym_env,
-    cartpole_mpc,
+    contact,
     diff_cartpole_trajopt,
     diff_drone_liftoff,
     diff_throw_to_target,
-    experimental_rigid_body_gui,
-    hybrid_dynamics,
+    floating_base,
     ipc_deformable_capsule_rod,
     ipc_deformable_cg_contact,
     ipc_deformable_cg_solver,
@@ -49,27 +42,22 @@ from examples.demos.scenes import (
     ipc_deformable_scripted_dirichlet,
     ipc_deformable_seg_strand,
     ipc_deformable_trampoline,
-    joint_constraints,
-    legged_balance,
-    operational_space_control,
-    sensor_descriptors,
-    sx_articulated,
-    sx_contact,
-    sx_floating_base,
-    sx_rigid_fixed_joint,
-    sx_rigid_ipc,
-    sx_rigid_ipc_incline,
-    sx_rigid_ipc_pile,
-    sx_rigid_ipc_tunnel,
-    sx_variational_chain,
-    sx_variational_tumbler,
+    planned,
+    rigid_body,
+    rigid_fixed_joint,
+    rigid_ipc,
+    rigid_ipc_incline,
+    rigid_ipc_pile,
+    rigid_ipc_tunnel,
+    robot_puppets,
+    variational_chain,
+    variational_tumbler,
     vbd_beam,
     vbd_cloth,
     vbd_net,
     vbd_obstacle_drape,
     vbd_self_fold,
     vbd_tilted_strand,
-    vehicle,
 )
 
 
@@ -112,14 +100,14 @@ def test_make_world_factory_returns_panels_tuple() -> None:
 
 def test_validate_scene_accepts_hyphenated_scene_id_alias() -> None:
     scene = PythonDemoScene(
-        id="sx_rigid_ipc_slide",
+        id="rigid_ipc_slide",
         title="Panel Scene",
         category="Tests",
         summary="Has a custom panel.",
         build=lambda: SceneSetup(world=object()),
     )
 
-    _validate_scene("sx-rigid-ipc-slide", [scene])
+    _validate_scene("rigid-ipc-slide", [scene])
 
 
 def test_scene_build_timeout_follows_demo_startup_budget_by_default(
@@ -218,22 +206,26 @@ class _FakePanelBuilder:
         self.events.append("separator")
 
 
-def test_high_value_sx_scenes_expose_custom_panels() -> None:
-    _require_simulation_experimental_symbols("World")
+def test_high_value_world_scenes_expose_custom_panels() -> None:
+    sx = _require_simulation_experimental_symbols("World")
 
-    for scene_module, expected_title in (
-        (sx_articulated, "Articulated sx"),
-        (sx_floating_base, "Floating Base sx"),
-        (sx_contact, "Contact sx"),
-        (experimental_rigid_body_gui, "Rigid Bodies sx"),
-        (sx_rigid_fixed_joint, "Rigid Fixed Joint"),
-        (sx_rigid_ipc, "Rigid IPC Contact"),
-        (sx_rigid_ipc_incline, "Rigid IPC Incline"),
-        (sx_rigid_ipc_pile, "Rigid IPC Pile"),
-        (sx_rigid_ipc_tunnel, "Rigid IPC Tunnel"),
-        (sx_variational_chain, "Variational Chain"),
-        (sx_variational_tumbler, "Variational Tumbler"),
-    ):
+    cases = [
+        (articulated, "Articulated"),
+        (floating_base, "Floating Base"),
+        (contact, "Contact"),
+        (rigid_body, "Rigid Bodies"),
+        (rigid_ipc, "Rigid IPC Contact"),
+        (rigid_ipc_incline, "Rigid IPC Incline"),
+        (rigid_ipc_pile, "Rigid IPC Pile"),
+        (rigid_ipc_tunnel, "Rigid IPC Tunnel"),
+        (atlas_simbicon, "Atlas SIMBICON"),
+        (variational_chain, "Variational Chain"),
+        (variational_tumbler, "Variational Tumbler"),
+    ]
+    if hasattr(sx.World(), "add_rigid_body_fixed_joint"):
+        cases.insert(4, (rigid_fixed_joint, "Rigid Fixed Joint"))
+
+    for scene_module, expected_title in cases:
         setup = scene_module.build()
         builder = _FakePanelBuilder()
 
@@ -246,6 +238,67 @@ def test_high_value_sx_scenes_expose_custom_panels() -> None:
         assert "text:External force" in builder.events
         assert any(event.startswith("text:drag target: ") for event in builder.events)
         assert "checkbox:Enable external force" in builder.events
+
+
+def test_robot_puppet_world_scenes_expose_pose_panels() -> None:
+    _require_simulation_experimental_symbols("World", "add_skeleton", "ReadOptions")
+
+    for scene, expected_title in (
+        (robot_puppets.ATLAS_PUPPET, "Atlas Puppet"),
+        (robot_puppets.HUBO_PUPPET, "Hubo Puppet"),
+    ):
+        setup = scene.build()
+        builder = _FakePanelBuilder()
+
+        assert setup.force_drag is not None
+        assert [panel.title for panel in setup.panels] == [expected_title]
+        assert setup.info["dofs"] > 0
+        assert setup.info["visual_links"] > 0
+
+        setup.panels[0].build(builder, object())
+
+        assert "slider:Pose blend:0.0:1.0" in builder.events
+        assert "button:Reach pose" in builder.events
+        assert "button:Crouch pose" in builder.events
+        assert "button:Neutral pose" in builder.events
+        assert any(event.startswith("plot:Root height:") for event in builder.events)
+        assert "text:External force" in builder.events
+
+
+def test_g1_puppet_stays_asset_gated_placeholder() -> None:
+    setup = robot_puppets.G1_PUPPET.build()
+    builder = _FakePanelBuilder()
+
+    assert [panel.title for panel in setup.panels] == ["G1 Puppet"]
+    assert setup.info["planned_world_port"] == "g1_puppet"
+
+    setup.panels[0].build(builder, object())
+
+    assert "text:status: planned World demo" in builder.events
+    assert "text:legacy seed: g1_puppet" in builder.events
+    assert any(event.startswith("text:target: ") for event in builder.events)
+
+
+def test_planned_world_port_placeholders_expose_status_panels() -> None:
+    for scene in [
+        planned.INVERSE_KINEMATICS,
+        planned.SIMBICON_WALKING,
+        planned.OPERATIONAL_SPACE_CONTROL,
+        planned.ROBOT_PUPPETS,
+        planned.COLLISION_SANDBOX,
+        planned.MOBILE_MANIPULATION,
+    ]:
+        setup = scene.build()
+        builder = _FakePanelBuilder()
+
+        assert [panel.title for panel in setup.panels] == [scene.title]
+        assert setup.info["planned_world_port"] == scene.id
+
+        setup.panels[0].build(builder, object())
+
+        assert "text:status: planned World demo" in builder.events
+        assert any(event.startswith("text:legacy seeds: ") for event in builder.events)
+        assert any(event.startswith("text:target: ") for event in builder.events)
 
 
 def test_ipc_deformable_scene_exposes_diagnostics_panel() -> None:
@@ -495,110 +548,17 @@ def test_ipc_fem_scenes_expose_diagnostics_panels() -> None:
         )
 
 
-def test_control_modern_scenes_expose_interactive_panels() -> None:
-    for scene_module, expected_title, expected_plot in (
-        (legged_balance, "Legged Balance", "plot:Angle:"),
-        (arm_push_box, "Arm Push Box", "plot:Box x:"),
-        (cartpole_gym_env, "Cart-pole Env", "plot:Cart x:"),
-        (cartpole_mpc, "Cart-pole MPC", "plot:Force:"),
-        (sensor_descriptors, "Sensor Descriptors", "text:status: descriptor surface"),
-    ):
-        setup = scene_module.build()
-        builder = _FakePanelBuilder()
-
-        assert [panel.title for panel in setup.panels] == [expected_title]
-
-        setup.panels[0].build(builder, object())
-
-        assert any(event.startswith(expected_plot) for event in builder.events)
-        if scene_module is not sensor_descriptors:
-            assert setup.pre_step is not None
-            assert setup.step is None
-
-
-def test_legacy_control_scenes_expose_controller_panels() -> None:
-    for scene_module, expected_title, expected_plot in (
-        (
-            operational_space_control,
-            "Operational Space",
-            "plot:Tracking error:",
-        ),
-        (hybrid_dynamics, "Hybrid Dynamics", "plot:Arm command:"),
-        (biped_stand, "Biped Stand", "plot:Pose error:"),
-        (joint_constraints, "Joint Constraints", "plot:Sagittal offset:"),
-        (vehicle, "Vehicle", "plot:Steering angle:"),
-        (atlas_simbicon, "Atlas SIMBICON", "plot:atlas z:"),
-    ):
-        setup = scene_module.build()
-        builder = _FakePanelBuilder()
-
-        assert [panel.title for panel in setup.panels] == [expected_title]
-
-        setup.panels[0].build(builder, object())
-
-        assert setup.pre_step is not None
-        assert any(event.startswith(expected_plot) for event in builder.events)
-
-
-class _FakeSimbiconController:
-    def __init__(
-        self,
-        name: str,
-        state: int,
-        swing: str,
-        pelvis_height: float,
-        balance_sagittal: float,
-        balance_coronal: float,
-    ) -> None:
-        self.cfg = SimpleNamespace(name=name)
-        self._diagnostics = {
-            "name": name,
-            "state": state,
-            "swing": swing,
-            "control_enabled": True,
-            "state_time": 0.125,
-            "pelvis_height": pelvis_height,
-            "balance_sagittal": balance_sagittal,
-            "balance_sagittal_velocity": -0.02,
-            "balance_coronal": balance_coronal,
-            "balance_coronal_velocity": 0.03,
-        }
-
-    def diagnostics(self) -> dict[str, float | int | bool | str]:
-        return self._diagnostics
-
-
-def test_simbicon_panel_reports_duo_robot_diagnostics_without_assets() -> None:
-    panel = make_simbicon_panel(
-        "SIMBICON Duo",
-        [
-            _FakeSimbiconController("atlas", 1, "left", 0.91, -0.12, 0.03),
-            _FakeSimbiconController("g1", 2, "right", 0.42, 0.04, -0.02),
-        ],
-    )
-    builder = _FakePanelBuilder()
-
-    panel.build(builder, object())
-
-    assert "text:atlas: state 1 swing left" in builder.events
-    assert "text:g1: state 2 swing right" in builder.events
-    assert any(event.startswith("plot:atlas z:") for event in builder.events)
-    assert any(event.startswith("plot:g1 z:") for event in builder.events)
-    assert any(event.startswith("plot:g1 sag:") for event in builder.events)
-    assert any(event.startswith("plot:g1 cor:") for event in builder.events)
-
-
 @pytest.mark.skipif(
     not hasattr(dart, "gui") or not hasattr(dart.gui, "extract_renderables"),
     reason="GUI descriptor extraction is not available in this build",
 )
-def test_sx_bridge_force_drag_uses_renderable_id_and_restores_rigid_force() -> None:
+def test_world_bridge_force_drag_uses_renderable_id_and_restores_rigid_force() -> None:
     sx_world = _FakeWorld()
     target = _FakeRigidBody()
     other = _FakeRigidBody()
     other.name = "other"
 
-    bridge = SxRenderBridge(sx_world, name="force_drag_test")
+    bridge = WorldRenderBridge(sx_world, name="force_drag_test")
     bridge.add_rigid_body_visual(
         other,
         dart.BoxShape(np.array([0.1, 0.1, 0.1])),
@@ -612,7 +572,9 @@ def test_sx_bridge_force_drag_uses_renderable_id_and_restores_rigid_force() -> N
         name="repeated_visual",
     )
     target_frame_name = next(
-        name for name, sx_object in bridge._by_name.items() if sx_object is target
+        name
+        for name, physics_object in bridge._by_name.items()
+        if physics_object is target
     )
     target_id = next(
         int(renderable.id)
@@ -661,13 +623,13 @@ def test_sx_bridge_force_drag_uses_renderable_id_and_restores_rigid_force() -> N
     not hasattr(dart, "gui") or not hasattr(dart.gui, "extract_renderables"),
     reason="GUI descriptor extraction is not available in this build",
 )
-def test_sx_bridge_external_force_panel_reports_disabled_and_static_targets() -> None:
+def test_world_bridge_external_force_panel_reports_disabled_and_static_targets() -> None:
     sx_world = _FakeWorld()
     static_target = _FakeRigidBody()
     static_target.name = "ground"
     static_target.is_static = True
 
-    bridge = SxRenderBridge(sx_world, name="external_force_state_test")
+    bridge = WorldRenderBridge(sx_world, name="external_force_state_test")
     bridge.add_rigid_body_visual(
         static_target,
         dart.BoxShape(np.array([0.1, 0.1, 0.1])),
@@ -719,7 +681,7 @@ def test_sx_bridge_external_force_panel_reports_disabled_and_static_targets() ->
 
     dynamic_target = _FakeRigidBody()
     dynamic_target.name = "box"
-    dynamic_bridge = SxRenderBridge(_FakeWorld(), name="external_force_hint_test")
+    dynamic_bridge = WorldRenderBridge(_FakeWorld(), name="external_force_hint_test")
     dynamic_bridge.add_rigid_body_visual(
         static_target,
         dart.BoxShape(np.array([0.1, 0.1, 0.1])),

@@ -17,7 +17,7 @@ from collections import deque
 import dartpy.simulation_experimental as sx
 import numpy as np
 
-from .._sx_bridge import SxRenderBridge
+from .._world_bridge import WorldRenderBridge
 from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
 _BOTTOM_SIDE = 7
@@ -117,7 +117,7 @@ def build() -> SceneSetup:
     world.configure_deformable_solver("self_fold", solver)
     world.enter_simulation_mode()
 
-    bridge = SxRenderBridge(world, name="vbd_self_fold")
+    bridge = WorldRenderBridge(world, name="vbd_self_fold")
     body = world.get_deformable_body("self_fold")
     bridge.add_deformable_visual(
         body,
@@ -192,8 +192,8 @@ def build() -> SceneSetup:
 
 SCENE = PythonDemoScene(
     id="vbd_self_fold",
-    title="VBD Surface Self-Contact (sx)",
-    category="Vertex Block Descent (sx)",
+    title="VBD Surface Self-Contact",
+    category="Vertex Block Descent",
     summary="One body's free top cloth layer settles on its pinned bottom layer "
     "without passing through it, via VBD surface self-contact.",
     build=build,

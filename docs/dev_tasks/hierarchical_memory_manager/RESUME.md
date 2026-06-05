@@ -46,13 +46,13 @@ the previous arbitrary-stage behavior through an overflow path.
 
 ## Current Branch
 
-`feature/world-step-global-heap-guard` - stacked on PR #2872
-(`feature/world-registry-allocator`). PRs #2879 and #2880 have merged to
-`main`; this branch has merged the current #2872 head.
+`feature/world-step-global-heap-guard` - PR #2888 branch for the first global
+heap allocation guard on top of the registry, no-growth, and inline-pipeline
+work that has merged to `main`.
 
 ## Immediate Next Step
 
-Monitor #2872/#2888 CI and resolve any failures. Next allocator work should
+Monitor #2888 CI and resolve any failures. Next allocator work should
 land the strict comparative benchmark gate, broaden `FixedPoolAllocator`
 correctness coverage, benchmark allocator-backed EnTT registry/component
 storage, extend no-growth ECS tests to broader contact and remaining solver

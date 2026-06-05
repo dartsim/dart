@@ -43,6 +43,7 @@
 #include "dart/simulation/experimental/compute/compute_executor.hpp"
 #include "dart/simulation/experimental/compute/compute_graph.hpp"
 #include "dart/simulation/experimental/compute/deformable_psd_backend.hpp"
+#include "dart/simulation/experimental/compute/detail/deformable_avbd_replay_state.hpp"
 #include "dart/simulation/experimental/compute/rigid_body_constraint.hpp"
 #include "dart/simulation/experimental/compute/rigid_body_state_batch.hpp"
 #include "dart/simulation/experimental/compute/world_kinematics_graph.hpp"
@@ -787,6 +788,155 @@ void RigidBodyIntegrationStage::execute(World& world, ComputeExecutor& executor)
 std::size_t RigidBodyIntegrationStage::getBatchSize() const noexcept
 {
   return m_batchSize;
+}
+
+//==============================================================================
+/// Transient cached topology for the experimental Vertex Block Descent inner
+/// solver: the spring and tetrahedron element lists plus the vertex-graph
+/// coloring (over the union of springs and tets) and the per-element incident
+/// adjacencies, rebuilt only when the element topology changes. Defined here
+/// (not in comps) so the heavy kernel headers stay out of the component
+/// headers; it is stored per body and never serialized.
+struct DeformableVbdScratch
+{
+  std::vector<dvbd::SpringElement> springs;
+  std::vector<dvbd::TetMeshElement> tets;
+  dvbd::VertexColoring coloring;
+  dvbd::SpringAdjacency springAdjacency;
+  dvbd::TetAdjacency tetAdjacency;
+  // Per-vertex static ground-contact planes, rebuilt each step from the barrier
+  // set at the warm-start position (lagged); a zero stiffness marks "no ground
+  // under this vertex".
+  std::vector<dvbd::ContactPlane> contactPlanes;
+  // Stable static-contact feature IDs parallel to `contactPlanes`, used by the
+  // AVBD row inventory so a vertex contact against ground, sphere, or box
+  // features warm-starts only against the same static feature.
+  std::vector<std::uint64_t> contactObjectIds;
+  std::vector<std::uint64_t> contactFeatureIds;
+  std::vector<dvbd::AvbdScalarRowDescriptor> avbdContactDescriptors;
+  dvbd::AvbdScalarRowInventory avbdContactInventory;
+  std::vector<dvbd::AvbdHalfSpaceContactRow> avbdContactRows;
+  std::vector<dvbd::AvbdScalarRowDescriptor> avbdFrictionDescriptors;
+  dvbd::AvbdScalarRowInventory avbdFrictionInventory;
+  std::vector<dvbd::AvbdHalfSpaceFrictionRow> avbdFrictionRows;
+  std::vector<dvbd::AvbdScalarRowDescriptor> avbdSelfContactDescriptors;
+  dvbd::AvbdScalarRowInventory avbdSelfContactInventory;
+  std::vector<dvbd::AvbdSelfContactNormalRow> avbdSelfContactRows;
+  std::vector<dvbd::AvbdScalarRowDescriptor> avbdSelfContactFrictionDescriptors;
+  dvbd::AvbdScalarRowInventory avbdSelfContactFrictionInventory;
+  std::vector<dvbd::AvbdSelfContactFrictionRow> avbdSelfContactFrictionRows;
+  std::vector<dvbd::AvbdScalarRowDescriptor> avbdAttachmentDescriptors;
+  dvbd::AvbdScalarRowInventory avbdAttachmentInventory;
+  std::vector<dvbd::AvbdPointAttachmentRow> avbdAttachmentRows;
+  std::vector<dvbd::AvbdScalarRowDescriptor> avbdSpringDescriptors;
+  dvbd::AvbdScalarRowInventory avbdSpringInventory;
+  std::vector<dvbd::AvbdSpringFiniteStiffnessRow> avbdSpringRows;
+  std::vector<dvbd::AvbdScalarRowDescriptor> avbdTetDescriptors;
+  dvbd::AvbdScalarRowInventory avbdTetInventory;
+  std::vector<dvbd::AvbdTetMaterialFiniteStiffnessRow> avbdTetRows;
+  std::vector<std::uint8_t> avbdSolveFixed;
+  // Self-contact candidate set + per-vertex incident lists, rebuilt each step
+  // (lagged) from the body's swept start-to-warm-start surface motion.
+  dc::ContactCandidateSet selfContactCandidates;
+  dc::detail::ContactCandidateSweepScratch selfContactSweepScratch;
+  dvbd::SelfContactAdjacency selfContactAdjacency;
+  std::size_t cachedNodeCount = 0;
+  std::size_t cachedEdgeCount = 0;
+  std::size_t cachedTetCount = 0;
+  bool initialized = false;
+};
+
+//==============================================================================
+namespace {
+
+void clearDeformableAvbdWarmStartRows(DeformableVbdScratch& scratch)
+{
+  scratch.avbdContactDescriptors.clear();
+  scratch.avbdContactInventory.records().clear();
+  scratch.avbdContactRows.clear();
+  scratch.avbdFrictionDescriptors.clear();
+  scratch.avbdFrictionInventory.records().clear();
+  scratch.avbdFrictionRows.clear();
+  scratch.avbdSelfContactDescriptors.clear();
+  scratch.avbdSelfContactInventory.records().clear();
+  scratch.avbdSelfContactRows.clear();
+  scratch.avbdSelfContactFrictionDescriptors.clear();
+  scratch.avbdSelfContactFrictionInventory.records().clear();
+  scratch.avbdSelfContactFrictionRows.clear();
+  scratch.avbdAttachmentDescriptors.clear();
+  scratch.avbdAttachmentInventory.records().clear();
+  scratch.avbdAttachmentRows.clear();
+  scratch.avbdSpringDescriptors.clear();
+  scratch.avbdSpringInventory.records().clear();
+  scratch.avbdSpringRows.clear();
+  scratch.avbdTetDescriptors.clear();
+  scratch.avbdTetInventory.records().clear();
+  scratch.avbdTetRows.clear();
+  scratch.avbdSolveFixed.clear();
+}
+
+} // namespace
+
+//==============================================================================
+std::vector<avbd_replay::DeformableAvbdWarmStartReplayState>
+avbd_replay::captureDeformableAvbdWarmStartReplayState(
+    const detail::WorldRegistry& registry)
+{
+  std::vector<avbd_replay::DeformableAvbdWarmStartReplayState> states;
+
+  auto view = registry.view<DeformableVbdScratch>();
+  for (auto entity : view) {
+    const auto& scratch = view.get<DeformableVbdScratch>(entity);
+    states.push_back(
+        avbd_replay::DeformableAvbdWarmStartReplayState{
+            entity,
+            scratch.avbdContactInventory.records(),
+            scratch.avbdFrictionInventory.records(),
+            scratch.avbdSelfContactInventory.records(),
+            scratch.avbdSelfContactFrictionInventory.records(),
+            scratch.avbdAttachmentInventory.records(),
+            scratch.avbdSpringInventory.records(),
+            scratch.avbdTetInventory.records()});
+  }
+
+  std::ranges::sort(states, [](const auto& lhs, const auto& rhs) {
+    return static_cast<std::uint32_t>(lhs.entity)
+           < static_cast<std::uint32_t>(rhs.entity);
+  });
+  return states;
+}
+
+//==============================================================================
+void avbd_replay::restoreDeformableAvbdWarmStartReplayState(
+    detail::WorldRegistry& registry,
+    std::span<const avbd_replay::DeformableAvbdWarmStartReplayState>
+        replayStates)
+{
+  for (const auto& state : replayStates) {
+    DART_EXPERIMENTAL_THROW_T_IF(
+        !registry.valid(state.entity)
+            || !registry.all_of<comps::DeformableBodyTag>(state.entity),
+        InvalidOperationException,
+        "Cannot restore replay frame: deformable AVBD entity layout changed");
+  }
+
+  for (auto entity : registry.view<DeformableVbdScratch>()) {
+    clearDeformableAvbdWarmStartRows(
+        registry.get<DeformableVbdScratch>(entity));
+  }
+
+  for (const auto& state : replayStates) {
+    auto& scratch = registry.get_or_emplace<DeformableVbdScratch>(state.entity);
+    clearDeformableAvbdWarmStartRows(scratch);
+    scratch.avbdContactInventory.records() = state.contactRows;
+    scratch.avbdFrictionInventory.records() = state.frictionRows;
+    scratch.avbdSelfContactInventory.records() = state.selfContactRows;
+    scratch.avbdSelfContactFrictionInventory.records()
+        = state.selfContactFrictionRows;
+    scratch.avbdAttachmentInventory.records() = state.attachmentRows;
+    scratch.avbdSpringInventory.records() = state.springRows;
+    scratch.avbdTetInventory.records() = state.tetRows;
+  }
 }
 
 namespace {
@@ -4579,62 +4729,6 @@ void prepareDeformableBoundaryConditions(
     }
   }
 }
-
-//==============================================================================
-/// Transient cached topology for the experimental Vertex Block Descent inner
-/// solver: the spring and tetrahedron element lists plus the vertex-graph
-/// coloring (over the union of springs and tets) and the per-element incident
-/// adjacencies, rebuilt only when the element topology changes. Defined here
-/// (not in comps) so the heavy kernel headers stay out of the component
-/// headers; it is stored per body and never serialized.
-struct DeformableVbdScratch
-{
-  std::vector<dvbd::SpringElement> springs;
-  std::vector<dvbd::TetMeshElement> tets;
-  dvbd::VertexColoring coloring;
-  dvbd::SpringAdjacency springAdjacency;
-  dvbd::TetAdjacency tetAdjacency;
-  // Per-vertex static ground-contact planes, rebuilt each step from the barrier
-  // set at the warm-start position (lagged); a zero stiffness marks "no ground
-  // under this vertex".
-  std::vector<dvbd::ContactPlane> contactPlanes;
-  // Stable static-contact feature IDs parallel to `contactPlanes`, used by the
-  // AVBD row inventory so a vertex contact against ground, sphere, or box
-  // features warm-starts only against the same static feature.
-  std::vector<std::uint64_t> contactObjectIds;
-  std::vector<std::uint64_t> contactFeatureIds;
-  std::vector<dvbd::AvbdScalarRowDescriptor> avbdContactDescriptors;
-  dvbd::AvbdScalarRowInventory avbdContactInventory;
-  std::vector<dvbd::AvbdHalfSpaceContactRow> avbdContactRows;
-  std::vector<dvbd::AvbdScalarRowDescriptor> avbdFrictionDescriptors;
-  dvbd::AvbdScalarRowInventory avbdFrictionInventory;
-  std::vector<dvbd::AvbdHalfSpaceFrictionRow> avbdFrictionRows;
-  std::vector<dvbd::AvbdScalarRowDescriptor> avbdSelfContactDescriptors;
-  dvbd::AvbdScalarRowInventory avbdSelfContactInventory;
-  std::vector<dvbd::AvbdSelfContactNormalRow> avbdSelfContactRows;
-  std::vector<dvbd::AvbdScalarRowDescriptor> avbdSelfContactFrictionDescriptors;
-  dvbd::AvbdScalarRowInventory avbdSelfContactFrictionInventory;
-  std::vector<dvbd::AvbdSelfContactFrictionRow> avbdSelfContactFrictionRows;
-  std::vector<dvbd::AvbdScalarRowDescriptor> avbdAttachmentDescriptors;
-  dvbd::AvbdScalarRowInventory avbdAttachmentInventory;
-  std::vector<dvbd::AvbdPointAttachmentRow> avbdAttachmentRows;
-  std::vector<dvbd::AvbdScalarRowDescriptor> avbdSpringDescriptors;
-  dvbd::AvbdScalarRowInventory avbdSpringInventory;
-  std::vector<dvbd::AvbdSpringFiniteStiffnessRow> avbdSpringRows;
-  std::vector<dvbd::AvbdScalarRowDescriptor> avbdTetDescriptors;
-  dvbd::AvbdScalarRowInventory avbdTetInventory;
-  std::vector<dvbd::AvbdTetMaterialFiniteStiffnessRow> avbdTetRows;
-  std::vector<std::uint8_t> avbdSolveFixed;
-  // Self-contact candidate set + per-vertex incident lists, rebuilt each step
-  // (lagged) from the body's swept start-to-warm-start surface motion.
-  dc::ContactCandidateSet selfContactCandidates;
-  dc::detail::ContactCandidateSweepScratch selfContactSweepScratch;
-  dvbd::SelfContactAdjacency selfContactAdjacency;
-  std::size_t cachedNodeCount = 0;
-  std::size_t cachedEdgeCount = 0;
-  std::size_t cachedTetCount = 0;
-  bool initialized = false;
-};
 
 inline constexpr std::uint64_t kAvbdStaticGroundObjectId = 1;
 inline constexpr std::uint64_t kAvbdStaticSphereObjectId = 2;

@@ -1,4 +1,4 @@
-"""FEM slab draping over a box obstacle (experimental IPC deformable solver).
+"""FEM slab draping over a box obstacle (IPC deformable solver).
 
 A free tetrahedral FEM slab is dropped onto a static box ("table") resting on
 the ground. The box is opted in as a deformable obstacle, so its clamped-log
@@ -122,7 +122,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="ipc_deformable_fem_box",
     title="Deformable FEM over Box (IPC)",
-    category="IPC Deformable (sx)",
+    category="IPC Deformable",
     summary="A FEM slab drapes over a box obstacle via the box barrier + ground barrier.",
     build=build,
 )

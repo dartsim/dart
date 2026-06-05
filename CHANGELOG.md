@@ -35,6 +35,18 @@
     `dart::gui::runDemos`. `hello_world` stays a standalone minimal CMake
     template, and the headless `csv_logger`, `headless_simulation`,
     `speed_test`, and `unified_loading` examples stay standalone.
+  - Pruned `pixi run demos` and `pixi run py-demos` to the DART 7 World demo
+    catalog. The old DART 6 demo scene modules and cross-language golden parity
+    fixtures were removed; remaining scene ids/categories use World, IPC,
+    differentiable, variational, and VBD names without experimental/sx labels.
+    High-value DART 6 examples that still need full World-native ports now
+    appear as lightweight `Planned World Ports` placeholders or conservative
+    previews: `atlas_puppet` and `hubo_puppet` load bundled humanoids through
+    the experimental World with pose controls, `g1_puppet` remains asset-gated,
+    `atlas_simbicon` cycles SIMBICON target poses, and IK, full walking
+    balance, operational-space control, collision sandbox, and
+    mobile-manipulation follow-ups stay visible without keeping legacy scene
+    implementations.
   - Added runtime rendering-backend (graphics API) selection through
     `dart::gui::RunOptions::renderBackend`, the `--render-backend` flag, and the
     `DART_FILAMENT_BACKEND` environment variable (`default`/`opengl`/`vulkan`
@@ -109,6 +121,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Added `pixi run bm-allocator-comparative-check`, a strict allocator
     benchmark gate that compares DART allocator workloads against
     foonathan/memory and `std::pmr` baselines.
+  - Hardened `dart::common::FixedPoolAllocator` against base-allocator failures
+    during construction and block-table growth, with coverage for deterministic
+    failure, fallback, reuse, and debug-guard paths.
   - Added the standalone `dartsim/` GUI simulator (a runtime executable, not a
     library) built only on the experimental World API. Its headless editor
     engine (`dartsim/engine`) provides scene/object, selection, command
@@ -614,6 +629,15 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     `clang-format` version changes under an existing build tree.
 
 - Simulation
+  - Added opt-in runtime replay recording to the experimental `World`, with C++
+    and dartpy controls for enabling recording, querying recorded timestep
+    metadata, clearing the buffer, and restoring a recorded frame in place
+    without re-running physics. Replay frames deliberately store only mutable
+    runtime state needed to restore an already-simulated frame, not topology,
+    geometry, material, or static construction data, and layout changes are
+    rejected on restore. Added focused C++/Python regressions and an
+    `sx_replay_scrubber` `py-demos` scene with timestep-resolution
+    slider/controller playback.
   - Consolidated the experimental CUDA solver modules (rigid-body batch, vertex
     block descent, deformable PSD projection) onto a shared device-runtime
     substrate so new GPU solvers reuse common blocks instead of reinventing them:
