@@ -245,7 +245,7 @@ def test_experimental_stub_tracks_public_runtime_symbols():
     sx = _simulation_experimental()
     repo_root = Path(__file__).resolve().parents[4]
     stub = (
-        repo_root / "python" / "stubs" / "dartpy" / "simulation_experimental.pyi"
+        repo_root / "python" / "stubs" / "dartpy" / "simulation.pyi"
     ).read_text(encoding="utf-8")
 
     public_symbols = (
@@ -349,7 +349,7 @@ def test_experimental_stub_places_rigid_surface_ccd_obstacle_on_rigid_body():
     sx = _simulation_experimental()
     repo_root = Path(__file__).resolve().parents[4]
     stub = (
-        repo_root / "python" / "stubs" / "dartpy" / "simulation_experimental.pyi"
+        repo_root / "python" / "stubs" / "dartpy" / "simulation.pyi"
     ).read_text(encoding="utf-8")
 
     assert hasattr(sx.RigidBody, "is_deformable_surface_ccd_obstacle")
