@@ -46,7 +46,9 @@
 ///   3. Multi-pool: mixed-size alloc/dealloc
 ///   4. Realistic mixed workload (multi-size, random order)
 ///   5. Steady-state: pre-filled pool with random replace
-///   6. STL container workload
+///   6. Frame bulk varying workload
+///   7. STL container workload
+///   8. EnTT registry workload
 ///
 /// Run:  pixi run bm -- allocators-comparative
 /// JSON: pixi run bm -- allocators-comparative
@@ -55,9 +57,9 @@
 
 #include <dart/common/fixed_pool_allocator.hpp>
 #include <dart/common/frame_allocator.hpp>
-#include <dart/common/free_list_allocator.hpp>
 #include <dart/common/memory_allocator.hpp>
 #include <dart/common/pool_allocator.hpp>
+#include <dart/common/stl_allocator.hpp>
 
 #include <benchmark/benchmark.h>
 #include <foonathan/memory/memory_pool.hpp>
@@ -66,8 +68,14 @@
 #include <foonathan/memory/namespace_alias.hpp>
 #include <foonathan/memory/std_allocator.hpp>
 
+#if defined(DART_BENCHMARK_HAS_ENTT) && DART_BENCHMARK_HAS_ENTT
+  #include <entt/entity/registry.hpp>
+#endif
+
+#include <algorithm>
 #include <array>
 #include <memory_resource>
+#include <string_view>
 #include <vector>
 
 #include <cstddef>
@@ -87,6 +95,56 @@ inline uint32_t lcgNext()
   lcgState = lcgState * 1664525u + 1013904223u;
   return lcgState;
 }
+
+class BenchmarkCountingMemoryAllocator final : public MemoryAllocator
+{
+public:
+  explicit BenchmarkCountingMemoryAllocator(MemoryAllocator& backing) noexcept
+    : mBacking(backing)
+  {
+  }
+
+  std::string_view getType() const override
+  {
+    return "BenchmarkCountingMemoryAllocator";
+  }
+
+  void* allocate(size_t bytes) noexcept override
+  {
+    ++allocationCount;
+    return mBacking.allocate(bytes);
+  }
+
+  void* allocate(size_t bytes, size_t alignment) noexcept override
+  {
+    ++allocationCount;
+    return mBacking.allocate(bytes, alignment);
+  }
+
+  void deallocate(void* pointer, size_t bytes) override
+  {
+    ++deallocationCount;
+    mBacking.deallocate(pointer, bytes);
+  }
+
+  void deallocate(void* pointer, size_t bytes, size_t alignment) override
+  {
+    ++deallocationCount;
+    mBacking.deallocate(pointer, bytes, alignment);
+  }
+
+  void resetCounts()
+  {
+    allocationCount = 0;
+    deallocationCount = 0;
+  }
+
+  size_t allocationCount{0};
+  size_t deallocationCount{0};
+
+private:
+  MemoryAllocator& mBacking;
+};
 
 // =============================================================================
 // Section 1: Pool — Fixed-Size Alloc/Dealloc
@@ -118,7 +176,6 @@ BENCHMARK(BM_Pool_DART)
     ->Args({32, 64})
     ->Args({256, 256})
     ->Args({32, 1024})
-    ->Repetitions(5)
     ->ReportAggregatesOnly(true);
 
 static void BM_Pool_Foonathan(benchmark::State& state)
@@ -144,7 +201,6 @@ BENCHMARK(BM_Pool_Foonathan)
     ->Args({32, 64})
     ->Args({256, 256})
     ->Args({32, 1024})
-    ->Repetitions(5)
     ->ReportAggregatesOnly(true);
 
 static void BM_Pool_StdPmr(benchmark::State& state)
@@ -172,7 +228,6 @@ BENCHMARK(BM_Pool_StdPmr)
     ->Args({32, 64})
     ->Args({256, 256})
     ->Args({32, 1024})
-    ->Repetitions(5)
     ->ReportAggregatesOnly(true);
 
 // =============================================================================
@@ -203,7 +258,6 @@ BENCHMARK(BM_Stack_DART)
     ->Args({256, 256})
     ->Args({256, 1024})
     ->Args({32, 4096})
-    ->Repetitions(5)
     ->ReportAggregatesOnly(true);
 
 static void BM_Stack_Foonathan(benchmark::State& state)
@@ -228,7 +282,6 @@ BENCHMARK(BM_Stack_Foonathan)
     ->Args({256, 256})
     ->Args({256, 1024})
     ->Args({32, 4096})
-    ->Repetitions(5)
     ->ReportAggregatesOnly(true);
 
 static void BM_Stack_StdPmr(benchmark::State& state)
@@ -254,7 +307,6 @@ BENCHMARK(BM_Stack_StdPmr)
     ->Args({256, 256})
     ->Args({256, 1024})
     ->Args({32, 4096})
-    ->Repetitions(5)
     ->ReportAggregatesOnly(true);
 
 // =============================================================================
@@ -286,7 +338,7 @@ static void BM_MultiPool_DART(benchmark::State& state)
   }
   state.SetItemsProcessed(static_cast<int64_t>(state.iterations() * kMultiOps));
 }
-BENCHMARK(BM_MultiPool_DART)->Repetitions(5)->ReportAggregatesOnly(true);
+BENCHMARK(BM_MultiPool_DART)->ReportAggregatesOnly(true);
 
 static void BM_MultiPool_Foonathan(benchmark::State& state)
 {
@@ -307,7 +359,7 @@ static void BM_MultiPool_Foonathan(benchmark::State& state)
   }
   state.SetItemsProcessed(static_cast<int64_t>(state.iterations() * kMultiOps));
 }
-BENCHMARK(BM_MultiPool_Foonathan)->Repetitions(5)->ReportAggregatesOnly(true);
+BENCHMARK(BM_MultiPool_Foonathan)->ReportAggregatesOnly(true);
 
 static void BM_MultiPool_StdPmr(benchmark::State& state)
 {
@@ -330,7 +382,7 @@ static void BM_MultiPool_StdPmr(benchmark::State& state)
   }
   state.SetItemsProcessed(static_cast<int64_t>(state.iterations() * kMultiOps));
 }
-BENCHMARK(BM_MultiPool_StdPmr)->Repetitions(5)->ReportAggregatesOnly(true);
+BENCHMARK(BM_MultiPool_StdPmr)->ReportAggregatesOnly(true);
 
 // =============================================================================
 // Section 4: Realistic Mixed Workload
@@ -365,10 +417,7 @@ static void BM_Realistic_DART(benchmark::State& state)
   state.SetItemsProcessed(
       static_cast<int64_t>(state.iterations() * kRealisticOps));
 }
-BENCHMARK(BM_Realistic_DART)
-    ->Repetitions(5)
-    ->ReportAggregatesOnly(true)
-    ->MinTime(0.1);
+BENCHMARK(BM_Realistic_DART)->ReportAggregatesOnly(true)->MinTime(0.1);
 
 static void BM_Realistic_Foonathan(benchmark::State& state)
 {
@@ -393,10 +442,7 @@ static void BM_Realistic_Foonathan(benchmark::State& state)
   state.SetItemsProcessed(
       static_cast<int64_t>(state.iterations() * kRealisticOps));
 }
-BENCHMARK(BM_Realistic_Foonathan)
-    ->Repetitions(5)
-    ->ReportAggregatesOnly(true)
-    ->MinTime(0.1);
+BENCHMARK(BM_Realistic_Foonathan)->ReportAggregatesOnly(true)->MinTime(0.1);
 
 static void BM_Realistic_StdPmr(benchmark::State& state)
 {
@@ -423,10 +469,7 @@ static void BM_Realistic_StdPmr(benchmark::State& state)
   state.SetItemsProcessed(
       static_cast<int64_t>(state.iterations() * kRealisticOps));
 }
-BENCHMARK(BM_Realistic_StdPmr)
-    ->Repetitions(5)
-    ->ReportAggregatesOnly(true)
-    ->MinTime(0.1);
+BENCHMARK(BM_Realistic_StdPmr)->ReportAggregatesOnly(true)->MinTime(0.1);
 
 // =============================================================================
 // Section 5: Steady-State — Pre-Filled Pool + Random Replace
@@ -465,7 +508,6 @@ static void BM_SteadyState_DART(benchmark::State& state)
 BENCHMARK(BM_SteadyState_DART)
     ->Args({64, 1024})
     ->Args({256, 512})
-    ->Repetitions(5)
     ->ReportAggregatesOnly(true);
 
 static void BM_SteadyState_Foonathan(benchmark::State& state)
@@ -499,7 +541,6 @@ static void BM_SteadyState_Foonathan(benchmark::State& state)
 BENCHMARK(BM_SteadyState_Foonathan)
     ->Args({64, 1024})
     ->Args({256, 512})
-    ->Repetitions(5)
     ->ReportAggregatesOnly(true);
 
 static void BM_SteadyState_StdPmr(benchmark::State& state)
@@ -535,7 +576,6 @@ static void BM_SteadyState_StdPmr(benchmark::State& state)
 BENCHMARK(BM_SteadyState_StdPmr)
     ->Args({64, 1024})
     ->Args({256, 512})
-    ->Repetitions(5)
     ->ReportAggregatesOnly(true);
 
 // =============================================================================
@@ -569,7 +609,6 @@ BENCHMARK(BM_FrameBulk_DART)
     ->Arg(256)
     ->Arg(1024)
     ->Arg(4096)
-    ->Repetitions(5)
     ->ReportAggregatesOnly(true);
 
 static void BM_FrameBulk_Foonathan(benchmark::State& state)
@@ -594,7 +633,6 @@ BENCHMARK(BM_FrameBulk_Foonathan)
     ->Arg(256)
     ->Arg(1024)
     ->Arg(4096)
-    ->Repetitions(5)
     ->ReportAggregatesOnly(true);
 
 static void BM_FrameBulk_StdPmr(benchmark::State& state)
@@ -619,7 +657,6 @@ BENCHMARK(BM_FrameBulk_StdPmr)
     ->Arg(256)
     ->Arg(1024)
     ->Arg(4096)
-    ->Repetitions(5)
     ->ReportAggregatesOnly(true);
 
 // =============================================================================
@@ -653,11 +690,7 @@ static void BM_StlVector_DART(benchmark::State& state)
   }
   state.SetItemsProcessed(static_cast<int64_t>(state.iterations() * n));
 }
-BENCHMARK(BM_StlVector_DART)
-    ->Arg(1000)
-    ->Arg(10000)
-    ->Repetitions(5)
-    ->ReportAggregatesOnly(true);
+BENCHMARK(BM_StlVector_DART)->Arg(1000)->Arg(10000)->ReportAggregatesOnly(true);
 
 static void BM_StlVector_Foonathan(benchmark::State& state)
 {
@@ -687,7 +720,6 @@ static void BM_StlVector_Foonathan(benchmark::State& state)
 BENCHMARK(BM_StlVector_Foonathan)
     ->Arg(1000)
     ->Arg(10000)
-    ->Repetitions(5)
     ->ReportAggregatesOnly(true);
 
 static void BM_StlVector_StdPmr(benchmark::State& state)
@@ -717,7 +749,288 @@ static void BM_StlVector_StdPmr(benchmark::State& state)
 BENCHMARK(BM_StlVector_StdPmr)
     ->Arg(1000)
     ->Arg(10000)
-    ->Repetitions(5)
     ->ReportAggregatesOnly(true);
+
+// =============================================================================
+// Section 8: EnTT Registry — Component storage through allocator adapters
+//
+// Benchmark: create entities, attach multiple World-like components, read them
+// back through cached storage handles, then destroy the entities. The registry
+// is pre-warmed so the measured loop represents steady-state simulation churn
+// instead of one-time storage discovery.
+// =============================================================================
+#if defined(DART_BENCHMARK_HAS_ENTT) && DART_BENCHMARK_HAS_ENTT
+
+struct EnttRegistryTransform
+{
+  double position[3] = {};
+  double rotation[4] = {};
+};
+
+struct EnttRegistryVelocity
+{
+  double linear[3] = {};
+  double angular[3] = {};
+};
+
+struct EnttRegistryMass
+{
+  double value = 1.0;
+  double inertia[9] = {};
+};
+
+struct EnttRegistryTag
+{
+};
+
+constexpr size_t EnttRegistryStorageCount = 4;
+
+template <typename Registry>
+void reserveEnttRegistryStorage(Registry& registry, const size_t entityCount)
+{
+  registry.template storage<EnttRegistryTransform>().reserve(entityCount);
+  registry.template storage<EnttRegistryVelocity>().reserve(entityCount);
+  registry.template storage<EnttRegistryMass>().reserve(entityCount);
+  registry.template storage<EnttRegistryTag>().reserve(entityCount);
+}
+
+template <typename Registry>
+void runEnttRegistryChurn(
+    Registry& registry, auto& entities, const size_t entityCount)
+{
+  // World systems know their component set. Cache storage handles so the hot
+  // path measures storage allocation/layout rather than repeated type lookups.
+  auto& entityStorage = registry.template storage<entt::entity>();
+  auto& transforms = registry.template storage<EnttRegistryTransform>();
+  auto& velocities = registry.template storage<EnttRegistryVelocity>();
+  auto& masses = registry.template storage<EnttRegistryMass>();
+  auto& tags = registry.template storage<EnttRegistryTag>();
+
+  for (size_t i = 0; i < entityCount; ++i) {
+    const auto entity = registry.create();
+    entities[i] = entity;
+    auto& transform = transforms.emplace(entity);
+    transform.position[0] = static_cast<double>(i);
+    transform.position[1] = static_cast<double>(i + 1);
+    transform.position[2] = static_cast<double>(i + 2);
+    transform.rotation[3] = 1.0;
+
+    auto& velocity = velocities.emplace(entity);
+    velocity.linear[0] = static_cast<double>(i & 7u);
+    velocity.angular[2] = static_cast<double>((i + 3u) & 15u);
+
+    auto& mass = masses.emplace(entity);
+    mass.value = 1.0 + static_cast<double>(i % 17u);
+    mass.inertia[0] = mass.value;
+
+    tags.emplace(entity);
+  }
+
+  double total = 0.0;
+  for (size_t i = 0; i < entityCount; ++i) {
+    const auto entity = entities[i];
+    const auto& transform = transforms.get(entity);
+    const auto& velocity = velocities.get(entity);
+    const auto& mass = masses.get(entity);
+    total += transform.position[0] + velocity.linear[0] + mass.value;
+    benchmark::DoNotOptimize(tags.contains(entity));
+  }
+  benchmark::DoNotOptimize(total);
+
+  for (size_t i = entityCount; i > 0; --i) {
+    const auto entity = entities[i - 1];
+    // The benchmark has no EnTT groups/signals; remove the known storages
+    // directly to keep the hot path symmetric with the cached emplacement/read
+    // path above.
+    tags.remove(entity);
+    masses.remove(entity);
+    velocities.remove(entity);
+    transforms.remove(entity);
+    entityStorage.erase(entity);
+  }
+  benchmark::ClobberMemory();
+}
+
+template <typename Registry>
+void prewarmEnttRegistry(
+    Registry& registry, auto& entities, const size_t entityCount)
+{
+  reserveEnttRegistryStorage(registry, entityCount);
+  runEnttRegistryChurn(registry, entities, entityCount);
+}
+
+static void BM_EnttRegistry_DART(benchmark::State& state)
+{
+  const auto entityCount = static_cast<size_t>(state.range(0));
+  FrameAllocator backing(
+      MemoryAllocator::GetDefault(), entityCount * 4096 + 1024 * 1024);
+  FrameStlAllocator<entt::entity> allocator(backing);
+  entt::basic_registry<entt::entity, FrameStlAllocator<entt::entity>> registry(
+      EnttRegistryStorageCount, allocator);
+  std::vector<entt::entity> entities(entityCount);
+
+  prewarmEnttRegistry(registry, entities, entityCount);
+  const size_t usedAfterPrewarm = backing.used();
+  const size_t overflowCountAfterPrewarm = backing.overflowCount();
+  const size_t overflowBytesAfterPrewarm = backing.overflowBytes();
+
+  for (auto _ : state) {
+    runEnttRegistryChurn(registry, entities, entityCount);
+  }
+  state.counters["dart_frame_bytes"] = static_cast<double>(backing.used());
+  state.counters["dart_frame_overflow_count"]
+      = static_cast<double>(backing.overflowCount());
+  state.counters["dart_frame_overflow_bytes"]
+      = static_cast<double>(backing.overflowBytes());
+  if (backing.used() != usedAfterPrewarm
+      || backing.overflowCount() != overflowCountAfterPrewarm
+      || backing.overflowBytes() != overflowBytesAfterPrewarm) {
+    state.SkipWithError(
+        "Reserved DART EnTT registry churn grew frame-backed storage.");
+  }
+  state.SetItemsProcessed(
+      static_cast<int64_t>(state.iterations() * entityCount));
+}
+BENCHMARK(BM_EnttRegistry_DART)
+    ->Arg(256)
+    ->Arg(512)
+    ->Arg(2048)
+    ->ReportAggregatesOnly(true);
+
+static void BM_EnttRegistryBuild_DART(benchmark::State& state)
+{
+  const auto entityCount = static_cast<size_t>(state.range(0));
+  PoolAllocator backing;
+  StlAllocator<entt::entity> allocator(backing);
+  std::vector<entt::entity> entities(entityCount);
+
+  for (auto _ : state) {
+    entt::basic_registry<entt::entity, StlAllocator<entt::entity>> registry(
+        EnttRegistryStorageCount, allocator);
+    reserveEnttRegistryStorage(registry, entityCount);
+    runEnttRegistryChurn(registry, entities, entityCount);
+  }
+
+  PoolAllocator countingStorageBacking;
+  BenchmarkCountingMemoryAllocator countingBacking(countingStorageBacking);
+  StlAllocator<entt::entity> countingAllocator(countingBacking);
+  std::vector<entt::entity> countingEntities(entityCount);
+  {
+    entt::basic_registry<entt::entity, StlAllocator<entt::entity>> registry(
+        EnttRegistryStorageCount, countingAllocator);
+    reserveEnttRegistryStorage(registry, entityCount);
+    runEnttRegistryChurn(registry, countingEntities, entityCount);
+  }
+
+  state.counters["dart_allocator_allocations_per_iter"]
+      = static_cast<double>(countingBacking.allocationCount);
+  state.counters["dart_allocator_deallocations_per_iter"]
+      = static_cast<double>(countingBacking.deallocationCount);
+  state.SetItemsProcessed(
+      static_cast<int64_t>(state.iterations() * entityCount));
+}
+BENCHMARK(BM_EnttRegistryBuild_DART)
+    ->Arg(256)
+    ->Arg(512)
+    ->Arg(2048)
+    ->ReportAggregatesOnly(true);
+
+static void BM_EnttRegistry_Foonathan(benchmark::State& state)
+{
+  const auto entityCount = static_cast<size_t>(state.range(0));
+  const size_t maxNodeSize = std::max<size_t>(sizeof(EnttRegistryMass), 8192);
+  const size_t blockSize = entityCount * 4096 + 16 * 1024 * 1024;
+  fm::memory_pool_collection<fm::array_pool, fm::log2_buckets> pool(
+      maxNodeSize, blockSize);
+  fm::std_allocator<
+      entt::entity,
+      fm::memory_pool_collection<fm::array_pool, fm::log2_buckets>>
+      allocator(pool);
+  entt::basic_registry<entt::entity, decltype(allocator)> registry(
+      EnttRegistryStorageCount, allocator);
+  std::vector<entt::entity> entities(entityCount);
+
+  prewarmEnttRegistry(registry, entities, entityCount);
+
+  for (auto _ : state) {
+    runEnttRegistryChurn(registry, entities, entityCount);
+  }
+  state.SetItemsProcessed(
+      static_cast<int64_t>(state.iterations() * entityCount));
+}
+BENCHMARK(BM_EnttRegistry_Foonathan)
+    ->Arg(256)
+    ->Arg(512)
+    ->Arg(2048)
+    ->ReportAggregatesOnly(true);
+
+static void BM_EnttRegistryBuild_Foonathan(benchmark::State& state)
+{
+  const auto entityCount = static_cast<size_t>(state.range(0));
+  const size_t maxNodeSize = std::max<size_t>(sizeof(EnttRegistryMass), 8192);
+  const size_t blockSize = entityCount * 4096 + 16 * 1024 * 1024;
+  fm::memory_pool_collection<fm::array_pool, fm::log2_buckets> pool(
+      maxNodeSize, blockSize);
+  fm::std_allocator<
+      entt::entity,
+      fm::memory_pool_collection<fm::array_pool, fm::log2_buckets>>
+      allocator(pool);
+  std::vector<entt::entity> entities(entityCount);
+
+  for (auto _ : state) {
+    entt::basic_registry<entt::entity, decltype(allocator)> registry(
+        EnttRegistryStorageCount, allocator);
+    reserveEnttRegistryStorage(registry, entityCount);
+    runEnttRegistryChurn(registry, entities, entityCount);
+  }
+  state.SetItemsProcessed(
+      static_cast<int64_t>(state.iterations() * entityCount));
+}
+BENCHMARK(BM_EnttRegistryBuild_Foonathan)
+    ->Arg(256)
+    ->Arg(512)
+    ->Arg(2048)
+    ->ReportAggregatesOnly(true);
+
+static void BM_EnttRegistry_Std(benchmark::State& state)
+{
+  const auto entityCount = static_cast<size_t>(state.range(0));
+  entt::registry registry(EnttRegistryStorageCount);
+  std::vector<entt::entity> entities(entityCount);
+
+  prewarmEnttRegistry(registry, entities, entityCount);
+
+  for (auto _ : state) {
+    runEnttRegistryChurn(registry, entities, entityCount);
+  }
+  state.SetItemsProcessed(
+      static_cast<int64_t>(state.iterations() * entityCount));
+}
+BENCHMARK(BM_EnttRegistry_Std)
+    ->Arg(256)
+    ->Arg(512)
+    ->Arg(2048)
+    ->ReportAggregatesOnly(true);
+
+static void BM_EnttRegistryBuild_Std(benchmark::State& state)
+{
+  const auto entityCount = static_cast<size_t>(state.range(0));
+  std::vector<entt::entity> entities(entityCount);
+
+  for (auto _ : state) {
+    entt::registry registry(EnttRegistryStorageCount);
+    reserveEnttRegistryStorage(registry, entityCount);
+    runEnttRegistryChurn(registry, entities, entityCount);
+  }
+  state.SetItemsProcessed(
+      static_cast<int64_t>(state.iterations() * entityCount));
+}
+BENCHMARK(BM_EnttRegistryBuild_Std)
+    ->Arg(256)
+    ->Arg(512)
+    ->Arg(2048)
+    ->ReportAggregatesOnly(true);
+
+#endif
 
 BENCHMARK_MAIN();
