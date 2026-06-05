@@ -600,7 +600,9 @@ void expectNoWorldBaseAllocatorActivityDuringBakedSteps(
 
 template <typename ConfigureScene>
 void expectNoGlobalHeapAllocationsDuringBakedSteps(
-    std::string_view scene, ConfigureScene&& configureScene)
+    std::string_view scene,
+    ConfigureScene&& configureScene,
+    bool requireInitialContact = false)
 {
   namespace sx = dart::simulation::experimental;
 
@@ -609,6 +611,9 @@ void expectNoGlobalHeapAllocationsDuringBakedSteps(
 
   configureScene(world);
   world.enterSimulationMode();
+  if (requireInitialContact) {
+    ASSERT_FALSE(world.collide().empty());
+  }
 
   ScopedHeapAllocationCounter heapCounter;
   for (int i = 0; i < 4; ++i) {
@@ -975,7 +980,8 @@ TEST(World, BakedRigidBodyContactStepsDoNotAllocateGlobalHeap)
   namespace sx = dart::simulation::experimental;
 
   expectNoGlobalHeapAllocationsDuringBakedSteps(
-      "rigid body resting contact", [](sx::World& world) {
+      "rigid body resting contact",
+      [](sx::World& world) {
         world.setGravity(Eigen::Vector3d::Zero());
 
         sx::RigidBodyOptions groundOptions;
@@ -986,14 +992,47 @@ TEST(World, BakedRigidBodyContactStepsDoNotAllocateGlobalHeap)
             sx::CollisionShape::makeBox(Eigen::Vector3d(2.0, 2.0, 0.25)));
 
         sx::RigidBodyOptions boxOptions;
-        boxOptions.position = Eigen::Vector3d(0.0, 0.0, 0.2);
+        boxOptions.position = Eigen::Vector3d(0.0, 0.0, 0.18);
         auto box = world.addRigidBody("box", boxOptions);
         box.setMass(1.0);
         box.setCollisionShape(
             sx::CollisionShape::makeBox(Eigen::Vector3d(0.2, 0.2, 0.2)));
 
         world.setTimeStep(0.001);
-      });
+      },
+      true);
+}
+
+TEST(World, BakedArticulatedContactStepsDoNotAllocateGlobalHeap)
+{
+  namespace sx = dart::simulation::experimental;
+
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "articulated link resting contact",
+      [](sx::World& world) {
+        world.setGravity(Eigen::Vector3d::Zero());
+
+        auto robot = world.addMultibody("leg_robot");
+        auto base = robot.addLink("base");
+        sx::JointSpec spec;
+        spec.name = "slider";
+        spec.type = sx::JointType::Prismatic;
+        spec.axis = Eigen::Vector3d::UnitZ();
+        auto leg = robot.addLink("leg", base, spec);
+        leg.setMass(1.0);
+        leg.setCollisionShape(sx::CollisionShape::makeSphere(0.2));
+        leg.getParentJoint().setPosition(Eigen::VectorXd::Constant(1, -0.35));
+
+        sx::RigidBodyOptions groundOptions;
+        groundOptions.isStatic = true;
+        groundOptions.position = Eigen::Vector3d(0.0, 0.0, -1.0);
+        auto ground = world.addRigidBody("ground", groundOptions);
+        ground.setCollisionShape(
+            sx::CollisionShape::makeBox(Eigen::Vector3d(5.0, 5.0, 0.5)));
+
+        world.setTimeStep(0.002);
+      },
+      true);
 }
 
 TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)

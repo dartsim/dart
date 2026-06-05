@@ -778,6 +778,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     graph traversal, and rigid IPC kinematic scratch at `enterSimulationMode()`,
     eliminating global heap allocation for repeated baked kinematic IPC steps
     and covering it with a regression test.
+  - Reused baked semi-implicit multibody dynamics/contact scratch and persistent
+    staged velocity buffers, extending the baked global-heap guard to
+    articulated link resting-contact steps.
   - Made experimental rigid-body external force/torque components persistent
     applied loads: each step reads them into the transient force buffer and
     leaves the components intact for callers to clear or update explicitly.

@@ -23,8 +23,9 @@
       `WorldStepPipeline` now stores built-in non-owning stage pointers inline,
       removing its per-build `std::vector` allocation from the normal step path.
       Longer custom pipelines keep the previous arbitrary-stage behavior through
-      an overflow path. The default rigid-body velocity/contact stages now reuse
-      baked force/contact scratch for the covered rigid contact scene; broader
+      an overflow path. The default rigid-body velocity/contact stages and
+      semi-implicit multibody velocity/contact path now reuse baked scratch for
+      the covered rigid and articulated resting-contact scenes; broader
       solver-owned transient buffers still need allocator-backed storage.
 - [ ] Phase 5: Add allocation/debug accounting gates for "no dynamic allocation
       during the step loop" on representative rigid, multibody, contact, and
@@ -32,8 +33,10 @@
       cover baked kinematic IPC rigid-body, multibody variational, and
       deformable ECS paths; a first global heap guard now covers baked
       kinematic IPC rigid-body, box-obstacle, multibody variational,
-      deformable, and rigid-body resting-contact steps. Broader solver coverage
-      remains open before making a full zero-allocation claim.
+      deformable, rigid-body resting-contact, and non-cross articulated
+      resting-contact steps. Broader solver coverage, including boxed-LCP/cross
+      articulated contact assembly, remains open before making a full
+      zero-allocation claim.
 - [ ] Phase 6: Add memory-layout profiler/debugger surfaces and GUI
       visualization.
 
@@ -125,10 +128,10 @@ debugging, profiling, optimization experiments, and ImGui visualization.
    overflow, reuse-after-free, leak/debug accounting, and bounded failure.
 3. Extend bake-time registry/component storage reservation and no-growth
    allocation tests to contact-heavy scenes and remaining solver scratch step
-   paths. The initial rigid-body resting-contact global heap guard is in place;
-   continue broadening to articulated contacts, larger stacks, and remaining
-   solver/deformable candidate buffers before making the full zero-allocation
-   claim.
+   paths. The initial rigid-body and non-cross articulated resting-contact
+   global heap guards are in place; continue broadening to larger stacks,
+   boxed-LCP/cross articulated contacts, and remaining solver/deformable
+   candidate buffers before making the full zero-allocation claim.
 4. Benchmark the allocator-backed EnTT registry/component-storage path against
    standard C++ allocators and foonathan/memory on DART-relevant workloads.
 5. Start replacing per-step `std::vector`/`Eigen` temporaries in hot stages with

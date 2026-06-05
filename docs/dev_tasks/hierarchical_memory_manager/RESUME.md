@@ -37,9 +37,10 @@ The current stacked no-allocation slice pre-bakes the default step stage bundle
 and kinematics graph cache at `enterSimulationMode()`, reuses rigid IPC
 kinematic scratch storage, and adds a global `operator new` guard proving baked
 kinematic IPC rigid-body and box-obstacle steps do not allocate from the global
-heap. The broader follow-up extends that guard to a baked rigid-body
-resting-contact scene by reusing collision-query/contact result storage and
-default rigid-body velocity/contact stage scratch.
+heap. The broader follow-up extends that guard to baked rigid-body and
+non-cross articulated resting-contact scenes by reusing collision-query/contact
+result storage, default rigid-body velocity/contact stage scratch, and
+semi-implicit multibody dynamics/contact/staged-velocity scratch.
 The stacked pipeline slice also removes `WorldStepPipeline`'s heap-backed stage
 pointer vector from default/built-in step composition. Pipelines now keep a
 fixed inline list of non-owning stage pointers sized for the current default
@@ -58,9 +59,10 @@ the previous arbitrary-stage behavior through an overflow path.
 Monitor #2872/#2888/#2899 CI and resolve any failures. Next allocator work
 should land the strict comparative benchmark gate, broaden
 `FixedPoolAllocator` correctness coverage, benchmark allocator-backed EnTT
-registry/component storage, extend no-growth ECS tests to articulated contacts
-and remaining solver scratch step paths, and broaden the global heap allocation
-guard before claiming zero dynamic allocation for the full simulation loop.
+registry/component storage, extend no-growth ECS tests to larger contact stacks,
+boxed-LCP/cross articulated contacts, and remaining solver scratch step paths,
+and broaden the global heap allocation guard before claiming zero dynamic
+allocation for the full simulation loop.
 
 ## Latest Local Validation
 
@@ -94,6 +96,15 @@ guard before claiming zero dynamic allocation for the full simulation loop.
 - On `feature/world-step-global-heap-guard-broader`:
   `cmake --build build/default/cpp/Release --target test_world test_collision_world test_collision_filter_core test_world_contact_parity -j2 && ./build/default/cpp/Release/bin/test_world --gtest_filter='World.Baked*DoNotAllocateGlobalHeap:World.BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths' && ./build/default/cpp/Release/bin/test_world_contact_parity && ./build/default/cpp/Release/bin/test_collision_world && ./build/default/cpp/Release/bin/test_collision_filter_core`
 - On `feature/world-step-global-heap-guard-broader`: `pixi run lint`
+- On `feature/world-step-global-heap-guard-broader` after the articulated
+  contact heap guard:
+  `cmake --build build/default/cpp/Release --target test_world -j2 && build/default/cpp/Release/bin/test_world --gtest_color=no --gtest_filter='World.EnterSimulationModeReservesRegistryStorageForMultibodySteps:World.BakedRigidBodyContactStepsDoNotAllocateGlobalHeap:World.BakedArticulatedContactStepsDoNotAllocateGlobalHeap:World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap'`
+- On `feature/world-step-global-heap-guard-broader` after the semi-implicit
+  multibody scratch update:
+  `cmake --build build/default/cpp/Release --target test_multibody_constraint test_multibody_link_contact -j2 && build/default/cpp/Release/bin/test_multibody_constraint --gtest_color=no && build/default/cpp/Release/bin/test_multibody_link_contact --gtest_color=no`
+- On `feature/world-step-global-heap-guard-broader` after the semi-implicit
+  multibody scratch update:
+  `build/default/cpp/Release/bin/test_world --gtest_color=no --gtest_filter='World.Multibody*'`
 
 ## Context That Would Be Lost
 
