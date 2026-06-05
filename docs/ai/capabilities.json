@@ -143,6 +143,12 @@
   ],
   "domain_skills": [
     {
+      "name": "dart-architecture",
+      "category": "architecture",
+      "status": "active",
+      "gate_profile": "reference"
+    },
+    {
       "name": "dart-build",
       "category": "build",
       "status": "active",

@@ -8,6 +8,13 @@ Design docs may be revised as evidence changes, but they should not own active
 priority, horizon, next step, gate, or implementation handoff state. Keep those
 fields in `docs/plans/dashboard.md` or `docs/dev_tasks/<task>/`.
 
+The published, single-page synthesis of these design docs — the DART 7
+multi-physics / multi-solver / multi-backend architecture as abstracted pipeline
+boxes with the available options at each seam — is
+[`docs/readthedocs/architecture.md`](../readthedocs/architecture.md). It is a
+navigational map that links back to the owner docs below; it does not own any
+rule itself.
+
 ## Files
 
 | File                                                                             | Purpose                                                                                                                                                                                                          |
