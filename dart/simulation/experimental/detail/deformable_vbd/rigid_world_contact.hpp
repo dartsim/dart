@@ -1136,7 +1136,7 @@ applyAvbdRigidWorldContactVelocityProjection(
 
 //==============================================================================
 inline std::size_t markAvbdRigidWorldFracturedPointJoints(
-    entt::registry& registry,
+    ::dart::simulation::experimental::detail::WorldRegistry& registry,
     const AvbdRigidWorldContactSnapshot& snapshot,
     std::span<const std::size_t> fracturedJointIndices)
 {
@@ -1283,7 +1283,7 @@ inline AvbdRigidWorldContactStepResult runAvbdRigidWorldContactStep(
 
 //==============================================================================
 inline AvbdRigidWorldContactStepResult runAvbdRigidWorldContactStep(
-    entt::registry& registry,
+    ::dart::simulation::experimental::detail::WorldRegistry& registry,
     std::span<const Contact> contacts,
     std::span<const AvbdRigidWorldPointJointInput> joints,
     AvbdScalarRowInventory& normalInventory,
@@ -1417,7 +1417,7 @@ inline AvbdRigidWorldContactStepResult runAvbdRigidWorldContactStep(
 
 //==============================================================================
 inline AvbdRigidWorldContactStepResult runAvbdRigidWorldContactStep(
-    entt::registry& registry,
+    ::dart::simulation::experimental::detail::WorldRegistry& registry,
     std::span<const Contact> contacts,
     AvbdScalarRowInventory& normalInventory,
     AvbdScalarRowInventory& frictionInventory,
@@ -1452,14 +1452,15 @@ inline AvbdRigidWorldContactStepResult runAvbdRigidWorldContactStep(
 {
   AvbdScalarRowInventory jointLinearInventory;
   AvbdScalarRowInventory jointAngularInventory;
+  AvbdScalarRowInventory motorInventory;
   return runAvbdRigidWorldContactStep(
       registry,
       contacts,
-      std::span<const AvbdRigidWorldPointJointInput>(),
       normalInventory,
       frictionInventory,
       jointLinearInventory,
       jointAngularInventory,
+      motorInventory,
       timeStep,
       options);
 }
