@@ -1251,6 +1251,8 @@ TEST(World, SequentialImpulseBakeDoesNotPrewarmRigidIpcCollisionSurfaces)
 
   EXPECT_EQ(
       supportedGeometry.allocationCount, unsupportedGeometry.allocationCount);
+  EXPECT_EQ(
+      supportedGeometry.allocationBytes, unsupportedGeometry.allocationBytes);
 }
 
 TEST(World, RigidIpcContactStagePrepareReusesSupportedDynamicSurfaceBuffers)

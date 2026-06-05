@@ -32,13 +32,11 @@ base-allocator no-growth guards for baked kinematic IPC rigid-body, multibody
 variational, and single-deformable step loops, plus inline default step-pipeline
 storage. These are not the final global zero-allocation proof.
 
-The first global heap guard branch, PR #2888, pre-bakes the default step stage
-bundle and kinematics graph cache at `enterSimulationMode()`, reuses rigid IPC
-kinematic scratch storage, and adds a global `operator new` guard proving baked
-kinematic IPC rigid-body and box-obstacle steps do not allocate from the global
-heap. The branch was refreshed on the current `main` after the allocator
-debugger diagnostics, fixed-capacity free-list, and EnTT benchmark slices
-merged.
+The first global heap guard branch, PR #2888, has merged to `main`. It pre-bakes
+the default step stage bundle and kinematics graph cache at
+`enterSimulationMode()`, reuses rigid IPC kinematic scratch storage, and adds a
+global `operator new` guard proving baked kinematic IPC rigid-body and
+box-obstacle steps do not allocate from the global heap.
 
 The EnTT benchmark slice (`bench/entt-registry-allocator`, PR #2890) adds
 comparative EnTT registry/component-storage rows against foonathan/memory and
@@ -49,26 +47,26 @@ reports DART counters, and keeps EnTT rows opt-in. PR #2890 has merged to
 `main`; keep its benchmark evidence as the baseline for future allocator-policy
 loops.
 
-The current broader no-allocation slice, PR #2899, extends #2888's guard to baked
-rigid-body and non-cross articulated resting-contact scenes by reusing
-collision-query/contact result storage, default rigid-body velocity/contact
-stage scratch, and semi-implicit multibody dynamics/contact/staged-velocity
-scratch.
+The current broader no-allocation slice, PR #2899, extends the merged #2888
+guard to baked rigid-body and non-cross articulated resting-contact scenes by
+reusing collision-query/contact result storage, default rigid-body
+velocity/contact stage scratch, and semi-implicit multibody
+dynamics/contact/staged-velocity scratch.
 
 ## Current Branch
 
-`feature/world-step-global-heap-guard-broader` - PR #2899, stacked on PR #2888
-(`feature/world-step-global-heap-guard`). This branch has merged the updated
-#2888 base after #2890, #2892, and #2893 landed on `main`.
+`feature/world-step-global-heap-guard-broader` - PR #2899, now based on `main`
+after PR #2888, PR #2890, PR #2892, and PR #2893 landed.
 
 ## Immediate Next Step
 
-Monitor PR #2899 CI/review after merging the refreshed #2888 base and fixing the
-zero-DOF link-contact review finding. Do not treat the benchmark-only
-frame-backed no-growth policy as production `WorldRegistry` bake/build
-allocation yet; production integration needs a persistent world-registry arena
-or bake allocator that resets on rebuild/destruction, not the existing per-step
-frame allocator that resets inside `World::step()`.
+Resolve any remaining PR #2899 CI/review fallout after merging the post-#2888
+`origin/main` state and fixing the zero-DOF link-contact review finding.
+Do not treat the benchmark-only frame-backed no-growth policy as production
+`WorldRegistry` bake/build allocation yet. Production integration needs a
+persistent world-registry arena or bake allocator that resets on
+rebuild/destruction, not the existing per-step frame allocator that resets
+inside `World::step()`.
 
 Rerun the focused gate on a quiet host after any allocator-policy or benchmark
 change:
@@ -207,5 +205,4 @@ git diff --stat
 gh pr view 2899 --repo dartsim/dart --json state,isDraft,mergeStateStatus,headRefOid,statusCheckRollup
 ```
 
-Then continue from PR #2899 and any stacked/base heap-guard PRs, alongside
-merged-branch cleanup candidates.
+Then continue from PR #2899 and merged-branch cleanup candidates.
