@@ -202,10 +202,10 @@ Paper audit:
     current-pose initialization and extraction now also cover private
     rigid-body ECS revolute/prismatic joint entities, deriving the same
     axes/masks from their configured joint axis while preserving explicit
-    multibody rejection until articulated AVBD state exists. The private
-    endpoint layer now classifies free rigid bodies separately from multibody
-    links so the supported extractor has a tested conservative fallback point
-    for the articulated bridge.
+    multibody rejection for masked articulated rows. The private endpoint layer
+    now classifies free rigid bodies separately from multibody links, and fixed
+    multibody-link point-joint configs can bridge into the variational
+    articulated solve path.
     Public experimental `World` facades now expose free rigid-body revolute and
     prismatic joints through C++ and dartpy, including generated stubs,
     focused tests, and the categorized `sx_rigid_limited_joints` py-demo.
@@ -231,9 +231,12 @@ Paper audit:
     later extraction, and adds the categorized `avbd_rigid_breakable_joint`
     py-demo.
     The private endpoint classifier now separates free rigid-body endpoints from
-    multibody links, with a `BM_AvbdRigidEndpointClassification` benchmark row
-    and categorized `avbd_articulated_endpoint_bridge` py-demo preview.
-    Articulated multibody joint extraction is still not wired.
+    multibody links, fixed multibody-link point-joint configs can bridge into
+    the variational articulated solve path, and
+    `BM_AvbdRigidEndpointClassification` plus the categorized
+    `avbd_articulated_endpoint_bridge` py-demo cover that first bridge.
+    Masked articulated revolute/prismatic, motor, and breakable row extraction
+    are still not wired.
     Unsupported envelopes still fall back to sequential impulses. This is not
     full narrow-phase feature extraction, not full rigid contact/joint rows, not
     broad fracture-corpus support, not broad motor lifecycle or paper/reference
@@ -317,12 +320,12 @@ numbers.
    `avbd_rigid_fixed_joint_contact` fixed-joint/contact AVBD demo, the
    `avbd_rigid_revolute_motor` motor demo, and the
    `avbd_rigid_breakable_joint` break-force demo, plus the private free-rigid
-   versus multibody-link endpoint classifier, endpoint benchmark row, and
-   articulated endpoint py-demo preview, have narrow CPU/user-visible or
-   extractor-foundation paths. The next code slice should fill the articulated
-   AVBD state/solve path behind that classifier so multibody link endpoints stop
-   being skipped by all AVBD row families, while retaining explicit fallback
-   coverage until a real articulated solve exists.
+   versus multibody-link endpoint classifier, endpoint benchmark row, and fixed
+   articulated endpoint bridge py-demo, have narrow CPU/user-visible or
+   extractor-foundation paths. The next code slice should extend the
+   articulated AVBD bridge to masked revolute/prismatic, motor, and breakable
+   rows, while retaining explicit fallback coverage until each real articulated
+   solve path exists.
 2. In parallel planning, keep full friction cones, rigid/articulated rows, GPU
    parity, demos, and benchmark packets as open AVBD parity gates rather than
    completion claims.

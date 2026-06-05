@@ -423,15 +423,16 @@ its own line so status updates remain git-history friendly.
   broken-state lifecycle, mark solved AVBD point joints broken when row load
   reaches the threshold, skip broken joints during later extraction, and expose
   the `avbd_rigid_breakable_joint` py-demo. Public multibody/articulated AVBD
-  state is not wired yet, but the private endpoint layer now distinguishes free
-  rigid-body endpoints from multibody links so articulated extraction has a
-  tested conservative fallback point, a `BM_AvbdRigidEndpointClassification`
-  benchmark row, and a categorized `avbd_articulated_endpoint_bridge` py-demo
-  preview. The next local slice should fill the articulated state/solve path or
-  broaden rigid-contact feature persistence, while the plan/dev-task surfaces
-  must also keep the 2D/3D source-demo corpus, paper/video scenes, CPU/GPU
-  benchmark packets, and performance leadership gates explicit instead of
-  treating the current free-rigid rows as AVBD completion.
+  state is only narrowly wired: the private endpoint layer distinguishes free
+  rigid-body endpoints from multibody links, fixed multibody-link point-joint
+  configs can bridge into the variational articulated solve path, and the branch
+  has a `BM_AvbdRigidEndpointClassification` benchmark row plus categorized
+  `avbd_articulated_endpoint_bridge` py-demo coverage. The next local slice
+  should extend masked articulated rows or broaden rigid-contact feature
+  persistence, while the plan/dev-task surfaces must also keep the 2D/3D
+  source-demo corpus, paper/video scenes, CPU/GPU benchmark packets, and
+  performance leadership gates explicit instead of treating the current
+  free-rigid rows as AVBD completion.
 - Gate: VBD progress is not complete until the implementation distinguishes
   each internal kernel slice from a wired solver, keeps VBD naming
   backend-neutral, proves per-vertex force/Hessian correctness, PD Hessian

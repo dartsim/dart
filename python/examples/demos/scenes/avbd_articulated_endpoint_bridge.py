@@ -23,6 +23,14 @@ def _translation(x: float, y: float, z: float) -> np.ndarray:
     return transform
 
 
+def _rotation_y(angle: float) -> np.ndarray:
+    transform = np.eye(4)
+    c = float(np.cos(angle))
+    s = float(np.sin(angle))
+    transform[:3, :3] = ((c, 0.0, s), (0.0, 1.0, 0.0), (-s, 0.0, c))
+    return transform
+
+
 def build() -> SceneSetup:
     world = sx.World()
     world.multibody_options = sx.MultibodyOptions(
@@ -36,8 +44,10 @@ def build() -> SceneSetup:
 
     links = []
     parent = base
+    tip_target_transform = np.eye(4)
     for i in range(_NUM_LINKS):
         offset = 0.0 if i == 0 else _LINK_LENGTH
+        initial_position = 0.18 * (-1.0 if i % 2 else 1.0)
         link = robot.add_link(
             f"link{i}",
             parent=parent,
@@ -52,9 +62,24 @@ def build() -> SceneSetup:
         ixx = 0.5 * _LINK_MASS * (0.05**2)
         itrans = _LINK_MASS * (_LINK_LENGTH**2) / 12.0
         link.inertia = ((ixx, 0.0, 0.0), (0.0, itrans, 0.0), (0.0, 0.0, itrans))
-        link.parent_joint.position = [0.18 * (-1.0 if i % 2 else 1.0)]
+        link.parent_joint.position = [initial_position]
         links.append(link)
         parent = link
+        tip_target_transform = (
+            tip_target_transform @ _rotation_y(initial_position) @ _translation(offset, 0.0, 0.0)
+        )
+
+    tip_target = tip_target_transform[:3, 3]
+    closure = world.add_loop_closure(
+        "avbd_endpoint_tip_bridge",
+        sx.LoopClosureSpec(
+            frame_a=links[-1],
+            frame_b=base,
+            family=sx.LoopClosureFamily.POINT,
+            offset_b=_translation(*tip_target),
+        ),
+    )
+    closure.dynamics = sx.ClosureDynamicsPolicy.SOLVE
 
     world.enter_simulation_mode()
 
@@ -79,29 +104,42 @@ def build() -> SceneSetup:
             palette[i % len(palette)],
             name=f"avbd_endpoint_link{i}_visual",
         )
+    target_frame = dart.SimpleFrame(
+        dart.Frame.world(), "avbd_endpoint_target_visual", _translation(*tip_target)
+    )
+    target_frame.set_shape(dart.BoxShape(np.array([0.11, 0.11, 0.11])))
+    target_frame.create_visual_aspect().set_color([0.92, 0.86, 0.22])
+    bridge.render_world.add_simple_frame(target_frame)
     bridge.sync()
 
     tip_height_history: deque[float] = deque(maxlen=140)
     joint_speed_history: deque[float] = deque(maxlen=140)
+    residual_history: deque[float] = deque(maxlen=140)
 
     def build_panel(builder: object, context: object) -> None:
         speeds = [
             float(np.linalg.norm(np.asarray(link.parent_joint.velocity, dtype=float)))
             for link in links
         ]
-        tip_height = float(np.asarray(links[-1].translation, dtype=float).reshape(3)[2])
+        tip_position = np.asarray(links[-1].translation, dtype=float).reshape(3)
+        tip_height = float(tip_position[2])
+        bridge_residual = float(np.linalg.norm(tip_position - tip_target))
         tip_height_history.append(tip_height)
         joint_speed_history.append(max(speeds) if speeds else 0.0)
+        residual_history.append(bridge_residual)
 
         builder.text("solver: articulated sx world")
         builder.text("AVBD endpoint class: multibody link")
-        builder.text("AVBD row path: conservative fallback")
+        builder.text("AVBD fixed-link bridge: variational closure")
+        builder.text("AVBD masked rows: conservative fallback")
         builder.text(f"links: {robot.num_links}")
         builder.text(f"dofs: {robot.num_dofs}")
         builder.text(f"world time: {world.time:.3f} s")
         builder.text(f"tip height: {tip_height:.3f} m")
+        builder.text(f"bridge residual: {bridge_residual:.4f} m")
         builder.plot_lines("Tip height", list(tip_height_history))
         builder.plot_lines("Max joint speed", list(joint_speed_history))
+        builder.plot_lines("Bridge residual", list(residual_history))
         builder.separator()
         bridge.build_control_panel(builder, context)
 
@@ -113,7 +151,8 @@ def build() -> SceneSetup:
         info={
             "sx_world": world,
             "avbd_endpoint_kind": "multibody_link",
-            "avbd_row_path": "fallback",
+            "avbd_fixed_link_bridge": "variational_closure",
+            "avbd_masked_row_path": "fallback",
             "dofs": robot.num_dofs,
         },
     )
@@ -123,6 +162,6 @@ SCENE = PythonDemoScene(
     id="avbd_articulated_endpoint_bridge",
     title="AVBD Articulated Endpoint Bridge (sx)",
     category="AVBD Rigid Constraints (sx)",
-    summary="A multibody-link endpoint preview for the articulated AVBD bridge.",
+    summary="A multibody-link endpoint bridge into the articulated solve path.",
     build=build,
 )
