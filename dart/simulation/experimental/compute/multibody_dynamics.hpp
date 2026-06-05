@@ -36,6 +36,7 @@
 
 #include <dart/simulation/experimental/compute/compute_stage_metadata.hpp>
 #include <dart/simulation/experimental/compute/world_step_stage.hpp>
+#include <dart/simulation/experimental/detail/world_registry_types.hpp>
 #include <dart/simulation/experimental/export.hpp>
 
 #include <Eigen/Core>
@@ -79,7 +80,7 @@ struct MultibodyDynamicsTerms
 /// degrees of freedom the returned matrix and vectors are empty.
 [[nodiscard]] DART_EXPERIMENTAL_API MultibodyDynamicsTerms
 computeMultibodyDynamicsTerms(
-    entt::registry& registry,
+    detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     const Eigen::Vector3d& gravity);
 
@@ -94,7 +95,7 @@ computeMultibodyDynamicsTerms(
 /// multibody with no movable degrees of freedom the result is empty.
 [[nodiscard]] DART_EXPERIMENTAL_API Eigen::VectorXd
 computeMultibodyInverseDynamics(
-    entt::registry& registry,
+    detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     const Eigen::Vector3d& gravity,
     const Eigen::VectorXd& desiredAcceleration);
@@ -121,7 +122,7 @@ struct InverseDynamicsDerivatives
 /// differencing. `generalizedAcceleration` must match the movable DOF count.
 [[nodiscard]] DART_EXPERIMENTAL_API InverseDynamicsDerivatives
 computeMultibodyInverseDynamicsDerivatives(
-    entt::registry& registry,
+    detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     const Eigen::Vector3d& gravity,
     const Eigen::VectorXd& generalizedAcceleration);
@@ -137,7 +138,7 @@ computeMultibodyInverseDynamicsDerivatives(
 /// @throws InvalidArgumentException if `linkEntity` is not part of `structure`.
 [[nodiscard]] DART_EXPERIMENTAL_API Eigen::MatrixXd
 computeMultibodyLinkJacobian(
-    entt::registry& registry,
+    detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     entt::entity linkEntity);
 
@@ -152,7 +153,7 @@ computeMultibodyLinkJacobian(
 /// @throws InvalidArgumentException if `linkEntity` is not part of `structure`.
 [[nodiscard]] DART_EXPERIMENTAL_API Eigen::MatrixXd
 computeMultibodyLinkWorldJacobian(
-    entt::registry& registry,
+    detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     entt::entity linkEntity);
 
@@ -258,7 +259,7 @@ struct MultibodyLinkContactProblem
 ///         multibody's movable degree-of-freedom count.
 [[nodiscard]] DART_EXPERIMENTAL_API MultibodyLinkContactProblem
 assembleMultibodyLinkContactProblem(
-    const entt::registry& registry,
+    const detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     const Eigen::VectorXd& nextVelocity,
     double timeStep,

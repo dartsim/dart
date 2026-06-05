@@ -32,6 +32,7 @@
 #pragma once
 
 #include <dart/simulation/experimental/detail/deformable_vbd/avbd_row_inventory.hpp>
+#include <dart/simulation/experimental/detail/world_registry_types.hpp>
 
 #include <entt/entt.hpp>
 
@@ -60,10 +61,11 @@ struct DeformableAvbdWarmStartReplayState
 };
 
 [[nodiscard]] std::vector<DeformableAvbdWarmStartReplayState>
-captureDeformableAvbdWarmStartReplayState(const entt::registry& registry);
+captureDeformableAvbdWarmStartReplayState(
+    const detail::WorldRegistry& registry);
 
 void restoreDeformableAvbdWarmStartReplayState(
-    entt::registry& registry,
+    detail::WorldRegistry& registry,
     std::span<const DeformableAvbdWarmStartReplayState> replayStates);
 
 } // namespace dart::simulation::experimental::compute::avbd_replay

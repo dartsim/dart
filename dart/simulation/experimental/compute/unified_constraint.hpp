@@ -34,6 +34,7 @@
 
 #include <dart/simulation/experimental/compute/multibody_dynamics.hpp>
 #include <dart/simulation/experimental/compute/rigid_body_constraint.hpp>
+#include <dart/simulation/experimental/detail/world_registry_types.hpp>
 #include <dart/simulation/experimental/export.hpp>
 
 #include <Eigen/Core>
@@ -191,7 +192,7 @@ solveUnifiedConstraintProblem(const UnifiedConstraintProblem& problem);
 /// order is irrelevant. A dynamic body shared between a rigid contact and a
 /// link obstacle accumulates both impulses into the same velocity.
 DART_EXPERIMENTAL_API void applyUnifiedConstraintImpulses(
-    entt::registry& registry,
+    detail::WorldRegistry& registry,
     const UnifiedConstraintProblem& problem,
     const Eigen::VectorXd& lambda,
     std::span<Eigen::VectorXd> multibodyVelocities);
@@ -210,7 +211,7 @@ DART_EXPERIMENTAL_API void applyUnifiedConstraintImpulses(
 /// the obstacle's `comps::Velocity`. `multibodyVelocities` is parallel to
 /// `problem.multibodyBlocks` and is updated in place.
 DART_EXPERIMENTAL_API void applyUnifiedConstraintFallback(
-    entt::registry& registry,
+    detail::WorldRegistry& registry,
     const UnifiedConstraintProblem& problem,
     std::span<Eigen::VectorXd> multibodyVelocities,
     std::size_t frictionIterations);
@@ -220,7 +221,7 @@ DART_EXPERIMENTAL_API void applyUnifiedConstraintFallback(
 /// if the fallback was used). This is the entry point the constraint stage
 /// calls.
 DART_EXPERIMENTAL_API bool resolveUnifiedConstraints(
-    entt::registry& registry,
+    detail::WorldRegistry& registry,
     const UnifiedConstraintProblem& problem,
     std::span<Eigen::VectorXd> multibodyVelocities,
     std::size_t frictionIterations);

@@ -15,6 +15,7 @@
 #include <dart/simulation/experimental/comps/component_category.hpp>
 #include <dart/simulation/experimental/compute/compute_stage_metadata.hpp>
 #include <dart/simulation/experimental/compute/world_step_stage.hpp>
+#include <dart/simulation/experimental/detail/world_registry_types.hpp>
 #include <dart/simulation/experimental/export.hpp>
 
 #include <Eigen/Core>
@@ -346,7 +347,7 @@ makeVariationalLinkSphereContactHook(
 /// this parameter is probe scaffolding for the compliant-contact go/no-go
 /// spike, not a production contact surface.
 DART_EXPERIMENTAL_API VariationalSolveReport integrateMultibodyVariational(
-    entt::registry& registry,
+    detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     const Eigen::Vector3d& gravity,
     double timeStep,
@@ -366,7 +367,7 @@ DART_EXPERIMENTAL_API VariationalSolveReport integrateMultibodyVariational(
 /// reference at the world origin). Fixed-base open chains with fixed/revolute/
 /// prismatic joints.
 [[nodiscard]] DART_EXPERIMENTAL_API double computeMultibodyMechanicalEnergy(
-    const entt::registry& registry,
+    const detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     const Eigen::Vector3d& gravity);
 
@@ -378,7 +379,7 @@ DART_EXPERIMENTAL_API VariationalSolveReport integrateMultibodyVariational(
 /// movable degree-of-freedom count.
 [[nodiscard]] DART_EXPERIMENTAL_API Eigen::VectorXd
 computeMultibodyInverseMassProduct(
-    entt::registry& registry,
+    detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     const Eigen::VectorXd& impulse);
 
@@ -396,7 +397,7 @@ struct VariationalConstraintLinearization
 
 [[nodiscard]] DART_EXPERIMENTAL_API VariationalConstraintLinearization
 computeVariationalConstraintLinearization(
-    entt::registry& registry,
+    detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     const std::vector<VariationalLoopConstraint>& constraints);
 
@@ -430,7 +431,7 @@ struct VariationalLoopClosureBinding
 /// the closure is disabled, or it does not request `Solve`.
 [[nodiscard]] DART_EXPERIMENTAL_API VariationalLoopClosureBinding
 bindVariationalLoopClosure(
-    const entt::registry& registry, entt::entity closureEntity);
+    const detail::WorldRegistry& registry, entt::entity closureEntity);
 
 /// Variational-integrator multibody stage (a peer of
 /// `MultibodyForwardDynamicsStage`, selected by the `variational integrator`

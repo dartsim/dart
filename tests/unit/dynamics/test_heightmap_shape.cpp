@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 
+#include <limits>
 #include <memory>
 #include <vector>
 
@@ -72,4 +73,64 @@ TEST(HeightmapShape, FloatHeightFieldAccessors)
   EXPECT_FLOAT_EQ(shape.getMinHeight(), 0.0f);
   EXPECT_FLOAT_EQ(shape.getMaxHeight(), 3.0f);
   EXPECT_GT(shape.getVolume(), 0.0);
+}
+
+//==============================================================================
+// setScale and setHeightField reject non-finite (NaN/Inf) and non-positive
+// inputs so they never reach the collision backend (e.g. ODE), where they
+// would trip an internal assertion or undefined behavior.
+// See https://github.com/gazebosim/gz-physics/issues/847
+TEST(HeightmapShape, RejectsNonFiniteScaleAndPreservesOriginal)
+{
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+  const double inf = std::numeric_limits<double>::infinity();
+
+  dart::dynamics::HeightmapShaped shape;
+  shape.setScale(Eigen::Vector3d(2.0, 2.0, 2.0));
+  const Eigen::Vector3d original = shape.getScale();
+
+  shape.setScale(Eigen::Vector3d(inf, 1.0, 1.0));
+  EXPECT_TRUE(shape.getScale().isApprox(original));
+
+  shape.setScale(Eigen::Vector3d(1.0, -inf, 1.0));
+  EXPECT_TRUE(shape.getScale().isApprox(original));
+
+  shape.setScale(Eigen::Vector3d(1.0, 1.0, nan));
+  EXPECT_TRUE(shape.getScale().isApprox(original));
+}
+
+//==============================================================================
+TEST(HeightmapShape, RejectsNonPositiveScaleAndPreservesOriginal)
+{
+  dart::dynamics::HeightmapShaped shape;
+  shape.setScale(Eigen::Vector3d(2.0, 2.0, 2.0));
+  const Eigen::Vector3d original = shape.getScale();
+
+  shape.setScale(Eigen::Vector3d(0.0, 1.0, 1.0));
+  EXPECT_TRUE(shape.getScale().isApprox(original));
+
+  shape.setScale(Eigen::Vector3d(1.0, -1.0, 1.0));
+  EXPECT_TRUE(shape.getScale().isApprox(original));
+}
+
+//==============================================================================
+TEST(HeightmapShape, RejectsNonFiniteHeightFieldAndPreservesOriginal)
+{
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+  const double inf = std::numeric_limits<double>::infinity();
+
+  dart::dynamics::HeightmapShaped shape;
+  shape.setHeightField(2u, 2u, std::vector<double>{0.0, 1.0, 2.0, 3.0});
+  EXPECT_DOUBLE_EQ(shape.getMaxHeight(), 3.0);
+  EXPECT_DOUBLE_EQ(shape.getMinHeight(), 0.0);
+
+  // A height field carrying a non-finite value must be rejected, leaving the
+  // previously set (valid) field intact.
+  shape.setHeightField(2u, 2u, std::vector<double>{0.0, nan, 2.0, 3.0});
+  EXPECT_DOUBLE_EQ(shape.getMaxHeight(), 3.0);
+  EXPECT_DOUBLE_EQ(shape.getMinHeight(), 0.0);
+
+  shape.setHeightField(2u, 2u, std::vector<double>{0.0, 1.0, inf, 3.0});
+  EXPECT_DOUBLE_EQ(shape.getMaxHeight(), 3.0);
+  EXPECT_DOUBLE_EQ(shape.getMinHeight(), 0.0);
 }

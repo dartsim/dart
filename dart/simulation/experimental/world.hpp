@@ -66,8 +66,9 @@ class SkeletonLoaderWorldAccess;
 
 namespace detail {
 struct WorldStorage;
-[[nodiscard]] WorldStorage& storageOf(World& world);
-[[nodiscard]] const WorldStorage& storageOf(const World& world);
+[[nodiscard]] DART_EXPERIMENTAL_API WorldStorage& storageOf(World& world);
+[[nodiscard]] DART_EXPERIMENTAL_API const WorldStorage& storageOf(
+    const World& world);
 } // namespace detail
 
 namespace compute {
@@ -692,6 +693,7 @@ private:
       const Eigen::Vector3d& axis);
 
   void ensureDesignMode() const;
+  void reserveRegistryStorageForSimulation();
   void resetCountersFromRegistry();
   void stepPipelineOnce(
       compute::ComputeExecutor& executor, compute::WorldStepPipeline& pipeline);

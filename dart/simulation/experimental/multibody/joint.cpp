@@ -178,7 +178,7 @@ void validateJointLimitPair(
       fieldName);
 }
 
-void markSubtreeTransformCacheDirty(entt::registry& registry, entt::entity root)
+void markSubtreeTransformCacheDirty(auto& registry, entt::entity root)
 {
   if (root == entt::null || !registry.valid(root)) {
     return;
@@ -187,7 +187,7 @@ void markSubtreeTransformCacheDirty(entt::registry& registry, entt::entity root)
   std::vector<entt::entity> stack;
   stack.push_back(root);
 
-  auto frameStateView = registry.view<comps::FrameState>();
+  auto frameStateView = registry.template view<comps::FrameState>();
 
   while (!stack.empty()) {
     const auto entity = stack.back();
@@ -197,12 +197,12 @@ void markSubtreeTransformCacheDirty(entt::registry& registry, entt::entity root)
       continue;
     }
 
-    if (auto* cache = registry.try_get<comps::FrameCache>(entity)) {
+    if (auto* cache = registry.template try_get<comps::FrameCache>(entity)) {
       cache->needTransformUpdate = true;
     }
 
     for (const auto child : frameStateView) {
-      const auto& state = frameStateView.get<comps::FrameState>(child);
+      const auto& state = frameStateView.template get<comps::FrameState>(child);
       if (state.parentFrame == entity) {
         stack.push_back(child);
       }
