@@ -7183,6 +7183,68 @@ void resetRigidIpcRuntimeBodyPreservingSurface(
 }
 
 //==============================================================================
+void copyRigidIpcSurfacePreservingCapacity(
+    const sxdetail::RigidIpcBarrierSurface& source,
+    sxdetail::RigidIpcBarrierSurface& target)
+{
+  target.body = source.body;
+  target.pose = source.pose;
+  target.vertices.assign(source.vertices.begin(), source.vertices.end());
+  target.triangles.assign(source.triangles.begin(), source.triangles.end());
+  target.frictionCoefficient = source.frictionCoefficient;
+  target.dynamic = source.dynamic;
+  target.kinematic = source.kinematic;
+  target.kinematicStartPose = source.kinematicStartPose;
+}
+
+//==============================================================================
+void copyRigidIpcRuntimeBodyPreservingSurfaceCapacity(
+    const RigidIpcRuntimeBody& source, RigidIpcRuntimeBody& target)
+{
+  target.entity = source.entity;
+  target.kinematic = source.kinematic;
+  target.hasSupportedSurface = source.hasSupportedSurface;
+  target.surfaceIndex = source.surfaceIndex;
+  target.initialPose = source.initialPose;
+  target.initialVelocity = source.initialVelocity;
+  copyRigidIpcSurfacePreservingCapacity(source.surface, target.surface);
+  target.dynamicsTerm = source.dynamicsTerm;
+}
+
+//==============================================================================
+void prepareRigidIpcSolverScratch(
+    const std::vector<RigidIpcRuntimeBody>& runtimeBodies,
+    std::vector<RigidIpcRuntimeBody>& solverBodies,
+    std::vector<sxdetail::RigidIpcBarrierSurface>& surfaces,
+    std::vector<sxdetail::RigidIpcBodyDynamicsTerm>& dynamicsTerms)
+{
+  std::size_t solverCount = 0u;
+  for (const auto& body : runtimeBodies) {
+    if (!body.hasSupportedSurface) {
+      continue;
+    }
+
+    if (solverCount == solverBodies.size()) {
+      solverBodies.emplace_back();
+    }
+    copyRigidIpcRuntimeBodyPreservingSurfaceCapacity(
+        body, solverBodies[solverCount]);
+    solverBodies[solverCount].surfaceIndex = solverCount;
+    solverBodies[solverCount].surface.body = solverCount;
+    ++solverCount;
+  }
+
+  solverBodies.resize(solverCount);
+  surfaces.resize(solverCount);
+  dynamicsTerms.resize(solverCount);
+  for (std::size_t i = 0; i < solverCount; ++i) {
+    copyRigidIpcSurfacePreservingCapacity(solverBodies[i].surface, surfaces[i]);
+    surfaces[i].body = i;
+    dynamicsTerms[i] = solverBodies[i].dynamicsTerm;
+  }
+}
+
+//==============================================================================
 sxdetail::RigidIpcPose toRigidIpcPose(const comps::Transform& transform)
 {
   sxdetail::RigidIpcPose pose;
@@ -8438,6 +8500,11 @@ void RigidIpcContactStage::prepare(World& world)
 
   RigidIpcSolverStats warmupStats;
   collectRigidIpcRuntimeBodies(world, warmupStats, m_scratch->runtimeBodies);
+  prepareRigidIpcSolverScratch(
+      m_scratch->runtimeBodies,
+      m_scratch->solverBodies,
+      m_scratch->surfaces,
+      m_scratch->dynamicsTerms);
 }
 
 //==============================================================================
@@ -8467,25 +8534,14 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
     return;
   }
 
+  prepareRigidIpcSolverScratch(
+      runtimeBodies,
+      scratch.solverBodies,
+      scratch.surfaces,
+      scratch.dynamicsTerms);
   auto& solverBodies = scratch.solverBodies;
-  solverBodies.clear();
-  solverBodies.reserve(m_lastStats.surfaceCount);
-  for (const auto& body : runtimeBodies) {
-    if (body.hasSupportedSurface) {
-      solverBodies.push_back(body);
-    }
-  }
-
   auto& surfaces = scratch.surfaces;
   auto& dynamicsTerms = scratch.dynamicsTerms;
-  surfaces.clear();
-  dynamicsTerms.clear();
-  surfaces.reserve(solverBodies.size());
-  dynamicsTerms.reserve(solverBodies.size());
-  for (const auto& body : solverBodies) {
-    surfaces.push_back(body.surface);
-    dynamicsTerms.push_back(body.dynamicsTerm);
-  }
 
   // Adaptive barrier-stiffness inputs: the world AABB diagonal over all
   // collision surfaces and the average dynamic-body mass. These drive the IPC
