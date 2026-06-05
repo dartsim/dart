@@ -1302,8 +1302,15 @@ TEST(World, IpcBakeDoesNotPrewarmRigidBodyContactQuery)
             body.setLinearVelocity(Eigen::Vector3d(1.0, 0.0, 0.0));
           });
 
-  EXPECT_EQ(noGeometry.allocationCount, unsupportedGeometry.allocationCount);
-  EXPECT_EQ(noGeometry.allocationBytes, unsupportedGeometry.allocationBytes);
+  // The unsupported (contact-query-only) plane geometry must not PREWARM the
+  // rigid-body contact query during the bake, i.e. it must not allocate MORE
+  // than the no-geometry baseline. Optimized builds make the two bake paths
+  // allocation-identical, but a Debug build does one extra small allocation in
+  // the no-geometry baseline (component-set-dependent container growth: the
+  // plane scene carries a CollisionShape component, the empty scene does not),
+  // so assert the no-prewarm invariant (<=) rather than exact equality.
+  EXPECT_LE(unsupportedGeometry.allocationCount, noGeometry.allocationCount);
+  EXPECT_LE(unsupportedGeometry.allocationBytes, noGeometry.allocationBytes);
 }
 
 TEST(World, RigidIpcContactStagePrepareReusesSupportedDynamicSurfaceBuffers)
