@@ -51,11 +51,11 @@
 //
 // The default solver (Dantzig primary + PGS secondary) already kept the loop
 // closed: on a singular pivot Dantzig terminates early and the existing PGS
-// fallback in BoxedLcpConstraintSolver takes over. PART A guards that invariant.
-// PART B disables the secondary so only Dantzig runs and the regularization has
-// to do the work alone: without the floor the loop drifts ~6 mm; with it the
-// loop stays closed to ~1e-9. That makes PART B the discriminating regression
-// guard.
+// fallback in BoxedLcpConstraintSolver takes over. PART A guards that
+// invariant. PART B disables the secondary so only Dantzig runs and the
+// regularization has to do the work alone: without the floor the loop drifts ~6
+// mm; with it the loop stays closed to ~1e-9. That makes PART B the
+// discriminating regression guard.
 
 #include "dart/constraint/BallJointConstraint.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
@@ -156,14 +156,16 @@ SkeletonPtr createNonAxisAlignedFourBar(
 // must not drift away from its anchor on the base by more than
 // kMaxLoopClosureError. Without the fix, the Dantzig-only configuration scrubs
 // the singular solution to zero and the loop drifts open, violating (b).
-void stepAndCheckLoopClosed(const WorldPtr& world, const SkeletonPtr& skel,
-                            BodyNode* base, BodyNode* lastLink,
-                            const Eigen::Vector3d& loopAnchor)
+void stepAndCheckLoopClosed(
+    const WorldPtr& world,
+    const SkeletonPtr& skel,
+    BodyNode* base,
+    BodyNode* lastLink,
+    const Eigen::Vector3d& loopAnchor)
 {
   const Eigen::Vector3d off1
       = lastLink->getWorldTransform().inverse() * loopAnchor;
-  const Eigen::Vector3d off2
-      = base->getWorldTransform().inverse() * loopAnchor;
+  const Eigen::Vector3d off2 = base->getWorldTransform().inverse() * loopAnchor;
   const std::size_t numSteps = 100;
   for (std::size_t i = 0; i < numSteps; ++i) {
     // Apply a small actuation/perturbation on the first revolute joint.
@@ -194,8 +196,7 @@ TEST(Issue719, NonAxisAlignedClosedLoopDefaultSolver)
   BodyNode* base = nullptr;
   BodyNode* lastLink = nullptr;
   Eigen::Vector3d loopAnchor = Eigen::Vector3d::Zero();
-  SkeletonPtr skel
-      = createNonAxisAlignedFourBar(&base, &lastLink, loopAnchor);
+  SkeletonPtr skel = createNonAxisAlignedFourBar(&base, &lastLink, loopAnchor);
 
   WorldPtr world = World::create();
   world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
@@ -207,7 +208,8 @@ TEST(Issue719, NonAxisAlignedClosedLoopDefaultSolver)
       lastLink, base, loopAnchor);
   world->getConstraintSolver()->addConstraint(loopConstraint);
 
-  EXPECT_NO_FATAL_FAILURE(stepAndCheckLoopClosed(world, skel, base, lastLink, loopAnchor));
+  EXPECT_NO_FATAL_FAILURE(
+      stepAndCheckLoopClosed(world, skel, base, lastLink, loopAnchor));
 }
 
 //==============================================================================
@@ -220,8 +222,7 @@ TEST(Issue719, NonAxisAlignedClosedLoopDantzigOnly)
   BodyNode* base = nullptr;
   BodyNode* lastLink = nullptr;
   Eigen::Vector3d loopAnchor = Eigen::Vector3d::Zero();
-  SkeletonPtr skel
-      = createNonAxisAlignedFourBar(&base, &lastLink, loopAnchor);
+  SkeletonPtr skel = createNonAxisAlignedFourBar(&base, &lastLink, loopAnchor);
 
   WorldPtr world = World::create();
   world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
@@ -237,5 +238,6 @@ TEST(Issue719, NonAxisAlignedClosedLoopDantzigOnly)
       lastLink, base, loopAnchor);
   world->getConstraintSolver()->addConstraint(loopConstraint);
 
-  EXPECT_NO_FATAL_FAILURE(stepAndCheckLoopClosed(world, skel, base, lastLink, loopAnchor));
+  EXPECT_NO_FATAL_FAILURE(
+      stepAndCheckLoopClosed(world, skel, base, lastLink, loopAnchor));
 }
