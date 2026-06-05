@@ -4839,6 +4839,42 @@ TEST(World, MultibodySiblingLinksResolveContact)
   EXPECT_GT(upperJoint.getVelocity()[0], -0.5);
 }
 
+// Test that a fixed articulated obstacle still routes link contacts through
+// the unified solver instead of being swallowed by the sequential shortcut.
+TEST(World, ZeroDofMultibodyLinkContactStopsRigidBody)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  auto fixture = world.addMultibody("fixed_fixture");
+  auto base = fixture.addLink("base");
+  sx::JointSpec fixed;
+  fixed.name = "weld";
+  fixed.type = sx::JointType::Fixed;
+  auto obstacle = fixture.addLink("obstacle", base, fixed);
+  obstacle.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+  ASSERT_EQ(fixture.getDOFCount(), 0u);
+
+  sx::RigidBodyOptions dynamicOptions;
+  dynamicOptions.position = Eigen::Vector3d(0.9, 0.0, 0.0);
+  dynamicOptions.linearVelocity = Eigen::Vector3d(-1.0, 0.0, 0.0);
+  auto dynamic = world.addRigidBody("dynamic", dynamicOptions);
+  dynamic.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  world.setTimeStep(0.001);
+  ASSERT_FALSE(world.collide().empty());
+
+  world.step();
+
+  EXPECT_GE(dynamic.getLinearVelocity().x(), -1e-9)
+      << dynamic.getLinearVelocity().transpose();
+  EXPECT_NEAR(dynamic.getLinearVelocity().y(), 0.0, 1e-12);
+  EXPECT_NEAR(dynamic.getLinearVelocity().z(), 0.0, 1e-12);
+  EXPECT_TRUE(dynamic.getAngularVelocity().isZero(1e-12));
+}
+
 // Test cross-multibody link-vs-link contact: two separate fixed-base
 // articulated bodies overlap and approach along their prismatic rails. The
 // unified row carries both articulated ends, so the impulse changes both

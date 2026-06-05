@@ -2642,7 +2642,7 @@ bool tryResolveSequentialMultibodyContacts(
           scratch.linkIndexOf,
           scratch.jointFrameSubspace);
       if (scratch.tree.dofCount == 0) {
-        continue;
+        return false;
       }
       pendingVelocity
           = &registry.get_or_emplace<PendingMultibodyVelocity>(entity);
