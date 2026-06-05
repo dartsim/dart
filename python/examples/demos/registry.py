@@ -61,6 +61,9 @@ from .scenes.robot_puppets import G1_PUPPET
 from .scenes.robot_puppets import HUBO_PUPPET
 from .scenes.variational_chain import SCENE as VARIATIONAL_CHAIN
 from .scenes.variational_contact import SCENE as VARIATIONAL_CONTACT
+from .scenes.variational_endpoint_loop_closure import (
+    SCENE as VARIATIONAL_ENDPOINT_LOOP_CLOSURE,
+)
 from .scenes.variational_tumbler import SCENE as VARIATIONAL_TUMBLER
 from .scenes.vbd_beam import SCENE as VBD_BEAM
 from .scenes.vbd_cloth import SCENE as VBD_CLOTH
@@ -116,6 +119,7 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         VARIATIONAL_TUMBLER,
         VARIATIONAL_CONTACT,
         LOOP_CLOSURE,
+        VARIATIONAL_ENDPOINT_LOOP_CLOSURE,
         # Differentiable physics. Reproduces the paper's
         # gradient-based experiments as browsable, animated scenes. Each scene
         # degrades gracefully to an un-optimized rollout when the differentiable
