@@ -539,27 +539,33 @@ void reportContacts(
        it != pastContacsVec.rend() && missing > 0u;
        ++it) {
     auto past_cont = *it;
+    bool matchesCurrentContact = false;
+    bool hasCurrentContactForPair = false;
     for (const auto& curr_cont : results_vec_copy) {
       const auto res_pair
           = MakeNewPair(curr_cont.collisionObject1, curr_cont.collisionObject2);
       if (res_pair != pair) {
         continue;
       }
+      hasCurrentContactForPair = true;
       auto dist_v = past_cont.point - curr_cont.point;
       const auto dist_m = (dist_v.transpose() * dist_v).coeff(0, 0);
       if (dist_m < 0.01) {
-        continue;
-      }
-      if (result.getNumContacts() >= option.maxNumContacts) {
-        return;
-      }
-      result.addContact(past_cont);
-      if (--missing == 0u)
+        matchesCurrentContact = true;
         break;
+      }
     }
-    if (missing == 0u) {
+
+    if (matchesCurrentContact || !hasCurrentContactForPair) {
+      continue;
+    }
+
+    if (result.getNumContacts() >= option.maxNumContacts) {
+      return;
+    }
+    result.addContact(past_cont);
+    if (--missing == 0u)
       break;
-    }
   }
   for (const auto& item : results_vec_copy) {
     const auto res_pair

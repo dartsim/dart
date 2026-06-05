@@ -2164,6 +2164,49 @@ TEST(Issue1654, OdeContactHistoryClearsAfterIncrementalKinematicPoseChanges)
 }
 
 //==============================================================================
+TEST(Issue1654, OdeContactHistorySkipsDuplicateCurrentContacts)
+{
+  auto detector = OdeCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+
+  CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 4u;
+
+  auto skeleton1 = Skeleton::create("duplicate_contact1");
+  auto skeleton2 = Skeleton::create("duplicate_contact2");
+
+  auto pair1 = skeleton1->createJointAndBodyNodePair<FreeJoint>();
+  auto pair2 = skeleton2->createJointAndBodyNodePair<FreeJoint>();
+  auto* joint1 = pair1.first;
+  auto* body1 = pair1.second;
+  auto* joint2 = pair2.first;
+  auto* body2 = pair2.second;
+
+  body1->createShapeNodeWith<CollisionAspect>(
+      std::make_shared<CapsuleShape>(1.0, 1.0));
+  body2->createShapeNodeWith<CollisionAspect>(
+      std::make_shared<CapsuleShape>(0.5, 1.0));
+
+  Eigen::Isometry3d pose1 = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d pose2 = Eigen::Isometry3d::Identity();
+  pose2.translate(Eigen::Vector3d(0.74, 0.0, 0.0));
+  joint1->setRelativeTransform(pose1);
+  joint2->setRelativeTransform(pose2);
+
+  group->addShapeFramesOf(body1);
+  group->addShapeFramesOf(body2);
+
+  CollisionResult result;
+  ASSERT_TRUE(group->collide(option, &result));
+  ASSERT_EQ(2u, result.getNumContacts());
+
+  result.clear();
+  ASSERT_TRUE(group->collide(option, &result));
+  EXPECT_EQ(2u, result.getNumContacts());
+}
+
+//==============================================================================
 TEST(Issue1654, OdeHonorsMaxNumContacts)
 {
   auto detector = OdeCollisionDetector::create();
