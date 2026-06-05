@@ -119,22 +119,26 @@ def test_top_level_stub_promotes_runtime_symbols():
         "ComputeExecutor",
         "ComputeNodeExecutionProfile",
         "ContinuousCollisionResult",
-        "getProfileSummaryText",
         "get_profile_summary_text",
-        "isProfileEnabled",
-        "isTextProfileEnabled",
         "is_profile_enabled",
         "is_text_profile_enabled",
-        "markProfileFrame",
         "mark_profile_frame",
         "ParallelExecutor",
-        "resetProfile",
         "reset_profile",
         "SequentialExecutor",
         "Skeleton",
         "World",
     ):
         assert name in public_names
+
+    for name in (
+        "getProfileSummaryText",
+        "isProfileEnabled",
+        "isTextProfileEnabled",
+        "markProfileFrame",
+        "resetProfile",
+    ):
+        assert name not in public_names
 
 
 def test_optional_stub_modules_can_be_absent(monkeypatch, tmp_path):
@@ -160,7 +164,7 @@ def test_optional_stub_modules_can_be_absent(monkeypatch, tmp_path):
     generate_stubs._remove_stub_output(tmp_path, Path("dartpy/gui/__init__.pyi"))
     generate_stubs._write_top_level_stub(
         tmp_path,
-        {"collision": ["CollisionDetector"]},
+        {"collision": ["CollisionDetector", "cast_result", "getResult"]},
         {"collision", "io", "utils"},
     )
 
@@ -170,6 +174,9 @@ def test_optional_stub_modules_can_be_absent(monkeypatch, tmp_path):
 
     assert not stale_output.exists()
     assert "from . import collision" in top_level_stub
+    assert "CollisionDetector" in top_level_stub
+    assert "cast_result" in top_level_stub
+    assert "getResult" not in top_level_stub
     assert "from . import gui" not in top_level_stub
     assert "from . import simulation_experimental" not in top_level_stub
 
