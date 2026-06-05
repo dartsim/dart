@@ -92,7 +92,7 @@ def test_strip_gpu_flags():
 def test_configure_gpu_compute_cpu_build_is_noop(monkeypatch, capsys):
     monkeypatch.delenv("DART_PY_DEMOS_GPU", raising=False)
     sx = _FakeSx(available=False)
-    panel = _configure_gpu_compute(SimpleNamespace(simulation_experimental=sx), None)
+    panel = _configure_gpu_compute(sx, None)
     assert panel is None
     # Auto on a CPU build never enables the GPU backend.
     assert all(call is False for call in sx.set_calls)
@@ -102,13 +102,13 @@ def test_configure_gpu_compute_cpu_build_is_noop(monkeypatch, capsys):
 def test_configure_gpu_compute_available_auto_enables(monkeypatch):
     monkeypatch.delenv("DART_PY_DEMOS_GPU", raising=False)
     sx = _FakeSx(available=True)
-    panel = _configure_gpu_compute(SimpleNamespace(simulation_experimental=sx), None)
+    panel = _configure_gpu_compute(sx, None)
     assert panel is not None
     assert sx.is_accelerated_deformable_solve_enabled() is True
 
 
 def test_configure_gpu_compute_no_binding_returns_none():
-    fake_dart = SimpleNamespace(simulation_experimental=SimpleNamespace())
+    fake_dart = SimpleNamespace()
     assert _configure_gpu_compute(fake_dart, None) is None
 
 

@@ -104,7 +104,7 @@ mobile manipulation.
 ## IPC Deformable scenes
 
 The dedicated **`IPC Deformable`** category groups the deformable-body
-scenes driven by the `dartpy.simulation_experimental` IPC solver
+scenes driven by the `dartpy` IPC solver
 (point-mass/spring with IPC-style clamped-log barriers, sparse projected Newton,
 lagged smoothed-Coulomb friction, and conservative CCD). They live in their own
 category so the IPC showcases stay together:
