@@ -327,6 +327,26 @@ TEST(FixedPoolAllocatorTest, KeepsExistingBlocksWhenBlockTableGrowthFails)
 }
 
 //==============================================================================
+TEST(FixedPoolAllocatorTest, RawAllocatorGrowsMemoryBlockTable)
+{
+  FixedPoolAllocator allocator(32, MemoryAllocator::GetDefault(), 32);
+
+  std::vector<void*> allocations;
+  allocations.reserve(65);
+  for (int i = 0; i < 65; ++i) {
+    void* ptr = allocator.allocate();
+    ASSERT_NE(ptr, nullptr) << "allocation " << i;
+    allocations.push_back(ptr);
+  }
+
+  EXPECT_EQ(allocator.getNumAllocatedMemoryBlocks(), 65);
+
+  for (void* ptr : allocations) {
+    allocator.deallocate(ptr);
+  }
+}
+
+//==============================================================================
 TEST(FixedPoolAllocatorTest, DebugRejectsMismatchedAndDoubleFree)
 {
   auto allocator = FixedPoolAllocator::Debug(32);
