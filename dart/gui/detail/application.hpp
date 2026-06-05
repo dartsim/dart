@@ -83,21 +83,10 @@ inline bool demoSceneMatchesSearch(
          || demoCatalogContainsSearchText(scene.summary, searchText);
 }
 
-inline bool demoSceneMatchesExperimentalFocus(
-    const dart::gui::DemoSceneEntry& scene)
-{
-  const std::string category = normalizedDemoSearchText(scene.category);
-  return category.find("(sx)") != std::string::npos
-         || category.find("experimental") != std::string::npos;
-}
-
 inline bool demoSceneVisibleInNavigator(
-    const dart::gui::DemoSceneEntry& scene,
-    const std::string& searchText,
-    bool experimentalFocus)
+    const dart::gui::DemoSceneEntry& scene, const std::string& searchText)
 {
-  return (!experimentalFocus || demoSceneMatchesExperimentalFocus(scene))
-         && demoSceneMatchesSearch(scene, searchText);
+  return demoSceneMatchesSearch(scene, searchText);
 }
 
 inline std::vector<DemoCategoryGroup> groupDemoScenesByCategory(

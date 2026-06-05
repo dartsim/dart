@@ -90,7 +90,7 @@ Chain makeChain(int n)
   return chain;
 }
 
-void resetToInitial(entt::registry& registry, const Chain& chain)
+void resetToInitial(sx::detail::WorldRegistry& registry, const Chain& chain)
 {
   for (std::size_t j = 0; j < chain.joints.size(); ++j) {
     auto& joint = registry.get<sx::comps::Joint>(chain.joints[j]);

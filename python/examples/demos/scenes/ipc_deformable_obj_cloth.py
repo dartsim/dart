@@ -1,4 +1,4 @@
-"""Cloth loaded from a Wavefront .obj draping under gravity (experimental IPC).
+"""Cloth loaded from a Wavefront .obj draping under gravity (IPC).
 
 A mass-spring cloth membrane is loaded from a bundled Wavefront ``.obj`` triangle
 mesh (the new ``load_obj_triangle_mesh`` importer, PLAN-081 M3 asset pipeline),
@@ -110,7 +110,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="ipc_deformable_obj_cloth",
     title="Deformable .obj Cloth (IPC)",
-    category="IPC Deformable (sx)",
+    category="IPC Deformable",
     summary="A cloth loaded from a Wavefront .obj is pinned at one edge and "
     "drapes under gravity onto the ground barrier.",
     build=build,

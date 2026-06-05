@@ -32,12 +32,16 @@
 
 #pragma once
 
+#include <dart/simulation/experimental/detail/world_registry_types.hpp>
+
 #include <Eigen/Core>
 #include <entt/entt.hpp>
 
 #include <concepts>
 #include <functional>
+#include <memory>
 #include <span>
+#include <stdexcept>
 #include <type_traits>
 #include <vector>
 
@@ -55,6 +59,18 @@ concept EigenVectorField = requires(Field field, Eigen::Index i) {
   field.data();
   field[i];
 };
+
+template <typename Callable, typename Registry>
+concept ScalarGetter
+    = requires(const Callable& callable, const Registry& registry) {
+        { std::invoke(callable, registry) } -> std::convertible_to<double>;
+      };
+
+template <typename Callable, typename Registry>
+concept ScalarSetter
+    = requires(Callable& callable, Registry& registry, double value) {
+        std::invoke(callable, registry, value);
+      };
 
 } // namespace detail
 
@@ -110,11 +126,74 @@ public:
   [[nodiscard]] virtual size_t getDimension() const = 0;
 };
 
-/// Mapper for a single scalar variable
-/// Useful for simple components with single values
-class ScalarMapper : public ComponentMapper
+/// Optional interface for mappers that support World-owned registries.
+///
+/// Custom ComponentMapper implementations that should operate on
+/// detail::WorldRegistry must also implement this interface. Keeping it
+/// separate preserves the existing ComponentMapper contract for plain
+/// entt::registry users while making allocator-aware World registry support
+/// explicit.
+class WorldRegistryComponentMapper
 {
 public:
+  virtual ~WorldRegistryComponentMapper() = default;
+
+  /// Extract component data from a World-owned allocator-aware registry.
+  virtual size_t toVector(
+      const detail::WorldRegistry& registry,
+      std::vector<double>& vec,
+      size_t offset) const = 0;
+
+  /// Write vector data back to a World-owned allocator-aware registry.
+  virtual size_t fromVector(
+      detail::WorldRegistry& registry,
+      std::span<const double> vec,
+      size_t offset) = 0;
+
+  /// Whether this mapper instance can currently dispatch on WorldRegistry.
+  [[nodiscard]] virtual bool supportsWorldRegistry() const noexcept
+  {
+    return true;
+  }
+};
+
+/// Mapper for a single scalar variable
+/// Useful for simple components with single values
+class ScalarMapper : public ComponentMapper, public WorldRegistryComponentMapper
+{
+public:
+  template <typename GetValue, typename SetValue>
+    requires detail::
+                 ScalarGetter<std::remove_reference_t<GetValue>, entt::registry>
+             && detail::
+                 ScalarSetter<std::remove_reference_t<SetValue>, entt::registry>
+  ScalarMapper(GetValue&& getValue, SetValue&& setValue)
+  {
+    using Get = std::decay_t<GetValue>;
+    using Set = std::decay_t<SetValue>;
+
+    auto get = std::make_shared<Get>(std::forward<GetValue>(getValue));
+    auto set = std::make_shared<Set>(std::forward<SetValue>(setValue));
+
+    m_getValue = [get](const entt::registry& registry) {
+      return static_cast<double>(std::invoke(*get, registry));
+    };
+    m_setValue = [set](entt::registry& registry, double value) {
+      std::invoke(*set, registry, value);
+    };
+
+    if constexpr (
+        detail::ScalarGetter<Get, detail::WorldRegistry>
+        && detail::ScalarSetter<Set, detail::WorldRegistry>) {
+      m_getWorldValue = [get](const detail::WorldRegistry& registry) {
+        return static_cast<double>(std::invoke(*get, registry));
+      };
+      m_setWorldValue = [set](detail::WorldRegistry& registry, double value) {
+        std::invoke(*set, registry, value);
+      };
+    }
+  }
+
   /// Constructor
   /// @param getValue Function to extract value from registry
   /// @param setValue Function to set value in registry
@@ -125,11 +204,24 @@ public:
   {
   }
 
+  /// Constructor for World-owned allocator-aware registries.
+  ScalarMapper(
+      std::function<double(const detail::WorldRegistry&)> getValue,
+      std::function<void(detail::WorldRegistry&, double)> setValue)
+    : m_getWorldValue(std::move(getValue)), m_setWorldValue(std::move(setValue))
+  {
+  }
+
   size_t toVector(
       const entt::registry& registry,
       std::vector<double>& vec,
       size_t offset) const override
   {
+    if (!m_getValue) {
+      throw std::invalid_argument(
+          "ScalarMapper does not support entt::registry extraction");
+    }
+
     vec[offset] = m_getValue(registry);
     return 1;
   }
@@ -139,8 +231,46 @@ public:
       std::span<const double> vec,
       size_t offset) override
   {
+    if (!m_setValue) {
+      throw std::invalid_argument(
+          "ScalarMapper does not support entt::registry injection");
+    }
+
     m_setValue(registry, vec[offset]);
     return 1;
+  }
+
+  size_t toVector(
+      const detail::WorldRegistry& registry,
+      std::vector<double>& vec,
+      size_t offset) const override
+  {
+    if (!m_getWorldValue) {
+      throw std::invalid_argument(
+          "ScalarMapper does not support WorldRegistry extraction");
+    }
+
+    vec[offset] = m_getWorldValue(registry);
+    return 1;
+  }
+
+  size_t fromVector(
+      detail::WorldRegistry& registry,
+      std::span<const double> vec,
+      size_t offset) override
+  {
+    if (!m_setWorldValue) {
+      throw std::invalid_argument(
+          "ScalarMapper does not support WorldRegistry injection");
+    }
+
+    m_setWorldValue(registry, vec[offset]);
+    return 1;
+  }
+
+  [[nodiscard]] bool supportsWorldRegistry() const noexcept override
+  {
+    return m_getWorldValue && m_setWorldValue;
   }
 
   [[nodiscard]] size_t getDimension() const override
@@ -151,12 +281,14 @@ public:
 private:
   std::function<double(const entt::registry&)> m_getValue;
   std::function<void(entt::registry&, double)> m_setValue;
+  std::function<double(const detail::WorldRegistry&)> m_getWorldValue;
+  std::function<void(detail::WorldRegistry&, double)> m_setWorldValue;
 };
 
 /// Mapper for a vector of scalars from multiple entities
 /// Extracts data from all entities that have a specific component
 template <typename Component, typename Field>
-class FieldMapper : public ComponentMapper
+class FieldMapper : public ComponentMapper, public WorldRegistryComponentMapper
 {
 public:
   /// Constructor
@@ -168,7 +300,46 @@ public:
       std::vector<double>& vec,
       size_t offset) const override
   {
-    auto view = registry.view<Component>();
+    return toVectorImpl(registry, vec, offset);
+  }
+
+  size_t toVector(
+      const detail::WorldRegistry& registry,
+      std::vector<double>& vec,
+      size_t offset) const override
+  {
+    return toVectorImpl(registry, vec, offset);
+  }
+
+  size_t fromVector(
+      entt::registry& registry,
+      std::span<const double> vec,
+      size_t offset) override
+  {
+    return fromVectorImpl(registry, vec, offset);
+  }
+
+  size_t fromVector(
+      detail::WorldRegistry& registry,
+      std::span<const double> vec,
+      size_t offset) override
+  {
+    return fromVectorImpl(registry, vec, offset);
+  }
+
+  [[nodiscard]] size_t getDimension() const override
+  {
+    // Dimension must be computed at runtime based on number of entities
+    // For now, return 0 to indicate dynamic sizing
+    return 0;
+  }
+
+private:
+  template <typename Registry>
+  size_t toVectorImpl(
+      const Registry& registry, std::vector<double>& vec, size_t offset) const
+  {
+    auto view = registry.template view<Component>();
     size_t count = 0;
 
     for (auto entity : view) {
@@ -192,12 +363,11 @@ public:
     return count;
   }
 
-  size_t fromVector(
-      entt::registry& registry,
-      std::span<const double> vec,
-      size_t offset) override
+  template <typename Registry>
+  size_t fromVectorImpl(
+      Registry& registry, std::span<const double> vec, size_t offset)
   {
-    auto view = registry.view<Component>();
+    auto view = registry.template view<Component>();
     size_t count = 0;
 
     for (auto entity : view) {
@@ -221,14 +391,6 @@ public:
     return count;
   }
 
-  [[nodiscard]] size_t getDimension() const override
-  {
-    // Dimension must be computed at runtime based on number of entities
-    // For now, return 0 to indicate dynamic sizing
-    return 0;
-  }
-
-private:
   Field Component::* m_fieldPtr;
 };
 

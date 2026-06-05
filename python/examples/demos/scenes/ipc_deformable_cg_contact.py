@@ -115,7 +115,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="ipc_deformable_cg_contact",
     title="Deformable FEM CG Contact (IPC)",
-    category="IPC Deformable (sx)",
+    category="IPC Deformable",
     summary="A stiff FEM cube settles on an IPC ground barrier via the incomplete-Cholesky CG Newton solve.",
     build=build,
 )

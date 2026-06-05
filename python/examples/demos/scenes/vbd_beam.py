@@ -2,7 +2,7 @@
 
 A Stable Neo-Hookean tetrahedral bar (stacked unit cubes, six Kuhn tets each)
 pinned at one end. It is the reproducible single-body analogue of the VBD
-paper's twisting-beam scene: the experimental World runs the contact-free
+paper's twisting-beam scene: the World runs the contact-free
 tetrahedral body through the VBD inner solver with the body's Lame parameters
 (from the material), and the free end sags under gravity.
 """
@@ -15,7 +15,7 @@ import numpy as np
 
 import dartpy.simulation_experimental as sx
 
-from .._sx_bridge import SxRenderBridge
+from .._world_bridge import WorldRenderBridge
 from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
 # Six Kuhn tetrahedra tiling one cube's eight corners (n = 4*di + 2*dj + dk).
@@ -88,7 +88,7 @@ def build() -> SceneSetup:
     world.configure_deformable_solver("vbd_beam", solver)
     world.enter_simulation_mode()
 
-    bridge = SxRenderBridge(world, name="vbd_beam_render")
+    bridge = WorldRenderBridge(world, name="vbd_beam_render")
     body = world.get_deformable_body("vbd_beam")
     bridge.add_deformable_visual(
         body, (0.85, 0.45, 0.20), radius=0.025, fixed_color=(0.30, 0.65, 0.95))
@@ -154,8 +154,8 @@ def build() -> SceneSetup:
 
 SCENE = PythonDemoScene(
     id="vbd_beam",
-    title="VBD Beam (sx)",
-    category="Vertex Block Descent (sx)",
+    title="VBD Beam",
+    category="Vertex Block Descent",
     summary="A tetrahedral cantilever beam sagging under gravity, solved by VBD.",
     build=build,
 )

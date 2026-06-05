@@ -37,6 +37,8 @@
 
 #include <gtest/gtest.h>
 
+#include <limits>
+
 using namespace dart;
 
 //==============================================================================
@@ -512,4 +514,25 @@ TEST(Inertia, TransformAndInverse)
       backTransformed.getLocalCOM().isApprox(inertia.getLocalCOM(), 1e-10));
   EXPECT_TRUE(backTransformed.getSpatialTensor().isApprox(
       inertia.getSpatialTensor(), 1e-9));
+}
+
+//==============================================================================
+// A non-finite moment of inertia passed to the constructor must leave the
+// object in a valid (finite) state. setMoment() rejects the non-finite matrix
+// and returns early, so the constructor must first establish a valid default
+// rather than leaving mMoment / the spatial tensor indeterminate.
+// See https://github.com/gazebosim/gz-physics/issues/854
+TEST(Inertia, NonFiniteMomentConstructorLeavesValidState)
+{
+  Eigen::Matrix3d nanMoment = Eigen::Matrix3d::Identity();
+  nanMoment(0, 0) = std::numeric_limits<double>::quiet_NaN();
+  const dynamics::Inertia nanInertia(1.0, Eigen::Vector3d::Zero(), nanMoment);
+  EXPECT_TRUE(nanInertia.getMoment().allFinite());
+  EXPECT_TRUE(nanInertia.getSpatialTensor().allFinite());
+
+  Eigen::Matrix3d infMoment = Eigen::Matrix3d::Identity();
+  infMoment(2, 2) = std::numeric_limits<double>::infinity();
+  const dynamics::Inertia infInertia(1.0, Eigen::Vector3d::Zero(), infMoment);
+  EXPECT_TRUE(infInertia.getMoment().allFinite());
+  EXPECT_TRUE(infInertia.getSpatialTensor().allFinite());
 }

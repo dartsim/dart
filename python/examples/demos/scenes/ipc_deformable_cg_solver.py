@@ -106,7 +106,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="ipc_deformable_cg_solver",
     title="Deformable FEM CG Solver (IPC)",
-    category="IPC Deformable (sx)",
+    category="IPC Deformable",
     summary="A large tetrahedral FEM cantilever sags under gravity, solved by the iterative conjugate-gradient Newton path.",
     build=build,
 )

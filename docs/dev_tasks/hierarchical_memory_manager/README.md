@@ -45,11 +45,25 @@
       installed EnTT package metadata for these rows without invoking DART's
       FetchContent-backed dependency helper, and the checker reports a clear
       error if a requested result file is empty.
+      Initial registry/component-storage wiring and `enterSimulationMode()`
+      reservation/no-growth tests for current World-owned ECS storage and the
+      first multibody/deformable private step-scratch components are
+      implemented. Direct EnTT create/emplace/clear/destroy/reuse storage
+      cycling is covered after explicit reserve; broader solver scratch
+      coverage remains open.
 - [ ] Phase 4: Built-in simulation stages borrow world memory for transient
-      buffers and avoid growth after simulation is baked.
+      buffers and avoid growth after simulation is baked. The default
+      `WorldStepPipeline` now stores built-in non-owning stage pointers inline,
+      removing its per-build `std::vector` allocation from the normal step path.
+      Longer custom pipelines keep the previous arbitrary-stage behavior through
+      an overflow path; solver-owned transient buffers still need
+      allocator-backed storage.
 - [ ] Phase 5: Add allocation/debug accounting gates for "no dynamic allocation
       during the step loop" on representative rigid, multibody, contact, and
-      deformable scenes.
+      deformable scenes. Initial World base-allocator no-growth guards now
+      cover baked kinematic IPC rigid-body, multibody variational, and
+      deformable ECS paths; global heap allocation guards and broader solver
+      coverage remain open.
 - [ ] Phase 6: Add memory-layout profiler/debugger surfaces and GUI
       visualization.
 
@@ -82,6 +96,14 @@ debugging, profiling, optimization experiments, and ImGui visualization.
   work must either instantiate the registry/storage with a DART allocator or
   provide an equivalent EnTT storage integration that preserves public API
   boundaries.
+- The active EnTT version supports stateful allocator propagation through
+  `entt::basic_registry`: the experimental World now constructs its internal
+  registry and component storages with a `dart::common::StlAllocator` borrowing
+  the World's active free allocator.
+- Free-list allocations must preserve at least `std::max_align_t` alignment
+  after every split. EnTT component storage surfaced this as an Eigen
+  `FrameCache` alignment failure when a max-aligned component allocation
+  followed an odd-sized allocation.
 - Broad hot-loop adoption is blocked until allocator correctness tests and
   benchmarks prove DART's allocators beat both standard C++ allocators and
   foonathan/memory on DART-relevant workloads. If DART cannot beat
@@ -114,7 +136,10 @@ debugging, profiling, optimization experiments, and ImGui visualization.
   `basic_storage`, or document the exact adapter/storage work needed.
 - Component storage: cover create/emplace/destroy/clear/reuse patterns for the
   current experimental components, including sparse-set growth and component
-  array capacity behavior.
+  array capacity behavior. Initial direct coverage now reserves entity,
+  `RigidBodyTag`, `Transform`, `Velocity`, and `Force` storages and verifies
+  repeated create/emplace/clear/re-emplace/destroy cycles do not grow World
+  base-allocator traffic after reserve.
 - Bake/build reserve path: reserve registry entities and component pools before
   simulation so repeated `World::step()` calls do not grow ECS storage.
 - No-growth proof: after the reserve/prewarm path, representative
@@ -151,6 +176,12 @@ debugging, profiling, optimization experiments, and ImGui visualization.
    production `WorldRegistry` wiring; production integration needs matching
    no-growth tests and lifetime diagnostics.
 
-4. Start replacing per-step `std::vector`/`Eigen` temporaries in hot stages with
+4. Extend bake-time registry/component storage reservation and no-growth
+   allocation tests to contact-heavy scenes and remaining solver scratch step
+   paths, then add a separate global heap guard for the full zero-allocation
+   claim.
+5. Start replacing per-step `std::vector`/`Eigen` temporaries in hot stages with
    world-frame or world-pool backed storage only after the allocator evidence
-   gate proves the DART allocator path is better for that workload.
+   gate proves the DART allocator path is better for that workload. The
+   non-owning `WorldStepPipeline` stage list is already inline; focus next on
+   solver-owned scratch and contact/deformable candidate buffers.

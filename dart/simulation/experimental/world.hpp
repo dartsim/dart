@@ -66,8 +66,9 @@ class SkeletonLoaderWorldAccess;
 
 namespace detail {
 struct WorldStorage;
-[[nodiscard]] WorldStorage& storageOf(World& world);
-[[nodiscard]] const WorldStorage& storageOf(const World& world);
+[[nodiscard]] DART_EXPERIMENTAL_API WorldStorage& storageOf(World& world);
+[[nodiscard]] DART_EXPERIMENTAL_API const WorldStorage& storageOf(
+    const World& world);
 } // namespace detail
 
 namespace compute {
@@ -532,6 +533,55 @@ public:
       compute::WorldStepPipeline& pipeline);
 
   //--------------------------------------------------------------------------
+  // Simulation replay
+  //--------------------------------------------------------------------------
+
+  /// Enable or disable opt-in simulation replay recording.
+  ///
+  /// Replay recording is off by default. Enabling it captures the current world
+  /// state as the first replay frame, then records one frame after each
+  /// timestep completed by the built-in or user-supplied step pipeline.
+  /// Restoring a recorded frame writes the saved state back into the existing
+  /// world entities, so public handles remain valid and no physics step is
+  /// re-run.
+  void setReplayRecordingEnabled(bool enabled);
+
+  /// Whether this world is currently appending replay frames after steps.
+  [[nodiscard]] bool isReplayRecordingEnabled() const noexcept;
+
+  /// Clear all recorded replay frames.
+  ///
+  /// If recording is currently enabled, the current world state is immediately
+  /// captured as the new frame zero.
+  void clearReplayRecording();
+
+  /// Number of states currently available for replay.
+  [[nodiscard]] std::size_t getReplayFrameCount() const noexcept;
+
+  /// Current replay cursor, if a frame has been recorded or restored.
+  [[nodiscard]] std::optional<std::size_t> getReplayCursor() const noexcept;
+
+  /// Simulation time stored at replay frame `index`.
+  ///
+  /// @throws InvalidArgumentException if `index` is out of range.
+  [[nodiscard]] double getReplayFrameTime(std::size_t index) const;
+
+  /// Simulation frame number stored at replay frame `index`.
+  ///
+  /// @throws InvalidArgumentException if `index` is out of range.
+  [[nodiscard]] std::size_t getReplaySimulationFrame(std::size_t index) const;
+
+  /// Restore a recorded frame without re-running physics.
+  ///
+  /// The restore is in-place with respect to existing entities and handles. If
+  /// recording is enabled and the caller subsequently steps from the restored
+  /// frame, frames after the cursor are discarded before the new branch is
+  /// appended.
+  ///
+  /// @throws InvalidArgumentException if `index` is out of range.
+  void restoreReplayFrame(std::size_t index);
+
+  //--------------------------------------------------------------------------
   // Memory
   //--------------------------------------------------------------------------
   /// Returns the memory manager owned by this World.
@@ -643,7 +693,11 @@ private:
       const Eigen::Vector3d& axis);
 
   void ensureDesignMode() const;
+  void reserveRegistryStorageForSimulation();
   void resetCountersFromRegistry();
+  void stepPipelineOnce(
+      compute::ComputeExecutor& executor, compute::WorldStepPipeline& pipeline);
+  void recordReplayFrame();
   void resetFrameScratchForStep();
   void refreshMemoryDiagnostics();
 
@@ -701,6 +755,9 @@ private:
   std::size_t m_linkCounter{0};
   std::size_t m_jointCounter{0};
   mutable std::unique_ptr<CollisionQueryCache> m_collisionQueryCache;
+
+  struct ReplayState;
+  std::unique_ptr<ReplayState> m_replay;
 };
 
 } // namespace dart::simulation::experimental
