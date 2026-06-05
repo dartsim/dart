@@ -525,6 +525,7 @@ def test_experimental_world_scenes_use_solver_focused_categories() -> None:
         },
         "AVBD Rigid Constraints (sx)": {
             "avbd_rigid_fixed_joint_contact",
+            "avbd_rigid_revolute_motor",
         },
         "Rigid IPC (sx)": {
             "sx_rigid_ipc",
@@ -601,6 +602,44 @@ def test_avbd_fixed_joint_contact_demo_exercises_contact_path() -> None:
     )
     assert np.linalg.norm(base_translation - initial_base) > 1.0e-3
     assert np.linalg.norm(payload_translation - initial_payload) > 1.0e-3
+
+
+def test_avbd_revolute_motor_demo_drives_hinge() -> None:
+    import numpy as np
+    import dartpy.simulation_experimental as sx
+
+    from examples.demos.scenes.avbd_rigid_revolute_motor import build
+
+    setup = build()
+    sx_world = setup.info["sx_world"]
+    rotor = setup.info["rotor"]
+    joint = setup.info["joint"]
+    target_speed = float(setup.info["target_speed"])
+    max_torque = float(setup.info["max_torque"])
+
+    assert sx_world.num_rigid_body_joints == 1
+    assert joint.actuator_type == sx.ActuatorType.VELOCITY
+    assert np.asarray(joint.command_velocity, dtype=float).reshape(1)[0] == pytest.approx(
+        target_speed
+    )
+    assert np.asarray(joint.effort_lower_limits, dtype=float).reshape(1)[0] == pytest.approx(
+        -max_torque
+    )
+    assert np.asarray(joint.effort_upper_limits, dtype=float).reshape(1)[0] == pytest.approx(
+        max_torque
+    )
+
+    initial_speed = float(np.asarray(rotor.angular_velocity, dtype=float).reshape(3)[2])
+    for _ in range(40):
+        assert setup.pre_step is not None
+        setup.pre_step()
+        setup.world.step()
+
+    measured_speed = float(
+        np.asarray(rotor.angular_velocity, dtype=float).reshape(3)[2]
+    )
+    assert measured_speed > initial_speed + 0.05
+    assert measured_speed == pytest.approx(target_speed, abs=0.7)
 
 
 def test_runner_screenshot_writes_ppm(tmp_path: pathlib.Path) -> None:

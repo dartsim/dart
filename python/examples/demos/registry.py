@@ -11,6 +11,7 @@ from .scenes.add_delete_skels import SCENE as ADD_DELETE_SKELS
 from .scenes.avbd_rigid_fixed_joint_contact import (
     SCENE as AVBD_RIGID_FIXED_JOINT_CONTACT,
 )
+from .scenes.avbd_rigid_revolute_motor import SCENE as AVBD_RIGID_REVOLUTE_MOTOR
 from .scenes.arm_push_box import SCENE as ARM_PUSH_BOX
 from .scenes.atlas_simbicon import SCENE as ATLAS_SIMBICON
 from .scenes.biped_stand import SCENE as BIPED_STAND
@@ -155,9 +156,11 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         SX_RIGID_FIXED_JOINT,
         SX_RIGID_LIMITED_JOINTS,
         # AVBD rigid constraints (PLAN-104) start with fixed-joint rows in
-        # contact. Broader articulated joints, motors, fracture, and soft/rigid
-        # coupling remain tracked by the AVBD dev task.
+        # contact and a bounded revolute motor. Broader articulated joints,
+        # fracture, and soft/rigid coupling remain tracked by the AVBD dev
+        # task.
         AVBD_RIGID_FIXED_JOINT_CONTACT,
+        AVBD_RIGID_REVOLUTE_MOTOR,
         # Rigid IPC (PLAN-082) contact-dynamics showcase, grouped by capability:
         # a drop, friction (flat + inclined), a multi-body pile, then the
         # intersection-free (no-tunneling) guarantee. Only scenes that run in

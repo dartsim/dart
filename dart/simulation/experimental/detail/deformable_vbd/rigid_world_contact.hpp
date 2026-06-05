@@ -76,6 +76,9 @@ struct AvbdRigidWorldPointJointInput
   Eigen::Matrix3d angularAxes = Eigen::Matrix3d::Identity();
   std::uint8_t linearAxisMask = kAvbdRigidJointAllAxesMask;
   std::uint8_t angularAxisMask = kAvbdRigidJointAllAxesMask;
+  bool useAngularMotor = false;
+  double motorTargetSpeed = 0.0;
+  double motorMaxTorque = std::numeric_limits<double>::infinity();
   double startStiffness = 1.0;
   double maxStiffness = std::numeric_limits<double>::infinity();
 };
@@ -104,6 +107,7 @@ struct AvbdRigidWorldContactSnapshot
   std::vector<std::uint8_t> fixed;
   std::vector<AvbdRigidContactManifoldPoint> contacts;
   std::vector<AvbdRigidPointJoint> joints;
+  std::vector<AvbdRigidAngularMotor> motors;
 };
 
 struct AvbdRigidWorldContactSolveOptions
@@ -121,6 +125,7 @@ struct AvbdRigidWorldContactSolveResult
   std::size_t frictionRows = 0;
   std::size_t jointLinearRows = 0;
   std::size_t jointAngularRows = 0;
+  std::size_t motorRows = 0;
 };
 
 struct AvbdRigidWorldContactApplyResult
@@ -140,6 +145,7 @@ struct AvbdRigidWorldContactStepResult
   std::size_t bodies = 0;
   std::size_t contacts = 0;
   std::size_t joints = 0;
+  std::size_t motors = 0;
   AvbdRigidWorldContactSolveResult solve;
   AvbdRigidWorldContactApplyResult apply;
 };
@@ -175,6 +181,30 @@ inline bool isAvbdRigidWorldPointJointType(comps::JointType type)
 {
   return type == comps::JointType::Fixed || type == comps::JointType::Revolute
          || type == comps::JointType::Prismatic;
+}
+
+//==============================================================================
+inline double avbdRigidWorldSymmetricEffortLimit(const comps::Joint& joint)
+{
+  if (joint.limits.effortLower.size() < 1 || joint.limits.effortUpper.size() < 1
+      || std::isnan(joint.limits.effortLower[0])
+      || std::isnan(joint.limits.effortUpper[0])) {
+    return std::numeric_limits<double>::infinity();
+  }
+
+  const double lower = joint.limits.effortLower[0];
+  const double upper = joint.limits.effortUpper[0];
+  if (lower > 0.0 || upper < 0.0 || lower > upper) {
+    return 0.0;
+  }
+
+  const double lowerMagnitude = std::isfinite(lower)
+                                    ? std::max(0.0, -lower)
+                                    : std::numeric_limits<double>::infinity();
+  const double upperMagnitude = std::isfinite(upper)
+                                    ? std::max(0.0, upper)
+                                    : std::numeric_limits<double>::infinity();
+  return std::min(lowerMagnitude, upperMagnitude);
 }
 
 //==============================================================================
@@ -755,6 +785,27 @@ inline std::size_t appendAvbdRigidWorldPointJoints(
       ++nextRow;
     }
 
+    if (input.useAngularMotor && input.angularAxes.allFinite()
+        && std::isfinite(input.motorTargetSpeed) && input.motorMaxTorque > 0.0
+        && !std::isnan(input.motorMaxTorque)) {
+      const Eigen::Quaterniond orientationA
+          = normalizeAvbdRigidOrientation(snapshot.states[bodyA].orientation);
+      const Eigen::Quaterniond orientationB
+          = normalizeAvbdRigidOrientation(snapshot.states[bodyB].orientation);
+      snapshot.motors.push_back(makeAvbdRigidAngularMotor(
+          joint.bodyA,
+          joint.bodyB,
+          joint.endpointA,
+          joint.endpointB,
+          orientationA.conjugate() * orientationB,
+          input.angularAxes.col(2),
+          input.motorTargetSpeed,
+          input.motorMaxTorque,
+          joint.startStiffness,
+          joint.maxStiffness,
+          joint.row));
+    }
+
     snapshot.joints.push_back(joint);
     ++appended;
   }
@@ -811,6 +862,7 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
     AvbdScalarRowInventory& frictionInventory,
     AvbdScalarRowInventory& jointLinearInventory,
     AvbdScalarRowInventory& jointAngularInventory,
+    AvbdScalarRowInventory& motorInventory,
     double timeStep,
     const AvbdRigidWorldContactSolveOptions& options = {})
 {
@@ -845,12 +897,28 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
   result.jointLinearRows = jointLinearRows.size();
   result.jointAngularRows = jointAngularRows.size();
 
+  std::vector<AvbdRigidBodyAngularPairRow> motorRows;
+  buildAvbdRigidAngularMotorRows(
+      snapshot.states,
+      snapshot.motors,
+      motorInventory,
+      motorRows,
+      timeStep,
+      options.warmStart);
+  result.motorRows = motorRows.size();
+
   std::vector<AvbdRigidBodyPointPairRow> pointPairRows;
   pointPairRows.reserve(normalRows.size() + jointLinearRows.size());
   pointPairRows.insert(
       pointPairRows.end(), normalRows.begin(), normalRows.end());
   pointPairRows.insert(
       pointPairRows.end(), jointLinearRows.begin(), jointLinearRows.end());
+
+  std::vector<AvbdRigidBodyAngularPairRow> angularRows;
+  angularRows.reserve(jointAngularRows.size() + motorRows.size());
+  angularRows.insert(
+      angularRows.end(), jointAngularRows.begin(), jointAngularRows.end());
+  angularRows.insert(angularRows.end(), motorRows.begin(), motorRows.end());
 
   std::vector<AvbdRigidBodyPointAttachmentRow> attachmentRows;
   const std::vector<AvbdRigidBodyState> inertialTargets
@@ -866,7 +934,7 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
       timeStep,
       attachmentRows,
       pointPairRows,
-      jointAngularRows,
+      angularRows,
       frictionRows,
       options.descent,
       options.row,
@@ -886,7 +954,12 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
   for (std::size_t i = 0;
        i < jointAngularRows.size() && i < jointAngularInventory.size();
        ++i) {
-    jointAngularInventory[i].state = jointAngularRows[i].row.state;
+    jointAngularInventory[i].state = angularRows[i].row.state;
+  }
+  const std::size_t motorOffset = jointAngularRows.size();
+  for (std::size_t i = 0; i < motorRows.size() && i < motorInventory.size();
+       ++i) {
+    motorInventory[i].state = angularRows[motorOffset + i].row.state;
   }
   for (std::size_t i = 0; i < frictionRows.size(); ++i) {
     const std::size_t first = 2u * i;
@@ -906,17 +979,41 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
     AvbdRigidWorldContactSnapshot& snapshot,
     AvbdScalarRowInventory& normalInventory,
     AvbdScalarRowInventory& frictionInventory,
+    AvbdScalarRowInventory& jointLinearInventory,
+    AvbdScalarRowInventory& jointAngularInventory,
     double timeStep,
     const AvbdRigidWorldContactSolveOptions& options = {})
 {
-  AvbdScalarRowInventory jointLinearInventory;
-  AvbdScalarRowInventory jointAngularInventory;
+  AvbdScalarRowInventory motorInventory;
   return solveAvbdRigidWorldContactSnapshot(
       snapshot,
       normalInventory,
       frictionInventory,
       jointLinearInventory,
       jointAngularInventory,
+      motorInventory,
+      timeStep,
+      options);
+}
+
+//==============================================================================
+inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
+    AvbdRigidWorldContactSnapshot& snapshot,
+    AvbdScalarRowInventory& normalInventory,
+    AvbdScalarRowInventory& frictionInventory,
+    double timeStep,
+    const AvbdRigidWorldContactSolveOptions& options = {})
+{
+  AvbdScalarRowInventory jointLinearInventory;
+  AvbdScalarRowInventory jointAngularInventory;
+  AvbdScalarRowInventory motorInventory;
+  return solveAvbdRigidWorldContactSnapshot(
+      snapshot,
+      normalInventory,
+      frictionInventory,
+      jointLinearInventory,
+      jointAngularInventory,
+      motorInventory,
       timeStep,
       options);
 }
@@ -1050,6 +1147,7 @@ inline AvbdRigidWorldContactStepResult runAvbdRigidWorldContactStep(
     AvbdScalarRowInventory& frictionInventory,
     AvbdScalarRowInventory& jointLinearInventory,
     AvbdScalarRowInventory& jointAngularInventory,
+    AvbdScalarRowInventory& motorInventory,
     double timeStep,
     const AvbdRigidWorldContactStepOptions& options = {})
 {
@@ -1057,10 +1155,12 @@ inline AvbdRigidWorldContactStepResult runAvbdRigidWorldContactStep(
   AvbdRigidWorldContactSnapshot snapshot
       = buildAvbdRigidWorldContactSnapshot(registry, contacts, options.contact);
   result.joints = appendAvbdRigidWorldPointJoints(registry, joints, snapshot);
+  result.motors = snapshot.motors.size();
   result.bodies = snapshot.states.size();
   result.contacts = snapshot.contacts.size();
   if (snapshot.states.empty()
-      || (snapshot.contacts.empty() && snapshot.joints.empty())) {
+      || (snapshot.contacts.empty() && snapshot.joints.empty()
+          && snapshot.motors.empty())) {
     return result;
   }
   if (options.useVelocityInertialTargets) {
@@ -1073,17 +1173,44 @@ inline AvbdRigidWorldContactStepResult runAvbdRigidWorldContactStep(
       frictionInventory,
       jointLinearInventory,
       jointAngularInventory,
+      motorInventory,
       timeStep,
       options.solve);
   if (result.solve.normalRows == 0u && result.solve.frictionRows == 0u
       && result.solve.jointLinearRows == 0u
-      && result.solve.jointAngularRows == 0u) {
+      && result.solve.jointAngularRows == 0u && result.solve.motorRows == 0u) {
     return result;
   }
 
   result.apply
       = applyAvbdRigidWorldContactSnapshot(registry, snapshot, timeStep);
   return result;
+}
+
+//==============================================================================
+inline AvbdRigidWorldContactStepResult runAvbdRigidWorldContactStep(
+    entt::registry& registry,
+    std::span<const Contact> contacts,
+    std::span<const AvbdRigidWorldPointJointInput> joints,
+    AvbdScalarRowInventory& normalInventory,
+    AvbdScalarRowInventory& frictionInventory,
+    AvbdScalarRowInventory& jointLinearInventory,
+    AvbdScalarRowInventory& jointAngularInventory,
+    double timeStep,
+    const AvbdRigidWorldContactStepOptions& options = {})
+{
+  AvbdScalarRowInventory motorInventory;
+  return runAvbdRigidWorldContactStep(
+      registry,
+      contacts,
+      joints,
+      normalInventory,
+      frictionInventory,
+      jointLinearInventory,
+      jointAngularInventory,
+      motorInventory,
+      timeStep,
+      options);
 }
 
 //==============================================================================
@@ -1144,6 +1271,17 @@ extractAvbdRigidWorldPointJointInputs(
     input.angularAxes = parentRotation * config.angularAxes;
     input.linearAxisMask = config.linearAxisMask;
     input.angularAxisMask = config.angularAxisMask;
+    if (joint.type == comps::JointType::Revolute
+        && joint.actuatorType == comps::ActuatorType::Velocity
+        && joint.commandVelocity.size() == 1
+        && joint.commandVelocity.allFinite()) {
+      const double maxTorque = avbdRigidWorldSymmetricEffortLimit(joint);
+      if (maxTorque > 0.0 && !std::isnan(maxTorque)) {
+        input.useAngularMotor = true;
+        input.motorTargetSpeed = joint.commandVelocity[0];
+        input.motorMaxTorque = maxTorque;
+      }
+    }
     input.startStiffness = config.startStiffness;
     input.maxStiffness = config.maxStiffness;
     inputs.push_back(input);
@@ -1155,6 +1293,34 @@ extractAvbdRigidWorldPointJointInputs(
 //==============================================================================
 inline AvbdRigidWorldContactStepResult runAvbdRigidWorldContactStep(
     ::dart::simulation::experimental::detail::WorldRegistry& registry,
+    std::span<const Contact> contacts,
+    AvbdScalarRowInventory& normalInventory,
+    AvbdScalarRowInventory& frictionInventory,
+    AvbdScalarRowInventory& jointLinearInventory,
+    AvbdScalarRowInventory& jointAngularInventory,
+    AvbdScalarRowInventory& motorInventory,
+    double timeStep,
+    const AvbdRigidWorldContactStepOptions& options = {})
+{
+  const std::vector<AvbdRigidWorldPointJointInput> joints
+      = extractAvbdRigidWorldPointJointInputs(registry);
+  return runAvbdRigidWorldContactStep(
+      registry,
+      contacts,
+      std::span<const AvbdRigidWorldPointJointInput>(
+          joints.data(), joints.size()),
+      normalInventory,
+      frictionInventory,
+      jointLinearInventory,
+      jointAngularInventory,
+      motorInventory,
+      timeStep,
+      options);
+}
+
+//==============================================================================
+inline AvbdRigidWorldContactStepResult runAvbdRigidWorldContactStep(
+    entt::registry& registry,
     std::span<const Contact> contacts,
     AvbdScalarRowInventory& normalInventory,
     AvbdScalarRowInventory& frictionInventory,

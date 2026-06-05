@@ -2278,6 +2278,77 @@ TEST(AvbdRigidBlock, RigidWorldPointJointInputPreservesAxisConfig)
 }
 
 //==============================================================================
+TEST(AvbdRigidBlock, RigidWorldRevoluteVelocityActuatorBuildsMotorRows)
+{
+  sx::World world;
+  world.setGravity(Vec3::Zero());
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world.addRigidBody("base", baseOptions);
+
+  sx::RigidBodyOptions linkOptions;
+  linkOptions.mass = 1.0;
+  linkOptions.position = Vec3::UnitX();
+  auto link = world.addRigidBody("link", linkOptions);
+
+  auto joint = world.addRigidBodyRevoluteJoint(
+      "motorized_hinge", base, link, Vec3::UnitZ());
+  joint.setActuatorType(sx::ActuatorType::Velocity);
+  joint.setCommandVelocity(Eigen::VectorXd::Constant(1, 0.75));
+  joint.setEffortLimits(
+      Eigen::VectorXd::Constant(1, -500.0),
+      Eigen::VectorXd::Constant(1, 500.0));
+
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
+  const std::vector<vbd::AvbdRigidWorldPointJointInput> joints
+      = vbd::extractAvbdRigidWorldPointJointInputs(registry);
+  ASSERT_EQ(joints.size(), 1u);
+  EXPECT_TRUE(joints[0].useAngularMotor);
+  EXPECT_DOUBLE_EQ(joints[0].motorTargetSpeed, 0.75);
+  EXPECT_DOUBLE_EQ(joints[0].motorMaxTorque, 500.0);
+
+  vbd::AvbdRigidWorldContactStepOptions stepOptions;
+  stepOptions.solve.descent.iterations = 8;
+  stepOptions.solve.descent.regularization = 1e-12;
+  stepOptions.solve.row.beta = 1000.0;
+  stepOptions.solve.row.maxStiffness = 1000.0;
+  vbd::AvbdScalarRowInventory normalInventory;
+  vbd::AvbdScalarRowInventory frictionInventory;
+  vbd::AvbdScalarRowInventory jointLinearInventory;
+  vbd::AvbdScalarRowInventory jointAngularInventory;
+  vbd::AvbdScalarRowInventory motorInventory;
+
+  const vbd::AvbdRigidWorldContactStepResult result
+      = vbd::runAvbdRigidWorldContactStep(
+          registry,
+          std::span<const sx::Contact>(),
+          normalInventory,
+          frictionInventory,
+          jointLinearInventory,
+          jointAngularInventory,
+          motorInventory,
+          /*timeStep=*/0.25,
+          stepOptions);
+
+  EXPECT_EQ(result.contacts, 0u);
+  EXPECT_EQ(result.joints, 1u);
+  EXPECT_EQ(result.motors, 1u);
+  EXPECT_EQ(result.solve.jointLinearRows, 3u);
+  EXPECT_EQ(result.solve.jointAngularRows, 2u);
+  EXPECT_EQ(result.solve.motorRows, 1u);
+  EXPECT_EQ(result.apply.bodies, 1u);
+  ASSERT_EQ(motorInventory.size(), 1u);
+  EXPECT_EQ(
+      motorInventory[0].descriptor.key.role, vbd::AvbdScalarRowRole::Motor);
+  EXPECT_DOUBLE_EQ(motorInventory[0].descriptor.bounds.lower, -500.0);
+  EXPECT_DOUBLE_EQ(motorInventory[0].descriptor.bounds.upper, 500.0);
+
+  EXPECT_GT(link.getAngularVelocity().z(), 0.05);
+  EXPECT_LT(link.getAngularVelocity().z(), 1.25);
+}
+
+//==============================================================================
 TEST(AvbdRigidBlock, RigidWorldExtractsFixedJointInputs)
 {
   sx::World world;

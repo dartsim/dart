@@ -211,14 +211,19 @@ Paper audit:
     preserving a captured rigid offset while ordinary rigid contact acts on the
     payload; this is only a narrow AVBD rigid-constraint showcase, not a
     source-demo or paper-scene reproduction.
-    A local follow-up slice now starts the next private row-family piece with
-    `AvbdRigidAngularMotor`, a bounded angular-motor row descriptor/builder,
-    and rigid fracture dual-threshold/reset helpers in the same 6-DOF row
-    kernel, with focused `AvbdRigidBlock.*` coverage.
-    Public multibody joint extraction is still not wired.
+    The next motor/fracture slice started with `AvbdRigidAngularMotor`, a
+    bounded angular-motor row descriptor/builder, and rigid fracture
+    dual-threshold/reset helpers in the same 6-DOF row kernel, with focused
+    `AvbdRigidBlock.*` coverage. Public rigid-body revolute velocity actuators
+    now extract to those private AVBD motor rows, the contact-stage AVBD
+    velocity projection keeps a persistent motor row inventory, and the
+    categorized `avbd_rigid_revolute_motor` py-demo shows the public actuator
+    path alongside the existing fixed-joint/contact showcase.
+    Articulated multibody joint extraction is still not wired.
     Unsupported envelopes still fall back to sequential impulses. This is not
     full narrow-phase feature extraction, not full rigid contact/joint rows, not
-    World-level motor/fracture support, and not articulated joint support yet.
+    public fracture lifecycle support, not broad motor lifecycle/benchmark
+    coverage, and not articulated joint support yet.
 - [ ] Phase A4: contact/friction bounds, static/dynamic friction switching, and
       quasi-Newton Hessian approximation.
 - [ ] Phase A5: joints, motors, fracture, and breakable constraints.
