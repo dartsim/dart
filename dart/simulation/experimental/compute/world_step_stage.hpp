@@ -35,6 +35,7 @@
 #include <dart/simulation/experimental/fwd.hpp>
 
 #include <dart/simulation/experimental/compute/compute_stage_metadata.hpp>
+#include <dart/simulation/experimental/compute/world_step_profile.hpp>
 #include <dart/simulation/experimental/export.hpp>
 
 #include <array>
@@ -255,6 +256,8 @@ public:
   [[nodiscard]] WorldStepStage& getStage(std::size_t index) const;
 
   void execute(World& world, ComputeExecutor& executor);
+  [[nodiscard]] WorldStepProfile executeProfiled(
+      World& world, ComputeExecutor& executor);
 
 private:
   std::array<WorldStepStage*, kInlineStageCount> m_stages{};

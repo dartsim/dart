@@ -74,12 +74,13 @@ BENCHMARK_SPECS = [
         benchmark_filter="BM_DeformableFemBarStep/.*",
         output_name="dashboard_deformable_world.json",
     ),
-    # Augmented VBD rigid (PLAN-104): end-to-end World step of a fixed-joint
-    # rigid chain routed through the AVBD contact projection.
+    # Augmented VBD rigid (PLAN-104): end-to-end World step of rigid chains
+    # routed through the AVBD contact projection for fixed-joint and
+    # revolute-motor rows.
     BenchmarkSpec(
         surface="avbd-world",
         target="bm_avbd_rigid_fixed_joint",
-        benchmark_filter="BM_AvbdRigidFixedJointStep/.*",
+        benchmark_filter="BM_AvbdRigid(FixedJoint|RevoluteMotor)Step/.*",
         output_name="dashboard_avbd_world.json",
     ),
 ]

@@ -99,6 +99,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     facades with C++ and dartpy bindings, generated stubs, tests, and a
     `sx_rigid_limited_joints` py-demo so users can exercise the narrow AVBD
     one-DOF rigid-joint path without touching ECS internals.
+  - Added public experimental joint break-force and broken-state accessors,
+    wired free rigid-body AVBD point joints to mark and skip broken joints, and
+    added an `avbd_rigid_breakable_joint` py-demo for the narrow breakable-joint
+    lifecycle.
   - Made `dart::gui` UI scaling DPI-aware: `--gui-scale` now acts as a manual
     user multiplier on top of GLFW content-scale detection, `DART_GUI_DPI_SCALE`
     can override misreported DPI, implicit interactive app windows now use a
@@ -830,6 +834,22 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     for profiler/debugger tooling without exposing EnTT types in the public
     header, and dartpy exposes the same read-only snapshot through
     `World.memory_diagnostics`.
+  - Added opt-in per-stage step profiling to the experimental `World`, a
+    non-GUI text-first performance surface for tools and AI agents:
+    `World::setStepProfilingEnabled()` records each pipeline stage's wall-clock
+    time, and `World::getLastStepProfile()` returns a `compute::WorldStepProfile`
+    (per-stage name, domain, and duration plus total wall time) with a
+    `toSummaryText()` breakdown. Exposed to dartpy as
+    `world.step_profiling_enabled`, `world.last_step_profile`, and
+    `WorldStepProfile.summary()`. Requires `DART_BUILD_PROFILE=ON`; when the
+    profiling build option is off, the runtime toggle is a no-op and the step
+    path compiles without profile cache fields, profile branches, or clock
+    reads.
+    Removed the unused, never-built `dart::simulation::experimental::common`
+    `ScopedTimer`/`Stopwatch`/`ProfileStats` profiler (its
+    `DART_EXPERIMENTAL_ENABLE_PROFILING` macros were wired into no build and
+    duplicated `dart::common::profile`) so the World step profile is the single
+    experimental profiling surface.
   - Routed the experimental World's internal EnTT registry, component storage,
     and differentiable-parameter list through the World free allocator, with
     state mapper support for World-owned registries and free-list alignment

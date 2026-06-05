@@ -68,6 +68,8 @@
 #include "dart/simulation/experimental/multibody/multibody.hpp"
 #include "dart/simulation/experimental/world_options.hpp"
 
+#include <dart/config.hpp>
+
 #ifdef DART_HAS_DIFF
   #include "dart/simulation/experimental/detail/contact_jacobians.hpp"
   #include "dart/simulation/experimental/detail/smooth_jacobians.hpp"
@@ -93,7 +95,36 @@
 #include <cmath>
 #include <cstdint>
 
+#if DART_BUILD_PROFILE
+  #include <chrono>
+#endif
+
 namespace {
+
+#if DART_BUILD_PROFILE
+using StepProfileClock = std::chrono::steady_clock;
+
+struct StepProfileTimer
+{
+  explicit StepProfileTimer(bool enabled_) : enabled(enabled_)
+  {
+    if (enabled) {
+      start = StepProfileClock::now();
+    }
+  }
+
+  void finish(
+      dart::simulation::experimental::compute::WorldStepProfile& profile) const
+  {
+    if (enabled) {
+      profile.wallTime = StepProfileClock::now() - start;
+    }
+  }
+
+  bool enabled = false;
+  StepProfileClock::time_point start{};
+};
+#endif
 
 template <typename... Components>
 std::size_t countEntities(const auto& registry)
@@ -210,6 +241,7 @@ struct World::ReplayState
     Eigen::VectorXd restPosition;
     Eigen::VectorXd armature;
     Eigen::VectorXd coulombFriction;
+    double breakForce = 0.0;
     comps::JointLimits limits;
     Eigen::Vector3d axis = Eigen::Vector3d::UnitZ();
     Eigen::Vector3d axis2 = Eigen::Vector3d::UnitX();
@@ -234,6 +266,7 @@ struct World::ReplayState
     Eigen::VectorXd acceleration;
     Eigen::VectorXd torque;
     Eigen::VectorXd commandVelocity;
+    bool broken = false;
   };
 
   struct LinkState
@@ -356,6 +389,7 @@ bool sameReplayJointLayout(const comps::Joint& joint, const JointLayout& layout)
          && sameReplayVector(joint.restPosition, layout.restPosition)
          && sameReplayVector(joint.armature, layout.armature)
          && sameReplayVector(joint.coulombFriction, layout.coulombFriction)
+         && joint.breakForce == layout.breakForce
          && sameReplayJointLimits(joint.limits, layout.limits)
          && joint.axis.isApprox(layout.axis, 0.0)
          && joint.axis2.isApprox(layout.axis2, 0.0)
@@ -2174,6 +2208,10 @@ void World::clear()
   m_frame = 0;
   m_memoryManager.getFrameAllocator().reset();
   m_memoryDiagnostics = {};
+#if DART_BUILD_PROFILE
+  m_stepProfilingEnabled = false;
+  m_lastStepProfile.reset();
+#endif
   m_freeFrameCounter = 0;
   m_fixedFrameCounter = 0;
   m_multibodyCounter = 0;
@@ -3532,10 +3570,18 @@ void World::step(compute::ComputeExecutor& executor)
       m_rigidBodySolver,
       m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational,
       hasMultibodyStructures(*this));
+
+#if DART_BUILD_PROFILE
+  StepProfileTimer profileTimer(m_stepProfilingEnabled);
+#endif
+
   stepPipelineOnce(executor, pipeline);
   m_lastDeformableSolverDiagnostics = makeDeformableSolverDiagnostics(
       stages.deformableDynamics.getLastStats());
   recordReplayFrame();
+#if DART_BUILD_PROFILE
+  profileTimer.finish(m_lastStepProfile);
+#endif
 }
 
 //==============================================================================
@@ -3547,10 +3593,17 @@ void World::step(std::size_t count, compute::ComputeExecutor& executor)
       m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational,
       hasMultibodyStructures(*this));
   for (std::size_t i = 0; i < count; ++i) {
+#if DART_BUILD_PROFILE
+    StepProfileTimer profileTimer(m_stepProfilingEnabled);
+#endif
+
     stepPipelineOnce(executor, pipeline);
     m_lastDeformableSolverDiagnostics = makeDeformableSolverDiagnostics(
         stages.deformableDynamics.getLastStats());
     recordReplayFrame();
+#if DART_BUILD_PROFILE
+    profileTimer.finish(m_lastStepProfile);
+#endif
   }
 }
 
@@ -3564,10 +3617,18 @@ void World::step(
       m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational,
       hasMultibodyStructures(*this),
       stage);
+
+#if DART_BUILD_PROFILE
+  StepProfileTimer profileTimer(m_stepProfilingEnabled);
+#endif
+
   stepPipelineOnce(executor, pipeline);
   m_lastDeformableSolverDiagnostics = makeDeformableSolverDiagnostics(
       stages.deformableDynamics.getLastStats());
   recordReplayFrame();
+#if DART_BUILD_PROFILE
+  profileTimer.finish(m_lastStepProfile);
+#endif
 }
 
 //==============================================================================
@@ -3583,10 +3644,17 @@ void World::step(
       hasMultibodyStructures(*this),
       stage);
   for (std::size_t i = 0; i < count; ++i) {
+#if DART_BUILD_PROFILE
+    StepProfileTimer profileTimer(m_stepProfilingEnabled);
+#endif
+
     stepPipelineOnce(executor, pipeline);
     m_lastDeformableSolverDiagnostics = makeDeformableSolverDiagnostics(
         stages.deformableDynamics.getLastStats());
     recordReplayFrame();
+#if DART_BUILD_PROFILE
+    profileTimer.finish(m_lastStepProfile);
+#endif
   }
 }
 
@@ -3594,8 +3662,15 @@ void World::step(
 void World::step(
     compute::ComputeExecutor& executor, compute::WorldStepPipeline& pipeline)
 {
+#if DART_BUILD_PROFILE
+  StepProfileTimer profileTimer(m_stepProfilingEnabled);
+#endif
+
   stepPipelineOnce(executor, pipeline);
   recordReplayFrame();
+#if DART_BUILD_PROFILE
+  profileTimer.finish(m_lastStepProfile);
+#endif
 }
 
 //==============================================================================
@@ -3622,7 +3697,15 @@ void World::stepPipelineOnce(
     captureStepDerivatives();
   }
 
+#if DART_BUILD_PROFILE
+  if (m_stepProfilingEnabled) {
+    m_lastStepProfile = pipeline.executeProfiled(*this, executor);
+  } else {
+    pipeline.execute(*this, executor);
+  }
+#else
   pipeline.execute(*this, executor);
+#endif
 
   m_time += m_timeStep;
   ++m_frame;
@@ -3770,6 +3853,37 @@ const DeformableSolverDiagnostics& World::getLastDeformableSolverDiagnostics()
     const
 {
   return m_lastDeformableSolverDiagnostics;
+}
+
+//==============================================================================
+void World::setStepProfilingEnabled(bool enabled) noexcept
+{
+#if DART_BUILD_PROFILE
+  m_stepProfilingEnabled = enabled;
+#else
+  (void)enabled;
+#endif
+}
+
+//==============================================================================
+bool World::isStepProfilingEnabled() const noexcept
+{
+#if DART_BUILD_PROFILE
+  return m_stepProfilingEnabled;
+#else
+  return false;
+#endif
+}
+
+//==============================================================================
+const compute::WorldStepProfile& World::getLastStepProfile() const noexcept
+{
+#if DART_BUILD_PROFILE
+  return m_lastStepProfile;
+#else
+  static const compute::WorldStepProfile kEmptyProfile;
+  return kEmptyProfile;
+#endif
 }
 
 //==============================================================================
@@ -4049,6 +4163,7 @@ void World::restoreReplayFrame(std::size_t index)
     joint.acceleration = state.acceleration;
     joint.torque = state.torque;
     joint.commandVelocity = state.commandVelocity;
+    joint.broken = state.broken;
   }
 
   for (const auto& state : replayFrame.links) {
@@ -4171,6 +4286,7 @@ void World::recordReplayFrame()
                 joint.restPosition,
                 joint.armature,
                 joint.coulombFriction,
+                joint.breakForce,
                 joint.limits,
                 joint.axis,
                 joint.axis2,
@@ -4185,7 +4301,8 @@ void World::recordReplayFrame()
             joint.velocity,
             joint.acceleration,
             joint.torque,
-            joint.commandVelocity});
+            joint.commandVelocity,
+            joint.broken});
   }
   std::ranges::sort(replayFrame.joints, [](const auto& lhs, const auto& rhs) {
     return static_cast<std::uint32_t>(lhs.entity)

@@ -83,9 +83,11 @@ visual change done.
 The dedicated **`AVBD Rigid Constraints (sx)`** category groups the first
 user-visible Augmented VBD rigid-constraint scenes from PLAN-104:
 
-| Scene id                         | Shows                                                | AVBD capability exercised                     |
-| -------------------------------- | ---------------------------------------------------- | --------------------------------------------- |
-| `avbd_rigid_fixed_joint_contact` | A fixed rigid payload sliding against static contact | Public fixed-joint rows plus ordinary contact |
+| Scene id                         | Shows                                                | AVBD capability exercised                          |
+| -------------------------------- | ---------------------------------------------------- | -------------------------------------------------- |
+| `avbd_rigid_fixed_joint_contact` | A fixed rigid payload sliding against static contact | Public fixed-joint rows plus ordinary contact      |
+| `avbd_rigid_revolute_motor`      | A bounded revolute motor driving a free hinge        | Public velocity actuator mapped to AVBD motor rows |
+| `avbd_rigid_breakable_joint`     | A weak fixed joint releasing a rigid payload         | Public break-force threshold and broken-state path |
 
 This is an early AVBD rigid-row showcase, not a paper-complete reproduction.
 The remaining AVBD corpus still needs the full 2D/3D reference demos, paper
