@@ -176,6 +176,19 @@ TEST(FreeListAllocatorTest, AllocateRejectsAlignmentRoundingOverflow)
 }
 
 //==============================================================================
+TEST(FreeListAllocatorTest, InitialBlockHeaderOverflowDoesNotAllocate)
+{
+  CountingMemoryAllocator baseAllocator;
+
+  FreeListAllocator allocator(
+      baseAllocator,
+      std::numeric_limits<std::size_t>::max(),
+      FreeListAllocator::GrowthPolicy::FixedCapacity);
+
+  EXPECT_EQ(baseAllocator.allocationCount, 0u);
+}
+
+//==============================================================================
 TEST(FreeListAllocatorTest, Basics)
 {
   auto a = FreeListAllocator::Debug();

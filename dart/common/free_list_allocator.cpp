@@ -197,7 +197,11 @@ void* FreeListAllocator::allocate(size_t bytes) noexcept
     }
 
     // Allocate a sufficient size
-    if (!allocateMemoryBlock((mTotalAllocatedBlockSize + bytes) * 2)) {
+    size_t requiredSize = 0;
+    size_t nextBlockSize = 0;
+    if (!checkedAdd(mTotalAllocatedBlockSize, bytes, requiredSize)
+        || !checkedAdd(requiredSize, requiredSize, nextBlockSize)
+        || !allocateMemoryBlock(nextBlockSize)) {
       return nullptr;
     }
 
@@ -353,9 +357,19 @@ void FreeListAllocator::deallocate(
 //==============================================================================
 bool FreeListAllocator::allocateMemoryBlock(size_t sizeToAllocate)
 {
+  size_t totalAllocatedBlockSize = 0;
+  if (!checkedAdd(
+          mTotalAllocatedBlockSize, sizeToAllocate, totalAllocatedBlockSize)) {
+    return false;
+  }
+
+  size_t allocationSize = 0;
+  if (!checkedAdd(sizeToAllocate, sizeof(MemoryBlockHeader), allocationSize)) {
+    return false;
+  }
+
   // Allocate memory chunk for header and the actual requested size
-  void* memory
-      = mBaseAllocator.allocate(sizeToAllocate + sizeof(MemoryBlockHeader));
+  void* memory = mBaseAllocator.allocate(allocationSize);
 
   // Return false if failed to allocate
   if (memory == nullptr) {
@@ -373,17 +387,13 @@ bool FreeListAllocator::allocateMemoryBlock(size_t sizeToAllocate)
   );
 
   mAllocatedBlocks.push_back(
-      AllocatedBlock{
-          memory,
-          sizeToAllocate + sizeof(MemoryBlockHeader),
-          alignof(std::max_align_t),
-          false});
+      AllocatedBlock{memory, allocationSize, alignof(std::max_align_t), false});
 
   // Set the new memory block as free block
   mFreeBlock = mFirstMemoryBlock;
 
   // Update the allocated size (without memory size for the headers of blocks)
-  mTotalAllocatedBlockSize += sizeToAllocate;
+  mTotalAllocatedBlockSize = totalAllocatedBlockSize;
 
   return true;
 }
