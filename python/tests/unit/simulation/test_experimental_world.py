@@ -299,6 +299,11 @@ def test_experimental_stub_tracks_public_runtime_symbols():
         "ReadOptions",
         "StateSpace",
         "StateVariable",
+        "ComputeExecutor",
+        "SequentialExecutor",
+        "ParallelExecutor",
+        "ComputeNodeExecutionProfile",
+        "ComputeExecutionProfile",
         "WorldStepProfile",
         "WorldStepStageProfile",
         "AllocatorDebugDiagnostics",
@@ -346,7 +351,14 @@ def test_experimental_stub_tracks_public_runtime_symbols():
         "is_valid",
         "step_profiling_enabled",
         "last_step_profile",
+        "worker_count",
+        "inline_threshold",
+        "graph_profiles",
+        "max_parallelism",
+        "average_parallelism",
+        "accelerated_backend_enabled",
         "def get_stage(",
+        "def get_node(",
         "def summary(",
     ):
         assert member in stub
@@ -3798,15 +3810,58 @@ def test_experimental_world_step_profiling_records_stages():
     assert isinstance(stage, sx.WorldStepStageProfile)
     assert stage.name == "kinematics"
     assert stage.domain == "kinematics"
+    assert "task_parallel" in stage.acceleration
+    assert isinstance(stage.accelerated_backend_enabled, bool)
     assert stage.duration_us >= 0
     assert stage.duration_ms >= 0.0
+    assert stage.total_graph_wall_time_us >= 0
+    assert stage.max_graph_worker_count >= 0
+    assert stage.max_graph_parallelism >= 0
     assert profile.get_stage("missing") is None
 
     summary = profile.summary()
     assert "World Step Profile" in summary
     assert "kinematics" in summary
+    assert "Execution details" in summary
     assert "(unattributed overhead)" in summary
     assert str(profile) == summary
+
+    if stage.graph_profiles:
+        graph_profile = stage.graph_profiles[0]
+        assert isinstance(graph_profile, sx.ComputeExecutionProfile)
+        assert graph_profile.worker_count >= 1
+        assert graph_profile.wall_time_us >= 0
+        assert graph_profile.total_node_time_us >= 0
+        assert graph_profile.critical_path_time_us >= 0
+        assert graph_profile.max_parallelism >= 0
+        assert graph_profile.average_parallelism >= 0.0
+        assert isinstance(graph_profile.nodes, list)
+        if not graph_profile.is_empty():
+            assert "Compute Execution Profile" in graph_profile.summary()
+
+
+def test_experimental_world_step_profiling_accepts_parallel_executor():
+    sx = _simulation_experimental()
+
+    assert sx.SequentialExecutor().worker_count == 1
+    executor = sx.ParallelExecutor(2)
+    assert executor.worker_count == 2
+    executor.inline_threshold = 0
+    assert executor.inline_threshold == 0
+
+    world = sx.World()
+    _enable_step_profiling_or_skip(world)
+
+    world.step(executor)
+
+    stage = world.last_step_profile.get_stage("kinematics")
+    assert isinstance(stage, sx.WorldStepStageProfile)
+    assert stage.graph_profiles
+    assert stage.max_graph_worker_count == executor.worker_count
+    graph_profile = stage.graph_profiles[0]
+    assert isinstance(graph_profile, sx.ComputeExecutionProfile)
+    assert graph_profile.worker_count == executor.worker_count
+    assert "max_workers=2" in world.last_step_profile.summary()
 
 
 def test_experimental_world_step_profiling_captures_last_step_for_counts():

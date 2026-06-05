@@ -305,6 +305,7 @@ TEST(ExperimentalComputeGraph, ExportsDotWithMetadataAndProfile)
   compute::SequentialExecutor executor;
   const auto profile = executor.executeProfiled(graph);
   const auto dot = compute::toDot(graph, &profile);
+  const auto summary = profile.toSummaryText();
 
   EXPECT_NE(dot.find("digraph ComputeGraph"), std::string::npos);
   EXPECT_NE(dot.find("simulate"), std::string::npos);
@@ -314,6 +315,12 @@ TEST(ExperimentalComputeGraph, ExportsDotWithMetadataAndProfile)
   EXPECT_NE(dot.find("gpu"), std::string::npos);
   EXPECT_NE(dot.find("duration_us="), std::string::npos);
   EXPECT_NE(dot.find("rank=same"), std::string::npos);
+
+  EXPECT_NE(summary.find("Compute Execution Profile"), std::string::npos);
+  EXPECT_NE(summary.find("workers=1"), std::string::npos);
+  EXPECT_NE(summary.find("max_parallelism="), std::string::npos);
+  EXPECT_NE(summary.find("simulate"), std::string::npos);
+  EXPECT_NE(summary.find("render"), std::string::npos);
 }
 
 //==============================================================================

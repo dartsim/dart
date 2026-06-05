@@ -46,7 +46,45 @@ double toMilliseconds(WorldStepProfile::Duration duration)
   return std::chrono::duration<double, std::milli>(duration).count();
 }
 
+//==============================================================================
+bool hasExecutionDetails(const WorldStepStageProfile& stage)
+{
+  return stage.acceleration != toMask(ComputeStageAcceleration::None)
+         || stage.acceleratedBackendEnabled || !stage.graphProfiles.empty();
+}
+
 } // namespace
+
+//==============================================================================
+WorldStepStageProfile::Duration WorldStepStageProfile::totalGraphWallTime()
+    const noexcept
+{
+  Duration total{};
+  for (const auto& profile : graphProfiles) {
+    total += profile.wallTime;
+  }
+  return total;
+}
+
+//==============================================================================
+std::size_t WorldStepStageProfile::maxGraphWorkerCount() const noexcept
+{
+  std::size_t count = 0;
+  for (const auto& profile : graphProfiles) {
+    count = std::max(count, profile.workerCount);
+  }
+  return count;
+}
+
+//==============================================================================
+std::size_t WorldStepStageProfile::maxGraphParallelism() const noexcept
+{
+  std::size_t parallelism = 0;
+  for (const auto& profile : graphProfiles) {
+    parallelism = std::max(parallelism, profile.maxParallelism);
+  }
+  return parallelism;
+}
 
 //==============================================================================
 bool WorldStepProfile::isEmpty() const noexcept
@@ -120,6 +158,31 @@ std::string WorldStepProfile::toSummaryText() const
       << std::setw(16) << "" << std::right << std::setw(14) << std::fixed
       << std::setprecision(3) << overheadMs << std::setw(9) << std::fixed
       << std::setprecision(1) << sharePercent(overheadMs) << '%' << '\n';
+
+  bool printedDetailsHeader = false;
+  for (const auto* stage : ordered) {
+    if (!hasExecutionDetails(*stage)) {
+      continue;
+    }
+    if (!printedDetailsHeader) {
+      out << "\nExecution details:\n";
+      printedDetailsHeader = true;
+    }
+
+    out << "- " << stage->name
+        << ": acceleration=" << formatAccelerationMask(stage->acceleration);
+    if (stage->acceleratedBackendEnabled) {
+      out << ", backend=accelerated";
+    }
+    if (!stage->graphProfiles.empty()) {
+      out << ", graph_profiles=" << stage->graphProfiles.size()
+          << ", graph_wall=" << std::fixed << std::setprecision(3)
+          << toMilliseconds(stage->totalGraphWallTime()) << " ms"
+          << ", max_workers=" << stage->maxGraphWorkerCount()
+          << ", max_parallelism=" << stage->maxGraphParallelism();
+    }
+    out << '\n';
+  }
   return out.str();
 }
 

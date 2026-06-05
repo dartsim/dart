@@ -9,6 +9,9 @@ __all__: list[str] = [
     "CollisionQueryOptions",
     "CollisionShape",
     "CollisionShapeType",
+    "ComputeExecutionProfile",
+    "ComputeExecutor",
+    "ComputeNodeExecutionProfile",
     "Contact",
     "ContactGradientMode",
     "ContactSolverMethod",
@@ -43,12 +46,14 @@ __all__: list[str] = [
     "ModelFormat",
     "Multibody",
     "MultibodyOptions",
+    "ParallelExecutor",
     "PhysicalParameter",
     "ReadOptions",
     "RigidBody",
     "RigidBodyOptions",
     "RigidBodySolver",
     "RootJointType",
+    "SequentialExecutor",
     "SkeletonLoadOptions",
     "SkeletonToMultibodyOptions",
     "StateSpace",
@@ -1139,6 +1144,88 @@ class DeformableSolverDiagnostics:
     @property
     def converged_active_contact_count(self) -> int: ...
 
+class ComputeExecutor:
+    @property
+    def worker_count(self) -> int: ...
+
+class SequentialExecutor(ComputeExecutor):
+    def __init__(self) -> None: ...
+
+class ParallelExecutor(ComputeExecutor):
+    def __init__(self, worker_count: int = ...) -> None: ...
+
+    @property
+    def inline_threshold(self) -> int: ...
+
+    @inline_threshold.setter
+    def inline_threshold(self, arg: int, /) -> None: ...
+
+class ComputeNodeExecutionProfile:
+    @property
+    def name(self) -> str: ...
+
+    @property
+    def topological_index(self) -> int: ...
+
+    @property
+    def dependency_count(self) -> int: ...
+
+    @property
+    def dependent_count(self) -> int: ...
+
+    @property
+    def level(self) -> int: ...
+
+    @property
+    def worker_index(self) -> int: ...
+
+    @property
+    def start_time_us(self) -> int: ...
+
+    @property
+    def end_time_us(self) -> int: ...
+
+    @property
+    def duration_us(self) -> int: ...
+
+    @property
+    def duration_ms(self) -> float: ...
+
+class ComputeExecutionProfile:
+    @property
+    def worker_count(self) -> int: ...
+
+    @property
+    def max_parallelism(self) -> int: ...
+
+    @property
+    def nodes(self) -> list[ComputeNodeExecutionProfile]: ...
+
+    @property
+    def wall_time_us(self) -> int: ...
+
+    @property
+    def wall_time_ms(self) -> float: ...
+
+    @property
+    def total_node_time_us(self) -> int: ...
+
+    @property
+    def critical_path_time_us(self) -> int: ...
+
+    @property
+    def average_parallelism(self) -> float: ...
+
+    def is_empty(self) -> bool: ...
+
+    def get_node(self, name: str) -> ComputeNodeExecutionProfile | None: ...
+
+    def summary(self) -> str: ...
+
+    def __repr__(self) -> str: ...
+
+    def __str__(self) -> str: ...
+
 class WorldStepStageProfile:
     @property
     def name(self) -> str: ...
@@ -1147,10 +1234,28 @@ class WorldStepStageProfile:
     def domain(self) -> str: ...
 
     @property
+    def acceleration(self) -> str: ...
+
+    @property
+    def accelerated_backend_enabled(self) -> bool: ...
+
+    @property
+    def graph_profiles(self) -> list[ComputeExecutionProfile]: ...
+
+    @property
     def duration_us(self) -> int: ...
 
     @property
     def duration_ms(self) -> float: ...
+
+    @property
+    def total_graph_wall_time_us(self) -> int: ...
+
+    @property
+    def max_graph_worker_count(self) -> int: ...
+
+    @property
+    def max_graph_parallelism(self) -> int: ...
 
 class WorldStepProfile:
     @property
@@ -1895,11 +2000,23 @@ class World:
 
     def enter_simulation_mode(self) -> None: ...
 
+    @overload
     def update_kinematics(self) -> None: ...
 
+    @overload
+    def update_kinematics(self, executor: ComputeExecutor) -> None: ...
+
+    @overload
     def sync(self, stage: WorldSyncStage = WorldSyncStage.KINEMATICS) -> None: ...
 
+    @overload
+    def sync(self, executor: ComputeExecutor, stage: WorldSyncStage = WorldSyncStage.KINEMATICS) -> None: ...
+
+    @overload
     def step(self, n: int = ...) -> None: ...
+
+    @overload
+    def step(self, executor: ComputeExecutor, n: int = ...) -> None: ...
 
     @property
     def replay_recording_enabled(self) -> bool: ...
