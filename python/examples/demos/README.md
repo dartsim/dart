@@ -7,8 +7,9 @@ Filament viewer. This is the Python-first surface from PLAN-103; C++
 ## Run
 
 ```bash
-pixi run py-demos                                # default: run the first scene
-pixi run py-demos -- --scene sx_articulated      # select a scene by id
+pixi run py-demos                                # default: open replay timeline
+pixi run py-demos -- --scene hello_world         # open the introductory scene
+pixi run py-demos -- --scene sx_articulated      # select any scene by id
 pixi run py-demos -- --cycle-scenes --frames 4   # cycle through every scene
 pixi run py-demos -- --list                      # print the scene catalog
 ```
@@ -26,7 +27,7 @@ The runner mirrors C++ `dart-demos` to keep the cross-language UX consistent:
 
 | Flag                | Meaning                                                    |
 | ------------------- | ---------------------------------------------------------- |
-| `--scene <id>`      | Select the initial scene (default: first registered)       |
+| `--scene <id>`      | Select the initial scene (default: replay timeline)        |
 | `--cycle-scenes`    | Advance through every scene for `--frames` frames and exit |
 | `--frames N`        | Per-scene step budget (default 60 single, 4 cycle)         |
 | `--screenshot PATH` | Write the final rendered frame as a binary PPM image       |
@@ -59,12 +60,13 @@ pixi run py-demo-capture -- --scene sx_articulated --show-ui --frames 2 \
 ```
 
 The docked workspace has a top `Simulation` toolbar, a searchable `Demos`
-navigator, scene-specific panels on the right, and a bottom DART diagnostics
-panel. Use `Replay` to rebuild the active scene from the beginning and
-`Reset Layout` to restore the default docks after rearranging panels. When
-frame recording is active, the `Simulation` panel also exposes a frame playback
-cursor over the recorded PPM sequence with first/previous/play/next/last
-controls and the selected frame path.
+navigator, scene-specific panels on the right, bottom scene panels when a demo
+owns timeline controls, and a docked DART diagnostics panel. Use `Rebuild` to
+reload the active scene, `Restart` to reload and run it from the beginning, and
+`Layout` to restore the default docks after rearranging panels. When frame
+capture is active, the `Simulation` panel also exposes a timeline scrubber over
+the recorded PPM sequence with first/previous/play/next/last controls and the
+selected frame path.
 
 Capture a short frame sequence and request MP4 encoding when `ffmpeg` is
 available:
@@ -143,9 +145,17 @@ rendering it through `IpcDeformableBridge`.
 
 `sx_replay_scrubber` demonstrates the experimental `World` replay recorder:
 the scene records a rigid-body rollout once, restores the first frame, and
-exposes a `Replay frame` slider plus first/previous/play/next/last controls.
-Moving the slider calls `World.restore_replay_frame(...)` at timestep
-resolution and does not re-run physics.
+exposes a bottom-docked replay timeline with a scrubber, frame marks, a cursor
+track, transport controls, loop/rate controls, and cursor details. The scene
+uses the reusable `PanelBuilder.timeline(...)` widget from `dartpy.gui` for the
+timeline lanes. Moving the scrubber calls `World.restore_replay_frame(...)` at
+timestep resolution and does not re-run physics.
+
+The shared demos toolbar uses the same timeline widget for captured-frame
+playback after `Capture` records viewer frames. That path stores only the
+captured image files and derives bounded marker/cursor tracks for the UI each
+frame, so large capture directories do not require an equally large in-memory
+timeline cache.
 
 ## Add a scene
 

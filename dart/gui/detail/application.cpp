@@ -591,6 +591,65 @@ std::vector<std::filesystem::path> recordedFramePaths(
   return paths;
 }
 
+int recordedFrameTimelineSampleCount(int frameCount)
+{
+  constexpr int kMaximumTimelineSamples = 1024;
+  return std::clamp(frameCount, 0, kMaximumTimelineSamples);
+}
+
+int frameIndexForTimelineSample(
+    int sampleIndex, int sampleCount, int frameCount)
+{
+  if (sampleCount <= 1 || frameCount <= 1) {
+    return 0;
+  }
+
+  const double normalized
+      = static_cast<double>(sampleIndex) / static_cast<double>(sampleCount - 1);
+  return static_cast<int>(
+      std::lround(normalized * static_cast<double>(frameCount - 1)));
+}
+
+std::vector<double> makeRecordedFrameMarkerTrack(int frameCount)
+{
+  const int sampleCount = recordedFrameTimelineSampleCount(frameCount);
+  if (sampleCount <= 0) {
+    return {};
+  }
+
+  std::vector<double> values(static_cast<std::size_t>(sampleCount), 0.0);
+  const int markerInterval = std::max(1, frameCount / 12);
+  for (int sample = 0; sample < sampleCount; ++sample) {
+    const int frame = frameIndexForTimelineSample(
+        sample, sampleCount, std::max(1, frameCount));
+    if (frame == 0 || frame + 1 == frameCount || frame % markerInterval == 0) {
+      values[static_cast<std::size_t>(sample)] = 1.0;
+    }
+  }
+  return values;
+}
+
+std::vector<double> makeRecordedFrameCursorTrack(int frameCount, int frameIndex)
+{
+  const int sampleCount = recordedFrameTimelineSampleCount(frameCount);
+  if (sampleCount <= 0) {
+    return {};
+  }
+
+  std::vector<double> values(static_cast<std::size_t>(sampleCount), 0.0);
+  const int clampedFrame
+      = std::clamp(frameIndex, 0, std::max(0, frameCount - 1));
+  const int cursorSample = frameCount <= 1
+                               ? 0
+                               : static_cast<int>(std::lround(
+                                     static_cast<double>(clampedFrame)
+                                     * static_cast<double>(sampleCount - 1)
+                                     / static_cast<double>(frameCount - 1)));
+  values[static_cast<std::size_t>(std::clamp(cursorSample, 0, sampleCount - 1))]
+      = 1.0;
+  return values;
+}
+
 std::string formatFixed(double value, int precision)
 {
   std::ostringstream stream;
@@ -629,7 +688,7 @@ dart::gui::Panel makeDemoSimulationPanel(
   dart::gui::Panel panel;
   panel.title = "Simulation";
   panel.dockSide = dart::gui::DockSide::Top;
-  panel.initialSize = std::array<double, 2>{760.0, 108.0};
+  panel.initialSize = std::array<double, 2>{760.0, 132.0};
   panel.autoResize = false;
   panel.buildWithContext = [&scenes, activeIndex](
                                dart::gui::PanelBuilder& builder,
@@ -657,15 +716,15 @@ dart::gui::Panel makeDemoSimulationPanel(
       requestSingleStep(*lifecycle);
     }
     builder.sameLine();
-    if (toolbarButton(builder, "Reset", "Rebuild the active demo scene.")
+    if (toolbarButton(builder, "Rebuild", "Rebuild the active demo scene.")
         && active != nullptr) {
       requestSceneSwitch(*lifecycle, active->id);
     }
     builder.sameLine();
     if (toolbarButton(
             builder,
-            "Replay",
-            "Restart and run the active demo from the beginning.")
+            "Restart",
+            "Rebuild and run the active demo from the beginning.")
         && active != nullptr) {
       requestSceneReplay(*lifecycle, active->id);
     }
@@ -691,9 +750,11 @@ dart::gui::Panel makeDemoSimulationPanel(
 
     if (toolbarButton(
             builder,
-            recordingFrames ? "Stop##record_frames" : "Rec##record_frames",
+            recordingFrames ? "Stop Capture##record_frames"
+                            : "Capture##record_frames",
             recordingFrames ? "Stop recording frame images."
-                            : "Record frame images for playback.")) {
+                            : "Record frame images for captured-frame "
+                              "playback.")) {
       toggleFrameOutputCapture(*lifecycle, recordDirectory);
     }
     builder.sameLine();
@@ -717,7 +778,8 @@ dart::gui::Panel makeDemoSimulationPanel(
     advanceRecordedFramePlayback(*lifecycle, recordedFrameCount);
     if (!lifecycle->frameOutputDirectory.empty() || recordedFrameCount > 0) {
       builder.separator();
-      builder.text(std::string("frames ") + std::to_string(recordedFrameCount));
+      builder.text(
+          std::string("captured frames ") + std::to_string(recordedFrameCount));
       builder.itemTooltip(lifecycle->frameOutputDirectory);
 
       if (recordedFrameCount > 0) {
@@ -755,13 +817,33 @@ dart::gui::Panel makeDemoSimulationPanel(
           setRecordedFramePlaybackIndex(
               *lifecycle, recordedFrameCount, recordedFrameCount - 1);
         }
-        const int selectedIndex = std::clamp(
+        int selectedIndex = std::clamp(
             lifecycle->recordedFramePlaybackIndex, 0, recordedFrameCount - 1);
         setRecordedFramePlaybackIndex(
             *lifecycle, recordedFrameCount, selectedIndex);
+        double selectedFrame = static_cast<double>(selectedIndex);
+        const auto markerTrack
+            = makeRecordedFrameMarkerTrack(recordedFrameCount);
+        const auto cursorTrack = makeRecordedFrameCursorTrack(
+            recordedFrameCount, lifecycle->recordedFramePlaybackIndex);
+        if (builder.timeline(
+                "Captured frame##recorded_frame_timeline",
+                selectedFrame,
+                0.0,
+                static_cast<double>(recordedFrameCount - 1),
+                {},
+                markerTrack,
+                cursorTrack,
+                "Captured frames")) {
+          selectedIndex = std::clamp(
+              static_cast<int>(std::lround(selectedFrame)),
+              0,
+              recordedFrameCount - 1);
+          setRecordedFramePlaybackIndex(
+              *lifecycle, recordedFrameCount, selectedIndex);
+        }
         const auto& selectedPath
             = recordedFrames[static_cast<std::size_t>(selectedIndex)];
-        builder.sameLine();
         builder.text(
             std::to_string(selectedIndex + 1) + "/"
             + std::to_string(recordedFrameCount) + " "

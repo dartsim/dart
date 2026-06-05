@@ -106,6 +106,12 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     rebuilt correctly by cached GUI renderable extraction.
   - Added a renderer-neutral `dart::gui` panel callback surface for examples
     that need custom controls without including backend UI headers.
+  - Added a reusable renderer-neutral `PanelBuilder.timeline(...)` control and
+    made the Python demos default to a replay-timeline scene with a
+    bottom-docked scrubber. The shared demos GUI now keeps bottom scene panels
+    visible by default, uses clearer `Rebuild`/`Restart`/`Capture` toolbar
+    labels, and exposes a bounded captured-frame timeline when recording
+    viewer frames.
   - Added `pixi run bm-allocator-comparative-check`, a strict allocator
     benchmark gate that compares DART allocator workloads against
     foonathan/memory and `std::pmr` baselines.

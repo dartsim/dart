@@ -34,11 +34,12 @@ import sys
 import threading
 import time
 from dataclasses import dataclass, field
-from typing import Any, Callable, Iterable
+from typing import Any, Callable, Iterable, Mapping
 
 # Frames-per-scene defaults match the C++ host so cycle behavior is identical.
 CYCLE_FRAMES_PER_SCENE = 4
 SINGLE_SCENE_DEFAULT_FRAMES = 60
+DEFAULT_INITIAL_SCENE_ID = "sx_replay_scrubber"
 SCENE_BUILD_TIMEOUT_ENV = "DART_PY_DEMO_SCENE_BUILD_TIMEOUT_MS"
 DEMO_SCENE_STARTUP_TIMEOUT_ENV = "DART_DEMO_SCENE_STARTUP_TIMEOUT_MS"
 DEFAULT_SCENE_BUILD_TIMEOUT_MS = 5000.0
@@ -302,6 +303,20 @@ def _strip_gpu_flags(argv: list[str]) -> list[str]:
     return [arg for arg in argv if arg not in {"--gpu", "--no-gpu"}]
 
 
+def _default_initial_scene_args(
+    argv: list[str], scene_arg: str | None, environ: Mapping[str, str]
+) -> list[str]:
+    """Forward a showcase default without changing the catalog order."""
+
+    if scene_arg is not None:
+        return []
+    if environ.get("DART_DEMOS_SCENE"):
+        return []
+    if "--cycle-scenes" in argv:
+        return []
+    return ["--scene", DEFAULT_INITIAL_SCENE_ID]
+
+
 def _make_gpu_panel(sx: Any) -> ScenePanel:
     """A small in-viewer panel that toggles GPU (CUDA) deformable solve.
 
@@ -393,6 +408,11 @@ def run(argv: Iterable[str], scenes: list[PythonDemoScene]) -> int:
         return 0
 
     _validate_scene(known.scene, scenes)
+    default_initial_scene_args = _default_initial_scene_args(
+        argv, known.scene, os.environ
+    )
+    if default_initial_scene_args:
+        _validate_scene(DEFAULT_INITIAL_SCENE_ID, scenes)
 
     # Import dartpy.gui lazily so `--list` works even when the GUI
     # backend isn't built (e.g. on CI variants without filament).
@@ -424,5 +444,9 @@ def run(argv: Iterable[str], scenes: list[PythonDemoScene]) -> int:
     ]
 
     # The viewer's argument parser does not know the runner-local GPU flags.
-    full_argv = ["py-demos", *_strip_gpu_flags(argv)]
+    full_argv = [
+        "py-demos",
+        *default_initial_scene_args,
+        *_strip_gpu_flags(argv),
+    ]
     return int(dart.gui.run_demos(catalog, full_argv))

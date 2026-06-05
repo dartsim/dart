@@ -110,6 +110,35 @@ public:
       std::string_view label, double& value, double minimum, double maximum)
       = 0;
 
+  /// A scrubber-style timeline control with optional diagnostic tracks.
+  ///
+  /// The primary value behaves like `slider`. Renderers with richer panel
+  /// support may draw the optional tracks as lanes below the scrubber; simpler
+  /// renderers fall back to regular plots through this default implementation.
+  virtual bool timeline(
+      std::string_view label,
+      double& value,
+      double minimum,
+      double maximum,
+      std::span<const double> valueTrack = {},
+      std::span<const double> markerTrack = {},
+      std::span<const double> cursorTrack = {},
+      std::string_view valueTrackLabel = "Values")
+  {
+    const bool changed = slider(label, value, minimum, maximum);
+    const std::string labelValue(label);
+    if (!valueTrack.empty()) {
+      plotLines(std::string(valueTrackLabel) + "##" + labelValue, valueTrack);
+    }
+    if (!markerTrack.empty()) {
+      plotLines("Marks##" + labelValue, markerTrack);
+    }
+    if (!cursorTrack.empty()) {
+      plotLines("Cursor##" + labelValue, cursorTrack);
+    }
+    return changed;
+  }
+
   virtual bool colorEdit(std::string_view label, Eigen::Vector4d& rgba)
   {
     (void)label;

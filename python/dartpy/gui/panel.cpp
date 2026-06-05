@@ -207,6 +207,37 @@ void defGuiPanels(nb::module_& m)
           nb::arg("minimum"),
           nb::arg("maximum"))
       .def(
+          "timeline",
+          [](PanelBuilderView& self,
+             const std::string& label,
+             double value,
+             double minimum,
+             double maximum,
+             const std::vector<double>& valueTrack,
+             const std::vector<double>& markerTrack,
+             const std::vector<double>& cursorTrack,
+             const std::string& valueTrackLabel) {
+            double next = value;
+            const bool changed = self.builder().timeline(
+                label,
+                next,
+                minimum,
+                maximum,
+                valueTrack,
+                markerTrack,
+                cursorTrack,
+                valueTrackLabel);
+            return nb::make_tuple(changed, next);
+          },
+          nb::arg("label"),
+          nb::arg("value"),
+          nb::arg("minimum"),
+          nb::arg("maximum"),
+          nb::arg("value_track") = std::vector<double>{},
+          nb::arg("marker_track") = std::vector<double>{},
+          nb::arg("cursor_track") = std::vector<double>{},
+          nb::arg("value_track_label") = "Values")
+      .def(
           "color_edit",
           [](PanelBuilderView& self,
              const std::string& label,

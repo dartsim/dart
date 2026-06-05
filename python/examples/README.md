@@ -16,8 +16,9 @@ C++ `dart-demos`
 ## Run
 
 ```bash
-pixi run py-demos                                # run the first scene
-pixi run py-demos -- --scene sx_articulated      # select a scene by id
+pixi run py-demos                                # default: open replay timeline
+pixi run py-demos -- --scene hello_world         # open the introductory scene
+pixi run py-demos -- --scene sx_articulated      # select any scene by id
 pixi run py-demos -- --cycle-scenes --frames 4   # cycle every scene and exit
 pixi run py-demos -- --list                      # print the catalog
 pixi run py-demo-capture -- --scene sx_articulated --show-ui --video

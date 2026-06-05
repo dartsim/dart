@@ -7,10 +7,12 @@ import numpy as np
 import pytest
 from examples.demos._sx_bridge import SxRenderBridge
 from examples.demos.runner import (
+    DEFAULT_INITIAL_SCENE_ID,
     DEFAULT_SCENE_BUILD_TIMEOUT_MS,
     PythonDemoScene,
     ScenePanel,
     SceneSetup,
+    _default_initial_scene_args,
     _make_world_factory,
     _scene_build_timeout_ms,
     _validate_scene,
@@ -61,6 +63,7 @@ from examples.demos.scenes import (
     sx_rigid_ipc_incline,
     sx_rigid_ipc_pile,
     sx_rigid_ipc_tunnel,
+    sx_replay_scrubber,
     sx_variational_chain,
     sx_variational_tumbler,
     vbd_beam,
@@ -120,6 +123,18 @@ def test_validate_scene_accepts_hyphenated_scene_id_alias() -> None:
     )
 
     _validate_scene("sx-rigid-ipc-slide", [scene])
+
+
+def test_default_py_demos_launch_uses_replay_timeline_without_reordering() -> None:
+    assert DEFAULT_INITIAL_SCENE_ID == "sx_replay_scrubber"
+    assert _default_initial_scene_args([], None, {}) == [
+        "--scene",
+        "sx_replay_scrubber",
+    ]
+
+    assert _default_initial_scene_args(["--scene", "hello_world"], "hello_world", {}) == []
+    assert _default_initial_scene_args([], None, {"DART_DEMOS_SCENE": "boxes"}) == []
+    assert _default_initial_scene_args(["--cycle-scenes"], None, {}) == []
 
 
 def test_scene_build_timeout_follows_demo_startup_budget_by_default(
@@ -203,19 +218,64 @@ class _FakePanelBuilder:
         self.events.append(f"slider:{label}:{minimum}:{maximum}")
         return False, value
 
+    def timeline(
+        self,
+        label: str,
+        value: float,
+        minimum: float,
+        maximum: float,
+        value_track: list[float] | tuple[float, ...] = (),
+        marker_track: list[float] | tuple[float, ...] = (),
+        cursor_track: list[float] | tuple[float, ...] = (),
+        value_track_label: str = "Values",
+    ) -> tuple[bool, float]:
+        self.events.append(
+            f"timeline:{label}:{minimum}:{maximum}:"
+            f"{len(value_track)}:{len(marker_track)}:{len(cursor_track)}:"
+            f"{value_track_label}"
+        )
+        return False, value
+
     def checkbox(self, label: str, value: bool) -> tuple[bool, bool]:
         self.events.append(f"checkbox:{label}")
         return False, value
 
+    def select(
+        self, label: str, selected_index: int, choices: list[str]
+    ) -> tuple[bool, int]:
+        self.events.append(f"select:{label}:{selected_index}:{','.join(choices)}")
+        return False, selected_index
+
     def button(self, label: str) -> bool:
         self.events.append(f"button:{label}")
         return False
+
+    def same_line(self) -> None:
+        self.events.append("same_line")
 
     def plot_lines(self, label: str, values: list[float]) -> None:
         self.events.append(f"plot:{label}:{len(values)}")
 
     def separator(self) -> None:
         self.events.append("separator")
+
+    def collapsing_header(self, label: str, default_open: bool = False) -> bool:
+        self.events.append(f"collapsing:{label}:{default_open}")
+        return True
+
+    def begin_table(self, label: str, columns: list[str]) -> bool:
+        self.events.append(f"table:{label}:{','.join(columns)}")
+        return True
+
+    def table_next_row(self) -> None:
+        self.events.append("table_row")
+
+    def table_next_column(self) -> bool:
+        self.events.append("table_column")
+        return True
+
+    def end_table(self) -> None:
+        self.events.append("end_table")
 
 
 def test_high_value_sx_scenes_expose_custom_panels() -> None:
@@ -298,6 +358,35 @@ def test_diff_trajectory_scenes_expose_replay_panels() -> None:
         assert "slider:Playback stride:1.0:8.0" in builder.events
         assert "button:Reset replay" in builder.events
         assert any(event.startswith(expected_plot) for event in builder.events)
+
+
+def test_sx_replay_scrubber_exposes_timeline_panel() -> None:
+    _require_simulation_experimental_symbols("World")
+
+    setup = sx_replay_scrubber.build()
+    builder = _FakePanelBuilder()
+
+    assert [panel.title for panel in setup.panels] == ["Replay Timeline"]
+    assert setup.panels[0].dock_side == "bottom"
+    assert setup.panels[0].initial_size == (960.0, 320.0)
+    assert setup.info["timeline_frame_count"] == setup.info["recorded_frames"]
+    assert setup.info["timeline_duration"] > 0.0
+
+    setup.panels[0].build(builder, object())
+
+    assert any(
+        event.startswith("timeline:Timeline##replay_timeline:0.0:")
+        for event in builder.events
+    )
+    assert any(
+        event.endswith(":181:181:181:Ball height") for event in builder.events
+    )
+    assert "checkbox:Loop playback" in builder.events
+    assert any(event.startswith("select:Rate:") for event in builder.events)
+    assert "collapsing:Cursor details:False" in builder.events
+    assert "table:Cursor details table:Track,Value" in builder.events
+    assert "button:-10" in builder.events
+    assert "button:+10" in builder.events
 
 
 def test_ipc_fem_buckle_scene_exposes_compression_panel() -> None:
