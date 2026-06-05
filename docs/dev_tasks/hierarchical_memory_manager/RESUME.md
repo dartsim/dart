@@ -16,10 +16,13 @@ and should merge latest `origin/main` before every push.
 
 ## Immediate Next Step
 
-Do not promote the current allocator-aware EnTT policy into production
-`WorldRegistry` bake/build allocation yet. A fresh focused strict run now fails
-against both foonathan/memory and the standard registry. First optimize or
-replace the allocator-aware registry policy, then rerun:
+Do not treat the benchmark-only allocator-aware EnTT policy as production
+`WorldRegistry` bake/build allocation yet. The current frame-backed no-growth
+policy passes the focused strict checker against both foonathan/memory and the
+standard registry, but production integration still needs a persistent
+world-registry arena or bake allocator with matching no-growth tests and
+lifetime diagnostics. Rerun the focused gate after any policy or benchmark
+change:
 
 ```bash
 pixi run bm-allocator-comparative-check --only-entt-registry \
@@ -27,26 +30,38 @@ pixi run bm-allocator-comparative-check --only-entt-registry \
 ```
 
 The current policy caches known EnTT component storage handles in the hot path,
-uses a free-list-backed DART allocator for persistent no-growth registry churn,
-and uses a pool-backed DART allocator for bake/build growth churn. The
+uses a frame-backed DART allocator for persistent no-growth registry churn, and
+uses a pool-backed DART allocator for bake/build growth churn. The no-growth row
+reports frame usage and overflow counters and fails on post-prewarm growth; the
 build/growth timing row uses an uninstrumented pool-backed allocator and reports
-configured-allocator call counters from a matching untimed probe. `StlAllocator`
-keeps allocator-backed STL storage alignment-aware, including fixed-pool-backed
-max-aligned values. A separate world-lifetime arena-backed registry probe via
-`FrameStlAllocator` proved the no-growth invariant, but repeated timing did not
-consistently beat both baselines. Do not confuse that probe with the per-step
-`World` frame allocator, which is reset at step boundaries and cannot hold
-persistent registry storage.
+configured-allocator call counters from a matching untimed probe.
+`StlAllocator` keeps allocator-backed STL storage alignment-aware, including
+fixed-pool-backed max-aligned values. Do not confuse the persistent
+world-registry arena policy with the per-step `World` frame allocator, which is
+reset at step boundaries and cannot hold persistent registry storage.
 The reserved-registry unit tests now prove the prewarmed churn loop makes no
 configured allocator calls and does not consume additional arena bytes after
-prewarm. The DART EnTT benchmark row reports allocator-call counters and fails
-if reserved churn calls the configured allocator after prewarm. Separate EnTT
-build/growth rows now measure bake-time registry storage allocation directly
-instead of conflating that cost with the no-growth simulation loop.
+prewarm. The DART no-growth EnTT benchmark row reports frame usage and overflow
+counters and fails if reserved churn grows frame-backed storage after prewarm.
+Separate EnTT build/growth rows now measure bake-time registry storage
+allocation directly instead of conflating that cost with the no-growth
+simulation loop.
 
 ## Latest Local Validation
 
-- The fresh focused command failed the strict gate on 2026-06-04 at local
+- The current focused strict command passed on 2026-06-04 at local timestamp
+  `20:20:48-07:00`:
+  `pixi run bm-allocator-comparative-check --only-entt-registry --baseline foonathan --baseline std --verbose --output .benchmark_results/allocator_comparative_entt_frame_final.json`.
+  All 12 EnTT comparisons passed. No-growth DART rows reported
+  `dart_frame_overflow_count=0` and `dart_frame_overflow_bytes=0` after
+  prewarm. DART/foonathan ratios were approximately `0.891`, `0.993`, and
+  `0.961` for `BM_EnttRegistry/{256,512,2048}`; DART/std ratios were
+  approximately `0.762`, `0.737`, and `0.767`. Build/growth DART rows beat
+  both foonathan/memory and the standard registry at 256, 512, and 2048
+  entities while reporting configured-allocator calls per iteration of 37, 38,
+  and 43.
+- The previous free-list-backed focused command failed the strict gate on
+  2026-06-04 at local
   timestamp `19:34:15-07:00`:
   `pixi run bm-allocator-comparative-check --only-entt-registry --output .benchmark_results/allocator_comparative_entt_default_current.json`.
   DART steady-state rows still reported `dart_allocator_allocations=0` and
@@ -62,12 +77,11 @@ instead of conflating that cost with the no-growth simulation loop.
 - Older focused runs include both passes and failures. Treat those files as
   historical evidence for why the gate needs repeated low-load runs, not as the
   current branch result.
-- A refreshed world-lifetime arena-backed benchmark experiment over
-  `.benchmark_results/entt_registry_arena_policy_probe.json` also failed the
-  strict gate. It drove backing allocator calls to zero for the build/growth
-  rows, but still lost all no-growth rows and all standard-registry rows, so do
-  not replace the current free-list-backed DART EnTT benchmark policy with
-  `FrameStlAllocator` timing evidence.
+- Older arena-backed benchmark experiments over
+  `.benchmark_results/entt_registry_arena_policy_probe.json` predate the
+  current cached-storage and frame-backed no-growth policy. Treat them as
+  historical evidence for why the focused gate needed a stricter current run,
+  not as current timing evidence.
 - The common comparative benchmark now discovers installed EnTT package
   metadata before configuring `bm_allocators_comparative`. Local
   `bm_allocators_comparative --benchmark_list_tests` lists all DART,
@@ -113,11 +127,10 @@ instead of conflating that cost with the no-growth simulation loop.
   rows beat the foonathan/memory build/growth rows at all measured sizes, but
   that JSON predates the current cached-storage and uninstrumented build/growth
   timing policy and should not be treated as the current gate result.
-- A world-lifetime arena probe using `FrameStlAllocator` showed zero arena
-  growth after prewarm and zero backing allocator calls, but repeated focused
-  strict checks were not stable enough to claim it beats both foonathan/memory
-  and the standard registry. Keep the arena result as correctness evidence and
-  continue policy work before changing production `WorldRegistry` storage.
+- The current world-lifetime arena policy using `FrameStlAllocator` shows zero
+  arena growth after prewarm and passes the focused EnTT strict checker against
+  both foonathan/memory and the standard registry. Keep it as benchmark evidence
+  until production `WorldRegistry` storage has matching no-growth tests.
 
 ## Context That Would Be Lost
 
@@ -138,11 +151,10 @@ instead of conflating that cost with the no-growth simulation loop.
 - The EnTT build/growth benchmark creates a fresh registry, reserves component
   storage, runs one churn pass, and destroys the registry inside each measured
   iteration. A miss there points at bake/build allocator and storage setup cost.
-- The arena-backed EnTT probe is a policy candidate, not yet production
-  `WorldRegistry` wiring and not a passing performance claim. Production
-  integration would need a persistent world-registry arena or bake allocator
-  that is reset on rebuild/destruction, not the existing per-step frame
-  allocator that resets inside `World::step()`.
+- The frame-backed EnTT benchmark policy is not yet production `WorldRegistry`
+  wiring. Production integration needs a persistent world-registry arena or bake
+  allocator that is reset on rebuild/destruction, not the existing per-step
+  frame allocator that resets inside `World::step()`.
 
 ## How to Resume
 

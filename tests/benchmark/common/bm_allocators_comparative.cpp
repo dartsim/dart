@@ -57,7 +57,6 @@
 
 #include <dart/common/fixed_pool_allocator.hpp>
 #include <dart/common/frame_allocator.hpp>
-#include <dart/common/free_list_allocator.hpp>
 #include <dart/common/memory_allocator.hpp>
 #include <dart/common/pool_allocator.hpp>
 #include <dart/common/stl_allocator.hpp>
@@ -96,56 +95,6 @@ inline uint32_t lcgNext()
   lcgState = lcgState * 1664525u + 1013904223u;
   return lcgState;
 }
-
-class BenchmarkCountingFreeListMemoryAllocator final : public MemoryAllocator
-{
-public:
-  explicit BenchmarkCountingFreeListMemoryAllocator(size_t initialAllocation)
-    : mBacking(MemoryAllocator::GetDefault(), initialAllocation)
-  {
-  }
-
-  std::string_view getType() const override
-  {
-    return "BenchmarkCountingFreeListMemoryAllocator";
-  }
-
-  void* allocate(size_t bytes) noexcept override
-  {
-    ++allocationCount;
-    return mBacking.allocate(bytes);
-  }
-
-  void* allocate(size_t bytes, size_t alignment) noexcept override
-  {
-    ++allocationCount;
-    return mBacking.allocate(bytes, alignment);
-  }
-
-  void deallocate(void* pointer, size_t bytes) override
-  {
-    ++deallocationCount;
-    mBacking.deallocate(pointer, bytes);
-  }
-
-  void deallocate(void* pointer, size_t bytes, size_t alignment) override
-  {
-    ++deallocationCount;
-    mBacking.deallocate(pointer, bytes, alignment);
-  }
-
-  void resetCounts()
-  {
-    allocationCount = 0;
-    deallocationCount = 0;
-  }
-
-  size_t allocationCount{0};
-  size_t deallocationCount{0};
-
-private:
-  FreeListAllocator mBacking;
-};
 
 class BenchmarkCountingPoolMemoryAllocator final : public MemoryAllocator
 {
@@ -912,26 +861,31 @@ void prewarmEnttRegistry(
 static void BM_EnttRegistry_DART(benchmark::State& state)
 {
   const auto entityCount = static_cast<size_t>(state.range(0));
-  BenchmarkCountingFreeListMemoryAllocator backing(
-      entityCount * 4096 + 1024 * 1024);
-  StlAllocator<entt::entity> allocator(backing);
-  entt::basic_registry<entt::entity, StlAllocator<entt::entity>> registry(
+  FrameAllocator backing(
+      MemoryAllocator::GetDefault(), entityCount * 4096 + 1024 * 1024);
+  FrameStlAllocator<entt::entity> allocator(backing);
+  entt::basic_registry<entt::entity, FrameStlAllocator<entt::entity>> registry(
       EnttRegistryStorageCount, allocator);
   std::vector<entt::entity> entities(entityCount);
 
   prewarmEnttRegistry(registry, entities, entityCount);
-  backing.resetCounts();
+  const size_t usedAfterPrewarm = backing.used();
+  const size_t overflowCountAfterPrewarm = backing.overflowCount();
+  const size_t overflowBytesAfterPrewarm = backing.overflowBytes();
 
   for (auto _ : state) {
     runEnttRegistryChurn(registry, entities, entityCount);
   }
-  state.counters["dart_allocator_allocations"]
-      = static_cast<double>(backing.allocationCount);
-  state.counters["dart_allocator_deallocations"]
-      = static_cast<double>(backing.deallocationCount);
-  if (backing.allocationCount != 0 || backing.deallocationCount != 0) {
+  state.counters["dart_frame_bytes"] = static_cast<double>(backing.used());
+  state.counters["dart_frame_overflow_count"]
+      = static_cast<double>(backing.overflowCount());
+  state.counters["dart_frame_overflow_bytes"]
+      = static_cast<double>(backing.overflowBytes());
+  if (backing.used() != usedAfterPrewarm
+      || backing.overflowCount() != overflowCountAfterPrewarm
+      || backing.overflowBytes() != overflowBytesAfterPrewarm) {
     state.SkipWithError(
-        "Reserved DART EnTT registry churn called the configured allocator.");
+        "Reserved DART EnTT registry churn grew frame-backed storage.");
   }
   state.SetItemsProcessed(
       static_cast<int64_t>(state.iterations() * entityCount));
