@@ -163,9 +163,9 @@ void WorldKinematicsGraph::rebuild()
   m_graph.clear();
   m_entityNodes.clear();
 
-  auto& registry = dart::simulation::experimental::detail::registryOf(m_world);
+  auto* registry = &dart::simulation::experimental::detail::registryOf(m_world);
   auto frameView
-      = registry.view<comps::FrameTag, comps::FrameState, comps::FrameCache>();
+      = registry->view<comps::FrameTag, comps::FrameState, comps::FrameCache>();
 
   for (auto entity : frameView) {
     const auto name = std::string("frame_")
@@ -178,7 +178,7 @@ void WorldKinematicsGraph::rebuild()
     metadata.resources.push_back(
         {frameCacheResource(entity), ComputeAccessMode::Write});
     const auto buildParentFrame
-        = registry.get<comps::FrameState>(entity).parentFrame;
+        = registry->get<comps::FrameState>(entity).parentFrame;
     if (buildParentFrame != entt::null) {
       metadata.resources.push_back(
           {frameCacheResource(buildParentFrame), ComputeAccessMode::Read});
@@ -186,16 +186,16 @@ void WorldKinematicsGraph::rebuild()
 
     auto& node = m_graph.addNode(
         name,
-        [&registry, entity]() {
-          const auto& frameState = registry.get<comps::FrameState>(entity);
-          auto& cache = registry.get<comps::FrameCache>(entity);
+        [registry, entity]() {
+          const auto& frameState = registry->get<comps::FrameState>(entity);
+          auto& cache = registry->get<comps::FrameCache>(entity);
 
-          const auto localTransform = getLocalTransform(registry, entity);
+          const auto localTransform = getLocalTransform(*registry, entity);
           if (frameState.parentFrame == entt::null) {
             cache.worldTransform = localTransform;
           } else {
             const auto* parentCache
-                = registry.try_get<comps::FrameCache>(frameState.parentFrame);
+                = registry->try_get<comps::FrameCache>(frameState.parentFrame);
             DART_EXPERIMENTAL_THROW_T_IF(
                 !parentCache,
                 InvalidOperationException,
@@ -212,7 +212,8 @@ void WorldKinematicsGraph::rebuild()
   }
 
   for (const auto& entityNode : m_entityNodes) {
-    const auto& frameState = registry.get<comps::FrameState>(entityNode.entity);
+    const auto& frameState
+        = registry->get<comps::FrameState>(entityNode.entity);
     auto* parentNode = findNode(frameState.parentFrame);
     if (parentNode) {
       m_graph.addDependency(*parentNode, *entityNode.node);
