@@ -337,6 +337,115 @@ TEST(AvbdContact, FixedJointPoseBridgeCapturesSimulationEntryPose)
 }
 
 //==============================================================================
+// Private rigid-body revolute ECS joints should configure the same point-joint
+// primitive as fixed joints, but leave the configured hinge axis free.
+TEST(AvbdContact, RevoluteRigidBodyJointPoseBridgeCapturesAxisConfig)
+{
+  sx::WorldOptions options;
+  options.timeStep = 0.005;
+  options.gravity = Eigen::Vector3d::Zero();
+  sx::World world(options);
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world.addRigidBody("base", baseOptions);
+
+  sx::RigidBodyOptions linkOptions;
+  linkOptions.position = Eigen::Vector3d::UnitX();
+  auto link = world.addRigidBody("link", linkOptions);
+
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
+  auto& avbdConfig
+      = registry.emplace_or_replace<sx::comps::RigidAvbdContactConfig>(
+          sx::detail::toRegistryEntity(link.getEntity()));
+  avbdConfig.startStiffness = 123.0;
+  avbdConfig.maxStiffness = 456.0;
+
+  const Eigen::Vector3d hingeAxis = Eigen::Vector3d(1.0, 2.0, 3.0).normalized();
+  const entt::entity jointEntity = registry.create();
+  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  joint.type = sx::comps::JointType::Revolute;
+  joint.parentLink = sx::detail::toRegistryEntity(base.getEntity());
+  joint.childLink = sx::detail::toRegistryEntity(link.getEntity());
+  joint.axis = hingeAxis;
+
+  ASSERT_FALSE(
+      registry.all_of<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity));
+  world.enterSimulationMode();
+
+  ASSERT_TRUE(
+      registry.all_of<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity));
+  const auto& config
+      = registry.get<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
+  EXPECT_NEAR(
+      (config.localAnchorA - Eigen::Vector3d::UnitX()).norm(), 0.0, 1e-12);
+  EXPECT_NEAR(config.localAnchorB.norm(), 0.0, 1e-12);
+  EXPECT_EQ(config.linearAxisMask, dvbd::kAvbdRigidJointAllAxesMask);
+  EXPECT_EQ(config.angularAxisMask, dvbd::avbdRigidJointAllButAxisMask(2u));
+  EXPECT_NEAR(config.angularAxes.col(0).dot(hingeAxis), 0.0, 1e-12);
+  EXPECT_NEAR(config.angularAxes.col(1).dot(hingeAxis), 0.0, 1e-12);
+  EXPECT_NEAR(std::abs(config.angularAxes.col(2).dot(hingeAxis)), 1.0, 1e-12);
+  EXPECT_EQ(config.startStiffness, 123.0);
+  EXPECT_EQ(config.maxStiffness, 456.0);
+
+  const auto inputs = dvbd::extractAvbdRigidWorldPointJointInputs(registry);
+  ASSERT_EQ(inputs.size(), 1u);
+  EXPECT_EQ(inputs[0].linearAxisMask, config.linearAxisMask);
+  EXPECT_EQ(inputs[0].angularAxisMask, config.angularAxisMask);
+  EXPECT_NEAR((inputs[0].angularAxes - config.angularAxes).norm(), 0.0, 1e-12);
+}
+
+//==============================================================================
+// Private rigid-body prismatic ECS joints should leave the configured
+// translation axis free while constraining all angular axes.
+TEST(AvbdContact, PrismaticRigidBodyJointPoseBridgeCapturesAxisConfig)
+{
+  sx::WorldOptions options;
+  options.timeStep = 0.005;
+  options.gravity = Eigen::Vector3d::Zero();
+  sx::World world(options);
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world.addRigidBody("base", baseOptions);
+
+  sx::RigidBodyOptions linkOptions;
+  linkOptions.position = Eigen::Vector3d::UnitX();
+  auto link = world.addRigidBody("link", linkOptions);
+
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
+  const Eigen::Vector3d translationAxis
+      = Eigen::Vector3d(-0.5, 0.25, 1.0).normalized();
+  const entt::entity jointEntity = registry.create();
+  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  joint.type = sx::comps::JointType::Prismatic;
+  joint.parentLink = sx::detail::toRegistryEntity(base.getEntity());
+  joint.childLink = sx::detail::toRegistryEntity(link.getEntity());
+  joint.axis = translationAxis;
+
+  ASSERT_FALSE(
+      registry.all_of<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity));
+  world.enterSimulationMode();
+
+  ASSERT_TRUE(
+      registry.all_of<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity));
+  const auto& config
+      = registry.get<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
+  EXPECT_EQ(config.linearAxisMask, dvbd::avbdRigidJointAllButAxisMask(2u));
+  EXPECT_EQ(config.angularAxisMask, dvbd::kAvbdRigidJointAllAxesMask);
+  EXPECT_NEAR(config.linearAxes.col(0).dot(translationAxis), 0.0, 1e-12);
+  EXPECT_NEAR(config.linearAxes.col(1).dot(translationAxis), 0.0, 1e-12);
+  EXPECT_NEAR(
+      std::abs(config.linearAxes.col(2).dot(translationAxis)), 1.0, 1e-12);
+
+  const auto inputs = dvbd::extractAvbdRigidWorldPointJointInputs(registry);
+  ASSERT_EQ(inputs.size(), 1u);
+  EXPECT_EQ(inputs[0].linearAxisMask, config.linearAxisMask);
+  EXPECT_EQ(inputs[0].angularAxisMask, config.angularAxisMask);
+  EXPECT_NEAR((inputs[0].linearAxes - config.linearAxes).norm(), 0.0, 1e-12);
+}
+
+//==============================================================================
 // The public facade should create the fixed-joint row config without exposing
 // ECS or AVBD detail components to users.
 TEST(AvbdContact, PublicRigidBodyFixedJointProjectsFromCapturedPose)
@@ -399,6 +508,92 @@ TEST(AvbdContact, PublicRigidBodyFixedJointProjectsFromCapturedPose)
   EXPECT_THROW(
       world.addRigidBodyFixedJoint("late_joint", base, link),
       sx::InvalidOperationException);
+}
+
+//==============================================================================
+// The public one-DOF rigid-body facade should expose a revolute joint that
+// projects the captured anchor while leaving the hinge axis free.
+TEST(AvbdContact, PublicRigidBodyRevoluteJointProjectsAnchor)
+{
+  sx::WorldOptions options;
+  options.timeStep = 0.005;
+  options.gravity = Eigen::Vector3d::Zero();
+  sx::World world(options);
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world.addRigidBody("base", baseOptions);
+
+  sx::RigidBodyOptions linkOptions;
+  linkOptions.position = Eigen::Vector3d::UnitX();
+  auto link = world.addRigidBody("link", linkOptions);
+
+  auto joint = world.addRigidBodyRevoluteJoint(
+      "base_to_link_hinge", base, link, Eigen::Vector3d::UnitZ());
+  EXPECT_EQ(joint.getType(), sx::JointType::Revolute);
+  EXPECT_EQ(joint.getDOFCount(), 1u);
+  EXPECT_EQ(joint.getParentRigidBody().getName(), "base");
+  EXPECT_EQ(joint.getChildRigidBody().getName(), "link");
+  EXPECT_TRUE(world.hasRigidBodyJoint("base_to_link_hinge"));
+  EXPECT_FALSE(world.hasRigidBodyFixedJoint("base_to_link_hinge"));
+  EXPECT_EQ(world.getRigidBodyJointCount(), 1u);
+  EXPECT_EQ(world.getRigidBodyFixedJointCount(), 0u);
+  auto foundJoint = world.getRigidBodyJoint("base_to_link_hinge");
+  ASSERT_TRUE(foundJoint.has_value());
+  EXPECT_EQ(foundJoint->getType(), sx::JointType::Revolute);
+  const auto rigidBodyJoints = world.getRigidBodyJoints();
+  ASSERT_EQ(rigidBodyJoints.size(), 1u);
+  EXPECT_EQ(rigidBodyJoints.front().getName(), "base_to_link_hinge");
+
+  Eigen::Isometry3d driftedPose = Eigen::Isometry3d::Identity();
+  driftedPose.translation() = Eigen::Vector3d(1.25, 0.25, 0.0);
+  driftedPose.linear()
+      = Eigen::AngleAxisd(0.5, Eigen::Vector3d::UnitZ()).toRotationMatrix();
+  link.setTransform(driftedPose);
+
+  world.enterSimulationMode();
+  world.step();
+
+  EXPECT_LT(std::abs(link.getTranslation().x() - 1.0), 0.05);
+  EXPECT_LT(std::abs(link.getTranslation().y()), 0.05);
+  EXPECT_TRUE(base.getTranslation().isApprox(Eigen::Vector3d::Zero()));
+}
+
+//==============================================================================
+// The public prismatic facade should project drift orthogonal to the slide axis
+// while leaving translation along that axis unconstrained.
+TEST(AvbdContact, PublicRigidBodyPrismaticJointProjectsOrthogonalDrift)
+{
+  sx::WorldOptions options;
+  options.timeStep = 0.005;
+  options.gravity = Eigen::Vector3d::Zero();
+  sx::World world(options);
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world.addRigidBody("base", baseOptions);
+
+  sx::RigidBodyOptions linkOptions;
+  linkOptions.position = Eigen::Vector3d::UnitZ();
+  auto link = world.addRigidBody("link", linkOptions);
+
+  auto joint = world.addRigidBodyPrismaticJoint(
+      "base_to_link_slider", base, link, Eigen::Vector3d::UnitZ());
+  EXPECT_EQ(joint.getType(), sx::JointType::Prismatic);
+  EXPECT_EQ(joint.getDOFCount(), 1u);
+  EXPECT_EQ(world.getRigidBodyJointCount(), 1u);
+  EXPECT_FALSE(world.hasRigidBodyFixedJoint("base_to_link_slider"));
+
+  Eigen::Isometry3d driftedPose = Eigen::Isometry3d::Identity();
+  driftedPose.translation() = Eigen::Vector3d(0.25, 0.0, 1.5);
+  link.setTransform(driftedPose);
+
+  world.enterSimulationMode();
+  world.step();
+
+  EXPECT_LT(std::abs(link.getTranslation().x()), 0.05);
+  EXPECT_NEAR(link.getTranslation().z(), 1.5, 0.05);
+  EXPECT_TRUE(base.getTranslation().isApprox(Eigen::Vector3d::Zero()));
 }
 
 //==============================================================================

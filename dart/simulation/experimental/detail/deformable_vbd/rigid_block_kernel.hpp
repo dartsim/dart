@@ -54,6 +54,7 @@ using Vector6d = Eigen::Matrix<double, 6, 1>;
 using Matrix6d = Eigen::Matrix<double, 6, 6>;
 
 inline constexpr double kAvbdRigidPi = 3.141592653589793238462643383279502884;
+inline constexpr std::uint8_t kAvbdRigidJointAllAxesMask = 0x7u;
 
 //==============================================================================
 inline Eigen::Quaterniond normalizeAvbdRigidOrientation(
@@ -196,6 +197,10 @@ struct AvbdRigidPointJoint
   Eigen::Vector3d localPointA = Eigen::Vector3d::Zero();
   Eigen::Vector3d localPointB = Eigen::Vector3d::Zero();
   Eigen::Quaterniond targetRelativeOrientation = Eigen::Quaterniond::Identity();
+  Eigen::Matrix3d linearAxes = Eigen::Matrix3d::Identity();
+  Eigen::Matrix3d angularAxes = Eigen::Matrix3d::Identity();
+  std::uint8_t linearAxisMask = kAvbdRigidJointAllAxesMask;
+  std::uint8_t angularAxisMask = kAvbdRigidJointAllAxesMask;
   double startStiffness = 1.0;
   double maxStiffness = std::numeric_limits<double>::infinity();
   std::uint32_t row = 0;
@@ -314,6 +319,46 @@ inline Eigen::Vector3d normalizedAvbdRigidPointPairAxis(
 }
 
 //==============================================================================
+inline std::uint8_t avbdRigidJointAxisBit(std::uint8_t axis)
+{
+  return axis < 3u ? static_cast<std::uint8_t>(1u << axis) : 0u;
+}
+
+//==============================================================================
+inline std::uint8_t avbdRigidJointAllButAxisMask(std::uint8_t freeAxis)
+{
+  return static_cast<std::uint8_t>(
+      kAvbdRigidJointAllAxesMask & ~avbdRigidJointAxisBit(freeAxis));
+}
+
+//==============================================================================
+inline Eigen::Matrix3d avbdRigidJointAxesFromFreeAxis(
+    const Eigen::Vector3d& freeAxis,
+    const Eigen::Vector3d& fallback = Eigen::Vector3d::UnitZ())
+{
+  const Eigen::Vector3d axis
+      = normalizedAvbdRigidPointPairAxis(freeAxis, fallback);
+  const Eigen::Vector3d first = axis.unitOrthogonal();
+  Eigen::Vector3d second = axis.cross(first);
+  const double secondNorm = second.norm();
+  if (!second.allFinite() || secondNorm <= 0.0) {
+    second = axis.cross(Eigen::Vector3d::UnitX());
+    if (second.squaredNorm() <= 0.0) {
+      second = axis.cross(Eigen::Vector3d::UnitY());
+    }
+    second.normalize();
+  } else {
+    second /= secondNorm;
+  }
+
+  Eigen::Matrix3d axes;
+  axes.col(0) = first;
+  axes.col(1) = second;
+  axes.col(2) = axis;
+  return axes;
+}
+
+//==============================================================================
 inline Eigen::Vector3d avbdRigidPointPairRelativePosition(
     const AvbdRigidBodyState& stateA,
     const AvbdRigidBodyState& stateB,
@@ -416,7 +461,95 @@ inline AvbdRigidAngularPairRow makeAvbdRigidJointAngularRow(
   return row;
 }
 
+//==============================================================================
+inline AvbdRigidPointJoint makeAvbdRigidRevolutePointJoint(
+    std::uint32_t bodyA,
+    std::uint32_t bodyB,
+    AvbdContactEndpointId endpointA,
+    AvbdContactEndpointId endpointB,
+    const Eigen::Vector3d& localPointA,
+    const Eigen::Vector3d& localPointB,
+    const Eigen::Quaterniond& targetRelativeOrientation,
+    const Eigen::Vector3d& hingeAxisWorld,
+    double startStiffness = 1.0,
+    double maxStiffness = std::numeric_limits<double>::infinity(),
+    std::uint32_t row = 0)
+{
+  AvbdRigidPointJoint joint;
+  joint.bodyA = bodyA;
+  joint.bodyB = bodyB;
+  joint.endpointA = endpointA;
+  joint.endpointB = endpointB;
+  joint.localPointA = localPointA;
+  joint.localPointB = localPointB;
+  joint.targetRelativeOrientation
+      = normalizeAvbdRigidOrientation(targetRelativeOrientation);
+  joint.angularAxes = avbdRigidJointAxesFromFreeAxis(hingeAxisWorld);
+  joint.linearAxisMask = kAvbdRigidJointAllAxesMask;
+  joint.angularAxisMask = avbdRigidJointAllButAxisMask(/*freeAxis=*/2u);
+  joint.startStiffness = std::max(0.0, startStiffness);
+  joint.maxStiffness = std::max(joint.startStiffness, maxStiffness);
+  joint.row = row;
+  return joint;
+}
+
+//==============================================================================
+inline AvbdRigidPointJoint makeAvbdRigidPrismaticPointJoint(
+    std::uint32_t bodyA,
+    std::uint32_t bodyB,
+    AvbdContactEndpointId endpointA,
+    AvbdContactEndpointId endpointB,
+    const Eigen::Vector3d& localPointA,
+    const Eigen::Vector3d& localPointB,
+    const Eigen::Quaterniond& targetRelativeOrientation,
+    const Eigen::Vector3d& translationAxisWorld,
+    double startStiffness = 1.0,
+    double maxStiffness = std::numeric_limits<double>::infinity(),
+    std::uint32_t row = 0)
+{
+  AvbdRigidPointJoint joint;
+  joint.bodyA = bodyA;
+  joint.bodyB = bodyB;
+  joint.endpointA = endpointA;
+  joint.endpointB = endpointB;
+  joint.localPointA = localPointA;
+  joint.localPointB = localPointB;
+  joint.targetRelativeOrientation
+      = normalizeAvbdRigidOrientation(targetRelativeOrientation);
+  joint.linearAxes = avbdRigidJointAxesFromFreeAxis(translationAxisWorld);
+  joint.angularAxes = joint.linearAxes;
+  joint.linearAxisMask = avbdRigidJointAllButAxisMask(/*freeAxis=*/2u);
+  joint.angularAxisMask = kAvbdRigidJointAllAxesMask;
+  joint.startStiffness = std::max(0.0, startStiffness);
+  joint.maxStiffness = std::max(joint.startStiffness, maxStiffness);
+  joint.row = row;
+  return joint;
+}
+
 namespace detail {
+
+//==============================================================================
+inline bool avbdRigidJointAxisEnabled(std::uint8_t mask, std::uint8_t axis)
+{
+  return axis < 3u && (mask & avbdRigidJointAxisBit(axis)) != 0u;
+}
+
+//==============================================================================
+inline bool hasValidActiveAvbdRigidJointAxes(
+    const Eigen::Matrix3d& axes, std::uint8_t mask)
+{
+  for (std::uint8_t axis = 0; axis < 3u; ++axis) {
+    if (!avbdRigidJointAxisEnabled(mask, axis)) {
+      continue;
+    }
+
+    const Eigen::Vector3d column = axes.col(axis);
+    if (!column.allFinite() || column.squaredNorm() <= 0.0) {
+      return false;
+    }
+  }
+  return true;
+}
 
 //==============================================================================
 inline bool isValidAvbdRigidContactManifoldPoint(
@@ -435,7 +568,13 @@ inline bool isValidAvbdRigidPointJoint(
 {
   return joint.bodyA < bodyCount && joint.bodyB < bodyCount
          && joint.bodyA != joint.bodyB && joint.localPointA.allFinite()
-         && joint.localPointB.allFinite();
+         && joint.localPointB.allFinite()
+         && joint.targetRelativeOrientation.coeffs().allFinite()
+         && joint.targetRelativeOrientation.norm() > 0.0
+         && hasValidActiveAvbdRigidJointAxes(
+             joint.linearAxes, joint.linearAxisMask)
+         && hasValidActiveAvbdRigidJointAxes(
+             joint.angularAxes, joint.angularAxisMask);
 }
 
 //==============================================================================
@@ -1037,8 +1176,14 @@ inline void buildAvbdRigidPointJointRows(
     std::vector<AvbdRigidBodyPointPairRow>& linearRows,
     const AvbdRowWarmStartOptions& warmStartOptions = {})
 {
-  std::vector<AvbdRigidPointJoint> activeJoints;
-  activeJoints.reserve(joints.size());
+  struct ActiveJointAxis
+  {
+    AvbdRigidPointJoint joint;
+    std::uint8_t axis = 0;
+  };
+
+  std::vector<ActiveJointAxis> activeRows;
+  activeRows.reserve(3 * joints.size());
   std::vector<AvbdScalarRowDescriptor> descriptors;
   descriptors.reserve(3 * joints.size());
   for (const AvbdRigidPointJoint& joint : joints) {
@@ -1046,8 +1191,12 @@ inline void buildAvbdRigidPointJointRows(
       continue;
     }
 
-    activeJoints.push_back(joint);
     for (std::uint8_t axis = 0; axis < 3u; ++axis) {
+      if (!detail::avbdRigidJointAxisEnabled(joint.linearAxisMask, axis)) {
+        continue;
+      }
+
+      activeRows.push_back(ActiveJointAxis{joint, axis});
       descriptors.push_back(
           detail::makeAvbdRigidJointLinearRowDescriptor(
               joint.endpointA,
@@ -1063,29 +1212,27 @@ inline void buildAvbdRigidPointJointRows(
 
   linearRows.clear();
   linearRows.reserve(linearInventory.size());
-  for (std::size_t jointIndex = 0; jointIndex < activeJoints.size();
-       ++jointIndex) {
-    const AvbdRigidPointJoint& joint = activeJoints[jointIndex];
-    for (std::uint8_t axis = 0; axis < 3u; ++axis) {
-      const std::size_t recordIndex = 3 * jointIndex + axis;
-      if (recordIndex >= linearInventory.size()) {
-        return;
-      }
-
-      const AvbdScalarRowRecord& record = linearInventory[recordIndex];
-      AvbdRigidBodyPointPairRow indexedRow;
-      indexedRow.bodyA = joint.bodyA;
-      indexedRow.bodyB = joint.bodyB;
-      indexedRow.row.localPointA = joint.localPointA;
-      indexedRow.row.localPointB = joint.localPointB;
-      indexedRow.row.axis = Eigen::Vector3d::Unit(axis);
-      indexedRow.row.state = record.state;
-      indexedRow.row.bounds = record.descriptor.bounds;
-      indexedRow.row.previousConstraintValue
-          = avbdRigidPointPairConstraintValue(
-              states[joint.bodyA], states[joint.bodyB], indexedRow.row);
-      linearRows.push_back(indexedRow);
+  for (std::size_t recordIndex = 0; recordIndex < activeRows.size();
+       ++recordIndex) {
+    if (recordIndex >= linearInventory.size()) {
+      return;
     }
+
+    const AvbdRigidPointJoint& joint = activeRows[recordIndex].joint;
+    const std::uint8_t axis = activeRows[recordIndex].axis;
+    const AvbdScalarRowRecord& record = linearInventory[recordIndex];
+    AvbdRigidBodyPointPairRow indexedRow;
+    indexedRow.bodyA = joint.bodyA;
+    indexedRow.bodyB = joint.bodyB;
+    indexedRow.row.localPointA = joint.localPointA;
+    indexedRow.row.localPointB = joint.localPointB;
+    indexedRow.row.axis = normalizedAvbdRigidPointPairAxis(
+        joint.linearAxes.col(axis), Eigen::Vector3d::Unit(axis));
+    indexedRow.row.state = record.state;
+    indexedRow.row.bounds = record.descriptor.bounds;
+    indexedRow.row.previousConstraintValue = avbdRigidPointPairConstraintValue(
+        states[joint.bodyA], states[joint.bodyB], indexedRow.row);
+    linearRows.push_back(indexedRow);
   }
 }
 
@@ -1097,8 +1244,14 @@ inline void buildAvbdRigidPointJointAngularRows(
     std::vector<AvbdRigidBodyAngularPairRow>& angularRows,
     const AvbdRowWarmStartOptions& warmStartOptions = {})
 {
-  std::vector<AvbdRigidPointJoint> activeJoints;
-  activeJoints.reserve(joints.size());
+  struct ActiveJointAxis
+  {
+    AvbdRigidPointJoint joint;
+    std::uint8_t axis = 0;
+  };
+
+  std::vector<ActiveJointAxis> activeRows;
+  activeRows.reserve(3 * joints.size());
   std::vector<AvbdScalarRowDescriptor> descriptors;
   descriptors.reserve(3 * joints.size());
   for (const AvbdRigidPointJoint& joint : joints) {
@@ -1106,8 +1259,12 @@ inline void buildAvbdRigidPointJointAngularRows(
       continue;
     }
 
-    activeJoints.push_back(joint);
     for (std::uint8_t axis = 0; axis < 3u; ++axis) {
+      if (!detail::avbdRigidJointAxisEnabled(joint.angularAxisMask, axis)) {
+        continue;
+      }
+
+      activeRows.push_back(ActiveJointAxis{joint, axis});
       descriptors.push_back(
           detail::makeAvbdRigidJointAngularRowDescriptor(
               joint.endpointA,
@@ -1123,29 +1280,27 @@ inline void buildAvbdRigidPointJointAngularRows(
 
   angularRows.clear();
   angularRows.reserve(angularInventory.size());
-  for (std::size_t jointIndex = 0; jointIndex < activeJoints.size();
-       ++jointIndex) {
-    const AvbdRigidPointJoint& joint = activeJoints[jointIndex];
-    for (std::uint8_t axis = 0; axis < 3u; ++axis) {
-      const std::size_t recordIndex = 3 * jointIndex + axis;
-      if (recordIndex >= angularInventory.size()) {
-        return;
-      }
-
-      const AvbdScalarRowRecord& record = angularInventory[recordIndex];
-      AvbdRigidBodyAngularPairRow indexedRow;
-      indexedRow.bodyA = joint.bodyA;
-      indexedRow.bodyB = joint.bodyB;
-      indexedRow.row = makeAvbdRigidJointAngularRow(
-          joint.targetRelativeOrientation,
-          Eigen::Vector3d::Unit(axis),
-          record.state);
-      indexedRow.row.bounds = record.descriptor.bounds;
-      indexedRow.row.previousConstraintValue
-          = avbdRigidAngularPairConstraintValue(
-              states[joint.bodyA], states[joint.bodyB], indexedRow.row);
-      angularRows.push_back(indexedRow);
+  for (std::size_t recordIndex = 0; recordIndex < activeRows.size();
+       ++recordIndex) {
+    if (recordIndex >= angularInventory.size()) {
+      return;
     }
+
+    const AvbdRigidPointJoint& joint = activeRows[recordIndex].joint;
+    const std::uint8_t axis = activeRows[recordIndex].axis;
+    const AvbdScalarRowRecord& record = angularInventory[recordIndex];
+    AvbdRigidBodyAngularPairRow indexedRow;
+    indexedRow.bodyA = joint.bodyA;
+    indexedRow.bodyB = joint.bodyB;
+    indexedRow.row = makeAvbdRigidJointAngularRow(
+        joint.targetRelativeOrientation,
+        joint.angularAxes.col(axis),
+        record.state);
+    indexedRow.row.bounds = record.descriptor.bounds;
+    indexedRow.row.previousConstraintValue
+        = avbdRigidAngularPairConstraintValue(
+            states[joint.bodyA], states[joint.bodyB], indexedRow.row);
+    angularRows.push_back(indexedRow);
   }
 }
 
