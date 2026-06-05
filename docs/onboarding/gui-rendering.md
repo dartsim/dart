@@ -124,8 +124,8 @@ ctest --test-dir build/default/cpp/Release --output-on-failure \
   -R '^UNIT_gui_FilamentSceneExtraction$'
 pixi run ex dartsim --headless --frames 1 --width 1280 --height 720 \
   --screenshot /tmp/dartsim.ppm
-pixi run ex rigid_cubes --headless --frames 2 --width 640 --height 480 \
-  --out /tmp/rigid_cubes_frames
+pixi run demos -- --scene rigid_body --headless --frames 2 --width 640 \
+  --height 480 --out /tmp/rigid_body_frames
 ```
 
 `--screenshot` writes a single final PPM image. `--out <dir>` writes a numbered
