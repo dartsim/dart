@@ -8,6 +8,9 @@ from __future__ import annotations
 
 from .runner import PythonDemoScene
 from .scenes.articulated import SCENE as ARTICULATED
+from .scenes.avbd_rigid_fixed_joint_contact import (
+    SCENE as AVBD_RIGID_FIXED_JOINT_CONTACT,
+)
 from .scenes.atlas_simbicon import SCENE as ATLAS_SIMBICON
 from .scenes.contact import SCENE as CONTACT
 from .scenes.diff_cartpole_trajopt import SCENE as DIFF_CARTPOLE_TRAJOPT
@@ -52,6 +55,7 @@ from .scenes.rigid_ipc_tunnel import SCENE as RIGID_IPC_TUNNEL
 from .scenes.robot_puppets import ATLAS_PUPPET
 from .scenes.robot_puppets import G1_PUPPET
 from .scenes.robot_puppets import HUBO_PUPPET
+from .scenes.sx_rigid_limited_joints import SCENE as SX_RIGID_LIMITED_JOINTS
 from .scenes.variational_chain import SCENE as VARIATIONAL_CHAIN
 from .scenes.variational_contact import SCENE as VARIATIONAL_CONTACT
 from .scenes.variational_tumbler import SCENE as VARIATIONAL_TUMBLER
@@ -71,6 +75,9 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         CONTACT,
         RIGID_BODY,
         RIGID_FIXED_JOINT,
+        # New World-native experimental facades from main.
+        SX_RIGID_LIMITED_JOINTS,
+        AVBD_RIGID_FIXED_JOINT_CONTACT,
         # High-value DART 6 examples that should return as World-native demos.
         # These lightweight placeholders keep the roadmap visible without
         # keeping legacy DART 6 scene implementations in the catalog.

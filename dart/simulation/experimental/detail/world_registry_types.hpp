@@ -32,30 +32,14 @@
 
 #pragma once
 
-#include <dart/simulation/experimental/detail/world_registry_types.hpp>
-#include <dart/simulation/experimental/export.hpp>
+#include <dart/common/stl_allocator.hpp>
 
-#include <Eigen/Core>
-#include <entt/fwd.hpp>
+#include <entt/entt.hpp>
 
-namespace dart::simulation::experimental::comps {
-struct MultibodyStructure;
-} // namespace dart::simulation::experimental::comps
+namespace dart::simulation::experimental::detail {
 
-namespace dart::simulation::experimental::compute {
+using WorldRegistryAllocator = dart::common::StlAllocator<entt::entity>;
+using WorldRegistry
+    = entt::basic_registry<entt::entity, WorldRegistryAllocator>;
 
-/// Write back a multibody's next generalized velocity and integrate positions.
-///
-/// `nextVelocity` is ordered by the multibody construction order, matching the
-/// generalized-coordinate vector used by the forward-dynamics solve. The helper
-/// preserves the existing integration semantics: Euclidean joints integrate
-/// linearly with position-limit hard stops, spherical/floating joints integrate
-/// orientation on SO(3), and floating translation limits only affect the first
-/// three translational coordinates.
-DART_EXPERIMENTAL_API void integrateMultibodyPositions(
-    detail::WorldRegistry& registry,
-    const comps::MultibodyStructure& structure,
-    const Eigen::VectorXd& nextVelocity,
-    double timeStep);
-
-} // namespace dart::simulation::experimental::compute
+} // namespace dart::simulation::experimental::detail

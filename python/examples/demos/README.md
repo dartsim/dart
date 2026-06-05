@@ -78,6 +78,29 @@ The lower-level viewer still accepts `--screenshot` and `--out` directly when
 you need raw PPM output. Inspect the generated PNG or MP4 before calling a
 visual change done.
 
+## Experimental Rigid Body (sx)
+
+The **`Experimental Rigid Body (sx)`** category keeps World-native rigid-body
+facade scenes that exercise the new experimental solver surface directly:
+
+| Scene id                  | Shows                                      | World capability exercised               |
+| ------------------------- | ------------------------------------------ | ---------------------------------------- |
+| `sx_rigid_limited_joints` | Revolute and prismatic one-DOF constraints | Captured AVBD rows for rigid-body joints |
+
+## AVBD Rigid Constraints (sx)
+
+The dedicated **`AVBD Rigid Constraints (sx)`** category groups the first
+user-visible Augmented VBD rigid-constraint scenes from PLAN-104:
+
+| Scene id                         | Shows                                                | AVBD capability exercised                     |
+| -------------------------------- | ---------------------------------------------------- | --------------------------------------------- |
+| `avbd_rigid_fixed_joint_contact` | A fixed rigid payload sliding against static contact | Public fixed-joint rows plus ordinary contact |
+
+This is an early AVBD rigid-row showcase, not a paper-complete reproduction.
+The remaining AVBD corpus still needs the full 2D/3D reference demos, paper
+figures, video/headline scenes, CPU/GPU benchmark packets, and performance
+comparisons recorded in PLAN-104.
+
 ## Planned World Ports
 
 The **`Planned World Ports`** category keeps important DART 6 demo concepts

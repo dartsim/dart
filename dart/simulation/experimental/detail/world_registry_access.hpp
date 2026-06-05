@@ -34,9 +34,8 @@
 
 #include <dart/simulation/experimental/fwd.hpp>
 
+#include <dart/simulation/experimental/detail/world_registry_types.hpp>
 #include <dart/simulation/experimental/export.hpp>
-
-#include <entt/entt.hpp>
 
 namespace dart::simulation::experimental::detail {
 
@@ -48,10 +47,10 @@ namespace dart::simulation::experimental::detail {
 /// promoted public surface and lives in `detail/`. It is built on the
 /// `friend` `storageOf` accessor, so it reaches the privately-held storage
 /// without widening the public API.
-[[nodiscard]] DART_EXPERIMENTAL_API entt::registry& registryOf(World& world);
+[[nodiscard]] DART_EXPERIMENTAL_API WorldRegistry& registryOf(World& world);
 
 /// See the non-const overload.
-[[nodiscard]] DART_EXPERIMENTAL_API const entt::registry& registryOf(
+[[nodiscard]] DART_EXPERIMENTAL_API const WorldRegistry& registryOf(
     const World& world);
 
 } // namespace dart::simulation::experimental::detail

@@ -88,6 +88,13 @@ public:
   [[nodiscard]] FreeListAllocator& getFreeListAllocator();
   [[nodiscard]] const FreeListAllocator& getFreeListAllocator() const;
 
+  /// Returns the active free allocator as a MemoryAllocator.
+  ///
+  /// In debug builds this is the debug wrapper used by allocate(Type::Free),
+  /// while getFreeListAllocator() returns the wrapped implementation.
+  [[nodiscard]] MemoryAllocator& getFreeAllocator();
+  [[nodiscard]] const MemoryAllocator& getFreeAllocator() const;
+
   /// Returns the pool allocator
   [[nodiscard]] PoolAllocator& getPoolAllocator();
   [[nodiscard]] const PoolAllocator& getPoolAllocator() const;

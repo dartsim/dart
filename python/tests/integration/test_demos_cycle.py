@@ -531,6 +531,12 @@ def test_world_scenes_use_solver_focused_categories() -> None:
             "contact",
             "rigid_body",
         },
+        "Experimental Rigid Body (sx)": {
+            "sx_rigid_limited_joints",
+        },
+        "AVBD Rigid Constraints (sx)": {
+            "avbd_rigid_fixed_joint_contact",
+        },
         "Planned World Ports": {
             "planned_inverse_kinematics",
             "planned_simbicon_walking",
@@ -575,7 +581,45 @@ def test_world_scenes_use_solver_focused_categories() -> None:
             assert by_id[scene_id].category == category
 
     assert not any(scene.category == "Experimental" for scene in scenes)
-    assert not any(scene.id.startswith("sx_") for scene in scenes)
+
+
+def test_avbd_fixed_joint_contact_demo_exercises_contact_path() -> None:
+    import numpy as np
+
+    _require_simulation_experimental_symbols("World")
+
+    from examples.demos.scenes.avbd_rigid_fixed_joint_contact import build
+
+    setup = build()
+    sx_world = setup.info["sx_world"]
+    base = setup.info["base"]
+    payload = setup.info["payload"]
+    connector = setup.info["connector"]
+
+    assert sx_world.num_rigid_body_fixed_joints == 1
+    assert len(sx_world.collide()) > 0
+    assert not base.is_static
+
+    initial_base = np.asarray(base.translation, dtype=float).reshape(3)
+    initial_payload = np.asarray(payload.translation, dtype=float).reshape(3)
+
+    for _ in range(20):
+        assert setup.pre_step is not None
+        setup.pre_step()
+        setup.world.step()
+
+    assert len(sx_world.collide()) > 0
+    base_translation = np.asarray(base.translation, dtype=float).reshape(3)
+    payload_translation = np.asarray(payload.translation, dtype=float).reshape(3)
+    offset = payload_translation - base_translation
+    expected_offset = np.array([0.72, 0.0, -0.34])
+    assert np.linalg.norm(offset - expected_offset) < 2.0e-2
+    connector_transform = np.asarray(connector.get_transform().matrix())
+    assert connector_transform[:3, 0] == pytest.approx(
+        offset / np.linalg.norm(offset), abs=1.0e-6
+    )
+    assert np.linalg.norm(base_translation - initial_base) > 1.0e-3
+    assert np.linalg.norm(payload_translation - initial_payload) > 1.0e-3
 
 
 def test_runner_screenshot_writes_ppm(tmp_path: pathlib.Path) -> None:

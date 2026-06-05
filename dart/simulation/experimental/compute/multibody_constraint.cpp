@@ -88,7 +88,7 @@ void applyPositionLimits(
 
 //==============================================================================
 void integrateMultibodyPositions(
-    entt::registry& registry,
+    detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     const Eigen::VectorXd& nextVelocity,
     double timeStep)

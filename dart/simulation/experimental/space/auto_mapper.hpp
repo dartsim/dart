@@ -222,7 +222,8 @@ constexpr size_t getFieldDimension()
 /// Automatically generated mapper for PropertyComponents
 /// Uses Boost.PFR to extract all fields to/from vectors
 template <comps::IsPropertyComponent Component>
-class AutoPropertyMapper : public ComponentMapper
+class AutoPropertyMapper : public ComponentMapper,
+                           public WorldRegistryComponentMapper
 {
 public:
   size_t toVector(
@@ -230,7 +231,49 @@ public:
       std::vector<double>& vec,
       size_t offset) const override
   {
-    auto view = registry.view<Component>();
+    return toVectorImpl(registry, vec, offset);
+  }
+
+  size_t toVector(
+      const ::dart::simulation::experimental::detail::WorldRegistry& registry,
+      std::vector<double>& vec,
+      size_t offset) const override
+  {
+    return toVectorImpl(registry, vec, offset);
+  }
+
+  size_t fromVector(
+      entt::registry& registry,
+      std::span<const double> vec,
+      size_t offset) override
+  {
+    return fromVectorImpl(registry, vec, offset);
+  }
+
+  size_t fromVector(
+      ::dart::simulation::experimental::detail::WorldRegistry& registry,
+      std::span<const double> vec,
+      size_t offset) override
+  {
+    return fromVectorImpl(registry, vec, offset);
+  }
+
+  [[nodiscard]] size_t getDimension() const override
+  {
+    // Compute dimension from component structure
+    size_t total = 0;
+    boost::pfr::for_each_field(Component{}, [&](const auto& field) {
+      total += getFieldDimension<decltype(field)>();
+    });
+    return total;
+  }
+
+private:
+  template <typename Registry>
+  size_t toVectorImpl(
+      const Registry& registry, std::vector<double>& vec, size_t offset) const
+  {
+    auto view = registry.template view<Component>();
     size_t totalCount = 0;
 
     for (auto entity : view) {
@@ -245,12 +288,11 @@ public:
     return totalCount;
   }
 
-  size_t fromVector(
-      entt::registry& registry,
-      std::span<const double> vec,
-      size_t offset) override
+  template <typename Registry>
+  size_t fromVectorImpl(
+      Registry& registry, std::span<const double> vec, size_t offset)
   {
-    auto view = registry.view<Component>();
+    auto view = registry.template view<Component>();
     size_t totalCount = 0;
 
     for (auto entity : view) {
@@ -263,16 +305,6 @@ public:
     }
 
     return totalCount;
-  }
-
-  [[nodiscard]] size_t getDimension() const override
-  {
-    // Compute dimension from component structure
-    size_t total = 0;
-    boost::pfr::for_each_field(Component{}, [&](const auto& field) {
-      total += getFieldDimension<decltype(field)>();
-    });
-    return total;
   }
 };
 
