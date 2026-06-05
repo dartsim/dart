@@ -278,6 +278,26 @@ TEST(Profiler, FormatsAndReportGeneration)
   EXPECT_NE(output.find("Avg FPS:"), std::string::npos);
 }
 
+TEST(Profiler, SummaryTextMatchesPrintSummary)
+{
+  auto& profiler = common::profile::Profiler::instance();
+  profiler.reset();
+
+  ScopedEnvVar env("DART_PROFILE_COLOR", "0");
+
+  {
+    common::profile::ProfileScope scope("SummaryTextScope", __FILE__, __LINE__);
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+  }
+
+  std::ostringstream oss;
+  profiler.printSummary(oss);
+
+  const std::string summary = profiler.toSummaryText();
+  EXPECT_EQ(summary, oss.str());
+  EXPECT_NE(summary.find("SummaryTextScope"), std::string::npos);
+}
+
 TEST(Profiler, SummaryMultipleThreads)
 {
   auto& profiler = common::profile::Profiler::instance();

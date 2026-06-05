@@ -546,6 +546,13 @@ void Profiler::printSummary(std::ostream& os)
   os << std::flush;
 }
 
+std::string Profiler::toSummaryText()
+{
+  std::ostringstream os;
+  printSummary(os);
+  return os.str();
+}
+
 void Profiler::reset()
 {
   std::lock_guard<std::mutex> lock(m_threadRegistryMutex);

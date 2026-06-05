@@ -37,6 +37,8 @@
 #include "dart/simulation/experimental/compute/compute_node.hpp"
 
 #include <algorithm>
+#include <iomanip>
+#include <sstream>
 #include <utility>
 
 namespace dart::simulation::experimental::compute {
@@ -44,6 +46,12 @@ namespace dart::simulation::experimental::compute {
 namespace {
 
 using Duration = ComputeExecutionProfile::Duration;
+
+//==============================================================================
+double toMilliseconds(Duration duration)
+{
+  return std::chrono::duration<double, std::milli>(duration).count();
+}
 
 //==============================================================================
 std::vector<std::size_t> computeNodeLevels(
@@ -137,6 +145,53 @@ const ComputeNodeExecutionProfile* ComputeExecutionProfile::getNode(
   }
 
   return &*it;
+}
+
+//==============================================================================
+std::string ComputeExecutionProfile::toSummaryText() const
+{
+  if (nodes.empty()) {
+    return "No compute execution profile captured.\n";
+  }
+
+  const double wallMs = toMilliseconds(wallTime);
+  const auto sharePercent = [wallMs](double ms) {
+    return wallMs > 0.0 ? 100.0 * ms / wallMs : 0.0;
+  };
+
+  std::vector<const ComputeNodeExecutionProfile*> ordered;
+  ordered.reserve(nodes.size());
+  for (const auto& node : nodes) {
+    ordered.push_back(&node);
+  }
+  std::ranges::sort(ordered, [](const auto* lhs, const auto* rhs) {
+    return lhs->duration > rhs->duration;
+  });
+
+  std::ostringstream out;
+  out << "=== Compute Execution Profile ===\n";
+  out << "workers=" << workerCount << "  wall=" << std::fixed
+      << std::setprecision(3) << wallMs << " ms"
+      << "  total_node=" << toMilliseconds(totalNodeTime) << " ms"
+      << "  critical_path=" << toMilliseconds(criticalPathTime) << " ms\n";
+  out << "max_parallelism=" << maxParallelism
+      << "  average_parallelism=" << std::fixed << std::setprecision(2)
+      << getAverageParallelism() << '\n';
+  out << '\n';
+  out << std::left << std::setw(34) << "Node" << std::right << std::setw(8)
+      << "Worker" << std::setw(8) << "Level" << std::setw(8) << "Deps"
+      << std::setw(14) << "Time (ms)" << std::setw(10) << "% wall" << '\n';
+  out << std::string(82, '-') << '\n';
+  for (const auto* node : ordered) {
+    const double ms = toMilliseconds(node->duration);
+    out << std::left << std::setw(34) << node->name << std::right
+        << std::setw(8) << node->workerIndex << std::setw(8) << node->level
+        << std::setw(8) << node->dependencyCount << std::setw(14) << std::fixed
+        << std::setprecision(3) << ms << std::setw(9) << std::fixed
+        << std::setprecision(1) << sharePercent(ms) << '%' << '\n';
+  }
+
+  return out.str();
 }
 
 //==============================================================================
