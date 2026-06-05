@@ -59,6 +59,8 @@ __all__: list[str] = [
     "WorldEcsDiagnostics",
     "WorldEcsStorageDiagnostics",
     "WorldMemoryDiagnostics",
+    "WorldStepProfile",
+    "WorldStepStageProfile",
     "WorldSyncStage",
     "add_skeleton",
     "add_world",
@@ -506,6 +508,17 @@ class Joint:
 
     @property
     def effort_upper_limits(self) -> Annotated[NDArray[numpy.float64], dict(shape=(None,), order='C')]: ...
+
+    @property
+    def break_force(self) -> float: ...
+
+    @break_force.setter
+    def break_force(self, arg: float, /) -> None: ...
+
+    @property
+    def is_broken(self) -> bool: ...
+
+    def reset_breakage(self) -> None: ...
 
     @property
     def parent_link(self) -> Link: ...
@@ -1125,6 +1138,45 @@ class DeformableSolverDiagnostics:
 
     @property
     def converged_active_contact_count(self) -> int: ...
+
+class WorldStepStageProfile:
+    @property
+    def name(self) -> str: ...
+
+    @property
+    def domain(self) -> str: ...
+
+    @property
+    def duration_us(self) -> int: ...
+
+    @property
+    def duration_ms(self) -> float: ...
+
+class WorldStepProfile:
+    @property
+    def step_count(self) -> int: ...
+
+    @property
+    def stages(self) -> list[WorldStepStageProfile]: ...
+
+    @property
+    def wall_time_us(self) -> int: ...
+
+    @property
+    def wall_time_ms(self) -> float: ...
+
+    @property
+    def total_stage_time_us(self) -> int: ...
+
+    def is_empty(self) -> bool: ...
+
+    def get_stage(self, name: str) -> WorldStepStageProfile | None: ...
+
+    def summary(self) -> str: ...
+
+    def __repr__(self) -> str: ...
+
+    def __str__(self) -> str: ...
 
 class AllocatorDebugDiagnostics:
     @property
@@ -1874,6 +1926,15 @@ class World:
 
     @property
     def memory_diagnostics(self) -> WorldMemoryDiagnostics: ...
+
+    @property
+    def step_profiling_enabled(self) -> bool: ...
+
+    @step_profiling_enabled.setter
+    def step_profiling_enabled(self, arg: bool, /) -> None: ...
+
+    @property
+    def last_step_profile(self) -> WorldStepProfile: ...
 
     @property
     def time_step(self) -> float: ...
