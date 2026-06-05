@@ -149,10 +149,16 @@ void myHotFunction() {
 
 // somewhere after running:
 DART_PROFILE_TEXT_DUMP();   // prints the aggregated per-scope summary
+
+const std::string summary = DART_PROFILE_TEXT_SUMMARY();
+// In no-profile or no-text-backend builds, summary is empty.
 ```
 
 `DART_PROFILE_TRACY=ON` additionally streams to the Tracy GUI for local
 developer profiling; the text backend stays the portable, agent-friendly path.
+For library code that already has access to the text backend, use
+`dart::common::profile::Profiler::instance().toSummaryText()` to retrieve the
+same text without printing to `std::cout`.
 
 ## Where this is implemented
 

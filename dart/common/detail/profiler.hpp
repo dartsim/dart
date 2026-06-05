@@ -67,6 +67,9 @@ public:
   /// tree).
   void printSummary(std::ostream& os = std::cout);
 
+  /// Return the same summary text produced by printSummary().
+  [[nodiscard]] std::string toSummaryText();
+
   /// Clear collected statistics while keeping thread registrations intact.
   void reset();
 

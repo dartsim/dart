@@ -176,6 +176,7 @@ set(
   common/test_memory_manager.cpp
   common/test_name_manager.cpp
   common/test_pool_allocator.cpp
+  common/test_profile.cpp
   common/test_profiler.cpp
   common/test_resource.cpp
   common/test_resource_retriever.cpp
@@ -191,10 +192,6 @@ set(
   common/test_uri.cpp
   common/test_version_counter.cpp
 )
-
-if(DART_BUILD_PROFILE AND DART_PROFILE_ENABLE_TEXT)
-  list(APPEND common_unit_sources common/test_profile.cpp)
-endif()
 
 dart_build_tests(
   TYPE unit
