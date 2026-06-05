@@ -91,9 +91,12 @@ payload. The current follow-up adds private angular-motor rows and rigid
 fracture dual-threshold/reset helpers in the 6-DOF row kernel, then wires
 public rigid-body revolute velocity actuators into those bounded AVBD motor
 rows with persistent contact-stage motor inventory, focused C++ coverage, and
-the categorized `avbd_rigid_revolute_motor` py-demo. This is still a narrow
+the categorized `avbd_rigid_revolute_motor` py-demo. The AVBD dashboard
+benchmark target also has a first end-to-end public-World
+`BM_AvbdRigidRevoluteMotorStep` row for that motor path. This is still a narrow
 free-rigid-body path only: no public fracture lifecycle, articulated multibody
-state path, GPU path, paper-corpus demo, or benchmark packet is complete.
+state path, GPU path, paper-corpus demo, broad motor lifecycle coverage, or
+paper/reference benchmark packet is complete.
 
 ## Current Branch
 
@@ -141,7 +144,8 @@ current local follow-up adds private angular-motor row construction, bounded
 motor descriptors, solver-direction coverage, rigid fracture
 dual-threshold/reset helpers, public rigid-body revolute velocity actuator
 extraction into AVBD motor rows, persistent motor inventory in the contact
-stage, and the `avbd_rigid_revolute_motor` py-demo.
+stage, the `avbd_rigid_revolute_motor` py-demo, and the AVBD dashboard
+`BM_AvbdRigidRevoluteMotorStep` benchmark row.
 
 ## Immediate Next Step
 

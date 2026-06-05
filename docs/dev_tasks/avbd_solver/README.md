@@ -218,19 +218,25 @@ Paper audit:
     now extract to those private AVBD motor rows, the contact-stage AVBD
     velocity projection keeps a persistent motor row inventory, and the
     categorized `avbd_rigid_revolute_motor` py-demo shows the public actuator
-    path alongside the existing fixed-joint/contact showcase.
+    path alongside the existing fixed-joint/contact showcase. The performance
+    dashboard's AVBD World slice now also records an end-to-end
+    `BM_AvbdRigidRevoluteMotorStep` row for the same public revolute velocity
+    actuator path.
     Articulated multibody joint extraction is still not wired.
     Unsupported envelopes still fall back to sequential impulses. This is not
     full narrow-phase feature extraction, not full rigid contact/joint rows, not
-    public fracture lifecycle support, not broad motor lifecycle/benchmark
-    coverage, and not articulated joint support yet.
+    public fracture lifecycle support, not broad motor lifecycle or
+    paper/reference benchmark-packet coverage, and not articulated joint support
+    yet.
 - [ ] Phase A4: contact/friction bounds, static/dynamic friction switching, and
       quasi-Newton Hessian approximation.
 - [ ] Phase A5: joints, motors, fracture, and breakable constraints.
   - First private angular-motor row and fracture threshold/reset helper slice
-    started in the rigid 6-DOF kernel. Public World wiring, py-demos,
-    benchmarks, GPU parity, and breakable constraint lifecycle are still
-    missing.
+    started in the rigid 6-DOF kernel. Public free-rigid-body revolute velocity
+    motors now have narrow World wiring, a categorized py-demo, and one
+    end-to-end AVBD World benchmark row; broad motor lifecycle coverage, public
+    fracture/breakable constraints, articulated wiring, GPU parity, and
+    reference/paper benchmark packets are still missing.
 - [ ] Phase A6: unified soft/rigid AVBD coupling.
 - [ ] Phase G: GPU parity for all row families, candidate generation, and
       benchmark scenes.
