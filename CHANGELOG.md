@@ -884,6 +884,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Reused baked semi-implicit multibody dynamics/contact scratch and persistent
     staged velocity buffers, extending the baked global-heap guard to
     articulated link resting-contact steps.
+  - Added a default sequential shortcut for cross-multibody articulated link
+    contact impulses, keeping repeated baked cross-link contact steps off the
+    global heap for isolated same-DOF pairs while leaving mixed, stacked,
+    coupled multi-row, and boxed-LCP unified solve paths on the fallback.
   - Fixed the experimental World's sequential articulated-contact shortcut to
     preflight zero-DOF multibody contacts before applying shortcut impulses, so
     mixed zero-DOF and solvable link-contact scenes fall back to the unified
