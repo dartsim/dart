@@ -1062,9 +1062,30 @@ TEST(FilamentSceneExtraction, DemosWorkspaceUsesDockedNavigationAndControls)
   EXPECT_NE(applicationSource.find("categoryHasActive"), std::string::npos);
   EXPECT_NE(
       applicationSource.find("toggleFrameOutputCapture"), std::string::npos);
+  EXPECT_NE(applicationSource.find("\"Rebuild\""), std::string::npos);
+  EXPECT_NE(applicationSource.find("\"Restart\""), std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("\"Capture##record_frames\""), std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("\"Stop Capture##record_frames\""),
+      std::string::npos);
   EXPECT_NE(
       applicationSource.find(
           "recordedFramePaths(lifecycle->frameOutputDirectory)"),
+      std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("recordedFrameTimelineSampleCount"),
+      std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("makeRecordedFrameMarkerTrack"),
+      std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("makeRecordedFrameCursorTrack"),
+      std::string::npos);
+  EXPECT_NE(
+      applicationSource.find(
+          "builder.timeline(\n"
+          "                \"Captured frame##recorded_frame_timeline\""),
       std::string::npos);
   EXPECT_NE(
       applicationSource.find(
@@ -1130,7 +1151,32 @@ TEST(FilamentSceneExtraction, DemosWorkspaceUsesDockedNavigationAndControls)
           "scenePanel.dockSide = dart::gui::DockSide::Right"),
       std::string::npos);
   EXPECT_NE(
-      uiFrameSource.find("center, ImGuiDir_Down, 0.12f"), std::string::npos);
+      uiFrameSource.find("bottomFraction = std::clamp(bottomFraction"),
+      std::string::npos);
+  EXPECT_NE(
+      uiFrameSource.find("bool useApplicationBottom = false"),
+      std::string::npos);
+  EXPECT_NE(
+      uiFrameSource.find("useApplicationBottom = true"), std::string::npos);
+  EXPECT_NE(
+      uiFrameSource.find("panel.initialSize.has_value()"), std::string::npos);
+  EXPECT_NE(
+      uiFrameSource.find("center, ImGuiDir_Down, bottomFraction"),
+      std::string::npos);
+  EXPECT_NE(
+      uiFrameSource.find("initialFocusPanelsForDefaultDockLayout"),
+      std::string::npos);
+  EXPECT_NE(uiFrameSource.find("selectInitialDockedPanels"), std::string::npos);
+  EXPECT_NE(
+      uiFrameSource.find("window->DockNode->SelectedTabId = window->TabId"),
+      std::string::npos);
+  EXPECT_NE(
+      uiFrameSource.find(
+          "window->DockNode->TabBar->NextSelectedTabId = window->TabId"),
+      std::string::npos);
+  EXPECT_NE(
+      uiFrameSource.find("!useApplicationBottom && bottom != 0"),
+      std::string::npos);
   EXPECT_NE(
       uiFrameSource.find("center, ImGuiDir_Left, 0.24f"), std::string::npos);
   EXPECT_NE(
@@ -1595,6 +1641,7 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
   bool headlights = false;
   bool aboutOpen = false;
   Eigen::Vector4d tint = Eigen::Vector4d::Ones();
+  double replayFrame = 0.0;
   dart::gui::RenderSettings renderSettings;
   renderSettings.shadowsEnabled = false;
   dart::gui::Panel panel;
@@ -1640,6 +1687,17 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
     builder.select("Mode", selectedMode, modes);
     constexpr std::array<double, 3> trend{0.0, 1.0, 0.5};
     builder.plotLines("Trend", trend);
+    constexpr std::array<double, 3> marks{1.0, 0.0, 1.0};
+    constexpr std::array<double, 3> cursor{0.0, 1.0, 0.0};
+    builder.timeline(
+        "Playback",
+        replayFrame,
+        0.0,
+        2.0,
+        trend,
+        marks,
+        cursor,
+        "Replay trend");
     constexpr std::array<std::string_view, 2> columns{"Name", "Value"};
     if (builder.beginTable("Stats", columns)) {
       builder.tableNextRow();
@@ -1707,6 +1765,7 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
   EXPECT_EQ(clicks, 2);
   EXPECT_TRUE(diagnostics);
   EXPECT_DOUBLE_EQ(gain, 1.0);
+  EXPECT_DOUBLE_EQ(replayFrame, 1.0);
   EXPECT_EQ(selectedLabel, "box");
   EXPECT_FALSE(aboutOpen);
   ASSERT_TRUE(context.selectedPoint.has_value());
@@ -1761,6 +1820,10 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
           "color:Tint",
           "color-swatch:Tint swatch",
           "plot-lines:Trend:3",
+          "slider:Playback",
+          "plot-lines:Replay trend##Playback:3",
+          "plot-lines:Marks##Playback:3",
+          "plot-lines:Cursor##Playback:3",
           "begin-table:Stats:2",
           "table-column:Name",
           "table-column:Value",
