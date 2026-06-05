@@ -33,6 +33,8 @@
 #include <dart/common/logging.hpp>
 #include <dart/common/stl_allocator.hpp>
 
+#include <cstddef>
+
 namespace dart::common {
 
 //==============================================================================
@@ -66,8 +68,10 @@ typename StlAllocator<T>::pointer StlAllocator<T>::allocate(
     size_type n, const void* hint)
 {
   (void)hint;
-  pointer ptr = reinterpret_cast<pointer>(
-      mBaseAllocator->allocate(n * sizeof(T), alignof(T)));
+  void* memory = nullptr;
+  const size_type bytes = n * sizeof(T);
+  memory = mBaseAllocator->allocate(bytes, alignof(T));
+  pointer ptr = reinterpret_cast<pointer>(memory);
 
   // Throw std::bad_alloc to comply 23.10.9.1
   // Reference: https://stackoverflow.com/a/50326956/3122234
@@ -82,7 +86,8 @@ typename StlAllocator<T>::pointer StlAllocator<T>::allocate(
 template <typename T>
 void StlAllocator<T>::deallocate(pointer pointer, size_type n) noexcept
 {
-  mBaseAllocator->deallocate(pointer, n * sizeof(T), alignof(T));
+  const size_type bytes = n * sizeof(T);
+  mBaseAllocator->deallocate(pointer, bytes, alignof(T));
 }
 
 //==============================================================================

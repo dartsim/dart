@@ -40,7 +40,7 @@ namespace dart::simulation::experimental::compute {
 //==============================================================================
 void SequentialExecutor::execute(const ComputeGraph& graph)
 {
-  for (auto* node : graph.getTopologicalOrder()) {
+  for (auto* node : graph.getTopologicalOrderView()) {
     node->execute();
   }
 }
@@ -51,7 +51,7 @@ ComputeExecutionProfile SequentialExecutor::executeProfiled(
 {
   ComputeExecutionProfiler profiler(graph, getWorkerCount());
   profiler.start();
-  for (auto* node : graph.getTopologicalOrder()) {
+  for (auto* node : graph.getTopologicalOrderView()) {
     profiler.executeNode(*node);
   }
   return profiler.finish();

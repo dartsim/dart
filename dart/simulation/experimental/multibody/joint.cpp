@@ -548,6 +548,36 @@ Eigen::VectorXd Joint::getEffortUpperLimits() const
 }
 
 //==============================================================================
+void Joint::setBreakForce(double breakForce)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !std::isfinite(breakForce) || breakForce < 0.0,
+      InvalidArgumentException,
+      "Joint '{}' break force must be finite and non-negative",
+      getName());
+
+  getJointComponent(m_world, m_entity).breakForce = breakForce;
+}
+
+//==============================================================================
+double Joint::getBreakForce() const
+{
+  return getJointComponent(m_world, m_entity).breakForce;
+}
+
+//==============================================================================
+bool Joint::isBroken() const
+{
+  return getJointComponent(m_world, m_entity).broken;
+}
+
+//==============================================================================
+void Joint::resetBreakage()
+{
+  getJointComponent(m_world, m_entity).broken = false;
+}
+
+//==============================================================================
 Link Joint::getParentLink() const
 {
   const auto& jointComp = getJointComponent(m_world, m_entity);

@@ -99,6 +99,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     facades with C++ and dartpy bindings, generated stubs, tests, and a
     `sx_rigid_limited_joints` py-demo so users can exercise the narrow AVBD
     one-DOF rigid-joint path without touching ECS internals.
+  - Added public experimental joint break-force and broken-state accessors,
+    wired free rigid-body AVBD point joints to mark and skip broken joints, and
+    added an `avbd_rigid_breakable_joint` py-demo for the narrow breakable-joint
+    lifecycle.
   - Made `dart::gui` UI scaling DPI-aware: `--gui-scale` now acts as a manual
     user multiplier on top of GLFW content-scale detection, `DART_GUI_DPI_SCALE`
     can override misreported DPI, implicit interactive app windows now use a
@@ -121,6 +125,32 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Added `pixi run bm-allocator-comparative-check`, a strict allocator
     benchmark gate that compares DART allocator workloads against
     foonathan/memory and `std::pmr` baselines.
+  - Extended the comparative allocator benchmarks with opt-in allocator-aware
+    EnTT registry/component storage churn against foonathan/memory and
+    standard-registry baselines, and added a CV/noise guard so strict allocator
+    comparisons do not treat noisy benchmark rows as evidence. Added a focused
+    EnTT-registry-only checker mode for allocator-policy optimization loops,
+    benchmark counters that fail the DART EnTT row if reserved churn calls the
+    configured allocator after prewarm, and separate EnTT build/growth rows for
+    bake-time registry storage allocation. Added `FrameStlAllocator` no-growth
+    EnTT coverage for world-lifetime arena policy exploration, while keeping
+    EnTT registry benchmark rows disabled when the benchmark target is
+    configured without an existing EnTT target. The EnTT registry benchmark rows
+    now discover installed EnTT package metadata without invoking DART's
+    FetchContent-backed dependency helper. The EnTT rows now benchmark cached
+    component storage handles, use frame-backed DART storage for persistent
+    no-growth registry churn, and use pool-backed DART storage for build/growth
+    churn. The no-growth row reports frame usage and overflow counters and
+    fails if reserved churn grows after prewarm. The build/growth row times the
+    uninstrumented pool-backed registry path and reports configured-allocator
+    call counters from a matching untimed probe. The focused checker now
+    distinguishes timing loss, allocator-call regressions, frame growth, and
+    noisy benchmark evidence.
+  - Optimized the frame allocator reset/accounting fast path and normal-aligned
+    `FrameStlAllocator` allocations while preserving over-aligned STL storage.
+  - Kept `StlAllocator` allocation and deallocation alignment-aware for
+    allocator-backed STL storage, including fixed-pool-backed max-aligned
+    values.
   - Added a fixed-capacity growth policy to `FreeListAllocator` so
     preallocated free-list arenas can fail deterministically instead of growing
     from the base allocator after bake/build, and exposed construction-time
@@ -804,6 +834,22 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     for profiler/debugger tooling without exposing EnTT types in the public
     header, and dartpy exposes the same read-only snapshot through
     `World.memory_diagnostics`.
+  - Added opt-in per-stage step profiling to the experimental `World`, a
+    non-GUI text-first performance surface for tools and AI agents:
+    `World::setStepProfilingEnabled()` records each pipeline stage's wall-clock
+    time, and `World::getLastStepProfile()` returns a `compute::WorldStepProfile`
+    (per-stage name, domain, and duration plus total wall time) with a
+    `toSummaryText()` breakdown. Exposed to dartpy as
+    `world.step_profiling_enabled`, `world.last_step_profile`, and
+    `WorldStepProfile.summary()`. Requires `DART_BUILD_PROFILE=ON`; when the
+    profiling build option is off, the runtime toggle is a no-op and the step
+    path compiles without profile cache fields, profile branches, or clock
+    reads.
+    Removed the unused, never-built `dart::simulation::experimental::common`
+    `ScopedTimer`/`Stopwatch`/`ProfileStats` profiler (its
+    `DART_EXPERIMENTAL_ENABLE_PROFILING` macros were wired into no build and
+    duplicated `dart::common::profile`) so the World step profile is the single
+    experimental profiling surface.
   - Routed the experimental World's internal EnTT registry, component storage,
     and differentiable-parameter list through the World free allocator, with
     state mapper support for World-owned registries and free-list alignment
@@ -819,6 +865,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     inline with an eight-stage capacity, eliminating stage-list heap allocation
     during default step pipeline assembly and rejecting overflow with
     `InvalidArgumentException`.
+  - Pre-baked the experimental World's default step stage bundle, kinematics
+    graph traversal, and rigid IPC kinematic scratch at `enterSimulationMode()`,
+    eliminating global heap allocation for repeated baked kinematic IPC steps
+    and covering it with a regression test.
   - Made experimental rigid-body external force/torque components persistent
     applied loads: each step reads them into the transient force buffer and
     leaves the components intact for callers to clear or update explicitly.

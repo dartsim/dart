@@ -661,6 +661,42 @@ TEST(AvbdContact, PublicRigidBodyFixedJointSurvivesSaveLoad)
 }
 
 //==============================================================================
+TEST(AvbdContact, PublicRigidBodyJointBreakStateSurvivesSaveLoad)
+{
+  sx::World world;
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world.addRigidBody("base", baseOptions);
+
+  sx::RigidBodyOptions linkOptions;
+  linkOptions.position = Eigen::Vector3d::UnitX();
+  auto link = world.addRigidBody("link", linkOptions);
+
+  auto joint = world.addRigidBodyFixedJoint("base_to_link", base, link);
+  joint.setBreakForce(7.5);
+
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
+  registry
+      .get<sx::comps::Joint>(sx::detail::toRegistryEntity(joint.getEntity()))
+      .broken = true;
+
+  std::stringstream data;
+  world.saveBinary(data);
+
+  sx::World restored;
+  restored.loadBinary(data);
+
+  auto restoredJoint = restored.getRigidBodyFixedJoint("base_to_link");
+  ASSERT_TRUE(restoredJoint.has_value());
+  EXPECT_DOUBLE_EQ(restoredJoint->getBreakForce(), 7.5);
+  EXPECT_TRUE(restoredJoint->isBroken());
+
+  restoredJoint->resetBreakage();
+  EXPECT_FALSE(restoredJoint->isBroken());
+}
+
+//==============================================================================
 // Saving after simulation mode should also preserve the public fixed joint. A
 // loaded simulation-mode world cannot re-enter simulation mode, so loadBinary()
 // must rebuild the private AVBD row config directly.

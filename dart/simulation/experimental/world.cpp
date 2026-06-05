@@ -68,6 +68,8 @@
 #include "dart/simulation/experimental/multibody/multibody.hpp"
 #include "dart/simulation/experimental/world_options.hpp"
 
+#include <dart/config.hpp>
+
 #ifdef DART_HAS_DIFF
   #include "dart/simulation/experimental/detail/contact_jacobians.hpp"
   #include "dart/simulation/experimental/detail/smooth_jacobians.hpp"
@@ -93,7 +95,36 @@
 #include <cmath>
 #include <cstdint>
 
+#if DART_BUILD_PROFILE
+  #include <chrono>
+#endif
+
 namespace {
+
+#if DART_BUILD_PROFILE
+using StepProfileClock = std::chrono::steady_clock;
+
+struct StepProfileTimer
+{
+  explicit StepProfileTimer(bool enabled_) : enabled(enabled_)
+  {
+    if (enabled) {
+      start = StepProfileClock::now();
+    }
+  }
+
+  void finish(
+      dart::simulation::experimental::compute::WorldStepProfile& profile) const
+  {
+    if (enabled) {
+      profile.wallTime = StepProfileClock::now() - start;
+    }
+  }
+
+  bool enabled = false;
+  StepProfileClock::time_point start{};
+};
+#endif
 
 template <typename... Components>
 std::size_t countEntities(const auto& registry)
@@ -187,6 +218,7 @@ struct World::ReplayState
     Eigen::VectorXd restPosition;
     Eigen::VectorXd armature;
     Eigen::VectorXd coulombFriction;
+    double breakForce = 0.0;
     comps::JointLimits limits;
     Eigen::Vector3d axis = Eigen::Vector3d::UnitZ();
     Eigen::Vector3d axis2 = Eigen::Vector3d::UnitX();
@@ -211,6 +243,7 @@ struct World::ReplayState
     Eigen::VectorXd acceleration;
     Eigen::VectorXd torque;
     Eigen::VectorXd commandVelocity;
+    bool broken = false;
   };
 
   struct LinkState
@@ -333,6 +366,7 @@ bool sameReplayJointLayout(const comps::Joint& joint, const JointLayout& layout)
          && sameReplayVector(joint.restPosition, layout.restPosition)
          && sameReplayVector(joint.armature, layout.armature)
          && sameReplayVector(joint.coulombFriction, layout.coulombFriction)
+         && joint.breakForce == layout.breakForce
          && sameReplayJointLimits(joint.limits, layout.limits)
          && joint.axis.isApprox(layout.axis, 0.0)
          && joint.axis2.isApprox(layout.axis2, 0.0)
@@ -1056,6 +1090,7 @@ struct WorldStepPipelineStages
       bool variationalSelected,
       bool useUnifiedConstraints)
   {
+    pipeline.clear();
     DART_EXPERIMENTAL_THROW_T_IF(
         !isValidRigidBodySolver(rigidBodySolver),
         InvalidArgumentException,
@@ -1072,7 +1107,7 @@ struct WorldStepPipelineStages
         }
         break;
       case RigidBodySolver::Ipc:
-        appendIpcDynamicsStages(variationalSelected);
+        appendIpcDynamicsStages(variationalSelected, useUnifiedConstraints);
         break;
     }
     pipeline.addStage(kinematics);
@@ -1085,6 +1120,7 @@ struct WorldStepPipelineStages
       bool useUnifiedConstraints,
       compute::WorldStepStage& finalStage)
   {
+    pipeline.clear();
     DART_EXPERIMENTAL_THROW_T_IF(
         !isValidRigidBodySolver(rigidBodySolver),
         InvalidArgumentException,
@@ -1101,11 +1137,29 @@ struct WorldStepPipelineStages
         }
         break;
       case RigidBodySolver::Ipc:
-        appendIpcDynamicsStages(variationalSelected);
+        appendIpcDynamicsStages(variationalSelected, useUnifiedConstraints);
         break;
     }
     pipeline.addStage(finalStage);
     return pipeline;
+  }
+
+  void prepare(World& world, RigidBodySolver rigidBodySolver)
+  {
+    prepareRigidIpcContact(world, rigidBodySolver);
+    kinematics.prepare(world);
+  }
+
+  void prepareRigidIpcContact(World& world, RigidBodySolver rigidBodySolver)
+  {
+    DART_EXPERIMENTAL_THROW_T_IF(
+        !isValidRigidBodySolver(rigidBodySolver),
+        InvalidArgumentException,
+        "Rigid-body solver is invalid");
+
+    if (rigidBodySolver == RigidBodySolver::Ipc) {
+      rigidIpcContact.prepare(world);
+    }
   }
 
 private:
@@ -1121,15 +1175,18 @@ private:
         .addStage(rigidBodyPosition);
   }
 
-  void appendIpcDynamicsStages(bool variationalSelected)
+  void appendIpcDynamicsStages(
+      bool variationalSelected, bool includeMultibodyStage)
   {
-    compute::WorldStepStage& multibodyStage
-        = variationalSelected
-              ? static_cast<compute::WorldStepStage&>(multibodyVariational)
-              : static_cast<compute::WorldStepStage&>(multibodyDynamics);
-    pipeline.addStage(rigidIpcContact)
-        .addStage(multibodyStage)
-        .addStage(deformableDynamics);
+    pipeline.addStage(rigidIpcContact);
+    if (includeMultibodyStage) {
+      compute::WorldStepStage& multibodyStage
+          = variationalSelected
+                ? static_cast<compute::WorldStepStage&>(multibodyVariational)
+                : static_cast<compute::WorldStepStage&>(multibodyDynamics);
+      pipeline.addStage(multibodyStage);
+    }
+    pipeline.addStage(deformableDynamics);
   }
 
   void appendSemiImplicitRigidBodyStages()
@@ -1991,10 +2048,17 @@ Eigen::Isometry3d toIsometry(
 
 } // namespace
 
+//==============================================================================
+struct World::StepPipelineCache
+{
+  WorldStepPipelineStages stages;
+};
+
 World::World()
   : m_storage(
         std::make_unique<detail::WorldStorage>(
-            m_memoryManager.getFreeAllocator()))
+            m_memoryManager.getFreeAllocator())),
+    m_stepPipelineCache(std::make_unique<StepPipelineCache>())
 {
   // Empty.
 }
@@ -2010,7 +2074,8 @@ World::World(const WorldOptions& options)
     m_timeStep(options.timeStep),
     m_differentiable(options.differentiable),
     m_contactSolverMethod(options.contactSolverMethod),
-    m_contactGradientMode(options.contactGradientMode)
+    m_contactGradientMode(options.contactGradientMode),
+    m_stepPipelineCache(std::make_unique<StepPipelineCache>())
 {
   DART_EXPERIMENTAL_THROW_T_IF(
       !std::isfinite(options.timeStep) || options.timeStep <= 0.0,
@@ -2091,6 +2156,7 @@ WorldMemoryDiagnostics World::getMemoryDiagnostics() const
 void World::clear()
 {
   m_storage->registry.clear();
+  markFrameTopologyChanged();
   m_simulationMode = false;
   m_gravity = Eigen::Vector3d(0.0, 0.0, -9.81);
   m_rigidBodySolver = RigidBodySolver::SequentialImpulse;
@@ -2105,6 +2171,10 @@ void World::clear()
   m_frame = 0;
   m_memoryManager.getFrameAllocator().reset();
   m_memoryDiagnostics = {};
+#if DART_BUILD_PROFILE
+  m_stepProfilingEnabled = false;
+  m_lastStepProfile.reset();
+#endif
   m_freeFrameCounter = 0;
   m_fixedFrameCounter = 0;
   m_multibodyCounter = 0;
@@ -2116,6 +2186,7 @@ void World::clear()
   if (m_collisionQueryCache) {
     m_collisionQueryCache->clear();
   }
+  m_stepPipelineCache = std::make_unique<StepPipelineCache>();
   if (m_replay) {
     m_replay->recordingEnabled = false;
     m_replay->frames.clear();
@@ -2130,6 +2201,18 @@ void World::ensureDesignMode() const
       m_simulationMode,
       InvalidOperationException,
       "World modifications are not allowed while in simulation mode");
+}
+
+//==============================================================================
+void World::markFrameTopologyChanged() noexcept
+{
+  ++m_frameTopologyRevision;
+}
+
+//==============================================================================
+std::uint64_t World::getFrameTopologyRevision() const noexcept
+{
+  return m_frameTopologyRevision;
 }
 
 //==============================================================================
@@ -2363,6 +2446,7 @@ Entity World::createFrameEntity(
   }
 
   outName = actualName;
+  markFrameTopologyChanged();
   return detail::fromRegistryEntity(entity);
 }
 
@@ -2996,6 +3080,7 @@ void World::enterSimulationMode()
   detail::deformable_vbd::configureAvbdRigidWorldPointJointsFromCurrentPoses(
       m_storage->registry);
   reserveRegistryStorageForSimulation();
+  m_stepPipelineCache->stages.prepare(*this, m_rigidBodySolver);
 }
 
 //==============================================================================
@@ -3025,6 +3110,9 @@ void World::setRigidBodySolver(RigidBodySolver solver)
 
   validateRigidBodyJointPipelineSupport(*this, solver);
   m_rigidBodySolver = solver;
+  if (m_simulationMode) {
+    m_stepPipelineCache->stages.prepareRigidIpcContact(*this, solver);
+  }
 }
 
 //==============================================================================
@@ -3430,30 +3518,45 @@ MultibodyOptions World::getMultibodyOptions() const
 //==============================================================================
 void World::step(compute::ComputeExecutor& executor)
 {
-  WorldStepPipelineStages stages;
+  auto& stages = m_stepPipelineCache->stages;
   compute::WorldStepPipeline& pipeline = stages.buildDefault(
       m_rigidBodySolver,
       m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational,
       hasMultibodyStructures(*this));
+
+#if DART_BUILD_PROFILE
+  StepProfileTimer profileTimer(m_stepProfilingEnabled);
+#endif
+
   stepPipelineOnce(executor, pipeline);
   m_lastDeformableSolverDiagnostics = makeDeformableSolverDiagnostics(
       stages.deformableDynamics.getLastStats());
   recordReplayFrame();
+#if DART_BUILD_PROFILE
+  profileTimer.finish(m_lastStepProfile);
+#endif
 }
 
 //==============================================================================
 void World::step(std::size_t count, compute::ComputeExecutor& executor)
 {
-  WorldStepPipelineStages stages;
+  auto& stages = m_stepPipelineCache->stages;
   compute::WorldStepPipeline& pipeline = stages.buildDefault(
       m_rigidBodySolver,
       m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational,
       hasMultibodyStructures(*this));
   for (std::size_t i = 0; i < count; ++i) {
+#if DART_BUILD_PROFILE
+    StepProfileTimer profileTimer(m_stepProfilingEnabled);
+#endif
+
     stepPipelineOnce(executor, pipeline);
     m_lastDeformableSolverDiagnostics = makeDeformableSolverDiagnostics(
         stages.deformableDynamics.getLastStats());
     recordReplayFrame();
+#if DART_BUILD_PROFILE
+    profileTimer.finish(m_lastStepProfile);
+#endif
   }
 }
 
@@ -3467,10 +3570,18 @@ void World::step(
       m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational,
       hasMultibodyStructures(*this),
       stage);
+
+#if DART_BUILD_PROFILE
+  StepProfileTimer profileTimer(m_stepProfilingEnabled);
+#endif
+
   stepPipelineOnce(executor, pipeline);
   m_lastDeformableSolverDiagnostics = makeDeformableSolverDiagnostics(
       stages.deformableDynamics.getLastStats());
   recordReplayFrame();
+#if DART_BUILD_PROFILE
+  profileTimer.finish(m_lastStepProfile);
+#endif
 }
 
 //==============================================================================
@@ -3486,10 +3597,17 @@ void World::step(
       hasMultibodyStructures(*this),
       stage);
   for (std::size_t i = 0; i < count; ++i) {
+#if DART_BUILD_PROFILE
+    StepProfileTimer profileTimer(m_stepProfilingEnabled);
+#endif
+
     stepPipelineOnce(executor, pipeline);
     m_lastDeformableSolverDiagnostics = makeDeformableSolverDiagnostics(
         stages.deformableDynamics.getLastStats());
     recordReplayFrame();
+#if DART_BUILD_PROFILE
+    profileTimer.finish(m_lastStepProfile);
+#endif
   }
 }
 
@@ -3497,8 +3615,15 @@ void World::step(
 void World::step(
     compute::ComputeExecutor& executor, compute::WorldStepPipeline& pipeline)
 {
+#if DART_BUILD_PROFILE
+  StepProfileTimer profileTimer(m_stepProfilingEnabled);
+#endif
+
   stepPipelineOnce(executor, pipeline);
   recordReplayFrame();
+#if DART_BUILD_PROFILE
+  profileTimer.finish(m_lastStepProfile);
+#endif
 }
 
 //==============================================================================
@@ -3525,7 +3650,15 @@ void World::stepPipelineOnce(
     captureStepDerivatives();
   }
 
+#if DART_BUILD_PROFILE
+  if (m_stepProfilingEnabled) {
+    m_lastStepProfile = pipeline.executeProfiled(*this, executor);
+  } else {
+    pipeline.execute(*this, executor);
+  }
+#else
   pipeline.execute(*this, executor);
+#endif
 
   m_time += m_timeStep;
   ++m_frame;
@@ -3673,6 +3806,37 @@ const DeformableSolverDiagnostics& World::getLastDeformableSolverDiagnostics()
     const
 {
   return m_lastDeformableSolverDiagnostics;
+}
+
+//==============================================================================
+void World::setStepProfilingEnabled(bool enabled) noexcept
+{
+#if DART_BUILD_PROFILE
+  m_stepProfilingEnabled = enabled;
+#else
+  (void)enabled;
+#endif
+}
+
+//==============================================================================
+bool World::isStepProfilingEnabled() const noexcept
+{
+#if DART_BUILD_PROFILE
+  return m_stepProfilingEnabled;
+#else
+  return false;
+#endif
+}
+
+//==============================================================================
+const compute::WorldStepProfile& World::getLastStepProfile() const noexcept
+{
+#if DART_BUILD_PROFILE
+  return m_lastStepProfile;
+#else
+  static const compute::WorldStepProfile kEmptyProfile;
+  return kEmptyProfile;
+#endif
 }
 
 //==============================================================================
@@ -3952,6 +4116,7 @@ void World::restoreReplayFrame(std::size_t index)
     joint.acceleration = state.acceleration;
     joint.torque = state.torque;
     joint.commandVelocity = state.commandVelocity;
+    joint.broken = state.broken;
   }
 
   for (const auto& state : replayFrame.links) {
@@ -3971,6 +4136,7 @@ void World::restoreReplayFrame(std::size_t index)
           state.entity, *state.fixedFrameProperties);
     }
   }
+  markFrameTopologyChanged();
   markFrameCachesDirty(m_storage->registry);
 
   for (const auto stateIndex : rigidBodyRestoreOrder) {
@@ -4073,6 +4239,7 @@ void World::recordReplayFrame()
                 joint.restPosition,
                 joint.armature,
                 joint.coulombFriction,
+                joint.breakForce,
                 joint.limits,
                 joint.axis,
                 joint.axis2,
@@ -4087,7 +4254,8 @@ void World::recordReplayFrame()
             joint.velocity,
             joint.acceleration,
             joint.torque,
-            joint.commandVelocity});
+            joint.commandVelocity,
+            joint.broken});
   }
   std::ranges::sort(replayFrame.joints, [](const auto& lhs, const auto& rhs) {
     return static_cast<std::uint32_t>(lhs.entity)

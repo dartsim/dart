@@ -90,8 +90,8 @@ void ParallelExecutor::execute(const ComputeGraph& graph)
 
   // Cost gate: a graph at or below the inline threshold runs in topological
   // order on the calling thread, skipping Taskflow build/scheduling overhead.
-  if (graph.getNodes().size() <= m_impl->inlineThreshold) {
-    for (auto* node : graph.getTopologicalOrder()) {
+  if (graph.getNodeCount() <= m_impl->inlineThreshold) {
+    for (auto* node : graph.getTopologicalOrderView()) {
       node->execute();
     }
     return;
@@ -126,9 +126,9 @@ ComputeExecutionProfile ParallelExecutor::executeProfiled(
 
   // Cost gate: mirror execute(); a sub-threshold graph profiles its inline
   // (sequential) run, which is what actually executes.
-  if (graph.getNodes().size() <= m_impl->inlineThreshold) {
+  if (graph.getNodeCount() <= m_impl->inlineThreshold) {
     profiler.start();
-    for (auto* node : graph.getTopologicalOrder()) {
+    for (auto* node : graph.getTopologicalOrderView()) {
       profiler.executeNode(*node);
     }
     return profiler.finish();

@@ -8,15 +8,48 @@
       allocators against standard C++ allocators and foonathan/memory.
       Alignment-aware allocation is implemented; fixed-size pool comparison now
       has a DART `FixedPoolAllocator` path that beats foonathan/memory and
-      `std::pmr` locally. `FreeListAllocator` now has a fixed-capacity mode for
+      `std::pmr` locally. The comparative benchmark binary now honors the
+      checker-requested repetition count instead of forcing five repetitions.
+      The strict checker now rejects high-CV rows before treating ratios as
+      evidence. `StlAllocator` keeps allocator-backed STL storage
+      alignment-aware, including fixed-pool-backed max-aligned values. Focused
+      EnTT registry probes now cover foonathan/memory's array-capable pool
+      baseline and the standard registry, including separate build/growth rows
+      for bake-time registry storage allocation. The focused EnTT checker
+      caches known component storage handles, uses frame-backed DART storage
+      for persistent no-growth churn, and uses pool-backed DART storage for
+      bake/build growth. The no-growth row reports frame usage and overflow
+      counters; the build/growth row times the uninstrumented pool-backed path
+      and reports configured-allocator call counters from a matching untimed
+      probe. The strict checker prints DART benchmark counters alongside
+      pass/fail ratios, so EnTT misses distinguish timing loss, allocator
+      traffic, growth, and noisy benchmark evidence.
+      `FreeListAllocator` now has a fixed-capacity mode for
       deterministic bounded failure after preallocation, and `MemoryManager` /
       experimental `WorldOptions` can construct the World free-list hierarchy
       with a fixed-capacity policy. Fixed-capacity free-list arenas can also
       satisfy over-aligned pool chunks from reserved bytes without growing from
-      the base allocator. The strict benchmark gate and broader correctness
-      matrix still need to land before this phase is complete.
+      the base allocator. A 2026-06-04 focused EnTT run passed the
+      foonathan/memory and standard-registry timing gate, but the current pushed
+      head needs a clean low-load rerun or optimization before #2890 is
+      merge-ready. Phase 2 remains open for the broader correctness matrix and
+      production workload gates.
 - [ ] Phase 3: EnTT registry/component storage allocation is configurable from
       the World memory hierarchy and covered by no-growth ECS tests.
+      Allocator-aware EnTT storage now has focused `StlAllocator` and
+      `FrameStlAllocator` unit tests showing that reserved
+      create/emplace/read/destroy churn makes no configured allocator calls or
+      arena growth after the prewarm pass. The DART comparative no-growth EnTT
+      row now uses the same world-lifetime arena policy and fails if reserved
+      churn grows frame-backed storage or spills to overflow after prewarm. The
+      benchmark hot path caches known component storage handles so the timing
+      surface matches optimized World systems rather than repeated registry
+      type lookup. Separate EnTT build/growth rows measure the bake-time
+      storage allocation phase instead of conflating that cost with the
+      no-growth simulation loop. The comparative benchmark now discovers
+      installed EnTT package metadata for these rows without invoking DART's
+      FetchContent-backed dependency helper, and the checker reports a clear
+      error if a requested result file is empty.
       Initial registry/component-storage wiring and `enterSimulationMode()`
       reservation/no-growth tests for current World-owned ECS storage and the
       first multibody/deformable private step-scratch components are
@@ -34,8 +67,9 @@
       during the step loop" on representative rigid, multibody, contact, and
       deformable scenes. Initial World base-allocator no-growth guards now
       cover baked kinematic IPC rigid-body, multibody variational, and
-      deformable ECS paths; global heap allocation guards and broader solver
-      coverage remain open.
+      deformable ECS paths; a first global heap guard now covers baked
+      kinematic IPC rigid-body and box-obstacle steps. Broader solver coverage
+      remains open before making a full zero-allocation claim.
 - [ ] Phase 6: Add memory-layout profiler/debugger surfaces and GUI
       visualization. `MemoryAllocatorDebugger` now exposes structured live
       bytes, peak live bytes, and live allocation count; `MemoryManager` and
@@ -127,23 +161,44 @@ debugging, profiling, optimization experiments, and ImGui visualization.
   base-allocator traffic after reserve.
 - Bake/build reserve path: reserve registry entities and component pools before
   simulation so repeated `World::step()` calls do not grow ECS storage.
+- No-growth proof: after the reserve/prewarm path, representative
+  create/emplace/read/destroy churn must make zero calls through the configured
+  DART allocator or grow the configured arena; benchmark timing alone is not
+  sufficient evidence.
 - Boundary rule: keep EnTT allocator/storage types out of the promoted public
   facade; expose only DART-owned memory options and diagnostics.
 
 ## Immediate Next Steps
 
-1. Land the strict allocator comparative benchmark gate and keep the
-   fixed-size, mixed-pool, frame, STL, and realistic workloads below
-   foonathan/memory and standard allocator baselines.
+1. Promote the frame-backed no-growth EnTT registry policy toward production
+   `WorldRegistry` bake/build guidance and integration. Production wiring must
+   use a persistent world-registry arena or bake allocator that resets on
+   rebuild/destruction, not the per-step frame scratch allocator that resets
+   inside `World::step()`.
 2. Extend allocator correctness tests for `FixedPoolAllocator` and the existing
    pool/free-list/frame allocators across invalid sizes, over-alignment,
    overflow, reuse-after-free, leak/debug accounting, and bounded failure.
-3. Extend bake-time registry/component storage reservation and no-growth
+3. Repeat the focused EnTT allocator benchmark on low-load machines as needed,
+   then promote the cached-storage policy into production `WorldRegistry`
+   bake/build guidance only after the production integration has matching
+   no-growth tests. Keep using the registry-only checker for focused
+   allocator-policy loops:
+
+   ```bash
+   pixi run bm-allocator-comparative-check --only-entt-registry \
+     --baseline foonathan --baseline std
+   ```
+
+   The current benchmark policy uses cached component storage handles,
+   frame-backed DART storage for persistent no-growth churn, and pool-backed
+   DART storage for build/growth churn. This is benchmark evidence rather than
+   production `WorldRegistry` wiring; production integration needs matching
+   no-growth tests and lifetime diagnostics.
+
+4. Extend bake-time registry/component storage reservation and no-growth
    allocation tests to contact-heavy scenes and remaining solver scratch step
-   paths, then add a separate global heap guard for the full zero-allocation
-   claim.
-4. Benchmark the allocator-backed EnTT registry/component-storage path against
-   standard C++ allocators and foonathan/memory on DART-relevant workloads.
+   paths, then broaden the global heap guard beyond the initial baked
+   kinematic IPC scenes before making the full zero-allocation claim.
 5. Start replacing per-step `std::vector`/`Eigen` temporaries in hot stages with
    world-frame or world-pool backed storage only after the allocator evidence
    gate proves the DART allocator path is better for that workload. The

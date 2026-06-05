@@ -70,6 +70,12 @@
 #include <gtest/gtest.h>
 
 #include <array>
+#include <atomic>
+
+#include <cstdlib>
+#if defined(_WIN32)
+  #include <malloc.h>
+#endif
 #include <limits>
 #include <map>
 #include <new>
@@ -82,6 +88,237 @@
 #include <cstdint>
 
 namespace {
+
+std::atomic<bool> g_heapAllocationTrackingEnabled{false};
+std::atomic<std::size_t> g_heapAllocationCount{0};
+std::atomic<std::size_t> g_heapAllocationBytes{0};
+
+void recordHeapAllocation(std::size_t bytes) noexcept
+{
+  if (g_heapAllocationTrackingEnabled.load(std::memory_order_relaxed)) {
+    g_heapAllocationCount.fetch_add(1, std::memory_order_relaxed);
+    g_heapAllocationBytes.fetch_add(bytes, std::memory_order_relaxed);
+  }
+}
+
+[[nodiscard]] void* allocateRaw(std::size_t bytes) noexcept
+{
+  return std::malloc(bytes == 0 ? 1 : bytes);
+}
+
+[[nodiscard]] void* allocateAlignedRaw(
+    std::size_t bytes, std::size_t alignment) noexcept
+{
+  if (alignment <= __STDCPP_DEFAULT_NEW_ALIGNMENT__) {
+    return allocateRaw(bytes);
+  }
+
+#if defined(_WIN32)
+  return _aligned_malloc(bytes == 0 ? 1 : bytes, alignment);
+#else
+  const auto requested = bytes == 0 ? 1 : bytes;
+  if (alignment == 0 || (alignment & (alignment - 1)) != 0) {
+    return nullptr;
+  }
+  if (alignment < alignof(void*)) {
+    alignment = alignof(void*);
+  }
+  void* pointer = nullptr;
+  return posix_memalign(&pointer, alignment, requested) == 0 ? pointer
+                                                             : nullptr;
+#endif
+}
+
+void deallocateAlignedRaw(void* pointer, std::size_t alignment) noexcept
+{
+  if (alignment <= __STDCPP_DEFAULT_NEW_ALIGNMENT__) {
+    std::free(pointer);
+    return;
+  }
+
+#if defined(_WIN32)
+  _aligned_free(pointer);
+#else
+  std::free(pointer);
+#endif
+}
+
+} // namespace
+
+void* operator new(std::size_t bytes)
+{
+  recordHeapAllocation(bytes);
+  if (auto* ptr = allocateRaw(bytes)) {
+    return ptr;
+  }
+  throw std::bad_alloc();
+}
+
+void* operator new[](std::size_t bytes)
+{
+  recordHeapAllocation(bytes);
+  if (auto* ptr = allocateRaw(bytes)) {
+    return ptr;
+  }
+  throw std::bad_alloc();
+}
+
+void* operator new(std::size_t bytes, const std::nothrow_t&) noexcept
+{
+  recordHeapAllocation(bytes);
+  return allocateRaw(bytes);
+}
+
+void* operator new[](std::size_t bytes, const std::nothrow_t&) noexcept
+{
+  recordHeapAllocation(bytes);
+  return allocateRaw(bytes);
+}
+
+void* operator new(std::size_t bytes, std::align_val_t alignment)
+{
+  recordHeapAllocation(bytes);
+  if (auto* ptr
+      = allocateAlignedRaw(bytes, static_cast<std::size_t>(alignment))) {
+    return ptr;
+  }
+  throw std::bad_alloc();
+}
+
+void* operator new[](std::size_t bytes, std::align_val_t alignment)
+{
+  recordHeapAllocation(bytes);
+  if (auto* ptr
+      = allocateAlignedRaw(bytes, static_cast<std::size_t>(alignment))) {
+    return ptr;
+  }
+  throw std::bad_alloc();
+}
+
+void* operator new(
+    std::size_t bytes,
+    std::align_val_t alignment,
+    const std::nothrow_t&) noexcept
+{
+  recordHeapAllocation(bytes);
+  return allocateAlignedRaw(bytes, static_cast<std::size_t>(alignment));
+}
+
+void* operator new[](
+    std::size_t bytes,
+    std::align_val_t alignment,
+    const std::nothrow_t&) noexcept
+{
+  recordHeapAllocation(bytes);
+  return allocateAlignedRaw(bytes, static_cast<std::size_t>(alignment));
+}
+
+void operator delete(void* pointer) noexcept
+{
+  std::free(pointer);
+}
+
+void operator delete[](void* pointer) noexcept
+{
+  std::free(pointer);
+}
+
+void operator delete(void* pointer, std::size_t) noexcept
+{
+  std::free(pointer);
+}
+
+void operator delete[](void* pointer, std::size_t) noexcept
+{
+  std::free(pointer);
+}
+
+void operator delete(void* pointer, const std::nothrow_t&) noexcept
+{
+  std::free(pointer);
+}
+
+void operator delete[](void* pointer, const std::nothrow_t&) noexcept
+{
+  std::free(pointer);
+}
+
+void operator delete(void* pointer, std::align_val_t alignment) noexcept
+{
+  deallocateAlignedRaw(pointer, static_cast<std::size_t>(alignment));
+}
+
+void operator delete[](void* pointer, std::align_val_t alignment) noexcept
+{
+  deallocateAlignedRaw(pointer, static_cast<std::size_t>(alignment));
+}
+
+void operator delete(
+    void* pointer, std::size_t, std::align_val_t alignment) noexcept
+{
+  deallocateAlignedRaw(pointer, static_cast<std::size_t>(alignment));
+}
+
+void operator delete[](
+    void* pointer, std::size_t, std::align_val_t alignment) noexcept
+{
+  deallocateAlignedRaw(pointer, static_cast<std::size_t>(alignment));
+}
+
+void operator delete(
+    void* pointer, std::align_val_t alignment, const std::nothrow_t&) noexcept
+{
+  deallocateAlignedRaw(pointer, static_cast<std::size_t>(alignment));
+}
+
+void operator delete[](
+    void* pointer, std::align_val_t alignment, const std::nothrow_t&) noexcept
+{
+  deallocateAlignedRaw(pointer, static_cast<std::size_t>(alignment));
+}
+
+namespace {
+
+class ScopedHeapAllocationCounter final
+{
+public:
+  ScopedHeapAllocationCounter()
+  {
+    g_heapAllocationCount.store(0, std::memory_order_relaxed);
+    g_heapAllocationBytes.store(0, std::memory_order_relaxed);
+    g_heapAllocationTrackingEnabled.store(true, std::memory_order_relaxed);
+  }
+
+  ~ScopedHeapAllocationCounter()
+  {
+    stop();
+  }
+
+  ScopedHeapAllocationCounter(const ScopedHeapAllocationCounter&) = delete;
+  ScopedHeapAllocationCounter& operator=(const ScopedHeapAllocationCounter&)
+      = delete;
+
+  void stop() noexcept
+  {
+    g_heapAllocationTrackingEnabled.store(false, std::memory_order_relaxed);
+  }
+
+  [[nodiscard]] std::size_t allocationCount() const noexcept
+  {
+    return g_heapAllocationCount.load(std::memory_order_relaxed);
+  }
+
+  [[nodiscard]] std::size_t allocationBytes() const noexcept
+  {
+    return g_heapAllocationBytes.load(std::memory_order_relaxed);
+  }
+};
+
+struct HeapAllocationSnapshot
+{
+  std::size_t allocationCount{0};
+  std::size_t allocationBytes{0};
+};
 
 class CountingKinematicsStage final
   : public dart::simulation::experimental::compute::WorldStepStage
@@ -363,6 +600,48 @@ void expectNoWorldBaseAllocatorActivityDuringBakedSteps(
   EXPECT_EQ(allocator.deallocationCount, deallocationsAfterBake);
   EXPECT_EQ(allocator.alignedAllocationCount, alignedAllocationsAfterBake);
   EXPECT_EQ(allocator.alignedDeallocationCount, alignedDeallocationsAfterBake);
+}
+
+template <typename ConfigureScene>
+void expectNoGlobalHeapAllocationsDuringBakedSteps(
+    std::string_view scene, ConfigureScene&& configureScene)
+{
+  namespace sx = dart::simulation::experimental;
+
+  SCOPED_TRACE(scene);
+  sx::World world;
+
+  configureScene(world);
+  world.enterSimulationMode();
+
+  ScopedHeapAllocationCounter heapCounter;
+  for (int i = 0; i < 4; ++i) {
+    world.step();
+  }
+  heapCounter.stop();
+
+  EXPECT_EQ(heapCounter.allocationCount(), 0u)
+      << "global heap bytes allocated during baked steps: "
+      << heapCounter.allocationBytes();
+  EXPECT_EQ(heapCounter.allocationBytes(), 0u);
+}
+
+template <typename ConfigureScene>
+HeapAllocationSnapshot countGlobalHeapAllocationsDuringSimulationBake(
+    std::string_view scene, ConfigureScene&& configureScene)
+{
+  namespace sx = dart::simulation::experimental;
+
+  SCOPED_TRACE(scene);
+  sx::World world;
+
+  configureScene(world);
+
+  ScopedHeapAllocationCounter heapCounter;
+  world.enterSimulationMode();
+  heapCounter.stop();
+
+  return {heapCounter.allocationCount(), heapCounter.allocationBytes()};
 }
 
 } // namespace
@@ -799,6 +1078,15 @@ TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
         body.setKinematic(true);
         body.setLinearVelocity(Eigen::Vector3d(1.0, 0.0, 0.0));
       });
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "kinematic IPC box obstacle", [](sx::World& world) {
+        world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+        auto body = world.addRigidBody("kinematic_box");
+        body.setKinematic(true);
+        body.setCollisionShape(
+            sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.5)));
+        body.setLinearVelocity(Eigen::Vector3d(1.0, 0.0, 0.0));
+      });
 
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "multibody variational scratch", [](sx::World& world) {
@@ -823,6 +1111,107 @@ TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
         world.addDeformableBody("particle", options);
         world.setTimeStep(0.01);
       });
+}
+
+TEST(World, BakedKinematicIpcStepsDoNotAllocateGlobalHeap)
+{
+  namespace sx = dart::simulation::experimental;
+
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "kinematic IPC rigid body", [](sx::World& world) {
+        world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+        auto body = world.addRigidBody("kinematic");
+        body.setKinematic(true);
+        body.setLinearVelocity(Eigen::Vector3d(1.0, 0.0, 0.0));
+      });
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "kinematic IPC box obstacle", [](sx::World& world) {
+        world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+        auto body = world.addRigidBody("kinematic_box");
+        body.setKinematic(true);
+        body.setCollisionShape(
+            sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.5)));
+        body.setLinearVelocity(Eigen::Vector3d(1.0, 0.0, 0.0));
+      });
+}
+
+TEST(World, SequentialImpulseBakeDoesNotPrewarmRigidIpcCollisionSurfaces)
+{
+  namespace sx = dart::simulation::experimental;
+
+  const auto unsupportedGeometry
+      = countGlobalHeapAllocationsDuringSimulationBake(
+          "sequential impulse plane geometry", [](sx::World& world) {
+            auto body = world.addRigidBody("kinematic_plane");
+            body.setKinematic(true);
+            body.setCollisionShape(
+                sx::CollisionShape::makePlane(Eigen::Vector3d::UnitZ(), 0.0));
+          });
+  const auto supportedGeometry = countGlobalHeapAllocationsDuringSimulationBake(
+      "sequential impulse box geometry", [](sx::World& world) {
+        auto body = world.addRigidBody("kinematic_box");
+        body.setKinematic(true);
+        body.setCollisionShape(
+            sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.5)));
+      });
+
+  EXPECT_EQ(
+      supportedGeometry.allocationCount, unsupportedGeometry.allocationCount);
+  EXPECT_EQ(
+      supportedGeometry.allocationBytes, unsupportedGeometry.allocationBytes);
+}
+
+TEST(World, RigidIpcContactStagePrepareReusesSupportedDynamicSurfaceBuffers)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  sx::RigidBodyOptions options;
+  options.mass = 2.0;
+  options.position = Eigen::Vector3d(0.0, 0.0, 0.5);
+  auto body = world.addRigidBody("dynamic_box", options);
+  body.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.5)));
+
+  sx::compute::RigidIpcContactStage ipcStage;
+  ipcStage.prepare(world);
+
+  ScopedHeapAllocationCounter heapCounter;
+  for (int i = 0; i < 4; ++i) {
+    ipcStage.prepare(world);
+  }
+  heapCounter.stop();
+
+  EXPECT_EQ(heapCounter.allocationCount(), 0u)
+      << "global heap bytes allocated while preparing dynamic IPC scratch: "
+      << heapCounter.allocationBytes();
+  EXPECT_EQ(heapCounter.allocationBytes(), 0u);
+}
+
+TEST(World, SetRigidBodySolverPreparesIpcScratchAfterSimulationBake)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  auto body = world.addRigidBody("kinematic_box");
+  body.setKinematic(true);
+  body.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.5)));
+  body.setLinearVelocity(Eigen::Vector3d(1.0, 0.0, 0.0));
+
+  world.enterSimulationMode();
+  world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+
+  ScopedHeapAllocationCounter heapCounter;
+  for (int i = 0; i < 4; ++i) {
+    world.step();
+  }
+  heapCounter.stop();
+
+  EXPECT_EQ(heapCounter.allocationCount(), 0u)
+      << "global heap bytes allocated during IPC steps after solver switch: "
+      << heapCounter.allocationBytes();
+  EXPECT_EQ(heapCounter.allocationBytes(), 0u);
 }
 
 TEST(World, FrameScratchCapacityReportsUsableArenaBytes)
@@ -6936,6 +7325,34 @@ TEST(World, StepAcceptsCustomStage)
       child.getTransform().isApprox(updatedParentTransform * childOffset));
 }
 
+TEST(World, StepRebuildsCachedKinematicsAfterFrameReparenting)
+{
+  namespace sx = dart::simulation::experimental;
+  namespace compute = dart::simulation::experimental::compute;
+
+  sx::World world;
+  auto oldParent = world.addFreeFrame("old_parent");
+
+  Eigen::Isometry3d childOffset = Eigen::Isometry3d::Identity();
+  childOffset.translate(Eigen::Vector3d(0.0, 1.0, 0.0));
+  auto child = world.addFixedFrame("child", oldParent, childOffset);
+
+  auto newParent = world.addFreeFrame("new_parent");
+
+  world.enterSimulationMode();
+
+  Eigen::Isometry3d updatedParentTransform = Eigen::Isometry3d::Identity();
+  updatedParentTransform.translate(Eigen::Vector3d(2.0, 0.0, 0.0));
+  newParent.setLocalTransform(updatedParentTransform);
+  child.setParentFrame(newParent);
+
+  compute::SequentialExecutor executor;
+  world.step(executor);
+
+  EXPECT_TRUE(
+      child.getTransform().isApprox(updatedParentTransform * childOffset));
+}
+
 // Test that custom-stage step overloads keep the same default dynamics baseline
 // as World::step(), with the caller-provided stage replacing the final stage.
 TEST(World, StepWithCustomStageUsesDefaultDynamicsBaseline)
@@ -7936,6 +8353,51 @@ TEST(World, ReplayRecordingRestoresPublicFrameState)
       recordedParentTransform * recordedChildOffset));
 }
 
+// Test that replay restore invalidates the cached kinematics graph when it
+// restores a public-frame parent relationship captured in the replay frame.
+TEST(World, ReplayRestoreRebuildsCachedKinematicsAfterFrameParentRestore)
+{
+  namespace sx = dart::simulation::experimental;
+  namespace compute = dart::simulation::experimental::compute;
+
+  sx::World world;
+
+  auto oldParent = world.addFreeFrame("old_parent");
+  Eigen::Isometry3d oldParentTransform = Eigen::Isometry3d::Identity();
+  oldParentTransform.translation() = Eigen::Vector3d(-10.0, 0.0, 0.0);
+  oldParent.setLocalTransform(oldParentTransform);
+
+  Eigen::Isometry3d childOffset = Eigen::Isometry3d::Identity();
+  childOffset.translation() = Eigen::Vector3d(0.0, 1.0, 0.0);
+  auto child = world.addFixedFrame("child", oldParent, childOffset);
+
+  auto replayParent = world.addFreeFrame("replay_parent");
+  Eigen::Isometry3d recordedParentTransform = Eigen::Isometry3d::Identity();
+  recordedParentTransform.translation() = Eigen::Vector3d(2.0, 0.0, 0.0);
+  replayParent.setLocalTransform(recordedParentTransform);
+  child.setParentFrame(replayParent);
+
+  world.enterSimulationMode();
+  world.setReplayRecordingEnabled(true);
+  ASSERT_EQ(world.getReplayFrameCount(), 1u);
+
+  compute::SequentialExecutor executor;
+  world.step(executor);
+
+  Eigen::Isometry3d movedReplayParentTransform = Eigen::Isometry3d::Identity();
+  movedReplayParentTransform.translation() = Eigen::Vector3d(20.0, 0.0, 0.0);
+  replayParent.setLocalTransform(movedReplayParentTransform);
+  child.setParentFrame(oldParent);
+  world.step(executor);
+
+  world.restoreReplayFrame(0);
+  world.step(executor);
+
+  EXPECT_EQ(child.getParentFrame().getEntity(), replayParent.getEntity());
+  EXPECT_TRUE(
+      child.getTransform().isApprox(recordedParentTransform * childOffset));
+}
+
 // Test that public-frame replay restore dirties caches before restoring rigid
 // bodies whose parent transform is a restored public frame.
 TEST(World, ReplayRecordingRestoresRigidBodyThroughPublicFrameWithDirtyCache)
@@ -8166,6 +8628,8 @@ TEST(World, ReplayRecordingRejectsJointDynamicsChanges)
   expectJointMutationRejected([](sx::Joint& joint) {
     joint.setCoulombFriction(Eigen::VectorXd::Constant(1, 0.2));
   });
+  expectJointMutationRejected(
+      [](sx::Joint& joint) { joint.setBreakForce(10.0); });
   expectJointMutationRejected([](sx::Joint& joint) {
     joint.setPositionLimits(
         Eigen::VectorXd::Constant(1, -0.5), Eigen::VectorXd::Constant(1, 0.5));
@@ -8291,12 +8755,18 @@ TEST(World, ReplayRecordingRestoresMultibodyRuntimeState)
   const Eigen::VectorXd initialTorque = Eigen::VectorXd::Constant(1, 1.5);
   const Eigen::VectorXd initialCommandVelocity
       = Eigen::VectorXd::Constant(1, -0.75);
+  const double initialBreakForce = 100.0;
   joint.setPosition(initialPosition);
   joint.setVelocity(initialVelocity);
   joint.setForce(initialTorque);
   joint.setCommandVelocity(initialCommandVelocity);
+  joint.setBreakForce(initialBreakForce);
 
   auto& registry = sx::detail::registryOf(world);
+  const entt::entity jointEntity
+      = sx::detail::toRegistryEntity(joint.getEntity());
+  auto& jointComponent = registry.get<sx::comps::Joint>(jointEntity);
+  jointComponent.broken = false;
   const entt::entity linkEntity
       = sx::detail::toRegistryEntity(link.getEntity());
   auto& linkComponent = registry.get<sx::comps::Link>(linkEntity);
@@ -8306,11 +8776,13 @@ TEST(World, ReplayRecordingRestoresMultibodyRuntimeState)
   linkComponent.externalForce = initialExternalForce;
 
   world.setReplayRecordingEnabled(true);
+  ASSERT_EQ(world.getReplayFrameCount(), 1u);
 
   joint.setPosition(Eigen::VectorXd::Constant(1, -1.0));
   joint.setVelocity(Eigen::VectorXd::Constant(1, -2.0));
   joint.setForce(Eigen::VectorXd::Constant(1, -3.0));
   joint.setCommandVelocity(Eigen::VectorXd::Constant(1, -4.0));
+  jointComponent.broken = true;
   linkComponent.externalForce.setZero();
 
   world.restoreReplayFrame(0);
@@ -8319,6 +8791,17 @@ TEST(World, ReplayRecordingRestoresMultibodyRuntimeState)
   EXPECT_TRUE(joint.getVelocity().isApprox(initialVelocity));
   EXPECT_TRUE(joint.getForce().isApprox(initialTorque));
   EXPECT_TRUE(joint.getCommandVelocity().isApprox(initialCommandVelocity));
+  EXPECT_DOUBLE_EQ(joint.getBreakForce(), initialBreakForce);
+  EXPECT_FALSE(joint.isBroken());
   EXPECT_TRUE(registry.get<sx::comps::Link>(linkEntity)
                   .externalForce.isApprox(initialExternalForce));
+
+  jointComponent.broken = true;
+  world.clearReplayRecording();
+  ASSERT_EQ(world.getReplayFrameCount(), 1u);
+  joint.resetBreakage();
+
+  world.restoreReplayFrame(0);
+
+  EXPECT_TRUE(joint.isBroken());
 }

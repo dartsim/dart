@@ -32,10 +32,13 @@
 
 #pragma once
 
+#include <dart/config.hpp>
+
 #include <dart/simulation/experimental/fwd.hpp>
 
 #include <dart/simulation/experimental/body/deformable_body_options.hpp>
 #include <dart/simulation/experimental/body/rigid_body_options.hpp>
+#include <dart/simulation/experimental/compute/world_step_profile.hpp>
 #include <dart/simulation/experimental/constraint/loop_closure.hpp>
 #include <dart/simulation/experimental/diff/step_derivatives.hpp>
 #include <dart/simulation/experimental/diff/step_gradient.hpp>
@@ -57,6 +60,7 @@
 #include <vector>
 
 #include <cstddef>
+#include <cstdint>
 
 namespace dart::simulation::experimental {
 
@@ -640,6 +644,32 @@ public:
   const DeformableSolverDiagnostics& getLastDeformableSolverDiagnostics() const;
 
   //--------------------------------------------------------------------------
+  // Profiling
+  //--------------------------------------------------------------------------
+  /// Enables or disables per-stage step profiling. When enabled, every ``step``
+  /// records the wall-clock time of each pipeline stage into a snapshot
+  /// retrievable via ``getLastStepProfile``. This is the experimental World's
+  /// non-GUI, text-first performance surface, intended for tools, bindings, and
+  /// AI agents optimizing a step. Requires ``DART_BUILD_PROFILE=ON``; when that
+  /// build option is off this toggle is a no-op, ``World`` stores no profiling
+  /// cache fields, and the step path has no compiled profiling branch. Disabled
+  /// by default in profiling-enabled
+  /// builds; when off the step path is unchanged and adds no profiling
+  /// overhead.
+  void setStepProfilingEnabled(bool enabled) noexcept;
+
+  /// Whether per-stage step profiling is currently enabled. Always false when
+  /// DART was built with ``DART_BUILD_PROFILE=OFF``.
+  [[nodiscard]] bool isStepProfilingEnabled() const noexcept;
+
+  /// Per-stage wall-clock profile of the most recent ``step`` taken while
+  /// profiling was enabled. Empty before the first such step. For a multi-step
+  /// call it reflects the last step. Use ``WorldStepProfile::toSummaryText``
+  /// for a compact, readable breakdown.
+  [[nodiscard]] const compute::WorldStepProfile& getLastStepProfile()
+      const noexcept;
+
+  //--------------------------------------------------------------------------
   // Multibody solver configuration
   //--------------------------------------------------------------------------
 
@@ -701,6 +731,7 @@ private:
   friend class RigidBody;
   friend class DeformableBody;
   friend class io::detail::SkeletonLoaderWorldAccess;
+  friend class compute::WorldKinematicsGraph;
   friend class compute::RigidIpcContactStage;
 
   /// Internal storage seam. `detail::storageOf` reaches the privately-held,
@@ -713,6 +744,7 @@ private:
 
   Frame resolveParentFrame(const Frame& parent) const;
   struct CollisionQueryCache;
+  struct StepPipelineCache;
   Entity createFrameEntity(
       std::string_view name,
       const Frame& parentFrame,
@@ -729,6 +761,8 @@ private:
       const Eigen::Vector3d& axis);
 
   void ensureDesignMode() const;
+  void markFrameTopologyChanged() noexcept;
+  [[nodiscard]] std::uint64_t getFrameTopologyRevision() const noexcept;
   void reserveRegistryStorageForSimulation();
   void resetCountersFromRegistry();
   void stepPipelineOnce(
@@ -772,7 +806,12 @@ private:
   double m_time{0.0};
   DeformableSolverDiagnostics m_lastDeformableSolverDiagnostics{};
   WorldMemoryDiagnostics m_memoryDiagnostics{};
+#if DART_BUILD_PROFILE
+  bool m_stepProfilingEnabled{false};
+  compute::WorldStepProfile m_lastStepProfile{};
+#endif
   double m_rigidIpcAdaptiveBarrierStiffnessLowerBound{1.0};
+  std::uint64_t m_frameTopologyRevision{0};
   enum class MultibodyIntegrationMethod
   {
     SemiImplicit,
@@ -791,6 +830,7 @@ private:
   std::size_t m_linkCounter{0};
   std::size_t m_jointCounter{0};
   mutable std::unique_ptr<CollisionQueryCache> m_collisionQueryCache;
+  std::unique_ptr<StepPipelineCache> m_stepPipelineCache;
 
   struct ReplayState;
   std::unique_ptr<ReplayState> m_replay;
