@@ -37,6 +37,22 @@ import dartpy as dart
 import numpy as np
 
 
+def world_render_frame() -> Any:
+    """The classic render-world root frame for SimpleFrame visuals.
+
+    The Filament viewer renders a classic ``dartpy.gui.RenderWorld`` whose
+    ``SimpleFrame`` visuals are placed relative to the legacy dynamics world
+    frame. The DART 7 ECS ``Frame`` owns the flat ``dartpy.Frame`` name, so this
+    helper exposes the classic render frame instead. Read from the raw dynamics
+    module to avoid the ``dartpy.dynamics`` deprecation wrapper. Exposed as
+    ``dartpy.gui.world_render_frame``.
+    """
+
+    from dartpy._dartpy import dynamics as _dyn
+
+    return _dyn.Frame.world()
+
+
 def _isometry_to_matrix(transform: Any) -> np.ndarray:
     """Convert a physics transform (Isometry3) to a numpy 4x4."""
 

@@ -130,11 +130,9 @@ def _install_world_render_bridge() -> None:
   # Render plumbing: the classic World root frame, used as the reference frame
   # for SimpleFrame visuals placed in a dartpy.gui.RenderWorld. The DART 7 ECS
   # Frame owns the flat dartpy.Frame name, so render code reaches the legacy
-  # render frame here instead. Read from the RAW dynamics module (the
-  # dartpy.dynamics legacy wrapper would emit a DeprecationWarning).
-  _dyn = getattr(_ext, "dynamics", None)
-  if _dyn is not None and hasattr(_dyn, "Frame"):
-    gui.world_render_frame = _dyn.Frame.world
+  # render frame via this helper instead. Defined as a real function in
+  # _world_render_bridge so the stub generator emits a correct import.
+  gui.world_render_frame = _bridge_impl.world_render_frame
 
 
 _install_world_render_bridge()
