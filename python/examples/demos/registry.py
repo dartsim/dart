@@ -7,10 +7,12 @@ order. Add a scene by importing its ``SCENE`` constant and appending it here.
 from __future__ import annotations
 
 from .runner import PythonDemoScene
-from .scenes.articulated import SCENE as ARTICULATED
+from .scenes.avbd_rigid_breakable_joint import SCENE as AVBD_RIGID_BREAKABLE_JOINT
 from .scenes.avbd_rigid_fixed_joint_contact import (
     SCENE as AVBD_RIGID_FIXED_JOINT_CONTACT,
 )
+from .scenes.avbd_rigid_revolute_motor import SCENE as AVBD_RIGID_REVOLUTE_MOTOR
+from .scenes.articulated import SCENE as ARTICULATED
 from .scenes.atlas_simbicon import SCENE as ATLAS_SIMBICON
 from .scenes.contact import SCENE as CONTACT
 from .scenes.diff_cartpole_trajopt import SCENE as DIFF_CARTPOLE_TRAJOPT
@@ -77,7 +79,13 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         RIGID_BODY,
         RIGID_FIXED_JOINT,
         RIGID_LIMITED_JOINTS,
+        # AVBD rigid constraints (PLAN-104) start with fixed-joint rows in
+        # contact, a bounded revolute motor, and a public breakable-joint
+        # lifecycle. Broader articulated joints and soft/rigid coupling remain
+        # tracked by the AVBD dev task.
         AVBD_RIGID_FIXED_JOINT_CONTACT,
+        AVBD_RIGID_REVOLUTE_MOTOR,
+        AVBD_RIGID_BREAKABLE_JOINT,
         # High-value DART 6 examples that should return as World-native demos.
         # These lightweight placeholders keep the roadmap visible without
         # keeping legacy DART 6 scene implementations in the catalog.

@@ -81,6 +81,53 @@ std::unique_ptr<sx::World> makeRigidFixedJointWorld(std::size_t linkCount)
   return world;
 }
 
+std::unique_ptr<sx::World> makeRigidRevoluteMotorWorld(std::size_t motorCount)
+{
+  sx::WorldOptions options;
+  options.gravity = Eigen::Vector3d::Zero();
+  options.timeStep = 0.005;
+  auto world = std::make_unique<sx::World>(options);
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto parent = world->addRigidBody("motor_base", baseOptions);
+
+  std::vector<sx::RigidBody> links;
+  std::vector<sx::Joint> joints;
+  links.reserve(motorCount);
+  joints.reserve(motorCount);
+  for (std::size_t i = 0; i < motorCount; ++i) {
+    sx::RigidBodyOptions bodyOptions;
+    bodyOptions.mass = 1.0;
+    bodyOptions.position = Eigen::Vector3d(
+        0.75 * static_cast<double>(i + 1),
+        0.08 * static_cast<double>(i % 2),
+        0.0);
+
+    auto child
+        = world->addRigidBody("motor_link_" + std::to_string(i), bodyOptions);
+    auto joint = world->addRigidBodyRevoluteJoint(
+        "motor_hinge_" + std::to_string(i),
+        parent,
+        child,
+        Eigen::Vector3d::UnitZ());
+    joint.setActuatorType(sx::ActuatorType::Velocity);
+    joint.setCommandVelocity(
+        Eigen::VectorXd::Constant(1, 0.75 + 0.05 * static_cast<double>(i % 3)));
+    joint.setEffortLimits(
+        Eigen::VectorXd::Constant(1, -600.0),
+        Eigen::VectorXd::Constant(1, 600.0));
+
+    parent = child;
+    links.push_back(child);
+    joints.push_back(joint);
+  }
+
+  benchmark::DoNotOptimize(links.data());
+  benchmark::DoNotOptimize(joints.data());
+  return world;
+}
+
 std::vector<sx::Joint> makeRigidFixedJoints(
     sx::World& world, std::size_t jointCount)
 {
@@ -196,5 +243,20 @@ static void BM_AvbdRigidFixedJointStep(benchmark::State& state)
   state.counters["fixed_joints"] = static_cast<double>(linkCount);
 }
 BENCHMARK(BM_AvbdRigidFixedJointStep)->Arg(1)->Arg(8)->Arg(32);
+
+//==============================================================================
+static void BM_AvbdRigidRevoluteMotorStep(benchmark::State& state)
+{
+  const auto motorCount = static_cast<std::size_t>(state.range(0));
+  auto world = makeRigidRevoluteMotorWorld(motorCount);
+  world->enterSimulationMode();
+
+  for (auto _ : state) {
+    world->step();
+    benchmark::ClobberMemory();
+  }
+  state.counters["motors"] = static_cast<double>(motorCount);
+}
+BENCHMARK(BM_AvbdRigidRevoluteMotorStep)->Arg(1)->Arg(8)->Arg(32);
 
 BENCHMARK_MAIN();

@@ -87,13 +87,24 @@ focused C++/Python tests, and the categorized `sx_rigid_limited_joints`
 py-demo. This branch also adds the first AVBD-specific `py-demos`
 rigid-constraint scene, `avbd_rigid_fixed_joint_contact`, so users can inspect
 the public fixed-joint row path while ordinary rigid contact acts on the
-payload. This is still a narrow free-rigid-body path only: no motor row,
-fracture row, articulated multibody state path, GPU path, paper-corpus demo, or
-benchmark packet is complete.
+payload. The current follow-up adds private angular-motor rows and rigid
+fracture dual-threshold/reset helpers in the 6-DOF row kernel, then wires
+public rigid-body revolute velocity actuators into those bounded AVBD motor
+rows with persistent contact-stage motor inventory, focused C++ coverage, and
+the categorized `avbd_rigid_revolute_motor` py-demo. The AVBD dashboard
+benchmark target also has a first end-to-end public-World
+`BM_AvbdRigidRevoluteMotorStep` row for that motor path. The narrow public
+fracture lifecycle now exposes `Joint` break-force and broken-state accessors,
+marks free rigid-body AVBD point joints broken when solved row load exceeds the
+threshold, skips broken joints on later extraction, and adds a categorized
+`avbd_rigid_breakable_joint` py-demo. This is still a narrow free-rigid-body
+path only: no articulated multibody state path, GPU path, paper-corpus demo,
+broad motor/fracture lifecycle coverage, or paper/reference benchmark packet is
+complete.
 
 ## Current Branch
 
-`feature/avbd-paper-complete-plan` - checkpoint branch based on
+`feature/avbd-rigid-motor-fracture-rows` - checkpoint branch based on
 current `origin/main`, including the scalar-row foundation, mass-spring AVBD row
 families, standalone tet-material rows, and World wiring for supported pure-tet
 finite-stiffness material rows, plus supported World static-contact friction
@@ -130,15 +141,21 @@ revolute/prismatic point-joint configs with arbitrary joint-axis bases and
 private rigid-body ECS current-pose extraction for those one-DOF joint
 entities. The current checkpoint adds public free rigid-body revolute/prismatic
 facades, dartpy bindings/stubs, focused C++/Python coverage, and the
-`sx_rigid_limited_joints` py-demo on top of that private path. This branch also adds the
-`avbd_rigid_fixed_joint_contact` Python demo scene and catalog/test/doc
-coverage for the first narrow user-visible AVBD rigid-constraint showcase.
+`sx_rigid_limited_joints` py-demo on top of that private path. This branch also
+adds the `avbd_rigid_fixed_joint_contact` Python demo scene and catalog/test/doc
+coverage for the first narrow user-visible AVBD rigid-constraint showcase. The
+current local follow-up adds private angular-motor row construction, bounded
+motor descriptors, solver-direction coverage, rigid fracture
+dual-threshold/reset helpers, public rigid-body revolute velocity actuator
+extraction into AVBD motor rows, persistent motor inventory in the contact
+stage, the `avbd_rigid_revolute_motor` py-demo, and the AVBD dashboard
+`BM_AvbdRigidRevoluteMotorStep` benchmark row.
 
 ## Immediate Next Step
 
-Continue the next bounded AVBD contact/friction or rigid-block slice:
-true rigid/articulated World wiring, full narrow-phase feature extraction,
-or the next motor/fracture row family are the preferred row-family gaps now that
+Continue the next bounded AVBD contact/friction or rigid-block step:
+articulated World wiring, full narrow-phase feature extraction, public fracture
+lifecycle, or broader motor benchmarks are the preferred row-family gaps now that
 private dynamic/rigid contact feature IDs, canonical two-endpoint row keys, and
 normal/friction row descriptor helpers plus private rigid contact/friction
 point-pair constructors, paired friction-cone helpers, and a private serial
@@ -155,8 +172,9 @@ generation for constrained linear/angular axes, and named private
 revolute/prismatic point-joint configs with arbitrary joint-axis bases plus
 private rigid-body ECS current-pose extraction for those one-DOF joint
 entities, and public free rigid-body revolute/prismatic facades with dartpy
-bindings, stubs, tests, and py-demo coverage, plus a first fixed-joint/contact
-AVBD py-demo exist.
+bindings, stubs, tests, and py-demo coverage, plus fixed-joint/contact and
+revolute-motor AVBD py-demos, the breakable-joint py-demo, and the narrow
+free-rigid-body break-force lifecycle exist.
 Keep the supported envelope narrow and preserve fallback coverage for topology
 mixes,
 damping/acceleration, parallel solves, and unsupported requested row
@@ -223,9 +241,11 @@ combinations.
   or without active contacts. Named private revolute and prismatic point-joint
   configs now preserve arbitrary joint-axis bases and leave one rotational or
   translational axis free, and private rigid-body ECS revolute/prismatic joint
-  entities now initialize and extract through the same current-pose bridge, but
-  full narrow-phase feature extraction, motors/fracture, and public articulated
-  World joint wiring are not solved yet.
+  entities now initialize and extract through the same current-pose bridge.
+  Public rigid-body revolute velocity actuators now extract to AVBD motor rows,
+  but full narrow-phase feature extraction, public fracture lifecycle, broader
+  motor lifecycle/benchmark coverage, and public articulated World joint wiring
+  are not solved yet.
 
 ## How to Resume
 

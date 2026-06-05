@@ -8628,6 +8628,8 @@ TEST(World, ReplayRecordingRejectsJointDynamicsChanges)
   expectJointMutationRejected([](sx::Joint& joint) {
     joint.setCoulombFriction(Eigen::VectorXd::Constant(1, 0.2));
   });
+  expectJointMutationRejected(
+      [](sx::Joint& joint) { joint.setBreakForce(10.0); });
   expectJointMutationRejected([](sx::Joint& joint) {
     joint.setPositionLimits(
         Eigen::VectorXd::Constant(1, -0.5), Eigen::VectorXd::Constant(1, 0.5));
@@ -8753,12 +8755,18 @@ TEST(World, ReplayRecordingRestoresMultibodyRuntimeState)
   const Eigen::VectorXd initialTorque = Eigen::VectorXd::Constant(1, 1.5);
   const Eigen::VectorXd initialCommandVelocity
       = Eigen::VectorXd::Constant(1, -0.75);
+  const double initialBreakForce = 100.0;
   joint.setPosition(initialPosition);
   joint.setVelocity(initialVelocity);
   joint.setForce(initialTorque);
   joint.setCommandVelocity(initialCommandVelocity);
+  joint.setBreakForce(initialBreakForce);
 
   auto& registry = sx::detail::registryOf(world);
+  const entt::entity jointEntity
+      = sx::detail::toRegistryEntity(joint.getEntity());
+  auto& jointComponent = registry.get<sx::comps::Joint>(jointEntity);
+  jointComponent.broken = false;
   const entt::entity linkEntity
       = sx::detail::toRegistryEntity(link.getEntity());
   auto& linkComponent = registry.get<sx::comps::Link>(linkEntity);
@@ -8768,11 +8776,13 @@ TEST(World, ReplayRecordingRestoresMultibodyRuntimeState)
   linkComponent.externalForce = initialExternalForce;
 
   world.setReplayRecordingEnabled(true);
+  ASSERT_EQ(world.getReplayFrameCount(), 1u);
 
   joint.setPosition(Eigen::VectorXd::Constant(1, -1.0));
   joint.setVelocity(Eigen::VectorXd::Constant(1, -2.0));
   joint.setForce(Eigen::VectorXd::Constant(1, -3.0));
   joint.setCommandVelocity(Eigen::VectorXd::Constant(1, -4.0));
+  jointComponent.broken = true;
   linkComponent.externalForce.setZero();
 
   world.restoreReplayFrame(0);
@@ -8781,6 +8791,17 @@ TEST(World, ReplayRecordingRestoresMultibodyRuntimeState)
   EXPECT_TRUE(joint.getVelocity().isApprox(initialVelocity));
   EXPECT_TRUE(joint.getForce().isApprox(initialTorque));
   EXPECT_TRUE(joint.getCommandVelocity().isApprox(initialCommandVelocity));
+  EXPECT_DOUBLE_EQ(joint.getBreakForce(), initialBreakForce);
+  EXPECT_FALSE(joint.isBroken());
   EXPECT_TRUE(registry.get<sx::comps::Link>(linkEntity)
                   .externalForce.isApprox(initialExternalForce));
+
+  jointComponent.broken = true;
+  world.clearReplayRecording();
+  ASSERT_EQ(world.getReplayFrameCount(), 1u);
+  joint.resetBreakage();
+
+  world.restoreReplayFrame(0);
+
+  EXPECT_TRUE(joint.isBroken());
 }

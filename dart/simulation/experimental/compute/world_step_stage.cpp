@@ -8128,12 +8128,14 @@ struct RigidBodyContactStage::AvbdScratch
     frictionInventory.records().clear();
     jointLinearInventory.records().clear();
     jointAngularInventory.records().clear();
+    motorInventory.records().clear();
   }
 
   dvbd::AvbdScalarRowInventory normalInventory;
   dvbd::AvbdScalarRowInventory frictionInventory;
   dvbd::AvbdScalarRowInventory jointLinearInventory;
   dvbd::AvbdScalarRowInventory jointAngularInventory;
+  dvbd::AvbdScalarRowInventory motorInventory;
 };
 
 //==============================================================================
@@ -8199,10 +8201,13 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
             m_avbdScratch->frictionInventory,
             m_avbdScratch->jointLinearInventory,
             m_avbdScratch->jointAngularInventory,
+            m_avbdScratch->motorInventory,
             timeStep,
             solveOptions);
-    if (solveResult.jointLinearRows == 0u
-        && solveResult.jointAngularRows == 0u) {
+    (void)dvbd::markAvbdRigidWorldFracturedPointJoints(
+        registry, snapshot, solveResult.fracturedJointIndices);
+    if (solveResult.jointLinearRows == 0u && solveResult.jointAngularRows == 0u
+        && solveResult.motorRows == 0u) {
       return false;
     }
 
@@ -8273,11 +8278,15 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
               m_avbdScratch->frictionInventory,
               m_avbdScratch->jointLinearInventory,
               m_avbdScratch->jointAngularInventory,
+              m_avbdScratch->motorInventory,
               timeStep,
               solveOptions);
+      (void)dvbd::markAvbdRigidWorldFracturedPointJoints(
+          registry, snapshot, solveResult.fracturedJointIndices);
       if (solveResult.normalRows != 0u || solveResult.frictionRows != 0u
           || solveResult.jointLinearRows != 0u
-          || solveResult.jointAngularRows != 0u) {
+          || solveResult.jointAngularRows != 0u
+          || solveResult.motorRows != 0u) {
         const dvbd::AvbdRigidWorldContactApplyResult projection
             = dvbd::applyAvbdRigidWorldContactVelocityProjection(
                 registry, snapshot, timeStep);

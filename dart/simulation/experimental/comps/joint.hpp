@@ -219,6 +219,13 @@ struct Joint
   /// generalized coordinate).
   Eigen::VectorXd commandVelocity;
 
+  /// Maximum AVBD constraint force before the joint is marked broken. A value
+  /// of 0 disables automatic breakage.
+  double breakForce = 0.0;
+
+  /// Whether the joint has been broken by an AVBD break-force threshold.
+  bool broken = false;
+
   JointLimits limits;
 
   Eigen::Vector3d axis = Eigen::Vector3d::UnitZ();

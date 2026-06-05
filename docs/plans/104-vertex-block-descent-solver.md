@@ -142,6 +142,13 @@ and a categorized `sx_rigid_limited_joints` py-demo. The first AVBD rigid-constr
 `py-demos` scene, `avbd_rigid_fixed_joint_contact`, shows the public
 fixed-joint/contact slice for users. Public multibody joint extraction and
 articulated World joint wiring are not solved yet.
+Public free-rigid-body revolute velocity actuators now also extract to private
+AVBD angular-motor rows, with a categorized `avbd_rigid_revolute_motor`
+py-demo and one end-to-end dashboard benchmark row for the public motor path.
+Public free-rigid-body AVBD point joints now also expose a narrow break-force
+and broken-state lifecycle through C++/dartpy, with solved-row fracture marking,
+later extraction skip behavior, and a categorized `avbd_rigid_breakable_joint`
+py-demo.
 Explicit fallback coverage keeps unsupported mixed spring-plus-tet,
 mass-spring self-contact without the self-contact AVBD flag,
 finite-stiffness-only friction scenes, Chebyshev, Rayleigh-damped, parallel,
@@ -149,8 +156,8 @@ and unsupported-row requests on the existing VBD path without partial AVBD row
 counters. Those slices are still foundation work; hard-contact/friction
 completeness beyond current static half-space and lagged self-contact rows,
 broader contact-stage dynamic/rigid AVBD activation, articulated joint rows,
-motors, fracture, rigid/soft coupling, GPU parity, paper-corpus demos, and
-benchmark packets remain open.
+broad fracture-corpus support, rigid/soft coupling, GPU parity, paper-corpus
+demos, and broad paper/reference benchmark packets remain open.
 
 ## Relationship To PLAN-081
 

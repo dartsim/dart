@@ -173,6 +173,8 @@ void deserializeJointV1(std::istream& input, comps::Joint& joint)
   joint.armature = Eigen::VectorXd::Zero(dof);
   joint.coulombFriction = Eigen::VectorXd::Zero(dof);
   joint.commandVelocity = Eigen::VectorXd::Zero(dof);
+  joint.breakForce = 0.0;
+  joint.broken = false;
 
   const double infinity = std::numeric_limits<double>::infinity();
   if (joint.limits.lower.size() != dof) {
@@ -195,7 +197,8 @@ void deserializeJointV1(std::istream& input, comps::Joint& joint)
                                  : Eigen::VectorXd::Constant(dof, infinity);
 }
 
-void deserializeJointV2ToV12(std::istream& input, comps::Joint& joint)
+void deserializeJointV2ToV13(
+    std::istream& input, comps::Joint& joint, std::uint32_t formatVersion)
 {
   readPOD(input, joint.type);
   readPOD(input, joint.actuatorType);
@@ -211,6 +214,9 @@ void deserializeJointV2ToV12(std::istream& input, comps::Joint& joint)
   readVectorXd(input, joint.armature);
   readVectorXd(input, joint.coulombFriction);
   readVectorXd(input, joint.commandVelocity);
+
+  joint.breakForce = 0.0;
+  joint.broken = false;
 
   readVectorXd(input, joint.limits.lower);
   readVectorXd(input, joint.limits.upper);
@@ -230,10 +236,27 @@ void deserializeJointV2ToV12(std::istream& input, comps::Joint& joint)
   joint.parentLink = static_cast<entt::entity>(parentLink);
   joint.childLink = static_cast<entt::entity>(childLink);
 
-  joint.hasRigidBodyFixedJointAnchors = false;
-  joint.rigidBodyFixedJointLocalAnchorParent.setZero();
-  joint.rigidBodyFixedJointLocalAnchorChild.setZero();
-  joint.rigidBodyFixedJointTargetRelativeOrientation.setIdentity();
+  if (formatVersion >= 13u) {
+    readPOD(input, joint.hasRigidBodyFixedJointAnchors);
+    readVector3d(input, joint.rigidBodyFixedJointLocalAnchorParent);
+    readVector3d(input, joint.rigidBodyFixedJointLocalAnchorChild);
+
+    double w = 1.0;
+    double x = 0.0;
+    double y = 0.0;
+    double z = 0.0;
+    readPOD(input, w);
+    readPOD(input, x);
+    readPOD(input, y);
+    readPOD(input, z);
+    joint.rigidBodyFixedJointTargetRelativeOrientation
+        = Eigen::Quaterniond(w, x, y, z);
+  } else {
+    joint.hasRigidBodyFixedJointAnchors = false;
+    joint.rigidBodyFixedJointLocalAnchorParent.setZero();
+    joint.rigidBodyFixedJointLocalAnchorChild.setZero();
+    joint.rigidBodyFixedJointTargetRelativeOrientation.setIdentity();
+  }
 }
 
 void initializeCollisionShapeDefaults(CollisionShape& shape)
@@ -448,8 +471,8 @@ private:
       deserializeJointV1(input, component);
       return;
     }
-    if (formatVersion < 13u) {
-      deserializeJointV2ToV12(input, component);
+    if (formatVersion < 14u) {
+      deserializeJointV2ToV13(input, component, formatVersion);
       return;
     }
 

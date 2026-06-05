@@ -187,6 +187,7 @@ struct World::ReplayState
     Eigen::VectorXd restPosition;
     Eigen::VectorXd armature;
     Eigen::VectorXd coulombFriction;
+    double breakForce = 0.0;
     comps::JointLimits limits;
     Eigen::Vector3d axis = Eigen::Vector3d::UnitZ();
     Eigen::Vector3d axis2 = Eigen::Vector3d::UnitX();
@@ -211,6 +212,7 @@ struct World::ReplayState
     Eigen::VectorXd acceleration;
     Eigen::VectorXd torque;
     Eigen::VectorXd commandVelocity;
+    bool broken = false;
   };
 
   struct LinkState
@@ -333,6 +335,7 @@ bool sameReplayJointLayout(const comps::Joint& joint, const JointLayout& layout)
          && sameReplayVector(joint.restPosition, layout.restPosition)
          && sameReplayVector(joint.armature, layout.armature)
          && sameReplayVector(joint.coulombFriction, layout.coulombFriction)
+         && joint.breakForce == layout.breakForce
          && sameReplayJointLimits(joint.limits, layout.limits)
          && joint.axis.isApprox(layout.axis, 0.0)
          && joint.axis2.isApprox(layout.axis2, 0.0)
@@ -4002,6 +4005,7 @@ void World::restoreReplayFrame(std::size_t index)
     joint.acceleration = state.acceleration;
     joint.torque = state.torque;
     joint.commandVelocity = state.commandVelocity;
+    joint.broken = state.broken;
   }
 
   for (const auto& state : replayFrame.links) {
@@ -4124,6 +4128,7 @@ void World::recordReplayFrame()
                 joint.restPosition,
                 joint.armature,
                 joint.coulombFriction,
+                joint.breakForce,
                 joint.limits,
                 joint.axis,
                 joint.axis2,
@@ -4138,7 +4143,8 @@ void World::recordReplayFrame()
             joint.velocity,
             joint.acceleration,
             joint.torque,
-            joint.commandVelocity});
+            joint.commandVelocity,
+            joint.broken});
   }
   std::ranges::sort(replayFrame.joints, [](const auto& lhs, const auto& rhs) {
     return static_cast<std::uint32_t>(lhs.entity)

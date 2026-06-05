@@ -86,7 +86,8 @@ using EntityMap = std::unordered_map<entt::entity, entt::entity>;
 //      CollisionShape::halfExtents.z()
 //   13: Joint stores captured rigid-body fixed-joint local anchors and target
 //      relative orientation.
-constexpr std::uint32_t kBinaryFormatVersion = 13;
+//   14: Joint stores AVBD break-force and broken-state fields.
+constexpr std::uint32_t kBinaryFormatVersion = 14;
 
 //==============================================================================
 // Low-level Binary I/O for POD types
