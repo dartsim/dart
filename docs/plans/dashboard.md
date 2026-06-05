@@ -426,9 +426,11 @@ its own line so status updates remain git-history friendly.
   state is only narrowly wired: the private endpoint layer distinguishes free
   rigid-body endpoints from multibody links, fixed multibody-link point-joint
   configs can bridge into the variational articulated solve path, and the branch
-  has a `BM_AvbdRigidEndpointClassification` benchmark row plus categorized
-  `avbd_articulated_endpoint_bridge` py-demo coverage. The next local slice
-  should extend masked articulated rows or broaden rigid-contact feature
+  has a `BM_AvbdRigidEndpointClassification` benchmark row plus focused C++
+  bridge tests. The related `variational_endpoint_loop_closure` py-demo previews
+  public loop-closure behavior but does not exercise the private AVBD config
+  extractor. The next local slice should extend masked articulated rows or
+  broaden rigid-contact feature
   persistence, while the plan/dev-task surfaces must also keep the 2D/3D
   source-demo corpus, paper/video scenes, CPU/GPU benchmark packets, and
   performance leadership gates explicit instead of treating the current

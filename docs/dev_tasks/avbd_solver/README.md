@@ -233,8 +233,11 @@ Paper audit:
     The private endpoint classifier now separates free rigid-body endpoints from
     multibody links, fixed multibody-link point-joint configs can bridge into
     the variational articulated solve path, and
-    `BM_AvbdRigidEndpointClassification` plus the categorized
-    `avbd_articulated_endpoint_bridge` py-demo cover that first bridge.
+    `BM_AvbdRigidEndpointClassification` plus focused C++ variational tests
+    cover that first bridge. The categorized
+    `variational_endpoint_loop_closure` py-demo previews the related public
+    multibody-link point-closure behavior, but it does not exercise the private
+    AVBD point-joint config extractor.
     Masked articulated revolute/prismatic, motor, and breakable row extraction
     are still not wired.
     Unsupported envelopes still fall back to sequential impulses. This is not
@@ -320,8 +323,9 @@ numbers.
    `avbd_rigid_fixed_joint_contact` fixed-joint/contact AVBD demo, the
    `avbd_rigid_revolute_motor` motor demo, and the
    `avbd_rigid_breakable_joint` break-force demo, plus the private free-rigid
-   versus multibody-link endpoint classifier, endpoint benchmark row, and fixed
-   articulated endpoint bridge py-demo, have narrow CPU/user-visible or
+   versus multibody-link endpoint classifier, endpoint benchmark row, focused
+   fixed articulated endpoint bridge tests, and related public variational
+   endpoint loop-closure py-demo, have narrow CPU/user-visible or
    extractor-foundation paths. The next code slice should extend the
    articulated AVBD bridge to masked revolute/prismatic, motor, and breakable
    rows, while retaining explicit fallback coverage until each real articulated

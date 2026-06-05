@@ -1,4 +1,4 @@
-"""AVBD articulated endpoint bridge preview for the experimental World facade."""
+"""Articulated endpoint loop-closure preview for the experimental World facade."""
 
 from __future__ import annotations
 
@@ -90,7 +90,7 @@ def build() -> SceneSetup:
 
     world.enter_simulation_mode()
 
-    bridge = WorldRenderBridge(world, name="avbd_articulated_endpoint_bridge_render")
+    bridge = WorldRenderBridge(world, name="variational_endpoint_loop_closure_render")
     bridge.add_link_visual(
         base,
         dart.BoxShape(np.array([0.18, 0.18, 0.18])),
@@ -138,9 +138,9 @@ def build() -> SceneSetup:
         residual_history.append(bridge_residual)
 
         builder.text("solver: articulated sx world")
-        builder.text("AVBD endpoint class: multibody link")
-        builder.text("AVBD fixed-link bridge: variational closure")
-        builder.text("AVBD masked rows: conservative fallback")
+        builder.text("endpoint class: multibody link")
+        builder.text("constraint path: public variational loop closure")
+        builder.text("constraint family: POINT")
         builder.text(f"links: {robot.num_links}")
         builder.text(f"dofs: {robot.num_dofs}")
         builder.text(f"world time: {world.time:.3f} s")
@@ -159,18 +159,18 @@ def build() -> SceneSetup:
         panels=[ScenePanel("AVBD Articulated Endpoint", build_panel)],
         info={
             "sx_world": world,
-            "avbd_endpoint_kind": "multibody_link",
-            "avbd_fixed_link_bridge": "variational_closure",
-            "avbd_masked_row_path": "fallback",
+            "endpoint_kind": "multibody_link",
+            "constraint_path": "public_variational_loop_closure",
+            "constraint_family": "point",
             "dofs": robot.num_dofs,
         },
     )
 
 
 SCENE = PythonDemoScene(
-    id="avbd_articulated_endpoint_bridge",
-    title="AVBD Articulated Endpoint Bridge (sx)",
-    category="AVBD Rigid Constraints (sx)",
-    summary="A multibody-link endpoint bridge into the articulated solve path.",
+    id="variational_endpoint_loop_closure",
+    title="Variational Endpoint Loop Closure (sx)",
+    category="Variational Integrators",
+    summary="A multibody-link point closure in the articulated variational solve path.",
     build=build,
 )

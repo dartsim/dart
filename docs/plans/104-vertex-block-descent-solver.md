@@ -150,9 +150,11 @@ and broken-state lifecycle through C++/dartpy, with solved-row fracture marking,
 later extraction skip behavior, and a categorized `avbd_rigid_breakable_joint`
 py-demo. The private endpoint classifier now separates free rigid-body endpoints
 from multibody links, with `BM_AvbdRigidEndpointClassification` and the
-categorized `avbd_articulated_endpoint_bridge` py-demo covering the first fixed
-link endpoint bridge into the variational articulated solve path while masked
-articulated rows remain on the conservative fallback path.
+focused C++ tests covering the first fixed link endpoint bridge into the
+variational articulated solve path while masked articulated rows remain on the
+conservative fallback path. The `variational_endpoint_loop_closure` py-demo is a
+related public loop-closure preview, not coverage for the private AVBD config
+extractor.
 Explicit fallback coverage keeps unsupported mixed spring-plus-tet,
 mass-spring self-contact without the self-contact AVBD flag,
 finite-stiffness-only friction scenes, Chebyshev, Rayleigh-damped, parallel,
