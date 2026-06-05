@@ -253,8 +253,8 @@ endif()
 # diff/step_derivatives.hpp / diff/step_gradient.hpp, which are not promotion
 # targets in their own right but are pulled into the public include closure by
 # value (world.hpp / rollout.hpp), so they must ship too. The compute/ directory
-# remains internal except for the backend-neutral stage metadata and
-# WorldStepProfile value types pulled into world.hpp.
+# remains internal except for the backend-neutral stage metadata and profiling
+# value types pulled into world.hpp.
 set(
   dart_experimental_public_headers_toplevel
   world.hpp
