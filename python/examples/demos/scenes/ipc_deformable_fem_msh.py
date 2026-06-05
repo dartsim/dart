@@ -1,7 +1,7 @@
 """FEM cantilever loaded from a GMSH .msh file (IPC deformable solver).
 
 A tetrahedral beam is loaded from a GMSH ASCII ``.msh`` mesh file via
-``dartpy.simulation_experimental.load_gmsh_tet_mesh`` (the new tet-mesh
+``dartpy.load_gmsh_tet_mesh`` (the new tet-mesh
 importer), opted in to stable neo-Hookean FEM elasticity, pinned at its clamped
 end, and released to sag under gravity. This demonstrates the file-loading path
 for FEM bodies -- the gateway to driving the solver from external tet meshes
@@ -16,7 +16,7 @@ from collections import deque
 from pathlib import Path
 
 import numpy as np
-import dartpy.simulation_experimental as sx
+import dartpy as sx
 
 from .._ipc_deformable_bridge import IpcDeformableBridge
 from ..runner import PythonDemoScene, ScenePanel, SceneSetup

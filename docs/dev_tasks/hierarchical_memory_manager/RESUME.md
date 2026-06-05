@@ -27,10 +27,16 @@ diagnostics cover callers that borrow `getFreeListAllocator()` or
 
 The registry/no-growth slices wire the experimental World's internal EnTT
 registry, component storage, differentiable-parameter list, and first
-World-owned ECS scratch paths through the World memory hierarchy. They also add
+World-owned ECS scratch paths through the World memory hierarchy. They add
 base-allocator no-growth guards for baked kinematic IPC rigid-body, multibody
 variational, and single-deformable step loops, plus inline default step-pipeline
 storage. These are not the final global zero-allocation proof.
+
+The first global heap guard branch, PR #2888, has merged to `main`. It pre-bakes
+the default step stage bundle and kinematics graph cache at
+`enterSimulationMode()`, reuses rigid IPC kinematic scratch storage, and adds a
+global `operator new` guard proving baked kinematic IPC rigid-body and
+box-obstacle steps do not allocate from the global heap.
 
 The EnTT benchmark slice (`bench/entt-registry-allocator`, PR #2890) adds
 comparative EnTT registry/component-storage rows against foonathan/memory and
@@ -41,17 +47,21 @@ reports DART counters, and keeps EnTT rows opt-in. PR #2890 has merged to
 `main`; keep its benchmark evidence as the baseline for future allocator-policy
 loops.
 
+The current broader no-allocation slice, PR #2899, extends the merged #2888
+guard to baked rigid-body and non-cross articulated resting-contact scenes by
+reusing collision-query/contact result storage, default rigid-body
+velocity/contact stage scratch, and semi-implicit multibody
+dynamics/contact/staged-velocity scratch.
+
 ## Current Branch
 
-`feature/world-step-global-heap-guard` - PR #2888 branch for the first global
-heap allocation guard on top of the registry, no-growth, and inline-pipeline
-work that has merged to `main`, plus the merged allocator-debugger diagnostics
-slice from PR #2893, fixed-capacity free-list slice from PR #2892, and EnTT
-benchmark slice from PR #2890.
+`feature/world-step-global-heap-guard-broader` - PR #2899, now based on `main`
+after PR #2888, PR #2890, PR #2892, and PR #2893 landed.
 
 ## Immediate Next Step
 
-Monitor #2888 CI and resolve any failures after the latest `origin/main` merge.
+Resolve any remaining PR #2899 CI/review fallout after merging the post-#2888
+`origin/main` state and fixing the zero-DOF link-contact review finding.
 Do not treat the benchmark-only frame-backed no-growth policy as production
 `WorldRegistry` bake/build allocation yet. Production integration needs a
 persistent world-registry arena or bake allocator that resets on
@@ -70,11 +80,34 @@ Next allocator work should broaden allocator correctness coverage, extend
 no-growth tests to contact-heavy scenes and remaining solver scratch paths, and
 continue optimizing allocator paths until DART beats standard C++ allocators and
 foonathan/memory on required workloads. The active zero-allocation guard work
-should broaden beyond the first baked kinematic IPC paths before making a full
-zero-dynamic-allocation claim.
+should broaden beyond the covered rigid-body and non-cross articulated
+resting-contact scenes before making a full zero-dynamic-allocation claim.
 
 ## Latest Local Validation
 
+- On `feature/world-step-global-heap-guard` after merging #2890-updated
+  `origin/main`: `pixi run lint`,
+  `cmake --build build/default/cpp/Release --target test_world -j8`, and
+  `build/default/cpp/Release/bin/test_world --gtest_color=no --gtest_filter='World.ReplayRestoreRebuildsCachedKinematicsAfterFrameParentRestore:World.ReplayRecordingRestoresPublicFrameState:World.StepRebuildsCachedKinematicsAfterFrameReparenting'`
+- On `feature/world-step-global-heap-guard-broader` after the rigid contact
+  heap guard:
+  `cmake --build build/default/cpp/Release --target test_world -j2`
+- On `feature/world-step-global-heap-guard-broader`:
+  `./build/default/cpp/Release/bin/test_world --gtest_filter='World.BakedRigidBodyContactStepsDoNotAllocateGlobalHeap'`
+- On `feature/world-step-global-heap-guard-broader`:
+  `./build/default/cpp/Release/bin/test_world --gtest_filter='World.Baked*DoNotAllocateGlobalHeap:World.BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths'`
+- On `feature/world-step-global-heap-guard-broader`:
+  `cmake --build build/default/cpp/Release --target test_world test_collision_world test_collision_filter_core test_world_contact_parity -j2 && ./build/default/cpp/Release/bin/test_world --gtest_filter='World.Baked*DoNotAllocateGlobalHeap:World.BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths' && ./build/default/cpp/Release/bin/test_world_contact_parity && ./build/default/cpp/Release/bin/test_collision_world && ./build/default/cpp/Release/bin/test_collision_filter_core`
+- On `feature/world-step-global-heap-guard-broader`: `pixi run lint`
+- On `feature/world-step-global-heap-guard-broader` after the articulated
+  contact heap guard:
+  `cmake --build build/default/cpp/Release --target test_world -j2 && build/default/cpp/Release/bin/test_world --gtest_color=no --gtest_filter='World.EnterSimulationModeReservesRegistryStorageForMultibodySteps:World.BakedRigidBodyContactStepsDoNotAllocateGlobalHeap:World.BakedArticulatedContactStepsDoNotAllocateGlobalHeap:World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap'`
+- On `feature/world-step-global-heap-guard-broader` after the semi-implicit
+  multibody scratch update:
+  `cmake --build build/default/cpp/Release --target test_multibody_constraint test_multibody_link_contact -j2 && build/default/cpp/Release/bin/test_multibody_constraint --gtest_color=no && build/default/cpp/Release/bin/test_multibody_link_contact --gtest_color=no`
+- On `feature/world-step-global-heap-guard-broader` after the semi-implicit
+  multibody scratch update:
+  `build/default/cpp/Release/bin/test_world --gtest_color=no --gtest_filter='World.Multibody*'`
 - `pixi run lint`
 - `cmake --build build/default/cpp/Release --target UNIT_common_stl_allocator -j2 && ctest --test-dir build/default/cpp/Release -R '^UNIT_common_stl_allocator$' --output-on-failure`
 - `clang++ --gcc-toolchain=/usr -std=gnu++20 -I. -Ibuild/default/cpp/Release -I.pixi/envs/default/include -fsyntax-only` with an allocator-aware `entt::basic_registry` multi-component `view` instantiation.
@@ -169,8 +202,7 @@ zero-dynamic-allocation claim.
 ```bash
 git status -sb
 git diff --stat
-gh pr view 2888 --repo dartsim/dart --json state,isDraft,mergeStateStatus,headRefOid,statusCheckRollup
+gh pr view 2899 --repo dartsim/dart --json state,isDraft,mergeStateStatus,headRefOid,statusCheckRollup
 ```
 
-Then continue from PR #2888 and any stacked heap-guard PRs such as #2899,
-alongside merged-branch cleanup candidates.
+Then continue from PR #2899 and merged-branch cleanup candidates.

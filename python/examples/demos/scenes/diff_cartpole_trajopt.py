@@ -29,7 +29,7 @@ from typing import Any
 import numpy as np
 
 import dartpy as dart
-import dartpy.simulation_experimental as sx
+import dartpy as sx
 
 from .._world_bridge import WorldRenderBridge
 from ..runner import PythonDemoScene, ScenePanel, SceneSetup
@@ -245,7 +245,7 @@ def _make_marker(
     color: tuple[float, float, float],
     transform: np.ndarray,
 ) -> Any:
-    frame = dart.SimpleFrame(dart.Frame.world(), name, transform)
+    frame = dart.SimpleFrame(dart.gui.world_render_frame(), name, transform)
     frame.set_shape(shape)
     frame.create_visual_aspect().set_color(list(color))
     render_world.add_simple_frame(frame)

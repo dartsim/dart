@@ -131,7 +131,7 @@ def test_atlas_hand_ik_simple():
     l_hand.set_default_relative_transform(tf_hand)
 
     # Create a simple frame target
-    target = dart.SimpleFrame(dart.Frame.world(), "target")
+    target = dart.SimpleFrame(dart.gui.world_render_frame(), "target")
 
     # Store initial hand position
     initial_pos = l_hand.get_world_transform().translation()
@@ -208,7 +208,7 @@ def test_atlas_foot_ik_constrained():
     l_foot.set_default_relative_transform(tf_foot)
 
     # Create target
-    target = dart.SimpleFrame(dart.Frame.world(), "target")
+    target = dart.SimpleFrame(dart.gui.world_render_frame(), "target")
 
     # Get current foot position
     initial_tf = l_foot.get_world_transform()
@@ -265,8 +265,8 @@ def test_atlas_hierarchical_ik():
     r_hand.set_default_relative_transform(tf_hand_r)
 
     # Create targets
-    l_target = dart.SimpleFrame(dart.Frame.world(), "l_target")
-    r_target = dart.SimpleFrame(dart.Frame.world(), "r_target")
+    l_target = dart.SimpleFrame(dart.gui.world_render_frame(), "l_target")
+    r_target = dart.SimpleFrame(dart.gui.world_render_frame(), "r_target")
 
     # Set targets 10cm forward
     l_initial_pos = l_hand.get_world_transform().translation()

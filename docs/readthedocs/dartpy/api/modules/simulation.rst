@@ -1,6 +1,1 @@
-:orphan:
-
-Simulation
-==========
-
-This content is documented on the consolidated :doc:`dartpy` page.
+.. include:: ../../../../python_api/modules/simulation.rst

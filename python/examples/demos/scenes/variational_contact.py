@@ -20,7 +20,7 @@ from __future__ import annotations
 import numpy as np
 
 import dartpy as dart
-import dartpy.simulation_experimental as sx
+import dartpy as sx
 
 from .._world_bridge import WorldRenderBridge
 from ..runner import PythonDemoScene, SceneSetup
@@ -101,7 +101,7 @@ def build() -> SceneSetup:
     # A thin static ground slab at the contact plane (a standalone render frame
     # so the bridge's per-step sync never moves it).
     ground = dart.SimpleFrame(
-        dart.Frame.world(), "ground_visual", _translation(0.4, 0.0, _GROUND_Z)
+        dart.gui.world_render_frame(), "ground_visual", _translation(0.4, 0.0, _GROUND_Z)
     )
     ground.set_shape(dart.BoxShape(np.array([1.6, 0.8, 0.02])))
     ground.create_visual_aspect().set_color([0.55, 0.55, 0.58])

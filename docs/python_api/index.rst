@@ -10,8 +10,8 @@ dartpy provides Python bindings for DART (Dynamic Animation and Robotics Toolkit
    :caption: API Modules
 
    modules/dartpy
+   modules/simulation
    modules/utils
-   modules/simulation_experimental
    modules/gui
 
 Getting Started

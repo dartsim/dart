@@ -604,7 +604,9 @@ void expectNoWorldBaseAllocatorActivityDuringBakedSteps(
 
 template <typename ConfigureScene>
 void expectNoGlobalHeapAllocationsDuringBakedSteps(
-    std::string_view scene, ConfigureScene&& configureScene)
+    std::string_view scene,
+    ConfigureScene&& configureScene,
+    bool requireInitialContact = false)
 {
   namespace sx = dart::simulation::experimental;
 
@@ -613,6 +615,9 @@ void expectNoGlobalHeapAllocationsDuringBakedSteps(
 
   configureScene(world);
   world.enterSimulationMode();
+  if (requireInitialContact) {
+    ASSERT_FALSE(world.collide().empty());
+  }
 
   ScopedHeapAllocationCounter heapCounter;
   for (int i = 0; i < 4; ++i) {
@@ -1135,6 +1140,95 @@ TEST(World, BakedKinematicIpcStepsDoNotAllocateGlobalHeap)
       });
 }
 
+TEST(World, BakedRigidBodyContactStepsDoNotAllocateGlobalHeap)
+{
+  namespace sx = dart::simulation::experimental;
+
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "rigid body resting contact",
+      [](sx::World& world) {
+        world.setGravity(Eigen::Vector3d::Zero());
+
+        sx::RigidBodyOptions groundOptions;
+        groundOptions.isStatic = true;
+        groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.25);
+        auto ground = world.addRigidBody("ground", groundOptions);
+        ground.setCollisionShape(
+            sx::CollisionShape::makeBox(Eigen::Vector3d(2.0, 2.0, 0.25)));
+
+        sx::RigidBodyOptions boxOptions;
+        boxOptions.position = Eigen::Vector3d(0.0, 0.0, 0.18);
+        auto box = world.addRigidBody("box", boxOptions);
+        box.setMass(1.0);
+        box.setCollisionShape(
+            sx::CollisionShape::makeBox(Eigen::Vector3d(0.2, 0.2, 0.2)));
+
+        world.setTimeStep(0.001);
+      },
+      true);
+}
+
+TEST(World, BakedArticulatedContactStepsDoNotAllocateGlobalHeap)
+{
+  namespace sx = dart::simulation::experimental;
+
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "articulated link resting contact",
+      [](sx::World& world) {
+        world.setGravity(Eigen::Vector3d::Zero());
+
+        auto robot = world.addMultibody("leg_robot");
+        auto base = robot.addLink("base");
+        sx::JointSpec spec;
+        spec.name = "slider";
+        spec.type = sx::JointType::Prismatic;
+        spec.axis = Eigen::Vector3d::UnitZ();
+        auto leg = robot.addLink("leg", base, spec);
+        leg.setMass(1.0);
+        leg.setCollisionShape(sx::CollisionShape::makeSphere(0.2));
+        leg.getParentJoint().setPosition(Eigen::VectorXd::Constant(1, -0.35));
+
+        sx::RigidBodyOptions groundOptions;
+        groundOptions.isStatic = true;
+        groundOptions.position = Eigen::Vector3d(0.0, 0.0, -1.0);
+        auto ground = world.addRigidBody("ground", groundOptions);
+        ground.setCollisionShape(
+            sx::CollisionShape::makeBox(Eigen::Vector3d(5.0, 5.0, 0.5)));
+
+        world.setTimeStep(0.002);
+      },
+      true);
+}
+
+TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
+{
+  namespace sx = dart::simulation::experimental;
+
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "multibody variational scratch", [](sx::World& world) {
+        auto robot = world.addMultibody("slider");
+        auto base = robot.addLink("base");
+        sx::JointSpec spec;
+        spec.name = "rail";
+        spec.type = sx::JointType::Prismatic;
+        spec.axis = Eigen::Vector3d::UnitZ();
+        auto carriage = robot.addLink("carriage", base, spec);
+        carriage.setMass(3.0);
+        world.setMultibodyOptions({"variational integrator"});
+        world.setTimeStep(0.01);
+      });
+
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "single deformable particle", [](sx::World& world) {
+        sx::DeformableBodyOptions options;
+        options.positions = {Eigen::Vector3d(0.0, 0.0, 1.0)};
+        options.masses = {1.0};
+        options.edgeStiffness = 0.0;
+        world.addDeformableBody("particle", options);
+        world.setTimeStep(0.01);
+      });
+}
+
 TEST(World, SequentialImpulseBakeDoesNotPrewarmRigidIpcCollisionSurfaces)
 {
   namespace sx = dart::simulation::experimental;
@@ -1157,8 +1251,32 @@ TEST(World, SequentialImpulseBakeDoesNotPrewarmRigidIpcCollisionSurfaces)
 
   EXPECT_EQ(
       supportedGeometry.allocationCount, unsupportedGeometry.allocationCount);
-  EXPECT_EQ(
-      supportedGeometry.allocationBytes, unsupportedGeometry.allocationBytes);
+}
+
+TEST(World, IpcBakeDoesNotPrewarmRigidBodyContactQuery)
+{
+  namespace sx = dart::simulation::experimental;
+
+  const auto noGeometry = countGlobalHeapAllocationsDuringSimulationBake(
+      "IPC no collision geometry", [](sx::World& world) {
+        world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+        auto body = world.addRigidBody("kinematic_body");
+        body.setKinematic(true);
+        body.setLinearVelocity(Eigen::Vector3d(1.0, 0.0, 0.0));
+      });
+  const auto unsupportedGeometry
+      = countGlobalHeapAllocationsDuringSimulationBake(
+          "IPC contact-query-only plane geometry", [](sx::World& world) {
+            world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+            auto body = world.addRigidBody("kinematic_plane");
+            body.setKinematic(true);
+            body.setCollisionShape(
+                sx::CollisionShape::makePlane(Eigen::Vector3d::UnitZ(), 0.0));
+            body.setLinearVelocity(Eigen::Vector3d(1.0, 0.0, 0.0));
+          });
+
+  EXPECT_EQ(noGeometry.allocationCount, unsupportedGeometry.allocationCount);
+  EXPECT_EQ(noGeometry.allocationBytes, unsupportedGeometry.allocationBytes);
 }
 
 TEST(World, RigidIpcContactStagePrepareReusesSupportedDynamicSurfaceBuffers)
@@ -4214,6 +4332,47 @@ TEST(World, CollisionQueryCacheUpdatesTransformsAndShapes)
   EXPECT_FALSE(world.collide().empty());
 }
 
+TEST(World, CollisionQueryCacheRebuildPreservesPreparedSpecs)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+
+  auto bodyA = world.addRigidBody("a");
+  bodyA.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  sx::RigidBodyOptions bodyBOptions;
+  bodyBOptions.position = Eigen::Vector3d(0.8, 0.0, 0.0);
+  auto bodyB = world.addRigidBody("b", bodyBOptions);
+  bodyB.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  const auto firstContacts = world.collide();
+  ASSERT_FALSE(firstContacts.empty());
+
+  Eigen::Isometry3d farPose = Eigen::Isometry3d::Identity();
+  farPose.translation() = Eigen::Vector3d(3.8, 0.0, 0.0);
+  bodyB.setTransform(farPose);
+  EXPECT_TRUE(world.collide().empty());
+
+  sx::CollisionShape offsetSphere = sx::CollisionShape::makeSphere(0.5);
+  offsetSphere.localTransform.translation() = Eigen::Vector3d(3.4, 0.0, 0.0);
+  bodyA.addCollisionShape(offsetSphere);
+
+  const auto rebuiltContacts = world.collide();
+  ASSERT_FALSE(rebuiltContacts.empty());
+
+  bool sawNewShape = false;
+  for (const auto& contact : rebuiltContacts) {
+    if (contact.bodyA.getName() == "a") {
+      sawNewShape = sawNewShape || contact.shapeIndexA == 1u;
+    }
+    if (contact.bodyB.getName() == "a") {
+      sawNewShape = sawNewShape || contact.shapeIndexB == 1u;
+    }
+  }
+  EXPECT_TRUE(sawNewShape);
+}
+
 // Test that multiple shapes on the same rigid body behave as compound
 // collision geometry and do not self-collide.
 TEST(World, CollisionQuerySupportsCompoundRigidBodyShapes)
@@ -4704,6 +4863,42 @@ TEST(World, MultibodySiblingLinksResolveContact)
   EXPECT_GE(relativeVelocity, -1e-9);
   EXPECT_LT(lowerJoint.getVelocity()[0], 0.5);
   EXPECT_GT(upperJoint.getVelocity()[0], -0.5);
+}
+
+// Test that a fixed articulated obstacle still routes link contacts through
+// the unified solver instead of being swallowed by the sequential shortcut.
+TEST(World, ZeroDofMultibodyLinkContactStopsRigidBody)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  auto fixture = world.addMultibody("fixed_fixture");
+  auto base = fixture.addLink("base");
+  sx::JointSpec fixed;
+  fixed.name = "weld";
+  fixed.type = sx::JointType::Fixed;
+  auto obstacle = fixture.addLink("obstacle", base, fixed);
+  obstacle.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+  ASSERT_EQ(fixture.getDOFCount(), 0u);
+
+  sx::RigidBodyOptions dynamicOptions;
+  dynamicOptions.position = Eigen::Vector3d(0.9, 0.0, 0.0);
+  dynamicOptions.linearVelocity = Eigen::Vector3d(-1.0, 0.0, 0.0);
+  auto dynamic = world.addRigidBody("dynamic", dynamicOptions);
+  dynamic.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  world.setTimeStep(0.001);
+  ASSERT_FALSE(world.collide().empty());
+
+  world.step();
+
+  EXPECT_GE(dynamic.getLinearVelocity().x(), -1e-9)
+      << dynamic.getLinearVelocity().transpose();
+  EXPECT_NEAR(dynamic.getLinearVelocity().y(), 0.0, 1e-12);
+  EXPECT_NEAR(dynamic.getLinearVelocity().z(), 0.0, 1e-12);
+  EXPECT_TRUE(dynamic.getAngularVelocity().isZero(1e-12));
 }
 
 // Test cross-multibody link-vs-link contact: two separate fixed-base

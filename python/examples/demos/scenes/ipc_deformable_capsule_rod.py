@@ -18,7 +18,7 @@ from collections import deque
 import math
 from pathlib import Path
 
-import dartpy.simulation_experimental as sx
+import dartpy as sx
 import numpy as np
 
 from .._ipc_deformable_bridge import IpcDeformableBridge, build_cloth_from_obj

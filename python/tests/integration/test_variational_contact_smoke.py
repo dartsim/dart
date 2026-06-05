@@ -25,7 +25,7 @@ if str(_PYTHON_DIR) not in sys.path:
 
 def _sx():
     try:
-        module = importlib.import_module("dartpy.simulation_experimental")
+        module = importlib.import_module("dartpy")
     except ModuleNotFoundError:
         pytest.skip("DART_BUILD_SIMULATION_EXPERIMENTAL is disabled")
     if not hasattr(module, "World"):

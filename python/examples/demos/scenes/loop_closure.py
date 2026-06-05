@@ -24,7 +24,7 @@ from __future__ import annotations
 import numpy as np
 
 import dartpy as dart
-import dartpy.simulation_experimental as sx
+import dartpy as sx
 
 from .._world_bridge import WorldRenderBridge
 from ..runner import PythonDemoScene, SceneSetup
@@ -134,7 +134,7 @@ def build() -> SceneSetup:
     # render frame (not bridged to any body) so the bridge's per-step sync
     # never moves it off the anchor.
     anchor_frame = dart.SimpleFrame(
-        dart.Frame.world(), "anchor_visual", _translation(*_ANCHOR)
+        dart.gui.world_render_frame(), "anchor_visual", _translation(*_ANCHOR)
     )
     anchor_frame.set_shape(dart.BoxShape(np.array([0.12, 0.12, 0.12])))
     anchor_frame.create_visual_aspect().set_color([0.85, 0.85, 0.20])

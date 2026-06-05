@@ -34,6 +34,6 @@ Module Reference
    :titlesonly:
 
    api/modules/dartpy
+   api/modules/simulation
    api/modules/utils
-   api/modules/simulation_experimental
    api/modules/gui
