@@ -46,7 +46,7 @@ private:
 class PanelContextView
 {
 public:
-  explicit PanelContextView(const dart::gui::PanelContext* context)
+  explicit PanelContextView(dart::gui::PanelContext* context)
     : mContext(context)
   {
   }
@@ -56,8 +56,13 @@ public:
     return *mContext;
   }
 
+  dart::gui::PanelContext& context()
+  {
+    return *mContext;
+  }
+
 private:
-  const dart::gui::PanelContext* mContext = nullptr;
+  dart::gui::PanelContext* mContext = nullptr;
 };
 
 std::optional<std::array<double, 2>> optionalPair(nb::handle value)
@@ -207,6 +212,37 @@ void defGuiPanels(nb::module_& m)
           nb::arg("minimum"),
           nb::arg("maximum"))
       .def(
+          "timeline",
+          [](PanelBuilderView& self,
+             const std::string& label,
+             double value,
+             double minimum,
+             double maximum,
+             const std::vector<double>& valueTrack,
+             const std::vector<double>& markerTrack,
+             const std::vector<double>& cursorTrack,
+             const std::string& valueTrackLabel) {
+            double next = value;
+            const bool changed = self.builder().timeline(
+                label,
+                next,
+                minimum,
+                maximum,
+                valueTrack,
+                markerTrack,
+                cursorTrack,
+                valueTrackLabel);
+            return nb::make_tuple(changed, next);
+          },
+          nb::arg("label"),
+          nb::arg("value"),
+          nb::arg("minimum"),
+          nb::arg("maximum"),
+          nb::arg("value_track") = std::vector<double>{},
+          nb::arg("marker_track") = std::vector<double>{},
+          nb::arg("cursor_track") = std::vector<double>{},
+          nb::arg("value_track_label") = "Values")
+      .def(
           "color_edit",
           [](PanelBuilderView& self,
              const std::string& label,
@@ -340,9 +376,26 @@ void defGuiPanels(nb::module_& m)
             const auto* lifecycle = self.context().lifecycle;
             return lifecycle != nullptr && lifecycle->paused;
           })
-      .def_prop_ro("frame_output_enabled", [](const PanelContextView& self) {
-        const auto* lifecycle = self.context().lifecycle;
-        return lifecycle != nullptr && lifecycle->frameOutputEnabled;
+      .def_prop_ro(
+          "frame_output_enabled",
+          [](const PanelContextView& self) {
+            const auto* lifecycle = self.context().lifecycle;
+            return lifecycle != nullptr && lifecycle->frameOutputEnabled;
+          })
+      .def(
+          "set_paused",
+          [](PanelContextView& self, bool paused) {
+            auto* lifecycle = self.context().lifecycle;
+            if (lifecycle != nullptr) {
+              lifecycle->paused = paused;
+            }
+          },
+          nb::arg("paused"))
+      .def("request_single_step", [](PanelContextView& self) {
+        auto* lifecycle = self.context().lifecycle;
+        if (lifecycle != nullptr) {
+          dart::gui::requestSingleStep(*lifecycle);
+        }
       });
 }
 

@@ -126,6 +126,17 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     rebuilt correctly by cached GUI renderable extraction.
   - Added a renderer-neutral `dart::gui` panel callback surface for examples
     that need custom controls without including backend UI headers.
+  - Added a reusable renderer-neutral `PanelBuilder.timeline(...)` control and
+    made the Python demos default to a replay-timeline scene with a
+    bottom-docked scrubber. The shared demos GUI now keeps bottom scene panels
+    visible by default, uses clearer `Rebuild`/`Restart`/`Capture` toolbar
+    labels, and exposes a bounded captured-frame timeline when recording
+    viewer frames. Python demos backed by an experimental `World` now also get
+    a shared bottom-docked `Replay` panel: `Save replay` records bounded World
+    state snapshots during normal playback, optional scene replay-state hooks
+    capture small Python controller state beside the World frames, and the same
+    timeline widget can scrub or play those saved states without re-running
+    physics.
   - Added `pixi run bm-allocator-comparative-check`, a strict allocator
     benchmark gate that compares DART allocator workloads against
     foonathan/memory and `std::pmr` baselines.
@@ -588,6 +599,13 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     deprecated runtime `compute()`/constructor arguments.
 
 - Tooling and Docs
+  - Added a tiered local verification pipeline with a systematic task-naming
+    scheme (`verify-*`/`test-*`/`bench-*`, tiers `quick` < bare < `full`),
+    load-aware build/test parallelism (ninja `-l`, ctest `--test-load`) shared
+    across clones, parallel test execution with per-test timeouts and
+    `--rerun-failed`, and opt-in `DART_USE_MOLD` (mold linker) and
+    `DART_NORMALIZE_BUILD_PATHS` (cross-clone compiler-cache sharing). See
+    `docs/design/local_verification_pipeline.md`.
   - Bumped developer tooling to current releases (clang-format 22, black 26)
     and reformatted the C++ and Python sources to match.
   - Added AI-native documentation architecture with AGENTS.md, module-specific guides, slash commands, and command sync automation. ([#2446](https://github.com/dartsim/dart/pull/2446), [#2447](https://github.com/dartsim/dart/pull/2447), [#2448](https://github.com/dartsim/dart/pull/2448), [#2449](https://github.com/dartsim/dart/pull/2449))
@@ -596,6 +614,7 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Removed the OpenSceneGraph GUI implementation sources, Raylib experiment, legacy C++ and Python GUI examples/tutorials, legacy dartpy GUI bindings/stubs, and OSG/Raylib dependency discovery. Filament with GLFW3 and Dear ImGui is now the official renderer surface.
   - Added AI-infra principles, living plan dashboard, `dart-plan-update`, and `dart-retrospect` workflows to track research-focused roadmap work and durable session learnings from one source of truth, and aligned public and onboarding documentation entrypoints with that direction.
   - Extended AI command and skill synchronization so Claude Code, OpenCode, and Codex expose the same DART workflow capabilities with parity checks for generated command and skill files.
+  - Added a single-page DART 7 architecture overview (`docs/readthedocs/architecture.md`, published as **Architecture** on the docs site) mapping the multi-physics, multi-solver, and multi-backend simulation pipeline as abstracted boxes with the available options at each seam, plus a `dart-architecture` domain skill and pointers from the north star, onboarding, and design indexes.
   - Promoted prompt-only AI workflows into synced workflow commands and removed the separate prompt-template folder.
   - Fixed generated Codex DART skill frontmatter so strict YAML parsers load AI workflow skills without warnings. ([#2546](https://github.com/dartsim/dart/pull/2546))
   - Simplified copyright headers to first publication year (REUSE compliance). ([#2438](https://github.com/dartsim/dart/pull/2438))
@@ -686,8 +705,8 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     without re-running physics. Replay frames deliberately store only mutable
     runtime state needed to restore an already-simulated frame, not topology,
     geometry, material, or static construction data, and layout changes are
-    rejected on restore. Added focused C++/Python regressions and an
-    `sx_replay_scrubber` `py-demos` scene with timestep-resolution
+    rejected on restore. Added focused C++/Python regressions and a
+    `replay_scrubber` `py-demos` scene with timestep-resolution
     slider/controller playback.
   - Consolidated the experimental CUDA solver modules (rigid-body batch, vertex
     block descent, deformable PSD projection) onto a shared device-runtime

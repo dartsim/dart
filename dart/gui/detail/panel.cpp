@@ -51,6 +51,37 @@ std::string visiblePanelLabel(std::string_view label)
   return std::string(label.substr(0, idMarker));
 }
 
+void renderPlotLines(
+    std::string_view label, std::span<const double> values, float height)
+{
+  const std::string labelValue(label);
+  const std::string displayLabel = visiblePanelLabel(label);
+  const auto valueGetter = [](void* data, int index) {
+    const auto* values = static_cast<const std::span<const double>*>(data);
+    return static_cast<float>((*values)[static_cast<std::size_t>(index)]);
+  };
+  const auto valueCount = values.size() > static_cast<std::size_t>(
+                              std::numeric_limits<int>::max())
+                              ? std::numeric_limits<int>::max()
+                              : static_cast<int>(values.size());
+  ImGui::PushID(labelValue.c_str());
+  if (!displayLabel.empty()) {
+    ImGui::TextUnformatted(displayLabel.c_str());
+  }
+  ImGui::SetNextItemWidth(-std::numeric_limits<float>::min());
+  ImGui::PlotLines(
+      "##lines",
+      valueGetter,
+      &values,
+      valueCount,
+      0,
+      nullptr,
+      std::numeric_limits<float>::max(),
+      std::numeric_limits<float>::max(),
+      ImVec2(0.0f, height));
+  ImGui::PopID();
+}
+
 class ImGuiPanelBuilder final : public dart::gui::PanelBuilder
 {
 public:
@@ -142,6 +173,40 @@ public:
     return changed;
   }
 
+  bool timeline(
+      std::string_view label,
+      double& value,
+      double minimum,
+      double maximum,
+      std::span<const double> valueTrack,
+      std::span<const double> markerTrack,
+      std::span<const double> cursorTrack,
+      std::string_view valueTrackLabel) override
+  {
+    const std::string labelValue(label);
+    const std::string displayLabel = visiblePanelLabel(label);
+    ImGui::PushID(labelValue.c_str());
+    if (!displayLabel.empty()) {
+      ImGui::TextUnformatted(displayLabel.c_str());
+    }
+    ImGui::SetNextItemWidth(-std::numeric_limits<float>::min());
+    const bool changed = ImGui::SliderScalar(
+        "##value", ImGuiDataType_Double, &value, &minimum, &maximum);
+
+    if (!valueTrack.empty()) {
+      renderPlotLines(valueTrackLabel, valueTrack, 44.0f);
+    }
+    if (!markerTrack.empty()) {
+      renderPlotLines("Marks", markerTrack, 20.0f);
+    }
+    if (!cursorTrack.empty()) {
+      renderPlotLines("Cursor", cursorTrack, 20.0f);
+    }
+
+    ImGui::PopID();
+    return changed;
+  }
+
   bool colorEdit(std::string_view label, Eigen::Vector4d& rgba) override
   {
     const std::string labelValue(label);
@@ -209,32 +274,7 @@ public:
   void plotLines(
       std::string_view label, std::span<const double> values) override
   {
-    const std::string labelValue(label);
-    const std::string displayLabel = visiblePanelLabel(label);
-    const auto valueGetter = [](void* data, int index) {
-      const auto* values = static_cast<const std::span<const double>*>(data);
-      return static_cast<float>((*values)[static_cast<std::size_t>(index)]);
-    };
-    const auto valueCount = values.size() > static_cast<std::size_t>(
-                                std::numeric_limits<int>::max())
-                                ? std::numeric_limits<int>::max()
-                                : static_cast<int>(values.size());
-    ImGui::PushID(labelValue.c_str());
-    if (!displayLabel.empty()) {
-      ImGui::TextUnformatted(displayLabel.c_str());
-    }
-    ImGui::SetNextItemWidth(-std::numeric_limits<float>::min());
-    ImGui::PlotLines(
-        "##lines",
-        valueGetter,
-        &values,
-        valueCount,
-        0,
-        nullptr,
-        std::numeric_limits<float>::max(),
-        std::numeric_limits<float>::max(),
-        ImVec2(0.0f, 72.0f));
-    ImGui::PopID();
+    renderPlotLines(label, values, 72.0f);
   }
 
   bool beginTable(

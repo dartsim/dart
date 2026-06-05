@@ -124,6 +124,10 @@ def build() -> SceneSetup:
         else:
             connector_visual.set_color([0.78, 0.78, 0.70])
 
+    def replay_sync() -> None:
+        bridge.sync()
+        sync_connector()
+
     def pre_step() -> None:
         bridge.pre_step()
         sync_connector()
@@ -170,6 +174,8 @@ def build() -> SceneSetup:
             "payload": payload,
             "ground": ground,
             "connector": connector,
+            "replay_sync": replay_sync,
+            "replay_live_step_is_stateless": True,
             "break_force": _BREAK_FORCE,
         },
     )

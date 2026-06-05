@@ -629,7 +629,7 @@ def test_avbd_fixed_joint_contact_demo_exercises_contact_path() -> None:
 def test_avbd_revolute_motor_demo_drives_hinge() -> None:
     import numpy as np
 
-    sx = _require_simulation_experimental_symbols("World")
+    sx = _require_simulation_experimental_symbols("World", "ActuatorType")
 
     from examples.demos.scenes.avbd_rigid_revolute_motor import build
 

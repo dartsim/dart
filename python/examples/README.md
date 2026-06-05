@@ -17,7 +17,8 @@ C++ `dart-demos` (PLAN-102) is now the smaller World-only C++ companion.
 ## Run
 
 ```bash
-pixi run py-demos                                # run the first scene
+pixi run py-demos                                # default: open replay timeline
+pixi run py-demos -- --scene replay_scrubber     # open the replay timeline
 pixi run py-demos -- --scene articulated         # select a scene by id
 pixi run py-demos -- --cycle-scenes --frames 4   # cycle every scene and exit
 pixi run py-demos -- --list                      # print the catalog
@@ -42,6 +43,10 @@ are required.
 `dartpy.gui.run_demos` opens the same Filament multi-scene viewer used by C++
 `dart-demos`. Scene modules can attach custom `ScenePanel` callbacks for
 per-example controls and diagnostics; the runner renders them through DART's
-renderer-neutral `PanelBuilder`. Use `--headless` for deterministic
-screenshot/frame capture and the C++ `dartsim` editor (PLAN-101) for scene
-authoring.
+renderer-neutral `PanelBuilder`. Experimental-World scenes also receive the
+shared bottom `Replay` panel, which records bounded saved states during normal
+playback and can scrub or play them back without re-running physics. Scene
+modules with Python-side controller state can add small replay capture/restore
+callbacks while static geometry and render setup stay scene-owned. Use
+`--headless` for deterministic screenshot/frame capture and the C++ `dartsim`
+editor (PLAN-101) for scene authoring.

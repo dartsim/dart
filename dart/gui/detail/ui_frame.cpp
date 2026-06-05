@@ -58,7 +58,9 @@
 #include <algorithm>
 #include <array>
 #include <optional>
+#include <span>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <cmath>
@@ -325,13 +327,16 @@ void buildDefaultDockLayout(
   using dart::gui::DockSide;
 
   bool useTop = false;
-  // The built-in status panel ("DART") always docks into the bottom region, so
-  // reserve it even when no application panel requests the bottom; otherwise
-  // the status panel would tab into the left sidebar (e.g. the demos catalog).
+  // Reserve a bottom region for either application-owned bottom panels or the
+  // built-in status panel. When an application owns the bottom region (for
+  // example a replay timeline), the status panel moves to a side tab so the
+  // primary scene control remains visible on first launch.
+  bool useApplicationBottom = false;
   bool useBottom = true;
   bool useLeft = false;
   bool useRight = false;
   float topFraction = 0.07f;
+  float bottomFraction = 0.12f;
   for (const auto& panel : panels) {
     switch (panel.dockSide) {
       case DockSide::Top:
@@ -346,7 +351,16 @@ void buildDefaultDockLayout(
         }
         break;
       case DockSide::Bottom:
+        useApplicationBottom = true;
         useBottom = true;
+        if (panel.initialSize.has_value()) {
+          const float viewportHeight = ImGui::GetMainViewport()->Size.y;
+          if (viewportHeight > 0.0f) {
+            bottomFraction = std::max(
+                bottomFraction,
+                static_cast<float>((*panel.initialSize)[1]) / viewportHeight);
+          }
+        }
         break;
       case DockSide::Left:
         useLeft = true;
@@ -371,6 +385,7 @@ void buildDefaultDockLayout(
           | static_cast<int>(ImGuiDockNodeFlags_PassthruCentralNode));
   ImGui::DockBuilderSetNodeSize(dockId, ImGui::GetMainViewport()->Size);
   topFraction = std::clamp(topFraction, 0.07f, 0.18f);
+  bottomFraction = std::clamp(bottomFraction, 0.10f, 0.45f);
 
   ImGuiID center = dockId;
   ImGuiID top = 0;
@@ -383,7 +398,7 @@ void buildDefaultDockLayout(
   }
   if (useBottom) {
     bottom = ImGui::DockBuilderSplitNode(
-        center, ImGuiDir_Down, 0.12f, nullptr, &center);
+        center, ImGuiDir_Down, bottomFraction, nullptr, &center);
   }
   if (useLeft) {
     left = ImGui::DockBuilderSplitNode(
@@ -421,16 +436,81 @@ void buildDefaultDockLayout(
     ImGui::DockBuilderDockWindow(panel.title.c_str(), target);
   }
 
-  // Fold the built-in scene/debug status panel into the bottom region so it
-  // joins the docked layout instead of floating over the viewport.
-  if (bottom != 0) {
+  // Fold the built-in scene/debug status panel into the docked layout instead
+  // of floating over the viewport. Application-owned bottom panels are primary
+  // controls, so keep them visible by docking status into a side region when
+  // possible.
+  if (!useApplicationBottom && bottom != 0) {
     ImGui::DockBuilderDockWindow(kBuiltInStatusPanelTitle, bottom);
   } else if (left != 0) {
     ImGui::DockBuilderDockWindow(kBuiltInStatusPanelTitle, left);
+  } else if (right != 0) {
+    ImGui::DockBuilderDockWindow(kBuiltInStatusPanelTitle, right);
+  } else if (bottom != 0) {
+    ImGui::DockBuilderDockWindow(kBuiltInStatusPanelTitle, bottom);
   }
 
   clearDockNodeResizeLocks(dockId);
   ImGui::DockBuilderFinish(dockId);
+}
+
+std::vector<std::string_view> initialFocusPanelsForDefaultDockLayout(
+    const std::vector<dart::gui::Panel>& panels)
+{
+  bool useBottom = false;
+  bool useLeft = false;
+  bool useRight = false;
+  std::vector<std::string_view> titles;
+  titles.reserve(3u);
+  for (const auto& panel : panels) {
+    if (panel.title.empty()) {
+      continue;
+    }
+    switch (panel.dockSide) {
+      case dart::gui::DockSide::Bottom:
+        if (!useBottom) {
+          titles.push_back(panel.title);
+          useBottom = true;
+        }
+        break;
+      case dart::gui::DockSide::Left:
+        if (!useLeft) {
+          titles.push_back(panel.title);
+          useLeft = true;
+        }
+        break;
+      case dart::gui::DockSide::Right:
+        if (!useRight) {
+          titles.push_back(panel.title);
+          useRight = true;
+        }
+        break;
+      case dart::gui::DockSide::Top:
+      case dart::gui::DockSide::Center:
+      case dart::gui::DockSide::None:
+        break;
+    }
+  }
+  return titles;
+}
+
+void selectInitialDockedPanels(std::span<const std::string_view> titles)
+{
+  for (const std::string_view title : titles) {
+    if (title.empty()) {
+      continue;
+    }
+    const std::string titleValue(title);
+    ImGuiWindow* window = ImGui::FindWindowByName(titleValue.c_str());
+    if (window == nullptr || window->DockNode == nullptr) {
+      continue;
+    }
+    window->DockNode->SelectedTabId = window->TabId;
+    if (window->DockNode->TabBar != nullptr) {
+      window->DockNode->TabBar->SelectedTabId = window->TabId;
+      window->DockNode->TabBar->NextSelectedTabId = window->TabId;
+    }
+  }
 }
 #endif // IMGUI_HAS_DOCK
 
@@ -464,12 +544,14 @@ void updateFrameUi(
   updateImGuiMouseInput(window, imguiIo, viewport.width, viewport.height);
   ImGui::NewFrame();
 #ifdef IMGUI_HAS_DOCK
+  std::vector<std::string_view> initialFocusPanelTitles;
   if (dartScene.dockingEnabled) {
     const ImGuiID dockId = ImHashStr("DARTMainDockSpace");
     const bool resetDockLayout
         = dart::gui::consumeDockLayoutResetRequest(lifecycle);
     if (resetDockLayout || !lifecycle.dockLayoutInitialized) {
       lifecycle.dockLayoutInitialized = true;
+      initialFocusPanelTitles = initialFocusPanelsForDefaultDockLayout(panels);
       // Apply the default layout deterministically on startup. The py-demos
       // workspace is an examples browser first; a stale imgui.ini layout should
       // not make its first frame look broken or obscure the viewport.
@@ -566,6 +648,9 @@ void updateFrameUi(
   }
   renderApplicationPanels(
       panels, panelContext, guiScale.effectiveScale, dartScene.dockingEnabled);
+#ifdef IMGUI_HAS_DOCK
+  selectInitialDockedPanels(initialFocusPanelTitles);
+#endif
   updateViewportPaneActivation(
       dartScene.viewportPaneActivation,
       window,

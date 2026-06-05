@@ -44,6 +44,14 @@ Research-focused means three things:
 The intended result is that DART becomes the default reference platform when
 researchers evaluate simulation libraries across these three dimensions.
 
+How the DART 7 engine realizes these dimensions — one simulation pipeline
+generalized for multi-physics, multi-solver, and multi-backend execution, with
+the available options at each abstraction seam — is mapped on a single page in
+[`../readthedocs/architecture.md`](../readthedocs/architecture.md), backed by the
+design rationale in
+[`../design/simulation_solver_architecture.md`](../design/simulation_solver_architecture.md)
+and [`../design/scalable_compute_decisions.md`](../design/scalable_compute_decisions.md).
+
 For AI-native work, the north star adds one operational requirement: a fresh
 agent should be able to inspect the repository, understand the mission and
 current status, choose the next valuable task, implement it locally, and verify

@@ -83,12 +83,49 @@ class _AtlasSimbiconPreview:
     def phase(self) -> float:
         return min(1.0, self.state_time / _STATE_DURATIONS[self.state])
 
+    def _blended_targets(self) -> dict[str, float]:
+        phase = 0.5 - 0.5 * math.cos(math.pi * self.phase)
+        names = set(self._previous_targets) | set(self._current_targets)
+        return {
+            name: (1.0 - phase) * self._previous_targets.get(name, 0.0)
+            + phase * self._current_targets.get(name, 0.0)
+            for name in names
+        }
+
+    def _apply_current_targets(self) -> None:
+        apply_joint_targets(self.robot, self._blended_targets())
+
     def reset(self) -> None:
         self.state = 0
         self.state_time = 0.0
         self._previous_targets = dict(_BASE_POSE)
         self._current_targets = _state_targets(0)
         apply_joint_targets(self.robot, self._current_targets)
+
+    def capture_replay_state(self) -> dict[str, object]:
+        return {
+            "state": int(self.state),
+            "state_time": float(self.state_time),
+            "speed": float(self.speed),
+            "previous_targets": dict(self._previous_targets),
+            "current_targets": dict(self._current_targets),
+        }
+
+    def restore_replay_state(self, snapshot: dict[str, object]) -> None:
+        self.state = int(snapshot.get("state", 0)) % len(_STATE_DURATIONS)
+        self.state_time = max(0.0, float(snapshot.get("state_time", 0.0)))
+        self.speed = max(0.0, float(snapshot.get("speed", self.speed)))
+        previous_targets = snapshot.get("previous_targets", _BASE_POSE)
+        current_targets = snapshot.get("current_targets", _state_targets(self.state))
+        self._previous_targets = {
+            str(name): float(value)
+            for name, value in dict(previous_targets).items()
+        }
+        self._current_targets = {
+            str(name): float(value)
+            for name, value in dict(current_targets).items()
+        }
+        self._apply_current_targets()
 
     def step(self, dt: float) -> None:
         self.state_time += max(0.0, dt * self.speed)
@@ -99,14 +136,7 @@ class _AtlasSimbiconPreview:
             self._previous_targets = self._current_targets
             self._current_targets = _state_targets(self.state)
 
-        phase = 0.5 - 0.5 * math.cos(math.pi * self.phase)
-        names = set(self._previous_targets) | set(self._current_targets)
-        blended = {
-            name: (1.0 - phase) * self._previous_targets.get(name, 0.0)
-            + phase * self._current_targets.get(name, 0.0)
-            for name in names
-        }
-        apply_joint_targets(self.robot, blended)
+        self._apply_current_targets()
 
 
 def build() -> SceneSetup:
@@ -163,6 +193,8 @@ def build() -> SceneSetup:
             "robot": "atlas",
             "controller": "simbicon_target_preview",
             "dofs": robot.num_dofs,
+            "replay_capture_state": controller.capture_replay_state,
+            "replay_restore_state": controller.restore_replay_state,
         },
     )
 
