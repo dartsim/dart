@@ -206,6 +206,21 @@ struct AvbdRigidPointJoint
   std::uint32_t row = 0;
 };
 
+struct AvbdRigidAngularMotor
+{
+  std::uint32_t bodyA = 0;
+  std::uint32_t bodyB = 0;
+  AvbdContactEndpointId endpointA;
+  AvbdContactEndpointId endpointB;
+  Eigen::Quaterniond targetRelativeOrientation = Eigen::Quaterniond::Identity();
+  Eigen::Vector3d axis = Eigen::Vector3d::UnitZ();
+  double targetSpeed = 0.0;
+  double maxTorque = std::numeric_limits<double>::infinity();
+  double startStiffness = 1.0;
+  double maxStiffness = std::numeric_limits<double>::infinity();
+  std::uint32_t row = 0;
+};
+
 struct AvbdRigidContactManifoldPoint
 {
   std::uint32_t bodyA = 0;
@@ -462,6 +477,50 @@ inline AvbdRigidAngularPairRow makeAvbdRigidJointAngularRow(
 }
 
 //==============================================================================
+inline AvbdRigidAngularPairRow makeAvbdRigidAngularMotorRow(
+    const Eigen::Quaterniond& targetRelativeOrientation,
+    const Eigen::Vector3d& axis,
+    double targetSpeed,
+    double timeStep,
+    AvbdScalarRowState state)
+{
+  AvbdRigidAngularPairRow row = makeAvbdRigidJointAngularRow(
+      targetRelativeOrientation, axis, state, /*previousConstraintValue=*/0.0);
+  row.offset = -targetSpeed * timeStep;
+  return row;
+}
+
+//==============================================================================
+inline AvbdRigidAngularMotor makeAvbdRigidAngularMotor(
+    std::uint32_t bodyA,
+    std::uint32_t bodyB,
+    AvbdContactEndpointId endpointA,
+    AvbdContactEndpointId endpointB,
+    const Eigen::Quaterniond& targetRelativeOrientation,
+    const Eigen::Vector3d& axis,
+    double targetSpeed,
+    double maxTorque,
+    double startStiffness = 1.0,
+    double maxStiffness = std::numeric_limits<double>::infinity(),
+    std::uint32_t row = 0)
+{
+  AvbdRigidAngularMotor motor;
+  motor.bodyA = bodyA;
+  motor.bodyB = bodyB;
+  motor.endpointA = endpointA;
+  motor.endpointB = endpointB;
+  motor.targetRelativeOrientation
+      = normalizeAvbdRigidOrientation(targetRelativeOrientation);
+  motor.axis = normalizedAvbdRigidPointPairAxis(axis, Eigen::Vector3d::UnitZ());
+  motor.targetSpeed = targetSpeed;
+  motor.maxTorque = std::max(0.0, maxTorque);
+  motor.startStiffness = std::max(0.0, startStiffness);
+  motor.maxStiffness = std::max(motor.startStiffness, maxStiffness);
+  motor.row = row;
+  return motor;
+}
+
+//==============================================================================
 inline AvbdRigidPointJoint makeAvbdRigidRevolutePointJoint(
     std::uint32_t bodyA,
     std::uint32_t bodyB,
@@ -578,6 +637,20 @@ inline bool isValidAvbdRigidPointJoint(
 }
 
 //==============================================================================
+inline bool isValidAvbdRigidAngularMotor(
+    const AvbdRigidAngularMotor& motor, std::size_t bodyCount, double timeStep)
+{
+  return motor.bodyA < bodyCount && motor.bodyB < bodyCount
+         && motor.bodyA != motor.bodyB
+         && motor.targetRelativeOrientation.coeffs().allFinite()
+         && motor.targetRelativeOrientation.norm() > 0.0
+         && motor.axis.allFinite() && motor.axis.squaredNorm() > 0.0
+         && std::isfinite(motor.targetSpeed) && timeStep > 0.0
+         && std::isfinite(timeStep) && motor.maxTorque > 0.0
+         && !std::isnan(motor.maxTorque);
+}
+
+//==============================================================================
 inline AvbdScalarRowDescriptor makeAvbdRigidJointLinearRowDescriptor(
     AvbdContactEndpointId first,
     AvbdContactEndpointId second,
@@ -614,6 +687,25 @@ inline AvbdScalarRowDescriptor makeAvbdRigidJointAngularRowDescriptor(
   descriptor.bounds
       = {-std::numeric_limits<double>::infinity(),
          std::numeric_limits<double>::infinity()};
+  descriptor.startStiffness = startStiffness;
+  descriptor.maxStiffness = maxStiffness;
+  return descriptor;
+}
+
+//==============================================================================
+inline AvbdScalarRowDescriptor makeAvbdRigidAngularMotorRowDescriptor(
+    AvbdContactEndpointId first,
+    AvbdContactEndpointId second,
+    double maxTorque,
+    double startStiffness,
+    double maxStiffness,
+    std::uint32_t row = 0)
+{
+  AvbdScalarRowDescriptor descriptor;
+  descriptor.key = makeAvbdEndpointPairRowKey(
+      AvbdScalarRowRole::Motor, first, second, row, /*axis=*/0);
+  descriptor.kind = AvbdScalarRowKind::HardConstraint;
+  descriptor.bounds = {-maxTorque, maxTorque};
   descriptor.startStiffness = startStiffness;
   descriptor.maxStiffness = maxStiffness;
   return descriptor;
@@ -700,6 +792,47 @@ inline double avbdRigidPointPairFrictionPairForceLimit(
   return std::min(
       avbdRigidPointPairFrictionForceLimit(first),
       avbdRigidPointPairFrictionForceLimit(second));
+}
+
+//==============================================================================
+inline bool avbdRigidScalarRowExceedsFractureThreshold(
+    const AvbdScalarRowState& state, double fractureThreshold)
+{
+  return fractureThreshold > 0.0 && std::isfinite(fractureThreshold)
+         && std::abs(state.lambda) >= fractureThreshold;
+}
+
+//==============================================================================
+inline double avbdRigidAngularPairLambdaNorm(
+    std::span<const AvbdRigidBodyAngularPairRow> rows)
+{
+  double squaredNorm = 0.0;
+  for (const AvbdRigidBodyAngularPairRow& row : rows) {
+    if (!std::isfinite(row.row.state.lambda)) {
+      return std::numeric_limits<double>::infinity();
+    }
+    squaredNorm += row.row.state.lambda * row.row.state.lambda;
+  }
+  return std::sqrt(squaredNorm);
+}
+
+//==============================================================================
+inline bool avbdRigidAngularPairRowsExceedFractureThreshold(
+    std::span<const AvbdRigidBodyAngularPairRow> rows, double fractureThreshold)
+{
+  return fractureThreshold > 0.0 && std::isfinite(fractureThreshold)
+         && avbdRigidAngularPairLambdaNorm(rows) >= fractureThreshold;
+}
+
+//==============================================================================
+inline void resetAvbdRigidAngularPairRowsAfterFracture(
+    std::span<AvbdRigidBodyAngularPairRow> rows)
+{
+  for (AvbdRigidBodyAngularPairRow& row : rows) {
+    row.row.state.lambda = 0.0;
+    row.row.state.stiffness = 0.0;
+    row.row.previousConstraintValue = 0.0;
+  }
 }
 
 //==============================================================================
@@ -1301,6 +1434,61 @@ inline void buildAvbdRigidPointJointAngularRows(
         = avbdRigidAngularPairConstraintValue(
             states[joint.bodyA], states[joint.bodyB], indexedRow.row);
     angularRows.push_back(indexedRow);
+  }
+}
+
+//==============================================================================
+inline void buildAvbdRigidAngularMotorRows(
+    const std::vector<AvbdRigidBodyState>& states,
+    std::span<const AvbdRigidAngularMotor> motors,
+    AvbdScalarRowInventory& motorInventory,
+    std::vector<AvbdRigidBodyAngularPairRow>& motorRows,
+    double timeStep,
+    const AvbdRowWarmStartOptions& warmStartOptions = {})
+{
+  std::vector<AvbdRigidAngularMotor> activeRows;
+  activeRows.reserve(motors.size());
+  std::vector<AvbdScalarRowDescriptor> descriptors;
+  descriptors.reserve(motors.size());
+  for (const AvbdRigidAngularMotor& motor : motors) {
+    if (!detail::isValidAvbdRigidAngularMotor(motor, states.size(), timeStep)) {
+      continue;
+    }
+
+    activeRows.push_back(motor);
+    descriptors.push_back(
+        detail::makeAvbdRigidAngularMotorRowDescriptor(
+            motor.endpointA,
+            motor.endpointB,
+            motor.maxTorque,
+            motor.startStiffness,
+            motor.maxStiffness,
+            motor.row));
+  }
+
+  motorInventory.syncActiveRows(descriptors, warmStartOptions);
+
+  motorRows.clear();
+  motorRows.reserve(motorInventory.size());
+  for (std::size_t recordIndex = 0; recordIndex < activeRows.size();
+       ++recordIndex) {
+    if (recordIndex >= motorInventory.size()) {
+      return;
+    }
+
+    const AvbdRigidAngularMotor& motor = activeRows[recordIndex];
+    const AvbdScalarRowRecord& record = motorInventory[recordIndex];
+    AvbdRigidBodyAngularPairRow indexedRow;
+    indexedRow.bodyA = motor.bodyA;
+    indexedRow.bodyB = motor.bodyB;
+    indexedRow.row = makeAvbdRigidAngularMotorRow(
+        motor.targetRelativeOrientation,
+        motor.axis,
+        motor.targetSpeed,
+        timeStep,
+        record.state);
+    indexedRow.row.bounds = record.descriptor.bounds;
+    motorRows.push_back(indexedRow);
   }
 }
 

@@ -917,6 +917,186 @@ TEST(AvbdRigidBlock, RigidPointJointBuilderCreatesWarmStartedAngularRows)
 }
 
 //==============================================================================
+TEST(AvbdRigidBlock, RigidAngularMotorBuilderCreatesBoundedRows)
+{
+  std::vector<vbd::AvbdRigidBodyState> states(2);
+  const vbd::AvbdContactEndpointId endpointA{
+      12, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Body, 0)};
+  const vbd::AvbdContactEndpointId endpointB{
+      3, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Body, 0)};
+  const std::vector<vbd::AvbdRigidAngularMotor> motors{
+      vbd::makeAvbdRigidAngularMotor(
+          /*bodyA=*/0,
+          /*bodyB=*/1,
+          endpointA,
+          endpointB,
+          rotationZ(0.1),
+          2.0 * Vec3::UnitZ(),
+          /*targetSpeed=*/2.0,
+          /*maxTorque=*/4.0,
+          /*startStiffness=*/70.0,
+          /*maxStiffness=*/500.0,
+          /*row=*/6)};
+
+  vbd::AvbdScalarRowInventory motorInventory;
+  std::vector<vbd::AvbdRigidBodyAngularPairRow> motorRows;
+  vbd::AvbdRowWarmStartOptions warmStart;
+  warmStart.alpha = 0.5;
+  warmStart.gamma = 0.25;
+
+  vbd::buildAvbdRigidAngularMotorRows(
+      states,
+      motors,
+      motorInventory,
+      motorRows,
+      /*timeStep=*/0.25,
+      warmStart);
+
+  ASSERT_EQ(motorInventory.size(), 1u);
+  ASSERT_EQ(motorRows.size(), 1u);
+
+  const auto& descriptor = motorInventory[0].descriptor;
+  EXPECT_EQ(descriptor.key.role, vbd::AvbdScalarRowRole::Motor);
+  EXPECT_EQ(descriptor.key.row, 6u);
+  EXPECT_EQ(descriptor.key.axis, 0u);
+  EXPECT_DOUBLE_EQ(descriptor.bounds.lower, -4.0);
+  EXPECT_DOUBLE_EQ(descriptor.bounds.upper, 4.0);
+  EXPECT_DOUBLE_EQ(descriptor.startStiffness, 70.0);
+  EXPECT_DOUBLE_EQ(descriptor.maxStiffness, 500.0);
+
+  EXPECT_EQ(motorRows[0].bodyA, 0u);
+  EXPECT_EQ(motorRows[0].bodyB, 1u);
+  EXPECT_NEAR((motorRows[0].row.axis - Vec3::UnitZ()).norm(), 0.0, 1e-12);
+  EXPECT_NEAR(
+      (motorRows[0].row.targetRelativeOrientation.toRotationMatrix()
+       - rotationZ(0.1).toRotationMatrix())
+          .norm(),
+      0.0,
+      1e-12);
+  EXPECT_DOUBLE_EQ(motorRows[0].row.offset, -0.5);
+  EXPECT_DOUBLE_EQ(motorRows[0].row.previousConstraintValue, 0.0);
+  EXPECT_DOUBLE_EQ(motorRows[0].row.bounds.lower, -4.0);
+  EXPECT_DOUBLE_EQ(motorRows[0].row.bounds.upper, 4.0);
+
+  motorInventory[0].state.lambda = 8.0;
+  motorInventory[0].state.stiffness = 120.0;
+  vbd::buildAvbdRigidAngularMotorRows(
+      states,
+      motors,
+      motorInventory,
+      motorRows,
+      /*timeStep=*/0.25,
+      warmStart);
+
+  ASSERT_EQ(motorInventory.size(), 1u);
+  EXPECT_DOUBLE_EQ(motorInventory[0].state.lambda, 1.0);
+  EXPECT_DOUBLE_EQ(motorInventory[0].state.stiffness, 70.0);
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, RigidAngularMotorRowsDriveTargetAngularStep)
+{
+  std::vector<vbd::AvbdRigidBodyState> states(2);
+  const std::vector<vbd::AvbdRigidBodyState> inertialTargets = states;
+  const std::vector<double> masses = {1.0, 1.0};
+  const std::vector<Eigen::Matrix3d> inertias
+      = {Eigen::Matrix3d::Identity(), Eigen::Matrix3d::Identity()};
+  const std::vector<std::uint8_t> fixed = {1u, 0u};
+
+  const std::vector<vbd::AvbdRigidAngularMotor> motors{
+      vbd::makeAvbdRigidAngularMotor(
+          /*bodyA=*/0,
+          /*bodyB=*/1,
+          {1,
+           vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Body, 0)},
+          {2,
+           vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Body, 0)},
+          Eigen::Quaterniond::Identity(),
+          Vec3::UnitZ(),
+          /*targetSpeed=*/0.5,
+          /*maxTorque=*/1000.0,
+          /*startStiffness=*/100.0,
+          /*maxStiffness=*/1000.0)};
+
+  vbd::AvbdScalarRowInventory motorInventory;
+  std::vector<vbd::AvbdRigidBodyAngularPairRow> motorRows;
+  vbd::buildAvbdRigidAngularMotorRows(
+      states, motors, motorInventory, motorRows, /*timeStep=*/0.25);
+
+  std::vector<vbd::AvbdRigidBodyPointAttachmentRow> attachments;
+  std::vector<vbd::AvbdRigidBodyPointPairRow> pointPairs;
+  std::vector<vbd::AvbdRigidBodyPointPairFrictionRows> frictionRows;
+  vbd::AvbdRigidBlockDescentOptions options;
+  options.iterations = 8;
+  options.regularization = 1e-12;
+  vbd::AvbdRigidPointAttachmentOptions rowOptions;
+  rowOptions.beta = 1000.0;
+  rowOptions.maxStiffness = 1000.0;
+  vbd::AvbdRigidPointPairFrictionOptions frictionOptions;
+
+  const vbd::AvbdRigidBlockDescentStats stats
+      = vbd::blockDescentRigidBodiesAvbdRows(
+          states,
+          masses,
+          inertias,
+          fixed,
+          inertialTargets,
+          /*timeStep=*/0.25,
+          attachments,
+          pointPairs,
+          motorRows,
+          frictionRows,
+          options,
+          rowOptions,
+          frictionOptions);
+
+  const Vec3 error = vbd::avbdRigidBodyOrientationError(
+      states[1].orientation, Eigen::Quaterniond::Identity());
+  EXPECT_GT(stats.bodyUpdates, 0u);
+  EXPECT_NEAR(error.x(), 0.0, 1e-12);
+  EXPECT_NEAR(error.y(), 0.0, 1e-12);
+  EXPECT_GT(error.z(), 0.02);
+  EXPECT_NEAR(error.z(), 0.125, 0.05);
+  ASSERT_EQ(motorRows.size(), 1u);
+  EXPECT_LE(std::abs(motorRows[0].row.state.lambda), 1000.0);
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, RigidAngularPairRowsReportFractureThreshold)
+{
+  vbd::AvbdScalarRowState scalarState;
+  scalarState.lambda = -2.5;
+  EXPECT_TRUE(
+      vbd::avbdRigidScalarRowExceedsFractureThreshold(scalarState, 2.5));
+  EXPECT_FALSE(
+      vbd::avbdRigidScalarRowExceedsFractureThreshold(scalarState, 2.6));
+  EXPECT_FALSE(
+      vbd::avbdRigidScalarRowExceedsFractureThreshold(scalarState, 0.0));
+
+  std::vector<vbd::AvbdRigidBodyAngularPairRow> angularRows(3);
+  angularRows[0].row.state.lambda = 3.0;
+  angularRows[0].row.state.stiffness = 40.0;
+  angularRows[0].row.previousConstraintValue = 0.25;
+  angularRows[1].row.state.lambda = 4.0;
+  angularRows[1].row.state.stiffness = 50.0;
+  angularRows[1].row.previousConstraintValue = -0.5;
+
+  EXPECT_DOUBLE_EQ(vbd::avbdRigidAngularPairLambdaNorm(angularRows), 5.0);
+  EXPECT_TRUE(
+      vbd::avbdRigidAngularPairRowsExceedFractureThreshold(angularRows, 5.0));
+  EXPECT_FALSE(
+      vbd::avbdRigidAngularPairRowsExceedFractureThreshold(angularRows, 5.1));
+
+  vbd::resetAvbdRigidAngularPairRowsAfterFracture(angularRows);
+
+  for (const vbd::AvbdRigidBodyAngularPairRow& row : angularRows) {
+    EXPECT_DOUBLE_EQ(row.row.state.lambda, 0.0);
+    EXPECT_DOUBLE_EQ(row.row.state.stiffness, 0.0);
+    EXPECT_DOUBLE_EQ(row.row.previousConstraintValue, 0.0);
+  }
+}
+
+//==============================================================================
 TEST(AvbdRigidBlock, RigidPointJointBuilderHonorsAxisMasks)
 {
   std::vector<vbd::AvbdRigidBodyState> states(2);

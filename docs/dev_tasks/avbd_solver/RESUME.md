@@ -87,13 +87,15 @@ focused C++/Python tests, and the categorized `sx_rigid_limited_joints`
 py-demo. This branch also adds the first AVBD-specific `py-demos`
 rigid-constraint scene, `avbd_rigid_fixed_joint_contact`, so users can inspect
 the public fixed-joint row path while ordinary rigid contact acts on the
-payload. This is still a narrow free-rigid-body path only: no motor row,
-fracture row, articulated multibody state path, GPU path, paper-corpus demo, or
+payload. The current local follow-up starts private angular-motor rows and
+rigid fracture dual-threshold/reset helpers in the 6-DOF row kernel. This is
+still a narrow free-rigid-body path only: no public World motor/fracture
+lifecycle, articulated multibody state path, GPU path, paper-corpus demo, or
 benchmark packet is complete.
 
 ## Current Branch
 
-`feature/avbd-paper-complete-plan` - checkpoint branch based on
+`feature/avbd-rigid-motor-fracture-rows` - checkpoint branch based on
 current `origin/main`, including the scalar-row foundation, mass-spring AVBD row
 families, standalone tet-material rows, and World wiring for supported pure-tet
 finite-stiffness material rows, plus supported World static-contact friction
@@ -132,13 +134,17 @@ entities. The current checkpoint adds public free rigid-body revolute/prismatic
 facades, dartpy bindings/stubs, focused C++/Python coverage, and the
 `sx_rigid_limited_joints` py-demo on top of that private path. This branch also adds the
 `avbd_rigid_fixed_joint_contact` Python demo scene and catalog/test/doc
-coverage for the first narrow user-visible AVBD rigid-constraint showcase.
+coverage for the first narrow user-visible AVBD rigid-constraint showcase. The
+current local follow-up adds private angular-motor row construction, bounded
+motor descriptors, solver-direction coverage, and rigid fracture
+dual-threshold/reset helpers.
 
 ## Immediate Next Step
 
-Continue the next bounded AVBD contact/friction or rigid-block slice:
-true rigid/articulated World wiring, full narrow-phase feature extraction,
-or the next motor/fracture row family are the preferred row-family gaps now that
+Finish validating the private motor/fracture primitive slice, then continue the
+next bounded AVBD contact/friction or rigid-block step: true
+rigid/articulated World wiring, full narrow-phase feature extraction, or
+World-facing motor/fracture lifecycle are the preferred row-family gaps now that
 private dynamic/rigid contact feature IDs, canonical two-endpoint row keys, and
 normal/friction row descriptor helpers plus private rigid contact/friction
 point-pair constructors, paired friction-cone helpers, and a private serial
@@ -156,7 +162,7 @@ revolute/prismatic point-joint configs with arbitrary joint-axis bases plus
 private rigid-body ECS current-pose extraction for those one-DOF joint
 entities, and public free rigid-body revolute/prismatic facades with dartpy
 bindings, stubs, tests, and py-demo coverage, plus a first fixed-joint/contact
-AVBD py-demo exist.
+AVBD py-demo exist and private angular-motor/fracture helpers are starting.
 Keep the supported envelope narrow and preserve fallback coverage for topology
 mixes,
 damping/acceleration, parallel solves, and unsupported requested row

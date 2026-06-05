@@ -211,13 +211,21 @@ Paper audit:
     preserving a captured rigid offset while ordinary rigid contact acts on the
     payload; this is only a narrow AVBD rigid-constraint showcase, not a
     source-demo or paper-scene reproduction.
+    A local follow-up slice now starts the next private row-family piece with
+    `AvbdRigidAngularMotor`, a bounded angular-motor row descriptor/builder,
+    and rigid fracture dual-threshold/reset helpers in the same 6-DOF row
+    kernel, with focused `AvbdRigidBlock.*` coverage.
     Public multibody joint extraction is still not wired.
     Unsupported envelopes still fall back to sequential impulses. This is not
     full narrow-phase feature extraction, not full rigid contact/joint rows, not
-    motor/fracture support, and not articulated joint support yet.
+    World-level motor/fracture support, and not articulated joint support yet.
 - [ ] Phase A4: contact/friction bounds, static/dynamic friction switching, and
       quasi-Newton Hessian approximation.
 - [ ] Phase A5: joints, motors, fracture, and breakable constraints.
+  - First private angular-motor row and fracture threshold/reset helper slice
+    started in the rigid 6-DOF kernel. Public World wiring, py-demos,
+    benchmarks, GPU parity, and breakable constraint lifecycle are still
+    missing.
 - [ ] Phase A6: unified soft/rigid AVBD coupling.
 - [ ] Phase G: GPU parity for all row families, candidate generation, and
       benchmark scenes.
@@ -255,7 +263,8 @@ numbers.
 
 1. Continue the next bounded AVBD contact/friction or rigid-block slice:
    true rigid/articulated World wiring, full narrow-phase feature extraction,
-   or the next motor/fracture row family are the preferred next gaps now that
+   or World wiring for the motor/fracture row family are the preferred next gaps
+   now that
    static box feature IDs,
    private dynamic/rigid contact feature IDs and descriptor
    helpers, static half-space tangent dual projection, self-contact
