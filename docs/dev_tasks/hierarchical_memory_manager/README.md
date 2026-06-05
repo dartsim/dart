@@ -15,14 +15,17 @@
       Initial registry/component-storage wiring and `enterSimulationMode()`
       reservation/no-growth tests for current World-owned ECS storage and the
       first multibody/deformable private step-scratch components are
-      implemented; broader solver scratch coverage remains open.
+      implemented. Direct EnTT create/emplace/clear/destroy/reuse storage
+      cycling is covered after explicit reserve; broader solver scratch
+      coverage remains open.
 - [ ] Phase 4: Built-in simulation stages borrow world memory for transient
       buffers and avoid growth after simulation is baked. The default
-      `WorldStepPipeline` now stores non-owning stage pointers inline, removing
-      its per-build `std::vector` allocation from the step path; the default
-      rigid-body velocity/contact stages now reuse baked force/contact scratch
-      for the covered rigid contact scene; broader solver-owned transient
-      buffers still need allocator-backed storage.
+      `WorldStepPipeline` now stores built-in non-owning stage pointers inline,
+      removing its per-build `std::vector` allocation from the normal step path.
+      Longer custom pipelines keep the previous arbitrary-stage behavior through
+      an overflow path. The default rigid-body velocity/contact stages now reuse
+      baked force/contact scratch for the covered rigid contact scene; broader
+      solver-owned transient buffers still need allocator-backed storage.
 - [ ] Phase 5: Add allocation/debug accounting gates for "no dynamic allocation
       during the step loop" on representative rigid, multibody, contact, and
       deformable scenes. Initial World base-allocator no-growth guards now
@@ -103,7 +106,10 @@ debugging, profiling, optimization experiments, and ImGui visualization.
   `basic_storage`, or document the exact adapter/storage work needed.
 - Component storage: cover create/emplace/destroy/clear/reuse patterns for the
   current experimental components, including sparse-set growth and component
-  array capacity behavior.
+  array capacity behavior. Initial direct coverage now reserves entity,
+  `RigidBodyTag`, `Transform`, `Velocity`, and `Force` storages and verifies
+  repeated create/emplace/clear/re-emplace/destroy cycles do not grow World
+  base-allocator traffic after reserve.
 - Bake/build reserve path: reserve registry entities and component pools before
   simulation so repeated `World::step()` calls do not grow ECS storage.
 - Boundary rule: keep EnTT allocator/storage types out of the promoted public
