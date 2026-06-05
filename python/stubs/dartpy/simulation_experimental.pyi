@@ -2,6 +2,7 @@ from __future__ import annotations
 
 __all__: list[str] = [
     "ActuatorType",
+    "AllocatorDebugDiagnostics",
     "ClosureDynamicsPolicy",
     "ClosureKinematicsPolicy",
     "CollisionBody",
@@ -41,6 +42,7 @@ __all__: list[str] = [
     "ModelFormat",
     "Multibody",
     "MultibodyOptions",
+    "MemoryManagerDebugDiagnostics",
     "PhysicalParameter",
     "ReadOptions",
     "RigidBody",
@@ -54,6 +56,9 @@ __all__: list[str] = [
     "StepDerivatives",
     "StepGradient",
     "World",
+    "WorldEcsDiagnostics",
+    "WorldEcsStorageDiagnostics",
+    "WorldMemoryDiagnostics",
     "WorldSyncStage",
     "add_skeleton",
     "add_world",
@@ -1121,6 +1126,80 @@ class DeformableSolverDiagnostics:
     @property
     def converged_active_contact_count(self) -> int: ...
 
+class AllocatorDebugDiagnostics:
+    @property
+    def live_bytes(self) -> int: ...
+
+    @property
+    def peak_live_bytes(self) -> int: ...
+
+    @property
+    def live_allocation_count(self) -> int: ...
+
+class MemoryManagerDebugDiagnostics:
+    @property
+    def enabled(self) -> bool: ...
+
+    @property
+    def free_allocator(self) -> AllocatorDebugDiagnostics: ...
+
+    @property
+    def pool_allocator(self) -> AllocatorDebugDiagnostics: ...
+
+class WorldEcsStorageDiagnostics:
+    @property
+    def storage_id(self) -> int: ...
+
+    @property
+    def size(self) -> int: ...
+
+    @property
+    def capacity(self) -> int: ...
+
+class WorldEcsDiagnostics:
+    @property
+    def entity_count(self) -> int: ...
+
+    @property
+    def entity_capacity(self) -> int: ...
+
+    @property
+    def storage_count(self) -> int: ...
+
+    @property
+    def component_count(self) -> int: ...
+
+    @property
+    def component_capacity(self) -> int: ...
+
+    @property
+    def storages(self) -> list[WorldEcsStorageDiagnostics]: ...
+
+class WorldMemoryDiagnostics:
+    @property
+    def allocator_debug_diagnostics(self) -> MemoryManagerDebugDiagnostics: ...
+
+    @property
+    def ecs_diagnostics(self) -> WorldEcsDiagnostics: ...
+
+    @property
+    def frame_scratch_capacity_bytes(self) -> int: ...
+
+    @property
+    def frame_scratch_used_bytes(self) -> int: ...
+
+    @property
+    def frame_scratch_peak_used_bytes(self) -> int: ...
+
+    @property
+    def frame_scratch_overflow_count(self) -> int: ...
+
+    @property
+    def frame_scratch_overflow_bytes(self) -> int: ...
+
+    @property
+    def frame_scratch_reset_count(self) -> int: ...
+
 class DeformableMaterialProperties:
     def __init__(self) -> None: ...
 
@@ -1772,6 +1851,9 @@ class World:
 
     @property
     def last_deformable_solver_diagnostics(self) -> DeformableSolverDiagnostics: ...
+
+    @property
+    def memory_diagnostics(self) -> WorldMemoryDiagnostics: ...
 
     @property
     def time_step(self) -> float: ...

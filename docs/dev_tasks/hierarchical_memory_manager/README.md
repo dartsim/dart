@@ -22,8 +22,9 @@
       bytes, peak live bytes, and live allocation count; `MemoryManager` and
       experimental `World` diagnostics now surface direct free/pool allocator
       debug counters. `WorldMemoryDiagnostics` also reports aggregate and
-      per-storage ECS registry layout counters without exposing EnTT types.
-      GUI visualization remains future work.
+      per-storage ECS registry layout counters without exposing EnTT types, and
+      dartpy exposes the same read-only snapshot through
+      `World.memory_diagnostics`. GUI visualization remains future work.
 
 ## Goal
 
