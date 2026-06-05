@@ -50,6 +50,9 @@
 
 namespace dart::common {
 
+template <typename T>
+class FrameStlAllocator;
+
 class DART_API FrameAllocator : public MemoryAllocator
 {
 public:
@@ -81,20 +84,7 @@ public:
 
   [[nodiscard]] inline void* allocate(size_t bytes) noexcept override
   {
-    if (bytes == 0 || !mCur) [[unlikely]] {
-      return bytes == 0 ? nullptr : allocateAlignedSlow(bytes, 32);
-    }
-
-    const auto padded = (bytes + 31) & ~size_t{31};
-    auto* next = mCur + padded;
-
-    if (next <= mEnd) [[likely]] {
-      auto* result = mCur;
-      mCur = next;
-      return result;
-    }
-
-    return allocateAlignedSlow(bytes, 32);
+    return allocateDefaultAligned(bytes);
   }
 
   [[nodiscard]] inline void* allocate(
@@ -146,8 +136,7 @@ public:
   inline void reset() noexcept
   {
     if (mOverflowAllocations.empty()) [[likely]] {
-      const auto addr = reinterpret_cast<uintptr_t>(mBuffer);
-      mCur = reinterpret_cast<char*>((addr + 31) & ~uintptr_t{31});
+      mCur = mBegin;
       return;
     }
     resetSlow();
@@ -177,11 +166,32 @@ public:
   [[nodiscard]] size_t overflowBytes() const noexcept;
 
 private:
+  template <typename T>
+  friend class FrameStlAllocator;
+
   struct OverflowEntry
   {
     void* ptr;
     size_t allocatedSize;
   };
+
+  [[nodiscard]] inline void* allocateDefaultAligned(size_t bytes) noexcept
+  {
+    if (bytes == 0 || !mCur) [[unlikely]] {
+      return bytes == 0 ? nullptr : allocateAlignedSlow(bytes, 32);
+    }
+
+    const auto padded = (bytes + 31) & ~size_t{31};
+    auto* next = mCur + padded;
+
+    if (next <= mEnd) [[likely]] {
+      auto* result = mCur;
+      mCur = next;
+      return result;
+    }
+
+    return allocateAlignedSlow(bytes, 32);
+  }
 
   [[nodiscard]] void* allocateAlignedSlow(
       size_t bytes, size_t alignment) noexcept;
@@ -193,6 +203,7 @@ private:
   char* mEnd;
 
   char* mBuffer;
+  char* mBegin;
   size_t mCapacity;
   size_t mOverflowBytes;
   std::vector<OverflowEntry> mOverflowAllocations;
@@ -217,7 +228,12 @@ public:
 
   [[nodiscard]] T* allocate(std::size_t n)
   {
-    void* p = mArena->allocateAligned(n * sizeof(T), alignof(T));
+    void* p;
+    if constexpr (alignof(T) <= 32) {
+      p = mArena->allocateDefaultAligned(n * sizeof(T));
+    } else {
+      p = mArena->allocateAligned(n * sizeof(T), alignof(T));
+    }
     if (!p) {
       throw std::bad_alloc();
     }
