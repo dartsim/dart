@@ -8,6 +8,34 @@ This directory contains the complete test suite for DART (Dynamic Animation and 
 - CI monitoring and expectations: [ci-cd.md](ci-cd.md)
 - Gazebo / gz-physics integration: [build-system.md](build-system.md#gazebo-integration-feature)
 
+## Verification Tiers
+
+Pick the cheapest tier that still proves your change, then escalate. Tiers are
+monotonic supersets (`quick` ⊂ bare ⊂ `full`); the bare verb is the everyday
+default. See [`docs/design/local_verification_pipeline.md`](../design/local_verification_pipeline.md)
+for the full naming scheme and rationale.
+
+| When                     | Gate (lint+build+test) | Tests only   | Benchmarks    |
+| ------------------------ | ---------------------- | ------------ | ------------- |
+| Inner loop (every save)  | `verify-quick`         | `test-quick` | `bench-quick` |
+| Pre-commit               | `verify`               | `test-core`  | `bench`       |
+| Pre-push / authoritative | `verify-full`          | `test-full`  | `bench-full`  |
+
+(`test-core` runs unit + integration; `test-experimental-quick` adds the
+experimental tests minus the long poles; `test-full` runs every label.)
+
+`verify-full` is the authoritative gate (the former `test-all`, still available
+as an alias). Subsystem scope stays orthogonal (`test-math`, `test-io`, …), and
+the environment is always a `-e` flag (`pixi run -e cuda verify-full`).
+
+Build and test parallelism are load-aware by default (ninja `-l`, ctest
+`--test-load`), so several clones on one machine share the CPU without
+oversubscription. Override the hard job cap with `DART_PARALLEL_JOBS` and the
+load ceiling with `DART_BUILD_LOAD_LIMIT` (or pin both for every clone in
+`~/.dart-dev/parallelism.env`). Opt-in build accelerators: `DART_USE_MOLD` (mold
+linker, Linux non-CUDA) and `DART_NORMALIZE_BUILD_PATHS` (cross-clone
+compiler-cache sharing).
+
 ## Fast Iteration Loop
 
 Smallest repeatable local loop before a full CI run.
