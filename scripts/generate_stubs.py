@@ -95,6 +95,13 @@ def _all_block(names: list[str]) -> str:
     return f"__all__: list[str] = [\n{values},\n]"
 
 
+def _is_runtime_flat_promoted(name: str) -> bool:
+    # Match python/dartpy/_layout.py:_promote_symbols. Legacy lowerCamel
+    # compatibility names stay on their submodules; the flat namespace promotes
+    # classes, enums/constants, and snake_case helpers.
+    return bool(name) and (name[0].isupper() or not any(ch.isupper() for ch in name))
+
+
 def _add_future_import(source: str) -> str:
     if source.startswith("from __future__ import annotations\n"):
         return source
@@ -175,7 +182,11 @@ def _write_top_level_stub(
 
     promoted_names: list[str] = []
     for module in PROMOTED_MODULES:
-        names = names_by_module.get(module, [])
+        names = [
+            name
+            for name in names_by_module.get(module, [])
+            if _is_runtime_flat_promoted(name)
+        ]
         if not names:
             continue
         lines.extend(["", f"from .{module} import ("])

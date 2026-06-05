@@ -34,6 +34,7 @@
 
 #include <dart/config.hpp>
 
+#include <iosfwd>
 #include <string>
 
 #if DART_BUILD_PROFILE
@@ -208,3 +209,63 @@ private:
     ::std::string {}
 
 #endif
+
+namespace dart::common::profile {
+
+/// Return whether DART was built with profiling support.
+[[nodiscard]] constexpr bool isProfilingEnabled() noexcept
+{
+#if DART_BUILD_PROFILE
+  return true;
+#else
+  return false;
+#endif
+}
+
+/// Return whether the built-in text profiling backend is available.
+[[nodiscard]] constexpr bool isTextProfilingEnabled() noexcept
+{
+#if DART_BUILD_PROFILE && DART_PROFILE_ENABLE_TEXT
+  return true;
+#else
+  return false;
+#endif
+}
+
+/// Mark a frame in the built-in text profiler.
+inline void markProfileFrame()
+{
+#if DART_BUILD_PROFILE && DART_PROFILE_ENABLE_TEXT
+  Profiler::instance().markFrame();
+#endif
+}
+
+/// Clear the built-in text profiler state.
+inline void resetProfile()
+{
+#if DART_BUILD_PROFILE && DART_PROFILE_ENABLE_TEXT
+  Profiler::instance().reset();
+#endif
+}
+
+/// Write the built-in text profiler summary to a stream.
+inline void printProfileSummary(std::ostream& os)
+{
+#if DART_BUILD_PROFILE && DART_PROFILE_ENABLE_TEXT
+  Profiler::instance().printSummary(os);
+#else
+  (void)os;
+#endif
+}
+
+/// Return the built-in text profiler summary.
+[[nodiscard]] inline std::string getProfileSummaryText()
+{
+#if DART_BUILD_PROFILE && DART_PROFILE_ENABLE_TEXT
+  return Profiler::instance().toSummaryText();
+#else
+  return {};
+#endif
+}
+
+} // namespace dart::common::profile

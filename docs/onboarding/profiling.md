@@ -154,6 +154,31 @@ const std::string summary = DART_PROFILE_TEXT_SUMMARY();
 // In no-profile or no-text-backend builds, summary is empty.
 ```
 
+The same text backend is also available through ordinary C++ functions when a
+callable API is easier to pass through tools or bindings:
+
+```cpp
+if (dart::common::profile::isTextProfilingEnabled()) {
+  dart::common::profile::resetProfile();
+  // Run instrumented code...
+  dart::common::profile::markProfileFrame();
+  std::cout << dart::common::profile::getProfileSummaryText();
+}
+```
+
+These helper calls compile to constants/no-ops (and an empty summary string) in
+`DART_BUILD_PROFILE=OFF` or no-text-backend builds.
+
+From dartpy, the same helper surface is promoted to the DART 7 flat namespace:
+
+```python
+import dartpy as dart
+
+dart.reset_profile()
+# Run instrumented DART code...
+print(dart.get_profile_summary_text())
+```
+
 `DART_PROFILE_TRACY=ON` additionally streams to the Tracy GUI for local
 developer profiling; the text backend stays the portable, agent-friendly path.
 For library code that already has access to the text backend, use
