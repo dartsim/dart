@@ -1177,22 +1177,14 @@ void ensureMultibodyLinkContactRowStorage(
 }
 
 //==============================================================================
-void solveMultibodyLinkContacts(
+bool prepareMultibodyContactDynamicsInto(
     detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     Eigen::VectorXd& nextVelocity,
-    double timeStep,
-    const std::vector<LinkContact>& linkContacts,
     MultibodyDynamicsScratch& scratch)
 {
-  // Assemble the per-contact rows (Jacobians, denominators, bias, restitution,
-  // two-sided obstacle coupling) once, then resolve them with an accumulated
-  // velocity-level Gauss-Seidel sweep. The assembly is shared with the unified
-  // constraint solve as the link-side counterpart of the rigid-body assembler.
-  auto& problem = scratch.contactProblem;
-  scratch.activeContactRowCount = 0;
   if (structure.links.empty()) {
-    return;
+    return false;
   }
 
   buildDynamicsTreeInto(
@@ -1210,9 +1202,10 @@ void solveMultibodyLinkContacts(
       nextVelocity.size(),
       scratch.tree.dofCount);
 
+  auto& problem = scratch.contactProblem;
   if (scratch.tree.dofCount == 0) {
     problem.inverseMass.resize(0, 0);
-    return;
+    return false;
   }
 
   const auto dof = static_cast<Eigen::Index>(scratch.tree.dofCount);
@@ -1237,6 +1230,34 @@ void solveMultibodyLinkContacts(
   }
 
   linkBodyJacobiansInto(scratch.tree, scratch.bodyJacobian);
+  return true;
+}
+
+//==============================================================================
+void solveMultibodyLinkContacts(
+    detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure,
+    Eigen::VectorXd& nextVelocity,
+    double timeStep,
+    const std::vector<LinkContact>& linkContacts,
+    MultibodyDynamicsScratch& scratch)
+{
+  // Assemble the per-contact rows (Jacobians, denominators, bias, restitution,
+  // two-sided obstacle coupling) once, then resolve them with an accumulated
+  // velocity-level Gauss-Seidel sweep. The assembly is shared with the unified
+  // constraint solve as the link-side counterpart of the rigid-body assembler.
+  auto& problem = scratch.contactProblem;
+  scratch.activeContactRowCount = 0;
+  if (structure.links.empty()) {
+    return;
+  }
+
+  if (!prepareMultibodyContactDynamicsInto(
+          registry, structure, nextVelocity, scratch)) {
+    return;
+  }
+
+  const auto dof = static_cast<Eigen::Index>(scratch.tree.dofCount);
   ensureMultibodyLinkContactRowStorage(scratch, linkContacts.size(), dof);
   constexpr double penetrationSlop = 1e-4;
   constexpr double baumgarteFactor = 0.2;
@@ -2854,6 +2875,42 @@ bool tryResolveSequentialMultibodyContacts(
     const auto& structure = view.get<comps::MultibodyStructure>(entity);
     auto& scratch = registry.get<MultibodyDynamicsScratch>(entity);
     if (scratch.linkContacts.empty() && !isRequiredCrossMultibody(entity)) {
+      continue;
+    }
+
+    auto* pendingVelocity = registry.try_get<PendingMultibodyVelocity>(entity);
+    if (pendingVelocity != nullptr && pendingVelocity->active) {
+      if (!prepareMultibodyContactDynamicsInto(
+              registry, structure, pendingVelocity->velocity, scratch)) {
+        return false;
+      }
+      continue;
+    }
+
+    buildDynamicsTreeInto(
+        registry,
+        structure,
+        scratch.tree,
+        scratch.linkIndexOf,
+        scratch.jointFrameSubspace);
+    if (scratch.tree.dofCount == 0) {
+      return false;
+    }
+    pendingVelocity
+        = &registry.get_or_emplace<PendingMultibodyVelocity>(entity);
+    gatherMultibodyVelocityInto(
+        registry, scratch.tree, pendingVelocity->velocity);
+    pendingVelocity->active = true;
+    if (!prepareMultibodyContactDynamicsInto(
+            registry, structure, pendingVelocity->velocity, scratch)) {
+      return false;
+    }
+  }
+
+  for (auto entity : view) {
+    const auto& structure = view.get<comps::MultibodyStructure>(entity);
+    auto& scratch = registry.get<MultibodyDynamicsScratch>(entity);
+    if (scratch.linkContacts.empty()) {
       continue;
     }
 

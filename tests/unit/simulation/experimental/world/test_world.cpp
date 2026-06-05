@@ -4928,6 +4928,104 @@ TEST(World, ZeroDofMultibodyLinkContactStopsRigidBody)
   EXPECT_TRUE(dynamic.getAngularVelocity().isZero(1e-12));
 }
 
+TEST(World, ZeroDofMultibodyFallbackDoesNotDoubleApplyShortcutImpulses)
+{
+  namespace sx = dart::simulation::experimental;
+
+  struct StepState
+  {
+    double sliderVelocity{0.0};
+    Eigen::Vector3d sliderRigidVelocity{Eigen::Vector3d::Zero()};
+    Eigen::Vector3d fixedRigidVelocity{Eigen::Vector3d::Zero()};
+  };
+
+  const auto runScene = [](bool boxedLcp, bool fixedFixtureFirst) -> StepState {
+    sx::WorldOptions options;
+    if (boxedLcp) {
+      options.contactSolverMethod = sx::ContactSolverMethod::BoxedLcp;
+    }
+    sx::World world(options);
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.001);
+
+    sx::Joint sliderJoint(sx::Entity{}, nullptr);
+    sx::RigidBody sliderTarget(sx::Entity{}, nullptr);
+    sx::RigidBody fixedTarget(sx::Entity{}, nullptr);
+
+    const auto addFixedFixture = [&]() {
+      auto fixture = world.addMultibody("fixed_fixture");
+      auto base = fixture.addLink("base");
+
+      sx::JointSpec fixed;
+      fixed.name = "weld";
+      fixed.type = sx::JointType::Fixed;
+      auto obstacle = fixture.addLink("obstacle", base, fixed);
+      auto obstacleShape = sx::CollisionShape::makeSphere(0.5);
+      obstacleShape.localTransform.translation()
+          = Eigen::Vector3d(3.0, 0.0, 0.0);
+      obstacle.setCollisionShape(obstacleShape);
+
+      sx::RigidBodyOptions dynamicOptions;
+      dynamicOptions.position = Eigen::Vector3d(3.9, 0.0, 0.0);
+      dynamicOptions.linearVelocity = Eigen::Vector3d(-1.0, 0.0, 0.0);
+      fixedTarget = world.addRigidBody("fixed_target", dynamicOptions);
+      fixedTarget.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+      EXPECT_EQ(fixture.getDOFCount(), 0u);
+    };
+
+    const auto addSolvableSlider = [&]() {
+      auto robot = world.addMultibody("slider_robot");
+      auto base = robot.addLink("base");
+      sx::JointSpec spec;
+      spec.name = "rail";
+      spec.type = sx::JointType::Prismatic;
+      spec.axis = Eigen::Vector3d::UnitX();
+      auto link = robot.addLink("slider", base, spec);
+      link.setMass(1.0);
+      link.setCollisionShape(sx::CollisionShape::makeSphere(0.2));
+      sliderJoint = link.getParentJoint();
+      sliderJoint.setVelocity(Eigen::VectorXd::Constant(1, 1.0));
+
+      sx::RigidBodyOptions targetOptions;
+      targetOptions.position = Eigen::Vector3d(0.35, 0.0, 0.0);
+      sliderTarget = world.addRigidBody("slider_target", targetOptions);
+      sliderTarget.setCollisionShape(sx::CollisionShape::makeSphere(0.2));
+    };
+
+    if (fixedFixtureFirst) {
+      addFixedFixture();
+      addSolvableSlider();
+    } else {
+      addSolvableSlider();
+      addFixedFixture();
+    }
+
+    EXPECT_GE(world.collide().size(), 2u);
+    world.step();
+
+    return StepState{
+        sliderJoint.getVelocity()[0],
+        sliderTarget.getLinearVelocity(),
+        fixedTarget.getLinearVelocity()};
+  };
+
+  for (const bool fixedFixtureFirst : {false, true}) {
+    SCOPED_TRACE(fixedFixtureFirst ? "fixed first" : "slider first");
+    const StepState defaultPath = runScene(false, fixedFixtureFirst);
+    const StepState boxedPath = runScene(true, fixedFixtureFirst);
+
+    EXPECT_NEAR(defaultPath.sliderVelocity, boxedPath.sliderVelocity, 1e-12);
+    EXPECT_TRUE(defaultPath.sliderRigidVelocity.isApprox(
+        boxedPath.sliderRigidVelocity, 1e-12))
+        << defaultPath.sliderRigidVelocity.transpose() << " vs "
+        << boxedPath.sliderRigidVelocity.transpose();
+    EXPECT_TRUE(defaultPath.fixedRigidVelocity.isApprox(
+        boxedPath.fixedRigidVelocity, 1e-12))
+        << defaultPath.fixedRigidVelocity.transpose() << " vs "
+        << boxedPath.fixedRigidVelocity.transpose();
+  }
+}
+
 // Test cross-multibody link-vs-link contact: two separate fixed-base
 // articulated bodies overlap and approach along their prismatic rails. The
 // unified row carries both articulated ends, so the impulse changes both
