@@ -94,10 +94,14 @@ PROMOTE_DIRS = (
 #   * compute/compute_stage_metadata.hpp carries backend-neutral stage domain
 #     metadata. It is intentionally public because World step profiles report a
 #     stage domain without exposing concrete executor/backend details.
+#   * compute/execution_profile.hpp carries backend-neutral compute-graph
+#     execution summaries. It is public because World step profiles expose
+#     captured graph profiles by value.
 #   * compute/world_step_profile.hpp is the experimental World's public
 #     text-first profiling value type, returned by World::getLastStepProfile().
 PROMOTE_FILES = {
     "compute/compute_stage_metadata.hpp",
+    "compute/execution_profile.hpp",
     "compute/world_step_profile.hpp",
     "diff/rollout.hpp",
     "diff/step_derivatives.hpp",

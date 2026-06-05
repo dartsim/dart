@@ -121,6 +121,10 @@ def build() -> SceneSetup:
         payload_pos = np.asarray(payload.translation, dtype=float).reshape(3)
         connector.set_transform(_connector_transform(base_pos, payload_pos))
 
+    def replay_sync() -> None:
+        bridge.sync()
+        sync_connector()
+
     def pre_step() -> None:
         bridge.pre_step()
         sync_connector()
@@ -168,6 +172,8 @@ def build() -> SceneSetup:
             "payload": payload,
             "ground": ground,
             "connector": connector,
+            "replay_sync": replay_sync,
+            "replay_live_step_is_stateless": True,
         },
     )
 
