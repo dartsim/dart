@@ -100,15 +100,20 @@ NB_MODULE(_dartpy, m)
   auto optimizer = m.def_submodule("optimizer", "Optimization utilities");
   dart::python_nb::defOptimizerModule(optimizer);
 
-#if defined(DARTPY_HAS_GUI)
+  // The classic dart::simulation::World is retained ONLY as render plumbing --
+  // the ECS simulation World has no direct viewer path, so demos mirror it into
+  // a parallel classic World (WorldRenderBridge) that the Filament viewer
+  // draws. It is bound as dartpy.gui.RenderWorld (plus its WorldConfig/enums
+  // and ConstraintSolver) and is NOT part of the official flat simulation API.
+  //
+  // This binding is registered unconditionally -- even when DART_BUILD_GUI=OFF
+  // -- because the always-built SDF/Skel/MJCF/URDF parsers in dartpy.io still
+  // return dart::simulation::WorldPtr, so a headless build needs a registered
+  // Python type for those results. Only the viewer itself (defGuiModule) is
+  // gated on the GUI build.
   auto gui = m.def_submodule("gui", "GUI utilities backed by nanobind");
-  dart::python_nb::defGuiModule(gui);
-  // The classic dart::simulation::World is retained ONLY as the GUI render
-  // target for WorldRenderBridge -- the ECS simulation World has no direct
-  // viewer path, so demos mirror it into a parallel classic World that the
-  // Filament viewer draws. Bound here as dartpy.gui.RenderWorld (plus its
-  // WorldConfig/enums and ConstraintSolver); it is NOT part of the official
-  // simulation API.
   dart::python_nb::defSimulationModule(gui);
+#if defined(DARTPY_HAS_GUI)
+  dart::python_nb::defGuiModule(gui);
 #endif
 }
