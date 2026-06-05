@@ -65,6 +65,7 @@
 #include <Eigen/Geometry>
 #include <gtest/gtest.h>
 
+#include <array>
 #include <limits>
 #include <map>
 #include <new>
@@ -446,6 +447,57 @@ TEST(World, RegistryUsesWorldFreeAllocator)
   EXPECT_EQ(
       storage.differentiableParameters.get_allocator(),
       expectedParameterAllocator);
+}
+
+TEST(World, ReservedRegistryStorageReusesComponentCapacity)
+{
+  namespace common = dart::common;
+  namespace sx = dart::simulation::experimental;
+
+  CountingMemoryAllocator allocator;
+  common::MemoryManager memoryManager(allocator);
+  sx::detail::WorldRegistry registry(
+      sx::detail::WorldRegistryAllocator{memoryManager.getFreeAllocator()});
+
+  constexpr std::size_t kEntityCount = 16;
+  registry.storage<entt::entity>().reserve(kEntityCount);
+  registry.storage<sx::comps::RigidBodyTag>().reserve(kEntityCount);
+  registry.storage<sx::comps::Transform>().reserve(kEntityCount);
+  registry.storage<sx::comps::Velocity>().reserve(kEntityCount);
+  registry.storage<sx::comps::Force>().reserve(kEntityCount);
+
+  const auto capacities = registryStorageCapacities(registry);
+  const auto allocationsAfterReserve = allocator.allocationCount;
+  const auto alignedAllocationsAfterReserve = allocator.alignedAllocationCount;
+
+  std::array<entt::entity, kEntityCount> entities{};
+  for (int cycle = 0; cycle < 3; ++cycle) {
+    for (std::size_t i = 0; i < kEntityCount; ++i) {
+      const auto entity = registry.create();
+      entities[i] = entity;
+      registry.emplace<sx::comps::RigidBodyTag>(entity);
+      auto& transform = registry.emplace<sx::comps::Transform>(entity);
+      transform.position.x() = static_cast<double>(i);
+      registry.emplace<sx::comps::Velocity>(entity);
+      registry.emplace<sx::comps::Force>(entity);
+    }
+
+    EXPECT_EQ(registry.storage<sx::comps::Velocity>().size(), kEntityCount);
+    registry.clear<sx::comps::Velocity>();
+    expectRegistryStorageCapacitiesUnchanged(capacities, registry);
+    for (const auto entity : entities) {
+      registry.emplace<sx::comps::Velocity>(entity);
+    }
+    expectRegistryStorageCapacitiesUnchanged(capacities, registry);
+
+    for (const auto entity : entities) {
+      registry.destroy(entity);
+    }
+    expectRegistryStorageCapacitiesUnchanged(capacities, registry);
+  }
+
+  EXPECT_EQ(allocator.allocationCount, allocationsAfterReserve);
+  EXPECT_EQ(allocator.alignedAllocationCount, alignedAllocationsAfterReserve);
 }
 
 TEST(World, EnterSimulationModeReservesRegistryStorageForKinematicIpcSteps)

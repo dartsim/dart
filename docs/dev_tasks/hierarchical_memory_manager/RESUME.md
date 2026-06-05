@@ -22,8 +22,10 @@ The stacked registry branch wires the experimental World's internal EnTT
 registry, component storage, and differentiable-parameter list through the
 World's active free allocator. It also adds initial
 `enterSimulationMode()` reservation/no-growth tests for current World-owned ECS
-storage and first private step-scratch component paths. Broader solver scratch
-coverage and EnTT allocator benchmarks remain open.
+storage and first private step-scratch component paths. Direct EnTT
+create/emplace/clear/re-emplace/destroy/reuse storage cycling is also covered
+after explicit entity/component reserve. Broader solver scratch coverage and
+EnTT allocator benchmarks remain open.
 
 The next stacked no-growth guard adds a counting base allocator test proving
 that baked kinematic IPC rigid-body, multibody variational, and single
@@ -95,8 +97,9 @@ guard before claiming zero dynamic allocation for the full simulation loop.
   inspect the active EnTT version's `basic_registry` and `basic_storage`
   allocator hooks and keep EnTT allocator types hidden from public World API.
 - The active EnTT version's registry allocator propagates to component storage;
-  the remaining Phase 3 gap is reserving/baking storage and proving no ECS
-  growth during repeated simulation steps.
+  the remaining Phase 3 gap is broadening bake-time reservation coverage for
+  contact-heavy and solver-private scratch paths and benchmarking the
+  allocator-backed EnTT path.
 
 ## How to Resume
 
