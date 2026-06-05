@@ -558,6 +558,9 @@ def test_world_scenes_use_solver_focused_categories() -> None:
             "rigid_ipc_pile",
             "rigid_ipc_tunnel",
         },
+        "Simulation Replay": {
+            "replay_scrubber",
+        },
         "Variational Integrators": {
             "variational_chain",
             "variational_tumbler",

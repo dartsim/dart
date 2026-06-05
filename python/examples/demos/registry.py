@@ -44,6 +44,7 @@ from .scenes.planned import INVERSE_KINEMATICS as PLANNED_INVERSE_KINEMATICS
 from .scenes.planned import MOBILE_MANIPULATION as PLANNED_MOBILE_MANIPULATION
 from .scenes.planned import OPERATIONAL_SPACE_CONTROL as PLANNED_OSC
 from .scenes.planned import SIMBICON_WALKING as PLANNED_SIMBICON_WALKING
+from .scenes.replay_scrubber import SCENE as REPLAY_SCRUBBER
 from .scenes.rigid_body import SCENE as RIGID_BODY
 from .scenes.rigid_fixed_joint import SCENE as RIGID_FIXED_JOINT
 from .scenes.rigid_limited_joints import SCENE as RIGID_LIMITED_JOINTS
@@ -102,6 +103,7 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         RIGID_IPC_EDGE_DROP,
         RIGID_IPC_PILE,
         RIGID_IPC_TUNNEL,
+        REPLAY_SCRUBBER,
         VARIATIONAL_CHAIN,
         VARIATIONAL_TUMBLER,
         VARIATIONAL_CONTACT,
