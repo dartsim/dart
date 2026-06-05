@@ -2,6 +2,30 @@
 
 ## DART 6
 
+### [DART 6.17.1 (2026-06-05)](https://github.com/dartsim/dart/milestone/95?closed=1)
+
+DART 6.17.1 is a patch release on the DART 6 LTS line. It hardens the classic
+DART 6 API against non-finite and degenerate inputs surfaced through gz-physics,
+so invalid SDF data degrades gracefully (with a warning) instead of aborting.
+
+* Collision
+
+  * Clamp the ODE heightfield extents, vertical scale, and bounds so an extreme `HeightmapShape` scale no longer aborts `dCollideHeightfield`: [#2894](https://github.com/dartsim/dart/pull/2894), [gazebosim/gz-physics#847](https://github.com/gazebosim/gz-physics/issues/847)
+
+* Dynamics
+
+  * Validate `HeightmapShape` scale and height-field values, rejecting non-finite and non-positive inputs: [#2884](https://github.com/dartsim/dart/pull/2884), [gazebosim/gz-physics#847](https://github.com/gazebosim/gz-physics/issues/847)
+  * Reject non-finite mass and moment of inertia at the `Inertia` ingest boundary: [#2885](https://github.com/dartsim/dart/pull/2885), [gazebosim/gz-physics#854](https://github.com/gazebosim/gz-physics/issues/854)
+  * Initialize `Inertia` to a valid state before applying a rejected moment, and check only the consumed inertia entries: [#2898](https://github.com/dartsim/dart/pull/2898)
+
+* Common
+
+  * Demote the duplicate-name auto-rename message to debug verbosity: [#2895](https://github.com/dartsim/dart/pull/2895), [gazebosim/gz-physics#725](https://github.com/gazebosim/gz-physics/issues/725)
+
+* Build
+
+  * Use pixi for the DART 6 Windows wheel dependencies: [#2882](https://github.com/dartsim/dart/pull/2882)
+
 ### [DART 6.17.0 (2026-06-03)](https://github.com/dartsim/dart/milestone/85?closed=1)
 
 DART 6.17.0 is a maintenance release on the DART 6 LTS compatibility line. It
