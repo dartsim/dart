@@ -96,12 +96,17 @@ inline uint32_t lcgNext()
   return lcgState;
 }
 
-class BenchmarkCountingPoolMemoryAllocator final : public MemoryAllocator
+class BenchmarkCountingMemoryAllocator final : public MemoryAllocator
 {
 public:
+  explicit BenchmarkCountingMemoryAllocator(MemoryAllocator& backing) noexcept
+    : mBacking(backing)
+  {
+  }
+
   std::string_view getType() const override
   {
-    return "BenchmarkCountingPoolMemoryAllocator";
+    return "BenchmarkCountingMemoryAllocator";
   }
 
   void* allocate(size_t bytes) noexcept override
@@ -138,7 +143,7 @@ public:
   size_t deallocationCount{0};
 
 private:
-  PoolAllocator mBacking;
+  MemoryAllocator& mBacking;
 };
 
 // =============================================================================
@@ -910,7 +915,8 @@ static void BM_EnttRegistryBuild_DART(benchmark::State& state)
     runEnttRegistryChurn(registry, entities, entityCount);
   }
 
-  BenchmarkCountingPoolMemoryAllocator countingBacking;
+  PoolAllocator countingStorageBacking;
+  BenchmarkCountingMemoryAllocator countingBacking(countingStorageBacking);
   StlAllocator<entt::entity> countingAllocator(countingBacking);
   std::vector<entt::entity> countingEntities(entityCount);
   {
@@ -944,7 +950,8 @@ static void BM_EnttRegistry_Foonathan(benchmark::State& state)
       entt::entity,
       fm::memory_pool_collection<fm::array_pool, fm::log2_buckets>>
       allocator(pool);
-  entt::basic_registry<entt::entity, decltype(allocator)> registry(allocator);
+  entt::basic_registry<entt::entity, decltype(allocator)> registry(
+      EnttRegistryStorageCount, allocator);
   std::vector<entt::entity> entities(entityCount);
 
   prewarmEnttRegistry(registry, entities, entityCount);
@@ -975,7 +982,8 @@ static void BM_EnttRegistryBuild_Foonathan(benchmark::State& state)
   std::vector<entt::entity> entities(entityCount);
 
   for (auto _ : state) {
-    entt::basic_registry<entt::entity, decltype(allocator)> registry(allocator);
+    entt::basic_registry<entt::entity, decltype(allocator)> registry(
+        EnttRegistryStorageCount, allocator);
     reserveEnttRegistryStorage(registry, entityCount);
     runEnttRegistryChurn(registry, entities, entityCount);
   }
@@ -991,7 +999,7 @@ BENCHMARK(BM_EnttRegistryBuild_Foonathan)
 static void BM_EnttRegistry_Std(benchmark::State& state)
 {
   const auto entityCount = static_cast<size_t>(state.range(0));
-  entt::registry registry;
+  entt::registry registry(EnttRegistryStorageCount);
   std::vector<entt::entity> entities(entityCount);
 
   prewarmEnttRegistry(registry, entities, entityCount);
@@ -1014,7 +1022,7 @@ static void BM_EnttRegistryBuild_Std(benchmark::State& state)
   std::vector<entt::entity> entities(entityCount);
 
   for (auto _ : state) {
-    entt::registry registry;
+    entt::registry registry(EnttRegistryStorageCount);
     reserveEnttRegistryStorage(registry, entityCount);
     runEnttRegistryChurn(registry, entities, entityCount);
   }
