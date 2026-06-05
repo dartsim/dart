@@ -207,7 +207,24 @@ def _write_io_stub(stubs_dir: Path):
 def _write_diff_stub(stubs_dir: Path):
     dartpy_dir = stubs_dir / "dartpy"
     dartpy_dir.mkdir(parents=True, exist_ok=True)
-    (dartpy_dir / "diff.pyi").write_text(
+
+    # DART_BUILD_DIFF=ON also re-exports the framework-neutral C++ rollout API
+    # onto the runtime dartpy.diff module (dartpy.__init__ copies it from
+    # dartpy.simulation). Mirror those re-exports in the stub when they exist so
+    # typed callers and the generated docs see dartpy.diff.rollout /
+    # RolloutTrajectory; the default DART_BUILD_DIFF=OFF build emits timestep only.
+    reexports: list[str] = []
+    try:
+        import dartpy  # type: ignore
+
+        diff_module = getattr(dartpy, "diff", None)
+        for name in ("RolloutTrajectory", "rollout"):
+            if diff_module is not None and hasattr(diff_module, name):
+                reexports.append(name)
+    except Exception:
+        pass
+
+    header = (
         '"""\n'
         "PyTorch autograd bridge for differentiable simulation.\n"
         "\n"
@@ -217,9 +234,15 @@ def _write_diff_stub(stubs_dir: Path):
         "dartpy stays torch-free.\n"
         '"""\n\n'
         "from __future__ import annotations\n\n"
-        '__all__: list[str] = [\n    "timestep",\n]\n\n'
-        "def timestep(world, state, action): ...\n"
     )
+    body = ""
+    if reexports:
+        body += "from dartpy.simulation import (\n"
+        body += "".join(f"    {name} as {name},\n" for name in sorted(reexports))
+        body += ")\n\n"
+    body += _all_block(sorted(["timestep", *reexports])) + "\n\n"
+    body += "def timestep(world, state, action): ...\n"
+    (dartpy_dir / "diff.pyi").write_text(header + body)
 
 
 def _public_module_name(relative_output: Path) -> str:
