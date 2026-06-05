@@ -36,13 +36,51 @@
 
 #include <dart/dynamics/HeightmapShape.hpp>
 
+#include <algorithm>
+#include <limits>
 #include <type_traits>
+
+#include <cmath>
 
 namespace dart {
 namespace collision {
 namespace detail {
 
 #define HF_THICKNESS 0.05
+
+//==============================================================================
+// A HeightmapShape scale/heights can be finite (so they pass the shape-level
+// validation guard) yet make the values DART hands to ODE non-finite: e.g.
+// (width-1)*scale.x() overflows to +/-Inf for a large field, or
+// maxHeight*scale.z overflows ODE's vertical AABB. ODE then derives a
+// non-finite sample spacing / AABB, collapses its per-cell index range, and
+// aborts via dIASSERT((nMinX < nMaxX) && (nMinZ < nMaxZ)) in
+// dCollideHeightfield. We intervene ONLY on an actual overflow (a non-finite
+// value), clamping to a finite bound well below sqrt(DBL_MAX); finite values
+// (even large but valid terrains) are passed through unchanged.
+// See https://github.com/gazebosim/gz-physics/issues/847
+constexpr double kOdeHeightfieldMaxExtent = 1.0e12;
+
+// Replaces a non-finite extent (the result of an overflowed product) with a
+// finite fallback so ODE's heightfield index math stays valid; finite inputs
+// are returned unchanged. Finiteness is validated AFTER the dReal cast: when
+// ODE is built single precision (dReal == float), a finite double larger than
+// FLT_MAX overflows to +/-Inf on the cast and would still abort.
+template <typename S>
+dReal finiteOdeExtentOr(S value, const char* what)
+{
+  const dReal r = static_cast<dReal>(value);
+  if (std::isfinite(r))
+    return r;
+
+  const double v = static_cast<double>(value);
+  const dReal fallback
+      = static_cast<dReal>(std::copysign(kOdeHeightfieldMaxExtent, v));
+  dtwarn << "[OdeHeightmap] Non-finite " << what
+         << " (likely from an extreme HeightmapShape scale); clamping to "
+         << fallback << " to avoid an ODE heightfield collision abort.\n";
+  return fallback;
+}
 
 //==============================================================================
 // creates the ODE height field. Only enabled if the height data type is float.
@@ -66,14 +104,14 @@ void setOdeHeightfieldDetails(
       odeHeightfieldId,
       heights,
       0,
-      (width - 1) * scale.x(),  // width (in meters)
-      (height - 1) * scale.y(), // height (in meters)
-      width,                    // width (sampling size)
-      height,                   // height (sampling size)
-      scale.z(),                // vertical scaling
-      0.0,                      // vertical offset
-      HF_THICKNESS,             // vertical thickness for closing the mesh
-      0);                       // wrap mode
+      finiteOdeExtentOr((width - 1) * scale.x(), "width extent"),
+      finiteOdeExtentOr((height - 1) * scale.y(), "depth extent"),
+      width,                                          // width (sampling size)
+      height,                                         // height (sampling size)
+      finiteOdeExtentOr(scale.z(), "vertical scale"), // clamped by the ctor too
+      0.0,                                            // vertical offset
+      HF_THICKNESS, // vertical thickness for closing the mesh
+      0);           // wrap mode
 }
 
 //==============================================================================
@@ -99,14 +137,14 @@ void setOdeHeightfieldDetails(
       odeHeightfieldId,
       heights,
       0,
-      (width - 1) * scale.x(),  // width (in meters)
-      (height - 1) * scale.y(), // height (in meters)
-      width,                    // width (sampling size)
-      height,                   // height (sampling size)
-      scale.z(),                // vertical scaling
-      0.0,                      // vertical offset
-      HF_THICKNESS,             // vertical thickness for closing the mesh
-      0);                       // wrap mode
+      finiteOdeExtentOr((width - 1) * scale.x(), "width extent"),
+      finiteOdeExtentOr((height - 1) * scale.y(), "depth extent"),
+      width,                                          // width (sampling size)
+      height,                                         // height (sampling size)
+      finiteOdeExtentOr(scale.z(), "vertical scale"), // clamped by the ctor too
+      0.0,                                            // vertical offset
+      HF_THICKNESS, // vertical thickness for closing the mesh
+      0);           // wrap mode
 }
 
 //==============================================================================
@@ -119,13 +157,42 @@ OdeHeightmap<S>::OdeHeightmap(
   DART_ASSERT(heightMap);
 
   // get the heightmap parameters
-  const auto& scale = heightMap->getScale();
+  Eigen::Matrix<S, 3, 1> scale = heightMap->getScale();
   const auto& heights = heightMap->getHeightField();
+  const double minHeight = static_cast<double>(heightMap->getMinHeight());
+  const double maxHeight = static_cast<double>(heightMap->getMaxHeight());
+
+  // ODE derives the heightfield's vertical AABB from the (unscaled) height
+  // bounds multiplied by the vertical scale, while its height callback returns
+  // sample * scale.z. If scale.z * |height bound| overflows to non-finite, the
+  // AABB collapses and dCollideHeightfield aborts. Clamp the vertical scale
+  // ONLY on an actual overflow (not on large-but-finite values) so the AABB
+  // stays consistent with the heights ODE will sample.
+  // See https://github.com/gazebosim/gz-physics/issues/847
+  const double maxAbsBound
+      = std::max(std::max(std::abs(minHeight), std::abs(maxHeight)), 1.0);
+  // Check the product in dReal: ODE forms the vertical AABB as
+  // bound * scale.z in dReal, so two values that are each finite (even in a
+  // single-precision build where dReal == float) can still overflow when
+  // multiplied. A double-only check would miss e.g. scale.z == 1e20 with a
+  // 1e20 bound.
+  const dReal scaledBound
+      = static_cast<dReal>(maxAbsBound) * static_cast<dReal>(scale.z());
+  if (!std::isfinite(scaledBound)) {
+    const double safeZ = std::copysign(
+        kOdeHeightfieldMaxExtent / maxAbsBound, static_cast<double>(scale.z()));
+    dtwarn << "[OdeHeightmap] Vertical scale (" << scale.z()
+           << ") combined with the height bound (" << maxAbsBound
+           << ") overflows ODE's heightfield AABB; clamping vertical scale to "
+           << safeZ << ".\n";
+    scale.z() = static_cast<S>(safeZ);
+  }
 
   // Create the ODE heightfield
   mOdeHeightfieldId = dGeomHeightfieldDataCreate();
 
-  // specify height field details
+  // specify height field details (the width/depth extents are clamped only if
+  // they overflow; the vertical scale was clamped above if needed)
   setOdeHeightfieldDetails(
       mOdeHeightfieldId,
       heights.data(),
@@ -133,14 +200,15 @@ OdeHeightmap<S>::OdeHeightmap(
       heightMap->getDepth(),
       scale);
 
-  // Restrict the bounds of the AABB to improve efficiency
+  // Restrict the bounds of the AABB to improve efficiency.
   //
-  // Note: ODE applies the vertical scale/offset (and thickness to min height)
-  // when computing the AABB, so we pass the unscaled bounds here.
+  // ODE applies the (now finite) vertical scale/offset when computing the AABB,
+  // so we pass the unscaled bounds here. Passing the real bounds keeps the AABB
+  // consistent with the heights ODE samples from the field.
   dGeomHeightfieldDataSetBounds(
       mOdeHeightfieldId,
-      static_cast<dReal>(heightMap->getMinHeight()),
-      static_cast<dReal>(heightMap->getMaxHeight()));
+      finiteOdeExtentOr(minHeight, "min height"),
+      finiteOdeExtentOr(maxHeight, "max height"));
 
   // create the height field
   mGeomId = dCreateHeightfield(0, mOdeHeightfieldId, 1);
