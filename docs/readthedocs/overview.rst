@@ -14,6 +14,8 @@ For developers and researchers, DART offers full access to internal kinematic an
 
 DART is intended to be easy to start with and practical to extend. Python and C++ packages cover common installation paths, while pixi-based source builds support reproducible development. Its math, collision, constraint, model-loading, benchmark, and test foundations are organized so new algorithms can be implemented and compared against existing DART baselines. Current platform support is centered on cross-platform CPU execution, with roadmap work tracking multi-core, SIMD, and accelerator backends.
 
+For the DART 7 direction — how the experimental simulation pipeline is generalized to support **multiple physics domains, multiple solver methods, and multiple compute backends** in one step, with the available options at each abstraction seam — see :doc:`architecture`.
+
 For visible citation guidance and credits for research methods implemented or
 being reproduced in DART, see :doc:`papers`.
 

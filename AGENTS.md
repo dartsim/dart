@@ -41,6 +41,7 @@ portable source of truth.
 | Contributing                | `docs/onboarding/contributing.md`, `CONTRIBUTING.md`                                                                                                               |
 | Code style                  | `docs/onboarding/code-style.md`                                                                                                                                    |
 | Architecture                | `docs/onboarding/architecture.md`, `docs/onboarding/README.md`                                                                                                     |
+| DART 7 architecture vision  | `docs/readthedocs/architecture.md` (multi-physics/solver/backend one-paper), `docs/design/simulation_solver_architecture.md`                                       |
 | Public API work             | `docs/onboarding/api-boundaries.md`                                                                                                                                |
 | Theory/research foundations | `docs/background/README.md`                                                                                                                                        |
 | CI/CD issues                | `docs/onboarding/ci-cd.md`                                                                                                                                         |
