@@ -52,6 +52,10 @@ Discuss or update DART living plans: $ARGUMENTS
    - For active multi-session solver/paper work, update the plan or dev-task
      resume surface with both the completed slice and the next missing
      paper-parity gap; do not let focused tests narrow the recorded objective.
+     If the user names source demos, videos, or project pages, keep the corpus
+     matrix explicit: which scenes/experiments are represented by tests,
+     `py-demos`, visual artifacts, benchmark JSON, CPU reference comparisons,
+     and GPU parity, and which rows remain missing.
 3. Keep the plan manageable:
    - revise an existing initiative before adding a duplicate;
    - use stable initiative IDs when renaming, splitting, consolidating, or
