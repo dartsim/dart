@@ -109,6 +109,7 @@ struct DART_EXPERIMENTAL_API ComputeExecutionProfile
   [[nodiscard]] double getAverageParallelism() const noexcept;
   [[nodiscard]] const ComputeNodeExecutionProfile* getNode(
       std::string_view name) const;
+  [[nodiscard]] std::string toSummaryText() const;
 };
 
 /// Helper used by executors to collect one profiled graph execution.

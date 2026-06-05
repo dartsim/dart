@@ -1125,9 +1125,12 @@ void resetMultibodyLinkContactRow(
   row.tangentJacobian1.setZero();
   row.tangentJacobian2.resize(dof);
   row.tangentJacobian2.setZero();
-  row.otherNormalJacobian.resize(0);
-  row.otherTangentJacobian1.resize(0);
-  row.otherTangentJacobian2.resize(0);
+  row.otherNormalJacobian.resize(dof);
+  row.otherNormalJacobian.setZero();
+  row.otherTangentJacobian1.resize(dof);
+  row.otherTangentJacobian1.setZero();
+  row.otherTangentJacobian2.resize(dof);
+  row.otherTangentJacobian2.setZero();
   row.normal = Eigen::Vector3d::UnitZ();
   row.tangent1.setZero();
   row.tangent2.setZero();
@@ -1174,22 +1177,14 @@ void ensureMultibodyLinkContactRowStorage(
 }
 
 //==============================================================================
-void solveMultibodyLinkContacts(
+bool prepareMultibodyContactDynamicsInto(
     detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     Eigen::VectorXd& nextVelocity,
-    double timeStep,
-    const std::vector<LinkContact>& linkContacts,
     MultibodyDynamicsScratch& scratch)
 {
-  // Assemble the per-contact rows (Jacobians, denominators, bias, restitution,
-  // two-sided obstacle coupling) once, then resolve them with an accumulated
-  // velocity-level Gauss-Seidel sweep. The assembly is shared with the unified
-  // constraint solve as the link-side counterpart of the rigid-body assembler.
-  auto& problem = scratch.contactProblem;
-  scratch.activeContactRowCount = 0;
   if (structure.links.empty()) {
-    return;
+    return false;
   }
 
   buildDynamicsTreeInto(
@@ -1207,9 +1202,10 @@ void solveMultibodyLinkContacts(
       nextVelocity.size(),
       scratch.tree.dofCount);
 
+  auto& problem = scratch.contactProblem;
   if (scratch.tree.dofCount == 0) {
     problem.inverseMass.resize(0, 0);
-    return;
+    return false;
   }
 
   const auto dof = static_cast<Eigen::Index>(scratch.tree.dofCount);
@@ -1234,6 +1230,34 @@ void solveMultibodyLinkContacts(
   }
 
   linkBodyJacobiansInto(scratch.tree, scratch.bodyJacobian);
+  return true;
+}
+
+//==============================================================================
+void solveMultibodyLinkContacts(
+    detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure,
+    Eigen::VectorXd& nextVelocity,
+    double timeStep,
+    const std::vector<LinkContact>& linkContacts,
+    MultibodyDynamicsScratch& scratch)
+{
+  // Assemble the per-contact rows (Jacobians, denominators, bias, restitution,
+  // two-sided obstacle coupling) once, then resolve them with an accumulated
+  // velocity-level Gauss-Seidel sweep. The assembly is shared with the unified
+  // constraint solve as the link-side counterpart of the rigid-body assembler.
+  auto& problem = scratch.contactProblem;
+  scratch.activeContactRowCount = 0;
+  if (structure.links.empty()) {
+    return;
+  }
+
+  if (!prepareMultibodyContactDynamicsInto(
+          registry, structure, nextVelocity, scratch)) {
+    return;
+  }
+
+  const auto dof = static_cast<Eigen::Index>(scratch.tree.dofCount);
   ensureMultibodyLinkContactRowStorage(scratch, linkContacts.size(), dof);
   constexpr double penetrationSlop = 1e-4;
   constexpr double baumgarteFactor = 0.2;
@@ -1445,6 +1469,208 @@ void solveMultibodyLinkContacts(
             row.tangent2,
             newImpulse - row.tangentImpulse2);
         row.tangentImpulse2 = newImpulse;
+      }
+    }
+  }
+}
+
+//==============================================================================
+void completeSequentialCrossMultibodyLinkRows(
+    detail::WorldRegistry& registry,
+    Eigen::VectorXd& primaryVelocity,
+    MultibodyDynamicsScratch& scratch)
+{
+  auto& problem = scratch.contactProblem;
+  const auto rowCount = scratch.activeContactRowCount;
+  if (rowCount == 0 || problem.inverseMass.size() == 0) {
+    return;
+  }
+
+  constexpr double restitutionThreshold = 1e-2;
+  for (auto& row :
+       std::span<MultibodyLinkContactRow>(problem.rows.data(), rowCount)) {
+    if (row.otherMultibody == entt::null) {
+      continue;
+    }
+
+    auto* otherScratch
+        = registry.try_get<MultibodyDynamicsScratch>(row.otherMultibody);
+    auto* otherPending
+        = registry.try_get<PendingMultibodyVelocity>(row.otherMultibody);
+    if (otherScratch == nullptr || otherPending == nullptr
+        || !otherPending->active) {
+      continue;
+    }
+
+    const auto& otherStructure
+        = registry.get<comps::MultibodyStructure>(row.otherMultibody);
+    const auto otherIndex = linkIndexOf(otherStructure, row.otherLink);
+    pointLinearJacobianInto(
+        otherScratch->tree,
+        otherScratch->bodyJacobian,
+        otherIndex,
+        row.point,
+        otherScratch->otherPointJacobian);
+
+    multiplyPointJacobianTransposeInto(
+        otherScratch->otherPointJacobian, row.normal, row.otherNormalJacobian);
+    multiplyPointJacobianTransposeInto(
+        otherScratch->otherPointJacobian,
+        row.tangent1,
+        row.otherTangentJacobian1);
+    multiplyPointJacobianTransposeInto(
+        otherScratch->otherPointJacobian,
+        row.tangent2,
+        row.otherTangentJacobian2);
+
+    const auto& otherInverseMass = otherScratch->contactProblem.inverseMass;
+    row.normalDenominator += jointSpaceDenominator(
+        otherInverseMass, row.otherNormalJacobian, otherScratch->contactWork);
+    row.tangentDenominator1 += jointSpaceDenominator(
+        otherInverseMass, row.otherTangentJacobian1, otherScratch->contactWork);
+    row.tangentDenominator2 += jointSpaceDenominator(
+        otherInverseMass, row.otherTangentJacobian2, otherScratch->contactWork);
+
+    const auto relativeVelocity = [&](const Eigen::VectorXd& primaryJacobian,
+                                      const Eigen::VectorXd& otherJacobian) {
+      return primaryJacobian.dot(primaryVelocity)
+             - otherJacobian.dot(otherPending->velocity);
+    };
+
+    const double approachingVelocity
+        = relativeVelocity(row.normalJacobian, row.otherNormalJacobian);
+    row.restitutionTarget = (approachingVelocity < -restitutionThreshold)
+                                ? -row.restitution * approachingVelocity
+                                : 0.0;
+    row.normalRhs
+        = -approachingVelocity + std::max(row.bias, row.restitutionTarget);
+    row.tangentRhs1
+        = -relativeVelocity(row.tangentJacobian1, row.otherTangentJacobian1);
+    row.tangentRhs2
+        = -relativeVelocity(row.tangentJacobian2, row.otherTangentJacobian2);
+    row.active = row.normalDenominator > 0.0;
+  }
+}
+
+//==============================================================================
+void applyMultibodyImpulse(
+    Eigen::VectorXd& velocity,
+    const Eigen::MatrixXd& inverseMass,
+    const Eigen::VectorXd& jacobian,
+    double deltaImpulse,
+    Eigen::VectorXd& work)
+{
+  if (jacobian.size() == 0) {
+    return;
+  }
+  if (jacobian.size() == 1) {
+    velocity[0] += inverseMass(0, 0) * jacobian[0] * deltaImpulse;
+    return;
+  }
+
+  work.resize(jacobian.size());
+  work.noalias() = inverseMass * jacobian;
+  velocity.noalias() += work * deltaImpulse;
+}
+
+//==============================================================================
+void solveSequentialCrossMultibodyLinkRows(detail::WorldRegistry& registry)
+{
+  constexpr int contactIterations = 8;
+  auto view = registry.view<comps::MultibodyStructure>();
+
+  for (int iteration = 0; iteration < contactIterations; ++iteration) {
+    for (auto entity : view) {
+      auto* pendingVelocity
+          = registry.try_get<PendingMultibodyVelocity>(entity);
+      if (pendingVelocity == nullptr || !pendingVelocity->active) {
+        continue;
+      }
+
+      auto& scratch = registry.get<MultibodyDynamicsScratch>(entity);
+      auto& problem = scratch.contactProblem;
+      const auto rowCount = scratch.activeContactRowCount;
+      if (rowCount == 0 || problem.inverseMass.size() == 0) {
+        continue;
+      }
+
+      for (auto& row :
+           std::span<MultibodyLinkContactRow>(problem.rows.data(), rowCount)) {
+        if (!row.active || row.otherMultibody == entt::null) {
+          continue;
+        }
+
+        auto* otherPending
+            = registry.try_get<PendingMultibodyVelocity>(row.otherMultibody);
+        auto* otherScratch
+            = registry.try_get<MultibodyDynamicsScratch>(row.otherMultibody);
+        if (otherPending == nullptr || !otherPending->active
+            || otherScratch == nullptr) {
+          continue;
+        }
+
+        const auto relativeVelocity
+            = [&](const Eigen::VectorXd& primaryJacobian,
+                  const Eigen::VectorXd& otherJacobian) {
+                return primaryJacobian.dot(pendingVelocity->velocity)
+                       - otherJacobian.dot(otherPending->velocity);
+              };
+        const auto applyImpulse = [&](const Eigen::VectorXd& primaryJacobian,
+                                      const Eigen::VectorXd& otherJacobian,
+                                      double deltaImpulse) {
+          applyMultibodyImpulse(
+              pendingVelocity->velocity,
+              problem.inverseMass,
+              primaryJacobian,
+              deltaImpulse,
+              scratch.contactImpulseDelta);
+          applyMultibodyImpulse(
+              otherPending->velocity,
+              otherScratch->contactProblem.inverseMass,
+              otherJacobian,
+              -deltaImpulse,
+              otherScratch->contactImpulseDelta);
+        };
+
+        const double normalVelocity
+            = relativeVelocity(row.normalJacobian, row.otherNormalJacobian);
+        const double deltaNormal
+            = (-normalVelocity + std::max(row.bias, row.restitutionTarget))
+              / row.normalDenominator;
+        const double newNormal = std::max(0.0, row.normalImpulse + deltaNormal);
+        applyImpulse(
+            row.normalJacobian,
+            row.otherNormalJacobian,
+            newNormal - row.normalImpulse);
+        row.normalImpulse = newNormal;
+
+        const double bound = row.friction * row.normalImpulse;
+        if (row.tangentDenominator1 > 0.0) {
+          const double tangentVelocity = relativeVelocity(
+              row.tangentJacobian1, row.otherTangentJacobian1);
+          const double newImpulse = std::clamp(
+              row.tangentImpulse1 - tangentVelocity / row.tangentDenominator1,
+              -bound,
+              bound);
+          applyImpulse(
+              row.tangentJacobian1,
+              row.otherTangentJacobian1,
+              newImpulse - row.tangentImpulse1);
+          row.tangentImpulse1 = newImpulse;
+        }
+        if (row.tangentDenominator2 > 0.0) {
+          const double tangentVelocity = relativeVelocity(
+              row.tangentJacobian2, row.otherTangentJacobian2);
+          const double newImpulse = std::clamp(
+              row.tangentImpulse2 - tangentVelocity / row.tangentDenominator2,
+              -bound,
+              bound);
+          applyImpulse(
+              row.tangentJacobian2,
+              row.otherTangentJacobian2,
+              newImpulse - row.tangentImpulse2);
+          row.tangentImpulse2 = newImpulse;
+        }
       }
     }
   }
@@ -2622,6 +2848,9 @@ bool tryResolveSequentialMultibodyContacts(
 
   auto view = registry.view<comps::MultibodyStructure>();
   bool hasHandledLinkContact = false;
+  bool hasCrossMultibodyLinkContact = false;
+  bool hasNonCrossLinkContact = false;
+  std::size_t crossMultibodyLinkContactCount = 0;
   for (auto entity : view) {
     const auto& structure = view.get<comps::MultibodyStructure>(entity);
     auto& scratch = registry.get_or_emplace<MultibodyDynamicsScratch>(entity);
@@ -2629,7 +2858,10 @@ bool tryResolveSequentialMultibodyContacts(
         registry, structure, contacts, scratch.linkContacts);
     for (const auto& contact : scratch.linkContacts) {
       if (contact.otherMultibody != entt::null) {
-        return false;
+        hasCrossMultibodyLinkContact = true;
+        ++crossMultibodyLinkContactCount;
+      } else {
+        hasNonCrossLinkContact = true;
       }
     }
     hasHandledLinkContact
@@ -2638,16 +2870,46 @@ bool tryResolveSequentialMultibodyContacts(
   if (!hasHandledLinkContact) {
     return false;
   }
+  if (hasCrossMultibodyLinkContact
+      && (hasNonCrossLinkContact || crossMultibodyLinkContactCount != 1)) {
+    return false;
+  }
+
+  const auto isRequiredCrossMultibody = [&](entt::entity candidate) {
+    if (!hasCrossMultibodyLinkContact) {
+      return false;
+    }
+    for (auto entity : view) {
+      const auto* scratch = registry.try_get<MultibodyDynamicsScratch>(entity);
+      if (scratch == nullptr) {
+        continue;
+      }
+      for (const auto& contact : scratch->linkContacts) {
+        if (contact.otherMultibody == candidate) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
 
   for (auto entity : view) {
     const auto& structure = view.get<comps::MultibodyStructure>(entity);
     auto& scratch = registry.get<MultibodyDynamicsScratch>(entity);
-    if (scratch.linkContacts.empty()) {
+    const bool hasOwnedLinkContacts = !scratch.linkContacts.empty();
+    if (!hasOwnedLinkContacts && !isRequiredCrossMultibody(entity)) {
       continue;
+    }
+    if (!hasOwnedLinkContacts) {
+      scratch.activeContactRowCount = 0;
     }
 
     auto* pendingVelocity = registry.try_get<PendingMultibodyVelocity>(entity);
     if (pendingVelocity != nullptr && pendingVelocity->active) {
+      if (!prepareMultibodyContactDynamicsInto(
+              registry, structure, pendingVelocity->velocity, scratch)) {
+        return false;
+      }
       continue;
     }
 
@@ -2659,6 +2921,33 @@ bool tryResolveSequentialMultibodyContacts(
         scratch.jointFrameSubspace);
     if (scratch.tree.dofCount == 0) {
       return false;
+    }
+    pendingVelocity
+        = &registry.get_or_emplace<PendingMultibodyVelocity>(entity);
+    gatherMultibodyVelocityInto(
+        registry, scratch.tree, pendingVelocity->velocity);
+    pendingVelocity->active = true;
+    if (!prepareMultibodyContactDynamicsInto(
+            registry, structure, pendingVelocity->velocity, scratch)) {
+      return false;
+    }
+  }
+
+  if (hasCrossMultibodyLinkContact) {
+    for (auto entity : view) {
+      const auto& scratch = registry.get<MultibodyDynamicsScratch>(entity);
+      for (const auto& contact : scratch.linkContacts) {
+        if (contact.otherMultibody == entt::null) {
+          continue;
+        }
+
+        const auto* otherScratch = registry.try_get<MultibodyDynamicsScratch>(
+            contact.otherMultibody);
+        if (otherScratch == nullptr
+            || scratch.tree.dofCount != otherScratch->tree.dofCount) {
+          return false;
+        }
+      }
     }
   }
 
@@ -2694,6 +2983,20 @@ bool tryResolveSequentialMultibodyContacts(
         timeStep,
         scratch.linkContacts,
         scratch);
+  }
+  if (hasCrossMultibodyLinkContact) {
+    for (auto entity : view) {
+      auto* pendingVelocity
+          = registry.try_get<PendingMultibodyVelocity>(entity);
+      if (pendingVelocity == nullptr || !pendingVelocity->active) {
+        continue;
+      }
+
+      auto& scratch = registry.get<MultibodyDynamicsScratch>(entity);
+      completeSequentialCrossMultibodyLinkRows(
+          registry, pendingVelocity->velocity, scratch);
+    }
+    solveSequentialCrossMultibodyLinkRows(registry);
   }
   return true;
 }

@@ -36,6 +36,8 @@
 #include "dart/simulation/experimental/compute/compute_graph.hpp"
 #include "dart/simulation/experimental/compute/execution_profile.hpp"
 
+#include <dart/config.hpp>
+
 #include <taskflow/taskflow.hpp>
 
 #include <memory>
@@ -117,6 +119,7 @@ void ParallelExecutor::execute(const ComputeGraph& graph)
 ComputeExecutionProfile ParallelExecutor::executeProfiled(
     const ComputeGraph& graph)
 {
+#if DART_BUILD_PROFILE
   DART_EXPERIMENTAL_ASSERT_MSG(
       graph.findResourceHazards().empty(),
       "Parallel execution found unordered resource-access hazards; add an "
@@ -151,6 +154,10 @@ ComputeExecutionProfile ParallelExecutor::executeProfiled(
   profiler.start();
   m_impl->executor->run(taskflow).get();
   return profiler.finish();
+#else
+  execute(graph);
+  return {};
+#endif
 }
 
 //==============================================================================
