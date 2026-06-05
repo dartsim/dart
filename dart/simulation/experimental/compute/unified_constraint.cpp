@@ -626,7 +626,7 @@ UnifiedConstraintSolution solveUnifiedConstraintProblem(
 
 //==============================================================================
 void applyUnifiedConstraintImpulses(
-    entt::registry& registry,
+    detail::WorldRegistry& registry,
     const UnifiedConstraintProblem& problem,
     const Eigen::VectorXd& lambda,
     std::span<Eigen::VectorXd> multibodyVelocities)
@@ -695,7 +695,7 @@ void applyUnifiedConstraintImpulses(
 
 //==============================================================================
 void applyUnifiedConstraintFallback(
-    entt::registry& registry,
+    detail::WorldRegistry& registry,
     const UnifiedConstraintProblem& problem,
     std::span<Eigen::VectorXd> multibodyVelocities,
     std::size_t frictionIterations)
@@ -904,7 +904,7 @@ void applyUnifiedConstraintFallback(
 
 //==============================================================================
 bool resolveUnifiedConstraints(
-    entt::registry& registry,
+    detail::WorldRegistry& registry,
     const UnifiedConstraintProblem& problem,
     std::span<Eigen::VectorXd> multibodyVelocities,
     std::size_t frictionIterations)

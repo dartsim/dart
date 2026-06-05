@@ -32,10 +32,11 @@
 
 #pragma once
 
+#include <dart/simulation/experimental/detail/world_registry_types.hpp>
 #include <dart/simulation/experimental/diff/physical_parameter.hpp>
 #include <dart/simulation/experimental/diff/step_derivatives.hpp>
 
-#include <entt/entt.hpp>
+#include <dart/common/stl_allocator.hpp>
 
 #include <optional>
 #include <utility>
@@ -53,15 +54,21 @@ namespace dart::simulation::experimental::detail {
 /// registry) include it.
 struct WorldStorage
 {
+  using DifferentiableParameter = std::pair<entt::entity, PhysicalParameter>;
+  using DifferentiableParameterAllocator
+      = dart::common::StlAllocator<DifferentiableParameter>;
+
+  explicit WorldStorage(dart::common::MemoryAllocator& allocator);
+
   /// The ECS registry holding every entity and component owned by the World.
-  entt::registry registry;
+  WorldRegistry registry;
 
   /// Registered differentiable physical parameters, in registration order. Each
   /// entry pairs the owning rigid-body entity with the parameter to
   /// differentiate. Columns of `StepDerivatives::parameterJacobian` follow this
   /// order. Stored in both build configs (the public registration API exists
   /// either way); only consumed when differentiable support is compiled.
-  std::vector<std::pair<entt::entity, PhysicalParameter>>
+  std::vector<DifferentiableParameter, DifferentiableParameterAllocator>
       differentiableParameters;
 
   /// Cached explicit Jacobians of the most recent differentiable step.

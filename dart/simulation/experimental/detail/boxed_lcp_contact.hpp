@@ -49,6 +49,7 @@
 
 #include <dart/simulation/experimental/fwd.hpp>
 
+#include <dart/simulation/experimental/detail/world_registry_types.hpp>
 #include <dart/simulation/experimental/export.hpp>
 
 #include <Eigen/Core>
@@ -133,7 +134,7 @@ struct DART_EXPERIMENTAL_API BoxedLcpContactSnapshot
 ///         when there is no active rigid-body normal constraint.
 [[nodiscard]] DART_EXPERIMENTAL_API BoxedLcpContactSnapshot
 solveBoxedLcpContacts(
-    entt::registry& registry,
+    detail::WorldRegistry& registry,
     const std::vector<Contact>& contacts,
     double timeStep);
 

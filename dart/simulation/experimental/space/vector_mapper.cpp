@@ -35,14 +35,59 @@
 #include "dart/simulation/experimental/common/exceptions.hpp"
 
 #include <algorithm>
+#include <concepts>
 #include <format>
 #include <iterator>
 #include <stdexcept>
+#include <type_traits>
 #include <utility>
 
 #include <cstddef>
 
 namespace dart::simulation::experimental {
+
+namespace {
+
+template <typename Registry>
+constexpr bool IsWorldRegistry
+    = std::same_as<std::remove_cvref_t<Registry>, detail::WorldRegistry>;
+
+const WorldRegistryComponentMapper* requireWorldRegistryMapper(
+    const ComponentMapper& mapper, const std::string& variableName)
+{
+  const auto* worldMapper
+      = dynamic_cast<const WorldRegistryComponentMapper*>(&mapper);
+  if (worldMapper == nullptr || !worldMapper->supportsWorldRegistry()) {
+    throw std::invalid_argument(
+        std::format(
+            "Mapper for variable '{}' does not support WorldRegistry; "
+            "mappers used with World-owned registries must implement "
+            "WorldRegistryComponentMapper and provide WorldRegistry-capable "
+            "callbacks",
+            variableName));
+  }
+
+  return worldMapper;
+}
+
+WorldRegistryComponentMapper* requireWorldRegistryMapper(
+    ComponentMapper& mapper, const std::string& variableName)
+{
+  auto* worldMapper = dynamic_cast<WorldRegistryComponentMapper*>(&mapper);
+  if (worldMapper == nullptr || !worldMapper->supportsWorldRegistry()) {
+    throw std::invalid_argument(
+        std::format(
+            "Mapper for variable '{}' does not support WorldRegistry; "
+            "mappers used with World-owned registries must implement "
+            "WorldRegistryComponentMapper and provide WorldRegistry-capable "
+            "callbacks",
+            variableName));
+  }
+
+  return worldMapper;
+}
+
+} // namespace
 
 VectorMapper::VectorMapper(StateSpace space) : m_space(std::move(space))
 {
@@ -52,22 +97,25 @@ VectorMapper::VectorMapper(StateSpace space) : m_space(std::move(space))
 
 VectorMapper::~VectorMapper() = default;
 
-std::vector<double> VectorMapper::toVector(const entt::registry& registry) const
+template <typename Registry>
+std::vector<double> VectorMapper::toVectorImpl(const Registry& registry) const
 {
   std::vector<double> result(m_space.getDimension());
-  toVector(registry, result);
+  toVectorImpl(registry, result);
   return result;
 }
 
-Eigen::VectorXd VectorMapper::toEigen(const entt::registry& registry) const
+template <typename Registry>
+Eigen::VectorXd VectorMapper::toEigenImpl(const Registry& registry) const
 {
   Eigen::VectorXd result(m_space.getDimension());
-  toEigen(registry, result);
+  toEigenImpl(registry, result);
   return result;
 }
 
-void VectorMapper::toVector(
-    const entt::registry& registry, std::vector<double>& output) const
+template <typename Registry>
+void VectorMapper::toVectorImpl(
+    const Registry& registry, std::vector<double>& output) const
 {
   if (output.size() < m_space.getDimension()) {
     throw std::invalid_argument(
@@ -80,9 +128,16 @@ void VectorMapper::toVector(
   size_t offset = 0;
   const auto& variables = m_space.getVariables();
 
-  for (size_t i = 0; i < m_mappers.size(); ++i) {
-    if (m_mappers[i]) {
-      size_t written = m_mappers[i]->toVector(registry, output, offset);
+  for (size_t i = 0; i < variables.size(); ++i) {
+    if (i < m_mappers.size() && m_mappers[i]) {
+      size_t written = 0;
+      if constexpr (IsWorldRegistry<Registry>) {
+        const auto* worldMapper = requireWorldRegistryMapper(
+            std::as_const(*m_mappers[i]), variables[i].name);
+        written = worldMapper->toVector(registry, output, offset);
+      } else {
+        written = m_mappers[i]->toVector(registry, output, offset);
+      }
       offset += written;
     } else {
       // No mapper for this variable, fill with zeros
@@ -95,8 +150,9 @@ void VectorMapper::toVector(
   }
 }
 
-void VectorMapper::toEigen(
-    const entt::registry& registry, Eigen::VectorXd& output) const
+template <typename Registry>
+void VectorMapper::toEigenImpl(
+    const Registry& registry, Eigen::VectorXd& output) const
 {
   if (std::cmp_less(output.size(), m_space.getDimension())) {
     throw std::invalid_argument(
@@ -108,14 +164,15 @@ void VectorMapper::toEigen(
 
   // Use temporary std::vector for conversion
   std::vector<double> temp(m_space.getDimension());
-  toVector(registry, temp);
+  toVectorImpl(registry, temp);
 
   // Copy to Eigen vector
   std::ranges::copy(temp, output.data());
 }
 
-void VectorMapper::fromVector(
-    entt::registry& registry, std::span<const double> vec)
+template <typename Registry>
+void VectorMapper::fromVectorImpl(
+    Registry& registry, std::span<const double> vec)
 {
   if (vec.size() < m_space.getDimension()) {
     throw std::invalid_argument(
@@ -128,9 +185,16 @@ void VectorMapper::fromVector(
   size_t offset = 0;
   const auto& variables = m_space.getVariables();
 
-  for (size_t i = 0; i < m_mappers.size(); ++i) {
-    if (m_mappers[i]) {
-      size_t read = m_mappers[i]->fromVector(registry, vec, offset);
+  for (size_t i = 0; i < variables.size(); ++i) {
+    if (i < m_mappers.size() && m_mappers[i]) {
+      size_t read = 0;
+      if constexpr (IsWorldRegistry<Registry>) {
+        auto* worldMapper
+            = requireWorldRegistryMapper(*m_mappers[i], variables[i].name);
+        read = worldMapper->fromVector(registry, vec, offset);
+      } else {
+        read = m_mappers[i]->fromVector(registry, vec, offset);
+      }
       offset += read;
     } else {
       // No mapper for this variable, skip
@@ -139,8 +203,8 @@ void VectorMapper::fromVector(
   }
 }
 
-void VectorMapper::fromEigen(
-    entt::registry& registry, const Eigen::VectorXd& vec)
+template <typename Registry>
+void VectorMapper::fromEigenImpl(Registry& registry, const Eigen::VectorXd& vec)
 {
   if (std::cmp_less(vec.size(), m_space.getDimension())) {
     throw std::invalid_argument(
@@ -150,9 +214,79 @@ void VectorMapper::fromEigen(
             m_space.getDimension()));
   }
 
-  fromVector(
+  fromVectorImpl(
       registry,
       std::span<const double>(vec.data(), static_cast<size_t>(vec.size())));
+}
+
+std::vector<double> VectorMapper::toVector(const entt::registry& registry) const
+{
+  return toVectorImpl(registry);
+}
+
+std::vector<double> VectorMapper::toVector(
+    const detail::WorldRegistry& registry) const
+{
+  return toVectorImpl(registry);
+}
+
+Eigen::VectorXd VectorMapper::toEigen(const entt::registry& registry) const
+{
+  return toEigenImpl(registry);
+}
+
+Eigen::VectorXd VectorMapper::toEigen(
+    const detail::WorldRegistry& registry) const
+{
+  return toEigenImpl(registry);
+}
+
+void VectorMapper::toVector(
+    const entt::registry& registry, std::vector<double>& output) const
+{
+  toVectorImpl(registry, output);
+}
+
+void VectorMapper::toVector(
+    const detail::WorldRegistry& registry, std::vector<double>& output) const
+{
+  toVectorImpl(registry, output);
+}
+
+void VectorMapper::toEigen(
+    const entt::registry& registry, Eigen::VectorXd& output) const
+{
+  toEigenImpl(registry, output);
+}
+
+void VectorMapper::toEigen(
+    const detail::WorldRegistry& registry, Eigen::VectorXd& output) const
+{
+  toEigenImpl(registry, output);
+}
+
+void VectorMapper::fromVector(
+    entt::registry& registry, std::span<const double> vec)
+{
+  fromVectorImpl(registry, vec);
+}
+
+void VectorMapper::fromVector(
+    detail::WorldRegistry& registry, std::span<const double> vec)
+{
+  fromVectorImpl(registry, vec);
+}
+
+void VectorMapper::fromEigen(
+    entt::registry& registry, const Eigen::VectorXd& vec)
+{
+  fromEigenImpl(registry, vec);
+}
+
+void VectorMapper::fromEigen(
+    detail::WorldRegistry& registry, const Eigen::VectorXd& vec)
+{
+  fromEigenImpl(registry, vec);
 }
 
 void VectorMapper::addMapper(

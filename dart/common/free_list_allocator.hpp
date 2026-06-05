@@ -40,6 +40,8 @@
 
 #include <vector>
 
+#include <cstddef>
+
 namespace dart::common {
 
 /// Most general heap memory allocator for allocating memory of various sizes.

@@ -5,33 +5,62 @@
 The first memory-manager slice has landed: experimental `World` owns a
 `dart::common::MemoryManager`, accepts root allocator/frame-scratch options,
 exposes memory diagnostics, and resets frame scratch at step boundaries. The
-allocator-quality gate is active: DART allocators must beat standard C++
+allocator-quality gate remains active: DART allocators must beat standard C++
 allocators and foonathan/memory on DART-relevant workloads before broad
-hot-loop adoption. Follow-up allocator work added alignment-aware
-`MemoryAllocator`/`StlAllocator` paths for over-aligned objects and
-allocator-aware EnTT registries, fixed free-list split alignment and overflow
-edge cases, and added `FixedPoolAllocator` for fixed-size slot workloads. The
-local comparative allocator benchmark now passes all DART/Foonathan median
-ratios when the fixed-size pool row uses `FixedPoolAllocator`, while mixed
-size-classed workloads remain on `PoolAllocator`.
+hot-loop adoption.
+
+Follow-up allocator work added alignment-aware `MemoryAllocator`/`StlAllocator`
+paths for over-aligned objects and allocator-aware EnTT registries, fixed
+free-list split alignment and overflow edge cases, allowed EnTT view internals
+to default-construct `StlAllocator` under Clang, and added `FixedPoolAllocator`
+for fixed-size slot workloads. The local comparative allocator benchmark now
+passes all DART/Foonathan and DART/StdPmr median ratios when fixed-size pool
+rows use `FixedPoolAllocator`, while mixed size-classed workloads remain on
+`PoolAllocator`.
+
+The stacked registry branch wires the experimental World's internal EnTT
+registry, component storage, and differentiable-parameter list through the
+World's active free allocator. It also adds initial
+`enterSimulationMode()` reservation/no-growth tests for current World-owned ECS
+storage and first private step-scratch component paths. Direct EnTT
+create/emplace/clear/re-emplace/destroy/reuse storage cycling is also covered
+after explicit entity/component reserve. Broader solver scratch coverage and
+EnTT allocator benchmarks remain open.
+
+The next stacked no-growth guard adds a counting base allocator test proving
+that baked kinematic IPC rigid-body, multibody variational, and single
+deformable paths do not request more World base-allocator allocations or
+deallocations during repeated `World::step()` calls. This is not the final
+global zero-allocation proof; it covers the World-owned memory hierarchy only.
+
+The current stacked pipeline slice removes `WorldStepPipeline`'s heap-backed
+stage pointer vector from default/built-in step composition. Pipelines now keep
+a fixed inline list of non-owning stage pointers sized for the current default
+World stage compositions plus headroom, while longer custom pipelines preserve
+the previous arbitrary-stage behavior through an overflow path.
 
 ## Current Branch
 
-`feature/aligned-memory-allocator` - PR #2871 branch for allocator correctness
-and fixed-size pool performance. The stacked
-`feature/world-registry-allocator` branch for PR #2872 builds on this branch.
+`feature/world-step-pipeline-inline-storage` - stacked on PR #2879
+(`feature/world-memory-step-no-growth`), which is itself stacked on PR #2872
+(`feature/world-registry-allocator`). PR #2871 has merged to `main`, and #2872
+has been merged forward from `main`.
 
 ## Immediate Next Step
 
-Finish review/CI for PR #2871, then merge it into the stacked World registry
-branch and keep PR #2872's EnTT allocator/no-growth tests current. Next
+Monitor #2872/#2879/#2880 CI after the base-propagation merge and resolve any
+failures. Next
 allocator work should land the strict comparative benchmark gate, broaden
-`FixedPoolAllocator` correctness coverage, and add EnTT registry/storage
-allocator benchmarks before replacing more per-step hot-loop temporaries.
+`FixedPoolAllocator` correctness coverage, benchmark allocator-backed EnTT
+registry/component storage, extend no-growth ECS tests to broader contact and
+remaining solver scratch step paths, and add a separate global heap allocation
+guard before claiming zero dynamic allocation for the full simulation loop.
 
 ## Latest Local Validation
 
 - `pixi run lint`
+- `cmake --build build/default/cpp/Release --target UNIT_common_stl_allocator -j2 && ctest --test-dir build/default/cpp/Release -R '^UNIT_common_stl_allocator$' --output-on-failure`
+- `clang++ --gcc-toolchain=/usr -std=gnu++20 -I. -Ibuild/default/cpp/Release -I.pixi/envs/default/include -fsyntax-only` with an allocator-aware `entt::basic_registry` multi-component `view` instantiation.
 - `cmake --build build/default/cpp/Release --target bm_allocators_comparative UNIT_common_pool_allocator -j2`
 - `ctest --test-dir build/default/cpp/Release -R '^UNIT_common_pool_allocator$' --output-on-failure`
 - `build/default/cpp/Release/bin/bm_allocators_comparative --benchmark_min_time=0.1s --benchmark_out=.benchmark_results/allocator-comparative-current-head.json --benchmark_out_format=json`
@@ -39,6 +68,13 @@ allocator benchmarks before replacing more per-step hot-loop temporaries.
   all DART/Foonathan and DART/StdPmr median ratios passed (`< 1.0`),
   including fixed pool, mixed pool, frame, realistic, steady-state, and STL
   vector workloads.
+- `cmake --build build/default/cpp/Release --target dartsim -j2`
+- `pixi run test-simulation-experimental` (61/61 passed)
+- `cmake --build build/default/cpp/Release --target test_world -j2`
+- `ctest --test-dir build/default/cpp/Release -R '^test_world$' --output-on-failure`
+- On `feature/world-step-pipeline-inline-storage` after the inline pipeline
+  storage change: `cmake --build build/default/cpp/Release --target test_world -j2`
+  and `ctest --test-dir build/default/cpp/Release -R '^test_world$' --output-on-failure`
 
 ## Context That Would Be Lost
 
@@ -61,6 +97,10 @@ allocator benchmarks before replacing more per-step hot-loop temporaries.
 - EnTT registry/storage allocation is first-class scope. Future work should
   inspect the active EnTT version's `basic_registry` and `basic_storage`
   allocator hooks and keep EnTT allocator types hidden from public World API.
+- The active EnTT version's registry allocator propagates to component storage;
+  the remaining Phase 3 gap is broadening bake-time reservation coverage for
+  contact-heavy and solver-private scratch paths and benchmarking the
+  allocator-backed EnTT path.
 
 ## How to Resume
 
@@ -69,6 +109,6 @@ git status -sb
 git diff --stat
 ```
 
-Then continue from the open PR stack: #2871 allocator correctness/performance,
-#2872 allocator-backed experimental World registry, and the comparative
-benchmark gate branch.
+Then continue from the open PR stack: #2872 allocator-backed experimental World
+registry, #2879 no-growth ECS guard, #2880 inline pipeline storage, and the
+comparative benchmark gate branch.

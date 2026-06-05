@@ -33,6 +33,7 @@
 #pragma once
 
 #include <dart/simulation/experimental/common/exceptions.hpp>
+#include <dart/simulation/experimental/detail/world_registry_types.hpp>
 #include <dart/simulation/experimental/export.hpp>
 #include <dart/simulation/experimental/io/binary_io.hpp>
 
@@ -71,13 +72,15 @@ public:
   virtual void save(
       std::ostream& out,
       entt::entity entity,
-      const entt::registry& registry,
+      const ::dart::simulation::experimental::detail::WorldRegistry& registry,
       const EntityMap& entityMap) const = 0;
 
   // Read component data from binary stream and attach to entity
   // Note: The type name has already been read by the registry
   virtual void load(
-      std::istream& in, entt::entity entity, entt::registry& registry) const
+      std::istream& in,
+      entt::entity entity,
+      ::dart::simulation::experimental::detail::WorldRegistry& registry) const
       = 0;
 
   // Version-aware extension used by built-in serializers. Custom serializers
@@ -85,7 +88,7 @@ public:
   virtual void load(
       std::istream& in,
       entt::entity entity,
-      entt::registry& registry,
+      ::dart::simulation::experimental::detail::WorldRegistry& registry,
       std::uint32_t formatVersion) const
   {
     (void)formatVersion;
@@ -94,7 +97,9 @@ public:
 
   // Check if an entity has this component type
   virtual bool hasComponent(
-      entt::entity entity, const entt::registry& registry) const = 0;
+      entt::entity entity,
+      const ::dart::simulation::experimental::detail::WorldRegistry& registry)
+      const = 0;
 };
 
 //==============================================================================
@@ -131,7 +136,7 @@ public:
   // @param entityMap Output mapping from old entity IDs to sequential save IDs
   void saveAllEntities(
       std::ostream& output,
-      const entt::registry& registry,
+      const ::dart::simulation::experimental::detail::WorldRegistry& registry,
       EntityMap& entityMap) const;
 
   // Load all entities and their components from input stream to registry
@@ -139,7 +144,7 @@ public:
   // @param entityMap Output mapping from saved IDs to new entity IDs
   void loadAllEntities(
       std::istream& input,
-      entt::registry& registry,
+      ::dart::simulation::experimental::detail::WorldRegistry& registry,
       EntityMap& entityMap,
       std::uint32_t formatVersion) const;
 
@@ -224,7 +229,7 @@ public:
   void save(
       std::ostream& out,
       entt::entity entity,
-      const entt::registry& registry,
+      const ::dart::simulation::experimental::detail::WorldRegistry& registry,
       const EntityMap& entityMap) const final
   {
     // Skip serialization if component has serializable = false
@@ -244,7 +249,10 @@ public:
     }
   }
 
-  void load(std::istream& in, entt::entity entity, entt::registry& registry)
+  void load(
+      std::istream& in,
+      entt::entity entity,
+      ::dart::simulation::experimental::detail::WorldRegistry& registry)
       const final
   {
     ComponentT component;
@@ -260,7 +268,7 @@ public:
   void load(
       std::istream& in,
       entt::entity entity,
-      entt::registry& registry,
+      ::dart::simulation::experimental::detail::WorldRegistry& registry,
       std::uint32_t formatVersion) const final
   {
     ComponentT component;
@@ -274,7 +282,9 @@ public:
   }
 
   bool hasComponent(
-      entt::entity entity, const entt::registry& registry) const final
+      entt::entity entity,
+      const ::dart::simulation::experimental::detail::WorldRegistry& registry)
+      const final
   {
     return registry.all_of<ComponentT>(entity);
   }
