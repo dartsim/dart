@@ -37,9 +37,10 @@ kinematics graph cache at `enterSimulationMode()`, reuse rigid IPC kinematic
 scratch storage, and add global `operator new` guards proving baked kinematic
 IPC rigid-body, box-obstacle, rigid-body resting-contact, non-cross articulated
 resting-contact, and same-DOF sequential cross-articulated link-contact steps do
-not allocate from the global heap. Boxed-LCP unified contact assembly,
-mixed/different-DOF cross contacts, larger stacks, and remaining solver-owned
-scratch remain open.
+not allocate from the global heap. Mixed/different-DOF and stacked
+cross-articulated contacts stay on the boxed-LCP fallback; boxed-LCP unified
+contact assembly, larger contact sets, and remaining solver-owned scratch remain
+open.
 
 The EnTT benchmark slice (`bench/entt-registry-allocator`, PR #2890) adds
 comparative EnTT registry/component-storage rows against foonathan/memory and
@@ -114,7 +115,7 @@ full zero-dynamic-allocation claim.
   `build/default/cpp/Release/bin/test_world --gtest_color=no --gtest_filter='World.Multibody*'`
 - On `feature/world-cross-contact-heap-guard` after the sequential
   cross-multibody contact heap guard:
-  `cmake --build build/default/cpp/Release --target test_world -j8 && build/default/cpp/Release/bin/test_world --gtest_color=no --gtest_filter='World.CrossMultibodyLinksResolveContact:World.BakedArticulatedContactStepsDoNotAllocateGlobalHeap:World.BakedRigidBodyContactStepsDoNotAllocateGlobalHeap:World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap:World.BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths:World.Multibody*'`
+  `cmake --build build/default/cpp/Release --target test_world -j8 && build/default/cpp/Release/bin/test_world --gtest_color=no --gtest_filter='World.CrossMultibodyLinksResolveContact:World.CrossMultibodyDifferentDofLinksUseUnifiedFallback:World.CrossMultibodyStackedContactsUseUnifiedFallback:World.BakedArticulatedContactStepsDoNotAllocateGlobalHeap:World.BakedRigidBodyContactStepsDoNotAllocateGlobalHeap:World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap:World.BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths:World.Multibody*'`
 - `pixi run lint`
 - `cmake --build build/default/cpp/Release --target UNIT_common_stl_allocator -j2 && ctest --test-dir build/default/cpp/Release -R '^UNIT_common_stl_allocator$' --output-on-failure`
 - `clang++ --gcc-toolchain=/usr -std=gnu++20 -I. -Ibuild/default/cpp/Release -I.pixi/envs/default/include -fsyntax-only` with an allocator-aware `entt::basic_registry` multi-component `view` instantiation.

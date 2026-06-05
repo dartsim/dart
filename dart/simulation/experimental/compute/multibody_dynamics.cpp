@@ -2836,6 +2836,7 @@ bool tryResolveSequentialMultibodyContacts(
   auto view = registry.view<comps::MultibodyStructure>();
   bool hasHandledLinkContact = false;
   bool hasCrossMultibodyLinkContact = false;
+  bool hasNonCrossLinkContact = false;
   for (auto entity : view) {
     const auto& structure = view.get<comps::MultibodyStructure>(entity);
     auto& scratch = registry.get_or_emplace<MultibodyDynamicsScratch>(entity);
@@ -2844,12 +2845,17 @@ bool tryResolveSequentialMultibodyContacts(
     for (const auto& contact : scratch.linkContacts) {
       if (contact.otherMultibody != entt::null) {
         hasCrossMultibodyLinkContact = true;
+      } else {
+        hasNonCrossLinkContact = true;
       }
     }
     hasHandledLinkContact
         = hasHandledLinkContact || !scratch.linkContacts.empty();
   }
   if (!hasHandledLinkContact) {
+    return false;
+  }
+  if (hasCrossMultibodyLinkContact && hasNonCrossLinkContact) {
     return false;
   }
 
