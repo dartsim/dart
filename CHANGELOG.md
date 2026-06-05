@@ -584,6 +584,13 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     deprecated runtime `compute()`/constructor arguments.
 
 - Tooling and Docs
+  - Added a tiered local verification pipeline with a systematic task-naming
+    scheme (`verify-*`/`test-*`/`bench-*`, tiers `quick` < bare < `full`),
+    load-aware build/test parallelism (ninja `-l`, ctest `--test-load`) shared
+    across clones, parallel test execution with per-test timeouts and
+    `--rerun-failed`, and opt-in `DART_USE_MOLD` (mold linker) and
+    `DART_NORMALIZE_BUILD_PATHS` (cross-clone compiler-cache sharing). See
+    `docs/design/local_verification_pipeline.md`.
   - Bumped developer tooling to current releases (clang-format 22, black 26)
     and reformatted the C++ and Python sources to match.
   - Added AI-native documentation architecture with AGENTS.md, module-specific guides, slash commands, and command sync automation. ([#2446](https://github.com/dartsim/dart/pull/2446), [#2447](https://github.com/dartsim/dart/pull/2447), [#2448](https://github.com/dartsim/dart/pull/2448), [#2449](https://github.com/dartsim/dart/pull/2449))
