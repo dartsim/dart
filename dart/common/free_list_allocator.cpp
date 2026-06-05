@@ -143,6 +143,7 @@ void* FreeListAllocator::allocate(size_t bytes) noexcept
   if (bytes == 0) {
     return nullptr;
   }
+  const size_t requestedBytes = bytes;
 
   size_t roundedBytes = 0;
   if (!roundUpToAlignment(bytes, alignof(std::max_align_t), roundedBytes)) {
@@ -224,6 +225,7 @@ void* FreeListAllocator::allocate(size_t bytes) noexcept
   }
 
   mTotalAllocatedSize += bytes;
+  recordAllocation(requestedBytes);
 
   return static_cast<void*>(curr->asCharPtr() + sizeof(MemoryBlockHeader));
 }
@@ -250,6 +252,7 @@ void* FreeListAllocator::allocate(size_t bytes, size_t alignment) noexcept
 
   mAllocatedBlocks.push_back(AllocatedBlock{pointer, bytes, alignment, true});
   mTotalAllocatedSize += bytes;
+  recordAllocation(bytes);
 
   return pointer;
 }
@@ -283,6 +286,8 @@ void* FreeListAllocator::allocateFromReservedBlockAligned(
           allocationSize,
           bytes,
           alignment});
+  recordDeallocation(allocationSize);
+  recordAllocation(bytes);
 
   return reinterpret_cast<void*>(alignedPayload);
 }
@@ -296,6 +301,7 @@ void FreeListAllocator::deallocate(void* pointer, size_t bytes)
   if (pointer == nullptr || bytes == 0) {
     return;
   }
+  const size_t requestedBytes = bytes;
 
   size_t roundedBytes = 0;
   if (!roundUpToAlignment(bytes, alignof(std::max_align_t), roundedBytes)) {
@@ -326,6 +332,7 @@ void FreeListAllocator::deallocate(void* pointer, size_t bytes)
   mFreeBlock = curr;
 
   mTotalAllocatedSize -= bytes;
+  recordDeallocation(requestedBytes);
 
   DART_TRACE("Deallocated {} bytes.", bytes);
 }
@@ -352,6 +359,7 @@ void FreeListAllocator::deallocate(
     DART_ASSERT(false);
     return;
   }
+  recordDeallocation(bytes);
 }
 
 //==============================================================================
@@ -443,9 +451,53 @@ bool FreeListAllocator::releaseReservedAlignedAllocation(
   void* allocationPointer = header->allocationPointer;
   const size_t allocationSize = header->allocationSize;
   std::destroy_at(header);
+  recordDeallocation(bytes);
+  recordAllocation(allocationSize);
   deallocate(allocationPointer, allocationSize);
 
   return true;
+}
+
+//==============================================================================
+size_t FreeListAllocator::getAllocatedSize() const
+{
+  return mDiagnosticAllocatedSize;
+}
+
+//==============================================================================
+size_t FreeListAllocator::getPeakAllocatedSize() const
+{
+  return mDiagnosticPeakAllocatedSize;
+}
+
+//==============================================================================
+size_t FreeListAllocator::getAllocationCount() const
+{
+  return mDiagnosticAllocationCount;
+}
+
+//==============================================================================
+void FreeListAllocator::recordAllocation(size_t bytes) noexcept
+{
+  mDiagnosticAllocatedSize += bytes;
+  if (mDiagnosticPeakAllocatedSize < mDiagnosticAllocatedSize) {
+    mDiagnosticPeakAllocatedSize = mDiagnosticAllocatedSize;
+  }
+  ++mDiagnosticAllocationCount;
+}
+
+//==============================================================================
+void FreeListAllocator::recordDeallocation(size_t bytes) noexcept
+{
+  if (bytes <= mDiagnosticAllocatedSize) {
+    mDiagnosticAllocatedSize -= bytes;
+  } else {
+    mDiagnosticAllocatedSize = 0;
+  }
+
+  if (mDiagnosticAllocationCount > 0) {
+    --mDiagnosticAllocationCount;
+  }
 }
 
 //==============================================================================

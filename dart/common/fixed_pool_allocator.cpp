@@ -58,8 +58,10 @@ FixedPoolAllocator::FixedPoolAllocator(
 
   mMemoryBlocksSize = 64;
   mMemoryBlocks = mBaseAllocator.allocateAs<MemoryBlock>(mMemoryBlocksSize);
-  const size_t allocatedSize = mMemoryBlocksSize * sizeof(MemoryBlock);
-  std::memset(mMemoryBlocks, 0, allocatedSize);
+  if (mMemoryBlocks != nullptr) {
+    const size_t allocatedSize = mMemoryBlocksSize * sizeof(MemoryBlock);
+    std::memset(mMemoryBlocks, 0, allocatedSize);
+  }
 
   mFreeMemoryUnits = nullptr;
 }
@@ -73,8 +75,10 @@ FixedPoolAllocator::~FixedPoolAllocator()
         mMemoryBlocks[i].mSize,
         mMemoryBlocks[i].mAlignment);
   }
-  mBaseAllocator.deallocate(
-      mMemoryBlocks, mMemoryBlocksSize * sizeof(MemoryBlock));
+  if (mMemoryBlocks != nullptr) {
+    mBaseAllocator.deallocate(
+        mMemoryBlocks, mMemoryBlocksSize * sizeof(MemoryBlock));
+  }
 }
 
 //==============================================================================
@@ -104,23 +108,31 @@ int FixedPoolAllocator::getNumAllocatedMemoryBlocks() const
 //==============================================================================
 void* FixedPoolAllocator::allocateSlow() noexcept
 {
-  if (mUnitSize == 0) {
+  if (mUnitSize == 0 || mMemoryBlocks == nullptr) {
     return nullptr;
   }
 
   if (mCurrentMemoryBlockIndex == mMemoryBlocksSize) {
     MemoryBlock* currentMemoryBlocks = mMemoryBlocks;
     const int currentMemoryBlocksSize = mMemoryBlocksSize;
-    mMemoryBlocksSize += 64;
-    mMemoryBlocks = mBaseAllocator.allocateAs<MemoryBlock>(mMemoryBlocksSize);
+    const int newMemoryBlocksSize = mMemoryBlocksSize + 64;
+    MemoryBlock* newMemoryBlocks
+        = mBaseAllocator.allocateAs<MemoryBlock>(newMemoryBlocksSize);
+    if (newMemoryBlocks == nullptr) {
+      return nullptr;
+    }
     std::memcpy(
-        mMemoryBlocks,
+        newMemoryBlocks,
         currentMemoryBlocks,
         mCurrentMemoryBlockIndex * sizeof(MemoryBlock));
     std::memset(
-        mMemoryBlocks + mCurrentMemoryBlockIndex, 0, 64 * sizeof(MemoryBlock));
+        newMemoryBlocks + mCurrentMemoryBlockIndex,
+        0,
+        64 * sizeof(MemoryBlock));
     mBaseAllocator.deallocate(
         currentMemoryBlocks, currentMemoryBlocksSize * sizeof(MemoryBlock));
+    mMemoryBlocks = newMemoryBlocks;
+    mMemoryBlocksSize = newMemoryBlocksSize;
   }
 
   MemoryBlock* newBlock = mMemoryBlocks + mCurrentMemoryBlockIndex;

@@ -32,6 +32,7 @@
 
 #pragma once
 
+#include <dart/simulation/experimental/detail/world_registry_types.hpp>
 #include <dart/simulation/experimental/export.hpp>
 
 #include <Eigen/Core>
@@ -52,7 +53,7 @@ namespace dart::simulation::experimental::compute {
 /// orientation on SO(3), and floating translation limits only affect the first
 /// three translational coordinates.
 DART_EXPERIMENTAL_API void integrateMultibodyPositions(
-    entt::registry& registry,
+    detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     const Eigen::VectorXd& nextVelocity,
     double timeStep);

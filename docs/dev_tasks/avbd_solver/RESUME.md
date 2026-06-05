@@ -84,13 +84,16 @@ keeping multibody link endpoints unsupported until articulated AVBD state
 exists. Public experimental `World` facades now expose free rigid-body
 revolute and prismatic joints through C++ and dartpy, with generated stubs,
 focused C++/Python tests, and the categorized `sx_rigid_limited_joints`
-py-demo. This is still a narrow free-rigid-body path only: no motor row,
+py-demo. This branch also adds the first AVBD-specific `py-demos`
+rigid-constraint scene, `avbd_rigid_fixed_joint_contact`, so users can inspect
+the public fixed-joint row path while ordinary rigid contact acts on the
+payload. This is still a narrow free-rigid-body path only: no motor row,
 fracture row, articulated multibody state path, GPU path, paper-corpus demo, or
 benchmark packet is complete.
 
 ## Current Branch
 
-`feature/avbd-plan104-joint-axis-masks` - checkpoint branch based on
+`feature/avbd-paper-complete-plan` - checkpoint branch based on
 current `origin/main`, including the scalar-row foundation, mass-spring AVBD row
 families, standalone tet-material rows, and World wiring for supported pure-tet
 finite-stiffness material rows, plus supported World static-contact friction
@@ -127,7 +130,9 @@ revolute/prismatic point-joint configs with arbitrary joint-axis bases and
 private rigid-body ECS current-pose extraction for those one-DOF joint
 entities. The current checkpoint adds public free rigid-body revolute/prismatic
 facades, dartpy bindings/stubs, focused C++/Python coverage, and the
-`sx_rigid_limited_joints` py-demo on top of that private path.
+`sx_rigid_limited_joints` py-demo on top of that private path. This branch also adds the
+`avbd_rigid_fixed_joint_contact` Python demo scene and catalog/test/doc
+coverage for the first narrow user-visible AVBD rigid-constraint showcase.
 
 ## Immediate Next Step
 
@@ -150,7 +155,8 @@ generation for constrained linear/angular axes, and named private
 revolute/prismatic point-joint configs with arbitrary joint-axis bases plus
 private rigid-body ECS current-pose extraction for those one-DOF joint
 entities, and public free rigid-body revolute/prismatic facades with dartpy
-bindings, stubs, tests, and py-demo coverage exist.
+bindings, stubs, tests, and py-demo coverage, plus a first fixed-joint/contact
+AVBD py-demo exist.
 Keep the supported envelope narrow and preserve fallback coverage for topology
 mixes,
 damping/acceleration, parallel solves, and unsupported requested row

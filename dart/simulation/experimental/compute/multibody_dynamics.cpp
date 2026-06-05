@@ -76,7 +76,7 @@ using detail::Vector6;
 
 //==============================================================================
 bool hasPrescribedRigidBodyContactResponse(
-    const entt::registry& registry, entt::entity entity)
+    const detail::WorldRegistry& registry, entt::entity entity)
 {
   return registry.all_of<comps::StaticBodyTag>(entity)
          || registry.all_of<comps::KinematicBodyTag>(entity);
@@ -370,7 +370,8 @@ struct PendingMultibodyVelocity
 // Build the per-link spatial dynamics for a multibody at its current
 // configuration. Links are in construction order (parent-before-child).
 DynamicsTree buildDynamicsTree(
-    const entt::registry& registry, const comps::MultibodyStructure& structure)
+    const detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure)
 {
   const auto& linkEntities = structure.links;
 
@@ -609,7 +610,7 @@ MassAndBias computeMassAndBias(
 
 //==============================================================================
 Eigen::VectorXd gatherMultibodyVelocity(
-    const entt::registry& registry, const DynamicsTree& tree)
+    const detail::WorldRegistry& registry, const DynamicsTree& tree)
 {
   Eigen::VectorXd qdot
       = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(tree.dofCount));
@@ -625,7 +626,7 @@ Eigen::VectorXd gatherMultibodyVelocity(
 
 //==============================================================================
 Eigen::VectorXd gatherMultibodyVelocity(
-    entt::registry& registry, const comps::MultibodyStructure& structure)
+    detail::WorldRegistry& registry, const comps::MultibodyStructure& structure)
 {
   const DynamicsTree tree = buildDynamicsTree(registry, structure);
   if (tree.dofCount == 0) {
@@ -636,7 +637,7 @@ Eigen::VectorXd gatherMultibodyVelocity(
 
 //==============================================================================
 Eigen::VectorXd computeUnconstrainedMultibodyVelocity(
-    entt::registry& registry,
+    detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     const Eigen::Vector3d& gravity,
     double timeStep)
@@ -806,7 +807,7 @@ Eigen::VectorXd computeUnconstrainedMultibodyVelocity(
 // velocity (via its Jacobian and the generalized velocity) minus a two-sided
 // dynamic rigid obstacle's point velocity (zero for an immovable obstacle).
 double linkContactRelativeVelocity(
-    const entt::registry& registry,
+    const detail::WorldRegistry& registry,
     const MultibodyLinkContactRow& row,
     const Eigen::VectorXd& jacobian,
     const Eigen::Vector3d& direction,
@@ -840,7 +841,7 @@ Eigen::MatrixXd pointLinearJacobian(
 
 //==============================================================================
 void solveMultibodyLinkContacts(
-    entt::registry& registry,
+    detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     Eigen::VectorXd& nextVelocity,
     double timeStep,
@@ -924,7 +925,7 @@ void solveMultibodyLinkContacts(
 
 //==============================================================================
 void enforceMultibodyVelocityLimits(
-    entt::registry& registry,
+    detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     Eigen::VectorXd& nextVelocity)
 {
@@ -979,7 +980,7 @@ void enforceMultibodyVelocityLimits(
 
 //==============================================================================
 std::vector<LinkContact> collectMultibodyLinkContacts(
-    entt::registry& registry,
+    detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     const std::vector<Contact>& contacts)
 {
@@ -1088,7 +1089,7 @@ std::vector<LinkContact> collectMultibodyLinkContacts(
 
 //==============================================================================
 void clearMultibodyExternalForces(
-    entt::registry& registry, const comps::MultibodyStructure& structure)
+    detail::WorldRegistry& registry, const comps::MultibodyStructure& structure)
 {
   for (const auto linkEntity : structure.links) {
     registry.get<comps::Link>(linkEntity).externalForce.setZero();
@@ -1097,7 +1098,7 @@ void clearMultibodyExternalForces(
 
 //==============================================================================
 void simulateMultibody(
-    entt::registry& registry,
+    detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     const Eigen::Vector3d& gravity,
     double timeStep,
@@ -1125,7 +1126,7 @@ struct CrossMultibodyAssemblyContext
 
 //==============================================================================
 void completeCrossMultibodyLinkRows(
-    const entt::registry& registry,
+    const detail::WorldRegistry& registry,
     std::span<UnifiedMultibodyContact> multibodyContacts,
     std::span<const Eigen::VectorXd> multibodyVelocities)
 {
@@ -1220,7 +1221,7 @@ void completeCrossMultibodyLinkRows(
 // subspaces; Spherical/Floating multi-DOF manifold subspaces) are rejected so
 // the caller falls back to finite differencing.
 bool treeSupportsAnalyticDerivatives(
-    const entt::registry& registry, const DynamicsTree& tree)
+    const detail::WorldRegistry& registry, const DynamicsTree& tree)
 {
   for (std::size_t i = 0; i < tree.links.size(); ++i) {
     if (tree.links[i].dof == 0) {
@@ -1384,7 +1385,7 @@ InverseDynamicsDerivatives rneaDerivatives(
 
 //==============================================================================
 MultibodyLinkContactProblem assembleMultibodyLinkContactProblem(
-    const entt::registry& registry,
+    const detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     const Eigen::VectorXd& nextVelocity,
     double timeStep,
@@ -1556,7 +1557,7 @@ MultibodyLinkContactProblem assembleMultibodyLinkContactProblem(
 
 //==============================================================================
 MultibodyDynamicsTerms computeMultibodyDynamicsTerms(
-    entt::registry& registry,
+    detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     const Eigen::Vector3d& gravity)
 {
@@ -1591,7 +1592,7 @@ MultibodyDynamicsTerms computeMultibodyDynamicsTerms(
 
 //==============================================================================
 Eigen::VectorXd computeMultibodyInverseDynamics(
-    entt::registry& registry,
+    detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     const Eigen::Vector3d& gravity,
     const Eigen::VectorXd& desiredAcceleration)
@@ -1639,7 +1640,7 @@ Eigen::VectorXd computeMultibodyInverseDynamics(
 
 //==============================================================================
 InverseDynamicsDerivatives computeMultibodyInverseDynamicsDerivatives(
-    entt::registry& registry,
+    detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     const Eigen::Vector3d& gravity,
     const Eigen::VectorXd& generalizedAcceleration)
@@ -1680,7 +1681,7 @@ InverseDynamicsDerivatives computeMultibodyInverseDynamicsDerivatives(
 
 //==============================================================================
 Eigen::MatrixXd computeMultibodyLinkJacobian(
-    entt::registry& registry,
+    detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     entt::entity linkEntity)
 {
@@ -1691,7 +1692,7 @@ Eigen::MatrixXd computeMultibodyLinkJacobian(
 
 //==============================================================================
 Eigen::MatrixXd computeMultibodyLinkWorldJacobian(
-    entt::registry& registry,
+    detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     entt::entity linkEntity)
 {
@@ -1886,6 +1887,28 @@ void MultibodyPositionStage::execute(
     if (registry.all_of<PendingMultibodyVelocity>(entity)) {
       registry.remove<PendingMultibodyVelocity>(entity);
     }
+  }
+}
+
+//==============================================================================
+void reserveMultibodyDynamicsRegistryStorage(
+    detail::WorldRegistry& registry, std::size_t multibodyCount)
+{
+  auto& pendingVelocityStorage = registry.storage<PendingMultibodyVelocity>();
+  pendingVelocityStorage.reserve(multibodyCount);
+
+  if (multibodyCount == 0u) {
+    return;
+  }
+
+  auto view = registry.view<comps::MultibodyStructure>();
+  for (auto entity : view) {
+    if (registry.all_of<PendingMultibodyVelocity>(entity)) {
+      continue;
+    }
+
+    registry.emplace<PendingMultibodyVelocity>(entity);
+    registry.remove<PendingMultibodyVelocity>(entity);
   }
 }
 

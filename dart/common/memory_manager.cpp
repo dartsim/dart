@@ -47,6 +47,21 @@ MemoryManager::Options makeOptionsWithFrameCapacity(
   return options;
 }
 
+//==============================================================================
+template <typename Allocator>
+MemoryManager::AllocatorDebugDiagnostics getAllocatorDiagnostics(
+    const Allocator* allocator)
+{
+  if (allocator == nullptr) {
+    return {};
+  }
+
+  return {
+      allocator->getAllocatedSize(),
+      allocator->getPeakAllocatedSize(),
+      allocator->getAllocationCount()};
+}
+
 } // namespace
 
 //==============================================================================
@@ -137,6 +152,30 @@ const FreeListAllocator& MemoryManager::getFreeListAllocator() const
   if (mUseDebugAllocators) {
     DART_ASSERT(mFreeListAllocatorWithDebug != nullptr);
     return mFreeListAllocatorWithDebug->getInternalAllocator();
+  }
+
+  DART_ASSERT(mFreeListAllocator != nullptr);
+  return *mFreeListAllocator;
+}
+
+//==============================================================================
+MemoryAllocator& MemoryManager::getFreeAllocator()
+{
+  if (mUseDebugAllocators) {
+    DART_ASSERT(mFreeListAllocatorWithDebug != nullptr);
+    return *mFreeListAllocatorWithDebug;
+  }
+
+  DART_ASSERT(mFreeListAllocator != nullptr);
+  return *mFreeListAllocator;
+}
+
+//==============================================================================
+const MemoryAllocator& MemoryManager::getFreeAllocator() const
+{
+  if (mUseDebugAllocators) {
+    DART_ASSERT(mFreeListAllocatorWithDebug != nullptr);
+    return *mFreeListAllocatorWithDebug;
   }
 
   DART_ASSERT(mFreeListAllocator != nullptr);
@@ -366,6 +405,21 @@ bool MemoryManager::hasAllocated(void* pointer, size_t size) const noexcept
   }
 
   return false;
+}
+
+//==============================================================================
+MemoryManager::DebugDiagnostics MemoryManager::getDebugDiagnostics() const
+{
+  if (!mUseDebugAllocators) {
+    return {};
+  }
+
+  return {
+      true,
+      getAllocatorDiagnostics(
+          &mFreeListAllocatorWithDebug->getInternalAllocator()),
+      getAllocatorDiagnostics(
+          &mPoolAllocatorWithDebug->getInternalAllocator())};
 }
 
 //==============================================================================

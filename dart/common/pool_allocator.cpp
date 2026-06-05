@@ -93,6 +93,24 @@ int PoolAllocator::getNumAllocatedMemoryBlocks() const
 }
 
 //==============================================================================
+size_t PoolAllocator::getAllocatedSize() const
+{
+  return mDiagnosticAllocatedSize;
+}
+
+//==============================================================================
+size_t PoolAllocator::getPeakAllocatedSize() const
+{
+  return mDiagnosticPeakAllocatedSize;
+}
+
+//==============================================================================
+size_t PoolAllocator::getAllocationCount() const
+{
+  return mDiagnosticAllocationCount;
+}
+
+//==============================================================================
 void* PoolAllocator::allocateSlow(int heapIndex) noexcept
 {
   if (mCurrentMemoryBlockIndex == mMemoryBlocksSize) {

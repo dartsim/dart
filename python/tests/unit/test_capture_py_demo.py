@@ -108,7 +108,7 @@ def test_visual_capture_rejects_noop_backend(tmp_path: pathlib.Path) -> None:
     args = argparse.Namespace(
         backend="noop",
         allow_noop=False,
-        scene="hello_world",
+        scene="articulated",
         frames=1,
         width=2,
         height=1,
@@ -127,12 +127,12 @@ def test_visual_capture_forwards_scripted_demo_switch(
     args = argparse.Namespace(
         backend="opengl",
         allow_noop=False,
-        scene="sx_rigid_ipc_slide",
+        scene="rigid_ipc_slide",
         frames=6,
         width=640,
         height=360,
         show_ui=True,
-        switch_scene="sx_rigid_ipc_incline",
+        switch_scene="rigid_ipc_incline",
         switch_frame=2,
         event_log=tmp_path / "events.jsonl",
     )
@@ -142,7 +142,7 @@ def test_visual_capture_forwards_scripted_demo_switch(
     )
 
     assert "--scripted-demo-switch" in demo_args
-    assert "2:sx_rigid_ipc_incline" in demo_args
+    assert "2:rigid_ipc_incline" in demo_args
     assert "--scripted-demo-event-log" in demo_args
     assert str(tmp_path / "events.jsonl") in demo_args
 
@@ -153,7 +153,7 @@ def test_visual_capture_forwards_scripted_force_drag(
     args = argparse.Namespace(
         backend="opengl",
         allow_noop=False,
-        scene="sx_rigid_ipc_slide",
+        scene="rigid_ipc_slide",
         frames=12,
         width=640,
         height=360,
@@ -181,7 +181,7 @@ def test_visual_capture_forwards_scripted_pointer_force_drag(
     args = argparse.Namespace(
         backend="opengl",
         allow_noop=False,
-        scene="sx_rigid_ipc_slide",
+        scene="rigid_ipc_slide",
         frames=12,
         width=640,
         height=360,

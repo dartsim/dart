@@ -35,6 +35,18 @@
     `dart::gui::runDemos`. `hello_world` stays a standalone minimal CMake
     template, and the headless `csv_logger`, `headless_simulation`,
     `speed_test`, and `unified_loading` examples stay standalone.
+  - Pruned `pixi run demos` and `pixi run py-demos` to the DART 7 World demo
+    catalog. The old DART 6 demo scene modules and cross-language golden parity
+    fixtures were removed; remaining scene ids/categories use World, IPC,
+    differentiable, variational, and VBD names without experimental/sx labels.
+    High-value DART 6 examples that still need full World-native ports now
+    appear as lightweight `Planned World Ports` placeholders or conservative
+    previews: `atlas_puppet` and `hubo_puppet` load bundled humanoids through
+    the experimental World with pose controls, `g1_puppet` remains asset-gated,
+    `atlas_simbicon` cycles SIMBICON target poses, and IK, full walking
+    balance, operational-space control, collision sandbox, and
+    mobile-manipulation follow-ups stay visible without keeping legacy scene
+    implementations.
   - Added runtime rendering-backend (graphics API) selection through
     `dart::gui::RunOptions::renderBackend`, the `--render-backend` flag, and the
     `DART_FILAMENT_BACKEND` environment variable (`default`/`opengl`/`vulkan`
@@ -119,6 +131,16 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     bytes without growing from the base allocator.
   - Hardened `FreeListAllocator` reservation arithmetic so impossible fixed
     capacities and expansion sizes fail before touching the base allocator.
+  - Added query methods on `dart::common::MemoryAllocatorDebugger`,
+    `FreeListAllocator`, and `PoolAllocator` for current live bytes, peak live
+    bytes, and live allocation count so allocator diagnostics can consume
+    structured counters instead of parsing debug text.
+  - Added structured `MemoryManager` debug diagnostics and surfaced them through
+    experimental `World` memory diagnostics for free/pool allocator accounting,
+    including typed borrowed allocator use.
+  - Hardened `dart::common::FixedPoolAllocator` against base-allocator failures
+    during construction and block-table growth, with coverage for deterministic
+    failure, fallback, reuse, and debug-guard paths.
   - Added the standalone `dartsim/` GUI simulator (a runtime executable, not a
     library) built only on the experimental World API. Its headless editor
     engine (`dartsim/engine`) provides scene/object, selection, command
@@ -548,7 +570,8 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Added an Eigen 64-byte over-alignment CI/local test task to catch allocator, placement-new, and Eigen storage assumptions without requiring AVX-512 hardware. ([#2541](https://github.com/dartsim/dart/pull/2541))
   - Added alignment-aware `dart::common::MemoryAllocator` and `StlAllocator`
     paths so over-aligned objects and allocator-aware EnTT registries can be
-    backed by DART allocators.
+    backed by DART allocators, including simulation-mode checkpoint reloads
+    that reserve registry storage before the first resumed step.
   - Added `dart::common::FixedPoolAllocator` for fixed-size slot workloads and
     routed the fixed-size allocator comparison benchmark through it, while
     keeping mixed-size pool workloads on `PoolAllocator`.
@@ -623,6 +646,15 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     `clang-format` version changes under an existing build tree.
 
 - Simulation
+  - Added opt-in runtime replay recording to the experimental `World`, with C++
+    and dartpy controls for enabling recording, querying recorded timestep
+    metadata, clearing the buffer, and restoring a recorded frame in place
+    without re-running physics. Replay frames deliberately store only mutable
+    runtime state needed to restore an already-simulated frame, not topology,
+    geometry, material, or static construction data, and layout changes are
+    rejected on restore. Added focused C++/Python regressions and an
+    `sx_replay_scrubber` `py-demos` scene with timestep-resolution
+    slider/controller playback.
   - Consolidated the experimental CUDA solver modules (rigid-body batch, vertex
     block descent, deformable PSD projection) onto a shared device-runtime
     substrate so new GPU solvers reuse common blocks instead of reinventing them:
@@ -767,7 +799,26 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     `World::getMemoryManager()`, and `World::getMemoryDiagnostics()` give each
     experimental World a `MemoryManager` root and report per-step frame-scratch
     usable capacity, usage, peak usage, overflow count, overflow bytes, and
-    reset count.
+    reset count. Memory diagnostics also include structured allocator debug
+    counters plus plain aggregate and per-storage ECS registry layout counters
+    for profiler/debugger tooling without exposing EnTT types in the public
+    header, and dartpy exposes the same read-only snapshot through
+    `World.memory_diagnostics`.
+  - Routed the experimental World's internal EnTT registry, component storage,
+    and differentiable-parameter list through the World free allocator, with
+    state mapper support for World-owned registries and free-list alignment
+    fixes for Eigen-backed component storage.
+  - Fixed experimental `VectorMapper::toVector()` in-place output so unmapped
+    state-space variables are zero-filled even when no mapper slot has been
+    registered.
+  - Added bake-time reservation for the experimental World's current
+    EnTT registry/component storage and private multibody/deformable
+    step-scratch storage at `enterSimulationMode()`, including no-growth
+    coverage for repeated IPC kinematic, multibody, and deformable steps.
+  - Updated experimental `WorldStepPipeline` to store its non-owning stage list
+    inline with an eight-stage capacity, eliminating stage-list heap allocation
+    during default step pipeline assembly and rejecting overflow with
+    `InvalidArgumentException`.
   - Made experimental rigid-body external force/torque components persistent
     applied loads: each step reads them into the transient force buffer and
     leaves the components intact for callers to clear or update explicitly.

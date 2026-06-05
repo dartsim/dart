@@ -40,6 +40,8 @@
 
 #include <vector>
 
+#include <cstddef>
+
 namespace dart::common {
 
 /// Most general heap memory allocator for allocating memory of various sizes.
@@ -110,6 +112,17 @@ public:
 
   // Documentation inherited
   void deallocate(void* pointer, size_t bytes, size_t alignment) override;
+
+  /// Returns the number of user-requested bytes currently allocated from this
+  /// allocator.
+  [[nodiscard]] size_t getAllocatedSize() const;
+
+  /// Returns the largest user-requested live byte total observed by this
+  /// allocator.
+  [[nodiscard]] size_t getPeakAllocatedSize() const;
+
+  /// Returns the number of currently live allocations from this allocator.
+  [[nodiscard]] size_t getAllocationCount() const;
 
   // Documentation inherited
   void print(std::ostream& os = std::cout, int indent = 0) const override;
@@ -190,6 +203,10 @@ private:
   bool releaseReservedAlignedAllocation(
       void* pointer, size_t bytes, size_t alignment);
 
+  void recordAllocation(size_t bytes) noexcept;
+
+  void recordDeallocation(size_t bytes) noexcept;
+
   /// The base allocator
   MemoryAllocator& mBaseAllocator;
 
@@ -210,6 +227,15 @@ private:
 
   /// The total allocated size in bytes
   size_t mTotalAllocatedSize{0};
+
+  /// The live user-requested allocation bytes for diagnostics.
+  size_t mDiagnosticAllocatedSize{0};
+
+  /// The peak live user-requested allocation bytes for diagnostics.
+  size_t mDiagnosticPeakAllocatedSize{0};
+
+  /// The live user allocation count for diagnostics.
+  size_t mDiagnosticAllocationCount{0};
 };
 
 } // namespace dart::common

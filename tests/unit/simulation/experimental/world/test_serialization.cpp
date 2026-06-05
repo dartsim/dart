@@ -50,11 +50,16 @@
 #include <dart/simulation/experimental/multibody/link.hpp>
 #include <dart/simulation/experimental/multibody/multibody.hpp>
 #include <dart/simulation/experimental/world.hpp>
+#include <dart/simulation/experimental/world_options.hpp>
+
+#include <dart/common/memory_allocator.hpp>
 
 #include <gtest/gtest.h>
 
 #include <algorithm>
 #include <iterator>
+#include <map>
+#include <new>
 #include <ranges>
 #include <sstream>
 #include <string>
@@ -69,6 +74,143 @@
 //==============================================================================
 
 namespace {
+
+class CountingMemoryAllocator final : public dart::common::MemoryAllocator
+{
+public:
+  [[nodiscard]] std::string_view getType() const override
+  {
+    return "CountingMemoryAllocator";
+  }
+
+  [[nodiscard]] void* allocate(std::size_t bytes) noexcept override
+  {
+    if (bytes == 0) {
+      return nullptr;
+    }
+
+    ++allocationCount;
+    return ::operator new(bytes, std::nothrow);
+  }
+
+  [[nodiscard]] void* allocate(
+      std::size_t bytes, std::size_t alignment) noexcept override
+  {
+    if (bytes == 0 || alignment == 0 || (alignment & (alignment - 1)) != 0) {
+      return nullptr;
+    }
+
+    ++allocationCount;
+    ++alignedAllocationCount;
+    if (alignment <= __STDCPP_DEFAULT_NEW_ALIGNMENT__) {
+      return ::operator new(bytes, std::nothrow);
+    }
+
+    return ::operator new(bytes, std::align_val_t(alignment), std::nothrow);
+  }
+
+  void deallocate(void* pointer, std::size_t /*bytes*/) override
+  {
+    ++deallocationCount;
+    ::operator delete(pointer);
+  }
+
+  void deallocate(
+      void* pointer, std::size_t /*bytes*/, std::size_t alignment) override
+  {
+    ++deallocationCount;
+    ++alignedDeallocationCount;
+    if (alignment <= __STDCPP_DEFAULT_NEW_ALIGNMENT__) {
+      ::operator delete(pointer);
+      return;
+    }
+
+    ::operator delete(pointer, std::align_val_t(alignment));
+  }
+
+  std::size_t allocationCount{0};
+  std::size_t alignedAllocationCount{0};
+  std::size_t deallocationCount{0};
+  std::size_t alignedDeallocationCount{0};
+};
+
+struct VersionedLoadFallbackComponent
+{
+  std::uint32_t value{0};
+};
+
+class LegacyLoadFallbackSerializer final
+  : public dart::simulation::experimental::io::ComponentSerializer
+{
+public:
+  [[nodiscard]] std::string_view getTypeName() const override
+  {
+    return "test::VersionedLoadFallbackComponent";
+  }
+
+  void save(
+      std::ostream&,
+      entt::entity,
+      const dart::simulation::experimental::detail::WorldRegistry&,
+      const dart::simulation::experimental::io::EntityMap&) const override
+  {
+  }
+
+  void load(
+      std::istream&,
+      entt::entity entity,
+      dart::simulation::experimental::detail::WorldRegistry& registry)
+      const override
+  {
+    registry.emplace<VersionedLoadFallbackComponent>(entity, 123u);
+  }
+
+  [[nodiscard]] bool hasComponent(
+      entt::entity entity,
+      const dart::simulation::experimental::detail::WorldRegistry& registry)
+      const override
+  {
+    return registry.all_of<VersionedLoadFallbackComponent>(entity);
+  }
+};
+
+using RegistryStorageCapacities = std::map<entt::id_type, std::size_t>;
+
+RegistryStorageCapacities registryStorageCapacities(
+    const dart::simulation::experimental::detail::WorldRegistry& registry)
+{
+  RegistryStorageCapacities capacities;
+  const auto* entityStorage = registry.storage<entt::entity>();
+  EXPECT_NE(entityStorage, nullptr);
+  capacities.emplace(
+      entt::type_hash<entt::entity>::value(),
+      entityStorage == nullptr ? 0u : entityStorage->capacity());
+  for (auto&& [id, storage] : registry.storage()) {
+    capacities.emplace(id, storage.capacity());
+  }
+  return capacities;
+}
+
+void expectRegistryStorageCapacitiesUnchanged(
+    const RegistryStorageCapacities& expected,
+    const dart::simulation::experimental::detail::WorldRegistry& registry)
+{
+  const auto actual = registryStorageCapacities(registry);
+  EXPECT_EQ(actual.size(), expected.size());
+
+  for (const auto& [id, capacity] : actual) {
+    if (!expected.contains(id)) {
+      ADD_FAILURE() << "unexpected storage id " << id << " capacity "
+                    << capacity;
+    }
+  }
+
+  for (const auto& [id, capacity] : expected) {
+    const auto it = actual.find(id);
+    ASSERT_NE(it, actual.end()) << "missing storage id " << id;
+    EXPECT_EQ(it->second, capacity) << "storage id " << id;
+  }
+}
 
 void writeLegacyJointV1(
     std::ostream& output,
@@ -291,6 +433,23 @@ TEST(Serialization, EmptyWorld)
   EXPECT_EQ(world2.getMultibodyCount(), 0);
   EXPECT_EQ(world2.getRigidBodyCount(), 0);
   EXPECT_FALSE(world2.isSimulationMode());
+}
+
+TEST(Serialization, ComponentSerializerVersionedLoadFallsBackToLegacyLoad)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  auto& registry = sx::detail::registryOf(world);
+  const auto entity = registry.create();
+  std::stringstream input;
+
+  LegacyLoadFallbackSerializer serializer;
+  const sx::io::ComponentSerializer& baseSerializer = serializer;
+  baseSerializer.load(input, entity, registry, 99u);
+
+  ASSERT_TRUE(registry.all_of<VersionedLoadFallbackComponent>(entity));
+  EXPECT_EQ(registry.get<VersionedLoadFallbackComponent>(entity).value, 123u);
 }
 
 // Test deformable custom serializers are restored after registry reset.
@@ -1772,6 +1931,42 @@ TEST(Serialization, CheckpointReloadMatchesUninterruptedRun)
   EXPECT_LT((chainState(resumed) - referenceState).norm(), kReplayTol)
       << "Checkpoint+reload mid-run must match the uninterrupted reference run";
   EXPECT_DOUBLE_EQ(resumed.getTime(), reference.getTime());
+}
+
+TEST(Serialization, SimulationModeReloadReservesRegistryStorageBeforeStep)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World original;
+  buildReplayChain(original);
+  original.enterSimulationMode();
+  original.step(15);
+
+  std::stringstream ss;
+  original.saveBinary(ss);
+
+  CountingMemoryAllocator allocator;
+  sx::WorldOptions options;
+  options.baseAllocator = &allocator;
+  sx::World resumed(options);
+  resumed.loadBinary(ss);
+  ASSERT_TRUE(resumed.isSimulationMode());
+
+  const auto capacitiesAfterLoad
+      = registryStorageCapacities(sx::detail::registryOf(resumed));
+  const auto allocationsAfterLoad = allocator.allocationCount;
+  const auto deallocationsAfterLoad = allocator.deallocationCount;
+  const auto alignedAllocationsAfterLoad = allocator.alignedAllocationCount;
+  const auto alignedDeallocationsAfterLoad = allocator.alignedDeallocationCount;
+
+  resumed.step();
+
+  expectRegistryStorageCapacitiesUnchanged(
+      capacitiesAfterLoad, sx::detail::registryOf(resumed));
+  EXPECT_EQ(allocator.allocationCount, allocationsAfterLoad);
+  EXPECT_EQ(allocator.deallocationCount, deallocationsAfterLoad);
+  EXPECT_EQ(allocator.alignedAllocationCount, alignedAllocationsAfterLoad);
+  EXPECT_EQ(allocator.alignedDeallocationCount, alignedDeallocationsAfterLoad);
 }
 
 // Same replay guarantee for the rigid-body integration path, checked through

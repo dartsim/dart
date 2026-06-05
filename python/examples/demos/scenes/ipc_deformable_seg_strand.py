@@ -91,7 +91,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="ipc_deformable_seg_strand",
     title="Deformable .seg Strand (IPC)",
-    category="IPC Deformable (sx)",
+    category="IPC Deformable",
     summary="A mass-spring strand loaded from a .seg segment mesh hangs and "
     "swings from a pinned end.",
     build=build,

@@ -1,4 +1,4 @@
-"""Friction against a capsule rod obstacle (experimental IPC deformable solver).
+"""Friction against a capsule rod obstacle (IPC deformable solver).
 
 A short deformable strip rests on top of a static horizontal capsule rod and is
 shoved along the rod's axis. Lagged smoothed Coulomb friction against the rod's
@@ -121,7 +121,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="ipc_deformable_rod_friction",
     title="Deformable Friction on Capsule Rod (IPC)",
-    category="IPC Deformable (sx)",
+    category="IPC Deformable",
     summary="A deformable strip shoved along a capsule rod is brought to rest by "
     "Coulomb friction against the rod obstacle.",
     build=build,

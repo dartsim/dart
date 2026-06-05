@@ -114,7 +114,7 @@ Eigen::Matrix3d inverseWorldInertiaOf(
 }
 
 //==============================================================================
-double restitutionOf(const entt::registry& registry, entt::entity entity)
+double restitutionOf(const detail::WorldRegistry& registry, entt::entity entity)
 {
   if (const auto* material = registry.try_get<comps::ContactMaterial>(entity)) {
     return material->restitution;
@@ -123,7 +123,7 @@ double restitutionOf(const entt::registry& registry, entt::entity entity)
 }
 
 //==============================================================================
-double frictionOf(const entt::registry& registry, entt::entity entity)
+double frictionOf(const detail::WorldRegistry& registry, entt::entity entity)
 {
   if (const auto* material = registry.try_get<comps::ContactMaterial>(entity)) {
     return material->friction;
@@ -133,7 +133,7 @@ double frictionOf(const entt::registry& registry, entt::entity entity)
 
 //==============================================================================
 bool hasPrescribedRigidBodyContactResponse(
-    const entt::registry& registry, entt::entity entity)
+    const detail::WorldRegistry& registry, entt::entity entity)
 {
   return registry.all_of<comps::StaticBodyTag>(entity)
          || registry.all_of<comps::KinematicBodyTag>(entity);
@@ -281,7 +281,7 @@ inline Eigen::VectorXd minvJtTimes(
 
 //==============================================================================
 ContactScene buildScene(
-    entt::registry& registry, const std::vector<Contact>& contacts)
+    detail::WorldRegistry& registry, const std::vector<Contact>& contacts)
 {
   ContactScene scene;
 
@@ -382,7 +382,7 @@ ContactScene buildScene(
 // computeTerms is O(contacts) rather than the previous O(bodies^3) dense
 // rows x 6*nb x 6*nb products.
 ContactTerms computeTerms(
-    const entt::registry& registry,
+    const detail::WorldRegistry& registry,
     const ContactScene& scene,
     const Eigen::Vector3d& gravity,
     double timeStep)
@@ -609,7 +609,7 @@ Eigen::VectorXd solveBoxedLcp(const ContactScene& scene, const ContactTerms& t)
 // translational output the state/control Jacobian differentiates and is the map
 // the parameter Jacobian central-differences.
 Eigen::VectorXd constrainedNextState(
-    const entt::registry& registry,
+    const detail::WorldRegistry& registry,
     const ContactScene& scene,
     const Eigen::Vector3d& gravity,
     double timeStep)
@@ -639,7 +639,7 @@ Eigen::VectorXd constrainedNextState(
 
 //==============================================================================
 StepDerivatives contactStepDerivatives(
-    entt::registry& registry,
+    detail::WorldRegistry& registry,
     const std::vector<Contact>& contacts,
     const Eigen::Vector3d& gravity,
     double timeStep,
@@ -1107,7 +1107,7 @@ std::size_t parameterColumnCount(PhysicalParameter parameter)
 // recomputed terms, and a fresh boxed-LCP solve, matching the forward step's
 // dependence on that quantity. Restores `*target` exactly.
 Eigen::VectorXd centralDifferenceColumn(
-    entt::registry& registry,
+    detail::WorldRegistry& registry,
     const std::vector<Contact>& contacts,
     const Eigen::Vector3d& gravity,
     double timeStep,
@@ -1133,7 +1133,7 @@ Eigen::VectorXd centralDifferenceColumn(
 
 //==============================================================================
 StepDerivatives contactStepDerivativesWithParameters(
-    entt::registry& registry,
+    detail::WorldRegistry& registry,
     const std::vector<Contact>& contacts,
     const Eigen::Vector3d& gravity,
     double timeStep,
