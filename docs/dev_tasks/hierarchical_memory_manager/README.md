@@ -25,10 +25,11 @@
       The build/growth row times the uninstrumented pool-backed path and
       reports configured-allocator call counters from a matching untimed probe.
       The strict checker prints DART benchmark counters alongside pass/fail
-      ratios, so the current EnTT no-growth misses explicitly show whether a
-      failure is a timing loss, allocator traffic, or noisy benchmark evidence.
-      The default focused gate still needs a clean strict pass before this phase
-      can claim the non-negotiable performance bar is met.
+      ratios, so EnTT misses distinguish timing loss, allocator traffic, and
+      noisy benchmark evidence. A fresh focused strict run now passes against
+      both foonathan/memory and the standard registry with zero allocator calls
+      in the prewarmed no-growth DART rows. Phase 2 remains open for the
+      broader correctness matrix and production workload gates.
 - [ ] Phase 3: EnTT registry/component storage allocation is configurable from
       the World memory hierarchy and covered by no-growth ECS tests.
       Allocator-aware EnTT storage now has focused `StlAllocator` and
@@ -125,17 +126,18 @@ debugging, profiling, optimization experiments, and ImGui visualization.
 
 ## Immediate Next Steps
 
-1. Land the strict allocator comparative benchmark gate and keep the
-   fixed-size, mixed-pool, frame, STL, and realistic workloads below
-   foonathan/memory, then extend the passing envelope to standard allocator and
-   opt-in EnTT registry baselines.
+1. Land the strict allocator comparative benchmark gate with current focused
+   EnTT evidence against both foonathan/memory and the standard registry, then
+   continue broadening the standard-library comparison envelope beyond the
+   focused registry rows.
 2. Extend allocator correctness tests for `FixedPoolAllocator` and the existing
    pool/free-list/frame allocators across invalid sizes, over-alignment,
    overflow, reuse-after-free, leak/debug accounting, and bounded failure.
-3. Continue optimizing the cached-storage EnTT allocator benchmark policy before
-   promoting it into production `WorldRegistry` bake/build guidance or claiming
-   zero allocations for ECS-backed world data. Keep using the registry-only
-   checker for focused allocator-policy loops:
+3. Repeat the focused EnTT allocator benchmark on low-load machines as needed,
+   then promote the cached-storage policy into production `WorldRegistry`
+   bake/build guidance only after the production integration has matching
+   no-growth tests. Keep using the registry-only checker for focused
+   allocator-policy loops:
 
    ```bash
    pixi run bm-allocator-comparative-check --only-entt-registry \
@@ -144,12 +146,12 @@ debugging, profiling, optimization experiments, and ImGui visualization.
 
    The current benchmark policy uses cached component storage handles,
    free-list-backed DART storage for persistent no-growth churn, and pool-backed
-   DART storage for build/growth churn. It is not yet a passing claim: the
-   latest default strict evidence has favorable medians but still fails the
-   10% CV stability gate. A separate `FrameStlAllocator` no-growth unit test
-   models persistent world registry storage allocated during bake/build and
-   reset only on rebuild/destruction; use it as correctness evidence for an
-   arena policy, not as a passing timing claim.
+   DART storage for build/growth churn. The latest fresh strict run passes both
+   baselines for the focused EnTT rows, but this is benchmark evidence rather
+   than production `WorldRegistry` wiring. A separate `FrameStlAllocator`
+   no-growth unit test models persistent world registry storage allocated during
+   bake/build and reset only on rebuild/destruction; use it as correctness
+   evidence for an arena policy, not as a passing timing claim.
 
 4. Start replacing per-step `std::vector`/`Eigen` temporaries in hot stages with
    world-frame or world-pool backed storage only after the allocator evidence
