@@ -46,6 +46,8 @@
 
 namespace dart::simulation::experimental::compute {
 
+class WorldKinematicsGraph;
+
 /// Summary of the most recent deformable solver execution.
 struct DeformableSolverStats
 {
@@ -264,9 +266,17 @@ private:
 class DART_EXPERIMENTAL_API KinematicsStage final : public WorldStepStage
 {
 public:
+  KinematicsStage();
+  ~KinematicsStage() override;
+
   [[nodiscard]] std::string_view getName() const noexcept override;
   [[nodiscard]] ComputeStageMetadata getMetadata() const noexcept override;
+  void prepare(World& world);
   void execute(World& world, ComputeExecutor& executor) override;
+
+private:
+  World* m_cachedWorld = nullptr;
+  std::unique_ptr<WorldKinematicsGraph> m_cachedGraph;
 };
 
 /// Per-entity unconstrained rigid-body integration stage for the experimental
@@ -453,9 +463,11 @@ class DART_EXPERIMENTAL_API RigidIpcContactStage final : public WorldStepStage
 public:
   explicit RigidIpcContactStage(std::size_t maxIterations = 8);
   explicit RigidIpcContactStage(RigidIpcContactStageOptions options);
+  ~RigidIpcContactStage() override;
 
   [[nodiscard]] std::string_view getName() const noexcept override;
   [[nodiscard]] ComputeStageMetadata getMetadata() const noexcept override;
+  void prepare(World& world);
   void execute(World& world, ComputeExecutor& executor) override;
 
   [[nodiscard]] std::size_t getMaxIterations() const noexcept;
@@ -467,8 +479,11 @@ public:
   [[nodiscard]] const RigidIpcSolverStats& getLastStats() const noexcept;
 
 private:
+  struct Scratch;
+
   RigidIpcContactStageOptions m_options;
   RigidIpcSolverStats m_lastStats;
+  std::unique_ptr<Scratch> m_scratch;
 };
 
 /// Default deformable-body dynamics stage.

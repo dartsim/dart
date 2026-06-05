@@ -374,6 +374,7 @@ Link Multibody::addLink(std::string_view name)
 
   // Add to Multibody structure
   structure.links.push_back(linkEntity);
+  m_world->markFrameTopologyChanged();
 
   return Link(detail::fromRegistryEntity(linkEntity), m_world);
 }
@@ -554,6 +555,7 @@ Link Multibody::addLink(std::string_view name, const LinkOptions& options)
   // Add to Multibody structure
   structure.links.push_back(linkEntity);
   structure.joints.push_back(jointEntity);
+  m_world->markFrameTopologyChanged();
 
   return Link(detail::fromRegistryEntity(linkEntity), m_world);
 }

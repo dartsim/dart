@@ -77,6 +77,7 @@ ComputeNode& ComputeGraph::addNode(
   auto* nodePtr = node.get();
   m_nodes.push_back(std::move(node));
   m_nodesByName.emplace(nameString, nodePtr);
+  invalidateTraversalCache();
   return *nodePtr;
 }
 
@@ -109,6 +110,7 @@ void ComputeGraph::addDependency(ComputeNode& from, ComputeNode& to)
       to.getName());
 
   m_edges.push_back({&from, &to});
+  invalidateTraversalCache();
 }
 
 //==============================================================================
@@ -136,13 +138,23 @@ std::vector<ComputeNode*> ComputeGraph::getNodes() const
 //==============================================================================
 std::vector<ComputeNode*> ComputeGraph::getTopologicalOrder() const
 {
-  return buildTopologicalOrder(true);
+  return getTopologicalOrderView();
+}
+
+//==============================================================================
+const std::vector<ComputeNode*>& ComputeGraph::getTopologicalOrderView() const
+{
+  if (!m_topologicalOrderCacheValid) {
+    m_topologicalOrderCache = buildTopologicalOrder(true);
+    m_topologicalOrderCacheValid = true;
+  }
+  return m_topologicalOrderCache;
 }
 
 //==============================================================================
 std::vector<std::vector<ComputeNode*>> ComputeGraph::getParallelLevels() const
 {
-  const auto order = getTopologicalOrder();
+  const auto& order = getTopologicalOrderView();
   if (order.empty()) {
     return {};
   }
@@ -298,6 +310,14 @@ void ComputeGraph::clear()
   m_edges.clear();
   m_nodesByName.clear();
   m_nodes.clear();
+  invalidateTraversalCache();
+}
+
+//==============================================================================
+void ComputeGraph::invalidateTraversalCache() noexcept
+{
+  m_topologicalOrderCache.clear();
+  m_topologicalOrderCacheValid = false;
 }
 
 //==============================================================================
