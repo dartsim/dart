@@ -179,3 +179,43 @@ TEST(InvalidDynamicsInputs, ZeroMassContactDoesNotCrash)
   EXPECT_TRUE(dynamicBox->getPositions().allFinite());
   EXPECT_TRUE(zeroMassBox->getPositions().allFinite());
 }
+
+// A non-finite moment of inertia must not abort forward dynamics. Inertia
+// rejects non-finite values at ingest, so the NaN never reaches the
+// articulated-inertia recursion.
+// See https://github.com/gazebosim/gz-physics/issues/854
+TEST(InvalidDynamicsInputs, NanInertiaDoesNotCrash)
+{
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+  auto world = World::create();
+  auto skeleton = createTwoLinkSkeleton(1.0, nan);
+  world->addSkeleton(skeleton);
+
+  EXPECT_NO_THROW({
+    for (int i = 0; i < 5; ++i) {
+      world->step();
+    }
+  });
+
+  EXPECT_TRUE(skeleton->getPositions().allFinite());
+  EXPECT_TRUE(skeleton->getVelocities().allFinite());
+}
+
+// A non-finite (infinite) mass must not abort forward dynamics.
+// See https://github.com/gazebosim/gz-physics/issues/854
+TEST(InvalidDynamicsInputs, InfMassDoesNotCrash)
+{
+  const double inf = std::numeric_limits<double>::infinity();
+  auto world = World::create();
+  auto skeleton = createTwoLinkSkeleton(inf, 1.0);
+  world->addSkeleton(skeleton);
+
+  EXPECT_NO_THROW({
+    for (int i = 0; i < 5; ++i) {
+      world->step();
+    }
+  });
+
+  EXPECT_TRUE(skeleton->getPositions().allFinite());
+  EXPECT_TRUE(skeleton->getVelocities().allFinite());
+}
