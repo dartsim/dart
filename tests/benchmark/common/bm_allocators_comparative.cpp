@@ -807,7 +807,7 @@ void runEnttRegistryChurn(
   auto& tags = registry.template storage<EnttRegistryTag>();
 
   for (size_t i = 0; i < entityCount; ++i) {
-    const auto entity = entityStorage.generate();
+    const auto entity = registry.create();
     entities[i] = entity;
     auto& transform = transforms.emplace(entity);
     transform.position[0] = static_cast<double>(i);

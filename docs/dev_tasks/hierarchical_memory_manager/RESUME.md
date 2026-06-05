@@ -12,44 +12,32 @@ adoption.
 Follow-up allocator work added alignment-aware `MemoryAllocator`/`StlAllocator`
 paths for over-aligned objects and allocator-aware EnTT registries, fixed
 free-list split alignment and overflow edge cases, allowed EnTT view internals
-to default-construct `StlAllocator` under Clang, and added `FixedPoolAllocator`
-for fixed-size slot workloads. The comparative allocator benchmark passes local
-DART/Foonathan and DART/StdPmr median ratios when fixed-size pool rows use
-`FixedPoolAllocator`, while mixed size-classed workloads remain on
-`PoolAllocator`.
+to default-construct `StlAllocator` under Clang, added `FixedPoolAllocator` for
+fixed-size slot workloads, and added fixed-capacity `FreeListAllocator` policy
+wiring through `MemoryManager::Options` and experimental `WorldOptions`.
+Fixed-capacity free-list arenas can satisfy over-aligned `PoolAllocator` chunks
+from reserved bytes without growing from the base allocator.
 
-The stacked registry branch wires the experimental World's internal EnTT
-registry, component storage, and differentiable-parameter list through the
-World's active free allocator. It also adds initial `enterSimulationMode()`
-reservation/no-growth tests for current World-owned ECS storage and first
-private step-scratch component paths. Direct EnTT
-create/emplace/clear/re-emplace/destroy/reuse storage cycling is covered after
-explicit entity/component reserve.
+The memory-debugger correctness slice exposes structured live-byte, peak-byte,
+and allocation-count queries from the allocator debug path and from the
+manager-owned free-list/pool allocators. `MemoryManager::DebugDiagnostics` and
+experimental `WorldMemoryDiagnostics` include typed borrowed allocator use, so
+diagnostics cover callers that borrow `getFreeListAllocator()` or
+`getPoolAllocator()` directly.
 
-The no-growth and inline-pipeline slices add World base-allocator guards for
-baked kinematic IPC rigid-body, multibody variational, and single-deformable
-step loops, then remove the default `WorldStepPipeline` heap-backed stage
-pointer vector. These are not the final global zero-allocation proof; they cover
-World-owned memory hierarchy paths and default pipeline storage.
+The registry/no-growth slices wire the experimental World's internal EnTT
+registry, component storage, differentiable-parameter list, and first
+World-owned ECS scratch paths through the World memory hierarchy. They also add
+base-allocator no-growth guards for baked kinematic IPC rigid-body, multibody
+variational, and single-deformable step loops, plus inline default step-pipeline
+storage. These are not the final global zero-allocation proof.
 
 The current benchmark slice (`bench/entt-registry-allocator`, PR #2890) adds
 comparative EnTT registry/component-storage rows against foonathan/memory and
 standard-registry baselines. It distinguishes no-growth/prewarmed churn from
 build/growth, caches component storage handles, uses frame-backed DART storage
 for persistent no-growth churn and pool-backed DART storage for build/growth,
-reports DART counters, and keeps EnTT rows opt-in. Current local evidence passes
-strict EnTT comparisons against foonathan/memory and the standard registry;
-production `WorldRegistry` wiring still requires a persistent world-registry
-arena or bake allocator with matching no-growth tests and lifetime diagnostics.
-
-The memory-debugger correctness slice exposes structured live-byte, peak-byte,
-and allocation-count queries from the allocator debug path and from the
-manager-owned free-list/pool allocators. `MemoryManager::DebugDiagnostics` and
-experimental `WorldMemoryDiagnostics` now include typed borrowed allocator use,
-so diagnostics cover callers that borrow `getFreeListAllocator()` or
-`getPoolAllocator()` directly. The same branch also keeps the aggregate and
-per-storage ECS registry layout counters available for profiler/debugger
-tooling and dartpy's read-only `World.memory_diagnostics` snapshot.
+reports DART counters, and keeps EnTT rows opt-in.
 
 ## Current Branch
 
@@ -59,10 +47,22 @@ merge latest `origin/main` before every push.
 
 ## Immediate Next Step
 
-Keep #2890 focused on benchmark evidence and review/CI cleanup. Do not treat
-the benchmark-only frame-backed no-growth policy as production `WorldRegistry`
-bake/build allocation yet. Rerun the focused gate after any policy or benchmark
-change:
+Keep #2890 focused on benchmark evidence and review/CI cleanup. The current
+Codex review fix replaces EnTT entity-storage `generate()` with
+`registry.create()` so the benchmark compiles against the supported EnTT 3.14
+CONFIG path. Rebuild the benchmark target and rerun checker unit tests after
+that change.
+
+Do not treat the benchmark-only frame-backed no-growth policy as production
+`WorldRegistry` bake/build allocation yet. Production integration needs a
+persistent world-registry arena or bake allocator that resets on
+rebuild/destruction, not the existing per-step frame allocator that resets
+inside `World::step()`.
+
+The current pushed head still needs a clean current-head performance pass or
+optimization before merge readiness. A high-load current-head rerun failed
+several warmed EnTT comparisons and several rows exceeded the CV/noise limit.
+Rerun the focused gate on a quiet host after any policy or benchmark change:
 
 ```bash
 pixi run bm-allocator-comparative-check --only-entt-registry \
@@ -101,15 +101,15 @@ foonathan/memory on required workloads.
   approximately `0.762`, `0.737`, and `0.767`. Build/growth DART rows beat both
   foonathan/memory and the standard registry at 256, 512, and 2048 entities
   while reporting configured-allocator calls per iteration of 37, 38, and 43.
-- The common comparative benchmark discovers installed EnTT package metadata
-  before configuring `bm_allocators_comparative`; the PR branch should require
-  the supported EnTT version when enabling those optional rows.
-- Historical broad and focused benchmark outputs include both passes and
-  failures. Treat older files as evidence for why the gate needs repeated
-  low-load runs, not as current proof.
-- On `feature/world-step-pipeline-inline-storage` after the inline pipeline
-  storage change: `cmake --build build/default/cpp/Release --target test_world -j2`
-  and `ctest --test-dir build/default/cpp/Release -R '^test_world$' --output-on-failure`
+- Current-head high-load rerun on head `750cd83b74c1` failed:
+  `taskset -c 8-15 pixi run bm-allocator-comparative-check --only-entt-registry --baseline foonathan --baseline std --verbose --output .benchmark_results/allocator_comparative_entt_current_750cd83.json`.
+  DART still reported no frame overflow, but warmed EnTT rows lost against
+  foonathan/memory at 512 and 2048 entities and against Std at 256 entities;
+  several baseline rows also exceeded the CV/noise limit.
+- On `feature/free-list-fixed-capacity` after the fixed-capacity slice:
+  `cmake --build build/default/cpp/Release --target UNIT_common_free_list_allocator UNIT_common_memory_manager test_world -j6`,
+  `ctest --test-dir build/default/cpp/Release -R '^(UNIT_common_free_list_allocator|UNIT_common_memory_manager|test_world)$' --output-on-failure`,
+  `pixi run lint`, and `git diff --check && git diff --cached --check`.
 - On `test/memory-allocator-debugger-correctness` after borrowed-allocator
   diagnostics: `cmake --build build/default/cpp/Release --target UNIT_common_memory_manager test_world -j2`
   and `ctest --test-dir build/default/cpp/Release -R '^(UNIT_common_memory_manager|test_world)$' --output-on-failure`
@@ -133,6 +133,10 @@ foonathan/memory on required workloads.
 - Use `FixedPoolAllocator` for fixed-size node/slot workloads. Keep
   `PoolAllocator` as the size-classed small-object allocator for mixed
   workloads.
+- Use fixed-capacity `FreeListAllocator` when runtime growth is prohibited by a
+  precomputed memory budget; keep the default expandable policy for heap-like
+  use. The policy now flows through `MemoryManager::Options` and experimental
+  `WorldOptions`.
 - Treat EnTT registry/storage allocation as first-class scope. The ECS storage
   layer is a dominant owner of world/component memory, but EnTT allocator types
   must remain hidden from promoted public World APIs.

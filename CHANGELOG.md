@@ -147,6 +147,16 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Kept `StlAllocator` allocation and deallocation alignment-aware for
     allocator-backed STL storage, including fixed-pool-backed max-aligned
     values.
+  - Added a fixed-capacity growth policy to `FreeListAllocator` so
+    preallocated free-list arenas can fail deterministically instead of growing
+    from the base allocator after bake/build, and exposed construction-time
+    free-list capacity/policy knobs through `MemoryManager` and experimental
+    `WorldOptions`.
+  - Fixed fixed-capacity `FreeListAllocator` aligned allocations so
+    `PoolAllocator` can satisfy aligned size-class chunks from reserved arena
+    bytes without growing from the base allocator.
+  - Hardened `FreeListAllocator` reservation arithmetic so impossible fixed
+    capacities and expansion sizes fail before touching the base allocator.
   - Added query methods on `dart::common::MemoryAllocatorDebugger`,
     `FreeListAllocator`, and `PoolAllocator` for current live bytes, peak live
     bytes, and live allocation count so allocator diagnostics can consume

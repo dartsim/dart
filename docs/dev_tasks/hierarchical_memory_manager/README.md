@@ -12,23 +12,28 @@
       checker-requested repetition count instead of forcing five repetitions.
       The strict checker now rejects high-CV rows before treating ratios as
       evidence. `StlAllocator` keeps allocator-backed STL storage
-      alignment-aware, including fixed-pool-backed max-aligned values. The
-      broader correctness matrix and production workload evidence still need to
-      land before this phase is complete. Focused EnTT registry probes now
-      cover foonathan/memory's array-capable pool baseline and the standard
-      registry, including separate build/growth rows for bake-time registry
-      storage allocation. The focused EnTT checker caches
-      known component storage handles, uses frame-backed DART storage for
-      persistent no-growth churn, and uses pool-backed DART storage for
+      alignment-aware, including fixed-pool-backed max-aligned values. Focused
+      EnTT registry probes now cover foonathan/memory's array-capable pool
+      baseline and the standard registry, including separate build/growth rows
+      for bake-time registry storage allocation. The focused EnTT checker
+      caches known component storage handles, uses frame-backed DART storage
+      for persistent no-growth churn, and uses pool-backed DART storage for
       bake/build growth. The no-growth row reports frame usage and overflow
       counters; the build/growth row times the uninstrumented pool-backed path
       and reports configured-allocator call counters from a matching untimed
       probe. The strict checker prints DART benchmark counters alongside
       pass/fail ratios, so EnTT misses distinguish timing loss, allocator
-      traffic, growth, and noisy benchmark evidence. A fresh focused strict run
-      on 2026-06-04 passes the foonathan/memory and standard-registry timing
-      gate for the EnTT rows. Phase 2 remains open for the broader correctness
-      matrix and production workload gates.
+      traffic, growth, and noisy benchmark evidence.
+      `FreeListAllocator` now has a fixed-capacity mode for
+      deterministic bounded failure after preallocation, and `MemoryManager` /
+      experimental `WorldOptions` can construct the World free-list hierarchy
+      with a fixed-capacity policy. Fixed-capacity free-list arenas can also
+      satisfy over-aligned pool chunks from reserved bytes without growing from
+      the base allocator. A 2026-06-04 focused EnTT run passed the
+      foonathan/memory and standard-registry timing gate, but the current pushed
+      head needs a clean low-load rerun or optimization before #2890 is
+      merge-ready. Phase 2 remains open for the broader correctness matrix and
+      production workload gates.
 - [ ] Phase 3: EnTT registry/component storage allocation is configurable from
       the World memory hierarchy and covered by no-growth ECS tests.
       Allocator-aware EnTT storage now has focused `StlAllocator` and
@@ -120,6 +125,12 @@ debugging, profiling, optimization experiments, and ImGui visualization.
   `PoolAllocator` focused on mixed size-classed small-object workloads. The
   comparative benchmark must not compare DART's generic size-classed pool
   against foonathan's fixed-size pool when a DART fixed-size allocator exists.
+- Use fixed-capacity `FreeListAllocator` instances when the allocator budget was
+  established during world creation or bake/build and runtime growth would
+  violate the no-dynamic-allocation contract. The default free-list policy
+  remains expandable for general heap-like use. Route the policy through
+  `MemoryManager::Options` and `WorldOptions` rather than exposing EnTT or
+  solver storage types.
 
 ## Required Allocator Evidence
 

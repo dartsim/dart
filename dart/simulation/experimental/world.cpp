@@ -1421,6 +1421,19 @@ common::MemoryAllocator& resolveBaseAllocator(const WorldOptions& options)
 }
 
 //==============================================================================
+common::MemoryManager::Options makeMemoryManagerOptions(
+    const WorldOptions& options)
+{
+  common::MemoryManager::Options memoryOptions;
+  memoryOptions.frameAllocatorInitialCapacity
+      = validateFrameScratchInitialCapacity(
+          options.frameScratchInitialCapacity);
+  memoryOptions.freeListInitialAllocation = options.freeListInitialAllocation;
+  memoryOptions.freeListGrowthPolicy = options.freeListGrowthPolicy;
+  return memoryOptions;
+}
+
+//==============================================================================
 void reserveExistingRegistryStorages(detail::WorldRegistry& registry)
 {
   auto& entities = registry.storage<entt::entity>();
@@ -1989,9 +2002,7 @@ World::World()
 //==============================================================================
 World::World(const WorldOptions& options)
   : m_memoryManager(
-        resolveBaseAllocator(options),
-        validateFrameScratchInitialCapacity(
-            options.frameScratchInitialCapacity)),
+        resolveBaseAllocator(options), makeMemoryManagerOptions(options)),
     m_storage(
         std::make_unique<detail::WorldStorage>(
             m_memoryManager.getFreeAllocator())),
