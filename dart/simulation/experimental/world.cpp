@@ -476,10 +476,22 @@ struct WorldStepPipelineStages
     return pipeline;
   }
 
-  void prepare(World& world)
+  void prepare(World& world, RigidBodySolver rigidBodySolver)
   {
-    rigidIpcContact.prepare(world);
+    prepareRigidIpcContact(world, rigidBodySolver);
     kinematics.prepare(world);
+  }
+
+  void prepareRigidIpcContact(World& world, RigidBodySolver rigidBodySolver)
+  {
+    DART_EXPERIMENTAL_THROW_T_IF(
+        !isValidRigidBodySolver(rigidBodySolver),
+        InvalidArgumentException,
+        "Rigid-body solver is invalid");
+
+    if (rigidBodySolver == RigidBodySolver::Ipc) {
+      rigidIpcContact.prepare(world);
+    }
   }
 
 private:
@@ -2363,7 +2375,7 @@ void World::enterSimulationMode()
   detail::deformable_vbd::configureAvbdRigidWorldPointJointsFromCurrentPoses(
       m_storage->registry);
   reserveRegistryStorageForSimulation();
-  m_stepPipelineCache->stages.prepare(*this);
+  m_stepPipelineCache->stages.prepare(*this, m_rigidBodySolver);
 }
 
 //==============================================================================
@@ -2393,6 +2405,9 @@ void World::setRigidBodySolver(RigidBodySolver solver)
 
   validateRigidBodyJointPipelineSupport(*this, solver);
   m_rigidBodySolver = solver;
+  if (m_simulationMode) {
+    m_stepPipelineCache->stages.prepareRigidIpcContact(*this, solver);
+  }
 }
 
 //==============================================================================
