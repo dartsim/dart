@@ -30,14 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dart.hpp"
-
+#include "TestHelpers.hpp"
 #include "dart/collision/bullet/bullet.hpp"
 #include "dart/collision/ode/ode.hpp"
+#include "dart/dart.hpp"
 
 #include <gtest/gtest.h>
-
-#include "TestHelpers.hpp"
 
 #include <functional>
 #include <tuple>

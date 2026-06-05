@@ -70,6 +70,9 @@ public:
   struct ContactHistoryItem
   {
     CollObjPair pair;
+    Eigen::Isometry3d transform1;
+    Eigen::Isometry3d transform2;
+    bool hasTransforms;
     std::deque<Contact> history;
   };
 

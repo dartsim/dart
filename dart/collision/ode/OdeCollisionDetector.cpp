@@ -104,20 +104,55 @@ OdeCollisionDetector::CollObjPair MakeNewPair(
   return std::make_pair(o1, o2);
 }
 
-std::deque<Contact>& FindPairInHist(
+bool hasTransformMoved(
+    const Eigen::Isometry3d& previous, const Eigen::Isometry3d& current)
+{
+  constexpr double translationTolerance = 5e-2;
+  constexpr double rotationTolerance = 5e-2;
+  return (previous.translation() - current.translation()).norm()
+             > translationTolerance
+         || !previous.linear().isApprox(current.linear(), rotationTolerance);
+}
+
+void refreshHistoryTransforms(OdeCollisionDetector::ContactHistoryItem& item)
+{
+  const auto& transform1 = item.pair.first->getTransform();
+  const auto& transform2 = item.pair.second->getTransform();
+
+  if (!item.hasTransforms) {
+    item.transform1 = transform1;
+    item.transform2 = transform2;
+    item.hasTransforms = true;
+    return;
+  }
+
+  const bool moved = hasTransformMoved(item.transform1, transform1)
+                     || hasTransformMoved(item.transform2, transform2);
+  if (moved)
+    item.history.clear();
+
+  item.transform1 = transform1;
+  item.transform2 = transform2;
+}
+
+OdeCollisionDetector::ContactHistoryItem& FindPairInHist(
     std::vector<OdeCollisionDetector::ContactHistoryItem>& cache,
     const OdeCollisionDetector::CollObjPair& pair)
 {
   for (auto& item : cache) {
     if (pair.first == item.pair.first && pair.second == item.pair.second) {
-      return item.history;
+      return item;
     }
   }
-  auto newItem
-      = OdeCollisionDetector::ContactHistoryItem{pair, std::deque<Contact>()};
+
+  OdeCollisionDetector::ContactHistoryItem newItem;
+  newItem.pair = pair;
+  newItem.transform1 = Eigen::Isometry3d::Identity();
+  newItem.transform2 = Eigen::Isometry3d::Identity();
+  newItem.hasTransforms = false;
   cache.push_back(newItem);
 
-  return cache.back().history;
+  return cache.back();
 }
 
 void eraseHistoryForObject(
@@ -417,11 +452,10 @@ void reportContacts(
   if (1 == numContacts && option.enableContact) {
     const auto* shapeA = b1->getShape().get();
     const auto* shapeB = b2->getShape().get();
-    const bool boxCylinderPair
-        = (shapeA->as<dynamics::BoxShape>()
-           && shapeB->as<dynamics::CylinderShape>())
-          || (shapeA->as<dynamics::CylinderShape>()
-              && shapeB->as<dynamics::BoxShape>());
+    const bool boxCylinderPair = (shapeA->as<dynamics::BoxShape>()
+                                  && shapeB->as<dynamics::CylinderShape>())
+                                 || (shapeA->as<dynamics::CylinderShape>()
+                                     && shapeB->as<dynamics::BoxShape>());
     if (boxCylinderPair) {
       auto baseContact = convertContact(contactGeoms[0], b1, b2, option);
       alignBoxCylinderNormal(baseContact);
@@ -455,7 +489,9 @@ void reportContacts(
   }
 
   const auto pair = MakeNewPair(b1, b2);
-  auto& pastContacsVec = FindPairInHist(*history, pair);
+  auto& historyItem = FindPairInHist(*history, pair);
+  refreshHistoryTransforms(historyItem);
+  auto& pastContacsVec = historyItem.history;
   auto results_vec_copy = result.getContacts();
 
   bool sliding = false;
