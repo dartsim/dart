@@ -66,7 +66,7 @@ def test_static():
         tf.set_identity()
         tf.set_translation(joint_01.get_transform_from_parent_body_node().translation())
         parent_frame01 = dart.SimpleFrame(
-            dart.Frame.world(), "parent_frame01", tf
+            dart.gui.world_render_frame(), "parent_frame01", tf
         )
         tf.set_identity()
         tf.set_translation(joint_01.get_transform_from_child_body_node().translation())
@@ -154,7 +154,7 @@ def test_force_torque_at_joint_limits():
         tf.set_identity()
         tf.set_translation(joint_01.get_transform_from_parent_body_node().translation())
         parent_frame01 = dart.SimpleFrame(
-            dart.Frame.world(), "parent_frame01", tf
+            dart.gui.world_render_frame(), "parent_frame01", tf
         )
         tf.set_identity()
         tf.set_translation(joint_01.get_transform_from_child_body_node().translation())

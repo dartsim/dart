@@ -32,10 +32,13 @@
 
 #pragma once
 
+#include <dart/config.hpp>
+
 #include <dart/simulation/experimental/fwd.hpp>
 
 #include <dart/simulation/experimental/body/deformable_body_options.hpp>
 #include <dart/simulation/experimental/body/rigid_body_options.hpp>
+#include <dart/simulation/experimental/compute/world_step_profile.hpp>
 #include <dart/simulation/experimental/constraint/loop_closure.hpp>
 #include <dart/simulation/experimental/diff/step_derivatives.hpp>
 #include <dart/simulation/experimental/diff/step_gradient.hpp>
@@ -57,6 +60,7 @@
 #include <vector>
 
 #include <cstddef>
+#include <cstdint>
 
 namespace dart::simulation::experimental {
 
@@ -72,7 +76,11 @@ struct WorldStorage;
 } // namespace detail
 
 namespace compute {
+class MultibodyContactStage;
+class MultibodyForwardDynamicsStage;
+class RigidBodyContactStage;
 class RigidIpcContactStage;
+class UnifiedConstraintStage;
 } // namespace compute
 
 struct WorldOptions;
@@ -161,13 +169,49 @@ struct DeformableSolverDiagnostics
   std::size_t convergedActiveContactCount = 0;
 };
 
+/// Per-component-storage ECS memory diagnostics. Storage IDs are internal
+/// diagnostic tokens for grouping one snapshot; callers should not persist them
+/// as stable public component identifiers.
+struct WorldEcsStorageDiagnostics
+{
+  /// Internal diagnostic ID for this component storage.
+  std::size_t storageId = 0;
+  /// Number of live components in this storage.
+  std::size_t size = 0;
+  /// Current storage capacity before another component insertion may grow it.
+  std::size_t capacity = 0;
+};
+
+/// Aggregate ECS registry storage diagnostics for profiler/debugger surfaces.
+struct WorldEcsDiagnostics
+{
+  /// Number of live entities in the World registry.
+  std::size_t entityCount = 0;
+  /// Current registry entity storage capacity.
+  std::size_t entityCapacity = 0;
+  /// Number of component storages currently materialized by the registry.
+  std::size_t storageCount = 0;
+  /// Sum of live component counts across materialized component storages.
+  std::size_t componentCount = 0;
+  /// Sum of component capacities across materialized component storages.
+  std::size_t componentCapacity = 0;
+  /// Per-storage live/capacity counters for layout debugging and UI grouping.
+  std::vector<WorldEcsStorageDiagnostics> storages;
+};
+
 /// Snapshot of the experimental World's CPU memory hierarchy diagnostics.
 ///
-/// This first slice reports only the World-owned frame allocator used for
-/// per-step scratch. Persistent allocator and ECS storage diagnostics are
-/// intentionally left for the allocator/EnTT integration workstream.
+/// This snapshot reports the World-owned frame allocator used for per-step
+/// scratch, structured debug counters for direct free/pool allocations, and
+/// ECS registry storage layout counters for memory debugger/profiler tools.
 struct WorldMemoryDiagnostics
 {
+  /// Debug counters for the World-owned MemoryManager hierarchy.
+  common::MemoryManager::DebugDiagnostics allocatorDebugDiagnostics;
+
+  /// ECS registry/component storage diagnostics.
+  WorldEcsDiagnostics ecsDiagnostics;
+
   /// Current usable frame-scratch arena capacity after alignment padding.
   std::size_t frameScratchCapacityBytes = 0;
   /// Bytes consumed in the current simulation frame, including overflow blocks.
@@ -604,6 +648,32 @@ public:
   const DeformableSolverDiagnostics& getLastDeformableSolverDiagnostics() const;
 
   //--------------------------------------------------------------------------
+  // Profiling
+  //--------------------------------------------------------------------------
+  /// Enables or disables per-stage step profiling. When enabled, every ``step``
+  /// records the wall-clock time of each pipeline stage into a snapshot
+  /// retrievable via ``getLastStepProfile``. This is the experimental World's
+  /// non-GUI, text-first performance surface, intended for tools, bindings, and
+  /// AI agents optimizing a step. Requires ``DART_BUILD_PROFILE=ON``; when that
+  /// build option is off this toggle is a no-op, ``World`` stores no profiling
+  /// cache fields, and the step path has no compiled profiling branch. Disabled
+  /// by default in profiling-enabled
+  /// builds; when off the step path is unchanged and adds no profiling
+  /// overhead.
+  void setStepProfilingEnabled(bool enabled) noexcept;
+
+  /// Whether per-stage step profiling is currently enabled. Always false when
+  /// DART was built with ``DART_BUILD_PROFILE=OFF``.
+  [[nodiscard]] bool isStepProfilingEnabled() const noexcept;
+
+  /// Per-stage wall-clock profile of the most recent ``step`` taken while
+  /// profiling was enabled. Empty before the first such step. For a multi-step
+  /// call it reflects the last step. Use ``WorldStepProfile::toSummaryText``
+  /// for a compact, readable breakdown.
+  [[nodiscard]] const compute::WorldStepProfile& getLastStepProfile()
+      const noexcept;
+
+  //--------------------------------------------------------------------------
   // Multibody solver configuration
   //--------------------------------------------------------------------------
 
@@ -665,7 +735,12 @@ private:
   friend class RigidBody;
   friend class DeformableBody;
   friend class io::detail::SkeletonLoaderWorldAccess;
+  friend class compute::MultibodyContactStage;
+  friend class compute::MultibodyForwardDynamicsStage;
+  friend class compute::RigidBodyContactStage;
+  friend class compute::WorldKinematicsGraph;
   friend class compute::RigidIpcContactStage;
+  friend class compute::UnifiedConstraintStage;
 
   /// Internal storage seam. `detail::storageOf` reaches the privately-held,
   /// ECS-typed `WorldStorage` without exposing it on the public surface; the
@@ -677,6 +752,7 @@ private:
 
   Frame resolveParentFrame(const Frame& parent) const;
   struct CollisionQueryCache;
+  struct StepPipelineCache;
   Entity createFrameEntity(
       std::string_view name,
       const Frame& parentFrame,
@@ -693,6 +769,10 @@ private:
       const Eigen::Vector3d& axis);
 
   void ensureDesignMode() const;
+  [[nodiscard]] const std::vector<Contact>& queryContacts(
+      const CollisionQueryOptions& options);
+  void markFrameTopologyChanged() noexcept;
+  [[nodiscard]] std::uint64_t getFrameTopologyRevision() const noexcept;
   void reserveRegistryStorageForSimulation();
   void resetCountersFromRegistry();
   void stepPipelineOnce(
@@ -736,7 +816,12 @@ private:
   double m_time{0.0};
   DeformableSolverDiagnostics m_lastDeformableSolverDiagnostics{};
   WorldMemoryDiagnostics m_memoryDiagnostics{};
+#if DART_BUILD_PROFILE
+  bool m_stepProfilingEnabled{false};
+  compute::WorldStepProfile m_lastStepProfile{};
+#endif
   double m_rigidIpcAdaptiveBarrierStiffnessLowerBound{1.0};
+  std::uint64_t m_frameTopologyRevision{0};
   enum class MultibodyIntegrationMethod
   {
     SemiImplicit,
@@ -755,6 +840,7 @@ private:
   std::size_t m_linkCounter{0};
   std::size_t m_jointCounter{0};
   mutable std::unique_ptr<CollisionQueryCache> m_collisionQueryCache;
+  std::unique_ptr<StepPipelineCache> m_stepPipelineCache;
 
   struct ReplayState;
   std::unique_ptr<ReplayState> m_replay;

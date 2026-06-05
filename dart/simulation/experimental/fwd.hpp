@@ -56,6 +56,7 @@ struct PhysicalParameterSelector;
 namespace compute {
 class ComputeExecutor;
 class ParallelExecutor;
+class WorldKinematicsGraph;
 class WorldStepPipeline;
 class WorldStepStage;
 } // namespace compute

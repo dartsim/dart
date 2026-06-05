@@ -1,7 +1,9 @@
-dartpy
-======
+dartpy.simulation
+=================
 
-.. note:: Legacy submodules will be removed in DART 8.0; use top-level `dartpy`.
+The official DART 7 ECS-backed simulation API. Its public symbols are also
+promoted to the flat ``dartpy`` namespace (for example ``dartpy.World`` is
+``dartpy.simulation.World``).
 
-.. automodule:: dartpy
+.. automodule:: dartpy.simulation
    :members:

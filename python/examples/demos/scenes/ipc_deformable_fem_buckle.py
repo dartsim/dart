@@ -1,4 +1,4 @@
-"""FEM self-contact under compression (experimental IPC deformable solver).
+"""FEM self-contact under compression (IPC deformable solver).
 
 A slender tetrahedralized beam is gripped at both ends and the grips are driven
 toward each other, so the soft FEM core buckles and folds onto itself. Where the
@@ -18,7 +18,7 @@ from __future__ import annotations
 from collections import deque
 
 import numpy as np
-import dartpy.simulation_experimental as sx
+import dartpy as sx
 
 from .._ipc_deformable_bridge import IpcDeformableBridge, build_fem_compression_bar
 from ..runner import PythonDemoScene, ScenePanel, SceneSetup
@@ -101,7 +101,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="ipc_deformable_fem_buckle",
     title="Deformable FEM Self-Contact (IPC)",
-    category="IPC Deformable (sx)",
+    category="IPC Deformable",
     summary="A tetrahedral FEM beam is compressed end-to-end until it buckles "
     "and folds onto itself, held apart by the self-contact barrier.",
     build=build,

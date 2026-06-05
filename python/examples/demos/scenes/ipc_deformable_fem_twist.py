@@ -1,4 +1,4 @@
-"""FEM twisting bar (experimental IPC deformable solver).
+"""FEM twisting bar (IPC deformable solver).
 
 A tetrahedralized beam is gripped at both ends and counter-rotated about its
 long axis, then released; the stable neo-Hookean FEM core stores the shear and
@@ -16,7 +16,7 @@ from __future__ import annotations
 from collections import deque
 
 import numpy as np
-import dartpy.simulation_experimental as sx
+import dartpy as sx
 
 from .._ipc_deformable_bridge import IpcDeformableBridge, build_fem_twist_bar
 from ..runner import PythonDemoScene, ScenePanel, SceneSetup
@@ -95,7 +95,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="ipc_deformable_fem_twist",
     title="Deformable FEM Twist (IPC)",
-    category="IPC Deformable (sx)",
+    category="IPC Deformable",
     summary="A tetrahedral FEM bar is twisted at both ends and untwists elastically.",
     build=build,
 )

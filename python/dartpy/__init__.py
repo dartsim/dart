@@ -64,33 +64,37 @@ _naming.install_aliases(_ext)
 _layout.install_layout(sys.modules[__name__])
 
 
-def _install_simulation_experimental_diff() -> None:
-  """Attach the pure-Python ``diff`` (PyTorch bridge) onto the experimental module.
+def _install_simulation_diff() -> None:
+  """Attach the pure-Python ``diff`` (PyTorch bridge) onto ``dartpy.simulation``.
 
-  ``dartpy.simulation_experimental`` is a C++ extension submodule, so its
-  PyTorch autograd bridge lives in a pure-Python module attached here as the
-  ``diff`` attribute. This import is torch-free; ``sx.diff.timestep`` imports
-  torch lazily, so ``import dartpy.simulation_experimental`` succeeds without
-  torch and ``sx.diff`` always exists.
+  ``dartpy.simulation`` is a C++ extension submodule (the official ECS-backed
+  simulation API), so its PyTorch autograd bridge lives in a pure-Python module
+  attached here as the ``diff`` attribute. This import is torch-free;
+  ``dartpy.simulation.diff.timestep`` imports torch lazily, so ``import
+  dartpy.simulation`` succeeds without torch and ``diff`` always exists.
   """
-  experimental = sys.modules.get(f"{__name__}.simulation_experimental")
+  # Resolve the C++ simulation module directly via _ext. dartpy.simulation is
+  # the official DART 7 ECS module (not a deprecated legacy wrapper -- _layout
+  # excludes it from the legacy set), so this resolution is independent of the
+  # public-namespace wiring and carries no import-time DeprecationWarning.
+  experimental = getattr(_ext, "simulation", None)
   if experimental is None:
     return
   from . import _simulation_experimental_diff as _diff_impl
 
-  module_name = f"{__name__}.simulation_experimental.diff"
+  module_name = f"{__name__}.simulation.diff"
   diff_module = sys.modules.get(module_name)
   if diff_module is None:
     import types
 
     diff_module = types.ModuleType(module_name)
     diff_module.__doc__ = _diff_impl.__doc__
-    diff_module.__package__ = f"{__name__}.simulation_experimental"
+    diff_module.__package__ = f"{__name__}.simulation"
     diff_module.timestep = _diff_impl.timestep
     diff_module.__all__ = list(_diff_impl.__all__)
     sys.modules[module_name] = diff_module
   # Re-export the framework-neutral C++ rollout (PLAN-110 rollout item) onto the
-  # ``sx.diff`` namespace when differentiable support is compiled. The torch
+  # ``diff`` namespace when differentiable support is compiled. The torch
   # ``timestep`` chaining bridge above stays as-is; ``rollout`` is the torch-free
   # path. Present only in DART_BUILD_DIFF=ON builds.
   for _name in ("rollout", "RolloutTrajectory"):
@@ -100,9 +104,42 @@ def _install_simulation_experimental_diff() -> None:
       if _name not in diff_module.__all__:
         diff_module.__all__.append(_name)
   experimental.diff = diff_module
+  # Expose the diff bridge on the canonical flat namespace too: the dartpy.diff
+  # attribute plus a sys.modules entry so it is importable as a real module
+  # (`import dartpy.diff` / `from dartpy.diff import timestep`), matching the
+  # generated dartpy/diff.pyi stub. dartpy.simulation.diff stays the underlying
+  # module object (same object, registered above).
+  setattr(sys.modules[__name__], "diff", diff_module)
+  sys.modules[f"{__name__}.diff"] = diff_module
 
 
-_install_simulation_experimental_diff()
+_install_simulation_diff()
+
+
+def _install_world_render_bridge() -> None:
+  """Attach the pure-Python ``WorldRenderBridge`` helper onto ``dartpy.gui``.
+
+  ``WorldRenderBridge`` mirrors an ECS ``dartpy.simulation`` World into a
+  parallel classic render World that the C++ Filament viewer draws (the ECS
+  World has no direct viewer path). It is a supported GUI helper; because
+  ``dartpy.gui`` is a C++ extension submodule, the pure-Python class is attached
+  here. Requires the GUI build; skipped when ``dartpy.gui`` is absent.
+  """
+  gui = sys.modules.get(f"{__name__}.gui")
+  if gui is None:
+    return
+  from . import _world_render_bridge as _bridge_impl
+
+  gui.WorldRenderBridge = _bridge_impl.WorldRenderBridge
+  # Render plumbing: the classic World root frame, used as the reference frame
+  # for SimpleFrame visuals placed in a dartpy.gui.RenderWorld. The DART 7 ECS
+  # Frame owns the flat dartpy.Frame name, so render code reaches the legacy
+  # render frame via this helper instead. Defined as a real function in
+  # _world_render_bridge so the stub generator emits a correct import.
+  gui.world_render_frame = _bridge_impl.world_render_frame
+
+
+_install_world_render_bridge()
 
 
 def __getattr__(name: str):

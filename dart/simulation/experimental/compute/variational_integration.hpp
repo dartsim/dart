@@ -449,6 +449,8 @@ class DART_EXPERIMENTAL_API MultibodyVariationalIntegrationStage final
 public:
   [[nodiscard]] std::string_view getName() const noexcept override;
   [[nodiscard]] ComputeStageMetadata getMetadata() const noexcept override;
+  /// Pre-reserve per-multibody variational state storage before baked steps.
+  void prepare(World& world);
   void execute(World& world, ComputeExecutor& executor) override;
 };
 

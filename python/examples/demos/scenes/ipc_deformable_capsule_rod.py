@@ -1,4 +1,4 @@
-"""Cloth draping over a capsule rod obstacle (experimental IPC deformable solver).
+"""Cloth draping over a capsule rod obstacle (IPC deformable solver).
 
 A mass-spring cloth (loaded from the bundled ``.obj`` mesh) is dropped over a
 static horizontal capsule -- a rod/wire -- opted in as a deformable obstacle. The
@@ -18,7 +18,7 @@ from collections import deque
 import math
 from pathlib import Path
 
-import dartpy.simulation_experimental as sx
+import dartpy as sx
 import numpy as np
 
 from .._ipc_deformable_bridge import IpcDeformableBridge, build_cloth_from_obj
@@ -130,7 +130,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="ipc_deformable_capsule_rod",
     title="Deformable Cloth over Capsule Rod (IPC)",
-    category="IPC Deformable (sx)",
+    category="IPC Deformable",
     summary="A cloth drapes over a static capsule rod obstacle via its "
     "codimensional radial barrier.",
     build=build,

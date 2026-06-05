@@ -40,6 +40,8 @@
 #include <string>
 #include <vector>
 
+#include <cstdint>
+
 namespace dart::simulation::experimental {
 class World;
 }
@@ -55,6 +57,7 @@ public:
   explicit WorldKinematicsGraph(World& world);
 
   void rebuild();
+  [[nodiscard]] bool isTopologyCurrent() const noexcept;
   void execute(ComputeExecutor& executor);
 
   [[nodiscard]] const ComputeGraph& getGraph() const noexcept
@@ -74,6 +77,7 @@ private:
   World& m_world;
   ComputeGraph m_graph;
   std::vector<EntityNode> m_entityNodes;
+  std::uint64_t m_frameTopologyRevision = 0;
 };
 
 } // namespace dart::simulation::experimental::compute

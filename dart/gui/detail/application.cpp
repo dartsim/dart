@@ -673,15 +673,6 @@ std::string& demoSidebarSearch()
   return search;
 }
 
-bool& demoSidebarExperimentalFocus(bool defaultValue)
-{
-  static std::optional<bool> focus;
-  if (!focus.has_value()) {
-    focus = defaultValue;
-  }
-  return *focus;
-}
-
 dart::gui::Panel makeDemoSimulationPanel(
     const std::vector<dart::gui::DemoSceneEntry>& scenes, int activeIndex)
 {
@@ -895,33 +886,16 @@ dart::gui::Panel makeDemoSidebarPanel(
     }
     const std::string normalizedSearch
         = dart::gui::detail::normalizedDemoSearchText(search);
-    const bool defaultExperimentalFocus
-        = active != nullptr
-          && dart::gui::detail::demoSceneMatchesExperimentalFocus(*active);
-    bool& experimentalFocus
-        = demoSidebarExperimentalFocus(defaultExperimentalFocus);
-    bool requestedExperimentalFocus = experimentalFocus;
-    if (builder.checkbox("Experimental focus", requestedExperimentalFocus)) {
-      experimentalFocus = requestedExperimentalFocus;
-    }
-    builder.itemTooltip(
-        "Show simulation-experimental and solver-focused demos.");
     std::size_t visibleSceneCount = 0;
-    std::size_t availableSceneCount = 0;
     for (const auto& scene : scenes) {
-      if (!experimentalFocus
-          || dart::gui::detail::demoSceneMatchesExperimentalFocus(scene)) {
-        ++availableSceneCount;
-      }
       if (dart::gui::detail::demoSceneVisibleInNavigator(
-              scene, normalizedSearch, experimentalFocus)) {
+              scene, normalizedSearch)) {
         ++visibleSceneCount;
       }
     }
     builder.text(
         "Showing " + std::to_string(visibleSceneCount) + "/"
-        + std::to_string(availableSceneCount)
-        + (experimentalFocus ? " experimental demos" : " demos"));
+        + std::to_string(scenes.size()) + " demos");
     builder.separator();
 
     // Tree-style catalog: categories are grouped by first appearance even if
@@ -935,13 +909,9 @@ dart::gui::Panel makeDemoSidebarPanel(
       std::size_t totalCount = 0;
       bool categoryHasActive = false;
       for (const std::size_t i : group.sceneIndices) {
-        if (!experimentalFocus
-            || dart::gui::detail::demoSceneMatchesExperimentalFocus(
-                scenes[i])) {
-          ++totalCount;
-        }
+        ++totalCount;
         if (dart::gui::detail::demoSceneVisibleInNavigator(
-                scenes[i], normalizedSearch, experimentalFocus)) {
+                scenes[i], normalizedSearch)) {
           ++visibleCount;
         }
         categoryHasActive
@@ -965,7 +935,7 @@ dart::gui::Panel makeDemoSidebarPanel(
         for (const std::size_t i : group.sceneIndices) {
           const auto& entry = scenes[i];
           if (!dart::gui::detail::demoSceneVisibleInNavigator(
-                  entry, normalizedSearch, experimentalFocus)) {
+                  entry, normalizedSearch)) {
             continue;
           }
           const bool isActive = static_cast<int>(i) == activeIndex;

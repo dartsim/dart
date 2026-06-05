@@ -320,6 +320,24 @@ public:
   /// Get the per-coordinate upper effort limits (default +infinity).
   [[nodiscard]] Eigen::VectorXd getEffortUpperLimits() const;
 
+  /// Set the AVBD break-force threshold.
+  ///
+  /// A finite non-negative value is required. The default value, 0, disables
+  /// automatic breakage. When AVBD rigid point-joint rows accumulate a
+  /// constraint load at or above this threshold, the joint is marked broken and
+  /// excluded from later AVBD point-joint extraction until resetBreakage().
+  void setBreakForce(double breakForce);
+
+  /// Get the AVBD break-force threshold.
+  [[nodiscard]] double getBreakForce() const;
+
+  /// Return whether this joint has been broken by AVBD break-force handling.
+  [[nodiscard]] bool isBroken() const;
+
+  /// Clear the broken flag so the joint can participate in AVBD extraction
+  /// again.
+  void resetBreakage();
+
   /// Get the parent link
   ///
   /// @return Parent Link handle

@@ -87,7 +87,7 @@ def _mean_luminance(
 
 def _simulation_experimental_has(*names: str) -> bool:
     try:
-        import dartpy.simulation_experimental as sx
+        import dartpy as sx
     except Exception:  # pragma: no cover - reduced build without the submodule
         return False
     return all(hasattr(sx, name) for name in names)
@@ -95,9 +95,9 @@ def _simulation_experimental_has(*names: str) -> bool:
 
 def _require_simulation_experimental_symbols(*names: str):
     try:
-        import dartpy.simulation_experimental as sx
+        import dartpy as sx
     except Exception as exc:  # pragma: no cover - reduced build without submodule
-        pytest.skip(f"dartpy.simulation_experimental unavailable: {exc}")
+        pytest.skip(f"dartpy unavailable: {exc}")
     missing = [name for name in names if not hasattr(sx, name)]
     if missing:
         formatted = ", ".join(f"simulation_experimental.{name}" for name in missing)
@@ -109,7 +109,7 @@ def _deformable_bindings_available() -> bool:
     """True when the experimental deformable bindings are compiled in.
 
     Builds with ``DART_BUILD_SIMULATION_EXPERIMENTAL=OFF`` ship a reduced
-    ``dartpy.simulation_experimental`` without the deformable types, so the
+    ``dartpy`` without the deformable types, so the
     solver-free grid-builder check skips there rather than erroring.
     """
 
@@ -130,6 +130,16 @@ def test_registry_has_scenes() -> None:
 def test_runner_cycle_returns_zero() -> None:
     if not _gui_run_demos_available():
         pytest.skip("dartpy.gui.run_demos unavailable (GUI not built)")
+    if not _simulation_experimental_has("World"):
+        # The pruned catalog is World-only, so every scene's factory needs the
+        # experimental World binding. Builds with
+        # DART_BUILD_SIMULATION_EXPERIMENTAL=OFF still ship the GUI runner but no
+        # World, leaving no scene to render (and no prior scene to fall back to),
+        # so the cycle can only skip here rather than exercise the runner.
+        pytest.skip(
+            "simulation_experimental.World unavailable "
+            "(experimental simulation disabled in this build)"
+        )
     rc = run(["--cycle-scenes", "--frames", "2", "--headless"], make_demo_scenes())
     assert rc == 0
 
@@ -469,8 +479,8 @@ def test_ipc_deformable_seg_and_pt_importers_feed_solves() -> None:
 def test_ipc_deformable_scenes_share_dedicated_category() -> None:
     """The IPC deformable scenes live in their own dedicated menu category.
 
-    The five IPC showcases must group under ``IPC Deformable (sx)`` (not the
-    general ``Experimental`` sx category), so the viewer renders them together.
+    The IPC showcases must group under ``IPC Deformable`` so the viewer renders
+    them together.
     """
 
     scenes = make_demo_scenes()
@@ -502,45 +512,64 @@ def test_ipc_deformable_scenes_share_dedicated_category() -> None:
     assert expected_ipc <= set(by_id), "missing IPC deformable scenes"
 
     for scene_id in expected_ipc:
-        assert by_id[scene_id].category == "IPC Deformable (sx)"
+        assert by_id[scene_id].category == "IPC Deformable"
 
-    # Every scene in the dedicated category is an IPC deformable scene, and
-    # none of them leaked back into the general Experimental category.
-    ipc_category = [s.id for s in scenes if s.category == "IPC Deformable (sx)"]
+    # Every scene in the dedicated category is an IPC deformable scene.
+    ipc_category = [s.id for s in scenes if s.category == "IPC Deformable"]
     assert set(ipc_category) == expected_ipc
-    experimental = [s.id for s in scenes if s.category == "Experimental"]
-    assert not any(s.startswith("ipc_deformable_") for s in experimental)
+    assert not any(s.category == "Experimental" for s in scenes)
 
 
-def test_experimental_world_scenes_use_solver_focused_categories() -> None:
+def test_world_scenes_use_solver_focused_categories() -> None:
     scenes = make_demo_scenes()
     by_id = {scene.id: scene for scene in scenes}
 
     expected = {
-        "Experimental Rigid Body (sx)": {
-            "sx_articulated",
-            "sx_floating_base",
-            "sx_contact",
-            "experimental_rigid_body_gui",
+        "World Rigid Body": {
+            "articulated",
+            "floating_base",
+            "contact",
+            "rigid_body",
+            "rigid_limited_joints",
         },
         "AVBD Rigid Constraints (sx)": {
             "avbd_rigid_fixed_joint_contact",
+            "avbd_rigid_revolute_motor",
+            "avbd_rigid_breakable_joint",
         },
-        "Rigid IPC (sx)": {
-            "sx_rigid_ipc",
-            "sx_rigid_ipc_slide",
-            "sx_rigid_ipc_incline",
-            "sx_rigid_ipc_edge_drop",
-            "sx_rigid_ipc_pile",
-            "sx_rigid_ipc_tunnel",
+        "Planned World Ports": {
+            "planned_inverse_kinematics",
+            "planned_simbicon_walking",
+            "planned_operational_space_control",
+            "g1_puppet",
+            "planned_collision_sandbox",
+            "planned_mobile_manipulation",
         },
-        "Variational Integrators (sx)": {
-            "sx_variational_chain",
-            "sx_variational_tumbler",
-            "sx_variational_contact",
-            "sx_loop_closure",
+        "Robot Models": {
+            "atlas_puppet",
+            "hubo_puppet",
         },
-        "Vertex Block Descent (sx)": {
+        "Control & IK": {
+            "atlas_simbicon",
+        },
+        "Rigid IPC": {
+            "rigid_ipc",
+            "rigid_ipc_slide",
+            "rigid_ipc_incline",
+            "rigid_ipc_edge_drop",
+            "rigid_ipc_pile",
+            "rigid_ipc_tunnel",
+        },
+        "Simulation Replay": {
+            "replay_scrubber",
+        },
+        "Variational Integrators": {
+            "variational_chain",
+            "variational_tumbler",
+            "variational_contact",
+            "loop_closure",
+        },
+        "Vertex Block Descent": {
             "vbd_cloth",
             "vbd_net",
             "vbd_beam",
@@ -554,14 +583,8 @@ def test_experimental_world_scenes_use_solver_focused_categories() -> None:
         for scene_id in scene_ids:
             assert by_id[scene_id].category == category
 
-    old_experimental = [
-        scene.id for scene in scenes if scene.category == "Experimental"
-    ]
-    assert not any(
-        scene_id.startswith(("sx_", "vbd_"))
-        or scene_id == "experimental_rigid_body_gui"
-        for scene_id in old_experimental
-    )
+    assert not any(scene.category == "Experimental" for scene in scenes)
+    assert not any(scene.id.startswith("sx_") for scene in scenes)
 
 
 def test_avbd_fixed_joint_contact_demo_exercises_contact_path() -> None:
@@ -601,6 +624,76 @@ def test_avbd_fixed_joint_contact_demo_exercises_contact_path() -> None:
     )
     assert np.linalg.norm(base_translation - initial_base) > 1.0e-3
     assert np.linalg.norm(payload_translation - initial_payload) > 1.0e-3
+
+
+def test_avbd_revolute_motor_demo_drives_hinge() -> None:
+    import numpy as np
+    import dartpy as sx
+
+    from examples.demos.scenes.avbd_rigid_revolute_motor import build
+
+    setup = build()
+    sx_world = setup.info["sx_world"]
+    rotor = setup.info["rotor"]
+    joint = setup.info["joint"]
+    target_speed = float(setup.info["target_speed"])
+    max_torque = float(setup.info["max_torque"])
+
+    assert sx_world.num_rigid_body_joints == 1
+    assert joint.actuator_type == sx.ActuatorType.VELOCITY
+    assert np.asarray(joint.command_velocity, dtype=float).reshape(1)[0] == pytest.approx(
+        target_speed
+    )
+    assert np.asarray(joint.effort_lower_limits, dtype=float).reshape(1)[0] == pytest.approx(
+        -max_torque
+    )
+    assert np.asarray(joint.effort_upper_limits, dtype=float).reshape(1)[0] == pytest.approx(
+        max_torque
+    )
+
+    initial_speed = float(np.asarray(rotor.angular_velocity, dtype=float).reshape(3)[2])
+    for _ in range(40):
+        assert setup.pre_step is not None
+        setup.pre_step()
+        setup.world.step()
+
+    measured_speed = float(
+        np.asarray(rotor.angular_velocity, dtype=float).reshape(3)[2]
+    )
+    assert measured_speed > initial_speed + 0.05
+    assert measured_speed == pytest.approx(target_speed, abs=0.7)
+
+
+def test_avbd_breakable_joint_demo_marks_joint_broken() -> None:
+    import numpy as np
+
+    _require_simulation_experimental_symbols("World")
+
+    from examples.demos.scenes.avbd_rigid_breakable_joint import build
+
+    setup = build()
+    sx_world = setup.info["sx_world"]
+    joint = setup.info["joint"]
+    base = setup.info["base"]
+    payload = setup.info["payload"]
+    break_force = float(setup.info["break_force"])
+
+    assert sx_world.num_rigid_body_fixed_joints == 1
+    assert joint.break_force == pytest.approx(break_force)
+    assert not joint.is_broken
+
+    initial_base = np.asarray(base.translation, dtype=float).reshape(3)
+    initial_payload = np.asarray(payload.translation, dtype=float).reshape(3)
+    for _ in range(45):
+        assert setup.pre_step is not None
+        setup.pre_step()
+        setup.world.step()
+
+    assert joint.is_broken
+    base_translation = np.asarray(base.translation, dtype=float).reshape(3)
+    payload_translation = np.asarray(payload.translation, dtype=float).reshape(3)
+    assert np.linalg.norm(base_translation - initial_base) < 1.0e-9
+    assert np.linalg.norm(payload_translation - initial_payload) > 1.0e-2
 
 
 def test_runner_screenshot_writes_ppm(tmp_path: pathlib.Path) -> None:
@@ -656,9 +749,9 @@ def test_show_ui_uses_docked_workspace_regions(
     monkeypatch.setenv("MESA_LOADER_DRIVER_OVERRIDE", "llvmpipe")
 
     def build_scene() -> SceneSetup:
-        world = dart.World("docked_smoke")
+        world = dart.gui.RenderWorld("docked_smoke")
         world.set_time_step(0.001)
-        frame = dart.SimpleFrame(dart.Frame.world(), "box")
+        frame = dart.SimpleFrame(dart.gui.world_render_frame(), "box")
         frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
         frame.create_visual_aspect().set_color([0.2, 0.7, 0.9])
         world.add_simple_frame(frame)
@@ -736,7 +829,7 @@ def test_py_demo_capture_records_ui_force_drag_artifacts(
     rc = capture_py_demo.main(
         [
             "--scene",
-            "sx_rigid_ipc_slide",
+            "rigid_ipc_slide",
             "--force-drag-target",
             "ipc_slide_box_visual",
             "--force-drag-frame",
@@ -791,9 +884,9 @@ def test_scripted_demo_switch_restores_previous_scene_on_factory_error(
     from examples.demos.runner import PythonDemoScene, SceneSetup
 
     def build_good() -> SceneSetup:
-        world = dart.World("good")
+        world = dart.gui.RenderWorld("good")
         world.set_time_step(0.001)
-        frame = dart.SimpleFrame(dart.Frame.world(), "good_box")
+        frame = dart.SimpleFrame(dart.gui.world_render_frame(), "good_box")
         frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
         frame.create_visual_aspect().set_color([0.2, 0.7, 0.9])
         world.add_simple_frame(frame)
@@ -866,9 +959,9 @@ def test_scripted_demo_switch_restores_previous_scene_on_startup_timeout(
         nonlocal good_setup
         if good_setup is not None:
             return good_setup
-        world = dart.World("good")
+        world = dart.gui.RenderWorld("good")
         world.set_time_step(0.001)
-        frame = dart.SimpleFrame(dart.Frame.world(), "good_box")
+        frame = dart.SimpleFrame(dart.gui.world_render_frame(), "good_box")
         frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
         frame.create_visual_aspect().set_color([0.2, 0.7, 0.9])
         world.add_simple_frame(frame)
@@ -877,7 +970,7 @@ def test_scripted_demo_switch_restores_previous_scene_on_startup_timeout(
 
     def build_slow() -> SceneSetup:
         time.sleep(0.25)
-        world = dart.World("slow")
+        world = dart.gui.RenderWorld("slow")
         world.set_time_step(0.001)
         return SceneSetup(world=world)
 
@@ -949,16 +1042,16 @@ def test_scripted_demo_switch_restores_previous_scene_on_render_state_failure(
     from examples.demos.runner import PythonDemoScene, SceneSetup
 
     def build_good() -> SceneSetup:
-        world = dart.World("good")
+        world = dart.gui.RenderWorld("good")
         world.set_time_step(0.001)
-        frame = dart.SimpleFrame(dart.Frame.world(), "good_box")
+        frame = dart.SimpleFrame(dart.gui.world_render_frame(), "good_box")
         frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
         frame.create_visual_aspect().set_color([0.2, 0.7, 0.9])
         world.add_simple_frame(frame)
         return SceneSetup(world=world)
 
     def build_empty() -> SceneSetup:
-        world = dart.World("empty")
+        world = dart.gui.RenderWorld("empty")
         world.set_time_step(0.001)
         return SceneSetup(world=world)
 
@@ -1031,9 +1124,9 @@ def test_scripted_demo_switch_restores_previous_scene_when_python_factory_stalls
     from examples.demos.runner import PythonDemoScene, SceneSetup
 
     def build_good() -> SceneSetup:
-        world = dart.World("good")
+        world = dart.gui.RenderWorld("good")
         world.set_time_step(0.001)
-        frame = dart.SimpleFrame(dart.Frame.world(), "good_box")
+        frame = dart.SimpleFrame(dart.gui.world_render_frame(), "good_box")
         frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
         frame.create_visual_aspect().set_color([0.2, 0.7, 0.9])
         world.add_simple_frame(frame)
@@ -1041,7 +1134,7 @@ def test_scripted_demo_switch_restores_previous_scene_when_python_factory_stalls
 
     def build_stalled() -> SceneSetup:
         time.sleep(60.0)
-        world = dart.World("stalled")
+        world = dart.gui.RenderWorld("stalled")
         world.set_time_step(0.001)
         return SceneSetup(world=world)
 
@@ -1119,18 +1212,18 @@ def test_scripted_demo_switch_restores_previous_scene_when_python_pre_step_stall
     from examples.demos.runner import PythonDemoScene, SceneSetup
 
     def build_good() -> SceneSetup:
-        world = dart.World("good")
+        world = dart.gui.RenderWorld("good")
         world.set_time_step(0.001)
-        frame = dart.SimpleFrame(dart.Frame.world(), "good_box")
+        frame = dart.SimpleFrame(dart.gui.world_render_frame(), "good_box")
         frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
         frame.create_visual_aspect().set_color([0.2, 0.7, 0.9])
         world.add_simple_frame(frame)
         return SceneSetup(world=world)
 
     def build_stalled_step() -> SceneSetup:
-        world = dart.World("stalled_step")
+        world = dart.gui.RenderWorld("stalled_step")
         world.set_time_step(0.001)
-        frame = dart.SimpleFrame(dart.Frame.world(), "stalled_box")
+        frame = dart.SimpleFrame(dart.gui.world_render_frame(), "stalled_box")
         frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
         frame.create_visual_aspect().set_color([0.8, 0.3, 0.2])
         world.add_simple_frame(frame)
@@ -1207,18 +1300,18 @@ def test_scripted_demo_switch_restores_previous_scene_on_slow_first_frame(
     from examples.demos.runner import PythonDemoScene, SceneSetup
 
     def build_good() -> SceneSetup:
-        world = dart.World("good")
+        world = dart.gui.RenderWorld("good")
         world.set_time_step(0.001)
-        frame = dart.SimpleFrame(dart.Frame.world(), "good_box")
+        frame = dart.SimpleFrame(dart.gui.world_render_frame(), "good_box")
         frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
         frame.create_visual_aspect().set_color([0.2, 0.7, 0.9])
         world.add_simple_frame(frame)
         return SceneSetup(world=world)
 
     def build_slow_step() -> SceneSetup:
-        world = dart.World("slow_step")
+        world = dart.gui.RenderWorld("slow_step")
         world.set_time_step(0.001)
-        frame = dart.SimpleFrame(dart.Frame.world(), "slow_box")
+        frame = dart.SimpleFrame(dart.gui.world_render_frame(), "slow_box")
         frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
         frame.create_visual_aspect().set_color([0.8, 0.3, 0.2])
         world.add_simple_frame(frame)

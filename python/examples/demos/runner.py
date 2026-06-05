@@ -39,7 +39,7 @@ from typing import Any, Callable, Iterable, Mapping
 # Frames-per-scene defaults match the C++ host so cycle behavior is identical.
 CYCLE_FRAMES_PER_SCENE = 4
 SINGLE_SCENE_DEFAULT_FRAMES = 60
-DEFAULT_INITIAL_SCENE_ID = "sx_replay_scrubber"
+DEFAULT_INITIAL_SCENE_ID = "replay_scrubber"
 SCENE_BUILD_TIMEOUT_ENV = "DART_PY_DEMO_SCENE_BUILD_TIMEOUT_MS"
 DEMO_SCENE_STARTUP_TIMEOUT_ENV = "DART_DEMO_SCENE_STARTUP_TIMEOUT_MS"
 DEFAULT_SCENE_BUILD_TIMEOUT_MS = 5000.0
@@ -77,9 +77,9 @@ class SceneSetup:
     (controllers, sensor updates). It receives no arguments and returns
     nothing.
 
-    ``step`` is the legacy whole-loop variant: ``step(frames)`` advances the
-    world by ``frames`` steps in headless runner paths. The interactive viewer
-    does not use it; interactive controllers should use ``pre_step``.
+    ``step`` is the whole-loop variant: ``step(frames)`` advances the world by
+    ``frames`` steps in headless runner paths. The interactive viewer does not
+    use it; interactive controllers should use ``pre_step``.
 
     ``force_drag`` is an optional callable invoked by the viewer's mouse
     "force-drag" while the user left-drags one of this scene's renderables that
@@ -94,7 +94,7 @@ class SceneSetup:
     and diagnostics. Panels are rendered through DART's renderer-neutral
     ``PanelBuilder`` abstraction and dock on the right by default.
 
-    ``info`` carries scene-specific metadata (e.g. ``golden_skeletons``).
+    ``info`` carries scene-specific metadata for tests and panels.
     """
 
     world: Any
@@ -120,8 +120,7 @@ def _step(setup: SceneSetup, frames: int) -> None:
     """Advance the scene by ``frames`` steps headlessly.
 
     Honors (in order of precedence):
-      1. SceneSetup.step (legacy whole-loop callable, owns world.step()
-         itself — used by the OSC/rigid_loop golden-parity smokes).
+      1. SceneSetup.step (whole-loop callable, owns world.step() itself).
       2. SceneSetup.pre_step (run the controller body, then world.step()
          here). Same pattern the interactive viewer uses, so the same
          scene runs in both surfaces without duplicate logic.
@@ -243,8 +242,8 @@ def _make_world_factory(
     physics-only; element 1 (if not ``None``) registers as the viewer's per-step
     hook; element 2 (if not ``None``) registers as the viewer's mouse
     force-drag handler; element 3 (if not ``None``) registers scene-specific
-    panels. These are used by experimental-world scenes that own an sx::World
-    and a render-mirror dart::simulation::World.
+    panels. These are used by World scenes that own a physics world and a
+    render-mirror dart::simulation::World.
     """
 
     def factory() -> Any:
@@ -346,8 +345,11 @@ def _configure_gpu_compute(dart: Any, cli_pref: bool | None) -> ScenePanel | Non
     one-line status so headless and interactive runs both report the mode.
     """
 
-    sx = getattr(dart, "simulation_experimental", None)
-    if sx is None or not hasattr(sx, "set_accelerated_deformable_solve"):
+    # In DART 7 the ECS simulation API is flat on the dartpy module, so the GPU
+    # deformable-solve controls live directly on it (absent when the simulation
+    # module is not built, e.g. DART_BUILD_SIMULATION_EXPERIMENTAL=OFF).
+    sx = dart
+    if not hasattr(sx, "set_accelerated_deformable_solve"):
         return None
 
     available = bool(sx.is_accelerated_deformable_solve_available())

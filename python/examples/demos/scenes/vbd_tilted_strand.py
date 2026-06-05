@@ -14,10 +14,10 @@ from __future__ import annotations
 
 from collections import deque
 
-import dartpy.simulation_experimental as sx
+import dartpy as sx
 import numpy as np
 
-from .._sx_bridge import SxRenderBridge
+from .._world_bridge import WorldRenderBridge
 from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
 _NUM_VERTS = 20
@@ -61,7 +61,7 @@ def build() -> SceneSetup:
     world.configure_deformable_solver("vbd_tilted_strand", solver)
     world.enter_simulation_mode()
 
-    bridge = SxRenderBridge(world, name="vbd_tilted_strand_render")
+    bridge = WorldRenderBridge(world, name="vbd_tilted_strand_render")
     body = world.get_deformable_body("vbd_tilted_strand")
     bridge.add_deformable_visual(
         body,
@@ -133,8 +133,8 @@ def build() -> SceneSetup:
 
 SCENE = PythonDemoScene(
     id="vbd_tilted_strand",
-    title="VBD Tilted Strand (sx)",
-    category="Vertex Block Descent (sx)",
+    title="VBD Tilted Strand",
+    category="Vertex Block Descent",
     summary=(
         "The TinyVBD reference stress scene (stiff 20-vertex strand, 1:1000 "
         "mass ratio), solved by VBD."

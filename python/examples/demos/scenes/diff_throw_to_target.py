@@ -1,4 +1,4 @@
-"""Differentiable throw-to-target scene (paper experiment, sx::World).
+"""Differentiable throw-to-target scene (paper experiment, World).
 
 Mirrors the throw-to-target trajectory optimization from
 ``tests/unit/simulation/experimental/diff/test_diff_optimization.cpp`` and the
@@ -27,9 +27,9 @@ from typing import Any
 import numpy as np
 
 import dartpy as dart
-import dartpy.simulation_experimental as sx
+import dartpy as sx
 
-from .._sx_bridge import SxRenderBridge
+from .._world_bridge import WorldRenderBridge
 from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
 # Small DOF / short horizon / few iters so the headless cycle smoke stays fast.
@@ -164,7 +164,7 @@ def _make_marker(
     color: tuple[float, float, float],
     position: Any,
 ) -> None:
-    frame = dart.SimpleFrame(dart.Frame.world(), name, _translation(position))
+    frame = dart.SimpleFrame(dart.gui.world_render_frame(), name, _translation(position))
     frame.set_shape(shape)
     frame.create_visual_aspect().set_color(list(color))
     render_world.add_simple_frame(frame)
@@ -209,9 +209,9 @@ def build() -> SceneSetup:
         pre_trail = []
 
     # A render-only world (no sx physics tracked); we replay the precomputed
-    # trajectory through a playhead, so reuse SxRenderBridge only for its
+    # trajectory through a playhead, so reuse WorldRenderBridge only for its
     # zero-gravity render_world plumbing.
-    bridge = SxRenderBridge(
+    bridge = WorldRenderBridge(
         world if world is not None else sx.World(),
         name="diff_throw_render",
     )
@@ -257,7 +257,7 @@ def build() -> SceneSetup:
     # Animated projectile sphere replaying the converged rollout.
     start = trail[0] if trail else np.array([0.0, 0.0, 5.0])
     projectile_frame = dart.SimpleFrame(
-        dart.Frame.world(), "projectile_visual", _translation(start)
+        dart.gui.world_render_frame(), "projectile_visual", _translation(start)
     )
     projectile_frame.set_shape(dart.SphereShape(_PROJECTILE_RADIUS))
     projectile_frame.create_visual_aspect().set_color([0.93, 0.30, 0.22])
@@ -362,8 +362,8 @@ def _fallback_trail() -> list[np.ndarray]:
 
 SCENE = PythonDemoScene(
     id="diff_throw_to_target",
-    title="Differentiable Throw-to-Target (sx)",
-    category="Differentiable (sx)",
+    title="Differentiable Throw-to-Target",
+    category="Differentiable",
     summary=(
         "Gradient descent through sx.diff.rollout optimizes a projectile's "
         "initial velocity to hit a target (falls back to the un-optimized "

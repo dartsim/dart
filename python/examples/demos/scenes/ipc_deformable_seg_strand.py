@@ -14,7 +14,7 @@ from collections import deque
 from pathlib import Path
 
 import numpy as np
-import dartpy.simulation_experimental as sx
+import dartpy as sx
 
 from .._ipc_deformable_bridge import IpcDeformableBridge, build_strand_from_seg
 from ..runner import PythonDemoScene, ScenePanel, SceneSetup
@@ -91,7 +91,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="ipc_deformable_seg_strand",
     title="Deformable .seg Strand (IPC)",
-    category="IPC Deformable (sx)",
+    category="IPC Deformable",
     summary="A mass-spring strand loaded from a .seg segment mesh hangs and "
     "swings from a pinned end.",
     build=build,

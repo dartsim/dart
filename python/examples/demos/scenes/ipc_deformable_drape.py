@@ -1,4 +1,4 @@
-"""Cloth drape over a step (experimental IPC deformable solver).
+"""Cloth drape over a step (IPC deformable solver).
 
 A free point-mass/spring mat is released flat above a raised static box and
 drapes over it onto the ground. Both the floor and the box are tagged as
@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from collections import deque
 
-import dartpy.simulation_experimental as sx
+import dartpy as sx
 import numpy as np
 
 from .._ipc_deformable_bridge import IpcDeformableBridge, build_grid_options
@@ -154,7 +154,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="ipc_deformable_drape",
     title="Deformable Drape (IPC)",
-    category="IPC Deformable (sx)",
+    category="IPC Deformable",
     summary="A mat drapes over a step onto the ground via IPC ground + self-contact barriers.",
     build=build,
 )

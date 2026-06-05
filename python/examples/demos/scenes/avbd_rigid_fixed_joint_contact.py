@@ -1,4 +1,4 @@
-"""AVBD fixed-joint contact scene for the experimental World facade."""
+"""AVBD fixed-joint contact scene for the World facade."""
 
 from __future__ import annotations
 
@@ -7,9 +7,9 @@ from collections import deque
 import numpy as np
 
 import dartpy as dart
-import dartpy.simulation_experimental as sx
+import dartpy as sx
 
-from .._sx_bridge import SxRenderBridge
+from .._world_bridge import WorldRenderBridge
 from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
 _BASE_HALF = np.array([0.18, 0.18, 0.18])
@@ -85,7 +85,7 @@ def build() -> SceneSetup:
     )
     world.enter_simulation_mode()
 
-    bridge = SxRenderBridge(world, name="avbd_rigid_fixed_joint_contact_render")
+    bridge = WorldRenderBridge(world, name="avbd_rigid_fixed_joint_contact_render")
     bridge.add_rigid_body_visual(
         ground,
         dart.BoxShape(_full(_GROUND_HALF)),
@@ -106,7 +106,7 @@ def build() -> SceneSetup:
     )
 
     connector = dart.SimpleFrame(
-        dart.Frame.world(),
+        dart.gui.world_render_frame(),
         "avbd_fixed_joint_connector_visual",
         _connector_transform(base_position, payload_position),
     )

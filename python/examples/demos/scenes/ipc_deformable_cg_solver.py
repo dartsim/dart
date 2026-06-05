@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from collections import deque
 
-import dartpy.simulation_experimental as sx
+import dartpy as sx
 import numpy as np
 
 from .._ipc_deformable_bridge import IpcDeformableBridge, build_fem_bar
@@ -106,7 +106,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="ipc_deformable_cg_solver",
     title="Deformable FEM CG Solver (IPC)",
-    category="IPC Deformable (sx)",
+    category="IPC Deformable",
     summary="A large tetrahedral FEM cantilever sags under gravity, solved by the iterative conjugate-gradient Newton path.",
     build=build,
 )

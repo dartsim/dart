@@ -1,4 +1,4 @@
-"""Corner-pinned membrane trampoline (experimental IPC deformable solver).
+"""Corner-pinned membrane trampoline (IPC deformable solver).
 
 A square point-mass/spring sheet is pinned at its four corners and released
 horizontally. Gravity pulls the free interior into a sagging "pillow" that
@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from collections import deque
 
-import dartpy.simulation_experimental as sx
+import dartpy as sx
 import numpy as np
 
 from .._ipc_deformable_bridge import (
@@ -134,7 +134,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="ipc_deformable_trampoline",
     title="Deformable Trampoline (IPC)",
-    category="IPC Deformable (sx)",
+    category="IPC Deformable",
     summary="A corner-pinned membrane sags and rebounds under the projected-Newton IPC solver.",
     build=build,
 )

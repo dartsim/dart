@@ -1,4 +1,4 @@
-"""Differentiable cartpole trajectory-optimization scene (sx::World).
+"""Differentiable cartpole trajectory-optimization scene (World).
 
 Mirrors the cartpole experiment from
 ``tests/unit/simulation/experimental/diff/test_diff_paper_experiments.cpp``
@@ -29,9 +29,9 @@ from typing import Any
 import numpy as np
 
 import dartpy as dart
-import dartpy.simulation_experimental as sx
+import dartpy as sx
 
-from .._sx_bridge import SxRenderBridge
+from .._world_bridge import WorldRenderBridge
 from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
 # Small system / short horizon / few iters so the headless cycle smoke is fast.
@@ -245,7 +245,7 @@ def _make_marker(
     color: tuple[float, float, float],
     transform: np.ndarray,
 ) -> Any:
-    frame = dart.SimpleFrame(dart.Frame.world(), name, transform)
+    frame = dart.SimpleFrame(dart.gui.world_render_frame(), name, transform)
     frame.set_shape(shape)
     frame.create_visual_aspect().set_color(list(color))
     render_world.add_simple_frame(frame)
@@ -300,7 +300,7 @@ def build() -> SceneSetup:
     states = result["states"]
 
     # Render-only world; replay the recorded joint states through a playhead.
-    bridge = SxRenderBridge(sx.World(), name="diff_cartpole_render")
+    bridge = WorldRenderBridge(sx.World(), name="diff_cartpole_render")
     render_world = bridge.render_world
     render_world.set_time_step(_TIME_STEP)
 
@@ -457,8 +457,8 @@ def build() -> SceneSetup:
 
 SCENE = PythonDemoScene(
     id="diff_cartpole_trajopt",
-    title="Differentiable Cartpole Trajectory Opt (sx)",
-    category="Differentiable (sx)",
+    title="Differentiable Cartpole Trajectory Opt",
+    category="Differentiable",
     summary=(
         "Gradient descent through World.get_step_derivatives optimizes a "
         "cart-force sequence to drive the cart to the yellow target. Blue "

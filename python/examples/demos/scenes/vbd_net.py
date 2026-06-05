@@ -12,9 +12,9 @@ import math
 
 import numpy as np
 
-import dartpy.simulation_experimental as sx
+import dartpy as sx
 
-from .._sx_bridge import SxRenderBridge
+from .._world_bridge import WorldRenderBridge
 from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
 
@@ -79,7 +79,7 @@ def build() -> SceneSetup:
     world.configure_deformable_solver("vbd_net", solver)
     world.enter_simulation_mode()
 
-    bridge = SxRenderBridge(world, name="vbd_net_render")
+    bridge = WorldRenderBridge(world, name="vbd_net_render")
     body = world.get_deformable_body("vbd_net")
     bridge.add_deformable_visual(
         body, (0.20, 0.70, 0.55), radius=0.03, fixed_color=(0.95, 0.50, 0.16))
@@ -136,8 +136,8 @@ def build() -> SceneSetup:
 
 SCENE = PythonDemoScene(
     id="vbd_net",
-    title="VBD Net (sx)",
-    category="Vertex Block Descent (sx)",
+    title="VBD Net",
+    category="Vertex Block Descent",
     summary="A spring net pinned at its top corners, solved by VBD.",
     build=build,
 )

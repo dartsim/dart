@@ -75,7 +75,10 @@ void defWorld(nb::module_& m)
         c.secondaryLcpSolver = std::nullopt;
       });
 
-  nb::class_<World>(m, "World")
+  // Bound as "RenderWorld": the legacy DART 6 World is retained only as the GUI
+  // render target for WorldRenderBridge (see dartpy.cpp). The official DART 7
+  // simulation World is the ECS facade in dartpy.simulation.
+  nb::class_<World>(m, "RenderWorld")
       .def(nb::init<>())
       .def(nb::init<const std::string&>(), nb::arg("name"))
       .def(nb::init<const WorldConfig&>(), nb::arg("config"))
@@ -261,7 +264,7 @@ void defWorld(nb::module_& m)
             "skeletons", std::to_string(self.getNumSkeletons()));
         fields.emplace_back("time", repr_double(self.getTime()));
         fields.emplace_back("time_step", repr_double(self.getTimeStep()));
-        return format_repr("World", fields);
+        return format_repr("RenderWorld", fields);
       });
 }
 

@@ -1,4 +1,4 @@
-"""FEM slab draping over a sphere obstacle (experimental IPC deformable solver).
+"""FEM slab draping over a sphere obstacle (IPC deformable solver).
 
 A free tetrahedral FEM slab is dropped onto a static sphere resting on the
 ground. The sphere is opted in as a deformable obstacle, so its radial
@@ -16,7 +16,7 @@ from __future__ import annotations
 from collections import deque
 
 import numpy as np
-import dartpy.simulation_experimental as sx
+import dartpy as sx
 
 from .._ipc_deformable_bridge import IpcDeformableBridge, build_fem_bar
 from ..runner import PythonDemoScene, ScenePanel, SceneSetup
@@ -120,7 +120,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="ipc_deformable_fem_sphere",
     title="Deformable FEM over Sphere (IPC)",
-    category="IPC Deformable (sx)",
+    category="IPC Deformable",
     summary="A FEM slab drapes over a sphere obstacle via the radial barrier + ground barrier.",
     build=build,
 )

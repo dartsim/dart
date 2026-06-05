@@ -1,4 +1,4 @@
-"""FEM cube dropped onto a ground barrier (experimental IPC deformable solver).
+"""FEM cube dropped onto a ground barrier (IPC deformable solver).
 
 A free tetrahedral FEM cube falls under gravity onto a static ground barrier,
 squashes on impact, and settles intersection-free on the barrier surface. This
@@ -16,7 +16,7 @@ from __future__ import annotations
 from collections import deque
 
 import numpy as np
-import dartpy.simulation_experimental as sx
+import dartpy as sx
 
 from .._ipc_deformable_bridge import IpcDeformableBridge, build_fem_bar
 from ..runner import PythonDemoScene, ScenePanel, SceneSetup
@@ -101,7 +101,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="ipc_deformable_fem_drop",
     title="Deformable FEM Drop (IPC)",
-    category="IPC Deformable (sx)",
+    category="IPC Deformable",
     summary="A FEM cube falls and settles on an IPC ground barrier without penetrating.",
     build=build,
 )

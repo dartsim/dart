@@ -68,6 +68,8 @@
 #include "dart/simulation/experimental/multibody/multibody.hpp"
 #include "dart/simulation/experimental/world_options.hpp"
 
+#include <dart/config.hpp>
+
 #ifdef DART_HAS_DIFF
   #include "dart/simulation/experimental/detail/contact_jacobians.hpp"
   #include "dart/simulation/experimental/detail/smooth_jacobians.hpp"
@@ -93,7 +95,36 @@
 #include <cmath>
 #include <cstdint>
 
+#if DART_BUILD_PROFILE
+  #include <chrono>
+#endif
+
 namespace {
+
+#if DART_BUILD_PROFILE
+using StepProfileClock = std::chrono::steady_clock;
+
+struct StepProfileTimer
+{
+  explicit StepProfileTimer(bool enabled_) : enabled(enabled_)
+  {
+    if (enabled) {
+      start = StepProfileClock::now();
+    }
+  }
+
+  void finish(
+      dart::simulation::experimental::compute::WorldStepProfile& profile) const
+  {
+    if (enabled) {
+      profile.wallTime = StepProfileClock::now() - start;
+    }
+  }
+
+  bool enabled = false;
+  StepProfileClock::time_point start{};
+};
+#endif
 
 template <typename... Components>
 std::size_t countEntities(const auto& registry)
@@ -158,18 +189,41 @@ struct World::CollisionQueryCache
     ncol::CollisionObject object;
   };
 
-  void clear()
+  struct ShapeEntrySpec
   {
+    Key key;
+    const CollisionShape* shape;
+    Eigen::Isometry3d pose;
+  };
+
+  void clearObjectsAndResultsPreservingSpecs()
+  {
+    // queryContacts() rebuilds native objects from `specs` after this call, so
+    // keep that vector intact while clearing the derived native/query state.
     collisionWorld.clear();
     keys.clear();
     entries.clear();
     entryByObjectId.clear();
+    candidatePairs.pairs.clear();
+    candidatePairs.numObjects = 0;
+    contacts.clear();
+    pairResult.clear();
+  }
+
+  void clear()
+  {
+    clearObjectsAndResultsPreservingSpecs();
+    specs.clear();
   }
 
   ncol::CollisionWorld collisionWorld;
   std::vector<Key> keys;
   std::vector<ObjectEntry> entries;
   std::vector<std::size_t> entryByObjectId;
+  std::vector<ShapeEntrySpec> specs;
+  ncol::BroadPhaseSnapshot candidatePairs;
+  std::vector<Contact> contacts;
+  ncol::CollisionResult pairResult;
 };
 
 struct World::ReplayState
@@ -187,6 +241,7 @@ struct World::ReplayState
     Eigen::VectorXd restPosition;
     Eigen::VectorXd armature;
     Eigen::VectorXd coulombFriction;
+    double breakForce = 0.0;
     comps::JointLimits limits;
     Eigen::Vector3d axis = Eigen::Vector3d::UnitZ();
     Eigen::Vector3d axis2 = Eigen::Vector3d::UnitX();
@@ -211,6 +266,7 @@ struct World::ReplayState
     Eigen::VectorXd acceleration;
     Eigen::VectorXd torque;
     Eigen::VectorXd commandVelocity;
+    bool broken = false;
   };
 
   struct LinkState
@@ -333,6 +389,7 @@ bool sameReplayJointLayout(const comps::Joint& joint, const JointLayout& layout)
          && sameReplayVector(joint.restPosition, layout.restPosition)
          && sameReplayVector(joint.armature, layout.armature)
          && sameReplayVector(joint.coulombFriction, layout.coulombFriction)
+         && joint.breakForce == layout.breakForce
          && sameReplayJointLimits(joint.limits, layout.limits)
          && joint.axis.isApprox(layout.axis, 0.0)
          && joint.axis2.isApprox(layout.axis2, 0.0)
@@ -809,6 +866,39 @@ DeformableSolverDiagnostics makeDeformableSolverDiagnostics(
 }
 
 //==============================================================================
+template <typename Registry>
+WorldEcsDiagnostics makeWorldEcsDiagnostics(const Registry& registry)
+{
+  WorldEcsDiagnostics diagnostics;
+
+  const auto* entityStorage = registry.template storage<entt::entity>();
+  if (entityStorage != nullptr) {
+    for (auto entity : *entityStorage) {
+      if (registry.valid(entity)) {
+        ++diagnostics.entityCount;
+      }
+    }
+    diagnostics.entityCapacity = entityStorage->capacity();
+  }
+
+  for (auto&& [id, storage] : registry.storage()) {
+    const auto size = storage.size();
+    const auto capacity = storage.capacity();
+    diagnostics.storages.push_back(
+        WorldEcsStorageDiagnostics{
+            static_cast<std::size_t>(id),
+            size,
+            capacity,
+        });
+    diagnostics.componentCount += size;
+    diagnostics.componentCapacity += capacity;
+  }
+
+  diagnostics.storageCount = diagnostics.storages.size();
+  return diagnostics;
+}
+
+//==============================================================================
 void executeKinematicsGraph(World& world, compute::ComputeExecutor& executor)
 {
   compute::WorldKinematicsGraph graph(world);
@@ -1023,6 +1113,7 @@ struct WorldStepPipelineStages
       bool variationalSelected,
       bool useUnifiedConstraints)
   {
+    pipeline.clear();
     DART_EXPERIMENTAL_THROW_T_IF(
         !isValidRigidBodySolver(rigidBodySolver),
         InvalidArgumentException,
@@ -1039,7 +1130,7 @@ struct WorldStepPipelineStages
         }
         break;
       case RigidBodySolver::Ipc:
-        appendIpcDynamicsStages(variationalSelected);
+        appendIpcDynamicsStages(variationalSelected, useUnifiedConstraints);
         break;
     }
     pipeline.addStage(kinematics);
@@ -1052,6 +1143,7 @@ struct WorldStepPipelineStages
       bool useUnifiedConstraints,
       compute::WorldStepStage& finalStage)
   {
+    pipeline.clear();
     DART_EXPERIMENTAL_THROW_T_IF(
         !isValidRigidBodySolver(rigidBodySolver),
         InvalidArgumentException,
@@ -1068,11 +1160,43 @@ struct WorldStepPipelineStages
         }
         break;
       case RigidBodySolver::Ipc:
-        appendIpcDynamicsStages(variationalSelected);
+        appendIpcDynamicsStages(variationalSelected, useUnifiedConstraints);
         break;
     }
     pipeline.addStage(finalStage);
     return pipeline;
+  }
+
+  void prepare(
+      World& world,
+      RigidBodySolver rigidBodySolver,
+      bool variationalSelected,
+      bool includeMultibodyStage)
+  {
+    DART_EXPERIMENTAL_THROW_T_IF(
+        !isValidRigidBodySolver(rigidBodySolver),
+        InvalidArgumentException,
+        "Rigid-body solver is invalid");
+
+    switch (rigidBodySolver) {
+      case RigidBodySolver::SequentialImpulse:
+        rigidBodyVelocity.prepare(world);
+        if (variationalSelected) {
+          rigidBodyContact.prepare(world);
+          multibodyVariational.prepare(world);
+        } else if (!includeMultibodyStage) {
+          rigidBodyContact.prepare(world);
+        }
+        break;
+      case RigidBodySolver::Ipc:
+        rigidIpcContact.prepare(world);
+        if (variationalSelected && includeMultibodyStage) {
+          multibodyVariational.prepare(world);
+        }
+        break;
+    }
+    deformableDynamics.prepare(world);
+    kinematics.prepare(world);
   }
 
 private:
@@ -1088,15 +1212,18 @@ private:
         .addStage(rigidBodyPosition);
   }
 
-  void appendIpcDynamicsStages(bool variationalSelected)
+  void appendIpcDynamicsStages(
+      bool variationalSelected, bool includeMultibodyStage)
   {
-    compute::WorldStepStage& multibodyStage
-        = variationalSelected
-              ? static_cast<compute::WorldStepStage&>(multibodyVariational)
-              : static_cast<compute::WorldStepStage&>(multibodyDynamics);
-    pipeline.addStage(rigidIpcContact)
-        .addStage(multibodyStage)
-        .addStage(deformableDynamics);
+    pipeline.addStage(rigidIpcContact);
+    if (includeMultibodyStage) {
+      compute::WorldStepStage& multibodyStage
+          = variationalSelected
+                ? static_cast<compute::WorldStepStage&>(multibodyVariational)
+                : static_cast<compute::WorldStepStage&>(multibodyDynamics);
+      pipeline.addStage(multibodyStage);
+    }
+    pipeline.addStage(deformableDynamics);
   }
 
   void appendSemiImplicitRigidBodyStages()
@@ -1385,6 +1512,19 @@ common::MemoryAllocator& resolveBaseAllocator(const WorldOptions& options)
 {
   return options.baseAllocator ? *options.baseAllocator
                                : common::MemoryAllocator::GetDefault();
+}
+
+//==============================================================================
+common::MemoryManager::Options makeMemoryManagerOptions(
+    const WorldOptions& options)
+{
+  common::MemoryManager::Options memoryOptions;
+  memoryOptions.frameAllocatorInitialCapacity
+      = validateFrameScratchInitialCapacity(
+          options.frameScratchInitialCapacity);
+  memoryOptions.freeListInitialAllocation = options.freeListInitialAllocation;
+  memoryOptions.freeListGrowthPolicy = options.freeListGrowthPolicy;
+  return memoryOptions;
 }
 
 //==============================================================================
@@ -1945,10 +2085,17 @@ Eigen::Isometry3d toIsometry(
 
 } // namespace
 
+//==============================================================================
+struct World::StepPipelineCache
+{
+  WorldStepPipelineStages stages;
+};
+
 World::World()
   : m_storage(
         std::make_unique<detail::WorldStorage>(
-            m_memoryManager.getFreeAllocator()))
+            m_memoryManager.getFreeAllocator())),
+    m_stepPipelineCache(std::make_unique<StepPipelineCache>())
 {
   // Empty.
 }
@@ -1956,9 +2103,7 @@ World::World()
 //==============================================================================
 World::World(const WorldOptions& options)
   : m_memoryManager(
-        resolveBaseAllocator(options),
-        validateFrameScratchInitialCapacity(
-            options.frameScratchInitialCapacity)),
+        resolveBaseAllocator(options), makeMemoryManagerOptions(options)),
     m_storage(
         std::make_unique<detail::WorldStorage>(
             m_memoryManager.getFreeAllocator())),
@@ -1966,7 +2111,8 @@ World::World(const WorldOptions& options)
     m_timeStep(options.timeStep),
     m_differentiable(options.differentiable),
     m_contactSolverMethod(options.contactSolverMethod),
-    m_contactGradientMode(options.contactGradientMode)
+    m_contactGradientMode(options.contactGradientMode),
+    m_stepPipelineCache(std::make_unique<StepPipelineCache>())
 {
   DART_EXPERIMENTAL_THROW_T_IF(
       !std::isfinite(options.timeStep) || options.timeStep <= 0.0,
@@ -2029,6 +2175,9 @@ const common::MemoryManager& World::getMemoryManager() const
 WorldMemoryDiagnostics World::getMemoryDiagnostics() const
 {
   WorldMemoryDiagnostics diagnostics = m_memoryDiagnostics;
+  diagnostics.allocatorDebugDiagnostics = m_memoryManager.getDebugDiagnostics();
+  diagnostics.ecsDiagnostics
+      = makeWorldEcsDiagnostics(detail::registryOf(*this));
   const auto& frameAllocator = m_memoryManager.getFrameAllocator();
   const auto overflowBytes = frameAllocator.overflowBytes();
   diagnostics.frameScratchCapacityBytes = frameAllocator.usableCapacity();
@@ -2044,6 +2193,7 @@ WorldMemoryDiagnostics World::getMemoryDiagnostics() const
 void World::clear()
 {
   m_storage->registry.clear();
+  markFrameTopologyChanged();
   m_simulationMode = false;
   m_gravity = Eigen::Vector3d(0.0, 0.0, -9.81);
   m_rigidBodySolver = RigidBodySolver::SequentialImpulse;
@@ -2058,6 +2208,10 @@ void World::clear()
   m_frame = 0;
   m_memoryManager.getFrameAllocator().reset();
   m_memoryDiagnostics = {};
+#if DART_BUILD_PROFILE
+  m_stepProfilingEnabled = false;
+  m_lastStepProfile.reset();
+#endif
   m_freeFrameCounter = 0;
   m_fixedFrameCounter = 0;
   m_multibodyCounter = 0;
@@ -2069,6 +2223,7 @@ void World::clear()
   if (m_collisionQueryCache) {
     m_collisionQueryCache->clear();
   }
+  m_stepPipelineCache = std::make_unique<StepPipelineCache>();
   if (m_replay) {
     m_replay->recordingEnabled = false;
     m_replay->frames.clear();
@@ -2083,6 +2238,18 @@ void World::ensureDesignMode() const
       m_simulationMode,
       InvalidOperationException,
       "World modifications are not allowed while in simulation mode");
+}
+
+//==============================================================================
+void World::markFrameTopologyChanged() noexcept
+{
+  ++m_frameTopologyRevision;
+}
+
+//==============================================================================
+std::uint64_t World::getFrameTopologyRevision() const noexcept
+{
+  return m_frameTopologyRevision;
 }
 
 //==============================================================================
@@ -2316,6 +2483,7 @@ Entity World::createFrameEntity(
   }
 
   outName = actualName;
+  markFrameTopologyChanged();
   return detail::fromRegistryEntity(entity);
 }
 
@@ -2949,6 +3117,11 @@ void World::enterSimulationMode()
   detail::deformable_vbd::configureAvbdRigidWorldPointJointsFromCurrentPoses(
       m_storage->registry);
   reserveRegistryStorageForSimulation();
+  m_stepPipelineCache->stages.prepare(
+      *this,
+      m_rigidBodySolver,
+      m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational,
+      hasMultibodyStructures(*this));
 }
 
 //==============================================================================
@@ -2978,6 +3151,13 @@ void World::setRigidBodySolver(RigidBodySolver solver)
 
   validateRigidBodyJointPipelineSupport(*this, solver);
   m_rigidBodySolver = solver;
+  if (m_simulationMode) {
+    m_stepPipelineCache->stages.prepare(
+        *this,
+        m_rigidBodySolver,
+        m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational,
+        hasMultibodyStructures(*this));
+  }
 }
 
 //==============================================================================
@@ -3319,6 +3499,8 @@ void World::resetFrameScratchForStep()
 //==============================================================================
 void World::refreshMemoryDiagnostics()
 {
+  m_memoryDiagnostics.allocatorDebugDiagnostics
+      = m_memoryManager.getDebugDiagnostics();
   const auto& frameAllocator = m_memoryManager.getFrameAllocator();
   const auto overflowBytes = frameAllocator.overflowBytes();
   m_memoryDiagnostics.frameScratchCapacityBytes
@@ -3357,6 +3539,8 @@ void World::setMultibodyOptions(const MultibodyOptions& options)
     m_multibodyIntegrationMethod = MultibodyIntegrationMethod::Variational;
     if (m_simulationMode) {
       reserveRegistryStorageForSimulation();
+      m_stepPipelineCache->stages.prepare(
+          *this, m_rigidBodySolver, true, hasMultibodyStructures(*this));
     }
   } else {
     DART_EXPERIMENTAL_THROW_T(
@@ -3381,30 +3565,45 @@ MultibodyOptions World::getMultibodyOptions() const
 //==============================================================================
 void World::step(compute::ComputeExecutor& executor)
 {
-  WorldStepPipelineStages stages;
+  auto& stages = m_stepPipelineCache->stages;
   compute::WorldStepPipeline& pipeline = stages.buildDefault(
       m_rigidBodySolver,
       m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational,
       hasMultibodyStructures(*this));
+
+#if DART_BUILD_PROFILE
+  StepProfileTimer profileTimer(m_stepProfilingEnabled);
+#endif
+
   stepPipelineOnce(executor, pipeline);
   m_lastDeformableSolverDiagnostics = makeDeformableSolverDiagnostics(
       stages.deformableDynamics.getLastStats());
   recordReplayFrame();
+#if DART_BUILD_PROFILE
+  profileTimer.finish(m_lastStepProfile);
+#endif
 }
 
 //==============================================================================
 void World::step(std::size_t count, compute::ComputeExecutor& executor)
 {
-  WorldStepPipelineStages stages;
+  auto& stages = m_stepPipelineCache->stages;
   compute::WorldStepPipeline& pipeline = stages.buildDefault(
       m_rigidBodySolver,
       m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational,
       hasMultibodyStructures(*this));
   for (std::size_t i = 0; i < count; ++i) {
+#if DART_BUILD_PROFILE
+    StepProfileTimer profileTimer(m_stepProfilingEnabled);
+#endif
+
     stepPipelineOnce(executor, pipeline);
     m_lastDeformableSolverDiagnostics = makeDeformableSolverDiagnostics(
         stages.deformableDynamics.getLastStats());
     recordReplayFrame();
+#if DART_BUILD_PROFILE
+    profileTimer.finish(m_lastStepProfile);
+#endif
   }
 }
 
@@ -3418,10 +3617,18 @@ void World::step(
       m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational,
       hasMultibodyStructures(*this),
       stage);
+
+#if DART_BUILD_PROFILE
+  StepProfileTimer profileTimer(m_stepProfilingEnabled);
+#endif
+
   stepPipelineOnce(executor, pipeline);
   m_lastDeformableSolverDiagnostics = makeDeformableSolverDiagnostics(
       stages.deformableDynamics.getLastStats());
   recordReplayFrame();
+#if DART_BUILD_PROFILE
+  profileTimer.finish(m_lastStepProfile);
+#endif
 }
 
 //==============================================================================
@@ -3437,10 +3644,17 @@ void World::step(
       hasMultibodyStructures(*this),
       stage);
   for (std::size_t i = 0; i < count; ++i) {
+#if DART_BUILD_PROFILE
+    StepProfileTimer profileTimer(m_stepProfilingEnabled);
+#endif
+
     stepPipelineOnce(executor, pipeline);
     m_lastDeformableSolverDiagnostics = makeDeformableSolverDiagnostics(
         stages.deformableDynamics.getLastStats());
     recordReplayFrame();
+#if DART_BUILD_PROFILE
+    profileTimer.finish(m_lastStepProfile);
+#endif
   }
 }
 
@@ -3448,8 +3662,15 @@ void World::step(
 void World::step(
     compute::ComputeExecutor& executor, compute::WorldStepPipeline& pipeline)
 {
+#if DART_BUILD_PROFILE
+  StepProfileTimer profileTimer(m_stepProfilingEnabled);
+#endif
+
   stepPipelineOnce(executor, pipeline);
   recordReplayFrame();
+#if DART_BUILD_PROFILE
+  profileTimer.finish(m_lastStepProfile);
+#endif
 }
 
 //==============================================================================
@@ -3476,7 +3697,15 @@ void World::stepPipelineOnce(
     captureStepDerivatives();
   }
 
+#if DART_BUILD_PROFILE
+  if (m_stepProfilingEnabled) {
+    m_lastStepProfile = pipeline.executeProfiled(*this, executor);
+  } else {
+    pipeline.execute(*this, executor);
+  }
+#else
   pipeline.execute(*this, executor);
+#endif
 
   m_time += m_timeStep;
   ++m_frame;
@@ -3624,6 +3853,37 @@ const DeformableSolverDiagnostics& World::getLastDeformableSolverDiagnostics()
     const
 {
   return m_lastDeformableSolverDiagnostics;
+}
+
+//==============================================================================
+void World::setStepProfilingEnabled(bool enabled) noexcept
+{
+#if DART_BUILD_PROFILE
+  m_stepProfilingEnabled = enabled;
+#else
+  (void)enabled;
+#endif
+}
+
+//==============================================================================
+bool World::isStepProfilingEnabled() const noexcept
+{
+#if DART_BUILD_PROFILE
+  return m_stepProfilingEnabled;
+#else
+  return false;
+#endif
+}
+
+//==============================================================================
+const compute::WorldStepProfile& World::getLastStepProfile() const noexcept
+{
+#if DART_BUILD_PROFILE
+  return m_lastStepProfile;
+#else
+  static const compute::WorldStepProfile kEmptyProfile;
+  return kEmptyProfile;
+#endif
 }
 
 //==============================================================================
@@ -3903,6 +4163,7 @@ void World::restoreReplayFrame(std::size_t index)
     joint.acceleration = state.acceleration;
     joint.torque = state.torque;
     joint.commandVelocity = state.commandVelocity;
+    joint.broken = state.broken;
   }
 
   for (const auto& state : replayFrame.links) {
@@ -3922,6 +4183,7 @@ void World::restoreReplayFrame(std::size_t index)
           state.entity, *state.fixedFrameProperties);
     }
   }
+  markFrameTopologyChanged();
   markFrameCachesDirty(m_storage->registry);
 
   for (const auto stateIndex : rigidBodyRestoreOrder) {
@@ -4024,6 +4286,7 @@ void World::recordReplayFrame()
                 joint.restPosition,
                 joint.armature,
                 joint.coulombFriction,
+                joint.breakForce,
                 joint.limits,
                 joint.axis,
                 joint.axis2,
@@ -4038,7 +4301,8 @@ void World::recordReplayFrame()
             joint.velocity,
             joint.acceleration,
             joint.torque,
-            joint.commandVelocity});
+            joint.commandVelocity,
+            joint.broken});
   }
   std::ranges::sort(replayFrame.joints, [](const auto& lhs, const auto& rhs) {
     return static_cast<std::uint32_t>(lhs.entity)
@@ -4138,13 +4402,19 @@ std::vector<Contact> World::collide()
 //==============================================================================
 std::vector<Contact> World::collide(const CollisionQueryOptions& options)
 {
-  struct ShapeEntrySpec
-  {
-    CollisionQueryCache::Key key;
-    const CollisionShape* shape;
-    Eigen::Isometry3d pose;
-  };
-  std::vector<ShapeEntrySpec> specs;
+  return queryContacts(options);
+}
+
+//==============================================================================
+const std::vector<Contact>& World::queryContacts(
+    const CollisionQueryOptions& options)
+{
+  if (!m_collisionQueryCache) {
+    m_collisionQueryCache = std::make_unique<CollisionQueryCache>();
+  }
+  auto& cache = *m_collisionQueryCache;
+  auto& specs = cache.specs;
+  specs.clear();
 
   const auto findMultibodyOwningLink = [&](entt::entity linkEntity) {
     auto view = m_storage->registry.view<comps::MultibodyStructure>();
@@ -4188,6 +4458,19 @@ std::vector<Contact> World::collide(const CollisionQueryOptions& options)
     return shape;
   };
 
+  const auto supportsNativeShape = [](const CollisionShape& collisionShape) {
+    switch (collisionShape.type) {
+      case CollisionShapeType::Sphere:
+      case CollisionShapeType::Box:
+      case CollisionShapeType::Capsule:
+      case CollisionShapeType::Cylinder:
+      case CollisionShapeType::Plane:
+      case CollisionShapeType::Mesh:
+        return true;
+    }
+    return false;
+  };
+
   const auto addSpecs = [&](entt::entity entity,
                             entt::entity multibody,
                             bool isLink,
@@ -4195,8 +4478,11 @@ std::vector<Contact> World::collide(const CollisionQueryOptions& options)
                             const Eigen::Isometry3d& pose) {
     for (std::size_t i = 0; i < geometry.shapes.size(); ++i) {
       const auto& shape = geometry.shapes[i];
+      if (!supportsNativeShape(shape)) {
+        continue;
+      }
       specs.push_back(
-          ShapeEntrySpec{
+          CollisionQueryCache::ShapeEntrySpec{
               CollisionQueryCache::Key{
                   entity, i, geometry.revision, multibody, isLink},
               &shape,
@@ -4250,23 +4536,24 @@ std::vector<Contact> World::collide(const CollisionQueryOptions& options)
     addSpecs(entity, multibody, true, geometry, link.getWorldTransform());
   }
 
-  if (!m_collisionQueryCache) {
-    m_collisionQueryCache = std::make_unique<CollisionQueryCache>();
+  if (specs.empty()) {
+    cache.contacts.clear();
+    return cache.contacts;
   }
-  auto& cache = *m_collisionQueryCache;
 
-  const bool rebuildCache = cache.keys.size() != specs.size()
-                            || !std::equal(
-                                specs.begin(),
-                                specs.end(),
-                                cache.keys.begin(),
-                                [](const ShapeEntrySpec& spec,
-                                   const CollisionQueryCache::Key& key) {
-                                  return spec.key == key;
-                                });
+  const bool rebuildCache
+      = cache.keys.size() != specs.size()
+        || !std::equal(
+            specs.begin(),
+            specs.end(),
+            cache.keys.begin(),
+            [](const CollisionQueryCache::ShapeEntrySpec& spec,
+               const CollisionQueryCache::Key& key) {
+              return spec.key == key;
+            });
 
   if (rebuildCache) {
-    cache.clear();
+    cache.clearObjectsAndResultsPreservingSpecs();
     cache.collisionWorld.reserveObjects(specs.size());
     cache.keys.reserve(specs.size());
     cache.entries.reserve(specs.size());
@@ -4297,9 +4584,10 @@ std::vector<Contact> World::collide(const CollisionQueryOptions& options)
   // known here, so the contacts map back to the right experimental bodies
   // without relying on the result carrying object identity.
   const auto option = ncol::CollisionOption::fullContacts();
-  const auto candidatePairs = cache.collisionWorld.buildBroadPhaseSnapshot();
-  std::vector<Contact> contacts;
-  for (const auto& pair : candidatePairs.pairs) {
+  cache.collisionWorld.buildBroadPhaseSnapshot(cache.candidatePairs);
+  auto& contacts = cache.contacts;
+  contacts.clear();
+  for (const auto& pair : cache.candidatePairs.pairs) {
     if (pair.first >= cache.entryByObjectId.size()
         || pair.second >= cache.entryByObjectId.size()) {
       continue;
@@ -4313,14 +4601,14 @@ std::vector<Contact> World::collide(const CollisionQueryOptions& options)
       continue;
     }
 
-    ncol::CollisionResult result;
+    auto& result = cache.pairResult;
+    result.clear();
     if (!cache.collisionWorld.collide(
             cache.entries[i].object, cache.entries[j].object, option, result)) {
       continue;
     }
 
-    for (std::size_t k = 0; k < result.numContacts(); ++k) {
-      const auto& point = result.getContact(k);
+    result.forEachContact([&](const ncol::ContactPoint& point) {
       // The native narrow phase reports the normal pointing from the second
       // object toward the first; the public Contact convention points from
       // bodyA (entries[i]) toward bodyB (entries[j]), so negate it.
@@ -4337,7 +4625,7 @@ std::vector<Contact> World::collide(const CollisionQueryOptions& options)
               specs[j].key.shapeIndex,
               specs[i].pose.inverse() * point.position,
               specs[j].pose.inverse() * point.position});
-    }
+    });
   }
 
   return contacts;

@@ -60,7 +60,7 @@ def test_dashboard_surface_runner_dry_run_lists_bounded_specs(tmp_path):
     assert "dashboard_deformable_world.json" in result.stdout
     assert "BM_DeformableFemBarStep/.*" in result.stdout
     assert "dashboard_avbd_world.json" in result.stdout
-    assert "BM_AvbdRigidFixedJointStep/.*" in result.stdout
+    assert "BM_AvbdRigid(FixedJoint|RevoluteMotor)Step/.*" in result.stdout
     # Still excludes unrelated solver, SIMD, and robot-loader surfaces, and the
     # CUDA/GPU and DART_BUILD_DIFF rows the hosted runner cannot produce.
     assert "BM_Robot_(KR5|Atlas)_WorldStep" not in result.stdout

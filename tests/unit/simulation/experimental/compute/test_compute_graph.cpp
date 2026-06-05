@@ -233,6 +233,31 @@ TEST(ExperimentalComputeGraph, TopologicalOrderUsesConstructionOrderTieBreaker)
 }
 
 //==============================================================================
+TEST(ExperimentalComputeGraph, CachedTopologicalOrderInvalidatesAfterMutations)
+{
+  compute::ComputeGraph graph;
+  auto& a = graph.addNode("a", []() {});
+  auto& b = graph.addNode("b", []() {});
+
+  const auto& initialOrder = graph.getTopologicalOrderView();
+  ASSERT_EQ(initialOrder.size(), 2u);
+  EXPECT_EQ(initialOrder[0], &a);
+  EXPECT_EQ(initialOrder[1], &b);
+
+  const auto* cachedStorage = initialOrder.data();
+  EXPECT_EQ(graph.getTopologicalOrderView().data(), cachedStorage);
+
+  graph.addDependency(b, a);
+  const auto& reordered = graph.getTopologicalOrderView();
+  ASSERT_EQ(reordered.size(), 2u);
+  EXPECT_EQ(reordered[0], &b);
+  EXPECT_EQ(reordered[1], &a);
+
+  graph.clear();
+  EXPECT_TRUE(graph.getTopologicalOrderView().empty());
+}
+
+//==============================================================================
 TEST(ExperimentalComputeGraph, ReportsStaticParallelLevels)
 {
   compute::ComputeGraph graph;

@@ -2,14 +2,24 @@ from __future__ import annotations
 
 __all__: list[str] = [
     "ActiveRenderableState",
+    "Bullet",
+    "CollisionDetectorType",
+    "ConstraintSolver",
+    "Dantzig",
+    "Dart",
     "DebugDrawOptions",
     "DebugLineDescriptor",
     "DirectionalNudgeInput",
+    "Experimental",
+    "Fcl",
     "GeometryDescriptor",
+    "LcpSolverType",
+    "Lemke",
     "MaterialDescriptor",
     "MeshAlphaMode",
     "MeshMaterialDescriptor",
     "MeshPartDescriptor",
+    "Ode",
     "OrbitCamera",
     "OrbitCameraBasis",
     "OrbitCameraController",
@@ -18,14 +28,17 @@ __all__: list[str] = [
     "PanelBuilder",
     "PanelContext",
     "PerspectiveProjection",
+    "Pgs",
     "PickHit",
     "PickRay",
     "ProjectionOptions",
+    "RenderWorld",
     "RenderableDescriptor",
     "RenderableSetUpdatePlan",
     "RunOptions",
     "ShapeKind",
     "ViewerLifecycleState",
+    "WorldConfig",
     "add_orbit_camera_scroll",
     "camera_eye",
     "compute_axis_drag_translation",
@@ -75,7 +88,7 @@ __all__: list[str] = [
 
 from collections.abc import Callable, Sequence
 import enum
-from typing import Annotated, overload
+from typing import Annotated, Any, overload
 
 import numpy
 from numpy.typing import NDArray
@@ -83,8 +96,234 @@ from numpy.typing import NDArray
 import dartpy.collision
 import dartpy.dynamics
 import dartpy.math
-import dartpy.simulation
+from dartpy._world_render_bridge import (
+    WorldRenderBridge as WorldRenderBridge,
+    world_render_frame as world_render_frame
+)
 
+
+class CollisionDetectorType(enum.Enum):
+    Dart = 0
+
+    Fcl = 1
+
+    Bullet = 2
+
+    Ode = 3
+
+    Experimental = 4
+
+Dart: CollisionDetectorType = CollisionDetectorType.Dart
+
+Fcl: CollisionDetectorType = CollisionDetectorType.Fcl
+
+Bullet: CollisionDetectorType = CollisionDetectorType.Bullet
+
+Ode: CollisionDetectorType = CollisionDetectorType.Ode
+
+Experimental: CollisionDetectorType = CollisionDetectorType.Experimental
+
+class LcpSolverType(enum.Enum):
+    Dantzig = 0
+
+    Pgs = 1
+
+    Lemke = 2
+
+Dantzig: LcpSolverType = LcpSolverType.Dantzig
+
+Pgs: LcpSolverType = LcpSolverType.Pgs
+
+Lemke: LcpSolverType = LcpSolverType.Lemke
+
+class WorldConfig:
+    @overload
+    def __init__(self) -> None: ...
+
+    @overload
+    def __init__(self, name: str) -> None: ...
+
+    @property
+    def name(self) -> str: ...
+
+    @name.setter
+    def name(self, arg: str, /) -> None: ...
+
+    @property
+    def collision_detector(self) -> CollisionDetectorType: ...
+
+    @collision_detector.setter
+    def collision_detector(self, arg: CollisionDetectorType, /) -> None: ...
+
+    @property
+    def primary_lcp_solver(self) -> LcpSolverType: ...
+
+    @primary_lcp_solver.setter
+    def primary_lcp_solver(self, arg: LcpSolverType, /) -> None: ...
+
+    @property
+    def secondary_lcp_solver(self) -> object: ...
+
+    def set_secondary_lcp_solver(self, solver: LcpSolverType) -> None: ...
+
+    def clear_secondary_lcp_solver(self) -> None: ...
+
+class RenderWorld:
+    @overload
+    def __init__(self) -> None: ...
+
+    @overload
+    def __init__(self, name: str) -> None: ...
+
+    @overload
+    def __init__(self, config: WorldConfig) -> None: ...
+
+    @overload
+    @staticmethod
+    def create(name: str = ...) -> RenderWorld: ...
+
+    @overload
+    @staticmethod
+    def create(config: WorldConfig) -> RenderWorld: ...
+
+    def clone(self) -> RenderWorld: ...
+
+    def setName(*args, **kwargs) -> Any: ...
+
+    def getName(*args, **kwargs) -> Any: ...
+
+    def setGravity(*args, **kwargs) -> Any: ...
+
+    def getGravity(*args, **kwargs) -> Any: ...
+
+    def setTimeStep(*args, **kwargs) -> Any: ...
+
+    def getTimeStep(*args, **kwargs) -> Any: ...
+
+    def getSkeleton(*args, **kwargs) -> Any: ...
+
+    def getNumSkeletons(*args, **kwargs) -> Any: ...
+
+    def addSkeleton(*args, **kwargs) -> Any: ...
+
+    def removeSkeleton(*args, **kwargs) -> Any: ...
+
+    def removeAllSkeletons(*args, **kwargs) -> Any: ...
+
+    def hasSkeleton(*args, **kwargs) -> Any: ...
+
+    def getIndex(*args, **kwargs) -> Any: ...
+
+    def getNumSimpleFrames(*args, **kwargs) -> Any: ...
+
+    def getSimpleFrame(*args, **kwargs) -> Any: ...
+
+    def addSimpleFrame(*args, **kwargs) -> Any: ...
+
+    def removeSimpleFrame(*args, **kwargs) -> Any: ...
+
+    def removeAllSimpleFrames(*args, **kwargs) -> Any: ...
+
+    def checkCollision(*args, **kwargs) -> Any: ...
+
+    def checkCollisionResult(*args, **kwargs) -> Any: ...
+
+    def getLastCollisionResult(*args, **kwargs) -> Any: ...
+
+    def reset(self) -> None: ...
+
+    @overload
+    def step(self) -> None: ...
+
+    @overload
+    def step(self, reset_command: bool) -> None: ...
+
+    def setTime(*args, **kwargs) -> Any: ...
+
+    def getTime(*args, **kwargs) -> Any: ...
+
+    def getSimFrames(*args, **kwargs) -> Any: ...
+
+    def getConstraintSolver(*args, **kwargs) -> Any: ...
+
+    def bake(self) -> None: ...
+
+    def __repr__(self) -> str: ...
+
+    add_simple_frame = addSimpleFrame
+
+    add_skeleton = addSkeleton
+
+    check_collision = checkCollision
+
+    check_collision_result = checkCollisionResult
+
+    get_constraint_solver = getConstraintSolver
+
+    get_gravity = getGravity
+
+    get_index = getIndex
+
+    get_last_collision_result = getLastCollisionResult
+
+    get_name = getName
+
+    get_num_simple_frames = getNumSimpleFrames
+
+    get_num_skeletons = getNumSkeletons
+
+    get_sim_frames = getSimFrames
+
+    get_simple_frame = getSimpleFrame
+
+    get_skeleton = getSkeleton
+
+    get_time = getTime
+
+    get_time_step = getTimeStep
+
+    has_skeleton = hasSkeleton
+
+    remove_all_simple_frames = removeAllSimpleFrames
+
+    remove_all_skeletons = removeAllSkeletons
+
+    remove_simple_frame = removeSimpleFrame
+
+    remove_skeleton = removeSkeleton
+
+    set_gravity = setGravity
+
+    set_name = setName
+
+    set_time = setTime
+
+    set_time_step = setTimeStep
+
+class ConstraintSolver:
+    def getCollisionDetector(*args, **kwargs) -> Any: ...
+
+    def setCollisionDetector(*args, **kwargs) -> Any: ...
+
+    def getCollisionGroup(*args, **kwargs) -> Any: ...
+
+    def getCollisionOption(*args, **kwargs) -> Any: ...
+
+    def addConstraint(*args, **kwargs) -> Any: ...
+
+    def removeConstraint(*args, **kwargs) -> Any: ...
+
+    add_constraint = addConstraint
+
+    get_collision_detector = getCollisionDetector
+
+    get_collision_group = getCollisionGroup
+
+    get_collision_option = getCollisionOption
+
+    remove_constraint = removeConstraint
+
+    set_collision_detector = setCollisionDetector
 
 class ShapeKind(enum.Enum):
     Box = 0
@@ -1231,7 +1470,7 @@ class DebugDrawOptions:
 
 def describe_shape(shape: dartpy.dynamics.Shape) -> GeometryDescriptor | None: ...
 
-def extract_renderables(world: dartpy.simulation.World) -> list[RenderableDescriptor]: ...
+def extract_renderables(world: RenderWorld) -> list[RenderableDescriptor]: ...
 
 @overload
 def plan_renderable_set_update(descriptors: Sequence[RenderableDescriptor], active_renderable_ids: Sequence[int]) -> RenderableSetUpdatePlan: ...
@@ -1321,7 +1560,7 @@ def make_support_polygon_debug_lines(skeleton: dartpy.dynamics.Skeleton, options
 
 def extract_contact_debug_lines(result: dartpy.collision.CollisionResult, options: DebugDrawOptions = ...) -> list[DebugLineDescriptor]: ...
 
-def extract_debug_lines(world: dartpy.simulation.World, options: DebugDrawOptions = ...) -> list[DebugLineDescriptor]: ...
+def extract_debug_lines(world: RenderWorld, options: DebugDrawOptions = ...) -> list[DebugLineDescriptor]: ...
 
 class PanelBuilder:
     def text(self, arg: str, /) -> None: ...
@@ -1412,6 +1651,6 @@ class PanelContext:
 
 def is_docking_available() -> bool: ...
 
-def run_application(world: dartpy.simulation.World, argv: Sequence[str] = ...) -> int: ...
+def run_application(world: RenderWorld, argv: Sequence[str] = ...) -> int: ...
 
 def run_demos(scenes: Sequence[tuple[str, str, str, str, Callable]], argv: Sequence[str] = ...) -> int: ...

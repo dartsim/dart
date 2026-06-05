@@ -1,4 +1,4 @@
-"""Friction across a barrier-only box plate (experimental IPC deformable solver).
+"""Friction across a barrier-only box plate (IPC deformable solver).
 
 A deformable strip rests on a wide static box plate and is shoved across its top
 face. The box is opted into *barrier-only* mode -- it keeps its clamped-log
@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from collections import deque
 
-import dartpy.simulation_experimental as sx
+import dartpy as sx
 import numpy as np
 
 from .._ipc_deformable_bridge import IpcDeformableBridge
@@ -113,7 +113,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="ipc_deformable_plate_friction",
     title="Deformable Friction on Box Plate (IPC)",
-    category="IPC Deformable (sx)",
+    category="IPC Deformable",
     summary="A deformable strip shoved across a barrier-only box plate is brought "
     "to rest by Coulomb friction.",
     build=build,

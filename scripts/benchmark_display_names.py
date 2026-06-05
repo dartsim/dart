@@ -106,6 +106,9 @@ SURFACES: dict[str, Surface] = {
     "BM_AvbdRigidFixedJointStep": Surface(
         "AVBD fixed-joint step", FAMILY_AVBD, ("links",)
     ),
+    "BM_AvbdRigidRevoluteMotorStep": Surface(
+        "AVBD revolute-motor step", FAMILY_AVBD, ("motors",)
+    ),
 }
 
 

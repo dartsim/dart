@@ -3,13 +3,14 @@
 Per PLAN-103, Python is DART's primary, growing example surface. The consolidated
 home is the `dart-demos` Python app: one runner, one registry, many scenes
 hosted by the shared Filament viewer — see [`demos/README.md`](demos/README.md).
-C++ `dart-demos`
-(PLAN-102) is frozen.
+C++ `dart-demos` (PLAN-102) is now the smaller World-only C++ companion.
 
 ## Layout
 
 - [`demos/`](demos/) — the scene-registry runner (`dart-demos` Python) and its
-  scene modules; this is where new example content lands.
+  scene modules; this is where new example content lands. High-value DART 6
+  concepts that still need World-native ports appear as lightweight
+  `Planned World Ports` placeholders.
 - A notebook gallery for Colab (PLAN-012) will live in `python/tutorials/` and
   import the scene modules from `demos/` (single source).
 
@@ -17,18 +18,18 @@ C++ `dart-demos`
 
 ```bash
 pixi run py-demos                                # default: open replay timeline
-pixi run py-demos -- --scene hello_world         # open the introductory scene
-pixi run py-demos -- --scene sx_articulated      # select any scene by id
+pixi run py-demos -- --scene replay_scrubber     # open the replay timeline
+pixi run py-demos -- --scene articulated         # select a scene by id
 pixi run py-demos -- --cycle-scenes --frames 4   # cycle every scene and exit
 pixi run py-demos -- --list                      # print the catalog
-pixi run py-demo-capture -- --scene sx_articulated --show-ui --video
+pixi run py-demo-capture -- --scene articulated --show-ui --video
 ```
 
 Without pixi, from the repo root:
 
 ```bash
 PYTHONPATH=build/default/cpp/Release/python:python \
-    .pixi/envs/default/bin/python -m examples.demos --scene hello_world --frames 5
+    .pixi/envs/default/bin/python -m examples.demos --scene articulated --frames 5
 ```
 
 ## Add a scene

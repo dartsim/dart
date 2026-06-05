@@ -232,6 +232,30 @@ def _neutralize_dynamic_submodule_imports(text: str) -> str:
     return pattern.sub(repl, text)
 
 
+def _neutralize_private_helper_imports(text: str) -> str:
+    """Replace ``from dartpy._helper import (A as A, ...)`` with placeholders.
+
+    Pure-Python helper modules under ``dartpy`` (e.g. ``_world_render_bridge``)
+    live in ``python/dartpy`` and import the compiled extension at runtime, so
+    they are not part of the checked-in stub tree. Without a built ``dartpy`` the
+    fallback stubs cannot import them; bind each imported name to a placeholder
+    class so the stub stays importable and the attribute exists for autodoc.
+    """
+
+    pattern = re.compile(r"(?m)^[ \t]*from dartpy\._\w+ import \((?P<body>[^)]*)\)")
+
+    def repl(match: re.Match[str]) -> str:
+        names = []
+        for part in match.group("body").split(","):
+            part = part.strip()
+            if not part:
+                continue
+            names.append(part.split(" as ")[-1].strip())
+        return "\n".join(f'{name} = type("{name}", (), {{}})' for name in names)
+
+    return pattern.sub(repl, text)
+
+
 def _sanitize_stub_source(text: str) -> str:
     """Rename invalid identifiers originating from the stub generator."""
 
@@ -256,6 +280,7 @@ def _sanitize_stub_source(text: str) -> str:
         text = _rename_placeholder(text, placeholder)
 
     text = _neutralize_dynamic_submodule_imports(text)
+    text = _neutralize_private_helper_imports(text)
     return _fix_forward_references(_strip_class_bases(text))
 
 

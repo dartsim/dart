@@ -1,4 +1,4 @@
-"""Scripted-boundary deformable banner (experimental IPC deformable solver).
+"""Scripted-boundary deformable banner (IPC deformable solver).
 
 A point-mass/spring banner hangs from two pinned top corners while the rest of
 its top edge is driven, for a short time window, by a scripted Dirichlet
@@ -18,7 +18,7 @@ from collections import deque
 
 import numpy as np
 
-import dartpy.simulation_experimental as sx
+import dartpy as sx
 
 from .._ipc_deformable_bridge import (
     IpcDeformableBridge,
@@ -131,7 +131,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="ipc_deformable_scripted_dirichlet",
     title="Scripted Deformable Banner (IPC)",
-    category="IPC Deformable (sx)",
+    category="IPC Deformable",
     summary="A pinned banner billows under a scripted Dirichlet boundary condition.",
     build=build,
 )

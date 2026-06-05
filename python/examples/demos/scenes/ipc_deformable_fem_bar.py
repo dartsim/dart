@@ -1,4 +1,4 @@
-"""FEM cantilever bar (experimental IPC deformable solver).
+"""FEM cantilever bar (IPC deformable solver).
 
 A tetrahedralized beam is pinned at one end and sags under gravity, held by
 stable neo-Hookean *finite-element* volumetric elasticity (PLAN-081 M1) rather
@@ -15,7 +15,7 @@ from __future__ import annotations
 from collections import deque
 
 import numpy as np
-import dartpy.simulation_experimental as sx
+import dartpy as sx
 
 from .._ipc_deformable_bridge import IpcDeformableBridge, build_fem_bar
 from ..runner import PythonDemoScene, ScenePanel, SceneSetup
@@ -97,7 +97,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="ipc_deformable_fem_bar",
     title="Deformable FEM Bar (IPC)",
-    category="IPC Deformable (sx)",
+    category="IPC Deformable",
     summary="A tetrahedral FEM cantilever sags under gravity via stable neo-Hookean elasticity.",
     build=build,
 )

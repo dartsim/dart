@@ -338,10 +338,11 @@ void Frame::setParentFrame(const Frame& parent)
 
   // Update parent in FrameState component (parentFrame is entt::entity
   // internally; world frame is represented as entt::null)
-  if (parent.isWorld()) {
-    frameState->parentFrame = entt::null;
-  } else {
-    frameState->parentFrame = detail::toRegistryEntity(parentEntity);
+  const auto newParentFrame
+      = parent.isWorld() ? entt::null : detail::toRegistryEntity(parentEntity);
+  if (frameState->parentFrame != newParentFrame) {
+    frameState->parentFrame = newParentFrame;
+    m_world->markFrameTopologyChanged();
   }
 
   markSubtreeTransformCacheDirty();

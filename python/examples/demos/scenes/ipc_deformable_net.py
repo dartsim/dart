@@ -1,4 +1,4 @@
-"""Hanging spring net (experimental IPC deformable solver).
+"""Hanging spring net (IPC deformable solver).
 
 A 9x5 point-mass/spring net is pinned at its two top corners and sags under
 gravity, swaying from small initial cross-velocities. This mirrors the C++
@@ -15,7 +15,7 @@ from __future__ import annotations
 from collections import deque
 import math
 
-import dartpy.simulation_experimental as sx
+import dartpy as sx
 import numpy as np
 
 from .._ipc_deformable_bridge import (
@@ -125,7 +125,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="ipc_deformable_net",
     title="Deformable Net (IPC)",
-    category="IPC Deformable (sx)",
+    category="IPC Deformable",
     summary="A pinned spring net sags and sways under the IPC deformable solver.",
     build=build,
 )

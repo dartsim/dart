@@ -48,19 +48,19 @@ def _cache_reports_experimental_disabled() -> bool:
 
 def _simulation_experimental():
     try:
-        module = importlib.import_module("dartpy.simulation_experimental")
+        module = importlib.import_module("dartpy")
     except ModuleNotFoundError as exc:
         if _cache_reports_experimental_disabled():
             pytest.skip("DART_BUILD_SIMULATION_EXPERIMENTAL is disabled")
         raise AssertionError(
-            "dartpy.simulation_experimental should be available when "
+            "dartpy should be available when "
             "dart-simulation-experimental is built"
         ) from exc
     if not hasattr(module, "World"):
         if _cache_reports_experimental_disabled():
             pytest.skip("DART_BUILD_SIMULATION_EXPERIMENTAL is disabled")
         raise AssertionError(
-            "dartpy.simulation_experimental imported but did not expose "
+            "dartpy imported but did not expose "
             "the experimental World binding"
         )
     return module
@@ -78,7 +78,7 @@ def _translation_transform(x: float, y: float, z: float):
 def test_experimental_world_module_is_separate_from_legacy_simulation():
     sx = _simulation_experimental()
 
-    assert dart.simulation_experimental is sx
+    assert dart is sx
     assert sx is not dart.simulation
     assert not hasattr(dart, "next")
 
@@ -241,11 +241,49 @@ def test_experimental_api_exposes_python_names_only():
     assert not hasattr(sx.FixedFrame, "set_local_transform")
 
 
+def test_experimental_world_memory_diagnostics_expose_allocator_and_ecs_counters():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+    empty = world.memory_diagnostics
+
+    assert isinstance(empty, sx.WorldMemoryDiagnostics)
+    assert isinstance(empty.allocator_debug_diagnostics, sx.MemoryManagerDebugDiagnostics)
+    assert isinstance(
+        empty.allocator_debug_diagnostics.free_allocator,
+        sx.AllocatorDebugDiagnostics,
+    )
+    assert isinstance(empty.ecs_diagnostics, sx.WorldEcsDiagnostics)
+    assert empty.frame_scratch_capacity_bytes > 0
+    assert empty.frame_scratch_used_bytes == 0
+    assert empty.ecs_diagnostics.entity_count == 0
+    assert empty.ecs_diagnostics.component_count == 0
+
+    world.add_free_frame("diagnostic_frame")
+    diagnostics = world.memory_diagnostics
+    ecs = diagnostics.ecs_diagnostics
+
+    assert ecs.entity_count == 1
+    assert ecs.entity_capacity >= ecs.entity_count
+    assert ecs.storage_count == len(ecs.storages)
+    assert ecs.storage_count > 0
+    assert sum(storage.size for storage in ecs.storages) == ecs.component_count
+    assert (
+        sum(storage.capacity for storage in ecs.storages)
+        == ecs.component_capacity
+    )
+    assert any(
+        isinstance(storage, sx.WorldEcsStorageDiagnostics)
+        for storage in ecs.storages
+    )
+    assert all(storage.capacity >= storage.size for storage in ecs.storages)
+
+
 def test_experimental_stub_tracks_public_runtime_symbols():
     sx = _simulation_experimental()
     repo_root = Path(__file__).resolve().parents[4]
     stub = (
-        repo_root / "python" / "stubs" / "dartpy" / "simulation_experimental.pyi"
+        repo_root / "python" / "stubs" / "dartpy" / "simulation.pyi"
     ).read_text(encoding="utf-8")
 
     public_symbols = (
@@ -261,6 +299,13 @@ def test_experimental_stub_tracks_public_runtime_symbols():
         "ReadOptions",
         "StateSpace",
         "StateVariable",
+        "WorldStepProfile",
+        "WorldStepStageProfile",
+        "AllocatorDebugDiagnostics",
+        "MemoryManagerDebugDiagnostics",
+        "WorldEcsStorageDiagnostics",
+        "WorldEcsDiagnostics",
+        "WorldMemoryDiagnostics",
     )
     for symbol in public_symbols:
         assert hasattr(sx, symbol), symbol
@@ -297,7 +342,12 @@ def test_experimental_stub_tracks_public_runtime_symbols():
         "has_rigid_body_joint",
         "num_rigid_body_joints",
         "num_rigid_body_fixed_joints",
+        "memory_diagnostics",
         "is_valid",
+        "step_profiling_enabled",
+        "last_step_profile",
+        "def get_stage(",
+        "def summary(",
     ):
         assert member in stub
 
@@ -349,7 +399,7 @@ def test_experimental_stub_places_rigid_surface_ccd_obstacle_on_rigid_body():
     sx = _simulation_experimental()
     repo_root = Path(__file__).resolve().parents[4]
     stub = (
-        repo_root / "python" / "stubs" / "dartpy" / "simulation_experimental.pyi"
+        repo_root / "python" / "stubs" / "dartpy" / "simulation.pyi"
     ).read_text(encoding="utf-8")
 
     assert hasattr(sx.RigidBody, "is_deformable_surface_ccd_obstacle")
@@ -493,6 +543,16 @@ def test_experimental_world_rigid_body_fixed_joint_projects_captured_pose():
     assert joint.name == "base_to_link"
     assert joint.type == sx.JointType.FIXED
     assert joint.num_dofs == 0
+    assert joint.break_force == pytest.approx(0.0)
+    assert not joint.is_broken
+    joint.break_force = 12.5
+    assert joint.break_force == pytest.approx(12.5)
+    joint.reset_breakage()
+    assert not joint.is_broken
+    with pytest.raises(Exception, match="finite and non-negative"):
+        joint.break_force = -1.0
+    with pytest.raises(Exception, match="finite and non-negative"):
+        joint.break_force = math.inf
     assert joint.parent_rigid_body.name == "base"
     assert joint.child_rigid_body.name == "link"
     assert world.has_rigid_body_fixed_joint("base_to_link")
@@ -861,7 +921,7 @@ def test_experimental_add_skeleton_uri_accepts_read_options():
 def test_experimental_add_world_imports_legacy_world():
     sx = _simulation_experimental()
 
-    legacy_world = dart.World("py_legacy_world")
+    legacy_world = dart.gui.RenderWorld("py_legacy_world")
     skeleton = dart.Skeleton("py_world_loader")
     properties = dart.RevoluteJointProperties()
     properties.mAxis = np.asarray([0.0, 1.0, 0.0], dtype=float)
@@ -893,7 +953,7 @@ def test_experimental_add_world_imports_legacy_world():
 def test_experimental_add_world_rejects_unsupported_world_without_mutation():
     sx = _simulation_experimental()
 
-    legacy_world = dart.World("py_unsupported_world")
+    legacy_world = dart.gui.RenderWorld("py_unsupported_world")
     supported = dart.Skeleton("py_supported_world_loader")
     supported.create_revolute_joint_and_body_node_pair()
     legacy_world.add_skeleton(supported)
@@ -911,7 +971,7 @@ def test_experimental_add_world_rejects_unsupported_world_without_mutation():
 def test_experimental_add_world_rejects_name_conflict_without_mutation():
     sx = _simulation_experimental()
 
-    legacy_world = dart.World("py_conflict_world")
+    legacy_world = dart.gui.RenderWorld("py_conflict_world")
     first = dart.Skeleton("py_first_world_loader")
     first.create_revolute_joint_and_body_node_pair()
     legacy_world.add_skeleton(first)
@@ -932,7 +992,7 @@ def test_experimental_add_world_rejects_name_conflict_without_mutation():
 def test_experimental_add_world_rejects_joint_axis_conflict_without_mutation():
     sx = _simulation_experimental()
 
-    legacy_world = dart.World("py_axis_conflict_world")
+    legacy_world = dart.gui.RenderWorld("py_axis_conflict_world")
     supported = dart.Skeleton("py_supported_world_loader")
     supported.create_revolute_joint_and_body_node_pair()
     legacy_world.add_skeleton(supported)
@@ -954,7 +1014,7 @@ def test_experimental_add_world_rejects_joint_axis_conflict_without_mutation():
 def test_experimental_add_world_rejects_invalid_body_inertia_without_mutation():
     sx = _simulation_experimental()
 
-    legacy_world = dart.World("py_invalid_inertia_world")
+    legacy_world = dart.gui.RenderWorld("py_invalid_inertia_world")
     supported = dart.Skeleton("py_supported_world_loader")
     supported.create_revolute_joint_and_body_node_pair()
     legacy_world.add_skeleton(supported)
@@ -3699,6 +3759,69 @@ def test_experimental_world_replay_recording_python_api():
 
     with pytest.raises(Exception):
         world.restore_replay_frame(-1)
+
+
+def test_experimental_world_step_profiling_disabled_by_default():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+    assert world.step_profiling_enabled is False
+
+    world.step()
+
+    # Off by default: no per-stage profile is captured.
+    assert world.last_step_profile.is_empty()
+
+
+def _enable_step_profiling_or_skip(world):
+    world.step_profiling_enabled = True
+    if not world.step_profiling_enabled:
+        pytest.skip("DART_BUILD_PROFILE=OFF: World step profiling is compiled out")
+
+
+def test_experimental_world_step_profiling_records_stages():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+    _enable_step_profiling_or_skip(world)
+
+    world.step()
+
+    profile = world.last_step_profile
+    assert isinstance(profile, sx.WorldStepProfile)
+    assert profile.is_empty() is False
+    assert profile.step_count == 1
+    assert profile.wall_time_us >= profile.total_stage_time_us
+    assert len(profile.stages) > 0
+
+    stage = profile.get_stage("kinematics")
+    assert isinstance(stage, sx.WorldStepStageProfile)
+    assert stage.name == "kinematics"
+    assert stage.domain == "kinematics"
+    assert stage.duration_us >= 0
+    assert stage.duration_ms >= 0.0
+    assert profile.get_stage("missing") is None
+
+    summary = profile.summary()
+    assert "World Step Profile" in summary
+    assert "kinematics" in summary
+    assert "(unattributed overhead)" in summary
+    assert str(profile) == summary
+
+
+def test_experimental_world_step_profiling_captures_last_step_for_counts():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+    _enable_step_profiling_or_skip(world)
+
+    world.step(3)
+
+    profile = world.last_step_profile
+    assert profile.step_count == 1
+    assert profile.wall_time_us >= profile.total_stage_time_us
+    assert len(profile.stages) > 0
+    assert world.frame == 3
 
 
 def test_experimental_deformable_scene_loader_python_api(tmp_path):
