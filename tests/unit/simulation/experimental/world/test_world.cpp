@@ -310,6 +310,12 @@ public:
   }
 };
 
+struct HeapAllocationSnapshot
+{
+  std::size_t allocationCount{0};
+  std::size_t allocationBytes{0};
+};
+
 class CountingKinematicsStage final
   : public dart::simulation::experimental::compute::WorldStepStage
 {
@@ -614,6 +620,24 @@ void expectNoGlobalHeapAllocationsDuringBakedSteps(
       << "global heap bytes allocated during baked steps: "
       << heapCounter.allocationBytes();
   EXPECT_EQ(heapCounter.allocationBytes(), 0u);
+}
+
+template <typename ConfigureScene>
+HeapAllocationSnapshot countGlobalHeapAllocationsDuringSimulationBake(
+    std::string_view scene, ConfigureScene&& configureScene)
+{
+  namespace sx = dart::simulation::experimental;
+
+  SCOPED_TRACE(scene);
+  sx::World world;
+
+  configureScene(world);
+
+  ScopedHeapAllocationCounter heapCounter;
+  world.enterSimulationMode();
+  heapCounter.stop();
+
+  return {heapCounter.allocationCount(), heapCounter.allocationBytes()};
 }
 
 } // namespace
@@ -999,6 +1023,56 @@ TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
         world.addDeformableBody("particle", options);
         world.setTimeStep(0.01);
       });
+}
+
+TEST(World, SequentialImpulseBakeDoesNotPrewarmRigidIpcCollisionSurfaces)
+{
+  namespace sx = dart::simulation::experimental;
+
+  const auto unsupportedGeometry
+      = countGlobalHeapAllocationsDuringSimulationBake(
+          "sequential impulse plane geometry", [](sx::World& world) {
+            auto body = world.addRigidBody("kinematic_plane");
+            body.setKinematic(true);
+            body.setCollisionShape(
+                sx::CollisionShape::makePlane(Eigen::Vector3d::UnitZ(), 0.0));
+          });
+  const auto supportedGeometry = countGlobalHeapAllocationsDuringSimulationBake(
+      "sequential impulse box geometry", [](sx::World& world) {
+        auto body = world.addRigidBody("kinematic_box");
+        body.setKinematic(true);
+        body.setCollisionShape(
+            sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.5)));
+      });
+
+  EXPECT_EQ(
+      supportedGeometry.allocationCount, unsupportedGeometry.allocationCount);
+}
+
+TEST(World, SetRigidBodySolverPreparesIpcScratchAfterSimulationBake)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  auto body = world.addRigidBody("kinematic_box");
+  body.setKinematic(true);
+  body.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.5)));
+  body.setLinearVelocity(Eigen::Vector3d(1.0, 0.0, 0.0));
+
+  world.enterSimulationMode();
+  world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+
+  ScopedHeapAllocationCounter heapCounter;
+  for (int i = 0; i < 4; ++i) {
+    world.step();
+  }
+  heapCounter.stop();
+
+  EXPECT_EQ(heapCounter.allocationCount(), 0u)
+      << "global heap bytes allocated during IPC steps after solver switch: "
+      << heapCounter.allocationBytes();
+  EXPECT_EQ(heapCounter.allocationBytes(), 0u);
 }
 
 TEST(World, FrameScratchCapacityReportsUsableArenaBytes)

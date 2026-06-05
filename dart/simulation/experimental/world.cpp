@@ -491,9 +491,12 @@ struct WorldStepPipelineStages
     return pipeline;
   }
 
-  void prepare(World& world, bool variationalStageActive)
+  void prepare(
+      World& world,
+      RigidBodySolver rigidBodySolver,
+      bool variationalStageActive)
   {
-    rigidIpcContact.prepare(world);
+    prepareRigidIpcContact(world, rigidBodySolver);
     rigidBodyVelocity.prepare(world);
     rigidBodyContact.prepare(world);
     if (variationalStageActive) {
@@ -501,6 +504,18 @@ struct WorldStepPipelineStages
     }
     deformableDynamics.prepare(world);
     kinematics.prepare(world);
+  }
+
+  void prepareRigidIpcContact(World& world, RigidBodySolver rigidBodySolver)
+  {
+    DART_EXPERIMENTAL_THROW_T_IF(
+        !isValidRigidBodySolver(rigidBodySolver),
+        InvalidArgumentException,
+        "Rigid-body solver is invalid");
+
+    if (rigidBodySolver == RigidBodySolver::Ipc) {
+      rigidIpcContact.prepare(world);
+    }
   }
 
 private:
@@ -2386,6 +2401,7 @@ void World::enterSimulationMode()
   reserveRegistryStorageForSimulation();
   m_stepPipelineCache->stages.prepare(
       *this,
+      m_rigidBodySolver,
       m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational
           && hasMultibodyStructures(*this));
 }
@@ -2417,6 +2433,9 @@ void World::setRigidBodySolver(RigidBodySolver solver)
 
   validateRigidBodyJointPipelineSupport(*this, solver);
   m_rigidBodySolver = solver;
+  if (m_simulationMode) {
+    m_stepPipelineCache->stages.prepareRigidIpcContact(*this, solver);
+  }
 }
 
 //==============================================================================
@@ -2796,7 +2815,8 @@ void World::setMultibodyOptions(const MultibodyOptions& options)
     m_multibodyIntegrationMethod = MultibodyIntegrationMethod::Variational;
     if (m_simulationMode) {
       reserveRegistryStorageForSimulation();
-      m_stepPipelineCache->stages.prepare(*this, hasMultibodyStructures(*this));
+      m_stepPipelineCache->stages.prepare(
+          *this, m_rigidBodySolver, hasMultibodyStructures(*this));
     }
   } else {
     DART_EXPERIMENTAL_THROW_T(
