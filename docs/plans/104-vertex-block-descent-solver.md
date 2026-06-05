@@ -129,16 +129,26 @@ rows can now be appended to the World rigid snapshot/solve/apply wrapper and
 combined step helper from world-space point-joint inputs, and a private
 fixed-joint ECS extractor can feed the step helper for rigid-body-linked joint
 entities. The internal contact-stage AVBD opt-in can project those fixed-joint
-rows with or without active contacts. Public multibody joint extraction and
-articulated World joint wiring are not solved yet.
+rows with or without active contacts. The private point-joint builders now
+accept per-axis linear and angular masks, keeping all-axis fixed-joint rows as
+the default. Named private revolute and prismatic point-joint configs now build
+arbitrary joint-axis bases, leave one rotational or translational axis free, and
+preserve axes/masks through World point-joint input and solve coverage.
+Simulation-entry current-pose initialization and extraction also cover private
+rigid-body ECS revolute/prismatic joint entities. Public experimental `World`
+facades now expose rigid-body revolute and prismatic joints for free rigid
+bodies through C++ and dartpy, with generated stubs, focused C++/Python tests,
+and a categorized `sx_rigid_limited_joints` py-demo. Public multibody joint
+extraction and articulated World joint wiring are not solved yet.
 Explicit fallback coverage keeps unsupported mixed spring-plus-tet,
 mass-spring self-contact without the self-contact AVBD flag,
 finite-stiffness-only friction scenes, Chebyshev, Rayleigh-damped, parallel,
 and unsupported-row requests on the existing VBD path without partial AVBD row
 counters. Those slices are still foundation work; hard-contact/friction
 completeness beyond current static half-space and lagged self-contact rows,
-contact-stage dynamic/rigid AVBD activation, rigid/articulated joint rows,
-rigid/soft coupling, GPU parity, demos, and benchmark packets remain open.
+broader contact-stage dynamic/rigid AVBD activation, articulated joint rows,
+motors, fracture, rigid/soft coupling, GPU parity, paper-corpus demos, and
+benchmark packets remain open.
 
 ## Relationship To PLAN-081
 

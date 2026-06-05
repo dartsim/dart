@@ -402,9 +402,19 @@ its own line so status updates remain git-history friendly.
   helper from world-space point-joint inputs, and a private fixed-joint ECS
   extractor can feed the step helper for rigid-body-linked joint entities. The
   internal contact-stage AVBD opt-in can project those fixed-joint rows with or
-  without active contacts. Public multibody joint extraction is not wired yet.
-  The next local slice is full narrow-phase feature extraction,
-  contact-complete rigid joint rows, or broader rigid/articulated World
+  without active contacts. The private point-joint builders now accept per-axis
+  linear and angular masks, preserving all-axis fixed-joint behavior while
+  enabling limited-DOF configs to reuse the same descriptor and warm-start path.
+  Named private revolute and prismatic point-joint configs now build arbitrary
+  joint-axis bases, leave one rotational or translational axis free, and
+  preserve axes/masks through World point-joint input and solve coverage.
+  Simulation-entry current-pose initialization and extraction also cover
+  private rigid-body ECS revolute/prismatic joint entities. Public experimental
+  `World` facades now expose free rigid-body revolute and prismatic joints
+  through C++ and dartpy, backed by generated stubs, focused C++/Python tests,
+  and the categorized `sx_rigid_limited_joints` py-demo. Public multibody joint
+  extraction is not wired yet. The next local slice is full narrow-phase feature
+  extraction, motor/fracture rows, or broader rigid/articulated World
   integration.
 - Gate: VBD progress is not complete until the implementation distinguishes
   each internal kernel slice from a wired solver, keeps VBD naming
