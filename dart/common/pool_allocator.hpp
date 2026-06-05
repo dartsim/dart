@@ -71,6 +71,17 @@ public:
   /// Returns the count of allocated memory blocks
   [[nodiscard]] int getNumAllocatedMemoryBlocks() const;
 
+  /// Returns the number of user-requested bytes currently allocated from this
+  /// allocator.
+  [[nodiscard]] size_t getAllocatedSize() const;
+
+  /// Returns the largest user-requested live byte total observed by this
+  /// allocator.
+  [[nodiscard]] size_t getPeakAllocatedSize() const;
+
+  /// Returns the number of currently live allocations from this allocator.
+  [[nodiscard]] size_t getAllocationCount() const;
+
   // PERF: These fast paths MUST stay inline. Moving them out-of-line causes
   // 2-5x regression from function-call overhead (benchmarked). Do NOT move
   // to .cpp — see tests/benchmark/common/bm_allocators.cpp.
@@ -86,17 +97,26 @@ public:
       if (defaultUnitSize(bytes) == 0) {
         return nullptr;
       }
-      return mBaseAllocator.allocate(bytes);
+      void* pointer = mBaseAllocator.allocate(bytes);
+      if (pointer != nullptr) {
+        recordAllocation(bytes);
+      }
+      return pointer;
     }
 
     const int heapIndex = heapIndexForDefaultBytes(bytes);
 
     if (MemoryUnit* unit = mFreeMemoryUnits[heapIndex]) [[likely]] {
       mFreeMemoryUnits[heapIndex] = unit->mNext;
+      recordAllocation(bytes);
       return unit;
     }
 
-    return allocateSlow(heapIndex);
+    void* pointer = allocateSlow(heapIndex);
+    if (pointer != nullptr) {
+      recordAllocation(bytes);
+    }
+    return pointer;
   }
 
   // Documentation inherited
@@ -109,17 +129,26 @@ public:
     }
 
     if (unitSize > MAX_UNIT_SIZE) [[unlikely]] {
-      return mBaseAllocator.allocate(bytes, alignment);
+      void* pointer = mBaseAllocator.allocate(bytes, alignment);
+      if (pointer != nullptr) {
+        recordAllocation(bytes);
+      }
+      return pointer;
     }
 
     const int heapIndex = heapIndexForUnitSize(unitSize);
 
     if (MemoryUnit* unit = mFreeMemoryUnits[heapIndex]) [[likely]] {
       mFreeMemoryUnits[heapIndex] = unit->mNext;
+      recordAllocation(bytes);
       return unit;
     }
 
-    return allocateSlow(heapIndex);
+    void* pointer = allocateSlow(heapIndex);
+    if (pointer != nullptr) {
+      recordAllocation(bytes);
+    }
+    return pointer;
   }
 
   // Documentation inherited
@@ -134,6 +163,7 @@ public:
         return;
       }
       mBaseAllocator.deallocate(pointer, bytes);
+      recordDeallocation(bytes);
       return;
     }
 
@@ -141,6 +171,7 @@ public:
     MemoryUnit* releasedUnit = static_cast<MemoryUnit*>(pointer);
     releasedUnit->mNext = mFreeMemoryUnits[heapIndex];
     mFreeMemoryUnits[heapIndex] = releasedUnit;
+    recordDeallocation(bytes);
   }
 
   // Documentation inherited
@@ -153,6 +184,7 @@ public:
 
     if (unitSize > MAX_UNIT_SIZE) [[unlikely]] {
       mBaseAllocator.deallocate(pointer, bytes, alignment);
+      recordDeallocation(bytes);
       return;
     }
 
@@ -160,6 +192,7 @@ public:
     MemoryUnit* releasedUnit = static_cast<MemoryUnit*>(pointer);
     releasedUnit->mNext = mFreeMemoryUnits[heapIndex];
     mFreeMemoryUnits[heapIndex] = releasedUnit;
+    recordDeallocation(bytes);
   }
 
   // Documentation inherited
@@ -178,6 +211,28 @@ private:
   };
 
   [[nodiscard]] void* allocateSlow(int heapIndex) noexcept;
+
+  void recordAllocation(size_t bytes) noexcept
+  {
+    mDiagnosticAllocatedSize += bytes;
+    if (mDiagnosticPeakAllocatedSize < mDiagnosticAllocatedSize) {
+      mDiagnosticPeakAllocatedSize = mDiagnosticAllocatedSize;
+    }
+    ++mDiagnosticAllocationCount;
+  }
+
+  void recordDeallocation(size_t bytes) noexcept
+  {
+    if (bytes <= mDiagnosticAllocatedSize) {
+      mDiagnosticAllocatedSize -= bytes;
+    } else {
+      mDiagnosticAllocatedSize = 0;
+    }
+
+    if (mDiagnosticAllocationCount > 0) {
+      --mDiagnosticAllocationCount;
+    }
+  }
 
   [[nodiscard]] static constexpr bool isPowerOfTwo(size_t value) noexcept
   {
@@ -270,6 +325,12 @@ private:
   int mCurrentMemoryBlockIndex;
 
   std::array<MemoryUnit*, HEAP_COUNT> mFreeMemoryUnits;
+
+  size_t mDiagnosticAllocatedSize{0};
+
+  size_t mDiagnosticPeakAllocatedSize{0};
+
+  size_t mDiagnosticAllocationCount{0};
 };
 
 } // namespace dart::common

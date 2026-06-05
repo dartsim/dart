@@ -42,6 +42,15 @@ strict EnTT comparisons against foonathan/memory and the standard registry;
 production `WorldRegistry` wiring still requires a persistent world-registry
 arena or bake allocator with matching no-growth tests and lifetime diagnostics.
 
+The memory-debugger correctness slice exposes structured live-byte, peak-byte,
+and allocation-count queries from the allocator debug path and from the
+manager-owned free-list/pool allocators. `MemoryManager::DebugDiagnostics` and
+experimental `WorldMemoryDiagnostics` now include typed borrowed allocator use,
+so diagnostics cover callers that borrow `getFreeListAllocator()` or
+`getPoolAllocator()` directly. The same branch also keeps the aggregate and
+per-storage ECS registry layout counters available for profiler/debugger
+tooling and dartpy's read-only `World.memory_diagnostics` snapshot.
+
 ## Current Branch
 
 `bench/entt-registry-allocator` - PR #2890 branch for allocator benchmark
@@ -98,6 +107,12 @@ foonathan/memory on required workloads.
 - Historical broad and focused benchmark outputs include both passes and
   failures. Treat older files as evidence for why the gate needs repeated
   low-load runs, not as current proof.
+- On `feature/world-step-pipeline-inline-storage` after the inline pipeline
+  storage change: `cmake --build build/default/cpp/Release --target test_world -j2`
+  and `ctest --test-dir build/default/cpp/Release -R '^test_world$' --output-on-failure`
+- On `test/memory-allocator-debugger-correctness` after borrowed-allocator
+  diagnostics: `cmake --build build/default/cpp/Release --target UNIT_common_memory_manager test_world -j2`
+  and `ctest --test-dir build/default/cpp/Release -R '^(UNIT_common_memory_manager|test_world)$' --output-on-failure`
 
 ## Context That Would Be Lost
 

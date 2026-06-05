@@ -147,6 +147,13 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Kept `StlAllocator` allocation and deallocation alignment-aware for
     allocator-backed STL storage, including fixed-pool-backed max-aligned
     values.
+  - Added query methods on `dart::common::MemoryAllocatorDebugger`,
+    `FreeListAllocator`, and `PoolAllocator` for current live bytes, peak live
+    bytes, and live allocation count so allocator diagnostics can consume
+    structured counters instead of parsing debug text.
+  - Added structured `MemoryManager` debug diagnostics and surfaced them through
+    experimental `World` memory diagnostics for free/pool allocator accounting,
+    including typed borrowed allocator use.
   - Hardened `dart::common::FixedPoolAllocator` against base-allocator failures
     during construction and block-table growth, with coverage for deterministic
     failure, fallback, reuse, and debug-guard paths.
@@ -808,7 +815,11 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     `World::getMemoryManager()`, and `World::getMemoryDiagnostics()` give each
     experimental World a `MemoryManager` root and report per-step frame-scratch
     usable capacity, usage, peak usage, overflow count, overflow bytes, and
-    reset count.
+    reset count. Memory diagnostics also include structured allocator debug
+    counters plus plain aggregate and per-storage ECS registry layout counters
+    for profiler/debugger tooling without exposing EnTT types in the public
+    header, and dartpy exposes the same read-only snapshot through
+    `World.memory_diagnostics`.
   - Routed the experimental World's internal EnTT registry, component storage,
     and differentiable-parameter list through the World free allocator, with
     state mapper support for World-owned registries and free-list alignment
