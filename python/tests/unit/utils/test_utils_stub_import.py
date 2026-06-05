@@ -115,7 +115,12 @@ def test_top_level_stub_promotes_runtime_symbols():
     for name in (
         "CollisionDetector",
         "CollisionGroup",
+        "ComputeExecutionProfile",
+        "ComputeExecutor",
+        "ComputeNodeExecutionProfile",
         "ContinuousCollisionResult",
+        "ParallelExecutor",
+        "SequentialExecutor",
         "Skeleton",
         "World",
     ):

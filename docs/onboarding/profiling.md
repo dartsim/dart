@@ -42,12 +42,18 @@ world = sx.World()
 world.step_profiling_enabled = True
 world.step()                       # or world.step(50) to profile the last of 50
 
+# Use the parallel backend when you want nested graph worker/parallelism data.
+executor = sx.ParallelExecutor(8)
+world.step(executor)
+
 profile = world.last_step_profile
 print(profile.summary())           # compact, sorted, agent-readable table
 
 # Or inspect programmatically:
 for stage in profile.stages:       # pipeline order
-    print(stage.name, stage.domain, stage.duration_us)
+    print(stage.name, stage.domain, stage.duration_us, stage.acceleration)
+    for graph in stage.graph_profiles:
+        print(graph.worker_count, graph.max_parallelism, graph.average_parallelism)
 
 contact = profile.get_stage("rigid_body_contact")
 if contact is not None:
@@ -70,12 +76,33 @@ rigid_body_position               rigid_body             0.030      1.2%
 kinematics                        kinematics             0.018      0.7%
 --------------------------------------------------------------------------
 (unattributed overhead)                                  0.019      0.8%
+
+Execution details:
+- deformable_dynamics: acceleration=task_parallel|data_locality|gpu
+- kinematics: acceleration=task_parallel|data_locality, graph_profiles=1, graph_wall=0.018 ms, max_workers=8, max_parallelism=4
 ```
 
 Fields available on `WorldStepProfile`: `step_count`, `wall_time_us`,
 `wall_time_ms`, `total_stage_time_us`, `stages`, `is_empty()`,
 `get_stage(name)`, and `summary()`. Each `WorldStepStageProfile` has `name`,
-`domain`, `duration_us`, and `duration_ms`.
+`domain`, `acceleration`, `accelerated_backend_enabled`, `duration_us`,
+`duration_ms`, `graph_profiles`, `total_graph_wall_time_us`,
+`max_graph_worker_count`, and `max_graph_parallelism`.
+
+Nested `graph_profiles` are `ComputeExecutionProfile` snapshots captured when a
+stage runs compute graphs through the injected executor. They expose
+`worker_count`, `max_parallelism`, `average_parallelism`, per-node records, and
+their own `summary()` text. This is the multi-threading view: stage wall time
+answers which stage is slow, while graph profiles answer how much parallel work
+the executor actually ran inside that stage. Direct calls to
+`ComputeExecutor::executeProfiled()` also require `DART_BUILD_PROFILE=ON`; in
+no-profile builds they execute the graph normally and return an empty profile.
+
+`acceleration` is backend-neutral stage metadata. A stage can advertise `gpu`
+without exposing CUDA, streams, or device handles; when an accelerated backend
+is active for that stage, `accelerated_backend_enabled` is true. For the
+deformable solve, this reflects the existing process-wide accelerated PSD
+backend selected by `set_accelerated_deformable_solve()`.
 
 ### C++
 
@@ -90,6 +117,9 @@ const auto& profile = world.getLastStepProfile();
 std::cout << profile.toSummaryText();
 const auto* contact = profile.getStage("rigid_body_contact");
 ```
+
+For nested graph timing, inspect `WorldStepStageProfile::graphProfiles` or call
+`ComputeExecutionProfile::toSummaryText()` on an individual graph profile.
 
 ### Semantics
 
@@ -119,15 +149,23 @@ void myHotFunction() {
 
 // somewhere after running:
 DART_PROFILE_TEXT_DUMP();   // prints the aggregated per-scope summary
+
+const std::string summary = DART_PROFILE_TEXT_SUMMARY();
+// In no-profile or no-text-backend builds, summary is empty.
 ```
 
 `DART_PROFILE_TRACY=ON` additionally streams to the Tracy GUI for local
 developer profiling; the text backend stays the portable, agent-friendly path.
+For library code that already has access to the text backend, use
+`dart::common::profile::Profiler::instance().toSummaryText()` to retrieve the
+same text without printing to `std::cout`.
 
 ## Where this is implemented
 
 - World step profile type:
   `dart/simulation/experimental/compute/world_step_profile.{hpp,cpp}`
+- Nested compute graph profile type:
+  `dart/simulation/experimental/compute/execution_profile.{hpp,cpp}`
 - Pipeline timing seam: `WorldStepPipeline::executeProfiled`
   (`dart/simulation/experimental/compute/world_step_stage.cpp`)
 - World surface: `World::setStepProfilingEnabled` /

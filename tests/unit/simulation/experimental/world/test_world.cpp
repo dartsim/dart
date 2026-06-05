@@ -1198,6 +1198,33 @@ TEST(World, BakedArticulatedContactStepsDoNotAllocateGlobalHeap)
         world.setTimeStep(0.002);
       },
       true);
+
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "cross articulated link contact",
+      [](sx::World& world) {
+        world.setGravity(Eigen::Vector3d::Zero());
+
+        const auto addRobot
+            = [&](std::string_view name, double z, double velocity) {
+                auto robot = world.addMultibody(name);
+                auto base = robot.addLink("base");
+                sx::JointSpec spec;
+                spec.name = "slider";
+                spec.type = sx::JointType::Prismatic;
+                spec.axis = Eigen::Vector3d::UnitZ();
+                auto link = robot.addLink("link", base, spec);
+                link.setMass(1.0);
+                link.setCollisionShape(sx::CollisionShape::makeSphere(0.2));
+                auto joint = link.getParentJoint();
+                joint.setPosition(Eigen::VectorXd::Constant(1, z));
+                joint.setVelocity(Eigen::VectorXd::Constant(1, velocity));
+              };
+
+        addRobot("lower_robot", 0.0, 0.5);
+        addRobot("upper_robot", 0.35, -0.5);
+        world.setTimeStep(0.001);
+      },
+      true);
 }
 
 TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
@@ -1275,8 +1302,15 @@ TEST(World, IpcBakeDoesNotPrewarmRigidBodyContactQuery)
             body.setLinearVelocity(Eigen::Vector3d(1.0, 0.0, 0.0));
           });
 
-  EXPECT_EQ(noGeometry.allocationCount, unsupportedGeometry.allocationCount);
-  EXPECT_EQ(noGeometry.allocationBytes, unsupportedGeometry.allocationBytes);
+  // The unsupported (contact-query-only) plane geometry must not PREWARM the
+  // rigid-body contact query during the bake, i.e. it must not allocate MORE
+  // than the no-geometry baseline. Optimized builds make the two bake paths
+  // allocation-identical, but a Debug build does one extra small allocation in
+  // the no-geometry baseline (component-set-dependent container growth: the
+  // plane scene carries a CollisionShape component, the empty scene does not),
+  // so assert the no-prewarm invariant (<=) rather than exact equality.
+  EXPECT_LE(unsupportedGeometry.allocationCount, noGeometry.allocationCount);
+  EXPECT_LE(unsupportedGeometry.allocationBytes, noGeometry.allocationBytes);
 }
 
 TEST(World, RigidIpcContactStagePrepareReusesSupportedDynamicSurfaceBuffers)
@@ -5007,43 +5041,253 @@ TEST(World, CrossMultibodyLinksResolveContact)
 {
   namespace sx = dart::simulation::experimental;
 
-  sx::WorldOptions options;
-  options.contactSolverMethod = sx::ContactSolverMethod::BoxedLcp;
-  sx::World world(options);
-  world.setGravity(Eigen::Vector3d::Zero());
+  for (const bool boxedLcp : {false, true}) {
+    SCOPED_TRACE(boxedLcp ? "boxed LCP" : "sequential shortcut");
 
-  const auto addRobot = [&](std::string_view name, double z, double velocity) {
-    auto robot = world.addMultibody(name);
-    auto base = robot.addLink("base");
-    sx::JointSpec spec;
-    spec.name = "slider";
-    spec.type = sx::JointType::Prismatic;
-    spec.axis = Eigen::Vector3d::UnitZ();
-    auto link = robot.addLink("link", base, spec);
-    link.setMass(1.0);
-    link.setCollisionShape(sx::CollisionShape::makeSphere(0.2));
-    auto joint = link.getParentJoint();
-    joint.setPosition(Eigen::VectorXd::Constant(1, z));
-    joint.setVelocity(Eigen::VectorXd::Constant(1, velocity));
-    return link;
+    sx::WorldOptions options;
+    if (boxedLcp) {
+      options.contactSolverMethod = sx::ContactSolverMethod::BoxedLcp;
+    }
+    sx::World world(options);
+    world.setGravity(Eigen::Vector3d::Zero());
+
+    const auto addRobot
+        = [&](std::string_view name, double z, double velocity) {
+            auto robot = world.addMultibody(name);
+            auto base = robot.addLink("base");
+            sx::JointSpec spec;
+            spec.name = "slider";
+            spec.type = sx::JointType::Prismatic;
+            spec.axis = Eigen::Vector3d::UnitZ();
+            auto link = robot.addLink("link", base, spec);
+            link.setMass(1.0);
+            link.setCollisionShape(sx::CollisionShape::makeSphere(0.2));
+            auto joint = link.getParentJoint();
+            joint.setPosition(Eigen::VectorXd::Constant(1, z));
+            joint.setVelocity(Eigen::VectorXd::Constant(1, velocity));
+            return link;
+          };
+
+    auto lower = addRobot("lower_robot", 0.0, 0.5);
+    auto upper = addRobot("upper_robot", 0.35, -0.5);
+    auto lowerJoint = lower.getParentJoint();
+    auto upperJoint = upper.getParentJoint();
+
+    world.setTimeStep(0.001);
+    world.enterSimulationMode();
+    ASSERT_FALSE(world.collide().empty());
+
+    world.step();
+
+    const double relativeVelocity
+        = upperJoint.getVelocity()[0] - lowerJoint.getVelocity()[0];
+    EXPECT_GE(relativeVelocity, -1e-9);
+    EXPECT_LT(lowerJoint.getVelocity()[0], 0.5);
+    EXPECT_GT(upperJoint.getVelocity()[0], -0.5);
+  }
+}
+
+TEST(World, CrossMultibodyDifferentDofLinksUseUnifiedFallback)
+{
+  namespace sx = dart::simulation::experimental;
+
+  struct StepState
+  {
+    double lowerVelocity{0.0};
+    double upperRootVelocity{0.0};
+    double upperTipVelocity{0.0};
   };
 
-  auto lower = addRobot("lower_robot", 0.0, 0.5);
-  auto upper = addRobot("upper_robot", 0.35, -0.5);
-  auto lowerJoint = lower.getParentJoint();
-  auto upperJoint = upper.getParentJoint();
+  const auto runScene = [](bool boxedLcp) {
+    sx::WorldOptions options;
+    if (boxedLcp) {
+      options.contactSolverMethod = sx::ContactSolverMethod::BoxedLcp;
+    }
+    sx::World world(options);
+    world.setGravity(Eigen::Vector3d::Zero());
 
-  world.setTimeStep(0.001);
-  world.enterSimulationMode();
-  ASSERT_FALSE(world.collide().empty());
+    auto lowerRobot = world.addMultibody("lower_robot");
+    auto lowerBase = lowerRobot.addLink("base");
+    sx::JointSpec lowerSpec;
+    lowerSpec.name = "lower_slider";
+    lowerSpec.type = sx::JointType::Prismatic;
+    lowerSpec.axis = Eigen::Vector3d::UnitZ();
+    auto lowerLink = lowerRobot.addLink("link", lowerBase, lowerSpec);
+    lowerLink.setMass(1.0);
+    lowerLink.setCollisionShape(sx::CollisionShape::makeSphere(0.2));
+    auto lowerJoint = lowerLink.getParentJoint();
+    lowerJoint.setPosition(Eigen::VectorXd::Constant(1, 0.0));
+    lowerJoint.setVelocity(Eigen::VectorXd::Constant(1, 0.5));
 
-  world.step();
+    auto upperRobot = world.addMultibody("upper_robot");
+    auto upperBase = upperRobot.addLink("base");
+    sx::JointSpec rootSpec;
+    rootSpec.name = "upper_root_slider";
+    rootSpec.type = sx::JointType::Prismatic;
+    rootSpec.axis = Eigen::Vector3d::UnitZ();
+    auto upperMid = upperRobot.addLink("mid", upperBase, rootSpec);
+    upperMid.setMass(1.0);
+    auto upperRootJoint = upperMid.getParentJoint();
+    upperRootJoint.setPosition(Eigen::VectorXd::Constant(1, 0.15));
+    upperRootJoint.setVelocity(Eigen::VectorXd::Constant(1, -0.25));
 
-  const double relativeVelocity
-      = upperJoint.getVelocity()[0] - lowerJoint.getVelocity()[0];
-  EXPECT_GE(relativeVelocity, -1e-9);
-  EXPECT_LT(lowerJoint.getVelocity()[0], 0.5);
-  EXPECT_GT(upperJoint.getVelocity()[0], -0.5);
+    sx::JointSpec tipSpec;
+    tipSpec.name = "upper_tip_slider";
+    tipSpec.type = sx::JointType::Prismatic;
+    tipSpec.axis = Eigen::Vector3d::UnitZ();
+    auto upperTip = upperRobot.addLink("tip", upperMid, tipSpec);
+    upperTip.setMass(1.0);
+    upperTip.setCollisionShape(sx::CollisionShape::makeSphere(0.2));
+    auto upperTipJoint = upperTip.getParentJoint();
+    upperTipJoint.setPosition(Eigen::VectorXd::Constant(1, 0.20));
+    upperTipJoint.setVelocity(Eigen::VectorXd::Constant(1, -0.25));
+
+    world.setTimeStep(0.001);
+    world.enterSimulationMode();
+    EXPECT_FALSE(world.collide().empty());
+
+    world.step();
+
+    return StepState{
+        lowerJoint.getVelocity()[0],
+        upperRootJoint.getVelocity()[0],
+        upperTipJoint.getVelocity()[0]};
+  };
+
+  const StepState defaultPath = runScene(false);
+  const StepState boxedPath = runScene(true);
+
+  EXPECT_NEAR(defaultPath.lowerVelocity, boxedPath.lowerVelocity, 1e-12);
+  EXPECT_NEAR(
+      defaultPath.upperRootVelocity, boxedPath.upperRootVelocity, 1e-12);
+  EXPECT_NEAR(defaultPath.upperTipVelocity, boxedPath.upperTipVelocity, 1e-12);
+}
+
+TEST(World, CrossMultibodyStackedContactsUseUnifiedFallback)
+{
+  namespace sx = dart::simulation::experimental;
+
+  struct StepState
+  {
+    double lowerVelocity{0.0};
+    double upperVelocity{0.0};
+  };
+
+  const auto runScene = [](bool boxedLcp) {
+    sx::WorldOptions options;
+    if (boxedLcp) {
+      options.contactSolverMethod = sx::ContactSolverMethod::BoxedLcp;
+    }
+    sx::World world(options);
+    world.setGravity(Eigen::Vector3d::Zero());
+
+    const auto addRobot
+        = [&](std::string_view name, double z, double velocity) {
+            auto robot = world.addMultibody(name);
+            auto base = robot.addLink("base");
+            sx::JointSpec spec;
+            spec.name = "slider";
+            spec.type = sx::JointType::Prismatic;
+            spec.axis = Eigen::Vector3d::UnitZ();
+            auto link = robot.addLink("link", base, spec);
+            link.setMass(1.0);
+            link.setCollisionShape(sx::CollisionShape::makeSphere(0.2));
+            auto joint = link.getParentJoint();
+            joint.setPosition(Eigen::VectorXd::Constant(1, z));
+            joint.setVelocity(Eigen::VectorXd::Constant(1, velocity));
+            return link;
+          };
+
+    auto lower = addRobot("lower_robot", 0.0, -0.2);
+    auto upper = addRobot("upper_robot", 0.35, -0.8);
+
+    sx::RigidBodyOptions fixtureOptions;
+    fixtureOptions.isStatic = true;
+    fixtureOptions.position = Eigen::Vector3d(0.0, 0.0, -0.35);
+    auto fixture = world.addRigidBody("fixture", fixtureOptions);
+    fixture.setCollisionShape(sx::CollisionShape::makeSphere(0.2));
+
+    auto lowerJoint = lower.getParentJoint();
+    auto upperJoint = upper.getParentJoint();
+
+    world.setTimeStep(0.001);
+    world.enterSimulationMode();
+    EXPECT_GE(world.collide().size(), 2u);
+
+    world.step();
+
+    return StepState{lowerJoint.getVelocity()[0], upperJoint.getVelocity()[0]};
+  };
+
+  const StepState defaultPath = runScene(false);
+  const StepState boxedPath = runScene(true);
+
+  EXPECT_NEAR(defaultPath.lowerVelocity, boxedPath.lowerVelocity, 1e-12);
+  EXPECT_NEAR(defaultPath.upperVelocity, boxedPath.upperVelocity, 1e-12);
+}
+
+TEST(World, CrossMultibodyCoupledRowsUseUnifiedFallback)
+{
+  namespace sx = dart::simulation::experimental;
+
+  struct StepState
+  {
+    double lowerVelocity{0.0};
+    double middleVelocity{0.0};
+    double upperVelocity{0.0};
+  };
+
+  const auto runScene = [](bool boxedLcp) {
+    sx::WorldOptions options;
+    if (boxedLcp) {
+      options.contactSolverMethod = sx::ContactSolverMethod::BoxedLcp;
+    }
+    sx::World world(options);
+    world.setGravity(Eigen::Vector3d::Zero());
+
+    const auto addRobot
+        = [&](std::string_view name, double z, double velocity) {
+            auto robot = world.addMultibody(name);
+            auto base = robot.addLink("base");
+            sx::JointSpec spec;
+            spec.name = "slider";
+            spec.type = sx::JointType::Prismatic;
+            spec.axis = Eigen::Vector3d::UnitZ();
+            auto link = robot.addLink("link", base, spec);
+            link.setMass(1.0);
+            link.setCollisionShape(sx::CollisionShape::makeSphere(0.2));
+            auto joint = link.getParentJoint();
+            joint.setPosition(Eigen::VectorXd::Constant(1, z));
+            joint.setVelocity(Eigen::VectorXd::Constant(1, velocity));
+            return link;
+          };
+
+    auto lower = addRobot("lower_robot", 0.0, 0.5);
+    auto middle = addRobot("middle_robot", 0.35, 0.0);
+    auto upper = addRobot("upper_robot", 0.70, -0.5);
+
+    auto lowerJoint = lower.getParentJoint();
+    auto middleJoint = middle.getParentJoint();
+    auto upperJoint = upper.getParentJoint();
+
+    world.setTimeStep(0.001);
+    world.enterSimulationMode();
+    EXPECT_GE(world.collide().size(), 2u);
+
+    world.step();
+
+    return StepState{
+        lowerJoint.getVelocity()[0],
+        middleJoint.getVelocity()[0],
+        upperJoint.getVelocity()[0]};
+  };
+
+  const StepState defaultPath = runScene(false);
+  const StepState boxedPath = runScene(true);
+
+  EXPECT_NEAR(defaultPath.lowerVelocity, boxedPath.lowerVelocity, 1e-12);
+  EXPECT_NEAR(defaultPath.middleVelocity, boxedPath.middleVelocity, 1e-12);
+  EXPECT_NEAR(defaultPath.upperVelocity, boxedPath.upperVelocity, 1e-12);
 }
 
 // Test that Coulomb friction at a link contact decelerates a sliding link. A

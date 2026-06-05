@@ -136,6 +136,7 @@ If you use DART in an academic publication, please consider citing this
    :caption: Home
 
    overview
+   Architecture <architecture>
    gallery
    papers
 

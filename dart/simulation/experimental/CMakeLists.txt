@@ -305,6 +305,7 @@ set(
 set(
   dart_experimental_public_headers_compute
   compute/compute_stage_metadata.hpp
+  compute/execution_profile.hpp
   compute/world_step_profile.hpp
 )
 # diff/rollout.hpp is the public differentiable-simulation entry point, but its
