@@ -9,7 +9,7 @@ def _make_two_link_skeleton(name: str = "skel"):
 
 
 def test_world_repr():
-    world = dart.World("repr_world")
+    world = dart.gui.RenderWorld("repr_world")
     text = repr(world)
     assert "World(" in text
     assert "repr_world" in text

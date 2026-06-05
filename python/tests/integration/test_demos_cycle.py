@@ -87,7 +87,7 @@ def _mean_luminance(
 
 def _simulation_experimental_has(*names: str) -> bool:
     try:
-        import dartpy.simulation_experimental as sx
+        import dartpy as sx
     except Exception:  # pragma: no cover - reduced build without the submodule
         return False
     return all(hasattr(sx, name) for name in names)
@@ -95,9 +95,9 @@ def _simulation_experimental_has(*names: str) -> bool:
 
 def _require_simulation_experimental_symbols(*names: str):
     try:
-        import dartpy.simulation_experimental as sx
+        import dartpy as sx
     except Exception as exc:  # pragma: no cover - reduced build without submodule
-        pytest.skip(f"dartpy.simulation_experimental unavailable: {exc}")
+        pytest.skip(f"dartpy unavailable: {exc}")
     missing = [name for name in names if not hasattr(sx, name)]
     if missing:
         formatted = ", ".join(f"simulation_experimental.{name}" for name in missing)
@@ -109,7 +109,7 @@ def _deformable_bindings_available() -> bool:
     """True when the experimental deformable bindings are compiled in.
 
     Builds with ``DART_BUILD_SIMULATION_EXPERIMENTAL=OFF`` ship a reduced
-    ``dartpy.simulation_experimental`` without the deformable types, so the
+    ``dartpy`` without the deformable types, so the
     solver-free grid-builder check skips there rather than erroring.
     """
 
@@ -628,7 +628,7 @@ def test_avbd_fixed_joint_contact_demo_exercises_contact_path() -> None:
 
 def test_avbd_revolute_motor_demo_drives_hinge() -> None:
     import numpy as np
-    import dartpy.simulation_experimental as sx
+    import dartpy as sx
 
     from examples.demos.scenes.avbd_rigid_revolute_motor import build
 
@@ -749,9 +749,9 @@ def test_show_ui_uses_docked_workspace_regions(
     monkeypatch.setenv("MESA_LOADER_DRIVER_OVERRIDE", "llvmpipe")
 
     def build_scene() -> SceneSetup:
-        world = dart.World("docked_smoke")
+        world = dart.gui.RenderWorld("docked_smoke")
         world.set_time_step(0.001)
-        frame = dart.SimpleFrame(dart.Frame.world(), "box")
+        frame = dart.SimpleFrame(dart.gui.world_render_frame(), "box")
         frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
         frame.create_visual_aspect().set_color([0.2, 0.7, 0.9])
         world.add_simple_frame(frame)
@@ -884,9 +884,9 @@ def test_scripted_demo_switch_restores_previous_scene_on_factory_error(
     from examples.demos.runner import PythonDemoScene, SceneSetup
 
     def build_good() -> SceneSetup:
-        world = dart.World("good")
+        world = dart.gui.RenderWorld("good")
         world.set_time_step(0.001)
-        frame = dart.SimpleFrame(dart.Frame.world(), "good_box")
+        frame = dart.SimpleFrame(dart.gui.world_render_frame(), "good_box")
         frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
         frame.create_visual_aspect().set_color([0.2, 0.7, 0.9])
         world.add_simple_frame(frame)
@@ -959,9 +959,9 @@ def test_scripted_demo_switch_restores_previous_scene_on_startup_timeout(
         nonlocal good_setup
         if good_setup is not None:
             return good_setup
-        world = dart.World("good")
+        world = dart.gui.RenderWorld("good")
         world.set_time_step(0.001)
-        frame = dart.SimpleFrame(dart.Frame.world(), "good_box")
+        frame = dart.SimpleFrame(dart.gui.world_render_frame(), "good_box")
         frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
         frame.create_visual_aspect().set_color([0.2, 0.7, 0.9])
         world.add_simple_frame(frame)
@@ -970,7 +970,7 @@ def test_scripted_demo_switch_restores_previous_scene_on_startup_timeout(
 
     def build_slow() -> SceneSetup:
         time.sleep(0.25)
-        world = dart.World("slow")
+        world = dart.gui.RenderWorld("slow")
         world.set_time_step(0.001)
         return SceneSetup(world=world)
 
@@ -1042,16 +1042,16 @@ def test_scripted_demo_switch_restores_previous_scene_on_render_state_failure(
     from examples.demos.runner import PythonDemoScene, SceneSetup
 
     def build_good() -> SceneSetup:
-        world = dart.World("good")
+        world = dart.gui.RenderWorld("good")
         world.set_time_step(0.001)
-        frame = dart.SimpleFrame(dart.Frame.world(), "good_box")
+        frame = dart.SimpleFrame(dart.gui.world_render_frame(), "good_box")
         frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
         frame.create_visual_aspect().set_color([0.2, 0.7, 0.9])
         world.add_simple_frame(frame)
         return SceneSetup(world=world)
 
     def build_empty() -> SceneSetup:
-        world = dart.World("empty")
+        world = dart.gui.RenderWorld("empty")
         world.set_time_step(0.001)
         return SceneSetup(world=world)
 
@@ -1124,9 +1124,9 @@ def test_scripted_demo_switch_restores_previous_scene_when_python_factory_stalls
     from examples.demos.runner import PythonDemoScene, SceneSetup
 
     def build_good() -> SceneSetup:
-        world = dart.World("good")
+        world = dart.gui.RenderWorld("good")
         world.set_time_step(0.001)
-        frame = dart.SimpleFrame(dart.Frame.world(), "good_box")
+        frame = dart.SimpleFrame(dart.gui.world_render_frame(), "good_box")
         frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
         frame.create_visual_aspect().set_color([0.2, 0.7, 0.9])
         world.add_simple_frame(frame)
@@ -1134,7 +1134,7 @@ def test_scripted_demo_switch_restores_previous_scene_when_python_factory_stalls
 
     def build_stalled() -> SceneSetup:
         time.sleep(60.0)
-        world = dart.World("stalled")
+        world = dart.gui.RenderWorld("stalled")
         world.set_time_step(0.001)
         return SceneSetup(world=world)
 
@@ -1212,18 +1212,18 @@ def test_scripted_demo_switch_restores_previous_scene_when_python_pre_step_stall
     from examples.demos.runner import PythonDemoScene, SceneSetup
 
     def build_good() -> SceneSetup:
-        world = dart.World("good")
+        world = dart.gui.RenderWorld("good")
         world.set_time_step(0.001)
-        frame = dart.SimpleFrame(dart.Frame.world(), "good_box")
+        frame = dart.SimpleFrame(dart.gui.world_render_frame(), "good_box")
         frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
         frame.create_visual_aspect().set_color([0.2, 0.7, 0.9])
         world.add_simple_frame(frame)
         return SceneSetup(world=world)
 
     def build_stalled_step() -> SceneSetup:
-        world = dart.World("stalled_step")
+        world = dart.gui.RenderWorld("stalled_step")
         world.set_time_step(0.001)
-        frame = dart.SimpleFrame(dart.Frame.world(), "stalled_box")
+        frame = dart.SimpleFrame(dart.gui.world_render_frame(), "stalled_box")
         frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
         frame.create_visual_aspect().set_color([0.8, 0.3, 0.2])
         world.add_simple_frame(frame)
@@ -1300,18 +1300,18 @@ def test_scripted_demo_switch_restores_previous_scene_on_slow_first_frame(
     from examples.demos.runner import PythonDemoScene, SceneSetup
 
     def build_good() -> SceneSetup:
-        world = dart.World("good")
+        world = dart.gui.RenderWorld("good")
         world.set_time_step(0.001)
-        frame = dart.SimpleFrame(dart.Frame.world(), "good_box")
+        frame = dart.SimpleFrame(dart.gui.world_render_frame(), "good_box")
         frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
         frame.create_visual_aspect().set_color([0.2, 0.7, 0.9])
         world.add_simple_frame(frame)
         return SceneSetup(world=world)
 
     def build_slow_step() -> SceneSetup:
-        world = dart.World("slow_step")
+        world = dart.gui.RenderWorld("slow_step")
         world.set_time_step(0.001)
-        frame = dart.SimpleFrame(dart.Frame.world(), "slow_box")
+        frame = dart.SimpleFrame(dart.gui.world_render_frame(), "slow_box")
         frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
         frame.create_visual_aspect().set_color([0.8, 0.3, 0.2])
         world.add_simple_frame(frame)

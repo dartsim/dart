@@ -18,7 +18,7 @@ from __future__ import annotations
 import math
 
 import dartpy as dart
-import dartpy.simulation_experimental as sx
+import dartpy as sx
 import numpy as np
 
 from .._world_bridge import WorldRenderBridge

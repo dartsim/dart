@@ -14,7 +14,7 @@ from collections import deque
 from pathlib import Path
 
 import numpy as np
-import dartpy.simulation_experimental as sx
+import dartpy as sx
 
 from .._ipc_deformable_bridge import IpcDeformableBridge, build_strand_from_seg
 from ..runner import PythonDemoScene, ScenePanel, SceneSetup

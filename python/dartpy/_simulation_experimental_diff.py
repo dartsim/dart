@@ -1,16 +1,16 @@
 """PyTorch autograd bridge for differentiable experimental simulation.
 
 This module is the pure-Python ``diff`` namespace attached to
-``dartpy.simulation_experimental`` (imported as ``sx``). It wraps a single
+``dartpy`` (imported as ``sx``). It wraps a single
 differentiable ``World`` step as a ``torch.autograd.Function`` so a step can be
 composed into a PyTorch graph:
 
->>> import dartpy.simulation_experimental as sx
+>>> import dartpy as sx
 >>> next_state = sx.diff.timestep(world, state, action)  # doctest: +SKIP
 >>> next_state.sum().backward()                            # doctest: +SKIP
 
 Torch is an optional dependency. Importing this module (and therefore
-``import dartpy.simulation_experimental``) must succeed without torch installed;
+``import dartpy``) must succeed without torch installed;
 ``sx.diff`` always exists as an attribute. ``torch`` is imported lazily inside
 ``timestep`` so the import-only path stays torch-free. Calling ``timestep``
 without torch raises a clear :class:`ImportError`.
@@ -83,7 +83,7 @@ def timestep(world, state, action):
   """Differentiable single simulation step as a ``torch.autograd.Function``.
 
   Args:
-    world: A differentiable ``dartpy.simulation_experimental.World`` (constructed
+    world: A differentiable ``dartpy.World`` (constructed
       with ``differentiable=True``).
     state: Torch tensor ``x = [q; q̇]`` of size ``2 * world.num_dofs``.
     action: Torch tensor ``u = τ`` of size ``world.num_efforts``.

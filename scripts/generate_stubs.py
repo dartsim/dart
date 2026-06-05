@@ -26,10 +26,6 @@ STUB_MODULES = (
     ("dartpy._dartpy.simulation", Path("dartpy/simulation.pyi")),
     ("dartpy._dartpy.constraint", Path("dartpy/constraint.pyi")),
     ("dartpy._dartpy.optimizer", Path("dartpy/optimizer.pyi")),
-    (
-        "dartpy._dartpy.simulation_experimental",
-        Path("dartpy/simulation_experimental.pyi"),
-    ),
     ("dartpy._dartpy.gui", Path("dartpy/gui/__init__.pyi")),
     ("dartpy._dartpy.utils", Path("dartpy/utils/__init__.pyi")),
     ("dartpy._dartpy.utils.MjcfParser", Path("dartpy/utils/MjcfParser.pyi")),
@@ -39,7 +35,10 @@ STUB_MODULES = (
 
 OPTIONAL_STUB_MODULES = frozenset(
     (
-        "dartpy._dartpy.simulation_experimental",
+        # simulation (the ECS facade) is absent when the experimental module is
+        # not built (e.g. DART_BUILD_SIMULATION_EXPERIMENTAL=OFF); gui is absent
+        # in non-GUI builds.
+        "dartpy._dartpy.simulation",
         "dartpy._dartpy.gui",
     )
 )
@@ -48,13 +47,13 @@ SUBMODULES = (
     "collision",
     "common",
     "constraint",
+    "diff",
     "dynamics",
     "gui",
     "io",
     "math",
     "optimizer",
     "simulation",
-    "simulation_experimental",
     "utils",
 )
 
@@ -119,6 +118,12 @@ def _postprocess_stub(source: str) -> str:
     source = _add_future_import(source)
     source = source.replace("dartpy._dartpy.", "dartpy.")
     source = source.replace("dartpy._dartpy", "dartpy")
+    # The diff namespace is a runtime-attached pure-Python module, not a real
+    # dartpy.simulation.diff submodule file. Point the simulation stub's diff
+    # import at the hand-written top-level dartpy.diff stub so it resolves.
+    source = source.replace(
+        "import dartpy.simulation.diff as diff", "from dartpy import diff as diff"
+    )
     return _insert_all(source, _public_names(source))
 
 
@@ -197,6 +202,47 @@ def _write_io_stub(stubs_dir: Path):
         "from dartpy.utils import *  # noqa: F401,F403\n\n"
         "__all__ = _utils.__all__\n"
     )
+
+
+def _write_diff_stub(stubs_dir: Path):
+    dartpy_dir = stubs_dir / "dartpy"
+    dartpy_dir.mkdir(parents=True, exist_ok=True)
+
+    # DART_BUILD_DIFF=ON also re-exports the framework-neutral C++ rollout API
+    # onto the runtime dartpy.diff module (dartpy.__init__ copies it from
+    # dartpy.simulation). Mirror those re-exports in the stub when they exist so
+    # typed callers and the generated docs see dartpy.diff.rollout /
+    # RolloutTrajectory; the default DART_BUILD_DIFF=OFF build emits timestep only.
+    reexports: list[str] = []
+    try:
+        import dartpy  # type: ignore
+
+        diff_module = getattr(dartpy, "diff", None)
+        for name in ("RolloutTrajectory", "rollout"):
+            if diff_module is not None and hasattr(diff_module, name):
+                reexports.append(name)
+    except Exception:
+        pass
+
+    header = (
+        '"""\n'
+        "PyTorch autograd bridge for differentiable simulation.\n"
+        "\n"
+        "Attached at runtime as ``dartpy.diff`` (and ``dartpy.simulation.diff``).\n"
+        "Wraps a single differentiable ``World`` step as a\n"
+        "``torch.autograd.Function``; torch is imported lazily so importing\n"
+        "dartpy stays torch-free.\n"
+        '"""\n\n'
+        "from __future__ import annotations\n\n"
+    )
+    body = ""
+    if reexports:
+        body += "from dartpy.simulation import (\n"
+        body += "".join(f"    {name} as {name},\n" for name in sorted(reexports))
+        body += ")\n\n"
+    body += _all_block(sorted(["timestep", *reexports])) + "\n\n"
+    body += "def timestep(world, state, action): ...\n"
+    (dartpy_dir / "diff.pyi").write_text(header + body)
 
 
 def _public_module_name(relative_output: Path) -> str:
@@ -279,8 +325,17 @@ def main():
                 names_by_module[public_module] = _public_names(source)
 
     available_submodules.add("io")
+    # The diff namespace (dartpy.diff / dartpy.simulation.diff) is attached at
+    # runtime by dartpy.__init__ only when the ECS simulation module is present.
+    diff_available = "simulation" in available_submodules
+    if diff_available:
+        available_submodules.add("diff")
     _write_top_level_stub(stubs_dir, names_by_module, available_submodules)
     _write_io_stub(stubs_dir)
+    if diff_available:
+        _write_diff_stub(stubs_dir)
+    else:
+        _remove_stub_output(stubs_dir, Path("dartpy/diff.pyi"))
 
     # Check that stubs were created
     dartpy_stub = stubs_dir / "dartpy" / "__init__.pyi"

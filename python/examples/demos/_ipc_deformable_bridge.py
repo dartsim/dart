@@ -31,7 +31,7 @@ from collections import deque
 from typing import Any, Callable, Iterable, Sequence
 
 import dartpy as dart
-import dartpy.simulation_experimental as sx
+import dartpy as sx
 import numpy as np
 
 # Node-sphere radii and colors mirror the C++ deformable demo.
@@ -504,7 +504,8 @@ class IpcDeformableBridge:
     ) -> None:
         self._physics_world = physics_world
         self._name = name
-        self.render_world = dart.World(name)
+        # Render world is the classic World, retained for the Filament viewer.
+        self.render_world = dart.gui.RenderWorld(name)
         self.render_world.set_gravity([0.0, 0.0, 0.0])
         self.render_world.set_time_step(getattr(physics_world, "time_step", 0.005))
         # (body, [node SimpleFrame, ...], edge LineSegmentShape) per deformable.
@@ -537,7 +538,7 @@ class IpcDeformableBridge:
             ]
         for node_a, node_b in edges:
             edge_shape.add_connection(int(node_a), int(node_b))
-        edge_frame = dart.SimpleFrame(dart.Frame.world(), f"{name}_edges", np.eye(4))
+        edge_frame = dart.SimpleFrame(dart.gui.world_render_frame(), f"{name}_edges", np.eye(4))
         edge_frame.set_shape(edge_shape)
         edge_frame.create_visual_aspect().set_color(list(_EDGE_COLOR))
         self.render_world.add_simple_frame(edge_frame)
@@ -546,7 +547,7 @@ class IpcDeformableBridge:
         for i in range(node_count):
             fixed = body.is_fixed_node(i)
             frame = dart.SimpleFrame(
-                dart.Frame.world(),
+                dart.gui.world_render_frame(),
                 f"{name}_node_{i}",
                 _translation(body.node_position(i)),
             )
@@ -570,7 +571,7 @@ class IpcDeformableBridge:
     ) -> None:
         """A static box SimpleFrame (e.g. a ground barrier or drape obstacle)."""
 
-        frame = dart.SimpleFrame(dart.Frame.world(), name, _translation(center))
+        frame = dart.SimpleFrame(dart.gui.world_render_frame(), name, _translation(center))
         frame.set_shape(dart.BoxShape(np.asarray(full_extents, dtype=float)))
         frame.create_visual_aspect().set_color(list(color))
         self.render_world.add_simple_frame(frame)
@@ -584,7 +585,7 @@ class IpcDeformableBridge:
     ) -> None:
         """A static sphere SimpleFrame (e.g. a deformable obstacle barrier)."""
 
-        frame = dart.SimpleFrame(dart.Frame.world(), name, _translation(center))
+        frame = dart.SimpleFrame(dart.gui.world_render_frame(), name, _translation(center))
         frame.set_shape(dart.SphereShape(float(radius)))
         frame.create_visual_aspect().set_color(list(color))
         self.render_world.add_simple_frame(frame)

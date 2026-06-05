@@ -43,7 +43,7 @@ class _FakeBuilder:
 
 
 class _FakeSx:
-    """Stand-in for dartpy.simulation_experimental's GPU control functions."""
+    """Stand-in for dartpy's GPU control functions."""
 
     def __init__(self, available: bool, enabled: bool = False) -> None:
         self._available = available
@@ -92,7 +92,7 @@ def test_strip_gpu_flags():
 def test_configure_gpu_compute_cpu_build_is_noop(monkeypatch, capsys):
     monkeypatch.delenv("DART_PY_DEMOS_GPU", raising=False)
     sx = _FakeSx(available=False)
-    panel = _configure_gpu_compute(SimpleNamespace(simulation_experimental=sx), None)
+    panel = _configure_gpu_compute(sx, None)
     assert panel is None
     # Auto on a CPU build never enables the GPU backend.
     assert all(call is False for call in sx.set_calls)
@@ -102,13 +102,13 @@ def test_configure_gpu_compute_cpu_build_is_noop(monkeypatch, capsys):
 def test_configure_gpu_compute_available_auto_enables(monkeypatch):
     monkeypatch.delenv("DART_PY_DEMOS_GPU", raising=False)
     sx = _FakeSx(available=True)
-    panel = _configure_gpu_compute(SimpleNamespace(simulation_experimental=sx), None)
+    panel = _configure_gpu_compute(sx, None)
     assert panel is not None
     assert sx.is_accelerated_deformable_solve_enabled() is True
 
 
 def test_configure_gpu_compute_no_binding_returns_none():
-    fake_dart = SimpleNamespace(simulation_experimental=SimpleNamespace())
+    fake_dart = SimpleNamespace()
     assert _configure_gpu_compute(fake_dart, None) is None
 
 
@@ -151,7 +151,7 @@ def test_world_factory_without_gpu_panel_is_unchanged():
 
 
 def test_dartpy_gpu_bindings_are_safe_noops_without_cuda():
-    sx = dart.simulation_experimental
+    sx = dart
     if not hasattr(sx, "set_accelerated_deformable_solve"):
         pytest.skip("simulation_experimental is disabled in this build")
     if sx.is_accelerated_deformable_solve_available():

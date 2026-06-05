@@ -6,7 +6,7 @@ import pytest
 
 
 def test_basic():
-    world_frame = dart.Frame.world()
+    world_frame = dart.gui.world_render_frame()
     assert world_frame.is_world()
 
     frame1 = dart.SimpleFrame()

@@ -48,19 +48,19 @@ def _cache_reports_experimental_disabled() -> bool:
 
 def _simulation_experimental():
     try:
-        module = importlib.import_module("dartpy.simulation_experimental")
+        module = importlib.import_module("dartpy")
     except ModuleNotFoundError as exc:
         if _cache_reports_experimental_disabled():
             pytest.skip("DART_BUILD_SIMULATION_EXPERIMENTAL is disabled")
         raise AssertionError(
-            "dartpy.simulation_experimental should be available when "
+            "dartpy should be available when "
             "dart-simulation-experimental is built"
         ) from exc
     if not hasattr(module, "World"):
         if _cache_reports_experimental_disabled():
             pytest.skip("DART_BUILD_SIMULATION_EXPERIMENTAL is disabled")
         raise AssertionError(
-            "dartpy.simulation_experimental imported but did not expose "
+            "dartpy imported but did not expose "
             "the experimental World binding"
         )
     return module
@@ -78,7 +78,7 @@ def _translation_transform(x: float, y: float, z: float):
 def test_experimental_world_module_is_separate_from_legacy_simulation():
     sx = _simulation_experimental()
 
-    assert dart.simulation_experimental is sx
+    assert dart is sx
     assert sx is not dart.simulation
     assert not hasattr(dart, "next")
 
@@ -283,7 +283,7 @@ def test_experimental_stub_tracks_public_runtime_symbols():
     sx = _simulation_experimental()
     repo_root = Path(__file__).resolve().parents[4]
     stub = (
-        repo_root / "python" / "stubs" / "dartpy" / "simulation_experimental.pyi"
+        repo_root / "python" / "stubs" / "dartpy" / "simulation.pyi"
     ).read_text(encoding="utf-8")
 
     public_symbols = (
@@ -399,7 +399,7 @@ def test_experimental_stub_places_rigid_surface_ccd_obstacle_on_rigid_body():
     sx = _simulation_experimental()
     repo_root = Path(__file__).resolve().parents[4]
     stub = (
-        repo_root / "python" / "stubs" / "dartpy" / "simulation_experimental.pyi"
+        repo_root / "python" / "stubs" / "dartpy" / "simulation.pyi"
     ).read_text(encoding="utf-8")
 
     assert hasattr(sx.RigidBody, "is_deformable_surface_ccd_obstacle")
@@ -921,7 +921,7 @@ def test_experimental_add_skeleton_uri_accepts_read_options():
 def test_experimental_add_world_imports_legacy_world():
     sx = _simulation_experimental()
 
-    legacy_world = dart.World("py_legacy_world")
+    legacy_world = dart.gui.RenderWorld("py_legacy_world")
     skeleton = dart.Skeleton("py_world_loader")
     properties = dart.RevoluteJointProperties()
     properties.mAxis = np.asarray([0.0, 1.0, 0.0], dtype=float)
@@ -953,7 +953,7 @@ def test_experimental_add_world_imports_legacy_world():
 def test_experimental_add_world_rejects_unsupported_world_without_mutation():
     sx = _simulation_experimental()
 
-    legacy_world = dart.World("py_unsupported_world")
+    legacy_world = dart.gui.RenderWorld("py_unsupported_world")
     supported = dart.Skeleton("py_supported_world_loader")
     supported.create_revolute_joint_and_body_node_pair()
     legacy_world.add_skeleton(supported)
@@ -971,7 +971,7 @@ def test_experimental_add_world_rejects_unsupported_world_without_mutation():
 def test_experimental_add_world_rejects_name_conflict_without_mutation():
     sx = _simulation_experimental()
 
-    legacy_world = dart.World("py_conflict_world")
+    legacy_world = dart.gui.RenderWorld("py_conflict_world")
     first = dart.Skeleton("py_first_world_loader")
     first.create_revolute_joint_and_body_node_pair()
     legacy_world.add_skeleton(first)
@@ -992,7 +992,7 @@ def test_experimental_add_world_rejects_name_conflict_without_mutation():
 def test_experimental_add_world_rejects_joint_axis_conflict_without_mutation():
     sx = _simulation_experimental()
 
-    legacy_world = dart.World("py_axis_conflict_world")
+    legacy_world = dart.gui.RenderWorld("py_axis_conflict_world")
     supported = dart.Skeleton("py_supported_world_loader")
     supported.create_revolute_joint_and_body_node_pair()
     legacy_world.add_skeleton(supported)
@@ -1014,7 +1014,7 @@ def test_experimental_add_world_rejects_joint_axis_conflict_without_mutation():
 def test_experimental_add_world_rejects_invalid_body_inertia_without_mutation():
     sx = _simulation_experimental()
 
-    legacy_world = dart.World("py_invalid_inertia_world")
+    legacy_world = dart.gui.RenderWorld("py_invalid_inertia_world")
     supported = dart.Skeleton("py_supported_world_loader")
     supported.create_revolute_joint_and_body_node_pair()
     legacy_world.add_skeleton(supported)

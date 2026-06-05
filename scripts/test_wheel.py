@@ -130,7 +130,9 @@ for module_name in core_modules:
             else:
                 import numpy as np
 
-                world = dartpy.World.create('wheel_gui')
+                # The Filament scene API renders the classic render world
+                # (dartpy.gui.RenderWorld); dartpy.World is the ECS facade.
+                world = dartpy.gui.RenderWorld('wheel_gui')
                 skeleton = dartpy.Skeleton('robot')
                 _, body = skeleton.create_free_joint_and_body_node_pair()
                 shape = dartpy.BoxShape(np.array([1.0, 1.0, 1.0]))

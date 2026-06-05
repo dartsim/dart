@@ -14,7 +14,7 @@ from __future__ import annotations
 from collections import deque
 
 import dartpy as dart
-import dartpy.simulation_experimental as sx
+import dartpy as sx
 import numpy as np
 
 from .._world_bridge import WorldRenderBridge
@@ -74,7 +74,7 @@ def _make_cloth_options(side: int, spacing: float, height: float):
 def _add_static_visual(bridge, center, shape, color, name):
     transform = np.eye(4)
     transform[:3, 3] = np.asarray(center, dtype=float)
-    frame = dart.SimpleFrame(dart.Frame.world(), name, transform)
+    frame = dart.SimpleFrame(dart.gui.world_render_frame(), name, transform)
     frame.set_shape(shape)
     frame.create_visual_aspect().set_color(list(color))
     bridge.render_world.add_simple_frame(frame)

@@ -330,8 +330,11 @@ def _configure_gpu_compute(dart: Any, cli_pref: bool | None) -> ScenePanel | Non
     one-line status so headless and interactive runs both report the mode.
     """
 
-    sx = getattr(dart, "simulation_experimental", None)
-    if sx is None or not hasattr(sx, "set_accelerated_deformable_solve"):
+    # In DART 7 the ECS simulation API is flat on the dartpy module, so the GPU
+    # deformable-solve controls live directly on it (absent when the simulation
+    # module is not built, e.g. DART_BUILD_SIMULATION_EXPERIMENTAL=OFF).
+    sx = dart
+    if not hasattr(sx, "set_accelerated_deformable_solve"):
         return None
 
     available = bool(sx.is_accelerated_deformable_solve_available())
