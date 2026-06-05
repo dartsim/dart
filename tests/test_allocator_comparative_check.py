@@ -16,8 +16,8 @@ def load_allocator_check_module():
     return module
 
 
-def aggregate_row(name, aggregate, cpu_time):
-    return {
+def aggregate_row(name, aggregate, cpu_time, **counters):
+    row = {
         "run_name": name,
         "run_type": "aggregate",
         "aggregate_name": aggregate,
@@ -25,6 +25,8 @@ def aggregate_row(name, aggregate, cpu_time):
         "real_time": cpu_time,
         "time_unit": "ns",
     }
+    row.update(counters)
+    return row
 
 
 def stl_vector_rows(*, dart_time, foonathan_time, dart_cv, foonathan_cv):
@@ -115,6 +117,45 @@ def test_noise_guard_allows_clean_fast_rows_to_pass():
 
     assert failures == []
     assert passes[0]["status"] == "PASS"
+
+
+def test_std_baseline_falls_back_to_flat_std_and_reports_dart_counters():
+    module = load_allocator_check_module()
+    rows = [
+        aggregate_row(
+            "BM_EnttRegistry_DART/512",
+            "median",
+            90.0,
+            dart_allocator_allocations=38.0,
+            dart_allocator_growths=0.0,
+        ),
+        aggregate_row("BM_EnttRegistry_DART/512", "cv", 0.02),
+        aggregate_row("BM_EnttRegistry_Std/512", "median", 100.0),
+        aggregate_row("BM_EnttRegistry_Std/512", "cv", 0.02),
+    ]
+
+    failures, passes = module.evaluate_comparisons(
+        rows,
+        baseline_allocators=[("StdPmr", "Std")],
+        max_cv=0.10,
+    )
+
+    assert failures == []
+    assert passes == [
+        {
+            "benchmark": "BM_EnttRegistry/512",
+            "baseline": "Std",
+            "dart_ns": 90.0,
+            "baseline_ns": 100.0,
+            "ratio": 0.9,
+            "max_ratio": 1.0,
+            "dart_counters": {
+                "dart_allocator_allocations": 38.0,
+                "dart_allocator_growths": 0.0,
+            },
+            "status": "PASS",
+        }
+    ]
 
 
 def test_benchmark_filter_modes_are_explicit():
