@@ -18,7 +18,9 @@
       during the step loop" on representative rigid, multibody, contact, and
       deformable scenes.
 - [ ] Phase 6: Add memory-layout profiler/debugger surfaces and GUI
-      visualization.
+      visualization. `MemoryAllocatorDebugger` now exposes structured live
+      bytes, peak live bytes, and live allocation count; World-level profiler
+      surfaces and GUI visualization remain future work.
 
 ## Goal
 

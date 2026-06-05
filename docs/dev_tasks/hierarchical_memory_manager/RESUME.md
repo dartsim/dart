@@ -14,31 +14,30 @@ edge cases, and added `FixedPoolAllocator` for fixed-size slot workloads. The
 local comparative allocator benchmark now passes all DART/Foonathan median
 ratios when the fixed-size pool row uses `FixedPoolAllocator`, while mixed
 size-classed workloads remain on `PoolAllocator`.
+The memory-debugger correctness slice now also exposes structured live-byte,
+peak-byte, and allocation-count queries from `MemoryAllocatorDebugger`, giving
+later World diagnostics/profiling code an API surface instead of requiring
+debug-text parsing.
 
 ## Current Branch
 
-`feature/aligned-memory-allocator` - PR #2871 branch for allocator correctness
-and fixed-size pool performance. The stacked
-`feature/world-registry-allocator` branch for PR #2872 builds on this branch.
+`test/memory-allocator-debugger-correctness` - PR #2893 branch for allocator
+debugger accounting coverage and structured debugger counters.
 
 ## Immediate Next Step
 
-Finish review/CI for PR #2871, then merge it into the stacked World registry
-branch and keep PR #2872's EnTT allocator/no-growth tests current. Next
-allocator work should land the strict comparative benchmark gate, broaden
-`FixedPoolAllocator` correctness coverage, and add EnTT registry/storage
-allocator benchmarks before replacing more per-step hot-loop temporaries.
+Keep PR #2893 draft until hosted CI and review are clean after the structured
+debugger-counter update. Next allocator work should continue landing the strict
+comparative benchmark gate, fixed-capacity/free-list correctness, and EnTT
+registry/storage allocator evidence before replacing more per-step hot-loop
+temporaries.
 
 ## Latest Local Validation
 
 - `pixi run lint`
-- `cmake --build build/default/cpp/Release --target bm_allocators_comparative UNIT_common_pool_allocator -j2`
-- `ctest --test-dir build/default/cpp/Release -R '^UNIT_common_pool_allocator$' --output-on-failure`
-- `build/default/cpp/Release/bin/bm_allocators_comparative --benchmark_min_time=0.1s --benchmark_out=.benchmark_results/allocator-comparative-current-head.json --benchmark_out_format=json`
-- Local parser over `.benchmark_results/allocator-comparative-current-head.json`:
-  all DART/Foonathan and DART/StdPmr median ratios passed (`< 1.0`),
-  including fixed pool, mixed pool, frame, realistic, steady-state, and STL
-  vector workloads.
+- `cmake --build build/default/cpp/Release --target UNIT_common_memory_allocator -j2`
+- `./build/default/cpp/Release/bin/UNIT_common_memory_allocator`
+- `git diff --check`
 
 ## Context That Would Be Lost
 

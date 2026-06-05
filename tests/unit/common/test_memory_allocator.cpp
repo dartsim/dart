@@ -168,6 +168,9 @@ TEST(MemoryAllocatorTest, DebuggerTracksLiveAllocationsAndPeakBytes)
   MemoryAllocatorDebugger<CAllocator> allocator;
 
   EXPECT_TRUE(allocator.isEmpty());
+  EXPECT_EQ(allocator.getAllocatedSize(), 0u);
+  EXPECT_EQ(allocator.getPeakAllocatedSize(), 0u);
+  EXPECT_EQ(allocator.getAllocationCount(), 0u);
   EXPECT_EQ(
       allocator.getType(),
       std::string_view("MemoryAllocatorDebugger<CAllocator>"));
@@ -178,6 +181,9 @@ TEST(MemoryAllocatorTest, DebuggerTracksLiveAllocationsAndPeakBytes)
   ASSERT_NE(second, nullptr);
 
   EXPECT_FALSE(allocator.isEmpty());
+  EXPECT_EQ(allocator.getAllocatedSize(), 24u);
+  EXPECT_EQ(allocator.getPeakAllocatedSize(), 24u);
+  EXPECT_EQ(allocator.getAllocationCount(), 2u);
   EXPECT_TRUE(allocator.hasAllocated(first, 8));
   EXPECT_TRUE(allocator.hasAllocated(second, 16));
   EXPECT_FALSE(allocator.hasAllocated(first, 16));
@@ -188,6 +194,9 @@ TEST(MemoryAllocatorTest, DebuggerTracksLiveAllocationsAndPeakBytes)
   EXPECT_NE(withBoth.str().find("peak: 24"), std::string::npos);
 
   allocator.deallocate(first, 8);
+  EXPECT_EQ(allocator.getAllocatedSize(), 16u);
+  EXPECT_EQ(allocator.getPeakAllocatedSize(), 24u);
+  EXPECT_EQ(allocator.getAllocationCount(), 1u);
   EXPECT_FALSE(allocator.hasAllocated(first, 8));
   EXPECT_TRUE(allocator.hasAllocated(second, 16));
 
@@ -198,6 +207,9 @@ TEST(MemoryAllocatorTest, DebuggerTracksLiveAllocationsAndPeakBytes)
 
   allocator.deallocate(second, 16);
   EXPECT_TRUE(allocator.isEmpty());
+  EXPECT_EQ(allocator.getAllocatedSize(), 0u);
+  EXPECT_EQ(allocator.getPeakAllocatedSize(), 24u);
+  EXPECT_EQ(allocator.getAllocationCount(), 0u);
 }
 
 TEST(MemoryAllocatorTest, DebuggerRejectsForeignAndMismatchedDeallocations)
@@ -213,13 +225,22 @@ TEST(MemoryAllocatorTest, DebuggerRejectsForeignAndMismatchedDeallocations)
   allocator.deallocate(foreign, 32);
   EXPECT_FALSE(allocator.hasAllocated(foreign, 32));
   EXPECT_TRUE(allocator.hasAllocated(tracked, 32));
+  EXPECT_EQ(allocator.getAllocatedSize(), 32u);
+  EXPECT_EQ(allocator.getPeakAllocatedSize(), 32u);
+  EXPECT_EQ(allocator.getAllocationCount(), 1u);
 
   allocator.deallocate(tracked, 16);
   EXPECT_TRUE(allocator.hasAllocated(tracked, 32));
+  EXPECT_EQ(allocator.getAllocatedSize(), 32u);
+  EXPECT_EQ(allocator.getPeakAllocatedSize(), 32u);
+  EXPECT_EQ(allocator.getAllocationCount(), 1u);
 
   allocator.deallocate(tracked, 32);
   rawAllocator.deallocate(foreign, 32);
   EXPECT_TRUE(allocator.isEmpty());
+  EXPECT_EQ(allocator.getAllocatedSize(), 0u);
+  EXPECT_EQ(allocator.getPeakAllocatedSize(), 32u);
+  EXPECT_EQ(allocator.getAllocationCount(), 0u);
 }
 
 TEST(MemoryAllocatorTest, DebuggerTracksAlignedAllocationOverload)
@@ -231,7 +252,13 @@ TEST(MemoryAllocatorTest, DebuggerTracksAlignedAllocationOverload)
   expectAligned(raw);
 
   EXPECT_TRUE(allocator.hasAllocated(raw, sizeof(OverAlignedObject)));
+  EXPECT_EQ(allocator.getAllocatedSize(), sizeof(OverAlignedObject));
+  EXPECT_EQ(allocator.getPeakAllocatedSize(), sizeof(OverAlignedObject));
+  EXPECT_EQ(allocator.getAllocationCount(), 1u);
   allocator.deallocate(
       raw, sizeof(OverAlignedObject), alignof(OverAlignedObject));
   EXPECT_TRUE(allocator.isEmpty());
+  EXPECT_EQ(allocator.getAllocatedSize(), 0u);
+  EXPECT_EQ(allocator.getPeakAllocatedSize(), sizeof(OverAlignedObject));
+  EXPECT_EQ(allocator.getAllocationCount(), 0u);
 }
