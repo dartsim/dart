@@ -845,6 +845,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     inline with an eight-stage capacity, eliminating stage-list heap allocation
     during default step pipeline assembly and rejecting overflow with
     `InvalidArgumentException`.
+  - Pre-baked the experimental World's default step stage bundle, kinematics
+    graph traversal, and rigid IPC kinematic scratch at `enterSimulationMode()`,
+    eliminating global heap allocation for repeated baked kinematic IPC steps
+    and covering it with a regression test.
   - Made experimental rigid-body external force/torque components persistent
     applied loads: each step reads them into the transient force buffer and
     leaves the components intact for callers to clear or update explicitly.

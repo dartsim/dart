@@ -32,48 +32,46 @@ base-allocator no-growth guards for baked kinematic IPC rigid-body, multibody
 variational, and single-deformable step loops, plus inline default step-pipeline
 storage. These are not the final global zero-allocation proof.
 
-The current benchmark slice (`bench/entt-registry-allocator`, PR #2890) adds
+The EnTT benchmark slice (`bench/entt-registry-allocator`, PR #2890) adds
 comparative EnTT registry/component-storage rows against foonathan/memory and
 standard-registry baselines. It distinguishes no-growth/prewarmed churn from
 build/growth, caches component storage handles, uses frame-backed DART storage
 for persistent no-growth churn and pool-backed DART storage for build/growth,
-reports DART counters, and keeps EnTT rows opt-in.
+reports DART counters, and keeps EnTT rows opt-in. PR #2890 has merged to
+`main`; keep its benchmark evidence as the baseline for future allocator-policy
+loops.
 
 ## Current Branch
 
-`bench/entt-registry-allocator` - PR #2890 branch for allocator benchmark
-evidence and EnTT registry benchmark loops. The branch is published and should
-merge latest `origin/main` before every push.
+`feature/world-step-global-heap-guard` - PR #2888 branch for the first global
+heap allocation guard on top of the registry, no-growth, and inline-pipeline
+work that has merged to `main`, plus the merged allocator-debugger diagnostics
+slice from PR #2893, fixed-capacity free-list slice from PR #2892, and EnTT
+benchmark slice from PR #2890.
 
 ## Immediate Next Step
 
-Keep #2890 focused on benchmark evidence and review/CI cleanup. The current
-Codex review fix replaces EnTT entity-storage `generate()` with
-`registry.create()` so the benchmark compiles against the supported EnTT 3.14
-CONFIG path. Rebuild the benchmark target and rerun checker unit tests after
-that change.
-
+Monitor #2888 CI and resolve any failures after the latest `origin/main` merge.
 Do not treat the benchmark-only frame-backed no-growth policy as production
 `WorldRegistry` bake/build allocation yet. Production integration needs a
 persistent world-registry arena or bake allocator that resets on
 rebuild/destruction, not the existing per-step frame allocator that resets
 inside `World::step()`.
 
-The current pushed head still needs a clean current-head performance pass or
-optimization before merge readiness. A high-load current-head rerun failed
-several warmed EnTT comparisons and several rows exceeded the CV/noise limit.
-Rerun the focused gate on a quiet host after any policy or benchmark change:
+Rerun the focused gate on a quiet host after any allocator-policy or benchmark
+change:
 
 ```bash
 pixi run bm-allocator-comparative-check --only-entt-registry \
   --baseline foonathan --baseline std --verbose
 ```
 
-Next allocator work should land the strict comparative gate, broaden allocator
-correctness coverage, benchmark EnTT registry/component storage, extend
+Next allocator work should broaden allocator correctness coverage, extend
 no-growth tests to contact-heavy scenes and remaining solver scratch paths, and
 continue optimizing allocator paths until DART beats standard C++ allocators and
-foonathan/memory on required workloads.
+foonathan/memory on required workloads. The active zero-allocation guard work
+should broaden beyond the first baked kinematic IPC paths before making a full
+zero-dynamic-allocation claim.
 
 ## Latest Local Validation
 
@@ -91,6 +89,17 @@ foonathan/memory on required workloads.
 - `pixi run test-simulation-experimental` (61/61 passed)
 - `cmake --build build/default/cpp/Release --target test_world -j2`
 - `ctest --test-dir build/default/cpp/Release -R '^test_world$' --output-on-failure`
+- On `feature/world-step-pipeline-inline-storage` after the inline pipeline
+  storage change: `cmake --build build/default/cpp/Release --target test_world -j2`
+  and `ctest --test-dir build/default/cpp/Release -R '^test_world$' --output-on-failure`
+- On `feature/world-step-global-heap-guard` before this handoff:
+  `cmake --build build/default/cpp/Release --target test_world -j2` and
+  `ctest --test-dir build/default/cpp/Release -R '^test_world$' --output-on-failure`
+- Post-lint review fix: `cmake --build build/default/cpp/Release --target UNIT_common_free_list_allocator UNIT_common_memory_manager -j2`
+- Post-lint review fix: `ctest --test-dir build/default/cpp/Release -R '^(UNIT_common_free_list_allocator|UNIT_common_memory_manager)$' --output-on-failure`
+- Post-lint: `cmake --build build/default/cpp/Release --target UNIT_common_memory_manager test_world -j2`
+- Post-lint: `ctest --test-dir build/default/cpp/Release -R '^(UNIT_common_memory_manager|test_world)$' --output-on-failure`
+- `git diff --check`
 - Current #2890 focused strict command passed on 2026-06-04 at local timestamp
   `20:20:48-07:00`:
   `pixi run bm-allocator-comparative-check --only-entt-registry --baseline foonathan --baseline std --verbose --output .benchmark_results/allocator_comparative_entt_frame_final.json`.
@@ -160,8 +169,8 @@ foonathan/memory on required workloads.
 ```bash
 git status -sb
 git diff --stat
-gh pr view 2890 --repo dartsim/dart --json state,isDraft,mergeStateStatus,headRefOid,statusCheckRollup
+gh pr view 2888 --repo dartsim/dart --json state,isDraft,mergeStateStatus,headRefOid,statusCheckRollup
 ```
 
-Then continue from PR #2890 and the focused EnTT registry benchmark gate,
-alongside remaining allocator dirty PR cleanup.
+Then continue from PR #2888 and any stacked heap-guard PRs such as #2899,
+alongside merged-branch cleanup candidates.

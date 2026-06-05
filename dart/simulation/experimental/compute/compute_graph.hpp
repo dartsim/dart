@@ -90,6 +90,8 @@ public:
   [[nodiscard]] ComputeNode* getNode(std::string_view name) const;
   [[nodiscard]] std::vector<ComputeNode*> getNodes() const;
   [[nodiscard]] std::vector<ComputeNode*> getTopologicalOrder() const;
+  [[nodiscard]] const std::vector<ComputeNode*>& getTopologicalOrderView()
+      const;
   [[nodiscard]] std::vector<std::vector<ComputeNode*>> getParallelLevels()
       const;
 
@@ -130,6 +132,8 @@ public:
   void clear();
 
 private:
+  void invalidateTraversalCache() noexcept;
+
   [[nodiscard]] bool ownsNode(const ComputeNode& node) const;
   [[nodiscard]] bool wouldCreateCycle(
       const ComputeNode& from, const ComputeNode& to) const;
@@ -139,6 +143,8 @@ private:
   std::vector<std::unique_ptr<ComputeNode>> m_nodes;
   std::vector<ComputeEdge> m_edges;
   std::unordered_map<std::string, ComputeNode*> m_nodesByName;
+  mutable std::vector<ComputeNode*> m_topologicalOrderCache;
+  mutable bool m_topologicalOrderCacheValid = false;
 };
 
 } // namespace dart::simulation::experimental::compute

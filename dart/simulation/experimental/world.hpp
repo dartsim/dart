@@ -57,6 +57,7 @@
 #include <vector>
 
 #include <cstddef>
+#include <cstdint>
 
 namespace dart::simulation::experimental {
 
@@ -701,6 +702,7 @@ private:
   friend class RigidBody;
   friend class DeformableBody;
   friend class io::detail::SkeletonLoaderWorldAccess;
+  friend class compute::WorldKinematicsGraph;
   friend class compute::RigidIpcContactStage;
 
   /// Internal storage seam. `detail::storageOf` reaches the privately-held,
@@ -713,6 +715,7 @@ private:
 
   Frame resolveParentFrame(const Frame& parent) const;
   struct CollisionQueryCache;
+  struct StepPipelineCache;
   Entity createFrameEntity(
       std::string_view name,
       const Frame& parentFrame,
@@ -729,6 +732,8 @@ private:
       const Eigen::Vector3d& axis);
 
   void ensureDesignMode() const;
+  void markFrameTopologyChanged() noexcept;
+  [[nodiscard]] std::uint64_t getFrameTopologyRevision() const noexcept;
   void reserveRegistryStorageForSimulation();
   void resetCountersFromRegistry();
   void stepPipelineOnce(
@@ -773,6 +778,7 @@ private:
   DeformableSolverDiagnostics m_lastDeformableSolverDiagnostics{};
   WorldMemoryDiagnostics m_memoryDiagnostics{};
   double m_rigidIpcAdaptiveBarrierStiffnessLowerBound{1.0};
+  std::uint64_t m_frameTopologyRevision{0};
   enum class MultibodyIntegrationMethod
   {
     SemiImplicit,
@@ -791,6 +797,7 @@ private:
   std::size_t m_linkCounter{0};
   std::size_t m_jointCounter{0};
   mutable std::unique_ptr<CollisionQueryCache> m_collisionQueryCache;
+  std::unique_ptr<StepPipelineCache> m_stepPipelineCache;
 
   struct ReplayState;
   std::unique_ptr<ReplayState> m_replay;

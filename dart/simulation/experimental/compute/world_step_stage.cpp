@@ -97,6 +97,33 @@ namespace dvbd = dart::simulation::experimental::detail::deformable_vbd;
 namespace fem = dart::simulation::experimental::detail::deformable_elasticity;
 namespace sxdetail = dart::simulation::experimental::detail;
 
+struct RigidIpcRuntimeBody
+{
+  entt::entity entity = entt::null;
+  bool kinematic = false;
+  bool hasSupportedSurface = false;
+  std::size_t surfaceIndex = std::numeric_limits<std::size_t>::max();
+  sxdetail::RigidIpcPose initialPose;
+  sxdetail::RigidIpcVector6d initialVelocity
+      = sxdetail::RigidIpcVector6d::Zero();
+  sxdetail::RigidIpcBarrierSurface surface;
+  sxdetail::RigidIpcBodyDynamicsTerm dynamicsTerm;
+};
+
+struct RigidIpcContactStage::Scratch
+{
+  std::vector<RigidIpcRuntimeBody> runtimeBodies;
+  std::vector<RigidIpcRuntimeBody> solverBodies;
+  std::vector<sxdetail::RigidIpcBarrierSurface> surfaces;
+  std::vector<sxdetail::RigidIpcBodyDynamicsTerm> dynamicsTerms;
+  std::vector<sxdetail::RigidIpcBodyDynamicsTerm> solveDynamicsTerms;
+  std::vector<entt::entity> tracedEntities;
+  std::vector<entt::entity> blockedEntities;
+  std::vector<entt::entity> writebackEntities;
+  std::vector<entt::entity> orderedEntities;
+  std::vector<int> visitState;
+};
+
 namespace {
 
 constexpr double kDefaultRigidIpcContactStageActivationDistance = 1e-2;
@@ -312,18 +339,31 @@ void appendRigidBodyParentBeforeChild(
 }
 
 //==============================================================================
+void orderRigidBodiesParentBeforeChild(
+    const detail::WorldRegistry& registry,
+    const std::vector<entt::entity>& rigidBodyEntities,
+    std::vector<entt::entity>& ordered,
+    std::vector<int>& visitState)
+{
+  ordered.clear();
+  ordered.reserve(rigidBodyEntities.size());
+
+  visitState.assign(rigidBodyEntities.size(), 0);
+  for (std::size_t i = 0; i < rigidBodyEntities.size(); ++i) {
+    appendRigidBodyParentBeforeChild(
+        registry, rigidBodyEntities, visitState, ordered, i);
+  }
+}
+
+//==============================================================================
 std::vector<entt::entity> orderRigidBodiesParentBeforeChild(
     const detail::WorldRegistry& registry,
     const std::vector<entt::entity>& rigidBodyEntities)
 {
   std::vector<entt::entity> ordered;
-  ordered.reserve(rigidBodyEntities.size());
-
-  std::vector<int> visitState(rigidBodyEntities.size(), 0);
-  for (std::size_t i = 0; i < rigidBodyEntities.size(); ++i) {
-    appendRigidBodyParentBeforeChild(
-        registry, rigidBodyEntities, visitState, ordered, i);
-  }
+  std::vector<int> visitState;
+  orderRigidBodiesParentBeforeChild(
+      registry, rigidBodyEntities, ordered, visitState);
 
   return ordered;
 }
@@ -608,6 +648,12 @@ std::string_view KinematicsStage::getName() const noexcept
 }
 
 //==============================================================================
+KinematicsStage::KinematicsStage() = default;
+
+//==============================================================================
+KinematicsStage::~KinematicsStage() = default;
+
+//==============================================================================
 ComputeStageMetadata KinematicsStage::getMetadata() const noexcept
 {
   return {
@@ -617,10 +663,25 @@ ComputeStageMetadata KinematicsStage::getMetadata() const noexcept
 }
 
 //==============================================================================
+void KinematicsStage::prepare(World& world)
+{
+  if (m_cachedWorld != &world || !m_cachedGraph) {
+    m_cachedGraph = std::make_unique<WorldKinematicsGraph>(world);
+    m_cachedWorld = &world;
+    return;
+  }
+
+  m_cachedGraph->rebuild();
+}
+
+//==============================================================================
 void KinematicsStage::execute(World& world, ComputeExecutor& executor)
 {
-  WorldKinematicsGraph graph(world);
-  graph.execute(executor);
+  if (!m_cachedGraph || m_cachedWorld != &world || !world.isSimulationMode()
+      || !m_cachedGraph->isTopologyCurrent()) {
+    prepare(world);
+  }
+  m_cachedGraph->execute(executor);
 }
 
 //==============================================================================
@@ -7173,19 +7234,6 @@ void advanceDeformableBody(
 }
 
 //==============================================================================
-struct RigidIpcRuntimeBody
-{
-  entt::entity entity = entt::null;
-  bool kinematic = false;
-  bool hasSupportedSurface = false;
-  std::size_t surfaceIndex = std::numeric_limits<std::size_t>::max();
-  sxdetail::RigidIpcPose initialPose;
-  sxdetail::RigidIpcVector6d initialVelocity
-      = sxdetail::RigidIpcVector6d::Zero();
-  sxdetail::RigidIpcBarrierSurface surface;
-  sxdetail::RigidIpcBodyDynamicsTerm dynamicsTerm;
-};
-
 //==============================================================================
 Eigen::Vector3d rotationVectorFromQuaternion(
     const Eigen::Quaterniond& orientation)
@@ -7206,6 +7254,90 @@ Eigen::Quaterniond quaternionFromRotationVector(const Eigen::Vector3d& rotation)
   const Eigen::Matrix3d matrix = sxdetail::rigidIpcRotationVectorToMatrix(
       rotation.allFinite() ? rotation : Eigen::Vector3d::Zero());
   return normalizeOrIdentity(Eigen::Quaterniond(matrix));
+}
+
+//==============================================================================
+void resetRigidIpcRuntimeBodyPreservingSurface(
+    RigidIpcRuntimeBody& body) noexcept
+{
+  body.entity = entt::null;
+  body.kinematic = false;
+  body.hasSupportedSurface = false;
+  body.surfaceIndex = std::numeric_limits<std::size_t>::max();
+  body.initialPose = sxdetail::RigidIpcPose{};
+  body.initialVelocity.setZero();
+  body.dynamicsTerm = sxdetail::RigidIpcBodyDynamicsTerm{};
+
+  body.surface.body = 0u;
+  body.surface.pose = sxdetail::RigidIpcPose{};
+  body.surface.vertices.clear();
+  body.surface.triangles.clear();
+  body.surface.frictionCoefficient = 1.0;
+  body.surface.dynamic = true;
+  body.surface.kinematic = false;
+  body.surface.kinematicStartPose = sxdetail::RigidIpcPose{};
+}
+
+//==============================================================================
+void copyRigidIpcSurfacePreservingCapacity(
+    const sxdetail::RigidIpcBarrierSurface& source,
+    sxdetail::RigidIpcBarrierSurface& target)
+{
+  target.body = source.body;
+  target.pose = source.pose;
+  target.vertices.assign(source.vertices.begin(), source.vertices.end());
+  target.triangles.assign(source.triangles.begin(), source.triangles.end());
+  target.frictionCoefficient = source.frictionCoefficient;
+  target.dynamic = source.dynamic;
+  target.kinematic = source.kinematic;
+  target.kinematicStartPose = source.kinematicStartPose;
+}
+
+//==============================================================================
+void copyRigidIpcRuntimeBodyPreservingSurfaceCapacity(
+    const RigidIpcRuntimeBody& source, RigidIpcRuntimeBody& target)
+{
+  target.entity = source.entity;
+  target.kinematic = source.kinematic;
+  target.hasSupportedSurface = source.hasSupportedSurface;
+  target.surfaceIndex = source.surfaceIndex;
+  target.initialPose = source.initialPose;
+  target.initialVelocity = source.initialVelocity;
+  copyRigidIpcSurfacePreservingCapacity(source.surface, target.surface);
+  target.dynamicsTerm = source.dynamicsTerm;
+}
+
+//==============================================================================
+void prepareRigidIpcSolverScratch(
+    const std::vector<RigidIpcRuntimeBody>& runtimeBodies,
+    std::vector<RigidIpcRuntimeBody>& solverBodies,
+    std::vector<sxdetail::RigidIpcBarrierSurface>& surfaces,
+    std::vector<sxdetail::RigidIpcBodyDynamicsTerm>& dynamicsTerms)
+{
+  std::size_t solverCount = 0u;
+  for (const auto& body : runtimeBodies) {
+    if (!body.hasSupportedSurface) {
+      continue;
+    }
+
+    if (solverCount == solverBodies.size()) {
+      solverBodies.emplace_back();
+    }
+    copyRigidIpcRuntimeBodyPreservingSurfaceCapacity(
+        body, solverBodies[solverCount]);
+    solverBodies[solverCount].surfaceIndex = solverCount;
+    solverBodies[solverCount].surface.body = solverCount;
+    ++solverCount;
+  }
+
+  solverBodies.resize(solverCount);
+  surfaces.resize(solverCount);
+  dynamicsTerms.resize(solverCount);
+  for (std::size_t i = 0; i < solverCount; ++i) {
+    copyRigidIpcSurfacePreservingCapacity(solverBodies[i].surface, surfaces[i]);
+    surfaces[i].body = i;
+    dynamicsTerms[i] = solverBodies[i].dynamicsTerm;
+  }
 }
 
 //==============================================================================
@@ -7511,8 +7643,10 @@ sxdetail::RigidIpcBodyDynamicsTerm makeRuntimeRigidIpcDynamicsTerm(
 }
 
 //==============================================================================
-std::vector<RigidIpcRuntimeBody> collectRigidIpcRuntimeBodies(
-    const World& world, RigidIpcSolverStats& stats)
+void collectRigidIpcRuntimeBodies(
+    const World& world,
+    RigidIpcSolverStats& stats,
+    std::vector<RigidIpcRuntimeBody>& bodies)
 {
   const auto& registry
       = dart::simulation::experimental::detail::registryOf(world);
@@ -7526,8 +7660,8 @@ std::vector<RigidIpcRuntimeBody> collectRigidIpcRuntimeBodies(
       comps::FreeFrameProperties,
       comps::FrameCache>();
 
-  std::vector<RigidIpcRuntimeBody> bodies;
   bodies.reserve(view.size_hint());
+  std::size_t outputCount = 0u;
   for (const auto entity : view) {
     const bool isStatic = registry.all_of<comps::StaticBodyTag>(entity);
     const bool isKinematic = registry.all_of<comps::KinematicBodyTag>(entity);
@@ -7537,17 +7671,21 @@ std::vector<RigidIpcRuntimeBody> collectRigidIpcRuntimeBodies(
     }
 
     ++stats.bodyCount;
+    if (outputCount == bodies.size()) {
+      bodies.emplace_back();
+    }
+    RigidIpcRuntimeBody& body = bodies[outputCount];
+    resetRigidIpcRuntimeBodyPreservingSurface(body);
 
     const auto& transform = view.get<comps::Transform>(entity);
     const auto& velocity = view.get<comps::Velocity>(entity);
 
-    RigidIpcRuntimeBody body;
     body.entity = entity;
     body.kinematic = isKinematic;
     body.initialPose = toRigidIpcPose(transform);
     body.initialVelocity.head<3>() = velocity.linear;
     body.initialVelocity.tail<3>() = velocity.angular;
-    body.surface.body = bodies.size();
+    body.surface.body = outputCount;
     body.surface.pose = body.initialPose;
     body.surface.dynamic = !isStatic && !isKinematic;
     body.surface.kinematic = isKinematic;
@@ -7586,10 +7724,9 @@ std::vector<RigidIpcRuntimeBody> collectRigidIpcRuntimeBodies(
       }
       ++stats.surfaceCount;
     }
-    bodies.push_back(std::move(body));
+    ++outputCount;
   }
-
-  return bodies;
+  bodies.resize(outputCount);
 }
 
 //==============================================================================
@@ -7605,11 +7742,13 @@ std::size_t findRuntimeBodyIndex(
 }
 
 //==============================================================================
-void clearKinematicBodyStepTraces(World& world)
+void clearKinematicBodyStepTraces(
+    World& world, std::vector<entt::entity>& tracedEntities)
 {
   auto& registry = dart::simulation::experimental::detail::registryOf(world);
   auto view = registry.view<comps::KinematicBodyStepTrace>();
-  std::vector<entt::entity> tracedEntities;
+  tracedEntities.clear();
+  tracedEntities.reserve(view.size());
   for (const auto entity : view) {
     tracedEntities.push_back(entity);
   }
@@ -7717,10 +7856,13 @@ void applyRigidIpcRuntimeResult(
 void applyRigidIpcKinematicRuntimeBodies(
     World& world,
     const std::vector<RigidIpcRuntimeBody>& bodies,
-    const std::vector<entt::entity>& blockedKinematicEntities)
+    const std::vector<entt::entity>& blockedKinematicEntities,
+    std::vector<entt::entity>& writebackEntities,
+    std::vector<entt::entity>& orderedEntities,
+    std::vector<int>& visitState)
 {
   auto& registry = dart::simulation::experimental::detail::registryOf(world);
-  std::vector<entt::entity> writebackEntities;
+  writebackEntities.clear();
   writebackEntities.reserve(bodies.size());
   for (const auto& body : bodies) {
     if (body.kinematic
@@ -7733,8 +7875,8 @@ void applyRigidIpcKinematicRuntimeBodies(
     }
   }
 
-  const auto orderedEntities
-      = orderRigidBodiesParentBeforeChild(registry, writebackEntities);
+  orderRigidBodiesParentBeforeChild(
+      registry, writebackEntities, orderedEntities, visitState);
   for (const auto entity : orderedEntities) {
     const std::size_t bodyIndex = findRuntimeBodyIndex(bodies, entity);
     if (bodyIndex >= bodies.size()) {
@@ -7742,14 +7884,6 @@ void applyRigidIpcKinematicRuntimeBodies(
     }
     applyKinematicRuntimeBody(world, bodies[bodyIndex]);
   }
-}
-
-//==============================================================================
-void applyRigidIpcKinematicRuntimeBodies(
-    World& world, const std::vector<RigidIpcRuntimeBody>& bodies)
-{
-  applyRigidIpcKinematicRuntimeBodies(
-      world, bodies, std::vector<entt::entity>{});
 }
 
 //==============================================================================
@@ -7807,10 +7941,18 @@ void applyRigidIpcKinematicRuntimeBodiesAfterRejectedSolve(
   // independent prescribed motion. Block only the involved supported surfaces;
   // unsupported kinematic bodies never entered the solve and remain
   // advanceable.
+  auto blockedEntities = blockedKinematicEntitiesAfterRejectedRigidIpcSolve(
+      solverBodies, result);
+  std::vector<entt::entity> writebackEntities;
+  std::vector<entt::entity> orderedEntities;
+  std::vector<int> visitState;
   applyRigidIpcKinematicRuntimeBodies(
       world,
       runtimeBodies,
-      blockedKinematicEntitiesAfterRejectedRigidIpcSolve(solverBodies, result));
+      blockedEntities,
+      writebackEntities,
+      orderedEntities,
+      visitState);
 }
 
 //==============================================================================
@@ -8404,9 +8546,13 @@ RigidIpcContactStage::RigidIpcContactStage(const std::size_t maxIterations)
 
 //==============================================================================
 RigidIpcContactStage::RigidIpcContactStage(RigidIpcContactStageOptions options)
-  : m_options(sanitizeRigidIpcContactStageOptions(options))
+  : m_options(sanitizeRigidIpcContactStageOptions(options)),
+    m_scratch(std::make_unique<Scratch>())
 {
 }
+
+//==============================================================================
+RigidIpcContactStage::~RigidIpcContactStage() = default;
 
 //==============================================================================
 std::string_view RigidIpcContactStage::getName() const noexcept
@@ -8430,12 +8576,43 @@ ComputeStageMetadata RigidIpcContactStage::getMetadata() const noexcept
 }
 
 //==============================================================================
+void RigidIpcContactStage::prepare(World& world)
+{
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
+  auto bodyView = registry.view<comps::RigidBodyTag>();
+  const auto bodyCount = bodyView.size();
+  auto kinematicView = registry.view<comps::KinematicBodyTag>();
+  const auto kinematicCount = kinematicView.size();
+
+  m_scratch->runtimeBodies.reserve(bodyCount);
+  m_scratch->solverBodies.reserve(bodyCount);
+  m_scratch->surfaces.reserve(bodyCount);
+  m_scratch->dynamicsTerms.reserve(bodyCount);
+  m_scratch->solveDynamicsTerms.reserve(bodyCount);
+  m_scratch->tracedEntities.reserve(kinematicCount);
+  m_scratch->blockedEntities.reserve(kinematicCount);
+  m_scratch->writebackEntities.reserve(bodyCount);
+  m_scratch->orderedEntities.reserve(bodyCount);
+  m_scratch->visitState.reserve(bodyCount);
+
+  RigidIpcSolverStats warmupStats;
+  collectRigidIpcRuntimeBodies(world, warmupStats, m_scratch->runtimeBodies);
+  prepareRigidIpcSolverScratch(
+      m_scratch->runtimeBodies,
+      m_scratch->solverBodies,
+      m_scratch->surfaces,
+      m_scratch->dynamicsTerms);
+}
+
+//==============================================================================
 void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
 {
   m_lastStats.reset();
-  clearKinematicBodyStepTraces(world);
+  auto& scratch = *m_scratch;
+  clearKinematicBodyStepTraces(world, scratch.tracedEntities);
 
-  const auto runtimeBodies = collectRigidIpcRuntimeBodies(world, m_lastStats);
+  collectRigidIpcRuntimeBodies(world, m_lastStats, scratch.runtimeBodies);
+  const auto& runtimeBodies = scratch.runtimeBodies;
 
   if (runtimeBodies.empty()) {
     return;
@@ -8443,26 +8620,27 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
   if (m_lastStats.dynamicBodyCount == 0u) {
     // Kinematic-only scenes have no solve acceptance gate, so advance
     // prescribed bodies directly.
-    applyRigidIpcKinematicRuntimeBodies(world, runtimeBodies);
+    scratch.blockedEntities.clear();
+    applyRigidIpcKinematicRuntimeBodies(
+        world,
+        runtimeBodies,
+        scratch.blockedEntities,
+        scratch.writebackEntities,
+        scratch.orderedEntities,
+        scratch.visitState);
     return;
   }
 
-  std::vector<RigidIpcRuntimeBody> solverBodies;
-  solverBodies.reserve(m_lastStats.surfaceCount);
-  for (const auto& body : runtimeBodies) {
-    if (body.hasSupportedSurface) {
-      solverBodies.push_back(body);
-    }
-  }
-
-  std::vector<sxdetail::RigidIpcBarrierSurface> surfaces;
-  std::vector<sxdetail::RigidIpcBodyDynamicsTerm> dynamicsTerms;
-  surfaces.reserve(solverBodies.size());
-  dynamicsTerms.reserve(solverBodies.size());
-  for (const auto& body : solverBodies) {
-    surfaces.push_back(body.surface);
-    dynamicsTerms.push_back(body.dynamicsTerm);
-  }
+  prepareRigidIpcSolverScratch(
+      runtimeBodies,
+      scratch.solverBodies,
+      scratch.surfaces,
+      scratch.dynamicsTerms);
+  auto& solverBodies = scratch.solverBodies;
+  auto& surfaces = scratch.surfaces;
+  auto& dynamicsTerms = scratch.dynamicsTerms;
+  auto& solveDynamicsTerms = scratch.solveDynamicsTerms;
+  solveDynamicsTerms.assign(dynamicsTerms.begin(), dynamicsTerms.end());
 
   // Adaptive barrier-stiffness inputs: the world AABB diagonal over all
   // collision surfaces and the average dynamic-body mass. These drive the IPC
@@ -8528,7 +8706,7 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
   options.friction.coefficient = 1.0;
   options.friction.staticFrictionDisplacement
       = std::max(0.0, m_options.staticFrictionSpeedBound * world.getTimeStep());
-  options.dynamicsTerms = std::move(dynamicsTerms);
+  options.dynamicsTerms = std::move(solveDynamicsTerms);
   options.maxIterations = m_options.maxIterations;
   options.frictionIterations = m_options.frictionIterations;
   options.frictionConvergenceTolerance = m_options.frictionConvergenceTolerance;
@@ -8556,6 +8734,7 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
       },
       getMetadata());
   executor.execute(graph);
+  solveDynamicsTerms = std::move(options.dynamicsTerms);
 
   const bool lineSearchBlocked
       = result.status
