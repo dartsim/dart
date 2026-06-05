@@ -164,8 +164,10 @@ struct World::CollisionQueryCache
     Eigen::Isometry3d pose;
   };
 
-  void clear()
+  void clearObjectsAndResultsPreservingSpecs()
   {
+    // queryContacts() rebuilds native objects from `specs` after this call, so
+    // keep that vector intact while clearing the derived native/query state.
     collisionWorld.clear();
     keys.clear();
     entries.clear();
@@ -174,6 +176,12 @@ struct World::CollisionQueryCache
     candidatePairs.numObjects = 0;
     contacts.clear();
     pairResult.clear();
+  }
+
+  void clear()
+  {
+    clearObjectsAndResultsPreservingSpecs();
+    specs.clear();
   }
 
   ncol::CollisionWorld collisionWorld;
@@ -3214,7 +3222,7 @@ const std::vector<Contact>& World::queryContacts(
             });
 
   if (rebuildCache) {
-    cache.clear();
+    cache.clearObjectsAndResultsPreservingSpecs();
     cache.collisionWorld.reserveObjects(specs.size());
     cache.keys.reserve(specs.size());
     cache.entries.reserve(specs.size());

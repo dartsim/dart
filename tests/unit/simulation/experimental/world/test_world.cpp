@@ -4103,6 +4103,47 @@ TEST(World, CollisionQueryCacheUpdatesTransformsAndShapes)
   EXPECT_FALSE(world.collide().empty());
 }
 
+TEST(World, CollisionQueryCacheRebuildPreservesPreparedSpecs)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+
+  auto bodyA = world.addRigidBody("a");
+  bodyA.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  sx::RigidBodyOptions bodyBOptions;
+  bodyBOptions.position = Eigen::Vector3d(0.8, 0.0, 0.0);
+  auto bodyB = world.addRigidBody("b", bodyBOptions);
+  bodyB.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  const auto firstContacts = world.collide();
+  ASSERT_FALSE(firstContacts.empty());
+
+  Eigen::Isometry3d farPose = Eigen::Isometry3d::Identity();
+  farPose.translation() = Eigen::Vector3d(3.8, 0.0, 0.0);
+  bodyB.setTransform(farPose);
+  EXPECT_TRUE(world.collide().empty());
+
+  sx::CollisionShape offsetSphere = sx::CollisionShape::makeSphere(0.5);
+  offsetSphere.localTransform.translation() = Eigen::Vector3d(3.4, 0.0, 0.0);
+  bodyA.addCollisionShape(offsetSphere);
+
+  const auto rebuiltContacts = world.collide();
+  ASSERT_FALSE(rebuiltContacts.empty());
+
+  bool sawNewShape = false;
+  for (const auto& contact : rebuiltContacts) {
+    if (contact.bodyA.getName() == "a") {
+      sawNewShape = sawNewShape || contact.shapeIndexA == 1u;
+    }
+    if (contact.bodyB.getName() == "a") {
+      sawNewShape = sawNewShape || contact.shapeIndexB == 1u;
+    }
+  }
+  EXPECT_TRUE(sawNewShape);
+}
+
 // Test that multiple shapes on the same rigid body behave as compound
 // collision geometry and do not self-collide.
 TEST(World, CollisionQuerySupportsCompoundRigidBodyShapes)
