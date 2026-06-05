@@ -25,8 +25,9 @@
       during the step loop" on representative rigid, multibody, contact, and
       deformable scenes. Initial World base-allocator no-growth guards now
       cover baked kinematic IPC rigid-body, multibody variational, and
-      deformable ECS paths; global heap allocation guards and broader solver
-      coverage remain open.
+      deformable ECS paths; a first global heap guard now covers baked
+      kinematic IPC rigid-body and box-obstacle steps. Broader solver coverage
+      remains open before making a full zero-allocation claim.
 - [ ] Phase 6: Add memory-layout profiler/debugger surfaces and GUI
       visualization.
 
@@ -115,8 +116,8 @@ debugging, profiling, optimization experiments, and ImGui visualization.
    overflow, reuse-after-free, leak/debug accounting, and bounded failure.
 3. Extend bake-time registry/component storage reservation and no-growth
    allocation tests to contact-heavy scenes and remaining solver scratch step
-   paths, then add a separate global heap guard for the full zero-allocation
-   claim.
+   paths, then broaden the global heap guard beyond the initial baked
+   kinematic IPC scenes before making the full zero-allocation claim.
 4. Benchmark the allocator-backed EnTT registry/component-storage path against
    standard C++ allocators and foonathan/memory on DART-relevant workloads.
 5. Start replacing per-step `std::vector`/`Eigen` temporaries in hot stages with

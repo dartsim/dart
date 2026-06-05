@@ -31,27 +31,26 @@ deformable paths do not request more World base-allocator allocations or
 deallocations during repeated `World::step()` calls. This is not the final
 global zero-allocation proof; it covers the World-owned memory hierarchy only.
 
-The current stacked pipeline slice removes `WorldStepPipeline`'s heap-backed
-stage pointer vector. Pipelines now keep a fixed inline list of non-owning stage
-pointers sized for the current default World stage compositions plus headroom,
-and overflow is a deterministic `InvalidArgumentException`.
+The current stacked no-allocation slice pre-bakes the default step stage bundle
+and kinematics graph cache at `enterSimulationMode()`, reuses rigid IPC
+kinematic scratch storage, and adds a global `operator new` guard proving baked
+kinematic IPC rigid-body and box-obstacle steps do not allocate from the global
+heap.
 
 ## Current Branch
 
-`feature/world-step-pipeline-inline-storage` - stacked on PR #2879
-(`feature/world-memory-step-no-growth`), which is itself stacked on PR #2872
-(`feature/world-registry-allocator`). PR #2871 has merged to `main`, and #2872
-has been merged forward from `main`.
+`feature/world-step-global-heap-guard` - stacked on PR #2872
+(`feature/world-registry-allocator`). PRs #2879 and #2880 have merged to
+`main`; this branch has merged the current #2872 head.
 
 ## Immediate Next Step
 
-Monitor #2872/#2879/#2880 CI after the base-propagation merge and resolve any
-failures. Next
-allocator work should land the strict comparative benchmark gate, broaden
-`FixedPoolAllocator` correctness coverage, benchmark allocator-backed EnTT
-registry/component storage, extend no-growth ECS tests to broader contact and
-remaining solver scratch step paths, and add a separate global heap allocation
-guard before claiming zero dynamic allocation for the full simulation loop.
+Monitor #2872/#2888 CI and resolve any failures. Next allocator work should
+land the strict comparative benchmark gate, broaden `FixedPoolAllocator`
+correctness coverage, benchmark allocator-backed EnTT registry/component
+storage, extend no-growth ECS tests to broader contact and remaining solver
+scratch step paths, and broaden the global heap allocation guard before
+claiming zero dynamic allocation for the full simulation loop.
 
 ## Latest Local Validation
 
@@ -72,6 +71,9 @@ guard before claiming zero dynamic allocation for the full simulation loop.
 - On `feature/world-step-pipeline-inline-storage` after the inline pipeline
   storage change: `cmake --build build/default/cpp/Release --target test_world -j2`
   and `ctest --test-dir build/default/cpp/Release -R '^test_world$' --output-on-failure`
+- On `feature/world-step-global-heap-guard` before this handoff:
+  `cmake --build build/default/cpp/Release --target test_world -j2` and
+  `ctest --test-dir build/default/cpp/Release -R '^test_world$' --output-on-failure`
 
 ## Context That Would Be Lost
 
