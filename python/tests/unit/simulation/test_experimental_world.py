@@ -241,6 +241,44 @@ def test_experimental_api_exposes_python_names_only():
     assert not hasattr(sx.FixedFrame, "set_local_transform")
 
 
+def test_experimental_world_memory_diagnostics_expose_allocator_and_ecs_counters():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+    empty = world.memory_diagnostics
+
+    assert isinstance(empty, sx.WorldMemoryDiagnostics)
+    assert isinstance(empty.allocator_debug_diagnostics, sx.MemoryManagerDebugDiagnostics)
+    assert isinstance(
+        empty.allocator_debug_diagnostics.free_allocator,
+        sx.AllocatorDebugDiagnostics,
+    )
+    assert isinstance(empty.ecs_diagnostics, sx.WorldEcsDiagnostics)
+    assert empty.frame_scratch_capacity_bytes > 0
+    assert empty.frame_scratch_used_bytes == 0
+    assert empty.ecs_diagnostics.entity_count == 0
+    assert empty.ecs_diagnostics.component_count == 0
+
+    world.add_free_frame("diagnostic_frame")
+    diagnostics = world.memory_diagnostics
+    ecs = diagnostics.ecs_diagnostics
+
+    assert ecs.entity_count == 1
+    assert ecs.entity_capacity >= ecs.entity_count
+    assert ecs.storage_count == len(ecs.storages)
+    assert ecs.storage_count > 0
+    assert sum(storage.size for storage in ecs.storages) == ecs.component_count
+    assert (
+        sum(storage.capacity for storage in ecs.storages)
+        == ecs.component_capacity
+    )
+    assert any(
+        isinstance(storage, sx.WorldEcsStorageDiagnostics)
+        for storage in ecs.storages
+    )
+    assert all(storage.capacity >= storage.size for storage in ecs.storages)
+
+
 def test_experimental_stub_tracks_public_runtime_symbols():
     sx = _simulation_experimental()
     repo_root = Path(__file__).resolve().parents[4]
@@ -263,6 +301,11 @@ def test_experimental_stub_tracks_public_runtime_symbols():
         "StateVariable",
         "WorldStepProfile",
         "WorldStepStageProfile",
+        "AllocatorDebugDiagnostics",
+        "MemoryManagerDebugDiagnostics",
+        "WorldEcsStorageDiagnostics",
+        "WorldEcsDiagnostics",
+        "WorldMemoryDiagnostics",
     )
     for symbol in public_symbols:
         assert hasattr(sx, symbol), symbol
@@ -299,6 +342,7 @@ def test_experimental_stub_tracks_public_runtime_symbols():
         "has_rigid_body_joint",
         "num_rigid_body_joints",
         "num_rigid_body_fixed_joints",
+        "memory_diagnostics",
         "is_valid",
         "step_profiling_enabled",
         "last_step_profile",

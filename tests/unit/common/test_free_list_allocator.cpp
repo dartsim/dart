@@ -40,6 +40,7 @@
 
 #include <limits>
 #include <sstream>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -59,6 +60,43 @@ struct alignas(64) OverAlignedObject
 struct alignas(std::max_align_t) MaxAlignedObject
 {
   unsigned char values[sizeof(std::max_align_t)] = {};
+};
+
+class CountingMemoryAllocator final : public MemoryAllocator
+{
+public:
+  std::string_view getType() const override
+  {
+    return "CountingMemoryAllocator";
+  }
+
+  void* allocate(size_t bytes) noexcept override
+  {
+    ++allocationCount;
+    return backing.allocate(bytes);
+  }
+
+  void* allocate(size_t bytes, size_t alignment) noexcept override
+  {
+    ++allocationCount;
+    return backing.allocate(bytes, alignment);
+  }
+
+  void deallocate(void* pointer, size_t bytes) override
+  {
+    ++deallocationCount;
+    backing.deallocate(pointer, bytes);
+  }
+
+  void deallocate(void* pointer, size_t bytes, size_t alignment) override
+  {
+    ++deallocationCount;
+    backing.deallocate(pointer, bytes, alignment);
+  }
+
+  CAllocator backing;
+  std::size_t allocationCount{0};
+  std::size_t deallocationCount{0};
 };
 
 } // namespace
@@ -135,6 +173,19 @@ TEST(FreeListAllocatorTest, AllocateRejectsAlignmentRoundingOverflow)
 
   EXPECT_EQ(
       allocator.allocate(std::numeric_limits<std::size_t>::max()), nullptr);
+}
+
+//==============================================================================
+TEST(FreeListAllocatorTest, InitialBlockHeaderOverflowDoesNotAllocate)
+{
+  CountingMemoryAllocator baseAllocator;
+
+  FreeListAllocator allocator(
+      baseAllocator,
+      std::numeric_limits<std::size_t>::max(),
+      FreeListAllocator::GrowthPolicy::FixedCapacity);
+
+  EXPECT_EQ(baseAllocator.allocationCount, 0u);
 }
 
 //==============================================================================
@@ -223,6 +274,8 @@ TEST(FreeListAllocatorTest, AllocateAfterDeallocate)
 TEST(FreeListAllocatorTest, RawAllocatorExpandsWhenCurrentBlocksAreFull)
 {
   FreeListAllocator allocator(MemoryAllocator::GetDefault(), 64);
+  EXPECT_EQ(
+      allocator.getGrowthPolicy(), FreeListAllocator::GrowthPolicy::Expand);
 
   auto* first = allocator.allocate(64);
   ASSERT_NE(first, nullptr);
@@ -232,6 +285,59 @@ TEST(FreeListAllocatorTest, RawAllocatorExpandsWhenCurrentBlocksAreFull)
 
   allocator.deallocate(first, 64);
   allocator.deallocate(second, 16);
+}
+
+//==============================================================================
+TEST(FreeListAllocatorTest, FixedCapacityDoesNotGrowWhenBlocksAreFull)
+{
+  CountingMemoryAllocator baseAllocator;
+  FreeListAllocator allocator(
+      baseAllocator, 64, FreeListAllocator::GrowthPolicy::FixedCapacity);
+  EXPECT_EQ(
+      allocator.getGrowthPolicy(),
+      FreeListAllocator::GrowthPolicy::FixedCapacity);
+
+  const auto initialBaseAllocations = baseAllocator.allocationCount;
+  auto* first = allocator.allocate(64);
+  ASSERT_NE(first, nullptr);
+  EXPECT_EQ(baseAllocator.allocationCount, initialBaseAllocations);
+
+  EXPECT_EQ(allocator.allocate(16), nullptr);
+  EXPECT_EQ(baseAllocator.allocationCount, initialBaseAllocations);
+
+  allocator.deallocate(first, 64);
+}
+
+//==============================================================================
+TEST(FreeListAllocatorTest, FixedCapacitySatisfiesOverAlignedAllocation)
+{
+  CountingMemoryAllocator baseAllocator;
+  FreeListAllocator allocator(
+      baseAllocator, 1024, FreeListAllocator::GrowthPolicy::FixedCapacity);
+
+  const auto initialBaseAllocations = baseAllocator.allocationCount;
+  auto* ptr = allocator.allocate(
+      sizeof(OverAlignedObject), alignof(OverAlignedObject));
+  ASSERT_NE(ptr, nullptr);
+  EXPECT_EQ(
+      reinterpret_cast<std::uintptr_t>(ptr) % alignof(OverAlignedObject), 0u);
+  EXPECT_EQ(baseAllocator.allocationCount, initialBaseAllocations);
+
+  allocator.deallocate(
+      ptr, sizeof(OverAlignedObject), alignof(OverAlignedObject));
+  EXPECT_EQ(baseAllocator.deallocationCount, 0u);
+}
+
+//==============================================================================
+TEST(FreeListAllocatorTest, FixedCapacityAlignedAllocationDoesNotGrow)
+{
+  CountingMemoryAllocator baseAllocator;
+  FreeListAllocator allocator(
+      baseAllocator, 128, FreeListAllocator::GrowthPolicy::FixedCapacity);
+
+  const auto initialBaseAllocations = baseAllocator.allocationCount;
+  EXPECT_EQ(allocator.allocate(1024, 64), nullptr);
+  EXPECT_EQ(baseAllocator.allocationCount, initialBaseAllocations);
 }
 
 //==============================================================================

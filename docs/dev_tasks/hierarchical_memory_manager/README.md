@@ -8,7 +8,12 @@
       allocators against standard C++ allocators and foonathan/memory.
       Alignment-aware allocation is implemented; fixed-size pool comparison now
       has a DART `FixedPoolAllocator` path that beats foonathan/memory and
-      `std::pmr` locally. The strict benchmark gate and broader correctness
+      `std::pmr` locally. `FreeListAllocator` now has a fixed-capacity mode for
+      deterministic bounded failure after preallocation, and `MemoryManager` /
+      experimental `WorldOptions` can construct the World free-list hierarchy
+      with a fixed-capacity policy. Fixed-capacity free-list arenas can also
+      satisfy over-aligned pool chunks from reserved bytes without growing from
+      the base allocator. The strict benchmark gate and broader correctness
       matrix still need to land before this phase is complete.
 - [ ] Phase 3: EnTT registry/component storage allocation is configurable from
       the World memory hierarchy and covered by no-growth ECS tests.
@@ -32,7 +37,13 @@
       deformable ECS paths; global heap allocation guards and broader solver
       coverage remain open.
 - [ ] Phase 6: Add memory-layout profiler/debugger surfaces and GUI
-      visualization.
+      visualization. `MemoryAllocatorDebugger` now exposes structured live
+      bytes, peak live bytes, and live allocation count; `MemoryManager` and
+      experimental `World` diagnostics now surface direct free/pool allocator
+      debug counters. `WorldMemoryDiagnostics` also reports aggregate and
+      per-storage ECS registry layout counters without exposing EnTT types, and
+      dartpy exposes the same read-only snapshot through
+      `World.memory_diagnostics`. GUI visualization remains future work.
 
 ## Goal
 
@@ -46,8 +57,9 @@ debugging, profiling, optimization experiments, and ImGui visualization.
 
 - Do not claim zero allocations for every experimental solver path yet.
 - Do not replace Eigen's internal heap behavior in one pass.
-- Do not expose ECS storage, solver registries, or backend resource types in
-  public memory diagnostics.
+- Do not expose raw EnTT storage, solver registries, or backend resource types
+  in public memory diagnostics; surface only DART-owned counters and diagnostic
+  IDs.
 
 ## Key Decisions
 
@@ -80,6 +92,12 @@ debugging, profiling, optimization experiments, and ImGui visualization.
   `PoolAllocator` focused on mixed size-classed small-object workloads. The
   comparative benchmark must not compare DART's generic size-classed pool
   against foonathan's fixed-size pool when a DART fixed-size allocator exists.
+- Use fixed-capacity `FreeListAllocator` instances when the allocator budget was
+  established during world creation or bake/build and runtime growth would
+  violate the no-dynamic-allocation contract. The default free-list policy
+  remains expandable for general heap-like use. Route the policy through
+  `MemoryManager::Options` and `WorldOptions` rather than exposing EnTT or
+  solver storage types.
 
 ## Required Allocator Evidence
 

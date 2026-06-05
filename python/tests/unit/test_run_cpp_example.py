@@ -52,7 +52,18 @@ def test_normalize_target_passthrough(run_cpp_example, capsys):
 
 
 @pytest.mark.parametrize(
-    "target", ["atlas_simbicon", "collision_sandbox", "wam_ikfast", "g1_puppet"]
+    "target",
+    [
+        "rigid_body",
+        "planned_inverse_kinematics",
+        "planned_simbicon_walking",
+        "planned_operational_space_control",
+        "planned_robot_puppets",
+        "planned_collision_sandbox",
+        "planned_mobile_manipulation",
+        "deformable_body",
+        "vbd_deformable",
+    ],
 )
 def test_normalize_target_redirects_demos_scenes(run_cpp_example, target):
     with pytest.raises(SystemExit) as exc:
@@ -61,6 +72,57 @@ def test_normalize_target_redirects_demos_scenes(run_cpp_example, target):
     message = str(exc.value)
     assert "dart-demos" in message
     assert f"--scene {target}" in message
+
+
+@pytest.mark.parametrize("target", ["boxes"])
+def test_normalize_target_rejects_removed_dart6_demos(run_cpp_example, target):
+    with pytest.raises(SystemExit) as exc:
+        run_cpp_example._normalize_target(target)
+
+    message = str(exc.value)
+    assert "DART 6 demo scene has been removed" in message
+    assert "pixi run demos -- --list" in message
+
+
+@pytest.mark.parametrize(
+    ("target", "replacement"),
+    [
+        ("atlas_simbicon", "planned_simbicon_walking"),
+        ("collision_sandbox", "planned_collision_sandbox"),
+        ("operational_space_control", "planned_operational_space_control"),
+        ("wam_ikfast", "planned_inverse_kinematics"),
+    ],
+)
+def test_normalize_target_mentions_planned_dart6_replacements(
+    run_cpp_example, target, replacement
+):
+    with pytest.raises(SystemExit) as exc:
+        run_cpp_example._normalize_target(target)
+
+    message = str(exc.value)
+    assert "DART 6 demo scene has been removed" in message
+    assert f"pixi run demos -- --scene {replacement}" in message
+    assert "pixi run demos -- --list" in message
+
+
+@pytest.mark.parametrize(
+    ("target", "expected"),
+    [
+        # Hyphen-spelled removed demos (the FILAMENT_ALL_SCENES spelling) must
+        # still reach the removal/placeholder guidance instead of falling
+        # through to a nonexistent CMake target.
+        ("rigid-cubes", "DART 6 demo scene has been removed"),
+        ("atlas-simbicon", "pixi run demos -- --scene planned_simbicon_walking"),
+        ("rigid-body", "pixi run demos -- --scene rigid_body"),
+    ],
+)
+def test_normalize_target_canonicalizes_hyphen_demo_ids(
+    run_cpp_example, target, expected
+):
+    with pytest.raises(SystemExit) as exc:
+        run_cpp_example._normalize_target(target)
+
+    assert expected in str(exc.value)
 
 
 @pytest.mark.parametrize("target", ["py-demos", "py_demos", "pydemos"])
@@ -189,6 +251,22 @@ def test_split_filament_scene_all_uses_smoke_scene_list(run_cpp_example):
     assert args == ["--frames", "1", "--width", "320"]
     assert scene_option_explicit is True
     assert "g1" not in scenes
+
+
+def test_split_demos_scene_all_uses_world_catalog(run_cpp_example):
+    spec = run_cpp_example._resolve_example("demos")
+    all_scene_ids = run_cpp_example._all_scene_ids_for_spec(spec)
+    scenes, args, scene_option_explicit = run_cpp_example._split_filament_scenes(
+        ["--frames", "1", "--scene", "all", "--width", "320"],
+        all_scene_ids,
+    )
+
+    assert all_scene_ids == run_cpp_example._DEMOS_SCENE_IDS
+    assert tuple(scenes) == run_cpp_example._DEMOS_SCENE_IDS
+    assert args == ["--frames", "1", "--width", "320"]
+    assert scene_option_explicit is True
+    assert "mvp" not in scenes
+    assert "hello-world" not in scenes
 
 
 def test_split_filament_scenes_marks_implicit_editor_default(run_cpp_example):

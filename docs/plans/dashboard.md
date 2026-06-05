@@ -715,18 +715,20 @@ its own line so status updates remain git-history friendly.
 - Status: Complete
 - Horizon: Now
 - Dimension: Easy start
-- Next step: Implemented — `dart-demos` hosts 37 GUI examples as categorized,
-  runtime-switchable scenes (cycle smoke `EXAMPLE_dart_demos_cycle_headless_smoke`);
-  `hello_world` stays the standalone template; tooling/docs/CHANGELOG updated.
-  The `dart/gui/detail` `ExampleScene` set is intentionally kept as the renderer's
+- Next step: Implemented — `dart-demos` is now the smaller C++ World demo app
+  with `rigid_body`, `deformable_body`, and `vbd_deformable` runtime-switchable
+  scenes plus lightweight `Planned World Ports` placeholders for high-value DART
+  6 concepts that still need World-native ports (IK, SIMBICON walking,
+  operational-space control, robot puppets, collision sandbox, mobile
+  manipulation); `hello_world` stays the standalone template;
+  tooling/docs/CHANGELOG updated. The
+  `dart/gui/detail` `ExampleScene` set is intentionally kept as the renderer's
   internal test fixtures (see the design doc's "examples vs renderer fixtures"
-  decision), so PLAN-101's `--scene` smoke gate is unaffected. C++ `dart-demos`
-  is now **frozen**: future example growth is Python-first under PLAN-103, which
-  also owns the retire-later checklist for this C++ app.
-- Gate: `dart-demos` launches and switches across scenes (including asset-backed
-  robots) in one window without window recreation; the headless cycle smoke
-  renders every scene; only `hello_world` plus a few special-build/test-coupled
-  programs stay standalone; `pixi run lint` and `check-docs-policy` green.
+  decision), so PLAN-101's `--scene` smoke gate is unaffected.
+- Gate: `dart-demos` launches and switches across the World scenes in one window
+  without window recreation; the headless cycle smoke renders every registered
+  scene; only `hello_world` plus CLI/headless support programs stay standalone;
+  `pixi run lint` and `check-docs-policy` green.
 
 ### PLAN-103: Examples Strategy (Python-First)
 
@@ -735,21 +737,18 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Easy start
-- Next step: Phases 1–4 landed — `dart-demos` Python (29 scenes incl. 5
-  minimal-viable modern scenarios + an interactive Filament viewer via
-  `dartpy.gui.run_demos`), cross-language golden parity (Python + C++ both
-  assert 3 scenes against shared fixtures within 1e-9),
-  `python/tutorials/01_browse_demos.ipynb`. Phase 5 (retire C++ `dart-demos`)
-  is explicit "not now": conditions 4–5 of the retire-later checklist are met,
-  conditions 1–3 wait on Python-breadth growth (~73%) + PLAN-012 (Colab smoke) +
-  PLAN-101 (editor loading example scenes). The `docs/dev_tasks/examples_strategy/`
-  folder is retired; residual follow-ups are tracked in PLAN-103's
-  Landed State + retire-later checklist.
+- Next step: Phases 1–4 landed and the catalog has been pruned for DART 7:
+  `py-demos` is the World demo surface (World rigid body, Rigid IPC,
+  Variational Integrators, Differentiable, Vertex Block Descent, and IPC
+  Deformable categories, plus `Planned World Ports` placeholders) running
+  through `dartpy.gui.run_demos`; C++ `dart-demos` is the smaller World-only
+  companion with matching planned-port placeholders. The old DART 6 demo scenes
+  and cross-language golden parity fixtures are removed from the demo surfaces.
+  The `docs/dev_tasks/examples_strategy/` folder is retired; residual follow-ups
+  are tracked in PLAN-103's Landed State + retire-later checklist.
 - Gate: `pixi run py-demos -- --cycle-scenes` cycles all scenes (exit 0);
-  Python `test_golden_parity` + C++ `UNIT_gui_DemosGoldenParity` both pass
-  against the shared fixture; the notebook imports (not copies) the scene
-  modules; C++ `dart-demos` unchanged; `pixi run lint` and `check-docs-policy`
-  green.
+  the notebook imports (not copies) the scene modules; C++ `dart-demos` cycles
+  its World scenes; `pixi run lint` and `check-docs-policy` green.
 
 ### PLAN-110: Differentiable Simulation
 

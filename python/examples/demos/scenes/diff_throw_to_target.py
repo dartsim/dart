@@ -1,4 +1,4 @@
-"""Differentiable throw-to-target scene (paper experiment, sx::World).
+"""Differentiable throw-to-target scene (paper experiment, World).
 
 Mirrors the throw-to-target trajectory optimization from
 ``tests/unit/simulation/experimental/diff/test_diff_optimization.cpp`` and the
@@ -29,7 +29,7 @@ import numpy as np
 import dartpy as dart
 import dartpy.simulation_experimental as sx
 
-from .._sx_bridge import SxRenderBridge
+from .._world_bridge import WorldRenderBridge
 from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
 # Small DOF / short horizon / few iters so the headless cycle smoke stays fast.
@@ -209,9 +209,9 @@ def build() -> SceneSetup:
         pre_trail = []
 
     # A render-only world (no sx physics tracked); we replay the precomputed
-    # trajectory through a playhead, so reuse SxRenderBridge only for its
+    # trajectory through a playhead, so reuse WorldRenderBridge only for its
     # zero-gravity render_world plumbing.
-    bridge = SxRenderBridge(
+    bridge = WorldRenderBridge(
         world if world is not None else sx.World(),
         name="diff_throw_render",
     )
@@ -362,8 +362,8 @@ def _fallback_trail() -> list[np.ndarray]:
 
 SCENE = PythonDemoScene(
     id="diff_throw_to_target",
-    title="Differentiable Throw-to-Target (sx)",
-    category="Differentiable (sx)",
+    title="Differentiable Throw-to-Target",
+    category="Differentiable",
     summary=(
         "Gradient descent through sx.diff.rollout optimizes a projectile's "
         "initial velocity to hit a target (falls back to the un-optimized "
