@@ -121,6 +121,32 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Added `pixi run bm-allocator-comparative-check`, a strict allocator
     benchmark gate that compares DART allocator workloads against
     foonathan/memory and `std::pmr` baselines.
+  - Extended the comparative allocator benchmarks with opt-in allocator-aware
+    EnTT registry/component storage churn against foonathan/memory and
+    standard-registry baselines, and added a CV/noise guard so strict allocator
+    comparisons do not treat noisy benchmark rows as evidence. Added a focused
+    EnTT-registry-only checker mode for allocator-policy optimization loops,
+    benchmark counters that fail the DART EnTT row if reserved churn calls the
+    configured allocator after prewarm, and separate EnTT build/growth rows for
+    bake-time registry storage allocation. Added `FrameStlAllocator` no-growth
+    EnTT coverage for world-lifetime arena policy exploration, while keeping
+    EnTT registry benchmark rows disabled when the benchmark target is
+    configured without an existing EnTT target. The EnTT registry benchmark rows
+    now discover installed EnTT package metadata without invoking DART's
+    FetchContent-backed dependency helper. The EnTT rows now benchmark cached
+    component storage handles, use frame-backed DART storage for persistent
+    no-growth registry churn, and use pool-backed DART storage for build/growth
+    churn. The no-growth row reports frame usage and overflow counters and
+    fails if reserved churn grows after prewarm. The build/growth row times the
+    uninstrumented pool-backed registry path and reports configured-allocator
+    call counters from a matching untimed probe. The focused checker now
+    distinguishes timing loss, allocator-call regressions, frame growth, and
+    noisy benchmark evidence.
+  - Optimized the frame allocator reset/accounting fast path and normal-aligned
+    `FrameStlAllocator` allocations while preserving over-aligned STL storage.
+  - Kept `StlAllocator` allocation and deallocation alignment-aware for
+    allocator-backed STL storage, including fixed-pool-backed max-aligned
+    values.
   - Added a fixed-capacity growth policy to `FreeListAllocator` so
     preallocated free-list arenas can fail deterministically instead of growing
     from the base allocator after bake/build, and exposed construction-time

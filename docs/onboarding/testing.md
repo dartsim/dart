@@ -326,8 +326,16 @@ pixi run bm-allocator-comparative-check
 
 `bm-check` compares DART allocator workloads against the default allocator.
 `bm-allocator-comparative-check` runs `bm_allocators_comparative` and fails
-when DART does not beat the selected foonathan/memory or `std::pmr` baseline on
-matching workloads.
+when DART does not beat the selected foonathan/memory or standard-library
+baseline on matching workloads. It also rejects compared aggregate rows whose
+coefficient of variation exceeds `--max-cv` (default 10%), because noisy rows are
+not valid evidence for strict allocator decisions.
+
+Pass `--include-entt-registry` to add allocator-aware EnTT registry/component
+storage churn rows. Those rows are an evidence surface for registry allocator
+policy work until the production registry allocator path consistently beats the
+selected baselines. Use `--only-entt-registry` for focused registry allocator
+optimization loops without rerunning the broader allocator benchmark set.
 
 ## Adding New Tests
 

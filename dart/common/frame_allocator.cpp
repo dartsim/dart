@@ -43,13 +43,15 @@ FrameAllocator::FrameAllocator(
     mCur(nullptr),
     mEnd(nullptr),
     mBuffer(static_cast<char*>(baseAllocator.allocate(initialCapacity))),
+    mBegin(nullptr),
     mCapacity(mBuffer ? initialCapacity : 0),
     mOverflowBytes(0)
 {
   if (mBuffer) {
     const auto addr = reinterpret_cast<uintptr_t>(mBuffer);
     const auto aligned = (addr + 31) & ~uintptr_t{31};
-    mCur = reinterpret_cast<char*>(aligned);
+    mBegin = reinterpret_cast<char*>(aligned);
+    mCur = mBegin;
     mEnd = mBuffer + mCapacity;
   }
 }
@@ -131,8 +133,14 @@ void FrameAllocator::resetSlow() noexcept
     mEnd = mBuffer + mCapacity;
   }
 
-  const auto addr = reinterpret_cast<uintptr_t>(mBuffer);
-  mCur = reinterpret_cast<char*>((addr + 31) & ~uintptr_t{31});
+  if (mBuffer) {
+    const auto addr = reinterpret_cast<uintptr_t>(mBuffer);
+    mBegin = reinterpret_cast<char*>((addr + 31) & ~uintptr_t{31});
+  } else {
+    mBegin = nullptr;
+    mEnd = nullptr;
+  }
+  mCur = mBegin;
 }
 
 //==============================================================================
@@ -144,33 +152,25 @@ size_t FrameAllocator::capacity() const noexcept
 //==============================================================================
 size_t FrameAllocator::usableCapacity() const noexcept
 {
-  if (!mBuffer || !mEnd) {
+  if (!mBegin || !mEnd) {
     return 0;
   }
 
-  const auto addr = reinterpret_cast<uintptr_t>(mBuffer);
-  const auto* alignedBase
-      = reinterpret_cast<const char*>((addr + 31) & ~uintptr_t{31});
-  if (alignedBase >= mEnd) {
+  if (mBegin >= mEnd) {
     return 0;
   }
 
-  const auto usableBytes = static_cast<size_t>(mEnd - alignedBase);
+  const auto usableBytes = static_cast<size_t>(mEnd - mBegin);
   return usableBytes & ~size_t{31};
 }
 
 //==============================================================================
 size_t FrameAllocator::used() const noexcept
 {
-  if (!mBuffer) {
+  if (!mBegin || !mCur) {
     return 0;
   }
-  // Measure from the aligned base (not raw mBuffer) since mCur starts at the
-  // first 32-byte aligned address within the buffer.
-  const auto addr = reinterpret_cast<uintptr_t>(mBuffer);
-  const auto* alignedBase
-      = reinterpret_cast<const char*>((addr + 31) & ~uintptr_t{31});
-  return static_cast<size_t>(mCur - alignedBase);
+  return static_cast<size_t>(mCur - mBegin);
 }
 
 //==============================================================================
