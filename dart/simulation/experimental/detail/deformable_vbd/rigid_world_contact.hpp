@@ -38,6 +38,7 @@
 #include <dart/simulation/experimental/comps/dynamics.hpp>
 #include <dart/simulation/experimental/comps/frame_types.hpp>
 #include <dart/simulation/experimental/comps/joint.hpp>
+#include <dart/simulation/experimental/comps/link.hpp>
 #include <dart/simulation/experimental/comps/rigid_body.hpp>
 #include <dart/simulation/experimental/detail/deformable_vbd/rigid_block_kernel.hpp>
 #include <dart/simulation/experimental/detail/entity_conversion.hpp>
@@ -83,6 +84,20 @@ struct AvbdRigidWorldPointJointInput
   double startStiffness = 1.0;
   double maxStiffness = std::numeric_limits<double>::infinity();
   double fractureThreshold = 0.0;
+};
+
+enum class AvbdRigidWorldEndpointKind
+{
+  Unsupported,
+  FreeRigidBody,
+  MultibodyLink,
+};
+
+struct AvbdRigidWorldEndpoint
+{
+  entt::entity entity = entt::null;
+  AvbdRigidWorldEndpointKind kind = AvbdRigidWorldEndpointKind::Unsupported;
+  bool canProjectAsRigidBody = false;
 };
 
 struct AvbdRigidWorldPointJointConfig
@@ -193,6 +208,42 @@ inline AvbdContactEndpointId avbdRigidWorldBodyEndpointId(
 }
 
 //==============================================================================
+inline AvbdRigidWorldEndpoint classifyAvbdRigidWorldEndpoint(
+    const ::dart::simulation::experimental::detail::WorldRegistry& registry,
+    entt::entity entity)
+{
+  AvbdRigidWorldEndpoint endpoint;
+  endpoint.entity = entity;
+
+  if (entity == entt::null || !registry.valid(entity)) {
+    return endpoint;
+  }
+
+  if (registry
+          .all_of<comps::RigidBodyTag, comps::Transform, comps::MassProperties>(
+              entity)) {
+    endpoint.kind = AvbdRigidWorldEndpointKind::FreeRigidBody;
+    endpoint.canProjectAsRigidBody = true;
+    return endpoint;
+  }
+
+  if (registry.all_of<comps::Link>(entity)) {
+    endpoint.kind = AvbdRigidWorldEndpointKind::MultibodyLink;
+    return endpoint;
+  }
+
+  return endpoint;
+}
+
+//==============================================================================
+inline bool canProjectAvbdRigidWorldEndpointAsRigidBody(
+    const ::dart::simulation::experimental::detail::WorldRegistry& registry,
+    entt::entity entity)
+{
+  return classifyAvbdRigidWorldEndpoint(registry, entity).canProjectAsRigidBody;
+}
+
+//==============================================================================
 inline Eigen::Isometry3d avbdRigidWorldContactToIsometry(
     const AvbdRigidBodyState& state)
 {
@@ -254,14 +305,9 @@ inline bool configureAvbdRigidWorldPointJointFromCurrentPose(
     return false;
   }
 
-  if (!registry.all_of<
-          comps::RigidBodyTag,
-          comps::Transform,
-          comps::MassProperties>(joint->parentLink)
-      || !registry.all_of<
-          comps::RigidBodyTag,
-          comps::Transform,
-          comps::MassProperties>(joint->childLink)) {
+  if (!canProjectAvbdRigidWorldEndpointAsRigidBody(registry, joint->parentLink)
+      || !canProjectAvbdRigidWorldEndpointAsRigidBody(
+          registry, joint->childLink)) {
     return false;
   }
 
@@ -380,14 +426,9 @@ inline std::size_t configureAvbdRigidWorldPointJointsFromCurrentPoses(
       continue;
     }
 
-    if (!registry.all_of<
-            comps::RigidBodyTag,
-            comps::Transform,
-            comps::MassProperties>(joint.parentLink)
-        || !registry.all_of<
-            comps::RigidBodyTag,
-            comps::Transform,
-            comps::MassProperties>(joint.childLink)) {
+    if (!canProjectAvbdRigidWorldEndpointAsRigidBody(registry, joint.parentLink)
+        || !canProjectAvbdRigidWorldEndpointAsRigidBody(
+            registry, joint.childLink)) {
       continue;
     }
 
@@ -692,8 +733,8 @@ inline AvbdRigidWorldContactSnapshot buildAvbdRigidWorldContactSnapshot(
       continue;
     }
 
-    if (!registry.all_of<comps::RigidBodyTag>(entityA)
-        || !registry.all_of<comps::RigidBodyTag>(entityB)) {
+    if (!canProjectAvbdRigidWorldEndpointAsRigidBody(registry, entityA)
+        || !canProjectAvbdRigidWorldEndpointAsRigidBody(registry, entityB)) {
       continue;
     }
 
@@ -1330,14 +1371,9 @@ extractAvbdRigidWorldPointJointInputs(
       continue;
     }
 
-    if (!registry.all_of<
-            comps::RigidBodyTag,
-            comps::Transform,
-            comps::MassProperties>(joint.parentLink)
-        || !registry.all_of<
-            comps::RigidBodyTag,
-            comps::Transform,
-            comps::MassProperties>(joint.childLink)) {
+    if (!canProjectAvbdRigidWorldEndpointAsRigidBody(registry, joint.parentLink)
+        || !canProjectAvbdRigidWorldEndpointAsRigidBody(
+            registry, joint.childLink)) {
       continue;
     }
 

@@ -20,6 +20,7 @@
 #include "dart/simulation/experimental/comps/variational_contact.hpp"
 #include "dart/simulation/experimental/comps/variational_contact_dual_state.hpp"
 #include "dart/simulation/experimental/compute/multibody_dynamics.hpp"
+#include "dart/simulation/experimental/detail/deformable_vbd/rigid_world_contact.hpp"
 #include "dart/simulation/experimental/detail/multibody_spatial_algebra.hpp"
 #include "dart/simulation/experimental/detail/variational/discrete_mechanics_math.hpp"
 #include "dart/simulation/experimental/detail/world_registry_access.hpp"
@@ -43,6 +44,7 @@ namespace dart::simulation::experimental::compute {
 namespace {
 
 namespace dm = detail::variational;
+namespace dvbd = detail::deformable_vbd;
 
 // The shared 6D spatial-algebra primitives (skew/adjoint/spatialInertia) and
 // the Vector6/Matrix6/Subspace aliases live in
@@ -290,6 +292,115 @@ VarTree buildVarTree(
         static_cast<int>(i));
   }
   return tree;
+}
+
+entt::entity findOwningMultibodyStructure(
+    const detail::WorldRegistry& registry, entt::entity linkEntity)
+{
+  if (linkEntity == entt::null || !registry.all_of<comps::Link>(linkEntity)) {
+    return entt::null;
+  }
+
+  auto structures = registry.view<comps::MultibodyStructure>();
+  for (const entt::entity structureEntity : structures) {
+    const auto& structure
+        = structures.get<comps::MultibodyStructure>(structureEntity);
+    if (std::find(structure.links.begin(), structure.links.end(), linkEntity)
+        != structure.links.end()) {
+      return structureEntity;
+    }
+  }
+
+  return entt::null;
+}
+
+bool isTopologyMultibodyJoint(
+    const detail::WorldRegistry& registry,
+    entt::entity jointEntity,
+    const comps::Joint& joint)
+{
+  const auto* childLink = registry.try_get<comps::Link>(joint.childLink);
+  return childLink != nullptr && childLink->parentJoint == jointEntity;
+}
+
+bool isHardAvbdRigidWorldPointJointConfig(
+    const dvbd::AvbdRigidWorldPointJointConfig& config)
+{
+  return std::isinf(config.startStiffness) && std::isinf(config.maxStiffness);
+}
+
+void appendAvbdRigidWorldArticulatedPointJointConstraints(
+    const detail::WorldRegistry& registry,
+    entt::entity structureEntity,
+    std::vector<VariationalLoopConstraint>& constraints)
+{
+  auto view
+      = registry.view<comps::Joint, dvbd::AvbdRigidWorldPointJointConfig>();
+  for (const entt::entity jointEntity : view) {
+    const auto& joint = view.get<comps::Joint>(jointEntity);
+    const auto& config
+        = view.get<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
+
+    if (!config.enabled || !isHardAvbdRigidWorldPointJointConfig(config)
+        || joint.broken || joint.breakForce > 0.0
+        || joint.type != comps::JointType::Fixed
+        || isTopologyMultibodyJoint(registry, jointEntity, joint)) {
+      continue;
+    }
+    if (config.linearAxisMask != dvbd::kAvbdRigidJointAllAxesMask
+        || config.angularAxisMask != dvbd::kAvbdRigidJointAllAxesMask) {
+      continue;
+    }
+    if (!config.localAnchorA.allFinite() || !config.localAnchorB.allFinite()
+        || !config.targetRelativeOrientation.coeffs().allFinite()
+        || config.targetRelativeOrientation.norm() == 0.0) {
+      continue;
+    }
+
+    const bool worldA = joint.parentLink == entt::null;
+    const bool worldB = joint.childLink == entt::null;
+    const dvbd::AvbdRigidWorldEndpoint endpointA
+        = dvbd::classifyAvbdRigidWorldEndpoint(registry, joint.parentLink);
+    const dvbd::AvbdRigidWorldEndpoint endpointB
+        = dvbd::classifyAvbdRigidWorldEndpoint(registry, joint.childLink);
+    if ((!worldA
+         && endpointA.kind != dvbd::AvbdRigidWorldEndpointKind::MultibodyLink)
+        || (!worldB
+            && endpointB.kind
+                   != dvbd::AvbdRigidWorldEndpointKind::MultibodyLink)) {
+      continue;
+    }
+
+    const entt::entity structureA
+        = worldA ? entt::null
+                 : findOwningMultibodyStructure(registry, joint.parentLink);
+    const entt::entity structureB
+        = worldB ? entt::null
+                 : findOwningMultibodyStructure(registry, joint.childLink);
+    if ((!worldA && structureA == entt::null)
+        || (!worldB && structureB == entt::null)) {
+      continue;
+    }
+    if ((structureA != entt::null && structureA != structureEntity)
+        || (structureB != entt::null && structureB != structureEntity)
+        || (structureA != structureEntity && structureB != structureEntity)) {
+      continue;
+    }
+
+    VariationalLoopConstraint constraint;
+    constraint.linkA
+        = structureA == structureEntity ? joint.parentLink : entt::null;
+    constraint.pointA = config.localAnchorA;
+    constraint.linkB
+        = structureB == structureEntity ? joint.childLink : entt::null;
+    constraint.pointB = config.localAnchorB;
+    constraint.rigid = true;
+    constraint.rotationA
+        = dvbd::normalizeAvbdRigidOrientation(config.targetRelativeOrientation)
+              .toRotationMatrix();
+    constraint.rotationB = Eigen::Matrix3d::Identity();
+    constraints.push_back(constraint);
+  }
 }
 
 // Gather the generalized velocity and the applied (forcing-side) generalized
@@ -1984,6 +2095,8 @@ void MultibodyVariationalIntegrationStage::execute(
         constraints.push_back(binding.constraint);
       }
     }
+    appendAvbdRigidWorldArticulatedPointJointConstraints(
+        registry, entity, constraints);
     // Build the opt-in contact hook from the multibody's contact config
     // (PLAN-082 Phase C). cadence 0 => C1/C2 (lagged friction + compliant
     // penalty); cadence > 0 => the stateful C3 augmented-Lagrangian rung, whose

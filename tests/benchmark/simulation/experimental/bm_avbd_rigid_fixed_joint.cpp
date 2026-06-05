@@ -36,7 +36,12 @@
 
 #include <dart/simulation/experimental/body/rigid_body.hpp>
 #include <dart/simulation/experimental/body/rigid_body_options.hpp>
+#include <dart/simulation/experimental/detail/deformable_vbd/rigid_world_contact.hpp>
+#include <dart/simulation/experimental/detail/entity_conversion.hpp>
+#include <dart/simulation/experimental/detail/world_registry_access.hpp>
 #include <dart/simulation/experimental/multibody/joint.hpp>
+#include <dart/simulation/experimental/multibody/link.hpp>
+#include <dart/simulation/experimental/multibody/multibody.hpp>
 #include <dart/simulation/experimental/world.hpp>
 #include <dart/simulation/experimental/world_options.hpp>
 
@@ -48,6 +53,7 @@
 #include <vector>
 
 namespace sx = dart::simulation::experimental;
+namespace vbd = dart::simulation::experimental::detail::deformable_vbd;
 
 namespace {
 
@@ -151,6 +157,38 @@ std::vector<sx::Joint> makeRigidFixedJoints(
   return joints;
 }
 
+std::vector<entt::entity> makeEndpointClassificationEntities(
+    sx::World& world, std::size_t endpointCount)
+{
+  std::vector<entt::entity> endpoints;
+  endpoints.reserve(endpointCount * 2u);
+
+  for (std::size_t i = 0; i < endpointCount; ++i) {
+    sx::RigidBodyOptions bodyOptions;
+    bodyOptions.position = Eigen::Vector3d(static_cast<double>(i), -0.5, 0.0);
+    auto body = world.addRigidBody(
+        "classifier_rigid_" + std::to_string(i), bodyOptions);
+    endpoints.push_back(sx::detail::toRegistryEntity(body.getEntity()));
+  }
+
+  auto robot = world.addMultibody("classifier_robot");
+  auto parent = robot.addLink("classifier_root");
+  endpoints.push_back(sx::detail::toRegistryEntity(parent.getEntity()));
+  for (std::size_t i = 1; i < endpointCount; ++i) {
+    sx::JointSpec joint;
+    joint.name = "classifier_joint_" + std::to_string(i);
+    joint.type = sx::JointType::Revolute;
+    joint.axis = Eigen::Vector3d::UnitZ();
+    joint.transformFromParent
+        = Eigen::Isometry3d(Eigen::Translation3d(Eigen::Vector3d::UnitX()));
+    parent
+        = robot.addLink("classifier_link_" + std::to_string(i), parent, joint);
+    endpoints.push_back(sx::detail::toRegistryEntity(parent.getEntity()));
+  }
+
+  return endpoints;
+}
+
 } // namespace
 
 //==============================================================================
@@ -228,6 +266,38 @@ static void BM_AvbdRigidFixedJointWorldList(benchmark::State& state)
   state.counters["fixed_joints"] = static_cast<double>(jointCount);
 }
 BENCHMARK(BM_AvbdRigidFixedJointWorldList)->Arg(1)->Arg(8)->Arg(32);
+
+//==============================================================================
+static void BM_AvbdRigidEndpointClassification(benchmark::State& state)
+{
+  sx::World world;
+  const auto endpointCount = static_cast<std::size_t>(state.range(0));
+  const std::vector<entt::entity> endpoints
+      = makeEndpointClassificationEntities(world, endpointCount);
+  const auto& registry = sx::detail::registryOf(world);
+
+  for (auto _ : state) {
+    std::size_t freeRigidEndpoints = 0;
+    std::size_t multibodyEndpoints = 0;
+    for (const entt::entity endpointEntity : endpoints) {
+      const vbd::AvbdRigidWorldEndpoint endpoint
+          = vbd::classifyAvbdRigidWorldEndpoint(registry, endpointEntity);
+      if (endpoint.kind == vbd::AvbdRigidWorldEndpointKind::FreeRigidBody) {
+        ++freeRigidEndpoints;
+      } else if (
+          endpoint.kind == vbd::AvbdRigidWorldEndpointKind::MultibodyLink) {
+        ++multibodyEndpoints;
+      }
+    }
+    benchmark::DoNotOptimize(freeRigidEndpoints);
+    benchmark::DoNotOptimize(multibodyEndpoints);
+  }
+
+  state.counters["free_rigid_endpoints"] = static_cast<double>(endpointCount);
+  state.counters["multibody_link_endpoints"]
+      = static_cast<double>(endpointCount);
+}
+BENCHMARK(BM_AvbdRigidEndpointClassification)->Arg(1)->Arg(8)->Arg(32);
 
 //==============================================================================
 static void BM_AvbdRigidFixedJointStep(benchmark::State& state)

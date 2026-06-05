@@ -14,6 +14,8 @@
 #include <dart/simulation/experimental/compute/multibody_dynamics.hpp>
 #include <dart/simulation/experimental/compute/variational_integration.hpp>
 #include <dart/simulation/experimental/constraint/loop_closure_spec.hpp>
+#include <dart/simulation/experimental/detail/deformable_vbd/rigid_world_contact.hpp>
+#include <dart/simulation/experimental/detail/entity_conversion.hpp>
 #include <dart/simulation/experimental/detail/world_registry_access.hpp>
 #include <dart/simulation/experimental/frame/frame.hpp>
 #include <dart/simulation/experimental/multibody/multibody.hpp>
@@ -29,6 +31,7 @@
 #include <functional>
 #include <iomanip>
 #include <iostream>
+#include <limits>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -39,6 +42,7 @@ namespace {
 
 namespace sx = dart::simulation::experimental;
 namespace sxc = dart::simulation::experimental::compute;
+namespace dvbd = dart::simulation::experimental::detail::deformable_vbd;
 
 // Returns the (single) multibody structure component in the world.
 const sx::comps::MultibodyStructure& structureOf(sx::World& world)
@@ -1183,6 +1187,223 @@ TEST(VariationalIntegration, LoopClosureRigidSolvedThroughWorldStep)
   }
   EXPECT_LT(maxResidual, 1e-6); // the 6-DOF weld holds through world.step()
   EXPECT_GT(motion, 1e-3);      // the redundant internal DOF still flexes
+}
+
+// PLAN-104 AVBD articulated bridge: a private fixed point-joint config on a
+// multibody link now maps to the same variational rigid-closure solve path used
+// by public loop closures. This keeps articulated endpoints out of the
+// free-rigid 6-DOF snapshot writeback while still giving fixed link constraints
+// a real solve path.
+TEST(VariationalIntegration, AvbdFixedPointJointConfigSolvesLinkEndpoint)
+{
+  sx::World world;
+  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  auto robot = world.addMultibody("arm");
+  auto parent = robot.addLink("base");
+  const Eigen::Vector3d axes[7]
+      = {Eigen::Vector3d::UnitZ(),
+         Eigen::Vector3d::UnitY(),
+         Eigen::Vector3d::UnitX(),
+         Eigen::Vector3d::UnitY(),
+         Eigen::Vector3d::UnitZ(),
+         Eigen::Vector3d::UnitY(),
+         Eigen::Vector3d::UnitX()};
+  const double bend[7] = {0.2, 0.3, -0.2, 0.4, -0.3, 0.2, -0.4};
+  Eigen::Isometry3d tipFromBase = Eigen::Isometry3d::Identity();
+  for (int i = 0; i < 7; ++i) {
+    Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+    offset.linear() = Eigen::AngleAxisd(bend[i], Eigen::Vector3d::UnitZ())
+                          .toRotationMatrix();
+    offset.translation() = Eigen::Vector3d(0.25, 0.0, 0.0);
+    sx::JointSpec spec;
+    spec.name = "j" + std::to_string(i);
+    spec.type = sx::JointType::Revolute;
+    spec.axis = axes[i];
+    spec.transformFromParent = offset;
+    auto link = robot.addLink("l" + std::to_string(i), parent, spec);
+    link.setMass(0.6);
+    link.setInertia(Eigen::Vector3d(0.01, 0.01, 0.01).asDiagonal());
+    parent = link;
+    tipFromBase = tipFromBase * offset;
+  }
+  auto tip = robot.getLinks().back();
+
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
+  const entt::entity jointEntity = registry.create();
+  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  joint.type = sx::comps::JointType::Fixed;
+  joint.parentLink = sx::detail::toRegistryEntity(tip.getEntity());
+  joint.childLink = entt::null;
+  auto& config
+      = registry.emplace<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
+  config.localAnchorA = Eigen::Vector3d::Zero();
+  config.localAnchorB = tipFromBase.translation();
+  config.targetRelativeOrientation
+      = Eigen::Quaterniond(tipFromBase.linear()).conjugate();
+  config.startStiffness = std::numeric_limits<double>::infinity();
+  config.maxStiffness = std::numeric_limits<double>::infinity();
+
+  world.setTimeStep(1e-3);
+  world.enterSimulationMode();
+  auto joints = robot.getJoints();
+  ASSERT_EQ(joints.size(), 7u);
+
+  double maxPositionResidual = 0.0;
+  double maxRotationResidual = 0.0;
+  double motion = 0.0;
+  for (int k = 0; k < 2000; ++k) {
+    world.step();
+    const Eigen::Isometry3d tipTransform = tip.getWorldTransform();
+    maxPositionResidual = std::max(
+        maxPositionResidual,
+        (tipTransform.translation() - tipFromBase.translation()).norm());
+    maxRotationResidual = std::max(
+        maxRotationResidual,
+        (tipTransform.linear() - tipFromBase.linear()).norm());
+    for (auto robotJoint : joints) {
+      motion = std::max(motion, std::abs(robotJoint.getPosition()[0]));
+    }
+  }
+
+  EXPECT_LT(maxPositionResidual, 1e-6);
+  EXPECT_LT(maxRotationResidual, 1e-6);
+  EXPECT_GT(motion, 1e-3);
+}
+
+// Breakable AVBD point-joint rows need fracture bookkeeping that
+// VariationalLoopConstraint does not own. Until that exists, the articulated
+// bridge must not turn them into unbreakable hard loop closures.
+TEST(VariationalIntegration, AvbdBreakablePointJointConfigSkipsLinkEndpoint)
+{
+  sx::World world;
+  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  auto robot = world.addMultibody("pendulum");
+  auto base = robot.addLink("base");
+
+  sx::JointSpec spec;
+  spec.name = "hinge";
+  spec.type = sx::JointType::Revolute;
+  spec.axis = Eigen::Vector3d::UnitY();
+  spec.transformFromParent.translation() = Eigen::Vector3d(0.5, 0.0, 0.0);
+  auto link = robot.addLink("link", base, spec);
+  link.setMass(1.0);
+  link.setInertia(Eigen::Vector3d(0.03, 0.03, 0.03).asDiagonal());
+
+  Eigen::Isometry3d target = Eigen::Isometry3d::Identity();
+  target.translation() = spec.transformFromParent.translation();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
+  const entt::entity jointEntity = registry.create();
+  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  joint.type = sx::comps::JointType::Fixed;
+  joint.parentLink = sx::detail::toRegistryEntity(link.getEntity());
+  joint.childLink = entt::null;
+  joint.breakForce = 1.0;
+  auto& config
+      = registry.emplace<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
+  config.localAnchorA = Eigen::Vector3d::Zero();
+  config.localAnchorB = target.translation();
+  config.targetRelativeOrientation
+      = Eigen::Quaterniond(target.linear()).conjugate();
+
+  world.setTimeStep(1e-3);
+  world.enterSimulationMode();
+
+  double maxPositionResidual = 0.0;
+  for (int k = 0; k < 500; ++k) {
+    world.step();
+    maxPositionResidual = std::max(
+        maxPositionResidual,
+        (link.getWorldTransform().translation() - target.translation()).norm());
+  }
+
+  EXPECT_GT(maxPositionResidual, 1e-3);
+  EXPECT_FALSE(registry.get<sx::comps::Joint>(jointEntity).broken);
+}
+
+// Compliant AVBD point-joint rows have finite-stiffness state that
+// VariationalLoopConstraint does not carry. The bridge accepts only explicitly
+// hard configs until compliance is represented in the articulated solve path.
+TEST(VariationalIntegration, AvbdCompliantPointJointConfigSkipsLinkEndpoint)
+{
+  sx::World world;
+  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  auto robot = world.addMultibody("pendulum");
+  auto base = robot.addLink("base");
+
+  sx::JointSpec spec;
+  spec.name = "hinge";
+  spec.type = sx::JointType::Revolute;
+  spec.axis = Eigen::Vector3d::UnitY();
+  spec.transformFromParent.translation() = Eigen::Vector3d(0.5, 0.0, 0.0);
+  auto link = robot.addLink("link", base, spec);
+  link.setMass(1.0);
+  link.setInertia(Eigen::Vector3d(0.03, 0.03, 0.03).asDiagonal());
+
+  Eigen::Isometry3d target = Eigen::Isometry3d::Identity();
+  target.translation() = spec.transformFromParent.translation();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
+  const entt::entity jointEntity = registry.create();
+  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  joint.type = sx::comps::JointType::Fixed;
+  joint.parentLink = sx::detail::toRegistryEntity(link.getEntity());
+  joint.childLink = entt::null;
+  auto& config
+      = registry.emplace<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
+  config.localAnchorA = Eigen::Vector3d::Zero();
+  config.localAnchorB = target.translation();
+  config.targetRelativeOrientation
+      = Eigen::Quaterniond(target.linear()).conjugate();
+  config.startStiffness = 1e3;
+  config.maxStiffness = 1e4;
+
+  world.setTimeStep(1e-3);
+  world.enterSimulationMode();
+
+  double maxPositionResidual = 0.0;
+  for (int k = 0; k < 500; ++k) {
+    world.step();
+    maxPositionResidual = std::max(
+        maxPositionResidual,
+        (link.getWorldTransform().translation() - target.translation()).norm());
+  }
+
+  EXPECT_GT(maxPositionResidual, 1e-3);
+}
+
+// Topology joints are the multibody tree itself, not external AVBD point-joint
+// rows. Even if a private config is attached accidentally, the articulated
+// bridge must not duplicate the tree joint as a rigid closure.
+TEST(VariationalIntegration, AvbdPointJointConfigSkipsTopologyJoint)
+{
+  sx::World world;
+  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  auto robot = world.addMultibody("pendulum");
+  auto base = robot.addLink("base");
+
+  sx::JointSpec spec;
+  spec.name = "hinge";
+  spec.type = sx::JointType::Revolute;
+  spec.axis = Eigen::Vector3d::UnitY();
+  spec.transformFromParent.translation() = Eigen::Vector3d(0.4, 0.0, 0.0);
+  auto link = robot.addLink("link", base, spec);
+  link.setMass(1.0);
+  link.setInertia(Eigen::Vector3d(0.03, 0.03, 0.03).asDiagonal());
+
+  auto hinge = robot.getJoints().front();
+  auto& registry = dart::simulation::experimental::detail::registryOf(world);
+  auto& config = registry.emplace<dvbd::AvbdRigidWorldPointJointConfig>(
+      sx::detail::toRegistryEntity(hinge.getEntity()));
+  config.localAnchorA = Eigen::Vector3d(0.4, 0.0, 0.0);
+  config.localAnchorB = Eigen::Vector3d::Zero();
+  config.targetRelativeOrientation = Eigen::Quaterniond::Identity();
+
+  world.setTimeStep(1e-3);
+  world.enterSimulationMode();
+  for (int k = 0; k < 500; ++k) {
+    world.step();
+  }
+
+  EXPECT_GT(std::abs(hinge.getPosition()[0]), 1e-3);
 }
 
 // Phase B2 (Distance family through the public API): a Distance loop closure
