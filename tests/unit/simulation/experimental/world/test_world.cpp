@@ -345,6 +345,57 @@ TEST(World, MemoryDiagnosticsMirrorAllocatorDebugCounters)
   world.getMemoryManager().deallocateUsingFree(freePtr, 24);
 }
 
+TEST(World, MemoryDiagnosticsReportEcsStorageLayout)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+
+  const auto empty = world.getMemoryDiagnostics();
+  EXPECT_EQ(empty.ecsDiagnostics.entityCount, 0u);
+  EXPECT_EQ(empty.ecsDiagnostics.componentCount, 0u);
+  EXPECT_EQ(
+      empty.ecsDiagnostics.storageCount, empty.ecsDiagnostics.storages.size());
+
+  auto frame = world.addFreeFrame("diagnostic_frame");
+  (void)frame;
+
+  const auto diagnostics = world.getMemoryDiagnostics();
+  EXPECT_EQ(diagnostics.ecsDiagnostics.entityCount, 1u);
+  EXPECT_GE(
+      diagnostics.ecsDiagnostics.entityCapacity,
+      diagnostics.ecsDiagnostics.entityCount);
+  ASSERT_GT(diagnostics.ecsDiagnostics.storageCount, 0u);
+  EXPECT_EQ(
+      diagnostics.ecsDiagnostics.storageCount,
+      diagnostics.ecsDiagnostics.storages.size());
+
+  std::size_t componentCount = 0;
+  std::size_t componentCapacity = 0;
+  bool hasLiveStorage = false;
+  for (const auto& storage : diagnostics.ecsDiagnostics.storages) {
+    EXPECT_GE(storage.capacity, storage.size);
+    componentCount += storage.size;
+    componentCapacity += storage.capacity;
+    hasLiveStorage = hasLiveStorage || storage.size > 0u;
+  }
+
+  EXPECT_TRUE(hasLiveStorage);
+  EXPECT_EQ(diagnostics.ecsDiagnostics.componentCount, componentCount);
+  EXPECT_EQ(diagnostics.ecsDiagnostics.componentCapacity, componentCapacity);
+
+  world.clear();
+  const auto cleared = world.getMemoryDiagnostics();
+  EXPECT_EQ(cleared.ecsDiagnostics.entityCount, 0u);
+  EXPECT_EQ(cleared.ecsDiagnostics.componentCount, 0u);
+  EXPECT_EQ(
+      cleared.ecsDiagnostics.storageCount,
+      cleared.ecsDiagnostics.storages.size());
+  for (const auto& storage : cleared.ecsDiagnostics.storages) {
+    EXPECT_EQ(storage.size, 0u);
+  }
+}
+
 TEST(World, FrameScratchCapacityReportsUsableArenaBytes)
 {
   namespace sx = dart::simulation::experimental;

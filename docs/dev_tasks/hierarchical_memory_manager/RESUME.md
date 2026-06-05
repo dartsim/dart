@@ -19,7 +19,9 @@ peak-byte, and allocation-count queries from `MemoryAllocatorDebugger`, giving
 later World diagnostics/profiling code an API surface instead of requiring
 debug-text parsing. The same branch now routes those counters through
 `MemoryManager::DebugDiagnostics` and experimental `WorldMemoryDiagnostics` for
-direct free/pool allocator accounting.
+direct free/pool allocator accounting. It also adds aggregate and per-storage
+ECS registry layout counters to `WorldMemoryDiagnostics` for profiler/debugger
+tooling without exposing EnTT types in the public header.
 
 ## Current Branch
 
@@ -29,10 +31,11 @@ debugger accounting coverage and structured debugger counters.
 ## Immediate Next Step
 
 Keep PR #2893 draft until hosted CI and review are clean after the structured
-debugger-counter and MemoryManager/World diagnostic updates. Next allocator work
-should continue landing the strict comparative benchmark gate,
-fixed-capacity/free-list correctness, and EnTT registry/storage allocator
-evidence before replacing more per-step hot-loop temporaries.
+debugger-counter, MemoryManager/World diagnostic, and ECS storage-layout
+updates. Next allocator work should continue landing the strict comparative
+benchmark gate, fixed-capacity/free-list correctness, and EnTT
+registry/storage allocator evidence before replacing more per-step hot-loop
+temporaries.
 
 ## Latest Local Validation
 

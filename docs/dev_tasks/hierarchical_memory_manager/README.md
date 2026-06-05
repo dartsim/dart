@@ -21,8 +21,9 @@
       visualization. `MemoryAllocatorDebugger` now exposes structured live
       bytes, peak live bytes, and live allocation count; `MemoryManager` and
       experimental `World` diagnostics now surface direct free/pool allocator
-      debug counters. ECS storage layout counters and GUI visualization remain
-      future work.
+      debug counters. `WorldMemoryDiagnostics` also reports aggregate and
+      per-storage ECS registry layout counters without exposing EnTT types.
+      GUI visualization remains future work.
 
 ## Goal
 
@@ -36,8 +37,9 @@ debugging, profiling, optimization experiments, and ImGui visualization.
 
 - Do not claim zero allocations for every experimental solver path yet.
 - Do not replace Eigen's internal heap behavior in one pass.
-- Do not expose ECS storage, solver registries, or backend resource types in
-  public memory diagnostics.
+- Do not expose raw EnTT storage, solver registries, or backend resource types
+  in public memory diagnostics; surface only DART-owned counters and diagnostic
+  IDs.
 
 ## Key Decisions
 
