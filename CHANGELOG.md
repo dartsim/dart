@@ -854,6 +854,18 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     `DART_EXPERIMENTAL_ENABLE_PROFILING` macros were wired into no build and
     duplicated `dart::common::profile`) so the World step profile is the single
     experimental profiling surface.
+    Extended the profile with nested `ComputeExecutionProfile` records for
+    compute graphs run inside a stage, including worker count, max/average
+    parallelism, critical path timing, per-node records, and text summaries;
+    stage profiles also report backend-neutral acceleration metadata and
+    whether an accelerated backend was active (for example the optional
+    deformable PSD accelerator) without exposing device-specific API. dartpy now
+    exposes the experimental sequential/parallel compute executors so Python
+    profiling can request the multi-threaded World step path. The built-in
+    non-experimental `dart::common::profile` text backend now also exposes
+    `Profiler::toSummaryText()` and `DART_PROFILE_TEXT_SUMMARY()` so existing
+    collision, constraint, and GUI profiling scopes can be consumed as text
+    without printing directly to `std::cout`.
   - Routed the experimental World's internal EnTT registry, component storage,
     and differentiable-parameter list through the World free allocator, with
     state mapper support for World-owned registries and free-list alignment

@@ -32,6 +32,7 @@
 
 #include <dart/config.hpp>
 
+#include <dart/simulation/experimental/compute/parallel_executor.hpp>
 #include <dart/simulation/experimental/compute/world_step_profile.hpp>
 #include <dart/simulation/experimental/world.hpp>
 
@@ -69,6 +70,12 @@ TEST(WorldStepProfileIntegration, EnabledStepRecordsPipelineStages)
   // The default pipeline always integrates rigid-body velocities and ends with
   // the kinematics/cache-refresh stage, regardless of world contents.
   EXPECT_NE(profile.getStage("rigid_body_velocity"), nullptr);
+  const auto* deformable = profile.getStage("deformable_dynamics");
+  ASSERT_NE(deformable, nullptr);
+  EXPECT_TRUE(
+      sx::compute::hasAcceleration(
+          deformable->acceleration,
+          sx::compute::ComputeStageAcceleration::Gpu));
   ASSERT_NE(profile.getStage("kinematics"), nullptr);
 
   // Every recorded stage carries a name; wall time is non-negative.
@@ -81,7 +88,36 @@ TEST(WorldStepProfileIntegration, EnabledStepRecordsPipelineStages)
   // The text summary is the AI-/human-facing surface; it names the stages.
   const std::string summary = profile.toSummaryText();
   EXPECT_NE(summary.find("kinematics"), std::string::npos);
+  EXPECT_NE(summary.find("gpu"), std::string::npos);
   EXPECT_NE(summary.find("World Step Profile"), std::string::npos);
+}
+
+TEST(WorldStepProfileIntegration, CapturesNestedParallelGraphProfiles)
+{
+  sx::World world;
+  sx::compute::ParallelExecutor executor(2);
+  world.setStepProfilingEnabled(true);
+
+  world.step(executor);
+
+  const auto& profile = world.getLastStepProfile();
+  ASSERT_FALSE(profile.isEmpty());
+
+  const auto* kinematics = profile.getStage("kinematics");
+  ASSERT_NE(kinematics, nullptr);
+  ASSERT_FALSE(kinematics->graphProfiles.empty());
+  EXPECT_GE(kinematics->maxGraphWorkerCount(), 1u);
+  EXPECT_LE(
+      kinematics->maxGraphParallelism(), kinematics->maxGraphWorkerCount());
+  EXPECT_NE(
+      kinematics->acceleration
+          & sx::compute::toMask(
+              sx::compute::ComputeStageAcceleration::TaskParallel),
+      0u);
+
+  const auto summary = profile.toSummaryText();
+  EXPECT_NE(summary.find("graph_profiles="), std::string::npos);
+  EXPECT_NE(summary.find("max_workers="), std::string::npos);
 }
 
 TEST(WorldStepProfileIntegration, DisablingFreezesTheLastSnapshot)

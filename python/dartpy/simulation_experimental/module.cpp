@@ -44,6 +44,8 @@
 #include <dart/simulation/experimental/common/exceptions.hpp>
 #include <dart/simulation/experimental/compute/compute_stage_metadata.hpp>
 #include <dart/simulation/experimental/compute/deformable_psd_backend.hpp>
+#include <dart/simulation/experimental/compute/parallel_executor.hpp>
+#include <dart/simulation/experimental/compute/sequential_executor.hpp>
 #include <dart/simulation/experimental/compute/world_step_profile.hpp>
 #include <dart/simulation/experimental/constraint/loop_closure.hpp>
 #include <dart/simulation/experimental/constraint/loop_closure_spec.hpp>
@@ -1956,6 +1958,159 @@ void defSimulationExperimentalModule(nb::module_& m)
           "converged_active_contact_count",
           &sim::DeformableSolverDiagnostics::convergedActiveContactCount);
 
+  nb::class_<sim::compute::ComputeExecutor>(m, "ComputeExecutor")
+      .def_prop_ro(
+          "worker_count",
+          &sim::compute::ComputeExecutor::getWorkerCount,
+          "Number of workers exposed by this executor.");
+
+  nb::class_<sim::compute::SequentialExecutor, sim::compute::ComputeExecutor>(
+      m, "SequentialExecutor")
+      .def(nb::init<>(), "Create the reference sequential compute executor.");
+
+  nb::class_<sim::compute::ParallelExecutor, sim::compute::ComputeExecutor>(
+      m, "ParallelExecutor")
+      .def(
+          nb::init<std::size_t>(),
+          nb::arg("worker_count") = 0,
+          "Create a parallel compute executor. Zero lets Taskflow choose the "
+          "worker count.")
+      .def_prop_rw(
+          "inline_threshold",
+          &sim::compute::ParallelExecutor::getInlineThreshold,
+          &sim::compute::ParallelExecutor::setInlineThreshold,
+          "Graphs with at most this many nodes execute inline.");
+
+  nb::class_<sim::compute::ComputeNodeExecutionProfile>(
+      m, "ComputeNodeExecutionProfile")
+      .def_ro(
+          "name",
+          &sim::compute::ComputeNodeExecutionProfile::name,
+          "Compute node name.")
+      .def_ro(
+          "topological_index",
+          &sim::compute::ComputeNodeExecutionProfile::topologicalIndex,
+          "Index in the graph's topological order.")
+      .def_ro(
+          "dependency_count",
+          &sim::compute::ComputeNodeExecutionProfile::dependencyCount,
+          "Number of incoming dependencies.")
+      .def_ro(
+          "dependent_count",
+          &sim::compute::ComputeNodeExecutionProfile::dependentCount,
+          "Number of outgoing dependents.")
+      .def_ro(
+          "level",
+          &sim::compute::ComputeNodeExecutionProfile::level,
+          "Longest dependency depth from any source node.")
+      .def_ro(
+          "worker_index",
+          &sim::compute::ComputeNodeExecutionProfile::workerIndex,
+          "Compact index of the worker thread that ran this node.")
+      .def_prop_ro(
+          "start_time_us",
+          [](const sim::compute::ComputeNodeExecutionProfile& self) {
+            return std::chrono::duration_cast<std::chrono::microseconds>(
+                       self.startTime)
+                .count();
+          },
+          "Node start time relative to graph execution start, in microseconds.")
+      .def_prop_ro(
+          "end_time_us",
+          [](const sim::compute::ComputeNodeExecutionProfile& self) {
+            return std::chrono::duration_cast<std::chrono::microseconds>(
+                       self.endTime)
+                .count();
+          },
+          "Node finish time relative to graph execution start, in "
+          "microseconds.")
+      .def_prop_ro(
+          "duration_us",
+          [](const sim::compute::ComputeNodeExecutionProfile& self) {
+            return std::chrono::duration_cast<std::chrono::microseconds>(
+                       self.duration)
+                .count();
+          },
+          "Time spent inside this node callable, in microseconds.")
+      .def_prop_ro(
+          "duration_ms",
+          [](const sim::compute::ComputeNodeExecutionProfile& self) {
+            return std::chrono::duration<double, std::milli>(self.duration)
+                .count();
+          },
+          "Time spent inside this node callable, in milliseconds.");
+
+  nb::class_<sim::compute::ComputeExecutionProfile>(
+      m, "ComputeExecutionProfile")
+      .def_ro(
+          "worker_count",
+          &sim::compute::ComputeExecutionProfile::workerCount,
+          "Number of workers exposed by the executor.")
+      .def_ro(
+          "max_parallelism",
+          &sim::compute::ComputeExecutionProfile::maxParallelism,
+          "Largest number of node callables observed running concurrently.")
+      .def_ro(
+          "nodes",
+          &sim::compute::ComputeExecutionProfile::nodes,
+          "Per-node execution records, sorted by topological index.")
+      .def_prop_ro(
+          "wall_time_us",
+          [](const sim::compute::ComputeExecutionProfile& self) {
+            return std::chrono::duration_cast<std::chrono::microseconds>(
+                       self.wallTime)
+                .count();
+          },
+          "End-to-end graph execution time, in microseconds.")
+      .def_prop_ro(
+          "wall_time_ms",
+          [](const sim::compute::ComputeExecutionProfile& self) {
+            return std::chrono::duration<double, std::milli>(self.wallTime)
+                .count();
+          },
+          "End-to-end graph execution time, in milliseconds.")
+      .def_prop_ro(
+          "total_node_time_us",
+          [](const sim::compute::ComputeExecutionProfile& self) {
+            return std::chrono::duration_cast<std::chrono::microseconds>(
+                       self.totalNodeTime)
+                .count();
+          },
+          "Sum of node callable durations, in microseconds.")
+      .def_prop_ro(
+          "critical_path_time_us",
+          [](const sim::compute::ComputeExecutionProfile& self) {
+            return std::chrono::duration_cast<std::chrono::microseconds>(
+                       self.criticalPathTime)
+                .count();
+          },
+          "Longest measured dependency path through the graph, in "
+          "microseconds.")
+      .def_prop_ro(
+          "average_parallelism",
+          &sim::compute::ComputeExecutionProfile::getAverageParallelism,
+          "Total node time divided by graph wall time.")
+      .def("is_empty", &sim::compute::ComputeExecutionProfile::isEmpty)
+      .def(
+          "get_node",
+          [](const sim::compute::ComputeExecutionProfile& self,
+             const std::string& name)
+              -> std::optional<sim::compute::ComputeNodeExecutionProfile> {
+            const auto* node = self.getNode(name);
+            if (node == nullptr) {
+              return std::nullopt;
+            }
+            return *node;
+          },
+          nb::arg("name"),
+          "Returns a node profile copy with the given name, or None.")
+      .def(
+          "summary",
+          &sim::compute::ComputeExecutionProfile::toSummaryText,
+          "Compact, sorted, human- and agent-readable graph timing table.")
+      .def("__repr__", &sim::compute::ComputeExecutionProfile::toSummaryText)
+      .def("__str__", &sim::compute::ComputeExecutionProfile::toSummaryText);
+
   nb::class_<sim::compute::WorldStepStageProfile>(m, "WorldStepStageProfile")
       .def_ro(
           "name",
@@ -1967,6 +2122,21 @@ void defSimulationExperimentalModule(nb::module_& m)
             return std::string(sim::compute::toString(self.domain));
           },
           "Broad compute domain of the stage, e.g. \"rigid_body\".")
+      .def_prop_ro(
+          "acceleration",
+          [](const sim::compute::WorldStepStageProfile& self) {
+            return sim::compute::formatAccelerationMask(self.acceleration);
+          },
+          "Acceleration opportunities advertised by the stage metadata.")
+      .def_ro(
+          "accelerated_backend_enabled",
+          &sim::compute::WorldStepStageProfile::acceleratedBackendEnabled,
+          "Whether a backend-neutral accelerated implementation was active "
+          "while this stage ran.")
+      .def_ro(
+          "graph_profiles",
+          &sim::compute::WorldStepStageProfile::graphProfiles,
+          "Compute graph profiles captured inside this stage.")
       .def_prop_ro(
           "duration_us",
           [](const sim::compute::WorldStepStageProfile& self) {
@@ -1981,7 +2151,23 @@ void defSimulationExperimentalModule(nb::module_& m)
             return std::chrono::duration<double, std::milli>(self.duration)
                 .count();
           },
-          "Wall-clock time spent in this stage, in milliseconds.");
+          "Wall-clock time spent in this stage, in milliseconds.")
+      .def_prop_ro(
+          "total_graph_wall_time_us",
+          [](const sim::compute::WorldStepStageProfile& self) {
+            return std::chrono::duration_cast<std::chrono::microseconds>(
+                       self.totalGraphWallTime())
+                .count();
+          },
+          "Sum of nested compute graph wall times, in microseconds.")
+      .def_prop_ro(
+          "max_graph_worker_count",
+          &sim::compute::WorldStepStageProfile::maxGraphWorkerCount,
+          "Largest executor worker count among nested graph profiles.")
+      .def_prop_ro(
+          "max_graph_parallelism",
+          &sim::compute::WorldStepStageProfile::maxGraphParallelism,
+          "Largest observed parallelism among nested graph profiles.");
 
   nb::class_<sim::compute::WorldStepProfile>(m, "WorldStepProfile")
       .def_ro(
@@ -2930,8 +3116,23 @@ void defSimulationExperimentalModule(nb::module_& m)
           [](sim::World& self) { self.updateKinematics(); },
           nb::call_guard<nb::gil_scoped_release>())
       .def(
+          "update_kinematics",
+          [](sim::World& self, sim::compute::ComputeExecutor& executor) {
+            self.updateKinematics(executor);
+          },
+          nb::arg("executor"),
+          nb::call_guard<nb::gil_scoped_release>())
+      .def(
           "sync",
           [](sim::World& self, sim::WorldSyncStage stage) { self.sync(stage); },
+          nb::arg("stage") = sim::WorldSyncStage::Kinematics,
+          nb::call_guard<nb::gil_scoped_release>())
+      .def(
+          "sync",
+          [](sim::World& self,
+             sim::compute::ComputeExecutor& executor,
+             sim::WorldSyncStage stage) { self.sync(stage, executor); },
+          nb::arg("executor"),
           nb::arg("stage") = sim::WorldSyncStage::Kinematics,
           nb::call_guard<nb::gil_scoped_release>())
       .def(
@@ -2949,6 +3150,26 @@ void defSimulationExperimentalModule(nb::module_& m)
             }
             self.step(static_cast<std::size_t>(n));
           },
+          nb::arg("n") = 1,
+          nb::call_guard<nb::gil_scoped_release>())
+      .def(
+          "step",
+          [](sim::World& self,
+             sim::compute::ComputeExecutor& executor,
+             std::ptrdiff_t n) {
+            DART_EXPERIMENTAL_THROW_T_IF(
+                n < 0,
+                sim::InvalidArgumentException,
+                "World.step(n=...) requires a non-negative step count");
+            if (n == 0) {
+              return;
+            }
+            if (!self.isSimulationMode()) {
+              self.enterSimulationMode();
+            }
+            self.step(static_cast<std::size_t>(n), executor);
+          },
+          nb::arg("executor"),
           nb::arg("n") = 1,
           nb::call_guard<nb::gil_scoped_release>())
       .def_prop_rw(
