@@ -67,11 +67,10 @@ if(TARGET dart-utils)
   dart_add_test("integration" test_SkelParser)
   target_link_libraries(test_SkelParser dart-utils)
 
-  if(NOT MSVC) 
+  if(NOT MSVC)
     dart_add_test("integration" test_VskParser)
     target_link_libraries(test_VskParser dart-utils)
   endif()
-
 endif()
 
 if(TARGET dart-utils-urdf)
@@ -123,6 +122,13 @@ if(TARGET dart-collision-ode)
   # it difficult to come up with correct test expectations.
   dart_add_test("integration" test_ForceDependentSlip)
   target_link_libraries(test_ForceDependentSlip dart-collision-ode)
+endif()
+
+if(TARGET dart-collision-bullet AND TARGET dart-collision-ode)
+  dart_add_test("integration" test_CapsuleGroundContact)
+  target_link_libraries(test_CapsuleGroundContact
+    dart-collision-bullet
+    dart-collision-ode)
 endif()
 
 if(TARGET dart-utils)
