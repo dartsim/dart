@@ -75,6 +75,15 @@ public:
   /// Returns true if there is no memory allocated by the internal allocator.
   [[nodiscard]] bool isEmpty() const;
 
+  /// Returns the number of bytes currently tracked as live allocations.
+  [[nodiscard]] size_t getAllocatedSize() const;
+
+  /// Returns the largest live allocation byte total observed by this debugger.
+  [[nodiscard]] size_t getPeakAllocatedSize() const;
+
+  /// Returns the number of currently tracked live allocations.
+  [[nodiscard]] size_t getAllocationCount() const;
+
   /// Returns true if a pointer is allocated by the internal allocator.
   [[nodiscard]] bool hasAllocated(void* pointer, size_t size) const;
 

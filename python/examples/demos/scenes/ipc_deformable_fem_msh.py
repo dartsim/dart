@@ -1,4 +1,4 @@
-"""FEM cantilever loaded from a GMSH .msh file (experimental IPC deformable solver).
+"""FEM cantilever loaded from a GMSH .msh file (IPC deformable solver).
 
 A tetrahedral beam is loaded from a GMSH ASCII ``.msh`` mesh file via
 ``dartpy.simulation_experimental.load_gmsh_tet_mesh`` (the new tet-mesh
@@ -112,7 +112,7 @@ def build() -> SceneSetup:
 SCENE = PythonDemoScene(
     id="ipc_deformable_fem_msh",
     title="Deformable FEM from .msh (IPC)",
-    category="IPC Deformable (sx)",
+    category="IPC Deformable",
     summary="A FEM cantilever loaded from a GMSH .msh tet mesh sags under gravity.",
     build=build,
 )

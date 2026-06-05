@@ -166,13 +166,49 @@ struct DeformableSolverDiagnostics
   std::size_t convergedActiveContactCount = 0;
 };
 
+/// Per-component-storage ECS memory diagnostics. Storage IDs are internal
+/// diagnostic tokens for grouping one snapshot; callers should not persist them
+/// as stable public component identifiers.
+struct WorldEcsStorageDiagnostics
+{
+  /// Internal diagnostic ID for this component storage.
+  std::size_t storageId = 0;
+  /// Number of live components in this storage.
+  std::size_t size = 0;
+  /// Current storage capacity before another component insertion may grow it.
+  std::size_t capacity = 0;
+};
+
+/// Aggregate ECS registry storage diagnostics for profiler/debugger surfaces.
+struct WorldEcsDiagnostics
+{
+  /// Number of live entities in the World registry.
+  std::size_t entityCount = 0;
+  /// Current registry entity storage capacity.
+  std::size_t entityCapacity = 0;
+  /// Number of component storages currently materialized by the registry.
+  std::size_t storageCount = 0;
+  /// Sum of live component counts across materialized component storages.
+  std::size_t componentCount = 0;
+  /// Sum of component capacities across materialized component storages.
+  std::size_t componentCapacity = 0;
+  /// Per-storage live/capacity counters for layout debugging and UI grouping.
+  std::vector<WorldEcsStorageDiagnostics> storages;
+};
+
 /// Snapshot of the experimental World's CPU memory hierarchy diagnostics.
 ///
-/// This first slice reports only the World-owned frame allocator used for
-/// per-step scratch. Persistent allocator and ECS storage diagnostics are
-/// intentionally left for the allocator/EnTT integration workstream.
+/// This snapshot reports the World-owned frame allocator used for per-step
+/// scratch, structured debug counters for direct free/pool allocations, and
+/// ECS registry storage layout counters for memory debugger/profiler tools.
 struct WorldMemoryDiagnostics
 {
+  /// Debug counters for the World-owned MemoryManager hierarchy.
+  common::MemoryManager::DebugDiagnostics allocatorDebugDiagnostics;
+
+  /// ECS registry/component storage diagnostics.
+  WorldEcsDiagnostics ecsDiagnostics;
+
   /// Current usable frame-scratch arena capacity after alignment padding.
   std::size_t frameScratchCapacityBytes = 0;
   /// Bytes consumed in the current simulation frame, including overflow blocks.
@@ -538,6 +574,55 @@ public:
       compute::WorldStepPipeline& pipeline);
 
   //--------------------------------------------------------------------------
+  // Simulation replay
+  //--------------------------------------------------------------------------
+
+  /// Enable or disable opt-in simulation replay recording.
+  ///
+  /// Replay recording is off by default. Enabling it captures the current world
+  /// state as the first replay frame, then records one frame after each
+  /// timestep completed by the built-in or user-supplied step pipeline.
+  /// Restoring a recorded frame writes the saved state back into the existing
+  /// world entities, so public handles remain valid and no physics step is
+  /// re-run.
+  void setReplayRecordingEnabled(bool enabled);
+
+  /// Whether this world is currently appending replay frames after steps.
+  [[nodiscard]] bool isReplayRecordingEnabled() const noexcept;
+
+  /// Clear all recorded replay frames.
+  ///
+  /// If recording is currently enabled, the current world state is immediately
+  /// captured as the new frame zero.
+  void clearReplayRecording();
+
+  /// Number of states currently available for replay.
+  [[nodiscard]] std::size_t getReplayFrameCount() const noexcept;
+
+  /// Current replay cursor, if a frame has been recorded or restored.
+  [[nodiscard]] std::optional<std::size_t> getReplayCursor() const noexcept;
+
+  /// Simulation time stored at replay frame `index`.
+  ///
+  /// @throws InvalidArgumentException if `index` is out of range.
+  [[nodiscard]] double getReplayFrameTime(std::size_t index) const;
+
+  /// Simulation frame number stored at replay frame `index`.
+  ///
+  /// @throws InvalidArgumentException if `index` is out of range.
+  [[nodiscard]] std::size_t getReplaySimulationFrame(std::size_t index) const;
+
+  /// Restore a recorded frame without re-running physics.
+  ///
+  /// The restore is in-place with respect to existing entities and handles. If
+  /// recording is enabled and the caller subsequently steps from the restored
+  /// frame, frames after the cursor are discarded before the new branch is
+  /// appended.
+  ///
+  /// @throws InvalidArgumentException if `index` is out of range.
+  void restoreReplayFrame(std::size_t index);
+
+  //--------------------------------------------------------------------------
   // Memory
   //--------------------------------------------------------------------------
   /// Returns the memory manager owned by this World.
@@ -661,6 +746,9 @@ private:
   [[nodiscard]] std::uint64_t getFrameTopologyRevision() const noexcept;
   void reserveRegistryStorageForSimulation();
   void resetCountersFromRegistry();
+  void stepPipelineOnce(
+      compute::ComputeExecutor& executor, compute::WorldStepPipeline& pipeline);
+  void recordReplayFrame();
   void resetFrameScratchForStep();
   void refreshMemoryDiagnostics();
 
@@ -720,6 +808,9 @@ private:
   std::size_t m_jointCounter{0};
   mutable std::unique_ptr<CollisionQueryCache> m_collisionQueryCache;
   std::unique_ptr<StepPipelineCache> m_stepPipelineCache;
+
+  struct ReplayState;
+  std::unique_ptr<ReplayState> m_replay;
 };
 
 } // namespace dart::simulation::experimental

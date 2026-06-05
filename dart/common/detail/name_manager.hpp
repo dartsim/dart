@@ -108,7 +108,11 @@ std::string NameManager<T>::issueNewName(std::string_view name) const
     newName = ss.str();
   } while (hasName(newName));
 
-  DART_INFO(
+  // Demoted to debug verbosity: automatic renaming of duplicate names is
+  // routine for legitimate use cases (e.g. loading nested models whose links
+  // share a base name), where this message is noise rather than a problem.
+  // See https://github.com/gazebosim/gz-physics/issues/725
+  DART_DEBUG(
       "({}) The name [{}] is a duplicate, so it has been renamed to [{}]",
       mManagerName,
       name,

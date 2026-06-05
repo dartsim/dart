@@ -130,6 +130,16 @@ def test_registry_has_scenes() -> None:
 def test_runner_cycle_returns_zero() -> None:
     if not _gui_run_demos_available():
         pytest.skip("dartpy.gui.run_demos unavailable (GUI not built)")
+    if not _simulation_experimental_has("World"):
+        # The pruned catalog is World-only, so every scene's factory needs the
+        # experimental World binding. Builds with
+        # DART_BUILD_SIMULATION_EXPERIMENTAL=OFF still ship the GUI runner but no
+        # World, leaving no scene to render (and no prior scene to fall back to),
+        # so the cycle can only skip here rather than exercise the runner.
+        pytest.skip(
+            "simulation_experimental.World unavailable "
+            "(experimental simulation disabled in this build)"
+        )
     rc = run(["--cycle-scenes", "--frames", "2", "--headless"], make_demo_scenes())
     assert rc == 0
 
@@ -469,8 +479,8 @@ def test_ipc_deformable_seg_and_pt_importers_feed_solves() -> None:
 def test_ipc_deformable_scenes_share_dedicated_category() -> None:
     """The IPC deformable scenes live in their own dedicated menu category.
 
-    The five IPC showcases must group under ``IPC Deformable (sx)`` (not the
-    general ``Experimental`` sx category), so the viewer renders them together.
+    The IPC showcases must group under ``IPC Deformable`` so the viewer renders
+    them together.
     """
 
     scenes = make_demo_scenes()
@@ -502,42 +512,62 @@ def test_ipc_deformable_scenes_share_dedicated_category() -> None:
     assert expected_ipc <= set(by_id), "missing IPC deformable scenes"
 
     for scene_id in expected_ipc:
-        assert by_id[scene_id].category == "IPC Deformable (sx)"
+        assert by_id[scene_id].category == "IPC Deformable"
 
-    # Every scene in the dedicated category is an IPC deformable scene, and
-    # none of them leaked back into the general Experimental category.
-    ipc_category = [s.id for s in scenes if s.category == "IPC Deformable (sx)"]
+    # Every scene in the dedicated category is an IPC deformable scene.
+    ipc_category = [s.id for s in scenes if s.category == "IPC Deformable"]
     assert set(ipc_category) == expected_ipc
-    experimental = [s.id for s in scenes if s.category == "Experimental"]
-    assert not any(s.startswith("ipc_deformable_") for s in experimental)
+    assert not any(s.category == "Experimental" for s in scenes)
 
 
-def test_experimental_world_scenes_use_solver_focused_categories() -> None:
+def test_world_scenes_use_solver_focused_categories() -> None:
     scenes = make_demo_scenes()
     by_id = {scene.id: scene for scene in scenes}
 
     expected = {
-        "Experimental Rigid Body (sx)": {
-            "sx_articulated",
-            "sx_floating_base",
-            "sx_contact",
-            "experimental_rigid_body_gui",
+        "World Rigid Body": {
+            "articulated",
+            "floating_base",
+            "contact",
+            "rigid_body",
+            "rigid_limited_joints",
         },
-        "Rigid IPC (sx)": {
-            "sx_rigid_ipc",
-            "sx_rigid_ipc_slide",
-            "sx_rigid_ipc_incline",
-            "sx_rigid_ipc_edge_drop",
-            "sx_rigid_ipc_pile",
-            "sx_rigid_ipc_tunnel",
+        "AVBD Rigid Constraints (sx)": {
+            "avbd_rigid_fixed_joint_contact",
         },
-        "Variational Integrators (sx)": {
-            "sx_variational_chain",
-            "sx_variational_tumbler",
-            "sx_variational_contact",
-            "sx_loop_closure",
+        "Planned World Ports": {
+            "planned_inverse_kinematics",
+            "planned_simbicon_walking",
+            "planned_operational_space_control",
+            "g1_puppet",
+            "planned_collision_sandbox",
+            "planned_mobile_manipulation",
         },
-        "Vertex Block Descent (sx)": {
+        "Robot Models": {
+            "atlas_puppet",
+            "hubo_puppet",
+        },
+        "Control & IK": {
+            "atlas_simbicon",
+        },
+        "Rigid IPC": {
+            "rigid_ipc",
+            "rigid_ipc_slide",
+            "rigid_ipc_incline",
+            "rigid_ipc_edge_drop",
+            "rigid_ipc_pile",
+            "rigid_ipc_tunnel",
+        },
+        "Simulation Replay": {
+            "replay_scrubber",
+        },
+        "Variational Integrators": {
+            "variational_chain",
+            "variational_tumbler",
+            "variational_contact",
+            "loop_closure",
+        },
+        "Vertex Block Descent": {
             "vbd_cloth",
             "vbd_net",
             "vbd_beam",
@@ -551,14 +581,47 @@ def test_experimental_world_scenes_use_solver_focused_categories() -> None:
         for scene_id in scene_ids:
             assert by_id[scene_id].category == category
 
-    old_experimental = [
-        scene.id for scene in scenes if scene.category == "Experimental"
-    ]
-    assert not any(
-        scene_id.startswith(("sx_", "vbd_"))
-        or scene_id == "experimental_rigid_body_gui"
-        for scene_id in old_experimental
+    assert not any(scene.category == "Experimental" for scene in scenes)
+    assert not any(scene.id.startswith("sx_") for scene in scenes)
+
+
+def test_avbd_fixed_joint_contact_demo_exercises_contact_path() -> None:
+    import numpy as np
+
+    _require_simulation_experimental_symbols("World")
+
+    from examples.demos.scenes.avbd_rigid_fixed_joint_contact import build
+
+    setup = build()
+    sx_world = setup.info["sx_world"]
+    base = setup.info["base"]
+    payload = setup.info["payload"]
+    connector = setup.info["connector"]
+
+    assert sx_world.num_rigid_body_fixed_joints == 1
+    assert len(sx_world.collide()) > 0
+    assert not base.is_static
+
+    initial_base = np.asarray(base.translation, dtype=float).reshape(3)
+    initial_payload = np.asarray(payload.translation, dtype=float).reshape(3)
+
+    for _ in range(20):
+        assert setup.pre_step is not None
+        setup.pre_step()
+        setup.world.step()
+
+    assert len(sx_world.collide()) > 0
+    base_translation = np.asarray(base.translation, dtype=float).reshape(3)
+    payload_translation = np.asarray(payload.translation, dtype=float).reshape(3)
+    offset = payload_translation - base_translation
+    expected_offset = np.array([0.72, 0.0, -0.34])
+    assert np.linalg.norm(offset - expected_offset) < 2.0e-2
+    connector_transform = np.asarray(connector.get_transform().matrix())
+    assert connector_transform[:3, 0] == pytest.approx(
+        offset / np.linalg.norm(offset), abs=1.0e-6
     )
+    assert np.linalg.norm(base_translation - initial_base) > 1.0e-3
+    assert np.linalg.norm(payload_translation - initial_payload) > 1.0e-3
 
 
 def test_runner_screenshot_writes_ppm(tmp_path: pathlib.Path) -> None:
@@ -694,7 +757,7 @@ def test_py_demo_capture_records_ui_force_drag_artifacts(
     rc = capture_py_demo.main(
         [
             "--scene",
-            "sx_rigid_ipc_slide",
+            "rigid_ipc_slide",
             "--force-drag-target",
             "ipc_slide_box_visual",
             "--force-drag-frame",

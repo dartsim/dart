@@ -197,6 +197,30 @@ bool MemoryAllocatorDebugger<T>::isEmpty() const
 
 //==============================================================================
 template <typename T>
+size_t MemoryAllocatorDebugger<T>::getAllocatedSize() const
+{
+  std::lock_guard<std::mutex> lock(mMutex);
+  return mSize;
+}
+
+//==============================================================================
+template <typename T>
+size_t MemoryAllocatorDebugger<T>::getPeakAllocatedSize() const
+{
+  std::lock_guard<std::mutex> lock(mMutex);
+  return mPeak;
+}
+
+//==============================================================================
+template <typename T>
+size_t MemoryAllocatorDebugger<T>::getAllocationCount() const
+{
+  std::lock_guard<std::mutex> lock(mMutex);
+  return mMapPointerToSize.size();
+}
+
+//==============================================================================
+template <typename T>
 bool MemoryAllocatorDebugger<T>::hasAllocated(void* pointer, size_t size) const
 {
   std::lock_guard<std::mutex> lock(mMutex);
