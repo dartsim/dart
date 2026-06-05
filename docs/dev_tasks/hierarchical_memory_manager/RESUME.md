@@ -16,10 +16,10 @@ and should merge latest `origin/main` before every push.
 
 ## Immediate Next Step
 
-Finish PR #2890 review/CI hygiene, then use its passing focused EnTT benchmark
-evidence to start the production `WorldRegistry` bake/build allocation policy.
-Repeat the focused gate on low-load hosts before treating any regression as
-actionable:
+Do not promote the current allocator-aware EnTT policy into production
+`WorldRegistry` bake/build allocation yet. A fresh focused strict run now fails
+against both foonathan/memory and the standard registry. First optimize or
+replace the allocator-aware registry policy, then rerun:
 
 ```bash
 pixi run bm-allocator-comparative-check --only-entt-registry \
@@ -30,14 +30,13 @@ The current policy caches known EnTT component storage handles in the hot path,
 uses a free-list-backed DART allocator for persistent no-growth registry churn,
 and uses a pool-backed DART allocator for bake/build growth churn. The
 build/growth timing row uses an uninstrumented pool-backed allocator and reports
-configured-allocator call counters from a matching untimed probe. A fresh
-focused strict checker run now passes against both foonathan/memory and the
-standard registry. `StlAllocator` keeps allocator-backed STL storage
-alignment-aware, including fixed-pool-backed max-aligned values. A separate
-world-lifetime arena-backed registry probe via `FrameStlAllocator` proved the
-no-growth invariant, but repeated timing did not consistently beat both
-baselines. Do not confuse that probe with the per-step `World` frame allocator,
-which is reset at step boundaries and cannot hold persistent registry storage.
+configured-allocator call counters from a matching untimed probe. `StlAllocator`
+keeps allocator-backed STL storage alignment-aware, including fixed-pool-backed
+max-aligned values. A separate world-lifetime arena-backed registry probe via
+`FrameStlAllocator` proved the no-growth invariant, but repeated timing did not
+consistently beat both baselines. Do not confuse that probe with the per-step
+`World` frame allocator, which is reset at step boundaries and cannot hold
+persistent registry storage.
 The reserved-registry unit tests now prove the prewarmed churn loop makes no
 configured allocator calls and does not consume additional arena bytes after
 prewarm. The DART EnTT benchmark row reports allocator-call counters and fails
@@ -47,22 +46,22 @@ instead of conflating that cost with the no-growth simulation loop.
 
 ## Latest Local Validation
 
-- The fresh focused command passed the strict gate on 2026-06-04 at local
-  timestamp `18:16:11-07:00`:
-  `pixi run bm-allocator-comparative-check --only-entt-registry --baseline foonathan --baseline std --verbose --output .benchmark_results/allocator_comparative_check_fresh_current.json`.
-  DART steady-state rows reported `dart_allocator_allocations=0` and
-  `dart_allocator_deallocations=0`. Median DART/std ratios were
-  `BM_EnttRegistry/{256,512,2048}` = `0.925`, `0.841`, `0.839`;
-  `BM_EnttRegistryBuild/{256,512,2048}` = `0.879`, `0.984`, `0.982`.
-  Median DART/foonathan ratios were `BM_EnttRegistry/{256,512,2048}` =
-  `0.919`, `0.866`, `0.880`; `BM_EnttRegistryBuild/{256,512,2048}` =
-  `0.192`, `0.337`, `0.606`. Build/growth rows reported DART
-  configured-allocator calls per iteration of 37, 38, and 43 for 256, 512, and
-  2048 entities.
-- Earlier focused runs failed under either the 10% CV stability gate or small
-  timing margins at 256/512 entities. Treat those files as historical evidence
-  for why the gate needs repeated low-load runs, not as the current branch
-  result.
+- The fresh focused command failed the strict gate on 2026-06-04 at local
+  timestamp `19:34:15-07:00`:
+  `pixi run bm-allocator-comparative-check --only-entt-registry --output .benchmark_results/allocator_comparative_entt_default_current.json`.
+  DART steady-state rows still reported `dart_allocator_allocations=0` and
+  `dart_allocator_deallocations=0`, but timing lost to foonathan/memory at
+  512 and 2048 entities and to the standard registry at 256, 512, and 2048
+  entities. DART/std ratios were approximately `1.618`, `1.551`, and `1.825`
+  for `BM_EnttRegistry/{256,512,2048}`. DART/foonathan ratios were
+  approximately noisy-at-256, `1.377`, and `1.367`. Build/growth rows beat
+  foonathan/memory at 256, 512, and 2048 entities, but lost to the standard
+  registry at 256 and 512 entities and had a noisy DART 2048 row. Build/growth
+  rows reported DART configured-allocator calls per iteration of 37, 38, and 43
+  for 256, 512, and 2048 entities.
+- Older focused runs include both passes and failures. Treat those files as
+  historical evidence for why the gate needs repeated low-load runs, not as the
+  current branch result.
 - A refreshed world-lifetime arena-backed benchmark experiment over
   `.benchmark_results/entt_registry_arena_policy_probe.json` also failed the
   strict gate. It drove backing allocator calls to zero for the build/growth
@@ -74,8 +73,11 @@ instead of conflating that cost with the no-growth simulation loop.
   `bm_allocators_comparative --benchmark_list_tests` lists all DART,
   foonathan/memory, and standard EnTT registry/build rows at 256, 512, and 2048
   entities.
-- `pixi run bm-allocator-comparative-check --verbose` passed the default
-  foonathan/memory gate on the current benchmark branch.
+- A fresh full broad allocator gate with both baselines also failed on this
+  host, including a foonathan/memory miss on `BM_Pool/32/64` and a narrow
+  `BM_StlVector/10000` miss. A focused rerun of `BM_Pool/32/64` then flipped
+  timing direction but failed the CV guard, so do not treat that single broad
+  run as an allocator-code diagnosis without lower-load confirmation.
 - The focused STL-vector checker over
   `.benchmark_results/stlvector_focused_serial_1s_9.json` passed against both
   foonathan and std, so the earlier 10k vector miss was not stable enough to
