@@ -42,15 +42,16 @@ all workflows must remain usable from public docs and `pixi run ...` commands.
 
 ## Domain Skills
 
-| Capability        | Codex              | Manual public path                                                     |
-| ----------------- | ------------------ | ---------------------------------------------------------------------- |
-| `dart-build`      | `$dart-build`      | `docs/onboarding/building.md`, `pixi run build`                        |
-| `dart-ci`         | `$dart-ci`         | `docs/onboarding/ci-cd.md`                                             |
-| `dart-contribute` | `$dart-contribute` | `docs/onboarding/contributing.md`, `CONTRIBUTING.md`                   |
-| `dart-io`         | `$dart-io`         | `docs/onboarding/io-parsing.md`                                        |
-| `dart-python`     | `$dart-python`     | `docs/onboarding/python-bindings.md`                                   |
-| `dart-references` | `$dart-references` | `docs/readthedocs/papers.md`                                           |
-| `dart-test`       | `$dart-test`       | `docs/onboarding/testing.md`, `pixi run test-unit`, `pixi run test-py` |
+| Capability          | Codex                | Manual public path                                                                  |
+| ------------------- | -------------------- | ----------------------------------------------------------------------------------- |
+| `dart-architecture` | `$dart-architecture` | `docs/readthedocs/architecture.md`, `docs/design/simulation_solver_architecture.md` |
+| `dart-build`        | `$dart-build`        | `docs/onboarding/building.md`, `pixi run build`                                     |
+| `dart-ci`           | `$dart-ci`           | `docs/onboarding/ci-cd.md`                                                          |
+| `dart-contribute`   | `$dart-contribute`   | `docs/onboarding/contributing.md`, `CONTRIBUTING.md`                                |
+| `dart-io`           | `$dart-io`           | `docs/onboarding/io-parsing.md`                                                     |
+| `dart-python`       | `$dart-python`       | `docs/onboarding/python-bindings.md`                                                |
+| `dart-references`   | `$dart-references`   | `docs/readthedocs/papers.md`                                                        |
+| `dart-test`         | `$dart-test`         | `docs/onboarding/testing.md`, `pixi run test-unit`, `pixi run test-py`              |
 
 ## Expected Routing Scenarios
 

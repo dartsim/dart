@@ -66,7 +66,14 @@ def run_cmake_build(build_dir: Path, build_type: str, target: str):
     elif os.environ.get("CI") or os.environ.get("GITHUB_ACTIONS"):
         raw_parallel = "1"
     else:
-        raw_parallel = str(max(os.cpu_count() or 1, 1))
+        # Single source of truth for the local job count (3/4-core cap), shared
+        # with cmake_build.py. Falls back gracefully if the helper is missing.
+        try:
+            from parallel_jobs import compute_parallel_jobs
+
+            raw_parallel = str(compute_parallel_jobs())
+        except Exception:
+            raw_parallel = str(max(os.cpu_count() or 1, 1))
     try:
         jobs = int(raw_parallel)
     except ValueError:
@@ -85,11 +92,25 @@ def run_cmake_build(build_dir: Path, build_type: str, target: str):
     ]
     cmd.extend(["--parallel", parallel])
 
+    # Load-aware scheduling for Ninja builds: append `-l <load>` so several
+    # clones on one machine share the CPU. Kept as a separate suffix so the
+    # --parallel-1 retry fallback below can rebuild the command cleanly.
+    load_suffix: list[str] = []
+    if (build_dir / "build.ninja").is_file():
+        try:
+            from parallel_jobs import ninja_load_args
+
+            load_args = ninja_load_args()
+        except Exception:
+            load_args = []
+        if load_args:
+            load_suffix = ["--", *load_args]
+
     def _run_build(args):
         subprocess.check_call(args)
 
     try:
-        _run_build(cmd)
+        _run_build(cmd + load_suffix)
         return
     except (subprocess.CalledProcessError, OSError):
         # If parallelism was explicitly configured, honor that failure.
@@ -97,7 +118,8 @@ def run_cmake_build(build_dir: Path, build_type: str, target: str):
             raise
 
         # Retry with minimal parallelism to avoid transient resource limits
-        # observed in CI (e.g., ninja posix_spawn failures).
+        # observed in CI (e.g., ninja posix_spawn failures). Drop the load
+        # governor too so the retry is maximally conservative.
         fallback_cmd = cmd[:-1] + ["1"]
         backoff_seconds = (0, 10, 30, 60)
         last_error: Optional[BaseException] = None

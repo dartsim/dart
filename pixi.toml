@@ -1970,9 +1970,79 @@ api-docs-serve-py = { cmd = """
     python -m http.server --directory docs/python_api/_build/html 8003
 """, depends-on = ["api-docs-py"] }
 
-test-all = { cmd = """
-    python scripts/test_all.py
-""" }
+# ---------------------------------------------------------------------------
+# Tiered local verification. See docs/design/local_verification_pipeline.md.
+# Naming: <verb>[-<tier>]; tiers are monotonic supersets quick < (bare) < full.
+#   verb: build | test | verify (lint+build+test gate) | bench
+#   tier: -quick (Tier 0 inner loop) | bare (Tier 1 pre-commit) | -full (Tier 2)
+# Environment stays a `-e` flag; subsystem scope stays `<verb>-<scope>`.
+# ---------------------------------------------------------------------------
+
+# Tier 2 — authoritative gate: full build (incl Debug/examples/docs) + all tests.
+verify-full = { cmd = "python scripts/test_all.py" }
+test-all = { depends-on = ["verify-full"] }          # backward-compatible alias
+
+# Tier 0 — inner loop: fast lint subset + fast unit tests (long poles skipped).
+check-lint-quick = { depends-on = [
+  "check-lint-cpp",
+  "check-lint-py",
+  "check-docs-policy",
+  "check-api-boundaries",
+  "check-dart7-promotion-surface",
+  "check-collision-runtime-isolation",
+] }
+test-quick = { cmd = "python scripts/run_cpp_test.py --quick", depends-on = [
+  "config",
+] }
+verify-quick = { depends-on = ["check-lint-quick", "test-quick"] }
+
+# Tier 1 — pre-commit default: lint + Release lib/tests + experimental-quick + python.
+# Builds only the test targets (not examples/tutorials/docs/Debug) to stay lean.
+test-core = { cmd = "python scripts/ctest_tier.py -LE simulation-experimental", depends-on = [
+  { task = "build-tests", args = [
+    "ON",
+    "Release",
+  ] },
+] }
+test-experimental-quick = { cmd = "python scripts/ctest_tier.py -L simulation-experimental --exclude-long-poles", depends-on = [
+  { task = "build-tests", args = [
+    "ON",
+    "Release",
+  ] },
+  { task = "build-simulation-experimental-tests", args = [
+    "ON",
+    "Release",
+  ] },
+] }
+# Uses read-only check-lint (not autofix lint): a gate must not mutate sources
+# while builds run in parallel. Run `pixi run lint` first to auto-fix.
+verify = { depends-on = [
+  "check-lint",
+  "test-core",
+  "test-experimental-quick",
+  "test-py",
+] }
+
+# Tier 2 — run every C++ test (all labels), parallel + load-aware.
+test-full = { cmd = "python scripts/ctest_tier.py", depends-on = [
+  { task = "build-tests", args = [
+    "ON",
+    "Release",
+  ] },
+  { task = "build-simulation-experimental-tests", args = [
+    "ON",
+    "Release",
+  ] },
+] }
+
+# Benchmark tiers mirror the test ladder.
+bench-quick = { depends-on = ["bm-check"] }
+bench = { depends-on = ["bm"] }
+bench-full = { depends-on = [
+  "bm",
+  "bm-check",
+  "bm-allocator-comparative-check",
+] }
 
 # ABI check (Linux only). Requires libabigail. Examples:
 # - Default (compare HEAD to latest matching major tag):

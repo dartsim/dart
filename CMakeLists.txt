@@ -53,6 +53,7 @@ set(CMAKE_MODULE_PATH "${DART_SOURCE_DIR}/cmake")
 
 include(dart_defs)
 include(compiler_cache)
+include(local_build_perf)
 
 # Initialize CMake component helpers (now part of dart_defs.cmake)
 # Uses the following variables:
@@ -452,6 +453,8 @@ if(DART_BUILD_DIFF)
 endif()
 
 dart_configure_compiler_cache()
+dart_configure_linker()
+dart_configure_path_normalization()
 
 #===============================================================================
 # Print intro

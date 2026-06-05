@@ -121,17 +121,6 @@ jobs:
       - name: Configure environment for compiler cache
         uses: ./.github/actions/configure-compiler-cache
 
-      # Keep the experimental simulation module OFF for Windows wheels only. The
-      # shared pyproject.toml [tool.scikit-build.cmake.define] block leaves
-      # DART_BUILD_SIMULATION_EXPERIMENTAL at its global default (ON) so Linux/macOS
-      # wheels still build it. scikit-build-core honors SKBUILD_CMAKE_DEFINE, which
-      # merges into cmake.define; exporting it here (Windows-gated) overrides the
-      # default for the Windows wheel build without affecting other platforms.
-      - name: Disable experimental simulation for Windows wheels
-        if: runner.os == 'Windows'
-        shell: bash
-        run: echo "SKBUILD_CMAKE_DEFINE=DART_BUILD_SIMULATION_EXPERIMENTAL=OFF" >> "$GITHUB_ENV"
-
       - name: Build wheel
         env:
           # Work around occasional sccache spawn failures on ubuntu-latest + Python 3.14 wheel builds.

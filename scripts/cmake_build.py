@@ -11,7 +11,7 @@ import sys
 from pathlib import Path
 
 try:
-    from parallel_jobs import compute_parallel_jobs
+    from parallel_jobs import compute_parallel_jobs, ninja_load_args
 except ImportError:  # pragma: no cover
 
     def compute_parallel_jobs() -> int:
@@ -22,6 +22,9 @@ except ImportError:  # pragma: no cover
             jobs = max(1, (cpus * 3) // 4)
         # Avoid exhausting process limits on beefy self-hosted runners.
         return min(jobs, 32)
+
+    def ninja_load_args() -> list[str]:
+        return []
 
 
 def parse_args() -> argparse.Namespace:
@@ -174,6 +177,13 @@ def run_build(
     cmd += ["--parallel", str(parallel)]
     if target:
         cmd += ["--target", target]
+    # Load-aware scheduling: pass ninja's `-l` so concurrent clones share the
+    # CPU. Guard on a Ninja build tree since `--parallel`'s passthrough goes to
+    # the native tool and `-l` is meaningless to MSBuild/Xcode.
+    if (build_dir / "build.ninja").is_file():
+        load_args = ninja_load_args()
+        if load_args:
+            cmd += ["--", *load_args]
     try:
         subprocess.run(cmd, check=True)
     except subprocess.CalledProcessError:
