@@ -5080,6 +5080,82 @@ TEST(World, CrossMultibodyLinksResolveContact)
   }
 }
 
+TEST(World, CrossMultibodyDifferentDofLinksUseUnifiedFallback)
+{
+  namespace sx = dart::simulation::experimental;
+
+  struct StepState
+  {
+    double lowerVelocity{0.0};
+    double upperRootVelocity{0.0};
+    double upperTipVelocity{0.0};
+  };
+
+  const auto runScene = [](bool boxedLcp) {
+    sx::WorldOptions options;
+    if (boxedLcp) {
+      options.contactSolverMethod = sx::ContactSolverMethod::BoxedLcp;
+    }
+    sx::World world(options);
+    world.setGravity(Eigen::Vector3d::Zero());
+
+    auto lowerRobot = world.addMultibody("lower_robot");
+    auto lowerBase = lowerRobot.addLink("base");
+    sx::JointSpec lowerSpec;
+    lowerSpec.name = "lower_slider";
+    lowerSpec.type = sx::JointType::Prismatic;
+    lowerSpec.axis = Eigen::Vector3d::UnitZ();
+    auto lowerLink = lowerRobot.addLink("link", lowerBase, lowerSpec);
+    lowerLink.setMass(1.0);
+    lowerLink.setCollisionShape(sx::CollisionShape::makeSphere(0.2));
+    auto lowerJoint = lowerLink.getParentJoint();
+    lowerJoint.setPosition(Eigen::VectorXd::Constant(1, 0.0));
+    lowerJoint.setVelocity(Eigen::VectorXd::Constant(1, 0.5));
+
+    auto upperRobot = world.addMultibody("upper_robot");
+    auto upperBase = upperRobot.addLink("base");
+    sx::JointSpec rootSpec;
+    rootSpec.name = "upper_root_slider";
+    rootSpec.type = sx::JointType::Prismatic;
+    rootSpec.axis = Eigen::Vector3d::UnitZ();
+    auto upperMid = upperRobot.addLink("mid", upperBase, rootSpec);
+    upperMid.setMass(1.0);
+    auto upperRootJoint = upperMid.getParentJoint();
+    upperRootJoint.setPosition(Eigen::VectorXd::Constant(1, 0.15));
+    upperRootJoint.setVelocity(Eigen::VectorXd::Constant(1, -0.25));
+
+    sx::JointSpec tipSpec;
+    tipSpec.name = "upper_tip_slider";
+    tipSpec.type = sx::JointType::Prismatic;
+    tipSpec.axis = Eigen::Vector3d::UnitZ();
+    auto upperTip = upperRobot.addLink("tip", upperMid, tipSpec);
+    upperTip.setMass(1.0);
+    upperTip.setCollisionShape(sx::CollisionShape::makeSphere(0.2));
+    auto upperTipJoint = upperTip.getParentJoint();
+    upperTipJoint.setPosition(Eigen::VectorXd::Constant(1, 0.20));
+    upperTipJoint.setVelocity(Eigen::VectorXd::Constant(1, -0.25));
+
+    world.setTimeStep(0.001);
+    world.enterSimulationMode();
+    EXPECT_FALSE(world.collide().empty());
+
+    world.step();
+
+    return StepState{
+        lowerJoint.getVelocity()[0],
+        upperRootJoint.getVelocity()[0],
+        upperTipJoint.getVelocity()[0]};
+  };
+
+  const StepState defaultPath = runScene(false);
+  const StepState boxedPath = runScene(true);
+
+  EXPECT_NEAR(defaultPath.lowerVelocity, boxedPath.lowerVelocity, 1e-12);
+  EXPECT_NEAR(
+      defaultPath.upperRootVelocity, boxedPath.upperRootVelocity, 1e-12);
+  EXPECT_NEAR(defaultPath.upperTipVelocity, boxedPath.upperTipVelocity, 1e-12);
+}
+
 // Test that Coulomb friction at a link contact decelerates a sliding link. A
 // vertical prismatic carries a horizontal prismatic link whose sphere rests on
 // the ground; an initial horizontal velocity is braked to rest by friction.

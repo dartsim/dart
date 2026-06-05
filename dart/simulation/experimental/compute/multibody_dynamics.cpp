@@ -2907,6 +2907,24 @@ bool tryResolveSequentialMultibodyContacts(
     }
   }
 
+  if (hasCrossMultibodyLinkContact) {
+    for (auto entity : view) {
+      const auto& scratch = registry.get<MultibodyDynamicsScratch>(entity);
+      for (const auto& contact : scratch.linkContacts) {
+        if (contact.otherMultibody == entt::null) {
+          continue;
+        }
+
+        const auto* otherScratch = registry.try_get<MultibodyDynamicsScratch>(
+            contact.otherMultibody);
+        if (otherScratch == nullptr
+            || scratch.tree.dofCount != otherScratch->tree.dofCount) {
+          return false;
+        }
+      }
+    }
+  }
+
   for (auto entity : view) {
     const auto& structure = view.get<comps::MultibodyStructure>(entity);
     auto& scratch = registry.get<MultibodyDynamicsScratch>(entity);
