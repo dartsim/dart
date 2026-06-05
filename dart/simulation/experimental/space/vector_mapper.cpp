@@ -101,7 +101,7 @@ template <typename Registry>
 std::vector<double> VectorMapper::toVectorImpl(const Registry& registry) const
 {
   std::vector<double> result(m_space.getDimension());
-  toVector(registry, result);
+  toVectorImpl(registry, result);
   return result;
 }
 
@@ -109,7 +109,7 @@ template <typename Registry>
 Eigen::VectorXd VectorMapper::toEigenImpl(const Registry& registry) const
 {
   Eigen::VectorXd result(m_space.getDimension());
-  toEigen(registry, result);
+  toEigenImpl(registry, result);
   return result;
 }
 
@@ -164,7 +164,7 @@ void VectorMapper::toEigenImpl(
 
   // Use temporary std::vector for conversion
   std::vector<double> temp(m_space.getDimension());
-  toVector(registry, temp);
+  toVectorImpl(registry, temp);
 
   // Copy to Eigen vector
   std::ranges::copy(temp, output.data());
@@ -214,7 +214,7 @@ void VectorMapper::fromEigenImpl(Registry& registry, const Eigen::VectorXd& vec)
             m_space.getDimension()));
   }
 
-  fromVector(
+  fromVectorImpl(
       registry,
       std::span<const double>(vec.data(), static_cast<size_t>(vec.size())));
 }
