@@ -317,13 +317,18 @@ def collect_dart_counters(rows: list[dict]) -> dict[str, dict[str, float]]:
 def evaluate_comparisons(
     rows: list[dict],
     *,
-    baseline_allocators: list[tuple[str, ...]],
+    baseline_allocators: list[str | tuple[str, ...]],
     max_ratio: float = 1.0,
     max_cv: float | None = 0.10,
     metric: str = "cpu_time",
 ) -> tuple[list[dict], list[dict]]:
     if not baseline_allocators:
-        baseline_allocators = [("Foonathan",)]
+        baseline_groups = [("Foonathan",)]
+    else:
+        baseline_groups = [
+            (candidates,) if isinstance(candidates, str) else tuple(candidates)
+            for candidates in baseline_allocators
+        ]
 
     timings = collect_timings(rows, metric)
     cvs = collect_coefficients_of_variation(rows, metric)
@@ -347,7 +352,7 @@ def evaluate_comparisons(
             )
             continue
 
-        for candidates in baseline_allocators:
+        for candidates in baseline_groups:
             baseline = next(
                 (candidate for candidate in candidates if candidate in allocs),
                 None,
