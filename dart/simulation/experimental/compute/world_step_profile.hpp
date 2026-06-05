@@ -33,6 +33,7 @@
 #pragma once
 
 #include <dart/simulation/experimental/compute/compute_stage_metadata.hpp>
+#include <dart/simulation/experimental/compute/execution_profile.hpp>
 #include <dart/simulation/experimental/export.hpp>
 
 #include <chrono>
@@ -58,6 +59,29 @@ struct DART_EXPERIMENTAL_API WorldStepStageProfile
 
   /// Wall-clock time spent in this stage's `execute` during the step.
   Duration duration{};
+
+  /// Acceleration opportunities advertised by the stage metadata.
+  ComputeStageAccelerationMask acceleration = 0u;
+
+  /// True when a backend-neutral accelerated implementation was active while
+  /// this stage ran. The flag deliberately avoids naming a concrete device
+  /// technology; stage metadata identifies whether GPU acceleration is a
+  /// supported opportunity.
+  bool acceleratedBackendEnabled = false;
+
+  /// Profiles captured for compute graphs executed inside this stage. Empty
+  /// when the stage does not execute compute graphs, or when profiling is not
+  /// enabled.
+  std::vector<ComputeExecutionProfile> graphProfiles;
+
+  /// Sum of graph wall times captured inside this stage.
+  [[nodiscard]] Duration totalGraphWallTime() const noexcept;
+
+  /// Largest executor worker count among graph profiles captured in this stage.
+  [[nodiscard]] std::size_t maxGraphWorkerCount() const noexcept;
+
+  /// Largest observed parallelism among graph profiles captured in this stage.
+  [[nodiscard]] std::size_t maxGraphParallelism() const noexcept;
 };
 
 /// Per-stage wall-clock profile of the most recent profiled World step.

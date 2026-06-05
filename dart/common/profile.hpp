@@ -34,6 +34,8 @@
 
 #include <dart/config.hpp>
 
+#include <string>
+
 #if DART_BUILD_PROFILE
 
   //-------------------------------------------------------------------------
@@ -105,11 +107,15 @@
           _dart_profile_scope_func_)(__func__)
     #define DART_PROFILE_TEXT_DUMP()                                           \
       ::dart::common::profile::Profiler::instance().printSummary()
+    #define DART_PROFILE_TEXT_SUMMARY()                                        \
+      ::dart::common::profile::Profiler::instance().toSummaryText()
   #else
     #define DART_PROFILE_TEXT_FRAME
     #define DART_PROFILE_TEXT_SCOPED(name_literal)
     #define DART_PROFILE_TEXT_SCOPED_F()
     #define DART_PROFILE_TEXT_DUMP()
+    #define DART_PROFILE_TEXT_SUMMARY()                                        \
+      ::std::string {}
   #endif
 
   #if DART_PROFILE_HAS_TRACY || DART_PROFILE_ENABLE_TEXT
@@ -198,5 +204,7 @@ private:
   #define DART_PROFILE_SCOPED
   #define DART_PROFILE_SCOPED_N(name_literal)
   #define DART_PROFILE_TEXT_DUMP()
+  #define DART_PROFILE_TEXT_SUMMARY()                                          \
+    ::std::string {}
 
 #endif

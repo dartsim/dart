@@ -35,6 +35,8 @@
 #include "dart/simulation/experimental/compute/compute_graph.hpp"
 #include "dart/simulation/experimental/compute/execution_profile.hpp"
 
+#include <dart/config.hpp>
+
 namespace dart::simulation::experimental::compute {
 
 //==============================================================================
@@ -49,12 +51,17 @@ void SequentialExecutor::execute(const ComputeGraph& graph)
 ComputeExecutionProfile SequentialExecutor::executeProfiled(
     const ComputeGraph& graph)
 {
+#if DART_BUILD_PROFILE
   ComputeExecutionProfiler profiler(graph, getWorkerCount());
   profiler.start();
   for (auto* node : graph.getTopologicalOrderView()) {
     profiler.executeNode(*node);
   }
   return profiler.finish();
+#else
+  execute(graph);
+  return {};
+#endif
 }
 
 } // namespace dart::simulation::experimental::compute
