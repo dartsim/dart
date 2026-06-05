@@ -115,6 +115,7 @@ struct RigidIpcContactStage::Scratch
   std::vector<RigidIpcRuntimeBody> solverBodies;
   std::vector<sxdetail::RigidIpcBarrierSurface> surfaces;
   std::vector<sxdetail::RigidIpcBodyDynamicsTerm> dynamicsTerms;
+  std::vector<sxdetail::RigidIpcBodyDynamicsTerm> solveDynamicsTerms;
   std::vector<entt::entity> tracedEntities;
   std::vector<entt::entity> blockedEntities;
   std::vector<entt::entity> writebackEntities;
@@ -8573,6 +8574,7 @@ void RigidIpcContactStage::prepare(World& world)
   m_scratch->solverBodies.reserve(bodyCount);
   m_scratch->surfaces.reserve(bodyCount);
   m_scratch->dynamicsTerms.reserve(bodyCount);
+  m_scratch->solveDynamicsTerms.reserve(bodyCount);
   m_scratch->tracedEntities.reserve(kinematicCount);
   m_scratch->blockedEntities.reserve(kinematicCount);
   m_scratch->writebackEntities.reserve(bodyCount);
@@ -8623,6 +8625,8 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
   auto& solverBodies = scratch.solverBodies;
   auto& surfaces = scratch.surfaces;
   auto& dynamicsTerms = scratch.dynamicsTerms;
+  auto& solveDynamicsTerms = scratch.solveDynamicsTerms;
+  solveDynamicsTerms.assign(dynamicsTerms.begin(), dynamicsTerms.end());
 
   // Adaptive barrier-stiffness inputs: the world AABB diagonal over all
   // collision surfaces and the average dynamic-body mass. These drive the IPC
@@ -8688,7 +8692,7 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
   options.friction.coefficient = 1.0;
   options.friction.staticFrictionDisplacement
       = std::max(0.0, m_options.staticFrictionSpeedBound * world.getTimeStep());
-  options.dynamicsTerms = std::move(dynamicsTerms);
+  options.dynamicsTerms = std::move(solveDynamicsTerms);
   options.maxIterations = m_options.maxIterations;
   options.frictionIterations = m_options.frictionIterations;
   options.frictionConvergenceTolerance = m_options.frictionConvergenceTolerance;
@@ -8716,6 +8720,7 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
       },
       getMetadata());
   executor.execute(graph);
+  solveDynamicsTerms = std::move(options.dynamicsTerms);
 
   const bool lineSearchBlocked
       = result.status
