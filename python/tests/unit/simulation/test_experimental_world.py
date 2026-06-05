@@ -3763,12 +3763,17 @@ def test_experimental_world_step_profiling_disabled_by_default():
     assert world.last_step_profile.is_empty()
 
 
+def _enable_step_profiling_or_skip(world):
+    world.step_profiling_enabled = True
+    if not world.step_profiling_enabled:
+        pytest.skip("DART_BUILD_PROFILE=OFF: World step profiling is compiled out")
+
+
 def test_experimental_world_step_profiling_records_stages():
     sx = _simulation_experimental()
 
     world = sx.World()
-    world.step_profiling_enabled = True
-    assert world.step_profiling_enabled is True
+    _enable_step_profiling_or_skip(world)
 
     world.step()
 
@@ -3798,7 +3803,7 @@ def test_experimental_world_step_profiling_captures_last_step_for_counts():
     sx = _simulation_experimental()
 
     world = sx.World()
-    world.step_profiling_enabled = True
+    _enable_step_profiling_or_skip(world)
 
     world.step(3)
 
