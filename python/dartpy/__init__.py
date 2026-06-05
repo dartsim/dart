@@ -73,10 +73,10 @@ def _install_simulation_diff() -> None:
   ``dartpy.simulation.diff.timestep`` imports torch lazily, so ``import
   dartpy.simulation`` succeeds without torch and ``diff`` always exists.
   """
-  # Use the RAW C++ simulation module, not the deprecated dartpy.simulation
-  # legacy wrapper installed by install_layout above -- attribute access on the
-  # wrapper emits a DeprecationWarning, which would fire at import time (and fail
-  # under -W error).
+  # Resolve the C++ simulation module directly via _ext. dartpy.simulation is
+  # the official DART 7 ECS module (not a deprecated legacy wrapper -- _layout
+  # excludes it from the legacy set), so this resolution is independent of the
+  # public-namespace wiring and carries no import-time DeprecationWarning.
   experimental = getattr(_ext, "simulation", None)
   if experimental is None:
     return

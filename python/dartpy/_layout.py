@@ -23,12 +23,18 @@ WARN_ON_LEGACY_MODULES = os.environ.get(_LEGACY_WARN_ENV, "1").lower() not in (
     "no",
 )
 
+# DART 6 submodules retained only as deprecated compatibility wrappers: their
+# public symbols are flat-promoted to dartpy.*, and reaching them via the
+# submodule path emits a DeprecationWarning. `simulation` is deliberately absent
+# here -- it is the official DART 7 ECS module with its own generated
+# simulation.pyi stub, so dartpy.simulation.World / dartpy.simulation.diff must
+# resolve without a deprecation warning (and not fail under `-W error`), even
+# though the same names are also promoted flat as dartpy.World etc.
 _LEGACY_MODULES: tuple[str, ...] = (
     "common",
     "math",
     "dynamics",
     "collision",
-    "simulation",
     "constraint",
     "optimizer",
     "utils",
@@ -41,7 +47,7 @@ _LEGACY_MODULES: tuple[str, ...] = (
 # Frame survives only as render plumbing, reached by the render bridge via
 # dartpy.gui.world_render_frame(), never the flat name.
 _PROMOTE_MODULES: tuple[str, ...] = ("simulation",) + tuple(
-    name for name in _LEGACY_MODULES if name not in ("utils", "simulation")
+    name for name in _LEGACY_MODULES if name != "utils"
 )
 
 _WARNED: set[str] = set()
