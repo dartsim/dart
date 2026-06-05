@@ -20,9 +20,11 @@
       coverage remains open.
 - [ ] Phase 4: Built-in simulation stages borrow world memory for transient
       buffers and avoid growth after simulation is baked. The default
-      `WorldStepPipeline` now stores non-owning stage pointers inline, removing
-      its per-build `std::vector` allocation from the step path; solver-owned
-      transient buffers still need allocator-backed storage.
+      `WorldStepPipeline` now stores built-in non-owning stage pointers inline,
+      removing its per-build `std::vector` allocation from the normal step path.
+      Longer custom pipelines keep the previous arbitrary-stage behavior through
+      an overflow path; solver-owned transient buffers still need
+      allocator-backed storage.
 - [ ] Phase 5: Add allocation/debug accounting gates for "no dynamic allocation
       during the step loop" on representative rigid, multibody, contact, and
       deformable scenes. Initial World base-allocator no-growth guards now

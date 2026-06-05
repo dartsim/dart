@@ -542,11 +542,15 @@ ComputeStageMetadata WorldStepStage::getMetadata() const noexcept
 //==============================================================================
 WorldStepPipeline& WorldStepPipeline::addStage(WorldStepStage& stage)
 {
-  DART_EXPERIMENTAL_THROW_T_IF(
-      m_stageCount >= m_stages.size(),
-      InvalidArgumentException,
-      "World step pipeline cannot contain more than {} stages",
-      m_stages.size());
+  if (m_stageCount >= m_stages.size()) {
+    if (m_overflowStages.empty()) {
+      m_overflowStages.reserve(m_stages.size());
+    }
+
+    m_overflowStages.push_back(&stage);
+    ++m_stageCount;
+    return *this;
+  }
 
   m_stages[m_stageCount] = &stage;
   ++m_stageCount;
@@ -557,6 +561,7 @@ WorldStepPipeline& WorldStepPipeline::addStage(WorldStepStage& stage)
 void WorldStepPipeline::clear() noexcept
 {
   m_stageCount = 0;
+  m_overflowStages.clear();
 }
 
 //==============================================================================
@@ -580,14 +585,18 @@ WorldStepStage& WorldStepPipeline::getStage(std::size_t index) const
       "World step pipeline stage index {} is out of range",
       index);
 
-  return *m_stages[index];
+  if (index < m_stages.size()) {
+    return *m_stages[index];
+  }
+
+  return *m_overflowStages[index - m_stages.size()];
 }
 
 //==============================================================================
 void WorldStepPipeline::execute(World& world, ComputeExecutor& executor)
 {
   for (std::size_t i = 0; i < m_stageCount; ++i) {
-    m_stages[i]->execute(world, executor);
+    getStage(i).execute(world, executor);
   }
 }
 

@@ -6882,13 +6882,15 @@ TEST(World, StepAcceptsMultiDomainSolverPipeline)
   EXPECT_EQ(world.getFrame(), 1u);
 }
 
-// Test that the fixed-size pipeline stage storage covers the advertised
-// capacity and rejects overflow without growing heap-backed state.
-TEST(World, StepPipelineRejectsMoreThanInlineStageCapacity)
+// Test that custom pipelines can exceed the inline storage threshold while
+// built-in pipelines keep the inline no-allocation fast path.
+TEST(World, StepPipelineAllowsMoreThanInlineStageCapacity)
 {
   namespace sx = dart::simulation::experimental;
   namespace compute = dart::simulation::experimental::compute;
 
+  sx::World world;
+  world.setTimeStep(0.25);
   std::vector<std::string> order;
   RecordingWorldStage stage0("stage0", {}, order);
   RecordingWorldStage stage1("stage1", {}, order);
@@ -6898,7 +6900,7 @@ TEST(World, StepPipelineRejectsMoreThanInlineStageCapacity)
   RecordingWorldStage stage5("stage5", {}, order);
   RecordingWorldStage stage6("stage6", {}, order);
   RecordingWorldStage stage7("stage7", {}, order);
-  RecordingWorldStage overflow("overflow", {}, order);
+  RecordingWorldStage stage8("stage8", {}, order);
 
   compute::WorldStepPipeline pipeline;
   pipeline.addStage(stage0)
@@ -6908,14 +6910,32 @@ TEST(World, StepPipelineRejectsMoreThanInlineStageCapacity)
       .addStage(stage4)
       .addStage(stage5)
       .addStage(stage6)
-      .addStage(stage7);
+      .addStage(stage7)
+      .addStage(stage8);
 
   EXPECT_EQ(
-      pipeline.getStageCount(), compute::WorldStepPipeline::kMaxStageCount);
-  EXPECT_THROW(pipeline.addStage(overflow), sx::InvalidArgumentException);
-  EXPECT_EQ(
-      pipeline.getStageCount(), compute::WorldStepPipeline::kMaxStageCount);
+      pipeline.getStageCount(),
+      compute::WorldStepPipeline::kInlineStageCount + 1u);
   EXPECT_EQ(&pipeline.getStage(7), &stage7);
+  EXPECT_EQ(&pipeline.getStage(8), &stage8);
+  EXPECT_THROW({ (void)pipeline.getStage(9); }, sx::OutOfRangeException);
+
+  compute::SequentialExecutor executor;
+  world.step(executor, pipeline);
+  EXPECT_EQ(
+      order,
+      (std::vector<std::string>{
+          "stage0",
+          "stage1",
+          "stage2",
+          "stage3",
+          "stage4",
+          "stage5",
+          "stage6",
+          "stage7",
+          "stage8"}));
+  EXPECT_DOUBLE_EQ(world.getTime(), 0.25);
+  EXPECT_EQ(world.getFrame(), 1u);
 
   pipeline.clear();
   EXPECT_TRUE(pipeline.isEmpty());

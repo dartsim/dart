@@ -34,9 +34,10 @@ deallocations during repeated `World::step()` calls. This is not the final
 global zero-allocation proof; it covers the World-owned memory hierarchy only.
 
 The current stacked pipeline slice removes `WorldStepPipeline`'s heap-backed
-stage pointer vector. Pipelines now keep a fixed inline list of non-owning stage
-pointers sized for the current default World stage compositions plus headroom,
-and overflow is a deterministic `InvalidArgumentException`.
+stage pointer vector from default/built-in step composition. Pipelines now keep
+a fixed inline list of non-owning stage pointers sized for the current default
+World stage compositions plus headroom, while longer custom pipelines preserve
+the previous arbitrary-stage behavior through an overflow path.
 
 ## Current Branch
 
