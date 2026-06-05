@@ -140,6 +140,52 @@ TEST(UnifiedConstraint, MultibodyFreeReproducesRigidProblemByteForByte)
 }
 
 //==============================================================================
+TEST(UnifiedConstraint, InPlaceAssemblerMatchesReturnValue)
+{
+  sx::World world;
+  const auto rigid = buildRigidStackProblem(world);
+  ASSERT_EQ(rigid.constraints.size(), 2u);
+
+  const std::span<const sx::compute::UnifiedMultibodyContact> noMultibodies{};
+  const auto expected
+      = sx::compute::assembleUnifiedConstraintProblem(rigid, noMultibodies);
+
+  sx::compute::UnifiedConstraintProblem actual;
+  actual.delassus.resize(1, 1);
+  actual.rhs.resize(1);
+  actual.lo.resize(1);
+  actual.hi.resize(1);
+  actual.findex.resize(1);
+  actual.rowOwners.reserve(32);
+  actual.rigidConstraints.reserve(4);
+  actual.multibodyBlocks.reserve(4);
+
+  sx::compute::assembleUnifiedConstraintProblemInto(
+      actual, rigid, noMultibodies);
+
+  expectMatrixExactlyEqual(actual.delassus, expected.delassus);
+  expectVectorExactlyEqual(actual.rhs, expected.rhs);
+  expectVectorExactlyEqual(actual.lo, expected.lo);
+  expectVectorExactlyEqual(actual.hi, expected.hi);
+  expectVectorExactlyEqual(actual.findex, expected.findex);
+  ASSERT_EQ(actual.rowOwners.size(), expected.rowOwners.size());
+  for (std::size_t i = 0; i < actual.rowOwners.size(); ++i) {
+    EXPECT_EQ(actual.rowOwners[i].domain, expected.rowOwners[i].domain);
+    EXPECT_EQ(actual.rowOwners[i].direction, expected.rowOwners[i].direction);
+    EXPECT_EQ(
+        actual.rowOwners[i].normalRowGlobalIndex,
+        expected.rowOwners[i].normalRowGlobalIndex);
+    EXPECT_EQ(
+        actual.rowOwners[i].sourceIndex, expected.rowOwners[i].sourceIndex);
+    EXPECT_EQ(
+        actual.rowOwners[i].multibodyIndex,
+        expected.rowOwners[i].multibodyIndex);
+  }
+  EXPECT_EQ(actual.rigidConstraints.size(), expected.rigidConstraints.size());
+  EXPECT_TRUE(actual.multibodyBlocks.empty());
+}
+
+//==============================================================================
 TEST(UnifiedConstraint, RigidFreeLinkBlockMatchesWithinMultibodyCoupling)
 {
   // A fixed-base revolute link about +Z with the link frame on the axis; two

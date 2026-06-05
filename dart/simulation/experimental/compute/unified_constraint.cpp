@@ -114,6 +114,18 @@ const Eigen::Vector3d& directionOfLink(
 }
 
 //==============================================================================
+int findMultibodyBlockIndex(
+    std::span<const UnifiedMultibodyBlock> blocks, entt::entity multibody)
+{
+  for (std::size_t k = 0; k < blocks.size(); ++k) {
+    if (blocks[k].multibody == multibody) {
+      return static_cast<int>(k);
+    }
+  }
+  return -1;
+}
+
+//==============================================================================
 // One rigid body a row's impulse acts on: the body, the signed
 // relative-velocity convention (-1 for bodyA, +1 for bodyB; -1 for a link's
 // dynamic obstacle), and that body's world inverse mass/inertia and contact
@@ -238,18 +250,18 @@ UnifiedConstraintSolution solveBoxedLcp(
 } // namespace
 
 //==============================================================================
-UnifiedConstraintProblem assembleUnifiedConstraintProblem(
+void assembleUnifiedConstraintProblemInto(
+    UnifiedConstraintProblem& problem,
     const RigidBodyContactProblem& rigidProblem,
     std::span<const UnifiedMultibodyContact> multibodyContacts)
 {
   constexpr int kRows = UnifiedConstraintProblem::kRowsPerContact;
   constexpr double kInfinity = std::numeric_limits<double>::infinity();
 
-  UnifiedConstraintProblem problem;
-
   // Retain the rigid constraints verbatim (post effective-mass filter, same
   // order) for impulse application and the rigid positional projection.
-  problem.rigidConstraints = rigidProblem.constraints;
+  problem.rigidConstraints.assign(
+      rigidProblem.constraints.begin(), rigidProblem.constraints.end());
   const auto rigidContactCount
       = static_cast<Eigen::Index>(rigidProblem.constraints.size());
   const Eigen::Index rigidRows = rigidContactCount * kRows;
@@ -257,11 +269,14 @@ UnifiedConstraintProblem assembleUnifiedConstraintProblem(
   // Compact each multibody's active link rows and lay out one contiguous block
   // per multibody after the rigid block.
   Eigen::Index nextBase = rigidRows;
-  problem.multibodyBlocks.reserve(multibodyContacts.size());
-  for (const auto& contact : multibodyContacts) {
-    UnifiedMultibodyBlock block;
+  problem.multibodyBlocks.resize(multibodyContacts.size());
+  for (std::size_t k = 0; k < multibodyContacts.size(); ++k) {
+    const auto& contact = multibodyContacts[k];
+    auto& block = problem.multibodyBlocks[k];
     block.multibody = contact.multibody;
     block.inverseMass = contact.problem.inverseMass;
+    block.rows.clear();
+    block.rows.reserve(contact.problem.rows.size());
     for (const auto& row : contact.problem.rows) {
       if (row.active) {
         block.rows.push_back(row);
@@ -269,27 +284,20 @@ UnifiedConstraintProblem assembleUnifiedConstraintProblem(
     }
     block.blockBase = nextBase;
     nextBase += static_cast<Eigen::Index>(block.rows.size()) * kRows;
-    problem.multibodyBlocks.push_back(std::move(block));
-  }
-  std::unordered_map<entt::entity, int> multibodyBlockIndex;
-  multibodyBlockIndex.reserve(problem.multibodyBlocks.size());
-  for (std::size_t k = 0; k < problem.multibodyBlocks.size(); ++k) {
-    multibodyBlockIndex[problem.multibodyBlocks[k].multibody]
-        = static_cast<int>(k);
   }
   for (auto& block : problem.multibodyBlocks) {
     for (auto& row : block.rows) {
       if (row.otherMultibody == entt::null) {
         continue;
       }
-      const auto it = multibodyBlockIndex.find(row.otherMultibody);
-      row.otherMultibodyIndex
-          = it == multibodyBlockIndex.end() ? -1 : it->second;
+      row.otherMultibodyIndex = findMultibodyBlockIndex(
+          problem.multibodyBlocks, row.otherMultibody);
     }
   }
 
   const Eigen::Index size = nextBase;
-  problem.delassus = Eigen::MatrixXd::Zero(size, size);
+  problem.delassus.resize(size, size);
+  problem.delassus.setZero();
   problem.rhs.resize(size);
   problem.lo.resize(size);
   problem.hi.resize(size);
@@ -546,7 +554,16 @@ UnifiedConstraintProblem assembleUnifiedConstraintProblem(
       }
     }
   }
+}
 
+//==============================================================================
+UnifiedConstraintProblem assembleUnifiedConstraintProblem(
+    const RigidBodyContactProblem& rigidProblem,
+    std::span<const UnifiedMultibodyContact> multibodyContacts)
+{
+  UnifiedConstraintProblem problem;
+  assembleUnifiedConstraintProblemInto(
+      problem, rigidProblem, multibodyContacts);
   return problem;
 }
 

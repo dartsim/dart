@@ -63,8 +63,10 @@
       Longer custom pipelines keep the previous arbitrary-stage behavior through
       an overflow path. The default rigid-body velocity/contact stages and
       semi-implicit multibody velocity/contact path now reuse baked scratch for
-      the covered rigid and articulated resting-contact scenes; broader
-      solver-owned transient buffers still need allocator-backed storage.
+      the covered rigid and articulated resting-contact scenes. The boxed-LCP
+      unified constraint stage now reuses stage-owned assembly containers and
+      unified problem storage; solver-local and remaining assembler-local
+      transient buffers still need allocator-backed storage.
 - [ ] Phase 5: Add allocation/debug accounting gates for "no dynamic allocation
       during the step loop" on representative rigid, multibody, contact, and
       deformable scenes. Initial World base-allocator no-growth guards now
@@ -76,10 +78,10 @@
       also covers an isolated same-DOF cross-multibody link contact scene
       without global heap allocation, while mixed/different-DOF, stacked, and
       coupled multi-row cross-contact scenes stay on the boxed-LCP fallback.
-      Broader solver coverage, including
-      boxed-LCP unified contact assembly, larger contact sets, and remaining
-      solver-owned scratch, remains open before making a full zero-allocation
-      claim.
+      Broader solver coverage, including boxed-LCP unified contact assembly,
+      boxed-LCP/cross articulated contact solve scratch, larger contact sets,
+      and remaining solver-owned scratch, remains open before making a full
+      zero-allocation claim.
 - [ ] Phase 6: Add memory-layout profiler/debugger surfaces and GUI
       visualization. `MemoryAllocatorDebugger` now exposes structured live
       bytes, peak live bytes, and live allocation count; `MemoryManager` and
@@ -211,10 +213,10 @@ debugging, profiling, optimization experiments, and ImGui visualization.
    sequential cross-articulated resting-contact global heap guards are in
    place; mixed/different-DOF, stacked, and coupled multi-row
    cross-articulated contacts stay on the boxed-LCP fallback. Continue
-   broadening boxed-LCP unified contact assembly, larger contact sets, and
-   remaining
-   solver/deformable candidate buffers before making the full zero-allocation
-   claim.
+   broadening boxed-LCP unified contact assembly and larger contact sets while
+   moving boxed-LCP solver-local scratch, remaining assembler-local
+   vectors/matrices, and remaining solver/deformable candidate buffers to
+   backed storage before making the full zero-allocation claim.
 5. Start replacing per-step `std::vector`/`Eigen` temporaries in hot stages with
    world-frame or world-pool backed storage only after the allocator evidence
    gate proves the DART allocator path is better for that workload. The

@@ -920,6 +920,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     preflight zero-DOF multibody contacts before applying shortcut impulses, so
     mixed zero-DOF and solvable link-contact scenes fall back to the unified
     solve without double-applying impulses.
+  - Reused `UnifiedConstraintStage` boxed-LCP assembly scratch and added an
+    in-place unified constraint assembler, reducing per-step transient container
+    churn while keeping the full boxed-LCP zero-allocation gate open.
   - Made experimental rigid-body external force/torque components persistent
     applied loads: each step reads them into the transient force buffer and
     leaves the components intact for callers to clear or update explicitly.
