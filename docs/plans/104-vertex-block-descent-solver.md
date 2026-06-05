@@ -155,9 +155,10 @@ finite-stiffness-only friction scenes, Chebyshev, Rayleigh-damped, parallel,
 and unsupported-row requests on the existing VBD path without partial AVBD row
 counters. Those slices are still foundation work; hard-contact/friction
 completeness beyond current static half-space and lagged self-contact rows,
-broader contact-stage dynamic/rigid AVBD activation, articulated joint rows,
-broad fracture-corpus support, rigid/soft coupling, GPU parity, paper-corpus
-demos, and broad paper/reference benchmark packets remain open.
+broader contact-stage dynamic/rigid AVBD activation, articulated multibody
+state/solve beyond the new private endpoint classifier, broad fracture-corpus
+support, rigid/soft coupling, GPU parity, complete paper/source-demo py-demos,
+visual evidence, and broad paper/reference benchmark packets remain open.
 
 ## Relationship To PLAN-081
 
@@ -236,6 +237,31 @@ internal/explicit-opt-in decision, not a leaked solver registry.
 8. **Performance leadership** — Optimize CPU and GPU until DART beats the
    reference demo repositories and the published paper numbers on every claimed
    case, with hardware and command packets recorded.
+
+## AVBD Current Next Gaps
+
+The free-rigid fixed-joint/contact, revolute-motor, prismatic/revolute facade,
+and narrow breakable-joint slices are user-visible but intentionally small.
+They do not cover the AVBD source-demo or paper corpus. The next bounded
+implementation work should prefer one of these gaps, in order:
+
+1. **Articulated multibody AVBD extraction** — the private extractor now
+   classifies free rigid-body endpoints separately from multibody links and keeps
+   links on a conservative skip path; map those experimental multibody links
+   into a real AVBD articulated state/solve path, then reuse the existing
+   point-joint row descriptors for fixed, revolute, prismatic, motor, and
+   breakable rows on articulated chains.
+2. **Rigid contact persistence completeness** — broaden narrow-phase endpoint
+   feature extraction and row identity so box/cylinder/capsule/compound contact
+   manifolds persist across realistic rigid stacks and piles, then connect that
+   evidence to the paper's rigid stacking/friction scenes.
+3. **Paper/source-demo corpus matrix** — promote the 19 `avbd-demo2d` scenes and
+   14 `avbd-demo3d` scenes into a tracked DART matrix with owner rows for
+   tests, py-demos, visual captures, benchmark JSON, CPU reference comparison,
+   and GPU parity.
+4. **GPU row parity plan** — route each landed CPU row family through the
+   private CUDA boundary only after the shared CUDA substrate and row inventory
+   can preserve warm-started dual/stiffness state deterministically.
 
 ## Acceptance Criteria
 

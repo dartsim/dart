@@ -415,11 +415,21 @@ its own line so status updates remain git-history friendly.
   and the categorized `sx_rigid_limited_joints` py-demo. The first AVBD
   rigid-constraint `py-demos` scene,
   `avbd_rigid_fixed_joint_contact`, exposes the fixed-joint/contact slice as a
-  user-visible showcase. Public multibody joint extraction is not wired yet.
-  The next local slice is full narrow-phase feature extraction,
-  contact-complete rigid joint rows, motor/fracture rows, or broader
-  rigid/articulated World
-  integration.
+  user-visible showcase. Public free-rigid-body revolute velocity actuators now
+  extract to private bounded AVBD angular-motor rows, with persistent
+  contact-stage motor inventory, a categorized `avbd_rigid_revolute_motor`
+  py-demo, and the first dashboard benchmark row for that public motor path.
+  Public free-rigid-body point joints also expose a narrow break-force and
+  broken-state lifecycle, mark solved AVBD point joints broken when row load
+  reaches the threshold, skip broken joints during later extraction, and expose
+  the `avbd_rigid_breakable_joint` py-demo. Public multibody/articulated AVBD
+  state is not wired yet, but the private endpoint layer now distinguishes free
+  rigid-body endpoints from multibody links so articulated extraction has a
+  tested conservative fallback point. The next local slice should fill the
+  articulated state/solve path or broaden rigid-contact feature persistence,
+  while the plan/dev-task surfaces must also keep the 2D/3D source-demo corpus,
+  paper/video scenes, CPU/GPU benchmark packets, and performance leadership gates
+  explicit instead of treating the current free-rigid rows as AVBD completion.
 - Gate: VBD progress is not complete until the implementation distinguishes
   each internal kernel slice from a wired solver, keeps VBD naming
   backend-neutral, proves per-vertex force/Hessian correctness, PD Hessian

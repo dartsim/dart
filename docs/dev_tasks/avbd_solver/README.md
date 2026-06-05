@@ -202,7 +202,10 @@ Paper audit:
     current-pose initialization and extraction now also cover private
     rigid-body ECS revolute/prismatic joint entities, deriving the same
     axes/masks from their configured joint axis while preserving explicit
-    multibody rejection until articulated AVBD state exists.
+    multibody rejection until articulated AVBD state exists. The private
+    endpoint layer now classifies free rigid bodies separately from multibody
+    links so the supported extractor has a tested conservative fallback point
+    for the articulated bridge.
     Public experimental `World` facades now expose free rigid-body revolute and
     prismatic joints through C++ and dartpy, including generated stubs,
     focused tests, and the categorized `sx_rigid_limited_joints` py-demo.
@@ -279,9 +282,9 @@ numbers.
 ## Immediate Next Steps
 
 1. Continue the next bounded AVBD contact/friction or rigid-block slice:
-   true rigid/articulated World wiring, full narrow-phase feature extraction,
-   or World wiring for the motor/fracture row family are the preferred next gaps
-   now that
+   true articulated multibody World wiring, full narrow-phase feature
+   extraction, or broad paper/source-demo corpus mapping are the preferred next
+   gaps now that
    static box feature IDs,
    private dynamic/rigid contact feature IDs and descriptor
    helpers, static half-space tangent dual projection, self-contact
@@ -310,8 +313,12 @@ numbers.
    bindings, stubs, focused tests, and py-demo coverage, plus the first
    `avbd_rigid_fixed_joint_contact` fixed-joint/contact AVBD demo, the
    `avbd_rigid_revolute_motor` motor demo, and the
-   `avbd_rigid_breakable_joint` break-force demo, have narrow CPU/user-visible
-   paths.
+   `avbd_rigid_breakable_joint` break-force demo, plus the private free-rigid
+   versus multibody-link endpoint classifier, have narrow CPU/user-visible or
+   extractor-foundation paths. The next code slice should fill the articulated
+   AVBD state/solve path behind that classifier so multibody link endpoints stop
+   being skipped by all AVBD row families, while retaining explicit fallback
+   coverage until a real articulated solve exists.
 2. In parallel planning, keep full friction cones, rigid/articulated rows, GPU
    parity, demos, and benchmark packets as open AVBD parity gates rather than
    completion claims.

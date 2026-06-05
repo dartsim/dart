@@ -2429,6 +2429,12 @@ TEST(AvbdRigidBlock, RigidWorldExtractsFixedJointInputs)
   auto link = world.addRigidBody("link", linkOptions);
 
   auto& registry = dart::simulation::experimental::detail::registryOf(world);
+  const vbd::AvbdRigidWorldEndpoint baseEndpoint
+      = vbd::classifyAvbdRigidWorldEndpoint(
+          registry, sx::detail::toRegistryEntity(base.getEntity()));
+  EXPECT_EQ(baseEndpoint.kind, vbd::AvbdRigidWorldEndpointKind::FreeRigidBody);
+  EXPECT_TRUE(baseEndpoint.canProjectAsRigidBody);
+
   const entt::entity jointEntity = registry.create();
   auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
   joint.type = sx::comps::JointType::Fixed;
@@ -2691,7 +2697,7 @@ TEST(AvbdRigidBlock, RigidWorldFixedJointHelperRejectsMultibodyLinks)
   sx::World world;
   sx::Multibody robot = world.addMultibody("robot");
   sx::Link root = robot.addLink("root");
-  robot.addLink(
+  const sx::Link child = robot.addLink(
       "child",
       root,
       sx::JointSpec{
@@ -2703,6 +2709,18 @@ TEST(AvbdRigidBlock, RigidWorldFixedJointHelperRejectsMultibodyLinks)
   ASSERT_TRUE(fixed.has_value());
 
   auto& registry = dart::simulation::experimental::detail::registryOf(world);
+  const vbd::AvbdRigidWorldEndpoint rootEndpoint
+      = vbd::classifyAvbdRigidWorldEndpoint(
+          registry, sx::detail::toRegistryEntity(root.getEntity()));
+  EXPECT_EQ(rootEndpoint.kind, vbd::AvbdRigidWorldEndpointKind::MultibodyLink);
+  EXPECT_FALSE(rootEndpoint.canProjectAsRigidBody);
+
+  const vbd::AvbdRigidWorldEndpoint childEndpoint
+      = vbd::classifyAvbdRigidWorldEndpoint(
+          registry, sx::detail::toRegistryEntity(child.getEntity()));
+  EXPECT_EQ(childEndpoint.kind, vbd::AvbdRigidWorldEndpointKind::MultibodyLink);
+  EXPECT_FALSE(childEndpoint.canProjectAsRigidBody);
+
   EXPECT_FALSE(
       vbd::configureAvbdRigidWorldFixedJointFromCurrentPose(
           registry,
@@ -2711,6 +2729,12 @@ TEST(AvbdRigidBlock, RigidWorldFixedJointHelperRejectsMultibodyLinks)
           1000.0));
   EXPECT_FALSE(registry.all_of<vbd::AvbdRigidWorldPointJointConfig>(
       sx::detail::toRegistryEntity(fixed->getEntity())));
+  EXPECT_EQ(
+      vbd::configureAvbdRigidWorldPointJointsFromCurrentPoses(registry), 0u);
+
+  registry.emplace<vbd::AvbdRigidWorldPointJointConfig>(
+      sx::detail::toRegistryEntity(fixed->getEntity()));
+  EXPECT_TRUE(vbd::extractAvbdRigidWorldPointJointInputs(registry).empty());
 }
 
 //==============================================================================

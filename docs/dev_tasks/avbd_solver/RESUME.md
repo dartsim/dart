@@ -81,7 +81,10 @@ assembly, and solve coverage. Simulation-entry current-pose initialization and
 extraction now also cover private rigid-body ECS revolute/prismatic joint
 entities, deriving the same axes/masks from their configured joint axis while
 keeping multibody link endpoints unsupported until articulated AVBD state
-exists. Public experimental `World` facades now expose free rigid-body
+exists. The private endpoint layer now classifies free rigid bodies separately
+from multibody links so the extractor has a tested conservative fallback point
+for that articulated bridge. Public experimental `World` facades now expose
+free rigid-body
 revolute and prismatic joints through C++ and dartpy, with generated stubs,
 focused C++/Python tests, and the categorized `sx_rigid_limited_joints`
 py-demo. This branch also adds the first AVBD-specific `py-demos`
@@ -104,7 +107,7 @@ complete.
 
 ## Current Branch
 
-`feature/avbd-rigid-motor-fracture-rows` - checkpoint branch based on
+`feature/avbd-paper-parity-plan-next` - checkpoint branch based on
 current `origin/main`, including the scalar-row foundation, mass-spring AVBD row
 families, standalone tet-material rows, and World wiring for supported pure-tet
 finite-stiffness material rows, plus supported World static-contact friction
@@ -149,13 +152,16 @@ motor descriptors, solver-direction coverage, rigid fracture
 dual-threshold/reset helpers, public rigid-body revolute velocity actuator
 extraction into AVBD motor rows, persistent motor inventory in the contact
 stage, the `avbd_rigid_revolute_motor` py-demo, and the AVBD dashboard
-`BM_AvbdRigidRevoluteMotorStep` benchmark row.
+`BM_AvbdRigidRevoluteMotorStep` benchmark row. The public free-rigid-body
+break-force lifecycle and `avbd_rigid_breakable_joint` py-demo are merged on
+`main`; the next branch should not treat that narrow lifecycle as pending.
 
 ## Immediate Next Step
 
 Continue the next bounded AVBD contact/friction or rigid-block step:
-articulated World wiring, full narrow-phase feature extraction, public fracture
-lifecycle, or broader motor benchmarks are the preferred row-family gaps now that
+private articulated multibody AVBD state/extraction, full narrow-phase feature
+extraction, or paper/source-demo corpus mapping are the preferred row-family
+gaps now that
 private dynamic/rigid contact feature IDs, canonical two-endpoint row keys, and
 normal/friction row descriptor helpers plus private rigid contact/friction
 point-pair constructors, paired friction-cone helpers, and a private serial
@@ -174,7 +180,8 @@ private rigid-body ECS current-pose extraction for those one-DOF joint
 entities, and public free rigid-body revolute/prismatic facades with dartpy
 bindings, stubs, tests, and py-demo coverage, plus fixed-joint/contact and
 revolute-motor AVBD py-demos, the breakable-joint py-demo, and the narrow
-free-rigid-body break-force lifecycle exist.
+free-rigid-body break-force lifecycle plus private free-rigid versus
+multibody-link endpoint classification exist.
 Keep the supported envelope narrow and preserve fallback coverage for topology
 mixes,
 damping/acceleration, parallel solves, and unsupported requested row
@@ -243,9 +250,11 @@ combinations.
   translational axis free, and private rigid-body ECS revolute/prismatic joint
   entities now initialize and extract through the same current-pose bridge.
   Public rigid-body revolute velocity actuators now extract to AVBD motor rows,
-  but full narrow-phase feature extraction, public fracture lifecycle, broader
-  motor lifecycle/benchmark coverage, and public articulated World joint wiring
-  are not solved yet.
+  and the private extractor now classifies free-rigid endpoints separately from
+  multibody links, but full narrow-phase feature extraction, articulated AVBD
+  state/solve, broad motor/fracture lifecycle and benchmark coverage, public articulated
+  World joint wiring, paper/source-demo py-demos, and CPU/GPU parity are not
+  solved yet.
 
 ## How to Resume
 
