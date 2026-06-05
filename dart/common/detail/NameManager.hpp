@@ -36,6 +36,7 @@
 #include "dart/common/Macros.hpp"
 
 #include <dart/common/Console.hpp>
+#include <dart/common/Logging.hpp>
 #include <dart/common/NameManager.hpp>
 
 #include <sstream>
@@ -102,9 +103,18 @@ std::string NameManager<T>::issueNewName(const std::string& _name) const
     newName = ss.str();
   } while (hasName(newName));
 
-  dtmsg << "[NameManager::issueNewName] (" << mManagerName << ") The name ["
-        << _name << "] is a duplicate, so it has been renamed to [" << newName
-        << "]\n";
+  // Use a level-gated debug logger (dtdbg/dtmsg always write to stdout, so they
+  // would not actually quiet the output). Automatic renaming of duplicate names
+  // is routine for legitimate use cases such as loading nested models whose
+  // links share a base name, where this message is noise rather than a problem.
+  // See https://github.com/gazebosim/gz-physics/issues/725
+  DART_DEBUG(
+      "[NameManager::issueNewName] ({}) The name [{}] is a duplicate, so it "
+      "has "
+      "been renamed to [{}]",
+      mManagerName,
+      _name,
+      newName);
 
   return newName;
 }
