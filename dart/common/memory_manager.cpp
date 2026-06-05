@@ -36,6 +36,25 @@
 
 namespace dart::common {
 
+namespace {
+
+//==============================================================================
+template <typename DebugAllocator>
+MemoryManager::AllocatorDebugDiagnostics getAllocatorDebugDiagnostics(
+    const DebugAllocator* allocator)
+{
+  if (allocator == nullptr) {
+    return {};
+  }
+
+  return {
+      allocator->getAllocatedSize(),
+      allocator->getPeakAllocatedSize(),
+      allocator->getAllocationCount()};
+}
+
+} // namespace
+
 //==============================================================================
 MemoryManager& MemoryManager::GetDefault()
 {
@@ -338,6 +357,19 @@ bool MemoryManager::hasAllocated(void* pointer, size_t size) const noexcept
   }
 
   return false;
+}
+
+//==============================================================================
+MemoryManager::DebugDiagnostics MemoryManager::getDebugDiagnostics() const
+{
+  if (!mUseDebugAllocators) {
+    return {};
+  }
+
+  return {
+      true,
+      getAllocatorDebugDiagnostics(mFreeListAllocatorWithDebug.get()),
+      getAllocatorDebugDiagnostics(mPoolAllocatorWithDebug.get())};
 }
 
 //==============================================================================

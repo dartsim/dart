@@ -162,11 +162,15 @@ struct DeformableSolverDiagnostics
 
 /// Snapshot of the experimental World's CPU memory hierarchy diagnostics.
 ///
-/// This first slice reports only the World-owned frame allocator used for
-/// per-step scratch. Persistent allocator and ECS storage diagnostics are
-/// intentionally left for the allocator/EnTT integration workstream.
+/// This snapshot reports the World-owned frame allocator used for per-step
+/// scratch and structured debug counters for direct free/pool allocations.
+/// ECS storage diagnostics remain part of the allocator/EnTT integration
+/// workstream.
 struct WorldMemoryDiagnostics
 {
+  /// Debug counters for the World-owned MemoryManager hierarchy.
+  common::MemoryManager::DebugDiagnostics allocatorDebugDiagnostics;
+
   /// Current usable frame-scratch arena capacity after alignment padding.
   std::size_t frameScratchCapacityBytes = 0;
   /// Bytes consumed in the current simulation frame, including overflow blocks.

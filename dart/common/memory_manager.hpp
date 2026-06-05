@@ -58,6 +58,32 @@ public:
     Frame,
   };
 
+  /// Debug allocation counters for one allocator in the hierarchy.
+  struct AllocatorDebugDiagnostics
+  {
+    /// Bytes currently tracked as live allocations.
+    size_t liveBytes = 0;
+
+    /// Largest live byte total observed by this allocator debugger.
+    size_t peakLiveBytes = 0;
+
+    /// Number of currently tracked live allocations.
+    size_t liveAllocationCount = 0;
+  };
+
+  /// Debug allocation counters for the MemoryManager allocator hierarchy.
+  struct DebugDiagnostics
+  {
+    /// Whether free/pool allocations route through debug wrappers.
+    bool enabled = false;
+
+    /// Debug counters for direct FreeListAllocator allocations.
+    AllocatorDebugDiagnostics freeAllocator;
+
+    /// Debug counters for direct PoolAllocator allocations.
+    AllocatorDebugDiagnostics poolAllocator;
+  };
+
   /// Returns the default memory manager
   [[nodiscard]] static MemoryManager& GetDefault();
 
@@ -195,6 +221,12 @@ public:
 
   /// Returns true if a pointer is allocated by the internal allocator.
   [[nodiscard]] bool hasAllocated(void* pointer, size_t size) const noexcept;
+
+  /// Returns structured debug counters for the free/pool allocators.
+  ///
+  /// Counters are zero and `enabled` is false when this MemoryManager is not
+  /// using debug allocator wrappers.
+  [[nodiscard]] DebugDiagnostics getDebugDiagnostics() const;
 
   /// Prints state of the memory manager.
   void print(std::ostream& os = std::cout, int indent = 0) const;

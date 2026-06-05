@@ -19,8 +19,10 @@
       deformable scenes.
 - [ ] Phase 6: Add memory-layout profiler/debugger surfaces and GUI
       visualization. `MemoryAllocatorDebugger` now exposes structured live
-      bytes, peak live bytes, and live allocation count; World-level profiler
-      surfaces and GUI visualization remain future work.
+      bytes, peak live bytes, and live allocation count; `MemoryManager` and
+      experimental `World` diagnostics now surface direct free/pool allocator
+      debug counters. ECS storage layout counters and GUI visualization remain
+      future work.
 
 ## Goal
 

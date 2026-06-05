@@ -112,6 +112,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Added query methods on `dart::common::MemoryAllocatorDebugger` for current
     live bytes, peak live bytes, and live allocation count so allocator
     diagnostics can consume structured counters instead of parsing debug text.
+  - Added structured `MemoryManager` debug diagnostics and surfaced them through
+    experimental `World` memory diagnostics for direct free/pool allocator
+    accounting.
   - Added the standalone `dartsim/` GUI simulator (a runtime executable, not a
     library) built only on the experimental World API. Its headless editor
     engine (`dartsim/engine`) provides scene/object, selection, command

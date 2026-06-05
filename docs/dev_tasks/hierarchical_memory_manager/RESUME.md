@@ -17,7 +17,9 @@ size-classed workloads remain on `PoolAllocator`.
 The memory-debugger correctness slice now also exposes structured live-byte,
 peak-byte, and allocation-count queries from `MemoryAllocatorDebugger`, giving
 later World diagnostics/profiling code an API surface instead of requiring
-debug-text parsing.
+debug-text parsing. The same branch now routes those counters through
+`MemoryManager::DebugDiagnostics` and experimental `WorldMemoryDiagnostics` for
+direct free/pool allocator accounting.
 
 ## Current Branch
 
@@ -27,14 +29,16 @@ debugger accounting coverage and structured debugger counters.
 ## Immediate Next Step
 
 Keep PR #2893 draft until hosted CI and review are clean after the structured
-debugger-counter update. Next allocator work should continue landing the strict
-comparative benchmark gate, fixed-capacity/free-list correctness, and EnTT
-registry/storage allocator evidence before replacing more per-step hot-loop
-temporaries.
+debugger-counter and MemoryManager/World diagnostic updates. Next allocator work
+should continue landing the strict comparative benchmark gate,
+fixed-capacity/free-list correctness, and EnTT registry/storage allocator
+evidence before replacing more per-step hot-loop temporaries.
 
 ## Latest Local Validation
 
 - `pixi run lint`
+- `cmake --build build/default/cpp/Release --target UNIT_common_memory_manager test_world -j2`
+- `ctest --test-dir build/default/cpp/Release -R '^(UNIT_common_memory_manager|test_world)$' --output-on-failure`
 - `cmake --build build/default/cpp/Release --target UNIT_common_memory_allocator -j2`
 - `./build/default/cpp/Release/bin/UNIT_common_memory_allocator`
 - `git diff --check`

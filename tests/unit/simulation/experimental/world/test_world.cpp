@@ -264,6 +264,17 @@ TEST(World, MemoryManagerOptionsAndDiagnostics)
   EXPECT_GT(allocator.allocationCount, 0u);
 
   const auto diagnostics = world.getMemoryDiagnostics();
+  const auto managerDiagnostics
+      = world.getMemoryManager().getDebugDiagnostics();
+  EXPECT_EQ(
+      diagnostics.allocatorDebugDiagnostics.enabled,
+      managerDiagnostics.enabled);
+  EXPECT_EQ(
+      diagnostics.allocatorDebugDiagnostics.freeAllocator.liveBytes,
+      managerDiagnostics.freeAllocator.liveBytes);
+  EXPECT_EQ(
+      diagnostics.allocatorDebugDiagnostics.poolAllocator.liveBytes,
+      managerDiagnostics.poolAllocator.liveBytes);
   EXPECT_LE(diagnostics.frameScratchCapacityBytes, 4096u);
   EXPECT_GE(diagnostics.frameScratchCapacityBytes + 32u, 4096u);
   EXPECT_EQ(diagnostics.frameScratchCapacityBytes % 32u, 0u);
@@ -280,6 +291,58 @@ TEST(World, MemoryManagerOptionsAndDiagnostics)
         (void)invalid;
       },
       sx::InvalidArgumentException);
+}
+
+TEST(World, MemoryDiagnosticsMirrorAllocatorDebugCounters)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+
+  auto* freePtr = world.getMemoryManager().allocateUsingFree(24);
+  ASSERT_NE(freePtr, nullptr);
+
+  const auto worldDiagnostics = world.getMemoryDiagnostics();
+  const auto managerDiagnostics
+      = world.getMemoryManager().getDebugDiagnostics();
+  EXPECT_EQ(
+      worldDiagnostics.allocatorDebugDiagnostics.enabled,
+      managerDiagnostics.enabled);
+  EXPECT_EQ(
+      worldDiagnostics.allocatorDebugDiagnostics.freeAllocator.liveBytes,
+      managerDiagnostics.freeAllocator.liveBytes);
+  EXPECT_EQ(
+      worldDiagnostics.allocatorDebugDiagnostics.freeAllocator.peakLiveBytes,
+      managerDiagnostics.freeAllocator.peakLiveBytes);
+  EXPECT_EQ(
+      worldDiagnostics.allocatorDebugDiagnostics.freeAllocator
+          .liveAllocationCount,
+      managerDiagnostics.freeAllocator.liveAllocationCount);
+  EXPECT_EQ(
+      worldDiagnostics.allocatorDebugDiagnostics.poolAllocator.liveBytes,
+      managerDiagnostics.poolAllocator.liveBytes);
+  EXPECT_EQ(
+      worldDiagnostics.allocatorDebugDiagnostics.poolAllocator.peakLiveBytes,
+      managerDiagnostics.poolAllocator.peakLiveBytes);
+  EXPECT_EQ(
+      worldDiagnostics.allocatorDebugDiagnostics.poolAllocator
+          .liveAllocationCount,
+      managerDiagnostics.poolAllocator.liveAllocationCount);
+
+#if !defined(NDEBUG)
+  EXPECT_TRUE(worldDiagnostics.allocatorDebugDiagnostics.enabled);
+  EXPECT_EQ(
+      worldDiagnostics.allocatorDebugDiagnostics.freeAllocator.liveBytes, 24u);
+  EXPECT_EQ(
+      worldDiagnostics.allocatorDebugDiagnostics.freeAllocator.peakLiveBytes,
+      24u);
+  EXPECT_EQ(
+      worldDiagnostics.allocatorDebugDiagnostics.freeAllocator
+          .liveAllocationCount,
+      1u);
+#endif
+
+  world.getMemoryManager().deallocateUsingFree(freePtr, 24);
 }
 
 TEST(World, FrameScratchCapacityReportsUsableArenaBytes)

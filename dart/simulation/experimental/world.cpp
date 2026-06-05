@@ -1358,6 +1358,7 @@ const common::MemoryManager& World::getMemoryManager() const
 WorldMemoryDiagnostics World::getMemoryDiagnostics() const
 {
   WorldMemoryDiagnostics diagnostics = m_memoryDiagnostics;
+  diagnostics.allocatorDebugDiagnostics = m_memoryManager.getDebugDiagnostics();
   const auto& frameAllocator = m_memoryManager.getFrameAllocator();
   const auto overflowBytes = frameAllocator.overflowBytes();
   diagnostics.frameScratchCapacityBytes = frameAllocator.usableCapacity();
@@ -2531,6 +2532,8 @@ void World::resetFrameScratchForStep()
 //==============================================================================
 void World::refreshMemoryDiagnostics()
 {
+  m_memoryDiagnostics.allocatorDebugDiagnostics
+      = m_memoryManager.getDebugDiagnostics();
   const auto& frameAllocator = m_memoryManager.getFrameAllocator();
   const auto overflowBytes = frameAllocator.overflowBytes();
   m_memoryDiagnostics.frameScratchCapacityBytes
