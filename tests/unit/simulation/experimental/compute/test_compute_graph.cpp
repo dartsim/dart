@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/config.hpp>
+
 #include <dart/simulation/experimental/common/exceptions.hpp>
 #include <dart/simulation/experimental/compute/compute_graph.hpp>
 #include <dart/simulation/experimental/compute/compute_graph_visualization.hpp>
@@ -313,14 +315,21 @@ TEST(ExperimentalComputeGraph, ExportsDotWithMetadataAndProfile)
   EXPECT_NE(dot.find("domain=rigid_body"), std::string::npos);
   EXPECT_NE(dot.find("domain=rendering"), std::string::npos);
   EXPECT_NE(dot.find("gpu"), std::string::npos);
-  EXPECT_NE(dot.find("duration_us="), std::string::npos);
   EXPECT_NE(dot.find("rank=same"), std::string::npos);
 
+#if DART_BUILD_PROFILE
+  EXPECT_NE(dot.find("duration_us="), std::string::npos);
   EXPECT_NE(summary.find("Compute Execution Profile"), std::string::npos);
   EXPECT_NE(summary.find("workers=1"), std::string::npos);
   EXPECT_NE(summary.find("max_parallelism="), std::string::npos);
   EXPECT_NE(summary.find("simulate"), std::string::npos);
   EXPECT_NE(summary.find("render"), std::string::npos);
+#else
+  EXPECT_TRUE(profile.isEmpty());
+  EXPECT_NE(
+      summary.find("No compute execution profile captured."),
+      std::string::npos);
+#endif
 }
 
 //==============================================================================
@@ -353,6 +362,9 @@ TEST(ExperimentalSequentialExecutor, ExecutesInDependencyOrder)
 //==============================================================================
 TEST(ExperimentalSequentialExecutor, ProfilesNodeLoadAndParallelism)
 {
+#if !DART_BUILD_PROFILE
+  GTEST_SKIP() << "DART_BUILD_PROFILE=OFF: compute profiling is compiled out";
+#else
   using namespace std::chrono_literals;
 
   compute::ComputeGraph graph;
@@ -389,6 +401,7 @@ TEST(ExperimentalSequentialExecutor, ProfilesNodeLoadAndParallelism)
   EXPECT_EQ(heavyProfile->workerIndex, 0u);
   EXPECT_GT(heavyProfile->duration, lightProfile->duration);
   EXPECT_GE(heavyProfile->startTime, lightProfile->endTime);
+#endif
 }
 
 //==============================================================================
@@ -458,6 +471,9 @@ TEST(ExperimentalParallelExecutor, ProfiledPropagatesNodeExceptions)
 //==============================================================================
 TEST(ExperimentalParallelExecutor, ProfileReportsObservedParallelism)
 {
+#if !DART_BUILD_PROFILE
+  GTEST_SKIP() << "DART_BUILD_PROFILE=OFF: compute profiling is compiled out";
+#else
   using namespace std::chrono_literals;
 
   compute::ComputeGraph graph;
@@ -517,6 +533,7 @@ TEST(ExperimentalParallelExecutor, ProfileReportsObservedParallelism)
   EXPECT_EQ(rightProfile->level, 1u);
   EXPECT_LT(leftProfile->workerIndex, profile.workerCount);
   EXPECT_LT(rightProfile->workerIndex, profile.workerCount);
+#endif
 }
 
 //==============================================================================
