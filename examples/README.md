@@ -32,9 +32,11 @@ Launch the each executable from the build directory above (e.g.,):
 
 Follow the instructions detailed in the console.
 
-## Headless Constraint Examples
+## Dynamic Joint Constraint Examples
 
-The `cylindrical_constraint` example demonstrates runtime slide-and-rotate
+The `dynamic_joint_constraints` GUI example demonstrates the DART 6.x runtime
+dynamic joint constraints side by side. The `cylindrical_constraint` headless
+example provides a focused convergence smoke test for slide-and-rotate
 attachments with `dart::constraint::CylindricalJointConstraint`.
 
 `BallJointConstraint` keeps one anchor coincident and leaves all relative
