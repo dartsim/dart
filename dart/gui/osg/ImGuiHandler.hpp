@@ -98,8 +98,12 @@ public:
 protected:
   double mTime;
 
-  /// Mouse buttons: left, right, middle.
+  /// Mouse buttons that were pressed since the last ImGui frame: left, right,
+  /// middle. This latches short clicks that press and release between frames.
   std::array<bool, 3> mMousePressed;
+
+  /// Current physical mouse-button state: left, right, middle.
+  std::array<bool, 3> mMouseDown;
 
   float mMouseWheel;
 

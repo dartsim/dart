@@ -266,6 +266,36 @@ TEST(IslandDeactivation, WakeOnExternalForce)
 }
 
 //==============================================================================
+// A body with a pending external disturbance must not accumulate quiet dwell
+// and freeze, even if the disturbance is small enough that the body remains
+// below the sleep thresholds. This covers the pre-resetCommand disturbance
+// bookkeeping path for bodies that are not already resting.
+TEST(IslandDeactivation, ExternalDisturbancePreventsSleep)
+{
+  auto world = makeSleepWorld();
+  auto opts = world->getDeactivationOptions();
+  opts.mTimeUntilSleep = 0.05;
+  world->setDeactivationOptions(opts);
+  world->addSkeleton(createFloor());
+
+  auto box = createFreeBox(
+      "box",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(box);
+  auto* body = box->getBodyNode(0);
+
+  // Greater than hasExternalDisturbance()'s tolerance but far below the force
+  // needed to keep the body visibly moving on the floor.
+  const Eigen::Vector3d tinyForce(1.0e-5, 0.0, 0.0);
+  for (std::size_t i = 0; i < 3000; ++i) {
+    body->setExtForce(tinyForce);
+    world->step();
+    ASSERT_FALSE(box->isResting()) << "actuated quiet body slept at step " << i;
+  }
+}
+
+//==============================================================================
 // A vertical stack must settle and all members must become resting together as
 // a single island. No member sleeps while another member is still moving.
 TEST(IslandDeactivation, StackSleepsAsIsland)
@@ -497,6 +527,8 @@ TEST(IslandDeactivation, DisablingClearsRestState)
   opts.mEnabled = false;
   world->setDeactivationOptions(opts);
   EXPECT_FALSE(box->isResting()) << "disabling must clear the resting flag";
+  EXPECT_EQ(box->getIslandIndex(), -1)
+      << "disabling must clear the visualization island index";
 }
 
 //==============================================================================

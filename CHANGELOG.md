@@ -11,6 +11,10 @@
     with headless and GUI examples covering DART 6.x dynamic joint constraints:
     [#2918](https://github.com/dartsim/dart/issues/2918)
 
+* Simulation
+
+  * Add opt-in automatic body deactivation ("sleeping") for resting solver islands, including wake-on-contact/force handling and island-index diagnostics: [#2920](https://github.com/dartsim/dart/pull/2920)
+
 ### [DART 6.18.0 (2026-06-05)](https://github.com/dartsim/dart/milestone/94?closed=1)
 
 DART 6.18.0 is a minor release on the DART 6 LTS line. It adds two contact and

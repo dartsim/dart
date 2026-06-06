@@ -196,16 +196,20 @@ void World::step(bool _resetCommand)
       if (!skel->isMobile())
         continue;
 
+      const bool externallyDisturbed
+          = deactivationEnabled && skel->hasExternalDisturbance();
+      if (externallyDisturbed)
+        disturbedThisStep[i] = true;
+
       // A resting skeleton skips forward dynamics (including gravity) unless a
       // user-applied force/command is pending this step, in which case it is
       // woken so the actuation is integrated rather than silently dropped.
       // Gravity alone is not a disturbance, so a body resting on its support
       // stays asleep.
       if (deactivationEnabled && skel->isResting()) {
-        if (skel->hasExternalDisturbance()) {
+        if (externallyDisturbed) {
           skel->setResting(false);
           skel->setSleepCandidate(false);
-          disturbedThisStep[i] = true;
         } else {
           continue;
         }
@@ -721,6 +725,7 @@ void World::setDeactivationOptions(const DeactivationOptions& options)
     for (auto& skel : mSkeletons) {
       skel->setResting(false);
       skel->setSleepCandidate(false);
+      skel->setIslandIndex(-1);
     }
   }
 }

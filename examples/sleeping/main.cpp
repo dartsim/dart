@@ -32,10 +32,10 @@
 
 // Visual demo of automatic body deactivation ("sleeping") and the solver-island
 // partition. Several separated box stacks each form an independent solver
-// island. Each island is drawn in a distinct color; when an island goes to
-// sleep (deactivates) it is tinted to a dim, cool shade. Press keys to drop a
-// box (which wakes the island it lands on, and merges islands if it bridges
-// two), toggle the feature, or print stats.
+// island. Boxes are drawn with a per-body gradient by default, with an option
+// to color by solver island. Awake bodies use a bright tint; sleeping bodies
+// use a cooler muted tint. Press keys to shoot a sphere, drop a box, toggle the
+// feature or island coloring, or print stats.
 
 #include <dart/gui/osg/osg.hpp>
 
@@ -45,12 +45,15 @@
 #include <osg/GraphicsContext>
 #include <osg/Light>
 #include <osg/Viewport>
+#include <osgGA/EventQueue>
 #include <osgShadow/SoftShadowMap>
 
 #include <algorithm>
+#include <chrono>
 #include <iostream>
 #include <memory>
 #include <string>
+#include <unordered_map>
 
 #include <cmath>
 #include <cstdlib>
@@ -74,6 +77,9 @@ namespace {
 
 constexpr double kBox = 0.3;
 constexpr double kDensity = 1000.0; // kg/m^3, water-like
+constexpr int kDefaultWindowWidth = 1280;
+constexpr int kDefaultWindowHeight = 800;
+constexpr int kProjectilePoolSize = 8;
 
 //==============================================================================
 // Sets a body's mass and moment of inertia from its shape's volume, so small
@@ -122,9 +128,79 @@ SkeletonPtr createBox(const std::string& name, const Eigen::Vector3d& pos)
 }
 
 //==============================================================================
-// A projectile sphere launched with an initial world-frame linear velocity.
-// Projectiles keep a fixed bright color (they are skipped by the island
-// recolor pass) so the user can see the object they fired.
+bool isShotProjectile(const SkeletonPtr& skel)
+{
+  return skel->getName().rfind("proj_shot", 0) == 0;
+}
+
+//==============================================================================
+bool isDroppedProjectile(const SkeletonPtr& skel)
+{
+  return skel->getName().rfind("proj_drop", 0) == 0;
+}
+
+//==============================================================================
+// True if this skeleton is a user-created projectile or dropped box.
+bool isProjectile(const SkeletonPtr& skel)
+{
+  return isShotProjectile(skel) || isDroppedProjectile(skel);
+}
+
+//==============================================================================
+Eigen::Vector4d shotColor()
+{
+  return Eigen::Vector4d(1.0, 0.84, 0.08, 1.0);
+}
+
+//==============================================================================
+Eigen::Vector4d droppedBoxColor()
+{
+  return Eigen::Vector4d(0.0, 0.96, 1.0, 1.0);
+}
+
+//==============================================================================
+void setSkeletonColor(const SkeletonPtr& skel, const Eigen::Vector4d& color)
+{
+  for (std::size_t b = 0; b < skel->getNumBodyNodes(); ++b) {
+    auto* body = skel->getBodyNode(b);
+    for (std::size_t s = 0; s < body->getNumShapeNodes(); ++s) {
+      auto* sn = body->getShapeNode(s);
+      if (auto* visual = sn->getVisualAspect())
+        visual->setRGBA(color);
+    }
+  }
+}
+
+//==============================================================================
+void setSkeletonVisible(const SkeletonPtr& skel, bool visible)
+{
+  for (std::size_t b = 0; b < skel->getNumBodyNodes(); ++b) {
+    auto* body = skel->getBodyNode(b);
+    for (std::size_t s = 0; s < body->getNumShapeNodes(); ++s) {
+      auto* sn = body->getShapeNode(s);
+      if (auto* visual = sn->getVisualAspect()) {
+        if (visible)
+          visual->show();
+        else
+          visual->hide();
+      }
+    }
+  }
+}
+
+//==============================================================================
+Eigen::Vector4d projectileColor(const SkeletonPtr& skel, bool active)
+{
+  if (!active)
+    return Eigen::Vector4d(0.05, 0.07, 0.10, 1.0);
+
+  return isShotProjectile(skel) ? shotColor() : droppedBoxColor();
+}
+
+//==============================================================================
+// A projectile sphere or dropped box with an initial world-frame linear
+// velocity. These get bright base colors before the awake/asleep tint is
+// applied, so user-spawned objects are easy to pick out.
 SkeletonPtr createProjectile(
     const std::string& name,
     const Eigen::Vector3d& pos,
@@ -135,14 +211,18 @@ SkeletonPtr createProjectile(
   auto* body = skel->createJointAndBodyNodePair<FreeJoint>(nullptr).second;
   dart::dynamics::ShapePtr shape;
   if (sphere)
-    shape = std::make_shared<dart::dynamics::SphereShape>(0.25);
+    shape = std::make_shared<dart::dynamics::EllipsoidShape>(
+        Eigen::Vector3d::Constant(1.10));
   else
-    shape = std::make_shared<BoxShape>(Eigen::Vector3d::Constant(0.35));
+    shape = std::make_shared<BoxShape>(Eigen::Vector3d::Constant(0.62));
   auto* sn = body->createShapeNodeWith<
       VisualAspect,
       CollisionAspect,
       DynamicsAspect>(shape);
-  sn->getVisualAspect()->setColor(Eigen::Vector3d(0.97, 0.55, 0.10));
+  const Eigen::Vector4d base = sphere ? shotColor() : droppedBoxColor();
+  auto* visual = sn->getVisualAspect();
+  visual->setRGBA(base);
+  visual->setShadowed(false);
   setShapeInertia(body, shape);
 
   auto* joint = static_cast<FreeJoint*>(skel->getJoint(0));
@@ -159,10 +239,85 @@ SkeletonPtr createProjectile(
 }
 
 //==============================================================================
-// True if this skeleton is a user-fired projectile (kept at a fixed color).
-bool isProjectile(const SkeletonPtr& skel)
+bool isProjectileInactive(const SkeletonPtr& skel)
 {
-  return skel->getName().rfind("proj", 0) == 0;
+  return skel->getNumBodyNodes() == 0 || !skel->getBodyNode(0)->isCollidable();
+}
+
+//==============================================================================
+void setProjectileState(
+    const SkeletonPtr& skel,
+    const Eigen::Vector3d& pos,
+    const Eigen::Vector3d& linearVelocity,
+    bool active)
+{
+  auto* joint = static_cast<FreeJoint*>(skel->getJoint(0));
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = pos;
+  joint->setPositions(FreeJoint::convertToPositions(tf));
+
+  Eigen::Vector6d v = Eigen::Vector6d::Zero();
+  v.tail<3>() = linearVelocity;
+  joint->setVelocities(v);
+
+  auto* body = skel->getBodyNode(0);
+  body->setCollidable(active);
+
+  skel->setResting(!active);
+  setSkeletonColor(skel, projectileColor(skel, active));
+  setSkeletonVisible(skel, active);
+}
+
+//==============================================================================
+void resetProjectile(
+    const SkeletonPtr& skel,
+    const Eigen::Vector3d& pos,
+    const Eigen::Vector3d& linearVelocity)
+{
+  setProjectileState(skel, pos, linearVelocity, /*active=*/true);
+}
+
+//==============================================================================
+Eigen::Vector3d hsvToRgb(double hue, double saturation, double value)
+{
+  hue = std::fmod(hue, 1.0);
+  if (hue < 0.0)
+    hue += 1.0;
+
+  const double h = hue * 6.0;
+  const int sector = static_cast<int>(std::floor(h));
+  const double f = h - sector;
+  const double p = value * (1.0 - saturation);
+  const double q = value * (1.0 - saturation * f);
+  const double t = value * (1.0 - saturation * (1.0 - f));
+
+  switch (sector % 6) {
+    case 0:
+      return Eigen::Vector3d(value, t, p);
+    case 1:
+      return Eigen::Vector3d(q, value, p);
+    case 2:
+      return Eigen::Vector3d(p, value, t);
+    case 3:
+      return Eigen::Vector3d(p, q, value);
+    case 4:
+      return Eigen::Vector3d(t, p, value);
+    default:
+      return Eigen::Vector3d(value, p, q);
+  }
+}
+
+//==============================================================================
+double clamp01(double value)
+{
+  return std::clamp(value, 0.0, 1.0);
+}
+
+//==============================================================================
+Eigen::Vector4d rgba(const Eigen::Vector3d& color)
+{
+  return Eigen::Vector4d(
+      clamp01(color[0]), clamp01(color[1]), clamp01(color[2]), 1.0);
 }
 
 //==============================================================================
@@ -170,26 +325,67 @@ bool isProjectile(const SkeletonPtr& skel)
 Eigen::Vector4d islandColor(int idx)
 {
   static const Eigen::Vector3d palette[]
-      = {{0.25, 0.55, 0.95},
-         {0.95, 0.48, 0.22},
-         {0.18, 0.72, 0.58},
-         {0.86, 0.36, 0.62},
-         {0.92, 0.72, 0.22},
-         {0.58, 0.42, 0.86},
-         {0.35, 0.70, 0.86}};
+      = {{0.20, 0.62, 1.00},
+         {1.00, 0.48, 0.18},
+         {0.16, 0.78, 0.50},
+         {0.95, 0.30, 0.58},
+         {1.00, 0.78, 0.18},
+         {0.66, 0.42, 1.00},
+         {0.00, 0.84, 0.86}};
   constexpr int n = static_cast<int>(sizeof(palette) / sizeof(palette[0]));
   if (idx < 0)
     return Eigen::Vector4d(0.74, 0.76, 0.78, 1.0);
   const Eigen::Vector3d& c = palette[idx % n];
+  return rgba(c);
+}
+
+//==============================================================================
+Eigen::Vector4d objectColor(const SkeletonPtr& skel, std::size_t worldIndex)
+{
+  if (isShotProjectile(skel))
+    return shotColor();
+  if (isDroppedProjectile(skel))
+    return droppedBoxColor();
+
+  // A stable, saturated gradient across boxes. The irrational-ish hue step
+  // keeps neighbouring bodies from landing on near-identical colors.
+  const Eigen::Vector3d c
+      = hsvToRgb(0.58 + 0.173 * static_cast<double>(worldIndex), 0.54, 0.92);
   return Eigen::Vector4d(c[0], c[1], c[2], 1.0);
 }
 
-// Dim, cool tint applied to an island that is asleep (deactivated).
+//==============================================================================
+Eigen::Vector4d awakeTint(const Eigen::Vector4d& base)
+{
+  const Eigen::Vector3d light(0.98, 0.99, 1.0);
+  return rgba(0.84 * base.head<3>() + 0.18 * light);
+}
+
+//==============================================================================
+// Dark tint applied to an object that is asleep (deactivated). Preserve the
+// base hue so island/body identity remains visible, but keep it clearly below
+// awake bodies in value.
 Eigen::Vector4d asleepTint(const Eigen::Vector4d& base)
 {
-  const Eigen::Vector3d cool(0.48, 0.56, 0.66);
-  const Eigen::Vector3d c = 0.60 * base.head<3>() + 0.40 * cool;
-  return Eigen::Vector4d(c[0], c[1], c[2], 1.0);
+  const Eigen::Vector3d shadow(0.015, 0.020, 0.030);
+  return rgba(0.72 * base.head<3>() + shadow);
+}
+
+//==============================================================================
+int initialStackIndex(const SkeletonPtr& skel)
+{
+  const std::string name = skel->getName();
+  if (name.rfind("box", 0) != 0 || name.size() <= 3)
+    return -1;
+
+  int id = 0;
+  for (std::size_t i = 3; i < name.size(); ++i) {
+    if (name[i] < '0' || name[i] > '9')
+      return -1;
+    id = 10 * id + (name[i] - '0');
+  }
+
+  return id / 4;
 }
 
 // X centers of the four stacks; shots cycle through them.
@@ -206,11 +402,11 @@ struct Launch
 Launch sphereLaunch(int targetIdx)
 {
   const double x = kStackX[((targetIdx % 4) + 4) % 4];
-  return {Eigen::Vector3d(x, 5.0, 1.6), Eigen::Vector3d(0.0, -12.0, 0.0)};
+  return {Eigen::Vector3d(x, 3.0, 2.0), Eigen::Vector3d(0.0, -4.2, 1.7)};
 }
 
-// Shared aim selection: the key handler advances targetIdx on each shot and the
-// world node draws the predicted trajectory for the current selection.
+// Shared aim selection: the world node advances targetIdx on each spawned
+// action and draws the predicted trajectory for the current selection.
 struct AimState
 {
   int targetIdx = 0;
@@ -236,25 +432,31 @@ public:
     updateAimLine();
   }
 
-  // Fire a sphere along the current aim arc; advances aim to the next stack.
+  // Fire a sphere along the current aim arc.
   void fireSphere()
   {
-    const Launch L = sphereLaunch(mAim->targetIdx);
-    mWorld->addSkeleton(createProjectile(
-        "proj_shot" + std::to_string(++mFired), L.pos, L.vel, /*sphere=*/true));
-    ++mAim->targetIdx;
+    spawnSphere();
   }
 
-  // Drop a box onto the currently-aimed stack; advances aim.
+  // Drop a box onto the currently-aimed stack.
   void dropBox()
   {
-    const double targetX = kStackX[((mAim->targetIdx % 4) + 4) % 4];
-    mWorld->addSkeleton(createProjectile(
-        "proj_drop" + std::to_string(++mFired),
-        Eigen::Vector3d(targetX, 0.0, 4.0),
-        Eigen::Vector3d::Zero(),
-        /*sphere=*/false));
-    ++mAim->targetIdx;
+    spawnDropBox();
+  }
+
+  bool getColorByIsland() const
+  {
+    return mColorByIsland;
+  }
+
+  void setColorByIsland(bool enabled)
+  {
+    mColorByIsland = enabled;
+  }
+
+  void toggleColorByIsland()
+  {
+    mColorByIsland = !mColorByIsland;
   }
 
   // Counts awake vs. asleep stack skeletons (mobile, non-projectile).
@@ -270,29 +472,119 @@ public:
     }
   }
 
+  void countProjectiles(int& shots, int& drops) const
+  {
+    shots = 0;
+    drops = 0;
+    for (std::size_t i = 0; i < mWorld->getNumSkeletons(); ++i) {
+      const auto& skel = mWorld->getSkeleton(i);
+      if (isProjectile(skel) && isProjectileInactive(skel))
+        continue;
+      if (isShotProjectile(skel))
+        ++shots;
+      else if (isDroppedProjectile(skel))
+        ++drops;
+    }
+  }
+
+  void printProjectiles() const
+  {
+    for (std::size_t i = 0; i < mWorld->getNumSkeletons(); ++i) {
+      const auto& skel = mWorld->getSkeleton(i);
+      if (!isProjectile(skel) || isProjectileInactive(skel))
+        continue;
+
+      const auto* body = skel->getBodyNode(0);
+      const Eigen::Vector3d p = body->getTransform().translation();
+      std::cout << "[headless] projectile " << skel->getName() << " at "
+                << p.transpose() << "\n";
+    }
+  }
+
 private:
-  // Recolor every box each frame from its current island index and sleep state.
+  void parkProjectilePool(const std::string& prefix)
+  {
+    const Eigen::Vector3d parkedBase(60.0, 60.0, 10.0);
+    for (int i = 0; i < kProjectilePoolSize; ++i) {
+      const std::string name = prefix + std::to_string(i);
+      if (const auto& skel = mWorld->getSkeleton(name)) {
+        const double yOffset = prefix == "proj_drop" ? 1.0 : 0.0;
+        const Eigen::Vector3d parked
+            = parkedBase + Eigen::Vector3d(i, yOffset, 0.0);
+        setProjectileState(
+            skel, parked, Eigen::Vector3d::Zero(), /*active=*/false);
+      }
+    }
+  }
+
+  void spawnSphere()
+  {
+    parkProjectilePool("proj_shot");
+    parkProjectilePool("proj_drop");
+
+    const Launch L = sphereLaunch(mAim->targetIdx);
+    const std::string name = "proj_shot" + std::to_string(mShotSlot);
+    mShotSlot = (mShotSlot + 1) % kProjectilePoolSize;
+    if (const auto& skel = mWorld->getSkeleton(name))
+      resetProjectile(skel, L.pos, L.vel);
+    ++mAim->targetIdx;
+  }
+
+  void spawnDropBox()
+  {
+    parkProjectilePool("proj_shot");
+    parkProjectilePool("proj_drop");
+
+    const double targetX = kStackX[((mAim->targetIdx % 4) + 4) % 4];
+    const double spawnX = std::min(targetX - 0.45, -3.6);
+    const double targetTime = 0.65;
+    const Eigen::Vector3d pos(spawnX, 1.2, 2.7);
+    const Eigen::Vector3d vel(
+        (targetX - spawnX) / targetTime, -1.2 / targetTime, 0.0);
+    const std::string name = "proj_drop" + std::to_string(mDropSlot);
+    mDropSlot = (mDropSlot + 1) % kProjectilePoolSize;
+    if (const auto& skel = mWorld->getSkeleton(name))
+      resetProjectile(skel, pos, vel);
+    ++mAim->targetIdx;
+  }
+
+  // Recolor every mobile object each frame. The default shows a stable per-body
+  // gradient; island mode paints all objects in the same solver island with the
+  // same base hue.
   void recolorIslands()
   {
     for (std::size_t i = 0; i < mWorld->getNumSkeletons(); ++i) {
       const auto& skel = mWorld->getSkeleton(i);
       if (!skel->isMobile())
         continue; // skip the static floor
-      if (isProjectile(skel))
-        continue; // keep the fired projectile its own bright color
 
-      Eigen::Vector4d color = islandColor(skel->getIslandIndex());
-      if (skel->isResting())
-        color = asleepTint(color);
-
-      for (std::size_t b = 0; b < skel->getNumBodyNodes(); ++b) {
-        auto* body = skel->getBodyNode(b);
-        for (std::size_t s = 0; s < body->getNumShapeNodes(); ++s) {
-          auto* sn = body->getShapeNode(s);
-          if (auto* visual = sn->getVisualAspect())
-            visual->setRGBA(color);
+      Eigen::Vector4d base = objectColor(skel, i);
+      if (mColorByIsland && !isProjectile(skel)) {
+        int island = -1;
+        const int solverIsland = skel->getIslandIndex();
+        if (!skel->isResting() && solverIsland >= 0) {
+          island = solverIsland;
+          mLastDisplayIsland[skel->getName()] = island;
+        } else {
+          island = initialStackIndex(skel);
+          if (island < 0) {
+            const auto it = mLastDisplayIsland.find(skel->getName());
+            if (it != mLastDisplayIsland.end())
+              island = it->second;
+          }
         }
+
+        if (island >= 0)
+          base = islandColor(island);
       }
+
+      const bool keepProjectileBright
+          = isProjectile(skel) && !isProjectileInactive(skel);
+      const Eigen::Vector4d color = (!keepProjectileBright && skel->isResting())
+                                        ? asleepTint(base)
+                                        : awakeTint(base);
+
+      setSkeletonColor(skel, color);
     }
   }
 
@@ -346,7 +638,10 @@ private:
   WorldPtr mWorld;
   std::shared_ptr<AimState> mAim;
   dart::dynamics::LineSegmentShapePtr mAimLine;
-  int mFired{0};
+  int mShotSlot{0};
+  int mDropSlot{0};
+  bool mColorByIsland{false};
+  std::unordered_map<std::string, int> mLastDisplayIsland;
 };
 
 //==============================================================================
@@ -377,6 +672,9 @@ public:
         mWorld->setDeactivationOptions(opts);
         return true;
       }
+      case 'c':
+        mNode->toggleColorByIsland();
+        return true;
       case 's': {
         int awake = 0, asleep = 0;
         mNode->countStacks(awake, asleep);
@@ -432,14 +730,17 @@ public:
     if (ImGui::CollapsingHeader("Status", ImGuiTreeNodeFlags_DefaultOpen)) {
       int awake = 0, asleep = 0;
       mNode->countStacks(awake, asleep);
+      int shots = 0, drops = 0;
+      mNode->countProjectiles(shots, drops);
       ImGui::Text("Time  %.2f s", mWorld->getTime());
       ImGui::SameLine();
       ImGui::Text("FPS  %.0f", ImGui::GetIO().Framerate);
       ImGui::Text("Stacks  %d awake / %d asleep", awake, asleep);
+      ImGui::Text("Active  %d spheres / %d boxes", shots, drops);
 
       ImGui::ColorButton(
           "awake_color",
-          ImVec4(0.25f, 0.55f, 0.95f, 1.0f),
+          ImVec4(0.48f, 0.76f, 1.0f, 1.0f),
           ImGuiColorEditFlags_NoTooltip,
           ImVec2(16.0f * mScale, 16.0f * mScale));
       ImGui::SameLine();
@@ -447,7 +748,7 @@ public:
       ImGui::SameLine();
       ImGui::ColorButton(
           "asleep_color",
-          ImVec4(0.34f, 0.55f, 0.83f, 1.0f),
+          ImVec4(0.16f, 0.22f, 0.30f, 1.0f),
           ImGuiColorEditFlags_NoTooltip,
           ImVec2(16.0f * mScale, 16.0f * mScale));
       ImGui::SameLine();
@@ -466,9 +767,14 @@ public:
         mWorld->setDeactivationOptions(opts);
       }
 
+      bool colorByIsland = mNode->getColorByIsland();
+      if (ImGui::Checkbox("Color by solver island", &colorByIsland))
+        mNode->setColorByIsland(colorByIsland);
+
       float dwell = static_cast<float>(opts.mTimeUntilSleep);
+      ImGui::TextUnformatted("Dwell time");
       ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-      if (ImGui::SliderFloat("Dwell time (s)", &dwell, 0.05f, 2.0f)) {
+      if (ImGui::SliderFloat("##dwell_time", &dwell, 0.05f, 2.0f, "%.3f s")) {
         opts.mTimeUntilSleep = dwell;
         mWorld->setDeactivationOptions(opts);
       }
@@ -490,6 +796,7 @@ public:
       ImGui::BulletText("f  Shoot sphere");
       ImGui::BulletText("d  Drop box");
       ImGui::BulletText("t  Toggle sleeping");
+      ImGui::BulletText("c  Toggle island colors");
       ImGui::BulletText("s  Print stats");
     }
 
@@ -509,9 +816,14 @@ struct Options
   float guiScale = 1.0f;
   bool headless = false;
   std::string shotPath = "sleeping.png";
-  int settleSteps = 1500;
-  int width = 1280;
-  int height = 800;
+  int settleSteps = 150;
+  int width = kDefaultWindowWidth;
+  int height = kDefaultWindowHeight;
+  bool widthExplicit = false;
+  bool heightExplicit = false;
+  std::string scriptedKeys;
+  bool scriptedIslandClick = false;
+  int profileFrames = 0;
 };
 
 //==============================================================================
@@ -519,15 +831,26 @@ void printUsage(const char* prog)
 {
   std::cout
       << "Usage: " << prog << " [options]\n"
-      << "  --gui-scale <f>  Scale the on-screen ImGui panel (default 1.0;\n"
-      << "                   try 2.0 on a HiDPI/4K display).\n"
+      << "  --gui-scale <f>  Scale the on-screen ImGui panel and default\n"
+      << "                   interactive window size (default 1.0; try 2.0\n"
+      << "                   on a HiDPI/4K display).\n"
       << "  --headless       Render one frame off-screen to a PNG and exit\n"
       << "                   (no window); useful for smoke tests / CI.\n"
       << "  --shot <path>    Output PNG path for --headless (default "
          "sleeping.png).\n"
       << "  --steps <n>      Sim steps to settle before the headless shot "
-         "(default 1500).\n"
-      << "  --width <w> --height <h>  Render size (default 1280x800).\n"
+         "(default 150).\n"
+      << "  --width <w> --height <h>  Override render/window size "
+         "(default 1280x800 before --gui-scale).\n"
+      << "  --scripted-actions  With --headless, inject the f/d key path\n"
+      << "                   before capture and fail if the expected active\n"
+      << "                   projectile is not created.\n"
+      << "  --scripted-keys <keys>  With --headless, inject a custom key\n"
+      << "                   sequence such as f, d, or fd before capture.\n"
+      << "  --scripted-island-click  With --headless, click the island-color\n"
+      << "                   checkbox and fail if it does not toggle.\n"
+      << "  --profile-frames <n>  With --headless, report average render and\n"
+      << "                   world-step time over n frames.\n"
       << "  -h, --help       Show this help.\n";
 }
 
@@ -563,10 +886,24 @@ bool parseArgs(int argc, char** argv, Options& opt)
       if (!needsValue(i))
         return false;
       opt.width = std::stoi(argv[++i]);
+      opt.widthExplicit = true;
     } else if (std::strcmp(a, "--height") == 0) {
       if (!needsValue(i))
         return false;
       opt.height = std::stoi(argv[++i]);
+      opt.heightExplicit = true;
+    } else if (std::strcmp(a, "--scripted-actions") == 0) {
+      opt.scriptedKeys = "fd";
+    } else if (std::strcmp(a, "--scripted-keys") == 0) {
+      if (!needsValue(i))
+        return false;
+      opt.scriptedKeys = argv[++i];
+    } else if (std::strcmp(a, "--scripted-island-click") == 0) {
+      opt.scriptedIslandClick = true;
+    } else if (std::strcmp(a, "--profile-frames") == 0) {
+      if (!needsValue(i))
+        return false;
+      opt.profileFrames = std::stoi(argv[++i]);
     } else if (std::strcmp(a, "-h") == 0 || std::strcmp(a, "--help") == 0) {
       printUsage(argv[0]);
       return false;
@@ -580,6 +917,35 @@ bool parseArgs(int argc, char** argv, Options& opt)
 }
 
 //==============================================================================
+void addProjectilePool(const WorldPtr& world)
+{
+  const Eigen::Vector3d parkedBase(60.0, 60.0, 10.0);
+  for (int i = 0; i < kProjectilePoolSize; ++i) {
+    const Eigen::Vector3d parked = parkedBase + Eigen::Vector3d(i, 0.0, 0.0);
+
+    auto shot = createProjectile(
+        "proj_shot" + std::to_string(i),
+        parked,
+        Eigen::Vector3d::Zero(),
+        /*sphere=*/true);
+    setProjectileState(shot, parked, Eigen::Vector3d::Zero(), /*active=*/false);
+    world->addSkeleton(shot);
+
+    auto drop = createProjectile(
+        "proj_drop" + std::to_string(i),
+        parked + Eigen::Vector3d(0.0, 1.0, 0.0),
+        Eigen::Vector3d::Zero(),
+        /*sphere=*/false);
+    setProjectileState(
+        drop,
+        parked + Eigen::Vector3d(0.0, 1.0, 0.0),
+        Eigen::Vector3d::Zero(),
+        /*active=*/false);
+    world->addSkeleton(drop);
+  }
+}
+
+//==============================================================================
 float sanitizeGuiScale(float scale)
 {
   if (!std::isfinite(scale) || scale <= 0.0f)
@@ -589,13 +955,44 @@ float sanitizeGuiScale(float scale)
 }
 
 //==============================================================================
+int scaleWindowExtent(int extent, float scale)
+{
+  return std::max(1, static_cast<int>(std::lround(extent * scale)));
+}
+
+//==============================================================================
+int initialWindowWidth(const Options& opt)
+{
+  return opt.widthExplicit ? opt.width
+                           : scaleWindowExtent(opt.width, opt.guiScale);
+}
+
+//==============================================================================
+int initialWindowHeight(const Options& opt)
+{
+  return opt.heightExplicit ? opt.height
+                            : scaleWindowExtent(opt.height, opt.guiScale);
+}
+
+//==============================================================================
 void configureImGuiStyle(float scale)
 {
   ImGuiIO& io = ImGui::GetIO();
-  io.FontGlobalScale = scale;
+  io.FontGlobalScale = 1.0f;
+  io.Fonts->Clear();
+  ImFontConfig fontConfig;
+  fontConfig.SizePixels = 13.0f * scale;
+#if IMGUI_VERSION_NUM >= 19200
+  io.Fonts->AddFontDefaultBitmap(&fontConfig);
+#else
+  io.Fonts->AddFontDefault(&fontConfig);
+#endif
 
   ImGui::StyleColorsDark();
   ImGuiStyle& style = ImGui::GetStyle();
+#if IMGUI_VERSION_NUM >= 19200
+  style.FontScaleMain = 1.0f;
+#endif
   style.WindowRounding = 4.0f;
   style.ChildRounding = 3.0f;
   style.FrameRounding = 3.0f;
@@ -638,17 +1035,17 @@ void configureViewerAppearance(dart::gui::osg::ImGuiViewer* viewer)
   auto key = viewer->getLightSource(0)->getLight();
   if (key) {
     key->setPosition(::osg::Vec4(-3.5f, -4.5f, 7.0f, 0.0f));
-    key->setAmbient(::osg::Vec4(0.18f, 0.18f, 0.20f, 1.0f));
-    key->setDiffuse(::osg::Vec4(0.82f, 0.80f, 0.74f, 1.0f));
+    key->setAmbient(::osg::Vec4(0.26f, 0.27f, 0.30f, 1.0f));
+    key->setDiffuse(::osg::Vec4(0.74f, 0.73f, 0.68f, 1.0f));
     key->setSpecular(::osg::Vec4(0.35f, 0.35f, 0.35f, 1.0f));
   }
 
   auto fill = viewer->getLightSource(1)->getLight();
   if (fill) {
     fill->setPosition(::osg::Vec4(5.0f, 4.0f, 6.0f, 0.0f));
-    fill->setAmbient(::osg::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
-    fill->setDiffuse(::osg::Vec4(0.24f, 0.28f, 0.34f, 1.0f));
-    fill->setSpecular(::osg::Vec4(0.08f, 0.08f, 0.10f, 1.0f));
+    fill->setAmbient(::osg::Vec4(0.03f, 0.035f, 0.04f, 1.0f));
+    fill->setDiffuse(::osg::Vec4(0.34f, 0.38f, 0.44f, 1.0f));
+    fill->setSpecular(::osg::Vec4(0.06f, 0.07f, 0.08f, 1.0f));
   }
 }
 
@@ -657,13 +1054,107 @@ void configureViewerAppearance(dart::gui::osg::ImGuiViewer* viewer)
     const dart::gui::osg::Viewer* viewer)
 {
   ::osg::ref_ptr<osgShadow::SoftShadowMap> sm = new osgShadow::SoftShadowMap;
-  const auto mapResolution = static_cast<short>(std::pow(2, 13));
+  const auto mapResolution = static_cast<short>(2048);
   sm->setTextureSize(::osg::Vec2s(mapResolution, mapResolution));
   sm->setLight(viewer->getLightSource(0));
-  sm->setSoftnessWidth(0.004f);
-  sm->setJitteringScale(16.0f);
-  sm->setBias(0.001f);
+  sm->setSoftnessWidth(0.006f);
+  sm->setJitteringScale(6.0f);
+  sm->setBias(0.004f);
   return sm;
+}
+
+//==============================================================================
+void printProfile(
+    dart::gui::osg::ImGuiViewer* viewer,
+    const WorldPtr& world,
+    ::osg::Camera* camera,
+    const ::osg::Vec3& eye,
+    const ::osg::Vec3& center,
+    const ::osg::Vec3& up,
+    int profileFrames)
+{
+  if (profileFrames <= 0)
+    return;
+
+  camera->setViewMatrixAsLookAt(eye, center, up);
+
+  for (int i = 0; i < 5; ++i)
+    viewer->frame();
+
+  const auto renderStart = std::chrono::steady_clock::now();
+  for (int i = 0; i < profileFrames; ++i)
+    viewer->frame();
+  const auto renderEnd = std::chrono::steady_clock::now();
+
+  const auto stepStart = std::chrono::steady_clock::now();
+  for (int i = 0; i < profileFrames; ++i)
+    world->step();
+  const auto stepEnd = std::chrono::steady_clock::now();
+
+  const double renderSeconds
+      = std::chrono::duration<double>(renderEnd - renderStart).count();
+  const double stepSeconds
+      = std::chrono::duration<double>(stepEnd - stepStart).count();
+  const double renderMs = 1000.0 * renderSeconds / profileFrames;
+  const double stepMs = 1000.0 * stepSeconds / profileFrames;
+
+  std::cout << "[profile] render " << renderMs << " ms/frame ("
+            << (1000.0 / renderMs) << " FPS), world step " << stepMs
+            << " ms/step\n";
+}
+
+//==============================================================================
+bool clickIslandColorCheckbox(
+    dart::gui::osg::ImGuiViewer* viewer,
+    DeactivationWorldNode* node,
+    const Options& opt)
+{
+  auto* queue = viewer->getEventQueue();
+  if (!queue) {
+    std::cerr << "[headless] Viewer has no event queue.\n";
+    return false;
+  }
+
+  const bool before = node->getColorByIsland();
+  const float xFromLeftCandidates[]
+      = {26.0f * opt.guiScale, 34.0f * opt.guiScale, 42.0f * opt.guiScale};
+  const float yFromTopCandidates[]
+      = {134.0f * opt.guiScale,
+         230.0f * opt.guiScale,
+         254.0f * opt.guiScale,
+         282.0f * opt.guiScale,
+         306.0f * opt.guiScale};
+  bool after = before;
+  for (const float x : xFromLeftCandidates) {
+    for (const float yFromTop : yFromTopCandidates) {
+      const float yCandidates[] = {yFromTop, opt.height - yFromTop};
+      for (const float y : yCandidates) {
+        node->setColorByIsland(before);
+        queue->mouseMotion(x, y);
+        viewer->frame();
+
+        // Inject press and release before the next frame. This catches the real
+        // bug class where short clicks were lost if they completed between
+        // ImGui frames.
+        queue->mouseButtonPress(x, y, 1);
+        queue->mouseButtonRelease(x, y, 1);
+        viewer->frame();
+        viewer->frame();
+
+        after = node->getColorByIsland();
+        if (before != after)
+          break;
+      }
+      if (before != after)
+        break;
+    }
+    if (before != after)
+      break;
+  }
+
+  std::cout << "[headless] island-color checkbox " << (before ? "on" : "off")
+            << " -> " << (after ? "on" : "off") << "\n";
+  return before != after;
 }
 
 //==============================================================================
@@ -672,6 +1163,7 @@ void configureViewerAppearance(dart::gui::osg::ImGuiViewer* viewer)
 // regardless of wall-clock speed. Returns a process exit code.
 int runHeadless(
     dart::gui::osg::ImGuiViewer* viewer,
+    DeactivationWorldNode* node,
     const WorldPtr& world,
     const Options& opt,
     const ::osg::Vec3& eye,
@@ -726,9 +1218,56 @@ int runHeadless(
     std::cerr << "[headless] Viewer failed to realize off-screen.\n";
     return 1;
   }
+  if (auto* queue = viewer->getEventQueue()) {
+    queue->windowResize(0, 0, opt.width, opt.height);
+    queue->setMouseInputRange(0.0f, 0.0f, opt.width, opt.height);
+  }
 
   for (int i = 0; i < opt.settleSteps; ++i)
     world->step();
+
+  if (!opt.scriptedKeys.empty()) {
+    auto* queue = viewer->getEventQueue();
+    if (!queue) {
+      std::cerr << "[headless] Viewer has no event queue.\n";
+      return 1;
+    }
+
+    int expectedShots = 0;
+    int expectedDrops = 0;
+    for (const char key : opt.scriptedKeys) {
+      if (key == 'f') {
+        expectedShots = 1;
+        expectedDrops = 0;
+      } else if (key == 'd') {
+        expectedShots = 0;
+        expectedDrops = 1;
+      }
+
+      queue->keyPress(key, key);
+      queue->keyRelease(key, key);
+      viewer->frame();
+      viewer->frame();
+    }
+
+    int shots = 0, drops = 0;
+    node->countProjectiles(shots, drops);
+    std::cout << "[headless] scripted actions active " << shots
+              << " sphere(s), " << drops << " box(es)\n";
+    node->printProjectiles();
+    if (shots < expectedShots || drops < expectedDrops) {
+      std::cerr << "[headless] Scripted key sequence did not create the "
+                   "expected projectiles.\n";
+      return 1;
+    }
+  }
+
+  if (opt.scriptedIslandClick && !clickIslandColorCheckbox(viewer, node, opt)) {
+    std::cerr << "[headless] Island-color checkbox did not toggle.\n";
+    return 1;
+  }
+
+  printProfile(viewer, world, camera, eye, center, up, opt.profileFrames);
 
   // Re-pin the view (realize may have reset it) and draw, then capture.
   camera->setViewMatrixAsLookAt(eye, center, up);
@@ -753,18 +1292,22 @@ int main(int argc, char** argv)
   opt.guiScale = sanitizeGuiScale(opt.guiScale);
 
   auto world = World::create();
+  // This example prioritizes interactive real-time playback over high-frequency
+  // simulation accuracy.
+  world->setTimeStep(1.0 / 60.0);
   world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
   world->addSkeleton(createFloor());
 
-  // Automatic deactivation is on by default. Use a short dwell here so islands
-  // visibly go to sleep a fraction of a second after they settle.
+  // Automatic deactivation is opt-in. Enable it here with a short dwell so
+  // islands visibly go to sleep a fraction of a second after they settle.
   auto opts = world->getDeactivationOptions();
   opts.mEnabled = true;
   opts.mTimeUntilSleep = 0.3;
   world->setDeactivationOptions(opts);
 
-  // Four separated stacks -> four independent solver islands, each colored
-  // distinctly and tinted dim once it settles and sleeps.
+  // Four separated stacks -> four independent solver islands. The default
+  // coloring is a per-body gradient; press c or use the panel to color by
+  // solver island instead.
   const double s = kBox + 1e-3;
   const Eigen::Vector3d centers[]
       = {{-2.0, 0.0, 0.0}, {-0.7, 0.0, 0.0}, {0.7, 0.0, 0.0}, {2.0, 0.0, 0.0}};
@@ -776,19 +1319,22 @@ int main(int argc, char** argv)
           c + Eigen::Vector3d(0, 0, kBox / 2 + 0.01 + k * s)));
     }
   }
+  addProjectilePool(world);
 
   std::cout
       << "\n=== Island deactivation (sleeping) demo ===\n"
-      << "Each stack is an independent solver island, drawn in its own\n"
-      << "color. When an island settles and goes to sleep it is tinted to\n"
-      << "a dim, cool shade (its constraint solve, gravity, and\n"
-      << "integration are skipped until it is disturbed).\n\n"
+      << "Each stack is an independent solver island. Boxes use a per-body\n"
+      << "gradient by default; press c to color every object in an island\n"
+      << "with the same base color. Awake objects are bright; sleeping\n"
+      << "objects use a cooler muted tint (their constraint solve, gravity,\n"
+      << "and integration are skipped until disturbed).\n\n"
       << "The yellow arc shows the predicted path of the next sphere\n"
       << "(an estimate - gravity and the collision make the real hit\n"
       << "differ).\n\n"
       << "Keys:  f = shoot a sphere along the aim arc (wakes it on hit)\n"
       << "       d = drop a box onto the aimed stack\n"
       << "       t = toggle automatic deactivation on/off\n"
+      << "       c = toggle per-island coloring\n"
       << "       s = print awake/asleep stats\n\n";
 
   auto aim = std::make_shared<AimState>();
@@ -797,6 +1343,7 @@ int main(int argc, char** argv)
 
   osg::ref_ptr<dart::gui::osg::ImGuiViewer> viewer
       = new dart::gui::osg::ImGuiViewer();
+  viewer->setThreadingModel(osgViewer::ViewerBase::SingleThreaded);
   viewer->addWorldNode(node);
   configureViewerAppearance(viewer.get());
 
@@ -812,16 +1359,18 @@ int main(int argc, char** argv)
   viewer->getImGuiHandler()->addWidget(
       std::make_shared<IslandWidget>(viewer, node.get(), world, opt.guiScale));
 
-  viewer->addEventHandler(new KeyHandler(node.get(), world));
+  // Keep demo hotkeys independent of ImGui focus/capture state.
+  viewer->getEventHandlers().push_front(new KeyHandler(node.get(), world));
 
   const ::osg::Vec3 eye(6.0, 8.0, 4.0);
   const ::osg::Vec3 center(0.0, 0.0, 1.0);
   const ::osg::Vec3 up(0.0, 0.0, 1.0);
 
   if (opt.headless)
-    return runHeadless(viewer.get(), world, opt, eye, center, up);
+    return runHeadless(viewer.get(), node.get(), world, opt, eye, center, up);
 
-  viewer->setUpViewInWindow(0, 0, opt.width, opt.height);
+  viewer->setUpViewInWindow(
+      0, 0, initialWindowWidth(opt), initialWindowHeight(opt));
   viewer->getCameraManipulator()->setHomePosition(eye, center, up);
   viewer->setCameraManipulator(viewer->getCameraManipulator());
 
