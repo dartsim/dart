@@ -4,6 +4,7 @@ project(dart-examples)
 
 # None GUI examples
 add_subdirectory(hello_world)
+add_subdirectory(cylindrical_constraint)
 add_subdirectory(speed_test)
 
 # OSG renderer examples
@@ -13,6 +14,7 @@ add_subdirectory(biped_stand)
 add_subdirectory(box_stacking)
 add_subdirectory(boxes)
 add_subdirectory(drag_and_drop)
+add_subdirectory(dynamic_joint_constraints)
 add_subdirectory(empty)
 add_subdirectory(heightmap)
 add_subdirectory(hubo_puppet)

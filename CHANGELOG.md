@@ -2,6 +2,15 @@
 
 ## DART 6
 
+### [DART 6.19.0 (TBD)](https://github.com/dartsim/dart/milestone/TBD?closed=1)
+
+* Constraint
+
+  * Add `CylindricalJointConstraint` for runtime slide-and-rotate attachments
+    that leave translation along an axis and rotation about that axis free,
+    with headless and GUI examples covering DART 6.x dynamic joint constraints:
+    [#2918](https://github.com/dartsim/dart/issues/2918)
+
 ### [DART 6.18.0 (2026-06-05)](https://github.com/dartsim/dart/milestone/94?closed=1)
 
 DART 6.18.0 is a minor release on the DART 6 LTS line. It adds two contact and
