@@ -61,6 +61,20 @@ using dart::simulation::WorldPtr;
 namespace {
 
 constexpr double kBox = 0.3;
+constexpr double kDensity = 1000.0; // kg/m^3, water-like
+
+//==============================================================================
+// Sets a body's mass and moment of inertia from its shape's volume, so small
+// boxes/spheres get physically-sized inertia instead of the default (1,1,1)
+// moment (which is far too large and makes them tumble unrealistically).
+void setShapeInertia(dynamics::BodyNode* body, const dynamics::ShapePtr& shape)
+{
+  const double mass = kDensity * shape->getVolume();
+  dynamics::Inertia inertia;
+  inertia.setMass(mass);
+  inertia.setMoment(shape->computeInertia(mass));
+  body->setInertia(inertia);
+}
 
 //==============================================================================
 SkeletonPtr createFloor()
@@ -85,10 +99,10 @@ SkeletonPtr createBox(const std::string& name, const Eigen::Vector3d& pos)
 {
   auto skel = Skeleton::create(name);
   auto* body = skel->createJointAndBodyNodePair<FreeJoint>(nullptr).second;
-  body->setMass(1.0);
   auto shape = std::make_shared<BoxShape>(Eigen::Vector3d::Constant(kBox));
   body->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(
       shape);
+  setShapeInertia(body, shape);
   Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
   tf.translation() = pos;
   skel->getJoint(0)->setPositions(FreeJoint::convertToPositions(tf));
@@ -107,7 +121,6 @@ SkeletonPtr createProjectile(
 {
   auto skel = Skeleton::create(name);
   auto* body = skel->createJointAndBodyNodePair<FreeJoint>(nullptr).second;
-  body->setMass(3.0);
   dart::dynamics::ShapePtr shape;
   if (sphere)
     shape = std::make_shared<dart::dynamics::SphereShape>(0.25);
@@ -118,6 +131,7 @@ SkeletonPtr createProjectile(
       CollisionAspect,
       DynamicsAspect>(shape);
   sn->getVisualAspect()->setColor(Eigen::Vector3d(0.97, 0.55, 0.10));
+  setShapeInertia(body, shape);
 
   auto* joint = static_cast<FreeJoint*>(skel->getJoint(0));
   Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
@@ -210,6 +224,40 @@ public:
     updateAimLine();
   }
 
+  // Fire a sphere along the current aim arc; advances aim to the next stack.
+  void fireSphere()
+  {
+    const Launch L = sphereLaunch(mAim->targetIdx);
+    mWorld->addSkeleton(createProjectile(
+        "proj_shot" + std::to_string(++mFired), L.pos, L.vel, /*sphere=*/true));
+    ++mAim->targetIdx;
+  }
+
+  // Drop a box onto the currently-aimed stack; advances aim.
+  void dropBox()
+  {
+    const double targetX = kStackX[((mAim->targetIdx % 4) + 4) % 4];
+    mWorld->addSkeleton(createProjectile(
+        "proj_drop" + std::to_string(++mFired),
+        Eigen::Vector3d(targetX, 0.0, 4.0),
+        Eigen::Vector3d::Zero(),
+        /*sphere=*/false));
+    ++mAim->targetIdx;
+  }
+
+  // Counts awake vs. asleep stack skeletons (mobile, non-projectile).
+  void countStacks(int& awake, int& asleep) const
+  {
+    awake = 0;
+    asleep = 0;
+    for (std::size_t i = 0; i < mWorld->getNumSkeletons(); ++i) {
+      const auto& skel = mWorld->getSkeleton(i);
+      if (!skel->isMobile() || isProjectile(skel))
+        continue;
+      (skel->isResting() ? asleep : awake)++;
+    }
+  }
+
 private:
   // Recolor every box each frame from its current island index and sleep state.
   void recolorIslands()
@@ -286,14 +334,15 @@ private:
   WorldPtr mWorld;
   std::shared_ptr<AimState> mAim;
   dart::dynamics::LineSegmentShapePtr mAimLine;
+  int mFired{0};
 };
 
 //==============================================================================
 class KeyHandler : public osgGA::GUIEventHandler
 {
 public:
-  KeyHandler(WorldPtr world, std::shared_ptr<AimState> aim)
-    : mWorld(std::move(world)), mAim(std::move(aim))
+  KeyHandler(DeactivationWorldNode* node, WorldPtr world)
+    : mNode(node), mWorld(std::move(world))
   {
   }
 
@@ -304,52 +353,22 @@ public:
       return false;
 
     switch (ea.getKey()) {
-      case 'f': {
-        // Shoot a sphere along the aim trajectory: it flies in, hits the
-        // (sleeping) island, and wakes it on contact.
-        const Launch L = sphereLaunch(mAim->targetIdx);
-        mWorld->addSkeleton(createProjectile(
-            "proj_shot" + std::to_string(++mFired),
-            L.pos,
-            L.vel,
-            /*sphere=*/true));
-        std::cout << "[fire] launched a sphere at the stack near x="
-                  << L.pos.x() << "\n";
-        ++mAim->targetIdx;
+      case 'f':
+        mNode->fireSphere();
         return true;
-      }
-      case 'd': {
-        // Drop a box from above onto the aimed stack: it wakes whatever island
-        // it lands on (and merges islands if it bridges two).
-        const double targetX = kStackX[((mAim->targetIdx % 4) + 4) % 4];
-        mWorld->addSkeleton(createProjectile(
-            "proj_drop" + std::to_string(++mFired),
-            Eigen::Vector3d(targetX, 0.0, 4.0),
-            Eigen::Vector3d::Zero(),
-            /*sphere=*/false));
-        std::cout << "[drop] released a box above the stack near x=" << targetX
-                  << "\n";
-        ++mAim->targetIdx;
+      case 'd':
+        mNode->dropBox();
         return true;
-      }
       case 't': {
         auto opts = mWorld->getDeactivationOptions();
         opts.mEnabled = !opts.mEnabled;
         mWorld->setDeactivationOptions(opts);
-        std::cout << "[toggle] automatic deactivation "
-                  << (opts.mEnabled ? "ENABLED" : "DISABLED") << "\n";
         return true;
       }
       case 's': {
-        std::size_t asleep = 0, awake = 0;
-        for (std::size_t i = 0; i < mWorld->getNumSkeletons(); ++i) {
-          const auto& skel = mWorld->getSkeleton(i);
-          if (!skel->isMobile())
-            continue;
-          (skel->isResting() ? asleep : awake)++;
-        }
-        std::cout << "[stats] awake skeletons=" << awake
-                  << "  asleep=" << asleep << "\n";
+        int awake = 0, asleep = 0;
+        mNode->countStacks(awake, asleep);
+        std::cout << "[stats] awake=" << awake << " asleep=" << asleep << "\n";
         return true;
       }
       default:
@@ -358,9 +377,99 @@ public:
   }
 
 private:
+  DeactivationWorldNode* mNode;
   WorldPtr mWorld;
-  std::shared_ptr<AimState> mAim;
-  int mFired{0};
+};
+
+//==============================================================================
+// On-screen panel: instructions, live status, and option controls. Mirrors the
+// keyboard shortcuts with buttons so the demo is usable without the keyboard.
+class IslandWidget : public dart::gui::osg::ImGuiWidget
+{
+public:
+  IslandWidget(
+      dart::gui::osg::ImGuiViewer* viewer,
+      DeactivationWorldNode* node,
+      WorldPtr world)
+    : mViewer(viewer), mNode(node), mWorld(std::move(world))
+  {
+  }
+
+  void render() override
+  {
+    ImGui::SetNextWindowPos(ImVec2(10, 20));
+    ImGui::SetNextWindowSize(ImVec2(310, 380));
+    ImGui::SetNextWindowBgAlpha(0.6f);
+    if (!ImGui::Begin(
+            "Island deactivation", nullptr, ImGuiWindowFlags_NoResize)) {
+      ImGui::End();
+      return;
+    }
+
+    ImGui::TextWrapped(
+        "Stacks settle into solver islands, each drawn in its own color and "
+        "tinted dim when it goes to sleep (its dynamics are skipped).");
+    ImGui::Spacing();
+    ImGui::Separator();
+
+    if (ImGui::CollapsingHeader("Status", ImGuiTreeNodeFlags_DefaultOpen)) {
+      int awake = 0, asleep = 0;
+      mNode->countStacks(awake, asleep);
+      ImGui::Text("Sim time : %.2f s", mWorld->getTime());
+      ImGui::Text("FPS      : %.1f", ImGui::GetIO().Framerate);
+      ImGui::Text("Stacks   : %d awake, %d asleep", awake, asleep);
+      ImGui::TextColored(
+          asleep > 0 ? ImVec4(0.4f, 0.7f, 1.0f, 1.0f)
+                     : ImVec4(1.0f, 0.8f, 0.3f, 1.0f),
+          "%s",
+          asleep > 0 ? "(asleep islands are tinted blue/dim)"
+                     : "(all islands active)");
+    }
+
+    if (ImGui::CollapsingHeader("Options", ImGuiTreeNodeFlags_DefaultOpen)) {
+      bool simulating = mViewer->isSimulating();
+      if (ImGui::Checkbox("Run simulation", &simulating))
+        mViewer->simulate(simulating);
+
+      auto opts = mWorld->getDeactivationOptions();
+      bool enabled = opts.mEnabled;
+      if (ImGui::Checkbox("Automatic deactivation (sleeping)", &enabled)) {
+        opts.mEnabled = enabled;
+        mWorld->setDeactivationOptions(opts);
+      }
+
+      float dwell = static_cast<float>(opts.mTimeUntilSleep);
+      if (ImGui::SliderFloat("Time until sleep (s)", &dwell, 0.05f, 2.0f)) {
+        opts.mTimeUntilSleep = dwell;
+        mWorld->setDeactivationOptions(opts);
+      }
+    }
+
+    if (ImGui::CollapsingHeader("Actions", ImGuiTreeNodeFlags_DefaultOpen)) {
+      if (ImGui::Button("Shoot sphere (f)"))
+        mNode->fireSphere();
+      ImGui::SameLine();
+      if (ImGui::Button("Drop box (d)"))
+        mNode->dropBox();
+      ImGui::TextWrapped(
+          "A projectile wakes the island it hits; the yellow arc previews the "
+          "next sphere's path.");
+    }
+
+    if (ImGui::CollapsingHeader("Keys")) {
+      ImGui::Text("f - shoot a sphere along the aim arc");
+      ImGui::Text("d - drop a box onto the aimed stack");
+      ImGui::Text("t - toggle automatic deactivation");
+      ImGui::Text("s - print awake/asleep stats");
+    }
+
+    ImGui::End();
+  }
+
+private:
+  dart::gui::osg::ImGuiViewer* mViewer;
+  DeactivationWorldNode* mNode;
+  WorldPtr mWorld;
 };
 
 } // namespace
@@ -411,16 +520,30 @@ int main()
   osg::ref_ptr<DeactivationWorldNode> node
       = new DeactivationWorldNode(world, aim);
 
-  dart::gui::osg::Viewer viewer;
-  viewer.addWorldNode(node);
-  viewer.addEventHandler(new KeyHandler(world, aim));
-  viewer.setUpViewInWindow(0, 0, 1280, 800);
-  viewer.getCameraManipulator()->setHomePosition(
+  osg::ref_ptr<dart::gui::osg::ImGuiViewer> viewer
+      = new dart::gui::osg::ImGuiViewer();
+  viewer->addWorldNode(node);
+
+  // Soft shadows for depth.
+  node->setShadowTechnique(
+      dart::gui::osg::WorldNode::createDefaultShadowTechnique(viewer.get()));
+
+  // On-screen instructions / status / options panel.
+  viewer->getImGuiHandler()->addWidget(
+      std::make_shared<IslandWidget>(viewer, node.get(), world));
+
+  viewer->addEventHandler(new KeyHandler(node.get(), world));
+  viewer->setUpViewInWindow(0, 0, 1280, 800);
+  viewer->getCameraManipulator()->setHomePosition(
       ::osg::Vec3(6.0, 8.0, 4.0),
       ::osg::Vec3(0.0, 0.0, 1.0),
       ::osg::Vec3(0.0, 0.0, 1.0));
-  viewer.setCameraManipulator(viewer.getCameraManipulator());
-  viewer.run();
+  viewer->setCameraManipulator(viewer->getCameraManipulator());
+
+  // Start simulating immediately rather than opening paused.
+  viewer->simulate(true);
+
+  viewer->run();
 
   return 0;
 }
