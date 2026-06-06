@@ -43,12 +43,16 @@
 
 #include <osg/Camera>
 #include <osg/GraphicsContext>
+#include <osg/Light>
 #include <osg/Viewport>
+#include <osgShadow/SoftShadowMap>
 
+#include <algorithm>
 #include <iostream>
 #include <memory>
 #include <string>
 
+#include <cmath>
 #include <cstdlib>
 #include <cstring>
 
@@ -94,7 +98,7 @@ SkeletonPtr createFloor()
       VisualAspect,
       CollisionAspect,
       DynamicsAspect>(shape);
-  sn->getVisualAspect()->setColor(Eigen::Vector3d(0.55, 0.55, 0.6));
+  sn->getVisualAspect()->setColor(Eigen::Vector3d(0.40, 0.43, 0.47));
   Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
   tf.translation() = Eigen::Vector3d(0, 0, -0.05);
   body->getParentJoint()->setTransformFromParentBodyNode(tf);
@@ -166,16 +170,16 @@ bool isProjectile(const SkeletonPtr& skel)
 Eigen::Vector4d islandColor(int idx)
 {
   static const Eigen::Vector3d palette[]
-      = {{0.86, 0.22, 0.22},
-         {0.24, 0.70, 0.34},
-         {0.24, 0.48, 0.92},
-         {0.92, 0.72, 0.16},
-         {0.72, 0.32, 0.82},
-         {0.20, 0.76, 0.76},
-         {0.93, 0.52, 0.20}};
+      = {{0.25, 0.55, 0.95},
+         {0.95, 0.48, 0.22},
+         {0.18, 0.72, 0.58},
+         {0.86, 0.36, 0.62},
+         {0.92, 0.72, 0.22},
+         {0.58, 0.42, 0.86},
+         {0.35, 0.70, 0.86}};
   constexpr int n = static_cast<int>(sizeof(palette) / sizeof(palette[0]));
   if (idx < 0)
-    return Eigen::Vector4d(0.82, 0.82, 0.82, 1.0);
+    return Eigen::Vector4d(0.74, 0.76, 0.78, 1.0);
   const Eigen::Vector3d& c = palette[idx % n];
   return Eigen::Vector4d(c[0], c[1], c[2], 1.0);
 }
@@ -183,8 +187,8 @@ Eigen::Vector4d islandColor(int idx)
 // Dim, cool tint applied to an island that is asleep (deactivated).
 Eigen::Vector4d asleepTint(const Eigen::Vector4d& base)
 {
-  const Eigen::Vector3d cool(0.12, 0.15, 0.30);
-  const Eigen::Vector3d c = 0.35 * base.head<3>() + 0.65 * cool;
+  const Eigen::Vector3d cool(0.48, 0.56, 0.66);
+  const Eigen::Vector3d c = 0.60 * base.head<3>() + 0.40 * cool;
   return Eigen::Vector4d(c[0], c[1], c[2], 1.0);
 }
 
@@ -406,35 +410,48 @@ public:
 
   void render() override
   {
-    ImGui::SetNextWindowPos(ImVec2(10 * mScale, 20 * mScale));
-    ImGui::SetNextWindowSize(ImVec2(310 * mScale, 380 * mScale));
-    ImGui::SetNextWindowBgAlpha(0.85f);
+    const ImGuiIO& io = ImGui::GetIO();
+    const float margin = 12.0f * mScale;
+    const float maxWidth = std::max(1.0f, io.DisplaySize.x - 2.0f * margin);
+    const float maxHeight = std::max(1.0f, io.DisplaySize.y - 2.0f * margin);
+    const float width = std::min(320.0f * mScale, maxWidth);
+    const float height = std::min(400.0f * mScale, maxHeight);
+
+    ImGui::SetNextWindowPos(ImVec2(margin, margin), ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(width, height), ImGuiCond_Always);
+    ImGui::SetNextWindowBgAlpha(0.96f);
     if (!ImGui::Begin(
-            "Sleeping (island deactivation)",
+            "Sleeping Demo",
             nullptr,
-            ImGuiWindowFlags_NoResize)) {
+            ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse
+                | ImGuiWindowFlags_NoSavedSettings)) {
       ImGui::End();
       return;
     }
 
-    ImGui::TextWrapped(
-        "Stacks settle into solver islands, each drawn in its own color and "
-        "tinted dim when it goes to sleep (its dynamics are skipped).");
-    ImGui::Spacing();
-    ImGui::Separator();
-
     if (ImGui::CollapsingHeader("Status", ImGuiTreeNodeFlags_DefaultOpen)) {
       int awake = 0, asleep = 0;
       mNode->countStacks(awake, asleep);
-      ImGui::Text("Sim time : %.2f s", mWorld->getTime());
-      ImGui::Text("FPS      : %.1f", ImGui::GetIO().Framerate);
-      ImGui::Text("Stacks   : %d awake, %d asleep", awake, asleep);
-      ImGui::TextColored(
-          asleep > 0 ? ImVec4(0.4f, 0.7f, 1.0f, 1.0f)
-                     : ImVec4(1.0f, 0.8f, 0.3f, 1.0f),
-          "%s",
-          asleep > 0 ? "(asleep islands are tinted blue/dim)"
-                     : "(all islands active)");
+      ImGui::Text("Time  %.2f s", mWorld->getTime());
+      ImGui::SameLine();
+      ImGui::Text("FPS  %.0f", ImGui::GetIO().Framerate);
+      ImGui::Text("Stacks  %d awake / %d asleep", awake, asleep);
+
+      ImGui::ColorButton(
+          "awake_color",
+          ImVec4(0.25f, 0.55f, 0.95f, 1.0f),
+          ImGuiColorEditFlags_NoTooltip,
+          ImVec2(16.0f * mScale, 16.0f * mScale));
+      ImGui::SameLine();
+      ImGui::TextUnformatted("awake");
+      ImGui::SameLine();
+      ImGui::ColorButton(
+          "asleep_color",
+          ImVec4(0.34f, 0.55f, 0.83f, 1.0f),
+          ImGuiColorEditFlags_NoTooltip,
+          ImVec2(16.0f * mScale, 16.0f * mScale));
+      ImGui::SameLine();
+      ImGui::TextUnformatted("asleep");
     }
 
     if (ImGui::CollapsingHeader("Options", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -450,28 +467,30 @@ public:
       }
 
       float dwell = static_cast<float>(opts.mTimeUntilSleep);
-      if (ImGui::SliderFloat("Time until sleep (s)", &dwell, 0.05f, 2.0f)) {
+      ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+      if (ImGui::SliderFloat("Dwell time (s)", &dwell, 0.05f, 2.0f)) {
         opts.mTimeUntilSleep = dwell;
         mWorld->setDeactivationOptions(opts);
       }
     }
 
     if (ImGui::CollapsingHeader("Actions", ImGuiTreeNodeFlags_DefaultOpen)) {
-      if (ImGui::Button("Shoot sphere (f)"))
+      const float spacing = ImGui::GetStyle().ItemSpacing.x;
+      const float buttonWidth
+          = (ImGui::GetContentRegionAvail().x - spacing) * 0.5f;
+      if (ImGui::Button("Shoot sphere", ImVec2(buttonWidth, 0.0f)))
         mNode->fireSphere();
       ImGui::SameLine();
-      if (ImGui::Button("Drop box (d)"))
+      if (ImGui::Button("Drop box", ImVec2(buttonWidth, 0.0f)))
         mNode->dropBox();
-      ImGui::TextWrapped(
-          "A projectile wakes the island it hits; the yellow arc previews the "
-          "next sphere's path.");
+      ImGui::TextWrapped("The yellow arc previews the next sphere shot.");
     }
 
     if (ImGui::CollapsingHeader("Keys")) {
-      ImGui::Text("f - shoot a sphere along the aim arc");
-      ImGui::Text("d - drop a box onto the aimed stack");
-      ImGui::Text("t - toggle automatic deactivation");
-      ImGui::Text("s - print awake/asleep stats");
+      ImGui::BulletText("f  Shoot sphere");
+      ImGui::BulletText("d  Drop box");
+      ImGui::BulletText("t  Toggle sleeping");
+      ImGui::BulletText("s  Print stats");
     }
 
     ImGui::End();
@@ -561,6 +580,93 @@ bool parseArgs(int argc, char** argv, Options& opt)
 }
 
 //==============================================================================
+float sanitizeGuiScale(float scale)
+{
+  if (!std::isfinite(scale) || scale <= 0.0f)
+    return 1.0f;
+
+  return std::clamp(scale, 0.75f, 2.5f);
+}
+
+//==============================================================================
+void configureImGuiStyle(float scale)
+{
+  ImGuiIO& io = ImGui::GetIO();
+  io.FontGlobalScale = scale;
+
+  ImGui::StyleColorsDark();
+  ImGuiStyle& style = ImGui::GetStyle();
+  style.WindowRounding = 4.0f;
+  style.ChildRounding = 3.0f;
+  style.FrameRounding = 3.0f;
+  style.GrabRounding = 3.0f;
+  style.ScrollbarRounding = 3.0f;
+  style.WindowBorderSize = 1.0f;
+  style.FrameBorderSize = 0.0f;
+  style.WindowPadding = ImVec2(12.0f, 10.0f);
+  style.FramePadding = ImVec2(8.0f, 5.0f);
+  style.ItemSpacing = ImVec2(8.0f, 7.0f);
+  style.ScrollbarSize = 14.0f;
+  style.ScaleAllSizes(scale);
+
+  auto& colors = style.Colors;
+  colors[ImGuiCol_Text] = ImVec4(0.93f, 0.95f, 0.97f, 1.0f);
+  colors[ImGuiCol_WindowBg] = ImVec4(0.075f, 0.085f, 0.105f, 1.0f);
+  colors[ImGuiCol_Border] = ImVec4(0.35f, 0.42f, 0.52f, 0.80f);
+  colors[ImGuiCol_FrameBg] = ImVec4(0.14f, 0.18f, 0.23f, 1.0f);
+  colors[ImGuiCol_FrameBgHovered] = ImVec4(0.22f, 0.30f, 0.39f, 1.0f);
+  colors[ImGuiCol_FrameBgActive] = ImVec4(0.26f, 0.38f, 0.50f, 1.0f);
+  colors[ImGuiCol_TitleBg] = ImVec4(0.11f, 0.14f, 0.18f, 1.0f);
+  colors[ImGuiCol_TitleBgActive] = ImVec4(0.14f, 0.19f, 0.25f, 1.0f);
+  colors[ImGuiCol_Header] = ImVec4(0.18f, 0.26f, 0.34f, 1.0f);
+  colors[ImGuiCol_HeaderHovered] = ImVec4(0.25f, 0.36f, 0.47f, 1.0f);
+  colors[ImGuiCol_HeaderActive] = ImVec4(0.30f, 0.43f, 0.55f, 1.0f);
+  colors[ImGuiCol_Button] = ImVec4(0.20f, 0.32f, 0.43f, 1.0f);
+  colors[ImGuiCol_ButtonHovered] = ImVec4(0.28f, 0.45f, 0.60f, 1.0f);
+  colors[ImGuiCol_ButtonActive] = ImVec4(0.32f, 0.52f, 0.68f, 1.0f);
+  colors[ImGuiCol_CheckMark] = ImVec4(0.35f, 0.66f, 0.95f, 1.0f);
+  colors[ImGuiCol_SliderGrab] = ImVec4(0.35f, 0.66f, 0.95f, 1.0f);
+  colors[ImGuiCol_SliderGrabActive] = ImVec4(0.55f, 0.78f, 1.0f, 1.0f);
+}
+
+//==============================================================================
+void configureViewerAppearance(dart::gui::osg::ImGuiViewer* viewer)
+{
+  viewer->getCamera()->setClearColor(::osg::Vec4(0.76f, 0.80f, 0.85f, 1.0f));
+  viewer->switchHeadlights(false);
+
+  auto key = viewer->getLightSource(0)->getLight();
+  if (key) {
+    key->setPosition(::osg::Vec4(-3.5f, -4.5f, 7.0f, 0.0f));
+    key->setAmbient(::osg::Vec4(0.18f, 0.18f, 0.20f, 1.0f));
+    key->setDiffuse(::osg::Vec4(0.82f, 0.80f, 0.74f, 1.0f));
+    key->setSpecular(::osg::Vec4(0.35f, 0.35f, 0.35f, 1.0f));
+  }
+
+  auto fill = viewer->getLightSource(1)->getLight();
+  if (fill) {
+    fill->setPosition(::osg::Vec4(5.0f, 4.0f, 6.0f, 0.0f));
+    fill->setAmbient(::osg::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
+    fill->setDiffuse(::osg::Vec4(0.24f, 0.28f, 0.34f, 1.0f));
+    fill->setSpecular(::osg::Vec4(0.08f, 0.08f, 0.10f, 1.0f));
+  }
+}
+
+//==============================================================================
+::osg::ref_ptr<osgShadow::ShadowTechnique> createDemoShadowTechnique(
+    const dart::gui::osg::Viewer* viewer)
+{
+  ::osg::ref_ptr<osgShadow::SoftShadowMap> sm = new osgShadow::SoftShadowMap;
+  const auto mapResolution = static_cast<short>(std::pow(2, 13));
+  sm->setTextureSize(::osg::Vec2s(mapResolution, mapResolution));
+  sm->setLight(viewer->getLightSource(0));
+  sm->setSoftnessWidth(0.004f);
+  sm->setJitteringScale(16.0f);
+  sm->setBias(0.001f);
+  return sm;
+}
+
+//==============================================================================
 // Render the scene once into an off-screen pbuffer and write a PNG, without
 // opening a window. The world is stepped directly so the result is the same
 // regardless of wall-clock speed. Returns a process exit code.
@@ -574,6 +680,8 @@ int runHeadless(
 {
   ::osg::ref_ptr<::osg::GraphicsContext::Traits> traits
       = new ::osg::GraphicsContext::Traits;
+  traits->readDISPLAY();
+  traits->setUndefinedScreenDetailsToDefaultScreen();
   traits->x = 0;
   traits->y = 0;
   traits->width = opt.width;
@@ -642,6 +750,7 @@ int main(int argc, char** argv)
   Options opt;
   if (!parseArgs(argc, argv, opt))
     return 0;
+  opt.guiScale = sanitizeGuiScale(opt.guiScale);
 
   auto world = World::create();
   world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
@@ -689,24 +798,15 @@ int main(int argc, char** argv)
   osg::ref_ptr<dart::gui::osg::ImGuiViewer> viewer
       = new dart::gui::osg::ImGuiViewer();
   viewer->addWorldNode(node);
+  configureViewerAppearance(viewer.get());
 
   // Scale the ImGui panel for HiDPI displays (the default 13px font is tiny on
-  // a 4K screen). The ImGui context already exists once the viewer is built,
-  // and its font atlas is not rasterized until the first frame, so we can
-  // rebuild the default font at the scaled pixel size here for crisp text
-  // (rather than bilinear-upscaling a 13px atlas via FontGlobalScale).
-  if (opt.guiScale != 1.0f) {
-    ImGuiIO& io = ImGui::GetIO();
-    ImFontConfig fontConfig;
-    fontConfig.SizePixels = 13.0f * opt.guiScale;
-    io.Fonts->Clear();
-    io.Fonts->AddFontDefault(&fontConfig);
-    ImGui::GetStyle().ScaleAllSizes(opt.guiScale);
-  }
+  // a 4K screen). Scale both style metrics and font rendering from the same
+  // value so controls and labels grow together.
+  configureImGuiStyle(opt.guiScale);
 
-  // Soft shadows for depth.
-  node->setShadowTechnique(
-      dart::gui::osg::WorldNode::createDefaultShadowTechnique(viewer.get()));
+  // Soft shadows for depth without the blocky, over-dark default demo look.
+  node->setShadowTechnique(createDemoShadowTechnique(viewer.get()));
 
   // On-screen instructions / status / options panel.
   viewer->getImGuiHandler()->addWidget(

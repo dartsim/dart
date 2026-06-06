@@ -520,6 +520,14 @@ void ImGuiHandler::render(::osg::RenderInfo& /*renderInfo*/)
   ImGui::Render();
 
   auto* drawData = ImGui::GetDrawData();
+#ifdef IMGUI_HAS_TEXTURES
+  if (drawData->Textures) {
+    for (ImTextureData* texture : *drawData->Textures) {
+      if (texture->Status != ImTextureStatus_OK)
+        ImGui_ImplOpenGL2_UpdateTexture(texture);
+    }
+  }
+#endif
   ImGui_ImplOpenGL2_RenderDrawData(drawData);
 }
 
