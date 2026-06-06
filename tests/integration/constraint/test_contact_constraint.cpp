@@ -32,6 +32,7 @@
 
 #include "helpers/gtest_utils.hpp"
 
+#include "dart/collision/dart/dart_collision_detector.hpp"
 #include "dart/common/All.hpp"
 #include "dart/constraint/All.hpp"
 #include "dart/dynamics/All.hpp"
@@ -219,4 +220,56 @@ TEST(ContactConstraint, MalformedContactGuardedCallbacksAreNoops)
   EXPECT_DOUBLE_EQ(values[0], 1.0);
   EXPECT_DOUBLE_EQ(values[1], 2.0);
   EXPECT_DOUBLE_EQ(values[2], 3.0);
+}
+
+//==============================================================================
+TEST(ContactConstraint, FrictionRowsUseCoefficientBoundsCoupledToNormalRow)
+{
+  auto skeleton1 = dynamics::Skeleton::create("skeleton1");
+  auto pair1 = skeleton1->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  auto bodyNode1 = pair1.second;
+  bodyNode1->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones()));
+  skeleton1->setPosition(3, 0.0);
+
+  auto skeleton2 = dynamics::Skeleton::create("skeleton2");
+  auto pair2 = skeleton2->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  auto bodyNode2 = pair2.second;
+  bodyNode2->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones()));
+  skeleton2->setPosition(3, 0.9);
+
+  auto detector = collision::DartCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+  group->addShapeFramesOf(skeleton1.get());
+  group->addShapeFramesOf(skeleton2.get());
+
+  collision::CollisionOption option;
+  option.maxNumContacts = 1;
+  collision::CollisionResult result;
+  group->collide(option, &result);
+  ASSERT_GT(result.getNumContacts(), 0u);
+
+  auto contact = result.getContact(0);
+
+  constraint::ContactSurfaceParams params;
+  params.mPrimaryFrictionCoeff = 2.5;
+  params.mSecondaryFrictionCoeff = 2.5;
+
+  ExposedContactConstraint constraint(contact, 0.001, params);
+  ASSERT_EQ(constraint.getDimension(), 3u);
+
+  ConstraintInfoStorage storage(constraint.getDimension());
+  constraint.getInformation(&storage.info);
+
+  EXPECT_DOUBLE_EQ(storage.lo[0], 0.0);
+  EXPECT_EQ(storage.findex[0], -1);
+
+  EXPECT_DOUBLE_EQ(storage.lo[1], -2.5);
+  EXPECT_DOUBLE_EQ(storage.hi[1], 2.5);
+  EXPECT_EQ(storage.findex[1], 0);
+
+  EXPECT_DOUBLE_EQ(storage.lo[2], -2.5);
+  EXPECT_DOUBLE_EQ(storage.hi[2], 2.5);
+  EXPECT_EQ(storage.findex[2], 0);
 }
