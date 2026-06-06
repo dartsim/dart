@@ -3888,6 +3888,18 @@ void Skeleton::setSmoothedAngularSpeed(double _speed)
 }
 
 //==============================================================================
+int Skeleton::getIslandIndex() const
+{
+  return mIslandIndex;
+}
+
+//==============================================================================
+void Skeleton::setIslandIndex(int _index)
+{
+  mIslandIndex = _index;
+}
+
+//==============================================================================
 double Skeleton::getRestDwellTime() const
 {
   return mRestDwellTime;

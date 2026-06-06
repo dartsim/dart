@@ -761,6 +761,15 @@ public:
   double getSmoothedAngularSpeed() const;
   void setSmoothedAngularSpeed(double _speed);
 
+  /// Returns the index of the solver island (constrained group) this skeleton
+  /// belonged to on the most recent step, or -1 if it was not in any island.
+  /// Populated by the constraint solver only when automatic deactivation is
+  /// enabled (otherwise -1). Intended for visualization/diagnostics.
+  int getIslandIndex() const;
+
+  /// Sets the island index. Called by the constraint solver each step.
+  void setIslandIndex(int _index);
+
   /// Returns the accumulated time (seconds) this skeleton has remained quiet
   /// without yet being put to sleep.
   double getRestDwellTime() const;
@@ -1389,6 +1398,12 @@ protected:
   /// (mIsResting) only when every member is a candidate. Managed by
   /// World::step's rest-detection pass.
   bool mSleepCandidate = false;
+
+  /// Index of the solver island (constrained group) this skeleton belonged to
+  /// on the most recent step, or -1 if it was not in any island. Stamped by the
+  /// constraint solver when automatic deactivation is enabled; useful for
+  /// visualizing/debugging the island partition. -1 when the feature is off.
+  int mIslandIndex = -1;
 
   /// Accumulated time (seconds) this skeleton has remained quiet without yet
   /// being put to sleep. Reset to zero whenever it is disturbed or woken.

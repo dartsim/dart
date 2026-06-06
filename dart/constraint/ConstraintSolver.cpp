@@ -680,8 +680,10 @@ void ConstraintSolver::buildConstrainedGroups()
     // freeze flags so a body that just lost all of its contacts resumes
     // simulating (e.g. a stack member that was kicked away).
     if (mDeactivationActive) {
-      for (auto& skeleton : mSkeletons)
+      for (auto& skeleton : mSkeletons) {
         skeleton->setResting(false);
+        skeleton->setIslandIndex(-1);
+      }
     }
     return;
   }
@@ -757,14 +759,18 @@ void ConstraintSolver::buildConstrainedGroups()
           = mGroupResting[it->second] && skeleton->isSleepCandidate();
     }
 
-    // Pass 2: stamp the island-atomic freeze flag. A grouped skeleton freezes
-    // iff its whole island rests; an ungrouped skeleton is never frozen by the
-    // solver (isolated bodies are cheap and handled by World::step directly).
+    // Pass 2: stamp the island-atomic freeze flag and the island index. A
+    // grouped skeleton freezes iff its whole island rests; an ungrouped
+    // skeleton is never frozen by the solver (isolated bodies are cheap and
+    // handled by World::step directly). The island index is exposed for
+    // visualization/diagnostics (e.g. coloring islands in a viewer).
     for (const auto& skeleton : mSkeletons) {
       const auto root = ConstraintBase::getRootSkeleton(skeleton);
       const auto it = rootToGroup.find(root.get());
-      skeleton->setResting(
-          it != rootToGroup.end() && mGroupResting[it->second]);
+      const bool grouped = (it != rootToGroup.end());
+      skeleton->setResting(grouped && mGroupResting[it->second]);
+      skeleton->setIslandIndex(
+          grouped ? static_cast<int>(it->second) : -1);
     }
   }
 
