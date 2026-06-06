@@ -1,5 +1,15 @@
 # Resume: IPC Deformable Solver
 
+## Current Reality (2026-06-06)
+
+Use this folder's `README.md`, `docs/plans/dashboard.md`, and the current code as
+the live status. The branch/PR handoff sections below are historical evidence
+from prior IPC deformable slices; do not treat their branch names, push
+instructions, or "current branch" language as current checkout state. Current
+deformable work should keep entering through the DART-owned deformable solver
+families, shared Newton-barrier/VBD components, the built-in World schedule, and
+facade-safe `World`/`DeformableBodyOptions`/diagnostics surfaces.
+
 ## Current State (2026-05-31) — PLAN-081 M1–M6 COMPLETE; M7 matrix-free CG in progress
 
 This session drove the experimental deformable solver from "mass-spring scaffold"

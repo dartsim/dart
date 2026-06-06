@@ -1047,6 +1047,67 @@ TEST(Serialization, PreservesWorldTimingMetadata)
   EXPECT_TRUE(world2.getGravity().isApprox(Eigen::Vector3d(0.0, -1.5, -3.0)));
 }
 
+// Test save/load preserves World-level solver-family and policy metadata.
+TEST(Serialization, PreservesWorldSolverOptions)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::WorldOptions options;
+  options.rigidBodySolver = sx::RigidBodySolver::Ipc;
+  options.multibodyOptions.integrationFamily = "variational integrator";
+  options.differentiable = true;
+  options.contactSolverMethod = sx::ContactSolverMethod::BoxedLcp;
+  options.contactGradientMode = sx::ContactGradientMode::PreContactSurrogate;
+
+  sx::World world1(options);
+
+  std::stringstream ss;
+  world1.saveBinary(ss);
+
+  sx::World world2;
+  world2.loadBinary(ss);
+
+  EXPECT_EQ(world2.getRigidBodySolver(), sx::RigidBodySolver::Ipc);
+  EXPECT_EQ(
+      world2.getMultibodyOptions().integrationFamily, "variational integrator");
+  EXPECT_TRUE(world2.isDifferentiable());
+  EXPECT_EQ(world2.getContactSolverMethod(), sx::ContactSolverMethod::BoxedLcp);
+  EXPECT_EQ(
+      world2.getContactGradientMode(),
+      sx::ContactGradientMode::PreContactSurrogate);
+}
+
+// Test loadBinary resets solver-family and policy metadata when reading records
+// that predate the versioned World-level solver-option tail.
+TEST(Serialization, LegacyLoadResetsMissingWorldSolverOptionsToDefaults)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World legacySource;
+  std::stringstream legacy;
+  saveLegacyWorldWithCurrentEntities(
+      legacy, legacySource, /*legacyVersion=*/14u);
+
+  sx::WorldOptions options;
+  options.rigidBodySolver = sx::RigidBodySolver::Ipc;
+  options.multibodyOptions.integrationFamily = "variational integrator";
+  options.differentiable = true;
+  options.contactSolverMethod = sx::ContactSolverMethod::BoxedLcp;
+  options.contactGradientMode = sx::ContactGradientMode::PreContactSurrogate;
+  sx::World loaded(options);
+
+  loaded.loadBinary(legacy);
+
+  EXPECT_EQ(
+      loaded.getRigidBodySolver(), sx::RigidBodySolver::SequentialImpulse);
+  EXPECT_EQ(loaded.getMultibodyOptions().integrationFamily, "semi-implicit");
+  EXPECT_FALSE(loaded.isDifferentiable());
+  EXPECT_EQ(
+      loaded.getContactSolverMethod(),
+      sx::ContactSolverMethod::SequentialImpulse);
+  EXPECT_EQ(loaded.getContactGradientMode(), sx::ContactGradientMode::Analytic);
+}
+
 // Test that legacy world records without versioned gravity metadata leave
 // trailing stream bytes untouched instead of consuming them as gravity.
 TEST(Serialization, LegacyWorldMetadataDoesNotConsumeTrailingBytesAsGravity)
@@ -1069,11 +1130,13 @@ TEST(Serialization, LegacyWorldMetadataDoesNotConsumeTrailingBytesAsGravity)
       legacyRecord.data() + sizeof(std::uint32_t),
       &legacyVersion,
       sizeof(legacyVersion));
-  // Format v3 appends a one-byte differentiable flag after the deformable-body
-  // counter. Drop it so the remaining record matches the v2 tail layout this
+  // Format v6+ appends World option metadata after the deformable-body counter.
+  // Drop the v15 tail so the remaining record matches the v2 tail layout this
   // legacy-compatibility check was written against (deformable counter, then
   // the gravity block as the last three doubles).
-  legacyRecord.pop_back();
+  constexpr std::size_t worldOptionTailBytes = 5u;
+  ASSERT_GE(legacyRecord.size(), worldOptionTailBytes);
+  legacyRecord.resize(legacyRecord.size() - worldOptionTailBytes);
   legacyRecord.resize(legacyRecord.size() - 3 * sizeof(double));
 
   constexpr std::string_view trailerBytes = "0123456789abcdefghijklmn";

@@ -169,16 +169,16 @@ same shape is usable across domains and `World::add*` stays uniform.
 
 ### Solver method families
 
-| Domain     | Method option                                                                       | Status          | Selected by                                                      |
-| ---------- | ----------------------------------------------------------------------------------- | --------------- | ---------------------------------------------------------------- |
-| Rigid      | Sequential-impulse (default)                                                        | ✅ available    | `World::setRigidBodySolver(SequentialImpulse)`                   |
-| Rigid      | IPC (incremental potential contact)                                                 | 🧪 experimental | `World::setRigidBodySolver(Ipc)`                                 |
-| Rigid      | Contact normal: sequential-impulse / boxed-LCP                                      | 🧪 experimental | `WorldOptions::contactSolverMethod`                              |
-| Rigid      | Differentiable gradient: analytic / complementarity-aware / pre-contact surrogate   | 🧪 experimental | `WorldOptions::differentiable` + `World::setContactGradientMode` |
-| Multibody  | Semi-implicit articulated-body forward dynamics (default)                           | ✅ available    | `MultibodyOptions::integrationFamily = "semi-implicit"`          |
-| Multibody  | Variational integrator (discrete-mechanics; linear-time form is PLAN-082, proposed) | 🧪 experimental | `MultibodyOptions::integrationFamily = "variational integrator"` |
-| Deformable | Mass-spring (default) / stable neo-Hookean FEM (opt-in)                             | 🧪 experimental | `DeformableBodyOptions`                                          |
-| Deformable | Projected-Newton + self-contact barrier / friction; VBD block descent               | 🧪 experimental | `World::configureDeformableSolver`                               |
+| Domain     | Method option                                                                       | Status          | Selected by                                                                 |
+| ---------- | ----------------------------------------------------------------------------------- | --------------- | --------------------------------------------------------------------------- |
+| Rigid      | Sequential-impulse (default)                                                        | ✅ available    | `WorldOptions::rigidBodySolver` or `World::setRigidBodySolver(...)`         |
+| Rigid      | IPC (incremental potential contact)                                                 | 🧪 experimental | `WorldOptions::rigidBodySolver` or `World::setRigidBodySolver(...)`         |
+| Rigid      | Contact normal/friction: sequential-impulse / boxed-LCP                             | 🧪 experimental | `WorldOptions::contactSolverMethod`                                         |
+| Rigid      | Differentiable gradient: analytic / complementarity-aware / pre-contact surrogate   | 🧪 experimental | `WorldOptions::differentiable`, `WorldOptions::contactGradientMode`, setter |
+| Multibody  | Semi-implicit articulated-body forward dynamics (default)                           | ✅ available    | `WorldOptions::multibodyOptions` or `World::setMultibodyOptions(...)`       |
+| Multibody  | Variational integrator (discrete-mechanics; linear-time form is PLAN-082, proposed) | 🧪 experimental | `WorldOptions::multibodyOptions` or `World::setMultibodyOptions(...)`       |
+| Deformable | Mass-spring (default) / stable neo-Hookean FEM (opt-in)                             | 🧪 experimental | `DeformableBodyOptions`                                                     |
+| Deformable | Projected-Newton + self-contact barrier / friction; VBD block descent               | 🧪 experimental | `World::configureDeformableSolver`                                          |
 
 New paper methods enter through the nearest DART-owned family (rigid IPC and
 deformable IPC under the Newton-barrier family; VBD/AVBD under the VBD family;
@@ -229,15 +229,22 @@ and [shared CUDA device substrate](https://github.com/dartsim/dart/blob/main/doc
 
 Multi-everything must not make the common path hard. The configuration contract:
 
-- **Default selection from content.** A rigid/articulated-only world gets the
-  articulated-body forward-dynamics + LCP-contacts default — DART 7's own native
-  implementation, gated to reach parity with the DART 6 rigid-body capability set
-  — with no solver vocabulary. The easy path is
-  `World` → `addRigidBody`/`addMultibody` → `step`.
+- **Default selection from content.** A free-rigid world gets the
+  sequential-impulse path, an articulated multibody world gets the
+  semi-implicit articulated-body path, and deformable bodies get the deformable
+  dynamics path. The built-in schedule emits only the domains that are present,
+  so the easy path remains `World` → `addRigidBody`/`addMultibody`/
+  `addDeformableBody` → `step` with no solver vocabulary.
 - **Method-family names, not engine or backend names.** Advanced users request a
   capability (e.g. `"variational integrator"`, IPC, boxed-LCP) or set a policy.
   The `World` maps it to an internal solver or returns an actionable
   unsupported-capability error.
+- **Construction-time grouping.** `WorldOptions` carries initial domain solver
+  choices and policies, while post-construction properties/setters remain for
+  interactive workflows. This keeps defaults, bindings, and schedule
+  preparation on one validated path. Result-affecting World-level solver
+  choices round-trip through binary save/load and replay so restarts do not
+  silently fall back to default families.
 - **No backend leakage.** Backend, ECS storage, registry, and execution types
   stay internal. Switching or adding a backend preserves the public API.
 - **Deterministic by default.** `World::step()` is synchronous and reproducible;

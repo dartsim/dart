@@ -1401,9 +1401,35 @@ def test_experimental_world_gravity():
 def test_experimental_multibody_options_selector():
     sx = _simulation_experimental()
 
+    configured = sx.World(
+        rigid_body_solver=sx.RigidBodySolver.IPC,
+        multibody_options=sx.MultibodyOptions(
+            integration_family="variational integrator"
+        ),
+    )
+    assert configured.rigid_body_solver == sx.RigidBodySolver.IPC
+    assert configured.multibody_options.integration_family == "variational integrator"
+
+    policy_configured = sx.World(
+        contact_solver_method=sx.ContactSolverMethod.BOXED_LCP,
+        contact_gradient_mode=sx.ContactGradientMode.PRE_CONTACT_SURROGATE,
+    )
+    assert policy_configured.contact_solver_method == sx.ContactSolverMethod.BOXED_LCP
+    assert (
+        policy_configured.contact_gradient_mode
+        == sx.ContactGradientMode.PRE_CONTACT_SURROGATE
+    )
+    policy_configured.contact_gradient_mode = sx.ContactGradientMode.ANALYTIC
+    assert policy_configured.contact_gradient_mode == sx.ContactGradientMode.ANALYTIC
+    with pytest.raises(TypeError):
+        policy_configured.contact_gradient_mode = 99
+
+    with pytest.raises(Exception):
+        sx.World(multibody_options=sx.MultibodyOptions(integration_family="nonsense"))
+
     world = sx.World()
-    # Solver config is a value object; selection is by documented method-family
-    # name only (no per-setting setters).
+    # Multibody solver config is a value object; selection is by documented
+    # method-family name only.
     assert world.multibody_options.integration_family == "semi-implicit"
     world.multibody_options = sx.MultibodyOptions(
         integration_family="variational integrator"

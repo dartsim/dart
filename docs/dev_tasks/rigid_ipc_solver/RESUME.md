@@ -1,5 +1,18 @@
 # Resume: Rigid IPC Solver
 
+## Current Reality (2026-06-06)
+
+Use this folder's `README.md`, `docs/plans/dashboard.md`, and the current code as
+the live status. The long session log below is historical evidence for the rigid
+IPC corpus/parity effort; branch names, `/home/js/...` checkout paths, pushed
+feature-branch notes, and "No push or PR mutation" statements belong to those
+past slices. Current rigid IPC work should keep using the DART-owned
+`RigidBodySolver::Ipc` method-family opt-in, the shared built-in World step
+schedule, and the open README/dashboard next steps: robust normal-push for
+kinematic obstacles, the performance climb, remaining corpus/parity coverage,
+and articulated-scene support without exposing solver registries, ECS storage,
+external project names, or backend resources in public API.
+
 ## Session 2026-06-01: generic hash-grid source row
 
 Delivered a bounded Phase 2/6 algorithm-manifest slice:
@@ -1495,8 +1508,10 @@ replay without an explicit `assetRoot`. The newest importer slice preserves
 comparison-script material Young/Poisson values plus energy model, warm-start,
 self-collision, and gravity-disable metadata. It also adds the first runtime
 replay regression that enters simulation mode and steps a fixture-populated
-experimental `World` through the default rigid-body pipeline, verifying fixture
-replay still does not select IPC solver behavior. The latest CCD slice embeds
+experimental `World` through the default sequential-impulse policy, verifying
+fixture replay does not silently select IPC solver behavior. Opt-in IPC stepping
+is now routed through `WorldOptions::rigidBodySolver` /
+`RigidBodySolver::Ipc`. The latest CCD slice embeds
 the first audited root `tests/data/ccd-test-000..003.json` rows as hermetic load
 regressions and full-step miss regressions, and adds first upstream-style
 edge-vertex, edge-edge, and face-vertex expected-TOI evaluator rows. The newest

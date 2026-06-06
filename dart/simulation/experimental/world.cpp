@@ -55,6 +55,7 @@
 #include "dart/simulation/experimental/detail/deformable_vbd/rigid_world_contact.hpp"
 #include "dart/simulation/experimental/detail/entity_conversion.hpp"
 #include "dart/simulation/experimental/detail/world_registry_access.hpp"
+#include "dart/simulation/experimental/detail/world_step_schedule.hpp"
 #include "dart/simulation/experimental/detail/world_storage.hpp"
 #include "dart/simulation/experimental/diff/physical_parameter.hpp"
 #include "dart/simulation/experimental/diff/step_derivatives.hpp"
@@ -929,9 +930,161 @@ bool isValidRigidBodySolver(RigidBodySolver solver)
 }
 
 //==============================================================================
+bool isValidContactSolverMethod(ContactSolverMethod method)
+{
+  switch (method) {
+    case ContactSolverMethod::SequentialImpulse:
+    case ContactSolverMethod::BoxedLcp:
+      return true;
+  }
+
+  return false;
+}
+
+//==============================================================================
+bool isValidContactGradientMode(ContactGradientMode mode)
+{
+  switch (mode) {
+    case ContactGradientMode::Analytic:
+    case ContactGradientMode::ComplementarityAware:
+    case ContactGradientMode::PreContactSurrogate:
+      return true;
+  }
+
+  return false;
+}
+
+//==============================================================================
+std::uint8_t encodeRigidBodySolver(RigidBodySolver solver)
+{
+  switch (solver) {
+    case RigidBodySolver::SequentialImpulse:
+      return 0u;
+    case RigidBodySolver::Ipc:
+      return 1u;
+  }
+
+  DART_EXPERIMENTAL_THROW_T(
+      InvalidArgumentException, "Rigid-body solver is invalid");
+  return 0u;
+}
+
+//==============================================================================
+RigidBodySolver decodeRigidBodySolver(std::uint8_t value)
+{
+  switch (value) {
+    case 0u:
+      return RigidBodySolver::SequentialImpulse;
+    case 1u:
+      return RigidBodySolver::Ipc;
+  }
+
+  DART_EXPERIMENTAL_THROW_T(
+      InvalidArgumentException,
+      "Serialized World rigid-body solver value is invalid");
+  return RigidBodySolver::SequentialImpulse;
+}
+
+//==============================================================================
+std::uint8_t encodeContactSolverMethod(ContactSolverMethod method)
+{
+  switch (method) {
+    case ContactSolverMethod::SequentialImpulse:
+      return 0u;
+    case ContactSolverMethod::BoxedLcp:
+      return 1u;
+  }
+
+  DART_EXPERIMENTAL_THROW_T(
+      InvalidArgumentException, "Contact solver method is invalid");
+  return 0u;
+}
+
+//==============================================================================
+ContactSolverMethod decodeContactSolverMethod(std::uint8_t value)
+{
+  switch (value) {
+    case 0u:
+      return ContactSolverMethod::SequentialImpulse;
+    case 1u:
+      return ContactSolverMethod::BoxedLcp;
+  }
+
+  DART_EXPERIMENTAL_THROW_T(
+      InvalidArgumentException,
+      "Serialized World contact solver method value is invalid");
+  return ContactSolverMethod::SequentialImpulse;
+}
+
+//==============================================================================
+std::uint8_t encodeContactGradientMode(ContactGradientMode mode)
+{
+  switch (mode) {
+    case ContactGradientMode::Analytic:
+      return 0u;
+    case ContactGradientMode::ComplementarityAware:
+      return 1u;
+    case ContactGradientMode::PreContactSurrogate:
+      return 2u;
+  }
+
+  DART_EXPERIMENTAL_THROW_T(
+      InvalidArgumentException, "Contact gradient mode is invalid");
+  return 0u;
+}
+
+//==============================================================================
+ContactGradientMode decodeContactGradientMode(std::uint8_t value)
+{
+  switch (value) {
+    case 0u:
+      return ContactGradientMode::Analytic;
+    case 1u:
+      return ContactGradientMode::ComplementarityAware;
+    case 2u:
+      return ContactGradientMode::PreContactSurrogate;
+  }
+
+  DART_EXPERIMENTAL_THROW_T(
+      InvalidArgumentException,
+      "Serialized World contact gradient mode value is invalid");
+  return ContactGradientMode::Analytic;
+}
+
+//==============================================================================
+detail::BuiltInRigidBodySolverFamily toBuiltInRigidBodySolverFamily(
+    RigidBodySolver solver)
+{
+  switch (solver) {
+    case RigidBodySolver::SequentialImpulse:
+      return detail::BuiltInRigidBodySolverFamily::SequentialImpulse;
+    case RigidBodySolver::Ipc:
+      return detail::BuiltInRigidBodySolverFamily::Ipc;
+  }
+
+  DART_EXPERIMENTAL_THROW_T(
+      InvalidArgumentException, "Rigid-body solver is invalid");
+  return detail::BuiltInRigidBodySolverFamily::SequentialImpulse;
+}
+
+//==============================================================================
 bool hasMultibodyStructures(const World& world)
 {
   const auto view = detail::registryOf(world).view<comps::MultibodyStructure>();
+  return view.begin() != view.end();
+}
+
+//==============================================================================
+bool hasRigidBodyStructures(const World& world)
+{
+  const auto view = detail::registryOf(world).view<comps::RigidBodyTag>();
+  return view.begin() != view.end();
+}
+
+//==============================================================================
+bool hasDeformableBodies(const World& world)
+{
+  const auto view = detail::registryOf(world).view<comps::DeformableBodyTag>();
   return view.begin() != view.end();
 }
 
@@ -1099,7 +1252,6 @@ struct WorldStepPipelineStages
   compute::RigidBodyPositionStage rigidBodyPosition;
   compute::RigidIpcContactStage rigidIpcContact;
   compute::MultibodyVelocityStage multibodyVelocity;
-  compute::MultibodyContactStage multibodyContact;
   compute::MultibodyPositionStage multibodyPosition;
   compute::MultibodyForwardDynamicsStage multibodyDynamics;
   compute::UnifiedConstraintStage unifiedConstraint;
@@ -1111,58 +1263,37 @@ struct WorldStepPipelineStages
   compute::WorldStepPipeline& buildDefault(
       RigidBodySolver rigidBodySolver,
       bool variationalSelected,
-      bool useUnifiedConstraints)
+      bool hasRigidBodies,
+      bool hasMultibodyStructure,
+      bool hasDeformableBodies)
   {
     pipeline.clear();
-    DART_EXPERIMENTAL_THROW_T_IF(
-        !isValidRigidBodySolver(rigidBodySolver),
-        InvalidArgumentException,
-        "Rigid-body solver is invalid");
-
-    switch (rigidBodySolver) {
-      case RigidBodySolver::SequentialImpulse:
-        if (variationalSelected) {
-          appendVariationalDynamicsStages();
-        } else if (useUnifiedConstraints) {
-          appendSemiImplicitUnifiedStages();
-        } else {
-          appendSemiImplicitRigidBodyStages();
-        }
-        break;
-      case RigidBodySolver::Ipc:
-        appendIpcDynamicsStages(variationalSelected, useUnifiedConstraints);
-        break;
-    }
-    pipeline.addStage(kinematics);
+    appendSchedule(makeSchedule(
+        rigidBodySolver,
+        variationalSelected,
+        hasRigidBodies,
+        hasMultibodyStructure,
+        hasDeformableBodies,
+        /*includeKinematics=*/true));
     return pipeline;
   }
 
   compute::WorldStepPipeline& buildWithFinalStage(
       RigidBodySolver rigidBodySolver,
       bool variationalSelected,
-      bool useUnifiedConstraints,
+      bool hasRigidBodies,
+      bool hasMultibodyStructure,
+      bool hasDeformableBodies,
       compute::WorldStepStage& finalStage)
   {
     pipeline.clear();
-    DART_EXPERIMENTAL_THROW_T_IF(
-        !isValidRigidBodySolver(rigidBodySolver),
-        InvalidArgumentException,
-        "Rigid-body solver is invalid");
-
-    switch (rigidBodySolver) {
-      case RigidBodySolver::SequentialImpulse:
-        if (variationalSelected) {
-          appendVariationalDynamicsStages();
-        } else if (useUnifiedConstraints) {
-          appendSemiImplicitUnifiedStages();
-        } else {
-          appendSemiImplicitRigidBodyStages();
-        }
-        break;
-      case RigidBodySolver::Ipc:
-        appendIpcDynamicsStages(variationalSelected, useUnifiedConstraints);
-        break;
-    }
+    appendSchedule(makeSchedule(
+        rigidBodySolver,
+        variationalSelected,
+        hasRigidBodies,
+        hasMultibodyStructure,
+        hasDeformableBodies,
+        /*includeKinematics=*/false));
     pipeline.addStage(finalStage);
     return pipeline;
   }
@@ -1171,84 +1302,123 @@ struct WorldStepPipelineStages
       World& world,
       RigidBodySolver rigidBodySolver,
       bool variationalSelected,
-      bool includeMultibodyStage)
+      bool hasRigidBodies,
+      bool hasMultibodyStructure,
+      bool hasDeformableBodies)
+  {
+    const auto schedule = makeSchedule(
+        rigidBodySolver,
+        variationalSelected,
+        hasRigidBodies,
+        hasMultibodyStructure,
+        hasDeformableBodies,
+        /*includeKinematics=*/true);
+    for (const auto slot : schedule) {
+      prepareStage(slot, world);
+    }
+  }
+
+private:
+  using Schedule = detail::BuiltInWorldStepSchedule;
+  using Slot = detail::BuiltInWorldStepStageSlot;
+
+  static Schedule makeSchedule(
+      RigidBodySolver rigidBodySolver,
+      bool variationalSelected,
+      bool hasRigidBodies,
+      bool hasMultibodyStructure,
+      bool hasDeformableBodies,
+      bool includeKinematics)
   {
     DART_EXPERIMENTAL_THROW_T_IF(
         !isValidRigidBodySolver(rigidBodySolver),
         InvalidArgumentException,
         "Rigid-body solver is invalid");
 
-    switch (rigidBodySolver) {
-      case RigidBodySolver::SequentialImpulse:
+    detail::BuiltInWorldStepScheduleOptions options;
+    options.rigidBodySolver = toBuiltInRigidBodySolverFamily(rigidBodySolver);
+    options.multibodyIntegration
+        = variationalSelected
+              ? detail::BuiltInMultibodyIntegrationFamily::Variational
+              : detail::BuiltInMultibodyIntegrationFamily::SemiImplicit;
+    options.hasRigidBodies = hasRigidBodies;
+    options.hasMultibodyStructures = hasMultibodyStructure;
+    options.hasDeformableBodies = hasDeformableBodies;
+    options.includeKinematics = includeKinematics;
+    return detail::makeBuiltInWorldStepSchedule(options);
+  }
+
+  compute::WorldStepStage& stageForSlot(Slot slot)
+  {
+    switch (slot) {
+      case Slot::RigidBodyVelocity:
+        return rigidBodyVelocity;
+      case Slot::RigidBodyContact:
+        return rigidBodyContact;
+      case Slot::RigidBodyPosition:
+        return rigidBodyPosition;
+      case Slot::RigidIpcContact:
+        return rigidIpcContact;
+      case Slot::MultibodyVelocity:
+        return multibodyVelocity;
+      case Slot::MultibodyForwardDynamics:
+        return multibodyDynamics;
+      case Slot::MultibodyPosition:
+        return multibodyPosition;
+      case Slot::MultibodyVariationalIntegration:
+        return multibodyVariational;
+      case Slot::UnifiedConstraint:
+        return unifiedConstraint;
+      case Slot::DeformableDynamics:
+        return deformableDynamics;
+      case Slot::Kinematics:
+        return kinematics;
+    }
+
+    DART_EXPERIMENTAL_THROW_T(
+        InvalidArgumentException, "World step stage slot is invalid");
+    return kinematics;
+  }
+
+  void appendSchedule(const Schedule& schedule)
+  {
+    for (const auto slot : schedule) {
+      pipeline.addStage(stageForSlot(slot));
+    }
+  }
+
+  void prepareStage(Slot slot, World& world)
+  {
+    if (!detail::builtInWorldStepScheduleNeedsPreparation(slot)) {
+      return;
+    }
+
+    switch (slot) {
+      case Slot::RigidBodyVelocity:
         rigidBodyVelocity.prepare(world);
-        if (variationalSelected) {
-          rigidBodyContact.prepare(world);
-          multibodyVariational.prepare(world);
-        } else if (!includeMultibodyStage) {
-          rigidBodyContact.prepare(world);
-        }
-        break;
-      case RigidBodySolver::Ipc:
+        return;
+      case Slot::RigidBodyContact:
+        rigidBodyContact.prepare(world);
+        return;
+      case Slot::RigidIpcContact:
         rigidIpcContact.prepare(world);
-        if (variationalSelected && includeMultibodyStage) {
-          multibodyVariational.prepare(world);
-        }
-        break;
+        return;
+      case Slot::MultibodyVariationalIntegration:
+        multibodyVariational.prepare(world);
+        return;
+      case Slot::DeformableDynamics:
+        deformableDynamics.prepare(world);
+        return;
+      case Slot::Kinematics:
+        kinematics.prepare(world);
+        return;
+      case Slot::RigidBodyPosition:
+      case Slot::MultibodyVelocity:
+      case Slot::MultibodyForwardDynamics:
+      case Slot::MultibodyPosition:
+      case Slot::UnifiedConstraint:
+        return;
     }
-    deformableDynamics.prepare(world);
-    kinematics.prepare(world);
-  }
-
-private:
-  void appendVariationalDynamicsStages()
-  {
-    // Integrate rigid-body positions after the multibody stage so two-sided
-    // link-vs-rigid-body contact impulses (applied to rigid-body velocities in
-    // the multibody solve) take effect in the same step's pose update.
-    pipeline.addStage(rigidBodyVelocity)
-        .addStage(rigidBodyContact)
-        .addStage(multibodyVariational)
-        .addStage(deformableDynamics)
-        .addStage(rigidBodyPosition);
-  }
-
-  void appendIpcDynamicsStages(
-      bool variationalSelected, bool includeMultibodyStage)
-  {
-    pipeline.addStage(rigidIpcContact);
-    if (includeMultibodyStage) {
-      compute::WorldStepStage& multibodyStage
-          = variationalSelected
-                ? static_cast<compute::WorldStepStage&>(multibodyVariational)
-                : static_cast<compute::WorldStepStage&>(multibodyDynamics);
-      pipeline.addStage(multibodyStage);
-    }
-    pipeline.addStage(deformableDynamics);
-  }
-
-  void appendSemiImplicitRigidBodyStages()
-  {
-    pipeline.addStage(rigidBodyVelocity)
-        .addStage(rigidBodyContact)
-        .addStage(multibodyDynamics)
-        .addStage(deformableDynamics)
-        .addStage(rigidBodyPosition);
-  }
-
-  void appendSemiImplicitUnifiedStages()
-  {
-    // When articulated bodies are present, one coupled boxed-LCP over all
-    // rigid-rigid and articulated link contacts replaces the separate
-    // RigidBodyContactStage + MultibodyContactStage passes. Positions-last is
-    // preserved (both velocity stages precede the solve, both position stages
-    // follow), and the joint velocity-limit clamp stays post-solve in
-    // MultibodyPositionStage.
-    pipeline.addStage(rigidBodyVelocity)
-        .addStage(multibodyVelocity)
-        .addStage(unifiedConstraint)
-        .addStage(rigidBodyPosition)
-        .addStage(multibodyPosition)
-        .addStage(deformableDynamics);
   }
 };
 
@@ -2108,6 +2278,7 @@ World::World(const WorldOptions& options)
         std::make_unique<detail::WorldStorage>(
             m_memoryManager.getFreeAllocator())),
     m_gravity(options.gravity),
+    m_rigidBodySolver(options.rigidBodySolver),
     m_timeStep(options.timeStep),
     m_differentiable(options.differentiable),
     m_contactSolverMethod(options.contactSolverMethod),
@@ -2122,6 +2293,19 @@ World::World(const WorldOptions& options)
       !options.gravity.array().isFinite().all(),
       InvalidArgumentException,
       "WorldOptions.gravity must contain only finite coordinates");
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValidRigidBodySolver(options.rigidBodySolver),
+      InvalidArgumentException,
+      "WorldOptions.rigidBodySolver is invalid");
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValidContactSolverMethod(options.contactSolverMethod),
+      InvalidArgumentException,
+      "WorldOptions.contactSolverMethod is invalid");
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValidContactGradientMode(options.contactGradientMode),
+      InvalidArgumentException,
+      "WorldOptions.contactGradientMode is invalid");
+  setMultibodyOptions(options.multibodyOptions);
 }
 
 //==============================================================================
@@ -2197,6 +2381,7 @@ void World::clear()
   m_simulationMode = false;
   m_gravity = Eigen::Vector3d(0.0, 0.0, -9.81);
   m_rigidBodySolver = RigidBodySolver::SequentialImpulse;
+  m_multibodyIntegrationMethod = MultibodyIntegrationMethod::SemiImplicit;
   m_timeStep = 0.001;
   m_differentiable = false;
   m_contactSolverMethod = ContactSolverMethod::SequentialImpulse;
@@ -2204,6 +2389,7 @@ void World::clear()
   resetRigidIpcAdaptiveBarrierStiffnessLowerBound();
   m_storage->stepDerivatives.reset();
   m_storage->differentiableParameters.clear();
+  m_lastDeformableSolverDiagnostics = {};
   m_time = 0.0;
   m_frame = 0;
   m_memoryManager.getFrameAllocator().reset();
@@ -2362,6 +2548,19 @@ void World::reserveRegistryStorageForSimulation()
   }
 
   reserveExistingRegistryStorages(registry);
+}
+
+//==============================================================================
+void World::prepareStepPipelineCacheForCurrentConfiguration()
+{
+  reserveRegistryStorageForSimulation();
+  m_stepPipelineCache->stages.prepare(
+      *this,
+      m_rigidBodySolver,
+      m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational,
+      hasRigidBodyStructures(*this),
+      hasMultibodyStructures(*this),
+      hasDeformableBodies(*this));
 }
 
 //==============================================================================
@@ -3116,12 +3315,7 @@ void World::enterSimulationMode()
   updateKinematics();
   detail::deformable_vbd::configureAvbdRigidWorldPointJointsFromCurrentPoses(
       m_storage->registry);
-  reserveRegistryStorageForSimulation();
-  m_stepPipelineCache->stages.prepare(
-      *this,
-      m_rigidBodySolver,
-      m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational,
-      hasMultibodyStructures(*this));
+  prepareStepPipelineCacheForCurrentConfiguration();
 }
 
 //==============================================================================
@@ -3152,11 +3346,7 @@ void World::setRigidBodySolver(RigidBodySolver solver)
   validateRigidBodyJointPipelineSupport(*this, solver);
   m_rigidBodySolver = solver;
   if (m_simulationMode) {
-    m_stepPipelineCache->stages.prepare(
-        *this,
-        m_rigidBodySolver,
-        m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational,
-        hasMultibodyStructures(*this));
+    prepareStepPipelineCacheForCurrentConfiguration();
   }
 }
 
@@ -3202,8 +3392,13 @@ ContactGradientMode World::getContactGradientMode() const noexcept
 }
 
 //==============================================================================
-void World::setContactGradientMode(ContactGradientMode mode) noexcept
+void World::setContactGradientMode(ContactGradientMode mode)
 {
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValidContactGradientMode(mode),
+      InvalidArgumentException,
+      "Contact gradient mode is invalid");
+
   m_contactGradientMode = mode;
 }
 
@@ -3316,6 +3511,27 @@ std::size_t World::getNumDifferentiableParameters() const noexcept
 }
 
 namespace {
+
+class ScopedWorldStepPipelineClear
+{
+public:
+  explicit ScopedWorldStepPipelineClear(compute::WorldStepPipeline& pipeline)
+    : m_pipeline(pipeline)
+  {
+  }
+
+  ~ScopedWorldStepPipelineClear() noexcept
+  {
+    m_pipeline.clear();
+  }
+
+  ScopedWorldStepPipelineClear(const ScopedWorldStepPipelineClear&) = delete;
+  ScopedWorldStepPipelineClear& operator=(const ScopedWorldStepPipelineClear&)
+      = delete;
+
+private:
+  compute::WorldStepPipeline& m_pipeline;
+};
 
 // Collect dynamic (non-static) rigid bodies in registry iteration order. This
 // is the same view and order the translational contact Jacobian uses, so the
@@ -3537,17 +3753,16 @@ void World::setMultibodyOptions(const MultibodyOptions& options)
     m_multibodyIntegrationMethod = MultibodyIntegrationMethod::SemiImplicit;
   } else if (family == "variational integrator" || family == "variational") {
     m_multibodyIntegrationMethod = MultibodyIntegrationMethod::Variational;
-    if (m_simulationMode) {
-      reserveRegistryStorageForSimulation();
-      m_stepPipelineCache->stages.prepare(
-          *this, m_rigidBodySolver, true, hasMultibodyStructures(*this));
-    }
   } else {
     DART_EXPERIMENTAL_THROW_T(
         InvalidArgumentException,
         "Unknown multibody integrationFamily '{}'; supported method-family "
         "names are 'semi-implicit' and 'variational integrator'",
         family);
+  }
+
+  if (m_simulationMode) {
+    prepareStepPipelineCacheForCurrentConfiguration();
   }
 }
 
@@ -3569,7 +3784,9 @@ void World::step(compute::ComputeExecutor& executor)
   compute::WorldStepPipeline& pipeline = stages.buildDefault(
       m_rigidBodySolver,
       m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational,
-      hasMultibodyStructures(*this));
+      hasRigidBodyStructures(*this),
+      hasMultibodyStructures(*this),
+      hasDeformableBodies(*this));
 
 #if DART_BUILD_PROFILE
   StepProfileTimer profileTimer(m_stepProfilingEnabled);
@@ -3591,7 +3808,9 @@ void World::step(std::size_t count, compute::ComputeExecutor& executor)
   compute::WorldStepPipeline& pipeline = stages.buildDefault(
       m_rigidBodySolver,
       m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational,
-      hasMultibodyStructures(*this));
+      hasRigidBodyStructures(*this),
+      hasMultibodyStructures(*this),
+      hasDeformableBodies(*this));
   for (std::size_t i = 0; i < count; ++i) {
 #if DART_BUILD_PROFILE
     StepProfileTimer profileTimer(m_stepProfilingEnabled);
@@ -3611,12 +3830,15 @@ void World::step(std::size_t count, compute::ComputeExecutor& executor)
 void World::step(
     compute::ComputeExecutor& executor, compute::WorldStepStage& stage)
 {
-  WorldStepPipelineStages stages;
+  auto& stages = m_stepPipelineCache->stages;
   compute::WorldStepPipeline& pipeline = stages.buildWithFinalStage(
       m_rigidBodySolver,
       m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational,
+      hasRigidBodyStructures(*this),
       hasMultibodyStructures(*this),
+      hasDeformableBodies(*this),
       stage);
+  ScopedWorldStepPipelineClear clearCustomPipeline(pipeline);
 
 #if DART_BUILD_PROFILE
   StepProfileTimer profileTimer(m_stepProfilingEnabled);
@@ -3637,12 +3859,16 @@ void World::step(
     compute::ComputeExecutor& executor,
     compute::WorldStepStage& stage)
 {
-  WorldStepPipelineStages stages;
+  auto& stages = m_stepPipelineCache->stages;
   compute::WorldStepPipeline& pipeline = stages.buildWithFinalStage(
       m_rigidBodySolver,
       m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational,
+      hasRigidBodyStructures(*this),
       hasMultibodyStructures(*this),
+      hasDeformableBodies(*this),
       stage);
+  ScopedWorldStepPipelineClear clearCustomPipeline(pipeline);
+
   for (std::size_t i = 0; i < count; ++i) {
 #if DART_BUILD_PROFILE
     StepProfileTimer profileTimer(m_stepProfilingEnabled);
@@ -3689,9 +3915,9 @@ void World::stepPipelineOnce(
 
   resetFrameScratchForStep();
 
-  // Differentiable opt-in: record the analytic contact-free step Jacobians at
-  // the pre-step state before integration. This is a single predictable branch;
-  // when off (the default) nothing extra runs and the forward result is
+  // Differentiable opt-in: record the analytic step Jacobians at the pre-step
+  // state before integration. This is a single predictable branch; when off
+  // (the default) nothing extra runs and the forward result is
   // bitwise-identical.
   if (m_differentiable) {
     captureStepDerivatives();
@@ -3718,9 +3944,9 @@ void World::captureStepDerivatives()
 #ifdef DART_HAS_DIFF
   // Contact-aware path (PLAN-110 WS2): when the boxed-LCP contact solver is
   // selected, the differentiable step Jacobian must include the analytic
-  // frictionless normal-contact gradient. Capture the active contacts at the
+  // normal/friction contact gradient. Capture the active contacts at the
   // pre-step state from the same collide() source the BoxedLcp contact stage
-  // consumes, validate they fall inside the WS2 slice's scope, then route
+  // consumes, validate they fall inside the supported slice's scope, then route
   // through detail::contactStepDerivatives(). When there are no active contacts
   // this reduces exactly to the contact-free (free-fall) Jacobian for the
   // dynamic rigid bodies; that is a mathematically exact reduction, not a
@@ -4219,6 +4445,7 @@ void World::restoreReplayFrame(std::size_t index)
   markFrameCachesDirty(m_storage->registry);
   if (m_simulationMode) {
     updateKinematics();
+    prepareStepPipelineCacheForCurrentConfiguration();
   }
 
   m_replay->cursor = index;
@@ -4658,6 +4885,15 @@ void World::saveBinary(std::ostream& output) const
 
   const std::uint8_t differentiableFlag = m_differentiable ? 1 : 0;
   io::writePOD(output, differentiableFlag);
+
+  io::writePOD(output, encodeRigidBodySolver(m_rigidBodySolver));
+  io::writePOD(output, encodeContactSolverMethod(m_contactSolverMethod));
+  io::writePOD(output, encodeContactGradientMode(m_contactGradientMode));
+  const std::uint8_t multibodyIntegrationMethod
+      = m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational
+            ? 1u
+            : 0u;
+  io::writePOD(output, multibodyIntegrationMethod);
 }
 
 //==============================================================================
@@ -4709,6 +4945,35 @@ void World::loadBinary(std::istream& input)
       io::readPOD(input, differentiableFlag);
       m_differentiable = differentiableFlag != 0;
     }
+
+    if (formatVersion >= 15 && input.peek() != std::char_traits<char>::eof()) {
+      std::uint8_t rigidBodySolver = 0u;
+      std::uint8_t contactSolverMethod = 0u;
+      std::uint8_t contactGradientMode = 0u;
+      std::uint8_t multibodyIntegrationMethod = 0u;
+      io::readPOD(input, rigidBodySolver);
+      io::readPOD(input, contactSolverMethod);
+      io::readPOD(input, contactGradientMode);
+      io::readPOD(input, multibodyIntegrationMethod);
+
+      m_rigidBodySolver = decodeRigidBodySolver(rigidBodySolver);
+      m_contactSolverMethod = decodeContactSolverMethod(contactSolverMethod);
+      m_contactGradientMode = decodeContactGradientMode(contactGradientMode);
+      switch (multibodyIntegrationMethod) {
+        case 0u:
+          m_multibodyIntegrationMethod
+              = MultibodyIntegrationMethod::SemiImplicit;
+          break;
+        case 1u:
+          m_multibodyIntegrationMethod
+              = MultibodyIntegrationMethod::Variational;
+          break;
+        default:
+          DART_EXPERIMENTAL_THROW_T(
+              InvalidArgumentException,
+              "Serialized World multibody integration method value is invalid");
+      }
+    }
   }
 
   // Ensure all frame entities have cache components (not serialized)
@@ -4730,7 +4995,7 @@ void World::loadBinary(std::istream& input)
     updateKinematics();
     detail::deformable_vbd::configureAvbdRigidWorldPointJointsFromCurrentPoses(
         m_storage->registry);
-    reserveRegistryStorageForSimulation();
+    prepareStepPipelineCacheForCurrentConfiguration();
   }
 }
 

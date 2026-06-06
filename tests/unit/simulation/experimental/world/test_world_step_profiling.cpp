@@ -32,6 +32,8 @@
 
 #include <dart/config.hpp>
 
+#include <dart/simulation/experimental/body/deformable_body.hpp>
+#include <dart/simulation/experimental/body/deformable_body_options.hpp>
 #include <dart/simulation/experimental/compute/parallel_executor.hpp>
 #include <dart/simulation/experimental/compute/world_step_profile.hpp>
 #include <dart/simulation/experimental/world.hpp>
@@ -65,17 +67,12 @@ TEST(WorldStepProfileIntegration, EnabledStepRecordsPipelineStages)
   const auto& profile = world.getLastStepProfile();
   ASSERT_FALSE(profile.isEmpty());
   EXPECT_EQ(profile.stepCount, 1u);
-  EXPECT_GE(profile.stages.size(), 2u);
+  EXPECT_EQ(profile.stages.size(), 1u);
 
-  // The default pipeline always integrates rigid-body velocities and ends with
-  // the kinematics/cache-refresh stage, regardless of world contents.
-  EXPECT_NE(profile.getStage("rigid_body_velocity"), nullptr);
-  const auto* deformable = profile.getStage("deformable_dynamics");
-  ASSERT_NE(deformable, nullptr);
-  EXPECT_TRUE(
-      sx::compute::hasAcceleration(
-          deformable->acceleration,
-          sx::compute::ComputeStageAcceleration::Gpu));
+  // Empty worlds still refresh kinematics, but inactive solver domains should
+  // not appear as placeholder stages.
+  EXPECT_EQ(profile.getStage("rigid_body_velocity"), nullptr);
+  EXPECT_EQ(profile.getStage("deformable_dynamics"), nullptr);
   ASSERT_NE(profile.getStage("kinematics"), nullptr);
 
   // Every recorded stage carries a name; wall time is non-negative.
@@ -88,8 +85,34 @@ TEST(WorldStepProfileIntegration, EnabledStepRecordsPipelineStages)
   // The text summary is the AI-/human-facing surface; it names the stages.
   const std::string summary = profile.toSummaryText();
   EXPECT_NE(summary.find("kinematics"), std::string::npos);
-  EXPECT_NE(summary.find("gpu"), std::string::npos);
   EXPECT_NE(summary.find("World Step Profile"), std::string::npos);
+}
+
+TEST(WorldStepProfileIntegration, EnabledDeformableStepRecordsDomainStage)
+{
+  sx::World world;
+  sx::DeformableBodyOptions options;
+  options.positions = {Eigen::Vector3d(0.0, 0.0, 1.0)};
+  options.masses = {1.0};
+  options.edgeStiffness = 0.0;
+  world.addDeformableBody("particle", options);
+  world.setStepProfilingEnabled(true);
+
+  world.step();
+
+  const auto& profile = world.getLastStepProfile();
+  ASSERT_FALSE(profile.isEmpty());
+  const auto* deformable = profile.getStage("deformable_dynamics");
+  ASSERT_NE(deformable, nullptr);
+  EXPECT_TRUE(
+      sx::compute::hasAcceleration(
+          deformable->acceleration,
+          sx::compute::ComputeStageAcceleration::Gpu));
+  ASSERT_NE(profile.getStage("kinematics"), nullptr);
+
+  const std::string summary = profile.toSummaryText();
+  EXPECT_NE(summary.find("deformable_dynamics"), std::string::npos);
+  EXPECT_NE(summary.find("gpu"), std::string::npos);
 }
 
 TEST(WorldStepProfileIntegration, CapturesNestedParallelGraphProfiles)

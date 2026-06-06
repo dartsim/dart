@@ -1,5 +1,14 @@
 # Resume: Unified Newton-Barrier Multibody
 
+## Current Reality (2026-06-06)
+
+Use this folder's `README.md`, PLAN-083, `docs/plans/dashboard.md`, and the
+current code as the live status. The branch-local "Current Branch" section below
+is historical handoff context, not current checkout state. Unified
+Newton-barrier work should continue by promoting shared primitives and solver
+contracts consumed by rigid IPC, deformable IPC, ABD, and future couplers rather
+than adding another public solver stack.
+
 ## Last Session Summary
 
 PLAN-083 was created for the unified Newton-barrier multibody solver family,

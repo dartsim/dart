@@ -2,8 +2,8 @@
 
 ## Status
 
-Proposal. This document owns durable API-shape rationale for the C++
-`dart::simulation::experimental` surface under
+Living design and implementation contract. This document owns durable API-shape
+rationale for the C++ `dart::simulation::experimental` surface under
 `dart/simulation/experimental/**`.
 
 DART 7 treats this API as experimental and opt-in while parity gates are being
@@ -274,13 +274,17 @@ the release roadmap.
   `World::updateKinematics()` remains available in DART 7 as the existing
   synchronization spelling. The promotion target is fresh-by-default ordinary
   queries plus named synchronization hooks for predictable batching.
-- Default `World::step()` composes split rigid-body velocity/contact, multibody
-  forward dynamics, rigid-body position, and kinematics stages through
-  `WorldStepPipeline`. `BatchedRigidBodyIntegrationStage` remains available as
-  an explicit unconstrained SoA path for parity tests, SIMD/data-locality work,
-  and future device prototype evidence. Executor/pipeline overloads already
-  allow selected stage execution and repeated stepping with caller-owned
-  execution policy.
+- Default `World::step()` uses a content-aware built-in schedule, selected from
+  `WorldOptions` / setter policy: free-rigid sequential impulse or IPC, the
+  semi-implicit or variational multibody family, the unified constraint/contact
+  path when articulated structures are present, deformable dynamics only when
+  deformable bodies exist, and a final kinematics refresh. The schedule is an
+  internal `WorldStepPipeline` of cached stages, so common users select
+  capability names and policies rather than stage objects. The batched
+  rigid-body integration stage remains available as an explicit unconstrained
+  SoA path for parity tests, SIMD/data-locality work, and future device
+  prototype evidence. Executor/pipeline overloads already allow selected stage
+  execution and repeated stepping with caller-owned execution policy.
 - `RigidBodyOptions` already represents user-facing rigid-body initialization
   data: mass, inertia, pose, and velocity.
 - `Frame`, `FreeFrame`, `FixedFrame`, `Multibody`, `Link`, and `Joint` provide
@@ -776,7 +780,7 @@ component structs. Examples include:
 - future material/contact/geometry/appearance value objects that keep source
   geometry, physical/contact behavior, inertial data, and visualization data as
   separate concepts;
-- future `WorldOptions`, `StepOptions`, or executor options for local
+- `WorldOptions` plus future `StepOptions` or executor options for local
   configuration.
 
 Value objects should validate field names and units in Doxygen and tests. The
@@ -895,14 +899,17 @@ fallback and unsupported-capability errors.
 
 Capability selection is exposed through **domain-scoped value objects set as a
 whole**, not a setter/getter per capability, so new capability fields are added
-without growing the `World` method surface. The first realized example is
-`MultibodyOptions { std::string integrationFamily; }`
-(`World::setMultibodyOptions`/`getMultibodyOptions`, `multibody_options` in
-dartpy), whose `integrationFamily` maps onto the "Integration family" matrix row;
-the unimplemented rows and a possible world-level grouping are deferred until a
-second capability exists. Selection is parsed to an internal representation on
-set, so the per-step path carries no configuration cost when a non-default family
-is not in use.
+without growing the `World` method surface. The realized C++ shape is a
+world-level construction grouping for defaults and policies
+(`WorldOptions::rigidBodySolver`, `WorldOptions::multibodyOptions`,
+`WorldOptions::contactSolverMethod`, `WorldOptions::contactGradientMode`, and
+`WorldOptions::differentiable`) plus the existing interactive setters for the
+policies that are safe to switch after construction (`World::setRigidBodySolver`,
+`World::setMultibodyOptions` / `getMultibodyOptions`, and
+`World::setContactGradientMode`). `MultibodyOptions { std::string
+integrationFamily; }` maps onto the "Integration family" matrix row. Selection
+is parsed to an internal representation on construction or set, so the per-step
+path carries no configuration cost when a non-default family is not in use.
 
 ## Future Capability Shapes
 

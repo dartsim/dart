@@ -377,6 +377,11 @@
       experimental `World` without exposing solver registries.
 - [ ] Phase 5b: extend solver selection toward persisted scene policy,
       diagnostics, examples, and mixed rigid/deformable coupling.
+  - [x] Preserve the World-level rigid solver family across binary save/load
+        and replay. `WorldOptions::rigidBodySolver` / `RigidBodySolver::Ipc`
+        now survives restart alongside the other result-affecting solver
+        policies, so an opt-in IPC world does not reload onto the sequential
+        default schedule.
   - [x] Add the first explicit opt-in stage options for max iterations, barrier
         activation distance, lagged-friction iterations, static-friction speed,
         and friction convergence tolerance without exposing a solver registry.
@@ -611,11 +616,13 @@ DART-owned implementation.
   upstream relative mesh paths can replay without an out-of-band asset root.
   Supported OBJ, OFF, rigid-ipc MSH, binary STL, ASCII STL, and polygonal inline
   geometry are loaded into experimental mesh collision shapes backed by the
-  native collision engine. A focused runtime replay regression now enters
-  simulation mode and takes one default `World::step()` on a fixture-populated
-  world, verifying ordinary gravity/force integration still owns stepping until
-  a solver-selection slice lands. Missing or unsupported mesh assets remain
-  explicit replay metadata. It still does not select a rigid IPC solver.
+  native collision engine. A focused runtime replay regression enters simulation
+  mode and takes one default `World::step()` on a fixture-populated world; that
+  remains the default-policy check that imported fixtures do not silently switch
+  solver families. Opt-in IPC stepping is selected through
+  `WorldOptions::rigidBodySolver` / `RigidBodySolver::Ipc` and the Phase 5
+  policy path. Missing or unsupported mesh assets remain explicit replay
+  metadata.
 - The same internal module now reads direct CCD test-data rows for `ee`, `ev`,
   and `fv` cases into DART-owned pose and primitive records, then replays those
   records through the internal subdivision-backed curved CCD implementation.
@@ -784,9 +791,11 @@ DART-owned implementation.
    open until the importer surface is no longer internal-only.
 5. Keep selecting P0 rows from remaining 3D unit-test fixtures, direct
    `tests/data/ccd-test-*` files, and one simple paper figure fixture.
-6. Keep the default `World::step()` behavior unchanged until a tested
-   DART-owned method policy can select the implicit-barrier path without
-   exposing registry or backend internals.
+6. Keep the easy default `World::step()` behavior on sequential impulse; the
+   existing `RigidBodySolver::Ipc` opt-in is the DART-owned method policy for
+   the implicit-barrier path, now round-tripped through World binary
+   serialization. Any broader activation should stay behind similarly validated
+   facade options without exposing registry or backend internals.
 
 ## Verification
 

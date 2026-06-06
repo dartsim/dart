@@ -9,7 +9,8 @@ enough to commit to API stability and user-facing support.
 "Supported" in DART means: a stable public surface we will not break without a
 deprecation cycle, CI gates that keep it green, user-facing docs, and a
 maintainer who owns regressions. The VI is opt-in behind the method-name facade
-(`World::setMultibodyOptions({.integrationFamily = "variational integrator"})`),
+(`WorldOptions::multibodyOptions` at construction or
+`World::setMultibodyOptions({.integrationFamily = "variational integrator"})`),
 so graduation does not change defaults — it changes the _promise_ we make about
 the family.
 
