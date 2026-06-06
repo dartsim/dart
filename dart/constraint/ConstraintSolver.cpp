@@ -769,8 +769,7 @@ void ConstraintSolver::buildConstrainedGroups()
       const auto it = rootToGroup.find(root.get());
       const bool grouped = (it != rootToGroup.end());
       skeleton->setResting(grouped && mGroupResting[it->second]);
-      skeleton->setIslandIndex(
-          grouped ? static_cast<int>(it->second) : -1);
+      skeleton->setIslandIndex(grouped ? static_cast<int>(it->second) : -1);
     }
   }
 
