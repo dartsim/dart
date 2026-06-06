@@ -28,6 +28,7 @@ foreach(collision_engine
 endforeach()
 dart_add_test("integration" test_ConstraintSolver)
 dart_add_test("integration" test_ContactConstraint)
+dart_add_test("integration" test_IslandDeactivation)
 dart_add_test("integration" test_Issue719)
 dart_add_test("integration" test_GenericJoints)
 dart_add_test("integration" test_Inertia)

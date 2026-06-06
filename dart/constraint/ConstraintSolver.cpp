@@ -55,6 +55,7 @@
 #include "dart/dynamics/SoftBodyNode.hpp"
 
 #include <algorithm>
+#include <unordered_map>
 
 namespace dart {
 namespace constraint {
@@ -257,6 +258,12 @@ void ConstraintSolver::setTimeStep(double _timeStep)
 double ConstraintSolver::getTimeStep() const
 {
   return mTimeStep;
+}
+
+//==============================================================================
+void ConstraintSolver::setDeactivationActive(bool _active)
+{
+  mDeactivationActive = _active;
 }
 
 //==============================================================================
@@ -665,10 +672,19 @@ void ConstraintSolver::buildConstrainedGroups()
 
   // Clear constrained groups
   mConstrainedGroups.clear();
+  mGroupResting.clear();
 
   // Exit if there is no active constraint
-  if (mActiveConstraints.empty())
+  if (mActiveConstraints.empty()) {
+    // With no active constraints, no island can be frozen. Clear any stale
+    // freeze flags so a body that just lost all of its contacts resumes
+    // simulating (e.g. a stack member that was kicked away).
+    if (mDeactivationActive) {
+      for (auto& skeleton : mSkeletons)
+        skeleton->setResting(false);
+    }
     return;
+  }
 
   //----------------------------------------------------------------------------
   // Unite skeletons according to constraints's relationships
@@ -706,6 +722,53 @@ void ConstraintSolver::buildConstrainedGroups()
   }
 
   //----------------------------------------------------------------------------
+  // Determine which islands are fully at rest, and set the island-atomic
+  // freeze flag on every skeleton.
+  //
+  // An island may be frozen (its LCP skipped, and its members' gravity /
+  // integration skipped in World::step) ONLY when EVERY skeleton in it is a
+  // sleep candidate. This is computed here, while the union-find information is
+  // still valid (before resetUnion below). Because a moving (awake) body that
+  // contacts a resting island is united into the same group, that group will
+  // contain a non-candidate member, so it is not frozen and IS solved -
+  // delivering the wake-up impulse to the previously-resting bodies.
+  //
+  // Setting mIsResting island-atomically (rather than per skeleton) is what
+  // keeps the freeze consistent: a body is never frozen in World::step while a
+  // constraint-coupled neighbour is still moving, so gravity is never skipped
+  // for a body whose island LCP still runs.
+  //----------------------------------------------------------------------------
+  if (mDeactivationActive) {
+    mGroupResting.assign(mConstrainedGroups.size(), true);
+
+    // Map each group's root skeleton (raw pointer) to its group index.
+    std::unordered_map<const dynamics::Skeleton*, std::size_t> rootToGroup;
+    rootToGroup.reserve(mConstrainedGroups.size());
+    for (std::size_t i = 0; i < mConstrainedGroups.size(); ++i)
+      rootToGroup[mConstrainedGroups[i].mRootSkeleton.get()] = i;
+
+    // Pass 1: an island rests only if every member is a sleep candidate.
+    for (const auto& skeleton : mSkeletons) {
+      const auto root = ConstraintBase::getRootSkeleton(skeleton);
+      const auto it = rootToGroup.find(root.get());
+      if (it == rootToGroup.end())
+        continue; // not in any active-constraint island
+      mGroupResting[it->second]
+          = mGroupResting[it->second] && skeleton->isSleepCandidate();
+    }
+
+    // Pass 2: stamp the island-atomic freeze flag. A grouped skeleton freezes
+    // iff its whole island rests; an ungrouped skeleton is never frozen by the
+    // solver (isolated bodies are cheap and handled by World::step directly).
+    for (const auto& skeleton : mSkeletons) {
+      const auto root = ConstraintBase::getRootSkeleton(skeleton);
+      const auto it = rootToGroup.find(root.get());
+      skeleton->setResting(
+          it != rootToGroup.end() && mGroupResting[it->second]);
+    }
+  }
+
+  //----------------------------------------------------------------------------
   // Reset union since we don't need union information anymore.
   //----------------------------------------------------------------------------
   for (auto& skeleton : mSkeletons)
@@ -717,8 +780,13 @@ void ConstraintSolver::solveConstrainedGroups()
 {
   DART_PROFILE_SCOPED;
 
-  for (auto& constraintGroup : mConstrainedGroups) {
-    solveConstrainedGroup(constraintGroup);
+  for (std::size_t i = 0; i < mConstrainedGroups.size(); ++i) {
+    // Skip islands in which every skeleton is resting. With the feature off no
+    // skeleton is resting, so every entry is false and nothing is skipped.
+    if (i < mGroupResting.size() && mGroupResting[i])
+      continue;
+
+    solveConstrainedGroup(mConstrainedGroups[i]);
   }
 }
 
