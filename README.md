@@ -161,7 +161,8 @@ pixi run ex headless_simulation --steps 1
 ## Documentation
 
 - **Static Docs**: [English](https://dart.readthedocs.io/) | [한국어](https://dart-ko.readthedocs.io/)
-- **AI Docs (interactive Q&A; experimental)**: [DeepWiki](https://deepwiki.com/dartsim/dart) | [NotebookLM](https://notebooklm.google.com/notebook/c0cfc8ce-17ae-415a-a615-44c4342f0da6) (Google account required)
+- **AI Docs (experimental)**: [DeepWiki](https://deepwiki.com/dartsim/dart) for quick codebase Q&A | [NotebookLM](https://notebooklm.google.com/notebook/c0cfc8ce-17ae-415a-a615-44c4342f0da6) (Google account required)
+- **Questions**: Ask in [GitHub Discussions](https://github.com/dartsim/dart/discussions) when you want maintainer or community input.
 
 ### Developer Resources
 

@@ -337,6 +337,35 @@ TEST(ContactSurface, ValidFrictionPassesThrough)
   EXPECT_DOUBLE_EQ(params.mPrimaryFrictionCoeff, 0.3);
 }
 
+TEST(ContactSurface, FrictionAboveOnePassesThroughAndUsesLowerSurface)
+{
+  auto setup = createCollidingBoxes(2.5, 3.0);
+  auto result = setup.runCollision();
+  ASSERT_GT(result.getNumContacts(), 0u);
+
+  const auto* shapeNode1 = setup.skel1->getBodyNode(0)->getShapeNode(0);
+  const auto* shapeNode2 = setup.skel2->getBodyNode(0)->getShapeNode(0);
+  ASSERT_NE(shapeNode1, nullptr);
+  ASSERT_NE(shapeNode2, nullptr);
+  ASSERT_NE(shapeNode1->getDynamicsAspect(), nullptr);
+  ASSERT_NE(shapeNode2->getDynamicsAspect(), nullptr);
+
+  EXPECT_DOUBLE_EQ(
+      shapeNode1->getDynamicsAspect()->getPrimaryFrictionCoeff(), 2.5);
+  EXPECT_DOUBLE_EQ(
+      shapeNode1->getDynamicsAspect()->getSecondaryFrictionCoeff(), 2.5);
+  EXPECT_DOUBLE_EQ(
+      shapeNode2->getDynamicsAspect()->getPrimaryFrictionCoeff(), 3.0);
+  EXPECT_DOUBLE_EQ(
+      shapeNode2->getDynamicsAspect()->getSecondaryFrictionCoeff(), 3.0);
+
+  DefaultContactSurfaceHandler handler;
+  auto params = handler.createParams(result.getContact(0), 1);
+
+  EXPECT_DOUBLE_EQ(params.mPrimaryFrictionCoeff, 2.5);
+  EXPECT_DOUBLE_EQ(params.mSecondaryFrictionCoeff, 2.5);
+}
+
 TEST(ContactSurface, ZeroFrictionIsValid)
 {
   auto setup = createCollidingBoxes(0.0, 0.5);

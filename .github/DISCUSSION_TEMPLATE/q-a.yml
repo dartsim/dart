@@ -1,0 +1,26 @@
+body:
+  - type: markdown
+    attributes:
+      value: |
+        DeepWiki may help with quick DART codebase and API questions:
+        https://deepwiki.com/dartsim/dart
+
+        It is optional and experimental. Questions are welcome here whenever you want maintainer or community input.
+  - type: input
+    id: version
+    attributes:
+      label: DART version or branch
+      description: For example, main, 6.17.x, 6.18.x, or a package version.
+      placeholder: main
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: What are you trying to do, and what result or error did you see?
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Links, code snippets, logs, or what DeepWiki/docs said if useful.

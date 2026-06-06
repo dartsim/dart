@@ -358,6 +358,44 @@ TEST(JointConstraintTests, RevoluteJointConstraintSingleBodyInformation)
   EXPECT_FALSE(inactiveConstraint.isActive());
 }
 
+TEST(JointConstraintTests, RevoluteJointConstraintUsesFiveBilateralRows)
+{
+  auto skelA = createBox(
+      Eigen::Vector3d(0.2, 0.2, 0.2), Eigen::Vector3d(0.0, 0.1, 0.0));
+  auto skelB = createBox(
+      Eigen::Vector3d(0.2, 0.2, 0.2), Eigen::Vector3d(0.0, 0.3, 0.0));
+  auto* bodyA = skelA->getBodyNode(0);
+  auto* bodyB = skelB->getBodyNode(0);
+  ASSERT_NE(bodyA, nullptr);
+  ASSERT_NE(bodyB, nullptr);
+
+  const Eigen::Vector3d jointPos(0.0, 0.2, 0.0);
+  const Eigen::Vector3d axis = Eigen::Vector3d::UnitY();
+  ExposedRevoluteJointConstraint constraint(bodyA, bodyB, jointPos, axis, axis);
+  constraint.update();
+
+  ASSERT_EQ(constraint.getDimension(), 5u);
+
+  constraint::ConstraintInfo info{};
+  LcpBuffers buffers;
+  prepareConstraintInfo(
+      info,
+      buffers,
+      constraint.getDimension(),
+      1000.0,
+      constraint::ConstraintPhase::Velocity,
+      false);
+  constraint.getInformation(&info);
+
+  for (std::size_t i = 0; i < constraint.getDimension(); ++i) {
+    EXPECT_TRUE(std::isinf(buffers.lo[i]));
+    EXPECT_TRUE(std::isinf(buffers.hi[i]));
+    EXPECT_LT(buffers.lo[i], 0.0);
+    EXPECT_GT(buffers.hi[i], 0.0);
+    EXPECT_EQ(buffers.findex[i], -1);
+  }
+}
+
 TEST(JointConstraintTests, RevoluteJointConstraintSingleBodyImpulseVelocity)
 {
   auto skel = createBox(

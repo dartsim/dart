@@ -233,3 +233,89 @@ TEST(BodyNodeExternalForce, SimulationDoesNotCrashWithNaNForce)
         << "Position " << i << " should not be NaN";
   }
 }
+
+//==============================================================================
+TEST(BodyNodeExternalForce, ExternalSpringCanConnectSeparateSkeletons)
+{
+  auto skelA = createSimpleSkeleton();
+  auto skelB = createSimpleSkeleton();
+  skelA->setName("spring_body_a");
+  skelB->setName("spring_body_b");
+
+  auto* bodyA = skelA->getBodyNode(0);
+  auto* bodyB = skelB->getBodyNode(0);
+  auto* jointA = dynamic_cast<FreeJoint*>(bodyA->getParentJoint());
+  auto* jointB = dynamic_cast<FreeJoint*>(bodyB->getParentJoint());
+  ASSERT_NE(nullptr, jointA);
+  ASSERT_NE(nullptr, jointB);
+  bodyA->setMomentOfInertia(1.0, 1.0, 1.0);
+  bodyB->setMomentOfInertia(1.0, 1.0, 1.0);
+
+  Eigen::Isometry3d tfA = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tfB = Eigen::Isometry3d::Identity();
+  tfB.linear()
+      = Eigen::AngleAxisd(0.2, Eigen::Vector3d::UnitZ()).toRotationMatrix();
+  tfB.translation() = Eigen::Vector3d(2.0, 0.0, 0.0);
+  jointA->setTransform(tfA);
+  jointB->setTransform(tfB);
+
+  auto world = simulation::World::create();
+  world->setGravity(Eigen::Vector3d::Zero());
+  world->setTimeStep(1e-3);
+  world->addSkeleton(skelA);
+  world->addSkeleton(skelB);
+
+  const Eigen::Vector3d localA = Eigen::Vector3d::Zero();
+  const Eigen::Vector3d localB = Eigen::Vector3d::Zero();
+  const double restLength = 1.0;
+  const double stiffness = 10.0;
+
+  const Eigen::Vector3d pA = bodyA->getWorldTransform() * localA;
+  const Eigen::Vector3d pB = bodyB->getWorldTransform() * localB;
+  const Eigen::Vector3d displacement = pB - pA;
+  const double length = displacement.norm();
+  ASSERT_GT(length, 1e-12);
+
+  const Eigen::Vector3d direction = displacement / length;
+  const Eigen::Vector3d force = stiffness * (length - restLength) * direction;
+
+  bodyA->addExtForce(force, localA, false, true);
+  bodyB->addExtForce(-force, localB, false, true);
+
+  const double rotationalStiffness = 2.0;
+  const Eigen::Matrix3d restRelativeRotation = Eigen::Matrix3d::Identity();
+  const Eigen::Matrix3d currentRelativeRotation
+      = bodyA->getWorldTransform().linear().transpose()
+        * bodyB->getWorldTransform().linear();
+  const Eigen::Vector3d rotationErrorInA = math::logMap(
+      restRelativeRotation.transpose() * currentRelativeRotation);
+  const Eigen::Vector3d torqueOnA = bodyA->getWorldTransform().linear()
+                                    * (rotationalStiffness * rotationErrorInA);
+  bodyA->addExtTorque(torqueOnA, false);
+  bodyB->addExtTorque(-torqueOnA, false);
+
+  world->step();
+
+  const Eigen::Vector3d velocityA = bodyA->getLinearVelocity(localA);
+  const Eigen::Vector3d velocityB = bodyB->getLinearVelocity(localB);
+  EXPECT_GT(velocityA.x(), 0.0);
+  EXPECT_LT(velocityB.x(), 0.0);
+  EXPECT_NEAR(velocityA.x(), -velocityB.x(), 1e-12);
+  EXPECT_NEAR(velocityA.y(), 0.0, 1e-12);
+  EXPECT_NEAR(velocityB.y(), 0.0, 1e-12);
+  EXPECT_NEAR(velocityA.z(), 0.0, 1e-12);
+  EXPECT_NEAR(velocityB.z(), 0.0, 1e-12);
+
+  const Eigen::Vector3d angularVelocityA = bodyA->getAngularVelocity();
+  const Eigen::Vector3d angularVelocityB = bodyB->getAngularVelocity();
+  EXPECT_GT(angularVelocityA.z(), 0.0);
+  EXPECT_LT(angularVelocityB.z(), 0.0);
+  EXPECT_NEAR(angularVelocityA.z(), -angularVelocityB.z(), 1e-12);
+  EXPECT_NEAR(angularVelocityA.x(), 0.0, 1e-12);
+  EXPECT_NEAR(angularVelocityB.x(), 0.0, 1e-12);
+  EXPECT_NEAR(angularVelocityA.y(), 0.0, 1e-12);
+  EXPECT_NEAR(angularVelocityB.y(), 0.0, 1e-12);
+
+  EXPECT_TRUE(bodyA->getExternalForceLocal().isZero(1e-12));
+  EXPECT_TRUE(bodyB->getExternalForceLocal().isZero(1e-12));
+}
