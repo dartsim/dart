@@ -41,8 +41,16 @@
 
 #include <dart/dart.hpp>
 
+#include <osg/Camera>
+#include <osg/GraphicsContext>
+#include <osg/Viewport>
+
 #include <iostream>
 #include <memory>
+#include <string>
+
+#include <cstdlib>
+#include <cstring>
 
 using namespace dart;
 using dart::dynamics::BodyNode;
@@ -390,18 +398,21 @@ public:
   IslandWidget(
       dart::gui::osg::ImGuiViewer* viewer,
       DeactivationWorldNode* node,
-      WorldPtr world)
-    : mViewer(viewer), mNode(node), mWorld(std::move(world))
+      WorldPtr world,
+      float scale = 1.0f)
+    : mViewer(viewer), mNode(node), mWorld(std::move(world)), mScale(scale)
   {
   }
 
   void render() override
   {
-    ImGui::SetNextWindowPos(ImVec2(10, 20));
-    ImGui::SetNextWindowSize(ImVec2(310, 380));
-    ImGui::SetNextWindowBgAlpha(0.6f);
+    ImGui::SetNextWindowPos(ImVec2(10 * mScale, 20 * mScale));
+    ImGui::SetNextWindowSize(ImVec2(310 * mScale, 380 * mScale));
+    ImGui::SetNextWindowBgAlpha(0.85f);
     if (!ImGui::Begin(
-            "Island deactivation", nullptr, ImGuiWindowFlags_NoResize)) {
+            "Sleeping (island deactivation)",
+            nullptr,
+            ImGuiWindowFlags_NoResize)) {
       ImGui::End();
       return;
     }
@@ -470,13 +481,168 @@ private:
   dart::gui::osg::ImGuiViewer* mViewer;
   DeactivationWorldNode* mNode;
   WorldPtr mWorld;
+  float mScale;
 };
+
+//==============================================================================
+struct Options
+{
+  float guiScale = 1.0f;
+  bool headless = false;
+  std::string shotPath = "sleeping.png";
+  int settleSteps = 1500;
+  int width = 1280;
+  int height = 800;
+};
+
+//==============================================================================
+void printUsage(const char* prog)
+{
+  std::cout
+      << "Usage: " << prog << " [options]\n"
+      << "  --gui-scale <f>  Scale the on-screen ImGui panel (default 1.0;\n"
+      << "                   try 2.0 on a HiDPI/4K display).\n"
+      << "  --headless       Render one frame off-screen to a PNG and exit\n"
+      << "                   (no window); useful for smoke tests / CI.\n"
+      << "  --shot <path>    Output PNG path for --headless (default "
+         "sleeping.png).\n"
+      << "  --steps <n>      Sim steps to settle before the headless shot "
+         "(default 1500).\n"
+      << "  --width <w> --height <h>  Render size (default 1280x800).\n"
+      << "  -h, --help       Show this help.\n";
+}
+
+//==============================================================================
+// Parse command-line options. Returns false if the program should exit
+// immediately (e.g. after --help or on a parse error).
+bool parseArgs(int argc, char** argv, Options& opt)
+{
+  auto needsValue = [&](int i) {
+    if (i + 1 >= argc) {
+      std::cerr << "Missing value for " << argv[i] << "\n";
+      return false;
+    }
+    return true;
+  };
+  for (int i = 1; i < argc; ++i) {
+    const char* a = argv[i];
+    if (std::strcmp(a, "--gui-scale") == 0) {
+      if (!needsValue(i))
+        return false;
+      opt.guiScale = std::stof(argv[++i]);
+    } else if (std::strcmp(a, "--headless") == 0) {
+      opt.headless = true;
+    } else if (std::strcmp(a, "--shot") == 0) {
+      if (!needsValue(i))
+        return false;
+      opt.shotPath = argv[++i];
+    } else if (std::strcmp(a, "--steps") == 0) {
+      if (!needsValue(i))
+        return false;
+      opt.settleSteps = std::stoi(argv[++i]);
+    } else if (std::strcmp(a, "--width") == 0) {
+      if (!needsValue(i))
+        return false;
+      opt.width = std::stoi(argv[++i]);
+    } else if (std::strcmp(a, "--height") == 0) {
+      if (!needsValue(i))
+        return false;
+      opt.height = std::stoi(argv[++i]);
+    } else if (std::strcmp(a, "-h") == 0 || std::strcmp(a, "--help") == 0) {
+      printUsage(argv[0]);
+      return false;
+    } else {
+      std::cerr << "Unknown option: " << a << "\n";
+      printUsage(argv[0]);
+      return false;
+    }
+  }
+  return true;
+}
+
+//==============================================================================
+// Render the scene once into an off-screen pbuffer and write a PNG, without
+// opening a window. The world is stepped directly so the result is the same
+// regardless of wall-clock speed. Returns a process exit code.
+int runHeadless(
+    dart::gui::osg::ImGuiViewer* viewer,
+    const WorldPtr& world,
+    const Options& opt,
+    const ::osg::Vec3& eye,
+    const ::osg::Vec3& center,
+    const ::osg::Vec3& up)
+{
+  ::osg::ref_ptr<::osg::GraphicsContext::Traits> traits
+      = new ::osg::GraphicsContext::Traits;
+  traits->x = 0;
+  traits->y = 0;
+  traits->width = opt.width;
+  traits->height = opt.height;
+  traits->red = traits->green = traits->blue = 8;
+  traits->alpha = 8;
+  traits->depth = 24;
+  traits->windowDecoration = false;
+  traits->pbuffer = true;
+  traits->doubleBuffer = true;
+
+  ::osg::ref_ptr<::osg::GraphicsContext> gc
+      = ::osg::GraphicsContext::createGraphicsContext(traits.get());
+  if (!gc) {
+    std::cerr << "[headless] Failed to create an off-screen GL context "
+                 "(no usable DISPLAY?).\n";
+    return 1;
+  }
+
+  auto* camera = viewer->getCamera();
+  camera->setGraphicsContext(gc.get());
+  camera->setViewport(new ::osg::Viewport(0, 0, opt.width, opt.height));
+  camera->setProjectionMatrixAsPerspective(
+      30.0, static_cast<double>(opt.width) / opt.height, 0.1, 1000.0);
+  const GLenum buffer = traits->doubleBuffer ? GL_BACK : GL_FRONT;
+  camera->setDrawBuffer(buffer);
+  camera->setReadBuffer(buffer);
+
+  // Single-threaded so the screen-capture (a camera final-draw callback)
+  // completes synchronously inside frame(); otherwise the draw thread may still
+  // be writing the file as we tear down and exit, corrupting it.
+  viewer->setThreadingModel(osgViewer::ViewerBase::SingleThreaded);
+
+  // Drive stepping ourselves and pin the view, so the screenshot is
+  // deterministic and independent of the real-time clock or any manipulator.
+  viewer->setCameraManipulator(nullptr);
+  viewer->simulate(false);
+  camera->setViewMatrixAsLookAt(eye, center, up);
+
+  viewer->realize();
+  if (!viewer->isRealized()) {
+    std::cerr << "[headless] Viewer failed to realize off-screen.\n";
+    return 1;
+  }
+
+  for (int i = 0; i < opt.settleSteps; ++i)
+    world->step();
+
+  // Re-pin the view (realize may have reset it) and draw, then capture.
+  camera->setViewMatrixAsLookAt(eye, center, up);
+  viewer->frame();
+  viewer->frame();
+  viewer->captureScreen(opt.shotPath);
+  viewer->frame(); // SaveScreen writes the PNG during this frame.
+
+  std::cout << "[headless] sim time " << world->getTime() << " s; wrote "
+            << opt.shotPath << "\n";
+  return 0;
+}
 
 } // namespace
 
 //==============================================================================
-int main()
+int main(int argc, char** argv)
 {
+  Options opt;
+  if (!parseArgs(argc, argv, opt))
+    return 0;
+
   auto world = World::create();
   world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
   world->addSkeleton(createFloor());
@@ -524,20 +690,39 @@ int main()
       = new dart::gui::osg::ImGuiViewer();
   viewer->addWorldNode(node);
 
+  // Scale the ImGui panel for HiDPI displays (the default 13px font is tiny on
+  // a 4K screen). The ImGui context already exists once the viewer is built,
+  // and its font atlas is not rasterized until the first frame, so we can
+  // rebuild the default font at the scaled pixel size here for crisp text
+  // (rather than bilinear-upscaling a 13px atlas via FontGlobalScale).
+  if (opt.guiScale != 1.0f) {
+    ImGuiIO& io = ImGui::GetIO();
+    ImFontConfig fontConfig;
+    fontConfig.SizePixels = 13.0f * opt.guiScale;
+    io.Fonts->Clear();
+    io.Fonts->AddFontDefault(&fontConfig);
+    ImGui::GetStyle().ScaleAllSizes(opt.guiScale);
+  }
+
   // Soft shadows for depth.
   node->setShadowTechnique(
       dart::gui::osg::WorldNode::createDefaultShadowTechnique(viewer.get()));
 
   // On-screen instructions / status / options panel.
   viewer->getImGuiHandler()->addWidget(
-      std::make_shared<IslandWidget>(viewer, node.get(), world));
+      std::make_shared<IslandWidget>(viewer, node.get(), world, opt.guiScale));
 
   viewer->addEventHandler(new KeyHandler(node.get(), world));
-  viewer->setUpViewInWindow(0, 0, 1280, 800);
-  viewer->getCameraManipulator()->setHomePosition(
-      ::osg::Vec3(6.0, 8.0, 4.0),
-      ::osg::Vec3(0.0, 0.0, 1.0),
-      ::osg::Vec3(0.0, 0.0, 1.0));
+
+  const ::osg::Vec3 eye(6.0, 8.0, 4.0);
+  const ::osg::Vec3 center(0.0, 0.0, 1.0);
+  const ::osg::Vec3 up(0.0, 0.0, 1.0);
+
+  if (opt.headless)
+    return runHeadless(viewer.get(), world, opt, eye, center, up);
+
+  viewer->setUpViewInWindow(0, 0, opt.width, opt.height);
+  viewer->getCameraManipulator()->setHomePosition(eye, center, up);
   viewer->setCameraManipulator(viewer->getCameraManipulator());
 
   // Start simulating immediately rather than opening paused.

@@ -1,7 +1,7 @@
-# Island deactivation (sleeping)
+# Sleeping (automatic body deactivation)
 
-Visual demo of DART's automatic body deactivation and the solver-island
-partition.
+Visual demo of DART's automatic body deactivation ("sleeping") and the
+solver-island partition.
 
 Several separated box stacks each form an independent **solver island**. Each
 island is drawn in its own color. When an island settles and goes to sleep
@@ -34,3 +34,17 @@ take island colors and dim when asleep.
   sleep again.
 - Dropping a box (`d`) onto a sleeping stack re-brightens it (wake), and if the
   box bridges two stacks they take on a single color (the islands merged).
+
+## Command-line options
+
+| Option | Description |
+|--------|-------------|
+| `--gui-scale <f>` | Scale the on-screen panel for HiDPI/4K displays (e.g. `--gui-scale 2.0`). Default `1.0`. |
+| `--headless` | Render a single frame off-screen to a PNG and exit (no window). Useful as a smoke test. |
+| `--shot <path>` | Output PNG path for `--headless` (default `sleeping.png`). |
+| `--steps <n>` | Simulation steps to settle the scene before the headless capture (default `1500`). |
+| `--width <w> --height <h>` | Render size (default `1280x800`). |
+
+The headless mode steps the world directly (independent of the real-time
+clock), so the captured frame deterministically shows the settled, sleeping
+state.
