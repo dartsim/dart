@@ -57,8 +57,10 @@ constexpr double kBodyMass = 1.0;
 constexpr double kDefaultGuiScale = 1.0;
 constexpr double kMinGuiScale = 0.75;
 constexpr double kMaxGuiScale = 4.0;
-constexpr float kPanelWidth = 500.0f;
-constexpr float kPanelHeight = 280.0f;
+constexpr int kViewerWidth = 960;
+constexpr int kViewerHeight = 640;
+constexpr float kPanelWidth = 430.0f;
+constexpr float kPanelHeight = 290.0f;
 
 struct Options
 {
@@ -84,8 +86,8 @@ void printUsage(const char* executable)
   std::cout << "Usage: " << executable << " [--gui-scale SCALE]\n"
             << "\n"
             << "Options:\n"
-            << "  --gui-scale SCALE   Scale the ImGui text and control panel "
-               "(default: 1.0).\n"
+            << "  --gui-scale SCALE   Scale the ImGui panel and initial "
+               "viewer window (default: 1.0).\n"
             << "  -h, --help          Show this help message.\n";
 }
 
@@ -129,6 +131,11 @@ Options parseOptions(int argc, char* argv[])
   }
 
   return options;
+}
+
+int scaleWindowExtent(int extent, double scale)
+{
+  return std::max(1, static_cast<int>(extent * scale + 0.5));
 }
 
 void setFreeJointVelocity(
@@ -492,8 +499,8 @@ public:
 
     ImGui::Text("Time: %.2f", mWorld->getTime());
     ImGui::Separator();
-    ImGui::TextWrapped("Ball: fixed anchor, free rotation");
-    ImGui::TextWrapped("Cylindrical: fixed axis, free slide and spin");
+    ImGui::TextWrapped("Ball: fixed anchor / free rotation");
+    ImGui::TextWrapped("Cylindrical: fixed axis / slide + spin");
     ImGui::TextWrapped("Weld: fixed pose");
     ImGui::Separator();
     ImGui::Text(
@@ -511,9 +518,8 @@ private:
     if (displaySize.x <= 0.0f || displaySize.y <= 0.0f)
       return preferred;
 
-    const float maxWidth = std::max(kPanelWidth, displaySize.x - 2.0f * margin);
-    const float maxHeight
-        = std::max(kPanelHeight, displaySize.y - 2.0f * margin);
+    const float maxWidth = std::max(1.0f, displaySize.x - 2.0f * margin);
+    const float maxHeight = std::max(1.0f, displaySize.y - 2.0f * margin);
     return ImVec2(
         std::min(preferred.x, maxWidth), std::min(preferred.y, maxHeight));
   }
@@ -547,10 +553,14 @@ int main(int argc, char* argv[])
       "The cylindrical body is constrained to the center rail while it slides "
       "and spins.\n");
   viewer->addInstructionText(
-      "Use --gui-scale <value> to scale the ImGui control panel.\n");
+      "Use --gui-scale <value> to scale the ImGui panel and viewer window.\n");
   std::cout << viewer->getInstructions() << std::endl;
 
-  viewer->setUpViewInWindow(0, 0, 960, 640);
+  viewer->setUpViewInWindow(
+      0,
+      0,
+      scaleWindowExtent(kViewerWidth, options.guiScale),
+      scaleWindowExtent(kViewerHeight, options.guiScale));
   viewer->getCameraManipulator()->setHomePosition(
       ::osg::Vec3(5.0, -7.0, 4.0),
       ::osg::Vec3(0.0, 0.0, 0.9),

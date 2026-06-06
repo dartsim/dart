@@ -20,8 +20,8 @@ The viewer shows the DART 6.x dynamic joint constraints side by side:
 
 The scene uses large in-view labels, color-coded lanes, and motion markers so
 the constraints can be compared without relying only on the ImGui panel. Use
-`--gui-scale <value>` if the control panel text is too small on a high-DPI or
-remote display.
+`--gui-scale <value>` if the ImGui panel and initial viewer window are too
+small on a high-DPI or remote display.
 
 DART 7/main also has `RevoluteJointConstraint`, which keeps a fixed anchor and
 leaves only rotation about the shared axis free. DART 6.19 does not expose that
@@ -43,6 +43,6 @@ Launch the executable from the build directory above:
 
     $ ./dynamic_joint_constraints
 
-Scale the ImGui control panel when needed:
+Scale the ImGui panel and initial viewer window when needed:
 
     $ ./dynamic_joint_constraints --gui-scale 1.5
