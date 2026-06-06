@@ -2,6 +2,21 @@
 
 ## DART 6
 
+### [DART 6.18.0 (2026-06-05)](https://github.com/dartsim/dart/milestone/94?closed=1)
+
+DART 6.18.0 is a minor release on the DART 6 LTS line. It adds two contact and
+constraint robustness improvements surfaced through gz-physics, so resting
+capsules/cylinders and non-axis-aligned closed kinematic chains behave correctly
+on the classic DART 6 API.
+
+* Collision
+
+  * Stabilize ODE capsule and cylinder resting contacts with a per-pair contact-history manifold (invalidated on sliding and kinematic pose changes) so they no longer sink through the supporting surface: [#2902](https://github.com/dartsim/dart/pull/2902), [gazebosim/gz-physics#692](https://github.com/gazebosim/gz-physics/issues/692)
+
+* Constraint
+
+  * Regularize rank-deficient closed-loop constraints with an additive Constraint Force Mixing floor on the `BallJointConstraint`/`WeldJointConstraint` loop-closure constraints, so non-axis-aligned closed kinematic chains stay enforced instead of drifting open: [#2903](https://github.com/dartsim/dart/pull/2903), [gazebosim/gz-physics#719](https://github.com/gazebosim/gz-physics/issues/719)
+
 ### [DART 6.17.1 (2026-06-05)](https://github.com/dartsim/dart/milestone/95?closed=1)
 
 DART 6.17.1 is a patch release on the DART 6 LTS line. It hardens the classic
