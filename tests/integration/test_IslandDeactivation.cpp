@@ -126,6 +126,18 @@ std::size_t stepUntil(World* world, std::size_t maxSteps, Predicate pred)
 constexpr double kBoxSize = 0.2;
 constexpr double kHalf = kBoxSize / 2.0;
 
+// Creates a world with automatic deactivation enabled. The library default is
+// OFF (opt-in), because a sleeping body's queried dynamics read zero; these
+// tests exercise the feature so they enable it explicitly.
+WorldPtr makeSleepWorld()
+{
+  auto world = World::create();
+  auto opts = world->getDeactivationOptions();
+  opts.mEnabled = true;
+  world->setDeactivationOptions(opts);
+  return world;
+}
+
 } // namespace
 
 //==============================================================================
@@ -134,8 +146,9 @@ constexpr double kHalf = kBoxSize / 2.0;
 // for many further steps.
 TEST(IslandDeactivation, SettlesThenSleeps)
 {
-  auto world = World::create();
-  ASSERT_TRUE(world->getDeactivationOptions().mEnabled); // default ON
+  EXPECT_FALSE(World::create()->getDeactivationOptions().mEnabled)
+      << "automatic deactivation must default to OFF (opt-in)";
+  auto world = makeSleepWorld();
 
   world->addSkeleton(createFloor());
   // Start just above the floor so it settles quickly.
@@ -168,7 +181,7 @@ TEST(IslandDeactivation, SettlesThenSleeps)
 // wake-on-contact impulse path) and move.
 TEST(IslandDeactivation, WakeOnContact)
 {
-  auto world = World::create();
+  auto world = makeSleepWorld();
   world->addSkeleton(createFloor());
 
   auto sleeper = createFreeBox(
@@ -218,7 +231,7 @@ TEST(IslandDeactivation, WakeOnContact)
 // wake-on-force path in step loop 1) and the body must accelerate.
 TEST(IslandDeactivation, WakeOnExternalForce)
 {
-  auto world = World::create();
+  auto world = makeSleepWorld();
   world->addSkeleton(createFloor());
 
   auto box = createFreeBox(
@@ -257,7 +270,7 @@ TEST(IslandDeactivation, WakeOnExternalForce)
 // a single island. No member sleeps while another member is still moving.
 TEST(IslandDeactivation, StackSleepsAsIsland)
 {
-  auto world = World::create();
+  auto world = makeSleepWorld();
   world->addSkeleton(createFloor());
 
   // Three stacked boxes, each resting on the one below.
@@ -313,7 +326,7 @@ TEST(IslandDeactivation, StackSleepsAsIsland)
 // correctness gate: we must never freeze a body that is actually moving.
 TEST(IslandDeactivation, NoPrematureSleepOfMovingBody)
 {
-  auto world = World::create();
+  auto world = makeSleepWorld();
   world->setGravity(Eigen::Vector3d::Zero()); // isolate the motion we impose
 
   auto box = createFreeBox(
