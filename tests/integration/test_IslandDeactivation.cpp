@@ -408,6 +408,98 @@ TEST(IslandDeactivation, DisabledIsNoOp)
 }
 
 //==============================================================================
+// A settled body exposes the solver-island index it belongs to (used by the
+// GUI example to color islands). It is -1 only when the feature is off or the
+// body is in no island.
+TEST(IslandDeactivation, IslandIndexExposed)
+{
+  auto world = makeSleepWorld();
+  world->addSkeleton(createFloor());
+  auto box = createFreeBox(
+      "box",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(box);
+
+  // After it lands on the floor the box forms a one-body contact island, so the
+  // solver stamps a valid (non-negative) island index every step thereafter.
+  for (std::size_t i = 0; i < 200; ++i)
+    world->step();
+  EXPECT_GE(box->getIslandIndex(), 0);
+}
+
+//==============================================================================
+// hasExternalDisturbance() must wake a sleeping body when an internal
+// generalized force is applied (covers the getForces() branch).
+TEST(IslandDeactivation, WakeOnInternalForce)
+{
+  auto world = makeSleepWorld();
+  world->addSkeleton(createFloor());
+  auto box = createFreeBox(
+      "box",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(box);
+  ASSERT_LT(
+      stepUntil(world.get(), 5000, [&]() { return box->isResting(); }), 5000u);
+
+  box->setForces(Eigen::Vector6d::Constant(5.0));
+  world->step();
+  EXPECT_FALSE(box->isResting()) << "internal force should wake the body";
+}
+
+//==============================================================================
+// hasExternalDisturbance() must wake a sleeping body when a command is set
+// (covers the getCommands() branch).
+TEST(IslandDeactivation, WakeOnCommand)
+{
+  auto world = makeSleepWorld();
+  world->addSkeleton(createFloor());
+  auto box = createFreeBox(
+      "box",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(box);
+  ASSERT_LT(
+      stepUntil(world.get(), 5000, [&]() { return box->isResting(); }), 5000u);
+
+  box->setCommands(Eigen::Vector6d::Constant(1.0));
+  world->step();
+  EXPECT_FALSE(box->isResting()) << "a set command should wake the body";
+}
+
+//==============================================================================
+// A zero-DOF skeleton never reports a disturbance (covers the early return).
+TEST(IslandDeactivation, DisturbanceFalseForZeroDof)
+{
+  auto floor = createFloor(); // WeldJoint to world => zero DOFs
+  ASSERT_EQ(floor->getNumDofs(), 0u);
+  EXPECT_FALSE(floor->hasExternalDisturbance());
+}
+
+//==============================================================================
+// Disabling deactivation must clear any existing resting state so subsequent
+// steps process every skeleton normally.
+TEST(IslandDeactivation, DisablingClearsRestState)
+{
+  auto world = makeSleepWorld();
+  world->addSkeleton(createFloor());
+  auto box = createFreeBox(
+      "box",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(box);
+  ASSERT_LT(
+      stepUntil(world.get(), 5000, [&]() { return box->isResting(); }), 5000u);
+  ASSERT_TRUE(box->isResting());
+
+  auto opts = world->getDeactivationOptions();
+  opts.mEnabled = false;
+  world->setDeactivationOptions(opts);
+  EXPECT_FALSE(box->isResting()) << "disabling must clear the resting flag";
+}
+
+//==============================================================================
 // Performance evidence (run explicitly with --gtest_also_run_disabled_tests).
 // Not a pass/fail correctness test - it prints wall-clock step times so the
 // "always beneficial" claim can be measured: a large speedup at scale for
