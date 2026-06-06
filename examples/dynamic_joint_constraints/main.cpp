@@ -39,13 +39,31 @@
 
 #include <dart/dart.hpp>
 
+#include <osg/Geode>
+#include <osg/Group>
+#include <osg/StateSet>
+#include <osgText/Text>
+
+#include <algorithm>
 #include <iostream>
 #include <memory>
 #include <string>
 
+#include <cstdlib>
+
 namespace {
 
 constexpr double kBodyMass = 1.0;
+constexpr double kDefaultGuiScale = 1.0;
+constexpr double kMinGuiScale = 0.75;
+constexpr double kMaxGuiScale = 4.0;
+constexpr float kPanelWidth = 500.0f;
+constexpr float kPanelHeight = 280.0f;
+
+struct Options
+{
+  double guiScale = kDefaultGuiScale;
+};
 
 struct DemoBody
 {
@@ -59,6 +77,58 @@ Eigen::Isometry3d makeTransform(const Eigen::Vector3d& translation)
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
   transform.translation() = translation;
   return transform;
+}
+
+void printUsage(const char* executable)
+{
+  std::cout << "Usage: " << executable << " [--gui-scale SCALE]\n"
+            << "\n"
+            << "Options:\n"
+            << "  --gui-scale SCALE   Scale the ImGui text and control panel "
+               "(default: 1.0).\n"
+            << "  -h, --help          Show this help message.\n";
+}
+
+double parseGuiScale(const std::string& value)
+{
+  char* end = nullptr;
+  const double parsed = std::strtod(value.c_str(), &end);
+  if (end == value.c_str() || *end != '\0') {
+    std::cerr << "Invalid --gui-scale value '" << value << "'. Falling back to "
+              << kDefaultGuiScale << ".\n";
+    return kDefaultGuiScale;
+  }
+
+  return std::max(kMinGuiScale, std::min(kMaxGuiScale, parsed));
+}
+
+Options parseOptions(int argc, char* argv[])
+{
+  Options options;
+
+  for (int i = 1; i < argc; ++i) {
+    const std::string arg = argv[i];
+    const std::string prefix = "--gui-scale=";
+
+    if (arg == "-h" || arg == "--help") {
+      printUsage(argv[0]);
+      std::exit(0);
+    } else if (arg == "--gui-scale") {
+      if (i + 1 >= argc) {
+        std::cerr << "--gui-scale requires a value. Falling back to "
+                  << kDefaultGuiScale << ".\n";
+        continue;
+      }
+
+      options.guiScale = parseGuiScale(argv[++i]);
+    } else if (arg.compare(0, prefix.size(), prefix) == 0) {
+      options.guiScale = parseGuiScale(arg.substr(prefix.size()));
+    } else {
+      std::cerr << "Ignoring unknown option '" << arg << "'.\n";
+    }
+  }
+
+  return options;
 }
 
 void setFreeJointVelocity(
@@ -118,6 +188,20 @@ dart::dynamics::SimpleFramePtr createSphereMarker(
   return frame;
 }
 
+dart::dynamics::SimpleFramePtr createBoxMarker(
+    const std::string& name,
+    const Eigen::Vector3d& position,
+    const Eigen::Vector3d& size,
+    const Eigen::Vector3d& color)
+{
+  auto frame = std::make_shared<dart::dynamics::SimpleFrame>(
+      dart::dynamics::Frame::World(), name, makeTransform(position));
+  frame->setShape(std::make_shared<dart::dynamics::BoxShape>(size));
+  frame->createVisualAspect();
+  frame->getVisualAspect()->setColor(color);
+  return frame;
+}
+
 dart::dynamics::SimpleFramePtr createLineMarker(
     const std::string& name,
     const Eigen::Vector3d& start,
@@ -132,6 +216,99 @@ dart::dynamics::SimpleFramePtr createLineMarker(
   frame->createVisualAspect();
   frame->getVisualAspect()->setColor(color);
   return frame;
+}
+
+osg::ref_ptr<osg::Geode> createTextLabel(
+    const std::string& text,
+    const Eigen::Vector3d& position,
+    const Eigen::Vector3d& color,
+    float characterSize)
+{
+  osg::ref_ptr<osgText::Text> label = new osgText::Text();
+  label->setText(text);
+  label->setPosition(osg::Vec3(position.x(), position.y(), position.z()));
+  label->setColor(osg::Vec4(color.x(), color.y(), color.z(), 1.0));
+  label->setCharacterSizeMode(osgText::TextBase::SCREEN_COORDS);
+  label->setCharacterSize(characterSize);
+  label->setAxisAlignment(osgText::TextBase::SCREEN);
+  label->setAlignment(osgText::TextBase::CENTER_CENTER);
+  label->setBackdropType(osgText::Text::OUTLINE);
+  label->setBackdropColor(osg::Vec4(1.0, 1.0, 1.0, 1.0));
+  label->setEnableDepthWrites(false);
+
+  osg::ref_ptr<osg::Geode> geode = new osg::Geode();
+  geode->addDrawable(label);
+  geode->getOrCreateStateSet()->setMode(
+      GL_DEPTH_TEST, osg::StateAttribute::OFF);
+  return geode;
+}
+
+osg::ref_ptr<osg::Group> createSceneLabels(double guiScale)
+{
+  const float baseSize = static_cast<float>(18.0 * guiScale);
+  const float titleSize = static_cast<float>(22.0 * guiScale);
+
+  osg::ref_ptr<osg::Group> labels = new osg::Group();
+  labels->addChild(createTextLabel(
+      "DART 6 DynamicJointConstraint catalog",
+      Eigen::Vector3d(0.0, -1.25, 3.35),
+      Eigen::Vector3d(0.08, 0.08, 0.08),
+      titleSize));
+  labels->addChild(createTextLabel(
+      "BALL\nfixed point\nfree rotation",
+      Eigen::Vector3d(-3.0, -1.05, 2.55),
+      Eigen::Vector3d(0.75, 0.12, 0.08),
+      baseSize));
+  labels->addChild(createTextLabel(
+      "CYLINDRICAL\nrail fixed\nslide + spin",
+      Eigen::Vector3d(0.0, -1.05, 2.75),
+      Eigen::Vector3d(0.0, 0.45, 0.70),
+      baseSize));
+  labels->addChild(createTextLabel(
+      "WELD\npose fixed\nno free DOF",
+      Eigen::Vector3d(3.0, -1.05, 2.55),
+      Eigen::Vector3d(0.12, 0.45, 0.12),
+      baseSize));
+
+  return labels;
+}
+
+void addSceneGuides(const dart::simulation::WorldPtr& world)
+{
+  world->addSimpleFrame(createBoxMarker(
+      "ball_lane_pad",
+      Eigen::Vector3d(-3.0, 0.0, 0.02),
+      Eigen::Vector3d(1.9, 1.25, 0.04),
+      Eigen::Vector3d(0.60, 0.20, 0.16)));
+  world->addSimpleFrame(createBoxMarker(
+      "cylindrical_lane_pad",
+      Eigen::Vector3d(0.0, 0.0, 0.02),
+      Eigen::Vector3d(1.9, 1.25, 0.04),
+      Eigen::Vector3d(0.12, 0.42, 0.62)));
+  world->addSimpleFrame(createBoxMarker(
+      "weld_lane_pad",
+      Eigen::Vector3d(3.0, 0.0, 0.02),
+      Eigen::Vector3d(1.9, 1.25, 0.04),
+      Eigen::Vector3d(0.20, 0.52, 0.20)));
+
+  world->addSimpleFrame(createLineMarker(
+      "ball_rotation_cue",
+      Eigen::Vector3d(-3.55, 0.0, 2.1),
+      Eigen::Vector3d(-2.45, 0.0, 1.5),
+      4.0f,
+      Eigen::Vector3d(1.0, 0.80, 0.20)));
+  world->addSimpleFrame(createLineMarker(
+      "weld_lock_cue_a",
+      Eigen::Vector3d(2.45, -0.35, 1.55),
+      Eigen::Vector3d(3.55, 0.35, 0.75),
+      4.0f,
+      Eigen::Vector3d(0.95, 0.95, 0.95)));
+  world->addSimpleFrame(createLineMarker(
+      "weld_lock_cue_b",
+      Eigen::Vector3d(2.45, 0.35, 1.55),
+      Eigen::Vector3d(3.55, -0.35, 0.75),
+      4.0f,
+      Eigen::Vector3d(0.95, 0.95, 0.95)));
 }
 
 dart::dynamics::SimpleFramePtr createAxisMarker(
@@ -244,6 +421,7 @@ dart::simulation::WorldPtr createWorld()
   world->setGravity(Eigen::Vector3d(0.0, 0.0, -4.0));
   world->setTimeStep(1e-3);
 
+  addSceneGuides(world);
   addBallJointDemo(world);
   addCylindricalJointDemo(world);
   addWeldJointDemo(world);
@@ -254,21 +432,37 @@ class DynamicJointWidget : public dart::gui::osg::ImGuiWidget
 {
 public:
   DynamicJointWidget(
-      dart::gui::osg::ImGuiViewer* viewer, dart::simulation::WorldPtr world)
-    : mViewer(viewer), mWorld(std::move(world))
+      dart::gui::osg::ImGuiViewer* viewer,
+      dart::simulation::WorldPtr world,
+      double guiScale)
+    : mViewer(viewer),
+      mWorld(std::move(world)),
+      mGuiScale(static_cast<float>(guiScale))
   {
     // Do nothing.
   }
 
   void render() override
   {
-    ImGui::SetNextWindowPos(ImVec2(10, 20));
-    ImGui::SetNextWindowSize(ImVec2(360, 260));
-    ImGui::SetNextWindowBgAlpha(0.65f);
+    if (!mStyleScaled) {
+      ImGui::GetStyle().ScaleAllSizes(mGuiScale);
+      mStyleScaled = true;
+    }
+
+    ImGui::GetIO().FontGlobalScale = mGuiScale;
+    const ImVec2 displaySize = ImGui::GetIO().DisplaySize;
+    const float margin = 10.0f * mGuiScale;
+    const ImVec2 windowSize = computeWindowSize(displaySize, margin);
+    ImGui::SetNextWindowPos(
+        ImVec2(std::max(margin, displaySize.x - windowSize.x - margin), margin),
+        ImGuiCond_Always);
+    ImGui::SetNextWindowSize(windowSize, ImGuiCond_Always);
+    ImGui::SetNextWindowBgAlpha(0.80f);
     if (!ImGui::Begin(
             "Dynamic Joint Constraints",
             nullptr,
-            ImGuiWindowFlags_NoResize | ImGuiWindowFlags_MenuBar)) {
+            ImGuiWindowFlags_NoResize | ImGuiWindowFlags_MenuBar
+                | ImGuiWindowFlags_NoSavedSettings)) {
       ImGui::End();
       return;
     }
@@ -298,9 +492,9 @@ public:
 
     ImGui::Text("Time: %.2f", mWorld->getTime());
     ImGui::Separator();
-    ImGui::Text("Ball: fixed anchor, free rotation");
-    ImGui::Text("Cylindrical: fixed axis, free slide and spin");
-    ImGui::Text("Weld: fixed pose");
+    ImGui::TextWrapped("Ball: fixed anchor, free rotation");
+    ImGui::TextWrapped("Cylindrical: fixed axis, free slide and spin");
+    ImGui::TextWrapped("Weld: fixed pose");
     ImGui::Separator();
     ImGui::Text(
         "Constraints: %u",
@@ -311,14 +505,30 @@ public:
   }
 
 private:
+  ImVec2 computeWindowSize(const ImVec2& displaySize, float margin) const
+  {
+    const ImVec2 preferred(kPanelWidth * mGuiScale, kPanelHeight * mGuiScale);
+    if (displaySize.x <= 0.0f || displaySize.y <= 0.0f)
+      return preferred;
+
+    const float maxWidth = std::max(kPanelWidth, displaySize.x - 2.0f * margin);
+    const float maxHeight
+        = std::max(kPanelHeight, displaySize.y - 2.0f * margin);
+    return ImVec2(
+        std::min(preferred.x, maxWidth), std::min(preferred.y, maxHeight));
+  }
+
   osg::ref_ptr<dart::gui::osg::ImGuiViewer> mViewer;
   dart::simulation::WorldPtr mWorld;
+  float mGuiScale;
+  bool mStyleScaled = false;
 };
 
 } // namespace
 
-int main()
+int main(int argc, char* argv[])
 {
+  const Options options = parseOptions(argc, argv);
   dart::simulation::WorldPtr world = createWorld();
 
   osg::ref_ptr<dart::gui::osg::WorldNode> node
@@ -327,14 +537,17 @@ int main()
   osg::ref_ptr<dart::gui::osg::ImGuiViewer> viewer
       = new dart::gui::osg::ImGuiViewer();
   viewer->addWorldNode(node);
+  viewer->getRootGroup()->addChild(createSceneLabels(options.guiScale));
   viewer->getImGuiHandler()->addWidget(
-      std::make_shared<DynamicJointWidget>(viewer, world));
+      std::make_shared<DynamicJointWidget>(viewer, world, options.guiScale));
 
   viewer->addInstructionText(
       "\nThe scene shows Ball, Cylindrical, and Weld dynamic constraints.\n");
   viewer->addInstructionText(
       "The cylindrical body is constrained to the center rail while it slides "
       "and spins.\n");
+  viewer->addInstructionText(
+      "Use --gui-scale <value> to scale the ImGui control panel.\n");
   std::cout << viewer->getInstructions() << std::endl;
 
   viewer->setUpViewInWindow(0, 0, 960, 640);
