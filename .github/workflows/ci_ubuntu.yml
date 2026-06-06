@@ -281,7 +281,7 @@ jobs:
           PYTHONPATH=build/default/cpp/Release/python \
             pixi run -- pytest -q \
               python/tests/unit/collision/test_collision.py \
-              python/tests/unit/simulation/test_world.py
+              python/tests/unit/simulation/test_experimental_world.py
 
   collision-benchmark-guard:
     needs: changes
