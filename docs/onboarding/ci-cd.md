@@ -95,7 +95,18 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   executable.
 - Unit test crashes or segfaults: isolate the failing test from job logs, reproduce locally, and add a regression for the edge case.
 - Job logs are missing or return 404: re-run the single job and/or download the run-level logs archive to inspect failures.
-- Infrastructure failures (runner connectivity lost, self-hosted runner issues): re-run only the failed jobs with `gh run rerun <RUN_ID> --failed`.
+- Infrastructure failures (self-hosted runner "lost communication"): the
+  `dartsim-mark*` self-hosted runners advertise the `ubuntu-latest` label as
+  parity replacements for GitHub-hosted runners, so each one must be capped to a
+  GitHub-hosted envelope — **4 vCPU / 16 GB** per runner — and the total kept
+  within host capacity with headroom. An uncapped runner on an oversubscribed
+  host starves its `Runner.Listener` heartbeat, and GitHub fails the job with
+  "The self-hosted runner lost communication with the server" — a host-resource
+  issue, not a code defect. Tell-tale: the job logs contain only the setup steps
+  because the failing step (e.g. `Build wheel`) died mid-run and never produced a
+  log. Re-run once the host is calm (`gh run rerun <RUN_ID> --failed`) and make
+  sure every runner is resource-capped per the runner-setup gist
+  (https://gist.github.com/jslee02/c0a6b0e4af18e4ecb2f2e8fb5b715f78).
 - FreeBSD RTTI failures: `dynamic_cast` across shared library boundaries can fail silently; use type enums + `static_cast` instead.
 - macOS ARM64 sporadic SEGFAULT: `alloca()` or VLAs may cause alignment violations; use `std::vector<T>` for proper alignment.
 - RTD build failures: Sphinx extension compatibility issues; use defensive `.get(key, default)` patterns.
