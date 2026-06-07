@@ -76,7 +76,7 @@
       world-contact packets, homogeneous 5-sphere coupled stack-contact
       packets, grouped variable-size 1/2/4/8/16-contact sphere-ground packets,
       grouped variable-size 2/3/4/5-sphere coupled stack-contact packets, and
-      grouped variable-size manually assembled 1-/4-contact articulated
+      grouped variable-size manually assembled 1-/4-/8-contact articulated
       unified-contact packets including cross-multibody link-vs-link cases,
       plus mixed grouped contact packets combining those separated, stack, and
       articulated fixture families, with CUDA unit coverage and benchmark rows.
@@ -296,7 +296,7 @@
       CUDA Jacobi and PGS unit tests and benchmark rows on the visible GPU.
 - [x] Added grouped variable-size CUDA contact-batch evidence for DART 7
       manually assembled fixed-base three-axis prismatic articulated
-      unified-contact packets with 1 and 4 contacts, covering fixed-iteration
+      unified-contact packets with 1, 4, and 8 contacts, covering fixed-iteration
       CUDA Jacobi and PGS unit tests and benchmark rows on the visible GPU.
 - [x] Added mixed grouped CUDA contact-batch evidence for DART 7 separated
       sphere-ground, coupled stack-contact, and manually assembled articulated
@@ -498,7 +498,7 @@ tradeoffs evidence based.
   homogeneous contact-derived world-contact CUDA batches, homogeneous 5-sphere
   coupled stack-contact CUDA batches, and grouped variable-size 1/2/4/8/16-contact
   separated, 2/3/4/5-sphere coupled stack world-contact, and manually assembled
-  1-/4-contact articulated unified-contact CUDA batches covering link-ground,
+  1-/4-/8-contact articulated unified-contact CUDA batches covering link-ground,
   link-vs-dynamic-rigid, and cross-multibody link-vs-link packets, plus mixed
   grouped contact batches combining the separated, stack, and articulated
   fixture families for Jacobi and PGS on the visible GPU.
@@ -539,11 +539,11 @@ tradeoffs evidence based.
   `test_lcp_jacobi_batch_cuda --gtest_filter='CudaLcpJacobiBatch.ArticulatedUnifiedContactGroupedBatchSatisfiesLcpContract:CudaLcpPgsBatch.ArticulatedUnifiedContactGroupedBatchSatisfiesLcpContract' --gtest_brief=1`
   passed both CUDA grouped-batch tests, and
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpCuda(Jacobi|Pgs)ArticulatedUnifiedContactGroupedBatch_FrictionIndex' --benchmark_min_time=0.001s --benchmark_repetitions=1`
-  reported two articulated CUDA rows with `contract_ok=1`, `batch_size=12`,
-  `cuda_group_count=2`, `contact_shape_count=2`,
+  reported two articulated CUDA rows with `contract_ok=1`, `batch_size=18`,
+  `cuda_group_count=3`, `contact_shape_count=3`,
   `articulated_contact_case_count=3`, `articulated_cross_link_contact=1`,
-  `min_problem_size=3`, `max_problem_size=12`, `total_contact_count=30`, and
-  `total_problem_size=90`. A focused mixed-contact follow-up
+  `min_problem_size=3`, `max_problem_size=24`, `total_contact_count=78`, and
+  `total_problem_size=234`. A focused mixed-contact follow-up
   `test_lcp_jacobi_batch_cuda --gtest_filter='CudaLcpJacobiBatch.MixedContactGroupedBatchSatisfiesLcpContract:CudaLcpPgsBatch.MixedContactGroupedBatchSatisfiesLcpContract' --gtest_brief=1`
   passed both CUDA grouped-batch tests, and
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpCuda(Jacobi|Pgs)MixedContactGroupedBatch_FrictionIndex' --benchmark_min_time=0.001s --benchmark_repetitions=1`
@@ -1378,29 +1378,22 @@ tradeoffs evidence based.
   multi-DOF articulated contact evidence, not broad articulated robot contact
   coverage.
 - DART 7 articulated unified-contact solver benchmark evidence:
-  `BM_LcpArticulatedUnifiedContact/FrictionIndex/{Ground,RigidImpact,CrossLinkImpact}/<solver>/{1,4}`
+  `BM_LcpArticulatedUnifiedContact/FrictionIndex/{Ground,RigidImpact,CrossLinkImpact}/<solver>/{1,4,8}`
   manually assembles fixed-base three-axis prismatic `LinkContact` snapshots
   through `assembleMultibodyLinkContactProblem` and
   `assembleUnifiedConstraintProblem`, then compares all 16
-  friction-index-capable solvers on the same 3-row and 12-row LCPs. The
-  cross-link rows complete a second articulated endpoint for a separate
+  friction-index-capable solvers on the same 3-row, 12-row, and 24-row LCPs.
+  The cross-link rows complete a second articulated endpoint for a separate
   multibody, so they exercise the unified contact matrix's cross-multibody
-  block. The
-  focused
-  `BM_LCP_COMPARE --benchmark_filter='BM_LcpArticulatedUnifiedContact' --benchmark_min_time=0.001s --benchmark_repetitions=1`
-  run reported `contract_ok=1` for all 96 rows, with
-  `articulated_unified_contact=1`, `contact_count=1` and `4`, and
-  `dynamic_rigid_body_count=1` and `4` for the rigid-impact rows. The focused
-  `BM_LCP_COMPARE --benchmark_filter='BM_LcpArticulatedUnifiedContact/FrictionIndex/CrossLinkImpact' --benchmark_min_time=0.001s --benchmark_repetitions=1`
-  default/SIMD/CUDA build-tree runs reported `contract_ok=1` for all 32
-  cross-link rows, with `multibody_count=2` and `8`,
-  `articulated_cross_link_contact=1`, and the expected backend build counters.
+  block. Focused default, SIMD-enabled, and CUDA-enabled
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpArticulatedUnifiedContact/FrictionIndex/.+/8$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  runs reported `contract_ok=1` for all 48 new 8-contact rows, with
+  `articulated_unified_contact=1`, `contact_count=8`, `problem_size=24`,
+  `multibody_count=8` for ground/rigid-impact rows, and `multibody_count=16`
+  plus `articulated_cross_link_contact=1` for cross-link rows.
   This is manual articulated link-contact assembly evidence, not
-  `World::collide()` or end-to-end stepping evidence. Focused SIMD-enabled and
-  CUDA-enabled build-tree runs over the Dantzig/Jacobi/SAP ground and
-  rigid-impact rows also reported `contract_ok=1` with the expected
-  `build_simd_enabled=1` and
-  `build_cuda_enabled=1` counters; those focused rows are CPU solver execution
+  `World::collide()` or end-to-end stepping evidence. The CUDA-enabled
+  all-solver rows are CPU solver execution
   in those build trees, not CUDA kernel execution.
 
 ## Completed This Session
@@ -1683,7 +1676,7 @@ tradeoffs evidence based.
   and grouped variable-size 1/2/4/8/16-contact DART 7 separated world-contact
   CUDA unit and benchmark evidence, plus homogeneous 5-sphere and grouped
   variable-size 2/3/4/5-sphere coupled stack-contact CUDA unit and benchmark
-  evidence and manually assembled 1-/4-contact articulated unified-contact CUDA
+  evidence and manually assembled 1-/4-/8-contact articulated unified-contact CUDA
   unit and benchmark evidence for link-ground, link-vs-dynamic-rigid, and
   cross-multibody link-vs-link packets for the same kernels. Added mixed grouped CUDA
   unit and benchmark evidence that combines those separated, stack, and
@@ -1778,7 +1771,7 @@ tradeoffs evidence based.
   standard/boxed/friction-index, homogeneous 4-/8-/16-contact, homogeneous
   5-sphere coupled stack, and grouped variable-size 1/2/4/8/16-contact separated
   and 2/3/4/5-sphere coupled stack world-contact batch paths, plus manually
-  assembled 1-/4-contact articulated unified-contact batch paths including
+  assembled 1-/4-/8-contact articulated unified-contact batch paths including
   cross-multibody link-vs-link packets, and mixed
   separated/stack/articulated grouped contact batch paths, pass.
   Jacobi has opt-in solver-internal CPU

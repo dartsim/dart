@@ -5006,7 +5006,7 @@ MakeGroupedArticulatedUnifiedContactCudaBatch(
     return std::nullopt;
   }
 
-  constexpr std::array<int, 2> kContactCounts{1, 4};
+  constexpr std::array<int, 3> kContactCounts{1, 4, 8};
   CudaGroupedWorldContactBenchmarkBatch grouped;
   std::vector<std::size_t> groupSizes;
   grouped.aggregate.problems.reserve(
@@ -9857,7 +9857,8 @@ void RegisterArticulatedUnifiedContactBenchmarks()
             RunArticulatedUnifiedContactBenchmark(state, solver, benchmarkCase);
           })
           ->Arg(1)
-          ->Arg(4);
+          ->Arg(4)
+          ->Arg(8);
     }
   }
 }

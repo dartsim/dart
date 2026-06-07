@@ -89,7 +89,7 @@ Support abbreviations:
   packets, homogeneous 4-/8-/16-contact and grouped variable-size
   1/2/4/8/16-contact DART 7 sphere-ground world-contact packets, homogeneous
   5-sphere and grouped variable-size 2/3/4/5-sphere coupled stack-contact
-  packets, grouped variable-size 1-/4-contact articulated unified-contact
+  packets, grouped variable-size 1-/4-/8-contact articulated unified-contact
   packets including cross-multibody link-vs-link cases, and PGS-only
   homogeneous plus grouped variable-size dense box-face contact packets, plus
   mixed grouped batches that combine separated, stack, and
@@ -662,22 +662,22 @@ The current local evidence for this task is:
   articulated contact evidence for the public unified constraint path, not
   broad robot-like contact coverage.
 - `BM_LCP_COMPARE --benchmark_filter='BM_LcpArticulatedUnifiedContact' --benchmark_min_time=0.001s --benchmark_repetitions=1`
-  passed locally for all 96
+  previously passed locally for all 96
   `BM_LcpArticulatedUnifiedContact/FrictionIndex/{Ground,RigidImpact,CrossLinkImpact}/<solver>/{1,4}`
-  rows. These rows manually assemble fixed-base three-axis prismatic
-  `LinkContact` snapshots through `assembleMultibodyLinkContactProblem` and
-  `assembleUnifiedConstraintProblem`, then compare all 16
-  friction-index-capable solvers on identical 3-row and 12-row LCPs. The
-  cross-link rows complete a second articulated endpoint for a separate
-  multibody, so they exercise the unified contact matrix's cross-multibody
-  block. The run
-  reported `contract_ok=1`, `articulated_unified_contact=1`,
-  `contact_count=1` and `4`, and `dynamic_rigid_body_count=1` and `4` for the
-  rigid-impact rows. A focused
-  `BM_LCP_COMPARE --benchmark_filter='BM_LcpArticulatedUnifiedContact/FrictionIndex/CrossLinkImpact' --benchmark_min_time=0.001s --benchmark_repetitions=1`
-  default/SIMD/CUDA build-tree run reported `contract_ok=1` for all 32
-  cross-link rows, with `multibody_count=2` and `8`,
-  `articulated_cross_link_contact=1`, and the expected backend build counters.
+  rows. The benchmark now also registers 8-contact rows, so these rows manually
+  assemble fixed-base three-axis prismatic `LinkContact` snapshots through
+  `assembleMultibodyLinkContactProblem` and `assembleUnifiedConstraintProblem`,
+  then compare all 16 friction-index-capable solvers on identical 3-row,
+  12-row, and 24-row LCPs. The cross-link rows complete a second articulated
+  endpoint for a separate multibody, so they exercise the unified contact
+  matrix's cross-multibody block. Focused default, SIMD-enabled, and
+  CUDA-enabled
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpArticulatedUnifiedContact/FrictionIndex/.+/8$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  runs reported `contract_ok=1` for all 48 new 8-contact rows, with
+  `articulated_unified_contact=1`, `contact_count=8`, `problem_size=24`,
+  `multibody_count=8` for ground/rigid-impact rows, `dynamic_rigid_body_count=8`
+  for rigid-impact rows, and `multibody_count=16` plus
+  `articulated_cross_link_contact=1` for cross-link rows.
   This is articulated unified-contact LCP assembly evidence, not
   collision-discovered or end-to-end stepping evidence. Focused
   SIMD-enabled and CUDA-enabled build-tree runs over the Dantzig/Jacobi/SAP
@@ -952,13 +952,13 @@ The current local evidence for this task is:
   `batch_size=8`, `cuda_group_count=4`, `contact_shape_count=4`,
   `min_problem_size=6`, `max_problem_size=15`,
   `total_contact_count=28`, and `total_problem_size=84`. The articulated
-  grouped variable-size rows use manually assembled 1-/4-contact fixed-base
+  grouped variable-size rows use manually assembled 1-/4-/8-contact fixed-base
   three-axis prismatic unified-contact packets covering link-ground,
   link-vs-dynamic-rigid, and cross-multibody link-vs-link cases with
-  `batch_size=12`, `cuda_group_count=2`, `contact_shape_count=2`,
+  `batch_size=18`, `cuda_group_count=3`, `contact_shape_count=3`,
   `articulated_contact_case_count=3`, `articulated_cross_link_contact=1`,
-  `min_problem_size=3`, `max_problem_size=12`, `total_contact_count=30`, and
-  `total_problem_size=90`. The mixed grouped rows combine separated
+  `min_problem_size=3`, `max_problem_size=24`, `total_contact_count=78`, and
+  `total_problem_size=234`. The mixed grouped rows combine separated
   sphere-ground, coupled stack, and manually assembled articulated
   unified-contact packets, including cross-multibody link-vs-link packets, with
   `batch_size=20`, `contact_fixture_family_count=3`, `cuda_group_count=4`,
@@ -1081,7 +1081,7 @@ The current local evidence for this task is:
   standard/boxed/friction-index, homogeneous 4-/8-/16-contact, homogeneous
   5-sphere coupled stack, and grouped variable-size 1/2/4/8/16-contact separated
   and 2/3/4/5-sphere coupled stack world-contact batch paths, plus manually
-  assembled 1-/4-contact articulated unified-contact batch paths including
+  assembled 1-/4-/8-contact articulated unified-contact batch paths including
   cross-multibody link-vs-link packets, and mixed
   separated/stack/articulated grouped contact batch paths, and PGS-only dense
   box-face CUDA batch paths through homogeneous 1/4/8/16/24/32-box and grouped
