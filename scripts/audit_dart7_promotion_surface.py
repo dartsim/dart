@@ -92,6 +92,11 @@ PROMOTE_DIRS = (
 #   * diff/step_derivatives.hpp / diff/step_gradient.hpp are pulled into the
 #     public include closure by value (world.hpp / rollout.hpp), so consumers
 #     including only those headers need the complete types.
+#   * compute/compute_executor.hpp, compute/sequential_executor.hpp, and
+#     compute/parallel_executor.hpp are the backend-neutral executor seam exposed
+#     by World::sync/updateKinematics/step overloads.
+#   * compute/world_step_stage.hpp carries the backend-neutral WorldStepStage and
+#     WorldStepPipeline extension points exposed by World::step overloads.
 #   * compute/compute_stage_metadata.hpp carries backend-neutral stage domain
 #     metadata. It is intentionally public because World step profiles report a
 #     stage domain without exposing concrete executor/backend details.
@@ -100,9 +105,13 @@ PROMOTE_DIRS = (
 #   * compute/world_step_profile.hpp is the World public
 #     text-first profiling value type, returned by World::getLastStepProfile().
 PROMOTE_FILES = {
+    "compute/compute_executor.hpp",
     "compute/compute_stage_metadata.hpp",
     "compute/execution_profile.hpp",
+    "compute/parallel_executor.hpp",
+    "compute/sequential_executor.hpp",
     "compute/world_step_profile.hpp",
+    "compute/world_step_stage.hpp",
     "diff/rollout.hpp",
     "diff/step_derivatives.hpp",
     "diff/step_gradient.hpp",

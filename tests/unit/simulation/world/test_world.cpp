@@ -1700,9 +1700,10 @@ TEST(Version, VersionString)
   EXPECT_GT(ver.size(), 0u);
 
   // Test individual version components
-  EXPECT_GE(dart::simulation::versionMajor(), 7);
-  EXPECT_GE(dart::simulation::versionMinor(), 0);
-  EXPECT_GE(dart::simulation::versionPatch(), 0);
+  EXPECT_EQ(dart::simulation::versionMajor(), DART_MAJOR_VERSION);
+  EXPECT_EQ(dart::simulation::versionMinor(), DART_MINOR_VERSION);
+  EXPECT_EQ(dart::simulation::versionPatch(), DART_PATCH_VERSION);
+  EXPECT_EQ(ver, std::string_view(DART_VERSION));
 }
 
 //==============================================================================

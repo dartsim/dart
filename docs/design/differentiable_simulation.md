@@ -280,8 +280,8 @@ The C++ core produces plain Eigen-typed derivative value objects and knows
 nothing about any tensor framework. The lowest-friction Python experience — a
 `torch.autograd.Function` so users write a normal loop and call `.backward()` —
 lives only in the optional dartpy `sx.diff` submodule and is a thin adapter over
-the framework-neutral core. `import dartpy.simulation_experimental` must succeed
-with torch absent; `sx.diff` always exists as an attribute, and calling into it
+the framework-neutral core. `import dartpy.simulation` must succeed with torch
+absent; `sx.diff` always exists as an attribute, and calling into it
 without torch raises a clear, guiding `ImportError`. This keeps the engine
 dependency-free and leaves room for a future JAX/`dlpack` bridge added the same
 way.
@@ -331,7 +331,7 @@ Using `sx.diff` _is_ the opt-in for the functional/learning path; a user who
 just wants `.backward()` writes a normal loop, exactly as in Nimble:
 
 ```python
-from dartpy import simulation_experimental as sx
+from dartpy import simulation as sx
 import torch
 
 world = sx.World(time_step=0.001)

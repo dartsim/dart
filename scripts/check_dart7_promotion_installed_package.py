@@ -26,7 +26,11 @@ REQUIRED_INSTALLED_HEADERS = (
     "dart/simulation/body/rigid_body.hpp",
     "dart/simulation/body/rigid_body_options.hpp",
     "dart/simulation/multibody/multibody.hpp",
+    "dart/simulation/compute/compute_executor.hpp",
+    "dart/simulation/compute/parallel_executor.hpp",
+    "dart/simulation/compute/sequential_executor.hpp",
     "dart/simulation/compute/world_step_profile.hpp",
+    "dart/simulation/compute/world_step_stage.hpp",
 )
 
 FORBIDDEN_INSTALLED_HEADERS = (
@@ -56,6 +60,8 @@ PRIVATE_COMPONENT_DEPENDENCY_MARKERS = (
 
 POSITIVE_CPP = r"""
 #include <dart/simulation/body/rigid_body.hpp>
+#include <dart/simulation/compute/parallel_executor.hpp>
+#include <dart/simulation/compute/sequential_executor.hpp>
 #include <dart/simulation/world.hpp>
 
 #include <iostream>
@@ -66,7 +72,11 @@ int main() {
   sx::World world;
   auto body = world.addRigidBody("box");
   (void)body;
-  world.step();
+  sx::compute::SequentialExecutor sequential;
+  world.sync(sx::WorldSyncStage::Kinematics, sequential);
+
+  sx::compute::ParallelExecutor parallel(1);
+  world.step(parallel);
 
   const auto count = world.getRigidBodyCount();
   std::cout << "rigid_body_count=" << count << "\n";

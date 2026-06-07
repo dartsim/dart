@@ -380,14 +380,10 @@ import dartpy as dart
 from dartpy import simulation as sx
 ```
 
-The experimental module is conditionally available when
-`DART_BUILD_SIMULATION_EXPERIMENTAL=ON`. It is not part of the legacy submodule
-compatibility layer and is not promoted onto top-level `dartpy`.
-
-The matching C++ surface remains opt-in under
-`dart::simulation` while parity gates are being closed. For the
-DART 7 clean break, the promoted API should move into the official stable
-simulation namespace while the DART 6-era C++ simulation surface is removed.
+The old `dartpy.simulation_experimental` staging module and
+`DART_BUILD_SIMULATION_EXPERIMENTAL` option are retired in the clean DART 7 API.
+The matching C++ surface is `dart::simulation`; the DART 6-era world surface is
+not kept as a parallel Python owner.
 
 The intended promoted public symbols are:
 

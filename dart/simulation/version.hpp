@@ -32,28 +32,30 @@
 
 #pragma once
 
+#include <dart/config.hpp>
+
 #include <string_view>
 
 namespace dart::simulation {
 
 inline constexpr int versionMajor()
 {
-  return 8;
+  return DART_MAJOR_VERSION;
 }
 
 inline constexpr int versionMinor()
 {
-  return 0;
+  return DART_MINOR_VERSION;
 }
 
 inline constexpr int versionPatch()
 {
-  return 0;
+  return DART_PATCH_VERSION;
 }
 
 inline constexpr std::string_view version()
 {
-  return "8.0.0";
+  return DART_VERSION;
 }
 
 } // namespace dart::simulation

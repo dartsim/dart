@@ -196,9 +196,13 @@ set(
 )
 set(
   dart_simulation_public_headers_compute
+  compute/compute_executor.hpp
   compute/compute_stage_metadata.hpp
   compute/execution_profile.hpp
+  compute/parallel_executor.hpp
+  compute/sequential_executor.hpp
   compute/world_step_profile.hpp
+  compute/world_step_stage.hpp
 )
 set(dart_simulation_public_headers_diff_optin diff/rollout.hpp)
 set(

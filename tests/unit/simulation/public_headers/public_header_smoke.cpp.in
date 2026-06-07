@@ -47,6 +47,18 @@ static_assert(
 static_assert(
     sizeof(dart::simulation::JointType) > 0,
     "JointType must be a complete value type in the public surface");
+static_assert(
+    sizeof(dart::simulation::compute::ComputeExecutor) > 0,
+    "ComputeExecutor must be a complete public executor interface");
+static_assert(
+    sizeof(dart::simulation::compute::SequentialExecutor) > 0,
+    "SequentialExecutor must be a complete public executor type");
+static_assert(
+    sizeof(dart::simulation::compute::ParallelExecutor) > 0,
+    "ParallelExecutor must be a complete public executor type");
+static_assert(
+    sizeof(dart::simulation::compute::WorldStepPipeline) > 0,
+    "WorldStepPipeline must be a complete public pipeline type");
 
 int main()
 {
