@@ -9813,7 +9813,8 @@ void RegisterWorldBoxContactBenchmarks()
         ->Arg(8)
         ->Arg(16)
         ->Arg(24)
-        ->Arg(32);
+        ->Arg(32)
+        ->Arg(48);
   }
 }
 
@@ -10245,7 +10246,8 @@ BENCHMARK(BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex)
     ->Args({8, 4})
     ->Args({16, 4})
     ->Args({24, 4})
-    ->Args({32, 4});
+    ->Args({32, 4})
+    ->Args({48, 4});
 BENCHMARK(BM_LcpCudaPgsWorldBoxContactGroupedBatch_FrictionIndex)->Arg(2);
 BENCHMARK(BM_LcpCudaJacobiWorldStackContactBatch_FrictionIndex)->Args({5, 4});
 BENCHMARK(BM_LcpCudaPgsWorldStackContactBatch_FrictionIndex)->Args({5, 4});
@@ -10282,7 +10284,8 @@ BENCHMARK(BM_LcpWorldBoxStep_BoxedLcp)
     ->Args({8, 200})
     ->Args({16, 500})
     ->Args({24, 2000})
-    ->Args({32, 4000});
+    ->Args({32, 4000})
+    ->Args({48, 4000});
 BENCHMARK(BM_LcpWorldArticulatedGroundStep_BoxedLcp)
     ->Args({1, 200})
     ->Args({4, 200})

@@ -273,9 +273,9 @@
       except `NNCG`.
 - [x] Added DART 7 dense box-face contact evidence: a 4-contact, 12-row,
       single-dynamic-body boxed/findex snapshot assembled from
-      `World::collide()`, APGD-verified in the unit test, plus 42 scoped
+      `World::collide()`, APGD-verified in the unit test, plus 48 scoped
       `BM_LcpWorldBoxContact/FrictionIndex` benchmark rows over
-      1/2/4/8/16/24/32-box snapshots verified in default, SIMD-enabled, and
+      1/2/4/8/16/24/32/48-box snapshots verified in default, SIMD-enabled, and
       CUDA-enabled build trees.
 - [x] Added contact-derived CUDA batch evidence for homogeneous 4-, 8-, and
       16-contact DART 7 world-contact packets, covering fixed-iteration CUDA
@@ -304,9 +304,11 @@
       one size-grouped batch, covering fixed-iteration CUDA Jacobi and PGS unit
       tests and benchmark rows on the visible GPU.
 - [x] Added dense box-face CUDA contact-batch evidence for DART 7:
-      homogeneous 4-problem 1-/4-/8-/16-/24-/32-box and grouped variable-size
+      homogeneous 4-problem 1-/4-/8-/16-/24-/32-/48-box and grouped variable-size
       1/2/4/8/16/24/32-box batches of box-face `World::collide()` snapshots pass
-      fixed-iteration CUDA PGS unit and benchmark coverage on the visible GPU.
+      fixed-iteration CUDA PGS benchmark coverage on the visible GPU; CUDA PGS
+      unit coverage now includes homogeneous 1-/16-/24-/32-/48-box packets and
+      the grouped 1/2/4/8/16/24/32-box packet.
       Fixed-iteration CUDA Jacobi was tried on the dense 4-contact patch and is
       not claimed: 4096 iterations with relaxation 1.0 failed the LCP contract with
       residual/complementarity/bound violations of about 3.3e-2 to 5.0e-2
@@ -323,7 +325,7 @@
       coverage to a 24-box/96-contact small-timestep scene. The
       `BM_LcpWorldBoxStep_BoxedLcp` rows report matching invariant counters for
       4/8/16/32-contact 200-step scenes, the 64-contact 500-step scene, the
-      96-contact 2000-step scene, and the 128-contact 4000-step scene.
+      96-contact 2000-step scene, and the 128-/192-contact 4000-step scenes.
 - [x] Added DART 7 per-contact block-structure evidence for BGS and
       Blocked Jacobi on real two-contact boxed-LCP world-contact snapshots:
       the tests prove `findex`-derived non-contiguous contact blocks solve the
@@ -359,7 +361,7 @@
 - [ ] Continue extending DART 7 end-to-end contact cases through the public
       simulation pipeline beyond current separated contacts, fixed-base
       articulated contacts, 5-sphere coupled stacks, and 24-box unit /
-      32-box benchmark dense face-contact step coverage.
+      48-box benchmark dense face-contact step coverage.
 - [ ] Broaden apples-to-apples benchmark packets from generated problems and
       simple world-contact snapshots to broader dense/robot-like end-to-end
       contact systems, with scalar, SIMD, threaded, CUDA, and broader batch
@@ -1170,16 +1172,18 @@ tradeoffs evidence based.
   benchmark evidence for 1/2/4 separated sphere-ground contacts, not evidence
   for articulated, robot-like, or denser degenerate contact scenes.
 - DART 7 dense box-contact benchmark evidence:
-  `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` now registers 42 scoped
-  `BM_LcpWorldBoxContact/FrictionIndex/<solver>/{1,2,4,8,16,24,32}` rows for
+  `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` now registers 48 scoped
+  `BM_LcpWorldBoxContact/FrictionIndex/<solver>/{1,2,4,8,16,24,32,48}` rows for
   `Pgs`, `RedBlackGaussSeidel`, `NNCG`, `Apgd`, `Tgs`, and `Admm`. Each solver
-  uses the same 1/2/4/8/16/24/32-box dense face-contact snapshots, covering
-  4/8/16/32/64/96/128 contacts, 12/24/48/96/192/288/384 rows, and
-  1/2/4/8/16/24/32 dynamic bodies. Focused default, SIMD-enabled, and
+  uses the same 1/2/4/8/16/24/32/48-box dense face-contact snapshots, covering
+  4/8/16/32/64/96/128/192 contacts, 12/24/48/96/192/288/384/576 rows, and
+  1/2/4/8/16/24/32/48 dynamic bodies. Focused default, SIMD-enabled, and
   CUDA-enabled
-  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldBoxContact/FrictionIndex/.+/(24|32)$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
-  runs each reported `contract_ok=1`, `dense_box_contact=1`, `box_count=24/32`,
-  `contact_count=96/128`, and `problem_size=288/384` for the 12 new rows.
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldBoxContact/FrictionIndex/.+/48$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  runs each reported `contract_ok=1`, `dense_box_contact=1`, `box_count=48`,
+  `contact_count=192`, and `problem_size=576` for the six new 48-box rows, with
+  `build_simd_enabled=1` in the SIMD build tree and `build_cuda_enabled=1` in
+  the CUDA-enabled build tree.
   The CUDA-enabled rows are CPU solver benchmark rows in that build tree, not
   CUDA LCP kernel execution. This is dense contact-snapshot evidence, not
   broad robot-like or CUDA dense-contact execution evidence.
@@ -1187,7 +1191,7 @@ tradeoffs evidence based.
   `BM_LcpWorldBoxStep_BoxedLcp/{1,2,4,8}/200` and
   `BM_LcpWorldBoxStep_BoxedLcp/16/500`,
   `BM_LcpWorldBoxStep_BoxedLcp/24/2000`, and
-  `BM_LcpWorldBoxStep_BoxedLcp/32/4000` rebuild separated box-on-ground scenes,
+  `BM_LcpWorldBoxStep_BoxedLcp/{32,48}/4000` rebuild separated box-on-ground scenes,
   confirm each box contributes a 4-contact face patch before stepping, enter
   simulation mode, advance the public boxed-LCP `World::step()` path, and check
   finite-state, contact-height, vertical-rest, and tangential-slowing
@@ -1196,29 +1200,36 @@ tradeoffs evidence based.
   `dense_box_contact=1`, `box_count=24/32`, `contact_count=96/128`, and
   `step_count=2000/4000`. The default 32-box row reported
   `max_height_error=1.46e-4` and `max_vertical_speed=4.38e-2`; the SIMD and
-  CUDA-enabled 32-box rows also reported `invariant_ok=1`. The
+  CUDA-enabled 32-box rows also reported `invariant_ok=1`. The focused default
+  48-box row reported `invariant_ok=1`, `dense_box_contact=1`,
+  `contact_count=192`, `step_count=4000`, `max_height_error=9.80e-5`, and
+  `max_vertical_speed=1.08e-2`. The
   CUDA-enabled rows are CPU public-step rows in that build tree, not CUDA LCP
   kernel execution. The runs still emit the dense-patch Dantzig warning, so
   this is public-step invariant evidence for dense face-contact scenes, not a
   direct Dantzig dense box solve claim.
 - DART 7 dense box-contact CUDA batch evidence:
   `CudaLcpPgsBatch.DenseBoxWorldContactBatchSatisfiesLcpContract` builds
-  homogeneous batches for 1-/16-/24-/32-box dense face-contact snapshots and
+  homogeneous batches for 1-/16-/24-/32-/48-box dense face-contact snapshots and
   verifies fixed-iteration CUDA PGS against the LCP contract.
   `CudaLcpPgsBatch.DenseBoxWorldContactGroupedBatchSatisfiesLcpContract` extends
   that to grouped variable-size 1/2/4/8/16/24/32-box packets. The
   focused
-  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpCudaPgsWorldBoxContact(Batch_FrictionIndex/(24|32)/4|GroupedBatch_FrictionIndex/2)$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpCudaPgsWorldBoxContact(Batch_FrictionIndex/48/4|GroupedBatch_FrictionIndex/2)$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   CUDA run reported `contract_ok=1`, `cuda_lcp_execution=1`,
   `cuda_batch_execution=1`, `cuda_dense_box_contact_batch=1`, and
-  `dense_box_contact=1` for the 24-/32-box homogeneous rows and the grouped row.
-  The 32-box homogeneous row reported `batch_size=4`, `box_count=32`,
-  `contact_count=128`, `total_contact_count=512`, `total_body_count=128`, and
-  `total_problem_size=1536`; the grouped row reported `batch_size=14`,
+  `dense_box_contact=1` for the 48-box homogeneous row and the grouped row. The
+  48-box homogeneous row reported `batch_size=4`, `box_count=48`,
+  `contact_count=192`, `problem_size=576`, `total_contact_count=768`,
+  `total_body_count=192`, and `total_problem_size=2304`; the grouped row
+  remains scoped to 1/2/4/8/16/24/32-box packets and reported `batch_size=14`,
   `cuda_group_count=7`, `box_count_shape_count=7`, `min_problem_size=12`,
   `max_problem_size=384`, `total_contact_count=696`, `total_body_count=174`, and
-  `total_problem_size=2088`. A fixed-iteration CUDA Jacobi dense-box trial
-  failed the LCP contract, so Jacobi dense-box CUDA execution remains unclaimed.
+  `total_problem_size=2088`. A grouped 48-box CUDA PGS extension was probed and
+  is not claimed: at 1024 fixed iterations the grouped validation failed two
+  48-box variants with fixed-variable residual/complementarity around
+  0.606/0.625. A fixed-iteration CUDA Jacobi dense-box trial failed the LCP
+  contract, so Jacobi dense-box CUDA execution remains unclaimed.
   The earlier failed Jacobi probe covered the previous homogeneous 4-problem and
   grouped 1/2/4-box fixtures: 4096 iterations with relaxation 1.0 failed with
   residual/complementarity/bound violations of about 3.3e-2 to 5.0e-2
@@ -1320,13 +1331,17 @@ tradeoffs evidence based.
   `max_vertical_speed=0`, and `min_tangential_speed_drop=0.23816`.
 - DART 7 dense box-face end-to-end benchmark evidence:
   `BM_LcpWorldBoxStep_BoxedLcp/{1,2,4,8}/200` and
-  `BM_LcpWorldBoxStep_BoxedLcp/{16,24,32}/{500,2000,4000}` rebuild separated
+  `BM_LcpWorldBoxStep_BoxedLcp/16/500`,
+  `BM_LcpWorldBoxStep_BoxedLcp/24/2000`, and
+  `BM_LcpWorldBoxStep_BoxedLcp/{32,48}/4000` rebuild separated
   dense box-face worlds,
   enter simulation mode, advance the public boxed-LCP `World::step()` path, and
   check finite-state, contact-height, vertical-rest, and tangential-slowing
   invariants. Focused default, SIMD-enabled, and CUDA-enabled build-tree
   runs over the 24-/32-box rows reported `invariant_ok=1`, with
-  `dense_box_contact=1`, `box_count=24/32`, and `contact_count=96/128`. The
+  `dense_box_contact=1`, `box_count=24/32`, and `contact_count=96/128`; the
+  focused default 48-box row reported `invariant_ok=1`, `box_count=48`,
+  `contact_count=192`, and `step_count=4000`. The
   CUDA-enabled rows are CPU public-step rows in that build tree, not CUDA LCP
   kernel execution.
 - DART 7 articulated contact end-to-end benchmark evidence:
@@ -1722,7 +1737,8 @@ tradeoffs evidence based.
   1-/4-/8-/16-pair articulated rigid-impact benchmark rows, a cross-multibody
   fixed-base prismatic link-vs-link boxed-LCP `World::step()` invariant test
   and 1-/4-/8-/16-pair articulated link-impact benchmark rows,
-  1-/2-/4-box dense face-contact boxed-LCP `World::step()` benchmark rows,
+  1-/2-/4-/8-/16-/24-/32-/48-box dense face-contact boxed-LCP `World::step()`
+  benchmark rows,
   manually assembled fixed-base three-axis prismatic articulated unified-contact
   all-solver benchmark rows for link-ground, link-vs-dynamic-rigid, and
   cross-multibody link-vs-link
@@ -1772,8 +1788,9 @@ tradeoffs evidence based.
   5-sphere coupled stack, and grouped variable-size 1/2/4/8/16-contact separated
   and 2/3/4/5-sphere coupled stack world-contact batch paths, plus manually
   assembled 1-/4-/8-contact articulated unified-contact batch paths including
-  cross-multibody link-vs-link packets, and mixed
-  separated/stack/articulated grouped contact batch paths, pass.
+  cross-multibody link-vs-link packets, mixed
+  separated/stack/articulated grouped contact batch paths, and PGS-only
+  homogeneous dense box-face CUDA batches through 48 boxes, pass.
   Jacobi has opt-in solver-internal CPU
   worker-thread correctness and benchmark evidence, including larger 2048-row
   banded rows, but the focused local rows did not show a general speedup. Other intra-solver multi-threaded
