@@ -1310,6 +1310,70 @@ void defSimulationModule(nb::module_& m)
         return format_repr("MultibodyOptions", fields);
       });
 
+  nb::class_<sim::DeactivationOptions>(m, "DeactivationOptions")
+      .def(
+          nb::new_([](bool enabled,
+                      double linearSpeedThreshold,
+                      double angularSpeedThreshold,
+                      double generalizedSpeedThreshold,
+                      double timeUntilSleep,
+                      double wakeThresholdScale,
+                      double disturbanceForceThreshold) {
+            sim::DeactivationOptions options;
+            options.enabled = enabled;
+            options.linearSpeedThreshold = linearSpeedThreshold;
+            options.angularSpeedThreshold = angularSpeedThreshold;
+            options.generalizedSpeedThreshold = generalizedSpeedThreshold;
+            options.timeUntilSleep = timeUntilSleep;
+            options.wakeThresholdScale = wakeThresholdScale;
+            options.disturbanceForceThreshold = disturbanceForceThreshold;
+            return options;
+          }),
+          nb::arg("enabled") = false,
+          nb::arg("linear_speed_threshold") = 1e-3,
+          nb::arg("angular_speed_threshold") = 1e-3,
+          nb::arg("generalized_speed_threshold") = 1e-3,
+          nb::arg("time_until_sleep") = 0.5,
+          nb::arg("wake_threshold_scale") = 2.0,
+          nb::arg("disturbance_force_threshold") = 1e-9)
+      .def_rw("enabled", &sim::DeactivationOptions::enabled)
+      .def_rw(
+          "linear_speed_threshold",
+          &sim::DeactivationOptions::linearSpeedThreshold)
+      .def_rw(
+          "angular_speed_threshold",
+          &sim::DeactivationOptions::angularSpeedThreshold)
+      .def_rw(
+          "generalized_speed_threshold",
+          &sim::DeactivationOptions::generalizedSpeedThreshold)
+      .def_rw("time_until_sleep", &sim::DeactivationOptions::timeUntilSleep)
+      .def_rw(
+          "wake_threshold_scale", &sim::DeactivationOptions::wakeThresholdScale)
+      .def_rw(
+          "disturbance_force_threshold",
+          &sim::DeactivationOptions::disturbanceForceThreshold)
+      .def("__repr__", [](const sim::DeactivationOptions& self) {
+        std::vector<std::pair<std::string, std::string>> fields;
+        fields.emplace_back("enabled", repr_bool(self.enabled));
+        fields.emplace_back(
+            "linear_speed_threshold",
+            std::to_string(self.linearSpeedThreshold));
+        fields.emplace_back(
+            "angular_speed_threshold",
+            std::to_string(self.angularSpeedThreshold));
+        fields.emplace_back(
+            "generalized_speed_threshold",
+            std::to_string(self.generalizedSpeedThreshold));
+        fields.emplace_back(
+            "time_until_sleep", std::to_string(self.timeUntilSleep));
+        fields.emplace_back(
+            "wake_threshold_scale", std::to_string(self.wakeThresholdScale));
+        fields.emplace_back(
+            "disturbance_force_threshold",
+            std::to_string(self.disturbanceForceThreshold));
+        return format_repr("DeactivationOptions", fields);
+      });
+
   nb::class_<sim::LoopClosureResidual>(m, "LoopClosureResidual")
       .def_prop_ro(
           "value",
@@ -1479,6 +1543,10 @@ void defSimulationModule(nb::module_& m)
       .def_prop_ro("joints", &sim::Multibody::getJoints)
       .def_prop_ro("link_names", &sim::Multibody::getLinkNames)
       .def_prop_ro("joint_names", &sim::Multibody::getJointNames)
+      .def_prop_ro("is_sleeping", &sim::Multibody::isSleeping)
+      .def_prop_ro(
+          "deactivation_group_index",
+          &sim::Multibody::getDeactivationGroupIndex)
       .def_prop_ro("mass_matrix", &sim::Multibody::getMassMatrix)
       .def_prop_ro("inverse_mass_matrix", &sim::Multibody::getInverseMassMatrix)
       .def_prop_ro("coriolis_forces", &sim::Multibody::getCoriolisForces)
@@ -1602,6 +1670,10 @@ void defSimulationModule(nb::module_& m)
           "is_kinematic",
           &sim::RigidBody::isKinematic,
           &sim::RigidBody::setKinematic)
+      .def_prop_ro("is_sleeping", &sim::RigidBody::isSleeping)
+      .def_prop_ro(
+          "deactivation_group_index",
+          &sim::RigidBody::getDeactivationGroupIndex)
       .def_prop_rw(
           "restitution",
           &sim::RigidBody::getRestitution,
@@ -2947,7 +3019,8 @@ void defSimulationModule(nb::module_& m)
              sim::RigidBodySolver rigidBodySolver,
              const sim::MultibodyOptions& multibodyOptions,
              sim::ContactSolverMethod contactSolverMethod,
-             sim::ContactGradientMode contactGradientMode) {
+             sim::ContactGradientMode contactGradientMode,
+             const sim::DeactivationOptions& deactivationOptions) {
             sim::WorldOptions options;
             options.timeStep = timeStep;
             if (!gravity.is_none()) {
@@ -2958,6 +3031,7 @@ void defSimulationModule(nb::module_& m)
             options.multibodyOptions = multibodyOptions;
             options.contactSolverMethod = contactSolverMethod;
             options.contactGradientMode = contactGradientMode;
+            options.deactivationOptions = deactivationOptions;
             new (self) sim::World(options);
           },
           nb::arg("time_step") = 0.001,
@@ -2969,7 +3043,8 @@ void defSimulationModule(nb::module_& m)
           nb::arg("multibody_options") = sim::MultibodyOptions{},
           nb::arg("contact_solver_method")
           = sim::ContactSolverMethod::SequentialImpulse,
-          nb::arg("contact_gradient_mode") = sim::ContactGradientMode::Analytic)
+          nb::arg("contact_gradient_mode") = sim::ContactGradientMode::Analytic,
+          nb::arg("deactivation_options") = sim::DeactivationOptions{})
       .def(
           "add_free_frame",
           [](sim::World& self,
@@ -3824,6 +3899,13 @@ void defSimulationModule(nb::module_& m)
           "contact_gradient_mode",
           &sim::World::getContactGradientMode,
           &sim::World::setContactGradientMode)
+      .def_prop_rw(
+          "deactivation_options",
+          &sim::World::getDeactivationOptions,
+          [](sim::World& self, const sim::DeactivationOptions& options) {
+            self.setDeactivationOptions(options);
+          })
+      .def_prop_ro("deactivation_enabled", &sim::World::isDeactivationEnabled)
       .def_prop_ro("num_dofs", &sim::World::getNumDofs)
       .def_prop_ro("num_efforts", &sim::World::getNumEfforts)
       .def_prop_rw(
