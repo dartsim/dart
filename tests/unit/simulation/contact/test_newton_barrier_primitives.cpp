@@ -35,6 +35,7 @@
 #include <dart/simulation/detail/newton_barrier/barrier_kernel.hpp>
 #include <dart/simulation/detail/newton_barrier/friction_kernel.hpp>
 #include <dart/simulation/detail/newton_barrier/primitive_distance.hpp>
+#include <dart/simulation/detail/newton_barrier/psd_projection.hpp>
 #include <dart/simulation/detail/newton_barrier/tangent_stencil.hpp>
 #include <dart/simulation/detail/rigid_ipc_barrier.hpp>
 
@@ -274,6 +275,30 @@ TEST(NewtonBarrierPrimitives, TangentForwardingMatchesSharedOwner)
   expectMatrixNear(oldPointPoint.basis, newPointPoint.basis);
   expectMatrixNear(oldPointPoint.projection, newPointPoint.projection);
   expectMatrixNear(oldPointPoint.metric, newPointPoint.metric);
+}
+
+//==============================================================================
+TEST(NewtonBarrierPrimitives, PsdProjectionClampsNegativeEigenvalues)
+{
+  Eigen::Matrix3d matrix = Eigen::Matrix3d::Zero();
+  matrix.diagonal() << 4.0, -2.0, 1.0;
+
+  Eigen::Matrix3d expected = Eigen::Matrix3d::Zero();
+  expected.diagonal() << 4.0, 0.0, 1.0;
+
+  expectMatrixNear(nb::projectSymmetricMatrixToPsd<3>(matrix), expected);
+}
+
+//==============================================================================
+TEST(NewtonBarrierPrimitives, PsdProjectionSymmetrizesBeforeProjection)
+{
+  Eigen::Matrix3d matrix = Eigen::Matrix3d::Zero();
+  matrix << 1.0, 2.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, -3.0;
+
+  Eigen::Matrix3d expected = Eigen::Matrix3d::Zero();
+  expected << 1.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0;
+
+  expectMatrixNear(nb::projectSymmetricMatrixToPsd<3>(matrix), expected);
 }
 
 //==============================================================================

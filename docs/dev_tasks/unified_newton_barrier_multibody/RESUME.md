@@ -9,6 +9,12 @@ Newton-barrier work should continue by promoting shared primitives and solver
 contracts consumed by rigid IPC, deformable IPC, ABD, and future couplers rather
 than adding another public solver stack.
 
+The first Phase 3 shared-contract slice promotes fixed-size symmetric PSD
+projection into `detail/newton_barrier`. Rigid IPC and ABD now use the same
+helper for reduced/affine Hessian projection; this is intentionally smaller
+than the existing deformable batched CPU/CUDA PSD backend and does not rename or
+generalize that backend yet.
+
 ## Last Session Summary
 
 Current slice: the first ABD benchmark packet has been promoted from
@@ -34,21 +40,27 @@ through the shared tangent-displacement friction kernel,
 `test_affine_body_dynamics`, and the first `bm_affine_body_dynamics` benchmark
 packet.
 
+The first Phase 3 contract slice lives on `simx/shared-newton-barrier-psd`: it
+adds a shared fixed-size PSD projection helper, routes rigid IPC and ABD Hessian
+projection through it, and adds focused Newton-barrier primitive tests for
+eigenvalue clamping and input symmetrization.
+
 ## Current Branch
 
-`docs/plan083-abd-next-slice-decision` - current checkout is expected to
-contain the PLAN-083 decision update that defers a two-body affine contact
-micro-solve until a broader ABD packet needs a solved-state residual.
+`simx/shared-newton-barrier-psd` - contains the Phase 3 fixed-size PSD
+projection helper slice. Verify the exact status with `git status --short
+--branch` because this section is a resume snapshot.
 
 ## Immediate Next Step
 
-Continue Phase 2/3 from
+Continue Phase 3 from
 [`../../plans/083-unified-newton-barrier-multibody/abd-first-slice-design.md`](../../plans/083-unified-newton-barrier-multibody/abd-first-slice-design.md):
-do not add a two-body affine contact micro-solve for the current
-`abd-alg-affine-body` micro-packet. Start Phase 3 shared-contract scouting from
-the existing rigid IPC, deformable IPC, and ABD evidence, and promote PSD,
-projected-Newton, line-search, diagnostics, or benchmark-schema contracts only
-after second-use behavior is proven identical across variants. Use
+finish validating and publishing the fixed-size PSD projection helper, then
+resume shared-contract scouting from the existing rigid IPC, deformable IPC, and
+ABD evidence. Do not add a two-body affine contact micro-solve for the current
+`abd-alg-affine-body` micro-packet; add projected-Newton, line-search,
+diagnostics, or benchmark-schema contracts only after second-use behavior is
+proven identical across variants. Use
 [`../../plans/083-unified-newton-barrier-multibody/implementation-roadmap.md`](../../plans/083-unified-newton-barrier-multibody/implementation-roadmap.md)
 to keep the Phase 2 packet, shared solver contracts, articulation rows,
 restitution work, mixed-domain coupling, CPU/GPU parity, and py-demos rows

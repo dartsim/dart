@@ -31,11 +31,11 @@
 
 #include <dart/simulation/detail/deformable_contact/candidate_set.hpp>
 #include <dart/simulation/detail/newton_barrier/friction_kernel.hpp>
+#include <dart/simulation/detail/newton_barrier/psd_projection.hpp>
 #include <dart/simulation/detail/newton_barrier/tangent_stencil.hpp>
 #include <dart/simulation/detail/rigid_ipc_barrier.hpp>
 
 #include <Eigen/Cholesky>
-#include <Eigen/Eigenvalues>
 
 #include <algorithm>
 #include <array>
@@ -292,19 +292,6 @@ PointTransformDerivatives pointTransformDerivatives(
   return derivatives;
 }
 
-RigidIpcMatrix12d projectToPsd(const RigidIpcMatrix12d& matrix)
-{
-  const RigidIpcMatrix12d symmetric
-      = 0.5 * (matrix + RigidIpcMatrix12d(matrix.transpose()));
-  Eigen::SelfAdjointEigenSolver<RigidIpcMatrix12d> solver(symmetric);
-  if (solver.info() != Eigen::Success) {
-    return symmetric;
-  }
-
-  return solver.eigenvectors() * solver.eigenvalues().cwiseMax(0.0).asDiagonal()
-         * solver.eigenvectors().transpose();
-}
-
 template <int Columns>
 RigidIpcFrictionPotentialResult computeProjectedFrictionPotential(
     const Eigen::Matrix<double, 2, Columns>& projection,
@@ -368,7 +355,8 @@ RigidIpcReducedFrictionResult chainFrictionPotentialToReducedCoordinates(
   result.hessian
       = 0.5 * (result.hessian + RigidIpcMatrix12d(result.hessian.transpose()));
   if (projectHessianToPsd) {
-    result.hessian = projectToPsd(result.hessian);
+    result.hessian
+        = newton_barrier::projectSymmetricMatrixToPsd<12>(result.hessian);
   }
   return result;
 }
@@ -409,7 +397,8 @@ RigidIpcReducedBarrierResult chainPrimitiveBarrierToReducedCoordinates(
   result.hessian
       = 0.5 * (result.hessian + RigidIpcMatrix12d(result.hessian.transpose()));
   if (options.projectReducedHessianToPsd) {
-    result.hessian = projectToPsd(result.hessian);
+    result.hessian
+        = newton_barrier::projectSymmetricMatrixToPsd<12>(result.hessian);
   }
   return result;
 }

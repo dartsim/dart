@@ -32,9 +32,8 @@
 
 #include <dart/simulation/detail/affine_body_dynamics.hpp>
 #include <dart/simulation/detail/newton_barrier/friction_kernel.hpp>
+#include <dart/simulation/detail/newton_barrier/psd_projection.hpp>
 #include <dart/simulation/detail/newton_barrier/tangent_stencil.hpp>
-
-#include <Eigen/Eigenvalues>
 
 #include <array>
 
@@ -43,22 +42,6 @@
 
 namespace dart::simulation::detail {
 namespace {
-
-template <int Size>
-[[nodiscard]] Eigen::Matrix<double, Size, Size> projectSymmetricMatrixToPsd(
-    const Eigen::Matrix<double, Size, Size>& matrix)
-{
-  const Eigen::Matrix<double, Size, Size> symmetric
-      = 0.5 * (matrix + Eigen::Matrix<double, Size, Size>(matrix.transpose()));
-  Eigen::SelfAdjointEigenSolver<Eigen::Matrix<double, Size, Size>> solver(
-      symmetric);
-  if (solver.info() != Eigen::Success) {
-    return symmetric;
-  }
-
-  return solver.eigenvectors() * solver.eigenvalues().cwiseMax(0.0).asDiagonal()
-         * solver.eigenvectors().transpose();
-}
 
 [[nodiscard]] bool hasValidBarrierOptions(const AffineBarrierOptions& options)
 {
@@ -127,7 +110,8 @@ template <int Size>
   result.hessian
       = 0.5 * (result.hessian + AffineMatrix24d(result.hessian.transpose()));
   if (options.projectHessianToPsd) {
-    result.hessian = projectSymmetricMatrixToPsd<24>(result.hessian);
+    result.hessian
+        = newton_barrier::projectSymmetricMatrixToPsd<24>(result.hessian);
   }
   return result;
 }
@@ -174,7 +158,8 @@ chainPrimitiveFrictionToAffineBodies(
   result.hessian
       = 0.5 * (result.hessian + AffineMatrix24d(result.hessian.transpose()));
   if (options.projectHessianToPsd) {
-    result.hessian = projectSymmetricMatrixToPsd<24>(result.hessian);
+    result.hessian
+        = newton_barrier::projectSymmetricMatrixToPsd<24>(result.hessian);
   }
   return result;
 }
@@ -652,7 +637,8 @@ AffineOrthogonalityEnergyResult affineOrthogonalityEnergy(
   result.hessian
       = 0.5 * (result.hessian + AffineMatrix12d(result.hessian.transpose()));
   if (projectHessianToPsd) {
-    result.hessian = projectSymmetricMatrixToPsd<12>(result.hessian);
+    result.hessian
+        = newton_barrier::projectSymmetricMatrixToPsd<12>(result.hessian);
   }
   return result;
 }

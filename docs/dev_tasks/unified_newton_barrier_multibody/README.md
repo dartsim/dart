@@ -40,6 +40,12 @@
       contract; use the PLAN-083 variant consolidation map to keep IPC-family
       responsibilities in the right owner while promoting only proven
       second-use contracts.
+  - [x] Promote the first second-use PSD projection contract into
+        `detail/newton_barrier` and route rigid IPC plus ABD Hessian projection
+        through it with shared tests.
+  - [ ] Continue scouting projected-Newton, line-search, diagnostics, or
+        benchmark-schema contracts only when another variant needs identical
+        behavior.
 - [ ] Phase 4: expand the unified manifest into diagnostics, benchmark packets,
       CPU/GPU evidence, and visual evidence rows.
 - [ ] Phase 5: add runtime and py-demos scenes only after the relevant solver
@@ -90,10 +96,11 @@ resources as public API.
 
 ## Immediate Next Steps
 
-1. Begin Phase 3 shared-contract scouting from the existing rigid IPC,
-   deformable IPC, and ABD evidence, and identify the first PSD,
-   projected-Newton, line-search, diagnostics, or benchmark-schema contract
-   with a real second consumer.
+1. Continue Phase 3 shared-contract scouting from the existing rigid IPC,
+   deformable IPC, and ABD evidence after the first fixed-size PSD projection
+   helper. Promote projected-Newton, line-search, diagnostics, or
+   benchmark-schema contracts only when a second consumer proves identical
+   behavior.
 2. Keep the two-body affine contact micro-solve deferred until the
    `abd-alg-affine-body` row expands beyond the primitive/oracle micro-packet
    and needs a solved-state residual or runtime stepping diagnostic.
