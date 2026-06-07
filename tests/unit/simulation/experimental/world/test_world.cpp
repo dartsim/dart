@@ -1574,6 +1574,29 @@ TEST(World, StepWithCustomStageReusesPreparedSolverStages)
   EXPECT_EQ(heapCounter.allocationBytes(), 0u);
 }
 
+TEST(World, IpcSemiImplicitMultibodyStepUsesForwardDynamicsStage)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  auto robot = world.addMultibody("slider");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "rail";
+  spec.type = sx::JointType::Prismatic;
+  spec.axis = Eigen::Vector3d::UnitZ();
+  auto carriage = robot.addLink("carriage", base, spec);
+  carriage.setMass(1.0);
+
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+  world.setTimeStep(0.01);
+
+  EXPECT_NO_THROW(world.step());
+  EXPECT_TRUE(world.isSimulationMode());
+  EXPECT_EQ(world.getFrame(), 1u);
+}
+
 TEST(World, FrameScratchCapacityReportsUsableArenaBytes)
 {
   namespace sx = dart::simulation::experimental;

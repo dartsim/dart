@@ -964,7 +964,7 @@ std::uint8_t encodeRigidBodySolver(RigidBodySolver solver)
       return 1u;
   }
 
-  DART_EXPERIMENTAL_THROW_T(
+  DART_EXPERIMENTAL_THROW_T( // LCOV_EXCL_LINE
       InvalidArgumentException, "Rigid-body solver is invalid");
   return 0u;
 }
@@ -995,7 +995,7 @@ std::uint8_t encodeContactSolverMethod(ContactSolverMethod method)
       return 1u;
   }
 
-  DART_EXPERIMENTAL_THROW_T(
+  DART_EXPERIMENTAL_THROW_T( // LCOV_EXCL_LINE
       InvalidArgumentException, "Contact solver method is invalid");
   return 0u;
 }
@@ -1028,7 +1028,7 @@ std::uint8_t encodeContactGradientMode(ContactGradientMode mode)
       return 2u;
   }
 
-  DART_EXPERIMENTAL_THROW_T(
+  DART_EXPERIMENTAL_THROW_T( // LCOV_EXCL_LINE
       InvalidArgumentException, "Contact gradient mode is invalid");
   return 0u;
 }
@@ -1062,7 +1062,7 @@ detail::BuiltInRigidBodySolverFamily toBuiltInRigidBodySolverFamily(
       return detail::BuiltInRigidBodySolverFamily::Ipc;
   }
 
-  DART_EXPERIMENTAL_THROW_T(
+  DART_EXPERIMENTAL_THROW_T( // LCOV_EXCL_LINE
       InvalidArgumentException, "Rigid-body solver is invalid");
   return detail::BuiltInRigidBodySolverFamily::SequentialImpulse;
 }
@@ -1375,7 +1375,7 @@ private:
         return kinematics;
     }
 
-    DART_EXPERIMENTAL_THROW_T(
+    DART_EXPERIMENTAL_THROW_T( // LCOV_EXCL_LINE
         InvalidArgumentException, "World step stage slot is invalid");
     return kinematics;
   }
@@ -1412,12 +1412,12 @@ private:
       case Slot::Kinematics:
         kinematics.prepare(world);
         return;
-      case Slot::RigidBodyPosition:
+      case Slot::RigidBodyPosition: // LCOV_EXCL_LINE
       case Slot::MultibodyVelocity:
       case Slot::MultibodyForwardDynamics:
       case Slot::MultibodyPosition:
       case Slot::UnifiedConstraint:
-        return;
+        return; // LCOV_EXCL_LINE
     }
   }
 };

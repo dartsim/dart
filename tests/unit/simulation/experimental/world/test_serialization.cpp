@@ -1077,6 +1077,50 @@ TEST(Serialization, PreservesWorldSolverOptions)
       sx::ContactGradientMode::PreContactSurrogate);
 }
 
+TEST(Serialization, PreservesComplementarityAwareContactGradientMode)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::WorldOptions options;
+  options.contactGradientMode = sx::ContactGradientMode::ComplementarityAware;
+  sx::World world1(options);
+
+  std::stringstream ss;
+  world1.saveBinary(ss);
+
+  sx::World world2;
+  world2.loadBinary(ss);
+
+  EXPECT_EQ(
+      world2.getContactGradientMode(),
+      sx::ContactGradientMode::ComplementarityAware);
+}
+
+TEST(Serialization, RejectsInvalidWorldSolverOptionTail)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  std::stringstream ss;
+  world.saveBinary(ss);
+  const auto validRecord = ss.str();
+  ASSERT_GE(validRecord.size(), 4u);
+
+  const auto expectInvalidByte = [&](std::size_t offsetFromEnd) {
+    auto corruptRecord = validRecord;
+    corruptRecord[corruptRecord.size() - offsetFromEnd] = static_cast<char>(99);
+
+    std::stringstream input(corruptRecord);
+    sx::World loaded;
+    EXPECT_THROW(loaded.loadBinary(input), sx::InvalidArgumentException);
+  };
+
+  expectInvalidByte(4u); // rigid-body solver
+  expectInvalidByte(3u); // contact solver method
+  expectInvalidByte(2u); // contact gradient mode
+  expectInvalidByte(1u); // multibody integration method
+}
+
 // Test loadBinary resets solver-family and policy metadata when reading records
 // that predate the versioned World-level solver-option tail.
 TEST(Serialization, LegacyLoadResetsMissingWorldSolverOptionsToDefaults)

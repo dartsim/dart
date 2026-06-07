@@ -182,6 +182,25 @@ TEST(BuiltInWorldStepSchedule, VariationalSelectionSubstitutesMultibodyStage)
   expectInlineCapacity(options);
 }
 
+TEST(BuiltInWorldStepSchedule, VariationalWithDeformableKeepsAllDomains)
+{
+  auto options = defaultOptions();
+  options.multibodyIntegration = MultibodyFamily::Variational;
+  options.hasMultibodyStructures = true;
+  options.hasDeformableBodies = true;
+
+  EXPECT_EQ(
+      slots(options),
+      (std::vector<Slot>{
+          Slot::RigidBodyVelocity,
+          Slot::RigidBodyContact,
+          Slot::MultibodyVariationalIntegration,
+          Slot::DeformableDynamics,
+          Slot::RigidBodyPosition,
+          Slot::Kinematics}));
+  expectInlineCapacity(options);
+}
+
 TEST(BuiltInWorldStepSchedule, VariationalSelectionRequiresMultibodyDomain)
 {
   auto options = defaultOptions();
@@ -194,6 +213,25 @@ TEST(BuiltInWorldStepSchedule, VariationalSelectionRequiresMultibodyDomain)
           Slot::RigidBodyVelocity,
           Slot::RigidBodyContact,
           Slot::RigidBodyPosition,
+          Slot::Kinematics}));
+  expectInlineCapacity(options);
+}
+
+TEST(BuiltInWorldStepSchedule, ArticulatedDefaultWithDeformableKeepsAllDomains)
+{
+  auto options = defaultOptions();
+  options.hasMultibodyStructures = true;
+  options.hasDeformableBodies = true;
+
+  EXPECT_EQ(
+      slots(options),
+      (std::vector<Slot>{
+          Slot::RigidBodyVelocity,
+          Slot::MultibodyVelocity,
+          Slot::UnifiedConstraint,
+          Slot::RigidBodyPosition,
+          Slot::MultibodyPosition,
+          Slot::DeformableDynamics,
           Slot::Kinematics}));
   expectInlineCapacity(options);
 }
@@ -221,6 +259,23 @@ TEST(BuiltInWorldStepSchedule, IpcCanComposeWithMultibodyDomain)
       (std::vector<Slot>{
           Slot::RigidIpcContact,
           Slot::MultibodyVariationalIntegration,
+          Slot::Kinematics}));
+  expectInlineCapacity(options);
+}
+
+TEST(BuiltInWorldStepSchedule, IpcWithDeformableKeepsAllDomains)
+{
+  auto options = defaultOptions();
+  options.rigidBodySolver = RigidFamily::Ipc;
+  options.hasMultibodyStructures = true;
+  options.hasDeformableBodies = true;
+
+  EXPECT_EQ(
+      slots(options),
+      (std::vector<Slot>{
+          Slot::RigidIpcContact,
+          Slot::MultibodyForwardDynamics,
+          Slot::DeformableDynamics,
           Slot::Kinematics}));
   expectInlineCapacity(options);
 }
@@ -284,6 +339,9 @@ TEST(BuiltInWorldStepSchedule, PreparationContractCoversStatefulStages)
   EXPECT_FALSE(
       sxdetail::builtInWorldStepScheduleNeedsPreparation(
           Slot::UnifiedConstraint));
+  EXPECT_FALSE(
+      sxdetail::builtInWorldStepScheduleNeedsPreparation(
+          static_cast<Slot>(99)));
 }
 
 TEST(BuiltInWorldStepSchedule, AddRejectsOverflowPastInlineCapacity)
