@@ -33,6 +33,8 @@
       fixtures.
 - [x] Added focused ADMM rho/adaptive-rho sweep benchmark rows on standard,
       boxed, and friction-index fixtures.
+- [x] Added focused SAP regularization sweep benchmark rows on standard, boxed,
+      and friction-index fixtures.
 - [x] Verified a focused DART 7 SIMD-enabled CPU build slice for generated LCP
       correctness and scalar/parallel batch benchmark rows.
 - [x] Verified a focused DART 7 CUDA-enabled build/runtime slice and ran the
@@ -652,6 +654,18 @@ tradeoffs evidence based.
   `contact_count=8` for the friction-index rows, and backend build-state
   counters. The CUDA-enabled rows report `build_cuda_enabled=1` but are CPU
   ADMM solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
+- Verified SAP regularization benchmark slice:
+  `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpSapRegularizationSweep' | wc -l`
+  reported 9 rows, and JSON checks for `BM_LcpSapRegularizationSweep` reported
+  9 rows with `contract_ok=1` in the default, SIMD-enabled, and CUDA-enabled
+  build trees. These rows cover standard 48-row, boxed 24-row, and
+  friction-index 8-contact fixtures at regularization values `1e-6`, `1e-5`,
+  and `1e-4`. The rows report `sap_regularization_sweep=1`,
+  `sap_regularization`, `sap_armijo_parameter`, `sap_backtracking_factor`,
+  `sap_max_line_search_iterations`, `problem_size=24/48`, `contact_count=8`
+  for the friction-index rows, and backend build-state counters. The
+  CUDA-enabled rows report `build_cuda_enabled=1` but are CPU SAP solver rows
+  in a CUDA-enabled build, not CUDA LCP kernel execution.
 - Verified larger active-set transition benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpLargerActiveSetTransition/' | wc -l`
   reported 49 rows, and
@@ -1466,7 +1480,7 @@ tradeoffs evidence based.
   mildly ill-conditioned single-problem and 8x-coupled batch packets,
   near-singular and singular-degenerate packets, PGS/PSOR, symmetric PSOR, and
   Red-Black Gauss-Seidel relaxation sweep rows, ADMM rho/adaptive-rho sweep
-  rows,
+  rows, SAP regularization sweep rows,
   independent-problem batches, simple world-contact snapshots, small coupled
   stack snapshot batches, and dense box-face step rows to broader dense and
   robot-like end-to-end contact systems, broader SIMD benchmark packets, larger threaded

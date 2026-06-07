@@ -373,6 +373,10 @@ $$L(x) = \frac{1}{2}x^T A x - b^T x + \text{regularization}(x,l,u)$$
 The regularization makes the method useful for compliant-contact-inspired
 experiments, but it also means strict LCP complementarity is approximate by
 design.
+Focused `BM_LcpSapRegularizationSweep` rows compare regularization values
+`1e-6`, `1e-5`, and `1e-4` on identical standard, boxed, and friction-index
+benchmark fixtures; these rows are CPU solver rows even when emitted by a
+CUDA-enabled build.
 
 ```cpp
 #include <dart/math/lcp/other/SapSolver.hpp>

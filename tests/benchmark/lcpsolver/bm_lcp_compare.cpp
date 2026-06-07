@@ -2815,6 +2815,14 @@ struct AdmmRhoSweepCase
   std::string_view policyLabel;
 };
 
+struct SapRegularizationSweepCase
+{
+  BenchmarkProblemFamily family;
+  int problemArg;
+  double regularization;
+  std::string_view regularizationLabel;
+};
+
 constexpr std::array<RelaxationSweepCase, 9> kRelaxationSweepCases{{
     {BenchmarkProblemFamily::Standard,
      48,
@@ -2883,6 +2891,19 @@ constexpr std::array<AdmmRhoSweepCase, 18> kAdmmRhoSweepCases{{
     {BenchmarkProblemFamily::FrictionIndex, 8, 1.0, true, "Rho1_0", "Adaptive"},
     {BenchmarkProblemFamily::FrictionIndex, 8, 4.0, true, "Rho4_0", "Adaptive"},
 }};
+
+constexpr std::array<SapRegularizationSweepCase, 9>
+    kSapRegularizationSweepCases{{
+        {BenchmarkProblemFamily::Standard, 48, 1e-6, "Reg1e_6"},
+        {BenchmarkProblemFamily::Standard, 48, 1e-5, "Reg1e_5"},
+        {BenchmarkProblemFamily::Standard, 48, 1e-4, "Reg1e_4"},
+        {BenchmarkProblemFamily::Boxed, 24, 1e-6, "Reg1e_6"},
+        {BenchmarkProblemFamily::Boxed, 24, 1e-5, "Reg1e_5"},
+        {BenchmarkProblemFamily::Boxed, 24, 1e-4, "Reg1e_4"},
+        {BenchmarkProblemFamily::FrictionIndex, 8, 1e-6, "Reg1e_6"},
+        {BenchmarkProblemFamily::FrictionIndex, 8, 1e-5, "Reg1e_5"},
+        {BenchmarkProblemFamily::FrictionIndex, 8, 1e-4, "Reg1e_4"},
+    }};
 
 std::string_view getNewtonWarmStartModeName(const NewtonWarmStartMode mode)
 {
@@ -4965,6 +4986,45 @@ void RunAdmmRhoSweepBenchmark(
   state.counters["admm_adaptive_rho"] = testCase.adaptiveRho ? 1.0 : 0.0;
   state.counters["admm_fixed_rho"] = testCase.adaptiveRho ? 0.0 : 1.0;
   state.counters["admm_adaptive_rho_tolerance"] = params.adaptiveRhoTolerance;
+  if (testCase.family == BenchmarkProblemFamily::FrictionIndex) {
+    state.counters["contact_count"] = testCase.problemArg;
+  }
+}
+
+void RunSapRegularizationSweepBenchmark(
+    benchmark::State& state, const SapRegularizationSweepCase testCase)
+{
+  const auto problem
+      = MakeBenchmarkProblem(testCase.family, testCase.problemArg);
+  auto options = MakeBenchmarkOptions(1000);
+  options.absoluteTolerance = 1e-5;
+  options.relativeTolerance = 1e-3;
+  options.complementarityTolerance
+      = testCase.family == BenchmarkProblemFamily::FrictionIndex ? 2e-3 : 1e-3;
+
+  dart::math::SapSolver::Parameters params;
+  params.regularization = testCase.regularization;
+  params.maxLineSearchIterations = 32;
+  options.customOptions = &params;
+
+  dart::math::SapSolver solver;
+  RunBenchmarkWithSolver(
+      state,
+      solver,
+      problem,
+      options,
+      MakeLabel(
+          "Sap",
+          "RegularizationSweep/"
+              + std::string(getProblemFamilyName(testCase.family)) + "/"
+              + std::string(testCase.regularizationLabel)));
+
+  state.counters["sap_regularization_sweep"] = 1.0;
+  state.counters["sap_regularization"] = testCase.regularization;
+  state.counters["sap_armijo_parameter"] = params.armijosParameter;
+  state.counters["sap_backtracking_factor"] = params.backtrackingFactor;
+  state.counters["sap_max_line_search_iterations"]
+      = params.maxLineSearchIterations;
   if (testCase.family == BenchmarkProblemFamily::FrictionIndex) {
     state.counters["contact_count"] = testCase.problemArg;
   }
@@ -7079,6 +7139,16 @@ std::string MakeAdmmRhoSweepBenchmarkName(const AdmmRhoSweepCase testCase)
   return out.str();
 }
 
+std::string MakeSapRegularizationSweepBenchmarkName(
+    const SapRegularizationSweepCase testCase)
+{
+  std::ostringstream out;
+  out << "BM_LcpSapRegularizationSweep/"
+      << getProblemFamilyName(testCase.family) << "/"
+      << testCase.regularizationLabel;
+  return out.str();
+}
+
 std::string MakeNewtonWarmStartBatchSerialBenchmarkName(
     const dart::test::LcpSolverManifestEntry& solver,
     const NewtonWarmStartMode mode)
@@ -7576,6 +7646,17 @@ void RegisterAdmmRhoSweepBenchmarks()
     benchmark::RegisterBenchmark(
         name.c_str(), [testCase](benchmark::State& state) {
           RunAdmmRhoSweepBenchmark(state, testCase);
+        });
+  }
+}
+
+void RegisterSapRegularizationSweepBenchmarks()
+{
+  for (const auto testCase : kSapRegularizationSweepCases) {
+    const auto name = MakeSapRegularizationSweepBenchmarkName(testCase);
+    benchmark::RegisterBenchmark(
+        name.c_str(), [testCase](benchmark::State& state) {
+          RunSapRegularizationSweepBenchmark(state, testCase);
         });
   }
 }
@@ -8339,6 +8420,7 @@ const bool kManifestBenchmarksRegistered = [] {
   RegisterSymmetricPsorRelaxationSweepBenchmarks();
   RegisterRedBlackGaussSeidelRelaxationSweepBenchmarks();
   RegisterAdmmRhoSweepBenchmarks();
+  RegisterSapRegularizationSweepBenchmarks();
   RegisterNewtonWarmStartBenchmarks();
   RegisterLargerActiveSetTransitionBenchmarks();
   RegisterStressActiveSetTransitionBenchmarks();
