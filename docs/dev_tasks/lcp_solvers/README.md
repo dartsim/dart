@@ -314,9 +314,11 @@
 - [x] Added dense box-face DART 7 end-to-end unit and benchmark evidence:
       `FourBoxWorldStepMaintainsDenseContactInvariants` and
       `EightBoxWorldStepMaintainsDenseContactInvariants` advance 4-box and
-      8-box dense face-contact scenes through public boxed-LCP `World::step()`,
-      and `BM_LcpWorldBoxStep_BoxedLcp/{1,2,4,8}/200` reports matching
-      benchmark invariant counters for 4/8/16/32 contacts.
+      8-box dense face-contact scenes through public boxed-LCP `World::step()`;
+      `SixteenBoxWorldStepMaintainsDenseContactInvariants` extends the same
+      scene family to 16 boxes with a longer 500-step horizon. The
+      `BM_LcpWorldBoxStep_BoxedLcp` rows report matching invariant counters for
+      4/8/16/32-contact 200-step scenes and the 64-contact 500-step scene.
 - [x] Added DART 7 per-contact block-structure evidence for BGS and
       Blocked Jacobi on real two-contact boxed-LCP world-contact snapshots:
       the tests prove `findex`-derived non-contiguous contact blocks solve the
@@ -351,7 +353,7 @@
       evidence beyond CPU solver rows in SIMD/CUDA-enabled builds.
 - [ ] Continue extending DART 7 end-to-end contact cases through the public
       simulation pipeline beyond current separated contacts, fixed-base
-      articulated contacts, 5-sphere coupled stacks, and 8-box dense
+      articulated contacts, 5-sphere coupled stacks, and 16-box dense
       face-contact step coverage.
 - [ ] Broaden apples-to-apples benchmark packets from generated problems and
       simple world-contact snapshots to broader dense/robot-like end-to-end
@@ -1116,7 +1118,7 @@ tradeoffs evidence based.
   articulated shortcut. The focused
   `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.ArticulatedPrismaticLinkPushesDynamicRigidBody' --gtest_brief=1`
   run passed. The full `test_boxed_lcp_contact --gtest_brief=1` binary now
-  passes 44 tests.
+  passes 45 tests.
   `BoxedLcpContact.ArticulatedPrismaticLinkPushesArticulatedPrismaticLink`
   advances a fixed-base prismatic striker link in contact with a prismatic
   target link owned by a separate multibody through one boxed-LCP
@@ -1133,9 +1135,11 @@ tradeoffs evidence based.
   evidence. `FourBoxWorldStepMaintainsDenseContactInvariants` and
   `EightBoxWorldStepMaintainsDenseContactInvariants` extend that to separated
   4-box and 8-box, 16-contact and 32-contact dense face-contact scenes advanced
-  for 200 public boxed-LCP `World::step()` iterations. The full run still emits
-  the dense-patch Dantzig warning; Dantzig's direct dense box solve is not
-  claimed.
+  for 200 public boxed-LCP `World::step()` iterations.
+  `SixteenBoxWorldStepMaintainsDenseContactInvariants` advances the same scene
+  family to 16 boxes and 64 dense face contacts over 500 public boxed-LCP
+  `World::step()` iterations. The full run still emits the dense-patch Dantzig
+  warning; Dantzig's direct dense box solve is not claimed.
 - DART 7 world-contact benchmark evidence:
   `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` now registers 48
   manifest-generated
@@ -1165,18 +1169,19 @@ tradeoffs evidence based.
   CUDA LCP kernel execution. This is dense contact-snapshot evidence, not
   broad robot-like or CUDA dense-contact execution evidence.
 - DART 7 dense box-contact end-to-end benchmark evidence:
-  `BM_LcpWorldBoxStep_BoxedLcp/{1,2,4,8}/200` rebuilds separated box-on-ground
-  scenes, confirms each box contributes a 4-contact face patch before stepping,
-  enters simulation mode, advances the public boxed-LCP `World::step()` path for
-  200 steps, and checks finite-state, contact-height, vertical-rest, and
-  tangential-slowing invariants. Focused default, SIMD-enabled, and
-  CUDA-enabled build-tree
+  `BM_LcpWorldBoxStep_BoxedLcp/{1,2,4,8}/200` and
+  `BM_LcpWorldBoxStep_BoxedLcp/16/500` rebuild separated box-on-ground scenes,
+  confirm each box contributes a 4-contact face patch before stepping, enter
+  simulation mode, advance the public boxed-LCP `World::step()` path, and check
+  finite-state, contact-height, vertical-rest, and tangential-slowing
+  invariants. Focused default, SIMD-enabled, and CUDA-enabled build-tree
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldBoxStep_BoxedLcp' --benchmark_min_time=0.001s --benchmark_repetitions=1`
-  runs reported `invariant_ok=1` for all four rows, with `dense_box_contact=1`,
-  `box_count=1`, `2`, `4`, and `8`, and `contact_count=4`, `8`, `16`, and
-  `32`. The default 8-box row reported `max_height_error=3.32e-4`,
-  `max_vertical_speed=0.04905`, and `min_tangential_speed_drop=0.372156`; the
-  SIMD and CUDA-enabled 8-box rows also reported `invariant_ok=1`. The
+  runs reported `invariant_ok=1` for all five rows, with `dense_box_contact=1`,
+  `box_count=1`, `2`, `4`, `8`, and `16`, and `contact_count=4`, `8`, `16`,
+  `32`, and `64`. The default 16-box row reported
+  `max_height_error=4.17e-4`, `max_vertical_speed=4.00e-15`, and
+  `min_tangential_speed_drop=0.372156`; the SIMD and CUDA-enabled 16-box rows
+  also reported `invariant_ok=1`. The
   CUDA-enabled rows are CPU public-step rows in that build tree, not CUDA LCP
   kernel execution. The runs still emit the dense-patch Dantzig warning, so
   this is public-step invariant evidence for dense face-contact scenes, not a
@@ -1298,15 +1303,15 @@ tradeoffs evidence based.
   `contact_count=16`; the 16-contact row reported `max_height_error=0`,
   `max_vertical_speed=0`, and `min_tangential_speed_drop=0.23816`.
 - DART 7 dense box-face end-to-end benchmark evidence:
-  `BM_LcpWorldBoxStep_BoxedLcp/{1,2,4,8}/200` rebuilds separated dense box-face
-  worlds, enters simulation mode, advances the public boxed-LCP `World::step()`
-  path for 200 steps, and checks finite-state, contact-height, vertical-rest,
-  and tangential-slowing invariants. Focused default, SIMD-enabled, and
-  CUDA-enabled build-tree
+  `BM_LcpWorldBoxStep_BoxedLcp/{1,2,4,8}/200` and
+  `BM_LcpWorldBoxStep_BoxedLcp/16/500` rebuild separated dense box-face worlds,
+  enter simulation mode, advance the public boxed-LCP `World::step()` path, and
+  check finite-state, contact-height, vertical-rest, and tangential-slowing
+  invariants. Focused default, SIMD-enabled, and CUDA-enabled build-tree
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldBoxStep_BoxedLcp' --benchmark_min_time=0.001s --benchmark_repetitions=1`
-  runs reported `invariant_ok=1` for all four rows, with
-  `dense_box_contact=1`, `box_count=1`, `2`, `4`, and `8`, and
-  `contact_count=4`, `8`, `16`, and `32`. The CUDA-enabled rows are CPU
+  runs reported `invariant_ok=1` for all five rows, with
+  `dense_box_contact=1`, `box_count=1`, `2`, `4`, `8`, and `16`, and
+  `contact_count=4`, `8`, `16`, `32`, and `64`. The CUDA-enabled rows are CPU
   public-step rows in that build tree, not CUDA LCP kernel execution.
 - DART 7 articulated contact end-to-end benchmark evidence:
   `BM_LcpWorldArticulatedGroundStep_BoxedLcp/{1,4,8,16}/200` rebuilds fixed-base
