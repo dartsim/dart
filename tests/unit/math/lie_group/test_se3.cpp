@@ -318,6 +318,20 @@ TYPED_TEST(SE3Test, SmallAdjoint)
 }
 
 //==============================================================================
+TYPED_TEST(SE3Test, LogJacobian)
+{
+  using S = typename TestFixture::Scalar;
+
+  const SE3<S> x = SE3<S>::Random();
+  Matrix6<S> jacobian;
+  const SE3Tangent<S> tangent = x.log(&jacobian);
+
+  EXPECT_TRUE(tangent.isApprox(x.log(), LieGroupTol<S>()));
+  EXPECT_TRUE(jacobian.isApprox(
+      SE3<S>::RightJacobianInverse(tangent.params()), LieGroupTol<S>()));
+}
+
+//==============================================================================
 TYPED_TEST(SE3Test, Jacobians)
 {
   using S = typename TestFixture::Scalar;

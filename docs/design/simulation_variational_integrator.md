@@ -2,11 +2,13 @@
 
 ## Status
 
-Implemented (Phases A1, A2, B1, B2; Phase C is a recorded NO-GO). This document
-owns the durable design rationale for the **linear-time variational integrator**
-in the DART 7 simulation `World` integration family. It owns architecture
-and math rationale, not timeline or status. Sequencing, phase gates, and
-acceptance criteria live in PLAN-082
+Implemented for Phases A1, A2, B1, and B2, with Phase C C1-C3 implemented for
+the scoped contact/friction envelope and arbitrary-geometry contact plus the C4
+hard-barrier rung deferred. This document owns the durable design rationale for
+the **linear-time variational integrator** in the DART 7 simulation
+`World` integration family. It owns architecture and math rationale, not
+timeline or status. Sequencing, phase gates, and acceptance criteria live in
+PLAN-082
 (`docs/plans/082-variational-integrator-solver.md` and its `contact-roadmap.md`
 sidecar); the implementation tracker, measured paper-experiment replication, and
 the per-gate evidence live in `docs/dev_tasks/variational_integrator_solver/`
@@ -54,7 +56,7 @@ Motivation:
    build (see "the central new component"); the synergy is not mechanical today.
 3. **First-party algorithm.** This is DART's own research lineage (implemented
    on classic DART; reference repo `jslee02/wafr2016`). Bringing it into the
-   DART 7 world makes DART the reference reproduction.
+   experimental world makes DART the reference reproduction.
 4. **Differentiability runway.** The method admits an analytic recursive
    Jacobian (paper Appendix, Alg. 4), aligning with the capability matrix's
    `analytic` differentiability target.
@@ -104,7 +106,7 @@ subspace `Sᵢ`; parent `λ(i)`; children `σ(i)`.
 
 ## Improvements, Corrections, and New Features (relative to the paper)
 
-This is a fresh implementation in the DART 7 ECS `World`, not a port of
+This is a fresh implementation in DART's experimental ECS `World`, not a port of
 the author's classic-DART reference (`github.com/jslee02/wafr2016`). It
 reproduces the paper's results (see
 [`../dev_tasks/variational_integrator_solver/paper-experiment-replication.md`](../dev_tasks/variational_integrator_solver/paper-experiment-replication.md))
@@ -170,12 +172,13 @@ item names the artifact that verifies it.
   bit-identically without re-bootstrapping (`StateSerializationRoundTripsTrajectory`).
 - **Facade-safe solver configuration.** The integrator is selected by the
   documented method-family name through a `MultibodyOptions` value object
-  (`World::setMultibodyOptions`, `multibody_options` in dartpy) -- a categorized
-  config that future capabilities extend as fields rather than as new World
-  methods -- with no public exposure of solver/stage/component types;
+  (`WorldOptions::multibodyOptions` at construction, `World::setMultibodyOptions`,
+  and `multibody_options` in dartpy) -- a categorized config that future
+  capabilities extend as fields rather than as new World methods -- with no
+  public exposure of solver/stage/component types;
   `check-api-boundaries` stays green.
 
-## How It Maps Onto The DART 7 World
+## How It Maps Onto The Experimental World
 
 ### Insertion seam: a peer integration-family stage + a minimal selector
 
@@ -190,20 +193,20 @@ declared beside `MultibodyForwardDynamicsStage`
 registered in `dart/simulation/CMakeLists.txt` (explicit source
 list).
 
-A **minimal selection mechanism is required** and must be designed (it does not
-exist today). The default `World::step()` hard-codes its pipeline in four
-overloads (`world.cpp`), and the single-stage `step(executor, WorldStepStage&)`
-overload **appends** the supplied stage to that default pipeline — passing a VI
-stage there would run semi-implicit _and_ variational integration on the same
-multibody (double integration). Therefore the VI must enter by **pipeline
-substitution** (replacing `MultibodyForwardDynamicsStage`), driven by a
-facade-safe integration-family selector — a value object carrying the
-`"variational integrator"` method name (modeled on the existing
-`LoopClosureFamily`/spec value-object pattern), consulted by default-pipeline
-construction. This is _not_ a plugin/factory registry (those remain deferred per
-the facade rules); it is the smallest selector that lets the default `step()`
-choose the dynamics stage. Selection scope (per-`World` vs per-`step`) is a
-PLAN-082 decision.
+The selection mechanism is now implemented as a facade-safe integration-family
+selector: `WorldOptions::multibodyOptions` at construction,
+`World::setMultibodyOptions(...)` after construction, and the dartpy
+`MultibodyOptions` binding carry the `"variational integrator"` method-family
+name. The built-in `World::step()` schedule is centralized in
+`detail/world_step_schedule.hpp`; when the variational family is selected and a
+multibody domain is active, the schedule substitutes
+`MultibodyVariationalIntegrationStage` for the semi-implicit multibody stage
+instead of appending both. The custom-final-stage `step(executor, stage)` path
+reuses the same built-in schedule before the caller's final stage, so it does not
+double-integrate a multibody. This is _not_ a plugin/factory registry (those
+remain deferred per the facade rules); it is the smallest selector that lets the
+default `step()` choose the dynamics stage while keeping selection scoped to the
+`World` configuration.
 
 ### Honest reuse map (re-baselined against current code)
 
@@ -220,18 +223,14 @@ PLAN-082 decision.
 | IG3 bootstrap step                          | the existing semi-implicit manifold-integration path                  |
 | Dense `M(q)`,`C`,`g` (oracle/baseline only) | `computeMultibodyDynamicsTerms` / `computeMassAndBias`                |
 
-**The central new component — an O(n) impulse-based ABI.** RIQN's `Δt·M⁻¹·e`
-must be O(n). The DART 7 World has **no ABA/ABI** — `computeMassAndBias`
-builds a dense `M` column-by-column and `simulateMultibody` solves with
-`ldlt()` (O(n²) assembly + O(n³) factor; its bias also includes gravity, so it
-cannot be fed `q̇≡0,Q≡Δt·e` to yield a clean `Δt·M⁻¹·e`). The reference impl
-used classic DART's `computeImpulseForwardDynamics` (a two-sweep bias-impulse /
-velocity-change recursion); the DART 7 rewrite must implement that ABI
-from scratch. This is the largest single piece of new work and the primary
-risk; it is sequenced as an explicit early spike (PLAN-082 Phase A2). Until it
-lands, a dense `M.ldlt().solve(Δt·e)` is an acceptable **O(n³) placeholder** for
-correctness validation — but then no "linear-time" claim may be made and the
-scaling benchmark is not yet a gate.
+**The central implemented component — an O(n) impulse-based ABI.** RIQN's
+`Δt·M⁻¹·e` must be O(n). At Phase A1 time the DART 7 World only had dense
+mass-matrix assembly/solve (`computeMassAndBias`, `ldlt()`), which was useful as
+an oracle but could not support the linear-time claim. Phase A2 added the
+two-sweep impulse / inverse-mass product (`computeMultibodyInverseMassProduct`)
+so the selected VI path no longer depends on a dense placeholder. The dense
+terms remain baseline/oracle tools; the O(n) inverse-mass path and its scaling
+benchmark are now regression gates for the linear-time claim.
 
 **Other genuinely new pieces:**
 
@@ -252,7 +251,7 @@ scaling benchmark is not yet a gate.
    the `adInvRLinear` gravity helper); a parity unit test cross-checks every
    kernel against `dart::math::lie_group` so the equivalence is guarded, and the
    `dexp⁻¹` kernel delegates to `SE3::LeftJacobianInverse`. The existing
-   current `rotationExp`/`rotationLog` are SO(3)-only and insufficient on
+   experimental `rotationExp`/`rotationLog` are SO(3)-only and insufficient on
    their own. The Cayley map (Kobilarov–Crane–Desbrun) is the documented escape
    hatch if the `log`-map / `dexp⁻¹` rotation-by-π singularity ever becomes
    binding.
@@ -265,8 +264,8 @@ scaling benchmark is not yet a gate.
    documented unsupported/diagnostic error — never a silent NaN or silent
    fallback), and convergence diagnostics (residual norm, iteration count).
 4. **An articulated total-mechanical-energy helper** (kinetic + gravity
-   potential) for the conservation test — none exists today (only per-rigid-body
-   energy).
+   potential) for the conservation test — implemented as
+   `computeMultibodyMechanicalEnergy` and used by the VI energy-drift tests.
 
 ### State model: a two-step integrator needs history
 
@@ -322,34 +321,37 @@ design constraint** (the sequencing lives in
   keeps RIQN O(n); a **stiff log-barrier** injects large local curvature that
   `Δt·M⁻¹` mis-scales, risking iteration blow-up — so a hard barrier is the
   _last_, highest-risk option, not the first.
-- **Prerequisite gap:** a root-finder needs contact/distance evaluated at the
-  _trial_ `qᵏ⁺¹` each inner iteration. Today `World::collide()` rebuilds the
-  whole collision world once per step (no distance-at-configuration query); any
-  contact phase is blocked on a contact-query redesign. The barrier/distance/
-  tangent/CCD kernels in `detail/deformable_contact/` are reusable _geometry_
-  (12-DOF mesh-vertex stencils), but the (world contact point) → (link,
-  body-frame point) → `Sᵢᵀ` generalized-force projection is net-new.
+- **Contact-query boundary:** a root-finder needs contact/distance evaluated at
+  the _trial_ `qᵏ⁺¹` each inner iteration. The implemented Phase C slice does
+  this through VI contact hooks for link-point-vs-analytic-ground contact and a
+  link-vs-link sphere-sphere hook. Arbitrary link geometry is still deferred
+  because `World::collide()` remains a once-per-step collision-world rebuild,
+  and DART still needs a warm-started "evaluate link geometry at this trial
+  configuration" query object plus generalized-force projection from contact
+  point to `Sᵢᵀ`.
 
 The recommended ordering (equality constraints → friction kernels →
 compliant/penalty contact → augmented-Lagrangian → optional hard barrier), with
 the IPC/VBD/AVBD/XPBD evidence and per-rung tradeoffs, is in the contact-roadmap
-sidecar. Contact is **out of scope for the initial plan** and gated behind a
-separate go/no-go.
+sidecar. C1-C3 have landed for the supported envelope; arbitrary link geometry
+and the optional C4 hard barrier remain separate follow-up work.
 
 ## Public Facade
 
 - Selection by capability/method name only, via the integration-family selector
   value object. Capability-matrix row: Integration = `variational integrator`;
   Dynamics = `articulated-body method`; Coordinate = `generalized coordinates`;
-  Supported features grow per phase (`joints`, then `closed chains`, later
-  `contacts`); Differentiability = `finite-difference checked` first, `analytic`
-  once Alg. 4 lands.
+  Supported features include joints, floating/spherical coordinates, loop
+  closures, link-point ground contact, lagged friction, augmented-Lagrangian
+  centering, and the link-sphere pair slice; arbitrary link geometry remains a
+  declared future extension. Differentiability = `finite-difference checked`
+  first, `analytic` once Alg. 4 lands.
 - No leak of `WorldStepStage`, solver types, ECS components, or backend names.
   Previous-configuration State and solver diagnostics surface only through
   documented state/diagnostic views.
-- Unsupported requests (e.g., contact under the equality-only phases, or
-  floating base before Phase B) return documented unsupported-capability errors,
-  not silent fallback.
+- Unsupported requests (for example unknown integration-family names,
+  unsupported closure endpoint combinations, or contact outside the declared
+  envelope) return documented errors, not silent fallback.
 
 ## Verification Approach
 
@@ -375,11 +377,10 @@ experiments (reference repo `experiments/`: `energy_conservation`, `convergence`
 
 ## Risks & Open Questions
 
-1. **No ABA today (the crux).** The O(n) headline depends on an impulse-ABI that
-   does not exist; the current path is dense O(n³). Highest-leverage early spike:
-   implement+verify O(n) ABI and benchmark `Δt·M⁻¹·e` vs DOF before building the
-   rest. If ABI cannot be committed, drop the linear-time claim and ship the
-   dense placeholder for correctness only.
+1. **O(n) inverse-mass path must stay load-bearing.** The O(n) headline depends
+   on the impulse-ABI / inverse-mass product and recursive preconditioner staying
+   on the selected path. Keep `computeMultibodyInverseMassProduct` and the
+   scaling benchmarks as regression gates for any solver-stage refactor.
 2. **Energy claim is regime-specific.** Symplectic/near-energy-conserving only
    for smooth conservative forcing at fixed `Δt`; friction is deliberately
    dissipative and augmented-Lagrangian contact has no proven long-time energy
@@ -403,15 +404,19 @@ experiments (reference repo `experiments/`: `energy_conservation`, `convergence`
    (`R_new = R·exp(δω)`, `p_new = p + R·δp`), where the reference impl had open
    TODOs. Verified by floating-base free-fall (exact) and a tumbling
    asymmetric-inertia body conserving energy over 2e4 steps.
-5. **Contact query at trial configuration** is unavailable (`collide()` is a
-   once-per-step full rebuild); any contact phase needs a query redesign first.
+5. **Arbitrary-geometry contact query at trial configuration** remains
+   unavailable (`collide()` is a once-per-step full rebuild). The implemented
+   hook-based ground/sphere slices prove the solver seam; a production geometry
+   adapter still needs a query redesign.
 6. **RIQN non-convergence / joint limits:** define the failure contract; hard
    joint-limit clamps are non-smooth and conflict with the symplectic claim —
    decide whether limits are hard stops or barrier potentials.
-7. **`dexp⁻¹` truncation & log-map singularity** at large `Δt·V` / rotation ≈ π:
-   pick/document the order; test near the singularity.
-8. **Floating base is net-new** to the dynamics path (current stage is
-   fixed-base, open-chain only) — Phase B cost regardless of the integrator.
+7. **Log-map singularity** at large `Δt·V` / rotation ≈ π remains a numerical
+   boundary even though `dexp⁻¹` now delegates to the exact SE(3)
+   left-Jacobian inverse.
+8. **Very long floating/spherical chains** may need a manifold extension of the
+   exact recursive preconditioner beyond the currently documented supported
+   envelope.
 9. **DynamicsTree rebuild cost:** cache the allocation across inner iterations
    and refresh only configuration-dependent fields, or constant factors regress.
 

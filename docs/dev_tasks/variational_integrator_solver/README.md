@@ -13,7 +13,8 @@ variational integrator**: DART's symplectic, structure-preserving alternative to
 semi-implicit Euler for multibody systems, faithful to Lee/Liu/Park/Srinivasa
 (WAFR 2016, arXiv:1609.02898) and extended to DART's needs. It lives entirely
 behind the DART 7 World's method-name facade
-(`World::setMultibodyOptions({.integrationFamily = "variational integrator"})`),
+(`WorldOptions::multibodyOptions` at construction or
+`World::setMultibodyOptions({.integrationFamily = "variational integrator"})`),
 never exposing solver / stage / component / backend types, and adds **zero
 runtime overhead** when not selected (the default path stays semi-implicit
 Euler).
@@ -72,8 +73,8 @@ and verified **today**; unchecked items are the [gaps below](#gaps-from-current-
         **serialization**: `MultibodyVariationalState` is a registered State
         component (binary format bumped to v3); save/load round-trips the
         `bootstrapped` flag + `previousDeltaTransform`/`previousMomentum`.
-  - [x] Integration-family **selector** (`World::setMultibodyOptions`, a
-        `MultibodyOptions` value object)
+  - [x] Integration-family **selector** (`WorldOptions::multibodyOptions`,
+        `World::setMultibodyOptions`, and the `MultibodyOptions` value object)
         so the VI runs on the default `step()` path by method name (pipeline
         substitution, not stage-append); covered by `SelectableThroughWorldStep`.
   - [x] Determinism & serialization — run-to-run bit-identical rollout through
@@ -173,8 +174,9 @@ energy behavior on a passive chain before optimizing to O(n). The
 ## Key Decisions (rationale in the design doc)
 
 - **Dense-solve placeholder first** (A1), ABI second (A2): get correctness +
-  symplectic-behavior evidence before the hardest kernel. The reviewers
-  confirmed the DART 7 World has **no ABA** today (dense `M.ldlt()`).
+  symplectic-behavior evidence before the hardest kernel. At Phase A1 start,
+  reviewers confirmed the DART 7 World had no ABI path yet (only the dense
+  `M.ldlt()` oracle); Phase A2 then landed the O(n) inverse-mass product.
 - **Gravity is forcing-side** (`Fᵏ`), not a Lagrangian potential — matches the
   reference impl; avoids double-counting.
 - **Port the author's reference kernels** (`dexp_inv`, `dexp_inv_transpose`,
@@ -200,17 +202,15 @@ landed: the **exact recursive-Jacobian preconditioner** (~3 iters to 128 links),
 **supported-envelope** + **performance** characterization docs. The remaining
 gaps to the [north star](#north-star), in priority order:
 
-1. **Phase C — contact & friction (the largest gap).** The VI is contact-free in
-   production today. Unblocking needs a _contact-query-at-trial-configuration_
-   redesign (cheap distance/gradient at an arbitrary trial `qᵏ⁺¹` inside the RIQN
-   loop; today `World::collide()` rebuilds the whole collision world once per
-   step with no such query) — **scoped in gate 1** of the
+1. **Arbitrary-geometry contact & friction (the largest remaining gap).** C1-C3
+   contact have landed for the supported envelope; what remains is the broader
+   _contact-query-at-trial-configuration_ redesign for arbitrary link geometry
+   (cheap distance/gradient at an arbitrary trial `qᵏ⁺¹` inside the RIQN loop;
+   today `World::collide()` rebuilds the whole collision world once per step
+   with no such query) — **scoped in gate 1** of the
    [contact roadmap](../../plans/082-variational-integrator-solver/contact-roadmap.md).
-   A compliant-contact robustness **spike cleared gate 2 (GO** for the
-   compliant/AL rungs, `k ≲ 1e4·mg` — see [`supported-envelope.md`](supported-envelope.md));
-   an opt-in in-loop `VariationalContactHook` exists (default-off byte-for-byte
-   identical). **C1-C3 contact have now landed** for the link-point-vs-analytic-
-   ground case — a real, configurable query (`makeVariationalGroundContactHook`:
+   The implemented ground slice is a real, configurable query
+   (`makeVariationalGroundContactHook`:
    analytic half-space + body-fixed points, VBD/XPBD quadratic penalty,
    reduced-coordinate glue), **lagged regularized-Coulomb friction**, and
    **augmented-Lagrangian** drift-free contact (`VariationalGroundContactSolver`:
@@ -235,7 +235,7 @@ gaps to the [north star](#north-star), in priority order:
    Phase C contact (the contact criterion) and the API-freeze surface — so the VI
    is **ready to propose for graduation**. The flip itself is **structural, not a
    toggle**: `experimental` is encoded in the namespace / directory /
-   `DART_EXPERIMENTAL_API` macro / CMake gate, with no per-family stability flag,
+   `DART_SIMULATION_API` macro / CMake gate, with no per-family stability flag,
    and the VI shares the module with the `World` and every other solver — so
    graduating means a maintainer-scale whole-module promotion or a VI extraction
    refactor (see the graduation-mechanics section of

@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include <dart/simulation/multibody/multibody_options.hpp>
+
 #include <dart/common/free_list_allocator.hpp>
 #include <dart/common/memory_allocator.hpp>
 
@@ -41,13 +43,22 @@
 
 namespace dart::simulation {
 
+/// Solver family used for free rigid-body dynamics in the default DART 7
+/// World step pipeline.
+enum class RigidBodySolver
+{
+  SequentialImpulse,
+  Ipc,
+};
+
 /// Selects how the rigid-body contact stage resolves active contacts.
 ///
 /// This is an explicit, documented opt-in. It is independent of the
 /// differentiable flag: a non-differentiable world may use either method, and a
 /// differentiable world defaults to the same `SequentialImpulse` path as any
-/// other. The enum names only solver intent (no solver, backend, LCP, or ECS
-/// type), so it is safe on the public facade surface.
+/// other. The enum names the contact formulation, without exposing backend,
+/// registry, ECS storage, or concrete solver-object types, so it is safe on the
+/// public facade surface.
 enum class ContactSolverMethod
 {
   /// Sequential-impulse (Gauss-Seidel) normal+friction solve. The default and
@@ -55,13 +66,14 @@ enum class ContactSolverMethod
   SequentialImpulse,
 
   /// Boxed-LCP rigid-body contact solve via a pivoting (Dantzig-style) solver.
-  /// First slice: frictionless (normal-only) rigid-body contacts. Falls back to
-  /// the sequential-impulse behavior for cases outside that scope.
+  /// The current rigid-body slice assembles one normal row plus two Coulomb
+  /// tangent rows per active rigid-body contact (`findex`-coupled box bounds).
+  /// Mixed articulated scenes use the unified constraint/contact path.
   BoxedLcp,
 };
 
 /// Selects how the differentiable contact stage produces its BACKWARD-pass
-/// gradient. This is an opt-in refinement knob for the experimental
+/// gradient. This is an opt-in refinement knob for DART 7
 /// differentiable simulation (PLAN-110 WS5): it affects ONLY the gradient
 /// (`World::getStepDerivatives()` / `applyStepVjp()`), never the forward step.
 /// The forward result is identical for every mode.
@@ -100,11 +112,11 @@ enum class ContactGradientMode
 /// Construction-time options for a `World`.
 ///
 /// `WorldOptions` is a plain value object: it carries the initial time step,
-/// gravity, whether the world opts in to differentiable simulation, which
-/// contact-solver method the rigid-body contact stage uses, and the root CPU
-/// allocator knobs for the World-owned memory hierarchy. It does not expose any
-/// solver, backend, or ECS storage type, so it is safe as a public facade
-/// surface.
+/// gravity, domain solver-family choices, whether the world opts in to
+/// differentiable simulation, which contact-solver method the rigid-body
+/// contact stage uses, and the root CPU allocator knobs for the World-owned
+/// memory hierarchy. It does not expose any backend, stage, registry, or ECS
+/// storage type, so it is safe as a public facade surface.
 ///
 /// Differentiability is opt-in and defaults off. When `differentiable` is false
 /// the step executes the identical non-differentiable code path with no extra
@@ -116,6 +128,14 @@ struct WorldOptions
 
   /// Uniform gravitational acceleration applied to dynamic bodies.
   Eigen::Vector3d gravity{0.0, 0.0, -9.81};
+
+  /// Free rigid-body solver family used by the built-in `World::step()`
+  /// schedule. Defaults to sequential impulse.
+  RigidBodySolver rigidBodySolver = RigidBodySolver::SequentialImpulse;
+
+  /// Multibody domain method-family options used by the built-in
+  /// `World::step()` schedule. Defaults to semi-implicit integration.
+  MultibodyOptions multibodyOptions;
 
   /// Opt in to differentiable simulation. Default false (zero overhead).
   bool differentiable = false;

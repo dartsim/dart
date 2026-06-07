@@ -34,6 +34,7 @@
 
 #include <dart/config.hpp>
 
+#include <dart/simulation/body/deformable_body.hpp>
 #include <dart/simulation/body/deformable_body_options.hpp>
 #include <dart/simulation/body/rigid_body_options.hpp>
 #include <dart/simulation/compute/world_step_profile.hpp>
@@ -83,14 +84,6 @@ class UnifiedConstraintStage;
 } // namespace compute
 
 struct WorldOptions;
-
-/// Solver family used for free rigid-body dynamics in the default experimental
-/// World step pipeline.
-enum class RigidBodySolver
-{
-  SequentialImpulse,
-  Ipc,
-};
 
 /// Options controlling `World::collide()` query filtering.
 struct CollisionQueryOptions
@@ -426,7 +419,9 @@ public:
   /// `applyStepVjp()`, never the forward step or any stored state. It does not
   /// require the differentiable opt-in to be set (it is simply inert without
   /// it).
-  void setContactGradientMode(ContactGradientMode mode) noexcept;
+  /// @throws InvalidArgumentException if `mode` is not a valid
+  ///         `ContactGradientMode` enumerator.
+  void setContactGradientMode(ContactGradientMode mode);
 
   /// Get the explicit Jacobian blocks of the most recent step.
   ///
@@ -773,6 +768,7 @@ private:
   void markFrameTopologyChanged() noexcept;
   [[nodiscard]] std::uint64_t getFrameTopologyRevision() const noexcept;
   void reserveRegistryStorageForSimulation();
+  void prepareStepPipelineCacheForCurrentConfiguration();
   void resetCountersFromRegistry();
   void stepPipelineOnce(
       compute::ComputeExecutor& executor, compute::WorldStepPipeline& pipeline);

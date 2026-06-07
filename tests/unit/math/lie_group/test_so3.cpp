@@ -285,6 +285,20 @@ TYPED_TEST(SO3Test, LeftJacobianInverseSmallAngle)
 }
 
 //==============================================================================
+TYPED_TEST(SO3Test, LogJacobian)
+{
+  using S = typename TestFixture::Scalar;
+
+  const SO3<S> x = SO3<S>::Random();
+  Matrix3<S> jacobian;
+  const SO3Tangent<S> tangent = x.log(&jacobian);
+
+  EXPECT_TRUE(tangent.isApprox(x.log(), LieGroupTol<S>()));
+  EXPECT_TRUE(jacobian.isApprox(
+      SO3<S>::RightJacobianInverse(tangent.params()), LieGroupTol<S>()));
+}
+
+//==============================================================================
 TYPED_TEST(SO3Test, Jacobians)
 {
   using S = typename TestFixture::Scalar;

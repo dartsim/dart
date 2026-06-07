@@ -36,28 +36,30 @@ solver** under a multi-solver, multi-physics architecture.
       now persists the native collision world across queries and only rebuilds
       when collision geometry changes).
 - [ ] Phase 3: constraint & contact solver (started: velocity-level sequential
-      contact solver between free rigid bodies with accumulated normal impulses,
-      restitution, two-tangent Coulomb friction, positional correction, and a
-      public static-body convention — a body drops onto a static ground and
-      rests, an elastic head-on collision swaps velocities, and a sliding box
-      brakes via friction. Remaining: joint-limit/motor constraints, contacts on
-      multibody links, islands, and the boxed-LCP formulation).
-- [ ] Phase 4: joint features & actuators (started: spring stiffness + rest
-      position and damping are applied as passive generalized forces for
-      revolute/prismatic joints; remaining: actuator types, limits, Coulomb
-      friction, mimic/coupler, armature).
+      contact for free rigid bodies; the current semi-implicit default routes
+      mixed free-rigid / articulated-link contact through the unified boxed-LCP
+      stage when multibody structures are present. Remaining work is Subsystem A
+      polish from `RESUME.md`: warm starting, friction-cone iteration, scaling
+      around the unified solve, and separate joint-limit/motor/island slices).
+- [ ] Phase 4: joint features & actuators (started: spring stiffness, rest
+      position, damping, effort limits, armature, joint-space Coulomb friction,
+      and Force/Passive/Velocity actuator behavior on supported joints;
+      remaining: servo/acceleration/locked actuator modes plus mimic/coupler
+      work).
 - [ ] Phase 5: loop closures & improvements.
 
 ### DART 7 B2 gate — rigid open-chain dynamics parity
 
-- [x] DART 7 regression harness:
-      `tests/unit/simulation/world/test_world_dart7_regression.cpp` covers
-      gravity free-fall, pendulum/double-pendulum integration, 1e4-step drift,
-      static-ground contact settling, and a held-torque controlled scene using
-      only the DART 7 `World` API. The retired same-branch classic-vs-DART-7
-      parity harness established machine-epsilon agreement before promotion;
-      future cross-version parity evidence belongs on `release-6.*` branches,
-      not in main-branch classic World tests.
+- [x] World-parity harness:
+      `tests/unit/simulation/world/test_world_parity.cpp` compares
+      classic `dart::simulation::World` vs
+      `dart::simulation::World` on shared open-chain scenes
+      (gravity free-fall, pendulum/double-pendulum integration, 1e4-step drift,
+      and a held-torque controlled scene), within documented tolerances. Runs
+      under `pixi run test-simulation`. All open-chain scenarios
+      reach parity on `main` to machine epsilon; contact/constraint parity (B3)
+      is deferred to the unified solver (PR #2838). See `RESUME.md` for the
+      per-scenario table and deferred items.
 
 ## Goal
 
@@ -67,14 +69,17 @@ exceed it (armature, pluggable integrator, fresh-by-default reads, backend-
 neutral compute, model/state separation) — without the public API exposing
 solvers, couplers, ECS storage, or execution backends.
 
-## Non-Goals (for early phases)
+## Boundaries
 
-- No second solver or non-rigid domain implementation yet (architecture must
-  _allow_ it; see roadmap "multi-solver readiness").
-- No public solver/coupler/domain types or registries.
-- No direct file-based loader in the DART 7 simulation library yet; compose
-  through `dart::io::readSkeleton` and the DART 7 skeleton-to-multibody bridge.
-  Use `release-6.*` branches for DART 6 whole-World loader parity evidence.
+- Keep public configuration at the method-family / policy level (`WorldOptions`,
+  handles, and value objects), not public solver, coupler, ECS, backend, or
+  registry types.
+- Rigid-body work must continue to compose with the existing multibody,
+  deformable, rigid IPC, variational-integrator, and differentiable paths
+  through the centralized built-in schedule instead of adding another parallel
+  default-step switch.
+- Direct file loading remains outside this task; compose through maintained
+  `dart::io` readers and the DART 7 skeleton/world conversion bridges.
 - Do not modify `/home/js/multiphysics-api-design.md` (external user doc).
 - Do not name solvers/presets/examples after other engines; use method/approach
   names. Do not reference specific external engines by name in core code or
@@ -103,13 +108,15 @@ solvers, couplers, ECS storage, or execution backends.
    `feature/experimental-model-loader` branch as the active publication path.
 2. Continue Subsystem A polish from `RESUME.md`: warm starting, friction-cone
    iteration, and other scaling work around the unified contact solve.
+3. Keep richer model-loading diagnostics, visual/material import, actuator,
+   mimic/coupler, loop-closure, integrator, and COM-Jacobian work as separate
+   deferred slices unless the active solver-polish work directly requires them.
 
-## Relationship To The API Design Docs
+## Relationship To The API-Design Dev Task
 
-`docs/design/simulation_cpp_api.md` and
-`docs/design/simulation_python_api.md` track the public _facade shape_ (handles,
-naming, Pythonic dartpy). This task tracks the _dynamics implementation_ behind
-that facade. Keep facade changes in the design docs; keep solver/dynamics
-changes here. When this task completes, promote durable decisions into
-`docs/onboarding/` and the design docs, then delete this folder
+`docs/dev_tasks/simulation_api_design/` tracks the public _facade
+shape_ (handles, naming, Pythonic dartpy). This task tracks the _dynamics
+implementation_ behind that facade. Keep facade changes in that task; keep
+solver/dynamics changes here. When this task completes, promote durable
+decisions into `docs/onboarding/` and the design docs, then delete this folder
 in the completing PR.

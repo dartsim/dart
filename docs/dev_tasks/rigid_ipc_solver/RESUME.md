@@ -1,5 +1,18 @@
 # Resume: Rigid IPC Solver
 
+## Current Reality (2026-06-06)
+
+Use this folder's `README.md`, `docs/plans/dashboard.md`, and the current code as
+the live status. The long session log below is historical evidence for the rigid
+IPC corpus/parity effort; branch names, `/home/js/...` checkout paths, pushed
+feature-branch notes, and "No push or PR mutation" statements belong to those
+past slices. Current rigid IPC work should keep using the DART-owned
+`RigidBodySolver::Ipc` method-family opt-in, the shared built-in World step
+schedule, and the open README/dashboard next steps: robust normal-push for
+kinematic obstacles, the performance climb, remaining corpus/parity coverage,
+and articulated-scene support without exposing solver registries, ECS storage,
+external project names, or backend resources in public API.
+
 ## Session 2026-06-01: generic hash-grid source row
 
 Delivered a bounded Phase 2/6 algorithm-manifest slice:
@@ -1140,7 +1153,7 @@ Delivered a bounded Phase 2c CCD parity slice:
 
 Validation in this slice:
 
-- `pixi run build-simulation-tests`
+- `pixi run build-simulation-experimental-tests`
 - `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcCcdCase.EvaluatesAuditedKinematicRowsWithoutZeroTimeHits'`
 - `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no'`
 - `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_barrier --gtest_color=no'`
@@ -1178,7 +1191,7 @@ No push or PR mutation has been made from this slice.
 Delivered a bounded fixture/runtime helper slice for Phases 1 and 5:
 
 - Added `populateAndStepRigidIpcReplayWorld(...)` in the internal rigid IPC
-  fixture module. The helper populates a DART 7 `World`, applies parsed
+  fixture module. The helper populates an DART 7 `World`, applies parsed
   fixture solver metadata to the supplied `RigidIpcContactStageOptions`, runs
   exactly one opt-in `RigidIpcContactStage` step, and can return the resulting
   `RigidIpcSolverStats`.
@@ -1194,7 +1207,7 @@ Delivered a bounded fixture/runtime helper slice for Phases 1 and 5:
 Validation in this slice:
 
 - `pixi run lint`
-- `pixi run build-simulation-tests`
+- `pixi run build-simulation-experimental-tests`
 - `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcFixtureReplay.RuntimeReplayHelperAppliesStagePolicy'`
 - `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no'`
 - `git diff --check`
@@ -1219,7 +1232,7 @@ Delivered a bounded fixture-import slice for Phase 1:
 
 Validation in this slice:
 
-- `pixi run build-simulation-tests`
+- `pixi run build-simulation-experimental-tests`
 - `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcFixtureReplay.LoadsOffStlMshAndVtkMeshAssets'`
 - `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no'`
 - `pixi run lint`
@@ -1242,7 +1255,7 @@ Delivered a bounded fixture/runtime policy slice for Phases 1 and 5:
 
 Validation in this slice:
 
-- `pixi run build-simulation-tests`
+- `pixi run build-simulation-experimental-tests`
 - `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcFixture.AppliesFixtureMetadataToStageOptions:RigidIpcFixtureReplay.RuntimeReplayCanUseParsedSolverSettings'`
 - `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no'`
 - `pixi run lint`
@@ -1267,7 +1280,7 @@ Delivered a bounded fixture/runtime policy slice for Phases 1 and 5:
 
 Validation in this slice:
 
-- `pixi run build-simulation-tests`
+- `pixi run build-simulation-experimental-tests`
 - `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcFixtureReplay.PopulatesWorldWithFixtureStateAndMetadata:RigidIpcFixtureReplay.RuntimeReplayAdvancesParsedKinematicBody'`
 - `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no'`
 - `pixi run lint`
@@ -1296,7 +1309,7 @@ Delivered another bounded stage-policy slice for Phases 1, 4, and 5:
 
 Validation in this slice:
 
-- `pixi run build-simulation-tests`
+- `pixi run build-simulation-experimental-tests`
 - `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcFixtureReplay.RuntimeReplayCanUseParsedSolverSettings'`
 - `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no'`
 - `pixi run bash -lc 'build/default/cpp/Release/bin/test_world --gtest_color=no --gtest_filter=World.RigidIpcContactStage*'`
@@ -1323,7 +1336,7 @@ Delivered a bounded stage-policy slice for Phases 1, 4, and 5:
 
 Validation in this slice:
 
-- `pixi run build-simulation-tests`
+- `pixi run build-simulation-experimental-tests`
 - `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcFixtureReplay.RuntimeReplayCanUseParsedSolverSettings'`
 - `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no'`
 - `pixi run bash -lc 'build/default/cpp/Release/bin/test_world --gtest_color=no --gtest_filter=World.RigidIpcContactStage*'`
@@ -1348,7 +1361,7 @@ Delivered a bounded fixture/runtime bridge slice for Phases 1 and 4:
 
 Validation in this slice:
 
-- `pixi run build-simulation-tests`
+- `pixi run build-simulation-experimental-tests`
 - `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no --gtest_filter=RigidIpcFixtureReplay.RuntimeReplayCarriesFrictionIntoRigidIpcStage'`
 - `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_fixture --gtest_color=no'`
 - `pixi run lint`
@@ -1360,7 +1373,7 @@ No push or PR mutation has been made from this slice.
 Branch `feature/rigid-ipc-paper-parity` was reconciled with current
 `origin/main` by local merge commit `46e4af0f5a3`
 (`Merge origin/main into rigid IPC paper parity`). The merge conflict was limited
-to the Python DART 7 binding/stub surface and preserved both newer
+to the Python experimental binding/stub surface and preserved both newer
 `CollisionShapeType.CAPSULE` / `CollisionShape.capsule(...)` and this branch's
 `CollisionShapeType.MESH` / `CollisionShape.mesh(...)`. No push or PR mutation
 has been made from this session.
@@ -1386,7 +1399,7 @@ Delivered a bounded solver-quality slice for Phase 3:
 Validation in this session:
 
 - `pixi run lint`
-- `pixi run build-simulation-tests`
+- `pixi run build-simulation-experimental-tests`
 - `pixi run build-py`
 - `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_barrier --gtest_color=no'`
 - `pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no'`
@@ -1398,7 +1411,7 @@ is now merged to `main` via PR #2777). Delivered, each built + verified +
 committed:
 
 - **Paper-parity C++ experiment suite**
-  (`tests/unit/simulation/experimental/contact/test_rigid_ipc_paper_experiments.cpp`).
+  (`tests/unit/simulation/contact/test_rigid_ipc_paper_experiments.cpp`).
   Encodes the rigid-ipc paper figures the free-body stage can express, asserting
   the two IPC invariants (intersection-free + Coulomb threshold):
   - Fig. 18 high-school friction test via tilted gravity over flat ground
@@ -1480,7 +1493,7 @@ slice added the first internal 3D rigid curved-trajectory ACCD query for
 face-vertex, edge-edge, and point-edge primitives, plus rotational regressions
 where endpoint-linear primitive CCD misses a mid-step contact and first
 minimum-separation regressions. The latest slice added the first internal
-fixture replay path that populates a DART 7 `World` with body state and
+fixture replay path that populates an DART 7 `World` with body state and
 preserves mesh/fixed-DOF/kinematic metadata. The newest slice added
 DART 7 mesh collision shapes, OBJ/OFF/MSH/STL fixture mesh loading, native
 collision mapping, and fixture replay regressions proving loaded mesh bodies
@@ -1489,14 +1502,16 @@ participate in `World::collide()`. The newest slice preserves inline
 polygonal inline geometry as native-backed mesh collision shapes, and adds
 rigid-ipc MSH surface mesh replay for comparison corpus assets. The latest
 fixture slice imports the upstream IPC comparison `.txt` shape-row subset and
-replays MSH-backed comparison rows into a DART 7 `World`; path-loaded
+replays MSH-backed comparison rows into an DART 7 `World`; path-loaded
 scripts now remember their source directory so upstream relative mesh paths can
 replay without an explicit `assetRoot`. The newest importer slice preserves
 comparison-script material Young/Poisson values plus energy model, warm-start,
 self-collision, and gravity-disable metadata. It also adds the first runtime
 replay regression that enters simulation mode and steps a fixture-populated
-DART 7 `World` through the default rigid-body pipeline, verifying fixture
-replay still does not select IPC solver behavior. The latest CCD slice embeds
+DART 7 `World` through the default sequential-impulse policy, verifying
+fixture replay does not silently select IPC solver behavior. Opt-in IPC stepping
+is now routed through `WorldOptions::rigidBodySolver` /
+`RigidBodySolver::Ipc`. The latest CCD slice embeds
 the first audited root `tests/data/ccd-test-000..003.json` rows as hermetic load
 regressions and full-step miss regressions, and adds first upstream-style
 edge-vertex, edge-edge, and face-vertex expected-TOI evaluator rows. The newest
@@ -1617,9 +1632,9 @@ commit "Add opt-in experimental rigid IPC contact stage with lagged friction"):
   `python/examples/demos/registry.py` under the Experimental group.
 - Merged `origin/main` a third time to pick up the Eigen 5 SVD migration and
   pixi dependency upgrade (#2765, #2768); rebuilt and re-greened the
-  simulation suite. NOTE: the pixi upgrade moved urdfdom 4.0->5.1,
+  simulation-experimental suite. NOTE: the pixi upgrade moved urdfdom 4.0->5.1,
   so the full C++/dartpy libraries must be rebuilt (`pixi run build`) before the
-  Python demos load; the simulation tests do not link urdfdom and stayed green
+  Python demos load; the experimental tests do not link urdfdom and stayed green
   throughout.
 - Fixed the freeze-on-contact "sink-then-stick" bug with IPC adaptive barrier
   stiffness (see the RESOLVED note below).
@@ -1671,7 +1686,7 @@ Phase 2 rigorous interval-arithmetic CCD + corpus parity. All work is pushed to
 `origin/feature/rigid-ipc-manifest` (sole-maintainer authorization, no
 PR-review gating).
 
-All green: `build-simulation-tests`, `test-simulation`
+All green: `build-simulation-experimental-tests`, `test-simulation-experimental`
 (23/23, including the new `RigidIpcAdaptiveStiffness` unit tests, the no-freeze
 `RigidIpcContactStageSlidingContactDoesNotFreeze` regression, and the
 `RigidIpcContactStageTwoBoxStackSettlesWithoutPenetration` body-body regression),
@@ -1679,7 +1694,7 @@ the py-demos cycle smoke (incl. `sx_rigid_ipc` + `sx_rigid_ipc_slide`), and the
 manifest checks. NOTE: after the Eigen 5 merge a full clean `pixi run build` was
 required to relink dartpy (urdfdom 5.1); incremental builds left mixed-ABI
 objects that crashed `import dartpy`. C++ lint uses `pixi run
-lint-simulation` (clang-format 22); the cached `pixi run lint`
+lint-simulation-experimental` (clang-format 22); the cached `pixi run lint`
 cmake `format` target still references a stale clang-format-21 path.
 
 ## Immediate Next Step
@@ -1757,9 +1772,9 @@ remain open fallback slices.
   selectors, or GPU resources in public API.
 - The importer currently lives in
   `dart/simulation/io/detail/rigid_ipc_fixture.*` and is covered
-  by `tests/unit/simulation/experimental/io/test_rigid_ipc_fixture.cpp`.
+  by `tests/unit/simulation/io/test_rigid_ipc_fixture.cpp`.
 - `populateRigidIpcReplayWorld()` is an internal bridge only: it creates
-  DART 7 `RigidBody` entries, preserves fixture metadata, and attaches
+  experimental `RigidBody` entries, preserves fixture metadata, and attaches
   supported OBJ, OFF, rigid-ipc MSH, binary STL, ASCII STL, and polygonal inline
   geometry as native-backed mesh collision shapes. It does not select a solver
   method, and unsupported or missing mesh assets are recorded in replay metadata
@@ -1777,7 +1792,7 @@ remain open fallback slices.
   upstream comparison corpus layout while preserving the explicit override path
   for tests and generated fixtures.
 - The first runtime replay regression uses inline mesh geometry, a force, and
-  gravity to populate a DART 7 `World`, enter simulation mode, take one
+  gravity to populate an DART 7 `World`, enter simulation mode, take one
   default `World::step()`, and assert the ordinary rigid-body velocity/position
   integration result. This is intentionally not a public example yet because the
   importer still lives under `io::detail`.
@@ -1800,7 +1815,7 @@ remain open fallback slices.
   but the rigid curved trajectory hits within the step.
 - The first rigid barrier scaffold lives in
   `dart/simulation/detail/rigid_ipc_barrier.*` and is covered by
-  `tests/unit/simulation/experimental/contact/test_rigid_ipc_barrier.cpp`. It
+  `tests/unit/simulation/contact/test_rigid_ipc_barrier.cpp`. It
   returns world-primitive barrier derivatives after rigid pose interpolation and
   now has local two-body reduced-coordinate derivatives for face-vertex and
   edge-edge terms. The local barrier primitive set also includes edge-vertex
@@ -1853,12 +1868,12 @@ cd /home/js/dev/dartsim/dart/task_6
 git checkout feature/rigid-ipc-paper-parity   # or: git checkout main
 git status && git log -8 --oneline
 pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc
-pixi run build-simulation-tests
+pixi run build-simulation-experimental-tests
 pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_rigid_ipc_barrier$'
 pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_rigid_ipc_paper_experiments$'
 pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_world$'   # incl. RigidIpcKinematic* regressions
 pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_rigid_ipc_fixture$'
-pixi run test-simulation
+pixi run test-simulation-experimental
 # Rendering / demos (needs a full `pixi run build` first to relink dartpy):
 pixi run build
 PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py -q

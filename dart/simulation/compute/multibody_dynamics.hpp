@@ -306,12 +306,10 @@ public:
   void execute(World& world, ComputeExecutor& executor) override;
 };
 
-/// Resolves current link-vs-rigid-body contacts against staged multibody
-/// velocities.
-///
-/// This stage preserves the existing link-contact solve while making it an
-/// explicit velocity-level stage between unconstrained velocity integration and
-/// position write-back.
+/// The built-in semi-implicit `World::step()` schedule uses
+/// `UnifiedConstraintStage` for articulated contact coupling. This stage
+/// remains available for focused custom-pipeline tests and experiments that
+/// need the older per-multibody velocity-level pass.
 class DART_SIMULATION_API MultibodyContactStage final : public WorldStepStage
 {
 public:

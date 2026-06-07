@@ -444,23 +444,23 @@ its own line so status updates remain git-history friendly.
 
 - Owner doc:
   [`082-variational-integrator-solver.md`](082-variational-integrator-solver.md)
-- Status: Proposed
-- Horizon: Next
+- Status: Active
+- Horizon: Now
 - Dimension: Algorithm extensibility
-- Next step: Run the O(n) impulse-ABI de-risking spike first — the experimental
-  World has no ABA today (dense `M.ldlt()` solve), and the linear-time claim
-  depends on it — then start Phase A1 (fixed-base MVP on a dense-solve
-  placeholder) under a new `docs/dev_tasks/variational_integrator_solver/`
-  folder. Durable design lives in
-  [`../design/simulation_variational_integrator.md`](../design/simulation_variational_integrator.md);
-  contact/friction is a deferred go/no-go sidecar.
-- Gate: Phase A1 proves symplectic energy behavior (no secular energy drift over
-  ≥1e5 steps where semi-implicit Euler drifts), analytic single-DOF correctness,
-  bounded RIQN iterations with a defined non-convergence error, and
-  determinism/serialization round-trip; Phase A2 proves sub-quadratic O(n)
-  scaling via benchmark JSON; `check-api-boundaries` stays green with no
-  solver/stage/component/backend leak; contact/friction stays behind the
-  contact-roadmap go/no-go.
+- Next step: The VI selector, O(n) inverse-mass path, floating/spherical support,
+  loop closures, scoped C1-C3 contact/friction, dartpy surface, and supported
+  envelope have landed. Continue either by opening the maintainer-owned
+  graduation proposal from
+  [`../dev_tasks/variational_integrator_solver/graduation-criteria.md`](../dev_tasks/variational_integrator_solver/graduation-criteria.md)
+  or by starting the separate arbitrary-geometry contact adapter workstream
+  coordinated with the rigid IPC / deformable IPC geometry stack.
+- Gate: The implemented family remains opt-in behind `MultibodyOptions`;
+  `check-api-boundaries` stays green with no solver/stage/component/backend leak;
+  regression evidence keeps symplectic energy behavior, O(n) scaling,
+  deterministic serialization, loop closures, and the declared contact/friction
+  envelope green. Graduation requires the maintainer-owned `PLAN-` entry and
+  adversarial review; arbitrary link geometry and C4 hard-barrier contact remain
+  explicit follow-up work, not hidden gaps.
 
 ### PLAN-035: Native Collision Feature Dashboard
 

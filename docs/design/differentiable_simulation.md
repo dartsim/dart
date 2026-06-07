@@ -2,12 +2,12 @@
 
 ## Status
 
-Proposal. This document owns the durable architecture and public-API rationale
-for **opt-in differentiable simulation** in the DART 7 `World`: how DART
-computes derivatives of a physics step, what the public surface looks like, how
-differentiability stays opt-in and backend-neutral, and how the Nimble-style
-analytic LCP-gradient method maps onto DART's existing boxed-LCP and
-articulated-body dynamics.
+Living design and implementation contract. This document owns the durable
+architecture and public-API rationale for **opt-in differentiable simulation**
+in the DART 7 `World`: how DART computes derivatives of a physics step,
+what the public surface looks like, how differentiability stays opt-in and
+backend-neutral, and how the Nimble-style analytic LCP-gradient method maps onto
+DART's existing boxed-LCP and articulated-body dynamics.
 
 It is the differentiability companion to the existing design docs and does not
 restate their rules:
@@ -24,7 +24,7 @@ restate their rules:
 autodiff`), and the DART 7 promotion contract.
 - [`simulation_python_api.md`](simulation_python_api.md)
   owns the dartpy facade, the `StateSpace` metadata object, and the functional
-  `sim.state.rollout` shape this design extends rather than forks.
+  `sx.state.rollout` shape this design extends rather than forks.
 - [`compute_backend_research.md`](compute_backend_research.md) recorded
   differentiability as a _deferred_ capability and the open question of whether
   to promote it. This document is the affirmative answer and supersedes the
@@ -41,7 +41,7 @@ This document was revised after architecture, plan, and API reviews. The
 "prose ran ahead of the code" in two places that those reviews corrected and
 that this revision now states accurately: (1) DART's manifold integrator makes
 the position Jacobian joint-type-dependent, not identity; and (2) the
-DART 7 contact path is currently sequential-impulse, not a boxed LCP, so
+experimental contact path is currently sequential-impulse, not a boxed LCP, so
 the analytic _contact_ gradient is undefined until that path becomes an LCP
 solve (PLAN-080 Workstream 4).
 
@@ -108,7 +108,7 @@ promotion or split decision.
 
 ## Background: What The Method Computes
 
-The DART 7 step is semi-implicit Euler with a contact/constraint solve.
+DART's experimental step is semi-implicit Euler with a contact/constraint solve.
 With state `x = [q; q̇]`, control `u = τ`, parameters `θ`, the **smooth core** of
 one step is:
 
@@ -250,7 +250,7 @@ value). The two parts are treated distinctly:
 ### D2 — Opt-in, default off, bitwise-identical when off
 
 Differentiability is **off by default** and enabled per `World` (imperative
-path) or per rollout/`sim.diff` call (functional path). When off, the step
+path) or per rollout/`sx.diff` call (functional path). When off, the step
 executes the identical non-differentiable code path: the contract is _bitwise-
 identical final state and zero reverse-snapshot allocation_, enforced by a named
 executor-parity test (`test_diff_zero_cost_parity`). Snapshot capture is plumbed
@@ -279,9 +279,9 @@ with documented shape, dtype, ownership, and freshness (valid until the next
 The C++ core produces plain Eigen-typed derivative value objects and knows
 nothing about any tensor framework. The lowest-friction Python experience — a
 `torch.autograd.Function` so users write a normal loop and call `.backward()` —
-lives only in the optional dartpy `sim.diff` submodule and is a thin adapter over
-the framework-neutral core. `import dartpy.simulation` must succeed
-with torch absent; `sim.diff` always exists as an attribute, and calling into it
+lives only in the optional dartpy `sx.diff` submodule and is a thin adapter over
+the framework-neutral core. `import dartpy.simulation_experimental` must succeed
+with torch absent; `sx.diff` always exists as an attribute, and calling into it
 without torch raises a clear, guiding `ImportError`. This keeps the engine
 dependency-free and leaves room for a future JAX/`dlpack` bridge added the same
 way.
@@ -323,25 +323,25 @@ step stages), which requires the snapshot-ownership plumbing in
 Progressive disclosure: the common path is unchanged (default off); the
 gradient headline is one import and one call; advanced surfaces escalate
 sensibly. Names describe the method/quantity, never an engine. One import alias
-(`sim`) throughout.
+(`sx`) throughout.
 
 ### Python — headline (lowest friction, lead with this)
 
-Using `sim.diff` _is_ the opt-in for the functional/learning path; a user who
+Using `sx.diff` _is_ the opt-in for the functional/learning path; a user who
 just wants `.backward()` writes a normal loop, exactly as in Nimble:
 
 ```python
-from dartpy import simulation as sim
+from dartpy import simulation_experimental as sx
 import torch
 
-world = sim.World(time_step=0.001)
+world = sx.World(time_step=0.001)
 arm = world.add_multibody("arm")
 # ... build topology ...
 
 state  = torch.tensor(world.state_vector, requires_grad=True)   # [q; q̇] (property)
 action = torch.zeros(world.num_efforts, requires_grad=True)
 for _ in range(100):
-    state = sim.diff.timestep(world, state, action)              # differentiable step
+    state = sx.diff.timestep(world, state, action)              # differentiable step
 loss = state[:world.num_dofs].norm()
 loss.backward()                                                  # state/action .grad set
 ```
@@ -352,7 +352,7 @@ For users who need the matrices themselves, opt in at the `World` and read the
 typed derivatives of the most recent step:
 
 ```python
-world = sim.World(time_step=0.001, differentiable=True)   # opt-in; default False
+world = sx.World(time_step=0.001, differentiable=True)   # opt-in; default False
 # ... build, step ...
 world.step()
 d = world.get_step_derivatives()        # method: allocates a snapshot-backed value object
@@ -363,12 +363,12 @@ d.control_jacobian                       # ∂x'/∂u   (2·ndof × nu)
 
 ### Python — functional rollout (one rollout API, not a fork)
 
-Differentiability is an opt-in flag on the _existing_ `sim.state.rollout` shape,
-preserving its `out=` buffer contract; `sim.diff.rollout` is documented as the
+Differentiability is an opt-in flag on the _existing_ `sx.state.rollout` shape,
+preserving its `out=` buffer contract; `sx.diff.rollout` is documented as the
 torch-tensor bridge over it, not a second rollout:
 
 ```python
-traj = sim.state.rollout(
+traj = sx.state.rollout(
     world.model(),
     initial_state=state0,        # StateSpace-typed
     control=control_sequence,    # [steps, nu] (optional leading batch dim)
@@ -385,12 +385,12 @@ grads = traj.gradients(d_loss_d_states)   # → grads.state, grads.control, grad
 ### Python — opt-in parameter derivatives and gradient modes
 
 ```python
-world.add_differentiable_parameter(arm.links["forearm"], sim.PhysicalParameter.MASS)
+world.add_differentiable_parameter(arm.links["forearm"], sx.PhysicalParameter.MASS)
 # subsequent get_step_derivatives()/gradients() now include the parameter block
 
-world.contact_gradient_mode = sim.ContactGradientMode.ANALYTIC            # default
-# sim.ContactGradientMode.COMPLEMENTARITY_AWARE   # saddle-escape heuristic (not the true gradient)
-# sim.ContactGradientMode.PRE_CONTACT_SURROGATE   # nonzero pre-contact gradient (backward-only surrogate)
+world.contact_gradient_mode = sx.ContactGradientMode.ANALYTIC            # default
+# sx.ContactGradientMode.COMPLEMENTARITY_AWARE   # saddle-escape heuristic (not the true gradient)
+# sx.ContactGradientMode.PRE_CONTACT_SURROGATE   # nonzero pre-contact gradient (backward-only surrogate)
 ```
 
 ### C++ (`dart::simulation`)
@@ -398,7 +398,7 @@ world.contact_gradient_mode = sim.ContactGradientMode.ANALYTIC            # defa
 Mirrors the Python facade with value objects, no framework types:
 
 ```cpp
-WorldOptions opts;            // new value object (does not exist today; added in WS1)
+WorldOptions opts;            // construction-time value object
 opts.timeStep = 0.001;
 opts.differentiable = true;   // opt-in; default false
 World world(opts);
@@ -437,31 +437,33 @@ appear in a public signature.
 
 ## Algorithm → DART Seam Mapping
 
-The five attachment seams and what each contributes to the reverse pass. **Seams
-1–2 attach to the _future_ boxed-LCP contact solve created by
-PLAN-080 Workstream 4 — they do not exist on the current DART 7 path today** (the
-current path is sequential-impulse PGS in `world_step_stage.cpp`
-`RigidBodyContactStage` and `multibody_dynamics.cpp` `simulateMultibody`, with no
-LCP). The legacy `dart/constraint/constraint_solver.cpp` is _not_ the seam.
+The five attachment seams and what each contributes to the reverse pass. Seams
+1–2 attach to the experimental boxed-LCP rigid-contact path selected by
+`WorldOptions::contactSolverMethod = ContactSolverMethod::BoxedLcp`, not to the
+default sequential-impulse PGS path. The implemented slice covers the
+rigid-body normal/friction contact snapshot and contact-aware derivative path;
+the legacy `dart/constraint/constraint_solver.cpp` is _not_ the seam.
 
-| #   | Seam (file)                                                                                                                                                                                             | Forward output      | Reverse contribution                                                                |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ----------------------------------------------------------------------------------- |
-| 1   | LCP solve — `dart/math/lcp/lcp_solver.hpp` `LcpResult LcpSolver::solve(const LcpProblem&, VectorXd& x, const LcpOptions&)`; target a **pivoting (Dantzig-style)** solver that yields a clean active set | impulses `f`        | snapshot `{A,b,lo,hi,findex,f}`; classify C/S/T; build/factor `A_CC`; `∂f_C/∂{A,b}` |
-| 2   | **Future** boxed-LCP contact stage (created by PLAN-080 WS4; replaces today's `RigidBodyContactStage`)                                                                                                  | `A,b` from `J, M⁻¹` | `∂A/∂q, ∂b/∂q` via contact Jacobian derivatives                                     |
-| 3   | Articulated dynamics — `compute/multibody_dynamics.*` `computeMultibodyDynamicsTerms`                                                                                                                   | `M, C, g`           | `∂(M⁻¹(τ−c))/∂{q,q̇,τ,θ}` (substantive; see D1)                                      |
-| 4   | Link Jacobian — `compute/multibody_dynamics.hpp` `computeMultibodyLinkJacobian`                                                                                                                         | `J`                 | `∂(Jᵀf)/∂q` (screw-axis derivative)                                                 |
-| 5   | Manifold integration — `simulateMultibody` position/velocity update                                                                                                                                     | `x'`                | joint-type-keyed position Jacobians; assemble `state_jacobian`, `control_jacobian`  |
+| #   | Seam (file)                                                                                                                                                                                                                               | Forward output      | Reverse contribution                                                                |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ----------------------------------------------------------------------------------- |
+| 1   | LCP solve — `dart/math/lcp/lcp_solver.hpp` `LcpResult LcpSolver::solve(const LcpProblem&, VectorXd& x, const LcpOptions&)`; the current boxed-LCP contact slice uses a **pivoting (Dantzig-style)** solver that yields a clean active set | impulses `f`        | snapshot `{A,b,lo,hi,findex,f}`; classify C/S/T; build/factor `A_CC`; `∂f_C/∂{A,b}` |
+| 2   | Experimental boxed-LCP contact stage — `detail/boxed_lcp_contact.*` plus `detail/contact_jacobians.*`; opt-in through `WorldOptions::contactSolverMethod` while default `RigidBodyContactStage` remains sequential impulse                | `A,b` from `J, M⁻¹` | `∂A/∂q, ∂b/∂q` via contact Jacobian derivatives                                     |
+| 3   | Articulated dynamics — `compute/multibody_dynamics.*` `computeMultibodyDynamicsTerms`                                                                                                                                                     | `M, C, g`           | `∂(M⁻¹(τ−c))/∂{q,q̇,τ,θ}` (substantive; see D1)                                      |
+| 4   | Link Jacobian — `compute/multibody_dynamics.hpp` `computeMultibodyLinkJacobian`                                                                                                                                                           | `J`                 | `∂(Jᵀf)/∂q` (screw-axis derivative)                                                 |
+| 5   | Manifold integration — `simulateMultibody` position/velocity update                                                                                                                                                                       | `x'`                | joint-type-keyed position Jacobians; assemble `state_jacobian`, `control_jacobian`  |
 
 Iterative/projection LCP solvers (PGS, APGD) do not return a clean active set, so
-the C/S/T classification threshold would be solver- and tolerance-dependent;
-WS2 targets a pivoting solver, and iterative-solver gradients are out of scope (or
-require a documented classification tolerance).
+the C/S/T classification threshold would be solver- and tolerance-dependent; the
+boxed-LCP derivative path therefore stays tied to the pivoting contact solve.
+Iterative-solver gradients remain out of scope unless they gain a documented
+classification tolerance.
 
-Because seams 1–2 depend on WS4, PLAN-110 contributes a requirement _into_ PLAN-080
-WS4: the LCP contact solve must emit `{A,b,lo,hi,findex,f}` as
-first-class outputs (a snapshot-friendly, differentiation-ready seam) so WS4 does
-not have to be re-touched. Until WS4 lands, only the contact-free articulated path
-(seams 3–5) is differentiable (WS1).
+PLAN-080 WS4 satisfied the original PLAN-110 prerequisite by emitting
+`{A,b,lo,hi,findex,f}` as first-class boxed-LCP contact outputs (a
+snapshot-friendly, differentiation-ready seam). Remaining promotion work is to
+extend that seam beyond the current rigid-body contact slice to articulated-link
+and coupled contact cases, preserve the same snapshot contract, and reject
+unsupported cases rather than silently returning contact-free gradients.
 
 ## Internal Architecture
 
@@ -470,13 +472,12 @@ solver-internal reverse pass:
 
 - **Snapshot plumbing.** The data the reverse pass needs (`M`, `J`, the per-island
   LCP `{A,b,findex,f}`, the clamping classification, joint-type position-Jacobian
-  inputs) is currently computed deep inside `simulateMultibody`/`computeMassAndBias`
-  and discarded. WS1 threads a **nullable snapshot sink** through those forward
+  inputs) is computed by the forward path and captured only for differentiable
+  worlds. WS1 threaded a **nullable snapshot sink** through those forward
   functions, populated only when non-null. The `World` owns the snapshot buffer
-  behind `WorldOptions::differentiable` (a new options/constructor surface that
-  does not exist today and must pass `check-api-boundaries`). The step stages are
-  stack-local and cannot hold per-step state, so ownership lives on the
-  World/solver, not the stage.
+  behind `WorldOptions::differentiable`; the step stages are stack-local and
+  cannot hold per-step state, so ownership lives on the World/solver, not the
+  stage.
 - **`StepSnapshot`** (detail): per-step record for backward (lazily allocated only
   when differentiable).
 - **`ContactGradient`** (detail): C/S/T partition and `∂f_C/∂{A,b}` (Nimble's
@@ -488,7 +489,7 @@ solver-internal reverse pass:
   blocks and the reverse-product result, Eigen-typed.
 - **`diff::rollout` / `diff::applyStepVjp`** (public functions).
 
-The dartpy `sim.diff` submodule adds the `timestep`/`rollout` `autograd.Function`
+The dartpy `sx.diff` submodule adds the `timestep`/`rollout` `autograd.Function`
 wrappers and the dlpack/NumPy plumbing; it imports torch lazily.
 
 Concurrency note: a differentiable `World` is more stateful (snapshot mutated in
@@ -508,7 +509,7 @@ snapshot ownership per world.
   matrices and exploits island block structure.
 - **Memory / checkpointing.** Trajectory memory scales with stored snapshots
   (O(steps · ndof²) in the worst case). WS3 delivers a checkpointing knob
-  (recompute vs. store) with a peak-memory test; `sim.state.rollout(...,
+  (recompute vs. store) with a peak-memory test; `sx.state.rollout(...,
 differentiable=True)` and the `traj.states` buffer interact with it. This is a
   first-class WS3 interface item, not a deferred knob.
 - Overhead (on vs. off) is reported by a benchmark with a stated budget.
@@ -540,9 +541,10 @@ differentiable=True)` and the `traj.states` buffer interact with it. This is a
 
 ## Phasing
 
-Sequenced; slice detail in the dev-task roadmap. WS1 is unblocked; WS2–WS5
-depend on PLAN-080 Workstream 4 (the DART 7 boxed-LCP contact solve), which has
-landed for the differentiability path; the dashboard tracks remaining hardening.
+Historical sequence; slice detail lives in the dev-task roadmap. WS1–WS5 and
+the PLAN-080 boxed-LCP contact prerequisite now have implemented first slices in
+the experimental stack. Keep this list as the dependency map that explains how
+the work landed and what stable promotion must still harden.
 
 0. **Prerequisite (PLAN-080 WS4)**: boxed-LCP contact + joint-limit solve on the
    DART 7 `World`, emitting `{A,b,lo,hi,findex,f}` as first-class outputs.
@@ -554,7 +556,7 @@ landed for the differentiability path; the dashboard tracks remaining hardening.
    zero-cost parity test. Enumerate which joint types ship in WS1.
 2. **Analytic contact gradient** — C/S/T classification, `A_CC` solve, `∂f_C/∂{A,b}`,
    friction `findex` mapping, `∂(Jᵀf)/∂q`; pin the `findex`/cone convention.
-3. **Reverse product + PyTorch bridge** — `applyStepVjp`, the `sim.diff` submodule,
+3. **Reverse product + PyTorch bridge** — `applyStepVjp`, the `sx.diff` submodule,
    `state_vector`/`num_efforts` helpers, the checkpointing knob, dartpy stubs +
    torch-absent import test + Python tests, and a trajectory-optimization example.
 4. **Parameter derivatives** — `PhysicalParameterSelector`, `parameter_jacobian`,
@@ -583,6 +585,12 @@ registrations; ownership/freshness/unsupported-case docs; dartpy bindings with
 committed stubs; a trajectory-optimization and a system-identification example
 with runnable commands; changelog and migration notes; and a tracked overhead
 benchmark. The zero-cost `differentiable=false` default is part of the contract.
+
+Current experimental status: binary save/load preserves the World-level
+differentiability/contact policy flags, and replay restores registered
+differentiable parameters. Binary serialization of parameter registrations is
+not implemented yet; stable promotion must either add that round-trip or
+document runtime re-registration as the supported restart contract.
 
 ## Deferred Capabilities
 

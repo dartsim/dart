@@ -6,6 +6,10 @@
 > [`graduation-criteria.md`](graduation-criteria.md); the contact sequencing in
 > [`../../plans/082-variational-integrator-solver/contact-roadmap.md`](../../plans/082-variational-integrator-solver/contact-roadmap.md).
 
+Branch/PR details below are historical handoff evidence, not current checkout
+instructions. Live status should be read from the README, the graduation
+criteria, the plan dashboard, and the current code.
+
 ## Last Session Summary (2026-05-30)
 
 Phase A/B were already done. This session executed **Phase C contact & friction**

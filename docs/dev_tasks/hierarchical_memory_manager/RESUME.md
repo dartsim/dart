@@ -1,5 +1,15 @@
 # Resume: Hierarchical Memory Manager
 
+## Current Reality (2026-06-06)
+
+Use this folder's `README.md`, `docs/plans/dashboard.md`, and the current code as
+the live status. The branch-local "Current Branch", validation-command, and PR
+handoff sections below are historical session notes, not current checkout
+instructions. Memory/scalability work should continue through World-owned
+allocator and diagnostics contracts (`MemoryManager`, `WorldOptions`,
+`WorldMemoryDiagnostics`) rather than exposing EnTT storage, allocator internals,
+or backend resources on the public simulation facade.
+
 ## Last Session Summary
 
 The first memory-manager slice has landed: DART 7 `World` owns a

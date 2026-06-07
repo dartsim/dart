@@ -17,8 +17,8 @@ Code is the source of truth; this file tracks intent and sequencing only.
   (differentiated Featherstone — most work, most accurate/fast), (b) the reserved
   scalar-generic autodiff path, or (c) FD-of-dynamics as an interim. Record the
   choice and the joint-type scope of WS1 here. This is real work, not bookkeeping.
-- **1.1** New `WorldOptions` value object with `differentiable` (default false) +
-  `World(WorldOptions)` constructor (none exists today; passes `check-api-boundaries`);
+- **1.1** `WorldOptions` value object with `differentiable` (default false) +
+  `World(WorldOptions)` constructor (passes `check-api-boundaries`);
   new optional module `dart/simulation/diff/` behind `DART_BUILD_DIFF`;
   CI builds with the option on and off.
 - **1.2** Nullable-sink snapshot plumbing threaded through `simulateMultibody`/
@@ -40,10 +40,10 @@ Code is the source of truth; this file tracks intent and sequencing only.
   body across shipped joint types, with non-smooth-feature boundaries excluded.
   → rows flip PRESENT.
 
-## WS2 — Analytic contact gradient (BLOCKED on WS0)
+## WS2 — Analytic contact gradient (implemented first slice)
 
-- **2.1** Capture LCP snapshot `{A,b,lo,hi,findex,f}` post-solve at the **future
-  experimental** boxed-LCP contact stage created by WS0 (target a pivoting /
+- **2.1** Capture LCP snapshot `{A,b,lo,hi,findex,f}` post-solve at the
+  experimental boxed-LCP contact stage created by WS0 (pivoting /
   Dantzig-style solver for a clean active set; not the legacy
   `dart/constraint/constraint_solver.cpp`). Detail-only; no public leak.
 - **2.2** Clamping/Separating/Tied classification (threshold) → `A_CC`.

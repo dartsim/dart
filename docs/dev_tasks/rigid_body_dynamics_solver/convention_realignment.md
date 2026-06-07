@@ -1,5 +1,10 @@
 # PR #2705 — Convention Re-alignment to main's #2698
 
+Historical handoff note for the PR #2705 merge/reconciliation. It records why
+that branch conflicted with main at the time; it is not current solver status.
+For current status use [`README.md`](README.md), [`RESUME.md`](RESUME.md), and
+the durable solver architecture design.
+
 Reference detail for the Codex hand-off. The short goal prompt lives in
 [`codex_handoff_prompt.md`](codex_handoff_prompt.md); broader roadmap in
 [`RESUME.md`](RESUME.md); the durable design intent that should steer this

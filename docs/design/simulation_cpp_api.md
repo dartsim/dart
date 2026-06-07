@@ -15,15 +15,15 @@ The companion Python binding design lives in
 
 ## Purpose
 
-The DART 7 C++ simulation API should give DART a clean public simulation
-surface for the DART 7 clean break. The API should expose research-facing
-physics concepts and stable extension points without exposing ECS storage,
+The C++ DART 7 simulation API gives DART a clean public simulation surface for
+the DART 7 clean break. The API should expose research-facing physics concepts
+and stable extension points without exposing ECS storage,
 implementation components, or backend execution details.
 
 The core design sentence is:
 
-> The DART 7 C++ simulation API is the official clean-break simulation API, not
-> a public contract for the underlying ECS implementation.
+> The C++ simulation API is the DART 7 clean-break facade, not a public contract for the underlying ECS
+> implementation.
 
 ## Design Principles
 
@@ -32,10 +32,10 @@ The core design sentence is:
 The common C++ path should fit in a short example:
 
 ```cpp
-namespace sim = dart::simulation;
+namespace sx = dart::simulation;
 
-sim::World world;
-auto box = world.addRigidBody("box", sim::RigidBodyOptions{});
+sx::World world;
+auto box = world.addRigidBody("box", sx::RigidBodyOptions{});
 
 world.enterSimulationMode();
 world.step(100);
@@ -71,9 +71,9 @@ ownership and lifetime.
 
 ### Stable Facade, Replaceable Internals
 
-DART 7 treats this namespace as the promoted simulation owner. Public headers,
+DART 7 clean-break promotion establishes a stable facade: public headers,
 exported symbols, Doxygen behavior, examples, dartpy bindings, and migration
-notes are the compatibility contract for the DART 7 line.
+notes become the compatibility contract.
 
 That stable facade should leave DART free to change implementation details:
 
@@ -217,8 +217,8 @@ backend-specific batch updates internally.
 
 ## Scope
 
-This design covers the supported shape of the official DART 7 clean-break C++
-simulation API.
+This design covers the supported shape of the experimental C++ API as it moves
+from opt-in status to the official DART 7 clean-break simulation API.
 
 It includes:
 
@@ -241,7 +241,7 @@ the release roadmap.
 
 ## Non-Goals
 
-- Do not make the DART 7 simulation namespace a long-term compatibility
+- Do not make the DART 7 experimental namespace a long-term compatibility
   namespace after clean-break promotion.
 - Do not keep the legacy DART 6 simulation API beside the promoted DART 7 API.
 - Do not expose `entt::registry`, `entt::entity`, `comps`, component category
@@ -270,17 +270,21 @@ the release roadmap.
   `World::updateKinematics()` remains available in DART 7 as the existing
   synchronization spelling. The promotion target is fresh-by-default ordinary
   queries plus named synchronization hooks for predictable batching.
-- Default `World::step()` composes split rigid-body velocity/contact, multibody
-  forward dynamics, rigid-body position, and kinematics stages through
-  `WorldStepPipeline`. `BatchedRigidBodyIntegrationStage` remains available as
-  an explicit unconstrained SoA path for parity tests, SIMD/data-locality work,
-  and future device prototype evidence. Executor/pipeline overloads already
-  allow selected stage execution and repeated stepping with caller-owned
-  execution policy.
+- Default `World::step()` uses a content-aware built-in schedule, selected from
+  `WorldOptions` / setter policy: free-rigid sequential impulse or IPC, the
+  semi-implicit or variational multibody family, the unified constraint/contact
+  path when articulated structures are present, deformable dynamics only when
+  deformable bodies exist, and a final kinematics refresh. The schedule is an
+  internal `WorldStepPipeline` of cached stages, so common users select
+  capability names and policies rather than stage objects. The batched
+  rigid-body integration stage remains available as an explicit unconstrained
+  SoA path for parity tests, SIMD/data-locality work, and future device
+  prototype evidence. Executor/pipeline overloads already allow selected stage
+  execution and repeated stepping with caller-owned execution policy.
 - `RigidBodyOptions` already represents user-facing rigid-body initialization
   data: mass, inertia, pose, and velocity.
 - `Frame`, `FreeFrame`, `FixedFrame`, `Multibody`, `Link`, and `Joint` provide
-  first-class handle concepts over internal storage.
+  first-class handle concepts over the experimental storage.
 - The implemented DART 7 `Multibody`, `Link`, and `Joint` API is currently
   tree-shaped, with public `JointSpec` construction, joint type, axis,
   parent/child link access, rigid-body endpoint access for public rigid-body
@@ -301,7 +305,7 @@ the release roadmap.
   a later design creates a stable storage-inspection API.
 - `StateSpace` provides a bindable, storage-independent value object for named
   flat-vector metadata.
-- The simulation compute benchmark includes both world kinematics updates and
+- The experimental compute benchmark includes both world kinematics updates and
   full world stepping, which is the right evidence shape for measuring
   kinematics-only performance gains against full physics.
 - Native collision already has standalone world/query concepts with explicit
@@ -312,8 +316,8 @@ the release roadmap.
   writes mark dirty caches. That gives safe fresh reads, but it also spreads
   dirty-flag bookkeeping across frames, joints, body nodes, Jacobians, skeleton
   caches, shape caches, and support caches.
-- `docs/onboarding/api-boundaries.md` requires public APIs to have docs, tests,
-  and ownership while keeping component storage, backend plumbing, and
+- `docs/onboarding/api-boundaries.md` requires experimental APIs to have docs,
+  tests, and ownership while keeping component storage, backend plumbing, and
   implementation namespaces out of public contracts.
 - `docs/onboarding/release-roadmap.md` defines DART 7 as the clean break that
   removes the legacy DART 6 API and promotes the new simulation API after
@@ -365,7 +369,7 @@ promotion, but public examples should never require implementation folders.
 
 ## Public Object Model
 
-| Concept                | Current DART 7 owner                                                                                                                                        | DART 7 promotion target                                                                                                               |
+| Concept                | DART 7 experimental owner                                                                                                                                   | DART 7 promotion target                                                                                                               |
 | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
 | `World`                | Owns topology, time, frame count, stepping, serialization, and compute entry points.                                                                        | Official simulation world.                                                                                                            |
 | `RigidBody`            | World-owned handle for a single rigid object and frame.                                                                                                     | Public rigid body handle with transform, velocity, inertial, force, and torque APIs, plus geometry/material APIs once wrappers exist. |
@@ -399,21 +403,21 @@ need to inspect implementation storage to understand lifecycle effects.
 The C++ API keeps topology mutation separate from simulation execution:
 
 ```cpp
-namespace sim = dart::simulation;
+namespace sx = dart::simulation;
 
-sim::World world;
-auto body = world.addRigidBody("box", sim::RigidBodyOptions{});
+sx::World world;
+auto body = world.addRigidBody("box", sx::RigidBodyOptions{});
 auto robot = world.addMultibody("arm");
 
 world.enterSimulationMode();
-world.sync(sim::WorldSyncStage::Kinematics);
+world.sync(sx::WorldSyncStage::Kinematics);
 world.step();
 ```
 
-DART 7 may keep existing camelCase C++ methods where they are already part of
-the accepted C++ style. Public names should follow the DART 7 public API naming
-policy for the target namespace and headers. Compatibility wrappers for the
-legacy DART 6 simulation API are not part of the stable DART 7 surface.
+DART 7 may keep existing camelCase methods while the experimental API matures.
+For clean-break promotion, public names should follow the DART 7 public API
+naming policy for the target namespace and headers. Compatibility wrappers for
+the legacy DART 6 simulation API are not part of the stable DART 7 surface.
 
 Design-mode errors, invalid handles, topology mismatches, and cross-world
 object use should fail through documented exceptions or status-returning
@@ -435,17 +439,17 @@ count queries, validation, serialization, and a backend-neutral
 `LoopClosureRuntimePolicy`. `LoopClosure::computeResidual()` returns explicit
 closed-chain residual diagnostics without exposing solver rows. Constrained
 kinematic projection and dynamic solving remain clean-break target concepts to
-stage behind the simulation namespace before promotion.
+stage behind the experimental namespace before promotion.
 
 The staged public C++ shape is a DART-owned handle and spec:
 
 ```cpp
 auto closure = world.addLoopClosure(
     "four_bar_closure",
-    sim::LoopClosureSpec{
+    sx::LoopClosureSpec{
         .frameA = groundFrame,
         .frameB = couplerLink,
-        .family = sim::LoopClosureFamily::Rigid,
+        .family = sx::LoopClosureFamily::Rigid,
         .offsetA = Eigen::Isometry3d::Identity(),
         .offsetB = Eigen::Isometry3d::Identity(),
     });
@@ -454,10 +458,10 @@ auto closure = world.addLoopClosure(
 Runtime policy is public metadata while projection and solving remain staged:
 
 ```cpp
-closure.setRuntimePolicy(sim::LoopClosureRuntimePolicy{
+closure.setRuntimePolicy(sx::LoopClosureRuntimePolicy{
     .enabled = true,
-    .kinematics = sim::ClosureKinematicsPolicy::Project,
-    .dynamics = sim::ClosureDynamicsPolicy::Solve,
+    .kinematics = sx::ClosureKinematicsPolicy::Project,
+    .dynamics = sx::ClosureDynamicsPolicy::Solve,
 });
 ```
 
@@ -470,9 +474,9 @@ auto residual = closure.computeResidual();
 The minimal world-owned construction surface should be:
 
 ```cpp
-sim::LoopClosure World::addLoopClosure(
-    std::string_view name, const sim::LoopClosureSpec& spec);
-std::optional<sim::LoopClosure> World::getLoopClosure(
+sx::LoopClosure World::addLoopClosure(
+    std::string_view name, const sx::LoopClosureSpec& spec);
+std::optional<sx::LoopClosure> World::getLoopClosure(
     std::string_view name);
 bool World::hasLoopClosure(std::string_view name) const;
 std::size_t World::getLoopClosureCount() const;
@@ -652,7 +656,7 @@ The public distinction should be pipeline intent, not a separate world type:
 ```cpp
 world.enterSimulationMode();
 joint.setPosition(q);
-world.sync(sim::WorldSyncStage::Kinematics);
+world.sync(sx::WorldSyncStage::Kinematics);
 ```
 
 When callers need predictable work placement or alternate execution policy,
@@ -660,7 +664,7 @@ the same kinematics-only path accepts the backend-neutral executor facade:
 
 ```cpp
 compute::ParallelExecutor executor;
-world.sync(sim::WorldSyncStage::Kinematics, executor);
+world.sync(sx::WorldSyncStage::Kinematics, executor);
 ```
 
 `World::updateKinematics()` delegates to this sync stage in DART 7. A future
@@ -772,7 +776,7 @@ component structs. Examples include:
 - future material/contact/geometry/appearance value objects that keep source
   geometry, physical/contact behavior, inertial data, and visualization data as
   separate concepts;
-- future `WorldOptions`, `StepOptions`, or executor options for local
+- `WorldOptions` plus future `StepOptions` or executor options for local
   configuration.
 
 Value objects should validate field names and units in Doxygen and tests. The
@@ -891,14 +895,17 @@ fallback and unsupported-capability errors.
 
 Capability selection is exposed through **domain-scoped value objects set as a
 whole**, not a setter/getter per capability, so new capability fields are added
-without growing the `World` method surface. The first realized example is
-`MultibodyOptions { std::string integrationFamily; }`
-(`World::setMultibodyOptions`/`getMultibodyOptions`, `multibody_options` in
-dartpy), whose `integrationFamily` maps onto the "Integration family" matrix row;
-the unimplemented rows and a possible world-level grouping are deferred until a
-second capability exists. Selection is parsed to an internal representation on
-set, so the per-step path carries no configuration cost when a non-default family
-is not in use.
+without growing the `World` method surface. The realized C++ shape is a
+world-level construction grouping for defaults and policies
+(`WorldOptions::rigidBodySolver`, `WorldOptions::multibodyOptions`,
+`WorldOptions::contactSolverMethod`, `WorldOptions::contactGradientMode`, and
+`WorldOptions::differentiable`) plus the existing interactive setters for the
+policies that are safe to switch after construction (`World::setRigidBodySolver`,
+`World::setMultibodyOptions` / `getMultibodyOptions`, and
+`World::setContactGradientMode`). `MultibodyOptions { std::string
+integrationFamily; }` maps onto the "Integration family" matrix row. Selection
+is parsed to an internal representation on construction or set, so the per-step
+path carries no configuration cost when a non-default family is not in use.
 
 ## Future Capability Shapes
 
@@ -989,8 +996,8 @@ before it is considered for clean-break promotion.
 ## Design Rationale
 
 - `World` stays the common entry point because it is the C++ owner of topology,
-  time, frame count, stepping, and serialization in the DART 7 stack.
-- The DART 7 simulation namespace gives maintainers room to iterate while
+  time, frame count, stepping, and serialization in the experimental stack.
+- The DART 7 experimental namespace gives maintainers room to iterate while
   preserving a clean DART 7 promotion path.
 - DART 7 should remove the legacy simulation API instead of carrying two
   stable world models with conflicting ownership rules.
@@ -1025,10 +1032,10 @@ simulation API only after the promoted subset has:
 7. release notes that state the legacy DART 6 C++ and dartpy 6 simulation APIs
    are removed.
 
-Promotion removes the staging names from the recommended user path. If
-temporary aliases are needed during release preparation, they should be
-documented as release-scoped migration aids, not as stable DART 7 compatibility
-APIs.
+Promotion should remove DART 7 experimental names from the recommended user
+path. If temporary aliases are needed during release preparation, they should
+be documented as release-scoped migration aids, not as stable DART 7
+compatibility APIs.
 
 ## Verification Expectations
 

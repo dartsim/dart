@@ -273,7 +273,7 @@ typename SO3Base<Derived>::Tangent SO3Base<Derived>::log(
 {
   const Tangent xi = log(tol);
   if (jacobian) {
-    (*jacobian) = SO3<Scalar>::RightJacobianInverse(xi, tol);
+    (*jacobian) = SO3<Scalar>::RightJacobianInverse(xi.params(), tol);
   }
   return xi;
 }

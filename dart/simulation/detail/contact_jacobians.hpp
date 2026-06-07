@@ -61,7 +61,7 @@
 
 namespace dart::simulation::detail {
 
-/// Analytic CONTACT single-step Jacobian for a frictionless rigid-body scene
+/// Analytic CONTACT single-step Jacobian for a normal/friction rigid-body scene
 /// resolved by the boxed-LCP path, evaluated at the current (pre-step) state.
 ///
 /// The differentiated step is the boxed-LCP rigid-body sub-pipeline that

@@ -8489,10 +8489,10 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
     m_avbdScratch->clear();
   }
 
-  // Opt-in boxed-LCP path (PLAN-080 WS4): assemble and solve the frictionless
-  // normal Delassus system with the pivoting Dantzig solver, applying the
-  // resulting impulses to body velocities. The default SequentialImpulse path
-  // below is unchanged.
+  // Opt-in boxed-LCP path (PLAN-080 WS4): assemble and solve the Coulomb
+  // normal+tangent Delassus system with the pivoting Dantzig solver, applying
+  // the resulting impulses to body velocities. The default SequentialImpulse
+  // path below is unchanged.
   if (world.getContactSolverMethod() == ContactSolverMethod::BoxedLcp) {
     (void)detail::solveBoxedLcpContacts(
         registry, contacts, world.getTimeStep());

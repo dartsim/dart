@@ -1,5 +1,14 @@
 # Resume: AVBD Solver
 
+## Current Reality (2026-06-06)
+
+Use this folder's `README.md`, PLAN-104, `docs/plans/dashboard.md`, and the
+current code as the live status. The branch-local "Current Branch" and handoff
+sections below are historical session notes, not current checkout instructions.
+AVBD work should continue through the DART-owned VBD/AVBD deformable family,
+shared row/diagnostic contracts, and facade-safe deformable configuration
+rather than adding public solver registries or isolated paper-specific stacks.
+
 ## Last Session Summary
 
 The AVBD paper, project page, 2D demo source, and 3D demo source were inspected

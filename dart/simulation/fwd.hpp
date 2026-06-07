@@ -48,6 +48,7 @@ class RigidBody;
 class World;
 enum class ContactSolverMethod;
 enum class ContactGradientMode;
+enum class RigidBodySolver;
 enum class JointType;
 enum class WorldSyncStage;
 enum class PhysicalParameter;

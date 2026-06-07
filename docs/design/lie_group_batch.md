@@ -7,7 +7,7 @@ Accepted — initial thin layer landed with the typed Lie group API
 
 ## Context
 
-The DART 7 ECS-based simulation engine (`dart/simulation/`)
+DART's experimental, ECS-based simulation engine (`dart/simulation/`)
 performs Lie group math (composition, exp/log, adjoint) per entity. As entity
 counts grow, doing this one element at a time leaves throughput on the table:
 the integration loop (`compute/world_step_stage.cpp`,
@@ -25,7 +25,8 @@ expose batch operations as thin free functions that view packed, contiguous
 buffers element-wise through the existing `Eigen::Map<SO3<S>>` /
 `Eigen::Map<SE3<S>>` specializations and apply the existing scalar operation.
 
-See `dart/math/lie_group/batch.hpp`: `composeBatch`, `expBatch`, `logBatch`.
+See `dart/math/lie_group/batch.hpp`: `composeBatch`, `expBatch`, `logBatch`,
+and `adjointBatch`.
 
 Buffer layout is AoS of `Params` (each element occupies `T::ParamSize` scalars;
 tangents occupy `T::DoF` scalars), which is exactly what the `Map`
@@ -49,22 +50,23 @@ buffers.
   details to stay _behind implementation boundaries_, with scalar fallbacks and
   preserved Eigen interop — i.e., not exposed as an architecture-specific public
   type.
-- **Fits the consumer's actual layout.** The DART 7 simulation world stores transforms
+- **Fits the consumer's actual layout.** The experimental world stores transforms
   AoS in entt component pools; there is no SoA transform store today that would
   justify a SoA type.
 
 ## Implementation notes
 
 - The functions in `batch.hpp` are the always-correct **scalar reference path**.
-  SIMD acceleration (via `dart/simd`) is expected to be slotted in _behind the
-  same interface_ — callers do not change.
-- The DART 7 engine is intentionally **not** rewired in this initial
+  SIMD acceleration (via `dart/simd`), multi-core scheduling, and opt-in CUDA
+  kernels are expected to be slotted in _behind the same interface_ — callers do
+  not change and public headers do not expose backend-specific types.
+- The experimental engine is intentionally **not** rewired in this initial
   layer; that is a follow-up once a kernel is benchmarked against the scalar
   path.
 
 ## When to revisit
 
 Escalate to a dedicated SoA storage type (separate arrays per component, e.g.
-quaternion `x/y/z/w` planes) only if benchmarks on the DART 7 engine prove
+quaternion `x/y/z/w` planes) only if benchmarks on the experimental engine prove
 the interleaved `Map`-over-`Params` layout is the bottleneck. Until then,
 consolidated wins on maintainability.
