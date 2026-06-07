@@ -3525,7 +3525,8 @@ enum class MildIllConditionedBenchmarkCase
   StrongerCoupledFrictionIndex32,
   ExtremeCoupledFrictionIndex16,
   ExtremeCoupledFrictionIndex24,
-  ExtremeCoupledFrictionIndex32
+  ExtremeCoupledFrictionIndex32,
+  ExtremeCoupledFrictionIndex48
 };
 
 enum class NearSingularBenchmarkCase
@@ -3848,6 +3849,8 @@ std::string_view getMildIllConditionedCaseName(
       return "ExtremeCoupledFrictionIndex24";
     case MildIllConditionedBenchmarkCase::ExtremeCoupledFrictionIndex32:
       return "ExtremeCoupledFrictionIndex32";
+    case MildIllConditionedBenchmarkCase::ExtremeCoupledFrictionIndex48:
+      return "ExtremeCoupledFrictionIndex48";
   }
 
   return "Unknown";
@@ -3875,6 +3878,7 @@ dart::test::LcpProblemSupport getMildIllConditionedProblemSupport(
     case MildIllConditionedBenchmarkCase::ExtremeCoupledFrictionIndex16:
     case MildIllConditionedBenchmarkCase::ExtremeCoupledFrictionIndex24:
     case MildIllConditionedBenchmarkCase::ExtremeCoupledFrictionIndex32:
+    case MildIllConditionedBenchmarkCase::ExtremeCoupledFrictionIndex48:
       return dart::test::LcpProblemSupport::FrictionIndex;
   }
 
@@ -3931,7 +3935,10 @@ bool isMildIllConditionedFrictionIndexCase(
                     ExtremeCoupledFrictionIndex24
          || testCase
                 == MildIllConditionedBenchmarkCase::
-                    ExtremeCoupledFrictionIndex32;
+                    ExtremeCoupledFrictionIndex32
+         || testCase
+                == MildIllConditionedBenchmarkCase::
+                    ExtremeCoupledFrictionIndex48;
 }
 
 int getMildIllConditionedContactCount(
@@ -3959,6 +3966,8 @@ int getMildIllConditionedContactCount(
       return 32;
     case MildIllConditionedBenchmarkCase::ExtremeCoupledFrictionIndex32:
       return 32;
+    case MildIllConditionedBenchmarkCase::ExtremeCoupledFrictionIndex48:
+      return 48;
     case MildIllConditionedBenchmarkCase::Standard32:
     case MildIllConditionedBenchmarkCase::Boxed16:
       return 0;
@@ -3996,7 +4005,10 @@ bool isMildIllConditionedCoupledFrictionIndexCase(
                     ExtremeCoupledFrictionIndex24
          || testCase
                 == MildIllConditionedBenchmarkCase::
-                    ExtremeCoupledFrictionIndex32;
+                    ExtremeCoupledFrictionIndex32
+         || testCase
+                == MildIllConditionedBenchmarkCase::
+                    ExtremeCoupledFrictionIndex48;
 }
 
 double getMildIllConditionedCouplingScale(
@@ -4013,6 +4025,7 @@ double getMildIllConditionedCouplingScale(
     case MildIllConditionedBenchmarkCase::ExtremeCoupledFrictionIndex16:
     case MildIllConditionedBenchmarkCase::ExtremeCoupledFrictionIndex24:
     case MildIllConditionedBenchmarkCase::ExtremeCoupledFrictionIndex32:
+    case MildIllConditionedBenchmarkCase::ExtremeCoupledFrictionIndex48:
       return 16.0;
     case MildIllConditionedBenchmarkCase::Standard32:
     case MildIllConditionedBenchmarkCase::Boxed16:
@@ -4067,6 +4080,9 @@ LcpProblem MakeMildIllConditionedBenchmarkProblem(
     case MildIllConditionedBenchmarkCase::ExtremeCoupledFrictionIndex32:
       return MakeMildIllConditionedFrictionIndexProblem(
           32, 30'032u, true, 16.0);
+    case MildIllConditionedBenchmarkCase::ExtremeCoupledFrictionIndex48:
+      return MakeMildIllConditionedFrictionIndexProblem(
+          48, 30'048u, true, 16.0);
   }
 
   return MakeMildIllConditionedStandardProblem(32, 24'032u);
@@ -9534,7 +9550,7 @@ void RegisterProductionActiveSetTransitionBatchBenchmarks()
 
 void RegisterMildIllConditionedBenchmarks()
 {
-  constexpr std::array<MildIllConditionedBenchmarkCase, 16> cases{
+  constexpr std::array<MildIllConditionedBenchmarkCase, 17> cases{
       MildIllConditionedBenchmarkCase::Standard32,
       MildIllConditionedBenchmarkCase::Boxed16,
       MildIllConditionedBenchmarkCase::FrictionIndex8,
@@ -9550,7 +9566,8 @@ void RegisterMildIllConditionedBenchmarks()
       MildIllConditionedBenchmarkCase::StrongerCoupledFrictionIndex32,
       MildIllConditionedBenchmarkCase::ExtremeCoupledFrictionIndex16,
       MildIllConditionedBenchmarkCase::ExtremeCoupledFrictionIndex24,
-      MildIllConditionedBenchmarkCase::ExtremeCoupledFrictionIndex32};
+      MildIllConditionedBenchmarkCase::ExtremeCoupledFrictionIndex32,
+      MildIllConditionedBenchmarkCase::ExtremeCoupledFrictionIndex48};
 
   for (const auto testCase : cases) {
     for (const auto& solver : dart::test::kLcpSolverManifest) {

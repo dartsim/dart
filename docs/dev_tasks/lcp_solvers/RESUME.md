@@ -32,8 +32,9 @@ known-solution slice for standard 32/64-row, boxed 16/32-row, friction-index
 8-contact, and coupled friction-index 6-, 8-, 12-, 16-, and 24-contact
 packets, plus stronger-coupled 16-/24-contact packets with 4x and 8x
 cross-contact coupling, a stronger-coupled 32-contact packet with 8x
-cross-contact coupling, and 190 matching `BM_LcpMildIllConditioned` benchmark
-rows verified in default, SIMD-enabled, and CUDA-enabled build trees. It also
+cross-contact coupling, ADMM/SAP-only 16x-coupled 16-/24-/32-/48-contact
+packets, and 192 matching `BM_LcpMildIllConditioned` benchmark rows verified in
+default, SIMD-enabled, and CUDA-enabled build trees. It also
 adds 56 `BM_LcpMildIllConditionedBatch(Serial|Parallel)` rows for batch-size-4
 serial and DART 7 `ParallelExecutor` runs over the 8x-coupled 16-/24-contact
 mildly ill-conditioned packets, verified in default, SIMD-enabled, and
@@ -153,11 +154,11 @@ and `contact_count=8` for the friction-index rows. The CUDA-enabled rows are
 CPU SAP solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
 It now also adds an ADMM/SAP-only 16x-coupled mildly ill-conditioned
 friction-index slice: the generated known-solution coverage includes 16-, 24-,
-and 32-contact packets, and `BM_LcpMildIllConditioned/ExtremeCoupledFrictionIndex*`
-adds 6 benchmark rows for the same packets. Focused default, SIMD-enabled, and
+32-, and 48-contact packets, and `BM_LcpMildIllConditioned/ExtremeCoupledFrictionIndex*`
+adds 8 benchmark rows for the same packets. Focused default, SIMD-enabled, and
 CUDA-enabled build-tree runs passed with `contract_ok=1` on every benchmark row
-and recorded `coupling_scale=16`, contact counts `16/24/32`, problem sizes
-`48/72/96`, and backend build-state counters. The CUDA-enabled rows are CPU
+and recorded `coupling_scale=16`, contact counts `16/24/32/48`, problem sizes
+`48/72/96/144`, and backend build-state counters. The CUDA-enabled rows are CPU
 ADMM/SAP solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
 It now also adds 27 `BM_LcpContactSolverComparisonSweep` benchmark rows for
 `Admm`, `Sap`, and `BoxedSemiSmoothNewton` over the same DART 7 contact-derived
@@ -525,11 +526,12 @@ contact scenes.
   `contact_count=16`/`coupled=1` for the coupled friction-index packet. The
   CUDA-enabled rows are CPU solver rows in a CUDA-enabled build, not CUDA LCP
   kernel execution.
-  `BM_LCP_COMPARE` also lists 190 `BM_LcpMildIllConditioned` rows for standard
+  `BM_LCP_COMPARE` also lists 192 `BM_LcpMildIllConditioned` rows for standard
   32-row, boxed 16-row, friction-index 8-contact, and coupled friction-index
   6-, 8-, 12-, 16-, and 24-contact packets, plus stronger-coupled 16-/24-contact
   packets with 4x and 8x cross-contact coupling plus a stronger-coupled
-  32-contact packet with 8x cross-contact coupling, over the scoped solver set; the
+  32-contact packet with 8x cross-contact coupling, plus ADMM/SAP-only
+  16x-coupled 16-/24-/32-/48-contact packets over the scoped solver set; the
   focused default, SIMD-enabled, and CUDA-enabled runs pass with
   `contract_ok=1` on all rows and report `mildly_ill_conditioned=1` plus
   contact/coupling counters where applicable.
@@ -750,13 +752,14 @@ contact scenes.
   CUDA-enabled build, not CUDA LCP kernel execution; this does not claim native
   boxed or friction-index support for standard-only solvers.
 - The generated LCP coverage now includes ADMM/SAP-only 16x-coupled mildly
-  ill-conditioned friction-index packets at 16, 24, and 32 contacts, and
-  `BM_LCP_COMPARE` now lists 6 matching
+  ill-conditioned friction-index packets at 16, 24, 32, and 48 contacts, and
+  `BM_LCP_COMPARE` now lists 8 matching
   `BM_LcpMildIllConditioned/ExtremeCoupledFrictionIndex*` rows. Default, SIMD,
   and CUDA-enabled focused benchmark runs report `contract_ok=1`,
-  `coupling_scale=16`, contact counts `16/24/32`, problem sizes `48/72/96`, and
-  backend build-state counters. Treat the CUDA-enabled rows as CPU ADMM/SAP
-  solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
+  `coupling_scale=16`, contact counts `16/24/32/48`, problem sizes
+  `48/72/96/144`, and backend build-state counters. Treat the CUDA-enabled rows
+  as CPU ADMM/SAP solver rows in a CUDA-enabled build, not CUDA LCP kernel
+  execution.
 - `BoxedSemiSmoothNewton` now includes the derivative of moving `findex`
   friction bounds in its natural-residual Jacobian. The previously failing
   coupled mildly ill-conditioned 4-contact friction-index generated case passes

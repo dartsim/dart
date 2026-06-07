@@ -1083,11 +1083,12 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     64 production active-set transition batch rows for batch-size-4 serial and
     DART 7 `ParallelExecutor` runs over those same packets verified across
     default, SIMD-enabled, and CUDA-enabled build trees, plus
-    190 larger mildly ill-conditioned benchmark rows for standard 32-row,
+    192 larger mildly ill-conditioned benchmark rows for standard 32-row,
     boxed 16-row, friction-index 8-contact, coupled friction-index 6-, 8-,
     12-, 16-, and 24-contact packets, and stronger-coupled 16-/24-contact
     packets with 4x and 8x cross-contact coupling plus a stronger-coupled
-    32-contact packet with 8x cross-contact coupling over the scoped solver set,
+    32-contact packet with 8x cross-contact coupling, plus ADMM/SAP-only
+    16x-coupled 16-/24-/32-/48-contact packets over the scoped solver set,
     verified across default, SIMD-enabled, and CUDA-enabled build trees, plus 56 larger
     mildly ill-conditioned batch rows for batch-size-4 serial and DART 7
     `ParallelExecutor` runs over the 8x-coupled 16-/24-contact packets
@@ -1210,8 +1211,8 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     CPU solver runs.
   - Added DART 7 ADMM/SAP solver-specific generated correctness and benchmark
     coverage for 16x-coupled mildly ill-conditioned friction-index LCP packets
-    at 16, 24, and 32 contacts, with backend build-state counters distinguishing
-    default, SIMD-enabled, and CUDA-enabled CPU solver runs.
+    at 16, 24, 32, and 48 contacts, with backend build-state counters
+    distinguishing default, SIMD-enabled, and CUDA-enabled CPU solver runs.
   - Added DART 7 contact-normal standard-LCP comparison benchmark rows for
     Dantzig, Lemke, Baraff, Direct, Minimum Map Newton,
     Fischer-Burmeister Newton, Penalized Fischer-Burmeister Newton, Interior
