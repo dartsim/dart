@@ -34,6 +34,7 @@
 
 #include "dart/math/lcp/lcp_validation.hpp"
 #include "dart/math/lcp/pivoting/dantzig_solver.hpp"
+#include "dart/math/lcp/projection/pgs_solver.hpp"
 
 #include <Eigen/QR>
 
@@ -77,6 +78,45 @@ void computeMinimumMapResidualAndGradient(
     } else {
       grad[i] += H[i];
     }
+  }
+}
+
+double minimumMapMerit(
+    const Eigen::MatrixXd& A,
+    const Eigen::VectorXd& b,
+    const Eigen::VectorXd& x)
+{
+  Eigen::VectorXd H(x.size());
+  Eigen::VectorXd grad(x.size());
+  computeMinimumMapResidualAndGradient(A, b, x, H, grad);
+  return 0.5 * H.squaredNorm();
+}
+
+void runPgsWarmStart(
+    const LcpProblem& problem,
+    Eigen::VectorXd& x,
+    const LcpOptions& options,
+    const MinimumMapNewtonSolver::Parameters& params)
+{
+  if (params.maxPgsWarmStartIterations <= 0) {
+    return;
+  }
+
+  const double initialMerit = minimumMapMerit(problem.A, problem.b, x);
+  Eigen::VectorXd candidate = x;
+  LcpOptions pgsOptions = options;
+  pgsOptions.maxIterations = params.maxPgsWarmStartIterations;
+  pgsOptions.relaxation = params.pgsWarmStartRelaxation;
+  pgsOptions.warmStart = true;
+  pgsOptions.validateSolution = false;
+  pgsOptions.customOptions = nullptr;
+
+  PgsSolver pgs;
+  pgs.solve(problem, candidate, pgsOptions);
+
+  if (candidate.allFinite()
+      && minimumMapMerit(problem.A, problem.b, candidate) < initialMerit) {
+    x = candidate;
   }
 }
 
@@ -231,6 +271,7 @@ LcpResult MinimumMapNewtonSolver::solve(
             ? static_cast<const Parameters*>(options.customOptions)
             : &mParameters;
 
+  runPgsWarmStart(problem, x, options, *params);
   runGradientDescentWarmStart(A, b, x, *params, absTol, relTol);
 
   bool converged = false;

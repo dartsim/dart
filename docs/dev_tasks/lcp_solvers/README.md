@@ -278,6 +278,9 @@
       standard-LCP paths of Minimum Map, Fischer-Burmeister, and Penalized
       Fischer-Burmeister Newton, with focused tests proving each initializer
       reduces its solver-specific merit before Newton line search.
+- [x] Added opt-in PGS warm starts for the same native standard-LCP Newton
+      paths, with focused tests proving each accepted seed reduces its
+      solver-specific merit before Newton line search.
 - [ ] Continue expanding synthetic coverage beyond the current production-scale,
       larger mildly ill-conditioned, extreme singular-degenerate, and extreme
       active-set transition benchmark slices into harder solver-specific

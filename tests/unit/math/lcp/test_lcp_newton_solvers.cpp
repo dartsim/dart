@@ -640,6 +640,29 @@ TEST(MinimumMapNewtonSolver, GradientDescentWarmStartReducesMerit)
 }
 
 //==============================================================================
+TEST(MinimumMapNewtonSolver, PgsWarmStartReducesMerit)
+{
+  MinimumMapNewtonSolver solver;
+  MinimumMapNewtonSolver::Parameters params;
+  params.maxLineSearchSteps = 0;
+  params.maxPgsWarmStartIterations = 1;
+  solver.setParameters(params);
+
+  auto problem = makeSpdProblem();
+  const Eigen::VectorXd initial = Eigen::VectorXd::Zero(3);
+  Eigen::VectorXd x = initial;
+
+  LcpOptions options;
+  options.maxIterations = 1;
+  options.validateSolution = false;
+  const auto result = solver.solve(problem, x, options);
+
+  EXPECT_EQ(result.status, LcpSolverStatus::Failed);
+  EXPECT_TRUE(x.array().isFinite().all());
+  EXPECT_LT(minimumMapMerit(problem, x), minimumMapMerit(problem, initial));
+}
+
+//==============================================================================
 TEST(FischerBurmeisterNewtonSolver, LineSearchFailureWithZeroSteps)
 {
   FischerBurmeisterNewtonSolver solver;
@@ -666,6 +689,31 @@ TEST(FischerBurmeisterNewtonSolver, GradientDescentWarmStartReducesMerit)
   params.maxLineSearchSteps = 0;
   params.maxGradientDescentWarmStartSteps = 1;
   params.maxGradientDescentLineSearchSteps = 16;
+  solver.setParameters(params);
+
+  auto problem = makeSpdProblem();
+  const Eigen::VectorXd initial = Eigen::VectorXd::Zero(3);
+  Eigen::VectorXd x = initial;
+
+  LcpOptions options;
+  options.maxIterations = 1;
+  options.validateSolution = false;
+  const auto result = solver.solve(problem, x, options);
+
+  EXPECT_EQ(result.status, LcpSolverStatus::Failed);
+  EXPECT_TRUE(x.array().isFinite().all());
+  EXPECT_LT(
+      fischerBurmeisterMerit(problem, x, params.smoothingEpsilon),
+      fischerBurmeisterMerit(problem, initial, params.smoothingEpsilon));
+}
+
+//==============================================================================
+TEST(FischerBurmeisterNewtonSolver, PgsWarmStartReducesMerit)
+{
+  FischerBurmeisterNewtonSolver solver;
+  FischerBurmeisterNewtonSolver::Parameters params;
+  params.maxLineSearchSteps = 0;
+  params.maxPgsWarmStartIterations = 1;
   solver.setParameters(params);
 
   auto problem = makeSpdProblem();
@@ -713,6 +761,33 @@ TEST(
   params.maxLineSearchSteps = 0;
   params.maxGradientDescentWarmStartSteps = 1;
   params.maxGradientDescentLineSearchSteps = 16;
+  solver.setParameters(params);
+
+  auto problem = makeSpdProblem();
+  const Eigen::VectorXd initial = Eigen::VectorXd::Zero(3);
+  Eigen::VectorXd x = initial;
+
+  LcpOptions options;
+  options.maxIterations = 1;
+  options.validateSolution = false;
+  const auto result = solver.solve(problem, x, options);
+
+  EXPECT_EQ(result.status, LcpSolverStatus::Failed);
+  EXPECT_TRUE(x.array().isFinite().all());
+  EXPECT_LT(
+      penalizedFischerBurmeisterMerit(
+          problem, x, params.smoothingEpsilon, params.lambda),
+      penalizedFischerBurmeisterMerit(
+          problem, initial, params.smoothingEpsilon, params.lambda));
+}
+
+//==============================================================================
+TEST(PenalizedFischerBurmeisterNewtonSolver, PgsWarmStartReducesMerit)
+{
+  PenalizedFischerBurmeisterNewtonSolver solver;
+  PenalizedFischerBurmeisterNewtonSolver::Parameters params;
+  params.maxLineSearchSteps = 0;
+  params.maxPgsWarmStartIterations = 1;
   solver.setParameters(params);
 
   auto problem = makeSpdProblem();

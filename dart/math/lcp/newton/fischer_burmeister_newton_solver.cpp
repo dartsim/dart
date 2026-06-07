@@ -34,6 +34,7 @@
 
 #include "dart/math/lcp/lcp_validation.hpp"
 #include "dart/math/lcp/pivoting/dantzig_solver.hpp"
+#include "dart/math/lcp/projection/pgs_solver.hpp"
 
 #include <Eigen/QR>
 
@@ -97,6 +98,48 @@ void computeFbResidualAndGradient(
   Eigen::VectorXd q;
   computeFbFunction(x, y, smoothingEpsilon, phi, p, q);
   grad = p.cwiseProduct(phi) + A.transpose() * q.cwiseProduct(phi);
+}
+
+double fbMerit(
+    const Eigen::MatrixXd& A,
+    const Eigen::VectorXd& b,
+    const Eigen::VectorXd& x,
+    double smoothingEpsilon)
+{
+  Eigen::VectorXd phi(x.size());
+  Eigen::VectorXd grad(x.size());
+  computeFbResidualAndGradient(A, b, x, smoothingEpsilon, phi, grad);
+  return 0.5 * phi.squaredNorm();
+}
+
+void runPgsWarmStart(
+    const LcpProblem& problem,
+    Eigen::VectorXd& x,
+    const LcpOptions& options,
+    const FischerBurmeisterNewtonSolver::Parameters& params)
+{
+  if (params.maxPgsWarmStartIterations <= 0) {
+    return;
+  }
+
+  const double initialMerit
+      = fbMerit(problem.A, problem.b, x, params.smoothingEpsilon);
+  Eigen::VectorXd candidate = x;
+  LcpOptions pgsOptions = options;
+  pgsOptions.maxIterations = params.maxPgsWarmStartIterations;
+  pgsOptions.relaxation = params.pgsWarmStartRelaxation;
+  pgsOptions.warmStart = true;
+  pgsOptions.validateSolution = false;
+  pgsOptions.customOptions = nullptr;
+
+  PgsSolver pgs;
+  pgs.solve(problem, candidate, pgsOptions);
+
+  if (candidate.allFinite()
+      && fbMerit(problem.A, problem.b, candidate, params.smoothingEpsilon)
+             < initialMerit) {
+    x = candidate;
+  }
 }
 
 void runGradientDescentWarmStart(
@@ -255,6 +298,7 @@ LcpResult FischerBurmeisterNewtonSolver::solve(
             ? static_cast<const Parameters*>(options.customOptions)
             : &mParameters;
 
+  runPgsWarmStart(problem, x, options, *params);
   runGradientDescentWarmStart(A, b, x, *params, absTol, relTol);
 
   bool converged = false;

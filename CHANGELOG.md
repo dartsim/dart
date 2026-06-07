@@ -1011,8 +1011,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Added opt-in projected gradient-descent warm starts for the DART 7
     standard-LCP Minimum Map, Fischer-Burmeister, and Penalized
     Fischer-Burmeister Newton solvers. Focused unit coverage proves each
-    initializer reduces its solver-specific merit before Newton line search,
-    while boxed/findex problems remain delegated for those three solvers.
+    initializer reduces its solver-specific merit before Newton line search.
+    Added opt-in PGS warm starts for those same standard Newton paths, accepting
+    PGS seeds only when they reduce the solver-specific Newton merit. Boxed/findex
+    problems remain delegated for those three solvers.
   - Added manifest-generated serial and DART 7 `ParallelExecutor` batch LCP
     benchmarks so standard, boxed, and friction-index solver families compare
     the same independent-problem batches across every supporting solver. The

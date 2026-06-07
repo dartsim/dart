@@ -34,6 +34,7 @@
 
 #include "dart/math/lcp/lcp_validation.hpp"
 #include "dart/math/lcp/pivoting/dantzig_solver.hpp"
+#include "dart/math/lcp/projection/pgs_solver.hpp"
 
 #include <Eigen/QR>
 
@@ -112,6 +113,55 @@ void computePenalizedFbResidualAndGradient(
   Eigen::VectorXd q;
   computePenalizedFbFunction(x, y, smoothingEpsilon, lambda, phi, p, q);
   grad = p.cwiseProduct(phi) + A.transpose() * q.cwiseProduct(phi);
+}
+
+double penalizedFbMerit(
+    const Eigen::MatrixXd& A,
+    const Eigen::VectorXd& b,
+    const Eigen::VectorXd& x,
+    double smoothingEpsilon,
+    double lambda)
+{
+  Eigen::VectorXd phi(x.size());
+  Eigen::VectorXd grad(x.size());
+  computePenalizedFbResidualAndGradient(
+      A, b, x, smoothingEpsilon, lambda, phi, grad);
+  return 0.5 * phi.squaredNorm();
+}
+
+void runPgsWarmStart(
+    const LcpProblem& problem,
+    Eigen::VectorXd& x,
+    const LcpOptions& options,
+    const PenalizedFischerBurmeisterNewtonSolver::Parameters& params)
+{
+  if (params.maxPgsWarmStartIterations <= 0) {
+    return;
+  }
+
+  const double initialMerit = penalizedFbMerit(
+      problem.A, problem.b, x, params.smoothingEpsilon, params.lambda);
+  Eigen::VectorXd candidate = x;
+  LcpOptions pgsOptions = options;
+  pgsOptions.maxIterations = params.maxPgsWarmStartIterations;
+  pgsOptions.relaxation = params.pgsWarmStartRelaxation;
+  pgsOptions.warmStart = true;
+  pgsOptions.validateSolution = false;
+  pgsOptions.customOptions = nullptr;
+
+  PgsSolver pgs;
+  pgs.solve(problem, candidate, pgsOptions);
+
+  if (candidate.allFinite()
+      && penalizedFbMerit(
+             problem.A,
+             problem.b,
+             candidate,
+             params.smoothingEpsilon,
+             params.lambda)
+             < initialMerit) {
+    x = candidate;
+  }
 }
 
 void runGradientDescentWarmStart(
@@ -280,6 +330,7 @@ LcpResult PenalizedFischerBurmeisterNewtonSolver::solve(
     return result;
   }
 
+  runPgsWarmStart(problem, x, options, *params);
   runGradientDescentWarmStart(A, b, x, *params, absTol, relTol);
 
   bool converged = false;

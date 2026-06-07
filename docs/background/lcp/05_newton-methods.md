@@ -55,6 +55,7 @@ $$\Delta x_{\mathcal{F}} = -H_{\mathcal{F}} = -x_{\mathcal{F}} \quad \text{(dire
 
 dart::math::MinimumMapNewtonSolver solver;
 dart::math::MinimumMapNewtonSolver::Parameters params;
+params.maxPgsWarmStartIterations = 5;          // optional; default is 0
 params.maxGradientDescentWarmStartSteps = 5;  // optional; default is 0
 solver.setParameters(params);
 
@@ -127,6 +128,7 @@ where $y_i = (Ax - b)_i$.
 
 dart::math::FischerBurmeisterNewtonSolver solver;
 dart::math::FischerBurmeisterNewtonSolver::Parameters params;
+params.maxPgsWarmStartIterations = 5;          // optional; default is 0
 params.maxGradientDescentWarmStartSteps = 5;  // optional; default is 0
 solver.setParameters(params);
 
@@ -220,6 +222,7 @@ dart::math::LcpOptions options = solver.getDefaultOptions();
 
 dart::math::PenalizedFischerBurmeisterNewtonSolver::Parameters params;
 params.lambda = 0.5;
+params.maxPgsWarmStartIterations = 5;          // optional; default is 0
 params.maxGradientDescentWarmStartSteps = 5;  // optional; default is 0
 options.customOptions = &params;
 
@@ -289,6 +292,14 @@ solver's own reformulation merit and separate backtracking parameters
 leave existing behavior unchanged. These standard Newton solvers still delegate
 boxed or friction-index problems to the boxed-capable pivoting solver; use
 `BoxedSemiSmoothNewtonSolver` for native boxed/findex Newton steps.
+
+The same standard Newton solvers also expose an opt-in PGS seed through
+`maxPgsWarmStartIterations`. When enabled, DART runs bounded PGS iterations
+first, accepts the seed only if it lowers the solver-specific Newton merit, and
+then optionally applies the projected gradient-descent initializer. The PGS seed
+uses `pgsWarmStartRelaxation` and clears `customOptions` before calling
+`PgsSolver`, so Newton-specific parameter structs are not reinterpreted by the
+projection solver.
 
 ```
 function gradient_descent(x, max_iter):
@@ -396,7 +407,7 @@ highly degenerate contact systems.
 
 7. Nonsmooth gradient descent (implemented as an opt-in standard-LCP
    initializer)
-8. Warm start from PGS (future)
+8. Warm start from PGS (implemented as an opt-in standard-LCP initializer)
 
 ### Phase 4: Fischer-Burmeister + Penalized FB
 

@@ -52,6 +52,8 @@ public:
     double gradientDescentStepReduction{0.5};
     double gradientDescentSufficientDecrease{1e-4};
     double gradientDescentMinStep{1e-8};
+    int maxPgsWarmStartIterations{0};
+    double pgsWarmStartRelaxation{1.0};
   };
 
   FischerBurmeisterNewtonSolver();

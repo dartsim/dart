@@ -323,6 +323,7 @@ solver usage examples.
 - **Features**:
   - Standard LCP only (`lo = 0`, `hi = +inf`, `findex = -1`)
   - Boxed/findex problems delegate to the boxed-capable pivoting solver
+  - Opt-in PGS warm start for standard LCPs
   - Opt-in projected gradient-descent warm start for the minimum-map merit
 - **Use Case**: High-accuracy solves for standard LCPs
 
@@ -333,6 +334,7 @@ solver usage examples.
 - **Features**:
   - Standard LCP only (`lo = 0`, `hi = +inf`, `findex = -1`)
   - Boxed/findex problems delegate to the boxed-capable pivoting solver
+  - Opt-in PGS warm start for standard LCPs
   - Opt-in projected gradient-descent warm start for the FB merit
 - **Use Case**: High-accuracy solves for standard LCPs
 
@@ -344,6 +346,7 @@ solver usage examples.
   - Standard LCP only (`lo = 0`, `hi = +inf`, `findex = -1`)
   - Boxed/findex problems delegate to the boxed-capable pivoting solver
   - Penalty parameter (`lambda`) to tune convergence behavior
+  - Opt-in PGS warm start for standard LCPs
   - Opt-in projected gradient-descent warm start for the penalized FB merit
 - **Use Case**: High-accuracy solves for standard LCPs with tunable penalty
 
@@ -556,6 +559,7 @@ See [LCP Selection Guide](07_selection-guide.md) for detailed recommendations.
 - [x] Boxed Semi-Smooth Newton
 - [x] Projected line search
 - [x] Nonsmooth gradient descent warm start for standard Newton methods
+- [x] PGS warm start for standard Newton methods
 
 ### Phase 5: Additional Methods (Future)
 

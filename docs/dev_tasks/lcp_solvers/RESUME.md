@@ -49,6 +49,9 @@ standard-LCP paths of Minimum Map, Fischer-Burmeister, and Penalized
 Fischer-Burmeister Newton. Focused unit tests prove each initializer reduces its
 solver-specific merit before Newton line search, while boxed/findex problems
 remain delegated for those three solvers.
+It now also adds opt-in PGS warm starts for those same standard Newton paths,
+accepting the PGS seed only when it reduces the solver-specific merit before
+Newton line search.
 It now also extends the robust near-singular generated slice to coupled
 friction-index 12-contact packets and adds 13 matching `BM_LcpNearSingular`
 benchmark rows for standard 8-row, boxed 8-row, and coupled friction-index
