@@ -969,13 +969,12 @@ contact scenes.
   `test_boxed_lcp_contact --gtest_brief=1` run passes 46 tests while still
   emitting the dense-patch Dantzig warning.
 - `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldBoxContact/FrictionIndex' --benchmark_min_time=0.001s --benchmark_repetitions=1`
-  passes in default, SIMD-enabled, and CUDA-enabled build trees for 30 scoped
+  passes in default, SIMD-enabled, and CUDA-enabled build trees for 42 scoped
   dense box rows: `Pgs`, `RedBlackGaussSeidel`, `NNCG`, `Apgd`, `Tgs`, and
-  `Admm` on 1/2/4/8/16-box snapshots. Each row reports `contract_ok=1`,
-  `dense_box_contact=1`, `box_count=1`, `2`, `4`, `8`, and `16`,
-  `contact_count=4`, `8`, `16`, `32`, and `64`, and `problem_size=12`, `24`,
-  `48`, `96`, and `192`; CUDA-enabled rows are CPU solver rows in that build
-  tree, not CUDA LCP kernel execution.
+  `Admm` on 1/2/4/8/16/24/32-box snapshots. Focused 24-/32-box rows report
+  `contract_ok=1`, `dense_box_contact=1`, `box_count=24/32`,
+  `contact_count=96/128`, and `problem_size=288/384`; CUDA-enabled rows are CPU
+  solver rows in that build tree, not CUDA LCP kernel execution.
 - `BM_LcpWorldBoxStep_BoxedLcp/{1,2,4,8}/200` plus
   `BM_LcpWorldBoxStep_BoxedLcp/{16,24,32}/{500,2000,4000}` rebuild separated
   dense box-face worlds, confirm 4/8/16/32/64/96/128 contacts before stepping,
@@ -1295,6 +1294,6 @@ cmake --build build/default/cpp/Release \
 ```
 
 Then continue with harder generated-size coverage, broader DART 7 boxed-LCP
-contact coverage beyond the current dense box-face snapshot/step slices, and
-backend-specific SIMD/CUDA/solver-internal threaded benchmark evidence described in `README.md` and
-`01-implementation-audit.md`.
+contact coverage beyond the current 32-box dense box-face snapshot/step slices,
+and backend-specific SIMD/CUDA/solver-internal threaded benchmark evidence
+described in `README.md` and `01-implementation-audit.md`.

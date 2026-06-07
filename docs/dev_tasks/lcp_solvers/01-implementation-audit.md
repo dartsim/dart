@@ -701,13 +701,12 @@ The current local evidence for this task is:
   iterations. The run still emits the dense-patch Dantzig warning, so
   Dantzig's direct dense box solve is not claimed.
 - `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldBoxContact/FrictionIndex' --benchmark_min_time=0.001s --benchmark_repetitions=1`
-  passed in default, SIMD-enabled, and CUDA-enabled build trees for 30 scoped
+  passed in default, SIMD-enabled, and CUDA-enabled build trees for 42 scoped
   dense box rows: `Pgs`, `RedBlackGaussSeidel`, `NNCG`, `Apgd`, `Tgs`, and
-  `Admm` on 1/2/4/8/16-box snapshots. Each row reported `contract_ok=1`,
-  `dense_box_contact=1`, `box_count=1`, `2`, `4`, `8`, and `16`,
-  `contact_count=4`, `8`, `16`, `32`, and `64`, and `problem_size=12`, `24`,
-  `48`, `96`, and `192`; the CUDA-enabled rows are CPU solver rows in that
-  build tree, not CUDA LCP kernel execution.
+  `Admm` on 1/2/4/8/16/24/32-box snapshots. Focused 24-/32-box rows reported
+  `contract_ok=1`, `dense_box_contact=1`, `box_count=24/32`,
+  `contact_count=96/128`, and `problem_size=288/384`; the CUDA-enabled rows
+  are CPU solver rows in that build tree, not CUDA LCP kernel execution.
 - `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldBoxStep_BoxedLcp' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   passed in default, SIMD-enabled, and CUDA-enabled build trees for
   `BM_LcpWorldBoxStep_BoxedLcp/{1,2,4,8}/200` and
@@ -1069,7 +1068,8 @@ The current local evidence for this task is:
   benchmark scenes, plus
   manually assembled three-axis articulated unified-contact all-solver rows
   including cross-multibody link-vs-link rows,
-  plus scoped dense box face-contact rows for six solvers and PGS-only dense
+  plus scoped dense box face-contact rows through 32 boxes for six solvers and
+  PGS-only dense
   box-face CUDA batch rows through homogeneous 1/4/8/16-box and grouped
   1/2/4/8/16-box packets, but not broad
   robot-like or general dense CUDA contact systems.
