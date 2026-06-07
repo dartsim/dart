@@ -1,5 +1,18 @@
 # Resume: Rigid-Body Dynamics Solver
 
+## Current Reality (2026-06-06)
+
+Use `README.md`, `docs/plans/dashboard.md`, and the current code as the live
+status. The older branch-local sections below record useful implementation
+history, but references to `feature/experimental-model-loader`, unpublished
+local commits, "DONE locally" slices, and publish/push instructions are
+historical handoff notes, not current branch state. The default semi-implicit
+path now routes rigid-rigid and articulated link contacts through the unified
+boxed-LCP stage when multibody structures are present; remaining PLAN-080 work is
+the Subsystem A polish called out in `README.md` and the dashboard: warm
+starting, friction-cone iteration, scaling around the unified solve, and
+separate deferred model-loading/actuator/mimic/loop-closure slices.
+
 ## B2 Gate — Rigid Open-Chain Dynamics Parity Harness (2026-06-01)
 
 Status of the DART 7 "Rigid dynamics parity" checkable gate (PLAN-080 B2):

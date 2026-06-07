@@ -357,9 +357,9 @@ public:
 /// `WorldOptions::contactSolverMethod`:
 ///   - `SequentialImpulse` (default): the long-standing sequential normal +
 ///     friction impulse solve with positional correction.
-///   - `BoxedLcp`: an opt-in boxed-LCP normal solve (frictionless first slice)
-///     via the pivoting Dantzig solver. Contacts outside that scope (friction,
-///     articulated links) fall through to the sequential-impulse behavior.
+///   - `BoxedLcp`: an opt-in boxed-LCP normal/friction solve via the pivoting
+///     Dantzig solver. Articulated-link contacts are handled by the unified
+///     constraint/contact path, not by this free-rigid stage.
 ///
 /// Internal PLAN-104 AVBD work can also opt specific rigid bodies into the
 /// private `RigidAvbdContactConfig` row projection without exposing AVBD row
@@ -468,10 +468,10 @@ struct RigidIpcContactStageOptions
 
 /// Opt-in rigid IPC world-step stage for free rigid bodies.
 ///
-/// This stage is intentionally not part of the default `World::step()`
-/// pipeline yet. It lets tests and custom pipelines exercise the internal IPC
-/// barrier/Newton path on mesh-like rigid bodies while the default rigid solver
-/// remains the established sequential-impulse stage.
+/// The default `World::step()` path remains the established sequential-impulse
+/// rigid solver. Selecting `RigidBodySolver::Ipc` routes the built-in schedule
+/// through this stage for supported free rigid bodies, and custom pipelines may
+/// still instantiate the stage directly for focused tests or experiments.
 class DART_EXPERIMENTAL_API RigidIpcContactStage final : public WorldStepStage
 {
 public:

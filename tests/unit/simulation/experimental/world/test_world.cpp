@@ -342,6 +342,23 @@ public:
   dart::simulation::experimental::compute::KinematicsStage defaultStage;
 };
 
+class NoOpWorldStage final
+  : public dart::simulation::experimental::compute::WorldStepStage
+{
+public:
+  [[nodiscard]] std::string_view getName() const noexcept override
+  {
+    return "noop";
+  }
+
+  void execute(
+      dart::simulation::experimental::World&,
+      dart::simulation::experimental::compute::ComputeExecutor&) override
+  {
+    // Empty final stage for tests that need to isolate built-in solver stages.
+  }
+};
+
 class RecordingWorldStage final
   : public dart::simulation::experimental::compute::WorldStepStage
 {
@@ -691,6 +708,98 @@ TEST(World, MemoryManagerOptionsAndDiagnostics)
         (void)invalid;
       },
       sx::InvalidArgumentException);
+}
+
+TEST(World, WorldOptionsConfigureDomainSolverFamilies)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::WorldOptions options;
+  options.rigidBodySolver = sx::RigidBodySolver::Ipc;
+  options.multibodyOptions.integrationFamily = "variational integrator";
+
+  sx::World world(options);
+
+  EXPECT_EQ(world.getRigidBodySolver(), sx::RigidBodySolver::Ipc);
+  EXPECT_EQ(
+      world.getMultibodyOptions().integrationFamily, "variational integrator");
+}
+
+TEST(World, ClearResetsWorldOptionPoliciesToDefaults)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::WorldOptions options;
+  options.rigidBodySolver = sx::RigidBodySolver::Ipc;
+  options.multibodyOptions.integrationFamily = "variational integrator";
+  options.differentiable = true;
+  options.contactSolverMethod = sx::ContactSolverMethod::BoxedLcp;
+  options.contactGradientMode = sx::ContactGradientMode::PreContactSurrogate;
+
+  sx::World world(options);
+  world.clear();
+
+  EXPECT_EQ(world.getRigidBodySolver(), sx::RigidBodySolver::SequentialImpulse);
+  EXPECT_EQ(world.getMultibodyOptions().integrationFamily, "semi-implicit");
+  EXPECT_FALSE(world.isDifferentiable());
+  EXPECT_EQ(
+      world.getContactSolverMethod(),
+      sx::ContactSolverMethod::SequentialImpulse);
+  EXPECT_EQ(world.getContactGradientMode(), sx::ContactGradientMode::Analytic);
+}
+
+TEST(World, WorldOptionsRejectInvalidDomainSolverFamilies)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::WorldOptions invalidRigid;
+  invalidRigid.rigidBodySolver = static_cast<sx::RigidBodySolver>(99);
+  EXPECT_THROW(
+      {
+        sx::World world(invalidRigid);
+        (void)world;
+      },
+      sx::InvalidArgumentException);
+
+  sx::WorldOptions invalidMultibody;
+  invalidMultibody.multibodyOptions.integrationFamily = "unknown-family";
+  EXPECT_THROW(
+      {
+        sx::World world(invalidMultibody);
+        (void)world;
+      },
+      sx::InvalidArgumentException);
+
+  sx::WorldOptions invalidContactSolver;
+  invalidContactSolver.contactSolverMethod
+      = static_cast<sx::ContactSolverMethod>(99);
+  EXPECT_THROW(
+      {
+        sx::World world(invalidContactSolver);
+        (void)world;
+      },
+      sx::InvalidArgumentException);
+
+  sx::WorldOptions invalidContactGradient;
+  invalidContactGradient.contactGradientMode
+      = static_cast<sx::ContactGradientMode>(99);
+  EXPECT_THROW(
+      {
+        sx::World world(invalidContactGradient);
+        (void)world;
+      },
+      sx::InvalidArgumentException);
+}
+
+TEST(World, SetContactGradientModeRejectsInvalidEnum)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  EXPECT_THROW(
+      world.setContactGradientMode(static_cast<sx::ContactGradientMode>(99)),
+      sx::InvalidArgumentException);
+  EXPECT_EQ(world.getContactGradientMode(), sx::ContactGradientMode::Analytic);
 }
 
 TEST(World, MemoryManagerOptionsConfigureFreeListPolicy)
@@ -1049,6 +1158,75 @@ TEST(World, SetMultibodyOptionsReservesVariationalStateAfterBake)
       allocator.alignedDeallocationCount, alignedDeallocationsAfterSwitch);
 }
 
+TEST(World, SolverMethodSwitchesAfterBakeSharePreparationPath)
+{
+  namespace sx = dart::simulation::experimental;
+
+  CountingMemoryAllocator allocator;
+  sx::WorldOptions options;
+  options.baseAllocator = &allocator;
+  sx::World world(options);
+
+  auto body = world.addRigidBody("kinematic_box");
+  body.setKinematic(true);
+  body.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.5)));
+  body.setLinearVelocity(Eigen::Vector3d(1.0, 0.0, 0.0));
+
+  auto robot = world.addMultibody("slider");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "rail";
+  spec.type = sx::JointType::Prismatic;
+  spec.axis = Eigen::Vector3d::UnitZ();
+  auto carriage = robot.addLink("carriage", base, spec);
+  carriage.setMass(3.0);
+
+  world.setTimeStep(0.01);
+  world.enterSimulationMode();
+
+  world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+  world.setMultibodyOptions({"variational integrator"});
+
+  const auto& registry = sx::detail::registryOf(world);
+  auto capacities = registryStorageCapacities(registry);
+  auto allocationsAfterSwitch = allocator.allocationCount;
+  auto deallocationsAfterSwitch = allocator.deallocationCount;
+  auto alignedAllocationsAfterSwitch = allocator.alignedAllocationCount;
+  auto alignedDeallocationsAfterSwitch = allocator.alignedDeallocationCount;
+
+  for (int i = 0; i < 4; ++i) {
+    world.step();
+    expectRegistryStorageCapacitiesUnchanged(capacities, registry);
+  }
+
+  EXPECT_EQ(allocator.allocationCount, allocationsAfterSwitch);
+  EXPECT_EQ(allocator.deallocationCount, deallocationsAfterSwitch);
+  EXPECT_EQ(allocator.alignedAllocationCount, alignedAllocationsAfterSwitch);
+  EXPECT_EQ(
+      allocator.alignedDeallocationCount, alignedDeallocationsAfterSwitch);
+
+  world.setMultibodyOptions({"semi-implicit"});
+  world.setRigidBodySolver(sx::RigidBodySolver::SequentialImpulse);
+
+  capacities = registryStorageCapacities(registry);
+  allocationsAfterSwitch = allocator.allocationCount;
+  deallocationsAfterSwitch = allocator.deallocationCount;
+  alignedAllocationsAfterSwitch = allocator.alignedAllocationCount;
+  alignedDeallocationsAfterSwitch = allocator.alignedDeallocationCount;
+
+  for (int i = 0; i < 4; ++i) {
+    world.step();
+    expectRegistryStorageCapacitiesUnchanged(capacities, registry);
+  }
+
+  EXPECT_EQ(allocator.allocationCount, allocationsAfterSwitch);
+  EXPECT_EQ(allocator.deallocationCount, deallocationsAfterSwitch);
+  EXPECT_EQ(allocator.alignedAllocationCount, alignedAllocationsAfterSwitch);
+  EXPECT_EQ(
+      allocator.alignedDeallocationCount, alignedDeallocationsAfterSwitch);
+}
+
 TEST(World, EnterSimulationModeReservesRegistryStorageForDeformableSteps)
 {
   namespace sx = dart::simulation::experimental;
@@ -1364,6 +1542,59 @@ TEST(World, SetRigidBodySolverPreparesIpcScratchAfterSimulationBake)
       << "global heap bytes allocated during IPC steps after solver switch: "
       << heapCounter.allocationBytes();
   EXPECT_EQ(heapCounter.allocationBytes(), 0u);
+}
+
+TEST(World, StepWithCustomStageReusesPreparedSolverStages)
+{
+  namespace sx = dart::simulation::experimental;
+  namespace compute = dart::simulation::experimental::compute;
+
+  sx::World world;
+  auto body = world.addRigidBody("kinematic_box");
+  body.setKinematic(true);
+  body.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.5)));
+  body.setLinearVelocity(Eigen::Vector3d(1.0, 0.0, 0.0));
+
+  world.enterSimulationMode();
+  world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+
+  compute::SequentialExecutor executor;
+  NoOpWorldStage finalStage;
+
+  ScopedHeapAllocationCounter heapCounter;
+  for (int i = 0; i < 4; ++i) {
+    world.step(executor, finalStage);
+  }
+  heapCounter.stop();
+
+  EXPECT_EQ(heapCounter.allocationCount(), 0u)
+      << "global heap bytes allocated during IPC custom-stage steps: "
+      << heapCounter.allocationBytes();
+  EXPECT_EQ(heapCounter.allocationBytes(), 0u);
+}
+
+TEST(World, IpcSemiImplicitMultibodyStepUsesForwardDynamicsStage)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  auto robot = world.addMultibody("slider");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "rail";
+  spec.type = sx::JointType::Prismatic;
+  spec.axis = Eigen::Vector3d::UnitZ();
+  auto carriage = robot.addLink("carriage", base, spec);
+  carriage.setMass(1.0);
+
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+  world.setTimeStep(0.01);
+
+  EXPECT_NO_THROW(world.step());
+  EXPECT_TRUE(world.isSimulationMode());
+  EXPECT_EQ(world.getFrame(), 1u);
 }
 
 TEST(World, FrameScratchCapacityReportsUsableArenaBytes)
@@ -8575,6 +8806,48 @@ TEST(World, ReplayRecordingRestoresRigidBodyState)
   world.setReplayRecordingEnabled(false);
   world.step();
   EXPECT_EQ(world.getReplayFrameCount(), 1u);
+}
+
+// Test replay restores World-level solver-family and policy metadata before
+// continuing from a simulation-mode frame.
+TEST(World, ReplayRecordingRestoresSolverOptions)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::WorldOptions options;
+  options.rigidBodySolver = sx::RigidBodySolver::Ipc;
+  options.multibodyOptions.integrationFamily = "variational integrator";
+  options.differentiable = true;
+  options.contactSolverMethod = sx::ContactSolverMethod::BoxedLcp;
+  options.contactGradientMode = sx::ContactGradientMode::PreContactSurrogate;
+
+  sx::World world(options);
+  world.setGravity(Eigen::Vector3d::Zero());
+  auto body = world.addRigidBody("body");
+  body.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.5)));
+
+  world.setReplayRecordingEnabled(true);
+  world.step();
+  ASSERT_EQ(world.getReplayFrameCount(), 2u);
+
+  world.setRigidBodySolver(sx::RigidBodySolver::SequentialImpulse);
+  world.setMultibodyOptions({"semi-implicit"});
+  world.setContactGradientMode(sx::ContactGradientMode::Analytic);
+
+  world.restoreReplayFrame(1);
+
+  EXPECT_TRUE(world.isSimulationMode());
+  EXPECT_EQ(world.getRigidBodySolver(), sx::RigidBodySolver::Ipc);
+  EXPECT_EQ(
+      world.getMultibodyOptions().integrationFamily, "variational integrator");
+  EXPECT_TRUE(world.isDifferentiable());
+  EXPECT_EQ(world.getContactSolverMethod(), sx::ContactSolverMethod::BoxedLcp);
+  EXPECT_EQ(
+      world.getContactGradientMode(),
+      sx::ContactGradientMode::PreContactSurrogate);
+
+  EXPECT_NO_THROW(world.step());
 }
 
 // Test that replay restores rigid IPC's adaptive barrier continuation state, so

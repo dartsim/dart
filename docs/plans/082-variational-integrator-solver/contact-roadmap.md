@@ -1,11 +1,12 @@
 # PLAN-082 Sidecar: Contact, Friction & Inequality-Constraint Roadmap
 
-Deferred, go/no-go-gated extension of the variational integrator (PLAN-082) to
-contact and friction. The source paper (`lee-vi-2016`) handles only joint
-equality constraints; closed loops are PLAN-082 Phase B2; everything here
-(contact, friction, inequality constraints) is **out of the initial PLAN-082
-commitment** and requires a separate go/no-go before any work starts. Durable
-rationale lives in
+Roadmap for extending the variational integrator (PLAN-082) to contact and
+friction. The source paper (`lee-vi-2016`) handles only joint equality
+constraints; closed loops are PLAN-082 Phase B2. The original Phase C work was
+go/no-go gated; the current status is that C1-C3 landed for the scoped envelope
+(ground points, lagged friction, augmented-Lagrangian centering, and a
+sphere-sphere link slice), while arbitrary link geometry and the optional C4 hard
+barrier remain separate follow-up work. Durable rationale lives in
 [`../../design/simulation_variational_integrator.md`](../../design/simulation_variational_integrator.md);
 this sidecar owns the sequencing and the comparative evidence.
 
@@ -26,15 +27,15 @@ multipliers. Two consequences fix the ordering:
   Lagrangian contact adds bounded curvature RIQN can absorb; a stiff log-barrier
   injects large local curvature `Δt·M⁻¹` mis-scales → iteration blow-up risk.
 
-## Hard Prerequisite (blocks every rung)
+## Hard Prerequisite (remaining for arbitrary geometry)
 
 A root-finder needs contact/distance evaluated at the **trial** `qᵏ⁺¹` on each
-inner RIQN iteration. Today `World::collide()` rebuilds the entire collision
-world once per step (O(n²) narrow phase; no distance-at-configuration query).
-**Phase C cannot start until a contact-query redesign** provides cheap distance
-and gradient queries at arbitrary configurations (persistent broad phase,
-incremental narrow phase). This is itself a sizeable workstream and the first
-go/no-go gate.
+inner RIQN iteration. The implemented C1-C3 slice satisfies that requirement with
+analytic ground and sphere-sphere hooks. For arbitrary link geometry,
+`World::collide()` still rebuilds the entire collision world once per step and
+does not provide a warm-started distance/gradient query at arbitrary
+configurations. That geometry adapter is still a sizeable workstream and remains
+the main prerequisite before broadening the envelope.
 
 ## Rungs (recommended order)
 

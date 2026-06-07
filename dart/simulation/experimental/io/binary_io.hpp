@@ -87,7 +87,10 @@ using EntityMap = std::unordered_map<entt::entity, entt::entity>;
 //   13: Joint stores captured rigid-body fixed-joint local anchors and target
 //      relative orientation.
 //   14: Joint stores AVBD break-force and broken-state fields.
-constexpr std::uint32_t kBinaryFormatVersion = 14;
+//   15: World solver-family metadata serialized after the differentiable flag
+//      (rigid-body solver, contact method, contact-gradient mode, and
+//      multibody integration method).
+constexpr std::uint32_t kBinaryFormatVersion = 15;
 
 //==============================================================================
 // Low-level Binary I/O for POD types

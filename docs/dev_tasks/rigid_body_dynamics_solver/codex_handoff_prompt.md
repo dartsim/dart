@@ -1,5 +1,9 @@
 # Codex hand-off prompt
 
+Historical prompt for the PR #2705 conflict-resolution session. Do not use this
+as live task direction; use [`README.md`](README.md), [`RESUME.md`](RESUME.md),
+and the durable solver architecture design for current status.
+
 Paste the block below into Codex.
 
 ---

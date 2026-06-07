@@ -865,6 +865,14 @@ TEST(DeformableBody, ExposesDeformableSolverDiagnostics)
   // No contacts for a single free-hanging tetrahedron.
   EXPECT_EQ(after.selfContactBarrierActiveContacts, 0u);
   EXPECT_EQ(after.convergedActiveContactCount, 0u);
+
+  world.clear();
+  const auto& reset = world.getLastDeformableSolverDiagnostics();
+  EXPECT_EQ(reset.bodyCount, 0u);
+  EXPECT_EQ(reset.nodeCount, 0u);
+  EXPECT_EQ(reset.solverIterations, 0u);
+  EXPECT_EQ(reset.projectedNewtonHessianNonZeros, 0u);
+  EXPECT_EQ(reset.projectedNewtonHessianStorageBytes, 0u);
 }
 
 //==============================================================================

@@ -87,6 +87,11 @@ Then: <specific instruction, e.g., "Continue implementing X in file Y" or "Run t
 - Update `RESUME.md` **before** ending your session
 - Update after significant progress (don't wait until "done")
 - Keep it current — stale resume prompts are worse than none
+- Treat branch/status sections as snapshots from the last update. Before acting
+  on an existing `RESUME.md`, verify the current checkout with `git status` and
+  the task's `README.md`/durable design docs. If the code has landed or the
+  branch instructions are historical, add a short "Current Reality" note above
+  the older branch-local instructions instead of deleting useful archaeology.
 
 ### README.md Template
 

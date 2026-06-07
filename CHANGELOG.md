@@ -905,6 +905,16 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     inline with an eight-stage capacity, eliminating stage-list heap allocation
     during default step pipeline assembly and rejecting overflow with
     `InvalidArgumentException`.
+  - Centralized the experimental World's built-in step schedule selection so
+    sequential impulse, rigid IPC, semi-implicit/variational multibody,
+    deformable, and custom-final-stage paths share one internal slot map.
+    Method-family changes after simulation bake now re-run one shared
+    preparation path, empty solver domains no longer add placeholder stages, and
+    custom-final-stage steps reuse the baked solver stages while clearing
+    caller-owned final stage pointers after execution.
+  - Added construction-time rigid and multibody solver-family selection to
+    experimental `WorldOptions`, and exposed the same validated path through the
+    dartpy `sx.World(...)` constructor.
   - Pre-baked the experimental World's default step stage bundle, kinematics
     graph traversal, and rigid IPC kinematic scratch at `enterSimulationMode()`,
     eliminating global heap allocation for repeated baked kinematic IPC steps
