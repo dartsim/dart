@@ -3,6 +3,7 @@ from __future__ import annotations
 __all__: list[str] = [
     "BallJointConstraint",
     "ConstraintBase",
+    "CylindricalJointConstraint",
     "DynamicJointConstraint",
     "JointConstraint",
     "JointCoulombFrictionConstraint",
@@ -110,6 +111,19 @@ class BallJointConstraint(DynamicJointConstraint):
     set_max_error_reduction_velocity = setMaxErrorReductionVelocity
 
     def setMaxErrorReductionVelocity(*args, **kwargs): ...
+
+class CylindricalJointConstraint(DynamicJointConstraint):
+    @overload
+    def __init__(self, body_node: dartpy.dynamics.BodyNode, joint_position: object, axis: object) -> None: ...
+
+    @overload
+    def __init__(self, body_node1: object, body_node2: object, joint_position: object, axis1: object, axis2: object) -> None: ...
+
+    def getType(self) -> str: ...
+
+    def getStaticType(*args, **kwargs): ...
+
+    get_static_type = getStaticType
 
 class RevoluteJointConstraint(DynamicJointConstraint):
     @overload

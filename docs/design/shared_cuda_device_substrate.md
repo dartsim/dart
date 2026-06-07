@@ -2,7 +2,9 @@
 
 ## Status
 
-Proposal. This document owns the durable rationale for sharing GPU
+Implemented baseline. PR #2875 landed the shared CUDA runtime helpers,
+`DeviceBuffer`, and single-sourced rigid orientation core on `main`. This
+document now owns the durable rationale and extraction triggers for sharing GPU
 device-runtime code across DART 7's experimental CUDA solvers instead of
 reinventing it per solver. Operating state (priority, horizon, next step, gate)
 lives in `docs/plans/dashboard.md` under PLAN-031. This design is scoped to
@@ -255,42 +257,49 @@ The hard guardrails from `scalable_compute_decisions.md` and
 
 ## Phased Roadmap
 
-Operating sequence (canonical priority/next-step/gate live in PLAN-031):
+The build-now sequence below is complete on `main` in PR #2875. Future work uses
+the deferral table above and must promote only real second-use extractions.
+Canonical priority, next step, and gate live in PLAN-031.
 
-- **P0 — pin parity baselines.** Record CPU/GPU parity for all three modules at
-  the existing tolerance (Phase-5 reference 1.78e-15) before any extraction, and
-  confirm the default no-GPU build + `dartpy` import are unchanged. Exit evidence:
-  baselines committed; all boundary/packaging checks green as the starting line.
-- **P1 — `cuda_runtime.cuh/.cpp` + refactor all three modules onto it.** Exit
-  evidence: the three module parity tests stay green within recorded tolerance;
-  `.cuh`-only confirmed (no `.hpp` gains a backend token); the `-cuda` library
-  stays build-only.
-- **P1b — VBD error-type unification (separate reviewed commit).** Moving VBD's
+- **P0 — pin parity baselines (complete).** Record CPU/GPU parity for all three
+  modules at the existing tolerance (Phase-5 reference 1.78e-15) before any
+  extraction, and confirm the default no-GPU build + `dartpy` import are
+  unchanged. Exit evidence: baselines committed; all boundary/packaging checks
+  green as the starting line.
+- **P1 — `cuda_runtime.cuh/.cpp` + refactor all three modules onto it
+  (complete).** Exit evidence: the three module parity tests stay green within
+  recorded tolerance; `.cuh`-only confirmed (no `.hpp` gains a backend token);
+  the `-cuda` library stays build-only.
+- **P1b — VBD error-type unification (complete).** Moving VBD's
   `std::runtime_error` onto `DART_EXPERIMENTAL_THROW_T` changes the thrown type at
   the `World::step` boundary, so it ships as its own commit with an explicit
   PR-body note and any downstream catcher updated in the same PR.
-- **P2 — `device_buffer.cuh` + migrate the three buffer classes.** Exit evidence:
-  outputs identical pre/post; PSD's `allocationCount()` invariant preserved; no
-  benchmark regression.
-- **P3 — single-source the rigid integration kernel.** Exit evidence: rigid
-  CPU/GPU parity passes (and ideally tightens); the macro expands to empty in the
-  default no-CUDA build; boundary checks green.
+- **P2 — `device_buffer.cuh` + migrate the three buffer classes (complete).**
+  Exit evidence: outputs identical pre/post; PSD's `allocationCount()` invariant
+  preserved; no benchmark regression.
+- **P3 — single-source the rigid integration kernel (complete).** Exit evidence:
+  rigid CPU/GPU parity passes (and ideally tightens); the macro expands to empty
+  in the default no-CUDA build; boundary checks green.
 - **Future — extract on documented second use.** Per the deferral table; each
   extraction requires its real second consumer, a separate review, a
   pre-extraction parity pin, and an unchanged public-API/sidecar guarantee.
 
-## Open Questions
+## Resolved Build-Now Questions
 
-- `DeviceBuffer<T>` resident-reuse shape: is opt-in `ensure(count)` inside one
-  thin type acceptable, or should PSD's resident behavior stay a thin wrapper to
-  keep the base type pure RAII? Decide in P2 by measuring type complexity.
-- Host/device macro home and spelling: confirm the exact experimental-scoped
-  header and a backend-token-free spelling that survives the boundary scanner and
-  compiles under `nvcc --expt-relaxed-constexpr` while expanding to empty in host
+PR #2875 resolved the questions that affected the landed substrate:
+
+- `DeviceBuffer<T>` uses opt-in `ensure(count)` / `allocationCount()` resident
+  reuse inside the shared type, preserving the PSD invariant without adding a
+  second buffer wrapper.
+- The host/device annotation lives in the experimental-scoped
+  `compute/detail/rigid_integration_core.hpp` header as `DART_EXPERIMENTAL_HD`,
+  expanding to `__host__ __device__` only under `nvcc` and to empty under host
   builds.
-- VBD error-type change: confirm by grep across tests and any downstream
-  (`gz-physics`) catchers that nothing relies on the `std::runtime_error` type
-  before P1b merges.
+- The VBD error-type divergence is unified onto the shared CUDA error helper and
+  `InvalidOperationException` path.
+
+## Deferred Questions
+
 - Rigid CUDA-graph amortization: does the maintainer want it as a standalone
   reviewed change soon, or left until the rollout helper's second consumer
   naturally triggers extraction?
