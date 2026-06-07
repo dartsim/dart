@@ -1055,6 +1055,11 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     dense, banded, mildly ill-conditioned, and near-singular standard-LCP
     fixtures, with backend build-state counters distinguishing default,
     SIMD-enabled, and CUDA-enabled CPU solver runs.
+  - Added DART 7 Staggering contact-pipeline comparison benchmark rows for
+    separated world-contact, coupled stack-contact, and articulated unified
+    contact fixtures, with normal/friction split counters and backend
+    build-state counters distinguishing default, SIMD-enabled, and
+    CUDA-enabled CPU solver runs.
   - Added manifest-generated serial and DART 7 `ParallelExecutor` batch LCP
     benchmarks so standard, boxed, and friction-index solver families compare
     the same independent-problem batches across every supporting solver. The

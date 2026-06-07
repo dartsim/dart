@@ -872,6 +872,41 @@ enum class WorldContactBatchKind
   StressStack
 };
 
+enum class StaggeringContactPipelineKind
+{
+  WorldSeparated,
+  WorldStack,
+  ArticulatedGround,
+  ArticulatedRigidImpact,
+  ArticulatedCrossLinkImpact
+};
+
+struct StaggeringContactPipelineSweepCase
+{
+  StaggeringContactPipelineKind kind;
+  int contactOrShapeCount;
+  std::string_view caseLabel;
+};
+
+constexpr std::array<StaggeringContactPipelineSweepCase, 9>
+    kStaggeringContactPipelineSweepCases{{
+        {StaggeringContactPipelineKind::WorldSeparated, 1, "WorldSeparated1"},
+        {StaggeringContactPipelineKind::WorldSeparated, 2, "WorldSeparated2"},
+        {StaggeringContactPipelineKind::WorldSeparated, 4, "WorldSeparated4"},
+        {StaggeringContactPipelineKind::WorldStack, 2, "WorldStack2"},
+        {StaggeringContactPipelineKind::WorldStack, 3, "WorldStack3"},
+        {StaggeringContactPipelineKind::WorldStack, 5, "WorldStack5"},
+        {StaggeringContactPipelineKind::ArticulatedGround,
+         4,
+         "ArticulatedGround4"},
+        {StaggeringContactPipelineKind::ArticulatedRigidImpact,
+         4,
+         "ArticulatedRigidImpact4"},
+        {StaggeringContactPipelineKind::ArticulatedCrossLinkImpact,
+         4,
+         "ArticulatedCrossLinkImpact4"},
+    }};
+
 std::optional<WorldContactBenchmarkProblem> MakeWorldContactBenchmarkProblem(
     int contactCount, std::string& errorMessage, int velocityVariant = 0)
 {
@@ -1411,6 +1446,39 @@ MakeArticulatedUnifiedContactBenchmarkProblem(
       benchmarkCase == ArticulatedContactBenchmarkCase::RigidImpact
           ? static_cast<std::size_t>(contactCount)
           : std::size_t{0}};
+}
+
+std::optional<WorldContactBenchmarkProblem>
+MakeStaggeringContactPipelineSweepProblem(
+    const StaggeringContactPipelineSweepCase testCase,
+    std::string& errorMessage)
+{
+  switch (testCase.kind) {
+    case StaggeringContactPipelineKind::WorldSeparated:
+      return MakeWorldContactBenchmarkProblem(
+          testCase.contactOrShapeCount, errorMessage);
+    case StaggeringContactPipelineKind::WorldStack:
+      return MakeWorldStackContactBenchmarkProblem(
+          testCase.contactOrShapeCount, errorMessage);
+    case StaggeringContactPipelineKind::ArticulatedGround:
+      return MakeArticulatedUnifiedContactBenchmarkProblem(
+          ArticulatedContactBenchmarkCase::Ground,
+          testCase.contactOrShapeCount,
+          errorMessage);
+    case StaggeringContactPipelineKind::ArticulatedRigidImpact:
+      return MakeArticulatedUnifiedContactBenchmarkProblem(
+          ArticulatedContactBenchmarkCase::RigidImpact,
+          testCase.contactOrShapeCount,
+          errorMessage);
+    case StaggeringContactPipelineKind::ArticulatedCrossLinkImpact:
+      return MakeArticulatedUnifiedContactBenchmarkProblem(
+          ArticulatedContactBenchmarkCase::CrossLinkImpact,
+          testCase.contactOrShapeCount,
+          errorMessage);
+  }
+
+  errorMessage = "unknown Staggering contact-pipeline sweep case";
+  return std::nullopt;
 }
 
 std::optional<WorldContactBenchmarkBatch> MakeWorldContactBenchmarkBatch(
@@ -6478,6 +6546,72 @@ void RunArticulatedUnifiedContactBenchmark(
   }
 }
 
+void RunStaggeringContactPipelineSweepBenchmark(
+    benchmark::State& state, const StaggeringContactPipelineSweepCase testCase)
+{
+  std::string errorMessage;
+  const auto fixture
+      = MakeStaggeringContactPipelineSweepProblem(testCase, errorMessage);
+  if (!fixture.has_value()) {
+    state.SkipWithError(errorMessage.c_str());
+    return;
+  }
+
+  auto options = MakeBenchmarkOptions(100);
+  options.absoluteTolerance = 1e-6;
+  options.relativeTolerance = 1e-4;
+  options.complementarityTolerance = 1e-6;
+
+  dart::math::StaggeringSolver solver;
+  RunBenchmarkWithSolver(
+      state,
+      solver,
+      fixture->problem,
+      options,
+      MakeLabel(
+          "Staggering",
+          "ContactPipelineSweep/" + std::string(testCase.caseLabel)));
+
+  const auto normalRows = (fixture->problem.findex.array() < 0).count();
+  const auto frictionRows = fixture->problem.findex.size() - normalRows;
+  state.counters["staggering_contact_pipeline_sweep"] = 1.0;
+  state.counters["staggering_normal_friction_split"] = 1.0;
+  state.counters["staggering_normal_row_count"]
+      = static_cast<double>(normalRows);
+  state.counters["staggering_friction_row_count"]
+      = static_cast<double>(frictionRows);
+  state.counters["contact_count"] = static_cast<double>(fixture->contactCount);
+  state.counters["body_count"] = static_cast<double>(fixture->bodyCount);
+  state.counters["staggering_world_separated_contact"]
+      = testCase.kind == StaggeringContactPipelineKind::WorldSeparated ? 1.0
+                                                                       : 0.0;
+  state.counters["staggering_world_stack_contact"]
+      = testCase.kind == StaggeringContactPipelineKind::WorldStack ? 1.0 : 0.0;
+  state.counters["staggering_articulated_unified_contact"]
+      = (testCase.kind == StaggeringContactPipelineKind::ArticulatedGround
+         || testCase.kind
+                == StaggeringContactPipelineKind::ArticulatedRigidImpact
+         || testCase.kind
+                == StaggeringContactPipelineKind::ArticulatedCrossLinkImpact)
+            ? 1.0
+            : 0.0;
+  state.counters["staggering_articulated_ground_contact"]
+      = testCase.kind == StaggeringContactPipelineKind::ArticulatedGround ? 1.0
+                                                                          : 0.0;
+  state.counters["staggering_articulated_rigid_impact_contact"]
+      = testCase.kind == StaggeringContactPipelineKind::ArticulatedRigidImpact
+            ? 1.0
+            : 0.0;
+  state.counters["staggering_articulated_cross_link_contact"]
+      = testCase.kind
+                == StaggeringContactPipelineKind::ArticulatedCrossLinkImpact
+            ? 1.0
+            : 0.0;
+  state.counters["staggering_coupled_contact_pipeline"]
+      = testCase.kind != StaggeringContactPipelineKind::WorldSeparated ? 1.0
+                                                                       : 0.0;
+}
+
 void RunWorldContactBatchSerialBenchmark(
     benchmark::State& state,
     const dart::test::LcpSolverManifestEntry& solverEntry,
@@ -8016,6 +8150,14 @@ std::string MakeWorldContactStressBatchParallelBenchmarkName(
   return out.str();
 }
 
+std::string MakeStaggeringContactPipelineSweepBenchmarkName(
+    const StaggeringContactPipelineSweepCase testCase)
+{
+  std::ostringstream out;
+  out << "BM_LcpStaggeringContactPipelineSweep/" << testCase.caseLabel;
+  return out.str();
+}
+
 std::string MakeMildIllConditionedBenchmarkName(
     const MildIllConditionedBenchmarkCase testCase,
     const dart::test::LcpSolverManifestEntry& solver)
@@ -8963,6 +9105,17 @@ void RegisterArticulatedUnifiedContactBenchmarks()
   }
 }
 
+void RegisterStaggeringContactPipelineSweepBenchmarks()
+{
+  for (const auto testCase : kStaggeringContactPipelineSweepCases) {
+    const auto name = MakeStaggeringContactPipelineSweepBenchmarkName(testCase);
+    benchmark::RegisterBenchmark(
+        name.c_str(), [testCase](benchmark::State& state) {
+          RunStaggeringContactPipelineSweepBenchmark(state, testCase);
+        });
+  }
+}
+
 void RegisterWorldContactBatchBenchmarks()
 {
   for (const auto& solver : dart::test::kLcpSolverManifest) {
@@ -9221,6 +9374,7 @@ const bool kManifestBenchmarksRegistered = [] {
   RegisterWorldBoxContactBenchmarks();
   RegisterWorldStackContactBenchmarks();
   RegisterArticulatedUnifiedContactBenchmarks();
+  RegisterStaggeringContactPipelineSweepBenchmarks();
   RegisterWorldContactBatchBenchmarks();
 #endif
   return true;

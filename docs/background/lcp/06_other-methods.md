@@ -190,6 +190,17 @@ solver.solve(problem, x, options);
 > Note: DART partitions variables by `findex` (normal indices are `findex < 0`,
 > friction indices are `findex >= 0`) and alternates normal and friction sub-solves.
 
+DART 7 benchmark evidence includes `BM_LcpStaggeringContactPipelineSweep`,
+which exercises the normal/friction split on DART-owned contact-pipeline
+fixtures rather than only synthetic math packets. The rows cover separated
+sphere-ground contacts, coupled vertical sphere stacks, and articulated unified
+contacts for ground, rigid-impact, and cross-link-impact cases. Focused default,
+SIMD-enabled, and CUDA-enabled build-tree runs reported 9 rows with
+`contract_ok=1`, normal-row counters `1/2/3/4/5`, friction-row counters
+`2/4/6/8/10`, coupled-contact flags, and backend build-state counters. The
+CUDA-enabled rows are CPU Staggering solver rows in a CUDA-enabled build, not
+CUDA LCP kernel execution.
+
 ### Properties
 
 - **Time**: Depends on sub-solvers

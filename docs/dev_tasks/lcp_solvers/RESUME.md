@@ -182,6 +182,17 @@ default, SIMD-enabled, and CUDA-enabled build-tree runs passed with
 `problem_size=8/32/64`, observed solver `iterations=14/16/27/31/32/41/51/53`,
 and backend build-state counters. The CUDA-enabled rows are CPU Interior Point
 solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
+It now also adds 9 `BM_LcpStaggeringContactPipelineSweep` benchmark rows for
+the `StaggeringSolver` normal/friction split on DART 7 contact-pipeline
+fixtures. The rows cover separated sphere-ground 1/2/4-contact fixtures,
+coupled vertical-stack 2/3/5-contact fixtures, and articulated unified ground,
+rigid-impact, and cross-link-impact 4-contact fixtures. Focused default,
+SIMD-enabled, and CUDA-enabled build-tree runs passed with `contract_ok=1` on
+every row and recorded `staggering_contact_pipeline_sweep`,
+`staggering_normal_friction_split`, normal-row counts `1/2/3/4/5`,
+friction-row counts `2/4/6/8/10`, coupled-contact flags, contact counts
+`1/2/3/4/5`, and backend build-state counters. The CUDA-enabled rows are CPU
+Staggering solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
 It now also extends the robust near-singular generated slice to coupled
 friction-index 12-contact packets and adds 13 matching `BM_LcpNearSingular`
 benchmark rows for standard 8-row, boxed 8-row, and coupled friction-index
@@ -299,8 +310,9 @@ rows, APGD restart-policy benchmark rows, ADMM rho/adaptive-rho benchmark
 rows, TGS iteration-budget benchmark rows, NNCG PGS-preconditioner iteration
 benchmark rows, SubspaceMinimization PGS-iteration benchmark rows,
 ShockPropagation layer-layout benchmark rows, MPRGP SPD/check benchmark rows,
-Interior Point path-parameter benchmark rows, SAP regularization benchmark
-rows, and Jacobi threading benchmark rows.
+Interior Point path-parameter benchmark rows, Staggering contact-pipeline
+benchmark rows, SAP regularization benchmark rows, and Jacobi threading
+benchmark rows.
 Push/PR work still requires explicit maintainer/user approval.
 
 ## Immediate Next Step
@@ -313,9 +325,9 @@ PGS/PSOR, symmetric PSOR, and Red-Black Gauss-Seidel relaxation sweep rows,
 APGD restart-policy sweep rows, TGS iteration-budget sweep rows, NNCG
 PGS-preconditioner iteration sweep rows, SubspaceMinimization PGS-iteration
 sweep rows, ShockPropagation layer-layout sweep rows, MPRGP SPD/check sweep
-rows, Interior Point path-parameter sweep rows, ADMM rho/adaptive-rho sweep
-rows, and SAP regularization sweep rows, toward broader solver-specific
-conditioning grids and direct backend
+rows, Interior Point path-parameter sweep rows, Staggering contact-pipeline
+sweep rows, ADMM rho/adaptive-rho sweep rows, and SAP regularization sweep
+rows, toward broader solver-specific conditioning grids and direct backend
 execution evidence beyond SIMD/CUDA-enabled build-state counters.
 Broaden SIMD benchmark gates, solver-internal threaded benchmark evidence, and
 the CUDA Jacobi/PGS batch slices into broader/general CUDA LCP execution
