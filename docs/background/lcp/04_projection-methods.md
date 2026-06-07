@@ -544,7 +544,11 @@ correctness grid, and apples-to-apples benchmark registration.
 
 - **APGD**: applies Nesterov-style extrapolation before a projected
   Gauss-Seidel sweep. Its parameters include adaptive restart controls so a bad
-  momentum direction can be discarded.
+  momentum direction can be discarded. Focused `BM_LcpApgdRestartSweep` rows
+  compare adaptive restart every iteration, adaptive restart every 5
+  iterations, and no restart on identical standard, boxed, and friction-index
+  benchmark fixtures; these rows are CPU solver rows even when emitted by a
+  CUDA-enabled build.
 - **TGS**: provides a Temporal Gauss-Seidel labelled boxed-LCP sweep. In a full
   simulation, TGS stability usually comes from substepping; the standalone DART
   LCP solver captures the boxed/findex Gauss-Seidel solve under the common

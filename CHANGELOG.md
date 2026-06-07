@@ -1029,6 +1029,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     under-relaxation, plain relaxation, and over-relaxation; Red-Black rows also
     report two-color partition counters. CUDA-enabled rows are CPU solver rows,
     not CUDA LCP kernel execution.
+  - Added DART 7 APGD restart-policy comparison benchmark rows for standard,
+    boxed, and friction-index LCP fixtures, with backend build-state counters
+    distinguishing default, SIMD-enabled, and CUDA-enabled CPU solver runs.
   - Added manifest-generated serial and DART 7 `ParallelExecutor` batch LCP
     benchmarks so standard, boxed, and friction-index solver families compare
     the same independent-problem batches across every supporting solver. The

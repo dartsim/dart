@@ -2805,6 +2805,15 @@ struct RelaxationSweepCase
   std::string_view relaxationLabel;
 };
 
+struct ApgdRestartSweepCase
+{
+  BenchmarkProblemFamily family;
+  int problemArg;
+  bool adaptiveRestart;
+  int restartCheckInterval;
+  std::string_view restartPolicyLabel;
+};
+
 struct AdmmRhoSweepCase
 {
   BenchmarkProblemFamily family;
@@ -2869,6 +2878,18 @@ constexpr std::array<RelaxationSweepCase, 9> kRelaxationSweepCases{{
      RelaxationSweepKind::Over,
      1.3,
      "Relaxation1_3"},
+}};
+
+constexpr std::array<ApgdRestartSweepCase, 9> kApgdRestartSweepCases{{
+    {BenchmarkProblemFamily::Standard, 48, true, 0, "AdaptiveEveryIter"},
+    {BenchmarkProblemFamily::Standard, 48, true, 5, "AdaptiveEvery5"},
+    {BenchmarkProblemFamily::Standard, 48, false, 0, "NoRestart"},
+    {BenchmarkProblemFamily::Boxed, 24, true, 0, "AdaptiveEveryIter"},
+    {BenchmarkProblemFamily::Boxed, 24, true, 5, "AdaptiveEvery5"},
+    {BenchmarkProblemFamily::Boxed, 24, false, 0, "NoRestart"},
+    {BenchmarkProblemFamily::FrictionIndex, 8, true, 0, "AdaptiveEveryIter"},
+    {BenchmarkProblemFamily::FrictionIndex, 8, true, 5, "AdaptiveEvery5"},
+    {BenchmarkProblemFamily::FrictionIndex, 8, false, 0, "NoRestart"},
 }};
 
 constexpr std::array<AdmmRhoSweepCase, 18> kAdmmRhoSweepCases{{
@@ -4949,6 +4970,44 @@ void RunRedBlackGaussSeidelRelaxationSweepBenchmark(
       = testCase.relaxationKind == RelaxationSweepKind::Plain ? 1.0 : 0.0;
   state.counters["psor_over_relaxation"]
       = testCase.relaxationKind == RelaxationSweepKind::Over ? 1.0 : 0.0;
+  if (testCase.family == BenchmarkProblemFamily::FrictionIndex) {
+    state.counters["contact_count"] = testCase.problemArg;
+  }
+}
+
+void RunApgdRestartSweepBenchmark(
+    benchmark::State& state, const ApgdRestartSweepCase testCase)
+{
+  const auto problem
+      = MakeBenchmarkProblem(testCase.family, testCase.problemArg);
+  auto options = MakeBenchmarkOptions(1000);
+  options.absoluteTolerance = 1e-5;
+  options.relativeTolerance = 1e-3;
+  options.complementarityTolerance
+      = testCase.family == BenchmarkProblemFamily::FrictionIndex ? 2e-3 : 1e-3;
+  options.relaxation = 1.0;
+
+  dart::math::ApgdSolver::Parameters params;
+  params.adaptiveRestart = testCase.adaptiveRestart;
+  params.restartCheckInterval = testCase.restartCheckInterval;
+  options.customOptions = &params;
+
+  dart::math::ApgdSolver solver;
+  RunBenchmarkWithSolver(
+      state,
+      solver,
+      problem,
+      options,
+      MakeLabel(
+          "Apgd",
+          "RestartSweep/" + std::string(getProblemFamilyName(testCase.family))
+              + "/" + std::string(testCase.restartPolicyLabel)));
+
+  state.counters["apgd_restart_sweep"] = 1.0;
+  state.counters["apgd_adaptive_restart"]
+      = testCase.adaptiveRestart ? 1.0 : 0.0;
+  state.counters["apgd_restart_check_interval"] = testCase.restartCheckInterval;
+  state.counters["apgd_relaxation"] = options.relaxation;
   if (testCase.family == BenchmarkProblemFamily::FrictionIndex) {
     state.counters["contact_count"] = testCase.problemArg;
   }
@@ -7131,6 +7190,15 @@ std::string MakeRedBlackGaussSeidelRelaxationSweepBenchmarkName(
   return out.str();
 }
 
+std::string MakeApgdRestartSweepBenchmarkName(
+    const ApgdRestartSweepCase testCase)
+{
+  std::ostringstream out;
+  out << "BM_LcpApgdRestartSweep/" << getProblemFamilyName(testCase.family)
+      << "/" << testCase.restartPolicyLabel;
+  return out.str();
+}
+
 std::string MakeAdmmRhoSweepBenchmarkName(const AdmmRhoSweepCase testCase)
 {
   std::ostringstream out;
@@ -7635,6 +7703,17 @@ void RegisterRedBlackGaussSeidelRelaxationSweepBenchmarks()
     benchmark::RegisterBenchmark(
         name.c_str(), [testCase](benchmark::State& state) {
           RunRedBlackGaussSeidelRelaxationSweepBenchmark(state, testCase);
+        });
+  }
+}
+
+void RegisterApgdRestartSweepBenchmarks()
+{
+  for (const auto testCase : kApgdRestartSweepCases) {
+    const auto name = MakeApgdRestartSweepBenchmarkName(testCase);
+    benchmark::RegisterBenchmark(
+        name.c_str(), [testCase](benchmark::State& state) {
+          RunApgdRestartSweepBenchmark(state, testCase);
         });
   }
 }
@@ -8419,6 +8498,7 @@ const bool kManifestBenchmarksRegistered = [] {
   RegisterPgsRelaxationSweepBenchmarks();
   RegisterSymmetricPsorRelaxationSweepBenchmarks();
   RegisterRedBlackGaussSeidelRelaxationSweepBenchmarks();
+  RegisterApgdRestartSweepBenchmarks();
   RegisterAdmmRhoSweepBenchmarks();
   RegisterSapRegularizationSweepBenchmarks();
   RegisterNewtonWarmStartBenchmarks();
