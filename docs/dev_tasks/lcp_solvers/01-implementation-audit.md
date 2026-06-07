@@ -104,8 +104,8 @@ Support abbreviations:
   coupling, and 190 matching benchmark rows verified in default, SIMD-enabled, and
   CUDA-enabled build trees. It now
   also includes a scoped robust near-singular slice for standard 8-row, boxed
-  8-row, and coupled friction-index 3-, 6-, 9-, and 12-contact packets, plus
-  13 matching
+  8-row, and coupled friction-index 3-, 6-, 9-, 12-, and 16-contact packets,
+  plus 15 matching
   benchmark rows verified in default, SIMD-enabled, and CUDA-enabled build
   trees. It now
   also includes an exact rank-deficient singular-degenerate slice for standard
@@ -219,7 +219,7 @@ The current local evidence for this task is:
   and 64-row, boxed 32-row, friction-index 16-contact, coupled friction-index
   8-contact, production-scale standard 128-row, boxed 64-row, friction-index
   24-contact, coupled friction-index 12-contact, near-singular standard 8-row,
-  boxed 8-row, coupled friction-index 3-, 6-, 9-, and 12-contact,
+  boxed 8-row, coupled friction-index 3-, 6-, 9-, 12-, and 16-contact,
   exact rank-deficient
   singular-degenerate standard 16-row, boxed 16-row, and coupled
   friction-index 6-contact known-solution cases, and larger exact
@@ -349,11 +349,11 @@ The current local evidence for this task is:
   CUDA-enabled rows are CPU solver batch rows in a CUDA-enabled build, not CUDA
   LCP kernel execution.
 - `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpNearSingular/' | wc -l`
-  reported 13 rows, and
+  reported 15 rows, and
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpNearSingular' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   ran all rows with `contract_ok=1` in the default, SIMD-enabled, and
   CUDA-enabled build trees. These rows cover near-singular standard 8-row,
-  boxed 8-row, and coupled friction-index 3-, 6-, 9-, and 12-contact packets
+  boxed 8-row, and coupled friction-index 3-, 6-, 9-, 12-, and 16-contact packets
   over the scoped robust solver set. The rows report `near_singular=1`,
   backend build-state counters, `contact_count` for friction-index packets,
   and `coupled=1` for the coupled packets. The CUDA-enabled rows are CPU
@@ -1027,8 +1027,9 @@ The current local evidence for this task is:
   slices now reach standard 128-row, boxed 64-row, friction-index 24-contact,
   coupled friction-index 12-contact, mildly ill-conditioned coupled
   friction-index 16-contact and 24-contact, stronger-coupled mildly
-  ill-conditioned 16-/24-contact cases plus a 32-contact 8x case, near-singular standard 8-row, boxed
-  8-row, coupled friction-index 3-, 6-, 9-, and 12-contact, and larger exact
+  ill-conditioned 16-/24-contact cases plus a 32-contact 8x case,
+  near-singular standard 8-row, boxed 8-row, coupled friction-index 3-, 6-,
+  9-, 12-, and 16-contact, and larger exact
   rank-deficient
   singular-degenerate standard 32-row, boxed 32-row, and coupled
   friction-index 8-contact cases, plus stress exact rank-deficient
