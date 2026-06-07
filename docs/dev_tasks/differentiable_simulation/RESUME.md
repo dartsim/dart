@@ -3,7 +3,7 @@
 ## Last Session Summary
 
 Planned and designed opt-in analytic differentiable simulation for the
-experimental `World` (the Nimble method, arXiv:2103.16021). Produced the durable
+DART 7 `World` (the Nimble method, arXiv:2103.16021). Produced the durable
 design doc, the PLAN-110 plan card + dashboard entry, a feature-by-feature Nimble
 gap audit + cross-engine API survey (Brax/Newton/Genesis/MJX), a `werling-2021`
 papers-catalog entry, and this dev-task scaffold. Ran three specialized reviews
@@ -16,7 +16,7 @@ Key review corrections now baked into the docs:
 - Position Jacobian is **joint-type-keyed** (SO(3)/SE(3) `dexp`/`dlog`), not
   identity — DART integrates on the manifold (`multibody_dynamics.cpp:1037-1067`).
 - The analytic **contact** gradient is undefined until PLAN-080 WS4 makes the
-  experimental contact path a boxed-LCP solve; today it is sequential-impulse.
+  DART 7 contact path a boxed-LCP solve; today it is sequential-impulse.
   WS2–WS5 are Blocked; only WS1 is actionable. Seam-2 is the _future_ experimental
   LCP stage, **not** legacy `dart/constraint/constraint_solver.cpp`.
 - `∂M/∂q`, `∂c/∂q` are substantive smooth-term derivatives (the larger part of
@@ -69,7 +69,7 @@ Nothing committed or pushed.
 
 ## PLAN-080 WS4 First Slice — Implemented And Verified (unblocks WS2)
 
-Added an **opt-in boxed-LCP rigid-body contact path** to the experimental World
+Added an **opt-in boxed-LCP rigid-body contact path** to the DART 7 World
 (the WS2 prerequisite):
 
 - `WorldOptions::contactSolverMethod` = `SequentialImpulse` (default, unchanged)
@@ -84,7 +84,7 @@ Added an **opt-in boxed-LCP rigid-body contact path** to the experimental World
 - `test_boxed_lcp_contact`: 4/4 — resting-height parity vs SequentialImpulse
   (1e-6), single-step normal velocity (1e-9), equal-mass head-on momentum (1e-12).
 
-Verified by me: build green; full experimental suite 23/23 (default config);
+Verified by me: build green; full simulation suite 23/23 (default config);
 `check-api-boundaries` + `lint` green.
 
 ## WS2 First Slice — Implemented And Verified (the Nimble analytic contact gradient)
@@ -108,7 +108,7 @@ clamping contact. Test `test_diff_contact_jacobian` (ON only): clamping case vs
 FD-of-step **state 1.2e-11 / control 1.1e-11** (gate <1e-4), plus a separating
 case reducing to the contact-free Jacobian.
 
-Verified by me (ON config): full experimental suite **25/25**; symbol exported;
+Verified by me (ON config): full simulation suite **25/25**; symbol exported;
 `check-api-boundaries` + `lint` green; cache reset to OFF.
 
 ## Public-Facade Consolidation — Implemented And Verified
@@ -125,7 +125,7 @@ so the default build is unaffected. Test `test_diff_public_contact_jacobian`
 (ON only, 3/3): in-scope contact-aware vs FD-of-step (state 1.2e-11 / control
 1.1e-11), no-contact closed-form + FD, and rotational-contact-throws.
 
-Verified by me (ON config): full experimental suite **26/26**; default build
+Verified by me (ON config): full simulation suite **26/26**; default build
 unaffected; `check-api-boundaries` + `lint` green; cache reset to OFF.
 
 ## Immediate Next Step
@@ -210,11 +210,11 @@ Continue, in order:
 
 ## Context That Would Be Lost
 
-- **The hard prerequisite**: the experimental contact path is currently
+- **The hard prerequisite**: the DART 7 contact path is currently
   sequential-impulse (`RigidBodyContactStage`) + multibody-internal contact, NOT
   boxed-LCP. The analytic _contact_ gradient (WS2) differentiates the LCP solve,
   so it is gated on **PLAN-080 Workstream 4** wiring boxed-LCP into the
-  experimental contact/joint-limit solve. WS1 (smooth articulated path) is
+  DART 7 contact/joint-limit solve. WS1 (smooth articulated path) is
   unblocked and should ship first to deliver value early.
 - **The five attachment seams** (confirmed in code): (1) `dart/math/lcp/lcp_solver.hpp`
   `LcpSolver::solve(LcpProblem{A,b,lo,hi,findex}, x)` — capture snapshot + classify
@@ -228,7 +228,7 @@ Continue, in order:
 - **The correctness stance**: finite-difference checker is the gate; mode-switch
   subgradients and elastic approximation are documented; complementarity-aware
   and contacts-from-distance are opt-in non-true-gradient aids.
-- The diff module lives in `dart/simulation/experimental/diff/` behind a build
+- The diff module lives in `dart/simulation/diff/` behind a build
   option (mirrors `compute/` and CUDA isolation); reverse-pass cache / LCP
   snapshot / clamping classification all live in `detail/` (never public).
 
@@ -244,6 +244,6 @@ git status && git log -3 --oneline
 
 Then: incorporate any pending review feedback, then implement WS1 starting with
 the `differentiable` option in `WorldOptions` and the `StepSnapshot` skeleton in
-`dart/simulation/experimental/diff/`, plus the finite-difference checker test
-utility. Keep `pixi run lint`, `pixi run build`, focused experimental tests, and
+`dart/simulation/diff/`, plus the finite-difference checker test
+utility. Keep `pixi run lint`, `pixi run build`, focused simulation tests, and
 `check-api-boundaries` green per slice.

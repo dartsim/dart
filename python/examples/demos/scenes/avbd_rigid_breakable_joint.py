@@ -1,4 +1,4 @@
-"""AVBD breakable fixed-joint scene for the experimental World facade."""
+"""AVBD breakable fixed-joint scene for the DART 7 World facade."""
 
 from __future__ import annotations
 

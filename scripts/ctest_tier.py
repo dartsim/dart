@@ -69,7 +69,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument(
         "--exclude-long-poles",
         action="store_true",
-        help="Skip the experimental long-pole tests (Tier-1 quick subset)",
+        help="Skip the DART 7 simulation long-pole tests (Tier-1 quick subset)",
     )
     parser.add_argument("--timeout", type=int, default=DEFAULT_TIMEOUT)
     parser.add_argument("--jobs", "-j", type=int, default=None)

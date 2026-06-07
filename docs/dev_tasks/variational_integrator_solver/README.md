@@ -12,7 +12,7 @@ The durable target this work builds toward — a **production-grade, linear-time
 variational integrator**: DART's symplectic, structure-preserving alternative to
 semi-implicit Euler for multibody systems, faithful to Lee/Liu/Park/Srinivasa
 (WAFR 2016, arXiv:1609.02898) and extended to DART's needs. It lives entirely
-behind the experimental World's method-name facade
+behind the DART 7 World's method-name facade
 (`World::setMultibodyOptions({.integrationFamily = "variational integrator"})`),
 never exposing solver / stage / component / backend types, and adds **zero
 runtime overhead** when not selected (the default path stays semi-implicit
@@ -159,7 +159,7 @@ All select the VI via `World.multibody_options`; the headless cycle smoke
 
 ## Original Phase-A1 Goal (achieved)
 
-A correct, tested variational-integrator stage in the experimental `World`,
+A correct, tested variational-integrator stage in the DART 7 `World`,
 selectable by the `variational integrator` method name, proving symplectic
 energy behavior on a passive chain before optimizing to O(n). The
 [North Star](#north-star) now captures the full vision beyond this MVP.
@@ -174,7 +174,7 @@ energy behavior on a passive chain before optimizing to O(n). The
 
 - **Dense-solve placeholder first** (A1), ABI second (A2): get correctness +
   symplectic-behavior evidence before the hardest kernel. The reviewers
-  confirmed the experimental World has **no ABA** today (dense `M.ldlt()`).
+  confirmed the DART 7 World has **no ABA** today (dense `M.ldlt()`).
 - **Gravity is forcing-side** (`Fᵏ`), not a Lagrangian potential — matches the
   reference impl; avoids double-counting.
 - **Port the author's reference kernels** (`dexp_inv`, `dexp_inv_transpose`,

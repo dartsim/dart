@@ -6,8 +6,8 @@ Proposal. This document owns the durable rationale for sharing GPU
 device-runtime code across DART 7's experimental CUDA solvers instead of
 reinventing it per solver. Operating state (priority, horizon, next step, gate)
 lives in `docs/plans/dashboard.md` under PLAN-031. This design is scoped to
-`dart::simulation::experimental`; it does not change the classic
-`dart::simulation::World`, any public API, or the GPU packaging shape decided in
+`dart::simulation`; it does not promote CUDA into the public API or change the
+GPU packaging shape decided in
 [`scalable_compute_decisions.md`](scalable_compute_decisions.md).
 
 ## Purpose
@@ -34,7 +34,7 @@ building the shared block.
 
 ## Problem: Duplication Across Three CUDA Modules
 
-All CUDA code lives under `dart/simulation/experimental/compute/cuda/` as three
+All CUDA code lives under `dart/simulation/compute/cuda/` as three
 solver-specific modules, each a `.cu`/`.cuh` (+ `.cpp` host wrapper) triple:
 
 | Module                           | Solver                                     | Plan     |
@@ -48,7 +48,7 @@ The duplication is already concrete at N=3 (verified by source inspection):
 | Duplicated concern                                       | Evidence                                                                                                                                                                                                                                                                                                                                                                    | Verdict                            |
 | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
 | Runtime/device probe `isCudaRuntimeAvailable()`          | Three identical declarations (`rigid_body_state_batch_cuda.cuh:45`, `deformable_psd_projection_cuda.cuh:52`, `vbd_block_descent_cuda.cuh:45`), one definition (`rigid_body_state_batch_cuda.cpp:229`), and a fragile cross-translation-unit "defined elsewhere" comment (`deformable_psd_projection_cuda.cpp:202`).                                                         | **Extract now**                    |
-| CUDA-error-to-exception helper `throwIfCudaError`        | `rigid_body_state_batch_cuda.cpp:72` and `deformable_psd_projection_cuda.cpp:58` are byte-identical (`DART_EXPERIMENTAL_THROW_T` + `sx::InvalidOperationException`); `vbd_block_descent_cuda.cu:437` **diverges** to `throw std::runtime_error` (`:440`).                                                                                                                   | **Extract now**                    |
+| CUDA-error-to-exception helper `throwIfCudaError`        | `rigid_body_state_batch_cuda.cpp:72` and `deformable_psd_projection_cuda.cpp:58` are byte-identical (`DART_EXPERIMENTAL_THROW_T` + `sim::InvalidOperationException`); `vbd_block_descent_cuda.cu:437` **diverges** to `throw std::runtime_error` (`:440`).                                                                                                                  | **Extract now**                    |
 | Launch config (ceil-div grid) + `cudaGetLastError` check | Hand-rolled at 7+ sites across all three modules (e.g. `rigid_body_state_batch_cuda.cu:169,200`; VBD/PSD use block size 128 vs rigid's 256).                                                                                                                                                                                                                                | **Extract now**                    |
 | Owning device buffer (`cudaMalloc`/`Memcpy`/`Free`)      | Three classes wrapping the same lifecycle: `DeviceDoubleBuffer` (`rigid_body_state_batch_cuda.cpp:85`), `DeviceArray<T>` (`vbd_block_descent_cuda.cu:448`), `ResidentDeviceBuffer` (`deformable_psd_projection_cuda.cpp:77`).                                                                                                                                               | **Extract now**                    |
 | Divergent CPU/GPU integration math                       | `__device__ integrateOrientation` (`rigid_body_state_batch_cuda.cu:67`, free `sin/cos/sqrt`) is a re-derivation of `integrateOrientationsSemiImplicit` (`rigid_body_integration_kernel.hpp:113`), which is already `Scalar`-templated, Eigen-free, pointer-based, and documents itself as device-mappable but uses `using std::sin/cos/sqrt`. The two have already drifted. | **Single-source now**              |
@@ -98,7 +98,7 @@ framework:
   and one definition (moved out of `rigid_body_state_batch_cuda.cpp:229`),
   deleting the two duplicate declarations and the cross-TU comment.
 - `throwIfCudaError(cudaError_t, std::string_view)` — one definition on
-  `DART_EXPERIMENTAL_THROW_T` + `sx::InvalidOperationException`, replacing the
+  `DART_EXPERIMENTAL_THROW_T` + `sim::InvalidOperationException`, replacing the
   byte-identical rigid/PSD pair and the divergent VBD `std::runtime_error`.
 - `launchGrid1D(std::size_t n, unsigned blockSize)` — ceil-div helper that takes
   block size **per call** (rigid keeps 256, PSD/VBD keep 128; the helper imposes
@@ -197,7 +197,7 @@ the GPU.
 ## Directory Layout
 
 ```text
-dart/simulation/experimental/compute/
+dart/simulation/compute/
   rigid_body_integration_kernel.hpp        # EDIT: orientation batch loop calls the shared per-body core (installed .hpp, backend-token-free)
   rigid_body_state_batch.{hpp,cpp}         # unchanged SoA State/Model
   deformable_psd_backend.{hpp,cpp}         # UNCHANGED: the only public device-attach seam, reused by example
@@ -220,7 +220,7 @@ dart/simulation/experimental/compute/
 
 CMake: add `cuda_runtime.cpp` to the existing `${target_name}-cuda` STATIC
 library source list (the `.cuh`/header-only files need no listing)
-(`dart/simulation/experimental/CMakeLists.txt`). It stays gated on
+(`dart/simulation/CMakeLists.txt`). It stays gated on
 `DART_ENABLE_EXPERIMENTAL_CUDA` (default OFF) and remains build-only. No new
 install/export rule; no GPU package added to any default Pixi feature or wheel
 manifest.
@@ -238,7 +238,7 @@ The hard guardrails from `scalable_compute_decisions.md` and
   it stays clean to `check-api-boundaries` and `check-compute-backend-boundaries`.
 - **GPU is an optional sidecar.** The `-cuda` STATIC library is **not** passed to
   `add_component_targets` (only the base target is, at
-  `dart/simulation/experimental/CMakeLists.txt:203`), so it is never installed,
+  `dart/simulation/CMakeLists.txt:203`), so it is never installed,
   exported, linked into the default `dart` target, the default Pixi environment,
   or the official `dartpy` wheel. `check-no-gpu-runtime-dependencies` continues to
   guard the default manifests. The CPU fallback with identical semantics is

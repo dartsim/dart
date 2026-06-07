@@ -1,7 +1,7 @@
 # PLAN-082: Linear-Time Variational Integrator (Discrete-Mechanics Solver)
 
 - Operating state: `PLAN-082` in [`dashboard.md`](dashboard.md)
-- Outcome: the experimental `World` offers a **variational integrator** as a
+- Outcome: the DART 7 `World` offers a **variational integrator** as a
   selectable integration family for multibody systems — symplectic,
   near-energy-conserving (for smooth conservative forcing at fixed `Δt`), and
   linear-time — implementing Lee/Liu/Park/Srinivasa (WAFR 2016,
@@ -10,8 +10,8 @@
 - Current evidence:
   - Durable design + math rationale and the honest new-vs-reused split:
     [`../design/simulation_variational_integrator.md`](../design/simulation_variational_integrator.md).
-  - The experimental multibody path is **semi-implicit Euler** with a **dense**
-    mass-matrix solve (`dart/simulation/experimental/compute/multibody_dynamics.cpp`
+  - The current DART 7 multibody path is **semi-implicit Euler** with a **dense**
+    mass-matrix solve (`dart/simulation/compute/multibody_dynamics.cpp`
     `computeMassAndBias` + `ldlt`); there is **no ABA/ABI** and **no
     integrator-selection mechanism** today (adversarial review, 2026-05).
   - Reusable O(n) spatial-algebra toolkit exists (`adjoint`, `motionCross`,
@@ -31,7 +31,7 @@
 - Solver architecture this plugs into:
   [`../design/simulation_solver_architecture.md`](../design/simulation_solver_architecture.md)
 - Public facade / capability matrix:
-  [`../design/simulation_experimental_cpp_api.md`](../design/simulation_experimental_cpp_api.md)
+  [`../design/simulation_cpp_api.md`](../design/simulation_cpp_api.md)
 - Contact/friction/inequality-constraint roadmap (deferred, go/no-go gated):
   [`082-variational-integrator-solver/contact-roadmap.md`](082-variational-integrator-solver/contact-roadmap.md)
 - Research catalog entry: `lee-vi-2016` in

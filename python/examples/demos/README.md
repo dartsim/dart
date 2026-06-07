@@ -69,7 +69,7 @@ the recorded PPM sequence with first/previous/play/next/last controls and the
 selected frame path.
 
 World-backed scenes also get a bottom `Replay` panel. `Save replay` is enabled
-by default and records bounded experimental-World state snapshots while the
+by default and records bounded DART 7 World state snapshots while the
 scene runs. Use the replay transport or scrubber to pause the live simulation,
 restore a saved frame, and play the saved states without stepping physics again;
 `Resume live` continues simulation from the selected restored state. Scenes with
@@ -162,7 +162,7 @@ rendering it through `IpcDeformableBridge`.
 
 ## Simulation Replay
 
-`replay_scrubber` demonstrates the experimental `World` replay recorder:
+`replay_scrubber` demonstrates the DART 7 `World` replay recorder:
 the scene records a rigid-body rollout once, restores the first frame, and
 exposes a bottom-docked replay timeline with a scrubber, frame marks, a cursor
 track, transport controls, loop/rate controls, and cursor details. The scene
@@ -171,7 +171,7 @@ timeline lanes. Moving the scrubber calls `World.restore_replay_frame(...)` at
 timestep resolution and does not re-run physics.
 
 The same saved-state replay path is injected by the runner into every
-`SceneSetup` that exposes an experimental `World` in `info["sx_world"]` or
+`SceneSetup` that exposes a DART 7 `World` in `info["sx_world"]` or
 `info["physics_world"]`. The shared panel stores only bounded mutable World
 snapshots plus optional small scene-provided mutable controller snapshots;
 static topology, geometry, materials, and scene construction data remain owned

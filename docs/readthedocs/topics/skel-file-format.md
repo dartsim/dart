@@ -10,23 +10,16 @@ DART-focused scene or want to exercise DART-specific options directly.
 
 ## Loading a SKEL file
 
-A SKEL file is read into a `World` (or, for a single model, a `Skeleton`).
+On `main`, the promoted DART 7 front door reads a single model as a `Skeleton`.
 Bundled sample files are addressable with the `dart://sample/...` URI scheme; you
-can also pass an ordinary file path.
+can also pass an ordinary file path. Whole-world SKEL loading through the old
+public DART 6 API remains available on `release-6.*` branches for parity work.
 
 ```cpp
 #include <dart/io/read.hpp>
-#include <dart/simulation/world.hpp>
 
-auto world = dart::io::readWorld(
+auto skeleton = dart::io::readSkeleton(
     dart::common::Uri("dart://sample/skel/cubes.skel"));
-// A single model: dart::io::readSkeleton(uri)
-```
-
-```python
-import dartpy as dart
-
-world = dart.io.SkelParser.read_world("dart://sample/skel/cubes.skel")
 ```
 
 ## Document structure

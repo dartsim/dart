@@ -46,12 +46,10 @@
 #include "dart/dynamics/skeleton.hpp"
 #include "dart/dynamics/sphere_shape.hpp"
 #include "dart/dynamics/weld_joint.hpp"
-#include "dart/simulation/world.hpp"
 #include "dart/utils/dart_resource_retriever.hpp"
 #include "dart/utils/mesh_loader.hpp"
 #include "dart/utils/urdf/backward_compatibility.hpp"
 #include "dart/utils/urdf/include_urdf.hpp"
-#include "dart/utils/urdf/urdf_world_parser.hpp"
 
 #include <tinyxml2.h>
 
@@ -167,74 +165,6 @@ dynamics::SkeletonPtr UrdfParser::parseSkeletonString(
       &context);
 }
 
-//==============================================================================
-simulation::WorldPtr UrdfParser::parseWorld(const common::Uri& uri)
-{
-  const common::ResourceRetrieverPtr resourceRetriever
-      = getResourceRetriever(mOptions.mResourceRetriever);
-
-  std::string content;
-  if (!readFileToString(resourceRetriever, uri, content)) {
-    return nullptr;
-  }
-
-  return parseWorldString(content, uri);
-}
-
-//==============================================================================
-simulation::WorldPtr UrdfParser::parseWorldString(
-    std::string_view urdfString, const common::Uri& baseUri)
-{
-  const common::ResourceRetrieverPtr resourceRetriever
-      = getResourceRetriever(mOptions.mResourceRetriever);
-
-  if (urdfString.empty()) {
-    DART_WARN(
-        "A blank string cannot be parsed into a World. Returning a nullptr");
-    return nullptr;
-  }
-
-  std::shared_ptr<urdf_parsing::World> worldInterface
-      = urdf_parsing::parseWorldURDF(urdfString, baseUri, resourceRetriever);
-
-  if (!worldInterface) {
-    DART_WARN("Failed loading URDF.");
-    return nullptr;
-  }
-
-  simulation::WorldPtr world = simulation::World::create();
-
-  for (const auto& entity : worldInterface->models) {
-    std::string modelContent;
-    readFileToString(resourceRetriever, entity.uri, modelContent);
-    ParseContext context;
-    context.mTransmissions = parseTransmissions(modelContent);
-    dynamics::SkeletonPtr skeleton = modelInterfaceToSkeleton(
-        entity.model.get(), entity.uri, resourceRetriever, mOptions, &context);
-
-    if (!skeleton) {
-      DART_WARN("Robot {} was not correctly parsed!", entity.model->getName());
-      continue;
-    }
-
-    // Initialize position and RPY
-    dynamics::Joint* rootJoint = skeleton->getRootBodyNode()->getParentJoint();
-    Eigen::Isometry3d transform = toEigen(entity.origin);
-
-    if (dynamic_cast<dynamics::FreeJoint*>(rootJoint)) {
-      rootJoint->setPositions(
-          dynamics::FreeJoint::convertToPositions(transform));
-    } else {
-      rootJoint->setTransformFromParentBodyNode(transform);
-    }
-
-    world->addSkeleton(skeleton);
-  }
-
-  return world;
-}
-
-//==============================================================================
 dynamics::SkeletonPtr UrdfParser::modelInterfaceToSkeleton(
     const urdf::ModelInterface* model,
     const common::Uri& baseUri,

@@ -2,7 +2,7 @@
 
 Reproduces the Nimble paper's complementarity-aware saddle-escape experiment
 (arXiv:2103.16021, Section VII-C, Fig 8) from
-``tests/unit/simulation/experimental/diff/test_diff_paper_experiments.cpp``
+``tests/unit/simulation/diff/test_diff_paper_experiments.cpp``
 (the ``DroneLiftOff...`` test / ``optimizeDrone`` / ``buildDroneWorld``).
 
 A single free rigid-body "drone" rests on the ground, an active *clamping*
@@ -93,7 +93,9 @@ def _build_drone_world(mode: Any) -> "sx.World | None":
     ground.set_collision_shape(sx.CollisionShape.box((10.0, 10.0, 0.5)))
     ground.friction = 0.0
 
-    drone = world.add_rigid_body("drone", mass=_DRONE_MASS, position=(0.0, 0.0, _REST_Z))
+    drone = world.add_rigid_body(
+        "drone", mass=_DRONE_MASS, position=(0.0, 0.0, _REST_Z)
+    )
     drone.set_collision_shape(sx.CollisionShape.sphere(_DRONE_RADIUS))
     drone.friction = 0.0
 
@@ -179,7 +181,9 @@ def _make_marker(
     color: tuple[float, float, float],
     position: Any,
 ) -> Any:
-    frame = dart.SimpleFrame(dart.gui.world_render_frame(), name, _translation(position))
+    frame = dart.SimpleFrame(
+        dart.gui.world_render_frame(), name, _translation(position)
+    )
     frame.set_shape(shape)
     frame.create_visual_aspect().set_color(list(color))
     render_world.add_simple_frame(frame)

@@ -42,10 +42,10 @@ namespace dartsim {
 
 class ObjectManager;
 
-/// Owns the Edit/Simulation mode and stepping loop over the experimental World.
+/// Owns the Edit/Simulation mode and stepping loop over the DART 7 World.
 ///
 /// Entering Simulation Mode captures the authored edit state so Reset can
-/// restore it (the experimental World's default synchronous stepping is the
+/// restore it (the DART 7 World's default synchronous stepping is the
 /// reference behavior; async stepping is intentionally not used).
 class SimulationController
 {

@@ -10,7 +10,7 @@
         with explicit unsupported-field diagnostics.
   - [x] Phase 1b: turn loaded fixture records into DART-native replay state
         with mesh resolution, fixture-row ownership, and runtime examples.
-    - [x] First internal replay path populates an experimental `World` with
+    - [x] First internal replay path populates a DART 7 `World` with
           fixture timestep, gravity, rigid body poses, velocities, loads,
           material coefficients, and body-row metadata.
     - [x] Attach supported OBJ, OFF, rigid-ipc MSH, binary STL, ASCII STL, and
@@ -26,10 +26,10 @@
           forces, energy model, warm-start flag, self-collision flag, gravity
           disable flag, friction, barrier distance, friction iterations, and
           tolerance metadata, then replay MSH-backed comparison rows into an
-          experimental `World`. Path-loaded scripts now use the script
+          DART 7 `World`. Path-loaded scripts now use the script
           directory as the default base for upstream relative mesh paths.
     - [x] Add the first runtime replay regression that steps a fixture-populated
-          experimental `World` through the existing rigid-body integration
+          DART 7 `World` through the existing rigid-body integration
           pipeline, proving fixture replay remains a population bridge and does
           not select an IPC solver.
     - [x] Add the first opt-in IPC runtime replay regression that steps a
@@ -143,7 +143,7 @@
         poses/velocities back without replacing the default rigid contact
         stage.
   - [x] Phase 3k: add same-domain rigid solver selection for the default
-        experimental `World` step. `World::setRigidBodySolver()` keeps
+        DART 7 `World` step. `World::setRigidBodySolver()` keeps
         sequential impulse as the default and lets callers opt into the rigid
         IPC stage as the free-rigid dynamics solver without double-applying the
         legacy velocity/contact/position stage sequence.
@@ -374,7 +374,7 @@
   - [ ] Extend friction into broader corpus coverage and production convergence
         criteria.
 - [x] Phase 5a: first same-domain rigid method selection inside the
-      experimental `World` without exposing solver registries.
+      DART 7 `World` without exposing solver registries.
 - [ ] Phase 5b: extend solver selection toward persisted scene policy,
       diagnostics, examples, and mixed rigid/deformable coupling.
   - [x] Add the first explicit opt-in stage options for max iterations, barrier
@@ -597,7 +597,7 @@ DART-owned implementation.
   evidence primitives are consolidated with deformable IPC and the planned ABD
   track when a second-use contract is stable.
 - The initial importer lives under
-  `dart/simulation/experimental/io/detail/rigid_ipc_fixture.*` so it can cover
+  `dart/simulation/io/detail/rigid_ipc_fixture.*` so it can cover
   upstream fixture rows without becoming a public solver-selection API.
 - The importer now has an internal replay path that populates an experimental
   `World` from loaded fixture records while preserving mesh paths, scale,
@@ -610,7 +610,7 @@ DART-owned implementation.
   Path-loaded fixture and script imports remember their source directory so
   upstream relative mesh paths can replay without an out-of-band asset root.
   Supported OBJ, OFF, rigid-ipc MSH, binary STL, ASCII STL, and polygonal inline
-  geometry are loaded into experimental mesh collision shapes backed by the
+  geometry are loaded into DART 7 mesh collision shapes backed by the
   native collision engine. A focused runtime replay regression now enters
   simulation mode and takes one default `World::step()` on a fixture-populated
   world, verifying ordinary gravity/force integration still owns stepping until
@@ -706,7 +706,7 @@ DART-owned implementation.
   Corpus-scale evaluator parity remains open until rigorous interval arithmetic
   and reference corpus semantics land.
 - The first curved-trajectory CCD code lives under
-  `dart/simulation/experimental/detail/rigid_ipc_ccd.*`. It is an internal
+  `dart/simulation/detail/rigid_ipc_ccd.*`. It is an internal
   DART-owned ACCD query for 3D face-vertex, edge-edge, and point-edge cases over
   linearly interpolated rotation vectors, including the first `minSeparation`
   regressions needed by IPC barriers. It now also exposes internal residual
@@ -715,7 +715,7 @@ DART-owned implementation.
   rigorous interval arithmetic, accepted corpus tolerances, or scene-level broad
   phase.
 - The first rigid barrier scaffold lives under
-  `dart/simulation/experimental/detail/rigid_ipc_barrier.*`. It evaluates
+  `dart/simulation/detail/rigid_ipc_barrier.*`. It evaluates
   face-vertex and edge-edge barrier terms by transforming local rigid
   primitives along the linearly interpolated rigid trajectory and then reusing
   the current DART IPC C2 clamped-log world-primitive kernel. Focused tests
@@ -796,10 +796,10 @@ Run the manifest checks before changing or relying on coverage:
 pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc
 pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc
 pixi run python scripts/check_rigid_ipc_fixture_manifest.py
-pixi run build-simulation-experimental-tests
+pixi run build-simulation-tests
 pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_rigid_ipc_barrier$'
 pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_rigid_ipc_fixture$'
-pixi run test-simulation-experimental
+pixi run test-simulation
 ```
 
 The upstream checkout must be at

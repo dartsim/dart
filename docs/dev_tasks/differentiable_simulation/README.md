@@ -1,7 +1,7 @@
 # Differentiable Simulation — Dev Task
 
 Implementation tracking for **PLAN-110**: opt-in analytic differentiable
-simulation in the experimental `World` (the Nimble method, arXiv:2103.16021).
+simulation in the DART 7 `World` (the Nimble method, arXiv:2103.16021).
 
 - Plan: [`docs/plans/110-differentiable-simulation.md`](../../plans/110-differentiable-simulation.md)
 - Design (source of truth): [`docs/design/differentiable_simulation.md`](../../design/differentiable_simulation.md)

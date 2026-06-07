@@ -13,7 +13,6 @@ Load this skill when working with robot model files or parsers.
 #include <dart/io/Read.hpp>
 
 // Format auto-detection
-auto world = dart::io::readWorld("dart://sample/skel/chain.skel");
 auto skel = dart::io::readSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
 ```
 

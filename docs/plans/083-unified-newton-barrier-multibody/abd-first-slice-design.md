@@ -34,8 +34,8 @@ as a user-selectable solver and does not claim paper-scale performance.
 Suggested owner path:
 
 ```text
-dart/simulation/experimental/detail/affine_body_dynamics.hpp
-dart/simulation/experimental/detail/affine_body_dynamics.cpp
+dart/simulation/detail/affine_body_dynamics.hpp
+dart/simulation/detail/affine_body_dynamics.cpp
 ```
 
 Suggested test path:

@@ -7,7 +7,7 @@ Accepted — initial thin layer landed with the typed Lie group API
 
 ## Context
 
-DART's experimental, ECS-based simulation engine (`dart/simulation/experimental/`)
+The DART 7 ECS-based simulation engine (`dart/simulation/`)
 performs Lie group math (composition, exp/log, adjoint) per entity. As entity
 counts grow, doing this one element at a time leaves throughput on the table:
 the integration loop (`compute/world_step_stage.cpp`,
@@ -49,7 +49,7 @@ buffers.
   details to stay _behind implementation boundaries_, with scalar fallbacks and
   preserved Eigen interop — i.e., not exposed as an architecture-specific public
   type.
-- **Fits the consumer's actual layout.** The experimental world stores transforms
+- **Fits the consumer's actual layout.** The DART 7 simulation world stores transforms
   AoS in entt component pools; there is no SoA transform store today that would
   justify a SoA type.
 
@@ -58,13 +58,13 @@ buffers.
 - The functions in `batch.hpp` are the always-correct **scalar reference path**.
   SIMD acceleration (via `dart/simd`) is expected to be slotted in _behind the
   same interface_ — callers do not change.
-- The experimental engine is intentionally **not** rewired in this initial
+- The DART 7 engine is intentionally **not** rewired in this initial
   layer; that is a follow-up once a kernel is benchmarked against the scalar
   path.
 
 ## When to revisit
 
 Escalate to a dedicated SoA storage type (separate arrays per component, e.g.
-quaternion `x/y/z/w` planes) only if benchmarks on the experimental engine prove
+quaternion `x/y/z/w` planes) only if benchmarks on the DART 7 engine prove
 the interleaved `Map`-over-`Params` layout is the bottleneck. Until then,
 consolidated wins on maintainability.

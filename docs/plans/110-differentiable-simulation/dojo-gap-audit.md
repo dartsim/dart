@@ -44,13 +44,13 @@ dependency or source to vendor.
 | Smoothness/accuracy knob                | Contact refinement modes are backward aids only       | GAP; must be labeled as a solver accuracy/smoothness tradeoff, not a true-gradient guarantee |
 | Examples and baselines                  | PLAN-110 examples remain Nimble-style                 | GAP; reproduce one Dojo paper example before any parity claim                                |
 
-## Experimental World Architecture Fit
+## DART 7 World Architecture Fit
 
-Dojo-style work belongs to the experimental `World` multi-solver architecture as
+Dojo-style work belongs to the DART 7 `World` multi-solver architecture as
 an alternate rigid-body solver family, not as a separate public engine and not as
 a deformable-domain solver. The intended high-level placement is:
 
-- entities remain ordinary experimental `World` rigid/articulated entities at the
+- entities remain ordinary DART 7 `World` rigid/articulated entities at the
   public facade;
 - a domain-scoped solver option requests the method capabilities
   (variational integration, hard-contact NCP/SOC friction, interior-point solve,
@@ -95,7 +95,7 @@ Relative to existing work:
 The Dojo-style path is not promotable until DART has:
 
 - an internal maximal-coordinate or constrained-coordinate state model that
-  coexists with the current experimental `World`;
+  coexists with the current DART 7 `World`;
 - a documented NCP/SOC contact formulation, solver residual definition, and
   central-path smoothness/accuracy contract;
 - finite-difference agreement for state/control/parameter derivatives on named

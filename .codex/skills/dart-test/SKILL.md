@@ -64,9 +64,8 @@ gh run view <RUN_ID> --log-failed
 - `pixi run build` builds libraries only, NOT the unit-test binaries. If you run
   `ctest` without building the test target first, you may execute stale binaries
   that silently pass. Build the test target before running its label, e.g. for
-  the experimental simulation suite:
-  `pixi run build-simulation-experimental-tests` (target `dart_experimental_tests`)
-  before `ctest -L simulation-experimental`.
+  the simulation suite: `pixi run build-simulation-tests` (target
+  `dart_simulation_tests`) before `ctest -L simulation`.
 - `pixi run test-all` is the default-environment full gate. On Linux hosts with
   a visible NVIDIA CUDA runtime, also run `pixi run -e cuda test-all`; the CUDA
   run preserves the `cuda` Pixi environment and executes the CUDA CTest +

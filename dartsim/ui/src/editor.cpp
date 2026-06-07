@@ -362,7 +362,7 @@ Eigen::Isometry3d makeTranslation(double x, double y, double z)
 }
 
 /// Convert engine render items into dart-gui renderable descriptors so the
-/// viewport draws the experimental scene (via ApplicationOptions::
+/// viewport draws the DART 7 scene (via ApplicationOptions::
 /// renderableProvider). Dynamics pointers stay null; only geometry, material,
 /// and transform are needed.
 std::vector<dart::gui::RenderableDescriptor> toDescriptors(
@@ -1441,11 +1441,8 @@ int runEditor(int argc, char* argv[])
   });
 
   dart::gui::ApplicationOptions options;
-  // Empty legacy world as a render canvas; the experimental engine owns the
-  // actual scene and is drawn through the renderable provider below. The legacy
-  // world is never stepped (simulateWorld = false).
-  options.world = dart::simulation::World::create("dartsim_editor");
-  options.simulateWorld = false;
+  // The editor engine owns the scene and feeds the viewer through descriptors.
+  options.advanceSimulation = false;
   options.dockingEnabled = true;
   // The editor opens an empty workspace by default (and via --demo seeds a
   // sample scene); allow a scene with no renderables so startup does not abort.

@@ -88,7 +88,7 @@ its own line so status updates remain git-history friendly.
 - Next step: Phases 0-5 are complete and merged to `main` (PRs #2698, #2710,
   #2712); the dev-task folder has been retired, so PLAN-030 plus
   [`../design/scalable_compute_decisions.md`](../design/scalable_compute_decisions.md)
-  are now the durable trackers. The default experimental `World::step` path
+  are now the durable trackers. The default DART 7 `World::step` path
   preserves the rigid-body contact/multibody solver pipeline, while the batched
   SoA rigid-body stage remains an explicit unconstrained path and
   benchmark/prototype seam. Phase 5 is closed with a GO: `CI CUDA / CUDA Build`
@@ -120,7 +120,7 @@ its own line so status updates remain git-history friendly.
   and differentiable state types if differentiability is promoted from a
   deferred to a committed capability. Rationale for each lives in
   [`../design/compute_backend_research.md`](../design/compute_backend_research.md).
-- Gate: `pixi run test-simulation-experimental` covers graph/world parity for
+- Gate: `pixi run test-simulation-quick` covers graph/world parity for
   the current CPU foundation; `pixi run bm-compute-check` keeps the full
   expected `bm_compute_graph` corpus reproducible for the current Euler and
   contact-shaped workloads; the performance dashboard publishes the
@@ -129,9 +129,9 @@ its own line so status updates remain git-history friendly.
   hosts; `pixi run -e cuda test-cuda` remains the focused CUDA smoke path; and
   future compute-bound contact/constraint work must extend the checked
   benchmark gate.
-  Taskflow remains behind the experimental executor boundary, metadata remains
+  Taskflow remains behind the simulation executor boundary, metadata remains
   backend-neutral, CUDA remains private/non-required, and classic World behavior
-  stays untouched.
+  parity evidence comes from `release-6.*` branches.
 
 ### PLAN-031: Shared Experimental CUDA Device Substrate
 
@@ -167,12 +167,12 @@ its own line so status updates remain git-history friendly.
   reviewed commit).
 - Gate: Verified locally — the three module CUDA parity tests pass within the
   recorded tolerance (`pixi run -e cuda test-cuda`, 3/3), the default no-GPU
-  experimental suite passes (`pixi run test-simulation-experimental`, 61/61,
+  simulation quick suite passes (`pixi run test-simulation-quick`,
   including `test_compute_graph` over the single-sourced kernel), and
   `check-api-boundaries`, `check-compute-backend-boundaries`, and
   `check-no-gpu-runtime-dependencies` stay green. Shared device code stays
   `.cuh`/`.cpp`-only under `compute/cuda/` (plus the `detail/` core header) in the
-  build-only `dart-simulation-experimental-cuda` STATIC library (never added to
+  build-only `dart-simulation-cuda` STATIC library (never added to
   `add_component_targets`, never installed/exported, never in a default Pixi
   feature or wheel manifest); and the VBD thrown-type change is reviewed
   separately with any downstream catcher updated in the same PR.
@@ -186,8 +186,8 @@ its own line so status updates remain git-history friendly.
 - Dimension: Algorithm extensibility
 - Next step: The rigid-body MVP shipped (PR #2705, merged 2026-05-25). The
   active line now carries the model-loading bridge from legacy
-  `dynamics::Skeleton` / `simulation::World` into experimental `Multibody`
-  objects, including the `addSkeleton()` / `addWorld()` URI-loading facades,
+  `dynamics::Skeleton` / `simulation::World` into DART 7 `Multibody`
+  objects, including the retained `addSkeleton()` URI-loading facade,
   joint-family/property transfer, branching and root offsets, collision shape
   import with local transforms, compound shapes, broad-phase-pruned collision
   queries, and a persistent native collision-query world. The semi-implicit
@@ -197,9 +197,10 @@ its own line so status updates remain git-history friendly.
   iteration, and scaling work around the unified contact solve; keep richer
   model-loading diagnostics, visual/material import, actuator, mimic/coupler,
   loop-closure, integrator, and COM-Jacobian work as separate deferred slices.
-- Gate: Each slice keeps focused experimental tests and `check-api-boundaries`
-  green, holds DART 6 parity on shared scenes before any promotion claim, and
-  never exposes solver/coupler/domain/backend types or ECS storage publicly.
+- Gate: Each slice keeps focused simulation tests and `check-api-boundaries`
+  green, sources DART 6 parity evidence from `release-6.*` branch refs before
+  any promotion claim, and never exposes solver/coupler/domain/backend types or
+  ECS storage publicly.
 
 ### PLAN-081: Deformable Implicit-Barrier Solver
 
@@ -566,13 +567,13 @@ its own line so status updates remain git-history friendly.
 - Horizon: Now
 - Dimension: Release transition
 - Next step: Follow the DART 7 implementation order in the release roadmap:
-  finish policy alignment and Gazebo lane split, publish the DART 6.17 support
+  finish policy alignment and Gazebo lane split, publish the `release-6.*` support
   packet, then settle PLAN-042 public API/source-layout topology before freezing
   PLAN-041 official simulation API promotion. Keep research-solver breadth out
   of the DART 7 release blocker set unless a promoted API depends on it.
 - Gate: DART 7 is not release-ready until the clean-break gates in the release
   roadmap have direct evidence, package metadata no longer implies DART
-  6/gz-physics compatibility, and DART 6.17 support scope plus sunset trigger
+  6/gz-physics compatibility, and `release-6.*` support scope plus sunset trigger
   are published.
 
 ### PLAN-041: Official Simulation API Promotion
@@ -582,25 +583,34 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Release transition
-- Next step: Consume the PLAN-042 namespace/source-layout decision, then start
-  the simulation-specific readiness audit, promoted-header manifest,
-  Python import-layout transaction, and installed-package smoke design before
-  any broad `experimental/` source-tree move. The readiness audit must keep the
-  promoted `World` double-backed and explicitly defer public scalar precision
-  selectors (`sx.World(dtype=...)`, `sx.World[...]`, scalar-specific aliases, or
-  a public C++ scalar-template facade) until DART 7 rigid-body and multibody
-  simulation is in good shape for humanoid locomotion and manipulation and a
-  separate scalar-instantiation plan proves the required ownership, binding,
-  serialization, collision, differentiability, package, and migration gates. The
-  intended path is DART 7 official API promotion, not a DART 8 middle step.
+- Next step: The promoted-header allowlist, strict promotion-surface audit,
+  package-contract check, installed-package smoke, World-promotion blocker
+  inventory, C++ namespace/target transaction, Python import-layout transaction,
+  and source-tree move are now in place: `dart::simulation::World`,
+  `dartpy.simulation.World`, and `dartpy.World` point at the ECS-backed facade,
+  generated stubs no longer publish `dartpy.simulation_experimental`, and the
+  classic Python world is quarantined as `dartpy.gui.RenderWorld`. The urgent
+  remaining promotion work is hardening and cleanup: finish stale docs, keep
+  the public-header/package/import guards green, add negative smokes for retired
+  experimental paths and targets, and keep strict-final World-promotion checks
+  green with parity evidence sourced from `release-6.*` branch refs.
+  The promoted `World` remains double-backed; public scalar precision selectors
+  (`sim.World(dtype=...)`, `sim.World[...]`, scalar-specific aliases, or a public
+  C++ scalar-template facade) stay deferred until a separate
+  scalar-instantiation plan proves the required ownership, binding,
+  serialization, collision, differentiability, package, and migration gates.
+  The intended path is DART 7 official API promotion, not a DART 8 middle step.
 - Gate: The planning PR passes the docs-only gates; implementation PRs must keep
   promotion-aware API-boundary checks, C++/Python tests, package/export smokes,
+  `check-dart7-promotion-surface`,
+  `check-dart7-promotion-package-contract`,
+  `check-dart7-promotion-installed-package`, `check-dartpy-import-layout`,
   stub/API-doc regeneration, and CUDA/full gates green according to the touched
-  scope. The promoted public API must hide ECS, component, solver-registry,
-  backend, implementation-folder, tensor framework, and unplanned
-  scalar-instantiation details, and the installed package must expose only final
-  headers, final CMake targets/components, and final dartpy module paths once
-  promotion is claimed.
+  scope. The
+  promoted public API must hide ECS, component, solver-registry, backend,
+  implementation-folder, tensor framework, and unplanned scalar-instantiation
+  details, and the installed package must expose only final headers, final CMake
+  targets/components, and final dartpy module paths once promotion is claimed.
 
 ### PLAN-042: DART 7 Public API And Source Layout
 
@@ -609,31 +619,36 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Easy start
-- Next step: Review and accept or revise the initial PLAN-042 decision/audit
-  packet before PLAN-041 freezes promoted World names. The default packet
-  recommends `dart.World(...)` after `import dartpy as dart` as a root
-  convenience alias to canonical `dart.simulation.World`, explicit C++
-  `dart::simulation::World` without an initial `dart::World` facade,
-  `check-simulation-public-header-allowlist`, `check-dartpy-import-layout`, and
-  no official dependency on `DART_BUILD_SIMULATION_EXPERIMENTAL` or
-  `dart-simulation-experimental`.
+- Next step: Treat the default packet as implemented and guarded
+  (`dart.World is dart.simulation.World`, no generated
+  `simulation_experimental` stubs, `dart.simulation.diff` / `dart.diff` shared
+  module, classic render world isolated under `dart.gui.RenderWorld`,
+  `dart::simulation::World` as the C++ owner, and `dart-simulation` as the
+  package target/component). Remaining work is negative smokes and docs cleanup
+  for removed DART 6 or experimental paths. Parity references should come from
+  `release-6.*` branches, not main-branch classic World tests. Final local gate:
+  `pixi run check-dart7-final-world-promotion`.
 - Gate: The planning PR passes the docs-only gates; follow-up implementation
   PRs must prove final examples, stubs/docs, package exports, API boundaries,
-  C++/Python tests, feature-off source/wheel behavior, case-insensitive header
-  behavior, and negative smokes for removed DART 6 or experimental paths.
+  C++/Python tests, `check-dart7-promotion-package-contract`,
+  `check-dart7-promotion-installed-package`, `check-dartpy-import-layout`,
+  feature-off source/wheel behavior, case-insensitive header behavior, and
+  negative smokes for removed DART 6 or experimental paths.
 
-### PLAN-050: Experimental World Split
+### PLAN-050: DART 7 World Binding Transition
 
 - Owner doc:
-  [`../onboarding/python-bindings.md#experimental-world-bindings-and-transition`](../onboarding/python-bindings.md#experimental-world-bindings-and-transition)
+  [`../onboarding/python-bindings.md#dart-7-world-bindings-and-transition`](../onboarding/python-bindings.md#dart-7-world-bindings-and-transition)
 - Status: Complete
 - Horizon: Later
 - Dimension: Algorithm extensibility
-- Next step: Track DART 7 promotion work under the release roadmap once the
-  experimental world has parity gates.
-- Gate: `dartpy.simulation_experimental` is separate from legacy
-  `dartpy.simulation`, has focused import/API coverage, and the clean-break
-  promotion path is documented in onboarding docs.
+- Next step: Keep this item complete. Current DART 7 promotion work is tracked
+  by PLAN-040, PLAN-041, and PLAN-042; the ECS World is promoted to
+  `dart::simulation`, `dartpy.simulation`, and `dartpy.World`.
+- Gate: The old split is retired: generated stubs no longer
+  publish `dartpy.simulation_experimental`, `check-dartpy-import-layout` guards
+  the promoted import shape, and any remaining `experimental` references are
+  compatibility or transition checks tracked by PLAN-041 rather than PLAN-050.
 
 ### PLAN-060: Backend-Hidden GUI Roadmap
 
@@ -708,17 +723,17 @@ its own line so status updates remain git-history friendly.
   console, watch, viewport), selection syncs across viewport/tree/inspector, and
   the editor covers create/edit/relationship/simulation/record-replay/watch and
   a four-view layout. The `dartsim_workbench_completion` dev task is retired into
-  the design doc; its remaining work is experimental-API-gated and tracked there:
+  the design doc; its remaining work is World-API-gated and tracked there:
   runtime sensor output panes + joint render layers/visibility filters, richer
   relationship inspectors/grouping, a Scene Tree context-menu popup affordance,
   extracting the `editor.cpp` project file-dialog flow into its own tested seam,
-  and adopting experimental shape/loader APIs (replace editor-side shape
+  and adopting simulation shape/loader APIs (replace editor-side shape
   descriptors) per PLAN-050.
 - Gate: The headless engine is covered by command/undo, object, selection,
   name-uniqueness, and project-round-trip tests with zero GUI/renderer includes;
   the filtered `dartsim/engine/*` + `dartsim/ui/*_actions` surface holds ≥95%
   line coverage (`pixi run coverage-report-dartsim`); the editor loop (design →
-  run → record → replay) works on the experimental World only; the renderer
+  run → record → replay) works on the DART 7 World only; the renderer
   stays backend-hidden (PLAN-060), enforced for `dartsim/engine` and
   `dartsim/ui` by `scripts/check_api_boundaries.py`; and the default `dartsim`
   headless smoke (`DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS`) renders a non-blank
@@ -736,14 +751,13 @@ its own line so status updates remain git-history friendly.
   scenes plus lightweight `Planned World Ports` placeholders for high-value DART
   6 concepts that still need World-native ports (IK, SIMBICON walking,
   operational-space control, robot puppets, collision sandbox, mobile
-  manipulation); `hello_world` stays the standalone template;
-  tooling/docs/CHANGELOG updated. The
+  manipulation); tooling/docs/CHANGELOG updated. The
   `dart/gui/detail` `ExampleScene` set is intentionally kept as the renderer's
   internal test fixtures (see the design doc's "examples vs renderer fixtures"
   decision), so PLAN-101's `--scene` smoke gate is unaffected.
 - Gate: `dart-demos` launches and switches across the World scenes in one window
   without window recreation; the headless cycle smoke renders every registered
-  scene; only `hello_world` plus CLI/headless support programs stay standalone;
+  scene; only CLI/headless support programs stay standalone;
   `pixi run lint` and `check-docs-policy` green.
 
 ### PLAN-103: Examples Strategy (Python-First)
@@ -785,7 +799,7 @@ its own line so status updates remain git-history friendly.
   track under PLAN-110: maximal-coordinate variational hard-contact NCP/IPM with
   implicit gradients, using Dojo.jl as method evidence and a comparison baseline
   rather than a dependency.
-- Next step: The WS1–WS5 experimental surface is merged to `main` (PR #2761);
+- Next step: The WS1–WS5 differentiability surface is merged to `main` (PR #2761);
   the remaining work is the hardening/examples/Dojo-spike follow-ups. Run the
   torch-autograd test (`pip install torch`); add the
   standalone worked trajectory-optimization / system-identification example
@@ -824,9 +838,9 @@ its own line so status updates remain git-history friendly.
 - Dimension: Algorithm extensibility
 - Next step: Run the Phase 0 design inventory before implementation: map
   classic DART `InverseKinematics`/`WholeBodyIK`/`CompositeIK`/`IKFast` behavior
-  to experimental `World` concepts; define the shared IK benchmark scene set;
+  to DART 7 `World` concepts; define the shared IK benchmark scene set;
   draft `docs/design/inverse_kinematics_motion.md`; and decide which pose,
-  motion-level, and `auto` selection APIs can wait on existing experimental
+  motion-level, and `auto` selection APIs can wait on existing DART 7
   state-space, kinematics-only, rollout, collision-query, and model-loading
   seams.
 - Gate: PLAN-120 is not implementation-ready until the design inventory proves

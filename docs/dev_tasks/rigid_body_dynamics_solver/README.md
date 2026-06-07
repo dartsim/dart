@@ -1,12 +1,12 @@
 # Rigid-Body Dynamics Solver — Dev Task
 
-Bring the experimental `World` (`dart/simulation/experimental/`) to DART
+Bring the DART 7 `World` (`dart/simulation/`) to DART
 6-equivalent — then better — rigid-body simulation, implemented as the **first
 solver** under a multi-solver, multi-physics architecture.
 
 ## Current Status
 
-- [x] Gap analysis: legacy DART 6 rigid-body sim vs experimental World
+- [x] Gap analysis: legacy DART 6 rigid-body sim vs DART 7 World
       ([`01-gap-analysis.md`](01-gap-analysis.md)).
 - [x] Architecture design for solvers / domain assignment / coupling /
       model-state separation
@@ -50,20 +50,18 @@ solver** under a multi-solver, multi-physics architecture.
 
 ### DART 7 B2 gate — rigid open-chain dynamics parity
 
-- [x] World-parity harness:
-      `tests/unit/simulation/experimental/world/test_world_parity.cpp` compares
-      classic `dart::simulation::World` vs
-      `dart::simulation::experimental::World` on shared open-chain scenes
-      (gravity free-fall, pendulum/double-pendulum integration, 1e4-step drift,
-      and a held-torque controlled scene), within documented tolerances. Runs
-      under `pixi run test-simulation-experimental`. All open-chain scenarios
-      reach parity on `main` to machine epsilon; contact/constraint parity (B3)
-      is deferred to the unified solver (PR #2838). See `RESUME.md` for the
-      per-scenario table and deferred items.
+- [x] DART 7 regression harness:
+      `tests/unit/simulation/world/test_world_dart7_regression.cpp` covers
+      gravity free-fall, pendulum/double-pendulum integration, 1e4-step drift,
+      static-ground contact settling, and a held-torque controlled scene using
+      only the DART 7 `World` API. The retired same-branch classic-vs-DART-7
+      parity harness established machine-epsilon agreement before promotion;
+      future cross-version parity evidence belongs on `release-6.*` branches,
+      not in main-branch classic World tests.
 
 ## Goal
 
-A user can build a rigid-body / articulated scene on the experimental `World`,
+A user can build a rigid-body / articulated scene on the DART 7 `World`,
 step it, and get dynamics that match legacy DART 6 (within tolerance) and then
 exceed it (armature, pluggable integrator, fresh-by-default reads, backend-
 neutral compute, model/state separation) — without the public API exposing
@@ -74,9 +72,9 @@ solvers, couplers, ECS storage, or execution backends.
 - No second solver or non-rigid domain implementation yet (architecture must
   _allow_ it; see roadmap "multi-solver readiness").
 - No public solver/coupler/domain types or registries.
-- No direct file-based loader in the experimental library yet; compose through
-  legacy `dart::io::readSkeleton`/`readWorld` and the experimental
-  skeleton-to-multibody bridge.
+- No direct file-based loader in the DART 7 simulation library yet; compose
+  through `dart::io::readSkeleton` and the DART 7 skeleton-to-multibody bridge.
+  Use `release-6.*` branches for DART 6 whole-World loader parity evidence.
 - Do not modify `/home/js/multiphysics-api-design.md` (external user doc).
 - Do not name solvers/presets/examples after other engines; use method/approach
   names. Do not reference specific external engines by name in core code or
@@ -105,11 +103,12 @@ solvers, couplers, ECS storage, or execution backends.
 2. Continue Subsystem A polish from `RESUME.md`: warm starting, friction-cone
    iteration, and other scaling work around the unified contact solve.
 
-## Relationship To The API-Design Dev Task
+## Relationship To The API Design Docs
 
-`docs/dev_tasks/simulation_experimental_api_design/` tracks the public _facade
-shape_ (handles, naming, Pythonic dartpy). This task tracks the _dynamics
-implementation_ behind that facade. Keep facade changes in that task; keep
-solver/dynamics changes here. When this task completes, promote durable
-decisions into `docs/onboarding/` and the design docs, then delete this folder
+`docs/design/simulation_cpp_api.md` and
+`docs/design/simulation_python_api.md` track the public _facade shape_ (handles,
+naming, Pythonic dartpy). This task tracks the _dynamics implementation_ behind
+that facade. Keep facade changes in the design docs; keep solver/dynamics
+changes here. When this task completes, promote durable decisions into
+`docs/onboarding/` and the design docs, then delete this folder
 in the completing PR.

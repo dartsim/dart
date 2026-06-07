@@ -21,22 +21,22 @@ ships.
 Measured on a default Release build (2026-06-05). These numbers drive every
 decision below, so they are recorded here as the evidence basis.
 
-| Observation                        | Measurement                                                                                                          | Implication                                                                              |
-| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| Full C++ suite, **sequential**     | 343 tests, **580.6 s**                                                                                               | Sequential test execution alone is ~10 min                                               |
-| ├ 5 experimental long-pole tests   | **524 s** of the 580 s (`test_rigid_ipc_paper_experiments` alone **352 s**)                                          | One outlier bounds the whole _parallel_ suite (Amdahl); routine tiers must exclude these |
-| └ the other 338 tests, sequential  | **56.1 s**                                                                                                           | Routine test work is cheap once the long poles are excluded                              |
-| Tier-1 core (unit + integration)   | 279 tests, **48.6 s** sequential                                                                                     | Excludes all experimental tests                                                          |
-| Tier-0 unit (`^UNIT_`, parallel)   | 184 tests, **0.5 s**                                                                                                 | Ideal inner-loop content                                                                 |
-| Link 241 test exes, `bfd` → `mold` | **3.0 s → 1.5 s (2.0×)** on the real GUI build                                                                       | mold halves link time and links the prebuilt Filament archive cleanly                    |
-| `pixi run test-all` build work     | lint(autofix) → build Release → build-tests → build-examples → build **Debug** → unit → experimental → python → docs | The full gate also rebuilds Debug + examples + tutorials + docs                          |
-| sccache                            | 47 % hit, 10 GiB cache 100 % full, shared across 15+ clones (each `build/` 14–31 GB)                                 | Undersized for intra-clone reuse; cross-clone reuse blocked (see below)                  |
-| Linker                             | `mold` 2.40.4 installed, **not wired** (default `bfd`); ~340 link targets                                            | Linking is a large, avoidable cost                                                       |
-| Build parallelism                  | `cmake_build.py` uses ¾-core cap; `build_helpers.py` uses `os.cpu_count()`; neither emits ninja `-l`                 | Contradictory defaults; no load governor                                                 |
-| Test parallelism                   | `test` / `test-simulation-experimental` call plain `ctest` with no `--parallel`                                      | Tests run **sequentially** by default                                                    |
-| ctest properties                   | no `TIMEOUT`, `PROCESSORS`, `RESOURCE_GROUPS`, `--rerun-failed`, link `JOB_POOL` anywhere                            | Missing standard fast-iteration ergonomics                                               |
+| Observation                        | Measurement                                                                                                        | Implication                                                                              |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| Full C++ suite, **sequential**     | 343 tests, **580.6 s**                                                                                             | Sequential test execution alone is ~10 min                                               |
+| ├ 5 simulation long-pole tests     | **524 s** of the 580 s (`test_rigid_ipc_paper_experiments` alone **352 s**)                                        | One outlier bounds the whole _parallel_ suite (Amdahl); routine tiers must exclude these |
+| └ the other 338 tests, sequential  | **56.1 s**                                                                                                         | Routine test work is cheap once the long poles are excluded                              |
+| Tier-1 core (unit + integration)   | 279 tests, **48.6 s** sequential                                                                                   | Excludes the simulation long-pole tests                                                  |
+| Tier-0 unit (`^UNIT_`, parallel)   | 184 tests, **0.5 s**                                                                                               | Ideal inner-loop content                                                                 |
+| Link 241 test exes, `bfd` → `mold` | **3.0 s → 1.5 s (2.0×)** on the real GUI build                                                                     | mold halves link time and links the prebuilt Filament archive cleanly                    |
+| `pixi run test-all` build work     | lint(autofix) → build Release → build-tests → build-examples → build **Debug** → unit → simulation → python → docs | The full gate also rebuilds Debug + examples + tutorials + docs                          |
+| sccache                            | 47 % hit, 10 GiB cache 100 % full, shared across 15+ clones (each `build/` 14–31 GB)                               | Undersized for intra-clone reuse; cross-clone reuse blocked (see below)                  |
+| Linker                             | `mold` 2.40.4 installed, **not wired** (default `bfd`); ~340 link targets                                          | Linking is a large, avoidable cost                                                       |
+| Build parallelism                  | `cmake_build.py` uses ¾-core cap; `build_helpers.py` uses `os.cpu_count()`; neither emits ninja `-l`               | Contradictory defaults; no load governor                                                 |
+| Test parallelism                   | `test` / `test-simulation` call plain `ctest` with no `--parallel`                                                 | Tests run **sequentially** by default                                                    |
+| ctest properties                   | no `TIMEOUT`, `PROCESSORS`, `RESOURCE_GROUPS`, `--rerun-failed`, link `JOB_POOL` anywhere                          | Missing standard fast-iteration ergonomics                                               |
 
-**Reframe:** two costs dominate routine local verification — the experimental
+**Reframe:** two costs dominate routine local verification — the simulation
 **long-pole tests** (524 s, and `test-all` runs them every time) and the **cold
 build** (Release + Debug + examples + docs). Tiering removes both from the inner
 loop (`verify-quick` runs the 0.5 s unit pass; `verify` runs the 48.6 s core
@@ -89,7 +89,7 @@ Scoped runners select a subsystem instead of a tier and keep the existing
 
 ```
 test-math   test-collision   test-io   test-py   test-cuda
-test-simulation-experimental   bench-collision   bench-lcpsolver
+test-simulation   bench-collision   bench-lcpsolver
 ```
 
 Tier words (`quick`, `full`) are reserved and are never subsystem names, so
@@ -121,17 +121,17 @@ aliases of the new names:
 ## Tier contents
 
 Each tier is a strict superset. Boundaries follow the measured numbers, so the
-experimental long tail is split out of Tier 1 (it alone is ~60 s of the 68 s
-experimental total and would blow the Tier-1 budget).
+simulation long tail is split out of Tier 1 (it alone is ~60 s of the 68 s
+simulation total and would blow the Tier-1 budget).
 
-|                      | Lint                      | Build                                    | Tests                                                            | Extras                                                           |
-| -------------------- | ------------------------- | ---------------------------------------- | ---------------------------------------------------------------- | ---------------------------------------------------------------- |
-| **Tier 0** `*-quick` | `check-lint` (no autofix) | incremental Release lib + UNIT test exes | `^UNIT_` minus long poles (`UNIT_simulation_World`)              | cheap correctness gates (see below)                              |
-| **Tier 1** bare      | `lint`                    | Release                                  | + `INTEGRATION_` + `experimental-quick` subset + python (dartpy) | —                                                                |
-| **Tier 2** `*-full`  | `lint`                    | Release **+ Debug**                      | all tests incl experimental long tail                            | examples, tutorials, docs, ASan, eigen-overalignment, (cuda env) |
+|                      | Lint                      | Build                                    | Tests                                                          | Extras                                                           |
+| -------------------- | ------------------------- | ---------------------------------------- | -------------------------------------------------------------- | ---------------------------------------------------------------- |
+| **Tier 0** `*-quick` | `check-lint` (no autofix) | incremental Release lib + UNIT test exes | `^UNIT_` minus long poles (`UNIT_simulation_World`)            | cheap correctness gates (see below)                              |
+| **Tier 1** bare      | `lint`                    | Release                                  | + `INTEGRATION_` + `simulation-quick` subset + python (dartpy) | —                                                                |
+| **Tier 2** `*-full`  | `lint`                    | Release **+ Debug**                      | all tests incl simulation long tail                            | examples, tutorials, docs, ASan, eigen-overalignment, (cuda env) |
 
 **Cheap correctness gates belong in Tier 0/1, not only Tier 2.** The pure-Python
-AST scans (e.g. `check-experimental-public-header-smoke`, the API-boundary
+AST scans (e.g. `check-simulation-public-header-smoke`, the API-boundary
 linters, `check-dart7-promotion-surface`) cost well under a second and catch
 real breakage; if they live only in the full gate, "quick is green" misleads.
 
@@ -226,7 +226,7 @@ Ordered by leverage and risk, lowest-risk enabling work first:
 Each step is validated empirically before it lands: cold/warm wall-clock deltas,
 the sccache miss-reason breakdown, runnable GUI/CUDA smokes for mold, a
 flip-every-flag check if any reconfigure-skip optimization is attempted, the
-Tier-1 wall-clock with the experimental subset, and a concurrent multi-clone
+Tier-1 wall-clock with the simulation subset, and a concurrent multi-clone
 throughput measurement for the load-aware default.
 
 ## Non-goals

@@ -106,8 +106,8 @@ The remaining M7 work, roughly in increasing-risk order:
 
 - One PR per slice off `main`; `pixi run test-all` must be 6/6; admin-squash-merge
   (NO `--delete-branch`); milestone DART 7.0; never add AI attribution.
-- After `pixi run generate-stubs`, revert the unrelated stubs (`__init__.pyi`,
-  `dynamics.pyi`, `gui/__init__.pyi`) — keep only `simulation_experimental.pyi`.
+- After `pixi run generate-stubs`, revert unrelated stubs unless the promoted
+  DART 7 surface changed; keep the intended `simulation.pyi` diff.
 - `pixi run update-api-boundary-inventory` when a public dartpy binding changes.
 - Adding a `CollisionShapeType` enum value breaks **every** switch on it under
   `-Werror=switch` — grep the **whole repo** (incl. `examples/`) for
@@ -301,7 +301,7 @@ covered on static-ground contact by a C++ FEM cube regression that matches
 direct sparse, sparse IC-CG, and matrix-free CG equilibria while proving the
 matrix-free path keeps zero sparse-Hessian footprint, plus a dartpy single-node
 ground-contact regression that matches the direct solve. The local review-fix
-commit bumps the simulation-experimental binary format to v9 and gates material
+commit bumps the simulation binary format to v9 and gates material
 deserialization so v8 files default `useMatrixFreeLinearSolver` to false instead
 of consuming the next byte.
 

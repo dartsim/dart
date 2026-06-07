@@ -224,8 +224,8 @@ def require_requested_entt_registry_rows(
 
     raise BenchmarkCheckError(
         "EnTT registry benchmark rows were requested but are unavailable. "
-        "Configure this benchmark in an environment where EnTT::EnTT is already "
-        "available, for example with DART_BUILD_SIMULATION_EXPERIMENTAL=ON."
+        "Configure this benchmark in an environment where EnTT::EnTT is "
+        "available through the DART 7 World stack."
     )
 
 

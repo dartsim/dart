@@ -11,10 +11,10 @@
  *   conditions are met:
  *   * Redistributions of source code must retain the above copyright
  *     notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above
- *       copyright notice, this list of conditions and the following
- *       disclaimer in the documentation and/or other materials provided
- *       with the distribution.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
  *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -30,20 +30,61 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_SIMULATION_FWD_HPP_
-#define DART_SIMULATION_FWD_HPP_
+#pragma once
 
-#include <dart/common/smart_pointer.hpp>
+#include <dart/simulation/export.hpp>
 
-namespace dart {
-namespace simulation {
+namespace dart::simulation {
 
-class Recording;
+class FixedFrame;
+class Frame;
+class FreeFrame;
+class DeformableBody;
+class Joint;
+class Link;
+class LoopClosure;
+class Multibody;
+class RigidBody;
 class World;
+enum class ContactSolverMethod;
+enum class ContactGradientMode;
+enum class JointType;
+enum class WorldSyncStage;
+enum class PhysicalParameter;
+struct PhysicalParameterSelector;
 
-DART_COMMON_DECLARE_SHARED_WEAK(World)
+namespace compute {
+class ComputeExecutor;
+class ParallelExecutor;
+class WorldKinematicsGraph;
+class WorldStepPipeline;
+class WorldStepStage;
+} // namespace compute
 
-} // namespace simulation
-} // namespace dart
+// Value objects
+struct Contact;
+struct StepDerivatives;
+struct StepGradient;
+struct DeformableDirichletBoundaryCondition;
+struct DeformableMaterialProperties;
+struct DeformableNeumannBoundaryCondition;
+struct DeformableSurfaceTriangle;
+struct DeformableTetrahedron;
 
-#endif // DART_SIMULATION_FWD_HPP_
+// Options structs
+struct CollisionQueryOptions;
+struct FixedFrameOptions;
+struct FreeFrameOptions;
+struct DeformableBodyOptions;
+struct DeformableEdge;
+struct JointOptions;
+struct JointSpec;
+struct LinkOptions;
+struct LoopClosureRuntimePolicy;
+struct LoopClosureResidual;
+struct LoopClosureSpec;
+struct MultibodyOptions;
+struct RigidBodyOptions;
+struct WorldOptions;
+
+} // namespace dart::simulation

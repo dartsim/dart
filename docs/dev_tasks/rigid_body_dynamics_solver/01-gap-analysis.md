@@ -1,11 +1,11 @@
-# Gap Analysis: Legacy DART 6 Rigid-Body Sim vs Experimental World
+# Gap Analysis: Legacy DART 6 Rigid-Body Sim vs DART 7 World
 
 Snapshot date: 2026-05-23. This is a working artifact; it will decay as the
 solver lands. Code is the source of truth — re-verify before acting on any row.
 
 ## Summary
 
-The experimental `World` (`dart/simulation/experimental/`) today provides
+The DART 7 `World` (`dart/simulation/`) today provides
 topology, frames, forward kinematics, ECS storage, a compute-graph executor, and
 serialization. Its only "dynamics" is a single explicit/semi-implicit
 integration of **free rigid bodies** from a user-set force/torque accumulator.
@@ -108,7 +108,7 @@ Status: MISSING (absent), PARTIAL (some support), PRESENT (comparable to DART 6)
 | Contacts in step (solved)  | contacts feed the constraint solver                         | query only; not fed to a solver yet (Phase 3)    | MISSING |
 
 > Note: `dart/collision/native/` is a maintained native collision engine with
-> standalone world/query concepts (PLAN-035/036/037). The experimental World
+> standalone world/query concepts (PLAN-035/036/037). The DART 7 World
 > needs a public owner bridge before contacts can flow into the solver.
 
 ### Rigid-body quantities & API
@@ -145,7 +145,7 @@ The dependency order falls out of the matrix:
    box"). **First slice.**
 2. Articulated-body forward dynamics for tree multibodies (joint accel, mass
    matrix, Coriolis/gravity, joint forces, damping/springs).
-3. Collision bridge: experimental shapes + native-collision query → contact
+3. Collision bridge: DART 7 shapes + native-collision query → contact
    buffers.
 4. Constraint/contact solver: wire the existing boxed-LCP library into a
    contact + joint-limit solve.

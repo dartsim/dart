@@ -69,11 +69,11 @@ VBD/OGC-adjacent work, or shared Newton-barrier infrastructure.
 - Do not expose ABD through public headers or dartpy bindings until runtime
   and benchmark evidence exists.
 - Phase 1 validation passed: `pixi run lint`,
-  `pixi run build-simulation-experimental-tests`,
-  `pixi run test-simulation-experimental`, `pixi run check-api-boundaries`, and
+  `pixi run build-simulation-tests`,
+  `pixi run test-simulation`, `pixi run check-api-boundaries`, and
   the four benchmark smokes listed in the dev-task README.
-- Phase 2 validation so far passed: `pixi run build-simulation-experimental-tests`,
-  `pixi run test-simulation-experimental` (47/47 after the latest main merge), and
+- Phase 2 validation so far passed: `pixi run build-simulation-tests`,
+  `pixi run test-simulation` (47/47 after the latest main merge), and
   `pixi run bm bm_affine_body_dynamics -- --benchmark_min_time=0.05s`.
 
 ## How To Resume
@@ -85,4 +85,4 @@ sed -n '1,220p' docs/plans/083-unified-newton-barrier-multibody/abd-first-slice-
 ```
 
 Then promote the first ABD benchmark packet toward a comparison manifest row and
-run focused simulation-experimental tests plus the relevant benchmark smoke.
+run focused simulation tests plus the relevant benchmark smoke.

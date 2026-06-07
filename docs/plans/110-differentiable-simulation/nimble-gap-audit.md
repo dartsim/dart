@@ -16,7 +16,7 @@ Status legend: **PRESENT** (implemented + finite-difference checked),
 > prerequisite have all landed and are finite-difference-verified: opt-in seam,
 > contact-free Jacobians for all joint types, the analytic contact gradient
 > (frictionless + Coulomb friction + rotational/multi-contact), the
-> `applyStepVjp`/`diff::rollout` reverse pass, the dartpy `sx.diff` bridge,
+> `applyStepVjp`/`diff::rollout` reverse pass, the dartpy `sim.diff` bridge,
 > mass/inertia/friction parameter derivatives, and the `ContactGradientMode`
 > refinement modes. Read the rows below as the original baseline, not the current
 > status; the dashboard and plan card own the current state.
@@ -55,14 +55,14 @@ and `q̇·Δt`; SE(3)/free add a translation-vs-orientation coupling block. The
 blanket `∂q'/∂q=I` from the paper is false for DART's ball/free integration and
 would fail the WS1 finite-difference gate.
 
-| Quantity    | Expression (paper Eq. 7–10)                         | Nimble cache                       | DART public name              | DART seam (file)                                                     | Status                |
-| ----------- | --------------------------------------------------- | ---------------------------------- | ----------------------------- | -------------------------------------------------------------------- | --------------------- |
-| ∂q̇'/∂q      | `∂(M⁻¹z)/∂q + M⁻¹(−Δt·∂c/∂q + ∂Jᵀ/∂q·f + Jᵀ·∂f/∂q)` | `posVel`\*                         | block of `state_jacobian`     | `multibody_dynamics.*`, contact-Jacobian deriv                       | GAP                   |
-| ∂q̇'/∂q̇      | `I + M⁻¹(−Δt·∂c/∂q̇ + Jᵀ·∂f/∂q̇)`                     | `velVel`                           | block of `state_jacobian`     | `multibody_dynamics.*`, LCP gradient                                 | GAP                   |
-| ∂q̇'/∂τ      | `M⁻¹(Δt·I + Jᵀ·∂f/∂τ)`                              | `forceVel`                         | block of `control_jacobian`   | `multibody_dynamics.*`, LCP gradient                                 | GAP                   |
-| ∂q̇'/∂θ      | `∂(M⁻¹z)/∂θ + M⁻¹(−Δt·∂c/∂θ + Jᵀ·∂f/∂θ)`            | `WithRespectTo`                    | block of `parameter_jacobian` | parameter selector + `multibody_dynamics.*`                          | GAP                   |
-| ∂f_C/∂{A,b} | `−A_CC⁻¹(∂A_CC/∂z·f_C + ∂b_C/∂z)`                   | `ConstrainedGroupGradientMatrices` | (detail)                      | LCP snapshot + clamping solve at the _future_ experimental LCP stage | PREREQ (PLAN-080 WS4) |
-| ∂(Jᵀf)/∂q   | screw-axis derivative of contact wrench             | `DifferentiableContactConstraint`  | (detail)                      | `computeMultibodyLinkJacobian` + contact                             | GAP                   |
+| Quantity    | Expression (paper Eq. 7–10)                         | Nimble cache                       | DART public name              | DART seam (file)                                            | Status                |
+| ----------- | --------------------------------------------------- | ---------------------------------- | ----------------------------- | ----------------------------------------------------------- | --------------------- |
+| ∂q̇'/∂q      | `∂(M⁻¹z)/∂q + M⁻¹(−Δt·∂c/∂q + ∂Jᵀ/∂q·f + Jᵀ·∂f/∂q)` | `posVel`\*                         | block of `state_jacobian`     | `multibody_dynamics.*`, contact-Jacobian deriv              | GAP                   |
+| ∂q̇'/∂q̇      | `I + M⁻¹(−Δt·∂c/∂q̇ + Jᵀ·∂f/∂q̇)`                     | `velVel`                           | block of `state_jacobian`     | `multibody_dynamics.*`, LCP gradient                        | GAP                   |
+| ∂q̇'/∂τ      | `M⁻¹(Δt·I + Jᵀ·∂f/∂τ)`                              | `forceVel`                         | block of `control_jacobian`   | `multibody_dynamics.*`, LCP gradient                        | GAP                   |
+| ∂q̇'/∂θ      | `∂(M⁻¹z)/∂θ + M⁻¹(−Δt·∂c/∂θ + Jᵀ·∂f/∂θ)`            | `WithRespectTo`                    | block of `parameter_jacobian` | parameter selector + `multibody_dynamics.*`                 | GAP                   |
+| ∂f_C/∂{A,b} | `−A_CC⁻¹(∂A_CC/∂z·f_C + ∂b_C/∂z)`                   | `ConstrainedGroupGradientMatrices` | (detail)                      | LCP snapshot + clamping solve at the DART 7 boxed-LCP stage | PREREQ (PLAN-080 WS4) |
+| ∂(Jᵀf)/∂q   | screw-axis derivative of contact wrench             | `DifferentiableContactConstraint`  | (detail)                      | `computeMultibodyLinkJacobian` + contact                    | GAP                   |
 
 \*Position Jacobians compose into the public `state_jacobian = ∂x'/∂x` and are
 joint-type-keyed (Euclidean `I`/`Δt·I`; SO(3)/SE(3) `dexp`/`dlog` + free-joint
@@ -75,16 +75,16 @@ cheap part.
 
 ## 3. Forward-Pass Ingredient Inventory (what DART already owns)
 
-| Ingredient                                             | DART location                                                                                                                                                                                                                                                                                                                    | Status for diff                                              |
-| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| LCP library `{A,b,lo,hi,findex}` + solver              | `dart/math/lcp/` `LcpResult LcpSolver::solve(const LcpProblem&, VectorXd& x, const LcpOptions&)` (30+ solvers: Dantzig/Lemke/PGS/APGD/Newton). The analytic gradient needs a **pivoting (Dantzig-style)** solve for a clean active set; iterative solvers give a noisy, tolerance-dependent classification and are out of scope. | PRESENT as a library; not used by the experimental World yet |
-| Mass matrix / Coriolis / gravity `M,C,g` (values only) | `compute/multibody_dynamics.*` `computeMultibodyDynamicsTerms` (returns `M,C·q̇,g`; **no** `∂M/∂q`, `∂c/∂q`)                                                                                                                                                                                                                      | PARTIAL (values PRESENT; derivatives GAP)                    |
-| Link Jacobians `J`                                     | `compute/multibody_dynamics.hpp` `computeMultibodyLinkJacobian`                                                                                                                                                                                                                                                                  | PRESENT                                                      |
-| Inverse dynamics                                       | `computeMultibodyInverseDynamics`                                                                                                                                                                                                                                                                                                | PRESENT                                                      |
-| Joint types (forward)                                  | revolute/prismatic/screw/universal/planar/ball/**free** all implemented (`multibody_dynamics.cpp:192,277,1045-1067`; error strings list "free" as supported). The `multibody_dynamics.hpp:139` header comment claiming free is unimplemented is **stale** — trust the `.cpp`.                                                    | PRESENT                                                      |
-| Boxed-LCP **contact** on experimental World            | none — contact is sequential-impulse PGS (`RigidBodyContactStage`, `simulateMultibody`); zero `dart/math/lcp/` usage in the experimental tree                                                                                                                                                                                    | PREREQ (PLAN-080 WS4)                                        |
-| Model/State/Control/Contacts separation                | `dart/simulation/experimental/` (ECS + `StateSpace`)                                                                                                                                                                                                                                                                             | PRESENT                                                      |
-| Reverse pass / snapshot / gradient                     | none in experimental tree (grep-confirmed)                                                                                                                                                                                                                                                                                       | GAP                                                          |
+| Ingredient                                             | DART location                                                                                                                                                                                                                                                                                                                    | Status for diff                                        |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| LCP library `{A,b,lo,hi,findex}` + solver              | `dart/math/lcp/` `LcpResult LcpSolver::solve(const LcpProblem&, VectorXd& x, const LcpOptions&)` (30+ solvers: Dantzig/Lemke/PGS/APGD/Newton). The analytic gradient needs a **pivoting (Dantzig-style)** solve for a clean active set; iterative solvers give a noisy, tolerance-dependent classification and are out of scope. | PRESENT as a library; not used by the DART 7 World yet |
+| Mass matrix / Coriolis / gravity `M,C,g` (values only) | `compute/multibody_dynamics.*` `computeMultibodyDynamicsTerms` (returns `M,C·q̇,g`; **no** `∂M/∂q`, `∂c/∂q`)                                                                                                                                                                                                                      | PARTIAL (values PRESENT; derivatives GAP)              |
+| Link Jacobians `J`                                     | `compute/multibody_dynamics.hpp` `computeMultibodyLinkJacobian`                                                                                                                                                                                                                                                                  | PRESENT                                                |
+| Inverse dynamics                                       | `computeMultibodyInverseDynamics`                                                                                                                                                                                                                                                                                                | PRESENT                                                |
+| Joint types (forward)                                  | revolute/prismatic/screw/universal/planar/ball/**free** all implemented (`multibody_dynamics.cpp:192,277,1045-1067`; error strings list "free" as supported). The `multibody_dynamics.hpp:139` header comment claiming free is unimplemented is **stale** — trust the `.cpp`.                                                    | PRESENT                                                |
+| Boxed-LCP **contact** on DART 7 World                  | none — contact is sequential-impulse PGS (`RigidBodyContactStage`, `simulateMultibody`); zero `dart/math/lcp/` usage in the DART 7 tree                                                                                                                                                                                          | PREREQ (PLAN-080 WS4)                                  |
+| Model/State/Control/Contacts separation                | `dart/simulation/` (ECS + `StateSpace`)                                                                                                                                                                                                                                                                                          | PRESENT                                                |
+| Reverse pass / snapshot / gradient                     | none in DART 7 tree (grep-confirmed)                                                                                                                                                                                                                                                                                             | GAP                                                    |
 
 ## 4. Feature-Complete Scope (Nimble "feature-complete" → DART rows)
 
@@ -134,15 +134,15 @@ free/floating differentiability waits on its forward implementation.
 
 ## 5. Internal Structure: Nimble `dart/neural/` → DART `diff/` module
 
-| Nimble (upstream fork)                  | Role                                           | DART-owned analogue (`dart/simulation/experimental/diff/`) | Public?                  |
-| --------------------------------------- | ---------------------------------------------- | ---------------------------------------------------------- | ------------------------ |
-| `BackpropSnapshot`                      | per-step cache for backward                    | `StepSnapshot` (detail)                                    | no                       |
-| `ConstrainedGroupGradientMatrices`      | clamping partition + `A_CC⁻¹` + `∂f_C/∂{A,b}`  | `ContactGradient` (detail)                                 | no                       |
-| `DifferentiableContactConstraint`       | `∂(Jᵀf)/∂q` screw-axis algebra                 | `ContactJacobianDerivative` (detail)                       | no                       |
-| `WithRespectTo` / `WithRespectToMass`   | parameter-selection abstraction                | `PhysicalParameterSelector` (value type)                   | yes                      |
-| `forwardPass` + `backpropState`         | high-level forward+Jacobian / VJP entry points | `World::getStepDerivatives()` + `World::applyStepVjp()`    | yes                      |
-| `IKMapping` / `MappedBackpropSnapshot`  | world-space coordinate mapping                 | deferred (map utility, later slice)                        | later                    |
-| `timestep.py` `torch.autograd.Function` | PyTorch bridge                                 | dartpy `sx.diff.timestep` / `sx.diff.rollout`              | yes (optional submodule) |
+| Nimble (upstream fork)                  | Role                                           | DART-owned analogue (`dart/simulation/diff/`)           | Public?                  |
+| --------------------------------------- | ---------------------------------------------- | ------------------------------------------------------- | ------------------------ |
+| `BackpropSnapshot`                      | per-step cache for backward                    | `StepSnapshot` (detail)                                 | no                       |
+| `ConstrainedGroupGradientMatrices`      | clamping partition + `A_CC⁻¹` + `∂f_C/∂{A,b}`  | `ContactGradient` (detail)                              | no                       |
+| `DifferentiableContactConstraint`       | `∂(Jᵀf)/∂q` screw-axis algebra                 | `ContactJacobianDerivative` (detail)                    | no                       |
+| `WithRespectTo` / `WithRespectToMass`   | parameter-selection abstraction                | `PhysicalParameterSelector` (value type)                | yes                      |
+| `forwardPass` + `backpropState`         | high-level forward+Jacobian / VJP entry points | `World::getStepDerivatives()` + `World::applyStepVjp()` | yes                      |
+| `IKMapping` / `MappedBackpropSnapshot`  | world-space coordinate mapping                 | deferred (map utility, later slice)                     | later                    |
+| `timestep.py` `torch.autograd.Function` | PyTorch bridge                                 | dartpy `sim.diff.timestep` / `sim.diff.rollout`         | yes (optional submodule) |
 
 Key divergences from upstream (all deliberate, see design doc):
 
@@ -224,8 +224,8 @@ source of truth once these land):
     mass/COM/inertia/friction (WS4).
   - `test_diff_determinism` — repeated differentiable steps reproduce Jacobians to
     tolerance (WS2/WS3).
-  - dartpy: `import dartpy.simulation_experimental` succeeds with torch absent;
-    `gradcheck`-style vs FD on `sx.diff.timestep`/`rollout` (WS3).
+  - dartpy: `import dartpy.simulation` succeeds with torch absent;
+    `gradcheck`-style vs FD on `sim.diff.timestep`/`rollout` (WS3).
 - Benchmarks (`tests/benchmark/simulation/experimental/`):
   - `bm_diff_step_overhead` — on/off step cost vs the stated budget (WS1/WS2).
   - `bm_diff_jacobian` — explicit-Jacobian vs VJP cost (WS3).

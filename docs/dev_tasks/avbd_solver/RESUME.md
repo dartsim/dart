@@ -83,7 +83,7 @@ entities, deriving the same axes/masks from their configured joint axis while
 keeping masked multibody link endpoints unsupported until articulated AVBD rows
 exist. The private endpoint layer now classifies free rigid bodies separately
 from multibody links, and hard fixed multibody-link point-joint configs can bridge
-into the variational articulated solve path. Public experimental `World`
+into the variational articulated solve path. Public DART 7 `World`
 facades now expose free rigid-body
 revolute and prismatic joints through C++ and dartpy, with generated stubs,
 focused C++/Python tests, and the categorized `sx_rigid_limited_joints`
@@ -271,7 +271,7 @@ combinations.
 
 ```bash
 git status --short --branch
-pixi run build-simulation-experimental-tests
+pixi run build-simulation-tests
 build/default/cpp/Release/bin/test_avbd_constraint
 build/default/cpp/Release/bin/test_avbd_rigid_block
 build/default/cpp/Release/bin/test_boxed_lcp_contact --gtest_filter='AvbdContact.*:BoxedLcpContact.MethodSelectorReflectsConstruction'

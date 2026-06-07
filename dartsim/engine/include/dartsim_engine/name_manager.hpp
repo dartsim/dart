@@ -43,7 +43,7 @@ class SceneModel;
 
 /// Generates and validates names that are unique within a parent scope.
 ///
-/// Names are unique among siblings (the experimental World separately enforces
+/// Names are unique among siblings (the DART 7 World separately enforces
 /// owner-local uniqueness for rigid bodies, multibodies, and multibody
 /// links/joints).
 class NameManager

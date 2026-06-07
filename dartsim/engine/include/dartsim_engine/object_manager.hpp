@@ -39,9 +39,9 @@
 #include <memory>
 #include <vector>
 
-namespace dart::simulation::experimental {
+namespace dart::simulation {
 class World;
-} // namespace dart::simulation::experimental
+} // namespace dart::simulation
 
 namespace dartsim {
 
@@ -55,9 +55,9 @@ struct RenderItem
   Eigen::Isometry3d worldTransform = Eigen::Isometry3d::Identity();
 };
 
-/// Owns the editable SceneModel and the experimental World derived from it.
+/// Owns the editable SceneModel and the DART 7 World derived from it.
 ///
-/// Because the experimental World has no per-object removal, every structural
+/// Because the DART 7 World has no per-object removal, every structural
 /// change rebuilds a fresh World from the model. The model is the source of
 /// truth; the World is a derived runtime queried by name for rendering and
 /// stepping. See docs/design/dartsim_gui_simulator.md.
@@ -92,12 +92,12 @@ public:
   /// user input; out-of-range values are sanitized so the editor stays alive.
   void rebuild();
 
-  /// The derived experimental World (valid after construction; never null).
-  [[nodiscard]] dart::simulation::experimental::World& world()
+  /// The derived DART 7 World (valid after construction; never null).
+  [[nodiscard]] dart::simulation::World& world()
   {
     return *m_world;
   }
-  [[nodiscard]] const dart::simulation::experimental::World& world() const
+  [[nodiscard]] const dart::simulation::World& world() const
   {
     return *m_world;
   }
@@ -113,7 +113,7 @@ private:
   struct RebuildFrameIndex;
 
   SceneModel m_model;
-  std::unique_ptr<dart::simulation::experimental::World> m_world;
+  std::unique_ptr<dart::simulation::World> m_world;
 
   void buildMultiBody(
       const SceneObject& multiBodyObject, RebuildFrameIndex& frames);

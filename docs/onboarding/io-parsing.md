@@ -1,33 +1,41 @@
-# Unified Model Loading (`dart::io`)
+# Unified Skeleton Loading (`dart::io`)
 
 ## Why this exists
 
-DART historically exposed multiple model-loading entry points with inconsistent naming and
-structure (e.g., `SkelParser`, `SdfParser`, `UrdfParser`, and legacy loaders).
+DART historically exposed multiple model-loading entry points with inconsistent
+naming and structure (e.g., `SkelParser`, `SdfParser`, `UrdfParser`, and
+legacy loaders).
 
-For most applications, this made “load a model from a URI” harder than it needed to be:
+For most applications, this made “load a model from a URI” harder than it needed
+to be:
 
 - Call sites had to choose a parser type up-front.
 - Format inference and error handling were duplicated.
 - The “standard” API varied across examples/tests/tutorials.
 
-The `dart::io` component provides a consolidated front door for reading `World`s and
-`Skeleton`s while keeping the underlying format-specific parsers available when needed.
+The `dart::io` component provides a consolidated front door for reading
+`Skeleton`s while keeping the underlying format-specific parsers available when
+needed. The DART 6 whole-`World` front door was retired from `main` during the
+DART 7 API promotion; use a `release-6.*` branch when parity evidence requires the
+old public whole-world loader.
 
 ## Task context (issue #604)
 
-This unified API and documentation were introduced while addressing issue #604 (parser naming)
-and migrating tests/examples/tutorials to the `dart::io` component APIs. The goal is a single,
-consistent “front door” (`dart::io`) without introducing new nested namespaces, while keeping
-full parser-specific customization available via `dart::utils::*` parsers. Unit coverage for
-the promoted options lives in `tests/unit/io/test_Read.cpp`.
+This unified API and documentation were introduced while addressing issue #604
+(parser naming) and migrating tests/examples/tutorials to the `dart::io`
+component APIs. The DART 7 surface keeps a single, consistent skeleton-loading
+front door (`dart::io`) without introducing new nested namespaces, while keeping
+parser-specific customization available via `dart::utils::*` parsers where
+needed. Unit coverage for the promoted options lives in
+`tests/unit/io/test_Read.cpp`.
 
 ## Scope and design decision
 
 ### One front door, not one mega-parser
 
-`dart::io::readWorld` / `dart::io::readSkeleton` are the preferred entry points for new C++
-code. Internally they delegate to the format-specific parsers in `dart::utils`.
+`dart::io::readSkeleton` is the preferred entry point for new C++ code.
+Internally it delegates to the format-specific parsers in `dart::utils`.
+Whole-world loading is not part of the DART 7 public `dart::io` API.
 
 This is intentionally _not_ an attempt to expose every parser-specific knob through one API.
 Instead:
@@ -46,7 +54,6 @@ namespaces for each format is intentionally avoided.
 
 ## Key APIs
 
-- `dart::io::readWorld(const common::Uri&, const ReadOptions&)`
 - `dart::io::readSkeleton(const common::Uri&, const ReadOptions&)`
 - `dart::io::ModelFormat` (format selection or inference)
 - `dart::io::ReadOptions` (common + minimal format-specific options)
@@ -64,12 +71,11 @@ Source of truth:
 
 ## Common usage patterns
 
-### Load with format inference
+### Load a skeleton with format inference
 
 ```cpp
 #include <dart/io/Read.hpp>
 
-auto world = dart::io::readWorld("dart://sample/skel/chain.skel");
 auto skel = dart::io::readSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
 ```
 
@@ -78,7 +84,7 @@ auto skel = dart::io::readSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
 ```cpp
 dart::io::ReadOptions options;
 options.format = dart::io::ModelFormat::Sdf;
-auto world = dart::io::readWorld("file:///path/to/model.xml", options);
+auto skel = dart::io::readSkeleton("file:///path/to/model.xml", options);
 ```
 
 ### Custom resource retrieval
@@ -89,7 +95,7 @@ options.resourceRetriever = myRetriever;
 auto skel = dart::io::readSkeleton(uri, options);
 ```
 
-### SDF default root joint type
+### SDF default root joint type for skeleton imports
 
 Some SDF workflows rely on a default root joint type when it is not explicitly
 specified by the model. Configure this through `ReadOptions`:
@@ -98,7 +104,7 @@ specified by the model. Configure this through `ReadOptions`:
 dart::io::ReadOptions options;
 options.format = dart::io::ModelFormat::Sdf;
 options.sdfDefaultRootJointType = dart::io::RootJointType::Fixed;
-auto world = dart::io::readWorld("dart://sample/sdf/test/force_torque_test.world", options);
+auto skel = dart::io::readSkeleton("dart://sample/sdf/test/box.sdf", options);
 ```
 
 ### URDF `package://` resolution (parser-specific customization)

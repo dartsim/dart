@@ -2,7 +2,7 @@
 
 A 9x5 point-mass/spring net is pinned at its two top corners and sags under
 gravity, swaying from small initial cross-velocities. This mirrors the C++
-``experimental_deformable`` net scene. The sx world owns the IPC-style
+``deformable`` net scene. The sx world owns the IPC-style
 deformable solve (clamped-log self-contact barriers, projected Newton); the
 render bridge draws per-node spheres + a spring wireframe.
 

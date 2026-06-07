@@ -1,18 +1,11 @@
-import os
-import platform
-
 import dartpy as dart
 import pytest
-from tests.util import get_asset_path
 
 
-def test_parse_fetch():
-    assert (
-        dart.io.MjcfParser.read_world(
-            "dart://sample/mjcf/openai/robotics/fetch/pick_and_place.xml"
-        )
-        is not None
-    )
+def test_read_world_removed():
+    assert hasattr(dart.io.MjcfParser, "Options")
+    assert not hasattr(dart.io.MjcfParser, "read_world")
+    assert not hasattr(dart.io.MjcfParser, "readWorld")
 
 
 if __name__ == "__main__":

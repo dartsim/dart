@@ -9,7 +9,7 @@ single edge (a degenerate, non-face-aligned contact) rather than a flat face.
 
 The cube starts rotated 45 degrees about the x-axis so its lower edge meets the
 ground first; friction then lets it tip down onto a face and settle.
-WorldRenderBridge mirrors the bodies into a parallel dart.simulation.World for
+WorldRenderBridge mirrors the bodies into a parallel render World for
 rendering.
 """
 

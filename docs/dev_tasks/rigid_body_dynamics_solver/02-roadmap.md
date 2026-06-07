@@ -1,13 +1,13 @@
 # Roadmap: Rigid-Body Dynamics Solver (First Solver)
 
-Phased plan to bring the experimental `World` to DART 6-equivalent (then better)
+Phased plan to bring the DART 7 `World` to DART 6-equivalent (then better)
 rigid-body simulation as the first solver under the architecture in
 [`docs/design/simulation_solver_architecture.md`](../../design/simulation_solver_architecture.md).
 
 Each phase is multi-session and should land as several small, independently
 verifiable slices (one PR per slice). Every slice runs `pixi run lint`, focused
-C++ tests under `tests/unit/simulation/experimental/`, `pixi run build`, and
-`pixi run test-py` when dartpy changes. Update the gap matrix
+C++ tests under `tests/unit/simulation/`, `pixi run build`, and `pixi run
+test-py` when dartpy changes. Update the gap matrix
 ([`01-gap-analysis.md`](01-gap-analysis.md)) rows as they flip to PRESENT.
 
 ## Phase 0 — Foundations (single-body dynamics)
@@ -42,7 +42,7 @@ forward dynamics for open chains.
 
 ## Phase 2 — Collision bridge
 
-Goal: experimental bodies/links carry collision geometry and produce contact
+Goal: DART 7 bodies/links carry collision geometry and produce contact
 data via the maintained native collision engine.
 
 - Public collision-shape/material value objects on rigid bodies and links
@@ -81,7 +81,7 @@ Goal: DART 6-equivalent constrained stepping (stacking boxes, robot on ground).
 - Pluggable integrator and explicit substepping policy.
 - COM jacobians, body jacobians, full diagnostics.
 - Model loading bridge: parsed `dynamics::Skeleton` import for the
-  experimental tree-joint families (Weld/Revolute/Prismatic/Screw/Universal/
+  DART 7 tree-joint families (Weld/Revolute/Prismatic/Screw/Universal/
   Ball/Planar/Free), legacy `simulation::World` import, and default URI-string
   loading are in place in C++ and dartpy, including one centered collidable
   Box/Sphere/Capsule/Cylinder/Mesh shape per link. Explicit read options are
@@ -105,8 +105,8 @@ second solver or domain can be added without reshaping the World:
 
 ## Verification & Parity Strategy
 
-- Cross-check experimental dynamics against legacy DART 6 on identical scenes
+- Cross-check DART 7 dynamics against legacy DART 6 on identical scenes
   (energy drift bounds, trajectory tolerance) — this is the parity gate before
-  any DART 8 promotion claim.
+  any DART 7 promotion claim.
 - Add focused unit tests per slice; add a benchmark when claiming a perf gain.
 - Track DART 8 promotion against the contract in the public-facade design doc.

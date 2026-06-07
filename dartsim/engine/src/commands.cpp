@@ -434,7 +434,7 @@ std::unique_ptr<Command> addFixedFrame(
 }
 
 // Invariant: sensor and collision descriptors are editor-owned scene data that
-// the derived experimental World deliberately ignores (ObjectManager::rebuild
+// the derived DART 7 World deliberately ignores (ObjectManager::rebuild
 // has no-op cases for ObjectType::Sensor/Collision). Commands that touch only
 // those descriptor fields therefore mutate the SceneModel without calling
 // objects.rebuild() — the render path reads the model, not the World. Any

@@ -41,12 +41,6 @@ def test_parse_skeleton_loads_primitive_geometry():
     )
 
 
-# Failing with following errors:
-# TypeError: No to_python (by-value) converter found for C++ type: std::shared_ptr<dart::simulation::World>
-#
-# def test_parse_world():
-#     parser = DartLoader()
-#     assert parser.parse_world(get_asset_path('urdf/testWorld.urdf')) is not None
 def test_parse_joint_properties():
     parser = DartLoader()
     robot = parser.parse_skeleton(get_asset_path("urdf/test/joint_properties.urdf"))

@@ -6,7 +6,7 @@ Code is the source of truth; this file tracks intent and sequencing only.
 
 ## WS0 — Prerequisite (owned by PLAN-080)
 
-- **0.1** Boxed-LCP contact + joint-limit solve on the experimental `World`
+- **0.1** Boxed-LCP contact + joint-limit solve on the DART 7 `World`
   (replaces/augments `RigidBodyContactStage` with an `LcpProblem`-based solve).
   Gates WS2. Track under `docs/dev_tasks/rigid_body_dynamics_solver/`.
 
@@ -19,7 +19,7 @@ Code is the source of truth; this file tracks intent and sequencing only.
   choice and the joint-type scope of WS1 here. This is real work, not bookkeeping.
 - **1.1** New `WorldOptions` value object with `differentiable` (default false) +
   `World(WorldOptions)` constructor (none exists today; passes `check-api-boundaries`);
-  new optional module `dart/simulation/experimental/diff/` behind `DART_BUILD_DIFF`;
+  new optional module `dart/simulation/diff/` behind `DART_BUILD_DIFF`;
   CI builds with the option on and off.
 - **1.2** Nullable-sink snapshot plumbing threaded through `simulateMultibody`/
   `computeMassAndBias` (populated only when non-null); World-owned `StepSnapshot`

@@ -37,9 +37,6 @@
 #include <dart/utils/package_resource_retriever.hpp>
 #include <dart/utils/urdf/export.hpp>
 
-#include <dart/simulation/fwd.hpp>
-#include <dart/simulation/world.hpp>
-
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/fwd.hpp>
 #include <dart/dynamics/joint.hpp>
@@ -159,13 +156,6 @@ public:
 
   /// Parse a text string to produce a Skeleton
   dynamics::SkeletonPtr parseSkeletonString(
-      std::string_view urdfString, const common::Uri& baseUri);
-
-  /// Parse a file to produce a World
-  dart::simulation::WorldPtr parseWorld(const common::Uri& uri);
-
-  /// Parse a text string to produce a World
-  dart::simulation::WorldPtr parseWorldString(
       std::string_view urdfString, const common::Uri& baseUri);
 
 private:

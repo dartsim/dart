@@ -26,10 +26,10 @@ if str(_PYTHON_DIR) not in sys.path:
 def _sx():
     try:
         module = importlib.import_module("dartpy")
-    except ModuleNotFoundError:
-        pytest.skip("DART_BUILD_SIMULATION_EXPERIMENTAL is disabled")
+    except ModuleNotFoundError as exc:
+        pytest.skip(f"dartpy unavailable: {exc}")
     if not hasattr(module, "World"):
-        pytest.skip("DART_BUILD_SIMULATION_EXPERIMENTAL is disabled")
+        pytest.skip("dartpy.World unavailable in this build")
     return module
 
 
@@ -43,7 +43,7 @@ def _tip_z(tip, tip_local) -> float:
 
 
 def test_variational_contact_catches_tip_on_ground() -> None:
-    _sx()  # skip cleanly if experimental is unavailable
+    _sx()  # skip cleanly if dartpy is unavailable
     from examples.demos.scenes.variational_contact import build
 
     setup = build()

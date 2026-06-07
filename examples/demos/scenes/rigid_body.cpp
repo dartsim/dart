@@ -10,13 +10,12 @@
 
 #include "scenes.hpp"
 
-#include <dart/simulation/experimental/body/collision_shape.hpp>
-#include <dart/simulation/experimental/body/rigid_body.hpp>
-#include <dart/simulation/experimental/body/rigid_body_options.hpp>
-#include <dart/simulation/experimental/world.hpp>
-
+#include <dart/gui/renderable.hpp>
 #include <dart/gui/viewer.hpp>
 
+#include <dart/simulation/body/collision_shape.hpp>
+#include <dart/simulation/body/rigid_body.hpp>
+#include <dart/simulation/body/rigid_body_options.hpp>
 #include <dart/simulation/world.hpp>
 
 #include <dart/dynamics/box_shape.hpp>
@@ -44,9 +43,8 @@ namespace {
 
 namespace dynamics = dart::dynamics;
 namespace gui = dart::gui;
-namespace legacy_sim = dart::simulation;
 namespace math = dart::math;
-namespace sx = dart::simulation::experimental;
+namespace sx = dart::simulation;
 
 Eigen::Vector4d rgba(double r, double g, double b, double a = 1.0)
 {
@@ -114,8 +112,6 @@ struct RenderBody
 struct ExampleState
 {
   sx::World physicsWorld;
-  legacy_sim::WorldPtr renderWorld
-      = legacy_sim::World::create("world_rigid_body_gui");
   std::vector<RenderBody> bodies;
 
   void addBody(
@@ -134,7 +130,6 @@ struct ExampleState
         dynamics::Frame::World(), name + "_visual", initialTransform);
     frame->setShape(makeVisualShape(shape));
     frame->getVisualAspect(true)->setRGBA(color);
-    renderWorld->addSimpleFrame(frame);
     bodies.push_back(
         {body,
          std::move(frame),
@@ -159,7 +154,6 @@ struct ExampleState
   void reset()
   {
     physicsWorld.setTime(0.0);
-    renderWorld->reset();
 
     for (auto& renderBody : bodies) {
       renderBody.body.setTransform(renderBody.initialTransform);
@@ -171,6 +165,18 @@ struct ExampleState
 
     syncRenderFrames();
   }
+
+  std::vector<gui::RenderableDescriptor> renderables() const
+  {
+    std::vector<gui::RenderableDescriptor> descriptors;
+    descriptors.reserve(bodies.size());
+    for (const auto& body : bodies) {
+      if (auto descriptor = gui::describeShapeFrame(*body.frame)) {
+        descriptors.push_back(*descriptor);
+      }
+    }
+    return descriptors;
+  }
 };
 
 std::shared_ptr<ExampleState> makeExampleState()
@@ -179,7 +185,6 @@ std::shared_ptr<ExampleState> makeExampleState()
 
   constexpr double timeStep = 1.0 / 120.0;
   state->physicsWorld.setTimeStep(timeStep);
-  state->renderWorld->setTimeStep(timeStep);
 
   sx::RigidBodyOptions ground;
   ground.position = Eigen::Vector3d(0.0, 0.0, -0.08);
@@ -252,11 +257,14 @@ dart::gui::ApplicationOptions makeRigidBodyScene()
   const auto state = makeExampleState();
 
   gui::ApplicationOptions options;
-  options.world = state->renderWorld;
   options.camera = makeCamera();
-  options.simulateWorld = false;
+  options.advanceSimulation = false;
   options.preStep = [state]() {
     state->step();
+  };
+  options.renderableProvider = [state]() {
+    state->syncRenderFrames();
+    return state->renderables();
   };
   options.keyboardActions = createKeyboardActions(state);
   return options;

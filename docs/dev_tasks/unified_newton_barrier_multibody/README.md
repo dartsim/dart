@@ -45,7 +45,7 @@
 
 Implement PLAN-083 incrementally until DART owns the shared Newton-barrier
 primitive layer, affine stiff-body track, CPU/GPU evidence, paper/deck parity
-rows, and py-demos examples behind DART-owned experimental `World` capabilities
+rows, and py-demos examples behind DART-owned DART 7 `World` capabilities
 without exposing upstream solver names, registries, ECS storage, or backend
 resources as public API.
 
@@ -93,8 +93,8 @@ resources as public API.
 
 ```bash
 pixi run lint
-pixi run build-simulation-experimental-tests
-pixi run test-simulation-experimental
+pixi run build-simulation-tests
+pixi run test-simulation
 pixi run check-api-boundaries
 pixi run bm bm_ipc_distance_kernels -- --benchmark_min_time=0.05s
 pixi run bm bm_ipc_barrier_kernel -- --benchmark_min_time=0.05s
@@ -112,8 +112,8 @@ pixi run -e cuda test-cuda
 Phase 1 local evidence:
 
 - `pixi run lint`
-- `pixi run build-simulation-experimental-tests`
-- `pixi run test-simulation-experimental`
+- `pixi run build-simulation-tests`
+- `pixi run test-simulation`
 - `pixi run check-api-boundaries`
 - `pixi run bm bm_ipc_distance_kernels -- --benchmark_min_time=0.05s`
 - `pixi run bm bm_ipc_barrier_kernel -- --benchmark_min_time=0.05s`
@@ -122,8 +122,8 @@ Phase 1 local evidence:
 
 Phase 2 local evidence so far:
 
-- `pixi run build-simulation-experimental-tests`
-- `pixi run test-simulation-experimental` (46/46)
+- `pixi run build-simulation-tests`
+- `pixi run test-simulation` (46/46)
 - `pixi run bm bm_affine_body_dynamics -- --benchmark_min_time=0.05s`
 
 ## Owner Docs

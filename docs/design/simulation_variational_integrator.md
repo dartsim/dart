@@ -4,7 +4,7 @@
 
 Implemented (Phases A1, A2, B1, B2; Phase C is a recorded NO-GO). This document
 owns the durable design rationale for the **linear-time variational integrator**
-in the experimental simulation `World` integration family. It owns architecture
+in the DART 7 simulation `World` integration family. It owns architecture
 and math rationale, not timeline or status. Sequencing, phase gates, and
 acceptance criteria live in PLAN-082
 (`docs/plans/082-variational-integrator-solver.md` and its `contact-roadmap.md`
@@ -16,7 +16,7 @@ Companion docs:
 
 - [`simulation_solver_architecture.md`](simulation_solver_architecture.md) — the
   solver/coupler/domain architecture this integrator plugs into.
-- [`simulation_experimental_cpp_api.md`](simulation_experimental_cpp_api.md) —
+- [`simulation_cpp_api.md`](simulation_cpp_api.md) —
   the public-facade capability matrix, which already lists `variational
 integrator` as an integration-family value (`Solver And Execution Policy`).
 
@@ -28,7 +28,7 @@ new-vs-reused split below is the result.
 ## Why This Integrator
 
 DART's north star is that "the easiest place to reproduce and evaluate a new
-algorithm should be inside DART." The experimental `World` already hosts a
+algorithm should be inside DART." The DART 7 `World` already hosts a
 semi-implicit articulated forward-dynamics path (PLAN-080) and an IPC-class
 deformable implicit-barrier path (PLAN-081). This adds a third, structurally
 distinct _time-integration_ family:
@@ -54,7 +54,7 @@ Motivation:
    build (see "the central new component"); the synergy is not mechanical today.
 3. **First-party algorithm.** This is DART's own research lineage (implemented
    on classic DART; reference repo `jslee02/wafr2016`). Bringing it into the
-   experimental world makes DART the reference reproduction.
+   DART 7 world makes DART the reference reproduction.
 4. **Differentiability runway.** The method admits an analytic recursive
    Jacobian (paper Appendix, Alg. 4), aligning with the capability matrix's
    `analytic` differentiability target.
@@ -104,7 +104,7 @@ subspace `Sᵢ`; parent `λ(i)`; children `σ(i)`.
 
 ## Improvements, Corrections, and New Features (relative to the paper)
 
-This is a fresh implementation in DART's experimental ECS `World`, not a port of
+This is a fresh implementation in the DART 7 ECS `World`, not a port of
 the author's classic-DART reference (`github.com/jslee02/wafr2016`). It
 reproduces the paper's results (see
 [`../dev_tasks/variational_integrator_solver/paper-experiment-replication.md`](../dev_tasks/variational_integrator_solver/paper-experiment-replication.md))
@@ -175,7 +175,7 @@ item names the artifact that verifies it.
   methods -- with no public exposure of solver/stage/component types;
   `check-api-boundaries` stays green.
 
-## How It Maps Onto The Experimental World
+## How It Maps Onto The DART 7 World
 
 ### Insertion seam: a peer integration-family stage + a minimal selector
 
@@ -187,7 +187,7 @@ new stage
 
 declared beside `MultibodyForwardDynamicsStage`
 (`compute/multibody_dynamics.hpp`), implemented in `multibody_dynamics.cpp`, and
-registered in `dart/simulation/experimental/CMakeLists.txt` (explicit source
+registered in `dart/simulation/CMakeLists.txt` (explicit source
 list).
 
 A **minimal selection mechanism is required** and must be designed (it does not
@@ -221,12 +221,12 @@ PLAN-082 decision.
 | Dense `M(q)`,`C`,`g` (oracle/baseline only) | `computeMultibodyDynamicsTerms` / `computeMassAndBias`                |
 
 **The central new component — an O(n) impulse-based ABI.** RIQN's `Δt·M⁻¹·e`
-must be O(n). The experimental World has **no ABA/ABI** — `computeMassAndBias`
+must be O(n). The DART 7 World has **no ABA/ABI** — `computeMassAndBias`
 builds a dense `M` column-by-column and `simulateMultibody` solves with
 `ldlt()` (O(n²) assembly + O(n³) factor; its bias also includes gravity, so it
 cannot be fed `q̇≡0,Q≡Δt·e` to yield a clean `Δt·M⁻¹·e`). The reference impl
 used classic DART's `computeImpulseForwardDynamics` (a two-sweep bias-impulse /
-velocity-change recursion); the experimental rewrite must implement that ABI
+velocity-change recursion); the DART 7 rewrite must implement that ABI
 from scratch. This is the largest single piece of new work and the primary
 risk; it is sequenced as an explicit early spike (PLAN-082 Phase A2). Until it
 lands, a dense `M.ldlt().solve(Δt·e)` is an acceptable **O(n³) placeholder** for
@@ -252,7 +252,7 @@ scaling benchmark is not yet a gate.
    the `adInvRLinear` gravity helper); a parity unit test cross-checks every
    kernel against `dart::math::lie_group` so the equivalence is guarded, and the
    `dexp⁻¹` kernel delegates to `SE3::LeftJacobianInverse`. The existing
-   experimental `rotationExp`/`rotationLog` are SO(3)-only and insufficient on
+   current `rotationExp`/`rotationLog` are SO(3)-only and insufficient on
    their own. The Cayley map (Kobilarov–Crane–Desbrun) is the documented escape
    hatch if the `log`-map / `dexp⁻¹` rotation-by-π singularity ever becomes
    binding.
@@ -298,7 +298,7 @@ The pattern is proven in-tree: the deformable solver stores
 - **Scalable-compute / CUDA:** the CUDA path is a rigid-body SoA _batch_; it
   shares no representation with articulated generalized coordinates. The VI is
   **CPU-only** for now; no GPU/batch synergy is claimed.
-- **Python (`dartpy.simulation_experimental`):** the integration-family selector
+- **Python (`dartpy.simulation`):** the integration-family selector
   is the only new public surface and must bind cleanly; PLAN-082 includes a
   binding + import-coverage slice.
 
@@ -439,13 +439,13 @@ experiments (reference repo `experiments/`: `energy_conservation`, `convergence`
 - Contact-extension inspiration (catalog): `ipc-2020`, `macklin-xpbd-2016`,
   `vbd-2024`, `avbd-2025`.
 - Architecture: `simulation_solver_architecture.md`,
-  `simulation_experimental_cpp_api.md`.
+  `simulation_cpp_api.md`.
 
 ## Verification Expectations
 
 Docs-only edits use the docs-only gate set in `docs/ai/verification.md`.
 Implementation PRs realizing this design include `pixi run lint`,
-`pixi run build`, focused C++ tests under `tests/unit/simulation/experimental/`,
+`pixi run build`, focused C++ tests under `tests/unit/simulation/`,
 `check-api-boundaries` when public headers/bindings change, benchmark evidence
 for the O(n) claim (Phase A2), `test-py` when bindings change, a serialization
 version-bump note, and a changelog entry. Reviewers reject any public API that

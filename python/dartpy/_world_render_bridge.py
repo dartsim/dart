@@ -1,32 +1,4 @@
-"""Small bridge that lets World scenes render through the C++ viewer.
-
-The Filament viewer renders `dart.simulation.World`, while the current DART 7
-World demos still build their physics state through
-`dartpy.World`. The C++ scenes solve this by keeping
-both worlds: one for physics, plus a parallel `dart.simulation.World` whose
-SimpleFrames are synced from physics body transforms each frame for rendering.
-This module provides the same pattern in Python.
-
-Usage from a World scene's `build()`::
-
-    from .._world_bridge import WorldRenderBridge
-
-    physics_world = sx.World()
-    # ... add bodies/links to physics_world ...
-    physics_world.enter_simulation_mode()
-
-    bridge = WorldRenderBridge(physics_world, name="articulated")
-    bridge.add_link_visual(link, dart.BoxShape(np.array([0.4, 0.1, 0.1])),
-                           (0.20, 0.55, 0.85))
-    bridge.add_rigid_body_visual(ground_body,
-        dart.BoxShape(np.array([5.0, 5.0, 0.5])), (0.7, 0.7, 0.7))
-
-    return SceneSetup(
-        world=bridge.render_world,
-        pre_step=bridge.pre_step,
-        info={"sx_world": physics_world},
-    )
-"""
+"""Descriptor-backed render bridge for DART 7 Python demo scenes."""
 
 from __future__ import annotations
 
@@ -38,15 +10,7 @@ import numpy as np
 
 
 def world_render_frame() -> Any:
-    """The classic render-world root frame for SimpleFrame visuals.
-
-    The Filament viewer renders a classic ``dartpy.gui.RenderWorld`` whose
-    ``SimpleFrame`` visuals are placed relative to the legacy dynamics world
-    frame. The DART 7 ECS ``Frame`` owns the flat ``dartpy.Frame`` name, so this
-    helper exposes the classic render frame instead. Read from the raw dynamics
-    module to avoid the ``dartpy.dynamics`` deprecation wrapper. Exposed as
-    ``dartpy.gui.world_render_frame``.
-    """
+    """Return the dynamics world frame used as a parent for render helpers."""
 
     from dartpy._dartpy import dynamics as _dyn
 
@@ -54,16 +18,18 @@ def world_render_frame() -> Any:
 
 
 def _isometry_to_matrix(transform: Any) -> np.ndarray:
-    """Convert a physics transform (Isometry3) to a numpy 4x4."""
-
     if hasattr(transform, "matrix"):
         return np.asarray(transform.matrix())
     return np.asarray(transform)
 
 
-def _is_fixed_node(body: Any, index: int) -> bool:
-    """``body.is_fixed_node(index)`` guarded against missing/odd bindings."""
+def _translation(position: Any) -> np.ndarray:
+    transform = np.eye(4)
+    transform[:3, 3] = np.asarray(position, dtype=float).reshape(3)
+    return transform
 
+
+def _is_fixed_node(body: Any, index: int) -> bool:
     try:
         return bool(body.is_fixed_node(index))
     except Exception:  # noqa: BLE001
@@ -71,14 +37,6 @@ def _is_fixed_node(body: Any, index: int) -> bool:
 
 
 def _deformable_wireframe_edges(body: Any) -> list[tuple[int, int]]:
-    """Unique undirected node-index pairs describing a body's mesh wireframe.
-
-    Tetrahedral/surface bodies are drawn as the edges of their boundary
-    triangles (a solid-looking faceted surface); mass-spring bodies are drawn
-    as their spring network. The result mirrors the paper's surface rendering
-    far better than an isolated per-node point cloud.
-    """
-
     edges: set[tuple[int, int]] = set()
 
     def add(u: int, v: int) -> None:
@@ -100,47 +58,112 @@ def _deformable_wireframe_edges(body: Any) -> list[tuple[int, int]]:
     return sorted(edges)
 
 
+class DescriptorRenderScene:
+    """Small frame container that supplies GUI renderable descriptors."""
+
+    def __init__(self, physics_world: Any, name: str) -> None:
+        self._physics_world = physics_world
+        self.name = name
+        self.time_step = float(getattr(physics_world, "time_step", 0.001))
+        self._frames: list[Any] = []
+        self._render_version = 0
+
+    def set_gravity(self, _gravity: Any) -> None:
+        return
+
+    def set_time_step(self, time_step: float) -> None:
+        self.time_step = float(time_step)
+        if hasattr(self._physics_world, "set_time_step"):
+            try:
+                self._physics_world.set_time_step(self.time_step)
+                return
+            except Exception:  # noqa: BLE001
+                pass
+        try:
+            self._physics_world.time_step = self.time_step
+        except Exception:  # noqa: BLE001
+            pass
+
+    def add_simple_frame(self, frame: Any) -> str:
+        if frame not in self._frames:
+            self._frames.append(frame)
+        try:
+            return str(frame.get_name())
+        except Exception:  # noqa: BLE001
+            try:
+                return str(frame.getName())
+            except Exception:  # noqa: BLE001
+                return f"frame_{len(self._frames) - 1}"
+
+    def step(self) -> None:
+        return
+
+    def renderable_provider(self) -> list[Any]:
+        renderables: list[Any] = []
+        self._render_version += 1
+        for frame in self._frames:
+            try:
+                shape = frame.get_shape()
+                visual = frame.get_visual_aspect(False)
+            except Exception:  # noqa: BLE001
+                continue
+            if shape is None or visual is None:
+                continue
+            try:
+                geometry = dart.gui.describe_shape(shape)
+            except Exception:  # noqa: BLE001
+                continue
+            if geometry is None:
+                continue
+            descriptor = dart.gui.RenderableDescriptor()
+            descriptor.id = id(frame)
+            try:
+                descriptor.shape_frame_name = str(frame.get_name())
+            except Exception:  # noqa: BLE001
+                descriptor.shape_frame_name = f"frame_{len(renderables)}"
+            descriptor.shape_node_name = descriptor.shape_frame_name
+            descriptor.geometry = geometry
+            material = dart.gui.MaterialDescriptor()
+            try:
+                material.rgba = np.asarray(visual.get_rgba(), dtype=float)
+            except Exception:  # noqa: BLE001
+                pass
+            try:
+                material.visible = not bool(visual.get_hidden())
+            except Exception:  # noqa: BLE001
+                pass
+            try:
+                shadowed = bool(visual.get_shadowed())
+                material.casts_shadows = shadowed
+                material.receives_shadows = shadowed
+            except Exception:  # noqa: BLE001
+                pass
+            descriptor.material = material
+            try:
+                descriptor.world_transform = _isometry_to_matrix(frame.get_transform())
+            except Exception:  # noqa: BLE001
+                pass
+            descriptor.shape_frame_version = self._render_version
+            descriptor.shape_node_version = self._render_version
+            descriptor.shape_version = self._render_version
+            descriptor.render_resource_version = self._render_version
+            renderables.append(descriptor)
+        return renderables
+
+
 class WorldRenderBridge:
-    """Maps physics World bodies/links to dart::simulation::World SimpleFrames.
+    """Maps DART 7 physics objects to descriptor-backed GUI renderables."""
 
-    The bridge owns a `render_world` (dart.simulation.World) containing one
-    SimpleFrame per registered physics body / link. ``pre_step()`` advances the
-    physics world by one step and syncs every SimpleFrame's transform from its
-    physics counterpart.
-    """
-
-    # Velocity-damping gain for the mouse force-drag. The C++ viewer can only
-    # send the spring term ``F = kp*(target - app_point)`` for bridged
-    # renderables (it can read a body's transform for picking but not its
-    # velocity), so
-    # the legacy ``-kd*v`` term is added here instead, mirroring the BodyNode
-    # force-drag. Without it a light free body overshoots and rings under a
-    # drag. Tunable: larger = more critically damped / heavier feel.
     _DRAG_DAMPING_KD: float = 4.0
 
     def __init__(self, physics_world: Any, name: str = "world_render") -> None:
         self._physics_world = physics_world
-        # The render world is the legacy classic World, retained only for the
-        # Filament viewer (dartpy.gui.RenderWorld). The physics_world is the
-        # official ECS dartpy.simulation World.
-        self.render_world = dart.gui.RenderWorld(name)
-        self.render_world.set_gravity([0.0, 0.0, 0.0])
-        # The render world steps too (the viewer's pump calls world.step()
-        # each frame). With no skeletons it's a no-op + a time advance.
-        self.render_world.set_time_step(getattr(physics_world, "time_step", 0.001))
-        self._mappings: list[tuple[Any, dart.SimpleFrame, np.ndarray]] = []
-        # (deformable_body, line_shape, node_count) deforming wireframes.
+        self.render_world = DescriptorRenderScene(physics_world, name)
+        self._mappings: list[tuple[Any, Any, np.ndarray]] = []
         self._surfaces: list[tuple[Any, Any, int]] = []
-        # (deformable_body, [(node_index, SimpleFrame)]) pinned-node markers.
-        self._pins: list[tuple[Any, list[tuple[int, dart.SimpleFrame]]]] = []
-        # SimpleFrame name / renderable id -> physics object, so the viewer's
-        # external-force drag can resolve the picked renderable back to the
-        # body/link that owns the physics.
+        self._pins: list[tuple[Any, list[tuple[int, Any]]]] = []
         self._by_name: dict[str, Any] = {}
         self._by_renderable_id: dict[int, Any] = {}
-        # Active mouse external force, if any: (object, force, point).
-        # Re-applied before each physics step because Link.apply_force is
-        # one-shot.
         self._drag: tuple[Any, np.ndarray, np.ndarray] | None = None
         self.force_drag_enabled = True
         self.force_drag_scale = 1.0
@@ -149,21 +172,14 @@ class WorldRenderBridge:
         self._last_drag_magnitude = 0.0
         self._force_history: deque[float] = deque(maxlen=120)
 
-    def _register_frame(self, frame: "dart.SimpleFrame", physics_object: Any) -> str:
-        actual_name = str(self.render_world.add_simple_frame(frame))
+    def _register_frame(self, frame: Any, physics_object: Any) -> str:
+        actual_name = self.render_world.add_simple_frame(frame)
         self._by_name[actual_name] = physics_object
         self._refresh_renderable_ids()
         return actual_name
 
     def _refresh_renderable_ids(self) -> None:
-        gui = getattr(dart, "gui", None)
-        if gui is None or not hasattr(gui, "extract_renderables"):
-            return
-        try:
-            renderables = gui.extract_renderables(self.render_world)
-        except Exception:  # noqa: BLE001
-            return
-        for renderable in renderables:
+        for renderable in self.renderable_provider():
             physics_object = self._by_name.get(renderable.shape_frame_name)
             if physics_object is not None:
                 self._by_renderable_id[int(renderable.id)] = physics_object
@@ -171,17 +187,21 @@ class WorldRenderBridge:
     def add_link_visual(
         self,
         physics_link: Any,
-        shape: "dart.Shape",
+        shape: Any,
         color: tuple[float, float, float],
         name: str | None = None,
         local_transform: Any | None = None,
-    ) -> "dart.SimpleFrame":
+    ) -> Any:
         frame_name = name or f"world_link_{len(self._mappings)}"
-        frame = dart.SimpleFrame(dart.gui.world_render_frame(), frame_name, np.eye(4))
+        frame = dart.SimpleFrame(world_render_frame(), frame_name, np.eye(4))
         frame.set_shape(shape)
         frame.create_visual_aspect().set_color(list(color))
         actual_name = self._register_frame(frame, physics_link)
-        local = np.eye(4) if local_transform is None else _isometry_to_matrix(local_transform)
+        local = (
+            np.eye(4)
+            if local_transform is None
+            else _isometry_to_matrix(local_transform)
+        )
         self._mappings.append((physics_link, frame, local))
         self._by_name[actual_name] = physics_link
         return frame
@@ -189,11 +209,11 @@ class WorldRenderBridge:
     def add_rigid_body_visual(
         self,
         physics_body: Any,
-        shape: "dart.Shape",
+        shape: Any,
         color: tuple[float, float, float],
         name: str | None = None,
         local_transform: Any | None = None,
-    ) -> "dart.SimpleFrame":
+    ) -> Any:
         return self.add_link_visual(
             physics_body,
             shape,
@@ -205,47 +225,41 @@ class WorldRenderBridge:
     def add_deformable_visual(
         self,
         deformable_body: Any,
-        color: tuple[float, float, float],
+        color: tuple[float, float, float] = (0.25, 0.62, 0.85),
         radius: float = 0.018,
         fixed_color: tuple[float, float, float] | None = None,
         thickness: float = 2.5,
-    ) -> "dart.SimpleFrame":
-        """Render a deformable body as a live deforming surface wireframe.
-
-        A single ``LineSegmentShape`` carries one vertex per node and one line
-        per mesh edge — spring edges for mass-spring bodies (cloth/net) or
-        boundary-triangle edges for tetrahedral bodies (the beam). Each frame
-        the vertices are rewritten from ``deformable_body.node_position(i)``,
-        which bumps the shape version so the viewer re-uploads the deformed
-        geometry. Pinned nodes are marked with small ``fixed_color`` spheres so
-        the constraints read clearly. Returns the wireframe SimpleFrame.
-        """
-
+        name: str | None = None,
+        edges: list[tuple[int, int]] | None = None,
+    ) -> Any:
         body = deformable_body
         node_count = int(body.node_count)
 
         line = dart.LineSegmentShape(float(thickness))
         for i in range(node_count):
             line.add_vertex(np.asarray(body.node_position(i), dtype=float))
-        for node_a, node_b in _deformable_wireframe_edges(body):
-            line.add_connection(node_a, node_b)
+        for node_a, node_b in (
+            edges if edges is not None else _deformable_wireframe_edges(body)
+        ):
+            line.add_connection(int(node_a), int(node_b))
 
-        frame = dart.SimpleFrame(
-            dart.gui.world_render_frame(), f"world_surface_{len(self._surfaces)}", np.eye(4)
-        )
+        frame_name = name or f"world_surface_{len(self._surfaces)}"
+        frame = dart.SimpleFrame(world_render_frame(), frame_name, np.eye(4))
         frame.set_shape(line)
         frame.create_visual_aspect().set_color(list(color))
-        self.render_world.add_simple_frame(frame)
+        self._register_frame(frame, body)
         self._surfaces.append((body, line, node_count))
 
         pin_color = fixed_color if fixed_color is not None else color
-        pin_frames: list[tuple[int, dart.SimpleFrame]] = []
+        pin_frames: list[tuple[int, Any]] = []
         group = len(self._pins)
         for i in range(node_count):
             if not _is_fixed_node(body, i):
                 continue
             sphere = dart.SimpleFrame(
-                dart.gui.world_render_frame(), f"world_pin_{group}_{i}", np.eye(4)
+                world_render_frame(),
+                f"world_pin_{group}_{i}",
+                _translation(body.node_position(i)),
             )
             sphere.set_shape(dart.SphereShape(radius))
             sphere.create_visual_aspect().set_color(list(pin_color))
@@ -255,8 +269,6 @@ class WorldRenderBridge:
         return frame
 
     def sync(self) -> None:
-        """Copy each physics body's world transform onto its SimpleFrame."""
-
         for physics_object, frame, local_transform in self._mappings:
             tf = getattr(physics_object, "transform", None)
             if tf is None:
@@ -266,8 +278,6 @@ class WorldRenderBridge:
             except Exception:  # noqa: BLE001
                 pass
 
-        # Rewrite wireframe vertices in place (set_vertex bumps the shape
-        # version, so the viewer re-uploads the deformed geometry).
         for body, line, node_count in self._surfaces:
             for i in range(node_count):
                 try:
@@ -278,11 +288,13 @@ class WorldRenderBridge:
         for body, pin_frames in self._pins:
             for i, sphere in pin_frames:
                 try:
-                    transform = np.eye(4)
-                    transform[:3, 3] = np.asarray(body.node_position(i))
-                    sphere.set_transform(transform)
+                    sphere.set_transform(_translation(body.node_position(i)))
                 except Exception:  # noqa: BLE001
                     pass
+
+    def renderable_provider(self) -> list[Any]:
+        self.sync()
+        return self.render_world.renderable_provider()
 
     def _resolve_drag_target(self, event: dict[str, Any]) -> Any | None:
         renderable_id = int(event.get("renderable_id", 0) or 0)
@@ -314,7 +326,6 @@ class WorldRenderBridge:
     def _force_target_hint(self) -> str:
         if not self.force_drag_enabled:
             return "disabled"
-
         labels: list[str] = []
         seen: set[int] = set()
         for frame_name, physics_object in self._by_name.items():
@@ -322,10 +333,8 @@ class WorldRenderBridge:
             if identity in seen:
                 continue
             seen.add(identity)
-            if self._force_target_rejection(physics_object) is not None:
-                continue
-            labels.append(self._force_target_label(physics_object, frame_name))
-
+            if self._force_target_rejection(physics_object) is None:
+                labels.append(self._force_target_label(physics_object, frame_name))
         if not labels:
             return "none"
         preview = labels[:3]
@@ -345,14 +354,6 @@ class WorldRenderBridge:
         return vector
 
     def force_drag(self, event: dict[str, Any]) -> None:
-        """Viewer mouse external-force handler (see ``SceneSetup.force_drag``).
-
-        On an active event, resolve the picked frame name to its physics object and
-        store the world-frame force + application point; on an inactive event,
-        clear the stored drag. The force is (re)applied in ``pre_step`` before
-        each physics step because ``Link.apply_force`` is one-shot.
-        """
-
         if not event.get("active", False):
             self._drag = None
             self._last_drag_status = "idle"
@@ -407,7 +408,9 @@ class WorldRenderBridge:
             )
             physics_object.apply_force(force)
             try:
-                translation = np.asarray(physics_object.translation, dtype=float).reshape(3)
+                translation = np.asarray(
+                    physics_object.translation, dtype=float
+                ).reshape(3)
                 physics_object.apply_torque(np.cross(point - translation, force))
             except Exception:  # noqa: BLE001
                 pass
@@ -437,9 +440,7 @@ class WorldRenderBridge:
         except Exception:  # noqa: BLE001
             pass
 
-    def build_control_panel(self, builder: Any, context: Any) -> None:
-        """Render generic World bridge controls into a DART ``PanelBuilder``."""
-
+    def build_control_panel(self, builder: Any, _context: Any) -> None:
         builder.text("External force")
         builder.text("Drag a dynamic body in the viewport to apply force.")
         builder.text(f"drag target: {self._force_target_hint()}")
@@ -464,15 +465,6 @@ class WorldRenderBridge:
 
     @staticmethod
     def _drag_velocity(physics_object: Any, point: np.ndarray) -> np.ndarray:
-        """World-frame velocity of ``physics_object`` at ``point`` for drag damping.
-
-        RigidBody exposes ``linear_velocity`` (+ ``angular_velocity``); when
-        both are present the velocity is evaluated at the application point as
-        ``v + omega x (point - com)`` so the damping opposes the actual motion
-        of the dragged contact. Multibody Links expose no velocity accessor,
-        so this returns zeros for them and the drag stays spring-only.
-        """
-
         linear = getattr(physics_object, "linear_velocity", None)
         if linear is None:
             return np.zeros(3)
@@ -490,14 +482,6 @@ class WorldRenderBridge:
         return velocity
 
     def pre_step(self) -> None:
-        """Advance physics by one step, then sync render frames.
-
-        If a mouse external-force drag is active, (re)apply its one-shot force
-        just before the step so the spring is consumed by this step. The viewer
-        sends the spring term, so the legacy ``-kd*v`` damping is subtracted
-        here using the dragged body's velocity at the application point.
-        """
-
         restores: list[tuple[Any, np.ndarray | None, np.ndarray | None]] = []
         if self._drag is not None:
             physics_object, force, point = self._drag

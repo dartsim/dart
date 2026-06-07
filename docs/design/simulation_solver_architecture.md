@@ -3,16 +3,16 @@
 ## Status
 
 Proposal. This document owns the durable architecture rationale for how the
-experimental simulation `World` runs physics: the solver abstraction, how
+DART 7 simulation `World` runs physics: the solver abstraction, how
 entities are assigned to solvers, how multiple physics domains are coupled, how
 static model data is separated from dynamic state, and how all of this maps onto
 the existing compute-graph executor.
 
 It is the internal-organization companion to the public-facade design docs:
 
-- [`simulation_experimental_cpp_api.md`](simulation_experimental_cpp_api.md)
+- [`simulation_cpp_api.md`](simulation_cpp_api.md)
   owns the public C++ object model, naming policy, and DART 7 promotion rules.
-- [`simulation_experimental_python_api.md`](simulation_experimental_python_api.md)
+- [`simulation_python_api.md`](simulation_python_api.md)
   owns the dartpy surface.
 
 This doc does not restate those rules; it explains the engine architecture that
@@ -24,7 +24,7 @@ simulation).
 
 ## Purpose
 
-The experimental `World` must grow from its current state (a single hard-wired
+The DART 7 `World` must grow from its current state (a single hard-wired
 free-body integration stage plus forward kinematics) into a simulator that:
 
 1. runs full rigid-body dynamics with constraints and contacts, matching and
@@ -46,7 +46,7 @@ The core design sentence is:
 
 ## Design Principles
 
-These extend the experimental-API principles; they do not replace them.
+These extend the simulation API principles; they do not replace them.
 
 ### Solvers Own Dynamics, The World Owns Composition
 
@@ -70,7 +70,7 @@ solvers and keeps a uniform `World::add*` surface.
 A solver is documented by capability: integration family, dynamics approach,
 constraint solve, coordinate support, supported features, execution shape, and
 differentiability (the capability matrix in
-[`simulation_experimental_cpp_api.md`](simulation_experimental_cpp_api.md)).
+[`simulation_cpp_api.md`](simulation_cpp_api.md)).
 Public selection uses method/approach/paper or DART-owned names — for example
 `articulated-body`, `semi-implicit`, `projected Gauss-Seidel`, `XPBD`,
 `implicit time stepping`. Solver, preset, and example names must not be derived
@@ -312,7 +312,7 @@ configuration, and explicit failure/fallback semantics.
 
 ## Where Differentiable Solver Families Fit
 
-Differentiability is a solver capability of the experimental `World`, not a
+Differentiability is a solver capability of the DART 7 `World`, not a
 separate user-facing engine. The multi-solver architecture therefore has two
 levels:
 
@@ -397,7 +397,7 @@ evidence, and only the backend-neutral, facade-safe subset is eligible for DART
 
 - Keeping dynamics in solvers and composition in the `World` lets DART add
   methods and domains without reshaping the user object model, which is the
-  whole point of the experimental staging namespace.
+  whole point of the promoted DART 7 simulation facade.
 - Domain-driven assignment gives a uniform `add*` API across radically different
   physical models while keeping geometry and physics orthogonal.
 - Pairwise, swappable couplers avoid a monolithic coupling object that reaches
@@ -421,7 +421,7 @@ Implementation PRs that realize parts of this architecture should include:
 
 - `pixi run lint`;
 - `pixi run build`;
-- focused C++ tests under `tests/unit/simulation/experimental/`;
+- focused C++ tests under `tests/unit/simulation/`;
 - `pixi run check-api-boundaries` when public headers or dartpy bindings change;
 - `pixi run test-py` when Python bindings are affected;
 - benchmark evidence when a change claims a performance or scalability gain;

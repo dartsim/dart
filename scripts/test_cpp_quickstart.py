@@ -12,27 +12,21 @@ import tempfile
 from pathlib import Path
 
 CPP_SOURCE = r"""
-#include <dart/all.hpp>
-#include <dart/io/read.hpp>
+#include <dart/simulation/body/rigid_body.hpp>
+#include <dart/simulation/world.hpp>
 
 #include <iostream>
 
 int main() {
-  auto world = dart::simulation::World::create();
-  auto robot = dart::io::readSkeleton(
-      "dart://sample/urdf/KR5/KR5 sixx R650.urdf");
-  if (!robot) {
-    std::cerr << "Failed to load KR5 sample robot\n";
-    return 1;
-  }
+  dart::simulation::World world;
+  auto body = world.addRigidBody("box");
+  (void)body;
+  world.step();
 
-  world->addSkeleton(robot);
-  world->step();
-
-  const auto positions = robot->getPositions();
-  std::cout << "positions_size=" << positions.size() << "\n";
-  if (positions.size() == 0) {
-    std::cerr << "Robot has no positions\n";
+  const auto count = world.getRigidBodyCount();
+  std::cout << "rigid_body_count=" << count << "\n";
+  if (count != 1) {
+    std::cerr << "Expected one rigid body\n";
     return 1;
   }
 
@@ -45,15 +39,13 @@ CMAKE_LISTS = r"""
 cmake_minimum_required(VERSION 3.22.1)
 project(dart_readme_cpp_quickstart LANGUAGES CXX)
 
-find_package(DART 7.0.0 REQUIRED COMPONENTS utils-urdf io CONFIG)
+find_package(DART 7.0.0 REQUIRED COMPONENTS simulation CONFIG)
 
 add_executable(dart_readme_cpp_quickstart main.cpp)
 target_link_libraries(
   dart_readme_cpp_quickstart
   PRIVATE
-    dart
-    dart-io
-    dart-utils-urdf
+    dart-simulation
 )
 """
 
