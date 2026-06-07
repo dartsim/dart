@@ -1625,6 +1625,12 @@ bm-simd = { cmd = """
   "config",
 ], env = { BUILD_TYPE = "Release" } }
 
+bm-lie-group-batch = { depends-on = [
+  { task = "run-cpp-target", args = [
+    "bm_lie_group_batch",
+  ] },
+] }
+
 tu-biped = { depends-on = [
   { task = "run-cpp-target", args = [
     "tutorial_biped",

@@ -657,6 +657,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Added `pixi run bm-compute-check`, contact-shaped experimental compute
     coverage, and a Phase 5 CPU-baseline dashboard surface so the full expected
     scalable-compute benchmark corpus is checked in CI.
+  - Added `pixi run bm-lie-group-batch` to benchmark the DART 7 SO(3)/SE(3)
+    batch `expBatch`, `logBatch`, and `adjointBatch` paths against explicit
+    scalar loops before introducing SIMD or other compute backends.
   - Added `pixi run bm-phase5-gpu-packet-check --write-template <packet.json>` /
     `--input <packet.json>` to create and validate the manual Phase 5 GPU
     go/no-go benchmark packet once a project GPU runner exists, including
