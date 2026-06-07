@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1780815666666,
+  "lastUpdate": 1780820199264,
   "repoUrl": "https://github.com/dartsim/dart",
   "entries": {
     "DART Performance": [
@@ -17226,6 +17226,328 @@ window.BENCHMARK_DATA = {
             "value": 468570.46343906346,
             "unit": "ns/iter",
             "extra": "iterations: 3\ncpu: 468540.6577629378 ns\nthreads: 1"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Jeongseok (JS) Lee",
+            "username": "jslee02",
+            "email": "jslee02@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "c26ae8d0ecfe8048aef041924f4fa515cd2b9ff0",
+          "message": "Add cylindrical dynamic joint constraint to DART 7 (#2927)",
+          "timestamp": "2026-06-07T06:24:00Z",
+          "url": "https://github.com/dartsim/dart/commit/c26ae8d0ecfe8048aef041924f4fa515cd2b9ff0"
+        },
+        "date": 1780820093430,
+        "tool": "googlecpp",
+        "benches": [
+          {
+            "name": "AVBD fixed-joint step · 1 links",
+            "value": 22978.007767804214,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 22976.60683953522 ns\nthreads: 1"
+          },
+          {
+            "name": "AVBD fixed-joint step · 8 links",
+            "value": 419567.18331339635,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 419526.7242822968 ns\nthreads: 1"
+          },
+          {
+            "name": "AVBD fixed-joint step · 32 links",
+            "value": 4867037.393103538,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 4866797.9413793115 ns\nthreads: 1"
+          },
+          {
+            "name": "AVBD revolute-motor step · 1 motors",
+            "value": 18808.165324154023,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 18805.74609684925 ns\nthreads: 1"
+          },
+          {
+            "name": "AVBD revolute-motor step · 8 motors",
+            "value": 401947.93899278506,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 401912.5130935249 ns\nthreads: 1"
+          },
+          {
+            "name": "AVBD revolute-motor step · 32 motors",
+            "value": 4836284.298968836,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 4836018.371134025 ns\nthreads: 1"
+          },
+          {
+            "name": "FEM bar step · 2 cells",
+            "value": 503337.0040322435,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 503280.9245967742 ns\nthreads: 1"
+          },
+          {
+            "name": "FEM bar step · 8 cells",
+            "value": 6703701.153846544,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 6702987.47115384 ns\nthreads: 1"
+          },
+          {
+            "name": "FEM bar step · 24 cells",
+            "value": 19643593.64788693,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 19641406.746478874 ns\nthreads: 1"
+          },
+          {
+            "name": "FEM bar step · 48 cells",
+            "value": 48171038.558821775,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 48165572.6764706 ns\nthreads: 1"
+          },
+          {
+            "name": "Kinematics update · 32 parents · 8 children/parent",
+            "value": 467293.99072228203,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 467285.13154406875 ns\nthreads: 1"
+          },
+          {
+            "name": "Kinematics update · 128 parents · 8 children/parent",
+            "value": 4500585.700965227,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 4500321.84244373 ns\nthreads: 1"
+          },
+          {
+            "name": "Kinematics update · 128 parents · 32 children/parent",
+            "value": 53511436.49999393,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 53506671.038461536 ns\nthreads: 1"
+          },
+          {
+            "name": "World step (sequential) · 32 parents · 8 children/parent",
+            "value": 145561.70601104345,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 145548.0026044377 ns\nthreads: 1"
+          },
+          {
+            "name": "World step (sequential) · 128 parents · 8 children/parent",
+            "value": 2095681.356287103,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 2095480.2574850293 ns\nthreads: 1"
+          },
+          {
+            "name": "World step (sequential) · 128 parents · 32 children/parent",
+            "value": 27463644.72548913,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 27460998.901960794 ns\nthreads: 1"
+          },
+          {
+            "name": "World step (parallel) · 32 parents · 8 children/parent",
+            "value": 295025.2897897934,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 263227.7755255255 ns\nthreads: 1"
+          },
+          {
+            "name": "World step (parallel) · 128 parents · 8 children/parent",
+            "value": 2519026.001736159,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 2431277.3611111133 ns\nthreads: 1"
+          },
+          {
+            "name": "World step (parallel) · 128 parents · 32 children/parent",
+            "value": 28316309.800002273,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 28038219.639999937 ns\nthreads: 1"
+          },
+          {
+            "name": "Rigid-body step (sequential) · 128 bodies",
+            "value": 48352.27645216946,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 48346.951547826284 ns\nthreads: 1"
+          },
+          {
+            "name": "Rigid-body step (sequential) · 1024 bodies",
+            "value": 383882.80329215986,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 383839.4052126201 ns\nthreads: 1"
+          },
+          {
+            "name": "Rigid-body step (sequential) · 4096 bodies",
+            "value": 1544337.477398064,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 1544212.7375964734 ns\nthreads: 1"
+          },
+          {
+            "name": "Rigid-body step (parallel) · 128 bodies",
+            "value": 107313.8079009512,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 89874.28974408057 ns\nthreads: 1"
+          },
+          {
+            "name": "Rigid-body step (parallel) · 1024 bodies",
+            "value": 699615.629839027,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 608415.9373640697 ns\nthreads: 1"
+          },
+          {
+            "name": "Rigid-body step (parallel) · 4096 bodies",
+            "value": 2372421.9985358757,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 2061000.4714494946 ns\nthreads: 1"
+          },
+          {
+            "name": "Contact-shaped proxy (sequential) · 1024 bodies · 16 iterations",
+            "value": 54306.813782932026,
+            "unit": "ns/iter",
+            "extra": "iterations: 16\ncpu: 54303.93574172492 ns\nthreads: 1"
+          },
+          {
+            "name": "Contact-shaped proxy (sequential) · 4096 bodies · 16 iterations",
+            "value": 218497.4044312612,
+            "unit": "ns/iter",
+            "extra": "iterations: 16\ncpu: 218480.4044312665 ns\nthreads: 1"
+          },
+          {
+            "name": "Contact-shaped proxy (sequential) · 1024 bodies · 64 iterations",
+            "value": 217252.5737780976,
+            "unit": "ns/iter",
+            "extra": "iterations: 64\ncpu: 217239.34290147386 ns\nthreads: 1"
+          },
+          {
+            "name": "Contact-shaped proxy (parallel) · 1024 bodies · 16 iterations",
+            "value": 77553.10583954149,
+            "unit": "ns/iter",
+            "extra": "iterations: 16\ncpu: 12005.252330618596 ns\nthreads: 1"
+          },
+          {
+            "name": "Contact-shaped proxy (parallel) · 4096 bodies · 16 iterations",
+            "value": 256615.41204646963,
+            "unit": "ns/iter",
+            "extra": "iterations: 16\ncpu: 13866.131915602191 ns\nthreads: 1"
+          },
+          {
+            "name": "Contact-shaped proxy (parallel) · 1024 bodies · 64 iterations",
+            "value": 264065.7592654471,
+            "unit": "ns/iter",
+            "extra": "iterations: 64\ncpu: 21467.97185430463 ns\nthreads: 1"
+          },
+          {
+            "name": "Contact-island proxy (sequential) · 4 islands · 512 bodies/island · 64 iterations",
+            "value": 433297.27236145845,
+            "unit": "ns/iter",
+            "extra": "iterations: 64\ncpu: 433266.1327762312 ns\nthreads: 1"
+          },
+          {
+            "name": "Contact-island proxy (sequential) · 8 islands · 512 bodies/island · 64 iterations",
+            "value": 865380.702101423,
+            "unit": "ns/iter",
+            "extra": "iterations: 64\ncpu: 865337.9864029606 ns\nthreads: 1"
+          },
+          {
+            "name": "Contact-island proxy (sequential) · 16 islands · 512 bodies/island · 64 iterations",
+            "value": 1733005.137376069,
+            "unit": "ns/iter",
+            "extra": "iterations: 64\ncpu: 1732884.7017326702 ns\nthreads: 1"
+          },
+          {
+            "name": "Contact-island proxy (parallel) · 4 islands · 512 bodies/island · 64 iterations",
+            "value": 137533.28753000006,
+            "unit": "ns/iter",
+            "extra": "iterations: 64\ncpu: 5313.302699999979 ns\nthreads: 1"
+          },
+          {
+            "name": "Contact-island proxy (parallel) · 8 islands · 512 bodies/island · 64 iterations",
+            "value": 252148.42136000015,
+            "unit": "ns/iter",
+            "extra": "iterations: 64\ncpu: 6643.479199999973 ns\nthreads: 1"
+          },
+          {
+            "name": "Contact-island proxy (parallel) · 16 islands · 512 bodies/island · 64 iterations",
+            "value": 481770.9865000006,
+            "unit": "ns/iter",
+            "extra": "iterations: 64\ncpu: 9126.72078 ns\nthreads: 1"
+          },
+          {
+            "name": "Rigid-body batch (CPU baseline) · 1024 worlds · 128 bodies · 10 steps",
+            "value": 143499302.3000061,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 143494008.30000007 ns\nthreads: 1"
+          },
+          {
+            "name": "Rigid world step (sequential impulse) · 1 boxes",
+            "value": 2223.065846557711,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 2255.379738380658 ns\nthreads: 1"
+          },
+          {
+            "name": "Rigid world step (sequential impulse) · 2 boxes",
+            "value": 2718.384208670069,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 2750.469887551751 ns\nthreads: 1"
+          },
+          {
+            "name": "Rigid world step (sequential impulse) · 4 boxes",
+            "value": 3781.3359320862364,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 3816.262685030509 ns\nthreads: 1"
+          },
+          {
+            "name": "Rigid world step (IPC barrier) · 1 boxes",
+            "value": 774830689.5000496,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 774803421.4999996 ns\nthreads: 1"
+          },
+          {
+            "name": "Rigid world step (IPC barrier) · 2 boxes",
+            "value": 629699719.9999623,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 629641267.9999986 ns\nthreads: 1"
+          },
+          {
+            "name": "Rigid world step (IPC barrier) · 4 boxes",
+            "value": 1227429407.000045,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 1227253505.0000002 ns\nthreads: 1"
+          },
+          {
+            "name": "Deformable world step (default solver) · 8×8 grid",
+            "value": 3690275.3056237954,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 3690076.3276283615 ns\nthreads: 1"
+          },
+          {
+            "name": "Deformable world step (default solver) · 16×16 grid",
+            "value": 21652219.259999584,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 21650370.269999992 ns\nthreads: 1"
+          },
+          {
+            "name": "Deformable world step (default solver) · 24×24 grid",
+            "value": 46956058.405406706,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 46952032.081081085 ns\nthreads: 1"
+          },
+          {
+            "name": "Deformable world step (VBD) · 8×8 grid",
+            "value": 46317.30567685607,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 46311.93836840027 ns\nthreads: 1"
+          },
+          {
+            "name": "Deformable world step (VBD) · 16×16 grid",
+            "value": 207588.98475426028,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 207572.80387803423 ns\nthreads: 1"
+          },
+          {
+            "name": "Deformable world step (VBD) · 24×24 grid",
+            "value": 481924.0209910636,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 481878.5529938052 ns\nthreads: 1"
           }
         ]
       }
