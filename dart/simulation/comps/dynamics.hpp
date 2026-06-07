@@ -86,4 +86,20 @@ struct Force
   Eigen::Vector3d torque = Eigen::Vector3d::Zero();
 };
 
+/// Automatic deactivation runtime state.
+///
+/// **Internal Implementation Detail** - Not exposed in public API.
+struct DeactivationState
+{
+  DART_SIMULATION_PROPERTY_COMPONENT(DeactivationState);
+
+  bool sleeping = false;
+  bool sleepCandidate = false;
+  double quietTime = 0.0;
+  double smoothedLinearSpeed = 0.0;
+  double smoothedAngularSpeed = 0.0;
+  double smoothedGeneralizedSpeed = 0.0;
+  int groupIndex = -1;
+};
+
 } // namespace dart::simulation::comps

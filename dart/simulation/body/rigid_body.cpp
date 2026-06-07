@@ -608,6 +608,24 @@ bool RigidBody::isKinematic() const
 }
 
 //==============================================================================
+bool RigidBody::isSleeping() const
+{
+  DART_SIMULATION_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid rigid body handle");
+
+  return getWorld()->isDeactivationEntitySleeping(getEntity());
+}
+
+//==============================================================================
+int RigidBody::getDeactivationGroupIndex() const
+{
+  DART_SIMULATION_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid rigid body handle");
+
+  return getWorld()->getDeactivationGroupIndex(getEntity());
+}
+
+//==============================================================================
 void RigidBody::setRestitution(double restitution)
 {
   DART_SIMULATION_THROW_T_IF(

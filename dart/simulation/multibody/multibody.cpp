@@ -347,6 +347,24 @@ bool Multibody::isValid() const
                 .all_of<comps::MultibodyTag>(entity);
 }
 
+//==============================================================================
+bool Multibody::isSleeping() const
+{
+  DART_SIMULATION_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid multibody handle");
+
+  return m_world->isDeactivationEntitySleeping(m_entity);
+}
+
+//==============================================================================
+int Multibody::getDeactivationGroupIndex() const
+{
+  DART_SIMULATION_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid multibody handle");
+
+  return m_world->getDeactivationGroupIndex(m_entity);
+}
+
 Link Multibody::addLink(std::string_view name)
 {
   // Check design mode

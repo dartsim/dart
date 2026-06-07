@@ -109,6 +109,38 @@ enum class ContactGradientMode
   PreContactSurrogate,
 };
 
+/// Opt-in automatic deactivation ("sleeping") policy.
+///
+/// Deactivation is disabled by default. When enabled, supported dynamic rigid
+/// bodies and semi-implicit multibodies that remain below the configured speed
+/// thresholds for `timeUntilSleep` may be frozen as a whole contact island
+/// until a contact with an active dynamic body or an explicit user disturbance
+/// wakes them. Gravity alone is not a wake disturbance.
+struct DeactivationOptions
+{
+  /// Enable automatic deactivation. Defaults off to preserve exact legacy
+  /// forward results and diagnostics.
+  bool enabled = false;
+
+  /// Rigid-body linear speed threshold in m/s.
+  double linearSpeedThreshold = 1e-3;
+
+  /// Rigid-body angular speed threshold in rad/s.
+  double angularSpeedThreshold = 1e-3;
+
+  /// Multibody generalized-speed threshold.
+  double generalizedSpeedThreshold = 1e-3;
+
+  /// Continuous quiet time required before a candidate island sleeps.
+  double timeUntilSleep = 0.5;
+
+  /// Hysteresis multiplier used by the wake-side speed band.
+  double wakeThresholdScale = 2.0;
+
+  /// Explicit force/torque/command magnitude above this value wakes a body.
+  double disturbanceForceThreshold = 1e-9;
+};
+
 /// Construction-time options for a `World`.
 ///
 /// `WorldOptions` is a plain value object: it carries the initial time step,
@@ -155,6 +187,9 @@ struct WorldOptions
   /// substitution in the resolved-configuration report instead of erroring.
   /// PLAN-091 WP-091.11.
   bool strictSolverResolution = false;
+
+  /// Automatic body deactivation policy. Disabled by default.
+  DeactivationOptions deactivationOptions;
 
   /// Optional base allocator for the World's memory hierarchy. If null, the
   /// default DART memory allocator is used. The pointed-to allocator must

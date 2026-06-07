@@ -627,6 +627,7 @@ void registerBuiltInSerializers(SerializerRegistry& registry)
   registerComponentIfNeeded<comps::Velocity>(registry);
   registerComponentIfNeeded<comps::MassProperties>(registry);
   registerComponentIfNeeded<comps::Force>(registry);
+  registerComponentIfNeeded<comps::DeactivationState>(registry);
 }
 
 } // namespace
