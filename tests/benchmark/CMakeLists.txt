@@ -391,6 +391,15 @@ target_link_libraries(
 )
 dart_format_add(math/bm_group_product.cpp)
 
+add_executable(bm_lie_group_batch math/bm_lie_group_batch.cpp)
+target_link_libraries(
+  bm_lie_group_batch
+  dart
+  benchmark::benchmark
+  benchmark::benchmark_main
+)
+dart_format_add(math/bm_lie_group_batch.cpp)
+
 add_executable(bm_spatial_algebra math/bm_spatial_algebra.cpp)
 target_link_libraries(
   bm_spatial_algebra
