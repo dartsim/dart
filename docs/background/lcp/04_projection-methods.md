@@ -586,6 +586,16 @@ solver.solve(problem, x, options);
 
 > Note: DART uses an even/odd index partition as the red/black sets.
 
+DART 7 benchmark evidence includes
+`BM_LcpRedBlackGaussSeidelRelaxationSweep` rows for standard 48-row, boxed
+24-row, and friction-index 8-contact fixtures at relaxation 0.5, 1.0, and 1.3.
+Focused default, SIMD-enabled, and CUDA-enabled build-tree runs all reported
+`contract_ok=1` with `red_black_color_count=2` and the expected red/black row
+counts. These rows expose the two-color partition and relaxation behavior; they
+are not evidence for solver-internal threaded Red-Black execution. The
+CUDA-enabled rows are CPU solver rows in a CUDA-enabled build, not CUDA LCP
+kernel execution.
+
 ### Use Cases
 
 - GPU implementations

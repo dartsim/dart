@@ -2805,6 +2805,54 @@ struct RelaxationSweepCase
   std::string_view relaxationLabel;
 };
 
+constexpr std::array<RelaxationSweepCase, 9> kRelaxationSweepCases{{
+    {BenchmarkProblemFamily::Standard,
+     48,
+     RelaxationSweepKind::Under,
+     0.5,
+     "Relaxation0_5"},
+    {BenchmarkProblemFamily::Standard,
+     48,
+     RelaxationSweepKind::Plain,
+     1.0,
+     "Relaxation1_0"},
+    {BenchmarkProblemFamily::Standard,
+     48,
+     RelaxationSweepKind::Over,
+     1.3,
+     "Relaxation1_3"},
+    {BenchmarkProblemFamily::Boxed,
+     24,
+     RelaxationSweepKind::Under,
+     0.5,
+     "Relaxation0_5"},
+    {BenchmarkProblemFamily::Boxed,
+     24,
+     RelaxationSweepKind::Plain,
+     1.0,
+     "Relaxation1_0"},
+    {BenchmarkProblemFamily::Boxed,
+     24,
+     RelaxationSweepKind::Over,
+     1.3,
+     "Relaxation1_3"},
+    {BenchmarkProblemFamily::FrictionIndex,
+     8,
+     RelaxationSweepKind::Under,
+     0.5,
+     "Relaxation0_5"},
+    {BenchmarkProblemFamily::FrictionIndex,
+     8,
+     RelaxationSweepKind::Plain,
+     1.0,
+     "Relaxation1_0"},
+    {BenchmarkProblemFamily::FrictionIndex,
+     8,
+     RelaxationSweepKind::Over,
+     1.3,
+     "Relaxation1_3"},
+}};
+
 std::string_view getNewtonWarmStartModeName(const NewtonWarmStartMode mode)
 {
   switch (mode) {
@@ -4809,6 +4857,43 @@ void RunSymmetricPsorRelaxationSweepBenchmark(
   state.counters["psor_under_relaxation"]
       = testCase.relaxationKind == RelaxationSweepKind::Under ? 1.0 : 0.0;
   state.counters["psor_plain_symmetric_psor"]
+      = testCase.relaxationKind == RelaxationSweepKind::Plain ? 1.0 : 0.0;
+  state.counters["psor_over_relaxation"]
+      = testCase.relaxationKind == RelaxationSweepKind::Over ? 1.0 : 0.0;
+  if (testCase.family == BenchmarkProblemFamily::FrictionIndex) {
+    state.counters["contact_count"] = testCase.problemArg;
+  }
+}
+
+void RunRedBlackGaussSeidelRelaxationSweepBenchmark(
+    benchmark::State& state, const RelaxationSweepCase testCase)
+{
+  const auto problem
+      = MakeBenchmarkProblem(testCase.family, testCase.problemArg);
+  auto options = MakeBenchmarkOptions(200);
+  options.relaxation = testCase.relaxation;
+
+  dart::math::RedBlackGaussSeidelSolver solver;
+  RunBenchmarkWithSolver(
+      state,
+      solver,
+      problem,
+      options,
+      MakeLabel(
+          "RedBlackGaussSeidel",
+          "RelaxationSweep/"
+              + std::string(getProblemFamilyName(testCase.family)) + "/"
+              + std::string(testCase.relaxationLabel)));
+
+  const double problemSize = static_cast<double>(problem.b.size());
+  state.counters["red_black_gauss_seidel_relaxation_sweep"] = 1.0;
+  state.counters["red_black_color_count"] = 2.0;
+  state.counters["red_black_red_rows"] = std::ceil(problemSize / 2.0);
+  state.counters["red_black_black_rows"] = std::floor(problemSize / 2.0);
+  state.counters["psor_relaxation"] = testCase.relaxation;
+  state.counters["psor_under_relaxation"]
+      = testCase.relaxationKind == RelaxationSweepKind::Under ? 1.0 : 0.0;
+  state.counters["psor_plain_red_black_gauss_seidel"]
       = testCase.relaxationKind == RelaxationSweepKind::Plain ? 1.0 : 0.0;
   state.counters["psor_over_relaxation"]
       = testCase.relaxationKind == RelaxationSweepKind::Over ? 1.0 : 0.0;
@@ -6907,6 +6992,17 @@ std::string MakeSymmetricPsorRelaxationSweepBenchmarkName(
   return out.str();
 }
 
+std::string MakeRedBlackGaussSeidelRelaxationSweepBenchmarkName(
+    const RelaxationSweepCase testCase)
+{
+  std::ostringstream out;
+  out << "BM_LcpRedBlackGaussSeidelRelaxationSweep/"
+      << getProblemFamilyName(testCase.family) << "/"
+      << getRelaxationSweepKindName(testCase.relaxationKind) << "/"
+      << testCase.relaxationLabel;
+  return out.str();
+}
+
 std::string MakeNewtonWarmStartBatchSerialBenchmarkName(
     const dart::test::LcpSolverManifestEntry& solver,
     const NewtonWarmStartMode mode)
@@ -7365,55 +7461,7 @@ void RegisterActiveSetTransitionBenchmarks()
 
 void RegisterPgsRelaxationSweepBenchmarks()
 {
-  constexpr std::array<RelaxationSweepCase, 9> kCases{{
-      {BenchmarkProblemFamily::Standard,
-       48,
-       RelaxationSweepKind::Under,
-       0.5,
-       "Relaxation0_5"},
-      {BenchmarkProblemFamily::Standard,
-       48,
-       RelaxationSweepKind::Plain,
-       1.0,
-       "Relaxation1_0"},
-      {BenchmarkProblemFamily::Standard,
-       48,
-       RelaxationSweepKind::Over,
-       1.3,
-       "Relaxation1_3"},
-      {BenchmarkProblemFamily::Boxed,
-       24,
-       RelaxationSweepKind::Under,
-       0.5,
-       "Relaxation0_5"},
-      {BenchmarkProblemFamily::Boxed,
-       24,
-       RelaxationSweepKind::Plain,
-       1.0,
-       "Relaxation1_0"},
-      {BenchmarkProblemFamily::Boxed,
-       24,
-       RelaxationSweepKind::Over,
-       1.3,
-       "Relaxation1_3"},
-      {BenchmarkProblemFamily::FrictionIndex,
-       8,
-       RelaxationSweepKind::Under,
-       0.5,
-       "Relaxation0_5"},
-      {BenchmarkProblemFamily::FrictionIndex,
-       8,
-       RelaxationSweepKind::Plain,
-       1.0,
-       "Relaxation1_0"},
-      {BenchmarkProblemFamily::FrictionIndex,
-       8,
-       RelaxationSweepKind::Over,
-       1.3,
-       "Relaxation1_3"},
-  }};
-
-  for (const auto testCase : kCases) {
+  for (const auto testCase : kRelaxationSweepCases) {
     const auto name = MakePgsRelaxationSweepBenchmarkName(testCase);
     benchmark::RegisterBenchmark(
         name.c_str(), [testCase](benchmark::State& state) {
@@ -7424,59 +7472,23 @@ void RegisterPgsRelaxationSweepBenchmarks()
 
 void RegisterSymmetricPsorRelaxationSweepBenchmarks()
 {
-  constexpr std::array<RelaxationSweepCase, 9> kCases{{
-      {BenchmarkProblemFamily::Standard,
-       48,
-       RelaxationSweepKind::Under,
-       0.5,
-       "Relaxation0_5"},
-      {BenchmarkProblemFamily::Standard,
-       48,
-       RelaxationSweepKind::Plain,
-       1.0,
-       "Relaxation1_0"},
-      {BenchmarkProblemFamily::Standard,
-       48,
-       RelaxationSweepKind::Over,
-       1.3,
-       "Relaxation1_3"},
-      {BenchmarkProblemFamily::Boxed,
-       24,
-       RelaxationSweepKind::Under,
-       0.5,
-       "Relaxation0_5"},
-      {BenchmarkProblemFamily::Boxed,
-       24,
-       RelaxationSweepKind::Plain,
-       1.0,
-       "Relaxation1_0"},
-      {BenchmarkProblemFamily::Boxed,
-       24,
-       RelaxationSweepKind::Over,
-       1.3,
-       "Relaxation1_3"},
-      {BenchmarkProblemFamily::FrictionIndex,
-       8,
-       RelaxationSweepKind::Under,
-       0.5,
-       "Relaxation0_5"},
-      {BenchmarkProblemFamily::FrictionIndex,
-       8,
-       RelaxationSweepKind::Plain,
-       1.0,
-       "Relaxation1_0"},
-      {BenchmarkProblemFamily::FrictionIndex,
-       8,
-       RelaxationSweepKind::Over,
-       1.3,
-       "Relaxation1_3"},
-  }};
-
-  for (const auto testCase : kCases) {
+  for (const auto testCase : kRelaxationSweepCases) {
     const auto name = MakeSymmetricPsorRelaxationSweepBenchmarkName(testCase);
     benchmark::RegisterBenchmark(
         name.c_str(), [testCase](benchmark::State& state) {
           RunSymmetricPsorRelaxationSweepBenchmark(state, testCase);
+        });
+  }
+}
+
+void RegisterRedBlackGaussSeidelRelaxationSweepBenchmarks()
+{
+  for (const auto testCase : kRelaxationSweepCases) {
+    const auto name
+        = MakeRedBlackGaussSeidelRelaxationSweepBenchmarkName(testCase);
+    benchmark::RegisterBenchmark(
+        name.c_str(), [testCase](benchmark::State& state) {
+          RunRedBlackGaussSeidelRelaxationSweepBenchmark(state, testCase);
         });
   }
 }
@@ -8238,6 +8250,7 @@ const bool kManifestBenchmarksRegistered = [] {
   RegisterActiveSetTransitionBenchmarks();
   RegisterPgsRelaxationSweepBenchmarks();
   RegisterSymmetricPsorRelaxationSweepBenchmarks();
+  RegisterRedBlackGaussSeidelRelaxationSweepBenchmarks();
   RegisterNewtonWarmStartBenchmarks();
   RegisterLargerActiveSetTransitionBenchmarks();
   RegisterStressActiveSetTransitionBenchmarks();

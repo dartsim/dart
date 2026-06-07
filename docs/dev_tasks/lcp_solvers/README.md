@@ -28,6 +28,9 @@
 - [x] Added focused PGS/PSOR and symmetric PSOR relaxation sweep benchmark rows
       covering under-relaxation, plain relaxation, and over-relaxation on
       standard, boxed, and friction-index fixtures.
+- [x] Added focused Red-Black Gauss-Seidel relaxation sweep benchmark rows with
+      two-color partition counters on standard, boxed, and friction-index
+      fixtures.
 - [x] Verified a focused DART 7 SIMD-enabled CPU build slice for generated LCP
       correctness and scalar/parallel batch benchmark rows.
 - [x] Verified a focused DART 7 CUDA-enabled build/runtime slice and ran the
@@ -618,6 +621,23 @@ tradeoffs evidence based.
   friction-index rows, and backend build-state counters. The CUDA-enabled rows
   report `build_cuda_enabled=1` but are CPU symmetric PSOR solver rows in a
   CUDA-enabled build, not CUDA LCP kernel execution.
+- Verified Red-Black Gauss-Seidel relaxation sweep benchmark slice:
+  `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpRedBlackGaussSeidelRelaxationSweep' | wc -l`
+  reported 9 rows, and JSON checks for
+  `BM_LcpRedBlackGaussSeidelRelaxationSweep` reported 9 rows with
+  `contract_ok=1` in the default, SIMD-enabled, and CUDA-enabled build trees.
+  These rows cover the standard 48-row, boxed 24-row, and friction-index
+  8-contact benchmark fixtures at relaxation 0.5, 1.0, and 1.3. The rows
+  report `red_black_gauss_seidel_relaxation_sweep=1`,
+  `red_black_color_count=2`, `red_black_red_rows=12/24`,
+  `red_black_black_rows=12/24`, `psor_relaxation`,
+  `psor_under_relaxation`, `psor_plain_red_black_gauss_seidel`,
+  `psor_over_relaxation`, `problem_size=24/48`, `contact_count=8` for the
+  friction-index rows, and backend build-state counters. The CUDA-enabled rows
+  report `build_cuda_enabled=1` but are CPU Red-Black Gauss-Seidel solver rows
+  in a CUDA-enabled build, not CUDA LCP kernel execution. These rows expose the
+  even/odd two-color partition; they do not prove solver-internal threaded
+  Red-Black execution.
 - Verified larger active-set transition benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpLargerActiveSetTransition/' | wc -l`
   reported 49 rows, and
@@ -1430,8 +1450,8 @@ tradeoffs evidence based.
   fixtures, active-set, larger/stress/extreme/production active-set packets,
   production active-set serial and `ParallelExecutor` batch packets,
   mildly ill-conditioned single-problem and 8x-coupled batch packets,
-  near-singular and singular-degenerate packets, PGS/PSOR and symmetric PSOR
-  relaxation sweep rows,
+  near-singular and singular-degenerate packets, PGS/PSOR, symmetric PSOR, and
+  Red-Black Gauss-Seidel relaxation sweep rows,
   independent-problem batches, simple world-contact snapshots, small coupled
   stack snapshot batches, and dense box-face step rows to broader dense and
   robot-like end-to-end contact systems, broader SIMD benchmark packets, larger threaded

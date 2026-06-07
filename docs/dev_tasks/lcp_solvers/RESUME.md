@@ -83,6 +83,15 @@ default, SIMD-enabled, and CUDA-enabled build-tree runs passed with
 `contract_ok=1` on every row and recorded symmetric under/plain/over-relaxation
 counters. The CUDA-enabled rows are CPU symmetric PSOR solver rows in a
 CUDA-enabled build, not CUDA LCP kernel execution.
+It now also adds 9 `BM_LcpRedBlackGaussSeidelRelaxationSweep` benchmark rows
+for the `RedBlackGaussSeidelSolver` relaxation and two-color partition path,
+covering standard 48-row, boxed 24-row, and friction-index 8-contact fixtures
+at relaxation 0.5, 1.0, and 1.3. Focused default, SIMD-enabled, and
+CUDA-enabled build-tree runs passed with `contract_ok=1` on every row and
+recorded under/plain/over-relaxation counters plus `red_black_color_count=2`
+with the expected 12/24 red and black row counts. The CUDA-enabled rows are CPU
+solver rows in a CUDA-enabled build, not CUDA LCP kernel execution; this is not
+evidence for solver-internal threaded Red-Black execution.
 It now also extends the robust near-singular generated slice to coupled
 friction-index 12-contact packets and adds 13 matching `BM_LcpNearSingular`
 benchmark rows for standard 8-row, boxed 8-row, and coupled friction-index
@@ -195,8 +204,8 @@ solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
 `feature/dart7-lcp-solver-evidence` - local checkpoint branch with DART 7 LCP
 solver evidence commits, including native standard-Newton warm-start tests and
 default/SIMD/CUDA-enabled warm-start single-problem and batch benchmark rows,
-PGS/PSOR and symmetric PSOR relaxation sweep benchmark rows, and Jacobi
-threading benchmark rows.
+PGS/PSOR, symmetric PSOR, and Red-Black Gauss-Seidel relaxation sweep benchmark
+rows, and Jacobi threading benchmark rows.
 Push/PR work still requires explicit maintainer/user approval.
 
 ## Immediate Next Step
@@ -205,9 +214,9 @@ Move from the now-verified extreme 128-row/16-contact exact rank-deficient,
 production active-set transition 32-contact, coupled mildly ill-conditioned
 24-contact, near-singular 12-contact CPU solver rows, and default/SIMD/CUDA
 Newton warm-start single-problem and batch benchmark rows, plus focused
-PGS/PSOR and symmetric PSOR relaxation sweep rows, toward broader
-solver-specific conditioning grids and direct backend execution evidence beyond
-SIMD/CUDA-enabled build-state counters.
+PGS/PSOR, symmetric PSOR, and Red-Black Gauss-Seidel relaxation sweep rows,
+toward broader solver-specific conditioning grids and direct backend execution
+evidence beyond SIMD/CUDA-enabled build-state counters.
 Broaden SIMD benchmark gates, solver-internal threaded benchmark evidence, and
 the CUDA Jacobi/PGS batch slices into broader/general CUDA LCP execution
 separately from the current serial, task-parallel independent-problem, simple
@@ -516,6 +525,15 @@ and broader dense/robot-like contact scenes.
   `contact_count=8` for the friction-index rows. Treat the CUDA-enabled rows as
   CPU symmetric PSOR solver rows in a CUDA-enabled build, not CUDA LCP kernel
   execution.
+- `BM_LCP_COMPARE` now lists 9 focused Red-Black Gauss-Seidel relaxation sweep
+  rows for the same standard 48-row, boxed 24-row, and friction-index 8-contact
+  fixtures at relaxation 0.5, 1.0, and 1.3. Default, SIMD, and CUDA-enabled
+  focused runs report `contract_ok=1`,
+  `red_black_gauss_seidel_relaxation_sweep=1`, two-color counters, backend
+  build-state counters, and `contact_count=8` for the friction-index rows.
+  Treat the CUDA-enabled rows as CPU solver rows in a CUDA-enabled build, not
+  CUDA LCP kernel execution; these rows do not prove solver-internal threaded
+  Red-Black execution.
 - `BoxedSemiSmoothNewton` now includes the derivative of moving `findex`
   friction bounds in its natural-residual Jacobian. The previously failing
   coupled mildly ill-conditioned 4-contact friction-index generated case passes
