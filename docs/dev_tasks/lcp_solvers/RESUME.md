@@ -217,6 +217,16 @@ no-fallback counters, four Dantzig boxed-or-findex rows,
 build-state counters. Focused pivoting unit coverage passed 42 tests. The
 CUDA-enabled rows are CPU pivoting solver rows in a CUDA-enabled build, not
 CUDA LCP kernel execution.
+It now also adds 12 `BM_LcpBlockPartitionSweep` benchmark rows for BGS and
+Blocked Jacobi, covering standard 12-row, boxed 12-row, and friction-index
+4-contact fixtures with full-block, 3-row block, auto `findex`, and explicit
+contact-block partitions. Focused default, SIMD-enabled, and CUDA-enabled
+build-tree runs passed with `contract_ok=1` on every row and recorded
+`block_partition_sweep`, block counts `1/4`, block sizes `3/12`,
+`contact_count=4`, observed solver `iterations=1/4/5/6/10`, and backend
+build-state counters. Focused block-solver unit coverage passed 15 tests. The
+CUDA-enabled rows are CPU BGS/Blocked Jacobi solver rows in a CUDA-enabled
+build, not CUDA LCP kernel execution.
 It now also extends the robust near-singular generated slice to coupled
 friction-index 12-contact packets and adds 13 matching `BM_LcpNearSingular`
 benchmark rows for standard 8-row, boxed 8-row, and coupled friction-index
@@ -336,8 +346,8 @@ benchmark rows, SubspaceMinimization PGS-iteration benchmark rows,
 ShockPropagation layer-layout benchmark rows, MPRGP SPD/check benchmark rows,
 Interior Point path-parameter benchmark rows, Staggering contact-pipeline
 benchmark rows, Boxed Semi-Smooth Newton line-search benchmark rows, Pivoting
-scale benchmark rows, SAP regularization benchmark rows, and Jacobi threading
-benchmark rows.
+scale benchmark rows, BGS/Blocked Jacobi block-partition benchmark rows, SAP
+regularization benchmark rows, and Jacobi threading benchmark rows.
 Push/PR work still requires explicit maintainer/user approval.
 
 ## Immediate Next Step
@@ -352,9 +362,10 @@ PGS-preconditioner iteration sweep rows, SubspaceMinimization PGS-iteration
 sweep rows, ShockPropagation layer-layout sweep rows, MPRGP SPD/check sweep
 rows, Interior Point path-parameter sweep rows, Staggering contact-pipeline
 sweep rows, Boxed Semi-Smooth Newton line-search sweep rows, Pivoting scale
-sweep rows, ADMM rho/adaptive-rho sweep rows, and SAP regularization sweep
-rows, toward broader solver-specific conditioning grids and direct backend
-execution evidence beyond SIMD/CUDA-enabled build-state counters.
+sweep rows, BGS/Blocked Jacobi block-partition sweep rows, ADMM
+rho/adaptive-rho sweep rows, and SAP regularization sweep rows, toward broader
+solver-specific conditioning grids and direct backend execution evidence beyond
+SIMD/CUDA-enabled build-state counters.
 Broaden SIMD benchmark gates, solver-internal threaded benchmark evidence, and
 the CUDA Jacobi/PGS batch slices into broader/general CUDA LCP execution
 separately from the current serial, task-parallel independent-problem, simple

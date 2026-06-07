@@ -307,6 +307,9 @@
       rejected. A focused `BM_LCP_COMPARE` gate also verifies 22 BGS/Blocked
       Jacobi world-contact, stack-contact, and serial/parallel batch rows with
       `contract_ok=1`.
+- [x] Added focused BGS/Blocked Jacobi block-partition sweep benchmark rows for
+      full-block, 3-row block, auto `findex`, and explicit contact-block
+      partitions on standard, boxed, and friction-index fixtures.
 - [x] Added opt-in projected gradient-descent warm starts for the native
       standard-LCP paths of Minimum Map, Fischer-Burmeister, and Penalized
       Fischer-Burmeister Newton, with focused tests proving each initializer
@@ -1500,6 +1503,19 @@ tradeoffs evidence based.
   world-contact rows (`BM_LcpWorldContact`, `BM_LcpWorldStackContact`,
   `BM_LcpWorldContactBatch(Serial|Parallel)`, and
   `BM_LcpWorldContactStressBatch(Serial|Parallel)`) with zero bad contracts.
+- Added BGS and Blocked Jacobi block-partition sweep evidence:
+  `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpBlockPartitionSweep' | wc -l`
+  reported 12 rows, and JSON checks for `BM_LcpBlockPartitionSweep` reported 12
+  rows with `contract_ok=1` in the default, SIMD-enabled, and CUDA-enabled
+  build trees. These rows cover standard 12-row, boxed 12-row, and
+  friction-index 4-contact fixtures with full-block, 3-row block, auto
+  `findex`, and explicit contact-block partitions for both solvers. The rows
+  report `block_partition_sweep=1`, block counts `1/4`, block sizes `3/12`,
+  `contact_count=4`, observed solver `iterations=1/4/5/6/10`, and backend
+  build-state counters. Focused
+  `BlockedJacobiSolverCoverage.*:BgsSolverCoverage.*` unit coverage passed 15
+  tests. The CUDA-enabled rows are CPU BGS/Blocked Jacobi rows in a
+  CUDA-enabled build, not CUDA LCP kernel execution.
 - Added end-to-end DART 7 `World::step()` evidence for the boxed-LCP path with
   two independent sphere-ground contacts advanced for 200 steps and checked
   against non-penetration, near-rest normal velocity, tangential-speed
@@ -1640,7 +1656,8 @@ tradeoffs evidence based.
   layer-layout sweep rows, MPRGP SPD/check sweep rows, Interior Point
   path-parameter sweep rows, Staggering contact-pipeline sweep rows, Boxed
   Semi-Smooth Newton line-search sweep rows, Pivoting scale sweep rows, ADMM
-  rho/adaptive-rho sweep rows, SAP regularization sweep rows,
+  rho/adaptive-rho sweep rows, SAP regularization sweep rows, BGS/Blocked
+  Jacobi block-partition sweep rows,
   independent-problem batches, simple world-contact snapshots, small coupled
   stack snapshot batches, and dense box-face step rows to broader dense and
   robot-like end-to-end contact systems, broader SIMD benchmark packets, larger threaded

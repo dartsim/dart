@@ -462,6 +462,16 @@ auto result = solver.solve(problem, x, options);
 > DART uses `DirectSolver` for standard blocks up to 3 variables and falls back
 > to `DantzigSolver` for boxed or larger blocks.
 
+DART 7 benchmark evidence includes `BM_LcpBlockPartitionSweep`, which compares
+Blocked Jacobi and BGS on standard, boxed, and friction-index fixtures with
+full-block, 3-row block, auto `findex` contact-block, and explicit
+contact-block partitions. Focused default, SIMD-enabled, and CUDA-enabled
+build-tree runs reported 12 rows with `contract_ok=1`, block counts `1/4`,
+block sizes `3/12`, friction-index `contact_count=4`, observed solver
+iterations `1/4/5/6/10`, and backend build-state counters. The CUDA-enabled
+rows are CPU Blocked Jacobi/BGS solver rows in a CUDA-enabled build, not CUDA
+LCP kernel execution.
+
 ### Properties
 
 - **Parallelization**: Fully parallel (all blocks independent)

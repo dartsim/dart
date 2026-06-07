@@ -2868,6 +2868,14 @@ enum class ShockPropagationLayerProfile
   SerialLayers
 };
 
+enum class BlockPartitionProfile
+{
+  FullBlock,
+  UniformThree,
+  AutoFindex,
+  ContactBlocks
+};
+
 enum class StandardSpdProblemKind
 {
   DenseSpd,
@@ -2903,6 +2911,15 @@ struct PivotingScaleSweepCase
   BenchmarkProblemFamily family;
   int problemArg;
   std::string_view problemLabel;
+};
+
+struct BlockPartitionSweepCase
+{
+  std::string_view solverName;
+  BenchmarkProblemFamily family;
+  int problemArg;
+  BlockPartitionProfile profile;
+  std::string_view profileLabel;
 };
 
 struct ApgdRestartSweepCase
@@ -3060,6 +3077,69 @@ constexpr std::array<PivotingScaleSweepCase, 12> kPivotingScaleSweepCases{{
     {"Dantzig", BenchmarkProblemFamily::Boxed, 24, "Rows24"},
     {"Dantzig", BenchmarkProblemFamily::FrictionIndex, 4, "Contacts4"},
     {"Dantzig", BenchmarkProblemFamily::FrictionIndex, 8, "Contacts8"},
+}};
+
+constexpr std::array<BlockPartitionSweepCase, 12> kBlockPartitionSweepCases{{
+    {"BGS",
+     BenchmarkProblemFamily::Standard,
+     12,
+     BlockPartitionProfile::FullBlock,
+     "FullBlock"},
+    {"BGS",
+     BenchmarkProblemFamily::Standard,
+     12,
+     BlockPartitionProfile::UniformThree,
+     "Blocks3"},
+    {"BGS",
+     BenchmarkProblemFamily::Boxed,
+     12,
+     BlockPartitionProfile::FullBlock,
+     "FullBlock"},
+    {"BGS",
+     BenchmarkProblemFamily::Boxed,
+     12,
+     BlockPartitionProfile::UniformThree,
+     "Blocks3"},
+    {"BGS",
+     BenchmarkProblemFamily::FrictionIndex,
+     4,
+     BlockPartitionProfile::AutoFindex,
+     "AutoFindex"},
+    {"BGS",
+     BenchmarkProblemFamily::FrictionIndex,
+     4,
+     BlockPartitionProfile::ContactBlocks,
+     "ContactBlocks"},
+    {"BlockedJacobi",
+     BenchmarkProblemFamily::Standard,
+     12,
+     BlockPartitionProfile::FullBlock,
+     "FullBlock"},
+    {"BlockedJacobi",
+     BenchmarkProblemFamily::Standard,
+     12,
+     BlockPartitionProfile::UniformThree,
+     "Blocks3"},
+    {"BlockedJacobi",
+     BenchmarkProblemFamily::Boxed,
+     12,
+     BlockPartitionProfile::FullBlock,
+     "FullBlock"},
+    {"BlockedJacobi",
+     BenchmarkProblemFamily::Boxed,
+     12,
+     BlockPartitionProfile::UniformThree,
+     "Blocks3"},
+    {"BlockedJacobi",
+     BenchmarkProblemFamily::FrictionIndex,
+     4,
+     BlockPartitionProfile::AutoFindex,
+     "AutoFindex"},
+    {"BlockedJacobi",
+     BenchmarkProblemFamily::FrictionIndex,
+     4,
+     BlockPartitionProfile::ContactBlocks,
+     "ContactBlocks"},
 }};
 
 constexpr std::array<ApgdRestartSweepCase, 9> kApgdRestartSweepCases{{
@@ -3462,6 +3542,33 @@ LcpProblem MakeBenchmarkProblem(BenchmarkProblemFamily family, int size)
   }
 
   return MakeStandardSpdProblem(size, 10'001u + static_cast<unsigned>(size));
+}
+
+std::vector<int> MakeBlockPartition(
+    const LcpProblem& problem, const BlockPartitionSweepCase testCase)
+{
+  const auto problemSize = static_cast<int>(problem.b.size());
+  switch (testCase.profile) {
+    case BlockPartitionProfile::FullBlock:
+      return {problemSize};
+    case BlockPartitionProfile::UniformThree: {
+      std::vector<int> blocks;
+      blocks.reserve(static_cast<std::size_t>((problemSize + 2) / 3));
+      int remaining = problemSize;
+      while (remaining > 0) {
+        const int blockSize = std::min(3, remaining);
+        blocks.push_back(blockSize);
+        remaining -= blockSize;
+      }
+      return blocks;
+    }
+    case BlockPartitionProfile::AutoFindex:
+      return {};
+    case BlockPartitionProfile::ContactBlocks:
+      return std::vector<int>(static_cast<std::size_t>(testCase.problemArg), 3);
+  }
+
+  return {problemSize};
 }
 
 LcpProblem MakeActiveSetTransitionBenchmarkProblem(
@@ -5550,6 +5657,86 @@ void RunPivotingScaleSweepBenchmark(
   if (testCase.family == BenchmarkProblemFamily::FrictionIndex) {
     state.counters["contact_count"] = testCase.problemArg;
   }
+}
+
+void AddBlockPartitionSweepCounters(
+    benchmark::State& state,
+    const BlockPartitionSweepCase testCase,
+    const LcpProblem& problem,
+    const std::vector<int>& blockSizes)
+{
+  int blockCount = static_cast<int>(blockSizes.size());
+  int minBlockSize = blockSizes.empty() ? 0 : blockSizes.front();
+  int maxBlockSize = blockSizes.empty() ? 0 : blockSizes.front();
+  int blockSizeSum = 0;
+  for (const int blockSize : blockSizes) {
+    minBlockSize = std::min(minBlockSize, blockSize);
+    maxBlockSize = std::max(maxBlockSize, blockSize);
+    blockSizeSum += blockSize;
+  }
+
+  if (testCase.profile == BlockPartitionProfile::AutoFindex) {
+    blockCount = testCase.problemArg;
+    minBlockSize = 3;
+    maxBlockSize = 3;
+    blockSizeSum = static_cast<int>(problem.b.size());
+  }
+
+  state.counters["block_partition_sweep"] = 1.0;
+  state.counters["block_partition_problem_arg"] = testCase.problemArg;
+  state.counters["block_partition_block_count"] = blockCount;
+  state.counters["block_partition_min_block_size"] = minBlockSize;
+  state.counters["block_partition_max_block_size"] = maxBlockSize;
+  state.counters["block_partition_size_sum"] = blockSizeSum;
+  state.counters["block_partition_full_block"]
+      = testCase.profile == BlockPartitionProfile::FullBlock ? 1.0 : 0.0;
+  state.counters["block_partition_uniform_three"]
+      = testCase.profile == BlockPartitionProfile::UniformThree ? 1.0 : 0.0;
+  state.counters["block_partition_auto_findex"]
+      = testCase.profile == BlockPartitionProfile::AutoFindex ? 1.0 : 0.0;
+  state.counters["block_partition_contact_blocks"]
+      = testCase.profile == BlockPartitionProfile::ContactBlocks ? 1.0 : 0.0;
+  state.counters["block_partition_bgs_solver"]
+      = testCase.solverName == "BGS" ? 1.0 : 0.0;
+  state.counters["block_partition_blocked_jacobi_solver"]
+      = testCase.solverName == "BlockedJacobi" ? 1.0 : 0.0;
+  if (testCase.family == BenchmarkProblemFamily::FrictionIndex) {
+    state.counters["contact_count"] = testCase.problemArg;
+  }
+}
+
+void RunBlockPartitionSweepBenchmark(
+    benchmark::State& state, const BlockPartitionSweepCase testCase)
+{
+  const auto problem
+      = MakeBenchmarkProblem(testCase.family, testCase.problemArg);
+  const auto blockSizes = MakeBlockPartition(problem, testCase);
+  auto options = MakeBenchmarkOptions(500);
+
+  const std::string label = "BlockPartitionSweep/"
+                            + std::string(getProblemFamilyName(testCase.family))
+                            + "/" + std::string(testCase.profileLabel);
+
+  if (testCase.solverName == "BGS") {
+    dart::math::BgsSolver::Parameters params;
+    params.blockSizes = blockSizes;
+    options.customOptions = &params;
+    dart::math::BgsSolver solver;
+    RunBenchmarkWithSolver(
+        state, solver, problem, options, MakeLabel("BGS", label));
+  } else if (testCase.solverName == "BlockedJacobi") {
+    dart::math::BlockedJacobiSolver::Parameters params;
+    params.blockSizes = blockSizes;
+    options.customOptions = &params;
+    dart::math::BlockedJacobiSolver solver;
+    RunBenchmarkWithSolver(
+        state, solver, problem, options, MakeLabel("BlockedJacobi", label));
+  } else {
+    state.SkipWithError("unsupported block partition sweep solver");
+    return;
+  }
+
+  AddBlockPartitionSweepCounters(state, testCase, problem, blockSizes);
 }
 
 void RunApgdRestartSweepBenchmark(
@@ -8081,6 +8268,15 @@ std::string MakePivotingScaleSweepBenchmarkName(
   return out.str();
 }
 
+std::string MakeBlockPartitionSweepBenchmarkName(
+    const BlockPartitionSweepCase testCase)
+{
+  std::ostringstream out;
+  out << "BM_LcpBlockPartitionSweep/" << getProblemFamilyName(testCase.family)
+      << "/" << testCase.solverName << "/" << testCase.profileLabel;
+  return out.str();
+}
+
 std::string MakeApgdRestartSweepBenchmarkName(
     const ApgdRestartSweepCase testCase)
 {
@@ -8682,6 +8878,17 @@ void RegisterPivotingScaleSweepBenchmarks()
     benchmark::RegisterBenchmark(
         name.c_str(), [testCase](benchmark::State& state) {
           RunPivotingScaleSweepBenchmark(state, testCase);
+        });
+  }
+}
+
+void RegisterBlockPartitionSweepBenchmarks()
+{
+  for (const auto testCase : kBlockPartitionSweepCases) {
+    const auto name = MakeBlockPartitionSweepBenchmarkName(testCase);
+    benchmark::RegisterBenchmark(
+        name.c_str(), [testCase](benchmark::State& state) {
+          RunBlockPartitionSweepBenchmark(state, testCase);
         });
   }
 }
@@ -9557,6 +9764,7 @@ const bool kManifestBenchmarksRegistered = [] {
   RegisterRedBlackGaussSeidelRelaxationSweepBenchmarks();
   RegisterBoxedSsnLineSearchSweepBenchmarks();
   RegisterPivotingScaleSweepBenchmarks();
+  RegisterBlockPartitionSweepBenchmarks();
   RegisterApgdRestartSweepBenchmarks();
   RegisterTgsIterationBudgetSweepBenchmarks();
   RegisterNncgPgsIterationsSweepBenchmarks();
