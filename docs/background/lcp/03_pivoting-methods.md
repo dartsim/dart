@@ -414,6 +414,13 @@ Direct no-fallback counters, four Dantzig boxed-or-findex rows,
 friction-index `contact_count=4/8`, observed solver iterations `1/4/8/16`, and
 backend build-state counters. The CUDA-enabled rows are CPU pivoting solver
 rows in a CUDA-enabled build, not CUDA LCP kernel execution.
+`BM_LcpContactNormalStandardSweep` adds contact-derived standard-LCP evidence
+by extracting only the normal rows from DART 7 separated sphere-ground, coupled
+vertical-stack, and articulated unified-contact snapshots. Those rows compare
+Dantzig, Lemke, Baraff, and Direct on contact-normal subproblems; Direct rows
+are limited to 1-, 2-, and 3-row subproblems so they measure enumeration rather
+than Dantzig fallback. This is contact-normal evidence, not full friction-index
+contact support for Lemke, Baraff, or Direct.
 
 ## When to Use Pivoting Methods
 

@@ -306,6 +306,11 @@ same standard active-set transition packets.
 same mode matrix to batch-size-4 packets, including DART 7 `ParallelExecutor`
 rows. CUDA-enabled benchmark rows for these standard Newton paths are CPU
 solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
+`BM_LcpContactNormalStandardSweep` adds contact-derived standard-LCP evidence
+for these standard Newton solvers by extracting only the normal rows from DART
+7 separated sphere-ground, coupled vertical-stack, and articulated
+unified-contact snapshots. This does not claim native boxed or friction-index
+Newton support for these three standard-only solvers.
 
 ```
 function gradient_descent(x, max_iter):

@@ -95,6 +95,11 @@ near-singular SPD standard-LCP fixtures. Focused default, SIMD-enabled, and
 CUDA-enabled build-tree runs reported 9 rows with `contract_ok=1`; the
 CUDA-enabled rows are CPU solver rows in a CUDA-enabled build, not CUDA LCP
 kernel execution.
+`BM_LcpContactNormalStandardSweep` adds contact-derived standard-LCP evidence
+for Interior Point by extracting only the normal rows from DART 7 separated
+sphere-ground, coupled vertical-stack, and articulated unified-contact
+snapshots. This does not claim native boxed or friction-index support for the
+standard-only Interior Point solver.
 
 ### Properties
 
@@ -363,6 +368,11 @@ near-singular SPD standard-LCP fixtures while toggling the positive-definite
 factorization check. Focused default, SIMD-enabled, and CUDA-enabled build-tree
 runs reported 9 rows with `contract_ok=1`; the CUDA-enabled rows are CPU solver
 rows in a CUDA-enabled build, not CUDA LCP kernel execution.
+`BM_LcpContactNormalStandardSweep` adds contact-derived standard-LCP evidence
+for MPRGP by extracting only the normal rows from DART 7 separated
+sphere-ground, coupled vertical-stack, and articulated unified-contact
+snapshots. This remains standard normal-contact evidence; boxed or
+friction-index contact paths still delegate to boxed-capable solvers.
 
 ### 3.3 ADMM ✅
 

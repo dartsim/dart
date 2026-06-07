@@ -57,6 +57,10 @@
 - [x] Added focused ADMM, SAP, and Boxed Semi-Smooth Newton contact comparison
       benchmark rows on DART 7 separated world-contact, coupled stack-contact,
       and articulated unified-contact fixtures.
+- [x] Added focused contact-normal standard-LCP benchmark rows for standard-only
+      pivoting, Newton, Interior Point, and MPRGP solvers over DART 7
+      separated world-contact, coupled stack-contact, and articulated
+      unified-contact snapshots, with Dantzig as an exact baseline.
 - [x] Verified a focused DART 7 SIMD-enabled CPU build slice for generated LCP
       correctness and scalar/parallel batch benchmark rows.
 - [x] Verified a focused DART 7 CUDA-enabled build/runtime slice and ran the
@@ -843,6 +847,26 @@ tradeoffs evidence based.
   `problem_size=3/6/9/12/15`, and backend build-state counters. The
   CUDA-enabled rows report `build_cuda_enabled=1` but are CPU solver rows in a
   CUDA-enabled build, not CUDA LCP kernel execution.
+- Verified contact-normal standard-LCP benchmark slice:
+  `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpContactNormalStandardSweep' | wc -l`
+  reported 76 rows, and JSON checks for
+  `BM_LcpContactNormalStandardSweep` reported 76 rows with `contract_ok=1` in
+  the default, SIMD-enabled, and CUDA-enabled build trees. These rows extract
+  only the normal rows from the same DART 7 separated sphere-ground 1/2/4-contact
+  fixtures, coupled vertical-stack 2/3/5-contact fixtures, and articulated
+  unified ground, rigid-impact, and cross-link-impact 4-contact fixtures, then
+  run them as standard LCPs. The rows compare `Dantzig`, `Lemke`, `Baraff`,
+  `Direct`, `MinimumMapNewton`, `FischerBurmeisterNewton`,
+  `PenalizedFischerBurmeisterNewton`, `InteriorPoint`, and `MPRGP`; `Direct`
+  is intentionally limited to four 1-, 2-, and 3-row contact-normal rows so the
+  benchmark measures its enumeration path rather than Dantzig fallback. The
+  rows report `contact_normal_standard_sweep=1`, `normal_row_count=1/2/3/4/5`,
+  `source_problem_size=3/6/9/12/15`, `problem_size=1/2/3/4/5`,
+  `contact_normal_direct_no_fallback=1` for all Direct rows, coupled-fixture
+  counters, and backend build-state counters. The CUDA-enabled rows report
+  `build_cuda_enabled=1` but are CPU solver rows in a CUDA-enabled build, not
+  CUDA LCP kernel execution. This is contact-normal standard-LCP evidence, not
+  native boxed or friction-index support for standard-only solvers.
 - Verified larger active-set transition benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpLargerActiveSetTransition/' | wc -l`
   reported 49 rows, and
@@ -1677,7 +1701,7 @@ tradeoffs evidence based.
   Semi-Smooth Newton line-search sweep rows, Pivoting scale sweep rows, ADMM
   rho/adaptive-rho sweep rows, SAP regularization sweep rows, BGS/Blocked
   Jacobi block-partition sweep rows, ADMM/SAP/Boxed Semi-Smooth Newton
-  contact comparison sweep rows,
+  contact comparison sweep rows, contact-normal standard-LCP sweep rows,
   independent-problem batches, simple world-contact snapshots, small coupled
   stack snapshot batches, and dense box-face step rows to broader dense and
   robot-like end-to-end contact systems, broader SIMD benchmark packets, larger threaded

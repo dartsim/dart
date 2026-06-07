@@ -1481,6 +1481,48 @@ MakeStaggeringContactPipelineSweepProblem(
   return std::nullopt;
 }
 
+std::optional<LcpProblem> MakeContactNormalStandardProblem(
+    const WorldContactBenchmarkProblem& fixture, std::string& errorMessage)
+{
+  std::vector<Eigen::Index> normalRows;
+  normalRows.reserve(fixture.contactCount);
+  for (Eigen::Index row = 0; row < fixture.problem.findex.size(); ++row) {
+    if (fixture.problem.findex[row] < 0) {
+      normalRows.push_back(row);
+    }
+  }
+
+  if (normalRows.empty()) {
+    errorMessage = "contact-normal standard problem has no normal rows";
+    return std::nullopt;
+  }
+
+  if (normalRows.size() != fixture.contactCount) {
+    errorMessage = "contact-normal row count does not match contact count";
+    return std::nullopt;
+  }
+
+  const Eigen::Index n = static_cast<Eigen::Index>(normalRows.size());
+  Eigen::MatrixXd A(n, n);
+  Eigen::VectorXd b(n);
+  for (Eigen::Index r = 0; r < n; ++r) {
+    b[r] = fixture.problem.b[normalRows[static_cast<std::size_t>(r)]];
+    for (Eigen::Index c = 0; c < n; ++c) {
+      A(r, c) = fixture.problem.A(
+          normalRows[static_cast<std::size_t>(r)],
+          normalRows[static_cast<std::size_t>(c)]);
+    }
+  }
+
+  const double inf = std::numeric_limits<double>::infinity();
+  return LcpProblem(
+      std::move(A),
+      std::move(b),
+      Eigen::VectorXd::Zero(n),
+      Eigen::VectorXd::Constant(n, inf),
+      Eigen::VectorXi::Constant(n, -1));
+}
+
 std::optional<WorldContactBenchmarkBatch> MakeWorldContactBenchmarkBatch(
     std::string& errorMessage,
     WorldContactBatchKind batchKind = WorldContactBatchKind::Baseline)
@@ -3007,6 +3049,18 @@ constexpr std::array<std::string_view, 3> kContactComparisonSolverNames{
     "Admm",
     "Sap",
     "BoxedSemiSmoothNewton",
+};
+
+constexpr std::array<std::string_view, 9> kContactNormalStandardSolverNames{
+    "Dantzig",
+    "Lemke",
+    "Baraff",
+    "Direct",
+    "MinimumMapNewton",
+    "FischerBurmeisterNewton",
+    "PenalizedFischerBurmeisterNewton",
+    "InteriorPoint",
+    "MPRGP",
 };
 
 constexpr std::array<RelaxationSweepCase, 9> kRelaxationSweepCases{{
@@ -7048,6 +7102,75 @@ void RunContactSolverComparisonSweepBenchmark(
                                                                        : 0.0;
 }
 
+void RunContactNormalStandardSweepBenchmark(
+    benchmark::State& state,
+    const dart::test::LcpSolverManifestEntry& solverEntry,
+    const StaggeringContactPipelineSweepCase testCase)
+{
+  std::string errorMessage;
+  const auto fixture
+      = MakeStaggeringContactPipelineSweepProblem(testCase, errorMessage);
+  if (!fixture.has_value()) {
+    state.SkipWithError(errorMessage.c_str());
+    return;
+  }
+
+  const auto problem = MakeContactNormalStandardProblem(*fixture, errorMessage);
+  if (!problem.has_value()) {
+    state.SkipWithError(errorMessage.c_str());
+    return;
+  }
+
+  SolverBenchmarkOptions storage;
+  ConfigureSolverBenchmarkOptions(storage, solverEntry, *problem);
+
+  const auto solver = solverEntry.create();
+  if (solver == nullptr) {
+    state.SkipWithError("LCP solver factory returned null");
+    return;
+  }
+
+  RunBenchmarkWithSolver(
+      state,
+      *solver,
+      *problem,
+      storage.options,
+      MakeLabel(
+          std::string(solverEntry.name),
+          "ContactNormalStandardSweep/" + std::string(testCase.caseLabel)));
+
+  state.counters["contact_normal_standard_sweep"] = 1.0;
+  state.counters["contact_normal_standard_subproblem"] = 1.0;
+  state.counters["source_contact_count"]
+      = static_cast<double>(fixture->contactCount);
+  state.counters["normal_row_count"]
+      = static_cast<double>(fixture->contactCount);
+  state.counters["source_problem_size"]
+      = static_cast<double>(fixture->problem.b.size());
+  state.counters["contact_normal_direct_enumeration"]
+      = solverEntry.name == "Direct" ? 1.0 : 0.0;
+  state.counters["contact_normal_direct_no_fallback"]
+      = solverEntry.name == "Direct" && problem->b.size() <= 3 ? 1.0 : 0.0;
+  state.counters["contact_normal_dantzig_baseline"]
+      = solverEntry.name == "Dantzig" ? 1.0 : 0.0;
+  state.counters["contact_normal_world_separated_contact"]
+      = testCase.kind == StaggeringContactPipelineKind::WorldSeparated ? 1.0
+                                                                       : 0.0;
+  state.counters["contact_normal_world_stack_contact"]
+      = testCase.kind == StaggeringContactPipelineKind::WorldStack ? 1.0 : 0.0;
+  state.counters["contact_normal_articulated_unified_contact"]
+      = (testCase.kind == StaggeringContactPipelineKind::ArticulatedGround
+         || testCase.kind
+                == StaggeringContactPipelineKind::ArticulatedRigidImpact
+         || testCase.kind
+                == StaggeringContactPipelineKind::ArticulatedCrossLinkImpact)
+            ? 1.0
+            : 0.0;
+  state.counters["contact_normal_coupled_contact_fixture"]
+      = testCase.kind != StaggeringContactPipelineKind::WorldSeparated ? 1.0
+                                                                       : 0.0;
+}
+
 void RunWorldContactBatchSerialBenchmark(
     benchmark::State& state,
     const dart::test::LcpSolverManifestEntry& solverEntry,
@@ -8632,6 +8755,16 @@ std::string MakeContactSolverComparisonSweepBenchmarkName(
   return out.str();
 }
 
+std::string MakeContactNormalStandardSweepBenchmarkName(
+    const dart::test::LcpSolverManifestEntry& solver,
+    const StaggeringContactPipelineSweepCase testCase)
+{
+  std::ostringstream out;
+  out << "BM_LcpContactNormalStandardSweep/" << solver.name << "/"
+      << testCase.caseLabel;
+  return out.str();
+}
+
 std::string MakeMildIllConditionedBenchmarkName(
     const MildIllConditionedBenchmarkCase testCase,
     const dart::test::LcpSolverManifestEntry& solver)
@@ -9645,6 +9778,32 @@ void RegisterContactSolverComparisonSweepBenchmarks()
   }
 }
 
+void RegisterContactNormalStandardSweepBenchmarks()
+{
+  for (const auto solverName : kContactNormalStandardSolverNames) {
+    const auto* solverEntry = FindSolverManifestEntry(solverName);
+    if (solverEntry == nullptr
+        || !dart::test::supportsProblem(
+            *solverEntry, dart::test::LcpProblemSupport::Standard)) {
+      continue;
+    }
+
+    for (const auto testCase : kStaggeringContactPipelineSweepCases) {
+      if (solverEntry->name == "Direct" && testCase.contactOrShapeCount > 3) {
+        continue;
+      }
+
+      const auto name
+          = MakeContactNormalStandardSweepBenchmarkName(*solverEntry, testCase);
+      benchmark::RegisterBenchmark(
+          name.c_str(),
+          [solver = *solverEntry, testCase](benchmark::State& state) {
+            RunContactNormalStandardSweepBenchmark(state, solver, testCase);
+          });
+    }
+  }
+}
+
 void RegisterWorldContactBatchBenchmarks()
 {
   for (const auto& solver : dart::test::kLcpSolverManifest) {
@@ -9908,6 +10067,7 @@ const bool kManifestBenchmarksRegistered = [] {
   RegisterArticulatedUnifiedContactBenchmarks();
   RegisterStaggeringContactPipelineSweepBenchmarks();
   RegisterContactSolverComparisonSweepBenchmarks();
+  RegisterContactNormalStandardSweepBenchmarks();
   RegisterWorldContactBatchBenchmarks();
 #endif
   return true;

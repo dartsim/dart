@@ -1204,6 +1204,13 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     articulated unified-contact friction-index fixtures, with backend
     build-state counters distinguishing default, SIMD-enabled, and CUDA-enabled
     CPU solver runs.
+  - Added DART 7 contact-normal standard-LCP comparison benchmark rows for
+    Dantzig, Lemke, Baraff, Direct, Minimum Map Newton,
+    Fischer-Burmeister Newton, Penalized Fischer-Burmeister Newton, Interior
+    Point, and MPRGP on normal-only subproblems extracted from separated
+    world-contact, coupled stack-contact, and articulated unified-contact
+    snapshots. Direct rows are limited to 1-, 2-, and 3-row subproblems to
+    avoid benchmarking its Dantzig fallback as direct enumeration.
   - Replaced the experimental rigid-body contact stage's per-contact
     sequential normal impulses with a coupled boxed-LCP solve over all
     rigid-rigid contacts (`dart/math/lcp` Dantzig solver). It assembles the
