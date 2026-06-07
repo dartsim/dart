@@ -667,20 +667,49 @@ CMAKE_BUILD_DIR=${BUILD_DIR} python scripts/cmake_build.py \
   { arg = "build_type", default = "Release" },
 ] }
 
-build-math-tests = { cmd = [
-  "bash",
-  "-lc",
-  """
+build-math-tests = { cmd = ["bash", "-lc", """
 set -euo pipefail
-BUILD_TYPE=${BUILD_TYPE:-Release}
-BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE}
-python scripts/cmake_build.py --build-dir "$BUILD_DIR" \
-  --target UNIT_math_Convhull --target UNIT_math_Geometry --target UNIT_math_Icosphere \
-  --target UNIT_math_Math --target UNIT_math_Random --target UNIT_math_TriMesh
-""",
-], depends-on = [
-  "config",
-] }
+targets=(
+  UNIT_math_Convhull
+  UNIT_math_configuration_space
+  UNIT_math_geometry
+  UNIT_math_icosphere
+  UNIT_math_lcp_math_lcp_additional_solvers
+  UNIT_math_lcp_math_lcp_all_solvers_smoke
+  UNIT_math_lcp_math_lcp_dantzig_misc
+  UNIT_math_lcp_math_lcp_dantzig_solver
+  UNIT_math_lcp_math_lcp_dantzig_vs_ode
+  UNIT_math_lcp_math_lcp_lcp_comparison_harness
+  UNIT_math_lcp_math_lcp_lcp_edge_cases
+  UNIT_math_lcp_math_lcp_lcp_newton_solvers
+  UNIT_math_lcp_math_lcp_lcp_problems
+  UNIT_math_lcp_math_lcp_lcp_projection_solvers
+  UNIT_math_lcp_math_lcp_lcp_solvers_stress
+  UNIT_math_lcp_math_lcp_lcp_types
+  UNIT_math_lcp_math_lcp_lcp_validation_and_solvers
+  UNIT_math_lcp_math_lcp_lemke
+  UNIT_math_lcp_math_lcp_pgs
+  UNIT_math_lcp_math_lcp_pivot_matrix
+  UNIT_math_lie_group_math_lie_group_batch
+  UNIT_math_lie_group_math_lie_group_forward_kinematics
+  UNIT_math_lie_group_math_lie_group_group_product
+  UNIT_math_lie_group_math_lie_group_se3
+  UNIT_math_lie_group_math_lie_group_so3
+  UNIT_math_lie_group_math_lie_group_spatial_inertia
+  UNIT_math_math
+  UNIT_math_optimization_GradientDescentSolver
+  UNIT_math_optimization_Problem
+  UNIT_math_polygon_mesh
+  UNIT_math_random
+  UNIT_math_tri_mesh
+  UNIT_math_value_equal
+)
+build_args=()
+for target in "${targets[@]}"; do
+  build_args+=(--target "$target")
+done
+python scripts/cmake_build.py "${build_args[@]}"
+"""], depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 build-py-dev = { cmd = [
   "bash",

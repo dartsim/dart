@@ -570,6 +570,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Developer workflow updates: refactored pixi tasks, tuned pixi parallelism, simplified the devcontainer, and bumped the DART version to 7.0.0. ([#2083](https://github.com/dartsim/dart/pull/2083), [#2208](https://github.com/dartsim/dart/pull/2208), [#2255](https://github.com/dartsim/dart/pull/2255), [#2046](https://github.com/dartsim/dart/pull/2046))
   - Limited `pixi run test-unit` to the built C++ `UNIT_` test set so
     simulation-experimental tests remain covered by their dedicated task.
+  - Fixed `pixi run test-math` so its build step uses the current math,
+    optimization, LCP, and lie-group CMake test target names before running the
+    `^UNIT_math_` ctest slice.
   - Added ASan build mode and example install destination controls. ([#2101](https://github.com/dartsim/dart/pull/2101), [#2100](https://github.com/dartsim/dart/pull/2100))
   - GUI dependency handling updates: switched ImGui to FetchContent, prefer local Vulkan loader, and removed bundled lodepng. ([#2056](https://github.com/dartsim/dart/pull/2056), [#2085](https://github.com/dartsim/dart/pull/2085), [#2051](https://github.com/dartsim/dart/pull/2051))
   - Hide fetched ImGui internal formatting helpers from shared library exports. ([#2671](https://github.com/dartsim/dart/issues/2671))
