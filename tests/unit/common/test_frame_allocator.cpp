@@ -40,6 +40,7 @@
 #include <gtest/gtest.h>
 
 #include <array>
+#include <limits>
 #include <vector>
 
 #include <cstddef>
@@ -48,6 +49,11 @@
 using namespace dart::common;
 
 struct alignas(64) OverAlignedStlValue
+{
+  double values[8] = {};
+};
+
+struct CacheLineSizedStlValue
 {
   double values[8] = {};
 };
@@ -108,7 +114,7 @@ TEST_F(FrameAllocatorTest, Construction)
   FrameAllocator allocator;
   EXPECT_EQ(allocator.capacity(), 65536u);
   EXPECT_LE(allocator.usableCapacity(), allocator.capacity());
-  EXPECT_GE(allocator.usableCapacity() + 32u, allocator.capacity());
+  EXPECT_GE(allocator.usableCapacity() + 64u, allocator.capacity());
   EXPECT_EQ(allocator.usableCapacity() % 32u, 0u);
   EXPECT_EQ(allocator.used(), 0u);
   EXPECT_EQ(allocator.overflowCount(), 0u);
@@ -135,7 +141,7 @@ TEST_F(FrameAllocatorTest, UsableCapacityMatchesFastPathBudget)
   FrameAllocator allocator(MemoryAllocator::GetDefault(), 128);
   const size_t usableCapacity = allocator.usableCapacity();
   EXPECT_LE(usableCapacity, allocator.capacity());
-  EXPECT_GE(usableCapacity + 32u, allocator.capacity());
+  EXPECT_GE(usableCapacity + 64u, allocator.capacity());
   ASSERT_GT(usableCapacity, 0u);
   EXPECT_EQ(usableCapacity % 32u, 0u);
 
@@ -157,6 +163,10 @@ TEST_F(FrameAllocatorTest, Alignment)
     const uintptr_t address = reinterpret_cast<uintptr_t>(ptr);
     EXPECT_EQ(address % alignment, 0u);
   }
+
+  void* cacheAligned = allocator.allocateCacheAligned(32);
+  EXPECT_NE(cacheAligned, nullptr);
+  EXPECT_EQ(reinterpret_cast<uintptr_t>(cacheAligned) % 64u, 0u);
 }
 
 //=============================================================================
@@ -167,6 +177,29 @@ TEST_F(FrameAllocatorTest, RejectsInvalidAlignment)
   EXPECT_EQ(allocator.allocate(32, 24), nullptr);
   EXPECT_EQ(allocator.used(), 0u);
   EXPECT_EQ(allocator.overflowCount(), 0u);
+}
+
+//=============================================================================
+TEST_F(FrameAllocatorTest, RejectsOverflowingRequestsWithoutChangingArena)
+{
+  FrameAllocator allocator(MemoryAllocator::GetDefault(), 128);
+
+  EXPECT_EQ(allocator.allocate(std::numeric_limits<size_t>::max()), nullptr);
+  EXPECT_EQ(
+      allocator.allocateAligned(std::numeric_limits<size_t>::max(), 64),
+      nullptr);
+  EXPECT_EQ(allocator.used(), 0u);
+  EXPECT_EQ(allocator.overflowCount(), 0u);
+  EXPECT_EQ(allocator.overflowBytes(), 0u);
+
+  FrameAllocator overflowOnly(MemoryAllocator::GetDefault(), 0);
+  EXPECT_EQ(overflowOnly.allocate(std::numeric_limits<size_t>::max()), nullptr);
+  EXPECT_EQ(
+      overflowOnly.allocateAligned(std::numeric_limits<size_t>::max(), 64),
+      nullptr);
+  EXPECT_EQ(overflowOnly.used(), 0u);
+  EXPECT_EQ(overflowOnly.overflowCount(), 0u);
+  EXPECT_EQ(overflowOnly.overflowBytes(), 0u);
 }
 
 //=============================================================================
@@ -291,6 +324,23 @@ TEST_F(FrameAllocatorTest, StlAllocatorUsesArena)
 }
 
 //=============================================================================
+TEST_F(FrameAllocatorTest, StlAllocatorCacheAlignsFrameBackedBlocks)
+{
+  FrameAllocator arena(MemoryAllocator::GetDefault(), 256);
+  FrameStlAllocator<double> allocator(arena);
+
+  auto* small = allocator.allocate(1);
+  ASSERT_NE(small, nullptr);
+  EXPECT_EQ(reinterpret_cast<std::uintptr_t>(small) % 32u, 0u);
+
+  FrameStlAllocator<CacheLineSizedStlValue> cacheLineAllocator(arena);
+  auto* cacheLineSized = cacheLineAllocator.allocate(1);
+  ASSERT_NE(cacheLineSized, nullptr);
+  EXPECT_EQ(reinterpret_cast<std::uintptr_t>(cacheLineSized) % 64u, 0u);
+  EXPECT_EQ(arena.overflowCount(), 0u);
+}
+
+//=============================================================================
 TEST_F(FrameAllocatorTest, StlAllocatorPreservesOverAlignedValues)
 {
   FrameAllocator arena(MemoryAllocator::GetDefault(), 512);
@@ -306,6 +356,25 @@ TEST_F(FrameAllocatorTest, StlAllocatorPreservesOverAlignedValues)
   values.resize(2);
   ASSERT_EQ(values.size(), 2u);
   EXPECT_EQ(reinterpret_cast<std::uintptr_t>(values.data()) % 64u, 0u);
+}
+
+//=============================================================================
+TEST_F(FrameAllocatorTest, StlAllocatorRejectsCountOverflow)
+{
+  FrameAllocator arena(MemoryAllocator::GetDefault(), 512);
+  FrameStlAllocator<OverAlignedStlValue> allocator(arena);
+
+  EXPECT_THROW(
+      {
+        auto* ptr = allocator.allocate(
+            std::numeric_limits<std::size_t>::max()
+                / sizeof(OverAlignedStlValue)
+            + 1);
+        (void)ptr;
+      },
+      std::bad_alloc);
+  EXPECT_EQ(arena.used(), 0u);
+  EXPECT_EQ(arena.overflowCount(), 0u);
 }
 
 //=============================================================================

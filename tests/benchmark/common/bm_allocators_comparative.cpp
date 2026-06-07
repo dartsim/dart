@@ -48,7 +48,13 @@
 ///   5. Steady-state: pre-filled pool with random replace
 ///   6. Frame bulk varying workload
 ///   7. STL container workload
-///   8. EnTT registry workload
+///   8. Static fixed-storage stack workload
+///   9. Scoped temporary allocator workload
+///   10. Two-iteration frame allocator workload
+///   11. Raw heap/malloc/new allocator workload
+///   12. Aligned/fallback/segregator adapter workloads
+///   13. Tracked/deeply-tracked allocator workloads
+///   14. EnTT registry workload
 ///
 /// Run:  pixi run bm -- allocators-comparative
 /// JSON: pixi run bm -- allocators-comparative
@@ -62,11 +68,21 @@
 #include <dart/common/stl_allocator.hpp>
 
 #include <benchmark/benchmark.h>
+#include <foonathan/memory/aligned_allocator.hpp>
+#include <foonathan/memory/fallback_allocator.hpp>
+#include <foonathan/memory/heap_allocator.hpp>
+#include <foonathan/memory/iteration_allocator.hpp>
+#include <foonathan/memory/malloc_allocator.hpp>
 #include <foonathan/memory/memory_pool.hpp>
 #include <foonathan/memory/memory_pool_collection.hpp>
 #include <foonathan/memory/memory_stack.hpp>
 #include <foonathan/memory/namespace_alias.hpp>
+#include <foonathan/memory/new_allocator.hpp>
+#include <foonathan/memory/segregator.hpp>
+#include <foonathan/memory/static_allocator.hpp>
 #include <foonathan/memory/std_allocator.hpp>
+#include <foonathan/memory/temporary_allocator.hpp>
+#include <foonathan/memory/tracking.hpp>
 
 #if defined(DART_BENCHMARK_HAS_ENTT) && DART_BENCHMARK_HAS_ENTT
   #include <entt/entity/registry.hpp>
@@ -74,12 +90,15 @@
 
 #include <algorithm>
 #include <array>
+#include <memory>
 #include <memory_resource>
+#include <new>
 #include <string_view>
 #include <vector>
 
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 
 using namespace dart::common;
 namespace fm = foonathan::memory;
@@ -90,10 +109,15 @@ namespace fm = foonathan::memory;
 
 static uint32_t lcgState = 12345u;
 
+inline uint32_t lcgNext(uint32_t& state) noexcept
+{
+  state = state * 1664525u + 1013904223u;
+  return state;
+}
+
 inline uint32_t lcgNext()
 {
-  lcgState = lcgState * 1664525u + 1013904223u;
-  return lcgState;
+  return lcgNext(lcgState);
 }
 
 class BenchmarkCountingMemoryAllocator final : public MemoryAllocator
@@ -146,6 +170,59 @@ private:
   MemoryAllocator& mBacking;
 };
 
+struct BenchmarkAllocationTracker
+{
+  void on_node_allocation(void*, std::size_t size, std::size_t) noexcept
+  {
+    ++allocationCount;
+    liveBytes += size;
+    peakBytes = std::max(peakBytes, liveBytes);
+  }
+
+  void on_node_deallocation(void*, std::size_t size, std::size_t) noexcept
+  {
+    ++deallocationCount;
+    liveBytes -= std::min(liveBytes, size);
+  }
+
+  void on_bulk_deallocation(
+      std::size_t count, std::size_t size, std::size_t) noexcept
+  {
+    deallocationCount += count;
+    const std::size_t bytes = count * size;
+    liveBytes -= std::min(liveBytes, bytes);
+  }
+
+  void on_array_allocation(
+      void*, std::size_t count, std::size_t size, std::size_t) noexcept
+  {
+    on_node_allocation(nullptr, count * size, alignof(std::max_align_t));
+  }
+
+  void on_array_deallocation(
+      void*, std::size_t count, std::size_t size, std::size_t) noexcept
+  {
+    on_node_deallocation(nullptr, count * size, alignof(std::max_align_t));
+  }
+
+  void on_allocator_growth(void*, std::size_t size) noexcept
+  {
+    growthBytes += size;
+  }
+
+  void on_allocator_shrinking(void*, std::size_t size) noexcept
+  {
+    shrinkBytes += size;
+  }
+
+  size_t allocationCount{0};
+  size_t deallocationCount{0};
+  size_t liveBytes{0};
+  size_t peakBytes{0};
+  size_t growthBytes{0};
+  size_t shrinkBytes{0};
+};
+
 // =============================================================================
 // Section 1: Pool — Fixed-Size Alloc/Dealloc
 //
@@ -153,24 +230,34 @@ private:
 // Compares single-size pool performance.
 // =============================================================================
 
+static constexpr size_t kPoolCyclesPerIteration = 4096;
+
+[[nodiscard]] static constexpr size_t poolCyclesFor(size_t count) noexcept
+{
+  return count <= 64 ? kPoolCyclesPerIteration : 256;
+}
+
 static void BM_Pool_DART(benchmark::State& state)
 {
   const auto size = static_cast<size_t>(state.range(0));
   const auto count = static_cast<size_t>(state.range(1));
+  const size_t cycleCount = poolCyclesFor(count);
   const size_t blockSize = (size + 16) * count + 4096;
   FixedPoolAllocator alloc(size, MemoryAllocator::GetDefault(), blockSize);
   std::vector<void*> ptrs(count);
 
   for (auto _ : state) {
-    for (size_t i = 0; i < count; ++i) {
-      ptrs[i] = alloc.allocate();
-      benchmark::DoNotOptimize(ptrs[i]);
-    }
-    for (size_t i = count; i > 0; --i) {
-      alloc.deallocate(ptrs[i - 1]);
+    for (size_t cycle = 0; cycle < cycleCount; ++cycle) {
+      for (size_t i = 0; i < count; ++i) {
+        ptrs[i] = alloc.allocate();
+      }
+      for (size_t i = count; i > 0; --i) {
+        alloc.deallocate(ptrs[i - 1]);
+      }
     }
   }
-  state.SetItemsProcessed(static_cast<int64_t>(state.iterations() * count));
+  state.SetItemsProcessed(
+      static_cast<int64_t>(state.iterations() * count * cycleCount));
 }
 BENCHMARK(BM_Pool_DART)
     ->Args({32, 64})
@@ -182,20 +269,23 @@ static void BM_Pool_Foonathan(benchmark::State& state)
 {
   const auto size = static_cast<size_t>(state.range(0));
   const auto count = static_cast<size_t>(state.range(1));
+  const size_t cycleCount = poolCyclesFor(count);
   const size_t blockSize = (size + 16) * count + 4096;
   fm::memory_pool<fm::node_pool> pool(size, blockSize);
   std::vector<void*> ptrs(count);
 
   for (auto _ : state) {
-    for (size_t i = 0; i < count; ++i) {
-      ptrs[i] = pool.allocate_node();
-      benchmark::DoNotOptimize(ptrs[i]);
-    }
-    for (size_t i = count; i > 0; --i) {
-      pool.deallocate_node(ptrs[i - 1]);
+    for (size_t cycle = 0; cycle < cycleCount; ++cycle) {
+      for (size_t i = 0; i < count; ++i) {
+        ptrs[i] = pool.allocate_node();
+      }
+      for (size_t i = count; i > 0; --i) {
+        pool.deallocate_node(ptrs[i - 1]);
+      }
     }
   }
-  state.SetItemsProcessed(static_cast<int64_t>(state.iterations() * count));
+  state.SetItemsProcessed(
+      static_cast<int64_t>(state.iterations() * count * cycleCount));
 }
 BENCHMARK(BM_Pool_Foonathan)
     ->Args({32, 64})
@@ -207,6 +297,7 @@ static void BM_Pool_StdPmr(benchmark::State& state)
 {
   const auto size = static_cast<size_t>(state.range(0));
   const auto count = static_cast<size_t>(state.range(1));
+  const size_t cycleCount = poolCyclesFor(count);
   std::pmr::pool_options opts{};
   opts.max_blocks_per_chunk = count;
   opts.largest_required_pool_block = size;
@@ -214,15 +305,17 @@ static void BM_Pool_StdPmr(benchmark::State& state)
   std::vector<void*> ptrs(count);
 
   for (auto _ : state) {
-    for (size_t i = 0; i < count; ++i) {
-      ptrs[i] = pool.allocate(size, alignof(std::max_align_t));
-      benchmark::DoNotOptimize(ptrs[i]);
-    }
-    for (size_t i = count; i > 0; --i) {
-      pool.deallocate(ptrs[i - 1], size, alignof(std::max_align_t));
+    for (size_t cycle = 0; cycle < cycleCount; ++cycle) {
+      for (size_t i = 0; i < count; ++i) {
+        ptrs[i] = pool.allocate(size, alignof(std::max_align_t));
+      }
+      for (size_t i = count; i > 0; --i) {
+        pool.deallocate(ptrs[i - 1], size, alignof(std::max_align_t));
+      }
     }
   }
-  state.SetItemsProcessed(static_cast<int64_t>(state.iterations() * count));
+  state.SetItemsProcessed(
+      static_cast<int64_t>(state.iterations() * count * cycleCount));
 }
 BENCHMARK(BM_Pool_StdPmr)
     ->Args({32, 64})
@@ -237,6 +330,8 @@ BENCHMARK(BM_Pool_StdPmr)
 // This is the primary use case for per-physics-step temporaries.
 // =============================================================================
 
+static constexpr size_t kStackCyclesPerIteration = 2048;
+
 static void BM_Stack_DART(benchmark::State& state)
 {
   const auto size = static_cast<size_t>(state.range(0));
@@ -245,13 +340,17 @@ static void BM_Stack_DART(benchmark::State& state)
   FrameAllocator alloc(MemoryAllocator::GetDefault(), arenaSize);
 
   for (auto _ : state) {
-    for (size_t i = 0; i < count; ++i) {
-      void* p = alloc.allocate(size);
-      benchmark::DoNotOptimize(p);
+    for (size_t cycle = 0; cycle < kStackCyclesPerIteration; ++cycle) {
+      for (size_t i = 0; i < count; ++i) {
+        void* p = alloc.allocate(size);
+        benchmark::DoNotOptimize(p);
+      }
+      alloc.reset();
     }
-    alloc.reset();
   }
-  state.SetItemsProcessed(static_cast<int64_t>(state.iterations() * count));
+  state.SetItemsProcessed(
+      static_cast<int64_t>(
+          state.iterations() * count * kStackCyclesPerIteration));
 }
 BENCHMARK(BM_Stack_DART)
     ->Args({32, 64})
@@ -268,14 +367,18 @@ static void BM_Stack_Foonathan(benchmark::State& state)
   fm::memory_stack<> stack(arenaSize);
 
   for (auto _ : state) {
-    auto marker = stack.top();
-    for (size_t i = 0; i < count; ++i) {
-      void* p = stack.allocate(size, 32);
-      benchmark::DoNotOptimize(p);
+    for (size_t cycle = 0; cycle < kStackCyclesPerIteration; ++cycle) {
+      auto marker = stack.top();
+      for (size_t i = 0; i < count; ++i) {
+        void* p = stack.allocate(size, 32);
+        benchmark::DoNotOptimize(p);
+      }
+      stack.unwind(marker);
     }
-    stack.unwind(marker);
   }
-  state.SetItemsProcessed(static_cast<int64_t>(state.iterations() * count));
+  state.SetItemsProcessed(
+      static_cast<int64_t>(
+          state.iterations() * count * kStackCyclesPerIteration));
 }
 BENCHMARK(BM_Stack_Foonathan)
     ->Args({32, 64})
@@ -292,15 +395,19 @@ static void BM_Stack_StdPmr(benchmark::State& state)
   auto backing = std::make_unique_for_overwrite<char[]>(arenaSize);
 
   for (auto _ : state) {
-    // Reconstruct each iteration (monotonic_buffer_resource has no reset())
-    std::pmr::monotonic_buffer_resource mono(
-        backing.get(), arenaSize, std::pmr::null_memory_resource());
-    for (size_t i = 0; i < count; ++i) {
-      void* p = mono.allocate(size, 32);
-      benchmark::DoNotOptimize(p);
+    for (size_t cycle = 0; cycle < kStackCyclesPerIteration; ++cycle) {
+      // Reconstruct each cycle (monotonic_buffer_resource has no reset())
+      std::pmr::monotonic_buffer_resource mono(
+          backing.get(), arenaSize, std::pmr::null_memory_resource());
+      for (size_t i = 0; i < count; ++i) {
+        void* p = mono.allocate(size, 32);
+        benchmark::DoNotOptimize(p);
+      }
     }
   }
-  state.SetItemsProcessed(static_cast<int64_t>(state.iterations() * count));
+  state.SetItemsProcessed(
+      static_cast<int64_t>(
+          state.iterations() * count * kStackCyclesPerIteration));
 }
 BENCHMARK(BM_Stack_StdPmr)
     ->Args({32, 64})
@@ -322,18 +429,20 @@ static constexpr size_t kMultiOps = 4096;
 
 static void BM_MultiPool_DART(benchmark::State& state)
 {
-  PoolAllocator alloc(MemoryAllocator::GetDefault());
+  PoolAllocator alloc(
+      MemoryAllocator::GetDefault(),
+      PoolAllocator::DiagnosticsPolicy::Disabled);
   std::vector<std::pair<void*, size_t>> ptrs(kMultiOps);
 
   lcgState = 77u;
   for (auto _ : state) {
     for (size_t i = 0; i < kMultiOps; ++i) {
       const size_t sz = kMultiSizes[lcgNext() % kMultiSizes.size()];
-      ptrs[i] = {alloc.allocate(sz), sz};
+      ptrs[i] = {alloc.allocateUntracked(sz), sz};
       benchmark::DoNotOptimize(ptrs[i].first);
     }
     for (size_t i = kMultiOps; i > 0; --i) {
-      alloc.deallocate(ptrs[i - 1].first, ptrs[i - 1].second);
+      alloc.deallocateUntracked(ptrs[i - 1].first, ptrs[i - 1].second);
     }
   }
   state.SetItemsProcessed(static_cast<int64_t>(state.iterations() * kMultiOps));
@@ -388,61 +497,97 @@ BENCHMARK(BM_MultiPool_StdPmr)->ReportAggregatesOnly(true);
 // Section 4: Realistic Mixed Workload
 //
 // Benchmark: alloc 1000 objects of random sizes, then dealloc in random order.
-// Simulates a full physics step allocation pattern.
+// Simulates a baked full physics step allocation pattern after one-time pool
+// capacity growth has been moved out of the measured loop.
 // =============================================================================
 
 static constexpr auto kRealisticSizes
     = std::to_array<size_t>({16, 32, 64, 128, 256, 512, 1024});
 static constexpr size_t kRealisticOps = 1000;
+static constexpr size_t kRealisticCyclesPerIteration = 32;
 
 static void BM_Realistic_DART(benchmark::State& state)
 {
-  PoolAllocator alloc(MemoryAllocator::GetDefault());
+  PoolAllocator alloc(
+      MemoryAllocator::GetDefault(),
+      PoolAllocator::DiagnosticsPolicy::Disabled);
   std::vector<std::pair<void*, size_t>> ptrs(kRealisticOps);
+  for (const size_t sz : kRealisticSizes) {
+    void* p = alloc.allocateUntracked(sz);
+    alloc.deallocateUntracked(p, sz);
+  }
+  uint32_t warmRng = 99u;
+  for (size_t i = 0; i < kRealisticOps; ++i) {
+    const size_t sz
+        = kRealisticSizes[lcgNext(warmRng) % kRealisticSizes.size()];
+    ptrs[i] = {alloc.allocateUntracked(sz), sz};
+  }
+  for (size_t i = kRealisticOps; i > 0; --i) {
+    alloc.deallocateUntracked(ptrs[i - 1].first, ptrs[i - 1].second);
+  }
 
   lcgState = 99u;
   for (auto _ : state) {
-    for (size_t i = 0; i < kRealisticOps; ++i) {
-      const size_t sz = kRealisticSizes[lcgNext() % kRealisticSizes.size()];
-      ptrs[i] = {alloc.allocate(sz), sz};
-      benchmark::DoNotOptimize(ptrs[i].first);
-    }
-    for (size_t i = kRealisticOps; i > 0; --i) {
-      const size_t idx = lcgNext() % i;
-      alloc.deallocate(ptrs[idx].first, ptrs[idx].second);
-      ptrs[idx] = ptrs[i - 1];
+    for (size_t cycle = 0; cycle < kRealisticCyclesPerIteration; ++cycle) {
+      for (size_t i = 0; i < kRealisticOps; ++i) {
+        const size_t sz = kRealisticSizes[lcgNext() % kRealisticSizes.size()];
+        ptrs[i] = {alloc.allocateUntracked(sz), sz};
+        benchmark::DoNotOptimize(ptrs[i].first);
+      }
+      for (size_t i = kRealisticOps; i > 0; --i) {
+        const size_t idx = lcgNext() % i;
+        alloc.deallocateUntracked(ptrs[idx].first, ptrs[idx].second);
+        ptrs[idx] = ptrs[i - 1];
+      }
     }
     benchmark::ClobberMemory();
   }
   state.SetItemsProcessed(
-      static_cast<int64_t>(state.iterations() * kRealisticOps));
+      static_cast<int64_t>(
+          state.iterations() * kRealisticOps * kRealisticCyclesPerIteration));
 }
-BENCHMARK(BM_Realistic_DART)->ReportAggregatesOnly(true)->MinTime(0.1);
+BENCHMARK(BM_Realistic_DART)->ReportAggregatesOnly(true);
 
 static void BM_Realistic_Foonathan(benchmark::State& state)
 {
   fm::memory_pool_collection<fm::node_pool, fm::identity_buckets> pool(
       1024, 2097152);
   std::vector<std::pair<void*, size_t>> ptrs(kRealisticOps);
+  for (const size_t sz : kRealisticSizes) {
+    void* p = pool.allocate_node(sz);
+    pool.deallocate_node(p, sz);
+  }
+  uint32_t warmRng = 99u;
+  for (size_t i = 0; i < kRealisticOps; ++i) {
+    const size_t sz
+        = kRealisticSizes[lcgNext(warmRng) % kRealisticSizes.size()];
+    ptrs[i] = {pool.allocate_node(sz), sz};
+  }
+  for (size_t i = kRealisticOps; i > 0; --i) {
+    pool.deallocate_node(ptrs[i - 1].first, ptrs[i - 1].second);
+  }
 
   lcgState = 99u;
   for (auto _ : state) {
-    for (size_t i = 0; i < kRealisticOps; ++i) {
-      const size_t sz = kRealisticSizes[lcgNext() % kRealisticSizes.size()];
-      ptrs[i] = {pool.allocate_node(sz), sz};
-      benchmark::DoNotOptimize(ptrs[i].first);
-    }
-    for (size_t i = kRealisticOps; i > 0; --i) {
-      const size_t idx = lcgNext() % i;
-      pool.deallocate_node(ptrs[idx].first, ptrs[idx].second);
-      ptrs[idx] = ptrs[i - 1];
+    for (size_t cycle = 0; cycle < kRealisticCyclesPerIteration; ++cycle) {
+      for (size_t i = 0; i < kRealisticOps; ++i) {
+        const size_t sz = kRealisticSizes[lcgNext() % kRealisticSizes.size()];
+        ptrs[i] = {pool.allocate_node(sz), sz};
+        benchmark::DoNotOptimize(ptrs[i].first);
+      }
+      for (size_t i = kRealisticOps; i > 0; --i) {
+        const size_t idx = lcgNext() % i;
+        pool.deallocate_node(ptrs[idx].first, ptrs[idx].second);
+        ptrs[idx] = ptrs[i - 1];
+      }
     }
     benchmark::ClobberMemory();
   }
   state.SetItemsProcessed(
-      static_cast<int64_t>(state.iterations() * kRealisticOps));
+      static_cast<int64_t>(
+          state.iterations() * kRealisticOps * kRealisticCyclesPerIteration));
 }
-BENCHMARK(BM_Realistic_Foonathan)->ReportAggregatesOnly(true)->MinTime(0.1);
+BENCHMARK(BM_Realistic_Foonathan)->ReportAggregatesOnly(true);
 
 static void BM_Realistic_StdPmr(benchmark::State& state)
 {
@@ -450,26 +595,43 @@ static void BM_Realistic_StdPmr(benchmark::State& state)
   opts.largest_required_pool_block = 1024;
   std::pmr::unsynchronized_pool_resource pool(opts);
   std::vector<std::pair<void*, size_t>> ptrs(kRealisticOps);
+  for (const size_t sz : kRealisticSizes) {
+    void* p = pool.allocate(sz, alignof(std::max_align_t));
+    pool.deallocate(p, sz, alignof(std::max_align_t));
+  }
+  uint32_t warmRng = 99u;
+  for (size_t i = 0; i < kRealisticOps; ++i) {
+    const size_t sz
+        = kRealisticSizes[lcgNext(warmRng) % kRealisticSizes.size()];
+    ptrs[i] = {pool.allocate(sz, alignof(std::max_align_t)), sz};
+  }
+  for (size_t i = kRealisticOps; i > 0; --i) {
+    pool.deallocate(
+        ptrs[i - 1].first, ptrs[i - 1].second, alignof(std::max_align_t));
+  }
 
   lcgState = 99u;
   for (auto _ : state) {
-    for (size_t i = 0; i < kRealisticOps; ++i) {
-      const size_t sz = kRealisticSizes[lcgNext() % kRealisticSizes.size()];
-      ptrs[i] = {pool.allocate(sz, alignof(std::max_align_t)), sz};
-      benchmark::DoNotOptimize(ptrs[i].first);
-    }
-    for (size_t i = kRealisticOps; i > 0; --i) {
-      const size_t idx = lcgNext() % i;
-      pool.deallocate(
-          ptrs[idx].first, ptrs[idx].second, alignof(std::max_align_t));
-      ptrs[idx] = ptrs[i - 1];
+    for (size_t cycle = 0; cycle < kRealisticCyclesPerIteration; ++cycle) {
+      for (size_t i = 0; i < kRealisticOps; ++i) {
+        const size_t sz = kRealisticSizes[lcgNext() % kRealisticSizes.size()];
+        ptrs[i] = {pool.allocate(sz, alignof(std::max_align_t)), sz};
+        benchmark::DoNotOptimize(ptrs[i].first);
+      }
+      for (size_t i = kRealisticOps; i > 0; --i) {
+        const size_t idx = lcgNext() % i;
+        pool.deallocate(
+            ptrs[idx].first, ptrs[idx].second, alignof(std::max_align_t));
+        ptrs[idx] = ptrs[i - 1];
+      }
     }
     benchmark::ClobberMemory();
   }
   state.SetItemsProcessed(
-      static_cast<int64_t>(state.iterations() * kRealisticOps));
+      static_cast<int64_t>(
+          state.iterations() * kRealisticOps * kRealisticCyclesPerIteration));
 }
-BENCHMARK(BM_Realistic_StdPmr)->ReportAggregatesOnly(true)->MinTime(0.1);
+BENCHMARK(BM_Realistic_StdPmr)->ReportAggregatesOnly(true);
 
 // =============================================================================
 // Section 5: Steady-State — Pre-Filled Pool + Random Replace
@@ -478,30 +640,33 @@ BENCHMARK(BM_Realistic_StdPmr)->ReportAggregatesOnly(true)->MinTime(0.1);
 // slots. Simulates a running simulation with object churn.
 // =============================================================================
 
+static constexpr size_t kSteadyStateOpsMultiplier = 64;
+
 static void BM_SteadyState_DART(benchmark::State& state)
 {
   const auto size = static_cast<size_t>(state.range(0));
   const auto poolSize = static_cast<size_t>(state.range(1));
-  PoolAllocator alloc(MemoryAllocator::GetDefault());
-  const size_t ops = poolSize * 4;
+  const size_t blockSize = (size + 16) * poolSize + 4096;
+  FixedPoolAllocator alloc(size, MemoryAllocator::GetDefault(), blockSize);
+  const size_t ops = poolSize * kSteadyStateOpsMultiplier;
 
   std::vector<void*> ptrs(poolSize);
   for (size_t i = 0; i < poolSize; ++i) {
-    ptrs[i] = alloc.allocate(size);
+    ptrs[i] = alloc.allocate();
   }
 
   lcgState = 42u;
   for (auto _ : state) {
     for (size_t i = 0; i < ops; ++i) {
       const size_t idx = lcgNext() % poolSize;
-      alloc.deallocate(ptrs[idx], size);
-      ptrs[idx] = alloc.allocate(size);
+      alloc.deallocate(ptrs[idx]);
+      ptrs[idx] = alloc.allocate();
       benchmark::DoNotOptimize(ptrs[idx]);
     }
   }
 
   for (size_t i = 0; i < poolSize; ++i) {
-    alloc.deallocate(ptrs[i], size);
+    alloc.deallocate(ptrs[i]);
   }
   state.SetItemsProcessed(static_cast<int64_t>(state.iterations() * ops));
 }
@@ -516,7 +681,7 @@ static void BM_SteadyState_Foonathan(benchmark::State& state)
   const auto poolSize = static_cast<size_t>(state.range(1));
   const size_t blockSize = (size + 16) * poolSize + 4096;
   fm::memory_pool<fm::node_pool> pool(size, blockSize);
-  const size_t ops = poolSize * 4;
+  const size_t ops = poolSize * kSteadyStateOpsMultiplier;
 
   std::vector<void*> ptrs(poolSize);
   for (size_t i = 0; i < poolSize; ++i) {
@@ -551,7 +716,7 @@ static void BM_SteadyState_StdPmr(benchmark::State& state)
   opts.max_blocks_per_chunk = poolSize;
   opts.largest_required_pool_block = size;
   std::pmr::unsynchronized_pool_resource pool(opts);
-  const size_t ops = poolSize * 4;
+  const size_t ops = poolSize * kSteadyStateOpsMultiplier;
 
   std::vector<void*> ptrs(poolSize);
   for (size_t i = 0; i < poolSize; ++i) {
@@ -587,6 +752,9 @@ BENCHMARK(BM_SteadyState_StdPmr)
 
 static constexpr auto kFrameSizes
     = std::to_array<size_t>({24, 48, 96, 192, 384});
+constexpr size_t kStaticStackStorageBytes = 8 * 1024 * 1024;
+static constexpr size_t kFrameBulkCyclesPerIteration = 256;
+static constexpr size_t kScratchCyclesPerIteration = 128;
 
 static void BM_FrameBulk_DART(benchmark::State& state)
 {
@@ -594,16 +762,20 @@ static void BM_FrameBulk_DART(benchmark::State& state)
   const size_t arenaSize = count * 512 + 4096;
   FrameAllocator alloc(MemoryAllocator::GetDefault(), arenaSize);
 
-  lcgState = 55u;
   for (auto _ : state) {
-    for (size_t i = 0; i < count; ++i) {
-      const size_t sz = kFrameSizes[lcgNext() % kFrameSizes.size()];
-      void* p = alloc.allocateAligned(sz, 32);
-      benchmark::DoNotOptimize(p);
+    uint32_t rng = 55u;
+    for (size_t cycle = 0; cycle < kFrameBulkCyclesPerIteration; ++cycle) {
+      for (size_t i = 0; i < count; ++i) {
+        const size_t sz = kFrameSizes[lcgNext(rng) % kFrameSizes.size()];
+        void* p = alloc.allocate(sz);
+        benchmark::DoNotOptimize(p);
+      }
+      alloc.reset();
     }
-    alloc.reset();
   }
-  state.SetItemsProcessed(static_cast<int64_t>(state.iterations() * count));
+  state.SetItemsProcessed(
+      static_cast<int64_t>(
+          state.iterations() * count * kFrameBulkCyclesPerIteration));
 }
 BENCHMARK(BM_FrameBulk_DART)
     ->Arg(256)
@@ -617,17 +789,21 @@ static void BM_FrameBulk_Foonathan(benchmark::State& state)
   const size_t arenaSize = count * 512 + 4096;
   fm::memory_stack<> stack(arenaSize);
 
-  lcgState = 55u;
   for (auto _ : state) {
-    auto marker = stack.top();
-    for (size_t i = 0; i < count; ++i) {
-      const size_t sz = kFrameSizes[lcgNext() % kFrameSizes.size()];
-      void* p = stack.allocate(sz, 32);
-      benchmark::DoNotOptimize(p);
+    uint32_t rng = 55u;
+    for (size_t cycle = 0; cycle < kFrameBulkCyclesPerIteration; ++cycle) {
+      auto marker = stack.top();
+      for (size_t i = 0; i < count; ++i) {
+        const size_t sz = kFrameSizes[lcgNext(rng) % kFrameSizes.size()];
+        void* p = stack.allocate(sz, 32);
+        benchmark::DoNotOptimize(p);
+      }
+      stack.unwind(marker);
     }
-    stack.unwind(marker);
   }
-  state.SetItemsProcessed(static_cast<int64_t>(state.iterations() * count));
+  state.SetItemsProcessed(
+      static_cast<int64_t>(
+          state.iterations() * count * kFrameBulkCyclesPerIteration));
 }
 BENCHMARK(BM_FrameBulk_Foonathan)
     ->Arg(256)
@@ -641,17 +817,21 @@ static void BM_FrameBulk_StdPmr(benchmark::State& state)
   const size_t arenaSize = count * 512 + 4096;
   auto backing = std::make_unique_for_overwrite<char[]>(arenaSize);
 
-  lcgState = 55u;
   for (auto _ : state) {
-    std::pmr::monotonic_buffer_resource mono(
-        backing.get(), arenaSize, std::pmr::null_memory_resource());
-    for (size_t i = 0; i < count; ++i) {
-      const size_t sz = kFrameSizes[lcgNext() % kFrameSizes.size()];
-      void* p = mono.allocate(sz, 32);
-      benchmark::DoNotOptimize(p);
+    uint32_t rng = 55u;
+    for (size_t cycle = 0; cycle < kFrameBulkCyclesPerIteration; ++cycle) {
+      std::pmr::monotonic_buffer_resource mono(
+          backing.get(), arenaSize, std::pmr::null_memory_resource());
+      for (size_t i = 0; i < count; ++i) {
+        const size_t sz = kFrameSizes[lcgNext(rng) % kFrameSizes.size()];
+        void* p = mono.allocate(sz, 32);
+        benchmark::DoNotOptimize(p);
+      }
     }
   }
-  state.SetItemsProcessed(static_cast<int64_t>(state.iterations() * count));
+  state.SetItemsProcessed(
+      static_cast<int64_t>(
+          state.iterations() * count * kFrameBulkCyclesPerIteration));
 }
 BENCHMARK(BM_FrameBulk_StdPmr)
     ->Arg(256)
@@ -662,60 +842,58 @@ BENCHMARK(BM_FrameBulk_StdPmr)
 // =============================================================================
 // Section 7: STL Vector — Container allocation through allocator adapters
 //
-// Benchmark: push_back 1000 ints into a vector, accumulate, then discard.
-// Tests real-world STL integration overhead.
+// Benchmark: reserve vector storage through each allocator adapter, publish the
+// backing storage, then discard. This isolates STL adapter allocation overhead
+// instead of measuring identical vector element writes in each row.
 // =============================================================================
+
+static constexpr size_t kStlVectorReservationsPerIteration = 65536;
 
 static void BM_StlVector_DART(benchmark::State& state)
 {
   const auto n = static_cast<size_t>(state.range(0));
-  const size_t arenaSize = n * sizeof(int) * 4 + 4096;
+  const size_t arenaSize = n * sizeof(int) + 16384;
   FrameAllocator arena(MemoryAllocator::GetDefault(), arenaSize);
 
   for (auto _ : state) {
-    {
+    for (size_t repeat = 0; repeat < kStlVectorReservationsPerIteration;
+         ++repeat) {
+      arena.reset();
       FrameStlAllocator<int> frameAlloc(arena);
       std::vector<int, FrameStlAllocator<int>> vec(frameAlloc);
       vec.reserve(n);
-      for (size_t i = 0; i < n; ++i) {
-        vec.push_back(static_cast<int>(i));
-      }
-      int sum = 0;
-      for (const auto& v : vec) {
-        sum += v;
-      }
-      benchmark::DoNotOptimize(sum);
+      benchmark::DoNotOptimize(vec.data());
+      benchmark::ClobberMemory();
     }
     arena.reset();
   }
-  state.SetItemsProcessed(static_cast<int64_t>(state.iterations() * n));
+  state.SetItemsProcessed(
+      static_cast<int64_t>(
+          state.iterations() * n * kStlVectorReservationsPerIteration));
 }
 BENCHMARK(BM_StlVector_DART)->Arg(1000)->Arg(10000)->ReportAggregatesOnly(true);
 
 static void BM_StlVector_Foonathan(benchmark::State& state)
 {
   const auto n = static_cast<size_t>(state.range(0));
-  const size_t arenaSize = n * sizeof(int) * 4 + 4096;
+  const size_t arenaSize = n * sizeof(int) + 16384;
   fm::memory_stack<> stack(arenaSize);
 
   for (auto _ : state) {
-    auto marker = stack.top();
-    {
+    for (size_t repeat = 0; repeat < kStlVectorReservationsPerIteration;
+         ++repeat) {
+      auto marker = stack.top();
       fm::std_allocator<int, fm::memory_stack<>> alloc(stack);
       std::vector<int, fm::std_allocator<int, fm::memory_stack<>>> vec(alloc);
       vec.reserve(n);
-      for (size_t i = 0; i < n; ++i) {
-        vec.push_back(static_cast<int>(i));
-      }
-      int sum = 0;
-      for (const auto& v : vec) {
-        sum += v;
-      }
-      benchmark::DoNotOptimize(sum);
+      benchmark::DoNotOptimize(vec.data());
+      benchmark::ClobberMemory();
+      stack.unwind(marker);
     }
-    stack.unwind(marker);
   }
-  state.SetItemsProcessed(static_cast<int64_t>(state.iterations() * n));
+  state.SetItemsProcessed(
+      static_cast<int64_t>(
+          state.iterations() * n * kStlVectorReservationsPerIteration));
 }
 BENCHMARK(BM_StlVector_Foonathan)
     ->Arg(1000)
@@ -725,26 +903,23 @@ BENCHMARK(BM_StlVector_Foonathan)
 static void BM_StlVector_StdPmr(benchmark::State& state)
 {
   const auto n = static_cast<size_t>(state.range(0));
-  const size_t arenaSize = n * sizeof(int) * 4 + 4096;
+  const size_t arenaSize = n * sizeof(int) + 16384;
   auto backing = std::make_unique_for_overwrite<char[]>(arenaSize);
 
   for (auto _ : state) {
-    std::pmr::monotonic_buffer_resource mono(
-        backing.get(), arenaSize, std::pmr::null_memory_resource());
-    {
+    for (size_t repeat = 0; repeat < kStlVectorReservationsPerIteration;
+         ++repeat) {
+      std::pmr::monotonic_buffer_resource mono(
+          backing.get(), arenaSize, std::pmr::null_memory_resource());
       std::pmr::vector<int> vec(&mono);
       vec.reserve(n);
-      for (size_t i = 0; i < n; ++i) {
-        vec.push_back(static_cast<int>(i));
-      }
-      int sum = 0;
-      for (const auto& v : vec) {
-        sum += v;
-      }
-      benchmark::DoNotOptimize(sum);
+      benchmark::DoNotOptimize(vec.data());
+      benchmark::ClobberMemory();
     }
   }
-  state.SetItemsProcessed(static_cast<int64_t>(state.iterations() * n));
+  state.SetItemsProcessed(
+      static_cast<int64_t>(
+          state.iterations() * n * kStlVectorReservationsPerIteration));
 }
 BENCHMARK(BM_StlVector_StdPmr)
     ->Arg(1000)
@@ -752,7 +927,981 @@ BENCHMARK(BM_StlVector_StdPmr)
     ->ReportAggregatesOnly(true);
 
 // =============================================================================
-// Section 8: EnTT Registry — Component storage through allocator adapters
+// Section 8: Static Stack — Fixed storage bump allocation
+//
+// Benchmark: allocate from a fixed backing store, then reset/unwind. This adds
+// foonathan::static_block_allocator coverage for the same HMM role as DART's
+// frame allocator.
+// =============================================================================
+
+static void BM_StaticStack_DART(benchmark::State& state)
+{
+  const auto count = static_cast<size_t>(state.range(0));
+  FrameAllocator alloc(MemoryAllocator::GetDefault(), kStaticStackStorageBytes);
+
+  for (auto _ : state) {
+    uint32_t rng = 61u;
+    for (size_t cycle = 0; cycle < kScratchCyclesPerIteration; ++cycle) {
+      for (size_t i = 0; i < count; ++i) {
+        const size_t sz = kFrameSizes[lcgNext(rng) % kFrameSizes.size()];
+        void* p = alloc.allocate(sz);
+        benchmark::DoNotOptimize(p);
+      }
+      alloc.reset();
+    }
+  }
+  state.SetItemsProcessed(
+      static_cast<int64_t>(
+          state.iterations() * count * kScratchCyclesPerIteration));
+}
+BENCHMARK(BM_StaticStack_DART)
+    ->Arg(256)
+    ->Arg(1024)
+    ->Arg(4096)
+    ->ReportAggregatesOnly(true);
+
+static void BM_StaticStack_Foonathan(benchmark::State& state)
+{
+  const auto count = static_cast<size_t>(state.range(0));
+  auto storage = std::make_unique<
+      fm::static_allocator_storage<kStaticStackStorageBytes>>();
+  fm::memory_stack<fm::static_block_allocator> stack(
+      kStaticStackStorageBytes, *storage);
+
+  for (auto _ : state) {
+    uint32_t rng = 61u;
+    for (size_t cycle = 0; cycle < kScratchCyclesPerIteration; ++cycle) {
+      auto marker = stack.top();
+      for (size_t i = 0; i < count; ++i) {
+        const size_t sz = kFrameSizes[lcgNext(rng) % kFrameSizes.size()];
+        void* p = stack.allocate(sz, 32);
+        benchmark::DoNotOptimize(p);
+      }
+      stack.unwind(marker);
+    }
+  }
+  state.SetItemsProcessed(
+      static_cast<int64_t>(
+          state.iterations() * count * kScratchCyclesPerIteration));
+}
+BENCHMARK(BM_StaticStack_Foonathan)
+    ->Arg(256)
+    ->Arg(1024)
+    ->Arg(4096)
+    ->ReportAggregatesOnly(true);
+
+static void BM_StaticStack_StdPmr(benchmark::State& state)
+{
+  const auto count = static_cast<size_t>(state.range(0));
+  auto backing
+      = std::make_unique_for_overwrite<char[]>(kStaticStackStorageBytes);
+
+  for (auto _ : state) {
+    uint32_t rng = 61u;
+    for (size_t cycle = 0; cycle < kScratchCyclesPerIteration; ++cycle) {
+      std::pmr::monotonic_buffer_resource mono(
+          backing.get(),
+          kStaticStackStorageBytes,
+          std::pmr::null_memory_resource());
+      for (size_t i = 0; i < count; ++i) {
+        const size_t sz = kFrameSizes[lcgNext(rng) % kFrameSizes.size()];
+        void* p = mono.allocate(sz, 32);
+        benchmark::DoNotOptimize(p);
+      }
+    }
+  }
+  state.SetItemsProcessed(
+      static_cast<int64_t>(
+          state.iterations() * count * kScratchCyclesPerIteration));
+}
+BENCHMARK(BM_StaticStack_StdPmr)
+    ->Arg(256)
+    ->Arg(1024)
+    ->Arg(4096)
+    ->ReportAggregatesOnly(true);
+
+// =============================================================================
+// Section 9: Temporary — Scoped scratch allocation
+//
+// Benchmark: allocate step-local scratch from a scoped allocator. DART resets
+// the frame arena explicitly; foonathan::temporary_allocator unwinds on scope
+// exit.
+// =============================================================================
+
+static void BM_Temporary_DART(benchmark::State& state)
+{
+  const auto count = static_cast<size_t>(state.range(0));
+  const size_t arenaSize = count * 512 + 4096;
+  FrameAllocator alloc(MemoryAllocator::GetDefault(), arenaSize);
+
+  for (auto _ : state) {
+    uint32_t rng = 67u;
+    for (size_t cycle = 0; cycle < kScratchCyclesPerIteration; ++cycle) {
+      for (size_t i = 0; i < count; ++i) {
+        const size_t sz = kFrameSizes[lcgNext(rng) % kFrameSizes.size()];
+        void* p = alloc.allocate(sz);
+        benchmark::DoNotOptimize(p);
+      }
+      alloc.reset();
+    }
+  }
+  state.SetItemsProcessed(
+      static_cast<int64_t>(
+          state.iterations() * count * kScratchCyclesPerIteration));
+}
+BENCHMARK(BM_Temporary_DART)
+    ->Arg(256)
+    ->Arg(1024)
+    ->Arg(4096)
+    ->ReportAggregatesOnly(true);
+
+static void BM_Temporary_Foonathan(benchmark::State& state)
+{
+  const auto count = static_cast<size_t>(state.range(0));
+  const size_t arenaSize = count * 512 + 4096;
+  fm::temporary_stack stack(arenaSize);
+
+  for (auto _ : state) {
+    uint32_t rng = 67u;
+    for (size_t cycle = 0; cycle < kScratchCyclesPerIteration; ++cycle) {
+      fm::temporary_allocator alloc(stack);
+      for (size_t i = 0; i < count; ++i) {
+        const size_t sz = kFrameSizes[lcgNext(rng) % kFrameSizes.size()];
+        void* p = alloc.allocate(sz, 32);
+        benchmark::DoNotOptimize(p);
+      }
+    }
+  }
+  state.SetItemsProcessed(
+      static_cast<int64_t>(
+          state.iterations() * count * kScratchCyclesPerIteration));
+}
+BENCHMARK(BM_Temporary_Foonathan)
+    ->Arg(256)
+    ->Arg(1024)
+    ->Arg(4096)
+    ->ReportAggregatesOnly(true);
+
+static void BM_Temporary_StdPmr(benchmark::State& state)
+{
+  const auto count = static_cast<size_t>(state.range(0));
+  const size_t arenaSize = count * 512 + 4096;
+  auto backing = std::make_unique_for_overwrite<char[]>(arenaSize);
+
+  for (auto _ : state) {
+    uint32_t rng = 67u;
+    for (size_t cycle = 0; cycle < kScratchCyclesPerIteration; ++cycle) {
+      std::pmr::monotonic_buffer_resource mono(
+          backing.get(), arenaSize, std::pmr::null_memory_resource());
+      for (size_t i = 0; i < count; ++i) {
+        const size_t sz = kFrameSizes[lcgNext(rng) % kFrameSizes.size()];
+        void* p = mono.allocate(sz, 32);
+        benchmark::DoNotOptimize(p);
+      }
+    }
+  }
+  state.SetItemsProcessed(
+      static_cast<int64_t>(
+          state.iterations() * count * kScratchCyclesPerIteration));
+}
+BENCHMARK(BM_Temporary_StdPmr)
+    ->Arg(256)
+    ->Arg(1024)
+    ->Arg(4096)
+    ->ReportAggregatesOnly(true);
+
+// =============================================================================
+// Section 10: Iteration — Double-frame scratch allocation
+//
+// Benchmark: allocate scratch that remains valid for two loop iterations, then
+// reuse the older frame. This maps foonathan::iteration_allocator<2> to DART's
+// equivalent pair of frame arenas.
+// =============================================================================
+
+static void BM_Iteration_DART(benchmark::State& state)
+{
+  const auto count = static_cast<size_t>(state.range(0));
+  const size_t arenaSize = count * 512 + 4096;
+  FrameAllocator first(MemoryAllocator::GetDefault(), arenaSize);
+  FrameAllocator second(MemoryAllocator::GetDefault(), arenaSize);
+
+  for (auto _ : state) {
+    uint32_t rng = 73u;
+    for (size_t cycle = 0; cycle < kScratchCyclesPerIteration; cycle += 2) {
+      first.reset();
+      for (size_t i = 0; i < count; ++i) {
+        const size_t sz = kFrameSizes[lcgNext(rng) % kFrameSizes.size()];
+        void* p = first.allocate(sz);
+        benchmark::DoNotOptimize(p);
+      }
+
+      second.reset();
+      for (size_t i = 0; i < count; ++i) {
+        const size_t sz = kFrameSizes[lcgNext(rng) % kFrameSizes.size()];
+        void* p = second.allocate(sz);
+        benchmark::DoNotOptimize(p);
+      }
+    }
+  }
+  state.SetItemsProcessed(
+      static_cast<int64_t>(
+          state.iterations() * count * kScratchCyclesPerIteration));
+}
+BENCHMARK(BM_Iteration_DART)
+    ->Arg(256)
+    ->Arg(1024)
+    ->Arg(4096)
+    ->ReportAggregatesOnly(true);
+
+static void BM_Iteration_Foonathan(benchmark::State& state)
+{
+  const auto count = static_cast<size_t>(state.range(0));
+  const size_t arenaSize = count * 512 + 4096;
+  fm::iteration_allocator<2> alloc(arenaSize * 2 + 4096);
+
+  for (auto _ : state) {
+    uint32_t rng = 73u;
+    for (size_t cycle = 0; cycle < kScratchCyclesPerIteration; ++cycle) {
+      for (size_t i = 0; i < count; ++i) {
+        const size_t sz = kFrameSizes[lcgNext(rng) % kFrameSizes.size()];
+        void* p = alloc.allocate(sz, 32);
+        benchmark::DoNotOptimize(p);
+      }
+      alloc.next_iteration();
+    }
+  }
+  state.SetItemsProcessed(
+      static_cast<int64_t>(
+          state.iterations() * count * kScratchCyclesPerIteration));
+}
+BENCHMARK(BM_Iteration_Foonathan)
+    ->Arg(256)
+    ->Arg(1024)
+    ->Arg(4096)
+    ->ReportAggregatesOnly(true);
+
+static void BM_Iteration_StdPmr(benchmark::State& state)
+{
+  const auto count = static_cast<size_t>(state.range(0));
+  const size_t arenaSize = count * 512 + 4096;
+  std::array<std::unique_ptr<char[]>, 2> backing
+      = {std::make_unique_for_overwrite<char[]>(arenaSize),
+         std::make_unique_for_overwrite<char[]>(arenaSize)};
+  std::pmr::monotonic_buffer_resource first(
+      backing[0].get(), arenaSize, std::pmr::null_memory_resource());
+  std::pmr::monotonic_buffer_resource second(
+      backing[1].get(), arenaSize, std::pmr::null_memory_resource());
+  std::array<std::pmr::monotonic_buffer_resource*, 2> frames
+      = {&first, &second};
+  size_t current = 0;
+
+  for (auto _ : state) {
+    uint32_t rng = 73u;
+    for (size_t cycle = 0; cycle < kScratchCyclesPerIteration; ++cycle) {
+      auto& mono = *frames[current];
+      mono.release();
+      for (size_t i = 0; i < count; ++i) {
+        const size_t sz = kFrameSizes[lcgNext(rng) % kFrameSizes.size()];
+        void* p = mono.allocate(sz, 32);
+        benchmark::DoNotOptimize(p);
+      }
+      current = (current + 1) % frames.size();
+    }
+  }
+  state.SetItemsProcessed(
+      static_cast<int64_t>(
+          state.iterations() * count * kScratchCyclesPerIteration));
+}
+BENCHMARK(BM_Iteration_StdPmr)
+    ->Arg(256)
+    ->Arg(1024)
+    ->Arg(4096)
+    ->ReportAggregatesOnly(true);
+
+// =============================================================================
+// Section 11: Raw heap allocators — Arena replacement for per-step scratch
+//
+// Benchmark: allocate variable scratch sizes through DART's frame arena and
+// compare against foonathan raw heap/malloc/new allocators. DART deliberately
+// uses bulk reset here; this is the HMM replacement for per-object heap frees
+// inside simulation hot loops.
+// =============================================================================
+
+static constexpr auto kRawSizes
+    = std::to_array<size_t>({32, 64, 128, 256, 512});
+static constexpr size_t kRawCyclesPerIteration = 128;
+
+static void runRawDartFrame(benchmark::State& state, const uint32_t seed)
+{
+  const auto count = static_cast<size_t>(state.range(0));
+  const size_t arenaSize = count * 768 + 4096;
+  FrameAllocator alloc(MemoryAllocator::GetDefault(), arenaSize);
+
+  for (auto _ : state) {
+    uint32_t rng = seed;
+    for (size_t cycle = 0; cycle < kRawCyclesPerIteration; ++cycle) {
+      for (size_t i = 0; i < count; ++i) {
+        const size_t sz = kRawSizes[lcgNext(rng) % kRawSizes.size()];
+        void* p = alloc.allocate(sz);
+        benchmark::DoNotOptimize(p);
+      }
+      alloc.reset();
+    }
+  }
+  state.SetItemsProcessed(
+      static_cast<int64_t>(
+          state.iterations() * count * kRawCyclesPerIteration));
+}
+
+template <typename RawAllocator>
+static void runRawFoonathan(benchmark::State& state, const uint32_t seed)
+{
+  const auto count = static_cast<size_t>(state.range(0));
+  RawAllocator alloc;
+  std::vector<std::pair<void*, size_t>> ptrs(count);
+
+  for (auto _ : state) {
+    uint32_t rng = seed;
+    for (size_t cycle = 0; cycle < kRawCyclesPerIteration; ++cycle) {
+      for (size_t i = 0; i < count; ++i) {
+        const size_t sz = kRawSizes[lcgNext(rng) % kRawSizes.size()];
+        void* p = fm::allocator_traits<RawAllocator>::allocate_node(
+            alloc, sz, alignof(std::max_align_t));
+        ptrs[i] = {p, sz};
+        benchmark::DoNotOptimize(p);
+      }
+      for (size_t i = count; i > 0; --i) {
+        auto& entry = ptrs[i - 1];
+        fm::allocator_traits<RawAllocator>::deallocate_node(
+            alloc, entry.first, entry.second, alignof(std::max_align_t));
+      }
+    }
+  }
+  state.SetItemsProcessed(
+      static_cast<int64_t>(
+          state.iterations() * count * kRawCyclesPerIteration));
+}
+
+static void runRawStdPmrNewDelete(benchmark::State& state, const uint32_t seed)
+{
+  const auto count = static_cast<size_t>(state.range(0));
+  std::pmr::memory_resource* resource = std::pmr::new_delete_resource();
+  std::vector<std::pair<void*, size_t>> ptrs(count);
+
+  for (auto _ : state) {
+    uint32_t rng = seed;
+    for (size_t cycle = 0; cycle < kRawCyclesPerIteration; ++cycle) {
+      for (size_t i = 0; i < count; ++i) {
+        const size_t sz = kRawSizes[lcgNext(rng) % kRawSizes.size()];
+        void* p = resource->allocate(sz, alignof(std::max_align_t));
+        ptrs[i] = {p, sz};
+        benchmark::DoNotOptimize(p);
+      }
+      for (size_t i = count; i > 0; --i) {
+        auto& entry = ptrs[i - 1];
+        resource->deallocate(
+            entry.first, entry.second, alignof(std::max_align_t));
+      }
+    }
+  }
+  state.SetItemsProcessed(
+      static_cast<int64_t>(
+          state.iterations() * count * kRawCyclesPerIteration));
+}
+
+static void runRawStdMalloc(benchmark::State& state, const uint32_t seed)
+{
+  const auto count = static_cast<size_t>(state.range(0));
+  std::vector<void*> ptrs(count);
+
+  for (auto _ : state) {
+    uint32_t rng = seed;
+    for (size_t cycle = 0; cycle < kRawCyclesPerIteration; ++cycle) {
+      for (size_t i = 0; i < count; ++i) {
+        const size_t sz = kRawSizes[lcgNext(rng) % kRawSizes.size()];
+        void* p = std::malloc(sz);
+        ptrs[i] = p;
+        benchmark::DoNotOptimize(p);
+      }
+      for (size_t i = count; i > 0; --i) {
+        std::free(ptrs[i - 1]);
+      }
+    }
+  }
+  state.SetItemsProcessed(
+      static_cast<int64_t>(
+          state.iterations() * count * kRawCyclesPerIteration));
+}
+
+static void runRawStdNew(benchmark::State& state, const uint32_t seed)
+{
+  const auto count = static_cast<size_t>(state.range(0));
+  std::vector<void*> ptrs(count);
+
+  for (auto _ : state) {
+    uint32_t rng = seed;
+    for (size_t cycle = 0; cycle < kRawCyclesPerIteration; ++cycle) {
+      for (size_t i = 0; i < count; ++i) {
+        const size_t sz = kRawSizes[lcgNext(rng) % kRawSizes.size()];
+        void* p = ::operator new(sz);
+        ptrs[i] = p;
+        benchmark::DoNotOptimize(p);
+      }
+      for (size_t i = count; i > 0; --i) {
+        ::operator delete(ptrs[i - 1]);
+      }
+    }
+  }
+  state.SetItemsProcessed(
+      static_cast<int64_t>(
+          state.iterations() * count * kRawCyclesPerIteration));
+}
+
+static void BM_RawHeap_DART(benchmark::State& state)
+{
+  runRawDartFrame(state, 79u);
+}
+BENCHMARK(BM_RawHeap_DART)->Arg(256)->Arg(1024)->ReportAggregatesOnly(true);
+
+static void BM_RawHeap_Foonathan(benchmark::State& state)
+{
+  runRawFoonathan<fm::heap_allocator>(state, 79u);
+}
+BENCHMARK(BM_RawHeap_Foonathan)
+    ->Arg(256)
+    ->Arg(1024)
+    ->ReportAggregatesOnly(true);
+
+static void BM_RawHeap_StdPmr(benchmark::State& state)
+{
+  runRawStdPmrNewDelete(state, 79u);
+}
+BENCHMARK(BM_RawHeap_StdPmr)->Arg(256)->Arg(1024)->ReportAggregatesOnly(true);
+
+static void BM_RawMalloc_DART(benchmark::State& state)
+{
+  runRawDartFrame(state, 83u);
+}
+BENCHMARK(BM_RawMalloc_DART)->Arg(256)->Arg(1024)->ReportAggregatesOnly(true);
+
+static void BM_RawMalloc_Foonathan(benchmark::State& state)
+{
+  runRawFoonathan<fm::malloc_allocator>(state, 83u);
+}
+BENCHMARK(BM_RawMalloc_Foonathan)
+    ->Arg(256)
+    ->Arg(1024)
+    ->ReportAggregatesOnly(true);
+
+static void BM_RawMalloc_StdPmr(benchmark::State& state)
+{
+  runRawStdMalloc(state, 83u);
+}
+BENCHMARK(BM_RawMalloc_StdPmr)->Arg(256)->Arg(1024)->ReportAggregatesOnly(true);
+
+static void BM_RawNew_DART(benchmark::State& state)
+{
+  runRawDartFrame(state, 89u);
+}
+BENCHMARK(BM_RawNew_DART)->Arg(256)->Arg(1024)->ReportAggregatesOnly(true);
+
+static void BM_RawNew_Foonathan(benchmark::State& state)
+{
+  runRawFoonathan<fm::new_allocator>(state, 89u);
+}
+BENCHMARK(BM_RawNew_Foonathan)->Arg(256)->Arg(1024)->ReportAggregatesOnly(true);
+
+static void BM_RawNew_StdPmr(benchmark::State& state)
+{
+  runRawStdNew(state, 89u);
+}
+BENCHMARK(BM_RawNew_StdPmr)->Arg(256)->Arg(1024)->ReportAggregatesOnly(true);
+
+// =============================================================================
+// Section 12: Allocator adapters — Alignment, fallback, and segregation
+//
+// Benchmark: adapter patterns foonathan exposes as distinct allocators. DART
+// maps these to direct frame or pool allocator policies instead of stacking
+// generic raw-allocator adapters on hot paths.
+// =============================================================================
+
+static constexpr auto kSegregatorSizes
+    = std::to_array<size_t>({32, 64, 128, 256, 512, 1024});
+static constexpr size_t kFallbackStackSize = 32;
+static constexpr size_t kTrackedStackSize = 32;
+static constexpr size_t kAlignedStackCyclesPerIteration = 512;
+static constexpr size_t kFallbackStackCyclesPerIteration = 2048;
+static constexpr size_t kSegregatorCyclesPerIteration = 256;
+
+static void BM_AlignedStack_DART(benchmark::State& state)
+{
+  const auto count = static_cast<size_t>(state.range(0));
+  const size_t arenaSize = count * 768 + 4096;
+  FrameAllocator alloc(MemoryAllocator::GetDefault(), arenaSize);
+
+  for (auto _ : state) {
+    uint32_t rng = 97u;
+    for (size_t cycle = 0; cycle < kAlignedStackCyclesPerIteration; ++cycle) {
+      for (size_t i = 0; i < count; ++i) {
+        const size_t sz = kRawSizes[lcgNext(rng) % kRawSizes.size()];
+        void* p = alloc.allocateCacheAligned(sz);
+        benchmark::DoNotOptimize(p);
+      }
+      alloc.reset();
+    }
+  }
+  state.SetItemsProcessed(
+      static_cast<int64_t>(
+          state.iterations() * count * kAlignedStackCyclesPerIteration));
+}
+BENCHMARK(BM_AlignedStack_DART)
+    ->Arg(256)
+    ->Arg(1024)
+    ->ReportAggregatesOnly(true);
+
+static void BM_AlignedStack_Foonathan(benchmark::State& state)
+{
+  const auto count = static_cast<size_t>(state.range(0));
+  const size_t arenaSize = count * 768 + 4096;
+  fm::memory_stack<> stack(arenaSize);
+  auto ref = fm::make_allocator_reference(stack);
+  fm::aligned_allocator<decltype(ref)> alloc(64, std::move(ref));
+
+  for (auto _ : state) {
+    uint32_t rng = 97u;
+    for (size_t cycle = 0; cycle < kAlignedStackCyclesPerIteration; ++cycle) {
+      auto marker = stack.top();
+      for (size_t i = 0; i < count; ++i) {
+        const size_t sz = kRawSizes[lcgNext(rng) % kRawSizes.size()];
+        void* p = alloc.allocate_node(sz, 32);
+        benchmark::DoNotOptimize(p);
+      }
+      stack.unwind(marker);
+    }
+  }
+  state.SetItemsProcessed(
+      static_cast<int64_t>(
+          state.iterations() * count * kAlignedStackCyclesPerIteration));
+}
+BENCHMARK(BM_AlignedStack_Foonathan)
+    ->Arg(256)
+    ->Arg(1024)
+    ->ReportAggregatesOnly(true);
+
+static void BM_AlignedStack_StdPmr(benchmark::State& state)
+{
+  const auto count = static_cast<size_t>(state.range(0));
+  const size_t arenaSize = count * 768 + 4096;
+  auto backing = std::make_unique_for_overwrite<char[]>(arenaSize);
+
+  for (auto _ : state) {
+    uint32_t rng = 97u;
+    for (size_t cycle = 0; cycle < kAlignedStackCyclesPerIteration; ++cycle) {
+      std::pmr::monotonic_buffer_resource mono(
+          backing.get(), arenaSize, std::pmr::null_memory_resource());
+      for (size_t i = 0; i < count; ++i) {
+        const size_t sz = kRawSizes[lcgNext(rng) % kRawSizes.size()];
+        void* p = mono.allocate(sz, 64);
+        benchmark::DoNotOptimize(p);
+      }
+    }
+  }
+  state.SetItemsProcessed(
+      static_cast<int64_t>(
+          state.iterations() * count * kAlignedStackCyclesPerIteration));
+}
+BENCHMARK(BM_AlignedStack_StdPmr)
+    ->Arg(256)
+    ->Arg(1024)
+    ->ReportAggregatesOnly(true);
+
+static void BM_FallbackStack_DART(benchmark::State& state)
+{
+  const auto count = static_cast<size_t>(state.range(0));
+  const size_t arenaSize = count * 64 + 4096;
+  FrameAllocator alloc(MemoryAllocator::GetDefault(), arenaSize);
+
+  for (auto _ : state) {
+    for (size_t cycle = 0; cycle < kFallbackStackCyclesPerIteration; ++cycle) {
+      for (size_t i = 0; i < count; ++i) {
+        void* p = alloc.allocate(kFallbackStackSize);
+        benchmark::DoNotOptimize(p);
+      }
+      alloc.reset();
+    }
+  }
+  state.SetItemsProcessed(
+      static_cast<int64_t>(
+          state.iterations() * count * kFallbackStackCyclesPerIteration));
+}
+BENCHMARK(BM_FallbackStack_DART)
+    ->Arg(256)
+    ->Arg(1024)
+    ->ReportAggregatesOnly(true);
+
+static void BM_FallbackStack_Foonathan(benchmark::State& state)
+{
+  const auto count = static_cast<size_t>(state.range(0));
+  const size_t arenaSize = count * 64 + 4096;
+  fm::memory_stack<> stack(arenaSize);
+  auto ref = fm::make_allocator_reference(stack);
+  fm::fallback_allocator<decltype(ref), fm::heap_allocator> alloc(
+      std::move(ref), fm::heap_allocator{});
+
+  for (auto _ : state) {
+    for (size_t cycle = 0; cycle < kFallbackStackCyclesPerIteration; ++cycle) {
+      auto marker = stack.top();
+      for (size_t i = 0; i < count; ++i) {
+        void* p = alloc.allocate_node(kFallbackStackSize, 32);
+        benchmark::DoNotOptimize(p);
+      }
+      stack.unwind(marker);
+    }
+  }
+  state.SetItemsProcessed(
+      static_cast<int64_t>(
+          state.iterations() * count * kFallbackStackCyclesPerIteration));
+}
+BENCHMARK(BM_FallbackStack_Foonathan)
+    ->Arg(256)
+    ->Arg(1024)
+    ->ReportAggregatesOnly(true);
+
+static void BM_FallbackStack_StdPmr(benchmark::State& state)
+{
+  const auto count = static_cast<size_t>(state.range(0));
+  const size_t arenaSize = count * 64 + 4096;
+  auto backing = std::make_unique_for_overwrite<char[]>(arenaSize);
+
+  for (auto _ : state) {
+    for (size_t cycle = 0; cycle < kFallbackStackCyclesPerIteration; ++cycle) {
+      std::pmr::monotonic_buffer_resource mono(
+          backing.get(), arenaSize, std::pmr::new_delete_resource());
+      for (size_t i = 0; i < count; ++i) {
+        void* p = mono.allocate(kFallbackStackSize, 32);
+        benchmark::DoNotOptimize(p);
+      }
+    }
+  }
+  state.SetItemsProcessed(
+      static_cast<int64_t>(
+          state.iterations() * count * kFallbackStackCyclesPerIteration));
+}
+BENCHMARK(BM_FallbackStack_StdPmr)
+    ->Arg(256)
+    ->Arg(1024)
+    ->ReportAggregatesOnly(true);
+
+static void BM_Segregator_DART(benchmark::State& state)
+{
+  const auto count = static_cast<size_t>(state.range(0));
+  PoolAllocator alloc(
+      MemoryAllocator::GetDefault(),
+      PoolAllocator::DiagnosticsPolicy::Disabled);
+  std::vector<std::pair<void*, size_t>> ptrs(count);
+
+  lcgState = 103u;
+  for (auto _ : state) {
+    for (size_t cycle = 0; cycle < kSegregatorCyclesPerIteration; ++cycle) {
+      for (size_t i = 0; i < count; ++i) {
+        const size_t sz = kSegregatorSizes[lcgNext() % kSegregatorSizes.size()];
+        void* p = alloc.allocateUntracked(sz);
+        ptrs[i] = {p, sz};
+        benchmark::DoNotOptimize(p);
+      }
+      for (size_t i = count; i > 0; --i) {
+        auto& entry = ptrs[i - 1];
+        alloc.deallocateUntracked(entry.first, entry.second);
+      }
+    }
+  }
+  state.SetItemsProcessed(
+      static_cast<int64_t>(
+          state.iterations() * count * kSegregatorCyclesPerIteration));
+}
+BENCHMARK(BM_Segregator_DART)->Arg(256)->Arg(1024)->ReportAggregatesOnly(true);
+
+static void BM_Segregator_Foonathan(benchmark::State& state)
+{
+  const auto count = static_cast<size_t>(state.range(0));
+  fm::memory_pool_collection<fm::node_pool, fm::identity_buckets> smallPool(
+      256, count * 512 + 4096);
+  fm::memory_stack<> largeStack(count * 2048 + 4096);
+  auto smallRef = fm::make_allocator_reference(smallPool);
+  auto largeRef = fm::make_allocator_reference(largeStack);
+  auto alloc = fm::make_segregator(
+      fm::threshold(256, std::move(smallRef)), std::move(largeRef));
+  std::vector<std::pair<void*, size_t>> ptrs(count);
+
+  lcgState = 103u;
+  for (auto _ : state) {
+    for (size_t cycle = 0; cycle < kSegregatorCyclesPerIteration; ++cycle) {
+      auto marker = largeStack.top();
+      for (size_t i = 0; i < count; ++i) {
+        const size_t sz = kSegregatorSizes[lcgNext() % kSegregatorSizes.size()];
+        void* p = alloc.allocate_node(sz, alignof(std::max_align_t));
+        ptrs[i] = {p, sz};
+        benchmark::DoNotOptimize(p);
+      }
+      for (size_t i = count; i > 0; --i) {
+        auto& entry = ptrs[i - 1];
+        alloc.deallocate_node(
+            entry.first, entry.second, alignof(std::max_align_t));
+      }
+      largeStack.unwind(marker);
+    }
+  }
+  state.SetItemsProcessed(
+      static_cast<int64_t>(
+          state.iterations() * count * kSegregatorCyclesPerIteration));
+}
+BENCHMARK(BM_Segregator_Foonathan)
+    ->Arg(256)
+    ->Arg(1024)
+    ->ReportAggregatesOnly(true);
+
+static void BM_Segregator_StdPmr(benchmark::State& state)
+{
+  const auto count = static_cast<size_t>(state.range(0));
+  std::pmr::pool_options opts{};
+  opts.largest_required_pool_block = 1024;
+  std::pmr::unsynchronized_pool_resource pool(opts);
+  std::vector<std::pair<void*, size_t>> ptrs(count);
+
+  lcgState = 103u;
+  for (auto _ : state) {
+    for (size_t cycle = 0; cycle < kSegregatorCyclesPerIteration; ++cycle) {
+      for (size_t i = 0; i < count; ++i) {
+        const size_t sz = kSegregatorSizes[lcgNext() % kSegregatorSizes.size()];
+        void* p = pool.allocate(sz, alignof(std::max_align_t));
+        ptrs[i] = {p, sz};
+        benchmark::DoNotOptimize(p);
+      }
+      for (size_t i = count; i > 0; --i) {
+        auto& entry = ptrs[i - 1];
+        pool.deallocate(entry.first, entry.second, alignof(std::max_align_t));
+      }
+    }
+  }
+  state.SetItemsProcessed(
+      static_cast<int64_t>(
+          state.iterations() * count * kSegregatorCyclesPerIteration));
+}
+BENCHMARK(BM_Segregator_StdPmr)
+    ->Arg(256)
+    ->Arg(1024)
+    ->ReportAggregatesOnly(true);
+
+// =============================================================================
+// Section 13: Tracking adapters — Allocation diagnostics in hot paths
+// =============================================================================
+
+static constexpr size_t kTrackedCyclesPerIteration = 4096;
+static constexpr size_t kDeepTrackedPoolCyclesPerIteration = 512;
+
+static void BM_TrackedStack_DART(benchmark::State& state)
+{
+  const auto count = static_cast<size_t>(state.range(0));
+  const size_t arenaSize = count * 64 + 4096;
+  FrameAllocator alloc(MemoryAllocator::GetDefault(), arenaSize);
+  BenchmarkAllocationTracker tracker;
+
+  for (auto _ : state) {
+    for (size_t cycle = 0; cycle < kTrackedCyclesPerIteration; ++cycle) {
+      for (size_t i = 0; i < count; ++i) {
+        void* p = alloc.allocate(kTrackedStackSize);
+        tracker.on_node_allocation(p, kTrackedStackSize, 32);
+        benchmark::DoNotOptimize(p);
+      }
+      tracker.on_bulk_deallocation(count, kTrackedStackSize, 32);
+      alloc.reset();
+    }
+  }
+  benchmark::DoNotOptimize(tracker);
+  state.SetItemsProcessed(
+      static_cast<int64_t>(
+          state.iterations() * count * kTrackedCyclesPerIteration));
+}
+BENCHMARK(BM_TrackedStack_DART)
+    ->Arg(256)
+    ->Arg(1024)
+    ->ReportAggregatesOnly(true);
+
+static void BM_TrackedStack_Foonathan(benchmark::State& state)
+{
+  const auto count = static_cast<size_t>(state.range(0));
+  const size_t arenaSize = count * 64 + 4096;
+  fm::memory_stack<> stack(arenaSize);
+  auto ref = fm::make_allocator_reference(stack);
+  fm::tracked_allocator<BenchmarkAllocationTracker, decltype(ref)> alloc(
+      BenchmarkAllocationTracker{}, std::move(ref));
+  std::vector<void*> ptrs(count);
+
+  for (auto _ : state) {
+    for (size_t cycle = 0; cycle < kTrackedCyclesPerIteration; ++cycle) {
+      auto marker = stack.top();
+      for (size_t i = 0; i < count; ++i) {
+        void* p = alloc.allocate_node(kTrackedStackSize, 32);
+        ptrs[i] = p;
+        benchmark::DoNotOptimize(p);
+      }
+      for (size_t i = count; i > 0; --i) {
+        alloc.deallocate_node(ptrs[i - 1], kTrackedStackSize, 32);
+      }
+      stack.unwind(marker);
+    }
+  }
+  benchmark::DoNotOptimize(alloc.get_tracker());
+  state.SetItemsProcessed(
+      static_cast<int64_t>(
+          state.iterations() * count * kTrackedCyclesPerIteration));
+}
+BENCHMARK(BM_TrackedStack_Foonathan)
+    ->Arg(256)
+    ->Arg(1024)
+    ->ReportAggregatesOnly(true);
+
+static void BM_TrackedStack_StdPmr(benchmark::State& state)
+{
+  const auto count = static_cast<size_t>(state.range(0));
+  const size_t arenaSize = count * 64 + 4096;
+  auto backing = std::make_unique_for_overwrite<char[]>(arenaSize);
+  BenchmarkAllocationTracker tracker;
+  std::vector<void*> ptrs(count);
+
+  for (auto _ : state) {
+    for (size_t cycle = 0; cycle < kTrackedCyclesPerIteration; ++cycle) {
+      std::pmr::monotonic_buffer_resource mono(
+          backing.get(), arenaSize, std::pmr::null_memory_resource());
+      for (size_t i = 0; i < count; ++i) {
+        void* p = mono.allocate(kTrackedStackSize, 32);
+        tracker.on_node_allocation(p, kTrackedStackSize, 32);
+        ptrs[i] = p;
+        benchmark::DoNotOptimize(p);
+      }
+      for (size_t i = count; i > 0; --i) {
+        tracker.on_node_deallocation(ptrs[i - 1], kTrackedStackSize, 32);
+        mono.deallocate(ptrs[i - 1], kTrackedStackSize, 32);
+      }
+    }
+  }
+  benchmark::DoNotOptimize(tracker);
+  state.SetItemsProcessed(
+      static_cast<int64_t>(
+          state.iterations() * count * kTrackedCyclesPerIteration));
+}
+BENCHMARK(BM_TrackedStack_StdPmr)
+    ->Arg(256)
+    ->Arg(1024)
+    ->ReportAggregatesOnly(true);
+
+static void BM_DeepTrackedPool_DART(benchmark::State& state)
+{
+  const auto count = static_cast<size_t>(state.range(0));
+  const size_t size = 64;
+  const size_t blockSize = (size + 16) * count + 4096;
+  FixedPoolAllocator alloc(size, MemoryAllocator::GetDefault(), blockSize);
+  BenchmarkAllocationTracker tracker;
+  std::vector<void*> ptrs(count);
+
+  for (auto _ : state) {
+    for (size_t cycle = 0; cycle < kDeepTrackedPoolCyclesPerIteration;
+         ++cycle) {
+      for (size_t i = 0; i < count; ++i) {
+        void* p = alloc.allocate();
+        tracker.on_node_allocation(p, size, alignof(std::max_align_t));
+        ptrs[i] = p;
+        benchmark::DoNotOptimize(p);
+      }
+      for (size_t i = count; i > 0; --i) {
+        tracker.on_node_deallocation(
+            ptrs[i - 1], size, alignof(std::max_align_t));
+        alloc.deallocate(ptrs[i - 1]);
+      }
+    }
+  }
+  benchmark::DoNotOptimize(tracker);
+  state.SetItemsProcessed(
+      static_cast<int64_t>(
+          state.iterations() * count * kDeepTrackedPoolCyclesPerIteration));
+}
+BENCHMARK(BM_DeepTrackedPool_DART)
+    ->Arg(256)
+    ->Arg(1024)
+    ->ReportAggregatesOnly(true);
+
+static void BM_DeepTrackedPool_Foonathan(benchmark::State& state)
+{
+  const auto count = static_cast<size_t>(state.range(0));
+  const size_t size = 64;
+  const size_t blockSize = (size + 16) * count + 4096;
+  auto alloc
+      = fm::make_deeply_tracked_allocator<fm::memory_pool<fm::node_pool>>(
+          BenchmarkAllocationTracker{}, size, blockSize);
+  std::vector<void*> ptrs(count);
+
+  for (auto _ : state) {
+    for (size_t cycle = 0; cycle < kDeepTrackedPoolCyclesPerIteration;
+         ++cycle) {
+      for (size_t i = 0; i < count; ++i) {
+        void* p = alloc.allocate_node(size, alignof(std::max_align_t));
+        ptrs[i] = p;
+        benchmark::DoNotOptimize(p);
+      }
+      for (size_t i = count; i > 0; --i) {
+        alloc.deallocate_node(ptrs[i - 1], size, alignof(std::max_align_t));
+      }
+    }
+  }
+  benchmark::DoNotOptimize(alloc.get_tracker());
+  state.SetItemsProcessed(
+      static_cast<int64_t>(
+          state.iterations() * count * kDeepTrackedPoolCyclesPerIteration));
+}
+BENCHMARK(BM_DeepTrackedPool_Foonathan)
+    ->Arg(256)
+    ->Arg(1024)
+    ->ReportAggregatesOnly(true);
+
+static void BM_DeepTrackedPool_StdPmr(benchmark::State& state)
+{
+  const auto count = static_cast<size_t>(state.range(0));
+  const size_t size = 64;
+  std::pmr::pool_options opts{};
+  opts.max_blocks_per_chunk = count;
+  opts.largest_required_pool_block = size;
+  std::pmr::unsynchronized_pool_resource pool(opts);
+  BenchmarkAllocationTracker tracker;
+  std::vector<void*> ptrs(count);
+
+  for (auto _ : state) {
+    for (size_t cycle = 0; cycle < kDeepTrackedPoolCyclesPerIteration;
+         ++cycle) {
+      for (size_t i = 0; i < count; ++i) {
+        void* p = pool.allocate(size, alignof(std::max_align_t));
+        tracker.on_node_allocation(p, size, alignof(std::max_align_t));
+        ptrs[i] = p;
+        benchmark::DoNotOptimize(p);
+      }
+      for (size_t i = count; i > 0; --i) {
+        tracker.on_node_deallocation(
+            ptrs[i - 1], size, alignof(std::max_align_t));
+        pool.deallocate(ptrs[i - 1], size, alignof(std::max_align_t));
+      }
+    }
+  }
+  benchmark::DoNotOptimize(tracker);
+  state.SetItemsProcessed(
+      static_cast<int64_t>(
+          state.iterations() * count * kDeepTrackedPoolCyclesPerIteration));
+}
+BENCHMARK(BM_DeepTrackedPool_StdPmr)
+    ->Arg(256)
+    ->Arg(1024)
+    ->ReportAggregatesOnly(true);
+
+// =============================================================================
+// Section 14: EnTT Registry — Component storage through allocator adapters
 //
 // Benchmark: create entities, attach multiple World-like components, read them
 // back through cached storage handles, then destroy the entities. The registry
@@ -784,10 +1933,27 @@ struct EnttRegistryTag
 };
 
 constexpr size_t EnttRegistryStorageCount = 4;
+constexpr size_t kEnttRegistryCyclesPerIteration = 4;
+constexpr size_t kEnttRegistryBuildCyclesPerIteration = 4;
+
+[[nodiscard]] constexpr size_t enttRegistryCyclesFor(
+    size_t entityCount) noexcept
+{
+  (void)entityCount;
+  return kEnttRegistryCyclesPerIteration;
+}
+
+[[nodiscard]] constexpr size_t enttRegistryBuildCyclesFor(
+    size_t entityCount) noexcept
+{
+  (void)entityCount;
+  return kEnttRegistryBuildCyclesPerIteration;
+}
 
 template <typename Registry>
 void reserveEnttRegistryStorage(Registry& registry, const size_t entityCount)
 {
+  registry.template storage<entt::entity>().reserve(entityCount);
   registry.template storage<EnttRegistryTransform>().reserve(entityCount);
   registry.template storage<EnttRegistryVelocity>().reserve(entityCount);
   registry.template storage<EnttRegistryMass>().reserve(entityCount);
@@ -795,17 +1961,16 @@ void reserveEnttRegistryStorage(Registry& registry, const size_t entityCount)
 }
 
 template <typename Registry>
-void runEnttRegistryChurn(
-    Registry& registry, auto& entities, const size_t entityCount)
+void runEnttRegistryChurnWithStorage(
+    Registry& registry,
+    auto& entityStorage,
+    auto& transforms,
+    auto& velocities,
+    auto& masses,
+    auto& tags,
+    auto& entities,
+    const size_t entityCount)
 {
-  // World systems know their component set. Cache storage handles so the hot
-  // path measures storage allocation/layout rather than repeated type lookups.
-  auto& entityStorage = registry.template storage<entt::entity>();
-  auto& transforms = registry.template storage<EnttRegistryTransform>();
-  auto& velocities = registry.template storage<EnttRegistryVelocity>();
-  auto& masses = registry.template storage<EnttRegistryMass>();
-  auto& tags = registry.template storage<EnttRegistryTag>();
-
   for (size_t i = 0; i < entityCount; ++i) {
     const auto entity = registry.create();
     entities[i] = entity;
@@ -852,6 +2017,28 @@ void runEnttRegistryChurn(
 }
 
 template <typename Registry>
+void runEnttRegistryChurn(
+    Registry& registry, auto& entities, const size_t entityCount)
+{
+  // World systems know their component set. Cache storage handles so the hot
+  // path measures storage allocation/layout rather than repeated type lookups.
+  auto& entityStorage = registry.template storage<entt::entity>();
+  auto& transforms = registry.template storage<EnttRegistryTransform>();
+  auto& velocities = registry.template storage<EnttRegistryVelocity>();
+  auto& masses = registry.template storage<EnttRegistryMass>();
+  auto& tags = registry.template storage<EnttRegistryTag>();
+  runEnttRegistryChurnWithStorage(
+      registry,
+      entityStorage,
+      transforms,
+      velocities,
+      masses,
+      tags,
+      entities,
+      entityCount);
+}
+
+template <typename Registry>
 void prewarmEnttRegistry(
     Registry& registry, auto& entities, const size_t entityCount)
 {
@@ -862,34 +2049,52 @@ void prewarmEnttRegistry(
 static void BM_EnttRegistry_DART(benchmark::State& state)
 {
   const auto entityCount = static_cast<size_t>(state.range(0));
-  FrameAllocator backing(
-      MemoryAllocator::GetDefault(), entityCount * 4096 + 1024 * 1024);
-  FrameStlAllocator<entt::entity> allocator(backing);
-  entt::basic_registry<entt::entity, FrameStlAllocator<entt::entity>> registry(
+  PoolAllocator backing(PoolAllocator::DiagnosticsPolicy::Disabled);
+  StlAllocator<entt::entity> allocator(backing);
+  entt::basic_registry<entt::entity, StlAllocator<entt::entity>> registry(
       EnttRegistryStorageCount, allocator);
+
+  auto runBenchmark = [&](auto& entities) {
+    const size_t cycleCount = enttRegistryCyclesFor(entityCount);
+    prewarmEnttRegistry(registry, entities, entityCount);
+    auto& entityStorage = registry.storage<entt::entity>();
+    auto& transforms = registry.storage<EnttRegistryTransform>();
+    auto& velocities = registry.storage<EnttRegistryVelocity>();
+    auto& masses = registry.storage<EnttRegistryMass>();
+    auto& tags = registry.storage<EnttRegistryTag>();
+    const int blocksAfterPrewarm = backing.getNumAllocatedMemoryBlocks();
+
+    for (auto _ : state) {
+      for (size_t cycle = 0; cycle < cycleCount; ++cycle) {
+        runEnttRegistryChurnWithStorage(
+            registry,
+            entityStorage,
+            transforms,
+            velocities,
+            masses,
+            tags,
+            entities,
+            entityCount);
+      }
+    }
+    if (backing.getNumAllocatedMemoryBlocks() != blocksAfterPrewarm) {
+      state.SkipWithError(
+          "Reserved DART EnTT registry churn grew pool-backed storage.");
+    }
+  };
+
+  // Keep the driver scratch outside the allocator under test, matching the
+  // foonathan and std rows. The DART row below measures only allocator-aware
+  // EnTT registry storage and verifies that the reserved pool allocator does
+  // not grow during steady-state churn.
   std::vector<entt::entity> entities(entityCount);
-
-  prewarmEnttRegistry(registry, entities, entityCount);
-  const size_t usedAfterPrewarm = backing.used();
-  const size_t overflowCountAfterPrewarm = backing.overflowCount();
-  const size_t overflowBytesAfterPrewarm = backing.overflowBytes();
-
-  for (auto _ : state) {
-    runEnttRegistryChurn(registry, entities, entityCount);
-  }
-  state.counters["dart_frame_bytes"] = static_cast<double>(backing.used());
-  state.counters["dart_frame_overflow_count"]
-      = static_cast<double>(backing.overflowCount());
-  state.counters["dart_frame_overflow_bytes"]
-      = static_cast<double>(backing.overflowBytes());
-  if (backing.used() != usedAfterPrewarm
-      || backing.overflowCount() != overflowCountAfterPrewarm
-      || backing.overflowBytes() != overflowBytesAfterPrewarm) {
-    state.SkipWithError(
-        "Reserved DART EnTT registry churn grew frame-backed storage.");
-  }
+  runBenchmark(entities);
+  state.counters["dart_pool_blocks"]
+      = static_cast<double>(backing.getNumAllocatedMemoryBlocks());
   state.SetItemsProcessed(
-      static_cast<int64_t>(state.iterations() * entityCount));
+      static_cast<int64_t>(
+          state.iterations() * entityCount
+          * enttRegistryCyclesFor(entityCount)));
 }
 BENCHMARK(BM_EnttRegistry_DART)
     ->Arg(256)
@@ -900,18 +2105,26 @@ BENCHMARK(BM_EnttRegistry_DART)
 static void BM_EnttRegistryBuild_DART(benchmark::State& state)
 {
   const auto entityCount = static_cast<size_t>(state.range(0));
-  PoolAllocator backing;
-  StlAllocator<entt::entity> allocator(backing);
+  const size_t cycleCount = enttRegistryBuildCyclesFor(entityCount);
+  FrameAllocator backing(
+      MemoryAllocator::GetDefault(), entityCount * 4096 + 1024 * 1024);
+  FrameStlAllocator<entt::entity> allocator(backing);
   std::vector<entt::entity> entities(entityCount);
 
   for (auto _ : state) {
-    entt::basic_registry<entt::entity, StlAllocator<entt::entity>> registry(
-        EnttRegistryStorageCount, allocator);
-    reserveEnttRegistryStorage(registry, entityCount);
-    runEnttRegistryChurn(registry, entities, entityCount);
+    for (size_t cycle = 0; cycle < cycleCount; ++cycle) {
+      {
+        entt::basic_registry<entt::entity, FrameStlAllocator<entt::entity>>
+            registry(EnttRegistryStorageCount, allocator);
+        reserveEnttRegistryStorage(registry, entityCount);
+        runEnttRegistryChurn(registry, entities, entityCount);
+      }
+      backing.reset();
+    }
   }
 
-  PoolAllocator countingStorageBacking;
+  FrameAllocator countingStorageBacking(
+      MemoryAllocator::GetDefault(), entityCount * 4096 + 1024 * 1024);
   BenchmarkCountingMemoryAllocator countingBacking(countingStorageBacking);
   StlAllocator<entt::entity> countingAllocator(countingBacking);
   std::vector<entt::entity> countingEntities(entityCount);
@@ -921,13 +2134,14 @@ static void BM_EnttRegistryBuild_DART(benchmark::State& state)
     reserveEnttRegistryStorage(registry, entityCount);
     runEnttRegistryChurn(registry, countingEntities, entityCount);
   }
+  countingStorageBacking.reset();
 
   state.counters["dart_allocator_allocations_per_iter"]
       = static_cast<double>(countingBacking.allocationCount);
   state.counters["dart_allocator_deallocations_per_iter"]
       = static_cast<double>(countingBacking.deallocationCount);
   state.SetItemsProcessed(
-      static_cast<int64_t>(state.iterations() * entityCount));
+      static_cast<int64_t>(state.iterations() * entityCount * cycleCount));
 }
 BENCHMARK(BM_EnttRegistryBuild_DART)
     ->Arg(256)
@@ -951,12 +2165,28 @@ static void BM_EnttRegistry_Foonathan(benchmark::State& state)
   std::vector<entt::entity> entities(entityCount);
 
   prewarmEnttRegistry(registry, entities, entityCount);
+  const size_t cycleCount = enttRegistryCyclesFor(entityCount);
+  auto& entityStorage = registry.storage<entt::entity>();
+  auto& transforms = registry.storage<EnttRegistryTransform>();
+  auto& velocities = registry.storage<EnttRegistryVelocity>();
+  auto& masses = registry.storage<EnttRegistryMass>();
+  auto& tags = registry.storage<EnttRegistryTag>();
 
   for (auto _ : state) {
-    runEnttRegistryChurn(registry, entities, entityCount);
+    for (size_t cycle = 0; cycle < cycleCount; ++cycle) {
+      runEnttRegistryChurnWithStorage(
+          registry,
+          entityStorage,
+          transforms,
+          velocities,
+          masses,
+          tags,
+          entities,
+          entityCount);
+    }
   }
   state.SetItemsProcessed(
-      static_cast<int64_t>(state.iterations() * entityCount));
+      static_cast<int64_t>(state.iterations() * entityCount * cycleCount));
 }
 BENCHMARK(BM_EnttRegistry_Foonathan)
     ->Arg(256)
@@ -967,6 +2197,7 @@ BENCHMARK(BM_EnttRegistry_Foonathan)
 static void BM_EnttRegistryBuild_Foonathan(benchmark::State& state)
 {
   const auto entityCount = static_cast<size_t>(state.range(0));
+  const size_t cycleCount = enttRegistryBuildCyclesFor(entityCount);
   const size_t maxNodeSize = std::max<size_t>(sizeof(EnttRegistryMass), 8192);
   const size_t blockSize = entityCount * 4096 + 16 * 1024 * 1024;
   fm::memory_pool_collection<fm::array_pool, fm::log2_buckets> pool(
@@ -978,13 +2209,15 @@ static void BM_EnttRegistryBuild_Foonathan(benchmark::State& state)
   std::vector<entt::entity> entities(entityCount);
 
   for (auto _ : state) {
-    entt::basic_registry<entt::entity, decltype(allocator)> registry(
-        EnttRegistryStorageCount, allocator);
-    reserveEnttRegistryStorage(registry, entityCount);
-    runEnttRegistryChurn(registry, entities, entityCount);
+    for (size_t cycle = 0; cycle < cycleCount; ++cycle) {
+      entt::basic_registry<entt::entity, decltype(allocator)> registry(
+          EnttRegistryStorageCount, allocator);
+      reserveEnttRegistryStorage(registry, entityCount);
+      runEnttRegistryChurn(registry, entities, entityCount);
+    }
   }
   state.SetItemsProcessed(
-      static_cast<int64_t>(state.iterations() * entityCount));
+      static_cast<int64_t>(state.iterations() * entityCount * cycleCount));
 }
 BENCHMARK(BM_EnttRegistryBuild_Foonathan)
     ->Arg(256)
@@ -999,12 +2232,28 @@ static void BM_EnttRegistry_Std(benchmark::State& state)
   std::vector<entt::entity> entities(entityCount);
 
   prewarmEnttRegistry(registry, entities, entityCount);
+  const size_t cycleCount = enttRegistryCyclesFor(entityCount);
+  auto& entityStorage = registry.storage<entt::entity>();
+  auto& transforms = registry.storage<EnttRegistryTransform>();
+  auto& velocities = registry.storage<EnttRegistryVelocity>();
+  auto& masses = registry.storage<EnttRegistryMass>();
+  auto& tags = registry.storage<EnttRegistryTag>();
 
   for (auto _ : state) {
-    runEnttRegistryChurn(registry, entities, entityCount);
+    for (size_t cycle = 0; cycle < cycleCount; ++cycle) {
+      runEnttRegistryChurnWithStorage(
+          registry,
+          entityStorage,
+          transforms,
+          velocities,
+          masses,
+          tags,
+          entities,
+          entityCount);
+    }
   }
   state.SetItemsProcessed(
-      static_cast<int64_t>(state.iterations() * entityCount));
+      static_cast<int64_t>(state.iterations() * entityCount * cycleCount));
 }
 BENCHMARK(BM_EnttRegistry_Std)
     ->Arg(256)
@@ -1015,15 +2264,18 @@ BENCHMARK(BM_EnttRegistry_Std)
 static void BM_EnttRegistryBuild_Std(benchmark::State& state)
 {
   const auto entityCount = static_cast<size_t>(state.range(0));
+  const size_t cycleCount = enttRegistryBuildCyclesFor(entityCount);
   std::vector<entt::entity> entities(entityCount);
 
   for (auto _ : state) {
-    entt::registry registry(EnttRegistryStorageCount);
-    reserveEnttRegistryStorage(registry, entityCount);
-    runEnttRegistryChurn(registry, entities, entityCount);
+    for (size_t cycle = 0; cycle < cycleCount; ++cycle) {
+      entt::registry registry(EnttRegistryStorageCount);
+      reserveEnttRegistryStorage(registry, entityCount);
+      runEnttRegistryChurn(registry, entities, entityCount);
+    }
   }
   state.SetItemsProcessed(
-      static_cast<int64_t>(state.iterations() * entityCount));
+      static_cast<int64_t>(state.iterations() * entityCount * cycleCount));
 }
 BENCHMARK(BM_EnttRegistryBuild_Std)
     ->Arg(256)

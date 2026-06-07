@@ -50,12 +50,22 @@ class DART_API PoolAllocator : public MemoryAllocator
 public:
   using Debug = MemoryAllocatorDebugger<PoolAllocator>;
 
+  enum class DiagnosticsPolicy
+  {
+    Enabled,
+    Disabled,
+  };
+
   /// Constructor
   ///
   /// @param[in] baseAllocator: (optional) Base memory allocator.
-  /// @param[in] initialAllocation: (optional) Bytes to initially allocate.
+  /// @param[in] diagnosticsPolicy: Whether to update live/peak counters on
+  /// the hot allocation path.
   explicit PoolAllocator(
-      MemoryAllocator& baseAllocator = MemoryAllocator::GetDefault());
+      MemoryAllocator& baseAllocator = MemoryAllocator::GetDefault(),
+      DiagnosticsPolicy diagnosticsPolicy = DiagnosticsPolicy::Enabled);
+
+  explicit PoolAllocator(DiagnosticsPolicy diagnosticsPolicy);
 
   /// Destructor
   ~PoolAllocator() override;
@@ -82,12 +92,14 @@ public:
   /// Returns the number of currently live allocations from this allocator.
   [[nodiscard]] size_t getAllocationCount() const;
 
-  // PERF: These fast paths MUST stay inline. Moving them out-of-line causes
-  // 2-5x regression from function-call overhead (benchmarked). Do NOT move
-  // to .cpp — see tests/benchmark/common/bm_allocators.cpp.
+  /// Returns whether live/peak counters are updated on the hot path.
+  [[nodiscard]] bool isDiagnosticsEnabled() const;
 
-  // Documentation inherited
-  [[nodiscard]] inline void* allocate(size_t bytes) noexcept override
+  /// Allocates without updating diagnostic counters.
+  ///
+  /// This is intended for release hot paths that deliberately own diagnostics
+  /// at a higher level.
+  [[nodiscard]] inline void* allocateUntracked(size_t bytes) noexcept
   {
     if (bytes == 0) [[unlikely]] {
       return nullptr;
@@ -97,31 +109,22 @@ public:
       if (defaultUnitSize(bytes) == 0) {
         return nullptr;
       }
-      void* pointer = mBaseAllocator.allocate(bytes);
-      if (pointer != nullptr) {
-        recordAllocation(bytes);
-      }
-      return pointer;
+      return mBaseAllocator.allocate(bytes);
     }
 
     const int heapIndex = heapIndexForDefaultBytes(bytes);
 
     if (MemoryUnit* unit = mFreeMemoryUnits[heapIndex]) [[likely]] {
       mFreeMemoryUnits[heapIndex] = unit->mNext;
-      recordAllocation(bytes);
       return unit;
     }
 
-    void* pointer = allocateSlow(heapIndex);
-    if (pointer != nullptr) {
-      recordAllocation(bytes);
-    }
-    return pointer;
+    return allocateSlow(heapIndex);
   }
 
-  // Documentation inherited
-  [[nodiscard]] inline void* allocate(
-      size_t bytes, size_t alignment) noexcept override
+  /// Allocates aligned storage without updating diagnostic counters.
+  [[nodiscard]] inline void* allocateUntracked(
+      size_t bytes, size_t alignment) noexcept
   {
     const size_t unitSize = effectiveUnitSize(bytes, alignment);
     if (unitSize == 0) [[unlikely]] {
@@ -129,30 +132,21 @@ public:
     }
 
     if (unitSize > MAX_UNIT_SIZE) [[unlikely]] {
-      void* pointer = mBaseAllocator.allocate(bytes, alignment);
-      if (pointer != nullptr) {
-        recordAllocation(bytes);
-      }
-      return pointer;
+      return mBaseAllocator.allocate(bytes, alignment);
     }
 
     const int heapIndex = heapIndexForUnitSize(unitSize);
 
     if (MemoryUnit* unit = mFreeMemoryUnits[heapIndex]) [[likely]] {
       mFreeMemoryUnits[heapIndex] = unit->mNext;
-      recordAllocation(bytes);
       return unit;
     }
 
-    void* pointer = allocateSlow(heapIndex);
-    if (pointer != nullptr) {
-      recordAllocation(bytes);
-    }
-    return pointer;
+    return allocateSlow(heapIndex);
   }
 
-  // Documentation inherited
-  inline void deallocate(void* pointer, size_t bytes) override
+  /// Deallocates without updating diagnostic counters.
+  inline void deallocateUntracked(void* pointer, size_t bytes) noexcept
   {
     if (pointer == nullptr || bytes == 0) [[unlikely]] {
       return;
@@ -163,7 +157,6 @@ public:
         return;
       }
       mBaseAllocator.deallocate(pointer, bytes);
-      recordDeallocation(bytes);
       return;
     }
 
@@ -171,11 +164,11 @@ public:
     MemoryUnit* releasedUnit = static_cast<MemoryUnit*>(pointer);
     releasedUnit->mNext = mFreeMemoryUnits[heapIndex];
     mFreeMemoryUnits[heapIndex] = releasedUnit;
-    recordDeallocation(bytes);
   }
 
-  // Documentation inherited
-  inline void deallocate(void* pointer, size_t bytes, size_t alignment) override
+  /// Deallocates aligned storage without updating diagnostic counters.
+  inline void deallocateUntracked(
+      void* pointer, size_t bytes, size_t alignment) noexcept
   {
     const size_t unitSize = effectiveUnitSize(bytes, alignment);
     if (pointer == nullptr || unitSize == 0) [[unlikely]] {
@@ -184,7 +177,6 @@ public:
 
     if (unitSize > MAX_UNIT_SIZE) [[unlikely]] {
       mBaseAllocator.deallocate(pointer, bytes, alignment);
-      recordDeallocation(bytes);
       return;
     }
 
@@ -192,7 +184,57 @@ public:
     MemoryUnit* releasedUnit = static_cast<MemoryUnit*>(pointer);
     releasedUnit->mNext = mFreeMemoryUnits[heapIndex];
     mFreeMemoryUnits[heapIndex] = releasedUnit;
-    recordDeallocation(bytes);
+  }
+
+  // PERF: These fast paths MUST stay inline. Moving them out-of-line causes
+  // 2-5x regression from function-call overhead (benchmarked). Do NOT move
+  // to .cpp — see tests/benchmark/common/bm_allocators.cpp.
+
+  // Documentation inherited
+  [[nodiscard]] inline void* allocate(size_t bytes) noexcept override
+  {
+    void* unit = allocateUntracked(bytes);
+    if (unit != nullptr) {
+      recordAllocationIfEnabled(bytes);
+    }
+    return unit;
+  }
+
+  // Documentation inherited
+  [[nodiscard]] inline void* allocate(
+      size_t bytes, size_t alignment) noexcept override
+  {
+    void* unit = allocateUntracked(bytes, alignment);
+    if (unit != nullptr) {
+      recordAllocationIfEnabled(bytes);
+    }
+    return unit;
+  }
+
+  // Documentation inherited
+  inline void deallocate(void* pointer, size_t bytes) override
+  {
+    if (pointer == nullptr || bytes == 0) [[unlikely]] {
+      return;
+    }
+    if (bytes > MAX_UNIT_SIZE && defaultUnitSize(bytes) == 0) [[unlikely]] {
+      return;
+    }
+
+    deallocateUntracked(pointer, bytes);
+    recordDeallocationIfEnabled(bytes);
+  }
+
+  // Documentation inherited
+  inline void deallocate(void* pointer, size_t bytes, size_t alignment) override
+  {
+    if (pointer == nullptr || effectiveUnitSize(bytes, alignment) == 0)
+        [[unlikely]] {
+      return;
+    }
+
+    deallocateUntracked(pointer, bytes, alignment);
+    recordDeallocationIfEnabled(bytes);
   }
 
   // Documentation inherited
@@ -211,6 +253,24 @@ private:
   };
 
   [[nodiscard]] void* allocateSlow(int heapIndex) noexcept;
+
+  void recordAllocationIfEnabled(size_t bytes) noexcept
+  {
+    if (!mDiagnosticsEnabled) [[likely]] {
+      return;
+    }
+
+    recordAllocation(bytes);
+  }
+
+  void recordDeallocationIfEnabled(size_t bytes) noexcept
+  {
+    if (!mDiagnosticsEnabled) [[likely]] {
+      return;
+    }
+
+    recordDeallocation(bytes);
+  }
 
   void recordAllocation(size_t bytes) noexcept
   {
@@ -317,6 +377,8 @@ private:
   }();
 
   MemoryAllocator& mBaseAllocator;
+
+  bool mDiagnosticsEnabled{true};
 
   MemoryBlock* mMemoryBlocks;
 

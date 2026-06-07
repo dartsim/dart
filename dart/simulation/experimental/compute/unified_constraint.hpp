@@ -37,11 +37,15 @@
 #include <dart/simulation/experimental/detail/world_registry_types.hpp>
 #include <dart/simulation/experimental/export.hpp>
 
+#include <dart/math/lcp/pivoting/dantzig_solver.hpp>
+
 #include <Eigen/Core>
 #include <entt/entity/entity.hpp>
 
 #include <span>
 #include <vector>
+
+#include <cstddef>
 
 namespace dart::simulation::experimental::compute {
 
@@ -84,6 +88,9 @@ struct UnifiedMultibodyContact
 {
   entt::entity multibody = entt::null;
   MultibodyLinkContactProblem problem;
+  /// Optional borrowed problem for stage-owned scratch paths that already own
+  /// the assembled rows. Public callers can leave this null and use `problem`.
+  MultibodyLinkContactProblem* borrowedProblem = nullptr;
 };
 
 /// One multibody's compacted active link rows placed into the global system.
@@ -175,6 +182,51 @@ struct UnifiedConstraintSolution
   bool succeeded = false; ///< the joint Dantzig solve converged at full size
 };
 
+/// Reusable solve storage for unified boxed-LCP island solves and fallback.
+///
+/// The default wrapper APIs allocate this storage locally. Step-pipeline stages
+/// that run same-shape solves repeatedly should keep one scratch instance and
+/// pass it to the `Into`/scratch overloads so island remapping, normal-only
+/// fallback buffers, tangent accumulators, and Dantzig work arrays retain
+/// capacity across frames. `lambda` stores the most recent global solved
+/// impulse vector after `solveUnifiedConstraintProblemInto()` or fallback
+/// normal solve.
+struct DART_EXPERIMENTAL_API UnifiedConstraintSolveScratch
+{
+  math::DantzigSolver solver;
+  math::DantzigSolver::Scratch dantzig;
+  Eigen::VectorXd lambda;
+  Eigen::VectorXd islandLambda;
+
+  std::vector<Eigen::Index> islandRows;
+  std::vector<Eigen::Index> islandOffsets;
+  std::vector<char> visitedRows;
+  std::vector<Eigen::Index> rowStack;
+  std::vector<Eigen::Index> localIndex;
+
+  Eigen::MatrixXd islandDelassus;
+  Eigen::VectorXd islandRhs;
+  Eigen::VectorXd islandLo;
+  Eigen::VectorXd islandHi;
+  Eigen::VectorXi islandFindex;
+
+  std::vector<Eigen::Index> normalRows;
+  Eigen::MatrixXd normalA;
+  Eigen::VectorXd normalB;
+  Eigen::VectorXd normalLo;
+  Eigen::VectorXd normalHi;
+  Eigen::VectorXi normalFindex;
+  Eigen::VectorXd normalLambda;
+
+  std::vector<double> rigidTangent1;
+  std::vector<double> rigidTangent2;
+  std::vector<std::size_t> linkTangentOffsets;
+  std::vector<double> linkTangent1;
+  std::vector<double> linkTangent2;
+
+  void clear() noexcept;
+};
+
 /// Solve the unified boxed-LCP `w = A*lambda - b`, `lo <= lambda <= hi` with
 /// the Coulomb cone coupled through `findex`, jointly over all contacts.
 ///
@@ -189,6 +241,23 @@ struct UnifiedConstraintSolution
 /// validation/tolerance fields determine `succeeded()`.
 [[nodiscard]] DART_EXPERIMENTAL_API UnifiedConstraintSolution
 solveUnifiedConstraintProblem(const UnifiedConstraintProblem& problem);
+
+DART_EXPERIMENTAL_API bool solveUnifiedConstraintProblemInto(
+    const UnifiedConstraintProblem& problem,
+    UnifiedConstraintSolveScratch& scratch);
+
+/// Solve into caller-owned scratch and result storage. Reusing both objects
+/// lets same-shape callers avoid the result-vector allocation that
+/// return-by-value convenience wrappers need for their output.
+DART_EXPERIMENTAL_API bool solveUnifiedConstraintProblemInto(
+    const UnifiedConstraintProblem& problem,
+    UnifiedConstraintSolution& solution,
+    UnifiedConstraintSolveScratch& scratch);
+
+[[nodiscard]] DART_EXPERIMENTAL_API UnifiedConstraintSolution
+solveUnifiedConstraintProblem(
+    const UnifiedConstraintProblem& problem,
+    UnifiedConstraintSolveScratch& scratch);
 
 /// Apply the solved global impulses back to both domains.
 ///
@@ -226,6 +295,13 @@ DART_EXPERIMENTAL_API void applyUnifiedConstraintFallback(
     std::span<Eigen::VectorXd> multibodyVelocities,
     std::size_t frictionIterations);
 
+DART_EXPERIMENTAL_API void applyUnifiedConstraintFallback(
+    detail::WorldRegistry& registry,
+    const UnifiedConstraintProblem& problem,
+    std::span<Eigen::VectorXd> multibodyVelocities,
+    std::size_t frictionIterations,
+    UnifiedConstraintSolveScratch& scratch);
+
 /// Solve and apply the unified constraints, falling back when the joint solve
 /// is rank-deficient. Returns true if the joint Dantzig solve succeeded (false
 /// if the fallback was used). This is the entry point the constraint stage
@@ -235,5 +311,12 @@ DART_EXPERIMENTAL_API bool resolveUnifiedConstraints(
     const UnifiedConstraintProblem& problem,
     std::span<Eigen::VectorXd> multibodyVelocities,
     std::size_t frictionIterations);
+
+DART_EXPERIMENTAL_API bool resolveUnifiedConstraints(
+    detail::WorldRegistry& registry,
+    const UnifiedConstraintProblem& problem,
+    std::span<Eigen::VectorXd> multibodyVelocities,
+    std::size_t frictionIterations,
+    UnifiedConstraintSolveScratch& scratch);
 
 } // namespace dart::simulation::experimental::compute

@@ -89,6 +89,12 @@ public:
   /// @param[in] n: Number of objects earlier passed to allocate().
   void deallocate(pointer pointer, size_type n) noexcept;
 
+  template <typename U, typename... Args>
+  void construct(U* pointer, Args&&... args);
+
+  template <typename U>
+  void destroy(U* pointer) noexcept;
+
   /// Upper bound on elements that can be allocated.
   [[nodiscard]] constexpr size_type max_size() const noexcept
   {

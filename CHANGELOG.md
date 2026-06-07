@@ -140,6 +140,14 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Added `pixi run bm-allocator-comparative-check`, a strict allocator
     benchmark gate that compares DART allocator workloads against
     foonathan/memory and `std::pmr` baselines.
+  - Added required comparative rows for foonathan/memory static fixed-storage
+    stacks, scoped temporary allocators, and two-iteration frame allocators,
+    with matching DART frame-allocator fast-path rows and
+    `std::pmr::monotonic_buffer_resource` baselines.
+  - Added required comparative rows for foonathan/memory raw heap/malloc/new
+    allocators plus aligned, fallback, segregator, tracked, and deeply tracked
+    allocator adapters, with matching DART frame/pool HMM rows and standard
+    allocator baselines.
   - Extended the comparative allocator benchmarks with opt-in allocator-aware
     EnTT registry/component storage churn against foonathan/memory and
     standard-registry baselines, and added a CV/noise guard so strict allocator
@@ -160,9 +168,25 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     uninstrumented pool-backed registry path and reports configured-allocator
     call counters from a matching untimed probe. The focused checker now
     distinguishes timing loss, allocator-call regressions, frame growth, and
-    noisy benchmark evidence.
-  - Optimized the frame allocator reset/accounting fast path and normal-aligned
-    `FrameStlAllocator` allocations while preserving over-aligned STL storage.
+    noisy benchmark evidence. The checker now also requires the expected
+    benchmark rows for the selected mode, so missing foonathan/memory coverage
+    cannot be treated as passing evidence.
+  - Optimized the frame allocator reset/accounting fast path, default 32-byte
+    frame allocations, and cache-line-aligned `FrameStlAllocator` allocations
+    while preserving over-aligned STL storage; frame-backed STL blocks are now
+    cache-line aligned for container hot loops such as allocator-aware EnTT
+    storage pages, and the comparative STL-vector row now batches reserve-only
+    allocator-adapter work to measure allocator throughput directly.
+  - Added an explicit `PoolAllocator::DiagnosticsPolicy` so hot-path pool
+    allocation can opt out of live/peak counter updates while preserving
+    counter behavior for existing direct `PoolAllocator` users by default.
+    Release `MemoryManager` pool allocation now uses the non-diagnostic policy,
+    and comparative DART pool workloads use that HMM hot path.
+  - Added optional CPU affinity, warmup, and random-interleaving controls to the
+    C++ benchmark runner and comparative allocator checker; the realistic
+    comparative allocator row now lets the checker control benchmark min-time,
+    and short stack/tracked-stack rows batch repeated allocator cycles for
+    stricter low-noise comparisons.
   - Kept `StlAllocator` allocation and deallocation alignment-aware for
     allocator-backed STL storage, including fixed-pool-backed max-aligned
     values.
@@ -176,6 +200,12 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     bytes without growing from the base allocator.
   - Hardened `FreeListAllocator` reservation arithmetic so impossible fixed
     capacities and expansion sizes fail before touching the base allocator.
+  - Hardened common allocator count and size overflow guards for
+    `MemoryAllocator::allocateAs`, `FrameAllocator`, `FrameStlAllocator`, and
+    `StlAllocator`; fixed fixed-capacity `FreeListAllocator` aligned-allocation
+    diagnostics so public live/peak counters track requested bytes instead of
+    internal header padding, and added allocator-root isolation coverage for
+    independent `MemoryManager` and experimental `World` instances.
   - Added query methods on `dart::common::MemoryAllocatorDebugger`,
     `FreeListAllocator`, and `PoolAllocator` for current live bytes, peak live
     bytes, and live allocation count so allocator diagnostics can consume
@@ -183,6 +213,52 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Added structured `MemoryManager` debug diagnostics and surfaced them through
     experimental `World` memory diagnostics for free/pool allocator accounting,
     including typed borrowed allocator use.
+  - Made experimental `World::clear()` recreate its internal allocator-backed
+    registry storage so ECS capacities and debug-tracked registry allocations
+    are released at the rebuild boundary while preserving the World memory
+    hierarchy.
+  - Extended experimental `World` base-allocator no-growth coverage to baked
+    rigid-body resting contact, non-cross articulated resting contact, and
+    same-DOF cross-articulated link-contact scenes after contact prewarm.
+  - Removed per-assembly heap containers from the experimental unified
+    constraint assembler for row directions, rigid/articulated row ends, and
+    shared rigid-body inertia lookup, and routed the boxed-LCP stage's
+    per-multibody link-contact row assembly through reusable
+    `MultibodyDynamicsScratch`. Cross-multibody row completion now reuses that
+    scratch for other-link point Jacobians and joint-space denominator work.
+    The Dantzig boxed-LCP solver now accepts caller-owned reusable scratch,
+    avoids `LcpProblem` input copies for already assembled systems, and is
+    routed through reusable unified-constraint solve scratch for island
+    remapping, island sub-problems, normal-only fallback, and fallback tangent
+    accumulators. Same-shape no-heap regressions cover both Dantzig solves and
+    unified island solves. The unified assembler now reuses same-shape link
+    block row storage without per-row Eigen temporaries, and the boxed-LCP
+    stage borrows per-multibody contact problems from persistent dynamics
+    scratch instead of copying them into staging containers first. Rigid
+    contact problem assembly now has an in-place scratch overload, and boxed-LCP
+    fallback world gates cover mixed/different-DOF, stacked, and coupled
+    multi-row cross-articulated contact scenes for base-allocator no-growth and
+    first baked-step global-heap no-allocation by priming unified constraint
+    scratch during `enterSimulationMode()`. Public multibody link-contact
+    assembly now has reusable scratch storage that can be borrowed by the
+    in-place unified assembler without same-shape heap growth, and the
+    boxed-LCP fallback gates include a larger five-multibody stacked contact
+    set. Convenience return-by-value unified problem wrappers remain a separate
+    allocation target.
+  - Reused `DeformableDynamicsStage` scratch for deformable surface snapshots,
+    static/moving rigid surface-CCD snapshots, and rigid obstacle barrier lists,
+    and primed deformable surface-contact candidate buffers during
+    `enterSimulationMode()`. Inter-body/rigid surface-CCD sweep buffers are now
+    stage/entity scratch-backed too, and VBD topology/static-contact scratch is
+    primed during `enterSimulationMode()`, so baked surface-snapshot steps and
+    first-baked-step active VBD static rigid surface-CCD point crossing do not
+    allocate from the global heap. Default projected-Newton deformable solves
+    now reuse per-body RHS, sparse Hessian assembly, PSD block batch, sparse
+    pattern, and solution scratch for covered mass-spring and static rigid
+    surface-CCD steps, and FEM rest-shape caches are primed for covered
+    one-tetrahedron FEM projected-Newton steps. Self-contact barrier scratch is
+    sized from bake-primed candidates for covered two-triangle
+    projected-Newton self-contact steps.
   - Hardened `dart::common::FixedPoolAllocator` against base-allocator failures
     during construction and block-table growth, with coverage for deterministic
     failure, fallback, reuse, and debug-guard paths.

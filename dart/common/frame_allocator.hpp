@@ -39,9 +39,11 @@
 #include <dart/export.hpp>
 
 #include <algorithm>
+#include <limits>
 #include <memory>
 #include <new>
 #include <stdexcept>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -118,12 +120,28 @@ public:
       return allocateAlignedSlow(bytes, alignment);
     }
 
+    if (alignment == 64) {
+      return allocateCacheAlignedFast(bytes, false);
+    }
+    if (alignment <= 32) {
+      return allocateDefaultAligned(bytes);
+    }
+
     const auto cur = reinterpret_cast<uintptr_t>(mCur);
+    if (cur > std::numeric_limits<uintptr_t>::max() - (alignment - 1)) {
+      return nullptr;
+    }
     const auto aligned = (cur + alignment - 1) & ~(alignment - 1);
+    if (aligned > std::numeric_limits<uintptr_t>::max() - bytes) {
+      return nullptr;
+    }
+    const auto unpaddedNext = aligned + bytes;
+    if (unpaddedNext > std::numeric_limits<uintptr_t>::max() - 31) {
+      return nullptr;
+    }
     // Round next to 32-byte boundary so that allocate()'s fast path
     // invariant (mCur is 32-aligned) is preserved after mixed calls.
-    auto* next
-        = reinterpret_cast<char*>((aligned + bytes + 31) & ~uintptr_t{31});
+    auto* next = reinterpret_cast<char*>((unpaddedNext + 31) & ~uintptr_t{31});
 
     if (next <= mEnd) [[likely]] {
       mCur = next;
@@ -133,10 +151,16 @@ public:
     return allocateAlignedSlow(bytes, alignment);
   }
 
+  [[nodiscard]] inline void* allocateCacheAligned(size_t bytes) noexcept
+  {
+    return allocateCacheAlignedFast(bytes, false);
+  }
+
   inline void reset() noexcept
   {
-    if (mOverflowAllocations.empty()) [[likely]] {
+    if (mOverflowBytes == 0) [[likely]] {
       mCur = mBegin;
+      mCacheLineColor = 0;
       return;
     }
     resetSlow();
@@ -181,16 +205,58 @@ private:
       return bytes == 0 ? nullptr : allocateAlignedSlow(bytes, 32);
     }
 
-    const auto padded = (bytes + 31) & ~size_t{31};
-    auto* next = mCur + padded;
+    const auto remaining = static_cast<size_t>(mEnd - mCur);
+    if (bytes <= remaining) [[likely]] {
+      const auto padded = (bytes + 31) & ~size_t{31};
+      if (padded > remaining) [[unlikely]] {
+        return allocateAlignedSlow(bytes, 32);
+      }
 
-    if (next <= mEnd) [[likely]] {
       auto* result = mCur;
-      mCur = next;
+      mCur += padded;
       return result;
     }
 
     return allocateAlignedSlow(bytes, 32);
+  }
+
+  [[nodiscard]] inline void* allocateStlStorageCacheAligned(
+      size_t bytes) noexcept
+  {
+    return allocateCacheAlignedFast(bytes, true);
+  }
+
+  [[nodiscard]] inline void* allocateCacheAlignedFast(
+      size_t bytes, bool colorStorage) noexcept
+  {
+    if (bytes == 0 || !mCur) [[unlikely]] {
+      return bytes == 0 ? nullptr : allocateAlignedSlow(bytes, 64);
+    }
+    if (bytes > std::numeric_limits<size_t>::max() - 31) [[unlikely]] {
+      return allocateAlignedSlow(bytes, 64);
+    }
+
+    const auto remaining = static_cast<size_t>(mEnd - mCur);
+    const auto addr = reinterpret_cast<uintptr_t>(mCur);
+    const auto alignPadding = static_cast<size_t>((uintptr_t{0} - addr) & 63u);
+    const auto colorPadding
+        = colorStorage ? static_cast<size_t>(mCacheLineColor) * 64u : 0u;
+    const auto padding = alignPadding + colorPadding;
+    if (padding <= remaining) [[likely]] {
+      const auto available = remaining - padding;
+      const auto padded = (bytes + 31) & ~size_t{31};
+      if (padded <= available) [[likely]] {
+        auto* result = mCur + padding;
+        mCur = result + padded;
+        if (colorStorage) {
+          mCacheLineColor
+              = static_cast<std::uint8_t>((mCacheLineColor + 1u) & 7u);
+        }
+        return result;
+      }
+    }
+
+    return allocateAlignedSlow(bytes, 64);
   }
 
   [[nodiscard]] void* allocateAlignedSlow(
@@ -206,6 +272,7 @@ private:
   char* mBegin;
   size_t mCapacity;
   size_t mOverflowBytes;
+  std::uint8_t mCacheLineColor;
   std::vector<OverflowEntry> mOverflowAllocations;
 };
 
@@ -228,13 +295,23 @@ public:
 
   [[nodiscard]] T* allocate(std::size_t n)
   {
-    void* p;
-    if constexpr (alignof(T) <= 32) {
-      p = mArena->allocateDefaultAligned(n * sizeof(T));
-    } else {
-      p = mArena->allocateAligned(n * sizeof(T), alignof(T));
+    if (n > std::numeric_limits<std::size_t>::max() / sizeof(T)) [[unlikely]] {
+      throw std::bad_alloc();
     }
-    if (!p) {
+
+    const std::size_t bytes = n * sizeof(T);
+    void* p;
+    // Cache-line alignment helps large value pages, over-aligned SIMD payloads,
+    // and bulk storage pages. Smaller scalar allocations stay compact on the
+    // default 32-byte frame invariant to reduce cache/TLB pressure.
+    if constexpr (alignof(T) > 32 || sizeof(T) >= 64) {
+      p = mArena->allocateStlStorageCacheAligned(bytes);
+    } else if (bytes >= 2048) {
+      p = mArena->allocateStlStorageCacheAligned(bytes);
+    } else {
+      p = mArena->allocateAligned(bytes, alignof(T));
+    }
+    if (!p) [[unlikely]] {
       throw std::bad_alloc();
     }
     return static_cast<T*>(p);
@@ -243,6 +320,20 @@ public:
   void deallocate(T*, std::size_t) noexcept
   {
     // Arena semantics: memory freed on reset()
+  }
+
+  template <typename U, typename... Args>
+  void construct(U* pointer, Args&&... args)
+  {
+    std::construct_at(pointer, std::forward<Args>(args)...);
+  }
+
+  template <typename U>
+  void destroy(U* pointer) noexcept
+  {
+    if constexpr (!std::is_trivially_destructible_v<U>) {
+      std::destroy_at(pointer);
+    }
   }
 
   template <typename U>

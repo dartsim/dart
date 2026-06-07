@@ -45,11 +45,12 @@ FrameAllocator::FrameAllocator(
     mBuffer(static_cast<char*>(baseAllocator.allocate(initialCapacity))),
     mBegin(nullptr),
     mCapacity(mBuffer ? initialCapacity : 0),
-    mOverflowBytes(0)
+    mOverflowBytes(0),
+    mCacheLineColor(0)
 {
   if (mBuffer) {
     const auto addr = reinterpret_cast<uintptr_t>(mBuffer);
-    const auto aligned = (addr + 31) & ~uintptr_t{31};
+    const auto aligned = (addr + 63) & ~uintptr_t{63};
     mBegin = reinterpret_cast<char*>(aligned);
     mCur = mBegin;
     mEnd = mBuffer + mCapacity;
@@ -94,6 +95,13 @@ void FrameAllocator::print(std::ostream& os, int indent) const
 void* FrameAllocator::allocateAlignedSlow(
     size_t bytes, size_t alignment) noexcept
 {
+  if (bytes == 0 || alignment == 0 || (alignment & (alignment - 1)) != 0) {
+    return nullptr;
+  }
+  if (bytes > std::numeric_limits<size_t>::max() - alignment) {
+    return nullptr;
+  }
+
   const size_t totalSize = bytes + alignment;
   void* raw = mBaseAllocator.allocate(totalSize);
   if (!raw) {
@@ -135,12 +143,13 @@ void FrameAllocator::resetSlow() noexcept
 
   if (mBuffer) {
     const auto addr = reinterpret_cast<uintptr_t>(mBuffer);
-    mBegin = reinterpret_cast<char*>((addr + 31) & ~uintptr_t{31});
+    mBegin = reinterpret_cast<char*>((addr + 63) & ~uintptr_t{63});
   } else {
     mBegin = nullptr;
     mEnd = nullptr;
   }
   mCur = mBegin;
+  mCacheLineColor = 0;
 }
 
 //==============================================================================

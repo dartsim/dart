@@ -267,10 +267,16 @@ void* FreeListAllocator::allocateFromReservedBlockAligned(
     return nullptr;
   }
 
+  const size_t diagnosticAllocatedSize = mDiagnosticAllocatedSize;
+  const size_t diagnosticPeakAllocatedSize = mDiagnosticPeakAllocatedSize;
+  const size_t diagnosticAllocationCount = mDiagnosticAllocationCount;
   auto* allocation = static_cast<unsigned char*>(allocate(allocationSize));
   if (allocation == nullptr) {
     return nullptr;
   }
+  mDiagnosticAllocatedSize = diagnosticAllocatedSize;
+  mDiagnosticPeakAllocatedSize = diagnosticPeakAllocatedSize;
+  mDiagnosticAllocationCount = diagnosticAllocationCount;
 
   const auto payloadBegin = reinterpret_cast<uintptr_t>(allocation)
                             + sizeof(AlignedAllocationHeader);
@@ -286,7 +292,6 @@ void* FreeListAllocator::allocateFromReservedBlockAligned(
           allocationSize,
           bytes,
           alignment});
-  recordDeallocation(allocationSize);
   recordAllocation(bytes);
 
   return reinterpret_cast<void*>(alignedPayload);
@@ -450,10 +455,16 @@ bool FreeListAllocator::releaseReservedAlignedAllocation(
 
   void* allocationPointer = header->allocationPointer;
   const size_t allocationSize = header->allocationSize;
+  const size_t diagnosticAllocatedSize = mDiagnosticAllocatedSize;
+  const size_t diagnosticPeakAllocatedSize = mDiagnosticPeakAllocatedSize;
+  const size_t diagnosticAllocationCount = mDiagnosticAllocationCount;
   std::destroy_at(header);
-  recordDeallocation(bytes);
-  recordAllocation(allocationSize);
   deallocate(allocationPointer, allocationSize);
+  mDiagnosticAllocatedSize
+      = bytes <= diagnosticAllocatedSize ? diagnosticAllocatedSize - bytes : 0;
+  mDiagnosticPeakAllocatedSize = diagnosticPeakAllocatedSize;
+  mDiagnosticAllocationCount
+      = diagnosticAllocationCount > 0 ? diagnosticAllocationCount - 1 : 0;
 
   return true;
 }

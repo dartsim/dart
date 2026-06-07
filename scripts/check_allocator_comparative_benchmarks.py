@@ -8,7 +8,9 @@ allocator on matching workloads.
 The default foonathan rule is intentionally strict: DART must be faster than
 the corresponding foonathan/memory row. This script is a manual evidence gate
 for deciding whether DART's in-house allocators are good enough for broader
-simulation-loop adoption.
+simulation-loop adoption. The checker also requires the benchmark rows expected
+for the selected mode, so missing foonathan/memory coverage cannot be mistaken
+for a pass.
 
 Usage:
     python scripts/check_allocator_comparative_benchmarks.py
@@ -31,19 +33,27 @@ from pathlib import Path
 _UNIT_TO_NS = {"ns": 1.0, "us": 1e3, "ms": 1e6, "s": 1e9}
 
 DEFAULT_FILTER = (
-    "BM_(Pool|Stack|MultiPool|Realistic|SteadyState|FrameBulk|StlVector)_"
+    "BM_(Pool|Stack|MultiPool|Realistic|SteadyState|FrameBulk|StlVector|"
+    "StaticStack|Temporary|Iteration|RawHeap|RawMalloc|RawNew|"
+    "AlignedStack|FallbackStack|Segregator|TrackedStack|DeepTrackedPool)_"
     "(DART|Foonathan|StdPmr)"
 )
 
 ENTT_REGISTRY_FILTER = (
     "BM_(Pool|Stack|MultiPool|Realistic|SteadyState|FrameBulk|StlVector|"
-    "EnttRegistry|EnttRegistryBuild)_(DART|Foonathan|StdPmr|Std)"
+    "StaticStack|Temporary|Iteration|RawHeap|RawMalloc|RawNew|"
+    "AlignedStack|FallbackStack|Segregator|TrackedStack|DeepTrackedPool|"
+    "EnttRegistry|EnttRegistryBuild)_"
+    "(DART|Foonathan|StdPmr|Std)"
 )
 ENTT_REGISTRY_ONLY_FILTER = "BM_(EnttRegistry|EnttRegistryBuild)_(DART|Foonathan|Std)"
 
 _COMPARATIVE_RE = re.compile(
     r"^(BM_(?:Pool|Stack|MultiPool|Realistic|SteadyState|FrameBulk|StlVector|"
-    r"EnttRegistry|EnttRegistryBuild))_(DART|Foonathan|StdPmr|Std)(/.*)?$"
+    r"StaticStack|Temporary|Iteration|RawHeap|RawMalloc|RawNew|"
+    r"AlignedStack|FallbackStack|Segregator|TrackedStack|DeepTrackedPool|"
+    r"EnttRegistry|EnttRegistryBuild))_"
+    r"(DART|Foonathan|StdPmr|Std)(/.*)?$"
 )
 _AGGREGATE_SUFFIX_RE = re.compile(r"_(?:mean|median|stddev|cv)$")
 _REPEATS_SUFFIX_RE = re.compile(r"/repeats:\d+")
@@ -52,6 +62,58 @@ _BASELINE_ALLOCATORS = {
     "std": ("StdPmr", "Std"),
     "stdpmr": ("StdPmr", "Std"),
 }
+
+_DEFAULT_REQUIRED_KEYS = (
+    "BM_Pool/32/64",
+    "BM_Pool/256/256",
+    "BM_Pool/32/1024",
+    "BM_Stack/32/64",
+    "BM_Stack/256/256",
+    "BM_Stack/256/1024",
+    "BM_Stack/32/4096",
+    "BM_MultiPool",
+    "BM_Realistic",
+    "BM_SteadyState/64/1024",
+    "BM_SteadyState/256/512",
+    "BM_FrameBulk/256",
+    "BM_FrameBulk/1024",
+    "BM_FrameBulk/4096",
+    "BM_StlVector/1000",
+    "BM_StlVector/10000",
+    "BM_StaticStack/256",
+    "BM_StaticStack/1024",
+    "BM_StaticStack/4096",
+    "BM_Temporary/256",
+    "BM_Temporary/1024",
+    "BM_Temporary/4096",
+    "BM_Iteration/256",
+    "BM_Iteration/1024",
+    "BM_Iteration/4096",
+    "BM_RawHeap/256",
+    "BM_RawHeap/1024",
+    "BM_RawMalloc/256",
+    "BM_RawMalloc/1024",
+    "BM_RawNew/256",
+    "BM_RawNew/1024",
+    "BM_AlignedStack/256",
+    "BM_AlignedStack/1024",
+    "BM_FallbackStack/256",
+    "BM_FallbackStack/1024",
+    "BM_Segregator/256",
+    "BM_Segregator/1024",
+    "BM_TrackedStack/256",
+    "BM_TrackedStack/1024",
+    "BM_DeepTrackedPool/256",
+    "BM_DeepTrackedPool/1024",
+)
+_ENTT_REQUIRED_KEYS = (
+    "BM_EnttRegistry/256",
+    "BM_EnttRegistry/512",
+    "BM_EnttRegistry/2048",
+    "BM_EnttRegistryBuild/256",
+    "BM_EnttRegistryBuild/512",
+    "BM_EnttRegistryBuild/2048",
+)
 
 
 class BenchmarkCheckError(RuntimeError):
@@ -84,6 +146,32 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
             "Minimum benchmark time passed to Google Benchmark. The default "
             "keeps the strict manual comparison gate focused on sustained "
             "allocator timings instead of short-run noise."
+        ),
+    )
+    parser.add_argument(
+        "--benchmark-min-warmup-time",
+        default=None,
+        help=(
+            "Optional Google Benchmark warmup time in seconds. Pass a bare "
+            "number such as 0.1; this host's Google Benchmark rejects an "
+            "'s'-suffixed warmup value."
+        ),
+    )
+    parser.add_argument(
+        "--benchmark-random-interleaving",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help=(
+            "Enable Google Benchmark random interleaving for repetitions. This "
+            "can reduce order and thermal bias in strict allocator comparisons."
+        ),
+    )
+    parser.add_argument(
+        "--cpu-affinity",
+        default=None,
+        help=(
+            "Pin only the benchmark binary to one CPU via run_cpp_benchmark.py. "
+            "Pass a CPU index or 'auto' to choose a nonzero allowed CPU."
         ),
     )
     parser.add_argument(
@@ -229,6 +317,16 @@ def require_requested_entt_registry_rows(
     )
 
 
+def required_keys_for_mode(
+    *, include_entt_registry: bool, only_entt_registry: bool
+) -> tuple[str, ...]:
+    if only_entt_registry:
+        return _ENTT_REQUIRED_KEYS
+    if include_entt_registry:
+        return (*_DEFAULT_REQUIRED_KEYS, *_ENTT_REQUIRED_KEYS)
+    return _DEFAULT_REQUIRED_KEYS
+
+
 def _select_rows(rows: list[dict]) -> list[dict]:
     medians = [
         row
@@ -318,6 +416,7 @@ def evaluate_comparisons(
     rows: list[dict],
     *,
     baseline_allocators: list[str | tuple[str, ...]],
+    required_keys: tuple[str, ...] = (),
     max_ratio: float = 1.0,
     max_cv: float | None = 0.10,
     metric: str = "cpu_time",
@@ -338,6 +437,17 @@ def evaluate_comparisons(
 
     if not timings:
         raise BenchmarkCheckError("no comparative allocator benchmark rows found")
+
+    for key in required_keys:
+        allocs = timings.get(key)
+        if allocs is None:
+            failures.append(
+                {
+                    "benchmark": key,
+                    "baseline": "<required>",
+                    "status": "MISSING_BENCHMARK",
+                }
+            )
 
     for key in sorted(timings):
         allocs = timings[key]
@@ -425,6 +535,9 @@ def run_benchmark(
     *,
     build_type: str,
     benchmark_min_time: str,
+    benchmark_min_warmup_time: str | None,
+    benchmark_random_interleaving: bool,
+    cpu_affinity: str | None,
     include_entt_registry: bool,
     only_entt_registry: bool,
     repetitions: int,
@@ -432,13 +545,18 @@ def run_benchmark(
     output.parent.mkdir(parents=True, exist_ok=True)
 
     env = os.environ.copy()
-    subprocess.run(
+    command = [
+        sys.executable,
+        "scripts/run_cpp_benchmark.py",
+        "allocators-comparative",
+        "--build-type",
+        build_type,
+    ]
+    if cpu_affinity is not None:
+        command.extend(["--cpu-affinity", cpu_affinity])
+    command.append("--")
+    command.extend(
         [
-            sys.executable,
-            "scripts/run_cpp_benchmark.py",
-            "allocators-comparative",
-            "--build-type",
-            build_type,
             "--benchmark_filter={}".format(
                 benchmark_filter_for_mode(
                     include_entt_registry=include_entt_registry,
@@ -450,7 +568,17 @@ def run_benchmark(
             "--benchmark_report_aggregates_only=true",
             "--benchmark_out={}".format(output),
             "--benchmark_out_format=json",
-        ],
+        ]
+    )
+    if benchmark_min_warmup_time is not None:
+        command.append(
+            "--benchmark_min_warmup_time={}".format(benchmark_min_warmup_time)
+        )
+    if benchmark_random_interleaving:
+        command.append("--benchmark_enable_random_interleaving=true")
+
+    subprocess.run(
+        command,
         check=True,
         env=env,
     )
@@ -537,6 +665,9 @@ def main(argv: list[str]) -> int:
             args.output,
             build_type=args.build_type,
             benchmark_min_time=args.benchmark_min_time,
+            benchmark_min_warmup_time=args.benchmark_min_warmup_time,
+            benchmark_random_interleaving=args.benchmark_random_interleaving,
+            cpu_affinity=args.cpu_affinity,
             include_entt_registry=args.include_entt_registry,
             only_entt_registry=args.only_entt_registry,
             repetitions=args.repetitions,
@@ -557,6 +688,10 @@ def main(argv: list[str]) -> int:
         failures, passes = evaluate_comparisons(
             rows,
             baseline_allocators=baseline_allocators,
+            required_keys=required_keys_for_mode(
+                include_entt_registry=args.include_entt_registry,
+                only_entt_registry=args.only_entt_registry,
+            ),
             max_ratio=args.max_ratio,
             max_cv=args.max_cv,
             metric=args.metric,

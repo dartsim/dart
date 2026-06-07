@@ -309,6 +309,24 @@ TEST(FreeListAllocatorTest, FixedCapacityDoesNotGrowWhenBlocksAreFull)
 }
 
 //==============================================================================
+TEST(FreeListAllocatorTest, FixedCapacityReusesFreedBlockWithoutGrowing)
+{
+  CountingMemoryAllocator baseAllocator;
+  FreeListAllocator allocator(
+      baseAllocator, 256, FreeListAllocator::GrowthPolicy::FixedCapacity);
+
+  const auto initialBaseAllocations = baseAllocator.allocationCount;
+  void* first = allocator.allocate(32);
+  ASSERT_NE(first, nullptr);
+  allocator.deallocate(first, 32);
+
+  void* second = allocator.allocate(32);
+  EXPECT_EQ(second, first);
+  EXPECT_EQ(baseAllocator.allocationCount, initialBaseAllocations);
+  allocator.deallocate(second, 32);
+}
+
+//==============================================================================
 TEST(FreeListAllocatorTest, FixedCapacitySatisfiesOverAlignedAllocation)
 {
   CountingMemoryAllocator baseAllocator;
@@ -329,6 +347,28 @@ TEST(FreeListAllocatorTest, FixedCapacitySatisfiesOverAlignedAllocation)
 }
 
 //==============================================================================
+TEST(FreeListAllocatorTest, FixedCapacityAlignedDiagnosticsUseRequestedBytes)
+{
+  FreeListAllocator allocator(
+      MemoryAllocator::GetDefault(),
+      1024,
+      FreeListAllocator::GrowthPolicy::FixedCapacity);
+
+  auto* ptr = allocator.allocate(
+      sizeof(OverAlignedObject), alignof(OverAlignedObject));
+  ASSERT_NE(ptr, nullptr);
+  EXPECT_EQ(allocator.getAllocatedSize(), sizeof(OverAlignedObject));
+  EXPECT_EQ(allocator.getPeakAllocatedSize(), sizeof(OverAlignedObject));
+  EXPECT_EQ(allocator.getAllocationCount(), 1u);
+
+  allocator.deallocate(
+      ptr, sizeof(OverAlignedObject), alignof(OverAlignedObject));
+  EXPECT_EQ(allocator.getAllocatedSize(), 0u);
+  EXPECT_EQ(allocator.getPeakAllocatedSize(), sizeof(OverAlignedObject));
+  EXPECT_EQ(allocator.getAllocationCount(), 0u);
+}
+
+//==============================================================================
 TEST(FreeListAllocatorTest, FixedCapacityAlignedAllocationDoesNotGrow)
 {
   CountingMemoryAllocator baseAllocator;
@@ -338,6 +378,58 @@ TEST(FreeListAllocatorTest, FixedCapacityAlignedAllocationDoesNotGrow)
   const auto initialBaseAllocations = baseAllocator.allocationCount;
   EXPECT_EQ(allocator.allocate(1024, 64), nullptr);
   EXPECT_EQ(baseAllocator.allocationCount, initialBaseAllocations);
+}
+
+//==============================================================================
+TEST(FreeListAllocatorTest, DiagnosticsTrackRequestedBytesAndPeak)
+{
+  FreeListAllocator allocator(MemoryAllocator::GetDefault(), 512);
+
+  void* first = allocator.allocate(17);
+  ASSERT_NE(first, nullptr);
+  EXPECT_EQ(allocator.getAllocatedSize(), 17u);
+  EXPECT_EQ(allocator.getPeakAllocatedSize(), 17u);
+  EXPECT_EQ(allocator.getAllocationCount(), 1u);
+
+  void* second = allocator.allocate(33);
+  ASSERT_NE(second, nullptr);
+  EXPECT_EQ(allocator.getAllocatedSize(), 50u);
+  EXPECT_EQ(allocator.getPeakAllocatedSize(), 50u);
+  EXPECT_EQ(allocator.getAllocationCount(), 2u);
+
+  allocator.deallocate(first, 17);
+  EXPECT_EQ(allocator.getAllocatedSize(), 33u);
+  EXPECT_EQ(allocator.getPeakAllocatedSize(), 50u);
+  EXPECT_EQ(allocator.getAllocationCount(), 1u);
+
+  allocator.deallocate(second, 33);
+  EXPECT_EQ(allocator.getAllocatedSize(), 0u);
+  EXPECT_EQ(allocator.getPeakAllocatedSize(), 50u);
+  EXPECT_EQ(allocator.getAllocationCount(), 0u);
+}
+
+//==============================================================================
+TEST(FreeListAllocatorTest, DebugRejectsMismatchedAlignedAndDoubleFree)
+{
+  auto allocator = FreeListAllocator::Debug();
+
+  void* ptr = allocator.allocate(
+      sizeof(OverAlignedObject), alignof(OverAlignedObject));
+  ASSERT_NE(ptr, nullptr);
+  EXPECT_TRUE(allocator.hasAllocated(ptr, sizeof(OverAlignedObject)));
+
+  allocator.deallocate(
+      ptr, sizeof(OverAlignedObject) / 2, alignof(OverAlignedObject));
+  EXPECT_FALSE(allocator.isEmpty());
+  EXPECT_TRUE(allocator.hasAllocated(ptr, sizeof(OverAlignedObject)));
+
+  allocator.deallocate(
+      ptr, sizeof(OverAlignedObject), alignof(OverAlignedObject));
+  EXPECT_TRUE(allocator.isEmpty());
+
+  allocator.deallocate(
+      ptr, sizeof(OverAlignedObject), alignof(OverAlignedObject));
+  EXPECT_TRUE(allocator.isEmpty());
 }
 
 //==============================================================================

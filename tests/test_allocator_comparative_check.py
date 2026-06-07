@@ -184,6 +184,65 @@ def test_benchmark_filter_modes_are_explicit():
     )
 
 
+def test_required_key_modes_are_explicit():
+    module = load_allocator_check_module()
+
+    default_keys = module.required_keys_for_mode(
+        include_entt_registry=False,
+        only_entt_registry=False,
+    )
+    include_keys = module.required_keys_for_mode(
+        include_entt_registry=True,
+        only_entt_registry=False,
+    )
+    only_keys = module.required_keys_for_mode(
+        include_entt_registry=False,
+        only_entt_registry=True,
+    )
+
+    assert "BM_Pool/32/64" in default_keys
+    assert "BM_StaticStack/256" in default_keys
+    assert "BM_Temporary/256" in default_keys
+    assert "BM_Iteration/256" in default_keys
+    assert "BM_RawHeap/256" in default_keys
+    assert "BM_RawMalloc/256" in default_keys
+    assert "BM_RawNew/256" in default_keys
+    assert "BM_AlignedStack/256" in default_keys
+    assert "BM_FallbackStack/256" in default_keys
+    assert "BM_Segregator/256" in default_keys
+    assert "BM_TrackedStack/256" in default_keys
+    assert "BM_DeepTrackedPool/256" in default_keys
+    assert "BM_EnttRegistry/256" not in default_keys
+    assert "BM_EnttRegistry/256" in include_keys
+    assert "BM_Pool/32/64" in include_keys
+    assert only_keys == module._ENTT_REQUIRED_KEYS
+
+
+def test_missing_required_benchmark_rows_fail():
+    module = load_allocator_check_module()
+
+    failures, passes = module.evaluate_comparisons(
+        stl_vector_rows(
+            dart_time=90.0,
+            foonathan_time=100.0,
+            dart_cv=0.02,
+            foonathan_cv=0.02,
+        ),
+        baseline_allocators=[("Foonathan",)],
+        required_keys=("BM_StlVector/10000", "BM_Pool/32/64"),
+        max_cv=0.10,
+    )
+
+    assert passes[0]["benchmark"] == "BM_StlVector/10000"
+    assert failures == [
+        {
+            "benchmark": "BM_Pool/32/64",
+            "baseline": "<required>",
+            "status": "MISSING_BENCHMARK",
+        }
+    ]
+
+
 def test_input_rows_are_filtered_by_entt_registry_mode():
     module = load_allocator_check_module()
     rows = (

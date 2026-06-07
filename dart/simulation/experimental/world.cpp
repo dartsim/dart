@@ -1184,6 +1184,8 @@ struct WorldStepPipelineStages
         if (variationalSelected) {
           rigidBodyContact.prepare(world);
           multibodyVariational.prepare(world);
+        } else if (includeMultibodyStage) {
+          unifiedConstraint.prepare(world);
         } else if (!includeMultibodyStage) {
           rigidBodyContact.prepare(world);
         }
@@ -2192,7 +2194,11 @@ WorldMemoryDiagnostics World::getMemoryDiagnostics() const
 //==============================================================================
 void World::clear()
 {
-  m_storage->registry.clear();
+  // Recreate the opaque storage at the rebuild boundary so registry/component
+  // capacities and other allocator-backed build artifacts release their live
+  // allocations instead of surviving as stale storage in an empty World.
+  m_storage = std::make_unique<detail::WorldStorage>(
+      m_memoryManager.getFreeAllocator());
   markFrameTopologyChanged();
   m_simulationMode = false;
   m_gravity = Eigen::Vector3d(0.0, 0.0, -9.81);
@@ -2202,8 +2208,6 @@ void World::clear()
   m_contactSolverMethod = ContactSolverMethod::SequentialImpulse;
   m_contactGradientMode = ContactGradientMode::Analytic;
   resetRigidIpcAdaptiveBarrierStiffnessLowerBound();
-  m_storage->stepDerivatives.reset();
-  m_storage->differentiableParameters.clear();
   m_time = 0.0;
   m_frame = 0;
   m_memoryManager.getFrameAllocator().reset();

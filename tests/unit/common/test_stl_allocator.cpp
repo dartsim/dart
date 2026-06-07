@@ -40,6 +40,7 @@
 #include <entt/entity/registry.hpp>
 #include <gtest/gtest.h>
 
+#include <limits>
 #include <string_view>
 #include <vector>
 
@@ -212,6 +213,23 @@ TEST(StlAllocatorTest, SupportsOverAlignedVectorStorage)
   for (auto& value : values) {
     expectAligned(&value);
   }
+}
+
+//==============================================================================
+TEST(StlAllocatorTest, RejectsCountOverflow)
+{
+  FreeListAllocator backing;
+  StlAllocator<OverAlignedComponent> allocator(backing);
+
+  EXPECT_THROW(
+      {
+        auto* ptr = allocator.allocate(
+            std::numeric_limits<std::size_t>::max()
+                / sizeof(OverAlignedComponent)
+            + 1);
+        (void)ptr;
+      },
+      std::bad_alloc);
 }
 
 //==============================================================================

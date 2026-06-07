@@ -102,6 +102,13 @@ DART_EXPERIMENTAL_API Eigen::Vector3d computeRigidBodyContactPointVelocity(
 DART_EXPERIMENTAL_API RigidBodyContactProblem assembleRigidBodyContactProblem(
     const detail::WorldRegistry& registry, std::span<const Contact> contacts);
 
+/// Assemble the rigid-body-only boxed-LCP contact problem into caller-owned
+/// storage, reusing any existing vector/Eigen capacity for same-shape solves.
+DART_EXPERIMENTAL_API void assembleRigidBodyContactProblemInto(
+    RigidBodyContactProblem& problem,
+    const detail::WorldRegistry& registry,
+    std::span<const Contact> contacts);
+
 /// Apply one world-space contact impulse to both rigid-body ends.
 DART_EXPERIMENTAL_API void applyRigidBodyContactImpulse(
     detail::WorldRegistry& registry,

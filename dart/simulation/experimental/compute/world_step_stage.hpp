@@ -509,6 +509,9 @@ class DART_EXPERIMENTAL_API DeformableDynamicsStage final
   : public WorldStepStage
 {
 public:
+  DeformableDynamicsStage();
+  ~DeformableDynamicsStage() override;
+
   [[nodiscard]] std::string_view getName() const noexcept override;
   [[nodiscard]] ComputeStageMetadata getMetadata() const noexcept override;
   /// Pre-reserve per-body deformable solver scratch before baked steps.
@@ -518,7 +521,10 @@ public:
   [[nodiscard]] const DeformableSolverStats& getLastStats() const noexcept;
 
 private:
+  struct Scratch;
+
   DeformableSolverStats m_lastStats;
+  std::unique_ptr<Scratch> m_scratch;
 };
 
 } // namespace dart::simulation::experimental::compute
