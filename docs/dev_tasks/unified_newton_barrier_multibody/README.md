@@ -83,16 +83,23 @@ resources as public API.
   affine primitive-family friction rows.
 - Public docs and APIs keep method/capability names DART-owned; internal tests
   and manifests may cite IPC, rigid IPC, ABD, and paper row provenance.
+- The first `abd-alg-affine-body` micro-packet is primitive/oracle evidence and
+  does not need a two-body affine contact micro-solve before Phase 3. Add a
+  solved-state micro-solve only when the next broader ABD packet needs runtime
+  residuals rather than primitive, friction, or orthogonality rows.
 
 ## Immediate Next Steps
 
-1. Use the `abd-alg-affine-body` micro-packet to decide whether the next
-   bounded slice needs a two-body affine contact micro-solve before Phase 3
-   shared projected-Newton work.
-2. Begin Phase 3 shared-contract promotion only after a second consumer proves
-   the PSD, projected-Newton, line-search, diagnostics, or benchmark schema is
-   identical across variants.
-3. Keep runtime stepping, py-demos, and GPU claims out of scope until the
+1. Begin Phase 3 shared-contract scouting from the existing rigid IPC,
+   deformable IPC, and ABD evidence, and identify the first PSD,
+   projected-Newton, line-search, diagnostics, or benchmark-schema contract
+   with a real second consumer.
+2. Keep the two-body affine contact micro-solve deferred until the
+   `abd-alg-affine-body` row expands beyond the primitive/oracle micro-packet
+   and needs a solved-state residual or runtime stepping diagnostic.
+3. Promote only the smallest proven shared contract, with cross-variant tests
+   showing identical behavior; keep variant-specific terms in their owner plans.
+4. Keep runtime stepping, py-demos, and GPU claims out of scope until the
    internal ABD oracle and benchmark packet exist.
 
 ## Validation Gates For Current Slices

@@ -280,8 +280,10 @@ its own line so status updates remain git-history friendly.
   [`../dev_tasks/unified_newton_barrier_multibody/`](../dev_tasks/unified_newton_barrier_multibody/):
   Phase 1 promoted shared distance/barrier/tangent/friction primitives into
   `detail/newton_barrier`, Phase 2 has internal ABD barrier/friction derivative
-  oracles, and the next move is to promote the first ABD benchmark packet from
-  smoke shape to a comparison manifest row. Use the PLAN-083
+  oracles, and the first `abd-alg-affine-body` benchmark packet is now an
+  in-progress primitive/oracle manifest row. The current packet does not need a
+  two-body affine contact micro-solve before Phase 3; defer that solved-state
+  row until a broader ABD packet needs runtime residual evidence. Use the PLAN-083
   [`ipc-variant-consolidation.md`](083-unified-newton-barrier-multibody/ipc-variant-consolidation.md)
   sidecar to keep deformable IPC, codimensional IPC, rigid IPC, ABD, PD-IPC,
   SPB, and VBD/OGC-adjacent obligations in the right owners. Generalize PSD

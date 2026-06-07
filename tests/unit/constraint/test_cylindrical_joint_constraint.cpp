@@ -62,6 +62,24 @@ struct TwoFreeBodies
   BodyNode* body2;
 };
 
+struct WeldAndFreeBodies
+{
+  SkeletonPtr skeleton;
+  WeldJoint* weldJoint;
+  BodyNode* staticBody;
+  FreeJoint* freeJoint;
+  BodyNode* reactiveBody;
+};
+
+struct FreeAndWeldRootBodies
+{
+  SkeletonPtr skeleton;
+  FreeJoint* freeJoint;
+  BodyNode* reactiveBody;
+  WeldJoint* weldJoint;
+  BodyNode* staticBody;
+};
+
 struct LcpBuffers
 {
   std::vector<double> x;
@@ -97,6 +115,43 @@ TwoFreeBodies createTwoFreeBodies(const std::string& name)
   result.joint2 = childPair.first;
   result.body2 = childPair.second;
   result.body2->setMass(1.0);
+
+  return result;
+}
+
+WeldAndFreeBodies createWeldAndFreeBodies(const std::string& name)
+{
+  WeldAndFreeBodies result;
+  result.skeleton = Skeleton::create(name);
+
+  auto weldPair = result.skeleton->createJointAndBodyNodePair<WeldJoint>();
+  result.weldJoint = weldPair.first;
+  result.staticBody = weldPair.second;
+  result.staticBody->setMass(1.0);
+
+  auto freePair
+      = result.staticBody->createChildJointAndBodyNodePair<FreeJoint>();
+  result.freeJoint = freePair.first;
+  result.reactiveBody = freePair.second;
+  result.reactiveBody->setMass(1.0);
+
+  return result;
+}
+
+FreeAndWeldRootBodies createFreeAndWeldRootBodies(const std::string& name)
+{
+  FreeAndWeldRootBodies result;
+  result.skeleton = Skeleton::create(name);
+
+  auto freePair = result.skeleton->createJointAndBodyNodePair<FreeJoint>();
+  result.freeJoint = freePair.first;
+  result.reactiveBody = freePair.second;
+  result.reactiveBody->setMass(1.0);
+
+  auto weldPair = result.skeleton->createJointAndBodyNodePair<WeldJoint>();
+  result.weldJoint = weldPair.first;
+  result.staticBody = weldPair.second;
+  result.staticBody->setMass(1.0);
 
   return result;
 }
@@ -234,6 +289,35 @@ TEST(CylindricalJointConstraint, RowsLeaveAxisTranslationAndRotationFree)
   EXPECT_GT(vectorNorm(buffers.b, 2, 2), 1e-3);
 }
 
+TEST(CylindricalJointConstraint, XAlignedAxisUsesStablePerpendicularBasis)
+{
+  auto freeBody = createFreeBody("x_axis_body");
+
+  ExposedCylindricalJointConstraint constraint(
+      freeBody.body, Eigen::Vector3d::Zero(), Eigen::Vector3d::UnitX());
+
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation() = Eigen::Vector3d(0.75, 0.0, 0.0);
+  setTransform(freeBody.joint, transform);
+
+  constraint.update();
+
+  ConstraintInfo info;
+  LcpBuffers buffers;
+  prepareConstraintInfo(info, buffers, constraint.getDimension(), 1000.0);
+  constraint.getInformation(&info);
+
+  EXPECT_NEAR(vectorNorm(buffers.b, 0, 2), 0.0, 1e-9);
+
+  transform.translation() = Eigen::Vector3d(0.75, 0.2, -0.3);
+  setTransform(freeBody.joint, transform);
+  constraint.update();
+  prepareConstraintInfo(info, buffers, constraint.getDimension(), 1000.0);
+  constraint.getInformation(&info);
+
+  EXPECT_GT(vectorNorm(buffers.b, 0, 2), 1e-3);
+}
+
 TEST(CylindricalJointConstraint, CallbackPipelineAndWarmStart)
 {
   auto body1 = createFreeBody("callbacks_1");
@@ -336,6 +420,18 @@ TEST(CylindricalJointConstraint, SingleBodyCallbacksUseWorldAxisFallback)
   EXPECT_DOUBLE_EQ(buffers.x[3], -0.1);
 }
 
+TEST(CylindricalJointConstraint, SingleBodyUniteSkeletonsIsNoOp)
+{
+  auto body = createFreeBody("single_body_unite");
+
+  ExposedCylindricalJointConstraint constraint(
+      body.body, Eigen::Vector3d::Zero(), Eigen::Vector3d::UnitZ());
+
+  EXPECT_TRUE(constraint.isActive());
+  constraint.uniteSkeletons();
+  EXPECT_EQ(body.skeleton->mUnionRootSkeleton.lock(), body.skeleton);
+}
+
 TEST(CylindricalJointConstraint, StaticBody1UsesBody2ReactiveBranches)
 {
   auto body1 = createFreeBody("static_callbacks_1");
@@ -373,6 +469,90 @@ TEST(CylindricalJointConstraint, StaticBody1UsesBody2ReactiveBranches)
   EXPECT_FALSE(body2.skeleton->isImpulseApplied());
 }
 
+TEST(CylindricalJointConstraint, NonReactiveFirstBodyUsesReactiveSecondBody)
+{
+  auto bodies = createWeldAndFreeBodies("non_reactive_first_cylindrical_body");
+
+  ASSERT_NE(bodies.staticBody, nullptr);
+  ASSERT_NE(bodies.reactiveBody, nullptr);
+  ASSERT_FALSE(bodies.staticBody->isReactive());
+  ASSERT_TRUE(bodies.reactiveBody->isReactive());
+
+  ExposedCylindricalJointConstraint constraint(
+      bodies.staticBody,
+      bodies.reactiveBody,
+      Eigen::Vector3d::Zero(),
+      Eigen::Vector3d::UnitZ(),
+      Eigen::Vector3d::UnitZ());
+  EXPECT_TRUE(constraint.isActive());
+  EXPECT_EQ(constraint.exposedGetRootSkeleton(), bodies.skeleton);
+  constraint.update();
+
+  constraint.applyUnitImpulse(0);
+  bodies.skeleton->computeForwardDynamics();
+
+  constraint.excite();
+  EXPECT_TRUE(bodies.skeleton->isImpulseApplied());
+
+  std::vector<double> vel(constraint.getDimension(), 0.0);
+  constraint.getVelocityChange(vel.data(), true);
+  for (double value : vel) {
+    EXPECT_TRUE(std::isfinite(value));
+  }
+
+  std::vector<double> lambda = {0.01, 0.02, 0.03, 0.04};
+  constraint.applyImpulse(lambda.data());
+  EXPECT_TRUE(bodies.reactiveBody->getConstraintImpulse().allFinite());
+
+  constraint.unexcite();
+  EXPECT_FALSE(bodies.skeleton->isImpulseApplied());
+
+  constraint.uniteSkeletons();
+  EXPECT_EQ(bodies.skeleton->mUnionRootSkeleton.lock(), bodies.skeleton);
+}
+
+TEST(CylindricalJointConstraint, ReactiveFirstBodyIgnoresStaticSecondBody)
+{
+  auto bodies = createFreeAndWeldRootBodies("reactive_first_cylindrical_body");
+
+  ASSERT_NE(bodies.reactiveBody, nullptr);
+  ASSERT_NE(bodies.staticBody, nullptr);
+  ASSERT_TRUE(bodies.reactiveBody->isReactive());
+  ASSERT_FALSE(bodies.staticBody->isReactive());
+
+  ExposedCylindricalJointConstraint constraint(
+      bodies.reactiveBody,
+      bodies.staticBody,
+      Eigen::Vector3d::Zero(),
+      Eigen::Vector3d::UnitZ(),
+      Eigen::Vector3d::UnitZ());
+  EXPECT_TRUE(constraint.isActive());
+  EXPECT_EQ(constraint.exposedGetRootSkeleton(), bodies.skeleton);
+  constraint.update();
+
+  constraint.applyUnitImpulse(1);
+  bodies.skeleton->computeForwardDynamics();
+
+  constraint.excite();
+  EXPECT_TRUE(bodies.skeleton->isImpulseApplied());
+
+  std::vector<double> vel(constraint.getDimension(), 0.0);
+  constraint.getVelocityChange(vel.data(), true);
+  for (double value : vel) {
+    EXPECT_TRUE(std::isfinite(value));
+  }
+
+  std::vector<double> lambda = {-0.01, 0.02, -0.03, 0.04};
+  constraint.applyImpulse(lambda.data());
+  EXPECT_TRUE(bodies.reactiveBody->getConstraintImpulse().allFinite());
+
+  constraint.unexcite();
+  EXPECT_FALSE(bodies.skeleton->isImpulseApplied());
+
+  constraint.uniteSkeletons();
+  EXPECT_EQ(bodies.skeleton->mUnionRootSkeleton.lock(), bodies.skeleton);
+}
+
 TEST(CylindricalJointConstraint, SameSkeletonBodiesShareImpulseSolve)
 {
   auto bodies = createTwoFreeBodies("same_skeleton_callbacks");
@@ -402,6 +582,31 @@ TEST(CylindricalJointConstraint, SameSkeletonBodiesShareImpulseSolve)
   constraint.uniteSkeletons();
   constraint.unexcite();
   EXPECT_FALSE(bodies.skeleton->isImpulseApplied());
+}
+
+TEST(CylindricalJointConstraint, StaticBodiesAreInactive)
+{
+  auto singleBody = createFreeBody("static_single_body");
+  singleBody.skeleton->setMobile(false);
+
+  ExposedCylindricalJointConstraint singleBodyConstraint(
+      singleBody.body, Eigen::Vector3d::Zero(), Eigen::Vector3d::UnitZ());
+  EXPECT_FALSE(singleBodyConstraint.isActive());
+  singleBodyConstraint.uniteSkeletons();
+
+  auto body1 = createFreeBody("static_body_1");
+  auto body2 = createFreeBody("static_body_2");
+  body1.skeleton->setMobile(false);
+  body2.skeleton->setMobile(false);
+
+  ExposedCylindricalJointConstraint twoBodyConstraint(
+      body1.body,
+      body2.body,
+      Eigen::Vector3d::Zero(),
+      Eigen::Vector3d::UnitZ(),
+      Eigen::Vector3d::UnitZ());
+  EXPECT_FALSE(twoBodyConstraint.isActive());
+  twoBodyConstraint.uniteSkeletons();
 }
 
 TEST(CylindricalJointConstraint, WorldStepReducesRadialError)
