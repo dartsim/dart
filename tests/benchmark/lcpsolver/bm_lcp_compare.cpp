@@ -2800,6 +2800,14 @@ enum class ShockPropagationLayerProfile
   SerialLayers
 };
 
+enum class MprgpSpdProblemKind
+{
+  DenseSpd,
+  BandedSpd,
+  MildIllConditioned,
+  NearSingular
+};
+
 constexpr int kNewtonWarmStartPgsIterations = 5;
 constexpr int kNewtonWarmStartGradientIterations = 5;
 
@@ -2851,6 +2859,16 @@ struct ShockPropagationLayerSweepCase
   int problemArg;
   ShockPropagationLayerProfile profile;
   std::string_view profileLabel;
+};
+
+struct MprgpSpdCheckSweepCase
+{
+  MprgpSpdProblemKind kind;
+  int problemSize;
+  bool checkPositiveDefinite;
+  std::string_view kindLabel;
+  std::string_view pdCheckLabel;
+  unsigned seed;
 };
 
 struct AdmmRhoSweepCase
@@ -3009,6 +3027,53 @@ constexpr std::array<ShockPropagationLayerSweepCase, 9>
          ShockPropagationLayerProfile::SerialLayers,
          "SerialLayers"},
     }};
+
+constexpr std::array<MprgpSpdCheckSweepCase, 9> kMprgpSpdCheckSweepCases{{
+    {MprgpSpdProblemKind::DenseSpd, 32, true, "DenseSpd", "PdCheckOn", 0x6010u},
+    {MprgpSpdProblemKind::DenseSpd,
+     32,
+     false,
+     "DenseSpd",
+     "PdCheckOff",
+     0x6010u},
+    {MprgpSpdProblemKind::DenseSpd, 64, true, "DenseSpd", "PdCheckOn", 0x6011u},
+    {MprgpSpdProblemKind::BandedSpd,
+     64,
+     true,
+     "BandedSpd",
+     "PdCheckOn",
+     0x6012u},
+    {MprgpSpdProblemKind::BandedSpd,
+     64,
+     false,
+     "BandedSpd",
+     "PdCheckOff",
+     0x6012u},
+    {MprgpSpdProblemKind::MildIllConditioned,
+     32,
+     true,
+     "MildIllConditioned",
+     "PdCheckOn",
+     0x6013u},
+    {MprgpSpdProblemKind::MildIllConditioned,
+     32,
+     false,
+     "MildIllConditioned",
+     "PdCheckOff",
+     0x6013u},
+    {MprgpSpdProblemKind::NearSingular,
+     8,
+     true,
+     "NearSingular",
+     "PdCheckOn",
+     0x6014u},
+    {MprgpSpdProblemKind::NearSingular,
+     8,
+     false,
+     "NearSingular",
+     "PdCheckOff",
+     0x6014u},
+}};
 
 constexpr std::array<AdmmRhoSweepCase, 18> kAdmmRhoSweepCases{{
     {BenchmarkProblemFamily::Standard, 48, 0.5, false, "Rho0_5", "Fixed"},
@@ -4010,6 +4075,24 @@ void ConfigureShockPropagationLayerSweepParameters(
       }
       break;
   }
+}
+
+LcpProblem MakeMprgpSpdCheckSweepProblem(const MprgpSpdCheckSweepCase testCase)
+{
+  switch (testCase.kind) {
+    case MprgpSpdProblemKind::DenseSpd:
+      return MakeStandardSpdProblem(testCase.problemSize, testCase.seed);
+    case MprgpSpdProblemKind::BandedSpd:
+      return MakeStandardBandedSpdProblem(testCase.problemSize, testCase.seed);
+    case MprgpSpdProblemKind::MildIllConditioned:
+      return MakeMildIllConditionedStandardProblem(
+          testCase.problemSize, testCase.seed);
+    case MprgpSpdProblemKind::NearSingular:
+      return MakeNearSingularStandardProblem(
+          testCase.problemSize, testCase.seed);
+  }
+
+  return MakeStandardSpdProblem(testCase.problemSize, testCase.seed);
 }
 
 void ConfigureSolverBenchmarkOptions(
@@ -5316,6 +5399,46 @@ void RunShockPropagationLayerSweepBenchmark(
   if (testCase.family == BenchmarkProblemFamily::FrictionIndex) {
     state.counters["contact_count"] = testCase.problemArg;
   }
+}
+
+void RunMprgpSpdCheckSweepBenchmark(
+    benchmark::State& state, const MprgpSpdCheckSweepCase testCase)
+{
+  const auto problem = MakeMprgpSpdCheckSweepProblem(testCase);
+  auto options = MakeBenchmarkOptions(500);
+  options.absoluteTolerance = 1e-5;
+  options.relativeTolerance = 1e-3;
+  options.complementarityTolerance = 1e-3;
+
+  dart::math::MprgpSolver::Parameters params;
+  params.checkPositiveDefinite = testCase.checkPositiveDefinite;
+  options.customOptions = &params;
+
+  dart::math::MprgpSolver solver;
+  RunBenchmarkWithSolver(
+      state,
+      solver,
+      problem,
+      options,
+      MakeLabel(
+          "MPRGP",
+          "SpdCheckSweep/" + std::string(testCase.kindLabel) + "/"
+              + std::to_string(testCase.problemSize) + "/"
+              + std::string(testCase.pdCheckLabel)));
+
+  state.counters["mprgp_spd_check_sweep"] = 1.0;
+  state.counters["mprgp_positive_definite_check"]
+      = testCase.checkPositiveDefinite ? 1.0 : 0.0;
+  state.counters["mprgp_dense_spd"]
+      = testCase.kind == MprgpSpdProblemKind::DenseSpd ? 1.0 : 0.0;
+  state.counters["mprgp_banded_spd"]
+      = testCase.kind == MprgpSpdProblemKind::BandedSpd ? 1.0 : 0.0;
+  state.counters["mprgp_mild_ill_conditioned"]
+      = testCase.kind == MprgpSpdProblemKind::MildIllConditioned ? 1.0 : 0.0;
+  state.counters["mprgp_near_singular"]
+      = testCase.kind == MprgpSpdProblemKind::NearSingular ? 1.0 : 0.0;
+  state.counters["mprgp_symmetry_tolerance"] = params.symmetryTolerance;
+  state.counters["mprgp_epsilon_for_division"] = params.epsilonForDivision;
 }
 
 void RunAdmmRhoSweepBenchmark(
@@ -7543,6 +7666,15 @@ std::string MakeShockPropagationLayerSweepBenchmarkName(
   return out.str();
 }
 
+std::string MakeMprgpSpdCheckSweepBenchmarkName(
+    const MprgpSpdCheckSweepCase testCase)
+{
+  std::ostringstream out;
+  out << "BM_LcpMprgpSpdCheckSweep/" << testCase.kindLabel << "/"
+      << testCase.problemSize << "/" << testCase.pdCheckLabel;
+  return out.str();
+}
+
 std::string MakeAdmmRhoSweepBenchmarkName(const AdmmRhoSweepCase testCase)
 {
   std::ostringstream out;
@@ -8102,6 +8234,17 @@ void RegisterShockPropagationLayerSweepBenchmarks()
     benchmark::RegisterBenchmark(
         name.c_str(), [testCase](benchmark::State& state) {
           RunShockPropagationLayerSweepBenchmark(state, testCase);
+        });
+  }
+}
+
+void RegisterMprgpSpdCheckSweepBenchmarks()
+{
+  for (const auto testCase : kMprgpSpdCheckSweepCases) {
+    const auto name = MakeMprgpSpdCheckSweepBenchmarkName(testCase);
+    benchmark::RegisterBenchmark(
+        name.c_str(), [testCase](benchmark::State& state) {
+          RunMprgpSpdCheckSweepBenchmark(state, testCase);
         });
   }
 }
@@ -8891,6 +9034,7 @@ const bool kManifestBenchmarksRegistered = [] {
   RegisterNncgPgsIterationsSweepBenchmarks();
   RegisterSubspacePgsIterationsSweepBenchmarks();
   RegisterShockPropagationLayerSweepBenchmarks();
+  RegisterMprgpSpdCheckSweepBenchmarks();
   RegisterAdmmRhoSweepBenchmarks();
   RegisterSapRegularizationSweepBenchmarks();
   RegisterNewtonWarmStartBenchmarks();

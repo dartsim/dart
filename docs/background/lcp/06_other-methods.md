@@ -338,6 +338,13 @@ auto result = solver.solve(problem, x, options);
 > definite matrices and delegates boxed or friction-indexed problems to the
 > boxed-capable pivoting solver.
 
+DART 7 benchmark evidence includes `BM_LcpMprgpSpdCheckSweep`, which compares
+well-conditioned dense SPD, banded SPD, mildly ill-conditioned SPD, and
+near-singular SPD standard-LCP fixtures while toggling the positive-definite
+factorization check. Focused default, SIMD-enabled, and CUDA-enabled build-tree
+runs reported 9 rows with `contract_ok=1`; the CUDA-enabled rows are CPU solver
+rows in a CUDA-enabled build, not CUDA LCP kernel execution.
+
 ### 3.3 ADMM ✅
 
 **Description**: Alternating Direction Method of Multipliers solver for boxed

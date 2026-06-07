@@ -41,6 +41,8 @@
       standard, boxed, and friction-index fixtures.
 - [x] Added focused ShockPropagation layer-layout sweep benchmark rows on
       standard, boxed, and friction-index fixtures.
+- [x] Added focused MPRGP SPD/positive-definite-check sweep benchmark rows on
+      standard SPD fixtures.
 - [x] Added focused ADMM rho/adaptive-rho sweep benchmark rows on standard,
       boxed, and friction-index fixtures.
 - [x] Added focused SAP regularization sweep benchmark rows on standard, boxed,
@@ -715,6 +717,19 @@ tradeoffs evidence based.
   solver `iterations=3/4`, and backend build-state counters. The CUDA-enabled
   rows report `build_cuda_enabled=1` but are CPU ShockPropagation solver rows in
   a CUDA-enabled build, not CUDA LCP kernel execution.
+- Verified MPRGP SPD/positive-definite-check benchmark slice:
+  `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpMprgpSpdCheckSweep' | wc -l`
+  reported 9 rows, and JSON checks for `BM_LcpMprgpSpdCheckSweep` reported 9
+  rows with `contract_ok=1` in the default, SIMD-enabled, and CUDA-enabled build
+  trees. These rows cover dense SPD 32/64-row, banded SPD 64-row, mildly
+  ill-conditioned SPD 32-row, and near-singular SPD 8-row standard-LCP fixtures
+  with `MprgpSolver::Parameters::checkPositiveDefinite` enabled and disabled
+  where paired. The rows report `mprgp_spd_check_sweep=1`,
+  `mprgp_positive_definite_check`, SPD-kind counters, `problem_size=8/32/64`,
+  observed solver `iterations=3/5/15`, `mprgp_symmetry_tolerance=1e-9`,
+  `mprgp_epsilon_for_division=1e-12`, and backend build-state counters. The
+  CUDA-enabled rows report `build_cuda_enabled=1` but are CPU MPRGP solver rows
+  in a CUDA-enabled build, not CUDA LCP kernel execution.
 - Verified ADMM rho/adaptive-rho benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpAdmmRhoSweep' | wc -l`
   reported 18 rows, and JSON checks for `BM_LcpAdmmRhoSweep` reported 18 rows
@@ -1555,8 +1570,8 @@ tradeoffs evidence based.
   Red-Black Gauss-Seidel relaxation sweep rows, APGD restart-policy sweep
   rows, TGS iteration-budget sweep rows, NNCG PGS-preconditioner iteration
   sweep rows, SubspaceMinimization PGS-iteration sweep rows, ShockPropagation
-  layer-layout sweep rows, ADMM rho/adaptive-rho sweep rows, SAP regularization
-  sweep rows,
+  layer-layout sweep rows, MPRGP SPD/check sweep rows, ADMM rho/adaptive-rho
+  sweep rows, SAP regularization sweep rows,
   independent-problem batches, simple world-contact snapshots, small coupled
   stack snapshot batches, and dense box-face step rows to broader dense and
   robot-like end-to-end contact systems, broader SIMD benchmark packets, larger threaded
