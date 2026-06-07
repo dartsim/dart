@@ -676,27 +676,27 @@ TEST(VbdContact, AvbdFrictionTangentRowsReduceTangentialMotionDuringSolve)
 // above the plane.
 TEST(VbdContact, SpringNetRestsAboveGround)
 {
-  const int side = 5;
+  constexpr int kSide = 5;
   std::vector<Vec3> positions;
   std::vector<double> masses;
   std::vector<std::uint8_t> fixed;
   std::vector<vbd::SpringElement> springs;
-  const auto index = [side](int r, int c) {
-    return static_cast<std::uint32_t>(r * side + c);
+  const auto index = [](int r, int c) {
+    return static_cast<std::uint32_t>(r * kSide + c);
   };
-  for (int r = 0; r < side; ++r) {
-    for (int c = 0; c < side; ++c) {
+  for (int r = 0; r < kSide; ++r) {
+    for (int c = 0; c < kSide; ++c) {
       positions.emplace_back(c * 0.2, 0.4, r * 0.2);
       masses.push_back(1.0);
-      fixed.push_back((r == 0 && (c == 0 || c == side - 1)) ? 1u : 0u);
+      fixed.push_back((r == 0 && (c == 0 || c == kSide - 1)) ? 1u : 0u);
     }
   }
-  for (int r = 0; r < side; ++r) {
-    for (int c = 0; c < side; ++c) {
-      if (c + 1 < side) {
+  for (int r = 0; r < kSide; ++r) {
+    for (int c = 0; c < kSide; ++c) {
+      if (c + 1 < kSide) {
         springs.push_back({index(r, c), index(r, c + 1), 0.2});
       }
-      if (r + 1 < side) {
+      if (r + 1 < kSide) {
         springs.push_back({index(r, c), index(r + 1, c), 0.2});
       }
     }
