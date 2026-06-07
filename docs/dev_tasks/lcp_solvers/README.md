@@ -35,6 +35,8 @@
       boxed, and friction-index fixtures.
 - [x] Added focused TGS iteration-budget sweep benchmark rows on standard,
       boxed, and friction-index fixtures.
+- [x] Added focused NNCG PGS-preconditioner iteration sweep benchmark rows on
+      standard, boxed, and friction-index fixtures.
 - [x] Added focused ADMM rho/adaptive-rho sweep benchmark rows on standard,
       boxed, and friction-index fixtures.
 - [x] Added focused SAP regularization sweep benchmark rows on standard, boxed,
@@ -669,6 +671,19 @@ tradeoffs evidence based.
   friction-index rows, observed `iterations=5/6`, and backend build-state
   counters. The CUDA-enabled rows report `build_cuda_enabled=1` but are CPU TGS
   solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
+- Verified NNCG PGS-preconditioner iteration benchmark slice:
+  `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpNncgPgsIterationsSweep' | wc -l`
+  reported 9 rows, and JSON checks for `BM_LcpNncgPgsIterationsSweep`
+  reported 9 rows with `contract_ok=1` in the default, SIMD-enabled, and
+  CUDA-enabled build trees. These rows cover standard 48-row, boxed 24-row, and
+  friction-index 8-contact fixtures at 1, 2, and 5 PGS preconditioner
+  iterations while holding NNCG restart interval 10 and restart threshold 1.0.
+  The rows report `nncg_pgs_iterations_sweep=1`, `nncg_pgs_iterations`,
+  `nncg_restart_interval=10`, `nncg_restart_threshold=1`, `problem_size=24/48`,
+  `contact_count=8` for the friction-index rows, observed outer
+  `iterations=0/2/4/5`, and backend build-state counters. The CUDA-enabled
+  rows report `build_cuda_enabled=1` but are CPU NNCG solver rows in a
+  CUDA-enabled build, not CUDA LCP kernel execution.
 - Verified ADMM rho/adaptive-rho benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpAdmmRhoSweep' | wc -l`
   reported 18 rows, and JSON checks for `BM_LcpAdmmRhoSweep` reported 18 rows
@@ -1507,8 +1522,8 @@ tradeoffs evidence based.
   mildly ill-conditioned single-problem and 8x-coupled batch packets,
   near-singular and singular-degenerate packets, PGS/PSOR, symmetric PSOR, and
   Red-Black Gauss-Seidel relaxation sweep rows, APGD restart-policy sweep
-  rows, TGS iteration-budget sweep rows, ADMM rho/adaptive-rho sweep rows, SAP
-  regularization sweep rows,
+  rows, TGS iteration-budget sweep rows, NNCG PGS-preconditioner iteration
+  sweep rows, ADMM rho/adaptive-rho sweep rows, SAP regularization sweep rows,
   independent-problem batches, simple world-contact snapshots, small coupled
   stack snapshot batches, and dense box-face step rows to broader dense and
   robot-like end-to-end contact systems, broader SIMD benchmark packets, larger threaded

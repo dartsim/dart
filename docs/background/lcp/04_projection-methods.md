@@ -434,6 +434,11 @@ options.customOptions = &params;
 solver.solve(problem, x, options);
 ```
 
+Focused `BM_LcpNncgPgsIterationsSweep` rows compare 1, 2, and 5 PGS
+preconditioner iterations on identical standard, boxed, and friction-index
+benchmark fixtures with restart interval 10 and threshold 1.0. These rows are
+CPU solver rows even when emitted by a CUDA-enabled build.
+
 ### Properties
 
 - **Time**: $O(n)$ per iteration (same as PGS)
@@ -715,7 +720,7 @@ Use only when $x \geq 0$; also ensure $Ax - b \geq 0$ when $x = 0$.
 
 ### Phase 3 (Advanced)
 
-7. **NNCG** - Better convergence for large systems
+7. ✅ **NNCG** - Better convergence for large systems
 8. ✅ **PGS-SM** - Hybrid approach
 
 ## When to Use Projection Methods

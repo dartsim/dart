@@ -1035,6 +1035,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Added DART 7 TGS iteration-budget comparison benchmark rows for standard,
     boxed, and friction-index LCP fixtures, with backend build-state counters
     distinguishing default, SIMD-enabled, and CUDA-enabled CPU solver runs.
+  - Added DART 7 NNCG PGS-preconditioner iteration comparison benchmark rows
+    for standard, boxed, and friction-index LCP fixtures, with backend
+    build-state counters distinguishing default, SIMD-enabled, and
+    CUDA-enabled CPU solver runs.
   - Added manifest-generated serial and DART 7 `ParallelExecutor` batch LCP
     benchmarks so standard, boxed, and friction-index solver families compare
     the same independent-problem batches across every supporting solver. The
