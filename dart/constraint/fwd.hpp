@@ -40,6 +40,7 @@ namespace constraint {
 
 class BalanceConstraint;
 class BallJointConstraint;
+class CylindricalJointConstraint;
 class BoxedLcpConstraintSolver;
 class BoxedLcpSolver;
 class ConstrainedGroup;
@@ -88,6 +89,7 @@ DART_COMMON_DECLARE_SHARED_WEAK(PgsBoxedLcpSolver)
 
 DART_COMMON_DECLARE_SHARED_WEAK(DynamicJointConstraint)
 DART_COMMON_DECLARE_SHARED_WEAK(BallJointConstraint)
+DART_COMMON_DECLARE_SHARED_WEAK(CylindricalJointConstraint)
 DART_COMMON_DECLARE_SHARED_WEAK(RevoluteJointConstraint)
 DART_COMMON_DECLARE_SHARED_WEAK(WeldJointConstraint)
 
