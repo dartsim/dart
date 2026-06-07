@@ -78,6 +78,9 @@
 - [x] Added generated coverage for batch-shaped state reuse, invalid-problem
       failure reporting, near-singular standard pivoting cases, and
       near-singular boxed cases.
+- [x] Added focused pivoting scale benchmark rows that separate Direct
+      2D/3D enumeration from larger-problem Dantzig fallback and cover Dantzig
+      standard, boxed, and friction-index fixtures.
 - [x] Added coupled friction-index generated coverage for well-conditioned
       2-contact, 4-contact, and 6-contact cases plus mildly ill-conditioned
       2-contact and 4-contact cases.
@@ -375,6 +378,21 @@ tradeoffs evidence based.
   `./build/default/cpp/Release/bin/BM_LCP_COMPARE --benchmark_filter='BM_LcpCompare/(Standard/Dantzig|Boxed/ShockPropagation|FrictionIndex/NNCG)' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   ran successfully with residual, complementarity, bound-violation,
   `contract_ok`, iteration, and problem-size counters.
+- Verified pivoting scale benchmark slice:
+  `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpPivotingScaleSweep' | wc -l`
+  reported 12 rows, and JSON checks for `BM_LcpPivotingScaleSweep` reported 12
+  rows with `contract_ok=1` in the default, SIMD-enabled, and CUDA-enabled
+  build trees. These rows cover Direct 2-row and 3-row standard fixtures,
+  Lemke and Baraff 8-row and 16-row standard fixtures, and Dantzig 8-row and
+  16-row standard, 12-row and 24-row boxed, and 4-contact and 8-contact
+  friction-index fixtures. The rows report `pivoting_scale_sweep=1`, Direct
+  no-fallback counters, four Dantzig boxed-or-findex rows,
+  `contact_count=4/8`, observed solver `iterations=1/4/8/16`, and backend
+  build-state counters. The CUDA-enabled rows report `build_cuda_enabled=1`
+  but are CPU pivoting solver rows in a CUDA-enabled build, not CUDA LCP kernel
+  execution. Focused pivoting unit coverage
+  `DantzigMatrixCoverage.*:LemkeSolverCoverage.*:DantzigSolverCoverage.*:DirectSolverCoverage.*:BaraffSolverCoverage.*`
+  passed 42 tests.
 - Verified batch benchmark registration slice:
   `./build/default/cpp/Release/bin/BM_LCP_COMPARE --benchmark_list_tests`
   listed 56 manifest-generated `BM_LcpBatchSerial/<family>/<solver>` entries
@@ -1621,8 +1639,8 @@ tradeoffs evidence based.
   sweep rows, SubspaceMinimization PGS-iteration sweep rows, ShockPropagation
   layer-layout sweep rows, MPRGP SPD/check sweep rows, Interior Point
   path-parameter sweep rows, Staggering contact-pipeline sweep rows, Boxed
-  Semi-Smooth Newton line-search sweep rows, ADMM rho/adaptive-rho sweep rows,
-  SAP regularization sweep rows,
+  Semi-Smooth Newton line-search sweep rows, Pivoting scale sweep rows, ADMM
+  rho/adaptive-rho sweep rows, SAP regularization sweep rows,
   independent-problem batches, simple world-contact snapshots, small coupled
   stack snapshot batches, and dense box-face step rows to broader dense and
   robot-like end-to-end contact systems, broader SIMD benchmark packets, larger threaded

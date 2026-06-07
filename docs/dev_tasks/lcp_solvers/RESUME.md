@@ -205,6 +205,18 @@ counters, observed solver `iterations=2/7/8/9`, `contact_count=8` for the
 friction-index rows, and backend build-state counters. The CUDA-enabled rows
 are CPU BoxedSemiSmoothNewton solver rows in a CUDA-enabled build, not CUDA LCP
 kernel execution.
+It now also adds 12 `BM_LcpPivotingScaleSweep` benchmark rows for the pivoting
+family, separating DirectSolver's 2-row and 3-row enumeration path from its
+larger-problem Dantzig fallback. The rows cover Direct 2/3-row standard
+fixtures, Lemke and Baraff 8/16-row standard fixtures, and Dantzig 8/16-row
+standard, 12/24-row boxed, and 4/8-contact friction-index fixtures. Focused
+default, SIMD-enabled, and CUDA-enabled build-tree runs passed with
+`contract_ok=1` on every row and recorded `pivoting_scale_sweep`, Direct
+no-fallback counters, four Dantzig boxed-or-findex rows,
+`contact_count=4/8`, observed solver `iterations=1/4/8/16`, and backend
+build-state counters. Focused pivoting unit coverage passed 42 tests. The
+CUDA-enabled rows are CPU pivoting solver rows in a CUDA-enabled build, not
+CUDA LCP kernel execution.
 It now also extends the robust near-singular generated slice to coupled
 friction-index 12-contact packets and adds 13 matching `BM_LcpNearSingular`
 benchmark rows for standard 8-row, boxed 8-row, and coupled friction-index
@@ -323,8 +335,9 @@ rows, TGS iteration-budget benchmark rows, NNCG PGS-preconditioner iteration
 benchmark rows, SubspaceMinimization PGS-iteration benchmark rows,
 ShockPropagation layer-layout benchmark rows, MPRGP SPD/check benchmark rows,
 Interior Point path-parameter benchmark rows, Staggering contact-pipeline
-benchmark rows, Boxed Semi-Smooth Newton line-search benchmark rows, SAP
-regularization benchmark rows, and Jacobi threading benchmark rows.
+benchmark rows, Boxed Semi-Smooth Newton line-search benchmark rows, Pivoting
+scale benchmark rows, SAP regularization benchmark rows, and Jacobi threading
+benchmark rows.
 Push/PR work still requires explicit maintainer/user approval.
 
 ## Immediate Next Step
@@ -338,10 +351,10 @@ APGD restart-policy sweep rows, TGS iteration-budget sweep rows, NNCG
 PGS-preconditioner iteration sweep rows, SubspaceMinimization PGS-iteration
 sweep rows, ShockPropagation layer-layout sweep rows, MPRGP SPD/check sweep
 rows, Interior Point path-parameter sweep rows, Staggering contact-pipeline
-sweep rows, Boxed Semi-Smooth Newton line-search sweep rows, ADMM
-rho/adaptive-rho sweep rows, and SAP regularization sweep rows, toward broader
-solver-specific conditioning grids and direct backend execution evidence beyond
-SIMD/CUDA-enabled build-state counters.
+sweep rows, Boxed Semi-Smooth Newton line-search sweep rows, Pivoting scale
+sweep rows, ADMM rho/adaptive-rho sweep rows, and SAP regularization sweep
+rows, toward broader solver-specific conditioning grids and direct backend
+execution evidence beyond SIMD/CUDA-enabled build-state counters.
 Broaden SIMD benchmark gates, solver-internal threaded benchmark evidence, and
 the CUDA Jacobi/PGS batch slices into broader/general CUDA LCP execution
 separately from the current serial, task-parallel independent-problem, simple

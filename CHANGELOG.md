@@ -1064,6 +1064,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     rows for standard, boxed, and friction-index fixtures, with backend
     build-state counters distinguishing default, SIMD-enabled, and
     CUDA-enabled CPU solver runs.
+  - Added DART 7 pivoting scale comparison benchmark rows for Direct 2D/3D
+    enumeration, Lemke and Baraff standard fixtures, and Dantzig standard,
+    boxed, and friction-index fixtures, with backend build-state counters
+    distinguishing default, SIMD-enabled, and CUDA-enabled CPU solver runs.
   - Added manifest-generated serial and DART 7 `ParallelExecutor` batch LCP
     benchmarks so standard, boxed, and friction-index solver families compare
     the same independent-problem batches across every supporting solver. The

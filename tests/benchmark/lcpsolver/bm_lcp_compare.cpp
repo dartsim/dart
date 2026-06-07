@@ -2897,6 +2897,14 @@ struct BoxedSsnLineSearchSweepCase
   std::string_view lineSearchLabel;
 };
 
+struct PivotingScaleSweepCase
+{
+  std::string_view solverName;
+  BenchmarkProblemFamily family;
+  int problemArg;
+  std::string_view problemLabel;
+};
+
 struct ApgdRestartSweepCase
 {
   BenchmarkProblemFamily family;
@@ -3038,6 +3046,21 @@ constexpr std::array<BoxedSsnLineSearchSweepCase, 9>
         {BenchmarkProblemFamily::FrictionIndex, 8, 20, 0.5, "MoreSteps"},
         {BenchmarkProblemFamily::FrictionIndex, 8, 20, 0.8, "GentleReduction"},
     }};
+
+constexpr std::array<PivotingScaleSweepCase, 12> kPivotingScaleSweepCases{{
+    {"Direct", BenchmarkProblemFamily::Standard, 2, "Rows2"},
+    {"Direct", BenchmarkProblemFamily::Standard, 3, "Rows3"},
+    {"Lemke", BenchmarkProblemFamily::Standard, 8, "Rows8"},
+    {"Lemke", BenchmarkProblemFamily::Standard, 16, "Rows16"},
+    {"Baraff", BenchmarkProblemFamily::Standard, 8, "Rows8"},
+    {"Baraff", BenchmarkProblemFamily::Standard, 16, "Rows16"},
+    {"Dantzig", BenchmarkProblemFamily::Standard, 8, "Rows8"},
+    {"Dantzig", BenchmarkProblemFamily::Standard, 16, "Rows16"},
+    {"Dantzig", BenchmarkProblemFamily::Boxed, 12, "Rows12"},
+    {"Dantzig", BenchmarkProblemFamily::Boxed, 24, "Rows24"},
+    {"Dantzig", BenchmarkProblemFamily::FrictionIndex, 4, "Contacts4"},
+    {"Dantzig", BenchmarkProblemFamily::FrictionIndex, 8, "Contacts8"},
+}};
 
 constexpr std::array<ApgdRestartSweepCase, 9> kApgdRestartSweepCases{{
     {BenchmarkProblemFamily::Standard, 48, true, 0, "AdaptiveEveryIter"},
@@ -3672,6 +3695,18 @@ bool SolverNameIn(
     const std::array<std::string_view, N>& names)
 {
   return std::find(names.begin(), names.end(), solver.name) != names.end();
+}
+
+const dart::test::LcpSolverManifestEntry* FindSolverManifestEntry(
+    const std::string_view solverName)
+{
+  for (const auto& solver : dart::test::kLcpSolverManifest) {
+    if (solver.name == solverName) {
+      return &solver;
+    }
+  }
+
+  return nullptr;
 }
 
 bool isMildIllConditionedFrictionIndexCase(
@@ -5447,6 +5482,71 @@ void RunBoxedSsnLineSearchSweepBenchmark(
                                                                          : 0.0;
   state.counters["boxed_ssn_gentle_reduction"]
       = params.stepReduction == 0.8 ? 1.0 : 0.0;
+  if (testCase.family == BenchmarkProblemFamily::FrictionIndex) {
+    state.counters["contact_count"] = testCase.problemArg;
+  }
+}
+
+void RunPivotingScaleSweepBenchmark(
+    benchmark::State& state, const PivotingScaleSweepCase testCase)
+{
+  const auto* solverEntry = FindSolverManifestEntry(testCase.solverName);
+  if (solverEntry == nullptr) {
+    state.SkipWithError("pivoting scale sweep solver is not in the manifest");
+    return;
+  }
+
+  if (!dart::test::supportsProblem(
+          *solverEntry, getProblemSupport(testCase.family))) {
+    state.SkipWithError("pivoting scale sweep case exceeds solver support");
+    return;
+  }
+
+  const auto problem
+      = MakeBenchmarkProblem(testCase.family, testCase.problemArg);
+  SolverBenchmarkOptions storage;
+  ConfigureSolverBenchmarkOptions(storage, *solverEntry, problem);
+
+  const auto solver = solverEntry->create();
+  if (solver == nullptr) {
+    state.SkipWithError("LCP solver factory returned null");
+    return;
+  }
+
+  RunBenchmarkWithSolver(
+      state,
+      *solver,
+      problem,
+      storage.options,
+      MakeLabel(
+          std::string(solverEntry->name),
+          "PivotingScaleSweep/"
+              + std::string(getProblemFamilyName(testCase.family)) + "/"
+              + std::string(testCase.problemLabel)));
+
+  state.counters["pivoting_scale_sweep"] = 1.0;
+  state.counters["pivoting_problem_arg"] = testCase.problemArg;
+  state.counters["pivoting_standard_family"]
+      = testCase.family == BenchmarkProblemFamily::Standard ? 1.0 : 0.0;
+  state.counters["pivoting_boxed_family"]
+      = testCase.family == BenchmarkProblemFamily::Boxed ? 1.0 : 0.0;
+  state.counters["pivoting_friction_index_family"]
+      = testCase.family == BenchmarkProblemFamily::FrictionIndex ? 1.0 : 0.0;
+  state.counters["pivoting_direct_enumeration"]
+      = solverEntry->name == "Direct" ? 1.0 : 0.0;
+  state.counters["pivoting_direct_no_fallback"]
+      = solverEntry->name == "Direct" && testCase.problemArg <= 3 ? 1.0 : 0.0;
+  state.counters["pivoting_dantzig_boxed_or_findex"]
+      = solverEntry->name == "Dantzig"
+                && testCase.family != BenchmarkProblemFamily::Standard
+            ? 1.0
+            : 0.0;
+  state.counters["pivoting_standard_only_solver"]
+      = solverEntry->name != "Dantzig" ? 1.0 : 0.0;
+  state.counters["pivoting_supports_boxed"]
+      = solverEntry->supportsBoxed ? 1.0 : 0.0;
+  state.counters["pivoting_supports_friction_index"]
+      = solverEntry->supportsFrictionIndex ? 1.0 : 0.0;
   if (testCase.family == BenchmarkProblemFamily::FrictionIndex) {
     state.counters["contact_count"] = testCase.problemArg;
   }
@@ -7972,6 +8072,15 @@ std::string MakeBoxedSsnLineSearchSweepBenchmarkName(
   return out.str();
 }
 
+std::string MakePivotingScaleSweepBenchmarkName(
+    const PivotingScaleSweepCase testCase)
+{
+  std::ostringstream out;
+  out << "BM_LcpPivotingScaleSweep/" << getProblemFamilyName(testCase.family)
+      << "/" << testCase.solverName << "/" << testCase.problemLabel;
+  return out.str();
+}
+
 std::string MakeApgdRestartSweepBenchmarkName(
     const ApgdRestartSweepCase testCase)
 {
@@ -8562,6 +8671,17 @@ void RegisterBoxedSsnLineSearchSweepBenchmarks()
     benchmark::RegisterBenchmark(
         name.c_str(), [testCase](benchmark::State& state) {
           RunBoxedSsnLineSearchSweepBenchmark(state, testCase);
+        });
+  }
+}
+
+void RegisterPivotingScaleSweepBenchmarks()
+{
+  for (const auto testCase : kPivotingScaleSweepCases) {
+    const auto name = MakePivotingScaleSweepBenchmarkName(testCase);
+    benchmark::RegisterBenchmark(
+        name.c_str(), [testCase](benchmark::State& state) {
+          RunPivotingScaleSweepBenchmark(state, testCase);
         });
   }
 }
@@ -9436,6 +9556,7 @@ const bool kManifestBenchmarksRegistered = [] {
   RegisterSymmetricPsorRelaxationSweepBenchmarks();
   RegisterRedBlackGaussSeidelRelaxationSweepBenchmarks();
   RegisterBoxedSsnLineSearchSweepBenchmarks();
+  RegisterPivotingScaleSweepBenchmarks();
   RegisterApgdRestartSweepBenchmarks();
   RegisterTgsIterationBudgetSweepBenchmarks();
   RegisterNncgPgsIterationsSweepBenchmarks();

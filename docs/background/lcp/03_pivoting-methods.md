@@ -403,6 +403,18 @@ auto result = solver.solve(problem, x, options);
 | Lemke        | ✅ Implemented | LCP          | $O(n^4)$ | None                |
 | Baraff       | ✅ Implemented | LCP          | $O(n^4)$ | Symmetric PD/PSD    |
 
+DART 7 benchmark evidence includes `BM_LcpPivotingScaleSweep`, which separates
+DirectSolver's real 2-row and 3-row enumeration path from its larger-problem
+Dantzig fallback and compares the pivoting family on supported problem
+families. Focused default, SIMD-enabled, and CUDA-enabled build-tree runs
+reported 12 rows with `contract_ok=1` across Direct 2/3-row standard fixtures,
+Lemke and Baraff 8/16-row standard fixtures, and Dantzig 8/16-row standard,
+12/24-row boxed, and 4/8-contact friction-index fixtures. The rows recorded
+Direct no-fallback counters, four Dantzig boxed-or-findex rows,
+friction-index `contact_count=4/8`, observed solver iterations `1/4/8/16`, and
+backend build-state counters. The CUDA-enabled rows are CPU pivoting solver
+rows in a CUDA-enabled build, not CUDA LCP kernel execution.
+
 ## When to Use Pivoting Methods
 
 ### Advantages
