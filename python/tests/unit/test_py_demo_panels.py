@@ -1044,7 +1044,7 @@ def test_ipc_fem_scenes_expose_diagnostics_panels() -> None:
 
 
 @pytest.mark.skipif(
-    not hasattr(dart, "gui") or not hasattr(dart.gui, "WorldRenderBridge"),
+    not hasattr(dart, "gui") or not hasattr(dart.gui, "describe_shape"),
     reason="GUI descriptor extraction is not available in this build",
 )
 def test_world_bridge_force_drag_uses_renderable_id_and_restores_rigid_force() -> None:
@@ -1115,7 +1115,7 @@ def test_world_bridge_force_drag_uses_renderable_id_and_restores_rigid_force() -
 
 
 @pytest.mark.skipif(
-    not hasattr(dart, "gui") or not hasattr(dart.gui, "WorldRenderBridge"),
+    not hasattr(dart, "gui") or not hasattr(dart.gui, "describe_shape"),
     reason="GUI descriptor extraction is not available in this build",
 )
 def test_world_bridge_external_force_panel_reports_disabled_and_static_targets() -> (
