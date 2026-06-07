@@ -166,8 +166,8 @@ Phase 3 line-search positive-step predicate slice local evidence:
 
 - `pixi run -- cmake --build build/default/cpp/Release --target test_newton_barrier_primitives --parallel 8`
 - `pixi run -- ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_newton_barrier_primitives$'`
-- `pixi run build-simulation-experimental-tests`
-- `pixi run test-simulation-experimental` (65/65)
+- `pixi run build-simulation-tests`
+- `pixi run test-simulation` (65/65)
 - `pixi run check-api-boundaries`
 - `pixi run lint`
 

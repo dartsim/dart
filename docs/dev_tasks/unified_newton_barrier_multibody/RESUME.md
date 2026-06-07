@@ -67,8 +67,9 @@ The current positive-step predicate slice lives on
 projected-Newton diagnostics merge: current evidence shows rigid and deformable
 share the positive-step predicate, but not yet a full projected-Newton status
 or solver-loop contract. Local validation passed `test_newton_barrier_primitives`,
-`build-simulation-experimental-tests`, `test-simulation-experimental`,
-`check-api-boundaries`, and `lint`.
+`build-simulation-tests`, `test-simulation`, `check-api-boundaries`, and
+`lint` after the DART 7 simulation promotion moved this code out of the
+`experimental` path.
 
 ## Current Branch
 
