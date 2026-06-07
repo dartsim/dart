@@ -61,6 +61,7 @@ INTERNAL_DIRS = (
 
 # Top-level simulation headers that are part of the promoted public surface.
 PROMOTE_TOPLEVEL = {
+    "All.hpp",
     "world.hpp",
     "world_options.hpp",
     "world_sync_stage.hpp",
