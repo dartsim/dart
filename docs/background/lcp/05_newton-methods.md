@@ -395,6 +395,17 @@ Newton-style solve and the active set is expected to be stable enough for
 linearization. Keep pivoting or robust projection methods as fallbacks for
 highly degenerate contact systems.
 
+DART 7 benchmark evidence includes
+`BM_LcpBoxedSemiSmoothNewtonLineSearchSweep`, which runs this solver on
+standard, boxed, and friction-index fixtures with default line search, an
+expanded line-search step budget, and a gentler step-reduction policy. Focused
+default, SIMD-enabled, and CUDA-enabled build-tree runs reported 9 rows with
+`contract_ok=1`, `maxLineSearchSteps=10/20`, `stepReduction=0.5/0.8`,
+friction-index `contact_count=8`, observed solver iterations `2/7/8/9`, and
+backend build-state counters. The CUDA-enabled rows are CPU
+BoxedSemiSmoothNewton solver rows in a CUDA-enabled build, not CUDA LCP kernel
+execution.
+
 ## Implementation Strategy
 
 ### Phase 1: Core Newton Framework

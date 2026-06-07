@@ -2888,6 +2888,15 @@ struct RelaxationSweepCase
   std::string_view relaxationLabel;
 };
 
+struct BoxedSsnLineSearchSweepCase
+{
+  BenchmarkProblemFamily family;
+  int problemArg;
+  int maxLineSearchSteps;
+  double stepReduction;
+  std::string_view lineSearchLabel;
+};
+
 struct ApgdRestartSweepCase
 {
   BenchmarkProblemFamily family;
@@ -3016,6 +3025,19 @@ constexpr std::array<RelaxationSweepCase, 9> kRelaxationSweepCases{{
      1.3,
      "Relaxation1_3"},
 }};
+
+constexpr std::array<BoxedSsnLineSearchSweepCase, 9>
+    kBoxedSsnLineSearchSweepCases{{
+        {BenchmarkProblemFamily::Standard, 48, 10, 0.5, "DefaultSearch"},
+        {BenchmarkProblemFamily::Standard, 48, 20, 0.5, "MoreSteps"},
+        {BenchmarkProblemFamily::Standard, 48, 20, 0.8, "GentleReduction"},
+        {BenchmarkProblemFamily::Boxed, 24, 10, 0.5, "DefaultSearch"},
+        {BenchmarkProblemFamily::Boxed, 24, 20, 0.5, "MoreSteps"},
+        {BenchmarkProblemFamily::Boxed, 24, 20, 0.8, "GentleReduction"},
+        {BenchmarkProblemFamily::FrictionIndex, 8, 10, 0.5, "DefaultSearch"},
+        {BenchmarkProblemFamily::FrictionIndex, 8, 20, 0.5, "MoreSteps"},
+        {BenchmarkProblemFamily::FrictionIndex, 8, 20, 0.8, "GentleReduction"},
+    }};
 
 constexpr std::array<ApgdRestartSweepCase, 9> kApgdRestartSweepCases{{
     {BenchmarkProblemFamily::Standard, 48, true, 0, "AdaptiveEveryIter"},
@@ -5378,6 +5400,53 @@ void RunRedBlackGaussSeidelRelaxationSweepBenchmark(
       = testCase.relaxationKind == RelaxationSweepKind::Plain ? 1.0 : 0.0;
   state.counters["psor_over_relaxation"]
       = testCase.relaxationKind == RelaxationSweepKind::Over ? 1.0 : 0.0;
+  if (testCase.family == BenchmarkProblemFamily::FrictionIndex) {
+    state.counters["contact_count"] = testCase.problemArg;
+  }
+}
+
+void RunBoxedSsnLineSearchSweepBenchmark(
+    benchmark::State& state, const BoxedSsnLineSearchSweepCase testCase)
+{
+  const auto problem
+      = MakeBenchmarkProblem(testCase.family, testCase.problemArg);
+  auto options = MakeBenchmarkOptions(100);
+  options.absoluteTolerance = 1e-8;
+  options.relativeTolerance = 1e-6;
+  options.complementarityTolerance = 1e-6;
+
+  dart::math::BoxedSemiSmoothNewtonSolver::Parameters params;
+  params.maxLineSearchSteps = testCase.maxLineSearchSteps;
+  params.stepReduction = testCase.stepReduction;
+  options.customOptions = &params;
+
+  dart::math::BoxedSemiSmoothNewtonSolver solver;
+  RunBenchmarkWithSolver(
+      state,
+      solver,
+      problem,
+      options,
+      MakeLabel(
+          "BoxedSemiSmoothNewton",
+          "LineSearchSweep/"
+              + std::string(getProblemFamilyName(testCase.family)) + "/"
+              + std::string(testCase.lineSearchLabel)));
+
+  state.counters["boxed_ssn_line_search_sweep"] = 1.0;
+  state.counters["boxed_ssn_max_line_search_steps"] = params.maxLineSearchSteps;
+  state.counters["boxed_ssn_step_reduction"] = params.stepReduction;
+  state.counters["boxed_ssn_sufficient_decrease"] = params.sufficientDecrease;
+  state.counters["boxed_ssn_min_step"] = params.minStep;
+  state.counters["boxed_ssn_jacobian_regularization"]
+      = params.jacobianRegularization;
+  state.counters["boxed_ssn_default_search"]
+      = (params.maxLineSearchSteps == 10 && params.stepReduction == 0.5) ? 1.0
+                                                                         : 0.0;
+  state.counters["boxed_ssn_more_steps"]
+      = (params.maxLineSearchSteps == 20 && params.stepReduction == 0.5) ? 1.0
+                                                                         : 0.0;
+  state.counters["boxed_ssn_gentle_reduction"]
+      = params.stepReduction == 0.8 ? 1.0 : 0.0;
   if (testCase.family == BenchmarkProblemFamily::FrictionIndex) {
     state.counters["contact_count"] = testCase.problemArg;
   }
@@ -7893,6 +7962,16 @@ std::string MakeRedBlackGaussSeidelRelaxationSweepBenchmarkName(
   return out.str();
 }
 
+std::string MakeBoxedSsnLineSearchSweepBenchmarkName(
+    const BoxedSsnLineSearchSweepCase testCase)
+{
+  std::ostringstream out;
+  out << "BM_LcpBoxedSemiSmoothNewtonLineSearchSweep/"
+      << getProblemFamilyName(testCase.family) << "/"
+      << testCase.lineSearchLabel;
+  return out.str();
+}
+
 std::string MakeApgdRestartSweepBenchmarkName(
     const ApgdRestartSweepCase testCase)
 {
@@ -8472,6 +8551,17 @@ void RegisterRedBlackGaussSeidelRelaxationSweepBenchmarks()
     benchmark::RegisterBenchmark(
         name.c_str(), [testCase](benchmark::State& state) {
           RunRedBlackGaussSeidelRelaxationSweepBenchmark(state, testCase);
+        });
+  }
+}
+
+void RegisterBoxedSsnLineSearchSweepBenchmarks()
+{
+  for (const auto testCase : kBoxedSsnLineSearchSweepCases) {
+    const auto name = MakeBoxedSsnLineSearchSweepBenchmarkName(testCase);
+    benchmark::RegisterBenchmark(
+        name.c_str(), [testCase](benchmark::State& state) {
+          RunBoxedSsnLineSearchSweepBenchmark(state, testCase);
         });
   }
 }
@@ -9345,6 +9435,7 @@ const bool kManifestBenchmarksRegistered = [] {
   RegisterPgsRelaxationSweepBenchmarks();
   RegisterSymmetricPsorRelaxationSweepBenchmarks();
   RegisterRedBlackGaussSeidelRelaxationSweepBenchmarks();
+  RegisterBoxedSsnLineSearchSweepBenchmarks();
   RegisterApgdRestartSweepBenchmarks();
   RegisterTgsIterationBudgetSweepBenchmarks();
   RegisterNncgPgsIterationsSweepBenchmarks();
