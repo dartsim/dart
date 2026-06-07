@@ -159,9 +159,6 @@ set(
   collision/raycast.hpp
   collision/collision_detector.hpp
   collision/collision_group.hpp
-  simulation/module.hpp
-  simulation/world.hpp
-  simulation/constraint_solver.hpp
   constraint/module.hpp
   constraint/constraint_base.hpp
   constraint/dynamic_joint_constraint.hpp
@@ -239,9 +236,6 @@ set(
   collision/raycast.cpp
   collision/collision_detector.cpp
   collision/collision_group.cpp
-  simulation/module.cpp
-  simulation/world.cpp
-  simulation/constraint_solver.cpp
   constraint/module.cpp
   constraint/constraint_base.cpp
   constraint/dynamic_joint_constraint.cpp
@@ -257,12 +251,12 @@ set(dartpy_gui_headers gui/descriptors.hpp gui/panel.hpp gui/viewer.hpp)
 
 set(dartpy_gui_sources gui/descriptors.cpp gui/panel.cpp gui/viewer.cpp)
 
-set(dartpy_simulation_experimental_headers simulation_experimental/module.hpp)
+set(dartpy_simulation_headers simulation/module.hpp)
 
-set(dartpy_simulation_experimental_sources simulation_experimental/module.cpp)
+set(dartpy_simulation_sources simulation/module.cpp)
 
 set(_dartpy_has_gui FALSE)
-set(_dartpy_has_simulation_experimental FALSE)
+set(_dartpy_has_simulation FALSE)
 
 if(TARGET dart-gui-core)
   list(APPEND dartpy_headers ${dartpy_gui_headers})
@@ -270,10 +264,10 @@ if(TARGET dart-gui-core)
   set(_dartpy_has_gui TRUE)
 endif()
 
-if(TARGET dart-simulation-experimental)
-  list(APPEND dartpy_headers ${dartpy_simulation_experimental_headers})
-  list(APPEND dartpy_sources ${dartpy_simulation_experimental_sources})
-  set(_dartpy_has_simulation_experimental TRUE)
+if(TARGET dart-simulation)
+  list(APPEND dartpy_headers ${dartpy_simulation_headers})
+  list(APPEND dartpy_sources ${dartpy_simulation_sources})
+  set(_dartpy_has_simulation TRUE)
 endif()
 
 if(_dartpy_has_gui)
@@ -345,30 +339,19 @@ if(TARGET dart-gui-core)
   endforeach()
 endif()
 
-if(TARGET dart-simulation-experimental)
-  target_link_libraries(dartpy PRIVATE dart-simulation-experimental)
-  # The dartpy experimental bindings compile internal (non-promoted) experimental
-  # headers directly. EnTT is a PRIVATE dependency of dart-simulation-experimental
-  # (the public surface is entt-free), so its include directory is not propagated
-  # through the library. Link it defensively for this in-tree internal consumer so
-  # that clean builds -- where EnTT is provided only via dart_find_entt.cmake /
-  # FetchContent rather than a global include directory -- stay robust as the
-  # bindings reach into more internals over time. Guarded so it is a no-op in
-  # standalone builds, where EnTT (a private dep) is not an exported target.
+if(TARGET dart-simulation)
+  target_link_libraries(dartpy PRIVATE dart-simulation)
+  # The dartpy simulation bindings compile selected in-tree implementation
+  # headers directly. EnTT is a PRIVATE dependency of dart-simulation (the public
+  # C++ surface is entt-free), so its include directory is not propagated through
+  # the library. Link it defensively for this in-tree binding consumer.
   if(TARGET EnTT::EnTT)
     target_link_libraries(dartpy PRIVATE EnTT::EnTT)
   endif()
   foreach(prop INCLUDE_DIRECTORIES INTERFACE_INCLUDE_DIRECTORIES)
-    get_target_property(
-      _simulation_experimental_includes
-      dart-simulation-experimental
-      ${prop}
-    )
-    if(_simulation_experimental_includes)
-      target_include_directories(
-        dartpy
-        PRIVATE ${_simulation_experimental_includes}
-      )
+    get_target_property(_simulation_includes dart-simulation ${prop})
+    if(_simulation_includes)
+      target_include_directories(dartpy PRIVATE ${_simulation_includes})
     endif()
   endforeach()
 endif()
@@ -386,11 +369,8 @@ endif()
 if(_dartpy_has_gui)
   target_compile_definitions(dartpy PRIVATE DARTPY_HAS_GUI=1)
 endif()
-if(_dartpy_has_simulation_experimental)
-  target_compile_definitions(
-    dartpy
-    PRIVATE DARTPY_HAS_SIMULATION_EXPERIMENTAL=1
-  )
+if(_dartpy_has_simulation)
+  target_compile_definitions(dartpy PRIVATE DARTPY_HAS_SIMULATION=1)
 endif()
 
 # Force-link the experimental CUDA sidecar (used by `pixi run -e cuda py-demos`)
@@ -399,10 +379,10 @@ endif()
 # never references CUDA symbols, so without whole-archive the registrar object
 # would be dropped. The target exists only when DART_ENABLE_EXPERIMENTAL_CUDA is
 # ON; pixi-provided CMake (>= 4.3) supports the WHOLE_ARCHIVE link feature.
-if(TARGET dart-simulation-experimental-cuda)
+if(TARGET dart-simulation-cuda)
   target_link_libraries(
     dartpy
-    PRIVATE "$<LINK_LIBRARY:WHOLE_ARCHIVE,dart-simulation-experimental-cuda>"
+    PRIVATE "$<LINK_LIBRARY:WHOLE_ARCHIVE,dart-simulation-cuda>"
   )
 endif()
 
@@ -419,7 +399,7 @@ foreach(
   __init__.py
   _naming.py
   _layout.py
-  _simulation_experimental_diff.py
+  _simulation_diff.py
   _world_render_bridge.py
 )
   configure_file(
@@ -472,7 +452,7 @@ if(DEFINED SKBUILD_PLATLIB_DIR)
       ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py
       ${CMAKE_CURRENT_SOURCE_DIR}/_naming.py
       ${CMAKE_CURRENT_SOURCE_DIR}/_layout.py
-      ${CMAKE_CURRENT_SOURCE_DIR}/_simulation_experimental_diff.py
+      ${CMAKE_CURRENT_SOURCE_DIR}/_simulation_diff.py
       ${CMAKE_CURRENT_SOURCE_DIR}/_world_render_bridge.py
     DESTINATION "${SKBUILD_PLATLIB_DIR}/dartpy"
   )
@@ -483,7 +463,7 @@ elseif(DEFINED PYTHON_SITE_PACKAGES)
       ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py
       ${CMAKE_CURRENT_SOURCE_DIR}/_naming.py
       ${CMAKE_CURRENT_SOURCE_DIR}/_layout.py
-      ${CMAKE_CURRENT_SOURCE_DIR}/_simulation_experimental_diff.py
+      ${CMAKE_CURRENT_SOURCE_DIR}/_simulation_diff.py
       ${CMAKE_CURRENT_SOURCE_DIR}/_world_render_bridge.py
     DESTINATION "${PYTHON_SITE_PACKAGES}/dartpy"
   )

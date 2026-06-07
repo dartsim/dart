@@ -2,20 +2,24 @@
 
 ## Status
 
-Proposal. This document is the PLAN-041 Workstream 1 deliverable: the **promotion
-contract and readiness audit** for moving `dart::simulation::experimental` to the
-official DART 7 simulation API. It freezes the supported public subset, records
-the headers/modules to promote, lists the public-looking internals to hide, maps
-the parity evidence that gates the promotion claim, and tracks the concrete
-boundary blockers to clear.
+Promotion readiness audit. This document is the PLAN-041 Workstream 1
+deliverable: the **promotion contract and readiness audit** for the official
+DART 7 simulation API. It
+freezes the supported public subset, records the headers/modules to promote,
+lists the public-looking internals to hide, maps the parity evidence that gates
+the promotion claim, and tracks the concrete boundary blockers to clear.
 
-This step edits docs and the boundary inventory only; it does not move source
-files. Source moves are PLAN-041 Workstream 9.
+The key boundary slices have landed: the simulation module builds by default,
+installs only an explicit public-header allowlist, keeps EnTT/Taskflow out of
+promoted header include paths, uses the `dart::simulation` namespace and
+`dart-simulation` target, and promotes the Python import layout to
+`dartpy.simulation.World` / `dartpy.World`. Remaining readiness work is cleanup,
+negative smokes for retired names, and keeping the guards green.
 
 Companion docs:
 
-- API shape and rationale: [`simulation_experimental_cpp_api.md`](simulation_experimental_cpp_api.md)
-  and [`simulation_experimental_python_api.md`](simulation_experimental_python_api.md).
+- API shape and rationale: [`simulation_cpp_api.md`](simulation_cpp_api.md)
+  and [`simulation_python_api.md`](simulation_python_api.md).
 - Operating state, sequencing, and gates: `PLAN-041` in
   [`../plans/dashboard.md`](../plans/dashboard.md) and
   [`../plans/041-official-simulation-api-promotion.md`](../plans/041-official-simulation-api-promotion.md).
@@ -29,106 +33,135 @@ dashboard).
 
 ## Why an audit before a facade
 
-Today there is **no public/internal split** in the experimental tree. The
-component installs every header by directory glob and depends on its ECS and
-task-graph libraries publicly, so the "experimental API" currently leaks its
-entire implementation. Promotion cannot be claimed until the supported subset is
-frozen and the implementation surface is hidden. This audit makes that subset and
-that hide-list explicit so the facade work (Workstreams 2/3/5) has a checklist.
+The promotion needed an audit before a facade because the original staging tree
+had no public/internal split: it installed every header by directory glob and
+required ECS/task-graph dependency discovery from downstream consumers. That
+specific leakage is now guarded under the promoted namespace and package target.
+This audit keeps the supported subset and hide-list explicit so future cleanup
+does not regress those boundaries.
 
 ## Current Public-Surface Audit (evidence)
 
-### A. The install rule ships the whole tree as public
+### A. Installed headers are allowlisted
 
-`dart/simulation/experimental/CMakeLists.txt`:
+`dart/simulation/CMakeLists.txt`:
 
 ```cmake
-install(
-  DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/
-  DESTINATION include/dart/simulation/experimental
-  COMPONENT headers
-  FILES_MATCHING
-  PATTERN "*.hpp"
+set(
+  DART_SIMULATION_PUBLIC_HEADERS
+  ${dart_simulation_public_headers_toplevel}
+  ${dart_simulation_public_headers_body}
+  ${dart_simulation_public_headers_multibody}
+  ${dart_simulation_public_headers_frame}
+  ${dart_simulation_public_headers_constraint}
+  ${dart_simulation_public_headers_compute}
+  ${dart_simulation_public_headers_diff}
 )
 ```
 
-This installs **all 127 `*.hpp`** under `experimental/`, including `detail/`,
-`comps/`, `ecs/`, and `compute/` implementation headers. There is no public-header
-allowlist today.
+Only that allowlist is installed through `install(FILES ...)`. The prior
+recursive `install(DIRECTORY ... PATTERN "*.hpp")` rule is gone, so `comps/`,
+`ecs/`, most `compute/`, `common/`, `detail/`, `io/`, and `space/` headers stay
+out of the installed package unless a row is deliberately promoted.
 
-### B. ECS and task-graph libraries are public package dependencies
+### B. Implementation dependencies are private
 
-`dart/simulation/experimental/CMakeLists.txt`:
+`dart/simulation/CMakeLists.txt`:
 
 ```cmake
-add_component_dependency_packages(${PROJECT_NAME} ${component_name} EnTT Taskflow)
+target_link_libraries(
+  ${target_name}
+  PUBLIC dart Eigen3::Eigen
+  PRIVATE
+    EnTT::EnTT
+    spdlog::spdlog
+    ${PROJECT_NAME}-collision-native
+    ${PROJECT_NAME}-io
+)
 ```
 
-`EnTT` and `Taskflow` are declared as **public** component dependency packages, so
-a downstream consumer of the promoted API would be forced to find and carry them.
-A promoted public API must not require either.
+`EnTT`, `Taskflow`, and `spdlog` are implementation dependencies. Shared builds
+do not register them as public component dependency packages. Static builds
+still register them only under `if(NOT BUILD_SHARED_LIBS)` so exported
+`$<LINK_ONLY:...>` entries can resolve without adding include or usage
+requirements to promoted headers.
 
-### C. The world handle leaks ECS storage
+### C. Promoted headers are EnTT/Taskflow-clean
 
-`dart/simulation/experimental/world.hpp`:
+The original blocker was `world.hpp` exposing `entt::registry` through
+`getRegistry()` and including `<entt/entt.hpp>` directly. That storage escape
+hatch has been replaced by opaque world storage, and promoted headers are now
+checked transitively.
 
-- `entt::registry& getRegistry();` and the `const` overload (lines ~449–452) are a
-  raw storage escape hatch. The shape doc already classifies this as
-  implementation-only and excluded from promotion.
-- The header includes `<entt/entt.hpp>` directly.
+Current gates:
 
-### D. Header inventory by subdirectory (127 total)
+- `pixi run check-dart7-promotion-surface` runs
+  `scripts/audit_dart7_promotion_surface.py --strict`, classifies promotion
+  targets, follows their simulation include closure, rejects EnTT/Taskflow,
+  ECS, `comps`, and internal-header leaks, and cross-checks the CMake install
+  allowlist.
+- `pixi run check-simulation-public-header-smoke` builds a translation unit
+  that includes every allowlisted public header while poison EnTT/Taskflow
+  headers are ahead of the real dependency include paths.
+- `pixi run check-dart7-promotion-package-contract` statically guards the
+  package/CMake facts above: the World stack remains non-optional on
+  `main`, opt-in diff/CUDA subfeatures default-off, no recursive public install,
+  and no unconditional private dependency-package leak.
+- `pixi run check-dart7-promotion-installed-package` configures a minimal local
+  install build, installs to a temporary prefix, compiles and runs a downstream
+  CMake project against the allowlisted public headers, and verifies selected
+  ECS/internal headers are absent from the installed prefix.
+- `pixi run check-dart7-world-promotion-blockers` keeps the
+  C++/package blocker inventory executable: experimental namespace/include-path
+  uses, staged `dart-simulation-experimental` package names, and related transition
+  references must stay in named transition buckets, and those code/build/test
+  bucket counts may not grow. Its
+  strict-final mode is the final local claim gate. In-tree parity references have been
+  ratcheted to zero; any new main-branch `dart::simulation::World` parity
+  dependency under `tests/unit/simulation/` fails the default
+  blocker check. The former contact/constraint, skeleton-to-multibody, and
+  world-parity rows now carry DART 7-only regression assertions; parity
+  evidence belongs on `release-6.*` branches.
+- `pixi run check-dart7-final-world-promotion` layers strict-final blocker
+  removal with a required local `release-6.*` branch ref. It is intentionally
+  not part of default lint while transition references are being retired, but it
+  is the final claim gate for "parity came from `release-6.*` branches, not
+  main's classic World implementation."
 
-Counts are a snapshot and drift as the tree grows; recompute the current total
-with `find dart/simulation/experimental -name '*.hpp' | wc -l`.
+### D. Header inventory ownership
 
-| Subdir        | hpp | Disposition | Notes                                                                                                                                                                                                                   |
-| ------------- | --- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| _(top level)_ | 6   | PROMOTE\*   | `world`, `world_options`, `world_sync_stage`, `fwd`, `export`, `version`. `world.hpp` must drop `getRegistry`/`entt`.                                                                                                   |
-| `body/`       | 7   | PROMOTE\*   | `rigid_body`, `collision_body`, `contact`, `deformable_body` (+ options) handles; some include `entt`.                                                                                                                  |
-| `multibody/`  | 5   | PROMOTE\*   | `multibody`, `link`, `joint` handles; include `entt` today.                                                                                                                                                             |
-| `frame/`      | 3   | PROMOTE\*   | `frame` handle; includes `entt` today.                                                                                                                                                                                  |
-| `constraint/` | 5   | PROMOTE\*   | `loop_closure` handle + spec/policy/residual; hide the `*_family`/`*_residual` internals if implementation-only.                                                                                                        |
-| `space/`      | 4   | MIXED       | `StateSpace` PROMOTE; `auto_mapper`/`component_mapper`/`vector_mapper` HIDE (registry mappers).                                                                                                                         |
-| `common/`     | 9   | MIXED       | `constants`/`exceptions`/`diagnostics` may be public; `ecs_utils` HIDE; `macros`/`assert`/`logging`/`profiling`/`type_list` are support headers to keep internal unless needed.                                         |
-| `comps/`      | 16  | HIDE        | ECS component storage. Never public.                                                                                                                                                                                    |
-| `compute/`    | 20  | HIDE\*\*    | Executors/kernels/backends. Only backend-neutral extension points (`ComputeExecutor`, `WorldStepPipeline`, `WorldStepStage`, profiles, metadata) are promotion candidates, and only with benchmark + boundary evidence. |
-| `ecs/`        | 4   | HIDE        | Entity-object base machinery.                                                                                                                                                                                           |
-| `io/`         | 11  | HIDE\*\*\*  | Binary serializers. `World::saveBinary`/`loadBinary` is the public surface; the serializer headers stay internal.                                                                                                       |
-| `detail/`     | 33  | HIDE        | Already `detail/` (solvers: boxed-LCP, rigid IPC, deformable VBD/IPC, elasticity). Never public.                                                                                                                        |
-| `diff/`       | 4   | SEPARATE    | Differentiable simulation (PLAN-110), opt-in behind `DART_BUILD_DIFF`; not part of the core promotion subset.                                                                                                           |
+The executable inventory source of truth is
+`scripts/audit_dart7_promotion_surface.py`, not a hand-maintained count table.
+Its current promotion groups are:
 
-`*` PROMOTE handles currently leak `entt` (include or signature) and need
-opaque-ownership/pimpl or include cleanup in the facade step before promotion.
+- top-level `world`, options, sync stage, entity, fwd, export, and version
+  headers;
+- public handle/value-object headers under `body/`, `multibody/`, `frame/`, and
+  `constraint/`;
+- the explicitly promoted backend-neutral compute profile/metadata headers; and
+- the small diff value-type include closure, with `diff/rollout.hpp` installed
+  only when `DART_BUILD_DIFF=ON`.
 
-`**` Default to HIDE; promote only the explicitly backend-neutral compute concepts
-the shape doc allows, gated by benchmark + `check-api-boundaries`.
+Everything else under `comps/`, `ecs/`, `detail/`, `io/`, `space/`, `common/`,
+most of `compute/`, and most of `diff/` remains internal unless it is added to
+that script and the CMake allowlist together.
 
-`***` Public serialization is the `World` method surface, not the serializer
-headers.
+### E. Remaining promotion blockers
 
-### E. Headers that currently leak ECS in the would-be public set
+The public-surface leak blocker is cleared for the promoted simulation package.
+The still-open blockers are cleanup and guard-hardening items:
 
-Non-`detail/` headers that include `entt`/`registry` or expose `getRegistry`
-(must be cleaned or hidden before promotion):
-
-- Promote-target handles to **clean**: `world.hpp`, `body/rigid_body.hpp`,
-  `body/collision_body.hpp`, `frame/frame.hpp`, `frame/free_frame.hpp`,
-  `frame/fixed_frame.hpp`, `multibody/{joint,link,multibody}.hpp`,
-  `constraint/loop_closure.hpp`. `frame/free_frame.hpp` and
-  `frame/fixed_frame.hpp` need cleanup even once their `entt::entity`
-  constructors are removed, because they still inherit
-  `EntityObjectWith<...comps::...>` via `frame.hpp`; they are clean only after
-  the shared `Frame`/`EntityObjectWith` base is de-ECS'd.
-- Internals to **hide** (stop installing): `common/ecs_utils.hpp`, all `comps/*`,
-  `ecs/*`, `io/{serializer,category_serializer,binary_io}.hpp`,
-  `space/{auto_mapper,component_mapper,vector_mapper}.hpp`,
-  `compute/{multibody_dynamics,variational_integration,world_kinematics_graph}.hpp`.
+- stale docs or user-facing snippets that still teach retired experimental or
+  DART 6 paths;
+- negative smokes for obsolete experimental headers, modules, targets, and
+  aliases;
+- any future parity claim that relies on main-branch DART 6 code instead of
+  `release-6.*` branch evidence.
 
 ## Frozen Supported Public Subset (PROMOTE)
 
-The supported DART 7 public simulation subset, by concept (names per `fwd.hpp`;
-final spelling decided in the facade step):
+The supported DART 7 public simulation subset, by concept (names per the
+promoted facade):
 
 - **World lifecycle**: `World`, `WorldOptions`, `WorldSyncStage`; design/sim-mode
   lifecycle; `step`/`sync`/`updateKinematics`; `saveBinary`/`loadBinary`;
@@ -162,18 +195,20 @@ separate opt-in capability (PLAN-110), not core-promotion surface.
 The audit above identifies the surface promotion must clear. As durable design
 constraints (per-workstream tracking and status live in the plan, see below):
 
-- **Install boundary:** replace the `*.hpp` install glob with an explicit
-  public-header allowlist; make `EnTT`/`Taskflow` private dependencies; make the
-  promoted baseline build without `DART_BUILD_SIMULATION_EXPERIMENTAL`.
+- **Install boundary:** keep the explicit public-header allowlist, private
+  EnTT/Taskflow/spdlog dependency shape, and package-contract checker green on
+  the DART 7 target/component.
 - **Handle de-ECS:** no promoted public signature or include exposes
-  `entt`/registry/component types; remove or internalize `World::getRegistry()`.
+  `entt`/registry/component types; `World::getRegistry()` must stay internal or
+  absent from the promoted contract.
 - **Boundary enforcement:** boundary checks reject EnTT/registry/`comps`/`ecs`/
   `detail`/backend leakage from promoted headers, with negative
   installed-package smokes.
-- **Name collision:** clear `dart::simulation::World` via an explicit
-  transaction before the promoted facade owns the official namespace.
-- **Python facade:** confirm the `dartpy.simulation` path and the `dartpy.World`
-  decision with no duplicate nanobind registration.
+- **Name collision:** keep `dart::simulation::World` owned by the promoted DART
+  7 facade; do not re-export the classic world on `main`.
+- **Python facade:** keep `dartpy.simulation.World` / `dartpy.World` as one class
+  identity with no duplicate nanobind registration and no
+  `dartpy.simulation_experimental` runtime/stub surface.
 
 ## Parity Evidence Map
 
@@ -184,12 +219,12 @@ in PLAN-041, not here):
 
 | Gate                         | Required evidence                                                         |
 | ---------------------------- | ------------------------------------------------------------------------- |
-| Experimental model loading   | URDF/SDF/MJCF/SKEL load with topology/DOF/transform/mass/collision.       |
+| DART 7 model loading         | URDF/SDF/MJCF/SKEL load with topology/DOF/transform/mass/collision.       |
 | Rigid dynamics parity        | Shared open-chain scenes match the classic DART 6 path within tolerances. |
 | Contact/constraint parity    | Contacts, friction, limits, motors, mimic/coupler, loop closures.         |
 | Serialization/replay parity  | Topology/state/assets + record/replay round-trip within bounded error.    |
 | Stable public API promotion  | Promoted headers hide ECS/components/solver/backend (boundary checks).    |
-| Name-collision resolution    | `dart::simulation::World` cleared via an explicit transaction.            |
+| Name-collision resolution    | `dart::simulation::World` owned by the promoted DART 7 facade.            |
 | Core build/tests + packaging | Lint, build, tests, and package/export smokes for the touched scope.      |
 
 ## Operating state lives in the plan, not here
@@ -204,14 +239,18 @@ in [`../plans/dashboard.md`](../plans/dashboard.md) and
 
 ## WS1 Acceptance
 
-Workstream 1 is satisfied when: the supported public subset is frozen (above), the
-hide-list is explicit (above), the promotion blockers are stated as durable design
-constraints (above), and the parity-evidence map names each gate (above).
-Per-workstream sequencing and per-gate status live in PLAN-041. Update this audit
-when the install rule, package dependencies, or header layout changes.
+Workstream 1 is satisfied when: the supported public subset is frozen (above),
+the hide-list is explicit (above), the package/header checks are executable
+(`check-dart7-promotion-surface`, `check-simulation-public-header-smoke`,
+`check-dart7-promotion-package-contract`,
+`check-dart7-promotion-installed-package`, and `check-dartpy-import-layout`),
+the remaining blockers are stated as durable design constraints (above), and
+the parity-evidence map names each gate (above). Per-workstream sequencing and
+per-gate status live in PLAN-041. Update this audit when the install rule,
+package dependencies, header layout, or import layout changes.
 
 ## Verification
 
-Docs-only edits use the docs-only gate set from `docs/ai/verification.md`:
-`pixi run lint-md`, `pixi run check-lint-md`, `pixi run check-lint-spell`,
-`pixi run check-docs-policy`, and `pixi run lint`.
+Docs-only edits use the docs-only gate set from `docs/ai/verification.md`.
+Package/header/import gate changes also run the focused checker tests and
+`pixi run check-lint`.

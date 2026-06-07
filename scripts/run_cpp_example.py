@@ -71,28 +71,11 @@ class ExampleSpec:
     default_args: tuple[str, ...] = ()
 
 
-# Standalone GUI example binaries that still build as their own executables.
-# Most former GUI examples are now scenes in the `dart-demos` app (run via the
-# `demos` target); only these remain standalone (special build needs or sources
-# reused by tests), plus `hello_world` as the minimal template.
-GUI_SCENE_EXAMPLE_DEFAULT_ARGS = {
-    "hello_world": (),
-    "gui_scene_diagnostics": (),
-}
-
 EXAMPLE_SPECS = {
-    "dartsim": ExampleSpec(
-        "dartsim", "dartsim", ("filament", "simulation-experimental")
-    ),
+    "dartsim": ExampleSpec("dartsim", "dartsim", ("filament", "simulation")),
     # The consolidated World demos app needs the current World implementation
     # component built as well.
-    "demos": ExampleSpec(
-        "dart-demos", "dart-demos", ("filament", "simulation-experimental")
-    ),
-    **{
-        name: ExampleSpec(name, name, ("filament",), default_args)
-        for name, default_args in GUI_SCENE_EXAMPLE_DEFAULT_ARGS.items()
-    },
+    "demos": ExampleSpec("dart-demos", "dart-demos", ("filament", "simulation")),
 }
 
 # World-scene demos hosted by `dart-demos`.
@@ -178,6 +161,26 @@ REMOVED_EXAMPLES = {
     "`pixi run ex dartsim` or one of the DART GUI example names instead.",
     "dart_filament_gui": "The backend-named GUI example has been renamed. Use "
     "`pixi run ex dartsim` or one of the DART GUI example names instead.",
+    "hello_world": "The classic C++ hello_world standalone example was retired "
+    "from main during the DART 7 World promotion. Run the DART 7 demo app with "
+    "`pixi run demos -- --scene rigid_body`, or use a release-6.* branch for "
+    "the DART 6 example source.",
+    "gui_scene_diagnostics": "The classic gui_scene_diagnostics standalone "
+    "example was retired from main during the DART 7 World promotion. Use "
+    "`pixi run demos -- --list` for maintained DART 7 GUI scenes, or use a "
+    "release-6.* branch for the DART 6 diagnostic source.",
+    "csv_logger": "The csv_logger standalone example was retired from main "
+    "during the DART 7 World promotion because it depended on DART 6 "
+    "whole-World loading. Use a release-6.* branch for the retired source.",
+    "headless_simulation": "The headless_simulation standalone example was "
+    "retired from main during the DART 7 World promotion because it depended "
+    "on DART 6 whole-World loading. Use a release-6.* branch for the retired "
+    "source.",
+    "unified_loading": "The unified_loading standalone example was retired "
+    "from main during the DART 7 World promotion because it depended on the "
+    "removed public whole-World IO API. Use dart::io::readSkeleton for "
+    "DART 7 skeleton loading, or use a release-6.* branch for DART 6 "
+    "whole-World loading parity.",
 }
 
 # The Python demos viewer (`pixi run py-demos` / `python -m examples.demos`) is
@@ -411,31 +414,11 @@ def _ensure_filament(build_dir: Path, env: dict[str, str], smoke: bool) -> None:
     _configure(build_dir, definitions, env)
 
 
-def _ensure_simulation_experimental(build_dir: Path, env: dict[str, str]) -> None:
-    desired = {"DART_BUILD_SIMULATION_EXPERIMENTAL": "ON"}
-    definitions = {
-        option: value
-        for option, value in desired.items()
-        if not _cache_bool_matches(build_dir, option, value)
-    }
-    if not definitions:
-        return
-
-    print(
-        "Configuring DART simulation experimental requirements "
-        f"({', '.join(f'{k}={v}' for k, v in definitions.items())})...",
-        file=sys.stderr,
-    )
-    _configure(build_dir, definitions, env)
-
-
 def _ensure_target_requirements(
     build_dir: Path, spec: ExampleSpec, env: dict[str, str], smoke: bool
 ) -> None:
     if "filament" in spec.requirements:
         _ensure_filament(build_dir, env, smoke)
-    if "simulation-experimental" in spec.requirements:
-        _ensure_simulation_experimental(build_dir, env)
 
 
 def ensure_build_exists(build_dir: Path, build_type: str) -> None:
@@ -590,16 +573,12 @@ def _prepare_filament_run_args(
 
 def _prepend_runtime_library_path(env: dict[str, str], build_dir: Path) -> None:
     lib_dir = build_dir / "lib"
-    simulation_experimental_dir = build_dir / "dart" / "simulation" / "experimental"
     if sys.platform.startswith("linux"):
         _prepend_env_path(env, "LD_LIBRARY_PATH", lib_dir)
-        _prepend_env_path(env, "LD_LIBRARY_PATH", simulation_experimental_dir)
     elif sys.platform == "darwin":
         _prepend_env_path(env, "DYLD_LIBRARY_PATH", lib_dir)
-        _prepend_env_path(env, "DYLD_LIBRARY_PATH", simulation_experimental_dir)
     elif os.name == "nt":
         _prepend_env_path(env, "PATH", lib_dir)
-        _prepend_env_path(env, "PATH", simulation_experimental_dir)
 
 
 def _runtime_env(

@@ -44,9 +44,9 @@ transitions at the API boundary.
   `SdfParser`, `UrdfParser`) construct skeletons in `Design` mode so the
   result can be inspected or edited before being added to a World. The
   prototype already threaded the enum through all five parsers.
-- **Open question, blocks Phase 1**: the experimental World (PLAN-050,
+- **Open question, blocks Phase 1**: the DART 7 World (PLAN-050,
   complete on main) stores frames under
-  `dart/simulation/experimental/frame/`, not `dart::dynamics::Skeleton`. The
+  `dart/simulation/frame/`, not `dart::dynamics::Skeleton`. The
   lifecycle marker may belong only on the experimental side, with the legacy
   Skeleton API left untouched until DART 8 removes it. This decision must be
   made before writing snake_case headers.
@@ -78,7 +78,7 @@ removal.
 1. Land this dev-task folder so the design is discoverable.
 2. Before any Phase 1 implementation, resolve the legacy-vs-experimental
    placement question with a short design note here under the
-   `01-placement.md` filename, or fold it into the experimental-World
+   `01-placement.md` filename, or fold it into the DART 7 World
    onboarding doc if the answer is "experimental only".
 
 ## Verification Gates

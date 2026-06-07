@@ -32,12 +32,8 @@
 
 #include "dart/utils/skel_parser.hpp"
 
-#include "dart/collision/collision_object.hpp"
-#include "dart/collision/dart/dart_collision_detector.hpp"
 #include "dart/common/logging.hpp"
 #include "dart/common/macros.hpp"
-#include "dart/config.hpp"
-#include "dart/constraint/constraint_solver.hpp"
 #include "dart/dynamics/ball_joint.hpp"
 #include "dart/dynamics/body_node.hpp"
 #include "dart/dynamics/box_shape.hpp"
@@ -210,11 +206,6 @@ bool setInertiaFromShapeNodes(dynamics::BodyNode* bodyNode)
   return true;
 }
 
-simulation::WorldPtr readWorld(
-    tinyxml2::XMLElement* _worldElement,
-    const common::Uri& _baseUri,
-    const common::ResourceRetrieverPtr& _retriever);
-
 dart::dynamics::SkeletonPtr readSkeleton(
     tinyxml2::XMLElement* _skeletonElement,
     const common::Uri& _baseUri,
@@ -331,14 +322,6 @@ void readAspects(
     tinyxml2::XMLElement* skeletonElement,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever);
-
-tinyxml2::XMLElement* checkFormatAndGetWorldElement(
-    tinyxml2::XMLDocument& _document);
-
-simulation::WorldPtr readWorld(
-    tinyxml2::XMLElement* _worldElement,
-    const common::Uri& _baseUri,
-    const common::ResourceRetrieverPtr& _retriever);
 
 NextResult getNextJointAndNodePair(
     JointMap::iterator& it,
@@ -488,59 +471,6 @@ common::ResourceRetrieverPtr getRetriever(
 
 } // anonymous namespace
 
-//==============================================================================
-simulation::WorldPtr SkelParser::readWorld(
-    const common::Uri& _uri, const common::ResourceRetrieverPtr& _retriever)
-{
-  const common::ResourceRetrieverPtr retriever = getRetriever(_retriever);
-
-  //--------------------------------------------------------------------------
-  // Load xml and create Document
-  tinyxml2::XMLDocument _dartFile;
-  try {
-    openXMLFile(_dartFile, _uri, retriever);
-  } catch (std::exception const& e) {
-    DART_ERROR(
-        "[readWorld] LoadFile [{}] Failed: {}", _uri.toString(), e.what());
-    return nullptr;
-  }
-
-  tinyxml2::XMLElement* worldElement = checkFormatAndGetWorldElement(_dartFile);
-  if (!worldElement) {
-    DART_ERROR(
-        "[readWorld] File named [{}] could not be parsed!", _uri.toString());
-    return nullptr;
-  }
-
-  return ::dart::utils::readWorld(worldElement, _uri, retriever);
-}
-
-//==============================================================================
-simulation::WorldPtr SkelParser::readWorldXML(
-    std::string_view xmlString,
-    const common::Uri& baseUri,
-    const common::ResourceRetrieverPtr& retriever)
-{
-  const common::ResourceRetrieverPtr resolvedRetriever
-      = getRetriever(retriever);
-
-  tinyxml2::XMLDocument dartXml;
-  const std::string xmlStringCopy(xmlString);
-  if (dartXml.Parse(xmlStringCopy.c_str()) != tinyxml2::XML_SUCCESS) {
-    dartXml.PrintError();
-    return nullptr;
-  }
-
-  tinyxml2::XMLElement* worldElement = checkFormatAndGetWorldElement(dartXml);
-  if (!worldElement) {
-    DART_ERROR("[readWorldXML] XML String could not be parsed!");
-    return nullptr;
-  }
-
-  return ::dart::utils::readWorld(worldElement, baseUri, resolvedRetriever);
-}
-
-//==============================================================================
 dynamics::SkeletonPtr SkelParser::readSkeleton(
     const common::Uri& uri, const common::ResourceRetrieverPtr& nullOrRetriever)
 {
@@ -567,16 +497,33 @@ dynamics::SkeletonPtr SkelParser::readSkeleton(
     return nullptr;
   }
 
-  //--------------------------------------------------------------------------
-  // Load World
   tinyxml2::XMLElement* skeletonElement = nullptr;
   skeletonElement = skelElement->FirstChildElement("skeleton");
   if (skeletonElement == nullptr) {
-    DART_ERROR(
-        "Skel file[{}] does not contain <skeleton> element under <skel> "
-        "element.",
-        uri.toString());
-    return nullptr;
+    auto* worldElement = skelElement->FirstChildElement("world");
+    if (worldElement == nullptr) {
+      DART_ERROR(
+          "Skel file[{}] does not contain <skeleton> or <world> element "
+          "under <skel> element.",
+          uri.toString());
+      return nullptr;
+    }
+
+    skeletonElement = worldElement->FirstChildElement("skeleton");
+    if (skeletonElement == nullptr) {
+      DART_ERROR(
+          "Skel file[{}] does not contain <skeleton> element under <world> "
+          "element.",
+          uri.toString());
+      return nullptr;
+    }
+
+    if (skeletonElement->NextSiblingElement("skeleton") != nullptr) {
+      DART_WARN(
+          "[SkelParser::readSkeleton] Loaded a Skel world containing multiple "
+          "skeletons; returning the first skeleton. URI=[{}]",
+          uri.toString());
+    }
   }
 
   dynamics::SkeletonPtr newSkeleton
@@ -703,115 +650,6 @@ void readAspects(
   }
 }
 
-//==============================================================================
-tinyxml2::XMLElement* checkFormatAndGetWorldElement(
-    tinyxml2::XMLDocument& _document)
-{
-  //--------------------------------------------------------------------------
-  // Check xml tag
-  tinyxml2::XMLElement* skelElement = nullptr;
-  skelElement = _document.FirstChildElement("skel");
-  if (skelElement == nullptr) {
-    DART_ERROR("XML Document does not contain <skel> as the root element.");
-    return nullptr;
-  }
-
-  //--------------------------------------------------------------------------
-  // Load World
-  tinyxml2::XMLElement* worldElement = nullptr;
-  worldElement = skelElement->FirstChildElement("world");
-  if (worldElement == nullptr) {
-    DART_ERROR(
-        "XML Document does not contain a <world> element under the <skel> "
-        "element.");
-    return nullptr;
-  }
-
-  return worldElement;
-}
-
-//==============================================================================
-simulation::WorldPtr readWorld(
-    tinyxml2::XMLElement* _worldElement,
-    const common::Uri& _baseUri,
-    const common::ResourceRetrieverPtr& _retriever)
-{
-  DART_ASSERT(_worldElement != nullptr);
-
-  // Create a world
-  simulation::WorldPtr newWorld = simulation::World::create();
-
-  //--------------------------------------------------------------------------
-  // Load physics
-  tinyxml2::XMLElement* physicsElement
-      = _worldElement->FirstChildElement("physics");
-  if (physicsElement != nullptr) {
-    // Time step
-    tinyxml2::XMLElement* timeStepElement = nullptr;
-    timeStepElement = physicsElement->FirstChildElement("time_step");
-    if (timeStepElement != nullptr) {
-      std::string strTimeStep = timeStepElement->GetText();
-      double timeStep = toDouble(strTimeStep);
-      newWorld->setTimeStep(timeStep);
-    }
-
-    // Gravity
-    tinyxml2::XMLElement* gravityElement = nullptr;
-    gravityElement = physicsElement->FirstChildElement("gravity");
-    if (gravityElement != nullptr) {
-      std::string strGravity = gravityElement->GetText();
-      Eigen::Vector3d gravity = toVector3d(strGravity);
-      newWorld->setGravity(gravity);
-    }
-
-    // Collision detector
-    auto* factory = collision::CollisionDetector::getFactory();
-    std::shared_ptr<collision::CollisionDetector> collision_detector;
-
-    if (hasElement(physicsElement, "collision_detector")) {
-      const auto cdType = getValueString(physicsElement, "collision_detector");
-
-      if (cdType == "fcl_mesh" && !factory->canCreate("fcl_mesh")
-          && factory->canCreate("fcl")) {
-        collision_detector = factory->create("fcl");
-      } else {
-        collision_detector = factory->create(cdType);
-      }
-
-      DART_WARN_IF(
-          !collision_detector,
-          "Unknown collision detector[{}]. Default collision "
-          "detector[dart] will be loaded.",
-          cdType);
-    }
-
-    if (!collision_detector) {
-      collision_detector = factory->create("dart");
-    }
-    if (!collision_detector) {
-      collision_detector = factory->create("experimental");
-    }
-    if (!collision_detector) {
-      collision_detector = factory->create("fcl");
-    }
-
-    newWorld->setCollisionDetector(collision_detector);
-  }
-
-  //--------------------------------------------------------------------------
-  // Load soft skeletons
-  ElementEnumerator SkeletonElements(_worldElement, "skeleton");
-  while (SkeletonElements.next()) {
-    dynamics::SkeletonPtr newSkeleton = ::dart::utils::readSkeleton(
-        SkeletonElements.get(), _baseUri, _retriever);
-
-    newWorld->addSkeleton(newSkeleton);
-  }
-
-  return newWorld;
-}
-
-//==============================================================================
 NextResult getNextJointAndNodePair(
     JointMap::iterator& it,
     BodyMap::const_iterator& child,

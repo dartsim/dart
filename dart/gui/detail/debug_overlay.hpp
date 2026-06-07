@@ -80,7 +80,6 @@ void refreshStaticDebugOverlay(
     ::filament::Engine& engine,
     ::filament::Scene& scene,
     ::filament::Material& material,
-    const dart::simulation::World& world,
     DebugOverlayController& controller);
 
 void refreshContactDebugOverlay(

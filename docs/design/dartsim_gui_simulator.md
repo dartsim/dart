@@ -4,7 +4,7 @@ Status: Implemented (v1)
 
 This document is the durable architecture and rationale for the `dartsim/`
 application: a general-purpose, standalone robotics multi-physics GUI simulator
-built on DART's experimental World API (evolved from the earlier thin viewer). It owns the
+built on the DART 7 World API (evolved from the earlier thin viewer). It owns the
 design and tradeoffs only. Active priority, horizon, and gate live in
 `docs/plans/dashboard.md` (PLAN-101); the landed developer overview lives in
 `docs/onboarding/gui-rendering.md`.
@@ -27,7 +27,7 @@ sketch below in two ways worth recording:
   additive `dart::gui::ApplicationOptions::renderableProvider` hook lets the
   editor append `RenderableDescriptor`s (from `ObjectManager::computeRenderItems`)
   to the scene each frame. The editor hosts an empty legacy world purely as a
-  render canvas (never stepped); the experimental World drives the actual scene.
+  render canvas (never stepped); the DART 7 World drives the actual scene.
 - **Docking workspace**: the editor enables an ImGui dockspace over the main
   viewport (`ApplicationOptions::dockingEnabled`, plumbed into `dart::gui` and
   submitted as `DockSpaceOverViewport` with a pass-through central node so the
@@ -54,7 +54,7 @@ fallback, context-sensitive Create menu with starter examples, and frame
 attach/detach relationship actions plus link hierarchy relationship actions);
 direct native project file pickers for Open and Save As; inspector enum
 choices for shape type and child link joint kind; viewport selection sync;
-transform-gizmo action seams; and viewport rendering of the experimental scene
+transform-gizmo action seams; and viewport rendering of the DART 7 scene
 (verified headless with a non-blank smoke check plus a foreground-geometry
 pixel check).
 
@@ -89,13 +89,13 @@ engine) is enforced by `scripts/check_api_boundaries.py`
 
 Genuinely-deferred follow-ups — each gated on a capability that does not exist
 yet, not on this app: runtime sensor output panes and joint render layers /
-joint visibility filters (wait on the experimental World exposing sensor values
+joint visibility filters (wait on the DART 7 World exposing sensor values
 and joint render data); richer relationship inspectors and grouping (wait on
 more authored object metadata); a Scene Tree context-menu popup affordance (waits
 on the panel API exposing context menus); extracting the project file-dialog
 orchestration out of `editor.cpp` into its own tested seam (the last untested
 dialog-flow branch, tracked under PLAN-101); and co-evolution to adopt
-experimental shape/loader APIs, replacing editor-side shape descriptors, as they
+simulation shape/loader APIs, replacing editor-side shape descriptors, as they
 land (see PLAN-050). The `## Architecture Overview` and later sections record the
 original rationale; treat this section as the authoritative as-built note where
 they differ.
@@ -105,7 +105,7 @@ they differ.
 `dartsim` becomes a desktop application with two clearly separated layers:
 
 1. A **headless editor engine** (no rendering, no UI toolkit) that owns the
-   editable scene over an experimental World plus an object manager, selection
+   editable scene over a DART 7 World plus an object manager, selection
    manager, command manager with undo/redo, name manager, simulation controller,
    and a record/replay subsystem.
 2. A **thin GUI** built on the existing backend-hidden Dear ImGui + Filament
@@ -116,12 +116,11 @@ The split follows the best-in-class separation seen in Gazebo (`gz-sim` server
 vs GUI client) and Drake (computation/context vs visualizer): the GUI holds no
 authoritative scene state; it observes engine state and submits commands.
 
-The simulator targets the **experimental World API** only
-(`dart::simulation::experimental`, alias `sx`; Python
-`dartpy.simulation_experimental`). That API is the DART 7 experimental surface
-until clean-break promotion (see
-[`simulation_experimental_cpp_api.md`](simulation_experimental_cpp_api.md) and
-[`simulation_experimental_python_api.md`](simulation_experimental_python_api.md)).
+The simulator targets the **DART 7 World API** only
+(`dart::simulation`, alias `sim`; Python `dartpy.simulation`). That API is the
+clean-break simulation surface (see
+[`simulation_cpp_api.md`](simulation_cpp_api.md) and
+[`simulation_python_api.md`](simulation_python_api.md)).
 
 ## Goals
 
@@ -134,7 +133,7 @@ until clean-break promotion (see
   timeline, and a 3D **Viewport** with selection and transform gizmos.
 - A headless engine that is **independently testable** and is the single owner of
   scene state, selection, and the undo/redo history.
-- Strict reliance on the **experimental World** as the physics/state model, so
+- Strict reliance on the **DART 7 World** as the physics/state model, so
   the simulator co-evolves with and validates the DART 7 clean-break simulation
   API.
 - Stay **backend-hidden** per PLAN-060: no rendering-backend or UI-toolkit types
@@ -153,11 +152,11 @@ revisited only with new evidence. They are not permanent exclusions.
 - No multi-process client/server transport in v1. The engine and GUI live in one
   process behind an in-process interface; the boundary is kept clean enough that
   a transport could be added later.
-- No URDF/SDF/MJCF import into the experimental World in early phases. The
-  experimental World has no model-format loader yet (only binary save/load); see
-  [Experimental-API gaps](#experimental-api-gaps-and-co-evolution).
+- No URDF/SDF/MJCF import into the DART 7 World in early phases. The
+  DART 7 World has no model-format loader yet (only binary save/load); see
+  [DART 7 API gaps](#dart-7-api-gaps-and-co-evolution).
 - No collision-shape authoring UI, sensors, or actuator/controller framework
-  until the experimental World exposes the matching public concepts.
+  until the DART 7 World exposes the matching public concepts.
 - No promotion of the editor engine into the `dart::` core library or `dartpy`
   in v1; it lives in the `dartsim/` application folder (revisit if reuse demand
   appears).
@@ -168,7 +167,7 @@ revisited only with new evidence. They are not permanent exclusions.
 These constraints come from the repository as it is today and shape every
 decision below.
 
-- **Experimental World is topology + kinematics + stepping + state today.**
+- **DART 7 World is topology + kinematics + stepping + state today.**
   Available: World lifecycle (design mode then simulation mode), `step()`,
   `step(n)`, `sync(WorldSyncStage::Kinematics)`, RigidBody/MultiBody/Link/Joint/
   Frame/LoopClosure creation and queries, joint position/velocity read/write,
@@ -185,8 +184,8 @@ decision below.
 - **The renderer is currently wired to the legacy `dart::simulation::World`.**
   `ApplicationOptions::world` is a `dart::simulation::WorldPtr` and
   `PanelContext::world` is a `dart::simulation::World*`. Driving the viewport
-  from an experimental World requires a new rendering bridge that reads
-  experimental Frame transforms and shape descriptions.
+  from a DART 7 World requires a rendering bridge that reads frame transforms
+  and shape descriptions.
 - **Scenes today are hardcoded C++ fixtures** (`ExampleScene` enum). A
   general-purpose simulator needs runtime-authored scenes with save/load.
 - **Docs conventions are strict.** Durable architecture goes here in
@@ -254,18 +253,18 @@ the ECS).
 |  +-----------------------------+ frame|  SceneIO               |  |
 |                                 state |  Logger / EventBus     |  |
 |                                       |  ----------------       |  |
-|                                       |  sx::World (experimental)|  |
+|                                       |  sim::World              |  |
 |                                       +------------------------+  |
 +------------------------------------------------------------------+
 ```
 
 Key rules:
 
-- The GUI never mutates `sx::World` or scene model state directly. Every edit is
+- The GUI never mutates `sim::World` or scene model state directly. Every edit is
   a **Command** submitted to the `CommandManager`. Every read is a **query** on a
   manager or a per-frame **render snapshot**.
 - The engine never includes any `dart::gui`, ImGui, or Filament header. It
-  depends only on `dart::simulation::experimental` (and `dart::math`).
+  depends only on `dart::simulation` (and `dart::math`).
 - The engine emits **events** (object added/removed/modified, selection changed,
   mode changed, frame stepped) that the GUI subscribes to in order to refresh
   panels. This keeps panels stateless mirrors of engine state.
@@ -280,7 +279,7 @@ demand appears, but that promotion is explicitly a non-goal for v1.
 
 ### SimEngine (facade)
 
-A single facade object that owns the experimental `sx::World` and all managers,
+A single facade object that owns the `sim::World` and all managers,
 and exposes a small surface to the GUI: submit a command, undo, redo, query the
 scene model, query/modify selection, control simulation, start/stop recording,
 load/save a project, and subscribe to events. The GUI holds one `SimEngine`.
@@ -288,20 +287,20 @@ load/save a project, and subscribe to events. The GUI holds one `SimEngine`.
 ### ObjectManager (scene model)
 
 Owns the editable **scene model**: a tree of `SceneObject` nodes that wrap the
-experimental World's public handles and carry editor-only metadata (display
+DART 7 World's public handles and carry editor-only metadata (display
 name, visibility, expansion state, authoring parameters not yet representable in
-the experimental World). Responsibilities:
+the DART 7 World). Responsibilities:
 
-- Create/destroy experimental objects (RigidBody, MultiBody + Links/Joints,
+- Create/destroy DART 7 simulation objects (RigidBody, MultiBody + Links/Joints,
   Frames, LoopClosures) and keep the scene tree in sync with World contents.
 - Provide stable editor handles/IDs that survive undo/redo and World rebuilds
-  (experimental handles can be invalidated by `World::clear()`), so the GUI and
+  (simulation handles can be invalidated by `World::clear()`), so the GUI and
   selection can refer to objects across operations.
 - Maintain parent/child structure for the Scene Tree (world root, then bodies and
   multibodies, then links, joints, attached frames and shapes).
 
-The scene model is the single bridge between editor concepts and the experimental
-World; it isolates the rest of the engine from experimental-API gaps and churn.
+The scene model is the single bridge between editor concepts and the DART 7
+World; it isolates the rest of the engine from API gaps and churn.
 
 ### SelectionManager
 
@@ -336,7 +335,7 @@ not pushed as authoring history.
 
 Guarantees unique, stable names within their scope, generates default names
 (`Body 1`, `arm/link_2`), and validates renames before they reach the World
-(which itself enforces owner-local uniqueness in the experimental API). Keeps
+(which itself enforces owner-local uniqueness in the DART 7 API). Keeps
 editor display names decoupled from World identifiers where the two must differ.
 
 ### SimulationController (Edit Mode vs Simulation Mode)
@@ -354,14 +353,14 @@ Owns the **mode** and the stepping loop:
   never destroys the design.
 
 Stepping runs on the engine; whether it runs on the GUI thread or a worker thread
-is an implementation detail behind the controller. The experimental World's
+is an implementation detail behind the controller. The DART 7 World's
 default synchronous stepping is the reference behavior; async stepping is not
-used (it is deferred in the experimental API).
+used (it is deferred in the DART 7 API).
 
 ### Recorder / Player (record and replay)
 
 - **Recorder**: while in Simulation Mode, captures a per-step **frame snapshot**
-  of the world state into a recording buffer. Snapshots use the experimental World's
+  of the world state into a recording buffer. Snapshots use the DART 7 World's
   binary serialization for fidelity and speed; the recording also stores time
   and step index per frame.
 - **Player**: replays a recording by restoring frame snapshots in order, driven
@@ -381,7 +380,7 @@ project file.
   headers, malformed numeric fields, duplicate object IDs, and nested or
   unterminated object blocks without partially mutating the output model. Saving
   a loaded scene should produce stable text so review diffs stay meaningful.
-- **Replay file** (binary): a sequence of experimental-World binary snapshots
+- **Replay file** (binary): a sequence of DART 7 World binary snapshots
   plus per-frame timing, optimized for fast capture and restore.
 - **UI layout/config**: saved separately from scene data (RViz `.rviz`
   precedent), so workspace layout is portable and does not pollute scene diffs.
@@ -394,37 +393,37 @@ engine change notifications to GUI panels so they refresh without polling.
 
 ## Object And Scene Model Mapping
 
-The Scene Tree presents this hierarchy, mapped onto experimental World public
+The Scene Tree presents this hierarchy, mapped onto DART 7 World public
 concepts:
 
 ```
 World (root)
 ├── Rigid Bodies
-│   └── <RigidBody>            -> sx::RigidBody (transform, vel, mass, inertia, force)
+│   └── <RigidBody>            -> sim::RigidBody (transform, vel, mass, inertia, force)
 ├── MultiBodies
-│   └── <MultiBody>            -> sx::MultiBody
+│   └── <MultiBody>            -> sim::MultiBody
 │       ├── Links
-│       │   └── <Link>         -> sx::Link (world transform, parent joint)
+│       │   └── <Link>         -> sim::Link (world transform, parent joint)
 │       └── Joints
-│           └── <Joint>        -> sx::Joint (type, axis, position, velocity, DOFs)
+│           └── <Joint>        -> sim::Joint (type, axis, position, velocity, DOFs)
 ├── Frames
-│   └── <Frame>               -> sx::FreeFrame / sx::FixedFrame
+│   └── <Frame>               -> sim::FreeFrame / sim::FixedFrame
 └── Loop Closures
-    └── <LoopClosure>         -> sx::LoopClosure (family, offsets, residual)
+    └── <LoopClosure>         -> sim::LoopClosure (family, offsets, residual)
 ```
 
-Object properties surfaced in the Inspector map directly to the experimental
+Object properties surfaced in the Inspector map directly to the DART 7
 public accessors documented in
-[`simulation_experimental_cpp_api.md`](simulation_experimental_cpp_api.md):
+[`simulation_cpp_api.md`](simulation_cpp_api.md):
 transform/translation/rotation/quaternion, linear/angular velocity, mass,
 inertia, force/torque (RigidBody); link/joint enumeration and counts (MultiBody);
 joint type/axis/position/velocity/DOF count (Joint); loop-closure family/offsets
 and residual diagnostics (LoopClosure).
 
-Geometry: until the experimental World exposes collision/visual shapes, authored
+Geometry: until the DART 7 World exposes collision/visual shapes, authored
 bodies carry **editor-side shape descriptors** (primitive box/sphere/cylinder/
 capsule/plane) used only for rendering and picking via the render bridge. When
-the experimental World gains a public shape API, the descriptors migrate to it
+the DART 7 World gains a public shape API, the descriptors migrate to it
 and the editor-side copy is removed.
 
 ## GUI Design
@@ -461,7 +460,7 @@ Layout is user-rearrangeable and persisted via the UI config file.
   prismatic child links, frames, and starter example scenes. Example creation is
   grouped as single undoable transactions so users can explore and discard a
   preset without walking back each object. Fixed frames require an existing
-  frame-like parent because the experimental World does not allow direct world
+  frame-like parent because the DART 7 World does not allow direct world
   attachment. Loop Closure and sensors remain deferred until the public API
   exposes the necessary concepts.
 - **Simulate**: Play, Pause, Step, Reset, Set Time Step, (record) Start/Stop
@@ -491,16 +490,16 @@ directly.
 - **Simulation controls + Timeline**: Play/Pause/Step/Reset, time-step field,
   real-time-factor and sim/wall/step readouts; record toggle; a timeline
   scrubber bound to the Player for replay.
-- **Viewport**: renders the experimental World through the render bridge; orbit
+- **Viewport**: renders the DART 7 World through the render bridge; orbit
   camera; pick-select (single + box) writing to SelectionManager; transform
   gizmos that emit `SetTransformCommand` on release.
 
 ### Render bridge
 
-A GUI-side adapter that, each frame, reads experimental Frame world transforms
+A GUI-side adapter that, each frame, reads DART 7 frame world transforms
 plus editor shape descriptors and produces the renderable set for `dart::gui`.
-This replaces the legacy-World rendering path for the experimental scene and is
-the only place that couples experimental World data to the renderer. It must stay
+This replaces the legacy-World rendering path for the DART 7 scene and is
+the only place that couples DART 7 World data to the renderer. It must stay
 backend-hidden (no Filament types above the `dart::gui` boundary).
 
 ## File Formats
@@ -512,19 +511,19 @@ backend-hidden (no Filament types above the `dart::gui` boundary).
   editor metadata. Designed to be diff-friendly and forward-compatible via the
   version field. Exact schema is defined during Phase 1 implementation.
 - **Recording (`*.dartrec` binary)**: header (format version, time step, frame
-  count) followed by per-frame records (sim time, step index, experimental World
+  count) followed by per-frame records (sim time, step index, DART 7 World
   binary snapshot via `saveBinary`). Restored with `loadBinary`.
 - **UI layout/config**: ImGui `.ini`-style or a small app config; separate from
   scene data.
 
-## Experimental-API Gaps And Co-Evolution
+## DART 7 API Gaps And Co-Evolution
 
-The simulator is a forcing function for the experimental World's promotion to the
+The simulator is a forcing function for the DART 7 World's promotion to the
 DART 7 clean-break API. The following gaps block full simulator features and
-should feed the experimental API design effort (see
-`docs/dev_tasks/simulation_experimental_api_design/` and PLAN-050):
+should feed the DART 7 API design effort (see
+PLAN-041 and PLAN-042):
 
-| Simulator need                       | Experimental World status | Interim approach in dartsim                    |
+| Simulator need                       | DART 7 World status       | Interim approach in dartsim                    |
 | ------------------------------------ | ------------------------- | ---------------------------------------------- |
 | Collision/visual shape access        | Deferred                  | Editor-side primitive shape descriptors        |
 | Model loading (URDF/SDF/MJCF)        | Not present (binary only) | Defer Import menu; author primitives in v1     |
@@ -544,9 +543,9 @@ The v1 phases below are implemented (see
 remaining follow-ups live in `docs/plans/dashboard.md` (PLAN-101) and
 `docs/plans/101-dartsim-gui-simulator.md`. At a high level:
 
-1. **Engine skeleton** — managers, command stack, scene model over `sx::World`,
+1. **Engine skeleton** — managers, command stack, scene model over `sim::World`,
    events; headless unit tests; no UI changes.
-2. **Experimental render bridge + viewport** — render an experimental scene with
+2. **Render bridge + viewport** — render a DART 7 scene with
    primitives; selection/picking.
 3. **Editor UI** — Scene Tree, Inspector, menu bar, Create/Edit via commands,
    undo/redo.
@@ -554,15 +553,15 @@ remaining follow-ups live in `docs/plans/dashboard.md` (PLAN-101) and
    readouts.
 5. **Project save/load** — human-readable project format round-trip.
 6. **Record & replay** — recorder, player, timeline scrubber.
-7. **Hardening + co-evolution** — adopt experimental shape/loader APIs as they
+7. **Hardening + co-evolution** — adopt simulation shape/loader APIs as they
    land; documentation; headless screenshot CI for the new app.
 
 ## Risks And Open Questions
 
-- **Experimental-API churn**: the experimental World is actively changing. The
+- **DART 7 API churn**: the DART 7 World is actively changing. The
   scene model and render bridge isolate the GUI from churn, but command/object
   APIs may need updates as the World API tightens.
-- **Handle invalidation**: experimental handles can be invalidated (e.g.
+- **Handle invalidation**: simulation handles can be invalidated (e.g.
   `World::clear()`); the ObjectManager must own stable editor IDs and rebind
   handles after undo/redo and Reset.
 - **Project format choice (JSON vs XML)**: decided at Phase 5 start; JSON is the
@@ -577,8 +576,8 @@ remaining follow-ups live in `docs/plans/dashboard.md` (PLAN-101) and
 ## References
 
 - Experimental API design:
-  [`simulation_experimental_cpp_api.md`](simulation_experimental_cpp_api.md),
-  [`simulation_experimental_python_api.md`](simulation_experimental_python_api.md)
+  [`simulation_cpp_api.md`](simulation_cpp_api.md),
+  [`simulation_python_api.md`](simulation_python_api.md)
 - GUI rendering policy: `docs/onboarding/gui-rendering.md` (PLAN-060,
   backend-hidden renderer)
 - Prior art: Gazebo `gz-sim`, NVIDIA Isaac Sim (Omniverse Kit), CoppeliaSim,

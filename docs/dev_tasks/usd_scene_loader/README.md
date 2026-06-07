@@ -4,9 +4,8 @@
 
 - [ ] Phase 0: Captured prototype reference and migration requirements (this PR)
 - [ ] Phase 1: Add `dart::io::ModelFormat::Usd` and a snake_case `dart/io/usd/`
-      implementation behind the unified `dart::io::readWorld` / `readSkeleton`
-      front door
-- [ ] Phase 2: Map USD prims to experimental World shapes/joints (PLAN-050);
+      implementation behind the DART 7 model-loading front door
+- [ ] Phase 2: Map USD prims to DART 7 World shapes/joints (PLAN-050);
       keep the loader behind the API-boundary policy
 - [ ] Phase 3: Filament-backed viewer example (replace the OSG prototype) plus
       headless smoke coverage under the dartsim engine
@@ -17,7 +16,7 @@
 ## Goal
 
 Make `.usda` / `.usd` scenes loadable through DART's unified IO front door so a
-researcher can drop a USD asset into an experimental World and visualize it
+researcher can drop a USD asset into a DART 7 World and visualize it
 through the maintained Filament renderer, with parity to the existing URDF /
 SDF / MJCF / SKEL paths.
 
@@ -32,15 +31,15 @@ SDF / MJCF / SKEL paths.
 ## Key Decisions
 
 - **Front door**: extend `dart::io::ModelFormat` with `Usd` and route reads
-  through `dart::io::readWorld` / `readSkeleton`, mirroring SDF / URDF / MJCF.
-  Do not create a parallel `dart::utils::UsdParser` namespace as the prototype
-  did.
+  through DART 7 loaders instead of restoring the retired public
+  `dart::io::readWorld` API. Do not create a parallel `dart::utils::UsdParser`
+  namespace as the prototype did.
 - **Naming**: snake_case headers under `dart/io/usd/` (e.g.
   `usd_parser.{cpp,hpp}`), per `docs/onboarding/code-style.md` and the
   completed snake_case migration. The prototype's PascalCase paths
   (`dart/utils/usd/UsdParser.{cpp,hpp}`) predate the migration.
-- **World target**: bind first against the experimental World
-  (`dart/simulation/experimental/`, PLAN-050) so the loader co-evolves with
+- **World target**: bind first against the DART 7 World
+  (`dart/simulation/`, PLAN-050) so the loader co-evolves with
   the new shape/loader APIs. The legacy `dart::simulation::World` does not
   need a USD path.
 - **Viewer example**: build the example against the dartsim engine + Filament
@@ -87,9 +86,9 @@ Files of interest in the prototype: `dart/utils/usd/UsdParser.{cpp,hpp}`,
 
 1. Land this dev-task folder so the work is discoverable.
 2. When a contributor or agent picks Phase 1 up, fork a fresh branch off
-   `main`, port the parser surface into `dart/io/usd/` under the unified
-   `readWorld` / `readSkeleton` API, and adapt the sample data and tests to
-   the snake_case + experimental-World layout.
+   `main`, port the parser surface into `dart/io/usd/` under the DART 7
+   model-loading API, and adapt the sample data and tests to the snake_case +
+   DART 7 World layout.
 
 ## Verification Gates
 

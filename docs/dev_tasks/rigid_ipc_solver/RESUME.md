@@ -1191,7 +1191,7 @@ No push or PR mutation has been made from this slice.
 Delivered a bounded fixture/runtime helper slice for Phases 1 and 5:
 
 - Added `populateAndStepRigidIpcReplayWorld(...)` in the internal rigid IPC
-  fixture module. The helper populates an experimental `World`, applies parsed
+  fixture module. The helper populates an DART 7 `World`, applies parsed
   fixture solver metadata to the supplied `RigidIpcContactStageOptions`, runs
   exactly one opt-in `RigidIpcContactStage` step, and can return the resulting
   `RigidIpcSolverStats`.
@@ -1411,7 +1411,7 @@ is now merged to `main` via PR #2777). Delivered, each built + verified +
 committed:
 
 - **Paper-parity C++ experiment suite**
-  (`tests/unit/simulation/experimental/contact/test_rigid_ipc_paper_experiments.cpp`).
+  (`tests/unit/simulation/contact/test_rigid_ipc_paper_experiments.cpp`).
   Encodes the rigid-ipc paper figures the free-body stage can express, asserting
   the two IPC invariants (intersection-free + Coulomb threshold):
   - Fig. 18 high-school friction test via tilted gravity over flat ground
@@ -1493,22 +1493,22 @@ slice added the first internal 3D rigid curved-trajectory ACCD query for
 face-vertex, edge-edge, and point-edge primitives, plus rotational regressions
 where endpoint-linear primitive CCD misses a mid-step contact and first
 minimum-separation regressions. The latest slice added the first internal
-fixture replay path that populates an experimental `World` with body state and
+fixture replay path that populates an DART 7 `World` with body state and
 preserves mesh/fixed-DOF/kinematic metadata. The newest slice added
-experimental mesh collision shapes, OBJ/OFF/MSH/STL fixture mesh loading, native
+DART 7 mesh collision shapes, OBJ/OFF/MSH/STL fixture mesh loading, native
 collision mapping, and fixture replay regressions proving loaded mesh bodies
 participate in `World::collide()`. The newest slice preserves inline
 `vertices`/`edges`/`polygons`, applies fixture torque during replay, replays
 polygonal inline geometry as native-backed mesh collision shapes, and adds
 rigid-ipc MSH surface mesh replay for comparison corpus assets. The latest
 fixture slice imports the upstream IPC comparison `.txt` shape-row subset and
-replays MSH-backed comparison rows into an experimental `World`; path-loaded
+replays MSH-backed comparison rows into an DART 7 `World`; path-loaded
 scripts now remember their source directory so upstream relative mesh paths can
 replay without an explicit `assetRoot`. The newest importer slice preserves
 comparison-script material Young/Poisson values plus energy model, warm-start,
 self-collision, and gravity-disable metadata. It also adds the first runtime
 replay regression that enters simulation mode and steps a fixture-populated
-experimental `World` through the default sequential-impulse policy, verifying
+DART 7 `World` through the default sequential-impulse policy, verifying
 fixture replay does not silently select IPC solver behavior. Opt-in IPC stepping
 is now routed through `WorldOptions::rigidBodySolver` /
 `RigidBodySolver::Ipc`. The latest CCD slice embeds
@@ -1771,8 +1771,8 @@ remain open fallback slices.
   not expose solver registries, ECS storage, external project names as solver
   selectors, or GPU resources in public API.
 - The importer currently lives in
-  `dart/simulation/experimental/io/detail/rigid_ipc_fixture.*` and is covered
-  by `tests/unit/simulation/experimental/io/test_rigid_ipc_fixture.cpp`.
+  `dart/simulation/io/detail/rigid_ipc_fixture.*` and is covered
+  by `tests/unit/simulation/io/test_rigid_ipc_fixture.cpp`.
 - `populateRigidIpcReplayWorld()` is an internal bridge only: it creates
   experimental `RigidBody` entries, preserves fixture metadata, and attaches
   supported OBJ, OFF, rigid-ipc MSH, binary STL, ASCII STL, and polygonal inline
@@ -1792,14 +1792,14 @@ remain open fallback slices.
   upstream comparison corpus layout while preserving the explicit override path
   for tests and generated fixtures.
 - The first runtime replay regression uses inline mesh geometry, a force, and
-  gravity to populate an experimental `World`, enter simulation mode, take one
+  gravity to populate an DART 7 `World`, enter simulation mode, take one
   default `World::step()`, and assert the ordinary rigid-body velocity/position
   integration result. This is intentionally not a public example yet because the
   importer still lives under `io::detail`.
 - Direct CCD rows currently cover the upstream `ee`, `ev`, and `fv` schemas as
   data records and can be replayed through the internal subdivision-backed
   curved CCD dispatcher. The first rigid curved-trajectory query lives in
-  `dart/simulation/experimental/detail/rigid_ipc_ccd.*` and is intentionally
+  `dart/simulation/detail/rigid_ipc_ccd.*` and is intentionally
   internal.
 - The first root direct CCD rows from the audited upstream corpus are covered as
   parser/topology and full-step miss regressions. Do not mark them complete in
@@ -1814,13 +1814,13 @@ remain open fallback slices.
   point-edge cases where endpoint-linear primitive CCD sees unchanged endpoints,
   but the rigid curved trajectory hits within the step.
 - The first rigid barrier scaffold lives in
-  `dart/simulation/experimental/detail/rigid_ipc_barrier.*` and is covered by
-  `tests/unit/simulation/experimental/contact/test_rigid_ipc_barrier.cpp`. It
+  `dart/simulation/detail/rigid_ipc_barrier.*` and is covered by
+  `tests/unit/simulation/contact/test_rigid_ipc_barrier.cpp`. It
   returns world-primitive barrier derivatives after rigid pose interpolation and
   now has local two-body reduced-coordinate derivatives for face-vertex and
   edge-edge terms. The local barrier primitive set also includes edge-vertex
   and vertex-vertex terms via shared point-edge/point-point kernels in
-  `dart/simulation/experimental/detail/deformable_contact/barrier_kernel.hpp`.
+  `dart/simulation/detail/deformable_contact/barrier_kernel.hpp`.
   The same module now assembles cross-body surface constraints into active row
   records, global dynamic-body gradients, and sparse PSD-projected Hessians.
   It also computes the first conservative line-search bound over matching

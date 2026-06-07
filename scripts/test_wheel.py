@@ -121,34 +121,34 @@ for module_name in core_modules:
         module = getattr(dartpy, module_name)
         print(f'  ✓ dartpy.{module_name}')
         if module_name == 'gui':
-            has_scene_api = hasattr(module, 'extract_renderables')
+            has_scene_api = hasattr(module, 'WorldRenderBridge')
             scene_marker = '✓' if has_scene_api else '✗'
             scene_detail = 'scene API available' if has_scene_api else 'scene API missing'
             print(f'    {scene_marker} dartpy.gui scene API ({scene_detail})')
             if not has_scene_api:
-                failed.append('gui.extract_renderables')
+                failed.append('gui.WorldRenderBridge')
             else:
                 import numpy as np
 
-                # The Filament scene API renders the classic render world
-                # (dartpy.gui.RenderWorld); dartpy.World is the ECS facade.
-                world = dartpy.gui.RenderWorld('wheel_gui')
-                skeleton = dartpy.Skeleton('robot')
-                _, body = skeleton.create_free_joint_and_body_node_pair()
-                shape = dartpy.BoxShape(np.array([1.0, 1.0, 1.0]))
-                shape_node = body.create_shape_node(shape)
-                shape_node.create_visual_aspect()
-                world.add_skeleton(skeleton)
+                world = dartpy.World()
+                body = world.add_rigid_body('wheel_gui_body')
+                bridge = module.WorldRenderBridge(world, name='wheel_gui')
+                bridge.add_rigid_body_visual(
+                    body,
+                    dartpy.BoxShape(np.array([1.0, 1.0, 1.0])),
+                    (0.2, 0.4, 0.8),
+                    name='wheel_gui_box',
+                )
 
-                renderables = module.extract_renderables(world)
+                renderables = bridge.renderable_provider()
                 if len(renderables) != 1:
                     raise AssertionError(
-                        'dartpy.gui.extract_renderables returned '
+                        'dartpy.gui.WorldRenderBridge returned '
                         f'{len(renderables)} renderables, expected 1'
                     )
                 if renderables[0].geometry.kind != module.ShapeKind.Box:
                     raise AssertionError(
-                        'dartpy.gui.extract_renderables did not preserve '
+                        'dartpy.gui.WorldRenderBridge did not preserve '
                         'the Box shape descriptor'
                     )
                 print('    ✓ dartpy.gui scene smoke')

@@ -714,7 +714,7 @@ when nothing is pending, any check fails, or the head SHA moves.
 - Local validation passes on the current head for draft-ready state: default
   `pixi run test-all`, plus `pixi run -e cuda test-all` on Linux CUDA hosts
 - All required CI checks pass for merge-ready state
-- Pre-existing failures (e.g., `simulation-experimental` "Not Run") can be ignored
+- Pre-existing failures (e.g., `simulation` "Not Run") can be ignored
 
 ---
 

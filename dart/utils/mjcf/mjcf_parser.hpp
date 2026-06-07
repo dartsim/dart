@@ -35,8 +35,6 @@
 
 #include <dart/utils/export.hpp>
 
-#include <dart/simulation/world.hpp>
-
 #include <dart/common/local_resource_retriever.hpp>
 #include <dart/common/uri.hpp>
 
@@ -64,17 +62,6 @@ struct DART_UTILS_API Options
       std::string_view geomSkeletonNamePrefix = "__geom_skel__",
       std::string_view siteSkeletonNamePrefix = "__site_skel__");
 };
-
-/// Reads World from MJCF model file
-///
-/// @param[in] uri URI to the XML file
-/// @param[in] retrieverOrNull Retriever to acquire the XML file from @c uri
-/// @return Parsed world.
-///
-/// @warning This MJCF model parser is experimental and not complete
-/// implementation of the spec.
-simulation::WorldPtr DART_UTILS_API
-readWorld(const common::Uri& uri, const Options& options = Options());
 
 } // namespace MjcfParser
 } // namespace utils

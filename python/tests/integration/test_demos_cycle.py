@@ -15,6 +15,7 @@ import pathlib
 import signal
 import sys
 import time
+from typing import Any
 
 # Put python/ on sys.path so the demos package is importable.
 _PYTHON_DIR = pathlib.Path(__file__).resolve().parents[2]
@@ -41,10 +42,8 @@ def _capture_py_demo_module():
 def _gui_run_demos_available() -> bool:
     """True when the dartpy Filament viewer entry point is built.
 
-    Reduced builds disable the GUI (for example the macOS arm64 CI job builds
-    with ``DART_BUILD_SIMULATION_EXPERIMENTAL=OFF``, and the GUI depends on the
-    experimental target). Without the viewer the runner returns early, so tests
-    that exercise the cycle/screenshot paths skip in that configuration.
+    Non-GUI builds omit the viewer. Without the viewer the runner returns early,
+    so tests that exercise the cycle/screenshot paths skip in that configuration.
     """
 
     try:
@@ -52,6 +51,32 @@ def _gui_run_demos_available() -> bool:
     except Exception:  # pragma: no cover - dartpy import failure
         return False
     return hasattr(dart, "gui") and hasattr(dart.gui, "run_demos")
+
+
+def _make_box_scene_setup(
+    dart: Any,
+    scene_setup_type: type,
+    *,
+    name: str,
+    frame_name: str,
+    color: tuple[float, float, float] = (0.2, 0.7, 0.9),
+    pre_step=None,
+    visible: bool = True,
+):
+    import numpy as np
+
+    scene = dart.gui.DescriptorRenderScene(dart.World(), name)
+    scene.set_time_step(0.001)
+    if visible:
+        frame = dart.SimpleFrame(dart.gui.world_render_frame(), frame_name)
+        frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
+        frame.create_visual_aspect().set_color(list(color))
+        scene.add_simple_frame(frame)
+    return scene_setup_type(
+        world=scene,
+        pre_step=pre_step,
+        renderable_provider=scene.renderable_provider,
+    )
 
 
 def _read_ppm(path: pathlib.Path) -> tuple[int, int, bytes]:
@@ -85,22 +110,22 @@ def _mean_luminance(
     return total / count
 
 
-def _simulation_experimental_has(*names: str) -> bool:
+def _simulation_has(*names: str) -> bool:
     try:
         import dartpy as sx
-    except Exception:  # pragma: no cover - reduced build without the submodule
+    except Exception:  # pragma: no cover - dartpy import failure
         return False
     return all(hasattr(sx, name) for name in names)
 
 
-def _require_simulation_experimental_symbols(*names: str):
+def _require_simulation_symbols(*names: str):
     try:
         import dartpy as sx
-    except Exception as exc:  # pragma: no cover - reduced build without submodule
+    except Exception as exc:  # pragma: no cover - dartpy import failure
         pytest.skip(f"dartpy unavailable: {exc}")
     missing = [name for name in names if not hasattr(sx, name)]
     if missing:
-        formatted = ", ".join(f"simulation_experimental.{name}" for name in missing)
+        formatted = ", ".join(f"dartpy.{name}" for name in missing)
         pytest.skip(f"{formatted} unavailable in this build")
     return sx
 
@@ -108,12 +133,11 @@ def _require_simulation_experimental_symbols(*names: str):
 def _deformable_bindings_available() -> bool:
     """True when the experimental deformable bindings are compiled in.
 
-    Builds with ``DART_BUILD_SIMULATION_EXPERIMENTAL=OFF`` ship a reduced
-    ``dartpy`` without the deformable types, so the
-    solver-free grid-builder check skips there rather than erroring.
+    Some Python builds can omit the deformable types, so the solver-free
+    grid-builder check skips there rather than erroring.
     """
 
-    return _simulation_experimental_has("DeformableBodyOptions")
+    return _simulation_has("DeformableBodyOptions")
 
 
 def test_registry_has_scenes() -> None:
@@ -130,16 +154,8 @@ def test_registry_has_scenes() -> None:
 def test_runner_cycle_returns_zero() -> None:
     if not _gui_run_demos_available():
         pytest.skip("dartpy.gui.run_demos unavailable (GUI not built)")
-    if not _simulation_experimental_has("World"):
-        # The pruned catalog is World-only, so every scene's factory needs the
-        # experimental World binding. Builds with
-        # DART_BUILD_SIMULATION_EXPERIMENTAL=OFF still ship the GUI runner but no
-        # World, leaving no scene to render (and no prior scene to fall back to),
-        # so the cycle can only skip here rather than exercise the runner.
-        pytest.skip(
-            "simulation_experimental.World unavailable "
-            "(experimental simulation disabled in this build)"
-        )
+    if not _simulation_has("World"):
+        pytest.skip("dartpy.World unavailable in this build")
     rc = run(["--cycle-scenes", "--frames", "2", "--headless"], make_demo_scenes())
     assert rc == 0
 
@@ -166,10 +182,7 @@ def test_ipc_deformable_grid_builder_topology() -> None:
     """
 
     if not _deformable_bindings_available():
-        pytest.skip(
-            "DeformableBodyOptions unavailable "
-            "(experimental simulation disabled in this build)"
-        )
+        pytest.skip("dartpy.DeformableBodyOptions unavailable in this build")
 
     from examples.demos._ipc_deformable_bridge import build_grid_options
 
@@ -215,7 +228,7 @@ def test_ipc_deformable_fem_self_contact_activates_under_compression() -> None:
     solve staying finite. Verified through the solver-diagnostics snapshot.
     """
 
-    sx = _require_simulation_experimental_symbols(
+    sx = _require_simulation_symbols(
         "DeformableBodyOptions",
         "DeformableDirichletBoundaryCondition",
         "DeformableTetrahedron",
@@ -270,7 +283,7 @@ def test_ipc_deformable_obj_cloth_loads_and_drapes() -> None:
     """
 
     # The importer round-trips the bundled mesh into a usable surface.
-    sx = _require_simulation_experimental_symbols("load_obj_triangle_mesh", "World")
+    sx = _require_simulation_symbols("load_obj_triangle_mesh", "World")
     import numpy as np
     from examples.demos.scenes.ipc_deformable_obj_cloth import _CLOTH_PATH, build
 
@@ -303,7 +316,7 @@ def test_ipc_deformable_cloth_drapes_over_capsule_rod_without_penetrating() -> N
     sphere/box settle tests, verified by the analytic point-to-segment distance.
     """
 
-    _require_simulation_experimental_symbols("load_obj_triangle_mesh", "World")
+    _require_simulation_symbols("load_obj_triangle_mesh", "World")
 
     import numpy as np
 
@@ -346,7 +359,7 @@ def test_ipc_deformable_rod_friction_decelerates_sliding_strip() -> None:
     slides measurably less with friction than without, while staying on the rod.
     """
 
-    _require_simulation_experimental_symbols(
+    _require_simulation_symbols(
         "CollisionShape",
         "DeformableBodyOptions",
         "DeformableEdge",
@@ -393,7 +406,7 @@ def test_ipc_deformable_barrier_only_box_friction_decelerates_strip() -> None:
     the CCD-free path to box/sphere obstacle friction.
     """
 
-    _require_simulation_experimental_symbols(
+    _require_simulation_symbols(
         "CollisionShape",
         "DeformableBodyOptions",
         "DeformableEdge",
@@ -440,7 +453,7 @@ def test_ipc_deformable_seg_and_pt_importers_feed_solves() -> None:
     the ground barrier without tunneling through it -- both staying finite.
     """
 
-    _require_simulation_experimental_symbols(
+    _require_simulation_symbols(
         "load_point_set",
         "load_seg_line_mesh",
         "World",
@@ -590,7 +603,7 @@ def test_world_scenes_use_solver_focused_categories() -> None:
 def test_avbd_fixed_joint_contact_demo_exercises_contact_path() -> None:
     import numpy as np
 
-    _require_simulation_experimental_symbols("World")
+    _require_simulation_symbols("World")
 
     from examples.demos.scenes.avbd_rigid_fixed_joint_contact import build
 
@@ -629,7 +642,7 @@ def test_avbd_fixed_joint_contact_demo_exercises_contact_path() -> None:
 def test_avbd_revolute_motor_demo_drives_hinge() -> None:
     import numpy as np
 
-    sx = _require_simulation_experimental_symbols("World", "ActuatorType")
+    sx = _require_simulation_symbols("World", "ActuatorType")
 
     from examples.demos.scenes.avbd_rigid_revolute_motor import build
 
@@ -642,15 +655,15 @@ def test_avbd_revolute_motor_demo_drives_hinge() -> None:
 
     assert sx_world.num_rigid_body_joints == 1
     assert joint.actuator_type == sx.ActuatorType.VELOCITY
-    assert np.asarray(joint.command_velocity, dtype=float).reshape(1)[0] == pytest.approx(
-        target_speed
-    )
-    assert np.asarray(joint.effort_lower_limits, dtype=float).reshape(1)[0] == pytest.approx(
-        -max_torque
-    )
-    assert np.asarray(joint.effort_upper_limits, dtype=float).reshape(1)[0] == pytest.approx(
-        max_torque
-    )
+    assert np.asarray(joint.command_velocity, dtype=float).reshape(1)[
+        0
+    ] == pytest.approx(target_speed)
+    assert np.asarray(joint.effort_lower_limits, dtype=float).reshape(1)[
+        0
+    ] == pytest.approx(-max_torque)
+    assert np.asarray(joint.effort_upper_limits, dtype=float).reshape(1)[
+        0
+    ] == pytest.approx(max_torque)
 
     initial_speed = float(np.asarray(rotor.angular_velocity, dtype=float).reshape(3)[2])
     for _ in range(40):
@@ -668,7 +681,7 @@ def test_avbd_revolute_motor_demo_drives_hinge() -> None:
 def test_avbd_breakable_joint_demo_marks_joint_broken() -> None:
     import numpy as np
 
-    _require_simulation_experimental_symbols("World")
+    _require_simulation_symbols("World")
 
     from examples.demos.scenes.avbd_rigid_breakable_joint import build
 
@@ -740,7 +753,6 @@ def test_show_ui_uses_docked_workspace_regions(
         pytest.skip("dartpy.gui.run_demos unavailable (GUI not built)")
 
     import dartpy as dart
-    import numpy as np
     from examples.demos.runner import PythonDemoScene, ScenePanel, SceneSetup
 
     if not getattr(dart.gui, "is_docking_available", lambda: False)():
@@ -750,17 +762,15 @@ def test_show_ui_uses_docked_workspace_regions(
     monkeypatch.setenv("MESA_LOADER_DRIVER_OVERRIDE", "llvmpipe")
 
     def build_scene() -> SceneSetup:
-        world = dart.gui.RenderWorld("docked_smoke")
-        world.set_time_step(0.001)
-        frame = dart.SimpleFrame(dart.gui.world_render_frame(), "box")
-        frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
-        frame.create_visual_aspect().set_color([0.2, 0.7, 0.9])
-        world.add_simple_frame(frame)
         panel = ScenePanel(
             "Controls",
             lambda builder, _context: builder.text("dock smoke"),
         )
-        return SceneSetup(world=world, panels=[panel])
+        setup = _make_box_scene_setup(
+            dart, SceneSetup, name="docked_smoke", frame_name="box"
+        )
+        setup.panels.append(panel)
+        return setup
 
     out = tmp_path / "docked.ppm"
     rc = run(
@@ -818,9 +828,7 @@ def test_py_demo_capture_records_ui_force_drag_artifacts(
 
     if not getattr(dart.gui, "is_docking_available", lambda: False)():
         pytest.skip("GUI build does not include ImGui docking support")
-    _require_simulation_experimental_symbols(
-        "World", "RigidBodySolver", "CollisionShape"
-    )
+    _require_simulation_symbols("World", "RigidBodySolver", "CollisionShape")
 
     monkeypatch.setenv("LIBGL_ALWAYS_SOFTWARE", "1")
     monkeypatch.setenv("MESA_LOADER_DRIVER_OVERRIDE", "llvmpipe")
@@ -881,17 +889,12 @@ def test_scripted_demo_switch_restores_previous_scene_on_factory_error(
         pytest.skip("dartpy.gui.run_demos unavailable (GUI not built)")
 
     import dartpy as dart
-    import numpy as np
     from examples.demos.runner import PythonDemoScene, SceneSetup
 
     def build_good() -> SceneSetup:
-        world = dart.gui.RenderWorld("good")
-        world.set_time_step(0.001)
-        frame = dart.SimpleFrame(dart.gui.world_render_frame(), "good_box")
-        frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
-        frame.create_visual_aspect().set_color([0.2, 0.7, 0.9])
-        world.add_simple_frame(frame)
-        return SceneSetup(world=world)
+        return _make_box_scene_setup(
+            dart, SceneSetup, name="good", frame_name="good_box"
+        )
 
     def build_broken() -> SceneSetup:
         raise RuntimeError("intentional scripted switch failure")
@@ -951,7 +954,6 @@ def test_scripted_demo_switch_restores_previous_scene_on_startup_timeout(
         pytest.skip("dartpy.gui.run_demos unavailable (GUI not built)")
 
     import dartpy as dart
-    import numpy as np
     from examples.demos.runner import PythonDemoScene, SceneSetup
 
     good_setup: SceneSetup | None = None
@@ -960,20 +962,16 @@ def test_scripted_demo_switch_restores_previous_scene_on_startup_timeout(
         nonlocal good_setup
         if good_setup is not None:
             return good_setup
-        world = dart.gui.RenderWorld("good")
-        world.set_time_step(0.001)
-        frame = dart.SimpleFrame(dart.gui.world_render_frame(), "good_box")
-        frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
-        frame.create_visual_aspect().set_color([0.2, 0.7, 0.9])
-        world.add_simple_frame(frame)
-        good_setup = SceneSetup(world=world)
+        good_setup = _make_box_scene_setup(
+            dart, SceneSetup, name="good", frame_name="good_box"
+        )
         return good_setup
 
     def build_slow() -> SceneSetup:
         time.sleep(0.25)
-        world = dart.gui.RenderWorld("slow")
-        world.set_time_step(0.001)
-        return SceneSetup(world=world)
+        return _make_box_scene_setup(
+            dart, SceneSetup, name="slow", frame_name="slow_box", visible=False
+        )
 
     monkeypatch.setenv("DART_PY_DEMO_SCENE_BUILD_TIMEOUT_MS", "10")
     monkeypatch.setenv("DART_DEMO_SCENE_STARTUP_TIMEOUT_MS", "100")
@@ -1039,22 +1037,17 @@ def test_scripted_demo_switch_restores_previous_scene_on_render_state_failure(
         pytest.skip("dartpy.gui.run_demos unavailable (GUI not built)")
 
     import dartpy as dart
-    import numpy as np
     from examples.demos.runner import PythonDemoScene, SceneSetup
 
     def build_good() -> SceneSetup:
-        world = dart.gui.RenderWorld("good")
-        world.set_time_step(0.001)
-        frame = dart.SimpleFrame(dart.gui.world_render_frame(), "good_box")
-        frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
-        frame.create_visual_aspect().set_color([0.2, 0.7, 0.9])
-        world.add_simple_frame(frame)
-        return SceneSetup(world=world)
+        return _make_box_scene_setup(
+            dart, SceneSetup, name="good", frame_name="good_box"
+        )
 
     def build_empty() -> SceneSetup:
-        world = dart.gui.RenderWorld("empty")
-        world.set_time_step(0.001)
-        return SceneSetup(world=world)
+        return _make_box_scene_setup(
+            dart, SceneSetup, name="empty", frame_name="empty_box", visible=False
+        )
 
     events = tmp_path / "events.jsonl"
     screenshot = tmp_path / "snap.ppm"
@@ -1121,23 +1114,18 @@ def test_scripted_demo_switch_restores_previous_scene_when_python_factory_stalls
         pytest.skip("dartpy.gui.run_demos unavailable (GUI not built)")
 
     import dartpy as dart
-    import numpy as np
     from examples.demos.runner import PythonDemoScene, SceneSetup
 
     def build_good() -> SceneSetup:
-        world = dart.gui.RenderWorld("good")
-        world.set_time_step(0.001)
-        frame = dart.SimpleFrame(dart.gui.world_render_frame(), "good_box")
-        frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
-        frame.create_visual_aspect().set_color([0.2, 0.7, 0.9])
-        world.add_simple_frame(frame)
-        return SceneSetup(world=world)
+        return _make_box_scene_setup(
+            dart, SceneSetup, name="good", frame_name="good_box"
+        )
 
     def build_stalled() -> SceneSetup:
         time.sleep(60.0)
-        world = dart.gui.RenderWorld("stalled")
-        world.set_time_step(0.001)
-        return SceneSetup(world=world)
+        return _make_box_scene_setup(
+            dart, SceneSetup, name="stalled", frame_name="stalled_box", visible=False
+        )
 
     monkeypatch.delenv("DART_PY_DEMO_SCENE_BUILD_TIMEOUT_MS", raising=False)
     monkeypatch.setenv("DART_DEMO_SCENE_STARTUP_TIMEOUT_MS", "10")
@@ -1209,30 +1197,25 @@ def test_scripted_demo_switch_restores_previous_scene_when_python_pre_step_stall
         pytest.skip("dartpy.gui.run_demos unavailable (GUI not built)")
 
     import dartpy as dart
-    import numpy as np
     from examples.demos.runner import PythonDemoScene, SceneSetup
 
     def build_good() -> SceneSetup:
-        world = dart.gui.RenderWorld("good")
-        world.set_time_step(0.001)
-        frame = dart.SimpleFrame(dart.gui.world_render_frame(), "good_box")
-        frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
-        frame.create_visual_aspect().set_color([0.2, 0.7, 0.9])
-        world.add_simple_frame(frame)
-        return SceneSetup(world=world)
+        return _make_box_scene_setup(
+            dart, SceneSetup, name="good", frame_name="good_box"
+        )
 
     def build_stalled_step() -> SceneSetup:
-        world = dart.gui.RenderWorld("stalled_step")
-        world.set_time_step(0.001)
-        frame = dart.SimpleFrame(dart.gui.world_render_frame(), "stalled_box")
-        frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
-        frame.create_visual_aspect().set_color([0.8, 0.3, 0.2])
-        world.add_simple_frame(frame)
-
         def pre_step() -> None:
             time.sleep(60.0)
 
-        return SceneSetup(world=world, pre_step=pre_step)
+        return _make_box_scene_setup(
+            dart,
+            SceneSetup,
+            name="stalled_step",
+            frame_name="stalled_box",
+            color=(0.8, 0.3, 0.2),
+            pre_step=pre_step,
+        )
 
     monkeypatch.delenv("DART_PY_DEMO_SCENE_BUILD_TIMEOUT_MS", raising=False)
     monkeypatch.setenv("DART_DEMO_SCENE_STARTUP_TIMEOUT_MS", "10")
@@ -1297,30 +1280,25 @@ def test_scripted_demo_switch_restores_previous_scene_on_slow_first_frame(
         pytest.skip("dartpy.gui.run_demos unavailable (GUI not built)")
 
     import dartpy as dart
-    import numpy as np
     from examples.demos.runner import PythonDemoScene, SceneSetup
 
     def build_good() -> SceneSetup:
-        world = dart.gui.RenderWorld("good")
-        world.set_time_step(0.001)
-        frame = dart.SimpleFrame(dart.gui.world_render_frame(), "good_box")
-        frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
-        frame.create_visual_aspect().set_color([0.2, 0.7, 0.9])
-        world.add_simple_frame(frame)
-        return SceneSetup(world=world)
+        return _make_box_scene_setup(
+            dart, SceneSetup, name="good", frame_name="good_box"
+        )
 
     def build_slow_step() -> SceneSetup:
-        world = dart.gui.RenderWorld("slow_step")
-        world.set_time_step(0.001)
-        frame = dart.SimpleFrame(dart.gui.world_render_frame(), "slow_box")
-        frame.set_shape(dart.BoxShape(np.array([0.2, 0.2, 0.2])))
-        frame.create_visual_aspect().set_color([0.8, 0.3, 0.2])
-        world.add_simple_frame(frame)
-
         def pre_step() -> None:
             time.sleep(0.25)
 
-        return SceneSetup(world=world, pre_step=pre_step)
+        return _make_box_scene_setup(
+            dart,
+            SceneSetup,
+            name="slow_step",
+            frame_name="slow_box",
+            color=(0.8, 0.3, 0.2),
+            pre_step=pre_step,
+        )
 
     monkeypatch.setenv("DART_PY_DEMO_SCENE_BUILD_TIMEOUT_MS", "0")
     monkeypatch.setenv("DART_DEMO_SCENE_STARTUP_TIMEOUT_MS", "100")

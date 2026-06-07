@@ -30,7 +30,7 @@ Do not build application code against:
 
 * headers or namespaces named ``detail`` or ``internal``;
 * implementation headers such as ``*-impl.hpp``;
-* experimental component storage under ``dart/simulation/experimental/comps``;
+* component storage under ``dart/simulation/comps``;
 * backend adapters that are not documented extension points.
 
 These names exist so DART can change implementation strategy, reduce

@@ -1,4 +1,4 @@
-"""AVBD revolute-motor scene for the experimental World facade."""
+"""AVBD revolute-motor scene for the DART 7 World facade."""
 
 from __future__ import annotations
 

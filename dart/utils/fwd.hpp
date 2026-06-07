@@ -39,7 +39,6 @@ namespace utils {
 class CompositeResourceRetriever;
 class DartResourceRetriever;
 class FileInfoDof;
-class FileInfoWorld;
 class PackageResourceRetriever;
 class UrdfParser;
 

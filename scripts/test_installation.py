@@ -53,7 +53,7 @@ def test_basic_functionality():
 
         print(
             "✗ dartpy.World is missing; dartpy wheels must include the "
-            "experimental simulation module"
+            "DART 7 simulation module"
         )
         return False
     except ImportError as e:

@@ -39,8 +39,6 @@
 #include <dart/gui/panel.hpp>
 #include <dart/gui/scene.hpp>
 
-#include <dart/simulation/fwd.hpp>
-
 #include <dart/dynamics/fwd.hpp>
 
 #include <Eigen/Core>
@@ -69,7 +67,6 @@ struct IkHandle
 
 struct DartScene
 {
-  dart::simulation::WorldPtr world;
   std::vector<IkHandle> ikHandles;
   std::vector<dart::gui::Gizmo> gizmos;
   std::function<std::vector<dart::gui::DebugLabelDescriptor>()> debugLabels;
@@ -77,7 +74,10 @@ struct DartScene
   std::vector<dart::gui::KeyboardAction> keyboardActions;
   std::function<void()> preStep;
   std::function<void()> postStep;
-  bool simulateWorld = true;
+  double timeStep = 1.0 / 60.0;
+  double time = 0.0;
+  std::size_t contactCount = 0u;
+  bool advanceSimulation = true;
   dart::gui::RenderSettings renderSettings;
   std::function<std::vector<dart::gui::RenderableDescriptor>()>
       renderableProvider;
@@ -128,12 +128,12 @@ enum class ExampleScene
 struct AppOptions
 {
   dart::gui::RunOptions run;
-  dart::simulation::WorldPtr world;
   std::function<void()> preStep;
   std::function<void()> postStep;
   std::function<void()> preRender;
   std::function<void()> postRender;
-  bool simulateWorld = true;
+  double timeStep = 1.0 / 60.0;
+  bool advanceSimulation = true;
   std::optional<dart::gui::OrbitCamera> camera;
   std::function<dart::gui::OrbitCameraControlOptions()> cameraControlsProvider;
   std::function<bool(dart::gui::OrbitCamera&)> cameraUpdater;
@@ -370,6 +370,9 @@ AppOptions parseOptions(
     const std::optional<dart::gui::RunOptions>& runDefaults = std::nullopt);
 
 DartScene createDartScene(const AppOptions& options);
+
+std::vector<dart::gui::RenderableDescriptor> collectSceneRenderables(
+    const DartScene& scene);
 
 } // namespace dart::gui::detail
 

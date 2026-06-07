@@ -35,8 +35,6 @@
 
 #include <dart/utils/export.hpp>
 
-#include <dart/simulation/world.hpp>
-
 #include <dart/dynamics/skeleton.hpp>
 
 #include <dart/common/deprecated.hpp>
@@ -72,13 +70,6 @@ struct DART_UTILS_API Options
       common::ResourceRetrieverPtr resourceRetriever = nullptr,
       RootJointType defaultRootJointType = RootJointType::Floating);
 };
-
-simulation::WorldPtr DART_UTILS_API
-readWorld(const common::Uri& uri, const Options& options = Options());
-
-DART_DEPRECATED(6.12)
-simulation::WorldPtr DART_UTILS_API readWorld(
-    const common::Uri& uri, const common::ResourceRetrieverPtr& retriever);
 
 dynamics::SkeletonPtr DART_UTILS_API
 readSkeleton(const common::Uri& uri, const Options& options = Options());

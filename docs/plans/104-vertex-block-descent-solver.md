@@ -1,7 +1,7 @@
 # PLAN-104: Vertex Block Descent Solver
 
 - Operating state: `PLAN-104` in [`dashboard.md`](dashboard.md)
-- Outcome: the experimental `World` can step deformable bodies with a
+- Outcome: the DART 7 `World` can step deformable bodies with a
   DART-owned Vertex Block Descent (VBD) solver — a per-vertex, graph-colored
   block coordinate descent on the variational implicit-Euler objective — that
   matches the reference implementations for correctness and beats the reference
@@ -11,7 +11,7 @@
 - Current evidence:
   - PR #2705 provides the rigid-body solver surface, staged `WorldStepPipeline`,
     and the multi-solver architecture this plan extends.
-  - PR #2711 added experimental deformable body dynamics: the public
+  - PR #2711 added initial DART 7 deformable body dynamics: the public
     `DeformableBody` handle, the `comps::Deformable*` ECS components, the
     inertial-target/gravity/damping setup, and `DeformableDynamicsStage`, which
     minimizes the variational implicit-Euler objective with a global
@@ -27,8 +27,8 @@
 - Architecture rationale:
   [`../design/simulation_solver_architecture.md`](../design/simulation_solver_architecture.md)
 - Public facade:
-  [`../design/simulation_experimental_cpp_api.md`](../design/simulation_experimental_cpp_api.md),
-  [`../design/simulation_experimental_python_api.md`](../design/simulation_experimental_python_api.md)
+  [`../design/simulation_cpp_api.md`](../design/simulation_cpp_api.md),
+  [`../design/simulation_python_api.md`](../design/simulation_python_api.md)
 - Research references: [`../readthedocs/papers.md`](../readthedocs/papers.md)
   (`chen-2024-vbd`, `tinyvbd`, `gaia`, `ogc-2025`, `avbd-2025`).
 - VBD paper/reference gap audit:
@@ -135,7 +135,7 @@ the default. Named private revolute and prismatic point-joint configs now build
 arbitrary joint-axis bases, leave one rotational or translational axis free, and
 preserve axes/masks through World point-joint input and solve coverage.
 Simulation-entry current-pose initialization and extraction also cover private
-rigid-body ECS revolute/prismatic joint entities. Public experimental `World`
+rigid-body ECS revolute/prismatic joint entities. Public DART 7 `World`
 facades now expose rigid-body revolute and prismatic joints for free rigid
 bodies through C++ and dartpy, with generated stubs, focused C++/Python tests,
 and a categorized `sx_rigid_limited_joints` py-demo. The first AVBD rigid-constraint
@@ -169,7 +169,7 @@ visual evidence, and broad paper/reference benchmark packets remain open.
 ## Relationship To PLAN-081
 
 PLAN-081 (IPC) and PLAN-104 (VBD) both target robust deformable dynamics on the
-same experimental deformable ECS components and the same variational
+same DART 7 deformable ECS components and the same variational
 implicit-Euler objective. They differ in the inner solver: PLAN-081 pursues an
 implicit-barrier projected-Newton-style method; PLAN-104 pursues per-vertex
 block coordinate descent. VBD reuses the PLAN-081 `deformable_contact` kernels

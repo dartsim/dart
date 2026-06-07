@@ -31,20 +31,18 @@
 
 #include "scenes.hpp"
 
-#include <dart/simulation/experimental/body/collision_shape.hpp>
-#include <dart/simulation/experimental/body/deformable_body.hpp>
-#include <dart/simulation/experimental/body/rigid_body.hpp>
-#include <dart/simulation/experimental/body/rigid_body_options.hpp>
-#include <dart/simulation/experimental/comps/deformable_body.hpp>
-#include <dart/simulation/experimental/detail/world_registry_access.hpp>
-#include <dart/simulation/experimental/io/deformable_scene_io.hpp>
-#include <dart/simulation/experimental/world.hpp>
-
 #include <dart/gui/application.hpp>
 #include <dart/gui/panel.hpp>
 #include <dart/gui/renderable.hpp>
 #include <dart/gui/viewer.hpp>
 
+#include <dart/simulation/body/collision_shape.hpp>
+#include <dart/simulation/body/deformable_body.hpp>
+#include <dart/simulation/body/rigid_body.hpp>
+#include <dart/simulation/body/rigid_body_options.hpp>
+#include <dart/simulation/comps/deformable_body.hpp>
+#include <dart/simulation/detail/world_registry_access.hpp>
+#include <dart/simulation/io/deformable_scene_io.hpp>
 #include <dart/simulation/world.hpp>
 
 #include <dart/dynamics/box_shape.hpp>
@@ -76,9 +74,8 @@ namespace {
 
 namespace dynamics = dart::dynamics;
 namespace gui = dart::gui;
-namespace legacy_sim = dart::simulation;
-namespace sx = dart::simulation::experimental;
-namespace sxio = dart::simulation::experimental::io;
+namespace sx = dart::simulation;
+namespace sxio = dart::simulation::io;
 
 //==============================================================================
 Eigen::Vector4d rgba(double r, double g, double b, double a = 1.0)
@@ -121,9 +118,8 @@ struct LaunchOptions
 struct ExampleState
 {
   sx::World physicsWorld;
-  legacy_sim::WorldPtr renderWorld
-      = legacy_sim::World::create("world_deformable_gui");
   std::vector<DeformableVisual> deformables;
+  std::vector<dynamics::SimpleFramePtr> staticFrames;
   int stepsPerFrame = 2;
   bool showSurfaceMesh = true;
   bool showPointMasses = true;
@@ -188,7 +184,6 @@ struct ExampleState
     for (int i = 0; i < stepsPerFrame; ++i) {
       physicsWorld.step();
     }
-    renderWorld->setTime(physicsWorld.getTime());
     syncRenderFrames();
     writeDiagnostics();
   }
@@ -197,8 +192,6 @@ struct ExampleState
   {
     physicsWorld.setTime(0.0);
     diagnosticsFrameOffset = physicsWorld.getFrame();
-    renderWorld->reset();
-    renderWorld->setTime(0.0);
 
     for (auto& deformable : deformables) {
       for (std::size_t i = 0; i < deformable.initialPositions.size(); ++i) {
@@ -248,6 +241,30 @@ struct ExampleState
 
     return descriptors;
   }
+
+  std::vector<gui::RenderableDescriptor> makeRenderables() const
+  {
+    std::vector<gui::RenderableDescriptor> descriptors
+        = makeSurfaceRenderables();
+    for (const auto& frame : staticFrames) {
+      if (auto descriptor = gui::describeShapeFrame(*frame)) {
+        descriptors.push_back(*descriptor);
+      }
+    }
+    for (const auto& deformable : deformables) {
+      if (deformable.edgeFrame) {
+        if (auto descriptor = gui::describeShapeFrame(*deformable.edgeFrame)) {
+          descriptors.push_back(*descriptor);
+        }
+      }
+      for (const auto& frame : deformable.nodeFrames) {
+        if (auto descriptor = gui::describeShapeFrame(*frame)) {
+          descriptors.push_back(*descriptor);
+        }
+      }
+    }
+    return descriptors;
+  }
 };
 
 //==============================================================================
@@ -268,7 +285,7 @@ void addGround(ExampleState& state)
   frame->setShape(
       std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(4.8, 2.4, 0.08)));
   frame->getVisualAspect(true)->setRGBA(rgba(0.37, 0.40, 0.43));
-  state.renderWorld->addSimpleFrame(frame);
+  state.staticFrames.push_back(std::move(frame));
 }
 
 //==============================================================================
@@ -376,7 +393,6 @@ void appendDeformableVisual(
       dynamics::Frame::World(), std::string(name) + "_edges");
   edgeFrame->setShape(edgeShape);
   edgeFrame->getVisualAspect(true)->setRGBA(rgba(0.08, 0.13, 0.17));
-  state.renderWorld->addSimpleFrame(edgeFrame);
 
   std::vector<dynamics::SimpleFramePtr> nodeFrames;
   nodeFrames.reserve(visual.initialPositions.size());
@@ -391,7 +407,6 @@ void appendDeformableVisual(
     frame->getVisualAspect(true)->setRGBA(
         visual.fixed[i] != 0u ? rgba(0.95, 0.50, 0.16)
                               : rgba(0.12, 0.57, 0.91));
-    state.renderWorld->addSimpleFrame(frame);
     nodeFrames.push_back(std::move(frame));
   }
 
@@ -438,7 +453,7 @@ void addObstacleBox(ExampleState& state)
       dynamics::Frame::World(), "drape_obstacle_visual", makeTransform(center));
   frame->setShape(std::make_shared<dynamics::BoxShape>(2.0 * halfExtents));
   frame->getVisualAspect(true)->setRGBA(rgba(0.52, 0.45, 0.34));
-  state.renderWorld->addSimpleFrame(frame);
+  state.staticFrames.push_back(std::move(frame));
 }
 
 //==============================================================================
@@ -587,7 +602,7 @@ sx::DeformableBodyOptions makeVbdClothOptions(
 // is absent.
 void enableVbdSolver(sx::World& world, std::size_t iterations)
 {
-  auto& registry = dart::simulation::experimental::detail::registryOf(world);
+  auto& registry = dart::simulation::detail::registryOf(world);
   for (const auto entity : registry.view<sx::comps::DeformableBodyTag>()) {
     registry.emplace_or_replace<sx::comps::DeformableVbdConfig>(
         entity, sx::comps::DeformableVbdConfig{true, iterations, 0.0});
@@ -626,7 +641,6 @@ std::shared_ptr<ExampleState> makeExampleState(const LaunchOptions& launch)
 
   constexpr double timeStep = 1.0 / 120.0;
   state->physicsWorld.setTimeStep(timeStep);
-  state->renderWorld->setTimeStep(timeStep * state->stepsPerFrame);
 
   if (launch.scenePath.empty()) {
     if (launch.sceneKind == "vbd") {
@@ -644,8 +658,6 @@ std::shared_ptr<ExampleState> makeExampleState(const LaunchOptions& launch)
     }
   } else {
     addLoadedScene(*state, launch.scenePath);
-    state->renderWorld->setTimeStep(
-        state->physicsWorld.getTimeStep() * state->stepsPerFrame);
   }
 
   state->physicsWorld.enterSimulationMode();
@@ -775,16 +787,16 @@ dart::gui::ApplicationOptions makeDeformableBodyScene()
   (void)applyDeformableViewMode(state, launch.deformableView);
 
   gui::ApplicationOptions options;
-  options.world = state->renderWorld;
   options.camera = makeCamera();
-  options.simulateWorld = false;
+  options.advanceSimulation = false;
   options.preStep = [state]() {
     state->step();
   };
   options.panels.push_back(createControlsPanel(state));
   options.keyboardActions = createKeyboardActions(state);
   options.renderableProvider = [state]() {
-    return state->makeSurfaceRenderables();
+    state->syncRenderFrames();
+    return state->makeRenderables();
   };
   return options;
 }
@@ -800,16 +812,16 @@ dart::gui::ApplicationOptions makeVbdDeformableScene()
   (void)applyDeformableViewMode(state, launch.deformableView);
 
   gui::ApplicationOptions options;
-  options.world = state->renderWorld;
   options.camera = makeVbdCamera();
-  options.simulateWorld = false;
+  options.advanceSimulation = false;
   options.preStep = [state]() {
     state->step();
   };
   options.panels.push_back(createVbdControlsPanel(state));
   options.keyboardActions = createKeyboardActions(state);
   options.renderableProvider = [state]() {
-    return state->makeSurfaceRenderables();
+    state->syncRenderFrames();
+    return state->makeRenderables();
   };
   return options;
 }

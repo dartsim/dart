@@ -38,14 +38,14 @@ def test_dashboard_surface_runner_dry_run_lists_bounded_specs(tmp_path):
     )
 
     lines = result.stdout.strip().splitlines()
-    # One bounded command per curated DART 7 experimental-World surface.
+    # One bounded command per curated DART 7 World surface.
     assert len(lines) == 5
     assert all("scripts/run_cpp_benchmark.py" in line for line in lines)
     assert all("--benchmark_out_format=json" in line for line in lines)
     assert all("--benchmark_min_time=1ms" in line for line in lines)
     assert all("--benchmark_repetitions=3" in line for line in lines)
-    # Core experimental World step & scaling surface (bm_compute_graph).
-    assert "dashboard_experimental_world.json" in result.stdout
+    # Core DART 7 World step & scaling surface (bm_compute_graph).
+    assert "dashboard_world.json" in result.stdout
     assert "BM_WorldUpdateKinematics" in result.stdout
     assert "BM_WorldStep(Sequential|Parallel)/.*" in result.stdout
     assert "BM_RigidBodyStep(Sequential|Parallel)/.*" in result.stdout
@@ -76,7 +76,7 @@ def test_dashboard_surface_runner_can_select_specific_surfaces(tmp_path):
             sys.executable,
             str(SCRIPT),
             "--surface",
-            "experimental-world",
+            "world",
             "--output-dir",
             str(tmp_path),
             "--benchmark-min-time",
@@ -92,7 +92,7 @@ def test_dashboard_surface_runner_can_select_specific_surfaces(tmp_path):
 
     lines = result.stdout.strip().splitlines()
     assert len(lines) == 1
-    assert "dashboard_experimental_world.json" in result.stdout
+    assert "dashboard_world.json" in result.stdout
     assert "--benchmark_min_time=2ms" in result.stdout
     assert "--benchmark_repetitions=2" in result.stdout
 

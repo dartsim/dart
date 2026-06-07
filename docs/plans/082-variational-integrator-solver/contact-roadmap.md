@@ -78,7 +78,7 @@ bounded forces** are the cleanest way to hard, drift-free non-penetration +
 Coulomb friction without a global solve; the **IPC hard barrier** is the only
 intersection-free option but the highest risk inside an O(n) recursive VI.
 
-## Reusable vs. Adapter-Required (DART experimental IPC stack)
+## Reusable vs. Adapter-Required (DART 7 IPC stack)
 
 Reusable geometry (coordinate-agnostic, in `detail/deformable_contact/`):
 `barrier_kernel.hpp` (matches IPC's clamped log-barrier), `primitive_distance.hpp`,
@@ -145,7 +145,7 @@ ContactQuery built once per step from link geometry + a persistent broad phase;
 ### Design (reuse-first)
 
 1. **Persistent broad phase** — refit/advance an AABB sweep-and-prune across the
-   step instead of rebuilding; **reuse** the experimental IPC active-set
+   step instead of rebuilding; **reuse** the DART 7 IPC active-set
    sweep-and-prune (`#2770`).
 2. **Incremental narrow phase** — primitive distances at the trial config via
    the existing `detail/deformable_contact/primitive_distance.hpp`

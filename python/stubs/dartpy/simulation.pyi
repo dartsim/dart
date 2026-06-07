@@ -68,8 +68,6 @@ __all__: list[str] = [
     "WorldStepStageProfile",
     "WorldSyncStage",
     "add_skeleton",
-    "add_world",
-    "build_multibodies_from_world",
     "build_multibody_from_skeleton",
     "collect_deformable_scene_diagnostics",
     "is_accelerated_deformable_solve_available",
@@ -93,7 +91,6 @@ import numpy
 from numpy.typing import NDArray
 
 import dartpy.dynamics
-import dartpy.gui
 from dartpy import diff as diff
 
 
@@ -1902,8 +1899,6 @@ class SkeletonToMultibodyOptions:
 
 def build_multibody_from_skeleton(world: World, skeleton: dartpy.dynamics.Skeleton, options: SkeletonToMultibodyOptions = ...) -> Multibody: ...
 
-def build_multibodies_from_world(world: World, legacy_world: dartpy.gui.RenderWorld, options: SkeletonToMultibodyOptions = ...) -> list[Multibody]: ...
-
 @overload
 def add_skeleton(world: World, skeleton: dartpy.dynamics.Skeleton, options: SkeletonLoadOptions = ...) -> Multibody: ...
 
@@ -1912,15 +1907,6 @@ def add_skeleton(world: World, uri: str, options: SkeletonLoadOptions = ...) -> 
 
 @overload
 def add_skeleton(world: World, uri: str, read_options: ReadOptions, options: SkeletonLoadOptions = ...) -> Multibody: ...
-
-@overload
-def add_world(world: object, source_world: dartpy.gui.RenderWorld, options: SkeletonLoadOptions = ...) -> list: ...
-
-@overload
-def add_world(world: object, uri: str, options: SkeletonLoadOptions = ...) -> list: ...
-
-@overload
-def add_world(world: object, uri: str, read_options: ReadOptions, options: SkeletonLoadOptions = ...) -> list: ...
 
 def load_deformable_scene(world: World, scene_path: str | os.PathLike, options: DeformableSceneLoadOptions = ...) -> DeformableSceneInfo: ...
 
@@ -1935,7 +1921,7 @@ def load_seg_line_mesh(path: str | os.PathLike) -> DeformableBodyOptions: ...
 def load_point_set(path: str | os.PathLike) -> DeformableBodyOptions: ...
 
 class World:
-    def __init__(self, time_step: float = ..., *, gravity: object | None = ..., differentiable: bool = ..., contact_solver_method: ContactSolverMethod = ContactSolverMethod.SEQUENTIAL_IMPULSE, contact_gradient_mode: ContactGradientMode = ContactGradientMode.ANALYTIC) -> None: ...
+    def __init__(self, time_step: float = ..., *, gravity: object | None = ..., differentiable: bool = ..., rigid_body_solver: RigidBodySolver = RigidBodySolver.SEQUENTIAL_IMPULSE, multibody_options: MultibodyOptions = ..., contact_solver_method: ContactSolverMethod = ContactSolverMethod.SEQUENTIAL_IMPULSE, contact_gradient_mode: ContactGradientMode = ContactGradientMode.ANALYTIC) -> None: ...
 
     def add_free_frame(self, name: str = ..., *, parent: object | None = ...) -> FreeFrame: ...
 

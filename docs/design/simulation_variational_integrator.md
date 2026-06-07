@@ -5,7 +5,7 @@
 Implemented for Phases A1, A2, B1, and B2, with Phase C C1-C3 implemented for
 the scoped contact/friction envelope and arbitrary-geometry contact plus the C4
 hard-barrier rung deferred. This document owns the durable design rationale for
-the **linear-time variational integrator** in the experimental simulation
+the **linear-time variational integrator** in the DART 7 simulation
 `World` integration family. It owns architecture and math rationale, not
 timeline or status. Sequencing, phase gates, and acceptance criteria live in
 PLAN-082
@@ -18,7 +18,7 @@ Companion docs:
 
 - [`simulation_solver_architecture.md`](simulation_solver_architecture.md) — the
   solver/coupler/domain architecture this integrator plugs into.
-- [`simulation_experimental_cpp_api.md`](simulation_experimental_cpp_api.md) —
+- [`simulation_cpp_api.md`](simulation_cpp_api.md) —
   the public-facade capability matrix, which already lists `variational
 integrator` as an integration-family value (`Solver And Execution Policy`).
 
@@ -30,7 +30,7 @@ new-vs-reused split below is the result.
 ## Why This Integrator
 
 DART's north star is that "the easiest place to reproduce and evaluate a new
-algorithm should be inside DART." The experimental `World` already hosts a
+algorithm should be inside DART." The DART 7 `World` already hosts a
 semi-implicit articulated forward-dynamics path (PLAN-080) and an IPC-class
 deformable implicit-barrier path (PLAN-081). This adds a third, structurally
 distinct _time-integration_ family:
@@ -190,7 +190,7 @@ new stage
 
 declared beside `MultibodyForwardDynamicsStage`
 (`compute/multibody_dynamics.hpp`), implemented in `multibody_dynamics.cpp`, and
-registered in `dart/simulation/experimental/CMakeLists.txt` (explicit source
+registered in `dart/simulation/CMakeLists.txt` (explicit source
 list).
 
 The selection mechanism is now implemented as a facade-safe integration-family
@@ -224,7 +224,7 @@ default `step()` choose the dynamics stage while keeping selection scoped to the
 | Dense `M(q)`,`C`,`g` (oracle/baseline only) | `computeMultibodyDynamicsTerms` / `computeMassAndBias`                |
 
 **The central implemented component — an O(n) impulse-based ABI.** RIQN's
-`Δt·M⁻¹·e` must be O(n). At Phase A1 time the experimental World only had dense
+`Δt·M⁻¹·e` must be O(n). At Phase A1 time the DART 7 World only had dense
 mass-matrix assembly/solve (`computeMassAndBias`, `ldlt()`), which was useful as
 an oracle but could not support the linear-time claim. Phase A2 added the
 two-sweep impulse / inverse-mass product (`computeMultibodyInverseMassProduct`)
@@ -297,7 +297,7 @@ The pattern is proven in-tree: the deformable solver stores
 - **Scalable-compute / CUDA:** the CUDA path is a rigid-body SoA _batch_; it
   shares no representation with articulated generalized coordinates. The VI is
   **CPU-only** for now; no GPU/batch synergy is claimed.
-- **Python (`dartpy.simulation_experimental`):** the integration-family selector
+- **Python (`dartpy.simulation`):** the integration-family selector
   is the only new public surface and must bind cleanly; PLAN-082 includes a
   binding + import-coverage slice.
 
@@ -444,13 +444,13 @@ experiments (reference repo `experiments/`: `energy_conservation`, `convergence`
 - Contact-extension inspiration (catalog): `ipc-2020`, `macklin-xpbd-2016`,
   `vbd-2024`, `avbd-2025`.
 - Architecture: `simulation_solver_architecture.md`,
-  `simulation_experimental_cpp_api.md`.
+  `simulation_cpp_api.md`.
 
 ## Verification Expectations
 
 Docs-only edits use the docs-only gate set in `docs/ai/verification.md`.
 Implementation PRs realizing this design include `pixi run lint`,
-`pixi run build`, focused C++ tests under `tests/unit/simulation/experimental/`,
+`pixi run build`, focused C++ tests under `tests/unit/simulation/`,
 `check-api-boundaries` when public headers/bindings change, benchmark evidence
 for the O(n) claim (Phase A2), `test-py` when bindings change, a serialization
 version-bump note, and a changelog entry. Reviewers reject any public API that

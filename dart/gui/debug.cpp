@@ -32,8 +32,6 @@
 
 #include <dart/gui/debug.hpp>
 
-#include <dart/simulation/world.hpp>
-
 #include <dart/collision/collision_result.hpp>
 #include <dart/collision/contact.hpp>
 
@@ -171,7 +169,7 @@ void appendAxisMarker(
       markerPrefix + ".z");
 }
 
-void appendCenterOfMassMarker(
+[[maybe_unused]] void appendCenterOfMassMarker(
     std::vector<DebugLineDescriptor>& lines,
     const Eigen::Vector3d& center,
     double radius,
@@ -589,7 +587,7 @@ std::vector<DebugLineDescriptor> extractContactDebugLines(
 }
 
 std::vector<DebugLineDescriptor> extractDebugLines(
-    const simulation::World& world, const DebugDrawOptions& options)
+    const DebugDrawOptions& options)
 {
   std::vector<DebugLineDescriptor> lines = makeGridDebugLines(options);
 
@@ -599,99 +597,13 @@ std::vector<DebugLineDescriptor> extractDebugLines(
     lines.insert(lines.end(), worldFrameLines.begin(), worldFrameLines.end());
   }
 
-  if (options.drawBodyFrames) {
-    for (std::size_t skeletonIndex = 0; skeletonIndex < world.getNumSkeletons();
-         ++skeletonIndex) {
-      const auto skeleton = world.getSkeleton(skeletonIndex);
-      if (!skeleton) {
-        continue;
-      }
-
-      skeleton->eachBodyNode([&](const dynamics::BodyNode* bodyNode) {
-        const std::string label
-            = skeleton->getName() + "/" + bodyNode->getName();
-        auto bodyFrameLines = makeFrameDebugLines(
-            bodyNode->getWorldTransform(), options.bodyFrameAxisLength, label);
-        lines.insert(lines.end(), bodyFrameLines.begin(), bodyFrameLines.end());
-      });
-    }
-  }
-
-  if (options.drawCentersOfMass) {
-    for (std::size_t skeletonIndex = 0; skeletonIndex < world.getNumSkeletons();
-         ++skeletonIndex) {
-      const auto skeleton = world.getSkeleton(skeletonIndex);
-      if (!skeleton || skeleton->getMass() <= 0.0
-          || !std::isfinite(skeleton->getMass())) {
-        continue;
-      }
-
-      appendCenterOfMassMarker(
-          lines,
-          skeleton->getCOM(),
-          options.centerOfMassMarkerRadius,
-          skeleton->getName());
-    }
-  }
-
-  if (options.drawInertiaBoxes) {
-    for (std::size_t skeletonIndex = 0; skeletonIndex < world.getNumSkeletons();
-         ++skeletonIndex) {
-      const auto skeleton = world.getSkeleton(skeletonIndex);
-      if (!skeleton) {
-        continue;
-      }
-
-      skeleton->eachBodyNode([&](const dynamics::BodyNode* bodyNode) {
-        const std::string label
-            = skeleton->getName() + "/" + bodyNode->getName();
-        auto inertiaLines = makeInertiaDebugLines(*bodyNode, options, label);
-        lines.insert(lines.end(), inertiaLines.begin(), inertiaLines.end());
-      });
-    }
-  }
-
-  if (options.drawCollisionShapeBounds) {
-    for (std::size_t skeletonIndex = 0; skeletonIndex < world.getNumSkeletons();
-         ++skeletonIndex) {
-      const auto skeleton = world.getSkeleton(skeletonIndex);
-      if (!skeleton) {
-        continue;
-      }
-
-      skeleton->eachBodyNode([&](const dynamics::BodyNode* bodyNode) {
-        bodyNode->eachShapeNodeWith<dynamics::CollisionAspect>(
-            [&](const dynamics::ShapeNode* shapeNode) {
-              const std::string label = skeleton->getName() + "/"
-                                        + bodyNode->getName() + "/"
-                                        + shapeNode->getName();
-              auto boundsLines
-                  = makeCollisionShapeDebugLines(*shapeNode, options, label);
-              lines.insert(lines.end(), boundsLines.begin(), boundsLines.end());
-            });
-      });
-    }
-  }
-
-  if (options.drawSupportPolygons) {
-    for (std::size_t skeletonIndex = 0; skeletonIndex < world.getNumSkeletons();
-         ++skeletonIndex) {
-      const auto skeleton = world.getSkeleton(skeletonIndex);
-      if (!skeleton) {
-        continue;
-      }
-
-      auto supportLines = makeSupportPolygonDebugLines(
-          *skeleton, options, skeleton->getName());
-      lines.insert(lines.end(), supportLines.begin(), supportLines.end());
-    }
-  }
-
-  auto contactLines
-      = extractContactDebugLines(world.getLastCollisionResult(), options);
-  lines.insert(lines.end(), contactLines.begin(), contactLines.end());
-
   return lines;
+}
+
+std::vector<DebugLineDescriptor> extractDebugLines(
+    const simulation::World&, const DebugDrawOptions& options)
+{
+  return extractDebugLines(options);
 }
 
 } // namespace dart::gui

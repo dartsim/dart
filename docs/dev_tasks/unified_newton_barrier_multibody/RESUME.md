@@ -120,11 +120,11 @@ VBD/OGC-adjacent work, or shared Newton-barrier infrastructure.
 - Do not expose ABD through public headers or dartpy bindings until runtime
   and benchmark evidence exists.
 - Phase 1 validation passed: `pixi run lint`,
-  `pixi run build-simulation-experimental-tests`,
-  `pixi run test-simulation-experimental`, `pixi run check-api-boundaries`, and
+  `pixi run build-simulation-tests`,
+  `pixi run test-simulation`, `pixi run check-api-boundaries`, and
   the four benchmark smokes listed in the dev-task README.
-- Phase 2 validation so far passed: `pixi run build-simulation-experimental-tests`,
-  `pixi run test-simulation-experimental` (64/64),
+- Phase 2 validation so far passed: `pixi run build-simulation-tests`,
+  `pixi run test-simulation` (64/64),
   `pixi run check-api-boundaries`, `pixi run check-docs-policy`,
   `pixi run lint`, and
   `pixi run bm bm_affine_body_dynamics -- --benchmark_min_time=0.05s`.
@@ -138,7 +138,7 @@ sed -n '1,220p' docs/dev_tasks/unified_newton_barrier_multibody/README.md
 sed -n '1,220p' docs/plans/083-unified-newton-barrier-multibody/abd-first-slice-design.md
 ```
 
-Then verify the current branch with the focused simulation-experimental tests,
+Then verify the current branch with the focused simulation tests,
 API-boundary check, lint, and `pixi run bm-abd-comparison-packet` if that has
 not already been done. After this slice, continue with Phase 3 shared-contract
 scouting; do not describe the micro-packet as a runtime ABD solver or a

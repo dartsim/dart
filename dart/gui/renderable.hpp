@@ -221,6 +221,9 @@ DART_GUI_API std::optional<GeometryDescriptor> describeShape(
 DART_GUI_API std::vector<RenderableDescriptor> extractRenderables(
     const simulation::World& world);
 
+DART_GUI_API std::optional<RenderableDescriptor> describeShapeFrame(
+    const dynamics::ShapeFrame& shapeFrame);
+
 /// Builds a dynamic, shaded surface mesh renderable from deformable node state.
 ///
 /// The returned descriptor uses ShapeKind::Mesh with material colors and

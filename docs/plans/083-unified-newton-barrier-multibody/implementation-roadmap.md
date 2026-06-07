@@ -13,7 +13,7 @@ family across CPU and GPU:
 
 - shared deformable, rigid, affine, articulation, codimensional, contact,
   friction, restitution, and diagnostics contracts behind DART-owned
-  experimental `World` capabilities;
+  DART 7 `World` capabilities;
 - DART-owned tests proving correctness parity across CPU/GPU and across the
   variant owners named in
   [`ipc-variant-consolidation.md`](ipc-variant-consolidation.md);

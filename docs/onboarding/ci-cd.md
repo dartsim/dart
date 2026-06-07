@@ -87,12 +87,10 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   declared outside the core `dart/` subtree. In-tree consumers expect linked
   DART libraries under `${DART_BINARY_DIR}/lib`; see
   [build-system.md](build-system.md#optional-component-output-directories).
-- Example links fail with a missing optional DART library after the component is
-  intentionally disabled: confirm the example only registers itself when every
-  required CMake target exists. CI can build examples with optional components
-  such as `DART_BUILD_SIMULATION_EXPERIMENTAL` turned `OFF`, so target guards
-  belong before `dart_add_example()` or `dart_build_gui_example()` registers the
-  executable.
+- Example links fail with a missing optional DART library after a prerequisite
+  target was skipped: confirm the example only registers itself when every
+  required CMake target exists. Target guards belong before
+  `dart_add_example()` or `dart_build_gui_example()` registers the executable.
 - Unit test crashes or segfaults: isolate the failing test from job logs, reproduce locally, and add a regression for the edge case.
 - Job logs are missing or return 404: re-run the single job and/or download the run-level logs archive to inspect failures.
 - Infrastructure failures (self-hosted runner "lost communication"): the

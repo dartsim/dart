@@ -2,11 +2,13 @@
 
 ## Status
 
-Proposal. This is the implementation design for de-ECS-ing the experimental
-simulation handle classes so the promoted DART 7 public API does not expose ECS
-storage. It is the WS5 detail behind the plan in
+Accepted and implemented for the current promoted-header surface. This is the
+implementation design for de-ECS-ing the DART 7 simulation handle classes
+so the promoted DART 7 public API does not expose ECS storage. It is the WS5
+detail behind the plan in
 [`dart7_promotion_readiness_audit.md`](dart7_promotion_readiness_audit.md) and is
-gated for maintainer review because it changes the shared handle base.
+gated by the promotion-surface audit so future headers cannot reintroduce the
+same storage leak.
 
 Operating state: `PLAN-041` in [`../plans/dashboard.md`](../plans/dashboard.md).
 
@@ -25,15 +27,15 @@ ReadWriteComps<comps::...>>`, naming component types in the public base.
 3. **`comps`/`ecs` includes** pulled in to make the above compile.
 
 The `audit-dart7-promotion-surface` check reports the current leak set (run it
-for the live count). `entity.hpp` (the opaque `Entity`
-token) and the `detail/entity_conversion.hpp` seam already exist; the
-`FreeFrame`/`FixedFrame` constructors already use `Entity`. The remaining leak is
-dominated by the `EntityObjectWith<...comps...>` public base.
+for the live count). The current promoted-header surface is storage-neutral:
+`Entity` is an opaque token with no public raw integer field, handle comments no
+longer point users at `detail::toRegistryEntity(...)`, and `DeformableBody` uses
+the same opaque token as the rest of the handle family.
 
 ## Constraints
 
 - **Preserve ECS storage.** This is an API-surface change, not a storage change.
-  Default-build behavior and the 49 `simulation-experimental` tests must stay
+  Default-build behavior and the DART 7 simulation tests must stay
   green at every step.
 - **Preserve the compile-time component-access validation** that
   `EntityObjectWith` provides today — move it internal, do not delete it.
@@ -78,16 +80,14 @@ handle surface while preserving storage and validation.
 
 ## Migration approach
 
-The design is applied in dependency order so each change stays small while ECS
-storage and the compile-time validation are preserved throughout: introduce the
-opaque `Entity` token and conversion seam; migrate `getEntity()` to an internal
-accessor so the internal callers move behind the seam without churn; replace the
-public `EntityObjectWith<...comps...>` inheritance with the minimal identity base
-(starting at the shared `Frame`, then the `body`/`multibody`/`constraint`
-handles); then move the `world.hpp` `entt::registry` member behind an opaque
-impl. The package-shape and boundary-enforcement follow-ups (private
-EnTT/Taskflow, an explicit install allowlist, and a `--strict` audit gate) build
-on a zero-leak promoted surface.
+The design was applied in dependency order so each change stayed small while ECS
+storage and validated internal access were preserved throughout: introduce the
+opaque `Entity` token and conversion seam; migrate public handles off raw
+`entt::entity` / `entityId` storage; replace public
+`EntityObjectWith<...comps...>` inheritance with storage-neutral handle classes;
+move the `world.hpp` registry behind opaque storage; then enforce the result
+with private EnTT/Taskflow linkage, an explicit install allowlist, and the
+strict promotion-surface audit.
 
 The per-step sequencing, status, and gates are tracked in PLAN-041
 ([`../plans/dashboard.md`](../plans/dashboard.md) and
@@ -96,15 +96,16 @@ not in this design doc.
 
 ## Verification
 
-Each implementation step keeps the experimental gates green:
-`pixi run build-simulation-experimental-tests` + `ctest -L simulation-experimental`,
+Each implementation step keeps the DART 7 simulation gates green:
+`pixi run build-simulation-tests`, `pixi run test-simulation-quick`,
 `pixi run check-api-boundaries`, `pixi run check-api-boundary-inventory`,
-`pixi run audit-dart7-promotion-surface`, and `pixi run lint`.
+`pixi run check-dart7-promotion-surface`, and `pixi run lint`.
 
 ## Risk and review notes
 
-- Removing the public `EntityObjectWith` base changes the handle design idiom;
-  the compile-time validation must be retained internally (step 2) so handle
-  `.cpp` code keeps its safety. This is the item needing maintainer sign-off.
-- The `getEntity()` migration (step 3) is broad but mechanical and fully behind
-  the seam; do it as one reviewable commit with no behavior change.
+- Keep future promoted handles on the opaque-token pattern. A new public raw
+  entity ID, `detail::toRegistryEntity(...)` comment, EnTT type, component type,
+  or ECS helper base should fail the strict promotion-surface audit.
+- The remaining broad promotion risk is no longer handle storage leakage; it is
+  the final namespace/package transaction that replaces the classic
+  `dart::simulation::World` owner and retires the staging target names.

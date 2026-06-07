@@ -173,14 +173,13 @@ void Sensor::reset()
 }
 
 //==============================================================================
-void Sensor::update(
-    const simulation::World& world, const SensorUpdateContext& context)
+void Sensor::update(const SensorUpdateContext& context)
 {
   if (!shouldUpdate(context)) {
     return;
   }
 
-  updateImpl(world, context);
+  updateImpl(context);
   markUpdated(context);
 }
 

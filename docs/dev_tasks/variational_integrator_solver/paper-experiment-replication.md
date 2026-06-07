@@ -2,7 +2,7 @@
 
 Reproduction of the validation experiments from Lee, Liu, Park, Srinivasa,
 _A Linear-Time Variational Integrator for Multibody Systems_ (WAFR 2016,
-arXiv:1609.02898), against this implementation in DART's experimental `World`.
+arXiv:1609.02898), against this implementation in DART 7 `World`.
 
 The paper's reference experiments live in the author's repo
 (`github.com/jslee02/wafr2016`, `experiments/`): `energy_conservation`,
@@ -107,7 +107,7 @@ commands at the end.
 
 ## Differences from the paper's exact setup
 
-This is a fresh implementation in DART's experimental ECS `World`, not the
+This is a fresh implementation in DART 7 ECS `World`, not the
 author's classic-DART reference, so a few things differ (all detailed in the
 design doc's "Improvements, corrections, and new features" section):
 

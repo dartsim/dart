@@ -1,7 +1,7 @@
 # PLAN-120: Inverse Kinematics And Motion Synthesis
 
 - Operating state: `PLAN-120` in [`dashboard.md`](dashboard.md)
-- Outcome: the experimental `World` gains a DART-owned inverse-kinematics
+- Outcome: the DART 7 `World` gains a DART-owned inverse-kinematics
   surface that covers the useful DART 6 IK behaviors, exposes a portfolio of
   pose and motion-level IK methods, and lets users either choose a method
   explicitly or ask for an `auto` policy that selects and explains a reasonable
@@ -20,13 +20,13 @@
   - Classic DART already protects some non-Euclidean IK math: Jacobian methods
     call `convertJacobianMethodOutputToGradient(...)` because FreeJoint and
     BallJoint cannot be integrated by plain vector addition.
-  - The experimental API design already reserves the right seams:
+  - The DART 7 API design already reserves the right seams:
     kinematics-only `World::sync(WorldSyncStage::Kinematics)`, future explicit
     state spaces, functional rollouts, collision-query stages, and a solver
     capability matrix in
-    [`../design/simulation_experimental_cpp_api.md`](../design/simulation_experimental_cpp_api.md)
+    [`../design/simulation_cpp_api.md`](../design/simulation_cpp_api.md)
     and
-    [`../design/simulation_experimental_python_api.md`](../design/simulation_experimental_python_api.md).
+    [`../design/simulation_python_api.md`](../design/simulation_python_api.md).
   - PLAN-100 records the DART 7 Lie-group surface in
     `dart/math/lie_group/`; IK must use the same manifold/retraction
     conventions for distance, interpolation, and update, not Euler-angle or
@@ -35,8 +35,8 @@
 ## Owner Docs
 
 - Public facade rules:
-  [`../design/simulation_experimental_cpp_api.md`](../design/simulation_experimental_cpp_api.md),
-  [`../design/simulation_experimental_python_api.md`](../design/simulation_experimental_python_api.md)
+  [`../design/simulation_cpp_api.md`](../design/simulation_cpp_api.md),
+  [`../design/simulation_python_api.md`](../design/simulation_python_api.md)
 - Solver architecture:
   [`../design/simulation_solver_architecture.md`](../design/simulation_solver_architecture.md)
 - Lie-group owner:
@@ -57,7 +57,7 @@
 
 ## Scope
 
-This plan covers IK and kinematic motion synthesis for the experimental
+This plan covers IK and kinematic motion synthesis for the DART 7
 simulation stack. It is an algorithm-extensibility plan, not a near-term DART 7
 promotion promise.
 
@@ -65,7 +65,7 @@ It includes:
 
 - pose IK for one or more task targets;
 - whole-body and hierarchical/task-priority IK parity with classic DART where
-  the experimental `World` owns matching topology and state;
+  the DART 7 `World` owns matching topology and state;
 - analytical, Jacobian-based, optimization-based, heuristic/evolutionary,
   statistical, and learned proposal methods behind DART-owned capability names;
 - motion-level IK over a horizon, including continuity and feasibility costs;
@@ -85,7 +85,7 @@ It does not include:
 
 | Family                              | DART role                                                                                                                                                                                                               | First design question                                                                                                    |
 | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| Classic whole-body/task-priority IK | Parity foundation. Preserve DART 6 `WholeBodyIK`, `CompositeIK`, hierarchy levels, null-space objectives, and task-space regions where experimental topology supports them.                                             | What public task and constraint value objects replace the classic `Skeleton`/`JacobianNode` attachment model?            |
+| Classic whole-body/task-priority IK | Parity foundation. Preserve DART 6 `WholeBodyIK`, `CompositeIK`, hierarchy levels, null-space objectives, and task-space regions where DART 7 topology supports them.                                                   | What public task and constraint value objects replace the classic `Skeleton`/`JacobianNode` attachment model?            |
 | Jacobian methods                    | Required local baseline. Start from Jacobian transpose and damped least squares, then evaluate selectively damped or dynamically weighted variants for singularities and limits.                                        | Which manifold tangent, damping, weighting, and trust-region rules are stable enough to expose?                          |
 | Analytical methods                  | Fast exact branch when robot geometry supports it. Keep `IKFast`/generated-code parity as a bridge, but expose analytical capability rather than an engine-named public solver.                                         | How are multiple analytical branches scored against continuity, limits, collision, and user preference?                  |
 | Constrained optimization            | Generic constrained baseline. Evaluate SQP/QP/TRAC-IK-like approaches for joint limits, collision, manipulability, task priorities, and secondary objectives.                                                           | Which constraints must be common DART task objects rather than solver-specific callback functions?                       |
@@ -97,7 +97,7 @@ It does not include:
 ## Workstreams
 
 0. **Design inventory and benchmark packet** - map classic DART IK features to
-   experimental `World` concepts; define a small scene set covering open-chain
+   DART 7 `World` concepts; define a small scene set covering open-chain
    arms, whole-body/multi-effector targets, redundant arms, ball/free joints,
    joint limits, near-singular poses, unreachable targets, and collision-query
    tasks. Create `docs/design/inverse_kinematics_motion.md` before code starts.

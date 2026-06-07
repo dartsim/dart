@@ -26,15 +26,15 @@ if str(_PYTHON_DIR) not in sys.path:
 def _sx():
     try:
         module = importlib.import_module("dartpy")
-    except ModuleNotFoundError:
-        pytest.skip("DART_BUILD_SIMULATION_EXPERIMENTAL is disabled")
+    except ModuleNotFoundError as exc:
+        pytest.skip(f"dartpy unavailable: {exc}")
     if not hasattr(module, "World"):
-        pytest.skip("DART_BUILD_SIMULATION_EXPERIMENTAL is disabled")
+        pytest.skip("dartpy.World unavailable in this build")
     return module
 
 
 def test_loop_closure_holds_under_vi() -> None:
-    _sx()  # skip cleanly if experimental is unavailable
+    _sx()  # skip cleanly if dartpy is unavailable
     from examples.demos.scenes.loop_closure import build
 
     setup = build()

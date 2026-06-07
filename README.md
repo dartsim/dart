@@ -61,28 +61,11 @@ for _ in range(100):
 
 **C++**
 
-```cpp
-#include <dart/all.hpp>
-#include <dart/io/read.hpp>
-
-#include <iostream>
-
-int main() {
-  auto world = dart::simulation::World::create();
-
-  // Load a robot from URDF
-  auto robot = dart::io::readSkeleton(
-      "dart://sample/urdf/KR5/KR5 sixx R650.urdf");
-  world->addSkeleton(robot);
-
-  // Simulate 100 steps
-  for (int i = 0; i < 100; ++i) {
-    world->step();
-    std::cout << "Positions: " << robot->getPositions().transpose() << "\n";
-  }
-  return 0;
-}
-```
+The DART 7 C++ simulation facade is available in source builds while the final
+public header transaction is still in progress. Use the C++ API shape recorded
+in [`docs/design/simulation_cpp_api.md`](docs/design/simulation_cpp_api.md)
+for current source-checkout examples; DART 6 C++ snippets remain on the
+`release-6.*` branches for compatibility-line users.
 
 ## Installation
 
@@ -135,27 +118,16 @@ print(f"Positions: {skeleton.getPositions()}")
 
 **C++ package**
 
-```cpp
-#include <dart/dart.hpp>
-
-#include <iostream>
-
-int main() {
-  auto world = dart::simulation::World::create();
-  auto skeleton = dart::dynamics::Skeleton::create("box");
-  skeleton->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
-  world->addSkeleton(skeleton);
-  world->step();
-  std::cout << "Positions: " << skeleton->getPositions().transpose() << "\n";
-  return 0;
-}
-```
+The published C++ package smoke for the compatibility line is maintained on
+`release-6.*`. DART 7 C++ package smoke checks move through
+`check-dart7-artifacts` and the local source-checkout promotion gates until
+DART 7 C++ artifacts are published.
 
 ### Source checkout
 
 ```bash
 pixi install
-pixi run ex headless_simulation --steps 1
+pixi run demos -- --scene rigid_body --headless --frames 1
 ```
 
 ## Documentation

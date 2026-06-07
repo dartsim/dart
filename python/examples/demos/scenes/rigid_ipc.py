@@ -4,7 +4,7 @@ implicit-barrier (IPC) solver (PLAN-082).
 World owns the physics with the opt-in rigid IPC solver selected
 (`RigidBodySolver.IPC`), so the falling box is held above the ground by the
 smooth contact barrier rather than by sequential impulses. WorldRenderBridge
-mirrors the box and ground into a parallel dart.simulation.World for rendering.
+mirrors the box and ground into a parallel render World for rendering.
 """
 
 from __future__ import annotations
@@ -34,8 +34,7 @@ def build() -> SceneSetup:
     world.time_step = 0.005
 
     # Static ground slab with its top face at z = 0.
-    ground = world.add_rigid_body(
-        "ipc_ground", position=(0.0, 0.0, -_GROUND_HALF[2]))
+    ground = world.add_rigid_body("ipc_ground", position=(0.0, 0.0, -_GROUND_HALF[2]))
     ground.is_static = True
     ground.set_collision_shape(sx.CollisionShape.box(_GROUND_HALF))
 
@@ -48,11 +47,14 @@ def build() -> SceneSetup:
 
     bridge = WorldRenderBridge(world, name="rigid_ipc_render")
     bridge.add_rigid_body_visual(
-        ground, dart.BoxShape(_full(_GROUND_HALF)), (0.7, 0.7, 0.7),
-        name="ipc_ground_visual")
+        ground,
+        dart.BoxShape(_full(_GROUND_HALF)),
+        (0.7, 0.7, 0.7),
+        name="ipc_ground_visual",
+    )
     bridge.add_rigid_body_visual(
-        box, dart.BoxShape(_full(_BOX_HALF)), (0.90, 0.45, 0.20),
-        name="ipc_box_visual")
+        box, dart.BoxShape(_full(_BOX_HALF)), (0.90, 0.45, 0.20), name="ipc_box_visual"
+    )
     bridge.sync()
 
     height_history: deque[float] = deque(maxlen=120)

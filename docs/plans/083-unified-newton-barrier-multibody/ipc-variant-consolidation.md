@@ -42,7 +42,7 @@ variant uses it and cross-variant tests prove the behavior is shared.
 
 ## Shared API Boundary
 
-The public experimental facade should expose stable DART concepts:
+The public DART 7 facade should expose stable DART concepts:
 
 - body/domain capabilities: deformable body, rigid body, affine stiff body,
   rods, shells, particles, codimensional geometry;

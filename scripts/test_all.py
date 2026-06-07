@@ -479,30 +479,13 @@ def run_unit_tests() -> bool:
     return success
 
 
-def run_simulation_experimental_tests() -> bool:
-    """Run simulation-experimental tests (ctest filtered to simulation-experimental labels)."""
-    print_header("SIMULATION-EXPERIMENTAL TESTS")
-
-    override_enabled = _env_flag_enabled(
-        "DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE", "ON"
-    )
-
-    if not override_enabled:
-        print_warning(
-            "Skipping simulation-experimental tests because the build override is OFF"
-        )
-        return True
-
-    cmake_flag = _cmake_option_enabled("DART_BUILD_SIMULATION_EXPERIMENTAL")
-    if cmake_flag is False:
-        print_warning(
-            "Skipping simulation-experimental tests because DART_BUILD_SIMULATION_EXPERIMENTAL is OFF in build"
-        )
-        return True
+def run_simulation_tests() -> bool:
+    """Run simulation tests (ctest filtered to simulation labels)."""
+    print_header("SIMULATION TESTS")
 
     result, _ = run_command(
-        pixi_command("test-simulation-experimental", PIXI_DEFAULT_DARTPY),
-        "simulation-experimental C++ tests",
+        pixi_command("test-simulation", PIXI_DEFAULT_DARTPY),
+        "simulation C++ tests",
     )
     return result
 
@@ -644,10 +627,10 @@ def main():
     )
     parser.add_argument("--skip-python", action="store_true", help="Skip Python tests")
     parser.add_argument(
-        "--skip-simulation-experimental",
-        dest="skip_simulation_experimental",
+        "--skip-simulation",
+        dest="skip_simulation",
         action="store_true",
-        help="Skip simulation-experimental C++ tests",
+        help="Skip simulation C++ tests",
     )
     parser.add_argument(
         "--skip-cuda",
@@ -713,11 +696,11 @@ def main():
     else:
         print_warning("Skipping unit tests")
 
-    # Run simulation-experimental tests
-    if not args.skip_simulation_experimental:
-        run_step("Simulation-Experimental Tests", run_simulation_experimental_tests)
+    # Run simulation tests
+    if not args.skip_simulation:
+        run_step("Simulation Tests", run_simulation_tests)
     else:
-        print_warning("Skipping simulation-experimental tests")
+        print_warning("Skipping simulation tests")
 
     # Run Python tests
     if not args.skip_python:

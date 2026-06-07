@@ -5,7 +5,7 @@
   unifies deformable IPC, rigid IPC, affine/stiff-body dynamics, mixed
   rigid-deformable codimensional contact, articulation constraints, friction,
   restitution, CPU/GPU execution, benchmarks, and py-demos examples behind the
-  experimental `World` facade without exposing upstream project names, solver
+  DART 7 `World` facade without exposing upstream project names, solver
   registries, ECS storage, or backend resources as public API.
 - Current evidence:
   - Chen et al. 2022, "A Unified Newton Barrier Method for Multibody Dynamics,"
@@ -39,7 +39,7 @@
     equivalence oracles, and `bm_affine_body_dynamics` smoke rows. Those are
     correctness foundations, not a runtime solver or paper-scale completion
     claim.
-  - PLAN-080 owns the experimental rigid-body dynamics and articulation path;
+  - PLAN-080 owns the DART 7 rigid-body dynamics and articulation path;
     PLAN-030 owns the private CPU/GPU compute gates; PLAN-103 owns the
     Python-first examples surface.
 
@@ -53,8 +53,8 @@
   [`080-rigid-body-dynamics-solver.md`](080-rigid-body-dynamics-solver.md)
 - Solver architecture and public facade:
   [`../design/simulation_solver_architecture.md`](../design/simulation_solver_architecture.md),
-  [`../design/simulation_experimental_cpp_api.md`](../design/simulation_experimental_cpp_api.md),
-  [`../design/simulation_experimental_python_api.md`](../design/simulation_experimental_python_api.md)
+  [`../design/simulation_cpp_api.md`](../design/simulation_cpp_api.md),
+  [`../design/simulation_python_api.md`](../design/simulation_python_api.md)
 - Compute/GPU policy:
   [`../design/scalable_compute_decisions.md`](../design/scalable_compute_decisions.md)
 - Research references: `ipc-2020`, `rigid-ipc-2021`, `lan-2022-abd`, and
@@ -164,7 +164,7 @@
    constraints with falling-box and rotating-board parity tests.
 6. **Mixed-domain coupling** - Convert rigid/deformable/codimensional contact
    from variant-local scaffolding into shared contact buffers and coupler seams
-   compatible with the experimental solver architecture.
+   compatible with the DART 7 solver architecture.
 7. **CPU/GPU performance program** - Extend PLAN-030-style private GPU gates to
    contact stencils, CCD, barrier/friction kernels, PSD projection, assembly,
    and linear solves. Each optimization must keep CPU/GPU result parity at
@@ -180,7 +180,7 @@
   a maintainer-visible manual/not-applicable rationale.
 - PLAN-081 and PLAN-082 either consume the shared internal Newton-barrier
   primitives or document why a variant-specific primitive remains necessary.
-- The experimental public facade remains backend-neutral and DART-owned: no
+- The DART 7 public facade remains backend-neutral and DART-owned: no
   public `IPC`, `RigidIPC`, `ABD`, upstream repository, solver registry,
   coupler registry, ECS, device, stream, memory-pool, or backend task type.
 - Solver options remain easy on the common `World` creation path: defaults and
