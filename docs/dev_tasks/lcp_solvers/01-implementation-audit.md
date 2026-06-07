@@ -101,7 +101,7 @@ Support abbreviations:
   friction-index 6-, 8-, 12-, 16-, and 24-contact packets, plus
   stronger-coupled 16-/24-contact packets with 4x and 8x cross-contact
   coupling, a stronger-coupled 32-contact packet with 8x cross-contact
-  coupling, and 188 matching benchmark rows verified in default, SIMD-enabled, and
+  coupling, and 190 matching benchmark rows verified in default, SIMD-enabled, and
   CUDA-enabled build trees. It now
   also includes a scoped robust near-singular slice for standard 8-row, boxed
   8-row, and coupled friction-index 3-, 6-, 9-, and 12-contact packets, plus
@@ -323,7 +323,7 @@ The current local evidence for this task is:
   counters on the `ParallelExecutor` rows. The CUDA-enabled rows are CPU solver
   batch rows in a CUDA-enabled build, not CUDA LCP kernel execution.
 - `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpMildIllConditioned/' | wc -l`
-  reported 188 rows, and
+  reported 190 rows, and
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpMildIllConditioned' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   ran all rows with `contract_ok=1` in the default, SIMD-enabled, and
   CUDA-enabled build trees. These rows cover standard 32-row, boxed 16-row,
@@ -783,12 +783,12 @@ The current local evidence for this task is:
   backend build-state counters. The CUDA-enabled rows are CPU solver rows in a
   CUDA-enabled build, not CUDA LCP kernel execution.
 - `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpMildIllConditioned/ExtremeCoupledFrictionIndex' | wc -l`
-  listed 4 ADMM/SAP extreme-coupling rows. Focused JSON runs for
-  `BM_LcpMildIllConditioned/ExtremeCoupledFrictionIndex*` in default,
-  SIMD-enabled, and CUDA-enabled build trees reported 4 rows with zero
+  listed 6 ADMM/SAP extreme-coupling rows. Focused runs for
+  `BM_LcpMildIllConditioned/ExtremeCoupledFrictionIndex32` in default,
+  SIMD-enabled, and CUDA-enabled build trees reported 2 new rows with zero
   `contract_ok` failures across 16x-coupled mildly ill-conditioned
-  friction-index packets at 16 contacts/48 rows and 24 contacts/72 rows. The
-  same generated coverage test now includes those two packets for ADMM/SAP
+  friction-index packets at 32 contacts/96 rows, extending the existing 16
+  contacts/48 rows and 24 contacts/72 rows. The same generated coverage test now includes those three packets for ADMM/SAP
   known-solution checking. The CUDA-enabled rows are CPU ADMM/SAP solver rows
   in a CUDA-enabled build, not CUDA LCP kernel execution.
 - `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpContactNormalStandardSweep' | wc -l`
@@ -1041,7 +1041,7 @@ The current local evidence for this task is:
   coupled friction-index 8-contact, 12-contact, and 16-contact cases near
   lower, upper, and friction-cone boundaries, plus stronger-coupled production
   coupled friction-index 24-contact and 32-contact active-set packets, plus an
-  ADMM/SAP-only 16x-coupled mildly ill-conditioned 16-/24-contact
+  ADMM/SAP-only 16x-coupled mildly ill-conditioned 16-/24-/32-contact
   friction-index slice. Coverage is still incomplete for broader hard
   solver-specific conditioning/coupling grids, direct backend execution beyond
   CPU solver rows in SIMD/CUDA-enabled builds, and real contact systems.

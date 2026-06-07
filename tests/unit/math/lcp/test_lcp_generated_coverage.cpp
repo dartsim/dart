@@ -982,7 +982,9 @@ std::vector<GeneratedCase> makeLargerMildlyIllConditionedCases()
       makeFrictionIndexCase(
           16, ConditioningClass::MildlyIllConditioned, 30016, true, 16.0),
       makeFrictionIndexCase(
-          24, ConditioningClass::MildlyIllConditioned, 30024, true, 16.0)};
+          24, ConditioningClass::MildlyIllConditioned, 30024, true, 16.0),
+      makeFrictionIndexCase(
+          32, ConditioningClass::MildlyIllConditioned, 30032, true, 16.0)};
 }
 
 std::vector<GeneratedCase> makeRobustNearSingularCases()
