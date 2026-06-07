@@ -14,50 +14,29 @@ from pathlib import Path
 PYTHON_SNIPPET = r"""
 import dartpy as dart
 
-if hasattr(dart, "World"):
-    world = dart.World()
-    skeleton_type = dart.Skeleton
-else:
-    world = dart.simulation.World()
-    skeleton_type = dart.dynamics.Skeleton
-
-skeleton = skeleton_type("box")
-if hasattr(skeleton, "create_free_joint_and_body_node_pair"):
-    skeleton.create_free_joint_and_body_node_pair()
-else:
-    skeleton.createFreeJointAndBodyNodePair()
-
-if hasattr(world, "add_skeleton"):
-    world.add_skeleton(skeleton)
-else:
-    world.addSkeleton(skeleton)
-
+world = dart.World()
+world.add_rigid_body("box")
 world.step()
-positions = (
-    skeleton.get_positions()
-    if hasattr(skeleton, "get_positions")
-    else skeleton.getPositions()
-)
-print(f"positions_size={positions.shape[0]}")
-if positions.shape[0] == 0:
-    raise SystemExit("expected at least one position")
+print(f"rigid_body_count={world.num_rigid_bodies}")
+if world.num_rigid_bodies != 1:
+    raise SystemExit("expected one rigid body")
 """
 
 CPP_SOURCE = r"""
-#include <dart/dart.hpp>
+#include <dart/simulation/body/rigid_body.hpp>
+#include <dart/simulation/world.hpp>
 
 #include <iostream>
 
 int main() {
-  auto world = dart::simulation::World::create();
-  auto skeleton = dart::dynamics::Skeleton::create("box");
-  skeleton->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
-  world->addSkeleton(skeleton);
-  world->step();
+  dart::simulation::World world;
+  auto body = world.addRigidBody("box");
+  (void)body;
+  world.step();
 
-  const auto positions = skeleton->getPositions();
-  std::cout << "positions_size=" << positions.size() << "\n";
-  return positions.size() > 0 ? 0 : 1;
+  const auto count = world.getRigidBodyCount();
+  std::cout << "rigid_body_count=" << count << "\n";
+  return count == 1 ? 0 : 1;
 }
 """
 
@@ -65,10 +44,10 @@ CMAKE_LISTS = r"""
 cmake_minimum_required(VERSION 3.22)
 project(dart_published_package_quickstart LANGUAGES CXX)
 
-find_package(DART REQUIRED CONFIG)
+find_package(DART REQUIRED COMPONENTS simulation CONFIG)
 
 add_executable(dart_published_package_quickstart main.cpp)
-target_link_libraries(dart_published_package_quickstart PRIVATE dart)
+target_link_libraries(dart_published_package_quickstart PRIVATE dart-simulation)
 """
 
 

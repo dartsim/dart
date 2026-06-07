@@ -37,7 +37,6 @@
 #include "dart/dynamics/skeleton.hpp"
 #include "dart/math/geometry.hpp"
 #include "dart/math/helpers.hpp"
-#include "dart/simulation/world.hpp"
 
 #include <gtest/gtest.h>
 
@@ -48,7 +47,6 @@ using namespace dart;
 using namespace dart::common;
 using namespace dart::math;
 using namespace dart::dynamics;
-using namespace dart::simulation;
 using namespace dart::test;
 using namespace Eigen;
 

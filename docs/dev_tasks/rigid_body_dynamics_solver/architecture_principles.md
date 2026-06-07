@@ -1,6 +1,6 @@
-# Rigid-Body Solver — Architecture Principles (DART 7 experimental → DART 8)
+# Rigid-Body Solver — Architecture Principles (DART 7)
 
-Durable design intent for the experimental rigid-body dynamics solver. These
+Durable design intent for the DART 7 rigid-body dynamics solver. These
 govern every slice (integration, contacts/constraints, model loading) and how
 the PR #2705 convention re-alignment should be resolved
 ([`convention_realignment.md`](convention_realignment.md)). Roadmap context in
@@ -35,7 +35,7 @@ the PR #2705 convention re-alignment should be resolved
    algorithms (Lie groups / spatial algebra, LCP solvers, dynamics formulas)
    wherever they fit the SoA / batch / pure-kernel API. Where DART 6's structure
    (AoS, `BodyNode` trees, virtual dispatch) does not fit, **rewrite from
-   scratch** — DART 8 ships only the experimental API, so there is no obligation
+   scratch** — `main` ships only the DART 7 API, so there is no obligation
    to preserve DART 6's internal structure for compatibility.
 
 ## Implication for gravity / forces (and the #2705 re-alignment)

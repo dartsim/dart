@@ -214,7 +214,7 @@ def _neutralize_dynamic_submodule_imports(text: str) -> str:
     """Replace imports of runtime-only ``dartpy`` submodules with placeholders.
 
     Some submodules have no stub of their own -- e.g.
-    ``dartpy.simulation_experimental.diff``, a pure-Python PyTorch bridge that
+    ``dartpy.simulation.diff``, a pure-Python PyTorch bridge that
     ``dartpy/__init__.py`` attaches at runtime. The flat stub modules cannot host
     real submodules, so ``import dartpy.<parent>.<child> as <alias>`` raises
     ImportError when autodoc imports the stub. Bind the alias to an empty

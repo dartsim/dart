@@ -81,7 +81,7 @@ modules notebooks import).
    `legged_whole_body_control` (quadruped/humanoid balance via a whole-body
    PD/QP controller), `contact_rich_manipulation` (arm/gripper pushing or
    grasping table objects), `rl_gym_env` (a Gymnasium-style `reset`/`step`
-   wrapper over an experimental World), `mpc_cartpole` (MPC-in-the-loop on a
+   wrapper over a DART 7 World), `mpc_cartpole` (MPC-in-the-loop on a
    cart-pole/arm), `sensor_depth_segmentation` (headless depth + segmentation
    outputs via the renderer/camera math). The **golden subset** (mirrored in
    both languages) is the small set of canonical basics that already exist as
@@ -193,10 +193,10 @@ explicit "not now"):
      `tests/integration/atlas_simbicon/` and are not Python-bound.
    - **Runtime-loaded analytical IKFast** — `wam_ikfast`. Needs a
      `SharedLibraryIkFast` binding.
-   - **`sx::World` deformable mesh build** — `experimental_deformable`.
+   - **`sim::World` deformable mesh build** — `experimental_deformable`.
      `DeformableBody`/`DeformableBodyOptions` exist; the scene also needs a
      tet-mesh construction helper (or a Python adapter to
-     `dartpy.simulation_experimental.load_deformable_scene`).
+     `dartpy.simulation.load_deformable_scene` when that API exists).
 2. **NOT MET.** Notebook gallery published with a green Colab smoke. Today:
    `python/tutorials/01_browse_demos.ipynb` is the seed; Colab publication +
    smoke is PLAN-012's responsibility.

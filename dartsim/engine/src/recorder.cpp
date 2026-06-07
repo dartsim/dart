@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/simulation/experimental/world.hpp>
+#include <dart/simulation/world.hpp>
 
 #include <dartsim_engine/recorder.hpp>
 
@@ -132,7 +132,7 @@ void Recorder::stop()
   m_recording = false;
 }
 
-void Recorder::capture(const dart::simulation::experimental::World& world)
+void Recorder::capture(const dart::simulation::World& world)
 {
   if (!m_recording) {
     return;
@@ -158,8 +158,7 @@ void Player::setRecording(Recording recording)
   m_index = 0;
 }
 
-bool Player::seek(
-    dart::simulation::experimental::World& world, std::size_t index)
+bool Player::seek(dart::simulation::World& world, std::size_t index)
 {
   if (index >= m_data.frameCount()) {
     return false;

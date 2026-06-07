@@ -5,7 +5,7 @@ solver (PLAN-082).
 The ramp and box are both rotated about the y-axis so the contact is a tilted
 face-face barrier; lagged Coulomb friction sets how fast the box accelerates
 down-slope. WorldRenderBridge mirrors the bodies into a parallel
-dart.simulation.World for rendering.
+render World for rendering.
 """
 
 from __future__ import annotations

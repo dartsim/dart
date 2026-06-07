@@ -3,7 +3,7 @@
 ## Status
 
 Living design and implementation contract. This document owns the durable
-architecture rationale for the experimental simulation `World`: how physics is
+architecture rationale for the DART 7 simulation `World`: how physics is
 organized into solver abstractions, how entities are assigned to solvers, how
 multiple physics domains are coupled, how static model data is separated from
 dynamic state, and how all of this maps onto the existing compute-graph
@@ -11,9 +11,9 @@ executor.
 
 It is the internal-organization companion to the public-facade design docs:
 
-- [`simulation_experimental_cpp_api.md`](simulation_experimental_cpp_api.md)
+- [`simulation_cpp_api.md`](simulation_cpp_api.md)
   owns the public C++ object model, naming policy, and DART 7 promotion rules.
-- [`simulation_experimental_python_api.md`](simulation_experimental_python_api.md)
+- [`simulation_python_api.md`](simulation_python_api.md)
   owns the dartpy surface.
 
 This doc does not restate those rules; it explains the engine architecture that
@@ -25,7 +25,7 @@ simulation).
 
 ## Purpose
 
-The experimental `World` now has a content-aware built-in step schedule with
+The DART 7 `World` now has a content-aware built-in step schedule with
 rigid, articulated, deformable, rigid IPC, variational-integrator, and
 differentiable solver-family work behind one facade. It must keep growing into a
 simulator that:
@@ -73,7 +73,7 @@ solvers and keeps a uniform `World::add*` surface.
 A solver is documented by capability: integration family, dynamics approach,
 constraint solve, coordinate support, supported features, execution shape, and
 differentiability (the capability matrix in
-[`simulation_experimental_cpp_api.md`](simulation_experimental_cpp_api.md)).
+[`simulation_cpp_api.md`](simulation_cpp_api.md)).
 Public selection uses method/approach/paper or DART-owned names — for example
 `articulated-body`, `semi-implicit`, `projected Gauss-Seidel`, `XPBD`,
 `implicit time stepping`. Solver, preset, and example names must not be derived
@@ -257,7 +257,7 @@ implementation, rigid, articulated, and deformable work is selected through the
 content-aware built-in schedule described below; kinematics refresh remains a
 world-level post-step concern.
 
-Current implementation note: the built-in experimental `World::step()` schedule
+Current implementation note: the built-in DART 7 `World::step()` schedule
 is centralized in `detail/world_step_schedule.hpp`, and `world.cpp` maps that
 internal schedule to concrete stage objects. New solver-family work that changes
 the default step path should update that schedule and its focused tests, not add
@@ -347,7 +347,7 @@ configuration, and explicit failure/fallback semantics.
 
 ## Where Differentiable Solver Families Fit
 
-Differentiability is a solver capability of the experimental `World`, not a
+Differentiability is a solver capability of the DART 7 `World`, not a
 separate user-facing engine. The multi-solver architecture therefore has two
 levels:
 
@@ -459,7 +459,7 @@ Implementation PRs that realize parts of this architecture should include:
 
 - `pixi run lint`;
 - `pixi run build`;
-- focused C++ tests under `tests/unit/simulation/experimental/`;
+- focused C++ tests under `tests/unit/simulation/`;
 - `pixi run check-api-boundaries` when public headers or dartpy bindings change;
 - `pixi run test-py` when Python bindings are affected;
 - benchmark evidence when a change claims a performance or scalability gain;

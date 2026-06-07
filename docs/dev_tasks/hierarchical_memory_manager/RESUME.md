@@ -12,7 +12,7 @@ or backend resources on the public simulation facade.
 
 ## Last Session Summary
 
-The first memory-manager slice has landed: experimental `World` owns a
+The first memory-manager slice has landed: DART 7 `World` owns a
 `dart::common::MemoryManager`, accepts root allocator/frame-scratch options,
 exposes memory diagnostics, and resets frame scratch at step boundaries. The
 allocator-quality gate remains active: DART allocators must beat standard C++
@@ -24,18 +24,18 @@ paths for over-aligned objects and allocator-aware EnTT registries, fixed
 free-list split alignment and overflow edge cases, allowed EnTT view internals
 to default-construct `StlAllocator` under Clang, added `FixedPoolAllocator` for
 fixed-size slot workloads, and added fixed-capacity `FreeListAllocator` policy
-wiring through `MemoryManager::Options` and experimental `WorldOptions`.
+wiring through `MemoryManager::Options` and DART 7 `WorldOptions`.
 Fixed-capacity free-list arenas can satisfy over-aligned `PoolAllocator` chunks
 from reserved bytes without growing from the base allocator.
 
 The memory-debugger correctness slice exposes structured live-byte, peak-byte,
 and allocation-count queries from the allocator debug path and from the
 manager-owned free-list/pool allocators. `MemoryManager::DebugDiagnostics` and
-experimental `WorldMemoryDiagnostics` include typed borrowed allocator use, so
+DART 7 `WorldMemoryDiagnostics` include typed borrowed allocator use, so
 diagnostics cover callers that borrow `getFreeListAllocator()` or
 `getPoolAllocator()` directly.
 
-The registry/no-growth slices wire the experimental World's internal EnTT
+The registry/no-growth slices wire the DART 7 World's internal EnTT
 registry, component storage, differentiable-parameter list, and first
 World-owned ECS scratch paths through the World memory hierarchy. They add
 base-allocator no-growth guards for baked kinematic IPC rigid-body, multibody
@@ -151,7 +151,7 @@ full zero-dynamic-allocation claim.
   including fixed pool, mixed pool, frame, realistic, steady-state, and STL
   vector workloads.
 - `cmake --build build/default/cpp/Release --target dartsim -j2`
-- `pixi run test-simulation-experimental` (61/61 passed)
+- `pixi run test-simulation` (61/61 passed)
 - `cmake --build build/default/cpp/Release --target test_world -j2`
 - `ctest --test-dir build/default/cpp/Release -R '^test_world$' --output-on-failure`
 - On `feature/world-step-pipeline-inline-storage` after the inline pipeline
@@ -191,7 +191,7 @@ full zero-dynamic-allocation claim.
 ## Context That Would Be Lost
 
 - The classic `dart::simulation::World` already owns a `common::MemoryManager`;
-  experimental `World` did not.
+  DART 7 `World` did not.
 - `dart/common/AGENTS.md` says World owns the memory manager and components
   borrow allocators from it.
 - Frame scratch should reset at the start of each simulation step, leaving the

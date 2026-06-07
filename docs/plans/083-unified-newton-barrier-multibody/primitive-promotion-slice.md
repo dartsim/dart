@@ -14,22 +14,22 @@ to work during active branch reconciliation.
 
 ## Current Evidence
 
-| Evidence            | Current state                                                                                                                                                                                                                    |
-| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Distance kernels    | `dart/simulation/experimental/detail/newton_barrier/primitive_distance.hpp` owns PT/EE/PE/PP squared distances, features, gradients, Hessians, and the edge-edge mollifier; `deformable_contact` forwards compatibility aliases. |
-| Barrier kernels     | `dart/simulation/experimental/detail/newton_barrier/barrier_kernel.hpp` owns the C2 clamped-log scalar barrier and primitive barrier derivatives; `deformable_contact` forwards compatibility aliases.                           |
-| Tangent stencils    | `dart/simulation/experimental/detail/newton_barrier/tangent_stencil.hpp` owns PT/EE/PE/PP tangent bases, projections, and metrics for friction; `deformable_contact` forwards compatibility aliases.                             |
-| Rigid/ABD reuse     | `dart/simulation/experimental/detail/rigid_ipc_barrier.{hpp,cpp}` and `dart/simulation/experimental/detail/affine_body_dynamics.{hpp,cpp}` consume the Newton-barrier owner directly for shared barrier/friction primitives.     |
-| PSD backend         | `dart/simulation/experimental/compute/deformable_psd_backend.*` is already a CPU/CUDA-pluggable block PSD projector, but its name is deformable-specific.                                                                        |
-| Existing tests      | `test_primitive_distance`, `test_barrier_kernel`, `test_tangent_stencil`, `test_newton_barrier_primitives`, `test_rigid_ipc_barrier`, `test_affine_body_dynamics`, and CUDA PSD coverage cover the active pieces.                |
-| Existing benchmarks | `bm_ipc_distance_kernels`, `bm_ipc_barrier_kernel`, `bm_ipc_tangent_stencil`, `bm_rigid_ipc_solver`, and `bm_affine_body_dynamics` are the baseline timing surfaces.                                                             |
+| Evidence            | Current state                                                                                                                                                                                                       |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Distance kernels    | `dart/simulation/detail/newton_barrier/primitive_distance.hpp` owns PT/EE/PE/PP squared distances, features, gradients, Hessians, and the edge-edge mollifier; `deformable_contact` forwards compatibility aliases. |
+| Barrier kernels     | `dart/simulation/detail/newton_barrier/barrier_kernel.hpp` owns the C2 clamped-log scalar barrier and primitive barrier derivatives; `deformable_contact` forwards compatibility aliases.                           |
+| Tangent stencils    | `dart/simulation/detail/newton_barrier/tangent_stencil.hpp` owns PT/EE/PE/PP tangent bases, projections, and metrics for friction; `deformable_contact` forwards compatibility aliases.                             |
+| Rigid/ABD reuse     | `dart/simulation/detail/rigid_ipc_barrier.{hpp,cpp}` and `dart/simulation/detail/affine_body_dynamics.{hpp,cpp}` consume the Newton-barrier owner directly for shared barrier/friction primitives.                  |
+| PSD backend         | `dart/simulation/compute/deformable_psd_backend.*` is already a CPU/CUDA-pluggable block PSD projector, but its name is deformable-specific.                                                                        |
+| Existing tests      | `test_primitive_distance`, `test_barrier_kernel`, `test_tangent_stencil`, `test_newton_barrier_primitives`, `test_rigid_ipc_barrier`, `test_affine_body_dynamics`, and CUDA PSD coverage cover the active pieces.   |
+| Existing benchmarks | `bm_ipc_distance_kernels`, `bm_ipc_barrier_kernel`, `bm_ipc_tangent_stencil`, `bm_rigid_ipc_solver`, and `bm_affine_body_dynamics` are the baseline timing surfaces.                                                |
 
 ## Implemented Internal Shape
 
 Header-only primitive owners live under:
 
 ```text
-dart/simulation/experimental/detail/newton_barrier/
+dart/simulation/detail/newton_barrier/
 ├── primitive_distance.hpp
 ├── barrier_kernel.hpp
 ├── friction_kernel.hpp
@@ -39,13 +39,13 @@ dart/simulation/experimental/detail/newton_barrier/
 Use namespace:
 
 ```cpp
-dart::simulation::experimental::detail::newton_barrier
+dart::simulation::detail::newton_barrier
 ```
 
 Compatibility forwarding remains under:
 
 ```text
-dart/simulation/experimental/detail/deformable_contact/
+dart/simulation/detail/deformable_contact/
 ├── primitive_distance.hpp
 ├── barrier_kernel.hpp
 └── tangent_stencil.hpp
@@ -69,11 +69,11 @@ Newton-barrier owner explicit for PLAN-082 and PLAN-083 work.
 
 ## Cross-Variant Test Additions
 
-Add a focused test file under the existing simulation-experimental contact test
+Add a focused test file under the existing DART 7 simulation contact test
 directory, for example:
 
 ```text
-tests/unit/simulation/experimental/contact/test_newton_barrier_primitives.cpp
+tests/unit/simulation/contact/test_newton_barrier_primitives.cpp
 ```
 
 Minimum rows:
@@ -109,8 +109,8 @@ The implementation PR derived from this plan should run:
 
 ```bash
 pixi run lint
-pixi run build-simulation-experimental-tests
-pixi run test-simulation-experimental
+pixi run build-simulation-tests
+pixi run test-simulation-quick
 pixi run check-api-boundaries
 pixi run bm bm_ipc_distance_kernels -- --benchmark_min_time=0.05s
 pixi run bm bm_ipc_barrier_kernel -- --benchmark_min_time=0.05s

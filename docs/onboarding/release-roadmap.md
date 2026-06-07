@@ -100,10 +100,12 @@ The DART 6.17 support line sunsets on a trigger, not a fixed calendar date:
   Python-first API layered on the refreshed C++ architecture.
 - The classic Skeleton-backed DART 6 API is not a DART 7 compatibility promise.
   Support for users that still need that API remains on `release-6.17`.
-- The ECS-backed world is the DART 7 public API target, but promotion is gated
-  by core robotics parity evidence. Until promotion, its development namespace
-  remains `dart::simulation::experimental` and
-  `dartpy.simulation_experimental`.
+- The ECS-backed world is the DART 7 public API target, but complete promotion
+  is gated by core robotics parity evidence plus package/API-boundary evidence.
+  Python has already moved the common path to `dartpy.simulation.World` and
+  `dartpy.World`; C++ still uses `dart::simulation` and the
+  `dart-simulation` component until PLAN-041 completes the
+  namespace, target, package, and classic-world removal transaction.
 - Algorithmic behavior must cover basic robotics simulation before release.
   IPC, VBD, differentiable simulation, and GPU work remain opt-in roadmap
   features unless a promoted public API depends on them.
@@ -114,32 +116,33 @@ The DART 6.17 support line sunsets on a trigger, not a fixed calendar date:
    north-star, API-boundary, CI, release-management, README, and changelog docs
    so DART 7 is the clean break and DART 6.17 is the compatibility line.
 2. **Gazebo lane split**: keep required gz-physics validation on
-   `release-6.17`; keep main's gz-physics workflow as a manual migration
+   `release-6.*`; keep main's gz-physics workflow as a manual migration
    canary. Coordinate branch-protection changes with maintainers before relying
    on that demotion.
-3. **DART 6.17 support packet**: audit fixes on main against `release-6.17` and
+3. **DART 6 support packet**: audit fixes on main against `release-6.*` and
    backport only compatibility-critical patches needed for the old API/Gazebo
    line.
 4. **Official simulation API promotion**: make PLAN-041 the release-critical
-   path. Freeze the supported ECS-backed world subset, resolve the classic
-   `dart::simulation::World` collision, promote stable C++ and Python facades,
-   and keep parity gates attached to the promotion claim rather than deferring
-   the official API to DART 8.
+   path. The Python facade is already staged; finish the supported ECS-backed
+   C++ subset, resolve the classic `dart::simulation::World` collision, expose
+   final headers/targets without the experimental component, and keep parity
+   gates attached to the promotion claim rather than deferring the official API
+   to DART 8.
 5. **Consumer migration and removal**: port in-repo examples, tutorials, tests,
    benchmarks, and Python stubs to the promoted API; then remove the classic
    `World`, DART 6 C++ API shims, legacy dartpy compatibility modules,
    experimental import paths, and gz-only compatibility surfaces from main.
-6. **Physical restructuring**: move `dart/` and `python/` files out of
-   experimental locations only after the official facade is green, keeping
-   mechanical moves isolated from semantic API changes.
+6. **Physical restructuring**: keep `dart/` and `python/` files in the final
+   DART 7 locations, with any future mechanical moves isolated from semantic API
+   changes.
 
 ### DART 7 Checkable Gates
 
 | Gate                         | Required evidence                                                                                                                    | Local or CI command                                                                                                                                             |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Experimental model loading   | URDF, SDF, MJCF, and SKEL load into the promoted world API with topology, DOF, transform, mass/inertia, collision, and Python tests. | Focused experimental loader tests plus `pixi run test-simulation-experimental` and `pixi run test-py`.                                                          |
-| Rigid dynamics parity        | Shared open-chain scenes match the classic DART 6 path within documented tolerances for gravity, integration, drift, and controls.   | Dedicated world-parity suite and focused solver tests.                                                                                                          |
-| Contact/constraint parity    | Contact response, friction, joint limits, motors, mimic/coupler behavior, and loop closures have tests and migration examples.       | Focused experimental contact/constraint tests and parity suite rows.                                                                                            |
+| DART 7 model loading         | URDF, SDF, MJCF, and SKEL load into the promoted world API with topology, DOF, transform, mass/inertia, collision, and Python tests. | Focused simulation loader tests plus `pixi run test-simulation` and `pixi run test-py`.                                                                         |
+| Rigid dynamics parity        | Shared open-chain scenes match the classic DART 6 path within documented tolerances for gravity, integration, drift, and controls.   | Release-6.\* branch evidence plus main-branch DART 7 regression tests.                                                                                          |
+| Contact/constraint parity    | Contact response, friction, joint limits, motors, mimic/coupler behavior, and loop closures have tests and migration examples.       | Focused simulation contact/constraint tests and parity suite rows.                                                                                              |
 | Serialization/replay parity  | World topology, state, model assets, and record/replay round-trip with bounded error.                                                | Serialization/replay tests for promoted world APIs.                                                                                                             |
 | Stable public API promotion  | Promoted APIs hide ECS storage, component types, solver registries, backend details, and implementation escape hatches.              | `pixi run check-api-boundaries`, generated stubs, docs, and migration snippets.                                                                                 |
 | First simulation works       | README Python, C++ package-project, and Pixi source first-success commands are verified or blocked.                                  | Run the README quick starts, `pixi run test-published-package-quickstarts`, and `pixi run check-dart7-artifacts`.                                               |
@@ -184,15 +187,15 @@ changed scope before opening the PR:
 
 Track these before DART 7 ships so clean-break removals are deliberate:
 
-| Debt area                         | DART 7 handling                                                                                                | Clean-break gate                                                                                      |
-| --------------------------------- | -------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| Legacy DART 6 API surface         | Remove from main unless explicitly needed for a bounded migration adapter; keep released support on DART 6.17. | Removal list has migration notes, changelog entries, package status, and DART 6.17 support status.    |
-| Legacy dartpy 6 API surface       | Remove from the DART 7 public contract rather than carrying a compatibility layer.                             | Replacement import/API path is documented and covered by tests/stubs.                                 |
-| Classic Skeleton-backed `World`   | Treat as the deletion target once the promoted world has parity evidence.                                      | ECS-backed world has stable wrappers, migration notes, focused tests, and parity evidence.            |
-| Experimental world bindings       | Keep under `dart::simulation::experimental` and `dartpy.simulation_experimental` until promotion gates pass.   | Promoted as the official DART 7/dartpy 7 API with documented C++ and Python migration paths.          |
-| Deprecated CMake/package surfaces | Remove package compatibility shims that would make DART 7 satisfy DART 6/gz-physics package ranges.            | Package exports and examples no longer require deprecated component or header names.                  |
-| Solver implementation details     | Keep Dantzig helper APIs, contact caches, and backend storage out of research-facing contracts.                | Any remaining public-looking internals are classified as supported, compatibility, or removed.        |
-| GUI backend exposure              | Keep Filament and other backend details behind migration gates.                                                | Public GUI API is backend-hidden and old backend-specific entry points have a migration/removal path. |
+| Debt area                         | DART 7 handling                                                                                                                                                        | Clean-break gate                                                                                                                  |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Legacy DART 6 API surface         | Remove from main unless explicitly needed for a bounded migration adapter; keep released support on DART 6.17.                                                         | Removal list has migration notes, changelog entries, package status, and DART 6.17 support status.                                |
+| Legacy dartpy 6 API surface       | Remove from the DART 7 public contract rather than carrying a compatibility layer.                                                                                     | Replacement import/API path is documented and covered by tests/stubs.                                                             |
+| Classic Skeleton-backed `World`   | Treat as the deletion target once the promoted world has parity evidence.                                                                                              | ECS-backed world has stable wrappers, migration notes, focused tests, and parity evidence.                                        |
+| DART 7 world bindings             | Python is promoted to `dartpy.simulation` / `dartpy.World`; C++ remains under `dart::simulation` and `dart-simulation` until PLAN-041 completes the final transaction. | C++ promoted as the official DART 7 API with documented migration path, package smokes, and no stale Python `simulation` surface. |
+| Deprecated CMake/package surfaces | Remove package compatibility shims that would make DART 7 satisfy DART 6/gz-physics package ranges.                                                                    | Package exports and examples no longer require deprecated component or header names.                                              |
+| Solver implementation details     | Keep Dantzig helper APIs, contact caches, and backend storage out of research-facing contracts.                                                                        | Any remaining public-looking internals are classified as supported, compatibility, or removed.                                    |
+| GUI backend exposure              | Keep Filament and other backend details behind migration gates.                                                                                                        | Public GUI API is backend-hidden and old backend-specific entry points have a migration/removal path.                             |
 
 Each release packaging pass should update this inventory when a deprecated API
 is added, promoted, moved to the DART 6.17 support lane, or removed from the

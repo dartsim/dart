@@ -1,7 +1,7 @@
 # PLAN-082: Linear-Time Variational Integrator (Discrete-Mechanics Solver)
 
 - Operating state: `PLAN-082` in [`dashboard.md`](dashboard.md)
-- Outcome: the experimental `World` offers a **variational integrator** as a
+- Outcome: the DART 7 `World` offers a **variational integrator** as a
   selectable integration family for multibody systems — symplectic,
   near-energy-conserving (for smooth conservative forcing at fixed `Δt`), and
   linear-time — implementing Lee/Liu/Park/Srinivasa (WAFR 2016,
@@ -31,7 +31,7 @@
 - Solver architecture this plugs into:
   [`../design/simulation_solver_architecture.md`](../design/simulation_solver_architecture.md)
 - Public facade / capability matrix:
-  [`../design/simulation_experimental_cpp_api.md`](../design/simulation_experimental_cpp_api.md)
+  [`../design/simulation_cpp_api.md`](../design/simulation_cpp_api.md)
 - Contact/friction/inequality-constraint roadmap:
   [`082-variational-integrator-solver/contact-roadmap.md`](082-variational-integrator-solver/contact-roadmap.md)
 - Research catalog entry: `lee-vi-2016` in
@@ -119,7 +119,7 @@ recorded measurements, mirroring PLAN-080/081 rigor.
   ECS storage; selection is by documented method-family name only; unsupported
   requests return documented errors.
 - **Gates per PR:** `pixi run lint`, `pixi run build`, focused
-  `tests/unit/simulation/experimental/` tests, `test-py` when bindings change,
+  `tests/unit/simulation/` tests, `test-py` when bindings change,
   benchmark JSON for performance claims, changelog entry.
 
 ## Revision Triggers

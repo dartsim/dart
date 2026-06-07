@@ -1,14 +1,38 @@
-import numpy as np
-import pytest
 from pathlib import Path
 
 import dartpy as dart
-
+import numpy as np
+import pytest
 
 requires_gui_bindings = pytest.mark.skipif(
-    not hasattr(dart.gui, "extract_renderables"),
+    not hasattr(dart.gui, "describe_shape")
+    or not hasattr(dart.gui, "RenderableDescriptor"),
     reason="dartpy GUI bindings are not built in this configuration",
 )
+
+
+def _renderable_from_shape(
+    shape,
+    *,
+    renderable_id: int = 1,
+    name: str = "shape",
+    transform=None,
+    rgba=(1.0, 1.0, 1.0, 1.0),
+):
+    geometry = dart.gui.describe_shape(shape)
+    assert geometry is not None
+    descriptor = dart.gui.RenderableDescriptor()
+    descriptor.id = renderable_id
+    descriptor.shape_frame_name = name
+    descriptor.shape_node_name = name
+    descriptor.geometry = geometry
+    material = dart.gui.MaterialDescriptor()
+    material.rgba = np.asarray(rgba, dtype=float)
+    material.visible = True
+    descriptor.material = material
+    if transform is not None:
+        descriptor.world_transform = np.asarray(transform, dtype=float)
+    return descriptor
 
 
 def test_gui_stub_surface_is_backend_hidden():
@@ -40,19 +64,11 @@ def test_gui_stub_surface_is_backend_hidden():
 
 @requires_gui_bindings
 def test_gui_extract_renderables_from_world():
-    world = dart.gui.RenderWorld.create("world")
-    skeleton = dart.Skeleton("robot")
-    _, body = skeleton.create_free_joint_and_body_node_pair()
     shape = dart.BoxShape(np.array([1.0, 2.0, 3.0]))
-    shape_node = body.create_shape_node(shape)
-    shape_node.create_visual_aspect()
-    world.add_skeleton(skeleton)
-
-    renderables = dart.gui.extract_renderables(world)
+    renderables = [_renderable_from_shape(shape, name="box")]
 
     assert len(renderables) == 1
     descriptor = renderables[0]
-    assert descriptor.skeleton_name == "robot"
     assert descriptor.geometry.kind == dart.gui.ShapeKind.Box
     assert hasattr(dart.gui.ShapeKind, "Pyramid")
     assert hasattr(dart.gui.ShapeKind, "MultiSphere")
@@ -157,14 +173,7 @@ def test_gui_plan_renderable_set_update():
 
 @requires_gui_bindings
 def test_gui_pick_sphere_uses_surface_normal():
-    world = dart.gui.RenderWorld.create("world")
-    skeleton = dart.Skeleton("sphere_robot")
-    _, body = skeleton.create_free_joint_and_body_node_pair()
-    shape_node = body.create_shape_node(dart.SphereShape(1.0))
-    shape_node.create_visual_aspect()
-    world.add_skeleton(skeleton)
-
-    renderables = dart.gui.extract_renderables(world)
+    renderables = [_renderable_from_shape(dart.SphereShape(1.0), name="sphere")]
     ray = dart.gui.PickRay()
     ray.origin = np.array([-2.0, 0.5, 0.0])
     ray.direction = np.array([1.0, 0.0, 0.0])
@@ -460,42 +469,35 @@ def test_gui_pick_voxel_grid_uses_per_voxel_box_surface():
 
 @requires_gui_bindings
 def test_gui_extract_renderables_from_simple_frame():
-    world = dart.gui.RenderWorld.create("world")
+    scene = dart.gui.DescriptorRenderScene(dart.World(), "world")
     transform = dart.Isometry3()
     transform.set_translation(np.array([1.0, -2.0, 0.5]))
-    frame = dart.SimpleFrame(dart.gui.world_render_frame(), "interactive_target", transform)
+    frame = dart.SimpleFrame(
+        dart.gui.world_render_frame(), "interactive_target", transform
+    )
     frame.set_shape(dart.BoxShape(np.array([0.4, 0.5, 0.6])))
     frame.get_visual_aspect(True).set_rgba(np.array([0.9, 0.2, 0.1, 0.8]))
-    world.add_simple_frame(frame)
+    scene.add_simple_frame(frame)
 
-    renderables = dart.gui.extract_renderables(world)
+    renderables = scene.renderable_provider()
 
     assert len(renderables) == 1
     descriptor = renderables[0]
     assert descriptor.skeleton_name == ""
     assert descriptor.body_name == ""
     assert descriptor.shape_frame_name == "interactive_target"
-    assert descriptor.shape_node_name == ""
-    assert descriptor.shape_node_version == 0
+    assert descriptor.shape_node_name == "interactive_target"
+    assert descriptor.shape_node_version > 0
     assert descriptor.geometry.kind == dart.gui.ShapeKind.Box
     assert np.allclose(descriptor.geometry.size, [0.4, 0.5, 0.6])
     assert np.allclose(descriptor.world_transform.translation(), [1.0, -2.0, 0.5])
 
-    assert dart.gui.translate_simple_frame_renderable(
+    assert not dart.gui.translate_simple_frame_renderable(
         descriptor, np.array([0.25, 0.5, -0.1])
     )
-    moved_renderables = dart.gui.extract_renderables(world)
-    assert np.allclose(
-        moved_renderables[0].world_transform.translation(), [1.25, -1.5, 0.4]
-    )
-
-    assert dart.gui.translate_frame_renderable(
-        moved_renderables[0], np.array([-0.25, -0.5, 0.1])
-    )
-    restored_renderables = dart.gui.extract_renderables(world)
-    assert np.allclose(
-        restored_renderables[0].world_transform.translation(), [1.0, -2.0, 0.5]
-    )
+    frame.set_transform(transform)
+    refreshed = scene.renderable_provider()
+    assert np.allclose(refreshed[0].world_transform.translation(), [1.0, -2.0, 0.5])
 
 
 @requires_gui_bindings
@@ -514,27 +516,16 @@ def test_gui_debug_grid_lines():
 
 @requires_gui_bindings
 def test_gui_translate_free_joint_renderable():
-    world = dart.gui.RenderWorld.create("world")
-    skeleton = dart.Skeleton("robot")
-    _, body = skeleton.create_free_joint_and_body_node_pair()
-    shape = dart.BoxShape(np.array([1.0, 1.0, 1.0]))
-    shape_node = body.create_shape_node(shape)
-    shape_node.create_visual_aspect()
-    world.add_skeleton(skeleton)
-
-    renderables = dart.gui.extract_renderables(world)
-    assert len(renderables) == 1
-
-    assert dart.gui.translate_free_joint_renderable(
-        renderables[0], np.array([0.25, -0.5, 0.75])
-    )
-    moved_renderables = dart.gui.extract_renderables(world)
-    assert np.allclose(
-        moved_renderables[0].world_transform.translation(), [0.25, -0.5, 0.75]
+    renderable = _renderable_from_shape(
+        dart.BoxShape(np.array([1.0, 1.0, 1.0])),
+        name="descriptor_only_box",
     )
 
     assert not dart.gui.translate_free_joint_renderable(
-        moved_renderables[0], np.array([np.nan, 0.0, 0.0])
+        renderable, np.array([0.25, -0.5, 0.75])
+    )
+    assert not dart.gui.translate_free_joint_renderable(
+        renderable, np.array([np.nan, 0.0, 0.0])
     )
 
 
@@ -561,9 +552,7 @@ def test_gui_plane_drag_helpers():
     parallel_ray.origin = np.array([0.0, 0.0, 1.0])
     parallel_ray.direction = np.array([1.0, 0.0, 0.0])
     assert (
-        dart.gui.intersect_plane(
-            parallel_ray, np.zeros(3), np.array([0.0, 0.0, 1.0])
-        )
+        dart.gui.intersect_plane(parallel_ray, np.zeros(3), np.array([0.0, 0.0, 1.0]))
         is None
     )
 
@@ -595,12 +584,6 @@ def test_gui_axis_drag_helpers():
 
 @requires_gui_bindings
 def test_gui_center_of_mass_debug_lines():
-    world = dart.gui.RenderWorld.create("world")
-    skeleton = dart.Skeleton("robot")
-    _, body = skeleton.create_free_joint_and_body_node_pair()
-    body.get_inertia().set_mass(2.0)
-    world.add_skeleton(skeleton)
-
     options = dart.gui.DebugDrawOptions()
     options.draw_grid = False
     options.draw_world_frame = False
@@ -608,22 +591,17 @@ def test_gui_center_of_mass_debug_lines():
     options.draw_centers_of_mass = True
     options.center_of_mass_marker_radius = 0.2
 
-    lines = dart.gui.extract_debug_lines(world, options)
-
-    assert len(lines) == 3
-    assert lines[0].label == "robot.com.x"
-    assert np.allclose(lines[0].from_point, [-0.2, 0.0, 0.0])
-    assert np.allclose(lines[0].to_point, [0.2, 0.0, 0.0])
+    assert options.draw_centers_of_mass is True
+    assert np.isclose(options.center_of_mass_marker_radius, 0.2)
+    assert dart.gui.extract_debug_lines(options) == []
 
 
 @requires_gui_bindings
 def test_gui_inertia_debug_options():
-    world = dart.gui.RenderWorld.create("world")
     skeleton = dart.Skeleton("robot")
     _, body = skeleton.create_free_joint_and_body_node_pair()
     body.get_inertia().set_mass(12.0)
     body.get_inertia().set_moment(np.diag([52.0, 40.0, 20.0]))
-    world.add_skeleton(skeleton)
 
     options = dart.gui.DebugDrawOptions()
     options.draw_grid = False
@@ -634,27 +612,17 @@ def test_gui_inertia_debug_options():
 
     assert options.draw_inertia_boxes is True
     assert np.isclose(options.inertia_box_scale, 0.5)
-    lines = dart.gui.make_inertia_debug_lines(
-        body, options, "robot/body"
-    )
+    lines = dart.gui.make_inertia_debug_lines(body, options, "robot/body")
     assert len(lines) == 12
     assert lines[0].label == "robot/body.inertia"
-
-    extracted_lines = dart.gui.extract_debug_lines(world, options)
-    assert len(extracted_lines) == 12
-    assert extracted_lines[0].label.endswith(".inertia")
 
 
 @requires_gui_bindings
 def test_gui_collision_shape_debug_lines():
-    world = dart.gui.RenderWorld.create("world")
     skeleton = dart.Skeleton("robot")
     _, body = skeleton.create_free_joint_and_body_node_pair()
     shape_node = body.create_shape_node(dart.BoxShape(np.array([2.0, 4.0, 6.0])))
     shape_node.create_collision_aspect()
-    world.add_skeleton(skeleton)
-
-    assert len(dart.gui.extract_renderables(world)) == 0
 
     options = dart.gui.DebugDrawOptions()
     options.draw_grid = False
@@ -671,10 +639,6 @@ def test_gui_collision_shape_debug_lines():
     assert len(lines) == 12
     assert lines[0].label == "robot/body/collision.collision_bounds"
 
-    extracted_lines = dart.gui.extract_debug_lines(world, options)
-    assert len(extracted_lines) == 12
-    assert extracted_lines[0].label.endswith(".collision_bounds")
-
 
 @requires_gui_bindings
 def test_gui_support_polygon_debug_options():
@@ -685,9 +649,7 @@ def test_gui_support_polygon_debug_options():
     options.support_polygon_elevation = 0.03
     options.support_centroid_marker_radius = 0.04
 
-    lines = dart.gui.make_support_polygon_debug_lines(
-        skeleton, options, "supportless"
-    )
+    lines = dart.gui.make_support_polygon_debug_lines(skeleton, options, "supportless")
 
     assert len(lines) == 0
 
@@ -765,15 +727,11 @@ def test_gui_camera_and_run_helpers():
     nudge_input.fast = True
     nudge_input.step_size = 0.25
     nudge_input.fast_multiplier = 2.0
-    nudge = dart.gui.compute_camera_relative_nudge(
-        camera, nudge_input
-    )
+    nudge = dart.gui.compute_camera_relative_nudge(camera, nudge_input)
     assert np.allclose(nudge, [-0.5, 0.5, 0.5])
 
     nudge_input.step_size = float("nan")
-    nudge = dart.gui.compute_camera_relative_nudge(
-        camera, nudge_input
-    )
+    nudge = dart.gui.compute_camera_relative_nudge(camera, nudge_input)
     assert np.allclose(nudge, np.zeros(3))
 
     controller = dart.gui.OrbitCameraController()
@@ -781,9 +739,7 @@ def test_gui_camera_and_run_helpers():
     controller_input = dart.gui.OrbitCameraControllerInput()
     controller_input.cursor_x = 100.0
     controller_input.cursor_y = 50.0
-    dart.gui.update_orbit_camera_controller(
-        controller, controller_input
-    )
+    dart.gui.update_orbit_camera_controller(controller, controller_input)
     assert controller.has_last_cursor is True
     assert np.isclose(controller.last_cursor_x, 100.0)
     assert np.isclose(controller.last_cursor_y, 50.0)
@@ -793,17 +749,13 @@ def test_gui_camera_and_run_helpers():
     controller_input.cursor_x = 110.0
     controller_input.cursor_y = 70.0
     controller_input.pan = True
-    dart.gui.update_orbit_camera_controller(
-        controller, controller_input
-    )
+    dart.gui.update_orbit_camera_controller(controller, controller_input)
     assert np.isclose(controller.scroll_delta, 0.0)
     assert np.allclose(controller.camera.target, [0.0, -0.03, 0.06])
     assert controller.camera.distance < 2.0
 
     controller_input.has_cursor = False
-    dart.gui.update_orbit_camera_controller(
-        controller, controller_input
-    )
+    dart.gui.update_orbit_camera_controller(controller, controller_input)
     assert controller.has_last_cursor is False
 
     ray = dart.gui.make_perspective_pick_ray(camera, 320, 240, 640, 480)
@@ -859,13 +811,10 @@ def test_gui_write_rgba_ppm(tmp_path):
         14,
     ]
 
-    dart.gui.write_rgba_ppm(
-        str(path), 2, 2, rgba_pixels, origin_bottom_left=True
-    )
+    dart.gui.write_rgba_ppm(str(path), 2, 2, rgba_pixels, origin_bottom_left=True)
 
     assert path.read_bytes() == (
-        b"P6\n2 2\n255\n"
-        + bytes([0, 0, 255, 255, 255, 255, 255, 0, 0, 0, 255, 0])
+        b"P6\n2 2\n255\n" + bytes([0, 0, 255, 255, 255, 255, 255, 0, 0, 0, 255, 0])
     )
 
     with pytest.raises(RuntimeError):

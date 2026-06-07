@@ -81,7 +81,7 @@ private:
 /// Each executed command is bracketed by full editor-state snapshots
 /// (SceneModel + selection). Undo restores the pre-command snapshot; redo
 /// restores the post-command snapshot. Restoring a snapshot rebuilds the
-/// derived experimental World unless only persisted workspace metadata changed.
+/// derived DART 7 World unless only persisted workspace metadata changed.
 class CommandManager
 {
 public:

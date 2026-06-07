@@ -1,4 +1,4 @@
-# Profiling the experimental World (text-first)
+# Profiling the DART 7 World (text-first)
 
 DART 7 is built so an AI agent (or a human) can find where simulation time goes
 **without a GUI profiler** — by reading a plain-text breakdown of a step. This
@@ -22,7 +22,7 @@ workflows. When `DART_BUILD_PROFILE=OFF`, the runtime toggle is a no-op,
 `last_step_profile` stays empty, and `World` carries no profiling cache fields;
 the normal `World::step` path has no compiled profiling branch or clock reads.
 
-The experimental World step runs an ordered pipeline of named stages
+The DART 7 World step runs an ordered pipeline of named stages
 (`rigid_body_velocity`, `rigid_body_contact`, `multibody_forward_dynamics`,
 `deformable_dynamics`, `rigid_body_position`, `kinematics`, ...). Step profiling
 times each stage and keeps the most recent breakdown.
@@ -34,9 +34,9 @@ execution as before. Enable it, take one or more steps, then read the profile.
 ### Python (dartpy)
 
 ```python
-import dartpy.simulation_experimental as sx
+import dartpy as dart
 
-world = sx.World()
+world = dart.World()
 # ... build your scene ...
 
 world.step_profiling_enabled = True
@@ -107,9 +107,9 @@ backend selected by `set_accelerated_deformable_solve()`.
 ### C++
 
 ```cpp
-#include <dart/simulation/experimental/world.hpp>
+#include <dart/simulation/world.hpp>
 
-dart::simulation::experimental::World world;
+dart::simulation::World world;
 world.setStepProfilingEnabled(true);
 world.step();
 
@@ -188,12 +188,12 @@ same text without printing to `std::cout`.
 ## Where this is implemented
 
 - World step profile type:
-  `dart/simulation/experimental/compute/world_step_profile.{hpp,cpp}`
+  `dart/simulation/compute/world_step_profile.{hpp,cpp}`
 - Nested compute graph profile type:
-  `dart/simulation/experimental/compute/execution_profile.{hpp,cpp}`
+  `dart/simulation/compute/execution_profile.{hpp,cpp}`
 - Pipeline timing seam: `WorldStepPipeline::executeProfiled`
-  (`dart/simulation/experimental/compute/world_step_stage.cpp`)
+  (`dart/simulation/compute/world_step_stage.cpp`)
 - World surface: `World::setStepProfilingEnabled` /
-  `World::getLastStepProfile` (`dart/simulation/experimental/world.hpp`)
-- dartpy bindings: `python/dartpy/simulation_experimental/module.cpp`
+  `World::getLastStepProfile` (`dart/simulation/world.hpp`)
+- dartpy bindings: `python/dartpy/simulation/module.cpp`
 - Built-in scope profiler: `dart/common/profile.hpp`

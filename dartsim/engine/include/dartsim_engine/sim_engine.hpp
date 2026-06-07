@@ -54,7 +54,7 @@ namespace dartsim {
 ///
 /// Owns the scene/object manager, selection, command history, simulation
 /// control, and record/replay, and exposes a small surface that a GUI (or a
-/// test) drives without touching the experimental World directly. The GUI is a
+/// test) drives without touching the DART 7 World directly. The GUI is a
 /// thin client over this engine; see docs/design/dartsim_gui_simulator.md.
 class SimEngine
 {

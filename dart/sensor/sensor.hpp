@@ -33,8 +33,6 @@
 #ifndef DART_SENSOR_SENSOR_HPP_
 #define DART_SENSOR_SENSOR_HPP_
 
-#include <dart/simulation/fwd.hpp>
-
 #include <dart/dynamics/fwd.hpp>
 
 #include <dart/common/class_with_virtual_base.hpp>
@@ -50,6 +48,8 @@
 #include <string>
 #include <string_view>
 
+#include <cstddef>
+
 namespace dart {
 namespace sensor {
 
@@ -57,7 +57,7 @@ struct SensorUpdateContext final
 {
   double time{0.0};
   double timeStep{0.0};
-  int frame{0};
+  std::size_t frame{0};
 };
 
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
@@ -128,9 +128,8 @@ public:
   /// Reset sensor internal state.
   void reset();
 
-  /// Update the sensor using the provided world context.
-  void update(
-      const simulation::World& world, const SensorUpdateContext& context);
+  /// Update the sensor using the provided simulation context.
+  void update(const SensorUpdateContext& context);
 
   /// Return true if the sensor has produced an update.
   bool hasUpdate() const;
@@ -139,8 +138,7 @@ public:
   const SensorUpdateContext& getLastUpdateContext() const;
 
 protected:
-  virtual void updateImpl(
-      const simulation::World& world, const SensorUpdateContext& context) = 0;
+  virtual void updateImpl(const SensorUpdateContext& context) = 0;
 
   virtual void resetImpl();
 

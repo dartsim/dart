@@ -10,9 +10,9 @@ and the promotion order for future implementation slices.
 
 - Pure distance, barrier, tangent-stencil, and tangent-displacement friction
   kernels now live under
-  `dart/simulation/experimental/detail/newton_barrier/`.
+  `dart/simulation/detail/newton_barrier/`.
 - Deformable compatibility headers under
-  `dart/simulation/experimental/detail/deformable_contact/` forward to the
+  `dart/simulation/detail/deformable_contact/` forward to the
   shared Newton-barrier owner so active PLAN-081 code keeps compiling.
 - Rigid IPC includes the shared Newton-barrier owner directly from
   `rigid_ipc_barrier.{hpp,cpp}` for primitive barriers and friction potentials.

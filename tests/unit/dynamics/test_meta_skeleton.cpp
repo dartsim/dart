@@ -51,7 +51,6 @@
 
 using namespace dart;
 using namespace dart::dynamics;
-using namespace dart::simulation;
 
 //==============================================================================
 // Helper: Create a simple chain skeleton with N revolute joints

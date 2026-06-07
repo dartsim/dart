@@ -10,12 +10,12 @@ on:
       - ".github/actions/setup-pixi-ci/**"
       - ".github/workflows/ci_cuda.yml"
       - "CMakeLists.txt"
-      - "dart/simulation/experimental/**"
+      - "dart/simulation/**"
       - "pixi.lock"
       - "pixi.toml"
       - "scripts/cmake_build.py"
-      - "tests/benchmark/simulation/experimental/**"
-      - "tests/unit/simulation/experimental/**"
+      - "tests/benchmark/simulation/**"
+      - "tests/unit/simulation/**"
   pull_request:
     branches:
       - "**"
@@ -24,12 +24,12 @@ on:
       - ".github/actions/setup-pixi-ci/**"
       - ".github/workflows/ci_cuda.yml"
       - "CMakeLists.txt"
-      - "dart/simulation/experimental/**"
+      - "dart/simulation/**"
       - "pixi.lock"
       - "pixi.toml"
       - "scripts/cmake_build.py"
-      - "tests/benchmark/simulation/experimental/**"
-      - "tests/unit/simulation/experimental/**"
+      - "tests/benchmark/simulation/**"
+      - "tests/unit/simulation/**"
   workflow_dispatch:
 
 concurrency:

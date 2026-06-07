@@ -1,12 +1,12 @@
 # Rigid-Body Dynamics Solver — Dev Task
 
-Bring the experimental `World` (`dart/simulation/experimental/`) to DART
+Bring the DART 7 `World` (`dart/simulation/`) to DART
 6-equivalent — then better — rigid-body simulation, implemented as the **first
 solver** under a multi-solver, multi-physics architecture.
 
 ## Current Status
 
-- [x] Gap analysis: legacy DART 6 rigid-body sim vs experimental World
+- [x] Gap analysis: legacy DART 6 rigid-body sim vs DART 7 World
       ([`01-gap-analysis.md`](01-gap-analysis.md)).
 - [x] Architecture design for solvers / domain assignment / coupling /
       model-state separation
@@ -51,19 +51,19 @@ solver** under a multi-solver, multi-physics architecture.
 ### DART 7 B2 gate — rigid open-chain dynamics parity
 
 - [x] World-parity harness:
-      `tests/unit/simulation/experimental/world/test_world_parity.cpp` compares
+      `tests/unit/simulation/world/test_world_parity.cpp` compares
       classic `dart::simulation::World` vs
-      `dart::simulation::experimental::World` on shared open-chain scenes
+      `dart::simulation::World` on shared open-chain scenes
       (gravity free-fall, pendulum/double-pendulum integration, 1e4-step drift,
       and a held-torque controlled scene), within documented tolerances. Runs
-      under `pixi run test-simulation-experimental`. All open-chain scenarios
+      under `pixi run test-simulation`. All open-chain scenarios
       reach parity on `main` to machine epsilon; contact/constraint parity (B3)
       is deferred to the unified solver (PR #2838). See `RESUME.md` for the
       per-scenario table and deferred items.
 
 ## Goal
 
-A user can build a rigid-body / articulated scene on the experimental `World`,
+A user can build a rigid-body / articulated scene on the DART 7 `World`,
 step it, and get dynamics that match legacy DART 6 (within tolerance) and then
 exceed it (armature, pluggable integrator, fresh-by-default reads, backend-
 neutral compute, model/state separation) — without the public API exposing
@@ -79,7 +79,7 @@ solvers, couplers, ECS storage, or execution backends.
   through the centralized built-in schedule instead of adding another parallel
   default-step switch.
 - Direct file loading remains outside this task; compose through maintained
-  `dart::io` readers and the experimental skeleton/world conversion bridges.
+  `dart::io` readers and the DART 7 skeleton/world conversion bridges.
 - Do not modify `/home/js/multiphysics-api-design.md` (external user doc).
 - Do not name solvers/presets/examples after other engines; use method/approach
   names. Do not reference specific external engines by name in core code or
@@ -114,7 +114,7 @@ solvers, couplers, ECS storage, or execution backends.
 
 ## Relationship To The API-Design Dev Task
 
-`docs/dev_tasks/simulation_experimental_api_design/` tracks the public _facade
+`docs/dev_tasks/simulation_api_design/` tracks the public _facade
 shape_ (handles, naming, Pythonic dartpy). This task tracks the _dynamics
 implementation_ behind that facade. Keep facade changes in that task; keep
 solver/dynamics changes here. When this task completes, promote durable

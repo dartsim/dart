@@ -6,7 +6,6 @@
 #include "dart/dynamics/shape_node.hpp"
 #include "dart/dynamics/skeleton.hpp"
 #include "dart/gui/scene.hpp"
-#include "dart/simulation/world.hpp"
 
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
@@ -350,7 +349,6 @@ void defGuiDescriptors(nb::module_& m)
           &gui::DebugDrawOptions::contactForceMaxLength);
 
   m.def("describe_shape", &gui::describeShape, nb::arg("shape"));
-  m.def("extract_renderables", &gui::extractRenderables, nb::arg("world"));
   m.def(
       "plan_renderable_set_update",
       static_cast<gui::RenderableSetUpdatePlan (*)(
@@ -587,8 +585,8 @@ void defGuiDescriptors(nb::module_& m)
       nb::arg("options") = gui::DebugDrawOptions{});
   m.def(
       "extract_debug_lines",
-      &gui::extractDebugLines,
-      nb::arg("world"),
+      static_cast<std::vector<gui::DebugLineDescriptor> (*)(
+          const gui::DebugDrawOptions&)>(&gui::extractDebugLines),
       nb::arg("options") = gui::DebugDrawOptions{});
 }
 

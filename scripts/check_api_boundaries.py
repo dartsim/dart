@@ -13,7 +13,7 @@ Covers four boundaries:
   Action 1).
 - The dartsim editor engine (``dartsim/engine``) is headless: it must not
   reference any renderer/windowing backend symbol *or* include a ``dart/gui``
-  header at all (the engine depends only on the experimental simulation API).
+  header at all (the engine depends only on the DART 7 simulation API).
 """
 
 from __future__ import annotations
@@ -75,10 +75,8 @@ LINE_CHECKS: tuple[tuple[str, re.Pattern[str], str], ...] = (
     ),
     (
         "python-experimental-comps-include",
-        re.compile(
-            r"^\s*#\s*include\s*[<\"]dart/simulation/experimental/comps/[^>\"]+[>\"]"
-        ),
-        "Python bindings must not include experimental component storage headers.",
+        re.compile(r"^\s*#\s*include\s*[<\"]dart/simulation/comps/[^>\"]+[>\"]"),
+        "Python bindings must not include DART 7 component storage headers.",
     ),
     (
         "python-private-namespace-reference",
@@ -114,7 +112,7 @@ DARTSIM_ENGINE_GUI_INCLUDE_PATTERN = re.compile(
 )
 DARTSIM_ENGINE_BACKEND_MESSAGE = (
     "dartsim/engine is headless: no renderer/windowing backend symbols and no "
-    "dart/gui include (depend only on dart::simulation::experimental + math)."
+    "dart/gui include (depend only on dart::simulation + math)."
 )
 
 
@@ -361,7 +359,7 @@ def run_self_tests() -> None:
             "python-private-include",
         ),
         (
-            "#include <dart/simulation/experimental/comps/world.hpp>",
+            "#include <dart/simulation/comps/world.hpp>",
             "python-experimental-comps-include",
         ),
         (
@@ -491,7 +489,7 @@ def run_self_tests() -> None:
     engine_clean_violations = find_dartsim_engine_boundary_violations_in_lines(
         engine_fixture_path,
         [
-            "#include <dart/simulation/experimental/world.hpp>",
+            "#include <dart/simulation/world.hpp>",
             "SceneModel model = engine.sceneModel();",
         ],
     )

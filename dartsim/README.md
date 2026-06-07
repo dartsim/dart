@@ -1,7 +1,7 @@
 # dartsim
 
 `dartsim` is the standalone, general-purpose robotics multi-physics GUI
-simulator built on DART's experimental World API. The DART libraries under
+simulator built on the DART 7 World API. The DART libraries under
 `dart/` remain the C++/Python library distribution; `dartsim` is distributed as
 a runtime executable (via package managers), not as a library, so nothing here
 is installed or exported as a public `dart::` component and runtime dependencies
@@ -70,13 +70,11 @@ pixi run ex dartsim --scene boxes
 ```
 
 The GUI examples are consolidated into the `dart-demos` app, where each is a
-runtime-switchable scene; `hello_world` stays standalone as the minimal
-template:
+runtime-switchable DART 7 World scene:
 
 ```bash
-pixi run demos                  # browse all example scenes in one window
-pixi run demos -- --scene boxes # select a scene by id
-pixi run ex hello_world         # the standalone minimal template
+pixi run demos                       # browse all example scenes in one window
+pixi run demos -- --scene rigid_body # select a scene by id
 ```
 
 The renderer implementation is private to `dart::gui`; code should include

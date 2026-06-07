@@ -39,8 +39,6 @@
 #include <dart/gui/gizmo.hpp>
 #include <dart/gui/scene.hpp>
 
-#include <dart/simulation/world.hpp>
-
 #include <ostream>
 
 namespace dart::gui::detail {
@@ -56,12 +54,7 @@ std::optional<InitialSceneState> createInitialSceneState(
     bool allowEmptyScene,
     std::ostream& errors)
 {
-  auto initialDescriptors = dart::gui::extractRenderables(*dartScene.world);
-  if (dartScene.renderableProvider) {
-    auto extra = dartScene.renderableProvider();
-    initialDescriptors.insert(
-        initialDescriptors.end(), extra.begin(), extra.end());
-  }
+  auto initialDescriptors = collectSceneRenderables(dartScene);
   const SceneContentCounts expectedSceneContent
       = countSceneContent(initialDescriptors);
   if (validateFixtureRequirements
@@ -99,11 +92,7 @@ std::optional<InitialSceneState> createInitialSceneState(
   state.debugOverlays
       = makeDebugOverlayController(exampleScene == ExampleScene::G1);
   refreshStaticDebugOverlay(
-      engine,
-      scene,
-      materials.debugColor,
-      *dartScene.world,
-      state.debugOverlays);
+      engine, scene, materials.debugColor, state.debugOverlays);
   if (!state.debugOverlays.staticOverlay && !allowEmptyScene) {
     errors << "No debug overlay lines were extracted\n";
     return std::nullopt;

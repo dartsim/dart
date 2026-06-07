@@ -169,21 +169,21 @@ Collision object posing should use public `dart::gui::Gizmo` handles so visual
 pair checks stay mouse-driven; keep ImGui panels for mode and parameter
 controls rather than as the primary transform editor.
 
-## dartsim Editor (Experimental World)
+## dartsim Editor (DART 7 World)
 
 The standalone GUI simulator lives in the top-level `dartsim/` folder (a runtime
 executable distribution, not a library). It is split into a headless editor
-engine (`dartsim/engine`, no GUI dependency) that owns an experimental
-`dart::simulation::experimental::World` plus object/selection/command
+engine (`dartsim/engine`, no GUI dependency) that owns a
+`dart::simulation::World` plus object/selection/command
 (undo/redo)/name managers, an Edit/Run controller, record/replay, and a
 human-readable project format; a thin panel layer (`dartsim/ui`) that wires the
 engine to `dart::gui`; and the executable entry point (`dartsim/app`). The
-engine keeps a SceneModel as the source of truth and rebuilds the experimental
+engine keeps a SceneModel as the source of truth and rebuilds the DART 7
 World from it (that World has no per-object removal), which is also how undo/redo
 and Reset work. Design rationale lives in
 `docs/design/dartsim_gui_simulator.md`.
 
-The viewport draws the experimental scene through
+The viewport draws the DART 7 scene through
 `dart::gui::ApplicationOptions::renderableProvider`, an optional callback that
 returns extra `RenderableDescriptor`s appended to the world-derived renderables
 each frame. Descriptors only need `id`, `geometry`, `material`, and
@@ -219,10 +219,10 @@ at runtime via `dart::gui::runDemos`. A scene is a factory returning a
 `examples/demos/scenes/<name>.cpp`, declaring it in `scenes.hpp`, and registering
 it in `registry.cpp`. High-value DART 6 concepts that are not ported yet belong
 as lightweight launchable placeholders in `Planned World Ports`, not as retained
-legacy scene code. `hello_world` stays a standalone minimal template. The
-`dart/gui/detail` `ExampleScene` set is kept as the renderer's internal test
-fixtures (renderable-extraction + `EXAMPLE_dartsim_<scene>` smokes), distinct
-from the examples. Design rationale: `docs/design/demos_app.md`.
+legacy scene code. The `dart/gui/detail` `ExampleScene` set is kept as the
+renderer's internal test fixtures (renderable-extraction +
+`EXAMPLE_dartsim_<scene>` smokes), distinct from the examples. Design rationale:
+`docs/design/demos_app.md`.
 
 ## Migration Notes
 

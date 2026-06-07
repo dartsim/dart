@@ -20,7 +20,7 @@
 cmake_minimum_required(VERSION 3.22.1)
 
 # The headless engine has no GUI dependency, so it always builds (and is
-# unit-tested by tests/unit/dartsim_engine) whenever the experimental World is
+# unit-tested by tests/unit/dartsim_engine) whenever the DART 7 World is
 # available.
 add_subdirectory(engine)
 

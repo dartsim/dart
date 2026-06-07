@@ -32,9 +32,12 @@
     scene selectable at runtime from a categorized sidebar (`--scene <id>`
     selects the initial scene; `--cycle-scenes` drives the headless smoke).
     Added a runtime scene-switch capability to `dart::gui` via
-    `dart::gui::runDemos`. `hello_world` stays a standalone minimal CMake
-    template, and the headless `csv_logger`, `headless_simulation`,
-    `speed_test`, and `unified_loading` examples stay standalone.
+    `dart::gui::runDemos`. The classic standalone GUI examples
+    (`hello_world`, `gui_scene_diagnostics`, and `speed_test`) were retired
+    from `main`; release-6.\* branches remain the parity source for those DART 6
+    examples. The headless `csv_logger`, `headless_simulation`, and
+    `unified_loading` examples were also retired because they taught the removed
+    DART 6 whole-World loading API.
   - Pruned `pixi run demos` and `pixi run py-demos` to the DART 7 World demo
     catalog. The old DART 6 demo scene modules and cross-language golden parity
     fixtures were removed; remaining scene ids/categories use World, IPC,
@@ -204,13 +207,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     non-docking ImGui builds are unaffected. See
     `docs/design/dartsim_gui_simulator.md` and
     `docs/onboarding/gui-rendering.md`.
-  - Moved the `dartsim` viewer source to a dedicated application tree, added a
-    public `dart::gui::ApplicationOptions::world` handoff for example-owned
-    worlds, and restored `hello_world` as a real public-API `dart::gui` example
-    source.
-  - Restored the `hello_world` example's instruction text, camera/run
-    defaults, deterministic non-axis-aligned box orientation, profiling
-    markers, and README through public `dart::gui`.
+  - Moved the `dartsim` viewer source to a dedicated application tree and added
+    a public `dart::gui::ApplicationOptions::world` handoff for example-owned
+    worlds.
   - Restored `boxes`, `rigid_cubes`, and `box_stacking` as real public-API
     `dart::gui` example sources with source-defined DART worlds instead of
     shared private scene-fixture launchers.
@@ -369,10 +368,8 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     pre-step control loop, perturbation and state-machine keyboard actions,
     gravity/harness/stride panel controls, native window title,
     camera/run defaults, and README through public `dart::gui`.
-  - Audited `gui_scene_diagnostics` against its historical source and kept it
-    as a promoted `dart::gui` descriptor diagnostic example with marker
-    coverage for CLI options, descriptor extraction, debug/selection lines,
-    camera picking, README, and no renderer dependency.
+  - Audited the `gui_scene_diagnostics` source before retiring it from `main`
+    with the rest of the classic standalone GUI example surface.
   - Removed the no-source `rerun` placeholder example because it had no
     concrete integration workflow, executable, or known downstream user.
   - Restored the `lcp_physics` example's historical scene counts, names,
@@ -534,18 +531,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     through public `dart::gui`.
   - Restored hardcoded-design example joint keyboard controls, camera default,
     and example README through public `dart::gui`.
-  - Preserved the `csv_logger` example's non-GUI command-line CSV logging
-    contract and added strict-audit marker coverage so renderer promotion does
-    not pull it into the GUI dependency surface.
-  - Preserved the `headless_simulation` example's non-GUI deterministic
-    batch-simulation contract and added strict-audit marker coverage so
-    renderer promotion does not pull it into the GUI dependency surface.
-  - Preserved the `speed_test` example's non-GUI timing benchmark contract and
-    added strict-audit marker coverage so renderer promotion does not pull it
-    into the GUI dependency surface.
-  - Preserved the `unified_loading` example's non-GUI shared `ReadOptions`
-    loading contract and added strict-audit marker coverage so renderer
-    promotion does not pull it into the GUI dependency surface.
+  - Retired the `csv_logger`, `headless_simulation`, and `unified_loading`
+    examples from `main` with release-6.\* branches as the parity source for
+    their DART 6 whole-World loading behavior.
   - Removed dartpy legacy collision detector aliases `DARTCollisionDetector`,
     `FCLCollisionDetector`, `BulletCollisionDetector`, and
     `OdeCollisionDetector`; use `DartCollisionDetector` or the default detector.

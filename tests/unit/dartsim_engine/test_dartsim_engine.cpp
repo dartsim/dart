@@ -30,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/simulation/experimental/body/rigid_body.hpp>
-#include <dart/simulation/experimental/multibody/multibody.hpp>
-#include <dart/simulation/experimental/world.hpp>
+#include <dart/simulation/body/rigid_body.hpp>
+#include <dart/simulation/multibody/multibody.hpp>
+#include <dart/simulation/world.hpp>
 
 #include <Eigen/Geometry>
 #include <dartsim_engine/commands.hpp>

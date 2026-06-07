@@ -34,9 +34,6 @@
 
 #include <dart/config.hpp>
 
-#include <dart/dynamics/free_joint.hpp>
-#include <dart/dynamics/weld_joint.hpp>
-
 #include <dart/common/local_resource_retriever.hpp>
 
 #include <gtest/gtest.h>
@@ -159,51 +156,6 @@ TEST(ReadUnit, ReturnsNullForMjcfSkeleton)
   EXPECT_EQ(skeleton, nullptr);
 }
 
-#if DART_HAVE_SDFORMAT
-
-namespace {
-
-const char* kSingleBodySdfWorld
-    = "dart://sample/sdf/test/single_bodynode_skeleton.world";
-
-}
-
-//==============================================================================
-TEST(ReadUnit, ReadsSdfWorldWithFloatingRootByDefault)
-{
-  io::ReadOptions options;
-  options.format = io::ModelFormat::Sdf;
-
-  const auto world = io::readWorld(kSingleBodySdfWorld, options);
-  ASSERT_NE(world, nullptr);
-  ASSERT_EQ(world->getNumSkeletons(), 1u);
-
-  const auto skeleton = world->getSkeleton(0);
-  ASSERT_NE(skeleton, nullptr);
-  ASSERT_EQ(skeleton->getNumJoints(), 1u);
-
-  EXPECT_NE(dynamic_cast<dynamics::FreeJoint*>(skeleton->getJoint(0)), nullptr);
-}
-
-//==============================================================================
-TEST(ReadUnit, ReadsSdfWorldWithFixedRootWhenRequested)
-{
-  io::ReadOptions options;
-  options.format = io::ModelFormat::Sdf;
-  options.sdfDefaultRootJointType = io::RootJointType::Fixed;
-
-  const auto world = io::readWorld(kSingleBodySdfWorld, options);
-  ASSERT_NE(world, nullptr);
-  ASSERT_EQ(world->getNumSkeletons(), 1u);
-
-  const auto skeleton = world->getSkeleton(0);
-  ASSERT_NE(skeleton, nullptr);
-  ASSERT_EQ(skeleton->getNumJoints(), 1u);
-
-  EXPECT_NE(dynamic_cast<dynamics::WeldJoint*>(skeleton->getJoint(0)), nullptr);
-}
-#endif // DART_HAVE_SDFORMAT
-
 #if DART_IO_HAS_URDF
 //==============================================================================
 TEST(ReadUnit, ReadsUrdfWithPackageDirectories)
@@ -227,9 +179,6 @@ TEST(ReadUnit, ReturnsNullForNonExistentFile)
 {
   const auto skeleton = io::readSkeleton("/nonexistent/path/robot.urdf");
   EXPECT_EQ(skeleton, nullptr);
-
-  const auto world = io::readWorld("/nonexistent/path/world.sdf");
-  EXPECT_EQ(world, nullptr);
 }
 
 //==============================================================================
@@ -246,7 +195,6 @@ TEST(ReadUnit, ReturnsNullForUnsupportedExplicitFormat)
   options.format = static_cast<io::ModelFormat>(-1);
   const common::Uri uri("memory://unsupported.xml");
 
-  EXPECT_EQ(io::readWorld(uri, options), nullptr);
   EXPECT_EQ(io::readSkeleton(uri, options), nullptr);
 }
 
@@ -269,21 +217,17 @@ TEST(ReadUnit, ReturnsNullForInvalidAmbiguousXmlContent)
     const auto options = optionsWithContent(testCase.content);
     const common::Uri uri(std::string("memory://") + testCase.name + ".xml");
 
-    EXPECT_EQ(io::readWorld(uri, options), nullptr) << testCase.name;
     EXPECT_EQ(io::readSkeleton(uri, options), nullptr) << testCase.name;
   }
 }
 
 //==============================================================================
-TEST(ReadUnit, InfersSkelWorldFromAmbiguousXmlRoot)
+TEST(ReadUnit, InfersSkelXmlRootBeforeReturningNullForEmptyWorld)
 {
   const auto options = optionsWithContent(
       "<skel version=\"1.0\"><world name=\"empty_world\" /></skel>");
   const common::Uri uri("memory://empty_skel.xml");
 
-  const auto world = io::readWorld(uri, options);
-  ASSERT_NE(world, nullptr);
-  EXPECT_EQ(world->getNumSkeletons(), 0u);
   EXPECT_EQ(io::readSkeleton(uri, options), nullptr);
 }
 
@@ -293,7 +237,6 @@ TEST(ReadUnit, InfersUrdfFromAmbiguousXmlRootBeforeParseFailure)
   const auto options = optionsWithContent("<robot />");
   const common::Uri uri("memory://invalid_urdf.xml");
 
-  EXPECT_EQ(io::readWorld(uri, options), nullptr);
   EXPECT_EQ(io::readSkeleton(uri, options), nullptr);
 }
 
@@ -306,14 +249,6 @@ TEST(ReadUnit, TryReadSkeletonReturnsErrorForInvalidPath)
 }
 
 //==============================================================================
-TEST(ReadUnit, TryReadWorldReturnsErrorForInvalidPath)
-{
-  const auto result = io::tryReadWorld("/nonexistent/world.sdf");
-  EXPECT_FALSE(result.isOk());
-  EXPECT_TRUE(result.isErr());
-}
-
-//==============================================================================
 TEST(ReadUnit, TryReadSkeletonReturnsOkForValidFile)
 {
   const auto result
@@ -321,33 +256,6 @@ TEST(ReadUnit, TryReadSkeletonReturnsOkForValidFile)
   EXPECT_TRUE(result.isOk());
   EXPECT_FALSE(result.isErr());
   EXPECT_NE(result.value(), nullptr);
-}
-
-//==============================================================================
-TEST(ReadUnit, TryReadWorldReturnsOkForValidFile)
-{
-  const auto result
-      = io::tryReadWorld("dart://sample/skel/test/single_pendulum.skel");
-  EXPECT_TRUE(result.isOk());
-  EXPECT_FALSE(result.isErr());
-  EXPECT_NE(result.value(), nullptr);
-}
-
-//==============================================================================
-TEST(ReadUnit, ReadsMjcfWorldSuccessfully)
-{
-  const auto world = io::readWorld("dart://sample/mjcf/openai/ant.xml");
-  EXPECT_NE(world, nullptr);
-}
-
-//==============================================================================
-TEST(ReadUnit, ReadsSkelWorldSuccessfully)
-{
-  io::ReadOptions options;
-  options.format = io::ModelFormat::Skel;
-  const auto world
-      = io::readWorld("dart://sample/skel/test/single_pendulum.skel", options);
-  EXPECT_NE(world, nullptr);
 }
 
 //==============================================================================

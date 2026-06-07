@@ -193,16 +193,6 @@ double vectorNorm(const std::vector<double>& values, std::size_t begin, int dim)
   return std::sqrt(squaredNorm);
 }
 
-double radialDistance(
-    const Eigen::Vector3d& point1,
-    const Eigen::Vector3d& point2,
-    const Eigen::Vector3d& axis)
-{
-  const Eigen::Vector3d normalizedAxis = axis.normalized();
-  const Eigen::Vector3d delta = point1 - point2;
-  return (delta - delta.dot(normalizedAxis) * normalizedAxis).norm();
-}
-
 class ExposedCylindricalJointConstraint final
   : public CylindricalJointConstraint
 {
@@ -607,53 +597,4 @@ TEST(CylindricalJointConstraint, StaticBodiesAreInactive)
       Eigen::Vector3d::UnitZ());
   EXPECT_FALSE(twoBodyConstraint.isActive());
   twoBodyConstraint.uniteSkeletons();
-}
-
-TEST(CylindricalJointConstraint, WorldStepReducesRadialError)
-{
-  auto world = World::create();
-  world->setGravity(Eigen::Vector3d::Zero());
-  world->setTimeStep(1e-3);
-
-  auto body1 = createFreeBody("world_1");
-  auto body2 = createFreeBody("world_2");
-
-  Eigen::Isometry3d body2Initial = Eigen::Isometry3d::Identity();
-  body2Initial.translation() = Eigen::Vector3d(0.0, 0.0, 0.75);
-  setTransform(body2.joint, body2Initial);
-
-  world->addSkeleton(body1.skeleton);
-  world->addSkeleton(body2.skeleton);
-
-  const Eigen::Vector3d axis = Eigen::Vector3d::UnitZ();
-  const Eigen::Vector3d jointPos = body1.body->getTransform().translation();
-  const Eigen::Vector3d offset1
-      = body1.body->getTransform().inverse() * jointPos;
-  const Eigen::Vector3d offset2
-      = body2.body->getTransform().inverse() * jointPos;
-
-  auto constraint = std::make_shared<CylindricalJointConstraint>(
-      body1.body, body2.body, jointPos, axis, axis);
-  world->getConstraintSolver()->addConstraint(constraint);
-
-  Eigen::Isometry3d body2Perturbed = body2Initial;
-  body2Perturbed.translation() += Eigen::Vector3d(0.4, -0.3, 0.0);
-  setTransform(body2.joint, body2Perturbed);
-
-  const double initialError = radialDistance(
-      body1.body->getTransform() * offset1,
-      body2.body->getTransform() * offset2,
-      axis);
-  EXPECT_GT(initialError, 0.1);
-
-  for (int i = 0; i < 200; ++i) {
-    world->step();
-  }
-
-  const double finalError = radialDistance(
-      body1.body->getTransform() * offset1,
-      body2.body->getTransform() * offset2,
-      axis);
-  EXPECT_LT(finalError, initialError);
-  EXPECT_LT(finalError, 0.1);
 }

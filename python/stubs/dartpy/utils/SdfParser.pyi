@@ -4,9 +4,7 @@ __all__: list[str] = [
     "Options",
     "RootJointType",
     "readSkeleton",
-    "readWorld",
     "read_skeleton",
-    "read_world",
 ]
 
 
@@ -51,10 +49,6 @@ class Options:
     @m_resource_retriever.setter
     def m_resource_retriever(self, arg: dartpy.common.ResourceRetriever, /) -> None: ...
 
-def readWorld(*args, **kwargs): ...
-
 def readSkeleton(*args, **kwargs): ...
 
 read_skeleton = readSkeleton
-
-read_world = readWorld

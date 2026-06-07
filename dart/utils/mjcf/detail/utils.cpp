@@ -33,6 +33,7 @@
 #include "dart/utils/mjcf/detail/utils.hpp"
 
 #include "dart/common/macros.hpp"
+#include "dart/math/helpers.hpp"
 #include "dart/utils/composite_resource_retriever.hpp"
 #include "dart/utils/dart_resource_retriever.hpp"
 #include "dart/utils/xml_helpers.hpp"
@@ -227,23 +228,6 @@ Errors handleInclude(
   }
 
   return errors;
-}
-
-//==============================================================================
-std::vector<dynamics::BodyNode*> getBodyNodes(
-    const simulation::World& world, std::string_view name)
-{
-  std::vector<dynamics::BodyNode*> bodyNodes;
-  const std::string nameString(name);
-
-  for (std::size_t i = 0; i < world.getNumSkeletons(); ++i) {
-    dynamics::SkeletonPtr skel = world.getSkeleton(i);
-    if (dynamics::BodyNode* bodyNode = skel->getBodyNode(nameString)) {
-      bodyNodes.push_back(bodyNode);
-    }
-  }
-
-  return bodyNodes;
 }
 
 //==============================================================================

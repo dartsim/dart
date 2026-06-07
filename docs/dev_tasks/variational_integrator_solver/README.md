@@ -12,7 +12,7 @@ The durable target this work builds toward — a **production-grade, linear-time
 variational integrator**: DART's symplectic, structure-preserving alternative to
 semi-implicit Euler for multibody systems, faithful to Lee/Liu/Park/Srinivasa
 (WAFR 2016, arXiv:1609.02898) and extended to DART's needs. It lives entirely
-behind the experimental World's method-name facade
+behind the DART 7 World's method-name facade
 (`WorldOptions::multibodyOptions` at construction or
 `World::setMultibodyOptions({.integrationFamily = "variational integrator"})`),
 never exposing solver / stage / component / backend types, and adds **zero
@@ -160,7 +160,7 @@ All select the VI via `World.multibody_options`; the headless cycle smoke
 
 ## Original Phase-A1 Goal (achieved)
 
-A correct, tested variational-integrator stage in the experimental `World`,
+A correct, tested variational-integrator stage in the DART 7 `World`,
 selectable by the `variational integrator` method name, proving symplectic
 energy behavior on a passive chain before optimizing to O(n). The
 [North Star](#north-star) now captures the full vision beyond this MVP.
@@ -175,7 +175,7 @@ energy behavior on a passive chain before optimizing to O(n). The
 
 - **Dense-solve placeholder first** (A1), ABI second (A2): get correctness +
   symplectic-behavior evidence before the hardest kernel. At Phase A1 start,
-  reviewers confirmed the experimental World had no ABI path yet (only the dense
+  reviewers confirmed the DART 7 World had no ABI path yet (only the dense
   `M.ldlt()` oracle); Phase A2 then landed the O(n) inverse-mass product.
 - **Gravity is forcing-side** (`Fᵏ`), not a Lagrangian potential — matches the
   reference impl; avoids double-counting.
@@ -235,7 +235,7 @@ gaps to the [north star](#north-star), in priority order:
    Phase C contact (the contact criterion) and the API-freeze surface — so the VI
    is **ready to propose for graduation**. The flip itself is **structural, not a
    toggle**: `experimental` is encoded in the namespace / directory /
-   `DART_EXPERIMENTAL_API` macro / CMake gate, with no per-family stability flag,
+   `DART_SIMULATION_API` macro / CMake gate, with no per-family stability flag,
    and the VI shares the module with the `World` and every other solver — so
    graduating means a maintainer-scale whole-module promotion or a VI extraction
    refactor (see the graduation-mechanics section of

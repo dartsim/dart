@@ -1,7 +1,7 @@
 """Differentiable cartpole trajectory-optimization scene (World).
 
 Mirrors the cartpole experiment from
-``tests/unit/simulation/experimental/diff/test_diff_paper_experiments.cpp``
+``tests/unit/simulation/diff/test_diff_paper_experiments.cpp``
 (Nimble paper Section VII-B): a cart that slides along world X (prismatic,
 actuated) carries a pole that hinges about world Y (revolute, unactuated). A
 per-step cart-force sequence is optimized by plain gradient descent so the cart
@@ -407,9 +407,7 @@ def build() -> SceneSetup:
             f"frame: {current_index + 1}/{len(states)} | "
             f"cart x={float(current_state[_CART_DOF]):.3f} m"
         )
-        builder.text(
-            f"target x: {_TARGET:.3f} m | final error={final_error:.3f} m"
-        )
+        builder.text(f"target x: {_TARGET:.3f} m | final error={final_error:.3f} m")
         builder.text(
             f"pole angle: {float(current_state[1]):.3f} rad | "
             f"cart force={current_force:.3f} N"

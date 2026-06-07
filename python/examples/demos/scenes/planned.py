@@ -4,9 +4,8 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-import numpy as np
-
 import dartpy as dart
+import numpy as np
 
 from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
@@ -23,11 +22,13 @@ def _build_placeholder(
     legacy_seeds: Iterable[str],
     target: str,
 ) -> SceneSetup:
-    world = dart.gui.RenderWorld(f"planned_{scene_id}")
+    world = dart.gui.DescriptorRenderScene(dart.World(), f"planned_{scene_id}")
     world.set_time_step(1.0 / 60.0)
 
     frame = dart.SimpleFrame(
-        dart.gui.world_render_frame(), f"{scene_id}_marker", _translation(0.0, 0.0, 0.08)
+        dart.gui.world_render_frame(),
+        f"{scene_id}_marker",
+        _translation(0.0, 0.0, 0.08),
     )
     frame.set_shape(dart.BoxShape(np.array([0.56, 0.56, 0.16])))
     frame.create_visual_aspect().set_color([0.35, 0.56, 0.86])

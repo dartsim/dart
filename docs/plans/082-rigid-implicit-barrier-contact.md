@@ -1,9 +1,9 @@
 # PLAN-082: Rigid Implicit-Barrier Contact Solver
 
 - Operating state: `PLAN-082` in [`dashboard.md`](dashboard.md)
-- Outcome: the experimental `World` supports a DART-owned rigid-body
+- Outcome: the DART 7 `World` supports a DART-owned rigid-body
   implicit-barrier contact method that extends incremental potential contact to
-  rigid bodies, runs alongside the current rigid and deformable experimental
+  rigid bodies, runs alongside the current rigid and deformable DART 7
   domains, and covers the reference paper's fixtures, tests, benchmarks,
   comparison baselines, CPU/GPU evidence, and visual examples without exposing
   solver registries, ECS storage, or backend resources through the public
@@ -16,7 +16,7 @@
     conservative CCD with minimum separation, extends incremental potential
     contact to reduced coordinates, and introduces a rigid-body simulation
     benchmark.
-  - DART's current experimental rigid path has semi-implicit velocity/position
+  - DART's current DART 7 rigid path has semi-implicit velocity/position
     stages, native collision queries, sequential rigid contact impulses, partial
     articulated contact response, and a deformable IPC-inspired first slice, but
     it does not yet have rigid IPC barriers, curved-trajectory CCD, projected
@@ -30,12 +30,12 @@
     scale, velocity, force, fixed DOFs, static/kinematic mode metadata, gravity,
     friction, restitution, barrier distance, solver tolerance, and explicit
     unsupported-field diagnostics.
-  - The first internal fixture replay path populates an experimental `World`
+  - The first internal fixture replay path populates a DART 7 `World`
     with timestep, gravity, rigid body state, loads, and material coefficients
     while preserving mesh path, scale, fixed-DOF, density, group, and kinematic
     metadata. It now also preserves fixture torque plus inline
     vertices/edges/polygons. Supported OBJ, OFF, rigid-ipc MSH, binary STL,
-    ASCII STL, and polygonal inline geometry now attach as experimental mesh
+    ASCII STL, and polygonal inline geometry now attach as DART 7 mesh
     collision shapes backed by native collision queries; missing and
     unsupported mesh assets remain explicit replay metadata. This still does
     not claim solver behavior. The same fixture model now imports the upstream
@@ -105,7 +105,7 @@
     timestep into those objective terms. A first opt-in runtime world-step stage
     now extracts mesh/box/sphere free rigid-body state, runs the
     projected-Newton IPC solve, and writes solved poses/velocities back. The
-    default experimental `World` pipeline now has same-domain rigid solver
+    default DART 7 `World` pipeline now has same-domain rigid solver
     selection, keeping sequential impulse as the default while allowing callers
     to opt into the rigid IPC free-rigid dynamics stage without exposing solver
     registries. The opt-in stage now also exposes durable solve status, last
@@ -172,7 +172,7 @@
    sparse solve/fallback behavior, then lagged smoothed Coulomb friction with
    tangent bases, normal-force lagging, static/dynamic transition diagnostics,
    and convergence tests.
-6. **Same-domain method selection** - Let the experimental `World` host more
+6. **Same-domain method selection** - Let the DART 7 `World` host more
    than one rigid-body method family internally. The easy path should keep the
    current default behavior, while tests can select the implicit-barrier method
    through DART-owned policy names without exposing solver registries or
@@ -203,7 +203,7 @@
   separation, barrier derivatives/Hessians, line search, projected Newton,
   friction, fixture import diagnostics, restart/serialization, and mixed
   rigid/deformable stepping.
-- The experimental public facade stays DART-owned and backend-neutral:
+- The DART 7 public facade stays DART-owned and backend-neutral:
   no public solver registry, coupler registry, ECS component, upstream-project
   solver selector, device, stream, or memory-pool type.
 - Full method parity is not claimed until the paper fixtures, upstream unit
@@ -225,7 +225,7 @@
 
 - The audited upstream commit changes.
 - The rigid IPC fixture schema requires public API beyond current
-  experimental facade rules.
+  DART 7 facade rules.
 - Rigid and deformable IPC work diverges in a way that duplicates barrier,
   CCD, Newton, friction, diagnostics, or benchmark infrastructure.
 - Hosted or local benchmark evidence shows the implicit-barrier path cannot be
