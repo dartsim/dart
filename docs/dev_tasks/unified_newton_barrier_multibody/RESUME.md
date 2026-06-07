@@ -2,6 +2,15 @@
 
 ## Last Session Summary
 
+Current slice: promoted the first ABD benchmark packet from smoke-only evidence
+into the PLAN-083 manifest. `pixi run bm-abd-comparison-packet` now builds/runs
+`bm_affine_body_dynamics`, writes
+`.benchmark_results/abd_comparison_packet.json`, and validates the affine
+point-triangle barrier, matched rigid IPC oracle, and orthogonality-energy rows.
+The `abd-alg-affine-body` manifest row is now `in-progress`, explicitly limited
+to this internal primitive/oracle micro-packet rather than a runtime ABD solver
+or paper-scale claim.
+
 PLAN-083 was created for the unified Newton-barrier multibody solver family,
 covering the supplied unified Newton barrier paper, the ABD deck, existing
 deformable IPC work, existing rigid IPC work, CPU/GPU evidence, and py-demos
@@ -16,17 +25,17 @@ packet.
 
 ## Current Branch
 
-`feature/unified-newton-barrier-abd` - current checkout is clean after the
-latest `origin/main` merge and the CodeQL timeout maintenance commit. Phase 1
-primitive promotion and Phase 2 ABD foundation changes are on this branch.
+`feature/abd-benchmark-manifest` - current checkout is expected to contain the
+ABD comparison-packet checker, Pixi task, and PLAN-083 manifest/dev-task doc
+updates for the micro-packet slice.
 
 ## Immediate Next Step
 
-Continue Phase 2 from
+Continue Phase 2/3 from
 [`../../plans/083-unified-newton-barrier-multibody/abd-first-slice-design.md`](../../plans/083-unified-newton-barrier-multibody/abd-first-slice-design.md):
-promote the first benchmark packet from smoke shape to a comparison manifest
-row now that affine barrier and friction primitive value/gradient/Hessian
-oracles are stable. Use
+use the new `abd-alg-affine-body` micro-packet to decide whether a two-body
+affine contact micro-solve is needed before shared projected-Newton contracts
+are promoted. Use
 [`../../plans/083-unified-newton-barrier-multibody/implementation-roadmap.md`](../../plans/083-unified-newton-barrier-multibody/implementation-roadmap.md)
 to keep the Phase 2 packet, shared solver contracts, articulation rows,
 restitution work, mixed-domain coupling, CPU/GPU parity, and py-demos rows
@@ -64,6 +73,9 @@ VBD/OGC-adjacent work, or shared Newton-barrier infrastructure.
 - `bm_affine_body_dynamics` currently contains the first ABD benchmark packet:
   affine point-triangle barrier mapping, matched rigid IPC point-triangle oracle
   row, and orthogonality energy.
+- `scripts/check_abd_comparison_packet.py` is the reproducible packet checker
+  for those rows; it deliberately does not validate paper-scale ABD scene
+  timings yet.
 - Do not expose `detail/newton_barrier` through public headers or dartpy
   bindings.
 - Do not expose ABD through public headers or dartpy bindings until runtime
@@ -73,8 +85,11 @@ VBD/OGC-adjacent work, or shared Newton-barrier infrastructure.
   `pixi run test-simulation-experimental`, `pixi run check-api-boundaries`, and
   the four benchmark smokes listed in the dev-task README.
 - Phase 2 validation so far passed: `pixi run build-simulation-experimental-tests`,
-  `pixi run test-simulation-experimental` (47/47 after the latest main merge), and
+  `pixi run test-simulation-experimental` (64/64),
+  `pixi run check-api-boundaries`, `pixi run check-docs-policy`,
+  `pixi run lint`, and
   `pixi run bm bm_affine_body_dynamics -- --benchmark_min_time=0.05s`.
+  The micro-packet slice adds `pixi run bm-abd-comparison-packet`.
 
 ## How To Resume
 
@@ -84,5 +99,8 @@ sed -n '1,220p' docs/dev_tasks/unified_newton_barrier_multibody/README.md
 sed -n '1,220p' docs/plans/083-unified-newton-barrier-multibody/abd-first-slice-design.md
 ```
 
-Then promote the first ABD benchmark packet toward a comparison manifest row and
-run focused simulation-experimental tests plus the relevant benchmark smoke.
+Then verify the current branch with the focused simulation-experimental tests,
+API-boundary check, lint, and `pixi run bm-abd-comparison-packet` if that has
+not already been done. After this slice, continue with the two-body micro-solve
+decision or Phase 3 shared-contract promotion; do not describe the micro-packet
+as a runtime ABD solver or a paper-scale performance row.
