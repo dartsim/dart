@@ -88,6 +88,14 @@ auto result = solver.solve(problem, x, options);
 > Note: DART's implementation targets standard LCPs and delegates boxed or
 > friction-indexed problems to the boxed-capable pivoting solver.
 
+DART 7 benchmark evidence includes `BM_LcpInteriorPointPathSweep`, which
+compares centering parameter $\sigma=0.1/0.3$ and step scales 0.75/0.99 over
+well-conditioned dense SPD, banded SPD, mildly ill-conditioned SPD, and
+near-singular SPD standard-LCP fixtures. Focused default, SIMD-enabled, and
+CUDA-enabled build-tree runs reported 9 rows with `contract_ok=1`; the
+CUDA-enabled rows are CPU solver rows in a CUDA-enabled build, not CUDA LCP
+kernel execution.
+
 ### Properties
 
 - **Time**: $O(n^3)$ per iteration (or $O(n)$ with iterative solver)

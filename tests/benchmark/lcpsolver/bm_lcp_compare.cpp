@@ -2800,7 +2800,7 @@ enum class ShockPropagationLayerProfile
   SerialLayers
 };
 
-enum class MprgpSpdProblemKind
+enum class StandardSpdProblemKind
 {
   DenseSpd,
   BandedSpd,
@@ -2863,11 +2863,23 @@ struct ShockPropagationLayerSweepCase
 
 struct MprgpSpdCheckSweepCase
 {
-  MprgpSpdProblemKind kind;
+  StandardSpdProblemKind kind;
   int problemSize;
   bool checkPositiveDefinite;
   std::string_view kindLabel;
   std::string_view pdCheckLabel;
+  unsigned seed;
+};
+
+struct InteriorPointPathSweepCase
+{
+  StandardSpdProblemKind kind;
+  int problemSize;
+  double sigma;
+  double stepScale;
+  std::string_view kindLabel;
+  std::string_view sigmaLabel;
+  std::string_view stepScaleLabel;
   unsigned seed;
 };
 
@@ -3029,51 +3041,137 @@ constexpr std::array<ShockPropagationLayerSweepCase, 9>
     }};
 
 constexpr std::array<MprgpSpdCheckSweepCase, 9> kMprgpSpdCheckSweepCases{{
-    {MprgpSpdProblemKind::DenseSpd, 32, true, "DenseSpd", "PdCheckOn", 0x6010u},
-    {MprgpSpdProblemKind::DenseSpd,
+    {StandardSpdProblemKind::DenseSpd,
+     32,
+     true,
+     "DenseSpd",
+     "PdCheckOn",
+     0x6010u},
+    {StandardSpdProblemKind::DenseSpd,
      32,
      false,
      "DenseSpd",
      "PdCheckOff",
      0x6010u},
-    {MprgpSpdProblemKind::DenseSpd, 64, true, "DenseSpd", "PdCheckOn", 0x6011u},
-    {MprgpSpdProblemKind::BandedSpd,
+    {StandardSpdProblemKind::DenseSpd,
+     64,
+     true,
+     "DenseSpd",
+     "PdCheckOn",
+     0x6011u},
+    {StandardSpdProblemKind::BandedSpd,
      64,
      true,
      "BandedSpd",
      "PdCheckOn",
      0x6012u},
-    {MprgpSpdProblemKind::BandedSpd,
+    {StandardSpdProblemKind::BandedSpd,
      64,
      false,
      "BandedSpd",
      "PdCheckOff",
      0x6012u},
-    {MprgpSpdProblemKind::MildIllConditioned,
+    {StandardSpdProblemKind::MildIllConditioned,
      32,
      true,
      "MildIllConditioned",
      "PdCheckOn",
      0x6013u},
-    {MprgpSpdProblemKind::MildIllConditioned,
+    {StandardSpdProblemKind::MildIllConditioned,
      32,
      false,
      "MildIllConditioned",
      "PdCheckOff",
      0x6013u},
-    {MprgpSpdProblemKind::NearSingular,
+    {StandardSpdProblemKind::NearSingular,
      8,
      true,
      "NearSingular",
      "PdCheckOn",
      0x6014u},
-    {MprgpSpdProblemKind::NearSingular,
+    {StandardSpdProblemKind::NearSingular,
      8,
      false,
      "NearSingular",
      "PdCheckOff",
      0x6014u},
 }};
+
+constexpr std::array<InteriorPointPathSweepCase, 9>
+    kInteriorPointPathSweepCases{{
+        {StandardSpdProblemKind::DenseSpd,
+         32,
+         0.1,
+         0.99,
+         "DenseSpd",
+         "Sigma0_1",
+         "Step0_99",
+         0x7010u},
+        {StandardSpdProblemKind::DenseSpd,
+         32,
+         0.3,
+         0.99,
+         "DenseSpd",
+         "Sigma0_3",
+         "Step0_99",
+         0x7010u},
+        {StandardSpdProblemKind::DenseSpd,
+         32,
+         0.1,
+         0.75,
+         "DenseSpd",
+         "Sigma0_1",
+         "Step0_75",
+         0x7010u},
+        {StandardSpdProblemKind::DenseSpd,
+         64,
+         0.1,
+         0.99,
+         "DenseSpd",
+         "Sigma0_1",
+         "Step0_99",
+         0x7011u},
+        {StandardSpdProblemKind::BandedSpd,
+         64,
+         0.1,
+         0.99,
+         "BandedSpd",
+         "Sigma0_1",
+         "Step0_99",
+         0x7012u},
+        {StandardSpdProblemKind::BandedSpd,
+         64,
+         0.3,
+         0.99,
+         "BandedSpd",
+         "Sigma0_3",
+         "Step0_99",
+         0x7012u},
+        {StandardSpdProblemKind::MildIllConditioned,
+         32,
+         0.1,
+         0.99,
+         "MildIllConditioned",
+         "Sigma0_1",
+         "Step0_99",
+         0x7013u},
+        {StandardSpdProblemKind::MildIllConditioned,
+         32,
+         0.3,
+         0.99,
+         "MildIllConditioned",
+         "Sigma0_3",
+         "Step0_99",
+         0x7013u},
+        {StandardSpdProblemKind::NearSingular,
+         8,
+         0.1,
+         0.99,
+         "NearSingular",
+         "Sigma0_1",
+         "Step0_99",
+         0x7014u},
+    }};
 
 constexpr std::array<AdmmRhoSweepCase, 18> kAdmmRhoSweepCases{{
     {BenchmarkProblemFamily::Standard, 48, 0.5, false, "Rho0_5", "Fixed"},
@@ -4077,22 +4175,23 @@ void ConfigureShockPropagationLayerSweepParameters(
   }
 }
 
-LcpProblem MakeMprgpSpdCheckSweepProblem(const MprgpSpdCheckSweepCase testCase)
+LcpProblem MakeStandardSpdSweepProblem(
+    const StandardSpdProblemKind kind,
+    const int problemSize,
+    const unsigned seed)
 {
-  switch (testCase.kind) {
-    case MprgpSpdProblemKind::DenseSpd:
-      return MakeStandardSpdProblem(testCase.problemSize, testCase.seed);
-    case MprgpSpdProblemKind::BandedSpd:
-      return MakeStandardBandedSpdProblem(testCase.problemSize, testCase.seed);
-    case MprgpSpdProblemKind::MildIllConditioned:
-      return MakeMildIllConditionedStandardProblem(
-          testCase.problemSize, testCase.seed);
-    case MprgpSpdProblemKind::NearSingular:
-      return MakeNearSingularStandardProblem(
-          testCase.problemSize, testCase.seed);
+  switch (kind) {
+    case StandardSpdProblemKind::DenseSpd:
+      return MakeStandardSpdProblem(problemSize, seed);
+    case StandardSpdProblemKind::BandedSpd:
+      return MakeStandardBandedSpdProblem(problemSize, seed);
+    case StandardSpdProblemKind::MildIllConditioned:
+      return MakeMildIllConditionedStandardProblem(problemSize, seed);
+    case StandardSpdProblemKind::NearSingular:
+      return MakeNearSingularStandardProblem(problemSize, seed);
   }
 
-  return MakeStandardSpdProblem(testCase.problemSize, testCase.seed);
+  return MakeStandardSpdProblem(problemSize, seed);
 }
 
 void ConfigureSolverBenchmarkOptions(
@@ -5404,7 +5503,8 @@ void RunShockPropagationLayerSweepBenchmark(
 void RunMprgpSpdCheckSweepBenchmark(
     benchmark::State& state, const MprgpSpdCheckSweepCase testCase)
 {
-  const auto problem = MakeMprgpSpdCheckSweepProblem(testCase);
+  const auto problem = MakeStandardSpdSweepProblem(
+      testCase.kind, testCase.problemSize, testCase.seed);
   auto options = MakeBenchmarkOptions(500);
   options.absoluteTolerance = 1e-5;
   options.relativeTolerance = 1e-3;
@@ -5430,15 +5530,56 @@ void RunMprgpSpdCheckSweepBenchmark(
   state.counters["mprgp_positive_definite_check"]
       = testCase.checkPositiveDefinite ? 1.0 : 0.0;
   state.counters["mprgp_dense_spd"]
-      = testCase.kind == MprgpSpdProblemKind::DenseSpd ? 1.0 : 0.0;
+      = testCase.kind == StandardSpdProblemKind::DenseSpd ? 1.0 : 0.0;
   state.counters["mprgp_banded_spd"]
-      = testCase.kind == MprgpSpdProblemKind::BandedSpd ? 1.0 : 0.0;
+      = testCase.kind == StandardSpdProblemKind::BandedSpd ? 1.0 : 0.0;
   state.counters["mprgp_mild_ill_conditioned"]
-      = testCase.kind == MprgpSpdProblemKind::MildIllConditioned ? 1.0 : 0.0;
+      = testCase.kind == StandardSpdProblemKind::MildIllConditioned ? 1.0 : 0.0;
   state.counters["mprgp_near_singular"]
-      = testCase.kind == MprgpSpdProblemKind::NearSingular ? 1.0 : 0.0;
+      = testCase.kind == StandardSpdProblemKind::NearSingular ? 1.0 : 0.0;
   state.counters["mprgp_symmetry_tolerance"] = params.symmetryTolerance;
   state.counters["mprgp_epsilon_for_division"] = params.epsilonForDivision;
+}
+
+void RunInteriorPointPathSweepBenchmark(
+    benchmark::State& state, const InteriorPointPathSweepCase testCase)
+{
+  const auto problem = MakeStandardSpdSweepProblem(
+      testCase.kind, testCase.problemSize, testCase.seed);
+  auto options = MakeBenchmarkOptions(100);
+  options.absoluteTolerance = 1e-5;
+  options.relativeTolerance = 1e-3;
+  options.complementarityTolerance = 1e-3;
+
+  dart::math::InteriorPointSolver::Parameters params;
+  params.sigma = testCase.sigma;
+  params.stepScale = testCase.stepScale;
+  options.customOptions = &params;
+
+  dart::math::InteriorPointSolver solver;
+  RunBenchmarkWithSolver(
+      state,
+      solver,
+      problem,
+      options,
+      MakeLabel(
+          "InteriorPoint",
+          "PathSweep/" + std::string(testCase.kindLabel) + "/"
+              + std::to_string(testCase.problemSize) + "/"
+              + std::string(testCase.sigmaLabel) + "/"
+              + std::string(testCase.stepScaleLabel)));
+
+  state.counters["interior_point_path_sweep"] = 1.0;
+  state.counters["interior_point_sigma"] = params.sigma;
+  state.counters["interior_point_step_scale"] = params.stepScale;
+  state.counters["interior_point_dense_spd"]
+      = testCase.kind == StandardSpdProblemKind::DenseSpd ? 1.0 : 0.0;
+  state.counters["interior_point_banded_spd"]
+      = testCase.kind == StandardSpdProblemKind::BandedSpd ? 1.0 : 0.0;
+  state.counters["interior_point_mild_ill_conditioned"]
+      = testCase.kind == StandardSpdProblemKind::MildIllConditioned ? 1.0 : 0.0;
+  state.counters["interior_point_near_singular"]
+      = testCase.kind == StandardSpdProblemKind::NearSingular ? 1.0 : 0.0;
 }
 
 void RunAdmmRhoSweepBenchmark(
@@ -7675,6 +7816,16 @@ std::string MakeMprgpSpdCheckSweepBenchmarkName(
   return out.str();
 }
 
+std::string MakeInteriorPointPathSweepBenchmarkName(
+    const InteriorPointPathSweepCase testCase)
+{
+  std::ostringstream out;
+  out << "BM_LcpInteriorPointPathSweep/" << testCase.kindLabel << "/"
+      << testCase.problemSize << "/" << testCase.sigmaLabel << "/"
+      << testCase.stepScaleLabel;
+  return out.str();
+}
+
 std::string MakeAdmmRhoSweepBenchmarkName(const AdmmRhoSweepCase testCase)
 {
   std::ostringstream out;
@@ -8245,6 +8396,18 @@ void RegisterMprgpSpdCheckSweepBenchmarks()
     benchmark::RegisterBenchmark(
         name.c_str(), [testCase](benchmark::State& state) {
           RunMprgpSpdCheckSweepBenchmark(state, testCase);
+        });
+  }
+}
+
+void RegisterInteriorPointPathSweepBenchmarks()
+{
+  for (const auto& testCase : kInteriorPointPathSweepCases) {
+    const auto benchmarkCase = testCase;
+    const auto name = MakeInteriorPointPathSweepBenchmarkName(benchmarkCase);
+    benchmark::RegisterBenchmark(
+        name.c_str(), [benchmarkCase](benchmark::State& state) {
+          RunInteriorPointPathSweepBenchmark(state, benchmarkCase);
         });
   }
 }
@@ -9035,6 +9198,7 @@ const bool kManifestBenchmarksRegistered = [] {
   RegisterSubspacePgsIterationsSweepBenchmarks();
   RegisterShockPropagationLayerSweepBenchmarks();
   RegisterMprgpSpdCheckSweepBenchmarks();
+  RegisterInteriorPointPathSweepBenchmarks();
   RegisterAdmmRhoSweepBenchmarks();
   RegisterSapRegularizationSweepBenchmarks();
   RegisterNewtonWarmStartBenchmarks();
