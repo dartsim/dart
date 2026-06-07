@@ -33,6 +33,7 @@
 
 #include <dart/simulation/detail/deformable_vbd/avbd_row_inventory.hpp>
 #include <dart/simulation/detail/world_registry_types.hpp>
+#include <dart/simulation/export.hpp>
 
 #include <entt/entt.hpp>
 
@@ -60,11 +61,14 @@ struct DeformableAvbdWarmStartReplayState
   std::vector<dvbd::AvbdScalarRowRecord> tetRows;
 };
 
-[[nodiscard]] std::vector<DeformableAvbdWarmStartReplayState>
+using DeformableAvbdWarmStartReplayStates
+    = std::vector<DeformableAvbdWarmStartReplayState>;
+
+[[nodiscard]] DART_SIMULATION_API DeformableAvbdWarmStartReplayStates
 captureDeformableAvbdWarmStartReplayState(
     const detail::WorldRegistry& registry);
 
-void restoreDeformableAvbdWarmStartReplayState(
+DART_SIMULATION_API void restoreDeformableAvbdWarmStartReplayState(
     detail::WorldRegistry& registry,
     std::span<const DeformableAvbdWarmStartReplayState> replayStates);
 
