@@ -36,6 +36,7 @@ from examples.demos.scenes import (
     atlas_simbicon,
     avbd_demo2d_dynamic_friction,
     contact,
+    deactivation_sleeping,
     diff_cartpole_trajopt,
     diff_drone_liftoff,
     diff_pre_contact_surrogate,
@@ -1137,6 +1138,7 @@ def test_high_value_world_scenes_expose_custom_panels() -> None:
         (contact, "Rigid Link Contact"),
         (lcp_physics, "LCP Physics"),
         (rigid_body, "Rigid Bodies"),
+        (deactivation_sleeping, "Body Deactivation"),
         (rigid_body_modes, "Rigid Body Modes"),
         (rigid_free_flight, "Rigid Free Flight"),
         (rigid_frame_hierarchy, "Rigid Frame Hierarchy"),
@@ -1227,6 +1229,25 @@ def test_high_value_world_scenes_expose_custom_panels() -> None:
         assert "text:External force" in builder.events
         assert any(event.startswith("text:drag target: ") for event in builder.events)
         assert "checkbox:Enable external force" in builder.events
+
+
+def test_deactivation_sleeping_scene_exposes_sleep_state_panel() -> None:
+    _require_simulation_symbols("World", "DeactivationOptions")
+
+    setup = deactivation_sleeping.build()
+    builder = _FakePanelBuilder()
+
+    assert [panel.title for panel in setup.panels] == ["Body Deactivation"]
+    assert setup.info["sx_world"].deactivation_enabled
+
+    setup.panels[0].build(builder, object())
+
+    assert "checkbox:Enable deactivation" in builder.events
+    assert "slider:Sleep after:0.02:0.4" in builder.events
+    assert any(event.startswith("plot:Sleeping bodies:") for event in builder.events)
+    assert any(event.startswith("plot:Contacts:") for event in builder.events)
+    assert "table:Sleep state table:Body,State,Group,Speed" in builder.events
+    assert any(event.startswith("text:sleep_candidate_0") for event in builder.events)
 
 
 def _write_lcp_profile_evidence(

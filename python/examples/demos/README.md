@@ -1261,6 +1261,19 @@ The `lcp_physics` scene metadata exposes the derived
 keep the long generated filter list in the scene metadata instead of copying it
 into this README.
 
+## DART 7 Body Deactivation
+
+`deactivation_sleeping` showcases the opt-in automatic body deactivation path:
+quiet rigid bodies sleep, an active striker wakes them through contact, and an
+untouched reference body remains asleep. The scene exposes `is_sleeping` and
+`deactivation_group_index` in a diagnostics table and works with the shared
+headless capture path:
+
+```bash
+pixi run py-demo-capture -- --scene deactivation_sleeping --show-ui \
+    --frames 150 --width 1280 --height 720
+```
+
 ## AVBD Rigid Constraints (sx)
 
 The dedicated **`AVBD Rigid Constraints (sx)`** category groups the first

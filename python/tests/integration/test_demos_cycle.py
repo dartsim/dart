@@ -824,6 +824,7 @@ def test_world_scenes_use_solver_focused_categories() -> None:
             "floating_base",
             "contact",
             "rigid_body",
+            "deactivation_sleeping",
             "rigid_body_modes",
             "rigid_free_flight",
             "rigid_frame_hierarchy",
@@ -977,6 +978,40 @@ def test_world_scenes_use_solver_focused_categories() -> None:
 
     assert not any(scene.category == "Experimental" for scene in scenes)
     assert not any(scene.id.startswith("sx_") for scene in scenes)
+
+
+def test_deactivation_sleeping_demo_sleeps_then_wakes_contact_target() -> None:
+    import numpy as np
+
+    _require_simulation_symbols("World", "DeactivationOptions")
+
+    from examples.demos.scenes.deactivation_sleeping import build
+
+    setup = build()
+    sx_world = setup.info["sx_world"]
+    sleepers = setup.info["sleep_candidates"]
+    target = sleepers[0]
+    quiet_reference = setup.info["quiet_reference"]
+    striker = setup.info["striker"]
+
+    assert sx_world.deactivation_enabled
+    assert setup.pre_step is not None
+
+    for _ in range(20):
+        setup.pre_step()
+        setup.world.step()
+
+    assert target.is_sleeping
+    assert quiet_reference.is_sleeping
+    assert not striker.is_sleeping
+
+    for _ in range(110):
+        setup.pre_step()
+        setup.world.step()
+
+    assert not target.is_sleeping
+    assert np.linalg.norm(np.asarray(target.linear_velocity, dtype=float)) > 0.05
+    assert quiet_reference.is_sleeping
 
 
 def test_gui_fidelity_debug_visuals_scene_exposes_pbr_and_debug_provider() -> None:

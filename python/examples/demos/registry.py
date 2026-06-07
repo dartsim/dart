@@ -91,6 +91,7 @@ from .scenes.avbd_rigid_spherical_breakable_joint import (
 from .scenes.articulated import SCENE as ARTICULATED
 from .scenes.atlas_simbicon import SCENE as ATLAS_SIMBICON
 from .scenes.contact import SCENE as CONTACT
+from .scenes.deactivation_sleeping import SCENE as DEACTIVATION_SLEEPING
 from .scenes.diff_cartpole_trajopt import SCENE as DIFF_CARTPOLE_TRAJOPT
 from .scenes.diff_drone_liftoff import SCENE as DIFF_DRONE_LIFTOFF
 from .scenes.diff_pre_contact_surrogate import SCENE as DIFF_PRE_CONTACT_SURROGATE
@@ -255,6 +256,7 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         RIGID_LOOP_CLOSURE,
         ARTICULATED,
         FLOATING_BASE,
+        DEACTIVATION_SLEEPING,
         # DART 7 contact LCP comparison packets. This keeps the PLAN-020
         # baseline example visible in the Python demo catalog while the solver
         # manifest and benchmark coverage remain in C++.

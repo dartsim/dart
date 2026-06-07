@@ -887,6 +887,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     rebuilt correctly by cached GUI renderable extraction.
   - Added a renderer-neutral `dart::gui` panel callback surface for examples
     that need custom controls without including backend UI headers.
+  - Added opt-in DART 7 body deactivation ("sleeping") for rigid bodies and
+    semi-implicit multibodies, with `DeactivationOptions`, body sleep-state
+    accessors in C++ and dartpy, replay/binary serialization coverage, and a
+    `deactivation_sleeping` Python GUI demo.
   - Added a reusable renderer-neutral `PanelBuilder.timeline(...)` control and
     made the Python demos default to a replay-timeline scene with a
     bottom-docked scrubber. The shared demos GUI now keeps bottom scene panels
