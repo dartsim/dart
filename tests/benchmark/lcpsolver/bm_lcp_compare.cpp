@@ -1616,8 +1616,12 @@ MakeHomogeneousWorldContactBenchmarkBatch(
 
 std::optional<WorldContactBenchmarkBatch>
 MakeHomogeneousWorldBoxContactBenchmarkBatch(
-    int batchSize, std::string& errorMessage)
+    int boxCount, int batchSize, std::string& errorMessage)
 {
+  if (boxCount <= 0) {
+    errorMessage = "dense box-contact box count must be positive";
+    return std::nullopt;
+  }
   if (batchSize <= 0) {
     errorMessage = "dense box-contact batch size must be positive";
     return std::nullopt;
@@ -1628,11 +1632,12 @@ MakeHomogeneousWorldBoxContactBenchmarkBatch(
 
   Eigen::Index expectedRows = 0;
   for (const int i : std::views::iota(0, batchSize)) {
-    auto fixture = MakeWorldBoxContactBenchmarkProblem(errorMessage, i);
+    auto fixture
+        = MakeWorldBoxContactBenchmarkProblem(errorMessage, i, boxCount);
     if (!fixture.has_value()) {
       return std::nullopt;
     }
-    if (fixture->contactCount < 4u) {
+    if (fixture->contactCount != static_cast<std::size_t>(4 * boxCount)) {
       errorMessage = "dense box-contact batch lost face contact coverage";
       return std::nullopt;
     }
@@ -1642,8 +1647,7 @@ MakeHomogeneousWorldBoxContactBenchmarkBatch(
       errorMessage = "dense box-contact batch problem shape changed";
       return std::nullopt;
     }
-    if (fixture->problem.b.size()
-        != static_cast<Eigen::Index>(3 * fixture->contactCount)) {
+    if (fixture->problem.b.size() != static_cast<Eigen::Index>(12 * boxCount)) {
       errorMessage = "dense box-contact batch row count changed";
       return std::nullopt;
     }
@@ -7944,10 +7948,11 @@ void RunCudaWorldBoxContactBatchBenchmark(benchmark::State& state)
     return;
   }
 
-  const int batchSize = static_cast<int>(state.range(0));
+  const int boxCount = static_cast<int>(state.range(0));
+  const int batchSize = static_cast<int>(state.range(1));
   std::string errorMessage;
-  const auto batch
-      = MakeHomogeneousWorldBoxContactBenchmarkBatch(batchSize, errorMessage);
+  const auto batch = MakeHomogeneousWorldBoxContactBenchmarkBatch(
+      boxCount, batchSize, errorMessage);
   if (!batch.has_value()) {
     state.SkipWithError(errorMessage.c_str());
     return;
@@ -7979,8 +7984,9 @@ void RunCudaWorldBoxContactBatchBenchmark(benchmark::State& state)
   state.counters["cuda_dense_box_contact_batch"] = 1.0;
   state.counters["dense_box_contact"] = 1.0;
   state.counters["cuda_fixed_iterations"] = static_cast<double>(iterations);
-  state.counters["contact_count"] = 4.0;
-  state.counters["problem_size"] = 12.0;
+  state.counters["box_count"] = static_cast<double>(boxCount);
+  state.counters["contact_count"] = static_cast<double>(4 * boxCount);
+  state.counters["problem_size"] = static_cast<double>(12 * boxCount);
 }
 
 void RunCudaWorldBoxContactGroupedBatchBenchmark(benchmark::State& state)
@@ -10164,7 +10170,11 @@ BENCHMARK(BM_LcpCudaPgsWorldContactBatch_FrictionIndex)
     ->Args({4, 4})
     ->Args({8, 4})
     ->Args({16, 4});
-BENCHMARK(BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex)->Arg(4);
+BENCHMARK(BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex)
+    ->Args({1, 4})
+    ->Args({4, 4})
+    ->Args({8, 4})
+    ->Args({16, 4});
 BENCHMARK(BM_LcpCudaPgsWorldBoxContactGroupedBatch_FrictionIndex)->Arg(2);
 BENCHMARK(BM_LcpCudaJacobiWorldStackContactBatch_FrictionIndex)->Args({5, 4});
 BENCHMARK(BM_LcpCudaPgsWorldStackContactBatch_FrictionIndex)->Args({5, 4});

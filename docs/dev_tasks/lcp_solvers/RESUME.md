@@ -1134,16 +1134,17 @@ longer-running coupled, and broader dense/robot-like contact scenes.
   `CudaLcpPgsBatch.DenseBoxWorldContactBatchSatisfiesLcpContract` and
   `CudaLcpPgsBatch.DenseBoxWorldContactGroupedBatchSatisfiesLcpContract` pass
   on homogeneous and grouped variable-size dense box-face `World::collide()`
-  snapshots. `BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex/4` reports
-  `cuda_dense_box_contact_batch=1`, `batch_size=4`,
-  `total_contact_count=16`, `total_body_count=4`, and
-  `total_problem_size=48`. `BM_LcpCudaPgsWorldBoxContactGroupedBatch_FrictionIndex/2`
+  snapshots. `BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex/{1,4,8,16}/4`
+  reports `cuda_dense_box_contact_batch=1` and `contract_ok=1`; the 16-box row
+  reports `box_count=16`, `contact_count=64`, `batch_size=4`,
+  `total_contact_count=256`, `total_body_count=64`, and
+  `total_problem_size=768`. `BM_LcpCudaPgsWorldBoxContactGroupedBatch_FrictionIndex/2`
   reports `cuda_group_count=5`, `box_count_shape_count=5`,
   `min_problem_size=12`, `max_problem_size=192`, `total_contact_count=248`,
   `total_body_count=62`, and `total_problem_size=744`. A fixed-iteration CUDA
   Jacobi dense-box trial
   failed the LCP contract, so Jacobi dense-contact CUDA execution remains
-  unclaimed. The failed probe used the same homogeneous 4-problem and grouped
+  unclaimed. The earlier failed probe used the previous homogeneous 4-problem and grouped
   1/2/4-box dense box-face fixtures: at 4096 iterations with relaxation 1.0 it
   failed with residual/complementarity/bound violations of about 3.3e-2 to
   5.0e-2 (`w must be non-negative at lo`), and at 8192 iterations with

@@ -1153,7 +1153,7 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     `BM_LcpWorldBoxContact/FrictionIndex` benchmark rows over
     1/2/4/8/16-box snapshots verified in default, SIMD-enabled, and
     CUDA-enabled build trees,
-    plus PGS-only CUDA batch coverage for homogeneous single-box and grouped
+    plus PGS-only CUDA batch coverage for homogeneous 1/4/8/16-box and grouped
     1/2/4/8/16-box dense box-face packets through
     `BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex` and
     `BM_LcpCudaPgsWorldBoxContactGroupedBatch_FrictionIndex`, and

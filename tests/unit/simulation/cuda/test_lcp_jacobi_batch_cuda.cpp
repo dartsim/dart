@@ -1071,8 +1071,15 @@ std::optional<WorldContactBatch> makeWorldStackContactBatch(
 }
 
 std::optional<WorldContactBatch> makeWorldBoxContactBatch(
-    int batchSize, std::size_t iterations, std::string& errorMessage)
+    int boxCount,
+    int batchSize,
+    std::size_t iterations,
+    std::string& errorMessage)
 {
+  if (boxCount <= 0) {
+    errorMessage = "dense box contact box count must be positive";
+    return std::nullopt;
+  }
   if (batchSize <= 0) {
     errorMessage = "dense box contact batch size must be positive";
     return std::nullopt;
@@ -1083,7 +1090,7 @@ std::optional<WorldContactBatch> makeWorldBoxContactBatch(
   batch.problems.reserve(static_cast<std::size_t>(batchSize));
 
   for (int i = 0; i < batchSize; ++i) {
-    auto fixture = makeWorldBoxContactProblem(1, i, errorMessage);
+    auto fixture = makeWorldBoxContactProblem(boxCount, i, errorMessage);
     if (!fixture.has_value()) {
       return std::nullopt;
     }
@@ -1096,8 +1103,8 @@ std::optional<WorldContactBatch> makeWorldBoxContactBatch(
       errorMessage = "dense box contact batch problem shape changed";
       return std::nullopt;
     }
-    if (fixture->contactCount < 4u
-        || problemSize != 3u * fixture->contactCount) {
+    if (fixture->contactCount != static_cast<std::size_t>(4 * boxCount)
+        || problemSize != static_cast<std::size_t>(12 * boxCount)) {
       errorMessage = "dense box contact batch contact shape changed";
       return std::nullopt;
     }
@@ -1810,13 +1817,17 @@ TEST(CudaLcpPgsBatch, DenseBoxWorldContactBatchSatisfiesLcpContract)
     GTEST_SKIP() << "CUDA runtime has no available device";
   }
 
-  std::string errorMessage;
-  auto fixture = makeWorldBoxContactBatch(4, 1024, errorMessage);
-  ASSERT_TRUE(fixture.has_value()) << errorMessage;
+  constexpr std::array<int, 2> kBoxCounts{1, 16};
+  for (const int boxCount : kBoxCounts) {
+    SCOPED_TRACE("boxCount=" + std::to_string(boxCount));
+    std::string errorMessage;
+    auto fixture = makeWorldBoxContactBatch(boxCount, 4, 1024, errorMessage);
+    ASSERT_TRUE(fixture.has_value()) << errorMessage;
 
-  cuda::solveBoxedLcpPgsBatchCuda(fixture->packet);
+    cuda::solveBoxedLcpPgsBatchCuda(fixture->packet);
 
-  expectBatchSatisfiesLcpContract(fixture->packet, fixture->problems);
+    expectBatchSatisfiesLcpContract(fixture->packet, fixture->problems);
+  }
 }
 
 //==============================================================================
