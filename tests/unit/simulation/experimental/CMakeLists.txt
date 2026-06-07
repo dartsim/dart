@@ -177,6 +177,12 @@ if(DART_EXPERIMENTAL_BUILD_TESTS)
       LIBRARY ${PROJECT_NAME}-simulation-experimental-cuda
       LABEL simulation-experimental-cuda
     )
+    dart_experimental_add_test(
+      test_lcp_jacobi_batch_cuda
+      ${CMAKE_CURRENT_SOURCE_DIR}/cuda/test_lcp_jacobi_batch_cuda.cpp
+      LIBRARY ${PROJECT_NAME}-simulation-experimental-cuda
+      LABEL simulation-experimental-cuda
+    )
   endif()
 
   # In-tree tests that poke ECS internals include <entt/entt.hpp> directly.

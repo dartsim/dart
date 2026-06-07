@@ -17,6 +17,8 @@ Staggering is implemented as `dart::math::StaggeringSolver`.
 Blocked Jacobi is implemented as `dart::math::BlockedJacobiSolver`.
 MPRGP is implemented as `dart::math::MprgpSolver`.
 Shock propagation is implemented as `dart::math::ShockPropagationSolver`.
+ADMM is implemented as `dart::math::AdmmSolver`.
+SAP is implemented as `dart::math::SapSolver`.
 
 ## 1. Interior Point Method ✅ (Implemented)
 
@@ -329,6 +331,61 @@ auto result = solver.solve(problem, x, options);
 > definite matrices and delegates boxed or friction-indexed problems to the
 > boxed-capable pivoting solver.
 
+### 3.3 ADMM ✅
+
+**Description**: Alternating Direction Method of Multipliers solver for boxed
+LCPs. DART's implementation alternates between a proximal linear solve, a box
+projection, and a dual update:
+
+$$x = (A + (\rho+\mu)I)^{-1}(\rho z - y + b)$$
+$$z = \Pi_{[l,u]}(x + y/\rho)$$
+$$y = y + \rho(x-z)$$
+
+For friction-index rows, the projection uses effective bounds coupled to the
+current normal impulse.
+
+```cpp
+#include <dart/math/lcp/other/AdmmSolver.hpp>
+
+dart::math::AdmmSolver solver;
+dart::math::LcpOptions options = solver.getDefaultOptions();
+options.maxIterations = 200;
+solver.solve(problem, x, options);
+```
+
+**Use Cases**:
+
+- Boxed/contact-style problems where operator-splitting robustness is useful
+- Approximate solves with adaptive residual balancing
+- Benchmark comparisons against projection and pivoting methods
+
+### 3.4 SAP ✅
+
+**Description**: Semi-Analytic Primal inspired regularized solve for boxed
+LCPs. DART's implementation minimizes a regularized quadratic objective with
+Armijo backtracking:
+
+$$L(x) = \frac{1}{2}x^T A x - b^T x + \text{regularization}(x,l,u)$$
+
+The regularization makes the method useful for compliant-contact-inspired
+experiments, but it also means strict LCP complementarity is approximate by
+design.
+
+```cpp
+#include <dart/math/lcp/other/SapSolver.hpp>
+
+dart::math::SapSolver solver;
+dart::math::LcpOptions options = solver.getDefaultOptions();
+options.maxIterations = 50;
+solver.solve(problem, x, options);
+```
+
+**Use Cases**:
+
+- Regularized contact-style solves
+- DART 7 compliant-contact experiments
+- Approximate benchmark baselines where exact complementarity is not required
+
 ## 4. Blocked Jacobi ✅ (Implemented)
 
 ### Description
@@ -379,6 +436,8 @@ auto result = solver.solve(problem, x, options);
 | Staggering ✅        | Variable    | Depends          | Medium     | No              |
 | Shock-Propagation ✅ | Linear      | $O(n)$           | Medium     | Limited         |
 | MPRGP ✅             | Monotone    | $O(n^2)$         | High       | No              |
+| ADMM ✅              | Variable    | Linear solve     | Medium     | No              |
+| SAP ✅               | Regularized | Newton solve     | Medium     | No              |
 | Blocked Jacobi ✅    | Linear      | $O(n \cdot b^3)$ | Medium     | Yes             |
 
 ## Implementation Priority
@@ -390,6 +449,8 @@ auto result = solver.solve(problem, x, options);
 - **Blocked Jacobi**: Parallel block updates with per-block LCP solves
 - **MPRGP**: Bound-constrained QP solver for standard SPD LCPs
 - **Shock-Propagation**: Layered block solve for gravity-dominated contact
+- **ADMM**: Operator-splitting solver for boxed LCPs
+- **SAP**: Regularized SAP-inspired boxed LCP solver
 
 ### Low Priority (Specialized Use Cases)
 

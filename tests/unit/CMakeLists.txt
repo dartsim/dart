@@ -373,6 +373,7 @@ dart_build_tests(
     math/lcp/test_dantzig_misc.cpp
     math/lcp/test_lcp_edge_cases.cpp
     math/lcp/test_lcp_comparison_harness.cpp
+    math/lcp/test_lcp_generated_coverage.cpp
     math/lcp/test_lcp_test_problems.cpp
     math/lcp/test_lcp_solvers_stress.cpp
     math/lcp/test_lcp_types.cpp

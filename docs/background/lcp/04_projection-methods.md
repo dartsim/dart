@@ -63,7 +63,12 @@ Equivalently: $z = x^k - r \oslash \text{diag}(A)$; $x^{k+1} = \max(0, z)$.
 - **Time**: $O(n)$ per iteration
 - **Storage**: $O(n)$
 - **Convergence**: Linear (if converges)
-- **Parallelization**: Fully parallel
+- **Parallelization**: Fully parallel update rule; DART 7 exposes an opt-in
+  CPU worker-thread path for this solver, but current dense benchmark evidence
+  shows correctness rather than a speedup for the tested 128/512-row cases.
+  DART 7 also has an experimental CUDA fixed-iteration batch path for
+  homogeneous dense standard, boxed, and friction-index Jacobi packets, plus a
+  grouped host path for variable-size world-contact packet batches.
 
 ### Advantages/Disadvantages
 
@@ -81,8 +86,23 @@ dart::math::LcpOptions options = solver.getDefaultOptions();
 // Optional: damped Jacobi via relaxation (0 < relaxation <= 2)
 options.relaxation = 1.0;
 
+// Optional: solver-internal CPU worker threads for the Jacobi update.
+// The default is 1; benchmark before enabling for a workload.
+dart::math::JacobiSolver::Parameters params;
+params.workerThreads = 4;
+options.customOptions = &params;
+
 solver.solve(problem, x, options);
 ```
+
+The experimental CUDA Jacobi batch path lives under
+`dart::simulation::experimental::compute::cuda` and is intentionally separate
+from the general `LcpSolver` interface while backend evidence is still narrow:
+it solves same-size dense standard, boxed, and friction-index batches with fixed
+Jacobi iterations. Variable-size contact batches are currently represented as
+homogeneous CUDA groups by problem size, with evidence for separated
+1/2/4-contact DART 7 world-contact packets and coupled 2/3/4-sphere
+stack-contact packets.
 
 ## 2. Projected Gauss-Seidel (PGS) ✅ (Implemented)
 
@@ -126,6 +146,10 @@ function PGS(A, b, x, max_iter, epsilon):
     `dart::math::PgsSolver::setParameters()`.
   - Use `dart::math::LcpOptions::relaxation` to enable PSOR-style relaxation
     (`1.0` = PGS, `>1` = over-relaxation, `<1` = under-relaxation).
+  - DART 7 also has an experimental CUDA fixed-iteration PGS batch path for
+    homogeneous dense standard, boxed, and friction-index packets, plus grouped
+    variable-size world-contact packet batches. It is batch execution evidence,
+    not a general `LcpSolver` backend.
 - **DART support**: `dart::math::NncgSolver` accelerates PGS for boxed LCPs,
   sharing the same bounds and `findex` handling.
 
@@ -388,7 +412,7 @@ dart::math::NncgSolver solver;
 dart::math::LcpOptions options = solver.getDefaultOptions();
 
 dart::math::NncgSolver::Parameters params;
-params.pgsIterations = 1;
+params.pgsIterations = 2; // Matches generated correctness and benchmark coverage.
 params.restartInterval = 10;
 params.restartThreshold = 1.0;
 options.customOptions = &params;
@@ -497,6 +521,20 @@ while not converged:
 ```
 
 The partition sets are $\mathcal{L} = \{ i \mid x_i = l_i \}$, $\mathcal{U} = \{ i \mid x_i = u_i \}$, $\mathcal{A} = \text{others}$.
+
+### DART-exported accelerated variants
+
+`dart::math::ApgdSolver` and `dart::math::TgsSolver` are also projection-family
+solvers in DART 7 and participate in the shared LCP solver manifest, generated
+correctness grid, and apples-to-apples benchmark registration.
+
+- **APGD**: applies Nesterov-style extrapolation before a projected
+  Gauss-Seidel sweep. Its parameters include adaptive restart controls so a bad
+  momentum direction can be discarded.
+- **TGS**: provides a Temporal Gauss-Seidel labelled boxed-LCP sweep. In a full
+  simulation, TGS stability usually comes from substepping; the standalone DART
+  LCP solver captures the boxed/findex Gauss-Seidel solve under the common
+  `LcpSolver` interface.
 
 ## 8. Red-Black Gauss-Seidel ✅ (Implemented)
 

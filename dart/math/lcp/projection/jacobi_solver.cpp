@@ -35,9 +35,13 @@
 #include "dart/math/lcp/lcp_validation.hpp"
 
 #include <algorithm>
+#include <atomic>
+#include <barrier>
 #include <iterator>
 #include <limits>
 #include <string>
+#include <thread>
+#include <vector>
 
 #include <cmath>
 
@@ -152,6 +156,11 @@ LcpResult JacobiSolver::solve(
     result.message = "Division epsilon must be positive";
     return result;
   }
+  if (params->workerThreads <= 0) {
+    result.status = LcpSolverStatus::InvalidProblem;
+    result.message = "Worker thread count must be positive";
+    return result;
+  }
 
   Eigen::VectorXd w;
   Eigen::VectorXd loEff;
@@ -193,10 +202,8 @@ LcpResult JacobiSolver::solve(
 
   Eigen::VectorXd xNew(n);
 
-  for (int iter = 0; iter < maxIterations && !converged; ++iter) {
-    iterationsUsed = iter + 1;
-
-    for (int i = 0; i < n; ++i) {
+  auto updateRange = [&](const int begin, const int end) {
+    for (int i = begin; i < end; ++i) {
       double value = x[i];
       const double diag = A(i, i);
       if (std::isfinite(diag) && std::abs(diag) >= params->epsilonForDivision) {
@@ -206,15 +213,74 @@ LcpResult JacobiSolver::solve(
 
       xNew[i] = detail::projectToBounds(value, loEff[i], hiEff[i]);
     }
+  };
 
-    x = xNew;
+  const int requestedWorkers = std::max(1, params->workerThreads);
+  const int workerCount = std::min<int>(requestedWorkers, static_cast<int>(n));
 
-    if (!updateMetrics(x)) {
-      return result;
+  if (workerCount > 1) {
+    std::atomic<bool> stopWorkers{false};
+    std::barrier iterationBarrier(workerCount + 1);
+    std::vector<std::thread> workers;
+    workers.reserve(static_cast<std::size_t>(workerCount));
+
+    const int chunkSize = (static_cast<int>(n) + workerCount - 1) / workerCount;
+    for (int worker = 0; worker < workerCount; ++worker) {
+      const int begin = worker * chunkSize;
+      const int end = std::min(static_cast<int>(n), begin + chunkSize);
+      workers.emplace_back([&, begin, end]() {
+        while (true) {
+          iterationBarrier.arrive_and_wait();
+          if (stopWorkers.load(std::memory_order_acquire)) {
+            break;
+          }
+          updateRange(begin, end);
+          iterationBarrier.arrive_and_wait();
+        }
+      });
     }
 
-    if (residual <= tol && complementarity <= compTol) {
-      converged = true;
+    for (int iter = 0; iter < maxIterations && !converged; ++iter) {
+      iterationsUsed = iter + 1;
+
+      iterationBarrier.arrive_and_wait();
+      iterationBarrier.arrive_and_wait();
+      x = xNew;
+
+      if (!updateMetrics(x)) {
+        stopWorkers.store(true, std::memory_order_release);
+        iterationBarrier.arrive_and_wait();
+        for (auto& worker : workers) {
+          worker.join();
+        }
+        return result;
+      }
+
+      if (residual <= tol && complementarity <= compTol) {
+        converged = true;
+      }
+    }
+
+    stopWorkers.store(true, std::memory_order_release);
+    iterationBarrier.arrive_and_wait();
+    for (auto& worker : workers) {
+      worker.join();
+    }
+  } else {
+    for (int iter = 0; iter < maxIterations && !converged; ++iter) {
+      iterationsUsed = iter + 1;
+
+      updateRange(0, static_cast<int>(n));
+
+      x = xNew;
+
+      if (!updateMetrics(x)) {
+        return result;
+      }
+
+      if (residual <= tol && complementarity <= compTol) {
+        converged = true;
+      }
     }
   }
 

@@ -167,6 +167,8 @@ if(DART_ENABLE_EXPERIMENTAL_CUDA)
     ${cuda_target_name}
     STATIC
     compute/cuda/cuda_runtime.cpp
+    compute/cuda/lcp_jacobi_batch_cuda.cpp
+    compute/cuda/lcp_jacobi_batch_cuda.cu
     compute/cuda/rigid_body_state_batch_cuda.cpp
     compute/cuda/rigid_body_state_batch_cuda.cu
     compute/cuda/deformable_psd_projection_cuda.cpp

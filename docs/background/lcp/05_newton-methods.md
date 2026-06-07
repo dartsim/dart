@@ -10,9 +10,9 @@
 
 Newton methods solve LCPs by reformulating them as nonsmooth root-finding problems and applying generalized Newton iteration. They offer superlinear to quadratic convergence but require globalization for robustness.
 
-Minimum Map Newton, Fischer-Burmeister Newton, and Penalized Fischer-Burmeister
-Newton are implemented in DART. Other Newton methods are documented here for
-future reference.
+Minimum Map Newton, Fischer-Burmeister Newton, Penalized Fischer-Burmeister
+Newton, and Boxed Semi-Smooth Newton are implemented in DART. Other Newton
+methods are documented here for future reference.
 
 ## Common Framework
 
@@ -330,6 +330,34 @@ Properties:
 | Minimum Map        | Nonsmooth everywhere | Simple (blocks)     | General use  |
 | Fischer-Burmeister | Smooth except origin | Medium              | Well-studied |
 | Penalized FB       | Less smooth          | Complex             | Tunable      |
+| Boxed Semi-Smooth  | Projection branches  | Medium              | Boxed/findex |
+
+## 4. Boxed Semi-Smooth Newton ✅ (Implemented)
+
+DART 7 also includes `dart::math::BoxedSemiSmoothNewtonSolver`, which applies a
+semi-smooth Newton step to the boxed natural residual:
+
+$$H(x) = x - \Pi_{[l,u]}(x - (Ax-b))$$
+
+For friction-index rows, the effective lower and upper bounds depend on the
+normal impulse. The DART implementation includes that moving-bound derivative in
+the generalized Jacobian, so coupled friction-index cases are handled by the
+Newton system rather than treated as fixed boxes.
+
+```cpp
+#include <dart/math/lcp/newton/BoxedSemiSmoothNewtonSolver.hpp>
+
+dart::math::BoxedSemiSmoothNewtonSolver solver;
+dart::math::LcpOptions options = solver.getDefaultOptions();
+options.maxIterations = 50;
+
+solver.solve(problem, x, options);
+```
+
+Use this solver when a boxed or friction-index problem needs a higher-accuracy
+Newton-style solve and the active set is expected to be stable enough for
+linearization. Keep pivoting or robust projection methods as fallbacks for
+highly degenerate contact systems.
 
 ## Implementation Strategy
 
