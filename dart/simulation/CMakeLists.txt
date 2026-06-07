@@ -149,6 +149,7 @@ endif()
 
 set(
   dart_simulation_public_headers_toplevel
+  All.hpp
   world.hpp
   world_options.hpp
   world_sync_stage.hpp
@@ -278,10 +279,19 @@ if(DART_BUILD_DIFF)
   )
 endif()
 
+set(dart_simulation_generated_umbrella_inputs)
+foreach(_dart_public_header IN LISTS dart_simulation_public_headers_toplevel)
+  if(NOT _dart_public_header STREQUAL "All.hpp")
+    list(
+      APPEND dart_simulation_generated_umbrella_inputs
+      "${_dart_public_header}"
+    )
+  endif()
+endforeach()
 dart_get_filename_components(
   dart_simulation_header_names
   "simulation headers"
-  ${dart_simulation_public_headers_toplevel}
+  ${dart_simulation_generated_umbrella_inputs}
 )
 foreach(_dart_public_header IN LISTS dart_simulation_public_headers)
   if(_dart_public_header MATCHES "/")
@@ -296,9 +306,7 @@ dart_generate_component_headers(
   SOURCE_HEADERS ${dart_simulation_public_source_headers}
 )
 install(
-  FILES
-    ${CMAKE_CURRENT_BINARY_DIR}/All.hpp
-    ${CMAKE_CURRENT_BINARY_DIR}/simulation.hpp
+  FILES ${CMAKE_CURRENT_BINARY_DIR}/simulation.hpp
   DESTINATION include/dart/simulation
   COMPONENT headers
 )
