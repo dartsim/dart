@@ -77,6 +77,10 @@ slice should stay under `detail/` and out of public headers.
 | 5    | Add a two-body contact micro-solve only if derivative tests are stable. | One affine dynamic body moves away from a static surface under a barrier objective without violating the activation-distance line-search contract.                                                                          |
 | 6    | Add benchmark smoke after correctness.                                  | `bm_affine_body_dynamics` or a temporary benchmark row records primitive mapping cost versus rigid reduced mapping on matched tiny scenes.                                                                                  |
 
+The first `abd-alg-affine-body` packet landed as primitive/oracle evidence, so
+Step 5 remains deferred. Add the two-body solved-state micro-solve only when a
+broader ABD packet needs runtime residual or stepping evidence.
+
 ## Correctness Oracles
 
 Use layered oracles rather than one broad scene claim:
