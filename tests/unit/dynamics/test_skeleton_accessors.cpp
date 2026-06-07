@@ -1989,6 +1989,37 @@ TEST(SkeletonForces, GravityForces)
   EXPECT_GT(gravityForces.norm(), 0.0);
 }
 
+TEST(SkeletonForces, GravityForcesCancelForwardDynamicsAcceleration)
+{
+  auto skeleton = Skeleton::create("gravity_compensation_test");
+
+  RevoluteJoint::Properties jointProps;
+  jointProps.mAxis = Eigen::Vector3d::UnitY();
+
+  BodyNode::Properties bodyProps;
+  bodyProps.mInertia.setMass(2.0);
+  bodyProps.mInertia.setLocalCOM(Eigen::Vector3d(0.5, 0.0, 0.0));
+  bodyProps.mInertia.setMoment(0.1, 0.1, 0.1, 0.0, 0.0, 0.0);
+
+  skeleton->createJointAndBodyNodePair<RevoluteJoint>(
+      nullptr, jointProps, bodyProps);
+  skeleton->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  skeleton->setPosition(0, 0.4);
+  skeleton->setVelocity(0, 0.0);
+
+  const auto gravityForces = skeleton->getGravityForces();
+  ASSERT_EQ(gravityForces.size(), 1);
+  ASSERT_GT(std::abs(gravityForces[0]), 1e-6);
+
+  skeleton->setForces(gravityForces);
+  skeleton->computeForwardDynamics();
+  EXPECT_NEAR(skeleton->getAcceleration(0), 0.0, 1e-12);
+
+  skeleton->setForces(Eigen::VectorXd::Zero(1));
+  skeleton->computeForwardDynamics();
+  EXPECT_GT(std::abs(skeleton->getAcceleration(0)), 1e-6);
+}
+
 // ============================================================================
 // Skeleton Forward Kinematics
 // ============================================================================

@@ -1,5 +1,8 @@
 blank_issues_enabled: false
 contact_links:
+  - name: DeepWiki
+    url: https://deepwiki.com/dartsim/dart
+    about: Optional AI-assisted DART Q&A. Use Discussions for maintainer or community help.
   - name: Discussions
     url: https://github.com/dartsim/dart/discussions
     about: Questions, usage help, and ideas belong here.

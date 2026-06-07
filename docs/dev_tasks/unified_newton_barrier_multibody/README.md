@@ -31,6 +31,10 @@
         point-triangle oracle row and orthogonality-energy row.
   - [x] Add reduced friction equivalence rows through affine tangent stencils
         for point-point, point-edge, edge-edge, and point-triangle primitives.
+  - [x] Promote the first packet into the PLAN-083 manifest as an in-progress
+        `abd-alg-affine-body` comparison row. Add
+        `pixi run bm-abd-comparison-packet` to generate/validate
+        `.benchmark_results/abd_comparison_packet.json`.
 - [ ] Phase 3: generalize second-use PSD projection and projected-Newton
       contracts when ABD or another solver-family slice needs the shared
       contract; use the PLAN-083 variant consolidation map to keep IPC-family
@@ -82,10 +86,12 @@ resources as public API.
 
 ## Immediate Next Steps
 
-1. Promote the first benchmark packet from smoke shape to a comparison manifest
-   row now that barrier and friction derivative oracles are stable.
-2. Add a two-body affine contact micro-solve only if the manifest row needs a
-   solved-state residual before Phase 3 shared projected-Newton work.
+1. Use the `abd-alg-affine-body` micro-packet to decide whether the next
+   bounded slice needs a two-body affine contact micro-solve before Phase 3
+   shared projected-Newton work.
+2. Begin Phase 3 shared-contract promotion only after a second consumer proves
+   the PSD, projected-Newton, line-search, diagnostics, or benchmark schema is
+   identical across variants.
 3. Keep runtime stepping, py-demos, and GPU claims out of scope until the
    internal ABD oracle and benchmark packet exist.
 
@@ -123,8 +129,9 @@ Phase 1 local evidence:
 Phase 2 local evidence so far:
 
 - `pixi run build-simulation-tests`
-- `pixi run test-simulation` (46/46)
+- `pixi run test-simulation` (64/64)
 - `pixi run bm bm_affine_body_dynamics -- --benchmark_min_time=0.05s`
+- `pixi run bm-abd-comparison-packet`
 
 ## Owner Docs
 

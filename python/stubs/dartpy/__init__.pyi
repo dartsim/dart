@@ -72,6 +72,7 @@ from .common import (
 from .constraint import (
     BallJointConstraint,
     ConstraintBase,
+    CylindricalJointConstraint,
     DynamicJointConstraint,
     JointConstraint,
     JointCoulombFrictionConstraint,
@@ -344,6 +345,7 @@ __all__: list[str] = [
     "ContinuousCollisionOption",
     "ContinuousCollisionResult",
     "Coupler",
+    "CylindricalJointConstraint",
     "CylinderShape",
     "DartCollisionDetector",
     "DefaultActuatorType",

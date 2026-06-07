@@ -223,46 +223,30 @@ theta2dot` with `s1 = R(theta2,axis2)^T axis` (angular; linear zero), mapped
 
 Historical gates passed at each slice: `pixi run lint`, focused C++ tests
 (`test_world`, `test_serialization`, `test_compute_graph`), and
-`test_experimental_world.py`. The current `feature/experimental-model-loader`
-branch has been reconciled with `origin/main` and locally validated; it is not
-associated with a hosted PR yet.
+`test_experimental_world.py`. The model-loading and unified contact/constraint
+follow-up line later landed on `main` as PR #2838, with follow-up allocation
+polish in PR #2899 and PR #2910.
 
 Key implementation note: each link's center of mass is assumed at the link frame
 origin; the joint motion subspace is transformed by the post-joint link offset
 (`Ad(transformFromParent^{-1}) * S_jointframe`) — this was essential to get
 correct gravity torques. See `compute/multibody_dynamics.cpp`.
 
-## Current Branch
+## Current Main Status
 
 PR #2705 (the rigid-body MVP) **merged to `main` on 2026-05-25** (merge commit
 `003c2d0e39`). The MVP convention re-alignment and the GUI example (Subsystem C)
 are done and on `main`.
 
-Current work is on branch `feature/experimental-model-loader` in
-`/home/js/dev/dartsim/dart/task_1` — Subsystem B (model loading), the
-`dynamics::Skeleton` → DART 7 `Multibody` bridge
-(`dart/simulation/io/skeleton_to_multibody.{hpp,cpp}`).
-
-### Local branch state
-
-The branch is ahead of `origin/feature/experimental-model-loader` with local
-model-loading/contact follow-up commits plus the latest merge from `origin/main`
-(`a806d68cd3a3a79441314d4599b6991adc580d26`). Current slices on the branch cover
-cross-multibody/link contacts, row-island unified constraints, preserved
-collision shape offsets, capsule/cylinder/plane/mesh-like collision shape
-support, and multiple collision shapes per body/link. As of 2026-06-01, `gh pr
-list --head feature/experimental-model-loader` reports no associated PR.
-
-Current validation for the reconciled model-loading/collision-shape line:
-`pixi run update-api-boundary-inventory`,
-`pixi run check-api-boundary-inventory`,
-`pixi run build-simulation-tests`,
-`pixi run test-simulation` (52/52),
-`pixi run test-py` (486 passed, 9 skipped), `pixi run lint`,
-`pixi run test-all`, and `pixi run -e cuda test-all` all passed. The docs build
-still emits four non-fatal autodoc warnings from generated dartpy stubs around
-`LocalResource.get_size = getSize`; they did not fail either default or CUDA
-`test-all`.
+PR #2838 **merged to `main` on 2026-06-02** (merge commit `c325539ec29`) and
+published the former `feature/experimental-model-loader` line: the
+`dynamics::Skeleton` / DART 6 `simulation::World` to DART 7 `Multibody` bridge,
+preserved collision shape offsets, capsule/cylinder/plane/mesh-like collision
+shape support, multiple collision shapes per body/link, same- and
+cross-multibody link contacts, and row-islanded unified constraints. PR #2899
+and PR #2910 then broadened the baked-step allocation guards and reused unified
+constraint stage scratch. Future work should branch from current `main` rather
+than resurrecting that retired local branch.
 
 ### Committed: pre-joint offset on `JointSpec`
 
@@ -767,10 +751,11 @@ demos). The blocker described in earlier sessions is resolved.
 screw, universal, planar, ball, free) with a floating base via a `Free` joint,
 including the config-dependent-subspace `cJ` term and SO(3)/SE(3) manifold
 integration. **Subsystem B (model loading) and the Subsystem A unified contact
-solve are both well underway** — see below. The immediate next step is to decide
-whether to publish `feature/experimental-model-loader` as a new PR or continue
-locally with a smaller follow-up slice such as visual geometry/material loading,
-richer load diagnostics, or warm-starting/friction-cone polish.
+solve are both on `main`** — see below. The immediate next step is a smaller
+follow-up slice such as visual geometry/material loading, richer load
+diagnostics, or warm-starting/friction-cone polish; for the current Subsystem A
+headline, prefer warm-start/friction-cone scaling polish around the unified
+constraint solve.
 
 ### Subsystem A — full constraint solver / boxed-LCP (two-sided contacts)
 
@@ -964,10 +949,10 @@ response)** and beyond.
    sphere shape descends under gravity and rests on a static rigid ground
    (penetration stops, normal velocity -> 0).
 
-When publishing this branch: preserve the local merge commit from `origin/main`,
-push only after explicit maintainer approval, and open a PR with milestone
-`DART 7.0`. The branch already has the default and CUDA `test-all` gates passing
-after the merge.
+The old branch-publication guidance is obsolete: the model-loading and unified
+contact/constraint line is already on `main` via PR #2838. Future follow-ups
+should start from current `main`, keep PRs scoped to one polish slice, and use
+the normal `DART 7.0` PR milestone and validation gates.
 
 ## Context That Would Be Lost
 

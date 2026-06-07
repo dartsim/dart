@@ -137,45 +137,28 @@ its own line so status updates remain git-history friendly.
 
 - Owner doc:
   [`../design/shared_cuda_device_substrate.md`](../design/shared_cuda_device_substrate.md)
-- Status: Active
-- Horizon: Now
+- Status: Complete
+- Horizon: Later
 - Dimension: Scalable compute
-- Next step: The build-now scope is implemented locally and verified (pending
-  maintainer review/commit). It de-duplicates the three existing experimental
-  CUDA modules (`rigid_body_state_batch_cuda`, `vbd_block_descent_cuda`,
-  `deformable_psd_projection_cuda`) before AVBD-CUDA (PLAN-104), rigid-IPC GPU
-  (PLAN-082), and PD-IPC GPU (PLAN-081) multiply the duplication. Landed: a shared
-  `compute/cuda/cuda_runtime.cuh` + host `cuda_runtime.cpp` (one
-  `isCudaRuntimeAvailable`, one `throwIfCudaError`, `checkLastError`, inline
-  `launchGrid1D`), replacing the triplicated probe, three error helpers (VBD's
-  divergent `std::runtime_error` unified onto `InvalidOperationException`), and
-  7+ hand-rolled launch sites; `compute/cuda/device_buffer.cuh`
-  (`DeviceBuffer<T=double>` with opt-in resident `ensure()`/`allocationCount()`)
-  subsuming `DeviceDoubleBuffer`/`DeviceArray<T>`/`ResidentDeviceBuffer`; and a
-  per-body `__host__ __device__` orientation core in
-  `compute/detail/rigid_integration_core.hpp` (macro `DART_EXPERIMENTAL_HD`) that
-  the CPU `rigid_body_integration_kernel.hpp` loop and the CUDA kernel now share,
-  deleting the drifted `__device__ integrateOrientation`. Deferred behind
-  documented second-use triggers: rollout/graph-capture/precision/colored-sweep, a
-  generic accelerator registry, a device IPC barrier/distance mirror, a residency
-  owner, and device reductions; the existing `deformable_psd_backend.hpp`
-  registrar is reused by example. No new general library — `dart/math`,
-  `dart/optimizer`, `detail/newton_barrier`, and `deformable_psd_backend` are
-  reused, and device IPC math will promote the same PLAN-083 cores
-  host/device-portable rather than forking a GPU copy. Remaining: maintainer
-  review and the dual-commit split (the VBD thrown-type change as its own
-  reviewed commit).
-- Gate: Verified locally — the three module CUDA parity tests pass within the
-  recorded tolerance (`pixi run -e cuda test-cuda`, 3/3), the default no-GPU
-  simulation quick suite passes (`pixi run test-simulation-quick`,
-  including `test_compute_graph` over the single-sourced kernel), and
-  `check-api-boundaries`, `check-compute-backend-boundaries`, and
-  `check-no-gpu-runtime-dependencies` stay green. Shared device code stays
-  `.cuh`/`.cpp`-only under `compute/cuda/` (plus the `detail/` core header) in the
-  build-only `dart-simulation-cuda` STATIC library (never added to
-  `add_component_targets`, never installed/exported, never in a default Pixi
-  feature or wheel manifest); and the VBD thrown-type change is reviewed
-  separately with any downstream catcher updated in the same PR.
+- Next step: The build-now substrate landed on `main` in PR #2875. Use
+  [`../design/shared_cuda_device_substrate.md`](../design/shared_cuda_device_substrate.md)
+  as the extraction contract when AVBD-CUDA (PLAN-104), rigid-IPC GPU
+  (PLAN-082), PD-IPC GPU (PLAN-081), or broadened Phase-6 compute work
+  introduces a real second consumer for deferred rollout, graph-capture,
+  precision, colored-sweep, accelerator-registry, device IPC math, residency, or
+  reduction helpers. No new general library is planned: reuse `dart/math`,
+  `dart/optimizer`, `detail/newton_barrier`, and
+  `deformable_psd_backend`, and promote the same PLAN-083 cores
+  host/device-portable only when a GPU IPC consumer lands.
+- Gate: Future substrate changes must keep shared device code `.cuh`/`.cpp`-only
+  under `compute/cuda/` (plus scanner-skipped `detail/` kernel cores), leave the
+  CUDA sidecar build-only and uninstalled, preserve the default no-GPU path, and
+  keep `pixi run -e cuda test-cuda`,
+  `pixi run test-simulation`,
+  `pixi run check-api-boundaries`,
+  `pixi run check-compute-backend-boundaries`, and
+  `pixi run check-no-gpu-runtime-dependencies` green for any promoted second-use
+  extraction.
 
 ### PLAN-080: Rigid-Body Dynamics Solver
 

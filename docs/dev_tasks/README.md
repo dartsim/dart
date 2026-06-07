@@ -116,18 +116,21 @@ Then: <specific instruction, e.g., "Continue implementing X in file Y" or "Run t
 2. <specific action>
 ```
 
-### Examples (Active Tasks)
+### Current Active Tasks
 
-- `world_split/` - ECS world separation (design, migration docs)
+Current active tasks are the subdirectories under `docs/dev_tasks/`. Do not
+maintain a hardcoded inventory in this README because task folders are removed
+when their work completes. To inspect the current set:
+
+```bash
+find docs/dev_tasks -maxdepth 2 -type d -print
+```
 
 ## Structure
 
 - Each development task should live in its own subdirectory under `docs/dev_tasks/`.
-- If you can't find a task folder (e.g., it was renamed or removed after completion), list what exists:
-
-  ```bash
-  find docs/dev_tasks -maxdepth 2 -type d -print
-  ```
+- If you can't find a task folder, use the current-inventory command above
+  instead of relying on a hardcoded list.
 
 ## Documentation Principles
 

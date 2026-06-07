@@ -217,6 +217,11 @@ if(DART_BUILD_COLLISION_REFERENCE_TESTS)
   dart_force_link_collision_backend(UNIT_constraint_ContactSurface dart-test-reference-fcl)
 endif()
 dart_add_test("unit" UNIT_constraint_JointConstraints constraint/test_joint_constraints.cpp)
+dart_add_test(
+  "unit"
+  UNIT_constraint_CylindricalJointConstraint
+  constraint/test_cylindrical_joint_constraint.cpp
+)
 dart_add_test("unit" UNIT_constraint_ConstrainedGroup constraint/test_constrained_group.cpp)
 
 # ==============================================================================

@@ -17,8 +17,8 @@ DART's C++ examples are organized around the DART 7 World demo app:
 From inside the DART repo:
 
 ```bash
-pixi run demos                     # launch the Demos app (interactive)
-pixi run demos -- --scene rigid_body # launch with a specific scene selected
+pixi run demos                                  # launch the Demos app
+pixi run demos -- --scene rigid_body
 ```
 
 In the app, use the **Demos** sidebar to switch scenes. Scenes are grouped into
