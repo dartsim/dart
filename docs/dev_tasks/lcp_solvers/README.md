@@ -198,7 +198,7 @@
 - [x] Fixed boxed semi-smooth Newton's `findex` moving-bound Jacobian so the
       coupled mildly ill-conditioned 4-contact generated case satisfies the
       all-solver contract.
-- [x] Added a DART 7 experimental `World` boxed-LCP contact snapshot test that
+- [x] Added a DART 7 `dart::simulation::World` boxed-LCP contact snapshot test that
       validates a real sphere-ground friction contact LCP assembled from
       `World::collide()`.
 - [x] Extended the DART 7 boxed-LCP contact snapshot evidence to a two-contact
@@ -312,10 +312,11 @@
       0.25 drove residual and bounds near zero but still failed fixed-variable
       complementarity at about 0.34 to 0.435.
 - [x] Added dense box-face DART 7 end-to-end unit and benchmark evidence:
-      `FourBoxWorldStepMaintainsDenseContactInvariants` advances a 4-box,
-      16-contact dense face-contact scene through public boxed-LCP
-      `World::step()`, and `BM_LcpWorldBoxStep_BoxedLcp/{1,2,4}/200` reports
-      matching benchmark invariant counters for 4/8/16 contacts.
+      `FourBoxWorldStepMaintainsDenseContactInvariants` and
+      `EightBoxWorldStepMaintainsDenseContactInvariants` advance 4-box and
+      8-box dense face-contact scenes through public boxed-LCP `World::step()`,
+      and `BM_LcpWorldBoxStep_BoxedLcp/{1,2,4,8}/200` reports matching
+      benchmark invariant counters for 4/8/16/32 contacts.
 - [x] Added DART 7 per-contact block-structure evidence for BGS and
       Blocked Jacobi on real two-contact boxed-LCP world-contact snapshots:
       the tests prove `findex`-derived non-contiguous contact blocks solve the
@@ -348,10 +349,10 @@
       active-set transition benchmark slices into harder solver-specific
       friction-index conditioning/coupling cases and broader backend execution
       evidence beyond CPU solver rows in SIMD/CUDA-enabled builds.
-- [ ] Continue extending DART 7 end-to-end contact cases through the
-      experimental simulation pipeline beyond current separated contacts,
-      fixed-base articulated contacts, 3-sphere coupled stacks, and dense box
-      face-contact snapshot/step/CUDA coverage.
+- [ ] Continue extending DART 7 end-to-end contact cases through the public
+      simulation pipeline beyond current separated contacts, fixed-base
+      articulated contacts, 5-sphere coupled stacks, and 8-box dense
+      face-contact step coverage.
 - [ ] Broaden apples-to-apples benchmark packets from generated problems and
       simple world-contact snapshots to broader dense/robot-like end-to-end
       contact systems, with scalar, SIMD, threaded, CUDA, and broader batch
@@ -1027,7 +1028,7 @@ tradeoffs evidence based.
   boxed semi-smooth Newton generated path no longer needs a `MaxIterations`
   allowance for coupled friction-index cases.
 - DART 7 world-contact evidence:
-  `tests/unit/simulation/experimental/contact/test_boxed_lcp_contact.cpp` now
+  `tests/unit/simulation/contact/test_boxed_lcp_contact.cpp` now
   checks `BoxedLcpContact.WorldContactSnapshotSatisfiesLcpContract`, which
   takes a real sphere-ground friction contact from `World::collide()`, routes it
   through `detail::solveBoxedLcpContacts`, validates the assembled boxed/findex
@@ -1115,7 +1116,7 @@ tradeoffs evidence based.
   articulated shortcut. The focused
   `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.ArticulatedPrismaticLinkPushesDynamicRigidBody' --gtest_brief=1`
   run passed. The full `test_boxed_lcp_contact --gtest_brief=1` binary now
-  passes 43 tests.
+  passes 44 tests.
   `BoxedLcpContact.ArticulatedPrismaticLinkPushesArticulatedPrismaticLink`
   advances a fixed-base prismatic striker link in contact with a prismatic
   target link owned by a separate multibody through one boxed-LCP
@@ -1129,20 +1130,22 @@ tradeoffs evidence based.
   checks the boxed/findex shape, and verifies the same LCP with APGD. The
   sliding and static-friction end-to-end box tests now also assert at least
   four contacts before stepping, so they are dense face-contact public-step
-  evidence. `FourBoxWorldStepMaintainsDenseContactInvariants` extends that to a
-  separated 4-box, 16-contact dense face-contact scene advanced for 200 public
-  boxed-LCP `World::step()` iterations. The full run still emits the
-  dense-patch Dantzig warning; Dantzig's direct dense box solve is not claimed.
+  evidence. `FourBoxWorldStepMaintainsDenseContactInvariants` and
+  `EightBoxWorldStepMaintainsDenseContactInvariants` extend that to separated
+  4-box and 8-box, 16-contact and 32-contact dense face-contact scenes advanced
+  for 200 public boxed-LCP `World::step()` iterations. The full run still emits
+  the dense-patch Dantzig warning; Dantzig's direct dense box solve is not
+  claimed.
 - DART 7 world-contact benchmark evidence:
   `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` now registers 48
   manifest-generated
   `BM_LcpWorldContact/FrictionIndex/<solver>/{1,2,4}` rows, covering all 16
   friction-index-capable solvers on the same boxed/findex LCP snapshots
   assembled from separated sphere-ground contacts. It also registers
-  `BM_LcpWorldContactAssembly_BoxedLcp/{1,2,4}`, which rebuilds the experimental
-  `World`, calls `World::collide()`, assembles the contact LCP through
-  `detail::solveBoxedLcpContacts`, and validates the solved snapshot. The
-  focused
+  `BM_LcpWorldContactAssembly_BoxedLcp/{1,2,4}`, which rebuilds
+  `dart::simulation::World`, calls `World::collide()`, assembles the contact
+  LCP through `detail::solveBoxedLcpContacts`, and validates the solved
+  snapshot. The focused
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldContact|BM_LcpWorldContactAssembly' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   run passed with `contract_ok=1` for all 51 rows. This is contact-derived
   benchmark evidence for 1/2/4 separated sphere-ground contacts, not evidence
@@ -1162,19 +1165,22 @@ tradeoffs evidence based.
   CUDA LCP kernel execution. This is dense contact-snapshot evidence, not
   broad robot-like or CUDA dense-contact execution evidence.
 - DART 7 dense box-contact end-to-end benchmark evidence:
-  `BM_LcpWorldBoxStep_BoxedLcp/{1,2,4}/200` rebuilds separated box-on-ground
+  `BM_LcpWorldBoxStep_BoxedLcp/{1,2,4,8}/200` rebuilds separated box-on-ground
   scenes, confirms each box contributes a 4-contact face patch before stepping,
   enters simulation mode, advances the public boxed-LCP `World::step()` path for
   200 steps, and checks finite-state, contact-height, vertical-rest, and
   tangential-slowing invariants. Focused default, SIMD-enabled, and
   CUDA-enabled build-tree
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldBoxStep_BoxedLcp' --benchmark_min_time=0.001s --benchmark_repetitions=1`
-  runs reported `invariant_ok=1` for all three rows, with
-  `dense_box_contact=1`, `box_count=1`, `2`, and `4`, and `contact_count=4`,
-  `8`, and `16`. The CUDA-enabled rows are CPU public-step rows in that build
-  tree, not CUDA LCP kernel execution. The runs still emit the dense-patch
-  Dantzig warning, so this is public-step invariant evidence for dense
-  face-contact scenes, not a direct Dantzig dense box solve claim.
+  runs reported `invariant_ok=1` for all four rows, with `dense_box_contact=1`,
+  `box_count=1`, `2`, `4`, and `8`, and `contact_count=4`, `8`, `16`, and
+  `32`. The default 8-box row reported `max_height_error=3.32e-4`,
+  `max_vertical_speed=0.04905`, and `min_tangential_speed_drop=0.372156`; the
+  SIMD and CUDA-enabled 8-box rows also reported `invariant_ok=1`. The
+  CUDA-enabled rows are CPU public-step rows in that build tree, not CUDA LCP
+  kernel execution. The runs still emit the dense-patch Dantzig warning, so
+  this is public-step invariant evidence for dense face-contact scenes, not a
+  direct Dantzig dense box solve claim.
 - DART 7 dense box-contact CUDA batch evidence:
   `CudaLcpPgsBatch.DenseBoxWorldContactBatchSatisfiesLcpContract` builds a
   homogeneous batch of four 4-contact, 12-row box-face `World::collide()`
@@ -1292,16 +1298,16 @@ tradeoffs evidence based.
   `contact_count=16`; the 16-contact row reported `max_height_error=0`,
   `max_vertical_speed=0`, and `min_tangential_speed_drop=0.23816`.
 - DART 7 dense box-face end-to-end benchmark evidence:
-  `BM_LcpWorldBoxStep_BoxedLcp/{1,2,4}/200` rebuilds separated dense box-face
+  `BM_LcpWorldBoxStep_BoxedLcp/{1,2,4,8}/200` rebuilds separated dense box-face
   worlds, enters simulation mode, advances the public boxed-LCP `World::step()`
   path for 200 steps, and checks finite-state, contact-height, vertical-rest,
   and tangential-slowing invariants. Focused default, SIMD-enabled, and
   CUDA-enabled build-tree
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldBoxStep_BoxedLcp' --benchmark_min_time=0.001s --benchmark_repetitions=1`
-  runs reported `invariant_ok=1` for all three rows, with
-  `dense_box_contact=1`, `box_count=1`, `2`, and `4`, and `contact_count=4`,
-  `8`, and `16`. The CUDA-enabled rows are CPU public-step rows in that build
-  tree, not CUDA LCP kernel execution.
+  runs reported `invariant_ok=1` for all four rows, with
+  `dense_box_contact=1`, `box_count=1`, `2`, `4`, and `8`, and
+  `contact_count=4`, `8`, `16`, and `32`. The CUDA-enabled rows are CPU
+  public-step rows in that build tree, not CUDA LCP kernel execution.
 - DART 7 articulated contact end-to-end benchmark evidence:
   `BM_LcpWorldArticulatedGroundStep_BoxedLcp/{1,4,8,16}/200` rebuilds fixed-base
   prismatic-link worlds, enters simulation mode in the world factory, advances
@@ -1664,7 +1670,7 @@ tradeoffs evidence based.
 ## Remaining Gaps
 
 - DART 7 integration: decide how these math solvers are selected and exercised
-  from the experimental `World` contact pipeline without exposing internal
+  from the `dart::simulation::World` contact pipeline without exposing internal
   solver/backend registry types.
 - Coverage breadth: extend deterministic generated fixtures beyond the current
   production-scale well-conditioned, larger mildly ill-conditioned,

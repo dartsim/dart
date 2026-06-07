@@ -37,14 +37,16 @@ Support abbreviations:
 - The background documents now include the exported DART 7 APGD, TGS, ADMM,
   SAP, and boxed semi-smooth Newton variants alongside the original solver
   taxonomy.
-- Current evidence is mostly math-layer evidence, with DART 7 experimental
-  `World` boxed-LCP contact snapshot tests for single-contact and two-contact
-  sphere-ground friction cases, 200-step two-sphere and four-sphere boxed-LCP
+- Current evidence is mostly math-layer evidence, with DART 7
+  `dart::simulation::World` boxed-LCP contact snapshot tests for
+  single-contact and two-contact sphere-ground friction cases, 200-step
+  two-sphere and four-sphere boxed-LCP
   `World::step()` invariant tests, 16-sphere separated-contact boxed-LCP
   `World::step()` invariant tests, 3-, 4-, and 5-sphere coupled-stack boxed-LCP
-  snapshot tests, 3-sphere 200-step, 3-sphere 500-step, and 4-sphere 200-step
-  boxed-LCP `World::step()` invariant tests and benchmark rows, 4-/8-/16-contact
-  separated sphere-ground step benchmark rows, 1-/2-/4-box dense box-face step
+  snapshot tests, 3-sphere 200-step, 3-sphere 500-step, 4-sphere 200-step, and
+  5-sphere 500-step boxed-LCP `World::step()` invariant tests and benchmark
+  rows, 4-/8-/16-contact separated sphere-ground step benchmark rows,
+  1-/2-/4-/8-box dense box-face step
   benchmark rows, a
   fixed-base prismatic articulated link-ground
   boxed-LCP `World::step()` invariant tests for one-link and four-link scenes,
@@ -517,7 +519,7 @@ The current local evidence for this task is:
 - `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.LongRunningSphereStackWorldStepMaintainsContactInvariants'`
   passed 1 test, advancing the same 3-sphere vertical stack through 500 public
   boxed-LCP `World::step()` iterations with the same motion invariants.
-- The full `test_boxed_lcp_contact --gtest_brief=1` binary passed 43 tests. The
+- The full `test_boxed_lcp_contact --gtest_brief=1` binary passed 44 tests. The
   run still emits the existing `StaticFrictionHoldsSmallPush` degenerate-pivot
   warning, so this should not be counted as clean evidence for
   dense-degenerate multi-contact systems.
@@ -672,15 +674,17 @@ The current local evidence for this task is:
   ground and rigid-impact rows also reported `contract_ok=1` with
   `build_simd_enabled=1` and `build_cuda_enabled=1`, respectively; those are CPU
   solver rows in those build trees, not CUDA kernel execution.
-- `test_boxed_lcp_contact --gtest_brief=1` now passes 43 tests. The dense box
+- `test_boxed_lcp_contact --gtest_brief=1` now passes 44 tests. The dense box
   face-contact test assembles a 4-contact, 12-row boxed/findex LCP from
   `World::collide()`, checks the single-dynamic-body dense patch shape, and
   verifies the problem with APGD; the sliding and static-friction box
   end-to-end tests also assert at least four contacts before stepping.
-  `FourBoxWorldStepMaintainsDenseContactInvariants` extends this to a separated
-  4-box, 16-contact dense face-contact scene advanced for 200 public boxed-LCP
-  `World::step()` iterations. The run still emits the dense-patch Dantzig
-  warning, so Dantzig's direct dense box solve is not claimed.
+  `FourBoxWorldStepMaintainsDenseContactInvariants` and
+  `EightBoxWorldStepMaintainsDenseContactInvariants` extend this to separated
+  4-box and 8-box, 16-contact and 32-contact dense face-contact scenes advanced
+  for 200 public boxed-LCP `World::step()` iterations. The run still emits the
+  dense-patch Dantzig warning, so Dantzig's direct dense box solve is not
+  claimed.
 - `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldBoxContact/FrictionIndex' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   passed in default, SIMD-enabled, and CUDA-enabled build trees for 18 scoped
   dense box rows: `Pgs`, `RedBlackGaussSeidel`, `NNCG`, `Apgd`, `Tgs`, and
@@ -688,6 +692,14 @@ The current local evidence for this task is:
   `dense_box_contact=1`, `box_count=1`, `2`, and `4`, `contact_count=4`, `8`,
   and `16`, and `problem_size=12`, `24`, and `48`; the CUDA-enabled rows are
   CPU solver rows in that build tree, not CUDA LCP kernel execution.
+- `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldBoxStep_BoxedLcp' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  passed in default, SIMD-enabled, and CUDA-enabled build trees for
+  `BM_LcpWorldBoxStep_BoxedLcp/{1,2,4,8}/200`. All four rows reported
+  `invariant_ok=1` and `dense_box_contact=1`; the new 8-box row covers 32
+  face contacts and reported `max_height_error=3.32e-4`,
+  `max_vertical_speed=0.04905`, and `min_tangential_speed_drop=0.372156` in
+  the default build. The CUDA-enabled rows are CPU public-step rows in that
+  build tree, not CUDA LCP kernel execution.
 - `BM_LCP_COMPARE --benchmark_list_tests` listed 190 manifest-generated
   `BM_LcpCompare/<family>/<solver>/<size>` benchmarks.
 - `BM_LCP_COMPARE --benchmark_list_tests` listed 56 manifest-generated
@@ -969,10 +981,10 @@ The current local evidence for this task is:
   boxed/findex fallback for standard-only methods; that should not be counted
   as native support without solver-specific evidence.
 - DART 7 integration: current tests now include single-contact and two-contact
-  experimental `World` boxed-LCP contact snapshots from `World::collide()` plus
-  two-contact, four-contact, 16-contact, and 3-sphere-stack 200-step and
-  500-step, plus 4-sphere-stack 200-step boxed-LCP `World::step()` invariant
-  tests and world-contact
+  `dart::simulation::World` boxed-LCP contact snapshots from `World::collide()`
+  plus two-contact, four-contact, 16-contact, and 3-sphere-stack 200-step and
+  500-step, plus 4-sphere-stack 200-step and 5-sphere-stack 500-step boxed-LCP
+  `World::step()` invariant tests and world-contact
   benchmark rows for 1/2/4 separated sphere-ground contacts, separated
   4-/8-/16-contact step rows,
   2/3-sphere vertical stacks, 4-/5-sphere vertical-stack rows for all of those
@@ -981,7 +993,7 @@ The current local evidence for this task is:
   link-ground one-link and four-link `World::step()` paths, connected
   fixed-base three-axis Cartesian-chain `World::step()` paths, fixed-base
   link-vs-rigid `World::step()` paths, cross-multibody fixed-base
-  link-vs-link `World::step()` paths, dense box-face
+  link-vs-link `World::step()` paths, 1-/2-/4-/8-box dense box-face
   `World::step()` benchmark rows, plus manually assembled three-axis
   articulated unified-contact LCP snapshots including cross-multibody
   link-vs-link rows, but broader solver
@@ -1025,8 +1037,9 @@ The current local evidence for this task is:
   over those snapshots, stress mixed serial/task-parallel batches that include
   4-/5-sphere stack snapshots for all of those solvers except `NNCG`,
   200-step/500-step
-  3-sphere and 200-step 4-sphere end-to-end stack step rows, and 4-/8-/16-contact
-  separated end-to-end step rows, plus 1-/2-/4-box dense box-face end-to-end step rows, fixed-base
+  3-sphere, 200-step 4-sphere, and 500-step 5-sphere end-to-end stack step
+  rows, and 4-/8-/16-contact separated end-to-end step rows, plus
+  1-/2-/4-/8-box dense box-face end-to-end step rows, fixed-base
   prismatic articulated link-ground, link-vs-rigid impact, and
   cross-multibody link-vs-link impact step rows up to 16-link or 16-pair
   benchmark scenes, plus
@@ -1058,14 +1071,14 @@ The current local evidence for this task is:
 1. Expand the manifest-generated correctness matrix across larger problem
    sizes, conditioning classes, active-set patterns, and friction-index
    coupling patterns.
-2. Extend DART 7 experimental simulation contact fixtures from the current
+2. Extend DART 7 boxed-LCP `World` contact fixtures from the current
    separated sphere-ground, fixed-base prismatic articulated, cross-multibody
    fixed-base articulated link-vs-link, manually assembled three-axis
-   articulated, 4-sphere end-to-end vertical-stack, and
+   articulated, 5-sphere end-to-end vertical-stack, and
    small vertical-stack boxed-LCP
    snapshots and contact-derived benchmark rows to richer articulated,
    longer-running, and denser coupled multi-contact scenes beyond the current
-   dense box face-contact slice
+   8-box dense face-contact public-step slice
    that validate solver outputs against motion/contact invariants.
 3. Add benchmark packets that broaden scalar CPU and SIMD-enabled CPU evidence,
    larger and sparser solver-internal multi-threaded CPU cases,

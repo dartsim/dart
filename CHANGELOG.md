@@ -1155,11 +1155,13 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     plus PGS-only CUDA batch
     coverage for homogeneous and grouped 1/2/4-box dense box-face packets through
     `BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex` and
-    `BM_LcpCudaPgsWorldBoxContactGroupedBatch_FrictionIndex`, and 1/2/4-box
+    `BM_LcpCudaPgsWorldBoxContactGroupedBatch_FrictionIndex`, and 1/2/4/8-box
     `BM_LcpWorldBoxStep_BoxedLcp` end-to-end invariant benchmark rows verified
     in default, SIMD-enabled, and CUDA-enabled build trees, plus a
     `FourBoxWorldStepMaintainsDenseContactInvariants` unit test for a 16-contact
-    dense box-face public-step scene. Added fixed-base prismatic articulated
+    dense box-face public-step scene and
+    `EightBoxWorldStepMaintainsDenseContactInvariants` for a 32-contact scene.
+    Added fixed-base prismatic articulated
     link-ground `World::step()` invariant coverage for one-link and four-link
     contact scenes, plus 1-/4-/8-/16-link articulated ground-step benchmark
     rows through the public boxed-LCP unified constraint path. Added connected
