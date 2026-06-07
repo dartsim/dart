@@ -105,7 +105,7 @@
       friction-index 24-contact, and coupled friction-index 12-contact cases.
 - [x] Added a near-singular generated known-solution slice for a robust scoped
       solver set covering standard 8-row, boxed 8-row, and coupled
-      friction-index 3-, 6-, 9-, 12-, and 16-contact cases.
+      friction-index 3-, 6-, 9-, 12-, 16-, 24-, and 32-contact cases.
 - [x] Added a singular-degenerate generated known-solution slice with exact
       rank-deficient matrices covering standard 16-row, boxed 16-row, and
       coupled friction-index 6-contact cases. The standard packet covers 21
@@ -176,9 +176,9 @@
       for batch-size-4 runs over the 8x-coupled 16-/24-contact mildly
       ill-conditioned friction-index packets, verified in default,
       SIMD-enabled, and CUDA-enabled build trees.
-- [x] Added 15 `BM_LcpNearSingular` benchmark rows for the scoped robust
+- [x] Added 19 `BM_LcpNearSingular` benchmark rows for the scoped robust
       near-singular standard 8-row, boxed 8-row, and coupled friction-index
-      3-, 6-, 9-, 12-, and 16-contact packets, verified in default,
+      3-, 6-, 9-, 12-, 16-, 24-, and 32-contact packets, verified in default,
       SIMD-enabled, and CUDA-enabled build trees.
 - [x] Added 27 `BM_LcpSingularDegenerate` benchmark rows for the exact
       rank-deficient standard 16-row, boxed 16-row, and coupled friction-index
@@ -1447,9 +1447,9 @@ tradeoffs evidence based.
   for standard 128-row, boxed 64-row, friction-index 24-contact, and coupled
   friction-index 12-contact known-solution cases over scoped scalable solvers.
 - Added `LcpGeneratedCoverage.NearSingularKnownSolutionsForRobustSolverSlice`
-  for standard 8-row, boxed 8-row, and coupled friction-index 3-, 6-, 9-, and
-  12-, and 16-contact near-singular known-solution cases over a scoped robust solver
-  set. Trial
+  for standard 8-row, boxed 8-row, and coupled friction-index 3-, 6-, 9-, 12-,
+  16-, 24-, and 32-contact near-singular known-solution cases over a scoped
+  robust solver set. Trial
   evidence kept this intentionally narrow: Lemke produced a valid complementary
   solution but not the selected generated solution for the 8-row singular
   standard case, and boxed semi-smooth Newton failed line search on the
@@ -1514,9 +1514,9 @@ tradeoffs evidence based.
   16-/24-contact mildly ill-conditioned friction-index packets. These rows
   report `contract_ok=1`, `mildly_ill_conditioned_batch=1`, backend build-state
   counters, and contact/coupling counters.
-- Added 15 `BM_LcpNearSingular` rows for near-singular standard 8-row, boxed
-  8-row, and coupled friction-index 3-, 6-, 9-, 12-, and 16-contact packets
-  over the generated robust near-singular solver scope. These rows report
+- Added 19 `BM_LcpNearSingular` rows for near-singular standard 8-row, boxed
+  8-row, and coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-, and 32-contact
+  packets over the generated robust near-singular solver scope. These rows report
   `contract_ok=1`, `near_singular=1`, backend build-state counters, and
   contact/coupling counters where applicable. The CUDA-enabled rows are CPU
   solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
@@ -1701,7 +1701,7 @@ tradeoffs evidence based.
   well-conditioned 12-contact, mildly ill-conditioned 24-contact,
   stronger-coupled mildly ill-conditioned 16-, 24-, and 32-contact cases,
   ADMM/SAP-only 16x-coupled mildly ill-conditioned 16-, 24-, and 32-contact cases,
-  near-singular 16-contact cases, singular-degenerate 16-contact cases, and
+  near-singular 32-contact cases, singular-degenerate 16-contact cases, and
   production active-set transition 24-contact and 32-contact cases. Broader
   harder-conditioned coupled friction-index grids beyond the narrow ADMM/SAP
   16x slice still need solver-specific evidence.

@@ -258,10 +258,10 @@ build-state counters. Focused block-solver unit coverage passed 15 tests. The
 CUDA-enabled rows are CPU BGS/Blocked Jacobi solver rows in a CUDA-enabled
 build, not CUDA LCP kernel execution.
 It now also extends the robust near-singular generated slice to coupled
-friction-index 16-contact packets and adds 15 matching `BM_LcpNearSingular`
+friction-index 32-contact packets and adds 19 matching `BM_LcpNearSingular`
 benchmark rows for standard 8-row, boxed 8-row, and coupled friction-index
-3-, 6-, 9-, 12-, and 16-contact packets verified in default, SIMD-enabled,
-and CUDA-enabled build trees. The CUDA-enabled rows are CPU solver rows in a
+3-, 6-, 9-, 12-, 16-, 24-, and 32-contact packets verified in default,
+SIMD-enabled, and CUDA-enabled build trees. The CUDA-enabled rows are CPU solver rows in a
 CUDA-enabled build, not CUDA LCP kernel execution.
 It now also adds exact rank-deficient singular-degenerate generated coverage
 for standard 16-row, boxed 16-row, and coupled friction-index 6-contact
@@ -384,7 +384,7 @@ Push/PR work still requires explicit maintainer/user approval.
 
 Move from the now-verified extreme 128-row/16-contact exact rank-deficient,
 production active-set transition 32-contact, coupled mildly ill-conditioned
-24-contact, near-singular 16-contact CPU solver rows, and default/SIMD/CUDA
+24-contact, near-singular 32-contact CPU solver rows, and default/SIMD/CUDA
 Newton warm-start single-problem and batch benchmark rows, plus focused
 PGS/PSOR, symmetric PSOR, and Red-Black Gauss-Seidel relaxation sweep rows,
 APGD restart-policy sweep rows, TGS iteration-budget sweep rows, NNCG
@@ -540,9 +540,9 @@ longer-running coupled, and broader dense/robot-like contact scenes.
   `mildly_ill_conditioned_batch=1`, `coupling_scale=8`, contact/total-contact
   counters, backend build-state counters, and parallel execution counters on
   `ParallelExecutor` rows.
-  `BM_LCP_COMPARE` also lists 15 `BM_LcpNearSingular` rows for standard
-  8-row, boxed 8-row, and coupled friction-index 3-, 6-, 9-, 12-, and
-  16-contact
+  `BM_LCP_COMPARE` also lists 19 `BM_LcpNearSingular` rows for standard
+  8-row, boxed 8-row, and coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-,
+  and 32-contact
   packets over the scoped robust solver set; the focused default,
   SIMD-enabled, and CUDA-enabled runs pass with `contract_ok=1` on all rows and
   report `near_singular=1`, backend build-state counters, and contact/coupling
@@ -659,7 +659,8 @@ longer-running coupled, and broader dense/robot-like contact scenes.
   32/64-row, boxed 16/32-row, friction-index 8-contact, coupled friction-index
   6-, 8-, 12-, 16-, and 24-contact, stronger-coupled mildly ill-conditioned
   16-/24-contact plus a 32-contact 8x case, near-singular standard 8-row,
-  boxed 8-row, coupled friction-index 3-, 6-, 9-, 12-, and 16-contact, and exact rank-deficient
+  boxed 8-row, coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-, and
+  32-contact, and exact rank-deficient
   singular-degenerate standard 16-row, boxed 16-row, and coupled friction-index
   6-contact
   known-solution cases, plus

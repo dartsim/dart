@@ -3536,7 +3536,9 @@ enum class NearSingularBenchmarkCase
   CoupledFrictionIndex6,
   CoupledFrictionIndex9,
   CoupledFrictionIndex12,
-  CoupledFrictionIndex16
+  CoupledFrictionIndex16,
+  CoupledFrictionIndex24,
+  CoupledFrictionIndex32
 };
 
 enum class SingularDegenerateBenchmarkCase
@@ -4088,6 +4090,10 @@ std::string_view getNearSingularCaseName(
       return "CoupledFrictionIndex12";
     case NearSingularBenchmarkCase::CoupledFrictionIndex16:
       return "CoupledFrictionIndex16";
+    case NearSingularBenchmarkCase::CoupledFrictionIndex24:
+      return "CoupledFrictionIndex24";
+    case NearSingularBenchmarkCase::CoupledFrictionIndex32:
+      return "CoupledFrictionIndex32";
   }
 
   return "Unknown";
@@ -4106,6 +4112,8 @@ dart::test::LcpProblemSupport getNearSingularProblemSupport(
     case NearSingularBenchmarkCase::CoupledFrictionIndex9:
     case NearSingularBenchmarkCase::CoupledFrictionIndex12:
     case NearSingularBenchmarkCase::CoupledFrictionIndex16:
+    case NearSingularBenchmarkCase::CoupledFrictionIndex24:
+    case NearSingularBenchmarkCase::CoupledFrictionIndex32:
       return dart::test::LcpProblemSupport::FrictionIndex;
   }
 
@@ -4118,7 +4126,9 @@ bool isNearSingularFrictionIndexCase(const NearSingularBenchmarkCase testCase)
          || testCase == NearSingularBenchmarkCase::CoupledFrictionIndex6
          || testCase == NearSingularBenchmarkCase::CoupledFrictionIndex9
          || testCase == NearSingularBenchmarkCase::CoupledFrictionIndex12
-         || testCase == NearSingularBenchmarkCase::CoupledFrictionIndex16;
+         || testCase == NearSingularBenchmarkCase::CoupledFrictionIndex16
+         || testCase == NearSingularBenchmarkCase::CoupledFrictionIndex24
+         || testCase == NearSingularBenchmarkCase::CoupledFrictionIndex32;
 }
 
 int getNearSingularContactCount(const NearSingularBenchmarkCase testCase)
@@ -4134,6 +4144,10 @@ int getNearSingularContactCount(const NearSingularBenchmarkCase testCase)
       return 12;
     case NearSingularBenchmarkCase::CoupledFrictionIndex16:
       return 16;
+    case NearSingularBenchmarkCase::CoupledFrictionIndex24:
+      return 24;
+    case NearSingularBenchmarkCase::CoupledFrictionIndex32:
+      return 32;
     case NearSingularBenchmarkCase::Standard8:
     case NearSingularBenchmarkCase::Boxed8:
       return 0;
@@ -4160,6 +4174,10 @@ LcpProblem MakeNearSingularBenchmarkProblem(
       return MakeNearSingularFrictionIndexProblem(12, 16'012u, true);
     case NearSingularBenchmarkCase::CoupledFrictionIndex16:
       return MakeNearSingularFrictionIndexProblem(16, 16'016u, true);
+    case NearSingularBenchmarkCase::CoupledFrictionIndex24:
+      return MakeNearSingularFrictionIndexProblem(24, 16'024u, true);
+    case NearSingularBenchmarkCase::CoupledFrictionIndex32:
+      return MakeNearSingularFrictionIndexProblem(32, 16'032u, true);
   }
 
   return MakeNearSingularStandardProblem(8, 14'008u);
@@ -9588,14 +9606,16 @@ void RegisterMildIllConditionedBatchBenchmarks()
 
 void RegisterNearSingularBenchmarks()
 {
-  constexpr std::array<NearSingularBenchmarkCase, 7> cases{
+  constexpr std::array<NearSingularBenchmarkCase, 9> cases{
       NearSingularBenchmarkCase::Standard8,
       NearSingularBenchmarkCase::Boxed8,
       NearSingularBenchmarkCase::CoupledFrictionIndex3,
       NearSingularBenchmarkCase::CoupledFrictionIndex6,
       NearSingularBenchmarkCase::CoupledFrictionIndex9,
       NearSingularBenchmarkCase::CoupledFrictionIndex12,
-      NearSingularBenchmarkCase::CoupledFrictionIndex16};
+      NearSingularBenchmarkCase::CoupledFrictionIndex16,
+      NearSingularBenchmarkCase::CoupledFrictionIndex24,
+      NearSingularBenchmarkCase::CoupledFrictionIndex32};
 
   for (const auto testCase : cases) {
     for (const auto& solver : dart::test::kLcpSolverManifest) {
