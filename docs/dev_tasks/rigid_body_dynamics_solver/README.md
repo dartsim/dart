@@ -100,8 +100,9 @@ solvers, couplers, ECS storage, or execution backends.
 
 ## Immediate Next Steps
 
-1. Keep the local `feature/experimental-model-loader` branch clean and validated
-   while it carries the model-loading/contact follow-up commits ahead of origin.
+1. Treat the model-loading and unified contact/constraint line as landed on
+   `main` via PR #2838; do not look for the retired
+   `feature/experimental-model-loader` branch as the active publication path.
 2. Continue Subsystem A polish from `RESUME.md`: warm starting, friction-cone
    iteration, and other scaling work around the unified contact solve.
 
