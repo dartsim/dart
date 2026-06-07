@@ -2778,6 +2778,13 @@ enum class BenchmarkProblemFamily
   FrictionIndex
 };
 
+enum class PgsRelaxationKind
+{
+  Under,
+  Plain,
+  Over
+};
+
 enum class NewtonWarmStartMode
 {
   None,
@@ -2788,6 +2795,15 @@ enum class NewtonWarmStartMode
 
 constexpr int kNewtonWarmStartPgsIterations = 5;
 constexpr int kNewtonWarmStartGradientIterations = 5;
+
+struct PgsRelaxationSweepCase
+{
+  BenchmarkProblemFamily family;
+  int problemArg;
+  PgsRelaxationKind relaxationKind;
+  double relaxation;
+  std::string_view relaxationLabel;
+};
 
 std::string_view getNewtonWarmStartModeName(const NewtonWarmStartMode mode)
 {
@@ -2800,6 +2816,20 @@ std::string_view getNewtonWarmStartModeName(const NewtonWarmStartMode mode)
       return "GradientDescent";
     case NewtonWarmStartMode::PgsThenGradient:
       return "PgsThenGradient";
+  }
+
+  return "Unknown";
+}
+
+std::string_view getPgsRelaxationKindName(const PgsRelaxationKind kind)
+{
+  switch (kind) {
+    case PgsRelaxationKind::Under:
+      return "Under";
+    case PgsRelaxationKind::Plain:
+      return "Plain";
+    case PgsRelaxationKind::Over:
+      return "Over";
   }
 
   return "Unknown";
@@ -4718,6 +4748,39 @@ void RunActiveSetTransitionBenchmark(
   }
   if (storage.hasShockPropagationParams) {
     AddShockPropagationCounters(state, storage.shockPropagationParams);
+  }
+}
+
+void RunPgsRelaxationSweepBenchmark(
+    benchmark::State& state, const PgsRelaxationSweepCase testCase)
+{
+  const auto problem
+      = MakeBenchmarkProblem(testCase.family, testCase.problemArg);
+  auto options = MakeBenchmarkOptions(200);
+  options.relaxation = testCase.relaxation;
+
+  dart::math::PgsSolver solver;
+  RunBenchmarkWithSolver(
+      state,
+      solver,
+      problem,
+      options,
+      MakeLabel(
+          "Pgs",
+          "RelaxationSweep/"
+              + std::string(getProblemFamilyName(testCase.family)) + "/"
+              + std::string(testCase.relaxationLabel)));
+
+  state.counters["pgs_relaxation_sweep"] = 1.0;
+  state.counters["psor_relaxation"] = testCase.relaxation;
+  state.counters["psor_under_relaxation"]
+      = testCase.relaxationKind == PgsRelaxationKind::Under ? 1.0 : 0.0;
+  state.counters["psor_plain_pgs"]
+      = testCase.relaxationKind == PgsRelaxationKind::Plain ? 1.0 : 0.0;
+  state.counters["psor_over_relaxation"]
+      = testCase.relaxationKind == PgsRelaxationKind::Over ? 1.0 : 0.0;
+  if (testCase.family == BenchmarkProblemFamily::FrictionIndex) {
+    state.counters["contact_count"] = testCase.problemArg;
   }
 }
 
@@ -6790,6 +6853,16 @@ std::string MakeNewtonWarmStartBenchmarkName(
   return out.str();
 }
 
+std::string MakePgsRelaxationSweepBenchmarkName(
+    const PgsRelaxationSweepCase testCase)
+{
+  std::ostringstream out;
+  out << "BM_LcpPgsRelaxationSweep/" << getProblemFamilyName(testCase.family)
+      << "/" << getPgsRelaxationKindName(testCase.relaxationKind) << "/"
+      << testCase.relaxationLabel;
+  return out.str();
+}
+
 std::string MakeNewtonWarmStartBatchSerialBenchmarkName(
     const dart::test::LcpSolverManifestEntry& solver,
     const NewtonWarmStartMode mode)
@@ -7243,6 +7316,65 @@ void RegisterActiveSetTransitionBenchmarks()
             RunActiveSetTransitionBenchmark(state, solver, family);
           });
     }
+  }
+}
+
+void RegisterPgsRelaxationSweepBenchmarks()
+{
+  constexpr std::array<PgsRelaxationSweepCase, 9> kCases{{
+      {BenchmarkProblemFamily::Standard,
+       48,
+       PgsRelaxationKind::Under,
+       0.5,
+       "Relaxation0_5"},
+      {BenchmarkProblemFamily::Standard,
+       48,
+       PgsRelaxationKind::Plain,
+       1.0,
+       "Relaxation1_0"},
+      {BenchmarkProblemFamily::Standard,
+       48,
+       PgsRelaxationKind::Over,
+       1.3,
+       "Relaxation1_3"},
+      {BenchmarkProblemFamily::Boxed,
+       24,
+       PgsRelaxationKind::Under,
+       0.5,
+       "Relaxation0_5"},
+      {BenchmarkProblemFamily::Boxed,
+       24,
+       PgsRelaxationKind::Plain,
+       1.0,
+       "Relaxation1_0"},
+      {BenchmarkProblemFamily::Boxed,
+       24,
+       PgsRelaxationKind::Over,
+       1.3,
+       "Relaxation1_3"},
+      {BenchmarkProblemFamily::FrictionIndex,
+       8,
+       PgsRelaxationKind::Under,
+       0.5,
+       "Relaxation0_5"},
+      {BenchmarkProblemFamily::FrictionIndex,
+       8,
+       PgsRelaxationKind::Plain,
+       1.0,
+       "Relaxation1_0"},
+      {BenchmarkProblemFamily::FrictionIndex,
+       8,
+       PgsRelaxationKind::Over,
+       1.3,
+       "Relaxation1_3"},
+  }};
+
+  for (const auto testCase : kCases) {
+    const auto name = MakePgsRelaxationSweepBenchmarkName(testCase);
+    benchmark::RegisterBenchmark(
+        name.c_str(), [testCase](benchmark::State& state) {
+          RunPgsRelaxationSweepBenchmark(state, testCase);
+        });
   }
 }
 
@@ -8001,6 +8133,7 @@ static void BM_LcpCudaPgsMixedContactGroupedBatch_FrictionIndex(
 const bool kManifestBenchmarksRegistered = [] {
   RegisterManifestBenchmarks();
   RegisterActiveSetTransitionBenchmarks();
+  RegisterPgsRelaxationSweepBenchmarks();
   RegisterNewtonWarmStartBenchmarks();
   RegisterLargerActiveSetTransitionBenchmarks();
   RegisterStressActiveSetTransitionBenchmarks();

@@ -1022,6 +1022,11 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     matrix over batch-size-4 serial and DART 7 `ParallelExecutor` standard
     active-set transition packets. The CUDA-enabled rows are CPU solver rows,
     not CUDA LCP kernel execution.
+  - Added focused DART 7 PGS/PSOR relaxation sweep benchmark rows for standard,
+    boxed, and friction-index fixtures at relaxation 0.5, 1.0, and 1.3,
+    verified in default, SIMD-enabled, and CUDA-enabled build trees. The rows
+    distinguish under-relaxation, plain PGS, and over-relaxation; CUDA-enabled
+    rows are CPU PGS solver rows, not CUDA LCP kernel execution.
   - Added manifest-generated serial and DART 7 `ParallelExecutor` batch LCP
     benchmarks so standard, boxed, and friction-index solver families compare
     the same independent-problem batches across every supporting solver. The

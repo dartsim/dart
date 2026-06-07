@@ -25,6 +25,9 @@
 - [x] Added opt-in solver-internal CPU worker threads for `JacobiSolver` plus
       generated correctness and dense/banded serial-vs-threaded benchmark
       evidence.
+- [x] Added focused PGS/PSOR relaxation sweep benchmark rows covering
+      under-relaxation, plain PGS, and over-relaxation on standard, boxed, and
+      friction-index fixtures.
 - [x] Verified a focused DART 7 SIMD-enabled CPU build slice for generated LCP
       correctness and scalar/parallel batch benchmark rows.
 - [x] Verified a focused DART 7 CUDA-enabled build/runtime slice and ran the
@@ -589,6 +592,19 @@ tradeoffs evidence based.
   `worker_count=20`, and observed `max_parallelism` values up to 4. The
   CUDA-enabled rows report `build_cuda_enabled=1` but are CPU solver batch rows
   in a CUDA-enabled build, not CUDA LCP kernel execution.
+- Verified PGS/PSOR relaxation sweep benchmark slice:
+  `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpPgsRelaxationSweep' | wc -l`
+  reported 9 rows, and JSON checks for
+  `BM_LcpPgsRelaxationSweep` reported 9 rows with `contract_ok=1` in the
+  default, SIMD-enabled, and CUDA-enabled build trees. These rows cover the
+  standard 48-row, boxed 24-row, and friction-index 8-contact benchmark
+  fixtures at relaxation 0.5, 1.0, and 1.3. The rows report
+  `pgs_relaxation_sweep=1`, `psor_relaxation`,
+  `psor_under_relaxation`, `psor_plain_pgs`, `psor_over_relaxation`,
+  `problem_size=24/48`, `contact_count=8` for the friction-index rows, and
+  backend build-state counters. The CUDA-enabled rows report
+  `build_cuda_enabled=1` but are CPU PGS solver rows in a CUDA-enabled build,
+  not CUDA LCP kernel execution.
 - Verified larger active-set transition benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpLargerActiveSetTransition/' | wc -l`
   reported 49 rows, and
@@ -1401,7 +1417,8 @@ tradeoffs evidence based.
   fixtures, active-set, larger/stress/extreme/production active-set packets,
   production active-set serial and `ParallelExecutor` batch packets,
   mildly ill-conditioned single-problem and 8x-coupled batch packets,
-  near-singular and singular-degenerate packets,
+  near-singular and singular-degenerate packets, PGS/PSOR relaxation sweep
+  rows,
   independent-problem batches, simple world-contact snapshots, small coupled
   stack snapshot batches, and dense box-face step rows to broader dense and
   robot-like end-to-end contact systems, broader SIMD benchmark packets, larger threaded
