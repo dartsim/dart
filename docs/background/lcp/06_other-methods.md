@@ -264,6 +264,13 @@ solver.solve(problem, x, options);
 > Note: Layers must cover all blocks. If `layers` is empty, DART uses a single
 > layer containing all blocks (equivalent to an ordered block sweep).
 
+DART 7 benchmark evidence includes `BM_LcpShockPropagationLayerSweep`, which
+compares single-layer, two-layer, and serial layer schedules over standard
+48-row, boxed 24-row, and friction-index 8-contact fixtures using 3-row
+blocks. Focused default, SIMD-enabled, and CUDA-enabled build-tree runs reported
+9 rows with `contract_ok=1`; the CUDA-enabled rows are CPU solver rows in a
+CUDA-enabled build, not CUDA LCP kernel execution.
+
 **Properties**:
 
 - Domain: Velocity-based BLCP

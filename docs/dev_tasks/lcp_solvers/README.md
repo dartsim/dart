@@ -39,6 +39,8 @@
       standard, boxed, and friction-index fixtures.
 - [x] Added focused SubspaceMinimization PGS-iteration sweep benchmark rows on
       standard, boxed, and friction-index fixtures.
+- [x] Added focused ShockPropagation layer-layout sweep benchmark rows on
+      standard, boxed, and friction-index fixtures.
 - [x] Added focused ADMM rho/adaptive-rho sweep benchmark rows on standard,
       boxed, and friction-index fixtures.
 - [x] Added focused SAP regularization sweep benchmark rows on standard, boxed,
@@ -700,6 +702,19 @@ tradeoffs evidence based.
   build-state counters. The CUDA-enabled rows report `build_cuda_enabled=1`
   but are CPU SubspaceMinimization solver rows in a CUDA-enabled build, not
   CUDA LCP kernel execution.
+- Verified ShockPropagation layer-layout benchmark slice:
+  `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpShockPropagationLayerSweep' | wc -l`
+  reported 9 rows, and JSON checks for `BM_LcpShockPropagationLayerSweep`
+  reported 9 rows with `contract_ok=1` in the default, SIMD-enabled, and
+  CUDA-enabled build trees. These rows cover standard 48-row, boxed 24-row, and
+  friction-index 8-contact fixtures with single-layer, two-layer, and serial
+  layer schedules built from 3-row blocks. The rows report
+  `shock_propagation_layer_sweep=1`, schedule counters, `layer_count=1/2/8/16`,
+  `block_count=8/16`, `max_block_size=3`, `max_blocks_per_layer=1/4/8/16`,
+  `problem_size=24/48`, `contact_count=8` for the friction-index rows, observed
+  solver `iterations=3/4`, and backend build-state counters. The CUDA-enabled
+  rows report `build_cuda_enabled=1` but are CPU ShockPropagation solver rows in
+  a CUDA-enabled build, not CUDA LCP kernel execution.
 - Verified ADMM rho/adaptive-rho benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpAdmmRhoSweep' | wc -l`
   reported 18 rows, and JSON checks for `BM_LcpAdmmRhoSweep` reported 18 rows
@@ -1539,8 +1554,9 @@ tradeoffs evidence based.
   near-singular and singular-degenerate packets, PGS/PSOR, symmetric PSOR, and
   Red-Black Gauss-Seidel relaxation sweep rows, APGD restart-policy sweep
   rows, TGS iteration-budget sweep rows, NNCG PGS-preconditioner iteration
-  sweep rows, SubspaceMinimization PGS-iteration sweep rows, ADMM
-  rho/adaptive-rho sweep rows, SAP regularization sweep rows,
+  sweep rows, SubspaceMinimization PGS-iteration sweep rows, ShockPropagation
+  layer-layout sweep rows, ADMM rho/adaptive-rho sweep rows, SAP regularization
+  sweep rows,
   independent-problem batches, simple world-contact snapshots, small coupled
   stack snapshot batches, and dense box-face step rows to broader dense and
   robot-like end-to-end contact systems, broader SIMD benchmark packets, larger threaded

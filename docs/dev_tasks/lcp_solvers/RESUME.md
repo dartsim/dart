@@ -150,6 +150,17 @@ runs passed with `contract_ok=1` on every row and recorded
 parameters, `sap_max_line_search_iterations`, backend build-state counters,
 and `contact_count=8` for the friction-index rows. The CUDA-enabled rows are
 CPU SAP solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
+It now also adds 9 `BM_LcpShockPropagationLayerSweep` benchmark rows for the
+`ShockPropagationSolver` layer schedule path, covering standard 48-row, boxed
+24-row, and friction-index 8-contact fixtures with single-layer, two-layer, and
+serial layer schedules built from 3-row blocks. Focused default, SIMD-enabled,
+and CUDA-enabled build-tree runs passed with `contract_ok=1` on every row and
+recorded `shock_propagation_layer_sweep`, schedule counters,
+`layer_count=1/2/8/16`, `block_count=8/16`, `max_block_size=3`,
+`max_blocks_per_layer=1/4/8/16`, backend build-state counters, and
+`contact_count=8` for the friction-index rows. The CUDA-enabled rows are CPU
+ShockPropagation solver rows in a CUDA-enabled build, not CUDA LCP kernel
+execution.
 It now also extends the robust near-singular generated slice to coupled
 friction-index 12-contact packets and adds 13 matching `BM_LcpNearSingular`
 benchmark rows for standard 8-row, boxed 8-row, and coupled friction-index
@@ -265,8 +276,9 @@ default/SIMD/CUDA-enabled warm-start single-problem and batch benchmark rows,
 PGS/PSOR, symmetric PSOR, Red-Black Gauss-Seidel relaxation sweep benchmark
 rows, APGD restart-policy benchmark rows, ADMM rho/adaptive-rho benchmark
 rows, TGS iteration-budget benchmark rows, NNCG PGS-preconditioner iteration
-benchmark rows, SubspaceMinimization PGS-iteration benchmark rows, SAP
-regularization benchmark rows, and Jacobi threading benchmark rows.
+benchmark rows, SubspaceMinimization PGS-iteration benchmark rows,
+ShockPropagation layer-layout benchmark rows, SAP regularization benchmark
+rows, and Jacobi threading benchmark rows.
 Push/PR work still requires explicit maintainer/user approval.
 
 ## Immediate Next Step
@@ -278,8 +290,9 @@ Newton warm-start single-problem and batch benchmark rows, plus focused
 PGS/PSOR, symmetric PSOR, and Red-Black Gauss-Seidel relaxation sweep rows,
 APGD restart-policy sweep rows, TGS iteration-budget sweep rows, NNCG
 PGS-preconditioner iteration sweep rows, SubspaceMinimization PGS-iteration
-sweep rows, ADMM rho/adaptive-rho sweep rows, and SAP regularization sweep
-rows, toward broader solver-specific conditioning grids and direct backend
+sweep rows, ShockPropagation layer-layout sweep rows, ADMM rho/adaptive-rho
+sweep rows, and SAP regularization sweep rows, toward broader solver-specific
+conditioning grids and direct backend
 execution evidence beyond SIMD/CUDA-enabled build-state counters.
 Broaden SIMD benchmark gates, solver-internal threaded benchmark evidence, and
 the CUDA Jacobi/PGS batch slices into broader/general CUDA LCP execution

@@ -2793,6 +2793,13 @@ enum class NewtonWarmStartMode
   PgsThenGradient
 };
 
+enum class ShockPropagationLayerProfile
+{
+  SingleLayer,
+  TwoLayers,
+  SerialLayers
+};
+
 constexpr int kNewtonWarmStartPgsIterations = 5;
 constexpr int kNewtonWarmStartGradientIterations = 5;
 
@@ -2836,6 +2843,14 @@ struct SubspacePgsIterationsSweepCase
   int problemArg;
   int pgsIterations;
   std::string_view pgsIterationsLabel;
+};
+
+struct ShockPropagationLayerSweepCase
+{
+  BenchmarkProblemFamily family;
+  int problemArg;
+  ShockPropagationLayerProfile profile;
+  std::string_view profileLabel;
 };
 
 struct AdmmRhoSweepCase
@@ -2953,6 +2968,46 @@ constexpr std::array<SubspacePgsIterationsSweepCase, 9>
         {BenchmarkProblemFamily::FrictionIndex, 8, 1, "PgsIter1"},
         {BenchmarkProblemFamily::FrictionIndex, 8, 3, "PgsIter3"},
         {BenchmarkProblemFamily::FrictionIndex, 8, 5, "PgsIter5"},
+    }};
+
+constexpr std::array<ShockPropagationLayerSweepCase, 9>
+    kShockPropagationLayerSweepCases{{
+        {BenchmarkProblemFamily::Standard,
+         48,
+         ShockPropagationLayerProfile::SingleLayer,
+         "SingleLayer"},
+        {BenchmarkProblemFamily::Standard,
+         48,
+         ShockPropagationLayerProfile::TwoLayers,
+         "TwoLayers"},
+        {BenchmarkProblemFamily::Standard,
+         48,
+         ShockPropagationLayerProfile::SerialLayers,
+         "SerialLayers"},
+        {BenchmarkProblemFamily::Boxed,
+         24,
+         ShockPropagationLayerProfile::SingleLayer,
+         "SingleLayer"},
+        {BenchmarkProblemFamily::Boxed,
+         24,
+         ShockPropagationLayerProfile::TwoLayers,
+         "TwoLayers"},
+        {BenchmarkProblemFamily::Boxed,
+         24,
+         ShockPropagationLayerProfile::SerialLayers,
+         "SerialLayers"},
+        {BenchmarkProblemFamily::FrictionIndex,
+         8,
+         ShockPropagationLayerProfile::SingleLayer,
+         "SingleLayer"},
+        {BenchmarkProblemFamily::FrictionIndex,
+         8,
+         ShockPropagationLayerProfile::TwoLayers,
+         "TwoLayers"},
+        {BenchmarkProblemFamily::FrictionIndex,
+         8,
+         ShockPropagationLayerProfile::SerialLayers,
+         "SerialLayers"},
     }};
 
 constexpr std::array<AdmmRhoSweepCase, 18> kAdmmRhoSweepCases{{
@@ -3914,6 +3969,46 @@ void ConfigureShockPropagationParameters(
   for (const auto i :
        std::views::iota(std::ptrdiff_t{0}, std::ssize(params.blockSizes))) {
     params.layers.push_back({static_cast<int>(i)});
+  }
+}
+
+void ConfigureShockPropagationLayerSweepParameters(
+    const LcpProblem& problem,
+    const ShockPropagationLayerProfile profile,
+    dart::math::ShockPropagationSolver::Parameters& params)
+{
+  params.blockSizes.clear();
+  params.layers.clear();
+
+  constexpr int blockSize = 3;
+  int remaining = static_cast<int>(problem.b.size());
+  while (remaining > 0) {
+    const int size = std::min(blockSize, remaining);
+    params.blockSizes.push_back(size);
+    remaining -= size;
+  }
+
+  const int blockCount = static_cast<int>(std::ssize(params.blockSizes));
+  switch (profile) {
+    case ShockPropagationLayerProfile::SingleLayer: {
+      auto blockIndices = std::views::iota(0, blockCount);
+      params.layers.emplace_back(blockIndices.begin(), blockIndices.end());
+      break;
+    }
+    case ShockPropagationLayerProfile::TwoLayers: {
+      const int split = (blockCount + 1) / 2;
+      auto firstLayer = std::views::iota(0, split);
+      auto secondLayer = std::views::iota(split, blockCount);
+      params.layers.emplace_back(firstLayer.begin(), firstLayer.end());
+      params.layers.emplace_back(secondLayer.begin(), secondLayer.end());
+      break;
+    }
+    case ShockPropagationLayerProfile::SerialLayers:
+      params.layers.reserve(blockCount);
+      for (const int blockIndex : std::views::iota(0, blockCount)) {
+        params.layers.push_back({blockIndex});
+      }
+      break;
   }
 }
 
@@ -5176,6 +5271,48 @@ void RunSubspacePgsIterationsSweepBenchmark(
   state.counters["subspace_pgs_iterations_sweep"] = 1.0;
   state.counters["subspace_pgs_iterations"] = testCase.pgsIterations;
   state.counters["subspace_active_set_tolerance"] = params.activeSetTolerance;
+  if (testCase.family == BenchmarkProblemFamily::FrictionIndex) {
+    state.counters["contact_count"] = testCase.problemArg;
+  }
+}
+
+void RunShockPropagationLayerSweepBenchmark(
+    benchmark::State& state, const ShockPropagationLayerSweepCase testCase)
+{
+  const auto problem
+      = MakeBenchmarkProblem(testCase.family, testCase.problemArg);
+  auto options = MakeBenchmarkOptions(100);
+  options.absoluteTolerance = 1e-5;
+  options.relativeTolerance = 1e-3;
+  options.complementarityTolerance
+      = testCase.family == BenchmarkProblemFamily::FrictionIndex ? 2e-3 : 1e-3;
+
+  dart::math::ShockPropagationSolver::Parameters params;
+  ConfigureShockPropagationLayerSweepParameters(
+      problem, testCase.profile, params);
+  options.customOptions = &params;
+
+  dart::math::ShockPropagationSolver solver;
+  RunBenchmarkWithSolver(
+      state,
+      solver,
+      problem,
+      options,
+      MakeLabel(
+          "ShockPropagation",
+          "LayerSweep/" + std::string(getProblemFamilyName(testCase.family))
+              + "/" + std::string(testCase.profileLabel)));
+
+  state.counters["shock_propagation_layer_sweep"] = 1.0;
+  state.counters["shock_propagation_single_layer"]
+      = testCase.profile == ShockPropagationLayerProfile::SingleLayer ? 1.0
+                                                                      : 0.0;
+  state.counters["shock_propagation_two_layers"]
+      = testCase.profile == ShockPropagationLayerProfile::TwoLayers ? 1.0 : 0.0;
+  state.counters["shock_propagation_serial_layers"]
+      = testCase.profile == ShockPropagationLayerProfile::SerialLayers ? 1.0
+                                                                       : 0.0;
+  AddShockPropagationCounters(state, params);
   if (testCase.family == BenchmarkProblemFamily::FrictionIndex) {
     state.counters["contact_count"] = testCase.problemArg;
   }
@@ -7397,6 +7534,15 @@ std::string MakeSubspacePgsIterationsSweepBenchmarkName(
   return out.str();
 }
 
+std::string MakeShockPropagationLayerSweepBenchmarkName(
+    const ShockPropagationLayerSweepCase testCase)
+{
+  std::ostringstream out;
+  out << "BM_LcpShockPropagationLayerSweep/"
+      << getProblemFamilyName(testCase.family) << "/" << testCase.profileLabel;
+  return out.str();
+}
+
 std::string MakeAdmmRhoSweepBenchmarkName(const AdmmRhoSweepCase testCase)
 {
   std::ostringstream out;
@@ -7945,6 +8091,17 @@ void RegisterSubspacePgsIterationsSweepBenchmarks()
     benchmark::RegisterBenchmark(
         name.c_str(), [testCase](benchmark::State& state) {
           RunSubspacePgsIterationsSweepBenchmark(state, testCase);
+        });
+  }
+}
+
+void RegisterShockPropagationLayerSweepBenchmarks()
+{
+  for (const auto testCase : kShockPropagationLayerSweepCases) {
+    const auto name = MakeShockPropagationLayerSweepBenchmarkName(testCase);
+    benchmark::RegisterBenchmark(
+        name.c_str(), [testCase](benchmark::State& state) {
+          RunShockPropagationLayerSweepBenchmark(state, testCase);
         });
   }
 }
@@ -8733,6 +8890,7 @@ const bool kManifestBenchmarksRegistered = [] {
   RegisterTgsIterationBudgetSweepBenchmarks();
   RegisterNncgPgsIterationsSweepBenchmarks();
   RegisterSubspacePgsIterationsSweepBenchmarks();
+  RegisterShockPropagationLayerSweepBenchmarks();
   RegisterAdmmRhoSweepBenchmarks();
   RegisterSapRegularizationSweepBenchmarks();
   RegisterNewtonWarmStartBenchmarks();
