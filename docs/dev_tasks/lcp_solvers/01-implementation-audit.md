@@ -966,19 +966,19 @@ The current local evidence for this task is:
   `articulated_cross_link_contact=1`, `min_problem_size=3`,
   `max_problem_size=15`, `total_contact_count=54`, and
   `total_problem_size=162`. The dense box PGS
-  rows include homogeneous 4-problem batches for 1-/4-/8-/16-box dense
+  rows include homogeneous 4-problem batches for 1-/4-/8-/16-/24-/32-box dense
   face-contact `World::collide()` snapshots and a grouped variable-size
-  1/2/4/8/16-box batch. All report
-  `cuda_dense_box_contact_batch=1` and `dense_box_contact=1`; the 16-box
-  homogeneous row reports `batch_size=4`, `box_count=16`, `contact_count=64`,
-  `total_contact_count=256`, `total_body_count=64`, and
-  `total_problem_size=768`, while the grouped row reports `batch_size=10`,
-  `cuda_group_count=5`, `box_count_shape_count=5`, `min_problem_size=12`,
-  `max_problem_size=192`, `total_contact_count=248`, `total_body_count=62`, and
-  `total_problem_size=744`. A fixed-iteration CUDA Jacobi dense-box trial failed
-  the LCP contract and is not claimed. The earlier failed probe used the previous
-  homogeneous 4-problem and grouped 1/2/4-box dense box-face fixtures: at 4096
-  iterations with relaxation 1.0 it failed with
+  1/2/4/8/16/24/32-box batch. All report
+  `cuda_dense_box_contact_batch=1` and `dense_box_contact=1`; the 32-box
+  homogeneous row reports `batch_size=4`, `box_count=32`, `contact_count=128`,
+  `total_contact_count=512`, `total_body_count=128`, and
+  `total_problem_size=1536`, while the grouped row reports `batch_size=14`,
+  `cuda_group_count=7`, `box_count_shape_count=7`, `min_problem_size=12`,
+  `max_problem_size=384`, `total_contact_count=696`, `total_body_count=174`, and
+  `total_problem_size=2088`. A fixed-iteration CUDA Jacobi dense-box trial
+  failed the LCP contract and is not claimed. The earlier failed probe used the
+  previous homogeneous 4-problem and grouped 1/2/4-box dense box-face fixtures:
+  at 4096 iterations with relaxation 1.0 it failed with
   residual/complementarity/bound violations of about 3.3e-2 to 5.0e-2
   (`w must be non-negative at lo`), and at 8192 iterations with relaxation
   0.25 it reached near-zero residual/bounds but failed fixed-variable
@@ -1070,8 +1070,8 @@ The current local evidence for this task is:
   including cross-multibody link-vs-link rows,
   plus scoped dense box face-contact rows through 32 boxes for six solvers and
   PGS-only dense
-  box-face CUDA batch rows through homogeneous 1/4/8/16-box and grouped
-  1/2/4/8/16-box packets, but not broad
+  box-face CUDA batch rows through homogeneous 1/4/8/16/24/32-box and grouped
+  1/2/4/8/16/24/32-box packets, but not broad
   robot-like or general dense CUDA contact systems.
 - Backend evidence: benchmark rows now identify scalar/SIMD/CUDA build state,
   a focused SIMD-enabled CPU slice passes, a focused CUDA-enabled build/runtime
@@ -1084,8 +1084,8 @@ The current local evidence for this task is:
   assembled 1-/4-contact articulated unified-contact batch paths including
   cross-multibody link-vs-link packets, and mixed
   separated/stack/articulated grouped contact batch paths, and PGS-only dense
-  box-face CUDA batch paths through homogeneous 1/4/8/16-box and grouped
-  1/2/4/8/16-box packets pass.
+  box-face CUDA batch paths through homogeneous 1/4/8/16/24/32-box and grouped
+  1/2/4/8/16/24/32-box packets pass.
   This still does
   not prove broader solver-internal multi-threaded speedups, general CUDA LCP
   solver execution, CUDA Jacobi dense-contact execution, end-to-end articulated

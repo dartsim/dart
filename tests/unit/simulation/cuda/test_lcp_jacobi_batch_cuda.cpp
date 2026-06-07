@@ -627,7 +627,7 @@ std::optional<WorldContactProblem> makeWorldBoxContactProblem(
 
   constexpr double kFriction = 0.5;
   sx::WorldOptions options;
-  options.timeStep = 0.005;
+  options.timeStep = boxCount >= 24 ? 0.001 : 0.005;
   options.gravity = Eigen::Vector3d(0.0, 0.0, -9.81);
   options.contactSolverMethod = sx::ContactSolverMethod::BoxedLcp;
   sx::World world(options);
@@ -1124,7 +1124,7 @@ std::optional<WorldContactGroupedBatch> makeWorldBoxContactGroupedBatch(
     return std::nullopt;
   }
 
-  constexpr std::array<int, 5> kBoxCounts{1, 2, 4, 8, 16};
+  constexpr std::array<int, 7> kBoxCounts{1, 2, 4, 8, 16, 24, 32};
   WorldContactGroupedBatch grouped;
   grouped.packets.reserve(kBoxCounts.size());
   grouped.problemsByGroup.reserve(kBoxCounts.size());
@@ -1817,7 +1817,7 @@ TEST(CudaLcpPgsBatch, DenseBoxWorldContactBatchSatisfiesLcpContract)
     GTEST_SKIP() << "CUDA runtime has no available device";
   }
 
-  constexpr std::array<int, 2> kBoxCounts{1, 16};
+  constexpr std::array<int, 4> kBoxCounts{1, 16, 24, 32};
   for (const int boxCount : kBoxCounts) {
     SCOPED_TRACE("boxCount=" + std::to_string(boxCount));
     std::string errorMessage;

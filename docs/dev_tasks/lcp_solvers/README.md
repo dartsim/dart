@@ -304,8 +304,8 @@
       one size-grouped batch, covering fixed-iteration CUDA Jacobi and PGS unit
       tests and benchmark rows on the visible GPU.
 - [x] Added dense box-face CUDA contact-batch evidence for DART 7:
-      homogeneous 4-problem 1-/4-/8-/16-box and grouped variable-size
-      1/2/4/8/16-box batches of box-face `World::collide()` snapshots pass
+      homogeneous 4-problem 1-/4-/8-/16-/24-/32-box and grouped variable-size
+      1/2/4/8/16/24/32-box batches of box-face `World::collide()` snapshots pass
       fixed-iteration CUDA PGS unit and benchmark coverage on the visible GPU.
       Fixed-iteration CUDA Jacobi was tried on the dense 4-contact patch and is
       not claimed: 4096 iterations with relaxation 1.0 failed the LCP contract with
@@ -1203,24 +1203,24 @@ tradeoffs evidence based.
   direct Dantzig dense box solve claim.
 - DART 7 dense box-contact CUDA batch evidence:
   `CudaLcpPgsBatch.DenseBoxWorldContactBatchSatisfiesLcpContract` builds
-  homogeneous batches for 1-box and 16-box dense face-contact snapshots and
+  homogeneous batches for 1-/16-/24-/32-box dense face-contact snapshots and
   verifies fixed-iteration CUDA PGS against the LCP contract.
   `CudaLcpPgsBatch.DenseBoxWorldContactGroupedBatchSatisfiesLcpContract` extends
-  that to grouped variable-size 1/2/4/8/16-box packets. The
+  that to grouped variable-size 1/2/4/8/16/24/32-box packets. The
   focused
-  `BM_LCP_COMPARE --benchmark_filter='BM_LcpCudaPgsWorldBoxContact(Batch|GroupedBatch)_FrictionIndex' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpCudaPgsWorldBoxContact(Batch_FrictionIndex/(24|32)/4|GroupedBatch_FrictionIndex/2)$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   CUDA run reported `contract_ok=1`, `cuda_lcp_execution=1`,
   `cuda_batch_execution=1`, `cuda_dense_box_contact_batch=1`, and
-  `dense_box_contact=1` for all homogeneous rows and the grouped row. The
-  16-box homogeneous row reported `batch_size=4`, `box_count=16`,
-  `contact_count=64`, `total_contact_count=256`, `total_body_count=64`, and
-  `total_problem_size=768`; the grouped row reported `batch_size=10`,
-  `cuda_group_count=5`, `box_count_shape_count=5`, `min_problem_size=12`,
-  `max_problem_size=192`, `total_contact_count=248`, `total_body_count=62`, and
-  `total_problem_size=744`. A fixed-iteration CUDA Jacobi dense-box trial failed
-  the LCP contract, so Jacobi dense-box CUDA execution remains unclaimed. The
-  earlier failed Jacobi probe covered the previous homogeneous 4-problem and grouped
-  1/2/4-box fixtures: 4096 iterations with relaxation 1.0 failed with
+  `dense_box_contact=1` for the 24-/32-box homogeneous rows and the grouped row.
+  The 32-box homogeneous row reported `batch_size=4`, `box_count=32`,
+  `contact_count=128`, `total_contact_count=512`, `total_body_count=128`, and
+  `total_problem_size=1536`; the grouped row reported `batch_size=14`,
+  `cuda_group_count=7`, `box_count_shape_count=7`, `min_problem_size=12`,
+  `max_problem_size=384`, `total_contact_count=696`, `total_body_count=174`, and
+  `total_problem_size=2088`. A fixed-iteration CUDA Jacobi dense-box trial
+  failed the LCP contract, so Jacobi dense-box CUDA execution remains unclaimed.
+  The earlier failed Jacobi probe covered the previous homogeneous 4-problem and
+  grouped 1/2/4-box fixtures: 4096 iterations with relaxation 1.0 failed with
   residual/complementarity/bound violations of about 3.3e-2 to 5.0e-2
   (`w must be non-negative at lo`), and 8192 iterations with relaxation 0.25
   reached near-zero residual/bound violation but failed fixed-variable
