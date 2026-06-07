@@ -951,13 +951,13 @@ The current local evidence for this task is:
   `total_problem_size=162`. The dense box PGS
   rows include a homogeneous 4-problem batch of 4-contact, 12-row,
   single-dynamic-body box-face `World::collide()` snapshots and a grouped
-  variable-size 1/2/4-box batch. Both report
+  variable-size 1/2/4/8/16-box batch. Both report
   `cuda_dense_box_contact_batch=1` and `dense_box_contact=1`; the homogeneous
   row reports `batch_size=4`, `total_contact_count=16`, `total_body_count=4`,
-  and `total_problem_size=48`, while the grouped row reports `batch_size=6`,
-  `cuda_group_count=3`, `box_count_shape_count=3`, `min_problem_size=12`,
-  `max_problem_size=48`, `total_contact_count=56`, `total_body_count=14`, and
-  `total_problem_size=168`. A fixed-iteration CUDA Jacobi dense-box trial failed
+  and `total_problem_size=48`, while the grouped row reports `batch_size=10`,
+  `cuda_group_count=5`, `box_count_shape_count=5`, `min_problem_size=12`,
+  `max_problem_size=192`, `total_contact_count=248`, `total_body_count=62`, and
+  `total_problem_size=744`. A fixed-iteration CUDA Jacobi dense-box trial failed
   the LCP contract and is not claimed. The failed probe used the same
   homogeneous 4-problem and grouped 1/2/4-box dense box-face fixtures: at 4096
   iterations with relaxation 1.0 it failed with
@@ -969,8 +969,8 @@ The current local evidence for this task is:
   and PGS on homogeneous dense standard/boxed/friction-index packets plus
   separated sphere-ground and small coupled stack world-contact packets plus
   manually assembled articulated unified-contact packets and mixed grouped
-  contact packets, plus PGS-only dense box-face contact packets up to 4 boxes
-  and 16 contacts; it is not evidence for CUDA execution across the full solver
+  contact packets, plus PGS-only dense box-face contact packets up to 16 boxes
+  and 64 contacts; it is not evidence for CUDA execution across the full solver
   manifest, CUDA Jacobi dense-contact execution, or end-to-end articulated
   world-step CUDA execution.
 
@@ -1050,7 +1050,7 @@ The current local evidence for this task is:
   manually assembled three-axis articulated unified-contact all-solver rows
   including cross-multibody link-vs-link rows,
   plus scoped dense box face-contact rows for six solvers and PGS-only dense
-  box-face CUDA batch rows through grouped 1/2/4-box packets, but not broad
+  box-face CUDA batch rows through grouped 1/2/4/8/16-box packets, but not broad
   robot-like or general dense CUDA contact systems.
 - Backend evidence: benchmark rows now identify scalar/SIMD/CUDA build state,
   a focused SIMD-enabled CPU slice passes, a focused CUDA-enabled build/runtime
@@ -1063,7 +1063,7 @@ The current local evidence for this task is:
   assembled 1-/4-contact articulated unified-contact batch paths including
   cross-multibody link-vs-link packets, and mixed
   separated/stack/articulated grouped contact batch paths, and PGS-only dense
-  box-face CUDA batch paths through grouped 1/2/4-box packets pass.
+  box-face CUDA batch paths through grouped 1/2/4/8/16-box packets pass.
   This still does
   not prove broader solver-internal multi-threaded speedups, general CUDA LCP
   solver execution, CUDA Jacobi dense-contact execution, end-to-end articulated

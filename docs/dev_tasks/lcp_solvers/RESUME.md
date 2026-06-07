@@ -1138,9 +1138,9 @@ longer-running coupled, and broader dense/robot-like contact scenes.
   `cuda_dense_box_contact_batch=1`, `batch_size=4`,
   `total_contact_count=16`, `total_body_count=4`, and
   `total_problem_size=48`. `BM_LcpCudaPgsWorldBoxContactGroupedBatch_FrictionIndex/2`
-  reports `cuda_group_count=3`, `box_count_shape_count=3`,
-  `min_problem_size=12`, `max_problem_size=48`, `total_contact_count=56`,
-  `total_body_count=14`, and `total_problem_size=168`. A fixed-iteration CUDA
+  reports `cuda_group_count=5`, `box_count_shape_count=5`,
+  `min_problem_size=12`, `max_problem_size=192`, `total_contact_count=248`,
+  `total_body_count=62`, and `total_problem_size=744`. A fixed-iteration CUDA
   Jacobi dense-box trial
   failed the LCP contract, so Jacobi dense-contact CUDA execution remains
   unclaimed. The failed probe used the same homogeneous 4-problem and grouped

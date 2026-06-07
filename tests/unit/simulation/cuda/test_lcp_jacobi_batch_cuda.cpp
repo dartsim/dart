@@ -1117,7 +1117,7 @@ std::optional<WorldContactGroupedBatch> makeWorldBoxContactGroupedBatch(
     return std::nullopt;
   }
 
-  constexpr std::array<int, 3> kBoxCounts{1, 2, 4};
+  constexpr std::array<int, 5> kBoxCounts{1, 2, 4, 8, 16};
   WorldContactGroupedBatch grouped;
   grouped.packets.reserve(kBoxCounts.size());
   grouped.problemsByGroup.reserve(kBoxCounts.size());

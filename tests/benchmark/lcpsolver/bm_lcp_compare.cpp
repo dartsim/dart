@@ -4813,7 +4813,7 @@ MakeGroupedWorldBoxContactCudaBatch(
     return std::nullopt;
   }
 
-  constexpr std::array<int, 3> kBoxCounts{1, 2, 4};
+  constexpr std::array<int, 5> kBoxCounts{1, 2, 4, 8, 16};
 
   CudaGroupedWorldContactBenchmarkBatch grouped;
   std::vector<std::size_t> groupSizes;
