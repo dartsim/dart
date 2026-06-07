@@ -281,6 +281,10 @@
 - [x] Added opt-in PGS warm starts for the same native standard-LCP Newton
       paths, with focused tests proving each accepted seed reduces its
       solver-specific merit before Newton line search.
+- [x] Added 24 `BM_LcpNewtonWarmStart` benchmark rows that compare no seed,
+      PGS, projected gradient descent, and PGS-then-gradient modes for the
+      three native standard-LCP Newton solvers on identical 32-row and 64-row
+      active-set transition packets.
 - [ ] Continue expanding synthetic coverage beyond the current production-scale,
       larger mildly ill-conditioned, extreme singular-degenerate, and extreme
       active-set transition benchmark slices into harder solver-specific
@@ -546,6 +550,20 @@ tradeoffs evidence based.
   solver. Focused standard/boxed/friction-index active-set rows also passed in
   `build/simd/cpp/Release` with `build_simd_enabled=1` and in
   `build/cuda/cpp/Release` with `build_cuda_enabled=1`.
+- Verified Newton warm-start benchmark slice:
+  `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpNewtonWarmStart/' | wc -l`
+  reported 24 rows, and
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpNewtonWarmStart/' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  ran all rows with `contract_ok=1` in the default build tree. These rows cover
+  `MinimumMapNewton`, `FischerBurmeisterNewton`, and
+  `PenalizedFischerBurmeisterNewton` on the same standard active-set transition
+  packets at 32 and 64 rows. The rows report `active_set_transition=1`,
+  `newton_pgs_warm_start`, `newton_gradient_warm_start`,
+  `newton_pgs_warm_start_iterations`, and
+  `newton_gradient_warm_start_iterations`, so no-seed, PGS-only,
+  gradient-only, and PGS-then-gradient modes are distinguishable in the JSON
+  output. This slice is default-build CPU benchmark evidence only; SIMD-enabled
+  and CUDA-enabled warm-start benchmark runs remain separate evidence gaps.
 - Verified larger active-set transition benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpLargerActiveSetTransition/' | wc -l`
   reported 49 rows, and

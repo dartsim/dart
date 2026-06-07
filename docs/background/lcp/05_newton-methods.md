@@ -299,7 +299,9 @@ first, accepts the seed only if it lowers the solver-specific Newton merit, and
 then optionally applies the projected gradient-descent initializer. The PGS seed
 uses `pgsWarmStartRelaxation` and clears `customOptions` before calling
 `PgsSolver`, so Newton-specific parameter structs are not reinterpreted by the
-projection solver.
+projection solver. `BM_LcpNewtonWarmStart/StandardActiveSet/*` compares no
+warm start, PGS-only, gradient-descent-only, and PGS-then-gradient modes on the
+same standard active-set transition packets.
 
 ```
 function gradient_descent(x, max_iter):

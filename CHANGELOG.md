@@ -1014,7 +1014,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     initializer reduces its solver-specific merit before Newton line search.
     Added opt-in PGS warm starts for those same standard Newton paths, accepting
     PGS seeds only when they reduce the solver-specific Newton merit. Boxed/findex
-    problems remain delegated for those three solvers.
+    problems remain delegated for those three solvers. Added 24 default-build
+    benchmark rows comparing no seed, PGS, projected gradient descent, and
+    PGS-then-gradient modes on identical 32-row and 64-row standard active-set
+    transition packets for those solvers.
   - Added manifest-generated serial and DART 7 `ParallelExecutor` batch LCP
     benchmarks so standard, boxed, and friction-index solver families compare
     the same independent-problem batches across every supporting solver. The

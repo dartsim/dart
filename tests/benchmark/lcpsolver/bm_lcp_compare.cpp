@@ -2668,6 +2668,45 @@ enum class BenchmarkProblemFamily
   FrictionIndex
 };
 
+enum class NewtonWarmStartMode
+{
+  None,
+  Pgs,
+  GradientDescent,
+  PgsThenGradient
+};
+
+constexpr int kNewtonWarmStartPgsIterations = 5;
+constexpr int kNewtonWarmStartGradientIterations = 5;
+
+std::string_view getNewtonWarmStartModeName(const NewtonWarmStartMode mode)
+{
+  switch (mode) {
+    case NewtonWarmStartMode::None:
+      return "None";
+    case NewtonWarmStartMode::Pgs:
+      return "Pgs";
+    case NewtonWarmStartMode::GradientDescent:
+      return "GradientDescent";
+    case NewtonWarmStartMode::PgsThenGradient:
+      return "PgsThenGradient";
+  }
+
+  return "Unknown";
+}
+
+bool usesPgsWarmStart(const NewtonWarmStartMode mode)
+{
+  return mode == NewtonWarmStartMode::Pgs
+         || mode == NewtonWarmStartMode::PgsThenGradient;
+}
+
+bool usesGradientWarmStart(const NewtonWarmStartMode mode)
+{
+  return mode == NewtonWarmStartMode::GradientDescent
+         || mode == NewtonWarmStartMode::PgsThenGradient;
+}
+
 enum class MildIllConditionedBenchmarkCase
 {
   Standard32,
@@ -3505,6 +3544,15 @@ struct SolverBenchmarkOptions
   bool hasShockPropagationParams{false};
 };
 
+struct NewtonWarmStartBenchmarkOptions
+{
+  LcpOptions options;
+  dart::math::MinimumMapNewtonSolver::Parameters minimumMapParams;
+  dart::math::FischerBurmeisterNewtonSolver::Parameters fischerBurmeisterParams;
+  dart::math::PenalizedFischerBurmeisterNewtonSolver::Parameters
+      penalizedFischerBurmeisterParams;
+};
+
 struct BatchBenchmarkCounters
 {
   int problemCount{0};
@@ -3568,6 +3616,41 @@ void ConfigureSolverBenchmarkOptions(
         problem, storage.shockPropagationParams);
     storage.options.customOptions = &storage.shockPropagationParams;
     storage.hasShockPropagationParams = true;
+  }
+}
+
+template <typename Params>
+void ConfigureNewtonWarmStartParameters(
+    Params& params, const NewtonWarmStartMode mode)
+{
+  if (usesPgsWarmStart(mode)) {
+    params.maxPgsWarmStartIterations = kNewtonWarmStartPgsIterations;
+  }
+
+  if (usesGradientWarmStart(mode)) {
+    params.maxGradientDescentWarmStartSteps
+        = kNewtonWarmStartGradientIterations;
+  }
+}
+
+void ConfigureNewtonWarmStartBenchmarkOptions(
+    NewtonWarmStartBenchmarkOptions& storage,
+    const dart::test::LcpSolverManifestEntry& solver,
+    const NewtonWarmStartMode mode)
+{
+  storage.options = MakeBenchmarkOptions(getBenchmarkMaxIterations(solver));
+
+  if (solver.name == "MinimumMapNewton") {
+    ConfigureNewtonWarmStartParameters(storage.minimumMapParams, mode);
+    storage.options.customOptions = &storage.minimumMapParams;
+  } else if (solver.name == "FischerBurmeisterNewton") {
+    ConfigureNewtonWarmStartParameters(storage.fischerBurmeisterParams, mode);
+    storage.options.customOptions = &storage.fischerBurmeisterParams;
+  } else if (solver.name == "PenalizedFischerBurmeisterNewton") {
+    storage.penalizedFischerBurmeisterParams.lambda = 1.0;
+    ConfigureNewtonWarmStartParameters(
+        storage.penalizedFischerBurmeisterParams, mode);
+    storage.options.customOptions = &storage.penalizedFischerBurmeisterParams;
   }
 }
 
@@ -4435,6 +4518,44 @@ void RunActiveSetTransitionBenchmark(
   if (storage.hasShockPropagationParams) {
     AddShockPropagationCounters(state, storage.shockPropagationParams);
   }
+}
+
+void RunNewtonWarmStartBenchmark(
+    benchmark::State& state,
+    const dart::test::LcpSolverManifestEntry& solverEntry,
+    const NewtonWarmStartMode mode)
+{
+  const int problemSize = static_cast<int>(state.range(0));
+  const auto problem = MakeStandardActiveSetTransitionProblem(
+      problemSize, 80'000u + static_cast<unsigned>(problemSize));
+  NewtonWarmStartBenchmarkOptions storage;
+  ConfigureNewtonWarmStartBenchmarkOptions(storage, solverEntry, mode);
+
+  const auto solver = solverEntry.create();
+  if (solver == nullptr) {
+    state.SkipWithError("LCP solver factory returned null");
+    return;
+  }
+
+  RunBenchmarkWithSolver(
+      state,
+      *solver,
+      problem,
+      storage.options,
+      MakeLabel(
+          std::string(solverEntry.name),
+          "NewtonWarmStart/" + std::string(getNewtonWarmStartModeName(mode))));
+
+  state.counters["active_set_transition"] = 1.0;
+  state.counters["newton_warm_start_mode"]
+      = static_cast<double>(static_cast<int>(mode));
+  state.counters["newton_pgs_warm_start"] = usesPgsWarmStart(mode) ? 1.0 : 0.0;
+  state.counters["newton_gradient_warm_start"]
+      = usesGradientWarmStart(mode) ? 1.0 : 0.0;
+  state.counters["newton_pgs_warm_start_iterations"]
+      = usesPgsWarmStart(mode) ? kNewtonWarmStartPgsIterations : 0.0;
+  state.counters["newton_gradient_warm_start_iterations"]
+      = usesGradientWarmStart(mode) ? kNewtonWarmStartGradientIterations : 0.0;
 }
 
 void ConfigureLargerActiveSetTransitionBenchmarkOptions(
@@ -6370,6 +6491,16 @@ std::string MakeActiveSetTransitionBenchmarkName(
   return out.str();
 }
 
+std::string MakeNewtonWarmStartBenchmarkName(
+    const dart::test::LcpSolverManifestEntry& solver,
+    const NewtonWarmStartMode mode)
+{
+  std::ostringstream out;
+  out << "BM_LcpNewtonWarmStart/StandardActiveSet/" << solver.name << "/"
+      << getNewtonWarmStartModeName(mode);
+  return out.str();
+}
+
 std::string MakeLargerActiveSetTransitionBenchmarkName(
     const LargerActiveSetTransitionBenchmarkCase testCase,
     const dart::test::LcpSolverManifestEntry& solver)
@@ -6800,6 +6931,38 @@ void RegisterActiveSetTransitionBenchmarks()
           name.c_str(), [solver, family](benchmark::State& state) {
             RunActiveSetTransitionBenchmark(state, solver, family);
           });
+    }
+  }
+}
+
+void RegisterNewtonWarmStartBenchmarks()
+{
+  constexpr std::array<std::string_view, 3> kStandardNewtonSolvers{{
+      "MinimumMapNewton",
+      "FischerBurmeisterNewton",
+      "PenalizedFischerBurmeisterNewton",
+  }};
+  constexpr std::array<NewtonWarmStartMode, 4> kModes{{
+      NewtonWarmStartMode::None,
+      NewtonWarmStartMode::Pgs,
+      NewtonWarmStartMode::GradientDescent,
+      NewtonWarmStartMode::PgsThenGradient,
+  }};
+
+  for (const auto& solver : dart::test::kLcpSolverManifest) {
+    if (!SolverNameIn(solver, kStandardNewtonSolvers)) {
+      continue;
+    }
+
+    for (const auto mode : kModes) {
+      const auto name = MakeNewtonWarmStartBenchmarkName(solver, mode);
+      benchmark::RegisterBenchmark(
+          name.c_str(),
+          [solver, mode](benchmark::State& state) {
+            RunNewtonWarmStartBenchmark(state, solver, mode);
+          })
+          ->Arg(32)
+          ->Arg(64);
     }
   }
 }
@@ -7505,6 +7668,7 @@ static void BM_LcpCudaPgsMixedContactGroupedBatch_FrictionIndex(
 const bool kManifestBenchmarksRegistered = [] {
   RegisterManifestBenchmarks();
   RegisterActiveSetTransitionBenchmarks();
+  RegisterNewtonWarmStartBenchmarks();
   RegisterLargerActiveSetTransitionBenchmarks();
   RegisterStressActiveSetTransitionBenchmarks();
   RegisterExtremeActiveSetTransitionBenchmarks();
