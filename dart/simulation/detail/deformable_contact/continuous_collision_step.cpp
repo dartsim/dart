@@ -69,25 +69,12 @@ void recordHit(
 }
 
 //==============================================================================
-void accumulateStats(
-    ContinuousCollisionStepStats& total,
-    const ContinuousCollisionStepStats& addend)
-{
-  total.pointTriangleChecks += addend.pointTriangleChecks;
-  total.edgeEdgeChecks += addend.edgeEdgeChecks;
-  total.hits += addend.hits;
-  total.misses += addend.misses;
-  total.indeterminate += addend.indeterminate;
-  total.zeroStepCount += addend.zeroStepCount;
-}
-
-//==============================================================================
 void considerCandidate(
     ContinuousCollisionStepResult& aggregate,
     const ContinuousCollisionStepResult& candidate,
     const std::size_t candidateIndex)
 {
-  accumulateStats(aggregate.stats, candidate.stats);
+  newton_barrier::accumulateLineSearchStats(aggregate.stats, candidate.stats);
   if (!candidate.hit) {
     aggregate.indeterminate
         = aggregate.indeterminate || candidate.indeterminate;

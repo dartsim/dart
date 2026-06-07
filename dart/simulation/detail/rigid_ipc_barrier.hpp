@@ -32,6 +32,7 @@
 #pragma once
 
 #include <dart/simulation/detail/newton_barrier/barrier_kernel.hpp>
+#include <dart/simulation/detail/newton_barrier/line_search.hpp>
 #include <dart/simulation/detail/rigid_ipc_ccd.hpp>
 #include <dart/simulation/export.hpp>
 
@@ -187,24 +188,8 @@ struct RigidIpcBodyDynamicsState
   RigidIpcVector6d generalizedForce = RigidIpcVector6d::Zero();
 };
 
-struct RigidIpcLineSearchOptions
-{
-  double minSeparation = 0.0;
-  double tolerance = 1e-6;
-  int maxIterations = 64;
-};
-
-struct RigidIpcLineSearchStats
-{
-  std::size_t pointPointChecks = 0;
-  std::size_t pointEdgeChecks = 0;
-  std::size_t edgeEdgeChecks = 0;
-  std::size_t pointTriangleChecks = 0;
-  std::size_t hits = 0;
-  std::size_t misses = 0;
-  std::size_t indeterminate = 0;
-  std::size_t zeroStepCount = 0;
-};
+using RigidIpcLineSearchOptions = newton_barrier::LineSearchOptions;
+using RigidIpcLineSearchStats = newton_barrier::LineSearchStats;
 
 struct RigidIpcLineSearchResult
 {

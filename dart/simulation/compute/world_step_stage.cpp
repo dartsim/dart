@@ -101,6 +101,7 @@ namespace dart::simulation::compute {
 namespace dc = dart::simulation::detail::deformable_contact;
 namespace dvbd = dart::simulation::detail::deformable_vbd;
 namespace fem = dart::simulation::detail::deformable_elasticity;
+namespace nb = dart::simulation::detail::newton_barrier;
 namespace sxdetail = dart::simulation::detail;
 
 struct RigidIpcRuntimeBody
@@ -1579,24 +1580,11 @@ bool surfaceContactPointAllowed(
 }
 
 //==============================================================================
-void accumulateCcdStats(
-    dc::ContinuousCollisionStepStats& total,
-    const dc::ContinuousCollisionStepStats& addend)
-{
-  total.pointTriangleChecks += addend.pointTriangleChecks;
-  total.edgeEdgeChecks += addend.edgeEdgeChecks;
-  total.hits += addend.hits;
-  total.misses += addend.misses;
-  total.indeterminate += addend.indeterminate;
-  total.zeroStepCount += addend.zeroStepCount;
-}
-
-//==============================================================================
 void considerInterBodyContactResult(
     InterBodySurfaceContactResult& aggregate,
     const dc::ContinuousCollisionStepResult& candidate)
 {
-  accumulateCcdStats(aggregate.stats, candidate.stats);
+  nb::accumulateLineSearchStats(aggregate.stats, candidate.stats);
   aggregate.indeterminate = aggregate.indeterminate || candidate.indeterminate;
   if (candidate.indeterminate) {
     aggregate.stepBound = 0.0;

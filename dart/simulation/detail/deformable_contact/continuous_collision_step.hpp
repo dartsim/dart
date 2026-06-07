@@ -33,6 +33,7 @@
 #pragma once
 
 #include <dart/simulation/detail/deformable_contact/candidate_set.hpp>
+#include <dart/simulation/detail/newton_barrier/line_search.hpp>
 #include <dart/simulation/export.hpp>
 
 #include <Eigen/Core>
@@ -51,22 +52,8 @@ enum class ContinuousCollisionPrimitive
   EdgeEdge,
 };
 
-struct ContinuousCollisionStepOptions
-{
-  double minSeparation = 0.0;
-  double tolerance = 1e-6;
-  int maxIterations = 64;
-};
-
-struct ContinuousCollisionStepStats
-{
-  std::size_t pointTriangleChecks = 0;
-  std::size_t edgeEdgeChecks = 0;
-  std::size_t hits = 0;
-  std::size_t misses = 0;
-  std::size_t indeterminate = 0;
-  std::size_t zeroStepCount = 0;
-};
+using ContinuousCollisionStepOptions = newton_barrier::LineSearchOptions;
+using ContinuousCollisionStepStats = newton_barrier::LineSearchStats;
 
 struct ContinuousCollisionStepResult
 {
