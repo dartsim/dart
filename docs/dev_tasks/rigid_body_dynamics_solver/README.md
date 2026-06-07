@@ -103,10 +103,12 @@ solvers, couplers, ECS storage, or execution backends.
 
 ## Immediate Next Steps
 
-1. Continue Subsystem A polish from `RESUME.md`: warm starting,
-   friction-cone iteration, and other scaling work around the unified contact
-   solve.
-2. Keep richer model-loading diagnostics, visual/material import, actuator,
+1. Treat the model-loading and unified contact/constraint line as landed on
+   `main` via PR #2838; do not look for the retired
+   `feature/experimental-model-loader` branch as the active publication path.
+2. Continue Subsystem A polish from `RESUME.md`: warm starting, friction-cone
+   iteration, and other scaling work around the unified contact solve.
+3. Keep richer model-loading diagnostics, visual/material import, actuator,
    mimic/coupler, loop-closure, integrator, and COM-Jacobian work as separate
    deferred slices unless the active solver-polish work directly requires them.
 
