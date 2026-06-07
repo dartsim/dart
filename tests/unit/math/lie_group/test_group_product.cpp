@@ -285,6 +285,41 @@ TYPED_TEST(GroupProductTest, MatrixRepresentationsAreBlockDiagonal)
 }
 
 //==============================================================================
+TYPED_TEST(GroupProductTest, LogJacobianIsComponentwiseBlockDiagonal)
+{
+  using S = typename TestFixture::Scalar;
+  using Product = SE3xSO3<S>;
+  using RnProduct = GroupProduct<S, R1, R6>;
+
+  const Product product = Product::Random();
+  Matrix<S, Product::DoF, Product::DoF> jacobian;
+  const typename Product::Tangent tangent = product.log(&jacobian);
+
+  Matrix<S, Product::DoF, Product::DoF> expectedJacobian
+      = Matrix<S, Product::DoF, Product::DoF>::Zero();
+  Matrix6<S> se3Jacobian;
+  Matrix3<S> so3Jacobian;
+  const SE3Tangent<S> se3Log = product.template get<0>().log(&se3Jacobian);
+  const SO3Tangent<S> so3Log = product.template get<1>().log(&so3Jacobian);
+  expectedJacobian.template block<SE3<S>::DoF, SE3<S>::DoF>(0, 0) = se3Jacobian;
+  expectedJacobian.template block<SO3<S>::DoF, SO3<S>::DoF>(
+      SE3<S>::DoF, SE3<S>::DoF) = so3Jacobian;
+
+  typename Product::Tangent expectedTangent;
+  expectedTangent.template head<SE3<S>::DoF>() = se3Log.params();
+  expectedTangent.template tail<SO3<S>::DoF>() = so3Log.params();
+
+  EXPECT_TRUE(tangent.isApprox(expectedTangent, LieGroupTol<S>()));
+  EXPECT_TRUE(jacobian.isApprox(expectedJacobian, LieGroupTol<S>()));
+
+  const RnProduct rnProduct = RnProduct::Random();
+  Matrix<S, RnProduct::DoF, RnProduct::DoF> rnJacobian;
+  const typename RnProduct::Tangent rnTangent = rnProduct.log(&rnJacobian);
+  EXPECT_TRUE(rnTangent.isApprox(rnProduct.params(), LieGroupTol<S>()));
+  EXPECT_TRUE(rnJacobian.isIdentity(LieGroupTol<S>()));
+}
+
+//==============================================================================
 TYPED_TEST(GroupProductTest, MapReferencesUnderlyingParameters)
 {
   using S = typename TestFixture::Scalar;
