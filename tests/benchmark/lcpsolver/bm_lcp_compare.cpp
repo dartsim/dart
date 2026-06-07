@@ -3555,7 +3555,8 @@ enum class SingularDegenerateBenchmarkCase
   CoupledFrictionIndex12,
   Standard128,
   Boxed128,
-  CoupledFrictionIndex16
+  CoupledFrictionIndex16,
+  CoupledFrictionIndex24
 };
 
 enum class LargerActiveSetTransitionBenchmarkCase
@@ -4358,6 +4359,8 @@ std::string_view getSingularDegenerateCaseName(
       return "Boxed128";
     case SingularDegenerateBenchmarkCase::CoupledFrictionIndex16:
       return "CoupledFrictionIndex16";
+    case SingularDegenerateBenchmarkCase::CoupledFrictionIndex24:
+      return "CoupledFrictionIndex24";
   }
 
   return "Unknown";
@@ -4381,6 +4384,7 @@ dart::test::LcpProblemSupport getSingularDegenerateProblemSupport(
     case SingularDegenerateBenchmarkCase::CoupledFrictionIndex8:
     case SingularDegenerateBenchmarkCase::CoupledFrictionIndex12:
     case SingularDegenerateBenchmarkCase::CoupledFrictionIndex16:
+    case SingularDegenerateBenchmarkCase::CoupledFrictionIndex24:
       return dart::test::LcpProblemSupport::FrictionIndex;
   }
 
@@ -4393,7 +4397,8 @@ bool isSingularDegenerateFrictionIndexCase(
   return testCase == SingularDegenerateBenchmarkCase::CoupledFrictionIndex6
          || testCase == SingularDegenerateBenchmarkCase::CoupledFrictionIndex8
          || testCase == SingularDegenerateBenchmarkCase::CoupledFrictionIndex12
-         || testCase == SingularDegenerateBenchmarkCase::CoupledFrictionIndex16;
+         || testCase == SingularDegenerateBenchmarkCase::CoupledFrictionIndex16
+         || testCase == SingularDegenerateBenchmarkCase::CoupledFrictionIndex24;
 }
 
 int getSingularDegenerateContactCount(
@@ -4408,6 +4413,8 @@ int getSingularDegenerateContactCount(
       return 12;
     case SingularDegenerateBenchmarkCase::CoupledFrictionIndex16:
       return 16;
+    case SingularDegenerateBenchmarkCase::CoupledFrictionIndex24:
+      return 24;
     case SingularDegenerateBenchmarkCase::Standard16:
     case SingularDegenerateBenchmarkCase::Boxed16:
     case SingularDegenerateBenchmarkCase::Standard32:
@@ -4450,6 +4457,8 @@ LcpProblem MakeSingularDegenerateBenchmarkProblem(
       return MakeSingularDegenerateBoxedProblem(128);
     case SingularDegenerateBenchmarkCase::CoupledFrictionIndex16:
       return MakeSingularDegenerateFrictionIndexProblem(16);
+    case SingularDegenerateBenchmarkCase::CoupledFrictionIndex24:
+      return MakeSingularDegenerateFrictionIndexProblem(24);
   }
 
   return MakeSingularDegenerateStandardProblem(16);
@@ -9719,10 +9728,11 @@ void RegisterStressSingularDegenerateBenchmarks()
 
 void RegisterExtremeSingularDegenerateBenchmarks()
 {
-  constexpr std::array<SingularDegenerateBenchmarkCase, 3> cases{
+  constexpr std::array<SingularDegenerateBenchmarkCase, 4> cases{
       SingularDegenerateBenchmarkCase::Standard128,
       SingularDegenerateBenchmarkCase::Boxed128,
-      SingularDegenerateBenchmarkCase::CoupledFrictionIndex16};
+      SingularDegenerateBenchmarkCase::CoupledFrictionIndex16,
+      SingularDegenerateBenchmarkCase::CoupledFrictionIndex24};
 
   for (const auto testCase : cases) {
     for (const auto& solver : dart::test::kLcpSolverManifest) {
