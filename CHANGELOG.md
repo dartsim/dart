@@ -1204,6 +1204,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     articulated unified-contact friction-index fixtures, with backend
     build-state counters distinguishing default, SIMD-enabled, and CUDA-enabled
     CPU solver runs.
+  - Added DART 7 ADMM/SAP solver-specific generated correctness and benchmark
+    coverage for 16x-coupled mildly ill-conditioned friction-index LCP packets
+    at 16 and 24 contacts, with backend build-state counters distinguishing
+    default, SIMD-enabled, and CUDA-enabled CPU solver runs.
   - Added DART 7 contact-normal standard-LCP comparison benchmark rows for
     Dantzig, Lemke, Baraff, Direct, Minimum Map Newton,
     Fischer-Burmeister Newton, Penalized Fischer-Burmeister Newton, Interior

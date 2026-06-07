@@ -976,7 +976,11 @@ std::vector<GeneratedCase> makeLargerMildlyIllConditionedCases()
       makeFrictionIndexCase(
           16, ConditioningClass::MildlyIllConditioned, 29016, true, 8.0),
       makeFrictionIndexCase(
-          24, ConditioningClass::MildlyIllConditioned, 29024, true, 8.0)};
+          24, ConditioningClass::MildlyIllConditioned, 29024, true, 8.0),
+      makeFrictionIndexCase(
+          16, ConditioningClass::MildlyIllConditioned, 30016, true, 16.0),
+      makeFrictionIndexCase(
+          24, ConditioningClass::MildlyIllConditioned, 30024, true, 16.0)};
 }
 
 std::vector<GeneratedCase> makeRobustNearSingularCases()
@@ -1195,6 +1199,15 @@ bool solverShouldRunLargerMildlyIllConditionedCase(
     }};
     return solverNameIn(solver, kExactStandardSolvers)
            || solverNameIn(solver, kLargerMildSolvers);
+  }
+
+  if (testCase.family == GeneratedFamily::FrictionIndex && testCase.coupled
+      && testCase.couplingScale > 8.0) {
+    constexpr std::array<std::string_view, 2> kExtremeCouplingSolvers{{
+        "Admm",
+        "Sap",
+    }};
+    return solverNameIn(solver, kExtremeCouplingSolvers);
   }
 
   return solverNameIn(solver, kLargerMildSolvers);

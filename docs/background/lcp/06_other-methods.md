@@ -392,7 +392,10 @@ are CPU solver rows even when emitted by a CUDA-enabled build. Additional
 `BM_LcpContactSolverComparisonSweep/Admm/*` rows reuse DART 7 separated
 sphere-ground, coupled vertical-stack, and articulated unified-contact
 friction-index fixtures so ADMM contact evidence is tracked independently from
-the synthetic $\rho$ sweep.
+the synthetic $\rho$ sweep. ADMM also has solver-specific generated evidence on
+16x-coupled mildly ill-conditioned friction-index packets at 16 and 24 contacts;
+the focused correctness slice and `BM_LcpMildIllConditioned/ExtremeCoupled*`
+rows keep that claim separate from broader all-solver conditioning coverage.
 
 ```cpp
 #include <dart/math/lcp/other/AdmmSolver.hpp>
@@ -426,7 +429,11 @@ benchmark fixtures; these rows are CPU solver rows even when emitted by a
 CUDA-enabled build. Additional `BM_LcpContactSolverComparisonSweep/Sap/*` rows
 reuse DART 7 separated sphere-ground, coupled vertical-stack, and articulated
 unified-contact friction-index fixtures so SAP contact evidence is tracked
-independently from the synthetic regularization sweep.
+independently from the synthetic regularization sweep. SAP also has
+solver-specific generated evidence on 16x-coupled mildly ill-conditioned
+friction-index packets at 16 and 24 contacts; the focused correctness slice and
+`BM_LcpMildIllConditioned/ExtremeCoupled*` rows keep that claim separate from
+broader all-solver conditioning coverage.
 
 ```cpp
 #include <dart/math/lcp/other/SapSolver.hpp>
