@@ -79,7 +79,7 @@ constexpr double kBox = 0.3;
 constexpr double kDensity = 1000.0; // kg/m^3, water-like
 constexpr int kDefaultWindowWidth = 1280;
 constexpr int kDefaultWindowHeight = 800;
-constexpr int kProjectilePoolSize = 8;
+constexpr int kProjectilePoolSize = 1;
 
 //==============================================================================
 // Sets a body's mass and moment of inertia from its shape's volume, so small
@@ -172,23 +172,6 @@ void setSkeletonColor(const SkeletonPtr& skel, const Eigen::Vector4d& color)
 }
 
 //==============================================================================
-void setSkeletonVisible(const SkeletonPtr& skel, bool visible)
-{
-  for (std::size_t b = 0; b < skel->getNumBodyNodes(); ++b) {
-    auto* body = skel->getBodyNode(b);
-    for (std::size_t s = 0; s < body->getNumShapeNodes(); ++s) {
-      auto* sn = body->getShapeNode(s);
-      if (auto* visual = sn->getVisualAspect()) {
-        if (visible)
-          visual->show();
-        else
-          visual->hide();
-      }
-    }
-  }
-}
-
-//==============================================================================
 Eigen::Vector4d projectileColor(const SkeletonPtr& skel, bool active)
 {
   if (!active)
@@ -265,7 +248,6 @@ void setProjectileState(
 
   skel->setResting(!active);
   setSkeletonColor(skel, projectileColor(skel, active));
-  setSkeletonVisible(skel, active);
 }
 
 //==============================================================================
