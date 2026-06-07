@@ -230,6 +230,11 @@ dart_add_test("unit" UNIT_constraint_JointConstraints constraint/test_joint_cons
 dart_add_test("unit" UNIT_constraint_MotorConstraints constraint/test_motor_constraints.cpp)
 dart_add_test("unit" UNIT_constraint_WeldJointConstraint constraint/test_weld_joint_constraint.cpp)
 dart_add_test("unit" UNIT_constraint_BallJointConstraint constraint/test_ball_joint_constraint.cpp)
+dart_add_test(
+  "unit"
+  UNIT_constraint_CylindricalJointConstraint
+  constraint/test_cylindrical_joint_constraint.cpp
+)
 dart_add_test("unit" UNIT_constraint_ServoMotorConstraint constraint/test_servo_motor_constraint.cpp)
 dart_add_test("unit" UNIT_constraint_ConstrainedGroup constraint/test_constrained_group.cpp)
 dart_add_test(
