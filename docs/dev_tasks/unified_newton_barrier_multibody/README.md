@@ -31,6 +31,10 @@
         point-triangle oracle row and orthogonality-energy row.
   - [x] Add reduced friction equivalence rows through affine tangent stencils
         for point-point, point-edge, edge-edge, and point-triangle primitives.
+  - [x] Promote the first packet into the PLAN-083 manifest as an in-progress
+        `abd-alg-affine-body` comparison row. Add
+        `pixi run bm-abd-comparison-packet` to generate/validate
+        `.benchmark_results/abd_comparison_packet.json`.
 - [ ] Phase 3: generalize second-use PSD projection and projected-Newton
       contracts when ABD or another solver-family slice needs the shared
       contract; use the PLAN-083 variant consolidation map to keep IPC-family
@@ -79,14 +83,23 @@ resources as public API.
   affine primitive-family friction rows.
 - Public docs and APIs keep method/capability names DART-owned; internal tests
   and manifests may cite IPC, rigid IPC, ABD, and paper row provenance.
+- The first `abd-alg-affine-body` micro-packet is primitive/oracle evidence and
+  does not need a two-body affine contact micro-solve before Phase 3. Add a
+  solved-state micro-solve only when the next broader ABD packet needs runtime
+  residuals rather than primitive, friction, or orthogonality rows.
 
 ## Immediate Next Steps
 
-1. Promote the first benchmark packet from smoke shape to a comparison manifest
-   row now that barrier and friction derivative oracles are stable.
-2. Add a two-body affine contact micro-solve only if the manifest row needs a
-   solved-state residual before Phase 3 shared projected-Newton work.
-3. Keep runtime stepping, py-demos, and GPU claims out of scope until the
+1. Begin Phase 3 shared-contract scouting from the existing rigid IPC,
+   deformable IPC, and ABD evidence, and identify the first PSD,
+   projected-Newton, line-search, diagnostics, or benchmark-schema contract
+   with a real second consumer.
+2. Keep the two-body affine contact micro-solve deferred until the
+   `abd-alg-affine-body` row expands beyond the primitive/oracle micro-packet
+   and needs a solved-state residual or runtime stepping diagnostic.
+3. Promote only the smallest proven shared contract, with cross-variant tests
+   showing identical behavior; keep variant-specific terms in their owner plans.
+4. Keep runtime stepping, py-demos, and GPU claims out of scope until the
    internal ABD oracle and benchmark packet exist.
 
 ## Validation Gates For Current Slices
@@ -123,8 +136,9 @@ Phase 1 local evidence:
 Phase 2 local evidence so far:
 
 - `pixi run build-simulation-experimental-tests`
-- `pixi run test-simulation-experimental` (46/46)
+- `pixi run test-simulation-experimental` (64/64)
 - `pixi run bm bm_affine_body_dynamics -- --benchmark_min_time=0.05s`
+- `pixi run bm-abd-comparison-packet`
 
 ## Owner Docs
 

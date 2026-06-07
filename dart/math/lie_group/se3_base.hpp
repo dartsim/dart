@@ -296,7 +296,7 @@ typename SE3Base<Derived>::Tangent SE3Base<Derived>::log(
 {
   const Tangent xi = log(tol);
   if (jacobian) {
-    (*jacobian) = SE3<Scalar>::RightJacobianInverse(xi, tol);
+    (*jacobian) = SE3<Scalar>::RightJacobianInverse(xi.params(), tol);
   }
   return xi;
 }

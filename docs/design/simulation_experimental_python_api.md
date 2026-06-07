@@ -344,10 +344,12 @@ or active task handoff. Those belong in `docs/plans/` or `docs/dev_tasks/`.
   backend-neutral kinematics-only execution; dartpy should expose executor
   customization only after Python compute wrappers are deliberately promoted.
 - The C++ `WorldStepPipeline` can execute selected stages, while default
-  `World::step()` composes rigid-body integration followed by kinematics.
-  C++ repeated-step overloads can reuse caller-owned executor and pipeline
-  state; dartpy's common `world.step(n=...)` remains the Pythonic synchronous
-  path until compute wrappers are promoted.
+  `World::step()` uses the same content-aware built-in schedule described by
+  the C++ facade: solver-family and policy choices come from construction
+  options or focused setters, and the default path emits only active domain
+  stages before the kinematics refresh. C++ repeated-step overloads can reuse
+  caller-owned executor and pipeline state; dartpy's common `world.step(n=...)`
+  remains the Pythonic synchronous path until compute wrappers are promoted.
 - `dart/simulation/experimental/space/state_space.hpp` provides a bindable
   value object for named state-vector metadata.
 - Native collision already has standalone world/query concepts with explicit
@@ -956,12 +958,13 @@ Configuration should use validated value objects for stable concepts and
 keyword shortcuts for the common path. Examples:
 
 ```python
-# Future target shape; DART 7 currently accepts World(time_step=...).
 world = sx.World(
-    sx.WorldOptions(
-        time_step=0.001,
-        gravity=(0.0, 0.0, -9.81),
-    )
+    time_step=0.001,
+    gravity=(0.0, 0.0, -9.81),
+    rigid_body_solver=sx.RigidBodySolver.SEQUENTIAL_IMPULSE,
+    multibody_options=sx.MultibodyOptions(integration_family="semi-implicit"),
+    contact_solver_method=sx.ContactSolverMethod.SEQUENTIAL_IMPULSE,
+    contact_gradient_mode=sx.ContactGradientMode.ANALYTIC,
 )
 
 body = world.add_rigid_body(
@@ -977,6 +980,11 @@ Options for simulation, rigid-body construction, joint construction, sensors,
 rendering, and execution should stay in separate value objects. Renderer,
 camera, GPU, and sensor-pipeline options should not leak into `World` until
 DART owns those subsystems.
+
+The current dartpy binding exposes World-level solver defaults and policies as
+constructor keywords rather than a bound `sx.WorldOptions` object. If Python
+later gains `sx.WorldOptions`, it should preserve the same field names and
+validation behavior as those constructor keywords.
 
 ### Loading And Source Geometry
 
@@ -1138,13 +1146,23 @@ backend names:
 | Differentiability  | unsupported, finite-difference checked, analytic, autodiff.   |
 
 The DART 7 Python API should not expose solver registries, plugin loaders, or
-backend-specific solver names. Future explicit solver selection may use public
-value objects after C++ defines the owner API and validation behavior.
+backend-specific solver names. Explicit solver and contact-policy selection uses
+DART-owned capability names on the `World` constructor and focused value objects
+such as `MultibodyOptions`.
 
 New solvers and multi-physics stages should be additive under DART-owned
 capability names. A user should be able to ask for a method family or policy
 and receive a documented fallback or unsupported-capability error when the
 current build lacks the required implementation backend.
+
+The current binding mirrors the C++ construction-time grouping without exposing
+solver internals:
+`sx.World(rigid_body_solver=..., multibody_options=..., contact_solver_method=..., contact_gradient_mode=...)`
+sets the built-in schedule defaults and policies up front, while the
+`rigid_body_solver`, `multibody_options`, and `contact_gradient_mode` properties
+remain available for interactive configuration when they are safe to switch
+after construction. Invalid method-family names and enum values are rejected
+before the world starts stepping.
 
 ## Future Capability Shapes
 

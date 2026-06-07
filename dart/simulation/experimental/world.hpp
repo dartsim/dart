@@ -85,14 +85,6 @@ class UnifiedConstraintStage;
 
 struct WorldOptions;
 
-/// Solver family used for free rigid-body dynamics in the default experimental
-/// World step pipeline.
-enum class RigidBodySolver
-{
-  SequentialImpulse,
-  Ipc,
-};
-
 /// Options controlling `World::collide()` query filtering.
 struct CollisionQueryOptions
 {
@@ -233,9 +225,11 @@ class DART_EXPERIMENTAL_API World
 public:
   World();
 
-  /// Construct a World from value options (time step, gravity, and the opt-in
-  /// differentiable flag). The existing default constructor and setters remain
-  /// valid; this only initializes members from `options`.
+  /// Construct a World from value options (time step, gravity, solver-family
+  /// defaults, differentiability/contact policies, and memory options). The
+  /// existing default constructor and setters remain valid; this initializes
+  /// the same facade state from `options` and validates every option on the
+  /// shared construction path.
   explicit World(const WorldOptions& options);
 
   ~World();
@@ -407,7 +401,7 @@ public:
   /// Selected via `WorldOptions::contactSolverMethod` (default
   /// `SequentialImpulse`) and independent of the differentiable flag. The
   /// `BoxedLcp` value opts the rigid-body contact stage into the boxed-LCP
-  /// normal solve; all other behavior is unchanged.
+  /// normal/friction solve; all other behavior is unchanged.
   [[nodiscard]] ContactSolverMethod getContactSolverMethod() const noexcept;
 
   /// The backward-pass contact gradient mode this World uses.
@@ -427,27 +421,28 @@ public:
   /// `applyStepVjp()`, never the forward step or any stored state. It does not
   /// require the differentiable opt-in to be set (it is simply inert without
   /// it).
-  void setContactGradientMode(ContactGradientMode mode) noexcept;
+  /// @throws InvalidArgumentException if `mode` is not a valid
+  ///         `ContactGradientMode` enumerator.
+  void setContactGradientMode(ContactGradientMode mode);
 
   /// Get the explicit Jacobian blocks of the most recent step.
   ///
   /// With the default `SequentialImpulse` contact solver this returns the
   /// contact-free (free-fall / multibody) step Jacobian. With
   /// `ContactSolverMethod::BoxedLcp` it returns the contact-aware Jacobian,
-  /// including the analytic frictionless normal-contact gradient, whenever the
-  /// step had active contacts; with no active contacts the result reduces
-  /// exactly to the contact-free Jacobian.
+  /// including the analytic normal/friction contact gradient for rigid-body
+  /// contacts, whenever the step had active contacts; with no active contacts
+  /// the result reduces exactly to the contact-free Jacobian.
   ///
   /// @throws InvalidOperationException if this World did not opt in to
   ///         differentiable simulation (`isDifferentiable() == false`), or if
   ///         differentiable support was not compiled (`DART_BUILD_DIFF=OFF`).
   /// @throws NotImplementedException if, under `BoxedLcp`, the step had active
-  ///         contacts outside the supported slice (multibody/articulated-link
-  ///         contact, or rotational contact whose lever arm is not parallel to
-  ///         the contact normal). The supported slice is frictionless
-  ///         translational rigid-body contact (PLAN-110 WS2 first slice); the
-  ///         API throws rather than returning a wrong (contact-omitting)
-  ///         matrix.
+  ///         contacts outside the supported gradient slice
+  ///         (multibody/articulated-link contact). The supported slice is
+  ///         rigid-body normal/friction contact, including rotational/off-COM
+  ///         and multi-contact cases (PLAN-110 WS2); the API throws rather than
+  ///         returning a wrong contact-omitting matrix.
   [[nodiscard]] StepDerivatives getStepDerivatives() const;
 
   /// Apply the reverse-mode (vector-Jacobian product) rule of the most recent
@@ -774,6 +769,7 @@ private:
   void markFrameTopologyChanged() noexcept;
   [[nodiscard]] std::uint64_t getFrameTopologyRevision() const noexcept;
   void reserveRegistryStorageForSimulation();
+  void prepareStepPipelineCacheForCurrentConfiguration();
   void resetCountersFromRegistry();
   void stepPipelineOnce(
       compute::ComputeExecutor& executor, compute::WorldStepPipeline& pipeline);

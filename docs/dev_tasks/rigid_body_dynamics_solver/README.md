@@ -36,16 +36,16 @@ solver** under a multi-solver, multi-physics architecture.
       now persists the native collision world across queries and only rebuilds
       when collision geometry changes).
 - [ ] Phase 3: constraint & contact solver (started: velocity-level sequential
-      contact solver between free rigid bodies with accumulated normal impulses,
-      restitution, two-tangent Coulomb friction, positional correction, and a
-      public static-body convention — a body drops onto a static ground and
-      rests, an elastic head-on collision swaps velocities, and a sliding box
-      brakes via friction. Remaining: joint-limit/motor constraints, contacts on
-      multibody links, islands, and the boxed-LCP formulation).
-- [ ] Phase 4: joint features & actuators (started: spring stiffness + rest
-      position and damping are applied as passive generalized forces for
-      revolute/prismatic joints; remaining: actuator types, limits, Coulomb
-      friction, mimic/coupler, armature).
+      contact for free rigid bodies; the current semi-implicit default routes
+      mixed free-rigid / articulated-link contact through the unified boxed-LCP
+      stage when multibody structures are present. Remaining work is Subsystem A
+      polish from `RESUME.md`: warm starting, friction-cone iteration, scaling
+      around the unified solve, and separate joint-limit/motor/island slices).
+- [ ] Phase 4: joint features & actuators (started: spring stiffness, rest
+      position, damping, effort limits, armature, joint-space Coulomb friction,
+      and Force/Passive/Velocity actuator behavior on supported joints;
+      remaining: servo/acceleration/locked actuator modes plus mimic/coupler
+      work).
 - [ ] Phase 5: loop closures & improvements.
 
 ### DART 7 B2 gate — rigid open-chain dynamics parity
@@ -69,14 +69,17 @@ exceed it (armature, pluggable integrator, fresh-by-default reads, backend-
 neutral compute, model/state separation) — without the public API exposing
 solvers, couplers, ECS storage, or execution backends.
 
-## Non-Goals (for early phases)
+## Boundaries
 
-- No second solver or non-rigid domain implementation yet (architecture must
-  _allow_ it; see roadmap "multi-solver readiness").
-- No public solver/coupler/domain types or registries.
-- No direct file-based loader in the experimental library yet; compose through
-  legacy `dart::io::readSkeleton`/`readWorld` and the experimental
-  skeleton-to-multibody bridge.
+- Keep public configuration at the method-family / policy level (`WorldOptions`,
+  handles, and value objects), not public solver, coupler, ECS, backend, or
+  registry types.
+- Rigid-body work must continue to compose with the existing multibody,
+  deformable, rigid IPC, variational-integrator, and differentiable paths
+  through the centralized built-in schedule instead of adding another parallel
+  default-step switch.
+- Direct file loading remains outside this task; compose through maintained
+  `dart::io` readers and the experimental skeleton/world conversion bridges.
 - Do not modify `/home/js/multiphysics-api-design.md` (external user doc).
 - Do not name solvers/presets/examples after other engines; use method/approach
   names. Do not reference specific external engines by name in core code or
@@ -100,10 +103,14 @@ solvers, couplers, ECS storage, or execution backends.
 
 ## Immediate Next Steps
 
-1. Keep the local `feature/experimental-model-loader` branch clean and validated
-   while it carries the model-loading/contact follow-up commits ahead of origin.
+1. Treat the model-loading and unified contact/constraint line as landed on
+   `main` via PR #2838; do not look for the retired
+   `feature/experimental-model-loader` branch as the active publication path.
 2. Continue Subsystem A polish from `RESUME.md`: warm starting, friction-cone
    iteration, and other scaling work around the unified contact solve.
+3. Keep richer model-loading diagnostics, visual/material import, actuator,
+   mimic/coupler, loop-closure, integrator, and COM-Jacobian work as separate
+   deferred slices unless the active solver-polish work directly requires them.
 
 ## Relationship To The API-Design Dev Task
 

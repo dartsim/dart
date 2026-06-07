@@ -18,6 +18,7 @@ set(
   demos_scene_sources
   "${CMAKE_CURRENT_LIST_DIR}/registry.cpp"
   "${CMAKE_CURRENT_LIST_DIR}/scenes/rigid_body.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/scenes/dynamic_joint_constraints.cpp"
   "${CMAKE_CURRENT_LIST_DIR}/scenes/deformable_body.cpp"
 )
 

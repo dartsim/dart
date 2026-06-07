@@ -132,6 +132,12 @@ public:
   /// Returns the componentwise logarithm concatenated in parameter order.
   [[nodiscard]] Tangent log(Scalar tol = LieGroupTol<Scalar>()) const;
 
+  /// Returns the componentwise logarithm and its block-diagonal Jacobian.
+  template <typename MatrixDerived>
+  [[nodiscard]] Tangent log(
+      Eigen::MatrixBase<MatrixDerived>* jacobian,
+      Scalar tol = LieGroupTol<Scalar>()) const;
+
   /// Returns the block-diagonal adjoint matrix of all components.
   [[nodiscard]] AdjointMatrix toAdjointMatrix() const;
 
@@ -164,6 +170,12 @@ private:
   template <std::size_t... Indices>
   [[nodiscard]] Tangent log(
       std::integer_sequence<std::size_t, Indices...>, Scalar tol) const;
+
+  template <typename MatrixDerived, std::size_t... Indices>
+  [[nodiscard]] Tangent log(
+      std::integer_sequence<std::size_t, Indices...>,
+      Eigen::MatrixBase<MatrixDerived>* jacobian,
+      Scalar tol) const;
 
   template <std::size_t... Indices>
   [[nodiscard]] AdjointMatrix toAdjointMatrix(
@@ -281,6 +293,48 @@ typename GroupProductBase<Derived>::Tangent GroupProductBase<Derived>::log(
   ((out.template segment<Component<Indices>::DoF>(offset)
     = detail::getTangentParams(get<Indices>().log(tol)),
     offset += Component<Indices>::DoF),
+   ...);
+  return out;
+}
+
+//==============================================================================
+template <typename Derived>
+template <typename MatrixDerived>
+typename GroupProductBase<Derived>::Tangent GroupProductBase<Derived>::log(
+    Eigen::MatrixBase<MatrixDerived>* jacobian, Scalar tol) const
+{
+  if (jacobian != nullptr) {
+    jacobian->derived().setZero();
+  }
+
+  return log(
+      std::make_integer_sequence<std::size_t, ProductSize>{}, jacobian, tol);
+}
+
+//==============================================================================
+template <typename Derived>
+template <typename MatrixDerived, std::size_t... Indices>
+typename GroupProductBase<Derived>::Tangent GroupProductBase<Derived>::log(
+    std::integer_sequence<std::size_t, Indices...>,
+    Eigen::MatrixBase<MatrixDerived>* jacobian,
+    Scalar tol) const
+{
+  Tangent out;
+  int offset = 0;
+  (([&] {
+     constexpr int componentDoF = Component<Indices>::DoF;
+     if (jacobian != nullptr) {
+       auto jacobianBlock
+           = jacobian->derived().template block<componentDoF, componentDoF>(
+               offset, offset);
+       out.template segment<componentDoF>(offset)
+           = detail::getTangentParams(get<Indices>().log(&jacobianBlock, tol));
+     } else {
+       out.template segment<componentDoF>(offset)
+           = detail::getTangentParams(get<Indices>().log(tol));
+     }
+     offset += componentDoF;
+   }()),
    ...);
   return out;
 }

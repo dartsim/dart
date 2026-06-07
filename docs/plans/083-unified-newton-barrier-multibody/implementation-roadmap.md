@@ -58,8 +58,14 @@ Convert the current ABD benchmark smoke shape into the first comparison packet:
   claim.
 
 Gate: benchmark JSON and a manifest row prove the comparison is reproducible.
-A two-body affine contact micro-solve is added only if the packet needs a
-solved-state residual before shared Newton work starts.
+The current first packet is the `abd-alg-affine-body` microbench row in
+[`paper-deck-manifest.md`](paper-deck-manifest.md), generated and checked with
+`pixi run bm-abd-comparison-packet`; it intentionally compares the internal
+affine point-triangle primitive mapping with the rigid IPC oracle and
+orthogonality energy only, without claiming a runtime solver or paper-scale
+scene result. This micro-packet does not need a two-body affine contact
+micro-solve before shared-contract scouting starts; add that solved-state row
+only when a broader ABD packet needs runtime residual or stepping evidence.
 
 ## Phase 2: Shared Solver Contracts
 

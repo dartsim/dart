@@ -46,10 +46,11 @@
     their source directory so upstream relative mesh paths replay without
     caller-supplied asset roots. Comparison-script material Young/Poisson
     values plus energy model, warm-start, self-collision, and gravity-disable
-    metadata are represented as fixture metadata but are not solver-active yet.
-    A runtime replay regression now steps a fixture-populated `World` through
-    the default rigid-body pipeline to keep the importer separated from solver
-    selection.
+    metadata are represented as fixture metadata. A runtime replay regression
+    now steps a fixture-populated `World` through the default
+    sequential-impulse policy to keep the importer separated from implicit
+    solver-family selection; opt-in IPC stepping is selected through the
+    World-level rigid solver policy.
   - The first direct CCD data reader covers upstream edge-edge, edge-vertex,
     and face-vertex JSON rows as pose and primitive records, with an internal
     replay path that dispatches loaded rows to the matching curved CCD query.

@@ -1,5 +1,10 @@
 # Roadmap: Rigid-Body Dynamics Solver (First Solver)
 
+Historical phased roadmap for the first rigid-body solver. It is useful for
+understanding why the slices were ordered this way, but it is not current status.
+For live status use [`README.md`](README.md),
+[`RESUME.md`](RESUME.md), and the durable solver architecture design.
+
 Phased plan to bring the experimental `World` to DART 6-equivalent (then better)
 rigid-body simulation as the first solver under the architecture in
 [`docs/design/simulation_solver_architecture.md`](../../design/simulation_solver_architecture.md).

@@ -25,7 +25,8 @@ expose batch operations as thin free functions that view packed, contiguous
 buffers element-wise through the existing `Eigen::Map<SO3<S>>` /
 `Eigen::Map<SE3<S>>` specializations and apply the existing scalar operation.
 
-See `dart/math/lie_group/batch.hpp`: `composeBatch`, `expBatch`, `logBatch`.
+See `dart/math/lie_group/batch.hpp`: `composeBatch`, `expBatch`, `logBatch`,
+and `adjointBatch`.
 
 Buffer layout is AoS of `Params` (each element occupies `T::ParamSize` scalars;
 tangents occupy `T::DoF` scalars), which is exactly what the `Map`
@@ -56,8 +57,9 @@ buffers.
 ## Implementation notes
 
 - The functions in `batch.hpp` are the always-correct **scalar reference path**.
-  SIMD acceleration (via `dart/simd`) is expected to be slotted in _behind the
-  same interface_ — callers do not change.
+  SIMD acceleration (via `dart/simd`), multi-core scheduling, and opt-in CUDA
+  kernels are expected to be slotted in _behind the same interface_ — callers do
+  not change and public headers do not expose backend-specific types.
 - The experimental engine is intentionally **not** rewired in this initial
   layer; that is a follow-up once a kernel is benchmarked against the scalar
   path.

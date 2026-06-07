@@ -905,6 +905,16 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     inline with an eight-stage capacity, eliminating stage-list heap allocation
     during default step pipeline assembly and rejecting overflow with
     `InvalidArgumentException`.
+  - Centralized the experimental World's built-in step schedule selection so
+    sequential impulse, rigid IPC, semi-implicit/variational multibody,
+    deformable, and custom-final-stage paths share one internal slot map.
+    Method-family changes after simulation bake now re-run one shared
+    preparation path, empty solver domains no longer add placeholder stages, and
+    custom-final-stage steps reuse the baked solver stages while clearing
+    caller-owned final stage pointers after execution.
+  - Added construction-time rigid and multibody solver-family selection to
+    experimental `WorldOptions`, and exposed the same validated path through the
+    dartpy `sx.World(...)` constructor.
   - Pre-baked the experimental World's default step stage bundle, kinematics
     graph traversal, and rigid IPC kinematic scratch at `enterSimulationMode()`,
     eliminating global heap allocation for repeated baked kinematic IPC steps
@@ -2690,6 +2700,11 @@ Capsule Rod (IPC)` py-demos scene (a cloth draping over a horizontal rod,
   - Ensure Bullet double-precision builds include `dart/collision/bullet/BulletInclude.hpp` before Bullet headers so `BT_USE_DOUBLE_PRECISION` is honored: [#2334](https://github.com/dartsim/dart/pull/2334).
 
 - LCP and Optimization
+  - Added `dart::constraint::CylindricalJointConstraint` for runtime
+    slide-and-rotate attachments that leave translation along an axis and
+    rotation about that axis free, with dartpy bindings, unit tests, a focused
+    headless smoke example, and a consolidated `dart-demos` dynamic joint
+    constraint catalog.
   - Added dimension validation to `Problem::setDimension()` to reject dimensions exceeding `Problem::kMaxDimension` (1,000,000) with `InvalidArgumentException` instead of attempting multi-GB allocations that cause ASan aborts or `std::bad_alloc`. ([#2500](https://github.com/dartsim/dart/issues/2500))
   - Refactored the LCP solver stack under `dart::math::lcp` with unified APIs plus new solver implementations and ImGui dashboard support. ([#2202](https://github.com/dartsim/dart/pull/2202), [#2241](https://github.com/dartsim/dart/pull/2241), [#2318](https://github.com/dartsim/dart/pull/2318), [#2355](https://github.com/dartsim/dart/pull/2355))
   - Modernized the Dantzig solver and improved stability (C++20 optimizations, NaN fallback, warning suppression). ([#2081](https://github.com/dartsim/dart/pull/2081), [#2253](https://github.com/dartsim/dart/pull/2253), [#2111](https://github.com/dartsim/dart/pull/2111))
@@ -2879,6 +2894,9 @@ Capsule Rod (IPC)` py-demos scene (a cloth draping over a horizontal rod,
 
 - Core
   - Added SIMD abstraction layer (`dart/simd/`) with portable vectorized math primitives supporting SSE4.2, AVX, AVX2, AVX-512, and ARM NEON backends with automatic runtime dispatch. Includes `Vec<T, N>`, `VecMask<T, N>`, aligned allocators, Eigen interop utilities, and dynamic vector/matrix types for batch computation. ([#2490](https://github.com/dartsim/dart/pull/2490))
+  - Added a backend-neutral lie-group batch adjoint helper and fixed SO3, SE3,
+    and group-product log Jacobian plumbing so DART 7 math paths have tested
+    scalar baselines ready for SIMD, multi-threaded, and CUDA compute backends.
   - Added `<numbers>`-style variable templates (`dart::math::pi`, `phi`, `two_pi`, etc.) plus numeric-limits helpers (`inf_v`, `max_v`, `min_v`, `eps_v`) in `dart/math/Constants.hpp` and deprecated `dart::math::constants<T>` (the legacy struct/header will be removed in DART 7.1). ([#2150](https://github.com/dartsim/dart/pull/2150), [#2157](https://github.com/dartsim/dart/pull/2157), [#2225](https://github.com/dartsim/dart/pull/2225))
   - Fix spdlog/fmt 12 builds by treating DART logging format parameters as runtime format strings. ([#2542](https://github.com/dartsim/dart/pull/2542), [#2538](https://github.com/dartsim/dart/issues/2538))
   - Logging and profiling updates: conditional logging macros, source-context metadata, `DART_ASSERT` adoption, log prefix cleanup, and the text profiling backend. ([#2099](https://github.com/dartsim/dart/pull/2099), [#2104](https://github.com/dartsim/dart/pull/2104), [#2105](https://github.com/dartsim/dart/pull/2105), [#2109](https://github.com/dartsim/dart/pull/2109), [#2110](https://github.com/dartsim/dart/pull/2110), [#2238](https://github.com/dartsim/dart/pull/2238))

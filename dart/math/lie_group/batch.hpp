@@ -42,9 +42,9 @@
 // matching the layout the Map specializations expect.
 //
 // The implementations below are the always-correct scalar reference path. SIMD
-// acceleration (see dart/simd) is expected to be slotted in *behind this same
-// interface* (kept off the public type surface, per
-// docs/design/scalable_compute_decisions.md and
+// acceleration (see dart/simd), multi-core scheduling, or opt-in GPU kernels
+// are expected to be slotted in *behind this same interface* (kept off the
+// public type surface, per docs/design/scalable_compute_decisions.md and
 // docs/onboarding/api-boundaries.md). Escalating to a dedicated SoA storage
 // type should only happen if benchmarks on the experimental engine prove the
 // interleaved Map layout is the bottleneck. See docs/design/lie_group_batch.md.
@@ -123,6 +123,35 @@ void logBatch(
     const ::Eigen::Map<const T> g(groups + i * P);
     ::Eigen::Map<::Eigen::Matrix<S, D, 1>>(out + i * D)
         = ::dart::math::Log(g).params();
+  }
+}
+
+/// Batch adjoint action: out[i] = Ad(groups[i], tangents[i]) for i in
+/// [0, count).
+///
+/// @tparam T A Lie group type with a typed tangent (e.g., SO3<double>,
+/// SE3<float>).
+/// @param[in] groups Packed group elements (count * T::ParamSize scalars).
+/// @param[in] tangents Packed tangent vectors (count * T::DoF scalars).
+/// @param[out] out Packed tangent results (count * T::DoF scalars). May alias
+/// tangents.
+/// @param[in] count Number of elements.
+template <typename T>
+void adjointBatch(
+    const typename T::Scalar* groups,
+    const typename T::Scalar* tangents,
+    typename T::Scalar* out,
+    std::size_t count)
+{
+  using S = typename T::Scalar;
+  constexpr int P = T::ParamSize;
+  constexpr int D = T::DoF;
+  for (std::size_t i = 0; i < count; ++i) {
+    const ::Eigen::Map<const T> g(groups + i * P);
+    const typename T::Tangent tangent(
+        ::Eigen::Map<const ::Eigen::Matrix<S, D, 1>>(tangents + i * D));
+    ::Eigen::Map<::Eigen::Matrix<S, D, 1>>(out + i * D)
+        = ::dart::math::Ad(g, tangent).params();
   }
 }
 
