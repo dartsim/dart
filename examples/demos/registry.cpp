@@ -91,6 +91,12 @@ std::vector<dart::gui::DemoSceneEntry> makeDemoScenes()
        "Falling rigid bodies on the World solver.",
        &makeRigidBodyScene});
   scenes.push_back(
+      {"dynamic_joint_constraints",
+       "Dynamic Joint Constraints",
+       "Runtime Constraints",
+       "Runtime ball, revolute, cylindrical, and weld dynamic constraints.",
+       &makeDynamicJointConstraintsScene});
+  scenes.push_back(
       {"planned_inverse_kinematics",
        "Inverse Kinematics",
        "Planned World Ports",

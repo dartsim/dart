@@ -23,6 +23,7 @@ namespace dart::examples::demos {
 // scene at runtime.
 
 dart::gui::ApplicationOptions makeRigidBodyScene();
+dart::gui::ApplicationOptions makeDynamicJointConstraintsScene();
 dart::gui::ApplicationOptions makeDeformableBodyScene();
 dart::gui::ApplicationOptions makeVbdDeformableScene();
 

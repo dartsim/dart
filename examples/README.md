@@ -25,8 +25,8 @@ example.
 From inside the DART repo:
 
 ```bash
-pixi run demos                     # launch the Demos app (interactive)
-pixi run demos -- --scene rigid_body # launch with a specific scene selected
+pixi run demos                                  # launch the Demos app
+pixi run demos -- --scene dynamic_joint_constraints
 ```
 
 In the app, use the **Demos** sidebar to switch scenes. Scenes are grouped into
@@ -59,10 +59,22 @@ exits; it backs the headless smoke test.
 ```bash
 pixi run ex hello_world
 pixi run ex csv_logger
+pixi run ex cylindrical_constraint
 ```
 
 The generic in-tree runner is `pixi run ex <target>`. GUI programs with extra
 CMake requirements declare them in `scripts/run_cpp_example.py`.
+
+## Dynamic Joint Constraint Examples
+
+`dart-demos` includes a Dynamic Joint Constraints scene cataloging the runtime
+dynamic `BallJointConstraint`, `RevoluteJointConstraint`,
+`CylindricalJointConstraint`, and `WeldJointConstraint` APIs side by side.
+
+The standalone `cylindrical_constraint` console example is a focused smoke test
+for `dart::constraint::CylindricalJointConstraint`. It keeps two bodies on a
+shared axis while leaving translation along that axis and rotation about that
+axis free.
 
 ## Build hello_world Standalone
 
