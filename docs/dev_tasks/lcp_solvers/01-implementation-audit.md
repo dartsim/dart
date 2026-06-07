@@ -46,7 +46,7 @@ Support abbreviations:
   snapshot tests, 3-sphere 200-step, 3-sphere 500-step, 4-sphere 200-step, and
   5-sphere 500-step boxed-LCP `World::step()` invariant tests and benchmark
   rows, 4-/8-/16-contact separated sphere-ground step benchmark rows,
-  1-/2-/4-/8-/16-box dense box-face step
+  1-/2-/4-/8-/16-/24-/32-box dense box-face step
   benchmark rows, a
   fixed-base prismatic articulated link-ground
   boxed-LCP `World::step()` invariant tests for one-link and four-link scenes,
@@ -684,7 +684,7 @@ The current local evidence for this task is:
   ground and rigid-impact rows also reported `contract_ok=1` with
   `build_simd_enabled=1` and `build_cuda_enabled=1`, respectively; those are CPU
   solver rows in those build trees, not CUDA kernel execution.
-- `test_boxed_lcp_contact --gtest_brief=1` now passes 45 tests. The dense box
+- `test_boxed_lcp_contact --gtest_brief=1` now passes 46 tests. The dense box
   face-contact test assembles a 4-contact, 12-row boxed/findex LCP from
   `World::collide()`, checks the single-dynamic-body dense patch shape, and
   verifies the problem with APGD; the sliding and static-friction box
@@ -695,6 +695,9 @@ The current local evidence for this task is:
   for 200 public boxed-LCP `World::step()` iterations.
   `SixteenBoxWorldStepMaintainsDenseContactInvariants` extends this to a
   16-box, 64-contact scene over 500 public boxed-LCP `World::step()`
+  iterations.
+  `TwentyFourBoxWorldStepMaintainsDenseContactInvariants` extends this to a
+  24-box, 96-contact scene over 2000 small public boxed-LCP `World::step()`
   iterations. The run still emits the dense-patch Dantzig warning, so
   Dantzig's direct dense box solve is not claimed.
 - `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldBoxContact/FrictionIndex' --benchmark_min_time=0.001s --benchmark_repetitions=1`
@@ -708,10 +711,11 @@ The current local evidence for this task is:
 - `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldBoxStep_BoxedLcp' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   passed in default, SIMD-enabled, and CUDA-enabled build trees for
   `BM_LcpWorldBoxStep_BoxedLcp/{1,2,4,8}/200` and
-  `BM_LcpWorldBoxStep_BoxedLcp/16/500`. All five rows reported
-  `invariant_ok=1` and `dense_box_contact=1`; the new 16-box row covers 64
-  face contacts and reported `max_height_error=4.17e-4`,
-  `max_vertical_speed=4.00e-15`, and `min_tangential_speed_drop=0.372156` in
+  `BM_LcpWorldBoxStep_BoxedLcp/{16,24,32}/{500,2000,4000}`. The seven-row
+  registry covers 4/8/16/32/64/96/128 face contacts. Focused 24-/32-box runs
+  reported `invariant_ok=1` and `dense_box_contact=1` in default, SIMD-enabled,
+  and CUDA-enabled build trees; the default 32-box row reported
+  `max_height_error=1.46e-4` and `max_vertical_speed=4.38e-2`.
   the default build. The CUDA-enabled rows are CPU public-step rows in that
   build tree, not CUDA LCP kernel execution.
 - `BM_LCP_COMPARE --benchmark_list_tests` listed 190 manifest-generated
@@ -1059,7 +1063,7 @@ The current local evidence for this task is:
   200-step/500-step
   3-sphere, 200-step 4-sphere, and 500-step 5-sphere end-to-end stack step
   rows, and 4-/8-/16-contact separated end-to-end step rows, plus
-  1-/2-/4-/8-/16-box dense box-face end-to-end step rows, fixed-base
+  1-/2-/4-/8-/16-/24-/32-box dense box-face end-to-end step rows, fixed-base
   prismatic articulated link-ground, link-vs-rigid impact, and
   cross-multibody link-vs-link impact step rows up to 16-link or 16-pair
   benchmark scenes, plus
@@ -1100,7 +1104,8 @@ The current local evidence for this task is:
    small vertical-stack boxed-LCP
    snapshots and contact-derived benchmark rows to richer articulated,
    longer-running, and denser coupled multi-contact scenes beyond the current
-   16-box dense face-contact public-step and all-solver snapshot slices
+   24-box unit / 32-box benchmark dense face-contact public-step and
+   all-solver snapshot slices
    that validate solver outputs against motion/contact invariants.
 3. Add benchmark packets that broaden scalar CPU and SIMD-enabled CPU evidence,
    larger and sparser solver-internal multi-threaded CPU cases,

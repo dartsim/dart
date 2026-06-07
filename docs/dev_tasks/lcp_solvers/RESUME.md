@@ -415,8 +415,9 @@ articulated end-to-end coverage, connected Cartesian-chain articulated
 end-to-end coverage, cross-multibody articulated link-vs-link impact coverage,
 manually assembled three-axis articulated LCP snapshots, 4-sphere coupled-stack
 end-to-end, 5-sphere vertical stack snapshots,
-and the 16-box dense face-contact public-step slice to broader articulated,
-longer-running coupled, and broader dense/robot-like contact scenes.
+and the 24-box unit / 32-box benchmark dense face-contact public-step slice to
+broader articulated, longer-running coupled, and broader dense/robot-like
+contact scenes.
 
 ## Context That Would Be Lost
 
@@ -796,7 +797,7 @@ longer-running coupled, and broader dense/robot-like contact scenes.
   and
   `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.FourSphereWorldStepMaintainsContactInvariants:BoxedLcpContact.SixteenSphereWorldStepMaintainsContactInvariants'`
   runs pass, and the full `test_boxed_lcp_contact --gtest_brief=1` binary
-  passes 45 tests. The full run still emits the existing
+  passes 46 tests. The full run still emits the existing
   `StaticFrictionHoldsSmallPush` degenerate-pivot warning.
 - `BoxedLcpContact.ArticulatedPrismaticLinkGroundStepMaintainsInvariants`
   advances a fixed-base prismatic articulated link in light ground contact
@@ -858,7 +859,7 @@ longer-running coupled, and broader dense/robot-like contact scenes.
   `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.*SphereStack*'` run
   passes these snapshot tests plus the 3-sphere 200-step, 3-sphere 500-step,
   4-sphere 200-step, and 5-sphere 500-step invariant tests. The full
-  `test_boxed_lcp_contact --gtest_brief=1` binary now passes 45 tests.
+  `test_boxed_lcp_contact --gtest_brief=1` binary now passes 46 tests.
 - `BoxedLcpContact.SphereStackWorldStepMaintainsContactInvariants` advances the
   same 3-sphere vertical stack through 200 public boxed-LCP `World::step()`
   iterations and checks finite state, non-penetration, preserved sphere spacing,
@@ -961,8 +962,11 @@ longer-running coupled, and broader dense/robot-like contact scenes.
   face-contact scenes advanced for 200 public boxed-LCP `World::step()`
   iterations. `SixteenBoxWorldStepMaintainsDenseContactInvariants` extends the
   same scene family to 16 boxes and 64 dense face contacts over 500 public
-  boxed-LCP `World::step()` iterations. The full
-  `test_boxed_lcp_contact --gtest_brief=1` run passes 45 tests while still
+  boxed-LCP `World::step()` iterations.
+  `TwentyFourBoxWorldStepMaintainsDenseContactInvariants` extends unit coverage
+  to 24 boxes and 96 dense face contacts over 2000 small public boxed-LCP
+  `World::step()` iterations. The full
+  `test_boxed_lcp_contact --gtest_brief=1` run passes 46 tests while still
   emitting the dense-patch Dantzig warning.
 - `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldBoxContact/FrictionIndex' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   passes in default, SIMD-enabled, and CUDA-enabled build trees for 30 scoped
@@ -972,17 +976,15 @@ longer-running coupled, and broader dense/robot-like contact scenes.
   `contact_count=4`, `8`, `16`, `32`, and `64`, and `problem_size=12`, `24`,
   `48`, `96`, and `192`; CUDA-enabled rows are CPU solver rows in that build
   tree, not CUDA LCP kernel execution.
-- `BM_LcpWorldBoxStep_BoxedLcp/{1,2,4,8}/200` and
-  `BM_LcpWorldBoxStep_BoxedLcp/16/500` rebuild separated dense box-face worlds,
-  confirm 4/8/16/32/64 contacts before stepping, enter simulation mode, advance
-  public boxed-LCP `World::step()` iterations, and report end-to-end invariant
-  counters. Focused default, SIMD-enabled, and CUDA-enabled build-tree
-  `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldBoxStep_BoxedLcp' --benchmark_min_time=0.001s --benchmark_repetitions=1`
-  runs reported `invariant_ok=1`, `dense_box_contact=1`, and
-  `box_count=1`, `2`, `4`, `8`, and `16`; the default 16-box row reported
-  `contact_count=64`, `max_height_error=4.17e-4`,
-  `max_vertical_speed=4.00e-15`, and `min_tangential_speed_drop=0.372156`.
-  The SIMD and CUDA-enabled 16-box rows also reported `invariant_ok=1`. The
+- `BM_LcpWorldBoxStep_BoxedLcp/{1,2,4,8}/200` plus
+  `BM_LcpWorldBoxStep_BoxedLcp/{16,24,32}/{500,2000,4000}` rebuild separated
+  dense box-face worlds, confirm 4/8/16/32/64/96/128 contacts before stepping,
+  enter simulation mode, advance public boxed-LCP `World::step()` iterations,
+  and report end-to-end invariant counters. Focused default, SIMD-enabled, and
+  CUDA-enabled build-tree runs over the 24-/32-box rows reported
+  `invariant_ok=1`, `dense_box_contact=1`, `box_count=24/32`,
+  `contact_count=96/128`, and `step_count=2000/4000`; the default 32-box row
+  reported `max_height_error=1.46e-4` and `max_vertical_speed=4.38e-2`. The
   CUDA-enabled rows are CPU public-step rows in that build tree, not CUDA LCP
   kernel execution. The runs still emit the dense-patch Dantzig warning, so
   treat this as public-step invariant evidence,

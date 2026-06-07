@@ -986,7 +986,7 @@ std::optional<WorldContactBenchmarkProblem> MakeWorldBoxContactBenchmarkProblem(
 
   constexpr double kFriction = 0.5;
   sx::WorldOptions options;
-  options.timeStep = 0.005;
+  options.timeStep = boxCount >= 24 ? 0.001 : 0.005;
   options.gravity = Eigen::Vector3d(0.0, 0.0, -9.81);
   options.contactSolverMethod = sx::ContactSolverMethod::BoxedLcp;
   sx::World world(options);
@@ -1760,7 +1760,7 @@ std::unique_ptr<sx::World> MakeWorldBoxStepBenchmarkWorld(
 
   constexpr double kFriction = 0.5;
   sx::WorldOptions options;
-  options.timeStep = 0.005;
+  options.timeStep = boxCount >= 24 ? 0.001 : 0.005;
   options.gravity = Eigen::Vector3d(0.0, 0.0, -9.81);
   options.contactSolverMethod = sx::ContactSolverMethod::BoxedLcp;
   auto world = std::make_unique<sx::World>(options);
@@ -10275,7 +10275,9 @@ BENCHMARK(BM_LcpWorldBoxStep_BoxedLcp)
     ->Args({2, 200})
     ->Args({4, 200})
     ->Args({8, 200})
-    ->Args({16, 500});
+    ->Args({16, 500})
+    ->Args({24, 2000})
+    ->Args({32, 4000});
 BENCHMARK(BM_LcpWorldArticulatedGroundStep_BoxedLcp)
     ->Args({1, 200})
     ->Args({4, 200})

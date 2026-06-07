@@ -1104,7 +1104,7 @@ std::unique_ptr<sx::World> buildSeparatedBoxGroundScene(
     int boxCount, double friction)
 {
   sx::WorldOptions options;
-  options.timeStep = 0.005;
+  options.timeStep = boxCount >= 24 ? 0.001 : 0.005;
   options.gravity = Eigen::Vector3d(0.0, 0.0, -9.81);
   options.contactSolverMethod = sx::ContactSolverMethod::BoxedLcp;
   auto world = std::make_unique<sx::World>(options);
@@ -2398,6 +2398,23 @@ TEST(BoxedLcpContact, SixteenBoxWorldStepMaintainsDenseContactInvariants)
 
   lcp->enterSimulationMode();
   lcp->step(500);
+
+  expectSeparatedBoxStepInvariants(*lcp, kBoxCount);
+}
+
+//==============================================================================
+TEST(BoxedLcpContact, TwentyFourBoxWorldStepMaintainsDenseContactInvariants)
+{
+  constexpr double kFriction = 0.5;
+  constexpr int kBoxCount = 24;
+
+  auto lcp = buildSeparatedBoxGroundScene(kBoxCount, kFriction);
+
+  const std::vector<sx::Contact> contacts = lcp->collide();
+  ASSERT_EQ(contacts.size(), static_cast<std::size_t>(4 * kBoxCount));
+
+  lcp->enterSimulationMode();
+  lcp->step(2000);
 
   expectSeparatedBoxStepInvariants(*lcp, kBoxCount);
 }
