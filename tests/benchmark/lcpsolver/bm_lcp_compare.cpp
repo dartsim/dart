@@ -143,6 +143,42 @@ LcpProblem MakeStandardSpdProblem(int n, unsigned seed)
       std::move(findex));
 }
 
+LcpProblem MakeStandardBandedSpdProblem(int n, unsigned seed)
+{
+  std::mt19937 rng(seed);
+  std::uniform_real_distribution<double> dist(-1.0, 1.0);
+
+  Eigen::MatrixXd A = Eigen::MatrixXd::Zero(n, n);
+  for (const int i : std::views::iota(0, n)) {
+    A(i, i) = 6.0;
+    if (i + 1 < n) {
+      A(i, i + 1) = -1.0;
+      A(i + 1, i) = -1.0;
+    }
+    if (i + 2 < n) {
+      A(i, i + 2) = -0.25;
+      A(i + 2, i) = -0.25;
+    }
+  }
+
+  Eigen::VectorXd xStar(n);
+  for (const int i : std::views::iota(0, n)) {
+    xStar[i] = std::abs(dist(rng)) + 0.25;
+  }
+
+  Eigen::VectorXd b = A * xStar;
+  Eigen::VectorXd lo = Eigen::VectorXd::Zero(n);
+  Eigen::VectorXd hi
+      = Eigen::VectorXd::Constant(n, std::numeric_limits<double>::infinity());
+  Eigen::VectorXi findex = Eigen::VectorXi::Constant(n, -1);
+  return LcpProblem(
+      std::move(A),
+      std::move(b),
+      std::move(lo),
+      std::move(hi),
+      std::move(findex));
+}
+
 LcpProblem MakeBoxedActiveBoundsProblem(int n, unsigned seed)
 {
   std::mt19937 rng(seed);
@@ -2634,15 +2670,60 @@ static void BM_LcpValidation_Threaded_FrictionIndex(benchmark::State& state)
       MakeLabel("ThreadedValidation", "FrictionIndex"));
 }
 
-static void BM_LcpJacobiSolverThreading_Standard(benchmark::State& state)
+enum class JacobiThreadingProblemKind
+{
+  DenseSpd,
+  BandedSpd
+};
+
+double CountBandedSpdNonzeros(const int problemSize)
+{
+  double nonzeros = static_cast<double>(problemSize);
+  if (problemSize > 1) {
+    nonzeros += 2.0 * static_cast<double>(problemSize - 1);
+  }
+  if (problemSize > 2) {
+    nonzeros += 2.0 * static_cast<double>(problemSize - 2);
+  }
+  return nonzeros;
+}
+
+const char* getJacobiThreadingProblemLabel(
+    const JacobiThreadingProblemKind kind)
+{
+  switch (kind) {
+    case JacobiThreadingProblemKind::DenseSpd:
+      return "StandardDenseSpd";
+    case JacobiThreadingProblemKind::BandedSpd:
+      return "StandardBandedSpd";
+  }
+  return "StandardUnknown";
+}
+
+LcpProblem MakeJacobiThreadingProblem(
+    const JacobiThreadingProblemKind kind,
+    const int problemSize,
+    const unsigned seed)
+{
+  switch (kind) {
+    case JacobiThreadingProblemKind::DenseSpd:
+      return MakeStandardSpdProblem(problemSize, seed);
+    case JacobiThreadingProblemKind::BandedSpd:
+      return MakeStandardBandedSpdProblem(problemSize, seed);
+  }
+  return MakeStandardSpdProblem(problemSize, seed);
+}
+
+void RunJacobiSolverThreadingBenchmark(
+    benchmark::State& state, const JacobiThreadingProblemKind kind)
 {
   const int problemSize = static_cast<int>(state.range(0));
   const int requestedWorkerCount = static_cast<int>(state.range(1));
   const int workerCount = std::max(
       1, std::min(requestedWorkerCount, static_cast<int>(problemSize)));
 
-  const auto problem = MakeStandardSpdProblem(
-      problemSize, 60'001u + static_cast<unsigned>(problemSize));
+  const auto problem = MakeJacobiThreadingProblem(
+      kind, problemSize, 60'001u + static_cast<unsigned>(problemSize));
   auto options = MakeBenchmarkOptions(500);
   dart::math::JacobiSolver::Parameters params;
   params.workerThreads = workerCount;
@@ -2655,10 +2736,39 @@ static void BM_LcpJacobiSolverThreading_Standard(benchmark::State& state)
       problem,
       options,
       MakeLabel(
-          workerCount == 1 ? "JacobiSerial" : "JacobiThreaded", "Standard"));
+          workerCount == 1 ? "JacobiSerial" : "JacobiThreaded",
+          getJacobiThreadingProblemLabel(kind)));
+
+  const double denseEntries
+      = static_cast<double>(problemSize) * static_cast<double>(problemSize);
+  const double nonzeroEntries = kind == JacobiThreadingProblemKind::BandedSpd
+                                    ? CountBandedSpdNonzeros(problemSize)
+                                    : denseEntries;
 
   state.counters["worker_count"] = workerCount;
   state.counters["solver_internal_threads"] = workerCount;
+  state.counters["jacobi_threading_problem_kind"]
+      = static_cast<double>(static_cast<int>(kind));
+  state.counters["jacobi_threading_banded_spd"]
+      = kind == JacobiThreadingProblemKind::BandedSpd ? 1.0 : 0.0;
+  state.counters["band_half_width"]
+      = kind == JacobiThreadingProblemKind::BandedSpd
+            ? 2.0
+            : static_cast<double>(std::max(0, problemSize - 1));
+  state.counters["matrix_nonzero_entries"] = nonzeroEntries;
+  state.counters["matrix_density"] = nonzeroEntries / denseEntries;
+}
+
+static void BM_LcpJacobiSolverThreading_Standard(benchmark::State& state)
+{
+  RunJacobiSolverThreadingBenchmark(
+      state, JacobiThreadingProblemKind::DenseSpd);
+}
+
+static void BM_LcpJacobiSolverThreadingBanded_Standard(benchmark::State& state)
+{
+  RunJacobiSolverThreadingBenchmark(
+      state, JacobiThreadingProblemKind::BandedSpd);
 }
 
 enum class BenchmarkProblemFamily
@@ -7928,6 +8038,13 @@ BENCHMARK(BM_LcpJacobiSolverThreading_Standard)
     ->Args({128, 8})
     ->Args({512, 1})
     ->Args({512, 8});
+BENCHMARK(BM_LcpJacobiSolverThreadingBanded_Standard)
+    ->Args({512, 1})
+    ->Args({512, 4})
+    ->Args({512, 8})
+    ->Args({1024, 1})
+    ->Args({1024, 4})
+    ->Args({1024, 8});
 
 #if DART_BM_LCP_COMPARE_HAS_SIMULATION_EXPERIMENTAL_CUDA
 BENCHMARK(BM_LcpCudaJacobiBatch_Standard)->Args({24, 4})->Args({48, 4});

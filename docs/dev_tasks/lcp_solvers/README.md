@@ -23,7 +23,8 @@
       SIMD-enabled, CUDA-enabled, and simulation-experimental builds are
       distinguishable in benchmark output.
 - [x] Added opt-in solver-internal CPU worker threads for `JacobiSolver` plus
-      generated correctness and serial-vs-threaded benchmark evidence.
+      generated correctness and dense/banded serial-vs-threaded benchmark
+      evidence.
 - [x] Verified a focused DART 7 SIMD-enabled CPU build slice for generated LCP
       correctness and scalar/parallel batch benchmark rows.
 - [x] Verified a focused DART 7 CUDA-enabled build/runtime slice and ran the
@@ -703,15 +704,20 @@ tradeoffs evidence based.
 - Verified solver-internal Jacobi threading slice:
   `JacobiSolver::Parameters::workerThreads` now enables an opt-in CPU threaded
   update path. `LcpGeneratedCoverage.ThreadedJacobiStandardKnownSolution`
-  passed on a 128-row generated standard LCP. `BM_LCP_COMPARE` adds
-  `BM_LcpJacobiSolverThreading_Standard` rows for 128-row and 512-row standard
-  problems with 1 and 8 worker threads. The focused default, SIMD, and
-  CUDA-enabled benchmark runs all reported `contract_ok=1`,
-  `solver_internal_threads`, `worker_count`, backend build-state counters, and
-  identical residual/complementarity for serial and threaded rows. The focused
-  local timings did not show a speedup for these dense 128/512-row cases, so
-  the current evidence is correctness and comparability, not a performance
-  recommendation.
+  passed on a 128-row generated standard LCP. `BM_LCP_COMPARE` now lists 10
+  Jacobi threading rows: 4 dense `BM_LcpJacobiSolverThreading_Standard` rows
+  for 128-row and 512-row standard problems with 1 and 8 worker threads, plus 6
+  banded `BM_LcpJacobiSolverThreadingBanded_Standard` rows for 512-row and
+  1024-row standard problems with 1, 4, and 8 worker threads. The focused
+  default, SIMD-enabled, and CUDA-enabled benchmark runs all reported
+  `contract_ok=1`, `solver_internal_threads`, `worker_count`,
+  `jacobi_threading_banded_spd`, `band_half_width`, `matrix_nonzero_entries`,
+  `matrix_density`, and backend build-state counters. The banded rows use
+  sparse-structured matrices in dense storage and report densities of about
+  0.00974 for 512 rows and 0.00488 for 1024 rows. The focused local timings
+  are benchmark-comparison evidence only; they do not establish a general
+  worker-thread speedup. CUDA-enabled rows are CPU Jacobi rows in a CUDA-enabled
+  build, not CUDA LCP kernel execution.
 - Boxed semi-smooth Newton friction-index fix:
   `dart/math/lcp/newton/boxed_semi_smooth_newton_solver.cpp` now includes the
   derivative of moving `findex` friction bounds in the natural-residual

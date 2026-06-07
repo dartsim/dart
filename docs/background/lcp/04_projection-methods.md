@@ -64,11 +64,12 @@ Equivalently: $z = x^k - r \oslash \text{diag}(A)$; $x^{k+1} = \max(0, z)$.
 - **Storage**: $O(n)$
 - **Convergence**: Linear (if converges)
 - **Parallelization**: Fully parallel update rule; DART 7 exposes an opt-in
-  CPU worker-thread path for this solver, but current dense benchmark evidence
-  shows correctness rather than a speedup for the tested 128/512-row cases.
-  DART 7 also has an experimental CUDA fixed-iteration batch path for
-  homogeneous dense standard, boxed, and friction-index Jacobi packets, plus a
-  grouped host path for variable-size world-contact packet batches.
+  CPU worker-thread path for this solver, but current dense and banded
+  benchmark evidence shows correctness/comparability rather than a general
+  speedup claim for the tested 128/512-row dense and 512/1024-row banded
+  standard cases. DART 7 also has an experimental CUDA fixed-iteration batch
+  path for homogeneous dense standard, boxed, and friction-index Jacobi packets,
+  plus a grouped host path for variable-size world-contact packet batches.
 
 ### Advantages/Disadvantages
 
