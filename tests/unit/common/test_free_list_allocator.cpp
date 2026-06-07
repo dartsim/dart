@@ -119,7 +119,7 @@ TEST(FreeListAllocatorTest, Constructors)
 }
 
 //==============================================================================
-TEST(FreeListAllocatorTest, AllocateAlignedFallsBackToBaseAllocator)
+TEST(FreeListAllocatorTest, AllocateAlignedSatisfiesOverAlignment)
 {
   FreeListAllocator allocator;
 
@@ -131,7 +131,7 @@ TEST(FreeListAllocatorTest, AllocateAlignedFallsBackToBaseAllocator)
 }
 
 //==============================================================================
-TEST(FreeListAllocatorTest, DestructorReleasesLeakedDelegatedAlignedAllocations)
+TEST(FreeListAllocatorTest, DestructorReleasesLeakedArenaAlignedAllocations)
 {
   MemoryAllocatorDebugger<CAllocator> baseAllocator;
 
@@ -141,7 +141,7 @@ TEST(FreeListAllocatorTest, DestructorReleasesLeakedDelegatedAlignedAllocations)
     auto* ptr = allocator.allocate(
         sizeof(OverAlignedObject), alignof(OverAlignedObject));
     ASSERT_NE(ptr, nullptr);
-    EXPECT_TRUE(baseAllocator.hasAllocated(ptr, sizeof(OverAlignedObject)));
+    EXPECT_FALSE(baseAllocator.hasAllocated(ptr, sizeof(OverAlignedObject)));
   }
 
   EXPECT_TRUE(baseAllocator.isEmpty());
@@ -343,6 +343,41 @@ TEST(FreeListAllocatorTest, FixedCapacitySatisfiesOverAlignedAllocation)
 
   allocator.deallocate(
       ptr, sizeof(OverAlignedObject), alignof(OverAlignedObject));
+  EXPECT_EQ(baseAllocator.deallocationCount, 0u);
+}
+
+//==============================================================================
+TEST(FreeListAllocatorTest, ExpandPolicySatisfiesOverAlignedAllocationInArena)
+{
+  CountingMemoryAllocator baseAllocator;
+  FreeListAllocator allocator(baseAllocator, 1024);
+
+  const auto initialBaseAllocations = baseAllocator.allocationCount;
+  auto* ptr = allocator.allocate(
+      sizeof(OverAlignedObject), alignof(OverAlignedObject));
+  ASSERT_NE(ptr, nullptr);
+  EXPECT_EQ(
+      reinterpret_cast<std::uintptr_t>(ptr) % alignof(OverAlignedObject), 0u);
+  EXPECT_EQ(baseAllocator.allocationCount, initialBaseAllocations);
+
+  allocator.deallocate(
+      ptr, sizeof(OverAlignedObject), alignof(OverAlignedObject));
+  EXPECT_EQ(baseAllocator.deallocationCount, 0u);
+}
+
+//==============================================================================
+TEST(FreeListAllocatorTest, ExpandPolicyGrowsArenaForLargeAlignedAllocation)
+{
+  CountingMemoryAllocator baseAllocator;
+  FreeListAllocator allocator(baseAllocator, 128);
+
+  const auto initialBaseAllocations = baseAllocator.allocationCount;
+  auto* ptr = allocator.allocate(1024, 64);
+  ASSERT_NE(ptr, nullptr);
+  EXPECT_EQ(reinterpret_cast<std::uintptr_t>(ptr) % 64u, 0u);
+  EXPECT_GT(baseAllocator.allocationCount, initialBaseAllocations);
+
+  allocator.deallocate(ptr, 1024, 64);
   EXPECT_EQ(baseAllocator.deallocationCount, 0u);
 }
 

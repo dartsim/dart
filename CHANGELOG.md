@@ -201,6 +201,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Fixed fixed-capacity `FreeListAllocator` aligned allocations so
     `PoolAllocator` can satisfy aligned size-class chunks from reserved arena
     bytes without growing from the base allocator.
+  - Routed expand-policy `FreeListAllocator` over-aligned allocations through
+    reserved free-list arena blocks instead of delegating them to the base
+    allocator.
   - Hardened `FreeListAllocator` reservation arithmetic so impossible fixed
     capacities and expansion sizes fail before touching the base allocator.
   - Hardened common allocator count and size overflow guards for
