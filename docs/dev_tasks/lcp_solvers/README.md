@@ -31,6 +31,8 @@
 - [x] Added focused Red-Black Gauss-Seidel relaxation sweep benchmark rows with
       two-color partition counters on standard, boxed, and friction-index
       fixtures.
+- [x] Added focused ADMM rho/adaptive-rho sweep benchmark rows on standard,
+      boxed, and friction-index fixtures.
 - [x] Verified a focused DART 7 SIMD-enabled CPU build slice for generated LCP
       correctness and scalar/parallel batch benchmark rows.
 - [x] Verified a focused DART 7 CUDA-enabled build/runtime slice and ran the
@@ -638,6 +640,18 @@ tradeoffs evidence based.
   in a CUDA-enabled build, not CUDA LCP kernel execution. These rows expose the
   even/odd two-color partition; they do not prove solver-internal threaded
   Red-Black execution.
+- Verified ADMM rho/adaptive-rho benchmark slice:
+  `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpAdmmRhoSweep' | wc -l`
+  reported 18 rows, and JSON checks for `BM_LcpAdmmRhoSweep` reported 18 rows
+  with `contract_ok=1` in the default, SIMD-enabled, and CUDA-enabled build
+  trees. These rows cover standard 48-row, boxed 24-row, and friction-index
+  8-contact fixtures at `rhoInit` 0.5, 1.0, and 4.0 with fixed and adaptive
+  rho policies. The rows report `admm_rho_sweep=1`, `admm_rho_init`,
+  `admm_fixed_rho`, `admm_adaptive_rho`,
+  `admm_adaptive_rho_tolerance`, `admm_mu_prox`, `problem_size=24/48`,
+  `contact_count=8` for the friction-index rows, and backend build-state
+  counters. The CUDA-enabled rows report `build_cuda_enabled=1` but are CPU
+  ADMM solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
 - Verified larger active-set transition benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpLargerActiveSetTransition/' | wc -l`
   reported 49 rows, and
@@ -1451,7 +1465,8 @@ tradeoffs evidence based.
   production active-set serial and `ParallelExecutor` batch packets,
   mildly ill-conditioned single-problem and 8x-coupled batch packets,
   near-singular and singular-degenerate packets, PGS/PSOR, symmetric PSOR, and
-  Red-Black Gauss-Seidel relaxation sweep rows,
+  Red-Black Gauss-Seidel relaxation sweep rows, ADMM rho/adaptive-rho sweep
+  rows,
   independent-problem batches, simple world-contact snapshots, small coupled
   stack snapshot batches, and dense box-face step rows to broader dense and
   robot-like end-to-end contact systems, broader SIMD benchmark packets, larger threaded

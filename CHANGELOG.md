@@ -1150,6 +1150,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Updated the DART 7 LCP background taxonomy and selection guide to include
     APGD, TGS, boxed semi-smooth Newton, ADMM, and SAP alongside the shared
     solver manifest, correctness coverage, and benchmark registration.
+  - Added DART 7 ADMM rho/adaptive-rho comparison benchmark rows for standard,
+    boxed, and friction-index LCP fixtures, with backend build-state counters
+    distinguishing default, SIMD-enabled, and CUDA-enabled CPU solver runs.
   - Replaced the experimental rigid-body contact stage's per-contact
     sequential normal impulses with a coupled boxed-LCP solve over all
     rigid-rigid contacts (`dart/math/lcp` Dantzig solver). It assembles the

@@ -343,6 +343,9 @@ $$y = y + \rho(x-z)$$
 
 For friction-index rows, the projection uses effective bounds coupled to the
 current normal impulse.
+Focused `BM_LcpAdmmRhoSweep` rows compare fixed and adaptive $\rho$ settings
+on identical standard, boxed, and friction-index benchmark fixtures; these rows
+are CPU solver rows even when emitted by a CUDA-enabled build.
 
 ```cpp
 #include <dart/math/lcp/other/AdmmSolver.hpp>

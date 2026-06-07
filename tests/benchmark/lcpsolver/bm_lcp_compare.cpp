@@ -2805,6 +2805,16 @@ struct RelaxationSweepCase
   std::string_view relaxationLabel;
 };
 
+struct AdmmRhoSweepCase
+{
+  BenchmarkProblemFamily family;
+  int problemArg;
+  double rhoInit;
+  bool adaptiveRho;
+  std::string_view rhoLabel;
+  std::string_view policyLabel;
+};
+
 constexpr std::array<RelaxationSweepCase, 9> kRelaxationSweepCases{{
     {BenchmarkProblemFamily::Standard,
      48,
@@ -2851,6 +2861,27 @@ constexpr std::array<RelaxationSweepCase, 9> kRelaxationSweepCases{{
      RelaxationSweepKind::Over,
      1.3,
      "Relaxation1_3"},
+}};
+
+constexpr std::array<AdmmRhoSweepCase, 18> kAdmmRhoSweepCases{{
+    {BenchmarkProblemFamily::Standard, 48, 0.5, false, "Rho0_5", "Fixed"},
+    {BenchmarkProblemFamily::Standard, 48, 1.0, false, "Rho1_0", "Fixed"},
+    {BenchmarkProblemFamily::Standard, 48, 4.0, false, "Rho4_0", "Fixed"},
+    {BenchmarkProblemFamily::Standard, 48, 0.5, true, "Rho0_5", "Adaptive"},
+    {BenchmarkProblemFamily::Standard, 48, 1.0, true, "Rho1_0", "Adaptive"},
+    {BenchmarkProblemFamily::Standard, 48, 4.0, true, "Rho4_0", "Adaptive"},
+    {BenchmarkProblemFamily::Boxed, 24, 0.5, false, "Rho0_5", "Fixed"},
+    {BenchmarkProblemFamily::Boxed, 24, 1.0, false, "Rho1_0", "Fixed"},
+    {BenchmarkProblemFamily::Boxed, 24, 4.0, false, "Rho4_0", "Fixed"},
+    {BenchmarkProblemFamily::Boxed, 24, 0.5, true, "Rho0_5", "Adaptive"},
+    {BenchmarkProblemFamily::Boxed, 24, 1.0, true, "Rho1_0", "Adaptive"},
+    {BenchmarkProblemFamily::Boxed, 24, 4.0, true, "Rho4_0", "Adaptive"},
+    {BenchmarkProblemFamily::FrictionIndex, 8, 0.5, false, "Rho0_5", "Fixed"},
+    {BenchmarkProblemFamily::FrictionIndex, 8, 1.0, false, "Rho1_0", "Fixed"},
+    {BenchmarkProblemFamily::FrictionIndex, 8, 4.0, false, "Rho4_0", "Fixed"},
+    {BenchmarkProblemFamily::FrictionIndex, 8, 0.5, true, "Rho0_5", "Adaptive"},
+    {BenchmarkProblemFamily::FrictionIndex, 8, 1.0, true, "Rho1_0", "Adaptive"},
+    {BenchmarkProblemFamily::FrictionIndex, 8, 4.0, true, "Rho4_0", "Adaptive"},
 }};
 
 std::string_view getNewtonWarmStartModeName(const NewtonWarmStartMode mode)
@@ -4897,6 +4928,43 @@ void RunRedBlackGaussSeidelRelaxationSweepBenchmark(
       = testCase.relaxationKind == RelaxationSweepKind::Plain ? 1.0 : 0.0;
   state.counters["psor_over_relaxation"]
       = testCase.relaxationKind == RelaxationSweepKind::Over ? 1.0 : 0.0;
+  if (testCase.family == BenchmarkProblemFamily::FrictionIndex) {
+    state.counters["contact_count"] = testCase.problemArg;
+  }
+}
+
+void RunAdmmRhoSweepBenchmark(
+    benchmark::State& state, const AdmmRhoSweepCase testCase)
+{
+  const auto problem
+      = MakeBenchmarkProblem(testCase.family, testCase.problemArg);
+  auto options = MakeBenchmarkOptions(500);
+  options.absoluteTolerance = 1e-5;
+  options.complementarityTolerance = 1e-5;
+
+  dart::math::AdmmSolver::Parameters params;
+  params.rhoInit = testCase.rhoInit;
+  params.adaptiveRho = testCase.adaptiveRho;
+  options.customOptions = &params;
+
+  dart::math::AdmmSolver solver;
+  RunBenchmarkWithSolver(
+      state,
+      solver,
+      problem,
+      options,
+      MakeLabel(
+          "Admm",
+          "RhoSweep/" + std::string(getProblemFamilyName(testCase.family)) + "/"
+              + std::string(testCase.policyLabel) + "/"
+              + std::string(testCase.rhoLabel)));
+
+  state.counters["admm_rho_sweep"] = 1.0;
+  state.counters["admm_rho_init"] = testCase.rhoInit;
+  state.counters["admm_mu_prox"] = params.muProx;
+  state.counters["admm_adaptive_rho"] = testCase.adaptiveRho ? 1.0 : 0.0;
+  state.counters["admm_fixed_rho"] = testCase.adaptiveRho ? 0.0 : 1.0;
+  state.counters["admm_adaptive_rho_tolerance"] = params.adaptiveRhoTolerance;
   if (testCase.family == BenchmarkProblemFamily::FrictionIndex) {
     state.counters["contact_count"] = testCase.problemArg;
   }
@@ -7003,6 +7071,14 @@ std::string MakeRedBlackGaussSeidelRelaxationSweepBenchmarkName(
   return out.str();
 }
 
+std::string MakeAdmmRhoSweepBenchmarkName(const AdmmRhoSweepCase testCase)
+{
+  std::ostringstream out;
+  out << "BM_LcpAdmmRhoSweep/" << getProblemFamilyName(testCase.family) << "/"
+      << testCase.policyLabel << "/" << testCase.rhoLabel;
+  return out.str();
+}
+
 std::string MakeNewtonWarmStartBatchSerialBenchmarkName(
     const dart::test::LcpSolverManifestEntry& solver,
     const NewtonWarmStartMode mode)
@@ -7489,6 +7565,17 @@ void RegisterRedBlackGaussSeidelRelaxationSweepBenchmarks()
     benchmark::RegisterBenchmark(
         name.c_str(), [testCase](benchmark::State& state) {
           RunRedBlackGaussSeidelRelaxationSweepBenchmark(state, testCase);
+        });
+  }
+}
+
+void RegisterAdmmRhoSweepBenchmarks()
+{
+  for (const auto testCase : kAdmmRhoSweepCases) {
+    const auto name = MakeAdmmRhoSweepBenchmarkName(testCase);
+    benchmark::RegisterBenchmark(
+        name.c_str(), [testCase](benchmark::State& state) {
+          RunAdmmRhoSweepBenchmark(state, testCase);
         });
   }
 }
@@ -8251,6 +8338,7 @@ const bool kManifestBenchmarksRegistered = [] {
   RegisterPgsRelaxationSweepBenchmarks();
   RegisterSymmetricPsorRelaxationSweepBenchmarks();
   RegisterRedBlackGaussSeidelRelaxationSweepBenchmarks();
+  RegisterAdmmRhoSweepBenchmarks();
   RegisterNewtonWarmStartBenchmarks();
   RegisterLargerActiveSetTransitionBenchmarks();
   RegisterStressActiveSetTransitionBenchmarks();
