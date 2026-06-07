@@ -52,12 +52,13 @@ remain delegated for those three solvers.
 It now also adds opt-in PGS warm starts for those same standard Newton paths,
 accepting the PGS seed only when it reduces the solver-specific merit before
 Newton line search.
-It now also adds 24 `BM_LcpNewtonWarmStart` default-build benchmark rows for
-the three native standard-LCP Newton solvers, comparing no seed, PGS,
-projected gradient descent, and PGS-then-gradient modes on identical 32-row and
-64-row active-set transition packets. The focused run passed with
-`contract_ok=1` on every row and recorded mode/iteration counters in the JSON
-output.
+It now also adds 24 `BM_LcpNewtonWarmStart` benchmark rows for the three native
+standard-LCP Newton solvers, comparing no seed, PGS, projected gradient
+descent, and PGS-then-gradient modes on identical 32-row and 64-row active-set
+transition packets. Focused default, SIMD-enabled, and CUDA-enabled build-tree
+runs passed with `contract_ok=1` on every row and recorded mode/iteration
+counters in the JSON output. The CUDA-enabled rows are CPU solver rows in a
+CUDA-enabled build, not CUDA LCP kernel execution.
 It now also extends the robust near-singular generated slice to coupled
 friction-index 12-contact packets and adds 13 matching `BM_LcpNearSingular`
 benchmark rows for standard 8-row, boxed 8-row, and coupled friction-index
@@ -169,16 +170,17 @@ solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
 
 `feature/dart7-lcp-solver-evidence` - local checkpoint branch with DART 7 LCP
 solver evidence commits, including native standard-Newton warm-start tests and
-default-build warm-start benchmark rows. Push/PR work still requires explicit
-maintainer/user approval.
+default/SIMD/CUDA-enabled warm-start benchmark rows. Push/PR work still
+requires explicit maintainer/user approval.
 
 ## Immediate Next Step
 
 Move from the now-verified extreme 128-row/16-contact exact rank-deficient,
 production active-set transition 32-contact, coupled mildly ill-conditioned
-24-contact, near-singular 12-contact CPU solver rows, and default-build Newton
-warm-start benchmark rows toward broader solver-specific conditioning grids and
-direct backend execution evidence beyond SIMD/CUDA-enabled build-state counters.
+24-contact, near-singular 12-contact CPU solver rows, and default/SIMD/CUDA
+Newton warm-start benchmark rows toward broader solver-specific conditioning
+grids and direct backend execution evidence beyond SIMD/CUDA-enabled
+build-state counters.
 Broaden SIMD benchmark gates, solver-internal threaded benchmark evidence, and
 the CUDA Jacobi/PGS batch slices into broader/general CUDA LCP execution
 separately from the current serial, task-parallel independent-problem, simple
