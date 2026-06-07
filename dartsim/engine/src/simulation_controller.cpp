@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/simulation/experimental/world.hpp>
+#include <dart/simulation/world.hpp>
 
 #include <dartsim_engine/object_manager.hpp>
 #include <dartsim_engine/simulation_controller.hpp>

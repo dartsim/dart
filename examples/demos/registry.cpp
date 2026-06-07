@@ -11,9 +11,8 @@
 #include "scenes.hpp"
 
 #include <dart/gui/panel.hpp>
+#include <dart/gui/renderable.hpp>
 #include <dart/gui/viewer.hpp>
-
-#include <dart/simulation/world.hpp>
 
 #include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/frame.hpp>
@@ -47,9 +46,6 @@ dart::gui::ApplicationOptions makePlannedWorldPortScene(
     std::string legacySeeds,
     std::string target)
 {
-  auto world = dart::simulation::World::create("planned_" + id);
-  world->setTimeStep(1.0 / 60.0);
-
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
   transform.translation() = Eigen::Vector3d(0.0, 0.0, 0.08);
   auto frame = dart::dynamics::SimpleFrame::createShared(
@@ -58,7 +54,6 @@ dart::gui::ApplicationOptions makePlannedWorldPortScene(
       std::make_shared<dart::dynamics::BoxShape>(
           Eigen::Vector3d(0.56, 0.56, 0.16)));
   frame->getVisualAspect(true)->setRGBA(Eigen::Vector4d(0.35, 0.56, 0.86, 1.0));
-  world->addSimpleFrame(frame);
 
   dart::gui::Panel panel;
   panel.title = std::move(title);
@@ -71,9 +66,15 @@ dart::gui::ApplicationOptions makePlannedWorldPortScene(
   };
 
   dart::gui::ApplicationOptions options;
-  options.world = std::move(world);
   options.camera = makePlannedCamera();
-  options.simulateWorld = false;
+  options.advanceSimulation = false;
+  options.renderableProvider = [frame]() {
+    std::vector<dart::gui::RenderableDescriptor> descriptors;
+    if (auto descriptor = dart::gui::describeShapeFrame(*frame)) {
+      descriptors.push_back(*descriptor);
+    }
+    return descriptors;
+  };
   options.panels.push_back(std::move(panel));
   return options;
 }

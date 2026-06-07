@@ -30,16 +30,16 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/simulation/experimental/body/rigid_body.hpp>
-#include <dart/simulation/experimental/body/rigid_body_options.hpp>
-#include <dart/simulation/experimental/frame/fixed_frame.hpp>
-#include <dart/simulation/experimental/frame/frame.hpp>
-#include <dart/simulation/experimental/frame/free_frame.hpp>
-#include <dart/simulation/experimental/multibody/joint.hpp>
-#include <dart/simulation/experimental/multibody/joint_type.hpp>
-#include <dart/simulation/experimental/multibody/link.hpp>
-#include <dart/simulation/experimental/multibody/multibody.hpp>
-#include <dart/simulation/experimental/world.hpp>
+#include <dart/simulation/body/rigid_body.hpp>
+#include <dart/simulation/body/rigid_body_options.hpp>
+#include <dart/simulation/frame/fixed_frame.hpp>
+#include <dart/simulation/frame/frame.hpp>
+#include <dart/simulation/frame/free_frame.hpp>
+#include <dart/simulation/multibody/joint.hpp>
+#include <dart/simulation/multibody/joint_type.hpp>
+#include <dart/simulation/multibody/link.hpp>
+#include <dart/simulation/multibody/multibody.hpp>
+#include <dart/simulation/world.hpp>
 
 #include <dartsim_engine/object_manager.hpp>
 
@@ -52,7 +52,7 @@
 
 namespace dartsim {
 
-namespace sx = dart::simulation::experimental;
+namespace sx = dart::simulation;
 
 struct ObjectManager::RebuildFrameIndex
 {
@@ -190,7 +190,7 @@ void ObjectManager::rebuild()
         break;
       }
       case ObjectType::FixedFrame:
-        // Fixed frames need a non-world parent frame in the experimental API.
+        // Fixed frames need a non-world parent frame in the DART 7 API.
         // Root-level fixed-frame records are ignored instead of crashing on
         // malformed or older project files.
         break;
@@ -199,12 +199,12 @@ void ObjectManager::rebuild()
         // Links/joints are created as part of their owning MultiBody.
         break;
       case ObjectType::Sensor:
-        // Sensors are editor-authored descriptors until the experimental World
+        // Sensors are editor-authored descriptors until the DART 7 World
         // exposes public sensor runtime concepts.
         break;
       case ObjectType::Collision:
         // Collision geometries are editor-authored descriptors until the
-        // experimental World exposes public collision-shape authoring.
+        // DART 7 World exposes public collision-shape authoring.
         break;
     }
   }

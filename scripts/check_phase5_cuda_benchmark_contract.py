@@ -206,7 +206,7 @@ def run_self_tests() -> None:
     # A CUDA benchmark for a different domain (no rigid-body Phase 5 row) is
     # exempt even though its filename and source mention CUDA.
     vbd_cuda_source = """
-    namespace cuda = dart::simulation::experimental::compute::cuda;
+    namespace cuda = dart::simulation::compute::cuda;
     void BM_VbdCudaStep(benchmark::State& state) {}
     BENCHMARK(BM_VbdCudaStep)->Arg(64);
     """

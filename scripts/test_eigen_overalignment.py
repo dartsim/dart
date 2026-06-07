@@ -86,7 +86,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--ctest-regex",
-        help="Optional ctest -R regex. By default, all built non-experimental tests run.",
+        help="Optional ctest -R regex. By default, all built non-simulation tests run.",
     )
     parser.add_argument(
         "--skip-tests",
@@ -166,7 +166,6 @@ def configure(build_dir: Path, args: argparse.Namespace) -> None:
         "-DDART_BUILD_GUI=OFF",
         "-DDART_BUILD_COLLISION_REFERENCE_TESTS=OFF",
         "-DDART_BUILD_COLLISION_REFERENCE_BENCHMARKS=OFF",
-        "-DDART_BUILD_SIMULATION_EXPERIMENTAL=OFF",
         "-DDART_BUILD_PROFILE=OFF",
         "-DDART_PROFILE_BUILTIN=OFF",
         "-DDART_PROFILE_TRACY=OFF",
@@ -206,7 +205,7 @@ def test(build_dir: Path, args: argparse.Namespace, parallel: int) -> None:
         str(ctest_parallel),
         "--no-tests=error",
         "-LE",
-        "simulation-experimental",
+        "simulation",
     ]
     if args.ctest_regex:
         cmd.extend(["-R", args.ctest_regex])

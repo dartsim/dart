@@ -6,6 +6,10 @@
 > [`graduation-criteria.md`](graduation-criteria.md); the contact sequencing in
 > [`../../plans/082-variational-integrator-solver/contact-roadmap.md`](../../plans/082-variational-integrator-solver/contact-roadmap.md).
 
+Branch/PR details below are historical handoff evidence, not current checkout
+instructions. Live status should be read from the README, the graduation
+criteria, the plan dashboard, and the current code.
+
 ## Last Session Summary (2026-05-30)
 
 Phase A/B were already done. This session executed **Phase C contact & friction**
@@ -42,7 +46,7 @@ items with investigation evidence:
 
 ## Verified (all green)
 
-- Full experimental ctest: **43/43** (`pixi run test-simulation-experimental`),
+- Full simulation ctest: **43/43** (`pixi run test-simulation`),
   re-run green after each merge of `origin/main`.
 - `test_variational_integration` contact/serialization gtests (12) incl.:
   - `VariationalGroundContact.WorldSurfaceCompliantContactRestsOnGround` (C2 rests at `mg/k`)
@@ -68,9 +72,8 @@ All four are the task's **own explicit deferrals**, now backed by concrete facts
    PLAN-081 / `082-rigid-implicit-barrier-contact`. The sphere-sphere hook is the
    gate-1 minimum already landed.
 2. **experimental → supported graduation — structural, maintainer-scoped.**
-   `experimental` is encoded in the namespace (`dart::simulation::experimental`),
-   directory, `DART_EXPERIMENTAL_API` macro, and CMake gate
-   (`DART_BUILD_SIMULATION_EXPERIMENTAL`). There is **no per-family stability
+   `experimental` is encoded in the namespace (`dart::simulation`),
+   directory, and `DART_EXPERIMENTAL_API` macro. There is **no per-family stability
    flag** — `MultibodyIntegrationMethod` (in `world.hpp`) is just
    `SemiImplicit`/`Variational`. The VI **shares the module with `World` and every
    other solver**, so it cannot be graduated in isolation: the flip is a
@@ -88,21 +91,21 @@ All four are the task's **own explicit deferrals**, now backed by concrete facts
 
 ## Key Files (hot paths)
 
-- `dart/simulation/experimental/compute/variational_integration.{hpp,cpp}` — the
+- `dart/simulation/compute/variational_integration.{hpp,cpp}` — the
   integrator, the contact hooks (`makeVariationalGroundContactHook`,
   `VariationalGroundContactSolver` with `setDuals`/`updateDuals`,
   `makeVariationalLinkSphereContactHook`), and
   `MultibodyVariationalIntegrationStage::execute` (the World-step wiring incl. the
   C3 seed→integrate→update→persist outer loop).
-- `dart/simulation/experimental/comps/variational_contact.hpp` — contact config
+- `dart/simulation/comps/variational_contact.hpp` — contact config
   (`Property`, incl. `dualUpdateCadence`).
-- `dart/simulation/experimental/comps/variational_contact_dual_state.hpp` — AL
+- `dart/simulation/comps/variational_contact_dual_state.hpp` — AL
   duals + cadence counter (`State`, serialized).
-- `dart/simulation/experimental/io/{auto_serialization.hpp,serializer.cpp,binary_io.hpp}`
+- `dart/simulation/io/{auto_serialization.hpp,serializer.cpp,binary_io.hpp}`
   — serialization (generic POD-vector path; `kBinaryFormatVersion = 8`).
-- `dart/simulation/experimental/multibody/multibody.{hpp,cpp}` — `setGroundContact`
+- `dart/simulation/multibody/multibody.{hpp,cpp}` — `setGroundContact`
   / `addGroundContactPoint`.
-- `python/dartpy/simulation_experimental/module.cpp` — dartpy bindings.
+- `python/dartpy/simulation/module.cpp` — dartpy bindings.
 - `tests/unit/simulation/experimental/compute/test_variational_integration.cpp`
   — all VI/contact tests.
 - `python/examples/demos/scenes/sx_variational_contact.py` + `registry.py`.
@@ -145,16 +148,16 @@ git checkout feature/vi-roadmap-followups
 git fetch origin main && git merge origin/main --no-edit   # keep current; clean so far
 git log --oneline -8
 
-# Build + run the full experimental suite (the gate):
-pixi run build-simulation-experimental-tests
-pixi run test-simulation-experimental                      # expect 43/43
+# Build + run the full simulation suite (the gate):
+pixi run build-simulation-tests
+pixi run test-simulation                      # expect 43/43
 
 # Run just the VI / contact tests:
 build/default/cpp/Release/bin/test_variational_integration \
   --gtest_filter='VariationalGroundContact.*:VariationalLinkContact.*:VariationalIntegration.*'
 
 # Format before committing:
-pixi run lint-simulation-experimental   # clang-format C++
+pixi run lint-simulation   # clang-format C++
 pixi run lint-md                        # prettier docs
 
 # (Optional) dartpy in-place build for the Python demo / smoke:

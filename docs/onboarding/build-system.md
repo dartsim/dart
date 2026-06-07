@@ -508,7 +508,7 @@ dart/
 │   └── ode/        # ODE collision engine (optional)
 ├── constraint/      # Constraint solver
 ├── simulation/      # Simulation world, integration, and time stepping
-├── io/              # Unified model loading (readWorld/readSkeleton)
+├── io/              # Unified skeleton loading (readSkeleton)
 ├── utils/           # Utility functions
 │   ├── sdf/        # SDF file parser
 │   └── urdf/       # URDF file parser
@@ -584,23 +584,15 @@ dart/
 Examples are built in `build/.../bin/`:
 
 - `dartsim` - Application-level simulator/viewer and migrated visual scenes
-- Historical GUI names such as `hello_world`, `rigid_cubes`, and
-  `drag_and_drop` - thin `dart::gui` launchers for migrated scenes
-- `gui_scene_diagnostics` - Backend-hidden GUI descriptor diagnostics
-- `unified_loading`, `headless_simulation`, `speed_test`, and `csv_logger` -
-  Maintained non-legacy examples
+- `dart-demos` - Runtime-switchable DART 7 World demo catalog
 
 Examples that depend on optional component libraries must guard on the required
 CMake targets before registering the executable. For example, a GUI example
-that also links `dart-simulation-experimental` should return early unless both
-`dart-gui` and `dart-simulation-experimental` exist; otherwise CI
-configurations that build examples while disabling that optional component can
+that also links `dart-simulation` should return early unless both
+`dart-gui` and `dart-simulation` exist; otherwise CI
+configurations that build examples with a skipped prerequisite target can
 register an executable that later fails to link. Validate this class of change
-with the relevant disabled-component build, for example:
-
-```bash
-DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE=OFF pixi run build-examples ON Release
-```
+with `pixi run build-examples ON Release`.
 
 ### Tutorial Executables
 
@@ -667,9 +659,9 @@ pixi run -e cuda test-all # Run CUDA-enabled full validation on Linux CUDA hosts
 #### Linting Tasks
 
 ```bash
-pixi run lint             # Format code + docs (C++, simulation-experimental, Python, YAML, TOML, MD) and lint RST
+pixi run lint             # Format code + docs (C++, simulation, Python, YAML, TOML, MD) and lint RST
 pixi run lint-cpp         # Format C++ code only
-pixi run lint-simulation-experimental       # Format simulation-experimental C++ sources
+pixi run lint-simulation  # Format simulation C++ sources
 pixi run lint-py          # Format Python code only
 pixi run lint-yaml        # Format YAML files
 pixi run lint-toml        # Format TOML files
@@ -677,7 +669,7 @@ pixi run lint-md          # Format Markdown files
 pixi run lint-rst         # Lint reStructuredText files
 pixi run check-lint       # Check formatting/linting (CI)
 pixi run check-lint-cpp   # Check C++ formatting
-pixi run check-lint-simulation-experimental # Check simulation-experimental formatting
+pixi run check-lint-simulation # Check simulation formatting
 pixi run check-lint-py    # Check Python formatting
 pixi run check-lint-yaml  # Check YAML formatting
 pixi run check-lint-rst   # Check reStructuredText files
@@ -686,9 +678,7 @@ pixi run check-lint-rst   # Check reStructuredText files
 #### Example/Tutorial Tasks
 
 ```bash
-pixi run ex-hello-world  # Run hello_world example
-pixi run ex-atlas-puppet # Run atlas_puppet example
-pixi run ex-atlas-simbicon # Run atlas_simbicon example
+pixi run demos -- --scene rigid_body # Run a DART 7 World demo scene
 
 pixi run tu-biped        # Run biped tutorial
 pixi run tu-collisions   # Run collisions tutorial

@@ -82,7 +82,7 @@ git checkout -b feature/my-awesome-feature
 ### 3. Make Your Changes
 
 - Write code following the [code style guide](code-style.md)
-- Keep legacy files in `dart/` and `python/dartpy/` using PascalCase names, but use snake_case for anything new in `dart/simulation/experimental/` and its related test/example directories (including `tests/unit/simulation/experimental/` and `tests/benchmark/simulation/experimental/`)
+- Keep legacy files in `dart/` and `python/dartpy/` using PascalCase names, but use snake_case for DART 7 simulation work in `dart/simulation/` and its related test/example directories (including `tests/unit/simulation/` and `tests/benchmark/simulation/`)
 - Add tests for new functionality
 - Update documentation if needed
 - If you use `docs/dev_tasks/<TASK>/` for tracking, keep it updated during work and remove the folder once the task is complete (after adding a brief note to the most relevant `docs/onboarding/*.md`)

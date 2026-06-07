@@ -1,6 +1,6 @@
 """World-loaded humanoid puppet scenes.
 
-These scenes bring back the DART 6 humanoid puppet seeds as experimental World
+These scenes bring back the DART 6 humanoid puppet seeds as DART 7 World
 model-loading demos. They intentionally stop short of the old whole-body IK and
 support-polygon tooling; the current value is proving that bundled humanoids
 load, expose named joints, and can be posed through the World surface.
@@ -12,9 +12,8 @@ from collections import deque
 from collections.abc import Callable, Mapping
 from typing import Any
 
-import numpy as np
-
 import dartpy as dart
+import numpy as np
 
 from .._world_bridge import WorldRenderBridge
 from ..runner import PythonDemoScene, ScenePanel, SceneSetup
@@ -201,9 +200,11 @@ def build_hubo() -> SceneSetup:
 
 
 def build_g1_placeholder() -> SceneSetup:
-    world = dart.gui.RenderWorld("g1_puppet_planned")
+    world = dart.gui.DescriptorRenderScene(dart.World(), "g1_puppet_planned")
     world.set_time_step(1.0 / 60.0)
-    frame = dart.SimpleFrame(dart.gui.world_render_frame(), "g1_puppet_marker", np.eye(4))
+    frame = dart.SimpleFrame(
+        dart.gui.world_render_frame(), "g1_puppet_marker", np.eye(4)
+    )
     frame.set_shape(dart.BoxShape(np.array([0.42, 0.42, 0.14])))
     frame.create_visual_aspect().set_color([0.35, 0.56, 0.86])
     world.add_simple_frame(frame)
@@ -229,7 +230,7 @@ ATLAS_PUPPET = PythonDemoScene(
     id="atlas_puppet",
     title="Atlas Puppet",
     category="Robot Models",
-    summary="Atlas v5 loaded into the experimental World with pose controls.",
+    summary="Atlas v5 loaded into the DART 7 World with pose controls.",
     build=build_atlas,
 )
 
@@ -237,7 +238,7 @@ HUBO_PUPPET = PythonDemoScene(
     id="hubo_puppet",
     title="Hubo Puppet",
     category="Robot Models",
-    summary="DRC-Hubo loaded into the experimental World with pose controls.",
+    summary="DRC-Hubo loaded into the DART 7 World with pose controls.",
     build=build_hubo,
 )
 

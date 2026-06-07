@@ -27,7 +27,7 @@ parallel to `DART_BUILD_GUI_FILAMENT`.
   Phase 4 blocker, not a parser bug.
 - The viewer example must target Filament + dartsim engine, not OSG
   (PLAN-060 / PLAN-090 retired OSG).
-- `dart::simulation::experimental` (PLAN-050) is the World target; the
+- `dart::simulation` (PLAN-050) is the World target; the
   legacy `dart::simulation::World` does not need a USD path.
 
 ## How to Resume

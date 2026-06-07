@@ -87,6 +87,11 @@ Then: <specific instruction, e.g., "Continue implementing X in file Y" or "Run t
 - Update `RESUME.md` **before** ending your session
 - Update after significant progress (don't wait until "done")
 - Keep it current — stale resume prompts are worse than none
+- Treat branch/status sections as snapshots from the last update. Before acting
+  on an existing `RESUME.md`, verify the current checkout with `git status` and
+  the task's `README.md`/durable design docs. If the code has landed or the
+  branch instructions are historical, add a short "Current Reality" note above
+  the older branch-local instructions instead of deleting useful archaeology.
 
 ### README.md Template
 
@@ -116,18 +121,21 @@ Then: <specific instruction, e.g., "Continue implementing X in file Y" or "Run t
 2. <specific action>
 ```
 
-### Examples (Active Tasks)
+### Current Active Tasks
 
-- `world_split/` - ECS world separation (design, migration docs)
+Current active tasks are the subdirectories under `docs/dev_tasks/`. Do not
+maintain a hardcoded inventory in this README because task folders are removed
+when their work completes. To inspect the current set:
+
+```bash
+find docs/dev_tasks -maxdepth 2 -type d -print
+```
 
 ## Structure
 
 - Each development task should live in its own subdirectory under `docs/dev_tasks/`.
-- If you can't find a task folder (e.g., it was renamed or removed after completion), list what exists:
-
-  ```bash
-  find docs/dev_tasks -maxdepth 2 -type d -print
-  ```
+- If you can't find a task folder, use the current-inventory command above
+  instead of relying on a hardcoded list.
 
 ## Documentation Principles
 

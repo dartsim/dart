@@ -1,7 +1,7 @@
 # PLAN-082: Linear-Time Variational Integrator (Discrete-Mechanics Solver)
 
 - Operating state: `PLAN-082` in [`dashboard.md`](dashboard.md)
-- Outcome: the experimental `World` offers a **variational integrator** as a
+- Outcome: the DART 7 `World` offers a **variational integrator** as a
   selectable integration family for multibody systems — symplectic,
   near-energy-conserving (for smooth conservative forcing at fixed `Δt`), and
   linear-time — implementing Lee/Liu/Park/Srinivasa (WAFR 2016,
@@ -10,19 +10,19 @@
 - Current evidence:
   - Durable design + math rationale and the honest new-vs-reused split:
     [`../design/simulation_variational_integrator.md`](../design/simulation_variational_integrator.md).
-  - The experimental multibody path is **semi-implicit Euler** with a **dense**
-    mass-matrix solve (`dart/simulation/experimental/compute/multibody_dynamics.cpp`
-    `computeMassAndBias` + `ldlt`); there is **no ABA/ABI** and **no
-    integrator-selection mechanism** today (adversarial review, 2026-05).
-  - Reusable O(n) spatial-algebra toolkit exists (`adjoint`, `motionCross`,
-    `spatialInertia`, `rotationExp/Log` (SO3), `jointSubspaceInJointFrame`,
-    `DynamicsTree`/`buildDynamicsTree`); twist/inertia conventions match the
-    paper (verified).
-  - Two-step-history precedent in-tree: `DeformableNodeState.previousPositions`
-    (`compute/world_step_stage.cpp`).
-  - Reference implementation (classic DART) and the paper's validation
-    experiments: `github.com/jslee02/wafr2016` (`dm_DRNEA_*`,
-    `computeImpulseForwardDynamics`, `experiments/`).
+  - Phases A1/A2/B1/B2 landed behind the `MultibodyOptions` method-family
+    selector (`WorldOptions::multibodyOptions`, `World::setMultibodyOptions`,
+    and dartpy `multibody_options`), with no public solver/stage/component leak.
+  - The O(n) inverse-mass path is implemented as
+    `computeMultibodyInverseMassProduct`; the dense mass-matrix path remains an
+    oracle/baseline, not the selected linear-time VI path.
+  - Phase C C1-C3 landed for the scoped envelope: link-point-vs-analytic-ground
+    contact, lagged friction, augmented-Lagrangian centering, serialized dual
+    state, and a link-vs-link sphere-sphere hook. Arbitrary link geometry and
+    the optional C4 hard barrier remain future work.
+  - Current implementation tracking, supported envelope, graduation criteria,
+    and paper-experiment replication live in
+    `docs/dev_tasks/variational_integrator_solver/`.
 
 ## Owner Docs
 
@@ -31,8 +31,8 @@
 - Solver architecture this plugs into:
   [`../design/simulation_solver_architecture.md`](../design/simulation_solver_architecture.md)
 - Public facade / capability matrix:
-  [`../design/simulation_experimental_cpp_api.md`](../design/simulation_experimental_cpp_api.md)
-- Contact/friction/inequality-constraint roadmap (deferred, go/no-go gated):
+  [`../design/simulation_cpp_api.md`](../design/simulation_cpp_api.md)
+- Contact/friction/inequality-constraint roadmap:
   [`082-variational-integrator-solver/contact-roadmap.md`](082-variational-integrator-solver/contact-roadmap.md)
 - Research catalog entry: `lee-vi-2016` in
   [`../readthedocs/papers.md`](../readthedocs/papers.md)
@@ -54,7 +54,7 @@
 Each phase lands as small verifiable slices; see the dev-task roadmap (once
 created) for slice-level detail.
 
-1. **Phase A1 — Fixed-base MVP, correctness-first (dense solve).**
+1. **Phase A1 — Fixed-base MVP, correctness-first (implemented).**
    Integration-family selector (pipeline substitution, not stage append); SE(3)
    `exp`/`log`, `dlog_V`/`dexp⁻¹` + transpose, `dAdT`; the DRNEA residual
    recursion; the RIQN outer loop with a **dense `M.ldlt().solve(Δt·e)`
@@ -62,21 +62,23 @@ created) for slice-level detail.
    previous-configuration State (+ serialization version bump, bootstrap-done
    flag); articulated total-mechanical-energy helper. Fixed-base open chains
    (revolute/prismatic), fixed `Δt`, passive + actuated. **No O(n) claim.**
-2. **Phase A2 — O(n) impulse-based ABI.** Implement and verify a Featherstone
+2. **Phase A2 — O(n) impulse-based ABI (implemented).** Implement and verify a Featherstone
    articulated-body-inertia recursion (modeled on the reference
    `computeImpulseForwardDynamics`); replace the dense inverse-mass apply with
    the O(n) `Δt·M⁻¹·e`. Unlocks the linear-time claim and the scaling gate.
-3. **Phase B1 — Floating base.** Extend DRNEA/RIQN/ABI to a floating root,
+3. **Phase B1 — Floating base (implemented).** Extend DRNEA/RIQN/ABI to a floating root,
    including manifold-correct velocity reconstruction and RIQN retraction for
    `SE(3)`/`SO(3)` joints (net-new; the reference impl has open TODOs here).
-4. **Phase B2 — Holonomic constraints (loop closures).** A constraint Jacobian
+4. **Phase B2 — Holonomic constraints (loop closures, implemented).** A constraint Jacobian
    `∂g/∂q` from the existing body Jacobians; an impulse-based constraint-force
    solve folded into RIQN (the paper's Sec. 5 sketch); make the loop-closure
    `Solve` dynamics policy supported (currently rejected at step time) for the
    variational stage only.
-5. **Phase C — Contact & friction (DEFERRED, separate go/no-go).** Per the
-   contact-roadmap sidecar; blocked on a contact-query-at-trial-configuration
-   redesign. Not part of the initial commitment.
+5. **Phase C — Contact & friction (C1-C3 implemented; broader geometry
+   deferred).** Per the contact-roadmap sidecar: the supported envelope now has
+   ground point contact, lagged friction, AL centering, and a sphere-sphere link
+   slice. The remaining PLAN-scale work is arbitrary link-geometry candidate
+   generation/query-at-trial-configuration and the optional C4 hard barrier.
 6. **Surface & docs (incremental).** dartpy selector binding + import coverage;
    a headless example/GUI smoke once a demonstrative scene exists; capability
    matrix and changelog updates per phase.
@@ -117,7 +119,7 @@ recorded measurements, mirroring PLAN-080/081 rigor.
   ECS storage; selection is by documented method-family name only; unsupported
   requests return documented errors.
 - **Gates per PR:** `pixi run lint`, `pixi run build`, focused
-  `tests/unit/simulation/experimental/` tests, `test-py` when bindings change,
+  `tests/unit/simulation/` tests, `test-py` when bindings change,
   benchmark JSON for performance claims, changelog entry.
 
 ## Revision Triggers
@@ -132,9 +134,9 @@ recorded measurements, mirroring PLAN-080/081 rigor.
 
 ## Next Step
 
-Run the Phase A2 de-risking spike **first** (a standalone, verified O(n)
-impulse-ABI over `DynamicsTree`, benchmarked `Δt·M⁻¹·e` vs DOF) to confirm the
-linear-time premise, then start Phase A1 under a new
-`docs/dev_tasks/variational_integrator_solver/` folder. If ABI proves
-infeasible to commit, rescope to the dense placeholder and drop the linear-time
-claim before writing VI code.
+Continue from the current dev-task evidence: either open the maintainer-owned
+graduation proposal that links `graduation-criteria.md`, `supported-envelope.md`,
+and `performance.md`, or start the separate arbitrary-geometry contact adapter
+workstream coordinated with the rigid IPC / deformable IPC geometry stack. Do
+not rerun the old Phase A2 de-risking sequence as if the ABI/selector were still
+missing.

@@ -3,6 +3,7 @@
 #include "common/eigen_utils.hpp"
 #include "common/polymorphic_utils.hpp"
 #include "dart/constraint/ball_joint_constraint.hpp"
+#include "dart/constraint/cylindrical_joint_constraint.hpp"
 #include "dart/constraint/dynamic_joint_constraint.hpp"
 #include "dart/constraint/revolute_joint_constraint.hpp"
 #include "dart/constraint/weld_joint_constraint.hpp"
@@ -21,6 +22,8 @@ void defDynamicJointConstraint(nb::module_& m)
 {
   using DynamicJointConstraint = dart::constraint::DynamicJointConstraint;
   using BallJointConstraint = dart::constraint::BallJointConstraint;
+  using CylindricalJointConstraint
+      = dart::constraint::CylindricalJointConstraint;
   using RevoluteJointConstraint = dart::constraint::RevoluteJointConstraint;
   using WeldJointConstraint = dart::constraint::WeldJointConstraint;
 
@@ -85,6 +88,50 @@ void defDynamicJointConstraint(nb::module_& m)
           })
       .def_static("getStaticType", []() {
         return std::string(BallJointConstraint::getStaticType());
+      });
+
+  nb::class_<CylindricalJointConstraint, DynamicJointConstraint>(
+      m, "CylindricalJointConstraint")
+      .def(
+          nb::new_([](dart::dynamics::BodyNode* bodyNode,
+                      nb::handle jointPosition,
+                      nb::handle axis) {
+            return new CylindricalJointConstraint(
+                bodyNode, toVector3(jointPosition), toVector3(axis));
+          }),
+          nb::arg("body_node"),
+          nb::arg("joint_position"),
+          nb::arg("axis"),
+          nb::keep_alive<1, 2>())
+      .def(
+          nb::new_([](nb::handle bodyNode1,
+                      nb::handle bodyNode2,
+                      nb::handle jointPosition,
+                      nb::handle axis1,
+                      nb::handle axis2) {
+            auto& node1 = refFromHandle<dart::dynamics::BodyNode>(bodyNode1);
+            auto& node2 = refFromHandle<dart::dynamics::BodyNode>(bodyNode2);
+            return new CylindricalJointConstraint(
+                &node1,
+                &node2,
+                toVector3(jointPosition),
+                toVector3(axis1),
+                toVector3(axis2));
+          }),
+          nb::arg("body_node1"),
+          nb::arg("body_node2"),
+          nb::arg("joint_position"),
+          nb::arg("axis1"),
+          nb::arg("axis2"),
+          nb::keep_alive<1, 2>(),
+          nb::keep_alive<1, 3>())
+      .def(
+          "getType",
+          [](const CylindricalJointConstraint& self) {
+            return std::string(self.getType());
+          })
+      .def_static("getStaticType", []() {
+        return std::string(CylindricalJointConstraint::getStaticType());
       });
 
   nb::class_<RevoluteJointConstraint, DynamicJointConstraint>(

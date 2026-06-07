@@ -42,10 +42,7 @@ target_include_directories(
 
 target_compile_features(${target_name} PUBLIC cxx_std_20)
 
-target_link_libraries(
-  ${target_name}
-  PUBLIC dart-simulation-experimental Eigen3::Eigen
-)
+target_link_libraries(${target_name} PUBLIC dart-simulation Eigen3::Eigen)
 
 # Allow linking into shared targets (e.g. the GUI app) later.
 set_target_properties(${target_name} PROPERTIES POSITION_INDEPENDENT_CODE ON)

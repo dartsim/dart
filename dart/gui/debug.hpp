@@ -148,6 +148,9 @@ DART_GUI_API std::vector<DebugLineDescriptor> extractContactDebugLines(
     const DebugDrawOptions& options = {});
 
 DART_GUI_API std::vector<DebugLineDescriptor> extractDebugLines(
+    const DebugDrawOptions& options = {});
+
+DART_GUI_API std::vector<DebugLineDescriptor> extractDebugLines(
     const simulation::World& world, const DebugDrawOptions& options = {});
 
 } // namespace dart::gui

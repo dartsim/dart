@@ -15,12 +15,6 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
- *   * This code incorporates portions of Open Dynamics Engine
- *     (Copyright (c) 2001-2004, Russell L. Smith. All rights
- *     reserved.) and portions of FCL (Copyright (c) 2011, Willow
- *     Garage, Inc. All rights reserved.), which were released under
- *     the same BSD license as below
- *
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
  *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -38,974 +32,4999 @@
 
 #include "dart/simulation/world.hpp"
 
-#include "dart/collision/collision_detector.hpp"
-#include "dart/collision/collision_group.hpp"
-#include "dart/common/diagnostics.hpp"
-#include "dart/common/exception.hpp"
-#include "dart/common/logging.hpp"
-#include "dart/common/macros.hpp"
-#include "dart/common/profile.hpp"
-#include "dart/common/string.hpp"
-#include "dart/constraint/boxed_lcp_constraint_solver.hpp"
-#include "dart/constraint/constrained_group.hpp"
-#include "dart/constraint/constraint_solver.hpp"
-#include "dart/dynamics/skeleton.hpp"
-#include "dart/math/lcp/pivoting/dantzig_solver.hpp"
-#include "dart/math/lcp/pivoting/lemke_solver.hpp"
-#include "dart/math/lcp/projection/pgs_solver.hpp"
+#include "dart/collision/native/collision_object.hpp"
+#include "dart/collision/native/collision_world.hpp"
+#include "dart/collision/native/contact_manifold.hpp"
+#include "dart/collision/native/contact_point.hpp"
+#include "dart/collision/native/shapes/shape.hpp"
+#include "dart/collision/native/types.hpp"
+#include "dart/simulation/body/contact.hpp"
+#include "dart/simulation/body/deformable_body.hpp"
+#include "dart/simulation/body/rigid_body.hpp"
+#include "dart/simulation/common/ecs_utils.hpp"
+#include "dart/simulation/common/exceptions.hpp"
+#include "dart/simulation/comps/all.hpp"
+#include "dart/simulation/compute/detail/deformable_avbd_replay_state.hpp"
+#include "dart/simulation/compute/multibody_dynamics.hpp"
+#include "dart/simulation/compute/sequential_executor.hpp"
+#include "dart/simulation/compute/variational_integration.hpp"
+#include "dart/simulation/compute/world_kinematics_graph.hpp"
+#include "dart/simulation/compute/world_step_stage.hpp"
+#include "dart/simulation/constraint/loop_closure.hpp"
+#include "dart/simulation/constraint/loop_closure_spec.hpp"
+#include "dart/simulation/detail/deformable_vbd/rigid_world_contact.hpp"
+#include "dart/simulation/detail/entity_conversion.hpp"
+#include "dart/simulation/detail/world_registry_access.hpp"
+#include "dart/simulation/detail/world_step_schedule.hpp"
+#include "dart/simulation/detail/world_storage.hpp"
+#include "dart/simulation/diff/physical_parameter.hpp"
+#include "dart/simulation/diff/step_derivatives.hpp"
+#include "dart/simulation/diff/step_gradient.hpp"
+#include "dart/simulation/frame/fixed_frame.hpp"
+#include "dart/simulation/frame/frame.hpp"
+#include "dart/simulation/frame/free_frame.hpp"
+#include "dart/simulation/io/binary_io.hpp"
+#include "dart/simulation/io/serializer.hpp"
+#include "dart/simulation/multibody/joint.hpp"
+#include "dart/simulation/multibody/multibody.hpp"
+#include "dart/simulation/world_options.hpp"
 
-#include <iostream>
+#include <dart/config.hpp>
+
+#ifdef DART_HAS_DIFF
+  #include "dart/simulation/detail/contact_jacobians.hpp"
+  #include "dart/simulation/detail/smooth_jacobians.hpp"
+#endif
+
+#include <Eigen/Cholesky>
+
+#include <algorithm>
+#include <array>
+#include <format>
+#include <istream>
+#include <limits>
+#include <map>
+#include <memory>
+#include <ostream>
+#include <set>
+#include <span>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
 #include <cmath>
+#include <cstdint>
 
-namespace dart {
-namespace simulation {
+#if DART_BUILD_PROFILE
+  #include <chrono>
+#endif
 
 namespace {
 
-using dart::collision::CollisionDetector;
-using dart::collision::CollisionDetectorPtr;
+#if DART_BUILD_PROFILE
+using StepProfileClock = std::chrono::steady_clock;
 
-std::string toCollisionDetectorKey(CollisionDetectorType type)
+struct StepProfileTimer
 {
-  switch (type) {
-    case CollisionDetectorType::Dart:
-      return "dart";
-    case CollisionDetectorType::Fcl:
-      return "fcl";
-    case CollisionDetectorType::Bullet:
-      return "bullet";
-    case CollisionDetectorType::Ode:
-      return "ode";
-    case CollisionDetectorType::Experimental:
-      return "experimental";
-  }
-
-  DART_FATAL(
-      "Encountered unsupported CollisionDetectorType value: {}.",
-      static_cast<int>(type));
-  return "dart";
-}
-
-CollisionDetectorPtr tryCreateCollisionDetector(const std::string& requestedKey)
-{
-  if (requestedKey.empty()) {
-    return nullptr;
-  }
-
-  auto key = common::toLower(requestedKey);
-
-  auto* factory = CollisionDetector::getFactory();
-  DART_ASSERT(factory);
-  if (!factory->canCreate(key)) {
-    return nullptr;
-  }
-
-  auto detector = factory->create(key);
-  if (!detector) {
-    DART_WARN(
-        "Failed to create collision detector '{}' even though the factory "
-        "reported it was available.",
-        key);
-  }
-
-  return detector;
-}
-
-CollisionDetectorPtr tryCreateCollisionDetector(CollisionDetectorType type)
-{
-  return tryCreateCollisionDetector(toCollisionDetectorKey(type));
-}
-
-CollisionDetectorPtr resolveCollisionDetector(const WorldConfig& config)
-{
-  const auto requestedType = config.collisionDetector;
-  const auto requestedKey = toCollisionDetectorKey(requestedType);
-  if (auto detector = tryCreateCollisionDetector(requestedType)) {
-    return detector;
-  }
-
-  const auto tryFallback
-      = [&](CollisionDetectorType fallbackType) -> CollisionDetectorPtr {
-    if (requestedType == fallbackType) {
-      return nullptr;
+  explicit StepProfileTimer(bool enabled_) : enabled(enabled_)
+  {
+    if (enabled) {
+      start = StepProfileClock::now();
     }
+  }
 
-    const auto fallbackKey = toCollisionDetectorKey(fallbackType);
-    DART_WARN(
-        "WorldConfig requested collision detector '{}', but it is not "
-        "available. Falling back to '{}'.",
-        requestedKey,
-        fallbackKey);
+  void finish(dart::simulation::compute::WorldStepProfile& profile) const
+  {
+    if (enabled) {
+      profile.wallTime = StepProfileClock::now() - start;
+    }
+  }
 
-    return tryCreateCollisionDetector(fallbackType);
+  bool enabled = false;
+  StepProfileClock::time_point start{};
+};
+#endif
+
+template <typename... Components>
+std::size_t countEntities(const auto& registry)
+{
+  std::size_t count = 0;
+  auto view = registry.template view<Components...>();
+  for (auto entity : view) {
+    (void)entity;
+    ++count;
+  }
+  return count;
+}
+
+template <typename Component>
+bool hasEntityWithName(const auto& registry, std::string_view name)
+{
+  auto view
+      = registry.template view<Component, dart::simulation::comps::Name>();
+  for (auto entity : view) {
+    const auto& info = view.template get<dart::simulation::comps::Name>(entity);
+    if (info.name == name) {
+      return true;
+    }
+  }
+  return false;
+}
+
+} // namespace
+
+namespace dart::simulation {
+
+namespace ncol = dart::collision::native;
+
+namespace compute {
+void reserveDeformableDynamicsRegistryStorage(
+    detail::WorldRegistry& registry, std::size_t deformableBodyCount);
+void reserveMultibodyDynamicsRegistryStorage(
+    detail::WorldRegistry& registry, std::size_t multibodyCount);
+} // namespace compute
+
+struct World::CollisionQueryCache
+{
+  struct Key
+  {
+    entt::entity entity;
+    std::size_t shapeIndex;
+    std::uint64_t geometryRevision;
+    entt::entity multibody;
+    bool isLink;
+
+    bool operator==(const Key&) const = default;
   };
 
-  // Fallback chain: requested -> dart -> experimental -> fcl
-  if (auto fallback = tryFallback(CollisionDetectorType::Dart)) {
-    return fallback;
-  }
-  if (auto fallback = tryFallback(CollisionDetectorType::Experimental)) {
-    return fallback;
-  }
-  if (auto fallback = tryFallback(CollisionDetectorType::Fcl)) {
-    return fallback;
+  struct ObjectEntry
+  {
+    entt::entity entity;
+    entt::entity multibody;
+    bool isLink;
+    ncol::CollisionObject object;
+  };
+
+  struct ShapeEntrySpec
+  {
+    Key key;
+    const CollisionShape* shape;
+    Eigen::Isometry3d pose;
+  };
+
+  void clearObjectsAndResultsPreservingSpecs()
+  {
+    // queryContacts() rebuilds native objects from `specs` after this call, so
+    // keep that vector intact while clearing the derived native/query state.
+    collisionWorld.clear();
+    keys.clear();
+    entries.clear();
+    entryByObjectId.clear();
+    candidatePairs.pairs.clear();
+    candidatePairs.numObjects = 0;
+    contacts.clear();
+    pairResult.clear();
   }
 
-  DART_WARN(
-      "Collision detector '{}' is not available and fallbacks also "
-      "failed. "
-      "The world will keep its existing collision detector.",
-      requestedKey);
-  return nullptr;
+  void clear()
+  {
+    clearObjectsAndResultsPreservingSpecs();
+    specs.clear();
+  }
+
+  ncol::CollisionWorld collisionWorld;
+  std::vector<Key> keys;
+  std::vector<ObjectEntry> entries;
+  std::vector<std::size_t> entryByObjectId;
+  std::vector<ShapeEntrySpec> specs;
+  ncol::BroadPhaseSnapshot candidatePairs;
+  std::vector<Contact> contacts;
+  ncol::CollisionResult pairResult;
+};
+
+struct World::ReplayState
+{
+  template <typename Component>
+  using ComponentSnapshot = std::vector<std::pair<entt::entity, Component>>;
+
+  struct JointLayoutState
+  {
+    comps::JointType type = comps::JointType::Revolute;
+    comps::ActuatorType actuatorType = comps::ActuatorType::Force;
+    std::string name;
+    Eigen::VectorXd springStiffness;
+    Eigen::VectorXd dampingCoefficient;
+    Eigen::VectorXd restPosition;
+    Eigen::VectorXd armature;
+    Eigen::VectorXd coulombFriction;
+    double breakForce = 0.0;
+    comps::JointLimits limits;
+    Eigen::Vector3d axis = Eigen::Vector3d::UnitZ();
+    Eigen::Vector3d axis2 = Eigen::Vector3d::UnitX();
+    double pitch = 0.0;
+    entt::entity parentLink = entt::null;
+    entt::entity childLink = entt::null;
+    bool hasRigidBodyFixedJointAnchors = false;
+    Eigen::Vector3d rigidBodyFixedJointLocalAnchorParent
+        = Eigen::Vector3d::Zero();
+    Eigen::Vector3d rigidBodyFixedJointLocalAnchorChild
+        = Eigen::Vector3d::Zero();
+    Eigen::Quaterniond rigidBodyFixedJointTargetRelativeOrientation
+        = Eigen::Quaterniond::Identity();
+  };
+
+  struct JointState
+  {
+    entt::entity entity = entt::null;
+    JointLayoutState layout;
+    Eigen::VectorXd position;
+    Eigen::VectorXd velocity;
+    Eigen::VectorXd acceleration;
+    Eigen::VectorXd torque;
+    Eigen::VectorXd commandVelocity;
+    bool broken = false;
+  };
+
+  struct LinkState
+  {
+    entt::entity entity = entt::null;
+    comps::MassProperties massProperties;
+    std::optional<comps::CollisionGeometry> collisionGeometry;
+    Eigen::Matrix<double, 6, 1> externalForce
+        = Eigen::Matrix<double, 6, 1>::Zero();
+  };
+
+  struct PublicFrameState
+  {
+    entt::entity entity = entt::null;
+    comps::FrameState frameState;
+    std::optional<comps::FreeFrameProperties> freeFrameProperties;
+    std::optional<comps::FixedFrameProperties> fixedFrameProperties;
+  };
+
+  struct LoopClosureState
+  {
+    entt::entity entity = entt::null;
+    std::string name;
+    comps::LoopClosure loopClosure;
+  };
+
+  struct RigidBodyState
+  {
+    entt::entity entity = entt::null;
+    comps::Transform transform;
+    comps::Velocity velocity;
+    comps::Force force;
+    comps::MassProperties massProperties;
+    entt::entity parentFrame = entt::null;
+    std::optional<comps::ContactMaterial> contactMaterial;
+    std::optional<comps::CollisionGeometry> collisionGeometry;
+    bool isStatic = false;
+    bool isKinematic = false;
+    bool hasDeformableGroundBarrier = false;
+    bool hasDeformableSurfaceCcdObstacle = false;
+    bool hasDeformableObstacleNoCcd = false;
+  };
+
+  struct Frame
+  {
+    bool simulationMode = false;
+    Eigen::Vector3d gravity{0.0, 0.0, -9.81};
+    RigidBodySolver rigidBodySolver{RigidBodySolver::SequentialImpulse};
+    double timeStep = 0.001;
+    bool differentiable = false;
+    ContactSolverMethod contactSolverMethod{
+        ContactSolverMethod::SequentialImpulse};
+    ContactGradientMode contactGradientMode{ContactGradientMode::Analytic};
+    double time = 0.0;
+    std::size_t frame = 0;
+    DeformableSolverDiagnostics deformableSolverDiagnostics{};
+    double rigidIpcAdaptiveBarrierStiffnessLowerBound = 1.0;
+    MultibodyIntegrationMethod multibodyIntegrationMethod{
+        MultibodyIntegrationMethod::SemiImplicit};
+    std::optional<StepDerivatives> stepDerivatives;
+    std::vector<std::pair<entt::entity, PhysicalParameter>>
+        differentiableParameters;
+
+    ComponentSnapshot<comps::DeformableNodeState> deformableNodeStates;
+    std::vector<compute::avbd_replay::DeformableAvbdWarmStartReplayState>
+        deformableAvbdWarmStartStates;
+    ComponentSnapshot<compute::MultibodyVariationalState>
+        multibodyVariationalStates;
+    ComponentSnapshot<comps::VariationalContactDualState>
+        variationalContactDualStates;
+    std::vector<JointState> joints;
+    std::vector<LinkState> links;
+    std::vector<PublicFrameState> publicFrames;
+    std::vector<LoopClosureState> loopClosures;
+    std::vector<RigidBodyState> rigidBodies;
+  };
+
+  bool recordingEnabled = false;
+  std::vector<Frame> frames;
+  std::optional<std::size_t> cursor;
+};
+
+namespace {
+
+template <typename View>
+std::size_t countReplayView(const View& view)
+{
+  std::size_t count = 0;
+  for (auto entity : view) {
+    static_cast<void>(entity);
+    ++count;
+  }
+  return count;
 }
 
-math::LcpSolverPtr createLcpSolver(LcpSolverType type)
+bool sameReplayVector(const Eigen::VectorXd& lhs, const Eigen::VectorXd& rhs)
+{
+  return lhs.size() == rhs.size() && (lhs.array() == rhs.array()).all();
+}
+
+bool sameReplayJointLimits(
+    const comps::JointLimits& lhs, const comps::JointLimits& rhs)
+{
+  return sameReplayVector(lhs.lower, rhs.lower)
+         && sameReplayVector(lhs.upper, rhs.upper)
+         && sameReplayVector(lhs.velocityLower, rhs.velocityLower)
+         && sameReplayVector(lhs.velocityUpper, rhs.velocityUpper)
+         && sameReplayVector(lhs.effortLower, rhs.effortLower)
+         && sameReplayVector(lhs.effortUpper, rhs.effortUpper);
+}
+
+template <typename JointLayout>
+bool sameReplayJointLayout(const comps::Joint& joint, const JointLayout& layout)
+{
+  return joint.type == layout.type && joint.actuatorType == layout.actuatorType
+         && joint.name == layout.name
+         && sameReplayVector(joint.springStiffness, layout.springStiffness)
+         && sameReplayVector(
+             joint.dampingCoefficient, layout.dampingCoefficient)
+         && sameReplayVector(joint.restPosition, layout.restPosition)
+         && sameReplayVector(joint.armature, layout.armature)
+         && sameReplayVector(joint.coulombFriction, layout.coulombFriction)
+         && joint.breakForce == layout.breakForce
+         && sameReplayJointLimits(joint.limits, layout.limits)
+         && joint.axis.isApprox(layout.axis, 0.0)
+         && joint.axis2.isApprox(layout.axis2, 0.0)
+         && joint.pitch == layout.pitch && joint.parentLink == layout.parentLink
+         && joint.childLink == layout.childLink
+         && joint.hasRigidBodyFixedJointAnchors
+                == layout.hasRigidBodyFixedJointAnchors
+         && joint.rigidBodyFixedJointLocalAnchorParent.isApprox(
+             layout.rigidBodyFixedJointLocalAnchorParent, 0.0)
+         && joint.rigidBodyFixedJointLocalAnchorChild.isApprox(
+             layout.rigidBodyFixedJointLocalAnchorChild, 0.0)
+         && joint.rigidBodyFixedJointTargetRelativeOrientation.coeffs()
+                .isApprox(
+                    layout.rigidBodyFixedJointTargetRelativeOrientation
+                        .coeffs(),
+                    0.0);
+}
+
+template <typename Component>
+std::optional<Component> captureReplayOptionalComponent(
+    const detail::WorldRegistry& registry, entt::entity entity)
+{
+  if (const auto* component = registry.try_get<Component>(entity)) {
+    return *component;
+  }
+
+  return std::nullopt;
+}
+
+bool sameReplayMassProperties(
+    const comps::MassProperties& lhs, const comps::MassProperties& rhs)
+{
+  return lhs.mass == rhs.mass && lhs.inertia.isApprox(rhs.inertia, 0.0)
+         && lhs.localCenterOfMass.isApprox(rhs.localCenterOfMass, 0.0);
+}
+
+bool sameReplayContactMaterial(
+    const std::optional<comps::ContactMaterial>& lhs,
+    const comps::ContactMaterial* rhs)
+{
+  if (lhs.has_value() != (rhs != nullptr)) {
+    return false;
+  }
+
+  if (!lhs) {
+    return true;
+  }
+
+  return lhs->restitution == rhs->restitution && lhs->friction == rhs->friction;
+}
+
+bool sameReplayCollisionShape(
+    const CollisionShape& lhs, const CollisionShape& rhs)
+{
+  if (lhs.type != rhs.type || lhs.radius != rhs.radius
+      || !lhs.halfExtents.isApprox(rhs.halfExtents, 0.0)
+      || !lhs.localTransform.matrix().isApprox(rhs.localTransform.matrix(), 0.0)
+      || !lhs.normal.isApprox(rhs.normal, 0.0) || lhs.offset != rhs.offset
+      || lhs.vertices.size() != rhs.vertices.size()
+      || lhs.triangles.size() != rhs.triangles.size()) {
+    return false;
+  }
+
+  for (std::size_t i = 0; i < lhs.vertices.size(); ++i) {
+    if (!lhs.vertices[i].isApprox(rhs.vertices[i], 0.0)) {
+      return false;
+    }
+  }
+
+  for (std::size_t i = 0; i < lhs.triangles.size(); ++i) {
+    if (!(lhs.triangles[i].array() == rhs.triangles[i].array()).all()) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+bool sameReplayCollisionGeometry(
+    const std::optional<comps::CollisionGeometry>& lhs,
+    const comps::CollisionGeometry* rhs)
+{
+  if (lhs.has_value() != (rhs != nullptr)) {
+    return false;
+  }
+
+  if (!lhs) {
+    return true;
+  }
+
+  if (lhs->revision != rhs->revision
+      || lhs->shapes.size() != rhs->shapes.size()) {
+    return false;
+  }
+
+  for (std::size_t i = 0; i < lhs->shapes.size(); ++i) {
+    if (!sameReplayCollisionShape(lhs->shapes[i], rhs->shapes[i])) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+bool sameReplayLoopClosureRuntimePolicy(
+    const LoopClosureRuntimePolicy& lhs, const LoopClosureRuntimePolicy& rhs)
+{
+  return lhs.enabled == rhs.enabled && lhs.kinematics == rhs.kinematics
+         && lhs.dynamics == rhs.dynamics;
+}
+
+bool sameReplayLoopClosure(
+    const comps::LoopClosure& lhs, const comps::LoopClosure& rhs)
+{
+  return lhs.family == rhs.family && lhs.frameA == rhs.frameA
+         && lhs.frameB == rhs.frameB
+         && lhs.offsetA.matrix().isApprox(rhs.offsetA.matrix(), 0.0)
+         && lhs.offsetB.matrix().isApprox(rhs.offsetB.matrix(), 0.0)
+         && sameReplayLoopClosureRuntimePolicy(
+             lhs.runtimePolicy, rhs.runtimePolicy)
+         && lhs.distance == rhs.distance;
+}
+
+template <typename RigidBodyStates>
+std::size_t findReplayRigidBodyStateIndex(
+    const RigidBodyStates& states, entt::entity entity)
+{
+  for (std::size_t i = 0; i < states.size(); ++i) {
+    if (states[i].entity == entity) {
+      return i;
+    }
+  }
+
+  return states.size();
+}
+
+template <typename PublicFrameStates>
+std::size_t findReplayPublicFrameStateIndex(
+    const PublicFrameStates& states, entt::entity entity)
+{
+  for (std::size_t i = 0; i < states.size(); ++i) {
+    if (states[i].entity == entity) {
+      return i;
+    }
+  }
+
+  return states.size();
+}
+
+template <typename RigidBodyStates, typename PublicFrameStates>
+entt::entity findNearestReplayRigidBodyAncestor(
+    const detail::WorldRegistry& registry,
+    entt::entity entity,
+    const RigidBodyStates& rigidBodyStates,
+    const PublicFrameStates& publicFrameStates)
+{
+  while (entity != entt::null) {
+    if (findReplayRigidBodyStateIndex(rigidBodyStates, entity)
+        != rigidBodyStates.size()) {
+      return entity;
+    }
+
+    const auto publicFrameStateIndex
+        = findReplayPublicFrameStateIndex(publicFrameStates, entity);
+    if (publicFrameStateIndex != publicFrameStates.size()) {
+      entity = publicFrameStates[publicFrameStateIndex].frameState.parentFrame;
+      continue;
+    }
+
+    const auto* frameState = registry.try_get<comps::FrameState>(entity);
+    DART_SIMULATION_THROW_T_IF(
+        !frameState,
+        InvalidOperationException,
+        "Cannot restore replay frame: RigidBody frame hierarchy changed");
+
+    entity = frameState->parentFrame;
+  }
+
+  return entt::null;
+}
+
+template <typename RigidBodyStates, typename PublicFrameStates>
+void appendReplayRigidBodyParentBeforeChild(
+    const detail::WorldRegistry& registry,
+    const RigidBodyStates& states,
+    const PublicFrameStates& publicFrameStates,
+    std::vector<int>& visitState,
+    std::vector<std::size_t>& ordered,
+    std::size_t index)
+{
+  if (visitState[index] == 2) {
+    return;
+  }
+
+  DART_SIMULATION_THROW_T_IF(
+      visitState[index] == 1,
+      InvalidOperationException,
+      "Cannot restore replay frame: RigidBody frame hierarchy contains a "
+      "cycle");
+
+  visitState[index] = 1;
+
+  const auto parentRigidBody = findNearestReplayRigidBodyAncestor(
+      registry, states[index].parentFrame, states, publicFrameStates);
+  if (parentRigidBody != entt::null) {
+    const auto parentIndex
+        = findReplayRigidBodyStateIndex(states, parentRigidBody);
+    DART_SIMULATION_THROW_T_IF(
+        parentIndex == states.size(),
+        InvalidOperationException,
+        "Cannot restore replay frame: RigidBody ancestor is missing");
+
+    appendReplayRigidBodyParentBeforeChild(
+        registry, states, publicFrameStates, visitState, ordered, parentIndex);
+  }
+
+  visitState[index] = 2;
+  ordered.push_back(index);
+}
+
+template <typename RigidBodyStates, typename PublicFrameStates>
+std::vector<std::size_t> orderReplayRigidBodiesParentBeforeChild(
+    const detail::WorldRegistry& registry,
+    const RigidBodyStates& states,
+    const PublicFrameStates& publicFrameStates)
+{
+  std::vector<std::size_t> ordered;
+  ordered.reserve(states.size());
+
+  std::vector<int> visitState(states.size(), 0);
+  for (std::size_t i = 0; i < states.size(); ++i) {
+    appendReplayRigidBodyParentBeforeChild(
+        registry, states, publicFrameStates, visitState, ordered, i);
+  }
+
+  return ordered;
+}
+
+template <typename Component>
+std::vector<std::pair<entt::entity, Component>> captureReplayComponents(
+    const detail::WorldRegistry& registry)
+{
+  std::vector<std::pair<entt::entity, Component>> snapshot;
+  auto view = registry.view<Component>();
+  snapshot.reserve(countReplayView(view));
+  for (auto entity : view) {
+    snapshot.emplace_back(entity, view.template get<Component>(entity));
+  }
+  std::ranges::sort(snapshot, [](const auto& lhs, const auto& rhs) {
+    return static_cast<std::uint32_t>(lhs.first)
+           < static_cast<std::uint32_t>(rhs.first);
+  });
+  return snapshot;
+}
+
+template <typename Component, typename Snapshot>
+void validateReplayComponents(
+    const detail::WorldRegistry& registry,
+    const Snapshot& snapshot,
+    std::string_view componentName)
+{
+  auto view = registry.view<Component>();
+  DART_SIMULATION_THROW_T_IF(
+      countReplayView(view) != snapshot.size(),
+      InvalidOperationException,
+      "Cannot restore replay frame: {} component count changed",
+      componentName);
+
+  for (const auto& [entity, component] : snapshot) {
+    DART_SIMULATION_THROW_T_IF(
+        !registry.valid(entity),
+        InvalidOperationException,
+        "Cannot restore replay frame: {} references an entity that no longer "
+        "exists",
+        componentName);
+    DART_SIMULATION_THROW_T_IF(
+        !registry.all_of<Component>(entity),
+        InvalidOperationException,
+        "Cannot restore replay frame: {} references an entity with changed "
+        "component layout",
+        componentName);
+  }
+}
+
+template <typename Component, typename Snapshot, typename EntityPredicate>
+void validateReplayTransientComponents(
+    const detail::WorldRegistry& registry,
+    const Snapshot& snapshot,
+    std::string_view componentName,
+    EntityPredicate&& entityPredicate)
+{
+  for (const auto& [entity, component] : snapshot) {
+    static_cast<void>(component);
+    DART_SIMULATION_THROW_T_IF(
+        !registry.valid(entity),
+        InvalidOperationException,
+        "Cannot restore replay frame: {} references an entity that no longer "
+        "exists",
+        componentName);
+    DART_SIMULATION_THROW_T_IF(
+        !entityPredicate(registry, entity),
+        InvalidOperationException,
+        "Cannot restore replay frame: {} references an entity with changed "
+        "component layout",
+        componentName);
+  }
+}
+
+template <typename Component, typename Snapshot>
+void restoreReplayComponents(
+    detail::WorldRegistry& registry,
+    const Snapshot& snapshot,
+    std::string_view componentName)
+{
+  validateReplayComponents<Component>(registry, snapshot, componentName);
+
+  for (const auto& [entity, component] : snapshot) {
+    registry.replace<Component>(entity, component);
+  }
+}
+
+template <typename Component, typename Snapshot, typename EntityPredicate>
+void restoreReplayTransientComponents(
+    detail::WorldRegistry& registry,
+    const Snapshot& snapshot,
+    std::string_view componentName,
+    EntityPredicate&& entityPredicate)
+{
+  validateReplayTransientComponents<Component>(
+      registry, snapshot, componentName, entityPredicate);
+
+  std::vector<std::uint32_t> snapshotEntities;
+  snapshotEntities.reserve(snapshot.size());
+  for (const auto& [entity, component] : snapshot) {
+    static_cast<void>(component);
+    snapshotEntities.push_back(static_cast<std::uint32_t>(entity));
+  }
+  std::ranges::sort(snapshotEntities);
+
+  std::vector<entt::entity> staleEntities;
+  auto view = registry.view<Component>();
+  for (auto entity : view) {
+    if (!std::ranges::binary_search(
+            snapshotEntities, static_cast<std::uint32_t>(entity))) {
+      staleEntities.push_back(entity);
+    }
+  }
+  for (auto entity : staleEntities) {
+    registry.remove<Component>(entity);
+  }
+
+  for (const auto& [entity, component] : snapshot) {
+    registry.emplace_or_replace<Component>(entity, component);
+  }
+}
+
+bool isReplayPublicFrameEntity(
+    const detail::WorldRegistry& registry, entt::entity entity)
+{
+  return registry.all_of<comps::FrameState, comps::FrameCache>(entity)
+         && !registry.all_of<comps::RigidBodyTag>(entity)
+         && !registry.all_of<comps::Link>(entity)
+         && (registry.all_of<comps::FreeFrameTag, comps::FreeFrameProperties>(
+                 entity)
+             || registry
+                    .all_of<comps::FixedFrameTag, comps::FixedFrameProperties>(
+                        entity));
+}
+
+std::size_t countReplayPublicFrameEntities(
+    const detail::WorldRegistry& registry)
+{
+  std::size_t count = 0;
+  auto frameView = registry.view<comps::FrameState>();
+  for (auto entity : frameView) {
+    if (isReplayPublicFrameEntity(registry, entity)) {
+      ++count;
+    }
+  }
+  return count;
+}
+
+template <typename LoopClosureState>
+std::vector<LoopClosureState> captureReplayLoopClosures(
+    const detail::WorldRegistry& registry)
+{
+  std::vector<LoopClosureState> states;
+  auto view = registry.view<comps::LoopClosure, comps::Name>();
+  states.reserve(countReplayView(view));
+  for (auto entity : view) {
+    states.push_back(
+        LoopClosureState{
+            entity,
+            view.get<comps::Name>(entity).name,
+            view.get<comps::LoopClosure>(entity)});
+  }
+  std::ranges::sort(states, [](const auto& lhs, const auto& rhs) {
+    return static_cast<std::uint32_t>(lhs.entity)
+           < static_cast<std::uint32_t>(rhs.entity);
+  });
+  return states;
+}
+
+template <typename LoopClosureStates>
+void validateReplayLoopClosures(
+    const detail::WorldRegistry& registry, const LoopClosureStates& states)
+{
+  auto view = registry.view<comps::LoopClosure>();
+  DART_SIMULATION_THROW_T_IF(
+      countReplayView(view) != states.size(),
+      InvalidOperationException,
+      "Cannot restore replay frame: LoopClosure component count changed");
+
+  for (const auto& state : states) {
+    const bool layoutChanged
+        = !registry.valid(state.entity)
+          || !registry.all_of<comps::LoopClosure, comps::Name>(state.entity);
+    DART_SIMULATION_THROW_T_IF(
+        layoutChanged,
+        InvalidOperationException,
+        "Cannot restore replay frame: LoopClosure entity layout changed");
+
+    const auto& name = registry.get<comps::Name>(state.entity);
+    const auto& loopClosure = registry.get<comps::LoopClosure>(state.entity);
+    DART_SIMULATION_THROW_T_IF(
+        name.name != state.name
+            || !sameReplayLoopClosure(loopClosure, state.loopClosure),
+        InvalidOperationException,
+        "Cannot restore replay frame: LoopClosure entity layout changed");
+  }
+}
+
+void markFrameCachesDirty(detail::WorldRegistry& registry)
+{
+  auto frameView = registry.view<comps::FrameCache>();
+  for (auto entity : frameView) {
+    auto& cache = frameView.get<comps::FrameCache>(entity);
+    cache.needTransformUpdate = true;
+  }
+}
+
+//==============================================================================
+// Folds the full internal solver stats into the curated public diagnostics.
+DeformableSolverDiagnostics makeDeformableSolverDiagnostics(
+    const compute::DeformableSolverStats& stats)
+{
+  DeformableSolverDiagnostics diagnostics;
+  diagnostics.bodyCount = stats.bodyCount;
+  diagnostics.nodeCount = stats.nodeCount;
+  diagnostics.edgeCount = stats.edgeCount;
+  diagnostics.solverIterations = stats.solverIterations;
+  diagnostics.objectiveEvaluations = stats.objectiveEvaluations;
+  diagnostics.lineSearchTrials = stats.lineSearchTrials;
+  diagnostics.projectedNewtonSteps = stats.projectedNewtonSteps;
+  diagnostics.projectedNewtonFallbacks = stats.projectedNewtonFallbacks;
+  diagnostics.projectedNewtonHessianNonZeros
+      = stats.projectedNewtonHessianNonZeros;
+  diagnostics.projectedNewtonHessianStorageBytes
+      = stats.projectedNewtonHessianStorageBytes;
+  diagnostics.projectedNewtonIterativeSolves
+      = stats.projectedNewtonIterativeSolves;
+  diagnostics.projectedNewtonMatrixFreeSolves
+      = stats.projectedNewtonMatrixFreeSolves;
+  diagnostics.projectedNewtonIterativeIterations
+      = stats.projectedNewtonIterativeIterations;
+  diagnostics.projectedNewtonIterativeMaxError
+      = stats.projectedNewtonIterativeMaxError;
+  diagnostics.selfContactBarrierActiveContacts
+      = stats.selfContactBarrierActiveContacts;
+  diagnostics.frictionDissipation = stats.frictionDissipation;
+  diagnostics.minActiveContactDistance = stats.minActiveContactDistance;
+  diagnostics.convergedActiveContactCount = stats.convergedActiveContactCount;
+  return diagnostics;
+}
+
+//==============================================================================
+template <typename Registry>
+WorldEcsDiagnostics makeWorldEcsDiagnostics(const Registry& registry)
+{
+  WorldEcsDiagnostics diagnostics;
+
+  const auto* entityStorage = registry.template storage<entt::entity>();
+  if (entityStorage != nullptr) {
+    for (auto entity : *entityStorage) {
+      if (registry.valid(entity)) {
+        ++diagnostics.entityCount;
+      }
+    }
+    diagnostics.entityCapacity = entityStorage->capacity();
+  }
+
+  for (auto&& [id, storage] : registry.storage()) {
+    const auto size = storage.size();
+    const auto capacity = storage.capacity();
+    diagnostics.storages.push_back(
+        WorldEcsStorageDiagnostics{
+            static_cast<std::size_t>(id),
+            size,
+            capacity,
+        });
+    diagnostics.componentCount += size;
+    diagnostics.componentCapacity += capacity;
+  }
+
+  diagnostics.storageCount = diagnostics.storages.size();
+  return diagnostics;
+}
+
+//==============================================================================
+void executeKinematicsGraph(World& world, compute::ComputeExecutor& executor)
+{
+  compute::WorldKinematicsGraph graph(world);
+  graph.execute(executor);
+}
+
+//==============================================================================
+bool isValidWorldSyncStage(WorldSyncStage stage)
+{
+  switch (stage) {
+    case WorldSyncStage::Kinematics:
+      return true;
+  }
+
+  return false;
+}
+
+//==============================================================================
+bool isValidRigidBodySolver(RigidBodySolver solver)
+{
+  switch (solver) {
+    case RigidBodySolver::SequentialImpulse:
+    case RigidBodySolver::Ipc:
+      return true;
+  }
+
+  return false;
+}
+
+//==============================================================================
+bool isValidContactSolverMethod(ContactSolverMethod method)
+{
+  switch (method) {
+    case ContactSolverMethod::SequentialImpulse:
+    case ContactSolverMethod::BoxedLcp:
+      return true;
+  }
+
+  return false;
+}
+
+//==============================================================================
+bool isValidContactGradientMode(ContactGradientMode mode)
+{
+  switch (mode) {
+    case ContactGradientMode::Analytic:
+    case ContactGradientMode::ComplementarityAware:
+    case ContactGradientMode::PreContactSurrogate:
+      return true;
+  }
+
+  return false;
+}
+
+//==============================================================================
+std::uint8_t encodeRigidBodySolver(RigidBodySolver solver)
+{
+  switch (solver) {
+    case RigidBodySolver::SequentialImpulse:
+      return 0u;
+    case RigidBodySolver::Ipc:
+      return 1u;
+  }
+
+  DART_SIMULATION_THROW_T( // LCOV_EXCL_LINE
+      InvalidArgumentException, "Rigid-body solver is invalid");
+  return 0u;
+}
+
+//==============================================================================
+RigidBodySolver decodeRigidBodySolver(std::uint8_t value)
+{
+  switch (value) {
+    case 0u:
+      return RigidBodySolver::SequentialImpulse;
+    case 1u:
+      return RigidBodySolver::Ipc;
+  }
+
+  DART_SIMULATION_THROW_T(
+      InvalidArgumentException,
+      "Serialized World rigid-body solver value is invalid");
+  return RigidBodySolver::SequentialImpulse;
+}
+
+//==============================================================================
+std::uint8_t encodeContactSolverMethod(ContactSolverMethod method)
+{
+  switch (method) {
+    case ContactSolverMethod::SequentialImpulse:
+      return 0u;
+    case ContactSolverMethod::BoxedLcp:
+      return 1u;
+  }
+
+  DART_SIMULATION_THROW_T( // LCOV_EXCL_LINE
+      InvalidArgumentException, "Contact solver method is invalid");
+  return 0u;
+}
+
+//==============================================================================
+ContactSolverMethod decodeContactSolverMethod(std::uint8_t value)
+{
+  switch (value) {
+    case 0u:
+      return ContactSolverMethod::SequentialImpulse;
+    case 1u:
+      return ContactSolverMethod::BoxedLcp;
+  }
+
+  DART_SIMULATION_THROW_T(
+      InvalidArgumentException,
+      "Serialized World contact solver method value is invalid");
+  return ContactSolverMethod::SequentialImpulse;
+}
+
+//==============================================================================
+std::uint8_t encodeContactGradientMode(ContactGradientMode mode)
+{
+  switch (mode) {
+    case ContactGradientMode::Analytic:
+      return 0u;
+    case ContactGradientMode::ComplementarityAware:
+      return 1u;
+    case ContactGradientMode::PreContactSurrogate:
+      return 2u;
+  }
+
+  DART_SIMULATION_THROW_T( // LCOV_EXCL_LINE
+      InvalidArgumentException, "Contact gradient mode is invalid");
+  return 0u;
+}
+
+//==============================================================================
+ContactGradientMode decodeContactGradientMode(std::uint8_t value)
+{
+  switch (value) {
+    case 0u:
+      return ContactGradientMode::Analytic;
+    case 1u:
+      return ContactGradientMode::ComplementarityAware;
+    case 2u:
+      return ContactGradientMode::PreContactSurrogate;
+  }
+
+  DART_SIMULATION_THROW_T(
+      InvalidArgumentException,
+      "Serialized World contact gradient mode value is invalid");
+  return ContactGradientMode::Analytic;
+}
+
+//==============================================================================
+detail::BuiltInRigidBodySolverFamily toBuiltInRigidBodySolverFamily(
+    RigidBodySolver solver)
+{
+  switch (solver) {
+    case RigidBodySolver::SequentialImpulse:
+      return detail::BuiltInRigidBodySolverFamily::SequentialImpulse;
+    case RigidBodySolver::Ipc:
+      return detail::BuiltInRigidBodySolverFamily::Ipc;
+  }
+
+  DART_SIMULATION_THROW_T( // LCOV_EXCL_LINE
+      InvalidArgumentException, "Rigid-body solver is invalid");
+  return detail::BuiltInRigidBodySolverFamily::SequentialImpulse;
+}
+
+//==============================================================================
+bool hasMultibodyStructures(const World& world)
+{
+  const auto view = detail::registryOf(world).view<comps::MultibodyStructure>();
+  return view.begin() != view.end();
+}
+
+//==============================================================================
+bool hasRigidBodyStructures(const World& world)
+{
+  const auto view = detail::registryOf(world).view<comps::RigidBodyTag>();
+  return view.begin() != view.end();
+}
+
+//==============================================================================
+bool hasDeformableBodies(const World& world)
+{
+  const auto view = detail::registryOf(world).view<comps::DeformableBodyTag>();
+  return view.begin() != view.end();
+}
+
+//==============================================================================
+bool isRigidBodyJointType(comps::JointType type)
+{
+  return type == comps::JointType::Fixed || type == comps::JointType::Revolute
+         || type == comps::JointType::Prismatic;
+}
+
+//==============================================================================
+comps::JointType toRigidBodyComponentJointType(JointType type)
 {
   switch (type) {
-    case LcpSolverType::Dantzig:
-      return std::make_shared<math::DantzigSolver>();
-    case LcpSolverType::Pgs:
-      return std::make_shared<math::PgsSolver>();
-    case LcpSolverType::Lemke:
-      return std::make_shared<math::LemkeSolver>();
+    case JointType::Fixed:
+      return comps::JointType::Fixed;
+    case JointType::Revolute:
+      return comps::JointType::Revolute;
+    case JointType::Prismatic:
+      return comps::JointType::Prismatic;
+    case JointType::Screw:
+    case JointType::Universal:
+    case JointType::Spherical:
+    case JointType::Planar:
+    case JointType::Floating:
+    case JointType::Custom:
+      break;
   }
 
-  DART_FATAL(
-      "Encountered unsupported LcpSolverType value: {}.",
-      static_cast<int>(type));
-  return std::make_shared<math::DantzigSolver>();
+  DART_SIMULATION_THROW_T(
+      InvalidArgumentException,
+      "Rigid-body joints currently support only fixed, revolute, and "
+      "prismatic joint types");
+  return comps::JointType::Custom;
 }
 
-std::unique_ptr<constraint::ConstraintSolver> createConstraintSolver(
-    const WorldConfig& config)
+//==============================================================================
+template <typename Registry>
+bool isRigidBodyJoint(const Registry& registry, const comps::Joint& joint)
 {
-  // Create BoxedLcpConstraintSolver (not base ConstraintSolver) to maintain
-  // backward compatibility with gz-physics, which does dynamic_cast to
-  // BoxedLcpConstraintSolver to access getBoxedLcpSolver()/getType() etc.
-  DART_SUPPRESS_DEPRECATED_BEGIN
-  auto solver = std::make_unique<constraint::BoxedLcpConstraintSolver>();
-  DART_SUPPRESS_DEPRECATED_END
-
-  auto primary = createLcpSolver(config.primaryLcpSolver);
-  solver->setLcpSolver(std::move(primary));
-
-  if (config.secondaryLcpSolver.has_value()) {
-    auto secondary = createLcpSolver(config.secondaryLcpSolver.value());
-    solver->setSecondaryLcpSolver(std::move(secondary));
-  } else {
-    solver->setSecondaryLcpSolver(nullptr);
+  if (!isRigidBodyJointType(joint.type) || joint.parentLink == entt::null
+      || joint.childLink == entt::null || joint.parentLink == joint.childLink) {
+    return false;
   }
 
-  return solver;
+  return registry.template all_of<comps::RigidBodyTag>(joint.parentLink)
+         && registry.template all_of<comps::RigidBodyTag>(joint.childLink);
+}
+
+//==============================================================================
+template <typename Registry>
+bool isRigidBodyFixedJoint(const Registry& registry, const comps::Joint& joint)
+{
+  if (joint.type != comps::JointType::Fixed) {
+    return false;
+  }
+
+  return isRigidBodyJoint(registry, joint);
+}
+
+//==============================================================================
+bool hasRigidBodyJoints(const World& world)
+{
+  const auto& registry = detail::registryOf(world);
+  const auto view = registry.view<comps::Joint>();
+  for (auto entity : view) {
+    (void)entity;
+    const auto& joint = view.get<comps::Joint>(entity);
+    if (isRigidBodyJoint(registry, joint)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+//==============================================================================
+void validateRigidBodyJointPipelineSupport(
+    const World& world, RigidBodySolver solver)
+{
+  if (!hasRigidBodyJoints(world)) {
+    return;
+  }
+
+  if (solver == RigidBodySolver::Ipc) {
+    DART_SIMULATION_THROW_T(
+        InvalidOperationException,
+        "Rigid-body joints are not supported by the IPC rigid-body "
+        "solver");
+  }
+
+  DART_SIMULATION_THROW_T_IF(
+      hasMultibodyStructures(world),
+      InvalidOperationException,
+      "Rigid-body joints are not supported in worlds with multibody "
+      "structures");
+}
+
+//==============================================================================
+void validateLoopClosureKinematicsPolicySupport(const World& world)
+{
+  auto view = detail::registryOf(world).view<comps::LoopClosure, comps::Name>();
+  for (auto entity : view) {
+    const auto& closure = view.get<comps::LoopClosure>(entity);
+    if (!closure.runtimePolicy.enabled
+        || closure.runtimePolicy.kinematics
+               == ClosureKinematicsPolicy::ResidualOnly) {
+      continue;
+    }
+
+    const auto& name = view.get<comps::Name>(entity);
+    DART_SIMULATION_THROW_T(
+        InvalidOperationException,
+        "LoopClosure '{}' requests kinematic projection, but the active "
+        "pipeline does not include a loop-closure projection stage",
+        name.name);
+  }
+}
+
+//==============================================================================
+// `variationalSelected` is passed in (an enum comparison the caller already
+// has) rather than re-derived from a string here, so the per-step default path
+// carries no configuration-string work. The variational integrator solves a
+// supported subset of loop closures (see compute::bindVariationalLoopClosure);
+// the semi-implicit pipeline has no loop-closure solving stage and rejects
+// every Solve closure.
+void validateLoopClosureDynamicsPolicySupport(
+    const World& world, bool variationalSelected)
+{
+  auto view = detail::registryOf(world).view<comps::LoopClosure, comps::Name>();
+  for (auto entity : view) {
+    const auto& closure = view.get<comps::LoopClosure>(entity);
+    if (!closure.runtimePolicy.enabled
+        || closure.runtimePolicy.dynamics
+               == ClosureDynamicsPolicy::ResidualOnly) {
+      continue;
+    }
+
+    const auto& name = view.get<comps::Name>(entity);
+    if (variationalSelected) {
+      const auto binding = compute::bindVariationalLoopClosure(
+          detail::registryOf(world), entity);
+      DART_SIMULATION_THROW_T_IF(
+          binding.status
+              == compute::VariationalLoopClosureBinding::Status::Unsupported,
+          InvalidOperationException,
+          "LoopClosure '{}' cannot be solved by the variational integrator: {}",
+          name.name,
+          binding.reason);
+      continue; // Supported: the variational stage will enforce it.
+    }
+
+    DART_SIMULATION_THROW_T(
+        InvalidOperationException,
+        "LoopClosure '{}' requests dynamic solving, but the active pipeline "
+        "does not include a loop-closure solving stage",
+        name.name);
+  }
+}
+
+//==============================================================================
+struct WorldStepPipelineStages
+{
+  compute::RigidBodyVelocityStage rigidBodyVelocity;
+  compute::RigidBodyContactStage rigidBodyContact;
+  compute::RigidBodyPositionStage rigidBodyPosition;
+  compute::RigidIpcContactStage rigidIpcContact;
+  compute::MultibodyVelocityStage multibodyVelocity;
+  compute::MultibodyPositionStage multibodyPosition;
+  compute::MultibodyForwardDynamicsStage multibodyDynamics;
+  compute::UnifiedConstraintStage unifiedConstraint;
+  compute::MultibodyVariationalIntegrationStage multibodyVariational;
+  compute::DeformableDynamicsStage deformableDynamics;
+  compute::KinematicsStage kinematics;
+  compute::WorldStepPipeline pipeline;
+
+  compute::WorldStepPipeline& buildDefault(
+      RigidBodySolver rigidBodySolver,
+      bool variationalSelected,
+      bool hasRigidBodies,
+      bool hasMultibodyStructure,
+      bool hasDeformableBodies)
+  {
+    pipeline.clear();
+    appendSchedule(makeSchedule(
+        rigidBodySolver,
+        variationalSelected,
+        hasRigidBodies,
+        hasMultibodyStructure,
+        hasDeformableBodies,
+        /*includeKinematics=*/true));
+    return pipeline;
+  }
+
+  compute::WorldStepPipeline& buildWithFinalStage(
+      RigidBodySolver rigidBodySolver,
+      bool variationalSelected,
+      bool hasRigidBodies,
+      bool hasMultibodyStructure,
+      bool hasDeformableBodies,
+      compute::WorldStepStage& finalStage)
+  {
+    pipeline.clear();
+    appendSchedule(makeSchedule(
+        rigidBodySolver,
+        variationalSelected,
+        hasRigidBodies,
+        hasMultibodyStructure,
+        hasDeformableBodies,
+        /*includeKinematics=*/false));
+    pipeline.addStage(finalStage);
+    return pipeline;
+  }
+
+  void prepare(
+      World& world,
+      RigidBodySolver rigidBodySolver,
+      bool variationalSelected,
+      bool hasRigidBodies,
+      bool hasMultibodyStructure,
+      bool hasDeformableBodies)
+  {
+    const auto schedule = makeSchedule(
+        rigidBodySolver,
+        variationalSelected,
+        hasRigidBodies,
+        hasMultibodyStructure,
+        hasDeformableBodies,
+        /*includeKinematics=*/true);
+    for (const auto slot : schedule) {
+      prepareStage(slot, world);
+    }
+  }
+
+private:
+  using Schedule = detail::BuiltInWorldStepSchedule;
+  using Slot = detail::BuiltInWorldStepStageSlot;
+
+  static Schedule makeSchedule(
+      RigidBodySolver rigidBodySolver,
+      bool variationalSelected,
+      bool hasRigidBodies,
+      bool hasMultibodyStructure,
+      bool hasDeformableBodies,
+      bool includeKinematics)
+  {
+    DART_SIMULATION_THROW_T_IF(
+        !isValidRigidBodySolver(rigidBodySolver),
+        InvalidArgumentException,
+        "Rigid-body solver is invalid");
+
+    detail::BuiltInWorldStepScheduleOptions options;
+    options.rigidBodySolver = toBuiltInRigidBodySolverFamily(rigidBodySolver);
+    options.multibodyIntegration
+        = variationalSelected
+              ? detail::BuiltInMultibodyIntegrationFamily::Variational
+              : detail::BuiltInMultibodyIntegrationFamily::SemiImplicit;
+    options.hasRigidBodies = hasRigidBodies;
+    options.hasMultibodyStructures = hasMultibodyStructure;
+    options.hasDeformableBodies = hasDeformableBodies;
+    options.includeKinematics = includeKinematics;
+    return detail::makeBuiltInWorldStepSchedule(options);
+  }
+
+  compute::WorldStepStage& stageForSlot(Slot slot)
+  {
+    switch (slot) {
+      case Slot::RigidBodyVelocity:
+        return rigidBodyVelocity;
+      case Slot::RigidBodyContact:
+        return rigidBodyContact;
+      case Slot::RigidBodyPosition:
+        return rigidBodyPosition;
+      case Slot::RigidIpcContact:
+        return rigidIpcContact;
+      case Slot::MultibodyVelocity:
+        return multibodyVelocity;
+      case Slot::MultibodyForwardDynamics:
+        return multibodyDynamics;
+      case Slot::MultibodyPosition:
+        return multibodyPosition;
+      case Slot::MultibodyVariationalIntegration:
+        return multibodyVariational;
+      case Slot::UnifiedConstraint:
+        return unifiedConstraint;
+      case Slot::DeformableDynamics:
+        return deformableDynamics;
+      case Slot::Kinematics:
+        return kinematics;
+    }
+
+    DART_SIMULATION_THROW_T( // LCOV_EXCL_LINE
+        InvalidArgumentException, "World step stage slot is invalid");
+    return kinematics;
+  }
+
+  void appendSchedule(const Schedule& schedule)
+  {
+    for (const auto slot : schedule) {
+      pipeline.addStage(stageForSlot(slot));
+    }
+  }
+
+  void prepareStage(Slot slot, World& world)
+  {
+    if (!detail::builtInWorldStepScheduleNeedsPreparation(slot)) {
+      return;
+    }
+
+    switch (slot) {
+      case Slot::RigidBodyVelocity:
+        rigidBodyVelocity.prepare(world);
+        return;
+      case Slot::RigidBodyContact:
+        rigidBodyContact.prepare(world);
+        return;
+      case Slot::RigidIpcContact:
+        rigidIpcContact.prepare(world);
+        return;
+      case Slot::MultibodyVariationalIntegration:
+        multibodyVariational.prepare(world);
+        return;
+      case Slot::UnifiedConstraint:
+        unifiedConstraint.prepare(world);
+        return;
+      case Slot::DeformableDynamics:
+        deformableDynamics.prepare(world);
+        return;
+      case Slot::Kinematics:
+        kinematics.prepare(world);
+        return;
+      case Slot::RigidBodyPosition: // LCOV_EXCL_LINE
+      case Slot::MultibodyVelocity:
+      case Slot::MultibodyForwardDynamics:
+      case Slot::MultibodyPosition:
+        return; // LCOV_EXCL_LINE
+    }
+  }
+};
+
+//==============================================================================
+bool isSymmetricPositiveDefinite(const Eigen::Matrix3d& matrix)
+{
+  if (!matrix.allFinite() || !matrix.isApprox(matrix.transpose(), 1e-12)) {
+    return false;
+  }
+
+  Eigen::LLT<Eigen::Matrix3d> factorization(matrix);
+  return factorization.info() == Eigen::Success;
+}
+
+//==============================================================================
+void validateFiniteVector(
+    const Eigen::Vector3d& value, std::string_view fieldName)
+{
+  DART_SIMULATION_THROW_T_IF(
+      !value.allFinite(),
+      InvalidArgumentException,
+      "RigidBodyOptions.{} must contain only finite values",
+      fieldName);
+}
+
+//==============================================================================
+bool isValidLoopClosureFamily(LoopClosureFamily family)
+{
+  switch (family) {
+    case LoopClosureFamily::Rigid:
+    case LoopClosureFamily::Point:
+    case LoopClosureFamily::Distance:
+      return true;
+  }
+
+  return false;
+}
+
+//==============================================================================
+void validateLoopClosureOffset(
+    const Eigen::Isometry3d& offset, std::string_view fieldName)
+{
+  constexpr double tolerance = 1e-9;
+
+  DART_SIMULATION_THROW_T_IF(
+      !offset.matrix().allFinite(),
+      InvalidArgumentException,
+      "LoopClosureSpec.{} must contain only finite values",
+      fieldName);
+
+  const auto& rotation = offset.linear();
+  const double orthonormalError
+      = (rotation * rotation.transpose() - Eigen::Matrix3d::Identity())
+            .cwiseAbs()
+            .maxCoeff();
+  DART_SIMULATION_THROW_T_IF(
+      orthonormalError > tolerance
+          || std::abs(rotation.determinant() - 1.0) > tolerance,
+      InvalidArgumentException,
+      "LoopClosureSpec.{} rotation must be orthonormal",
+      fieldName);
+}
+
+//==============================================================================
+entt::entity resolveLoopClosureFrame(
+    const World& world, const Frame& frame, std::string_view fieldName)
+{
+  if (frame.isWorld()) {
+    return entt::null;
+  }
+
+  DART_SIMULATION_THROW_T_IF(
+      !frame.isValid(),
+      InvalidArgumentException,
+      "LoopClosureSpec.{} is invalid or has been destroyed",
+      fieldName);
+
+  DART_SIMULATION_THROW_T_IF(
+      frame.getWorld() != &world,
+      InvalidArgumentException,
+      "LoopClosureSpec.{} belongs to a different world",
+      fieldName);
+
+  return detail::toRegistryEntity(frame.getEntity());
+}
+
+//==============================================================================
+void validateLoopClosureSpec(const World& world, const LoopClosureSpec& spec)
+{
+  DART_SIMULATION_THROW_T_IF(
+      !isValidLoopClosureFamily(spec.family),
+      InvalidArgumentException,
+      "LoopClosureSpec.family is invalid");
+
+  const auto frameA = resolveLoopClosureFrame(world, spec.frameA, "frameA");
+  const auto frameB = resolveLoopClosureFrame(world, spec.frameB, "frameB");
+  DART_SIMULATION_THROW_T_IF(
+      frameA == frameB,
+      InvalidArgumentException,
+      "LoopClosureSpec endpoints must be distinct frames");
+
+  validateLoopClosureOffset(spec.offsetA, "offsetA");
+  validateLoopClosureOffset(spec.offsetB, "offsetB");
+}
+
+//==============================================================================
+void validateRigidBodyOptions(const RigidBodyOptions& options)
+{
+  DART_SIMULATION_THROW_T_IF(
+      !std::isfinite(options.mass) || options.mass <= 0.0,
+      InvalidArgumentException,
+      "RigidBodyOptions.mass must be positive and finite");
+
+  DART_SIMULATION_THROW_T_IF(
+      !isSymmetricPositiveDefinite(options.inertia),
+      InvalidArgumentException,
+      "RigidBodyOptions.inertia must be symmetric positive definite");
+
+  validateFiniteVector(options.position, "position");
+  validateFiniteVector(options.linearVelocity, "linearVelocity");
+  validateFiniteVector(options.angularVelocity, "angularVelocity");
+
+  const auto orientationNorm = options.orientation.norm();
+  DART_SIMULATION_THROW_T_IF(
+      !options.orientation.coeffs().allFinite()
+          || !std::isfinite(orientationNorm) || orientationNorm <= 0.0,
+      InvalidArgumentException,
+      "RigidBodyOptions.orientation must be finite and non-zero");
+}
+
+//==============================================================================
+void validateDeformableFiniteVector(
+    const Eigen::Vector3d& value, std::string_view fieldName, std::size_t index)
+{
+  DART_SIMULATION_THROW_T_IF(
+      !value.allFinite(),
+      InvalidArgumentException,
+      "DeformableBodyOptions.{}[{}] must contain only finite values",
+      fieldName,
+      index);
+}
+
+//==============================================================================
+std::array<std::size_t, 3> sortedFaceKey(
+    std::size_t nodeA, std::size_t nodeB, std::size_t nodeC)
+{
+  std::array<std::size_t, 3> key{nodeA, nodeB, nodeC};
+  std::ranges::sort(key);
+  return key;
+}
+
+//==============================================================================
+std::array<std::size_t, 4> sortedTetrahedronKey(
+    std::size_t nodeA, std::size_t nodeB, std::size_t nodeC, std::size_t nodeD)
+{
+  std::array<std::size_t, 4> key{nodeA, nodeB, nodeC, nodeD};
+  std::ranges::sort(key);
+  return key;
+}
+
+//==============================================================================
+bool hasRepeatedNodes(std::span<const std::size_t> nodes)
+{
+  for (std::size_t i = 0; i < nodes.size(); ++i) {
+    for (std::size_t j = i + 1; j < nodes.size(); ++j) {
+      if (nodes[i] == nodes[j]) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+//==============================================================================
+double signedTetrahedronVolume(
+    const std::vector<Eigen::Vector3d>& positions,
+    const comps::DeformableTetrahedron& tetrahedron)
+{
+  const auto& a = positions[tetrahedron.nodeA];
+  const auto& b = positions[tetrahedron.nodeB];
+  const auto& c = positions[tetrahedron.nodeC];
+  const auto& d = positions[tetrahedron.nodeD];
+  return (b - a).cross(c - a).dot(d - a) / 6.0;
+}
+
+//==============================================================================
+double surfaceTriangleAreaSquared(
+    const std::vector<Eigen::Vector3d>& positions,
+    const comps::DeformableSurfaceTriangle& triangle)
+{
+  const auto& a = positions[triangle.nodeA];
+  const auto& b = positions[triangle.nodeB];
+  const auto& c = positions[triangle.nodeC];
+  return 0.25 * (b - a).cross(c - a).squaredNorm();
+}
+
+//==============================================================================
+void validateDeformableMaterial(const DeformableMaterialProperties& material)
+{
+  DART_SIMULATION_THROW_T_IF(
+      !std::isfinite(material.density) || material.density <= 0.0,
+      InvalidArgumentException,
+      "DeformableBodyOptions.material.density must be positive and finite");
+  DART_SIMULATION_THROW_T_IF(
+      !std::isfinite(material.youngsModulus) || material.youngsModulus <= 0.0,
+      InvalidArgumentException,
+      "DeformableBodyOptions.material.youngsModulus must be positive and "
+      "finite");
+  DART_SIMULATION_THROW_T_IF(
+      !std::isfinite(material.poissonRatio) || material.poissonRatio <= -1.0
+          || material.poissonRatio >= 0.5,
+      InvalidArgumentException,
+      "DeformableBodyOptions.material.poissonRatio must be finite and in "
+      "(-1, 0.5)");
+  DART_SIMULATION_THROW_T_IF(
+      !std::isfinite(material.frictionCoefficient)
+          || material.frictionCoefficient < 0.0,
+      InvalidArgumentException,
+      "DeformableBodyOptions.material.frictionCoefficient must be finite and "
+      "non-negative");
+}
+
+//==============================================================================
+struct PreparedDeformableBodyData
+{
+  std::vector<Eigen::Vector3d> positions;
+  std::vector<Eigen::Vector3d> restPositions;
+  std::vector<Eigen::Vector3d> velocities;
+  std::vector<double> masses;
+  std::vector<std::uint8_t> fixed;
+  std::vector<comps::DeformableSpringEdge> edges;
+  std::vector<comps::DeformableSurfaceTriangle> surfaceTriangles;
+  std::vector<comps::DeformableTetrahedron> tetrahedra;
+  std::vector<double> tetrahedronRestVolumes;
+  comps::DeformableMaterial material;
+  comps::DeformableBoundaryConditions boundaryConditions;
+  double stiffness = 0.0;
+  double damping = 0.0;
+};
+
+//==============================================================================
+bool hasValidBoundaryEndTime(double value)
+{
+  return std::isfinite(value)
+         || value == std::numeric_limits<double>::infinity();
+}
+
+//==============================================================================
+std::size_t validateFrameScratchInitialCapacity(std::size_t capacity)
+{
+  DART_SIMULATION_THROW_T_IF(
+      capacity == 0,
+      InvalidArgumentException,
+      "WorldOptions.frameScratchInitialCapacity must be positive");
+
+  return capacity;
+}
+
+//==============================================================================
+common::MemoryAllocator& resolveBaseAllocator(const WorldOptions& options)
+{
+  return options.baseAllocator ? *options.baseAllocator
+                               : common::MemoryAllocator::GetDefault();
+}
+
+//==============================================================================
+common::MemoryManager::Options makeMemoryManagerOptions(
+    const WorldOptions& options)
+{
+  common::MemoryManager::Options memoryOptions;
+  memoryOptions.frameAllocatorInitialCapacity
+      = validateFrameScratchInitialCapacity(
+          options.frameScratchInitialCapacity);
+  memoryOptions.freeListInitialAllocation = options.freeListInitialAllocation;
+  memoryOptions.freeListGrowthPolicy = options.freeListGrowthPolicy;
+  return memoryOptions;
+}
+
+//==============================================================================
+void reserveExistingRegistryStorages(detail::WorldRegistry& registry)
+{
+  auto& entities = registry.storage<entt::entity>();
+  entities.reserve(entities.size());
+
+  for (auto&& [id, storage] : registry.storage()) {
+    (void)id;
+    storage.reserve(storage.size());
+  }
+}
+
+//==============================================================================
+template <typename Component, typename EntityRange>
+void reserveAndPrimeDefaultComponentStorage(
+    detail::WorldRegistry& registry,
+    EntityRange&& entities,
+    std::size_t capacity)
+{
+  auto& storage = registry.template storage<Component>();
+  storage.reserve(capacity);
+
+  for (const auto entity : entities) {
+    if (registry.template all_of<Component>(entity)) {
+      continue;
+    }
+
+    registry.template emplace<Component>(entity);
+    registry.template remove<Component>(entity);
+  }
+}
+
+//==============================================================================
+template <typename Component>
+std::size_t existingComponentStorageSize(
+    const detail::WorldRegistry& registry) noexcept
+{
+  const auto* storage = registry.template storage<Component>();
+  return storage == nullptr ? 0u : storage->size();
+}
+
+//==============================================================================
+template <typename... Components>
+void ensureRegistryStorages(detail::WorldRegistry& registry)
+{
+  (static_cast<void>(registry.template storage<Components>()), ...);
+}
+
+//==============================================================================
+bool boundaryRangesOverlap(
+    double startA, double endA, double startB, double endB)
+{
+  return startA < endB && startB < endA;
+}
+
+//==============================================================================
+void validateBoundaryTimeRange(
+    double startTime, double endTime, std::string_view fieldName)
+{
+  DART_SIMULATION_THROW_T_IF(
+      !std::isfinite(startTime) || startTime < 0.0,
+      InvalidArgumentException,
+      "DeformableBodyOptions.{} start time must be finite and non-negative",
+      fieldName);
+  DART_SIMULATION_THROW_T_IF(
+      !hasValidBoundaryEndTime(endTime) || endTime < startTime,
+      InvalidArgumentException,
+      "DeformableBodyOptions.{} end time must be finite or infinity and must "
+      "not precede the start time",
+      fieldName);
+}
+
+//==============================================================================
+void validateBoundaryNodes(
+    std::span<const std::size_t> nodes,
+    std::size_t nodeCount,
+    std::string_view fieldName,
+    std::size_t boundaryIndex)
+{
+  DART_SIMULATION_THROW_T_IF(
+      nodes.empty(),
+      InvalidArgumentException,
+      "DeformableBodyOptions.{}[{}] must reference at least one node",
+      fieldName,
+      boundaryIndex);
+  std::set<std::size_t> uniqueNodes;
+  for (const auto node : nodes) {
+    DART_SIMULATION_THROW_T_IF(
+        node >= nodeCount,
+        InvalidArgumentException,
+        "DeformableBodyOptions.{}[{}] references an out-of-range node",
+        fieldName,
+        boundaryIndex);
+    DART_SIMULATION_THROW_T_IF(
+        !uniqueNodes.insert(node).second,
+        InvalidArgumentException,
+        "DeformableBodyOptions.{}[{}] contains duplicate node {}",
+        fieldName,
+        boundaryIndex,
+        node);
+  }
+}
+
+//==============================================================================
+void validateNoBoundaryConflicts(
+    const DeformableBodyOptions& options,
+    const std::vector<std::uint8_t>& fixed)
+{
+  for (std::size_t dirichletIndex = 0;
+       dirichletIndex < options.dirichletBoundaryConditions.size();
+       ++dirichletIndex) {
+    const auto& dirichlet = options.dirichletBoundaryConditions[dirichletIndex];
+    for (const auto node : dirichlet.nodes) {
+      DART_SIMULATION_THROW_T_IF(
+          fixed[node] != 0u,
+          InvalidArgumentException,
+          "DeformableBodyOptions.dirichletBoundaryConditions[{}] overlaps "
+          "permanently fixed node {}",
+          dirichletIndex,
+          node);
+    }
+
+    for (std::size_t otherIndex = dirichletIndex + 1;
+         otherIndex < options.dirichletBoundaryConditions.size();
+         ++otherIndex) {
+      const auto& other = options.dirichletBoundaryConditions[otherIndex];
+      if (!boundaryRangesOverlap(
+              dirichlet.startTime,
+              dirichlet.endTime,
+              other.startTime,
+              other.endTime)) {
+        continue;
+      }
+      for (const auto node : dirichlet.nodes) {
+        DART_SIMULATION_THROW_T_IF(
+            std::ranges::find(other.nodes, node) != other.nodes.end(),
+            InvalidArgumentException,
+            "DeformableBodyOptions.dirichletBoundaryConditions overlap on "
+            "node {}",
+            node);
+      }
+    }
+  }
+
+  for (std::size_t neumannIndex = 0;
+       neumannIndex < options.neumannBoundaryConditions.size();
+       ++neumannIndex) {
+    const auto& neumann = options.neumannBoundaryConditions[neumannIndex];
+    for (const auto node : neumann.nodes) {
+      DART_SIMULATION_THROW_T_IF(
+          fixed[node] != 0u,
+          InvalidArgumentException,
+          "DeformableBodyOptions.neumannBoundaryConditions[{}] overlaps "
+          "permanently fixed node {}",
+          neumannIndex,
+          node);
+    }
+
+    for (const auto& dirichlet : options.dirichletBoundaryConditions) {
+      if (!boundaryRangesOverlap(
+              neumann.startTime,
+              neumann.endTime,
+              dirichlet.startTime,
+              dirichlet.endTime)) {
+        continue;
+      }
+      for (const auto node : neumann.nodes) {
+        DART_SIMULATION_THROW_T_IF(
+            std::ranges::find(dirichlet.nodes, node) != dirichlet.nodes.end(),
+            InvalidArgumentException,
+            "DeformableBodyOptions.neumannBoundaryConditions overlap active "
+            "Dirichlet boundary node {}",
+            node);
+      }
+    }
+  }
+}
+
+//==============================================================================
+std::vector<comps::DeformableSurfaceTriangle>
+validateDeformableSurfaceTriangles(const DeformableBodyOptions& options)
+{
+  std::vector<comps::DeformableSurfaceTriangle> surfaceTriangles;
+  surfaceTriangles.reserve(options.surfaceTriangles.size());
+
+  std::set<std::array<std::size_t, 3>> uniqueFaces;
+  for (std::size_t i = 0; i < options.surfaceTriangles.size(); ++i) {
+    const auto& triangle = options.surfaceTriangles[i];
+    const std::array<std::size_t, 3> nodes{
+        triangle.nodeA, triangle.nodeB, triangle.nodeC};
+    DART_SIMULATION_THROW_T_IF(
+        hasRepeatedNodes(nodes),
+        InvalidArgumentException,
+        "DeformableBodyOptions.surfaceTriangles[{}] nodes must be distinct",
+        i);
+    for (const auto node : nodes) {
+      DART_SIMULATION_THROW_T_IF(
+          node >= options.positions.size(),
+          InvalidArgumentException,
+          "DeformableBodyOptions.surfaceTriangles[{}] references an "
+          "out-of-range node",
+          i);
+    }
+
+    comps::DeformableSurfaceTriangle internal{
+        triangle.nodeA, triangle.nodeB, triangle.nodeC};
+    DART_SIMULATION_THROW_T_IF(
+        surfaceTriangleAreaSquared(options.positions, internal) <= 1e-24,
+        InvalidArgumentException,
+        "DeformableBodyOptions.surfaceTriangles[{}] is degenerate",
+        i);
+
+    const auto key
+        = sortedFaceKey(internal.nodeA, internal.nodeB, internal.nodeC);
+    DART_SIMULATION_THROW_T_IF(
+        !uniqueFaces.insert(key).second,
+        InvalidArgumentException,
+        "DeformableBodyOptions.surfaceTriangles[{}] duplicates an existing "
+        "face",
+        i);
+    surfaceTriangles.push_back(internal);
+  }
+
+  return surfaceTriangles;
+}
+
+//==============================================================================
+void addBoundaryFace(
+    std::map<
+        std::array<std::size_t, 3>,
+        std::pair<comps::DeformableSurfaceTriangle, std::size_t>>& faces,
+    comps::DeformableSurfaceTriangle face)
+{
+  const auto key = sortedFaceKey(face.nodeA, face.nodeB, face.nodeC);
+  auto [it, inserted] = faces.emplace(key, std::pair{face, 0u});
+  ++it->second.second;
+  DART_SIMULATION_THROW_T_IF(
+      it->second.second > 2u,
+      InvalidArgumentException,
+      "DeformableBodyOptions.tetrahedra creates a nonmanifold surface face");
+  if (!inserted && it->second.second == 2u) {
+    it->second.first = face;
+  }
+}
+
+//==============================================================================
+std::vector<comps::DeformableSurfaceTriangle> deriveDeformableBoundarySurface(
+    const std::vector<comps::DeformableTetrahedron>& tetrahedra)
+{
+  std::map<
+      std::array<std::size_t, 3>,
+      std::pair<comps::DeformableSurfaceTriangle, std::size_t>>
+      faces;
+  for (const auto& tet : tetrahedra) {
+    addBoundaryFace(faces, {tet.nodeA, tet.nodeC, tet.nodeB});
+    addBoundaryFace(faces, {tet.nodeA, tet.nodeB, tet.nodeD});
+    addBoundaryFace(faces, {tet.nodeA, tet.nodeD, tet.nodeC});
+    addBoundaryFace(faces, {tet.nodeB, tet.nodeC, tet.nodeD});
+  }
+
+  std::vector<comps::DeformableSurfaceTriangle> surfaceTriangles;
+  for (const auto& [_, faceAndCount] : faces) {
+    if (faceAndCount.second == 1u) {
+      surfaceTriangles.push_back(faceAndCount.first);
+    }
+  }
+  return surfaceTriangles;
+}
+
+//==============================================================================
+PreparedDeformableBodyData prepareDeformableBodyOptions(
+    const DeformableBodyOptions& options)
+{
+  const auto nodeCount = options.positions.size();
+  DART_SIMULATION_THROW_T_IF(
+      nodeCount == 0,
+      InvalidArgumentException,
+      "DeformableBodyOptions.positions must not be empty");
+
+  PreparedDeformableBodyData data;
+  data.positions = options.positions;
+  data.restPositions = data.positions;
+  data.velocities.assign(nodeCount, Eigen::Vector3d::Zero());
+  data.masses.assign(nodeCount, 1.0);
+  data.fixed.assign(nodeCount, 0u);
+  data.stiffness = options.edgeStiffness;
+  data.damping = options.damping;
+  data.material.density = options.material.density;
+  data.material.youngsModulus = options.material.youngsModulus;
+  data.material.poissonRatio = options.material.poissonRatio;
+  data.material.frictionCoefficient = options.material.frictionCoefficient;
+  data.material.useFiniteElementElasticity
+      = options.material.useFiniteElementElasticity;
+  data.material.useFixedCorotationalElasticity
+      = options.material.useFixedCorotationalElasticity;
+  data.material.useAdaptiveBarrierStiffness
+      = options.material.useAdaptiveBarrierStiffness;
+  data.material.useIterativeLinearSolver
+      = options.material.useIterativeLinearSolver;
+  data.material.useMatrixFreeLinearSolver
+      = options.material.useMatrixFreeLinearSolver;
+
+  for (std::size_t i = 0; i < nodeCount; ++i) {
+    validateDeformableFiniteVector(options.positions[i], "positions", i);
+  }
+
+  validateDeformableMaterial(options.material);
+
+  std::set<std::array<std::size_t, 4>> uniqueTetrahedra;
+  data.tetrahedra.reserve(options.tetrahedra.size());
+  data.tetrahedronRestVolumes.reserve(options.tetrahedra.size());
+  for (std::size_t i = 0; i < options.tetrahedra.size(); ++i) {
+    const auto& tetrahedron = options.tetrahedra[i];
+    const std::array<std::size_t, 4> nodes{
+        tetrahedron.nodeA,
+        tetrahedron.nodeB,
+        tetrahedron.nodeC,
+        tetrahedron.nodeD};
+    DART_SIMULATION_THROW_T_IF(
+        hasRepeatedNodes(nodes),
+        InvalidArgumentException,
+        "DeformableBodyOptions.tetrahedra[{}] nodes must be distinct",
+        i);
+    for (const auto node : nodes) {
+      DART_SIMULATION_THROW_T_IF(
+          node >= nodeCount,
+          InvalidArgumentException,
+          "DeformableBodyOptions.tetrahedra[{}] references an out-of-range "
+          "node",
+          i);
+    }
+
+    const auto key = sortedTetrahedronKey(
+        tetrahedron.nodeA,
+        tetrahedron.nodeB,
+        tetrahedron.nodeC,
+        tetrahedron.nodeD);
+    DART_SIMULATION_THROW_T_IF(
+        !uniqueTetrahedra.insert(key).second,
+        InvalidArgumentException,
+        "DeformableBodyOptions.tetrahedra[{}] duplicates an existing "
+        "tetrahedron",
+        i);
+
+    comps::DeformableTetrahedron internal{
+        tetrahedron.nodeA,
+        tetrahedron.nodeB,
+        tetrahedron.nodeC,
+        tetrahedron.nodeD};
+    double volume = signedTetrahedronVolume(options.positions, internal);
+    DART_SIMULATION_THROW_T_IF(
+        !std::isfinite(volume) || std::abs(volume) <= 1e-18,
+        InvalidArgumentException,
+        "DeformableBodyOptions.tetrahedra[{}] has zero or nonfinite rest "
+        "volume",
+        i);
+    if (volume < 0.0) {
+      std::swap(internal.nodeC, internal.nodeD);
+      volume = -volume;
+    }
+
+    data.tetrahedra.push_back(internal);
+    data.tetrahedronRestVolumes.push_back(volume);
+  }
+
+  data.surfaceTriangles = validateDeformableSurfaceTriangles(options);
+  if (data.surfaceTriangles.empty() && !data.tetrahedra.empty()) {
+    data.surfaceTriangles = deriveDeformableBoundarySurface(data.tetrahedra);
+  }
+
+  DART_SIMULATION_THROW_T_IF(
+      options.masses.empty() && options.tetrahedra.empty()
+          && !options.surfaceTriangles.empty(),
+      InvalidArgumentException,
+      "DeformableBodyOptions.surfaceTriangles require explicit masses when no "
+      "tetrahedra are provided");
+
+  DART_SIMULATION_THROW_T_IF(
+      !options.velocities.empty() && options.velocities.size() != nodeCount,
+      InvalidArgumentException,
+      "DeformableBodyOptions.velocities must be empty or match positions");
+  for (std::size_t i = 0; i < options.velocities.size(); ++i) {
+    validateDeformableFiniteVector(options.velocities[i], "velocities", i);
+    data.velocities[i] = options.velocities[i];
+  }
+
+  DART_SIMULATION_THROW_T_IF(
+      !options.masses.empty() && options.masses.size() != nodeCount,
+      InvalidArgumentException,
+      "DeformableBodyOptions.masses must be empty or match positions");
+  if (!options.masses.empty()) {
+    for (std::size_t i = 0; i < options.masses.size(); ++i) {
+      const double mass = options.masses[i];
+      DART_SIMULATION_THROW_T_IF(
+          !std::isfinite(mass) || mass <= 0.0,
+          InvalidArgumentException,
+          "DeformableBodyOptions.masses[{}] must be positive and finite",
+          i);
+      data.masses[i] = mass;
+    }
+  } else if (!data.tetrahedra.empty()) {
+    data.masses.assign(nodeCount, 0.0);
+    for (std::size_t i = 0; i < data.tetrahedra.size(); ++i) {
+      const auto& tetrahedron = data.tetrahedra[i];
+      const double nodeMass
+          = options.material.density * data.tetrahedronRestVolumes[i] / 4.0;
+      data.masses[tetrahedron.nodeA] += nodeMass;
+      data.masses[tetrahedron.nodeB] += nodeMass;
+      data.masses[tetrahedron.nodeC] += nodeMass;
+      data.masses[tetrahedron.nodeD] += nodeMass;
+    }
+
+    for (std::size_t i = 0; i < data.masses.size(); ++i) {
+      DART_SIMULATION_THROW_T_IF(
+          !std::isfinite(data.masses[i]) || data.masses[i] <= 0.0,
+          InvalidArgumentException,
+          "DeformableBodyOptions.tetrahedra leave node {} without positive "
+          "finite assembled mass",
+          i);
+    }
+  }
+
+  for (const auto fixedNode : options.fixedNodes) {
+    DART_SIMULATION_THROW_T_IF(
+        fixedNode >= nodeCount,
+        InvalidArgumentException,
+        "DeformableBodyOptions.fixedNodes contains out-of-range node {}",
+        fixedNode);
+    DART_SIMULATION_THROW_T_IF(
+        data.fixed[fixedNode] != 0u,
+        InvalidArgumentException,
+        "DeformableBodyOptions.fixedNodes contains duplicate node {}",
+        fixedNode);
+    data.fixed[fixedNode] = 1u;
+  }
+
+  data.boundaryConditions.dirichlet.reserve(
+      options.dirichletBoundaryConditions.size());
+  for (std::size_t i = 0; i < options.dirichletBoundaryConditions.size(); ++i) {
+    const auto& boundary = options.dirichletBoundaryConditions[i];
+    validateBoundaryNodes(
+        boundary.nodes, nodeCount, "dirichletBoundaryConditions", i);
+    validateDeformableFiniteVector(
+        boundary.linearVelocity,
+        "dirichletBoundaryConditions.linearVelocity",
+        i);
+    validateDeformableFiniteVector(
+        boundary.angularVelocity,
+        "dirichletBoundaryConditions.angularVelocity",
+        i);
+    validateDeformableFiniteVector(
+        boundary.center, "dirichletBoundaryConditions.center", i);
+    validateBoundaryTimeRange(
+        boundary.startTime, boundary.endTime, "dirichletBoundaryConditions");
+
+    comps::DeformableDirichletBoundary internal;
+    internal.nodes = boundary.nodes;
+    internal.referencePositions.reserve(boundary.nodes.size());
+    for (const auto node : boundary.nodes) {
+      internal.referencePositions.push_back(data.restPositions[node]);
+    }
+    internal.center = boundary.center;
+    internal.linearVelocity = boundary.linearVelocity;
+    internal.angularVelocity = boundary.angularVelocity;
+    internal.startTime = boundary.startTime;
+    internal.endTime = boundary.endTime;
+    data.boundaryConditions.dirichlet.push_back(std::move(internal));
+  }
+
+  data.boundaryConditions.neumann.reserve(
+      options.neumannBoundaryConditions.size());
+  for (std::size_t i = 0; i < options.neumannBoundaryConditions.size(); ++i) {
+    const auto& boundary = options.neumannBoundaryConditions[i];
+    validateBoundaryNodes(
+        boundary.nodes, nodeCount, "neumannBoundaryConditions", i);
+    validateDeformableFiniteVector(
+        boundary.acceleration, "neumannBoundaryConditions.acceleration", i);
+    validateBoundaryTimeRange(
+        boundary.startTime, boundary.endTime, "neumannBoundaryConditions");
+
+    comps::DeformableNeumannBoundary internal;
+    internal.nodes = boundary.nodes;
+    internal.acceleration = boundary.acceleration;
+    internal.startTime = boundary.startTime;
+    internal.endTime = boundary.endTime;
+    data.boundaryConditions.neumann.push_back(std::move(internal));
+  }
+
+  validateNoBoundaryConflicts(options, data.fixed);
+
+  DART_SIMULATION_THROW_T_IF(
+      !std::isfinite(options.edgeStiffness) || options.edgeStiffness < 0.0,
+      InvalidArgumentException,
+      "DeformableBodyOptions.edgeStiffness must be finite and non-negative");
+  DART_SIMULATION_THROW_T_IF(
+      !std::isfinite(options.damping) || options.damping < 0.0,
+      InvalidArgumentException,
+      "DeformableBodyOptions.damping must be finite and non-negative");
+
+  data.edges.reserve(options.edges.size());
+  for (std::size_t i = 0; i < options.edges.size(); ++i) {
+    const auto& edge = options.edges[i];
+    DART_SIMULATION_THROW_T_IF(
+        edge.nodeA >= nodeCount || edge.nodeB >= nodeCount,
+        InvalidArgumentException,
+        "DeformableBodyOptions.edges[{}] references an out-of-range node",
+        i);
+    DART_SIMULATION_THROW_T_IF(
+        edge.nodeA == edge.nodeB,
+        InvalidArgumentException,
+        "DeformableBodyOptions.edges[{}] endpoints must be distinct",
+        i);
+
+    double restLength = edge.restLength;
+    if (restLength <= 0.0) {
+      restLength
+          = (options.positions[edge.nodeB] - options.positions[edge.nodeA])
+                .norm();
+    }
+    DART_SIMULATION_THROW_T_IF(
+        !std::isfinite(restLength) || restLength <= 0.0,
+        InvalidArgumentException,
+        "DeformableBodyOptions.edges[{}].restLength must be positive and "
+        "finite",
+        i);
+
+    data.edges.push_back(
+        comps::DeformableSpringEdge{edge.nodeA, edge.nodeB, restLength});
+  }
+
+  return data;
+}
+
+//==============================================================================
+Eigen::Quaterniond normalizeOrIdentity(const Eigen::Quaterniond& orientation)
+{
+  const auto norm = orientation.norm();
+  if (norm <= 0.0 || !std::isfinite(norm)) {
+    return Eigen::Quaterniond::Identity();
+  }
+
+  auto normalized = orientation;
+  normalized.coeffs() /= norm;
+  return normalized;
+}
+
+//==============================================================================
+Eigen::Isometry3d toIsometry(
+    const Eigen::Vector3d& position, const Eigen::Quaterniond& orientation)
+{
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation() = position;
+  transform.linear() = orientation.toRotationMatrix();
+  return transform;
 }
 
 } // namespace
 
 //==============================================================================
-std::shared_ptr<World> World::create(std::string_view name)
+struct World::StepPipelineCache
 {
-  return std::make_shared<World>(name);
+  WorldStepPipelineStages stages;
+};
+
+World::World()
+  : m_storage(
+        std::make_unique<detail::WorldStorage>(
+            m_memoryManager.getFreeAllocator())),
+    m_stepPipelineCache(std::make_unique<StepPipelineCache>())
+{
+  // Empty.
 }
 
 //==============================================================================
-std::shared_ptr<World> World::create(const WorldConfig& config)
+World::World(const WorldOptions& options)
+  : m_memoryManager(
+        resolveBaseAllocator(options), makeMemoryManagerOptions(options)),
+    m_storage(
+        std::make_unique<detail::WorldStorage>(
+            m_memoryManager.getFreeAllocator())),
+    m_gravity(options.gravity),
+    m_rigidBodySolver(options.rigidBodySolver),
+    m_timeStep(options.timeStep),
+    m_differentiable(options.differentiable),
+    m_contactSolverMethod(options.contactSolverMethod),
+    m_contactGradientMode(options.contactGradientMode),
+    m_stepPipelineCache(std::make_unique<StepPipelineCache>())
 {
-  return std::make_shared<World>(config);
+  DART_SIMULATION_THROW_T_IF(
+      !std::isfinite(options.timeStep) || options.timeStep <= 0.0,
+      InvalidArgumentException,
+      "WorldOptions.timeStep must be positive and finite");
+  DART_SIMULATION_THROW_T_IF(
+      !options.gravity.array().isFinite().all(),
+      InvalidArgumentException,
+      "WorldOptions.gravity must contain only finite coordinates");
+  DART_SIMULATION_THROW_T_IF(
+      !isValidRigidBodySolver(options.rigidBodySolver),
+      InvalidArgumentException,
+      "WorldOptions.rigidBodySolver is invalid");
+  DART_SIMULATION_THROW_T_IF(
+      !isValidContactSolverMethod(options.contactSolverMethod),
+      InvalidArgumentException,
+      "WorldOptions.contactSolverMethod is invalid");
+  DART_SIMULATION_THROW_T_IF(
+      !isValidContactGradientMode(options.contactGradientMode),
+      InvalidArgumentException,
+      "WorldOptions.contactGradientMode is invalid");
+  setMultibodyOptions(options.multibodyOptions);
 }
 
 //==============================================================================
-World::World(std::string_view name) : World(WorldConfig(name)) {}
+World::~World() = default;
 
 //==============================================================================
-World::World(const WorldConfig& config)
-  : mName(config.name),
-    mNameMgrForSkeletons("World::Skeleton | " + config.name, "skeleton"),
-    mNameMgrForSimpleFrames("World::SimpleFrame | " + config.name, "frame"),
-    mSensorManager("World::Sensor | " + config.name, "sensor"),
-    mGravity(0.0, 0.0, -9.81),
-    mTimeStep(0.001),
-    mTime(0.0),
-    mFrame(0),
-    mMemoryManager(
-        config.baseAllocator ? *config.baseAllocator
-                             : common::MemoryAllocator::GetDefault()),
-    mRecording(new Recording(mSkeletons)),
-    onNameChanged(mNameChangedSignal)
+detail::WorldStorage::WorldStorage(common::MemoryAllocator& allocator)
+  : registry(detail::WorldRegistryAllocator{allocator}),
+    differentiableParameters(DifferentiableParameterAllocator{allocator})
 {
-  mIndices.push_back(0);
-
-  auto solver = createConstraintSolver(config);
-  setConstraintSolver(std::move(solver));
-
-  if (auto detector = resolveCollisionDetector(config)) {
-    setCollisionDetector(detector);
-  }
+  // Empty.
 }
 
 //==============================================================================
-World::~World()
+detail::WorldStorage& detail::storageOf(World& world)
 {
-  delete mRecording;
-
-  for (common::Connection& connection : mNameConnectionsForSkeletons) {
-    connection.disconnect();
-  }
-
-  for (common::Connection& connection : mNameConnectionsForSimpleFrames) {
-    connection.disconnect();
-  }
+  return *world.m_storage;
 }
 
 //==============================================================================
-WorldPtr World::clone() const
+const detail::WorldStorage& detail::storageOf(const World& world)
 {
-  WorldConfig config;
-  config.name = mName;
-  config.baseAllocator = const_cast<common::MemoryAllocator*>(
-      &mMemoryManager.getBaseAllocator());
-  WorldPtr worldClone = World::create(config);
-
-  worldClone->setGravity(mGravity);
-  worldClone->setTimeStep(mTimeStep);
-
-  auto cd = getConstraintSolver()->getCollisionDetector();
-  if (cd) {
-    worldClone->setCollisionDetector(cd->cloneWithoutCollisionObjects());
-  }
-
-  // Clone and add each Skeleton
-  for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
-    worldClone->addSkeleton(mSkeletons[i]->cloneSkeleton());
-  }
-
-  // Clone and add each SimpleFrame
-  for (std::size_t i = 0; i < mSimpleFrames.size(); ++i) {
-    worldClone->addSimpleFrame(
-        mSimpleFrames[i]->clone(mSimpleFrames[i]->getParentFrame()));
-  }
-
-  // For each newly cloned SimpleFrame, try to make its parent Frame be one of
-  // the new clones if there is a match. This is meant to minimize any possible
-  // interdependencies between the kinematics of different worlds.
-  for (std::size_t i = 0; i < worldClone->getNumSimpleFrames(); ++i) {
-    dynamics::Frame* current_parent
-        = worldClone->getSimpleFrame(i)->getParentFrame();
-
-    dynamics::SimpleFramePtr parent_candidate
-        = worldClone->getSimpleFrame(current_parent->getName());
-
-    if (parent_candidate) {
-      worldClone->getSimpleFrame(i)->setParentFrame(parent_candidate.get());
-    }
-  }
-
-  return worldClone;
+  return *world.m_storage;
 }
 
 //==============================================================================
-void World::setTimeStep(double _timeStep)
+detail::WorldRegistry& detail::registryOf(World& world)
 {
-  if (!std::isfinite(_timeStep) || _timeStep <= 0.0) {
-    DART_WARN(
-        "[World] Attempting to set an invalid timestep ({}). Ignoring this "
-        "request because it can lead to undefined behavior.",
-        _timeStep);
-    return;
-  }
-
-  mTimeStep = _timeStep;
-  DART_ASSERT(mConstraintSolver);
-  mConstraintSolver->setTimeStep(_timeStep);
-  for (auto& skel : mSkeletons) {
-    skel->setTimeStep(_timeStep);
-  }
+  return detail::storageOf(world).registry;
 }
 
 //==============================================================================
-double World::getTimeStep() const
+const detail::WorldRegistry& detail::registryOf(const World& world)
 {
-  return mTimeStep;
-}
-
-//==============================================================================
-void World::reset()
-{
-  mTime = 0.0;
-  mFrame = 0;
-  mRecording->clear();
-  mConstraintSolver->clearLastCollisionResult();
-
-  for (auto& skel : mSkeletons) {
-    skel->clearConstraintImpulses();
-    skel->setImpulseApplied(false);
-  }
-
-  mSensorManager.resetSensors();
-}
-
-//==============================================================================
-void World::step(bool _resetCommand)
-{
-  DART_PROFILE_FRAME;
-
-  // Integrate velocity for unconstrained skeletons
-  {
-    DART_PROFILE_SCOPED_N("World::step - Integrate velocity");
-    for (auto& skel : mSkeletons) {
-      if (!skel->isMobile()) {
-        continue;
-      }
-
-      skel->computeForwardDynamics();
-      skel->integrateVelocities(mTimeStep);
-    }
-  }
-
-  // Detect activated constraints and compute constraint impulses
-  {
-    DART_PROFILE_SCOPED_N("World::step - Solve constraints");
-    mConstraintSolver->solve();
-  }
-
-  // Compute velocity changes given constraint impulses
-  for (auto& skel : mSkeletons) {
-    if (!skel->isMobile()) {
-      continue;
-    }
-
-    if (skel->isImpulseApplied()) {
-      skel->computeImpulseForwardDynamics();
-      skel->setImpulseApplied(false);
-    }
-
-    if (skel->isPositionImpulseApplied()) {
-      skel->integratePositions(mTimeStep, skel->getPositionVelocityChanges());
-      skel->setPositionImpulseApplied(false);
-      skel->clearPositionVelocityChanges();
-    } else {
-      skel->integratePositions(mTimeStep);
-    }
-
-    if (_resetCommand) {
-      skel->clearInternalForces();
-      skel->clearExternalForces();
-      skel->resetCommands();
-    }
-  }
-
-  mTime += mTimeStep;
-  mFrame++;
-  mSensorManager.updateSensors(*this);
-}
-
-//==============================================================================
-void World::setTime(double _time)
-{
-  mTime = _time;
-}
-
-//==============================================================================
-double World::getTime() const
-{
-  return mTime;
-}
-
-//==============================================================================
-int World::getSimFrames() const
-{
-  return mFrame;
-}
-
-//==============================================================================
-const std::string& World::setName(std::string_view newName)
-{
-  if (newName == mName) {
-    return mName;
-  }
-
-  const std::string oldName = mName;
-  mName = newName;
-
-  mNameChangedSignal.raise(oldName, mName);
-
-  mNameMgrForSkeletons.setManagerName("World::Skeleton | " + mName);
-  mNameMgrForSimpleFrames.setManagerName("World::SimpleFrame | " + mName);
-  mSensorManager.setManagerName("World::Sensor | " + mName);
-
-  return mName;
-}
-
-//==============================================================================
-const std::string& World::getName() const
-{
-  return mName;
-}
-
-//==============================================================================
-void World::setGravity(const Eigen::Vector3d& _gravity)
-{
-  mGravity = _gravity;
-  for (std::vector<dynamics::SkeletonPtr>::iterator it = mSkeletons.begin();
-       it != mSkeletons.end();
-       ++it) {
-    (*it)->setGravity(_gravity);
-  }
-}
-
-//==============================================================================
-void World::setGravity(double x, double y, double z)
-{
-  setGravity(Eigen::Vector3d(x, y, z));
-}
-
-//==============================================================================
-const Eigen::Vector3d& World::getGravity() const
-{
-  return mGravity;
-}
-
-//==============================================================================
-dynamics::SkeletonPtr World::getSkeleton(std::size_t _index) const
-{
-  if (_index < mSkeletons.size()) {
-    return mSkeletons[_index];
-  }
-
-  return nullptr;
-}
-
-//==============================================================================
-dynamics::SkeletonPtr World::getSkeleton(std::string_view name) const
-{
-  return mNameMgrForSkeletons.getObject(std::string(name));
-}
-
-//==============================================================================
-std::size_t World::getNumSkeletons() const
-{
-  return mSkeletons.size();
-}
-
-//==============================================================================
-std::string World::addSkeleton(const dynamics::SkeletonPtr& _skeleton)
-{
-  DART_THROW_T_IF(
-      _skeleton == nullptr,
-      common::NullPointerException,
-      "Cannot add nullptr Skeleton to the world");
-
-  // If mSkeletons already has _skeleton, then we do nothing.
-  if (std::ranges::find(mSkeletons, _skeleton) != mSkeletons.end()) {
-    DART_WARN(
-        "Skeleton named [{}] is already in the world.", _skeleton->getName());
-    return _skeleton->getName();
-  }
-
-  mSkeletons.push_back(_skeleton);
-  mMapForSkeletons[_skeleton] = _skeleton;
-
-  mNameConnectionsForSkeletons.push_back(_skeleton->onNameChanged.connect(
-      [this](
-          dynamics::ConstMetaSkeletonPtr skel,
-          const std::string&,
-          const std::string&) { this->handleSkeletonNameChange(skel); }));
-
-  _skeleton->setName(
-      mNameMgrForSkeletons.issueNewNameAndAdd(_skeleton->getName(), _skeleton));
-
-  _skeleton->setTimeStep(mTimeStep);
-  _skeleton->setGravity(mGravity);
-
-  mIndices.push_back(mIndices.back() + _skeleton->getNumDofs());
-  mConstraintSolver->addSkeleton(_skeleton);
-
-  // Update recording
-  mRecording->updateNumGenCoords(mSkeletons);
-
-  return _skeleton->getName();
-}
-
-//==============================================================================
-void World::removeSkeleton(const dynamics::SkeletonPtr& _skeleton)
-{
-  DART_THROW_T_IF(
-      _skeleton == nullptr,
-      common::NullPointerException,
-      "Cannot remove nullptr Skeleton from the world");
-
-  // Find index of _skeleton in mSkeleton.
-  std::size_t index = 0;
-  for (; index < mSkeletons.size(); ++index) {
-    if (mSkeletons[index] == _skeleton) {
-      break;
-    }
-  }
-
-  // If i is equal to the number of skeletons, then _skeleton is not in
-  // mSkeleton. We do nothing.
-  if (index == mSkeletons.size()) {
-    DART_WARN("Skeleton [{}] is not in the world.", _skeleton->getName());
-    return;
-  }
-
-  // Update mIndices.
-  for (std::size_t i = index + 1; i < mSkeletons.size() - 1; ++i) {
-    mIndices[i] = mIndices[i + 1] - _skeleton->getNumDofs();
-  }
-  mIndices.pop_back();
-
-  // Remove _skeleton from constraint handler.
-  mConstraintSolver->removeSkeleton(_skeleton);
-
-  // Remove _skeleton from mSkeletons
-  std::erase(mSkeletons, _skeleton);
-
-  // Disconnect the name change monitor
-  mNameConnectionsForSkeletons[index].disconnect();
-  mNameConnectionsForSkeletons.erase(
-      mNameConnectionsForSkeletons.begin() + index);
-
-  // Update recording
-  mRecording->updateNumGenCoords(mSkeletons);
-
-  // Remove from NameManager
-  mNameMgrForSkeletons.removeName(_skeleton->getName());
-
-  // Remove from the pointer map
-  mMapForSkeletons.erase(_skeleton);
-}
-
-//==============================================================================
-std::set<dynamics::SkeletonPtr> World::removeAllSkeletons()
-{
-  std::set<dynamics::SkeletonPtr> ptrs;
-  for (const auto& skeleton : mSkeletons) {
-    ptrs.insert(skeleton);
-  }
-
-  while (getNumSkeletons() > 0) {
-    removeSkeleton(getSkeleton(0));
-  }
-
-  return ptrs;
-}
-
-//==============================================================================
-bool World::hasSkeleton(const dynamics::ConstSkeletonPtr& skeleton) const
-{
-  return std::ranges::find(mSkeletons, skeleton) != mSkeletons.end();
-}
-
-//==============================================================================
-bool World::hasSkeleton(std::string_view skeletonName) const
-{
-  return mNameMgrForSkeletons.hasName(std::string(skeletonName));
-}
-
-//==============================================================================
-int World::getIndex(int _index) const
-{
-  if (std::cmp_less(_index, 0)
-      || std::cmp_greater_equal(_index, mIndices.size())) {
-    DART_ERROR(
-        "World::getIndex: index [{}] is out of range. Valid range is [0, {}).",
-        _index,
-        mIndices.size());
-    DART_ASSERT(false);
-    return -1;
-  }
-  return mIndices[_index];
-}
-
-//==============================================================================
-dynamics::SimpleFramePtr World::getSimpleFrame(std::size_t _index) const
-{
-  if (_index < mSimpleFrames.size()) {
-    return mSimpleFrames[_index];
-  }
-
-  return nullptr;
-}
-
-//==============================================================================
-dynamics::SimpleFramePtr World::getSimpleFrame(std::string_view name) const
-{
-  return mNameMgrForSimpleFrames.getObject(std::string(name));
-}
-
-//==============================================================================
-std::size_t World::getNumSimpleFrames() const
-{
-  return mSimpleFrames.size();
-}
-
-//==============================================================================
-std::string World::addSimpleFrame(const dynamics::SimpleFramePtr& _frame)
-{
-  DART_THROW_T_IF(
-      _frame == nullptr,
-      common::NullPointerException,
-      "Cannot add nullptr SimpleFrame to the world");
-
-  if (std::ranges::find(mSimpleFrames, _frame) != mSimpleFrames.end()) {
-    DART_WARN(
-        "SimpleFrame named [{}] is already in the world.", _frame->getName());
-    return _frame->getName();
-  }
-
-  mSimpleFrames.push_back(_frame);
-  mSimpleFrameToShared[_frame.get()] = _frame;
-
-  mNameConnectionsForSimpleFrames.push_back(_frame->onNameChanged.connect(
-      [this](
-          const dynamics::Entity* _entity,
-          const std::string&,
-          const std::string&) { this->handleSimpleFrameNameChange(_entity); }));
-
-  _frame->setName(
-      mNameMgrForSimpleFrames.issueNewNameAndAdd(_frame->getName(), _frame));
-
-  return _frame->getName();
-}
-
-//==============================================================================
-void World::removeSimpleFrame(const dynamics::SimpleFramePtr& _frame)
-{
-  DART_THROW_T_IF(
-      _frame == nullptr,
-      common::NullPointerException,
-      "Cannot remove nullptr SimpleFrame from the world");
-
-  auto it = std::ranges::find(mSimpleFrames, _frame);
-
-  if (it == mSimpleFrames.end()) {
-    DART_WARN("Frame named [{}] is not in the world.", _frame->getName());
-    return;
-  }
-
-  std::size_t index = it - mSimpleFrames.begin();
-
-  // Remove the frame
-  mSimpleFrames.erase(mSimpleFrames.begin() + index);
-
-  // Disconnect the name change monitor
-  mNameConnectionsForSimpleFrames[index].disconnect();
-  mNameConnectionsForSimpleFrames.erase(
-      mNameConnectionsForSimpleFrames.begin() + index);
-
-  // Remove from NameManager
-  mNameMgrForSimpleFrames.removeName(_frame->getName());
-
-  // Remove from the pointer map
-  mSimpleFrameToShared.erase(_frame.get());
-}
-
-//==============================================================================
-std::set<dynamics::SimpleFramePtr> World::removeAllSimpleFrames()
-{
-  std::set<dynamics::SimpleFramePtr> ptrs;
-  for (std::vector<dynamics::SimpleFramePtr>::iterator it
-       = mSimpleFrames.begin(),
-       end = mSimpleFrames.end();
-       it != end;
-       ++it) {
-    ptrs.insert(*it);
-  }
-
-  while (getNumSimpleFrames() > 0) {
-    removeSimpleFrame(getSimpleFrame(0));
-  }
-
-  return ptrs;
-}
-
-//==============================================================================
-sensor::SensorPtr World::getSensor(std::size_t index) const
-{
-  return mSensorManager.getSensor(index);
-}
-
-//==============================================================================
-sensor::SensorPtr World::getSensor(std::string_view name) const
-{
-  return mSensorManager.getSensor(name);
-}
-
-//==============================================================================
-std::size_t World::getNumSensors() const
-{
-  return mSensorManager.getNumSensors();
-}
-
-//==============================================================================
-std::string World::addSensor(const sensor::SensorPtr& sensor)
-{
-  return mSensorManager.addSensor(sensor);
-}
-
-//==============================================================================
-void World::removeSensor(const sensor::SensorPtr& sensor)
-{
-  mSensorManager.removeSensor(sensor);
-}
-
-//==============================================================================
-std::set<sensor::SensorPtr> World::removeAllSensors()
-{
-  return mSensorManager.removeAllSensors();
-}
-
-//==============================================================================
-bool World::hasSensor(const sensor::SensorPtr& sensor) const
-{
-  return mSensorManager.hasSensor(sensor);
-}
-
-//==============================================================================
-bool World::hasSensor(std::string_view sensorName) const
-{
-  return mSensorManager.hasSensor(sensorName);
-}
-
-//==============================================================================
-sensor::SensorManager& World::getSensorManager()
-{
-  return mSensorManager;
-}
-
-//==============================================================================
-const sensor::SensorManager& World::getSensorManager() const
-{
-  return mSensorManager;
-}
-
-//==============================================================================
-bool World::checkCollision(
-    const collision::CollisionOption& option,
-    collision::CollisionResult* result)
-{
-  return mConstraintSolver->getCollisionGroup()->collide(option, result);
-}
-
-//==============================================================================
-const collision::CollisionResult& World::getLastCollisionResult() const
-{
-  return mConstraintSolver->getLastCollisionResult();
-}
-
-//==============================================================================
-void World::setCollisionDetector(
-    const collision::CollisionDetectorPtr& collisionDetector)
-{
-  if (!collisionDetector) {
-    DART_WARN(
-        "Attempted to assign a null collision detector to world '{}'.", mName);
-    return;
-  }
-
-  mConstraintSolver->setCollisionDetector(collisionDetector);
-}
-
-//==============================================================================
-void World::setCollisionDetector(CollisionDetectorType collisionDetector)
-{
-  auto detector = tryCreateCollisionDetector(collisionDetector);
-  if (!detector) {
-    auto current = mConstraintSolver->getCollisionDetector();
-    DART_WARN(
-        "Collision detector '{}' is not available for world '{}'. Keeping the "
-        "current detector '{}'.",
-        toCollisionDetectorKey(collisionDetector),
-        mName,
-        current ? current->getTypeView() : "unknown");
-    return;
-  }
-
-  setCollisionDetector(detector);
-}
-
-//==============================================================================
-collision::CollisionDetectorPtr World::getCollisionDetector()
-{
-  return mConstraintSolver->getCollisionDetector();
-}
-
-//==============================================================================
-collision::ConstCollisionDetectorPtr World::getCollisionDetector() const
-{
-  return mConstraintSolver->getCollisionDetector();
-}
-
-//==============================================================================
-void World::setConstraintSolver(constraint::UniqueConstraintSolverPtr solver)
-{
-  DART_THROW_T_IF(
-      !solver,
-      common::NullPointerException,
-      "Cannot set nullptr as constraint solver");
-
-  if (mConstraintSolver) {
-    solver->setFromOtherConstraintSolver(*mConstraintSolver);
-  }
-
-  mConstraintSolver = std::move(solver);
-  mConstraintSolver->setTimeStep(mTimeStep);
-  mConstraintSolver->setFrameAllocator(&mMemoryManager.getFrameAllocator());
-}
-
-//==============================================================================
-constraint::ConstraintSolver* World::getConstraintSolver()
-{
-  return mConstraintSolver.get();
-}
-
-//==============================================================================
-const constraint::ConstraintSolver* World::getConstraintSolver() const
-{
-  return mConstraintSolver.get();
+  return detail::storageOf(world).registry;
 }
 
 //==============================================================================
 common::MemoryManager& World::getMemoryManager()
 {
-  return mMemoryManager;
+  return m_memoryManager;
 }
 
 //==============================================================================
 const common::MemoryManager& World::getMemoryManager() const
 {
-  return mMemoryManager;
+  return m_memoryManager;
 }
 
 //==============================================================================
-void World::bake()
+WorldMemoryDiagnostics World::getMemoryDiagnostics() const
 {
-  const auto collisionResult = getConstraintSolver()->getLastCollisionResult();
-  const auto nContacts = static_cast<int>(collisionResult.getNumContacts());
-  const auto nSkeletons = getNumSkeletons();
-
-  Eigen::VectorXd state(getIndex(nSkeletons) + 6 * nContacts);
-  for (auto i = 0u; i < getNumSkeletons(); ++i) {
-    state.segment(getIndex(i), getSkeleton(i)->getNumDofs())
-        = getSkeleton(i)->getPositions();
-  }
-
-  for (auto i = 0; i < nContacts; ++i) {
-    auto begin = getIndex(nSkeletons) + i * 6;
-    state.segment(begin, 3) = collisionResult.getContact(i).point;
-    state.segment(begin + 3, 3) = collisionResult.getContact(i).force;
-  }
-
-  mRecording->addState(state);
+  WorldMemoryDiagnostics diagnostics = m_memoryDiagnostics;
+  diagnostics.allocatorDebugDiagnostics = m_memoryManager.getDebugDiagnostics();
+  diagnostics.ecsDiagnostics
+      = makeWorldEcsDiagnostics(detail::registryOf(*this));
+  const auto& frameAllocator = m_memoryManager.getFrameAllocator();
+  const auto overflowBytes = frameAllocator.overflowBytes();
+  diagnostics.frameScratchCapacityBytes = frameAllocator.usableCapacity();
+  diagnostics.frameScratchUsedBytes = frameAllocator.used() + overflowBytes;
+  diagnostics.frameScratchOverflowCount = frameAllocator.overflowCount();
+  diagnostics.frameScratchOverflowBytes = overflowBytes;
+  diagnostics.frameScratchPeakUsedBytes = std::max(
+      diagnostics.frameScratchPeakUsedBytes, diagnostics.frameScratchUsedBytes);
+  return diagnostics;
 }
 
 //==============================================================================
-Recording* World::getRecording()
+void World::clear()
 {
-  return mRecording;
-}
-
-//==============================================================================
-void World::handleSkeletonNameChange(
-    const dynamics::ConstMetaSkeletonPtr& _skeleton)
-{
-  if (nullptr == _skeleton) {
-    DART_ERROR(
-        "Received a name change callback for a nullptr Skeleton. This is most "
-        "likely a bug. Please report this!");
-    DART_ASSERT(false);
-    return;
+  // Recreate the opaque storage at the rebuild boundary so registry/component
+  // capacities and other allocator-backed build artifacts release their live
+  // allocations instead of surviving as stale storage in an empty World.
+  m_storage = std::make_unique<detail::WorldStorage>(
+      m_memoryManager.getFreeAllocator());
+  markFrameTopologyChanged();
+  m_simulationMode = false;
+  m_gravity = Eigen::Vector3d(0.0, 0.0, -9.81);
+  m_rigidBodySolver = RigidBodySolver::SequentialImpulse;
+  m_multibodyIntegrationMethod = MultibodyIntegrationMethod::SemiImplicit;
+  m_timeStep = 0.001;
+  m_differentiable = false;
+  m_contactSolverMethod = ContactSolverMethod::SequentialImpulse;
+  m_contactGradientMode = ContactGradientMode::Analytic;
+  resetRigidIpcAdaptiveBarrierStiffnessLowerBound();
+  m_lastDeformableSolverDiagnostics = {};
+  m_time = 0.0;
+  m_frame = 0;
+  m_memoryManager.getFrameAllocator().reset();
+  m_memoryDiagnostics = {};
+#if DART_BUILD_PROFILE
+  m_stepProfilingEnabled = false;
+  m_lastStepProfile.reset();
+#endif
+  m_freeFrameCounter = 0;
+  m_fixedFrameCounter = 0;
+  m_multibodyCounter = 0;
+  m_loopClosureCounter = 0;
+  m_rigidBodyCounter = 0;
+  m_deformableBodyCounter = 0;
+  m_linkCounter = 0;
+  m_jointCounter = 0;
+  if (m_collisionQueryCache) {
+    m_collisionQueryCache->clear();
   }
-
-  // Get the new name of the Skeleton
-  const std::string& newName = _skeleton->getName();
-
-  // Find the shared version of the Skeleton
-  std::map<dynamics::ConstMetaSkeletonPtr, dynamics::SkeletonPtr>::iterator it
-      = mMapForSkeletons.find(_skeleton);
-  if (it == mMapForSkeletons.end()) {
-    DART_ERROR(
-        "Could not find Skeleton named [{}] in the shared_ptr map of World "
-        "[{}]. This is most likely a bug. Please report this!",
-        _skeleton->getName(),
-        getName());
-    DART_ASSERT(false);
-    return;
-  }
-  dynamics::SkeletonPtr sharedSkel = it->second;
-
-  // Inform the NameManager of the change
-  std::string issuedName
-      = mNameMgrForSkeletons.changeObjectName(sharedSkel, newName);
-
-  // If the name issued by the NameManger does not match, reset the name of the
-  // Skeleton to match the newly issued name.
-  if ((!issuedName.empty()) && (newName != issuedName)) {
-    sharedSkel->setName(issuedName);
-  } else if (issuedName.empty()) {
-    DART_ERROR(
-        "Skeleton named [{}] ({}) does not exist in the NameManager of World "
-        "[{}]. This is most likely a bug. Please report this!",
-        sharedSkel->getName(),
-        sharedSkel,
-        getName());
-    DART_ASSERT(false);
-    return;
+  m_stepPipelineCache = std::make_unique<StepPipelineCache>();
+  if (m_replay) {
+    m_replay->recordingEnabled = false;
+    m_replay->frames.clear();
+    m_replay->cursor.reset();
   }
 }
 
 //==============================================================================
-void World::handleSimpleFrameNameChange(const dynamics::Entity* _entity)
+void World::ensureDesignMode() const
 {
-  // Check that this is actually a SimpleFrame
-  const dynamics::SimpleFrame* frame
-      = dynamic_cast<const dynamics::SimpleFrame*>(_entity);
+  DART_SIMULATION_THROW_T_IF(
+      m_simulationMode,
+      InvalidOperationException,
+      "World modifications are not allowed while in simulation mode");
+}
 
-  if (nullptr == frame) {
-    DART_ERROR(
-        "Received a callback for a nullptr entity. This is most likely a bug. "
-        "Please report this!");
-    DART_ASSERT(false);
-    return;
+//==============================================================================
+void World::markFrameTopologyChanged() noexcept
+{
+  ++m_frameTopologyRevision;
+}
+
+//==============================================================================
+std::uint64_t World::getFrameTopologyRevision() const noexcept
+{
+  return m_frameTopologyRevision;
+}
+
+//==============================================================================
+void World::reserveRegistryStorageForSimulation()
+{
+  auto& registry = m_storage->registry;
+
+  // Creating queried storage objects is part of the bake boundary: EnTT's
+  // non-const view/all_of paths materialize missing component pools even when
+  // no entity owns that component. Doing this here keeps repeated steps from
+  // changing the registry storage set; absent components keep zero payload
+  // capacity.
+  ensureRegistryStorages<
+      comps::Name,
+      comps::ContactMaterial,
+      comps::CollisionGeometry,
+      comps::DeformableGroundBarrierTag,
+      comps::DeformableSurfaceCcdObstacleTag,
+      comps::DeformableObstacleNoCcdTag,
+      comps::RigidBodyTag,
+      comps::StaticBodyTag,
+      comps::KinematicBodyTag,
+      comps::KinematicBodyStepTrace,
+      comps::RigidAvbdContactConfig,
+      comps::MultibodyTag,
+      comps::MultibodyStructure,
+      comps::LoopClosure,
+      comps::Link,
+      comps::Joint,
+      comps::FrameTag,
+      comps::FixedFrameTag,
+      comps::FreeFrameTag,
+      comps::FrameState,
+      comps::FrameCache,
+      comps::FixedFrameProperties,
+      comps::FreeFrameProperties,
+      comps::Transform,
+      comps::Velocity,
+      comps::MassProperties,
+      comps::Force,
+      comps::DeformableBodyTag,
+      comps::DeformableNodeState,
+      comps::DeformableSpringModel,
+      comps::DeformableMeshTopology,
+      comps::DeformableMaterial,
+      comps::DeformableBoundaryConditions,
+      comps::DeformableVbdConfig,
+      comps::DeformableSolverScratch,
+      comps::VariationalContact,
+      comps::VariationalContactDualState,
+      compute::MultibodyVariationalState,
+      detail::deformable_vbd::AvbdRigidWorldPointJointConfig>(registry);
+
+  reserveExistingRegistryStorages(registry);
+
+  const auto kinematicBodyCount
+      = existingComponentStorageSize<comps::KinematicBodyTag>(registry);
+  if (kinematicBodyCount > 0u) {
+    auto kinematicBodies = registry.view<comps::KinematicBodyTag>();
+    reserveAndPrimeDefaultComponentStorage<comps::KinematicBodyStepTrace>(
+        registry, kinematicBodies, kinematicBodyCount);
   }
 
-  // Get the new name of the Frame
-  const std::string& newName = frame->getName();
+  const auto deformableBodyCount
+      = existingComponentStorageSize<comps::DeformableBodyTag>(registry);
+  if (deformableBodyCount > 0u) {
+    auto deformableBodies = registry.view<comps::DeformableBodyTag>();
+    reserveAndPrimeDefaultComponentStorage<comps::DeformableSolverScratch>(
+        registry, deformableBodies, deformableBodyCount);
+    compute::reserveDeformableDynamicsRegistryStorage(
+        registry, deformableBodyCount);
+  }
 
-  // Find the shared version of the Frame
-  std::map<const dynamics::SimpleFrame*, dynamics::SimpleFramePtr>::iterator it
-      = mSimpleFrameToShared.find(frame);
-  if (it == mSimpleFrameToShared.end()) {
-    DART_ERROR(
-        "Could not find SimpleFrame named [{}] in the shared_ptr map of World "
-        "[{}]. This is most likely a bug. Please report this!",
-        frame->getName(),
-        getName());
-    DART_ASSERT(false);
+  const auto multibodyCount
+      = existingComponentStorageSize<comps::MultibodyStructure>(registry);
+  if (multibodyCount > 0u) {
+    compute::reserveMultibodyDynamicsRegistryStorage(registry, multibodyCount);
+  }
+  if (m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational
+      && multibodyCount > 0u) {
+    auto multibodies = registry.view<comps::MultibodyStructure>();
+    reserveAndPrimeDefaultComponentStorage<compute::MultibodyVariationalState>(
+        registry, multibodies, multibodyCount);
+  }
+
+  const auto variationalContactCount
+      = existingComponentStorageSize<comps::VariationalContact>(registry);
+  if (variationalContactCount > 0u) {
+    auto variationalContacts = registry.view<comps::VariationalContact>();
+    auto& variationalDualStorage
+        = registry.storage<comps::VariationalContactDualState>();
+    variationalDualStorage.reserve(variationalContactCount);
+    for (const auto entity : variationalContacts) {
+      const auto& contact
+          = variationalContacts.get<comps::VariationalContact>(entity);
+      if (contact.dualUpdateCadence == 0 || contact.pointLinkIndices.empty()
+          || registry.all_of<comps::VariationalContactDualState>(entity)) {
+        continue;
+      }
+
+      registry.emplace<comps::VariationalContactDualState>(entity);
+      registry.remove<comps::VariationalContactDualState>(entity);
+    }
+  }
+
+  const auto jointCount = existingComponentStorageSize<comps::Joint>(registry);
+  if (jointCount > 0u) {
+    registry.storage<detail::deformable_vbd::AvbdRigidWorldPointJointConfig>()
+        .reserve(jointCount);
+  }
+
+  reserveExistingRegistryStorages(registry);
+}
+
+//==============================================================================
+void World::prepareStepPipelineCacheForCurrentConfiguration()
+{
+  reserveRegistryStorageForSimulation();
+  m_stepPipelineCache->stages.prepare(
+      *this,
+      m_rigidBodySolver,
+      m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational,
+      hasRigidBodyStructures(*this),
+      hasMultibodyStructures(*this),
+      hasDeformableBodies(*this));
+}
+
+//==============================================================================
+FreeFrame World::addFreeFrame()
+{
+  return addFreeFrame("", Frame::world());
+}
+
+//==============================================================================
+FreeFrame World::addFreeFrame(std::string_view name)
+{
+  return addFreeFrame(name, Frame::world());
+}
+
+//==============================================================================
+FreeFrame World::addFreeFrame(std::string_view name, const Frame& parent)
+{
+  ensureDesignMode();
+  Frame parentFrame = resolveParentFrame(parent);
+
+  std::string actualName;
+  auto entity = createFrameEntity(
+      name,
+      parentFrame,
+      Eigen::Isometry3d::Identity(),
+      &m_freeFrameCounter,
+      "free_frame",
+      false,
+      actualName);
+
+  return FreeFrame(entity, this);
+}
+
+//==============================================================================
+FixedFrame World::addFixedFrame(std::string_view name, const Frame& parent)
+{
+  return addFixedFrame(name, parent, Eigen::Isometry3d::Identity());
+}
+
+//==============================================================================
+FixedFrame World::addFixedFrame(
+    std::string_view name, const Frame& parent, const Eigen::Isometry3d& offset)
+{
+  ensureDesignMode();
+  Frame parentFrame = resolveParentFrame(parent);
+
+  DART_SIMULATION_THROW_T_IF(
+      name.empty(),
+      InvalidArgumentException,
+      "FixedFrame requires a non-empty name");
+
+  DART_SIMULATION_THROW_T_IF(
+      parentFrame.isWorld(),
+      InvalidArgumentException,
+      "FixedFrame cannot be attached directly to the world frame");
+
+  std::string actualName;
+  auto entity = createFrameEntity(
+      name,
+      parentFrame,
+      offset,
+      &m_fixedFrameCounter,
+      "fixed_frame",
+      true,
+      actualName);
+
+  return FixedFrame(entity, this);
+}
+
+//==============================================================================
+Entity World::createFrameEntity(
+    std::string_view name,
+    const Frame& parentFrame,
+    const Eigen::Isometry3d& localTransform,
+    std::size_t* autoNameCounter,
+    std::string_view autoNamePrefix,
+    bool isFixedFrame,
+    std::string& outName)
+{
+  std::string actualName;
+  if (name.empty()) {
+    if (autoNameCounter) {
+      actualName
+          = std::format("{}_{:03d}", autoNamePrefix, ++(*autoNameCounter));
+    } else {
+      actualName = std::string(autoNamePrefix);
+    }
+  } else {
+    actualName = std::string(name);
+  }
+
+  auto entity = m_storage->registry.create();
+  m_storage->registry.emplace<comps::Name>(entity, actualName);
+  m_storage->registry.emplace<comps::FrameTag>(entity);
+
+  if (isFixedFrame) {
+    m_storage->registry.emplace<comps::FixedFrameTag>(entity);
+  } else {
+    m_storage->registry.emplace<comps::FreeFrameTag>(entity);
+  }
+
+  auto& state = m_storage->registry.emplace<comps::FrameState>(entity);
+  state.parentFrame = parentFrame.isWorld()
+                          ? entt::null
+                          : detail::toRegistryEntity(parentFrame.getEntity());
+
+  auto& cache = m_storage->registry.emplace<comps::FrameCache>(entity);
+  cache.worldTransform = Eigen::Isometry3d::Identity();
+  cache.needTransformUpdate = true;
+
+  if (isFixedFrame) {
+    auto& props
+        = m_storage->registry.emplace<comps::FixedFrameProperties>(entity);
+    props.localTransform = localTransform;
+  } else {
+    auto& props
+        = m_storage->registry.emplace<comps::FreeFrameProperties>(entity);
+    props.localTransform = localTransform;
+  }
+
+  outName = actualName;
+  markFrameTopologyChanged();
+  return detail::fromRegistryEntity(entity);
+}
+
+//==============================================================================
+Frame World::resolveParentFrame(const Frame& parent) const
+{
+  if (parent.isWorld()) {
+    return Frame(Entity{}, const_cast<World*>(this));
+  }
+
+  DART_SIMULATION_THROW_T_IF(
+      !parent.isValid(),
+      InvalidArgumentException,
+      "Parent frame is invalid or has been destroyed");
+
+  DART_SIMULATION_THROW_T_IF(
+      parent.getWorld() != this,
+      InvalidArgumentException,
+      "Parent frame belongs to a different world");
+
+  return parent;
+}
+
+//==============================================================================
+Multibody World::addMultibody(std::string_view name)
+{
+  ensureDesignMode();
+  DART_SIMULATION_THROW_T_IF(
+      hasRigidBodyJoints(*this),
+      InvalidOperationException,
+      "Multibody structures are not supported in worlds with rigid-body "
+      "joints");
+
+  std::string candidateName;
+  if (name.empty()) {
+    do {
+      candidateName = std::format("multibody_{:03d}", ++m_multibodyCounter);
+    } while (hasEntityWithName<comps::MultibodyTag>(
+        m_storage->registry, candidateName));
+  } else {
+    candidateName = std::string(name);
+    DART_SIMULATION_THROW_T_IF(
+        hasEntityWithName<comps::MultibodyTag>(
+            m_storage->registry, candidateName),
+        InvalidArgumentException,
+        "Multibody '{}' already exists",
+        candidateName);
+  }
+
+  auto entity = m_storage->registry.create();
+  m_storage->registry.emplace<comps::Name>(entity, candidateName);
+  m_storage->registry.emplace<comps::MultibodyTag>(entity);
+  m_storage->registry.emplace<comps::MultibodyStructure>(entity);
+
+  return Multibody(detail::fromRegistryEntity(entity), this);
+}
+
+//==============================================================================
+std::optional<Multibody> World::getMultibody(std::string_view name)
+{
+  auto view = m_storage->registry.view<comps::MultibodyTag, comps::Name>();
+  for (auto entity : view) {
+    const auto& info = view.get<comps::Name>(entity);
+    if (info.name == name) {
+      return Multibody(detail::fromRegistryEntity(entity), this);
+    }
+  }
+  return std::nullopt;
+}
+
+//==============================================================================
+bool World::hasMultibody(std::string_view name) const
+{
+  return hasEntityWithName<comps::MultibodyTag>(m_storage->registry, name);
+}
+
+//==============================================================================
+std::size_t World::getMultibodyCount() const
+{
+  return countEntities<comps::MultibodyTag>(m_storage->registry);
+}
+
+//==============================================================================
+LoopClosure World::addLoopClosure(
+    std::string_view name, const LoopClosureSpec& spec)
+{
+  ensureDesignMode();
+  validateLoopClosureSpec(*this, spec);
+
+  std::string candidateName;
+  if (name.empty()) {
+    do {
+      candidateName
+          = std::format("loop_closure_{:03d}", ++m_loopClosureCounter);
+    } while (hasEntityWithName<comps::LoopClosure>(
+        m_storage->registry, candidateName));
+  } else {
+    candidateName = std::string(name);
+    DART_SIMULATION_THROW_T_IF(
+        hasEntityWithName<comps::LoopClosure>(
+            m_storage->registry, candidateName),
+        InvalidArgumentException,
+        "LoopClosure '{}' already exists",
+        candidateName);
+  }
+
+  auto entity = m_storage->registry.create();
+  m_storage->registry.emplace<comps::Name>(entity, candidateName);
+
+  auto& closure = m_storage->registry.emplace<comps::LoopClosure>(entity);
+  closure.family = spec.family;
+  closure.frameA = resolveLoopClosureFrame(*this, spec.frameA, "frameA");
+  closure.frameB = resolveLoopClosureFrame(*this, spec.frameB, "frameB");
+  closure.offsetA = spec.offsetA;
+  closure.offsetB = spec.offsetB;
+  closure.distance = spec.distance;
+
+  return LoopClosure(detail::fromRegistryEntity(entity), this);
+}
+
+//==============================================================================
+std::optional<LoopClosure> World::getLoopClosure(std::string_view name)
+{
+  auto view = m_storage->registry.view<comps::LoopClosure, comps::Name>();
+  for (auto entity : view) {
+    const auto& info = view.get<comps::Name>(entity);
+    if (info.name == name) {
+      return LoopClosure(detail::fromRegistryEntity(entity), this);
+    }
+  }
+  return std::nullopt;
+}
+
+//==============================================================================
+bool World::hasLoopClosure(std::string_view name) const
+{
+  return hasEntityWithName<comps::LoopClosure>(m_storage->registry, name);
+}
+
+//==============================================================================
+std::size_t World::getLoopClosureCount() const
+{
+  return countEntities<comps::LoopClosure>(m_storage->registry);
+}
+
+//==============================================================================
+RigidBody World::addRigidBody(
+    std::string_view name, const RigidBodyOptions& options)
+{
+  ensureDesignMode();
+
+  std::string candidateName;
+  if (name.empty()) {
+    do {
+      candidateName = std::format("rigid_body_{:03d}", ++m_rigidBodyCounter);
+    } while (hasEntityWithName<comps::RigidBodyTag>(
+        m_storage->registry, candidateName));
+  } else {
+    candidateName = std::string(name);
+    DART_SIMULATION_THROW_T_IF(
+        hasEntityWithName<comps::RigidBodyTag>(
+            m_storage->registry, candidateName),
+        InvalidArgumentException,
+        "RigidBody '{}' already exists",
+        candidateName);
+  }
+
+  validateRigidBodyOptions(options);
+
+  Frame parent = Frame(Entity{}, this);
+  const auto orientation = normalizeOrIdentity(options.orientation);
+  const auto initialTransform = toIsometry(options.position, orientation);
+
+  std::string actualName;
+  const Entity entity = createFrameEntity(
+      candidateName,
+      parent,
+      initialTransform,
+      &m_rigidBodyCounter,
+      "rigid_body",
+      false,
+      actualName);
+  const auto enttEntity = detail::toRegistryEntity(entity);
+
+  m_storage->registry.emplace<comps::RigidBodyTag>(enttEntity);
+
+  auto& transform = m_storage->registry.emplace<comps::Transform>(enttEntity);
+  transform.position = options.position;
+  transform.orientation = orientation;
+
+  auto& velocity = m_storage->registry.emplace<comps::Velocity>(enttEntity);
+  velocity.linear = options.linearVelocity;
+  velocity.angular = options.angularVelocity;
+
+  auto& mass = m_storage->registry.emplace<comps::MassProperties>(enttEntity);
+  mass.mass = options.mass;
+  mass.inertia = options.inertia;
+
+  m_storage->registry.emplace<comps::Force>(enttEntity);
+
+  if (options.isStatic) {
+    m_storage->registry.emplace<comps::StaticBodyTag>(enttEntity);
+  }
+
+  return RigidBody(entity, this);
+}
+
+//==============================================================================
+Joint World::addRigidBodyFixedJoint(
+    std::string_view name, const RigidBody& parent, const RigidBody& child)
+{
+  return addRigidBodyJoint(
+      name, parent, child, JointType::Fixed, Eigen::Vector3d::UnitZ());
+}
+
+//==============================================================================
+Joint World::addRigidBodyRevoluteJoint(
+    std::string_view name,
+    const RigidBody& parent,
+    const RigidBody& child,
+    const Eigen::Vector3d& axis)
+{
+  return addRigidBodyJoint(name, parent, child, JointType::Revolute, axis);
+}
+
+//==============================================================================
+Joint World::addRigidBodyPrismaticJoint(
+    std::string_view name,
+    const RigidBody& parent,
+    const RigidBody& child,
+    const Eigen::Vector3d& axis)
+{
+  return addRigidBodyJoint(name, parent, child, JointType::Prismatic, axis);
+}
+
+//==============================================================================
+Joint World::addRigidBodyJoint(
+    std::string_view name,
+    const RigidBody& parent,
+    const RigidBody& child,
+    JointType type,
+    const Eigen::Vector3d& axis)
+{
+  ensureDesignMode();
+
+  const comps::JointType componentType = toRigidBodyComponentJointType(type);
+  DART_SIMULATION_THROW_T_IF(
+      componentType != comps::JointType::Fixed
+          && (!axis.allFinite() || axis.squaredNorm() <= 0.0),
+      InvalidArgumentException,
+      "Rigid-body joint axis must be finite and non-zero");
+  DART_SIMULATION_THROW_T_IF(
+      !parent.isValid(),
+      InvalidArgumentException,
+      "Joint parent rigid body is invalid or has been destroyed");
+  DART_SIMULATION_THROW_T_IF(
+      !child.isValid(),
+      InvalidArgumentException,
+      "Joint child rigid body is invalid or has been destroyed");
+  DART_SIMULATION_THROW_T_IF(
+      parent.getWorld() != this || child.getWorld() != this,
+      InvalidArgumentException,
+      "Joint rigid bodies must belong to this World");
+  DART_SIMULATION_THROW_T_IF(
+      parent.getEntity() == child.getEntity(),
+      InvalidArgumentException,
+      "Joint parent and child rigid bodies must be distinct");
+
+  const entt::entity parentEntity
+      = detail::toRegistryEntity(parent.getEntity());
+  const entt::entity childEntity = detail::toRegistryEntity(child.getEntity());
+  const bool parentIsRigidBody = m_storage->registry.all_of<
+      comps::RigidBodyTag,
+      comps::Transform,
+      comps::MassProperties>(parentEntity);
+  const bool childIsRigidBody = m_storage->registry.all_of<
+      comps::RigidBodyTag,
+      comps::Transform,
+      comps::MassProperties>(childEntity);
+  DART_SIMULATION_THROW_T_IF(
+      !parentIsRigidBody || !childIsRigidBody,
+      InvalidArgumentException,
+      "Joint endpoints must be valid rigid bodies");
+  DART_SIMULATION_THROW_T_IF(
+      m_rigidBodySolver == RigidBodySolver::Ipc,
+      InvalidOperationException,
+      "Rigid-body joints are not supported by the IPC rigid-body solver");
+  DART_SIMULATION_THROW_T_IF(
+      hasMultibodyStructures(*this),
+      InvalidOperationException,
+      "Rigid-body joints are not supported in worlds with multibody "
+      "structures");
+
+  std::string actualName;
+  if (name.empty()) {
+    do {
+      actualName = std::format("joint_{:03d}", ++m_jointCounter);
+    } while (hasEntityWithName<comps::Joint>(m_storage->registry, actualName));
+  } else {
+    actualName = std::string(name);
+    DART_SIMULATION_THROW_T_IF(
+        hasEntityWithName<comps::Joint>(m_storage->registry, actualName),
+        InvalidArgumentException,
+        "Joint '{}' already exists",
+        actualName);
+  }
+
+  const entt::entity jointEntity = m_storage->registry.create();
+  m_storage->registry.emplace<comps::Name>(jointEntity, actualName);
+
+  auto& joint = m_storage->registry.emplace<comps::Joint>(jointEntity);
+  joint.type = componentType;
+  joint.name = std::move(actualName);
+  joint.parentLink = parentEntity;
+  joint.childLink = childEntity;
+  if (componentType != comps::JointType::Fixed) {
+    joint.axis = axis.normalized();
+  }
+
+  const Eigen::Index dof = static_cast<Eigen::Index>(joint.getDOF());
+  joint.position = Eigen::VectorXd::Zero(dof);
+  joint.velocity = Eigen::VectorXd::Zero(dof);
+  joint.acceleration = Eigen::VectorXd::Zero(dof);
+  joint.torque = Eigen::VectorXd::Zero(dof);
+  joint.springStiffness = Eigen::VectorXd::Zero(dof);
+  joint.dampingCoefficient = Eigen::VectorXd::Zero(dof);
+  joint.restPosition = Eigen::VectorXd::Zero(dof);
+  joint.armature = Eigen::VectorXd::Zero(dof);
+  joint.coulombFriction = Eigen::VectorXd::Zero(dof);
+  joint.commandVelocity = Eigen::VectorXd::Zero(dof);
+
+  const double infinity = std::numeric_limits<double>::infinity();
+  joint.limits.lower = Eigen::VectorXd::Constant(dof, -infinity);
+  joint.limits.upper = Eigen::VectorXd::Constant(dof, infinity);
+  joint.limits.velocityLower = Eigen::VectorXd::Constant(dof, -infinity);
+  joint.limits.velocityUpper = Eigen::VectorXd::Constant(dof, infinity);
+  joint.limits.effortLower = Eigen::VectorXd::Constant(dof, -infinity);
+  joint.limits.effortUpper = Eigen::VectorXd::Constant(dof, infinity);
+
+  const comps::RigidAvbdContactConfig defaultAvbdConfig;
+  if (!detail::deformable_vbd::configureAvbdRigidWorldPointJointFromCurrentPose(
+          m_storage->registry,
+          jointEntity,
+          defaultAvbdConfig.startStiffness,
+          defaultAvbdConfig.maxStiffness)) {
+    m_storage->registry.destroy(jointEntity);
+    DART_SIMULATION_THROW_T(
+        InvalidOperationException,
+        "Failed to configure rigid-body joint '{}' from current poses",
+        name);
+  }
+
+  return Joint(detail::fromRegistryEntity(jointEntity), this);
+}
+
+//==============================================================================
+std::optional<Joint> World::getRigidBodyJoint(std::string_view name)
+{
+  auto view = m_storage->registry.view<comps::Joint, comps::Name>();
+  for (auto entity : view) {
+    const auto& joint = view.get<comps::Joint>(entity);
+    const auto& info = view.get<comps::Name>(entity);
+    if (info.name == name && isRigidBodyJoint(m_storage->registry, joint)) {
+      return Joint(detail::fromRegistryEntity(entity), this);
+    }
+  }
+  return std::nullopt;
+}
+
+//==============================================================================
+bool World::hasRigidBodyJoint(std::string_view name) const
+{
+  const auto view = m_storage->registry.view<comps::Joint, comps::Name>();
+  for (auto entity : view) {
+    const auto& joint = view.get<comps::Joint>(entity);
+    const auto& info = view.get<comps::Name>(entity);
+    if (info.name == name && isRigidBodyJoint(m_storage->registry, joint)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+//==============================================================================
+std::size_t World::getRigidBodyJointCount() const
+{
+  std::size_t count = 0;
+  const auto view = m_storage->registry.view<comps::Joint>();
+  for (auto entity : view) {
+    (void)entity;
+    const auto& joint = view.get<comps::Joint>(entity);
+    if (isRigidBodyJoint(m_storage->registry, joint)) {
+      ++count;
+    }
+  }
+  return count;
+}
+
+//==============================================================================
+std::vector<Joint> World::getRigidBodyJoints()
+{
+  std::vector<Joint> joints;
+  joints.reserve(getRigidBodyJointCount());
+  const auto view = m_storage->registry.view<comps::Joint>();
+  for (auto entity : view) {
+    const auto& joint = view.get<comps::Joint>(entity);
+    if (isRigidBodyJoint(m_storage->registry, joint)) {
+      joints.emplace_back(detail::fromRegistryEntity(entity), this);
+    }
+  }
+  return joints;
+}
+
+//==============================================================================
+std::optional<Joint> World::getRigidBodyFixedJoint(std::string_view name)
+{
+  auto view = m_storage->registry.view<comps::Joint, comps::Name>();
+  for (auto entity : view) {
+    const auto& joint = view.get<comps::Joint>(entity);
+    const auto& info = view.get<comps::Name>(entity);
+    if (info.name == name
+        && isRigidBodyFixedJoint(m_storage->registry, joint)) {
+      return Joint(detail::fromRegistryEntity(entity), this);
+    }
+  }
+  return std::nullopt;
+}
+
+//==============================================================================
+bool World::hasRigidBodyFixedJoint(std::string_view name) const
+{
+  const auto view = m_storage->registry.view<comps::Joint, comps::Name>();
+  for (auto entity : view) {
+    const auto& joint = view.get<comps::Joint>(entity);
+    const auto& info = view.get<comps::Name>(entity);
+    if (info.name == name
+        && isRigidBodyFixedJoint(m_storage->registry, joint)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+//==============================================================================
+std::size_t World::getRigidBodyFixedJointCount() const
+{
+  std::size_t count = 0;
+  const auto view = m_storage->registry.view<comps::Joint>();
+  for (auto entity : view) {
+    (void)entity;
+    const auto& joint = view.get<comps::Joint>(entity);
+    if (isRigidBodyFixedJoint(m_storage->registry, joint)) {
+      ++count;
+    }
+  }
+  return count;
+}
+
+//==============================================================================
+std::vector<Joint> World::getRigidBodyFixedJoints()
+{
+  std::vector<Joint> joints;
+  joints.reserve(getRigidBodyFixedJointCount());
+  const auto view = m_storage->registry.view<comps::Joint>();
+  for (auto entity : view) {
+    const auto& joint = view.get<comps::Joint>(entity);
+    if (isRigidBodyFixedJoint(m_storage->registry, joint)) {
+      joints.emplace_back(detail::fromRegistryEntity(entity), this);
+    }
+  }
+  return joints;
+}
+
+//==============================================================================
+std::optional<RigidBody> World::getRigidBody(std::string_view name)
+{
+  auto view = m_storage->registry.view<comps::RigidBodyTag, comps::Name>();
+  for (auto entity : view) {
+    const auto& info = view.get<comps::Name>(entity);
+    if (info.name == name) {
+      return RigidBody(detail::fromRegistryEntity(entity), this);
+    }
+  }
+  return std::nullopt;
+}
+
+//==============================================================================
+bool World::hasRigidBody(std::string_view name) const
+{
+  return hasEntityWithName<comps::RigidBodyTag>(m_storage->registry, name);
+}
+
+//==============================================================================
+std::size_t World::getRigidBodyCount() const
+{
+  return countEntities<comps::RigidBodyTag>(m_storage->registry);
+}
+
+//==============================================================================
+DeformableBody World::addDeformableBody(
+    std::string_view name, const DeformableBodyOptions& options)
+{
+  ensureDesignMode();
+  auto data = prepareDeformableBodyOptions(options);
+
+  std::string candidateName;
+  if (name.empty()) {
+    do {
+      candidateName
+          = std::format("deformable_body_{:03d}", ++m_deformableBodyCounter);
+    } while (hasEntityWithName<comps::DeformableBodyTag>(
+        m_storage->registry, candidateName));
+  } else {
+    candidateName = std::string(name);
+    DART_SIMULATION_THROW_T_IF(
+        hasEntityWithName<comps::DeformableBodyTag>(
+            m_storage->registry, candidateName),
+        InvalidArgumentException,
+        "DeformableBody '{}' already exists",
+        candidateName);
+  }
+
+  auto entity = m_storage->registry.create();
+  m_storage->registry.emplace<comps::Name>(entity, candidateName);
+  m_storage->registry.emplace<comps::DeformableBodyTag>(entity);
+
+  auto& state = m_storage->registry.emplace<comps::DeformableNodeState>(entity);
+  state.positions = std::move(data.positions);
+  state.previousPositions = state.positions;
+  state.velocities = std::move(data.velocities);
+  state.masses = std::move(data.masses);
+  state.fixed = std::move(data.fixed);
+
+  auto& model
+      = m_storage->registry.emplace<comps::DeformableSpringModel>(entity);
+  model.edges = std::move(data.edges);
+  model.stiffness = data.stiffness;
+  model.damping = data.damping;
+
+  auto& topology
+      = m_storage->registry.emplace<comps::DeformableMeshTopology>(entity);
+  topology.restPositions = std::move(data.restPositions);
+  topology.surfaceTriangles = std::move(data.surfaceTriangles);
+  topology.tetrahedra = std::move(data.tetrahedra);
+  topology.tetrahedronRestVolumes = std::move(data.tetrahedronRestVolumes);
+
+  auto& material
+      = m_storage->registry.emplace<comps::DeformableMaterial>(entity);
+  material = data.material;
+
+  if (!data.boundaryConditions.dirichlet.empty()
+      || !data.boundaryConditions.neumann.empty()) {
+    auto& boundaryConditions
+        = m_storage->registry.emplace<comps::DeformableBoundaryConditions>(
+            entity);
+    boundaryConditions = std::move(data.boundaryConditions);
+  }
+
+  return DeformableBody(detail::fromRegistryEntity(entity), this);
+}
+
+//==============================================================================
+std::optional<DeformableBody> World::getDeformableBody(std::string_view name)
+{
+  auto view = m_storage->registry.view<comps::DeformableBodyTag, comps::Name>();
+  for (auto entity : view) {
+    const auto& info = view.get<comps::Name>(entity);
+    if (info.name == name) {
+      return DeformableBody(detail::fromRegistryEntity(entity), this);
+    }
+  }
+  return std::nullopt;
+}
+
+//==============================================================================
+bool World::hasDeformableBody(std::string_view name) const
+{
+  return hasEntityWithName<comps::DeformableBodyTag>(m_storage->registry, name);
+}
+
+//==============================================================================
+std::size_t World::getDeformableBodyCount() const
+{
+  return countEntities<comps::DeformableBodyTag>(m_storage->registry);
+}
+
+//==============================================================================
+void World::configureDeformableSolver(
+    std::string_view name, const DeformableSolverOptions& options)
+{
+  auto view = m_storage->registry.view<comps::DeformableBodyTag, comps::Name>();
+  for (auto entity : view) {
+    if (view.get<comps::Name>(entity).name != name) {
+      continue;
+    }
+    // Translate the public, solver-agnostic options into the internal opt-in
+    // inner-solver component. The mapping lives here (the World step pipeline
+    // owns the concrete solver) so the public facade stays algorithm-neutral.
+    m_storage->registry.emplace_or_replace<comps::DeformableVbdConfig>(
+        entity,
+        comps::DeformableVbdConfig{/*enabled=*/true,
+                                   options.iterations,
+                                   options.convergenceTolerance,
+                                   options.useAcceleration,
+                                   options.accelerationSpectralRadius,
+                                   options.stiffnessDamping,
+                                   options.workerThreads,
+                                   options.groundContactStiffness});
     return;
   }
-  dynamics::SimpleFramePtr sharedFrame = it->second;
+  DART_SIMULATION_THROW_T(
+      InvalidArgumentException,
+      "configureDeformableSolver: no deformable body named '{}'",
+      name);
+}
 
-  std::string issuedName
-      = mNameMgrForSimpleFrames.changeObjectName(sharedFrame, newName);
+//==============================================================================
+void World::enterSimulationMode()
+{
+  DART_SIMULATION_THROW_T_IF(
+      m_simulationMode,
+      InvalidArgumentException,
+      "World is already in simulation mode");
 
-  if ((!issuedName.empty()) && (newName != issuedName)) {
-    sharedFrame->setName(issuedName);
-  } else if (issuedName.empty()) {
-    DART_ERROR(
-        "SimpleFrame named [{}] ({}) does not exist in the NameManager of "
-        "World [{}]. This is most likely a bug. Please report this!",
-        frame->getName(),
-        frame,
-        getName());
-    DART_ASSERT(false);
-    return;
+  validateLoopClosureKinematicsPolicySupport(*this);
+  validateRigidBodyJointPipelineSupport(*this, m_rigidBodySolver);
+  m_simulationMode = true;
+
+  // Initial bake so that cached transforms are up-to-date.
+  updateKinematics();
+  detail::deformable_vbd::configureAvbdRigidWorldPointJointsFromCurrentPoses(
+      m_storage->registry);
+  prepareStepPipelineCacheForCurrentConfiguration();
+}
+
+//==============================================================================
+void World::setGravity(const Eigen::Vector3d& gravity)
+{
+  DART_SIMULATION_THROW_T_IF(
+      !gravity.array().isFinite().all(),
+      InvalidArgumentException,
+      "Gravity must contain only finite coordinates");
+
+  m_gravity = gravity;
+}
+
+//==============================================================================
+const Eigen::Vector3d& World::getGravity() const noexcept
+{
+  return m_gravity;
+}
+
+//==============================================================================
+void World::setRigidBodySolver(RigidBodySolver solver)
+{
+  DART_SIMULATION_THROW_T_IF(
+      !isValidRigidBodySolver(solver),
+      InvalidArgumentException,
+      "Rigid-body solver is invalid");
+
+  validateRigidBodyJointPipelineSupport(*this, solver);
+  m_rigidBodySolver = solver;
+  if (m_simulationMode) {
+    prepareStepPipelineCacheForCurrentConfiguration();
   }
 }
 
-} // namespace simulation
-} // namespace dart
+//==============================================================================
+RigidBodySolver World::getRigidBodySolver() const noexcept
+{
+  return m_rigidBodySolver;
+}
+
+//==============================================================================
+void World::setTimeStep(double timeStep)
+{
+  DART_SIMULATION_THROW_T_IF(
+      !std::isfinite(timeStep) || timeStep <= 0.0,
+      InvalidArgumentException,
+      "Time step must be positive and finite");
+
+  m_timeStep = timeStep;
+}
+
+//==============================================================================
+double World::getTimeStep() const noexcept
+{
+  return m_timeStep;
+}
+
+//==============================================================================
+bool World::isDifferentiable() const noexcept
+{
+  return m_differentiable;
+}
+
+//==============================================================================
+ContactSolverMethod World::getContactSolverMethod() const noexcept
+{
+  return m_contactSolverMethod;
+}
+
+//==============================================================================
+ContactGradientMode World::getContactGradientMode() const noexcept
+{
+  return m_contactGradientMode;
+}
+
+//==============================================================================
+void World::setContactGradientMode(ContactGradientMode mode)
+{
+  DART_SIMULATION_THROW_T_IF(
+      !isValidContactGradientMode(mode),
+      InvalidArgumentException,
+      "Contact gradient mode is invalid");
+
+  m_contactGradientMode = mode;
+}
+
+//==============================================================================
+StepDerivatives World::getStepDerivatives() const
+{
+  DART_SIMULATION_THROW_T_IF(
+      !m_differentiable,
+      InvalidOperationException,
+      "World::getStepDerivatives() requires a differentiable World (construct "
+      "with WorldOptions::differentiable set to true)");
+
+#ifdef DART_HAS_DIFF
+  DART_SIMULATION_THROW_T_IF(
+      !m_storage->stepDerivatives.has_value(),
+      InvalidOperationException,
+      "World::getStepDerivatives() has no derivatives yet; call step() first");
+  return *m_storage->stepDerivatives;
+#else
+  DART_SIMULATION_THROW_T(
+      InvalidOperationException,
+      "World::getStepDerivatives() requires differentiable support to be built "
+      "(enable the DART_BUILD_DIFF CMake option)");
+#endif
+}
+
+//==============================================================================
+StepGradient World::applyStepVjp(const Eigen::VectorXd& dLossDNextState) const
+{
+  // Reuse getStepDerivatives() for the not-differentiable / not-built /
+  // no-derivatives-yet gating so applyStepVjp throws the identical errors. When
+  // differentiable support is not compiled this call already throws, so the
+  // explicit VJP below is only reached with valid cached Jacobians.
+  const StepDerivatives derivatives = getStepDerivatives();
+
+  DART_SIMULATION_THROW_T_IF(
+      dLossDNextState.size() != derivatives.stateJacobian.rows(),
+      InvalidArgumentException,
+      "World::applyStepVjp(): dLossDNextState has size {} but the cached step "
+      "Jacobian expects next-state size {}",
+      dLossDNextState.size(),
+      derivatives.stateJacobian.rows());
+
+  StepGradient gradient;
+  gradient.state = derivatives.stateJacobian.transpose() * dLossDNextState;
+  gradient.control = derivatives.controlJacobian.transpose() * dLossDNextState;
+  return gradient;
+}
+
+//==============================================================================
+void World::addDifferentiableParameter(
+    const PhysicalParameterSelector& selector)
+{
+  DART_SIMULATION_THROW_T_IF(
+      !m_differentiable,
+      InvalidOperationException,
+      "World::addDifferentiableParameter() requires a differentiable World "
+      "(construct with WorldOptions::differentiable set to true)");
+
+#ifndef DART_HAS_DIFF
+  (void)selector;
+  DART_SIMULATION_THROW_T(
+      InvalidOperationException,
+      "World::addDifferentiableParameter() requires differentiable support to "
+      "be built (enable the DART_BUILD_DIFF CMake option)");
+#else
+  DART_SIMULATION_THROW_T_IF(
+      !selector.body.isValid() || selector.body.getWorld() != this,
+      InvalidArgumentException,
+      "World::addDifferentiableParameter(): the selector's body does not "
+      "belong to this World");
+
+  const auto entity = detail::toRegistryEntity(selector.body.getEntity());
+  DART_SIMULATION_THROW_T_IF(
+      !m_storage->registry.all_of<comps::RigidBodyTag>(entity),
+      InvalidArgumentException,
+      "World::addDifferentiableParameter(): the selector's body is not a valid "
+      "rigid body");
+
+  // Supported parameters (PLAN-110 WS4): MASS (1 column), INERTIA (3 diagonal
+  // principal-moment columns), and FRICTION (1 column). CENTER_OF_MASS stays
+  // unsupported: the rigid-body forward step assumes the center of mass at the
+  // body origin (`MassProperties::localCenterOfMass` is unused outside the
+  // multibody path), so its single-step gradient is identically zero — there is
+  // no meaningful Jacobian to assemble. Reject it with a clear
+  // NotImplementedException rather than producing a vacuous zero column.
+  DART_SIMULATION_THROW_T_IF(
+      selector.parameter == PhysicalParameter::CENTER_OF_MASS,
+      NotImplementedException,
+      "World::addDifferentiableParameter(): PhysicalParameter::CENTER_OF_MASS "
+      "is not supported for rigid bodies; the rigid-body step assumes the "
+      "center of mass at the body origin, so the gradient is identically zero. "
+      "Supported: MASS, INERTIA, FRICTION");
+
+  m_storage->differentiableParameters.emplace_back(entity, selector.parameter);
+#endif
+}
+
+//==============================================================================
+void World::addDifferentiableParameter(
+    const RigidBody& body, PhysicalParameter parameter)
+{
+  addDifferentiableParameter(PhysicalParameterSelector(body, parameter));
+}
+
+//==============================================================================
+std::size_t World::getNumDifferentiableParameters() const noexcept
+{
+  return m_storage->differentiableParameters.size();
+}
+
+namespace {
+
+// Collect dynamic (non-static) rigid bodies in registry iteration order. This
+// is the same view and order the translational contact Jacobian uses, so the
+// state/control vectors line up with getStepDerivatives()'s [q; q̇] layout.
+std::vector<entt::entity> collectDynamicRigidBodies(const auto& registry)
+{
+  std::vector<entt::entity> bodies;
+  auto view = registry.template view<
+      comps::RigidBodyTag,
+      comps::Transform,
+      comps::Velocity,
+      comps::MassProperties,
+      comps::Force>();
+  for (const auto entity : view) {
+    if (registry.template all_of<comps::StaticBodyTag>(entity)) {
+      continue;
+    }
+    bodies.push_back(entity);
+  }
+  return bodies;
+}
+
+} // namespace
+
+//==============================================================================
+std::size_t World::getNumDofs() const
+{
+  return 3 * collectDynamicRigidBodies(m_storage->registry).size();
+}
+
+//==============================================================================
+std::size_t World::getNumEfforts() const
+{
+  return getNumDofs();
+}
+
+//==============================================================================
+Eigen::VectorXd World::getStateVector() const
+{
+  const std::vector<entt::entity> bodies
+      = collectDynamicRigidBodies(m_storage->registry);
+  const Eigen::Index dofs = 3 * static_cast<Eigen::Index>(bodies.size());
+  Eigen::VectorXd state(2 * dofs);
+  for (std::size_t k = 0; k < bodies.size(); ++k) {
+    const auto base = 3 * static_cast<Eigen::Index>(k);
+    const auto& transform
+        = m_storage->registry.get<comps::Transform>(bodies[k]);
+    const auto& velocity = m_storage->registry.get<comps::Velocity>(bodies[k]);
+    state.segment<3>(base) = transform.position;
+    state.segment<3>(dofs + base) = velocity.linear;
+  }
+  return state;
+}
+
+//==============================================================================
+void World::setStateVector(const Eigen::VectorXd& state)
+{
+  const std::vector<entt::entity> bodies
+      = collectDynamicRigidBodies(m_storage->registry);
+  const Eigen::Index dofs = 3 * static_cast<Eigen::Index>(bodies.size());
+  DART_SIMULATION_THROW_T_IF(
+      state.size() != 2 * dofs,
+      InvalidArgumentException,
+      "World::setStateVector(): expected size {} (= 2 * num_dofs) but got {}",
+      2 * dofs,
+      state.size());
+  for (std::size_t k = 0; k < bodies.size(); ++k) {
+    const auto base = 3 * static_cast<Eigen::Index>(k);
+    auto& transform = m_storage->registry.get<comps::Transform>(bodies[k]);
+    auto& velocity = m_storage->registry.get<comps::Velocity>(bodies[k]);
+    transform.position = state.segment<3>(base);
+    velocity.linear = state.segment<3>(dofs + base);
+  }
+}
+
+//==============================================================================
+Eigen::VectorXd World::getControlVector() const
+{
+  const std::vector<entt::entity> bodies
+      = collectDynamicRigidBodies(m_storage->registry);
+  const Eigen::Index dofs = 3 * static_cast<Eigen::Index>(bodies.size());
+  Eigen::VectorXd control(dofs);
+  for (std::size_t k = 0; k < bodies.size(); ++k) {
+    const auto base = 3 * static_cast<Eigen::Index>(k);
+    const auto& force = m_storage->registry.get<comps::Force>(bodies[k]);
+    control.segment<3>(base) = force.force;
+  }
+  return control;
+}
+
+//==============================================================================
+void World::setControlVector(const Eigen::VectorXd& control)
+{
+  const std::vector<entt::entity> bodies
+      = collectDynamicRigidBodies(m_storage->registry);
+  const Eigen::Index dofs = 3 * static_cast<Eigen::Index>(bodies.size());
+  DART_SIMULATION_THROW_T_IF(
+      control.size() != dofs,
+      InvalidArgumentException,
+      "World::setControlVector(): expected size {} (= num_efforts) but got {}",
+      dofs,
+      control.size());
+  for (std::size_t k = 0; k < bodies.size(); ++k) {
+    const auto base = 3 * static_cast<Eigen::Index>(k);
+    auto& force = m_storage->registry.get<comps::Force>(bodies[k]);
+    force.force = control.segment<3>(base);
+  }
+}
+
+//==============================================================================
+void World::setTime(double time)
+{
+  DART_SIMULATION_THROW_T_IF(
+      !std::isfinite(time) || time < 0.0,
+      InvalidArgumentException,
+      "Time must be non-negative and finite");
+
+  m_time = time;
+}
+
+//==============================================================================
+double World::getTime() const noexcept
+{
+  return m_time;
+}
+
+//==============================================================================
+std::size_t World::getFrame() const noexcept
+{
+  return m_frame;
+}
+
+//==============================================================================
+void World::sync(WorldSyncStage stage)
+{
+  compute::SequentialExecutor executor;
+  sync(stage, executor);
+}
+
+//==============================================================================
+void World::sync(WorldSyncStage stage, compute::ComputeExecutor& executor)
+{
+  DART_SIMULATION_THROW_T_IF(
+      !m_simulationMode,
+      InvalidArgumentException,
+      "World::sync() requires simulation mode");
+
+  DART_SIMULATION_THROW_T_IF(
+      !isValidWorldSyncStage(stage),
+      InvalidArgumentException,
+      "World::sync() stage is invalid");
+
+  switch (stage) {
+    case WorldSyncStage::Kinematics:
+      validateLoopClosureKinematicsPolicySupport(*this);
+      executeKinematicsGraph(*this, executor);
+      return;
+  }
+}
+
+//==============================================================================
+void World::updateKinematics()
+{
+  sync(WorldSyncStage::Kinematics);
+}
+
+//==============================================================================
+void World::updateKinematics(compute::ComputeExecutor& executor)
+{
+  sync(WorldSyncStage::Kinematics, executor);
+}
+
+//==============================================================================
+void World::resetFrameScratchForStep()
+{
+  m_memoryManager.getFrameAllocator().reset();
+  ++m_memoryDiagnostics.frameScratchResetCount;
+  refreshMemoryDiagnostics();
+}
+
+//==============================================================================
+void World::refreshMemoryDiagnostics()
+{
+  m_memoryDiagnostics.allocatorDebugDiagnostics
+      = m_memoryManager.getDebugDiagnostics();
+  const auto& frameAllocator = m_memoryManager.getFrameAllocator();
+  const auto overflowBytes = frameAllocator.overflowBytes();
+  m_memoryDiagnostics.frameScratchCapacityBytes
+      = frameAllocator.usableCapacity();
+  m_memoryDiagnostics.frameScratchUsedBytes
+      = frameAllocator.used() + overflowBytes;
+  m_memoryDiagnostics.frameScratchOverflowCount
+      = frameAllocator.overflowCount();
+  m_memoryDiagnostics.frameScratchOverflowBytes = overflowBytes;
+  m_memoryDiagnostics.frameScratchPeakUsedBytes = std::max(
+      m_memoryDiagnostics.frameScratchPeakUsedBytes,
+      m_memoryDiagnostics.frameScratchUsedBytes);
+}
+
+//==============================================================================
+void World::step()
+{
+  compute::SequentialExecutor executor;
+  step(executor);
+}
+
+//==============================================================================
+class ScopedWorldStepPipelineClear
+{
+public:
+  explicit ScopedWorldStepPipelineClear(compute::WorldStepPipeline& pipeline)
+    : m_pipeline(pipeline)
+  {
+    // Empty.
+  }
+
+  ~ScopedWorldStepPipelineClear() noexcept
+  {
+    m_pipeline.clear();
+  }
+
+  ScopedWorldStepPipelineClear(const ScopedWorldStepPipelineClear&) = delete;
+  ScopedWorldStepPipelineClear& operator=(const ScopedWorldStepPipelineClear&)
+      = delete;
+
+private:
+  compute::WorldStepPipeline& m_pipeline;
+};
+
+//==============================================================================
+void World::step(std::size_t count)
+{
+  compute::SequentialExecutor executor;
+  step(count, executor);
+}
+
+//==============================================================================
+void World::setMultibodyOptions(const MultibodyOptions& options)
+{
+  const std::string& family = options.integrationFamily;
+  if (family == "semi-implicit" || family == "semi-implicit Euler") {
+    m_multibodyIntegrationMethod = MultibodyIntegrationMethod::SemiImplicit;
+  } else if (family == "variational integrator" || family == "variational") {
+    m_multibodyIntegrationMethod = MultibodyIntegrationMethod::Variational;
+  } else {
+    DART_SIMULATION_THROW_T(
+        InvalidArgumentException,
+        "Unknown multibody integrationFamily '{}'; supported method-family "
+        "names are 'semi-implicit' and 'variational integrator'",
+        family);
+  }
+
+  if (m_simulationMode) {
+    prepareStepPipelineCacheForCurrentConfiguration();
+  }
+}
+
+//==============================================================================
+MultibodyOptions World::getMultibodyOptions() const
+{
+  MultibodyOptions options;
+  options.integrationFamily
+      = m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational
+            ? "variational integrator"
+            : "semi-implicit";
+  return options;
+}
+
+//==============================================================================
+void World::step(compute::ComputeExecutor& executor)
+{
+  auto& stages = m_stepPipelineCache->stages;
+  compute::WorldStepPipeline& pipeline = stages.buildDefault(
+      m_rigidBodySolver,
+      m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational,
+      hasRigidBodyStructures(*this),
+      hasMultibodyStructures(*this),
+      hasDeformableBodies(*this));
+
+#if DART_BUILD_PROFILE
+  StepProfileTimer profileTimer(m_stepProfilingEnabled);
+#endif
+
+  stepPipelineOnce(executor, pipeline);
+  m_lastDeformableSolverDiagnostics = makeDeformableSolverDiagnostics(
+      stages.deformableDynamics.getLastStats());
+  recordReplayFrame();
+#if DART_BUILD_PROFILE
+  profileTimer.finish(m_lastStepProfile);
+#endif
+}
+
+//==============================================================================
+void World::step(std::size_t count, compute::ComputeExecutor& executor)
+{
+  auto& stages = m_stepPipelineCache->stages;
+  compute::WorldStepPipeline& pipeline = stages.buildDefault(
+      m_rigidBodySolver,
+      m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational,
+      hasRigidBodyStructures(*this),
+      hasMultibodyStructures(*this),
+      hasDeformableBodies(*this));
+  for (std::size_t i = 0; i < count; ++i) {
+#if DART_BUILD_PROFILE
+    StepProfileTimer profileTimer(m_stepProfilingEnabled);
+#endif
+
+    stepPipelineOnce(executor, pipeline);
+    m_lastDeformableSolverDiagnostics = makeDeformableSolverDiagnostics(
+        stages.deformableDynamics.getLastStats());
+    recordReplayFrame();
+#if DART_BUILD_PROFILE
+    profileTimer.finish(m_lastStepProfile);
+#endif
+  }
+}
+
+//==============================================================================
+void World::step(
+    compute::ComputeExecutor& executor, compute::WorldStepStage& stage)
+{
+  auto& stages = m_stepPipelineCache->stages;
+  compute::WorldStepPipeline& pipeline = stages.buildWithFinalStage(
+      m_rigidBodySolver,
+      m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational,
+      hasRigidBodyStructures(*this),
+      hasMultibodyStructures(*this),
+      hasDeformableBodies(*this),
+      stage);
+  ScopedWorldStepPipelineClear clearCustomPipeline(pipeline);
+
+#if DART_BUILD_PROFILE
+  StepProfileTimer profileTimer(m_stepProfilingEnabled);
+#endif
+
+  stepPipelineOnce(executor, pipeline);
+  m_lastDeformableSolverDiagnostics = makeDeformableSolverDiagnostics(
+      stages.deformableDynamics.getLastStats());
+  recordReplayFrame();
+#if DART_BUILD_PROFILE
+  profileTimer.finish(m_lastStepProfile);
+#endif
+}
+
+//==============================================================================
+void World::step(
+    std::size_t count,
+    compute::ComputeExecutor& executor,
+    compute::WorldStepStage& stage)
+{
+  auto& stages = m_stepPipelineCache->stages;
+  compute::WorldStepPipeline& pipeline = stages.buildWithFinalStage(
+      m_rigidBodySolver,
+      m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational,
+      hasRigidBodyStructures(*this),
+      hasMultibodyStructures(*this),
+      hasDeformableBodies(*this),
+      stage);
+  ScopedWorldStepPipelineClear clearCustomPipeline(pipeline);
+  for (std::size_t i = 0; i < count; ++i) {
+#if DART_BUILD_PROFILE
+    StepProfileTimer profileTimer(m_stepProfilingEnabled);
+#endif
+
+    stepPipelineOnce(executor, pipeline);
+    m_lastDeformableSolverDiagnostics = makeDeformableSolverDiagnostics(
+        stages.deformableDynamics.getLastStats());
+    recordReplayFrame();
+#if DART_BUILD_PROFILE
+    profileTimer.finish(m_lastStepProfile);
+#endif
+  }
+}
+
+//==============================================================================
+void World::step(
+    compute::ComputeExecutor& executor, compute::WorldStepPipeline& pipeline)
+{
+#if DART_BUILD_PROFILE
+  StepProfileTimer profileTimer(m_stepProfilingEnabled);
+#endif
+
+  stepPipelineOnce(executor, pipeline);
+  recordReplayFrame();
+#if DART_BUILD_PROFILE
+  profileTimer.finish(m_lastStepProfile);
+#endif
+}
+
+//==============================================================================
+void World::stepPipelineOnce(
+    compute::ComputeExecutor& executor, compute::WorldStepPipeline& pipeline)
+{
+  validateLoopClosureKinematicsPolicySupport(*this);
+  validateLoopClosureDynamicsPolicySupport(
+      *this,
+      m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational);
+  validateRigidBodyJointPipelineSupport(*this, m_rigidBodySolver);
+
+  if (!m_simulationMode) {
+    enterSimulationMode();
+  }
+
+  resetFrameScratchForStep();
+
+  // Differentiable opt-in: record the analytic contact-free step Jacobians at
+  // the pre-step state before integration. This is a single predictable branch;
+  // when off (the default) nothing extra runs and the forward result is
+  // bitwise-identical.
+  if (m_differentiable) {
+    captureStepDerivatives();
+  }
+
+#if DART_BUILD_PROFILE
+  if (m_stepProfilingEnabled) {
+    m_lastStepProfile = pipeline.executeProfiled(*this, executor);
+  } else {
+    pipeline.execute(*this, executor);
+  }
+#else
+  pipeline.execute(*this, executor);
+#endif
+
+  m_time += m_timeStep;
+  ++m_frame;
+  refreshMemoryDiagnostics();
+}
+
+//==============================================================================
+void World::captureStepDerivatives()
+{
+#ifdef DART_HAS_DIFF
+  // Contact-aware path (PLAN-110 WS2): when the boxed-LCP contact solver is
+  // selected, the differentiable step Jacobian must include the analytic
+  // frictionless normal-contact gradient. Capture the active contacts at the
+  // pre-step state from the same collide() source the BoxedLcp contact stage
+  // consumes, validate they fall inside the WS2 slice's scope, then route
+  // through detail::contactStepDerivatives(). When there are no active contacts
+  // this reduces exactly to the contact-free (free-fall) Jacobian for the
+  // dynamic rigid bodies; that is a mathematically exact reduction, not a
+  // fallback.
+  if (m_contactSolverMethod == ContactSolverMethod::BoxedLcp) {
+    const std::vector<Contact> contacts = collide();
+
+    // Scope guard: the contact gradient now covers Coulomb-friction rigid-body
+    // contacts including those that excite the angular DOFs (lever arm not
+    // parallel to the normal, e.g. an off-COM contact) and multiple
+    // simultaneous contacts (e.g. a box resting on its corners). The full 6-DOF
+    // Delassus solve and the screw-axis angular rows of J inside
+    // detail::contactStepDerivatives() handle that coupling; the differentiated
+    // output stays the body's translational [pos; linvel] (the single-step
+    // angular state does not feed back into the translational output). The one
+    // case still out of scope is an articulated-link (multibody) contact, which
+    // the rigid-body contact assembly does not handle: reject it (rather than
+    // silently returning a wrong matrix).
+    for (const auto& contact : contacts) {
+      const auto entityA = detail::toRegistryEntity(contact.bodyA.getEntity());
+      const auto entityB = detail::toRegistryEntity(contact.bodyB.getEntity());
+
+      const bool rigidA
+          = m_storage->registry.all_of<comps::RigidBodyTag>(entityA);
+      const bool rigidB
+          = m_storage->registry.all_of<comps::RigidBodyTag>(entityB);
+      DART_SIMULATION_THROW_T_IF(
+          !rigidA || !rigidB,
+          NotImplementedException,
+          "World::getStepDerivatives(): differentiable contact gradient not "
+          "yet supported for multibody/articulated-link contact; supported: "
+          "rigid-body normal/friction contact (PLAN-110 WS2, incl. rotational "
+          "and multi-contact)");
+    }
+
+    // When physical parameters are registered, additionally assemble the
+    // parameter Jacobian ∂x'/∂θ alongside the state/control Jacobians;
+    // otherwise skip the extra FD work and leave parameterJacobian empty.
+    StepDerivatives contactDerivatives
+        = m_storage->differentiableParameters.empty()
+              ? detail::contactStepDerivatives(
+                    m_storage->registry,
+                    contacts,
+                    m_gravity,
+                    m_timeStep,
+                    m_contactGradientMode)
+              : detail::contactStepDerivativesWithParameters(
+                    m_storage->registry,
+                    contacts,
+                    m_gravity,
+                    m_timeStep,
+                    m_storage->differentiableParameters,
+                    m_contactGradientMode);
+    // Non-empty only when a dynamic rigid body is in scope. When empty (e.g. a
+    // pure multibody scene under BoxedLcp), fall through to the WS1 path below.
+    if (contactDerivatives.stateJacobian.size() != 0) {
+      m_storage->stepDerivatives = std::move(contactDerivatives);
+      return;
+    }
+  }
+
+  // WS1 covers a single contact-free multibody. The joint-type-keyed position
+  // Jacobian in detail::contactFreeStepDerivatives covers fixed, revolute,
+  // prismatic, screw, universal, planar, ball (Spherical), and free (Floating)
+  // joints. Assemble tau from the joint efforts in construction (DOF) order and
+  // compute the analytic Jacobian at the current (pre-step) state.
+  auto view = m_storage->registry.view<comps::MultibodyStructure>();
+  for (auto entity : view) {
+    const auto& structure = view.get<comps::MultibodyStructure>(entity);
+
+    Eigen::VectorXd tau;
+    std::vector<double> torques;
+    for (const auto linkEntity : structure.links) {
+      const auto& link = m_storage->registry.get<comps::Link>(linkEntity);
+      if (link.parentJoint == entt::null) {
+        continue;
+      }
+      const auto& joint
+          = m_storage->registry.get<comps::Joint>(link.parentJoint);
+      for (Eigen::Index d = 0; d < joint.torque.size(); ++d) {
+        torques.push_back(joint.torque[d]);
+      }
+    }
+    if (torques.empty()) {
+      continue;
+    }
+    tau = Eigen::Map<const Eigen::VectorXd>(
+        torques.data(), static_cast<Eigen::Index>(torques.size()));
+
+    m_storage->stepDerivatives = detail::contactFreeStepDerivatives(
+        m_storage->registry, structure, m_gravity, m_timeStep, tau);
+    return; // WS1: one multibody.
+  }
+#endif
+}
+
+//==============================================================================
+double World::getRigidIpcAdaptiveBarrierStiffnessLowerBound() const noexcept
+{
+  return m_rigidIpcAdaptiveBarrierStiffnessLowerBound;
+}
+
+//==============================================================================
+void World::setRigidIpcAdaptiveBarrierStiffnessLowerBound(
+    const double value) noexcept
+{
+  m_rigidIpcAdaptiveBarrierStiffnessLowerBound
+      = std::isfinite(value) && value > 0.0 ? value : 1.0;
+}
+
+//==============================================================================
+void World::resetRigidIpcAdaptiveBarrierStiffnessLowerBound() noexcept
+{
+  m_rigidIpcAdaptiveBarrierStiffnessLowerBound = 1.0;
+}
+
+//==============================================================================
+void World::step(
+    std::size_t count,
+    compute::ComputeExecutor& executor,
+    compute::WorldStepPipeline& pipeline)
+{
+  for (std::size_t i = 0; i < count; ++i) {
+    step(executor, pipeline);
+  }
+}
+
+//==============================================================================
+const DeformableSolverDiagnostics& World::getLastDeformableSolverDiagnostics()
+    const
+{
+  return m_lastDeformableSolverDiagnostics;
+}
+
+//==============================================================================
+void World::setStepProfilingEnabled(bool enabled) noexcept
+{
+#if DART_BUILD_PROFILE
+  m_stepProfilingEnabled = enabled;
+#else
+  (void)enabled;
+#endif
+}
+
+//==============================================================================
+bool World::isStepProfilingEnabled() const noexcept
+{
+#if DART_BUILD_PROFILE
+  return m_stepProfilingEnabled;
+#else
+  return false;
+#endif
+}
+
+//==============================================================================
+const compute::WorldStepProfile& World::getLastStepProfile() const noexcept
+{
+#if DART_BUILD_PROFILE
+  return m_lastStepProfile;
+#else
+  static const compute::WorldStepProfile kEmptyProfile;
+  return kEmptyProfile;
+#endif
+}
+
+//==============================================================================
+void World::setReplayRecordingEnabled(bool enabled)
+{
+  if (!m_replay) {
+    m_replay = std::make_unique<ReplayState>();
+  }
+
+  if (enabled == m_replay->recordingEnabled) {
+    return;
+  }
+
+  m_replay->recordingEnabled = enabled;
+  if (enabled) {
+    m_replay->frames.clear();
+    m_replay->cursor.reset();
+    recordReplayFrame();
+  }
+}
+
+//==============================================================================
+bool World::isReplayRecordingEnabled() const noexcept
+{
+  return m_replay && m_replay->recordingEnabled;
+}
+
+//==============================================================================
+void World::clearReplayRecording()
+{
+  if (!m_replay) {
+    return;
+  }
+
+  m_replay->frames.clear();
+  m_replay->cursor.reset();
+  if (m_replay->recordingEnabled) {
+    recordReplayFrame();
+  }
+}
+
+//==============================================================================
+std::size_t World::getReplayFrameCount() const noexcept
+{
+  return m_replay ? m_replay->frames.size() : 0u;
+}
+
+//==============================================================================
+std::optional<std::size_t> World::getReplayCursor() const noexcept
+{
+  if (!m_replay) {
+    return std::nullopt;
+  }
+  return m_replay->cursor;
+}
+
+//==============================================================================
+double World::getReplayFrameTime(std::size_t index) const
+{
+  DART_SIMULATION_THROW_T_IF(
+      !m_replay || index >= m_replay->frames.size(),
+      InvalidArgumentException,
+      "Replay frame index {} is out of range",
+      index);
+  return m_replay->frames[index].time;
+}
+
+//==============================================================================
+std::size_t World::getReplaySimulationFrame(std::size_t index) const
+{
+  DART_SIMULATION_THROW_T_IF(
+      !m_replay || index >= m_replay->frames.size(),
+      InvalidArgumentException,
+      "Replay frame index {} is out of range",
+      index);
+  return m_replay->frames[index].frame;
+}
+
+//==============================================================================
+void World::restoreReplayFrame(std::size_t index)
+{
+  DART_SIMULATION_THROW_T_IF(
+      !m_replay || index >= m_replay->frames.size(),
+      InvalidArgumentException,
+      "Replay frame index {} is out of range",
+      index);
+
+  const ReplayState::Frame& replayFrame = m_replay->frames[index];
+
+  validateReplayComponents<comps::DeformableNodeState>(
+      m_storage->registry,
+      replayFrame.deformableNodeStates,
+      "DeformableNodeState");
+  validateReplayTransientComponents<compute::MultibodyVariationalState>(
+      m_storage->registry,
+      replayFrame.multibodyVariationalStates,
+      "MultibodyVariationalState",
+      [](const detail::WorldRegistry& registry, entt::entity entity) {
+        return registry.all_of<comps::MultibodyStructure>(entity);
+      });
+  validateReplayTransientComponents<comps::VariationalContactDualState>(
+      m_storage->registry,
+      replayFrame.variationalContactDualStates,
+      "VariationalContactDualState",
+      [](const detail::WorldRegistry& registry, entt::entity entity) {
+        return registry
+            .all_of<comps::MultibodyStructure, comps::VariationalContact>(
+                entity);
+      });
+
+  DART_SIMULATION_THROW_T_IF(
+      countReplayView(m_storage->registry.view<comps::Joint>())
+          != replayFrame.joints.size(),
+      InvalidOperationException,
+      "Cannot restore replay frame: Joint component count changed");
+  for (const auto& state : replayFrame.joints) {
+    DART_SIMULATION_THROW_T_IF(
+        !m_storage->registry.valid(state.entity)
+            || !m_storage->registry.all_of<comps::Joint>(state.entity),
+        InvalidOperationException,
+        "Cannot restore replay frame: Joint entity layout changed");
+    DART_SIMULATION_THROW_T_IF(
+        !sameReplayJointLayout(
+            m_storage->registry.get<comps::Joint>(state.entity), state.layout),
+        InvalidOperationException,
+        "Cannot restore replay frame: Joint entity layout changed");
+  }
+
+  DART_SIMULATION_THROW_T_IF(
+      countReplayView(m_storage->registry.view<comps::Link>())
+          != replayFrame.links.size(),
+      InvalidOperationException,
+      "Cannot restore replay frame: Link component count changed");
+  for (const auto& state : replayFrame.links) {
+    DART_SIMULATION_THROW_T_IF(
+        !m_storage->registry.valid(state.entity)
+            || !m_storage->registry.all_of<comps::Link>(state.entity),
+        InvalidOperationException,
+        "Cannot restore replay frame: Link entity layout changed");
+    const auto& link = m_storage->registry.get<comps::Link>(state.entity);
+    DART_SIMULATION_THROW_T_IF(
+        !sameReplayMassProperties(link.mass, state.massProperties)
+            || !sameReplayCollisionGeometry(
+                state.collisionGeometry,
+                m_storage->registry.try_get<comps::CollisionGeometry>(
+                    state.entity)),
+        InvalidOperationException,
+        "Cannot restore replay frame: Link entity layout changed");
+  }
+
+  DART_SIMULATION_THROW_T_IF(
+      countReplayPublicFrameEntities(m_storage->registry)
+          != replayFrame.publicFrames.size(),
+      InvalidOperationException,
+      "Cannot restore replay frame: public Frame component count changed");
+  for (const auto& state : replayFrame.publicFrames) {
+    const bool expectedFree = state.freeFrameProperties.has_value();
+    const bool expectedFixed = state.fixedFrameProperties.has_value();
+    const bool entityValid = m_storage->registry.valid(state.entity);
+    const bool currentFree
+        = entityValid
+          && m_storage->registry
+                 .all_of<comps::FreeFrameTag, comps::FreeFrameProperties>(
+                     state.entity);
+    const bool currentFixed
+        = entityValid
+          && m_storage->registry
+                 .all_of<comps::FixedFrameTag, comps::FixedFrameProperties>(
+                     state.entity);
+    const bool layoutChanged
+        = !entityValid
+          || !m_storage->registry.all_of<comps::FrameState, comps::FrameCache>(
+              state.entity)
+          || m_storage->registry.all_of<comps::RigidBodyTag>(state.entity)
+          || m_storage->registry.all_of<comps::Link>(state.entity)
+          || currentFree != expectedFree || currentFixed != expectedFixed
+          || currentFree == currentFixed;
+    DART_SIMULATION_THROW_T_IF(
+        layoutChanged,
+        InvalidOperationException,
+        "Cannot restore replay frame: public Frame entity layout changed");
+  }
+
+  validateReplayLoopClosures(m_storage->registry, replayFrame.loopClosures);
+
+  DART_SIMULATION_THROW_T_IF(
+      countReplayView(m_storage->registry.view<
+                      comps::RigidBodyTag,
+                      comps::FrameState,
+                      comps::Transform,
+                      comps::Velocity,
+                      comps::Force,
+                      comps::MassProperties>())
+          != replayFrame.rigidBodies.size(),
+      InvalidOperationException,
+      "Cannot restore replay frame: RigidBody component count changed");
+  for (const auto& state : replayFrame.rigidBodies) {
+    const bool layoutChanged = !m_storage->registry.valid(state.entity)
+                               || !m_storage->registry.all_of<
+                                   comps::RigidBodyTag,
+                                   comps::FrameState,
+                                   comps::Transform,
+                                   comps::Velocity,
+                                   comps::Force,
+                                   comps::MassProperties>(state.entity);
+    DART_SIMULATION_THROW_T_IF(
+        layoutChanged,
+        InvalidOperationException,
+        "Cannot restore replay frame: RigidBody entity layout changed");
+    const auto& frameState
+        = m_storage->registry.get<comps::FrameState>(state.entity);
+    const auto& massProperties
+        = m_storage->registry.get<comps::MassProperties>(state.entity);
+    DART_SIMULATION_THROW_T_IF(
+        frameState.parentFrame != state.parentFrame
+            || !sameReplayMassProperties(massProperties, state.massProperties)
+            || !sameReplayContactMaterial(
+                state.contactMaterial,
+                m_storage->registry.try_get<comps::ContactMaterial>(
+                    state.entity))
+            || !sameReplayCollisionGeometry(
+                state.collisionGeometry,
+                m_storage->registry.try_get<comps::CollisionGeometry>(
+                    state.entity))
+            || m_storage->registry.all_of<comps::DeformableGroundBarrierTag>(
+                   state.entity)
+                   != state.hasDeformableGroundBarrier
+            || m_storage->registry
+                       .all_of<comps::DeformableSurfaceCcdObstacleTag>(
+                           state.entity)
+                   != state.hasDeformableSurfaceCcdObstacle
+            || m_storage->registry.all_of<comps::DeformableObstacleNoCcdTag>(
+                   state.entity)
+                   != state.hasDeformableObstacleNoCcd,
+        InvalidOperationException,
+        "Cannot restore replay frame: RigidBody entity layout changed");
+    DART_SIMULATION_THROW_T_IF(
+        m_storage->registry.all_of<comps::StaticBodyTag>(state.entity)
+                != state.isStatic
+            || m_storage->registry.all_of<comps::KinematicBodyTag>(state.entity)
+                   != state.isKinematic,
+        InvalidOperationException,
+        "Cannot restore replay frame: RigidBody entity mode changed");
+  }
+
+  const auto rigidBodyRestoreOrder = orderReplayRigidBodiesParentBeforeChild(
+      m_storage->registry, replayFrame.rigidBodies, replayFrame.publicFrames);
+
+  compute::avbd_replay::restoreDeformableAvbdWarmStartReplayState(
+      m_storage->registry, replayFrame.deformableAvbdWarmStartStates);
+
+  restoreReplayComponents<comps::DeformableNodeState>(
+      m_storage->registry,
+      replayFrame.deformableNodeStates,
+      "DeformableNodeState");
+  restoreReplayTransientComponents<compute::MultibodyVariationalState>(
+      m_storage->registry,
+      replayFrame.multibodyVariationalStates,
+      "MultibodyVariationalState",
+      [](const detail::WorldRegistry& registry, entt::entity entity) {
+        return registry.all_of<comps::MultibodyStructure>(entity);
+      });
+  restoreReplayTransientComponents<comps::VariationalContactDualState>(
+      m_storage->registry,
+      replayFrame.variationalContactDualStates,
+      "VariationalContactDualState",
+      [](const detail::WorldRegistry& registry, entt::entity entity) {
+        return registry
+            .all_of<comps::MultibodyStructure, comps::VariationalContact>(
+                entity);
+      });
+
+  for (const auto& state : replayFrame.joints) {
+    auto& joint = m_storage->registry.get<comps::Joint>(state.entity);
+    joint.position = state.position;
+    joint.velocity = state.velocity;
+    joint.acceleration = state.acceleration;
+    joint.torque = state.torque;
+    joint.commandVelocity = state.commandVelocity;
+    joint.broken = state.broken;
+  }
+
+  for (const auto& state : replayFrame.links) {
+    m_storage->registry.get<comps::Link>(state.entity).externalForce
+        = state.externalForce;
+  }
+
+  for (const auto& state : replayFrame.publicFrames) {
+    m_storage->registry.replace<comps::FrameState>(
+        state.entity, state.frameState);
+    if (state.freeFrameProperties) {
+      m_storage->registry.replace<comps::FreeFrameProperties>(
+          state.entity, *state.freeFrameProperties);
+    }
+    if (state.fixedFrameProperties) {
+      m_storage->registry.replace<comps::FixedFrameProperties>(
+          state.entity, *state.fixedFrameProperties);
+    }
+  }
+  markFrameTopologyChanged();
+  markFrameCachesDirty(m_storage->registry);
+
+  for (const auto stateIndex : rigidBodyRestoreOrder) {
+    const auto& state = replayFrame.rigidBodies[stateIndex];
+    RigidBody(detail::fromRegistryEntity(state.entity), this)
+        .setTransform(
+            toIsometry(state.transform.position, state.transform.orientation));
+    m_storage->registry.replace<comps::Velocity>(state.entity, state.velocity);
+    m_storage->registry.replace<comps::Force>(state.entity, state.force);
+  }
+
+  m_simulationMode = replayFrame.simulationMode;
+  m_gravity = replayFrame.gravity;
+  m_rigidBodySolver = replayFrame.rigidBodySolver;
+  m_timeStep = replayFrame.timeStep;
+  m_differentiable = replayFrame.differentiable;
+  m_contactSolverMethod = replayFrame.contactSolverMethod;
+  m_contactGradientMode = replayFrame.contactGradientMode;
+  m_time = replayFrame.time;
+  m_frame = replayFrame.frame;
+  m_lastDeformableSolverDiagnostics = replayFrame.deformableSolverDiagnostics;
+  m_rigidIpcAdaptiveBarrierStiffnessLowerBound
+      = replayFrame.rigidIpcAdaptiveBarrierStiffnessLowerBound;
+  m_multibodyIntegrationMethod = replayFrame.multibodyIntegrationMethod;
+  m_storage->stepDerivatives = replayFrame.stepDerivatives;
+  m_storage->differentiableParameters.assign(
+      replayFrame.differentiableParameters.begin(),
+      replayFrame.differentiableParameters.end());
+
+  if (m_collisionQueryCache) {
+    m_collisionQueryCache->clear();
+  }
+  markFrameCachesDirty(m_storage->registry);
+  if (m_simulationMode) {
+    updateKinematics();
+    prepareStepPipelineCacheForCurrentConfiguration();
+  }
+
+  m_replay->cursor = index;
+}
+
+//==============================================================================
+void World::recordReplayFrame()
+{
+  if (!m_replay || !m_replay->recordingEnabled) {
+    return;
+  }
+
+  if (m_replay->cursor && *m_replay->cursor + 1u < m_replay->frames.size()) {
+    m_replay->frames.erase(
+        m_replay->frames.begin()
+            + static_cast<std::ptrdiff_t>(*m_replay->cursor + 1u),
+        m_replay->frames.end());
+  }
+
+  ReplayState::Frame replayFrame;
+  replayFrame.simulationMode = m_simulationMode;
+  replayFrame.gravity = m_gravity;
+  replayFrame.rigidBodySolver = m_rigidBodySolver;
+  replayFrame.timeStep = m_timeStep;
+  replayFrame.differentiable = m_differentiable;
+  replayFrame.contactSolverMethod = m_contactSolverMethod;
+  replayFrame.contactGradientMode = m_contactGradientMode;
+  replayFrame.time = m_time;
+  replayFrame.frame = m_frame;
+  replayFrame.deformableSolverDiagnostics = m_lastDeformableSolverDiagnostics;
+  replayFrame.rigidIpcAdaptiveBarrierStiffnessLowerBound
+      = m_rigidIpcAdaptiveBarrierStiffnessLowerBound;
+  replayFrame.multibodyIntegrationMethod = m_multibodyIntegrationMethod;
+  replayFrame.stepDerivatives = m_storage->stepDerivatives;
+  replayFrame.differentiableParameters.assign(
+      m_storage->differentiableParameters.begin(),
+      m_storage->differentiableParameters.end());
+
+  replayFrame.deformableNodeStates
+      = captureReplayComponents<comps::DeformableNodeState>(
+          m_storage->registry);
+  replayFrame.deformableAvbdWarmStartStates
+      = compute::avbd_replay::captureDeformableAvbdWarmStartReplayState(
+          m_storage->registry);
+  replayFrame.multibodyVariationalStates
+      = captureReplayComponents<compute::MultibodyVariationalState>(
+          m_storage->registry);
+  replayFrame.variationalContactDualStates
+      = captureReplayComponents<comps::VariationalContactDualState>(
+          m_storage->registry);
+
+  auto jointView = m_storage->registry.view<comps::Joint>();
+  replayFrame.joints.reserve(countReplayView(jointView));
+  for (auto entity : jointView) {
+    const auto& joint = jointView.get<comps::Joint>(entity);
+    replayFrame.joints.push_back(
+        ReplayState::JointState{
+            entity,
+            ReplayState::JointLayoutState{
+                joint.type,
+                joint.actuatorType,
+                joint.name,
+                joint.springStiffness,
+                joint.dampingCoefficient,
+                joint.restPosition,
+                joint.armature,
+                joint.coulombFriction,
+                joint.breakForce,
+                joint.limits,
+                joint.axis,
+                joint.axis2,
+                joint.pitch,
+                joint.parentLink,
+                joint.childLink,
+                joint.hasRigidBodyFixedJointAnchors,
+                joint.rigidBodyFixedJointLocalAnchorParent,
+                joint.rigidBodyFixedJointLocalAnchorChild,
+                joint.rigidBodyFixedJointTargetRelativeOrientation},
+            joint.position,
+            joint.velocity,
+            joint.acceleration,
+            joint.torque,
+            joint.commandVelocity,
+            joint.broken});
+  }
+  std::ranges::sort(replayFrame.joints, [](const auto& lhs, const auto& rhs) {
+    return static_cast<std::uint32_t>(lhs.entity)
+           < static_cast<std::uint32_t>(rhs.entity);
+  });
+
+  auto linkView = m_storage->registry.view<comps::Link>();
+  replayFrame.links.reserve(countReplayView(linkView));
+  for (auto entity : linkView) {
+    const auto& link = linkView.get<comps::Link>(entity);
+    replayFrame.links.push_back(
+        ReplayState::LinkState{
+            entity,
+            link.mass,
+            captureReplayOptionalComponent<comps::CollisionGeometry>(
+                m_storage->registry, entity),
+            link.externalForce});
+  }
+  std::ranges::sort(replayFrame.links, [](const auto& lhs, const auto& rhs) {
+    return static_cast<std::uint32_t>(lhs.entity)
+           < static_cast<std::uint32_t>(rhs.entity);
+  });
+
+  auto publicFrameView = m_storage->registry.view<comps::FrameState>();
+  replayFrame.publicFrames.reserve(
+      countReplayPublicFrameEntities(m_storage->registry));
+  for (auto entity : publicFrameView) {
+    if (!isReplayPublicFrameEntity(m_storage->registry, entity)) {
+      continue;
+    }
+
+    replayFrame.publicFrames.push_back(
+        ReplayState::PublicFrameState{
+            entity,
+            publicFrameView.get<comps::FrameState>(entity),
+            captureReplayOptionalComponent<comps::FreeFrameProperties>(
+                m_storage->registry, entity),
+            captureReplayOptionalComponent<comps::FixedFrameProperties>(
+                m_storage->registry, entity)});
+  }
+  std::ranges::sort(
+      replayFrame.publicFrames, [](const auto& lhs, const auto& rhs) {
+        return static_cast<std::uint32_t>(lhs.entity)
+               < static_cast<std::uint32_t>(rhs.entity);
+      });
+
+  replayFrame.loopClosures
+      = captureReplayLoopClosures<ReplayState::LoopClosureState>(
+          m_storage->registry);
+
+  auto rigidBodyView = m_storage->registry.view<
+      comps::RigidBodyTag,
+      comps::FrameState,
+      comps::Transform,
+      comps::Velocity,
+      comps::Force,
+      comps::MassProperties>();
+  replayFrame.rigidBodies.reserve(countReplayView(rigidBodyView));
+  for (auto entity : rigidBodyView) {
+    replayFrame.rigidBodies.push_back(
+        ReplayState::RigidBodyState{
+            entity,
+            rigidBodyView.get<comps::Transform>(entity),
+            rigidBodyView.get<comps::Velocity>(entity),
+            rigidBodyView.get<comps::Force>(entity),
+            rigidBodyView.get<comps::MassProperties>(entity),
+            rigidBodyView.get<comps::FrameState>(entity).parentFrame,
+            captureReplayOptionalComponent<comps::ContactMaterial>(
+                m_storage->registry, entity),
+            captureReplayOptionalComponent<comps::CollisionGeometry>(
+                m_storage->registry, entity),
+            m_storage->registry.all_of<comps::StaticBodyTag>(entity),
+            m_storage->registry.all_of<comps::KinematicBodyTag>(entity),
+            m_storage->registry.all_of<comps::DeformableGroundBarrierTag>(
+                entity),
+            m_storage->registry.all_of<comps::DeformableSurfaceCcdObstacleTag>(
+                entity),
+            m_storage->registry.all_of<comps::DeformableObstacleNoCcdTag>(
+                entity)});
+  }
+  std::ranges::sort(
+      replayFrame.rigidBodies, [](const auto& lhs, const auto& rhs) {
+        return static_cast<std::uint32_t>(lhs.entity)
+               < static_cast<std::uint32_t>(rhs.entity);
+      });
+
+  m_replay->frames.push_back(std::move(replayFrame));
+  m_replay->cursor = m_replay->frames.size() - 1u;
+}
+
+//==============================================================================
+std::vector<Contact> World::collide()
+{
+  return collide(CollisionQueryOptions{});
+}
+
+//==============================================================================
+std::vector<Contact> World::collide(const CollisionQueryOptions& options)
+{
+  return queryContacts(options);
+}
+
+//==============================================================================
+const std::vector<Contact>& World::queryContacts(
+    const CollisionQueryOptions& options)
+{
+  if (!m_collisionQueryCache) {
+    m_collisionQueryCache = std::make_unique<CollisionQueryCache>();
+  }
+  auto& cache = *m_collisionQueryCache;
+  auto& specs = cache.specs;
+  specs.clear();
+
+  const auto findMultibodyOwningLink = [&](entt::entity linkEntity) {
+    auto view = m_storage->registry.view<comps::MultibodyStructure>();
+    for (auto multibody : view) {
+      const auto& structure = view.get<comps::MultibodyStructure>(multibody);
+      if (std::find(structure.links.begin(), structure.links.end(), linkEntity)
+          != structure.links.end()) {
+        return multibody;
+      }
+    }
+    return static_cast<entt::entity>(entt::null);
+  };
+
+  const auto makeNativeShape =
+      [](const CollisionShape& collisionShape) -> std::unique_ptr<ncol::Shape> {
+    std::unique_ptr<ncol::Shape> shape;
+    switch (collisionShape.type) {
+      case CollisionShapeType::Sphere:
+        shape = std::make_unique<ncol::SphereShape>(collisionShape.radius);
+        break;
+      case CollisionShapeType::Box:
+        shape = std::make_unique<ncol::BoxShape>(collisionShape.halfExtents);
+        break;
+      case CollisionShapeType::Capsule:
+        shape = std::make_unique<ncol::CapsuleShape>(
+            collisionShape.radius, 2.0 * collisionShape.halfExtents.z());
+        break;
+      case CollisionShapeType::Cylinder:
+        shape = std::make_unique<ncol::CylinderShape>(
+            collisionShape.radius, 2.0 * collisionShape.halfExtents.z());
+        break;
+      case CollisionShapeType::Plane:
+        shape = std::make_unique<ncol::PlaneShape>(
+            collisionShape.normal, collisionShape.offset);
+        break;
+      case CollisionShapeType::Mesh:
+        shape = std::make_unique<ncol::MeshShape>(
+            collisionShape.vertices, collisionShape.triangles);
+        break;
+    }
+    return shape;
+  };
+
+  const auto supportsNativeShape = [](const CollisionShape& collisionShape) {
+    switch (collisionShape.type) {
+      case CollisionShapeType::Sphere:
+      case CollisionShapeType::Box:
+      case CollisionShapeType::Capsule:
+      case CollisionShapeType::Cylinder:
+      case CollisionShapeType::Plane:
+      case CollisionShapeType::Mesh:
+        return true;
+    }
+    return false;
+  };
+
+  const auto addSpecs = [&](entt::entity entity,
+                            entt::entity multibody,
+                            bool isLink,
+                            const comps::CollisionGeometry& geometry,
+                            const Eigen::Isometry3d& pose) {
+    for (std::size_t i = 0; i < geometry.shapes.size(); ++i) {
+      const auto& shape = geometry.shapes[i];
+      if (!supportsNativeShape(shape)) {
+        continue;
+      }
+      specs.push_back(
+          CollisionQueryCache::ShapeEntrySpec{
+              CollisionQueryCache::Key{
+                  entity, i, geometry.revision, multibody, isLink},
+              &shape,
+              pose * shape.localTransform});
+    }
+  };
+
+  const auto includesPair = [&](const CollisionQueryCache::ObjectEntry& a,
+                                const CollisionQueryCache::ObjectEntry& b) {
+    if (a.entity == b.entity) {
+      return false;
+    }
+
+    if (a.isLink && b.isLink) {
+      return options.includeLinkPairs
+             && (options.includeSameMultibodyLinkPairs
+                 || a.multibody == entt::null || a.multibody != b.multibody);
+    }
+
+    if (a.isLink || b.isLink) {
+      return options.includeRigidBodyLinkPairs;
+    }
+
+    return options.includeRigidBodyPairs;
+  };
+
+  // Rigid bodies pose their collision shapes from the rigid-body transform.
+  auto rigidBodyView = m_storage->registry.view<
+      comps::CollisionGeometry,
+      comps::Transform,
+      comps::RigidBodyTag>();
+  for (auto entity : rigidBodyView) {
+    const auto& geometry = rigidBodyView.get<comps::CollisionGeometry>(entity);
+    const auto& transform = rigidBodyView.get<comps::Transform>(entity);
+
+    Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
+    pose.linear() = transform.orientation.normalized().toRotationMatrix();
+    pose.translation() = transform.position;
+    addSpecs(entity, entt::null, false, geometry, pose);
+  }
+
+  // Multibody links pose their collision shapes through the frame accessor so
+  // dirty joint-driven caches are refreshed before the query.
+  auto linkView
+      = m_storage->registry
+            .view<comps::CollisionGeometry, comps::Link, comps::FrameCache>();
+  for (auto entity : linkView) {
+    const auto& geometry = linkView.get<comps::CollisionGeometry>(entity);
+    const Link link(detail::fromRegistryEntity(entity), this);
+    const entt::entity multibody = findMultibodyOwningLink(entity);
+    addSpecs(entity, multibody, true, geometry, link.getWorldTransform());
+  }
+
+  if (specs.empty()) {
+    cache.contacts.clear();
+    return cache.contacts;
+  }
+
+  const bool rebuildCache
+      = cache.keys.size() != specs.size()
+        || !std::equal(
+            specs.begin(),
+            specs.end(),
+            cache.keys.begin(),
+            [](const CollisionQueryCache::ShapeEntrySpec& spec,
+               const CollisionQueryCache::Key& key) {
+              return spec.key == key;
+            });
+
+  if (rebuildCache) {
+    cache.clearObjectsAndResultsPreservingSpecs();
+    cache.collisionWorld.reserveObjects(specs.size());
+    cache.keys.reserve(specs.size());
+    cache.entries.reserve(specs.size());
+    for (const auto& spec : specs) {
+      ncol::CollisionObject object = cache.collisionWorld.createObject(
+          makeNativeShape(*spec.shape), spec.pose);
+      const std::size_t entryIndex = cache.entries.size();
+      const std::size_t objectId = object.getId();
+      if (objectId >= cache.entryByObjectId.size()) {
+        cache.entryByObjectId.resize(
+            objectId + 1, std::numeric_limits<std::size_t>::max());
+      }
+      cache.entryByObjectId[objectId] = entryIndex;
+      cache.keys.push_back(spec.key);
+      cache.entries.push_back(
+          CollisionQueryCache::ObjectEntry{
+              spec.key.entity, spec.key.multibody, spec.key.isLink, object});
+    }
+  } else {
+    for (std::size_t i = 0; i < specs.size(); ++i) {
+      auto& object = cache.entries[i].object;
+      object.setTransform(specs[i].pose);
+      cache.collisionWorld.updateObject(object);
+    }
+  }
+
+  // Broad-phase-pruned narrow-phase queries. Each candidate pair's bodies are
+  // known here, so the contacts map back to the right experimental bodies
+  // without relying on the result carrying object identity.
+  const auto option = ncol::CollisionOption::fullContacts();
+  cache.collisionWorld.buildBroadPhaseSnapshot(cache.candidatePairs);
+  auto& contacts = cache.contacts;
+  contacts.clear();
+  for (const auto& pair : cache.candidatePairs.pairs) {
+    if (pair.first >= cache.entryByObjectId.size()
+        || pair.second >= cache.entryByObjectId.size()) {
+      continue;
+    }
+    const std::size_t i = cache.entryByObjectId[pair.first];
+    const std::size_t j = cache.entryByObjectId[pair.second];
+    if (i >= cache.entries.size() || j >= cache.entries.size()) {
+      continue;
+    }
+    if (!includesPair(cache.entries[i], cache.entries[j])) {
+      continue;
+    }
+
+    auto& result = cache.pairResult;
+    result.clear();
+    if (!cache.collisionWorld.collide(
+            cache.entries[i].object, cache.entries[j].object, option, result)) {
+      continue;
+    }
+
+    result.forEachContact([&](const ncol::ContactPoint& point) {
+      // The native narrow phase reports the normal pointing from the second
+      // object toward the first; the public Contact convention points from
+      // bodyA (entries[i]) toward bodyB (entries[j]), so negate it.
+      contacts.push_back(
+          Contact{
+              CollisionBody(
+                  detail::fromRegistryEntity(cache.entries[i].entity), this),
+              CollisionBody(
+                  detail::fromRegistryEntity(cache.entries[j].entity), this),
+              point.position,
+              -point.normal,
+              point.depth,
+              specs[i].key.shapeIndex,
+              specs[j].key.shapeIndex,
+              specs[i].pose.inverse() * point.position,
+              specs[j].pose.inverse() * point.position});
+    });
+  }
+
+  return contacts;
+}
+
+//==============================================================================
+void World::saveBinary(std::ostream& output) const
+{
+  io::writeFormatHeader(output);
+
+  io::EntityMap entityMap;
+  io::SerializerRegistry::instance().saveAllEntities(
+      output, m_storage->registry, entityMap);
+
+  const std::uint8_t simulationFlag = m_simulationMode ? 1 : 0;
+  io::writePOD(output, simulationFlag);
+  io::writePOD(output, m_freeFrameCounter);
+  io::writePOD(output, m_fixedFrameCounter);
+  io::writePOD(output, m_multibodyCounter);
+  io::writePOD(output, m_rigidBodyCounter);
+  io::writePOD(output, m_linkCounter);
+  io::writePOD(output, m_jointCounter);
+  io::writePOD(output, m_timeStep);
+  io::writePOD(output, m_time);
+  io::writePOD(output, m_frame);
+  io::writePOD(output, m_gravity.x());
+  io::writePOD(output, m_gravity.y());
+  io::writePOD(output, m_gravity.z());
+  io::writePOD(output, m_deformableBodyCounter);
+
+  const std::uint8_t differentiableFlag = m_differentiable ? 1 : 0;
+  io::writePOD(output, differentiableFlag);
+
+  io::writePOD(output, encodeRigidBodySolver(m_rigidBodySolver));
+  io::writePOD(output, encodeContactSolverMethod(m_contactSolverMethod));
+  io::writePOD(output, encodeContactGradientMode(m_contactGradientMode));
+  const std::uint8_t multibodyIntegrationMethod
+      = m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational
+            ? 1u
+            : 0u;
+  io::writePOD(output, multibodyIntegrationMethod);
+}
+
+//==============================================================================
+void World::loadBinary(std::istream& input)
+{
+  clear();
+
+  const auto formatVersion = io::readFormatHeader(input);
+
+  io::EntityMap entityMap;
+  io::SerializerRegistry::instance().loadAllEntities(
+      input, m_storage->registry, entityMap, formatVersion);
+
+  // World metadata (optional for forward-compatibility)
+  if (input.peek() != std::char_traits<char>::eof()) {
+    std::uint8_t simulationFlag = 0;
+    io::readPOD(input, simulationFlag);
+    m_simulationMode = simulationFlag != 0;
+
+    io::readPOD(input, m_freeFrameCounter);
+    io::readPOD(input, m_fixedFrameCounter);
+    io::readPOD(input, m_multibodyCounter);
+    io::readPOD(input, m_rigidBodyCounter);
+    io::readPOD(input, m_linkCounter);
+    io::readPOD(input, m_jointCounter);
+
+    if (input.peek() != std::char_traits<char>::eof()) {
+      io::readPOD(input, m_timeStep);
+      io::readPOD(input, m_time);
+      io::readPOD(input, m_frame);
+    }
+
+    if (formatVersion >= 2) {
+      double gravityX = 0.0;
+      double gravityY = 0.0;
+      double gravityZ = 0.0;
+      io::readPOD(input, gravityX);
+      io::readPOD(input, gravityY);
+      io::readPOD(input, gravityZ);
+      m_gravity = Eigen::Vector3d(gravityX, gravityY, gravityZ);
+    }
+
+    if (input.peek() != std::char_traits<char>::eof()) {
+      io::readPOD(input, m_deformableBodyCounter);
+    }
+
+    if (formatVersion >= 6 && input.peek() != std::char_traits<char>::eof()) {
+      std::uint8_t differentiableFlag = 0;
+      io::readPOD(input, differentiableFlag);
+      m_differentiable = differentiableFlag != 0;
+    }
+
+    if (formatVersion >= 15 && input.peek() != std::char_traits<char>::eof()) {
+      std::uint8_t rigidBodySolver = 0u;
+      std::uint8_t contactSolverMethod = 0u;
+      std::uint8_t contactGradientMode = 0u;
+      std::uint8_t multibodyIntegrationMethod = 0u;
+      io::readPOD(input, rigidBodySolver);
+      io::readPOD(input, contactSolverMethod);
+      io::readPOD(input, contactGradientMode);
+      io::readPOD(input, multibodyIntegrationMethod);
+
+      m_rigidBodySolver = decodeRigidBodySolver(rigidBodySolver);
+      m_contactSolverMethod = decodeContactSolverMethod(contactSolverMethod);
+      m_contactGradientMode = decodeContactGradientMode(contactGradientMode);
+      switch (multibodyIntegrationMethod) {
+        case 0u:
+          m_multibodyIntegrationMethod
+              = MultibodyIntegrationMethod::SemiImplicit;
+          break;
+        case 1u:
+          m_multibodyIntegrationMethod
+              = MultibodyIntegrationMethod::Variational;
+          break;
+        default:
+          DART_SIMULATION_THROW_T(
+              InvalidArgumentException,
+              "Serialized World multibody integration method value is invalid");
+      }
+    }
+  }
+
+  // Ensure all frame entities have cache components (not serialized)
+  auto frameView = m_storage->registry.view<comps::FrameTag>();
+  for (auto entity : frameView) {
+    if (!m_storage->registry.any_of<comps::FrameCache>(entity)) {
+      auto& cache = m_storage->registry.emplace<comps::FrameCache>(entity);
+      cache.worldTransform = Eigen::Isometry3d::Identity();
+      cache.needTransformUpdate = true;
+    } else {
+      auto& cache = m_storage->registry.get<comps::FrameCache>(entity);
+      cache.needTransformUpdate = true;
+    }
+  }
+
+  resetCountersFromRegistry();
+
+  if (m_simulationMode) {
+    updateKinematics();
+    detail::deformable_vbd::configureAvbdRigidWorldPointJointsFromCurrentPoses(
+        m_storage->registry);
+    prepareStepPipelineCacheForCurrentConfiguration();
+  }
+}
+
+//==============================================================================
+void World::resetCountersFromRegistry()
+{
+  m_freeFrameCounter = std::max(
+      m_freeFrameCounter,
+      countEntities<comps::FreeFrameTag>(m_storage->registry));
+  m_fixedFrameCounter = std::max(
+      m_fixedFrameCounter,
+      countEntities<comps::FixedFrameTag>(m_storage->registry));
+  m_multibodyCounter = std::max(
+      m_multibodyCounter,
+      countEntities<comps::MultibodyTag>(m_storage->registry));
+  m_loopClosureCounter = std::max(
+      m_loopClosureCounter,
+      countEntities<comps::LoopClosure>(m_storage->registry));
+  m_rigidBodyCounter = std::max(
+      m_rigidBodyCounter,
+      countEntities<comps::RigidBodyTag>(m_storage->registry));
+  m_deformableBodyCounter = std::max(
+      m_deformableBodyCounter,
+      countEntities<comps::DeformableBodyTag>(m_storage->registry));
+  m_linkCounter = std::max(
+      m_linkCounter, countEntities<comps::Link>(m_storage->registry));
+  m_jointCounter = std::max(
+      m_jointCounter, countEntities<comps::Joint>(m_storage->registry));
+}
+
+} // namespace dart::simulation

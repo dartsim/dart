@@ -5,7 +5,7 @@ solver (PLAN-082).
 Unlike the neatly aligned ``rigid_ipc_stack``, the boxes start spread out and
 at different heights, so they fall, collide, and settle into an irregular pile --
 exercising several simultaneous body-ground and body-body barrier contacts.
-WorldRenderBridge mirrors the bodies into a parallel dart.simulation.World for
+WorldRenderBridge mirrors the bodies into a parallel render World for
 rendering.
 """
 

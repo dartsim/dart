@@ -106,7 +106,7 @@ jobs:
             --target dart-utils \
             --target dart-utils-urdf \
             --target dart-io \
-            --target dart-simulation-experimental \
+            --target dart-simulation \
             --target dartsim_engine
 
       - name: CodeQL Analyze

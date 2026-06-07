@@ -2,17 +2,18 @@
 
 ## Status
 
-Proposal. This document owns the durable architecture rationale for how the
-experimental simulation `World` runs physics: the solver abstraction, how
-entities are assigned to solvers, how multiple physics domains are coupled, how
-static model data is separated from dynamic state, and how all of this maps onto
-the existing compute-graph executor.
+Living design and implementation contract. This document owns the durable
+architecture rationale for the DART 7 simulation `World`: how physics is
+organized into solver abstractions, how entities are assigned to solvers, how
+multiple physics domains are coupled, how static model data is separated from
+dynamic state, and how all of this maps onto the existing compute-graph
+executor.
 
 It is the internal-organization companion to the public-facade design docs:
 
-- [`simulation_experimental_cpp_api.md`](simulation_experimental_cpp_api.md)
+- [`simulation_cpp_api.md`](simulation_cpp_api.md)
   owns the public C++ object model, naming policy, and DART 7 promotion rules.
-- [`simulation_experimental_python_api.md`](simulation_experimental_python_api.md)
+- [`simulation_python_api.md`](simulation_python_api.md)
   owns the dartpy surface.
 
 This doc does not restate those rules; it explains the engine architecture that
@@ -24,8 +25,10 @@ simulation).
 
 ## Purpose
 
-The experimental `World` must grow from its current state (a single hard-wired
-free-body integration stage plus forward kinematics) into a simulator that:
+The DART 7 `World` now has a content-aware built-in step schedule with
+rigid, articulated, deformable, rigid IPC, variational-integrator, and
+differentiable solver-family work behind one facade. It must keep growing into a
+simulator that:
 
 1. runs full rigid-body dynamics with constraints and contacts, matching and
    then improving on the legacy DART 6 capability set;
@@ -70,7 +73,7 @@ solvers and keeps a uniform `World::add*` surface.
 A solver is documented by capability: integration family, dynamics approach,
 constraint solve, coordinate support, supported features, execution shape, and
 differentiability (the capability matrix in
-[`simulation_experimental_cpp_api.md`](simulation_experimental_cpp_api.md)).
+[`simulation_cpp_api.md`](simulation_cpp_api.md)).
 Public selection uses method/approach/paper or DART-owned names — for example
 `articulated-body`, `semi-implicit`, `projected Gauss-Seidel`, `XPBD`,
 `implicit time stepping`. Solver, preset, and example names must not be derived
@@ -178,9 +181,11 @@ execution, if added, wraps this contract; it does not replace it.
 | Step schedule   | Ordered substep windowing (prepare / pre-couple / couple / post-couple).                       | Hidden; pipeline/stage overloads for advanced.   |
 
 These map onto the existing implementation primitives: the ECS registry holds
-Model/State/Control/Contacts components; the compute graph and executors run the
-solver and coupler work; `WorldStepPipeline`/`WorldStepStage` are the current
-seam that the solver schedule generalizes.
+Model/State/Control/Contacts components; `WorldStepPipeline`/`WorldStepStage`
+provide the current ordered step-composition seam; and stage internals may emit
+`ComputeGraph` work through the injected executor. The longer-term solver/coupler
+contract should keep moving stage work toward explicit compute-graph nodes and
+dependencies, but the current built-in schedule is still an ordered stage list.
 
 ## Solver Interface
 
@@ -236,7 +241,9 @@ active solver, allocating State/Control/Contacts runtime storage. Each
 1. refresh collision/contact generation for the substep (when contacts are
    enabled);
 2. run the prepare / pre-couple / couple / post-couple schedule across active
-   solvers and registered couplers via the compute graph;
+   solvers and registered couplers through the built-in stage schedule, with
+   backend-neutral compute-graph work inside stages where parallel execution is
+   available;
 3. integrate state and advance internal substep accounting.
 
 After the substep loop, the `World` advances time and frame counters once per
@@ -244,22 +251,39 @@ After the substep loop, the `World` advances time and frame counters once per
 accumulators following a documented policy. Active solvers are those that have
 at least one assigned entity; an empty domain contributes nothing.
 
-This generalizes the current pipeline: today `World::step()` runs a
-`RigidBodyIntegrationStage` then a `KinematicsStage`. Under this architecture
-the rigid-body work becomes the rigid-body solver's substep contribution, and
-kinematics refresh remains a world-level post-step concern.
+This generalizes the original single-domain pipeline, where `World::step()` ran
+rigid-body integration and then refreshed kinematics. In the current
+implementation, rigid, articulated, and deformable work is selected through the
+content-aware built-in schedule described below; kinematics refresh remains a
+world-level post-step concern.
+
+Current implementation note: the built-in DART 7 `World::step()` schedule
+is centralized in `detail/world_step_schedule.hpp`, and `world.cpp` maps that
+internal schedule to concrete stage objects. New solver-family work that changes
+the default step path should update that schedule and its focused tests, not add
+a second ad-hoc switch in a stage, solver, or custom-pipeline overload. The
+schedule is an internal composition contract only; public users still select
+method families and policies through the facade. Post-bake method-family
+changes re-run one shared preparation path for the active schedule instead of
+teaching each setter which stages own scratch. The schedule is content-aware:
+rigid, multibody, and deformable stage slots are emitted only when that domain
+has entities, so empty domains do not add placeholder work or profiling rows.
+The custom-final-stage `World::step()` overload reuses the same cached built-in
+stage objects, so solver preparation, scratch ownership, and diagnostics stay
+shared with the default path.
 
 ## Default Solver Selection
 
 Common users should not choose a solver. The `World` selects a sensible default
 per domain from content:
 
-| Content                         | Default method family                                                         |
-| ------------------------------- | ----------------------------------------------------------------------------- |
-| Rigid bodies / articulated only | Articulated-body forward dynamics + LCP contacts (the DART 6-equivalent path) |
-| Deformables (later)             | Position-based / implicit deformable solver                                   |
-| Particles / fluids (later)      | Continuum/particle solver                                                     |
-| Mixed domains (later)           | Per-domain defaults plus registered couplers                                  |
+| Content                    | Default method family                                                                    |
+| -------------------------- | ---------------------------------------------------------------------------------------- |
+| Free rigid bodies          | Sequential-impulse free-rigid dynamics/contact path                                      |
+| Articulated multibodies    | Semi-implicit articulated-body forward dynamics plus the unified constraint/contact path |
+| Deformables                | Mass-spring / stable neo-Hookean FEM through the deformable dynamics stage               |
+| Particles / fluids (later) | Continuum/particle solver                                                                |
+| Mixed domains              | Per-domain defaults in the content-aware schedule; cross-domain couplers remain planned  |
 
 Advanced users may request a method family or set policies; the `World` returns
 documented fallback behavior or an unsupported-capability error when the build
@@ -275,6 +299,17 @@ internal solver objects. The common path should be:
 - add bodies/domains through the public facade;
 - set at most a method-family or policy preset when the default is not desired;
 - call `step()` and read diagnostics when a requested capability is unsupported.
+
+Current implementation note: `WorldOptions` owns the construction-time domain
+solver choices that affect the built-in schedule (`rigidBodySolver` and
+`multibodyOptions`) alongside contact/differentiability policies. The post-
+construction setters remain for interactive workflows, but new domain-level
+solver family defaults should enter through this value-object path first so
+construction, bindings, serialization, and schedule preparation stay aligned.
+Binary save/load and replay frames preserve the result-affecting World-level
+solver choices (`rigidBodySolver`, `multibodyOptions.integrationFamily`,
+`contactSolverMethod`, `contactGradientMode`, and `differentiable`) so a restart
+does not silently fall back to the default schedule.
 
 The configuration design must keep simple use simple and invalid use hard:
 
@@ -312,7 +347,7 @@ configuration, and explicit failure/fallback semantics.
 
 ## Where Differentiable Solver Families Fit
 
-Differentiability is a solver capability of the experimental `World`, not a
+Differentiability is a solver capability of the DART 7 `World`, not a
 separate user-facing engine. The multi-solver architecture therefore has two
 levels:
 
@@ -330,13 +365,13 @@ levels:
 That placement gives DART a clean relation between the existing and proposed
 paths:
 
-| Path                                      | Domain              | Forward method                                  | Gradient method                                | Relationship                                                                  |
-| ----------------------------------------- | ------------------- | ----------------------------------------------- | ---------------------------------------------- | ----------------------------------------------------------------------------- |
-| Existing rigid-body default               | Rigid / articulated | Semi-implicit dynamics + existing contact path  | none                                           | easy path and compatibility baseline                                          |
-| PLAN-110 boxed-LCP/Nimble-style path      | Rigid / articulated | Generalized-coordinate boxed LCP contact solve  | active-set LCP implicit differentiation        | first opt-in differentiable rigid solver; default remains off                 |
-| Planned Dojo-style evaluation             | Rigid / articulated | Variational maximal/constrained coordinate NCP  | IPM/KKT implicit differentiation               | possible second opt-in rigid solver family after an internal spike            |
-| PLAN-081/PLAN-104 deformable solver paths | Deformable          | IPC/VBD-family deformable methods               | deferred per-solver/coupler differentiation    | separate domain; later coupled to rigid solvers through pairwise couplers     |
-| PLAN-082 variational-integrator work      | Rigid / articulated | Variational integration for articulated systems | not sufficient by itself for contact gradients | shared integration rationale; Dojo adds contact/NCP/IPM and differentiability |
+| Path                                      | Domain              | Forward method                                                 | Gradient method                                | Relationship                                                                  |
+| ----------------------------------------- | ------------------- | -------------------------------------------------------------- | ---------------------------------------------- | ----------------------------------------------------------------------------- |
+| Existing rigid-body default               | Rigid / articulated | Semi-implicit dynamics + existing contact path                 | none                                           | easy path and compatibility baseline                                          |
+| PLAN-110 boxed-LCP/Nimble-style path      | Rigid / articulated | Generalized-coordinate boxed LCP normal/friction contact solve | active-set LCP implicit differentiation        | first opt-in differentiable rigid solver; default remains off                 |
+| Planned Dojo-style evaluation             | Rigid / articulated | Variational maximal/constrained coordinate NCP                 | IPM/KKT implicit differentiation               | possible second opt-in rigid solver family after an internal spike            |
+| PLAN-081/PLAN-104 deformable solver paths | Deformable          | IPC/VBD-family deformable methods                              | deferred per-solver/coupler differentiation    | separate domain; later coupled to rigid solvers through pairwise couplers     |
+| PLAN-082 variational-integrator work      | Rigid / articulated | Variational integration for articulated systems                | not sufficient by itself for contact gradients | shared integration rationale; Dojo adds contact/NCP/IPM and differentiability |
 
 The public API should not expose a `DojoWorld`, `DojoSolver`, solver registry, or
 Dojo.jl dependency. If promoted, users would opt in through DART-owned
@@ -351,13 +386,15 @@ the facade.
 
 ## Compute-Graph Integration
 
-Solvers and couplers express their work as compute-graph nodes with explicit
-dependencies and stage metadata; the executor (sequential reference, parallel,
-or a future backend) runs the graph. This keeps the dynamics backend-neutral and
-reuses the existing scheduling, profiling, and DOT-visualization surfaces. The
-substep schedule is encoded as graph dependencies (pre-couple nodes precede
-couple nodes precede post-couple nodes), not as hard-coded call order, so the
-executor remains free to parallelize independent solver work within a phase.
+Solvers and couplers should express parallelizable work as compute-graph nodes
+with explicit dependencies and stage metadata; the executor (sequential
+reference, parallel, or a future backend) runs those graphs. The current
+`World::step()` implementation still composes solver families with an ordered
+`WorldStepPipeline`, and individual stages decide whether to build a
+`ComputeGraph` internally. This keeps today's dynamics backend-neutral without
+pretending the whole substep schedule is already a DAG. As solver/coupler phases
+mature, the target is to encode pre-couple/couple/post-couple dependencies in
+graphs so independent solver work within a phase can run concurrently.
 
 The compute graph stays an implementation/extension surface. Backend types, task
 systems, devices, streams, and memory pools are never part of the public solver
@@ -374,7 +411,7 @@ contract (see the compute-surface rules in the public-facade doc).
 - Expose dynamics through entity handles and state/control/contact views with
   documented ownership and freshness, never through the registry.
 - Default selection must keep the easy path (`World` + `addRigidBody` /
-  `addMultiBody` + `step`) free of solver vocabulary.
+  `addMultibody` + `step`) free of solver vocabulary.
 - Custom solver/coupler plugins that cross shared-library or Python-callback
   boundaries are deferred until a dedicated ABI/lifetime/threading design
   exists.
@@ -383,7 +420,8 @@ contract (see the compute-surface rules in the public-facade doc).
 
 - the concrete contact/constraint solver internals (LCP formulation, friction
   model) — owned by the rigid-body solver implementation and its tests;
-- deformable, particle, and fluid solvers and their couplers;
+- additional deformable solver parity, deformable-rigid coupling, and particle /
+  fluid solvers plus their couplers;
 - model/state batching (replicated worlds, `n_envs`) and differentiable
   rollouts;
 - a public solver/coupler registration API for third-party methods;
@@ -421,7 +459,7 @@ Implementation PRs that realize parts of this architecture should include:
 
 - `pixi run lint`;
 - `pixi run build`;
-- focused C++ tests under `tests/unit/simulation/experimental/`;
+- focused C++ tests under `tests/unit/simulation/`;
 - `pixi run check-api-boundaries` when public headers or dartpy bindings change;
 - `pixi run test-py` when Python bindings are affected;
 - benchmark evidence when a change claims a performance or scalability gain;

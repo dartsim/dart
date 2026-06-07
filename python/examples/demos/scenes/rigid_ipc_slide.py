@@ -6,7 +6,7 @@ This scene complements ``rigid_ipc`` (a box settling straight down). Here the
 box starts in contact with a tangential velocity, so the smooth contact barrier
 holds it above the ground while lagged Coulomb friction decelerates the slide
 without it penetrating or freezing. WorldRenderBridge mirrors the box and ground
-into a parallel dart.simulation.World for rendering.
+into a parallel render World for rendering.
 """
 
 from __future__ import annotations

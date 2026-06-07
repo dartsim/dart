@@ -140,20 +140,14 @@ def test_filter(name, cd_factory):
     shape_node1.create_visual_aspect()
     shape_node1.create_collision_aspect()
 
-    # Create a world and add the created skeleton
-    world = dart.gui.RenderWorld()
-    world.add_skeleton(skel)
-
-    # Set a new collision detector
-    constraint_solver = world.get_constraint_solver()
-    constraint_solver.set_collision_detector(cd_factory())
-
-    # Get the collision group from the constraint solver
-    group = constraint_solver.get_collision_group()
+    group = cd_factory().create_collision_group()
+    group.add_shape_frames_of(body0)
+    group.add_shape_frames_of(body1)
     assert group.get_num_shape_frames() == 2
 
     # Create BodyNodeCollisionFilter
-    option = constraint_solver.get_collision_option()
+    option = dart.CollisionOption()
+    option.enable_contact = True
     body_node_filter = dart.BodyNodeCollisionFilter()
     option.collision_filter = body_node_filter
 
@@ -163,7 +157,7 @@ def test_filter(name, cd_factory):
     assert skel.is_enabled_adjacent_body_check()
     assert group.collide()
     assert group.collide(option)
-    assert world.check_collision_result(option).is_collision()
+    assert group.collide_result(option).is_collision()
 
     skel.enable_self_collision_check()
     skel.disable_adjacent_body_check()

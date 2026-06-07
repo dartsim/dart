@@ -131,10 +131,12 @@ def test_world_factory_injects_gpu_panel():
         build=lambda: SceneSetup(world=sentinel_world),
     )
     result = _make_world_factory(scene, gpu_panel)()
-    # An injected panel forces the (world, pre_step, force_drag, panels) form.
+    # The viewer factory returns (pre_step, force_drag, panels, provider).
     assert isinstance(result, tuple) and len(result) == 4
-    assert result[0] is sentinel_world
-    assert gpu_panel in result[3]
+    assert result[0] is None
+    assert result[1] is None
+    assert result[2] == [gpu_panel]
+    assert result[3] is None
 
 
 def test_world_factory_without_gpu_panel_is_unchanged():
@@ -146,14 +148,14 @@ def test_world_factory_without_gpu_panel_is_unchanged():
         summary="s",
         build=lambda: SceneSetup(world=sentinel_world),
     )
-    # No panel, no pre_step/force_drag -> the bare world is returned as before.
-    assert _make_world_factory(scene)() is sentinel_world
+    # No callbacks, no panels, no renderable provider.
+    assert _make_world_factory(scene)() == (None, None, None, None)
 
 
 def test_dartpy_gpu_bindings_are_safe_noops_without_cuda():
     sx = dart
     if not hasattr(sx, "set_accelerated_deformable_solve"):
-        pytest.skip("simulation_experimental is disabled in this build")
+        pytest.skip("simulation bindings are disabled in this build")
     if sx.is_accelerated_deformable_solve_available():
         # On a CUDA-enabled build the behavior is covered by the cuda env demos.
         return

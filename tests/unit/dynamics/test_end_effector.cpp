@@ -12,7 +12,6 @@
 
 using namespace dart;
 using namespace dynamics;
-using namespace dart::simulation;
 
 class EndEffectorTest : public ::testing::Test
 {

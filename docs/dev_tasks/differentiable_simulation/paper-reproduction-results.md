@@ -1,6 +1,6 @@
 # Nimble paper reproduction: correctness + performance results
 
-This records how DART's experimental differentiable simulation reproduces and
+This records how DART 7 differentiable simulation reproduces and
 compares against the Nimble paper (Werling et al., _Fast and Feature-Complete
 Differentiable Physics for Articulated Rigid Bodies with Contact_, RSS 2021,
 [arXiv:2103.16021](https://arxiv.org/abs/2103.16021)) and its reference
@@ -136,7 +136,7 @@ A scoped investigation graded the experiments not yet reproduced:
   dynamics derivatives and the scalable contact gradient above are its
   prerequisites and are in place.
 - **Atlas Jacobian table**: additionally needs mesh/capsule colliders and a
-  URDF loader the experimental World does not have — reproducible only as a
+  URDF loader the DART 7 World does not have — reproducible only as a
   box-approximated, degraded model.
 - **Atlas jump-from-crouch and Jump-Worm "jump as high as possible"**: require
   **floating-base articulated dynamics** (and its gradient); the experimental

@@ -212,8 +212,8 @@ endif()
 
 # Add custom target to build all the tests as a single target
 set(extra_test_targets)
-if(TARGET dart_experimental_tests)
-  list(APPEND extra_test_targets dart_experimental_tests)
+if(TARGET dart_simulation_tests)
+  list(APPEND extra_test_targets dart_simulation_tests)
 endif()
 
 add_custom_target(

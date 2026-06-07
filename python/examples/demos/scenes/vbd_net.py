@@ -1,6 +1,6 @@
 """VBD net: a spring net pinned at its two top corners, solved by VBD.
 
-Mirrors the C++ ``experimental_deformable`` net scene (without a ground), so the
+Mirrors the C++ deformable net demo (without a ground), so the
 contact-free body runs through the VBD inner solver. The net sags and sways
 under gravity between its pinned corners.
 """
@@ -33,7 +33,8 @@ def _make_net_options(columns: int, rows: int) -> "sx.DeformableBodyOptions":
             z = 0.92 - 0.135 * row
             positions.append(np.array([x, y, z]))
             velocities.append(
-                np.array([0.0, 0.16 * math.sin(0.7 * row + 0.3 * col), 0.0]))
+                np.array([0.0, 0.16 * math.sin(0.7 * row + 0.3 * col), 0.0])
+            )
             masses.append(0.08)
     options.positions = positions
     options.velocities = velocities
@@ -50,17 +51,19 @@ def _make_net_options(columns: int, rows: int) -> "sx.DeformableBodyOptions":
         for col in range(columns):
             if col + 1 < columns:
                 edges.append(
-                    sx.DeformableEdge(index(col, row), index(col + 1, row), -1.0))
+                    sx.DeformableEdge(index(col, row), index(col + 1, row), -1.0)
+                )
             if row + 1 < rows:
                 edges.append(
-                    sx.DeformableEdge(index(col, row), index(col, row + 1), -1.0))
+                    sx.DeformableEdge(index(col, row), index(col, row + 1), -1.0)
+                )
             if col + 1 < columns and row + 1 < rows:
                 edges.append(
-                    sx.DeformableEdge(
-                        index(col, row), index(col + 1, row + 1), -1.0))
+                    sx.DeformableEdge(index(col, row), index(col + 1, row + 1), -1.0)
+                )
                 edges.append(
-                    sx.DeformableEdge(
-                        index(col + 1, row), index(col, row + 1), -1.0))
+                    sx.DeformableEdge(index(col + 1, row), index(col, row + 1), -1.0)
+                )
     options.edges = edges
     options.edge_stiffness = 65.0
     options.damping = 1.1
@@ -82,7 +85,8 @@ def build() -> SceneSetup:
     bridge = WorldRenderBridge(world, name="vbd_net_render")
     body = world.get_deformable_body("vbd_net")
     bridge.add_deformable_visual(
-        body, (0.20, 0.70, 0.55), radius=0.03, fixed_color=(0.95, 0.50, 0.16))
+        body, (0.20, 0.70, 0.55), radius=0.03, fixed_color=(0.95, 0.50, 0.16)
+    )
     bridge.sync()
 
     pin_indices = (0, columns - 1)

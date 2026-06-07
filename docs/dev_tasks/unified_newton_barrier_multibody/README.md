@@ -31,11 +31,24 @@
         point-triangle oracle row and orthogonality-energy row.
   - [x] Add reduced friction equivalence rows through affine tangent stencils
         for point-point, point-edge, edge-edge, and point-triangle primitives.
+  - [x] Promote the first packet into the PLAN-083 manifest as an in-progress
+        `abd-alg-affine-body` comparison row. Add
+        `pixi run bm-abd-comparison-packet` to generate/validate
+        `.benchmark_results/abd_comparison_packet.json`.
 - [ ] Phase 3: generalize second-use PSD projection and projected-Newton
       contracts when ABD or another solver-family slice needs the shared
       contract; use the PLAN-083 variant consolidation map to keep IPC-family
       responsibilities in the right owner while promoting only proven
       second-use contracts.
+  - [x] Promote the first second-use PSD projection contract into
+        `detail/newton_barrier` and route rigid IPC plus ABD Hessian projection
+        through it with shared tests.
+  - [x] Promote the first shared line-search option/stat contract into
+        `detail/newton_barrier` and route rigid IPC plus deformable CCD stats
+        accumulation through it with shared tests.
+  - [ ] Continue scouting projected-Newton, line-search result, diagnostics, or
+        benchmark-schema contracts only when another variant needs identical
+        behavior.
 - [ ] Phase 4: expand the unified manifest into diagnostics, benchmark packets,
       CPU/GPU evidence, and visual evidence rows.
 - [ ] Phase 5: add runtime and py-demos scenes only after the relevant solver
@@ -45,7 +58,7 @@
 
 Implement PLAN-083 incrementally until DART owns the shared Newton-barrier
 primitive layer, affine stiff-body track, CPU/GPU evidence, paper/deck parity
-rows, and py-demos examples behind DART-owned experimental `World` capabilities
+rows, and py-demos examples behind DART-owned DART 7 `World` capabilities
 without exposing upstream solver names, registries, ECS storage, or backend
 resources as public API.
 
@@ -79,22 +92,32 @@ resources as public API.
   affine primitive-family friction rows.
 - Public docs and APIs keep method/capability names DART-owned; internal tests
   and manifests may cite IPC, rigid IPC, ABD, and paper row provenance.
+- The first `abd-alg-affine-body` micro-packet is primitive/oracle evidence and
+  does not need a two-body affine contact micro-solve before Phase 3. Add a
+  solved-state micro-solve only when the next broader ABD packet needs runtime
+  residuals rather than primitive, friction, or orthogonality rows.
 
 ## Immediate Next Steps
 
-1. Promote the first benchmark packet from smoke shape to a comparison manifest
-   row now that barrier and friction derivative oracles are stable.
-2. Add a two-body affine contact micro-solve only if the manifest row needs a
-   solved-state residual before Phase 3 shared projected-Newton work.
-3. Keep runtime stepping, py-demos, and GPU claims out of scope until the
+1. Continue Phase 3 shared-contract scouting from the existing rigid IPC,
+   deformable IPC, and ABD evidence after the fixed-size PSD projection helper
+   and first line-search option/stat helper. Promote projected-Newton,
+   line-search result semantics, diagnostics, or benchmark-schema contracts only
+   when a second consumer proves identical behavior.
+2. Keep the two-body affine contact micro-solve deferred until the
+   `abd-alg-affine-body` row expands beyond the primitive/oracle micro-packet
+   and needs a solved-state residual or runtime stepping diagnostic.
+3. Promote only the smallest proven shared contract, with cross-variant tests
+   showing identical behavior; keep variant-specific terms in their owner plans.
+4. Keep runtime stepping, py-demos, and GPU claims out of scope until the
    internal ABD oracle and benchmark packet exist.
 
 ## Validation Gates For Current Slices
 
 ```bash
 pixi run lint
-pixi run build-simulation-experimental-tests
-pixi run test-simulation-experimental
+pixi run build-simulation-tests
+pixi run test-simulation
 pixi run check-api-boundaries
 pixi run bm bm_ipc_distance_kernels -- --benchmark_min_time=0.05s
 pixi run bm bm_ipc_barrier_kernel -- --benchmark_min_time=0.05s
@@ -112,8 +135,8 @@ pixi run -e cuda test-cuda
 Phase 1 local evidence:
 
 - `pixi run lint`
-- `pixi run build-simulation-experimental-tests`
-- `pixi run test-simulation-experimental`
+- `pixi run build-simulation-tests`
+- `pixi run test-simulation`
 - `pixi run check-api-boundaries`
 - `pixi run bm bm_ipc_distance_kernels -- --benchmark_min_time=0.05s`
 - `pixi run bm bm_ipc_barrier_kernel -- --benchmark_min_time=0.05s`
@@ -122,9 +145,17 @@ Phase 1 local evidence:
 
 Phase 2 local evidence so far:
 
-- `pixi run build-simulation-experimental-tests`
-- `pixi run test-simulation-experimental` (46/46)
+- `pixi run build-simulation-tests`
+- `pixi run test-simulation` (64/64)
 - `pixi run bm bm_affine_body_dynamics -- --benchmark_min_time=0.05s`
+- `pixi run bm-abd-comparison-packet`
+
+Phase 3 line-search option/stat slice local evidence:
+
+- `pixi run lint`
+- `pixi run build-simulation-experimental-tests`
+- `pixi run test-simulation-experimental` (65/65)
+- `pixi run check-api-boundaries`
 
 ## Owner Docs
 

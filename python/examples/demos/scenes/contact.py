@@ -1,7 +1,7 @@
 """Contact scene: a prismatic leg with a sphere foot drops onto static ground.
 
 World owns the physics; WorldRenderBridge renders a sphere foot + a box
-ground in a parallel dart.simulation.World.
+ground in a parallel render World.
 """
 
 from __future__ import annotations
@@ -41,10 +41,14 @@ def build() -> SceneSetup:
 
     bridge = WorldRenderBridge(world, name="contact_render")
     bridge.add_link_visual(
-        leg, dart.SphereShape(0.2), (0.20, 0.55, 0.90), name="leg_visual")
+        leg, dart.SphereShape(0.2), (0.20, 0.55, 0.90), name="leg_visual"
+    )
     bridge.add_rigid_body_visual(
-        ground, dart.BoxShape(np.array([5.0, 5.0, 0.5])),
-        (0.7, 0.7, 0.7), name="ground_visual")
+        ground,
+        dart.BoxShape(np.array([5.0, 5.0, 0.5])),
+        (0.7, 0.7, 0.7),
+        name="ground_visual",
+    )
     bridge.sync()
 
     height_history: deque[float] = deque(maxlen=120)
@@ -63,7 +67,9 @@ def build() -> SceneSetup:
         builder.text(f"time step: {world.time_step:.4f} s")
         builder.text(f"foot height: {height:.3f} m")
         builder.text(f"slider speed: {slider_speed:.3f} m/s")
-        changed, friction = builder.slider("Ground friction", float(ground.friction), 0.0, 1.0)
+        changed, friction = builder.slider(
+            "Ground friction", float(ground.friction), 0.0, 1.0
+        )
         if changed:
             ground.friction = float(friction)
         builder.plot_lines("Foot height", list(height_history))

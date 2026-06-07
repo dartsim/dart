@@ -1,6 +1,6 @@
 """Shared bridge + grid builder for the IPC deformable demos.
 
-The Filament viewer renders a `dart.simulation.World`, while these demos build
+The Filament viewer renders a classic render World, while these demos build
 deformable physics through the current World API. `_world_bridge.WorldRenderBridge`
 mirrors rigid bodies onto SimpleFrames by syncing a single transform per body.
 Deformable bodies instead move every node independently, so this bridge mirrors
@@ -461,9 +461,7 @@ def build_strand_from_seg(
 
     options = sx.load_seg_line_mesh(str(path))
     offset = np.asarray(translate, dtype=float)
-    options.positions = [
-        np.asarray(p, dtype=float) + offset for p in options.positions
-    ]
+    options.positions = [np.asarray(p, dtype=float) + offset for p in options.positions]
     options.masses = [mass] * len(options.positions)
     options.edge_stiffness = edge_stiffness
     options.damping = damping
@@ -489,23 +487,18 @@ def build_particles_from_pt(
 
     options = sx.load_point_set(str(path))
     offset = np.asarray(translate, dtype=float)
-    options.positions = [
-        np.asarray(p, dtype=float) + offset for p in options.positions
-    ]
+    options.positions = [np.asarray(p, dtype=float) + offset for p in options.positions]
     options.masses = [mass] * len(options.positions)
     return options
 
 
 class IpcDeformableBridge:
-    """Mirrors deformable bodies onto a render `dart.simulation.World`."""
+    """Mirrors deformable bodies onto descriptor-backed GUI renderables."""
 
-    def __init__(
-        self, physics_world: Any, name: str = "ipc_deformable_render"
-    ) -> None:
+    def __init__(self, physics_world: Any, name: str = "ipc_deformable_render") -> None:
         self._physics_world = physics_world
         self._name = name
-        # Render world is the classic World, retained for the Filament viewer.
-        self.render_world = dart.gui.RenderWorld(name)
+        self.render_world = dart.gui.DescriptorRenderScene(physics_world, name)
         self.render_world.set_gravity([0.0, 0.0, 0.0])
         self.render_world.set_time_step(getattr(physics_world, "time_step", 0.005))
         # (body, [node SimpleFrame, ...], edge LineSegmentShape) per deformable.
@@ -538,7 +531,9 @@ class IpcDeformableBridge:
             ]
         for node_a, node_b in edges:
             edge_shape.add_connection(int(node_a), int(node_b))
-        edge_frame = dart.SimpleFrame(dart.gui.world_render_frame(), f"{name}_edges", np.eye(4))
+        edge_frame = dart.SimpleFrame(
+            dart.gui.world_render_frame(), f"{name}_edges", np.eye(4)
+        )
         edge_frame.set_shape(edge_shape)
         edge_frame.create_visual_aspect().set_color(list(_EDGE_COLOR))
         self.render_world.add_simple_frame(edge_frame)
@@ -571,7 +566,9 @@ class IpcDeformableBridge:
     ) -> None:
         """A static box SimpleFrame (e.g. a ground barrier or drape obstacle)."""
 
-        frame = dart.SimpleFrame(dart.gui.world_render_frame(), name, _translation(center))
+        frame = dart.SimpleFrame(
+            dart.gui.world_render_frame(), name, _translation(center)
+        )
         frame.set_shape(dart.BoxShape(np.asarray(full_extents, dtype=float)))
         frame.create_visual_aspect().set_color(list(color))
         self.render_world.add_simple_frame(frame)
@@ -585,7 +582,9 @@ class IpcDeformableBridge:
     ) -> None:
         """A static sphere SimpleFrame (e.g. a deformable obstacle barrier)."""
 
-        frame = dart.SimpleFrame(dart.gui.world_render_frame(), name, _translation(center))
+        frame = dart.SimpleFrame(
+            dart.gui.world_render_frame(), name, _translation(center)
+        )
         frame.set_shape(dart.SphereShape(float(radius)))
         frame.create_visual_aspect().set_color(list(color))
         self.render_world.add_simple_frame(frame)

@@ -32,9 +32,12 @@
     scene selectable at runtime from a categorized sidebar (`--scene <id>`
     selects the initial scene; `--cycle-scenes` drives the headless smoke).
     Added a runtime scene-switch capability to `dart::gui` via
-    `dart::gui::runDemos`. `hello_world` stays a standalone minimal CMake
-    template, and the headless `csv_logger`, `headless_simulation`,
-    `speed_test`, and `unified_loading` examples stay standalone.
+    `dart::gui::runDemos`. The classic standalone GUI examples
+    (`hello_world`, `gui_scene_diagnostics`, and `speed_test`) were retired
+    from `main`; release-6.\* branches remain the parity source for those DART 6
+    examples. The headless `csv_logger`, `headless_simulation`, and
+    `unified_loading` examples were also retired because they taught the removed
+    DART 6 whole-World loading API.
   - Pruned `pixi run demos` and `pixi run py-demos` to the DART 7 World demo
     catalog. The old DART 6 demo scene modules and cross-language golden parity
     fixtures were removed; remaining scene ids/categories use World, IPC,
@@ -280,13 +283,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     non-docking ImGui builds are unaffected. See
     `docs/design/dartsim_gui_simulator.md` and
     `docs/onboarding/gui-rendering.md`.
-  - Moved the `dartsim` viewer source to a dedicated application tree, added a
-    public `dart::gui::ApplicationOptions::world` handoff for example-owned
-    worlds, and restored `hello_world` as a real public-API `dart::gui` example
-    source.
-  - Restored the `hello_world` example's instruction text, camera/run
-    defaults, deterministic non-axis-aligned box orientation, profiling
-    markers, and README through public `dart::gui`.
+  - Moved the `dartsim` viewer source to a dedicated application tree and added
+    a public `dart::gui::ApplicationOptions::world` handoff for example-owned
+    worlds.
   - Restored `boxes`, `rigid_cubes`, and `box_stacking` as real public-API
     `dart::gui` example sources with source-defined DART worlds instead of
     shared private scene-fixture launchers.
@@ -445,10 +444,8 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     pre-step control loop, perturbation and state-machine keyboard actions,
     gravity/harness/stride panel controls, native window title,
     camera/run defaults, and README through public `dart::gui`.
-  - Audited `gui_scene_diagnostics` against its historical source and kept it
-    as a promoted `dart::gui` descriptor diagnostic example with marker
-    coverage for CLI options, descriptor extraction, debug/selection lines,
-    camera picking, README, and no renderer dependency.
+  - Audited the `gui_scene_diagnostics` source before retiring it from `main`
+    with the rest of the classic standalone GUI example surface.
   - Removed the no-source `rerun` placeholder example because it had no
     concrete integration workflow, executable, or known downstream user.
   - Restored the `lcp_physics` example's historical scene counts, names,
@@ -610,18 +607,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     through public `dart::gui`.
   - Restored hardcoded-design example joint keyboard controls, camera default,
     and example README through public `dart::gui`.
-  - Preserved the `csv_logger` example's non-GUI command-line CSV logging
-    contract and added strict-audit marker coverage so renderer promotion does
-    not pull it into the GUI dependency surface.
-  - Preserved the `headless_simulation` example's non-GUI deterministic
-    batch-simulation contract and added strict-audit marker coverage so
-    renderer promotion does not pull it into the GUI dependency surface.
-  - Preserved the `speed_test` example's non-GUI timing benchmark contract and
-    added strict-audit marker coverage so renderer promotion does not pull it
-    into the GUI dependency surface.
-  - Preserved the `unified_loading` example's non-GUI shared `ReadOptions`
-    loading contract and added strict-audit marker coverage so renderer
-    promotion does not pull it into the GUI dependency surface.
+  - Retired the `csv_logger`, `headless_simulation`, and `unified_loading`
+    examples from `main` with release-6.\* branches as the parity source for
+    their DART 6 whole-World loading behavior.
   - Removed dartpy legacy collision detector aliases `DARTCollisionDetector`,
     `FCLCollisionDetector`, `BulletCollisionDetector`, and
     `OdeCollisionDetector`; use `DartCollisionDetector` or the default detector.
@@ -646,6 +634,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Developer workflow updates: refactored pixi tasks, tuned pixi parallelism, simplified the devcontainer, and bumped the DART version to 7.0.0. ([#2083](https://github.com/dartsim/dart/pull/2083), [#2208](https://github.com/dartsim/dart/pull/2208), [#2255](https://github.com/dartsim/dart/pull/2255), [#2046](https://github.com/dartsim/dart/pull/2046))
   - Limited `pixi run test-unit` to the built C++ `UNIT_` test set so
     simulation-experimental tests remain covered by their dedicated task.
+  - Fixed `pixi run test-math` so its build step uses the current math,
+    optimization, LCP, and lie-group CMake test target names before running the
+    `^UNIT_math_` ctest slice.
   - Added ASan build mode and example install destination controls. ([#2101](https://github.com/dartsim/dart/pull/2101), [#2100](https://github.com/dartsim/dart/pull/2100))
   - GUI dependency handling updates: switched ImGui to FetchContent, prefer local Vulkan loader, and removed bundled lodepng. ([#2056](https://github.com/dartsim/dart/pull/2056), [#2085](https://github.com/dartsim/dart/pull/2085), [#2051](https://github.com/dartsim/dart/pull/2051))
   - Hide fetched ImGui internal formatting helpers from shared library exports. ([#2671](https://github.com/dartsim/dart/issues/2671))
@@ -730,6 +721,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Added `pixi run bm-compute-check`, contact-shaped experimental compute
     coverage, and a Phase 5 CPU-baseline dashboard surface so the full expected
     scalable-compute benchmark corpus is checked in CI.
+  - Added `pixi run bm-lie-group-batch` to benchmark the DART 7 SO(3)/SE(3)
+    batch `expBatch`, `logBatch`, and `adjointBatch` paths against explicit
+    scalar loops before introducing SIMD or other compute backends.
   - Added `pixi run bm-phase5-gpu-packet-check --write-template <packet.json>` /
     `--input <packet.json>` to create and validate the manual Phase 5 GPU
     go/no-go benchmark packet once a project GPU runner exists, including
@@ -981,6 +975,16 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     inline with an eight-stage capacity, eliminating stage-list heap allocation
     during default step pipeline assembly and rejecting overflow with
     `InvalidArgumentException`.
+  - Centralized the experimental World's built-in step schedule selection so
+    sequential impulse, rigid IPC, semi-implicit/variational multibody,
+    deformable, and custom-final-stage paths share one internal slot map.
+    Method-family changes after simulation bake now re-run one shared
+    preparation path, empty solver domains no longer add placeholder stages, and
+    custom-final-stage steps reuse the baked solver stages while clearing
+    caller-owned final stage pointers after execution.
+  - Added construction-time rigid and multibody solver-family selection to
+    experimental `WorldOptions`, and exposed the same validated path through the
+    dartpy `sx.World(...)` constructor.
   - Pre-baked the experimental World's default step stage bundle, kinematics
     graph traversal, and rigid IPC kinematic scratch at `enterSimulationMode()`,
     eliminating global heap allocation for repeated baked kinematic IPC steps
@@ -2606,6 +2610,11 @@ Capsule Rod (IPC)` py-demos scene (a cloth draping over a horizontal rod,
   - Ensure Bullet double-precision builds include `dart/collision/bullet/BulletInclude.hpp` before Bullet headers so `BT_USE_DOUBLE_PRECISION` is honored: [#2334](https://github.com/dartsim/dart/pull/2334).
 
 - LCP and Optimization
+  - Added `dart::constraint::CylindricalJointConstraint` for runtime
+    slide-and-rotate attachments that leave translation along an axis and
+    rotation about that axis free, with dartpy bindings, unit tests, a focused
+    headless smoke example, and a consolidated `dart-demos` dynamic joint
+    constraint catalog.
   - Added dimension validation to `Problem::setDimension()` to reject dimensions exceeding `Problem::kMaxDimension` (1,000,000) with `InvalidArgumentException` instead of attempting multi-GB allocations that cause ASan aborts or `std::bad_alloc`. ([#2500](https://github.com/dartsim/dart/issues/2500))
   - Refactored the LCP solver stack under `dart::math::lcp` with unified APIs plus new solver implementations and ImGui dashboard support. ([#2202](https://github.com/dartsim/dart/pull/2202), [#2241](https://github.com/dartsim/dart/pull/2241), [#2318](https://github.com/dartsim/dart/pull/2318), [#2355](https://github.com/dartsim/dart/pull/2355))
   - Modernized the Dantzig solver and improved stability (C++20 optimizations, NaN fallback, warning suppression). ([#2081](https://github.com/dartsim/dart/pull/2081), [#2253](https://github.com/dartsim/dart/pull/2253), [#2111](https://github.com/dartsim/dart/pull/2111))
@@ -2795,6 +2804,9 @@ Capsule Rod (IPC)` py-demos scene (a cloth draping over a horizontal rod,
 
 - Core
   - Added SIMD abstraction layer (`dart/simd/`) with portable vectorized math primitives supporting SSE4.2, AVX, AVX2, AVX-512, and ARM NEON backends with automatic runtime dispatch. Includes `Vec<T, N>`, `VecMask<T, N>`, aligned allocators, Eigen interop utilities, and dynamic vector/matrix types for batch computation. ([#2490](https://github.com/dartsim/dart/pull/2490))
+  - Added a backend-neutral lie-group batch adjoint helper and fixed SO3, SE3,
+    and group-product log Jacobian plumbing so DART 7 math paths have tested
+    scalar baselines ready for SIMD, multi-threaded, and CUDA compute backends.
   - Added `<numbers>`-style variable templates (`dart::math::pi`, `phi`, `two_pi`, etc.) plus numeric-limits helpers (`inf_v`, `max_v`, `min_v`, `eps_v`) in `dart/math/Constants.hpp` and deprecated `dart::math::constants<T>` (the legacy struct/header will be removed in DART 7.1). ([#2150](https://github.com/dartsim/dart/pull/2150), [#2157](https://github.com/dartsim/dart/pull/2157), [#2225](https://github.com/dartsim/dart/pull/2225))
   - Fix spdlog/fmt 12 builds by treating DART logging format parameters as runtime format strings. ([#2542](https://github.com/dartsim/dart/pull/2542), [#2538](https://github.com/dartsim/dart/issues/2538))
   - Logging and profiling updates: conditional logging macros, source-context metadata, `DART_ASSERT` adoption, log prefix cleanup, and the text profiling backend. ([#2099](https://github.com/dartsim/dart/pull/2099), [#2104](https://github.com/dartsim/dart/pull/2104), [#2105](https://github.com/dartsim/dart/pull/2105), [#2109](https://github.com/dartsim/dart/pull/2109), [#2110](https://github.com/dartsim/dart/pull/2110), [#2238](https://github.com/dartsim/dart/pull/2238))

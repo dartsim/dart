@@ -2,7 +2,7 @@
 
 This audit grounds PLAN-104 against the Vertex Block Descent paper and its
 reference implementations. It records what the method requires, what the DART
-experimental world already provides, and what each phase must add. It is a
+DART 7 simulation world already provides, and what each phase must add. It is a
 planning artifact; it does not itself claim implemented behavior.
 
 ## Sources
@@ -120,7 +120,7 @@ be transcribed from the paper during Phase 5.
 
 ## Initial Component-by-Component Gap
 
-| VBD component                                             | DART experimental world today                                                                                            | Phase that closes the gap         |
+| VBD component                                             | DART 7 simulation world today                                                                                            | Phase that closes the gap         |
 | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | --------------------------------- |
 | Variational implicit-Euler objective `G(x)`               | Present: `evaluateDeformableObjective` already assembles inertia + spring (+ barrier) energy/gradient                    | Phase 1 reuses the same objective |
 | Inertial target `y` with gravity/damping/external accel   | Present: `world_step_stage.cpp` inertial-target setup (`dampingScale`, `gravityStep`, `externalAccelerations`)           | Phase 1/3 reuse                   |

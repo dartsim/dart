@@ -204,18 +204,8 @@ dart_build_tests(
 # ==============================================================================
 # Constraint Tests
 # ==============================================================================
-dart_add_test("unit" UNIT_constraint_ConstraintSolver constraint/test_constraint_solver.cpp)
-if(DART_BUILD_COLLISION_REFERENCE_TESTS)
-  dart_force_link_collision_backend(UNIT_constraint_ConstraintSolver dart-test-reference-fcl)
-endif()
 dart_add_test(
   "unit" UNIT_constraint_BoxedLcpConstraintSolver constraint/test_boxed_lcp_constraint_solver.cpp
-)
-dart_add_test(
-  "unit" UNIT_constraint_JointLimitConstraint constraint/test_joint_limit_constraint.cpp
-)
-dart_add_test(
-  "unit" UNIT_constraint_JointConstraint constraint/test_joint_constraint.cpp
 )
 dart_add_test(
   "unit" UNIT_constraint_BalanceConstraint constraint/test_balance_constraint.cpp
@@ -227,28 +217,16 @@ if(DART_BUILD_COLLISION_REFERENCE_TESTS)
   dart_force_link_collision_backend(UNIT_constraint_ContactSurface dart-test-reference-fcl)
 endif()
 dart_add_test("unit" UNIT_constraint_JointConstraints constraint/test_joint_constraints.cpp)
-dart_add_test("unit" UNIT_constraint_MotorConstraints constraint/test_motor_constraints.cpp)
-dart_add_test("unit" UNIT_constraint_WeldJointConstraint constraint/test_weld_joint_constraint.cpp)
-dart_add_test("unit" UNIT_constraint_BallJointConstraint constraint/test_ball_joint_constraint.cpp)
-dart_add_test("unit" UNIT_constraint_ServoMotorConstraint constraint/test_servo_motor_constraint.cpp)
+dart_add_test(
+  "unit"
+  UNIT_constraint_CylindricalJointConstraint
+  constraint/test_cylindrical_joint_constraint.cpp
+)
 dart_add_test("unit" UNIT_constraint_ConstrainedGroup constraint/test_constrained_group.cpp)
-dart_add_test(
-  "unit" UNIT_constraint_SoftContactConstraint constraint/test_soft_contact_constraint.cpp
-)
-if(DART_BUILD_COLLISION_REFERENCE_TESTS)
-  dart_force_link_collision_backend(UNIT_constraint_SoftContactConstraint dart-test-reference-fcl)
-endif()
-dart_add_test(
-  "unit" UNIT_constraint_CouplerConstraint constraint/test_coupler_constraint.cpp
-)
 
 # ==============================================================================
 # Dynamics Tests
 # ==============================================================================
-dart_add_test("unit" UNIT_dynamics_GenericJoints dynamics/test_generic_joints.cpp)
-dart_add_test(
-  "unit" UNIT_dynamics_BodyNodeExternalForce dynamics/test_body_node_external_force.cpp
-)
 dart_add_test("unit" UNIT_dynamics_Inertia dynamics/test_inertia.cpp)
 dart_add_test("unit" UNIT_dynamics_ScrewJoint dynamics/test_screw_joint.cpp)
 dart_add_test("unit" UNIT_dynamics_BallJoint dynamics/test_ball_joint.cpp)
@@ -260,17 +238,13 @@ dart_add_test("unit" UNIT_dynamics_MeshMaterial dynamics/test_mesh_material.cpp)
 dart_add_test("unit" UNIT_dynamics_MeshShape dynamics/test_mesh_shape.cpp)
 dart_add_test("unit" UNIT_dynamics_HeightmapShape dynamics/test_heightmap_shape.cpp)
 dart_add_test("unit" UNIT_dynamics_SphereShape dynamics/test_sphere_shape.cpp)
-dart_add_test("unit" UNIT_dynamics_JointCommand dynamics/test_joint_command.cpp)
 dart_add_test("unit" UNIT_dynamics_ConvexMeshShape dynamics/test_convex_mesh_shape.cpp)
-dart_add_test("unit" UNIT_dynamics_BodyNodeDerivatives dynamics/test_body_node_derivatives.cpp)
 dart_add_test(
   "unit" UNIT_dynamics_BodyNodePotentialEnergy dynamics/test_body_node_potential_energy.cpp
 )
 dart_add_test("unit" UNIT_dynamics_ShapeNodeInertia dynamics/test_shape_node_inertia.cpp)
 dart_add_test("unit" UNIT_dynamics_SkeletonClone dynamics/test_skeleton_clone.cpp)
 dart_add_test("unit" UNIT_dynamics_SkeletonAccessors dynamics/test_skeleton_accessors.cpp)
-dart_add_test("unit" UNIT_dynamics_SkeletonProperties dynamics/test_skeleton_properties.cpp)
-dart_add_test("unit" UNIT_dynamics_BodyNodeProperties dynamics/test_body_node_properties.cpp)
 dart_add_test(
   "unit"
   UNIT_dynamics_ArticulatedDynamicsAlgorithms
@@ -301,13 +275,9 @@ if(TARGET octomap)
 endif()
 dart_add_test("unit" UNIT_dynamics_EndEffector dynamics/test_end_effector.cpp)
 dart_add_test("unit" UNIT_dynamics_Marker dynamics/test_marker.cpp)
-dart_add_test("unit" UNIT_dynamics_PointMass dynamics/test_point_mass.cpp)
-dart_add_test("unit" UNIT_dynamics_SoftBodyNodeHelper dynamics/test_soft_body_node_helper.cpp)
-dart_add_test("unit" UNIT_dynamics_SoftBodyNode dynamics/test_soft_body_node.cpp)
 dart_add_test("unit" UNIT_dynamics_SoftMeshShape dynamics/test_soft_mesh_shape.cpp)
 dart_add_test("unit" UNIT_dynamics_Frame dynamics/test_frame.cpp)
 dart_add_test("unit" UNIT_dynamics_Group dynamics/test_group.cpp)
-dart_add_test("unit" UNIT_dynamics_Joints dynamics/test_joints.cpp)
 dart_add_test("unit" UNIT_dynamics_DegreeOfFreedom dynamics/test_degree_of_freedom.cpp)
 dart_add_test("unit" UNIT_dynamics_MetaSkeleton dynamics/test_meta_skeleton.cpp)
 dart_add_test("unit" UNIT_dynamics_Linkage dynamics/test_linkage.cpp)
@@ -326,10 +296,6 @@ dart_add_test("unit" UNIT_dynamics_EulerJoint dynamics/test_euler_joint.cpp)
 dart_add_test("unit" UNIT_dynamics_PlanarJoint dynamics/test_planar_joint.cpp)
 dart_add_test("unit" UNIT_dynamics_ShapeFrame dynamics/test_shape_frame.cpp)
 dart_add_test("unit" UNIT_dynamics_Entity dynamics/test_entity.cpp)
-# Additional dynamics tests
-if(TARGET dart-utils-urdf)
-  dart_add_test("unit" UNIT_dynamics_CreateShapeNodeApi dynamics/test_create_shape_node_api.cpp)
-endif()
 
 dart_add_test("unit" UNIT_dynamics_BodyNodePool dynamics/test_body_node_pool.cpp)
 
@@ -399,18 +365,6 @@ dart_build_tests(
     math/lie_group/test_batch.cpp
 )
 
-# ==============================================================================
-# GUI Tests
-# ==============================================================================
-if(TARGET dart-gui-core)
-  dart_add_test(
-    "unit"
-    UNIT_gui_FilamentSceneExtraction
-    gui/test_filament_scene_extraction.cpp
-  )
-  target_link_libraries(UNIT_gui_FilamentSceneExtraction dart-gui-core)
-endif()
-
 if(TARGET dart-gui AND TARGET dart-imgui-lib)
   # DART-patched ImGui guard tests only work with the fetched ImGui target.
   dart_add_test(
@@ -456,9 +410,6 @@ if(TARGET dart-io)
   dart_add_test("unit" test_io_readNone io/test_read.cpp)
   target_link_libraries(test_io_readNone dart-io)
 
-  dart_add_test("unit" UNIT_io_Parsers io/test_parsers.cpp)
-  target_link_libraries(UNIT_io_Parsers dart-io)
-
   dart_add_test("unit" UNIT_io_UrdfParser_Errors io/test_urdf_parser_errors.cpp)
   target_link_libraries(UNIT_io_UrdfParser_Errors dart-io)
 
@@ -469,41 +420,13 @@ if(TARGET dart-io)
 endif()
 
 # ==============================================================================
-# Sensor Tests
-# ==============================================================================
-dart_add_test("unit" UNIT_sensor_Sensor sensor/test_sensor.cpp)
-dart_add_test("unit" UNIT_sensor_SensorManager sensor/test_sensor_manager.cpp)
-
-# ==============================================================================
 # Simulation Tests
 # ==============================================================================
-dart_add_test("unit" UNIT_simulation_World simulation/test_world.cpp)
-set_property(
-  TEST UNIT_simulation_World
-  APPEND
-  PROPERTY LABELS collision-native-stability
-)
-set_tests_properties(UNIT_simulation_World PROPERTIES TIMEOUT 3600)
-if(DART_BUILD_COLLISION_REFERENCE_TESTS)
-  target_compile_definitions(
-    UNIT_simulation_World
-    PRIVATE DART_ENABLE_COLLISION_REFERENCE_TESTS=1
-  )
-  if(TARGET dart-test-reference-bullet)
-    target_link_libraries(UNIT_simulation_World dart-test-reference-bullet)
-  endif()
-endif()
-dart_add_test("unit" UNIT_simulation_Recording simulation/test_recording.cpp)
-dart_add_test("unit" UNIT_simulation_WorldConfig simulation/test_world_config.cpp)
-
-# ==============================================================================
-# Simulation-Experimental Tests
-# ==============================================================================
-# Guard on the target, not just the option: the experimental module skips itself
-# in minimal configurations where its core sibling components (e.g. dart-io) are
-# unavailable, leaving the option ON but the target absent.
-if(DART_BUILD_SIMULATION_EXPERIMENTAL AND TARGET dart-simulation-experimental)
-  add_subdirectory(simulation/experimental)
+# Guard on the target, not just the option: the simulation module skips itself in
+# minimal configurations where its sibling components (e.g. dart-io) are
+# unavailable.
+if(TARGET dart-simulation)
+  add_subdirectory(simulation)
 endif()
 
 # Headless dartsim editor engine tests (links the dartsim_engine library).

@@ -35,8 +35,8 @@ public-header boundary guards)
 DART GUI smoke: `pixi run test-dart-gui-smoke` when changing the explicit
 fetch path, renderer fixture behavior, or screenshot smoke coverage.
 
-Examples: the standalone `dartsim/` application, restored GUI example
-launchers, and `examples/gui_scene_diagnostics/`
+Examples: the standalone `dartsim/` application and the DART 7 World demo app
+in `examples/demos/`
 
 ## See Also
 

@@ -9,7 +9,8 @@ enough to commit to API stability and user-facing support.
 "Supported" in DART means: a stable public surface we will not break without a
 deprecation cycle, CI gates that keep it green, user-facing docs, and a
 maintainer who owns regressions. The VI is opt-in behind the method-name facade
-(`World::setMultibodyOptions({.integrationFamily = "variational integrator"})`),
+(`WorldOptions::multibodyOptions` at construction or
+`World::setMultibodyOptions({.integrationFamily = "variational integrator"})`),
 so graduation does not change defaults — it changes the _promise_ we make about
 the family.
 
@@ -126,9 +127,9 @@ non-blockers** (future workstreams), not graduation gates.
 ### Graduation mechanics — why the flip is module-wide, not a VI toggle
 
 The `experimental` status is **structural**, not a per-solver flag. It is encoded
-in (a) the namespace `dart::simulation::experimental`, (b) the directory
-`dart/simulation/experimental/`, (c) the `DART_EXPERIMENTAL_API` export macro, and
-(d) the CMake gate `DART_BUILD_SIMULATION_EXPERIMENTAL` (default `OFF`). There is
+in (a) the namespace `dart::simulation`, (b) the directory
+`dart/simulation/`, and (c) the `DART_EXPERIMENTAL_API` export
+macro. There is
 **no code-level per-family stability marker** — the `MultibodyIntegrationMethod`
 enum (`world.hpp`) has only `SemiImplicit` / `Variational`, with no maturity
 field, and semi-implicit Euler lives under the same experimental umbrella.

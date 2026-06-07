@@ -1,7 +1,7 @@
 """Articulated dynamics scene: a 2-DOF arm on the World.
 
 Builds a World (revolute shoulder + universal wrist) for physics, plus a
-parallel dart.simulation.World (via WorldRenderBridge) of SimpleFrame box
+parallel render World (via WorldRenderBridge) of SimpleFrame box
 visuals so the C++ viewer can render the result.
 """
 
@@ -70,14 +70,23 @@ def build() -> SceneSetup:
     # Render bridge: a small box per link tracking the link's world transform.
     bridge = WorldRenderBridge(world, name="articulated_render")
     bridge.add_link_visual(
-        base, dart.BoxShape(np.array([0.18, 0.18, 0.18])),
-        (0.65, 0.65, 0.65), name="base_visual")
+        base,
+        dart.BoxShape(np.array([0.18, 0.18, 0.18])),
+        (0.65, 0.65, 0.65),
+        name="base_visual",
+    )
     bridge.add_link_visual(
-        upper, dart.BoxShape(np.array([0.9, 0.12, 0.12])),
-        (0.20, 0.55, 0.90), name="upper_visual")
+        upper,
+        dart.BoxShape(np.array([0.9, 0.12, 0.12])),
+        (0.20, 0.55, 0.90),
+        name="upper_visual",
+    )
     bridge.add_link_visual(
-        fore, dart.BoxShape(np.array([0.9, 0.10, 0.10])),
-        (0.30, 0.80, 0.45), name="fore_visual")
+        fore,
+        dart.BoxShape(np.array([0.9, 0.10, 0.10])),
+        (0.30, 0.80, 0.45),
+        name="fore_visual",
+    )
     bridge.sync()
 
     joint_speed_history: deque[float] = deque(maxlen=120)

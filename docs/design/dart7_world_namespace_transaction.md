@@ -1,36 +1,40 @@
 # DART 7 `dart::simulation::World` Name-Collision Transaction
 
-Status: Proposed (needs maintainer sign-off).
+Status: Accepted and implemented on the DART 7 promotion branch. The DART 7
+transaction uses option (b): atomic replacement of the classic
+`dart::simulation::World` public name with the ECS-backed facade. Do not
+introduce a temporary public `World7`, `simulation::v7::World`, or equivalent
+two-world migration surface on `main`.
 
 This design owns the durable rationale for **how the classic DART 6
-`dart::simulation::World` name is cleared** so the ECS-backed experimental world
-can own the official DART 7 `dart::simulation::World` C++ name and the
+`dart::simulation::World` name is cleared** so the ECS-backed World can own the
+official DART 7 `dart::simulation::World` C++ name and the
 `dartpy.World` / `dartpy.simulation.World` Python names. It is the design
 artifact for PLAN-041 workstream 4 (World name-collision transaction). Roadmap
 operating state for PLAN-041 lives in `docs/plans/dashboard.md`; the active
 workstream sequence, verification commands, and acceptance criteria live in
 `docs/plans/041-official-simulation-api-promotion.md`. The promoted C++ and
-Python API shapes are owned by `docs/design/simulation_experimental_cpp_api.md`
-and `docs/design/simulation_experimental_python_api.md`; the release topology is
+Python API shapes are owned by `docs/design/simulation_cpp_api.md`
+and `docs/design/simulation_python_api.md`; the release topology is
 owned by `docs/design/dart7_clean_break_strategy.md`. Public/internal API policy
 is owned by `docs/onboarding/api-boundaries.md`. This doc only owns the
 transaction that frees the colliding name without ever shipping two official
 worlds.
 
-## Why This Is A Hard Blocker
+## Why This Was A Hard Blocker
 
-The name `dart::simulation::World` is currently occupied by the classic DART 6
-world, and the ECS-backed world lives under `dart::simulation::experimental`.
-Promotion cannot simply rename the experimental class into `dart::simulation`
-because that name is already a fully exported, default-built, widely consumed
-public symbol. The two definitions are not ABI- or lifecycle-compatible (see the
-occupancy map below), so there is no safe in-place type alias. The collision
-must be cleared by an explicit transaction before the official facade PR can
-land.
+The name `dart::simulation::World` was occupied by the classic DART 6 world, and
+the ECS-backed world lived under `dart::simulation::experimental`. Promotion
+could not simply rename the staged class into `dart::simulation` because that
+name was already a fully exported, default-built, widely consumed public symbol.
+The two definitions were not ABI- or lifecycle-compatible (see the occupancy map
+below), so there was no safe in-place type alias. The collision had to be
+cleared by an explicit transaction before DART 7 could claim the official
+facade.
 
-## Current Occupancy Of `dart::simulation::World` (C++)
+## Pre-Transaction Occupancy Of `dart::simulation::World` (C++)
 
-### Classic world (DART 6 surface, occupies the official name today)
+### Classic world (DART 6 surface, occupied the official name)
 
 - Class declaration: `dart/simulation/world.hpp:139` —
   `class DART_API World : public virtual common::Subject`, namespace
@@ -67,87 +71,70 @@ land.
   `dart/gui/**`, `dart/sensor/**`, and `dartsim/ui/src/editor.cpp`; examples,
   tests, and Python bindings are also part of the in-repo migration surface.
 
-### ECS-backed world (experimental, target for promotion)
+### ECS-backed world (staging surface, target for promotion)
 
-- Class declaration: `dart/simulation/experimental/world.hpp:130` —
+- Class declaration: `dart/simulation/experimental/world.hpp:231` —
   `class DART_EXPERIMENTAL_API World`, namespace
   `dart::simulation::experimental` (`dart/simulation/experimental/world.hpp:58`).
 - Lifecycle: value type, **non-copyable and non-movable** (all copy/move
-  constructors and assignments deleted,
-  `dart/simulation/experimental/world.hpp:142-145`); stack-constructible
-  (`World()` and `explicit World(const WorldOptions&)`,
-  `dart/simulation/experimental/world.hpp:133-138`). No `common::Subject` base,
-  no `WorldPtr` shared-ownership typedef.
-- Internal/ECS exposure today: `entt::registry& getRegistry()` and the const
-  overload (`dart/simulation/experimental/world.hpp:449-452`, marked
-  `@internal` as a DART 7 escape hatch), backed by the data member
-  `entt::registry m_registry` (`dart/simulation/experimental/world.hpp:513`).
-  The header includes `<entt/entt.hpp>`
-  (`dart/simulation/experimental/world.hpp:47`). These EnTT/ECS dependencies are
-  exactly what the promoted boundary checks must reject (PLAN-041 workstream 3),
-  so a wrapper/opaque-impl facade is required regardless of which transaction
-  option is chosen.
+  constructors and assignments deleted around the public class declaration);
+  stack-constructible through `World()` and
+  `explicit World(const WorldOptions&)`. No `common::Subject` base, no
+  `WorldPtr` shared-ownership typedef.
+- Internal/ECS exposure state: the staged public header no longer exposes
+  `entt::registry`, `getRegistry()`, or `<entt/entt.hpp>`. It owns opaque
+  `std::unique_ptr<detail::WorldStorage> m_storage`
+  (`dart/simulation/experimental/world.hpp:807`) and grants detail-only storage
+  access through `detail::storageOf(...)`
+  (`dart/simulation/experimental/world.hpp:72-74`,
+  `dart/simulation/experimental/world.hpp:750-751`). This clears the staged
+  public-header leak, but the final promoted facade still needs the official
+  namespace, export macro, package target/component, and classic-World
+  quarantine/removal transaction.
 - Export macro: `DART_EXPERIMENTAL_API` (distinct from `DART_API`).
 - Build target/component: separate CMake component `simulation-experimental`,
-  target `dart-simulation-experimental`
-  (`dart/simulation/experimental/CMakeLists.txt:31-32`,
-  `dart/simulation/experimental/CMakeLists.txt:197-200`). It links
-  `EnTT::EnTT` **PUBLIC** (`dart/simulation/experimental/CMakeLists.txt:115`) and
-  is controlled by `DART_BUILD_SIMULATION_EXPERIMENTAL`, which defaults to **OFF**
-  (`CMakeLists.txt:409-414`, `CMakeLists.txt:897-899`). The header style is
-  `#pragma once` and the headers install via a `DIRECTORY` glob to
-  `include/dart/simulation/experimental`
-  (`dart/simulation/experimental/CMakeLists.txt:202-208`); they do **not** flow
-  through `dart_generate_component_headers`, so no PascalCase compat header is
-  generated for the experimental world today.
+  target `dart-simulation-experimental`. It now keeps EnTT/Taskflow/spdlog as
+  private implementation dependencies for shared builds, exposes static
+  link-only dependency packages only under `if(NOT BUILD_SHARED_LIBS)`, and the
+  root build attempts it whenever the required sibling targets are present.
+  Headers install through the explicit `DART_EXPERIMENTAL_PUBLIC_HEADERS`
+  allowlist, not a recursive
+  directory glob; they still do **not** flow through
+  `dart_generate_component_headers`, so no PascalCase compat header was
+  generated for the staged DART 7 simulation world at that time.
 
-The classic world is non-optional and core; the ECS world is opt-in and
-EnTT-coupled. PLAN-041 workstream 2 requires the official baseline to be
-non-optional and EnTT/ECS-free at the public boundary before promotion is
-claimed, so the build-shape change is a prerequisite of either transaction
-option.
+The classic world is non-optional and core; the ECS world is staged behind an
+experimental namespace/target, without a separate build option, and has a clean
+staged public-header boundary. PLAN-041 workstream 2 requires the official
+baseline to move that contract onto the final package shape before
+promotion is claimed, so the build-shape change remains a prerequisite of either
+transaction option.
 
-## Current Occupancy Of `dartpy.World` And `dartpy.simulation.World` (Python)
+## Python Occupancy Of `dartpy.World` And `dartpy.simulation.World`
 
-- Classic binding: `nb::class_<World>(m, "World")` where
-  `World = dart::simulation::World`, registered into the `simulation` submodule
-  (`python/dartpy/simulation/world.cpp:32`,
-  `python/dartpy/simulation/world.cpp:78`, via `defWorld(m)` from
-  `python/dartpy/simulation/module.cpp:10`, wired by
-  `m.def_submodule("simulation", ...)` and `defSimulationModule` at
-  `python/dartpy/dartpy.cpp:86-88`). Result: `dartpy.simulation.World` is the
-  classic world.
-- Experimental binding: `nb::class_<sim::World>(m, "World")` where
-  `sim = dart::simulation::experimental`
-  (`python/dartpy/simulation_experimental/module.cpp:102`,
-  `python/dartpy/simulation_experimental/module.cpp:2212`), registered into the
-  `simulation_experimental` submodule
-  (`python/dartpy/dartpy.cpp:91-94`). Result:
-  `dartpy.simulation_experimental.World` is the ECS world.
-- Both bindings use the nanobind class name `"World"`, but in **different
-  submodules**, so there is no duplicate-registration conflict today. nanobind
-  keys class identity by C++ type within a module scope; binding both C++ types
-  with the name `"World"` into the **same** `simulation` module would be a
-  duplicate-registration hazard. This constrains the atomic-replacement option:
-  only one C++ type may own `simulation.World` at a time.
-- Top-level `dartpy.World`: there is no explicit re-export in
-  `python/dartpy/__init__.py`. The top-level name is synthesized at import time
-  by `_layout.install_layout` →
-  `_promote_symbols(root, _PROMOTE_MODULES)` (`python/dartpy/_layout.py:36-38`,
-  `python/dartpy/_layout.py:65-81`, `python/dartpy/_layout.py:127-131`).
-  `_PROMOTE_MODULES` includes `"simulation"`, so the loader copies
-  `dartpy.simulation.World` onto the top-level package as `dartpy.World`.
-  Therefore `dartpy.World` **currently resolves to the classic world** and
-  silently tracks whatever `dartpy.simulation.World` is.
-- Stubs: `python/stubs/dartpy/simulation.pyi:90` declares `class World:` (the
-  classic shape, with `create`/`clone`/`WorldConfig`), and
-  `python/stubs/dartpy/__init__.pyi:256-268` re-exports `World` from
-  `.simulation` (and lists it in `__all__` at line 402). The experimental world
-  is a separate `class World:` in
-  `python/stubs/dartpy/simulation_experimental.pyi:1560`. Any change to which
-  C++ type backs `simulation.World` must regenerate both stub files
-  (`pixi run generate-stubs`) and the generated Python API docs
-  (`pixi run api-docs-py`).
+- ECS binding: `nb::class_<sim::World>(m, "World")` where
+  `sim = dart::simulation` lives in `python/dartpy/simulation/module.cpp` and
+  registers into the `simulation` submodule. Result: `dartpy.simulation.World`
+  is the ECS-backed DART 7 facade.
+- Classic binding: the old `dart::simulation::World` binding is no longer
+  exposed as `dartpy.simulation.World`. It is registered through
+  `python/dartpy/simulation/world.cpp` as `dartpy.gui.RenderWorld`, with
+  `WorldConfig`, collision/LCP enums, and `ConstraintSolver` retained only as
+  rendering/parser plumbing. This keeps the Python public simulation API from
+  shipping two `World` classes.
+- `dartpy.simulation_experimental`: the runtime/stub layout no longer publishes
+  this as a second submodule. If maintainers reintroduce a migration alias, it
+  must be a Python-level alias forwarding to `dartpy.simulation`, not a second
+  nanobind registration.
+- Top-level `dartpy.World`: `_layout._PROMOTE_MODULES` promotes `simulation`
+  first, so `dartpy.World` is the same class object as
+  `dartpy.simulation.World`. The generated top-level stub re-exports `World`
+  from `.simulation` and does not import `simulation_experimental`.
+- Stubs and checks: `python/stubs/dartpy/simulation.pyi` declares the ECS
+  `class World`, `python/stubs/dartpy/__init__.pyi` re-exports it, and
+  `python/stubs/dartpy/simulation_experimental.pyi` is absent. Keep this guarded
+  with `pixi run check-dartpy-import-layout`, `pixi run generate-stubs`, and
+  `pixi run api-docs-py` when Python module names change.
 
 ## The Case-Insensitive `World.hpp` / `world.hpp` Filesystem Collision
 
@@ -200,10 +187,9 @@ Pros:
 - Lets parity, boundary, and package validation stabilize against the new facade
   before the classic world is removed, reducing the chance of a single giant PR
   failing late.
-- Python mirror is clean: bind the new world into a non-colliding submodule
-  (or a `simulation.World7` class name) so there is never duplicate
-  registration of `"World"` in the same module; `dartpy.World` keeps pointing at
-  the classic world until the final swap.
+- Python mirror is no longer a reason to choose this option: the Python side has
+  already moved the ECS-backed World into `dartpy.simulation.World` /
+  `dartpy.World` and quarantined the classic world as `dartpy.gui.RenderWorld`.
 
 Cons:
 
@@ -223,12 +209,13 @@ Cons:
 
 In a single PR, replace the classic `dart::simulation::World` definition with the
 ECS-backed facade (public wrapper that hides EnTT/ECS), update
-`dart/simulation/fwd.hpp`, retarget all in-tree consumers, repoint the Python
-`simulation.World` binding to the ECS facade, and quarantine the classic
-implementation under an explicit legacy/internal namespace/target that **no
-longer exports `dart::simulation::World`** (or remove it outright). The facade
-preceding work (build-shape change to make the baseline non-optional and
-EnTT-free at the boundary, PLAN-041 workstream 2/5) lands first.
+`dart/simulation/fwd.hpp`, retarget all in-tree C++ consumers, keep the already
+promoted Python `simulation.World` / `dartpy.World` identity aligned with the
+ECS facade, and quarantine the classic implementation under an explicit
+legacy/internal namespace/target that **no longer exports
+`dart::simulation::World`** (or remove it outright). The facade preceding work
+(build-shape change to make the baseline non-optional and EnTT-free at the
+boundary, PLAN-041 workstream 2/5) lands first.
 
 Pros:
 
@@ -240,16 +227,18 @@ Pros:
   `dart::simulation::World` are preserved, so source-compatible consumers that
   use only the overlapping API need minimal churn.
 - No throwaway public name leaks into user or downstream code.
-- Python side is unambiguous: `simulation.World` is rebound to the ECS facade in
-  the same PR, `dartpy.World` follows automatically via `_promote_symbols`, and
-  stubs/docs regenerate once.
+- Python side is already unambiguous: `simulation.World` is the ECS facade,
+  `dartpy.World` follows via `_promote_symbols`, and
+  `check-dartpy-import-layout` / generated stubs guard that identity while the
+  C++ transaction lands.
 
 Cons:
 
 - Large, high-risk PR touching 158 in-tree files across runtime code, examples,
-  tests, and Python bindings, plus stubs and generated docs. PLAN-041 should
-  sequence prerequisite validation so the final replacement is not the first time
-  lifecycle, package, Python, and boundary decisions meet.
+  tests, and any Python/stub/docs references that still mention classic or
+  experimental paths. PLAN-041 should sequence prerequisite validation so the
+  final replacement is not the first time lifecycle, package, and boundary
+  decisions meet.
 - The ECS world is non-copyable/non-movable and value-typed, while the classic
   world is shared-ownership (`WorldPtr`, `clone()`, `create()`). The facade must
   reconcile lifecycle: either the facade re-adds heap/shared-ownership factories
@@ -257,17 +246,20 @@ Cons:
   same PR. This is the dominant correctness risk and cannot be a literal type
   alias.
 - nanobind duplicate-registration must be handled in the cutover: the classic
-  `nb::class_<dart::simulation::World>(m, "World")` must be removed from the
-  `simulation` module in the same change that adds the ECS binding there, so the
-  name `"World"` in the `simulation` module is never bound to two C++ types.
+  `nb::class_<dart::simulation::World>(m, "World")` is already removed from the
+  Python `simulation` module. Keep it that way: the name `"World"` in the
+  `simulation` module must never be bound to two C++ types.
 - Heavier merge-conflict exposure for active solver/loader branches at the moment
   the PR lands (PLAN-041 calls for `git merge-tree` preflight against active PR
   heads).
 
-## Recommended Transaction
+## Accepted Transaction
 
 **Adopt option (b), atomic replacement, with prerequisites sequenced in
-PLAN-041 before the replacement PR.** Option (b) is the only path that never
+PLAN-041 before the replacement PR.** This follows the DART 7 clean-break
+direction: DART 6 compatibility and parity evidence live on `release-6.*`
+branches, while `main` moves to the new public API without preserving a second
+official World facade. Option (b) is the only path that never
 ships two official `dart::simulation::World` symbols, costs one rename and one
 ABI/downstream migration, and preserves the official include path and namespace.
 The two-worlds window and double rename of option (a) directly conflict with the
@@ -279,6 +271,15 @@ exactly one official `dart::simulation::World` at each committed state, and the
 classic implementation is either removed or quarantined somewhere that no longer
 exports that name. PLAN-041 owns the active PR sequence, verification commands,
 and open maintainer decisions needed to make the atomic replacement reviewable.
+`check-dart7-world-promotion-blockers` keeps the blocker set executable:
+default mode prevents new unclassified classic/experimental references, rejects
+temporary `World7`/`simulation::v7::World` facade code, rejects growth in the
+code/build/test buckets, and ratchets main-tree parity references to zero. The
+contact/constraint World rows, skeleton-to-multibody multi-skeleton rows, and
+former world-parity rows have been converted to DART 7-only regression coverage,
+so reintroducing classic World references there fails the default ratchet. The
+final gate is `pixi run check-dart7-final-world-promotion`, which also requires
+a local `release-6.*` branch ref before parity can be claimed.
 
 ## `dartpy.World` Decision
 
@@ -291,14 +292,15 @@ Options:
   `dartpy.simulation.World` (same class object), which is the current de facto
   behavior produced by `_layout._promote_symbols`.
 
-Recommendation: **keep `dartpy.World` identical to `dartpy.simulation.World`**,
+Current decision: **keep `dartpy.World` identical to
+`dartpy.simulation.World`**,
 because the existing `_promote_symbols` machinery
 (`python/dartpy/_layout.py:65-81`) already makes the top-level name an exact
 copy of the submodule class object, and the DART 7 layout intentionally promotes
-flat top-level names. After the Python cutover, `dartpy.simulation.World` is the
-ECS facade, so `dartpy.World` automatically
-becomes the ECS facade with the same class identity — `isinstance` and `is`
-checks stay consistent across `dartpy.World` and `dartpy.simulation.World`
+flat top-level names. The Python cutover has happened:
+`dartpy.simulation.World` is the ECS facade, so `dartpy.World` is the ECS facade
+with the same class identity — `isinstance` and `is` checks stay consistent
+across `dartpy.World` and `dartpy.simulation.World`
 because they are the same object, not two registrations.
 
 Rationale and guardrails:
@@ -306,11 +308,11 @@ Rationale and guardrails:
 - The risk PLAN-041 flags is _silently_ repointing `dartpy.World` at a different
   world without a maintainer decision. Choosing "identical to
   `dartpy.simulation.World`" makes the repoint explicit and validated rather
-  than silent: the same Python cutover that rebinds `simulation.World` updates
-  `python/stubs/dartpy/__init__.pyi` (currently re-exporting `World` from
-  `.simulation`, lines 256-268/402) and `simulation.pyi` (currently the classic
-  shape, line 90), and adds a wheel import smoke asserting
-  `dartpy.World is dartpy.simulation.World` and that the world is the ECS facade.
+  than silent: the Python cutover updates `python/stubs/dartpy/__init__.pyi` and
+  `simulation.pyi`, and `check-dartpy-import-layout` asserts that
+  `dartpy.World is dartpy.simulation.World`, that
+  `dartpy.simulation_experimental` is absent, and that the classic render world
+  is only `dartpy.gui.RenderWorld`.
 - This avoids a second public name (no top-level deprecation shim to maintain)
   and avoids duplicate nanobind registration, since `dartpy.World` is never an
   independent binding — only a promoted reference to the single

@@ -1,7 +1,7 @@
 # Differentiable Simulation — Dev Task
 
 Implementation tracking for **PLAN-110**: opt-in analytic differentiable
-simulation in the experimental `World` (the Nimble method, arXiv:2103.16021).
+simulation in the DART 7 `World` (the Nimble method, arXiv:2103.16021).
 
 - Plan: [`docs/plans/110-differentiable-simulation.md`](../../plans/110-differentiable-simulation.md)
 - Design (source of truth): [`docs/design/differentiable_simulation.md`](../../design/differentiable_simulation.md)
@@ -11,12 +11,13 @@ simulation in the experimental `World` (the Nimble method, arXiv:2103.16021).
 ## Current Status — all workstreams implemented & verified (first slices)
 
 - [x] **WS0 (prereq, PLAN-080 WS4)**: opt-in boxed-LCP rigid-body contact path +
-      `BoxedLcpContactSnapshot{A,b,lo,hi,findex,f,J}` (frictionless + friction).
+      `BoxedLcpContactSnapshot{A,b,lo,hi,findex,f,J}` (normal contact + Coulomb
+      friction).
 - [x] **WS1**: build-time + runtime opt-in seam (`DART_BUILD_DIFF` +
       `WorldOptions.differentiable`); contact-free `state_jacobian`/
       `control_jacobian` for ALL joint types (fixed/revolute/prismatic/screw/
       universal/planar/ball-SO(3)/free-SE(3)); FD checker; zero-cost parity.
-- [x] **WS2**: analytic contact gradient (clamping `A_CC⁻¹`) — frictionless,
+- [x] **WS2**: analytic contact gradient (clamping `A_CC⁻¹`) — normal contact,
       Coulomb friction (upper-bound mapping), rotational/off-COM, multi-contact.
 - [x] **WS3**: `applyStepVjp` + dartpy `sx.diff.timestep` (`torch.autograd.Function`,
       lazy torch) + `sx.World(differentiable=True)` + `get_step_derivatives`.
@@ -30,13 +31,15 @@ simulation in the experimental `World` (the Nimble method, arXiv:2103.16021).
 PRE_CONTACT_SURROGATE}`; 5a elastic/restitution FD-verified; 5b/5c documented
       non-true-gradient opt-ins.
 
-**As of this session**: the full PLAN-110 surface is implemented and verified
-across 13 slices. Experimental suite: ON **30/30**, default OFF **23/23**. All
-contact/parameter/joint gradients FD-of-step validated (~1e-11; rollout VJP <1e-4
-over a chain). `differentiable=false` is bitwise zero-cost. dartpy `test-py` green
-(12 diff tests pass / 1 torch-skipped). `check-api-boundaries`, `lint`, stub-sync
-green; default build untouched (`#ifdef DART_HAS_DIFF`); cache rests OFF.
-**Changes are local on `main`, uncommitted.**
+The WS1–WS5 first-slice surface landed on `main` via PR #2761. Experimental
+suite evidence from that path: ON **30/30**, default OFF **23/23**. All
+contact/parameter/joint gradients were FD-of-step validated (~1e-11; rollout VJP
+<1e-4 over a chain). `differentiable=false` is bitwise zero-cost. dartpy
+`test-py` was green (12 diff tests pass / 1 torch-skipped).
+`check-api-boundaries`, `lint`, and stub-sync were green; the default build was
+untouched (`#ifdef DART_HAS_DIFF`), and the cache remained OFF. Current active
+work is hardening/examples/promotion plus the Dojo-style evaluation tracked in
+PLAN-110, not landing the original WS1–WS5 surface.
 
 ### Deferred / honest follow-ups (none block the plan's workstreams)
 
@@ -47,6 +50,10 @@ green; default build untouched (`#ifdef DART_HAS_DIFF`); cache rests OFF.
 - A benign `LCP internal error, s<=0` `DART_WARN_ONCE` in the static-friction
   Dantzig degenerate-pivot path (shared `dart/math/lcp`) — recovers correctly,
   all assertions pass; harden later (touches shared LCP code, warrants its own PR).
+- Binary save/load preserves the World-level differentiability/contact policy
+  flags, and replay restores registered differentiable parameters. Parameter
+  registrations are not yet serialized in the binary format; promotion must
+  either serialize them or document them as a replay-only/runtime registration.
 - Worked trajectory-optimization / system-identification example programs.
 
 ## Goal
@@ -97,6 +104,6 @@ examples, promotion, and landing:
    make/break-instant subgradient limits, and the CENTER_OF_MASS exclusion.
 4. **Robustness**: harden the static-friction Dantzig degenerate-pivot
    `s<=0` warning (shared `dart/math/lcp` — its own PR).
-5. **Land it**: prepare the commit/PR per repo rules (branch off `main`,
-   milestone `DART 7.0`, CHANGELOG; the surface is experimental so single-branch
-   to `main`). Awaiting maintainer approval — nothing is committed/pushed.
+5. **Dojo de-risking spike**: use the PLAN-110 Dojo gap audit before any public
+   API, dependency, or runtime-path promise for a second differentiable solver
+   family.

@@ -9,13 +9,13 @@ Paper audit:
 
 - [x] Phase A0: scalar row foundation started
   - Internal row update utility:
-    `dart/simulation/experimental/detail/deformable_vbd/avbd_constraint.hpp`.
+    `dart/simulation/detail/deformable_vbd/avbd_constraint.hpp`.
   - Focused tests:
     `tests/unit/simulation/experimental/deformable_vbd/test_avbd_constraint.cpp`.
 - [ ] Phase A1: row model and persistent inventory started, not complete
   - Deterministic scalar-row descriptors, keys, warm-start state cache, and
     role/axis separation:
-    `dart/simulation/experimental/detail/deformable_vbd/avbd_row_inventory.hpp`.
+    `dart/simulation/detail/deformable_vbd/avbd_row_inventory.hpp`.
   - Still missing production row generation and storage for the full contact,
     friction, joint, motor, fracture, and attachment corpus.
 - [ ] Phase A2: CPU deformable AVBD through the existing VBD body path
@@ -155,7 +155,7 @@ Paper audit:
     `addAvbdRigidBodyInertiaTerm`, `solveAvbdRigidBodyBlock`,
     `applyAvbdRigidBodyStep`, scalar rigid point-attachment rows, and private
     two-body rigid point-pair row stamping in
-    `dart/simulation/experimental/detail/deformable_vbd/rigid_block_kernel.hpp`,
+    `dart/simulation/detail/deformable_vbd/rigid_block_kernel.hpp`,
     with focused `AvbdRigidBlock.*` coverage. Point-pair rows now also carry a
     scalar offset, private constructors for rigid contact-normal and bounded
     contact-friction tangent rows, a paired tangent helper that switches
@@ -206,7 +206,7 @@ Paper audit:
     now classifies free rigid bodies separately from multibody links, and
     explicitly hard fixed multibody-link point-joint configs can bridge into the
     variational articulated solve path.
-    Public experimental `World` facades now expose free rigid-body revolute and
+    Public DART 7 `World` facades now expose free rigid-body revolute and
     prismatic joints through C++ and dartpy, including generated stubs,
     focused tests, and the categorized `sx_rigid_limited_joints` py-demo.
     A first user-visible AVBD-specific `py-demos` scene,
@@ -284,7 +284,7 @@ numbers.
 - **Row foundation first:** The scalar row update equations are shared by hard
   contact, joints, attachments, friction limits, motors, fracture, and
   finite-stiffness ramping, so they are the first tested implementation slice.
-- **Clean DART 7/8 architecture:** AVBD work may refactor internal solver,
+- **Clean DART 7 architecture:** AVBD work may refactor internal solver,
   pipeline, row-storage, compute, and demo surfaces when that produces a cleaner
   long-term design.
 

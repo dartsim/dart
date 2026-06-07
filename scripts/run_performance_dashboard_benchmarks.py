@@ -20,9 +20,9 @@ class BenchmarkSpec:
     output_name: str
 
 
-# The dashboard is intentionally scoped to experimental World performance. Keep
-# the published history focused on end-to-end experimental World update/step
-# cases for the new DART 7 simulation APIs (the experimental World and its
+# The dashboard is intentionally scoped to DART 7 World performance. Keep
+# the published history focused on end-to-end DART 7 World update/step
+# cases for the new DART 7 simulation APIs (the DART 7 World and its
 # solver families) instead of mixing in unrelated SIMD or robot-loader surfaces.
 #
 # Each surface tracks the *end-to-end World step* of a DART 7 solver family so
@@ -32,11 +32,11 @@ class BenchmarkSpec:
 # runner lacks or a build flag the dashboard build does not set, and they would
 # bury the World-step throughput signal. Filters are bounded so a run stays cheap.
 BENCHMARK_SPECS = [
-    # Core experimental World step & scaling (kinematics, sequential/parallel
+    # Core DART 7 World step & scaling (kinematics, sequential/parallel
     # World step, rigid-body step scaling, the contact-shaped/contact-island
     # scalable-compute proxies, and the Phase 5 CPU baseline row).
     BenchmarkSpec(
-        surface="experimental-world",
+        surface="world",
         target="bm_compute_graph",
         benchmark_filter=(
             "BM_WorldUpdateKinematics/.*|"
@@ -46,7 +46,7 @@ BENCHMARK_SPECS = [
             "BM_ContactIslandShaped(Sequential|Parallel)/.*|"
             "BM_Phase5RigidBodyBatchCpuBaseline/1024/128/10"
         ),
-        output_name="dashboard_experimental_world.json",
+        output_name="dashboard_world.json",
     ),
     # Rigid-body dynamics solver (PLAN-080 / PLAN-082): end-to-end World step
     # with the default sequential-impulse contact solve and the opt-in IPC

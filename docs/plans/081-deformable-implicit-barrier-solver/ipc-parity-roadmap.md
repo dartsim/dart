@@ -1,6 +1,6 @@
 # IPC Paper-Parity Roadmap
 
-Authoritative execution roadmap for taking DART's experimental deformable
+Authoritative execution roadmap for taking the DART 7 deformable
 solver from its current mass-spring contact scaffold to faithful reproduction
 of the IPC paper (Li et al. 2020) experiments, with correctness tests and
 performance benchmarks that match or beat the reference, on **both CPU and

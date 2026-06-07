@@ -10,12 +10,12 @@ import dartpy as dart
 import pytest
 
 
-def test_read_world():
-    assert dart.io.SkelParser.read_world("dart://sample/skel/cubes.skel") is not None
-    assert (
-        dart.io.SkelParser.read_world("dart://sample/skel/cubes.skel", None)
-        is not None
-    )
+def test_read_world_removed():
+    assert hasattr(dart.io.SkelParser, "read_skeleton")
+    assert not hasattr(dart.io.SkelParser, "read_world")
+    assert not hasattr(dart.io.SkelParser, "readWorld")
+    assert not hasattr(dart.io.SkelParser, "read_world_xml")
+    assert not hasattr(dart.io.SkelParser, "readWorldXML")
 
 
 if __name__ == "__main__":
