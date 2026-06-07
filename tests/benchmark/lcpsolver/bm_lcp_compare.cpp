@@ -2814,6 +2814,14 @@ struct ApgdRestartSweepCase
   std::string_view restartPolicyLabel;
 };
 
+struct TgsIterationBudgetSweepCase
+{
+  BenchmarkProblemFamily family;
+  int problemArg;
+  int maxIterations;
+  std::string_view iterationBudgetLabel;
+};
+
 struct AdmmRhoSweepCase
 {
   BenchmarkProblemFamily family;
@@ -2891,6 +2899,19 @@ constexpr std::array<ApgdRestartSweepCase, 9> kApgdRestartSweepCases{{
     {BenchmarkProblemFamily::FrictionIndex, 8, true, 5, "AdaptiveEvery5"},
     {BenchmarkProblemFamily::FrictionIndex, 8, false, 0, "NoRestart"},
 }};
+
+constexpr std::array<TgsIterationBudgetSweepCase, 9>
+    kTgsIterationBudgetSweepCases{{
+        {BenchmarkProblemFamily::Standard, 48, 10, "Iter10"},
+        {BenchmarkProblemFamily::Standard, 48, 50, "Iter50"},
+        {BenchmarkProblemFamily::Standard, 48, 100, "Iter100"},
+        {BenchmarkProblemFamily::Boxed, 24, 10, "Iter10"},
+        {BenchmarkProblemFamily::Boxed, 24, 50, "Iter50"},
+        {BenchmarkProblemFamily::Boxed, 24, 100, "Iter100"},
+        {BenchmarkProblemFamily::FrictionIndex, 8, 10, "Iter10"},
+        {BenchmarkProblemFamily::FrictionIndex, 8, 50, "Iter50"},
+        {BenchmarkProblemFamily::FrictionIndex, 8, 100, "Iter100"},
+    }};
 
 constexpr std::array<AdmmRhoSweepCase, 18> kAdmmRhoSweepCases{{
     {BenchmarkProblemFamily::Standard, 48, 0.5, false, "Rho0_5", "Fixed"},
@@ -5008,6 +5029,37 @@ void RunApgdRestartSweepBenchmark(
       = testCase.adaptiveRestart ? 1.0 : 0.0;
   state.counters["apgd_restart_check_interval"] = testCase.restartCheckInterval;
   state.counters["apgd_relaxation"] = options.relaxation;
+  if (testCase.family == BenchmarkProblemFamily::FrictionIndex) {
+    state.counters["contact_count"] = testCase.problemArg;
+  }
+}
+
+void RunTgsIterationBudgetSweepBenchmark(
+    benchmark::State& state, const TgsIterationBudgetSweepCase testCase)
+{
+  const auto problem
+      = MakeBenchmarkProblem(testCase.family, testCase.problemArg);
+  auto options = MakeBenchmarkOptions(testCase.maxIterations);
+  options.absoluteTolerance = 1e-5;
+  options.relativeTolerance = 1e-3;
+  options.complementarityTolerance
+      = testCase.family == BenchmarkProblemFamily::FrictionIndex ? 2e-3 : 1e-3;
+
+  dart::math::TgsSolver solver;
+  RunBenchmarkWithSolver(
+      state,
+      solver,
+      problem,
+      options,
+      MakeLabel(
+          "Tgs",
+          "IterationBudgetSweep/"
+              + std::string(getProblemFamilyName(testCase.family)) + "/"
+              + std::string(testCase.iterationBudgetLabel)));
+
+  state.counters["tgs_iteration_budget_sweep"] = 1.0;
+  state.counters["tgs_max_iterations"] = testCase.maxIterations;
+  state.counters["tgs_relaxation"] = 1.0;
   if (testCase.family == BenchmarkProblemFamily::FrictionIndex) {
     state.counters["contact_count"] = testCase.problemArg;
   }
@@ -7199,6 +7251,16 @@ std::string MakeApgdRestartSweepBenchmarkName(
   return out.str();
 }
 
+std::string MakeTgsIterationBudgetSweepBenchmarkName(
+    const TgsIterationBudgetSweepCase testCase)
+{
+  std::ostringstream out;
+  out << "BM_LcpTgsIterationBudgetSweep/"
+      << getProblemFamilyName(testCase.family) << "/"
+      << testCase.iterationBudgetLabel;
+  return out.str();
+}
+
 std::string MakeAdmmRhoSweepBenchmarkName(const AdmmRhoSweepCase testCase)
 {
   std::ostringstream out;
@@ -7714,6 +7776,17 @@ void RegisterApgdRestartSweepBenchmarks()
     benchmark::RegisterBenchmark(
         name.c_str(), [testCase](benchmark::State& state) {
           RunApgdRestartSweepBenchmark(state, testCase);
+        });
+  }
+}
+
+void RegisterTgsIterationBudgetSweepBenchmarks()
+{
+  for (const auto testCase : kTgsIterationBudgetSweepCases) {
+    const auto name = MakeTgsIterationBudgetSweepBenchmarkName(testCase);
+    benchmark::RegisterBenchmark(
+        name.c_str(), [testCase](benchmark::State& state) {
+          RunTgsIterationBudgetSweepBenchmark(state, testCase);
         });
   }
 }
@@ -8499,6 +8572,7 @@ const bool kManifestBenchmarksRegistered = [] {
   RegisterSymmetricPsorRelaxationSweepBenchmarks();
   RegisterRedBlackGaussSeidelRelaxationSweepBenchmarks();
   RegisterApgdRestartSweepBenchmarks();
+  RegisterTgsIterationBudgetSweepBenchmarks();
   RegisterAdmmRhoSweepBenchmarks();
   RegisterSapRegularizationSweepBenchmarks();
   RegisterNewtonWarmStartBenchmarks();

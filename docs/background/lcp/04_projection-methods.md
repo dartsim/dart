@@ -552,7 +552,10 @@ correctness grid, and apples-to-apples benchmark registration.
 - **TGS**: provides a Temporal Gauss-Seidel labelled boxed-LCP sweep. In a full
   simulation, TGS stability usually comes from substepping; the standalone DART
   LCP solver captures the boxed/findex Gauss-Seidel solve under the common
-  `LcpSolver` interface.
+  `LcpSolver` interface. Focused `BM_LcpTgsIterationBudgetSweep` rows compare
+  10-, 50-, and 100-iteration caps on identical standard, boxed, and
+  friction-index benchmark fixtures; these rows are CPU solver rows even when
+  emitted by a CUDA-enabled build.
 
 ## 8. Red-Black Gauss-Seidel ✅ (Implemented)
 

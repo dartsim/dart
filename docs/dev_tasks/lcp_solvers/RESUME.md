@@ -102,6 +102,15 @@ every row and recorded `apgd_restart_sweep`, `apgd_adaptive_restart`,
 counters, and `contact_count=8` for the friction-index rows. The CUDA-enabled
 rows are CPU APGD solver rows in a CUDA-enabled build, not CUDA LCP kernel
 execution.
+It now also adds 9 `BM_LcpTgsIterationBudgetSweep` benchmark rows for the
+`TgsSolver` standalone boxed-LCP sweep, covering standard 48-row, boxed
+24-row, and friction-index 8-contact fixtures at 10-, 50-, and
+100-iteration budgets. Focused default, SIMD-enabled, and CUDA-enabled
+build-tree runs passed with `contract_ok=1` on every row and recorded
+`tgs_iteration_budget_sweep`, `tgs_max_iterations`, `tgs_relaxation=1`,
+observed `iterations=5/6`, backend build-state counters, and
+`contact_count=8` for the friction-index rows. The CUDA-enabled rows are CPU
+TGS solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
 It now also adds 18 `BM_LcpAdmmRhoSweep` benchmark rows for the `AdmmSolver`
 rho/adaptive-rho path, covering standard 48-row, boxed 24-row, and
 friction-index 8-contact fixtures at `rhoInit` 0.5, 1.0, and 4.0 with fixed
@@ -234,7 +243,8 @@ solver evidence commits, including native standard-Newton warm-start tests and
 default/SIMD/CUDA-enabled warm-start single-problem and batch benchmark rows,
 PGS/PSOR, symmetric PSOR, Red-Black Gauss-Seidel relaxation sweep benchmark
 rows, APGD restart-policy benchmark rows, ADMM rho/adaptive-rho benchmark
-rows, SAP regularization benchmark rows, and Jacobi threading benchmark rows.
+rows, TGS iteration-budget benchmark rows, SAP regularization benchmark rows,
+and Jacobi threading benchmark rows.
 Push/PR work still requires explicit maintainer/user approval.
 
 ## Immediate Next Step
@@ -244,10 +254,10 @@ production active-set transition 32-contact, coupled mildly ill-conditioned
 24-contact, near-singular 12-contact CPU solver rows, and default/SIMD/CUDA
 Newton warm-start single-problem and batch benchmark rows, plus focused
 PGS/PSOR, symmetric PSOR, and Red-Black Gauss-Seidel relaxation sweep rows,
-APGD restart-policy sweep rows, ADMM rho/adaptive-rho sweep rows, and SAP
-regularization sweep rows, toward broader solver-specific conditioning grids
-and direct backend execution evidence beyond SIMD/CUDA-enabled build-state
-counters.
+APGD restart-policy sweep rows, TGS iteration-budget sweep rows, ADMM
+rho/adaptive-rho sweep rows, and SAP regularization sweep rows, toward broader
+solver-specific conditioning grids and direct backend execution evidence beyond
+SIMD/CUDA-enabled build-state counters.
 Broaden SIMD benchmark gates, solver-internal threaded benchmark evidence, and
 the CUDA Jacobi/PGS batch slices into broader/general CUDA LCP execution
 separately from the current serial, task-parallel independent-problem, simple
