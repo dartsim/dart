@@ -64,6 +64,12 @@ struct ContinuousCollisionStepResult
       = ContinuousCollisionPrimitive::None;
   std::size_t limitingCandidate = std::numeric_limits<std::size_t>::max();
   ContinuousCollisionStepStats stats;
+
+  [[nodiscard]] bool allowsPositiveStep() const noexcept
+  {
+    return newton_barrier::allowsPositiveLineSearchStep(
+        stepBound, indeterminate);
+  }
 };
 
 /// Conservative step bound for one moving point-triangle pair.

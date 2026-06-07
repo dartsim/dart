@@ -21,6 +21,12 @@ collision detection now share option defaults, primitive check counters, and the
 stats accumulation helper while keeping their distinct result semantics and CCD
 implementations in variant-local owners.
 
+The current Phase 3 slice promotes only the shared line-search positive-step
+predicate, `allowsPositiveLineSearchStep(stepBound, indeterminate)`, into
+`detail/newton_barrier`. Rigid IPC and deformable continuous collision result
+methods route through it, but hit/limited fields and limiting-primitive payloads
+remain variant-local.
+
 ## Last Session Summary
 
 Current slice: the first ABD benchmark packet has been promoted from
@@ -51,28 +57,35 @@ fixed-size PSD projection helper, routed rigid IPC and ABD Hessian projection
 through it, and added focused Newton-barrier primitive tests for eigenvalue
 clamping and input symmetrization.
 
-The current line-search stats slice lives on
-`simx/shared-newton-barrier-line-search-stats`. It adds
+The line-search stats slice merged as PR #2937. It added
 `detail/newton_barrier/line_search.hpp`, aliases rigid IPC and deformable CCD
 option/stat types to the shared owner, and keeps line-search result semantics
 variant-local.
 
+The current positive-step predicate slice lives on
+`simx/shared-newton-barrier-positive-step`. It is intentionally smaller than a
+projected-Newton diagnostics merge: current evidence shows rigid and deformable
+share the positive-step predicate, but not yet a full projected-Newton status
+or solver-loop contract. Local validation passed `test_newton_barrier_primitives`,
+`build-simulation-experimental-tests`, `test-simulation-experimental`,
+`check-api-boundaries`, and `lint`.
+
 ## Current Branch
 
-`simx/shared-newton-barrier-line-search-stats` - contains the Phase 3
-line-search option/stat helper slice. Verify the exact status with
+`simx/shared-newton-barrier-positive-step` - contains the Phase 3 shared
+line-search positive-step predicate slice. Verify the exact status with
 `git status --short --branch` because this section is a resume snapshot.
 
 ## Immediate Next Step
 
 Continue Phase 3 from
 [`../../plans/083-unified-newton-barrier-multibody/abd-first-slice-design.md`](../../plans/083-unified-newton-barrier-multibody/abd-first-slice-design.md):
-validate and publish the line-search option/stat helper, then resume
-shared-contract scouting from the existing rigid IPC, deformable IPC, and ABD
-evidence. Do not add a two-body affine contact micro-solve for the current
-`abd-alg-affine-body` micro-packet; add projected-Newton, line-search result
-semantics, diagnostics, or benchmark-schema contracts only after second-use
-behavior is proven identical across variants. Use
+validate and publish the line-search positive-step predicate helper, then
+resume shared-contract scouting from the existing rigid IPC, deformable IPC,
+and ABD evidence. Do not add a two-body affine contact micro-solve for the
+current `abd-alg-affine-body` micro-packet; add projected-Newton,
+line-search result semantics, diagnostics, or benchmark-schema contracts only
+after second-use behavior is proven identical across variants. Use
 [`../../plans/083-unified-newton-barrier-multibody/implementation-roadmap.md`](../../plans/083-unified-newton-barrier-multibody/implementation-roadmap.md)
 to keep the Phase 2 packet, shared solver contracts, articulation rows,
 restitution work, mixed-domain coupling, CPU/GPU parity, and py-demos rows
@@ -107,6 +120,10 @@ VBD/OGC-adjacent work, or shared Newton-barrier infrastructure.
 - The tangent-displacement friction kernel now lives under
   `detail/newton_barrier` so rigid IPC and ABD share the same Coulomb smoothing
   branch before reduced/affine chain rules.
+- `detail/newton_barrier/line_search.hpp` owns the shared line-search
+  option/stat types plus the positive-step predicate. Do not move full
+  line-search result structs there until rigid, deformable, ABD, or another
+  variant prove identical result semantics.
 - `bm_affine_body_dynamics` currently contains the first ABD benchmark packet:
   affine point-triangle barrier mapping, matched rigid IPC point-triangle oracle
   row, and orthogonality energy.
