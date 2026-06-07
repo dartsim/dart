@@ -302,6 +302,10 @@ uses `pgsWarmStartRelaxation` and clears `customOptions` before calling
 projection solver. `BM_LcpNewtonWarmStart/StandardActiveSet/*` compares no
 warm start, PGS-only, gradient-descent-only, and PGS-then-gradient modes on the
 same standard active-set transition packets.
+`BM_LcpNewtonWarmStartBatch(Serial|Parallel)/StandardActiveSet/*` applies the
+same mode matrix to batch-size-4 packets, including DART 7 `ParallelExecutor`
+rows. CUDA-enabled benchmark rows for these standard Newton paths are CPU
+solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
 
 ```
 function gradient_descent(x, max_iter):

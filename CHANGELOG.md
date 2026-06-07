@@ -1018,8 +1018,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     comparing no seed, PGS, projected gradient descent, and PGS-then-gradient
     modes on identical 32-row and 64-row standard active-set transition packets
     for those solvers, verified in default, SIMD-enabled, and CUDA-enabled
-    build trees; the CUDA-enabled rows are CPU solver rows, not CUDA LCP kernel
-    execution.
+    build trees. Added 48 batch benchmark rows for the same warm-start mode
+    matrix over batch-size-4 serial and DART 7 `ParallelExecutor` standard
+    active-set transition packets. The CUDA-enabled rows are CPU solver rows,
+    not CUDA LCP kernel execution.
   - Added manifest-generated serial and DART 7 `ParallelExecutor` batch LCP
     benchmarks so standard, boxed, and friction-index solver families compare
     the same independent-problem batches across every supporting solver. The

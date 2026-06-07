@@ -3654,6 +3654,21 @@ void ConfigureNewtonWarmStartBenchmarkOptions(
   }
 }
 
+void AddNewtonWarmStartBenchmarkCounters(
+    benchmark::State& state, const NewtonWarmStartMode mode)
+{
+  state.counters["active_set_transition"] = 1.0;
+  state.counters["newton_warm_start_mode"]
+      = static_cast<double>(static_cast<int>(mode));
+  state.counters["newton_pgs_warm_start"] = usesPgsWarmStart(mode) ? 1.0 : 0.0;
+  state.counters["newton_gradient_warm_start"]
+      = usesGradientWarmStart(mode) ? 1.0 : 0.0;
+  state.counters["newton_pgs_warm_start_iterations"]
+      = usesPgsWarmStart(mode) ? kNewtonWarmStartPgsIterations : 0.0;
+  state.counters["newton_gradient_warm_start_iterations"]
+      = usesGradientWarmStart(mode) ? kNewtonWarmStartGradientIterations : 0.0;
+}
+
 std::vector<LcpProblem> MakeBenchmarkProblemBatch(
     BenchmarkProblemFamily family, int problemArg, int batchSize)
 {
@@ -4347,6 +4362,82 @@ struct ParallelBatchFixture
   bool valid{true};
   std::string errorMessage;
 };
+
+struct ParallelNewtonWarmStartBatchFixture
+{
+  ParallelNewtonWarmStartBatchFixture(
+      const dart::test::LcpSolverManifestEntry& solverEntry,
+      const NewtonWarmStartMode mode,
+      std::vector<LcpProblem> inputProblems)
+    : problems(std::move(inputProblems)),
+      solutions(problems.size()),
+      results(problems.size()),
+      checks(problems.size())
+  {
+    if (problems.empty()) {
+      valid = false;
+      errorMessage = "LCP batch fixture has no problems";
+      return;
+    }
+
+    ConfigureNewtonWarmStartBenchmarkOptions(storage, solverEntry, mode);
+
+    solvers.reserve(problems.size());
+    for (const std::size_t index :
+         std::views::iota(std::size_t{0}, problems.size())) {
+      auto solver = solverEntry.create();
+      if (solver == nullptr) {
+        valid = false;
+        errorMessage = "LCP solver factory returned null";
+        return;
+      }
+
+      solvers.push_back(std::move(solver));
+      solutions[index] = Eigen::VectorXd::Zero(problems[index].b.size());
+
+      compute::ComputeStageMetadata metadata;
+      metadata.domain = compute::ComputeStageDomain::Constraint;
+      metadata.acceleration = compute::ComputeStageAcceleration::TaskParallel
+                              | compute::ComputeStageAcceleration::DataParallel;
+      metadata.resources.push_back(
+          {"newton_warm_start_lcp_batch_problem_" + std::to_string(index),
+           compute::ComputeAccessMode::ReadWrite});
+
+      graph.addNode(
+          "newton_warm_start_problem_" + std::to_string(index),
+          [this, index]() { solveProblem(index); },
+          metadata);
+    }
+  }
+
+  void solveProblem(std::size_t index)
+  {
+    solutions[index].setZero();
+    results[index] = solvers[index]->solve(
+        problems[index], solutions[index], storage.options);
+    checks[index] = dart::test::CheckLcpSolution(
+        problems[index], solutions[index], storage.options);
+  }
+
+  BatchBenchmarkCounters collectCounters() const
+  {
+    BatchBenchmarkCounters counters;
+    for (std::size_t i = 0; i < results.size(); ++i) {
+      AccumulateBatchResult(counters, results[i], checks[i]);
+    }
+    return counters;
+  }
+
+  std::vector<LcpProblem> problems;
+  NewtonWarmStartBenchmarkOptions storage;
+  std::vector<std::unique_ptr<dart::math::LcpSolver>> solvers;
+  std::vector<Eigen::VectorXd> solutions;
+  std::vector<dart::math::LcpResult> results;
+  std::vector<dart::test::LcpCheckResult> checks;
+  compute::ComputeGraph graph;
+  bool valid{true};
+  std::string errorMessage;
+};
 #endif
 
 void AddBatchBenchmarkCounters(
@@ -4546,17 +4637,105 @@ void RunNewtonWarmStartBenchmark(
           std::string(solverEntry.name),
           "NewtonWarmStart/" + std::string(getNewtonWarmStartModeName(mode))));
 
-  state.counters["active_set_transition"] = 1.0;
-  state.counters["newton_warm_start_mode"]
-      = static_cast<double>(static_cast<int>(mode));
-  state.counters["newton_pgs_warm_start"] = usesPgsWarmStart(mode) ? 1.0 : 0.0;
-  state.counters["newton_gradient_warm_start"]
-      = usesGradientWarmStart(mode) ? 1.0 : 0.0;
-  state.counters["newton_pgs_warm_start_iterations"]
-      = usesPgsWarmStart(mode) ? kNewtonWarmStartPgsIterations : 0.0;
-  state.counters["newton_gradient_warm_start_iterations"]
-      = usesGradientWarmStart(mode) ? kNewtonWarmStartGradientIterations : 0.0;
+  AddNewtonWarmStartBenchmarkCounters(state, mode);
 }
+
+std::vector<LcpProblem> MakeNewtonWarmStartBatchProblems(
+    const int problemSize, const int batchSize)
+{
+  std::vector<LcpProblem> problems;
+  problems.reserve(static_cast<std::size_t>(batchSize));
+
+  const unsigned seedBase = 81'000u + static_cast<unsigned>(problemSize);
+  for (const int i : std::views::iota(0, batchSize)) {
+    problems.push_back(MakeStandardActiveSetTransitionProblem(
+        problemSize, seedBase + static_cast<unsigned>(997 * i)));
+  }
+
+  return problems;
+}
+
+void RunNewtonWarmStartBatchSerialBenchmark(
+    benchmark::State& state,
+    const dart::test::LcpSolverManifestEntry& solverEntry,
+    const NewtonWarmStartMode mode)
+{
+  const int problemSize = static_cast<int>(state.range(0));
+  const int batchSize = static_cast<int>(state.range(1));
+  const auto problems
+      = MakeNewtonWarmStartBatchProblems(problemSize, batchSize);
+  NewtonWarmStartBenchmarkOptions storage;
+  ConfigureNewtonWarmStartBenchmarkOptions(storage, solverEntry, mode);
+
+  const auto solver = solverEntry.create();
+  if (solver == nullptr) {
+    state.SkipWithError("LCP solver factory returned null");
+    return;
+  }
+
+  BatchBenchmarkCounters counters;
+  for (auto _ : state) {
+    counters = RunBatchWithSolver(*solver, problems, storage.options);
+    benchmark::DoNotOptimize(counters.maxResidual);
+  }
+
+  counters = RunBatchWithSolver(*solver, problems, storage.options);
+  AddBatchBenchmarkCounters(
+      state,
+      counters,
+      static_cast<int>(problems.front().b.size()),
+      batchSize,
+      MakeLabel(
+          std::string(solverEntry.name),
+          "NewtonWarmStartBatchSerial/"
+              + std::string(getNewtonWarmStartModeName(mode))));
+  AddNewtonWarmStartBenchmarkCounters(state, mode);
+  state.counters["newton_warm_start_batch"] = 1.0;
+  state.counters["batch_serial_execution"] = 1.0;
+}
+
+#if DART_BM_LCP_COMPARE_HAS_SIMULATION_EXPERIMENTAL
+void RunNewtonWarmStartBatchParallelBenchmark(
+    benchmark::State& state,
+    const dart::test::LcpSolverManifestEntry& solverEntry,
+    const NewtonWarmStartMode mode)
+{
+  const int problemSize = static_cast<int>(state.range(0));
+  const int batchSize = static_cast<int>(state.range(1));
+  ParallelNewtonWarmStartBatchFixture fixture(
+      solverEntry,
+      mode,
+      MakeNewtonWarmStartBatchProblems(problemSize, batchSize));
+  if (!fixture.valid) {
+    state.SkipWithError(fixture.errorMessage.c_str());
+    return;
+  }
+
+  compute::ParallelExecutor executor;
+  BatchBenchmarkCounters counters;
+  for (auto _ : state) {
+    executor.execute(fixture.graph);
+    counters = fixture.collectCounters();
+    benchmark::DoNotOptimize(counters.maxResidual);
+  }
+
+  const auto profile = executor.executeProfiled(fixture.graph);
+  counters = fixture.collectCounters();
+  AddBatchBenchmarkCounters(
+      state,
+      counters,
+      static_cast<int>(fixture.problems.front().b.size()),
+      batchSize,
+      MakeLabel(
+          std::string(solverEntry.name),
+          "NewtonWarmStartBatchParallel/"
+              + std::string(getNewtonWarmStartModeName(mode))));
+  AddNewtonWarmStartBenchmarkCounters(state, mode);
+  state.counters["newton_warm_start_batch"] = 1.0;
+  state.counters["batch_parallel_execution"] = 1.0;
+  AddParallelExecutionCounters(state, profile, fixture.graph);
+}
+#endif
 
 void ConfigureLargerActiveSetTransitionBenchmarkOptions(
     SolverBenchmarkOptions& storage,
@@ -6501,6 +6680,28 @@ std::string MakeNewtonWarmStartBenchmarkName(
   return out.str();
 }
 
+std::string MakeNewtonWarmStartBatchSerialBenchmarkName(
+    const dart::test::LcpSolverManifestEntry& solver,
+    const NewtonWarmStartMode mode)
+{
+  std::ostringstream out;
+  out << "BM_LcpNewtonWarmStartBatchSerial/StandardActiveSet/" << solver.name
+      << "/" << getNewtonWarmStartModeName(mode);
+  return out.str();
+}
+
+#if DART_BM_LCP_COMPARE_HAS_SIMULATION_EXPERIMENTAL
+std::string MakeNewtonWarmStartBatchParallelBenchmarkName(
+    const dart::test::LcpSolverManifestEntry& solver,
+    const NewtonWarmStartMode mode)
+{
+  std::ostringstream out;
+  out << "BM_LcpNewtonWarmStartBatchParallel/StandardActiveSet/" << solver.name
+      << "/" << getNewtonWarmStartModeName(mode);
+  return out.str();
+}
+#endif
+
 std::string MakeLargerActiveSetTransitionBenchmarkName(
     const LargerActiveSetTransitionBenchmarkCase testCase,
     const dart::test::LcpSolverManifestEntry& solver)
@@ -6963,6 +7164,28 @@ void RegisterNewtonWarmStartBenchmarks()
           })
           ->Arg(32)
           ->Arg(64);
+
+      const auto serialBatchName
+          = MakeNewtonWarmStartBatchSerialBenchmarkName(solver, mode);
+      benchmark::RegisterBenchmark(
+          serialBatchName.c_str(),
+          [solver, mode](benchmark::State& state) {
+            RunNewtonWarmStartBatchSerialBenchmark(state, solver, mode);
+          })
+          ->Args({32, 4})
+          ->Args({64, 4});
+
+#if DART_BM_LCP_COMPARE_HAS_SIMULATION_EXPERIMENTAL
+      const auto parallelBatchName
+          = MakeNewtonWarmStartBatchParallelBenchmarkName(solver, mode);
+      benchmark::RegisterBenchmark(
+          parallelBatchName.c_str(),
+          [solver, mode](benchmark::State& state) {
+            RunNewtonWarmStartBatchParallelBenchmark(state, solver, mode);
+          })
+          ->Args({32, 4})
+          ->Args({64, 4});
+#endif
     }
   }
 }

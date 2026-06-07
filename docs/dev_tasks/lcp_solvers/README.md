@@ -286,6 +286,11 @@
       three native standard-LCP Newton solvers on identical 32-row and 64-row
       active-set transition packets, verified in default, SIMD-enabled, and
       CUDA-enabled build trees.
+- [x] Added 48
+      `BM_LcpNewtonWarmStartBatch(Serial|Parallel)` benchmark rows that run the
+      same Newton warm-start mode matrix over batch-size-4 standard active-set
+      transition packets, both serially and through DART 7 `ParallelExecutor`,
+      verified in default, SIMD-enabled, and CUDA-enabled build trees.
 - [ ] Continue expanding synthetic coverage beyond the current production-scale,
       larger mildly ill-conditioned, extreme singular-degenerate, and extreme
       active-set transition benchmark slices into harder solver-specific
@@ -567,6 +572,22 @@ tradeoffs evidence based.
   output. The SIMD-enabled rows report `build_simd_enabled=1`; the
   CUDA-enabled rows report `build_cuda_enabled=1` but are CPU solver rows in a
   CUDA-enabled build, not CUDA LCP kernel execution.
+- Verified Newton warm-start batch benchmark slice:
+  `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpNewtonWarmStartBatch' | wc -l`
+  reported 48 rows, and
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpNewtonWarmStartBatch' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  ran all rows with `contract_ok=1` in the default, SIMD-enabled, and
+  CUDA-enabled build trees. These rows cover batch-size-4 serial and DART 7
+  `ParallelExecutor` runs for `MinimumMapNewton`, `FischerBurmeisterNewton`,
+  and `PenalizedFischerBurmeisterNewton` on the same 32-row and 64-row
+  standard active-set transition packets and the same no-seed, PGS-only,
+  gradient-only, and PGS-then-gradient mode matrix. The rows report
+  `newton_warm_start_batch=1`, `batch_size=4`, `total_problem_size=128/256`,
+  warm-start mode/iteration counters, serial or parallel execution counters,
+  and backend build-state counters. Parallel rows report `parallel_units=4`,
+  `worker_count=20`, and observed `max_parallelism` values up to 4. The
+  CUDA-enabled rows report `build_cuda_enabled=1` but are CPU solver batch rows
+  in a CUDA-enabled build, not CUDA LCP kernel execution.
 - Verified larger active-set transition benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpLargerActiveSetTransition/' | wc -l`
   reported 49 rows, and
