@@ -2719,6 +2719,8 @@ void defSimulationModule(nb::module_& m)
              double timeStep,
              const nb::handle& gravity,
              bool differentiable,
+             sim::RigidBodySolver rigidBodySolver,
+             const sim::MultibodyOptions& multibodyOptions,
              sim::ContactSolverMethod contactSolverMethod,
              sim::ContactGradientMode contactGradientMode) {
             sim::WorldOptions options;
@@ -2727,6 +2729,8 @@ void defSimulationModule(nb::module_& m)
               options.gravity = toVector3(gravity);
             }
             options.differentiable = differentiable;
+            options.rigidBodySolver = rigidBodySolver;
+            options.multibodyOptions = multibodyOptions;
             options.contactSolverMethod = contactSolverMethod;
             options.contactGradientMode = contactGradientMode;
             new (self) sim::World(options);
@@ -2735,6 +2739,9 @@ void defSimulationModule(nb::module_& m)
           nb::kw_only(),
           nb::arg("gravity") = nb::none(),
           nb::arg("differentiable") = false,
+          nb::arg("rigid_body_solver")
+          = sim::RigidBodySolver::SequentialImpulse,
+          nb::arg("multibody_options") = sim::MultibodyOptions{},
           nb::arg("contact_solver_method")
           = sim::ContactSolverMethod::SequentialImpulse,
           nb::arg("contact_gradient_mode") = sim::ContactGradientMode::Analytic)

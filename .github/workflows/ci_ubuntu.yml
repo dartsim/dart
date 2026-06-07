@@ -253,8 +253,9 @@ jobs:
               dart \
               dartpy \
               dart_collision_native_tests \
-              INTEGRATION_simulation_World \
-              UNIT_simulation_World \
+              test_world \
+              test_world_contact_parity \
+              test_world_dart7_regression \
               UNIT_collision_CollisionGroup \
               UNIT_collision_Raycast \
               UNIT_collision_DartCollisionDetector \
@@ -275,7 +276,7 @@ jobs:
           PYTHONPATH=build/default/cpp/Release/python \
             pixi run -- pytest -q \
               python/tests/unit/collision/test_collision.py \
-              python/tests/unit/simulation/test_experimental_world.py
+              python/tests/unit/simulation/test_world.py
 
   collision-benchmark-guard:
     needs: changes
