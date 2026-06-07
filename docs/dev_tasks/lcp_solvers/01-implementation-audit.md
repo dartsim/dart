@@ -688,12 +688,13 @@ The current local evidence for this task is:
   iterations. The run still emits the dense-patch Dantzig warning, so
   Dantzig's direct dense box solve is not claimed.
 - `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldBoxContact/FrictionIndex' --benchmark_min_time=0.001s --benchmark_repetitions=1`
-  passed in default, SIMD-enabled, and CUDA-enabled build trees for 18 scoped
+  passed in default, SIMD-enabled, and CUDA-enabled build trees for 30 scoped
   dense box rows: `Pgs`, `RedBlackGaussSeidel`, `NNCG`, `Apgd`, `Tgs`, and
-  `Admm` on 1/2/4-box snapshots. Each row reported `contract_ok=1`,
-  `dense_box_contact=1`, `box_count=1`, `2`, and `4`, `contact_count=4`, `8`,
-  and `16`, and `problem_size=12`, `24`, and `48`; the CUDA-enabled rows are
-  CPU solver rows in that build tree, not CUDA LCP kernel execution.
+  `Admm` on 1/2/4/8/16-box snapshots. Each row reported `contract_ok=1`,
+  `dense_box_contact=1`, `box_count=1`, `2`, `4`, `8`, and `16`,
+  `contact_count=4`, `8`, `16`, `32`, and `64`, and `problem_size=12`, `24`,
+  `48`, `96`, and `192`; the CUDA-enabled rows are CPU solver rows in that
+  build tree, not CUDA LCP kernel execution.
 - `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldBoxStep_BoxedLcp' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   passed in default, SIMD-enabled, and CUDA-enabled build trees for
   `BM_LcpWorldBoxStep_BoxedLcp/{1,2,4,8}/200` and
@@ -997,7 +998,7 @@ The current local evidence for this task is:
   fixed-base three-axis Cartesian-chain `World::step()` paths, fixed-base
   link-vs-rigid `World::step()` paths, cross-multibody fixed-base
   link-vs-link `World::step()` paths, 1-/2-/4-/8-/16-box dense box-face
-  `World::step()` benchmark rows, plus manually assembled three-axis
+  all-solver snapshot and `World::step()` benchmark rows, plus manually assembled three-axis
   articulated unified-contact LCP snapshots including cross-multibody
   link-vs-link rows, but broader solver
   selection evidence is still missing for richer articulated, longer-running
@@ -1081,7 +1082,7 @@ The current local evidence for this task is:
    small vertical-stack boxed-LCP
    snapshots and contact-derived benchmark rows to richer articulated,
    longer-running, and denser coupled multi-contact scenes beyond the current
-   16-box dense face-contact public-step slice
+   16-box dense face-contact public-step and all-solver snapshot slices
    that validate solver outputs against motion/contact invariants.
 3. Add benchmark packets that broaden scalar CPU and SIMD-enabled CPU evidence,
    larger and sparser solver-internal multi-threaded CPU cases,

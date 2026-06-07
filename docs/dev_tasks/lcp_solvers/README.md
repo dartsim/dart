@@ -271,10 +271,10 @@
       except `NNCG`.
 - [x] Added DART 7 dense box-face contact evidence: a 4-contact, 12-row,
       single-dynamic-body boxed/findex snapshot assembled from
-      `World::collide()`, APGD-verified in the unit test, plus 18 scoped
-      `BM_LcpWorldBoxContact/FrictionIndex` benchmark rows over 1/2/4-box
-      snapshots verified in default, SIMD-enabled, and CUDA-enabled build
-      trees.
+      `World::collide()`, APGD-verified in the unit test, plus 30 scoped
+      `BM_LcpWorldBoxContact/FrictionIndex` benchmark rows over
+      1/2/4/8/16-box snapshots verified in default, SIMD-enabled, and
+      CUDA-enabled build trees.
 - [x] Added contact-derived CUDA batch evidence for homogeneous 4-, 8-, and
       16-contact DART 7 world-contact packets, covering fixed-iteration CUDA
       Jacobi and PGS unit tests and benchmark rows on the visible GPU.
@@ -1155,16 +1155,16 @@ tradeoffs evidence based.
   benchmark evidence for 1/2/4 separated sphere-ground contacts, not evidence
   for articulated, robot-like, or denser degenerate contact scenes.
 - DART 7 dense box-contact benchmark evidence:
-  `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` now registers 18 scoped
-  `BM_LcpWorldBoxContact/FrictionIndex/<solver>/{1,2,4}` rows for `Pgs`,
+  `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` now registers 30 scoped
+  `BM_LcpWorldBoxContact/FrictionIndex/<solver>/{1,2,4,8,16}` rows for `Pgs`,
   `RedBlackGaussSeidel`, `NNCG`, `Apgd`, `Tgs`, and `Admm`. Each solver uses
-  the same 1/2/4-box dense face-contact snapshots, covering 4/8/16 contacts,
-  12/24/48 rows, and 1/2/4 dynamic bodies. Focused default, SIMD-enabled, and
-  CUDA-enabled
+  the same 1/2/4/8/16-box dense face-contact snapshots, covering
+  4/8/16/32/64 contacts, 12/24/48/96/192 rows, and 1/2/4/8/16 dynamic bodies.
+  Focused default, SIMD-enabled, and CUDA-enabled
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldBoxContact/FrictionIndex' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   runs each reported `contract_ok=1`, `dense_box_contact=1`, `box_count=1`,
-  `2`, and `4`, `contact_count=4`, `8`, and `16`, and `problem_size=12`, `24`,
-  and `48` for all 18 rows.
+  `2`, `4`, `8`, and `16`, `contact_count=4`, `8`, `16`, `32`, and `64`, and
+  `problem_size=12`, `24`, `48`, `96`, and `192` for all 30 rows.
   The CUDA-enabled rows are CPU solver benchmark rows in that build tree, not
   CUDA LCP kernel execution. This is dense contact-snapshot evidence, not
   broad robot-like or CUDA dense-contact execution evidence.
@@ -1747,8 +1747,8 @@ tradeoffs evidence based.
   Jacobi block-partition sweep rows, ADMM/SAP/Boxed Semi-Smooth Newton
   contact comparison sweep rows, contact-normal standard-LCP sweep rows,
   independent-problem batches, simple world-contact snapshots, small coupled
-  stack snapshot batches, and dense box-face step rows to broader dense and
-  robot-like end-to-end contact systems, broader SIMD benchmark packets, larger threaded
+  stack snapshot batches, and dense box-face snapshot and step rows to broader
+  dense and robot-like end-to-end contact systems, broader SIMD benchmark packets, larger threaded
   configurations, broader CUDA LCP solver execution, and
   vectorized/threaded/CUDA batch-processing paths.
 - Compute backends: current benchmark rows now self-report scalar/SIMD/CUDA
