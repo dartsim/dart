@@ -501,6 +501,11 @@ options.customOptions = &params;
 solver.solve(problem, x, options);
 ```
 
+Focused `BM_LcpSubspaceMinimizationPgsIterationsSweep` rows compare 1, 3, and
+5 PGS active-set-estimation iterations on identical standard, boxed, and
+friction-index benchmark fixtures with active-set tolerance 0.0. These rows are
+CPU solver rows even when emitted by a CUDA-enabled build.
+
 ### Properties
 
 - **Time**: $O(n)$ for PGS + $O(|\mathcal{A}|^3)$ for subspace

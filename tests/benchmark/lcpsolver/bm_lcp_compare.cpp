@@ -2830,6 +2830,14 @@ struct NncgPgsIterationsSweepCase
   std::string_view pgsIterationsLabel;
 };
 
+struct SubspacePgsIterationsSweepCase
+{
+  BenchmarkProblemFamily family;
+  int problemArg;
+  int pgsIterations;
+  std::string_view pgsIterationsLabel;
+};
+
 struct AdmmRhoSweepCase
 {
   BenchmarkProblemFamily family;
@@ -2931,6 +2939,19 @@ constexpr std::array<NncgPgsIterationsSweepCase, 9>
         {BenchmarkProblemFamily::Boxed, 24, 5, "PgsIter5"},
         {BenchmarkProblemFamily::FrictionIndex, 8, 1, "PgsIter1"},
         {BenchmarkProblemFamily::FrictionIndex, 8, 2, "PgsIter2"},
+        {BenchmarkProblemFamily::FrictionIndex, 8, 5, "PgsIter5"},
+    }};
+
+constexpr std::array<SubspacePgsIterationsSweepCase, 9>
+    kSubspacePgsIterationsSweepCases{{
+        {BenchmarkProblemFamily::Standard, 48, 1, "PgsIter1"},
+        {BenchmarkProblemFamily::Standard, 48, 3, "PgsIter3"},
+        {BenchmarkProblemFamily::Standard, 48, 5, "PgsIter5"},
+        {BenchmarkProblemFamily::Boxed, 24, 1, "PgsIter1"},
+        {BenchmarkProblemFamily::Boxed, 24, 3, "PgsIter3"},
+        {BenchmarkProblemFamily::Boxed, 24, 5, "PgsIter5"},
+        {BenchmarkProblemFamily::FrictionIndex, 8, 1, "PgsIter1"},
+        {BenchmarkProblemFamily::FrictionIndex, 8, 3, "PgsIter3"},
         {BenchmarkProblemFamily::FrictionIndex, 8, 5, "PgsIter5"},
     }};
 
@@ -5119,6 +5140,42 @@ void RunNncgPgsIterationsSweepBenchmark(
   state.counters["nncg_pgs_iterations"] = testCase.pgsIterations;
   state.counters["nncg_restart_interval"] = params.restartInterval;
   state.counters["nncg_restart_threshold"] = params.restartThreshold;
+  if (testCase.family == BenchmarkProblemFamily::FrictionIndex) {
+    state.counters["contact_count"] = testCase.problemArg;
+  }
+}
+
+void RunSubspacePgsIterationsSweepBenchmark(
+    benchmark::State& state, const SubspacePgsIterationsSweepCase testCase)
+{
+  const auto problem
+      = MakeBenchmarkProblem(testCase.family, testCase.problemArg);
+  auto options = MakeBenchmarkOptions(300);
+  options.absoluteTolerance = 1e-5;
+  options.relativeTolerance = 1e-3;
+  options.complementarityTolerance
+      = testCase.family == BenchmarkProblemFamily::FrictionIndex ? 2e-3 : 1e-3;
+
+  dart::math::SubspaceMinimizationSolver::Parameters params;
+  params.pgsIterations = testCase.pgsIterations;
+  params.activeSetTolerance = 0.0;
+  options.customOptions = &params;
+
+  dart::math::SubspaceMinimizationSolver solver;
+  RunBenchmarkWithSolver(
+      state,
+      solver,
+      problem,
+      options,
+      MakeLabel(
+          "SubspaceMinimization",
+          "PgsIterationsSweep/"
+              + std::string(getProblemFamilyName(testCase.family)) + "/"
+              + std::string(testCase.pgsIterationsLabel)));
+
+  state.counters["subspace_pgs_iterations_sweep"] = 1.0;
+  state.counters["subspace_pgs_iterations"] = testCase.pgsIterations;
+  state.counters["subspace_active_set_tolerance"] = params.activeSetTolerance;
   if (testCase.family == BenchmarkProblemFamily::FrictionIndex) {
     state.counters["contact_count"] = testCase.problemArg;
   }
@@ -7330,6 +7387,16 @@ std::string MakeNncgPgsIterationsSweepBenchmarkName(
   return out.str();
 }
 
+std::string MakeSubspacePgsIterationsSweepBenchmarkName(
+    const SubspacePgsIterationsSweepCase testCase)
+{
+  std::ostringstream out;
+  out << "BM_LcpSubspaceMinimizationPgsIterationsSweep/"
+      << getProblemFamilyName(testCase.family) << "/"
+      << testCase.pgsIterationsLabel;
+  return out.str();
+}
+
 std::string MakeAdmmRhoSweepBenchmarkName(const AdmmRhoSweepCase testCase)
 {
   std::ostringstream out;
@@ -7867,6 +7934,17 @@ void RegisterNncgPgsIterationsSweepBenchmarks()
     benchmark::RegisterBenchmark(
         name.c_str(), [testCase](benchmark::State& state) {
           RunNncgPgsIterationsSweepBenchmark(state, testCase);
+        });
+  }
+}
+
+void RegisterSubspacePgsIterationsSweepBenchmarks()
+{
+  for (const auto testCase : kSubspacePgsIterationsSweepCases) {
+    const auto name = MakeSubspacePgsIterationsSweepBenchmarkName(testCase);
+    benchmark::RegisterBenchmark(
+        name.c_str(), [testCase](benchmark::State& state) {
+          RunSubspacePgsIterationsSweepBenchmark(state, testCase);
         });
   }
 }
@@ -8654,6 +8732,7 @@ const bool kManifestBenchmarksRegistered = [] {
   RegisterApgdRestartSweepBenchmarks();
   RegisterTgsIterationBudgetSweepBenchmarks();
   RegisterNncgPgsIterationsSweepBenchmarks();
+  RegisterSubspacePgsIterationsSweepBenchmarks();
   RegisterAdmmRhoSweepBenchmarks();
   RegisterSapRegularizationSweepBenchmarks();
   RegisterNewtonWarmStartBenchmarks();
