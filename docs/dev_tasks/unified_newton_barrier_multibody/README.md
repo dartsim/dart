@@ -43,7 +43,10 @@
   - [x] Promote the first second-use PSD projection contract into
         `detail/newton_barrier` and route rigid IPC plus ABD Hessian projection
         through it with shared tests.
-  - [ ] Continue scouting projected-Newton, line-search, diagnostics, or
+  - [x] Promote the first shared line-search option/stat contract into
+        `detail/newton_barrier` and route rigid IPC plus deformable CCD stats
+        accumulation through it with shared tests.
+  - [ ] Continue scouting projected-Newton, line-search result, diagnostics, or
         benchmark-schema contracts only when another variant needs identical
         behavior.
 - [ ] Phase 4: expand the unified manifest into diagnostics, benchmark packets,
@@ -97,10 +100,10 @@ resources as public API.
 ## Immediate Next Steps
 
 1. Continue Phase 3 shared-contract scouting from the existing rigid IPC,
-   deformable IPC, and ABD evidence after the first fixed-size PSD projection
-   helper. Promote projected-Newton, line-search, diagnostics, or
-   benchmark-schema contracts only when a second consumer proves identical
-   behavior.
+   deformable IPC, and ABD evidence after the fixed-size PSD projection helper
+   and first line-search option/stat helper. Promote projected-Newton,
+   line-search result semantics, diagnostics, or benchmark-schema contracts only
+   when a second consumer proves identical behavior.
 2. Keep the two-body affine contact micro-solve deferred until the
    `abd-alg-affine-body` row expands beyond the primitive/oracle micro-packet
    and needs a solved-state residual or runtime stepping diagnostic.
@@ -146,6 +149,13 @@ Phase 2 local evidence so far:
 - `pixi run test-simulation-experimental` (64/64)
 - `pixi run bm bm_affine_body_dynamics -- --benchmark_min_time=0.05s`
 - `pixi run bm-abd-comparison-packet`
+
+Phase 3 line-search option/stat slice local evidence:
+
+- `pixi run lint`
+- `pixi run build-simulation-experimental-tests`
+- `pixi run test-simulation-experimental` (65/65)
+- `pixi run check-api-boundaries`
 
 ## Owner Docs
 

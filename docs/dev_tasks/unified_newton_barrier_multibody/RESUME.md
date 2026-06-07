@@ -15,6 +15,12 @@ helper for reduced/affine Hessian projection; this is intentionally smaller
 than the existing deformable batched CPU/CUDA PSD backend and does not rename or
 generalize that backend yet.
 
+The next Phase 3 slice promotes the first shared line-search option/stat
+contract into `detail/newton_barrier`. Rigid IPC and deformable continuous
+collision detection now share option defaults, primitive check counters, and the
+stats accumulation helper while keeping their distinct result semantics and CCD
+implementations in variant-local owners.
+
 ## Last Session Summary
 
 Current slice: the first ABD benchmark packet has been promoted from
@@ -40,27 +46,33 @@ through the shared tangent-displacement friction kernel,
 `test_affine_body_dynamics`, and the first `bm_affine_body_dynamics` benchmark
 packet.
 
-The first Phase 3 contract slice lives on `simx/shared-newton-barrier-psd`: it
-adds a shared fixed-size PSD projection helper, routes rigid IPC and ABD Hessian
-projection through it, and adds focused Newton-barrier primitive tests for
-eigenvalue clamping and input symmetrization.
+The first Phase 3 contract slice was merged as PR #2936. It added a shared
+fixed-size PSD projection helper, routed rigid IPC and ABD Hessian projection
+through it, and added focused Newton-barrier primitive tests for eigenvalue
+clamping and input symmetrization.
+
+The current line-search stats slice lives on
+`simx/shared-newton-barrier-line-search-stats`. It adds
+`detail/newton_barrier/line_search.hpp`, aliases rigid IPC and deformable CCD
+option/stat types to the shared owner, and keeps line-search result semantics
+variant-local.
 
 ## Current Branch
 
-`simx/shared-newton-barrier-psd` - contains the Phase 3 fixed-size PSD
-projection helper slice. Verify the exact status with `git status --short
---branch` because this section is a resume snapshot.
+`simx/shared-newton-barrier-line-search-stats` - contains the Phase 3
+line-search option/stat helper slice. Verify the exact status with
+`git status --short --branch` because this section is a resume snapshot.
 
 ## Immediate Next Step
 
 Continue Phase 3 from
 [`../../plans/083-unified-newton-barrier-multibody/abd-first-slice-design.md`](../../plans/083-unified-newton-barrier-multibody/abd-first-slice-design.md):
-finish validating and publishing the fixed-size PSD projection helper, then
-resume shared-contract scouting from the existing rigid IPC, deformable IPC, and
-ABD evidence. Do not add a two-body affine contact micro-solve for the current
-`abd-alg-affine-body` micro-packet; add projected-Newton, line-search,
-diagnostics, or benchmark-schema contracts only after second-use behavior is
-proven identical across variants. Use
+validate and publish the line-search option/stat helper, then resume
+shared-contract scouting from the existing rigid IPC, deformable IPC, and ABD
+evidence. Do not add a two-body affine contact micro-solve for the current
+`abd-alg-affine-body` micro-packet; add projected-Newton, line-search result
+semantics, diagnostics, or benchmark-schema contracts only after second-use
+behavior is proven identical across variants. Use
 [`../../plans/083-unified-newton-barrier-multibody/implementation-roadmap.md`](../../plans/083-unified-newton-barrier-multibody/implementation-roadmap.md)
 to keep the Phase 2 packet, shared solver contracts, articulation rows,
 restitution work, mixed-domain coupling, CPU/GPU parity, and py-demos rows

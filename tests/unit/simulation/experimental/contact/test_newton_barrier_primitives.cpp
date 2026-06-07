@@ -30,10 +30,12 @@
  */
 
 #include <dart/simulation/experimental/detail/deformable_contact/barrier_kernel.hpp>
+#include <dart/simulation/experimental/detail/deformable_contact/continuous_collision_step.hpp>
 #include <dart/simulation/experimental/detail/deformable_contact/primitive_distance.hpp>
 #include <dart/simulation/experimental/detail/deformable_contact/tangent_stencil.hpp>
 #include <dart/simulation/experimental/detail/newton_barrier/barrier_kernel.hpp>
 #include <dart/simulation/experimental/detail/newton_barrier/friction_kernel.hpp>
+#include <dart/simulation/experimental/detail/newton_barrier/line_search.hpp>
 #include <dart/simulation/experimental/detail/newton_barrier/primitive_distance.hpp>
 #include <dart/simulation/experimental/detail/newton_barrier/psd_projection.hpp>
 #include <dart/simulation/experimental/detail/newton_barrier/tangent_stencil.hpp>
@@ -121,6 +123,14 @@ TEST(NewtonBarrierPrimitives, DeformableContactHeadersForwardSharedTypes)
   static_assert(std::is_same_v<
                 dc::PointTriangleTangentStencil,
                 nb::PointTriangleTangentStencil>);
+  using DcLineSearchOptions = dc::ContinuousCollisionStepOptions;
+  using DcLineSearchStats = dc::ContinuousCollisionStepStats;
+  using RigidLineSearchOptions = rigid::RigidIpcLineSearchOptions;
+  using RigidLineSearchStats = rigid::RigidIpcLineSearchStats;
+  static_assert(std::is_same_v<DcLineSearchOptions, nb::LineSearchOptions>);
+  static_assert(std::is_same_v<DcLineSearchStats, nb::LineSearchStats>);
+  static_assert(std::is_same_v<RigidLineSearchOptions, nb::LineSearchOptions>);
+  static_assert(std::is_same_v<RigidLineSearchStats, nb::LineSearchStats>);
 
   EXPECT_DOUBLE_EQ(dc::detail::kRelativeEpsilon, nb::detail::kRelativeEpsilon);
   EXPECT_DOUBLE_EQ(
@@ -128,6 +138,38 @@ TEST(NewtonBarrierPrimitives, DeformableContactHeadersForwardSharedTypes)
       nb::detail::kBarrierDistanceFloorScale);
   EXPECT_DOUBLE_EQ(
       dc::detail::kTangentBasisEpsilon, nb::detail::kTangentBasisEpsilon);
+}
+
+//==============================================================================
+TEST(NewtonBarrierPrimitives, LineSearchStatsAccumulateSharedCounters)
+{
+  const nb::LineSearchOptions options;
+  EXPECT_DOUBLE_EQ(options.minSeparation, 0.0);
+  EXPECT_DOUBLE_EQ(options.tolerance, 1e-6);
+  EXPECT_EQ(options.maxIterations, 64);
+
+  nb::LineSearchStats total;
+  nb::LineSearchStats addend;
+  addend.pointPointChecks = 1;
+  addend.pointEdgeChecks = 2;
+  addend.edgeEdgeChecks = 3;
+  addend.pointTriangleChecks = 4;
+  addend.hits = 5;
+  addend.misses = 6;
+  addend.indeterminate = 7;
+  addend.zeroStepCount = 8;
+
+  nb::accumulateLineSearchStats(total, addend);
+  nb::accumulateLineSearchStats(total, addend);
+
+  EXPECT_EQ(total.pointPointChecks, 2u);
+  EXPECT_EQ(total.pointEdgeChecks, 4u);
+  EXPECT_EQ(total.edgeEdgeChecks, 6u);
+  EXPECT_EQ(total.pointTriangleChecks, 8u);
+  EXPECT_EQ(total.hits, 10u);
+  EXPECT_EQ(total.misses, 12u);
+  EXPECT_EQ(total.indeterminate, 14u);
+  EXPECT_EQ(total.zeroStepCount, 16u);
 }
 
 //==============================================================================
