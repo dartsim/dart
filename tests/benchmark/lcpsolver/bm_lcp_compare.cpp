@@ -3003,6 +3003,12 @@ struct SapRegularizationSweepCase
   std::string_view regularizationLabel;
 };
 
+constexpr std::array<std::string_view, 3> kContactComparisonSolverNames{
+    "Admm",
+    "Sap",
+    "BoxedSemiSmoothNewton",
+};
+
 constexpr std::array<RelaxationSweepCase, 9> kRelaxationSweepCases{{
     {BenchmarkProblemFamily::Standard,
      48,
@@ -6968,6 +6974,80 @@ void RunStaggeringContactPipelineSweepBenchmark(
                                                                        : 0.0;
 }
 
+void RunContactSolverComparisonSweepBenchmark(
+    benchmark::State& state,
+    const dart::test::LcpSolverManifestEntry& solverEntry,
+    const StaggeringContactPipelineSweepCase testCase)
+{
+  std::string errorMessage;
+  const auto fixture
+      = MakeStaggeringContactPipelineSweepProblem(testCase, errorMessage);
+  if (!fixture.has_value()) {
+    state.SkipWithError(errorMessage.c_str());
+    return;
+  }
+
+  SolverBenchmarkOptions storage;
+  ConfigureSolverBenchmarkOptions(storage, solverEntry, fixture->problem);
+
+  const auto solver = solverEntry.create();
+  if (solver == nullptr) {
+    state.SkipWithError("LCP solver factory returned null");
+    return;
+  }
+
+  RunBenchmarkWithSolver(
+      state,
+      *solver,
+      fixture->problem,
+      storage.options,
+      MakeLabel(
+          std::string(solverEntry.name),
+          "ContactSolverComparisonSweep/" + std::string(testCase.caseLabel)));
+
+  const auto normalRows = (fixture->problem.findex.array() < 0).count();
+  const auto frictionRows = fixture->problem.findex.size() - normalRows;
+  state.counters["contact_solver_comparison_sweep"] = 1.0;
+  state.counters["contact_solver_comparison_admm"]
+      = solverEntry.name == "Admm" ? 1.0 : 0.0;
+  state.counters["contact_solver_comparison_sap"]
+      = solverEntry.name == "Sap" ? 1.0 : 0.0;
+  state.counters["contact_solver_comparison_boxed_ssn"]
+      = solverEntry.name == "BoxedSemiSmoothNewton" ? 1.0 : 0.0;
+  state.counters["contact_count"] = static_cast<double>(fixture->contactCount);
+  state.counters["body_count"] = static_cast<double>(fixture->bodyCount);
+  state.counters["normal_row_count"] = static_cast<double>(normalRows);
+  state.counters["friction_row_count"] = static_cast<double>(frictionRows);
+  state.counters["contact_comparison_world_separated_contact"]
+      = testCase.kind == StaggeringContactPipelineKind::WorldSeparated ? 1.0
+                                                                       : 0.0;
+  state.counters["contact_comparison_world_stack_contact"]
+      = testCase.kind == StaggeringContactPipelineKind::WorldStack ? 1.0 : 0.0;
+  state.counters["contact_comparison_articulated_unified_contact"]
+      = (testCase.kind == StaggeringContactPipelineKind::ArticulatedGround
+         || testCase.kind
+                == StaggeringContactPipelineKind::ArticulatedRigidImpact
+         || testCase.kind
+                == StaggeringContactPipelineKind::ArticulatedCrossLinkImpact)
+            ? 1.0
+            : 0.0;
+  state.counters["contact_comparison_articulated_ground_contact"]
+      = testCase.kind == StaggeringContactPipelineKind::ArticulatedGround ? 1.0
+                                                                          : 0.0;
+  state.counters["contact_comparison_articulated_rigid_impact_contact"]
+      = testCase.kind == StaggeringContactPipelineKind::ArticulatedRigidImpact
+            ? 1.0
+            : 0.0;
+  state.counters["contact_comparison_articulated_cross_link_contact"]
+      = testCase.kind
+                == StaggeringContactPipelineKind::ArticulatedCrossLinkImpact
+            ? 1.0
+            : 0.0;
+  state.counters["contact_comparison_coupled_contact_fixture"]
+      = testCase.kind != StaggeringContactPipelineKind::WorldSeparated ? 1.0
+                                                                       : 0.0;
+}
+
 void RunWorldContactBatchSerialBenchmark(
     benchmark::State& state,
     const dart::test::LcpSolverManifestEntry& solverEntry,
@@ -8542,6 +8622,16 @@ std::string MakeStaggeringContactPipelineSweepBenchmarkName(
   return out.str();
 }
 
+std::string MakeContactSolverComparisonSweepBenchmarkName(
+    const dart::test::LcpSolverManifestEntry& solver,
+    const StaggeringContactPipelineSweepCase testCase)
+{
+  std::ostringstream out;
+  out << "BM_LcpContactSolverComparisonSweep/" << solver.name << "/"
+      << testCase.caseLabel;
+  return out.str();
+}
+
 std::string MakeMildIllConditionedBenchmarkName(
     const MildIllConditionedBenchmarkCase testCase,
     const dart::test::LcpSolverManifestEntry& solver)
@@ -9533,6 +9623,28 @@ void RegisterStaggeringContactPipelineSweepBenchmarks()
   }
 }
 
+void RegisterContactSolverComparisonSweepBenchmarks()
+{
+  for (const auto solverName : kContactComparisonSolverNames) {
+    const auto* solverEntry = FindSolverManifestEntry(solverName);
+    if (solverEntry == nullptr
+        || !dart::test::supportsProblem(
+            *solverEntry, dart::test::LcpProblemSupport::FrictionIndex)) {
+      continue;
+    }
+
+    for (const auto testCase : kStaggeringContactPipelineSweepCases) {
+      const auto name = MakeContactSolverComparisonSweepBenchmarkName(
+          *solverEntry, testCase);
+      benchmark::RegisterBenchmark(
+          name.c_str(),
+          [solver = *solverEntry, testCase](benchmark::State& state) {
+            RunContactSolverComparisonSweepBenchmark(state, solver, testCase);
+          });
+    }
+  }
+}
+
 void RegisterWorldContactBatchBenchmarks()
 {
   for (const auto& solver : dart::test::kLcpSolverManifest) {
@@ -9795,6 +9907,7 @@ const bool kManifestBenchmarksRegistered = [] {
   RegisterWorldStackContactBenchmarks();
   RegisterArticulatedUnifiedContactBenchmarks();
   RegisterStaggeringContactPipelineSweepBenchmarks();
+  RegisterContactSolverComparisonSweepBenchmarks();
   RegisterWorldContactBatchBenchmarks();
 #endif
   return true;

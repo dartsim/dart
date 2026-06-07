@@ -150,6 +150,16 @@ runs passed with `contract_ok=1` on every row and recorded
 parameters, `sap_max_line_search_iterations`, backend build-state counters,
 and `contact_count=8` for the friction-index rows. The CUDA-enabled rows are
 CPU SAP solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
+It now also adds 27 `BM_LcpContactSolverComparisonSweep` benchmark rows for
+`Admm`, `Sap`, and `BoxedSemiSmoothNewton` over the same DART 7 contact-derived
+fixtures used by the Staggering contact-pipeline sweep: separated world-contact
+1/2/4-contact snapshots, coupled vertical-stack 2/3/5-contact snapshots, and
+articulated unified ground, rigid-impact, and cross-link-impact 4-contact
+snapshots. Focused default, SIMD-enabled, and CUDA-enabled build-tree runs
+passed with `contract_ok=1` on every row and recorded solver identity,
+fixture-family, normal/friction row-count, contact-count, problem-size, and
+backend build-state counters. The CUDA-enabled rows are CPU solver rows in a
+CUDA-enabled build, not CUDA LCP kernel execution.
 It now also adds 9 `BM_LcpShockPropagationLayerSweep` benchmark rows for the
 `ShockPropagationSolver` layer schedule path, covering standard 48-row, boxed
 24-row, and friction-index 8-contact fixtures with single-layer, two-layer, and
@@ -363,7 +373,8 @@ sweep rows, ShockPropagation layer-layout sweep rows, MPRGP SPD/check sweep
 rows, Interior Point path-parameter sweep rows, Staggering contact-pipeline
 sweep rows, Boxed Semi-Smooth Newton line-search sweep rows, Pivoting scale
 sweep rows, BGS/Blocked Jacobi block-partition sweep rows, ADMM
-rho/adaptive-rho sweep rows, and SAP regularization sweep rows, toward broader
+rho/adaptive-rho sweep rows, SAP regularization sweep rows, and ADMM/SAP/Boxed
+Semi-Smooth Newton contact comparison sweep rows, toward broader
 solver-specific conditioning grids and direct backend execution evidence beyond
 SIMD/CUDA-enabled build-state counters.
 Broaden SIMD benchmark gates, solver-internal threaded benchmark evidence, and
@@ -691,6 +702,14 @@ and broader dense/robot-like contact scenes.
   build-state counters, and `contact_count=8` for the friction-index rows.
   Treat the CUDA-enabled rows as CPU ADMM solver rows in a CUDA-enabled build,
   not CUDA LCP kernel execution.
+- `BM_LCP_COMPARE` now lists 27 focused contact comparison rows for `Admm`,
+  `Sap`, and `BoxedSemiSmoothNewton` on the same DART 7 contact-derived
+  separated world-contact, coupled stack-contact, and articulated unified-contact
+  fixtures. Default, SIMD, and CUDA-enabled focused runs report
+  `contract_ok=1`, solver identity counters, contact counts `1/2/3/4/5`,
+  problem sizes `3/6/9/12/15`, normal/friction row-count counters, and backend
+  build-state counters. Treat the CUDA-enabled rows as CPU solver rows in a
+  CUDA-enabled build, not CUDA LCP kernel execution.
 - `BoxedSemiSmoothNewton` now includes the derivative of moving `findex`
   friction bounds in its natural-residual Jacobian. The previously failing
   coupled mildly ill-conditioned 4-contact friction-index generated case passes

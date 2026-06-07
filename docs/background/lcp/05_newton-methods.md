@@ -404,7 +404,10 @@ default, SIMD-enabled, and CUDA-enabled build-tree runs reported 9 rows with
 friction-index `contact_count=8`, observed solver iterations `2/7/8/9`, and
 backend build-state counters. The CUDA-enabled rows are CPU
 BoxedSemiSmoothNewton solver rows in a CUDA-enabled build, not CUDA LCP kernel
-execution.
+execution. Additional `BM_LcpContactSolverComparisonSweep` rows run
+BoxedSemiSmoothNewton on DART 7 separated sphere-ground, coupled vertical-stack,
+and articulated unified-contact friction-index fixtures, so contact-derived
+evidence is reported separately from the synthetic line-search parameter sweep.
 
 ## Implementation Strategy
 

@@ -378,7 +378,11 @@ For friction-index rows, the projection uses effective bounds coupled to the
 current normal impulse.
 Focused `BM_LcpAdmmRhoSweep` rows compare fixed and adaptive $\rho$ settings
 on identical standard, boxed, and friction-index benchmark fixtures; these rows
-are CPU solver rows even when emitted by a CUDA-enabled build.
+are CPU solver rows even when emitted by a CUDA-enabled build. Additional
+`BM_LcpContactSolverComparisonSweep/Admm/*` rows reuse DART 7 separated
+sphere-ground, coupled vertical-stack, and articulated unified-contact
+friction-index fixtures so ADMM contact evidence is tracked independently from
+the synthetic $\rho$ sweep.
 
 ```cpp
 #include <dart/math/lcp/other/AdmmSolver.hpp>
@@ -409,7 +413,10 @@ design.
 Focused `BM_LcpSapRegularizationSweep` rows compare regularization values
 `1e-6`, `1e-5`, and `1e-4` on identical standard, boxed, and friction-index
 benchmark fixtures; these rows are CPU solver rows even when emitted by a
-CUDA-enabled build.
+CUDA-enabled build. Additional `BM_LcpContactSolverComparisonSweep/Sap/*` rows
+reuse DART 7 separated sphere-ground, coupled vertical-stack, and articulated
+unified-contact friction-index fixtures so SAP contact evidence is tracked
+independently from the synthetic regularization sweep.
 
 ```cpp
 #include <dart/math/lcp/other/SapSolver.hpp>

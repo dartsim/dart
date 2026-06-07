@@ -1199,6 +1199,11 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Added DART 7 SAP regularization comparison benchmark rows for standard,
     boxed, and friction-index LCP fixtures, with backend build-state counters
     distinguishing default, SIMD-enabled, and CUDA-enabled CPU solver runs.
+  - Added DART 7 ADMM, SAP, and Boxed Semi-Smooth Newton contact comparison
+    benchmark rows for separated world-contact, coupled stack-contact, and
+    articulated unified-contact friction-index fixtures, with backend
+    build-state counters distinguishing default, SIMD-enabled, and CUDA-enabled
+    CPU solver runs.
   - Replaced the experimental rigid-body contact stage's per-contact
     sequential normal impulses with a coupled boxed-LCP solve over all
     rigid-rigid contacts (`dart/math/lcp` Dantzig solver). It assembles the

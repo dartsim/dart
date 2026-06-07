@@ -54,6 +54,9 @@
       boxed, and friction-index fixtures.
 - [x] Added focused SAP regularization sweep benchmark rows on standard, boxed,
       and friction-index fixtures.
+- [x] Added focused ADMM, SAP, and Boxed Semi-Smooth Newton contact comparison
+      benchmark rows on DART 7 separated world-contact, coupled stack-contact,
+      and articulated unified-contact fixtures.
 - [x] Verified a focused DART 7 SIMD-enabled CPU build slice for generated LCP
       correctness and scalar/parallel batch benchmark rows.
 - [x] Verified a focused DART 7 CUDA-enabled build/runtime slice and ran the
@@ -824,6 +827,22 @@ tradeoffs evidence based.
   for the friction-index rows, and backend build-state counters. The
   CUDA-enabled rows report `build_cuda_enabled=1` but are CPU SAP solver rows
   in a CUDA-enabled build, not CUDA LCP kernel execution.
+- Verified ADMM/SAP/Boxed Semi-Smooth Newton contact comparison benchmark
+  slice:
+  `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpContactSolverComparisonSweep' | wc -l`
+  reported 27 rows, and JSON checks for
+  `BM_LcpContactSolverComparisonSweep` reported 27 rows with `contract_ok=1`
+  in the default, SIMD-enabled, and CUDA-enabled build trees. These rows run
+  `Admm`, `Sap`, and `BoxedSemiSmoothNewton` over the same DART 7 separated
+  sphere-ground 1/2/4-contact fixtures, coupled vertical-stack 2/3/5-contact
+  fixtures, and articulated unified ground, rigid-impact, and cross-link-impact
+  4-contact fixtures. The rows report
+  `contact_solver_comparison_sweep=1`, solver identity counters,
+  fixture-family counters, `contact_count=1/2/3/4/5`,
+  `normal_row_count=1/2/3/4/5`, `friction_row_count=2/4/6/8/10`,
+  `problem_size=3/6/9/12/15`, and backend build-state counters. The
+  CUDA-enabled rows report `build_cuda_enabled=1` but are CPU solver rows in a
+  CUDA-enabled build, not CUDA LCP kernel execution.
 - Verified larger active-set transition benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpLargerActiveSetTransition/' | wc -l`
   reported 49 rows, and
@@ -1657,7 +1676,8 @@ tradeoffs evidence based.
   path-parameter sweep rows, Staggering contact-pipeline sweep rows, Boxed
   Semi-Smooth Newton line-search sweep rows, Pivoting scale sweep rows, ADMM
   rho/adaptive-rho sweep rows, SAP regularization sweep rows, BGS/Blocked
-  Jacobi block-partition sweep rows,
+  Jacobi block-partition sweep rows, ADMM/SAP/Boxed Semi-Smooth Newton
+  contact comparison sweep rows,
   independent-problem batches, simple world-contact snapshots, small coupled
   stack snapshot batches, and dense box-face step rows to broader dense and
   robot-like end-to-end contact systems, broader SIMD benchmark packets, larger threaded
