@@ -2719,6 +2719,9 @@ Capsule Rod (IPC)` py-demos scene (a cloth draping over a horizontal rod,
 
 - Core
   - Added SIMD abstraction layer (`dart/simd/`) with portable vectorized math primitives supporting SSE4.2, AVX, AVX2, AVX-512, and ARM NEON backends with automatic runtime dispatch. Includes `Vec<T, N>`, `VecMask<T, N>`, aligned allocators, Eigen interop utilities, and dynamic vector/matrix types for batch computation. ([#2490](https://github.com/dartsim/dart/pull/2490))
+  - Added a backend-neutral lie-group batch adjoint helper and fixed SO3, SE3,
+    and group-product log Jacobian plumbing so DART 7 math paths have tested
+    scalar baselines ready for SIMD, multi-threaded, and CUDA compute backends.
   - Added `<numbers>`-style variable templates (`dart::math::pi`, `phi`, `two_pi`, etc.) plus numeric-limits helpers (`inf_v`, `max_v`, `min_v`, `eps_v`) in `dart/math/Constants.hpp` and deprecated `dart::math::constants<T>` (the legacy struct/header will be removed in DART 7.1). ([#2150](https://github.com/dartsim/dart/pull/2150), [#2157](https://github.com/dartsim/dart/pull/2157), [#2225](https://github.com/dartsim/dart/pull/2225))
   - Fix spdlog/fmt 12 builds by treating DART logging format parameters as runtime format strings. ([#2542](https://github.com/dartsim/dart/pull/2542), [#2538](https://github.com/dartsim/dart/issues/2538))
   - Logging and profiling updates: conditional logging macros, source-context metadata, `DART_ASSERT` adoption, log prefix cleanup, and the text profiling backend. ([#2099](https://github.com/dartsim/dart/pull/2099), [#2104](https://github.com/dartsim/dart/pull/2104), [#2105](https://github.com/dartsim/dart/pull/2105), [#2109](https://github.com/dartsim/dart/pull/2109), [#2110](https://github.com/dartsim/dart/pull/2110), [#2238](https://github.com/dartsim/dart/pull/2238))
