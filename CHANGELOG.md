@@ -1002,7 +1002,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Added DART 7 contact-derived block-structure coverage for BGS and Blocked
     Jacobi LCP solvers, proving real boxed-LCP world-contact snapshots solve
     with `findex`-derived non-contiguous per-contact blocks and reject explicit
-    block partitions that split tangent rows from their owning normal rows.
+    block partitions that split tangent rows from their owning normal rows;
+    focused world-contact, stack-contact, and serial/parallel batch benchmark
+    rows for both solvers also pass the LCP contract.
   - Added manifest-generated serial and DART 7 `ParallelExecutor` batch LCP
     benchmarks so standard, boxed, and friction-index solver families compare
     the same independent-problem batches across every supporting solver. The

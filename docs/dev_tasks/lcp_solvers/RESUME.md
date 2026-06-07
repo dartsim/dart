@@ -41,7 +41,9 @@ It now also adds DART 7 per-contact block-structure evidence for BGS and
 Blocked Jacobi on a real two-contact boxed-LCP world-contact snapshot: the
 focused tests pass when blocks are derived from non-contiguous `findex`
 dependencies and reject explicit block sizes that split tangent rows from their
-owning normal rows.
+owning normal rows. A focused `BM_LCP_COMPARE` gate on the merged default tree
+also verifies 22 BGS/Blocked Jacobi world-contact, stack-contact, and
+serial/parallel batch rows with `bad_contract=0`.
 It now also extends the robust near-singular generated slice to coupled
 friction-index 12-contact packets and adds 13 matching `BM_LcpNearSingular`
 benchmark rows for standard 8-row, boxed 8-row, and coupled friction-index
@@ -479,6 +481,9 @@ and broader dense/robot-like contact scenes.
   the same denser separated-contact invariants. The focused
   `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.BlockSolversUseFindexContactBlocksOnWorldSnapshot:BoxedLcpContact.BlockSolversRejectExplicitWorldContactFindexSplit'`
   run passes both per-contact block tests, the focused
+  `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorld(Contact|StackContact|ContactBatchSerial|ContactBatchParallel|ContactStressBatchSerial|ContactStressBatchParallel)/FrictionIndex/(BGS|BlockedJacobi)'`
+  JSON gate reports 22 rows, `bad_contract=0`, `bad_problem=0`,
+  `stack_rows=8`, and `batch_rows=8`, the focused
   `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.*WorldContactSnapshot*'`
   run passes both snapshot tests, the focused
   `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.TwoSphereWorldStepMaintainsContactInvariants'`

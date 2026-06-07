@@ -271,7 +271,9 @@
       Blocked Jacobi on real two-contact boxed-LCP world-contact snapshots:
       the tests prove `findex`-derived non-contiguous contact blocks solve the
       snapshot and explicit block partitions that split normal/tangent rows are
-      rejected.
+      rejected. A focused `BM_LCP_COMPARE` gate also verifies 22 BGS/Blocked
+      Jacobi world-contact, stack-contact, and serial/parallel batch rows with
+      `contract_ok=1`.
 - [ ] Continue expanding synthetic coverage beyond the current production-scale,
       larger mildly ill-conditioned, extreme singular-degenerate, and extreme
       active-set transition benchmark slices into harder solver-specific
@@ -1206,7 +1208,11 @@ tradeoffs evidence based.
 - Added BGS and Blocked Jacobi per-contact block evidence on that DART 7
   two-contact world snapshot: the solver tests pass with default `findex`
   grouping over the normal-first/tangent-later row layout and reject explicit
-  block sizes that split tangent rows from their owning normal row.
+  block sizes that split tangent rows from their owning normal row. A focused
+  default `BM_LCP_COMPARE` JSON gate covers 22 BGS/Blocked Jacobi
+  world-contact rows (`BM_LcpWorldContact`, `BM_LcpWorldStackContact`,
+  `BM_LcpWorldContactBatch(Serial|Parallel)`, and
+  `BM_LcpWorldContactStressBatch(Serial|Parallel)`) with zero bad contracts.
 - Added end-to-end DART 7 `World::step()` evidence for the boxed-LCP path with
   two independent sphere-ground contacts advanced for 200 steps and checked
   against non-penetration, near-rest normal velocity, tangential-speed
