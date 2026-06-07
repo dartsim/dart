@@ -216,6 +216,17 @@ TEST(StlAllocatorTest, SupportsOverAlignedVectorStorage)
 }
 
 //==============================================================================
+TEST(StlAllocatorTest, LargeStorageUsesCacheLineAlignment)
+{
+  EXPECT_EQ(StlAllocator<double>::storageAlignmentFor(128), alignof(double));
+  EXPECT_EQ(StlAllocator<double>::storageAlignmentFor(2048), 64u);
+  EXPECT_EQ(
+      StlAllocator<OverAlignedComponent>::storageAlignmentFor(
+          sizeof(OverAlignedComponent)),
+      alignof(OverAlignedComponent));
+}
+
+//==============================================================================
 TEST(StlAllocatorTest, RejectsCountOverflow)
 {
   FreeListAllocator backing;

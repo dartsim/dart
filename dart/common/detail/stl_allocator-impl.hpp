@@ -79,7 +79,7 @@ typename StlAllocator<T>::pointer StlAllocator<T>::allocate(
 
   void* memory = nullptr;
   const size_type bytes = n * sizeof(T);
-  memory = mBaseAllocator->allocate(bytes, alignof(T));
+  memory = mBaseAllocator->allocate(bytes, storageAlignmentFor(bytes));
   pointer ptr = reinterpret_cast<pointer>(memory);
 
   // Throw std::bad_alloc to comply 23.10.9.1
@@ -100,7 +100,26 @@ void StlAllocator<T>::deallocate(pointer pointer, size_type n) noexcept
   }
 
   const size_type bytes = n * sizeof(T);
-  mBaseAllocator->deallocate(pointer, bytes, alignof(T));
+  mBaseAllocator->deallocate(pointer, bytes, storageAlignmentFor(bytes));
+}
+
+//==============================================================================
+template <typename T>
+constexpr typename StlAllocator<T>::size_type
+StlAllocator<T>::storageAlignmentFor(size_type bytes) noexcept
+{
+  constexpr size_type naturalAlignment = alignof(T);
+  constexpr size_type cacheLineAlignment = 64;
+
+  if constexpr (naturalAlignment >= cacheLineAlignment) {
+    return naturalAlignment;
+  }
+
+  if constexpr (sizeof(T) >= cacheLineAlignment) {
+    return cacheLineAlignment;
+  }
+
+  return bytes >= 2048 ? cacheLineAlignment : naturalAlignment;
 }
 
 //==============================================================================

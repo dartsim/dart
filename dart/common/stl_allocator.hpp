@@ -101,6 +101,10 @@ public:
     return std::allocator_traits<Base>::max_size(*this);
   }
 
+  /// Alignment used for an allocation of @p bytes.
+  [[nodiscard]] static constexpr size_type storageAlignmentFor(
+      size_type bytes) noexcept;
+
   template <typename U>
   [[nodiscard]] bool operator==(const StlAllocator<U>& other) const noexcept;
 
