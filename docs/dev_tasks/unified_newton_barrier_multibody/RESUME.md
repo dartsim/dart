@@ -9,6 +9,18 @@ Newton-barrier work should continue by promoting shared primitives and solver
 contracts consumed by rigid IPC, deformable IPC, ABD, and future couplers rather
 than adding another public solver stack.
 
+The first Phase 3 shared-contract slice promotes fixed-size symmetric PSD
+projection into `detail/newton_barrier`. Rigid IPC and ABD now use the same
+helper for reduced/affine Hessian projection; this is intentionally smaller
+than the existing deformable batched CPU/CUDA PSD backend and does not rename or
+generalize that backend yet.
+
+The next Phase 3 slice promotes the first shared line-search option/stat
+contract into `detail/newton_barrier`. Rigid IPC and deformable continuous
+collision detection now share option defaults, primitive check counters, and the
+stats accumulation helper while keeping their distinct result semantics and CCD
+implementations in variant-local owners.
+
 ## Last Session Summary
 
 Current slice: the first ABD benchmark packet has been promoted from
@@ -34,21 +46,33 @@ through the shared tangent-displacement friction kernel,
 `test_affine_body_dynamics`, and the first `bm_affine_body_dynamics` benchmark
 packet.
 
+The first Phase 3 contract slice was merged as PR #2936. It added a shared
+fixed-size PSD projection helper, routed rigid IPC and ABD Hessian projection
+through it, and added focused Newton-barrier primitive tests for eigenvalue
+clamping and input symmetrization.
+
+The current line-search stats slice lives on
+`simx/shared-newton-barrier-line-search-stats`. It adds
+`detail/newton_barrier/line_search.hpp`, aliases rigid IPC and deformable CCD
+option/stat types to the shared owner, and keeps line-search result semantics
+variant-local.
+
 ## Current Branch
 
-`docs/plan083-abd-next-slice-decision` - current checkout is expected to
-contain the PLAN-083 decision update that defers a two-body affine contact
-micro-solve until a broader ABD packet needs a solved-state residual.
+`simx/shared-newton-barrier-line-search-stats` - contains the Phase 3
+line-search option/stat helper slice. Verify the exact status with
+`git status --short --branch` because this section is a resume snapshot.
 
 ## Immediate Next Step
 
-Continue Phase 2/3 from
+Continue Phase 3 from
 [`../../plans/083-unified-newton-barrier-multibody/abd-first-slice-design.md`](../../plans/083-unified-newton-barrier-multibody/abd-first-slice-design.md):
-do not add a two-body affine contact micro-solve for the current
-`abd-alg-affine-body` micro-packet. Start Phase 3 shared-contract scouting from
-the existing rigid IPC, deformable IPC, and ABD evidence, and promote PSD,
-projected-Newton, line-search, diagnostics, or benchmark-schema contracts only
-after second-use behavior is proven identical across variants. Use
+validate and publish the line-search option/stat helper, then resume
+shared-contract scouting from the existing rigid IPC, deformable IPC, and ABD
+evidence. Do not add a two-body affine contact micro-solve for the current
+`abd-alg-affine-body` micro-packet; add projected-Newton, line-search result
+semantics, diagnostics, or benchmark-schema contracts only after second-use
+behavior is proven identical across variants. Use
 [`../../plans/083-unified-newton-barrier-multibody/implementation-roadmap.md`](../../plans/083-unified-newton-barrier-multibody/implementation-roadmap.md)
 to keep the Phase 2 packet, shared solver contracts, articulation rows,
 restitution work, mixed-domain coupling, CPU/GPU parity, and py-demos rows
@@ -96,11 +120,11 @@ VBD/OGC-adjacent work, or shared Newton-barrier infrastructure.
 - Do not expose ABD through public headers or dartpy bindings until runtime
   and benchmark evidence exists.
 - Phase 1 validation passed: `pixi run lint`,
-  `pixi run build-simulation-experimental-tests`,
-  `pixi run test-simulation-experimental`, `pixi run check-api-boundaries`, and
+  `pixi run build-simulation-tests`,
+  `pixi run test-simulation`, `pixi run check-api-boundaries`, and
   the four benchmark smokes listed in the dev-task README.
-- Phase 2 validation so far passed: `pixi run build-simulation-experimental-tests`,
-  `pixi run test-simulation-experimental` (64/64),
+- Phase 2 validation so far passed: `pixi run build-simulation-tests`,
+  `pixi run test-simulation` (64/64),
   `pixi run check-api-boundaries`, `pixi run check-docs-policy`,
   `pixi run lint`, and
   `pixi run bm bm_affine_body_dynamics -- --benchmark_min_time=0.05s`.
@@ -114,7 +138,7 @@ sed -n '1,220p' docs/dev_tasks/unified_newton_barrier_multibody/README.md
 sed -n '1,220p' docs/plans/083-unified-newton-barrier-multibody/abd-first-slice-design.md
 ```
 
-Then verify the current branch with the focused simulation-experimental tests,
+Then verify the current branch with the focused simulation tests,
 API-boundary check, lint, and `pixi run bm-abd-comparison-packet` if that has
 not already been done. After this slice, continue with Phase 3 shared-contract
 scouting; do not describe the micro-packet as a runtime ABD solver or a

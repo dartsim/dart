@@ -67,7 +67,7 @@ The CMake compat header logic resides in `cmake/dart_defs.cmake`:
 #endif
 #endif // DART_SUPPRESS_DEPRECATED_HEADER_WARNING
 
-#include "dart/simulation/experimental/body/rigid_body.hpp"
+#include "dart/simulation/body/rigid_body.hpp"
 ```
 
 ### Current Usage
@@ -92,7 +92,7 @@ The compat mechanism is used across core modules (via `dart_install_compat_heade
 - **`dart/` public headers**: snake_case (includes `detail/` headers).
 - **Umbrella headers**: `dart/All.hpp` and `dart/Export.hpp` remain PascalCase
   (case-only); plan to revisit before the DART 7 clean break.
-- **`dart/simulation/experimental/`**: snake_case (unchanged).
+- **`dart/simulation/`**: snake_case (unchanged).
 - **Tests**: Naming conventions unchanged (`test_` + PascalCase for legacy tests).
 
 See `docs/onboarding/code-style.md` for canonical conventions once updated for this migration.

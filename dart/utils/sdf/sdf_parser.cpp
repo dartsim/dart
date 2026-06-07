@@ -53,7 +53,6 @@
 #include "dart/dynamics/sphere_shape.hpp"
 #include "dart/dynamics/universal_joint.hpp"
 #include "dart/dynamics/weld_joint.hpp"
-#include "dart/simulation/world.hpp"
 #include "dart/utils/composite_resource_retriever.hpp"
 #include "dart/utils/dart_resource_retriever.hpp"
 #include "dart/utils/mesh_loader.hpp"
@@ -83,7 +82,6 @@
 #include <string>
 #include <string_view>
 #include <system_error>
-#include <unordered_map>
 #include <vector>
 
 #include <cctype>
@@ -123,44 +121,6 @@ using detail::getValueVectorXd;
 using detail::hasAttribute;
 using detail::hasElement;
 using detail::readGeometryShape;
-
-using TempResourceMap = std::unordered_map<std::string, common::Uri>;
-
-thread_local TempResourceMap* gCurrentOriginMap = nullptr;
-
-struct ScopedOriginMap
-{
-  explicit ScopedOriginMap(const std::shared_ptr<TempResourceMap>& map)
-    : mPrevious(gCurrentOriginMap)
-  {
-    if (map) {
-      gCurrentOriginMap = map.get();
-    }
-  }
-
-  ~ScopedOriginMap()
-  {
-    gCurrentOriginMap = mPrevious;
-  }
-
-private:
-  TempResourceMap* mPrevious;
-};
-
-const common::Uri* findOriginalUri(std::string_view filePath)
-{
-  if (!gCurrentOriginMap || filePath.empty()) {
-    return nullptr;
-  }
-
-  const std::string filePathString(filePath);
-  const auto it = gCurrentOriginMap->find(filePathString);
-  if (it == gCurrentOriginMap->end()) {
-    return nullptr;
-  }
-
-  return &it->second;
-}
 
 common::ResourceRetrieverPtr getRetriever(
     const common::ResourceRetrieverPtr& retriever);
@@ -226,13 +186,6 @@ using BodyMap = common::aligned_map<std::string, SDFBodyNode>;
 // Maps a child BodyNode to the properties of its parent Joint
 using JointMap = std::map<std::string, SDFJoint>;
 
-simulation::WorldPtr readWorld(
-    const ElementPtr& worldElement,
-    const common::Uri& baseUri,
-    const ResolvedOptions& options);
-
-void readPhysics(const ElementPtr& physicsElement, simulation::WorldPtr world);
-
 dynamics::SkeletonPtr readSkeleton(
     const ElementPtr& skeletonElement,
     const common::Uri& baseUri,
@@ -265,35 +218,6 @@ NextResult getNextJointAndNodePair(
 
 dynamics::SkeletonPtr makeSkeleton(
     const ElementPtr& skeletonElement, Eigen::Isometry3d& skeletonFrame);
-
-common::Uri getElementBaseUri(
-    const ElementPtr& element, const common::Uri& fallbackUri)
-{
-  if (!element) {
-    return fallbackUri;
-  }
-
-  const auto& filePath = element->FilePath();
-  if (filePath.empty()) {
-    return fallbackUri;
-  }
-
-  if (const auto* originalUri = findOriginalUri(filePath)) {
-    return *originalUri;
-  }
-
-  common::Uri elementUri;
-  if (elementUri.fromPath(filePath)) {
-    return elementUri;
-  }
-
-  DART_WARN(
-      "[SdfParser] Failed to parse file path [{}] for included element. "
-      "Falling back to [{}].",
-      filePath,
-      fallbackUri.toString());
-  return fallbackUri;
-}
 
 template <class NodeType>
 std::pair<dynamics::Joint*, dynamics::BodyNode*> createJointAndNodePair(
@@ -524,8 +448,7 @@ std::filesystem::path writeTemporaryResource(
 std::string resolveWithRetriever(
     std::string_view requested,
     const common::ResourceRetrieverPtr& retriever,
-    const std::shared_ptr<std::vector<std::filesystem::path>>& tempFiles,
-    const std::shared_ptr<TempResourceMap>& origins)
+    const std::shared_ptr<std::vector<std::filesystem::path>>& tempFiles)
 {
   if (!retriever) {
     return std::string();
@@ -554,10 +477,6 @@ std::string resolveWithRetriever(
     const auto data = retriever->readAll(requestedUri);
     const auto tmp = writeTemporaryResource(data, requestedUri);
     tempFiles->push_back(tmp);
-    if (origins) {
-      auto uri = common::Uri::createFromStringOrPath(requestedString);
-      (*origins)[tmp.string()] = uri;
-    }
     return tmp.string();
   } catch (const std::exception& e) {
     DART_WARN(
@@ -655,7 +574,6 @@ struct TemporaryResourceOwner
   }
 
   std::shared_ptr<std::vector<std::filesystem::path>> files;
-  std::shared_ptr<TempResourceMap> origins;
 };
 
 bool loadSdfRoot(
@@ -673,16 +591,12 @@ bool loadSdfRoot(
   }
 
   resources.files = std::make_shared<std::vector<std::filesystem::path>>();
-  resources.origins = std::make_shared<TempResourceMap>();
   sdf::ParserConfig config = sdf::ParserConfig::GlobalConfig();
   config.SetFindCallback(
-      [retriever,
-       tempFiles = resources.files,
-       origins = resources.origins,
-       baseUri = uri](const std::string& requested) -> std::string {
+      [retriever, tempFiles = resources.files, baseUri = uri](
+          const std::string& requested) -> std::string {
         const auto resolvedRequest = resolveRequestedUri(requested, baseUri);
-        return resolveWithRetriever(
-            resolvedRequest, retriever, tempFiles, origins);
+        return resolveWithRetriever(resolvedRequest, retriever, tempFiles);
       });
 
   sdf::Errors errors;
@@ -705,7 +619,6 @@ bool loadSdfRoot(
           "[SdfParser] Failed to read [{}]: {}.", uri.toString(), e.what());
       cleanupTemporaryResources(resources.files);
       resources.files.reset();
-      resources.origins.reset();
       return false;
     }
     errors = root.LoadSdfString(content, config);
@@ -718,79 +631,12 @@ bool loadSdfRoot(
         "[SdfParser] [{}] produced an empty SDF document.", uri.toString());
     cleanupTemporaryResources(resources.files);
     resources.files.reset();
-    resources.origins.reset();
     return false;
   }
 
   return true;
 }
 
-//==============================================================================
-simulation::WorldPtr readWorld(
-    const ElementPtr& worldElement,
-    const common::Uri& baseUri,
-    const ResolvedOptions& options)
-{
-  DART_ASSERT(worldElement != nullptr);
-
-  // Create a world
-  simulation::WorldPtr newWorld = simulation::World::create();
-
-  //--------------------------------------------------------------------------
-  // Name attribute
-  std::string name = getAttributeString(worldElement, "name");
-  newWorld->setName(name);
-
-  //--------------------------------------------------------------------------
-  // Load physics
-  if (hasElement(worldElement, "physics")) {
-    const ElementPtr& physicsElement = getElement(worldElement, "physics");
-    readPhysics(physicsElement, newWorld);
-  }
-
-  //--------------------------------------------------------------------------
-  // Load skeletons
-  ElementEnumerator skeletonElements(worldElement, "model");
-  while (skeletonElements.next()) {
-    const ElementPtr skeletonElement = skeletonElements.get();
-    const common::Uri skeletonBaseUri
-        = getElementBaseUri(skeletonElement, baseUri);
-    dynamics::SkeletonPtr newSkeleton
-        = readSkeleton(skeletonElement, skeletonBaseUri, options);
-
-    newWorld->addSkeleton(newSkeleton);
-  }
-
-  return newWorld;
-}
-
-//==============================================================================
-void readPhysics(const ElementPtr& physicsElement, simulation::WorldPtr world)
-{
-  // Type attribute
-  // std::string physicsEngineName = getAttribute(_physicsElement, "type");
-
-  // Time step
-  if (hasElement(physicsElement, "max_step_size")) {
-    double timeStep = getValueDouble(physicsElement, "max_step_size");
-    world->setTimeStep(timeStep);
-  }
-
-  // Number of max contacts
-  // if (hasElement(_physicsElement, "max_contacts"))
-  // {
-  //   int timeStep = getValueInt(_physicsElement, "max_contacts");
-  //   _world->setMaxNumContacts(timeStep);
-  // }
-
-  // Gravity
-  if (hasElement(physicsElement, "gravity")) {
-    Eigen::Vector3d gravity = getValueVector3d(physicsElement, "gravity");
-    world->setGravity(gravity);
-  }
-}
-
-//==============================================================================
 dynamics::SkeletonPtr readSkeleton(
     const ElementPtr& skeletonElement,
     const common::Uri& baseUri,
@@ -1995,37 +1841,6 @@ common::ResourceRetrieverPtr getRetriever(
 
 } // anonymous namespace
 
-//==============================================================================
-simulation::WorldPtr readWorld(const common::Uri& uri, const Options& options)
-{
-  const auto resolvedOptions = resolveOptions(options);
-
-  sdf::Root root;
-  TemporaryResourceOwner tempResources;
-  if (!loadSdfRoot(uri, resolvedOptions.retriever, root, tempResources)) {
-    return nullptr;
-  }
-
-  const ElementPtr sdfElement = root.Element();
-  if (!sdfElement) {
-    DART_WARN(
-        "[SdfParser] [{}] does not contain a valid <sdf> root element.",
-        uri.toString());
-    return nullptr;
-  }
-
-  const ElementPtr worldElement = getElement(sdfElement, "world");
-  if (!worldElement) {
-    DART_WARN(
-        "[SdfParser] [{}] does not contain a <world> element.", uri.toString());
-    return nullptr;
-  }
-
-  ScopedOriginMap originScope(tempResources.origins);
-  return readWorld(worldElement, uri, resolvedOptions);
-}
-
-//==============================================================================
 dynamics::SkeletonPtr readSkeleton(
     const common::Uri& uri, const Options& options)
 {
@@ -2052,7 +1867,6 @@ dynamics::SkeletonPtr readSkeleton(
     return nullptr;
   }
 
-  ScopedOriginMap originScope(tempResources.origins);
   return readSkeleton(modelElement, uri, resolvedOptions);
 }
 

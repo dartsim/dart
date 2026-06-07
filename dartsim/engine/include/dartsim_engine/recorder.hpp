@@ -38,13 +38,13 @@
 
 #include <cstddef>
 
-namespace dart::simulation::experimental {
+namespace dart::simulation {
 class World;
-} // namespace dart::simulation::experimental
+} // namespace dart::simulation
 
 namespace dartsim {
 
-/// One captured frame: sim time, step index, and an experimental World binary
+/// One captured frame: sim time, step index, and a DART 7 World binary
 /// snapshot (World::saveBinary output).
 struct RecordedFrame
 {
@@ -101,7 +101,7 @@ public:
   }
 
   /// Append a snapshot of `world` if recording is active.
-  void capture(const dart::simulation::experimental::World& world);
+  void capture(const dart::simulation::World& world);
 
   [[nodiscard]] const Recording& recording() const
   {
@@ -137,7 +137,7 @@ public:
   }
 
   /// Restore frame `index` into `world`. Returns false if out of range.
-  bool seek(dart::simulation::experimental::World& world, std::size_t index);
+  bool seek(dart::simulation::World& world, std::size_t index);
 
   /// Drop the loaded recording and rewind (e.g. when loading a new project).
   void clear()

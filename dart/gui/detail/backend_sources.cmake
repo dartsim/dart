@@ -57,7 +57,6 @@ set(
   "${DART_GUI_FILAMENT_BACKEND_DIR}/renderable_resources.cpp"
   "${DART_GUI_FILAMENT_BACKEND_DIR}/renderable_sync.cpp"
   "${DART_GUI_FILAMENT_BACKEND_DIR}/scene_frame.cpp"
-  "${DART_GUI_FILAMENT_BACKEND_DIR}/scene_fixtures.cpp"
   "${DART_GUI_FILAMENT_BACKEND_DIR}/scene_requirements.cpp"
   "${DART_GUI_FILAMENT_BACKEND_DIR}/scene_startup.cpp"
   "${DART_GUI_FILAMENT_BACKEND_DIR}/scenes.cpp"
@@ -87,7 +86,6 @@ set(
   "${DART_GUI_FILAMENT_BACKEND_DIR}/renderable_resources.hpp"
   "${DART_GUI_FILAMENT_BACKEND_DIR}/renderable_sync.hpp"
   "${DART_GUI_FILAMENT_BACKEND_DIR}/scene_frame.hpp"
-  "${DART_GUI_FILAMENT_BACKEND_DIR}/scene_fixtures.hpp"
   "${DART_GUI_FILAMENT_BACKEND_DIR}/scene_requirements.hpp"
   "${DART_GUI_FILAMENT_BACKEND_DIR}/scene_startup.hpp"
   "${DART_GUI_FILAMENT_BACKEND_DIR}/scenes.hpp"
@@ -522,7 +520,7 @@ function(dart_gui_filament_add_smoke_tests example_target)
   endif()
 
   find_package(Python3 COMPONENTS Interpreter REQUIRED)
-  # The no-scene dartsim launch is the experimental-World editor, whose default
+  # The no-scene dartsim launch is the DART 7 World editor, whose default
   # scene is intentionally minimal, so it uses the non-blank (basic) check. The
   # legacy example scenes below also use the basic non-blank check.
   _dart_gui_filament_add_headless_smoke_test(

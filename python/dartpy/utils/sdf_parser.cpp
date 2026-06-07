@@ -33,27 +33,10 @@ void defSdfParser(nb::module_& m)
           "mDefaultRootJointType",
           &SdfParserNs::Options::mDefaultRootJointType);
 
-  auto read_world = [](auto uri, const SdfParserNs::Options& options) {
-    return SdfParserNs::readWorld(uri, options);
-  };
   auto read_skeleton = [](auto uri, const SdfParserNs::Options& options) {
     return SdfParserNs::readSkeleton(uri, options);
   };
 
-  sm.def(
-      "readWorld",
-      [=](const common::Uri& uri, const SdfParserNs::Options& options) {
-        return read_world(uri, options);
-      },
-      nb::arg("uri"),
-      nb::arg("options") = SdfParserNs::Options());
-  sm.def(
-      "readWorld",
-      [=](const std::string& uri, const SdfParserNs::Options& options) {
-        return read_world(common::Uri(uri), options);
-      },
-      nb::arg("uri"),
-      nb::arg("options") = SdfParserNs::Options());
   sm.def(
       "readSkeleton",
       [=](const common::Uri& uri, const SdfParserNs::Options& options) {

@@ -3,14 +3,18 @@
 - Operating state: `PLAN-041` in [`dashboard.md`](dashboard.md)
 - Outcome: the ECS-backed simulation world becomes the official DART 7 C++ and
   dartpy simulation API, with the experimental namespace/module removed from the
-  promoted public contract and the source tree reorganized only after the stable
-  facade is in place. DART 6 API compatibility remains on the DART 6.17 support
-  lane; main moves as a DART 7 clean break.
-- Current evidence: the experimental world already owns the DART 7 simulation
-  direction, but its current public shape still exposes experimental paths,
-  implementation-oriented headers, recursive header installs, build-option
-  seams, public package-interface leaks, and a Python module split that cannot
-  be treated as the final API without a deliberate promotion pass.
+  promoted public contract and the source tree reorganized around the stable
+  facade. DART 6 API compatibility remains on `release-6.*` support branches;
+  main moves as a DART 7 clean break.
+- Current evidence: the promoted World owns the DART 7 simulation direction.
+  `dart::simulation::World`, `dartpy.simulation.World`, and `dartpy.World` now
+  bind the ECS-backed facade; the source tree, CMake component, Python binding
+  source, focused tests, and benchmark directories use the `simulation` path;
+  generated stubs no longer publish `dartpy.simulation_experimental`; and the
+  classic Python world is quarantined as `dartpy.gui.RenderWorld`. Remaining
+  work is cleanup and hardening: finish stale docs, keep public-header/package
+  guards green, retire obsolete staging task names, and ensure parity claims
+  are backed by `release-6.*` branches rather than main-branch DART 6 code.
 
 ## Direction
 
@@ -24,10 +28,10 @@ The fastest maintainable path is:
 4. Delete or quarantine the legacy DART 6 simulation surface on main.
 5. Perform physical source-tree moves after the facade is green.
 
-Do not start with a broad `git mv` of `experimental/`. Mechanical moves create
-large conflicts and do not by themselves solve namespace, ABI, Python module, or
-package-export questions. The source-tree restructuring is important, but it is
-late-stage cleanup after official names and gates are stable.
+Do not treat a broad `git mv` out of `experimental/` as sufficient by itself.
+Mechanical moves must be paired with namespace, ABI, Python module,
+package-export, docs, and gate updates. Source-tree restructuring is valid only
+when it follows the accepted public facade and keeps the promotion checks green.
 
 External architecture review informs the plan, but DART should not copy another
 engine's vocabulary or package shape. The reusable pattern is a small common
@@ -46,7 +50,7 @@ renames on its own.
 - `main` targets DART 7 and should not carry the DART 6 public API as a long-term
   compatibility layer.
 - gz-physics and Gazebo compatibility work remains important, but compatibility
-  fixes for the existing DART 6 API belong on `release-6.17` unless a maintainer
+  fixes for the existing DART 6 API belong on `release-6.*` unless a maintainer
   explicitly scopes a main-branch migration canary.
 - DART 8 is reserved for debt introduced during the DART 7 line. It is not the
   default place to remove DART 6 simulation APIs or the experimental-world name.
@@ -58,85 +62,96 @@ renames on its own.
 The plan incorporates three focused review perspectives before implementation:
 
 - **C++ API**: final public headers must not expose ECS storage, EnTT, component
-  namespaces, solver registries, backend types, or implementation folders. The
-  current `dart::simulation::World` name is occupied by the classic API, so the
-  collision must be resolved before the ECS-backed world can own the official
-  namespace. That resolution must be an explicit transaction: either introduce a
-  non-colliding temporary facade while consumers migrate, or atomically replace
-  the classic definition with the ECS-backed facade in one PR. Any quarantine may
-  preserve the old implementation only under an explicit legacy or internal
-  namespace/target; it must not keep exporting `dart::simulation::World`. The
-  promotion needs an explicit header map before any source move because the
-  current staging tree recursively installs public-looking `detail/`, `comps/`,
-  and `ecs/` headers.
-- **Python bindings**: the likely promoted import path is `dartpy.simulation`,
-  with `dartpy.simulation_experimental` reduced to a short compatibility alias
-  only if needed. PLAN-042 owns the broader root facade policy; its current
-  working hypothesis is that first-use examples can use `dart.World(...)` after
-  `import dartpy as dart`, while `dart.simulation.World` remains the canonical
-  owner and object identity. The cutover is a single import-layout transaction
-  across `_dartpy` submodule registration, `_layout.py`, `sys.modules`,
-  `__all__`, stubs, generated docs, and the pure-Python `diff` attachment. Avoid
-  duplicate nanobind class registration: compatibility aliases must forward to
-  the promoted Python object rather than binding a second C++ `World` type into
-  `dartpy.simulation`. Do not repoint top-level `dartpy.World` without an
-  explicit maintainer decision because that name currently implies the legacy
-  simulation module. The promotion must decide whether `dartpy.World` is removed,
-  deprecated, or identical to `dartpy.simulation.World`, and gate that decision
-  with tests, stubs, generated docs, and wheel import smokes.
+  namespaces, solver registries, backend types, or implementation folders.
+  `dart::simulation::World` now resolves to the ECS-backed facade on `main`.
+  Any quarantine may preserve old implementation code only under an explicit
+  legacy or internal namespace/target; it must not re-export
+  `dart::simulation::World`.
+- **Python bindings**: the promoted import path is `dartpy.simulation`, and
+  `dartpy.World` is identical to `dartpy.simulation.World`. The import-layout
+  transaction spans `_dartpy` submodule registration, `_layout.py`,
+  `sys.modules`, `__all__`, stubs, generated docs, and the pure-Python `diff`
+  attachment. Avoid duplicate nanobind class registration: any compatibility
+  alias must forward to the promoted Python object rather than binding a second
+  C++ `World` type into `dartpy.simulation`.
 - **Build, package, and downstream**: decide whether the promoted simulation API
   is a core component or a separately discoverable CMake component before
   reshaping install/export rules. The official baseline API must be present in
-  default builds before promotion is claimed; it cannot remain hidden behind the
-  old `DART_BUILD_SIMULATION_EXPERIMENTAL` option or require a
-  `simulation-experimental` target to link. The final installed package must not
-  force implementation-only dependencies through public CMake targets or
-  component files. Keep reduced-build and package smoke tests in the gate while
-  the old option still exists.
+  default builds before promotion is claimed; it cannot be restored behind a
+  staging build option or require a `simulation-experimental` target to link.
+  The final installed package must not force implementation-only dependencies
+  through public CMake targets or component files. Keep package smoke tests and
+  negative target/dependency smokes in the gate.
 - **Scalar precision**: DART 7 promotion keeps the public `World` facade
   double-backed. Public scalar-type support is deferred until the promoted
   rigid-body and multibody stack is in good shape for humanoid locomotion and
   manipulation. The promotion work should keep scalar support from becoming a
   one-way door by avoiding unnecessary storage, handle, package, and API-boundary
-  commitments, but it should not add `sx.World(dtype=...)` or
-  `sx.World[...]` during promotion unless a dedicated scalar-instantiation plan
+  commitments, but it should not add `sim.World(dtype=...)` or
+  `sim.World[...]` during promotion unless a dedicated scalar-instantiation plan
   proves C++ ownership, bindings, stubs, serialization, collision,
   differentiability, and package gates for every advertised scalar. If that
   future plan makes precision public, the primary Python construction spelling
-  is `sx.World(dtype=sx.float64)` (or `WorldOptions(dtype=...)`) with concrete
+  is `sim.World(dtype=sim.float64)` (or `WorldOptions(dtype=...)`) with concrete
   scalar-specific implementation classes underneath as needed;
-  `sx.World[sx.float64]` is not the common runtime API.
+  `sim.World[sim.float64]` is not the common runtime API.
 
 ## Workstreams
 
 1. **Promotion contract and readiness audit** - freeze the initial supported
    public subset, record the headers/modules to promote, list public-looking
    internals to hide, add the header promotion map described below, and map
-   parity evidence that blocks the promotion claim. Consume PLAN-042's accepted
-   namespace/source-layout decision before freezing final public names. This step
-   also decides whether PLAN-042's `check-simulation-public-header-allowlist`
-   and `check-dartpy-import-layout` are new scripts or extensions of existing
-   API-boundary checks, and records the scalar-precision policy from the
-   simulation experimental API design docs; it does not move source files.
+   parity evidence that blocks the promotion claim. The first enforcement slice
+   exists as `scripts/audit_dart7_promotion_surface.py --strict`, the
+   simulation CMake public-header allowlist, the public-header
+   self-containment smoke, `scripts/check_dart7_promotion_package_contract.py`,
+   `scripts/check_dart7_promotion_installed_package.py`,
+   and `scripts/check_dartpy_import_layout.py`. Consume PLAN-042's accepted C++
+   namespace/source-layout decision before freezing final public C++ names. The
+   scalar-precision policy from the simulation API design docs
+   remains: promotion is double-backed and does not add a public scalar selector.
 2. **Build and package shape** - choose the final target/component/export-macro
    shape before the first promoted API PR. Make the official baseline API
    non-optional in default builds, update install/export rules, and add package
    smokes that prove promoted headers and Python modules are available without
    experimental build flags. Inspect installed targets and component files so
    promoted exports do not require implementation-only dependency discovery.
-3. **Promoted API boundary enforcement** - update boundary inventories and
-   checks so promoted C++ headers fail if they expose EnTT, ECS storage,
+3. **Promoted API boundary enforcement** - keep boundary inventories and checks
+   green so promoted C++ headers fail if they expose EnTT, ECS storage,
    component namespaces, solver registries, backend types, implementation
    folders, direct registry access, public entity IDs, or public inheritance from
-   ECS helper templates. Add a promoted-simulation-header manifest/checker
-   (`check-simulation-public-header-allowlist` or equivalent
-   `check-api-boundaries` coverage), add a promotion-aware inventory
-   classification, and add negative installed-package smokes for forbidden
-   headers and obsolete experimental targets.
-4. **World name-collision transaction design** - choose how to clear the classic
-   `dart::simulation::World` collision before implementation. Either use a
-   temporary non-colliding facade while consumers migrate, or replace the classic
-   `World` definition and introduce the ECS-backed facade atomically. A
+   ECS helper templates. The current equivalent of
+   `check-simulation-public-header-allowlist` is
+   `pixi run check-simulation-public-headers`:
+   `check-dart7-promotion-surface` cross-checks the CMake install allowlist
+   against promotion rules, and `check-simulation-public-header-smoke` compiles
+   promoted headers without EnTT/Taskflow on the include path.
+   `check-dart7-promotion-package-contract` guards the staged package facts:
+   default-on simulation module, opt-in diff/CUDA subfeatures, no recursive
+   install, and no unconditional EnTT/Taskflow/spdlog package-dependency leak.
+   `check-dart7-promotion-installed-package` builds and installs the staged
+   package into a temporary prefix, compiles a downstream CMake project against
+   the promoted public headers, and rejects installed internal headers.
+   `check-dart7-world-promotion-blockers` inventories the still-open C++ name
+   collision, DART 6 pipeline, experimental namespace, and staged package/build
+   option references; its default mode fails on new unclassified blockers and on
+   growth in the current code/build/test buckets, while `--strict-final` is the
+   final promotion gate. In-tree parity references are classified separately and ratcheted to
+   zero, so any new main-branch classic World parity dependency fails locally on
+   the way to `release-6.*` branch evidence. The contact/constraint,
+   skeleton-to-multibody, and world dynamics rows now run as DART 7-only
+   regressions.
+   `check-dart7-final-world-promotion` combines the strict-final blocker gate
+   with a required local `release-6.*` branch ref; it is expected to fail until
+   the local checkout has an appropriate release branch ref, and it is the
+   command to run before claiming main no longer depends on DART 6 parity code.
+   Remaining work: keep that smoke aligned with final headers/components and
+   add negative checks for obsolete experimental targets.
+4. **World name-collision transaction design** - accepted: clear the classic
+   `dart::simulation::World` collision by atomically replacing it with the
+   ECS-backed facade. Do not introduce a temporary public `World7`,
+   `simulation::v7::World`, or equivalent two-world migration surface on
+   `main`; DART 6 parity evidence comes from `release-6.*` branches instead. A
    quarantine plan must not continue exporting `dart::simulation::World`.
 5. **C++ official facade** - introduce the promoted C++ API under the chosen
    namespace and public include path. Use wrappers or opaque implementation
@@ -145,13 +160,16 @@ The plan incorporates three focused review perspectives before implementation:
    Confirm top-level module ownership before moving loaders, collision helpers,
    sensors, or GUI synchronization code so DART 7 does not create duplicate
    public front doors.
-6. **Python official facade** - bind the promoted API under `dartpy.simulation`,
-   decide the top-level `dartpy.World` outcome, generate stubs and docs for the
-   final path, and make `dartpy.simulation_experimental` a Python-level
-   compatibility alias only if the release path needs it. Cover `sx.diff`,
-   `_layout.py`, `_naming.py`, `sys.modules`, `__all__`, GUI stubs, generated API
-   pages, `check-dartpy-import-layout` or equivalent boundary coverage, and any
-   alias window in the migration matrix.
+6. **Python official facade** - first pass implemented. The promoted API binds
+   under `dartpy.simulation`, top-level `dartpy.World` is identical to
+   `dartpy.simulation.World`, generated stubs expose `simulation.pyi` and
+   top-level `World` without `simulation_experimental.pyi`, `dartpy.diff` and
+   `dartpy.simulation.diff` share the same pure-Python bridge, and the classic
+   render world is available only as `dartpy.gui.RenderWorld`. Keep this guarded
+   with `check-dartpy-import-layout`, `generate-stubs`, Python tests, generated
+   API pages, and wheel import smokes. Any future `simulation_experimental`
+   compatibility alias must be Python-level only, warning-covered, and
+   sunset-dated.
 7. **Consumer migration** - port examples, tutorials, tests, benchmarks, stubs,
    package quickstarts, and readthedocs snippets to the official path. Remove
    experimental imports from user-facing docs once the replacement is covered.
@@ -173,15 +191,15 @@ The plan incorporates three focused review perspectives before implementation:
 
 ## DART 7 Simulation Source And Module Layout Contract
 
-The DART 7 source layout should be redesigned around the public API users should
-see, not around the current staging tree. The contract for implementation PRs is:
+The DART 7 source layout is organized around the public API users should see,
+not around the retired staging tree. The contract for implementation PRs is:
 
 - Promoted user headers live under the final `dart/simulation/` public layout
   and include only public DART headers or standard/library dependencies that are
   part of the final contract.
 - ECS storage, component definitions, solver kernels, backend adapters,
   registry access, and loader internals live under `detail/`, `internal/`, or an
-  existing non-public owner. Recursive installation of the staging tree is
+  existing non-public owner. Recursive installation of implementation folders is
   forbidden once promotion starts.
 - Public handles are opaque. Promoted headers must not include EnTT, expose
   entity IDs, include `comps/` or `ecs/`, inherit publicly from ECS helper
@@ -191,16 +209,15 @@ see, not around the current staging tree. The contract for implementation PRs is
   `dart/sensor` owns sensor concepts, and `dart/gui` owns GUI/viewer concepts.
   `dart/simulation` may own world-level adapters that compose those modules, but
   it should not duplicate their public entry points.
-- The final package exposes a named CMake target/component and export macro
-  choice. Promotion is not claimable while a consumer must enable
-  `DART_BUILD_SIMULATION_EXPERIMENTAL`, link `dart-simulation-experimental`, or
-  discover implementation-only dependency packages to use the official API.
+- The final package exposes the `dart-simulation` CMake target/component and
+  final export macro choice. Promotion is not claimable while a consumer must
+  link `dart-simulation-experimental` or discover implementation-only
+  dependency packages to use the official API.
 - The Python layout promotes one object identity. `dartpy.simulation.World`,
-  the maintainer-approved `dartpy.World` behavior, any
-  `dartpy.simulation_experimental` alias, generated stubs, generated docs,
-  `__all__`, and pure-Python helpers move together. If an alias remains, it
-  forwards at Python level to the promoted class object and does not bind a
-  second C++ `World` class into `dartpy.simulation`.
+  `dartpy.World`, generated stubs, generated docs, `__all__`, and pure-Python
+  helpers move together. If a `dartpy.simulation_experimental` alias is ever
+  reintroduced, it forwards at Python level to the promoted class object and
+  does not bind a second C++ `World` class into `dartpy.simulation`.
 
 The promotion readiness audit must include a header/module map with these
 fields:
@@ -254,12 +271,12 @@ Current intended sequence:
    preflight active solver and loader branch conflicts; and validate the
    `world.hpp`/`World.hpp` behavior on a case-insensitive filesystem before the
    atomic replacement PR.
-2. **Build-shape prerequisite (workstream 2).** Make the ECS-backed baseline
+2. **Build-shape prerequisite (workstream 2).** Keep the ECS-backed baseline
    non-optional in default builds and keep EnTT/ECS out of the public boundary.
-   No public name changes yet. Gate with `pixi run build`,
-   `pixi run test-simulation-experimental`, a reduced-build check while
-   `DART_BUILD_SIMULATION_EXPERIMENTAL` still exists, and an installed-package
-   C++ smoke.
+   Gate with `pixi run build`, `pixi run test-simulation-quick`, a static check
+   proving the retired experimental build option remains absent,
+   `pixi run check-dart7-promotion-package-contract`, and
+   `pixi run check-dart7-promotion-installed-package`.
 3. **Boundary enforcement prerequisite (workstream 3).** Update
    `scripts/check_api_boundaries.py` and
    `scripts/generate_api_boundary_inventory.py` so promoted headers fail if they
@@ -269,44 +286,41 @@ Current intended sequence:
    equivalent storage access must be hidden from the promoted facade. Gate with
    `pixi run check-api-boundaries` and
    `pixi run check-api-boundary-inventory`.
-4. **C++ facade prerequisite (workstream 5).** Introduce the public ECS-backed
-   facade behind a non-colliding internal/interim symbol, with opaque ownership
-   or wrappers so no public header includes `<entt/entt.hpp>`. Reconcile the
-   lifecycle model before the public name swap. Gate with `pixi run build`,
-   `pixi run test-unit`, `pixi run test-simulation-experimental`, and
+4. **C++ facade prerequisite (workstream 5).** Keep the public ECS-backed
+   facade under `dart::simulation` with opaque ownership or wrappers so no
+   public header includes `<entt/entt.hpp>`. Gate with `pixi run build`,
+   `pixi run test-unit`, `pixi run test-simulation-quick`, and
    `pixi run check-api-boundaries`.
-5. **Atomic C++/Python name-swap PR (workstreams 4, 5, 6, 7, and 8).** Replace
-   or repoint `dart/simulation/world.hpp` and `dart/simulation/fwd.hpp` so
-   `dart::simulation::World` resolves to the ECS facade and `fwd.hpp` reflects
-   the maintainer-approved lifecycle model, keeping `WorldPtr` only if shared
-   ownership is selected; quarantine or remove the classic implementation so it
-   no longer exports `dart::simulation::World`; rebind `simulation.World` from
-   the classic type to the ECS facade in `python/dartpy/simulation/world.cpp`;
-   remove the old
-   `nb::class_<dart::simulation::World>(m, "World")` in the same change so the
-   `simulation` module never holds two C++ types under the name `"World"`; and
-   regenerate stubs/docs for the final Python shape, including
-   `simulation.pyi`, `simulation_experimental.pyi` if an alias remains,
+5. **Atomic C++ name-swap plus Python alignment PR (workstreams 4, 5, 6, 7, and
+   8).** Keep `dart/simulation/world.hpp` and `dart/simulation/fwd.hpp` pointed
+   at the ECS facade so `dart::simulation::World` resolves to the DART 7 facade;
+   quarantine or remove the classic implementation so it no longer exports
+   `dart::simulation::World`; keep Python `simulation.World` pointed at the ECS
+   facade; keep the classic Python binding quarantined as `gui.RenderWorld`; and
+   regenerate stubs/docs for the final Python shape, including `simulation.pyi`,
    `__init__.pyi`, GUI stubs that mention world types, and generated API pages.
-   Retarget all 158 matched in-tree consumer files: 35 under `dart/`, 1 under
-   `dartsim/`, 47 under `examples/`, 4 under `python/`, and 71 under `tests/`.
+   If a `simulation_experimental` alias is reintroduced for migration, it must
+   be a Python-level alias only and must not bind a second C++ `World` class.
+   Keep in-tree consumers on the promoted headers, modules, and test paths.
    Keep the public header name `dart/simulation/world.hpp`; do not hand-author
    `dart/simulation/World.hpp`; and preflight active solver and loader PR heads
    with `git merge-tree`. Gate with `pixi run build`, `pixi run test-unit`,
-   `pixi run test-simulation-experimental`, `pixi run test-py`,
+   `pixi run test-simulation-quick`, `pixi run test-py`,
    `pixi run generate-stubs`, `pixi run api-docs-py`,
-   `pixi run check-api-boundaries`, `pixi run check-api-boundary-inventory`, a
-   macOS case-insensitive-filesystem build, an installed-package C++ smoke, and
-   a wheel import smoke.
+   `pixi run check-api-boundaries`, `pixi run check-api-boundary-inventory`,
+   `pixi run check-dart7-final-world-promotion`, a macOS
+   case-insensitive-filesystem build, an installed-package C++ smoke, and a
+   wheel import smoke.
 6. **Compatibility alias cleanup (workstreams 6 and 10).** Decide and then
-   retire any `dartpy.simulation_experimental` alias window, obsolete
-   `DART_BUILD_SIMULATION_EXPERIMENTAL` option, stale package component, or
-   migration shim left behind by the atomic name-swap PR. Do not defer the
-   `dartpy.simulation.World` rebind itself past the atomic C++/Python name-swap
-   state. Gate with `pixi run test-py`, `pixi run generate-stubs`,
-   `pixi run api-docs-py`, package/export smokes, and a wheel import smoke.
+   retire any remaining or future `dartpy.simulation_experimental` alias window,
+   stale package component, reintroduced staging build option, or migration shim
+   left behind by the atomic name-swap PR. Do not regress the
+   already-promoted `dartpy.simulation.World` / `dartpy.World` identity. Gate
+   with `pixi run check-dartpy-import-layout`, `pixi run test-py`,
+   `pixi run generate-stubs`, `pixi run api-docs-py`, package/export smokes, and
+   a wheel import smoke.
 7. **Compatibility documentation (acceptance + clean-break strategy).** Record
-   DART 6 / gz-physics support expectations on the DART 6.17 lane, including
+   DART 6 / gz-physics support expectations on the `release-6.*` lane, including
    the Gazebo branch/version matrix, support window, and sunset trigger in the
    compatibility owner docs referenced by
    [`../design/dart7_clean_break_strategy.md`](../design/dart7_clean_break_strategy.md)
@@ -314,30 +328,26 @@ Current intended sequence:
 
 ## High-Risk Surfaces
 
-Review these before implementation PRs:
+Review these before implementation PRs and promotion-claim updates:
 
-- `dart/simulation/world.hpp` and the classic `dart::simulation::World`
-  namespace collision.
-- `dart/simulation/experimental/world.hpp`, especially exposed registry or ECS
-  access.
-- `dart/simulation/experimental/ecs/` and `comps/` headers that look public only
-  because they are installed today.
+- `dart/simulation/world.hpp`, especially exposed registry or ECS access.
+- `dart/simulation/ecs/` and `dart/simulation/comps/` headers that must remain
+  internal implementation storage rather than promoted public API.
 - Handle headers whose constructors, base classes, accessors, includes, or
   layout reveal ECS identity or component storage.
-- `dart/simulation/experimental/*_loader.*`, frame/body/joint handles, and stage
-  APIs that may currently reveal implementation ownership.
-- `dart/simulation/experimental/CMakeLists.txt`, root CMake options, package
-  exports, installed target/component files, public dependency discovery, and
-  workflow path filters.
+- `dart/simulation/*_loader.*`, frame/body/joint handles, and stage APIs that
+  may reveal implementation ownership.
+- `dart/simulation/CMakeLists.txt`, root CMake options, package exports,
+  installed target/component files, public dependency discovery, and workflow
+  path filters.
 - `dart/simulation/CMakeLists.txt` generated component headers and PascalCase
   compatibility headers, especially `World.hpp`/`world.hpp` case-insensitive
   filesystem collisions.
-- `python/dartpy/dartpy.cpp`, `python/dartpy/simulation/`,
-  `python/dartpy/simulation_experimental/`, `_layout.py`, `_naming.py`, stub
-  generation, and Python API boundary checks.
+- `python/dartpy/dartpy.cpp`, `python/dartpy/simulation/`, `_layout.py`,
+  `_naming.py`, stub generation, and Python API boundary checks.
 - `scripts/check_api_boundaries.py`, `scripts/generate_api_boundary_inventory.py`,
-  `scripts/generate_stubs.py`, and generated API docs that currently know about
-  experimental module names.
+  `scripts/check_dartpy_import_layout.py`, `scripts/generate_stubs.py`, and
+  generated API docs that currently know about experimental module names.
 
 ## Acceptance Criteria
 
@@ -352,19 +362,18 @@ Review these before implementation PRs:
   private include directories through their public interface.
 - The official Python path imports as `dartpy.simulation`, has generated stubs
   and generated docs, and does not duplicate nanobind class identities.
-- The top-level `dartpy.World` decision is explicit: removed, deprecated, or
-  identical to `dartpy.simulation.World`, with tests, stubs, docs, and wheel
-  import smokes covering the chosen behavior.
+- The top-level `dartpy.World` decision is explicit: it is identical to
+  `dartpy.simulation.World`, with tests, stubs, docs, and wheel import smokes
+  covering that behavior.
 - The promoted DART 7 `World` API is documented as double-backed. No
-  `sx.World(dtype=...)`, `sx.World[...]`, scalar-specific `World` aliases, or
+  `sim.World(dtype=...)`, `sim.World[...]`, scalar-specific `World` aliases, or
   public C++ scalar-template facade is shipped unless a separate
   scalar-instantiation plan supplies concrete ownership, dtype, identity,
   serialization, collision, differentiability, package, and migration gates
   after the DART 7 rigid-body and multibody locomotion/manipulation baseline is
   strong enough to make scalar precision the next bounded design priority.
-- If migration aliases exist, the compatibility matrix covers
-  `import dartpy.simulation`, `import dartpy.simulation_experimental`,
-  `from dartpy import simulation_experimental as sx`, `sx.diff`, and
+- If migration aliases are reintroduced, the compatibility matrix covers
+  `import dartpy.simulation`, the alias import path, diff helper forwarding, and
   `isinstance`/identity behavior across aliases.
 - Public API boundary checks reject ECS storage, EnTT, component types, solver
   registries, backend types, direct registry access, public entity IDs,
@@ -373,13 +382,13 @@ Review these before implementation PRs:
 - Installed-package negative smokes reject forbidden experimental headers and
   obsolete `simulation-experimental` package targets once promotion is claimed.
 - Python module-layout tests cover `dartpy.simulation.World`,
-  `dartpy.World`, any `dartpy.simulation_experimental` alias,
-  `sys.modules`, `__all__`, generated stubs, GUI stub references, `sx.diff` or
-  its final home, reduced-build behavior while the old option exists, and wheel
+  `dartpy.World`, `sys.modules`, `__all__`, generated stubs, GUI stub
+  references, `dartpy.diff` / `dartpy.simulation.diff`, any intentionally
+  reintroduced alias, reduced-build behavior while old options exist, and wheel
   import behavior.
 - In-repo examples, tutorials, tests, and docs use the official path unless they
   are explicitly testing a migration alias.
-- DART 6/gz-physics compatibility expectations are documented on the DART 6.17
+- DART 6/gz-physics compatibility expectations are documented on the `release-6.*`
   lane, including the Gazebo branch/version matrix, support window, and sunset
   date or trigger before main removes legacy API surfaces.
 - Source-tree moves happen after facade promotion and are isolated enough that
@@ -401,9 +410,13 @@ For implementation PRs, select by touched scope:
 
 - `pixi run check-api-boundaries`
 - `pixi run check-api-boundary-inventory`
+- `pixi run check-dart7-promotion-surface`
+- `pixi run check-dart7-promotion-package-contract`
+- `pixi run check-dart7-promotion-installed-package`
+- `pixi run check-dartpy-import-layout`
 - `pixi run build`
 - `pixi run test-unit`
-- `pixi run test-simulation-experimental`
+- `pixi run test-simulation-quick`
 - `pixi run test-py`
 - `pixi run test-all`
 - `pixi run -e cuda test-all` when CUDA, compute, or full-release promotion
@@ -413,13 +426,14 @@ For implementation PRs, select by touched scope:
 - installed-package C++ and wheel import smokes for package/export changes
 - negative installed-package smokes for forbidden promoted-header dependencies
   and obsolete experimental targets
-- reduced-build checks while `DART_BUILD_SIMULATION_EXPERIMENTAL` exists
+- static guards that the retired experimental build option remains absent
 
 ## Revision Triggers
 
 - A maintainer chooses a different final C++ namespace, Python import path, or
   CMake component shape.
 - Parity gates expose a blocker that prevents official promotion in DART 7.
-- gz-physics or Gazebo compatibility requires a DART 6.17 support-lane update.
+- gz-physics or Gazebo compatibility requires a `release-6.*` support-lane
+  update.
 - A physical move PR conflicts heavily with active solver/model-loading work and
   needs to be split or delayed.

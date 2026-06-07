@@ -8,7 +8,7 @@ if(NOT TARGET dart-gui)
   return()
 endif()
 
-if(NOT TARGET dart-simulation-experimental)
+if(NOT TARGET dart-simulation)
   return()
 endif()
 
@@ -18,7 +18,6 @@ set(
   demos_scene_sources
   "${CMAKE_CURRENT_LIST_DIR}/registry.cpp"
   "${CMAKE_CURRENT_LIST_DIR}/scenes/rigid_body.cpp"
-  "${CMAKE_CURRENT_LIST_DIR}/scenes/dynamic_joint_constraints.cpp"
   "${CMAKE_CURRENT_LIST_DIR}/scenes/deformable_body.cpp"
 )
 
@@ -26,11 +25,11 @@ add_library(demos_scenes STATIC ${demos_scene_sources})
 target_include_directories(demos_scenes PUBLIC "${CMAKE_CURRENT_LIST_DIR}")
 target_link_libraries(
   demos_scenes
-  PUBLIC dart-gui dart-io dart-collision-native dart-simulation-experimental
+  PUBLIC dart-gui dart-io dart-collision-native dart-simulation
 )
 # deformable_body.cpp compiles an internal (non-promoted) experimental header,
 # detail/world_registry_access.hpp, which includes <entt/entt.hpp>. EnTT is a
-# PRIVATE dependency of dart-simulation-experimental (the public surface is
+# PRIVATE dependency of dart-simulation (the public surface is
 # entt-free) and so is not propagated to consumers, so this scene fails to
 # compile in clean builds where EnTT is supplied only via
 # dart_find_entt.cmake/FetchContent rather than a global include directory.

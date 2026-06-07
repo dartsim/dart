@@ -55,13 +55,14 @@ namespaces:
 
 ```
 dartpy/
+├── simulation    # DART 7 World and simulation object model
 ├── io            # File parsers (URDF, SDF, SKEL, MJCF)
 └── gui           # Filament-backed 3D visualization descriptors and helpers
 ```
 
 - Core classes/functions (dynamics, collision, math, simulation, constraint,
   optimizer) are promoted onto `dartpy` directly.
-- Legacy submodules remain available on the DART 6.17 support lane. Main keeps
+- Legacy submodules remain available on `release-6.*` support branches. Main keeps
   migration warnings only while the DART 7 clean-break gates are being closed;
   the DART 7 public contract should not carry the legacy dartpy 6 API surface.
   Toggle deprecation handling with `DARTPY_WARN_ON_LEGACY_MODULES` or
@@ -69,22 +70,27 @@ dartpy/
 
 **Source**: See `python/dartpy/` directory for module implementations
 
-### Experimental World Bindings And Transition
+### DART 7 World Bindings And Transition
 
-Before the DART 7 clean-break release, the ECS-backed world matures behind
-explicit experimental namespaces. C++ users opt in through
-`dart::simulation::experimental`; Python users opt in through
-`dartpy.simulation_experimental`, which is built only when
-`DART_BUILD_SIMULATION_EXPERIMENTAL=ON`. Bindings for this module should expose
-only public experimental wrapper types and must not expose EnTT, `comps`, or
-other ECS internals until the C++ API provides public wrappers. The DART 7 path
-is to promote this shape into the official stable simulation namespace only
-after parity gates pass, then remove the classic world and legacy dartpy 6
-surface from the public contract instead of carrying them beside the promoted
-API.
+The ECS-backed world is the DART 7 simulation API target. Python has already
+promoted the common path: `dartpy.simulation.World` is the canonical owner,
+`dartpy.World` is the same class object after `import dartpy as dart`, generated
+stubs no longer publish `dartpy.simulation_experimental`, and the classic
+DART 6 world is quarantined as `dartpy.gui.RenderWorld` for rendering plumbing.
+The Python `dartpy.io` parser surface no longer exposes whole-world
+`read_world` / `parse_world` entrypoints; load skeletons and add them to the
+DART 7 world instead. Keep that shape guarded with
+`pixi run check-dartpy-import-layout`, stub generation, Python tests, and wheel
+import smokes.
+
+The C++ surface now uses the final `dart::simulation` namespace and
+`dart-simulation` target. Bindings for the promoted Python module should
+continue to expose only public wrapper types and must not expose EnTT, `comps`,
+or other ECS internals. The DART 7 path is to keep release-6 branches as the
+parity reference and avoid carrying the DART 6 world beside the promoted API.
 
 Durable API-shape rationale for this surface lives in
-[simulation_experimental_python_api.md](../design/simulation_experimental_python_api.md).
+[simulation_python_api.md](../design/simulation_python_api.md).
 
 ### Eigen ↔ NumPy Integration
 
@@ -120,7 +126,7 @@ positions = skel.get_positions()  # Returns ndarray
 - When the C++ API stores raw pointers, add explicit keep-alive/shared-ownership patterns to prevent lifetime bugs in Python.
 - Treat dartpy as the public user-facing API, not a mirror of all C++ internals.
   Do not include `dart/**/detail/**`, `dart/**/internal/**`, or
-  `dart/simulation/experimental/comps/**` headers.
+  `dart/simulation/comps/**` headers.
 - Do not bind `dart::...::detail` or `dart::...::internal` types, aliases, or
   data members. A public C++ alias whose underlying type is in `detail` still
   needs an allowlist entry until the C++ API provides a public wrapper.
@@ -269,7 +275,7 @@ import dartpy as dart
 world = dart.World()
 parser = dart.io.UrdfParser()
 robot = parser.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
-world.addSkeleton(robot)
+multibody = dart.add_skeleton(world, robot)
 
 for _ in range(100):
     world.step()

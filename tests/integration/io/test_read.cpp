@@ -37,30 +37,30 @@
 using namespace dart;
 
 //==============================================================================
-TEST(Read, AutoDetectsSkelWorld)
+TEST(Read, AutoDetectsSkelSkeleton)
 {
-  const auto world = io::readWorld("dart://sample/skel/test/empty.skel");
-  ASSERT_NE(world, nullptr);
-  EXPECT_EQ(world->getNumSkeletons(), 0);
+  const auto skeleton
+      = io::readSkeleton("dart://sample/skel/test/single_pendulum.skel");
+  EXPECT_NE(skeleton, nullptr);
 }
 
 //==============================================================================
-TEST(Read, AutoDetectsSdfWorld)
+TEST(Read, AutoDetectsSdfSkeleton)
 {
-  const auto world = io::readWorld("dart://sample/sdf/empty.world");
+  const auto skeleton
+      = io::readSkeleton("dart://sample/sdf/test/two_link_revolute_model.sdf");
 #if DART_HAS_SDFORMAT
-  ASSERT_NE(world, nullptr);
+  ASSERT_NE(skeleton, nullptr);
 #else
-  EXPECT_EQ(world, nullptr);
+  EXPECT_EQ(skeleton, nullptr);
 #endif
 }
 
 //==============================================================================
-TEST(Read, AutoDetectsMjcfWorldByXmlRoot)
+TEST(Read, MjcfDoesNotExposeDirectSkeletonLoading)
 {
-  const auto world = io::readWorld("dart://sample/mjcf/openai/ant.xml");
-  ASSERT_NE(world, nullptr);
-  EXPECT_GT(world->getNumSkeletons(), 0);
+  const auto skeleton = io::readSkeleton("dart://sample/mjcf/openai/ant.xml");
+  EXPECT_EQ(skeleton, nullptr);
 }
 
 //==============================================================================
@@ -82,16 +82,5 @@ TEST(Read, HandlesUrdfSkeletonSupport)
   EXPECT_NE(skeleton, nullptr);
 #else
   EXPECT_EQ(skeleton, nullptr);
-#endif
-}
-
-//==============================================================================
-TEST(Read, HandlesUrdfWorldSupport)
-{
-  const auto world = io::readWorld("dart://sample/urdf/test/testWorld.urdf");
-#if DART_IO_HAS_URDF
-  EXPECT_NE(world, nullptr);
-#else
-  EXPECT_EQ(world, nullptr);
 #endif
 }

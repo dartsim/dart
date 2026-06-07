@@ -26,7 +26,7 @@
       traffic, growth, and noisy benchmark evidence.
       `FreeListAllocator` now has a fixed-capacity mode for
       deterministic bounded failure after preallocation, and `MemoryManager` /
-      experimental `WorldOptions` can construct the World free-list hierarchy
+      DART 7 `WorldOptions` can construct the World free-list hierarchy
       with a fixed-capacity policy. Fixed-capacity free-list arenas can also
       satisfy over-aligned pool chunks from reserved bytes without growing from
       the base allocator. A 2026-06-04 focused EnTT run passed the
@@ -85,7 +85,7 @@
 - [ ] Phase 6: Add memory-layout profiler/debugger surfaces and GUI
       visualization. `MemoryAllocatorDebugger` now exposes structured live
       bytes, peak live bytes, and live allocation count; `MemoryManager` and
-      experimental `World` diagnostics now surface direct free/pool allocator
+      DART 7 `World` diagnostics now surface direct free/pool allocator
       debug counters. `WorldMemoryDiagnostics` also reports aggregate and
       per-storage ECS registry layout counters without exposing EnTT types, and
       dartpy exposes the same read-only snapshot through
@@ -93,7 +93,7 @@
 
 ## Goal
 
-Move the experimental simulation stack toward zero dynamic memory allocation in
+Move the DART 7 simulation stack toward zero dynamic memory allocation in
 the simulation loop by giving each `World` one hierarchical allocator root and
 routing persistent and per-frame data through that root. Long term, the memory
 hierarchy should map cleanly to world objects/components so it can drive memory
@@ -122,7 +122,7 @@ debugging, profiling, optimization experiments, and ImGui visualization.
   provide an equivalent EnTT storage integration that preserves public API
   boundaries.
 - The active EnTT version supports stateful allocator propagation through
-  `entt::basic_registry`: the experimental World now constructs its internal
+  `entt::basic_registry`: the DART 7 World now constructs its internal
   registry and component storages with a `dart::common::StlAllocator` borrowing
   the World's active free allocator.
 - Free-list allocations must preserve at least `std::max_align_t` alignment
@@ -166,7 +166,7 @@ debugging, profiling, optimization experiments, and ImGui visualization.
   stateful allocator through `entt::basic_registry` and component
   `basic_storage`, or document the exact adapter/storage work needed.
 - Component storage: cover create/emplace/destroy/clear/reuse patterns for the
-  current experimental components, including sparse-set growth and component
+  current DART 7 components, including sparse-set growth and component
   array capacity behavior. Initial direct coverage now reserves entity,
   `RigidBodyTag`, `Transform`, `Velocity`, and `Force` storages and verifies
   repeated create/emplace/clear/re-emplace/destroy cycles do not grow World

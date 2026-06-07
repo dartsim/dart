@@ -2,7 +2,7 @@
 
 Mirrors examples/demos/scenes/rigid_body.cpp via the
 WorldRenderBridge: a World owns the physics (RigidBody + collision
-shape), and a parallel dart.simulation.World owns the SimpleFrame
+shape), and a parallel render World owns the SimpleFrame
 visuals the C++ viewer renders. The bridge advances physics in
 ``pre_step`` and copies each body's world transform onto its render
 frame.
@@ -21,7 +21,9 @@ from .._world_bridge import WorldRenderBridge
 from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
 
-def _visual_for(shape_kind: str, *, radius: float = 0.0, half_extents=None) -> "dart.Shape":
+def _visual_for(
+    shape_kind: str, *, radius: float = 0.0, half_extents=None
+) -> "dart.Shape":
     if shape_kind == "sphere":
         return dart.SphereShape(radius)
     if shape_kind == "box":

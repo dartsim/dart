@@ -110,10 +110,6 @@ class UrdfParser:
 
     def parseSkeletonString(*args, **kwargs) -> Any: ...
 
-    def parseWorld(*args, **kwargs) -> Any: ...
-
-    def parseWorldString(*args, **kwargs) -> Any: ...
-
     RootJointType: TypeAlias = UrdfParserRootJointType
 
     Options: TypeAlias = UrdfParserOptions
@@ -125,10 +121,6 @@ class UrdfParser:
     parse_skeleton = parseSkeleton
 
     parse_skeleton_string = parseSkeletonString
-
-    parse_world = parseWorld
-
-    parse_world_string = parseWorldString
 
     set_options = setOptions
 

@@ -72,27 +72,6 @@ void defUrdfParser(nb::module_& m)
                        return self.parseSkeletonString(data, base);
                      },
                      nb::arg("urdf_string"),
-                     nb::arg("base_uri"))
-                 .def(
-                     "parseWorld",
-                     [](UrdfParser& self, const common::Uri& uri) {
-                       return self.parseWorld(uri);
-                     },
-                     nb::arg("uri"))
-                 .def(
-                     "parseWorld",
-                     [](UrdfParser& self, const std::string& uri) {
-                       return self.parseWorld(common::Uri(uri));
-                     },
-                     nb::arg("uri"))
-                 .def(
-                     "parseWorldString",
-                     [](UrdfParser& self,
-                        const std::string& data,
-                        const common::Uri& base) {
-                       return self.parseWorldString(data, base);
-                     },
-                     nb::arg("urdf_string"),
                      nb::arg("base_uri"));
 
   cls.attr("RootJointType") = root_joint_type;

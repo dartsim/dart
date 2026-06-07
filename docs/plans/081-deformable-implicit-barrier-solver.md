@@ -1,7 +1,7 @@
 # PLAN-081: Deformable Implicit-Barrier Solver
 
 - Operating state: `PLAN-081` in [`dashboard.md`](dashboard.md)
-- Outcome: the experimental `World` can host deformable bodies as a second
+- Outcome: the DART 7 `World` can host deformable bodies as a second
   physics domain, stepped by a DART-owned implicit-barrier method inspired by
   Incremental Potential Contact (IPC), without exposing solver registries,
   backend/project names, ECS storage, or execution resources through the public
@@ -22,8 +22,8 @@
 - Architecture rationale:
   [`../design/simulation_solver_architecture.md`](../design/simulation_solver_architecture.md)
 - Public facade:
-  [`../design/simulation_experimental_cpp_api.md`](../design/simulation_experimental_cpp_api.md),
-  [`../design/simulation_experimental_python_api.md`](../design/simulation_experimental_python_api.md)
+  [`../design/simulation_cpp_api.md`](../design/simulation_cpp_api.md),
+  [`../design/simulation_python_api.md`](../design/simulation_python_api.md)
 - Research references:
   [`../readthedocs/papers.md`](../readthedocs/papers.md)
 - IPC paper/repository gap audit:
@@ -67,7 +67,7 @@
 1. **Vertical model/state slice** — Add a minimal public `DeformableBody`
    handle and options value object for point-mass nodes, edges, masses,
    per-body spring/damping parameters, and fixed nodes. Store runtime data in
-   experimental ECS components; keep components out of dartpy and public user
+   internal ECS components; keep components out of dartpy and public user
    docs. The public handle must be world-created and must not expose
    `entt::entity`, `entt::registry`, `comps::*`, execution backends, or solver
    identifiers in public signatures or user-facing docs.

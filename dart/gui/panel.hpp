@@ -47,10 +47,6 @@
 
 #include <cstddef>
 
-namespace dart::simulation {
-class World;
-} // namespace dart::simulation
-
 namespace dart::gui {
 
 struct ViewerLifecycleState;
@@ -271,7 +267,6 @@ struct PanelContext
     std::optional<std::array<int, 2>> fontTextureSize;
   };
 
-  dart::simulation::World* world = nullptr;
   ViewerLifecycleState* lifecycle = nullptr;
   std::string selectedLabel;
   std::optional<Eigen::Vector3d> selectedPoint;

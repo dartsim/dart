@@ -46,21 +46,6 @@ include(dart_test_libccd)
 # ==============================================================================
 # Collision Benchmarks
 # ==============================================================================
-if(
-  DART_BUILD_COLLISION_REFERENCE_BENCHMARKS
-  AND TARGET dart-test-reference-bullet
-)
-  add_executable(bm_boxes collision/bm_boxes.cpp)
-  target_link_libraries(
-    bm_boxes
-    dart
-    dart-test-reference-bullet
-    benchmark::benchmark
-    benchmark::benchmark_main
-  )
-  dart_format_add(collision/bm_boxes.cpp)
-endif()
-
 add_executable(bm_native collision/bm_native.cpp)
 target_link_libraries(bm_native dart-collision-native benchmark::benchmark)
 dart_format_add(collision/bm_native.cpp)
@@ -267,17 +252,6 @@ dart_format_add(collision/fixtures/edge_cases.hpp)
 # ==============================================================================
 # Dynamics Benchmarks
 # ==============================================================================
-if(TARGET dart-io)
-  add_executable(bm_kinematics dynamics/bm_kinematics.cpp)
-  target_link_libraries(
-    bm_kinematics
-    dart-io
-    benchmark::benchmark
-    benchmark::benchmark_main
-  )
-  dart_format_add(dynamics/bm_kinematics.cpp)
-endif()
-
 add_executable(bm_jacobian dynamics/bm_jacobian.cpp)
 target_link_libraries(
   bm_jacobian
@@ -286,15 +260,6 @@ target_link_libraries(
   benchmark::benchmark_main
 )
 dart_format_add(dynamics/bm_jacobian.cpp)
-
-add_executable(bm_dynamics_cache dynamics/bm_dynamics_cache.cpp)
-target_link_libraries(
-  bm_dynamics_cache
-  dart
-  benchmark::benchmark
-  benchmark::benchmark_main
-)
-dart_format_add(dynamics/bm_dynamics_cache.cpp)
 
 add_executable(bm_sparse_occupancy_grid dynamics/bm_sparse_occupancy_grid.cpp)
 target_link_libraries(
@@ -311,17 +276,6 @@ if(TARGET octomap)
   )
 endif()
 dart_format_add(dynamics/bm_sparse_occupancy_grid.cpp)
-
-if(TARGET dart-io)
-  add_executable(bm_dynamics_cache_io dynamics/bm_dynamics_cache_io.cpp)
-  target_link_libraries(
-    bm_dynamics_cache_io
-    dart-io
-    benchmark::benchmark
-    benchmark::benchmark_main
-  )
-  dart_format_add(dynamics/bm_dynamics_cache_io.cpp)
-endif()
 
 # ==============================================================================
 # Common (Allocator) Benchmarks
@@ -363,11 +317,11 @@ endif()
 # Component Benchmarks (organized in subdirectories)
 # ==============================================================================
 add_subdirectory(lcpsolver)
-# Guard on the target, not just the option: the experimental module skips itself
-# in minimal configurations where its core sibling components (e.g. dart-io) are
-# unavailable, leaving the option ON but the target absent.
-if(DART_BUILD_SIMULATION_EXPERIMENTAL AND TARGET dart-simulation-experimental)
-  add_subdirectory(simulation/experimental)
+# Guard on the target, not just the option: the simulation module skips itself in
+# minimal configurations where its sibling components (e.g. dart-io) are
+# unavailable.
+if(TARGET dart-simulation)
+  add_subdirectory(simulation)
 endif()
 
 # ==============================================================================
@@ -390,6 +344,15 @@ target_link_libraries(
   benchmark::benchmark_main
 )
 dart_format_add(math/bm_group_product.cpp)
+
+add_executable(bm_lie_group_batch math/bm_lie_group_batch.cpp)
+target_link_libraries(
+  bm_lie_group_batch
+  dart
+  benchmark::benchmark
+  benchmark::benchmark_main
+)
+dart_format_add(math/bm_lie_group_batch.cpp)
 
 add_executable(bm_spatial_algebra math/bm_spatial_algebra.cpp)
 target_link_libraries(
@@ -456,9 +419,8 @@ dart_format_add(dynamics/bm_soft_body.cpp)
 # They are NOT registered as ctests since they measure performance, not correctness.
 #
 # Run benchmarks manually:
-#   ./build/default/cpp/Release/tests/benchmark/bm_boxes
-#   ./build/default/cpp/Release/tests/benchmark/bm_kinematics
+#   ./build/default/cpp/Release/tests/benchmark/bm_native
 #
 # With custom settings:
-#   ./bm_boxes --benchmark_min_time=1s --benchmark_repetitions=10
+#   ./bm_native --benchmark_min_time=1s --benchmark_repetitions=10
 # ==============================================================================

@@ -40,14 +40,14 @@ def test_preview_writes_index_and_data(tmp_path):
             "--output-dir",
             str(tmp_path),
             "--suite-name",
-            "DART Experimental World Performance",
+            "DART 7 World Performance",
         ]
     )
 
     assert rc == 0
     assert (tmp_path / "index.html").is_file()
     data = _read_data(tmp_path / "data.js")
-    runs = data["entries"]["DART Experimental World Performance"]
+    runs = data["entries"]["DART 7 World Performance"]
     assert len(runs) == 1
     assert runs[0]["tool"] == "googlecpp"
     # Every row carries name/value/unit in the action's bench shape.
@@ -63,5 +63,5 @@ def test_preview_append_accumulates_history(tmp_path):
     )
 
     data = _read_data(tmp_path / "data.js")
-    runs = data["entries"]["DART Experimental World Performance"]
+    runs = data["entries"]["DART 7 World Performance"]
     assert [r["commit"]["id"] for r in runs] == ["aaa", "bbb"]

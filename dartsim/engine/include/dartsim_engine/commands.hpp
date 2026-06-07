@@ -150,7 +150,7 @@ std::unique_ptr<Command> attachFrame(ObjectId frame, ObjectId parentFrame);
 /// Detach a frame to the world root, preserving world transform.
 ///
 /// Root-level FixedFrame records are converted to FreeFrame because the
-/// experimental World requires fixed frames to have a non-world parent.
+/// DART 7 World requires fixed frames to have a non-world parent.
 std::unique_ptr<Command> detachFrame(ObjectId frame);
 
 /// Set the world time step.

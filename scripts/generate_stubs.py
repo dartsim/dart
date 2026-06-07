@@ -35,9 +35,9 @@ STUB_MODULES = (
 
 OPTIONAL_STUB_MODULES = frozenset(
     (
-        # simulation (the ECS facade) is absent when the experimental module is
-        # not built (e.g. DART_BUILD_SIMULATION_EXPERIMENTAL=OFF); gui is absent
-        # in non-GUI builds.
+        # simulation (the ECS facade) can be absent when a configure skips the
+        # DART 7 World stack because required sibling targets are unavailable;
+        # gui is absent in non-GUI builds.
         "dartpy._dartpy.simulation",
         "dartpy._dartpy.gui",
     )
@@ -121,6 +121,22 @@ def _insert_all(source: str, names: list[str]) -> str:
     )
 
 
+def _remove_all_block(source: str) -> str:
+    lines = source.splitlines()
+    for index, line in enumerate(lines):
+        if not line.startswith("__all__: list[str] = ["):
+            continue
+        end = index + 1
+        while end < len(lines) and lines[end] != "]":
+            end += 1
+        if end < len(lines):
+            end += 1
+        if end < len(lines) and lines[end] == "":
+            end += 1
+        return "\n".join(lines[:index] + lines[end:]).rstrip() + "\n"
+    return source
+
+
 def _postprocess_stub(source: str) -> str:
     source = _add_future_import(source)
     source = source.replace("dartpy._dartpy.", "dartpy.")
@@ -132,6 +148,43 @@ def _postprocess_stub(source: str) -> str:
         "import dartpy.simulation.diff as diff", "from dartpy import diff as diff"
     )
     return _insert_all(source, _public_names(source))
+
+
+def _postprocess_public_module_stub(source: str, public_module: str) -> str:
+    if public_module != "gui":
+        return source
+
+    helper_names = [
+        "DescriptorRenderScene",
+        "WorldRenderBridge",
+        "world_render_frame",
+    ]
+    helper_import = (
+        "from dartpy._world_render_bridge import (\n"
+        "    DescriptorRenderScene as DescriptorRenderScene,\n"
+        "    WorldRenderBridge as WorldRenderBridge,\n"
+        "    world_render_frame as world_render_frame,\n"
+        ")\n"
+    )
+
+    source = _remove_all_block(source)
+    updated = source
+    if "from dartpy._world_render_bridge import" not in updated:
+        lines = updated.splitlines()
+        insert_at = 0
+        while insert_at < len(lines):
+            line = lines[insert_at]
+            if line.startswith("from ") or line.startswith("import ") or not line:
+                insert_at += 1
+                continue
+            break
+
+        updated = "\n".join(
+            lines[:insert_at] + ["", helper_import.rstrip()] + lines[insert_at:]
+        )
+
+    names = sorted(dict.fromkeys([*_public_names(updated), *helper_names]))
+    return _insert_all(updated, names)
 
 
 def _requested_module_is_missing(error: ModuleNotFoundError, module_name: str) -> bool:
@@ -326,11 +379,12 @@ def main():
                 sys.exit(1)
 
             source = _postprocess_stub(temp_output.read_text())
+            public_module = _public_module_name(relative_output)
+            source = _postprocess_public_module_stub(source, public_module)
             output = stubs_dir / relative_output
             output.parent.mkdir(parents=True, exist_ok=True)
             output.write_text(source)
 
-            public_module = _public_module_name(relative_output)
             available_submodules.add(public_module)
             if public_module != "utils":
                 names_by_module[public_module] = _public_names(source)

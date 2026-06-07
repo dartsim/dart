@@ -30,23 +30,6 @@ void defMjcfParser(nb::module_& m)
       .def_rw(
           "mSiteSkeletonNamePrefix",
           &::dart::utils::MjcfParser::Options::mSiteSkeletonNamePrefix);
-
-  sm.def(
-      "readWorld",
-      [](const common::Uri& uri,
-         const ::dart::utils::MjcfParser::Options& options) {
-        return ::dart::utils::MjcfParser::readWorld(uri, options);
-      },
-      nb::arg("uri"),
-      nb::arg("options") = ::dart::utils::MjcfParser::Options());
-  sm.def(
-      "readWorld",
-      [](const std::string& uri,
-         const ::dart::utils::MjcfParser::Options& options) {
-        return ::dart::utils::MjcfParser::readWorld(common::Uri(uri), options);
-      },
-      nb::arg("uri"),
-      nb::arg("options") = ::dart::utils::MjcfParser::Options());
 }
 
 } // namespace dart::python_nb

@@ -7,10 +7,10 @@ acting on any row.
 
 ## Current Status Note (2026-06-06)
 
-The experimental `World` has moved well past this baseline:
+The DART 7 `World` has moved well past this baseline:
 
 - `World::step()` now uses the centralized built-in schedule in
-  `dart/simulation/experimental/detail/world_step_schedule.hpp`.
+  `dart/simulation/detail/world_step_schedule.hpp`.
 - Gravity, persistent applied forces, articulated forward dynamics, collision
   queries, free-rigid contact, unified rigid/articulated contact, rigid IPC,
   variational multibody integration, deformable dynamics, binary restart, and
@@ -29,8 +29,8 @@ the present implementation.
 
 ## Summary
 
-At the snapshot date, the experimental `World`
-(`dart/simulation/experimental/`) provided topology, frames, forward kinematics,
+At the snapshot date, the DART 7 `World`
+(`dart/simulation/`) provided topology, frames, forward kinematics,
 ECS storage, a compute-graph executor, and serialization. Its only "dynamics"
 was a single explicit/semi-implicit integration of **free rigid bodies** from a
 user-set force/torque accumulator. There was **no gravity, no articulated-body
@@ -134,7 +134,7 @@ Status: MISSING (absent), PARTIAL (some support), PRESENT (comparable to DART 6)
 | Contacts in step (solved)  | contacts feed the constraint solver                         | contact query feeds the free-rigid and unified constraint/contact step paths; deformable-rigid coupling and full DART 6 parity remain | PARTIAL |
 
 > Note: `dart/collision/native/` is a maintained native collision engine with
-> standalone world/query concepts (PLAN-035/036/037). The experimental World
+> standalone world/query concepts (PLAN-035/036/037). The DART 7 World
 > needs a public owner bridge before contacts can flow into the solver.
 
 ### Rigid-body quantities & API

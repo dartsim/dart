@@ -131,7 +131,7 @@ def test_cuda_tests_run_after_python_and_docs(monkeypatch):
             "--skip-lint",
             "--skip-build",
             "--skip-tests",
-            "--skip-simulation-experimental",
+            "--skip-simulation",
         ],
     )
     monkeypatch.setenv("PIXI_ENVIRONMENT_NAME", "cuda")

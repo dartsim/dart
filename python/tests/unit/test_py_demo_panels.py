@@ -18,6 +18,7 @@ from examples.demos.runner import (
     _scene_build_timeout_ms,
     _validate_scene,
 )
+
 from examples.demos.scenes import (
     articulated,
     atlas_simbicon,
@@ -67,14 +68,14 @@ from examples.demos.scenes import (
 )
 
 
-def _require_simulation_experimental_symbols(*names: str):
+def _require_simulation_symbols(*names: str):
     try:
         import dartpy as sx
     except Exception as exc:  # pragma: no cover - reduced build without submodule
         pytest.skip(f"dartpy unavailable: {exc}")
     missing = [name for name in names if not hasattr(sx, name)]
     if missing:
-        formatted = ", ".join(f"simulation_experimental.{name}" for name in missing)
+        formatted = ", ".join(f"dartpy.{name}" for name in missing)
         pytest.skip(f"{formatted} unavailable in this build")
     return sx
 
@@ -101,7 +102,7 @@ def test_make_world_factory_returns_panels_tuple() -> None:
     result = _make_world_factory(scene)()
 
     assert isinstance(result, tuple)
-    assert result == (result[0], None, None, [panel])
+    assert result == (None, None, [panel], None)
 
 
 def test_make_world_factory_injects_shared_replay_panel_for_world_scenes() -> None:
@@ -123,15 +124,15 @@ def test_make_world_factory_injects_shared_replay_panel_for_world_scenes() -> No
         id="replayable",
         title="Replayable",
         category="Tests",
-        summary="Uses an experimental World.",
+        summary="Uses an DART 7 World.",
         build=build,
     )
 
     result = _make_world_factory(scene)()
 
     assert isinstance(result, tuple)
-    world, pre_step, force_drag, panels = result
-    assert world is bridge.render_world
+    pre_step, force_drag, panels, renderable_provider = result
+    assert renderable_provider is None
     assert force_drag is None
     assert [panel.title for panel in panels] == ["Replay"]
     assert replay_world.replay_recording_enabled is True
@@ -160,7 +161,7 @@ def test_shared_replay_panel_scrubs_and_replays_saved_world_states() -> None:
         id="replayable",
         title="Replayable",
         category="Tests",
-        summary="Uses an experimental World.",
+        summary="Uses an DART 7 World.",
         build=lambda: SceneSetup(
             world=object(),
             pre_step=live_pre_step,
@@ -289,9 +290,10 @@ def test_custom_replay_pre_step_requires_state_hooks_or_stateless_flag() -> None
 
     assert setup.panels == []
     assert "replay_controller" not in setup.info
-    assert "custom pre_step needs replay_capture_state" in setup.info[
-        "shared_replay_skipped_reason"
-    ]
+    assert (
+        "custom pre_step needs replay_capture_state"
+        in setup.info["shared_replay_skipped_reason"]
+    )
 
 
 def test_shared_replay_panel_honors_scene_opt_out() -> None:
@@ -331,7 +333,7 @@ def test_shared_replay_panel_accepts_physics_world_info_key() -> None:
 
 
 def test_registered_world_scenes_receive_shared_replay_controls() -> None:
-    _require_simulation_experimental_symbols("World")
+    _require_simulation_symbols("World")
     render_only_scene_ids = {
         "planned_inverse_kinematics",
         "g1_puppet",
@@ -395,7 +397,9 @@ def test_default_py_demos_launch_uses_replay_timeline_without_reordering() -> No
         "replay_scrubber",
     ]
 
-    assert _default_initial_scene_args(["--scene", "hello_world"], "hello_world", {}) == []
+    assert (
+        _default_initial_scene_args(["--scene", "hello_world"], "hello_world", {}) == []
+    )
     assert _default_initial_scene_args([], None, {"DART_DEMOS_SCENE": "boxes"}) == []
     assert _default_initial_scene_args(["--cycle-scenes"], None, {}) == []
 
@@ -677,7 +681,7 @@ class _ScriptedPanelBuilder(_FakePanelBuilder):
 
 
 def test_high_value_world_scenes_expose_custom_panels() -> None:
-    sx = _require_simulation_experimental_symbols("World")
+    sx = _require_simulation_symbols("World")
 
     cases = [
         (articulated, "Articulated"),
@@ -711,7 +715,7 @@ def test_high_value_world_scenes_expose_custom_panels() -> None:
 
 
 def test_robot_puppet_world_scenes_expose_pose_panels() -> None:
-    _require_simulation_experimental_symbols("World", "add_skeleton", "ReadOptions")
+    _require_simulation_symbols("World", "add_skeleton", "ReadOptions")
 
     for scene, expected_title in (
         (robot_puppets.ATLAS_PUPPET, "Atlas Puppet"),
@@ -772,9 +776,7 @@ def test_planned_world_port_placeholders_expose_status_panels() -> None:
 
 
 def test_ipc_deformable_scene_exposes_diagnostics_panel() -> None:
-    _require_simulation_experimental_symbols(
-        "DeformableBodyOptions", "DeformableEdge", "World"
-    )
+    _require_simulation_symbols("DeformableBodyOptions", "DeformableEdge", "World")
 
     setup = ipc_deformable_friction_slide.build()
     builder = _FakePanelBuilder()
@@ -790,7 +792,7 @@ def test_ipc_deformable_scene_exposes_diagnostics_panel() -> None:
 
 
 def test_diff_drone_scene_exposes_replay_panel() -> None:
-    _require_simulation_experimental_symbols("World")
+    _require_simulation_symbols("World")
 
     setup = diff_drone_liftoff.build()
     builder = _FakePanelBuilder()
@@ -805,7 +807,7 @@ def test_diff_drone_scene_exposes_replay_panel() -> None:
 
 
 def test_diff_trajectory_scenes_expose_replay_panels() -> None:
-    _require_simulation_experimental_symbols("World")
+    _require_simulation_symbols("World")
 
     for scene_module, expected_title, expected_plot in (
         (diff_throw_to_target, "Diff Throw Target", "plot:Target distance:"),
@@ -824,7 +826,7 @@ def test_diff_trajectory_scenes_expose_replay_panels() -> None:
 
 
 def test_replay_scrubber_exposes_timeline_panel() -> None:
-    _require_simulation_experimental_symbols("World")
+    _require_simulation_symbols("World")
 
     setup = replay_scrubber.build()
     builder = _FakePanelBuilder()
@@ -841,9 +843,7 @@ def test_replay_scrubber_exposes_timeline_panel() -> None:
         event.startswith("timeline:Timeline##replay_timeline:0.0:")
         for event in builder.events
     )
-    assert any(
-        event.endswith(":181:181:181:Ball height") for event in builder.events
-    )
+    assert any(event.endswith(":181:181:181:Ball height") for event in builder.events)
     assert "checkbox:Loop playback" in builder.events
     assert any(event.startswith("select:Rate:") for event in builder.events)
     assert "collapsing:Cursor details:False" in builder.events
@@ -853,7 +853,7 @@ def test_replay_scrubber_exposes_timeline_panel() -> None:
 
 
 def test_ipc_fem_buckle_scene_exposes_compression_panel() -> None:
-    _require_simulation_experimental_symbols(
+    _require_simulation_symbols(
         "DeformableBodyOptions", "DeformableTetrahedron", "World"
     )
 
@@ -872,7 +872,7 @@ def test_ipc_fem_buckle_scene_exposes_compression_panel() -> None:
 
 
 def test_ipc_fem_sphere_scene_exposes_clearance_panel() -> None:
-    _require_simulation_experimental_symbols(
+    _require_simulation_symbols(
         "DeformableBodyOptions", "DeformableTetrahedron", "World"
     )
 
@@ -891,9 +891,7 @@ def test_ipc_fem_sphere_scene_exposes_clearance_panel() -> None:
 
 
 def test_ipc_friction_obstacle_scenes_expose_speed_panels() -> None:
-    _require_simulation_experimental_symbols(
-        "DeformableBodyOptions", "DeformableEdge", "World"
-    )
+    _require_simulation_symbols("DeformableBodyOptions", "DeformableEdge", "World")
 
     for scene_module, expected_title, expected_plot in (
         (ipc_deformable_plate_friction, "IPC Plate Friction", "plot:X speed:"),
@@ -916,9 +914,7 @@ def test_ipc_friction_obstacle_scenes_expose_speed_panels() -> None:
 
 
 def test_ipc_drape_showcase_scenes_expose_shape_panels() -> None:
-    _require_simulation_experimental_symbols(
-        "DeformableBodyOptions", "DeformableEdge", "World"
-    )
+    _require_simulation_symbols("DeformableBodyOptions", "DeformableEdge", "World")
 
     for scene_module, expected_title, expected_plot in (
         (ipc_deformable_capsule_rod, "IPC Capsule Rod", "plot:Rod clearance:"),
@@ -940,7 +936,7 @@ def test_ipc_drape_showcase_scenes_expose_shape_panels() -> None:
 
 
 def test_ipc_cg_showcase_scenes_expose_solver_panels() -> None:
-    _require_simulation_experimental_symbols(
+    _require_simulation_symbols(
         "DeformableBodyOptions", "DeformableTetrahedron", "World"
     )
 
@@ -961,7 +957,7 @@ def test_ipc_cg_showcase_scenes_expose_solver_panels() -> None:
 
 
 def test_vbd_showcase_scenes_expose_solver_panels() -> None:
-    _require_simulation_experimental_symbols(
+    _require_simulation_symbols(
         "DeformableBodyOptions", "DeformableSolverOptions", "World"
     )
 
@@ -985,7 +981,7 @@ def test_vbd_showcase_scenes_expose_solver_panels() -> None:
 
 
 def test_ipc_asset_and_scripted_scenes_expose_diagnostics_panels() -> None:
-    _require_simulation_experimental_symbols(
+    _require_simulation_symbols(
         "DeformableBodyOptions",
         "DeformableDirichletBoundaryCondition",
         "DeformableEdge",
@@ -1019,7 +1015,7 @@ def test_ipc_asset_and_scripted_scenes_expose_diagnostics_panels() -> None:
 
 
 def test_ipc_fem_scenes_expose_diagnostics_panels() -> None:
-    _require_simulation_experimental_symbols(
+    _require_simulation_symbols(
         "DeformableBodyOptions",
         "DeformableTetrahedron",
         "World",
@@ -1048,7 +1044,7 @@ def test_ipc_fem_scenes_expose_diagnostics_panels() -> None:
 
 
 @pytest.mark.skipif(
-    not hasattr(dart, "gui") or not hasattr(dart.gui, "extract_renderables"),
+    not hasattr(dart, "gui") or not hasattr(dart.gui, "describe_shape"),
     reason="GUI descriptor extraction is not available in this build",
 )
 def test_world_bridge_force_drag_uses_renderable_id_and_restores_rigid_force() -> None:
@@ -1077,7 +1073,7 @@ def test_world_bridge_force_drag_uses_renderable_id_and_restores_rigid_force() -
     )
     target_id = next(
         int(renderable.id)
-        for renderable in dart.gui.extract_renderables(bridge.render_world)
+        for renderable in bridge.renderable_provider()
         if renderable.shape_frame_name == target_frame_name
     )
 
@@ -1119,10 +1115,12 @@ def test_world_bridge_force_drag_uses_renderable_id_and_restores_rigid_force() -
 
 
 @pytest.mark.skipif(
-    not hasattr(dart, "gui") or not hasattr(dart.gui, "extract_renderables"),
+    not hasattr(dart, "gui") or not hasattr(dart.gui, "describe_shape"),
     reason="GUI descriptor extraction is not available in this build",
 )
-def test_world_bridge_external_force_panel_reports_disabled_and_static_targets() -> None:
+def test_world_bridge_external_force_panel_reports_disabled_and_static_targets() -> (
+    None
+):
     sx_world = _FakeWorld()
     static_target = _FakeRigidBody()
     static_target.name = "ground"
@@ -1137,7 +1135,7 @@ def test_world_bridge_external_force_panel_reports_disabled_and_static_targets()
     )
     static_id = next(
         int(renderable.id)
-        for renderable in dart.gui.extract_renderables(bridge.render_world)
+        for renderable in bridge.renderable_provider()
         if renderable.shape_frame_name == "static_visual"
     )
 

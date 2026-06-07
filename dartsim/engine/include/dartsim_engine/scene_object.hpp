@@ -45,7 +45,7 @@ namespace dartsim {
 /// Stable, editor-side identifier for a scene object.
 ///
 /// Editor IDs are owned by the SceneModel and remain stable across undo/redo
-/// and across rebuilds of the derived experimental World (whose handles can be
+/// and across rebuilds of the derived DART 7 World (whose handles can be
 /// invalidated). The world root uses kNoObject (0).
 using ObjectId = std::uint64_t;
 
@@ -53,7 +53,7 @@ inline constexpr ObjectId kNoObject = 0;
 
 /// The kind of object an editor node represents.
 ///
-/// The experimental World has no per-object removal and no public shape API, so
+/// The DART 7 World has no per-object removal and no public shape API, so
 /// the editor keeps its own typed scene description and rebuilds the World from
 /// it. See docs/design/dartsim_gui_simulator.md.
 enum class ObjectType
@@ -70,7 +70,7 @@ enum class ObjectType
 
 /// Editor-side primitive shape used for rendering and picking.
 ///
-/// The experimental World does not expose collision/visual geometry yet, so a
+/// The DART 7 World does not expose collision/visual geometry yet, so a
 /// shape descriptor lives on the editor object until that API lands.
 enum class ShapeType
 {
@@ -81,10 +81,10 @@ enum class ShapeType
   Plane,
 };
 
-/// Joint kind mirrored from the experimental joint type.
+/// Joint kind mirrored from the DART 7 joint type.
 ///
 /// Mirrored (rather than aliased) so the editor model does not depend on the
-/// experimental header layout and stays serializable on its own.
+/// DART 7 header layout and stays serializable on its own.
 enum class JointKind
 {
   Fixed,
@@ -100,7 +100,7 @@ enum class JointKind
 /// Editor-owned sensor descriptor.
 ///
 /// These descriptors are authored and persisted by the editor while the
-/// experimental World grows public sensor concepts. They intentionally describe
+/// DART 7 World grows public sensor concepts. They intentionally describe
 /// configuration only; they do not imply simulated sensor output yet.
 enum class SensorKind
 {
@@ -122,7 +122,7 @@ struct SensorDesc
 /// Editor-owned collision geometry descriptor.
 ///
 /// Collision descriptors are authored and persisted by the editor while the
-/// experimental World grows public collision-shape authoring. They describe
+/// DART 7 World grows public collision-shape authoring. They describe
 /// intended contact material and geometry only; they do not alter runtime
 /// collision behavior yet.
 struct CollisionDesc

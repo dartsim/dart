@@ -7,7 +7,7 @@ Accepted — initial thin layer landed with the typed Lie group API
 
 ## Context
 
-DART's experimental, ECS-based simulation engine (`dart/simulation/experimental/`)
+DART's experimental, ECS-based simulation engine (`dart/simulation/`)
 performs Lie group math (composition, exp/log, adjoint) per entity. As entity
 counts grow, doing this one element at a time leaves throughput on the table:
 the integration loop (`compute/world_step_stage.cpp`,

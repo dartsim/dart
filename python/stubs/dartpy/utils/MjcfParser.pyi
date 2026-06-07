@@ -2,8 +2,6 @@ from __future__ import annotations
 
 __all__: list[str] = [
     "Options",
-    "readWorld",
-    "read_world",
 ]
 
 
@@ -48,7 +46,3 @@ class Options:
 
     @m_site_skeleton_name_prefix.setter
     def m_site_skeleton_name_prefix(self, arg: str, /) -> None: ...
-
-def readWorld(*args, **kwargs): ...
-
-read_world = readWorld

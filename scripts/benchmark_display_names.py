@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Human-readable display names for the experimental World performance dashboard.
+"""Human-readable display names for the DART 7 World performance dashboard.
 
 Both the hosted dashboard (``benchmark-action/github-action-benchmark``) and the
 local preview use a Google Benchmark row's ``name`` as the chart title *and* the
@@ -27,7 +27,7 @@ import re
 from dataclasses import dataclass
 
 # Section headers used to group charts on the dashboard.
-FAMILY_CORE = "Experimental World — core step & scaling"
+FAMILY_CORE = "DART 7 World — core step & scaling"
 FAMILY_RIGID = "Rigid-body dynamics solver"
 FAMILY_VBD = "Deformable solver (Vertex Block Descent)"
 FAMILY_FEM = "Deformable solver (FEM)"
@@ -49,7 +49,7 @@ class Surface:
 
 # Base benchmark name (without the ``/arg`` suffix) -> readable surface.
 SURFACES: dict[str, Surface] = {
-    # --- Experimental World core step & scaling (bm_compute_graph) ---------
+    # --- DART 7 World core step & scaling (bm_compute_graph) ---------
     "BM_WorldUpdateKinematics": Surface(
         "Kinematics update", FAMILY_CORE, ("parents", "children/parent")
     ),

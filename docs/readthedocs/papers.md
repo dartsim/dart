@@ -12,15 +12,14 @@ only in internal developer docs. The old
 `docs/design/simulation_experimental_references.md` path is kept only as a
 compatibility pointer; do not add entries there.
 
-The catalog currently focuses on the DART **experimental simulation world**
-(`dart/simulation/experimental/**` and `dartpy.simulation_experimental`) and
-its algorithms. The schema is general, so it can extend to the rest of DART
-without changing its shape.
+The catalog currently focuses on the DART 7 simulation world
+(`dart/simulation/**` and `dartpy.simulation`) and its algorithms. The schema
+is general, so it can extend to the rest of DART without changing its shape.
 
 It is a companion to the API design docs:
 
-- [`simulation_experimental_cpp_api.md`](https://github.com/dartsim/dart/blob/main/docs/design/simulation_experimental_cpp_api.md)
-- [`simulation_experimental_python_api.md`](https://github.com/dartsim/dart/blob/main/docs/design/simulation_experimental_python_api.md)
+- [`simulation_cpp_api.md`](https://github.com/dartsim/dart/blob/main/docs/design/simulation_cpp_api.md)
+- [`simulation_python_api.md`](https://github.com/dartsim/dart/blob/main/docs/design/simulation_python_api.md)
 
 ## Why This Exists
 
@@ -29,7 +28,7 @@ is a research-focused engine where "the
 easiest place to reproduce and evaluate a new algorithm should be inside DART,"
 and it names a tracked gap: _algorithm-family contracts and baseline comparisons
 are not yet tracked as first-class research surfaces._ This catalog is that
-surface for the experimental world: it records what the new API and algorithms
+surface for the DART 7 simulation world: it records what the new API and algorithms
 reference, implement, plan, evaluate, or reject, with an explicit verdict and
 status for each — so a researcher or agent can see at a glance where a method
 stands and where it is wired into the code.
@@ -70,13 +69,13 @@ Each entry carries these properties:
 | -------------- | ---------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
 | **Type**       | `textbook`, `paper`, `standard`, `engine`                                                                  | Kind of reference (`engine` = comparative software implementation).                           |
 | **Topic**      | e.g. `dynamics`, `kinematics`, `contact`, `integration`, `collision`, `terminology`, `model-format`, `api` | Primary subject area.                                                                         |
-| **Status**     | `referenced`, `planned`, `in-progress`, `implemented`, `deferred`, `rejected`                              | The experimental world's relationship to the reference.                                       |
+| **Status**     | `referenced`, `planned`, `in-progress`, `implemented`, `deferred`, `rejected`                              | The DART 7 simulation world's relationship to the reference.                                  |
 | **Priority**   | `high`, `medium`, `low`, `—`                                                                               | Relative importance for acting on or evaluating the reference; `—` when purely informational. |
 | **Verdict**    | `adopt`, `baseline`, `reference`, `evaluate`, `reject`                                                     | The project's decision: build on it, compare against it, cite it, weigh it, or pass.          |
 | **Where used** | links / paths                                                                                              | Design doc, code, or test that uses or will use it.                                           |
 
-Status values are written from the experimental world's perspective. A method
-already shipping in _classic_ DART but not yet in the experimental world is
+Status values are written from the DART 7 simulation world's perspective. A method
+already shipping in _classic_ DART but not yet in the DART 7 simulation world is
 `planned` here, with the classic location noted.
 
 ## DART Core Citation
@@ -120,13 +119,13 @@ Animation and Robotics Toolkit." _Journal of Open Source Software_, 3(22),
 Featherstone, R. _Rigid Body Dynamics Algorithms._ Springer, 2008.
 
 - **Type:** textbook · **Topic:** dynamics · **Status:** planned · **Priority:** high · **Verdict:** adopt
-- **Where used:** [cpp design](https://github.com/dartsim/dart/blob/main/docs/design/simulation_experimental_cpp_api.md)
+- **Where used:** [cpp design](https://github.com/dartsim/dart/blob/main/docs/design/simulation_cpp_api.md)
   (articulated-body method); terminology grounding in the
   "Terminology Grounding" section below.
 - **Notes:** Canonical reference for the kinematic-tree model and the O(n)
   Articulated-Body Algorithm (ABA). Source of the "kinematic tree" /
-  "multibody system" vocabulary the experimental API adopts. ABA is the planned
-  basis for the experimental forward-dynamics stage; experimental forward
+  "multibody system" vocabulary the DART 7 API adopts. ABA is the planned
+  basis for the DART 7 forward-dynamics stage; DART 7 forward
   kinematics already follows its tree formulation.
 
 ### `lynch-park-2017`
@@ -135,7 +134,7 @@ Lynch, K. M., & Park, F. C. _Modern Robotics: Mechanics, Planning, and Control._
 Cambridge University Press, 2017.
 
 - **Type:** textbook · **Topic:** kinematics/terminology · **Status:** implemented · **Priority:** — · **Verdict:** adopt
-- **Where used:** experimental `JointType` taxonomy and frame/transform vocabulary; drove `Ball`→`Spherical` naming.
+- **Where used:** DART 7 `JointType` taxonomy and frame/transform vocabulary; drove `Ball`→`Spherical` naming.
 - **Notes:** Source for the joint taxonomy (revolute, prismatic, helical/screw,
   cylindrical, universal, spherical) and screw-theory framing. "Spherical" (not
   "ball") follows this text.
@@ -231,7 +230,7 @@ inertias." _International Journal of Robotics Research_, 2(1), 1983.
 
 - **Type:** paper · **Topic:** dynamics · **Status:** planned · **Priority:** high · **Verdict:** adopt
 - **Notes:** Original ABA paper; the planned forward-dynamics method for the
-  experimental dynamics stage. See the `featherstone-2008` entry for the
+  DART 7 dynamics stage. See the `featherstone-2008` entry for the
   consolidated textbook treatment.
 
 ### `liu-jain-mbs`
@@ -243,7 +242,7 @@ Institute of Technology. (`docs/dynamics.pdf`)
 - **Where used:** [`docs/background/dynamics/`](https://github.com/dartsim/dart/tree/main/docs/background/dynamics);
   classic `dart/dynamics/`.
 - **Notes:** DART's own foundational derivation of articulated-body equations of
-  motion. Implemented in classic DART; the experimental world reuses the same
+  motion. Implemented in classic DART; the DART 7 simulation world reuses the same
   generalized-coordinate formulation.
 
 ### `tan-lcp`
@@ -255,7 +254,7 @@ Using LCP._ (`docs/lcp.pdf`)
 - **Where used:** [`docs/background/lcp/`](https://github.com/dartsim/dart/tree/main/docs/background/lcp);
   classic `dart/constraint/`, `dart/math/`.
 - **Notes:** DART's LCP-based contact formulation. Implemented in classic DART;
-  the experimental constraint stage is a planned reimplementation target.
+  the DART 7 constraint stage is a planned reimplementation target.
 
 ### `stewart-trinkle-1996`
 
@@ -264,7 +263,7 @@ body dynamics with inelastic collisions and Coulomb friction." _IJNME_, 1996.
 
 - **Type:** paper · **Topic:** contact/integration · **Status:** referenced · **Priority:** medium · **Verdict:** baseline
 - **Notes:** Standard implicit time-stepping contact formulation; a baseline to
-  compare the experimental contact/integration stages against.
+  compare the DART 7 contact/integration stages against.
 
 ### `baraff-1996`
 
@@ -281,7 +280,7 @@ compliant constrained dynamics." _MIG_, 2016.
 
 - **Type:** paper · **Topic:** integration · **Status:** referenced · **Priority:** medium · **Verdict:** evaluate
 - **Where used:** named as a candidate integration family in
-  [cpp design](https://github.com/dartsim/dart/blob/main/docs/design/simulation_experimental_cpp_api.md);
+  [cpp design](https://github.com/dartsim/dart/blob/main/docs/design/simulation_cpp_api.md);
   surveyed as a compliant-constraint contact model in
   [`PLAN-082 contact-roadmap`](https://github.com/dartsim/dart/blob/main/docs/plans/082-variational-integrator-solver/contact-roadmap.md).
 - **Notes:** Compliant position-based dynamics; under evaluation as an optional
@@ -299,7 +298,7 @@ of Robotics and Automation_, 1988.
 - **Type:** paper · **Topic:** collision · **Status:** implemented · **Priority:** — · **Verdict:** adopt
 - **Where used:** native collision (`dart/collision/`, libccd-derived GJK/EPA).
 - **Notes:** GJK distance/intersection underpins DART's native narrowphase; the
-  experimental world consumes collision through the shared collision foundation.
+  DART 7 simulation world consumes collision through the shared collision foundation.
 
 ### `ipc-2020`
 
@@ -493,7 +492,7 @@ Related public resources:
   ranges, BDF-2 integration, and semi-implicit Rayleigh damping for restitution.
 
   DART should implement the method as a DART-owned solver family inside the
-  experimental `World`, using PLAN-081 and PLAN-082 as variant owners and
+  DART 7 `World`, using PLAN-081 and PLAN-082 as variant owners and
   PLAN-083 as the shared API/kernel/benchmark plan. Completion requires mapped
   figure/table/unit-test coverage, py-demos examples, CPU and GPU benchmark
   packets, and explicit comparisons against DART incumbents, upstream
@@ -577,7 +576,7 @@ Related public resources:
   rather than the upstream project name as a solver identity.
 
   This entry should not be described as complete: full parity requires the
-  boxed-LCP contact path in the experimental world (PLAN-080 prerequisite), the
+  boxed-LCP contact path in the DART 7 simulation world (PLAN-080 prerequisite), the
   clamping/separating/tied classification and clamping-block gradient, contact
   Jacobian derivatives, the parameter (mass/COM/inertia/friction) selector,
   the PyTorch `autograd.Function` bridge, finite-difference-checked correctness,
@@ -653,7 +652,7 @@ Related public resources:
   regularized Newton step using a positive-definite local 3x3 Hessian, with
   graph-colored parallel Gauss-Seidel sweeps and adaptive
   initialization/Chebyshev acceleration. DART targets it as a second deformable
-  inner solver on the same experimental deformable ECS components and the same
+  inner solver on the same DART 7 deformable ECS components and the same
   variational objective the current gradient-descent stage already minimizes.
   The DART implementation is experimental and DART-owned; DART does not vendor
   or link `Gaia`/`TinyVBD` as a runtime dependency, and the public deformable
@@ -691,7 +690,7 @@ Robotics. arXiv:1609.02898.
   articulated-body-inertia forward-dynamics pass. Symplectic and
   near-energy-conserving for smooth conservative forcing; the paper does not
   address contact, friction, or closed loops (PLAN-082 roadmaps those). The
-  experimental world has no ABA yet, so the O(n) update is net-new work; classic
+  DART 7 simulation world has no ABA yet, so the O(n) update is net-new work; classic
   DART implemented the original (reference repo `jslee02/wafr2016`).
 
 ### `marsden-west-2001`
@@ -950,7 +949,7 @@ Control of Robot Manipulators." _International Journal of Robotics Research_,
 - **Notes:** Grounds whole-body and task-priority IK: higher-priority task
   residuals constrain lower-priority objectives through redundancy/null spaces.
   Classic DART already has related `HierarchicalIK`, `CompositeIK`, and
-  `WholeBodyIK` APIs; the experimental world needs a DART-owned task model
+  `WholeBodyIK` APIs; the DART 7 simulation world needs a DART-owned task model
   before carrying them forward.
 
 ### `buss-kim-2005-sdls`
@@ -1121,7 +1120,7 @@ Unified Robot Description Format. <https://wiki.ros.org/urdf/XML/joint>
 - **Type:** standard · **Topic:** model-format/terminology · **Status:** referenced · **Priority:** medium · **Verdict:** reference
 - **Notes:** Robotics interchange standard; source of the `Floating` joint
   naming and the revolute/prismatic/fixed/planar vocabulary. Loading into the
-  experimental world is deferred until a public C++ import owner exists; classic
+  DART 7 simulation world is deferred until a public C++ import owner exists; classic
   `dart::io` already parses URDF.
 
 ### `sdformat`
@@ -1143,7 +1142,7 @@ MuJoCo XML (MJCF). <https://mujoco.readthedocs.io/en/stable/XMLreference.html>
 
 ## Comparative Implementations (Engines)
 
-Software references that informed the experimental API shape, terminology, and
+Software references that informed the DART 7 API shape, terminology, and
 algorithm-family choices. These are baselines/comparisons, not dependencies.
 
 | ID            | Engine                               | Used for                                                                    | Status     | Verdict   |
@@ -1164,7 +1163,7 @@ algorithm-family choices. These are baselines/comparisons, not dependencies.
 ### Notes on engine verdicts
 
 - **`drake`, `pinocchio`, `rbdl`, `mujoco`, `gazebo` — baseline:** mature
-  robotics-dynamics references the experimental world should be benchmarked and
+  robotics-dynamics references the DART 7 simulation world should be benchmarked and
   compared against, and whose terminology (multibody, spherical, floating)
   DART follows. gz-physics is also DART's primary downstream integration.
 - **`physx-isaac`, `newton`, `genesis`, `bullet` — reference:** consulted for
@@ -1181,13 +1180,13 @@ algorithm-family choices. These are baselines/comparisons, not dependencies.
   DART must first complete the Dojo gap audit and de-risking spike.
 
 Design-doc links for these comparisons live in
-[`simulation_experimental_cpp_api.md`](https://github.com/dartsim/dart/blob/main/docs/design/simulation_experimental_cpp_api.md)
+[`simulation_cpp_api.md`](https://github.com/dartsim/dart/blob/main/docs/design/simulation_cpp_api.md)
 and
-[`simulation_experimental_python_api.md`](https://github.com/dartsim/dart/blob/main/docs/design/simulation_experimental_python_api.md).
+[`simulation_python_api.md`](https://github.com/dartsim/dart/blob/main/docs/design/simulation_python_api.md).
 
 ## Terminology Grounding
 
-The experimental world's naming decisions are grounded in the references above
+The DART 7 simulation world's naming decisions are grounded in the references above
 rather than any single engine:
 
 - `Multibody` (one word) — `shabana-mbs`, `featherstone-2008`, `drake`.
@@ -1203,6 +1202,6 @@ This catalog is maintained with the `dart-references` skill
 (`.claude/skills/dart-references/SKILL.md`), which documents the entry schema,
 the status/verdict workflow, and how to keep entries in sync with the design
 docs and code. Keep citations accurate, prefer official sources, and update an
-entry's `status`/`verdict` when the experimental world's relationship to a
+entry's `status`/`verdict` when the DART 7 simulation world's relationship to a
 reference changes (for example, when a `planned` algorithm becomes
 `implemented`).

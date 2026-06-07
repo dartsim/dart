@@ -23,7 +23,7 @@ settled before stable promotion.
 ## Last Session Summary
 
 Planned and designed opt-in analytic differentiable simulation for the
-experimental `World` (the Nimble method, arXiv:2103.16021). Produced the durable
+DART 7 `World` (the Nimble method, arXiv:2103.16021). Produced the durable
 design doc, the PLAN-110 plan card + dashboard entry, a feature-by-feature Nimble
 gap audit + cross-engine API survey (Brax/Newton/Genesis/MJX), a `werling-2021`
 papers-catalog entry, and this dev-task scaffold. Ran three specialized reviews
@@ -64,7 +64,7 @@ solver-family/contact/differentiability policies, memory options}`),
   `getStepDerivatives()`, serialized flag (binary format v2→v3),
   `diff/step_derivatives.hpp` (`StepDerivatives`, header-only public).
 - Behind `DART_BUILD_DIFF` (`DART_HAS_DIFF`): `detail/smooth_jacobians.{hpp,cpp}`
-  (`detail::contactFreeStepDerivatives`, **exported with `DART_EXPERIMENTAL_API`** —
+  (`detail::contactFreeStepDerivatives`, **exported with `DART_SIMULATION_API`** —
   required so tests link it across the `.so`, per the deformable-contact detail
   precedent).
 - CMake: `DART_BUILD_DIFF` option (default OFF, CUDA-pattern guard); wired into
@@ -90,13 +90,13 @@ Nothing committed or pushed.
 
 ## PLAN-080 WS4 First Slice — Implemented And Verified (unblocks WS2)
 
-Added an **opt-in boxed-LCP rigid-body contact path** to the experimental World
+Added an **opt-in boxed-LCP rigid-body contact path** to the DART 7 World
 (the WS2 prerequisite):
 
 - `WorldOptions::contactSolverMethod` = `SequentialImpulse` (default, unchanged)
   | `BoxedLcp`; `World::getContactSolverMethod()`.
 - `detail/boxed_lcp_contact.{hpp,cpp}` — `solveBoxedLcpContacts(...)`
-  (`DART_EXPERIMENTAL_API`, exported, `nm`-verified) assembles `A = J M⁻¹ Jᵀ`,
+  (`DART_SIMULATION_API`, exported, `nm`-verified) assembles `A = J M⁻¹ Jᵀ`,
   `b = −J v_free + bias`, one normal row plus two Coulomb tangent rows per
   contact (`findex`-coupled box bounds), solves with `dart::math::DantzigSolver`,
   applies `Δv = M⁻¹ Jᵀ f`, and returns
@@ -112,7 +112,7 @@ Verified by me: build green; full experimental suite 23/23 (default config);
 ## WS2 First Slice — Implemented And Verified (the Nimble analytic contact gradient)
 
 `detail/contact_jacobians.{hpp,cpp}` — `contactStepDerivatives(...)`
-(`DART_EXPERIMENTAL_API`, exported, `nm`-verified). Classifies clamping rows
+(`DART_SIMULATION_API`, exported, `nm`-verified). Classifies clamping rows
 (`f_i>1e-9`) of the `BoxedLcpContactSnapshot`, forms `A_CC`, and computes the
 analytic LCP gradient `∂f_C/∂z = A_CC⁻¹(∂b_C/∂z − (∂A_CC/∂z)·f_C)` via rank-
 revealing `completeOrthogonalDecomposition`; geometric inputs (`∂A/∂z`, `∂b/∂z`,
@@ -244,7 +244,7 @@ degenerate-pivot `DART_WARN_ONCE` (`s<=0`).
 - **The correctness stance**: finite-difference checker is the gate; mode-switch
   subgradients and elastic approximation are documented; complementarity-aware
   and contacts-from-distance are opt-in non-true-gradient aids.
-- The diff module lives in `dart/simulation/experimental/diff/` behind a build
+- The diff module lives in `dart/simulation/diff/` behind a build
   option (mirrors `compute/` and CUDA isolation); reverse-pass cache / LCP
   snapshot / clamping classification all live in `detail/` (never public).
 
@@ -260,6 +260,6 @@ git status && git log -3 --oneline
 
 Then: incorporate any pending review feedback, then implement WS1 starting with
 the `differentiable` option in `WorldOptions` and the `StepSnapshot` skeleton in
-`dart/simulation/experimental/diff/`, plus the finite-difference checker test
+`dart/simulation/diff/`, plus the finite-difference checker test
 utility. Keep `pixi run lint`, `pixi run build`, focused experimental tests, and
 `check-api-boundaries` green per slice.

@@ -54,7 +54,7 @@ and the default `world.step()` is the split pipeline
 - New-file-only on main (no conflict, just land): `rigid_body_state_batch.*`,
   `rigid_body_integration_kernel.hpp`, `world_batch.*`,
   `compute_stage_metadata.*`, CCD files.
-- **Conflicts** (both sides edited): `dart/simulation/experimental/`
+- **Conflicts** (both sides edited): `dart/simulation/`
   `CMakeLists.txt`, `compute/world_step_stage.hpp`, `compute/world_step_stage.cpp`.
   Resolve by **union**: keep main's `RigidBodyIntegrationStage`,
   `BatchedRigidBodyIntegrationStage`, `integrateRigidBody` (untouched) **and**

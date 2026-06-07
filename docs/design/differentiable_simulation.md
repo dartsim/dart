@@ -4,7 +4,7 @@
 
 Living design and implementation contract. This document owns the durable
 architecture and public-API rationale for **opt-in differentiable simulation**
-in the experimental `World`: how DART computes derivatives of a physics step,
+in the DART 7 `World`: how DART computes derivatives of a physics step,
 what the public surface looks like, how differentiability stays opt-in and
 backend-neutral, and how the Nimble-style analytic LCP-gradient method maps onto
 DART's existing boxed-LCP and articulated-body dynamics.
@@ -18,11 +18,11 @@ restate their rules:
   this plan) a _rigid-body-solver-internal_ reverse pass for contact/dynamics
   gradients. It names Model/State/Control/Contacts separation "the precondition
   for batching and differentiability."
-- [`simulation_experimental_cpp_api.md`](simulation_experimental_cpp_api.md)
+- [`simulation_cpp_api.md`](simulation_cpp_api.md)
   owns the public C++ object model, the solver capability matrix (whose
   `Differentiability` axis is `unsupported, finite-difference checked, analytic,
 autodiff`), and the DART 7 promotion contract.
-- [`simulation_experimental_python_api.md`](simulation_experimental_python_api.md)
+- [`simulation_python_api.md`](simulation_python_api.md)
   owns the dartpy facade, the `StateSpace` metadata object, and the functional
   `sx.state.rollout` shape this design extends rather than forks.
 - [`compute_backend_research.md`](compute_backend_research.md) recorded
@@ -280,8 +280,8 @@ The C++ core produces plain Eigen-typed derivative value objects and knows
 nothing about any tensor framework. The lowest-friction Python experience — a
 `torch.autograd.Function` so users write a normal loop and call `.backward()` —
 lives only in the optional dartpy `sx.diff` submodule and is a thin adapter over
-the framework-neutral core. `import dartpy.simulation_experimental` must succeed
-with torch absent; `sx.diff` always exists as an attribute, and calling into it
+the framework-neutral core. `import dartpy.simulation` must succeed with torch
+absent; `sx.diff` always exists as an attribute, and calling into it
 without torch raises a clear, guiding `ImportError`. This keeps the engine
 dependency-free and leaves room for a future JAX/`dlpack` bridge added the same
 way.
@@ -331,7 +331,7 @@ Using `sx.diff` _is_ the opt-in for the functional/learning path; a user who
 just wants `.backward()` writes a normal loop, exactly as in Nimble:
 
 ```python
-from dartpy import simulation_experimental as sx
+from dartpy import simulation as sx
 import torch
 
 world = sx.World(time_step=0.001)
@@ -393,7 +393,7 @@ world.contact_gradient_mode = sx.ContactGradientMode.ANALYTIC            # defau
 # sx.ContactGradientMode.PRE_CONTACT_SURROGATE   # nonzero pre-contact gradient (backward-only surrogate)
 ```
 
-### C++ (`dart::simulation::experimental`)
+### C++ (`dart::simulation`)
 
 Mirrors the Python facade with value objects, no framework types:
 
@@ -415,7 +415,7 @@ g.state; g.control; g.parameter;
 ```
 
 The differentiable C++ types live in an optional module
-`dart/simulation/experimental/diff/` compiled behind the `DART_BUILD_DIFF` option,
+`dart/simulation/diff/` compiled behind the `DART_BUILD_DIFF` option,
 mirroring how `compute/` and CUDA are isolated. The reverse-pass cache, clamping
 classification, `A_CC` factorization, and LCP snapshot live in `detail/` and never
 appear in a public signature.
@@ -467,7 +467,7 @@ unsupported cases rather than silently returning contact-free gradients.
 
 ## Internal Architecture
 
-`dart/simulation/experimental/diff/` (optional, `DART_BUILD_DIFF`) realizes the
+`dart/simulation/diff/` (optional, `DART_BUILD_DIFF`) realizes the
 solver-internal reverse pass:
 
 - **Snapshot plumbing.** The data the reverse pass needs (`M`, `J`, the per-island
@@ -547,7 +547,7 @@ the experimental stack. Keep this list as the dependency map that explains how
 the work landed and what stable promotion must still harden.
 
 0. **Prerequisite (PLAN-080 WS4)**: boxed-LCP contact + joint-limit solve on the
-   experimental `World`, emitting `{A,b,lo,hi,findex,f}` as first-class outputs.
+   DART 7 `World`, emitting `{A,b,lo,hi,findex,f}` as first-class outputs.
    Not owned here; gates seams 1–2.
 1. **Opt-in seam + contact-free Jacobians** — `WorldOptions::differentiable`
    (default false), nullable-sink plumbing, the chosen smooth-term derivative
@@ -632,7 +632,7 @@ Docs-only edits use the docs-only gate set from `docs/ai/verification.md`.
 
 Implementation PRs should include: `pixi run lint`; `pixi run build` with
 `DART_BUILD_DIFF` on and off; focused C++ tests under
-`tests/unit/simulation/experimental/` (derivatives, FD checks, the zero-cost
+`tests/unit/simulation/` (derivatives, FD checks, the zero-cost
 parity test, error handling, lifetime); `pixi run check-api-boundaries` when
 public headers or dartpy bindings change; `pixi run test-py` plus committed stub
 updates and a torch-absent import test when the bridge changes; benchmark evidence

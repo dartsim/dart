@@ -33,8 +33,6 @@
 #include <dart/gui/detail/scenes.hpp>
 #include <dart/gui/detail/simulation_stepper.hpp>
 
-#include <dart/simulation/world.hpp>
-
 #include <algorithm>
 #include <chrono>
 
@@ -94,12 +92,12 @@ bool advanceSimulationSteps(
 
   const auto phaseStart = ProfileAccumulator::Clock::now();
   for (std::size_t i = 0; i < simulationStepsToRun; ++i) {
-    const double timeStep = scene.world->getTimeStep();
+    const double timeStep = scene.timeStep;
     if (scene.preStep) {
       scene.preStep();
     }
-    if (scene.simulateWorld) {
-      scene.world->step();
+    if (scene.advanceSimulation) {
+      scene.time += timeStep;
       profile.simulatedMs += timeStep * 1000.0;
     }
     if (scene.postStep) {

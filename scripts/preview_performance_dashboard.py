@@ -118,7 +118,7 @@ INDEX_HTML = """<!DOCTYPE html>
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>DART Experimental World Performance Dashboard</title>
+<title>DART 7 World Performance Dashboard</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <style>
   :root { color-scheme: light dark; }
@@ -141,8 +141,8 @@ INDEX_HTML = """<!DOCTYPE html>
 </head>
 <body>
 <header>
-  <h1>DART Experimental World Performance Dashboard</h1>
-  <p id="meta">Benchmark history for the DART 7 experimental World, tracked over commits. Lower is better.</p>
+  <h1>DART 7 World Performance Dashboard</h1>
+  <p id="meta">Benchmark history for the DART 7 World, tracked over commits. Lower is better.</p>
 </header>
 <main id="root"></main>
 <footer>
@@ -296,7 +296,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     )
     parser.add_argument(
         "--suite-name",
-        default="DART Experimental World Performance",
+        default="DART 7 World Performance",
         help="Benchmark suite name shown on the dashboard.",
     )
     parser.add_argument(

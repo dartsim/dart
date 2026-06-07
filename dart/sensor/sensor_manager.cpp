@@ -34,7 +34,6 @@
 
 #include "dart/common/logging.hpp"
 #include "dart/common/macros.hpp"
-#include "dart/simulation/world.hpp"
 
 #include <algorithm>
 
@@ -182,16 +181,11 @@ bool SensorManager::hasSensor(std::string_view name) const
 }
 
 //==============================================================================
-void SensorManager::updateSensors(const simulation::World& world)
+void SensorManager::updateSensors(const SensorUpdateContext& context)
 {
-  SensorUpdateContext context;
-  context.time = world.getTime();
-  context.timeStep = world.getTimeStep();
-  context.frame = world.getSimFrames();
-
   for (const auto& sensor : mSensors) {
     if (sensor) {
-      sensor->update(world, context);
+      sensor->update(context);
     }
   }
 }

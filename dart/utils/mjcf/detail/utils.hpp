@@ -37,9 +37,10 @@
 #include <dart/utils/mjcf/detail/compiler.hpp>
 #include <dart/utils/mjcf/detail/error.hpp>
 
-#include <dart/simulation/world.hpp>
+#include <dart/math/math_types.hpp>
 
 #include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <tinyxml2.h>
 
 #include <initializer_list>
@@ -78,10 +79,6 @@ DART_UTILS_API Errors handleInclude(
     tinyxml2::XMLElement* element,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever);
-
-/// Finds all BodyNodes by name
-DART_UTILS_API std::vector<dynamics::BodyNode*> getBodyNodes(
-    const simulation::World& world, std::string_view name);
 
 /// Logs warnings about child elements of @c parentElement that are not in
 /// @c knownChildNames.

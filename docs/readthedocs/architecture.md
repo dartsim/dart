@@ -1,23 +1,23 @@
 # DART 7 Architecture: Multi-Physics, Multi-Solver, Multi-Backend
 
 ```{note}
-This page describes the **DART 7 simulation engine** — the experimental
-`dart::simulation::experimental` `World`, which is the clean-break public API
-target for DART 7. It is the single-page visual map of how that one pipeline is
+This page describes the **DART 7 simulation engine** — the promoted
+`dart::simulation::World`, which is the clean-break public API for DART 7. It
+is the single-page visual map of how that one pipeline is
 generalized so it can support **many physics domains, many solver methods, and
 many compute backends** at once. Everything below is DART 7.
 
 The classic DART 6 API (`dart::simulation::World`, `Skeleton`/`BodyNode`/`Joint`,
 the FCL/Bullet/ODE collision backends) is **not** part of this engine. It is
-maintained separately on the `release-6.17` compatibility line and is out of
+maintained separately on `release-6.*` compatibility branches and is out of
 scope here; see the
 [clean-break strategy](https://github.com/dartsim/dart/blob/main/docs/design/dart7_clean_break_strategy.md).
 
-DART 7 promotion is **parity-gated**: the experimental World becomes the promoted
-public API only after core robotics workflows have direct parity evidence, so
-this is a maturing target, not a finished one. Boxes below are marked
-**available** (in the experimental stack today), **experimental / opt-in**
-(active research tracks), or **planned**. Owner documents and headers are the
+DART 7 promotion is **parity-gated**: parity claims must come from direct
+evidence, with DART 6 comparisons sourced from `release-6.*` branches. Boxes
+below are marked **available** (in the DART 7 stack today),
+**experimental / opt-in** (active research tracks), or **planned**. Owner
+documents and headers are the
 source of truth; this page is a navigational snapshot. For live progress and
 sequencing see the
 [plan dashboard](https://github.com/dartsim/dart/blob/main/docs/plans/dashboard.md)
@@ -115,8 +115,8 @@ COMPUTE BACKEND — injected through the ComputeExecutor seam
   CUDA / GPU — opt-in sidecar, CPU fallback      [X]
   SIMD multi-ISA foundation (SSE…AVX-512 / NEON) [A]
 
-Status:  [A] available in the experimental stack today, parity-gated
-         before DART 7 promotion  ·  [X] experimental / opt-in  ·  [P] planned
+Status:  [A] available in the DART 7 stack today  ·
+         [X] experimental / opt-in  ·  [P] planned
 ```
 
 ### Per-substep step schedule
@@ -150,10 +150,9 @@ The seams above, with the concrete options that exist today, how they are
 selected from the public facade, and the owner document for details. Header and
 owner docs are authoritative; this table is a snapshot.
 
-Throughout, **✅ available** means "present and selectable in the experimental
-stack today" — still parity-gated before DART 7 promotion, not a shipped/promoted
-guarantee. **🧪 experimental** is an opt-in active research track, and
-**📋 planned** has an agreed design but no implementation yet.
+Throughout, **✅ available** means "present and selectable in the DART 7 stack
+today." **🧪 experimental** is an opt-in active research track, and **📋 planned**
+has an agreed design but no implementation yet.
 
 ### Physics domains
 
@@ -270,8 +269,8 @@ This page is a synthesis. Each detailed rule has one owner:
 | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Mission and the three research dimensions                      | [north-star](https://github.com/dartsim/dart/blob/main/docs/ai/north-star.md)                                                                                                        |
 | Solver abstraction, domain assignment, coupling, step schedule | [simulation_solver_architecture](https://github.com/dartsim/dart/blob/main/docs/design/simulation_solver_architecture.md)                                                            |
-| Public C++ object model and promotion rules                    | [simulation_experimental_cpp_api](https://github.com/dartsim/dart/blob/main/docs/design/simulation_experimental_cpp_api.md)                                                          |
-| dartpy surface                                                 | [simulation_experimental_python_api](https://github.com/dartsim/dart/blob/main/docs/design/simulation_experimental_python_api.md)                                                    |
+| Public C++ object model and promotion rules                    | [simulation_cpp_api](https://github.com/dartsim/dart/blob/main/docs/design/simulation_cpp_api.md)                                                                                    |
+| dartpy surface                                                 | [simulation_python_api](https://github.com/dartsim/dart/blob/main/docs/design/simulation_python_api.md)                                                                              |
 | Research extension and baseline contracts                      | [algorithm_extension_contracts](https://github.com/dartsim/dart/blob/main/docs/design/algorithm_extension_contracts.md)                                                              |
 | CPU / SIMD / GPU decision framework                            | [scalable_compute_decisions](https://github.com/dartsim/dart/blob/main/docs/design/scalable_compute_decisions.md)                                                                    |
 | Backend evidence survey                                        | [compute_backend_research](https://github.com/dartsim/dart/blob/main/docs/design/compute_backend_research.md)                                                                        |

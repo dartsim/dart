@@ -10,7 +10,7 @@
 - Binding Python? Expose only the user-facing API unless a legacy exception is
   explicitly allowlisted by `scripts/check_api_boundaries.py` with a
   replacement and removal condition.
-- Changing DART 6.17 compatibility API? Run the Gazebo workflow from
+- Changing DART 6 compatibility API? Run the Gazebo workflow from
   [build-system.md](build-system.md#gazebo-integration-feature) on the affected
   support branch.
 - Changing a `detail` or `internal` type that appears in an installed public
@@ -21,7 +21,7 @@
 
 DART 7 intentionally refactors large parts of the codebase as a clean break
 from the DART 6 API. Released downstream compatibility where there is evidence,
-especially gz-physics, is maintained on `release-6.17` unless a maintainer
+especially gz-physics, is maintained on `release-6.*` unless a maintainer
 explicitly scopes a bounded migration adapter. The project needs a small,
 stable user-facing API and a larger internal API that can change quickly for
 dependency removal, collision backend work, performance, and new simulation
@@ -62,12 +62,12 @@ Compatibility API is retained for existing users or downstreams on a documented
 support lane even when it is not the preferred DART 7 interface. Keep it
 source-compatible until the documented removal point, add `DART_DEPRECATED` or
 `[[deprecated]]` where possible, and mention the replacement. Gz-physics
-compatibility shims belong on `release-6.17` by default; a DART 7 shim must be
+compatibility shims belong on `release-6.*` by default; a DART 7 shim must be
 bounded, inventory-driven, and sunset dated.
 
 Each compatibility entry needs downstream evidence, replacement API, first
 deprecated release, earliest removal release, blocking migration condition, and
-release-note or changelog requirement. For gz-physics on the DART 6.17 support
+release-note or changelog requirement. For gz-physics on the `release-6.*` support
 lane, removal requires evidence from the pinned gz-physics integration or an
 accepted upstream migration; a version target alone is not enough.
 
@@ -84,7 +84,7 @@ Before changing exposed implementation debt:
   symbols.
 - Provide a supported replacement API or wrapper and migration notes.
 - Run the downstream gate for touched support-lane surfaces, especially
-  gz-physics on `release-6.17`.
+  gz-physics on `release-6.*`.
 - Review ABI risk when exported class layout, virtual bases, inline methods, or
   exported data are involved.
 
@@ -94,8 +94,8 @@ Experimental API can change faster, but it still needs docs, tests, and clear
 ownership. Do not expose implementation-only component storage or backend
 plumbing just because the surrounding module is experimental.
 
-For `dart::simulation::experimental::compute`, keep the stable-looking surface
-small and backend-neutral. The supported experimental concepts are graph nodes,
+For `dart::simulation::compute`, keep the stable-looking surface
+small and backend-neutral. The supported compute concepts are graph nodes,
 explicit graph dependencies, executor injection, profiles, domain/acceleration
 metadata, DOT visualization, and stage/pipeline composition. Do not expose
 Taskflow types, GPU devices, streams, memory pools, SIMD storage requirements,
@@ -103,7 +103,7 @@ solver registries, or rendering backends until a later plan and benchmark gate
 justify them. Future resource read/write declarations should start as
 diagnostic metadata and validation inputs before becoming scheduler contracts.
 
-Experimental deformable simulation follows the same boundary: public handles
+DART 7 deformable simulation follows the same boundary: public handles
 and options describe model topology, initial state, fixed nodes, and physical
 parameters. Public compute stages may expose broad domain-level hooks such as
 deformable dynamics, but ECS components, algorithm-specific stage names,
@@ -112,16 +112,16 @@ geometry must be modeled explicitly through public world objects; do not add
 hidden default contact surfaces or expose contact-barrier tuning on body options
 without a design update.
 
-#### Experimental package shape (`dart::simulation::experimental`)
+#### Simulation package shape (`dart::simulation`)
 
-The experimental simulation module builds by default
-(`DART_BUILD_SIMULATION_EXPERIMENTAL=ON`) and ships only a small, explicit
-public subset:
+The DART 7 simulation module is built as part of default DART 7
+configurations when its required sibling targets are present, and ships only a
+small, explicit public subset:
 
 - Only the promoted public headers are installed, via an explicit
   `install(FILES ...)` allowlist in
-  `dart/simulation/experimental/CMakeLists.txt`
-  (`dart_experimental_public_headers`). The implementation-internal directories
+  `dart/simulation/CMakeLists.txt`
+  (`dart_simulation_public_headers`). The implementation-internal directories
   (`comps/`, `compute/`, `common/`, `detail/`, `diff/`, `ecs/`, `io/`,
   `space/`) are not installed. New internal directories are excluded by default;
   promoting a header means adding it to the allowlist on purpose.
@@ -131,11 +131,27 @@ public subset:
   promoted headers must not include or name them.
 - Two guards keep this true:
   `pixi run check-dart7-promotion-surface` (strict source-level audit, fails if
-  any promoted header reintroduces an ECS/EnTT leak) and
-  `pixi run check-experimental-public-header-smoke` (a build-tree TU that
+  any promoted header reintroduces an ECS/EnTT leak, raw entity-ID token, or
+  public reference to the internal entity-conversion seam) and
+  `pixi run check-simulation-public-header-smoke` (a build-tree TU that
   includes every promoted header but is compiled without entt/taskflow on its
   include path, so a leaked `<entt/...>` include fails with "file not found").
-  `pixi run check-experimental-public-headers` runs both.
+  `pixi run check-simulation-public-headers` runs both. Package-shape drift is
+  guarded separately by `pixi run check-dart7-promotion-package-contract`, which
+  fails if the DART 7 simulation package stops defaulting on, restores
+  recursive header install, or leaks EnTT/Taskflow/spdlog dependency discovery
+  outside the static-link-only exception. The local-install package smoke
+  `pixi run check-dart7-promotion-installed-package` verifies the same
+  boundary after installation by compiling a downstream CMake project and
+  checking that selected internal headers are absent from the installed prefix.
+  `pixi run check-dart7-world-promotion-blockers` keeps the experimental
+  namespace, staged package target, and build-option references in named
+  transition buckets and fails if the
+  code/build/test debt grows or main-tree parity references spread to new
+  files; strict-final mode should only pass when the main branch no longer
+  depends on the DART 6 simulation pipeline for the promoted API or parity
+  evidence. `pixi run check-dart7-final-world-promotion` adds the required
+  local `release-6.*` branch-ref check for final parity claims.
 
 ### Internal API
 
@@ -145,7 +161,7 @@ Internal API may change without compatibility guarantees. It includes:
 - `dart::...::detail` namespaces.
 - `*-impl.hpp` files, and existing `*_impl.hpp` files, that support templates
   or inline definitions.
-- Private ECS/storage components such as `dart/simulation/experimental/comps/`.
+- Private ECS/storage components such as `dart/simulation/comps/`.
 - Symbols marked with a component `*_LOCAL` macro.
 - Source-file-local classes, anonymous namespace helpers, and backend adapters.
 
@@ -191,7 +207,7 @@ through headers, templates, Doxygen, or Python bindings.
 should expose the easiest supported workflow and avoid C++ internals:
 
 - Do not include `dart/**/detail/**`, `dart/**/internal/**`, or
-  `dart/simulation/experimental/comps/**` from `python/dartpy`.
+  `dart/simulation/comps/**` from `python/dartpy`.
 - Do not bind `dart::...::detail` or `dart::...::internal` types, aliases, or
   data members. A public C++ alias that resolves to a detail type still needs
   migration tracking.
@@ -208,11 +224,11 @@ they exist locally, and reports any legacy exceptions from
 `replacement`, `remove_by`, `tracking`, and `reason` fields, and stale entries
 fail the checker.
 
-For experimental scalable-compute work, `pixi run check-compute-backend-boundaries`
-also checks public experimental headers and the default dartpy experimental
-bindings for CUDA/SYCL/device/stream/kernel/memory-pool API leakage. The existing
-`ComputeStageAcceleration::Gpu` metadata flag is allowed because it describes
-backend-neutral acceleration intent, not a concrete backend API.
+For scalable-compute work, `pixi run check-compute-backend-boundaries` also
+checks public DART 7 simulation headers and the default dartpy simulation
+bindings for CUDA/SYCL/device/stream/kernel/memory-pool API leakage. The
+existing `ComputeStageAcceleration::Gpu` metadata flag is allowed because it
+describes backend-neutral acceleration intent, not a concrete backend API.
 
 ## Documentation Rules
 

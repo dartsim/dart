@@ -6,7 +6,7 @@ bundle defines what a resource-access implementation must prove.
 
 ## Objective
 
-Land descriptive resource access metadata for the experimental compute graph so
+Land descriptive resource access metadata for the simulation compute graph so
 developers can inspect which resources graph nodes read, write, mutate, reduce,
 or use as scratch space without replacing explicit graph dependencies as the
 correctness source of truth.
@@ -14,7 +14,7 @@ correctness source of truth.
 ## Scope
 
 - Add a small resource access mode/value model under
-  `dart::simulation::experimental::compute`.
+  `dart::simulation::compute`.
 - Attach optional resource access metadata to compute nodes.
 - Add conservative validation for obvious same-resource read/write,
   write/write, and mutation hazards.
@@ -29,12 +29,13 @@ correctness source of truth.
 - No automatic dependency inference in this milestone.
 - No stable public resource registry.
 - No GPU residency, stream, transfer, or device-memory API.
-- No changes to classic `dart::simulation::World` behavior.
+- No dependency on the DART 6 `World` behavior; parity evidence belongs on
+  `release-6.*` branches.
 - No collision, contact, constraint, or rendering backend implementation.
 
 ## Expected Deliverable
 
-A bounded local change that keeps the experimental compute executor boundary
+A bounded local change that keeps the simulation compute executor boundary
 backend-neutral, improves graph inspection and validation, and can be reported
 against the evaluator contract in the completion report or active dev-task
 handoff.
@@ -48,9 +49,9 @@ handoff.
   `docs/design/scalable_compute_decisions.md` own the durable scalable-compute
   state now that the consolidated dev-task folder has been retired;
   resource-access was Phase 1 of that plan.
-- `tests/unit/simulation/experimental/compute/` and
-  `tests/unit/simulation/experimental/world/` own focused regression coverage.
-- `tests/benchmark/simulation/experimental/bm_compute_graph.cpp` owns
+- `tests/unit/simulation/compute/` and `tests/unit/simulation/world/` own
+  focused regression coverage.
+- `tests/benchmark/simulation/bm_compute_graph.cpp` owns
   compute-graph benchmark coverage.
 
 ## Handoff

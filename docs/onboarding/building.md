@@ -167,7 +167,7 @@ We ship a [pixi](https://pixi.sh) environment for contributors. Pixi installs ev
    ```bash
    pixi run build                 # cmake --build … --target all
    pixi run build-tests           # builds the C++ test targets
-   pixi run test                  # ctest -LE simulation-experimental
+   pixi run test                  # ctest -LE simulation
    pixi run test-all              # helper script that runs lint + build + tests
    pixi run -e cuda test-all      # CUDA-enabled full helper; Linux CUDA host
    pixi run -e cuda test-cuda     # focused CUDA smoke path; Linux CUDA host
@@ -243,7 +243,7 @@ We ship a [pixi](https://pixi.sh) environment for contributors. Pixi installs ev
    Example:
 
 ```bash
-pixi run ex hello_world
+pixi run demos -- --scene rigid_body
 ```
 
 `scripts/run_cpp_example.py` centralizes example-specific CMake

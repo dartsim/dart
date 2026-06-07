@@ -1,6 +1,6 @@
 """VBD cloth: a contact-free hanging curtain solved by Vertex Block Descent.
 
-Mirrors the C++ ``experimental_vbd`` demo scene. The pinned top row holds a
+Mirrors the C++ VBD demo scene. The pinned top row holds a
 spring-net curtain that billows out of plane from an initial gust and settles
 under gravity. Because the body is contact-free, the World routes
 it through the VBD inner solver (selected with the public, solver-agnostic
@@ -54,17 +54,19 @@ def _make_cloth_options(columns: int, rows: int) -> "sx.DeformableBodyOptions":
         for col in range(columns):
             if col + 1 < columns:
                 edges.append(
-                    sx.DeformableEdge(index(col, row), index(col + 1, row), -1.0))
+                    sx.DeformableEdge(index(col, row), index(col + 1, row), -1.0)
+                )
             if row + 1 < rows:
                 edges.append(
-                    sx.DeformableEdge(index(col, row), index(col, row + 1), -1.0))
+                    sx.DeformableEdge(index(col, row), index(col, row + 1), -1.0)
+                )
             if col + 1 < columns and row + 1 < rows:
                 edges.append(
-                    sx.DeformableEdge(
-                        index(col, row), index(col + 1, row + 1), -1.0))
+                    sx.DeformableEdge(index(col, row), index(col + 1, row + 1), -1.0)
+                )
                 edges.append(
-                    sx.DeformableEdge(
-                        index(col + 1, row), index(col, row + 1), -1.0))
+                    sx.DeformableEdge(index(col + 1, row), index(col, row + 1), -1.0)
+                )
     options.edges = edges
     options.edge_stiffness = 120.0
     options.damping = 0.6
@@ -86,7 +88,8 @@ def build() -> SceneSetup:
     bridge = WorldRenderBridge(world, name="vbd_cloth_render")
     body = world.get_deformable_body("vbd_cloth")
     bridge.add_deformable_visual(
-        body, (0.12, 0.57, 0.91), fixed_color=(0.95, 0.50, 0.16))
+        body, (0.12, 0.57, 0.91), fixed_color=(0.95, 0.50, 0.16)
+    )
     bridge.sync()
 
     top_indices = list(range(columns))

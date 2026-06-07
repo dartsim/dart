@@ -1,4 +1,4 @@
-"""Simulation replay scrubber for the experimental World.
+"""Simulation replay scrubber for the DART 7 World.
 
 The scene records a World rollout once, restores frame zero, then lets the
 user scrub the already-simulated states with a timestep-resolution slider.
@@ -290,6 +290,6 @@ SCENE = PythonDemoScene(
     id="replay_scrubber",
     title="Replay Timeline",
     category="Simulation Replay",
-    summary="Inspect and scrub an already-recorded experimental World timeline.",
+    summary="Inspect and scrub an already-recorded DART 7 World timeline.",
     build=build,
 )
