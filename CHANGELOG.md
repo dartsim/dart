@@ -977,8 +977,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     for standard
     32/64-row, boxed 16/32-row, friction-index 8-contact, and coupled
     friction-index 6-, 8-, 12-, 16-, and 24-contact packets, now including
-    stronger-coupled 16-/24-contact packets with 4x and 8x cross-contact coupling,
-    plus an exact rank-deficient
+    stronger-coupled 16-/24-contact packets with 4x and 8x cross-contact
+    coupling and a 32-contact packet with 8x cross-contact coupling, plus an
+    exact rank-deficient
     singular-degenerate slice for standard 16-row, boxed 16-row, and coupled
     friction-index 6-contact packets and a larger exact rank-deficient
     singular-degenerate slice for standard 32-row, boxed 32-row, and coupled
@@ -1081,11 +1082,12 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     64 production active-set transition batch rows for batch-size-4 serial and
     DART 7 `ParallelExecutor` runs over those same packets verified across
     default, SIMD-enabled, and CUDA-enabled build trees, plus
-    170 larger mildly ill-conditioned benchmark rows for standard 32-row,
+    188 larger mildly ill-conditioned benchmark rows for standard 32-row,
     boxed 16-row, friction-index 8-contact, coupled friction-index 6-, 8-,
     12-, 16-, and 24-contact packets, and stronger-coupled 16-/24-contact
-    packets with 4x and 8x cross-contact coupling over the scoped solver set verified
-    across default, SIMD-enabled, and CUDA-enabled build trees, plus 56 larger
+    packets with 4x and 8x cross-contact coupling plus a stronger-coupled
+    32-contact packet with 8x cross-contact coupling over the scoped solver set,
+    verified across default, SIMD-enabled, and CUDA-enabled build trees, plus 56 larger
     mildly ill-conditioned batch rows for batch-size-4 serial and DART 7
     `ParallelExecutor` runs over the 8x-coupled 16-/24-contact packets
     verified across default, SIMD-enabled, and CUDA-enabled build trees, plus

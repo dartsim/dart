@@ -121,7 +121,8 @@
       scoped solvers covering standard 32-row and 64-row, boxed 16-row and
       32-row, friction-index 8-contact, and coupled friction-index 6-, 8-, and
       12-, 16-, and 24-contact cases, plus stronger-coupled 16- and
-      24-contact cases with 4x and 8x cross-contact coupling, plus an
+      24-contact cases with 4x and 8x cross-contact coupling, a
+      stronger-coupled 32-contact case with 8x cross-contact coupling, plus an
       ADMM/SAP-only 16x-coupled 16-/24-contact slice. `MPRGP` is intentionally
       excluded from the stricter standard known-solution slice after the 32-row
       trial satisfied the LCP contract but missed the selected expected-solution
@@ -164,10 +165,11 @@
       batch-size-4 runs over the same stronger-coupled 24-contact/72-row and
       32-contact/96-row friction-index packets, verified in default,
       SIMD-enabled, and CUDA-enabled build trees.
-- [x] Added 174 `BM_LcpMildIllConditioned` benchmark rows for the scoped larger
+- [x] Added 188 `BM_LcpMildIllConditioned` benchmark rows for the scoped larger
       mildly ill-conditioned standard 32-row, boxed 16-row, friction-index
       8-contact, coupled friction-index 6-, 8-, 12-, 16-, and 24-contact
       packets, stronger-coupled 16-/24-contact packets with 4x and 8x
+      cross-contact coupling, a stronger-coupled 32-contact packet with 8x
       cross-contact coupling, and ADMM/SAP-only 16x-coupled 16-/24-contact
       packets, verified in default, SIMD-enabled, and CUDA-enabled build trees.
 - [x] Added 56 `BM_LcpMildIllConditionedBatch(Serial|Parallel)` benchmark rows
@@ -946,16 +948,17 @@ tradeoffs evidence based.
   in a CUDA-enabled build, not CUDA LCP kernel execution.
 - Verified larger mildly ill-conditioned benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpMildIllConditioned/' | wc -l`
-  reported 170 rows, and
+  reported 188 rows, and
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpMildIllConditioned' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   ran all rows with `contract_ok=1` in the default, SIMD-enabled, and
   CUDA-enabled build trees. The rows cover standard 32-row, boxed 16-row,
   friction-index 8-contact, and coupled friction-index 6-, 8-, 12-, 16-, and
-  24-contact packets, plus stronger-coupled 16-/24-contact packets with 4x and 8x
+  24-contact packets, plus stronger-coupled 16-/24-contact packets with 4x and
+  8x cross-contact coupling and a stronger-coupled 32-contact packet with 8x
   cross-contact coupling, over the scoped solver set. The friction-index rows
   report `contact_count`, the coupled rows report `coupled=1`, the
-  stronger-coupled rows report `coupling_scale=4` or `coupling_scale=8`, and all rows report
-  `mildly_ill_conditioned=1` plus backend build-state counters.
+  stronger-coupled rows report `coupling_scale=4` or `coupling_scale=8`, and
+  all rows report `mildly_ill_conditioned=1` plus backend build-state counters.
 - Verified larger mildly ill-conditioned batch benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpMildIllConditionedBatch' | wc -l`
   reported 56 rows, and JSON benchmark checks for
@@ -1454,7 +1457,8 @@ tradeoffs evidence based.
   `LcpGeneratedCoverage.LargerMildlyIllConditionedKnownSolutionsForScopedSolvers`
   for standard 32-row and 64-row, boxed 16-row and 32-row, friction-index
   8-contact, and coupled friction-index 6-, 8-, 12-, 16-, and 24-contact
-  known-solution cases, plus stronger-coupled 16-/24-contact cases with 4x and 8x
+  known-solution cases, plus stronger-coupled 16-/24-contact cases with 4x and
+  8x cross-contact coupling and a stronger-coupled 32-contact case with 8x
   cross-contact coupling, over a scoped solver set. `MPRGP` is excluded from
   this stricter known-solution slice after a focused 32-row standard trial
   satisfied the LCP contract but missed the selected expected-solution
@@ -1495,11 +1499,12 @@ tradeoffs evidence based.
 - Added `BM_LcpActiveSetTransition` rows for the same standard, boxed, and
   coupled friction-index packets so the active-set boundary cases are also
   benchmarked apples-to-apples across manifest-supporting solvers.
-- Added 170 `BM_LcpMildIllConditioned` rows for larger mildly ill-conditioned
+- Added 188 `BM_LcpMildIllConditioned` rows for larger mildly ill-conditioned
   standard 32-row, boxed 16-row, friction-index 8-contact, and coupled
   friction-index 6-, 8-, 12-, 16-, and 24-contact packets, plus
-  stronger-coupled 16-/24-contact packets with 4x and 8x cross-contact coupling, over
-  the same scoped solver set. These rows are solve-to-tolerance benchmark
+  stronger-coupled 16-/24-contact packets with 4x and 8x cross-contact
+  coupling and a stronger-coupled 32-contact packet with 8x cross-contact
+  coupling, over the same scoped solver set. These rows are solve-to-tolerance benchmark
   evidence and report `contract_ok=1`, `mildly_ill_conditioned=1`, backend
   build-state counters, and contact/coupling counters where applicable.
 - Added 56 `BM_LcpMildIllConditionedBatch(Serial|Parallel)` rows for
@@ -1692,7 +1697,7 @@ tradeoffs evidence based.
   4-contact and 6-contact cases plus mildly ill-conditioned 2-contact and
   4-contact cases. Scoped generated evidence now reaches coupled
   well-conditioned 12-contact, mildly ill-conditioned 24-contact,
-  stronger-coupled mildly ill-conditioned 16- and 24-contact cases,
+  stronger-coupled mildly ill-conditioned 16-, 24-, and 32-contact cases,
   ADMM/SAP-only 16x-coupled mildly ill-conditioned 16- and 24-contact cases,
   near-singular 12-contact cases, singular-degenerate 16-contact cases, and
   production active-set transition 24-contact and 32-contact cases. Broader

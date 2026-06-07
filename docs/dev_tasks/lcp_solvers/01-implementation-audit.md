@@ -99,8 +99,9 @@ Support abbreviations:
   also includes a scoped larger mildly ill-conditioned slice for standard
   32/64-row, boxed 16/32-row, friction-index 8-contact, and coupled
   friction-index 6-, 8-, 12-, 16-, and 24-contact packets, plus
-  stronger-coupled 16-/24-contact packets with 4x and 8x cross-contact coupling, and
-  170 matching benchmark rows verified in default, SIMD-enabled, and
+  stronger-coupled 16-/24-contact packets with 4x and 8x cross-contact
+  coupling, a stronger-coupled 32-contact packet with 8x cross-contact
+  coupling, and 188 matching benchmark rows verified in default, SIMD-enabled, and
   CUDA-enabled build trees. It now
   also includes a scoped robust near-singular slice for standard 8-row, boxed
   8-row, and coupled friction-index 3-, 6-, 9-, and 12-contact packets, plus
@@ -235,7 +236,8 @@ The current local evidence for this task is:
   stronger 32-contact packet. The new larger
   mildly ill-conditioned slice covers standard 32-row and 64-row, boxed 16-row
   and 32-row, friction-index 8-contact, and coupled friction-index 6-, 8-, 12-,
-  16-, and 24-contact packets over a scoped solver set. `MPRGP` is intentionally
+  16-, and 24-contact packets, plus a stronger-coupled 32-contact 8x packet,
+  over a scoped solver set. `MPRGP` is intentionally
   excluded from this stricter known-solution slice because a focused standard
   32-row trial satisfied the
   LCP contract but missed the selected expected-solution tolerance.
@@ -321,14 +323,15 @@ The current local evidence for this task is:
   counters on the `ParallelExecutor` rows. The CUDA-enabled rows are CPU solver
   batch rows in a CUDA-enabled build, not CUDA LCP kernel execution.
 - `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpMildIllConditioned/' | wc -l`
-  reported 170 rows, and
+  reported 188 rows, and
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpMildIllConditioned' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   ran all rows with `contract_ok=1` in the default, SIMD-enabled, and
   CUDA-enabled build trees. These rows cover standard 32-row, boxed 16-row,
   friction-index 8-contact, and coupled friction-index 6-, 8-, 12-, 16-, and
   24-contact larger mildly ill-conditioned packets, plus stronger-coupled
-  16-/24-contact packets with 4x and 8x cross-contact coupling, over the scoped solver
-  set. The rows report `mildly_ill_conditioned=1`, backend build-state
+  16-/24-contact packets with 4x and 8x cross-contact coupling and a
+  stronger-coupled 32-contact packet with 8x cross-contact coupling, over the
+  scoped solver set. The rows report `mildly_ill_conditioned=1`, backend build-state
   counters, `contact_count` for friction-index packets, `coupled=1` for the
   coupled packets, and `coupling_scale=4` or `coupling_scale=8` for the stronger-coupled
   packets.
@@ -1024,7 +1027,7 @@ The current local evidence for this task is:
   slices now reach standard 128-row, boxed 64-row, friction-index 24-contact,
   coupled friction-index 12-contact, mildly ill-conditioned coupled
   friction-index 16-contact and 24-contact, stronger-coupled mildly
-  ill-conditioned 16-/24-contact cases, near-singular standard 8-row, boxed
+  ill-conditioned 16-/24-contact cases plus a 32-contact 8x case, near-singular standard 8-row, boxed
   8-row, coupled friction-index 3-, 6-, 9-, and 12-contact, and larger exact
   rank-deficient
   singular-degenerate standard 32-row, boxed 32-row, and coupled
