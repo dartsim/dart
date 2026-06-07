@@ -2229,6 +2229,23 @@ TEST(BoxedLcpContact, LargerSphereStackWorldStepMaintainsContactInvariants)
 }
 
 //==============================================================================
+// The 5-sphere stack extends the existing 5-contact boxed/findex snapshot into
+// the public World::step() path. It needs a longer horizon than the 4-sphere
+// gate before satisfying the near-rest velocity invariant.
+TEST(BoxedLcpContact, StressSphereStackWorldStepMaintainsContactInvariants)
+{
+  constexpr double kFriction = 0.6;
+  constexpr int kSphereCount = 5;
+
+  auto lcp = buildSphereStackScene(kSphereCount, kFriction, false);
+
+  lcp->enterSimulationMode();
+  lcp->step(500);
+
+  expectSphereStackStepInvariants(*lcp, kSphereCount);
+}
+
+//==============================================================================
 // End-to-end DART 7 World stepping: two independent sphere-ground contacts are
 // advanced through the public BoxedLcp contact solver for many time steps. This
 // complements the direct LCP snapshot tests above by checking the integrated

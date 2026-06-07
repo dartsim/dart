@@ -247,6 +247,11 @@
 - [x] Added timestep-driven Baumgarte velocity bias to the DART 7 boxed-LCP
       rigid contact solve and verified a 4-sphere coupled-stack public
       `World::step(200)` invariant test plus a matching benchmark row.
+- [x] Extended DART 7 boxed-LCP coupled stack public-step evidence to a
+      5-sphere stack that satisfies the same finite-state, spacing, near-rest,
+      lateral-drift, and static-ground invariants after `World::step(500)`,
+      with a matching benchmark row in default, SIMD-enabled, and CUDA-enabled
+      build trees.
 - [x] Added DART 7 world-contact `BM_LCP_COMPARE` rows that run every
       friction-index-capable solver on the same boxed-LCP snapshots assembled
       from 1, 2, and 4 separated sphere-ground contacts, plus a
@@ -1057,17 +1062,22 @@ tradeoffs evidence based.
   advances a 4-sphere coupled stack through `World::step(200)` using the
   timestep-driven boxed-LCP Baumgarte velocity bias and verifies the same
   finite-state, non-penetration, spacing, near-rest, lateral-drift, and
-  static-ground invariants. The
+  static-ground invariants.
+  `BoxedLcpContact.StressSphereStackWorldStepMaintainsContactInvariants`
+  advances a 5-sphere coupled stack through `World::step(500)` and verifies the
+  same invariants; the longer horizon is required before the taller stack
+  satisfies the near-rest vertical-velocity gate. The
   focused
   `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.*WorldContactSnapshot*'`
   run passed the single-contact and two-contact sphere-ground snapshot tests,
   the focused
   `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.*SphereStack*'`
   run passed the 3-sphere snapshot, 4-sphere snapshot, 5-sphere snapshot,
-  3-sphere 200-step, 3-sphere 500-step, and 4-sphere 200-step stack tests,
+  3-sphere 200-step, 3-sphere 500-step, 4-sphere 200-step, and 5-sphere
+  500-step stack tests,
   the focused
-  `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.SphereStackWorldStepMaintainsContactInvariants:BoxedLcpContact.LongRunningSphereStackWorldStepMaintainsContactInvariants:BoxedLcpContact.LargerSphereStackWorldStepMaintainsContactInvariants'`
-  run passed all three coupled stack step tests, focused
+  `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.SphereStackWorldStepMaintainsContactInvariants:BoxedLcpContact.LongRunningSphereStackWorldStepMaintainsContactInvariants:BoxedLcpContact.LargerSphereStackWorldStepMaintainsContactInvariants:BoxedLcpContact.StressSphereStackWorldStepMaintainsContactInvariants'`
+  run passed all four coupled stack step tests, focused
   `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.TwoSphereWorldStepMaintainsContactInvariants'`
   and
   `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.FourSphereWorldStepMaintainsContactInvariants:BoxedLcpContact.SixteenSphereWorldStepMaintainsContactInvariants'`
@@ -1105,7 +1115,7 @@ tradeoffs evidence based.
   articulated shortcut. The focused
   `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.ArticulatedPrismaticLinkPushesDynamicRigidBody' --gtest_brief=1`
   run passed. The full `test_boxed_lcp_contact --gtest_brief=1` binary now
-  passes 40 tests.
+  passes 43 tests.
   `BoxedLcpContact.ArticulatedPrismaticLinkPushesArticulatedPrismaticLink`
   advances a fixed-base prismatic striker link in contact with a prismatic
   target link owned by a separate multibody through one boxed-LCP
@@ -1253,19 +1263,23 @@ tradeoffs evidence based.
   `BM_LcpWorldStackStep_BoxedLcp/3/200` and
   `BM_LcpWorldStackStep_BoxedLcp/3/500` rebuild the 3-sphere stack world, while
   `BM_LcpWorldStackStep_BoxedLcp/4/200` rebuilds the 4-sphere stack world with
-  a smaller 0.001 s step. All three rows enter simulation mode, advance the
+  a smaller 0.001 s step and `BM_LcpWorldStackStep_BoxedLcp/5/500` rebuilds the
+  5-sphere stack world with the same 0.001 s step and a longer horizon. All four
+  rows enter simulation mode, advance the
   public boxed-LCP `World::step()` path, and check the same finite-state,
   non-penetration, spacing, vertical-rest, lateral-drift, and static-ground
   invariants as the unit tests.
   Focused default, SIMD-enabled, and CUDA-enabled
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldStackStep_BoxedLcp' --benchmark_min_time=0.001s --benchmark_repetitions=1`
-  runs each reported three rows with `invariant_ok=1`; the SIMD run reported
+  runs each reported four rows with `invariant_ok=1`; the SIMD run reported
   `build_simd_enabled=1`, and the CUDA-enabled run reported
   `build_cuda_enabled=1`. The default 3-sphere rows reported
   `time_step=0.005`, `min_spacing=0.9999`, and
   `max_vertical_speed=4.31e-14`; the default 4-sphere row reported
   `time_step=0.001`, `min_spacing=0.9999`, and
-  `max_vertical_speed=1.72e-8`.
+  `max_vertical_speed=1.72e-8`; the default 5-sphere row reported
+  `time_step=0.001`, `min_spacing=0.9999`, and
+  `max_vertical_speed=1.26e-5`.
 - DART 7 separated multi-contact end-to-end benchmark evidence:
   `BM_LcpWorldSeparatedStep_BoxedLcp/4/200`,
   `BM_LcpWorldSeparatedStep_BoxedLcp/8/200`, and
@@ -1673,8 +1687,8 @@ tradeoffs evidence based.
   single-contact and two-contact sphere-ground boxed-LCP snapshots, a
   two-contact, four-contact, and 16-contact 200-step boxed-LCP `World::step()`
   invariant tests, separated 4-/8-/16-contact 200-step boxed-LCP
-  `World::step()` benchmark rows, 3-sphere 200-step, 3-sphere 500-step, and
-  4-sphere 200-step boxed-LCP `World::step()` invariant tests and benchmark
+  `World::step()` benchmark rows, 3-sphere 200-step, 3-sphere 500-step,
+  4-sphere 200-step, and 5-sphere 500-step boxed-LCP `World::step()` invariant tests and benchmark
   rows, fixed-base prismatic articulated link-ground boxed-LCP
   `World::step()` invariant tests for one-link and four-link scenes and
   1-/4-/8-/16-link articulated ground-step benchmark rows, fixed-base

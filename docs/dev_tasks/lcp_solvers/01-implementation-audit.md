@@ -494,16 +494,21 @@ The current local evidence for this task is:
   shortcut. This is cross-multibody link-vs-link evidence, not general robot
   contact coverage.
 - `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.*SphereStack*'`
-  passed 6 tests, validating the boxed/findex LCP contract for 3-sphere,
+  passed 7 tests, validating the boxed/findex LCP contract for 3-sphere,
   4-sphere, and 5-sphere vertical stacks assembled from DART 7
-  `World::collide()`, plus the 3-sphere and 4-sphere public step invariants
-  below. The
+  `World::collide()`, plus the 3-sphere, 4-sphere, and 5-sphere public step
+  invariants below. The
   4-sphere snapshot contains 4 contacts and 12 LCP rows; the 5-sphere snapshot
   contains 5 contacts and 15 LCP rows. The snapshot tests also check that the
   normal-contact block has nonzero off-diagonal coupling, so this evidence is
   not just a set of independent contact rows. The 4-sphere public-step path is
   enabled by the boxed-LCP contact solve's timestep-driven Baumgarte velocity
   bias.
+- `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.StressSphereStackWorldStepMaintainsContactInvariants'`
+  passed 1 test, advancing the same 5-sphere vertical stack through 500 public
+  boxed-LCP `World::step()` iterations and checking finite state,
+  non-penetration, preserved sphere spacing, near-rest vertical velocity,
+  bounded lateral drift, and static-ground invariants.
 - `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.SphereStackWorldStepMaintainsContactInvariants'`
   passed 1 test, advancing the same 3-sphere vertical stack through 200 public
   boxed-LCP `World::step()` iterations and checking finite state,
@@ -512,7 +517,7 @@ The current local evidence for this task is:
 - `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.LongRunningSphereStackWorldStepMaintainsContactInvariants'`
   passed 1 test, advancing the same 3-sphere vertical stack through 500 public
   boxed-LCP `World::step()` iterations with the same motion invariants.
-- The full `test_boxed_lcp_contact --gtest_brief=1` binary passed 40 tests. The
+- The full `test_boxed_lcp_contact --gtest_brief=1` binary passed 43 tests. The
   run still emits the existing `StaticFrictionHoldsSmallPush` degenerate-pivot
   warning, so this should not be counted as clean evidence for
   dense-degenerate multi-contact systems.
@@ -580,13 +585,16 @@ The current local evidence for this task is:
   passed locally in default, SIMD-enabled, and CUDA-enabled build trees for
   `BM_LcpWorldStackStep_BoxedLcp/3/200`,
   `BM_LcpWorldStackStep_BoxedLcp/3/500`, and
-  `BM_LcpWorldStackStep_BoxedLcp/4/200`. The rows rebuild the stack worlds,
+  `BM_LcpWorldStackStep_BoxedLcp/4/200`, plus
+  `BM_LcpWorldStackStep_BoxedLcp/5/500`. The rows rebuild the stack worlds,
   enter simulation mode, advance public boxed-LCP `World::step()` iterations,
   and report `invariant_ok=1`. The SIMD run reported `build_simd_enabled=1`,
   and the CUDA-enabled run reported `build_cuda_enabled=1`. The default
   3-sphere rows reported `time_step=0.005`, `min_spacing=0.9999`, and
   `max_vertical_speed=4.31e-14`; the default 4-sphere row reported
-  `time_step=0.001`, `min_spacing=0.9999`, and `max_vertical_speed=1.72e-8`.
+  `time_step=0.001`, `min_spacing=0.9999`, and `max_vertical_speed=1.72e-8`;
+  the default 5-sphere row reported `time_step=0.001`, `min_spacing=0.9999`,
+  and `max_vertical_speed=1.26e-5`.
 - `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldSeparatedStep_BoxedLcp' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   passed locally for `BM_LcpWorldSeparatedStep_BoxedLcp/4/200`,
   `BM_LcpWorldSeparatedStep_BoxedLcp/8/200`, and
@@ -664,7 +672,7 @@ The current local evidence for this task is:
   ground and rigid-impact rows also reported `contract_ok=1` with
   `build_simd_enabled=1` and `build_cuda_enabled=1`, respectively; those are CPU
   solver rows in those build trees, not CUDA kernel execution.
-- `test_boxed_lcp_contact --gtest_brief=1` now passes 40 tests. The dense box
+- `test_boxed_lcp_contact --gtest_brief=1` now passes 43 tests. The dense box
   face-contact test assembles a 4-contact, 12-row boxed/findex LCP from
   `World::collide()`, checks the single-dynamic-body dense patch shape, and
   verifies the problem with APGD; the sliding and static-friction box

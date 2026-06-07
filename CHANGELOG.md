@@ -1121,7 +1121,7 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     execution, CUDA grouped-batch execution, world-contact batch, and
     stack-contact batch counters. General CUDA execution across the full solver
     manifest remains future work.
-  - Added DART 7 experimental `World` boxed-LCP snapshot coverage for one
+  - Added DART 7 `dart::simulation::World` boxed-LCP snapshot coverage for one
     sphere-ground friction contact and for two separated sphere-ground contacts
     assembled into one boxed/friction-index LCP, plus a 200-step two-sphere
     `World::step()` invariant test. Added contact-derived LCP benchmark rows
@@ -1133,9 +1133,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     `NNCG`, so benchmark evidence now includes small contact systems with
     shared dynamic bodies. Added 3-, 4-, and 5-sphere stack snapshot tests that
     validate nonzero normal-contact coupling, plus boxed-LCP Baumgarte
-    velocity-bias stabilization and 3-sphere 200-step, 3-sphere 500-step, and
-    4-sphere 200-step `World::step()` invariant tests with matching benchmark
-    rows for the public boxed-LCP stack path. Added 4- and 16-sphere separated-contact
+    velocity-bias stabilization and 3-sphere 200-step, 3-sphere 500-step,
+    4-sphere 200-step, and 5-sphere 500-step `World::step()` invariant tests
+    with matching benchmark rows for the public boxed-LCP stack path. Added 4- and 16-sphere separated-contact
     `World::step()` invariant tests and 4-/8-/16-sphere separated-contact
     `World::step()` benchmark rows for the public boxed-LCP path. Stack
     assembly/solve benchmark rows now include a 5-sphere, 5-contact, 15-row

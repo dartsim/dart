@@ -11,8 +11,8 @@
 #include "tests/common/lcpsolver/lcp_solver_manifest.hpp"
 #include "tests/common/lcpsolver/lcp_test_harness.hpp"
 
-#ifndef DART_BM_LCP_COMPARE_HAS_SIMULATION_EXPERIMENTAL
-  #define DART_BM_LCP_COMPARE_HAS_SIMULATION_EXPERIMENTAL 0
+#ifndef DART_BM_LCP_COMPARE_HAS_SIMULATION
+  #define DART_BM_LCP_COMPARE_HAS_SIMULATION 0
 #endif
 #ifndef DART_BM_LCP_COMPARE_DART_ENABLE_SIMD
   #define DART_BM_LCP_COMPARE_DART_ENABLE_SIMD 0
@@ -23,31 +23,31 @@
 #ifndef DART_BM_LCP_COMPARE_DART_ENABLE_EXPERIMENTAL_CUDA
   #define DART_BM_LCP_COMPARE_DART_ENABLE_EXPERIMENTAL_CUDA 0
 #endif
-#ifndef DART_BM_LCP_COMPARE_HAS_SIMULATION_EXPERIMENTAL_CUDA
-  #define DART_BM_LCP_COMPARE_HAS_SIMULATION_EXPERIMENTAL_CUDA 0
+#ifndef DART_BM_LCP_COMPARE_HAS_SIMULATION_CUDA
+  #define DART_BM_LCP_COMPARE_HAS_SIMULATION_CUDA 0
 #endif
 
-#if DART_BM_LCP_COMPARE_HAS_SIMULATION_EXPERIMENTAL
-  #include <dart/simulation/experimental/body/collision_shape.hpp>
-  #include <dart/simulation/experimental/body/contact.hpp>
-  #include <dart/simulation/experimental/body/rigid_body.hpp>
-  #include <dart/simulation/experimental/body/rigid_body_options.hpp>
-  #include <dart/simulation/experimental/comps/multibody.hpp>
-  #include <dart/simulation/experimental/compute/compute_graph.hpp>
-  #include <dart/simulation/experimental/compute/multibody_dynamics.hpp>
-  #include <dart/simulation/experimental/compute/parallel_executor.hpp>
-  #include <dart/simulation/experimental/compute/unified_constraint.hpp>
-  #include <dart/simulation/experimental/detail/boxed_lcp_contact.hpp>
-  #include <dart/simulation/experimental/detail/entity_conversion.hpp>
-  #include <dart/simulation/experimental/detail/world_registry_access.hpp>
-  #include <dart/simulation/experimental/multibody/joint.hpp>
-  #include <dart/simulation/experimental/multibody/link.hpp>
-  #include <dart/simulation/experimental/multibody/multibody.hpp>
-  #include <dart/simulation/experimental/world.hpp>
-  #include <dart/simulation/experimental/world_options.hpp>
+#if DART_BM_LCP_COMPARE_HAS_SIMULATION
+  #include <dart/simulation/body/collision_shape.hpp>
+  #include <dart/simulation/body/contact.hpp>
+  #include <dart/simulation/body/rigid_body.hpp>
+  #include <dart/simulation/body/rigid_body_options.hpp>
+  #include <dart/simulation/comps/multibody.hpp>
+  #include <dart/simulation/compute/compute_graph.hpp>
+  #include <dart/simulation/compute/multibody_dynamics.hpp>
+  #include <dart/simulation/compute/parallel_executor.hpp>
+  #include <dart/simulation/compute/unified_constraint.hpp>
+  #include <dart/simulation/detail/boxed_lcp_contact.hpp>
+  #include <dart/simulation/detail/entity_conversion.hpp>
+  #include <dart/simulation/detail/world_registry_access.hpp>
+  #include <dart/simulation/multibody/joint.hpp>
+  #include <dart/simulation/multibody/link.hpp>
+  #include <dart/simulation/multibody/multibody.hpp>
+  #include <dart/simulation/world.hpp>
+  #include <dart/simulation/world_options.hpp>
 #endif
-#if DART_BM_LCP_COMPARE_HAS_SIMULATION_EXPERIMENTAL_CUDA
-  #include <dart/simulation/experimental/compute/cuda/lcp_jacobi_batch_cuda.cuh>
+#if DART_BM_LCP_COMPARE_HAS_SIMULATION_CUDA
+  #include <dart/simulation/compute/cuda/lcp_jacobi_batch_cuda.cuh>
 #endif
 
 #include <Eigen/Dense>
@@ -87,12 +87,12 @@ namespace {
 
 using dart::math::LcpOptions;
 using dart::math::LcpProblem;
-#if DART_BM_LCP_COMPARE_HAS_SIMULATION_EXPERIMENTAL
-namespace compute = dart::simulation::experimental::compute;
-namespace sx = dart::simulation::experimental;
+#if DART_BM_LCP_COMPARE_HAS_SIMULATION
+namespace compute = dart::simulation::compute;
+namespace sx = dart::simulation;
 #endif
-#if DART_BM_LCP_COMPARE_HAS_SIMULATION_EXPERIMENTAL_CUDA
-namespace cuda_compute = dart::simulation::experimental::compute::cuda;
+#if DART_BM_LCP_COMPARE_HAS_SIMULATION_CUDA
+namespace cuda_compute = dart::simulation::compute::cuda;
 #endif
 
 LcpOptions MakeBenchmarkOptions(int maxIterations)
@@ -827,7 +827,7 @@ LcpProblem MakeScaledProblem(int n, double scale, unsigned seed)
   return problem;
 }
 
-#if DART_BM_LCP_COMPARE_HAS_SIMULATION_EXPERIMENTAL
+#if DART_BM_LCP_COMPARE_HAS_SIMULATION
 enum class ArticulatedContactBenchmarkCase
 {
   Ground,
@@ -1580,7 +1580,7 @@ std::optional<WorldContactBenchmarkBatch> MakeWorldContactBenchmarkBatch(
   return batch;
 }
 
-  #if DART_BM_LCP_COMPARE_HAS_SIMULATION_EXPERIMENTAL_CUDA
+  #if DART_BM_LCP_COMPARE_HAS_SIMULATION_CUDA
 std::optional<WorldContactBenchmarkBatch>
 MakeHomogeneousWorldContactBenchmarkBatch(
     int contactCount, int batchSize, std::string& errorMessage)
@@ -2437,12 +2437,14 @@ std::string MakeLabel(const std::string& solver, const std::string& category)
   return out.str();
 }
 
+#if DART_BM_LCP_COMPARE_HAS_SIMULATION
 bool SupportsDenseWorldBoxContactPatch(std::string_view solverName)
 {
   return solverName == "Pgs" || solverName == "RedBlackGaussSeidel"
          || solverName == "NNCG" || solverName == "Apgd" || solverName == "Tgs"
          || solverName == "Admm";
 }
+#endif
 
 void AddShockPropagationCounters(
     benchmark::State& state,
@@ -2474,7 +2476,7 @@ void AddShockPropagationCounters(
   state.counters["max_blocks_per_layer"] = maxBlocksPerLayer;
 }
 
-#if DART_BM_LCP_COMPARE_HAS_SIMULATION_EXPERIMENTAL
+#if DART_BM_LCP_COMPARE_HAS_SIMULATION
 void AddFindexShockPropagationCounters(
     benchmark::State& state, std::size_t contactCount, Eigen::Index problemSize)
 {
@@ -2579,8 +2581,8 @@ void AddBackendBuildCounters(benchmark::State& state)
       = DART_BM_LCP_COMPARE_DART_SIMD_FORCE_SCALAR ? 1.0 : 0.0;
   state.counters["build_cuda_enabled"]
       = DART_BM_LCP_COMPARE_DART_ENABLE_EXPERIMENTAL_CUDA ? 1.0 : 0.0;
-  state.counters["has_simulation_experimental"]
-      = DART_BM_LCP_COMPARE_HAS_SIMULATION_EXPERIMENTAL ? 1.0 : 0.0;
+  state.counters["has_simulation"]
+      = DART_BM_LCP_COMPARE_HAS_SIMULATION ? 1.0 : 0.0;
 }
 
 int ChooseWorkerCount(Eigen::Index problemSize)
@@ -4619,7 +4621,7 @@ std::vector<LcpProblem> MakeBenchmarkProblemBatch(
   return problems;
 }
 
-#if DART_BM_LCP_COMPARE_HAS_SIMULATION_EXPERIMENTAL_CUDA
+#if DART_BM_LCP_COMPARE_HAS_SIMULATION_CUDA
 cuda_compute::LcpBatchCudaProblem MakeCudaBatchProblem(
     const std::vector<LcpProblem>& problems, std::size_t iterations)
 {
@@ -5199,7 +5201,7 @@ BatchBenchmarkCounters RunBatchWithSolver(
   return counters;
 }
 
-#if DART_BM_LCP_COMPARE_HAS_SIMULATION_EXPERIMENTAL
+#if DART_BM_LCP_COMPARE_HAS_SIMULATION
 struct ParallelBatchFixture
 {
   ParallelBatchFixture(
@@ -5388,7 +5390,7 @@ void AddBatchBenchmarkCounters(
   state.SetLabel(label);
 }
 
-#if DART_BM_LCP_COMPARE_HAS_SIMULATION_EXPERIMENTAL_CUDA
+#if DART_BM_LCP_COMPARE_HAS_SIMULATION_CUDA
 void AddCudaGroupedBenchmarkCounters(
     benchmark::State& state,
     const BatchBenchmarkCounters& counters,
@@ -5424,7 +5426,7 @@ void AddCudaGroupedBenchmarkCounters(
 }
 #endif
 
-#if DART_BM_LCP_COMPARE_HAS_SIMULATION_EXPERIMENTAL
+#if DART_BM_LCP_COMPARE_HAS_SIMULATION
 void AddWorldContactBatchCounters(
     benchmark::State& state,
     const BatchBenchmarkCounters& counters,
@@ -6256,7 +6258,7 @@ void RunNewtonWarmStartBatchSerialBenchmark(
   state.counters["batch_serial_execution"] = 1.0;
 }
 
-#if DART_BM_LCP_COMPARE_HAS_SIMULATION_EXPERIMENTAL
+#if DART_BM_LCP_COMPARE_HAS_SIMULATION
 void RunNewtonWarmStartBatchParallelBenchmark(
     benchmark::State& state,
     const dart::test::LcpSolverManifestEntry& solverEntry,
@@ -6435,7 +6437,7 @@ void RunProductionActiveSetTransitionBatchSerialBenchmark(
   }
 }
 
-#if DART_BM_LCP_COMPARE_HAS_SIMULATION_EXPERIMENTAL
+#if DART_BM_LCP_COMPARE_HAS_SIMULATION
 void RunProductionActiveSetTransitionBatchParallelBenchmark(
     benchmark::State& state,
     const dart::test::LcpSolverManifestEntry& solverEntry,
@@ -6616,7 +6618,7 @@ void RunMildIllConditionedBatchSerialBenchmark(
   }
 }
 
-#if DART_BM_LCP_COMPARE_HAS_SIMULATION_EXPERIMENTAL
+#if DART_BM_LCP_COMPARE_HAS_SIMULATION
 void RunMildIllConditionedBatchParallelBenchmark(
     benchmark::State& state,
     const dart::test::LcpSolverManifestEntry& solverEntry,
@@ -6802,7 +6804,7 @@ void RunManifestBatchBenchmark(
   }
 }
 
-#if DART_BM_LCP_COMPARE_HAS_SIMULATION_EXPERIMENTAL
+#if DART_BM_LCP_COMPARE_HAS_SIMULATION
 void RunWorldContactBenchmark(
     benchmark::State& state,
     const dart::test::LcpSolverManifestEntry& solverEntry)
@@ -7697,7 +7699,7 @@ static void BM_LcpWorldArticulatedCartesianGroundStep_BoxedLcp(
 }
 #endif
 
-#if DART_BM_LCP_COMPARE_HAS_SIMULATION_EXPERIMENTAL
+#if DART_BM_LCP_COMPARE_HAS_SIMULATION
 void RunManifestParallelBatchBenchmark(
     benchmark::State& state,
     const dart::test::LcpSolverManifestEntry& solverEntry,
@@ -7740,7 +7742,7 @@ void RunManifestParallelBatchBenchmark(
 }
 #endif
 
-#if DART_BM_LCP_COMPARE_HAS_SIMULATION_EXPERIMENTAL_CUDA
+#if DART_BM_LCP_COMPARE_HAS_SIMULATION_CUDA
 void RunCudaJacobiBatchBenchmark(
     benchmark::State& state, BenchmarkProblemFamily family)
 {
@@ -7878,8 +7880,8 @@ void RunCudaGroupedBatchBenchmark(
 }
 #endif
 
-#if DART_BM_LCP_COMPARE_HAS_SIMULATION_EXPERIMENTAL                            \
-    && DART_BM_LCP_COMPARE_HAS_SIMULATION_EXPERIMENTAL_CUDA
+#if DART_BM_LCP_COMPARE_HAS_SIMULATION                                         \
+    && DART_BM_LCP_COMPARE_HAS_SIMULATION_CUDA
 void RunCudaWorldContactBatchBenchmark(benchmark::State& state, bool usePgs)
 {
   if (!cuda_compute::isCudaRuntimeAvailable()) {
@@ -8606,7 +8608,7 @@ std::string MakeNewtonWarmStartBatchSerialBenchmarkName(
   return out.str();
 }
 
-#if DART_BM_LCP_COMPARE_HAS_SIMULATION_EXPERIMENTAL
+#if DART_BM_LCP_COMPARE_HAS_SIMULATION
 std::string MakeNewtonWarmStartBatchParallelBenchmarkName(
     const dart::test::LcpSolverManifestEntry& solver,
     const NewtonWarmStartMode mode)
@@ -8668,7 +8670,7 @@ std::string MakeProductionActiveSetTransitionBatchSerialBenchmarkName(
   return out.str();
 }
 
-#if DART_BM_LCP_COMPARE_HAS_SIMULATION_EXPERIMENTAL
+#if DART_BM_LCP_COMPARE_HAS_SIMULATION
 std::string MakeProductionActiveSetTransitionBatchParallelBenchmarkName(
     const LargerActiveSetTransitionBenchmarkCase testCase,
     const dart::test::LcpSolverManifestEntry& solver)
@@ -8690,7 +8692,7 @@ std::string MakeBatchBenchmarkName(
   return out.str();
 }
 
-#if DART_BM_LCP_COMPARE_HAS_SIMULATION_EXPERIMENTAL
+#if DART_BM_LCP_COMPARE_HAS_SIMULATION
 std::string MakeParallelBatchBenchmarkName(
     BenchmarkProblemFamily family,
     const dart::test::LcpSolverManifestEntry& solver)
@@ -8767,6 +8769,7 @@ std::string MakeWorldContactStressBatchParallelBenchmarkName(
   out << "BM_LcpWorldContactStressBatchParallel/FrictionIndex/" << solver.name;
   return out.str();
 }
+#endif
 
 std::string MakeStaggeringContactPipelineSweepBenchmarkName(
     const StaggeringContactPipelineSweepCase testCase)
@@ -8816,7 +8819,7 @@ std::string MakeMildIllConditionedBatchSerialBenchmarkName(
   return out.str();
 }
 
-  #if DART_BM_LCP_COMPARE_HAS_SIMULATION_EXPERIMENTAL
+#if DART_BM_LCP_COMPARE_HAS_SIMULATION
 std::string MakeMildIllConditionedBatchParallelBenchmarkName(
     const MildIllConditionedBenchmarkCase testCase,
     const dart::test::LcpSolverManifestEntry& solver)
@@ -8826,7 +8829,7 @@ std::string MakeMildIllConditionedBatchParallelBenchmarkName(
       << getMildIllConditionedCaseName(testCase) << "/" << solver.name;
   return out.str();
 }
-  #endif
+#endif
 
 bool SolverShouldRunMildIllConditionedBenchmark(
     const dart::test::LcpSolverManifestEntry& solver,
@@ -8917,7 +8920,6 @@ bool SolverShouldRunNearSingularBenchmark(
   }};
   return SolverNameIn(solver, kFrictionIndexSolvers);
 }
-#endif
 
 bool SolverShouldRunLargerActiveSetTransitionBenchmark(
     const dart::test::LcpSolverManifestEntry& solver,
@@ -9295,7 +9297,7 @@ void RegisterNewtonWarmStartBenchmarks()
           ->Args({32, 4})
           ->Args({64, 4});
 
-#if DART_BM_LCP_COMPARE_HAS_SIMULATION_EXPERIMENTAL
+#if DART_BM_LCP_COMPARE_HAS_SIMULATION
       const auto parallelBatchName
           = MakeNewtonWarmStartBatchParallelBenchmarkName(solver, mode);
       benchmark::RegisterBenchmark(
@@ -9450,7 +9452,7 @@ void RegisterProductionActiveSetTransitionBatchBenchmarks()
           })
           ->Arg(batchSize);
 
-#if DART_BM_LCP_COMPARE_HAS_SIMULATION_EXPERIMENTAL
+#if DART_BM_LCP_COMPARE_HAS_SIMULATION
       const auto parallelName
           = MakeProductionActiveSetTransitionBatchParallelBenchmarkName(
               testCase, solver);
@@ -9521,7 +9523,7 @@ void RegisterMildIllConditionedBatchBenchmarks()
           })
           ->Arg(batchSize);
 
-#if DART_BM_LCP_COMPARE_HAS_SIMULATION_EXPERIMENTAL
+#if DART_BM_LCP_COMPARE_HAS_SIMULATION
       const auto parallelName
           = MakeMildIllConditionedBatchParallelBenchmarkName(testCase, solver);
       benchmark::RegisterBenchmark(
@@ -9675,7 +9677,7 @@ void RegisterBatchBenchmarks()
   }
 }
 
-#if DART_BM_LCP_COMPARE_HAS_SIMULATION_EXPERIMENTAL
+#if DART_BM_LCP_COMPARE_HAS_SIMULATION
 void RegisterParallelBatchBenchmarks()
 {
   constexpr std::array<BenchmarkProblemFamily, 3> families{
@@ -9918,7 +9920,7 @@ static void BM_LCP_COMPARE_SMOKE(benchmark::State& state)
       state, problem, options, MakeLabel("Dantzig", "Smoke"));
 }
 
-#if DART_BM_LCP_COMPARE_HAS_SIMULATION_EXPERIMENTAL_CUDA
+#if DART_BM_LCP_COMPARE_HAS_SIMULATION_CUDA
 static void BM_LcpCudaJacobiBatch_Standard(benchmark::State& state)
 {
   RunCudaJacobiBatchBenchmark(state, BenchmarkProblemFamily::Standard);
@@ -9982,8 +9984,8 @@ static void BM_LcpCudaPgsGroupedBatch_FrictionIndex(benchmark::State& state)
 }
 #endif
 
-#if DART_BM_LCP_COMPARE_HAS_SIMULATION_EXPERIMENTAL                            \
-    && DART_BM_LCP_COMPARE_HAS_SIMULATION_EXPERIMENTAL_CUDA
+#if DART_BM_LCP_COMPARE_HAS_SIMULATION                                         \
+    && DART_BM_LCP_COMPARE_HAS_SIMULATION_CUDA
 static void BM_LcpCudaJacobiWorldContactBatch_FrictionIndex(
     benchmark::State& state)
 {
@@ -10101,7 +10103,7 @@ const bool kManifestBenchmarksRegistered = [] {
   RegisterStressSingularDegenerateBenchmarks();
   RegisterExtremeSingularDegenerateBenchmarks();
   RegisterBatchBenchmarks();
-#if DART_BM_LCP_COMPARE_HAS_SIMULATION_EXPERIMENTAL
+#if DART_BM_LCP_COMPARE_HAS_SIMULATION
   RegisterParallelBatchBenchmarks();
   RegisterWorldContactBenchmarks();
   RegisterWorldBoxContactBenchmarks();
@@ -10135,7 +10137,7 @@ BENCHMARK(BM_LcpJacobiSolverThreadingBanded_Standard)
     ->Args({1024, 4})
     ->Args({1024, 8});
 
-#if DART_BM_LCP_COMPARE_HAS_SIMULATION_EXPERIMENTAL_CUDA
+#if DART_BM_LCP_COMPARE_HAS_SIMULATION_CUDA
 BENCHMARK(BM_LcpCudaJacobiBatch_Standard)->Args({24, 4})->Args({48, 4});
 BENCHMARK(BM_LcpCudaJacobiBatch_Boxed)->Args({24, 4})->Args({48, 4});
 BENCHMARK(BM_LcpCudaJacobiBatch_FrictionIndex)->Args({8, 4})->Args({16, 4});
@@ -10150,8 +10152,8 @@ BENCHMARK(BM_LcpCudaPgsGroupedBatch_Boxed)->Arg(2);
 BENCHMARK(BM_LcpCudaPgsGroupedBatch_FrictionIndex)->Arg(2);
 #endif
 
-#if DART_BM_LCP_COMPARE_HAS_SIMULATION_EXPERIMENTAL                            \
-    && DART_BM_LCP_COMPARE_HAS_SIMULATION_EXPERIMENTAL_CUDA
+#if DART_BM_LCP_COMPARE_HAS_SIMULATION                                         \
+    && DART_BM_LCP_COMPARE_HAS_SIMULATION_CUDA
 BENCHMARK(BM_LcpCudaJacobiWorldContactBatch_FrictionIndex)
     ->Args({4, 4})
     ->Args({8, 4})
@@ -10176,7 +10178,7 @@ BENCHMARK(BM_LcpCudaJacobiMixedContactGroupedBatch_FrictionIndex)->Arg(2);
 BENCHMARK(BM_LcpCudaPgsMixedContactGroupedBatch_FrictionIndex)->Arg(2);
 #endif
 
-#if DART_BM_LCP_COMPARE_HAS_SIMULATION_EXPERIMENTAL
+#if DART_BM_LCP_COMPARE_HAS_SIMULATION
 BENCHMARK(BM_LcpWorldContactAssembly_BoxedLcp)->Arg(1)->Arg(2)->Arg(4);
 BENCHMARK(BM_LcpWorldStackContactAssembly_BoxedLcp)
     ->Arg(2)
@@ -10185,6 +10187,7 @@ BENCHMARK(BM_LcpWorldStackContactAssembly_BoxedLcp)
     ->Arg(5);
 BENCHMARK(BM_LcpWorldStackStep_BoxedLcp)->Args({3, 200})->Args({3, 500});
 BENCHMARK(BM_LcpWorldStackStep_BoxedLcp)->Args({4, 200});
+BENCHMARK(BM_LcpWorldStackStep_BoxedLcp)->Args({5, 500});
 BENCHMARK(BM_LcpWorldSeparatedStep_BoxedLcp)
     ->Args({4, 200})
     ->Args({8, 200})

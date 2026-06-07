@@ -322,7 +322,7 @@ solver except `NNCG`; a focused `NNCG` 4-sphere benchmark trial did not satisfy
 the contract, so that row is not claimed. It now also extends the direct
 snapshot/assembly evidence to a 5-sphere, 5-contact, 15-row coupled stack,
 verified in default, SIMD-enabled, and CUDA-enabled build trees. It also adds
-3-sphere 200-step, 3-sphere 500-step, and 4-sphere 200-step public
+3-sphere 200-step, 3-sphere 500-step, 4-sphere 200-step, and 5-sphere 500-step public
 `World::step()` invariant tests and benchmark rows for the boxed-LCP stack path
 after adding the boxed-LCP contact solve's timestep-driven Baumgarte velocity
 bias, plus 4- and 16-sphere separated sphere-ground `World::step()` invariant
@@ -791,7 +791,7 @@ and broader dense/robot-like contact scenes.
   and
   `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.FourSphereWorldStepMaintainsContactInvariants:BoxedLcpContact.SixteenSphereWorldStepMaintainsContactInvariants'`
   runs pass, and the full `test_boxed_lcp_contact --gtest_brief=1` binary
-  passes 40 tests. The full run still emits the existing
+  passes 43 tests. The full run still emits the existing
   `StaticFrictionHoldsSmallPush` degenerate-pivot warning.
 - `BoxedLcpContact.ArticulatedPrismaticLinkGroundStepMaintainsInvariants`
   advances a fixed-base prismatic articulated link in light ground contact
@@ -852,8 +852,8 @@ and broader dense/robot-like contact scenes.
   The focused
   `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.*SphereStack*'` run
   passes these snapshot tests plus the 3-sphere 200-step, 3-sphere 500-step,
-  and 4-sphere 200-step invariant tests. The full
-  `test_boxed_lcp_contact --gtest_brief=1` binary now passes 40 tests.
+  4-sphere 200-step, and 5-sphere 500-step invariant tests. The full
+  `test_boxed_lcp_contact --gtest_brief=1` binary now passes 43 tests.
 - `BoxedLcpContact.SphereStackWorldStepMaintainsContactInvariants` advances the
   same 3-sphere vertical stack through 200 public boxed-LCP `World::step()`
   iterations and checks finite state, non-penetration, preserved sphere spacing,
@@ -953,7 +953,7 @@ and broader dense/robot-like contact scenes.
   contacts before stepping. `FourBoxWorldStepMaintainsDenseContactInvariants`
   extends the unit coverage to a separated 4-box, 16-contact dense face-contact
   scene advanced for 200 public boxed-LCP `World::step()` iterations. The full
-  `test_boxed_lcp_contact --gtest_brief=1` run passes 40 tests while still
+  `test_boxed_lcp_contact --gtest_brief=1` run passes 43 tests while still
   emitting the dense-patch Dantzig warning.
 - `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldBoxContact/FrictionIndex' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   passes in default, SIMD-enabled, and CUDA-enabled build trees for 18 scoped
@@ -974,20 +974,23 @@ and broader dense/robot-like contact scenes.
   dense-patch Dantzig warning, so treat this as public-step invariant evidence,
   not a direct Dantzig dense box solve claim.
 - `BM_LcpWorldStackStep_BoxedLcp/3/200`,
-  `BM_LcpWorldStackStep_BoxedLcp/3/500`, and
-  `BM_LcpWorldStackStep_BoxedLcp/4/200` rebuild coupled stack worlds, enter
+  `BM_LcpWorldStackStep_BoxedLcp/3/500`,
+  `BM_LcpWorldStackStep_BoxedLcp/4/200`, and
+  `BM_LcpWorldStackStep_BoxedLcp/5/500` rebuild coupled stack worlds, enter
   simulation mode, advance public boxed-LCP `World::step()` iterations, and
   report end-to-end invariant counters. The focused
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldStackStep_BoxedLcp' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   runs in default, SIMD-enabled, and CUDA-enabled build trees reported
-  `invariant_ok=1` for the existing 3-sphere rows and the new
-  `BM_LcpWorldStackStep_BoxedLcp/4/200` row. The SIMD run reported
+  `invariant_ok=1` for the existing 3-sphere rows and the 4-/5-sphere rows.
+  The SIMD run reported
   `build_simd_enabled=1`, and the CUDA-enabled run reported
   `build_cuda_enabled=1`. The default 3-sphere rows reported
   `time_step=0.005`, `min_spacing=0.9999`, and
   `max_vertical_speed=4.31e-14`; the default 4-sphere row reported
   `time_step=0.001`, `min_spacing=0.9999`, and
-  `max_vertical_speed=1.72e-8`.
+  `max_vertical_speed=1.72e-8`; the default 5-sphere row reported
+  `time_step=0.001`, `min_spacing=0.9999`, and
+  `max_vertical_speed=1.26e-5`.
 - `BM_LcpWorldSeparatedStep_BoxedLcp/4/200` and
   `BM_LcpWorldSeparatedStep_BoxedLcp/8/200` rebuild separated sphere-ground
   worlds, enter simulation mode, advance 200 public boxed-LCP `World::step()`

@@ -64,21 +64,21 @@ else()
     PRIVATE DART_BM_LCP_COMPARE_DART_ENABLE_EXPERIMENTAL_CUDA=0
   )
 endif()
-if(TARGET dart-simulation-experimental)
-  target_link_libraries(BM_LCP_COMPARE dart-simulation-experimental)
+if(TARGET dart-simulation)
+  target_link_libraries(BM_LCP_COMPARE dart-simulation)
   if(TARGET EnTT::EnTT)
     target_link_libraries(BM_LCP_COMPARE EnTT::EnTT)
   endif()
   target_compile_definitions(
     BM_LCP_COMPARE
-    PRIVATE DART_BM_LCP_COMPARE_HAS_SIMULATION_EXPERIMENTAL=1
+    PRIVATE DART_BM_LCP_COMPARE_HAS_SIMULATION=1
   )
 endif()
-if(TARGET dart-simulation-experimental-cuda)
-  target_link_libraries(BM_LCP_COMPARE dart-simulation-experimental-cuda)
+if(TARGET dart-simulation-cuda)
+  target_link_libraries(BM_LCP_COMPARE dart-simulation-cuda)
   target_compile_definitions(
     BM_LCP_COMPARE
-    PRIVATE DART_BM_LCP_COMPARE_HAS_SIMULATION_EXPERIMENTAL_CUDA=1
+    PRIVATE DART_BM_LCP_COMPARE_HAS_SIMULATION_CUDA=1
   )
 endif()
 set_target_properties(BM_LCP_COMPARE PROPERTIES FOLDER "Benchmarks")
