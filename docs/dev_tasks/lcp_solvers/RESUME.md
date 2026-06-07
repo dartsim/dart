@@ -679,16 +679,17 @@ longer-running coupled, and broader dense/robot-like contact scenes.
   not satisfy the selected exact rank-deficient boxed/findex contracts.
 - `JacobiSolver::Parameters::workerThreads` enables an opt-in solver-internal
   CPU threaded update path. `LcpGeneratedCoverage.ThreadedJacobiStandardKnownSolution`
-  passes on a 128-row generated standard LCP. `BM_LCP_COMPARE` now lists 10
+  passes on a 128-row generated standard LCP. `BM_LCP_COMPARE` now lists 13
   focused Jacobi threading rows: 4 dense rows for 128-row and 512-row standard
   problems with 1 and 8 worker threads, plus 6 banded rows for 512-row and
-  1024-row standard problems with 1, 4, and 8 worker threads. Default, SIMD,
+  1024-row standard problems with 1, 4, and 8 worker threads, plus 3 larger
+  2048-row banded rows with 1, 8, and 16 worker threads. Default, SIMD,
   and CUDA-enabled focused runs report `contract_ok=1`, backend build-state
   counters, `solver_internal_threads`, `worker_count`,
   `jacobi_threading_banded_spd`, `band_half_width`,
   `matrix_nonzero_entries`, and `matrix_density`; the banded rows are
-  sparse-structured dense-storage inputs with densities of about 0.00974 and
-  0.00488. Treat this as correctness/comparison evidence rather than a
+  sparse-structured dense-storage inputs with densities of about 0.00974,
+  0.00488, and 0.00244. Treat this as correctness/comparison evidence rather than a
   performance recommendation. CUDA-enabled rows are CPU Jacobi rows in a
   CUDA-enabled build, not CUDA LCP kernel execution.
 - `BM_LCP_COMPARE` now lists 9 focused PGS/PSOR relaxation sweep rows for

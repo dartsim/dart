@@ -1008,20 +1008,22 @@ tradeoffs evidence based.
 - Verified solver-internal Jacobi threading slice:
   `JacobiSolver::Parameters::workerThreads` now enables an opt-in CPU threaded
   update path. `LcpGeneratedCoverage.ThreadedJacobiStandardKnownSolution`
-  passed on a 128-row generated standard LCP. `BM_LCP_COMPARE` now lists 10
+  passed on a 128-row generated standard LCP. `BM_LCP_COMPARE` now lists 13
   Jacobi threading rows: 4 dense `BM_LcpJacobiSolverThreading_Standard` rows
   for 128-row and 512-row standard problems with 1 and 8 worker threads, plus 6
   banded `BM_LcpJacobiSolverThreadingBanded_Standard` rows for 512-row and
-  1024-row standard problems with 1, 4, and 8 worker threads. The focused
+  1024-row standard problems with 1, 4, and 8 worker threads, plus 3
+  larger banded rows for 2048-row standard problems with 1, 8, and 16 worker
+  threads. The focused
   default, SIMD-enabled, and CUDA-enabled benchmark runs all reported
   `contract_ok=1`, `solver_internal_threads`, `worker_count`,
   `jacobi_threading_banded_spd`, `band_half_width`, `matrix_nonzero_entries`,
   `matrix_density`, and backend build-state counters. The banded rows use
   sparse-structured matrices in dense storage and report densities of about
-  0.00974 for 512 rows and 0.00488 for 1024 rows. The focused local timings
-  are benchmark-comparison evidence only; they do not establish a general
-  worker-thread speedup. CUDA-enabled rows are CPU Jacobi rows in a CUDA-enabled
-  build, not CUDA LCP kernel execution.
+  0.00974 for 512 rows, 0.00488 for 1024 rows, and 0.00244 for 2048 rows. The
+  focused local timings are benchmark-comparison evidence only; they do not
+  establish a general worker-thread speedup. CUDA-enabled rows are CPU Jacobi
+  rows in a CUDA-enabled build, not CUDA LCP kernel execution.
 - Boxed semi-smooth Newton friction-index fix:
   `dart/math/lcp/newton/boxed_semi_smooth_newton_solver.cpp` now includes the
   derivative of moving `findex` friction bounds in the natural-residual
@@ -1418,7 +1420,8 @@ tradeoffs evidence based.
 - Added opt-in solver-internal CPU worker threads to `JacobiSolver` and
   benchmark rows comparing serial and threaded Jacobi on the same generated
   standard problems. Current focused timings show correctness with overhead for
-  the tested dense 128/512-row cases.
+  the tested dense 128/512-row and larger sparse-structured 2048-row banded
+  cases.
 - Added `docs/dev_tasks/lcp_solvers/01-implementation-audit.md`. The audit
   records the current DART 7 evidence and now maps the exported APGD, TGS,
   ADMM, SAP, and boxed semi-smooth Newton solvers back to
@@ -1763,8 +1766,8 @@ tradeoffs evidence based.
   cross-multibody link-vs-link packets, and mixed
   separated/stack/articulated grouped contact batch paths, pass.
   Jacobi has opt-in solver-internal CPU
-  worker-thread correctness and benchmark evidence, but the focused dense
-  128/512-row rows did not show a speedup. Other intra-solver multi-threaded
+  worker-thread correctness and benchmark evidence, including larger 2048-row
+  banded rows, but the focused local rows did not show a general speedup. Other intra-solver multi-threaded
   CPU paths, general CUDA LCP solver execution, CUDA Jacobi dense-contact
   execution, end-to-end articulated world-step CUDA execution, and broader
   vectorized/CUDA LCP batch-processing paths still need separate evidence.

@@ -991,8 +991,8 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Added an opt-in CPU worker-thread update path for the DART 7 projected
     Jacobi LCP solver (`JacobiSolver::Parameters::workerThreads`), with
     generated 128-row correctness coverage and focused dense plus banded
-    serial-vs-worker benchmark rows up to 1024 rows. The local benchmark rows
-    are comparison evidence, not a speedup claim.
+    serial-vs-worker benchmark rows up to 2048 banded rows. The local benchmark
+    rows are comparison evidence, not a speedup claim.
   - Added DART 7 contact-derived block-structure coverage for BGS and Blocked
     Jacobi LCP solvers, proving real boxed-LCP world-contact snapshots solve
     with `findex`-derived non-contiguous per-contact blocks and reject explicit
