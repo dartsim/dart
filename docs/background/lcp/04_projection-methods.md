@@ -265,6 +265,13 @@ options.relaxation = 1.2;  // Optional PSOR-style relaxation
 solver.solve(problem, x, options);
 ```
 
+DART 7 benchmark evidence includes
+`BM_LcpSymmetricPsorRelaxationSweep` rows for standard 48-row, boxed 24-row,
+and friction-index 8-contact fixtures at $\lambda=0.5$, $1.0$, and $1.3$.
+Focused default, SIMD-enabled, and CUDA-enabled build-tree runs all reported
+`contract_ok=1`; the CUDA-enabled rows are CPU symmetric PSOR solver rows in a
+CUDA-enabled build, not CUDA LCP kernel execution.
+
 ### Generic projected iteration
 
 A simple implementation shared by Jacobi/PGS/PSOR:
