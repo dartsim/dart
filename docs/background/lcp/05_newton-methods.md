@@ -54,6 +54,10 @@ $$\Delta x_{\mathcal{F}} = -H_{\mathcal{F}} = -x_{\mathcal{F}} \quad \text{(dire
 #include <dart/math/lcp/newton/MinimumMapNewtonSolver.hpp>
 
 dart::math::MinimumMapNewtonSolver solver;
+dart::math::MinimumMapNewtonSolver::Parameters params;
+params.maxGradientDescentWarmStartSteps = 5;  // optional; default is 0
+solver.setParameters(params);
+
 dart::math::LcpOptions options = solver.getDefaultOptions();
 options.maxIterations = 50;
 options.warmStart = false;
@@ -122,6 +126,10 @@ where $y_i = (Ax - b)_i$.
 #include <dart/math/lcp/newton/FischerBurmeisterNewtonSolver.hpp>
 
 dart::math::FischerBurmeisterNewtonSolver solver;
+dart::math::FischerBurmeisterNewtonSolver::Parameters params;
+params.maxGradientDescentWarmStartSteps = 5;  // optional; default is 0
+solver.setParameters(params);
+
 dart::math::LcpOptions options = solver.getDefaultOptions();
 options.maxIterations = 50;
 options.warmStart = false;
@@ -212,6 +220,7 @@ dart::math::LcpOptions options = solver.getDefaultOptions();
 
 dart::math::PenalizedFischerBurmeisterNewtonSolver::Parameters params;
 params.lambda = 0.5;
+params.maxGradientDescentWarmStartSteps = 5;  // optional; default is 0
 options.customOptions = &params;
 
 auto result = solver.solve(problem, x, options);
@@ -269,7 +278,17 @@ $$\phi_t = \frac{1}{2} \|H(x_{\text{new}})\|^2$$
 
 ### Nonsmooth Gradient Descent (Warm Start)
 
-Used to compute good starting iterate for Newton methods.
+DART 7 implements this as an opt-in initializer for the native standard-LCP
+paths of `MinimumMapNewtonSolver`, `FischerBurmeisterNewtonSolver`, and
+`PenalizedFischerBurmeisterNewtonSolver`. Set
+`maxGradientDescentWarmStartSteps > 0` in the solver parameters to run
+projected gradient steps before Newton iteration. The initializer uses the
+solver's own reformulation merit and separate backtracking parameters
+(`maxGradientDescentLineSearchSteps`, `gradientDescentStepReduction`,
+`gradientDescentSufficientDecrease`, and `gradientDescentMinStep`). Defaults
+leave existing behavior unchanged. These standard Newton solvers still delegate
+boxed or friction-index problems to the boxed-capable pivoting solver; use
+`BoxedSemiSmoothNewtonSolver` for native boxed/findex Newton steps.
 
 ```
 function gradient_descent(x, max_iter):
@@ -375,8 +394,9 @@ highly degenerate contact systems.
 
 ### Phase 3: Supporting Methods
 
-7. Nonsmooth gradient descent
-8. Warm start from PGS
+7. Nonsmooth gradient descent (implemented as an opt-in standard-LCP
+   initializer)
+8. Warm start from PGS (future)
 
 ### Phase 4: Fischer-Burmeister + Penalized FB
 

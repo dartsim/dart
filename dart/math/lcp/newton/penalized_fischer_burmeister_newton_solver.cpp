@@ -98,6 +98,90 @@ void computePenalizedFbFunction(
   }
 }
 
+void computePenalizedFbResidualAndGradient(
+    const Eigen::MatrixXd& A,
+    const Eigen::VectorXd& b,
+    const Eigen::VectorXd& x,
+    double smoothingEpsilon,
+    double lambda,
+    Eigen::VectorXd& phi,
+    Eigen::VectorXd& grad)
+{
+  const Eigen::VectorXd y = A * x - b;
+  Eigen::VectorXd p;
+  Eigen::VectorXd q;
+  computePenalizedFbFunction(x, y, smoothingEpsilon, lambda, phi, p, q);
+  grad = p.cwiseProduct(phi) + A.transpose() * q.cwiseProduct(phi);
+}
+
+void runGradientDescentWarmStart(
+    const Eigen::MatrixXd& A,
+    const Eigen::VectorXd& b,
+    Eigen::VectorXd& x,
+    const PenalizedFischerBurmeisterNewtonSolver::Parameters& params,
+    double absTol,
+    double relTol)
+{
+  if (params.maxGradientDescentWarmStartSteps <= 0) {
+    return;
+  }
+
+  Eigen::VectorXd phi(x.size());
+  Eigen::VectorXd grad(x.size());
+
+  for (int iter = 0; iter < params.maxGradientDescentWarmStartSteps; ++iter) {
+    computePenalizedFbResidualAndGradient(
+        A, b, x, params.smoothingEpsilon, params.lambda, phi, grad);
+
+    const double scale = std::max(
+        1.0,
+        std::max(
+            vectorInfinityNorm(b),
+            matrixInfinityNorm(A) * vectorInfinityNorm(x)));
+    const double tol = std::max(absTol, relTol * scale);
+    const double phiNorm = phi.cwiseAbs().maxCoeff();
+    if (phiNorm <= tol || !grad.allFinite()) {
+      break;
+    }
+
+    const double merit = 0.5 * phi.squaredNorm();
+    double step = 1.0;
+    bool accepted = false;
+
+    for (int ls = 0; ls < params.maxGradientDescentLineSearchSteps; ++ls) {
+      const Eigen::VectorXd xCandidate = (x - step * grad).cwiseMax(0.0);
+      Eigen::VectorXd phiCandidate(x.size());
+      Eigen::VectorXd gradCandidate(x.size());
+      computePenalizedFbResidualAndGradient(
+          A,
+          b,
+          xCandidate,
+          params.smoothingEpsilon,
+          params.lambda,
+          phiCandidate,
+          gradCandidate);
+      const double candidateMerit = 0.5 * phiCandidate.squaredNorm();
+      const double target
+          = merit * (1.0 - params.gradientDescentSufficientDecrease * step);
+
+      if (candidateMerit <= target || candidateMerit < merit) {
+        x = xCandidate;
+        accepted = true;
+        break;
+      }
+
+      step *= params.gradientDescentStepReduction;
+      if (step < params.gradientDescentMinStep) {
+        break;
+      }
+    }
+
+    if (!accepted) {
+      break;
+    }
+  }
+}
+
 } // namespace
 
 //==============================================================================
@@ -195,6 +279,8 @@ LcpResult PenalizedFischerBurmeisterNewtonSolver::solve(
     result.message = "Penalty parameter lambda must be in (0, 1]";
     return result;
   }
+
+  runGradientDescentWarmStart(A, b, x, *params, absTol, relTol);
 
   bool converged = false;
   bool lineSearchFailed = false;

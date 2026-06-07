@@ -44,6 +44,11 @@ dependencies and reject explicit block sizes that split tangent rows from their
 owning normal rows. A focused `BM_LCP_COMPARE` gate on the merged default tree
 also verifies 22 BGS/Blocked Jacobi world-contact, stack-contact, and
 serial/parallel batch rows with `bad_contract=0`.
+It now also adds opt-in projected gradient-descent warm starts for the native
+standard-LCP paths of Minimum Map, Fischer-Burmeister, and Penalized
+Fischer-Burmeister Newton. Focused unit tests prove each initializer reduces its
+solver-specific merit before Newton line search, while boxed/findex problems
+remain delegated for those three solvers.
 It now also extends the robust near-singular generated slice to coupled
 friction-index 12-contact packets and adds 13 matching `BM_LcpNearSingular`
 benchmark rows for standard 8-row, boxed 8-row, and coupled friction-index
@@ -153,7 +158,9 @@ solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
 
 ## Current Branch
 
-`main` - uncommitted local changes.
+`feature/dart7-lcp-solver-evidence` - local checkpoint branch with DART 7 LCP
+solver evidence commits. Push/PR work still requires explicit maintainer/user
+approval.
 
 ## Immediate Next Step
 

@@ -29,7 +29,7 @@ This section tracks which LCP solvers are currently implemented in DART (`dart/m
 | **Projection**     | TGS                        | ✅ Implemented | `projection/TgsSolver.hpp`                          | Temporal Gauss-Seidel style sweep       |
 | **Newton**         | Minimum Map Newton         | ✅ Implemented | `newton/MinimumMapNewtonSolver.hpp`                 | Standard LCP (boxed/findex fallback)    |
 | **Newton**         | Fischer-Burmeister Newton  | ✅ Implemented | `newton/FischerBurmeisterNewtonSolver.hpp`          | Standard LCP (boxed/findex fallback)    |
-| **Newton**         | Penalized FB Newton        | ✅ Implemented | `newton/PenalizedFischerBurmeisterNewtonSolver.hpp` | Extension of FB                         |
+| **Newton**         | Penalized FB Newton        | ✅ Implemented | `newton/PenalizedFischerBurmeisterNewtonSolver.hpp` | Standard LCP (boxed/findex fallback)    |
 | **Newton**         | Boxed Semi-Smooth Newton   | ✅ Implemented | `newton/BoxedSemiSmoothNewtonSolver.hpp`            | Boxed LCP + friction index              |
 | **Interior Point** | Interior Point Method      | ✅ Implemented | `other/InteriorPointSolver.hpp`                     | Very robust                             |
 | **Other**          | MPRGP (QP)                 | ✅ Implemented | `other/MprgpSolver.hpp`                             | Standard SPD LCPs                       |
@@ -323,6 +323,7 @@ solver usage examples.
 - **Features**:
   - Standard LCP only (`lo = 0`, `hi = +inf`, `findex = -1`)
   - Boxed/findex problems delegate to the boxed-capable pivoting solver
+  - Opt-in projected gradient-descent warm start for the minimum-map merit
 - **Use Case**: High-accuracy solves for standard LCPs
 
 #### 18. Fischer-Burmeister Newton (`newton/FischerBurmeisterNewtonSolver.hpp`)
@@ -332,6 +333,7 @@ solver usage examples.
 - **Features**:
   - Standard LCP only (`lo = 0`, `hi = +inf`, `findex = -1`)
   - Boxed/findex problems delegate to the boxed-capable pivoting solver
+  - Opt-in projected gradient-descent warm start for the FB merit
 - **Use Case**: High-accuracy solves for standard LCPs
 
 #### 19. Penalized Fischer-Burmeister Newton (`newton/PenalizedFischerBurmeisterNewtonSolver.hpp`)
@@ -342,6 +344,7 @@ solver usage examples.
   - Standard LCP only (`lo = 0`, `hi = +inf`, `findex = -1`)
   - Boxed/findex problems delegate to the boxed-capable pivoting solver
   - Penalty parameter (`lambda`) to tune convergence behavior
+  - Opt-in projected gradient-descent warm start for the penalized FB merit
 - **Use Case**: High-accuracy solves for standard LCPs with tunable penalty
 
 #### 20. Boxed Semi-Smooth Newton (`newton/BoxedSemiSmoothNewtonSolver.hpp`)
@@ -552,7 +555,7 @@ See [LCP Selection Guide](07_selection-guide.md) for detailed recommendations.
 - [x] Penalized Fischer-Burmeister Newton
 - [x] Boxed Semi-Smooth Newton
 - [x] Projected line search
-- [ ] Nonsmooth gradient descent (warm start)
+- [x] Nonsmooth gradient descent warm start for standard Newton methods
 
 ### Phase 5: Additional Methods (Future)
 

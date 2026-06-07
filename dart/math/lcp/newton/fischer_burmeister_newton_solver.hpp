@@ -47,6 +47,11 @@ public:
     double stepReduction{0.5};
     double sufficientDecrease{1e-4};
     double minStep{1e-6};
+    int maxGradientDescentWarmStartSteps{0};
+    int maxGradientDescentLineSearchSteps{8};
+    double gradientDescentStepReduction{0.5};
+    double gradientDescentSufficientDecrease{1e-4};
+    double gradientDescentMinStep{1e-8};
   };
 
   FischerBurmeisterNewtonSolver();

@@ -274,6 +274,10 @@
       rejected. A focused `BM_LCP_COMPARE` gate also verifies 22 BGS/Blocked
       Jacobi world-contact, stack-contact, and serial/parallel batch rows with
       `contract_ok=1`.
+- [x] Added opt-in projected gradient-descent warm starts for the native
+      standard-LCP paths of Minimum Map, Fischer-Burmeister, and Penalized
+      Fischer-Burmeister Newton, with focused tests proving each initializer
+      reduces its solver-specific merit before Newton line search.
 - [ ] Continue expanding synthetic coverage beyond the current production-scale,
       larger mildly ill-conditioned, extreme singular-degenerate, and extreme
       active-set transition benchmark slices into harder solver-specific

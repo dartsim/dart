@@ -1005,6 +1005,11 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     block partitions that split tangent rows from their owning normal rows;
     focused world-contact, stack-contact, and serial/parallel batch benchmark
     rows for both solvers also pass the LCP contract.
+  - Added opt-in projected gradient-descent warm starts for the DART 7
+    standard-LCP Minimum Map, Fischer-Burmeister, and Penalized
+    Fischer-Burmeister Newton solvers. Focused unit coverage proves each
+    initializer reduces its solver-specific merit before Newton line search,
+    while boxed/findex problems remain delegated for those three solvers.
   - Added manifest-generated serial and DART 7 `ParallelExecutor` batch LCP
     benchmarks so standard, boxed, and friction-index solver families compare
     the same independent-problem batches across every supporting solver. The

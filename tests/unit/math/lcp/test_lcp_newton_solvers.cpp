@@ -189,6 +189,43 @@ void expectDiagonalSolution(const Eigen::VectorXd& x, double expected)
   }
 }
 
+double minimumMapMerit(const LcpProblem& problem, const Eigen::VectorXd& x)
+{
+  const Eigen::VectorXd y = problem.A * x - problem.b;
+  const Eigen::VectorXd H = x.cwiseMin(y);
+  return 0.5 * H.squaredNorm();
+}
+
+double fischerBurmeisterMerit(
+    const LcpProblem& problem, const Eigen::VectorXd& x, double epsilon)
+{
+  const Eigen::VectorXd y = problem.A * x - problem.b;
+  double merit = 0.0;
+  for (Eigen::Index i = 0; i < x.size(); ++i) {
+    const double phi = std::hypot(x[i], y[i], epsilon) - x[i] - y[i];
+    merit += phi * phi;
+  }
+  return 0.5 * merit;
+}
+
+double penalizedFischerBurmeisterMerit(
+    const LcpProblem& problem,
+    const Eigen::VectorXd& x,
+    double epsilon,
+    double lambda)
+{
+  const Eigen::VectorXd y = problem.A * x - problem.b;
+  const double penaltyScale = 1.0 - lambda;
+  double merit = 0.0;
+  for (Eigen::Index i = 0; i < x.size(); ++i) {
+    const double fb = std::hypot(x[i], y[i], epsilon) - x[i] - y[i];
+    const double penalty = std::max(0.0, x[i]) * std::max(0.0, y[i]);
+    const double phi = lambda * fb - penaltyScale * penalty;
+    merit += phi * phi;
+  }
+  return 0.5 * merit;
+}
+
 } // namespace
 
 //==============================================================================
@@ -579,6 +616,30 @@ TEST(MinimumMapNewtonSolver, LineSearchFailureWithZeroSteps)
 }
 
 //==============================================================================
+TEST(MinimumMapNewtonSolver, GradientDescentWarmStartReducesMerit)
+{
+  MinimumMapNewtonSolver solver;
+  MinimumMapNewtonSolver::Parameters params;
+  params.maxLineSearchSteps = 0;
+  params.maxGradientDescentWarmStartSteps = 1;
+  params.maxGradientDescentLineSearchSteps = 16;
+  solver.setParameters(params);
+
+  auto problem = makeSpdProblem();
+  const Eigen::VectorXd initial = Eigen::VectorXd::Zero(3);
+  Eigen::VectorXd x = initial;
+
+  LcpOptions options;
+  options.maxIterations = 1;
+  options.validateSolution = false;
+  const auto result = solver.solve(problem, x, options);
+
+  EXPECT_EQ(result.status, LcpSolverStatus::Failed);
+  EXPECT_TRUE(x.array().isFinite().all());
+  EXPECT_LT(minimumMapMerit(problem, x), minimumMapMerit(problem, initial));
+}
+
+//==============================================================================
 TEST(FischerBurmeisterNewtonSolver, LineSearchFailureWithZeroSteps)
 {
   FischerBurmeisterNewtonSolver solver;
@@ -598,6 +659,32 @@ TEST(FischerBurmeisterNewtonSolver, LineSearchFailureWithZeroSteps)
 }
 
 //==============================================================================
+TEST(FischerBurmeisterNewtonSolver, GradientDescentWarmStartReducesMerit)
+{
+  FischerBurmeisterNewtonSolver solver;
+  FischerBurmeisterNewtonSolver::Parameters params;
+  params.maxLineSearchSteps = 0;
+  params.maxGradientDescentWarmStartSteps = 1;
+  params.maxGradientDescentLineSearchSteps = 16;
+  solver.setParameters(params);
+
+  auto problem = makeSpdProblem();
+  const Eigen::VectorXd initial = Eigen::VectorXd::Zero(3);
+  Eigen::VectorXd x = initial;
+
+  LcpOptions options;
+  options.maxIterations = 1;
+  options.validateSolution = false;
+  const auto result = solver.solve(problem, x, options);
+
+  EXPECT_EQ(result.status, LcpSolverStatus::Failed);
+  EXPECT_TRUE(x.array().isFinite().all());
+  EXPECT_LT(
+      fischerBurmeisterMerit(problem, x, params.smoothingEpsilon),
+      fischerBurmeisterMerit(problem, initial, params.smoothingEpsilon));
+}
+
+//==============================================================================
 TEST(PenalizedFischerBurmeisterNewtonSolver, LineSearchFailureWithZeroSteps)
 {
   PenalizedFischerBurmeisterNewtonSolver solver;
@@ -614,6 +701,36 @@ TEST(PenalizedFischerBurmeisterNewtonSolver, LineSearchFailureWithZeroSteps)
 
   EXPECT_EQ(result.status, LcpSolverStatus::Failed);
   EXPECT_FALSE(result.message.empty());
+}
+
+//==============================================================================
+TEST(
+    PenalizedFischerBurmeisterNewtonSolver,
+    GradientDescentWarmStartReducesMerit)
+{
+  PenalizedFischerBurmeisterNewtonSolver solver;
+  PenalizedFischerBurmeisterNewtonSolver::Parameters params;
+  params.maxLineSearchSteps = 0;
+  params.maxGradientDescentWarmStartSteps = 1;
+  params.maxGradientDescentLineSearchSteps = 16;
+  solver.setParameters(params);
+
+  auto problem = makeSpdProblem();
+  const Eigen::VectorXd initial = Eigen::VectorXd::Zero(3);
+  Eigen::VectorXd x = initial;
+
+  LcpOptions options;
+  options.maxIterations = 1;
+  options.validateSolution = false;
+  const auto result = solver.solve(problem, x, options);
+
+  EXPECT_EQ(result.status, LcpSolverStatus::Failed);
+  EXPECT_TRUE(x.array().isFinite().all());
+  EXPECT_LT(
+      penalizedFischerBurmeisterMerit(
+          problem, x, params.smoothingEpsilon, params.lambda),
+      penalizedFischerBurmeisterMerit(
+          problem, initial, params.smoothingEpsilon, params.lambda));
 }
 
 //==============================================================================
