@@ -9,6 +9,71 @@ import dartpy as dart
 import numpy as np
 
 
+class _FallbackGeometryDescriptor:
+    def __init__(self, shape: Any) -> None:
+        shape_type = type(shape).__name__
+        self.kind = shape_type.removesuffix("Shape") or "Unsupported"
+        self.shape_type = shape_type
+        self.unsupported_reason = ""
+        self.size = _shape_vector(shape, "size")
+        self.radius = _shape_scalar(shape, "radius")
+        self.height = _shape_scalar(shape, "height")
+
+
+class _FallbackMaterialDescriptor:
+    def __init__(self) -> None:
+        self.rgba = np.ones(4)
+        self.visible = True
+        self.casts_shadows = True
+        self.receives_shadows = True
+
+
+class _FallbackRenderableDescriptor:
+    def __init__(self) -> None:
+        self.id = 0
+        self.skeleton_name = ""
+        self.body_name = ""
+        self.shape_frame_name = ""
+        self.shape_node_name = ""
+        self.geometry = None
+        self.material = _FallbackMaterialDescriptor()
+        self.world_transform = np.eye(4)
+        self.shape_frame_version = 0
+        self.shape_node_version = 0
+        self.shape_version = 0
+        self.render_resource_version = 0
+
+
+def _shape_member(shape: Any, name: str) -> Any | None:
+    snake_getter = getattr(shape, f"get_{name}", None)
+    if snake_getter is not None:
+        return snake_getter()
+    camel_getter = getattr(shape, f"get{name.title().replace('_', '')}", None)
+    if camel_getter is not None:
+        return camel_getter()
+    return getattr(shape, name, None)
+
+
+def _shape_vector(shape: Any, name: str) -> np.ndarray:
+    value = _shape_member(shape, name)
+    if value is None:
+        return np.zeros(3)
+    try:
+        return np.asarray(value, dtype=float).reshape(-1)
+    except Exception:  # noqa: BLE001
+        return np.zeros(3)
+
+
+def _shape_scalar(shape: Any, name: str) -> float:
+    value = _shape_member(shape, name)
+    if value is None:
+        return 0.0
+    try:
+        return float(value)
+    except Exception:  # noqa: BLE001
+        return 0.0
+
+
 def world_render_frame() -> Any:
     """Return the dynamics world frame used as a parent for render helpers."""
 
@@ -101,6 +166,12 @@ class DescriptorRenderScene:
     def renderable_provider(self) -> list[Any]:
         renderables: list[Any] = []
         self._render_version += 1
+        describe_shape = getattr(dart.gui, "describe_shape", None)
+        renderable_type = getattr(
+            dart.gui, "RenderableDescriptor", _FallbackRenderableDescriptor
+        )
+        material_type = getattr(dart.gui, "MaterialDescriptor", _FallbackMaterialDescriptor)
+        use_fallback_geometry = describe_shape is None
         for frame in self._frames:
             try:
                 shape = frame.get_shape()
@@ -109,13 +180,16 @@ class DescriptorRenderScene:
                 continue
             if shape is None or visual is None:
                 continue
-            try:
-                geometry = dart.gui.describe_shape(shape)
-            except Exception:  # noqa: BLE001
-                continue
+            if use_fallback_geometry:
+                geometry = _FallbackGeometryDescriptor(shape)
+            else:
+                try:
+                    geometry = describe_shape(shape)
+                except Exception:  # noqa: BLE001
+                    continue
             if geometry is None:
                 continue
-            descriptor = dart.gui.RenderableDescriptor()
+            descriptor = renderable_type()
             descriptor.id = id(frame)
             try:
                 descriptor.shape_frame_name = str(frame.get_name())
@@ -123,7 +197,7 @@ class DescriptorRenderScene:
                 descriptor.shape_frame_name = f"frame_{len(renderables)}"
             descriptor.shape_node_name = descriptor.shape_frame_name
             descriptor.geometry = geometry
-            material = dart.gui.MaterialDescriptor()
+            material = material_type()
             try:
                 material.rgba = np.asarray(visual.get_rgba(), dtype=float)
             except Exception:  # noqa: BLE001
