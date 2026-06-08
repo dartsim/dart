@@ -309,14 +309,23 @@ same-DOF sequential cross-articulated, current boxed-LCP fallback
 resting-contact, current active 11x11 deformable self-contact friction grid,
 current active AVBD ground contact/friction rows, current active AVBD
 self-contact normal/friction row scene, current active rigid AVBD contact rows,
-current active rigid AVBD fixed-joint rows, and basic deformable
-surface-snapshot scenes, while keeping remaining public-value unified
-problem/solution wrappers and larger or differently shaped default-solver
-deformable allocation surfaces explicit, before making a full
-zero-dynamic-allocation claim.
+current active rigid AVBD fixed-joint rows, current active inter-body
+deformable surface-CCD crossing, and basic deformable surface-snapshot scenes,
+while keeping remaining public-value unified problem/solution wrappers and
+larger or differently shaped default-solver deformable allocation surfaces
+explicit, before making a full zero-dynamic-allocation claim.
 
 ## Latest Local Validation
 
+- On 2026-06-08 after merging the latest `origin/main`, an active inter-body
+  deformable surface-CCD crossing was added to the World base-allocator and
+  global heap baked-step no-growth guards. The scene uses a fixed deformable
+  surface and a moving deformable surface whose projected-Newton step is clipped
+  before crossing, so the coverage is an active solver path rather than only
+  snapshot plumbing. Focused validation passed:
+  `cmake --build build/default/cpp/Release --target test_world --parallel "$JOBS"`
+  and
+  `build/default/cpp/Release/bin/test_world --gtest_filter='World.DeformableInterBodySurfaceCcdCrossingIsActive:World.BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths:World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap'`.
 - On 2026-06-08 after merging the latest `origin/main`, the rigid AVBD contact
   continuation moved the World contact-stage AVBD snapshot, point-joint input
   list, endpoint row counters, row inventories, inertial-target copy, and solve

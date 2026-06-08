@@ -231,10 +231,11 @@
       VBD static rigid surface-CCD point crossing. Default projected-Newton
       deformable scratch now reuses its RHS, sparse Hessian assembly, PSD block
       batches, sparse-pattern cache, and solution storage for the covered
-      mass-spring path, and default static rigid surface-CCD point crossing is
-      also covered by the first-baked-step global heap guard. FEM rest-shape
-      caches are primed during `enterSimulationMode()`, and a one-tetrahedron
-      FEM projected-Newton path is covered by the same guard; broader
+      mass-spring path; default static rigid surface-CCD point crossing and an
+      active inter-body deformable surface-CCD crossing are also covered by
+      baked no-growth guards. FEM rest-shape caches are primed during
+      `enterSimulationMode()`, and a one-tetrahedron FEM projected-Newton path
+      is covered by the same guard; broader
       projected-Newton self-contact barrier scratch is sized from bake-primed
       contact candidates and covered for the two-triangle no-friction
       self-contact path. The global heap guard now also covers a baked
@@ -245,9 +246,10 @@
       11x11 guard also asserts non-vacuous solver activity through public
       deformable diagnostics: active self-contact barriers, converged active
       contacts, and positive friction dissipation. The global heap and
-      World-base no-growth guards now also cover active AVBD ground
-      contact/friction rows, AVBD self-contact normal/friction rows, and an
-      active rigid AVBD penetrating contact plus no-contact fixed-joint rows.
+      World-base no-growth guards now also cover the active inter-body
+      deformable surface-CCD crossing, active AVBD ground contact/friction
+      rows, AVBD self-contact normal/friction rows, and an active rigid AVBD
+      penetrating contact plus no-contact fixed-joint rows.
       Still-larger or differently shaped production-scale frictional deformable
       sets still need no-growth gates before making the full deformable claim.
 - [ ] Phase 6: Add memory-layout profiler/debugger surfaces and GUI
