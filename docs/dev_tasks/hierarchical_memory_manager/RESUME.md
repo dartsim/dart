@@ -65,7 +65,8 @@ stage-owned entity-order scratch instead of local traversal vectors, and reuse
 stage-owned per-body contact-power and stationary-flag scratch for the rigid IPC
 resting-contact no-op predicate. The rigid IPC projected-Newton loop also reuses
 solve-local surface buffers across line-search and sufficient-decrease
-backtracking candidates. They add
+backtracking candidates, and repeated solve-internal barrier assembly and
+line-search calls reuse surface-pair/triplet scratch. They add
 global `operator new` guards proving baked kinematic IPC rigid-body,
 box-obstacle, rigid-body resting-contact, non-cross articulated resting-contact,
 and same-DOF sequential cross-articulated link-contact steps do not allocate

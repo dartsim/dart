@@ -282,7 +282,8 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     resting-contact no-op predicate reuses stage-owned per-body contact-power
     and stationary-flag scratch. The rigid IPC projected-Newton loop now reuses
     solve-local surface buffers across line-search and sufficient-decrease
-    backtracking candidates.
+    backtracking candidates, and its repeated solve-internal barrier assembly
+    and line-search calls reuse surface-pair/triplet scratch.
     Convenience return-by-value unified problem wrappers remain a separate
     allocation target.
   - Reused `DeformableDynamicsStage` scratch for deformable surface snapshots,
