@@ -160,15 +160,16 @@
       `BM_LcpExtremeActiveSetTransition` rows for scoped standard 128-row,
       boxed 128-row, and coupled friction-index 16-contact packets, verified in
       default, SIMD-enabled, and CUDA-enabled build trees.
-- [x] Added production active-set transition coverage and 48
+- [x] Added production active-set transition coverage and 64
       `BM_LcpProductionActiveSetTransition` rows for stronger-coupled
-      24-contact/72-row, 32-contact/96-row, and 48-contact/144-row
+      24-contact/72-row, 32-contact/96-row, 48-contact/144-row, and
+      64-contact/192-row
       friction-index packets, verified in default, SIMD-enabled, and
       CUDA-enabled build trees.
-- [x] Added 390
+- [x] Added 422
       `BM_LcpProductionActiveSetTransitionBatch(Serial|Parallel)` rows for
       batch-size-4 runs over standard 32/64/128-row, boxed 32/64/128-row, and
-      coupled friction-index 8-/12-/16-/24-/32-/48-contact active-set packets,
+      coupled friction-index 8-/12-/16-/24-/32-/48-/64-contact active-set packets,
       verified in default, SIMD-enabled, and CUDA-enabled build trees.
 - [x] Added 284 `BM_LcpMildIllConditioned` benchmark rows for the scoped larger
       mildly ill-conditioned standard 32-row, boxed 16-row, friction-index
@@ -963,31 +964,31 @@ tradeoffs evidence based.
   CUDA-enabled build, not CUDA LCP kernel execution.
 - Verified production active-set transition benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpProductionActiveSetTransition/' | wc -l`
-  reported 48 rows, and
+  reported 64 rows, and
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpProductionActiveSetTransition' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   ran all rows with `contract_ok=1` in the default, SIMD-enabled, and
   CUDA-enabled build trees. These rows cover stronger-coupled 24-contact,
-  72-row, 32-contact, 96-row, and 48-contact, 144-row friction-index
+  72-row, 32-contact, 96-row, 48-contact, 144-row, and 64-contact, 192-row friction-index
   active-set transition packets over all 16 friction-index-capable manifest
   solvers. The rows report
   `active_set_transition=1`, `production_active_set_transition=1`, backend
-  build-state counters, `contact_count=24/32/48`,
-  `problem_size=72/96/144`, `coupling_scale=2/4/8`, and `coupled=1`. The CUDA-enabled rows are CPU solver
+  build-state counters, `contact_count=24/32/48/64`,
+  `problem_size=72/96/144/192`, `coupling_scale=2/4/8/16`, and `coupled=1`. The CUDA-enabled rows are CPU solver
   rows in a CUDA-enabled build, not CUDA LCP kernel execution.
 - Verified production active-set transition batch benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpProductionActiveSetTransitionBatch' | wc -l`
-  reported 390 rows, and JSON benchmark checks for
-  `BM_LcpProductionActiveSetTransitionBatch` reported 390 rows with
+  reported 422 rows, and JSON benchmark checks for
+  `BM_LcpProductionActiveSetTransitionBatch` reported 422 rows with
   `contract_ok=1` in the default, SIMD-enabled, and CUDA-enabled build trees.
   These rows cover batch-size-4 serial and DART 7 `ParallelExecutor` runs over
   standard 32/64/128-row, boxed 32/64/128-row, and coupled friction-index
-  8-/12-/16-/24-/32-/48-contact active-set packets.
+  8-/12-/16-/24-/32-/48-/64-contact active-set packets.
   The rows report `production_active_set_transition_batch=1`,
   `batch_size=4`, `problem_size=24/32/36/48/64/72/96/128/144`,
-  `total_problem_size=96/128/144/192/256/288/384/512/576`, and backend
+  `total_problem_size=96/128/144/192/256/288/384/512/576/768`, and backend
   build-state counters. Friction-index rows also report
-  `contact_count=8/12/16/24/32/48`, `total_contact_count=32/48/64/96/128/192`,
-  and `coupling_scale=1/2/4/8`. Parallel rows also report `profile_enabled=1`,
+  `contact_count=8/12/16/24/32/48/64`, `total_contact_count=32/48/64/96/128/192/256`,
+  and `coupling_scale=1/2/4/8/16`. Parallel rows also report `profile_enabled=1`,
   `parallel_units=4`, `worker_count=20`, and observed `max_parallelism`. The
   CUDA-enabled rows are CPU solver batch rows in a CUDA-enabled build, not CUDA
   LCP kernel execution.
@@ -1725,25 +1726,26 @@ tradeoffs evidence based.
   build-state counters, and contact/coupling counters where applicable. The
   CUDA-enabled rows are CPU solver rows in a CUDA-enabled build, not CUDA LCP
   kernel execution.
-- Added 48 `BM_LcpProductionActiveSetTransition` rows for stronger-coupled
-  24-contact, 72-row, 32-contact, 96-row, and 48-contact, 144-row
+- Added 64 `BM_LcpProductionActiveSetTransition` rows for stronger-coupled
+  24-contact, 72-row, 32-contact, 96-row, 48-contact, 144-row, and
+  64-contact, 192-row
   friction-index active-set transition packets over every friction-index-capable manifest solver. These
   rows report `contract_ok=1`, `active_set_transition=1`,
-  `production_active_set_transition=1`, `contact_count=24/32/48`,
-  `problem_size=72/96/144`, `coupling_scale=2/4/8`, backend build-state counters,
+  `production_active_set_transition=1`, `contact_count=24/32/48/64`,
+  `problem_size=72/96/144/192`, `coupling_scale=2/4/8/16`, backend build-state counters,
   and `coupled=1`. The CUDA-enabled rows are CPU solver rows in a
   CUDA-enabled build, not CUDA LCP kernel execution.
-- Added 390
+- Added 422
   `BM_LcpProductionActiveSetTransitionBatch(Serial|Parallel)` rows for
   batch-size-4 serial and DART 7 `ParallelExecutor` runs over standard
   32/64/128-row, boxed 32/64/128-row, and coupled friction-index
-  8-/12-/16-/24-/32-/48-contact active-set packets. These rows
+  8-/12-/16-/24-/32-/48-/64-contact active-set packets. These rows
   report `contract_ok=1`, `production_active_set_transition_batch=1`,
   `batch_size=4`, `problem_size=24/32/36/48/64/72/96/128/144`,
-  `total_problem_size=96/128/144/192/256/288/384/512/576`, backend build-state
+  `total_problem_size=96/128/144/192/256/288/384/512/576/768`, backend build-state
   counters, and parallel execution counters on the `ParallelExecutor` rows.
-  Friction-index rows also report `contact_count=8/12/16/24/32/48`,
-  `total_contact_count=32/48/64/96/128/192`, and `coupling_scale=1/2/4/8`.
+  Friction-index rows also report `contact_count=8/12/16/24/32/48/64`,
+  `total_contact_count=32/48/64/96/128/192/256`, and `coupling_scale=1/2/4/8/16`.
   The CUDA-enabled rows are CPU solver batch rows in a CUDA-enabled build, not
   CUDA LCP kernel execution.
 - Extended generated friction-index coverage with coupled contact matrices:
@@ -1854,7 +1856,7 @@ tradeoffs evidence based.
 - Coverage breadth: extend deterministic generated fixtures beyond the current
   production-scale well-conditioned, larger mildly ill-conditioned,
   singular-degenerate through the current 128-row/64-contact slice, and
-  active-set transition through the current stronger-coupled 48-contact slice
+  active-set transition through the current stronger-coupled 64-contact slice
   into harder solver-specific friction-index coupling edge cases and direct
   backend execution evidence beyond CPU solver rows in SIMD/CUDA-enabled
   builds. Standard/boxed exact rank-deficient singular-degenerate batch
@@ -1869,8 +1871,8 @@ tradeoffs evidence based.
   mildly ill-conditioned 6-, 8-, 12-, 16-, 24-, and 32-contact cases,
   ADMM/SAP-only 16x-coupled mildly ill-conditioned 6-, 8-, 12-, 16-, 24-,
   32-, 48-, and 64-contact cases, near-singular 48-contact cases, singular-degenerate
-  64-contact cases, and production active-set transition 24-, 32-, and
-  48-contact cases. Broader
+  64-contact cases, and production active-set transition 24-, 32-, 48-, and
+  64-contact cases. Broader
   harder-conditioned coupled friction-index grids beyond the narrow ADMM/SAP
   16x slice still need solver-specific evidence.
 - Real-world cases: the current DART 7 world-contact evidence includes
@@ -1956,7 +1958,7 @@ tradeoffs evidence based.
 
 1. Extend solver-specific friction-index conditioning/coupling grids beyond the
    current exact rank-deficient 128-row/16-contact and production active-set
-   transition 48-contact slices.
+   transition 64-contact slices.
 2. Extend DART 7 boxed-LCP world-contact evidence from current separated
    sphere-ground, current fixed-base prismatic articulated end-to-end coverage,
    current connected Cartesian-chain articulated end-to-end coverage,

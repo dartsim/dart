@@ -324,14 +324,14 @@ the default, SIMD-enabled, and CUDA-enabled build trees. The CUDA-enabled rows
 are CPU solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
 It now also extends active-set transition coverage to a production
 friction-index slice: stronger-coupled 24-contact, 72-row, 32-contact, 96-row,
-and 48-contact, 144-row packets, plus 48 matching
+48-contact, 144-row, and 64-contact, 192-row packets, plus 64 matching
 `BM_LcpProductionActiveSetTransition`
 benchmark rows verified in the default, SIMD-enabled, and CUDA-enabled build
-trees. It now also adds 390
+trees. It now also adds 422
 `BM_LcpProductionActiveSetTransitionBatch(Serial|Parallel)` rows for
 batch-size-4 serial and DART 7 `ParallelExecutor` runs over standard
 32/64/128-row, boxed 32/64/128-row, and coupled friction-index
-8-/12-/16-/24-/32-/48-contact active-set packets, verified in the default,
+8-/12-/16-/24-/32-/48-/64-contact active-set packets, verified in the default,
 SIMD-enabled, and CUDA-enabled build trees. The CUDA-enabled rows are CPU
 solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
 The work adds DART 7 `dart::simulation::World` boxed-LCP contact snapshot tests
@@ -411,7 +411,7 @@ Push/PR work still requires explicit maintainer/user approval.
 ## Immediate Next Step
 
 Move from the now-verified extreme 128-row/64-contact exact rank-deficient,
-production active-set transition 48-contact, coupled mildly ill-conditioned
+production active-set transition 64-contact, coupled mildly ill-conditioned
 24-contact, near-singular 48-contact CPU solver rows, near-singular
 serial/parallel batch rows, exact rank-deficient singular-degenerate
 friction-index and standard/boxed batch rows, and default/SIMD/CUDA Newton warm-start
@@ -518,22 +518,22 @@ contact scenes.
   `contact_count=16`/`coupled=1` for the coupled friction-index packet. The
   CUDA-enabled rows are CPU solver rows in a CUDA-enabled build, not CUDA LCP
   kernel execution.
-  `BM_LCP_COMPARE` also lists 48
+  `BM_LCP_COMPARE` also lists 64
   `BM_LcpProductionActiveSetTransition` rows for stronger-coupled 24-contact,
-  72-row, 32-contact, 96-row, and 48-contact, 144-row friction-index active-set packets over all 16
+  72-row, 32-contact, 96-row, 48-contact, 144-row, and 64-contact, 192-row friction-index active-set packets over all 16
   friction-index-capable manifest solvers; the focused default, SIMD-enabled,
   and CUDA-enabled runs pass with `contract_ok=1` on all rows and report
   `active_set_transition=1`, `production_active_set_transition=1`,
-  `contact_count=24/32/48`, `problem_size=72/96/144`, `coupling_scale=2/4/8`, and
+  `contact_count=24/32/48/64`, `problem_size=72/96/144/192`, `coupling_scale=2/4/8/16`, and
   `coupled=1`. The CUDA-enabled rows are CPU solver rows in a CUDA-enabled
   build, not CUDA LCP kernel execution.
-  `BM_LCP_COMPARE` also lists 390
+  `BM_LCP_COMPARE` also lists 422
   `BM_LcpProductionActiveSetTransitionBatch(Serial|Parallel)` rows for
   batch-size-4 serial and DART 7 `ParallelExecutor` runs over standard
   32/64/128-row, boxed 32/64/128-row, and coupled friction-index
-  8-/12-/16-/24-/32-/48-contact active-set packets. Focused default,
-  SIMD-enabled, and CUDA-enabled JSON checks report 390 rows with
-  `contract_ok=1`, 195 serial rows, and 195 parallel rows; the SIMD run reports
+  8-/12-/16-/24-/32-/48-/64-contact active-set packets. Focused default,
+  SIMD-enabled, and CUDA-enabled JSON checks report 422 rows with
+  `contract_ok=1`, 211 serial rows, and 211 parallel rows; the SIMD run reports
   `build_simd_enabled=1`, and the CUDA-enabled run reports
   `build_cuda_enabled=1`. These are CPU solver batch rows in a CUDA-enabled
   build, not CUDA LCP kernel execution.
@@ -686,11 +686,11 @@ contact scenes.
   `BM_LcpExtremeActiveSetTransition` slice passes with
   `build_cuda_enabled=1`, `build_simd_enabled=0`, and `contract_ok=1` on all
   49 rows, the focused `BM_LcpProductionActiveSetTransition` slice passes with
-  `build_cuda_enabled=1`, `build_simd_enabled=0`, `contact_count=24/32/48`,
-  `problem_size=72/96/144`, `coupling_scale=2/4/8`, and `contract_ok=1` on all 48
+  `build_cuda_enabled=1`, `build_simd_enabled=0`, `contact_count=24/32/48/64`,
+  `problem_size=72/96/144/192`, `coupling_scale=2/4/8/16`, and `contract_ok=1` on all 64
   rows, the focused `BM_LcpProductionActiveSetTransitionBatch` slice passes
   with `build_cuda_enabled=1`, `build_simd_enabled=0`,
-  `production_active_set_transition_batch=1`, and `contract_ok=1` on all 390
+  `production_active_set_transition_batch=1`, and `contract_ok=1` on all 422
   rows, and the focused
   `BM_LcpExtremeSingularDegenerate` slice passes with
   `build_cuda_enabled=1`, `build_simd_enabled=0`, `rank_deficient=1`, and
@@ -1001,18 +1001,18 @@ contact scenes.
   `total_body_count=12`; parallel rows also report `profile_enabled=1`,
   `worker_count=20`, `parallel_units=5`, and observed `max_parallelism` up to 5. Treat this as serial and DART 7 `ParallelExecutor` batch evidence over
   contact-derived snapshots, not CUDA batch execution.
-- The benchmark target now also registers 390
+- The benchmark target now also registers 422
   `BM_LcpProductionActiveSetTransitionBatch(Serial|Parallel)` rows over
   batch-size-4 serial and DART 7 `ParallelExecutor` runs for standard
   32/64/128-row, boxed 32/64/128-row, and coupled friction-index
-  8-/12-/16-/24-/32-/48-contact active-set packets. Focused JSON benchmark
-  checks in default, SIMD-enabled, and CUDA-enabled build trees report 390 rows
+  8-/12-/16-/24-/32-/48-/64-contact active-set packets. Focused JSON benchmark
+  checks in default, SIMD-enabled, and CUDA-enabled build trees report 422 rows
   with `contract_ok=1`. Each row reports
   `production_active_set_transition_batch=1`, `batch_size=4`,
   `problem_size=24/32/36/48/64/72/96/128/144`, and
-  `total_problem_size=96/128/144/192/256/288/384/512/576`; friction-index rows
-  also report `contact_count=8/12/16/24/32/48`,
-  `total_contact_count=32/48/64/96/128/192`, and `coupling_scale=1/2/4/8`.
+  `total_problem_size=96/128/144/192/256/288/384/512/576/768`; friction-index rows
+  also report `contact_count=8/12/16/24/32/48/64`,
+  `total_contact_count=32/48/64/96/128/192/256`, and `coupling_scale=1/2/4/8/16`.
   Parallel rows also report `profile_enabled=1`, `worker_count=20`,
   `parallel_units=4`, and observed `max_parallelism`. Treat this as serial and
   DART 7 `ParallelExecutor` batch evidence over synthetic active-set packets,

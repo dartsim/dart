@@ -973,8 +973,8 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     transition coverage near lower, upper, and friction-cone boundaries. The
     active-set transition correctness grid now reaches standard 128-row, boxed
     128-row, and coupled friction-index 16-contact packets over scoped
-    scalable solvers, plus production coupled friction-index 24-contact and
-    32-contact active-set transition packets with stronger cross-contact
+    scalable solvers, plus production coupled friction-index 24-, 32-, 48-,
+    and 64-contact active-set transition packets with stronger cross-contact
     coupling. Added a scoped larger mildly ill-conditioned known-solution slice
     for standard
     32/64-row, boxed 16/32-row, friction-index 8-contact, and coupled
@@ -1078,13 +1078,13 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     default, SIMD-enabled, and CUDA-enabled build trees, plus 49 extreme
     active-set transition rows for standard 128-row, boxed 128-row, and coupled
     friction-index 16-contact packets verified across default, SIMD-enabled,
-    and CUDA-enabled build trees, plus 48 production active-set transition rows
-    for 24-contact/72-row, 32-contact/96-row, and 48-contact/144-row coupled
-    friction-index packets verified across default, SIMD-enabled, and
-    CUDA-enabled build trees, plus 390 production active-set transition batch
+    and CUDA-enabled build trees, plus 64 production active-set transition rows
+    for 24-contact/72-row, 32-contact/96-row, 48-contact/144-row, and
+    64-contact/192-row coupled friction-index packets verified across default,
+    SIMD-enabled, and CUDA-enabled build trees, plus 422 production active-set transition batch
     rows for batch-size-4 serial and DART 7 `ParallelExecutor` runs over the
     standard 32/64/128-row, boxed 32/64/128-row, and coupled friction-index
-    8-/12-/16-/24-/32-/48-contact active-set packets verified across default,
+    8-/12-/16-/24-/32-/48-/64-contact active-set packets verified across default,
     SIMD-enabled, and CUDA-enabled build trees, plus
     larger mildly ill-conditioned generated correctness coverage and 284
     benchmark rows for standard 32-row,
