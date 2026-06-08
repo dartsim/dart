@@ -173,6 +173,40 @@ TEST(NewtonBarrierPrimitives, LineSearchStatsAccumulateSharedCounters)
 }
 
 //==============================================================================
+TEST(NewtonBarrierPrimitives, LineSearchPositiveStepPredicateIsShared)
+{
+  EXPECT_TRUE(nb::allowsPositiveLineSearchStep(1.0, false));
+  EXPECT_FALSE(nb::allowsPositiveLineSearchStep(0.0, false));
+  EXPECT_FALSE(nb::allowsPositiveLineSearchStep(-1.0, false));
+  EXPECT_FALSE(nb::allowsPositiveLineSearchStep(0.5, true));
+}
+
+//==============================================================================
+TEST(NewtonBarrierPrimitives, LineSearchResultsUseSharedPositiveStepPredicate)
+{
+  dc::ContinuousCollisionStepResult deformable;
+  rigid::RigidIpcLineSearchResult rigidResult;
+
+  deformable.stepBound = 0.25;
+  rigidResult.limited = true;
+  rigidResult.stepBound = 0.25;
+  EXPECT_TRUE(deformable.allowsPositiveStep());
+  EXPECT_TRUE(rigidResult.allowsPositiveStep());
+
+  deformable.stepBound = 0.0;
+  rigidResult.stepBound = 0.0;
+  EXPECT_FALSE(deformable.allowsPositiveStep());
+  EXPECT_FALSE(rigidResult.allowsPositiveStep());
+
+  deformable.stepBound = 0.25;
+  rigidResult.stepBound = 0.25;
+  deformable.indeterminate = true;
+  rigidResult.indeterminate = true;
+  EXPECT_FALSE(deformable.allowsPositiveStep());
+  EXPECT_FALSE(rigidResult.allowsPositiveStep());
+}
+
+//==============================================================================
 TEST(NewtonBarrierPrimitives, DistanceForwardingMatchesSharedOwner)
 {
   const Eigen::Vector3d p(0.25, 0.35, 0.4);

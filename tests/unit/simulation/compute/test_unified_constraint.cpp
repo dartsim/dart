@@ -204,24 +204,26 @@ TEST(UnifiedConstraint, RigidFreeLinkBlockMatchesWithinMultibodyCoupling)
   arm.setMass(1.0);
   arm.setInertia(Eigen::Matrix3d::Identity());
 
-  sx::compute::LinkContact near;
-  near.link = dart::simulation::detail::toRegistryEntity(arm.getEntity());
-  near.normal = Eigen::Vector3d::UnitY();
-  near.point = Eigen::Vector3d(1.0, 0.0, 0.0);
-  near.depth = 0.01;
-  near.friction = 0.5;
+  sx::compute::LinkContact nearContact;
+  nearContact.link
+      = dart::simulation::detail::toRegistryEntity(arm.getEntity());
+  nearContact.normal = Eigen::Vector3d::UnitY();
+  nearContact.point = Eigen::Vector3d(1.0, 0.0, 0.0);
+  nearContact.depth = 0.01;
+  nearContact.friction = 0.5;
 
-  sx::compute::LinkContact far;
-  far.link = dart::simulation::detail::toRegistryEntity(arm.getEntity());
-  far.normal = Eigen::Vector3d::UnitY();
-  far.point = Eigen::Vector3d(2.0, 0.0, 0.0);
-  far.depth = 0.0;
-  far.friction = 0.5;
+  sx::compute::LinkContact farContact;
+  farContact.link = dart::simulation::detail::toRegistryEntity(arm.getEntity());
+  farContact.normal = Eigen::Vector3d::UnitY();
+  farContact.point = Eigen::Vector3d(2.0, 0.0, 0.0);
+  farContact.depth = 0.0;
+  farContact.friction = 0.5;
 
   Eigen::VectorXd nextVelocity(1);
   nextVelocity << -0.3;
 
-  const std::vector<sx::compute::LinkContact> linkContacts{near, far};
+  const std::vector<sx::compute::LinkContact> linkContacts{
+      nearContact, farContact};
   auto& registry = dart::simulation::detail::registryOf(world);
   const auto& structure = registry.get<sx::comps::MultibodyStructure>(
       dart::simulation::detail::toRegistryEntity(robot.getEntity()));

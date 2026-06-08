@@ -4180,7 +4180,7 @@ bool applySurfaceContactCcdLimit(
   stats.surfaceContactCcdIndeterminateCount += result.stats.indeterminate;
   stats.surfaceContactCcdZeroStepCount += result.stats.zeroStepCount;
 
-  if (result.indeterminate) {
+  if (!result.allowsPositiveStep()) {
     return false;
   }
 

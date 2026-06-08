@@ -209,7 +209,8 @@ struct RigidIpcLineSearchResult
 
   [[nodiscard]] bool allowsPositiveStep() const noexcept
   {
-    return stepBound > 0.0 && !indeterminate;
+    return newton_barrier::allowsPositiveLineSearchStep(
+        stepBound, indeterminate);
   }
 };
 
