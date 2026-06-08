@@ -2499,6 +2499,28 @@ TEST(BoxedLcpContact, SevenSphereStackWorldContactSnapshotSatisfiesLcpContract)
 }
 
 //==============================================================================
+// An eight-sphere stack extends coupled multi-contact snapshot evidence beyond
+// the previous 7-contact boundary without claiming public-step stability.
+TEST(BoxedLcpContact, EightSphereStackWorldContactSnapshotSatisfiesLcpContract)
+{
+  constexpr double kFriction = 0.6;
+  constexpr int kSphereCount = 8;
+
+  auto lcp = buildSphereStackScene(kSphereCount, kFriction, true);
+
+  const std::vector<sx::Contact> contacts = lcp->collide();
+  ASSERT_EQ(contacts.size(), static_cast<std::size_t>(kSphereCount));
+
+  const sx::detail::BoxedLcpContactSnapshot snapshot
+      = sx::detail::solveBoxedLcpContacts(
+          sx::detail::registryOf(*lcp), contacts, lcp->getTimeStep());
+
+  expectBoxedFrictionIndexSnapshot(
+      snapshot, kFriction, kSphereCount, kSphereCount);
+  EXPECT_GT(maxNormalContactCoupling(snapshot), 1e-6);
+}
+
+//==============================================================================
 // End-to-end DART 7 World stepping for coupled contacts: a 3-sphere stack
 // advances through the public BoxedLcp path for many time steps. This checks
 // motion-level invariants for the same shared-body contact topology validated

@@ -1180,9 +1180,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     coupled 2/3-sphere vertical-stack benchmark rows for the same solver set,
     plus scoped 4-, 5-, and 6-sphere stack rows for all of those solvers except
     `NNCG`, plus 7-sphere rows for that set except `NNCG` and
-    `RedBlackGaussSeidel`, so benchmark evidence now includes small contact
-    systems with shared dynamic bodies. Added 3-, 4-, 5-, 6-, and 7-sphere stack snapshot tests
-    that validate nonzero normal-contact coupling, plus boxed-LCP Baumgarte
+    `RedBlackGaussSeidel`, plus 8-sphere rows for the narrower passing
+    10-solver subset, so benchmark evidence now includes small contact systems
+    with shared dynamic bodies. Added 3-, 4-, 5-, 6-, 7-, and 8-sphere stack
+    snapshot tests that validate nonzero normal-contact coupling, plus boxed-LCP Baumgarte
     velocity-bias stabilization that preserves kinematic contacts' static-obstacle
     compatibility behavior, and 3-sphere 200-step, 3-sphere 500-step,
     4-sphere 200-step, 5-sphere 500-step, and 6-sphere 1000-step
@@ -1190,8 +1191,8 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     public boxed-LCP stack path. Added 4- and 16-sphere separated-contact
     `World::step()` invariant tests and 4-/8-/16-sphere separated-contact
     `World::step()` benchmark rows for the public boxed-LCP path. Stack
-    assembly/solve benchmark rows now include a 7-sphere, 7-contact, 21-row
-    coupled stack snapshot. Added
+    assembly/solve benchmark rows now include 7-sphere, 7-contact, 21-row and
+    8-sphere, 8-contact, 24-row coupled stack snapshots. Added
     mixed world-contact batch benchmark rows that compare every
     friction-index-capable solver on the same five separated-contact and
     stacked-contact snapshots, both serially and through the DART 7

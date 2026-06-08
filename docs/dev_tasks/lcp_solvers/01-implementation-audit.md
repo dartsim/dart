@@ -42,7 +42,7 @@ Support abbreviations:
   single-contact and two-contact sphere-ground friction cases, 200-step
   two-sphere and four-sphere boxed-LCP
   `World::step()` invariant tests, 16-sphere separated-contact boxed-LCP
-  `World::step()` invariant tests, 3-, 4-, 5-, 6-, and 7-sphere coupled-stack boxed-LCP
+  `World::step()` invariant tests, 3-, 4-, 5-, 6-, 7-, and 8-sphere coupled-stack boxed-LCP
   snapshot tests, 3-sphere 200-step, 3-sphere 500-step, 4-sphere 200-step,
   5-sphere 500-step, and 6-sphere 1000-step boxed-LCP `World::step()` invariant tests and benchmark
   rows, 4-/8-/16-contact separated sphere-ground step benchmark rows,
@@ -666,7 +666,7 @@ The current local evidence for this task is:
   general robot contact coverage.
 - `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.*SphereStack*'`
   passed focused stack tests, validating the boxed/findex LCP contract for
-  3-sphere, 4-sphere, 5-sphere, 6-sphere, and 7-sphere vertical stacks assembled from
+  3-sphere, 4-sphere, 5-sphere, 6-sphere, 7-sphere, and 8-sphere vertical stacks assembled from
   DART 7 `World::collide()`, plus the 3-sphere, 4-sphere, 5-sphere, and
   6-sphere public step invariants below. Local 7-sphere public-step probes at
   1000 and 2000 steps failed the existing motion-invariant contract, so no
@@ -674,7 +674,8 @@ The current local evidence for this task is:
   4-sphere snapshot contains 4 contacts and 12 LCP rows, the 5-sphere snapshot
   contains 5 contacts and 15 LCP rows, and the 6-sphere snapshot contains
   6 contacts and 18 LCP rows; the 7-sphere snapshot contains 7 contacts and
-  21 LCP rows. The snapshot tests also check that the
+  21 LCP rows; the 8-sphere snapshot contains 8 contacts and 24 LCP rows. The
+  snapshot tests also check that the
   normal-contact block has nonzero off-diagonal coupling, so this evidence is
   not just a set of independent contact rows. The 4-sphere public-step path is
   enabled by the boxed-LCP contact solve's timestep-driven Baumgarte velocity
@@ -703,6 +704,9 @@ The current local evidence for this task is:
   unit path still failed height, spacing, and near-rest checks, and
   `BM_LcpWorldStackStep_BoxedLcp/7/2000` reported `invariant_ok=0` with
   `max_vertical_speed=4.599`.
+- `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.EightSphereStackWorldContactSnapshotSatisfiesLcpContract' --gtest_brief=1`
+  passed locally. This validates the 8-sphere, 8-contact, 24-row boxed/findex
+  stack snapshot only; no 8-sphere public-step invariant is claimed.
 - `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.SphereStackWorldStepMaintainsContactInvariants'`
   passed 1 test, advancing the same 3-sphere vertical stack through 200 public
   boxed-LCP `World::step()` iterations and checking finite state,
@@ -711,7 +715,7 @@ The current local evidence for this task is:
 - `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.LongRunningSphereStackWorldStepMaintainsContactInvariants'`
   passed 1 test, advancing the same 3-sphere vertical stack through 500 public
   boxed-LCP `World::step()` iterations with the same motion invariants.
-- The `test_boxed_lcp_contact --gtest_list_tests` inventory now lists 62 tests.
+- The `test_boxed_lcp_contact --gtest_list_tests` inventory now lists 63 tests.
   The earlier full run still emits the existing `StaticFrictionHoldsSmallPush` degenerate-pivot
   warning, so this should not be counted as clean evidence for
   dense-degenerate multi-contact systems.
@@ -738,9 +742,15 @@ The current local evidence for this task is:
   claimed. It also registers 14
   `BM_LcpWorldStackContact/FrictionIndex/<solver>/7` rows for that set except
   `NNCG` and `RedBlackGaussSeidel`; a focused `RedBlackGaussSeidel` 7-sphere
-  probe reported `contract_ok=0`, so that row is not claimed. The matching
-  `BM_LcpWorldStackContactAssembly_BoxedLcp/{2,3,4,5,6}` rows rebuild, collide,
-  assemble through `detail::solveBoxedLcpContacts`, solve, and validate the
+  probe reported `contract_ok=0`, so that row is not claimed. It also
+  registers 10 `BM_LcpWorldStackContact/FrictionIndex/<solver>/8` rows for the
+  passing 8-sphere subset (`Dantzig`, `SymmetricPsor`, `BGS`,
+  `SubspaceMinimization`, `Apgd`, `Tgs`, `Staggering`, `Admm`, `Sap`, and
+  `BoxedSemiSmoothNewton`); focused probes reported `contract_ok=0` for `Pgs`,
+  `Jacobi`, `BlockedJacobi`, and `ShockPropagation`, so those 8-sphere rows are
+  not claimed. The matching
+  `BM_LcpWorldStackContactAssembly_BoxedLcp/{2,3,4,5,6,7,8}` rows rebuild,
+  collide, assemble through `detail::solveBoxedLcpContacts`, solve, and validate the
   boxed-LCP stack contact path. The focused 4-sphere benchmark run
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldStackContact/FrictionIndex/.*/4|BM_LcpWorldStackContactAssembly_BoxedLcp/4' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   passed with `contract_ok=1` for all 16 registered rows. Focused default,
@@ -764,6 +774,11 @@ The current local evidence for this task is:
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldStackContact/FrictionIndex/.*/7$|BM_LcpWorldStackContactAssembly_BoxedLcp/7$' --benchmark_min_time=0.001s`
   run reported `contract_ok=1` for all 14 registered 7-sphere solver rows and
   the 7-sphere assembly row.
+  Focused default, SIMD-enabled, and CUDA-enabled
+  `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldStackContact/FrictionIndex/.*/8$|BM_LcpWorldStackContactAssembly_BoxedLcp/8$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  runs reported `contract_ok=1` for all 10 registered 8-sphere solver rows and
+  the 8-sphere assembly row. These are CPU solver rows in each build tree,
+  including the CUDA-enabled build.
   These stacks include sphere-ground and sphere-sphere contacts coupled through
   shared dynamic bodies. This is small coupled-stack benchmark evidence, not
   articulated, robot-like, or dense-degenerate contact evidence.
@@ -889,7 +904,7 @@ The current local evidence for this task is:
   ground and rigid-impact rows also reported `contract_ok=1` with
   `build_simd_enabled=1` and `build_cuda_enabled=1`, respectively; those are CPU
   solver rows in those build trees, not CUDA kernel execution.
-- `test_boxed_lcp_contact --gtest_list_tests` now lists 62 tests. The dense box
+- `test_boxed_lcp_contact --gtest_list_tests` now lists 63 tests. The dense box
   face-contact test assembles a 4-contact, 12-row boxed/findex LCP from
   `World::collide()`, checks the single-dynamic-body dense patch shape, and
   verifies the problem with APGD; the sliding and static-friction box
@@ -1345,7 +1360,8 @@ The current local evidence for this task is:
   4-/8-/16-contact step rows,
   2/3-sphere vertical stacks, 4-/5-/6-sphere vertical-stack rows for all of those
   solvers except `NNCG`, 7-sphere rows for all of those solvers except `NNCG`
-  and `RedBlackGaussSeidel`, mixed contact-derived serial/parallel batches, the
+  and `RedBlackGaussSeidel`, 8-sphere rows for the narrower passing solver
+  subset, mixed contact-derived serial/parallel batches, the
   3-sphere stack public step path, fixed-base prismatic articulated
   link-ground one-link and four-link `World::step()` paths, connected
   fixed-base three-axis Cartesian-chain `World::step()` paths, fixed-base
@@ -1394,7 +1410,8 @@ The current local evidence for this task is:
   benchmark rows now cover simple
   separated boxed-LCP contact snapshots, small coupled vertical stacks through
   6-sphere all-solver rows except `NNCG`, scoped 7-sphere rows excluding `NNCG`
-  and `RedBlackGaussSeidel`, mixed serial/task-parallel batches
+  and `RedBlackGaussSeidel`, scoped 8-sphere rows over the narrower passing
+  solver subset, mixed serial/task-parallel batches
   over those snapshots, stress mixed serial/task-parallel batches that include
   4-/5-/6-sphere stack snapshots for all of those solvers except `NNCG`,
   200-step/500-step
