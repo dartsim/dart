@@ -33,10 +33,7 @@
 #include <dart/common/logging.hpp>
 #include <dart/common/stl_allocator.hpp>
 
-#include <limits>
-#include <memory>
-#include <type_traits>
-#include <utility>
+#include <new>
 
 #include <cstddef>
 
@@ -52,17 +49,9 @@ StlAllocator<T>::StlAllocator(MemoryAllocator& baseAllocator) noexcept
 
 //==============================================================================
 template <typename T>
-StlAllocator<T>::StlAllocator(const StlAllocator& other) throw()
-  : std::allocator<T>(other), mBaseAllocator(other.mBaseAllocator)
-{
-  // Do nothing
-}
-
-//==============================================================================
-template <typename T>
 template <class U>
-StlAllocator<T>::StlAllocator(const StlAllocator<U>& other) throw()
-  : std::allocator<T>(other), mBaseAllocator(other.mBaseAllocator)
+constexpr StlAllocator<T>::StlAllocator(const StlAllocator<U>& other) noexcept
+  : mBaseAllocator(other.mBaseAllocator)
 {
   // Do nothing
 }
@@ -120,24 +109,6 @@ StlAllocator<T>::storageAlignmentFor(size_type bytes) noexcept
   }
 
   return bytes >= 2048 ? cacheLineAlignment : naturalAlignment;
-}
-
-//==============================================================================
-template <typename T>
-template <typename U, typename... Args>
-void StlAllocator<T>::construct(U* pointer, Args&&... args)
-{
-  std::construct_at(pointer, std::forward<Args>(args)...);
-}
-
-//==============================================================================
-template <typename T>
-template <typename U>
-void StlAllocator<T>::destroy(U* pointer) noexcept
-{
-  if constexpr (!std::is_trivially_destructible_v<U>) {
-    std::destroy_at(pointer);
-  }
 }
 
 //==============================================================================

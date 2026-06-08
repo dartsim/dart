@@ -41,7 +41,9 @@
 #include <gtest/gtest.h>
 
 #include <limits>
+#include <memory>
 #include <string_view>
+#include <type_traits>
 #include <vector>
 
 #include <cstddef>
@@ -197,6 +199,22 @@ TEST(StlAllocatorTest, ComparesUnderlyingAllocatorIdentity)
   EXPECT_FALSE(firstInts != firstDoubles);
   EXPECT_FALSE(firstInts == secondInts);
   EXPECT_TRUE(firstInts != secondInts);
+}
+
+//==============================================================================
+TEST(StlAllocatorTest, ExposesLightweightStatefulAllocatorTraits)
+{
+  using Allocator = StlAllocator<int>;
+  using Traits = std::allocator_traits<Allocator>;
+
+  EXPECT_FALSE((std::is_base_of_v<std::allocator<int>, Allocator>));
+  EXPECT_EQ(sizeof(Allocator), sizeof(void*));
+  EXPECT_TRUE((std::is_trivially_copy_constructible_v<Allocator>));
+  EXPECT_TRUE((std::is_trivially_destructible_v<Allocator>));
+  EXPECT_FALSE(Traits::is_always_equal::value);
+  EXPECT_TRUE(Traits::propagate_on_container_copy_assignment::value);
+  EXPECT_TRUE(Traits::propagate_on_container_move_assignment::value);
+  EXPECT_TRUE(Traits::propagate_on_container_swap::value);
 }
 
 //==============================================================================

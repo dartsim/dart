@@ -194,6 +194,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     allocator-backed STL storage, including fixed-pool-backed max-aligned
     values and cache-line-aligned large storage pages for allocator-aware
     container hot loops.
+  - Made `StlAllocator` a lightweight stateful allocator instead of deriving
+    from `std::allocator`, matching foonathan-style container propagation
+    traits and letting `std::allocator_traits` handle object
+    construction/destruction for allocator-aware container hot loops.
   - Added a fixed-capacity growth policy to `FreeListAllocator` so
     preallocated free-list arenas can fail deterministically instead of growing
     from the base allocator after bake/build, and exposed construction-time
