@@ -609,10 +609,14 @@ its own line so status updates remain git-history friendly.
   `simulation_experimental` stubs, `dart.simulation.diff` / `dart.diff` shared
   module, classic render world isolated under `dart.gui.RenderWorld`,
   `dart::simulation::World` as the C++ owner, and `dart-simulation` as the
-  package target/component). Remaining work is negative smokes and docs cleanup
-  for removed DART 6 or experimental paths. Parity references should come from
-  `release-6.*` branches, not main-branch classic World tests. Final local gate:
-  `pixi run check-dart7-final-world-promotion`.
+  package target/component). The current `dart/simulation` folder tree is the
+  accepted guarded post-promotion layout, not the final whole-repo taxonomy; use
+  the post-promotion source-layout decision sidecar for compute, IO, state/space,
+  diff, and legacy dynamics follow-ups before moving files. Remaining work is
+  negative smokes and docs cleanup for removed DART 6 or experimental paths.
+  Parity references should come from `release-6.*` branches, not main-branch
+  classic World tests. Final local gate: `pixi run
+check-dart7-final-world-promotion`.
 - Gate: The planning PR passes the docs-only gates; follow-up implementation
   PRs must prove final examples, stubs/docs, package exports, API boundaries,
   C++/Python tests, `check-dart7-promotion-package-contract`,

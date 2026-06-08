@@ -42,18 +42,6 @@ namespace dart::simulation::detail::deformable_contact {
 namespace {
 
 //==============================================================================
-collision::native::CcdOption makeNativeOption(
-    const ContinuousCollisionStepOptions& options)
-{
-  collision::native::CcdOption native;
-  native.minSeparation = std::max(0.0, options.minSeparation);
-  native.tolerance = std::max(0.0, options.tolerance);
-  native.maxIterations = std::max(1, options.maxIterations);
-  native.advancement = collision::native::CcdAdvancement::Conservative;
-  return native;
-}
-
-//==============================================================================
 void recordHit(
     ContinuousCollisionStepResult& result,
     const double timeOfImpact,
@@ -123,7 +111,7 @@ ContinuousCollisionStepResult pointTriangleStepBound(
       bEnd,
       cStart,
       cEnd,
-      makeNativeOption(options),
+      newton_barrier::makeLineSearchCcdOption(options),
       nativeResult);
 
   if (hit) {
@@ -169,7 +157,7 @@ ContinuousCollisionStepResult edgeEdgeStepBound(
       cEnd,
       dStart,
       dEnd,
-      makeNativeOption(options),
+      newton_barrier::makeLineSearchCcdOption(options),
       nativeResult);
 
   if (hit) {

@@ -6,15 +6,16 @@
   promoted public contract and the source tree reorganized around the stable
   facade. DART 6 API compatibility remains on `release-6.*` support branches;
   main moves as a DART 7 clean break.
-- Current evidence: the promoted World owns the DART 7 simulation direction.
-  `dart::simulation::World`, `dartpy.simulation.World`, and `dartpy.World` now
-  bind the ECS-backed facade; the source tree, CMake component, Python binding
-  source, focused tests, and benchmark directories use the `simulation` path;
-  generated stubs no longer publish `dartpy.simulation_experimental`; and the
-  classic Python world is quarantined as `dartpy.gui.RenderWorld`. Remaining
-  work is cleanup and hardening: finish stale docs, keep public-header/package
-  guards green, retire obsolete staging task names, and ensure parity claims
-  are backed by `release-6.*` branches rather than main-branch DART 6 code.
+- Current evidence: PR #2932 landed the first official DART 7 simulation API
+  promotion. `dart::simulation::World`, `dartpy.simulation.World`, and
+  `dartpy.World` now bind the ECS-backed facade; the source tree, CMake
+  component, Python binding source, focused tests, and benchmark directories use
+  the `simulation` path; generated stubs no longer publish
+  `dartpy.simulation_experimental`; and the classic Python world is quarantined
+  as `dartpy.gui.RenderWorld`. Remaining work is cleanup and hardening: finish
+  stale docs, keep public-header/package guards green, retire obsolete staging
+  task names, and ensure parity claims are backed by `release-6.*` branches
+  rather than main-branch DART 6 code.
 
 ## Direction
 
