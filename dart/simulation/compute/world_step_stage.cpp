@@ -9599,6 +9599,20 @@ void DeformableDynamicsStage::prepare(World& world)
           scratch.boxObstacles,
           *vbdConfig,
           vbdScratch);
+      if (vbdConfig->useAvbdContactNormalRows
+          && vbdConfig->contactStiffness > 0.0) {
+        const std::size_t contactRowCapacity = state.positions.size();
+        vbdScratch.avbdSolveFixed.reserve(state.positions.size());
+        vbdScratch.avbdContactDescriptors.reserve(contactRowCapacity);
+        vbdScratch.avbdContactInventory.reserve(contactRowCapacity);
+        vbdScratch.avbdContactRows.reserve(contactRowCapacity);
+        const std::size_t frictionRowCapacity = 2 * contactRowCapacity;
+        vbdScratch.avbdFrictionDescriptors.reserve(frictionRowCapacity);
+        vbdScratch.avbdFrictionInventory.reserve(frictionRowCapacity);
+        vbdScratch.avbdFrictionRows.reserve(frictionRowCapacity);
+        vbdScratch.previousAvbdFrictionDescriptors.reserve(frictionRowCapacity);
+        vbdScratch.previousAvbdFrictionRows.reserve(frictionRowCapacity);
+      }
       if (vbdConfig->useAvbdSelfContactNormalRows
           && contactScratch.surfaceTriangles.size() >= 2) {
         vbdScratch.avbdSolveFixed.reserve(state.positions.size());

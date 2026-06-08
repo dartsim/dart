@@ -1073,6 +1073,43 @@ void configureAvbdSelfContactFrictionRowsScene(dart::simulation::World& world)
   }
 }
 
+void configureAvbdGroundFrictionRowsScene(dart::simulation::World& world)
+{
+  namespace sx = dart::simulation;
+
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.01);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("avbd_ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(10.0, 10.0, 0.5)));
+  ground.setDeformableGroundBarrier(true);
+
+  sx::DeformableBodyOptions options;
+  options.positions = {Eigen::Vector3d(0.0, 0.0, -0.002)};
+  options.velocities = {Eigen::Vector3d(1.0, 0.0, 0.0)};
+  options.masses = {1.0};
+  options.edgeStiffness = 0.0;
+  options.material.frictionCoefficient = 0.8;
+  world.addDeformableBody("avbd_ground_friction", options);
+
+  sx::comps::DeformableVbdConfig cfg;
+  cfg.enabled = true;
+  cfg.iterations = 8;
+  cfg.contactStiffness = 1.0e4;
+  cfg.useAvbdContactNormalRows = true;
+  cfg.avbdAlpha = 0.0;
+  cfg.avbdGamma = 1.0;
+  cfg.avbdMaxStiffness = 1.0e6;
+  auto& registry = sx::detail::registryOf(world);
+  for (const auto entity : registry.view<sx::comps::DeformableBodyTag>()) {
+    registry.emplace_or_replace<sx::comps::DeformableVbdConfig>(entity, cfg);
+  }
+}
+
 } // namespace
 
 // Test World construction
@@ -1939,6 +1976,9 @@ TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "deformable AVBD self-contact friction rows",
       configureAvbdSelfContactFrictionRowsScene);
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "deformable AVBD ground friction rows",
+      configureAvbdGroundFrictionRowsScene);
 }
 
 TEST(World, DeformableSelfContactFrictionProductionGridIsActive)
@@ -1957,6 +1997,26 @@ TEST(World, DeformableSelfContactFrictionProductionGridIsActive)
   EXPECT_GT(diagnostics.selfContactBarrierActiveContacts, 0u);
   EXPECT_GT(diagnostics.convergedActiveContactCount, 0u);
   EXPECT_GT(diagnostics.frictionDissipation, 0.0);
+}
+
+TEST(World, AvbdGroundFrictionRowsAreActive)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  configureAvbdGroundFrictionRowsScene(world);
+  auto& registry = sx::detail::registryOf(world);
+  world.enterSimulationMode();
+
+  world.step();
+  world.step();
+
+  const auto states
+      = sx::compute::avbd_replay::captureDeformableAvbdWarmStartReplayState(
+          registry);
+  ASSERT_EQ(states.size(), 1u);
+  EXPECT_GT(states[0].contactRows.size(), 0u);
+  EXPECT_EQ(states[0].frictionRows.size(), 2u * states[0].contactRows.size());
 }
 
 TEST(World, BakedKinematicIpcStepsDoNotAllocateGlobalHeap)
@@ -2203,6 +2263,9 @@ TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "deformable AVBD self-contact friction rows",
       configureAvbdSelfContactFrictionRowsScene);
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "deformable AVBD ground friction rows",
+      configureAvbdGroundFrictionRowsScene);
 
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "deformable surface and rigid CCD snapshots", [](sx::World& world) {
