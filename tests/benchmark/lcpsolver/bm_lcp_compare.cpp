@@ -4772,8 +4772,12 @@ int getBenchmarkMaxIterations(const dart::test::LcpSolverManifestEntry& solver)
   if (solver.name == "InteriorPoint" || solver.name == "MinimumMapNewton"
       || solver.name == "FischerBurmeisterNewton"
       || solver.name == "PenalizedFischerBurmeisterNewton"
-      || solver.name == "Sap" || solver.name == "BoxedSemiSmoothNewton") {
+      || solver.name == "BoxedSemiSmoothNewton") {
     return 50;
+  }
+
+  if (solver.name == "Sap") {
+    return 5000;
   }
 
   if (solver.name == "Dantzig" || solver.name == "Baraff"
@@ -4793,7 +4797,9 @@ struct SolverBenchmarkOptions
   dart::math::SubspaceMinimizationSolver::Parameters subspaceParams;
   dart::math::PenalizedFischerBurmeisterNewtonSolver::Parameters
       penalizedFischerBurmeisterParams;
+  dart::math::SapSolver::Parameters sapParams;
   dart::math::ShockPropagationSolver::Parameters shockPropagationParams;
+  bool hasSapParams{false};
   bool hasShockPropagationParams{false};
 };
 
@@ -4923,6 +4929,15 @@ void ConfigureSolverBenchmarkOptions(
   } else if (solver.name == "PenalizedFischerBurmeisterNewton") {
     storage.penalizedFischerBurmeisterParams.lambda = 1.0;
     storage.options.customOptions = &storage.penalizedFischerBurmeisterParams;
+  } else if (solver.name == "Sap") {
+    storage.options.absoluteTolerance = 1e-5;
+    storage.options.relativeTolerance = 1e-3;
+    storage.options.complementarityTolerance
+        = (problem.findex.array() >= 0).any() ? 2e-3 : 1e-3;
+    storage.sapParams.regularization = 1e-6;
+    storage.sapParams.maxLineSearchIterations = 32;
+    storage.options.customOptions = &storage.sapParams;
+    storage.hasSapParams = true;
   } else if (solver.name == "ShockPropagation") {
     ConfigureShockPropagationParameters(
         problem, storage.shockPropagationParams);
@@ -7805,6 +7820,11 @@ void RunArticulatedUnifiedContactBenchmark(
   if (benchmarkCase == ArticulatedContactBenchmarkCase::RigidImpact) {
     state.counters["dynamic_rigid_body_count"]
         = static_cast<double>(fixture->bodyCount);
+  }
+  if (storage.hasSapParams) {
+    state.counters["sap_regularization"] = storage.sapParams.regularization;
+    state.counters["sap_max_line_search_iterations"]
+        = storage.sapParams.maxLineSearchIterations;
   }
   if (storage.hasShockPropagationParams) {
     if (storage.shockPropagationParams.blockSizes.empty()) {
@@ -10870,7 +10890,7 @@ void RegisterArticulatedUnifiedContactBenchmarks()
           ->Arg(4)
           ->Arg(8)
           ->Arg(16)
-          ->Arg(20);
+          ->Arg(24);
     }
   }
 }
