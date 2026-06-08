@@ -937,6 +937,39 @@ TEST(UnifiedConstraint, FallbackFrictionUpdatesCrossMultibodyOtherEnd)
   EXPECT_LT(std::abs(tangentAfter), std::abs(tangentBefore));
   EXPECT_LT(velocities[0][1], velocityA[1]);
   EXPECT_GT(velocities[1][1], velocityB[1]);
+
+  sx::compute::UnifiedConstraintSolveScratch scratch;
+  std::vector<Eigen::VectorXd> scratchVelocities{velocityA, velocityB};
+  sx::compute::applyUnifiedConstraintFallback(
+      registry,
+      unified,
+      std::span<Eigen::VectorXd>(scratchVelocities),
+      8,
+      scratch);
+  scratchVelocities = {velocityA, velocityB};
+  sx::compute::applyUnifiedConstraintFallback(
+      registry,
+      unified,
+      std::span<Eigen::VectorXd>(scratchVelocities),
+      8,
+      scratch);
+
+  std::size_t allocations = 0;
+  std::size_t bytes = 0;
+  scratchVelocities = {velocityA, velocityB};
+  {
+    ScopedHeapAllocationCounter heapCounter;
+    sx::compute::applyUnifiedConstraintFallback(
+        registry,
+        unified,
+        std::span<Eigen::VectorXd>(scratchVelocities),
+        8,
+        scratch);
+    allocations = heapCounter.allocations();
+    bytes = heapCounter.bytes();
+  }
+
+  EXPECT_EQ(allocations, 0u) << "allocated " << bytes << " bytes";
 }
 
 //==============================================================================
