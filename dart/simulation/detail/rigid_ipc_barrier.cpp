@@ -2291,13 +2291,36 @@ RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
     const RigidIpcProjectedNewtonSolveOptions& options)
 {
   RigidIpcProjectedNewtonSolveResult result;
+  RigidIpcProjectedNewtonSolveScratch scratch;
+  solveRigidIpcProjectedNewtonBarrierSystem(surfaces, options, result, scratch);
+  return result;
+}
+
+void solveRigidIpcProjectedNewtonBarrierSystem(
+    std::span<const RigidIpcBarrierSurface> surfaces,
+    const RigidIpcProjectedNewtonSolveOptions& options,
+    RigidIpcProjectedNewtonSolveResult& result,
+    RigidIpcProjectedNewtonSolveScratch& scratch)
+{
+  result.status = RigidIpcProjectedNewtonSolveStatus::MaxIterations;
+  result.converged = false;
+  result.failed = false;
+  result.assembly = RigidIpcBarrierAssembly{};
+  result.lineSearch = RigidIpcLineSearchResult{};
+  result.lastStep = RigidIpcProjectedNewtonStep{};
+  result.stats = RigidIpcProjectedNewtonSolveStats{};
   result.surfaces.assign(surfaces.begin(), surfaces.end());
-  std::vector<RigidIpcBarrierSurface> laggedSurfaces(
-      surfaces.begin(), surfaces.end());
-  std::vector<RigidIpcBarrierSurface> lineSearchStartSurfaces;
-  std::vector<RigidIpcBarrierSurface> candidateSurfaces;
-  std::vector<RigidIpcBarrierSurface> acceptedSurfaces;
-  std::vector<RigidIpcBarrierSurface> bestDecreasingSurfaces;
+
+  std::vector<RigidIpcBarrierSurface>& laggedSurfaces = scratch.laggedSurfaces;
+  std::vector<RigidIpcBarrierSurface>& lineSearchStartSurfaces
+      = scratch.lineSearchStartSurfaces;
+  std::vector<RigidIpcBarrierSurface>& candidateSurfaces
+      = scratch.candidateSurfaces;
+  std::vector<RigidIpcBarrierSurface>& acceptedSurfaces
+      = scratch.acceptedSurfaces;
+  std::vector<RigidIpcBarrierSurface>& bestDecreasingSurfaces
+      = scratch.bestDecreasingSurfaces;
+  laggedSurfaces.assign(surfaces.begin(), surfaces.end());
   lineSearchStartSurfaces.reserve(surfaces.size());
   candidateSurfaces.reserve(surfaces.size());
   acceptedSurfaces.reserve(surfaces.size());
@@ -2525,15 +2548,15 @@ RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
 
       if (step.status == RigidIpcProjectedNewtonStatus::NoDofs) {
         if (!checkConvergedKinematicSweep()) {
-          return result;
+          return;
         }
         result.status = RigidIpcProjectedNewtonSolveStatus::NoDofs;
         result.converged = true;
-        return result;
+        return;
       }
       if (step.converged) {
         if (!checkConvergedKinematicSweep()) {
-          return result;
+          return;
         }
         result.status = RigidIpcProjectedNewtonSolveStatus::Converged;
         result.converged = true;
@@ -2542,11 +2565,11 @@ RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
       if (!step.success) {
         result.status = RigidIpcProjectedNewtonSolveStatus::FactorizationFailed;
         result.failed = true;
-        return result;
+        return;
       }
       if (iteration == options.maxIterations) {
         result.status = RigidIpcProjectedNewtonSolveStatus::MaxIterations;
-        return result;
+        return;
       }
 
       if (options.useLineSearch) {
@@ -2580,7 +2603,7 @@ RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
             && kinematicLineSearchLimitBlocksAcceptedState(result.lineSearch)) {
           result.status = RigidIpcProjectedNewtonSolveStatus::LineSearchBlocked;
           result.failed = true;
-          return result;
+          return;
         }
         step = computeRigidIpcProjectedNewtonStep(
             result.assembly, result.lineSearch, newtonOptions);
@@ -2600,13 +2623,13 @@ RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
           }
           result.status = RigidIpcProjectedNewtonSolveStatus::LineSearchBlocked;
           result.failed = true;
-          return result;
+          return;
         }
         if (!step.success) {
           result.status
               = RigidIpcProjectedNewtonSolveStatus::FactorizationFailed;
           result.failed = true;
-          return result;
+          return;
         }
       }
 
@@ -2620,7 +2643,7 @@ RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
           result.status
               = RigidIpcProjectedNewtonSolveStatus::FactorizationFailed;
           result.failed = true;
-          return result;
+          return;
         }
 
         double sufficientDecreaseFactor
@@ -2707,10 +2730,10 @@ RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
             result.status
                 = RigidIpcProjectedNewtonSolveStatus::LineSearchBlocked;
             result.failed = true;
-            return result;
+            return;
           } else {
             result.status = RigidIpcProjectedNewtonSolveStatus::MaxIterations;
-            return result;
+            return;
           }
         }
 
@@ -2743,7 +2766,7 @@ RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
     }
 
     if (!result.converged || !useLaggedFriction) {
-      return result;
+      return;
     }
 
     laggedSurfaces = result.surfaces;
@@ -2761,7 +2784,7 @@ RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
     if (result.assembly.activeFrictionConstraints.empty()) {
       result.status = RigidIpcProjectedNewtonSolveStatus::Converged;
       result.converged = true;
-      return result;
+      return;
     }
 
     ++result.stats.frictionIterations;
@@ -2771,12 +2794,11 @@ RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
                    <= frictionConvergenceTolerance)) {
       result.status = RigidIpcProjectedNewtonSolveStatus::Converged;
       result.converged = true;
-      return result;
+      return;
     }
   }
 
   result.status = RigidIpcProjectedNewtonSolveStatus::MaxIterations;
-  return result;
 }
 
 } // namespace dart::simulation::detail

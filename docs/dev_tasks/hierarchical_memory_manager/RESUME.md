@@ -67,7 +67,9 @@ resting-contact no-op predicate. The rigid IPC projected-Newton loop also reuses
 solve-local surface buffers across line-search and sufficient-decrease
 backtracking candidates, and repeated solve-internal barrier assembly and
 line-search calls reuse surface-pair/triplet scratch, including the
-lagged-friction barrier pass. They add
+lagged-friction barrier pass. The rigid IPC contact stage now calls the
+projected-Newton solve through caller-owned result/scratch storage so per-solve
+surface candidate buffers persist across steps. They add
 global `operator new` guards proving baked kinematic IPC rigid-body,
 box-obstacle, rigid-body resting-contact, non-cross articulated resting-contact,
 and same-DOF sequential cross-articulated link-contact steps do not allocate

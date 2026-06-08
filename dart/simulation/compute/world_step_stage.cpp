@@ -131,6 +131,8 @@ struct RigidIpcContactStage::Scratch
   std::vector<double> contactPowerSum;
   std::vector<std::uint8_t> sawNonStationaryContactBody;
   std::vector<std::uint8_t> stationaryContactBody;
+  sxdetail::RigidIpcProjectedNewtonSolveResult solveResult;
+  sxdetail::RigidIpcProjectedNewtonSolveScratch solveScratch;
 };
 
 struct RigidBodyNode
@@ -9124,6 +9126,12 @@ void RigidIpcContactStage::prepare(World& world)
   m_scratch->contactPowerSum.reserve(bodyCount);
   m_scratch->sawNonStationaryContactBody.reserve(bodyCount);
   m_scratch->stationaryContactBody.reserve(bodyCount);
+  m_scratch->solveResult.surfaces.reserve(bodyCount);
+  m_scratch->solveScratch.laggedSurfaces.reserve(bodyCount);
+  m_scratch->solveScratch.lineSearchStartSurfaces.reserve(bodyCount);
+  m_scratch->solveScratch.candidateSurfaces.reserve(bodyCount);
+  m_scratch->solveScratch.acceptedSurfaces.reserve(bodyCount);
+  m_scratch->solveScratch.bestDecreasingSurfaces.reserve(bodyCount);
 
   RigidIpcSolverStats warmupStats;
   collectRigidIpcRuntimeBodies(world, warmupStats, m_scratch->runtimeBodies);
@@ -9254,13 +9262,13 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
   options.newton.relativeGradientTolerance = 1e-6;
   options.stepTolerance = 1e-12;
 
-  sxdetail::RigidIpcProjectedNewtonSolveResult result;
+  sxdetail::RigidIpcProjectedNewtonSolveResult& result = scratch.solveResult;
   ComputeGraph graph;
   graph.addNode(
       "rigid_ipc_projected_newton_solve",
       [&]() {
-        result = sxdetail::solveRigidIpcProjectedNewtonBarrierSystem(
-            surfaces, options);
+        sxdetail::solveRigidIpcProjectedNewtonBarrierSystem(
+            surfaces, options, result, scratch.solveScratch);
       },
       getMetadata());
   executor.execute(graph);

@@ -192,6 +192,9 @@
       across line-search and sufficient-decrease backtracking candidates, and
       repeated solve-internal barrier assembly and line-search calls reuse
       surface-pair/triplet scratch, including the lagged-friction barrier pass.
+      The rigid IPC contact stage now calls the projected-Newton solve through a
+      caller-owned result/scratch overload so per-solve surface candidate
+      buffers persist in stage scratch across steps.
       `DeformableDynamicsStage` now owns reusable
       obstacle-list, deformable surface-snapshot, and rigid
       surface-CCD snapshot scratch, and `prepare()` primes per-body

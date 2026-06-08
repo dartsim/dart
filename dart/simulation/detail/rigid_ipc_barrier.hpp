@@ -367,6 +367,15 @@ struct RigidIpcProjectedNewtonSolveResult
   }
 };
 
+struct RigidIpcProjectedNewtonSolveScratch
+{
+  std::vector<RigidIpcBarrierSurface> laggedSurfaces;
+  std::vector<RigidIpcBarrierSurface> lineSearchStartSurfaces;
+  std::vector<RigidIpcBarrierSurface> candidateSurfaces;
+  std::vector<RigidIpcBarrierSurface> acceptedSurfaces;
+  std::vector<RigidIpcBarrierSurface> bestDecreasingSurfaces;
+};
+
 /// Evaluates the IPC point-triangle barrier after rigid pose interpolation.
 ///
 /// The returned derivatives are with respect to the transformed world-space
@@ -706,6 +715,17 @@ computeRigidIpcProjectedNewtonStep(
 solveRigidIpcProjectedNewtonBarrierSystem(
     std::span<const RigidIpcBarrierSurface> surfaces,
     const RigidIpcProjectedNewtonSolveOptions& options = {});
+
+/// Run the projected-Newton solve into caller-owned result and scratch storage.
+///
+/// This is the hot-path form for simulation stages that repeatedly solve the
+/// same scene shape. The return-by-value overload remains the convenience API
+/// for tests and one-off callers.
+DART_SIMULATION_API void solveRigidIpcProjectedNewtonBarrierSystem(
+    std::span<const RigidIpcBarrierSurface> surfaces,
+    const RigidIpcProjectedNewtonSolveOptions& options,
+    RigidIpcProjectedNewtonSolveResult& result,
+    RigidIpcProjectedNewtonSolveScratch& scratch);
 
 /// Compute the initial IPC adaptive barrier stiffness (kappa) for a solve.
 ///
