@@ -45,12 +45,12 @@ ill-conditioned packet set: standard 32-row, boxed 16-row, friction-index
 6-/8-/12-/16-/24-/32-/48-/64-/96-/128-contact rows. Boxed Semi-Smooth Newton reports
 tuned line-search settings on the 16x rows. The slice is verified in default,
 SIMD-enabled, and CUDA-enabled build trees.
-The robust near-singular generated coverage now reaches coupled friction-index
-128-contact packets. It also adds 50
+The robust near-singular generated and benchmark coverage now reaches coupled
+friction-index 128-contact packets. It also adds 54
 `BM_LcpNearSingularBatch(Serial|Parallel)` rows for batch-size-4 serial and
 DART 7 `ParallelExecutor` runs over near-singular standard 8-row, boxed 8-row,
-and coupled friction-index 3-/6-/9-/12-/16-/24-/32-/48-/64-/96-contact packets,
-verified in default, SIMD-enabled, and CUDA-enabled build trees.
+and coupled friction-index 3-/6-/9-/12-/16-/24-/32-/48-/64-/96-/128-contact
+packets, verified in default, SIMD-enabled, and CUDA-enabled build trees.
 It also adds 54
 `BM_LcpSingularDegenerateFrictionIndexBatch(Serial|Parallel)` rows for
 batch-size-4 serial and DART 7 `ParallelExecutor` runs over exact
@@ -293,14 +293,15 @@ build-state counters. Focused block-solver unit coverage passed 15 tests. The
 CUDA-enabled rows are CPU BGS/Blocked Jacobi solver rows in a CUDA-enabled
 build, not CUDA LCP kernel execution.
 It now also extends the robust near-singular generated slice to coupled
-friction-index 128-contact packets and adds 25 `BM_LcpNearSingular` benchmark
+friction-index 128-contact packets and adds 27 `BM_LcpNearSingular` benchmark
 rows for standard 8-row, boxed 8-row, and coupled friction-index 3-, 6-, 9-,
-12-, 16-, 24-, 32-, 48-, 64-, and 96-contact packets verified in
+12-, 16-, 24-, 32-, 48-, 64-, 96-, and 128-contact packets verified in
 default, SIMD-enabled, and CUDA-enabled build trees. The 96- and 128-contact
 generated packets use the contract-verified capped normal ramp and `1e6`
-diagonal spread; focused generated coverage passes in default, SIMD-enabled,
-and CUDA-enabled build trees. The CUDA-enabled rows/tests are CPU solver rows
-in a CUDA-enabled build, not CUDA LCP kernel execution.
+diagonal spread; focused generated coverage and focused 128-contact benchmark
+rows pass in default, SIMD-enabled, and CUDA-enabled build trees. The
+CUDA-enabled rows/tests are CPU solver rows in a CUDA-enabled build, not CUDA
+LCP kernel execution.
 It now also adds exact rank-deficient singular-degenerate generated coverage
 for standard 16-row, boxed 16-row, and coupled friction-index 6-contact
 packets, plus 27 matching `BM_LcpSingularDegenerate` benchmark rows verified in
@@ -631,19 +632,19 @@ contact scenes.
   128-contact packet, and the 16x rows report `boxed_ssn_max_line_search_steps=50`,
   `boxed_ssn_step_reduction=0.8`, and
   `boxed_ssn_jacobian_regularization=1e-8`.
-  `BM_LCP_COMPARE` also lists 25 `BM_LcpNearSingular` rows for standard
+  `BM_LCP_COMPARE` also lists 27 `BM_LcpNearSingular` rows for standard
   8-row, boxed 8-row, and coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-,
-  32-, 48-, 64-, and 96-contact
+  32-, 48-, 64-, 96-, and 128-contact
   packets over the scoped robust solver set; the focused default,
   SIMD-enabled, and CUDA-enabled runs pass with `contract_ok=1` on all rows and
   report `near_singular=1`, backend build-state counters, and contact/coupling
   counters where applicable. The CUDA-enabled rows are CPU solver rows in a
   CUDA-enabled build, not CUDA LCP kernel execution.
-  `BM_LCP_COMPARE` also lists 50
+  `BM_LCP_COMPARE` also lists 54
   `BM_LcpNearSingularBatch(Serial|Parallel)` rows for batch-size-4 serial and
   DART 7 `ParallelExecutor` runs over near-singular standard 8-row, boxed
-  8-row, and coupled friction-index 3-/6-/9-/12-/16-/24-/32-/48-/64-/96-contact
-  packets; focused default, SIMD-enabled, and CUDA-enabled JSON checks pass
+  8-row, and coupled friction-index 3-/6-/9-/12-/16-/24-/32-/48-/64-/96-/128-contact
+  packets; focused default, SIMD-enabled, and CUDA-enabled checks pass
   with `contract_ok=1` on all rows and report `near_singular_batch=1`,
   problem/total-problem-size counters, contact/total-contact counters for the
   friction-index rows, backend build-state counters, and parallel execution
