@@ -9734,6 +9734,8 @@ void AddBatchBenchmarkArgs(
     BenchmarkProblemFamily family)
 {
   constexpr int batchSize = 4;
+  const bool addCudaComparableSizes
+      = solver.name == "Jacobi" || solver.name == "Pgs";
   if (family == BenchmarkProblemFamily::Standard && solver.name == "Direct") {
     // DirectSolver enumerates n <= 3 before falling back to Dantzig.
     registeredBenchmark->Args({3, batchSize});
@@ -9743,12 +9745,21 @@ void AddBatchBenchmarkArgs(
   switch (family) {
     case BenchmarkProblemFamily::Standard:
       registeredBenchmark->Args({24, batchSize});
+      if (addCudaComparableSizes) {
+        registeredBenchmark->Args({48, batchSize})->Args({96, batchSize});
+      }
       break;
     case BenchmarkProblemFamily::Boxed:
       registeredBenchmark->Args({24, batchSize});
+      if (addCudaComparableSizes) {
+        registeredBenchmark->Args({48, batchSize})->Args({96, batchSize});
+      }
       break;
     case BenchmarkProblemFamily::FrictionIndex:
       registeredBenchmark->Args({8, batchSize});
+      if (addCudaComparableSizes) {
+        registeredBenchmark->Args({16, batchSize})->Args({32, batchSize});
+      }
       break;
   }
 }

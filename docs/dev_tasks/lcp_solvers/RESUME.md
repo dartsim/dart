@@ -392,7 +392,10 @@ packets, plus grouped variable-size manually assembled 1-/4-/8-/16-contact
 articulated unified-contact packets covering link-ground, link-vs-dynamic-rigid,
 and cross-multibody link-vs-link cases, plus mixed grouped contact batches that
 combine separated, stack, and 1-/4-/8-/16-contact articulated fixture families for fixed-iteration
-Jacobi and PGS.
+Jacobi and PGS. The generic CPU serial and DART 7 `ParallelExecutor` batch
+benchmark registrations now also expose Jacobi and PGS rows at the same
+standard/boxed 24-/48-/96-row and friction-index 8-/16-/32-contact packet
+sizes used by the direct CUDA batch rows.
 The work now also adds 49 `BM_LcpLargerActiveSetTransition` rows for the
 scoped scalable active-set transition packets: standard 32-row, boxed 32-row,
 and coupled friction-index 8-contact. Focused default, SIMD-enabled, and
@@ -715,6 +718,8 @@ contact scenes.
   proving narrow CUDA fixed-iteration projected-Jacobi and PGS batch paths for
   standard, boxed, friction-index, grouped variable-size synthetic
   standard/boxed/findex through 96-row and 32-contact packets,
+  CPU serial/`ParallelExecutor` Jacobi/PGS batch rows at the same
+  standard/boxed 24-/48-/96-row and friction-index 8-/16-/32-contact sizes,
   4-/8-/16-contact world-contact packets, and grouped
   1/2/4/8/16-contact separated sphere-ground packets. General CUDA execution for
   the full solver manifest remains a gap.
@@ -1223,7 +1228,14 @@ contact scenes.
   `total_problem_size=384`; the friction-index grouped rows cover
   4/8/16/32-contact packets with `min_problem_size=12`,
   `max_problem_size=96`, `total_contact_count=120`, and
-  `total_problem_size=360`. The homogeneous world-contact CUDA rows are
+  `total_problem_size=360`. The apples-to-apples CPU/CUDA batch follow-up
+  reports 36 CPU serial/`ParallelExecutor` rows with `contract_ok=1`,
+  `batch_size=4`, standard/boxed `problem_size=24/48/96`,
+  friction-index `contact_count=8/16/32`, `parallel_units=4` on
+  `ParallelExecutor` rows, and `total_problem_size` up to 384; the matching
+  direct CUDA command reports 18 rows with `cuda_batch_execution=1`,
+  `contract_ok=1`, and the same size counters. The homogeneous world-contact
+  CUDA rows are
   4-, 8-, and 16-contact packets; the denser rows report
   `batch_size=4`, `contact_count=16`, `problem_size=48`,
   `total_contact_count=64`, and `total_problem_size=192`. The homogeneous stack
@@ -1397,6 +1409,16 @@ cmake --build build/default/cpp/Release \
   "--gtest_brief=1"
 ./build/cuda/cpp/Release/bin/BM_LCP_COMPARE \
   "--benchmark_filter=^BM_LcpCuda(Jacobi|Pgs)(Batch|GroupedBatch)_(Standard|Boxed|FrictionIndex)" \
+  "--benchmark_min_time=0.001s" \
+  "--benchmark_repetitions=1" \
+  "--benchmark_format=json"
+./build/default/cpp/Release/bin/BM_LCP_COMPARE \
+  "--benchmark_filter=^BM_LcpBatch(Serial|Parallel)/(Standard|Boxed|FrictionIndex)/(Jacobi|Pgs)/(24|48|96|8|16|32)/4$" \
+  "--benchmark_min_time=0.001s" \
+  "--benchmark_repetitions=1" \
+  "--benchmark_format=json"
+./build/cuda/cpp/Release/bin/BM_LCP_COMPARE \
+  "--benchmark_filter=^BM_LcpCuda(Jacobi|Pgs)Batch_(Standard|Boxed|FrictionIndex)" \
   "--benchmark_min_time=0.001s" \
   "--benchmark_repetitions=1" \
   "--benchmark_format=json"

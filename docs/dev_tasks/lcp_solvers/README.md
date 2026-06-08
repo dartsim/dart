@@ -321,6 +321,10 @@
       standard 16/32/48/96-row, boxed 16/32/48/96-row, and friction-index
       4/8/16/32-contact packets, covering fixed-iteration CUDA Jacobi and PGS
       unit tests and benchmark rows on the visible GPU.
+- [x] Added apples-to-apples DART 7 CPU serial, DART 7 `ParallelExecutor`, and
+      fixed-iteration CUDA batch benchmark rows for Jacobi and PGS on the same
+      standard/boxed 24-/48-/96-row and friction-index 8-/16-/32-contact
+      packets at batch size 4.
 - [x] Added grouped variable-size CUDA contact-batch evidence for DART 7
       1/2/4/8/16-contact separated sphere-ground packets, covering
       fixed-iteration CUDA Jacobi and PGS unit tests and benchmark rows on the
@@ -555,6 +559,17 @@ tradeoffs evidence based.
   while the friction-index grouped rows report `min_contact_count=4`,
   `max_contact_count=32`, `total_contact_count=120`, `min_problem_size=12`,
   `max_problem_size=96`, and `total_problem_size=360`. A focused homogeneous
+  apples-to-apples CPU/CUDA follow-up
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpBatch(Serial|Parallel)/(Standard|Boxed|FrictionIndex)/(Jacobi|Pgs)/(24|48|96|8|16|32)/4$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_format=json`
+  in the default build reported 36 CPU rows with `contract_ok=1`,
+  `batch_size=4`, standard/boxed `problem_size=24/48/96`,
+  friction-index `contact_count=8/16/32`, `parallel_units=4` on
+  `ParallelExecutor` rows, and `total_problem_size` up to 384. The matching
+  CUDA command
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpCuda(Jacobi|Pgs)Batch_(Standard|Boxed|FrictionIndex)' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_format=json`
+  reported 18 direct CUDA rows with `cuda_batch_execution=1`, `contract_ok=1`,
+  and the same problem sizes, contact counts, batch size, and maximum
+  `total_problem_size=384`. A focused homogeneous
   16-contact follow-up
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpCuda(Jacobi|Pgs)WorldContactBatch_FrictionIndex/16/4' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   reported two homogeneous CUDA rows with `contract_ok=1`, `contact_count=16`,
