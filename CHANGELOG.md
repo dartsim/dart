@@ -979,8 +979,8 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     for standard
     32/64-row, boxed 16/32-row, friction-index 8-contact, and coupled
     friction-index 6-, 8-, 12-, 16-, and 24-contact packets, now including
-    stronger-coupled 16-/24-contact packets with 4x and 8x cross-contact
-    coupling and a 32-contact packet with 8x cross-contact coupling, plus an
+    4x-coupled 6-/8-/12-/16-/24-contact packets and 8x-coupled
+    6-/8-/12-/16-/24-/32-contact packets, plus an
     exact rank-deficient
     singular-degenerate slice for standard 16-row, boxed 16-row, and coupled
     friction-index 6-contact packets and a larger exact rank-deficient
@@ -1086,17 +1086,18 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     standard 32/64/128-row, boxed 32/64/128-row, and coupled friction-index
     8-/12-/16-/24-/32-/48-contact active-set packets verified across default,
     SIMD-enabled, and CUDA-enabled build trees, plus
-    198 larger mildly ill-conditioned benchmark rows for standard 32-row,
+    282 larger mildly ill-conditioned benchmark rows for standard 32-row,
     boxed 16-row, friction-index 8-contact, coupled friction-index 6-, 8-,
-    12-, 16-, and 24-contact packets, and stronger-coupled 16-/24-contact
-    packets with 4x and 8x cross-contact coupling plus a stronger-coupled
-    32-contact packet with 8x cross-contact coupling, plus ADMM/SAP-only
+    12-, 16-, and 24-contact packets, 4x-coupled
+    6-/8-/12-/16-/24-contact packets, and 8x-coupled
+    6-/8-/12-/16-/24-/32-contact packets, plus ADMM/SAP-only
     16x-coupled 6-/8-/12-/16-/24-/32-/48-contact packets over the scoped solver set,
     verified across default, SIMD-enabled, and CUDA-enabled build trees, plus
-    396 larger mildly ill-conditioned batch rows for batch-size-4 serial and
+    564 larger mildly ill-conditioned batch rows for batch-size-4 serial and
     DART 7 `ParallelExecutor` runs over standard 32-row, boxed 16-row,
     friction-index 8-contact, coupled friction-index 6-/8-/12-/16-/24-contact,
-    4x-coupled 16-/24-contact, 8x-coupled 16-/24-/32-contact, and
+    4x-coupled 6-/8-/12-/16-/24-contact, 8x-coupled
+    6-/8-/12-/16-/24-/32-contact, and
     ADMM/SAP-only 16x-coupled 6-/8-/12-/16-/24-/32-/48-contact packets, verified across
     default, SIMD-enabled, and CUDA-enabled build trees, plus
     21 near-singular benchmark rows for standard 8-row, boxed 8-row, and

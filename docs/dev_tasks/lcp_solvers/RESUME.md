@@ -30,17 +30,17 @@ case to the generated all-solver grid.
 The work now also adds a scoped larger mildly ill-conditioned generated
 known-solution slice for standard 32/64-row, boxed 16/32-row, friction-index
 8-contact, and coupled friction-index 6-, 8-, 12-, 16-, and 24-contact
-packets, plus stronger-coupled 16-/24-contact packets with 4x and 8x
-cross-contact coupling, a stronger-coupled 32-contact packet with 8x
-cross-contact coupling, ADMM/SAP-only 16x-coupled
-6-/8-/12-/16-/24-/32-/48-contact packets, and 198 matching
+packets, plus 4x-coupled 6-/8-/12-/16-/24-contact packets, 8x-coupled
+6-/8-/12-/16-/24-/32-contact packets, ADMM/SAP-only 16x-coupled
+6-/8-/12-/16-/24-/32-/48-contact packets, and 282 matching
 `BM_LcpMildIllConditioned` benchmark rows verified in
 default, SIMD-enabled, and CUDA-enabled build trees. It also
-adds 396 `BM_LcpMildIllConditionedBatch(Serial|Parallel)` rows for batch-size-4
+adds 564 `BM_LcpMildIllConditionedBatch(Serial|Parallel)` rows for batch-size-4
 serial and DART 7 `ParallelExecutor` runs over the full scoped mildly
 ill-conditioned packet set: standard 32-row, boxed 16-row, friction-index
-8-contact, coupled friction-index 6-/8-/12-/16-/24-contact, 4x-coupled
-16-/24-contact, 8x-coupled 16-/24-/32-contact, and ADMM/SAP-only 16x-coupled
+8-contact, coupled friction-index 6-/8-/12-/16-/24-contact,
+4x-coupled 6-/8-/12-/16-/24-contact, 8x-coupled
+6-/8-/12-/16-/24-/32-contact, and ADMM/SAP-only 16x-coupled
 6-/8-/12-/16-/24-/32-/48-contact packets, verified in default, SIMD-enabled,
 and CUDA-enabled build trees.
 It also adds 42 `BM_LcpNearSingularBatch(Serial|Parallel)` rows for
@@ -555,22 +555,23 @@ contact scenes.
   coupled friction-index packets. The
   CUDA-enabled rows are CPU solver rows in a CUDA-enabled build, not CUDA LCP
   kernel execution.
-  `BM_LCP_COMPARE` also lists 198 `BM_LcpMildIllConditioned` rows for standard
+  `BM_LCP_COMPARE` also lists 282 `BM_LcpMildIllConditioned` rows for standard
   32-row, boxed 16-row, friction-index 8-contact, and coupled friction-index
-  6-, 8-, 12-, 16-, and 24-contact packets, plus stronger-coupled 16-/24-contact
-  packets with 4x and 8x cross-contact coupling plus a stronger-coupled
-  32-contact packet with 8x cross-contact coupling, plus ADMM/SAP-only
+  6-, 8-, 12-, 16-, and 24-contact packets, plus 4x-coupled
+  6-/8-/12-/16-/24-contact packets and 8x-coupled
+  6-/8-/12-/16-/24-/32-contact packets, plus ADMM/SAP-only
   16x-coupled 6-/8-/12-/16-/24-/32-/48-contact packets over the scoped solver set; the
   focused default, SIMD-enabled, and CUDA-enabled runs pass with
   `contract_ok=1` on all rows and report `mildly_ill_conditioned=1` plus
   contact/coupling counters where applicable.
-  `BM_LCP_COMPARE` also lists 396
+  `BM_LCP_COMPARE` also lists 564
   `BM_LcpMildIllConditionedBatch(Serial|Parallel)` rows for batch-size-4 serial
   and DART 7 `ParallelExecutor` runs over the full scoped mildly
   ill-conditioned
   packet set: standard 32-row, boxed 16-row, friction-index 8-contact, coupled
-  friction-index 6-/8-/12-/16-/24-contact, 4x-coupled 16-/24-contact,
-  8x-coupled 16-/24-/32-contact, and ADMM/SAP-only 16x-coupled
+  friction-index 6-/8-/12-/16-/24-contact,
+  4x-coupled 6-/8-/12-/16-/24-contact, 8x-coupled
+  6-/8-/12-/16-/24-/32-contact, and ADMM/SAP-only 16x-coupled
   6-/8-/12-/16-/24-/32-/48-contact packets; focused default, SIMD-enabled, and
   CUDA-enabled JSON checks pass with `contract_ok=1` on all rows and report
   `mildly_ill_conditioned_batch=1`, problem/total-problem-size counters,
@@ -725,8 +726,9 @@ contact scenes.
   production-scale standard 128-row, boxed 64-row, friction-index 24-contact,
   coupled friction-index 12-contact, larger mildly ill-conditioned standard
   32/64-row, boxed 16/32-row, friction-index 8-contact, coupled friction-index
-  6-, 8-, 12-, 16-, and 24-contact, stronger-coupled mildly ill-conditioned
-  16-/24-contact plus a 32-contact 8x case, near-singular standard 8-row,
+  6-, 8-, 12-, 16-, and 24-contact, 4x-coupled mildly ill-conditioned
+  6-/8-/12-/16-/24-contact and 8x-coupled 6-/8-/12-/16-/24-/32-contact,
+  near-singular standard 8-row,
   boxed 8-row, coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-, and
   32-contact, and exact rank-deficient
   singular-degenerate standard 16-row, boxed 16-row, and coupled friction-index
