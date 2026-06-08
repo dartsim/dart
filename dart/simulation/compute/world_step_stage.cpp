@@ -4911,8 +4911,8 @@ void reserveSurfaceContactCandidateScratch(
 {
   const std::size_t triangleCount = scratch.surfaceTriangles.size();
   const std::size_t edgeCapacity = 3 * triangleCount;
-  const std::size_t pointTriangleCapacity = 4 * (nodeCount + triangleCount);
-  const std::size_t edgeEdgeCapacity = 6 * edgeCapacity;
+  const std::size_t pointTriangleCapacity = 8 * (nodeCount + triangleCount);
+  const std::size_t edgeEdgeCapacity = 12 * edgeCapacity;
 
   scratch.candidates.surfaceEdges.reserve(edgeCapacity);
   scratch.candidates.pointTriangleCandidates.reserve(pointTriangleCapacity);

@@ -144,8 +144,9 @@ The deformable scratch slice moved step-local obstacle barrier lists,
 deformable surface snapshots, and static/moving rigid surface-CCD snapshots
 into `DeformableDynamicsStage` scratch. `DeformableDynamicsStage::prepare()`
 now primes those reusable containers plus per-body surface-contact candidate
-buffers and inter-body/rigid surface-CCD sweep buffers during
-`enterSimulationMode()`. The baked global-heap guard now includes a deformable
+buffers, the wider swept-AABB line-search CCD candidate envelope needed by
+non-square self-contact grids, and inter-body/rigid surface-CCD sweep buffers
+during `enterSimulationMode()`. The baked global-heap guard now includes a deformable
 surface scene with a static rigid surface-CCD obstacle, covering snapshot
 reuse, plus first-baked-step active VBD static rigid surface-CCD point crossing.
 VBD topology and static-contact scratch are primed during
@@ -162,9 +163,10 @@ from bake-primed contact candidates, and the guard covers the two-triangle
 no-friction self-contact path. Surface-contact candidate and sweep buffers now
 get topology-scaled bake-time reserve capacity, and the guard covers a
 multi-triangle frictional self-contact patch, a 5x5 two-layer frictional
-self-contact grid, a 7x7 two-layer large grid, a 9x9 two-layer production
-grid, and an 11x11 two-layer extended production grid. Differently shaped or
-still-larger production-scale frictional deformable contact sets need
+self-contact grid, a 7x7 two-layer large grid, a 9x9 two-layer production grid,
+an 11x11 two-layer extended production grid, a 9x13 non-square production grid,
+and a 7x17 wide non-square production grid. Additional still-larger or
+differently shaped production-scale frictional deformable contact sets need
 no-growth gates before making the full deformable claim.
 
 The latest continuation verified the boxed-LCP fallback and unified island
@@ -326,17 +328,28 @@ should broaden beyond the covered rigid-body, non-cross articulated,
 same-DOF sequential cross-articulated, current boxed-LCP fallback
 resting-contact, current boxed-LCP multi-island mixed rigid/articulated
 fallback, current active 11x11 deformable self-contact friction grid, current
-active 9x13 deformable self-contact friction grid, current active AVBD ground
-contact/friction rows, current active AVBD self-contact normal/friction row
-scene, current active rigid AVBD contact rows, current active rigid AVBD
-fixed-joint rows, current active inter-body deformable surface-CCD crossing, and
-basic deformable surface-snapshot scenes, while keeping remaining public-value
-unified problem/solution wrappers and larger or differently shaped
-default-solver deformable allocation surfaces explicit, before making a full
-zero-dynamic-allocation claim.
+active 9x13 and 7x17 deformable self-contact friction grids, current active
+AVBD ground contact/friction rows, current active AVBD self-contact
+normal/friction row scene, current active rigid AVBD contact rows, current
+active rigid AVBD fixed-joint rows, current active inter-body deformable
+surface-CCD crossing, and basic deformable surface-snapshot scenes, while
+keeping remaining public-value unified problem/solution wrappers and larger or
+differently shaped default-solver deformable allocation surfaces explicit,
+before making a full zero-dynamic-allocation claim.
 
 ## Latest Local Validation
 
+- On 2026-06-08 after merging the latest `origin/main`, the deformable
+  self-contact friction no-growth guard expanded from the 9x13 non-square grid
+  to a 7x17 wide non-square two-layer production grid. The first guard exposed
+  global heap growth from motion-aware swept-AABB point-triangle and edge-edge
+  candidate vectors; the bake-time topology reserve now covers that wider
+  line-search CCD envelope. Focused validation passed:
+  `cmake --build build/default/cpp/Release --target test_world --parallel "$JOBS"`
+  and
+  `build/default/cpp/Release/bin/test_world --gtest_filter='World.DeformableSelfContactFrictionWideRectangularGridIsActive:World.BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths:World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap'`.
+  Full local gates also passed: `pixi run lint`, `pixi run build`, and
+  `pixi run test-unit`.
 - On 2026-06-08 after adding scratch-backed unified link impulse application,
   the successful joint-solve path now reuses caller-owned generalized-impulse
   and velocity-delta buffers instead of relying on dynamic Eigen temporaries,

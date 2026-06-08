@@ -292,11 +292,13 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Reused `DeformableDynamicsStage` scratch for deformable surface snapshots,
     static/moving rigid surface-CCD snapshots, and rigid obstacle barrier lists,
     and primed deformable surface-contact candidate buffers during
-    `enterSimulationMode()`. Inter-body/rigid surface-CCD sweep buffers are now
-    stage/entity scratch-backed too, and VBD topology/static-contact scratch is
-    primed during `enterSimulationMode()`, so baked surface-snapshot steps and
-    first-baked-step active VBD static rigid surface-CCD point crossing do not
-    allocate from the global heap. Scripted deformable boundary processing now
+    `enterSimulationMode()`, including the wider swept-AABB candidate envelope
+    needed by non-square self-contact grids. Inter-body/rigid surface-CCD sweep
+    buffers are now stage/entity scratch-backed too, and VBD
+    topology/static-contact scratch is primed during `enterSimulationMode()`, so
+    baked surface-snapshot steps and first-baked-step active VBD static rigid
+    surface-CCD point crossing do not allocate from the global heap. Scripted
+    deformable boundary processing now
     reuses per-body Dirichlet/Neumann count masks instead of allocating local
     per-node vectors each step. Default projected-Newton deformable solves now
     reuse per-body RHS, sparse Hessian assembly, PSD block batch, sparse
@@ -313,8 +315,8 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     row-counter, row-inventory, and solve scratch for covered active rigid
     contacts and no-contact fixed-joint rows, with baked base-allocator and
     global-heap no-growth guards. Active inter-body deformable surface-CCD
-    crossings and a non-square production-scale deformable frictional
-    self-contact grid now have the same baked no-growth guard coverage.
+    crossings and two non-square production-scale deformable frictional
+    self-contact grids now have the same baked no-growth guard coverage.
   - Hardened `dart::common::FixedPoolAllocator` against base-allocator failures
     during construction and block-table growth, with coverage for deterministic
     failure, fallback, reuse, and debug-guard paths.
