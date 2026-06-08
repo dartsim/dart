@@ -3574,7 +3574,8 @@ enum class LargerActiveSetTransitionBenchmarkCase
   Boxed128,
   CoupledFrictionIndex16,
   CoupledFrictionIndex24,
-  CoupledFrictionIndex32
+  CoupledFrictionIndex32,
+  CoupledFrictionIndex48
 };
 
 std::string_view getProblemFamilyName(BenchmarkProblemFamily family)
@@ -3690,6 +3691,8 @@ std::string_view getLargerActiveSetTransitionCaseName(
       return "CoupledFrictionIndex24";
     case LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex32:
       return "CoupledFrictionIndex32";
+    case LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex48:
+      return "CoupledFrictionIndex48";
   }
 
   return "Unknown";
@@ -3712,6 +3715,7 @@ dart::test::LcpProblemSupport getLargerActiveSetTransitionProblemSupport(
     case LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex16:
     case LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex24:
     case LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex32:
+    case LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex48:
       return dart::test::LcpProblemSupport::FrictionIndex;
   }
 
@@ -3734,7 +3738,10 @@ bool isLargerActiveSetTransitionFrictionIndexCase(
                     CoupledFrictionIndex24
          || testCase
                 == LargerActiveSetTransitionBenchmarkCase::
-                    CoupledFrictionIndex32;
+                    CoupledFrictionIndex32
+         || testCase
+                == LargerActiveSetTransitionBenchmarkCase::
+                    CoupledFrictionIndex48;
 }
 
 int getLargerActiveSetTransitionContactCount(
@@ -3751,6 +3758,8 @@ int getLargerActiveSetTransitionContactCount(
       return 24;
     case LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex32:
       return 32;
+    case LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex48:
+      return 48;
     case LargerActiveSetTransitionBenchmarkCase::Standard32:
     case LargerActiveSetTransitionBenchmarkCase::Boxed32:
     case LargerActiveSetTransitionBenchmarkCase::Standard64:
@@ -3789,6 +3798,8 @@ LcpProblem MakeLargerActiveSetTransitionBenchmarkProblem(
       return MakeFrictionIndexActiveSetTransitionProblem(24, 23'024u, 2.0);
     case LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex32:
       return MakeFrictionIndexActiveSetTransitionProblem(32, 23'032u, 4.0);
+    case LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex48:
+      return MakeFrictionIndexActiveSetTransitionProblem(48, 23'048u, 8.0);
   }
 
   return MakeStandardActiveSetTransitionProblem(32, 21'032u);
@@ -3802,6 +3813,8 @@ double getLargerActiveSetTransitionCouplingScale(
       return 2.0;
     case LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex32:
       return 4.0;
+    case LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex48:
+      return 8.0;
     case LargerActiveSetTransitionBenchmarkCase::Standard32:
     case LargerActiveSetTransitionBenchmarkCase::Boxed32:
     case LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex8:
@@ -6480,11 +6493,15 @@ std::vector<LcpProblem> MakeProductionActiveSetTransitionBatchProblems(
   const int contactCount = getLargerActiveSetTransitionContactCount(testCase);
   const double couplingScale
       = getLargerActiveSetTransitionCouplingScale(testCase);
-  const unsigned seedBase
-      = (testCase
-         == LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex32)
-            ? 23'032u
-            : 23'024u;
+  unsigned seedBase = 23'024u;
+  if (testCase
+      == LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex32) {
+    seedBase = 23'032u;
+  } else if (
+      testCase
+      == LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex48) {
+    seedBase = 23'048u;
+  }
 
   for (const int i : std::views::iota(0, batchSize)) {
     problems.push_back(MakeFrictionIndexActiveSetTransitionProblem(
@@ -9517,9 +9534,10 @@ void RegisterExtremeActiveSetTransitionBenchmarks()
 
 void RegisterProductionActiveSetTransitionBenchmarks()
 {
-  constexpr std::array<LargerActiveSetTransitionBenchmarkCase, 2> cases{
+  constexpr std::array<LargerActiveSetTransitionBenchmarkCase, 3> cases{
       LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex24,
-      LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex32};
+      LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex32,
+      LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex48};
 
   for (const auto testCase : cases) {
     for (const auto& solver : dart::test::kLcpSolverManifest) {
@@ -9545,9 +9563,10 @@ void RegisterProductionActiveSetTransitionBenchmarks()
 
 void RegisterProductionActiveSetTransitionBatchBenchmarks()
 {
-  constexpr std::array<LargerActiveSetTransitionBenchmarkCase, 2> cases{
+  constexpr std::array<LargerActiveSetTransitionBenchmarkCase, 3> cases{
       LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex24,
-      LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex32};
+      LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex32,
+      LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex48};
   constexpr int batchSize = 4;
 
   for (const auto testCase : cases) {

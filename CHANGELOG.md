@@ -1078,11 +1078,12 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     default, SIMD-enabled, and CUDA-enabled build trees, plus 49 extreme
     active-set transition rows for standard 128-row, boxed 128-row, and coupled
     friction-index 16-contact packets verified across default, SIMD-enabled,
-    and CUDA-enabled build trees, plus 32 production active-set transition rows
-    for 24-contact/72-row and 32-contact/96-row coupled friction-index packets
-    verified across default, SIMD-enabled, and CUDA-enabled build trees, plus
-    64 production active-set transition batch rows for batch-size-4 serial and
-    DART 7 `ParallelExecutor` runs over those same packets verified across
+    and CUDA-enabled build trees, plus 48 production active-set transition rows
+    for 24-contact/72-row, 32-contact/96-row, and 48-contact/144-row coupled
+    friction-index packets verified across default, SIMD-enabled, and
+    CUDA-enabled build trees, plus 96 production active-set transition batch
+    rows for batch-size-4 serial and DART 7 `ParallelExecutor` runs over those
+    same packets verified across
     default, SIMD-enabled, and CUDA-enabled build trees, plus
     192 larger mildly ill-conditioned benchmark rows for standard 32-row,
     boxed 16-row, friction-index 8-contact, coupled friction-index 6-, 8-,
