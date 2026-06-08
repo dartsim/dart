@@ -42,9 +42,9 @@ Support abbreviations:
   single-contact and two-contact sphere-ground friction cases, 200-step
   two-sphere and four-sphere boxed-LCP
   `World::step()` invariant tests, 16-sphere separated-contact boxed-LCP
-  `World::step()` invariant tests, 3-, 4-, and 5-sphere coupled-stack boxed-LCP
-  snapshot tests, 3-sphere 200-step, 3-sphere 500-step, 4-sphere 200-step, and
-  5-sphere 500-step boxed-LCP `World::step()` invariant tests and benchmark
+  `World::step()` invariant tests, 3-, 4-, 5-, and 6-sphere coupled-stack boxed-LCP
+  snapshot tests, 3-sphere 200-step, 3-sphere 500-step, 4-sphere 200-step,
+  5-sphere 500-step, and 6-sphere 1000-step boxed-LCP `World::step()` invariant tests and benchmark
   rows, 4-/8-/16-contact separated sphere-ground step benchmark rows,
   1-/2-/4-/8-/16-/24-/32-/48-box dense box-face step
   benchmark rows, a
@@ -68,8 +68,8 @@ Support abbreviations:
   friction-index-capable
   solvers on the same 1/2/4 separated sphere-ground boxed/findex contact
   snapshots, all-solver 2/3-sphere vertical-stack boxed/findex snapshots,
-  scoped 4-sphere vertical-stack rows excluding `NNCG`, 5-sphere stack assembly
-  rows, and a mixed 5-problem
+  scoped 4-/5-/6-sphere vertical-stack rows excluding `NNCG`, 6-sphere stack
+  assembly rows, and a mixed 5-problem
   serial/`ParallelExecutor` batch over the 1/2/4 separated-contact and 2/3
   stack snapshots. A focused local SIMD-enabled CPU run now exists for
   generated LCP correctness and selected benchmark rows. Jacobi also has an
@@ -93,7 +93,7 @@ Support abbreviations:
   `ParallelExecutor` Jacobi/PGS batch rows at the direct CUDA packet sizes in
   default and SIMD-enabled build trees, homogeneous 4-/8-/16-contact and grouped variable-size
   1/2/4/8/16-contact DART 7 sphere-ground world-contact packets, homogeneous
-  5-sphere and grouped variable-size 2/3/4/5-sphere coupled stack-contact
+  5-/6-sphere and grouped variable-size 2/3/4/5/6-sphere coupled stack-contact
   packets, grouped variable-size 1-/4-/8-/16-contact articulated unified-contact
   packets including cross-multibody link-vs-link cases, and PGS-only
   homogeneous plus grouped variable-size dense box-face contact packets, plus
@@ -601,21 +601,30 @@ The current local evidence for this task is:
   shortcut. This is cross-multibody link-vs-link evidence, not general robot
   contact coverage.
 - `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.*SphereStack*'`
-  passed 7 tests, validating the boxed/findex LCP contract for 3-sphere,
-  4-sphere, and 5-sphere vertical stacks assembled from DART 7
-  `World::collide()`, plus the 3-sphere, 4-sphere, and 5-sphere public step
-  invariants below. The
-  4-sphere snapshot contains 4 contacts and 12 LCP rows; the 5-sphere snapshot
-  contains 5 contacts and 15 LCP rows. The snapshot tests also check that the
+  passed focused stack tests, validating the boxed/findex LCP contract for
+  3-sphere, 4-sphere, 5-sphere, and 6-sphere vertical stacks assembled from
+  DART 7 `World::collide()`, plus the 3-sphere, 4-sphere, 5-sphere, and
+  6-sphere public step invariants below. The
+  4-sphere snapshot contains 4 contacts and 12 LCP rows, the 5-sphere snapshot
+  contains 5 contacts and 15 LCP rows, and the 6-sphere snapshot contains
+  6 contacts and 18 LCP rows. The snapshot tests also check that the
   normal-contact block has nonzero off-diagonal coupling, so this evidence is
   not just a set of independent contact rows. The 4-sphere public-step path is
   enabled by the boxed-LCP contact solve's timestep-driven Baumgarte velocity
-  bias.
+  bias. The bias now remains disabled for contacts involving a kinematic body,
+  preserving the sequential-impulse/static-obstacle compatibility contract;
+  focused default and CUDA 5-repeat runs of
+  `World.BoxedLcpContactTreatsKinematicBodyAsStaticObstacle` pass with the
+  dynamic body velocity unchanged.
 - `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.StressSphereStackWorldStepMaintainsContactInvariants'`
   passed 1 test, advancing the same 5-sphere vertical stack through 500 public
   boxed-LCP `World::step()` iterations and checking finite state,
   non-penetration, preserved sphere spacing, near-rest vertical velocity,
   bounded lateral drift, and static-ground invariants.
+- `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.LargerStressSphereStackWorldContactSnapshotSatisfiesLcpContract:BoxedLcpContact.LargerStressSphereStackWorldStepMaintainsContactInvariants'`
+  passed in default, SIMD-enabled, and CUDA-enabled build trees, validating the
+  6-sphere, 6-contact, 18-row boxed/findex stack snapshot and advancing the
+  same coupled stack through 1000 public boxed-LCP `World::step()` iterations.
 - `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.SphereStackWorldStepMaintainsContactInvariants'`
   passed 1 test, advancing the same 3-sphere vertical stack through 200 public
   boxed-LCP `World::step()` iterations and checking finite state,
@@ -624,8 +633,8 @@ The current local evidence for this task is:
 - `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.LongRunningSphereStackWorldStepMaintainsContactInvariants'`
   passed 1 test, advancing the same 3-sphere vertical stack through 500 public
   boxed-LCP `World::step()` iterations with the same motion invariants.
-- The full `test_boxed_lcp_contact --gtest_brief=1` binary passed 45 tests. The
-  run still emits the existing `StaticFrictionHoldsSmallPush` degenerate-pivot
+- The `test_boxed_lcp_contact --gtest_list_tests` inventory now lists 48 tests.
+  The earlier full run still emits the existing `StaticFrictionHoldsSmallPush` degenerate-pivot
   warning, so this should not be counted as clean evidence for
   dense-degenerate multi-contact systems.
 - `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldContact|BM_LcpWorldContactAssembly' --benchmark_min_time=0.001s --benchmark_repetitions=1`
@@ -644,12 +653,12 @@ The current local evidence for this task is:
   passed locally. It ran 32 manifest-generated
   `BM_LcpWorldStackContact/FrictionIndex/<solver>/{2,3}` rows, covering all 16
   friction-index-capable solvers on DART 7 `World::collide()` snapshots from
-  2- and 3-sphere vertical stacks. It also registers 30
-  `BM_LcpWorldStackContact/FrictionIndex/<solver>/{4,5}` rows for the same
+  2- and 3-sphere vertical stacks. It also registers 45
+  `BM_LcpWorldStackContact/FrictionIndex/<solver>/{4,5,6}` rows for the same
   solver set except `NNCG`; a focused `NNCG` 4-sphere trial reached the
-  benchmark cap with `contract_ok=0`, so the NNCG 4-/5-sphere rows are not
+  benchmark cap with `contract_ok=0`, so the NNCG 4-/5-/6-sphere rows are not
   claimed. The matching
-  `BM_LcpWorldStackContactAssembly_BoxedLcp/{2,3,4,5}` rows rebuild, collide,
+  `BM_LcpWorldStackContactAssembly_BoxedLcp/{2,3,4,5,6}` rows rebuild, collide,
   assemble through `detail::solveBoxedLcpContacts`, solve, and validate the
   boxed-LCP stack contact path. The focused 4-sphere benchmark run
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldStackContact/FrictionIndex/.*/4|BM_LcpWorldStackContactAssembly_BoxedLcp/4' --benchmark_min_time=0.001s --benchmark_repetitions=1`
@@ -662,6 +671,11 @@ The current local evidence for this task is:
   LCP kernel execution. Focused default, SIMD-enabled, and CUDA-enabled
   `BM_LcpWorldStackContactAssembly_BoxedLcp/5` runs also passed with
   `contract_ok=1`, `sphere_count=5`, `contact_count=5`, and `problem_size=15`.
+  Focused default, SIMD-enabled, and CUDA-enabled
+  `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldStackContact/FrictionIndex/.*/6$|BM_LcpWorldStackContactAssembly_BoxedLcp/6|BM_LcpWorldStackStep_BoxedLcp/6/1000$' --benchmark_min_time=0.001s`
+  runs reported `contract_ok=1` for all 15 registered 6-sphere solver rows,
+  `contract_ok=1` for the 6-sphere assembly row, and `invariant_ok=1` for the
+  6-sphere 1000-step public `World::step()` row.
   These stacks include sphere-ground and sphere-sphere contacts coupled through
   shared dynamic bodies. This is small coupled-stack benchmark evidence, not
   articulated, robot-like, or dense-degenerate contact evidence.
@@ -693,7 +707,8 @@ The current local evidence for this task is:
   `BM_LcpWorldStackStep_BoxedLcp/3/200`,
   `BM_LcpWorldStackStep_BoxedLcp/3/500`, and
   `BM_LcpWorldStackStep_BoxedLcp/4/200`, plus
-  `BM_LcpWorldStackStep_BoxedLcp/5/500`. The rows rebuild the stack worlds,
+  `BM_LcpWorldStackStep_BoxedLcp/5/500` and
+  `BM_LcpWorldStackStep_BoxedLcp/6/1000`. The rows rebuild the stack worlds,
   enter simulation mode, advance public boxed-LCP `World::step()` iterations,
   and report `invariant_ok=1`. The SIMD run reported `build_simd_enabled=1`,
   and the CUDA-enabled run reported `build_cuda_enabled=1`. The default
@@ -701,7 +716,9 @@ The current local evidence for this task is:
   `max_vertical_speed=4.31e-14`; the default 4-sphere row reported
   `time_step=0.001`, `min_spacing=0.9999`, and `max_vertical_speed=1.72e-8`;
   the default 5-sphere row reported `time_step=0.001`, `min_spacing=0.9999`,
-  and `max_vertical_speed=1.26e-5`.
+  and `max_vertical_speed=1.26e-5`; the default 6-sphere row reported
+  `time_step=0.001`, `min_spacing=0.9999`, and
+  `max_vertical_speed=2.52e-6`.
 - `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldSeparatedStep_BoxedLcp' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   passed locally for `BM_LcpWorldSeparatedStep_BoxedLcp/4/200`,
   `BM_LcpWorldSeparatedStep_BoxedLcp/8/200`, and
@@ -784,7 +801,7 @@ The current local evidence for this task is:
   ground and rigid-impact rows also reported `contract_ok=1` with
   `build_simd_enabled=1` and `build_cuda_enabled=1`, respectively; those are CPU
   solver rows in those build trees, not CUDA kernel execution.
-- `test_boxed_lcp_contact --gtest_brief=1` now passes 46 tests. The dense box
+- `test_boxed_lcp_contact --gtest_list_tests` now lists 48 tests. The dense box
   face-contact test assembles a 4-contact, 12-row boxed/findex LCP from
   `World::collide()`, checks the single-dynamic-body dense patch shape, and
   verifies the problem with APGD; the sliding and static-friction box
@@ -1043,10 +1060,11 @@ The current local evidence for this task is:
   rows, and the focused 2048-row banded Jacobi rows passed with
   `solver_internal_threads=1/8/16`; this remains CPU Jacobi execution in a
   CUDA-enabled build.
-- `test_lcp_jacobi_batch_cuda --gtest_brief=1` passed 31 tests in the
+- `test_lcp_jacobi_batch_cuda --gtest_brief=1` passed 33 tests in the
   CUDA-enabled build, including standard, boxed, friction-index, and
   grouped variable-size synthetic standard/boxed/friction-index plus
-  contact-derived world-contact, coupled stack-contact, and articulated
+  contact-derived world-contact, homogeneous 5-/6-sphere and grouped
+  variable-size 2/3/4/5/6-sphere coupled stack-contact, and articulated
   unified-contact batches including cross-multibody link-vs-link packets, plus
   mixed grouped contact batches executed on CUDA for fixed-iteration Jacobi and
   PGS.
@@ -1079,18 +1097,19 @@ The current local evidence for this task is:
   snapshots up to 16 contacts with `batch_size=4`, `contact_count=16`,
   `problem_size=48`, `total_contact_count=64`, and `total_problem_size=192`
   on the denser rows. The
-  homogeneous coupled stack CUDA rows use 5-sphere DART 7 `World::collide()`
-  snapshots with `batch_size=4`, `sphere_count=5`, `contact_count=5`,
-  `problem_size=15`, `total_contact_count=20`, and `total_problem_size=60`.
+  homogeneous coupled stack CUDA rows use 5-/6-sphere DART 7 `World::collide()`
+  snapshots; the 6-sphere rows report `batch_size=4`, `sphere_count=6`,
+  `contact_count=6`, `problem_size=18`, `total_contact_count=24`, and
+  `total_problem_size=72`.
   The separated grouped variable-size rows now
   use 1/2/4/8/16-contact sphere-ground packets with `batch_size=10`,
   `cuda_group_count=5`, `contact_shape_count=5`, `min_problem_size=3`,
   `max_problem_size=48`, `total_contact_count=62`, and
   `total_problem_size=186`. The coupled stack
-  grouped variable-size rows now use 2/3/4/5-sphere stack packets with
-  `batch_size=8`, `cuda_group_count=4`, `contact_shape_count=4`,
-  `min_problem_size=6`, `max_problem_size=15`,
-  `total_contact_count=28`, and `total_problem_size=84`. The articulated
+  grouped variable-size rows now use 2/3/4/5/6-sphere stack packets with
+  `batch_size=10`, `cuda_group_count=5`, `contact_shape_count=5`,
+  `min_problem_size=6`, `max_problem_size=18`,
+  `total_contact_count=40`, and `total_problem_size=120`. The articulated
   grouped variable-size rows use manually assembled 1-/4-/8-/16-contact fixed-base
   three-axis prismatic unified-contact packets covering link-ground,
   link-vs-dynamic-rigid, and cross-multibody link-vs-link cases with
@@ -1152,11 +1171,12 @@ The current local evidence for this task is:
 - DART 7 integration: current tests now include single-contact and two-contact
   `dart::simulation::World` boxed-LCP contact snapshots from `World::collide()`
   plus two-contact, four-contact, 16-contact, and 3-sphere-stack 200-step and
-  500-step, plus 4-sphere-stack 200-step and 5-sphere-stack 500-step boxed-LCP
+  500-step, plus 4-sphere-stack 200-step, 5-sphere-stack 500-step, and
+  6-sphere-stack 1000-step boxed-LCP
   `World::step()` invariant tests and world-contact
   benchmark rows for 1/2/4 separated sphere-ground contacts, separated
   4-/8-/16-contact step rows,
-  2/3-sphere vertical stacks, 4-/5-sphere vertical-stack rows for all of those
+  2/3-sphere vertical stacks, 4-/5-/6-sphere vertical-stack rows for all of those
   solvers except `NNCG`, mixed contact-derived serial/parallel batches, the
   3-sphere stack public step path, fixed-base prismatic articulated
   link-ground one-link and four-link `World::step()` paths, connected
@@ -1204,11 +1224,11 @@ The current local evidence for this task is:
   World-contact
   benchmark rows now cover simple
   separated boxed-LCP contact snapshots, small coupled vertical stacks through
-  5-sphere all-solver rows except `NNCG`, mixed serial/task-parallel batches
+  6-sphere all-solver rows except `NNCG`, mixed serial/task-parallel batches
   over those snapshots, stress mixed serial/task-parallel batches that include
-  4-/5-sphere stack snapshots for all of those solvers except `NNCG`,
+  4-/5-/6-sphere stack snapshots for all of those solvers except `NNCG`,
   200-step/500-step
-  3-sphere, 200-step 4-sphere, and 500-step 5-sphere end-to-end stack step
+  3-sphere, 200-step 4-sphere, 500-step 5-sphere, and 1000-step 6-sphere end-to-end stack step
   rows, and 4-/8-/16-contact separated end-to-end step rows, plus
   1-/2-/4-/8-/16-/24-/32-/48-box dense box-face end-to-end step rows, fixed-base
   prismatic articulated link-ground, link-vs-rigid impact, and
@@ -1228,8 +1248,8 @@ The current local evidence for this task is:
   evidence, and narrow CUDA projected-Jacobi and PGS
   standard/boxed/friction-index plus grouped variable-size synthetic
   standard/boxed/friction-index, homogeneous 4-/8-/16-contact, homogeneous
-  5-sphere coupled stack, and grouped variable-size 1/2/4/8/16-contact separated
-  and 2/3/4/5-sphere coupled stack world-contact batch paths, plus manually
+  5-/6-sphere coupled stack, and grouped variable-size 1/2/4/8/16-contact separated
+  and 2/3/4/5/6-sphere coupled stack world-contact batch paths, plus manually
   assembled 1-/4-/8-/16-contact articulated unified-contact batch paths including
   cross-multibody link-vs-link packets, and mixed
   separated/stack/articulated grouped contact batch paths, scoped dense
@@ -1250,7 +1270,7 @@ The current local evidence for this task is:
 2. Extend DART 7 boxed-LCP `World` contact fixtures from the current
    separated sphere-ground, fixed-base prismatic articulated, cross-multibody
    fixed-base articulated link-vs-link, manually assembled three-axis
-   articulated, 5-sphere end-to-end vertical-stack, and
+   articulated, 6-sphere end-to-end vertical-stack, and
    small vertical-stack boxed-LCP
    snapshots and contact-derived benchmark rows to richer articulated,
    longer-running, and denser coupled multi-contact scenes beyond the current

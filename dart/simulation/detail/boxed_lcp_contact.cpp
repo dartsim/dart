@@ -185,6 +185,8 @@ BoxedLcpContactSnapshot solveBoxedLcpContacts(
       continue;
     }
 
+    const bool kinematicA = registry.all_of<comps::KinematicBodyTag>(entityA);
+    const bool kinematicB = registry.all_of<comps::KinematicBodyTag>(entityB);
     const bool staticA
         = hasPrescribedRigidBodyContactResponse(registry, entityA);
     const bool staticB
@@ -232,8 +234,13 @@ BoxedLcpContactSnapshot solveBoxedLcpContacts(
         = (restitution > 0.0 && approach < -restitutionThreshold)
               ? -restitution * approach
               : 0.0;
+    // Kinematic bodies follow the sequential-impulse compatibility path here:
+    // their prescribed motion is ignored by the LCP contact solve, and initial
+    // penetration does not inject a velocity-level push from the kinematic
+    // body.
     const double baumgarteVelocity
-        = (timeStep > 0.0 && approach > baumgarteApproachThreshold)
+        = (timeStep > 0.0 && !kinematicA && !kinematicB
+           && approach > baumgarteApproachThreshold)
               ? baumgarteFactor * std::max(0.0, contact.depth - penetrationSlop)
                     / timeStep
               : 0.0;

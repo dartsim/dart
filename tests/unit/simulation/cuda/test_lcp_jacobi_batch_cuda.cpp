@@ -1214,7 +1214,7 @@ std::optional<WorldContactGroupedBatch> makeWorldStackContactGroupedBatch(
     return std::nullopt;
   }
 
-  constexpr std::array<int, 4> kSphereCounts{2, 3, 4, 5};
+  constexpr std::array<int, 5> kSphereCounts{2, 3, 4, 5, 6};
   WorldContactGroupedBatch grouped;
   grouped.packets.reserve(kSphereCounts.size());
   grouped.problemsByGroup.reserve(kSphereCounts.size());
@@ -1630,13 +1630,17 @@ TEST(
     GTEST_SKIP() << "CUDA runtime has no available device";
   }
 
-  std::string errorMessage;
-  auto fixture = makeWorldStackContactBatch(5, 4, 1024, errorMessage);
-  ASSERT_TRUE(fixture.has_value()) << errorMessage;
+  for (const int sphereCount : {5, 6}) {
+    SCOPED_TRACE("sphereCount=" + std::to_string(sphereCount));
+    std::string errorMessage;
+    auto fixture
+        = makeWorldStackContactBatch(sphereCount, 4, 1024, errorMessage);
+    ASSERT_TRUE(fixture.has_value()) << errorMessage;
 
-  cuda::solveBoxedLcpJacobiBatchCuda(fixture->packet);
+    cuda::solveBoxedLcpJacobiBatchCuda(fixture->packet);
 
-  expectBatchSatisfiesLcpContract(fixture->packet, fixture->problems);
+    expectBatchSatisfiesLcpContract(fixture->packet, fixture->problems);
+  }
 }
 
 //==============================================================================
@@ -1871,13 +1875,17 @@ TEST(CudaLcpPgsBatch, HomogeneousStackedWorldContactBatchSatisfiesLcpContract)
     GTEST_SKIP() << "CUDA runtime has no available device";
   }
 
-  std::string errorMessage;
-  auto fixture = makeWorldStackContactBatch(5, 4, 512, errorMessage);
-  ASSERT_TRUE(fixture.has_value()) << errorMessage;
+  for (const int sphereCount : {5, 6}) {
+    SCOPED_TRACE("sphereCount=" + std::to_string(sphereCount));
+    std::string errorMessage;
+    auto fixture
+        = makeWorldStackContactBatch(sphereCount, 4, 512, errorMessage);
+    ASSERT_TRUE(fixture.has_value()) << errorMessage;
 
-  cuda::solveBoxedLcpPgsBatchCuda(fixture->packet);
+    cuda::solveBoxedLcpPgsBatchCuda(fixture->packet);
 
-  expectBatchSatisfiesLcpContract(fixture->packet, fixture->problems);
+    expectBatchSatisfiesLcpContract(fixture->packet, fixture->problems);
+  }
 }
 
 //==============================================================================

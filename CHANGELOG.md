@@ -1140,9 +1140,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     verified in default and SIMD-enabled builds at those 24-/48-/96-row and
     8-/16-/32-contact direct CUDA packet sizes,
     homogeneous 4-, 8-, and 16-contact world-contact,
-    homogeneous 5-sphere coupled stack-contact, grouped variable-size
+    homogeneous 5-/6-sphere coupled stack-contact, grouped variable-size
     1/2/4/8/16-contact separated world-contact LCP packets, plus grouped
-    variable-size 2/3/4/5-sphere coupled stack-contact LCP packets, plus
+    variable-size 2/3/4/5/6-sphere coupled stack-contact LCP packets, plus
     grouped variable-size manually assembled 1-/4-/8-/16-contact articulated
     unified-contact LCP packets including cross-multibody link-vs-link cases,
     plus mixed grouped contact batches combining separated, stack, and
@@ -1160,16 +1160,18 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     separated sphere-ground boxed/findex snapshots, plus boxed-LCP
     contact assembly/solve benchmark rows for the same contact counts. Added
     coupled 2/3-sphere vertical-stack benchmark rows for the same solver set,
-    plus scoped 4- and 5-sphere stack rows for all of those solvers except
+    plus scoped 4-, 5-, and 6-sphere stack rows for all of those solvers except
     `NNCG`, so benchmark evidence now includes small contact systems with
-    shared dynamic bodies. Added 3-, 4-, and 5-sphere stack snapshot tests that
-    validate nonzero normal-contact coupling, plus boxed-LCP Baumgarte
-    velocity-bias stabilization and 3-sphere 200-step, 3-sphere 500-step,
-    4-sphere 200-step, and 5-sphere 500-step `World::step()` invariant tests
-    with matching benchmark rows for the public boxed-LCP stack path. Added 4- and 16-sphere separated-contact
+    shared dynamic bodies. Added 3-, 4-, 5-, and 6-sphere stack snapshot tests
+    that validate nonzero normal-contact coupling, plus boxed-LCP Baumgarte
+    velocity-bias stabilization that preserves kinematic contacts' static-obstacle
+    compatibility behavior, and 3-sphere 200-step, 3-sphere 500-step,
+    4-sphere 200-step, 5-sphere 500-step, and 6-sphere 1000-step
+    `World::step()` invariant tests with matching benchmark rows for the
+    public boxed-LCP stack path. Added 4- and 16-sphere separated-contact
     `World::step()` invariant tests and 4-/8-/16-sphere separated-contact
     `World::step()` benchmark rows for the public boxed-LCP path. Stack
-    assembly/solve benchmark rows now include a 5-sphere, 5-contact, 15-row
+    assembly/solve benchmark rows now include a 6-sphere, 6-contact, 18-row
     coupled stack snapshot. Added
     mixed world-contact batch benchmark rows that compare every
     friction-index-capable solver on the same five separated-contact and
