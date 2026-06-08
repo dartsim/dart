@@ -1212,19 +1212,22 @@ tradeoffs evidence based.
 - Verified solver-internal Jacobi threading slice:
   `JacobiSolver::Parameters::workerThreads` now enables an opt-in CPU threaded
   update path. `LcpGeneratedCoverage.ThreadedJacobiStandardKnownSolution`
-  passed on a 128-row generated standard LCP. `BM_LCP_COMPARE` now lists 13
+  passed on a 128-row generated standard LCP. `BM_LCP_COMPARE` now lists 15
   Jacobi threading rows: 4 dense `BM_LcpJacobiSolverThreading_Standard` rows
-  for 128-row and 512-row standard problems with 1 and 8 worker threads, plus 6
-  banded `BM_LcpJacobiSolverThreadingBanded_Standard` rows for 512-row and
-  1024-row standard problems with 1, 4, and 8 worker threads, plus 3
-  larger banded rows for 2048-row standard problems with 1, 8, and 16 worker
-  threads. The focused
+  for 128-row and 512-row standard problems with 1 and 8 worker threads, plus
+  11 banded `BM_LcpJacobiSolverThreadingBanded_Standard` rows for 512-row
+  standard problems with 1, 4, and 8 worker threads, 1024-row standard problems
+  with 1, 4, 8, and 16 worker threads, and 2048-row standard problems with 1,
+  8, 16, and 32 worker threads. The focused
   default, SIMD-enabled, and CUDA-enabled benchmark runs all reported
   `contract_ok=1`, `solver_internal_threads`, `worker_count`,
   `jacobi_threading_banded_spd`, `band_half_width`, `matrix_nonzero_entries`,
   `matrix_density`, and backend build-state counters. The banded rows use
   sparse-structured matrices in dense storage and report densities of about
   0.00974 for 512 rows, 0.00488 for 1024 rows, and 0.00244 for 2048 rows. The
+  focused default, SIMD-enabled, and CUDA-enabled checks for the new 1024/16
+  and 2048/32 rows passed with `contract_ok=1`,
+  `solver_internal_threads=16/32`, and the expected sparsity counters. The
   focused local timings are benchmark-comparison evidence only; they do not
   establish a general worker-thread speedup. CUDA-enabled rows are CPU Jacobi
   rows in a CUDA-enabled build, not CUDA LCP kernel execution.
