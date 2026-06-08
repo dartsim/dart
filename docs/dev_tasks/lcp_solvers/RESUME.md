@@ -2,8 +2,9 @@
 
 ## Last Session Summary
 
-The worktree is on `main` with uncommitted changes adding solver-agnostic
-correctness coverage for advanced LCP solvers, a shared DART 7 LCP solver
+The worktree is on local branch `feature/dart7-lcp-solver-evidence` with
+checkpoint commits adding solver-agnostic correctness coverage for advanced LCP
+solvers, a shared DART 7 LCP solver
 manifest for tests, manifest-generated comparison benchmark registration, a
 solver-by-solver implementation audit, manifest-driven generated correctness
 coverage, generated invalid-problem rejection checks, generated batch-shaped
@@ -427,26 +428,20 @@ benchmark rows, Boxed Semi-Smooth Newton line-search benchmark rows, Pivoting
 scale benchmark rows, BGS/Blocked Jacobi block-partition benchmark rows, SAP
 regularization benchmark rows, Jacobi threading benchmark rows, and
 singular-degenerate standard/boxed batch benchmark rows.
-The latest checkpoint extends coupled DART 7 boxed-LCP stack evidence from the
-previous 5-sphere boundary to a 6-sphere, 6-contact, 18-row vertical stack:
-focused default, SIMD-enabled, and CUDA-enabled runs pass the new snapshot
-contract and 1000-step public `World::step()` invariant tests; matching
-benchmark rows pass all 15 registered non-`NNCG` 6-sphere solver rows, the
-6-sphere assembly row, and the 6-sphere 1000-step public-step row. The CUDA
-tree also passes direct fixed-iteration Jacobi and PGS homogeneous 8-sphere
-stack batches plus three-variant grouped 2/3/4/5/6/7/8-sphere stack batches with
-`cuda_lcp_execution=1` and `contract_ok=1`.
-The current branch also adds a 7-sphere, 7-contact, 21-row coupled stack
-snapshot/assembly row, 14 matching 7-sphere solver benchmark rows excluding
-`NNCG` and `RedBlackGaussSeidel`, 32-box and 48-box dense public-step unit
-gates, and 8-sphere fixed-iteration CUDA Jacobi/PGS stack-contact batch rows
-with grouped 2/3/4/5/6/7/8-sphere stack packets, including `/2` and `/3`
-grouped benchmark rows.
+The latest checkpoints extend direct and grouped synthetic CUDA Jacobi/PGS
+evidence through standard/boxed 128-row and friction-index 48-contact packets,
+add apples-to-apples grouped CPU serial and DART 7 `ParallelExecutor` rows for
+the same grouped synthetic packets, and broaden solver-internal Jacobi
+threading benchmark evidence with 4096-row banded SPD rows for worker counts
+1, 8, 16, and 32. The grouped synthetic CPU/CUDA rows and the 4096-row Jacobi
+threading rows pass focused default, SIMD-enabled, and CUDA-enabled build-tree
+benchmark gates with `contract_ok=1`.
 Push/PR work still requires explicit maintainer/user approval.
 
 ## Immediate Next Step
 
-Move from the now-verified extreme 128-row/96-contact exact rank-deficient,
+Move from the now-verified grouped synthetic CPU/CUDA batch rows, 4096-row
+banded Jacobi solver-internal threading rows, extreme 128-row/96-contact exact rank-deficient,
 production active-set transition 128-contact, coupled mildly ill-conditioned
 24-contact, near-singular 96-contact CPU solver rows, near-singular
 serial/parallel batch rows, exact rank-deficient singular-degenerate
@@ -812,20 +807,22 @@ contact scenes.
   not satisfy the selected exact rank-deficient boxed/findex contracts.
 - `JacobiSolver::Parameters::workerThreads` enables an opt-in solver-internal
   CPU threaded update path. `LcpGeneratedCoverage.ThreadedJacobiStandardKnownSolution`
-  passes on a 128-row generated standard LCP. `BM_LCP_COMPARE` now lists 15
+  passes on a 128-row generated standard LCP. `BM_LCP_COMPARE` now lists 19
   focused Jacobi threading rows: 4 dense rows for 128-row and 512-row standard
-  problems with 1 and 8 worker threads, plus 11 banded rows for 512-row
+  problems with 1 and 8 worker threads, plus 15 banded rows for 512-row
   standard problems with 1, 4, and 8 worker threads, 1024-row standard problems
   with 1, 4, 8, and 16 worker threads, and 2048-row standard problems with 1,
-  8, 16, and 32 worker threads. Default, SIMD,
+  8, 16, and 32 worker threads, plus 4096-row standard problems with 1, 8,
+  16, and 32 worker threads. Default, SIMD,
   and CUDA-enabled focused runs report `contract_ok=1`, backend build-state
   counters, `solver_internal_threads`, `worker_count`,
   `jacobi_threading_banded_spd`, `band_half_width`,
   `matrix_nonzero_entries`, and `matrix_density`; the banded rows are
   sparse-structured dense-storage inputs with densities of about 0.00974,
-  0.00488, and 0.00244. Focused default, SIMD-enabled, and CUDA-enabled checks
-  for the new 1024/16 and 2048/32 rows passed with `contract_ok=1`,
-  `solver_internal_threads=16/32`, and the expected sparsity counters. Treat
+  0.00488, 0.00244, and 0.00122. Focused default, SIMD-enabled, and
+  CUDA-enabled checks for the new 4096-row rows passed with `contract_ok=1`,
+  `solver_internal_threads=1/8/16/32`, `matrix_nonzero_entries=20474`, and
+  `matrix_density=0.00122035`. Treat
   this as correctness/comparison evidence rather than a
   performance recommendation. CUDA-enabled rows are CPU Jacobi rows in a
   CUDA-enabled build, not CUDA LCP kernel execution.

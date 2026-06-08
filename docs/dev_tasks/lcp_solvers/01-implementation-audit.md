@@ -515,15 +515,15 @@ The current local evidence for this task is:
   `JacobiSolver::Parameters::workerThreads = 4` on the 128-row deterministic
   standard generated case. This is solver-internal CPU threading correctness
   evidence for Jacobi's update loop, not a performance claim.
-- `BM_LCP_COMPARE --benchmark_filter='BM_LcpJacobiSolverThreadingBanded_Standard/(512|1024|2048)' --benchmark_min_time=0.001s --benchmark_repetitions=1`
-  passed in the default build for all 11 banded Jacobi threading rows, including
-  1024-row rows with 1, 4, 8, and 16 worker threads and 2048-row rows with 1,
-  8, 16, and 32 worker threads. Focused default, SIMD-enabled, and
-  CUDA-enabled checks for the new 1024/16 and 2048/32 rows passed with
-  `contract_ok=1`, `solver_internal_threads=16/32`,
-  `matrix_nonzero_entries=5114/10234`, and
-  `matrix_density=0.00488/0.00244`. The CUDA-enabled rows are CPU Jacobi rows
-  in that build tree, not CUDA LCP kernel execution.
+- `BM_LCP_COMPARE --benchmark_filter='BM_LcpJacobiSolverThreadingBanded_Standard/(512|1024|2048|4096)' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  passed in the default build for all 15 banded Jacobi threading rows,
+  including 1024-row rows with 1, 4, 8, and 16 worker threads, 2048-row rows
+  with 1, 8, 16, and 32 worker threads, and 4096-row rows with 1, 8, 16, and
+  32 worker threads. Focused default, SIMD-enabled, and CUDA-enabled checks for
+  the new 4096-row rows passed with `contract_ok=1`,
+  `solver_internal_threads=1/8/16/32`, `matrix_nonzero_entries=20474`, and
+  `matrix_density=0.00122035`. The CUDA-enabled rows are CPU Jacobi rows in
+  that build tree, not CUDA LCP kernel execution.
 - `BoxedSemiSmoothNewton` now includes the derivative of moving `findex`
   friction bounds in its natural-residual Jacobian. With that fix,
   `UNIT_math_lcp_math_lcp_lcp_generated_coverage
@@ -1324,7 +1324,8 @@ The current local evidence for this task is:
 - Backend evidence: benchmark rows now identify scalar/SIMD/CUDA build state,
   a focused SIMD-enabled CPU slice passes, a focused CUDA-enabled build/runtime
   slice passes, Jacobi has opt-in CPU worker-thread correctness/comparison
-  evidence, and narrow CUDA projected-Jacobi and PGS
+  evidence through 4096-row banded SPD rows, and narrow CUDA projected-Jacobi
+  and PGS
   standard/boxed/friction-index through direct 128-row and 48-contact packets
   plus grouped variable-size synthetic standard/boxed/friction-index with two-
   and three-variant rows, homogeneous

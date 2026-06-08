@@ -12126,7 +12126,11 @@ BENCHMARK(BM_LcpJacobiSolverThreadingBanded_Standard)
     ->Args({2048, 1})
     ->Args({2048, 8})
     ->Args({2048, 16})
-    ->Args({2048, 32});
+    ->Args({2048, 32})
+    ->Args({4096, 1})
+    ->Args({4096, 8})
+    ->Args({4096, 16})
+    ->Args({4096, 32});
 
 #if DART_BM_LCP_COMPARE_HAS_SIMULATION_CUDA
 BENCHMARK(BM_LcpCudaJacobiBatch_Standard)
