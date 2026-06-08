@@ -35,6 +35,7 @@
 
 #include <algorithm>
 
+#include <cmath>
 #include <cstddef>
 
 namespace dart::simulation::detail::newton_barrier {
@@ -73,6 +74,36 @@ struct LineSearchStats
     const double stepBound, const bool indeterminate) noexcept
 {
   return stepBound > 0.0 && !indeterminate;
+}
+
+[[nodiscard]] inline double makeLineSearchStepScale(
+    const double stepBound, const double safetyScale = 1.0) noexcept
+{
+  const double clampedStepBound = std::clamp(stepBound, 0.0, 1.0);
+  const double clampedSafetyScale = std::clamp(safetyScale, 0.0, 1.0);
+  if (!std::isfinite(clampedStepBound) || !std::isfinite(clampedSafetyScale)) {
+    return 0.0;
+  }
+
+  const double stepScale
+      = std::clamp(clampedStepBound * clampedSafetyScale, 0.0, 1.0);
+  return std::isfinite(stepScale) ? stepScale : 0.0;
+}
+
+[[nodiscard]] inline double makeInteriorLineSearchStepScale(
+    const double stepBound) noexcept
+{
+  const double stepScale = makeLineSearchStepScale(stepBound);
+  if (stepScale <= 0.0) {
+    return 0.0;
+  }
+
+  const double interiorStepScale = std::nextafter(stepScale, 0.0);
+  if (interiorStepScale <= 0.0 || !std::isfinite(interiorStepScale)) {
+    return 0.0;
+  }
+
+  return interiorStepScale;
 }
 
 inline void accumulateLineSearchStats(
