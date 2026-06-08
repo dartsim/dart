@@ -58,8 +58,9 @@
       benchmark rows on DART 7 separated world-contact, coupled stack-contact,
       and articulated unified-contact fixtures.
 - [x] Added Boxed Semi-Smooth Newton generated correctness and single/batch
-      benchmark rows for 8x-coupled mildly ill-conditioned DART 7
-      friction-index packets at 6, 8, 12, 16, 24, and 32 contacts, plus
+      benchmark rows for 1x-/4x-coupled mildly ill-conditioned DART 7
+      friction-index packets at 6, 8, 12, 16, and 24 contacts and 8x-coupled
+      packets at 6, 8, 12, 16, 24, and 32 contacts, plus
       ADMM/SAP/Boxed Semi-Smooth Newton generated correctness and
       single-problem benchmark rows for 16x-coupled 6-, 8-, 12-, 16-, 24-,
       32-, 48-, and 64-contact packets. The 16x batch rows remain scoped to
@@ -130,8 +131,8 @@
       32-row, friction-index 8-contact, and coupled friction-index 6-, 8-, and
       12-, 16-, and 24-contact cases, plus 4x-coupled
       6-/8-/12-/16-/24-contact cases and 8x-coupled
-      6-/8-/12-/16-/24-/32-contact cases with Boxed Semi-Smooth Newton added
-      to the scoped solver set, plus an
+      6-/8-/12-/16-/24-/32-contact cases with Boxed Semi-Smooth Newton
+      included across those coupled rows, plus an
       ADMM/SAP/Boxed Semi-Smooth Newton 16x-coupled
       6-/8-/12-/16-/24-/32-/48-/64-contact single-problem slice. `MPRGP` is
       intentionally
@@ -178,22 +179,22 @@
       batch-size-4 runs over standard 32/64/128-row, boxed 32/64/128-row, and
       coupled friction-index 8-/12-/16-/24-/32-/48-/64-contact active-set packets,
       verified in default, SIMD-enabled, and CUDA-enabled build trees.
-- [x] Added 298 `BM_LcpMildIllConditioned` benchmark rows for the scoped larger
+- [x] Added 308 `BM_LcpMildIllConditioned` benchmark rows for the scoped larger
       mildly ill-conditioned standard 32-row, boxed 16-row, friction-index
       8-contact, coupled friction-index 6-, 8-, 12-, 16-, and 24-contact
-      packets, 4x-coupled 6-/8-/12-/16-/24-contact packets, 8x-coupled
+      packets, 4x-coupled 6-/8-/12-/16-/24-contact packets, and 8x-coupled
       6-/8-/12-/16-/24-/32-contact packets with Boxed Semi-Smooth Newton
-      included, and
+      included across those coupled rows, plus
       ADMM/SAP/Boxed Semi-Smooth Newton 16x-coupled
       6-/8-/12-/16-/24-/32-/48-/64-contact single-problem
       packets, verified in default, SIMD-enabled, and CUDA-enabled build trees.
-- [x] Added 580 `BM_LcpMildIllConditionedBatch(Serial|Parallel)` benchmark rows
+- [x] Added 600 `BM_LcpMildIllConditionedBatch(Serial|Parallel)` benchmark rows
       for batch-size-4 runs over the full scoped mildly ill-conditioned packet
       set: standard 32-row, boxed 16-row, friction-index 8-contact, coupled
       friction-index 6-/8-/12-/16-/24-contact, 4x-coupled
-      6-/8-/12-/16-/24-contact, 8x-coupled
-      6-/8-/12-/16-/24-/32-contact with Boxed Semi-Smooth Newton included,
-      and ADMM/SAP-only 16x-coupled
+      6-/8-/12-/16-/24-contact, and 8x-coupled
+      6-/8-/12-/16-/24-/32-contact with Boxed Semi-Smooth Newton included
+      across those non-16x coupled rows, and ADMM/SAP-only 16x-coupled
       6-/8-/12-/16-/24-/32-/48-/64-contact packets, verified in default,
       SIMD-enabled, and CUDA-enabled build trees.
 - [x] Added 23 `BM_LcpNearSingular` benchmark rows for the scoped robust
@@ -483,7 +484,7 @@ tradeoffs evidence based.
   `build/simd/cpp/Release/bin/UNIT_math_lcp_math_lcp_lcp_generated_coverage --gtest_filter='LcpGeneratedCoverage.*'`
   passed 21 tests. The focused `BM_LCP_COMPARE` mild slice reported
   `build_simd_enabled=1`, `build_cuda_enabled=0`,
-  `has_simulation_experimental=1`, and `contract_ok=1` for all 298
+  `has_simulation_experimental=1`, and `contract_ok=1` for all 308
   `BM_LcpMildIllConditioned` rows, and the focused
   `BM_LcpStressActiveSetTransition` slice reported
   `build_simd_enabled=1`, `build_cuda_enabled=0`,
@@ -512,7 +513,7 @@ tradeoffs evidence based.
   slices. The
   focused `BM_LCP_COMPARE` mild slice reported
   `build_cuda_enabled=1`, `build_simd_enabled=0`,
-  `has_simulation_experimental=1`, and `contract_ok=1` for all 298
+  `has_simulation_experimental=1`, and `contract_ok=1` for all 308
   `BM_LcpMildIllConditioned` rows, and the focused
   `BM_LcpStressActiveSetTransition` slice reported
   `build_cuda_enabled=1`, `build_simd_enabled=0`,
@@ -1008,33 +1009,34 @@ tradeoffs evidence based.
   LCP kernel execution.
 - Verified larger mildly ill-conditioned benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpMildIllConditioned/' | wc -l`
-  reported 298 rows, and
+  reported 308 rows, and
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpMildIllConditioned' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   ran all rows with `contract_ok=1` in the default, SIMD-enabled, and
   CUDA-enabled build trees. The rows cover standard 32-row, boxed 16-row,
   friction-index 8-contact, and coupled friction-index 6-, 8-, 12-, 16-, and
   24-contact packets, plus 4x-coupled 6-/8-/12-/16-/24-contact packets and
   8x-coupled 6-/8-/12-/16-/24-/32-contact packets with Boxed Semi-Smooth
-  Newton included, plus ADMM/SAP/Boxed Semi-Smooth Newton single-problem
+  Newton included across those coupled rows, plus ADMM/SAP/Boxed Semi-Smooth
+  Newton single-problem
   16x-coupled
   6-/8-/12-/16-/24-/32-/48-/64-contact packets over the scoped solver set. The friction-index rows
   report `contact_count`, the coupled rows report `coupled=1`, the
   stronger/extreme-coupled rows report `coupling_scale=4`, `8`, or `16`, and
   all rows report `mildly_ill_conditioned=1` plus backend build-state
-  counters. The 8x-coupled slice contributes 90 single-problem rows and the
-  solver set includes `BoxedSemiSmoothNewton` alongside the prior scoped
-  solvers.
+  counters. The `BoxedSemiSmoothNewton` coupled single-problem rows contribute
+  24 rows over coupling scales `1/4/8/16` and contact counts
+  `6/8/12/16/24/32/48/64` alongside the prior scoped solvers.
 - Verified larger mildly ill-conditioned batch benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpMildIllConditionedBatch' | wc -l`
-  reported 580 rows, and JSON benchmark checks for
-  `BM_LcpMildIllConditionedBatch(Serial|Parallel)` reported 580 rows with
+  reported 600 rows, and JSON benchmark checks for
+  `BM_LcpMildIllConditionedBatch(Serial|Parallel)` reported 600 rows with
   `contract_ok=1` in the default, SIMD-enabled, and CUDA-enabled build trees.
   These rows cover batch-size-4 serial and DART 7 `ParallelExecutor` runs over
   the full scoped mildly ill-conditioned packet set: standard 32-row, boxed
   16-row, friction-index 8-contact, coupled friction-index
   6-/8-/12-/16-/24-contact, 4x-coupled 6-/8-/12-/16-/24-contact,
   8x-coupled 6-/8-/12-/16-/24-/32-contact with Boxed Semi-Smooth Newton
-  included, and ADMM/SAP-only 16x-coupled
+  included across those non-16x coupled rows, and ADMM/SAP-only 16x-coupled
   6-/8-/12-/16-/24-/32-/48-/64-contact packets. The rows report
   `mildly_ill_conditioned_batch=1`, `batch_size=4`, problem sizes
   `16/18/24/32/36/48/72/96/144/192`, total problem sizes
@@ -1044,10 +1046,11 @@ tradeoffs evidence based.
   `coupled=1` and `coupling_scale=1/4/8/16`. Parallel rows also report
   `profile_enabled=1`, `parallel_units=4`, `worker_count=20`, and observed
   `max_parallelism`. The CUDA-enabled rows are CPU solver batch rows in a
-  CUDA-enabled build, not CUDA LCP kernel execution. The 8x-coupled batch
-  slice contributes 180 serial and parallel rows and includes
-  `BoxedSemiSmoothNewton`; the 16x-coupled batch rows remain ADMM/SAP-only
-  after the Boxed Semi-Smooth Newton contract trial failed.
+  CUDA-enabled build, not CUDA LCP kernel execution. The
+  `BoxedSemiSmoothNewton` coupled batch rows contribute 32 serial and parallel
+  rows over coupling scales `1/4/8` and contact counts `6/8/12/16/24/32`;
+  the 16x-coupled batch rows remain ADMM/SAP-only after the Boxed Semi-Smooth
+  Newton contract trial failed.
 - Verified near-singular batch benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpNearSingularBatch' | wc -l`
   reported 46 rows, and JSON benchmark checks for
@@ -1613,7 +1616,8 @@ tradeoffs evidence based.
   8-contact, and coupled friction-index 6-, 8-, 12-, 16-, and 24-contact
   known-solution cases, plus 4x-coupled 6-/8-/12-/16-/24-contact cases and
   8x-coupled 6-/8-/12-/16-/24-/32-contact cases with Boxed Semi-Smooth Newton
-  included, plus ADMM/SAP/Boxed Semi-Smooth Newton 16x-coupled
+  included across those coupled rows, plus ADMM/SAP/Boxed Semi-Smooth Newton
+  16x-coupled
   6-/8-/12-/16-/24-/32-/48-/64-contact single-problem cases, over a scoped
   solver set.
   `MPRGP` is excluded from
@@ -1656,23 +1660,24 @@ tradeoffs evidence based.
 - Added `BM_LcpActiveSetTransition` rows for the same standard, boxed, and
   coupled friction-index packets so the active-set boundary cases are also
   benchmarked apples-to-apples across manifest-supporting solvers.
-- Added 298 `BM_LcpMildIllConditioned` rows for larger mildly ill-conditioned
+- Added 308 `BM_LcpMildIllConditioned` rows for larger mildly ill-conditioned
   standard 32-row, boxed 16-row, friction-index 8-contact, and coupled
   friction-index 6-, 8-, 12-, 16-, and 24-contact packets, plus
   4x-coupled 6-/8-/12-/16-/24-contact packets and 8x-coupled
   6-/8-/12-/16-/24-/32-contact packets with Boxed Semi-Smooth Newton
-  included, plus ADMM/SAP/Boxed Semi-Smooth Newton 16x-coupled
+  included across those coupled rows, plus ADMM/SAP/Boxed Semi-Smooth Newton
+  16x-coupled
   6-/8-/12-/16-/24-/32-/48-/64-contact single-problem packets over the
   same scoped solver set. These rows are solve-to-tolerance benchmark
   evidence and report `contract_ok=1`, `mildly_ill_conditioned=1`, backend
   build-state counters, and contact/coupling counters where applicable.
-- Added 580 `BM_LcpMildIllConditionedBatch(Serial|Parallel)` rows for
+- Added 600 `BM_LcpMildIllConditionedBatch(Serial|Parallel)` rows for
   batch-size-4 serial and DART 7 `ParallelExecutor` runs over the full scoped
   mildly ill-conditioned packet set: standard 32-row, boxed 16-row,
   friction-index 8-contact, coupled friction-index 6-/8-/12-/16-/24-contact,
-  4x-coupled 6-/8-/12-/16-/24-contact, 8x-coupled
-  6-/8-/12-/16-/24-/32-contact with Boxed Semi-Smooth Newton included, and
-  ADMM/SAP-only 16x-coupled
+  4x-coupled 6-/8-/12-/16-/24-contact, and 8x-coupled
+  6-/8-/12-/16-/24-/32-contact with Boxed Semi-Smooth Newton included across
+  those non-16x coupled rows, and ADMM/SAP-only 16x-coupled
   6-/8-/12-/16-/24-/32-/48-/64-contact packets. These rows report
   `contract_ok=1`, `mildly_ill_conditioned_batch=1`, backend build-state
   counters, problem/total-problem-size counters, and contact/coupling counters
@@ -1894,7 +1899,7 @@ tradeoffs evidence based.
   well-conditioned 12-contact, mildly ill-conditioned 24-contact, 4x-coupled
   mildly ill-conditioned 6-, 8-, 12-, 16-, and 24-contact cases, 8x-coupled
   mildly ill-conditioned 6-, 8-, 12-, 16-, 24-, and 32-contact cases with
-  Boxed Semi-Smooth Newton included in single and batch rows,
+  Boxed Semi-Smooth Newton included in single rows and non-16x batch rows,
   ADMM/SAP/Boxed Semi-Smooth Newton single-problem 16x-coupled mildly
   ill-conditioned 6-, 8-, 12-, 16-, 24-, 32-, 48-, and 64-contact cases,
   ADMM/SAP batch rows for that 16x slice, near-singular 64-contact cases, singular-degenerate
@@ -1945,7 +1950,7 @@ tradeoffs evidence based.
 - Benchmarks: extend `tests/benchmark/lcpsolver/` beyond generated math
   fixtures, active-set, larger/stress/extreme/production active-set packets,
   production active-set serial and `ParallelExecutor` batch packets,
-  mildly ill-conditioned single-problem and 4x/8x/16x-coupled batch packets,
+  mildly ill-conditioned single-problem and coupled/4x/8x/16x batch packets,
   near-singular single-problem and batch packets, singular-degenerate
   single-problem and friction-index batch packets, PGS/PSOR, symmetric PSOR,
   and Red-Black Gauss-Seidel relaxation sweep rows, APGD restart-policy sweep

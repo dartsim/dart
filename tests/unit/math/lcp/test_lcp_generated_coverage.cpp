@@ -1249,7 +1249,6 @@ bool solverShouldRunLargerMildlyIllConditionedCase(
   }
 
   if (testCase.family == GeneratedFamily::FrictionIndex && testCase.coupled
-      && testCase.couplingScale == 8.0
       && solver.name == "BoxedSemiSmoothNewton") {
     return true;
   }

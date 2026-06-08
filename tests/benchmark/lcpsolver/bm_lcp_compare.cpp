@@ -9775,7 +9775,6 @@ bool SolverShouldRunMildIllConditionedBenchmark(
   }
 
   if (isMildIllConditionedCoupledFrictionIndexCase(testCase)
-      && getMildIllConditionedCouplingScale(testCase) == 8.0
       && solver.name == "BoxedSemiSmoothNewton") {
     return true;
   }
