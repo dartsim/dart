@@ -1083,6 +1083,17 @@ contact scenes.
   `contact_count=768`, and `problem_size=2304` in default, SIMD-enabled, and
   CUDA-enabled build trees; CUDA-enabled rows are CPU solver rows in that build
   tree, not CUDA LCP kernel execution.
+- `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` also registers 36 dense
+  box-face serial and DART 7 `ParallelExecutor` batch rows:
+  `BM_LcpWorldBoxContactBatch(Serial|Parallel)/FrictionIndex/<solver>/{24,64,96}/4`
+  for `Pgs`, `RedBlackGaussSeidel`, `NNCG`, `Apgd`, `Tgs`, and `Admm`. Focused
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldBoxContactBatch(Serial|Parallel)/FrictionIndex/.+/96/4$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  runs in default, SIMD-enabled, and CUDA-enabled build trees report 12 rows
+  with `contract_ok=1`, `dense_box_contact_batch=1`, `box_count=96`,
+  `contact_count=384`, `problem_size=1152`, `batch_size=4`,
+  `total_contact_count=1536`, `total_problem_size=4608`, and
+  `parallel_units=4` on parallel rows; CUDA-enabled rows are CPU solver batch
+  rows in that build tree, not CUDA LCP kernel execution.
 - `BM_LcpWorldBoxStep_BoxedLcp/{1,2,4,8}/200` plus
   `BM_LcpWorldBoxStep_BoxedLcp/16/500`,
   `BM_LcpWorldBoxStep_BoxedLcp/24/2000`, and
@@ -1405,6 +1416,10 @@ cmake --build build/default/cpp/Release \
   "--benchmark_repetitions=1"
 ./build/cuda/cpp/Release/bin/BM_LCP_COMPARE \
   "--benchmark_filter=BM_LcpCudaPgsWorldBoxContact(Batch|GroupedBatch)_FrictionIndex" \
+  "--benchmark_min_time=0.001s" \
+  "--benchmark_repetitions=1"
+./build/default/cpp/Release/bin/BM_LCP_COMPARE \
+  "--benchmark_filter=^BM_LcpWorldBoxContactBatch(Serial|Parallel)/FrictionIndex/.+/96/4$" \
   "--benchmark_min_time=0.001s" \
   "--benchmark_repetitions=1"
 ```

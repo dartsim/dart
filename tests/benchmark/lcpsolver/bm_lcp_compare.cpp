@@ -1593,6 +1593,52 @@ std::optional<WorldContactBenchmarkBatch> MakeWorldContactBenchmarkBatch(
   return batch;
 }
 
+std::optional<WorldContactBenchmarkBatch> MakeWorldBoxContactBenchmarkBatch(
+    int boxCount, int batchSize, std::string& errorMessage)
+{
+  if (boxCount <= 0) {
+    errorMessage = "dense box-contact batch box count must be positive";
+    return std::nullopt;
+  }
+  if (batchSize <= 0) {
+    errorMessage = "dense box-contact batch size must be positive";
+    return std::nullopt;
+  }
+
+  WorldContactBenchmarkBatch batch;
+  batch.problems.reserve(static_cast<std::size_t>(batchSize));
+
+  Eigen::Index expectedRows = 0;
+  for (const int i : std::views::iota(0, batchSize)) {
+    auto fixture
+        = MakeWorldBoxContactBenchmarkProblem(errorMessage, i, boxCount);
+    if (!fixture.has_value()) {
+      return std::nullopt;
+    }
+    if (fixture->contactCount != static_cast<std::size_t>(4 * boxCount)) {
+      errorMessage = "dense box-contact batch lost face contact coverage";
+      return std::nullopt;
+    }
+    if (expectedRows == 0) {
+      expectedRows = fixture->problem.b.size();
+    } else if (fixture->problem.b.size() != expectedRows) {
+      errorMessage = "dense box-contact batch problem shape changed";
+      return std::nullopt;
+    }
+    if (fixture->problem.b.size() != static_cast<Eigen::Index>(12 * boxCount)) {
+      errorMessage = "dense box-contact batch row count changed";
+      return std::nullopt;
+    }
+
+    batch.totalProblemSize += fixture->problem.b.size();
+    batch.totalContactCount += fixture->contactCount;
+    batch.totalBodyCount += fixture->bodyCount;
+    batch.problems.push_back(std::move(fixture->problem));
+  }
+
+  return batch;
+}
+
   #if DART_BM_LCP_COMPARE_HAS_SIMULATION_CUDA
 std::optional<WorldContactBenchmarkBatch>
 MakeHomogeneousWorldContactBenchmarkBatch(
@@ -8257,6 +8303,100 @@ void RunWorldContactBatchParallelBenchmark(
   }
 }
 
+void AddWorldBoxContactBatchShapeCounters(
+    benchmark::State& state, int boxCount, int batchSize, bool parallel)
+{
+  state.counters["dense_box_contact"] = 1.0;
+  state.counters["dense_box_contact_batch"] = 1.0;
+  state.counters["dense_box_contact_batch_parallel"] = parallel ? 1.0 : 0.0;
+  state.counters["box_count"] = static_cast<double>(boxCount);
+  state.counters["total_box_count"] = static_cast<double>(boxCount * batchSize);
+  state.counters["contact_count"] = static_cast<double>(4 * boxCount);
+  state.counters["problem_size"] = static_cast<double>(12 * boxCount);
+}
+
+void RunWorldBoxContactBatchSerialBenchmark(
+    benchmark::State& state,
+    const dart::test::LcpSolverManifestEntry& solverEntry)
+{
+  const int boxCount = static_cast<int>(state.range(0));
+  const int batchSize = static_cast<int>(state.range(1));
+  std::string errorMessage;
+  const auto batch
+      = MakeWorldBoxContactBenchmarkBatch(boxCount, batchSize, errorMessage);
+  if (!batch.has_value()) {
+    state.SkipWithError(errorMessage.c_str());
+    return;
+  }
+
+  SolverBenchmarkOptions storage;
+  ConfigureSolverBenchmarkOptions(
+      storage, solverEntry, batch->problems.front());
+
+  const auto solver = solverEntry.create();
+  if (solver == nullptr) {
+    state.SkipWithError("LCP solver factory returned null");
+    return;
+  }
+
+  BatchBenchmarkCounters counters;
+  for (auto _ : state) {
+    counters = RunBatchWithSolver(*solver, batch->problems, storage.options);
+    benchmark::DoNotOptimize(counters.maxResidual);
+  }
+
+  counters = RunBatchWithSolver(*solver, batch->problems, storage.options);
+  AddWorldContactBatchCounters(
+      state,
+      counters,
+      *batch,
+      MakeLabel(
+          std::string(solverEntry.name),
+          "WorldBoxContactBatchSerial/FrictionIndex"));
+  AddWorldBoxContactBatchShapeCounters(state, boxCount, batchSize, false);
+}
+
+void RunWorldBoxContactBatchParallelBenchmark(
+    benchmark::State& state,
+    const dart::test::LcpSolverManifestEntry& solverEntry)
+{
+  const int boxCount = static_cast<int>(state.range(0));
+  const int batchSize = static_cast<int>(state.range(1));
+  std::string errorMessage;
+  const auto batch
+      = MakeWorldBoxContactBenchmarkBatch(boxCount, batchSize, errorMessage);
+  if (!batch.has_value()) {
+    state.SkipWithError(errorMessage.c_str());
+    return;
+  }
+
+  ParallelBatchFixture fixture(solverEntry, batch->problems);
+  if (!fixture.valid) {
+    state.SkipWithError(fixture.errorMessage.c_str());
+    return;
+  }
+
+  compute::ParallelExecutor executor;
+  BatchBenchmarkCounters counters;
+  for (auto _ : state) {
+    executor.execute(fixture.graph);
+    counters = fixture.collectCounters();
+    benchmark::DoNotOptimize(counters.maxResidual);
+  }
+
+  const auto profile = executor.executeProfiled(fixture.graph);
+  counters = fixture.collectCounters();
+  AddWorldContactBatchCounters(
+      state,
+      counters,
+      *batch,
+      MakeLabel(
+          std::string(solverEntry.name),
+          "WorldBoxContactBatchParallel/FrictionIndex"));
+  AddWorldBoxContactBatchShapeCounters(state, boxCount, batchSize, true);
+  AddParallelExecutionCounters(state, profile, fixture.graph);
+}
+
 static void BM_LcpWorldContactAssembly_BoxedLcp(benchmark::State& state)
 {
   const int contactCount = static_cast<int>(state.range(0));
@@ -9715,6 +9855,22 @@ std::string MakeWorldContactStressBatchParallelBenchmarkName(
   out << "BM_LcpWorldContactStressBatchParallel/FrictionIndex/" << solver.name;
   return out.str();
 }
+
+std::string MakeWorldBoxContactBatchSerialBenchmarkName(
+    const dart::test::LcpSolverManifestEntry& solver)
+{
+  std::ostringstream out;
+  out << "BM_LcpWorldBoxContactBatchSerial/FrictionIndex/" << solver.name;
+  return out.str();
+}
+
+std::string MakeWorldBoxContactBatchParallelBenchmarkName(
+    const dart::test::LcpSolverManifestEntry& solver)
+{
+  std::ostringstream out;
+  out << "BM_LcpWorldBoxContactBatchParallel/FrictionIndex/" << solver.name;
+  return out.str();
+}
 #endif
 
 std::string MakeStaggeringContactPipelineSweepBenchmarkName(
@@ -11126,6 +11282,40 @@ void RegisterWorldContactBatchBenchmarks()
     }
   }
 }
+
+void RegisterWorldBoxContactBatchBenchmarks()
+{
+  for (const auto& solver : dart::test::kLcpSolverManifest) {
+    if (!dart::test::supportsProblem(
+            solver, dart::test::LcpProblemSupport::FrictionIndex)) {
+      continue;
+    }
+    if (!SupportsDenseWorldBoxContactPatch(solver.name)) {
+      continue;
+    }
+
+    const auto serialName = MakeWorldBoxContactBatchSerialBenchmarkName(solver);
+    benchmark::RegisterBenchmark(
+        serialName.c_str(),
+        [solver](benchmark::State& state) {
+          RunWorldBoxContactBatchSerialBenchmark(state, solver);
+        })
+        ->Args({24, 4})
+        ->Args({64, 4})
+        ->Args({96, 4});
+
+    const auto parallelName
+        = MakeWorldBoxContactBatchParallelBenchmarkName(solver);
+    benchmark::RegisterBenchmark(
+        parallelName.c_str(),
+        [solver](benchmark::State& state) {
+          RunWorldBoxContactBatchParallelBenchmark(state, solver);
+        })
+        ->Args({24, 4})
+        ->Args({64, 4})
+        ->Args({96, 4});
+  }
+}
 #endif
 
 static void BM_LcpCompare_Dantzig_Scaled(benchmark::State& state)
@@ -11354,6 +11544,7 @@ const bool kManifestBenchmarksRegistered = [] {
   RegisterContactSolverComparisonSweepBenchmarks();
   RegisterContactNormalStandardSweepBenchmarks();
   RegisterWorldContactBatchBenchmarks();
+  RegisterWorldBoxContactBatchBenchmarks();
 #endif
   return true;
 }();

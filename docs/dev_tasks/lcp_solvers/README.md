@@ -315,6 +315,12 @@
       `BM_LcpWorldBoxContact/FrictionIndex` benchmark rows over
       1/2/4/8/16/24/32/48/64/96/128/192-box snapshots verified in default, SIMD-enabled, and
       CUDA-enabled build trees.
+- [x] Added DART 7 dense box-face serial and `ParallelExecutor` batch benchmark
+      rows: 36 `BM_LcpWorldBoxContactBatch(Serial|Parallel)/FrictionIndex`
+      rows cover `Pgs`, `RedBlackGaussSeidel`, `NNCG`, `Apgd`, `Tgs`, and
+      `Admm` over 24/64/96-box snapshots with batch size 4, verified in
+      default, SIMD-enabled, and CUDA-enabled build trees as CPU solver batch
+      rows.
 - [x] Added contact-derived CUDA batch evidence for homogeneous 4-, 8-, and
       16-contact DART 7 world-contact packets, covering fixed-iteration CUDA
       Jacobi and PGS unit tests and benchmark rows on the visible GPU.
@@ -1327,6 +1333,19 @@ tradeoffs evidence based.
   The CUDA-enabled rows are CPU solver benchmark rows in that build tree, not
   CUDA LCP kernel execution. This is dense contact-snapshot evidence, not
   broad robot-like or CUDA dense-contact execution evidence.
+- DART 7 dense box-contact serial/parallel batch benchmark evidence:
+  `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` now also registers 36
+  `BM_LcpWorldBoxContactBatch(Serial|Parallel)/FrictionIndex/<solver>/{24,64,96}/4`
+  rows for `Pgs`, `RedBlackGaussSeidel`, `NNCG`, `Apgd`, `Tgs`, and `Admm`.
+  Focused default, SIMD-enabled, and CUDA-enabled
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldBoxContactBatch(Serial|Parallel)/FrictionIndex/.+/96/4$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  runs each reported 12 rows with `contract_ok=1`, `dense_box_contact=1`,
+  `dense_box_contact_batch=1`, `box_count=96`, `contact_count=384`,
+  `problem_size=1152`, `batch_size=4`, `total_contact_count=1536`, and
+  `total_problem_size=4608`; parallel rows reported `parallel_units=4`, while
+  build counters reported `build_simd_enabled=1` in the SIMD build tree and
+  `build_cuda_enabled=1` in the CUDA-enabled build tree. The CUDA-enabled rows
+  are CPU solver batch rows in that build tree, not CUDA LCP kernel execution.
 - DART 7 dense box-contact end-to-end benchmark evidence:
   `BM_LcpWorldBoxStep_BoxedLcp/{1,2,4,8}/200` and
   `BM_LcpWorldBoxStep_BoxedLcp/16/500`,
@@ -1972,7 +1991,8 @@ tradeoffs evidence based.
   Jacobi block-partition sweep rows, ADMM/SAP/Boxed Semi-Smooth Newton
   contact comparison sweep rows, contact-normal standard-LCP sweep rows,
   independent-problem batches, simple world-contact snapshots, small coupled
-  stack snapshot batches, and dense box-face snapshot and step rows to broader
+  stack snapshot batches, dense box-face snapshot/step rows, and scoped dense
+  box-face serial/parallel batch rows to broader
   dense and robot-like end-to-end contact systems, broader SIMD benchmark packets, larger threaded
   configurations, broader CUDA LCP solver execution, and
   vectorized/threaded/CUDA batch-processing paths.
