@@ -27,13 +27,19 @@ The positive-step predicate slice promoted only
 methods route through it, but hit/limited fields and limiting-primitive payloads
 remain variant-local.
 
-The current Phase 3 slice promotes the shared conservative native-CCD option
-adapter into `detail/newton_barrier`. Rigid IPC and deformable continuous
-collision detection now use one `LineSearchOptions` -> `CcdOption` adapter for
-non-negative separation/tolerance clamping, positive iteration count clamping,
-and conservative advancement selection, while their CCD implementations,
-hit/limited result fields, and limiting-primitive payloads remain
-variant-local.
+The native-CCD option adapter slice merged as PR #2942. Rigid IPC and
+deformable continuous collision detection now use one `LineSearchOptions` ->
+`CcdOption` adapter for non-negative separation/tolerance clamping, positive
+iteration count clamping, and conservative advancement selection, while their
+CCD implementations, hit/limited result fields, and limiting-primitive payloads
+remain variant-local.
+
+The current Phase 3 slice promotes the shared line-search step-scale policy into
+`detail/newton_barrier`. Rigid IPC Newton step scaling and deformable/world CCD
+limiters now share finite `[0, 1]` step-bound clamping, safety-scale handling,
+and the strictly-interior CCD fraction used before applying a line-search
+candidate. Variant-local owners still keep their hit/limited payloads,
+candidate identities, and zero-step diagnostic counters.
 
 The benchmark-packet utility slice promoted the first shared packet contract:
 Google Benchmark row-name canonicalization, timing-unit conversion, median-row
@@ -91,23 +97,27 @@ owners. Focused local validation passed
 `pixi run python -m pytest tests/test_benchmark_packet_utils.py` and
 `pixi run lint`.
 
-The current native-CCD option adapter slice lives on
-`simx/shared-newton-barrier-ccd-option`. It is intentionally smaller than a
-projected-Newton diagnostics merge: current evidence shows rigid and deformable
-share the line-search option conversion to native conservative CCD options, but
-not yet a full projected-Newton status or solver-loop contract.
+The current line-search step-scale slice lives on
+`simx/shared-newton-barrier-step-scale`. It is intentionally smaller than a
+line-search result or projected-Newton diagnostics merge: current evidence
+shows rigid and deformable share finite step-bound scaling and the
+strictly-interior CCD fraction, but not yet full line-search result payloads,
+projected-Newton status terminology, or solver-loop diagnostics.
+Focused local validation passed `pixi run lint`, the focused
+`test_newton_barrier_primitives` / `test_rigid_ipc_barrier` / `test_world`
+CTest entries, `pixi run build`, and `pixi run test-unit`.
 
 ## Current Branch
 
-`simx/shared-newton-barrier-ccd-option` - contains the Phase 3 shared
-line-search native-CCD option adapter slice. Verify the exact status with
+`simx/shared-newton-barrier-step-scale` - contains the Phase 3 shared
+line-search step-scale policy slice. Verify the exact status with
 `git status --short --branch` because this section is a resume snapshot.
 
 ## Immediate Next Step
 
 Continue Phase 3 from
 [`../../plans/083-unified-newton-barrier-multibody/abd-first-slice-design.md`](../../plans/083-unified-newton-barrier-multibody/abd-first-slice-design.md):
-validate and publish the line-search native-CCD option adapter, then resume
+validate and publish the line-search step-scale policy, then resume
 shared-contract scouting from the existing rigid IPC, deformable IPC, ABD, and
 benchmark-packet evidence. Do not add a two-body affine contact micro-solve for
 the current `abd-alg-affine-body` micro-packet; add projected-Newton,
@@ -148,9 +158,10 @@ VBD/OGC-adjacent work, or shared Newton-barrier infrastructure.
   `detail/newton_barrier` so rigid IPC and ABD share the same Coulomb smoothing
   branch before reduced/affine chain rules.
 - `detail/newton_barrier/line_search.hpp` owns the shared line-search
-  option/stat types, the positive-step predicate, and the conservative native
-  CCD option adapter. Do not move full line-search result structs there until
-  rigid, deformable, ABD, or another variant prove identical result semantics.
+  option/stat types, the positive-step predicate, the conservative native CCD
+  option adapter, and the step-scale helpers. Do not move full line-search
+  result structs there until rigid, deformable, ABD, or another variant prove
+  identical result semantics.
 - `scripts/benchmark_packet_utils.py` owns the shared Google Benchmark row
   parsing utilities for packet validators. Keep packet-specific metadata and
   go/no-go gates in each checker until more variants prove identical semantics.
@@ -185,7 +196,7 @@ sed -n '1,220p' docs/dev_tasks/unified_newton_barrier_multibody/README.md
 sed -n '1,220p' docs/plans/083-unified-newton-barrier-multibody/abd-first-slice-design.md
 ```
 
-Then verify the current branch with lint and the focused native-CCD adapter
+Then verify the current branch with lint and the focused line-search helper
 simulation tests. Re-run the focused Python packet tests or
 `pixi run bm-abd-comparison-packet` only if packet utility or ABD checker
 behavior changes beyond the merge. After this slice, continue with Phase 3

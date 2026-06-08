@@ -939,11 +939,8 @@ RigidIpcProjectedNewtonStep computeRigidIpcProjectedNewtonStepImpl(
 
     if (lineSearch->limited) {
       result.stats.lineSearchLimited = true;
-      const double safeBound = std::clamp(
-          lineSearch->stepBound
-              * std::clamp(options.lineSearchSafetyScale, 0.0, 1.0),
-          0.0,
-          1.0);
+      const double safeBound = newton_barrier::makeLineSearchStepScale(
+          lineSearch->stepBound, options.lineSearchSafetyScale);
       if (safeBound <= 0.0) {
         result.status = RigidIpcProjectedNewtonStatus::LineSearchBlocked;
         result.lineSearchBlocked = true;

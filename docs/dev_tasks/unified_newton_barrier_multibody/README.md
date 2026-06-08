@@ -54,6 +54,10 @@
         `detail/newton_barrier` and route rigid IPC plus deformable CCD
         line-search queries through it while keeping their CCD implementations
         and limiting-primitive payloads variant-local.
+  - [x] Promote the shared line-search step-scale policy into
+        `detail/newton_barrier` and route rigid IPC Newton step scaling plus
+        deformable/world CCD limiters through it while keeping their result
+        payloads and zero-step diagnostics variant-local.
   - [x] Promote the first shared Google Benchmark packet row parser into
         `scripts/benchmark_packet_utils.py` and route the ABD comparison packet
         checker plus the Phase 5 GPU packet checker through it while keeping
@@ -114,11 +118,11 @@ resources as public API.
 1. Continue Phase 3 shared-contract scouting from the existing rigid IPC,
    deformable IPC, and ABD evidence after the fixed-size PSD projection helper,
    first line-search option/stat helper, shared line-search positive-step
-   predicate, shared conservative native-CCD option adapter, and shared Google
-   Benchmark packet row parser. Promote projected-Newton result/status
-   terminology, line-search result semantics, diagnostics, or additional
-   benchmark-schema contracts only when a second consumer proves identical
-   behavior.
+   predicate, shared conservative native-CCD option adapter, shared
+   line-search step-scale helper, and shared Google Benchmark packet row parser.
+   Promote projected-Newton result/status terminology, line-search result
+   semantics, diagnostics, or additional benchmark-schema contracts only when a
+   second consumer proves identical behavior.
 2. Keep the two-body affine contact micro-solve deferred until the
    `abd-alg-affine-body` row expands beyond the primitive/oracle micro-packet
    and needs a solved-state residual or runtime stepping diagnostic.
@@ -185,6 +189,14 @@ Phase 3 benchmark packet utility slice local evidence:
 
 - `pixi run python -m pytest tests/test_benchmark_packet_utils.py`
 - `pixi run lint`
+
+Phase 3 line-search step-scale slice local evidence:
+
+- `pixi run lint`
+- `pixi run -- cmake --build build/default/cpp/Release --target test_newton_barrier_primitives test_rigid_ipc_barrier test_world --parallel 8`
+- `pixi run -- ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(test_newton_barrier_primitives|test_rigid_ipc_barrier|test_world)$'`
+- `pixi run build`
+- `pixi run test-unit`
 
 ## Owner Docs
 

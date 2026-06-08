@@ -43,6 +43,7 @@
 
 #include <gtest/gtest.h>
 
+#include <limits>
 #include <type_traits>
 
 namespace dc = dart::simulation::detail::deformable_contact;
@@ -210,6 +211,41 @@ TEST(NewtonBarrierPrimitives, LineSearchPositiveStepPredicateIsShared)
   EXPECT_FALSE(nb::allowsPositiveLineSearchStep(0.0, false));
   EXPECT_FALSE(nb::allowsPositiveLineSearchStep(-1.0, false));
   EXPECT_FALSE(nb::allowsPositiveLineSearchStep(0.5, true));
+}
+
+//==============================================================================
+TEST(NewtonBarrierPrimitives, LineSearchStepScaleUsesSharedClampingPolicy)
+{
+  EXPECT_NEAR(nb::makeLineSearchStepScale(0.25, 0.8), 0.2, 1e-15);
+  EXPECT_DOUBLE_EQ(nb::makeLineSearchStepScale(2.0, 2.0), 1.0);
+  EXPECT_DOUBLE_EQ(nb::makeLineSearchStepScale(-0.5, 1.0), 0.0);
+  EXPECT_DOUBLE_EQ(nb::makeLineSearchStepScale(0.5, -0.5), 0.0);
+  EXPECT_DOUBLE_EQ(
+      nb::makeLineSearchStepScale(
+          std::numeric_limits<double>::quiet_NaN(), 1.0),
+      0.0);
+  EXPECT_DOUBLE_EQ(
+      nb::makeLineSearchStepScale(
+          0.5, std::numeric_limits<double>::quiet_NaN()),
+      0.0);
+}
+
+//==============================================================================
+TEST(NewtonBarrierPrimitives, InteriorLineSearchStepScaleStaysInsideBound)
+{
+  const double fullStep = nb::makeInteriorLineSearchStepScale(1.0);
+  EXPECT_GT(fullStep, 0.0);
+  EXPECT_LT(fullStep, 1.0);
+
+  const double partialStep = nb::makeInteriorLineSearchStepScale(0.25);
+  EXPECT_GT(partialStep, 0.0);
+  EXPECT_LT(partialStep, 0.25);
+
+  EXPECT_DOUBLE_EQ(nb::makeInteriorLineSearchStepScale(0.0), 0.0);
+  EXPECT_DOUBLE_EQ(
+      nb::makeInteriorLineSearchStepScale(
+          std::numeric_limits<double>::quiet_NaN()),
+      0.0);
 }
 
 //==============================================================================
