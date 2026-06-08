@@ -32,16 +32,17 @@ known-solution slice for standard 32/64-row, boxed 16/32-row, friction-index
 8-contact, and coupled friction-index 6-, 8-, 12-, 16-, and 24-contact
 packets, plus stronger-coupled 16-/24-contact packets with 4x and 8x
 cross-contact coupling, a stronger-coupled 32-contact packet with 8x
-cross-contact coupling, ADMM/SAP-only 16x-coupled 16-/24-/32-/48-contact
-packets, and 192 matching `BM_LcpMildIllConditioned` benchmark rows verified in
+cross-contact coupling, ADMM/SAP-only 16x-coupled
+6-/8-/12-/16-/24-/32-/48-contact packets, and 198 matching
+`BM_LcpMildIllConditioned` benchmark rows verified in
 default, SIMD-enabled, and CUDA-enabled build trees. It also
-adds 384 `BM_LcpMildIllConditionedBatch(Serial|Parallel)` rows for batch-size-4
+adds 396 `BM_LcpMildIllConditionedBatch(Serial|Parallel)` rows for batch-size-4
 serial and DART 7 `ParallelExecutor` runs over the full scoped mildly
 ill-conditioned packet set: standard 32-row, boxed 16-row, friction-index
 8-contact, coupled friction-index 6-/8-/12-/16-/24-contact, 4x-coupled
 16-/24-contact, 8x-coupled 16-/24-/32-contact, and ADMM/SAP-only 16x-coupled
-16-/24-/32-/48-contact packets, verified in default, SIMD-enabled, and
-CUDA-enabled build trees.
+6-/8-/12-/16-/24-/32-/48-contact packets, verified in default, SIMD-enabled,
+and CUDA-enabled build trees.
 It also adds 42 `BM_LcpNearSingularBatch(Serial|Parallel)` rows for
 batch-size-4 serial and DART 7 `ParallelExecutor` runs over near-singular
 standard 8-row, boxed 8-row, and coupled friction-index
@@ -171,13 +172,15 @@ parameters, `sap_max_line_search_iterations`, backend build-state counters,
 and `contact_count=8` for the friction-index rows. The CUDA-enabled rows are
 CPU SAP solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
 It now also adds an ADMM/SAP-only 16x-coupled mildly ill-conditioned
-friction-index slice: the generated known-solution coverage includes 16-, 24-,
-32-, and 48-contact packets, and `BM_LcpMildIllConditioned/ExtremeCoupledFrictionIndex*`
-adds 8 benchmark rows for the same packets. Focused default, SIMD-enabled, and
-CUDA-enabled build-tree runs passed with `contract_ok=1` on every benchmark row
-and recorded `coupling_scale=16`, contact counts `16/24/32/48`, problem sizes
-`48/72/96/144`, and backend build-state counters. The CUDA-enabled rows are CPU
-ADMM/SAP solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
+friction-index slice: the generated known-solution coverage includes 6-, 8-,
+12-, 16-, 24-, 32-, and 48-contact packets, and
+`BM_LcpMildIllConditioned/ExtremeCoupledFrictionIndex*` adds 14 benchmark rows
+for the same packets. Focused default, SIMD-enabled, and CUDA-enabled
+build-tree runs passed with `contract_ok=1` on every benchmark row and recorded
+`coupling_scale=16`, contact counts `6/8/12/16/24/32/48`, problem sizes
+`18/24/36/48/72/96/144`, and backend build-state counters. The CUDA-enabled
+rows are CPU ADMM/SAP solver rows in a CUDA-enabled build, not CUDA LCP kernel
+execution.
 It now also adds 27 `BM_LcpContactSolverComparisonSweep` benchmark rows for
 `Admm`, `Sap`, and `BoxedSemiSmoothNewton` over the same DART 7 contact-derived
 fixtures used by the Staggering contact-pipeline sweep: separated world-contact
@@ -552,23 +555,23 @@ contact scenes.
   coupled friction-index packets. The
   CUDA-enabled rows are CPU solver rows in a CUDA-enabled build, not CUDA LCP
   kernel execution.
-  `BM_LCP_COMPARE` also lists 192 `BM_LcpMildIllConditioned` rows for standard
+  `BM_LCP_COMPARE` also lists 198 `BM_LcpMildIllConditioned` rows for standard
   32-row, boxed 16-row, friction-index 8-contact, and coupled friction-index
   6-, 8-, 12-, 16-, and 24-contact packets, plus stronger-coupled 16-/24-contact
   packets with 4x and 8x cross-contact coupling plus a stronger-coupled
   32-contact packet with 8x cross-contact coupling, plus ADMM/SAP-only
-  16x-coupled 16-/24-/32-/48-contact packets over the scoped solver set; the
+  16x-coupled 6-/8-/12-/16-/24-/32-/48-contact packets over the scoped solver set; the
   focused default, SIMD-enabled, and CUDA-enabled runs pass with
   `contract_ok=1` on all rows and report `mildly_ill_conditioned=1` plus
   contact/coupling counters where applicable.
-  `BM_LCP_COMPARE` also lists 384
+  `BM_LCP_COMPARE` also lists 396
   `BM_LcpMildIllConditionedBatch(Serial|Parallel)` rows for batch-size-4 serial
   and DART 7 `ParallelExecutor` runs over the full scoped mildly
   ill-conditioned
   packet set: standard 32-row, boxed 16-row, friction-index 8-contact, coupled
   friction-index 6-/8-/12-/16-/24-contact, 4x-coupled 16-/24-contact,
   8x-coupled 16-/24-/32-contact, and ADMM/SAP-only 16x-coupled
-  16-/24-/32-/48-contact packets; focused default, SIMD-enabled, and
+  6-/8-/12-/16-/24-/32-/48-contact packets; focused default, SIMD-enabled, and
   CUDA-enabled JSON checks pass with `contract_ok=1` on all rows and report
   `mildly_ill_conditioned_batch=1`, problem/total-problem-size counters,
   contact/total-contact counters where applicable, coupling-scale counters for
@@ -816,12 +819,12 @@ contact scenes.
   CUDA-enabled build, not CUDA LCP kernel execution; this does not claim native
   boxed or friction-index support for standard-only solvers.
 - The generated LCP coverage now includes ADMM/SAP-only 16x-coupled mildly
-  ill-conditioned friction-index packets at 16, 24, 32, and 48 contacts, and
-  `BM_LCP_COMPARE` now lists 8 matching
+  ill-conditioned friction-index packets at 6, 8, 12, 16, 24, 32, and 48
+  contacts, and `BM_LCP_COMPARE` now lists 14 matching
   `BM_LcpMildIllConditioned/ExtremeCoupledFrictionIndex*` rows. Default, SIMD,
   and CUDA-enabled focused benchmark runs report `contract_ok=1`,
-  `coupling_scale=16`, contact counts `16/24/32/48`, problem sizes
-  `48/72/96/144`, and backend build-state counters. Treat the CUDA-enabled rows
+  `coupling_scale=16`, contact counts `6/8/12/16/24/32/48`, problem sizes
+  `18/24/36/48/72/96/144`, and backend build-state counters. Treat the CUDA-enabled rows
   as CPU ADMM/SAP solver rows in a CUDA-enabled build, not CUDA LCP kernel
   execution.
 - `BoxedSemiSmoothNewton` now includes the derivative of moving `findex`
