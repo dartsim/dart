@@ -967,8 +967,8 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     slice up to standard 128-row, boxed 64-row, friction-index 24-contact, and
     coupled friction-index 12-contact problems, plus a scoped robust
     near-singular known-solution slice for standard 8-row, boxed 8-row, and
-    coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-, 32-, 48-, 64-, and
-    96- and 128-contact packets,
+    coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-, 32-, 48-, 64-, 96-,
+    128-, and 192-contact packets,
     and active-set
     transition coverage near lower, upper, and friction-cone boundaries. The
     active-set transition correctness grid now reaches standard 128-row, boxed
@@ -1106,11 +1106,11 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     6-/8-/12-/16-/24-/32-/48-/64-/96-/128-contact rows. Boxed Semi-Smooth Newton reports
     tuned line-search settings on the 16x rows. The row set is verified across
     default, SIMD-enabled, and CUDA-enabled build trees, plus
-    27 near-singular benchmark rows for standard 8-row, boxed 8-row, and
+    29 near-singular benchmark rows for standard 8-row, boxed 8-row, and
     coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-, 32-, 48-, 64-, 96-,
-    and 128-contact
+    128-, and 192-contact
     packets verified across default, SIMD-enabled, and CUDA-enabled build
-    trees, plus 54 near-singular batch rows for batch-size-4 serial and
+    trees, plus 58 near-singular batch rows for batch-size-4 serial and
     DART 7 `ParallelExecutor` runs over standard 8-row, boxed 8-row, and those
     coupled friction-index packets verified across default, SIMD-enabled, and
     CUDA-enabled build trees, plus

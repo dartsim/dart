@@ -3642,7 +3642,8 @@ enum class NearSingularBenchmarkCase
   CoupledFrictionIndex48,
   CoupledFrictionIndex64,
   CoupledFrictionIndex96,
-  CoupledFrictionIndex128
+  CoupledFrictionIndex128,
+  CoupledFrictionIndex192
 };
 
 enum class SingularDegenerateBenchmarkCase
@@ -4612,6 +4613,8 @@ std::string_view getNearSingularCaseName(
       return "CoupledFrictionIndex96";
     case NearSingularBenchmarkCase::CoupledFrictionIndex128:
       return "CoupledFrictionIndex128";
+    case NearSingularBenchmarkCase::CoupledFrictionIndex192:
+      return "CoupledFrictionIndex192";
   }
 
   return "Unknown";
@@ -4636,6 +4639,7 @@ dart::test::LcpProblemSupport getNearSingularProblemSupport(
     case NearSingularBenchmarkCase::CoupledFrictionIndex64:
     case NearSingularBenchmarkCase::CoupledFrictionIndex96:
     case NearSingularBenchmarkCase::CoupledFrictionIndex128:
+    case NearSingularBenchmarkCase::CoupledFrictionIndex192:
       return dart::test::LcpProblemSupport::FrictionIndex;
   }
 
@@ -4654,7 +4658,8 @@ bool isNearSingularFrictionIndexCase(const NearSingularBenchmarkCase testCase)
          || testCase == NearSingularBenchmarkCase::CoupledFrictionIndex48
          || testCase == NearSingularBenchmarkCase::CoupledFrictionIndex64
          || testCase == NearSingularBenchmarkCase::CoupledFrictionIndex96
-         || testCase == NearSingularBenchmarkCase::CoupledFrictionIndex128;
+         || testCase == NearSingularBenchmarkCase::CoupledFrictionIndex128
+         || testCase == NearSingularBenchmarkCase::CoupledFrictionIndex192;
 }
 
 int getNearSingularContactCount(const NearSingularBenchmarkCase testCase)
@@ -4682,6 +4687,8 @@ int getNearSingularContactCount(const NearSingularBenchmarkCase testCase)
       return 96;
     case NearSingularBenchmarkCase::CoupledFrictionIndex128:
       return 128;
+    case NearSingularBenchmarkCase::CoupledFrictionIndex192:
+      return 192;
     case NearSingularBenchmarkCase::Standard8:
     case NearSingularBenchmarkCase::Boxed8:
       return 0;
@@ -4721,6 +4728,9 @@ LcpProblem MakeNearSingularBenchmarkProblem(
     case NearSingularBenchmarkCase::CoupledFrictionIndex128:
       return MakeNearSingularFrictionIndexProblem(
           128, 16'128u, true, 0.08, 1e3);
+    case NearSingularBenchmarkCase::CoupledFrictionIndex192:
+      return MakeNearSingularFrictionIndexProblem(
+          192, 16'192u, true, 0.08, 1e3);
   }
 
   return MakeNearSingularStandardProblem(8, 14'008u);
@@ -4752,7 +4762,8 @@ std::vector<LcpProblem> MakeNearSingularBatchProblems(
       case NearSingularBenchmarkCase::CoupledFrictionIndex48:
       case NearSingularBenchmarkCase::CoupledFrictionIndex64:
       case NearSingularBenchmarkCase::CoupledFrictionIndex96:
-      case NearSingularBenchmarkCase::CoupledFrictionIndex128: {
+      case NearSingularBenchmarkCase::CoupledFrictionIndex128:
+      case NearSingularBenchmarkCase::CoupledFrictionIndex192: {
         const int contactCount = getNearSingularContactCount(testCase);
         const unsigned seedBase = 16'000u + static_cast<unsigned>(contactCount);
         // Keep the 64-contact batch on the same contract-verified packet as
@@ -11301,7 +11312,7 @@ void RegisterMildIllConditionedBatchBenchmarks()
 
 void RegisterNearSingularBenchmarks()
 {
-  constexpr std::array<NearSingularBenchmarkCase, 13> cases{
+  constexpr std::array<NearSingularBenchmarkCase, 14> cases{
       NearSingularBenchmarkCase::Standard8,
       NearSingularBenchmarkCase::Boxed8,
       NearSingularBenchmarkCase::CoupledFrictionIndex3,
@@ -11314,7 +11325,8 @@ void RegisterNearSingularBenchmarks()
       NearSingularBenchmarkCase::CoupledFrictionIndex48,
       NearSingularBenchmarkCase::CoupledFrictionIndex64,
       NearSingularBenchmarkCase::CoupledFrictionIndex96,
-      NearSingularBenchmarkCase::CoupledFrictionIndex128};
+      NearSingularBenchmarkCase::CoupledFrictionIndex128,
+      NearSingularBenchmarkCase::CoupledFrictionIndex192};
 
   for (const auto testCase : cases) {
     for (const auto& solver : dart::test::kLcpSolverManifest) {
@@ -11333,7 +11345,7 @@ void RegisterNearSingularBenchmarks()
 
 void RegisterNearSingularBatchBenchmarks()
 {
-  constexpr std::array<NearSingularBenchmarkCase, 13> cases{
+  constexpr std::array<NearSingularBenchmarkCase, 14> cases{
       NearSingularBenchmarkCase::Standard8,
       NearSingularBenchmarkCase::Boxed8,
       NearSingularBenchmarkCase::CoupledFrictionIndex3,
@@ -11346,7 +11358,8 @@ void RegisterNearSingularBatchBenchmarks()
       NearSingularBenchmarkCase::CoupledFrictionIndex48,
       NearSingularBenchmarkCase::CoupledFrictionIndex64,
       NearSingularBenchmarkCase::CoupledFrictionIndex96,
-      NearSingularBenchmarkCase::CoupledFrictionIndex128};
+      NearSingularBenchmarkCase::CoupledFrictionIndex128,
+      NearSingularBenchmarkCase::CoupledFrictionIndex192};
   constexpr int batchSize = 4;
 
   for (const auto testCase : cases) {
