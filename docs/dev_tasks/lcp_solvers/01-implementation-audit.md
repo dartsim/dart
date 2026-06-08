@@ -90,8 +90,8 @@ Support abbreviations:
   passes in that CUDA-enabled build, but broader robot-like denser contact
   pipeline coverage, full SIMD benchmark gates, broader solver-internal
   multi-threaded runs, general CUDA LCP solver execution, and broader
-  vectorized/CUDA LCP batch-processing paths are still missing. The narrow CUDA Jacobi/PGS batch
-  evidence now includes direct synthetic standard/boxed/findex packets through
+  vectorized/CUDA LCP batch-processing paths are still missing. The narrow CUDA
+  Jacobi/PGS batch evidence now includes direct synthetic standard/boxed/findex packets through
   256-row and 96-contact sizes and grouped variable-size synthetic
   standard/boxed/findex packets through 192-row and 64-contact groups, matching
   CPU serial and DART 7 `ParallelExecutor` Jacobi/PGS batch rows at the direct and grouped CUDA packet sizes in
@@ -1284,12 +1284,17 @@ The current local evidence for this task is:
   `cuda_group_count=7`, `box_count_shape_count=7`, `min_problem_size=12`,
   `max_problem_size=384`, `total_contact_count=696`, `total_body_count=174`, and
   `total_problem_size=2088`. A grouped 48-box CUDA PGS extension was probed and
-  is not claimed: at 1024 and 2048 fixed iterations the grouped validation failed two
-  48-box variants with fixed-variable residual/complementarity around
-  0.606/0.625. A homogeneous 128-box CUDA PGS extension was also probed and is
-  not claimed because `World::collide()` returned 472 box contacts while the
-  fixture contract requires 512. A fixed-iteration CUDA Jacobi dense-box trial
-  failed the LCP contract and is not claimed. The earlier failed probe used the
+  is not claimed: at 1024 and 2048 fixed iterations the grouped validation
+  failed two 48-box variants with fixed-variable residual/complementarity around
+  0.606/0.625. The old fixed-ground homogeneous 128-box fixture loss is now
+  separated from CUDA execution:
+  `CudaLcpDenseBoxFixture.LargerGridKeepsFaceContactShape` verifies that dynamic
+  dense-ground sizing preserves 512 box-face contacts and a 1536-row LCP, while
+  the focused all-count CUDA PGS unit sweep and a focused
+  `BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex/128/4` row were stopped
+  before completing. The 128-box CUDA PGS solve is therefore still not claimed.
+  A fixed-iteration CUDA Jacobi dense-box trial failed the LCP contract and is
+  not claimed. The earlier failed probe used the
   previous homogeneous 4-problem and grouped 1/2/4-box dense box-face fixtures:
   at 4096 iterations with relaxation 1.0 it failed with
   residual/complementarity/bound violations of about 3.3e-2 to 5.0e-2
@@ -1300,8 +1305,9 @@ The current local evidence for this task is:
   and PGS on homogeneous dense standard/boxed/friction-index packets plus
   separated sphere-ground and small coupled stack world-contact packets plus
   manually assembled articulated unified-contact packets and mixed grouped
-  contact packets, plus PGS-only dense box-face contact packets up to 16 boxes
-  and 64 contacts; it is not evidence for CUDA execution across the full solver
+  contact packets, plus PGS-only dense box-face contact packets through 96 boxes
+  and 384 contacts. The 128-box dense box-face fixture shape is covered
+  separately, but it is not evidence for CUDA execution across the full solver
   manifest, CUDA Jacobi dense-contact execution, or end-to-end articulated
   world-step CUDA execution.
 
@@ -1409,8 +1415,10 @@ The current local evidence for this task is:
   link-vs-link packets, and mixed
   separated/stack/articulated grouped contact batch paths, scoped dense
   box-face serial/parallel batch rows, and PGS-only dense
-  box-face CUDA batch paths through homogeneous 1/4/8/16/24/32/48/64/96-box and grouped
-  1/2/4/8/16/24/32-box packets pass.
+  box-face CUDA batch paths through homogeneous 1/4/8/16/24/32/48/64/96-box and
+  grouped 1/2/4/8/16/24/32-box packets pass. The 128-box dense box-face fixture
+  shape is covered separately, while 128-box CUDA PGS execution remains
+  unclaimed.
   This still does
   not prove broader solver-internal multi-threaded speedups, general CUDA LCP
   solver execution, CUDA Jacobi dense-contact execution, end-to-end articulated
