@@ -10098,12 +10098,8 @@ bool SolverShouldRunMildIllConditionedBenchmark(
 
   if (isMildIllConditionedCoupledFrictionIndexCase(testCase)
       && getMildIllConditionedCouplingScale(testCase) > 8.0) {
-    constexpr std::array<std::string_view, 3> kExtremeCouplingSolvers{{
-        "Admm",
-        "Sap",
-        "BoxedSemiSmoothNewton",
-    }};
-    return SolverNameIn(solver, kExtremeCouplingSolvers);
+    return SolverNameIn(solver, kScopedSolvers)
+           || solver.name == "BoxedSemiSmoothNewton";
   }
 
   if (isMildIllConditionedCoupledFrictionIndexCase(testCase)
