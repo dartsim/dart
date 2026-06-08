@@ -989,7 +989,7 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     friction-index 12-contact packets over the solver scope proven by the
     generated harness, plus an extreme exact rank-deficient
     singular-degenerate slice for standard 128-row, boxed 128-row, and coupled
-    friction-index 16-, 24-, and 32-contact packets.
+    friction-index 16-, 24-, 32-, and 48-contact packets.
   - Added an opt-in CPU worker-thread update path for the DART 7 projected
     Jacobi LCP solver (`JacobiSolver::Parameters::workerThreads`), with
     generated 128-row correctness coverage and focused dense plus banded
@@ -1103,8 +1103,8 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     27 stress exact rank-deficient singular-degenerate benchmark rows for
     standard 64-row, boxed 64-row, and coupled friction-index 12-contact
     packets, each verified across default, SIMD-enabled, and CUDA-enabled build
-    trees, plus 33 extreme exact rank-deficient singular-degenerate rows for
-    standard 128-row, boxed 128-row, and coupled friction-index 16-/24-/32-contact
+    trees, plus 36 extreme exact rank-deficient singular-degenerate rows for
+    standard 128-row, boxed 128-row, and coupled friction-index 16-/24-/32-/48-contact
     packets verified across default, SIMD-enabled, and CUDA-enabled build
     trees. The
     LCP benchmark rows now report scalar/SIMD/CUDA build-state counters so

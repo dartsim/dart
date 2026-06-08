@@ -193,9 +193,9 @@
       rank-deficient standard 64-row, boxed 64-row, and coupled
       friction-index 12-contact packets, verified in default, SIMD-enabled,
       and CUDA-enabled build trees.
-- [x] Added extreme exact rank-deficient singular-degenerate coverage and 33
+- [x] Added extreme exact rank-deficient singular-degenerate coverage and 36
       `BM_LcpExtremeSingularDegenerate` rows for scoped standard 128-row,
-      boxed 128-row, and coupled friction-index 16-/24-/32-contact packets,
+      boxed 128-row, and coupled friction-index 16-/24-/32-/48-contact packets,
       verified in default, SIMD-enabled, and CUDA-enabled build trees.
 - [x] Fixed boxed semi-smooth Newton's `findex` moving-bound Jacobian so the
       coupled mildly ill-conditioned 4-contact generated case satisfies the
@@ -1018,14 +1018,14 @@ tradeoffs evidence based.
   CPU solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
 - Verified extreme singular-degenerate benchmark slice:
   `BM_LCP_COMPARE --benchmark_filter='^BM_LcpExtremeSingularDegenerate/' --benchmark_min_time=0.001s --benchmark_repetitions=1`
-  ran 33 rows with `contract_ok=1` in the default, SIMD-enabled, and
+  ran 36 rows with `contract_ok=1` in the default, SIMD-enabled, and
   CUDA-enabled build trees. These rows cover exact rank-deficient standard
-  128-row, boxed 128-row, and coupled friction-index 16-/24-/32-contact packets
+  128-row, boxed 128-row, and coupled friction-index 16-/24-/32-/48-contact packets
   over the same scoped robust solver set as the generated extreme
   singular-degenerate correctness slice. The rows report
   `singular_degenerate=1`, `rank_deficient=1`, backend build-state counters,
-  contact counts `16/24/32`, problem sizes `48/72/96`, and `coupled=1` for the
-  coupled packets. The CUDA-enabled rows are CPU solver rows in a CUDA-enabled
+  contact counts `16/24/32/48`, problem sizes `48/72/96/144`, and `coupled=1`
+  for the coupled packets. The CUDA-enabled rows are CPU solver rows in a CUDA-enabled
   build, not CUDA LCP kernel execution.
 - Verified solver-internal Jacobi threading slice:
   `JacobiSolver::Parameters::workerThreads` now enables an opt-in CPU threaded
@@ -1514,7 +1514,7 @@ tradeoffs evidence based.
 - Added
   `LcpGeneratedCoverage.ExtremeSingularDegenerateKnownSolutionsForRobustSolverSlice`
   for extreme exact rank-deficient standard 128-row, boxed 128-row, and coupled
-  friction-index 16-/24-/32-contact known-solution cases over the same
+  friction-index 16-/24-/32-/48-contact known-solution cases over the same
   observed-robust singular-degenerate solver scope.
 - Added `LcpGeneratedCoverage.ActiveSetTransitionKnownSolutions` for standard
   16-row, boxed 16-row, and coupled friction-index 6-contact known-solution
@@ -1569,8 +1569,8 @@ tradeoffs evidence based.
   build-state counters, and contact/coupling counters where applicable. The
   CUDA-enabled rows are CPU solver rows in a CUDA-enabled build, not CUDA LCP
   kernel execution.
-- Added 33 `BM_LcpExtremeSingularDegenerate` rows for exact rank-deficient
-  standard 128-row, boxed 128-row, and coupled friction-index 16-/24-/32-contact
+- Added 36 `BM_LcpExtremeSingularDegenerate` rows for exact rank-deficient
+  standard 128-row, boxed 128-row, and coupled friction-index 16-/24-/32-/48-contact
   packets over the generated extreme singular-degenerate solver scope. These
   rows report `contract_ok=1`, `singular_degenerate=1`, `rank_deficient=1`,
   backend build-state counters, and contact/coupling counters where applicable.
@@ -1720,7 +1720,7 @@ tradeoffs evidence based.
   solver/backend registry types.
 - Coverage breadth: extend deterministic generated fixtures beyond the current
   production-scale well-conditioned, larger mildly ill-conditioned,
-  singular-degenerate through the current 128-row/32-contact slice, and
+  singular-degenerate through the current 128-row/48-contact slice, and
   active-set transition through the current stronger-coupled 32-contact slice into
   harder solver-specific friction-index coupling edge cases and direct backend
   execution evidence beyond CPU solver rows in SIMD/CUDA-enabled builds.
@@ -1732,7 +1732,7 @@ tradeoffs evidence based.
   stronger-coupled mildly ill-conditioned 16-, 24-, and 32-contact cases,
   ADMM/SAP-only 16x-coupled mildly ill-conditioned 16-, 24-, 32-, and
   48-contact cases, near-singular 32-contact cases, singular-degenerate
-  32-contact cases, and production active-set transition 24-contact and
+  48-contact cases, and production active-set transition 24-contact and
   32-contact cases. Broader
   harder-conditioned coupled friction-index grids beyond the narrow ADMM/SAP
   16x slice still need solver-specific evidence.
