@@ -9766,14 +9766,32 @@ bool SolverShouldRunMildIllConditionedBenchmark(
 
   if (isMildIllConditionedCoupledFrictionIndexCase(testCase)
       && getMildIllConditionedCouplingScale(testCase) > 8.0) {
-    constexpr std::array<std::string_view, 2> kExtremeCouplingSolvers{{
+    constexpr std::array<std::string_view, 3> kExtremeCouplingSolvers{{
         "Admm",
         "Sap",
+        "BoxedSemiSmoothNewton",
     }};
     return SolverNameIn(solver, kExtremeCouplingSolvers);
   }
 
   return SolverNameIn(solver, kScopedSolvers);
+}
+
+bool SolverShouldRunMildIllConditionedBatchBenchmark(
+    const dart::test::LcpSolverManifestEntry& solver,
+    const MildIllConditionedBenchmarkCase testCase)
+{
+  if (!SolverShouldRunMildIllConditionedBenchmark(solver, testCase)) {
+    return false;
+  }
+
+  if (isMildIllConditionedCoupledFrictionIndexCase(testCase)
+      && getMildIllConditionedCouplingScale(testCase) > 8.0
+      && solver.name == "BoxedSemiSmoothNewton") {
+    return false;
+  }
+
+  return true;
 }
 
 std::string MakeNearSingularBenchmarkName(
@@ -10525,7 +10543,7 @@ void RegisterMildIllConditionedBatchBenchmarks()
 
   for (const auto testCase : cases) {
     for (const auto& solver : dart::test::kLcpSolverManifest) {
-      if (!SolverShouldRunMildIllConditionedBenchmark(solver, testCase)) {
+      if (!SolverShouldRunMildIllConditionedBatchBenchmark(solver, testCase)) {
         continue;
       }
 

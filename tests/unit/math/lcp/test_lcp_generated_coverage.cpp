@@ -1240,9 +1240,10 @@ bool solverShouldRunLargerMildlyIllConditionedCase(
 
   if (testCase.family == GeneratedFamily::FrictionIndex && testCase.coupled
       && testCase.couplingScale > 8.0) {
-    constexpr std::array<std::string_view, 2> kExtremeCouplingSolvers{{
+    constexpr std::array<std::string_view, 3> kExtremeCouplingSolvers{{
         "Admm",
         "Sap",
+        "BoxedSemiSmoothNewton",
     }};
     return solverNameIn(solver, kExtremeCouplingSolvers);
   }
