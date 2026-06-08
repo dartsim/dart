@@ -1765,8 +1765,9 @@ ArticulatedRigidImpactResult runArticulatedRigidImpactStep(
 }
 
 MultiArticulatedRigidImpactResult runMultiArticulatedRigidImpactStep(
-    sx::ContactSolverMethod method, int pairCount)
+    sx::ContactSolverMethod method, int pairCount, int stepCount = 1)
 {
+  EXPECT_GT(stepCount, 0);
   auto world = buildArticulatedRigidImpactScene(method, pairCount);
   EXPECT_TRUE(world != nullptr);
   if (world == nullptr) {
@@ -1793,7 +1794,7 @@ MultiArticulatedRigidImpactResult runMultiArticulatedRigidImpactStep(
     }
   }
 
-  world->step();
+  world->step(stepCount);
 
   MultiArticulatedRigidImpactResult result;
   result.contactCount = contacts.size();
@@ -1836,14 +1837,15 @@ MultiArticulatedRigidImpactResult runMultiArticulatedRigidImpactStep(
   return result;
 }
 
-void expectArticulatedRigidImpactPairsStepMaintainsInvariants(int pairCount)
+void expectArticulatedRigidImpactPairsStepMaintainsInvariants(
+    int pairCount, int stepCount = 1)
 {
   const MultiArticulatedRigidImpactResult reference
       = runMultiArticulatedRigidImpactStep(
-          sx::ContactSolverMethod::SequentialImpulse, pairCount);
+          sx::ContactSolverMethod::SequentialImpulse, pairCount, stepCount);
   const MultiArticulatedRigidImpactResult lcp
       = runMultiArticulatedRigidImpactStep(
-          sx::ContactSolverMethod::BoxedLcp, pairCount);
+          sx::ContactSolverMethod::BoxedLcp, pairCount, stepCount);
 
   ASSERT_EQ(lcp.contactCount, static_cast<std::size_t>(pairCount));
   EXPECT_EQ(lcp.linkContactCount, static_cast<std::size_t>(pairCount));
@@ -1910,8 +1912,9 @@ ArticulatedLinkImpactResult runArticulatedLinkImpactStep(
 }
 
 MultiArticulatedLinkImpactResult runMultiArticulatedLinkImpactStep(
-    sx::ContactSolverMethod method, int pairCount)
+    sx::ContactSolverMethod method, int pairCount, int stepCount = 1)
 {
+  EXPECT_GT(stepCount, 0);
   auto world = buildArticulatedLinkImpactScene(method, pairCount);
   EXPECT_TRUE(world != nullptr);
   if (world == nullptr) {
@@ -1933,7 +1936,7 @@ MultiArticulatedLinkImpactResult runMultiArticulatedLinkImpactStep(
     }
   }
 
-  world->step();
+  world->step(stepCount);
 
   MultiArticulatedLinkImpactResult result;
   result.contactCount = contacts.size();
@@ -1982,14 +1985,15 @@ MultiArticulatedLinkImpactResult runMultiArticulatedLinkImpactStep(
   return result;
 }
 
-void expectArticulatedLinkImpactPairsStepMaintainsInvariants(int pairCount)
+void expectArticulatedLinkImpactPairsStepMaintainsInvariants(
+    int pairCount, int stepCount = 1)
 {
   const MultiArticulatedLinkImpactResult reference
       = runMultiArticulatedLinkImpactStep(
-          sx::ContactSolverMethod::SequentialImpulse, pairCount);
+          sx::ContactSolverMethod::SequentialImpulse, pairCount, stepCount);
   const MultiArticulatedLinkImpactResult lcp
       = runMultiArticulatedLinkImpactStep(
-          sx::ContactSolverMethod::BoxedLcp, pairCount);
+          sx::ContactSolverMethod::BoxedLcp, pairCount, stepCount);
 
   ASSERT_EQ(lcp.contactCount, static_cast<std::size_t>(pairCount));
   EXPECT_EQ(lcp.twoLinkContactCount, static_cast<std::size_t>(pairCount));
@@ -2934,6 +2938,19 @@ TEST(BoxedLcpContact, SixteenArticulatedPrismaticLinksPushDynamicRigidBodies)
 }
 
 //==============================================================================
+// The same largest link-vs-rigid packet remains stable across a longer public
+// step sequence after the initial impulse separates each pair.
+TEST(
+    BoxedLcpContact,
+    SixteenArticulatedPrismaticLinksPushDynamicRigidBodiesForManySteps)
+{
+  constexpr int kPairCount = 16;
+  constexpr int kStepCount = 200;
+  expectArticulatedRigidImpactPairsStepMaintainsInvariants(
+      kPairCount, kStepCount);
+}
+
+//==============================================================================
 // Cross-multibody articulated contact: a prismatic link pushes a prismatic link
 // owned by a separate multibody. This exercises the unified row's second
 // articulated endpoint rather than a dynamic rigid-body endpoint.
@@ -2980,6 +2997,19 @@ TEST(
 {
   constexpr int kPairCount = 16;
   expectArticulatedLinkImpactPairsStepMaintainsInvariants(kPairCount);
+}
+
+//==============================================================================
+// The largest cross-multibody articulated packet also stays stable across a
+// longer public step sequence after the initial link-vs-link impulse.
+TEST(
+    BoxedLcpContact,
+    SixteenArticulatedPrismaticLinksPushArticulatedPrismaticLinksForManySteps)
+{
+  constexpr int kPairCount = 16;
+  constexpr int kStepCount = 200;
+  expectArticulatedLinkImpactPairsStepMaintainsInvariants(
+      kPairCount, kStepCount);
 }
 
 //==============================================================================

@@ -12347,12 +12347,14 @@ BENCHMARK(BM_LcpWorldArticulatedRigidImpactStep_BoxedLcp)
     ->Args({1, 1})
     ->Args({4, 1})
     ->Args({8, 1})
-    ->Args({16, 1});
+    ->Args({16, 1})
+    ->Args({16, 200});
 BENCHMARK(BM_LcpWorldArticulatedLinkImpactStep_BoxedLcp)
     ->Args({1, 1})
     ->Args({4, 1})
     ->Args({8, 1})
-    ->Args({16, 1});
+    ->Args({16, 1})
+    ->Args({16, 200});
 BENCHMARK(BM_LcpWorldArticulatedCartesianGroundStep_BoxedLcp)
     ->Args({1, 200})
     ->Args({4, 200})
