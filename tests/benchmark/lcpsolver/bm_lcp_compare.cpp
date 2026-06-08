@@ -5423,12 +5423,12 @@ std::optional<GroupedBenchmarkBatch> MakeGroupedBenchmarkBatch(
   switch (family) {
     case BenchmarkProblemFamily::Standard:
     case BenchmarkProblemFamily::Boxed:
-      for (const int rows : std::array<int, 5>{16, 32, 48, 96, 128}) {
+      for (const int rows : std::array<int, 6>{16, 32, 48, 96, 128, 192}) {
         appendGroup(rows);
       }
       break;
     case BenchmarkProblemFamily::FrictionIndex:
-      for (const int contactCount : std::array<int, 5>{4, 8, 16, 32, 48}) {
+      for (const int contactCount : std::array<int, 6>{4, 8, 16, 32, 48, 64}) {
         appendGroup(contactCount);
       }
       break;

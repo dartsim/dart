@@ -389,10 +389,10 @@ world-contact batch benchmark rows that compare all friction-index-capable
 solvers over the same five separated-contact and stacked-contact snapshots,
 both serially and through the DART 7 experimental
 `ParallelExecutor`. The CUDA LCP batch evidence now also includes direct
-synthetic standard/boxed/findex packets through 128-row and 48-contact sizes,
+synthetic standard/boxed/findex packets through 256-row and 96-contact sizes,
 homogeneous 4-/8-/16-contact DART 7 world-contact packets, homogeneous 5-/6-/7-/8-sphere coupled
 stack-contact packets, grouped variable-size synthetic standard/boxed/findex
-through 128-row and 48-contact packets, grouped variable-size
+through 192-row and 64-contact groups, grouped variable-size
 1/2/4/8/16-contact separated sphere-ground packets with two- and three-variant
 grouped benchmark rows, plus grouped variable-size
 2/3/4/5/6/7/8-sphere coupled stack-contact packets with two- and three-variant
@@ -404,7 +404,8 @@ combine separated, stack, and 1-/4-/8-/16-contact articulated fixture families f
 Jacobi and PGS. The generic CPU serial and DART 7 `ParallelExecutor` batch
 benchmark registrations now also expose Jacobi and PGS rows at the same
 grouped synthetic packet sizes plus the same standard/boxed
-24-/48-/96-/128-row and friction-index 8-/16-/32-/48-contact packet sizes used
+24-/48-/96-/128-/192-/256-row and friction-index
+8-/16-/32-/48-/64-/96-contact packet sizes used
 by the CUDA batch rows; the focused evidence covers default, SIMD-enabled, and
 CUDA-enabled build trees.
 The work now also adds 49 `BM_LcpLargerActiveSetTransition` rows for the
@@ -429,13 +430,14 @@ scale benchmark rows, BGS/Blocked Jacobi block-partition benchmark rows, SAP
 regularization benchmark rows, Jacobi threading benchmark rows, and
 singular-degenerate standard/boxed batch benchmark rows.
 The latest checkpoints extend direct synthetic CUDA Jacobi/PGS evidence through
-standard/boxed 256-row and friction-index 96-contact packets, add
-apples-to-apples grouped CPU serial and DART 7 `ParallelExecutor` rows for the
-same grouped synthetic packets, and broaden solver-internal Jacobi threading
-benchmark evidence with 4096-row banded SPD rows for worker counts 1, 8, 16,
-and 32. The grouped synthetic CPU/CUDA rows, new direct 256-row/96-contact CPU
-and CUDA rows, and the 4096-row Jacobi threading rows pass focused default,
-SIMD-enabled, and CUDA-enabled build-tree benchmark gates with `contract_ok=1`.
+standard/boxed 256-row and friction-index 96-contact packets, extend grouped
+synthetic CPU/CUDA Jacobi/PGS rows through 192-row standard/boxed and
+64-contact friction-index groups with matching DART 7 `ParallelExecutor` rows,
+and broaden solver-internal Jacobi threading benchmark evidence with 4096-row
+banded SPD rows for worker counts 1, 8, 16, and 32. The grouped synthetic
+CPU/CUDA rows, new direct 256-row/96-contact CPU and CUDA rows, and the
+4096-row Jacobi threading rows pass focused default, SIMD-enabled, and
+CUDA-enabled build-tree benchmark gates with `contract_ok=1`.
 Push/PR work still requires explicit maintainer/user approval.
 
 ## Immediate Next Step
@@ -750,9 +752,10 @@ contact scenes.
   variable-size world-contact CUDA batch rows,
   proving narrow CUDA fixed-iteration projected-Jacobi and PGS batch paths for
   standard, boxed, friction-index, grouped variable-size synthetic
-  standard/boxed/findex through 128-row and 48-contact packets,
+  standard/boxed/findex through 192-row and 64-contact groups,
   CPU serial/`ParallelExecutor` Jacobi/PGS batch rows at the same
-  standard/boxed 24-/48-/96-row and friction-index 8-/16-/32-contact sizes,
+  standard/boxed 24-/48-/96-/128-/192-/256-row and friction-index
+  8-/16-/32-/48-/64-/96-contact sizes,
   4-/8-/16-contact world-contact packets, and grouped
   1/2/4/8/16-contact separated sphere-ground packets. General CUDA execution for
   the full solver manifest remains a gap.
@@ -1331,20 +1334,21 @@ contact scenes.
   8-/16-/32-/48-contact
   packets at batch size 4. A focused grouped synthetic follow-up
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpCuda(Jacobi|Pgs)GroupedBatch_(Standard|Boxed|FrictionIndex)/(2|3)$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
-  reports 12 CUDA rows with `contract_ok=1` and `cuda_group_count=5`. The
-  `/2` rows report `batch_size=10`, standard/boxed 16/32/48/96/128-row
-  packets with `total_problem_size=640`, and friction-index
-  4/8/16/32/48-contact packets with `min_problem_size=12`,
-  `max_problem_size=144`, `total_contact_count=216`, and
-  `total_problem_size=648`. The `/3` rows report `batch_size=15`,
-  standard/boxed `total_problem_size=960`, and friction-index
-  `total_contact_count=324` and `total_problem_size=972` across the same size
+  reports 12 CUDA rows with `contract_ok=1` and `cuda_group_count=6`. The
+  `/2` rows report `batch_size=12`, standard/boxed
+  16/32/48/96/128/192-row packets with `total_problem_size=1024`, and
+  friction-index 4/8/16/32/48/64-contact packets with `min_problem_size=12`,
+  `max_problem_size=192`, `total_contact_count=344`, and
+  `total_problem_size=1032`. The `/3` rows report `batch_size=18`,
+  standard/boxed `total_problem_size=1536`, and friction-index
+  `total_contact_count=516` and `total_problem_size=1548` across the same size
   groups. The grouped CPU serial/`ParallelExecutor` follow-up reports 24 rows
   in each default, SIMD-enabled, and CUDA-enabled build tree with
-  `contract_ok=1`, `batch_group_count=5`, `batch_size=10/15`,
-  standard/boxed `total_problem_size=640/960`, friction-index
-  `total_contact_count=216/324`, friction-index `total_problem_size=648/972`,
-  and `parallel_units=10/15` plus `profile_enabled=1` on `ParallelExecutor`
+  `contract_ok=1`, `batch_group_count=6`, `batch_size=12/18`,
+  standard/boxed `total_problem_size=1024/1536`, friction-index
+  `total_contact_count=344/516`, friction-index
+  `total_problem_size=1032/1548`, and `parallel_units=12/18` plus
+  `profile_enabled=1` on `ParallelExecutor`
   rows. The apples-to-apples CPU/CUDA batch follow-up
   reports 36 CPU serial/`ParallelExecutor` rows with `contract_ok=1`,
   `batch_size=4`, standard/boxed `problem_size=24/48/96`,

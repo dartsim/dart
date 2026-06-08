@@ -77,8 +77,8 @@ Support abbreviations:
   opt-in solver-internal CPU worker-thread correctness and comparison slice,
   plus experimental CUDA fixed-iteration Jacobi and PGS batch paths for
   homogeneous dense standard/boxed/friction-index LCP packets. The CUDA batch
-  evidence now reaches direct synthetic 128-row standard/boxed and 48-contact
-  friction-index packets and also includes grouped synthetic through 128-row and 48-contact
+  evidence now reaches direct synthetic 256-row standard/boxed and 96-contact
+  friction-index packets and also includes grouped synthetic through 192-row and 64-contact
   packets, CPU serial/`ParallelExecutor` Jacobi/PGS batch rows at the same
   direct and grouped CUDA packet sizes verified in default, SIMD-enabled, and
   CUDA-enabled build trees,
@@ -92,8 +92,8 @@ Support abbreviations:
   multi-threaded runs, general CUDA LCP solver execution, and broader
   vectorized/CUDA LCP batch-processing paths are still missing. The narrow CUDA Jacobi/PGS batch
   evidence now includes direct synthetic standard/boxed/findex packets through
-  128-row and 48-contact sizes and grouped variable-size synthetic
-  standard/boxed/findex packets through 128-row and 48-contact sizes, matching
+  256-row and 96-contact sizes and grouped variable-size synthetic
+  standard/boxed/findex packets through 192-row and 64-contact groups, matching
   CPU serial and DART 7 `ParallelExecutor` Jacobi/PGS batch rows at the direct and grouped CUDA packet sizes in
   default, SIMD-enabled, and CUDA-enabled build trees, homogeneous 4-/8-/16-contact and grouped variable-size
   1/2/4/8/16-contact DART 7 sphere-ground world-contact packets, homogeneous
@@ -1166,22 +1166,22 @@ The current local evidence for this task is:
   pass in default, SIMD-enabled, and CUDA-enabled build trees with
   `contract_ok=1`, `batch_size=4`, and `parallel_units=4` on
   `ParallelExecutor` rows. The
-  grouped synthetic CUDA rows cover five problem-size groups and two-/three-variant
-  rows per group. The standard and boxed rows cover 16/32/48/96/128-row packets;
-  the `/2` rows report `batch_size=10`, `cuda_group_count=5`, and
-  `total_problem_size=640`, while the `/3` rows report `batch_size=15`,
-  `cuda_group_count=5`, and `total_problem_size=960`. The friction-index rows
-  cover 4/8/16/32/48-contact packets with `min_problem_size=12` and
-  `max_problem_size=144`; the `/2` rows report `total_contact_count=216` and
-  `total_problem_size=648`, while the `/3` rows report
-  `total_contact_count=324` and `total_problem_size=972`. The matching
+  grouped synthetic CUDA rows cover six problem-size groups and two-/three-variant
+  rows per group. The standard and boxed rows cover
+  16/32/48/96/128/192-row packets; the `/2` rows report `batch_size=12`,
+  `cuda_group_count=6`, and `total_problem_size=1024`, while the `/3` rows
+  report `batch_size=18`, `cuda_group_count=6`, and `total_problem_size=1536`.
+  The friction-index rows cover 4/8/16/32/48/64-contact packets with
+  `min_problem_size=12` and `max_problem_size=192`; the `/2` rows report
+  `total_contact_count=344` and `total_problem_size=1032`, while the `/3` rows
+  report `total_contact_count=516` and `total_problem_size=1548`. The matching
   grouped CPU serial and DART 7 `ParallelExecutor` rows cover Jacobi and PGS
   over the same groups in default, SIMD-enabled, and CUDA-enabled build trees;
   focused smokes report 24 rows per build tree with `contract_ok=1`,
-  `batch_group_count=5`, `batch_size=10/15`, standard/boxed
-  `total_problem_size=640/960`, friction-index
-  `total_contact_count=216/324`, friction-index
-  `total_problem_size=648/972`, and `parallel_units=10/15` with
+  `batch_group_count=6`, `batch_size=12/18`, standard/boxed
+  `total_problem_size=1024/1536`, friction-index
+  `total_contact_count=344/516`, friction-index
+  `total_problem_size=1032/1548`, and `parallel_units=12/18` with
   `profile_enabled=1` on `ParallelExecutor` rows. The
   homogeneous world-contact CUDA rows used DART 7 `World::collide()`
   snapshots up to 16 contacts with `batch_size=4`, `contact_count=16`,
@@ -1356,9 +1356,9 @@ The current local evidence for this task is:
   slice passes, Jacobi has opt-in CPU worker-thread correctness/comparison
   evidence through 4096-row banded SPD rows, and narrow CUDA projected-Jacobi
   and PGS
-  standard/boxed/friction-index through direct 128-row and 48-contact packets
-  plus grouped variable-size synthetic standard/boxed/friction-index with two-
-  and three-variant rows, homogeneous
+  standard/boxed/friction-index through direct 256-row and 96-contact packets
+  plus grouped variable-size synthetic standard/boxed/friction-index through
+  192-row and 64-contact groups with two- and three-variant rows, homogeneous
   4-/8-/16-contact, homogeneous
   5-/6-/7-/8-sphere coupled stack, grouped variable-size 1/2/4/8/16-contact separated
   sphere-ground and 2/3/4/5/6/7/8-sphere coupled stack world-contact batch
