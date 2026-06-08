@@ -1631,13 +1631,16 @@ TEST(CudaLcpJacobiBatch, LargerSyntheticBatchSatisfiesLcpContract)
     GTEST_SKIP() << "CUDA runtime has no available device";
   }
 
-  const std::array<std::pair<SyntheticCudaFamily, int>, 6> cases{{
+  const std::array<std::pair<SyntheticCudaFamily, int>, 9> cases{{
       {SyntheticCudaFamily::Standard, 128},
       {SyntheticCudaFamily::Boxed, 128},
       {SyntheticCudaFamily::FrictionIndex, 48},
       {SyntheticCudaFamily::Standard, 192},
       {SyntheticCudaFamily::Boxed, 192},
       {SyntheticCudaFamily::FrictionIndex, 64},
+      {SyntheticCudaFamily::Standard, 256},
+      {SyntheticCudaFamily::Boxed, 256},
+      {SyntheticCudaFamily::FrictionIndex, 96},
   }};
   for (const auto& [family, arg] : cases) {
     SCOPED_TRACE(
@@ -1899,13 +1902,16 @@ TEST(CudaLcpPgsBatch, LargerSyntheticBatchSatisfiesLcpContract)
     GTEST_SKIP() << "CUDA runtime has no available device";
   }
 
-  const std::array<std::pair<SyntheticCudaFamily, int>, 6> cases{{
+  const std::array<std::pair<SyntheticCudaFamily, int>, 9> cases{{
       {SyntheticCudaFamily::Standard, 128},
       {SyntheticCudaFamily::Boxed, 128},
       {SyntheticCudaFamily::FrictionIndex, 48},
       {SyntheticCudaFamily::Standard, 192},
       {SyntheticCudaFamily::Boxed, 192},
       {SyntheticCudaFamily::FrictionIndex, 64},
+      {SyntheticCudaFamily::Standard, 256},
+      {SyntheticCudaFamily::Boxed, 256},
+      {SyntheticCudaFamily::FrictionIndex, 96},
   }};
   for (const auto& [family, arg] : cases) {
     SCOPED_TRACE(

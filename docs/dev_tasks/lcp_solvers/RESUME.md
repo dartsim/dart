@@ -429,18 +429,18 @@ scale benchmark rows, BGS/Blocked Jacobi block-partition benchmark rows, SAP
 regularization benchmark rows, Jacobi threading benchmark rows, and
 singular-degenerate standard/boxed batch benchmark rows.
 The latest checkpoints extend direct synthetic CUDA Jacobi/PGS evidence through
-standard/boxed 192-row and friction-index 64-contact packets, add
+standard/boxed 256-row and friction-index 96-contact packets, add
 apples-to-apples grouped CPU serial and DART 7 `ParallelExecutor` rows for the
 same grouped synthetic packets, and broaden solver-internal Jacobi threading
 benchmark evidence with 4096-row banded SPD rows for worker counts 1, 8, 16,
-and 32. The grouped synthetic CPU/CUDA rows, new direct 192-row/64-contact CPU
+and 32. The grouped synthetic CPU/CUDA rows, new direct 256-row/96-contact CPU
 and CUDA rows, and the 4096-row Jacobi threading rows pass focused default,
 SIMD-enabled, and CUDA-enabled build-tree benchmark gates with `contract_ok=1`.
 Push/PR work still requires explicit maintainer/user approval.
 
 ## Immediate Next Step
 
-Move from the now-verified direct 192-row/64-contact CUDA batch rows, grouped
+Move from the now-verified direct 256-row/96-contact CUDA batch rows, grouped
 synthetic CPU/CUDA batch rows, 4096-row banded Jacobi solver-internal threading
 rows, extreme 128-row/96-contact exact rank-deficient,
 production active-set transition 128-contact, coupled mildly ill-conditioned
@@ -1362,10 +1362,22 @@ contact scenes.
   standard/boxed and friction-index `problem_size=192`,
   `total_problem_size=768`, friction-index `contact_count=64`, and
   `parallel_units=4` on parallel rows. The direct CUDA rows now cover
-  standard/boxed 24-/48-/96-/128-/192-row and friction-index
-  8-/16-/32-/48-/64-contact packets; the focused 192-row/64-contact CUDA
+  standard/boxed 24-/48-/96-/128-/192-/256-row and friction-index
+  8-/16-/32-/48-/64-/96-contact packets. A focused 256-row/96-contact CPU
+  follow-up in default, SIMD-enabled, and CUDA-enabled build trees reports 12
+  serial/`ParallelExecutor` rows with `contract_ok=1`, `batch_size=4`,
+  standard/boxed `problem_size=256`, friction-index `problem_size=288`,
+  friction-index `contact_count=96`, `total_problem_size=1024/1152`, and
+  `parallel_units=4` on parallel rows. The focused CUDA unit run
+  `test_lcp_jacobi_batch_cuda --gtest_filter='CudaLcpJacobiBatch.LargerSyntheticBatchSatisfiesLcpContract:CudaLcpPgsBatch.LargerSyntheticBatchSatisfiesLcpContract' --gtest_brief=1`
+  passes both larger synthetic batch tests with those cases included; the
+  focused 192-row/64-contact CUDA
   follow-up reports six rows with `cuda_batch_execution=1`, `contract_ok=1`,
-  `problem_size=192`, and `total_problem_size=768`. The homogeneous world-contact
+  `problem_size=192`, and `total_problem_size=768`, and the focused
+  256-row/96-contact CUDA follow-up reports six rows with `cuda_lcp_execution=1`,
+  `cuda_batch_execution=1`, `contract_ok=1`, `problem_size=256/288`,
+  `contact_count=96` on friction-index rows, and `total_problem_size=1024/1152`.
+  The homogeneous world-contact
   CUDA rows are
   4-, 8-, and 16-contact packets; the denser rows report
   `batch_size=4`, `contact_count=16`, `problem_size=48`,
