@@ -9912,7 +9912,8 @@ void AddBatchBenchmarkArgs(
       if (addCudaComparableSizes) {
         registeredBenchmark->Args({48, batchSize})
             ->Args({96, batchSize})
-            ->Args({128, batchSize});
+            ->Args({128, batchSize})
+            ->Args({192, batchSize});
       }
       break;
     case BenchmarkProblemFamily::Boxed:
@@ -9920,7 +9921,8 @@ void AddBatchBenchmarkArgs(
       if (addCudaComparableSizes) {
         registeredBenchmark->Args({48, batchSize})
             ->Args({96, batchSize})
-            ->Args({128, batchSize});
+            ->Args({128, batchSize})
+            ->Args({192, batchSize});
       }
       break;
     case BenchmarkProblemFamily::FrictionIndex:
@@ -9928,7 +9930,8 @@ void AddBatchBenchmarkArgs(
       if (addCudaComparableSizes) {
         registeredBenchmark->Args({16, batchSize})
             ->Args({32, batchSize})
-            ->Args({48, batchSize});
+            ->Args({48, batchSize})
+            ->Args({64, batchSize});
       }
       break;
   }
@@ -12137,32 +12140,38 @@ BENCHMARK(BM_LcpCudaJacobiBatch_Standard)
     ->Args({24, 4})
     ->Args({48, 4})
     ->Args({96, 4})
-    ->Args({128, 4});
+    ->Args({128, 4})
+    ->Args({192, 4});
 BENCHMARK(BM_LcpCudaJacobiBatch_Boxed)
     ->Args({24, 4})
     ->Args({48, 4})
     ->Args({96, 4})
-    ->Args({128, 4});
+    ->Args({128, 4})
+    ->Args({192, 4});
 BENCHMARK(BM_LcpCudaJacobiBatch_FrictionIndex)
     ->Args({8, 4})
     ->Args({16, 4})
     ->Args({32, 4})
-    ->Args({48, 4});
+    ->Args({48, 4})
+    ->Args({64, 4});
 BENCHMARK(BM_LcpCudaPgsBatch_Standard)
     ->Args({24, 4})
     ->Args({48, 4})
     ->Args({96, 4})
-    ->Args({128, 4});
+    ->Args({128, 4})
+    ->Args({192, 4});
 BENCHMARK(BM_LcpCudaPgsBatch_Boxed)
     ->Args({24, 4})
     ->Args({48, 4})
     ->Args({96, 4})
-    ->Args({128, 4});
+    ->Args({128, 4})
+    ->Args({192, 4});
 BENCHMARK(BM_LcpCudaPgsBatch_FrictionIndex)
     ->Args({8, 4})
     ->Args({16, 4})
     ->Args({32, 4})
-    ->Args({48, 4});
+    ->Args({48, 4})
+    ->Args({64, 4});
 BENCHMARK(BM_LcpCudaJacobiGroupedBatch_Standard)->Arg(2)->Arg(3);
 BENCHMARK(BM_LcpCudaJacobiGroupedBatch_Boxed)->Arg(2)->Arg(3);
 BENCHMARK(BM_LcpCudaJacobiGroupedBatch_FrictionIndex)->Arg(2)->Arg(3);

@@ -428,20 +428,21 @@ benchmark rows, Boxed Semi-Smooth Newton line-search benchmark rows, Pivoting
 scale benchmark rows, BGS/Blocked Jacobi block-partition benchmark rows, SAP
 regularization benchmark rows, Jacobi threading benchmark rows, and
 singular-degenerate standard/boxed batch benchmark rows.
-The latest checkpoints extend direct and grouped synthetic CUDA Jacobi/PGS
-evidence through standard/boxed 128-row and friction-index 48-contact packets,
-add apples-to-apples grouped CPU serial and DART 7 `ParallelExecutor` rows for
-the same grouped synthetic packets, and broaden solver-internal Jacobi
-threading benchmark evidence with 4096-row banded SPD rows for worker counts
-1, 8, 16, and 32. The grouped synthetic CPU/CUDA rows and the 4096-row Jacobi
-threading rows pass focused default, SIMD-enabled, and CUDA-enabled build-tree
-benchmark gates with `contract_ok=1`.
+The latest checkpoints extend direct synthetic CUDA Jacobi/PGS evidence through
+standard/boxed 192-row and friction-index 64-contact packets, add
+apples-to-apples grouped CPU serial and DART 7 `ParallelExecutor` rows for the
+same grouped synthetic packets, and broaden solver-internal Jacobi threading
+benchmark evidence with 4096-row banded SPD rows for worker counts 1, 8, 16,
+and 32. The grouped synthetic CPU/CUDA rows, new direct 192-row/64-contact CPU
+and CUDA rows, and the 4096-row Jacobi threading rows pass focused default,
+SIMD-enabled, and CUDA-enabled build-tree benchmark gates with `contract_ok=1`.
 Push/PR work still requires explicit maintainer/user approval.
 
 ## Immediate Next Step
 
-Move from the now-verified grouped synthetic CPU/CUDA batch rows, 4096-row
-banded Jacobi solver-internal threading rows, extreme 128-row/96-contact exact rank-deficient,
+Move from the now-verified direct 192-row/64-contact CUDA batch rows, grouped
+synthetic CPU/CUDA batch rows, 4096-row banded Jacobi solver-internal threading
+rows, extreme 128-row/96-contact exact rank-deficient,
 production active-set transition 128-contact, coupled mildly ill-conditioned
 24-contact, near-singular 96-contact CPU solver rows, near-singular
 serial/parallel batch rows, exact rank-deficient singular-degenerate
@@ -1340,9 +1341,16 @@ contact scenes.
   serial/`ParallelExecutor` rows with `contract_ok=1` for standard/boxed
   128-row and friction-index 48-contact packets, `batch_size=4`,
   `parallel_units=4` on parallel rows, standard/boxed `total_problem_size=512`,
-  and friction-index `total_problem_size=576`; the matching direct CUDA command
-  now reports 24 rows with `cuda_batch_execution=1`, `contract_ok=1`, and the
-  same expanded size counters. The homogeneous world-contact
+  and friction-index `total_problem_size=576`. A focused 192-row/64-contact CPU
+  follow-up in default, SIMD-enabled, and CUDA-enabled build trees reports 12
+  serial/`ParallelExecutor` rows with `contract_ok=1`, `batch_size=4`,
+  standard/boxed and friction-index `problem_size=192`,
+  `total_problem_size=768`, friction-index `contact_count=64`, and
+  `parallel_units=4` on parallel rows. The direct CUDA rows now cover
+  standard/boxed 24-/48-/96-/128-/192-row and friction-index
+  8-/16-/32-/48-/64-contact packets; the focused 192-row/64-contact CUDA
+  follow-up reports six rows with `cuda_batch_execution=1`, `contract_ok=1`,
+  `problem_size=192`, and `total_problem_size=768`. The homogeneous world-contact
   CUDA rows are
   4-, 8-, and 16-contact packets; the denser rows report
   `batch_size=4`, `contact_count=16`, `problem_size=48`,
@@ -1565,8 +1573,24 @@ python scripts/run_benchmark_smoke.py build/simd/cpp/Release/bin/BM_LCP_COMPARE 
   "--benchmark_filter=^BM_LcpBatch(Serial|Parallel)/(Standard|Boxed)/(Jacobi|Pgs)/128/4$|^BM_LcpBatch(Serial|Parallel)/FrictionIndex/(Jacobi|Pgs)/48/4$" \
   "--benchmark_min_time=0.001s" \
   "--benchmark_repetitions=1"
+python scripts/run_benchmark_smoke.py build/default/cpp/Release/bin/BM_LCP_COMPARE \
+  "--benchmark_filter=^BM_LcpBatch(Serial|Parallel)/(Standard|Boxed)/(Jacobi|Pgs)/192/4$|^BM_LcpBatch(Serial|Parallel)/FrictionIndex/(Jacobi|Pgs)/64/4$" \
+  "--benchmark_min_time=0.001s" \
+  "--benchmark_repetitions=1"
+python scripts/run_benchmark_smoke.py build/simd/cpp/Release/bin/BM_LCP_COMPARE \
+  "--benchmark_filter=^BM_LcpBatch(Serial|Parallel)/(Standard|Boxed)/(Jacobi|Pgs)/192/4$|^BM_LcpBatch(Serial|Parallel)/FrictionIndex/(Jacobi|Pgs)/64/4$" \
+  "--benchmark_min_time=0.001s" \
+  "--benchmark_repetitions=1"
+python scripts/run_benchmark_smoke.py build/cuda/cpp/Release/bin/BM_LCP_COMPARE \
+  "--benchmark_filter=^BM_LcpBatch(Serial|Parallel)/(Standard|Boxed)/(Jacobi|Pgs)/192/4$|^BM_LcpBatch(Serial|Parallel)/FrictionIndex/(Jacobi|Pgs)/64/4$" \
+  "--benchmark_min_time=0.001s" \
+  "--benchmark_repetitions=1"
 python scripts/run_benchmark_smoke.py build/cuda/cpp/Release/bin/BM_LCP_COMPARE \
   "--benchmark_filter=BM_LcpCuda(Jacobi|Pgs)Batch_(Standard|Boxed)/128/4$|BM_LcpCuda(Jacobi|Pgs)Batch_FrictionIndex/48/4$" \
+  "--benchmark_min_time=0.001s" \
+  "--benchmark_repetitions=1"
+python scripts/run_benchmark_smoke.py build/cuda/cpp/Release/bin/BM_LCP_COMPARE \
+  "--benchmark_filter=BM_LcpCuda(Jacobi|Pgs)Batch_(Standard|Boxed)/192/4$|BM_LcpCuda(Jacobi|Pgs)Batch_FrictionIndex/64/4$" \
   "--benchmark_min_time=0.001s" \
   "--benchmark_repetitions=1"
 python scripts/run_benchmark_smoke.py build/cuda/cpp/Release/bin/BM_LCP_COMPARE \

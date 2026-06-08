@@ -357,9 +357,9 @@
       CUDA-enabled build trees.
 - [x] Added apples-to-apples DART 7 CPU serial, DART 7 `ParallelExecutor`, and
       fixed-iteration CUDA batch benchmark rows for Jacobi and PGS on the same
-      standard/boxed 24-/48-/96-/128-row and friction-index 8-/16-/32-/48-contact
-      packets at batch size 4, verified in default, SIMD-enabled, and
-      CUDA-enabled build trees.
+      standard/boxed 24-/48-/96-/128-/192-row and friction-index
+      8-/16-/32-/48-/64-contact packets at batch size 4, verified in default,
+      SIMD-enabled, and CUDA-enabled build trees.
 - [x] Added grouped variable-size CUDA contact-batch evidence for DART 7
       1/2/4/8/16-contact separated sphere-ground packets, covering
       fixed-iteration CUDA Jacobi and PGS unit tests and benchmark rows on the
@@ -633,15 +633,23 @@ tradeoffs evidence based.
   SIMD-enabled command reported the same 36 CPU rows with `contract_ok=1`,
   `build_simd_enabled=1`, and the same size, batch, and `parallel_units`
   counters. A focused larger-size CPU follow-up in both default and SIMD builds
-  reported the 12 new serial/`ParallelExecutor` rows with `contract_ok=1` for
+  reported the 12 serial/`ParallelExecutor` rows with `contract_ok=1` for
   standard/boxed 128-row and friction-index 48-contact packets, `batch_size=4`,
   `parallel_units=4` on parallel rows, standard/boxed `total_problem_size=512`,
-  and friction-index `total_problem_size=576`. The matching CUDA command
+  and friction-index `total_problem_size=576`. A focused 192-row/64-contact CPU
+  follow-up in default, SIMD-enabled, and CUDA-enabled build trees reported 12
+  serial/`ParallelExecutor` rows with `contract_ok=1`, `batch_size=4`,
+  standard/boxed and friction-index `problem_size=192`, `total_problem_size=768`,
+  friction-index `contact_count=64`, and `parallel_units=4` on parallel rows.
+  The matching CUDA command
   `BM_LCP_COMPARE --benchmark_filter='^BM_LcpCuda(Jacobi|Pgs)Batch_(Standard|Boxed|FrictionIndex)' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_format=json`
-  now reports 24 direct CUDA rows with `cuda_batch_execution=1`,
+  reported 24 direct CUDA rows through the 128-row/48-contact boundary with `cuda_batch_execution=1`,
   `contract_ok=1`, the same batch size, standard/boxed `problem_size` through
   128, friction-index `contact_count` through 48, and maximum
-  `total_problem_size=576`. A focused homogeneous
+  `total_problem_size=576`; the focused 192-row/64-contact CUDA follow-up
+  reported six additional direct CUDA rows with `contract_ok=1`,
+  `cuda_batch_execution=1`, standard/boxed and friction-index `problem_size=192`,
+  friction-index `contact_count=64`, and `total_problem_size=768`. A focused homogeneous
   16-contact follow-up
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpCuda(Jacobi|Pgs)WorldContactBatch_FrictionIndex/16/4' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   reported two homogeneous CUDA rows with `contract_ok=1`, `contact_count=16`,

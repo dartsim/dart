@@ -1134,10 +1134,15 @@ The current local evidence for this task is:
   `BM_LcpCudaPgsWorldBoxContactGroupedBatch_FrictionIndex` rows ran
   successfully and reported `build_cuda_enabled=1`, `cuda_lcp_execution=1`,
   `cuda_batch_execution=1`, fixed iteration counters, and `contract_ok=1`. The
-  direct synthetic CUDA rows now cover standard/boxed 24/48/96/128-row packets
-  and friction-index 8/16/32/48-contact packets at `batch_size=4`; the largest
-  rows report standard/boxed `total_problem_size=512` and friction-index
-  `problem_size=144`, `total_problem_size=576`. The
+  direct synthetic CUDA rows now cover standard/boxed 24/48/96/128/192-row
+  packets and friction-index 8/16/32/48/64-contact packets at `batch_size=4`.
+  The focused 192-row/64-contact CUDA follow-up reports six direct CUDA rows
+  with `contract_ok=1`, `cuda_batch_execution=1`, standard/boxed and
+  friction-index `problem_size=192`, friction-index `contact_count=64`, and
+  `total_problem_size=768`. Matching CPU serial and DART 7 `ParallelExecutor`
+  rows for the same 192-row/64-contact packets pass in default, SIMD-enabled,
+  and CUDA-enabled build trees with `contract_ok=1`, `batch_size=4`, and
+  `parallel_units=4` on `ParallelExecutor` rows. The
   grouped synthetic CUDA rows cover five problem-size groups and two-/three-variant
   rows per group. The standard and boxed rows cover 16/32/48/96/128-row packets;
   the `/2` rows report `batch_size=10`, `cuda_group_count=5`, and
