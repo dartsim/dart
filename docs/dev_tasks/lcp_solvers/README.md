@@ -318,8 +318,8 @@
       DART 7 coupled stack-contact packets, covering fixed-iteration CUDA
       Jacobi and PGS unit tests and benchmark rows on the visible GPU.
 - [x] Added grouped variable-size synthetic CUDA batch evidence for DART 7
-      standard 16/32/48-row, boxed 16/32/48-row, and friction-index
-      4/8/16-contact packets, covering fixed-iteration CUDA Jacobi and PGS
+      standard 16/32/48/96-row, boxed 16/32/48/96-row, and friction-index
+      4/8/16/32-contact packets, covering fixed-iteration CUDA Jacobi and PGS
       unit tests and benchmark rows on the visible GPU.
 - [x] Added grouped variable-size CUDA contact-batch evidence for DART 7
       1/2/4/8/16-contact separated sphere-ground packets, covering
@@ -529,7 +529,7 @@ tradeoffs evidence based.
 - Verified CUDA LCP execution slice:
   `cmake --build build/cuda/cpp/Release --parallel 5 --target dart-simulation-experimental-cuda test_lcp_jacobi_batch_cuda BM_LCP_COMPARE`
   passed. `build/cuda/cpp/Release/bin/test_lcp_jacobi_batch_cuda --gtest_brief=1`
-  passed 31 tests, including standard, boxed, friction-index, grouped
+  passed 33 tests, including standard, boxed, friction-index, grouped
   variable-size synthetic standard/boxed/friction-index CUDA batches,
   homogeneous contact-derived world-contact CUDA batches, homogeneous 5-sphere
   coupled stack-contact CUDA batches, and grouped variable-size 1/2/4/8/16-contact
@@ -545,15 +545,16 @@ tradeoffs evidence based.
   standard/boxed/friction-index, and homogeneous 4-, 8-, and 16-contact world-contact
   Jacobi and PGS batches, plus grouped variable-size 1/2/4/8/16-contact
   separated sphere-ground and 2/3/4/5-sphere coupled stack CUDA batches. A
-  focused
-  grouped synthetic follow-up
-  `BM_LCP_COMPARE --benchmark_filter='BM_LcpCuda(Jacobi|Pgs)GroupedBatch_(Standard|Boxed|FrictionIndex)/2' --benchmark_min_time=0.001s --benchmark_repetitions=1`
-  reported six grouped CUDA rows with `contract_ok=1`, `cuda_group_count=3`,
-  and `batch_size=6`. The standard and boxed rows reported
-  `min_problem_size=16`, `max_problem_size=48`, and `total_problem_size=192`;
-  the friction-index rows reported `min_contact_count=4`,
-  `max_contact_count=16`, `total_contact_count=56`, `min_problem_size=12`,
-  `max_problem_size=48`, and `total_problem_size=168`. A focused homogeneous
+  focused direct/grouped synthetic follow-up
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpCuda(Jacobi|Pgs)(Batch|GroupedBatch)_(Standard|Boxed|FrictionIndex)' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_format=json`
+  reported 24 CUDA rows with `contract_ok=1`. The homogeneous rows cover
+  standard and boxed 24-/48-/96-row packets and friction-index 8-/16-/32-contact
+  packets at batch size 4. The grouped rows report `cuda_group_count=4` and
+  `batch_size=8`; the standard and boxed grouped rows report
+  `min_problem_size=16`, `max_problem_size=96`, and `total_problem_size=384`,
+  while the friction-index grouped rows report `min_contact_count=4`,
+  `max_contact_count=32`, `total_contact_count=120`, `min_problem_size=12`,
+  `max_problem_size=96`, and `total_problem_size=360`. A focused homogeneous
   16-contact follow-up
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpCuda(Jacobi|Pgs)WorldContactBatch_FrictionIndex/16/4' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   reported two homogeneous CUDA rows with `contract_ok=1`, `contact_count=16`,
@@ -1870,8 +1871,8 @@ tradeoffs evidence based.
   and `solveBoxedLcpPgsBatchCuda`, fixed-iteration projected Jacobi and PGS
   kernels for homogeneous dense standard, boxed, and friction-index LCP batches.
   Added grouped variable-size synthetic standard/boxed/friction-index CUDA unit
-  and benchmark evidence for 16/32/48-row standard and boxed packets plus
-  4/8/16-contact friction-index packets. Added homogeneous 4-/8-/16-contact
+  and benchmark evidence for 16/32/48/96-row standard and boxed packets plus
+  4/8/16/32-contact friction-index packets. Added homogeneous 4-/8-/16-contact
   and grouped variable-size 1/2/4/8/16-contact DART 7 separated world-contact
   CUDA unit and benchmark evidence, plus homogeneous 5-sphere and grouped
   variable-size 2/3/4/5-sphere coupled stack-contact CUDA unit and benchmark
@@ -1881,8 +1882,9 @@ tradeoffs evidence based.
   unit and benchmark evidence that combines those separated, stack, and
   1-/4-/8-/16-contact articulated fixture families, including cross-multibody link-vs-link packets,
   in one size-grouped batch.
-  The current CUDA path intentionally excludes other solvers and dense,
-  contact batches, and end-to-end articulated world-step CUDA execution.
+  The current CUDA path intentionally excludes other solvers, CUDA Jacobi
+  dense-contact batches, broader dense-contact CUDA execution, and end-to-end
+  articulated world-step CUDA execution.
 
 ## Remaining Gaps
 
@@ -1892,7 +1894,7 @@ tradeoffs evidence based.
 - Coverage breadth: extend deterministic generated fixtures beyond the current
   production-scale well-conditioned, larger mildly ill-conditioned,
   singular-degenerate through the current 128-row/96-contact slice, and
-  active-set transition through the current stronger-coupled 64-contact slice
+  active-set transition through the current stronger-coupled 96-contact slice
   into harder solver-specific friction-index coupling edge cases and direct
   backend execution evidence beyond CPU solver rows in SIMD/CUDA-enabled
   builds. Standard/boxed exact rank-deficient singular-degenerate batch
@@ -1976,7 +1978,8 @@ tradeoffs evidence based.
   build state, a focused local SIMD-enabled CPU slice passes, a focused
   CUDA-enabled build/runtime slice passes, and narrow CUDA projected-Jacobi and
   PGS standard/boxed/friction-index plus grouped variable-size synthetic
-  standard/boxed/friction-index, homogeneous 4-/8-/16-contact, homogeneous
+  standard/boxed/friction-index through 96-row and 32-contact packets,
+  homogeneous 4-/8-/16-contact, homogeneous
   5-sphere coupled stack, and grouped variable-size 1/2/4/8/16-contact separated
   and 2/3/4/5-sphere coupled stack world-contact batch paths, plus manually
   assembled 1-/4-/8-/16-contact articulated unified-contact batch paths including

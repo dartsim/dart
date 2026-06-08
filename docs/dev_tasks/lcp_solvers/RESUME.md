@@ -385,8 +385,9 @@ both serially and through the DART 7 experimental
 `ParallelExecutor`. The CUDA LCP batch evidence now also includes homogeneous
 4-/8-/16-contact DART 7 world-contact packets, homogeneous 5-sphere coupled
 stack-contact packets, grouped variable-size synthetic standard/boxed/findex
-packets, grouped variable-size 1/2/4/8/16-contact separated sphere-ground
-packets, plus grouped variable-size 2/3/4/5-sphere coupled stack-contact
+through 96-row and 32-contact packets, grouped variable-size
+1/2/4/8/16-contact separated sphere-ground packets, plus grouped variable-size
+2/3/4/5-sphere coupled stack-contact
 packets, plus grouped variable-size manually assembled 1-/4-/8-/16-contact
 articulated unified-contact packets covering link-ground, link-vs-dynamic-rigid,
 and cross-multibody link-vs-link cases, plus mixed grouped contact batches that
@@ -713,7 +714,8 @@ contact scenes.
   variable-size world-contact CUDA batch rows,
   proving narrow CUDA fixed-iteration projected-Jacobi and PGS batch paths for
   standard, boxed, friction-index, grouped variable-size synthetic
-  standard/boxed/findex, 4-/8-/16-contact world-contact packets, and grouped
+  standard/boxed/findex through 96-row and 32-contact packets,
+  4-/8-/16-contact world-contact packets, and grouped
   1/2/4/8/16-contact separated sphere-ground packets. General CUDA execution for
   the full solver manifest remains a gap.
 - `docs/dev_tasks/lcp_solvers/01-implementation-audit.md` maps the background
@@ -1189,7 +1191,7 @@ contact scenes.
 - CUDA was enabled and validated through the documented DART 7
   `simulation-experimental-cuda` smoke path on a visible RTX 4080 Laptop GPU,
   and the LCP generated coverage plus selected LCP benchmark rows pass in that
-  CUDA-enabled build. `test_lcp_jacobi_batch_cuda` passes 31 tests, including
+  CUDA-enabled build. `test_lcp_jacobi_batch_cuda` passes 33 tests, including
   standard, boxed, friction-index, grouped variable-size synthetic
   standard/boxed/friction-index, contact-derived world-contact, and homogeneous
   5-sphere coupled stack-contact batches, plus grouped manually assembled
@@ -1210,13 +1212,18 @@ contact scenes.
   `BM_LcpCudaJacobiMixedContactGroupedBatch_FrictionIndex`, and
   `BM_LcpCudaPgsMixedContactGroupedBatch_FrictionIndex` rows report
   `build_cuda_enabled=1`, `cuda_lcp_execution=1`, `cuda_batch_execution=1`,
-  fixed iteration counters, and `contract_ok=1`. The grouped synthetic rows use
-  three groups and two variants per group (`batch_size=6`,
-  `cuda_group_count=3`). The standard and boxed grouped rows cover
-  16/32/48-row packets with `total_problem_size=192`; the friction-index
-  grouped rows cover 4/8/16-contact packets with `min_problem_size=12`,
-  `max_problem_size=48`, `total_contact_count=56`, and
-  `total_problem_size=168`. The homogeneous world-contact CUDA rows are
+  fixed iteration counters, and `contract_ok=1`. The direct/grouped synthetic
+  CUDA follow-up
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpCuda(Jacobi|Pgs)(Batch|GroupedBatch)_(Standard|Boxed|FrictionIndex)' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_format=json`
+  reports 24 CUDA rows with `contract_ok=1`. The homogeneous rows cover
+  standard and boxed 24-/48-/96-row packets and friction-index 8-/16-/32-contact
+  packets at batch size 4. The grouped synthetic rows use four groups and two
+  variants per group (`batch_size=8`, `cuda_group_count=4`). The standard and
+  boxed grouped rows cover 16/32/48/96-row packets with
+  `total_problem_size=384`; the friction-index grouped rows cover
+  4/8/16/32-contact packets with `min_problem_size=12`,
+  `max_problem_size=96`, `total_contact_count=120`, and
+  `total_problem_size=360`. The homogeneous world-contact CUDA rows are
   4-, 8-, and 16-contact packets; the denser rows report
   `batch_size=4`, `contact_count=16`, `problem_size=48`,
   `total_contact_count=64`, and `total_problem_size=192`. The homogeneous stack
@@ -1388,6 +1395,11 @@ cmake --build build/default/cpp/Release \
 ./build/cuda/cpp/Release/bin/test_lcp_jacobi_batch_cuda \
   "--gtest_filter=CudaLcpPgsBatch.DenseBoxWorldContactBatchSatisfiesLcpContract:CudaLcpPgsBatch.DenseBoxWorldContactGroupedBatchSatisfiesLcpContract" \
   "--gtest_brief=1"
+./build/cuda/cpp/Release/bin/BM_LCP_COMPARE \
+  "--benchmark_filter=^BM_LcpCuda(Jacobi|Pgs)(Batch|GroupedBatch)_(Standard|Boxed|FrictionIndex)" \
+  "--benchmark_min_time=0.001s" \
+  "--benchmark_repetitions=1" \
+  "--benchmark_format=json"
 ./build/cuda/cpp/Release/bin/BM_LCP_COMPARE \
   "--benchmark_filter=BM_LcpCuda(Jacobi|Pgs)WorldStackContactGroupedBatch_FrictionIndex" \
   "--benchmark_min_time=0.001s" \

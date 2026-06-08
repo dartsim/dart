@@ -1131,8 +1131,11 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     backend-specific runs are distinguishable in the benchmark output.
   - Added DART 7 experimental CUDA LCP execution paths for fixed-iteration
     projected Jacobi and PGS batch solves over homogeneous dense standard,
-    boxed, friction-index, grouped variable-size synthetic standard, boxed,
-    and friction-index packets, homogeneous 4-, 8-, and 16-contact world-contact,
+    boxed, and friction-index packets now reaching 96-row standard/boxed and
+    32-contact friction-index synthetic cases, grouped variable-size synthetic
+    standard, boxed, and friction-index packets now reaching 16/32/48/96-row
+    standard/boxed groups and 4/8/16/32-contact friction-index groups,
+    homogeneous 4-, 8-, and 16-contact world-contact,
     homogeneous 5-sphere coupled stack-contact, grouped variable-size
     1/2/4/8/16-contact separated world-contact LCP packets, plus grouped
     variable-size 2/3/4/5-sphere coupled stack-contact LCP packets, plus

@@ -5435,12 +5435,12 @@ std::optional<CudaGroupedBenchmarkBatch> MakeGroupedCudaBenchmarkBatch(
   switch (family) {
     case BenchmarkProblemFamily::Standard:
     case BenchmarkProblemFamily::Boxed:
-      for (const int rows : std::array<int, 3>{16, 32, 48}) {
+      for (const int rows : std::array<int, 4>{16, 32, 48, 96}) {
         appendGroup(rows);
       }
       break;
     case BenchmarkProblemFamily::FrictionIndex:
-      for (const int contactCount : std::array<int, 3>{4, 8, 16}) {
+      for (const int contactCount : std::array<int, 4>{4, 8, 16, 32}) {
         appendGroup(contactCount);
       }
       break;
@@ -11846,12 +11846,30 @@ BENCHMARK(BM_LcpJacobiSolverThreadingBanded_Standard)
     ->Args({2048, 16});
 
 #if DART_BM_LCP_COMPARE_HAS_SIMULATION_CUDA
-BENCHMARK(BM_LcpCudaJacobiBatch_Standard)->Args({24, 4})->Args({48, 4});
-BENCHMARK(BM_LcpCudaJacobiBatch_Boxed)->Args({24, 4})->Args({48, 4});
-BENCHMARK(BM_LcpCudaJacobiBatch_FrictionIndex)->Args({8, 4})->Args({16, 4});
-BENCHMARK(BM_LcpCudaPgsBatch_Standard)->Args({24, 4})->Args({48, 4});
-BENCHMARK(BM_LcpCudaPgsBatch_Boxed)->Args({24, 4})->Args({48, 4});
-BENCHMARK(BM_LcpCudaPgsBatch_FrictionIndex)->Args({8, 4})->Args({16, 4});
+BENCHMARK(BM_LcpCudaJacobiBatch_Standard)
+    ->Args({24, 4})
+    ->Args({48, 4})
+    ->Args({96, 4});
+BENCHMARK(BM_LcpCudaJacobiBatch_Boxed)
+    ->Args({24, 4})
+    ->Args({48, 4})
+    ->Args({96, 4});
+BENCHMARK(BM_LcpCudaJacobiBatch_FrictionIndex)
+    ->Args({8, 4})
+    ->Args({16, 4})
+    ->Args({32, 4});
+BENCHMARK(BM_LcpCudaPgsBatch_Standard)
+    ->Args({24, 4})
+    ->Args({48, 4})
+    ->Args({96, 4});
+BENCHMARK(BM_LcpCudaPgsBatch_Boxed)
+    ->Args({24, 4})
+    ->Args({48, 4})
+    ->Args({96, 4});
+BENCHMARK(BM_LcpCudaPgsBatch_FrictionIndex)
+    ->Args({8, 4})
+    ->Args({16, 4})
+    ->Args({32, 4});
 BENCHMARK(BM_LcpCudaJacobiGroupedBatch_Standard)->Arg(2);
 BENCHMARK(BM_LcpCudaJacobiGroupedBatch_Boxed)->Arg(2);
 BENCHMARK(BM_LcpCudaJacobiGroupedBatch_FrictionIndex)->Arg(2);

@@ -431,9 +431,9 @@ std::vector<int> syntheticGroupArgs(const SyntheticCudaFamily family)
   switch (family) {
     case SyntheticCudaFamily::Standard:
     case SyntheticCudaFamily::Boxed:
-      return {8, 16, 32};
+      return {8, 16, 32, 64, 96};
     case SyntheticCudaFamily::FrictionIndex:
-      return {2, 4, 8};
+      return {2, 4, 8, 16, 32};
   }
 
   return {};
