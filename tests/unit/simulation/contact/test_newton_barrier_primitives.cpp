@@ -173,6 +173,37 @@ TEST(NewtonBarrierPrimitives, LineSearchStatsAccumulateSharedCounters)
 }
 
 //==============================================================================
+TEST(NewtonBarrierPrimitives, LineSearchCcdOptionUsesSharedConservativePolicy)
+{
+  nb::LineSearchOptions options;
+  options.minSeparation = -0.25;
+  options.tolerance = -1.0;
+  options.maxIterations = 0;
+
+  const auto ccdOption = nb::makeLineSearchCcdOption(options);
+
+  EXPECT_DOUBLE_EQ(ccdOption.minSeparation, 0.0);
+  EXPECT_DOUBLE_EQ(ccdOption.tolerance, 0.0);
+  EXPECT_EQ(ccdOption.maxIterations, 1);
+  EXPECT_EQ(
+      ccdOption.advancement,
+      dart::collision::native::CcdAdvancement::Conservative);
+
+  options.minSeparation = 0.125;
+  options.tolerance = 1e-4;
+  options.maxIterations = 17;
+
+  const auto positiveOption = nb::makeLineSearchCcdOption(options);
+
+  EXPECT_DOUBLE_EQ(positiveOption.minSeparation, 0.125);
+  EXPECT_DOUBLE_EQ(positiveOption.tolerance, 1e-4);
+  EXPECT_EQ(positiveOption.maxIterations, 17);
+  EXPECT_EQ(
+      positiveOption.advancement,
+      dart::collision::native::CcdAdvancement::Conservative);
+}
+
+//==============================================================================
 TEST(NewtonBarrierPrimitives, LineSearchPositiveStepPredicateIsShared)
 {
   EXPECT_TRUE(nb::allowsPositiveLineSearchStep(1.0, false));

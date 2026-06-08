@@ -50,6 +50,10 @@
         `detail/newton_barrier` and route rigid IPC plus deformable CCD result
         methods through it while keeping hit/limited result ownership
         variant-local.
+  - [x] Promote the shared conservative native-CCD option adapter into
+        `detail/newton_barrier` and route rigid IPC plus deformable CCD
+        line-search queries through it while keeping their CCD implementations
+        and limiting-primitive payloads variant-local.
   - [x] Promote the first shared Google Benchmark packet row parser into
         `scripts/benchmark_packet_utils.py` and route the ABD comparison packet
         checker plus the Phase 5 GPU packet checker through it while keeping
@@ -110,10 +114,11 @@ resources as public API.
 1. Continue Phase 3 shared-contract scouting from the existing rigid IPC,
    deformable IPC, and ABD evidence after the fixed-size PSD projection helper,
    first line-search option/stat helper, shared line-search positive-step
-   predicate, and shared Google Benchmark packet row parser. Promote
-   projected-Newton result/status terminology, line-search result semantics,
-   diagnostics, or additional benchmark-schema contracts only when a second
-   consumer proves identical behavior.
+   predicate, shared conservative native-CCD option adapter, and shared Google
+   Benchmark packet row parser. Promote projected-Newton result/status
+   terminology, line-search result semantics, diagnostics, or additional
+   benchmark-schema contracts only when a second consumer proves identical
+   behavior.
 2. Keep the two-body affine contact micro-solve deferred until the
    `abd-alg-affine-body` row expands beyond the primitive/oracle micro-packet
    and needs a solved-state residual or runtime stepping diagnostic.
