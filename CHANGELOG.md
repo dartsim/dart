@@ -1086,20 +1086,21 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     standard 32/64/128-row, boxed 32/64/128-row, and coupled friction-index
     8-/12-/16-/24-/32-/48-/64-contact active-set packets verified across default,
     SIMD-enabled, and CUDA-enabled build trees, plus
-    larger mildly ill-conditioned generated correctness coverage and 292
+    larger mildly ill-conditioned generated correctness coverage and 298
     benchmark rows for standard 32-row,
     boxed 16-row, friction-index 8-contact, coupled friction-index 6-, 8-,
     12-, 16-, and 24-contact packets, 4x-coupled
     6-/8-/12-/16-/24-contact packets, and 8x-coupled
-    6-/8-/12-/16-/24-/32-contact packets, plus ADMM/SAP/Boxed
-    Semi-Smooth Newton single-problem 16x-coupled
+    6-/8-/12-/16-/24-/32-contact packets with Boxed Semi-Smooth Newton added
+    to the scoped solver set, plus ADMM/SAP/Boxed Semi-Smooth Newton
+    single-problem 16x-coupled
     6-/8-/12-/16-/24-/32-/48-/64-contact packets over the scoped solver set,
     verified across default, SIMD-enabled, and CUDA-enabled build trees, plus
-    568 larger mildly ill-conditioned batch rows for batch-size-4 serial and
+    580 larger mildly ill-conditioned batch rows for batch-size-4 serial and
     DART 7 `ParallelExecutor` runs over standard 32-row, boxed 16-row,
     friction-index 8-contact, coupled friction-index 6-/8-/12-/16-/24-contact,
     4x-coupled 6-/8-/12-/16-/24-contact, 8x-coupled
-    6-/8-/12-/16-/24-/32-contact, and
+    6-/8-/12-/16-/24-/32-contact with Boxed Semi-Smooth Newton included, and
     ADMM/SAP-only 16x-coupled 6-/8-/12-/16-/24-/32-/48-/64-contact packets, verified across
     default, SIMD-enabled, and CUDA-enabled build trees, plus
     23 near-singular benchmark rows for standard 8-row, boxed 8-row, and
@@ -1230,12 +1231,14 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     articulated unified-contact friction-index fixtures, with backend
     build-state counters distinguishing default, SIMD-enabled, and CUDA-enabled
     CPU solver runs.
-  - Added DART 7 ADMM/SAP/Boxed Semi-Smooth Newton solver-specific generated
-    correctness and single-problem benchmark coverage for 16x-coupled mildly
-    ill-conditioned friction-index LCP packets at 6, 8, 12, 16, 24, 32, 48,
-    and 64 contacts, while keeping batch coverage scoped to ADMM/SAP where the
-    contract is green. Backend build-state counters distinguish default,
-    SIMD-enabled, and CUDA-enabled CPU solver runs.
+  - Added DART 7 Boxed Semi-Smooth Newton solver-specific generated correctness
+    and single/batch benchmark coverage for 8x-coupled mildly ill-conditioned
+    friction-index LCP packets at 6, 8, 12, 16, 24, and 32 contacts, plus
+    ADMM/SAP/Boxed Semi-Smooth Newton generated correctness and single-problem
+    benchmark coverage for the 16x-coupled 6-, 8-, 12-, 16-, 24-, 32-, 48-,
+    and 64-contact packets. Batch coverage for the 16x packets remains scoped
+    to ADMM/SAP where the contract is green. Backend build-state counters
+    distinguish default, SIMD-enabled, and CUDA-enabled CPU solver runs.
   - Added DART 7 contact-normal standard-LCP comparison benchmark rows for
     Dantzig, Lemke, Baraff, Direct, Minimum Map Newton,
     Fischer-Burmeister Newton, Penalized Fischer-Burmeister Newton, Interior
