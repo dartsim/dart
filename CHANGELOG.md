@@ -1135,8 +1135,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     32-contact friction-index synthetic cases, grouped variable-size synthetic
     standard, boxed, and friction-index packets now reaching 16/32/48/96-row
     standard/boxed groups and 4/8/16/32-contact friction-index groups,
-    matching CPU serial and DART 7 `ParallelExecutor` Jacobi/PGS batch rows at
-    those 24-/48-/96-row and 8-/16-/32-contact direct CUDA packet sizes,
+    matching CPU serial and DART 7 `ParallelExecutor` Jacobi/PGS batch rows
+    verified in default and SIMD-enabled builds at those 24-/48-/96-row and
+    8-/16-/32-contact direct CUDA packet sizes,
     homogeneous 4-, 8-, and 16-contact world-contact,
     homogeneous 5-sphere coupled stack-contact, grouped variable-size
     1/2/4/8/16-contact separated world-contact LCP packets, plus grouped

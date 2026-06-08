@@ -324,7 +324,8 @@
 - [x] Added apples-to-apples DART 7 CPU serial, DART 7 `ParallelExecutor`, and
       fixed-iteration CUDA batch benchmark rows for Jacobi and PGS on the same
       standard/boxed 24-/48-/96-row and friction-index 8-/16-/32-contact
-      packets at batch size 4.
+      packets at batch size 4, verified in default, SIMD-enabled, and
+      CUDA-enabled build trees.
 - [x] Added grouped variable-size CUDA contact-batch evidence for DART 7
       1/2/4/8/16-contact separated sphere-ground packets, covering
       fixed-iteration CUDA Jacobi and PGS unit tests and benchmark rows on the
@@ -565,6 +566,9 @@ tradeoffs evidence based.
   `batch_size=4`, standard/boxed `problem_size=24/48/96`,
   friction-index `contact_count=8/16/32`, `parallel_units=4` on
   `ParallelExecutor` rows, and `total_problem_size` up to 384. The matching
+  SIMD-enabled command reported the same 36 CPU rows with `contract_ok=1`,
+  `build_simd_enabled=1`, and the same size, batch, and `parallel_units`
+  counters. The matching
   CUDA command
   `BM_LCP_COMPARE --benchmark_filter='^BM_LcpCuda(Jacobi|Pgs)Batch_(Standard|Boxed|FrictionIndex)' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_format=json`
   reported 18 direct CUDA rows with `cuda_batch_execution=1`, `contract_ok=1`,

@@ -78,9 +78,10 @@ Support abbreviations:
   homogeneous dense standard/boxed/friction-index LCP packets. The CUDA batch
   evidence now also includes grouped synthetic through 96-row and 32-contact
   packets, CPU serial/`ParallelExecutor` Jacobi/PGS batch rows at the same
-  direct CUDA packet sizes, separated sphere-ground, coupled stack-contact,
-  manually assembled articulated unified-contact packets, PGS-only homogeneous
-  and grouped variable-size dense box-face contact batches, plus mixed
+  direct CUDA packet sizes verified in default and SIMD-enabled build trees,
+  separated sphere-ground, coupled stack-contact, manually assembled
+  articulated unified-contact packets, PGS-only homogeneous and grouped
+  variable-size dense box-face contact batches, plus mixed
   grouped batches spanning those contact fixture families.
   A focused CUDA-enabled build/runtime run also exists and the LCP harness
   passes in that CUDA-enabled build, but broader robot-like denser contact
@@ -89,8 +90,8 @@ Support abbreviations:
   vectorized/CUDA LCP batch-processing paths are still missing. The narrow CUDA Jacobi/PGS batch
   evidence now includes grouped variable-size synthetic standard/boxed/findex
   packets through 96-row and 32-contact sizes, matching CPU serial and DART 7
-  `ParallelExecutor` Jacobi/PGS batch rows at the direct CUDA packet sizes,
-  homogeneous 4-/8-/16-contact and grouped variable-size
+  `ParallelExecutor` Jacobi/PGS batch rows at the direct CUDA packet sizes in
+  default and SIMD-enabled build trees, homogeneous 4-/8-/16-contact and grouped variable-size
   1/2/4/8/16-contact DART 7 sphere-ground world-contact packets, homogeneous
   5-sphere and grouped variable-size 2/3/4/5-sphere coupled stack-contact
   packets, grouped variable-size 1-/4-/8-/16-contact articulated unified-contact

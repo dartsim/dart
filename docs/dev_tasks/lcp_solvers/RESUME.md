@@ -395,7 +395,8 @@ combine separated, stack, and 1-/4-/8-/16-contact articulated fixture families f
 Jacobi and PGS. The generic CPU serial and DART 7 `ParallelExecutor` batch
 benchmark registrations now also expose Jacobi and PGS rows at the same
 standard/boxed 24-/48-/96-row and friction-index 8-/16-/32-contact packet
-sizes used by the direct CUDA batch rows.
+sizes used by the direct CUDA batch rows; the focused evidence covers default,
+SIMD-enabled, and CUDA-enabled build trees.
 The work now also adds 49 `BM_LcpLargerActiveSetTransition` rows for the
 scoped scalable active-set transition packets: standard 32-row, boxed 32-row,
 and coupled friction-index 8-contact. Focused default, SIMD-enabled, and
@@ -1232,8 +1233,10 @@ contact scenes.
   reports 36 CPU serial/`ParallelExecutor` rows with `contract_ok=1`,
   `batch_size=4`, standard/boxed `problem_size=24/48/96`,
   friction-index `contact_count=8/16/32`, `parallel_units=4` on
-  `ParallelExecutor` rows, and `total_problem_size` up to 384; the matching
-  direct CUDA command reports 18 rows with `cuda_batch_execution=1`,
+  `ParallelExecutor` rows, and `total_problem_size` up to 384; the
+  SIMD-enabled build reports the same 36 CPU rows with `contract_ok=1`,
+  `build_simd_enabled=1`, and the same size counters; the matching direct CUDA
+  command reports 18 rows with `cuda_batch_execution=1`,
   `contract_ok=1`, and the same size counters. The homogeneous world-contact
   CUDA rows are
   4-, 8-, and 16-contact packets; the denser rows report
@@ -1413,6 +1416,11 @@ cmake --build build/default/cpp/Release \
   "--benchmark_repetitions=1" \
   "--benchmark_format=json"
 ./build/default/cpp/Release/bin/BM_LCP_COMPARE \
+  "--benchmark_filter=^BM_LcpBatch(Serial|Parallel)/(Standard|Boxed|FrictionIndex)/(Jacobi|Pgs)/(24|48|96|8|16|32)/4$" \
+  "--benchmark_min_time=0.001s" \
+  "--benchmark_repetitions=1" \
+  "--benchmark_format=json"
+./build/simd/cpp/Release/bin/BM_LCP_COMPARE \
   "--benchmark_filter=^BM_LcpBatch(Serial|Parallel)/(Standard|Boxed|FrictionIndex)/(Jacobi|Pgs)/(24|48|96|8|16|32)/4$" \
   "--benchmark_min_time=0.001s" \
   "--benchmark_repetitions=1" \
