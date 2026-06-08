@@ -10869,7 +10869,8 @@ void RegisterArticulatedUnifiedContactBenchmarks()
           ->Arg(1)
           ->Arg(4)
           ->Arg(8)
-          ->Arg(16);
+          ->Arg(16)
+          ->Arg(20);
     }
   }
 }

@@ -254,7 +254,7 @@
 - [x] Added DART 7 articulated unified-contact benchmark rows that compare all
       friction-index-capable solvers on the same manually assembled fixed-base
       three-axis prismatic link-ground, link-vs-dynamic-rigid, and
-      cross-multibody link-vs-link LCP snapshots through 16-contact packets.
+      cross-multibody link-vs-link LCP snapshots through 20-contact packets.
 - [x] Added a DART 7 boxed-LCP coupled stack snapshot test for a 3-sphere
       vertical stack, validating the LCP contract and nonzero normal-contact
       coupling from shared dynamic bodies.
@@ -1487,21 +1487,21 @@ tradeoffs evidence based.
   multi-DOF articulated contact evidence, not broad articulated robot contact
   coverage.
 - DART 7 articulated unified-contact solver benchmark evidence:
-  `BM_LcpArticulatedUnifiedContact/FrictionIndex/{Ground,RigidImpact,CrossLinkImpact}/<solver>/{1,4,8,16}`
+  `BM_LcpArticulatedUnifiedContact/FrictionIndex/{Ground,RigidImpact,CrossLinkImpact}/<solver>/{1,4,8,16,20}`
   manually assembles fixed-base three-axis prismatic `LinkContact` snapshots
   through `assembleMultibodyLinkContactProblem` and
   `assembleUnifiedConstraintProblem`, then compares all 16
-  friction-index-capable solvers on the same 3-row, 12-row, 24-row, and 48-row
-  LCPs.
+  friction-index-capable solvers on the same 3-row, 12-row, 24-row, 48-row, and
+  60-row LCPs.
   The cross-link rows complete a second articulated endpoint for a separate
   multibody, so they exercise the unified contact matrix's cross-multibody
   block. Focused default, SIMD-enabled, and CUDA-enabled
-  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpArticulatedUnifiedContact/FrictionIndex/.+/16$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
-  runs reported `contract_ok=1` for all 48 new 16-contact rows, with
-  `articulated_unified_contact=1`, `contact_count=16`, `problem_size=48`,
-  `multibody_count=16` for ground/rigid-impact rows, and `multibody_count=32`
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpArticulatedUnifiedContact/FrictionIndex/.+/20$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  runs reported `contract_ok=1` for all 48 new 20-contact rows, with
+  `articulated_unified_contact=1`, `contact_count=20`, `problem_size=60`,
+  `multibody_count=20` for ground/rigid-impact rows, and `multibody_count=40`
   plus `articulated_cross_link_contact=1` for cross-link rows. The full
-  articulated unified-contact registration now lists 192 rows.
+  articulated unified-contact registration now lists 240 rows.
   This is manual articulated link-contact assembly evidence, not
   `World::collide()` or end-to-end stepping evidence. The CUDA-enabled
   all-solver rows are CPU solver execution
@@ -1790,7 +1790,7 @@ tradeoffs evidence based.
 - Added DART 7 articulated unified-contact all-solver benchmark evidence for
   manually assembled fixed-base three-axis prismatic link-ground and
   link-vs-dynamic-rigid LCP snapshots, now extended to cross-multibody
-  link-vs-link snapshots and 16-contact packets.
+  link-vs-link snapshots and 20-contact packets.
 - Added DART 7 world-contact benchmark rows that compare all
   friction-index-capable solvers on the same real boxed/findex contact
   snapshots from 1, 2, and 4 separated sphere-ground contacts, plus a benchmark

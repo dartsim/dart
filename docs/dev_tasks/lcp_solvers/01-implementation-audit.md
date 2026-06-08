@@ -736,19 +736,19 @@ The current local evidence for this task is:
 - `BM_LCP_COMPARE --benchmark_filter='BM_LcpArticulatedUnifiedContact' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   previously passed locally for all 96
   `BM_LcpArticulatedUnifiedContact/FrictionIndex/{Ground,RigidImpact,CrossLinkImpact}/<solver>/{1,4}`
-  rows. The benchmark now also registers 8-contact and 16-contact rows, so these rows manually
+  rows. The benchmark now also registers 8-contact, 16-contact, and 20-contact rows, so these rows manually
   assemble fixed-base three-axis prismatic `LinkContact` snapshots through
   `assembleMultibodyLinkContactProblem` and `assembleUnifiedConstraintProblem`,
   then compare all 16 friction-index-capable solvers on identical 3-row,
-  12-row, 24-row, and 48-row LCPs. The cross-link rows complete a second articulated
+  12-row, 24-row, 48-row, and 60-row LCPs. The cross-link rows complete a second articulated
   endpoint for a separate multibody, so they exercise the unified contact
   matrix's cross-multibody block. Focused default, SIMD-enabled, and
   CUDA-enabled
-  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpArticulatedUnifiedContact/FrictionIndex/.+/16$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
-  runs reported `contract_ok=1` for all 48 new 16-contact rows, with
-  `articulated_unified_contact=1`, `contact_count=16`, `problem_size=48`,
-  `multibody_count=16` for ground/rigid-impact rows,
-  `dynamic_rigid_body_count=16` for rigid-impact rows, and `multibody_count=32` plus
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpArticulatedUnifiedContact/FrictionIndex/.+/20$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  runs reported `contract_ok=1` for all 48 new 20-contact rows, with
+  `articulated_unified_contact=1`, `contact_count=20`, `problem_size=60`,
+  `multibody_count=20` for ground/rigid-impact rows,
+  `dynamic_rigid_body_count=20` for rigid-impact rows, and `multibody_count=40` plus
   `articulated_cross_link_contact=1` for cross-link rows.
   This is articulated unified-contact LCP assembly evidence, not
   collision-discovered or end-to-end stepping evidence. Focused
