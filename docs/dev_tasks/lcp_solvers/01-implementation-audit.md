@@ -52,8 +52,9 @@ Support abbreviations:
   boxed-LCP `World::step()` invariant tests for one-link and four-link scenes,
   1-/4-/8-/16-link articulated ground-step benchmark rows, connected
   fixed-base three-axis prismatic Cartesian-chain boxed-LCP `World::step()`
-  invariant coverage, 1-/4-/8-/16-chain articulated Cartesian benchmark rows, a fixed-base
-  prismatic link-vs-dynamic-rigid boxed-LCP `World::step()` invariant test, and
+  invariant coverage for two- and four-chain scenes, 1-/4-/8-/16-chain
+  articulated Cartesian benchmark rows, a fixed-base prismatic
+  link-vs-dynamic-rigid boxed-LCP `World::step()` invariant test, and
   1-/4-/8-/16-pair articulated
   rigid-impact benchmark rows, a cross-multibody fixed-base prismatic
   link-vs-link boxed-LCP `World::step()` invariant test, and
@@ -631,15 +632,15 @@ The current local evidence for this task is:
   velocity, and parity with the sequential articulated shortcut. This broadens
   fixed-base link-ground evidence, but it is still not general articulated
   robot contact coverage.
-- `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.CartesianPrismaticChainGroundStepMaintainsInvariants' --gtest_brief=1`
-  passed 1 test, adding a connected fixed-base three-axis prismatic Cartesian
-  chain scene. The test advances two serial-chain multibodies in simultaneous
-  tip-ground contact for 200 boxed-LCP `World::step()` iterations, confirms two
-  link-touching contacts and six generalized coordinates, and checks finite
-  state, bounded tip height error, bounded joint velocities, bounded planar
-  joint speed, and parity with the sequential articulated shortcut. This is
-  connected multi-DOF fixed-base articulated contact evidence, not general
-  articulated robot contact coverage.
+- `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.CartesianPrismaticChainGroundStepMaintainsInvariants:BoxedLcpContact.FourCartesianPrismaticChainsGroundStepMaintainsInvariants' --gtest_brief=1`
+  passed 2 tests, adding connected fixed-base three-axis prismatic Cartesian
+  chain scenes. The tests advance two and four serial-chain multibodies in
+  simultaneous tip-ground contact for 200 boxed-LCP `World::step()` iterations,
+  confirm all contacts touch links, cover six and twelve generalized
+  coordinates, and check finite state, bounded tip height error, bounded joint
+  velocities, bounded planar joint speed, and parity with the sequential
+  articulated shortcut. This is connected multi-DOF fixed-base articulated
+  contact evidence, not general articulated robot contact coverage.
 - `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.ArticulatedPrismaticLinkPushesDynamicRigidBody' --gtest_brief=1`
   passed 1 test, advancing a fixed-base prismatic articulated striker link in
   contact with a dynamic rigid sphere for one boxed-LCP `World::step()`. The
@@ -704,7 +705,7 @@ The current local evidence for this task is:
 - `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.LongRunningSphereStackWorldStepMaintainsContactInvariants'`
   passed 1 test, advancing the same 3-sphere vertical stack through 500 public
   boxed-LCP `World::step()` iterations with the same motion invariants.
-- The `test_boxed_lcp_contact --gtest_list_tests` inventory now lists 51 tests.
+- The `test_boxed_lcp_contact --gtest_list_tests` inventory now lists 52 tests.
   The earlier full run still emits the existing `StaticFrictionHoldsSmallPush` degenerate-pivot
   warning, so this should not be counted as clean evidence for
   dense-degenerate multi-contact systems.
@@ -882,7 +883,7 @@ The current local evidence for this task is:
   ground and rigid-impact rows also reported `contract_ok=1` with
   `build_simd_enabled=1` and `build_cuda_enabled=1`, respectively; those are CPU
   solver rows in those build trees, not CUDA kernel execution.
-- `test_boxed_lcp_contact --gtest_list_tests` now lists 51 tests. The dense box
+- `test_boxed_lcp_contact --gtest_list_tests` now lists 52 tests. The dense box
   face-contact test assembles a 4-contact, 12-row boxed/findex LCP from
   `World::collide()`, checks the single-dynamic-body dense patch shape, and
   verifies the problem with APGD; the sliding and static-friction box

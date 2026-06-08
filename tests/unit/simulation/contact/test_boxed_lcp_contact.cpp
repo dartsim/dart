@@ -1640,6 +1640,34 @@ CartesianArticulatedGroundStepResult runCartesianArticulatedGroundStep(
   return result;
 }
 
+void expectCartesianPrismaticChainsGroundStepMaintainsInvariants(int chainCount)
+{
+  const std::size_t dofCount = 3u * static_cast<std::size_t>(chainCount);
+
+  const CartesianArticulatedGroundStepResult reference
+      = runCartesianArticulatedGroundStep(
+          sx::ContactSolverMethod::SequentialImpulse, chainCount);
+  const CartesianArticulatedGroundStepResult lcp
+      = runCartesianArticulatedGroundStep(
+          sx::ContactSolverMethod::BoxedLcp, chainCount);
+
+  ASSERT_EQ(lcp.contactCount, static_cast<std::size_t>(chainCount));
+  EXPECT_EQ(lcp.linkContactCount, static_cast<std::size_t>(chainCount));
+  EXPECT_EQ(lcp.dofCount, dofCount);
+  EXPECT_TRUE(lcp.allFinite);
+  EXPECT_LE(lcp.maxHeightError, 2e-2);
+  EXPECT_LT(lcp.maxAbsJointVelocity, 0.12);
+  EXPECT_LT(lcp.maxPlanarJointSpeed, 0.08);
+
+  ASSERT_EQ(reference.contactCount, lcp.contactCount);
+  EXPECT_EQ(reference.linkContactCount, lcp.linkContactCount);
+  EXPECT_EQ(reference.dofCount, lcp.dofCount);
+  EXPECT_TRUE(reference.allFinite);
+  EXPECT_NEAR(reference.maxHeightError, lcp.maxHeightError, 2e-2);
+  EXPECT_NEAR(reference.maxAbsJointVelocity, lcp.maxAbsJointVelocity, 0.12);
+  EXPECT_NEAR(reference.maxPlanarJointSpeed, lcp.maxPlanarJointSpeed, 0.08);
+}
+
 ArticulatedRigidImpactResult runArticulatedRigidImpactStep(
     sx::ContactSolverMethod method)
 {
@@ -2583,30 +2611,16 @@ TEST(
 TEST(BoxedLcpContact, CartesianPrismaticChainGroundStepMaintainsInvariants)
 {
   constexpr int kChainCount = 2;
-  constexpr std::size_t kDofCount = 3u * kChainCount;
+  expectCartesianPrismaticChainsGroundStepMaintainsInvariants(kChainCount);
+}
 
-  const CartesianArticulatedGroundStepResult reference
-      = runCartesianArticulatedGroundStep(
-          sx::ContactSolverMethod::SequentialImpulse, kChainCount);
-  const CartesianArticulatedGroundStepResult lcp
-      = runCartesianArticulatedGroundStep(
-          sx::ContactSolverMethod::BoxedLcp, kChainCount);
-
-  ASSERT_EQ(lcp.contactCount, static_cast<std::size_t>(kChainCount));
-  EXPECT_EQ(lcp.linkContactCount, static_cast<std::size_t>(kChainCount));
-  EXPECT_EQ(lcp.dofCount, kDofCount);
-  EXPECT_TRUE(lcp.allFinite);
-  EXPECT_LE(lcp.maxHeightError, 2e-2);
-  EXPECT_LT(lcp.maxAbsJointVelocity, 0.12);
-  EXPECT_LT(lcp.maxPlanarJointSpeed, 0.08);
-
-  ASSERT_EQ(reference.contactCount, lcp.contactCount);
-  EXPECT_EQ(reference.linkContactCount, lcp.linkContactCount);
-  EXPECT_EQ(reference.dofCount, lcp.dofCount);
-  EXPECT_TRUE(reference.allFinite);
-  EXPECT_NEAR(reference.maxHeightError, lcp.maxHeightError, 2e-2);
-  EXPECT_NEAR(reference.maxAbsJointVelocity, lcp.maxAbsJointVelocity, 0.12);
-  EXPECT_NEAR(reference.maxPlanarJointSpeed, lcp.maxPlanarJointSpeed, 0.08);
+//==============================================================================
+// Four connected multi-DOF articulated DART 7 chains exercise the same public
+// BoxedLcp unified path at the first benchmark-sized Cartesian-chain packet.
+TEST(BoxedLcpContact, FourCartesianPrismaticChainsGroundStepMaintainsInvariants)
+{
+  constexpr int kChainCount = 4;
+  expectCartesianPrismaticChainsGroundStepMaintainsInvariants(kChainCount);
 }
 
 //==============================================================================
