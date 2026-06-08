@@ -191,7 +191,7 @@
       The rigid IPC projected-Newton loop now reuses solve-local surface buffers
       across line-search and sufficient-decrease backtracking candidates, and
       repeated solve-internal barrier assembly and line-search calls reuse
-      surface-pair/triplet scratch.
+      surface-pair/triplet scratch, including the lagged-friction barrier pass.
       `DeformableDynamicsStage` now owns reusable
       obstacle-list, deformable surface-snapshot, and rigid
       surface-CCD snapshot scratch, and `prepare()` primes per-body

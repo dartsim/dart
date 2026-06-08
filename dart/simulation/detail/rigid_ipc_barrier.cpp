@@ -727,17 +727,17 @@ void addLaggedFrictionTerms(
     std::vector<Eigen::Triplet<double>>& triplets,
     const std::span<const RigidIpcBarrierSurface> surfaces,
     const std::span<const RigidIpcBarrierSurface> laggedSurfaces,
-    const RigidIpcBarrierOptions& barrierOptions,
-    const RigidIpcFrictionOptions& frictionOptions)
+    const RigidIpcFrictionOptions& frictionOptions,
+    const RigidIpcBarrierAssembly& laggedAssembly)
 {
   if (laggedSurfaces.size() != surfaces.size()
+      || !(frictionOptions.coefficient > 0.0)
+      || !std::isfinite(frictionOptions.coefficient)
       || !(frictionOptions.staticFrictionDisplacement > 0.0)
       || !std::isfinite(frictionOptions.staticFrictionDisplacement)) {
     return;
   }
 
-  const RigidIpcBarrierAssembly laggedAssembly
-      = assembleRigidIpcBarrierSystem(laggedSurfaces, barrierOptions);
   for (const RigidIpcBarrierConstraint& constraint :
        laggedAssembly.activeConstraints) {
     const double coefficient = combinedFrictionCoefficient(
@@ -1869,17 +1869,31 @@ static RigidIpcBarrierAssembly assembleRigidIpcObjectiveSystemWithScratch(
       surfaces, barrierOptions, scratch);
   assert(dynamicsTerms.size() <= surfaces.size());
 
+  const bool useLaggedFriction
+      = laggedSurfaces.size() == surfaces.size()
+        && frictionOptions.coefficient > 0.0
+        && std::isfinite(frictionOptions.coefficient)
+        && frictionOptions.staticFrictionDisplacement > 0.0
+        && std::isfinite(frictionOptions.staticFrictionDisplacement);
+  RigidIpcBarrierAssembly laggedAssembly;
+  if (useLaggedFriction) {
+    laggedAssembly = assembleRigidIpcBarrierSystemWithScratch(
+        laggedSurfaces, barrierOptions, scratch);
+  }
+
   const std::size_t termCount = std::min(dynamicsTerms.size(), surfaces.size());
   std::vector<Eigen::Triplet<double>>& triplets = scratch.objectiveTriplets;
   triplets.clear();
   triplets.reserve(6 * termCount);
-  addLaggedFrictionTerms(
-      assembly,
-      triplets,
-      surfaces,
-      laggedSurfaces,
-      barrierOptions,
-      frictionOptions);
+  if (useLaggedFriction) {
+    addLaggedFrictionTerms(
+        assembly,
+        triplets,
+        surfaces,
+        laggedSurfaces,
+        frictionOptions,
+        laggedAssembly);
+  }
   for (std::size_t body = 0; body < termCount; ++body) {
     addBodyDynamicsTerm(
         assembly, triplets, body, surfaces[body], dynamicsTerms[body]);
