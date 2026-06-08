@@ -401,11 +401,12 @@
       1/2/4/8/16/24/32-box batches of box-face `World::collide()` snapshots pass
       fixed-iteration CUDA PGS benchmark coverage on the visible GPU; CUDA PGS
       unit coverage now includes homogeneous 1-/16-/24-/32-/48-/64-/96-box packets and
-      the grouped 1/2/4/8/16/24/32-box packet.
+      the grouped 1/2/4/8/16/24/32-box packet, plus a bounded homogeneous
+      128-box single-problem CUDA packet.
       A focused fixture boundary test now verifies that the same dense box-face
-      construction keeps the 128-box grid at 512 contacts and 1536 LCP rows, but
-      128-box CUDA PGS execution remains unclaimed because the focused solve and
-      benchmark probes were too expensive for a checkpoint gate.
+      construction keeps the 128-box grid at 512 contacts and 1536 LCP rows.
+      The 128-box batch-size-4 CUDA PGS row remains unclaimed because its
+      focused benchmark probe was too expensive for a checkpoint gate.
       Fixed-iteration CUDA Jacobi was tried on the dense 4-contact patch and is
       not claimed: 4096 iterations with relaxation 1.0 failed the LCP contract with
       residual/complementarity/bound violations of about 3.3e-2 to 5.0e-2
@@ -1651,6 +1652,10 @@ tradeoffs evidence based.
   `CudaLcpPgsBatch.DenseBoxWorldContactBatchSatisfiesLcpContract` builds
   homogeneous batches for 1-/16-/24-/32-/48-/64-/96-box dense face-contact snapshots and
   verifies fixed-iteration CUDA PGS against the LCP contract.
+  `CudaLcpPgsBatch.DenseBoxWorldContactLargestFixtureSatisfiesLcpContract`
+  executes the 128-box, 512-contact, 1536-row dense face-contact fixture as a
+  homogeneous batch-size-1 CUDA PGS packet with the same fixed-iteration
+  contract.
   `CudaLcpPgsBatch.DenseBoxWorldContactGroupedBatchSatisfiesLcpContract` extends
   that to grouped variable-size 1/2/4/8/16/24/32-box packets. The
   focused homogeneous
@@ -1670,14 +1675,19 @@ tradeoffs evidence based.
   0.606/0.625. The old fixed-ground homogeneous 128-box fixture loss is now
   separated from CUDA execution:
   `CudaLcpDenseBoxFixture.LargerGridKeepsFaceContactShape` verifies that dynamic
-  dense-ground sizing preserves 512 box-face contacts and a 1536-row LCP, while
-  the focused all-count CUDA PGS unit sweep was stopped after crossing the
-  bounded local window and a focused
-  `BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex/128/4` row was stopped after
-  about 3:54 elapsed / 3:28 CPU before completing. The 128-box CUDA PGS solve is
-  therefore still not claimed. A fixed-iteration CUDA Jacobi dense-box trial
-  failed the LCP contract, so Jacobi dense-box CUDA execution remains unclaimed.
-  The earlier failed Jacobi probe covered the previous homogeneous 4-problem and
+  dense-ground sizing preserves 512 box-face contacts and a 1536-row LCP. The
+  focused
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex/128/1$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  CUDA row reports `contract_ok=1`, `cuda_lcp_execution=1`,
+  `cuda_batch_execution=1`, `cuda_dense_box_contact_batch=1`,
+  `dense_box_contact=1`, `box_count=128`, `contact_count=512`,
+  `problem_size=1536`, `batch_size=1`, and `total_problem_size=1536`. The
+  heavier `BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex/128/4` row was still
+  stopped after about 3:54 elapsed / 3:28 CPU before completing, so the
+  128-box batch-size-4 CUDA PGS row remains unclaimed. A fixed-iteration CUDA
+  Jacobi dense-box trial failed the LCP contract, so Jacobi dense-box CUDA
+  execution remains unclaimed. The earlier failed Jacobi probe covered the
+  previous homogeneous 4-problem and
   grouped 1/2/4-box fixtures: 4096 iterations with relaxation 1.0 failed with
   residual/complementarity/bound violations of about 3.3e-2 to 5.0e-2
   (`w must be non-negative at lo`), and 8192 iterations with relaxation 0.25
@@ -2344,9 +2354,9 @@ tradeoffs evidence based.
   two- and three-variant grouped benchmark rows including cross-multibody
   link-vs-link packets, mixed
   separated/stack/articulated grouped contact batch paths, and PGS-only
-  homogeneous dense box-face CUDA batches through 96 boxes, pass. The 128-box
-  dense box-face fixture shape is covered separately, but 128-box CUDA PGS
-  execution remains unclaimed.
+  homogeneous dense box-face CUDA batches through 96 boxes plus a bounded
+  128-box homogeneous batch-size-1 CUDA PGS packet pass. The 128-box
+  batch-size-4 CUDA PGS row remains unclaimed.
   Jacobi has opt-in solver-internal CPU
   worker-thread correctness and benchmark evidence, including larger 8192-row
   banded rows, but the focused local rows do not establish a general speedup.

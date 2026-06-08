@@ -1296,10 +1296,17 @@ The current local evidence for this task is:
   0.606/0.625. The old fixed-ground homogeneous 128-box fixture loss is now
   separated from CUDA execution:
   `CudaLcpDenseBoxFixture.LargerGridKeepsFaceContactShape` verifies that dynamic
-  dense-ground sizing preserves 512 box-face contacts and a 1536-row LCP, while
-  the focused all-count CUDA PGS unit sweep and a focused
-  `BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex/128/4` row were stopped
-  before completing. The 128-box CUDA PGS solve is therefore still not claimed.
+  dense-ground sizing preserves 512 box-face contacts and a 1536-row LCP, and
+  `CudaLcpPgsBatch.DenseBoxWorldContactLargestFixtureSatisfiesLcpContract`
+  executes that fixture as a homogeneous batch-size-1 CUDA PGS packet. The
+  focused
+  `BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex/128/1` row reports
+  `contract_ok=1`, `cuda_lcp_execution=1`, `cuda_batch_execution=1`,
+  `cuda_dense_box_contact_batch=1`, `box_count=128`, `contact_count=512`,
+  `problem_size=1536`, and `batch_size=1`. The heavier
+  `BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex/128/4` row was stopped
+  before completing, so 128-box batch-size-4 CUDA PGS execution remains
+  unclaimed.
   A fixed-iteration CUDA Jacobi dense-box trial failed the LCP contract and is
   not claimed. The earlier failed probe used the
   previous homogeneous 4-problem and grouped 1/2/4-box dense box-face fixtures:
@@ -1423,8 +1430,8 @@ The current local evidence for this task is:
   separated/stack/articulated grouped contact batch paths, scoped dense
   box-face serial/parallel batch rows, and PGS-only dense
   box-face CUDA batch paths through homogeneous 1/4/8/16/24/32/48/64/96-box and
-  grouped 1/2/4/8/16/24/32-box packets pass. The 128-box dense box-face fixture
-  shape is covered separately, while 128-box CUDA PGS execution remains
+  grouped 1/2/4/8/16/24/32-box packets plus a homogeneous 128-box batch-size-1
+  CUDA PGS packet pass. The 128-box batch-size-4 CUDA PGS row remains
   unclaimed.
   This still does
   not prove broader solver-internal multi-threaded speedups, general CUDA LCP

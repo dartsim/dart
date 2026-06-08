@@ -2022,6 +2022,26 @@ TEST(CudaLcpDenseBoxFixture, LargerGridKeepsFaceContactShape)
 }
 
 //==============================================================================
+// Execute the largest dense box-face fixture as a single-problem CUDA batch.
+// The heavier batch-size-4 row is tracked separately because it is a runtime
+// cost boundary rather than a shape issue.
+TEST(CudaLcpPgsBatch, DenseBoxWorldContactLargestFixtureSatisfiesLcpContract)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  constexpr int boxCount = 128;
+  std::string errorMessage;
+  auto fixture = makeWorldBoxContactBatch(boxCount, 1, 1024, errorMessage);
+  ASSERT_TRUE(fixture.has_value()) << errorMessage;
+
+  cuda::solveBoxedLcpPgsBatchCuda(fixture->packet);
+
+  expectBatchSatisfiesLcpContract(fixture->packet, fixture->problems);
+}
+
+//==============================================================================
 TEST(CudaLcpPgsBatch, DenseBoxWorldContactGroupedBatchSatisfiesLcpContract)
 {
   if (!cuda::isCudaRuntimeAvailable()) {

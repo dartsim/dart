@@ -51,12 +51,14 @@ narrowing solver scope: the SIMD-enabled 16x 192-contact probe was stopped after
 about 5:52 elapsed / 5:45 CPU before completing the late single-problem rows,
 and the default 8x 128-contact probe was stopped after about 3:01 elapsed / 2:59
 CPU before completing the late batch rows.
-The dense box-face CUDA fixture now also has a focused 128-box shape boundary
-test: `CudaLcpDenseBoxFixture.LargerGridKeepsFaceContactShape` verifies that
-dynamic dense-ground sizing preserves 512 contacts and a 1536-row LCP. This is
-not a 128-box CUDA execution claim; the all-count CUDA PGS unit sweep and a
-focused `BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex/128/4` benchmark probe
-were stopped after exceeding the local checkpoint window.
+The dense box-face CUDA fixture now also has focused 128-box boundary evidence:
+`CudaLcpDenseBoxFixture.LargerGridKeepsFaceContactShape` verifies that dynamic
+dense-ground sizing preserves 512 contacts and a 1536-row LCP, and
+`CudaLcpPgsBatch.DenseBoxWorldContactLargestFixtureSatisfiesLcpContract`
+executes that 128-box fixture as a homogeneous batch-size-1 CUDA PGS packet.
+This is not a 128-box batch-size-4 CUDA execution claim; the focused
+`BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex/128/4` benchmark probe remains
+too expensive for the checkpoint gate.
 The robust near-singular generated and benchmark coverage now reaches coupled
 friction-index 192-contact packets. It also adds 58
 `BM_LcpNearSingularBatch(Serial|Parallel)` rows for batch-size-4 serial and
@@ -497,8 +499,9 @@ coupled-stack, and grouped manually assembled articulated unified-contact
 including cross-multibody link-vs-link CUDA rows, plus mixed
 separated/stack/articulated CUDA benchmark rows, plus the current
 PGS-only homogeneous and grouped variable-size dense box-face CUDA batch rows;
-the 128-box dense box-face fixture shape is covered, but 128-box CUDA PGS
-execution remains unclaimed.
+the 128-box dense box-face fixture shape and homogeneous batch-size-1 CUDA PGS
+execution are covered, but 128-box batch-size-4 CUDA PGS execution remains
+unclaimed.
 Do not claim a 7-sphere public-step stack invariant yet: local temporary probes
 failed at both 1000 and 2000 public `World::step()` iterations under the
 existing motion-invariant contract, with benchmark probes reporting
@@ -1505,13 +1508,21 @@ contact scenes.
   `CudaLcpPgsBatch.DenseBoxWorldContactBatchSatisfiesLcpContract` and
   `CudaLcpPgsBatch.DenseBoxWorldContactGroupedBatchSatisfiesLcpContract` pass
   on homogeneous and grouped variable-size dense box-face `World::collide()`
-  snapshots. `BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex/{1,4,8,16,24,32,48,64,96}/4`
+  snapshots. `CudaLcpPgsBatch.DenseBoxWorldContactLargestFixtureSatisfiesLcpContract`
+  additionally executes the 128-box, 512-contact, 1536-row dense box-face
+  fixture as a homogeneous batch-size-1 CUDA PGS packet.
+  `BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex/{1,4,8,16,24,32,48,64,96}/4`
   reports 9 homogeneous rows with `cuda_dense_box_contact_batch=1`,
   `cuda_lcp_execution=1`, `cuda_batch_execution=1`, `contract_ok=1`,
   `box_count=1/4/8/16/24/32/48/64/96`,
   `contact_count=4/16/32/64/96/128/192/256/384`,
   `problem_size=12/48/96/192/288/384/576/768/1152`, `batch_size=4`, and
-  `total_problem_size` up to 4608. `BM_LcpCudaPgsWorldBoxContactGroupedBatch_FrictionIndex/2`
+  `total_problem_size` up to 4608.
+  `BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex/128/1` reports
+  `contract_ok=1`, `cuda_lcp_execution=1`, `cuda_batch_execution=1`,
+  `cuda_dense_box_contact_batch=1`, `dense_box_contact=1`, `box_count=128`,
+  `contact_count=512`, `problem_size=1536`, `batch_size=1`, and
+  `total_problem_size=1536`. `BM_LcpCudaPgsWorldBoxContactGroupedBatch_FrictionIndex/2`
   reports `cuda_group_count=7`, `box_count_shape_count=7`,
   `min_problem_size=12`, `max_problem_size=384`, `total_contact_count=696`,
   `total_body_count=174`, and `total_problem_size=2088`. Grouped dense-box CUDA
@@ -1521,11 +1532,10 @@ contact scenes.
   fixed-ground homogeneous 128-box fixture loss is now separated from CUDA
   execution: `CudaLcpDenseBoxFixture.LargerGridKeepsFaceContactShape` verifies
   that dynamic dense-ground sizing preserves 512 box-face contacts and a
-  1536-row LCP, while the focused all-count CUDA PGS unit sweep was stopped
-  after crossing the bounded local window and a focused
+  1536-row LCP. The focused
   `BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex/128/4` row was stopped after
-  about 3:54 elapsed / 3:28 CPU before completing. The 128-box CUDA PGS solve is
-  therefore still not claimed. A
+  about 3:54 elapsed / 3:28 CPU before completing. The 128-box batch-size-4
+  CUDA PGS solve is therefore still not claimed. A
   fixed-iteration CUDA Jacobi dense-box trial failed the LCP contract, so
   Jacobi dense-contact CUDA execution remains unclaimed. The earlier failed probe used the previous
   homogeneous 4-problem and grouped 1/2/4-box dense box-face fixtures: at 4096
@@ -1651,7 +1661,7 @@ cmake --build build/default/cpp/Release \
   "--gtest_filter=CudaLcpJacobiBatch.MixedContactGroupedBatchSatisfiesLcpContract:CudaLcpPgsBatch.MixedContactGroupedBatchSatisfiesLcpContract" \
   "--gtest_brief=1"
 ./build/cuda/cpp/Release/bin/test_lcp_jacobi_batch_cuda \
-  "--gtest_filter=CudaLcpPgsBatch.DenseBoxWorldContactBatchSatisfiesLcpContract:CudaLcpPgsBatch.DenseBoxWorldContactGroupedBatchSatisfiesLcpContract" \
+  "--gtest_filter=CudaLcpPgsBatch.DenseBoxWorldContactBatchSatisfiesLcpContract:CudaLcpPgsBatch.DenseBoxWorldContactLargestFixtureSatisfiesLcpContract:CudaLcpPgsBatch.DenseBoxWorldContactGroupedBatchSatisfiesLcpContract" \
   "--gtest_brief=1"
 ./build/cuda/cpp/Release/bin/BM_LCP_COMPARE \
   "--benchmark_filter=^BM_LcpCuda(Jacobi|Pgs)(Batch|GroupedBatch)_(Standard|Boxed|FrictionIndex)" \
@@ -1745,7 +1755,7 @@ python scripts/run_benchmark_smoke.py build/cuda/cpp/Release/bin/BM_LCP_COMPARE 
   "--benchmark_min_time=0.001s" \
   "--benchmark_repetitions=1"
 ./build/cuda/cpp/Release/bin/BM_LCP_COMPARE \
-  "--benchmark_filter=^BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex/(1|4|8|16|24|32|48|64|96)/4$" \
+  "--benchmark_filter=^BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex/((1|4|8|16|24|32|48|64|96)/4|128/1)$" \
   "--benchmark_min_time=0.001s" \
   "--benchmark_repetitions=1"
 ```
