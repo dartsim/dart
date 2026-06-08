@@ -71,6 +71,16 @@ namespace {
 
 constexpr double kInf = std::numeric_limits<double>::infinity();
 
+double makeDenseBoxGroundHalfExtent(int boxCount)
+{
+  const int columns
+      = static_cast<int>(std::ceil(std::sqrt(static_cast<double>(boxCount))));
+  const int rows = (boxCount + columns - 1) / columns;
+  constexpr double kSpacing = 2.0;
+  return std::max(
+      20.0, kSpacing * static_cast<double>(std::max(columns, rows) - 1) + 1.0);
+}
+
 struct WorldContactProblem
 {
   dart::math::LcpProblem problem;
@@ -673,8 +683,10 @@ std::optional<WorldContactProblem> makeWorldBoxContactProblem(
   groundOptions.isStatic = true;
   groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
   auto ground = world.addRigidBody("ground", groundOptions);
+  const double groundHalfExtent = makeDenseBoxGroundHalfExtent(boxCount);
   ground.setCollisionShape(
-      sx::CollisionShape::makeBox(Eigen::Vector3d(20.0, 20.0, 0.5)));
+      sx::CollisionShape::makeBox(
+          Eigen::Vector3d(groundHalfExtent, groundHalfExtent, 0.5)));
   ground.setFriction(kFriction);
 
   const int columns
@@ -1991,6 +2003,22 @@ TEST(CudaLcpPgsBatch, DenseBoxWorldContactBatchSatisfiesLcpContract)
 
     expectBatchSatisfiesLcpContract(fixture->packet, fixture->problems);
   }
+}
+
+//==============================================================================
+TEST(CudaLcpDenseBoxFixture, LargerGridKeepsFaceContactShape)
+{
+  constexpr int boxCount = 128;
+  std::string errorMessage;
+  const auto fixture = makeWorldBoxContactProblem(boxCount, 0, errorMessage);
+  ASSERT_TRUE(fixture.has_value()) << errorMessage;
+
+  constexpr Eigen::Index expectedRows = 12 * boxCount;
+  EXPECT_EQ(fixture->contactCount, static_cast<std::size_t>(4 * boxCount));
+  EXPECT_EQ(fixture->problem.b.size(), expectedRows);
+  EXPECT_EQ(fixture->problem.A.rows(), expectedRows);
+  EXPECT_EQ(fixture->problem.A.cols(), expectedRows);
+  EXPECT_EQ((fixture->problem.findex.array() < 0).count(), 4 * boxCount);
 }
 
 //==============================================================================

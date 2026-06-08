@@ -51,6 +51,12 @@ narrowing solver scope: the SIMD-enabled 16x 192-contact probe was stopped after
 about 5:52 elapsed / 5:45 CPU before completing the late single-problem rows,
 and the default 8x 128-contact probe was stopped after about 3:01 elapsed / 2:59
 CPU before completing the late batch rows.
+The dense box-face CUDA fixture now also has a focused 128-box shape boundary
+test: `CudaLcpDenseBoxFixture.LargerGridKeepsFaceContactShape` verifies that
+dynamic dense-ground sizing preserves 512 contacts and a 1536-row LCP. This is
+not a 128-box CUDA execution claim; the all-count CUDA PGS unit sweep and a
+focused `BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex/128/4` benchmark probe
+were stopped after exceeding the local checkpoint window.
 The robust near-singular generated and benchmark coverage now reaches coupled
 friction-index 192-contact packets. It also adds 58
 `BM_LcpNearSingularBatch(Serial|Parallel)` rows for batch-size-4 serial and
@@ -484,7 +490,9 @@ separated CUDA world-contact, and 8-sphere homogeneous/grouped CUDA
 coupled-stack, and grouped manually assembled articulated unified-contact
 including cross-multibody link-vs-link CUDA rows, plus mixed
 separated/stack/articulated CUDA benchmark rows, plus the current
-PGS-only homogeneous and grouped variable-size dense box-face CUDA batch rows.
+PGS-only homogeneous and grouped variable-size dense box-face CUDA batch rows;
+the 128-box dense box-face fixture shape is covered, but 128-box CUDA PGS
+execution remains unclaimed.
 Do not claim a 7-sphere public-step stack invariant yet: local temporary probes
 failed at both 1000 and 2000 public `World::step()` iterations under the
 existing motion-invariant contract, with benchmark probes reporting
@@ -1482,9 +1490,15 @@ contact scenes.
   `total_body_count=174`, and `total_problem_size=2088`. Grouped dense-box CUDA
   remains scoped to 1/2/4/8/16/24/32-box packets; a grouped 48-box CUDA PGS
   probe failed two 48-box variants at 1024 and 2048 fixed iterations with
-  fixed-variable residual/complementarity around 0.606/0.625. A homogeneous
-  128-box CUDA PGS probe also remains unclaimed because `World::collide()`
-  returned 472 box contacts while the fixture contract requires 512. A
+  fixed-variable residual/complementarity around 0.606/0.625. The old
+  fixed-ground homogeneous 128-box fixture loss is now separated from CUDA
+  execution: `CudaLcpDenseBoxFixture.LargerGridKeepsFaceContactShape` verifies
+  that dynamic dense-ground sizing preserves 512 box-face contacts and a
+  1536-row LCP, while the focused all-count CUDA PGS unit sweep was stopped
+  after crossing the bounded local window and a focused
+  `BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex/128/4` row was stopped after
+  about 3:54 elapsed / 3:28 CPU before completing. The 128-box CUDA PGS solve is
+  therefore still not claimed. A
   fixed-iteration CUDA Jacobi dense-box trial failed the LCP contract, so
   Jacobi dense-contact CUDA execution remains unclaimed. The earlier failed probe used the previous
   homogeneous 4-problem and grouped 1/2/4-box dense box-face fixtures: at 4096
