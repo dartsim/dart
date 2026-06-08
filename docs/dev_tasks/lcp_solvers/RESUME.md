@@ -396,14 +396,15 @@ coverage for two-, four-, eight-, and sixteen-chain scenes and
 1-/4-/8-/16-chain articulated Cartesian ground-step benchmark rows through the
 same public unified path. It now also adds a
 fixed-base prismatic link-vs-dynamic-rigid `World::step()` invariant tests for
-one-pair, four-pair, and sixteen-pair scenes, including a sixteen-pair 200-step
-scene, and 1-/4-/8-/16-pair one-step plus 16-pair 200-step articulated
-rigid-impact benchmark rows through the same public unified path. It now also
-adds a cross-multibody fixed-base prismatic link-vs-link `World::step()`
-invariant tests for one-pair, four-pair, and sixteen-pair scenes, including a
+one-pair, four-pair, eight-pair, and sixteen-pair scenes, including a
 sixteen-pair 200-step scene, and 1-/4-/8-/16-pair one-step plus 16-pair
-200-step articulated link-impact benchmark rows through the same public unified
-path. It now also
+200-step articulated rigid-impact benchmark rows through the same public
+unified path. It now also
+adds a cross-multibody fixed-base prismatic link-vs-link `World::step()`
+invariant tests for one-pair, four-pair, eight-pair, and sixteen-pair scenes,
+including a sixteen-pair 200-step scene, and 1-/4-/8-/16-pair one-step plus
+16-pair 200-step articulated link-impact benchmark rows through the same public
+unified path. It now also
 adds
 all-solver articulated unified-contact benchmark rows for
 manually assembled fixed-base three-axis prismatic link-ground and
@@ -988,7 +989,7 @@ contact scenes.
   `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.TwoSphereWorldStepMaintainsContactInvariants'`
   and
   `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.FourSphereWorldStepMaintainsContactInvariants:BoxedLcpContact.SixteenSphereWorldStepMaintainsContactInvariants'`
-  runs pass, and `test_boxed_lcp_contact --gtest_list_tests` now lists 60
+  runs pass, and `test_boxed_lcp_contact --gtest_list_tests` now lists 62
   tests. The full `--gtest_brief=1` run still emits the existing
   `StaticFrictionHoldsSmallPush` degenerate-pivot warning.
 - `BoxedLcpContact.ArticulatedPrismaticLinkGroundStepMaintainsInvariants`
@@ -1027,34 +1028,37 @@ contact scenes.
   articulated contact evidence, not broad articulated robot contact coverage.
 - `BoxedLcpContact.ArticulatedPrismaticLinkPushesDynamicRigidBody`,
   `BoxedLcpContact.FourArticulatedPrismaticLinksPushDynamicRigidBodies`, and
+  `BoxedLcpContact.EightArticulatedPrismaticLinksPushDynamicRigidBodies`, and
   `BoxedLcpContact.SixteenArticulatedPrismaticLinksPushDynamicRigidBodies`,
   plus
   `BoxedLcpContact.SixteenArticulatedPrismaticLinksPushDynamicRigidBodiesForManySteps`,
-  advance one, four, and sixteen fixed-base prismatic articulated striker links
-  in contact with dynamic rigid spheres through one and 200 boxed-LCP
+  advance one, four, eight, and sixteen fixed-base prismatic articulated
+  striker links in contact with dynamic rigid spheres through one and 200 boxed-LCP
   `World::step()` iterations, confirm all contacts touch both `comps::Link`
   entities and rigid bodies, and check finite velocities, target motion,
   striker slowdown, X-momentum conservation, and parity with the sequential
   articulated shortcut. The focused
-  `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.ArticulatedPrismaticLinkPushesDynamicRigidBody:BoxedLcpContact.FourArticulatedPrismaticLinksPushDynamicRigidBodies:BoxedLcpContact.SixteenArticulatedPrismaticLinksPushDynamicRigidBodies:BoxedLcpContact.SixteenArticulatedPrismaticLinksPushDynamicRigidBodiesForManySteps' --gtest_brief=1`
-  run passes all four tests. Treat this as fixed-base prismatic link-vs-rigid
+  `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.ArticulatedPrismaticLinkPushesDynamicRigidBody:BoxedLcpContact.FourArticulatedPrismaticLinksPushDynamicRigidBodies:BoxedLcpContact.EightArticulatedPrismaticLinksPushDynamicRigidBodies:BoxedLcpContact.SixteenArticulatedPrismaticLinksPushDynamicRigidBodies:BoxedLcpContact.SixteenArticulatedPrismaticLinksPushDynamicRigidBodiesForManySteps' --gtest_brief=1`
+  run passes all five tests. Treat this as fixed-base prismatic link-vs-rigid
   evidence, including a longer-running separated-after-impact packet, not broad
   articulated robot contact coverage.
 - `BoxedLcpContact.ArticulatedPrismaticLinkPushesArticulatedPrismaticLink`,
   `BoxedLcpContact.FourArticulatedPrismaticLinksPushArticulatedPrismaticLinks`,
   and
+  `BoxedLcpContact.EightArticulatedPrismaticLinksPushArticulatedPrismaticLinks`,
+  and
   `BoxedLcpContact.SixteenArticulatedPrismaticLinksPushArticulatedPrismaticLinks`,
   plus
   `BoxedLcpContact.SixteenArticulatedPrismaticLinksPushArticulatedPrismaticLinksForManySteps`,
-  advance one, four, and sixteen fixed-base prismatic articulated striker links
-  in contact with prismatic target links owned by separate multibodies through
-  one and 200 boxed-LCP `World::step()` iterations, confirm all contacts touch
-  two `comps::Link` entities, and check finite velocities, target motion,
-  striker slowdown, nonnegative post-step separation velocity, X-momentum
-  conservation, and parity with the sequential cross-multibody articulated
-  shortcut. The focused
-  `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.ArticulatedPrismaticLinkPushesArticulatedPrismaticLink:BoxedLcpContact.FourArticulatedPrismaticLinksPushArticulatedPrismaticLinks:BoxedLcpContact.SixteenArticulatedPrismaticLinksPushArticulatedPrismaticLinks:BoxedLcpContact.SixteenArticulatedPrismaticLinksPushArticulatedPrismaticLinksForManySteps' --gtest_brief=1`
-  run passes all four tests. Treat this as fixed-base cross-multibody
+  advance one, four, eight, and sixteen fixed-base prismatic articulated
+  striker links in contact with prismatic target links owned by separate
+  multibodies through one and 200 boxed-LCP `World::step()` iterations, confirm
+  all contacts touch two `comps::Link` entities, and check finite velocities,
+  target motion, striker slowdown, nonnegative post-step separation velocity,
+  X-momentum conservation, and parity with the sequential cross-multibody
+  articulated shortcut. The focused
+  `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.ArticulatedPrismaticLinkPushesArticulatedPrismaticLink:BoxedLcpContact.FourArticulatedPrismaticLinksPushArticulatedPrismaticLinks:BoxedLcpContact.EightArticulatedPrismaticLinksPushArticulatedPrismaticLinks:BoxedLcpContact.SixteenArticulatedPrismaticLinksPushArticulatedPrismaticLinks:BoxedLcpContact.SixteenArticulatedPrismaticLinksPushArticulatedPrismaticLinksForManySteps' --gtest_brief=1`
+  run passes all five tests. Treat this as fixed-base cross-multibody
   link-vs-link evidence, including a longer-running separated-after-impact
   packet, not broad articulated robot contact coverage.
 - `BoxedLcpContact.SphereStackWorldContactSnapshotSatisfiesLcpContract`,
@@ -1084,7 +1088,7 @@ contact scenes.
   Focused default, SIMD-enabled, and CUDA-enabled
   `test_boxed_lcp_contact --gtest_filter=BoxedLcpContact.LargerStressSphereStackWorldContactSnapshotSatisfiesLcpContract:BoxedLcpContact.LargerStressSphereStackWorldStepMaintainsContactInvariants`
   runs pass the new 6-sphere tests. The full
-  `test_boxed_lcp_contact --gtest_list_tests` inventory now lists 60 tests.
+  `test_boxed_lcp_contact --gtest_list_tests` inventory now lists 62 tests.
 - `BoxedLcpContact.SphereStackWorldStepMaintainsContactInvariants` advances the
   same 3-sphere vertical stack through 200 public boxed-LCP `World::step()`
   iterations and checks finite state, non-penetration, preserved sphere spacing,
@@ -1217,7 +1221,7 @@ contact scenes.
   `FortyEightBoxWorldStepMaintainsDenseContactInvariants` extends unit coverage
   to 48 boxes and 192 dense face contacts over 4000 small public boxed-LCP
   `World::step()` iterations; the focused default run passed in 84992 ms. The
-  full `test_boxed_lcp_contact --gtest_list_tests` inventory lists 60 tests; the
+  full `test_boxed_lcp_contact --gtest_list_tests` inventory lists 62 tests; the
   earlier `--gtest_brief=1` run still
   emitting the dense-patch Dantzig warning.
 - `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` registers 72 scoped dense box

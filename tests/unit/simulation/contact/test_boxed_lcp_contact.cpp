@@ -2929,6 +2929,15 @@ TEST(BoxedLcpContact, FourArticulatedPrismaticLinksPushDynamicRigidBodies)
 }
 
 //==============================================================================
+// Eight simultaneous link-vs-rigid contacts cover the intermediate registered
+// articulated rigid-impact benchmark packet.
+TEST(BoxedLcpContact, EightArticulatedPrismaticLinksPushDynamicRigidBodies)
+{
+  constexpr int kPairCount = 8;
+  expectArticulatedRigidImpactPairsStepMaintainsInvariants(kPairCount);
+}
+
+//==============================================================================
 // Sixteen simultaneous link-vs-rigid contacts match the largest registered
 // articulated rigid-impact benchmark packet.
 TEST(BoxedLcpContact, SixteenArticulatedPrismaticLinksPushDynamicRigidBodies)
@@ -2985,6 +2994,17 @@ TEST(
     BoxedLcpContact, FourArticulatedPrismaticLinksPushArticulatedPrismaticLinks)
 {
   constexpr int kPairCount = 4;
+  expectArticulatedLinkImpactPairsStepMaintainsInvariants(kPairCount);
+}
+
+//==============================================================================
+// Eight simultaneous cross-multibody contacts cover the intermediate registered
+// articulated link-impact benchmark packet.
+TEST(
+    BoxedLcpContact,
+    EightArticulatedPrismaticLinksPushArticulatedPrismaticLinks)
+{
+  constexpr int kPairCount = 8;
   expectArticulatedLinkImpactPairsStepMaintainsInvariants(kPairCount);
 }
 
