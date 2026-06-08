@@ -16,10 +16,11 @@
       EnTT registry probes now cover foonathan/memory's array-capable pool
       baseline and the standard registry, including separate build/growth rows
       for bake-time registry storage allocation. The focused EnTT checker
-      caches known component storage handles, uses pool-backed world-lifetime
-      DART storage for persistent no-growth churn, and uses a resettable
-      frame-backed bake arena for build/growth. The no-growth row reports pool
-      block counters and fails if prewarmed churn grows the DART pool; the
+      caches known component storage handles, uses free-list-backed
+      world-lifetime DART storage for persistent no-growth churn, and uses a
+      resettable frame-backed bake arena for build/growth. The no-growth row
+      reports post-prewarm allocator-call counters and fails if reserved churn
+      asks the configured allocator for storage after prewarm; the
       build/growth row times the uninstrumented frame-backed path and reports
       configured-allocator call counters from a matching untimed probe. The
       strict checker prints DART benchmark counters
@@ -68,6 +69,9 @@
       allocator work. `FixedPoolAllocator` also uses a cache-friendly stride
       for medium power-of-two slots, which removes the fixed-pool cache-set
       conflict that previously let foonathan/memory win `BM_Pool/256/256`.
+      `PoolAllocator` default-size requests now use a constexpr heap-index
+      lookup table for the same rounded/skewed size classes, removing repeated
+      size-class arithmetic from mixed-size allocation/deallocation hot paths.
       A 2026-06-06 CPU-affined foonathan-plus-standard-plus-EnTT matrix,
       merged with focused replacement rows for strict-CV stability, passed all
       94 DART-vs-baseline comparisons, including EnTT no-growth and
@@ -94,18 +98,32 @@
       is still too close to foonathan/memory at small sizes to treat the
       sequential artifact as the final "beats every foonathan allocator" proof;
       keep EnTT steady-state optimization open and use random interleaving for
-      follow-up allocator-policy evidence.
+      follow-up allocator-policy evidence. A follow-up switched persistent EnTT
+      no-growth storage to the world free-list arena, which is the better DART
+      HMM match for reserved variable-size registry arrays; the merged focused
+      result in
+      `.benchmark_results/allocator_entt_freelist_nogrowth_frame_build_current_merged_check.json`
+      passes all 12 EnTT no-growth/build comparisons against both
+      foonathan/memory and standard baselines with strict CV checks. The same
+      continuation fixed the remaining mixed-size pool misses with the
+      heap-index table; the current merged broad-plus-focused result
+      `.benchmark_results/allocator_comparative_lookup_table_mixed_entt_merged_check.json`
+      passes all 94 foonathan/memory and standard comparisons, including
+      `BM_MultiPool`, `BM_Realistic`, EnTT no-growth, and EnTT build/growth.
 - [ ] Phase 3: EnTT registry/component storage allocation is configurable from
       the World memory hierarchy and covered by no-growth ECS tests.
       Allocator-aware EnTT storage now has focused `StlAllocator` and
       `FrameStlAllocator` unit tests showing that reserved
       create/emplace/read/destroy churn makes no configured allocator calls or
       arena growth after the prewarm pass. The DART comparative no-growth EnTT
-      row now uses the same pool-backed world-lifetime policy and fails if
-      reserved churn grows pool blocks after prewarm. The
+      row now uses free-list-backed world-lifetime storage for reserved
+      variable-size registry arrays and fails if reserved churn asks the
+      configured allocator for storage after prewarm. The
       benchmark hot path caches known component storage handles so the timing
       surface matches optimized World systems rather than repeated registry
-      type lookup. Separate EnTT build/growth rows measure the bake-time
+      type lookup. The focused no-growth benchmark now uses free-list-backed
+      persistent array storage rather than the small-object pool path. Separate
+      EnTT build/growth rows measure the bake-time
       storage allocation phase instead of conflating that cost with the
       no-growth simulation loop. The comparative benchmark now discovers
       installed EnTT package metadata for these rows without invoking DART's
@@ -318,12 +336,14 @@ debugging, profiling, optimization experiments, and ImGui visualization.
 
 ## Immediate Next Steps
 
-1. Continue promoting the frame-backed no-growth EnTT benchmark policy toward
-   production `WorldRegistry` bake/build guidance and integration. Production
-   wiring now resets registry storage on `World::clear()` rebuild boundaries,
-   but still needs broader bake/build sizing guidance and contact-heavy
-   no-growth tests; it must not use the per-step frame scratch allocator that
-   resets inside `World::step()`.
+1. Continue promoting the benchmark-only EnTT storage policies toward
+   production `WorldRegistry` bake/build guidance and integration: free-list
+   backed world-lifetime storage for reserved no-growth arrays, and resettable
+   rebuild-lifetime frame storage for bake/growth. Production wiring now resets
+   registry storage on `World::clear()` rebuild boundaries, but still needs
+   broader bake/build sizing guidance and contact-heavy no-growth tests; it
+   must not use the per-step frame scratch allocator that resets inside
+   `World::step()`.
 2. Continue extending allocator correctness tests for remaining
    leak/debug-accounting gaps and production workload cases after the new
    count/size overflow, over-alignment, reuse, diagnostics, and bounded-failure
@@ -347,10 +367,12 @@ debugging, profiling, optimization experiments, and ImGui visualization.
    passes all 47 foonathan comparisons with either non-noisy rows or
    confidence-separated high-CV rows.
    Later random-interleaved EnTT diagnostics on the same branch found that the
-   pool-backed no-growth row can still miss foonathan/memory at 256/512
-   entities, while frame-backed and default-backed probes did not robustly close
-   the gap. Treat that as the active EnTT steady-state performance gap before
-   making a stronger foonathan completion claim.
+   pool-backed no-growth row could miss foonathan/memory at 256/512 entities,
+   while frame-backed and default-backed probes did not robustly close the gap.
+   A follow-up switched the no-growth row to free-list-backed world-lifetime
+   storage, matching reserved variable-size registry arrays, and passed all 12
+   EnTT comparisons in
+   `.benchmark_results/allocator_entt_freelist_nogrowth_frame_build_current_merged_check.json`.
    A later 2026-06-07/08 probe kept `StlAllocator` storage at natural alignment
    for non-overaligned values and added cache-friendly default `PoolAllocator`
    strides for medium power-of-two slots. This is scoped to allocator
@@ -362,15 +384,18 @@ debugging, profiling, optimization experiments, and ImGui visualization.
    `.benchmark_results/allocator_entt_build_frame_bake_current_cpuauto_probe.json`
    beat foonathan/memory clearly and beat the standard registry by median, but
    the 256/512 standard rows were not confidence-separated because the standard
-   rows were slightly above the strict CV gate. Repeated no-growth probes,
+   rows were slightly above the strict CV gate. Earlier no-growth probes,
    including
    `.benchmark_results/allocator_entt_nogrowth_pool_stride_current_cpu12_probe.json`
    and
    `.benchmark_results/allocator_entt_nogrowth_pool_stride_current_cpu12_warm_probe.json`,
-   were rejected as noisy, so the steady-state EnTT proof remains open.
-   Re-run the standard-baseline half before claiming a fresh 94-row
-   post-policy-change pass. Keep this combined gate green after allocator or
-   benchmark policy changes:
+   were rejected as noisy and are superseded by the free-list storage result.
+   The default `PoolAllocator` heap-index lookup table then fixed the remaining
+   mixed-size `BM_MultiPool` and `BM_Realistic` foonathan misses. The current
+   merged broad-plus-focused result
+   `.benchmark_results/allocator_comparative_lookup_table_mixed_entt_merged_check.json`
+   passes all 94 foonathan/memory and standard comparisons. Keep this combined
+   gate green after allocator or benchmark policy changes:
 
    ```bash
    pixi run bm-allocator-comparative-check \

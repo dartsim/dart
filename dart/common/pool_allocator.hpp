@@ -367,7 +367,7 @@ private:
   [[nodiscard]] static constexpr int heapIndexForDefaultBytes(
       size_t bytes) noexcept
   {
-    return heapIndexForUnitSize(defaultUnitSize(bytes));
+    return mDefaultHeapIndices[bytes];
   }
 
   [[nodiscard]] static constexpr size_t blockAlignmentForUnitSize(
@@ -411,6 +411,23 @@ private:
     }
     return sizes;
   }();
+
+  inline static constexpr std::array<int, MAX_POOL_REQUEST_SIZE + 1>
+      mDefaultHeapIndices = [] {
+        std::array<int, MAX_POOL_REQUEST_SIZE + 1> indices{};
+        for (size_t bytes = 1; bytes < indices.size(); ++bytes) {
+          const size_t minimumSize
+              = bytes < sizeof(MemoryUnit) ? sizeof(MemoryUnit) : bytes;
+          size_t unitSize
+              = (minimumSize + UNIT_GRANULARITY - 1) & ~(UNIT_GRANULARITY - 1);
+          if (unitSize >= 8 * 32 && unitSize <= MAX_POOL_REQUEST_SIZE
+              && (unitSize & (unitSize - 1)) == 0) {
+            unitSize += 32;
+          }
+          indices[bytes] = static_cast<int>(unitSize / UNIT_GRANULARITY - 1);
+        }
+        return indices;
+      }();
 
   MemoryAllocator& mBaseAllocator;
 

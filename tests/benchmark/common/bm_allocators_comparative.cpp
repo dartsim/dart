@@ -63,6 +63,7 @@
 
 #include <dart/common/fixed_pool_allocator.hpp>
 #include <dart/common/frame_allocator.hpp>
+#include <dart/common/free_list_allocator.hpp>
 #include <dart/common/memory_allocator.hpp>
 #include <dart/common/pool_allocator.hpp>
 #include <dart/common/stl_allocator.hpp>
@@ -2049,7 +2050,12 @@ void prewarmEnttRegistry(
 static void BM_EnttRegistry_DART(benchmark::State& state)
 {
   const auto entityCount = static_cast<size_t>(state.range(0));
-  PoolAllocator backing(PoolAllocator::DiagnosticsPolicy::Disabled);
+  // Persistent registry storage reserves variable-size arrays. Model it with
+  // the world free-list arena directly; the fixed-size pool remains for small
+  // same-size/node-like allocations elsewhere in the HMM hierarchy.
+  FreeListAllocator worldArena(
+      MemoryAllocator::GetDefault(), entityCount * 4096 + 1024 * 1024);
+  BenchmarkCountingMemoryAllocator backing(worldArena);
   StlAllocator<entt::entity> allocator(backing);
   entt::basic_registry<entt::entity, StlAllocator<entt::entity>> registry(
       EnttRegistryStorageCount, allocator);
@@ -2057,12 +2063,12 @@ static void BM_EnttRegistry_DART(benchmark::State& state)
   auto runBenchmark = [&](auto& entities) {
     const size_t cycleCount = enttRegistryCyclesFor(entityCount);
     prewarmEnttRegistry(registry, entities, entityCount);
+    backing.resetCounts();
     auto& entityStorage = registry.storage<entt::entity>();
     auto& transforms = registry.storage<EnttRegistryTransform>();
     auto& velocities = registry.storage<EnttRegistryVelocity>();
     auto& masses = registry.storage<EnttRegistryMass>();
     auto& tags = registry.storage<EnttRegistryTag>();
-    const int blocksAfterPrewarm = backing.getNumAllocatedMemoryBlocks();
 
     for (auto _ : state) {
       for (size_t cycle = 0; cycle < cycleCount; ++cycle) {
@@ -2077,9 +2083,9 @@ static void BM_EnttRegistry_DART(benchmark::State& state)
             entityCount);
       }
     }
-    if (backing.getNumAllocatedMemoryBlocks() != blocksAfterPrewarm) {
+    if (backing.allocationCount != 0 || backing.deallocationCount != 0) {
       state.SkipWithError(
-          "Reserved DART EnTT registry churn grew pool-backed storage.");
+          "Reserved DART EnTT registry churn used allocator-backed storage.");
     }
   };
 
@@ -2089,8 +2095,10 @@ static void BM_EnttRegistry_DART(benchmark::State& state)
   // not grow during steady-state churn.
   std::vector<entt::entity> entities(entityCount);
   runBenchmark(entities);
-  state.counters["dart_pool_blocks"]
-      = static_cast<double>(backing.getNumAllocatedMemoryBlocks());
+  state.counters["dart_allocator_allocations_per_iter"]
+      = static_cast<double>(backing.allocationCount);
+  state.counters["dart_allocator_deallocations_per_iter"]
+      = static_cast<double>(backing.deallocationCount);
   state.SetItemsProcessed(
       static_cast<int64_t>(
           state.iterations() * entityCount

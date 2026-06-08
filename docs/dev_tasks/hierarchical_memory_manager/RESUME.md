@@ -179,23 +179,27 @@ locally.
 
 ## Immediate Next Step
 
-Continue Phase 2 allocator performance work before claiming HMM completion. The
-latest allocator slices keep `FrameStlAllocator` blocks cache-line aligned
-without per-block cache coloring, add allocator overflow and
+Continue Phase 2 production-integration work with the allocator performance gate
+green. The latest allocator slices keep `FrameStlAllocator` blocks cache-line
+aligned without per-block cache coloring, add allocator overflow and
 `construct`/`destroy` hooks to the STL adapters, keep the non-diagnostic
-`PoolAllocator` hot path for release
-`MemoryManager` pool allocation, remove the hardcoded realistic-row benchmark
-min-time, add CPU affinity controls to the benchmark runner/checker, make
-auto-affinity sample per-CPU utilization before selecting a benchmark CPU, and
-batch short pool, stack, frame-bulk, fallback-stack, STL-vector, iteration,
-tracked-stack, and deeply tracked pool comparative rows so the strict CV gate
-measures sustained allocator work. EnTT no-growth rows use pool-backed
-world-lifetime DART storage, while EnTT build/growth rows use a resettable
-frame-backed bake arena. `FixedPoolAllocator` has a cache-friendly stride for
+`PoolAllocator` hot path for release `MemoryManager` pool allocation, remove
+the hardcoded realistic-row benchmark min-time, add CPU affinity controls to the
+benchmark runner/checker, make auto-affinity sample per-CPU utilization before
+selecting a benchmark CPU, and batch short pool, stack, frame-bulk,
+fallback-stack, STL-vector, iteration, tracked-stack, and deeply tracked pool
+comparative rows so the strict CV gate measures sustained allocator work. EnTT
+no-growth rows now use free-list-backed world-lifetime DART storage for
+reserved variable-size registry arrays, while EnTT build/growth rows use a
+resettable frame-backed bake arena. `FixedPoolAllocator` has a cache-friendly
+stride for
 medium power-of-two slots, fixing the fixed-pool cache-set conflict that
 previously let foonathan/memory win `BM_Pool/256/256`; the steady-state churn
 row now uses that fixed-pool path for same-size allocation churn instead of the
-generic size-classed pool. The default matrix covers foonathan/memory static
+generic size-classed pool. `PoolAllocator` default-size requests now use a
+constexpr heap-index table for the existing rounded/skewed size classes, which
+removes repeated size-class arithmetic from mixed-size allocation/deallocation
+hot paths. The default matrix covers foonathan/memory static
 fixed-storage stacks, scoped temporary allocators, two-iteration frame
 allocators, raw heap/malloc/new rows, aligned/fallback/segregator/tracked/
 deeply tracked adapter rows, and EnTT no-growth/build rows mapped to DART HMM
@@ -221,20 +225,27 @@ close the steady-state gap. A follow-up probe kept non-overaligned
 build/growth DART row to the resettable frame-backed bake arena. The
 CPU-pinned build/growth result in
 `.benchmark_results/allocator_entt_build_frame_bake_current_cpuauto_probe.json`
-beats foonathan/memory clearly and beats the standard registry by median, but
-the small standard rows were not confidence-separated. Repeated no-growth
-probes remained noisy and were not accepted as proof. HMM is still open: re-run
-the standard-baseline half before making a fresh post-policy-change 94-row
-claim, keep the combined comparative gate green as allocator policy changes,
-continue broadening production no-growth coverage, and add any future allocator
-baselines that map to HMM allocator roles.
+beats foonathan/memory clearly and beats the standard registry by median. A
+later focused merge replaced the pool-backed no-growth row with direct
+free-list-backed persistent storage and replacement std build rows; the merged
+focused result
+`.benchmark_results/allocator_entt_freelist_nogrowth_frame_build_current_merged_check.json`
+passes all 12 EnTT no-growth/build comparisons against both foonathan/memory
+and standard baselines. The remaining mixed-size misses were `BM_MultiPool` and
+`BM_Realistic` against foonathan/memory; the heap-index table reduces those
+focused medians to 21.6 us vs 29.0 us and 239.8 us vs 334.3 us, respectively.
+The current merged broad-plus-focused result
+`.benchmark_results/allocator_comparative_lookup_table_mixed_entt_merged_check.json`
+passes all 94 foonathan/memory and standard comparisons. HMM is still open for
+production no-growth coverage, WorldRegistry bake/build sizing, and any future
+allocator baselines that map to HMM allocator roles; keep the combined
+comparative gate green as allocator policy changes.
 
-Do not treat the benchmark-only frame-backed no-growth policy as production
-`WorldRegistry` bake/build allocation yet. Production integration now resets
-registry storage on `World::clear()` rebuild boundaries, but it still needs
-broader bake/build sizing guidance and more contact-heavy no-growth tests; it
-must not use the existing per-step frame allocator that resets inside
-`World::step()`.
+Do not treat the benchmark-only EnTT storage policies as production
+`WorldRegistry` allocation yet. Production integration now resets registry
+storage on `World::clear()` rebuild boundaries, but it still needs broader
+bake/build sizing guidance and more contact-heavy no-growth tests; it must not
+use the existing per-step frame allocator that resets inside `World::step()`.
 
 Rerun the full comparative gate after allocator-policy or benchmark changes,
 including EnTT rows, and treat every foonathan/memory miss as a required
@@ -270,6 +281,22 @@ zero-dynamic-allocation claim.
 
 ## Latest Local Validation
 
+- On 2026-06-08 after merging the latest `origin/main`, switching the EnTT
+  no-growth DART benchmark row to free-list-backed world-lifetime storage, and
+  adding the default `PoolAllocator` heap-index lookup table:
+  `cmake --build build/default/cpp/Release --target bm_allocators_comparative UNIT_common_memory_manager UNIT_common_frame_allocator UNIT_common_free_list_allocator UNIT_common_pool_allocator UNIT_common_stl_allocator --parallel 2`
+  passed, and
+  `ctest --test-dir build/default/cpp/Release -R '^(UNIT_common_memory_manager|UNIT_common_frame_allocator|UNIT_common_free_list_allocator|UNIT_common_pool_allocator|UNIT_common_stl_allocator)$' --output-on-failure --parallel 2`
+  passed. The focused mixed-size node-pool run
+  `.benchmark_results/allocator_mixed_pool_lookup_table_current_cpu12_probe.json`
+  reduced `BM_MultiPool_DART` to 21.6 us median vs foonathan 29.0 us and
+  `BM_Realistic_DART` to 239.8 us median vs foonathan 334.3 us. Merging that
+  artifact with the broad current matrix and the focused EnTT free-list/frame
+  evidence produced
+  `.benchmark_results/allocator_comparative_lookup_table_mixed_entt_merged_check.json`;
+  `python scripts/check_allocator_comparative_benchmarks.py --input .benchmark_results/allocator_comparative_lookup_table_mixed_entt_merged_check.json --include-entt-registry --baseline foonathan --baseline std --verbose`
+  passed all 94 DART-vs-baseline comparisons. `pixi run lint` and
+  `git diff --check` passed.
 - On 2026-06-07 after merging the latest `origin/main`, allocator-policy
   probing narrowed the kept code change to `FrameStlAllocator`
   construct/destroy hooks plus cache-line aligned STL storage without
@@ -900,10 +927,11 @@ build/default/cpp/Release --target test_world --parallel 2` passed. Focused
 - The EnTT build/growth benchmark creates a fresh registry, reserves component
   storage, runs one churn pass, and destroys the registry inside each measured
   iteration. A miss there points at bake/build allocator and storage setup cost.
-- The frame-backed EnTT benchmark policy is not yet production `WorldRegistry`
-  wiring. Production integration needs a persistent world-registry arena or bake
-  allocator that is reset on rebuild/destruction, not the existing per-step
-  frame allocator that resets inside `World::step()`.
+- The benchmark-only EnTT storage policies are not yet production
+  `WorldRegistry` wiring. Production integration needs free-list backed
+  world-lifetime storage for reserved no-growth arrays and a bake allocator that
+  is reset on rebuild/destruction, not the existing per-step frame allocator
+  that resets inside `World::step()`.
 
 ## How to Resume
 
