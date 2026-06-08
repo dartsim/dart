@@ -2480,6 +2480,18 @@ void AddShockPropagationCounters(
   state.counters["max_blocks_per_layer"] = maxBlocksPerLayer;
 }
 
+void AddBoxedSsnCounters(
+    benchmark::State& state,
+    const dart::math::BoxedSemiSmoothNewtonSolver::Parameters& params)
+{
+  state.counters["boxed_ssn_max_line_search_steps"] = params.maxLineSearchSteps;
+  state.counters["boxed_ssn_step_reduction"] = params.stepReduction;
+  state.counters["boxed_ssn_sufficient_decrease"] = params.sufficientDecrease;
+  state.counters["boxed_ssn_min_step"] = params.minStep;
+  state.counters["boxed_ssn_jacobian_regularization"]
+      = params.jacobianRegularization;
+}
+
 #if DART_BM_LCP_COMPARE_HAS_SIMULATION
 void AddFindexShockPropagationCounters(
     benchmark::State& state, std::size_t contactCount, Eigen::Index problemSize)
@@ -4848,8 +4860,10 @@ struct SolverBenchmarkOptions
   dart::math::SubspaceMinimizationSolver::Parameters subspaceParams;
   dart::math::PenalizedFischerBurmeisterNewtonSolver::Parameters
       penalizedFischerBurmeisterParams;
+  dart::math::BoxedSemiSmoothNewtonSolver::Parameters boxedSsnParams;
   dart::math::SapSolver::Parameters sapParams;
   dart::math::ShockPropagationSolver::Parameters shockPropagationParams;
+  bool hasBoxedSsnParams{false};
   bool hasSapParams{false};
   bool hasShockPropagationParams{false};
 };
@@ -6953,6 +6967,7 @@ void RunProductionActiveSetTransitionBatchParallelBenchmark(
 
 void ConfigureMildIllConditionedBenchmarkOptions(
     SolverBenchmarkOptions& storage,
+    const dart::test::LcpSolverManifestEntry& solver,
     const MildIllConditionedBenchmarkCase testCase)
 {
   storage.options.maxIterations
@@ -6962,6 +6977,16 @@ void ConfigureMildIllConditionedBenchmarkOptions(
   storage.options.complementarityTolerance
       = isMildIllConditionedFrictionIndexCase(testCase) ? 2e-2 : 5e-3;
   storage.options.earlyTermination = true;
+
+  if (solver.name == "BoxedSemiSmoothNewton"
+      && isMildIllConditionedCoupledFrictionIndexCase(testCase)
+      && getMildIllConditionedCouplingScale(testCase) > 8.0) {
+    storage.boxedSsnParams.maxLineSearchSteps = 50;
+    storage.boxedSsnParams.stepReduction = 0.8;
+    storage.boxedSsnParams.jacobianRegularization = 1e-8;
+    storage.options.customOptions = &storage.boxedSsnParams;
+    storage.hasBoxedSsnParams = true;
+  }
 }
 
 void RunMildIllConditionedBenchmark(
@@ -6972,7 +6997,7 @@ void RunMildIllConditionedBenchmark(
   const auto problem = MakeMildIllConditionedBenchmarkProblem(testCase);
   SolverBenchmarkOptions storage;
   ConfigureSolverBenchmarkOptions(storage, solverEntry, problem);
-  ConfigureMildIllConditionedBenchmarkOptions(storage, testCase);
+  ConfigureMildIllConditionedBenchmarkOptions(storage, solverEntry, testCase);
 
   const auto solver = solverEntry.create();
   if (solver == nullptr) {
@@ -7002,6 +7027,9 @@ void RunMildIllConditionedBenchmark(
   }
   if (storage.hasShockPropagationParams) {
     AddShockPropagationCounters(state, storage.shockPropagationParams);
+  }
+  if (storage.hasBoxedSsnParams) {
+    AddBoxedSsnCounters(state, storage.boxedSsnParams);
   }
 }
 
@@ -7176,7 +7204,7 @@ void RunMildIllConditionedBatchSerialBenchmark(
       = MakeMildIllConditionedBatchProblems(testCase, batchSize);
   SolverBenchmarkOptions storage;
   ConfigureSolverBenchmarkOptions(storage, solverEntry, problems.front());
-  ConfigureMildIllConditionedBenchmarkOptions(storage, testCase);
+  ConfigureMildIllConditionedBenchmarkOptions(storage, solverEntry, testCase);
 
   const auto solver = solverEntry.create();
   if (solver == nullptr) {
@@ -7205,6 +7233,9 @@ void RunMildIllConditionedBatchSerialBenchmark(
   if (storage.hasShockPropagationParams) {
     AddShockPropagationCounters(state, storage.shockPropagationParams);
   }
+  if (storage.hasBoxedSsnParams) {
+    AddBoxedSsnCounters(state, storage.boxedSsnParams);
+  }
 }
 
 #if DART_BM_LCP_COMPARE_HAS_SIMULATION
@@ -7220,7 +7251,8 @@ void RunMildIllConditionedBatchParallelBenchmark(
     state.SkipWithError(fixture.errorMessage.c_str());
     return;
   }
-  ConfigureMildIllConditionedBenchmarkOptions(fixture.storage, testCase);
+  ConfigureMildIllConditionedBenchmarkOptions(
+      fixture.storage, solverEntry, testCase);
 
   compute::ParallelExecutor executor;
   BatchBenchmarkCounters counters;
@@ -7247,6 +7279,9 @@ void RunMildIllConditionedBatchParallelBenchmark(
 
   if (fixture.storage.hasShockPropagationParams) {
     AddShockPropagationCounters(state, fixture.storage.shockPropagationParams);
+  }
+  if (fixture.storage.hasBoxedSsnParams) {
+    AddBoxedSsnCounters(state, fixture.storage.boxedSsnParams);
   }
 }
 #endif
@@ -9787,13 +9822,6 @@ bool SolverShouldRunMildIllConditionedBatchBenchmark(
     const MildIllConditionedBenchmarkCase testCase)
 {
   if (!SolverShouldRunMildIllConditionedBenchmark(solver, testCase)) {
-    return false;
-  }
-
-  using Case = MildIllConditionedBenchmarkCase;
-  if (solver.name == "BoxedSemiSmoothNewton"
-      && (testCase == Case::ExtremeCoupledFrictionIndex24
-          || testCase == Case::ExtremeCoupledFrictionIndex64)) {
     return false;
   }
 
