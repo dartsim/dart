@@ -1161,8 +1161,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     contact assembly/solve benchmark rows for the same contact counts. Added
     coupled 2/3-sphere vertical-stack benchmark rows for the same solver set,
     plus scoped 4-, 5-, and 6-sphere stack rows for all of those solvers except
-    `NNCG`, so benchmark evidence now includes small contact systems with
-    shared dynamic bodies. Added 3-, 4-, 5-, 6-, and 7-sphere stack snapshot tests
+    `NNCG`, plus 7-sphere rows for that set except `NNCG` and
+    `RedBlackGaussSeidel`, so benchmark evidence now includes small contact
+    systems with shared dynamic bodies. Added 3-, 4-, 5-, 6-, and 7-sphere stack snapshot tests
     that validate nonzero normal-contact coupling, plus boxed-LCP Baumgarte
     velocity-bias stabilization that preserves kinematic contacts' static-obstacle
     compatibility behavior, and 3-sphere 200-step, 3-sphere 500-step,

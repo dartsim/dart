@@ -11448,6 +11448,9 @@ void RegisterWorldStackContactBenchmarks()
     registeredBenchmark->Arg(2)->Arg(3);
     if (solver.name != "NNCG") {
       registeredBenchmark->Arg(4)->Arg(5)->Arg(6);
+      if (solver.name != "RedBlackGaussSeidel") {
+        registeredBenchmark->Arg(7);
+      }
     }
   }
 }

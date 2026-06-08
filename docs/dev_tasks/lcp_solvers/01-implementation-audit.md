@@ -42,7 +42,7 @@ Support abbreviations:
   single-contact and two-contact sphere-ground friction cases, 200-step
   two-sphere and four-sphere boxed-LCP
   `World::step()` invariant tests, 16-sphere separated-contact boxed-LCP
-  `World::step()` invariant tests, 3-, 4-, 5-, and 6-sphere coupled-stack boxed-LCP
+  `World::step()` invariant tests, 3-, 4-, 5-, 6-, and 7-sphere coupled-stack boxed-LCP
   snapshot tests, 3-sphere 200-step, 3-sphere 500-step, 4-sphere 200-step,
   5-sphere 500-step, and 6-sphere 1000-step boxed-LCP `World::step()` invariant tests and benchmark
   rows, 4-/8-/16-contact separated sphere-ground step benchmark rows,
@@ -68,8 +68,9 @@ Support abbreviations:
   friction-index-capable
   solvers on the same 1/2/4 separated sphere-ground boxed/findex contact
   snapshots, all-solver 2/3-sphere vertical-stack boxed/findex snapshots,
-  scoped 4-/5-/6-sphere vertical-stack rows excluding `NNCG`, 6-sphere stack
-  assembly rows, and a mixed 5-problem
+  scoped 4-/5-/6-sphere vertical-stack rows excluding `NNCG`, scoped 7-sphere
+  rows excluding `NNCG` and `RedBlackGaussSeidel`, 6-sphere stack assembly
+  rows, and a mixed 5-problem
   serial/`ParallelExecutor` batch over the 1/2/4 separated-contact and 2/3
   stack snapshots. A focused local SIMD-enabled CPU run now exists for
   generated LCP correctness and selected benchmark rows. Jacobi also has an
@@ -662,7 +663,10 @@ The current local evidence for this task is:
   `BM_LcpWorldStackContact/FrictionIndex/<solver>/{4,5,6}` rows for the same
   solver set except `NNCG`; a focused `NNCG` 4-sphere trial reached the
   benchmark cap with `contract_ok=0`, so the NNCG 4-/5-/6-sphere rows are not
-  claimed. The matching
+  claimed. It also registers 14
+  `BM_LcpWorldStackContact/FrictionIndex/<solver>/7` rows for that set except
+  `NNCG` and `RedBlackGaussSeidel`; a focused `RedBlackGaussSeidel` 7-sphere
+  probe reported `contract_ok=0`, so that row is not claimed. The matching
   `BM_LcpWorldStackContactAssembly_BoxedLcp/{2,3,4,5,6}` rows rebuild, collide,
   assemble through `detail::solveBoxedLcpContacts`, solve, and validate the
   boxed-LCP stack contact path. The focused 4-sphere benchmark run
@@ -684,6 +688,10 @@ The current local evidence for this task is:
   A focused default run of `BM_LcpWorldStackContactAssembly_BoxedLcp/7`
   reported `contract_ok=1`, `sphere_count=7`, `contact_count=7`, and
   `problem_size=21`.
+  A focused default
+  `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldStackContact/FrictionIndex/.*/7$|BM_LcpWorldStackContactAssembly_BoxedLcp/7$' --benchmark_min_time=0.001s`
+  run reported `contract_ok=1` for all 14 registered 7-sphere solver rows and
+  the 7-sphere assembly row.
   These stacks include sphere-ground and sphere-sphere contacts coupled through
   shared dynamic bodies. This is small coupled-stack benchmark evidence, not
   articulated, robot-like, or dense-degenerate contact evidence.
@@ -1191,7 +1199,8 @@ The current local evidence for this task is:
   benchmark rows for 1/2/4 separated sphere-ground contacts, separated
   4-/8-/16-contact step rows,
   2/3-sphere vertical stacks, 4-/5-/6-sphere vertical-stack rows for all of those
-  solvers except `NNCG`, mixed contact-derived serial/parallel batches, the
+  solvers except `NNCG`, 7-sphere rows for all of those solvers except `NNCG`
+  and `RedBlackGaussSeidel`, mixed contact-derived serial/parallel batches, the
   3-sphere stack public step path, fixed-base prismatic articulated
   link-ground one-link and four-link `World::step()` paths, connected
   fixed-base three-axis Cartesian-chain `World::step()` paths, fixed-base
@@ -1238,7 +1247,8 @@ The current local evidence for this task is:
   World-contact
   benchmark rows now cover simple
   separated boxed-LCP contact snapshots, small coupled vertical stacks through
-  6-sphere all-solver rows except `NNCG`, mixed serial/task-parallel batches
+  6-sphere all-solver rows except `NNCG`, scoped 7-sphere rows excluding `NNCG`
+  and `RedBlackGaussSeidel`, mixed serial/task-parallel batches
   over those snapshots, stress mixed serial/task-parallel batches that include
   4-/5-/6-sphere stack snapshots for all of those solvers except `NNCG`,
   200-step/500-step

@@ -430,7 +430,9 @@ tree also passes direct fixed-iteration Jacobi and PGS homogeneous 6-sphere
 stack batches plus grouped 2/3/4/5/6-sphere stack batches with
 `cuda_lcp_execution=1` and `contract_ok=1`.
 The current unpushed slice adds a 7-sphere, 7-contact, 21-row coupled stack
-snapshot/assembly row and a 32-box, 128-contact dense public-step unit gate.
+snapshot/assembly row, 14 matching 7-sphere solver benchmark rows excluding
+`NNCG` and `RedBlackGaussSeidel`, and a 32-box, 128-contact dense public-step
+unit gate.
 Push/PR work still requires explicit maintainer/user approval.
 
 ## Immediate Next Step
@@ -1018,11 +1020,14 @@ contact scenes.
 - The benchmark target also registers 32
   `BM_LcpWorldStackContact/FrictionIndex/<solver>/{2,3}` rows for all 16
   friction-index-capable solvers over DART 7 `World::collide()` snapshots from
-  2- and 3-sphere vertical stacks. It also registers 30
+  2- and 3-sphere vertical stacks. It also registers 45
   `BM_LcpWorldStackContact/FrictionIndex/<solver>/{4,5,6}` rows for the same
   solver set except `NNCG`; a focused `NNCG` 4-sphere trial reached the
   benchmark cap with `contract_ok=0`, so the NNCG 4-/5-/6-sphere rows are not
-  claimed. The matching
+  claimed. It also registers 14
+  `BM_LcpWorldStackContact/FrictionIndex/<solver>/7` rows for that set except
+  `NNCG` and `RedBlackGaussSeidel`; a focused `RedBlackGaussSeidel` 7-sphere
+  probe reported `contract_ok=0`, so that row is not claimed. The matching
   `BM_LcpWorldStackContactAssembly_BoxedLcp/{2,3,4,5,6}` rows rebuild the world,
   collide, assemble through `detail::solveBoxedLcpContacts`, solve, and
   validate the coupled stack snapshot. The focused 4-sphere benchmark run
@@ -1044,6 +1049,10 @@ contact scenes.
   A focused default run of `BM_LcpWorldStackContactAssembly_BoxedLcp/7`
   reports `contract_ok=1`, `sphere_count=7`, `contact_count=7`, and
   `problem_size=21`.
+  A focused default
+  `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldStackContact/FrictionIndex/.*/7$|BM_LcpWorldStackContactAssembly_BoxedLcp/7$' --benchmark_min_time=0.001s`
+  run reports `contract_ok=1` for all 14 registered 7-sphere solver rows and
+  the 7-sphere assembly row.
   Treat this as small coupled-stack benchmark evidence, not evidence for
   articulated or dense-degenerate contact scenes.
 - The benchmark target now also registers 32
