@@ -402,9 +402,10 @@ and cross-multibody link-vs-link cases, plus mixed grouped contact batches that
 combine separated, stack, and 1-/4-/8-/16-contact articulated fixture families for fixed-iteration
 Jacobi and PGS. The generic CPU serial and DART 7 `ParallelExecutor` batch
 benchmark registrations now also expose Jacobi and PGS rows at the same
-standard/boxed 24-/48-/96-/128-row and friction-index 8-/16-/32-/48-contact packet
-sizes used by the direct CUDA batch rows; the focused evidence covers default,
-SIMD-enabled, and CUDA-enabled build trees.
+grouped synthetic packet sizes plus the same standard/boxed
+24-/48-/96-/128-row and friction-index 8-/16-/32-/48-contact packet sizes used
+by the CUDA batch rows; the focused evidence covers default, SIMD-enabled, and
+CUDA-enabled build trees.
 The work now also adds 49 `BM_LcpLargerActiveSetTransition` rows for the
 scoped scalable active-set transition packets: standard 32-row, boxed 32-row,
 and coupled friction-index 8-contact. Focused default, SIMD-enabled, and
@@ -1325,7 +1326,13 @@ contact scenes.
   `total_problem_size=648`. The `/3` rows report `batch_size=15`,
   standard/boxed `total_problem_size=960`, and friction-index
   `total_contact_count=324` and `total_problem_size=972` across the same size
-  groups. The apples-to-apples CPU/CUDA batch follow-up
+  groups. The grouped CPU serial/`ParallelExecutor` follow-up reports 24 rows
+  in each default, SIMD-enabled, and CUDA-enabled build tree with
+  `contract_ok=1`, `batch_group_count=5`, `batch_size=10/15`,
+  standard/boxed `total_problem_size=640/960`, friction-index
+  `total_contact_count=216/324`, friction-index `total_problem_size=648/972`,
+  and `parallel_units=10/15` plus `profile_enabled=1` on `ParallelExecutor`
+  rows. The apples-to-apples CPU/CUDA batch follow-up
   reports 36 CPU serial/`ParallelExecutor` rows with `contract_ok=1`,
   `batch_size=4`, standard/boxed `problem_size=24/48/96`,
   friction-index `contact_count=8/16/32`, `parallel_units=4` on

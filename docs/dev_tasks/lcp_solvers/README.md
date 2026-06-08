@@ -351,6 +351,10 @@
       friction-index 4/8/16/32/48-contact packets, covering fixed-iteration
       CUDA Jacobi and PGS unit tests and two-/three-variant benchmark rows on
       the visible GPU.
+- [x] Added apples-to-apples grouped variable-size DART 7 CPU serial and
+      DART 7 `ParallelExecutor` batch benchmark rows for Jacobi and PGS on the
+      same grouped synthetic packets, verified in default, SIMD-enabled, and
+      CUDA-enabled build trees.
 - [x] Added apples-to-apples DART 7 CPU serial, DART 7 `ParallelExecutor`, and
       fixed-iteration CUDA batch benchmark rows for Jacobi and PGS on the same
       standard/boxed 24-/48-/96-/128-row and friction-index 8-/16-/32-/48-contact
@@ -607,6 +611,18 @@ tradeoffs evidence based.
   `max_problem_size=144`, and `total_problem_size=648`. The `/3` rows report
   `batch_size=15`, standard/boxed `total_problem_size=960`, and
   friction-index `total_contact_count=324` and `total_problem_size=972`. A
+  focused grouped CPU follow-up
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpGroupedBatch(Serial|Parallel)/(Standard|Boxed|FrictionIndex)/(Jacobi|Pgs)/(2|3)$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  reported 24 serial/`ParallelExecutor` rows with `contract_ok=1` in default,
+  SIMD-enabled, and CUDA-enabled build trees. Those rows report
+  `batch_group_count=5`; `/2` rows report `batch_size=10`,
+  standard/boxed `max_problem_size=128` and `total_problem_size=640`, and
+  friction-index `max_contact_count=48`, `max_problem_size=144`,
+  `total_contact_count=216`, and `total_problem_size=648`. The `/3` rows
+  report `batch_size=15`, standard/boxed `total_problem_size=960`,
+  friction-index `total_contact_count=324` and `total_problem_size=972`, and
+  `ParallelExecutor` rows report `parallel_units=10/15` with
+  `profile_enabled=1`. A
   focused homogeneous
   apples-to-apples CPU/CUDA follow-up
   `BM_LCP_COMPARE --benchmark_filter='^BM_LcpBatch(Serial|Parallel)/(Standard|Boxed|FrictionIndex)/(Jacobi|Pgs)/(24|48|96|8|16|32)/4$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_format=json`
@@ -2167,7 +2183,9 @@ tradeoffs evidence based.
   CUDA-enabled build/runtime slice passes, and narrow CUDA projected-Jacobi and
   PGS standard/boxed/friction-index through direct 128-row and 48-contact
   packets plus grouped variable-size synthetic standard/boxed/friction-index
-  through 128-row and 48-contact packets with two- and three-variant grouped synthetic
+  through 128-row and 48-contact packets with matching CPU
+  serial/`ParallelExecutor` rows and fixed-iteration CUDA rows for the two- and
+  three-variant grouped synthetic
   benchmark rows,
   homogeneous 4-/8-/16-contact, homogeneous
   5-/6-/7-/8-sphere coupled stack, grouped variable-size 1/2/4/8/16-contact separated

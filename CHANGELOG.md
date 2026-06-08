@@ -1141,8 +1141,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     standard/boxed groups and 4/8/16/32/48-contact friction-index groups with
     two- and three-variant grouped rows,
     matching CPU serial and DART 7 `ParallelExecutor` Jacobi/PGS batch rows
-    verified in default and SIMD-enabled builds at those 24-/48-/96-/128-row
-    and 8-/16-/32-/48-contact direct CUDA packet sizes,
+    verified in default, SIMD-enabled, and CUDA-enabled builds at both those
+    grouped packets and the 24-/48-/96-/128-row and 8-/16-/32-/48-contact
+    direct CUDA packet sizes,
     homogeneous 4-, 8-, and 16-contact world-contact,
     homogeneous 5-/6-/7-/8-sphere coupled stack-contact, grouped variable-size
     1/2/4/8/16-contact separated world-contact LCP packets with additional

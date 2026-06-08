@@ -80,7 +80,8 @@ Support abbreviations:
   evidence now reaches direct synthetic 128-row standard/boxed and 48-contact
   friction-index packets and also includes grouped synthetic through 128-row and 48-contact
   packets, CPU serial/`ParallelExecutor` Jacobi/PGS batch rows at the same
-  direct CUDA packet sizes verified in default and SIMD-enabled build trees,
+  direct and grouped CUDA packet sizes verified in default, SIMD-enabled, and
+  CUDA-enabled build trees,
   separated sphere-ground, coupled stack-contact, manually assembled
   articulated unified-contact packets, PGS-only homogeneous and grouped
   variable-size dense box-face contact batches, plus mixed
@@ -93,8 +94,8 @@ Support abbreviations:
   evidence now includes direct synthetic standard/boxed/findex packets through
   128-row and 48-contact sizes and grouped variable-size synthetic
   standard/boxed/findex packets through 128-row and 48-contact sizes, matching
-  CPU serial and DART 7 `ParallelExecutor` Jacobi/PGS batch rows at the direct CUDA packet sizes in
-  default and SIMD-enabled build trees, homogeneous 4-/8-/16-contact and grouped variable-size
+  CPU serial and DART 7 `ParallelExecutor` Jacobi/PGS batch rows at the direct and grouped CUDA packet sizes in
+  default, SIMD-enabled, and CUDA-enabled build trees, homogeneous 4-/8-/16-contact and grouped variable-size
   1/2/4/8/16-contact DART 7 sphere-ground world-contact packets, homogeneous
   5-/6-/7-/8-sphere and grouped variable-size 2/3/4/5/6/7/8-sphere coupled stack-contact
   packets, grouped variable-size 1-/4-/8-/16-contact articulated unified-contact
@@ -1145,7 +1146,15 @@ The current local evidence for this task is:
   cover 4/8/16/32/48-contact packets with `min_problem_size=12` and
   `max_problem_size=144`; the `/2` rows report `total_contact_count=216` and
   `total_problem_size=648`, while the `/3` rows report
-  `total_contact_count=324` and `total_problem_size=972`. The
+  `total_contact_count=324` and `total_problem_size=972`. The matching
+  grouped CPU serial and DART 7 `ParallelExecutor` rows cover Jacobi and PGS
+  over the same groups in default, SIMD-enabled, and CUDA-enabled build trees;
+  focused smokes report 24 rows per build tree with `contract_ok=1`,
+  `batch_group_count=5`, `batch_size=10/15`, standard/boxed
+  `total_problem_size=640/960`, friction-index
+  `total_contact_count=216/324`, friction-index
+  `total_problem_size=648/972`, and `parallel_units=10/15` with
+  `profile_enabled=1` on `ParallelExecutor` rows. The
   homogeneous world-contact CUDA rows used DART 7 `World::collide()`
   snapshots up to 16 contacts with `batch_size=4`, `contact_count=16`,
   `problem_size=48`, `total_contact_count=64`, and `total_problem_size=192`

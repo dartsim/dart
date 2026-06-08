@@ -5372,6 +5372,82 @@ std::vector<LcpProblem> MakeBenchmarkProblemBatch(
   return problems;
 }
 
+struct GroupedBenchmarkBatch
+{
+  std::vector<std::vector<LcpProblem>> problemGroups;
+  int problemCount{0};
+  std::size_t totalProblemSize{0};
+  std::size_t minProblemSize{0};
+  std::size_t maxProblemSize{0};
+  int totalContactCount{0};
+  int minContactCount{0};
+  int maxContactCount{0};
+};
+
+std::optional<GroupedBenchmarkBatch> MakeGroupedBenchmarkBatch(
+    BenchmarkProblemFamily family,
+    int variantsPerProblemArg,
+    std::string& errorMessage)
+{
+  if (variantsPerProblemArg <= 0) {
+    errorMessage = "variants per synthetic group must be positive";
+    return std::nullopt;
+  }
+
+  GroupedBenchmarkBatch grouped;
+  const auto appendGroup = [&](const int problemArg) {
+    auto problems
+        = MakeBenchmarkProblemBatch(family, problemArg, variantsPerProblemArg);
+    const auto problemSize
+        = static_cast<std::size_t>(problems.front().b.size());
+    grouped.problemCount += variantsPerProblemArg;
+    grouped.totalProblemSize
+        += problemSize * static_cast<std::size_t>(variantsPerProblemArg);
+    if (grouped.minProblemSize == 0 || problemSize < grouped.minProblemSize) {
+      grouped.minProblemSize = problemSize;
+    }
+    grouped.maxProblemSize = std::max(grouped.maxProblemSize, problemSize);
+
+    if (family == BenchmarkProblemFamily::FrictionIndex) {
+      grouped.totalContactCount += problemArg * variantsPerProblemArg;
+      if (grouped.minContactCount == 0
+          || problemArg < grouped.minContactCount) {
+        grouped.minContactCount = problemArg;
+      }
+      grouped.maxContactCount = std::max(grouped.maxContactCount, problemArg);
+    }
+
+    grouped.problemGroups.push_back(std::move(problems));
+  };
+
+  switch (family) {
+    case BenchmarkProblemFamily::Standard:
+    case BenchmarkProblemFamily::Boxed:
+      for (const int rows : std::array<int, 5>{16, 32, 48, 96, 128}) {
+        appendGroup(rows);
+      }
+      break;
+    case BenchmarkProblemFamily::FrictionIndex:
+      for (const int contactCount : std::array<int, 5>{4, 8, 16, 32, 48}) {
+        appendGroup(contactCount);
+      }
+      break;
+  }
+
+  return grouped;
+}
+
+std::vector<LcpProblem> FlattenGroupedBenchmarkBatch(
+    const GroupedBenchmarkBatch& batch)
+{
+  std::vector<LcpProblem> problems;
+  problems.reserve(static_cast<std::size_t>(batch.problemCount));
+  for (const auto& group : batch.problemGroups) {
+    problems.insert(problems.end(), group.begin(), group.end());
+  }
+  return problems;
+}
+
 #if DART_BM_LCP_COMPARE_HAS_SIMULATION_CUDA
 cuda_compute::LcpBatchCudaProblem MakeCudaBatchProblem(
     const std::vector<LcpProblem>& problems, std::size_t iterations)
@@ -5414,15 +5490,8 @@ cuda_compute::LcpBatchCudaProblem MakeCudaBatchProblem(
 
 struct CudaGroupedBenchmarkBatch
 {
-  std::vector<std::vector<LcpProblem>> problemGroups;
+  GroupedBenchmarkBatch grouped;
   std::vector<cuda_compute::LcpBatchCudaProblem> packets;
-  int problemCount{0};
-  std::size_t totalProblemSize{0};
-  std::size_t minProblemSize{0};
-  std::size_t maxProblemSize{0};
-  int totalContactCount{0};
-  int minContactCount{0};
-  int maxContactCount{0};
 };
 
 std::optional<CudaGroupedBenchmarkBatch> MakeGroupedCudaBenchmarkBatch(
@@ -5431,53 +5500,20 @@ std::optional<CudaGroupedBenchmarkBatch> MakeGroupedCudaBenchmarkBatch(
     std::size_t iterations,
     std::string& errorMessage)
 {
-  if (variantsPerProblemArg <= 0) {
-    errorMessage = "variants per CUDA synthetic group must be positive";
+  auto grouped
+      = MakeGroupedBenchmarkBatch(family, variantsPerProblemArg, errorMessage);
+  if (!grouped.has_value()) {
     return std::nullopt;
   }
 
-  CudaGroupedBenchmarkBatch grouped;
-  const auto appendGroup = [&](const int problemArg) {
-    auto problems
-        = MakeBenchmarkProblemBatch(family, problemArg, variantsPerProblemArg);
-    const auto problemSize
-        = static_cast<std::size_t>(problems.front().b.size());
-    grouped.problemCount += variantsPerProblemArg;
-    grouped.totalProblemSize
-        += problemSize * static_cast<std::size_t>(variantsPerProblemArg);
-    if (grouped.minProblemSize == 0 || problemSize < grouped.minProblemSize) {
-      grouped.minProblemSize = problemSize;
-    }
-    grouped.maxProblemSize = std::max(grouped.maxProblemSize, problemSize);
-
-    if (family == BenchmarkProblemFamily::FrictionIndex) {
-      grouped.totalContactCount += problemArg * variantsPerProblemArg;
-      if (grouped.minContactCount == 0
-          || problemArg < grouped.minContactCount) {
-        grouped.minContactCount = problemArg;
-      }
-      grouped.maxContactCount = std::max(grouped.maxContactCount, problemArg);
-    }
-
-    grouped.packets.push_back(MakeCudaBatchProblem(problems, iterations));
-    grouped.problemGroups.push_back(std::move(problems));
-  };
-
-  switch (family) {
-    case BenchmarkProblemFamily::Standard:
-    case BenchmarkProblemFamily::Boxed:
-      for (const int rows : std::array<int, 5>{16, 32, 48, 96, 128}) {
-        appendGroup(rows);
-      }
-      break;
-    case BenchmarkProblemFamily::FrictionIndex:
-      for (const int contactCount : std::array<int, 5>{4, 8, 16, 32, 48}) {
-        appendGroup(contactCount);
-      }
-      break;
+  CudaGroupedBenchmarkBatch cudaBatch;
+  cudaBatch.grouped = std::move(*grouped);
+  cudaBatch.packets.reserve(cudaBatch.grouped.problemGroups.size());
+  for (const auto& problemGroup : cudaBatch.grouped.problemGroups) {
+    cudaBatch.packets.push_back(MakeCudaBatchProblem(problemGroup, iterations));
   }
 
-  return grouped;
+  return cudaBatch;
 }
 
 struct CudaGroupedWorldContactBenchmarkBatch
@@ -6165,15 +6201,14 @@ void AddBatchBenchmarkCounters(
   state.SetLabel(label);
 }
 
-#if DART_BM_LCP_COMPARE_HAS_SIMULATION_CUDA
-void AddCudaGroupedBenchmarkCounters(
+void AddGroupedBatchBenchmarkCounters(
     benchmark::State& state,
     const BatchBenchmarkCounters& counters,
-    const CudaGroupedBenchmarkBatch& batch,
+    const GroupedBenchmarkBatch& batch,
     const std::string& label)
 {
   state.counters["batch_size"] = batch.problemCount;
-  state.counters["cuda_group_count"]
+  state.counters["batch_group_count"]
       = static_cast<double>(batch.problemGroups.size());
   state.counters["min_problem_size"]
       = static_cast<double>(batch.minProblemSize);
@@ -6198,6 +6233,18 @@ void AddCudaGroupedBenchmarkCounters(
   AddBackendBuildCounters(state);
   state.SetItemsProcessed(state.iterations() * batch.totalProblemSize);
   state.SetLabel(label);
+}
+
+#if DART_BM_LCP_COMPARE_HAS_SIMULATION_CUDA
+void AddCudaGroupedBenchmarkCounters(
+    benchmark::State& state,
+    const BatchBenchmarkCounters& counters,
+    const CudaGroupedBenchmarkBatch& batch,
+    const std::string& label)
+{
+  AddGroupedBatchBenchmarkCounters(state, counters, batch.grouped, label);
+  state.counters["cuda_group_count"]
+      = static_cast<double>(batch.grouped.problemGroups.size());
 }
 #endif
 
@@ -8067,6 +8114,47 @@ void RunManifestBatchBenchmark(
   }
 }
 
+void RunGroupedBatchSerialBenchmark(
+    benchmark::State& state,
+    const dart::test::LcpSolverManifestEntry& solverEntry,
+    BenchmarkProblemFamily family)
+{
+  const int variantsPerProblemArg = static_cast<int>(state.range(0));
+  std::string errorMessage;
+  const auto batch
+      = MakeGroupedBenchmarkBatch(family, variantsPerProblemArg, errorMessage);
+  if (!batch.has_value()) {
+    state.SkipWithError(errorMessage.c_str());
+    return;
+  }
+  const auto problems = FlattenGroupedBenchmarkBatch(*batch);
+
+  SolverBenchmarkOptions storage;
+  ConfigureSolverBenchmarkOptions(storage, solverEntry, problems.front());
+
+  const auto solver = solverEntry.create();
+  if (solver == nullptr) {
+    state.SkipWithError("LCP solver factory returned null");
+    return;
+  }
+
+  BatchBenchmarkCounters counters;
+  for (auto _ : state) {
+    counters = RunBatchWithSolver(*solver, problems, storage.options);
+    benchmark::DoNotOptimize(counters.maxResidual);
+  }
+
+  counters = RunBatchWithSolver(*solver, problems, storage.options);
+  AddGroupedBatchBenchmarkCounters(
+      state,
+      counters,
+      *batch,
+      MakeLabel(
+          std::string(solverEntry.name),
+          "GroupedBatchSerial/" + std::string(getProblemFamilyName(family))));
+  state.counters["grouped_batch_serial"] = 1.0;
+}
+
 #if DART_BM_LCP_COMPARE_HAS_SIMULATION
 void RunWorldContactBenchmark(
     benchmark::State& state,
@@ -9102,6 +9190,47 @@ void RunManifestParallelBatchBenchmark(
     AddShockPropagationCounters(state, fixture.storage.shockPropagationParams);
   }
 }
+
+void RunGroupedBatchParallelBenchmark(
+    benchmark::State& state,
+    const dart::test::LcpSolverManifestEntry& solverEntry,
+    BenchmarkProblemFamily family)
+{
+  const int variantsPerProblemArg = static_cast<int>(state.range(0));
+  std::string errorMessage;
+  const auto batch
+      = MakeGroupedBenchmarkBatch(family, variantsPerProblemArg, errorMessage);
+  if (!batch.has_value()) {
+    state.SkipWithError(errorMessage.c_str());
+    return;
+  }
+  ParallelBatchFixture fixture(
+      solverEntry, FlattenGroupedBenchmarkBatch(*batch));
+  if (!fixture.valid) {
+    state.SkipWithError(fixture.errorMessage.c_str());
+    return;
+  }
+
+  compute::ParallelExecutor executor;
+  BatchBenchmarkCounters counters;
+  for (auto _ : state) {
+    executor.execute(fixture.graph);
+    counters = fixture.collectCounters();
+    benchmark::DoNotOptimize(counters.maxResidual);
+  }
+
+  const auto profile = executor.executeProfiled(fixture.graph);
+  counters = fixture.collectCounters();
+  AddGroupedBatchBenchmarkCounters(
+      state,
+      counters,
+      *batch,
+      MakeLabel(
+          std::string(solverEntry.name),
+          "GroupedBatchParallel/" + std::string(getProblemFamilyName(family))));
+  state.counters["grouped_batch_parallel"] = 1.0;
+  AddParallelExecutionCounters(state, profile, fixture.graph);
+}
 #endif
 
 #if DART_BM_LCP_COMPARE_HAS_SIMULATION_CUDA
@@ -9227,7 +9356,7 @@ void RunCudaGroupedBatchBenchmark(
     cuda_compute::solveBoxedLcpJacobiGroupedBatchCuda(packets);
   }
   counters = CheckCudaGroupedBatchResult(
-      batch->problemGroups, packets, options, iterations);
+      batch->grouped.problemGroups, packets, options, iterations);
   AddCudaGroupedBenchmarkCounters(
       state,
       counters,
@@ -10073,6 +10202,16 @@ std::string MakeBatchBenchmarkName(
   return out.str();
 }
 
+std::string MakeGroupedBatchSerialBenchmarkName(
+    BenchmarkProblemFamily family,
+    const dart::test::LcpSolverManifestEntry& solver)
+{
+  std::ostringstream out;
+  out << "BM_LcpGroupedBatchSerial/" << getProblemFamilyName(family) << "/"
+      << solver.name;
+  return out.str();
+}
+
 #if DART_BM_LCP_COMPARE_HAS_SIMULATION
 std::string MakeParallelBatchBenchmarkName(
     BenchmarkProblemFamily family,
@@ -10080,6 +10219,16 @@ std::string MakeParallelBatchBenchmarkName(
 {
   std::ostringstream out;
   out << "BM_LcpBatchParallel/" << getProblemFamilyName(family) << "/"
+      << solver.name;
+  return out.str();
+}
+
+std::string MakeGroupedBatchParallelBenchmarkName(
+    BenchmarkProblemFamily family,
+    const dart::test::LcpSolverManifestEntry& solver)
+{
+  std::ostringstream out;
+  out << "BM_LcpGroupedBatchParallel/" << getProblemFamilyName(family) << "/"
       << solver.name;
   return out.str();
 }
@@ -11384,6 +11533,32 @@ void RegisterBatchBenchmarks()
   }
 }
 
+void RegisterGroupedBatchBenchmarks()
+{
+  constexpr std::array<BenchmarkProblemFamily, 3> families{
+      BenchmarkProblemFamily::Standard,
+      BenchmarkProblemFamily::Boxed,
+      BenchmarkProblemFamily::FrictionIndex};
+
+  for (const auto family : families) {
+    for (const auto& solver : dart::test::kLcpSolverManifest) {
+      if ((solver.name != "Jacobi" && solver.name != "Pgs")
+          || !dart::test::supportsProblem(solver, getProblemSupport(family))) {
+        continue;
+      }
+
+      const auto name = MakeGroupedBatchSerialBenchmarkName(family, solver);
+      benchmark::RegisterBenchmark(
+          name.c_str(),
+          [solver, family](benchmark::State& state) {
+            RunGroupedBatchSerialBenchmark(state, solver, family);
+          })
+          ->Arg(2)
+          ->Arg(3);
+    }
+  }
+}
+
 #if DART_BM_LCP_COMPARE_HAS_SIMULATION
 void RegisterParallelBatchBenchmarks()
 {
@@ -11404,6 +11579,32 @@ void RegisterParallelBatchBenchmarks()
             RunManifestParallelBatchBenchmark(state, solver, family);
           });
       AddBatchBenchmarkArgs(registeredBenchmark, solver, family);
+    }
+  }
+}
+
+void RegisterGroupedParallelBatchBenchmarks()
+{
+  constexpr std::array<BenchmarkProblemFamily, 3> families{
+      BenchmarkProblemFamily::Standard,
+      BenchmarkProblemFamily::Boxed,
+      BenchmarkProblemFamily::FrictionIndex};
+
+  for (const auto family : families) {
+    for (const auto& solver : dart::test::kLcpSolverManifest) {
+      if ((solver.name != "Jacobi" && solver.name != "Pgs")
+          || !dart::test::supportsProblem(solver, getProblemSupport(family))) {
+        continue;
+      }
+
+      const auto name = MakeGroupedBatchParallelBenchmarkName(family, solver);
+      benchmark::RegisterBenchmark(
+          name.c_str(),
+          [solver, family](benchmark::State& state) {
+            RunGroupedBatchParallelBenchmark(state, solver, family);
+          })
+          ->Arg(2)
+          ->Arg(3);
     }
   }
 }
@@ -11885,8 +12086,10 @@ const bool kManifestBenchmarksRegistered = [] {
   RegisterSingularDegenerateFrictionIndexBatchBenchmarks();
   RegisterSingularDegenerateStandardBoxedBatchBenchmarks();
   RegisterBatchBenchmarks();
+  RegisterGroupedBatchBenchmarks();
 #if DART_BM_LCP_COMPARE_HAS_SIMULATION
   RegisterParallelBatchBenchmarks();
+  RegisterGroupedParallelBatchBenchmarks();
   RegisterWorldContactBenchmarks();
   RegisterWorldBoxContactBenchmarks();
   RegisterWorldStackContactBenchmarks();
