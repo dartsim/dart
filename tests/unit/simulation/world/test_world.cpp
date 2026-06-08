@@ -934,8 +934,11 @@ void configureDeformableSelfContactFrictionPatchScene(
   world.addDeformableBody("friction_patches", options);
 }
 
-void configureDeformableSelfContactFrictionGridSceneWithSize(
-    dart::simulation::World& world, std::size_t grid, std::string_view bodyName)
+void configureDeformableSelfContactFrictionGridSceneWithShape(
+    dart::simulation::World& world,
+    std::size_t rows,
+    std::size_t cols,
+    std::string_view bodyName)
 {
   namespace sx = dart::simulation;
 
@@ -944,15 +947,17 @@ void configureDeformableSelfContactFrictionGridSceneWithSize(
 
   constexpr double spacing = 0.5;
   constexpr double gap = 0.012;
+  const std::size_t layerNodeCount = rows * cols;
   sx::DeformableBodyOptions options;
-  options.positions.reserve(2 * grid * grid);
-  options.velocities.reserve(2 * grid * grid);
-  options.masses.assign(2 * grid * grid, 1.0);
-  options.fixedNodes.reserve(grid * grid);
+  options.positions.reserve(2 * layerNodeCount);
+  options.velocities.reserve(2 * layerNodeCount);
+  options.masses.assign(2 * layerNodeCount, 1.0);
+  options.fixedNodes.reserve(layerNodeCount);
 
   const auto nodeIndex
-      = [grid](std::size_t layer, std::size_t row, std::size_t col) {
-          return layer * grid * grid + row * grid + col;
+      = [cols, layerNodeCount](
+            std::size_t layer, std::size_t row, std::size_t col) {
+          return layer * layerNodeCount + row * cols + col;
         };
 
   for (std::size_t layer = 0; layer < 2; ++layer) {
@@ -960,8 +965,8 @@ void configureDeformableSelfContactFrictionGridSceneWithSize(
     const Eigen::Vector3d velocity = layer == 0
                                          ? Eigen::Vector3d::Zero()
                                          : Eigen::Vector3d(0.35, 0.1, -0.08);
-    for (std::size_t row = 0; row < grid; ++row) {
-      for (std::size_t col = 0; col < grid; ++col) {
+    for (std::size_t row = 0; row < rows; ++row) {
+      for (std::size_t col = 0; col < cols; ++col) {
         options.positions.emplace_back(
             (static_cast<double>(col) - 1.0) * spacing,
             (static_cast<double>(row) - 1.0) * spacing,
@@ -974,9 +979,9 @@ void configureDeformableSelfContactFrictionGridSceneWithSize(
     }
   }
 
-  options.surfaceTriangles.reserve(4 * (grid - 1) * (grid - 1));
-  for (std::size_t row = 0; row + 1 < grid; ++row) {
-    for (std::size_t col = 0; col + 1 < grid; ++col) {
+  options.surfaceTriangles.reserve(4 * (rows - 1) * (cols - 1));
+  for (std::size_t row = 0; row + 1 < rows; ++row) {
+    for (std::size_t col = 0; col + 1 < cols; ++col) {
       const auto a = nodeIndex(0, row, col);
       const auto b = nodeIndex(0, row, col + 1);
       const auto c = nodeIndex(0, row + 1, col + 1);
@@ -1001,6 +1006,13 @@ void configureDeformableSelfContactFrictionGridSceneWithSize(
   options.material.frictionCoefficient = 0.8;
 
   world.addDeformableBody(bodyName, options);
+}
+
+void configureDeformableSelfContactFrictionGridSceneWithSize(
+    dart::simulation::World& world, std::size_t grid, std::string_view bodyName)
+{
+  configureDeformableSelfContactFrictionGridSceneWithShape(
+      world, grid, grid, bodyName);
 }
 
 void configureDeformableSelfContactFrictionGridScene(
@@ -1029,6 +1041,13 @@ void configureDeformableSelfContactFrictionExtendedProductionGridScene(
 {
   configureDeformableSelfContactFrictionGridSceneWithSize(
       world, 11, "friction_extended_production_grid");
+}
+
+void configureDeformableSelfContactFrictionRectangularGridScene(
+    dart::simulation::World& world)
+{
+  configureDeformableSelfContactFrictionGridSceneWithShape(
+      world, 9, 13, "friction_rectangular_production_grid");
 }
 
 void configureDeformableInterBodySurfaceCcdCrossingScene(
@@ -2060,6 +2079,9 @@ TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
       "deformable self-contact friction extended production grid",
       configureDeformableSelfContactFrictionExtendedProductionGridScene);
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "deformable self-contact friction rectangular grid",
+      configureDeformableSelfContactFrictionRectangularGridScene);
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "deformable inter-body surface CCD crossing",
       configureDeformableInterBodySurfaceCcdCrossingScene);
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
@@ -2083,6 +2105,24 @@ TEST(World, DeformableSelfContactFrictionProductionGridIsActive)
   const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
   EXPECT_EQ(diagnostics.bodyCount, 1u);
   EXPECT_EQ(diagnostics.nodeCount, 2u * 11u * 11u);
+  EXPECT_GT(diagnostics.selfContactBarrierActiveContacts, 0u);
+  EXPECT_GT(diagnostics.convergedActiveContactCount, 0u);
+  EXPECT_GT(diagnostics.frictionDissipation, 0.0);
+}
+
+TEST(World, DeformableSelfContactFrictionRectangularGridIsActive)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  configureDeformableSelfContactFrictionRectangularGridScene(world);
+  world.enterSimulationMode();
+
+  world.step();
+
+  const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
+  EXPECT_EQ(diagnostics.bodyCount, 1u);
+  EXPECT_EQ(diagnostics.nodeCount, 2u * 9u * 13u);
   EXPECT_GT(diagnostics.selfContactBarrierActiveContacts, 0u);
   EXPECT_GT(diagnostics.convergedActiveContactCount, 0u);
   EXPECT_GT(diagnostics.frictionDissipation, 0.0);
@@ -2406,6 +2446,9 @@ TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "deformable self-contact friction extended production grid",
       configureDeformableSelfContactFrictionExtendedProductionGridScene);
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "deformable self-contact friction rectangular grid",
+      configureDeformableSelfContactFrictionRectangularGridScene);
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "deformable inter-body surface CCD crossing",
       configureDeformableInterBodySurfaceCcdCrossingScene);

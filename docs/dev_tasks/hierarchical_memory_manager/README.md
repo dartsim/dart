@@ -242,14 +242,14 @@
       default-solver deformable ground-friction projected-Newton scene plus a
       multi-triangle frictional self-contact patch, a 5x5 two-layer frictional
       self-contact grid, a 7x7 two-layer large grid, a 9x9 two-layer
-      production grid, and an 11x11 two-layer extended production grid. The
-      11x11 guard also asserts non-vacuous solver activity through public
-      deformable diagnostics: active self-contact barriers, converged active
-      contacts, and positive friction dissipation. The global heap and
-      World-base no-growth guards now also cover the active inter-body
-      deformable surface-CCD crossing, active AVBD ground contact/friction
-      rows, AVBD self-contact normal/friction rows, and an active rigid AVBD
-      penetrating contact plus no-contact fixed-joint rows.
+      production grid, an 11x11 two-layer extended production grid, and a 9x13
+      non-square two-layer production grid. The larger-grid guards also assert
+      non-vacuous solver activity through public deformable diagnostics: active
+      self-contact barriers, converged active contacts, and positive friction
+      dissipation. The global heap and World-base no-growth guards now also
+      cover the active inter-body deformable surface-CCD crossing, active AVBD
+      ground contact/friction rows, AVBD self-contact normal/friction rows, and
+      an active rigid AVBD penetrating contact plus no-contact fixed-joint rows.
       Still-larger or differently shaped production-scale frictional deformable
       sets still need no-growth gates before making the full deformable claim.
 - [ ] Phase 6: Add memory-layout profiler/debugger surfaces and GUI

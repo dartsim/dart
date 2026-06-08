@@ -294,7 +294,8 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     row-counter, row-inventory, and solve scratch for covered active rigid
     contacts and no-contact fixed-joint rows, with baked base-allocator and
     global-heap no-growth guards. Active inter-body deformable surface-CCD
-    crossings now have the same baked no-growth guard coverage.
+    crossings and a non-square production-scale deformable frictional
+    self-contact grid now have the same baked no-growth guard coverage.
   - Hardened `dart::common::FixedPoolAllocator` against base-allocator failures
     during construction and block-table growth, with coverage for deterministic
     failure, fallback, reuse, and debug-guard paths.
