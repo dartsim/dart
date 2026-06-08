@@ -179,12 +179,19 @@ The same continuation also added an explicit no-heap guard for same-shape
 in-place unified assembly with both rigid contacts and a borrowed multibody link
 problem, extending the earlier link-only in-place assembler coverage.
 
+The diagnostics continuation added a `dartsim_ui` Memory action seam and a
+read-only editor panel for DART 7 `WorldMemoryDiagnostics`. It displays frame
+scratch capacity/usage/peak/overflow/reset counters, MemoryManager free-list and
+pool debug counters, and the largest ECS storage capacity rows without exposing
+EnTT or backend GUI types. The seam has a focused `UNIT_dartsim_ui_MemoryActions`
+test and is covered by the full `UNIT_dartsim_ui_` test filter.
+
 ## Current Branch
 
 `feature/allocator-correctness-gates` - active branch for the allocator and
 hierarchical-memory-manager follow-up slices. Check `git status -sb` for the
-live dirty state before resuming; the latest checkpoint commit has been pushed
-to `origin/feature/allocator-correctness-gates`.
+live dirty state before resuming; checkpoint commits are pushed to
+`origin/feature/allocator-correctness-gates`.
 
 ## Immediate Next Step
 

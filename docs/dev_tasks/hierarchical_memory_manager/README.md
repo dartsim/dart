@@ -236,7 +236,11 @@
       debug counters. `WorldMemoryDiagnostics` also reports aggregate and
       per-storage ECS registry layout counters without exposing EnTT types, and
       dartpy exposes the same read-only snapshot through
-      `World.memory_diagnostics`. GUI visualization remains future work.
+      `World.memory_diagnostics`. The standalone `dartsim` editor now has a
+      tested read-only Memory panel action seam that surfaces frame scratch,
+      allocator debug counters, and largest ECS storage capacities. Broader
+      profiler overlays and workflow-specific visualizations remain future
+      work.
 
 ## Goal
 

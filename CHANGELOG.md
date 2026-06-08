@@ -237,6 +237,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Added structured `MemoryManager` debug diagnostics and surfaced them through
     experimental `World` memory diagnostics for free/pool allocator accounting,
     including typed borrowed allocator use.
+  - Added a read-only Memory panel to the standalone `dartsim` editor for
+    frame-scratch counters, `MemoryManager` debug counters, and ECS storage
+    capacity diagnostics.
   - Made experimental `World::clear()` recreate its internal allocator-backed
     registry storage so ECS capacities and debug-tracked registry allocations
     are released at the rebuild boundary while preserving the World memory
