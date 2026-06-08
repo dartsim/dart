@@ -1140,9 +1140,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     verified in default and SIMD-enabled builds at those 24-/48-/96-row and
     8-/16-/32-contact direct CUDA packet sizes,
     homogeneous 4-, 8-, and 16-contact world-contact,
-    homogeneous 5-/6-sphere coupled stack-contact, grouped variable-size
+    homogeneous 5-/6-/7-sphere coupled stack-contact, grouped variable-size
     1/2/4/8/16-contact separated world-contact LCP packets, plus grouped
-    variable-size 2/3/4/5/6-sphere coupled stack-contact LCP packets, plus
+    variable-size 2/3/4/5/6/7-sphere coupled stack-contact LCP packets, plus
     grouped variable-size manually assembled 1-/4-/8-/16-contact articulated
     unified-contact LCP packets including cross-multibody link-vs-link cases,
     plus mixed grouped contact batches combining separated, stack, and
