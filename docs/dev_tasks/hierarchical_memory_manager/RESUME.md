@@ -58,18 +58,20 @@ These are not the final global zero-allocation proof.
 
 The global heap guard branches pre-bake the default step stage bundle and
 kinematics graph cache at `enterSimulationMode()`, reuse rigid IPC kinematic
-scratch storage, and add global `operator new` guards proving baked kinematic
-IPC rigid-body, box-obstacle, rigid-body resting-contact, non-cross articulated
-resting-contact, and same-DOF sequential cross-articulated link-contact steps do
-not allocate from the global heap. The current base-allocator no-growth guard
-now covers the same contact-heavy rigid-body, non-cross articulated, and
-same-DOF cross-articulated paths after contact prewarm. Mixed/different-DOF,
-stacked, and coupled multi-row cross-articulated boxed-LCP fallback scenes now
-have World base-allocator no-growth gates and first baked-step global heap
-no-allocation gates, with unified constraint scratch primed during
-`enterSimulationMode()`. Five-multibody and eight-multibody stacked boxed-LCP
-fallback scenes plus a disconnected multi-island mixed rigid/articulated
-contact scene now extend those gates beyond the original small contact sets.
+scratch storage, and route rigid IPC accepted/rejected writeback through that
+stage-owned entity-order scratch instead of local traversal vectors. They add
+global `operator new` guards proving baked kinematic IPC rigid-body,
+box-obstacle, rigid-body resting-contact, non-cross articulated resting-contact,
+and same-DOF sequential cross-articulated link-contact steps do not allocate
+from the global heap. The current base-allocator no-growth guard now covers the
+same contact-heavy rigid-body, non-cross articulated, and same-DOF
+cross-articulated paths after contact prewarm. Mixed/different-DOF, stacked,
+and coupled multi-row cross-articulated boxed-LCP fallback scenes now have World
+base-allocator no-growth gates and first baked-step global heap no-allocation
+gates, with unified constraint scratch primed during `enterSimulationMode()`.
+Five-multibody and eight-multibody stacked boxed-LCP fallback scenes plus a
+disconnected multi-island mixed rigid/articulated contact scene now extend those
+gates beyond the original small contact sets.
 Public return-by-value boxed-LCP unified convenience wrappers are API
 allocation-boundary surfaces; the production boxed-LCP stage uses in-place
 unified assembly and solve scratch. Still-larger production contact sets and

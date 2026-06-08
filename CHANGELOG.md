@@ -275,6 +275,8 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     build the local row remap once per solve instead of once per island, and
     successful unified link impulse application can reuse the same solve scratch
     for generalized-impulse and velocity-delta buffers.
+    Rigid IPC accepted/rejected writeback now reuses stage-owned entity-order
+    scratch instead of allocating local traversal vectors.
     Convenience return-by-value unified problem wrappers remain a separate
     allocation target.
   - Reused `DeformableDynamicsStage` scratch for deformable surface snapshots,

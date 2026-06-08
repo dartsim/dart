@@ -8205,10 +8205,13 @@ void applyKinematicRuntimeBody(World& world, const RigidIpcRuntimeBody& body)
 void applyRigidIpcRuntimeResult(
     World& world,
     const std::vector<RigidIpcRuntimeBody>& bodies,
-    const sxdetail::RigidIpcProjectedNewtonSolveResult& result)
+    const sxdetail::RigidIpcProjectedNewtonSolveResult& result,
+    std::vector<entt::entity>& writebackEntities,
+    std::vector<entt::entity>& orderedEntities,
+    std::vector<int>& visitState)
 {
   auto& registry = dart::simulation::detail::registryOf(world);
-  std::vector<entt::entity> writebackEntities;
+  writebackEntities.clear();
   writebackEntities.reserve(bodies.size());
   for (const auto& body : bodies) {
     if (body.surface.dynamic || body.kinematic) {
@@ -8216,8 +8219,8 @@ void applyRigidIpcRuntimeResult(
     }
   }
 
-  const auto orderedEntities
-      = orderRigidBodiesParentBeforeChild(registry, writebackEntities);
+  orderRigidBodiesParentBeforeChild(
+      registry, writebackEntities, orderedEntities, visitState);
   for (const auto entity : orderedEntities) {
     const std::size_t bodyIndex = findRuntimeBodyIndex(bodies, entity);
     if (bodyIndex >= bodies.size()) {
@@ -8289,11 +8292,12 @@ void blockRejectedRigidIpcKinematicBody(
 }
 
 //==============================================================================
-std::vector<entt::entity> blockedKinematicEntitiesAfterRejectedRigidIpcSolve(
+void blockedKinematicEntitiesAfterRejectedRigidIpcSolve(
     const std::vector<RigidIpcRuntimeBody>& solverBodies,
-    const sxdetail::RigidIpcProjectedNewtonSolveResult& result)
+    const sxdetail::RigidIpcProjectedNewtonSolveResult& result,
+    std::vector<entt::entity>& blockedEntities)
 {
-  std::vector<entt::entity> blockedEntities;
+  blockedEntities.clear();
   const auto blockBodyPair = [&](const std::size_t bodyA,
                                  const std::size_t bodyB) {
     blockRejectedRigidIpcKinematicBody(solverBodies, bodyA, blockedEntities);
@@ -8309,8 +8313,6 @@ std::vector<entt::entity> blockedKinematicEntitiesAfterRejectedRigidIpcSolve(
   if (result.lineSearch.limited || !result.lineSearch.allowsPositiveStep()) {
     blockBodyPair(result.lineSearch.bodyA, result.lineSearch.bodyB);
   }
-
-  return blockedEntities;
 }
 
 //==============================================================================
@@ -8318,18 +8320,19 @@ void applyRigidIpcKinematicRuntimeBodiesAfterRejectedSolve(
     World& world,
     const std::vector<RigidIpcRuntimeBody>& runtimeBodies,
     const std::vector<RigidIpcRuntimeBody>& solverBodies,
-    const sxdetail::RigidIpcProjectedNewtonSolveResult& result)
+    const sxdetail::RigidIpcProjectedNewtonSolveResult& result,
+    std::vector<entt::entity>& blockedEntities,
+    std::vector<entt::entity>& writebackEntities,
+    std::vector<entt::entity>& orderedEntities,
+    std::vector<int>& visitState)
 {
   // Rejected dynamic solve results are discarded, but kinematic bodies that did
   // not participate in active IPC rows or the limiting CCD pair still have an
   // independent prescribed motion. Block only the involved supported surfaces;
   // unsupported kinematic bodies never entered the solve and remain
   // advanceable.
-  auto blockedEntities = blockedKinematicEntitiesAfterRejectedRigidIpcSolve(
-      solverBodies, result);
-  std::vector<entt::entity> writebackEntities;
-  std::vector<entt::entity> orderedEntities;
-  std::vector<int> visitState;
+  blockedKinematicEntitiesAfterRejectedRigidIpcSolve(
+      solverBodies, result, blockedEntities);
   applyRigidIpcKinematicRuntimeBodies(
       world,
       runtimeBodies,
@@ -9306,7 +9309,14 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
   // preserved by leaving the runtime state untouched.
   if (result.failed && !restingContactBlocked) {
     applyRigidIpcKinematicRuntimeBodiesAfterRejectedSolve(
-        world, runtimeBodies, solverBodies, result);
+        world,
+        runtimeBodies,
+        solverBodies,
+        result,
+        scratch.blockedEntities,
+        scratch.writebackEntities,
+        scratch.orderedEntities,
+        scratch.visitState);
     return;
   }
   // Otherwise apply the last intersection-free iterate the bounded solve
@@ -9323,12 +9333,25 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
   if (!result.converged && !result.madeProgress() && !restingContactBlocked) {
     m_lastStats.nonConvergedResultSkipped = true;
     applyRigidIpcKinematicRuntimeBodiesAfterRejectedSolve(
-        world, runtimeBodies, solverBodies, result);
+        world,
+        runtimeBodies,
+        solverBodies,
+        result,
+        scratch.blockedEntities,
+        scratch.writebackEntities,
+        scratch.orderedEntities,
+        scratch.visitState);
     return;
   }
 
   m_lastStats.resultApplied = true;
-  applyRigidIpcRuntimeResult(world, runtimeBodies, result);
+  applyRigidIpcRuntimeResult(
+      world,
+      runtimeBodies,
+      result,
+      scratch.writebackEntities,
+      scratch.orderedEntities,
+      scratch.visitState);
 }
 
 //==============================================================================

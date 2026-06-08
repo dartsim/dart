@@ -181,8 +181,11 @@
       solved lambda vector out of its local scratch instead of allocating a
       second result copy, and callers that want a `UnifiedConstraintSolution`
       object can now pass caller-owned result storage alongside solve scratch
-      for same-shape no-growth solves. `DeformableDynamicsStage` now owns
-      reusable obstacle-list, deformable surface-snapshot, and rigid
+      for same-shape no-growth solves. Rigid IPC accepted and rejected
+      writeback now reuses the stage-owned blocked/writeback/entity-order
+      scratch prepared with the rigid body capacity instead of allocating local
+      traversal vectors. `DeformableDynamicsStage` now owns reusable
+      obstacle-list, deformable surface-snapshot, and rigid
       surface-CCD snapshot scratch, and `prepare()` primes per-body
       surface-contact candidate buffers plus inter-body/rigid surface-CCD sweep
       buffers for baked steps. Default deformable projected-Newton friction
