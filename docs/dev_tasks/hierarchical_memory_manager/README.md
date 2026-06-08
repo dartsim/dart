@@ -190,7 +190,9 @@
       obstacle-list, deformable surface-snapshot, and rigid
       surface-CCD snapshot scratch, and `prepare()` primes per-body
       surface-contact candidate buffers plus inter-body/rigid surface-CCD sweep
-      buffers for baked steps. Default deformable projected-Newton friction
+      buffers for baked steps. Scripted deformable boundary processing now
+      reuses per-body Dirichlet/Neumann count masks instead of allocating local
+      per-node vectors each step. Default deformable projected-Newton friction
       now reuses per-body normal-force, normal-direction, and self-contact
       friction-contact buffers instead of allocating local `std::vector`
       scratch in the step loop, and static-ground box CCD footprint clipping now

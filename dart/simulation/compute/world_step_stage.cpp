@@ -4884,6 +4884,8 @@ void reserveDeformableSolverScratch(
   scratch.externalAccelerations.reserve(nodeCount);
   scratch.activeFixed.reserve(nodeCount);
   scratch.activeDirichlet.reserve(nodeCount);
+  scratch.countedDirichlet.reserve(nodeCount);
+  scratch.countedNeumann.reserve(nodeCount);
 }
 
 //==============================================================================
@@ -5018,7 +5020,7 @@ void prepareDeformableBoundaryConditions(
     return;
   }
 
-  std::vector<std::uint8_t> countedDirichlet(nodeCount, 0u);
+  scratch.countedDirichlet.assign(nodeCount, 0u);
   for (const auto& boundary : boundaryConditions->dirichlet) {
     if (!isBoundaryActiveAtStepStart(
             time, boundary.startTime, boundary.endTime)) {
@@ -5048,14 +5050,14 @@ void prepareDeformableBoundaryConditions(
       state.velocities[node] = velocity;
       scratch.activeFixed[node] = 1u;
       scratch.activeDirichlet[node] = 1u;
-      if (countedDirichlet[node] == 0u) {
-        countedDirichlet[node] = 1u;
+      if (scratch.countedDirichlet[node] == 0u) {
+        scratch.countedDirichlet[node] = 1u;
         ++stats.activeDirichletNodeCount;
       }
     }
   }
 
-  std::vector<std::uint8_t> countedNeumann(nodeCount, 0u);
+  scratch.countedNeumann.assign(nodeCount, 0u);
   for (const auto& boundary : boundaryConditions->neumann) {
     if (!isBoundaryActiveAtStepStart(
             time, boundary.startTime, boundary.endTime)) {
@@ -5074,8 +5076,8 @@ void prepareDeformableBoundaryConditions(
       }
 
       scratch.externalAccelerations[node] += boundary.acceleration;
-      if (countedNeumann[node] == 0u) {
-        countedNeumann[node] = 1u;
+      if (scratch.countedNeumann[node] == 0u) {
+        scratch.countedNeumann[node] = 1u;
         ++stats.activeNeumannNodeCount;
       }
     }

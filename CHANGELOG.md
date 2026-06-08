@@ -288,8 +288,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     stage/entity scratch-backed too, and VBD topology/static-contact scratch is
     primed during `enterSimulationMode()`, so baked surface-snapshot steps and
     first-baked-step active VBD static rigid surface-CCD point crossing do not
-    allocate from the global heap. Default projected-Newton deformable solves
-    now reuse per-body RHS, sparse Hessian assembly, PSD block batch, sparse
+    allocate from the global heap. Scripted deformable boundary processing now
+    reuses per-body Dirichlet/Neumann count masks instead of allocating local
+    per-node vectors each step. Default projected-Newton deformable solves now
+    reuse per-body RHS, sparse Hessian assembly, PSD block batch, sparse
     pattern, and solution scratch for covered mass-spring and static rigid
     surface-CCD steps, and FEM rest-shape caches are primed for covered
     one-tetrahedron FEM projected-Newton steps. Self-contact barrier scratch is

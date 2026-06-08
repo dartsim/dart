@@ -141,8 +141,10 @@ buffers and inter-body/rigid surface-CCD sweep buffers during
 surface scene with a static rigid surface-CCD obstacle, covering snapshot
 reuse, plus first-baked-step active VBD static rigid surface-CCD point crossing.
 VBD topology and static-contact scratch are primed during
-`enterSimulationMode()`. Default projected-Newton deformable scratch now keeps
-its RHS, sparse Hessian assembly, PSD block batches, sparse-pattern cache, and
+`enterSimulationMode()`. Scripted deformable boundary processing now reuses
+per-body Dirichlet/Neumann count masks instead of allocating local per-node
+vectors each step. Default projected-Newton deformable scratch now keeps its
+RHS, sparse Hessian assembly, PSD block batches, sparse-pattern cache, and
 solution storage on reusable per-body scratch for the covered mass-spring path;
 the first-baked-step global heap guard also covers default static rigid
 surface-CCD point crossing. FEM rest-shape caches are primed during
