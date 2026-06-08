@@ -190,8 +190,9 @@
       vector on every non-vertical sweep. Surface-contact candidate and sweep
       buffers now get topology-scaled bake-time reserve capacity, so the covered
       frictional self-contact patch, 5x5 two-layer grid, 7x7 two-layer large
-      grid, and 9x9 two-layer production grid reuse candidate and
-      friction-contact storage through projected-Newton line-search CCD. The
+      grid, 9x9 two-layer production grid, and 11x11 two-layer extended
+      production grid reuse candidate and friction-contact storage through
+      projected-Newton line-search CCD. The
       current production boxed-LCP stage
       uses the in-place unified assembler and solve scratch; the public
       return-by-value unified problem and solution wrappers remain
@@ -227,10 +228,13 @@
       self-contact path. The global heap guard now also covers a baked
       default-solver deformable ground-friction projected-Newton scene plus a
       multi-triangle frictional self-contact patch, a 5x5 two-layer frictional
-      self-contact grid, a 7x7 two-layer large grid, and a 9x9 two-layer
-      production grid. Still-larger
-      production-scale frictional deformable sets still need no-growth gates
-      before making the full deformable claim.
+      self-contact grid, a 7x7 two-layer large grid, a 9x9 two-layer
+      production grid, and an 11x11 two-layer extended production grid. The
+      11x11 guard also asserts non-vacuous solver activity through public
+      deformable diagnostics: active self-contact barriers, converged active
+      contacts, and positive friction dissipation. Still-larger or differently
+      shaped production-scale frictional deformable sets still need no-growth
+      gates before making the full deformable claim.
 - [ ] Phase 6: Add memory-layout profiler/debugger surfaces and GUI
       visualization. `MemoryAllocatorDebugger` now exposes structured live
       bytes, peak live bytes, and live allocation count; `MemoryManager` and
@@ -432,10 +436,13 @@ debugging, profiling, optimization experiments, and ImGui visualization.
    mixed/different-DOF, stacked, coupled multi-row, larger stacked, and
    extended stacked cross-articulated guards now cover World base-allocator
    growth and first baked-step global heap allocation by priming unified
-   constraint scratch at `enterSimulationMode()`. Continue broadening
-   boxed-LCP unified problem assembly and production-scale contact sets while
-   moving still-larger frictional deformable/contact candidate buffers to
-   backed storage before making the full zero-allocation claim.
+   constraint scratch at `enterSimulationMode()`. The current deformable
+   friction guard scales the same topology-reserved candidate/friction scratch
+   from patch, 5x5, 7x7, and 9x9 grids to an active 11x11 two-layer grid.
+   Continue broadening boxed-LCP unified problem assembly and differently
+   shaped production contact sets while moving any newly exposed
+   deformable/contact candidate buffers to backed storage before making the
+   full zero-allocation claim.
 6. Start replacing per-step `std::vector`/`Eigen` temporaries in hot stages with
    world-frame or world-pool backed storage only after the allocator evidence
    gate proves the DART allocator path is better for that workload. The

@@ -144,8 +144,10 @@ from bake-primed contact candidates, and the guard covers the two-triangle
 no-friction self-contact path. Surface-contact candidate and sweep buffers now
 get topology-scaled bake-time reserve capacity, and the guard covers a
 multi-triangle frictional self-contact patch, a 5x5 two-layer frictional
-self-contact grid, and a 7x7 two-layer large grid. Still-larger
-production-scale frictional deformable contact sets need no-growth gates.
+self-contact grid, a 7x7 two-layer large grid, a 9x9 two-layer production
+grid, and an 11x11 two-layer extended production grid. Differently shaped or
+still-larger production-scale frictional deformable contact sets need
+no-growth gates before making the full deformable claim.
 
 The latest continuation verified the boxed-LCP fallback and unified island
 same-shape allocation guards, then removed the avoidable final lambda copy from
@@ -180,6 +182,14 @@ The follow-up production-grid continuation expanded the same guard family to a
 bake-time reserve heuristic still covers that larger contact surface without
 additional scratch changes; the focused World base-allocator and global-heap
 no-growth filters pass.
+
+The extended production-grid continuation expanded that same guard family to an
+11x11 two-layer frictional self-contact grid. It also adds a public diagnostics
+assertion that the guard is non-vacuous: the scene reports one deformable body,
+242 nodes, active self-contact barriers, a nonempty converged active contact
+set, and positive friction dissipation. The same topology-reserved
+surface-candidate and self-contact-friction scratch covers the larger grid
+without additional allocator policy changes.
 
 The same continuation also added an explicit no-heap guard for same-shape
 in-place unified assembly with both rigid contacts and a borrowed multibody link
@@ -296,13 +306,22 @@ every required foonathan/memory allocator baseline on required workloads. The
 active zero-allocation guard work
 should broaden beyond the covered rigid-body, non-cross articulated,
 same-DOF sequential cross-articulated, current boxed-LCP fallback
-resting-contact, and basic deformable surface-snapshot scenes, while keeping
-remaining public-value unified problem/solution wrappers and larger
+resting-contact, current active 11x11 deformable self-contact friction grid,
+and basic deformable surface-snapshot scenes, while keeping remaining
+public-value unified problem/solution wrappers and larger or differently shaped
 default-solver deformable allocation surfaces explicit, before making a full
 zero-dynamic-allocation claim.
 
 ## Latest Local Validation
 
+- On 2026-06-08 after merging the latest `origin/main`, the deformable
+  no-growth guard expanded from the 9x9 production grid to an 11x11 two-layer
+  frictional self-contact grid. The focused filter
+  `World.BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths:World.DeformableSelfContactFrictionProductionGridIsActive:World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap`
+  passed, including the public diagnostics check for active self-contact and
+  positive friction dissipation. The saved strict allocator checker still
+  passes all 94 foonathan/memory and standard comparisons:
+  `.benchmark_results/allocator_comparative_lookup_table_mixed_entt_merged_check.json`.
 - On 2026-06-08 after merging the latest `origin/main`, switching the EnTT
   no-growth DART benchmark row to free-list-backed world-lifetime storage, and
   adding the default `PoolAllocator` heap-index lookup table:

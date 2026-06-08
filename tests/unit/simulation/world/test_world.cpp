@@ -1024,6 +1024,13 @@ void configureDeformableSelfContactFrictionProductionGridScene(
       world, 9, "friction_production_grid");
 }
 
+void configureDeformableSelfContactFrictionExtendedProductionGridScene(
+    dart::simulation::World& world)
+{
+  configureDeformableSelfContactFrictionGridSceneWithSize(
+      world, 11, "friction_extended_production_grid");
+}
+
 } // namespace
 
 // Test World construction
@@ -1884,6 +1891,27 @@ TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "deformable self-contact friction production grid",
       configureDeformableSelfContactFrictionProductionGridScene);
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "deformable self-contact friction extended production grid",
+      configureDeformableSelfContactFrictionExtendedProductionGridScene);
+}
+
+TEST(World, DeformableSelfContactFrictionProductionGridIsActive)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  configureDeformableSelfContactFrictionExtendedProductionGridScene(world);
+  world.enterSimulationMode();
+
+  world.step();
+
+  const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
+  EXPECT_EQ(diagnostics.bodyCount, 1u);
+  EXPECT_EQ(diagnostics.nodeCount, 2u * 11u * 11u);
+  EXPECT_GT(diagnostics.selfContactBarrierActiveContacts, 0u);
+  EXPECT_GT(diagnostics.convergedActiveContactCount, 0u);
+  EXPECT_GT(diagnostics.frictionDissipation, 0.0);
 }
 
 TEST(World, BakedKinematicIpcStepsDoNotAllocateGlobalHeap)
@@ -2124,6 +2152,9 @@ TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "deformable self-contact friction production grid",
       configureDeformableSelfContactFrictionProductionGridScene);
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "deformable self-contact friction extended production grid",
+      configureDeformableSelfContactFrictionExtendedProductionGridScene);
 
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "deformable surface and rigid CCD snapshots", [](sx::World& world) {
