@@ -1105,7 +1105,8 @@ The current local evidence for this task is:
   CUDA-enabled build, including standard, boxed, friction-index, and
   grouped variable-size synthetic standard/boxed/friction-index plus
   contact-derived world-contact, homogeneous 5-/6-/7-/8-sphere and grouped
-  variable-size 2/3/4/5/6/7/8-sphere coupled stack-contact, and articulated
+  variable-size 2/3/4/5/6/7/8-sphere coupled stack-contact with three
+  variants per sphere count, and articulated
   unified-contact batches including cross-multibody link-vs-link packets, plus
   mixed grouped contact batches executed on CUDA for fixed-iteration Jacobi and
   PGS.
@@ -1147,10 +1148,15 @@ The current local evidence for this task is:
   `cuda_group_count=5`, `contact_shape_count=5`, `min_problem_size=3`,
   `max_problem_size=48`, `total_contact_count=62`, and
   `total_problem_size=186`. The coupled stack
-  grouped variable-size rows now use 2/3/4/5/6/7/8-sphere stack packets with
+  grouped variable-size rows now use 2/3/4/5/6/7/8-sphere stack packets. The
+  `/2` benchmark rows report
   `batch_size=14`, `cuda_group_count=7`, `contact_shape_count=7`,
   `min_problem_size=6`, `max_problem_size=24`,
-  `total_contact_count=70`, and `total_problem_size=210`. The articulated
+  `total_contact_count=70`, and `total_problem_size=210`; the `/3` rows
+  report `problem_variants_per_shape=3`, `batch_size=21`,
+  `cuda_group_count=7`, `contact_shape_count=7`, `min_problem_size=6`,
+  `max_problem_size=24`, `total_contact_count=105`, and
+  `total_problem_size=315`. The articulated
   grouped variable-size rows use manually assembled 1-/4-/8-/16-contact fixed-base
   three-axis prismatic unified-contact packets covering link-ground,
   link-vs-dynamic-rigid, and cross-multibody link-vs-link cases with
@@ -1293,7 +1299,8 @@ The current local evidence for this task is:
   standard/boxed/friction-index plus grouped variable-size synthetic
   standard/boxed/friction-index, homogeneous 4-/8-/16-contact, homogeneous
   5-/6-/7-/8-sphere coupled stack, and grouped variable-size 1/2/4/8/16-contact separated
-  and 2/3/4/5/6/7/8-sphere coupled stack world-contact batch paths, plus manually
+  and 2/3/4/5/6/7/8-sphere coupled stack world-contact batch paths with
+  two- and three-variant grouped benchmark rows, plus manually
   assembled 1-/4-/8-/16-contact articulated unified-contact batch paths including
   cross-multibody link-vs-link packets, and mixed
   separated/stack/articulated grouped contact batch paths, scoped dense

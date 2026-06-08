@@ -82,7 +82,8 @@
       boxed, and friction-index packets, homogeneous 4-, 8-, and 16-contact DART 7
       world-contact packets, homogeneous 5-/6-/7-/8-sphere coupled stack-contact
       packets, grouped variable-size 1/2/4/8/16-contact sphere-ground packets,
-      grouped variable-size 2/3/4/5/6/7/8-sphere coupled stack-contact packets, and
+      grouped variable-size 2/3/4/5/6/7/8-sphere coupled stack-contact packets
+      with two- and three-variant stack grouped benchmark rows, and
       grouped variable-size manually assembled 1-/4-/8-/16-contact articulated
       unified-contact packets including cross-multibody link-vs-link cases,
       plus mixed grouped contact packets combining those separated, stack, and
@@ -360,6 +361,8 @@
 - [x] Added grouped variable-size CUDA contact-batch evidence for DART 7
       2/3/4/5/6/7/8-sphere coupled stack-contact packets, covering fixed-iteration
       CUDA Jacobi and PGS unit tests and benchmark rows on the visible GPU.
+      The stack grouped tests now run three velocity variants per sphere count,
+      and benchmark rows keep the earlier `/2` rows while adding `/3` rows.
 - [x] Added grouped variable-size CUDA contact-batch evidence for DART 7
       manually assembled fixed-base three-axis prismatic articulated
       unified-contact packets with 1, 4, 8, and 16 contacts, covering fixed-iteration
@@ -572,7 +575,8 @@ tradeoffs evidence based.
   variable-size synthetic standard/boxed/friction-index CUDA batches,
   homogeneous contact-derived world-contact CUDA batches, homogeneous 5-/6-/7-/8-sphere
   coupled stack-contact CUDA batches, and grouped variable-size 1/2/4/8/16-contact
-  separated, 2/3/4/5/6/7/8-sphere coupled stack world-contact, and manually assembled
+  separated, 2/3/4/5/6/7/8-sphere coupled stack world-contact with three
+  variants per sphere count, and manually assembled
   1-/4-/8-/16-contact articulated unified-contact CUDA batches covering link-ground,
   link-vs-dynamic-rigid, and cross-multibody link-vs-link packets, plus mixed
   grouped contact batches combining the separated, stack, and articulated
@@ -627,7 +631,13 @@ tradeoffs evidence based.
   reported two stack CUDA rows with `contract_ok=1`, `batch_size=14`,
   `cuda_group_count=7`, `contact_shape_count=7`, `min_problem_size=6`,
   `max_problem_size=24`, `total_contact_count=70`, and
-  `total_problem_size=210`. A focused articulated unified-contact follow-up
+  `total_problem_size=210`. A focused three-variant stack follow-up
+  `BM_LCP_COMPARE --benchmark_filter='BM_LcpCuda(Jacobi|Pgs)WorldStackContactGroupedBatch_FrictionIndex/3$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  reported two stack CUDA rows with `contract_ok=1`,
+  `problem_variants_per_shape=3`, `batch_size=21`, `cuda_group_count=7`,
+  `contact_shape_count=7`, `min_problem_size=6`, `max_problem_size=24`,
+  `total_contact_count=105`, and `total_problem_size=315`. A focused
+  articulated unified-contact follow-up
   `test_lcp_jacobi_batch_cuda --gtest_filter='CudaLcpJacobiBatch.ArticulatedUnifiedContactGroupedBatchSatisfiesLcpContract:CudaLcpPgsBatch.ArticulatedUnifiedContactGroupedBatchSatisfiesLcpContract' --gtest_brief=1`
   passed both CUDA grouped-batch tests, and
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpCuda(Jacobi|Pgs)ArticulatedUnifiedContactGroupedBatch_FrictionIndex' --benchmark_min_time=0.001s --benchmark_repetitions=1`
@@ -2130,7 +2140,8 @@ tradeoffs evidence based.
   standard/boxed/friction-index through 96-row and 32-contact packets,
   homogeneous 4-/8-/16-contact, homogeneous
   5-/6-/7-/8-sphere coupled stack, and grouped variable-size 1/2/4/8/16-contact separated
-  and 2/3/4/5/6/7/8-sphere coupled stack world-contact batch paths, plus manually
+  and 2/3/4/5/6/7/8-sphere coupled stack world-contact batch paths with
+  two- and three-variant grouped benchmark rows, plus manually
   assembled 1-/4-/8-/16-contact articulated unified-contact batch paths including
   cross-multibody link-vs-link packets, mixed
   separated/stack/articulated grouped contact batch paths, and PGS-only

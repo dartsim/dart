@@ -392,8 +392,8 @@ both serially and through the DART 7 experimental
 stack-contact packets, grouped variable-size synthetic standard/boxed/findex
 through 96-row and 32-contact packets, grouped variable-size
 1/2/4/8/16-contact separated sphere-ground packets, plus grouped variable-size
-2/3/4/5/6/7/8-sphere coupled stack-contact
-packets, plus grouped variable-size manually assembled 1-/4-/8-/16-contact
+2/3/4/5/6/7/8-sphere coupled stack-contact packets with two- and three-variant
+grouped benchmark rows, plus grouped variable-size manually assembled 1-/4-/8-/16-contact
 articulated unified-contact packets covering link-ground, link-vs-dynamic-rigid,
 and cross-multibody link-vs-link cases, plus mixed grouped contact batches that
 combine separated, stack, and 1-/4-/8-/16-contact articulated fixture families for fixed-iteration
@@ -430,13 +430,14 @@ contract and 1000-step public `World::step()` invariant tests; matching
 benchmark rows pass all 15 registered non-`NNCG` 6-sphere solver rows, the
 6-sphere assembly row, and the 6-sphere 1000-step public-step row. The CUDA
 tree also passes direct fixed-iteration Jacobi and PGS homogeneous 8-sphere
-stack batches plus grouped 2/3/4/5/6/7/8-sphere stack batches with
+stack batches plus three-variant grouped 2/3/4/5/6/7/8-sphere stack batches with
 `cuda_lcp_execution=1` and `contract_ok=1`.
 The current branch also adds a 7-sphere, 7-contact, 21-row coupled stack
 snapshot/assembly row, 14 matching 7-sphere solver benchmark rows excluding
 `NNCG` and `RedBlackGaussSeidel`, 32-box and 48-box dense public-step unit
 gates, and 8-sphere fixed-iteration CUDA Jacobi/PGS stack-contact batch rows
-with grouped 2/3/4/5/6/7/8-sphere stack packets.
+with grouped 2/3/4/5/6/7/8-sphere stack packets, including `/2` and `/3`
+grouped benchmark rows.
 Push/PR work still requires explicit maintainer/user approval.
 
 ## Immediate Next Step
@@ -1285,7 +1286,8 @@ contact scenes.
   standard, boxed, friction-index, grouped variable-size synthetic
   standard/boxed/friction-index, contact-derived world-contact, homogeneous
   5-/6-/7-/8-sphere coupled stack-contact batches, and grouped variable-size
-  2/3/4/5/6/7/8-sphere coupled stack-contact batches, plus grouped manually assembled
+  2/3/4/5/6/7/8-sphere coupled stack-contact batches with three variants per
+  sphere count, plus grouped manually assembled
   1-/4-/8-/16-contact articulated unified-contact batches, plus mixed grouped contact
   batches executed on CUDA for Jacobi and PGS.
   `BM_LcpCudaJacobiBatch_*`, `BM_LcpCudaPgsBatch_*`,
@@ -1335,10 +1337,14 @@ contact scenes.
   (`batch_size=10`, `cuda_group_count=5`, `contact_shape_count=5`,
   `min_problem_size=3`, `max_problem_size=48`, `total_contact_count=62`,
   `total_problem_size=186`).
-  The coupled stack grouped variable-size rows are 2/3/4/5/6/7/8-sphere stack packets
-  (`batch_size=14`, `cuda_group_count=7`, `contact_shape_count=7`,
-  `min_problem_size=6`, `max_problem_size=24`, `total_contact_count=70`,
-  `total_problem_size=210`).
+  The coupled stack grouped variable-size rows are 2/3/4/5/6/7/8-sphere stack
+  packets. The `/2` rows report `batch_size=14`, `cuda_group_count=7`,
+  `contact_shape_count=7`, `min_problem_size=6`, `max_problem_size=24`,
+  `total_contact_count=70`, and `total_problem_size=210`; the `/3` rows
+  report `problem_variants_per_shape=3`, `batch_size=21`,
+  `cuda_group_count=7`, `contact_shape_count=7`, `min_problem_size=6`,
+  `max_problem_size=24`, `total_contact_count=105`, and
+  `total_problem_size=315`.
   The articulated unified-contact grouped variable-size rows are manually
   assembled fixed-base three-axis prismatic link-ground,
   link-vs-dynamic-rigid, and cross-multibody link-vs-link packets with 1, 4,
@@ -1523,6 +1529,10 @@ cmake --build build/default/cpp/Release \
 python scripts/run_benchmark_smoke.py build/cuda/cpp/Release/bin/BM_LCP_COMPARE \
   "--benchmark_filter=BM_LcpCuda(Jacobi|Pgs)WorldStackContact(Batch_FrictionIndex/8/4|GroupedBatch_FrictionIndex/2$)" \
   "--benchmark_min_time=0.001s"
+python scripts/run_benchmark_smoke.py build/cuda/cpp/Release/bin/BM_LCP_COMPARE \
+  "--benchmark_filter=BM_LcpCuda(Jacobi|Pgs)WorldStackContactGroupedBatch_FrictionIndex/3$" \
+  "--benchmark_min_time=0.001s" \
+  "--benchmark_repetitions=1"
 ./build/cuda/cpp/Release/bin/BM_LCP_COMPARE \
   "--benchmark_filter=BM_LcpCuda(Jacobi|Pgs)ArticulatedUnifiedContactGroupedBatch_FrictionIndex" \
   "--benchmark_min_time=0.001s" \
