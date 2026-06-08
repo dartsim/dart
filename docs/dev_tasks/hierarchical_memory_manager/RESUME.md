@@ -68,7 +68,8 @@ stacked, and coupled multi-row cross-articulated boxed-LCP fallback scenes now
 have World base-allocator no-growth gates and first baked-step global heap
 no-allocation gates, with unified constraint scratch primed during
 `enterSimulationMode()`. Five-multibody and eight-multibody stacked boxed-LCP
-fallback scenes now extend those gates beyond the original small contact sets.
+fallback scenes plus a disconnected multi-island mixed rigid/articulated
+contact scene now extend those gates beyond the original small contact sets.
 Public return-by-value boxed-LCP unified convenience wrappers are API
 allocation-boundary surfaces; the production boxed-LCP stage uses in-place
 unified assembly and solve scratch. Still-larger production contact sets and
@@ -121,8 +122,11 @@ boxed-LCP contact shape at `enterSimulationMode()` without writing impulses
 back to World state, so the current fallback scenes' first active step reuses
 that capacity. Public multibody link-contact assembly now has reusable scratch
 storage, and the in-place unified assembler can borrow that problem without
-same-shape heap growth. Convenience return-by-value unified problem wrappers
-are still open.
+same-shape heap growth. Multi-island unified solves now reserve traversal
+scratch and initialize the local row remap once per solve instead of once per
+island, and no-growth guards cover a disconnected mixed rigid/articulated
+contact scene. Convenience return-by-value unified problem wrappers are still
+open.
 
 The deformable scratch slice moved step-local obstacle barrier lists,
 deformable surface snapshots, and static/moving rigid surface-CCD snapshots
@@ -306,10 +310,11 @@ every required foonathan/memory allocator baseline on required workloads. The
 active zero-allocation guard work
 should broaden beyond the covered rigid-body, non-cross articulated,
 same-DOF sequential cross-articulated, current boxed-LCP fallback
-resting-contact, current active 11x11 deformable self-contact friction grid,
-current active 9x13 deformable self-contact friction grid, current active AVBD
-ground contact/friction rows, current active AVBD self-contact normal/friction
-row scene, current active rigid AVBD contact rows, current active rigid AVBD
+resting-contact, current boxed-LCP multi-island mixed rigid/articulated
+fallback, current active 11x11 deformable self-contact friction grid, current
+active 9x13 deformable self-contact friction grid, current active AVBD ground
+contact/friction rows, current active AVBD self-contact normal/friction row
+scene, current active rigid AVBD contact rows, current active rigid AVBD
 fixed-joint rows, current active inter-body deformable surface-CCD crossing, and
 basic deformable surface-snapshot scenes, while keeping remaining public-value
 unified problem/solution wrappers and larger or differently shaped
@@ -318,6 +323,18 @@ zero-dynamic-allocation claim.
 
 ## Latest Local Validation
 
+- On 2026-06-08 after merging the latest `origin/main`, boxed-LCP unified
+  island remapping now builds its local row map once per solve instead of once
+  per island and reserves island traversal scratch up front. A disconnected
+  multi-island mixed rigid/articulated scene was added to the active unified
+  fallback check plus the World base-allocator and global heap baked-step
+  no-growth guards. Focused validation passed:
+  `cmake --build build/default/cpp/Release --target test_world --parallel "$JOBS"`
+  and
+  `build/default/cpp/Release/bin/test_world --gtest_filter='World.CrossMultibodyMultiIslandContactsUseUnifiedFallback:World.BakedBoxedLcpFallbackContactsDoNotGrowWorldBaseAllocator:World.BakedBoxedLcpFallbackContactStepsDoNotAllocateGlobalHeap'`.
+  Full local gates also passed: `pixi run lint`, `pixi run build`,
+  `pixi run test-unit`, and the strict saved 94-row allocator checker against
+  foonathan/memory and standard baselines.
 - On 2026-06-08 after merging the latest `origin/main`, the deformable
   self-contact friction grid guard was generalized from square grids to a 9x13
   non-square two-layer production grid. The rectangular scene is covered by the

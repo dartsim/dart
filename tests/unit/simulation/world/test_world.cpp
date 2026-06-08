@@ -893,6 +893,113 @@ void configureCrossMultibodyExtendedStackFallbackScene(
   world.setTimeStep(0.001);
 }
 
+struct CrossMultibodyMultiIslandFallbackSceneHandles
+{
+  dart::simulation::Joint differentLowerJoint{
+      dart::simulation::Entity{}, nullptr};
+  dart::simulation::Joint differentUpperTipJoint{
+      dart::simulation::Entity{}, nullptr};
+  dart::simulation::Joint stackLowerJoint{dart::simulation::Entity{}, nullptr};
+  dart::simulation::Joint stackMiddleJoint{dart::simulation::Entity{}, nullptr};
+  dart::simulation::Joint stackUpperJoint{dart::simulation::Entity{}, nullptr};
+  dart::simulation::RigidBody lowerRigid{dart::simulation::Entity{}, nullptr};
+  dart::simulation::RigidBody upperRigid{dart::simulation::Entity{}, nullptr};
+};
+
+CrossMultibodyMultiIslandFallbackSceneHandles
+configureCrossMultibodyMultiIslandFallbackSceneWithHandles(
+    dart::simulation::World& world)
+{
+  namespace sx = dart::simulation;
+
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.001);
+
+  CrossMultibodyMultiIslandFallbackSceneHandles handles;
+
+  const auto makeOffsetSphere = [](double xOffset) {
+    auto shape = sx::CollisionShape::makeSphere(0.2);
+    shape.localTransform.translation() = Eigen::Vector3d(xOffset, 0.0, 0.0);
+    return shape;
+  };
+
+  const auto addSlider
+      = [&](std::string_view robotName, double xOffset, double z, double v) {
+          auto robot = world.addMultibody(robotName);
+          auto base = robot.addLink("base");
+          sx::JointSpec spec;
+          spec.name = "slider";
+          spec.type = sx::JointType::Prismatic;
+          spec.axis = Eigen::Vector3d::UnitZ();
+          auto link = robot.addLink("link", base, spec);
+          link.setMass(1.0);
+          link.setCollisionShape(makeOffsetSphere(xOffset));
+          auto joint = link.getParentJoint();
+          joint.setPosition(Eigen::VectorXd::Constant(1, z));
+          joint.setVelocity(Eigen::VectorXd::Constant(1, v));
+          return joint;
+        };
+
+  handles.differentLowerJoint
+      = addSlider("multi_island_different_lower", 0.0, 0.0, 0.5);
+
+  auto upperRobot = world.addMultibody("multi_island_different_upper");
+  auto upperBase = upperRobot.addLink("base");
+  sx::JointSpec rootSpec;
+  rootSpec.name = "upper_root_slider";
+  rootSpec.type = sx::JointType::Prismatic;
+  rootSpec.axis = Eigen::Vector3d::UnitZ();
+  auto upperMid = upperRobot.addLink("mid", upperBase, rootSpec);
+  upperMid.setMass(1.0);
+  auto upperRootJoint = upperMid.getParentJoint();
+  upperRootJoint.setPosition(Eigen::VectorXd::Constant(1, 0.15));
+  upperRootJoint.setVelocity(Eigen::VectorXd::Constant(1, -0.25));
+
+  sx::JointSpec tipSpec;
+  tipSpec.name = "upper_tip_slider";
+  tipSpec.type = sx::JointType::Prismatic;
+  tipSpec.axis = Eigen::Vector3d::UnitZ();
+  auto upperTip = upperRobot.addLink("tip", upperMid, tipSpec);
+  upperTip.setMass(1.0);
+  upperTip.setCollisionShape(makeOffsetSphere(0.0));
+  handles.differentUpperTipJoint = upperTip.getParentJoint();
+  handles.differentUpperTipJoint.setPosition(
+      Eigen::VectorXd::Constant(1, 0.20));
+  handles.differentUpperTipJoint.setVelocity(
+      Eigen::VectorXd::Constant(1, -0.25));
+
+  handles.stackLowerJoint
+      = addSlider("multi_island_stack_lower", 2.5, 0.0, 0.45);
+  handles.stackMiddleJoint
+      = addSlider("multi_island_stack_middle", 2.5, 0.35, 0.0);
+  handles.stackUpperJoint
+      = addSlider("multi_island_stack_upper", 2.5, 0.70, -0.45);
+
+  sx::RigidBodyOptions lowerRigidOptions;
+  lowerRigidOptions.position = Eigen::Vector3d(5.0, 0.0, 0.0);
+  lowerRigidOptions.linearVelocity = Eigen::Vector3d(0.0, 0.0, 0.4);
+  handles.lowerRigid
+      = world.addRigidBody("multi_island_lower_rigid", lowerRigidOptions);
+  handles.lowerRigid.setMass(1.0);
+  handles.lowerRigid.setCollisionShape(sx::CollisionShape::makeSphere(0.2));
+
+  sx::RigidBodyOptions upperRigidOptions;
+  upperRigidOptions.position = Eigen::Vector3d(5.0, 0.0, 0.35);
+  upperRigidOptions.linearVelocity = Eigen::Vector3d(0.0, 0.0, -0.4);
+  handles.upperRigid
+      = world.addRigidBody("multi_island_upper_rigid", upperRigidOptions);
+  handles.upperRigid.setMass(1.0);
+  handles.upperRigid.setCollisionShape(sx::CollisionShape::makeSphere(0.2));
+
+  return handles;
+}
+
+void configureCrossMultibodyMultiIslandFallbackScene(
+    dart::simulation::World& world)
+{
+  (void)configureCrossMultibodyMultiIslandFallbackSceneWithHandles(world);
+}
+
 void configureDeformableSelfContactFrictionPatchScene(
     dart::simulation::World& world)
 {
@@ -2559,6 +2666,11 @@ TEST(World, BakedBoxedLcpFallbackContactsDoNotGrowWorldBaseAllocator)
       configureCrossMultibodyExtendedStackFallbackScene,
       true,
       7);
+  expectNoWorldBaseAllocatorActivityDuringBakedBoxedLcpSteps(
+      "cross multibody multi-island mixed fallback",
+      configureCrossMultibodyMultiIslandFallbackScene,
+      true,
+      4);
 }
 
 TEST(World, BakedBoxedLcpFallbackContactStepsDoNotAllocateGlobalHeap)
@@ -2582,6 +2694,11 @@ TEST(World, BakedBoxedLcpFallbackContactStepsDoNotAllocateGlobalHeap)
       configureCrossMultibodyExtendedStackFallbackScene,
       true,
       7);
+  expectNoGlobalHeapAllocationsDuringBakedBoxedLcpSteps(
+      "cross multibody multi-island mixed fallback",
+      configureCrossMultibodyMultiIslandFallbackScene,
+      true,
+      4);
 }
 
 TEST(World, SequentialImpulseBakeDoesNotPrewarmRigidIpcCollisionSurfaces)
@@ -6669,6 +6786,76 @@ TEST(World, CrossMultibodyCoupledRowsUseUnifiedFallback)
   EXPECT_NEAR(defaultPath.lowerVelocity, boxedPath.lowerVelocity, 1e-12);
   EXPECT_NEAR(defaultPath.middleVelocity, boxedPath.middleVelocity, 1e-12);
   EXPECT_NEAR(defaultPath.upperVelocity, boxedPath.upperVelocity, 1e-12);
+}
+
+TEST(World, CrossMultibodyMultiIslandContactsUseUnifiedFallback)
+{
+  namespace sx = dart::simulation;
+
+  struct StepState
+  {
+    std::size_t contactCount{0};
+    double differentLowerVelocity{0.0};
+    double differentUpperTipVelocity{0.0};
+    double stackLowerVelocity{0.0};
+    double stackMiddleVelocity{0.0};
+    double stackUpperVelocity{0.0};
+    double lowerRigidVelocity{0.0};
+    double upperRigidVelocity{0.0};
+  };
+
+  const auto runScene = [](bool boxedLcp) {
+    sx::WorldOptions options;
+    if (boxedLcp) {
+      options.contactSolverMethod = sx::ContactSolverMethod::BoxedLcp;
+    }
+    sx::World world(options);
+    const auto handles
+        = configureCrossMultibodyMultiIslandFallbackSceneWithHandles(world);
+
+    world.enterSimulationMode();
+    const std::size_t contactCount = world.collide().size();
+    EXPECT_GE(contactCount, 4u);
+
+    world.step();
+
+    return StepState{
+        contactCount,
+        handles.differentLowerJoint.getVelocity()[0],
+        handles.differentUpperTipJoint.getVelocity()[0],
+        handles.stackLowerJoint.getVelocity()[0],
+        handles.stackMiddleJoint.getVelocity()[0],
+        handles.stackUpperJoint.getVelocity()[0],
+        handles.lowerRigid.getLinearVelocity().z(),
+        handles.upperRigid.getLinearVelocity().z()};
+  };
+
+  const StepState defaultPath = runScene(false);
+  const StepState boxedPath = runScene(true);
+
+  EXPECT_GE(defaultPath.contactCount, 4u);
+  EXPECT_GE(boxedPath.contactCount, 4u);
+  EXPECT_NEAR(
+      defaultPath.differentLowerVelocity,
+      boxedPath.differentLowerVelocity,
+      1e-12);
+  EXPECT_NEAR(
+      defaultPath.differentUpperTipVelocity,
+      boxedPath.differentUpperTipVelocity,
+      1e-12);
+  EXPECT_NEAR(
+      defaultPath.stackLowerVelocity, boxedPath.stackLowerVelocity, 1e-12);
+  EXPECT_NEAR(
+      defaultPath.stackMiddleVelocity, boxedPath.stackMiddleVelocity, 1e-12);
+  EXPECT_NEAR(
+      defaultPath.stackUpperVelocity, boxedPath.stackUpperVelocity, 1e-12);
+  EXPECT_NEAR(
+      defaultPath.lowerRigidVelocity, boxedPath.lowerRigidVelocity, 1e-12);
+  EXPECT_NEAR(
+      defaultPath.upperRigidVelocity, boxedPath.upperRigidVelocity, 1e-12);
+
+  EXPECT_LT(defaultPath.lowerRigidVelocity, 0.4);
+  EXPECT_GT(defaultPath.upperRigidVelocity, -0.4);
 }
 
 // Test that Coulomb friction at a link contact decelerates a sliding link. A

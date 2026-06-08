@@ -269,8 +269,11 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     scratch during `enterSimulationMode()`. Public multibody link-contact
     assembly now has reusable scratch storage that can be borrowed by the
     in-place unified assembler without same-shape heap growth, and the
-    boxed-LCP fallback gates include a larger five-multibody stacked contact
-    set. Convenience return-by-value unified problem wrappers remain a separate
+    boxed-LCP fallback gates include larger five- and eight-multibody stacked
+    contact sets plus a disconnected multi-island mixed rigid/articulated
+    contact set. Unified island solves now reserve island traversal scratch and
+    build the local row remap once per solve instead of once per island.
+    Convenience return-by-value unified problem wrappers remain a separate
     allocation target.
   - Reused `DeformableDynamicsStage` scratch for deformable surface snapshots,
     static/moving rigid surface-CCD snapshots, and rigid obstacle barrier lists,

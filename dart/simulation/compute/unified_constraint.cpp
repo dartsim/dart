@@ -303,10 +303,14 @@ void computeRowIslandsInto(
     UnifiedConstraintSolveScratch& scratch)
 {
   const Eigen::Index size = problem.rhs.size();
+  const auto rowCount = static_cast<std::size_t>(size);
   scratch.islandRows.clear();
+  scratch.islandRows.reserve(rowCount);
   scratch.islandOffsets.clear();
+  scratch.islandOffsets.reserve(rowCount + 1u);
   scratch.rowStack.clear();
-  scratch.visitedRows.assign(static_cast<std::size_t>(size), 0);
+  scratch.rowStack.reserve(rowCount);
+  scratch.visitedRows.assign(rowCount, 0);
   scratch.islandOffsets.push_back(0);
 
   const auto visit = [&](Eigen::Index row) {
@@ -729,11 +733,11 @@ bool solveUnifiedConstraintProblemInto(
   }
 
   scratch.lambda.setZero(size);
+  scratch.localIndex.assign(static_cast<std::size_t>(size), -1);
   for (std::size_t islandIndex = 0; islandIndex < islandCount; ++islandIndex) {
     const auto islandBegin = scratch.islandOffsets[islandIndex];
     const auto islandEnd = scratch.islandOffsets[islandIndex + 1];
     const auto islandSize = static_cast<Eigen::Index>(islandEnd - islandBegin);
-    scratch.localIndex.assign(static_cast<std::size_t>(size), -1);
     for (Eigen::Index local = 0; local < islandSize; ++local) {
       scratch.localIndex[static_cast<std::size_t>(
           scratch.islandRows[islandBegin + static_cast<std::size_t>(local)])]
