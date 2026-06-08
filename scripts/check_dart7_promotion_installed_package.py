@@ -72,6 +72,8 @@ int main() {
   sx::World world;
   auto body = world.addRigidBody("box");
   (void)body;
+  world.enterSimulationMode();
+
   sx::compute::SequentialExecutor sequential;
   world.sync(sx::WorldSyncStage::Kinematics, sequential);
 
