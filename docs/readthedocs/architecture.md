@@ -179,10 +179,11 @@ same shape is usable across domains and `World::add*` stays uniform.
 | Deformable | Mass-spring (default) / stable neo-Hookean FEM (opt-in)                             | 🧪 experimental | `DeformableBodyOptions`                                                     |
 | Deformable | Projected-Newton + self-contact barrier / friction; VBD block descent               | 🧪 experimental | `World::configureDeformableSolver`                                          |
 
-New paper methods enter through the nearest DART-owned family (rigid IPC and
-deformable IPC under the Newton-barrier family; VBD/AVBD under the VBD family;
-differentiable LCP under the differentiable rigid family) so they share a domain,
-state adapter, contact representation, benchmark schema, and capability
+New paper methods enter through the nearest DART-owned family (the IPC family
+for deformable, rigid, and affine/unified IPC variants consolidated through the
+unified Newton-barrier implementation; VBD/AVBD under the VBD family;
+differentiable LCP under the differentiable rigid family) so they share a
+domain, state adapter, contact representation, benchmark schema, and capability
 vocabulary instead of forming isolated stacks. Solvers, presets, and examples
 use method/approach/paper or DART-owned names — never other engines' names.
 

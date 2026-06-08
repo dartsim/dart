@@ -83,13 +83,15 @@ from other engines or projects.
 
 DART is research-focused, so adding algorithms from new papers is expected.
 That does not mean each paper gets an isolated solver stack. A new paper method
-must first be routed to the nearest DART-owned family: for example deformable
-IPC, rigid IPC, and affine/unified IPC belong under the Newton-barrier family;
-VBD, OGC, and AVBD belong under the VBD family; differentiable LCP and Dojo-style
-variational gradients belong under the differentiable/variational rigid-body
-families. A new family is justified only when the method cannot share a domain,
-state adapter, objective, contact representation, optimization loop, benchmark
-schema, or public capability vocabulary with an existing family.
+must first be routed to the nearest DART-owned family: for example IPC is the
+representative solver-family name for deformable IPC, rigid IPC, and
+affine/unified IPC as they consolidate through the unified Newton-barrier
+implementation; VBD, OGC, and AVBD belong under the VBD family;
+differentiable LCP and Dojo-style variational gradients belong under the
+differentiable/variational rigid-body families. A new family is justified only
+when the method cannot share a domain, state adapter, objective, contact
+representation, optimization loop, benchmark schema, or public capability
+vocabulary with an existing family.
 
 DART 7 is a clean-break API line, so backward compatibility is not a reason to
 carry duplicate public solver surfaces. Prefer a clean internal contract and a

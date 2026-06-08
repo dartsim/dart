@@ -1,8 +1,9 @@
 # PLAN-083: Unified Newton-Barrier Multibody Solver
 
 - Operating state: `PLAN-083` in [`dashboard.md`](dashboard.md)
-- Outcome: DART has a DART-owned Newton-barrier multibody solver family that
-  unifies deformable IPC, rigid IPC, affine/stiff-body dynamics, mixed
+- Outcome: DART has a DART-owned IPC solver family whose unified
+  Newton-barrier multibody implementation brings together deformable IPC,
+  rigid IPC, affine/stiff-body dynamics, mixed
   rigid-deformable codimensional contact, articulation constraints, friction,
   restitution, CPU/GPU execution, benchmarks, and py-demos examples behind the
   DART 7 `World` facade without exposing upstream project names, solver
@@ -78,8 +79,10 @@
 
 ## Consolidation Decisions
 
-1. **One DART method family, multiple variant owners.** PLAN-083 owns the
-   shared Newton-barrier multibody direction and the
+1. **One DART IPC method family, multiple variant owners.** Use IPC as the
+   representative solver-family name when the unified Newton-barrier method is
+   the most advanced shared IPC variant. PLAN-083 owns the shared
+   Newton-barrier multibody implementation direction and the
    [`ipc-variant-consolidation.md`](083-unified-newton-barrier-multibody/ipc-variant-consolidation.md)
    routing map. PLAN-081 keeps deformable FEM/IPC, codimensional IPC, PD-IPC
    GPU, and SPB recovery obligations. PLAN-082 keeps exact/reduced rigid IPC

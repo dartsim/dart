@@ -4,10 +4,12 @@
 
 Use this folder's `README.md`, PLAN-083, `docs/plans/dashboard.md`, and the
 current code as the live status. The branch-local "Current Branch" section below
-is historical handoff context, not current checkout state. Unified
-Newton-barrier work should continue by promoting shared primitives and solver
-contracts consumed by rigid IPC, deformable IPC, ABD, and future couplers rather
-than adding another public solver stack.
+is historical handoff context, not current checkout state. Treat IPC as the
+representative solver-family name when PLAN-083's unified Newton-barrier method
+is the most advanced shared IPC variant. Unified Newton-barrier work should
+continue by promoting shared primitives and solver contracts consumed by rigid
+IPC, deformable IPC, ABD, and future couplers rather than adding another public
+solver stack.
 
 The first Phase 3 shared-contract slice promotes fixed-size symmetric PSD
 projection into `detail/newton_barrier`. Rigid IPC and ABD now use the same

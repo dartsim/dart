@@ -81,11 +81,11 @@
 
 ## Goal
 
-Implement PLAN-083 incrementally until DART owns the shared Newton-barrier
-primitive layer, affine stiff-body track, CPU/GPU evidence, paper/deck parity
-rows, and py-demos examples behind DART-owned DART 7 `World` capabilities
-without exposing upstream solver names, registries, ECS storage, or backend
-resources as public API.
+Implement PLAN-083 incrementally until DART owns the IPC solver family through
+the shared Newton-barrier primitive layer, affine stiff-body track, CPU/GPU
+evidence, paper/deck parity rows, and py-demos examples behind DART-owned DART 7
+`World` capabilities without exposing upstream solver names, registries, ECS
+storage, or backend resources as public API.
 
 ## Non-Goals For Current Internal Slices
 
@@ -117,6 +117,11 @@ resources as public API.
   affine primitive-family friction rows.
 - Public docs and APIs keep method/capability names DART-owned; internal tests
   and manifests may cite IPC, rigid IPC, ABD, and paper row provenance.
+- Treat IPC as the representative solver-family name for PLAN-083 when the
+  unified Newton-barrier method is the most advanced shared IPC variant.
+  `Newton-barrier` names the implementation contracts and paper lineage;
+  variant names such as rigid IPC, deformable IPC, and ABD remain internal
+  provenance until shared behavior is proven.
 - The first `abd-alg-affine-body` micro-packet is primitive/oracle evidence and
   does not need a two-body affine contact micro-solve before Phase 3. Add a
   solved-state micro-solve only when the next broader ABD packet needs runtime
