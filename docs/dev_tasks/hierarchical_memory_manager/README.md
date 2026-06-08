@@ -189,12 +189,12 @@
       uses fixed-size stack storage instead of allocating a tiny footprint
       vector on every non-vertical sweep. Surface-contact candidate and sweep
       buffers now get topology-scaled bake-time reserve capacity, so the covered
-      frictional self-contact patch and 5x5 two-layer grid reuse candidate and
-      friction-contact storage through projected-Newton line-search CCD. The
-      current production boxed-LCP stage uses the in-place unified assembler
-      and solve scratch; the public return-by-value unified problem and
-      solution wrappers remain allocation-boundary API conveniences rather than
-      step-loop hot paths.
+      frictional self-contact patch, 5x5 two-layer grid, and 7x7 two-layer
+      large grid reuse candidate and friction-contact storage through
+      projected-Newton line-search CCD. The current production boxed-LCP stage
+      uses the in-place unified assembler and solve scratch; the public
+      return-by-value unified problem and solution wrappers remain
+      allocation-boundary API conveniences rather than step-loop hot paths.
 - [ ] Phase 5: Add allocation/debug accounting gates for "no dynamic allocation
       during the step loop" on representative rigid, multibody, contact, and
       deformable scenes. World base-allocator no-growth guards now cover baked
@@ -225,10 +225,10 @@
       contact candidates and covered for the two-triangle no-friction
       self-contact path. The global heap guard now also covers a baked
       default-solver deformable ground-friction projected-Newton scene plus a
-      multi-triangle frictional self-contact patch and a larger 5x5 two-layer
-      frictional self-contact grid. Still-larger production-scale frictional
-      deformable sets still need no-growth gates before making the full
-      deformable claim.
+      multi-triangle frictional self-contact patch, a 5x5 two-layer frictional
+      self-contact grid, and a 7x7 two-layer large grid. Still-larger
+      production-scale frictional deformable sets still need no-growth gates
+      before making the full deformable claim.
 - [ ] Phase 6: Add memory-layout profiler/debugger surfaces and GUI
       visualization. `MemoryAllocatorDebugger` now exposes structured live
       bytes, peak live bytes, and live allocation count; `MemoryManager` and

@@ -934,15 +934,14 @@ void configureDeformableSelfContactFrictionPatchScene(
   world.addDeformableBody("friction_patches", options);
 }
 
-void configureDeformableSelfContactFrictionGridScene(
-    dart::simulation::World& world)
+void configureDeformableSelfContactFrictionGridSceneWithSize(
+    dart::simulation::World& world, std::size_t grid, std::string_view bodyName)
 {
   namespace sx = dart::simulation;
 
   world.setGravity(Eigen::Vector3d::Zero());
   world.setTimeStep(0.01);
 
-  constexpr std::size_t grid = 5;
   constexpr double spacing = 0.5;
   constexpr double gap = 0.012;
   sx::DeformableBodyOptions options;
@@ -952,7 +951,7 @@ void configureDeformableSelfContactFrictionGridScene(
   options.fixedNodes.reserve(grid * grid);
 
   const auto nodeIndex
-      = [](std::size_t layer, std::size_t row, std::size_t col) {
+      = [grid](std::size_t layer, std::size_t row, std::size_t col) {
           return layer * grid * grid + row * grid + col;
         };
 
@@ -1001,7 +1000,21 @@ void configureDeformableSelfContactFrictionGridScene(
   options.edgeStiffness = 0.0;
   options.material.frictionCoefficient = 0.8;
 
-  world.addDeformableBody("friction_grid", options);
+  world.addDeformableBody(bodyName, options);
+}
+
+void configureDeformableSelfContactFrictionGridScene(
+    dart::simulation::World& world)
+{
+  configureDeformableSelfContactFrictionGridSceneWithSize(
+      world, 5, "friction_grid");
+}
+
+void configureDeformableSelfContactFrictionLargeGridScene(
+    dart::simulation::World& world)
+{
+  configureDeformableSelfContactFrictionGridSceneWithSize(
+      world, 7, "friction_large_grid");
 }
 
 } // namespace
@@ -1858,6 +1871,9 @@ TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "deformable self-contact friction grid",
       configureDeformableSelfContactFrictionGridScene);
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "deformable self-contact friction large grid",
+      configureDeformableSelfContactFrictionLargeGridScene);
 }
 
 TEST(World, BakedKinematicIpcStepsDoNotAllocateGlobalHeap)
@@ -2092,6 +2108,9 @@ TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "deformable self-contact friction grid",
       configureDeformableSelfContactFrictionGridScene);
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "deformable self-contact friction large grid",
+      configureDeformableSelfContactFrictionLargeGridScene);
 
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "deformable surface and rigid CCD snapshots", [](sx::World& world) {

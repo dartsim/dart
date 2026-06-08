@@ -143,9 +143,9 @@ projected-Newton path. Projected-Newton self-contact barrier scratch is sized
 from bake-primed contact candidates, and the guard covers the two-triangle
 no-friction self-contact path. Surface-contact candidate and sweep buffers now
 get topology-scaled bake-time reserve capacity, and the guard covers a
-multi-triangle frictional self-contact patch plus a larger 5x5 two-layer
-frictional self-contact grid. Still-larger production-scale frictional
-deformable contact sets need no-growth gates.
+multi-triangle frictional self-contact patch, a 5x5 two-layer frictional
+self-contact grid, and a 7x7 two-layer large grid. Still-larger
+production-scale frictional deformable contact sets need no-growth gates.
 
 The latest continuation verified the boxed-LCP fallback and unified island
 same-shape allocation guards, then removed the avoidable final lambda copy from
@@ -169,6 +169,11 @@ frictional self-contact grid. The larger grid exceeded the first topology
 reserve heuristic for motion-aware point-triangle and edge-edge candidates; the
 bake-time surface-candidate reserve now uses a larger still-linear local-contact
 heuristic.
+
+The next continuation expanded that same guard family to a 7x7 two-layer
+frictional self-contact grid. The existing bake-time candidate/friction reserve
+heuristic scaled to that case without additional scratch changes; the focused
+World base-allocator and global-heap no-growth filters pass.
 
 The same continuation also added an explicit no-heap guard for same-shape
 in-place unified assembly with both rigid contacts and a borrowed multibody link
