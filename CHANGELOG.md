@@ -204,6 +204,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Added explicit STL allocator construct/destroy hooks that keep non-trivial
     object lifetimes correct while avoiding unnecessary trivial-destructor work
     in allocator-aware container hot loops.
+  - Refined the comparative allocator checker so high-CV rows can pass only
+    when the benchmark mean/stddev/repetition aggregates still show DART's
+    normal-approximation 95% confidence interval strictly below the selected
+    baseline's confidence interval.
   - Applied the same lightweight stateful allocator traits to
     `FrameStlAllocator`, letting `std::allocator_traits` own construction and
     destruction in frame-backed allocator-aware container builds.

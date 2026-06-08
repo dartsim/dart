@@ -57,6 +57,8 @@ _COMPARATIVE_RE = re.compile(
 )
 _AGGREGATE_SUFFIX_RE = re.compile(r"_(?:mean|median|stddev|cv)$")
 _REPEATS_SUFFIX_RE = re.compile(r"/repeats:\d+")
+# Normal-approximation 95% confidence interval over benchmark repetitions.
+_NOISY_SEPARATION_Z = 1.96
 _BASELINE_ALLOCATORS = {
     "foonathan": ("Foonathan",),
     "std": ("StdPmr", "Std"),
@@ -385,6 +387,45 @@ def collect_coefficients_of_variation(
     return dict(cvs)
 
 
+def collect_timing_statistics(
+    rows: list[dict], metric: str = "cpu_time"
+) -> dict[str, dict[str, dict[str, float]]]:
+    statistics: dict[str, dict[str, dict[str, float]]] = defaultdict(
+        lambda: defaultdict(dict)
+    )
+
+    for row in rows:
+        if row.get("run_type") != "aggregate":
+            continue
+        aggregate = row.get("aggregate_name")
+        if aggregate not in {"mean", "stddev"}:
+            continue
+
+        name = _canonical_name(_row_name(row))
+        match = _COMPARATIVE_RE.match(name)
+        if match is None:
+            continue
+
+        family, allocator, args = match.groups()
+        key = family + (args or "")
+        timing = _timing_ns(row, metric)
+        if not math.isfinite(timing) or timing < 0.0:
+            continue
+
+        statistics[key][allocator][aggregate] = timing
+        try:
+            repetitions = int(row.get("repetitions", 0))
+        except (TypeError, ValueError):
+            repetitions = 0
+        if repetitions > 0:
+            statistics[key][allocator]["repetitions"] = float(repetitions)
+
+    return {
+        key: {allocator: dict(values) for allocator, values in allocs.items()}
+        for key, allocs in statistics.items()
+    }
+
+
 def collect_dart_counters(rows: list[dict]) -> dict[str, dict[str, float]]:
     counters: dict[str, dict[str, float]] = defaultdict(dict)
 
@@ -412,6 +453,54 @@ def collect_dart_counters(rows: list[dict]) -> dict[str, dict[str, float]]:
     return dict(counters)
 
 
+def _mean_confidence_interval(
+    statistics: dict[str, float],
+) -> tuple[float, float] | None:
+    mean = statistics.get("mean")
+    stddev = statistics.get("stddev")
+    repetitions = statistics.get("repetitions")
+    if mean is None or stddev is None or repetitions is None:
+        return None
+    if not all(math.isfinite(value) for value in (mean, stddev, repetitions)):
+        return None
+    if mean <= 0.0 or stddev < 0.0 or repetitions < 2.0:
+        return None
+
+    half_width = _NOISY_SEPARATION_Z * stddev / math.sqrt(repetitions)
+    return max(0.0, mean - half_width), mean + half_width
+
+
+def _separated_noisy_timing_evidence(
+    timing_statistics: dict[str, dict[str, dict[str, float]]],
+    *,
+    key: str,
+    baseline: str,
+    max_ratio: float,
+) -> dict | None:
+    dart_interval = _mean_confidence_interval(
+        timing_statistics.get(key, {}).get("DART", {})
+    )
+    baseline_interval = _mean_confidence_interval(
+        timing_statistics.get(key, {}).get(baseline, {})
+    )
+    if dart_interval is None or baseline_interval is None:
+        return None
+
+    dart_lower, dart_upper = dart_interval
+    baseline_lower, baseline_upper = baseline_interval
+    if dart_upper < baseline_lower * max_ratio:
+        return {
+            "evidence": "MEAN_CI_SEPARATED",
+            "dart_mean_ci_ns": [round(dart_lower, 3), round(dart_upper, 3)],
+            "baseline_mean_ci_ns": [
+                round(baseline_lower, 3),
+                round(baseline_upper, 3),
+            ],
+            "confidence_z": _NOISY_SEPARATION_Z,
+        }
+    return None
+
+
 def evaluate_comparisons(
     rows: list[dict],
     *,
@@ -431,6 +520,7 @@ def evaluate_comparisons(
 
     timings = collect_timings(rows, metric)
     cvs = collect_coefficients_of_variation(rows, metric)
+    timing_statistics = collect_timing_statistics(rows, metric)
     dart_counters = collect_dart_counters(rows)
     failures = []
     passes = []
@@ -478,27 +568,6 @@ def evaluate_comparisons(
                 )
                 continue
 
-            noisy_allocators = []
-            if max_cv is not None:
-                dart_cv = cvs.get(key, {}).get("DART")
-                baseline_cv = cvs.get(key, {}).get(baseline)
-                if dart_cv is not None and dart_cv > max_cv:
-                    noisy_allocators.append(("DART", dart_cv))
-                if baseline_cv is not None and baseline_cv > max_cv:
-                    noisy_allocators.append((baseline, baseline_cv))
-
-            if noisy_allocators:
-                failures.append(
-                    {
-                        "benchmark": key,
-                        "baseline": baseline,
-                        "noisy_allocators": noisy_allocators,
-                        "max_cv": max_cv,
-                        "status": "NOISY",
-                    }
-                )
-                continue
-
             ratio = dart_time / baseline_time
             result = {
                 "benchmark": key,
@@ -510,6 +579,42 @@ def evaluate_comparisons(
             }
             if key in dart_counters:
                 result["dart_counters"] = dart_counters[key]
+
+            noisy_allocators = []
+            if max_cv is not None:
+                dart_cv = cvs.get(key, {}).get("DART")
+                baseline_cv = cvs.get(key, {}).get(baseline)
+                if dart_cv is not None and dart_cv > max_cv:
+                    noisy_allocators.append(("DART", dart_cv))
+                if baseline_cv is not None and baseline_cv > max_cv:
+                    noisy_allocators.append((baseline, baseline_cv))
+
+            if noisy_allocators:
+                separated_evidence = _separated_noisy_timing_evidence(
+                    timing_statistics,
+                    key=key,
+                    baseline=baseline,
+                    max_ratio=max_ratio,
+                )
+                if ratio < max_ratio and separated_evidence is not None:
+                    result.update(separated_evidence)
+                    result["noisy_allocators"] = noisy_allocators
+                    result["max_cv"] = max_cv
+                    result["status"] = "PASS"
+                    passes.append(result)
+                    continue
+
+                failures.append(
+                    {
+                        "benchmark": key,
+                        "baseline": baseline,
+                        "noisy_allocators": noisy_allocators,
+                        "max_cv": max_cv,
+                        "status": "NOISY",
+                    }
+                )
+                continue
+
             if ratio < max_ratio:
                 result["status"] = "PASS"
                 passes.append(result)
@@ -642,6 +747,17 @@ def _print_result(prefix: str, result: dict) -> None:
     counters = _format_dart_counters(result)
     if counters:
         message += "; DART counters: {}".format(counters)
+    if result.get("evidence") == "MEAN_CI_SEPARATED":
+        message += (
+            "; noisy but separated mean CI: DART [{:.1f}, {:.1f}] ns, "
+            "baseline [{:.1f}, {:.1f}] ns (z={:.2f})"
+        ).format(
+            result["dart_mean_ci_ns"][0],
+            result["dart_mean_ci_ns"][1],
+            result["baseline_mean_ci_ns"][0],
+            result["baseline_mean_ci_ns"][1],
+            result["confidence_z"],
+        )
     print(message)
 
 

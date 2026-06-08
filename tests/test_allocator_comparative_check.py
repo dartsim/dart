@@ -56,7 +56,7 @@ def entt_registry_build_rows(*, dart_time, foonathan_time, dart_cv, foonathan_cv
     ]
 
 
-def test_noisy_rows_fail_before_timing_ratio_is_used():
+def test_noisy_rows_without_separated_statistics_fail_before_timing_ratio_is_used():
     module = load_allocator_check_module()
 
     failures, passes = module.evaluate_comparisons(
@@ -80,6 +80,61 @@ def test_noisy_rows_fail_before_timing_ratio_is_used():
             "status": "NOISY",
         }
     ]
+
+
+def test_noisy_rows_pass_when_mean_confidence_intervals_are_separated():
+    module = load_allocator_check_module()
+    rows = stl_vector_rows(
+        dart_time=90.0,
+        foonathan_time=180.0,
+        dart_cv=0.20,
+        foonathan_cv=0.20,
+    ) + [
+        aggregate_row("BM_StlVector_DART/10000", "mean", 90.0, repetitions=5),
+        aggregate_row("BM_StlVector_DART/10000", "stddev", 18.0, repetitions=5),
+        aggregate_row("BM_StlVector_Foonathan/10000", "mean", 180.0, repetitions=5),
+        aggregate_row("BM_StlVector_Foonathan/10000", "stddev", 18.0, repetitions=5),
+    ]
+
+    failures, passes = module.evaluate_comparisons(
+        rows,
+        baseline_allocators=[("Foonathan",)],
+        max_cv=0.10,
+    )
+
+    assert failures == []
+    assert len(passes) == 1
+    result = passes[0]
+    assert result["status"] == "PASS"
+    assert result["evidence"] == "MEAN_CI_SEPARATED"
+    assert result["ratio"] == 0.5
+    assert result["noisy_allocators"] == [("DART", 0.20), ("Foonathan", 0.20)]
+    assert result["dart_mean_ci_ns"] == pytest.approx([74.222, 105.778])
+    assert result["baseline_mean_ci_ns"] == pytest.approx([164.222, 195.778])
+
+
+def test_noisy_rows_still_fail_when_confidence_intervals_overlap():
+    module = load_allocator_check_module()
+    rows = stl_vector_rows(
+        dart_time=90.0,
+        foonathan_time=100.0,
+        dart_cv=0.20,
+        foonathan_cv=0.20,
+    ) + [
+        aggregate_row("BM_StlVector_DART/10000", "mean", 90.0, repetitions=5),
+        aggregate_row("BM_StlVector_DART/10000", "stddev", 18.0, repetitions=5),
+        aggregate_row("BM_StlVector_Foonathan/10000", "mean", 100.0, repetitions=5),
+        aggregate_row("BM_StlVector_Foonathan/10000", "stddev", 20.0, repetitions=5),
+    ]
+
+    failures, passes = module.evaluate_comparisons(
+        rows,
+        baseline_allocators=[("Foonathan",)],
+        max_cv=0.10,
+    )
+
+    assert passes == []
+    assert failures[0]["status"] == "NOISY"
 
 
 def test_stable_rows_still_use_strict_ratio():

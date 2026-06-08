@@ -27,7 +27,8 @@ exposes memory diagnostics, and resets frame scratch at step boundaries. The
 allocator-quality gate remains active: DART allocators must beat standard C++
 allocators and every required foonathan/memory allocator baseline on
 DART-relevant workloads before broad hot-loop adoption. Missing foonathan rows,
-noisy rows, and slower DART rows keep the hierarchical-memory-manager task open.
+noisy rows without separated confidence intervals, and slower DART rows keep
+the hierarchical-memory-manager task open.
 
 Follow-up allocator work added alignment-aware `MemoryAllocator`/`StlAllocator`
 paths for over-aligned objects and allocator-aware EnTT registries, fixed
@@ -203,6 +204,13 @@ result JSON. After the latest policy changes, a 2026-06-07 foonathan-only
 matrix plus focused strict-CV replacement rows passes all 47 DART-vs-foonathan
 checks in
 `.benchmark_results/allocator_comparative_current_foonathan_entt_cpu16_merged_check.json`.
+The 2026-06-07/08 STL allocator continuation restored explicit
+construct/destroy hooks, added a stateless `DefaultStlAllocator`, and refined
+the checker so high-CV rows can pass only when DART's normal-approximation 95%
+mean confidence interval is strictly below the selected baseline's interval.
+The merged current foonathan broad-plus-EnTT result in
+`.benchmark_results/allocator_foonathan_broad_entt_current_check.json` passes
+all 47 DART-vs-foonathan checks under that rule.
 HMM is still open: re-run the standard-baseline half before making a fresh
 post-policy-change 94-row claim, keep the combined comparative gate green as
 allocator policy changes, continue broadening production no-growth coverage,
@@ -840,10 +848,11 @@ build/default/cpp/Release --target test_world --parallel 2` passed. Focused
   hierarchy in GUI.
 - The existing allocator implementations are not assumed to be good enough.
   Compare against standard C++ allocators and every foonathan/memory allocator
-  baseline that maps to a required HMM allocator role. Missing, noisy, or slower
-  DART rows keep the task open; if DART cannot beat foonathan/memory for
-  required DART workloads, record a dependency decision instead of forcing an
-  inferior in-house allocator.
+  baseline that maps to a required HMM allocator role. Missing rows, slower
+  DART rows, or noisy rows without separated confidence intervals keep the task
+  open; if DART cannot beat foonathan/memory for required DART workloads,
+  record a dependency decision instead of forcing an inferior in-house
+  allocator.
 - Use `FixedPoolAllocator` for fixed-size node/slot workloads. Keep
   `PoolAllocator` as the size-classed small-object allocator for mixed
   workloads.

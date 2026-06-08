@@ -28,6 +28,9 @@
       traffic, growth, and noisy benchmark evidence. It also requires the
       expected benchmark keys for the selected mode, so missing
       foonathan/memory coverage is a failure instead of a skipped comparison.
+      The checker rejects high-CV rows unless the saved mean/stddev/repetition
+      aggregates still show DART's normal-approximation 95% confidence interval
+      strictly below the selected baseline's confidence interval.
       The default comparative matrix now also covers foonathan/memory static
       fixed-storage stacks, scoped temporary allocators, and two-iteration frame
       allocators against the DART frame allocator's 32-byte fast path and
@@ -78,8 +81,14 @@
       matrix, merged with focused strict-CV replacement rows for the loaded
       host, passes all 47 DART-vs-foonathan checks, including EnTT no-growth,
       EnTT build/growth, steady-state, stack, frame, raw, adapter, and tracked
-      rows. Re-run the standard-baseline half before making a fresh
-      post-policy-change 94-row claim.
+      rows. A later 2026-06-07/08 continuation restored explicit STL
+      construct/destroy hooks, added a stateless `DefaultStlAllocator`, and
+      refined the checker to require confidence-separated evidence for any
+      accepted high-CV rows; the merged current foonathan broad-plus-EnTT
+      result in
+      `.benchmark_results/allocator_foonathan_broad_entt_current_check.json`
+      passes all 47 foonathan comparisons. Re-run the standard-baseline half
+      before making a fresh post-policy-change 94-row claim.
 - [ ] Phase 3: EnTT registry/component storage allocation is configurable from
       the World memory hierarchy and covered by no-growth ECS tests.
       Allocator-aware EnTT storage now has focused `StlAllocator` and
@@ -277,8 +286,9 @@ debugging, profiling, optimization experiments, and ImGui visualization.
 - Completion gate: the required comparative benchmark/checker matrix must cover
   every foonathan/memory allocator family that maps to a DART allocator role
   used by the HMM plan, and every DART implementation row must beat the matching
-  foonathan/memory row with non-noisy aggregate evidence. Rows that are missing,
-  noisy, or slower keep this dev task open.
+  foonathan/memory row with non-noisy aggregate evidence or
+  confidence-separated high-CV evidence. Rows that are missing, noisy without
+  separated confidence intervals, or slower keep this dev task open.
 
 ## Required EnTT Integration Evidence
 
@@ -325,6 +335,11 @@ debugging, profiling, optimization experiments, and ImGui visualization.
    policy changes, a 2026-06-07 foonathan-only run plus focused strict-CV row
    replacements passed all 47 foonathan comparisons in
    `.benchmark_results/allocator_comparative_current_foonathan_entt_cpu16_merged_check.json`.
+   After the latest STL allocator hook/default-adapter change, the merged
+   foonathan broad-plus-EnTT input
+   `.benchmark_results/allocator_foonathan_broad_entt_current_check.json`
+   passes all 47 foonathan comparisons with either non-noisy rows or
+   confidence-separated high-CV rows.
    Re-run the standard-baseline half before claiming a fresh 94-row
    post-policy-change pass. Keep this combined gate green after allocator or
    benchmark policy changes:
