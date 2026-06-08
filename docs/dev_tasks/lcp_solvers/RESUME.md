@@ -429,6 +429,8 @@ benchmark rows pass all 15 registered non-`NNCG` 6-sphere solver rows, the
 tree also passes direct fixed-iteration Jacobi and PGS homogeneous 6-sphere
 stack batches plus grouped 2/3/4/5/6-sphere stack batches with
 `cuda_lcp_execution=1` and `contract_ok=1`.
+The current unpushed slice adds a 7-sphere, 7-contact, 21-row coupled stack
+snapshot/assembly row and a 32-box, 128-contact dense public-step unit gate.
 Push/PR work still requires explicit maintainer/user approval.
 
 ## Immediate Next Step
@@ -467,8 +469,8 @@ evidence beyond the current separated sphere-ground, fixed-base prismatic
 articulated end-to-end coverage, connected Cartesian-chain articulated
 end-to-end coverage, cross-multibody articulated link-vs-link impact coverage,
 manually assembled three-axis articulated LCP snapshots, 4-/5-/6-sphere
-coupled-stack end-to-end, 6-sphere vertical stack snapshots,
-and the 24-box unit / 48-box benchmark dense face-contact public-step slice to
+coupled-stack end-to-end, 7-sphere vertical stack snapshots,
+and the 32-box unit / 48-box benchmark dense face-contact public-step slice to
 broader articulated, longer-running coupled, and broader dense/robot-like
 contact scenes.
 
@@ -911,7 +913,7 @@ contact scenes.
   and
   `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.FourSphereWorldStepMaintainsContactInvariants:BoxedLcpContact.SixteenSphereWorldStepMaintainsContactInvariants'`
   runs pass, and the full `test_boxed_lcp_contact --gtest_brief=1` binary
-  now lists 48 tests. The full run still emits the existing
+  now lists 50 tests. The full run still emits the existing
   `StaticFrictionHoldsSmallPush` degenerate-pivot warning.
 - `BoxedLcpContact.ArticulatedPrismaticLinkGroundStepMaintainsInvariants`
   advances a fixed-base prismatic articulated link in light ground contact
@@ -967,11 +969,13 @@ contact scenes.
   `BoxedLcpContact.StressSphereStackWorldContactSnapshotSatisfiesLcpContract`,
   and
   `BoxedLcpContact.LargerStressSphereStackWorldContactSnapshotSatisfiesLcpContract`
-  validate 3-sphere, 4-sphere, 5-sphere, and 6-sphere vertical stacks assembled
+  and `BoxedLcpContact.SevenSphereStackWorldContactSnapshotSatisfiesLcpContract`
+  validate 3-sphere, 4-sphere, 5-sphere, 6-sphere, and 7-sphere vertical stacks assembled
   from `World::collide()` and check that the normal-contact block has nonzero
   off-diagonal coupling. The 4-sphere snapshot has 4 contacts and 12 LCP rows,
   the 5-sphere snapshot has 5 contacts and 15 LCP rows, and the 6-sphere
-  snapshot has 6 contacts and 18 LCP rows.
+  snapshot has 6 contacts and 18 LCP rows; the 7-sphere snapshot has 7 contacts
+  and 21 LCP rows.
   The focused
   `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.*SphereStack*'` run
   passes these snapshot tests plus the 3-sphere 200-step, 3-sphere 500-step,
@@ -979,7 +983,7 @@ contact scenes.
   Focused default, SIMD-enabled, and CUDA-enabled
   `test_boxed_lcp_contact --gtest_filter=BoxedLcpContact.LargerStressSphereStackWorldContactSnapshotSatisfiesLcpContract:BoxedLcpContact.LargerStressSphereStackWorldStepMaintainsContactInvariants`
   runs pass the new 6-sphere tests. The full
-  `test_boxed_lcp_contact --gtest_list_tests` inventory now lists 48 tests.
+  `test_boxed_lcp_contact --gtest_list_tests` inventory now lists 50 tests.
 - `BoxedLcpContact.SphereStackWorldStepMaintainsContactInvariants` advances the
   same 3-sphere vertical stack through 200 public boxed-LCP `World::step()`
   iterations and checks finite state, non-penetration, preserved sphere spacing,
@@ -1037,6 +1041,9 @@ contact scenes.
   runs pass with `contract_ok=1` for all 15 registered 6-sphere solver rows,
   `contract_ok=1` for the 6-sphere assembly row, and `invariant_ok=1` for the
   6-sphere 1000-step public-step row.
+  A focused default run of `BM_LcpWorldStackContactAssembly_BoxedLcp/7`
+  reports `contract_ok=1`, `sphere_count=7`, `contact_count=7`, and
+  `problem_size=21`.
   Treat this as small coupled-stack benchmark evidence, not evidence for
   articulated or dense-degenerate contact scenes.
 - The benchmark target now also registers 32
@@ -1094,8 +1101,11 @@ contact scenes.
   boxed-LCP `World::step()` iterations.
   `TwentyFourBoxWorldStepMaintainsDenseContactInvariants` extends unit coverage
   to 24 boxes and 96 dense face contacts over 2000 small public boxed-LCP
+  `World::step()` iterations.
+  `ThirtyTwoBoxWorldStepMaintainsDenseContactInvariants` extends unit coverage
+  to 32 boxes and 128 dense face contacts over 4000 small public boxed-LCP
   `World::step()` iterations. The full
-  `test_boxed_lcp_contact --gtest_list_tests` inventory lists 48 tests; the
+  `test_boxed_lcp_contact --gtest_list_tests` inventory lists 50 tests; the
   earlier `--gtest_brief=1` run still
   emitting the dense-patch Dantzig warning.
 - `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` registers 72 scoped dense box
@@ -1138,7 +1148,9 @@ contact scenes.
   CUDA-enabled build-tree runs over the 24-/32-box rows reported
   `invariant_ok=1`, `dense_box_contact=1`, `box_count=24/32`,
   `contact_count=96/128`, and `step_count=2000/4000`; the default 32-box row
-  reported `max_height_error=1.46e-4` and `max_vertical_speed=4.38e-2`. A
+  reported `max_height_error=1.46e-4` and `max_vertical_speed=4.38e-2`.
+  `BoxedLcpContact.ThirtyTwoBoxWorldStepMaintainsDenseContactInvariants`
+  now covers the same 32-box, 128-contact scene in unit tests. A
   focused default 48-box row reported `invariant_ok=1`, `contact_count=192`,
   `step_count=4000`, `max_height_error=9.80e-5`, and
   `max_vertical_speed=1.08e-2`. The

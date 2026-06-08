@@ -1162,7 +1162,7 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     coupled 2/3-sphere vertical-stack benchmark rows for the same solver set,
     plus scoped 4-, 5-, and 6-sphere stack rows for all of those solvers except
     `NNCG`, so benchmark evidence now includes small contact systems with
-    shared dynamic bodies. Added 3-, 4-, 5-, and 6-sphere stack snapshot tests
+    shared dynamic bodies. Added 3-, 4-, 5-, 6-, and 7-sphere stack snapshot tests
     that validate nonzero normal-contact coupling, plus boxed-LCP Baumgarte
     velocity-bias stabilization that preserves kinematic contacts' static-obstacle
     compatibility behavior, and 3-sphere 200-step, 3-sphere 500-step,
@@ -1171,7 +1171,7 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     public boxed-LCP stack path. Added 4- and 16-sphere separated-contact
     `World::step()` invariant tests and 4-/8-/16-sphere separated-contact
     `World::step()` benchmark rows for the public boxed-LCP path. Stack
-    assembly/solve benchmark rows now include a 6-sphere, 6-contact, 18-row
+    assembly/solve benchmark rows now include a 7-sphere, 7-contact, 21-row
     coupled stack snapshot. Added
     mixed world-contact batch benchmark rows that compare every
     friction-index-capable solver on the same five separated-contact and
@@ -1207,8 +1207,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     `SixteenBoxWorldStepMaintainsDenseContactInvariants` for 32-contact and
     64-contact scenes, plus
     `TwentyFourBoxWorldStepMaintainsDenseContactInvariants` for a 96-contact
-    small-timestep scene and 32-box/128-contact plus 48-box/192-contact
-    benchmark-only rows.
+    small-timestep scene and
+    `ThirtyTwoBoxWorldStepMaintainsDenseContactInvariants` for a
+    128-contact small-timestep scene, leaving the 48-box/192-contact row as
+    benchmark-only evidence.
     Added fixed-base prismatic articulated
     link-ground `World::step()` invariant coverage for one-link and four-link
     contact scenes, plus 1-/4-/8-/16-link articulated ground-step benchmark

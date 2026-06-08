@@ -2202,6 +2202,29 @@ TEST(
 }
 
 //==============================================================================
+// A seven-sphere stack extends coupled multi-contact snapshot evidence to a
+// 21-row friction-index LCP assembled from one ground contact and six shared
+// dynamic body contacts.
+TEST(BoxedLcpContact, SevenSphereStackWorldContactSnapshotSatisfiesLcpContract)
+{
+  constexpr double kFriction = 0.6;
+  constexpr int kSphereCount = 7;
+
+  auto lcp = buildSphereStackScene(kSphereCount, kFriction, true);
+
+  const std::vector<sx::Contact> contacts = lcp->collide();
+  ASSERT_EQ(contacts.size(), static_cast<std::size_t>(kSphereCount));
+
+  const sx::detail::BoxedLcpContactSnapshot snapshot
+      = sx::detail::solveBoxedLcpContacts(
+          sx::detail::registryOf(*lcp), contacts, lcp->getTimeStep());
+
+  expectBoxedFrictionIndexSnapshot(
+      snapshot, kFriction, kSphereCount, kSphereCount);
+  EXPECT_GT(maxNormalContactCoupling(snapshot), 1e-6);
+}
+
+//==============================================================================
 // End-to-end DART 7 World stepping for coupled contacts: a 3-sphere stack
 // advances through the public BoxedLcp path for many time steps. This checks
 // motion-level invariants for the same shared-body contact topology validated
@@ -2457,6 +2480,23 @@ TEST(BoxedLcpContact, TwentyFourBoxWorldStepMaintainsDenseContactInvariants)
 
   lcp->enterSimulationMode();
   lcp->step(2000);
+
+  expectSeparatedBoxStepInvariants(*lcp, kBoxCount);
+}
+
+//==============================================================================
+TEST(BoxedLcpContact, ThirtyTwoBoxWorldStepMaintainsDenseContactInvariants)
+{
+  constexpr double kFriction = 0.5;
+  constexpr int kBoxCount = 32;
+
+  auto lcp = buildSeparatedBoxGroundScene(kBoxCount, kFriction);
+
+  const std::vector<sx::Contact> contacts = lcp->collide();
+  ASSERT_EQ(contacts.size(), static_cast<std::size_t>(4 * kBoxCount));
+
+  lcp->enterSimulationMode();
+  lcp->step(4000);
 
   expectSeparatedBoxStepInvariants(*lcp, kBoxCount);
 }

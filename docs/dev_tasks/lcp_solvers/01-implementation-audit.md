@@ -602,12 +602,13 @@ The current local evidence for this task is:
   contact coverage.
 - `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.*SphereStack*'`
   passed focused stack tests, validating the boxed/findex LCP contract for
-  3-sphere, 4-sphere, 5-sphere, and 6-sphere vertical stacks assembled from
+  3-sphere, 4-sphere, 5-sphere, 6-sphere, and 7-sphere vertical stacks assembled from
   DART 7 `World::collide()`, plus the 3-sphere, 4-sphere, 5-sphere, and
   6-sphere public step invariants below. The
   4-sphere snapshot contains 4 contacts and 12 LCP rows, the 5-sphere snapshot
   contains 5 contacts and 15 LCP rows, and the 6-sphere snapshot contains
-  6 contacts and 18 LCP rows. The snapshot tests also check that the
+  6 contacts and 18 LCP rows; the 7-sphere snapshot contains 7 contacts and
+  21 LCP rows. The snapshot tests also check that the
   normal-contact block has nonzero off-diagonal coupling, so this evidence is
   not just a set of independent contact rows. The 4-sphere public-step path is
   enabled by the boxed-LCP contact solve's timestep-driven Baumgarte velocity
@@ -625,6 +626,10 @@ The current local evidence for this task is:
   passed in default, SIMD-enabled, and CUDA-enabled build trees, validating the
   6-sphere, 6-contact, 18-row boxed/findex stack snapshot and advancing the
   same coupled stack through 1000 public boxed-LCP `World::step()` iterations.
+- `test_boxed_lcp_contact --gtest_filter=BoxedLcpContact.SevenSphereStackWorldContactSnapshotSatisfiesLcpContract:BoxedLcpContact.ThirtyTwoBoxWorldStepMaintainsDenseContactInvariants --gtest_brief=1`
+  passed locally. The first test validates the 7-sphere, 7-contact, 21-row
+  boxed/findex stack snapshot. This is 7-sphere snapshot evidence only; a
+  7-sphere public-step invariant is not claimed.
 - `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.SphereStackWorldStepMaintainsContactInvariants'`
   passed 1 test, advancing the same 3-sphere vertical stack through 200 public
   boxed-LCP `World::step()` iterations and checking finite state,
@@ -633,7 +638,7 @@ The current local evidence for this task is:
 - `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.LongRunningSphereStackWorldStepMaintainsContactInvariants'`
   passed 1 test, advancing the same 3-sphere vertical stack through 500 public
   boxed-LCP `World::step()` iterations with the same motion invariants.
-- The `test_boxed_lcp_contact --gtest_list_tests` inventory now lists 48 tests.
+- The `test_boxed_lcp_contact --gtest_list_tests` inventory now lists 50 tests.
   The earlier full run still emits the existing `StaticFrictionHoldsSmallPush` degenerate-pivot
   warning, so this should not be counted as clean evidence for
   dense-degenerate multi-contact systems.
@@ -676,6 +681,9 @@ The current local evidence for this task is:
   runs reported `contract_ok=1` for all 15 registered 6-sphere solver rows,
   `contract_ok=1` for the 6-sphere assembly row, and `invariant_ok=1` for the
   6-sphere 1000-step public `World::step()` row.
+  A focused default run of `BM_LcpWorldStackContactAssembly_BoxedLcp/7`
+  reported `contract_ok=1`, `sphere_count=7`, `contact_count=7`, and
+  `problem_size=21`.
   These stacks include sphere-ground and sphere-sphere contacts coupled through
   shared dynamic bodies. This is small coupled-stack benchmark evidence, not
   articulated, robot-like, or dense-degenerate contact evidence.
@@ -801,7 +809,7 @@ The current local evidence for this task is:
   ground and rigid-impact rows also reported `contract_ok=1` with
   `build_simd_enabled=1` and `build_cuda_enabled=1`, respectively; those are CPU
   solver rows in those build trees, not CUDA kernel execution.
-- `test_boxed_lcp_contact --gtest_list_tests` now lists 48 tests. The dense box
+- `test_boxed_lcp_contact --gtest_list_tests` now lists 50 tests. The dense box
   face-contact test assembles a 4-contact, 12-row boxed/findex LCP from
   `World::collide()`, checks the single-dynamic-body dense patch shape, and
   verifies the problem with APGD; the sliding and static-friction box
@@ -815,6 +823,9 @@ The current local evidence for this task is:
   iterations.
   `TwentyFourBoxWorldStepMaintainsDenseContactInvariants` extends this to a
   24-box, 96-contact scene over 2000 small public boxed-LCP `World::step()`
+  iterations.
+  `ThirtyTwoBoxWorldStepMaintainsDenseContactInvariants` extends this to a
+  32-box, 128-contact scene over 4000 small public boxed-LCP `World::step()`
   iterations. The run still emits the dense-patch Dantzig warning, so
   Dantzig's direct dense box solve is not claimed.
 - `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` now registers 72 scoped dense
@@ -855,6 +866,9 @@ The current local evidence for this task is:
   reported `invariant_ok=1` and `dense_box_contact=1` in default, SIMD-enabled,
   and CUDA-enabled build trees; the default 32-box row reported
   `max_height_error=1.46e-4` and `max_vertical_speed=4.38e-2`.
+  The latest focused default run of the 32-box row reported `invariant_ok=1`,
+  `contact_count=128`, `step_count=4000`, `max_height_error=1.46e-4`, and
+  `max_vertical_speed=4.38e-2`.
   A focused default 48-box run reported `invariant_ok=1`,
   `contact_count=192`, `step_count=4000`, `max_height_error=9.80e-5`, and
   `max_vertical_speed=1.08e-2`. The CUDA-enabled rows are CPU public-step rows
@@ -1274,7 +1288,7 @@ The current local evidence for this task is:
    small vertical-stack boxed-LCP
    snapshots and contact-derived benchmark rows to richer articulated,
    longer-running, and denser coupled multi-contact scenes beyond the current
-   24-box unit / 48-box benchmark dense face-contact public-step and
+   32-box unit / 48-box benchmark dense face-contact public-step and
    all-solver snapshot slices
    that validate solver outputs against motion/contact invariants.
 3. Add benchmark packets that broaden scalar CPU and SIMD-enabled CPU evidence,

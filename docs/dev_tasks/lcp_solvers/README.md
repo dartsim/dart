@@ -292,6 +292,10 @@
       public `World::step()` invariant test, all-solver stack benchmark rows
       excluding the known-unclaimed `NNCG` larger-stack path, and matching
       default/SIMD/CUDA-enabled benchmark evidence.
+- [x] Extended DART 7 boxed-LCP coupled stack snapshot evidence to a 7-sphere,
+      7-contact, 21-row vertical stack and matching boxed-LCP assembly
+      benchmark row. This is snapshot/assembly evidence only; a 7-sphere
+      public-step invariant is not claimed.
 - [x] Added DART 7 world-contact `BM_LCP_COMPARE` rows that run every
       friction-index-capable solver on the same boxed-LCP snapshots assembled
       from 1, 2, and 4 separated sphere-ground contacts, plus a
@@ -377,7 +381,9 @@
       `SixteenBoxWorldStepMaintainsDenseContactInvariants` extends the same
       scene family to 16 boxes with a longer 500-step horizon, and
       `TwentyFourBoxWorldStepMaintainsDenseContactInvariants` extends unit
-      coverage to a 24-box/96-contact small-timestep scene. The
+      coverage to a 24-box/96-contact small-timestep scene.
+      `ThirtyTwoBoxWorldStepMaintainsDenseContactInvariants` extends unit
+      coverage again to a 32-box/128-contact small-timestep scene. The
       `BM_LcpWorldBoxStep_BoxedLcp` rows report matching invariant counters for
       4/8/16/32-contact 200-step scenes, the 64-contact 500-step scene, the
       96-contact 2000-step scene, and the 128-/192-contact 4000-step scenes.
@@ -415,7 +421,8 @@
       evidence beyond CPU solver rows in SIMD/CUDA-enabled builds.
 - [ ] Continue extending DART 7 end-to-end contact cases through the public
       simulation pipeline beyond current separated contacts, fixed-base
-      articulated contacts, 5-sphere coupled stacks, and 24-box unit /
+      articulated contacts, 7-sphere coupled snapshots, 6-sphere coupled-stack
+      public-step rows, and 32-box unit /
       48-box benchmark dense face-contact step coverage.
 - [ ] Broaden apples-to-apples benchmark packets from generated problems and
       simple world-contact snapshots to broader dense/robot-like end-to-end
@@ -1271,6 +1278,12 @@ tradeoffs evidence based.
   the same finite-state, spacing, near-rest, lateral-drift, and static-ground
   invariants. Focused default, SIMD-enabled, and CUDA-enabled build-tree runs
   passed both new 6-sphere tests.
+  `BoxedLcpContact.SevenSphereStackWorldContactSnapshotSatisfiesLcpContract`
+  extends the same real DART 7 boxed/findex snapshot path to a 7-sphere stack
+  with 7 contacts and 21 LCP rows. The focused default
+  `test_boxed_lcp_contact --gtest_filter=BoxedLcpContact.SevenSphereStackWorldContactSnapshotSatisfiesLcpContract:BoxedLcpContact.ThirtyTwoBoxWorldStepMaintainsDenseContactInvariants --gtest_brief=1`
+  run passed both tests. This is 7-sphere snapshot evidence only; a 7-sphere
+  public-step invariant is not claimed.
   The
   focused
   `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.*WorldContactSnapshot*'`
@@ -1320,7 +1333,7 @@ tradeoffs evidence based.
   articulated shortcut. The focused
   `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.ArticulatedPrismaticLinkPushesDynamicRigidBody' --gtest_brief=1`
   run passed. The full `test_boxed_lcp_contact --gtest_list_tests` inventory now
-  lists 48 tests.
+  lists 50 tests.
   `BoxedLcpContact.ArticulatedPrismaticLinkPushesArticulatedPrismaticLink`
   advances a fixed-base prismatic striker link in contact with a prismatic
   target link owned by a separate multibody through one boxed-LCP
@@ -1343,11 +1356,13 @@ tradeoffs evidence based.
   `World::step()` iterations.
   `TwentyFourBoxWorldStepMaintainsDenseContactInvariants` extends this to 24
   boxes and 96 dense face contacts over 2000 small public boxed-LCP
+  `World::step()` iterations.
+  `ThirtyTwoBoxWorldStepMaintainsDenseContactInvariants` extends this to 32
+  boxes and 128 dense face contacts over 4000 small public boxed-LCP
   `World::step()` iterations. The full
-  `test_boxed_lcp_contact --gtest_list_tests` inventory lists 48 tests; the
-  earlier full `--gtest_brief=1` run still
-  emitting the dense-patch Dantzig warning; Dantzig's direct dense box solve is
-  not claimed.
+  `test_boxed_lcp_contact --gtest_list_tests` inventory lists 50 tests; the
+  earlier full `--gtest_brief=1` run still emitted the dense-patch Dantzig
+  warning, so Dantzig's direct dense box solve is not claimed.
   warning; Dantzig's direct dense box solve is not claimed.
 - DART 7 world-contact benchmark evidence:
   `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` now registers 48
@@ -1418,8 +1433,11 @@ tradeoffs evidence based.
   `dense_box_contact=1`, `box_count=24/32`, `contact_count=96/128`, and
   `step_count=2000/4000`. The default 32-box row reported
   `max_height_error=1.46e-4` and `max_vertical_speed=4.38e-2`; the SIMD and
-  CUDA-enabled 32-box rows also reported `invariant_ok=1`. The focused default
-  48-box row reported `invariant_ok=1`, `dense_box_contact=1`,
+  CUDA-enabled 32-box rows also reported `invariant_ok=1`. A focused default
+  run of the 32-box row in this slice reported `invariant_ok=1`,
+  `dense_box_contact=1`, `contact_count=128`, `step_count=4000`,
+  `max_height_error=1.46e-4`, and `max_vertical_speed=4.38e-2`. The focused
+  default 48-box row reported `invariant_ok=1`, `dense_box_contact=1`,
   `contact_count=192`, `step_count=4000`, `max_height_error=9.80e-5`, and
   `max_vertical_speed=1.08e-2`. The
   CUDA-enabled rows are CPU public-step rows in that build tree, not CUDA LCP
@@ -1483,7 +1501,10 @@ tradeoffs evidence based.
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldStackContact/FrictionIndex/.*/6$|BM_LcpWorldStackContactAssembly_BoxedLcp/6|BM_LcpWorldStackStep_BoxedLcp/6/1000$' --benchmark_min_time=0.001s`
   runs reported `contract_ok=1` for all 15 registered 6-sphere solver rows
   excluding `NNCG`, `contract_ok=1` for the 6-sphere assembly row, and
-  `invariant_ok=1` for the 6-sphere 1000-step public `World::step()` row. The
+  `invariant_ok=1` for the 6-sphere 1000-step public `World::step()` row. A
+  focused default run of `BM_LcpWorldStackContactAssembly_BoxedLcp/7` reported
+  `contract_ok=1`, `sphere_count=7`, `contact_count=7`, and `problem_size=21`.
+  The
   CUDA-enabled rows are CPU solver benchmark rows in that build tree, not CUDA
   LCP kernel execution.
   Focused default, SIMD-enabled, and CUDA-enabled
