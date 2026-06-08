@@ -9790,9 +9790,10 @@ bool SolverShouldRunMildIllConditionedBatchBenchmark(
     return false;
   }
 
-  if (isMildIllConditionedCoupledFrictionIndexCase(testCase)
-      && getMildIllConditionedCouplingScale(testCase) > 8.0
-      && solver.name == "BoxedSemiSmoothNewton") {
+  using Case = MildIllConditionedBenchmarkCase;
+  if (solver.name == "BoxedSemiSmoothNewton"
+      && (testCase == Case::ExtremeCoupledFrictionIndex24
+          || testCase == Case::ExtremeCoupledFrictionIndex64)) {
     return false;
   }
 

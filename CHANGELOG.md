@@ -1097,13 +1097,15 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     single-problem 16x-coupled
     6-/8-/12-/16-/24-/32-/48-/64-contact packets over the scoped solver set,
     verified across default, SIMD-enabled, and CUDA-enabled build trees, plus
-    600 larger mildly ill-conditioned batch rows for batch-size-4 serial and
+    612 larger mildly ill-conditioned batch rows for batch-size-4 serial and
     DART 7 `ParallelExecutor` runs over standard 32-row, boxed 16-row,
     friction-index 8-contact, coupled friction-index 6-/8-/12-/16-/24-contact,
     4x-coupled 6-/8-/12-/16-/24-contact, and 8x-coupled
     6-/8-/12-/16-/24-/32-contact, with Boxed Semi-Smooth Newton included
-    across those non-16x coupled rows, plus
-    ADMM/SAP-only 16x-coupled 6-/8-/12-/16-/24-/32-/48-/64-contact packets, verified across
+    across those non-16x coupled rows and the 16x-coupled
+    6-/8-/12-/16-/32-/48-contact rows; the 16x-coupled 24-/64-contact rows
+    remain scoped to ADMM/SAP after focused Boxed Semi-Smooth Newton contract
+    trials. The row set is verified across
     default, SIMD-enabled, and CUDA-enabled build trees, plus
     23 near-singular benchmark rows for standard 8-row, boxed 8-row, and
     coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-, 32-, 48-, and 64-contact
@@ -1239,8 +1241,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     8x-coupled packets through 32 contacts, plus
     ADMM/SAP/Boxed Semi-Smooth Newton generated correctness and single-problem
     benchmark coverage for the 16x-coupled 6-, 8-, 12-, 16-, 24-, 32-, 48-,
-    and 64-contact packets. Batch coverage for the 16x packets remains scoped
-    to ADMM/SAP where the contract is green. Backend build-state counters
+    and 64-contact packets. Batch coverage for the 16x packets includes
+    Boxed Semi-Smooth Newton where the contract is green at 6, 8, 12, 16, 32,
+    and 48 contacts; the 24- and 64-contact rows remain scoped to ADMM/SAP.
+    Backend build-state counters
     distinguish default, SIMD-enabled, and CUDA-enabled CPU solver runs.
   - Added DART 7 contact-normal standard-LCP comparison benchmark rows for
     Dantzig, Lemke, Baraff, Direct, Minimum Map Newton,
