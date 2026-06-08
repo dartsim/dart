@@ -161,11 +161,11 @@
       24-contact/72-row, 32-contact/96-row, and 48-contact/144-row
       friction-index packets, verified in default, SIMD-enabled, and
       CUDA-enabled build trees.
-- [x] Added 96
+- [x] Added 390
       `BM_LcpProductionActiveSetTransitionBatch(Serial|Parallel)` rows for
-      batch-size-4 runs over the same stronger-coupled 24-contact/72-row and
-      32-contact/96-row and 48-contact/144-row friction-index packets, verified
-      in default, SIMD-enabled, and CUDA-enabled build trees.
+      batch-size-4 runs over standard 32/64/128-row, boxed 32/64/128-row, and
+      coupled friction-index 8-/12-/16-/24-/32-/48-contact active-set packets,
+      verified in default, SIMD-enabled, and CUDA-enabled build trees.
 - [x] Added 192 `BM_LcpMildIllConditioned` benchmark rows for the scoped larger
       mildly ill-conditioned standard 32-row, boxed 16-row, friction-index
       8-contact, coupled friction-index 6-, 8-, 12-, 16-, and 24-contact
@@ -961,19 +961,21 @@ tradeoffs evidence based.
   rows in a CUDA-enabled build, not CUDA LCP kernel execution.
 - Verified production active-set transition batch benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpProductionActiveSetTransitionBatch' | wc -l`
-  reported 96 rows, and JSON benchmark checks for
-  `BM_LcpProductionActiveSetTransitionBatch` reported 96 rows with
+  reported 390 rows, and JSON benchmark checks for
+  `BM_LcpProductionActiveSetTransitionBatch` reported 390 rows with
   `contract_ok=1` in the default, SIMD-enabled, and CUDA-enabled build trees.
   These rows cover batch-size-4 serial and DART 7 `ParallelExecutor` runs over
-  the same stronger-coupled 24-contact/72-row, 32-contact/96-row, and
-  48-contact/144-row packets.
+  standard 32/64/128-row, boxed 32/64/128-row, and coupled friction-index
+  8-/12-/16-/24-/32-/48-contact active-set packets.
   The rows report `production_active_set_transition_batch=1`,
-  `batch_size=4`, `contact_count=24/32/48`,
-  `total_contact_count=96/128/192`, `problem_size=72/96/144`,
-  `total_problem_size=288/384/576`, `coupling_scale=2/4/8`, and backend build-state counters. Parallel rows also
-  report `profile_enabled=1`, `parallel_units=4`, `worker_count=20`, and
-  observed `max_parallelism`. The CUDA-enabled rows are CPU solver batch rows
-  in a CUDA-enabled build, not CUDA LCP kernel execution.
+  `batch_size=4`, `problem_size=24/32/36/48/64/72/96/128/144`,
+  `total_problem_size=96/128/144/192/256/288/384/512/576`, and backend
+  build-state counters. Friction-index rows also report
+  `contact_count=8/12/16/24/32/48`, `total_contact_count=32/48/64/96/128/192`,
+  and `coupling_scale=1/2/4/8`. Parallel rows also report `profile_enabled=1`,
+  `parallel_units=4`, `worker_count=20`, and observed `max_parallelism`. The
+  CUDA-enabled rows are CPU solver batch rows in a CUDA-enabled build, not CUDA
+  LCP kernel execution.
 - Verified larger mildly ill-conditioned benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpMildIllConditioned/' | wc -l`
   reported 192 rows, and
@@ -1706,17 +1708,19 @@ tradeoffs evidence based.
   `problem_size=72/96/144`, `coupling_scale=2/4/8`, backend build-state counters,
   and `coupled=1`. The CUDA-enabled rows are CPU solver rows in a
   CUDA-enabled build, not CUDA LCP kernel execution.
-- Added 96
+- Added 390
   `BM_LcpProductionActiveSetTransitionBatch(Serial|Parallel)` rows for
-  batch-size-4 serial and DART 7 `ParallelExecutor` runs over the same
-  stronger-coupled 24-contact/72-row, 32-contact/96-row, and
-  48-contact/144-row packets. These rows
+  batch-size-4 serial and DART 7 `ParallelExecutor` runs over standard
+  32/64/128-row, boxed 32/64/128-row, and coupled friction-index
+  8-/12-/16-/24-/32-/48-contact active-set packets. These rows
   report `contract_ok=1`, `production_active_set_transition_batch=1`,
-  `batch_size=4`, `contact_count=24/32/48`,
-  `total_contact_count=96/128/192`, `problem_size=72/96/144`,
-  `total_problem_size=288/384/576`, `coupling_scale=2/4/8`, backend build-state counters, and parallel execution
-  counters on the `ParallelExecutor` rows. The CUDA-enabled rows are CPU solver
-  batch rows in a CUDA-enabled build, not CUDA LCP kernel execution.
+  `batch_size=4`, `problem_size=24/32/36/48/64/72/96/128/144`,
+  `total_problem_size=96/128/144/192/256/288/384/512/576`, backend build-state
+  counters, and parallel execution counters on the `ParallelExecutor` rows.
+  Friction-index rows also report `contact_count=8/12/16/24/32/48`,
+  `total_contact_count=32/48/64/96/128/192`, and `coupling_scale=1/2/4/8`.
+  The CUDA-enabled rows are CPU solver batch rows in a CUDA-enabled build, not
+  CUDA LCP kernel execution.
 - Extended generated friction-index coverage with coupled contact matrices:
   well-conditioned 2-contact, 4-contact, and 6-contact cases plus mildly
   ill-conditioned 2-contact and 4-contact cases pass across all

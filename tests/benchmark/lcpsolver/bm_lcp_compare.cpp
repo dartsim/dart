@@ -3772,37 +3772,73 @@ int getLargerActiveSetTransitionContactCount(
   return 0;
 }
 
-LcpProblem MakeLargerActiveSetTransitionBenchmarkProblem(
+unsigned getLargerActiveSetTransitionSeedBase(
     const LargerActiveSetTransitionBenchmarkCase testCase)
 {
   switch (testCase) {
     case LargerActiveSetTransitionBenchmarkCase::Standard32:
-      return MakeStandardActiveSetTransitionProblem(32, 21'032u);
+      return 21'032u;
     case LargerActiveSetTransitionBenchmarkCase::Boxed32:
-      return MakeBoxedActiveSetTransitionProblem(32, 22'032u);
+      return 22'032u;
     case LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex8:
-      return MakeFrictionIndexActiveSetTransitionProblem(8, 23'008u);
+      return 23'008u;
     case LargerActiveSetTransitionBenchmarkCase::Standard64:
-      return MakeStandardActiveSetTransitionProblem(64, 21'064u);
+      return 21'064u;
     case LargerActiveSetTransitionBenchmarkCase::Boxed64:
-      return MakeBoxedActiveSetTransitionProblem(64, 22'064u);
+      return 22'064u;
     case LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex12:
-      return MakeFrictionIndexActiveSetTransitionProblem(12, 23'012u);
+      return 23'012u;
     case LargerActiveSetTransitionBenchmarkCase::Standard128:
-      return MakeStandardActiveSetTransitionProblem(128, 21'128u);
+      return 21'128u;
     case LargerActiveSetTransitionBenchmarkCase::Boxed128:
-      return MakeBoxedActiveSetTransitionProblem(128, 22'128u);
+      return 22'128u;
     case LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex16:
-      return MakeFrictionIndexActiveSetTransitionProblem(16, 23'016u);
+      return 23'016u;
     case LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex24:
-      return MakeFrictionIndexActiveSetTransitionProblem(24, 23'024u, 2.0);
+      return 23'024u;
     case LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex32:
-      return MakeFrictionIndexActiveSetTransitionProblem(32, 23'032u, 4.0);
+      return 23'032u;
     case LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex48:
-      return MakeFrictionIndexActiveSetTransitionProblem(48, 23'048u, 8.0);
+      return 23'048u;
   }
 
-  return MakeStandardActiveSetTransitionProblem(32, 21'032u);
+  return 21'032u;
+}
+
+LcpProblem MakeLargerActiveSetTransitionBenchmarkProblem(
+    const LargerActiveSetTransitionBenchmarkCase testCase,
+    const unsigned seedOffset = 0)
+{
+  const unsigned seed
+      = getLargerActiveSetTransitionSeedBase(testCase) + seedOffset;
+  switch (testCase) {
+    case LargerActiveSetTransitionBenchmarkCase::Standard32:
+      return MakeStandardActiveSetTransitionProblem(32, seed);
+    case LargerActiveSetTransitionBenchmarkCase::Boxed32:
+      return MakeBoxedActiveSetTransitionProblem(32, seed);
+    case LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex8:
+      return MakeFrictionIndexActiveSetTransitionProblem(8, seed);
+    case LargerActiveSetTransitionBenchmarkCase::Standard64:
+      return MakeStandardActiveSetTransitionProblem(64, seed);
+    case LargerActiveSetTransitionBenchmarkCase::Boxed64:
+      return MakeBoxedActiveSetTransitionProblem(64, seed);
+    case LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex12:
+      return MakeFrictionIndexActiveSetTransitionProblem(12, seed);
+    case LargerActiveSetTransitionBenchmarkCase::Standard128:
+      return MakeStandardActiveSetTransitionProblem(128, seed);
+    case LargerActiveSetTransitionBenchmarkCase::Boxed128:
+      return MakeBoxedActiveSetTransitionProblem(128, seed);
+    case LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex16:
+      return MakeFrictionIndexActiveSetTransitionProblem(16, seed);
+    case LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex24:
+      return MakeFrictionIndexActiveSetTransitionProblem(24, seed, 2.0);
+    case LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex32:
+      return MakeFrictionIndexActiveSetTransitionProblem(32, seed, 4.0);
+    case LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex48:
+      return MakeFrictionIndexActiveSetTransitionProblem(48, seed, 8.0);
+  }
+
+  return MakeStandardActiveSetTransitionProblem(32, seed);
 }
 
 double getLargerActiveSetTransitionCouplingScale(
@@ -6596,22 +6632,9 @@ std::vector<LcpProblem> MakeProductionActiveSetTransitionBatchProblems(
   std::vector<LcpProblem> problems;
   problems.reserve(static_cast<std::size_t>(batchSize));
 
-  const int contactCount = getLargerActiveSetTransitionContactCount(testCase);
-  const double couplingScale
-      = getLargerActiveSetTransitionCouplingScale(testCase);
-  unsigned seedBase = 23'024u;
-  if (testCase
-      == LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex32) {
-    seedBase = 23'032u;
-  } else if (
-      testCase
-      == LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex48) {
-    seedBase = 23'048u;
-  }
-
   for (const int i : std::views::iota(0, batchSize)) {
-    problems.push_back(MakeFrictionIndexActiveSetTransitionProblem(
-        contactCount, seedBase + static_cast<unsigned>(i), couplingScale));
+    problems.push_back(MakeLargerActiveSetTransitionBenchmarkProblem(
+        testCase, static_cast<unsigned>(i)));
   }
 
   return problems;
@@ -6622,15 +6645,17 @@ void AddProductionActiveSetTransitionBatchCounters(
     const LargerActiveSetTransitionBenchmarkCase testCase,
     const int batchSize)
 {
-  const int contactCount = getLargerActiveSetTransitionContactCount(testCase);
   state.counters["active_set_transition"] = 1.0;
   state.counters["production_active_set_transition_batch"] = 1.0;
-  state.counters["contact_count"] = static_cast<double>(contactCount);
-  state.counters["total_contact_count"]
-      = static_cast<double>(contactCount * batchSize);
-  state.counters["coupled"] = 1.0;
-  state.counters["coupling_scale"]
-      = getLargerActiveSetTransitionCouplingScale(testCase);
+  if (isLargerActiveSetTransitionFrictionIndexCase(testCase)) {
+    const int contactCount = getLargerActiveSetTransitionContactCount(testCase);
+    state.counters["contact_count"] = static_cast<double>(contactCount);
+    state.counters["total_contact_count"]
+        = static_cast<double>(contactCount * batchSize);
+    state.counters["coupled"] = 1.0;
+    state.counters["coupling_scale"]
+        = getLargerActiveSetTransitionCouplingScale(testCase);
+  }
 }
 
 void RunProductionActiveSetTransitionBatchSerialBenchmark(
@@ -10117,7 +10142,16 @@ void RegisterProductionActiveSetTransitionBenchmarks()
 
 void RegisterProductionActiveSetTransitionBatchBenchmarks()
 {
-  constexpr std::array<LargerActiveSetTransitionBenchmarkCase, 3> cases{
+  constexpr std::array<LargerActiveSetTransitionBenchmarkCase, 12> cases{
+      LargerActiveSetTransitionBenchmarkCase::Standard32,
+      LargerActiveSetTransitionBenchmarkCase::Boxed32,
+      LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex8,
+      LargerActiveSetTransitionBenchmarkCase::Standard64,
+      LargerActiveSetTransitionBenchmarkCase::Boxed64,
+      LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex12,
+      LargerActiveSetTransitionBenchmarkCase::Standard128,
+      LargerActiveSetTransitionBenchmarkCase::Boxed128,
+      LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex16,
       LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex24,
       LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex32,
       LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex48};
