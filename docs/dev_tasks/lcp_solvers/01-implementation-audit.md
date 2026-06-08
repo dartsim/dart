@@ -103,10 +103,10 @@ Support abbreviations:
   in addition to homogeneous synthetic
   standard/boxed/findex packets. The generated synthetic grid now
   also includes a scoped larger mildly ill-conditioned slice for standard
-  32/64-row, boxed 16/32-row, friction-index 8-contact, and
-  1x-/4x-/8x-/16x-coupled
-  6-/8-/12-/16-/24-/32-/48-/64-/96-contact packets with Boxed Semi-Smooth
-  Newton included in single rows and coupled batch rows, and 584 matching
+  32/64-row, boxed 16/32-row, friction-index 8-contact, 1x-/4x-/8x-coupled
+  6-/8-/12-/16-/24-/32-/48-/64-/96-contact packets, and 16x-coupled
+  6-/8-/12-/16-/24-/32-/48-/64-/96-/128-contact packets with Boxed
+  Semi-Smooth Newton included in single rows and coupled batch rows, and 599 matching
   single-problem benchmark rows verified in default,
   SIMD-enabled, and CUDA-enabled build trees. It now
   also includes a scoped robust near-singular slice for standard 8-row, boxed
@@ -178,12 +178,12 @@ Support abbreviations:
 
 ## Newton Methods
 
-| Method                              | Background source                                                 | Implementation evidence                                                                     | Manifest support | Correctness evidence                                                                                                                                                                                                                                                                                                                                                                                                      | Benchmark evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Remaining DART 7 gap                                                                                                                                                                                               |
-| ----------------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Minimum Map Newton                  | `02_overview.md`, `05_newton-methods.md`, `07_selection-guide.md` | `dart/math/lcp/newton/minimum_map_newton_solver.hpp` exported by `all.hpp`                  | S                | Smoke manifest checks; comparison harness covers standard fixtures; focused unit coverage proves the opt-in PGS and gradient-descent warm starts reduce the minimum-map merit before Newton line search                                                                                                                                                                                                                   | Manifest registers `BM_LcpCompare/Standard/MinimumMapNewton/*`; warm-start rows compare no seed, PGS, gradient descent, and PGS-then-gradient on standard active-set packets, including serial and `ParallelExecutor` batch rows; focused `BM_LcpContactNormalStandardSweep/MinimumMapNewton/*` rows cover DART 7 contact-normal standard subproblems in default, SIMD-enabled, and CUDA-enabled build trees                                                                                                                                                                                                                                                                                                                                                             | Manifest does not claim native boxed or friction-index support; need full-contact and backend evidence                                                                                                             |
-| Fischer-Burmeister Newton           | `02_overview.md`, `05_newton-methods.md`, `07_selection-guide.md` | `dart/math/lcp/newton/fischer_burmeister_newton_solver.hpp` exported by `all.hpp`           | S                | Smoke manifest checks; comparison harness covers standard fixtures; focused unit coverage proves the opt-in PGS and gradient-descent warm starts reduce the FB merit before Newton line search                                                                                                                                                                                                                            | Manifest registers `BM_LcpCompare/Standard/FischerBurmeisterNewton/*`; warm-start rows compare no seed, PGS, gradient descent, and PGS-then-gradient on standard active-set packets, including serial and `ParallelExecutor` batch rows; focused `BM_LcpContactNormalStandardSweep/FischerBurmeisterNewton/*` rows cover DART 7 contact-normal standard subproblems in default, SIMD-enabled, and CUDA-enabled build trees                                                                                                                                                                                                                                                                                                                                               | Manifest does not claim native boxed or friction-index support; need full-contact and backend evidence                                                                                                             |
-| Penalized Fischer-Burmeister Newton | `02_overview.md`, `05_newton-methods.md`, `07_selection-guide.md` | `dart/math/lcp/newton/penalized_fischer_burmeister_newton_solver.hpp` exported by `all.hpp` | S                | Smoke manifest checks; comparison harness covers standard fixtures with custom lambda; focused unit coverage proves the opt-in PGS and gradient-descent warm starts reduce the penalized FB merit before Newton line search                                                                                                                                                                                               | Manifest registers `BM_LcpCompare/Standard/PenalizedFischerBurmeisterNewton/*`; warm-start rows compare no seed, PGS, gradient descent, and PGS-then-gradient on standard active-set packets, including serial and `ParallelExecutor` batch rows; focused `BM_LcpContactNormalStandardSweep/PenalizedFischerBurmeisterNewton/*` rows cover DART 7 contact-normal standard subproblems in default, SIMD-enabled, and CUDA-enabled build trees                                                                                                                                                                                                                                                                                                                             | Manifest does not claim native boxed or friction-index support; need parameter-sweep, full-contact, and backend evidence                                                                                           |
-| Boxed semi-smooth Newton            | `02_overview.md`, `05_newton-methods.md`, `07_selection-guide.md` | `dart/math/lcp/newton/boxed_semi_smooth_newton_solver.hpp` exported by `all.hpp`            | S, B, F          | Smoke manifest checks; comparison harness covers standard, boxed, and friction-index fixtures; smoke tests include line-search failure reporting; generated coverage passes coupled mildly ill-conditioned 2-contact and 4-contact friction-index cases after the moving-bound Jacobian fix; generated coverage now also passes 1x-/4x-/8x-/16x-coupled mildly ill-conditioned friction-index packets through 96 contacts | Manifest registers all three benchmark families; focused `BM_LcpBoxedSemiSmoothNewtonLineSearchSweep` rows cover default line search, expanded line-search step budget, and gentle step-reduction settings on standard, boxed, and friction-index fixtures in default, SIMD-enabled, and CUDA-enabled build trees; focused `BM_LcpContactSolverComparisonSweep/BoxedSemiSmoothNewton/*` rows cover separated world-contact, coupled stack-contact, and articulated unified-contact fixtures in those build trees; focused `BM_LcpMildIllConditioned/*/BoxedSemiSmoothNewton` single rows cover coupled 1x/4x/8x/16x mildly ill-conditioned friction-index packets; batch rows cover coupled 1x/4x/8x/16x packets, with the 16x rows reporting tuned line-search counters | Still needs longer-running/denser end-to-end contact and direct backend execution evidence; CUDA-enabled line-search, contact-comparison, and coupled mild rows are CPU solver rows, not CUDA LCP kernel execution |
+| Method                              | Background source                                                 | Implementation evidence                                                                     | Manifest support | Correctness evidence                                                                                                                                                                                                                                                                                                                                                                                                                                              | Benchmark evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Remaining DART 7 gap                                                                                                                                                                                               |
+| ----------------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Minimum Map Newton                  | `02_overview.md`, `05_newton-methods.md`, `07_selection-guide.md` | `dart/math/lcp/newton/minimum_map_newton_solver.hpp` exported by `all.hpp`                  | S                | Smoke manifest checks; comparison harness covers standard fixtures; focused unit coverage proves the opt-in PGS and gradient-descent warm starts reduce the minimum-map merit before Newton line search                                                                                                                                                                                                                                                           | Manifest registers `BM_LcpCompare/Standard/MinimumMapNewton/*`; warm-start rows compare no seed, PGS, gradient descent, and PGS-then-gradient on standard active-set packets, including serial and `ParallelExecutor` batch rows; focused `BM_LcpContactNormalStandardSweep/MinimumMapNewton/*` rows cover DART 7 contact-normal standard subproblems in default, SIMD-enabled, and CUDA-enabled build trees                                                                                                                                                                                                                                                                                                                                                             | Manifest does not claim native boxed or friction-index support; need full-contact and backend evidence                                                                                                             |
+| Fischer-Burmeister Newton           | `02_overview.md`, `05_newton-methods.md`, `07_selection-guide.md` | `dart/math/lcp/newton/fischer_burmeister_newton_solver.hpp` exported by `all.hpp`           | S                | Smoke manifest checks; comparison harness covers standard fixtures; focused unit coverage proves the opt-in PGS and gradient-descent warm starts reduce the FB merit before Newton line search                                                                                                                                                                                                                                                                    | Manifest registers `BM_LcpCompare/Standard/FischerBurmeisterNewton/*`; warm-start rows compare no seed, PGS, gradient descent, and PGS-then-gradient on standard active-set packets, including serial and `ParallelExecutor` batch rows; focused `BM_LcpContactNormalStandardSweep/FischerBurmeisterNewton/*` rows cover DART 7 contact-normal standard subproblems in default, SIMD-enabled, and CUDA-enabled build trees                                                                                                                                                                                                                                                                                                                                               | Manifest does not claim native boxed or friction-index support; need full-contact and backend evidence                                                                                                             |
+| Penalized Fischer-Burmeister Newton | `02_overview.md`, `05_newton-methods.md`, `07_selection-guide.md` | `dart/math/lcp/newton/penalized_fischer_burmeister_newton_solver.hpp` exported by `all.hpp` | S                | Smoke manifest checks; comparison harness covers standard fixtures with custom lambda; focused unit coverage proves the opt-in PGS and gradient-descent warm starts reduce the penalized FB merit before Newton line search                                                                                                                                                                                                                                       | Manifest registers `BM_LcpCompare/Standard/PenalizedFischerBurmeisterNewton/*`; warm-start rows compare no seed, PGS, gradient descent, and PGS-then-gradient on standard active-set packets, including serial and `ParallelExecutor` batch rows; focused `BM_LcpContactNormalStandardSweep/PenalizedFischerBurmeisterNewton/*` rows cover DART 7 contact-normal standard subproblems in default, SIMD-enabled, and CUDA-enabled build trees                                                                                                                                                                                                                                                                                                                             | Manifest does not claim native boxed or friction-index support; need parameter-sweep, full-contact, and backend evidence                                                                                           |
+| Boxed semi-smooth Newton            | `02_overview.md`, `05_newton-methods.md`, `07_selection-guide.md` | `dart/math/lcp/newton/boxed_semi_smooth_newton_solver.hpp` exported by `all.hpp`            | S, B, F          | Smoke manifest checks; comparison harness covers standard, boxed, and friction-index fixtures; smoke tests include line-search failure reporting; generated coverage passes coupled mildly ill-conditioned 2-contact and 4-contact friction-index cases after the moving-bound Jacobian fix; generated coverage now also passes 1x-/4x-/8x-coupled mildly ill-conditioned friction-index packets through 96 contacts and 16x-coupled packets through 128 contacts | Manifest registers all three benchmark families; focused `BM_LcpBoxedSemiSmoothNewtonLineSearchSweep` rows cover default line search, expanded line-search step budget, and gentle step-reduction settings on standard, boxed, and friction-index fixtures in default, SIMD-enabled, and CUDA-enabled build trees; focused `BM_LcpContactSolverComparisonSweep/BoxedSemiSmoothNewton/*` rows cover separated world-contact, coupled stack-contact, and articulated unified-contact fixtures in those build trees; focused `BM_LcpMildIllConditioned/*/BoxedSemiSmoothNewton` single rows cover coupled 1x/4x/8x/16x mildly ill-conditioned friction-index packets; batch rows cover coupled 1x/4x/8x/16x packets, with the 16x rows reporting tuned line-search counters | Still needs longer-running/denser end-to-end contact and direct backend execution evidence; CUDA-enabled line-search, contact-comparison, and coupled mild rows are CPU solver rows, not CUDA LCP kernel execution |
 
 ## Other Methods
 
@@ -250,9 +250,10 @@ The current local evidence for this task is:
   stronger-coupled production coupled friction-index 24-contact packet and a
   stronger 32-contact packet. The new larger
   mildly ill-conditioned slice covers standard 32-row and 64-row, boxed 16-row
-  and 32-row, friction-index 8-contact, and 1x-/4x-/8x-/16x-coupled
-  friction-index 6-/8-/12-/16-/24-/32-/48-/64-/96-contact packets with Boxed
-  Semi-Smooth Newton included across those coupled rows,
+  and 32-row, friction-index 8-contact, 1x-/4x-/8x-coupled
+  friction-index 6-/8-/12-/16-/24-/32-/48-/64-/96-contact packets, and
+  16x-coupled 6-/8-/12-/16-/24-/32-/48-/64-/96-/128-contact packets with
+  Boxed Semi-Smooth Newton included across those coupled rows,
   over a scoped solver set. `MPRGP` is intentionally
   excluded from this stricter known-solution slice because a focused standard
   32-row trial satisfied the
@@ -354,24 +355,28 @@ The current local evidence for this task is:
   The CUDA-enabled rows are CPU solver batch rows in a CUDA-enabled build, not
   CUDA LCP kernel execution.
 - `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpMildIllConditioned/' | wc -l`
-  reported 584 rows. The combined single/batch check
+  reported 599 rows. The combined single/batch check
   `BM_LCP_COMPARE --benchmark_filter='^BM_LcpMildIllConditioned(BatchSerial|BatchParallel)?/' --benchmark_min_time=0.001s --benchmark_repetitions=1`
-  ran all 1752 rows with `contract_ok=1` in the default, SIMD-enabled, and
+  previously ran all 1752 rows with `contract_ok=1` in the default,
+  SIMD-enabled, and
   CUDA-enabled build trees. These rows cover standard 32-row, boxed 16-row,
   friction-index 8-contact, and coupled friction-index 6-, 8-, 12-, 16-, 24-,
   32-, 48-, 64-, and 96-contact larger mildly ill-conditioned packets, plus
-  4x-, 8x-, and 16x-coupled
-  6-/8-/12-/16-/24-/32-/48-/64-/96-contact packets. The
+  4x- and 8x-coupled 6-/8-/12-/16-/24-/32-/48-/64-/96-contact packets and
+  16x-coupled 6-/8-/12-/16-/24-/32-/48-/64-/96-/128-contact packets. Focused
+  default, SIMD-enabled, and CUDA-enabled smokes also pass the new
+  128-contact PGS row with `contract_ok=1`, `contact_count=128`,
+  `problem_size=384`, and `coupling_scale=16`. The
   rows report `mildly_ill_conditioned=1`, backend build-state
   counters, `contact_count` for friction-index packets, `coupled=1` for the
   coupled packets, and `coupling_scale=1`, `4`, `8`, or `16` for the
   stronger/extreme-coupled packets. The `BoxedSemiSmoothNewton` coupled
-  single-problem rows span coupling scales `1/4/8/16`; all four coupling scales
-  include the 96-contact packet, and the 16x rows report the same tuned
+  single-problem rows span coupling scales `1/4/8/16`; the 16x scale now
+  includes the 128-contact packet, and the 16x rows report the same tuned
   line-search counters as the batch rows.
 - `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpMildIllConditionedBatch' | wc -l`
-  reported 1168 rows, and JSON benchmark checks for
-  `BM_LcpMildIllConditionedBatch(Serial|Parallel)` reported 1168 rows with
+  reported 1198 rows, and JSON benchmark checks for
+  `BM_LcpMildIllConditionedBatch(Serial|Parallel)` previously reported 1168 rows with
   `contract_ok=1` in the default, SIMD-enabled, and CUDA-enabled build trees.
   These rows compare the batch-scoped solver set over batch-size-4 serial and
   DART 7 `ParallelExecutor` runs on standard
@@ -379,10 +384,14 @@ The current local evidence for this task is:
   6-/8-/12-/16-/24-/32-/48-/64-/96-contact, 4x-coupled
   6-/8-/12-/16-/24-/32-/48-/64-/96-contact, 8x-coupled
   6-/8-/12-/16-/24-/32-/48-/64-/96-contact, and 15-solver 16x-coupled
-  6-/8-/12-/16-/24-/32-/48-/64-/96-contact rows. The rows report
+  6-/8-/12-/16-/24-/32-/48-/64-/96-/128-contact rows. Focused default,
+  SIMD-enabled, and CUDA-enabled smokes also pass the new 128-contact PGS
+  serial and `ParallelExecutor` rows with `contract_ok=1`,
+  `total_contact_count=512`, `total_problem_size=1536`, and `parallel_units=4`
+  on parallel rows. The rows report
   `mildly_ill_conditioned_batch=1`, `batch_size=4`, problem sizes
-  `16/18/24/32/36/48/72/96/144/192/288`, total problem sizes
-  `64/72/96/128/144/192/288/384/576/768/1152`, backend build-state counters,
+  `16/18/24/32/36/48/72/96/144/192/288/384`, total problem sizes
+  `64/72/96/128/144/192/288/384/576/768/1152/1536`, backend build-state counters,
   and parallel execution counters on the `ParallelExecutor` rows. The
   `BoxedSemiSmoothNewton` coupled batch rows span coupling scales `1/4/8/16`;
   all four coupling scales include the 96-contact packet, and the 16x rows report
@@ -1024,7 +1033,9 @@ The current local evidence for this task is:
   passed 21 tests after adding the production active-set slice, the focused
   `BM_LcpMildIllConditioned` slice reported
   `build_simd_enabled=1`, `build_cuda_enabled=0`,
-  `has_simulation_experimental=1`, and `contract_ok=1` on all 1752 single and batch rows, and the
+  `has_simulation_experimental=1`, and `contract_ok=1` on the previous 1752
+  single and batch rows; the new 128-contact PGS single and batch rows also
+  pass in that build tree, and the
   focused `BM_LcpStressActiveSetTransition` slice reported
   `build_simd_enabled=1`, `build_cuda_enabled=0`,
   `active_set_transition=1`, `stress_active_set_transition=1`, and
@@ -1061,7 +1072,9 @@ The current local evidence for this task is:
   passed 21 tests after adding the production active-set slice, the focused
   `BM_LcpMildIllConditioned` slice reported
   `build_cuda_enabled=1`, `build_simd_enabled=0`,
-  `has_simulation_experimental=1`, and `contract_ok=1` on all 1752 single and batch rows, and the
+  `has_simulation_experimental=1`, and `contract_ok=1` on the previous 1752
+  single and batch rows; the new 128-contact PGS single and batch rows also
+  pass in that build tree, and the
   focused `BM_LcpStressActiveSetTransition` slice reported
   `build_cuda_enabled=1`, `build_simd_enabled=0`,
   `active_set_transition=1`, `stress_active_set_transition=1`, and
@@ -1241,8 +1254,9 @@ The current local evidence for this task is:
   coupled friction-index 8-contact, 12-contact, and 16-contact cases near
   lower, upper, and friction-cone boundaries, plus stronger-coupled production
   coupled friction-index 24-, 32-, 48-, 64-, 96-, and 128-contact active-set packets, plus
-  1x-/4x-/8x-/16x-coupled mildly ill-conditioned
-  6-/8-/12-/16-/24-/32-/48-/64-/96-contact
+  1x-/4x-/8x-coupled mildly ill-conditioned
+  6-/8-/12-/16-/24-/32-/48-/64-/96-contact and 16x-coupled
+  6-/8-/12-/16-/24-/32-/48-/64-/96-/128-contact
   friction-index slice. Coverage is still incomplete for broader hard
   solver-specific conditioning/coupling grids, direct backend execution beyond
   CPU solver rows in SIMD/CUDA-enabled builds, and real contact systems.
