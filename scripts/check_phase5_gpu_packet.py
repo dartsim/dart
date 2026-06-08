@@ -33,9 +33,10 @@ from __future__ import annotations
 import argparse
 import json
 import math
-import re
 import sys
 from pathlib import Path
+
+from benchmark_packet_utils import median_timing_by_name
 
 DEFAULT_CPU_PREFIX = "BM_Phase5RigidBodyBatchCpuBaseline"
 DEFAULT_GPU_PREFIX = "BM_Phase5RigidBodyBatchGpu"
@@ -50,10 +51,6 @@ REQUIRED_EVIDENCE_FLAGS = (
     "no_gpu_runtime_dependencies_passed",
     "phase5_benchmark_contract_passed",
 )
-
-_AGGREGATE_SUFFIX_RE = re.compile(r"_(?:mean|median|stddev|cv)$")
-_REPEATS_SUFFIX_RE = re.compile(r"/repeats:\d+")
-_UNIT_TO_NS = {"ns": 1.0, "us": 1e3, "ms": 1e6, "s": 1e9}
 
 
 class Phase5PacketError(RuntimeError):
@@ -115,29 +112,6 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         help="Maximum allowed CPU/GPU final-state absolute error.",
     )
     return parser.parse_args(argv)
-
-
-def _canonical_name(name: str) -> str:
-    return _AGGREGATE_SUFFIX_RE.sub("", _REPEATS_SUFFIX_RE.sub("", name))
-
-
-def _row_name(row: dict) -> str:
-    name = row.get("run_name", row.get("name", ""))
-    return name if isinstance(name, str) else ""
-
-
-def _to_ns(value: float, unit: str) -> float:
-    return value * _UNIT_TO_NS.get(unit, 1.0)
-
-
-def _timing_ns(row: dict) -> float:
-    value = row.get("real_time", row.get("cpu_time"))
-    if value is None:
-        return math.nan
-    try:
-        return _to_ns(float(value), str(row.get("time_unit", "ns")))
-    except (TypeError, ValueError):
-        return math.nan
 
 
 def _require_bool(metadata: dict, key: str) -> bool:
@@ -244,20 +218,6 @@ def write_packet_template(path: Path, template: dict) -> None:
     path.write_text(json.dumps(template, indent=2) + "\n", encoding="utf-8")
 
 
-def _median_timing_by_name(rows: list[dict]) -> dict[str, float]:
-    timings = {}
-    for row in rows:
-        if row.get("aggregate_name") != "median":
-            continue
-        name = _canonical_name(_row_name(row))
-        if not name:
-            continue
-        timing = _timing_ns(row)
-        if math.isfinite(timing) and timing > 0.0:
-            timings[name] = timing
-    return timings
-
-
 def _validate_metadata(
     metadata: dict,
     min_world_count: int,
@@ -335,7 +295,7 @@ def validate_packet(
 
     cpu_name = f"{cpu_prefix}/{world_count}/{actual_body_count}/{actual_step_count}"
     gpu_name = f"{gpu_prefix}/{world_count}/{actual_body_count}/{actual_step_count}"
-    timings = _median_timing_by_name(rows)
+    timings = median_timing_by_name(rows)
     missing = [name for name in (cpu_name, gpu_name) if name not in timings]
     if missing:
         raise Phase5PacketError("missing median benchmark rows: " + ", ".join(missing))
