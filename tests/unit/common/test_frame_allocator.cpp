@@ -41,6 +41,8 @@
 
 #include <array>
 #include <limits>
+#include <memory>
+#include <type_traits>
 #include <vector>
 
 #include <cstddef>
@@ -321,6 +323,21 @@ TEST_F(FrameAllocatorTest, StlAllocatorUsesArena)
 
   EXPECT_EQ(values.size(), 2u);
   EXPECT_GT(arena.used(), 0u);
+}
+
+//=============================================================================
+TEST_F(FrameAllocatorTest, StlAllocatorExposesLightweightStatefulTraits)
+{
+  using Allocator = FrameStlAllocator<int>;
+  using Traits = std::allocator_traits<Allocator>;
+
+  EXPECT_EQ(sizeof(Allocator), sizeof(void*));
+  EXPECT_TRUE((std::is_trivially_copy_constructible_v<Allocator>));
+  EXPECT_TRUE((std::is_trivially_destructible_v<Allocator>));
+  EXPECT_FALSE(Traits::is_always_equal::value);
+  EXPECT_TRUE(Traits::propagate_on_container_copy_assignment::value);
+  EXPECT_TRUE(Traits::propagate_on_container_move_assignment::value);
+  EXPECT_TRUE(Traits::propagate_on_container_swap::value);
 }
 
 //=============================================================================

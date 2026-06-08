@@ -284,11 +284,18 @@ class FrameStlAllocator
 {
 public:
   using value_type = T;
+  using is_always_equal = std::false_type;
+  using propagate_on_container_copy_assignment = std::true_type;
+  using propagate_on_container_move_assignment = std::true_type;
+  using propagate_on_container_swap = std::true_type;
 
   explicit FrameStlAllocator(FrameAllocator& arena) noexcept : mArena(&arena) {}
 
+  constexpr FrameStlAllocator(const FrameStlAllocator& other) noexcept
+      = default;
+
   template <typename U>
-  FrameStlAllocator(const FrameStlAllocator<U>& other) noexcept
+  constexpr FrameStlAllocator(const FrameStlAllocator<U>& other) noexcept
     : mArena(other.mArena)
   {
   }
@@ -320,20 +327,6 @@ public:
   void deallocate(T*, std::size_t) noexcept
   {
     // Arena semantics: memory freed on reset()
-  }
-
-  template <typename U, typename... Args>
-  void construct(U* pointer, Args&&... args)
-  {
-    std::construct_at(pointer, std::forward<Args>(args)...);
-  }
-
-  template <typename U>
-  void destroy(U* pointer) noexcept
-  {
-    if constexpr (!std::is_trivially_destructible_v<U>) {
-      std::destroy_at(pointer);
-    }
   }
 
   template <typename U>
