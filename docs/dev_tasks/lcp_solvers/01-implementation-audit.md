@@ -106,9 +106,10 @@ Support abbreviations:
   SIMD-enabled, and CUDA-enabled build trees. It now
   also includes a scoped robust near-singular slice for standard 8-row, boxed
   8-row, and coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-, 32-, and
-  48-, and 64-contact packets, plus 23 matching benchmark rows and 46 matching
-  batch benchmark rows verified in default, SIMD-enabled, and CUDA-enabled
-  build trees. It now
+  48-, 64-, and 96-contact packets, plus 25 matching benchmark rows and 50
+  matching batch benchmark rows verified in default, SIMD-enabled, and
+  CUDA-enabled build trees. The 96-contact packet uses the contract-verified
+  capped normal ramp and `1e6` diagonal spread. It now
   also includes an exact rank-deficient singular-degenerate slice for standard
   16-row, boxed 16-row, and coupled friction-index 6-contact packets, plus 27
   matching benchmark rows verified in default, SIMD-enabled, and CUDA-enabled
@@ -227,8 +228,8 @@ The current local evidence for this task is:
   and 64-row, boxed 32-row, friction-index 16-contact, coupled friction-index
   8-contact, production-scale standard 128-row, boxed 64-row, friction-index
   24-contact, coupled friction-index 12-contact, near-singular standard 8-row,
-  boxed 8-row, coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-, 32-, and
-  48-, and 64-contact,
+  boxed 8-row, coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-, 32-, 48-,
+  64-, and 96-contact,
   exact rank-deficient
   singular-degenerate standard 16-row, boxed 16-row, and coupled
   friction-index 6-contact known-solution cases, and larger exact
@@ -378,32 +379,32 @@ The current local evidence for this task is:
   `coupled=1` and `coupling_scale=1/4/8/16`. The CUDA-enabled rows are CPU
   solver batch rows in a CUDA-enabled build, not CUDA LCP kernel execution.
 - `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpNearSingular/' | wc -l`
-  reported 23 rows, and
+  reported 25 rows, and
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpNearSingular' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   ran all rows with `contract_ok=1` in the default, SIMD-enabled, and
   CUDA-enabled build trees. These rows cover near-singular standard 8-row,
-  boxed 8-row, and coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-, 32-, and
-  48-, and 64-contact packets over the scoped robust solver set. The rows report
+  boxed 8-row, and coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-, 32-, 48-,
+  64-, and 96-contact packets over the scoped robust solver set. The rows report
   `near_singular=1`, backend build-state counters, contact counts
-  `3/6/9/12/16/24/32/48/64`, problem sizes `9/18/27/36/48/72/96/144/192`, and
+  `3/6/9/12/16/24/32/48/64/96`, problem sizes `9/18/27/36/48/72/96/144/192/288`, and
   `coupled=1` for the coupled packets. The CUDA-enabled rows are CPU solver
   rows in a CUDA-enabled build, not CUDA LCP kernel execution.
 - `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpNearSingularBatch' | wc -l`
-  reported 46 rows, and JSON benchmark checks for
-  `BM_LcpNearSingularBatch(Serial|Parallel)` reported 46 rows with
+  reported 50 rows, and JSON benchmark checks for
+  `BM_LcpNearSingularBatch(Serial|Parallel)` reported 50 rows with
   `contract_ok=1` in the default, SIMD-enabled, and CUDA-enabled build trees.
   These rows compare `Dantzig` and `Baraff` on standard 8-row packets,
   `Dantzig`, `ShockPropagation`, and `BoxedSemiSmoothNewton` on boxed 8-row
   packets, and `Dantzig` and `ShockPropagation` on coupled friction-index 3-,
-  6-, 9-, 12-, 16-, 24-, 32-, 48-, and 64-contact packets. They cover batch-size-4
+  6-, 9-, 12-, 16-, 24-, 32-, 48-, 64-, and 96-contact packets. They cover batch-size-4
   serial and DART 7 `ParallelExecutor` runs on near-singular packets. The rows
   report `near_singular_batch=1`, `batch_size=4`, problem sizes
-  `8/9/18/27/36/48/72/96/144/192`, total problem sizes
-  `32/36/72/108/144/192/288/384/576/768`, backend build-state counters, and
+  `8/9/18/27/36/48/72/96/144/192/288`, total problem sizes
+  `32/36/72/108/144/192/288/384/576/768/1152`, backend build-state counters, and
   parallel execution counters on the `ParallelExecutor` rows. The
   friction-index rows additionally report
-  `contact_count=3/6/9/12/16/24/32/48/64`,
-  `total_contact_count=12/24/36/48/64/96/128/192/256`,
+  `contact_count=3/6/9/12/16/24/32/48/64/96`,
+  `total_contact_count=12/24/36/48/64/96/128/192/256/384`,
   and `coupled=1`. The CUDA-enabled rows are CPU solver batch rows in a
   CUDA-enabled build, not CUDA LCP kernel execution.
 - `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpSingularDegenerate/' | wc -l`
@@ -1147,7 +1148,7 @@ The current local evidence for this task is:
   friction-index 16-contact and 24-contact, stronger-coupled mildly
   ill-conditioned 16-/24-contact cases plus a 32-contact 8x case,
   near-singular standard 8-row, boxed 8-row, coupled friction-index 3-, 6-,
-  9-, 12-, 16-, 24-, 32-, 48-, and 64-contact, and larger exact
+  9-, 12-, 16-, 24-, 32-, 48-, 64-, and 96-contact, and larger exact
   rank-deficient
   singular-degenerate standard 32-row, boxed 32-row, and coupled
   friction-index 8-contact cases, plus stress exact rank-deficient

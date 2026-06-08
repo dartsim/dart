@@ -399,7 +399,9 @@ GeneratedCase makeFrictionIndexCase(
     const ConditioningClass conditioning,
     const unsigned seed,
     const bool coupled = false,
-    const double couplingScale = 1.0)
+    const double couplingScale = 1.0,
+    const double normalSlope = 0.15,
+    const double nearSingularScale = 1e4)
 {
   const int n = 3 * numContacts;
   Eigen::MatrixXd A = Eigen::MatrixXd::Zero(n, n);
@@ -409,7 +411,7 @@ GeneratedCase makeFrictionIndexCase(
     if (conditioning == ConditioningClass::MildlyIllConditioned) {
       scale = 25.0;
     } else if (conditioning == ConditioningClass::NearSingular) {
-      scale = 1e4;
+      scale = nearSingularScale;
     }
     const double contactScale
         = 1.0 + 0.1 * static_cast<double>((seed + contact) % 7);
@@ -446,7 +448,7 @@ GeneratedCase makeFrictionIndexCase(
 
   for (int contact = 0; contact < numContacts; ++contact) {
     const int base = 3 * contact;
-    const double normal = 0.5 + 0.15 * static_cast<double>(contact + 1);
+    const double normal = 0.5 + normalSlope * static_cast<double>(contact + 1);
     const double mu = 0.25 + 0.05 * static_cast<double>((contact % 4) + 1);
 
     x[base] = normal;
@@ -487,6 +489,13 @@ GeneratedCase makeFrictionIndexCase(
        << (coupled ? "_coupled" : "");
   if (coupled && couplingScale != 1.0) {
     name << "_scale" << static_cast<int>(couplingScale);
+  }
+  if (std::abs(normalSlope - 0.15) > 1e-12) {
+    name << "_normal_slope" << static_cast<int>(100.0 * normalSlope);
+  }
+  if (conditioning == ConditioningClass::NearSingular
+      && std::abs(nearSingularScale - 1e4) > 1e-12) {
+    name << "_diag_scale" << static_cast<int>(nearSingularScale);
   }
   name << "_mixed_cone_activity";
 
@@ -1048,7 +1057,9 @@ std::vector<GeneratedCase> makeRobustNearSingularCases()
       makeFrictionIndexCase(24, ConditioningClass::NearSingular, 16024, true),
       makeFrictionIndexCase(32, ConditioningClass::NearSingular, 16032, true),
       makeFrictionIndexCase(48, ConditioningClass::NearSingular, 16048, true),
-      makeFrictionIndexCase(64, ConditioningClass::NearSingular, 16064, true)};
+      makeFrictionIndexCase(64, ConditioningClass::NearSingular, 16064, true),
+      makeFrictionIndexCase(
+          96, ConditioningClass::NearSingular, 16096, true, 1.0, 0.08, 1e3)};
 }
 
 std::vector<GeneratedCase> makeSingularDegenerateCases()
