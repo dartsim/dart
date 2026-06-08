@@ -35,11 +35,11 @@ cross-contact coupling, a stronger-coupled 32-contact packet with 8x
 cross-contact coupling, ADMM/SAP-only 16x-coupled 16-/24-/32-/48-contact
 packets, and 192 matching `BM_LcpMildIllConditioned` benchmark rows verified in
 default, SIMD-enabled, and CUDA-enabled build trees. It also
-adds 100 `BM_LcpMildIllConditionedBatch(Serial|Parallel)` rows for batch-size-4
-serial and DART 7 `ParallelExecutor` runs over the 8x-coupled
-16-/24-/32-contact mildly ill-conditioned packets plus ADMM/SAP-only
-16x-coupled 16-/24-/32-/48-contact packets, verified in default, SIMD-enabled,
-and CUDA-enabled build trees.
+adds 156 `BM_LcpMildIllConditionedBatch(Serial|Parallel)` rows for batch-size-4
+serial and DART 7 `ParallelExecutor` runs over the 4x-coupled 16-/24-contact,
+8x-coupled 16-/24-/32-contact, and ADMM/SAP-only 16x-coupled
+16-/24-/32-/48-contact mildly ill-conditioned packets, verified in default,
+SIMD-enabled, and CUDA-enabled build trees.
 It now also adds DART 7 per-contact block-structure evidence for BGS and
 Blocked Jacobi on a real two-contact boxed-LCP world-contact snapshot: the
 focused tests pass when blocks are derived from non-contiguous `findex`
@@ -538,13 +538,13 @@ contact scenes.
   focused default, SIMD-enabled, and CUDA-enabled runs pass with
   `contract_ok=1` on all rows and report `mildly_ill_conditioned=1` plus
   contact/coupling counters where applicable.
-  `BM_LCP_COMPARE` also lists 100
+  `BM_LCP_COMPARE` also lists 156
   `BM_LcpMildIllConditionedBatch(Serial|Parallel)` rows for batch-size-4 serial
-  and DART 7 `ParallelExecutor` runs over the 8x-coupled 16-/24-/32-contact
-  mildly ill-conditioned packets plus ADMM/SAP-only 16x-coupled
+  and DART 7 `ParallelExecutor` runs over the 4x-coupled 16-/24-contact,
+  8x-coupled 16-/24-/32-contact, and ADMM/SAP-only 16x-coupled
   16-/24-/32-/48-contact packets; focused default, SIMD-enabled, and
   CUDA-enabled JSON checks pass with `contract_ok=1` on all rows and report
-  `mildly_ill_conditioned_batch=1`, `coupling_scale=8/16`,
+  `mildly_ill_conditioned_batch=1`, `coupling_scale=4/8/16`,
   contact/total-contact counters, backend build-state counters, and parallel
   execution counters on `ParallelExecutor` rows.
   `BM_LCP_COMPARE` also lists 21 `BM_LcpNearSingular` rows for standard

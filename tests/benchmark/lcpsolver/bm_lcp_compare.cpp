@@ -6677,6 +6677,12 @@ std::vector<LcpProblem> MakeMildIllConditionedBatchProblems(
   const double couplingScale = getMildIllConditionedCouplingScale(testCase);
   unsigned seedBase = 29'016u;
   switch (testCase) {
+    case MildIllConditionedBenchmarkCase::StrongCoupledFrictionIndex16:
+      seedBase = 28'016u;
+      break;
+    case MildIllConditionedBenchmarkCase::StrongCoupledFrictionIndex24:
+      seedBase = 28'024u;
+      break;
     case MildIllConditionedBenchmarkCase::StrongerCoupledFrictionIndex16:
       seedBase = 29'016u;
       break;
@@ -9662,7 +9668,9 @@ void RegisterMildIllConditionedBenchmarks()
 
 void RegisterMildIllConditionedBatchBenchmarks()
 {
-  constexpr std::array<MildIllConditionedBenchmarkCase, 7> cases{
+  constexpr std::array<MildIllConditionedBenchmarkCase, 9> cases{
+      MildIllConditionedBenchmarkCase::StrongCoupledFrictionIndex16,
+      MildIllConditionedBenchmarkCase::StrongCoupledFrictionIndex24,
       MildIllConditionedBenchmarkCase::StrongerCoupledFrictionIndex16,
       MildIllConditionedBenchmarkCase::StrongerCoupledFrictionIndex24,
       MildIllConditionedBenchmarkCase::StrongerCoupledFrictionIndex32,
