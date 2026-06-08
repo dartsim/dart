@@ -44,6 +44,11 @@ It also adds 32 `BM_LcpNearSingularBatch(Serial|Parallel)` rows for
 batch-size-4 serial and DART 7 `ParallelExecutor` runs over coupled
 friction-index 3-/6-/9-/12-/16-/24-/32-/48-contact near-singular packets,
 verified in default, SIMD-enabled, and CUDA-enabled build trees.
+It also adds 42
+`BM_LcpSingularDegenerateFrictionIndexBatch(Serial|Parallel)` rows for
+batch-size-4 serial and DART 7 `ParallelExecutor` runs over exact
+rank-deficient coupled friction-index 6-/8-/12-/16-/24-/32-/48-contact
+packets, verified in default, SIMD-enabled, and CUDA-enabled build trees.
 It now also adds DART 7 per-contact block-structure evidence for BGS and
 Blocked Jacobi on a real two-contact boxed-LCP world-contact snapshot: the
 focused tests pass when blocks are derived from non-contiguous `findex`
@@ -392,7 +397,8 @@ Push/PR work still requires explicit maintainer/user approval.
 Move from the now-verified extreme 128-row/16-contact exact rank-deficient,
 production active-set transition 48-contact, coupled mildly ill-conditioned
 24-contact, near-singular 48-contact CPU solver rows, near-singular
-serial/parallel batch rows, and default/SIMD/CUDA Newton warm-start
+serial/parallel batch rows, exact rank-deficient singular-degenerate
+friction-index batch rows, and default/SIMD/CUDA Newton warm-start
 single-problem and batch benchmark rows, plus focused
 PGS/PSOR, symmetric PSOR, and Red-Black Gauss-Seidel relaxation sweep rows,
 APGD restart-policy sweep rows, TGS iteration-budget sweep rows, NNCG
@@ -585,6 +591,16 @@ contact scenes.
   and `contact_count=8`/`coupled=1` for the coupled friction-index packet. The
   CUDA-enabled rows are CPU solver rows in a CUDA-enabled build, not CUDA LCP
   kernel execution.
+  `BM_LCP_COMPARE` also lists 42
+  `BM_LcpSingularDegenerateFrictionIndexBatch(Serial|Parallel)` rows for
+  batch-size-4 serial and DART 7 `ParallelExecutor` runs over exact
+  rank-deficient coupled friction-index 6-/8-/12-/16-/24-/32-/48-contact
+  packets; focused default, SIMD-enabled, and CUDA-enabled JSON checks pass
+  with `contract_ok=1` on all rows and report `singular_degenerate_batch=1`,
+  `rank_deficient=1`, contact/total-contact counters, backend build-state
+  counters, and parallel execution counters on `ParallelExecutor` rows. The
+  CUDA-enabled rows are CPU solver batch rows in a CUDA-enabled build, not CUDA
+  LCP kernel execution.
 - Standard, boxed, and friction-index benchmark registration now comes from
   `tests/common/lcpsolver/lcp_solver_manifest.hpp`; each family/size uses one
   deterministic generated problem across supported solvers. `DirectSolver` is

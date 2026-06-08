@@ -203,6 +203,11 @@
       `BM_LcpExtremeSingularDegenerate` rows for scoped standard 128-row,
       boxed 128-row, and coupled friction-index 16-/24-/32-/48-contact packets,
       verified in default, SIMD-enabled, and CUDA-enabled build trees.
+- [x] Added 42
+      `BM_LcpSingularDegenerateFrictionIndexBatch(Serial|Parallel)` benchmark
+      rows for batch-size-4 runs over exact rank-deficient coupled
+      friction-index 6-/8-/12-/16-/24-/32-/48-contact packets, verified in
+      default, SIMD-enabled, and CUDA-enabled build trees.
 - [x] Fixed boxed semi-smooth Newton's `findex` moving-bound Jacobian so the
       coupled mildly ill-conditioned 4-contact generated case satisfies the
       all-solver contract.
@@ -1052,6 +1057,23 @@ tradeoffs evidence based.
   contact counts `16/24/32/48`, problem sizes `48/72/96/144`, and `coupled=1`
   for the coupled packets. The CUDA-enabled rows are CPU solver rows in a CUDA-enabled
   build, not CUDA LCP kernel execution.
+- Verified singular-degenerate friction-index batch benchmark slice:
+  `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpSingularDegenerateFrictionIndexBatch' | wc -l`
+  reported 42 rows, and JSON benchmark checks for
+  `BM_LcpSingularDegenerateFrictionIndexBatch(Serial|Parallel)` reported 42
+  rows with `contract_ok=1` in the default, SIMD-enabled, and CUDA-enabled
+  build trees. These rows cover batch-size-4 serial and DART 7
+  `ParallelExecutor` runs over exact rank-deficient coupled friction-index 6-,
+  8-, 12-, 16-, 24-, 32-, and 48-contact packets. The rows report
+  `singular_degenerate_batch=1`, `rank_deficient=1`, `batch_size=4`,
+  `contact_count=6/8/12/16/24/32/48`,
+  `total_contact_count=24/32/48/64/96/128/192`,
+  `problem_size=18/24/36/48/72/96/144`,
+  `total_problem_size=72/96/144/192/288/384/576`, and backend build-state
+  counters. Parallel rows also report `profile_enabled=1`,
+  `parallel_units=4`, `worker_count=20`, and observed `max_parallelism`. The
+  CUDA-enabled rows are CPU solver batch rows in a CUDA-enabled build, not CUDA
+  LCP kernel execution.
 - Verified solver-internal Jacobi threading slice:
   `JacobiSolver::Parameters::workerThreads` now enables an opt-in CPU threaded
   update path. `LcpGeneratedCoverage.ThreadedJacobiStandardKnownSolution`
@@ -1609,6 +1631,13 @@ tradeoffs evidence based.
   backend build-state counters, and contact/coupling counters where applicable.
   The CUDA-enabled rows are CPU solver rows in a CUDA-enabled build, not CUDA
   LCP kernel execution.
+- Added 42 `BM_LcpSingularDegenerateFrictionIndexBatch(Serial|Parallel)` rows
+  for batch-size-4 serial and DART 7 `ParallelExecutor` runs over exact
+  rank-deficient coupled friction-index 6-/8-/12-/16-/24-/32-/48-contact
+  packets. These rows report `contract_ok=1`, `singular_degenerate_batch=1`,
+  `rank_deficient=1`, backend build-state counters, and contact/coupling
+  counters. The CUDA-enabled rows are CPU solver batch rows in a CUDA-enabled
+  build, not CUDA LCP kernel execution.
 - Added 49 `BM_LcpLargerActiveSetTransition` rows for the scoped scalable
   active-set transition packets: standard 32-row, boxed 32-row, and coupled
   friction-index 8-contact. These rows report `contract_ok=1`,
@@ -1813,8 +1842,9 @@ tradeoffs evidence based.
   fixtures, active-set, larger/stress/extreme/production active-set packets,
   production active-set serial and `ParallelExecutor` batch packets,
   mildly ill-conditioned single-problem and 4x/8x/16x-coupled batch packets,
-  near-singular single-problem and batch packets, singular-degenerate packets,
-  PGS/PSOR, symmetric PSOR, and Red-Black Gauss-Seidel relaxation sweep rows, APGD restart-policy sweep
+  near-singular single-problem and batch packets, singular-degenerate
+  single-problem and friction-index batch packets, PGS/PSOR, symmetric PSOR,
+  and Red-Black Gauss-Seidel relaxation sweep rows, APGD restart-policy sweep
   rows, TGS iteration-budget sweep rows, NNCG PGS-preconditioner iteration
   sweep rows, SubspaceMinimization PGS-iteration sweep rows, ShockPropagation
   layer-layout sweep rows, MPRGP SPD/check sweep rows, Interior Point

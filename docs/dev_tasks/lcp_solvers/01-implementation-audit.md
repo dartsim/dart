@@ -122,6 +122,8 @@ Support abbreviations:
   build trees. It now also includes an extreme exact rank-deficient
   singular-degenerate slice for standard 128-row, boxed 128-row, and coupled
   friction-index 16-/24-/32-/48-contact packets, plus 36 matching benchmark rows verified
+  in default, SIMD-enabled, and CUDA-enabled build trees. It also includes 42
+  exact rank-deficient singular-degenerate friction-index batch rows verified
   in default, SIMD-enabled, and CUDA-enabled build trees. It now also adds 49 larger active-set transition benchmark rows
   for standard 32-row, boxed 32-row, and coupled friction-index 8-contact
   packets, verified in default, SIMD-enabled, and CUDA-enabled build trees. It
@@ -427,6 +429,22 @@ The current local evidence for this task is:
   build-state counters, contact counts `16/24/32/48`, problem sizes `48/72/96/144`, and
   `coupled=1` for the coupled packets. The CUDA-enabled rows are CPU solver rows in a CUDA-enabled build,
   not CUDA LCP kernel execution.
+- `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpSingularDegenerateFrictionIndexBatch' | wc -l`
+  reported 42 rows, and JSON benchmark checks for
+  `BM_LcpSingularDegenerateFrictionIndexBatch(Serial|Parallel)` reported 42
+  rows with `contract_ok=1` in the default, SIMD-enabled, and CUDA-enabled
+  build trees. These rows compare `Admm`, `Sap`, and
+  `BoxedSemiSmoothNewton` over batch-size-4 serial and DART 7
+  `ParallelExecutor` runs on exact rank-deficient coupled friction-index 6-,
+  8-, 12-, 16-, 24-, 32-, and 48-contact packets. The rows report
+  `singular_degenerate_batch=1`, `rank_deficient=1`, `batch_size=4`,
+  `contact_count=6/8/12/16/24/32/48`,
+  `total_contact_count=24/32/48/64/96/128/192`,
+  `problem_size=18/24/36/48/72/96/144`,
+  `total_problem_size=72/96/144/192/288/384/576`, backend build-state
+  counters, and parallel execution counters on the `ParallelExecutor` rows.
+  The CUDA-enabled rows are CPU solver batch rows in a CUDA-enabled build, not
+  CUDA LCP kernel execution.
 - `LcpGeneratedCoverage.ThreadedJacobiStandardKnownSolution` passed with
   `JacobiSolver::Parameters::workerThreads = 4` on the 128-row deterministic
   standard generated case. This is solver-internal CPU threading correctness
