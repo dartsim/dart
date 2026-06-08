@@ -2176,6 +2176,14 @@ RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
   result.surfaces.assign(surfaces.begin(), surfaces.end());
   std::vector<RigidIpcBarrierSurface> laggedSurfaces(
       surfaces.begin(), surfaces.end());
+  std::vector<RigidIpcBarrierSurface> lineSearchStartSurfaces;
+  std::vector<RigidIpcBarrierSurface> candidateSurfaces;
+  std::vector<RigidIpcBarrierSurface> acceptedSurfaces;
+  std::vector<RigidIpcBarrierSurface> bestDecreasingSurfaces;
+  lineSearchStartSurfaces.reserve(surfaces.size());
+  candidateSurfaces.reserve(surfaces.size());
+  acceptedSurfaces.reserve(surfaces.size());
+  bestDecreasingSurfaces.reserve(surfaces.size());
 
   // Kinematic (prescribed-motion) obstacles advance from their start pose to
   // their end pose over the step. `result.surfaces`/`laggedSurfaces` hold the
@@ -2277,23 +2285,22 @@ RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
   // relative floor (filled once the initial gradient norm is known below).
   RigidIpcProjectedNewtonOptions newtonOptions = options.newton;
 
-  const auto makeKinematicLineSearchStart = [&]() {
-    std::vector<RigidIpcBarrierSurface> lineSearchStart = result.surfaces;
-    for (std::size_t i = 0; i < lineSearchStart.size(); ++i) {
+  const auto makeKinematicLineSearchStart
+      = [&]() -> const std::vector<RigidIpcBarrierSurface>& {
+    lineSearchStartSurfaces = result.surfaces;
+    for (std::size_t i = 0; i < lineSearchStartSurfaces.size(); ++i) {
       if (surfaces[i].kinematic) {
-        lineSearchStart[i].pose = surfaces[i].kinematicStartPose;
+        lineSearchStartSurfaces[i].pose = surfaces[i].kinematicStartPose;
       }
     }
-    return lineSearchStart;
+    return lineSearchStartSurfaces;
   };
   const auto checkConvergedKinematicSweep = [&]() {
     if (!hasKinematic || !options.useLineSearch) {
       return true;
     }
-    const std::vector<RigidIpcBarrierSurface> lineSearchStart
-        = makeKinematicLineSearchStart();
     result.lineSearch = computeRigidIpcLineSearchStepBound(
-        lineSearchStart, result.surfaces, options.lineSearch);
+        makeKinematicLineSearchStart(), result.surfaces, options.lineSearch);
     recordSolveLineSearchStats(result);
     if (result.lineSearch.limited) {
       ++result.stats.lineSearchLimitedSteps;
@@ -2322,10 +2329,10 @@ RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
           if (!hasKinematic || !options.useLineSearch) {
             return true;
           }
-          const std::vector<RigidIpcBarrierSurface> lineSearchStart
-              = makeKinematicLineSearchStart();
           result.lineSearch = computeRigidIpcLineSearchStepBound(
-              lineSearchStart, candidateSurfaces, options.lineSearch);
+              makeKinematicLineSearchStart(),
+              candidateSurfaces,
+              options.lineSearch);
           recordSolveLineSearchStats(result);
           if (result.lineSearch.limited) {
             ++result.stats.lineSearchLimitedSteps;
@@ -2415,7 +2422,7 @@ RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
       }
 
       if (options.useLineSearch) {
-        std::vector<RigidIpcBarrierSurface> candidateSurfaces = result.surfaces;
+        candidateSurfaces = result.surfaces;
         applyRigidIpcNewtonDelta(
             candidateSurfaces, result.assembly, step.delta);
         // The Newton delta only moves dynamic surfaces, so candidateSurfaces
@@ -2425,10 +2432,10 @@ RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
         // (anti-tunneling against a moving obstacle); dynamic surfaces keep
         // their current iterate.
         if (hasKinematic) {
-          const std::vector<RigidIpcBarrierSurface> lineSearchStart
-              = makeKinematicLineSearchStart();
           result.lineSearch = computeRigidIpcLineSearchStepBound(
-              lineSearchStart, candidateSurfaces, options.lineSearch);
+              makeKinematicLineSearchStart(),
+              candidateSurfaces,
+              options.lineSearch);
         } else {
           result.lineSearch = computeRigidIpcLineSearchStepBound(
               result.surfaces, candidateSurfaces, options.lineSearch);
@@ -2499,8 +2506,8 @@ RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
         }
 
         double trialScale = 1.0;
-        std::vector<RigidIpcBarrierSurface> acceptedSurfaces;
-        std::vector<RigidIpcBarrierSurface> bestDecreasingSurfaces;
+        acceptedSurfaces.clear();
+        bestDecreasingSurfaces.clear();
         bool hasDecreasingCandidate = false;
         bool hasUnsafeKinematicCandidate = false;
         double bestDecreasingValue = currentValue;
@@ -2508,8 +2515,7 @@ RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
         for (std::size_t backtrack = 0;
              backtrack <= newtonOptions.maxBacktrackingIterations;
              ++backtrack) {
-          std::vector<RigidIpcBarrierSurface> candidateSurfaces
-              = result.surfaces;
+          candidateSurfaces = result.surfaces;
           applyRigidIpcNewtonDelta(
               candidateSurfaces, result.assembly, trialScale * step.delta);
           if (!kinematicCandidateAllowsFullStep(candidateSurfaces)) {
@@ -2542,7 +2548,7 @@ RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
           }
           if (std::isfinite(candidateAssembly.value)
               && candidateAssembly.value <= sufficientDecreaseValue) {
-            acceptedSurfaces = std::move(candidateSurfaces);
+            acceptedSurfaces = candidateSurfaces;
             acceptedCandidate = true;
             break;
           }
@@ -2561,7 +2567,7 @@ RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
             // assembled objective. Keep that progress instead of reporting a
             // line-search failure; per-candidate CCD already filtered unsafe
             // kinematic backtracking states.
-            acceptedSurfaces = std::move(bestDecreasingSurfaces);
+            acceptedSurfaces = bestDecreasingSurfaces;
             trialScale = bestDecreasingScale;
             acceptedCandidate = true;
           } else if (hasUnsafeKinematicCandidate) {
@@ -2579,7 +2585,7 @@ RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
           scaleRigidIpcNewtonStep(step, trialScale);
           result.lastStep = step;
         }
-        result.surfaces = std::move(acceptedSurfaces);
+        result.surfaces = acceptedSurfaces;
       }
 
       if (!acceptedCandidate) {

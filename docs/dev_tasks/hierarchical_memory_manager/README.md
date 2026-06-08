@@ -188,6 +188,8 @@
       scratch prepared with the rigid body capacity instead of allocating local
       traversal vectors, and the rigid IPC resting-contact no-op predicate now
       reuses stage-owned per-body contact-power and stationary-flag scratch.
+      The rigid IPC projected-Newton loop now reuses solve-local surface buffers
+      across line-search and sufficient-decrease backtracking candidates.
       `DeformableDynamicsStage` now owns reusable
       obstacle-list, deformable surface-snapshot, and rigid
       surface-CCD snapshot scratch, and `prepare()` primes per-body

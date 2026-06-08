@@ -280,7 +280,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     Rigid IPC accepted/rejected writeback now reuses stage-owned entity-order
     scratch instead of allocating local traversal vectors, and the
     resting-contact no-op predicate reuses stage-owned per-body contact-power
-    and stationary-flag scratch.
+    and stationary-flag scratch. The rigid IPC projected-Newton loop now reuses
+    solve-local surface buffers across line-search and sufficient-decrease
+    backtracking candidates.
     Convenience return-by-value unified problem wrappers remain a separate
     allocation target.
   - Reused `DeformableDynamicsStage` scratch for deformable surface snapshots,
