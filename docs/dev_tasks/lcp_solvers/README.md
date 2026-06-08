@@ -311,9 +311,9 @@
       except `NNCG`.
 - [x] Added DART 7 dense box-face contact evidence: a 4-contact, 12-row,
       single-dynamic-body boxed/findex snapshot assembled from
-      `World::collide()`, APGD-verified in the unit test, plus 48 scoped
+      `World::collide()`, APGD-verified in the unit test, plus 54 scoped
       `BM_LcpWorldBoxContact/FrictionIndex` benchmark rows over
-      1/2/4/8/16/24/32/48-box snapshots verified in default, SIMD-enabled, and
+      1/2/4/8/16/24/32/48/64-box snapshots verified in default, SIMD-enabled, and
       CUDA-enabled build trees.
 - [x] Added contact-derived CUDA batch evidence for homogeneous 4-, 8-, and
       16-contact DART 7 world-contact packets, covering fixed-iteration CUDA
@@ -1311,16 +1311,17 @@ tradeoffs evidence based.
   benchmark evidence for 1/2/4 separated sphere-ground contacts, not evidence
   for articulated, robot-like, or denser degenerate contact scenes.
 - DART 7 dense box-contact benchmark evidence:
-  `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` now registers 48 scoped
-  `BM_LcpWorldBoxContact/FrictionIndex/<solver>/{1,2,4,8,16,24,32,48}` rows for
+  `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` now registers 54 scoped
+  `BM_LcpWorldBoxContact/FrictionIndex/<solver>/{1,2,4,8,16,24,32,48,64}` rows for
   `Pgs`, `RedBlackGaussSeidel`, `NNCG`, `Apgd`, `Tgs`, and `Admm`. Each solver
-  uses the same 1/2/4/8/16/24/32/48-box dense face-contact snapshots, covering
-  4/8/16/32/64/96/128/192 contacts, 12/24/48/96/192/288/384/576 rows, and
-  1/2/4/8/16/24/32/48 dynamic bodies. Focused default, SIMD-enabled, and
+  uses the same 1/2/4/8/16/24/32/48/64-box dense face-contact snapshots,
+  covering 4/8/16/32/64/96/128/192/256 contacts,
+  12/24/48/96/192/288/384/576/768 rows, and
+  1/2/4/8/16/24/32/48/64 dynamic bodies. Focused default, SIMD-enabled, and
   CUDA-enabled
-  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldBoxContact/FrictionIndex/.+/48$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
-  runs each reported `contract_ok=1`, `dense_box_contact=1`, `box_count=48`,
-  `contact_count=192`, and `problem_size=576` for the six new 48-box rows, with
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldBoxContact/FrictionIndex/.+/64$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  runs each reported `contract_ok=1`, `dense_box_contact=1`, `box_count=64`,
+  `contact_count=256`, and `problem_size=768` for the six new 64-box rows, with
   `build_simd_enabled=1` in the SIMD build tree and `build_cuda_enabled=1` in
   the CUDA-enabled build tree.
   The CUDA-enabled rows are CPU solver benchmark rows in that build tree, not
