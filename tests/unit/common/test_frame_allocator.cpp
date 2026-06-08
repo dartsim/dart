@@ -69,6 +69,20 @@ struct ArenaRegistryVelocity
   double values[3] = {};
 };
 
+struct NonTrivialArenaValue
+{
+  explicit NonTrivialArenaValue(int* destroyCount) : mDestroyCount(destroyCount)
+  {
+  }
+
+  ~NonTrivialArenaValue()
+  {
+    ++*mDestroyCount;
+  }
+
+  int* mDestroyCount;
+};
+
 template <typename Registry>
 void reserveArenaRegistryStorage(Registry& registry, const size_t entityCount)
 {
@@ -338,6 +352,25 @@ TEST_F(FrameAllocatorTest, StlAllocatorExposesLightweightStatefulTraits)
   EXPECT_TRUE(Traits::propagate_on_container_copy_assignment::value);
   EXPECT_TRUE(Traits::propagate_on_container_move_assignment::value);
   EXPECT_TRUE(Traits::propagate_on_container_swap::value);
+}
+
+//=============================================================================
+TEST_F(FrameAllocatorTest, StlAllocatorConstructsAndDestroysNonTrivialObjects)
+{
+  FrameAllocator arena(MemoryAllocator::GetDefault(), 512);
+  FrameStlAllocator<NonTrivialArenaValue> allocator(arena);
+  using Traits = std::allocator_traits<decltype(allocator)>;
+
+  int destroyCount = 0;
+  auto* value = allocator.allocate(1);
+  ASSERT_NE(value, nullptr);
+
+  Traits::construct(allocator, value, &destroyCount);
+  EXPECT_EQ(destroyCount, 0);
+
+  Traits::destroy(allocator, value);
+  EXPECT_EQ(destroyCount, 1);
+  allocator.deallocate(value, 1);
 }
 
 //=============================================================================

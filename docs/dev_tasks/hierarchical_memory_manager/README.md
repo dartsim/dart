@@ -51,9 +51,10 @@
       allocator-root isolation across independent `MemoryManager` and
       experimental `World` instances, and keeps fixed-capacity free-list
       aligned-allocation diagnostics on user-requested bytes instead of internal
-      header padding. `FrameStlAllocator` blocks are now cache-line aligned so
-      frame-backed STL pages used by allocator-aware EnTT storage have a better
-      hot-loop layout, and the frame allocator now has cheaper no-overflow
+      header padding. `FrameStlAllocator` blocks are cache-line aligned without
+      per-block cache coloring, so frame-backed STL pages used by
+      allocator-aware EnTT storage keep the alignment benefit without avoidable
+      arena padding, and the frame allocator now has cheaper no-overflow
       reset plus 32-byte and cache-line-aligned fast paths for the comparative
       frame/STL rows. The STL-vector adapter benchmark is batched reserve-only
       allocator-adapter work so it measures allocator throughput instead of
@@ -88,7 +89,12 @@
       result in
       `.benchmark_results/allocator_foonathan_broad_entt_current_check.json`
       passes all 47 foonathan comparisons. Re-run the standard-baseline half
-      before making a fresh post-policy-change 94-row claim.
+      before making a fresh post-policy-change 94-row claim. Later
+      random-interleaved EnTT diagnostics showed the pool-backed no-growth row
+      is still too close to foonathan/memory at small sizes to treat the
+      sequential artifact as the final "beats every foonathan allocator" proof;
+      keep EnTT steady-state optimization open and use random interleaving for
+      follow-up allocator-policy evidence.
 - [ ] Phase 3: EnTT registry/component storage allocation is configurable from
       the World memory hierarchy and covered by no-growth ECS tests.
       Allocator-aware EnTT storage now has focused `StlAllocator` and
@@ -340,6 +346,11 @@ debugging, profiling, optimization experiments, and ImGui visualization.
    `.benchmark_results/allocator_foonathan_broad_entt_current_check.json`
    passes all 47 foonathan comparisons with either non-noisy rows or
    confidence-separated high-CV rows.
+   Later random-interleaved EnTT diagnostics on the same branch found that the
+   pool-backed no-growth row can still miss foonathan/memory at 256/512
+   entities, while frame-backed and default-backed probes did not robustly close
+   the gap. Treat that as the active EnTT steady-state performance gap before
+   making a stronger foonathan completion claim.
    Re-run the standard-baseline half before claiming a fresh 94-row
    post-policy-change pass. Keep this combined gate green after allocator or
    benchmark policy changes:

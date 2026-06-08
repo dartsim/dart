@@ -180,9 +180,10 @@ locally.
 ## Immediate Next Step
 
 Continue Phase 2 allocator performance work before claiming HMM completion. The
-latest allocator slices cache-line-align and cache-color `FrameStlAllocator`
-blocks, add allocator overflow and `construct`/`destroy` hooks to the STL
-adapters, keep the non-diagnostic `PoolAllocator` hot path for release
+latest allocator slices keep `FrameStlAllocator` blocks cache-line aligned
+without per-block cache coloring, add allocator overflow and
+`construct`/`destroy` hooks to the STL adapters, keep the non-diagnostic
+`PoolAllocator` hot path for release
 `MemoryManager` pool allocation, remove the hardcoded realistic-row benchmark
 min-time, add CPU affinity controls to the benchmark runner/checker, make
 auto-affinity sample per-CPU utilization before selecting a benchmark CPU, and
@@ -211,10 +212,14 @@ mean confidence interval is strictly below the selected baseline's interval.
 The merged current foonathan broad-plus-EnTT result in
 `.benchmark_results/allocator_foonathan_broad_entt_current_check.json` passes
 all 47 DART-vs-foonathan checks under that rule.
-HMM is still open: re-run the standard-baseline half before making a fresh
-post-policy-change 94-row claim, keep the combined comparative gate green as
-allocator policy changes, continue broadening production no-growth coverage,
-and add any future allocator baselines that map to HMM allocator roles.
+Random-interleaved EnTT diagnostics later in the same branch found that the
+current pool-backed no-growth row remains too close to foonathan/memory at
+small entity counts, and frame-backed/default-backed probes did not robustly
+close the steady-state gap. HMM is still open: re-run the standard-baseline
+half before making a fresh post-policy-change 94-row claim, keep the combined
+comparative gate green as allocator policy changes, continue broadening
+production no-growth coverage, and add any future allocator baselines that map
+to HMM allocator roles.
 
 Do not treat the benchmark-only frame-backed no-growth policy as production
 `WorldRegistry` bake/build allocation yet. Production integration now resets
@@ -257,6 +262,20 @@ zero-dynamic-allocation claim.
 
 ## Latest Local Validation
 
+- On 2026-06-07 after merging the latest `origin/main`, allocator-policy
+  probing narrowed the kept code change to `FrameStlAllocator`
+  construct/destroy hooks plus cache-line aligned STL storage without
+  cache-color padding. Random-interleaved EnTT diagnostics were intentionally
+  treated as investigation rather than green evidence:
+  `.benchmark_results/allocator_entt_frame_random_probe.json` showed the
+  frame-backed no-growth probe still missing foonathan at 256/2048 entities
+  (`1.024`/`1.020`) and std build rows, while
+  `.benchmark_results/allocator_entt_pool_random_probe.json` showed the
+  restored pool-backed no-growth policy still missing foonathan at 256/512
+  (`1.003`/`1.052`). A default-backed aligned-storage probe also missed
+  foonathan and std rows and was not kept. Continue optimizing EnTT
+  steady-state under random interleaving before making a stronger
+  foonathan-completion claim.
 - On 2026-06-07 after adding STL allocator `construct`/`destroy` hooks,
   cache-line colored frame-backed STL storage, cheaper no-overflow frame resets,
   a pool-backed EnTT no-growth row, and a fixed-pool steady-state churn row:

@@ -223,7 +223,7 @@ private:
   [[nodiscard]] inline void* allocateStlStorageCacheAligned(
       size_t bytes) noexcept
   {
-    return allocateCacheAlignedFast(bytes, true);
+    return allocateCacheAlignedFast(bytes, false);
   }
 
   [[nodiscard]] inline void* allocateCacheAlignedFast(
@@ -327,6 +327,20 @@ public:
   void deallocate(T*, std::size_t) noexcept
   {
     // Arena semantics: memory freed on reset()
+  }
+
+  template <typename U, typename... Args>
+  void construct(U* pointer, Args&&... args)
+  {
+    std::construct_at(pointer, std::forward<Args>(args)...);
+  }
+
+  template <typename U>
+  void destroy(U* pointer) noexcept
+  {
+    if constexpr (!std::is_trivially_destructible_v<U>) {
+      std::destroy_at(pointer);
+    }
   }
 
   template <typename U>
