@@ -639,7 +639,7 @@ The current local evidence for this task is:
 - `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.LongRunningSphereStackWorldStepMaintainsContactInvariants'`
   passed 1 test, advancing the same 3-sphere vertical stack through 500 public
   boxed-LCP `World::step()` iterations with the same motion invariants.
-- The `test_boxed_lcp_contact --gtest_list_tests` inventory now lists 50 tests.
+- The `test_boxed_lcp_contact --gtest_list_tests` inventory now lists 51 tests.
   The earlier full run still emits the existing `StaticFrictionHoldsSmallPush` degenerate-pivot
   warning, so this should not be counted as clean evidence for
   dense-degenerate multi-contact systems.
@@ -817,7 +817,7 @@ The current local evidence for this task is:
   ground and rigid-impact rows also reported `contract_ok=1` with
   `build_simd_enabled=1` and `build_cuda_enabled=1`, respectively; those are CPU
   solver rows in those build trees, not CUDA kernel execution.
-- `test_boxed_lcp_contact --gtest_list_tests` now lists 50 tests. The dense box
+- `test_boxed_lcp_contact --gtest_list_tests` now lists 51 tests. The dense box
   face-contact test assembles a 4-contact, 12-row boxed/findex LCP from
   `World::collide()`, checks the single-dynamic-body dense patch shape, and
   verifies the problem with APGD; the sliding and static-friction box
@@ -834,7 +834,11 @@ The current local evidence for this task is:
   iterations.
   `ThirtyTwoBoxWorldStepMaintainsDenseContactInvariants` extends this to a
   32-box, 128-contact scene over 4000 small public boxed-LCP `World::step()`
-  iterations. The run still emits the dense-patch Dantzig warning, so
+  iterations.
+  `FortyEightBoxWorldStepMaintainsDenseContactInvariants` extends this to a
+  48-box, 192-contact scene over 4000 small public boxed-LCP `World::step()`
+  iterations; the focused default run passed in 84992 ms. The run still emits
+  the dense-patch Dantzig warning, so
   Dantzig's direct dense box solve is not claimed.
 - `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` now registers 72 scoped dense
   box rows: `Pgs`, `RedBlackGaussSeidel`, `NNCG`, `Apgd`, `Tgs`, and `Admm` on
@@ -1298,7 +1302,7 @@ The current local evidence for this task is:
    small vertical-stack boxed-LCP
    snapshots and contact-derived benchmark rows to richer articulated,
    longer-running, and denser coupled multi-contact scenes beyond the current
-   32-box unit / 48-box benchmark dense face-contact public-step and
+   48-box unit/benchmark dense face-contact public-step and
    all-solver snapshot slices
    that validate solver outputs against motion/contact invariants.
 3. Add benchmark packets that broaden scalar CPU and SIMD-enabled CPU evidence,

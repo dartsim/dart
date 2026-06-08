@@ -386,7 +386,9 @@
       `TwentyFourBoxWorldStepMaintainsDenseContactInvariants` extends unit
       coverage to a 24-box/96-contact small-timestep scene.
       `ThirtyTwoBoxWorldStepMaintainsDenseContactInvariants` extends unit
-      coverage again to a 32-box/128-contact small-timestep scene. The
+      coverage again to a 32-box/128-contact small-timestep scene, and
+      `FortyEightBoxWorldStepMaintainsDenseContactInvariants` extends unit
+      coverage to the 48-box/192-contact benchmark boundary. The
       `BM_LcpWorldBoxStep_BoxedLcp` rows report matching invariant counters for
       4/8/16/32-contact 200-step scenes, the 64-contact 500-step scene, the
       96-contact 2000-step scene, and the 128-/192-contact 4000-step scenes.
@@ -425,8 +427,8 @@
 - [ ] Continue extending DART 7 end-to-end contact cases through the public
       simulation pipeline beyond current separated contacts, fixed-base
       articulated contacts, 7-sphere coupled snapshots, 6-sphere coupled-stack
-      public-step rows, and 32-box unit /
-      48-box benchmark dense face-contact step coverage.
+      public-step rows, and 48-box unit/benchmark dense face-contact step
+      coverage.
 - [ ] Broaden apples-to-apples benchmark packets from generated problems and
       simple world-contact snapshots to broader dense/robot-like end-to-end
       contact systems, with scalar, SIMD, threaded, CUDA, and broader batch
@@ -1337,7 +1339,7 @@ tradeoffs evidence based.
   articulated shortcut. The focused
   `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.ArticulatedPrismaticLinkPushesDynamicRigidBody' --gtest_brief=1`
   run passed. The full `test_boxed_lcp_contact --gtest_list_tests` inventory now
-  lists 50 tests.
+  lists 51 tests.
   `BoxedLcpContact.ArticulatedPrismaticLinkPushesArticulatedPrismaticLink`
   advances a fixed-base prismatic striker link in contact with a prismatic
   target link owned by a separate multibody through one boxed-LCP
@@ -1363,8 +1365,11 @@ tradeoffs evidence based.
   `World::step()` iterations.
   `ThirtyTwoBoxWorldStepMaintainsDenseContactInvariants` extends this to 32
   boxes and 128 dense face contacts over 4000 small public boxed-LCP
-  `World::step()` iterations. The full
-  `test_boxed_lcp_contact --gtest_list_tests` inventory lists 50 tests; the
+  `World::step()` iterations.
+  `FortyEightBoxWorldStepMaintainsDenseContactInvariants` extends this to 48
+  boxes and 192 dense face contacts over 4000 small public boxed-LCP
+  `World::step()` iterations; the focused default run passed in 84992 ms. The
+  full `test_boxed_lcp_contact --gtest_list_tests` inventory lists 51 tests; the
   earlier full `--gtest_brief=1` run still emitted the dense-patch Dantzig
   warning, so Dantzig's direct dense box solve is not claimed.
   warning; Dantzig's direct dense box solve is not claimed.
@@ -2069,7 +2074,7 @@ tradeoffs evidence based.
   contacts beyond fixed-base prismatic link-ground, connected Cartesian-chain
   ground contact, link-vs-rigid impact, and cross-multibody link-vs-link impact,
   longer denser coupled scenes, larger
-  coupled multi-contact systems beyond the current 6-sphere snapshot, and
+  coupled multi-contact systems beyond the current 7-sphere snapshot, and
   robot-like contact systems still need LCP-contract, invariant, and benchmark
   evidence.
 - Multi-contact boxed-LCP snapshots: a resting box multi-contact friction
@@ -2128,7 +2133,7 @@ tradeoffs evidence based.
    current connected Cartesian-chain articulated end-to-end coverage,
    current cross-multibody articulated link-vs-link impact coverage,
    current manually assembled three-axis articulated LCP snapshots, and
-   current 6-sphere vertical-stack snapshots and dense box face-contact
+   current 7-sphere vertical-stack snapshots and dense box face-contact
    evidence to broader articulated, longer-running, and denser coupled contact
    scenes.
 3. Add broader benchmark gates for SIMD-enabled CPU, intra-solver

@@ -2502,6 +2502,23 @@ TEST(BoxedLcpContact, ThirtyTwoBoxWorldStepMaintainsDenseContactInvariants)
 }
 
 //==============================================================================
+TEST(BoxedLcpContact, FortyEightBoxWorldStepMaintainsDenseContactInvariants)
+{
+  constexpr double kFriction = 0.5;
+  constexpr int kBoxCount = 48;
+
+  auto lcp = buildSeparatedBoxGroundScene(kBoxCount, kFriction);
+
+  const std::vector<sx::Contact> contacts = lcp->collide();
+  ASSERT_EQ(contacts.size(), static_cast<std::size_t>(4 * kBoxCount));
+
+  lcp->enterSimulationMode();
+  lcp->step(4000);
+
+  expectSeparatedBoxStepInvariants(*lcp, kBoxCount);
+}
+
+//==============================================================================
 // Articulated DART 7 World stepping: a fixed-base prismatic link starts in
 // light contact with static ground. Under BoxedLcp this exercises the public
 // unified constraint path, because the rigid-only boxed-LCP helper filters

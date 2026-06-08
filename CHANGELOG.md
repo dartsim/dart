@@ -1210,8 +1210,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     `TwentyFourBoxWorldStepMaintainsDenseContactInvariants` for a 96-contact
     small-timestep scene and
     `ThirtyTwoBoxWorldStepMaintainsDenseContactInvariants` for a
-    128-contact small-timestep scene, leaving the 48-box/192-contact row as
-    benchmark-only evidence.
+    128-contact small-timestep scene, plus
+    `FortyEightBoxWorldStepMaintainsDenseContactInvariants` for a
+    192-contact small-timestep scene.
     Added fixed-base prismatic articulated
     link-ground `World::step()` invariant coverage for one-link and four-link
     contact scenes, plus 1-/4-/8-/16-link articulated ground-step benchmark
