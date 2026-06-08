@@ -202,8 +202,9 @@
       both map allocation and quadratic previous-row scans. Rigid AVBD contact
       projection now reuses stage-owned snapshot, point-joint, row-counter,
       row-inventory, inertial-target, and solve-row scratch for covered active
-      rigid contacts; the public return-by-value AVBD helpers remain
-      allocation-boundary conveniences. The current
+      rigid contacts and no-contact fixed-joint rows; the public
+      return-by-value AVBD helpers remain allocation-boundary conveniences. The
+      current
       production boxed-LCP stage
       uses the in-place unified assembler and solve scratch; the public
       return-by-value unified problem and solution wrappers remain
@@ -246,7 +247,7 @@
       contacts, and positive friction dissipation. The global heap and
       World-base no-growth guards now also cover active AVBD ground
       contact/friction rows, AVBD self-contact normal/friction rows, and an
-      active rigid AVBD penetrating contact.
+      active rigid AVBD penetrating contact plus no-contact fixed-joint rows.
       Still-larger or differently shaped production-scale frictional deformable
       sets still need no-growth gates before making the full deformable claim.
 - [ ] Phase 6: Add memory-layout profiler/debugger surfaces and GUI

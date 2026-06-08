@@ -309,9 +309,10 @@ same-DOF sequential cross-articulated, current boxed-LCP fallback
 resting-contact, current active 11x11 deformable self-contact friction grid,
 current active AVBD ground contact/friction rows, current active AVBD
 self-contact normal/friction row scene, current active rigid AVBD contact rows,
-and basic deformable surface-snapshot scenes, while keeping remaining
-public-value unified problem/solution wrappers and larger or differently shaped
-default-solver deformable allocation surfaces explicit, before making a full
+current active rigid AVBD fixed-joint rows, and basic deformable
+surface-snapshot scenes, while keeping remaining public-value unified
+problem/solution wrappers and larger or differently shaped default-solver
+deformable allocation surfaces explicit, before making a full
 zero-dynamic-allocation claim.
 
 ## Latest Local Validation
@@ -322,8 +323,9 @@ zero-dynamic-allocation claim.
   rows into baked stage-owned scratch. The public return-by-value AVBD helpers
   remain allocation-boundary conveniences, while the World stage uses in-place
   scratch overloads. The new active rigid penetrating-contact scene is covered
-  by World base-allocator and global heap baked-step no-growth guards and a
-  non-vacuous velocity/position projection check. Focused validation passed:
+  by World base-allocator and global heap baked-step no-growth guards; the same
+  guards now cover no-contact fixed-joint rows, with non-vacuous
+  velocity/position projection checks for both paths. Focused validation passed:
   `cmake --build build/default/cpp/Release --target test_world test_avbd_rigid_block test_boxed_lcp_contact -j 8`
   and
   `ctest --test-dir build/default/cpp/Release -R '^(test_world|test_avbd_rigid_block|test_boxed_lcp_contact)$' --output-on-failure`.

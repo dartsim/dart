@@ -1135,6 +1135,29 @@ void configureRigidAvbdContactRowsScene(dart::simulation::World& world)
       sx::detail::toRegistryEntity(sphere.getEntity()));
 }
 
+void configureRigidAvbdFixedJointRowsScene(dart::simulation::World& world)
+{
+  namespace sx = dart::simulation;
+
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.005);
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world.addRigidBody("rigid_avbd_joint_base", baseOptions);
+
+  sx::RigidBodyOptions linkOptions;
+  linkOptions.position = Eigen::Vector3d::UnitX();
+  auto link = world.addRigidBody("rigid_avbd_joint_link", linkOptions);
+  link.setMass(1.0);
+
+  (void)world.addRigidBodyFixedJoint("rigid_avbd_fixed_joint", base, link);
+
+  Eigen::Isometry3d driftedPose = Eigen::Isometry3d::Identity();
+  driftedPose.translation() = Eigen::Vector3d(1.25, 0.0, 0.0);
+  link.setTransform(driftedPose);
+}
+
 } // namespace
 
 // Test World construction
@@ -1905,6 +1928,8 @@ TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
       true);
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "rigid AVBD contact rows", configureRigidAvbdContactRowsScene, true);
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "rigid AVBD fixed-joint rows", configureRigidAvbdFixedJointRowsScene);
 
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "multibody variational scratch", [](sx::World& world) {
@@ -2063,6 +2088,23 @@ TEST(World, RigidAvbdContactRowsAreActive)
   EXPECT_GT(sphere->getTranslation().z(), 0.49);
 }
 
+TEST(World, RigidAvbdFixedJointRowsAreActiveWithoutContacts)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  configureRigidAvbdFixedJointRowsScene(world);
+  auto link = world.getRigidBody("rigid_avbd_joint_link");
+  ASSERT_TRUE(link.has_value());
+
+  world.enterSimulationMode();
+  ASSERT_TRUE(world.collide().empty());
+  world.step();
+
+  EXPECT_LT(link->getTranslation().x(), 1.25);
+  EXPECT_LT(link->getLinearVelocity().x(), 0.0);
+}
+
 TEST(World, BakedKinematicIpcStepsDoNotAllocateGlobalHeap)
 {
   namespace sx = dart::simulation;
@@ -2113,6 +2155,8 @@ TEST(World, BakedRigidBodyContactStepsDoNotAllocateGlobalHeap)
       true);
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "rigid AVBD contact rows", configureRigidAvbdContactRowsScene, true);
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "rigid AVBD fixed-joint rows", configureRigidAvbdFixedJointRowsScene);
 }
 
 TEST(World, BakedArticulatedContactStepsDoNotAllocateGlobalHeap)
