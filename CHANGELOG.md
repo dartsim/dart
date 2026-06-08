@@ -979,7 +979,7 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     for standard
     32/64-row, boxed 16/32-row, friction-index 8-contact, and coupled
     friction-index 6-, 8-, 12-, 16-, and 24-contact packets, now including
-    4x-coupled 6-/8-/12-/16-/24-contact packets and 8x-coupled
+    4x-coupled 6-/8-/12-/16-/24-/32-/48-/64-contact packets and 8x-coupled
     6-/8-/12-/16-/24-/32-/48-/64-contact packets, plus an
     exact rank-deficient
     singular-degenerate slice for standard 16-row, boxed 16-row, and coupled
@@ -1086,21 +1086,21 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     standard 32/64/128-row, boxed 32/64/128-row, and coupled friction-index
     8-/12-/16-/24-/32-/48-/64-contact active-set packets verified across default,
     SIMD-enabled, and CUDA-enabled build trees, plus
-    larger mildly ill-conditioned generated correctness coverage and 338
+    larger mildly ill-conditioned generated correctness coverage and 383
     benchmark rows for standard 32-row,
     boxed 16-row, friction-index 8-contact, coupled friction-index 6-, 8-,
     12-, 16-, and 24-contact packets, 4x-coupled
-    6-/8-/12-/16-/24-contact packets, and 8x-coupled
+    6-/8-/12-/16-/24-/32-/48-/64-contact packets, and 8x-coupled
     6-/8-/12-/16-/24-/32-/48-/64-contact packets, with Boxed Semi-Smooth Newton
     added across those coupled single-problem rows, plus
     ADMM/SAP/Boxed Semi-Smooth Newton
     single-problem 16x-coupled
     6-/8-/12-/16-/24-/32-/48-/64-contact packets over the scoped solver set,
     verified across default, SIMD-enabled, and CUDA-enabled build trees, plus
-    676 larger mildly ill-conditioned batch rows for batch-size-4 serial and
+    766 larger mildly ill-conditioned batch rows for batch-size-4 serial and
     DART 7 `ParallelExecutor` runs over standard 32-row, boxed 16-row,
     friction-index 8-contact, coupled friction-index 6-/8-/12-/16-/24-contact,
-    4x-coupled 6-/8-/12-/16-/24-contact, and 8x-coupled
+    4x-coupled 6-/8-/12-/16-/24-/32-/48-/64-contact, and 8x-coupled
     6-/8-/12-/16-/24-/32-/48-/64-contact, with Boxed Semi-Smooth Newton included
     across those coupled rows, including the 16x-coupled
     6-/8-/12-/16-/24-/32-/48-/64-contact rows with tuned line-search settings
@@ -1240,9 +1240,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     build-state counters distinguishing default, SIMD-enabled, and CUDA-enabled
     CPU solver runs.
   - Added DART 7 Boxed Semi-Smooth Newton solver-specific generated correctness
-    and single/batch benchmark coverage for 1x-/4x-coupled mildly
+    and single/batch benchmark coverage for 1x-coupled mildly
     ill-conditioned friction-index LCP packets through 24 contacts and
-    8x-coupled packets through 64 contacts, plus
+    4x-/8x-coupled packets through 64 contacts, plus
     ADMM/SAP/Boxed Semi-Smooth Newton generated correctness and single-problem
     benchmark coverage for the 16x-coupled 6-, 8-, 12-, 16-, 24-, 32-, 48-,
     and 64-contact packets. Batch coverage for the 16x packets includes
