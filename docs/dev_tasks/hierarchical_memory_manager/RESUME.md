@@ -308,14 +308,28 @@ should broaden beyond the covered rigid-body, non-cross articulated,
 same-DOF sequential cross-articulated, current boxed-LCP fallback
 resting-contact, current active 11x11 deformable self-contact friction grid,
 current active AVBD ground contact/friction rows, current active AVBD
-self-contact normal/friction row scene, and basic deformable surface-snapshot
-scenes, while keeping remaining
+self-contact normal/friction row scene, current active rigid AVBD contact rows,
+and basic deformable surface-snapshot scenes, while keeping remaining
 public-value unified problem/solution wrappers and larger or differently shaped
 default-solver deformable allocation surfaces explicit, before making a full
 zero-dynamic-allocation claim.
 
 ## Latest Local Validation
 
+- On 2026-06-08 after merging the latest `origin/main`, the rigid AVBD contact
+  continuation moved the World contact-stage AVBD snapshot, point-joint input
+  list, endpoint row counters, row inventories, inertial-target copy, and solve
+  rows into baked stage-owned scratch. The public return-by-value AVBD helpers
+  remain allocation-boundary conveniences, while the World stage uses in-place
+  scratch overloads. The new active rigid penetrating-contact scene is covered
+  by World base-allocator and global heap baked-step no-growth guards and a
+  non-vacuous velocity/position projection check. Focused validation passed:
+  `cmake --build build/default/cpp/Release --target test_world test_avbd_rigid_block test_boxed_lcp_contact -j 8`
+  and
+  `ctest --test-dir build/default/cpp/Release -R '^(test_world|test_avbd_rigid_block|test_boxed_lcp_contact)$' --output-on-failure`.
+  Full local gates also passed: `pixi run lint`, `pixi run build`,
+  `pixi run test-unit`, and the strict saved 94-row allocator checker against
+  both foonathan/memory and standard baselines.
 - On 2026-06-08 after merging the latest `origin/main`, the AVBD deformable
   scratch continuation added active ground contact/friction rows and an active
   two-surface self-contact scene with AVBD normal/friction rows to the World

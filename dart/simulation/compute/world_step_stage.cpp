@@ -8552,6 +8552,9 @@ struct RigidBodyContactStage::AvbdScratch
 {
   void clear()
   {
+    dvbd::clearAvbdRigidWorldContactSnapshot(snapshot);
+    pointJoints.clear();
+    buildScratch.rowCounters.clear();
     normalInventory.records().clear();
     frictionInventory.records().clear();
     jointLinearInventory.records().clear();
@@ -8559,6 +8562,32 @@ struct RigidBodyContactStage::AvbdScratch
     motorInventory.records().clear();
   }
 
+  void reserve(
+      std::size_t bodyCapacity,
+      std::size_t contactCapacity,
+      std::size_t jointCapacity)
+  {
+    dvbd::reserveAvbdRigidWorldContactSnapshot(
+        snapshot, bodyCapacity, contactCapacity, jointCapacity, jointCapacity);
+    pointJoints.reserve(jointCapacity);
+    buildScratch.rowCounters.reserve(std::max(contactCapacity, jointCapacity));
+    dvbd::reserveAvbdRigidWorldContactSolveScratch(
+        solveScratch,
+        contactCapacity,
+        jointCapacity,
+        jointCapacity,
+        bodyCapacity);
+    normalInventory.reserve(contactCapacity);
+    frictionInventory.reserve(2u * contactCapacity);
+    jointLinearInventory.reserve(3u * jointCapacity);
+    jointAngularInventory.reserve(3u * jointCapacity);
+    motorInventory.reserve(jointCapacity);
+  }
+
+  dvbd::AvbdRigidWorldContactSnapshot snapshot;
+  std::vector<dvbd::AvbdRigidWorldPointJointInput> pointJoints;
+  dvbd::AvbdRigidWorldContactBuildScratch buildScratch;
+  dvbd::AvbdRigidWorldContactSolveScratch solveScratch;
   dvbd::AvbdScalarRowInventory normalInventory;
   dvbd::AvbdScalarRowInventory frictionInventory;
   dvbd::AvbdScalarRowInventory jointLinearInventory;
@@ -8633,6 +8662,16 @@ void RigidBodyContactStage::prepare(World& world)
 
   const auto& contacts = world.queryContacts(CollisionQueryOptions{});
   m_contactScratch->constraints.reserve(contacts.size());
+
+  if (m_avbdScratch == nullptr) {
+    m_avbdScratch = std::make_unique<AvbdScratch>();
+  }
+  auto& registry = dart::simulation::detail::registryOf(world);
+  const std::size_t jointCapacity
+      = registry.view<comps::Joint, dvbd::AvbdRigidWorldPointJointConfig>()
+            .size_hint();
+  const std::size_t bodyCapacity = 2u * (contacts.size() + jointCapacity);
+  m_avbdScratch->reserve(bodyCapacity, contacts.size(), jointCapacity);
 }
 
 //==============================================================================
@@ -8642,42 +8681,42 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
   auto& registry = dart::simulation::detail::registryOf(world);
 
   const auto projectAvbdRigidPointJoints = [&]() {
-    const std::vector<dvbd::AvbdRigidWorldPointJointInput> joints
-        = dvbd::extractAvbdRigidWorldPointJointInputs(registry);
-    if (joints.empty()) {
-      return false;
-    }
-
     if (m_avbdScratch == nullptr) {
       m_avbdScratch = std::make_unique<AvbdScratch>();
     }
+    auto& scratch = *m_avbdScratch;
+    dvbd::extractAvbdRigidWorldPointJointInputs(registry, scratch.pointJoints);
+    if (scratch.pointJoints.empty()) {
+      return false;
+    }
 
-    dvbd::AvbdRigidWorldContactSnapshot snapshot;
-    const std::size_t appendedJoints
-        = dvbd::appendAvbdRigidWorldPointJoints(registry, joints, snapshot);
+    dvbd::clearAvbdRigidWorldContactSnapshot(scratch.snapshot);
+    const std::size_t appendedJoints = dvbd::appendAvbdRigidWorldPointJoints(
+        registry, scratch.pointJoints, scratch.snapshot, scratch.buildScratch);
     if (appendedJoints == 0u) {
       return false;
     }
 
     const double timeStep = world.getTimeStep();
     dvbd::predictAvbdRigidWorldContactInertialTargets(
-        registry, snapshot, timeStep);
+        registry, scratch.snapshot, timeStep);
 
     dvbd::AvbdRigidWorldContactSolveOptions solveOptions;
     solveOptions.descent.iterations = m_iterations;
     solveOptions.descent.regularization = 1e-12;
     const dvbd::AvbdRigidWorldContactSolveResult solveResult
         = dvbd::solveAvbdRigidWorldContactSnapshot(
-            snapshot,
-            m_avbdScratch->normalInventory,
-            m_avbdScratch->frictionInventory,
-            m_avbdScratch->jointLinearInventory,
-            m_avbdScratch->jointAngularInventory,
-            m_avbdScratch->motorInventory,
+            scratch.snapshot,
+            scratch.normalInventory,
+            scratch.frictionInventory,
+            scratch.jointLinearInventory,
+            scratch.jointAngularInventory,
+            scratch.motorInventory,
             timeStep,
+            scratch.solveScratch,
             solveOptions);
     (void)dvbd::markAvbdRigidWorldFracturedPointJoints(
-        registry, snapshot, solveResult.fracturedJointIndices);
+        registry, scratch.snapshot, solveResult.fracturedJointIndices);
     if (solveResult.jointLinearRows == 0u && solveResult.jointAngularRows == 0u
         && solveResult.motorRows == 0u) {
       return false;
@@ -8685,7 +8724,7 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
 
     const dvbd::AvbdRigidWorldContactApplyResult projection
         = dvbd::applyAvbdRigidWorldContactVelocityProjection(
-            registry, snapshot, timeStep);
+            registry, scratch.snapshot, timeStep);
     return projection.bodies != 0u;
   };
 
@@ -8711,24 +8750,27 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
     if (m_avbdScratch == nullptr) {
       m_avbdScratch = std::make_unique<AvbdScratch>();
     }
+    auto& scratch = *m_avbdScratch;
 
     dvbd::AvbdRigidWorldContactOptions contactOptions;
     contactOptions.startStiffness = std::max(0.0, avbdConfig->startStiffness);
     contactOptions.maxStiffness
         = std::max(contactOptions.startStiffness, avbdConfig->maxStiffness);
-    dvbd::AvbdRigidWorldContactSnapshot snapshot
-        = dvbd::buildAvbdRigidWorldContactSnapshot(
-            registry, contacts, contactOptions);
-    const std::vector<dvbd::AvbdRigidWorldPointJointInput> joints
-        = dvbd::extractAvbdRigidWorldPointJointInputs(registry);
-    const std::size_t appendedJoints
-        = dvbd::appendAvbdRigidWorldPointJoints(registry, joints, snapshot);
+    dvbd::buildAvbdRigidWorldContactSnapshot(
+        registry,
+        contacts,
+        scratch.snapshot,
+        scratch.buildScratch,
+        contactOptions);
+    dvbd::extractAvbdRigidWorldPointJointInputs(registry, scratch.pointJoints);
+    const std::size_t appendedJoints = dvbd::appendAvbdRigidWorldPointJoints(
+        registry, scratch.pointJoints, scratch.snapshot, scratch.buildScratch);
 
-    if (snapshot.contacts.size() == contacts.size()
-        && (!snapshot.contacts.empty() || appendedJoints != 0u)) {
+    if (scratch.snapshot.contacts.size() == contacts.size()
+        && (!scratch.snapshot.contacts.empty() || appendedJoints != 0u)) {
       const double timeStep = world.getTimeStep();
       dvbd::predictAvbdRigidWorldContactInertialTargets(
-          registry, snapshot, timeStep);
+          registry, scratch.snapshot, timeStep);
 
       dvbd::AvbdRigidWorldContactSolveOptions solveOptions;
       solveOptions.warmStart.alpha = avbdConfig->alpha;
@@ -8745,23 +8787,24 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
 
       const dvbd::AvbdRigidWorldContactSolveResult solveResult
           = dvbd::solveAvbdRigidWorldContactSnapshot(
-              snapshot,
-              m_avbdScratch->normalInventory,
-              m_avbdScratch->frictionInventory,
-              m_avbdScratch->jointLinearInventory,
-              m_avbdScratch->jointAngularInventory,
-              m_avbdScratch->motorInventory,
+              scratch.snapshot,
+              scratch.normalInventory,
+              scratch.frictionInventory,
+              scratch.jointLinearInventory,
+              scratch.jointAngularInventory,
+              scratch.motorInventory,
               timeStep,
+              scratch.solveScratch,
               solveOptions);
       (void)dvbd::markAvbdRigidWorldFracturedPointJoints(
-          registry, snapshot, solveResult.fracturedJointIndices);
+          registry, scratch.snapshot, solveResult.fracturedJointIndices);
       if (solveResult.normalRows != 0u || solveResult.frictionRows != 0u
           || solveResult.jointLinearRows != 0u
           || solveResult.jointAngularRows != 0u
           || solveResult.motorRows != 0u) {
         const dvbd::AvbdRigidWorldContactApplyResult projection
             = dvbd::applyAvbdRigidWorldContactVelocityProjection(
-                registry, snapshot, timeStep);
+                registry, scratch.snapshot, timeStep);
         if (projection.bodies != 0u) {
           return;
         }

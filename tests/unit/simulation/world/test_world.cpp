@@ -1110,6 +1110,31 @@ void configureAvbdGroundFrictionRowsScene(dart::simulation::World& world)
   }
 }
 
+void configureRigidAvbdContactRowsScene(dart::simulation::World& world)
+{
+  namespace sx = dart::simulation;
+
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.001);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("rigid_avbd_ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(2.0, 2.0, 0.5)));
+
+  sx::RigidBodyOptions sphereOptions;
+  sphereOptions.position = Eigen::Vector3d(0.0, 0.0, 0.49);
+  auto sphere = world.addRigidBody("rigid_avbd_sphere", sphereOptions);
+  sphere.setMass(1.0);
+  sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  auto& registry = sx::detail::registryOf(world);
+  registry.emplace_or_replace<sx::comps::RigidAvbdContactConfig>(
+      sx::detail::toRegistryEntity(sphere.getEntity()));
+}
+
 } // namespace
 
 // Test World construction
@@ -1878,6 +1903,8 @@ TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
         world.setTimeStep(0.001);
       },
       true);
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "rigid AVBD contact rows", configureRigidAvbdContactRowsScene, true);
 
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "multibody variational scratch", [](sx::World& world) {
@@ -2019,6 +2046,23 @@ TEST(World, AvbdGroundFrictionRowsAreActive)
   EXPECT_EQ(states[0].frictionRows.size(), 2u * states[0].contactRows.size());
 }
 
+TEST(World, RigidAvbdContactRowsAreActive)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  configureRigidAvbdContactRowsScene(world);
+  auto sphere = world.getRigidBody("rigid_avbd_sphere");
+  ASSERT_TRUE(sphere.has_value());
+
+  world.enterSimulationMode();
+  ASSERT_FALSE(world.collide().empty());
+  world.step();
+
+  EXPECT_GT(sphere->getLinearVelocity().z(), 0.0);
+  EXPECT_GT(sphere->getTranslation().z(), 0.49);
+}
+
 TEST(World, BakedKinematicIpcStepsDoNotAllocateGlobalHeap)
 {
   namespace sx = dart::simulation;
@@ -2067,6 +2111,8 @@ TEST(World, BakedRigidBodyContactStepsDoNotAllocateGlobalHeap)
         world.setTimeStep(0.001);
       },
       true);
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "rigid AVBD contact rows", configureRigidAvbdContactRowsScene, true);
 }
 
 TEST(World, BakedArticulatedContactStepsDoNotAllocateGlobalHeap)
