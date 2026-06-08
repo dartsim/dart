@@ -253,6 +253,65 @@ TEST(NewtonBarrierPrimitives, InteriorLineSearchStepScaleStaysInsideBound)
 }
 
 //==============================================================================
+TEST(NewtonBarrierPrimitives, LineSearchHitAccountingClampsSharedStepBound)
+{
+  nb::LineSearchStats stats;
+
+  EXPECT_DOUBLE_EQ(nb::recordLineSearchHit(stats, 0.25), 0.25);
+  EXPECT_EQ(stats.hits, 1u);
+  EXPECT_EQ(stats.zeroStepCount, 0u);
+
+  EXPECT_DOUBLE_EQ(nb::recordLineSearchHit(stats, 2.0), 1.0);
+  EXPECT_EQ(stats.hits, 2u);
+  EXPECT_EQ(stats.zeroStepCount, 0u);
+
+  EXPECT_DOUBLE_EQ(nb::recordLineSearchHit(stats, -0.5), 0.0);
+  EXPECT_EQ(stats.hits, 3u);
+  EXPECT_EQ(stats.zeroStepCount, 1u);
+}
+
+//==============================================================================
+TEST(NewtonBarrierPrimitives, LineSearchCcdOutcomeAccountsNativeStatus)
+{
+  nb::LineSearchStats stats;
+
+  dart::collision::native::CcdPrimitiveResult hit;
+  hit.hit = true;
+  hit.status = dart::collision::native::CcdPrimitiveStatus::Hit;
+  hit.timeOfImpact = 1.25;
+  const auto hitOutcome = nb::recordLineSearchCcdOutcome(stats, hit);
+  EXPECT_TRUE(hitOutcome.hit);
+  EXPECT_FALSE(hitOutcome.indeterminate);
+  EXPECT_DOUBLE_EQ(hitOutcome.stepBound, 1.0);
+  EXPECT_EQ(stats.hits, 1u);
+  EXPECT_EQ(stats.misses, 0u);
+  EXPECT_EQ(stats.indeterminate, 0u);
+
+  dart::collision::native::CcdPrimitiveResult miss;
+  miss.status = dart::collision::native::CcdPrimitiveStatus::Miss;
+  const auto missOutcome = nb::recordLineSearchCcdOutcome(stats, miss);
+  EXPECT_FALSE(missOutcome.hit);
+  EXPECT_FALSE(missOutcome.indeterminate);
+  EXPECT_DOUBLE_EQ(missOutcome.stepBound, 1.0);
+  EXPECT_EQ(stats.hits, 1u);
+  EXPECT_EQ(stats.misses, 1u);
+  EXPECT_EQ(stats.indeterminate, 0u);
+
+  dart::collision::native::CcdPrimitiveResult indeterminate;
+  indeterminate.status
+      = dart::collision::native::CcdPrimitiveStatus::Indeterminate;
+  indeterminate.timeOfImpact = 0.25;
+  const auto indeterminateOutcome
+      = nb::recordLineSearchCcdOutcome(stats, indeterminate);
+  EXPECT_FALSE(indeterminateOutcome.hit);
+  EXPECT_TRUE(indeterminateOutcome.indeterminate);
+  EXPECT_DOUBLE_EQ(indeterminateOutcome.stepBound, 0.25);
+  EXPECT_EQ(stats.hits, 1u);
+  EXPECT_EQ(stats.misses, 1u);
+  EXPECT_EQ(stats.indeterminate, 1u);
+}
+
+//==============================================================================
 TEST(NewtonBarrierPrimitives, LineSearchResultsUseSharedPositiveStepPredicate)
 {
   dc::ContinuousCollisionStepResult deformable;
