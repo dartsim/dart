@@ -45,6 +45,12 @@ ill-conditioned packet set: standard 32-row, boxed 16-row, friction-index
 6-/8-/12-/16-/24-/32-/48-/64-/96-/128-contact rows. Boxed Semi-Smooth Newton reports
 tuned line-search settings on the 16x rows. The slice is verified in default,
 SIMD-enabled, and CUDA-enabled build trees.
+Local follow-up probes were not retained for broader mildly ill-conditioned
+coupled packets because the focused benchmark gates became too expensive without
+narrowing solver scope: the SIMD-enabled 16x 192-contact probe was stopped after
+about 5:52 elapsed / 5:45 CPU before completing the late single-problem rows,
+and the default 8x 128-contact probe was stopped after about 3:01 elapsed / 2:59
+CPU before completing the late batch rows.
 The robust near-singular generated and benchmark coverage now reaches coupled
 friction-index 192-contact packets. It also adds 58
 `BM_LcpNearSingularBatch(Serial|Parallel)` rows for batch-size-4 serial and

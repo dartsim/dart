@@ -196,6 +196,13 @@
       6-/8-/12-/16-/24-/32-/48-/64-/96-/128-contact rows. Boxed Semi-Smooth Newton
       reports tuned line-search settings on the 16x rows. The slice is verified
       in default, SIMD-enabled, and CUDA-enabled build trees.
+- [x] Probed but did not retain broader mildly ill-conditioned coupled
+      friction-index benchmark packets after local evidence showed the focused
+      gates were too expensive without narrowing solver scope: the SIMD-enabled
+      16x 192-contact probe was stopped after about 5:52 elapsed / 5:45 CPU
+      before completing the late single-problem rows, and the default 8x
+      128-contact probe was stopped after about 3:01 elapsed / 2:59 CPU before
+      completing the late batch rows.
 - [x] Added 29 `BM_LcpNearSingular` benchmark rows for the scoped robust
       near-singular standard 8-row, boxed 8-row, and coupled friction-index
       3-, 6-, 9-, 12-, 16-, 24-, 32-, 48-, 64-, 96-, 128-, and 192-contact packets,
