@@ -215,11 +215,19 @@ all 47 DART-vs-foonathan checks under that rule.
 Random-interleaved EnTT diagnostics later in the same branch found that the
 current pool-backed no-growth row remains too close to foonathan/memory at
 small entity counts, and frame-backed/default-backed probes did not robustly
-close the steady-state gap. HMM is still open: re-run the standard-baseline
-half before making a fresh post-policy-change 94-row claim, keep the combined
-comparative gate green as allocator policy changes, continue broadening
-production no-growth coverage, and add any future allocator baselines that map
-to HMM allocator roles.
+close the steady-state gap. A follow-up probe kept non-overaligned
+`StlAllocator` storage at natural alignment, added cache-friendly default
+`PoolAllocator` strides for medium power-of-two slots, and restored the EnTT
+build/growth DART row to the resettable frame-backed bake arena. The
+CPU-pinned build/growth result in
+`.benchmark_results/allocator_entt_build_frame_bake_current_cpuauto_probe.json`
+beats foonathan/memory clearly and beats the standard registry by median, but
+the small standard rows were not confidence-separated. Repeated no-growth
+probes remained noisy and were not accepted as proof. HMM is still open: re-run
+the standard-baseline half before making a fresh post-policy-change 94-row
+claim, keep the combined comparative gate green as allocator policy changes,
+continue broadening production no-growth coverage, and add any future allocator
+baselines that map to HMM allocator roles.
 
 Do not treat the benchmark-only frame-backed no-growth policy as production
 `WorldRegistry` bake/build allocation yet. Production integration now resets

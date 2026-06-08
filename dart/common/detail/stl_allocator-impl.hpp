@@ -124,11 +124,9 @@ StlAllocator<T>::storageAlignmentFor(size_type bytes) noexcept
     return naturalAlignment;
   }
 
-  if constexpr (sizeof(T) >= cacheLineAlignment) {
-    return cacheLineAlignment;
-  }
-
-  return bytes >= 2048 ? cacheLineAlignment : naturalAlignment;
+  (void)bytes;
+  (void)cacheLineAlignment;
+  return naturalAlignment;
 }
 
 //==============================================================================

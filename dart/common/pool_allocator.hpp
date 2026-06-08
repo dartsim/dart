@@ -105,7 +105,7 @@ public:
       return nullptr;
     }
 
-    if (bytes > MAX_UNIT_SIZE) [[unlikely]] {
+    if (bytes > MAX_POOL_REQUEST_SIZE) [[unlikely]] {
       if (defaultUnitSize(bytes) == 0) {
         return nullptr;
       }
@@ -126,6 +126,14 @@ public:
   [[nodiscard]] inline void* allocateUntracked(
       size_t bytes, size_t alignment) noexcept
   {
+    if (!isPowerOfTwo(alignment)) [[unlikely]] {
+      return nullptr;
+    }
+
+    if (alignment <= alignof(MemoryUnit)) {
+      return allocateUntracked(bytes);
+    }
+
     const size_t unitSize = effectiveUnitSize(bytes, alignment);
     if (unitSize == 0) [[unlikely]] {
       return nullptr;
@@ -152,7 +160,7 @@ public:
       return;
     }
 
-    if (bytes > MAX_UNIT_SIZE) [[unlikely]] {
+    if (bytes > MAX_POOL_REQUEST_SIZE) [[unlikely]] {
       if (defaultUnitSize(bytes) == 0) {
         return;
       }
@@ -170,6 +178,15 @@ public:
   inline void deallocateUntracked(
       void* pointer, size_t bytes, size_t alignment) noexcept
   {
+    if (!isPowerOfTwo(alignment)) [[unlikely]] {
+      return;
+    }
+
+    if (alignment <= alignof(MemoryUnit)) {
+      deallocateUntracked(pointer, bytes);
+      return;
+    }
+
     const size_t unitSize = effectiveUnitSize(bytes, alignment);
     if (pointer == nullptr || unitSize == 0) [[unlikely]] {
       return;
@@ -217,7 +234,8 @@ public:
     if (pointer == nullptr || bytes == 0) [[unlikely]] {
       return;
     }
-    if (bytes > MAX_UNIT_SIZE && defaultUnitSize(bytes) == 0) [[unlikely]] {
+    if (bytes > MAX_POOL_REQUEST_SIZE && defaultUnitSize(bytes) == 0)
+        [[unlikely]] {
       return;
     }
 
@@ -337,7 +355,7 @@ private:
         > std::numeric_limits<size_t>::max() - (UNIT_GRANULARITY - 1)) {
       return 0;
     }
-    return roundUp(minimumSize, UNIT_GRANULARITY);
+    return cacheFriendlyUnitSize(roundUp(minimumSize, UNIT_GRANULARITY));
   }
 
   [[nodiscard]] static constexpr int heapIndexForUnitSize(
@@ -349,7 +367,7 @@ private:
   [[nodiscard]] static constexpr int heapIndexForDefaultBytes(
       size_t bytes) noexcept
   {
-    return static_cast<int>((bytes - 1) / UNIT_GRANULARITY);
+    return heapIndexForUnitSize(defaultUnitSize(bytes));
   }
 
   [[nodiscard]] static constexpr size_t blockAlignmentForUnitSize(
@@ -362,11 +380,29 @@ private:
     return alignment;
   }
 
-  inline static constexpr int HEAP_COUNT = 128;
+  [[nodiscard]] static constexpr size_t cacheFriendlyUnitSize(
+      size_t unitSize) noexcept
+  {
+    constexpr size_t cacheSkewBytes = 32;
+    // Default pool requests carry no over-alignment contract. Skew medium
+    // power-of-two slots so sequential same-size allocations do not repeatedly
+    // map to the same small subset of L1 cache sets.
+    if (unitSize >= 8 * cacheSkewBytes && unitSize <= MAX_POOL_REQUEST_SIZE
+        && isPowerOfTwo(unitSize)
+        && unitSize <= std::numeric_limits<size_t>::max() - cacheSkewBytes) {
+      return unitSize + cacheSkewBytes;
+    }
+    return unitSize;
+  }
 
-  inline static constexpr size_t MAX_UNIT_SIZE = 1024;
+  inline static constexpr size_t MAX_POOL_REQUEST_SIZE = 1024;
 
-  inline static constexpr size_t BLOCK_SIZE = 16 * MAX_UNIT_SIZE;
+  inline static constexpr size_t MAX_UNIT_SIZE = MAX_POOL_REQUEST_SIZE + 32;
+
+  inline static constexpr int HEAP_COUNT
+      = static_cast<int>(MAX_UNIT_SIZE / UNIT_GRANULARITY);
+
+  inline static constexpr size_t BLOCK_SIZE = 16 * MAX_POOL_REQUEST_SIZE;
 
   inline static constexpr std::array<size_t, HEAP_COUNT> mUnitSizes = [] {
     std::array<size_t, HEAP_COUNT> sizes{};

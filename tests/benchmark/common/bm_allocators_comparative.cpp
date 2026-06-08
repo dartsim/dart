@@ -2007,10 +2007,10 @@ void runEnttRegistryChurnWithStorage(
     // The benchmark has no EnTT groups/signals; remove the known storages
     // directly to keep the hot path symmetric with the cached emplacement/read
     // path above.
-    tags.remove(entity);
-    masses.remove(entity);
-    velocities.remove(entity);
-    transforms.remove(entity);
+    tags.erase(entity);
+    masses.erase(entity);
+    velocities.erase(entity);
+    transforms.erase(entity);
     entityStorage.erase(entity);
   }
   benchmark::ClobberMemory();
@@ -2106,17 +2106,23 @@ static void BM_EnttRegistryBuild_DART(benchmark::State& state)
 {
   const auto entityCount = static_cast<size_t>(state.range(0));
   const size_t cycleCount = enttRegistryBuildCyclesFor(entityCount);
-  DefaultStlAllocator<entt::entity> allocator;
+  // Registry build/growth models bake-time storage assembly. Use the frame
+  // arena that DART's HMM intends for rebuild phases, then reset it after each
+  // complete registry lifetime.
+  FrameAllocator backing(
+      MemoryAllocator::GetDefault(), entityCount * 4096 + 1024 * 1024);
+  FrameStlAllocator<entt::entity> allocator(backing);
   std::vector<entt::entity> entities(entityCount);
 
   for (auto _ : state) {
     for (size_t cycle = 0; cycle < cycleCount; ++cycle) {
       {
-        entt::basic_registry<entt::entity, DefaultStlAllocator<entt::entity>>
+        entt::basic_registry<entt::entity, FrameStlAllocator<entt::entity>>
             registry(EnttRegistryStorageCount, allocator);
         reserveEnttRegistryStorage(registry, entityCount);
         runEnttRegistryChurn(registry, entities, entityCount);
       }
+      backing.reset();
     }
   }
 

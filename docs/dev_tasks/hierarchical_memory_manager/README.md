@@ -351,6 +351,23 @@ debugging, profiling, optimization experiments, and ImGui visualization.
    entities, while frame-backed and default-backed probes did not robustly close
    the gap. Treat that as the active EnTT steady-state performance gap before
    making a stronger foonathan completion claim.
+   A later 2026-06-07/08 probe kept `StlAllocator` storage at natural alignment
+   for non-overaligned values and added cache-friendly default `PoolAllocator`
+   strides for medium power-of-two slots. This is scoped to allocator
+   contracts: STL storage only requests natural alignment, while default pool
+   requests carry no over-alignment promise and can use non-power-of-two size
+   classes to reduce cache-set conflicts. The same continuation moved the EnTT
+   build/growth DART row back to the resettable frame-backed bake arena; the
+   CPU-pinned build/growth probe in
+   `.benchmark_results/allocator_entt_build_frame_bake_current_cpuauto_probe.json`
+   beat foonathan/memory clearly and beat the standard registry by median, but
+   the 256/512 standard rows were not confidence-separated because the standard
+   rows were slightly above the strict CV gate. Repeated no-growth probes,
+   including
+   `.benchmark_results/allocator_entt_nogrowth_pool_stride_current_cpu12_probe.json`
+   and
+   `.benchmark_results/allocator_entt_nogrowth_pool_stride_current_cpu12_warm_probe.json`,
+   were rejected as noisy, so the steady-state EnTT proof remains open.
    Re-run the standard-baseline half before claiming a fresh 94-row
    post-policy-change pass. Keep this combined gate green after allocator or
    benchmark policy changes:

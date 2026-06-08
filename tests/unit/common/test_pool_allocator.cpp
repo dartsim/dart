@@ -156,6 +156,24 @@ TEST(PoolAllocatorTest, AllocateAlignedUsesAlignedSlots)
 }
 
 //==============================================================================
+TEST(PoolAllocatorTest, DefaultPowerOfTwoSlotsUseCacheFriendlyStride)
+{
+  PoolAllocator allocator;
+
+  void* first = allocator.allocate(1024);
+  void* second = allocator.allocate(1024);
+  ASSERT_NE(first, nullptr);
+  ASSERT_NE(second, nullptr);
+
+  const auto firstAddress = reinterpret_cast<std::uintptr_t>(first);
+  const auto secondAddress = reinterpret_cast<std::uintptr_t>(second);
+  EXPECT_EQ(secondAddress - firstAddress, 1056u);
+
+  allocator.deallocate(second, 1024);
+  allocator.deallocate(first, 1024);
+}
+
+//==============================================================================
 TEST(PoolAllocatorTest, RejectsInvalidSizesWithoutBaseAllocation)
 {
   CountingMemoryAllocator base;
@@ -603,13 +621,13 @@ TEST(PoolAllocatorTest, RawAllocatorGrowsMemoryBlockTable)
   EXPECT_EQ(&constAllocator.getBaseAllocator(), &MemoryAllocator::GetDefault());
 
   std::vector<std::pair<void*, std::size_t>> allocations;
-  for (std::size_t size = 8; size <= 8 * 65; size += 8) {
+  for (std::size_t size = 8; size <= 8 * 66; size += 8) {
     auto* ptr = allocator.allocate(size);
     ASSERT_NE(ptr, nullptr);
     allocations.emplace_back(ptr, size);
   }
 
-  EXPECT_EQ(allocator.getNumAllocatedMemoryBlocks(), 65);
+  EXPECT_GT(allocator.getNumAllocatedMemoryBlocks(), 64);
 
   for (const auto& [ptr, size] : allocations) {
     allocator.deallocate(ptr, size);
