@@ -51,12 +51,12 @@ friction-index 128-contact packets. It also adds 54
 DART 7 `ParallelExecutor` runs over near-singular standard 8-row, boxed 8-row,
 and coupled friction-index 3-/6-/9-/12-/16-/24-/32-/48-/64-/96-/128-contact
 packets, verified in default, SIMD-enabled, and CUDA-enabled build trees.
-It also adds 60
+It also adds 66
 `BM_LcpSingularDegenerateFrictionIndexBatch(Serial|Parallel)` rows for
 batch-size-4 serial and DART 7 `ParallelExecutor` runs over exact
 rank-deficient coupled friction-index
-6-/8-/12-/16-/24-/32-/48-/64-/96-/128-contact packets, verified in default,
-SIMD-enabled, and CUDA-enabled build trees.
+6-/8-/12-/16-/24-/32-/48-/64-/96-/128-/192-contact packets, verified in
+default, SIMD-enabled, and CUDA-enabled build trees.
 It also adds 192
 `BM_LcpSingularDegenerateStandardBoxedBatch(Serial|Parallel)` rows for
 batch-size-4 serial and DART 7 `ParallelExecutor` runs over exact
