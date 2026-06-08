@@ -21,7 +21,7 @@ status. They also add opt-in solver-internal CPU worker threads for
 experimental CUDA fixed-iteration Jacobi and PGS batch paths for homogeneous
 dense standard, boxed, friction-index, grouped variable-size synthetic
 standard/boxed/friction-index, 4-/8-/16-contact world-contact, and homogeneous
-5-/6-/7-sphere coupled stack-contact LCP packets, with grouped articulated
+5-/6-/7-/8-sphere coupled stack-contact LCP packets, with grouped articulated
 unified-contact CUDA evidence later expanded to cross-multibody link-vs-link
 packets in this task log.
 They also fix boxed semi-smooth Newton's `findex` moving-bound Jacobian and add
@@ -388,11 +388,11 @@ world-contact batch benchmark rows that compare all friction-index-capable
 solvers over the same five separated-contact and stacked-contact snapshots,
 both serially and through the DART 7 experimental
 `ParallelExecutor`. The CUDA LCP batch evidence now also includes homogeneous
-4-/8-/16-contact DART 7 world-contact packets, homogeneous 5-/6-/7-sphere coupled
+4-/8-/16-contact DART 7 world-contact packets, homogeneous 5-/6-/7-/8-sphere coupled
 stack-contact packets, grouped variable-size synthetic standard/boxed/findex
 through 96-row and 32-contact packets, grouped variable-size
 1/2/4/8/16-contact separated sphere-ground packets, plus grouped variable-size
-2/3/4/5/6/7-sphere coupled stack-contact
+2/3/4/5/6/7/8-sphere coupled stack-contact
 packets, plus grouped variable-size manually assembled 1-/4-/8-/16-contact
 articulated unified-contact packets covering link-ground, link-vs-dynamic-rigid,
 and cross-multibody link-vs-link cases, plus mixed grouped contact batches that
@@ -429,14 +429,14 @@ focused default, SIMD-enabled, and CUDA-enabled runs pass the new snapshot
 contract and 1000-step public `World::step()` invariant tests; matching
 benchmark rows pass all 15 registered non-`NNCG` 6-sphere solver rows, the
 6-sphere assembly row, and the 6-sphere 1000-step public-step row. The CUDA
-tree also passes direct fixed-iteration Jacobi and PGS homogeneous 7-sphere
-stack batches plus grouped 2/3/4/5/6/7-sphere stack batches with
+tree also passes direct fixed-iteration Jacobi and PGS homogeneous 8-sphere
+stack batches plus grouped 2/3/4/5/6/7/8-sphere stack batches with
 `cuda_lcp_execution=1` and `contract_ok=1`.
 The current branch also adds a 7-sphere, 7-contact, 21-row coupled stack
 snapshot/assembly row, 14 matching 7-sphere solver benchmark rows excluding
 `NNCG` and `RedBlackGaussSeidel`, 32-box and 48-box dense public-step unit
-gates, and 7-sphere fixed-iteration CUDA Jacobi/PGS stack-contact batch rows
-with grouped 2/3/4/5/6/7-sphere stack packets.
+gates, and 8-sphere fixed-iteration CUDA Jacobi/PGS stack-contact batch rows
+with grouped 2/3/4/5/6/7/8-sphere stack packets.
 Push/PR work still requires explicit maintainer/user approval.
 
 ## Immediate Next Step
@@ -464,7 +464,7 @@ Broaden SIMD benchmark gates, solver-internal threaded benchmark evidence, and
 the CUDA Jacobi/PGS batch slices into broader/general CUDA LCP execution
 separately from the current serial, task-parallel independent-problem, simple
 world-contact, mixed world-contact batch, small coupled-stack, 16-contact
-separated CUDA world-contact, and 7-sphere homogeneous/grouped CUDA
+separated CUDA world-contact, and 8-sphere homogeneous/grouped CUDA
 coupled-stack, and grouped manually assembled articulated unified-contact
 including cross-multibody link-vs-link CUDA rows, plus mixed
 separated/stack/articulated CUDA benchmark rows, plus the current
@@ -1284,8 +1284,8 @@ contact scenes.
   CUDA-enabled build. `test_lcp_jacobi_batch_cuda` passes 33 tests, including
   standard, boxed, friction-index, grouped variable-size synthetic
   standard/boxed/friction-index, contact-derived world-contact, homogeneous
-  5-/6-/7-sphere coupled stack-contact batches, and grouped variable-size
-  2/3/4/5/6/7-sphere coupled stack-contact batches, plus grouped manually assembled
+  5-/6-/7-/8-sphere coupled stack-contact batches, and grouped variable-size
+  2/3/4/5/6/7/8-sphere coupled stack-contact batches, plus grouped manually assembled
   1-/4-/8-/16-contact articulated unified-contact batches, plus mixed grouped contact
   batches executed on CUDA for Jacobi and PGS.
   `BM_LcpCudaJacobiBatch_*`, `BM_LcpCudaPgsBatch_*`,
@@ -1327,18 +1327,18 @@ contact scenes.
   4-, 8-, and 16-contact packets; the denser rows report
   `batch_size=4`, `contact_count=16`, `problem_size=48`,
   `total_contact_count=64`, and `total_problem_size=192`. The homogeneous stack
-  CUDA rows now include 5-, 6-, and 7-sphere coupled stack packets; the 7-sphere
-  rows report `batch_size=4`, `contact_count=7`, `problem_size=21`,
-  `total_contact_count=28`, and `total_problem_size=84`. The separated grouped
+  CUDA rows now include 5-, 6-, 7-, and 8-sphere coupled stack packets; the
+  8-sphere rows report `batch_size=4`, `contact_count=8`, `problem_size=24`,
+  `total_contact_count=32`, and `total_problem_size=96`. The separated grouped
   variable-size rows are
   sphere-ground packets with 1/2/4/8/16 contacts
   (`batch_size=10`, `cuda_group_count=5`, `contact_shape_count=5`,
   `min_problem_size=3`, `max_problem_size=48`, `total_contact_count=62`,
   `total_problem_size=186`).
-  The coupled stack grouped variable-size rows are 2/3/4/5/6/7-sphere stack packets
-  (`batch_size=12`, `cuda_group_count=6`, `contact_shape_count=6`,
-  `min_problem_size=6`, `max_problem_size=21`, `total_contact_count=54`,
-  `total_problem_size=162`).
+  The coupled stack grouped variable-size rows are 2/3/4/5/6/7/8-sphere stack packets
+  (`batch_size=14`, `cuda_group_count=7`, `contact_shape_count=7`,
+  `min_problem_size=6`, `max_problem_size=24`, `total_contact_count=70`,
+  `total_problem_size=210`).
   The articulated unified-contact grouped variable-size rows are manually
   assembled fixed-base three-axis prismatic link-ground,
   link-vs-dynamic-rigid, and cross-multibody link-vs-link packets with 1, 4,
@@ -1521,7 +1521,7 @@ cmake --build build/default/cpp/Release \
   "--benchmark_repetitions=1" \
   "--benchmark_format=json"
 python scripts/run_benchmark_smoke.py build/cuda/cpp/Release/bin/BM_LCP_COMPARE \
-  "--benchmark_filter=BM_LcpCuda(Jacobi|Pgs)WorldStackContact(Batch_FrictionIndex/7/4|GroupedBatch_FrictionIndex/2$)" \
+  "--benchmark_filter=BM_LcpCuda(Jacobi|Pgs)WorldStackContact(Batch_FrictionIndex/8/4|GroupedBatch_FrictionIndex/2$)" \
   "--benchmark_min_time=0.001s"
 ./build/cuda/cpp/Release/bin/BM_LCP_COMPARE \
   "--benchmark_filter=BM_LcpCuda(Jacobi|Pgs)ArticulatedUnifiedContactGroupedBatch_FrictionIndex" \

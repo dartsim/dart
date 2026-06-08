@@ -94,7 +94,7 @@ Support abbreviations:
   `ParallelExecutor` Jacobi/PGS batch rows at the direct CUDA packet sizes in
   default and SIMD-enabled build trees, homogeneous 4-/8-/16-contact and grouped variable-size
   1/2/4/8/16-contact DART 7 sphere-ground world-contact packets, homogeneous
-  5-/6-/7-sphere and grouped variable-size 2/3/4/5/6/7-sphere coupled stack-contact
+  5-/6-/7-/8-sphere and grouped variable-size 2/3/4/5/6/7/8-sphere coupled stack-contact
   packets, grouped variable-size 1-/4-/8-/16-contact articulated unified-contact
   packets including cross-multibody link-vs-link cases, and PGS-only
   homogeneous plus grouped variable-size dense box-face contact packets, plus
@@ -1104,8 +1104,8 @@ The current local evidence for this task is:
 - `test_lcp_jacobi_batch_cuda --gtest_brief=1` passed 33 tests in the
   CUDA-enabled build, including standard, boxed, friction-index, and
   grouped variable-size synthetic standard/boxed/friction-index plus
-  contact-derived world-contact, homogeneous 5-/6-/7-sphere and grouped
-  variable-size 2/3/4/5/6/7-sphere coupled stack-contact, and articulated
+  contact-derived world-contact, homogeneous 5-/6-/7-/8-sphere and grouped
+  variable-size 2/3/4/5/6/7/8-sphere coupled stack-contact, and articulated
   unified-contact batches including cross-multibody link-vs-link packets, plus
   mixed grouped contact batches executed on CUDA for fixed-iteration Jacobi and
   PGS.
@@ -1138,19 +1138,19 @@ The current local evidence for this task is:
   snapshots up to 16 contacts with `batch_size=4`, `contact_count=16`,
   `problem_size=48`, `total_contact_count=64`, and `total_problem_size=192`
   on the denser rows. The
-  homogeneous coupled stack CUDA rows use 5-/6-/7-sphere DART 7 `World::collide()`
-  snapshots; the 7-sphere rows report `batch_size=4`, `sphere_count=7`,
-  `contact_count=7`, `problem_size=21`, `total_contact_count=28`, and
-  `total_problem_size=84`.
+  homogeneous coupled stack CUDA rows use 5-/6-/7-/8-sphere DART 7
+  `World::collide()` snapshots; the 8-sphere rows report `batch_size=4`,
+  `sphere_count=8`, `contact_count=8`, `problem_size=24`,
+  `total_contact_count=32`, and `total_problem_size=96`.
   The separated grouped variable-size rows now
   use 1/2/4/8/16-contact sphere-ground packets with `batch_size=10`,
   `cuda_group_count=5`, `contact_shape_count=5`, `min_problem_size=3`,
   `max_problem_size=48`, `total_contact_count=62`, and
   `total_problem_size=186`. The coupled stack
-  grouped variable-size rows now use 2/3/4/5/6/7-sphere stack packets with
-  `batch_size=12`, `cuda_group_count=6`, `contact_shape_count=6`,
-  `min_problem_size=6`, `max_problem_size=21`,
-  `total_contact_count=54`, and `total_problem_size=162`. The articulated
+  grouped variable-size rows now use 2/3/4/5/6/7/8-sphere stack packets with
+  `batch_size=14`, `cuda_group_count=7`, `contact_shape_count=7`,
+  `min_problem_size=6`, `max_problem_size=24`,
+  `total_contact_count=70`, and `total_problem_size=210`. The articulated
   grouped variable-size rows use manually assembled 1-/4-/8-/16-contact fixed-base
   three-axis prismatic unified-contact packets covering link-ground,
   link-vs-dynamic-rigid, and cross-multibody link-vs-link cases with
@@ -1292,8 +1292,8 @@ The current local evidence for this task is:
   evidence, and narrow CUDA projected-Jacobi and PGS
   standard/boxed/friction-index plus grouped variable-size synthetic
   standard/boxed/friction-index, homogeneous 4-/8-/16-contact, homogeneous
-  5-/6-/7-sphere coupled stack, and grouped variable-size 1/2/4/8/16-contact separated
-  and 2/3/4/5/6/7-sphere coupled stack world-contact batch paths, plus manually
+  5-/6-/7-/8-sphere coupled stack, and grouped variable-size 1/2/4/8/16-contact separated
+  and 2/3/4/5/6/7/8-sphere coupled stack world-contact batch paths, plus manually
   assembled 1-/4-/8-/16-contact articulated unified-contact batch paths including
   cross-multibody link-vs-link packets, and mixed
   separated/stack/articulated grouped contact batch paths, scoped dense
