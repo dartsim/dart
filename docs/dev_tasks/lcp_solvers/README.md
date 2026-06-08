@@ -269,9 +269,9 @@
 - [x] Added DART 7 boxed-LCP two-sided articulated contact evidence for
       one-link and four-pair fixed-base prismatic link-vs-dynamic-rigid scenes, plus
       1-/4-/8-/16-pair articulated rigid-impact benchmark rows.
-- [x] Added DART 7 boxed-LCP cross-multibody articulated contact evidence for a
-      fixed-base prismatic link pushing a prismatic link owned by another
-      multibody, plus 1-/4-/8-/16-pair articulated link-impact benchmark rows.
+- [x] Added DART 7 boxed-LCP cross-multibody articulated contact evidence for
+      one-pair and four-pair fixed-base prismatic link-vs-link scenes, plus
+      1-/4-/8-/16-pair articulated link-impact benchmark rows.
 - [x] Added DART 7 articulated unified-contact benchmark rows that compare all
       friction-index-capable solvers on the same manually assembled fixed-base
       three-axis prismatic link-ground, link-vs-dynamic-rigid, and
@@ -1511,16 +1511,21 @@ tradeoffs evidence based.
   `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldArticulatedRigidImpactStep_BoxedLcp/4/1$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   row reported `invariant_ok=1`, `articulated_link_count=4`,
   `dynamic_rigid_body_count=4`, `contact_count=4`, and `step_count=1`. The full
-  `test_boxed_lcp_contact --gtest_list_tests` inventory now lists 55 tests.
-  `BoxedLcpContact.ArticulatedPrismaticLinkPushesArticulatedPrismaticLink`
-  advances a fixed-base prismatic striker link in contact with a prismatic
-  target link owned by a separate multibody through one boxed-LCP
-  `World::step()`, confirms the contact touches two `comps::Link` entities,
-  and checks finite velocities, target motion, striker slowdown,
-  nonnegative post-step separation velocity, X-momentum conservation, and parity
-  with the sequential cross-multibody articulated shortcut. The focused
-  `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.ArticulatedPrismaticLinkPushesArticulatedPrismaticLink' --gtest_brief=1`
-  run passed. `DenseBoxWorldContactSnapshotSatisfiesLcpContract`
+  `test_boxed_lcp_contact --gtest_list_tests` inventory now lists 56 tests.
+  `BoxedLcpContact.ArticulatedPrismaticLinkPushesArticulatedPrismaticLink` and
+  `BoxedLcpContact.FourArticulatedPrismaticLinksPushArticulatedPrismaticLinks`
+  advance one and four fixed-base prismatic striker links in contact with
+  prismatic target links owned by separate multibodies through one boxed-LCP
+  `World::step()`, confirm all contacts touch two `comps::Link` entities, and
+  check finite velocities, target motion, striker slowdown, nonnegative
+  post-step separation velocity, X-momentum conservation, and parity with the
+  sequential cross-multibody articulated shortcut. The focused
+  `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.ArticulatedPrismaticLinkPushesArticulatedPrismaticLink:BoxedLcpContact.FourArticulatedPrismaticLinksPushArticulatedPrismaticLinks' --gtest_brief=1`
+  run passed both tests. The focused
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldArticulatedLinkImpactStep_BoxedLcp/4/1$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  row reported `invariant_ok=1`, `articulated_pair_count=4`,
+  `articulated_link_count=8`, `articulated_dof_count=8`, `contact_count=4`, and
+  `cross_multibody_link_contact=1`. `DenseBoxWorldContactSnapshotSatisfiesLcpContract`
   assembles a 4-contact, 12-row box-face ground patch from `World::collide()`,
   checks the boxed/findex shape, and verifies the same LCP with APGD. The
   sliding and static-friction end-to-end box tests now also assert at least
@@ -1541,7 +1546,7 @@ tradeoffs evidence based.
   `FortyEightBoxWorldStepMaintainsDenseContactInvariants` extends this to 48
   boxes and 192 dense face contacts over 4000 small public boxed-LCP
   `World::step()` iterations; the focused default run passed in 84992 ms. The
-  full `test_boxed_lcp_contact --gtest_list_tests` inventory lists 55 tests; the
+  full `test_boxed_lcp_contact --gtest_list_tests` inventory lists 56 tests; the
   earlier full `--gtest_brief=1` run still emitted the dense-patch Dantzig
   warning, so Dantzig's direct dense box solve is not claimed.
 - DART 7 world-contact benchmark evidence:
@@ -2162,8 +2167,8 @@ tradeoffs evidence based.
   one-pair and four-pair fixed-base prismatic link-vs-dynamic-rigid scenes,
   plus 1-/4-/8-/16-pair articulated rigid-impact benchmark rows.
 - Added DART 7 cross-multibody articulated boxed-LCP `World::step()` evidence
-  for a fixed-base prismatic link pushing a separate multibody's prismatic link,
-  plus 1-/4-/8-/16-pair articulated link-impact benchmark rows.
+  for one-pair and four-pair fixed-base prismatic link-vs-link scenes, plus
+  1-/4-/8-/16-pair articulated link-impact benchmark rows.
 - Added DART 7 articulated unified-contact all-solver benchmark evidence for
   manually assembled fixed-base three-axis prismatic link-ground and
   link-vs-dynamic-rigid LCP snapshots, now extended to cross-multibody
