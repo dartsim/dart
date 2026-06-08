@@ -1102,7 +1102,8 @@ std::vector<GeneratedCase> makeExtremeSingularDegenerateCases()
       makeSingularDegenerateFrictionIndexCase(32),
       makeSingularDegenerateFrictionIndexCase(48),
       makeSingularDegenerateFrictionIndexCase(64),
-      makeSingularDegenerateFrictionIndexCase(96)};
+      makeSingularDegenerateFrictionIndexCase(96),
+      makeSingularDegenerateFrictionIndexCase(128)};
 }
 
 std::vector<LcpProblem> makeInvalidProblems()
