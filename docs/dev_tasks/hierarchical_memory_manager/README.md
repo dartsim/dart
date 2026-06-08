@@ -196,7 +196,10 @@
       self-contact normal/friction rows now reuse row-inventory and
       self-contact adjacency storage, including previous friction warm-start
       rows, and `prepare()` bakes row/candidate capacity for the covered AVBD
-      ground-contact and two-surface contact scenes. The current production
+      ground-contact and two-surface contact scenes. AVBD row-inventory
+      warm-start lookup keeps rows in descriptor order while indexing the
+      previous frame through sorted reserved storage, avoiding both map
+      allocation and quadratic previous-row scans. The current production
       boxed-LCP stage
       uses the in-place unified assembler and solve scratch; the public
       return-by-value unified problem and solution wrappers remain

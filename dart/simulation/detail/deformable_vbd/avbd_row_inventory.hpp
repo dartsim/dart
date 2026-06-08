@@ -200,13 +200,19 @@ public:
     mPreviousRecords.clear();
     mPreviousRecords.insert(
         mPreviousRecords.end(), mRecords.begin(), mRecords.end());
+    std::sort(
+        mPreviousRecords.begin(),
+        mPreviousRecords.end(),
+        [](const AvbdScalarRowRecord& lhs, const AvbdScalarRowRecord& rhs) {
+          return lhs.descriptor.key < rhs.descriptor.key;
+        });
 
     mRecords.clear();
     mRecords.reserve(descriptors.size());
     for (const AvbdScalarRowDescriptor& descriptor : descriptors) {
       AvbdScalarRowState state = initialAvbdScalarRowState(descriptor, options);
       if (const AvbdScalarRowRecord* previous
-          = findIn(mPreviousRecords, descriptor.key)) {
+          = findInSorted(mPreviousRecords, descriptor.key)) {
         state
             = warmStartAvbdScalarRowState(previous->state, descriptor, options);
       }
@@ -283,14 +289,19 @@ public:
 
 private:
   //==============================================================================
-  [[nodiscard]] static const AvbdScalarRowRecord* findIn(
+  [[nodiscard]] static const AvbdScalarRowRecord* findInSorted(
       std::span<const AvbdScalarRowRecord> records,
       const AvbdScalarRowKey& key) noexcept
   {
-    for (const AvbdScalarRowRecord& record : records) {
-      if (record.descriptor.key == key) {
-        return &record;
-      }
+    const auto match = std::lower_bound(
+        records.begin(),
+        records.end(),
+        key,
+        [](const AvbdScalarRowRecord& record, const AvbdScalarRowKey& value) {
+          return record.descriptor.key < value;
+        });
+    if (match != records.end() && match->descriptor.key == key) {
+      return &*match;
     }
     return nullptr;
   }
