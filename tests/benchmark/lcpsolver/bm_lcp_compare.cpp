@@ -10959,7 +10959,8 @@ void RegisterWorldBoxContactBenchmarks()
         ->Arg(24)
         ->Arg(32)
         ->Arg(48)
-        ->Arg(64);
+        ->Arg(64)
+        ->Arg(96);
   }
 }
 

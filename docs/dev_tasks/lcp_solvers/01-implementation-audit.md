@@ -794,13 +794,13 @@ The current local evidence for this task is:
   24-box, 96-contact scene over 2000 small public boxed-LCP `World::step()`
   iterations. The run still emits the dense-patch Dantzig warning, so
   Dantzig's direct dense box solve is not claimed.
-- `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` now registers 54 scoped dense
+- `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` now registers 60 scoped dense
   box rows: `Pgs`, `RedBlackGaussSeidel`, `NNCG`, `Apgd`, `Tgs`, and `Admm` on
-  1/2/4/8/16/24/32/48/64-box snapshots. Focused
-  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldBoxContact/FrictionIndex/.+/64$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  1/2/4/8/16/24/32/48/64/96-box snapshots. Focused
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldBoxContact/FrictionIndex/.+/96$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   runs reported
-  `contract_ok=1`, `dense_box_contact=1`, `box_count=64`,
-  `contact_count=256`, and `problem_size=768` in default, SIMD-enabled, and
+  `contract_ok=1`, `dense_box_contact=1`, `box_count=96`,
+  `contact_count=384`, and `problem_size=1152` in default, SIMD-enabled, and
   CUDA-enabled build trees; the CUDA-enabled rows are CPU solver rows in that
   build tree, not CUDA LCP kernel execution.
 - `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldBoxStep_BoxedLcp' --benchmark_min_time=0.001s --benchmark_repetitions=1`
@@ -1190,7 +1190,7 @@ The current local evidence for this task is:
   benchmark scenes, plus
   manually assembled three-axis articulated unified-contact all-solver rows
   through 16 contacts including cross-multibody link-vs-link rows,
-  plus scoped dense box face-contact rows through 64 boxes for six solvers and
+  plus scoped dense box face-contact rows through 96 boxes for six solvers and
   PGS-only dense
   box-face CUDA batch rows through homogeneous 1/4/8/16/24/32/48/64/96-box and grouped
   1/2/4/8/16/24/32-box packets, but not broad
