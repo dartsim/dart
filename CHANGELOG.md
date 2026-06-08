@@ -1182,11 +1182,13 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     `World::step()` tests, and 72 scoped
     `BM_LcpWorldBoxContact/FrictionIndex` benchmark rows over
     1/2/4/8/16/24/32/48/64/96/128/192-box snapshots verified in default, SIMD-enabled, and
-    CUDA-enabled build trees, plus 60 serial and DART 7
+    CUDA-enabled build trees, plus 72 serial and DART 7
     `ParallelExecutor` dense box-face batch rows for `Pgs`,
     `RedBlackGaussSeidel`, `NNCG`, `Apgd`, `Tgs`, and `Admm` over
-    24/64/96/128/192-box snapshots verified in default, SIMD-enabled, and
-    CUDA-enabled build trees as CPU solver rows,
+    24/64/96/128/192-box snapshots, with `Pgs` additionally covering
+    1/4/8/16/32/48-box snapshots so the CPU rows match homogeneous CUDA PGS
+    packet sizes through 96 boxes in default, SIMD-enabled, and CUDA-enabled
+    build trees,
     plus PGS-only CUDA batch coverage for homogeneous
     1/4/8/16/24/32/48/64/96-box and
     grouped 1/2/4/8/16/24/32-box dense box-face packets through

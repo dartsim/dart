@@ -11565,6 +11565,31 @@ void RegisterWorldContactBatchBenchmarks()
 
 void RegisterWorldBoxContactBatchBenchmarks()
 {
+  const auto addWorldBoxContactBatchArgs
+      = [](benchmark::Benchmark* registeredBenchmark,
+           const dart::test::LcpSolverManifestEntry& solver) {
+          if (solver.name == "Pgs") {
+            registeredBenchmark->Args({1, 4})
+                ->Args({4, 4})
+                ->Args({8, 4})
+                ->Args({16, 4})
+                ->Args({24, 4})
+                ->Args({32, 4})
+                ->Args({48, 4})
+                ->Args({64, 4})
+                ->Args({96, 4})
+                ->Args({128, 4})
+                ->Args({192, 4});
+            return;
+          }
+
+          registeredBenchmark->Args({24, 4})
+              ->Args({64, 4})
+              ->Args({96, 4})
+              ->Args({128, 4})
+              ->Args({192, 4});
+        };
+
   for (const auto& solver : dart::test::kLcpSolverManifest) {
     if (!dart::test::supportsProblem(
             solver, dart::test::LcpProblemSupport::FrictionIndex)) {
@@ -11575,29 +11600,23 @@ void RegisterWorldBoxContactBatchBenchmarks()
     }
 
     const auto serialName = MakeWorldBoxContactBatchSerialBenchmarkName(solver);
-    benchmark::RegisterBenchmark(
-        serialName.c_str(),
-        [solver](benchmark::State& state) {
-          RunWorldBoxContactBatchSerialBenchmark(state, solver);
-        })
-        ->Args({24, 4})
-        ->Args({64, 4})
-        ->Args({96, 4})
-        ->Args({128, 4})
-        ->Args({192, 4});
+    addWorldBoxContactBatchArgs(
+        benchmark::RegisterBenchmark(
+            serialName.c_str(),
+            [solver](benchmark::State& state) {
+              RunWorldBoxContactBatchSerialBenchmark(state, solver);
+            }),
+        solver);
 
     const auto parallelName
         = MakeWorldBoxContactBatchParallelBenchmarkName(solver);
-    benchmark::RegisterBenchmark(
-        parallelName.c_str(),
-        [solver](benchmark::State& state) {
-          RunWorldBoxContactBatchParallelBenchmark(state, solver);
-        })
-        ->Args({24, 4})
-        ->Args({64, 4})
-        ->Args({96, 4})
-        ->Args({128, 4})
-        ->Args({192, 4});
+    addWorldBoxContactBatchArgs(
+        benchmark::RegisterBenchmark(
+            parallelName.c_str(),
+            [solver](benchmark::State& state) {
+              RunWorldBoxContactBatchParallelBenchmark(state, solver);
+            }),
+        solver);
   }
 }
 #endif

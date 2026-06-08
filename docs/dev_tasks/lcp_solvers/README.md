@@ -306,11 +306,12 @@
       1/2/4/8/16/24/32/48/64/96/128/192-box snapshots verified in default, SIMD-enabled, and
       CUDA-enabled build trees.
 - [x] Added DART 7 dense box-face serial and `ParallelExecutor` batch benchmark
-      rows: 60 `BM_LcpWorldBoxContactBatch(Serial|Parallel)/FrictionIndex`
+      rows: 72 `BM_LcpWorldBoxContactBatch(Serial|Parallel)/FrictionIndex`
       rows cover `Pgs`, `RedBlackGaussSeidel`, `NNCG`, `Apgd`, `Tgs`, and
-      `Admm` over 24/64/96/128/192-box snapshots with batch size 4, verified
-      in default, SIMD-enabled, and CUDA-enabled build trees as CPU solver
-      batch rows.
+      `Admm` over 24/64/96/128/192-box snapshots with batch size 4. `Pgs` also
+      covers 1/4/8/16/32/48-box snapshots, so the CPU serial and
+      `ParallelExecutor` rows match the homogeneous CUDA PGS packet sizes
+      through 96 boxes in default, SIMD-enabled, and CUDA-enabled build trees.
 - [x] Added contact-derived CUDA batch evidence for homogeneous 4-, 8-, and
       16-contact DART 7 world-contact packets, covering fixed-iteration CUDA
       Jacobi and PGS unit tests and benchmark rows on the visible GPU.
@@ -1339,9 +1340,13 @@ tradeoffs evidence based.
   CUDA LCP kernel execution. This is dense contact-snapshot evidence, not
   broad robot-like or CUDA dense-contact execution evidence.
 - DART 7 dense box-contact serial/parallel batch benchmark evidence:
-  `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` now also registers 60
-  `BM_LcpWorldBoxContactBatch(Serial|Parallel)/FrictionIndex/<solver>/{24,64,96,128,192}/4`
-  rows for `Pgs`, `RedBlackGaussSeidel`, `NNCG`, `Apgd`, `Tgs`, and `Admm`.
+  `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` now also registers 72
+  `BM_LcpWorldBoxContactBatch(Serial|Parallel)/FrictionIndex` rows. `Pgs`,
+  `RedBlackGaussSeidel`, `NNCG`, `Apgd`, `Tgs`, and `Admm` cover
+  24/64/96/128/192-box snapshots at batch size 4; `Pgs` additionally covers
+  1/4/8/16/32/48-box snapshots so the CPU serial and DART 7
+  `ParallelExecutor` rows match the homogeneous CUDA PGS packet sizes through
+  96 boxes.
   Focused default, SIMD-enabled, and CUDA-enabled
   `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldBoxContactBatch(Serial|Parallel)/FrictionIndex/.+/192/4$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   runs each reported 12 rows with `contract_ok=1`, `dense_box_contact=1`,
@@ -1351,6 +1356,14 @@ tradeoffs evidence based.
   build counters reported `build_simd_enabled=1` in the SIMD build tree and
   `build_cuda_enabled=1` in the CUDA-enabled build tree. The CUDA-enabled rows
   are CPU solver batch rows in that build tree, not CUDA LCP kernel execution.
+  Focused matching-size
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldBoxContactBatch(Serial|Parallel)/FrictionIndex/Pgs/(1|4|8|16|24|32|48|64|96)/4$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  runs in default, SIMD-enabled, and CUDA-enabled build trees each reported 18
+  rows with `contract_ok=1`, `dense_box_contact=1`,
+  `dense_box_contact_batch=1`, `box_count=1/4/8/16/24/32/48/64/96`,
+  `contact_count=4/16/32/64/96/128/192/256/384`,
+  `problem_size=12/48/96/192/288/384/576/768/1152`, `batch_size=4`,
+  `total_problem_size` up to 4608, and `parallel_units=4` on parallel rows.
 - DART 7 dense box-contact end-to-end benchmark evidence:
   `BM_LcpWorldBoxStep_BoxedLcp/{1,2,4,8}/200` and
   `BM_LcpWorldBoxStep_BoxedLcp/16/500`,
@@ -1378,19 +1391,19 @@ tradeoffs evidence based.
   verifies fixed-iteration CUDA PGS against the LCP contract.
   `CudaLcpPgsBatch.DenseBoxWorldContactGroupedBatchSatisfiesLcpContract` extends
   that to grouped variable-size 1/2/4/8/16/24/32-box packets. The
-  focused
-  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpCudaPgsWorldBoxContact(Batch_FrictionIndex/96/4|GroupedBatch_FrictionIndex/2)$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
-  CUDA run reported `contract_ok=1`, `cuda_lcp_execution=1`,
-  `cuda_batch_execution=1`, `cuda_dense_box_contact_batch=1`, and
-  `dense_box_contact=1` for the 96-box homogeneous row and the grouped row. The
-  96-box homogeneous row reported `batch_size=4`, `box_count=96`,
-  `contact_count=384`, `problem_size=1152`, `total_contact_count=1536`,
-  `total_body_count=384`, and `total_problem_size=4608`; the grouped row
-  remains scoped to 1/2/4/8/16/24/32-box packets and reported `batch_size=14`,
+  focused homogeneous
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex/(1|4|8|16|24|32|48|64|96)/4$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  CUDA run reported 9 rows with `contract_ok=1`, `cuda_lcp_execution=1`,
+  `cuda_batch_execution=1`, `cuda_dense_box_contact_batch=1`,
+  `dense_box_contact=1`, `box_count=1/4/8/16/24/32/48/64/96`,
+  `contact_count=4/16/32/64/96/128/192/256/384`,
+  `problem_size=12/48/96/192/288/384/576/768/1152`, `batch_size=4`, and
+  `total_problem_size` up to 4608. The grouped row remains scoped to
+  1/2/4/8/16/24/32-box packets and reported `batch_size=14`,
   `cuda_group_count=7`, `box_count_shape_count=7`, `min_problem_size=12`,
   `max_problem_size=384`, `total_contact_count=696`, `total_body_count=174`, and
   `total_problem_size=2088`. A grouped 48-box CUDA PGS extension was probed and
-  is not claimed: at 1024 fixed iterations the grouped validation failed two
+  is not claimed: at 1024 and 2048 fixed iterations the grouped validation failed two
   48-box variants with fixed-variable residual/complementarity around
   0.606/0.625. A fixed-iteration CUDA Jacobi dense-box trial failed the LCP
   contract, so Jacobi dense-box CUDA execution remains unclaimed.

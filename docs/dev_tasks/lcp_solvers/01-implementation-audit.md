@@ -799,16 +799,24 @@ The current local evidence for this task is:
   `contact_count=768`, and `problem_size=2304` in default, SIMD-enabled, and
   CUDA-enabled build trees; the CUDA-enabled rows are CPU solver rows in that
   build tree, not CUDA LCP kernel execution.
-- `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` now also registers 60
-  serial and DART 7 `ParallelExecutor` dense box batch rows:
-  `BM_LcpWorldBoxContactBatch(Serial|Parallel)/FrictionIndex/<solver>/{24,64,96,128,192}/4`
-  for `Pgs`, `RedBlackGaussSeidel`, `NNCG`, `Apgd`, `Tgs`, and `Admm`. Focused
+- `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` now also registers 72
+  serial and DART 7 `ParallelExecutor` dense box batch rows. `Pgs`,
+  `RedBlackGaussSeidel`, `NNCG`, `Apgd`, `Tgs`, and `Admm` cover
+  24/64/96/128/192-box snapshots at batch size 4; `Pgs` additionally covers
+  1/4/8/16/32/48-box snapshots so the CPU serial and `ParallelExecutor` rows
+  match the homogeneous CUDA PGS packet sizes through 96 boxes. Focused
   192-box runs in default, SIMD-enabled, and CUDA-enabled build trees reported
   12 rows with `contract_ok=1`, `dense_box_contact_batch=1`, `box_count=192`,
   `contact_count=768`, `problem_size=2304`, `batch_size=4`,
   `total_contact_count=3072`, `total_problem_size=9216`, and
   `parallel_units=4` on parallel rows. The CUDA-enabled rows are CPU solver
   batch rows in that build tree, not CUDA LCP kernel execution.
+  Focused matching-size PGS CPU runs in default, SIMD-enabled, and CUDA-enabled
+  build trees reported 18 rows with `contract_ok=1`,
+  `dense_box_contact_batch=1`, `box_count=1/4/8/16/24/32/48/64/96`,
+  `contact_count=4/16/32/64/96/128/192/256/384`,
+  `problem_size=12/48/96/192/288/384/576/768/1152`, `batch_size=4`,
+  `total_problem_size` up to 4608, and `parallel_units=4` on parallel rows.
 - `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldBoxStep_BoxedLcp' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   previously passed in default, SIMD-enabled, and CUDA-enabled build trees for
   `BM_LcpWorldBoxStep_BoxedLcp/{1,2,4,8}/200`,
@@ -1082,18 +1090,21 @@ The current local evidence for this task is:
   `articulated_cross_link_contact=1`, `min_problem_size=3`,
   `max_problem_size=48`, `total_contact_count=198`, and
   `total_problem_size=594`. The dense box PGS
-  rows include homogeneous 4-problem batches for 1-/4-/8-/16-/24-/32-/48-/64-/96-box dense
-  face-contact `World::collide()` snapshots and a grouped variable-size
-  1/2/4/8/16/24/32-box batch. All report
-  `cuda_dense_box_contact_batch=1` and `dense_box_contact=1`; the 96-box
-  homogeneous row reports `batch_size=4`, `box_count=96`, `contact_count=384`,
-  `problem_size=1152`, `total_contact_count=1536`, `total_body_count=384`, and
-  `total_problem_size=4608`, while the grouped row remains scoped to
+  rows include homogeneous 4-problem batches for
+  1-/4-/8-/16-/24-/32-/48-/64-/96-box dense face-contact `World::collide()`
+  snapshots and a grouped variable-size 1/2/4/8/16/24/32-box batch. A focused
+  homogeneous CUDA run reports 9 rows with `cuda_lcp_execution=1`,
+  `cuda_batch_execution=1`, `cuda_dense_box_contact_batch=1`,
+  `dense_box_contact=1`, `contract_ok=1`,
+  `box_count=1/4/8/16/24/32/48/64/96`,
+  `contact_count=4/16/32/64/96/128/192/256/384`,
+  `problem_size=12/48/96/192/288/384/576/768/1152`, `batch_size=4`, and
+  `total_problem_size` up to 4608, while the grouped row remains scoped to
   1/2/4/8/16/24/32-box packets and reports `batch_size=14`,
   `cuda_group_count=7`, `box_count_shape_count=7`, `min_problem_size=12`,
   `max_problem_size=384`, `total_contact_count=696`, `total_body_count=174`, and
   `total_problem_size=2088`. A grouped 48-box CUDA PGS extension was probed and
-  is not claimed: at 1024 fixed iterations the grouped validation failed two
+  is not claimed: at 1024 and 2048 fixed iterations the grouped validation failed two
   48-box variants with fixed-variable residual/complementarity around
   0.606/0.625. A fixed-iteration CUDA Jacobi dense-box trial
   failed the LCP contract and is not claimed. The earlier failed probe used the
