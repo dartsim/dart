@@ -244,6 +244,10 @@ TEST(NewtonBarrierPrimitives, InteriorLineSearchStepScaleStaysInsideBound)
   EXPECT_DOUBLE_EQ(nb::makeInteriorLineSearchStepScale(0.0), 0.0);
   EXPECT_DOUBLE_EQ(
       nb::makeInteriorLineSearchStepScale(
+          std::numeric_limits<double>::denorm_min()),
+      0.0);
+  EXPECT_DOUBLE_EQ(
+      nb::makeInteriorLineSearchStepScale(
           std::numeric_limits<double>::quiet_NaN()),
       0.0);
 }
