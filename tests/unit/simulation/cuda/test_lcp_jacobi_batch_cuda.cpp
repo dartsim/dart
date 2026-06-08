@@ -1835,7 +1835,7 @@ TEST(CudaLcpPgsBatch, DenseBoxWorldContactBatchSatisfiesLcpContract)
     GTEST_SKIP() << "CUDA runtime has no available device";
   }
 
-  constexpr std::array<int, 6> kBoxCounts{1, 16, 24, 32, 48, 64};
+  constexpr std::array<int, 7> kBoxCounts{1, 16, 24, 32, 48, 64, 96};
   for (const int boxCount : kBoxCounts) {
     SCOPED_TRACE("boxCount=" + std::to_string(boxCount));
     std::string errorMessage;

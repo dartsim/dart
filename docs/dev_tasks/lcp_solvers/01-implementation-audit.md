@@ -1078,13 +1078,13 @@ The current local evidence for this task is:
   `articulated_cross_link_contact=1`, `min_problem_size=3`,
   `max_problem_size=48`, `total_contact_count=198`, and
   `total_problem_size=594`. The dense box PGS
-  rows include homogeneous 4-problem batches for 1-/4-/8-/16-/24-/32-/48-/64-box dense
+  rows include homogeneous 4-problem batches for 1-/4-/8-/16-/24-/32-/48-/64-/96-box dense
   face-contact `World::collide()` snapshots and a grouped variable-size
   1/2/4/8/16/24/32-box batch. All report
-  `cuda_dense_box_contact_batch=1` and `dense_box_contact=1`; the 64-box
-  homogeneous row reports `batch_size=4`, `box_count=64`, `contact_count=256`,
-  `problem_size=768`, `total_contact_count=1024`, `total_body_count=256`, and
-  `total_problem_size=3072`, while the grouped row remains scoped to
+  `cuda_dense_box_contact_batch=1` and `dense_box_contact=1`; the 96-box
+  homogeneous row reports `batch_size=4`, `box_count=96`, `contact_count=384`,
+  `problem_size=1152`, `total_contact_count=1536`, `total_body_count=384`, and
+  `total_problem_size=4608`, while the grouped row remains scoped to
   1/2/4/8/16/24/32-box packets and reports `batch_size=14`,
   `cuda_group_count=7`, `box_count_shape_count=7`, `min_problem_size=12`,
   `max_problem_size=384`, `total_contact_count=696`, `total_body_count=174`, and
@@ -1192,7 +1192,7 @@ The current local evidence for this task is:
   through 16 contacts including cross-multibody link-vs-link rows,
   plus scoped dense box face-contact rows through 48 boxes for six solvers and
   PGS-only dense
-  box-face CUDA batch rows through homogeneous 1/4/8/16/24/32/48/64-box and grouped
+  box-face CUDA batch rows through homogeneous 1/4/8/16/24/32/48/64/96-box and grouped
   1/2/4/8/16/24/32-box packets, but not broad
   robot-like or general dense CUDA contact systems.
 - Backend evidence: benchmark rows now identify scalar/SIMD/CUDA build state,
@@ -1206,7 +1206,7 @@ The current local evidence for this task is:
   assembled 1-/4-/8-/16-contact articulated unified-contact batch paths including
   cross-multibody link-vs-link packets, and mixed
   separated/stack/articulated grouped contact batch paths, and PGS-only dense
-  box-face CUDA batch paths through homogeneous 1/4/8/16/24/32/48/64-box and grouped
+  box-face CUDA batch paths through homogeneous 1/4/8/16/24/32/48/64/96-box and grouped
   1/2/4/8/16/24/32-box packets pass.
   This still does
   not prove broader solver-internal multi-threaded speedups, general CUDA LCP
