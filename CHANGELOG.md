@@ -967,7 +967,8 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     slice up to standard 128-row, boxed 64-row, friction-index 24-contact, and
     coupled friction-index 12-contact problems, plus a scoped robust
     near-singular known-solution slice for standard 8-row, boxed 8-row, and
-    coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-, and 32-contact packets,
+    coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-, 32-, and 48-contact
+    packets,
     and active-set
     transition coverage near lower, upper, and friction-cone boundaries. The
     active-set transition correctness grid now reaches standard 128-row, boxed
@@ -1093,9 +1094,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     mildly ill-conditioned batch rows for batch-size-4 serial and DART 7
     `ParallelExecutor` runs over the 8x-coupled 16-/24-contact packets
     verified across default, SIMD-enabled, and CUDA-enabled build trees, plus
-    19 near-singular benchmark rows for standard 8-row, boxed 8-row, and
-    coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-, and 32-contact packets verified across
-    default, SIMD-enabled, and CUDA-enabled build trees, plus 27 exact
+    21 near-singular benchmark rows for standard 8-row, boxed 8-row, and
+    coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-, 32-, and 48-contact
+    packets verified across default, SIMD-enabled, and CUDA-enabled build
+    trees, plus 27 exact
     rank-deficient singular-degenerate benchmark rows for standard 16-row,
     boxed 16-row, and coupled friction-index 6-contact packets, plus 27 larger
     exact rank-deficient singular-degenerate benchmark rows for standard
