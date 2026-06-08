@@ -380,7 +380,7 @@ packets, plus grouped variable-size 2/3/4/5-sphere coupled stack-contact
 packets, plus grouped variable-size manually assembled 1-/4-/8-/16-contact
 articulated unified-contact packets covering link-ground, link-vs-dynamic-rigid,
 and cross-multibody link-vs-link cases, plus mixed grouped contact batches that
-combine separated, stack, and articulated fixture families for fixed-iteration
+combine separated, stack, and 1-/4-/8-/16-contact articulated fixture families for fixed-iteration
 Jacobi and PGS.
 The work now also adds 49 `BM_LcpLargerActiveSetTransition` rows for the
 scoped scalable active-set transition packets: standard 32-row, boxed 32-row,
@@ -1206,12 +1206,12 @@ contact scenes.
   `total_problem_size=522`).
   The mixed grouped rows combine separated sphere-ground, coupled stack, and
   manually assembled articulated unified-contact packets including
-  cross-multibody link-vs-link packets (`batch_size=20`,
-  `contact_fixture_family_count=3`, `cuda_group_count=4`,
-  `contact_shape_count=4`, `articulated_contact_case_count=3`,
+  cross-multibody link-vs-link packets (`batch_size=32`,
+  `contact_fixture_family_count=3`, `cuda_group_count=6`,
+  `contact_shape_count=6`, `articulated_contact_case_count=3`,
   `articulated_cross_link_contact=1`, `min_problem_size=3`,
-  `max_problem_size=15`, `total_contact_count=54`,
-  `total_problem_size=162`).
+  `max_problem_size=48`, `total_contact_count=198`,
+  `total_problem_size=594`).
   The dense box-face CUDA rows are PGS-only:
   `CudaLcpPgsBatch.DenseBoxWorldContactBatchSatisfiesLcpContract` and
   `CudaLcpPgsBatch.DenseBoxWorldContactGroupedBatchSatisfiesLcpContract` pass

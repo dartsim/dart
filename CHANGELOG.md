@@ -1138,7 +1138,7 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     grouped variable-size manually assembled 1-/4-/8-/16-contact articulated
     unified-contact LCP packets including cross-multibody link-vs-link cases,
     plus mixed grouped contact batches combining separated, stack, and
-    articulated contact fixture families including cross-multibody link-vs-link
+    1-/4-/8-/16-contact articulated fixture families including cross-multibody link-vs-link
     packets, with
     CUDA unit coverage and benchmark rows that report CUDA LCP, CUDA batch
     execution, CUDA grouped-batch execution, world-contact batch, and
@@ -1212,7 +1212,7 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     execution rows over manually assembled 1-/4-/8-/16-contact articulated
     unified-contact packets covering link-ground, link-vs-dynamic-rigid, and
     cross-multibody link-vs-link cases and mixed CUDA grouped-batch rows that
-    combine separated, stack, and articulated cross-multibody contact packets in
+    combine separated, stack, and 1-/4-/8-/16-contact articulated cross-multibody contact packets in
     one benchmark family.
   - Updated the DART 7 LCP background taxonomy and selection guide to include
     APGD, TGS, boxed semi-smooth Newton, ADMM, and SAP alongside the shared

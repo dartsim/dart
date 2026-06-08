@@ -82,7 +82,7 @@
       grouped variable-size manually assembled 1-/4-/8-/16-contact articulated
       unified-contact packets including cross-multibody link-vs-link cases,
       plus mixed grouped contact packets combining those separated, stack, and
-      articulated fixture families, with CUDA unit coverage and benchmark rows.
+      1-/4-/8-/16-contact articulated fixture families, with CUDA unit coverage and benchmark rows.
       This does not yet cover a general CUDA backend for every solver.
 - [x] Completed a solver-by-solver implementation audit against
       `docs/background/lcp/`.
@@ -319,12 +319,12 @@
       CUDA Jacobi and PGS unit tests and benchmark rows on the visible GPU.
 - [x] Added grouped variable-size CUDA contact-batch evidence for DART 7
       manually assembled fixed-base three-axis prismatic articulated
-      unified-contact packets with 1, 4, and 8 contacts, covering fixed-iteration
+      unified-contact packets with 1, 4, 8, and 16 contacts, covering fixed-iteration
       CUDA Jacobi and PGS unit tests and benchmark rows on the visible GPU.
 - [x] Added mixed grouped CUDA contact-batch evidence for DART 7 separated
-      sphere-ground, coupled stack-contact, and manually assembled articulated
-      unified-contact packets including cross-multibody link-vs-link cases in
-      one size-grouped batch, covering fixed-iteration CUDA Jacobi and PGS unit
+      sphere-ground, coupled stack-contact, and manually assembled 1-/4-/8-/16-contact
+      articulated unified-contact packets including cross-multibody link-vs-link
+      cases in one size-grouped batch, covering fixed-iteration CUDA Jacobi and PGS unit
       tests and benchmark rows on the visible GPU.
 - [x] Added dense box-face CUDA contact-batch evidence for DART 7:
       homogeneous 4-problem 1-/4-/8-/16-/24-/32-/48-box and grouped variable-size
@@ -573,11 +573,11 @@ tradeoffs evidence based.
   passed both CUDA grouped-batch tests, and
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpCuda(Jacobi|Pgs)MixedContactGroupedBatch_FrictionIndex' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   reported two mixed CUDA rows with `contract_ok=1`,
-  `batch_size=20`, `contact_fixture_family_count=3`, `cuda_group_count=4`,
-  `contact_shape_count=4`, `articulated_contact_case_count=3`,
+  `batch_size=32`, `contact_fixture_family_count=3`, `cuda_group_count=6`,
+  `contact_shape_count=6`, `articulated_contact_case_count=3`,
   `articulated_cross_link_contact=1`, `min_problem_size=3`,
-  `max_problem_size=15`, `total_contact_count=54`, and
-  `total_problem_size=162`. This proves narrow
+  `max_problem_size=48`, `total_contact_count=198`, and
+  `total_problem_size=594`. This proves narrow
   CUDA projected-Jacobi and
   PGS batch LCP paths; it does not prove CUDA execution for the full solver
   manifest or for dense contact CUDA batches, or end-to-end articulated
@@ -1822,7 +1822,7 @@ tradeoffs evidence based.
   unit and benchmark evidence for link-ground, link-vs-dynamic-rigid, and
   cross-multibody link-vs-link packets for the same kernels. Added mixed grouped CUDA
   unit and benchmark evidence that combines those separated, stack, and
-  articulated fixture families, including cross-multibody link-vs-link packets,
+  1-/4-/8-/16-contact articulated fixture families, including cross-multibody link-vs-link packets,
   in one size-grouped batch.
   The current CUDA path intentionally excludes other solvers and dense,
   contact batches, and end-to-end articulated world-step CUDA execution.

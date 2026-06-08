@@ -94,7 +94,7 @@ Support abbreviations:
   packets including cross-multibody link-vs-link cases, and PGS-only
   homogeneous plus grouped variable-size dense box-face contact packets, plus
   mixed grouped batches that combine separated, stack, and
-  articulated fixture families including cross-multibody link-vs-link packets,
+  1-/4-/8-/16-contact articulated fixture families including cross-multibody link-vs-link packets,
   in addition to homogeneous synthetic
   standard/boxed/findex packets. The generated synthetic grid now
   also includes a scoped larger mildly ill-conditioned slice for standard
@@ -1039,13 +1039,14 @@ The current local evidence for this task is:
   `articulated_contact_case_count=3`, `articulated_cross_link_contact=1`,
   `min_problem_size=3`, `max_problem_size=48`, `total_contact_count=174`, and
   `total_problem_size=522`. The mixed grouped rows combine separated
-  sphere-ground, coupled stack, and manually assembled articulated
-  unified-contact packets, including cross-multibody link-vs-link packets, with
-  `batch_size=20`, `contact_fixture_family_count=3`, `cuda_group_count=4`,
-  `contact_shape_count=4`, `articulated_contact_case_count=3`,
+  sphere-ground, coupled stack, and manually assembled 1-/4-/8-/16-contact
+  articulated unified-contact packets, including cross-multibody link-vs-link
+  packets, with
+  `batch_size=32`, `contact_fixture_family_count=3`, `cuda_group_count=6`,
+  `contact_shape_count=6`, `articulated_contact_case_count=3`,
   `articulated_cross_link_contact=1`, `min_problem_size=3`,
-  `max_problem_size=15`, `total_contact_count=54`, and
-  `total_problem_size=162`. The dense box PGS
+  `max_problem_size=48`, `total_contact_count=198`, and
+  `total_problem_size=594`. The dense box PGS
   rows include homogeneous 4-problem batches for 1-/4-/8-/16-/24-/32-/48-box dense
   face-contact `World::collide()` snapshots and a grouped variable-size
   1/2/4/8/16/24/32-box batch. All report
