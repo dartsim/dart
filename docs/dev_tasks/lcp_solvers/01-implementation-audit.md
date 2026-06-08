@@ -60,7 +60,8 @@ Support abbreviations:
   1-/4-/8-/16-pair articulated link-impact benchmark rows, plus all-solver
   articulated unified-contact
   benchmark rows for manually assembled fixed-base three-axis prismatic
-  link-ground, link-vs-dynamic-rigid, and cross-multibody link-vs-link
+  link-ground, link-vs-dynamic-rigid, and cross-multibody link-vs-link through
+  16-contact
   snapshots,
   serial and DART 7 `ParallelExecutor` independent-problem batch benchmark
   packets, and world-contact benchmark rows that compare all
@@ -735,19 +736,19 @@ The current local evidence for this task is:
 - `BM_LCP_COMPARE --benchmark_filter='BM_LcpArticulatedUnifiedContact' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   previously passed locally for all 96
   `BM_LcpArticulatedUnifiedContact/FrictionIndex/{Ground,RigidImpact,CrossLinkImpact}/<solver>/{1,4}`
-  rows. The benchmark now also registers 8-contact rows, so these rows manually
+  rows. The benchmark now also registers 8-contact and 16-contact rows, so these rows manually
   assemble fixed-base three-axis prismatic `LinkContact` snapshots through
   `assembleMultibodyLinkContactProblem` and `assembleUnifiedConstraintProblem`,
   then compare all 16 friction-index-capable solvers on identical 3-row,
-  12-row, and 24-row LCPs. The cross-link rows complete a second articulated
+  12-row, 24-row, and 48-row LCPs. The cross-link rows complete a second articulated
   endpoint for a separate multibody, so they exercise the unified contact
   matrix's cross-multibody block. Focused default, SIMD-enabled, and
   CUDA-enabled
-  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpArticulatedUnifiedContact/FrictionIndex/.+/8$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
-  runs reported `contract_ok=1` for all 48 new 8-contact rows, with
-  `articulated_unified_contact=1`, `contact_count=8`, `problem_size=24`,
-  `multibody_count=8` for ground/rigid-impact rows, `dynamic_rigid_body_count=8`
-  for rigid-impact rows, and `multibody_count=16` plus
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpArticulatedUnifiedContact/FrictionIndex/.+/16$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  runs reported `contract_ok=1` for all 48 new 16-contact rows, with
+  `articulated_unified_contact=1`, `contact_count=16`, `problem_size=48`,
+  `multibody_count=16` for ground/rigid-impact rows,
+  `dynamic_rigid_body_count=16` for rigid-impact rows, and `multibody_count=32` plus
   `articulated_cross_link_contact=1` for cross-link rows.
   This is articulated unified-contact LCP assembly evidence, not
   collision-discovered or end-to-end stepping evidence. Focused
@@ -1152,7 +1153,7 @@ The current local evidence for this task is:
   cross-multibody link-vs-link impact step rows up to 16-link or 16-pair
   benchmark scenes, plus
   manually assembled three-axis articulated unified-contact all-solver rows
-  including cross-multibody link-vs-link rows,
+  through 16 contacts including cross-multibody link-vs-link rows,
   plus scoped dense box face-contact rows through 48 boxes for six solvers and
   PGS-only dense
   box-face CUDA batch rows through homogeneous 1/4/8/16/24/32/48-box and grouped
