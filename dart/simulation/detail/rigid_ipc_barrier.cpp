@@ -788,17 +788,6 @@ void addBodyDynamicsTerm(
   ++assembly.activeDynamicsTerms;
 }
 
-collision::native::CcdOption makeCcdOption(
-    const RigidIpcLineSearchOptions& options)
-{
-  collision::native::CcdOption ccdOption;
-  ccdOption.minSeparation = std::max(0.0, options.minSeparation);
-  ccdOption.tolerance = std::max(0.0, options.tolerance);
-  ccdOption.maxIterations = std::max(1, options.maxIterations);
-  ccdOption.advancement = collision::native::CcdAdvancement::Conservative;
-  return ccdOption;
-}
-
 void assertMatchingSurfaceTopology(
     const RigidIpcBarrierSurface& start, const RigidIpcBarrierSurface& end)
 {
@@ -1832,7 +1821,8 @@ RigidIpcLineSearchResult computeRigidIpcLineSearchStepBound(
   assert(startSurfaces.size() == endSurfaces.size());
 
   RigidIpcLineSearchResult result;
-  const collision::native::CcdOption ccdOption = makeCcdOption(options);
+  const collision::native::CcdOption ccdOption
+      = newton_barrier::makeLineSearchCcdOption(options);
 
   std::vector<std::vector<SurfaceEdge>> surfaceEdges;
   surfaceEdges.reserve(startSurfaces.size());

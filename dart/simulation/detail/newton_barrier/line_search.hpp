@@ -31,6 +31,10 @@
 
 #pragma once
 
+#include <dart/collision/native/types.hpp>
+
+#include <algorithm>
+
 #include <cstddef>
 
 namespace dart::simulation::detail::newton_barrier {
@@ -53,6 +57,17 @@ struct LineSearchStats
   std::size_t indeterminate = 0;
   std::size_t zeroStepCount = 0;
 };
+
+[[nodiscard]] inline collision::native::CcdOption makeLineSearchCcdOption(
+    const LineSearchOptions& options)
+{
+  collision::native::CcdOption ccdOption;
+  ccdOption.minSeparation = std::max(0.0, options.minSeparation);
+  ccdOption.tolerance = std::max(0.0, options.tolerance);
+  ccdOption.maxIterations = std::max(1, options.maxIterations);
+  ccdOption.advancement = collision::native::CcdAdvancement::Conservative;
+  return ccdOption;
+}
 
 [[nodiscard]] inline bool allowsPositiveLineSearchStep(
     const double stepBound, const bool indeterminate) noexcept
