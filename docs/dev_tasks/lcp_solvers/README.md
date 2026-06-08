@@ -913,13 +913,14 @@ tradeoffs evidence based.
   passed 2 focused tests, and
   `UNIT_math_lcp_math_lcp_lcp_generated_coverage --gtest_filter='LcpGeneratedCoverage.ThreadedRedBlackGaussSeidelStandardKnownSolution' --gtest_brief=1`
   passed the 4-worker 128-row generated known-solution test. Focused
-  `BM_LcpRedBlackGaussSeidelSolverThreadingBanded_Standard/128/{1,4}` rows
-  passed in default, SIMD-enabled, and CUDA-enabled build trees with
-  `contract_ok=1`, `problem_size=128`, `red_black_color_count=2`,
-  `red_black_red_rows=64`, `red_black_black_rows=64`, `band_half_width=2`,
-  `solver_internal_threads=1/4`, and
+  `BM_LcpRedBlackGaussSeidelSolverThreadingBanded_Standard` rows passed in
+  default, SIMD-enabled, and CUDA-enabled build trees for 128-row serial/4-worker
+  and 512-/1024-row serial/4-/8-worker banded packets with `contract_ok=1`,
+  `red_black_color_count=2`, `band_half_width=2`,
+  `solver_internal_threads=1/4/8`, and
   `red_black_threaded_color_updates=0/1`. This proves the opt-in CPU threaded
-  color-update path, not a solver speedup or CUDA-kernel claim.
+  color-update path over larger banded packets, not a solver speedup or
+  CUDA-kernel claim.
 - Verified APGD restart-policy benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpApgdRestartSweep' | wc -l`
   reported 9 rows, and JSON checks for `BM_LcpApgdRestartSweep` reported 9
@@ -2179,13 +2180,14 @@ tradeoffs evidence based.
   passed 2 focused tests, and
   `UNIT_math_lcp_math_lcp_lcp_generated_coverage --gtest_filter='LcpGeneratedCoverage.ThreadedBlockedJacobiStandardKnownSolution' --gtest_brief=1`
   passed the 4-worker 128-row generated known-solution test. Focused
-  `BM_LcpBlockedJacobiSolverThreadingBanded_Standard/128/{1,4}` rows passed in
-  default, SIMD-enabled, and CUDA-enabled build trees with `contract_ok=1`,
-  `problem_size=128`, `block_count=128`,
+  `BM_LcpBlockedJacobiSolverThreadingBanded_Standard` rows passed in default,
+  SIMD-enabled, and CUDA-enabled build trees for 128-row serial/4-worker and
+  512-/1024-row serial/4-/8-worker banded packets with `contract_ok=1`,
   `blocked_jacobi_auto_singleton_blocks=1`,
-  `solver_internal_threads=1/4`, and
+  `solver_internal_threads=1/4/8`, and
   `blocked_jacobi_threaded_block_updates=0/1`. This proves the opt-in CPU
-  threaded independent-block update path, not a speedup or CUDA-kernel claim.
+  threaded independent-block update path over larger banded packets, not a
+  speedup or CUDA-kernel claim.
 - Added end-to-end DART 7 `World::step()` evidence for the boxed-LCP path with
   two independent sphere-ground contacts advanced for 200 steps and checked
   against non-penetration, near-rest normal velocity, tangential-speed

@@ -207,6 +207,10 @@ solver usage examples.
   - Parallel-friendly variant of PGS (color sets update independently)
   - Supports bounds and `findex` friction coupling
   - Uses `LcpOptions::relaxation` for damping/acceleration
+  - Exposes an opt-in DART 7 CPU worker-thread update path through
+    `RedBlackGaussSeidelSolver::Parameters::workerThreads`; current 128-,
+    512-, and 1024-row banded benchmark rows are correctness/comparison
+    evidence, not a speedup claim
 - **Use Case**: Parallel-style baseline with reduced data dependency
 
 #### 9. Blocked Gauss-Seidel (BGS) (`projection/BgsSolver.hpp`)
@@ -225,7 +229,10 @@ solver usage examples.
 - **Algorithm**: Jacobi updates over blocks with per-block Dantzig solves
 - **Features**:
   - Block partition identical to BGS (by `findex` or explicit block sizes)
-  - Parallel-friendly block updates
+  - Parallel-friendly block updates, with opt-in DART 7 CPU worker threads via
+    `BlockedJacobiSolver::Parameters::workerThreads`; current 128-, 512-, and
+    1024-row banded benchmark rows are correctness/comparison evidence, not a
+    speedup claim
   - Supports bounds and friction index coupling
 - **Use Case**: Parallel-friendly baseline for block-structured problems
 

@@ -12304,10 +12304,22 @@ BENCHMARK(BM_LcpJacobiSolverThreadingBanded_Standard)
     ->Args({8192, 32});
 BENCHMARK(BM_LcpRedBlackGaussSeidelSolverThreadingBanded_Standard)
     ->Args({128, 1})
-    ->Args({128, 4});
+    ->Args({128, 4})
+    ->Args({512, 1})
+    ->Args({512, 4})
+    ->Args({512, 8})
+    ->Args({1024, 1})
+    ->Args({1024, 4})
+    ->Args({1024, 8});
 BENCHMARK(BM_LcpBlockedJacobiSolverThreadingBanded_Standard)
     ->Args({128, 1})
-    ->Args({128, 4});
+    ->Args({128, 4})
+    ->Args({512, 1})
+    ->Args({512, 4})
+    ->Args({512, 8})
+    ->Args({1024, 1})
+    ->Args({1024, 4})
+    ->Args({1024, 8});
 
 #if DART_BM_LCP_COMPARE_HAS_SIMULATION_CUDA
 BENCHMARK(BM_LcpCudaJacobiBatch_Standard)
