@@ -4230,12 +4230,31 @@ std::vector<LcpProblem> MakeNearSingularBatchProblems(
   std::vector<LcpProblem> problems;
   problems.reserve(static_cast<std::size_t>(batchSize));
 
-  const int contactCount = getNearSingularContactCount(testCase);
-  const unsigned seedBase = 16'000u + static_cast<unsigned>(contactCount);
-
   for (const int i : std::views::iota(0, batchSize)) {
-    problems.push_back(MakeNearSingularFrictionIndexProblem(
-        contactCount, seedBase + static_cast<unsigned>(i), true));
+    const unsigned variant = static_cast<unsigned>(i);
+    switch (testCase) {
+      case NearSingularBenchmarkCase::Standard8:
+        problems.push_back(
+            MakeNearSingularStandardProblem(8, 14'008u + variant));
+        break;
+      case NearSingularBenchmarkCase::Boxed8:
+        problems.push_back(MakeNearSingularBoxedProblem(8, 15'008u + variant));
+        break;
+      case NearSingularBenchmarkCase::CoupledFrictionIndex3:
+      case NearSingularBenchmarkCase::CoupledFrictionIndex6:
+      case NearSingularBenchmarkCase::CoupledFrictionIndex9:
+      case NearSingularBenchmarkCase::CoupledFrictionIndex12:
+      case NearSingularBenchmarkCase::CoupledFrictionIndex16:
+      case NearSingularBenchmarkCase::CoupledFrictionIndex24:
+      case NearSingularBenchmarkCase::CoupledFrictionIndex32:
+      case NearSingularBenchmarkCase::CoupledFrictionIndex48: {
+        const int contactCount = getNearSingularContactCount(testCase);
+        const unsigned seedBase = 16'000u + static_cast<unsigned>(contactCount);
+        problems.push_back(MakeNearSingularFrictionIndexProblem(
+            contactCount, seedBase + variant, true));
+        break;
+      }
+    }
   }
 
   return problems;
@@ -6960,13 +6979,15 @@ void AddNearSingularBatchCounters(
     const NearSingularBenchmarkCase testCase,
     const int batchSize)
 {
-  const int contactCount = getNearSingularContactCount(testCase);
   state.counters["near_singular"] = 1.0;
   state.counters["near_singular_batch"] = 1.0;
-  state.counters["contact_count"] = static_cast<double>(contactCount);
-  state.counters["total_contact_count"]
-      = static_cast<double>(contactCount * batchSize);
-  state.counters["coupled"] = 1.0;
+  if (isNearSingularFrictionIndexCase(testCase)) {
+    const int contactCount = getNearSingularContactCount(testCase);
+    state.counters["contact_count"] = static_cast<double>(contactCount);
+    state.counters["total_contact_count"]
+        = static_cast<double>(contactCount * batchSize);
+    state.counters["coupled"] = 1.0;
+  }
 }
 
 void RunNearSingularBatchSerialBenchmark(
@@ -10194,7 +10215,9 @@ void RegisterNearSingularBenchmarks()
 
 void RegisterNearSingularBatchBenchmarks()
 {
-  constexpr std::array<NearSingularBenchmarkCase, 8> cases{
+  constexpr std::array<NearSingularBenchmarkCase, 10> cases{
+      NearSingularBenchmarkCase::Standard8,
+      NearSingularBenchmarkCase::Boxed8,
       NearSingularBenchmarkCase::CoupledFrictionIndex3,
       NearSingularBenchmarkCase::CoupledFrictionIndex6,
       NearSingularBenchmarkCase::CoupledFrictionIndex9,
