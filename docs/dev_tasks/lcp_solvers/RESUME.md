@@ -392,9 +392,9 @@ articulated link-ground `World::step()` invariant tests for one-link and
 four-link scenes and 1-/4-/8-/16-link articulated ground-step benchmark rows
 through the public boxed-LCP unified constraint path. It now also adds connected
 fixed-base three-axis prismatic Cartesian-chain `World::step()` invariant
-coverage for two-, four-, and eight-chain scenes and 1-/4-/8-/16-chain
-articulated Cartesian ground-step benchmark rows through the same public
-unified path. It now also adds a
+coverage for two-, four-, eight-, and sixteen-chain scenes and
+1-/4-/8-/16-chain articulated Cartesian ground-step benchmark rows through the
+same public unified path. It now also adds a
 fixed-base prismatic link-vs-dynamic-rigid `World::step()` invariant test and
 1-/4-/8-/16-pair articulated rigid-impact benchmark rows through the same
 public unified path. It now also adds a cross-multibody fixed-base prismatic
@@ -984,7 +984,7 @@ contact scenes.
   `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.TwoSphereWorldStepMaintainsContactInvariants'`
   and
   `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.FourSphereWorldStepMaintainsContactInvariants:BoxedLcpContact.SixteenSphereWorldStepMaintainsContactInvariants'`
-  runs pass, and `test_boxed_lcp_contact --gtest_list_tests` now lists 53
+  runs pass, and `test_boxed_lcp_contact --gtest_list_tests` now lists 54
   tests. The full `--gtest_brief=1` run still emits the existing
   `StaticFrictionHoldsSmallPush` degenerate-pivot warning.
 - `BoxedLcpContact.ArticulatedPrismaticLinkGroundStepMaintainsInvariants`
@@ -1008,17 +1008,18 @@ contact scenes.
   coverage.
 - `BoxedLcpContact.CartesianPrismaticChainGroundStepMaintainsInvariants`,
   `BoxedLcpContact.FourCartesianPrismaticChainsGroundStepMaintainsInvariants`,
+  `BoxedLcpContact.EightCartesianPrismaticChainsGroundStepMaintainsInvariants`,
   and
-  `BoxedLcpContact.EightCartesianPrismaticChainsGroundStepMaintainsInvariants`
-  advance two, four, and eight connected fixed-base three-axis prismatic
-  Cartesian chains in simultaneous tip-ground contact through
+  `BoxedLcpContact.SixteenCartesianPrismaticChainsGroundStepMaintainsInvariants`
+  advance two, four, eight, and sixteen connected fixed-base three-axis
+  prismatic Cartesian chains in simultaneous tip-ground contact through
   `World::step(200)` with `ContactSolverMethod::BoxedLcp`, confirm all contacts
-  touch links, and check finite state, six, twelve, and twenty-four total
-  generalized coordinates, bounded tip height error, bounded joint velocities,
-  bounded planar joint speed, and parity with the sequential articulated
-  shortcut. The focused
-  `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.CartesianPrismaticChainGroundStepMaintainsInvariants:BoxedLcpContact.FourCartesianPrismaticChainsGroundStepMaintainsInvariants:BoxedLcpContact.EightCartesianPrismaticChainsGroundStepMaintainsInvariants' --gtest_brief=1`
-  run passes all three tests. Treat this as connected multi-DOF fixed-base
+  touch links, and check finite state, six, twelve, twenty-four, and
+  forty-eight total generalized coordinates, bounded tip height error, bounded
+  joint velocities, bounded planar joint speed, and parity with the sequential
+  articulated shortcut. The focused
+  `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.CartesianPrismaticChainGroundStepMaintainsInvariants:BoxedLcpContact.FourCartesianPrismaticChainsGroundStepMaintainsInvariants:BoxedLcpContact.EightCartesianPrismaticChainsGroundStepMaintainsInvariants:BoxedLcpContact.SixteenCartesianPrismaticChainsGroundStepMaintainsInvariants' --gtest_brief=1`
+  run passes all four tests. Treat this as connected multi-DOF fixed-base
   articulated contact evidence, not broad articulated robot contact coverage.
 - `BoxedLcpContact.ArticulatedPrismaticLinkPushesDynamicRigidBody` advances a
   fixed-base prismatic articulated striker link in contact with a dynamic rigid
@@ -1066,7 +1067,7 @@ contact scenes.
   Focused default, SIMD-enabled, and CUDA-enabled
   `test_boxed_lcp_contact --gtest_filter=BoxedLcpContact.LargerStressSphereStackWorldContactSnapshotSatisfiesLcpContract:BoxedLcpContact.LargerStressSphereStackWorldStepMaintainsContactInvariants`
   runs pass the new 6-sphere tests. The full
-  `test_boxed_lcp_contact --gtest_list_tests` inventory now lists 53 tests.
+  `test_boxed_lcp_contact --gtest_list_tests` inventory now lists 54 tests.
 - `BoxedLcpContact.SphereStackWorldStepMaintainsContactInvariants` advances the
   same 3-sphere vertical stack through 200 public boxed-LCP `World::step()`
   iterations and checks finite state, non-penetration, preserved sphere spacing,
@@ -1199,7 +1200,7 @@ contact scenes.
   `FortyEightBoxWorldStepMaintainsDenseContactInvariants` extends unit coverage
   to 48 boxes and 192 dense face contacts over 4000 small public boxed-LCP
   `World::step()` iterations; the focused default run passed in 84992 ms. The
-  full `test_boxed_lcp_contact --gtest_list_tests` inventory lists 53 tests; the
+  full `test_boxed_lcp_contact --gtest_list_tests` inventory lists 54 tests; the
   earlier `--gtest_brief=1` run still
   emitting the dense-patch Dantzig warning.
 - `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` registers 72 scoped dense box
