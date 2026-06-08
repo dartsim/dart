@@ -978,6 +978,8 @@ std::vector<GeneratedCase> makeLargerMildlyIllConditionedCases()
       makeFrictionIndexCase(
           64, ConditioningClass::MildlyIllConditioned, 27064, true),
       makeFrictionIndexCase(
+          96, ConditioningClass::MildlyIllConditioned, 27096, true),
+      makeFrictionIndexCase(
           6, ConditioningClass::MildlyIllConditioned, 28006, true, 4.0),
       makeFrictionIndexCase(
           8, ConditioningClass::MildlyIllConditioned, 28008, true, 4.0),
@@ -994,6 +996,8 @@ std::vector<GeneratedCase> makeLargerMildlyIllConditionedCases()
       makeFrictionIndexCase(
           64, ConditioningClass::MildlyIllConditioned, 28064, true, 4.0),
       makeFrictionIndexCase(
+          96, ConditioningClass::MildlyIllConditioned, 28096, true, 4.0),
+      makeFrictionIndexCase(
           6, ConditioningClass::MildlyIllConditioned, 29006, true, 8.0),
       makeFrictionIndexCase(
           8, ConditioningClass::MildlyIllConditioned, 29008, true, 8.0),
@@ -1009,6 +1013,8 @@ std::vector<GeneratedCase> makeLargerMildlyIllConditionedCases()
           48, ConditioningClass::MildlyIllConditioned, 29048, true, 8.0),
       makeFrictionIndexCase(
           64, ConditioningClass::MildlyIllConditioned, 29064, true, 8.0),
+      makeFrictionIndexCase(
+          96, ConditioningClass::MildlyIllConditioned, 29096, true, 8.0),
       makeFrictionIndexCase(
           6, ConditioningClass::MildlyIllConditioned, 30006, true, 16.0),
       makeFrictionIndexCase(
