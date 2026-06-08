@@ -42,7 +42,6 @@
 #include "dart/simulation/comps/rigid_body.hpp"
 #include "dart/simulation/compute/compute_executor.hpp"
 #include "dart/simulation/compute/compute_graph.hpp"
-#include "dart/simulation/compute/deformable_psd_backend.hpp"
 #include "dart/simulation/compute/detail/deformable_avbd_replay_state.hpp"
 #include "dart/simulation/compute/rigid_body_constraint.hpp"
 #include "dart/simulation/compute/rigid_body_state_batch.hpp"
@@ -59,6 +58,7 @@
 #include "dart/simulation/detail/deformable_vbd/parallel_block_descent.hpp"
 #include "dart/simulation/detail/deformable_vbd/rigid_world_contact.hpp"
 #include "dart/simulation/detail/entity_conversion.hpp"
+#include "dart/simulation/detail/newton_barrier/psd_backend.hpp"
 #include "dart/simulation/detail/rigid_ipc_barrier.hpp"
 #include "dart/simulation/detail/world_registry_access.hpp"
 #include "dart/simulation/world.hpp"
@@ -6109,7 +6109,7 @@ bool computeProjectedNewtonDirection(
         edgeBlocks.data() + offset) = edgeHessian;
     edgeBlockNodes.push_back({edge.nodeA, edge.nodeB});
   }
-  projectSymmetricBlocksToPsd(edgeBlocks.data(), 6, edgeBlockNodes.size());
+  nb::projectSymmetricBlocksToPsd(edgeBlocks.data(), 6, edgeBlockNodes.size());
   for (std::size_t b = 0; b < edgeBlockNodes.size(); ++b) {
     const Eigen::Map<const Eigen::Matrix<double, 6, 6, Eigen::RowMajor>>
         edgeHessian(edgeBlocks.data() + b * kEdgeBlockEntries);
@@ -6149,7 +6149,7 @@ bool computeProjectedNewtonDirection(
           tetBlocks.data() + offset) = element.hessian;
       tetBlockNodes.push_back({tet.nodeA, tet.nodeB, tet.nodeC, tet.nodeD});
     }
-    projectSymmetricBlocksToPsd(tetBlocks.data(), 12, tetBlockNodes.size());
+    nb::projectSymmetricBlocksToPsd(tetBlocks.data(), 12, tetBlockNodes.size());
     for (std::size_t b = 0; b < tetBlockNodes.size(); ++b) {
       const Eigen::Map<const Eigen::Matrix<double, 12, 12, Eigen::RowMajor>>
           projected(tetBlocks.data() + b * kTetBlockEntries);
@@ -6219,7 +6219,7 @@ bool computeProjectedNewtonDirection(
       collect12(
           result.hessian, {edgeA.nodeA, edgeA.nodeB, edgeB.nodeA, edgeB.nodeB});
     }
-    projectSymmetricBlocksToPsd(
+    nb::projectSymmetricBlocksToPsd(
         barrierBlocks.data(), 12, barrierBlockNodes.size());
     for (std::size_t b = 0; b < barrierBlockNodes.size(); ++b) {
       const Eigen::Map<const Eigen::Matrix<double, 12, 12, Eigen::RowMajor>>

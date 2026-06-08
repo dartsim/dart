@@ -43,6 +43,10 @@
   - [x] Promote the first second-use PSD projection contract into
         `detail/newton_barrier` and route rigid IPC plus ABD Hessian projection
         through it with shared tests.
+  - [x] Wrap the deformable batched PSD backend behind a
+        `detail/newton_barrier` owner and route deformable projected-Newton
+        Hessian batches through it while preserving the existing CPU/CUDA
+        backend seam.
   - [x] Promote the first shared line-search option/stat contract into
         `detail/newton_barrier` and route rigid IPC plus deformable CCD stats
         accumulation through it with shared tests.
@@ -178,6 +182,11 @@ Phase 3 line-search option/stat slice local evidence:
 
 - `pixi run lint`
 - `pixi run build-simulation-experimental-tests`
+
+Phase 3 PSD backend wrapper slice local evidence:
+
+- `pixi run -- cmake --build build/default/cpp/Release --target test_deformable_psd_backend test_world --parallel 8`
+- `pixi run -- ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(test_deformable_psd_backend|test_world)$'`
 - `pixi run test-simulation-experimental` (65/65)
 - `pixi run check-api-boundaries`
 

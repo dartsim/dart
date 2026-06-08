@@ -15,6 +15,12 @@ helper for reduced/affine Hessian projection; this is intentionally smaller
 than the existing deformable batched CPU/CUDA PSD backend and does not rename or
 generalize that backend yet.
 
+The PSD backend wrapper slice promotes only the solver-family owner name for
+the existing deformable batched CPU/CUDA seam: `detail/newton_barrier` now wraps
+the compute PSD backend, and deformable projected-Newton Hessian batching calls
+through that internal owner. The core CPU/CUDA backend hooks, acceleration
+control, and public compute names stay unchanged.
+
 The next Phase 3 slice promotes the first shared line-search option/stat
 contract into `detail/newton_barrier`. Rigid IPC and deformable continuous
 collision detection now share option defaults, primitive check counters, and the
@@ -114,8 +120,8 @@ Focused local validation passed `pixi run lint`, the focused
 CTest entries, `pixi run build`, and `pixi run test-unit`.
 
 The native-CCD primitive outcome accounting slice is on
-`simx/shared-newton-barrier-ccd-hit-accounting`, rebased directly onto
-`origin/main` after PR #2943 landed. Focused local validation passed the
+`simx/shared-newton-barrier-ccd-hit-accounting`, published as PR #2945 after PR
+#2943 landed. Focused local validation passed the
 `test_newton_barrier_primitives`, `test_continuous_collision_step`, and
 `test_rigid_ipc_barrier` build/CTest entries plus `pixi run lint`. Stronger
 local validation also passed `pixi run build`, `pixi run test-unit`,
@@ -123,21 +129,27 @@ local validation also passed `pixi run build`, `pixi run test-unit`,
 the docs phase still emits the existing `dartpy._world_render_bridge` autodoc
 warnings.
 
+The PSD backend wrapper slice is on
+`simx/shared-newton-barrier-psd-backend-wrapper`, stacked after #2945 while that
+PR waits for hosted CI/review. Focused local validation passed
+`test_deformable_psd_backend` and `test_world` build/CTest entries.
+
 ## Current Branch
 
-`simx/shared-newton-barrier-ccd-hit-accounting` - contains the Phase 3 shared
-native-CCD primitive outcome accounting slice, rebased directly onto
-`origin/main` after PR #2943 landed. Verify the exact status with
-`git status --short --branch` because this section is a resume snapshot.
+`simx/shared-newton-barrier-psd-backend-wrapper` - contains the Phase 3
+Newton-barrier PSD backend wrapper slice, stacked after #2945. Verify the exact
+status with `git status --short --branch` because this section is a resume
+snapshot.
 
 ## Immediate Next Step
 
 Continue Phase 3 from
 [`../../plans/083-unified-newton-barrier-multibody/abd-first-slice-design.md`](../../plans/083-unified-newton-barrier-multibody/abd-first-slice-design.md):
-publish the native-CCD primitive outcome accounting slice against `main`, then
-resume shared-contract scouting from the existing rigid IPC, deformable IPC,
-ABD, and benchmark-packet evidence. Do not add a two-body affine contact
-micro-solve for the current `abd-alg-affine-body` micro-packet; add
+publish the PSD backend wrapper slice as a stacked PR if #2945 remains open, or
+retarget/restack it to `main` after #2945 lands. Then resume shared-contract
+scouting from the existing rigid IPC, deformable IPC, ABD, and benchmark-packet
+evidence. Do not add a two-body affine contact micro-solve for the current
+`abd-alg-affine-body` micro-packet; add
 projected-Newton, line-search result semantics, diagnostics, or
 benchmark-schema contracts only after second-use behavior is proven identical
 across variants. Use
