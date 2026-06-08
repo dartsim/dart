@@ -1074,13 +1074,13 @@ contact scenes.
   `World::step()` iterations. The full
   `test_boxed_lcp_contact --gtest_brief=1` run passes 46 tests while still
   emitting the dense-patch Dantzig warning.
-- `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` registers 66 scoped dense box
+- `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` registers 72 scoped dense box
   rows: `Pgs`, `RedBlackGaussSeidel`, `NNCG`, `Apgd`, `Tgs`, and `Admm` on
-  1/2/4/8/16/24/32/48/64/96/128-box snapshots. Focused
-  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldBoxContact/FrictionIndex/.+/128$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  1/2/4/8/16/24/32/48/64/96/128/192-box snapshots. Focused
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldBoxContact/FrictionIndex/.+/192$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   runs report
-  `contract_ok=1`, `dense_box_contact=1`, `box_count=128`,
-  `contact_count=512`, and `problem_size=1536` in default, SIMD-enabled, and
+  `contract_ok=1`, `dense_box_contact=1`, `box_count=192`,
+  `contact_count=768`, and `problem_size=2304` in default, SIMD-enabled, and
   CUDA-enabled build trees; CUDA-enabled rows are CPU solver rows in that build
   tree, not CUDA LCP kernel execution.
 - `BM_LcpWorldBoxStep_BoxedLcp/{1,2,4,8}/200` plus
