@@ -1288,8 +1288,9 @@ contact scenes.
   standard, boxed, friction-index, grouped variable-size synthetic
   standard/boxed/friction-index, contact-derived world-contact, homogeneous
   5-/6-/7-/8-sphere coupled stack-contact batches, and grouped variable-size
-  2/3/4/5/6/7/8-sphere coupled stack-contact batches with three variants per
-  sphere count, plus grouped manually assembled
+  1/2/4/8/16-contact separated world-contact and 2/3/4/5/6/7/8-sphere coupled
+  stack-contact batches with two and three variants per contact or sphere
+  count, plus grouped manually assembled
   1-/4-/8-/16-contact articulated unified-contact batches, plus mixed grouped contact
   batches executed on CUDA for Jacobi and PGS.
   `BM_LcpCudaJacobiBatch_*`, `BM_LcpCudaPgsBatch_*`,

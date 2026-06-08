@@ -359,14 +359,13 @@
       1/2/4/8/16-contact separated sphere-ground packets, covering
       fixed-iteration CUDA Jacobi and PGS unit tests and benchmark rows on the
       visible GPU.
-      The separated grouped tests now run three velocity variants per contact
-      count, and benchmark rows keep the earlier `/2` rows while adding `/3`
-      rows.
+      The separated grouped tests now run two and three velocity variants per
+      contact count, matching the `/2` and `/3` benchmark rows.
 - [x] Added grouped variable-size CUDA contact-batch evidence for DART 7
       2/3/4/5/6/7/8-sphere coupled stack-contact packets, covering fixed-iteration
       CUDA Jacobi and PGS unit tests and benchmark rows on the visible GPU.
-      The stack grouped tests now run three velocity variants per sphere count,
-      and benchmark rows keep the earlier `/2` rows while adding `/3` rows.
+      The stack grouped tests now run two and three velocity variants per sphere
+      count, matching the `/2` and `/3` benchmark rows.
 - [x] Added grouped variable-size CUDA contact-batch evidence for DART 7
       manually assembled fixed-base three-axis prismatic articulated
       unified-contact packets with 1, 4, 8, and 16 contacts, covering fixed-iteration
@@ -579,8 +578,8 @@ tradeoffs evidence based.
   variable-size synthetic standard/boxed/friction-index CUDA batches,
   homogeneous contact-derived world-contact CUDA batches, homogeneous 5-/6-/7-/8-sphere
   coupled stack-contact CUDA batches, and grouped variable-size 1/2/4/8/16-contact
-  separated, 2/3/4/5/6/7/8-sphere coupled stack world-contact with three
-  variants per sphere count, and manually assembled
+  separated world-contact and 2/3/4/5/6/7/8-sphere coupled stack world-contact
+  packets with two and three variants per contact or sphere count, and manually assembled
   1-/4-/8-/16-contact articulated unified-contact CUDA batches covering link-ground,
   link-vs-dynamic-rigid, and cross-multibody link-vs-link packets, plus mixed
   grouped contact batches combining the separated, stack, and articulated

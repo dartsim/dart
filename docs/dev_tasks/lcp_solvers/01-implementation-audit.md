@@ -1106,8 +1106,9 @@ The current local evidence for this task is:
   CUDA-enabled build, including standard, boxed, friction-index, and
   grouped variable-size synthetic standard/boxed/friction-index plus
   contact-derived world-contact, homogeneous 5-/6-/7-/8-sphere and grouped
-  variable-size 2/3/4/5/6/7/8-sphere coupled stack-contact with three
-  variants per sphere count, and articulated
+  variable-size 1/2/4/8/16-contact separated world-contact and
+  2/3/4/5/6/7/8-sphere coupled stack-contact with two and three variants per
+  contact or sphere count, and articulated
   unified-contact batches including cross-multibody link-vs-link packets, plus
   mixed grouped contact batches executed on CUDA for fixed-iteration Jacobi and
   PGS.

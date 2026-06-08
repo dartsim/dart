@@ -1663,13 +1663,18 @@ TEST(CudaLcpJacobiBatch, VariableSizeWorldContactBatchSatisfiesLcpContract)
     GTEST_SKIP() << "CUDA runtime has no available device";
   }
 
-  std::string errorMessage;
-  auto fixture = makeWorldContactGroupedBatch(3, 512, errorMessage);
-  ASSERT_TRUE(fixture.has_value()) << errorMessage;
+  for (const int variantsPerContactCount : {2, 3}) {
+    SCOPED_TRACE(
+        "variantsPerContactCount=" + std::to_string(variantsPerContactCount));
+    std::string errorMessage;
+    auto fixture = makeWorldContactGroupedBatch(
+        variantsPerContactCount, 512, errorMessage);
+    ASSERT_TRUE(fixture.has_value()) << errorMessage;
 
-  cuda::solveBoxedLcpJacobiGroupedBatchCuda(fixture->packets);
+    cuda::solveBoxedLcpJacobiGroupedBatchCuda(fixture->packets);
 
-  expectGroupedBatchSatisfiesLcpContract(*fixture);
+    expectGroupedBatchSatisfiesLcpContract(*fixture);
+  }
 }
 
 //==============================================================================
@@ -1679,13 +1684,18 @@ TEST(CudaLcpJacobiBatch, StackedWorldContactGroupedBatchSatisfiesLcpContract)
     GTEST_SKIP() << "CUDA runtime has no available device";
   }
 
-  std::string errorMessage;
-  auto fixture = makeWorldStackContactGroupedBatch(3, 1024, errorMessage);
-  ASSERT_TRUE(fixture.has_value()) << errorMessage;
+  for (const int variantsPerSphereCount : {2, 3}) {
+    SCOPED_TRACE(
+        "variantsPerSphereCount=" + std::to_string(variantsPerSphereCount));
+    std::string errorMessage;
+    auto fixture = makeWorldStackContactGroupedBatch(
+        variantsPerSphereCount, 1024, errorMessage);
+    ASSERT_TRUE(fixture.has_value()) << errorMessage;
 
-  cuda::solveBoxedLcpJacobiGroupedBatchCuda(fixture->packets);
+    cuda::solveBoxedLcpJacobiGroupedBatchCuda(fixture->packets);
 
-  expectGroupedBatchSatisfiesLcpContract(*fixture);
+    expectGroupedBatchSatisfiesLcpContract(*fixture);
+  }
 }
 
 //==============================================================================
@@ -1929,13 +1939,18 @@ TEST(CudaLcpPgsBatch, VariableSizeWorldContactBatchSatisfiesLcpContract)
     GTEST_SKIP() << "CUDA runtime has no available device";
   }
 
-  std::string errorMessage;
-  auto fixture = makeWorldContactGroupedBatch(3, 256, errorMessage);
-  ASSERT_TRUE(fixture.has_value()) << errorMessage;
+  for (const int variantsPerContactCount : {2, 3}) {
+    SCOPED_TRACE(
+        "variantsPerContactCount=" + std::to_string(variantsPerContactCount));
+    std::string errorMessage;
+    auto fixture = makeWorldContactGroupedBatch(
+        variantsPerContactCount, 256, errorMessage);
+    ASSERT_TRUE(fixture.has_value()) << errorMessage;
 
-  cuda::solveBoxedLcpPgsGroupedBatchCuda(fixture->packets);
+    cuda::solveBoxedLcpPgsGroupedBatchCuda(fixture->packets);
 
-  expectGroupedBatchSatisfiesLcpContract(*fixture);
+    expectGroupedBatchSatisfiesLcpContract(*fixture);
+  }
 }
 
 //==============================================================================
@@ -1945,13 +1960,18 @@ TEST(CudaLcpPgsBatch, StackedWorldContactGroupedBatchSatisfiesLcpContract)
     GTEST_SKIP() << "CUDA runtime has no available device";
   }
 
-  std::string errorMessage;
-  auto fixture = makeWorldStackContactGroupedBatch(3, 512, errorMessage);
-  ASSERT_TRUE(fixture.has_value()) << errorMessage;
+  for (const int variantsPerSphereCount : {2, 3}) {
+    SCOPED_TRACE(
+        "variantsPerSphereCount=" + std::to_string(variantsPerSphereCount));
+    std::string errorMessage;
+    auto fixture = makeWorldStackContactGroupedBatch(
+        variantsPerSphereCount, 512, errorMessage);
+    ASSERT_TRUE(fixture.has_value()) << errorMessage;
 
-  cuda::solveBoxedLcpPgsGroupedBatchCuda(fixture->packets);
+    cuda::solveBoxedLcpPgsGroupedBatchCuda(fixture->packets);
 
-  expectGroupedBatchSatisfiesLcpContract(*fixture);
+    expectGroupedBatchSatisfiesLcpContract(*fixture);
+  }
 }
 
 //==============================================================================
