@@ -161,11 +161,11 @@
       reuses unified solve scratch that carries the Dantzig scratch plus island
       remapping/sub-problem buffers, normal-only fallback buffers, and fallback
       tangent accumulators. Same-shape no-heap coverage now includes unified
-      island solves and cross-multibody fallback friction sweeps. The unified
-      assembler now reuses same-shape link-block row storage without per-row
-      Eigen matrix-vector temporaries; same-shape no-heap coverage now also
-      includes mixed rigid plus borrowed-link unified assembly. The boxed-LCP
-      stage borrows per-multibody contact problems from
+      island solves and rigid plus cross-multibody fallback friction sweeps.
+      The unified assembler now reuses same-shape link-block row storage
+      without per-row Eigen matrix-vector temporaries; same-shape no-heap
+      coverage now also includes mixed rigid plus borrowed-link unified
+      assembly. The boxed-LCP stage borrows per-multibody contact problems from
       persistent `MultibodyDynamicsScratch` instead of copying them into
       staging containers first. The rigid-contact assembler now has an in-place
       scratch overload, so same-shape fallback steps reuse the stage-owned

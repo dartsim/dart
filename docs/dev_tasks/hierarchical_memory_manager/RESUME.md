@@ -326,11 +326,11 @@ zero-dynamic-allocation claim.
 - On 2026-06-08 after the multi-island boxed-LCP scratch checkpoint, the
   cross-multibody fallback-friction test now verifies that caller-owned
   `UnifiedConstraintSolveScratch` avoids global heap allocation for same-shape
-  fallback reuse, covering the normal-only fallback buffers plus link tangent
-  accumulators. Focused validation passed:
+  fallback reuse, and the rigid fallback-friction test covers the same
+  no-growth contract for rigid tangent accumulators. Focused validation passed:
   `cmake --build build/default/cpp/Release --target test_unified_constraint --parallel "$JOBS"`
   and
-  `build/default/cpp/Release/bin/test_unified_constraint --gtest_filter='UnifiedConstraint.FallbackFrictionUpdatesCrossMultibodyOtherEnd'`.
+  `build/default/cpp/Release/bin/test_unified_constraint --gtest_filter='UnifiedConstraint.FallbackFrictionUpdatesCrossMultibodyOtherEnd:UnifiedConstraint.FallbackFrictionOpposesSlidingWithoutReversing'`.
 - On 2026-06-08 after merging the latest `origin/main`, boxed-LCP unified
   island remapping now builds its local row map once per solve instead of once
   per island and reserves island traversal scratch up front. A disconnected

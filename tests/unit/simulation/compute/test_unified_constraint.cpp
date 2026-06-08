@@ -1687,6 +1687,36 @@ TEST(UnifiedConstraint, FallbackFrictionOpposesSlidingWithoutReversing)
   EXPECT_GE(boxVelocity.z(), -1e-9);
   EXPECT_GT(boxVelocity.x(), 0.0); // still sliding in the same direction
   EXPECT_LT(boxVelocity.x(), 2.0); // but decelerated by friction
+
+  sx::compute::UnifiedConstraintSolveScratch scratch;
+  sx::compute::applyUnifiedConstraintFallback(
+      dart::simulation::detail::registryOf(world),
+      unified,
+      std::span<Eigen::VectorXd>(noMultibodyVelocities),
+      16,
+      scratch);
+  sx::compute::applyUnifiedConstraintFallback(
+      dart::simulation::detail::registryOf(world),
+      unified,
+      std::span<Eigen::VectorXd>(noMultibodyVelocities),
+      16,
+      scratch);
+
+  std::size_t allocations = 0;
+  std::size_t bytes = 0;
+  {
+    ScopedHeapAllocationCounter heapCounter;
+    sx::compute::applyUnifiedConstraintFallback(
+        dart::simulation::detail::registryOf(world),
+        unified,
+        std::span<Eigen::VectorXd>(noMultibodyVelocities),
+        16,
+        scratch);
+    allocations = heapCounter.allocations();
+    bytes = heapCounter.bytes();
+  }
+
+  EXPECT_EQ(allocations, 0u) << "allocated " << bytes << " bytes";
 }
 
 //==============================================================================
