@@ -207,14 +207,14 @@
       rank-deficient standard 64-row, boxed 64-row, and coupled
       friction-index 12-contact packets, verified in default, SIMD-enabled,
       and CUDA-enabled build trees.
-- [x] Added extreme exact rank-deficient singular-degenerate coverage and 36
+- [x] Added extreme exact rank-deficient singular-degenerate coverage and 39
       `BM_LcpExtremeSingularDegenerate` rows for scoped standard 128-row,
-      boxed 128-row, and coupled friction-index 16-/24-/32-/48-contact packets,
+      boxed 128-row, and coupled friction-index 16-/24-/32-/48-/64-contact packets,
       verified in default, SIMD-enabled, and CUDA-enabled build trees.
-- [x] Added 42
+- [x] Added 48
       `BM_LcpSingularDegenerateFrictionIndexBatch(Serial|Parallel)` benchmark
       rows for batch-size-4 runs over exact rank-deficient coupled
-      friction-index 6-/8-/12-/16-/24-/32-/48-contact packets, verified in
+      friction-index 6-/8-/12-/16-/24-/32-/48-/64-contact packets, verified in
       default, SIMD-enabled, and CUDA-enabled build trees.
 - [x] Added 192
       `BM_LcpSingularDegenerateStandardBoxedBatch(Serial|Parallel)` benchmark
@@ -611,7 +611,7 @@ tradeoffs evidence based.
   ill-conditioned standard 32-row and 64-row, boxed 16-row and 32-row,
   friction-index 8-contact, and coupled friction-index 6-, 8-, 12-, 16-, and
   24-contact known-solution cases, plus an ADMM/SAP-only 16x-coupled
-  16-/24-/32-/48-contact mildly ill-conditioned friction-index slice;
+  6-/8-/12-/16-/24-/32-/48-/64-contact mildly ill-conditioned friction-index slice;
   near-singular standard 8-row, boxed 8-row, and coupled friction-index 3-, 6-,
   9-, 12-, 16-, 24-, 32-, and 48-contact known-solution cases;
   exact rank-deficient
@@ -620,7 +620,9 @@ tradeoffs evidence based.
   singular-degenerate standard 32-row, boxed 32-row, and coupled friction-index
   8-contact known-solution cases; and stress exact rank-deficient
   singular-degenerate standard 64-row, boxed 64-row, and coupled friction-index
-  12-contact known-solution cases for solver sets selected by observed
+  12-contact known-solution cases; and extreme exact rank-deficient
+  singular-degenerate standard 128-row, boxed 128-row, and coupled
+  friction-index 16-/24-/32-/48-/64-contact known-solution cases for solver sets selected by observed
   robustness. `MPRGP` is not included in the larger
   mildly ill-conditioned standard slice because a focused 32-row trial
   satisfied the LCP contract but missed the selected expected solution
@@ -1077,28 +1079,28 @@ tradeoffs evidence based.
   CPU solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
 - Verified extreme singular-degenerate benchmark slice:
   `BM_LCP_COMPARE --benchmark_filter='^BM_LcpExtremeSingularDegenerate/' --benchmark_min_time=0.001s --benchmark_repetitions=1`
-  ran 36 rows with `contract_ok=1` in the default, SIMD-enabled, and
+  ran 39 rows with `contract_ok=1` in the default, SIMD-enabled, and
   CUDA-enabled build trees. These rows cover exact rank-deficient standard
-  128-row, boxed 128-row, and coupled friction-index 16-/24-/32-/48-contact packets
+  128-row, boxed 128-row, and coupled friction-index 16-/24-/32-/48-/64-contact packets
   over the same scoped robust solver set as the generated extreme
   singular-degenerate correctness slice. The rows report
   `singular_degenerate=1`, `rank_deficient=1`, backend build-state counters,
-  contact counts `16/24/32/48`, problem sizes `48/72/96/144`, and `coupled=1`
+  contact counts `16/24/32/48/64`, problem sizes `48/72/96/144/192`, and `coupled=1`
   for the coupled packets. The CUDA-enabled rows are CPU solver rows in a CUDA-enabled
   build, not CUDA LCP kernel execution.
 - Verified singular-degenerate friction-index batch benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpSingularDegenerateFrictionIndexBatch' | wc -l`
-  reported 42 rows, and JSON benchmark checks for
-  `BM_LcpSingularDegenerateFrictionIndexBatch(Serial|Parallel)` reported 42
+  reported 48 rows, and JSON benchmark checks for
+  `BM_LcpSingularDegenerateFrictionIndexBatch(Serial|Parallel)` reported 48
   rows with `contract_ok=1` in the default, SIMD-enabled, and CUDA-enabled
   build trees. These rows cover batch-size-4 serial and DART 7
   `ParallelExecutor` runs over exact rank-deficient coupled friction-index 6-,
-  8-, 12-, 16-, 24-, 32-, and 48-contact packets. The rows report
+  8-, 12-, 16-, 24-, 32-, 48-, and 64-contact packets. The rows report
   `singular_degenerate_batch=1`, `rank_deficient=1`, `batch_size=4`,
-  `contact_count=6/8/12/16/24/32/48`,
-  `total_contact_count=24/32/48/64/96/128/192`,
-  `problem_size=18/24/36/48/72/96/144`,
-  `total_problem_size=72/96/144/192/288/384/576`, and backend build-state
+  `contact_count=6/8/12/16/24/32/48/64`,
+  `total_contact_count=24/32/48/64/96/128/192/256`,
+  `problem_size=18/24/36/48/72/96/144/192`,
+  `total_problem_size=72/96/144/192/288/384/576/768`, and backend build-state
   counters. Parallel rows also report `profile_enabled=1`,
   `parallel_units=4`, `worker_count=20`, and observed `max_parallelism`. The
   CUDA-enabled rows are CPU solver batch rows in a CUDA-enabled build, not CUDA
@@ -1614,7 +1616,7 @@ tradeoffs evidence based.
 - Added
   `LcpGeneratedCoverage.ExtremeSingularDegenerateKnownSolutionsForRobustSolverSlice`
   for extreme exact rank-deficient standard 128-row, boxed 128-row, and coupled
-  friction-index 16-/24-/32-/48-contact known-solution cases over the same
+  friction-index 16-/24-/32-/48-/64-contact known-solution cases over the same
   observed-robust singular-degenerate solver scope.
 - Added `LcpGeneratedCoverage.ActiveSetTransitionKnownSolutions` for standard
   16-row, boxed 16-row, and coupled friction-index 6-contact known-solution
@@ -1682,16 +1684,16 @@ tradeoffs evidence based.
   build-state counters, and contact/coupling counters where applicable. The
   CUDA-enabled rows are CPU solver rows in a CUDA-enabled build, not CUDA LCP
   kernel execution.
-- Added 36 `BM_LcpExtremeSingularDegenerate` rows for exact rank-deficient
-  standard 128-row, boxed 128-row, and coupled friction-index 16-/24-/32-/48-contact
+- Added 39 `BM_LcpExtremeSingularDegenerate` rows for exact rank-deficient
+  standard 128-row, boxed 128-row, and coupled friction-index 16-/24-/32-/48-/64-contact
   packets over the generated extreme singular-degenerate solver scope. These
   rows report `contract_ok=1`, `singular_degenerate=1`, `rank_deficient=1`,
   backend build-state counters, and contact/coupling counters where applicable.
   The CUDA-enabled rows are CPU solver rows in a CUDA-enabled build, not CUDA
   LCP kernel execution.
-- Added 42 `BM_LcpSingularDegenerateFrictionIndexBatch(Serial|Parallel)` rows
+- Added 48 `BM_LcpSingularDegenerateFrictionIndexBatch(Serial|Parallel)` rows
   for batch-size-4 serial and DART 7 `ParallelExecutor` runs over exact
-  rank-deficient coupled friction-index 6-/8-/12-/16-/24-/32-/48-contact
+  rank-deficient coupled friction-index 6-/8-/12-/16-/24-/32-/48-/64-contact
   packets. These rows report `contract_ok=1`, `singular_degenerate_batch=1`,
   `rank_deficient=1`, backend build-state counters, and contact/coupling
   counters. The CUDA-enabled rows are CPU solver batch rows in a CUDA-enabled
@@ -1851,7 +1853,7 @@ tradeoffs evidence based.
   solver/backend registry types.
 - Coverage breadth: extend deterministic generated fixtures beyond the current
   production-scale well-conditioned, larger mildly ill-conditioned,
-  singular-degenerate through the current 128-row/48-contact slice, and
+  singular-degenerate through the current 128-row/64-contact slice, and
   active-set transition through the current stronger-coupled 48-contact slice
   into harder solver-specific friction-index coupling edge cases and direct
   backend execution evidence beyond CPU solver rows in SIMD/CUDA-enabled
@@ -1866,8 +1868,8 @@ tradeoffs evidence based.
   mildly ill-conditioned 6-, 8-, 12-, 16-, and 24-contact cases, 8x-coupled
   mildly ill-conditioned 6-, 8-, 12-, 16-, 24-, and 32-contact cases,
   ADMM/SAP-only 16x-coupled mildly ill-conditioned 6-, 8-, 12-, 16-, 24-,
-  32-, and 48-contact cases, near-singular 48-contact cases, singular-degenerate
-  48-contact cases, and production active-set transition 24-, 32-, and
+  32-, 48-, and 64-contact cases, near-singular 48-contact cases, singular-degenerate
+  64-contact cases, and production active-set transition 24-, 32-, and
   48-contact cases. Broader
   harder-conditioned coupled friction-index grids beyond the narrow ADMM/SAP
   16x slice still need solver-specific evidence.
