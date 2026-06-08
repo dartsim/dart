@@ -377,7 +377,7 @@ both serially and through the DART 7 experimental
 stack-contact packets, grouped variable-size synthetic standard/boxed/findex
 packets, grouped variable-size 1/2/4/8/16-contact separated sphere-ground
 packets, plus grouped variable-size 2/3/4/5-sphere coupled stack-contact
-packets, plus grouped variable-size manually assembled 1-/4-/8-contact
+packets, plus grouped variable-size manually assembled 1-/4-/8-/16-contact
 articulated unified-contact packets covering link-ground, link-vs-dynamic-rigid,
 and cross-multibody link-vs-link cases, plus mixed grouped contact batches that
 combine separated, stack, and articulated fixture families for fixed-iteration
@@ -1159,7 +1159,7 @@ contact scenes.
   standard, boxed, friction-index, grouped variable-size synthetic
   standard/boxed/friction-index, contact-derived world-contact, and homogeneous
   5-sphere coupled stack-contact batches, plus grouped manually assembled
-  1-/4-/8-contact articulated unified-contact batches, plus mixed grouped contact
+  1-/4-/8-/16-contact articulated unified-contact batches, plus mixed grouped contact
   batches executed on CUDA for Jacobi and PGS.
   `BM_LcpCudaJacobiBatch_*`, `BM_LcpCudaPgsBatch_*`,
   `BM_LcpCudaJacobiGroupedBatch_*`, `BM_LcpCudaPgsGroupedBatch_*`,
@@ -1200,10 +1200,10 @@ contact scenes.
   The articulated unified-contact grouped variable-size rows are manually
   assembled fixed-base three-axis prismatic link-ground,
   link-vs-dynamic-rigid, and cross-multibody link-vs-link packets with 1, 4,
-  and 8 contacts (`batch_size=18`, `cuda_group_count=3`, `contact_shape_count=3`,
+  8, and 16 contacts (`batch_size=24`, `cuda_group_count=4`, `contact_shape_count=4`,
   `articulated_contact_case_count=3`, `articulated_cross_link_contact=1`,
-  `min_problem_size=3`, `max_problem_size=24`, `total_contact_count=78`,
-  `total_problem_size=234`).
+  `min_problem_size=3`, `max_problem_size=48`, `total_contact_count=174`,
+  `total_problem_size=522`).
   The mixed grouped rows combine separated sphere-ground, coupled stack, and
   manually assembled articulated unified-contact packets including
   cross-multibody link-vs-link packets (`batch_size=20`,

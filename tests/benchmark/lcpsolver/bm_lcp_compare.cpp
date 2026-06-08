@@ -5330,7 +5330,7 @@ MakeGroupedArticulatedUnifiedContactCudaBatch(
     return std::nullopt;
   }
 
-  constexpr std::array<int, 3> kContactCounts{1, 4, 8};
+  constexpr std::array<int, 4> kContactCounts{1, 4, 8, 16};
   CudaGroupedWorldContactBenchmarkBatch grouped;
   std::vector<std::size_t> groupSizes;
   grouped.aggregate.problems.reserve(

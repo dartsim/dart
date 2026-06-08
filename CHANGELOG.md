@@ -1135,7 +1135,7 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     homogeneous 5-sphere coupled stack-contact, grouped variable-size
     1/2/4/8/16-contact separated world-contact LCP packets, plus grouped
     variable-size 2/3/4/5-sphere coupled stack-contact LCP packets, plus
-    grouped variable-size manually assembled 1-/4-/8-contact articulated
+    grouped variable-size manually assembled 1-/4-/8-/16-contact articulated
     unified-contact LCP packets including cross-multibody link-vs-link cases,
     plus mixed grouped contact batches combining separated, stack, and
     articulated contact fixture families including cross-multibody link-vs-link
@@ -1209,7 +1209,7 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     assembled fixed-base three-axis prismatic link-ground and
     link-vs-dynamic-rigid LCP snapshots, now extended to cross-multibody
     link-vs-link LCP snapshots and 16-contact packets, plus CUDA grouped-batch Jacobi/PGS
-    execution rows over manually assembled 1-/4-/8-contact articulated
+    execution rows over manually assembled 1-/4-/8-/16-contact articulated
     unified-contact packets covering link-ground, link-vs-dynamic-rigid, and
     cross-multibody link-vs-link cases and mixed CUDA grouped-batch rows that
     combine separated, stack, and articulated cross-multibody contact packets in

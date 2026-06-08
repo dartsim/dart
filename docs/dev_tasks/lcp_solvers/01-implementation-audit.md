@@ -90,7 +90,7 @@ Support abbreviations:
   packets, homogeneous 4-/8-/16-contact and grouped variable-size
   1/2/4/8/16-contact DART 7 sphere-ground world-contact packets, homogeneous
   5-sphere and grouped variable-size 2/3/4/5-sphere coupled stack-contact
-  packets, grouped variable-size 1-/4-/8-contact articulated unified-contact
+  packets, grouped variable-size 1-/4-/8-/16-contact articulated unified-contact
   packets including cross-multibody link-vs-link cases, and PGS-only
   homogeneous plus grouped variable-size dense box-face contact packets, plus
   mixed grouped batches that combine separated, stack, and
@@ -1032,13 +1032,13 @@ The current local evidence for this task is:
   `batch_size=8`, `cuda_group_count=4`, `contact_shape_count=4`,
   `min_problem_size=6`, `max_problem_size=15`,
   `total_contact_count=28`, and `total_problem_size=84`. The articulated
-  grouped variable-size rows use manually assembled 1-/4-/8-contact fixed-base
+  grouped variable-size rows use manually assembled 1-/4-/8-/16-contact fixed-base
   three-axis prismatic unified-contact packets covering link-ground,
   link-vs-dynamic-rigid, and cross-multibody link-vs-link cases with
-  `batch_size=18`, `cuda_group_count=3`, `contact_shape_count=3`,
+  `batch_size=24`, `cuda_group_count=4`, `contact_shape_count=4`,
   `articulated_contact_case_count=3`, `articulated_cross_link_contact=1`,
-  `min_problem_size=3`, `max_problem_size=24`, `total_contact_count=78`, and
-  `total_problem_size=234`. The mixed grouped rows combine separated
+  `min_problem_size=3`, `max_problem_size=48`, `total_contact_count=174`, and
+  `total_problem_size=522`. The mixed grouped rows combine separated
   sphere-ground, coupled stack, and manually assembled articulated
   unified-contact packets, including cross-multibody link-vs-link packets, with
   `batch_size=20`, `contact_fixture_family_count=3`, `cuda_group_count=4`,
@@ -1167,7 +1167,7 @@ The current local evidence for this task is:
   standard/boxed/friction-index, homogeneous 4-/8-/16-contact, homogeneous
   5-sphere coupled stack, and grouped variable-size 1/2/4/8/16-contact separated
   and 2/3/4/5-sphere coupled stack world-contact batch paths, plus manually
-  assembled 1-/4-/8-contact articulated unified-contact batch paths including
+  assembled 1-/4-/8-/16-contact articulated unified-contact batch paths including
   cross-multibody link-vs-link packets, and mixed
   separated/stack/articulated grouped contact batch paths, and PGS-only dense
   box-face CUDA batch paths through homogeneous 1/4/8/16/24/32/48-box and grouped

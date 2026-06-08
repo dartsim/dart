@@ -79,7 +79,7 @@
       world-contact packets, homogeneous 5-sphere coupled stack-contact
       packets, grouped variable-size 1/2/4/8/16-contact sphere-ground packets,
       grouped variable-size 2/3/4/5-sphere coupled stack-contact packets, and
-      grouped variable-size manually assembled 1-/4-/8-contact articulated
+      grouped variable-size manually assembled 1-/4-/8-/16-contact articulated
       unified-contact packets including cross-multibody link-vs-link cases,
       plus mixed grouped contact packets combining those separated, stack, and
       articulated fixture families, with CUDA unit coverage and benchmark rows.
@@ -523,7 +523,7 @@ tradeoffs evidence based.
   homogeneous contact-derived world-contact CUDA batches, homogeneous 5-sphere
   coupled stack-contact CUDA batches, and grouped variable-size 1/2/4/8/16-contact
   separated, 2/3/4/5-sphere coupled stack world-contact, and manually assembled
-  1-/4-/8-contact articulated unified-contact CUDA batches covering link-ground,
+  1-/4-/8-/16-contact articulated unified-contact CUDA batches covering link-ground,
   link-vs-dynamic-rigid, and cross-multibody link-vs-link packets, plus mixed
   grouped contact batches combining the separated, stack, and articulated
   fixture families for Jacobi and PGS on the visible GPU.
@@ -564,11 +564,11 @@ tradeoffs evidence based.
   `test_lcp_jacobi_batch_cuda --gtest_filter='CudaLcpJacobiBatch.ArticulatedUnifiedContactGroupedBatchSatisfiesLcpContract:CudaLcpPgsBatch.ArticulatedUnifiedContactGroupedBatchSatisfiesLcpContract' --gtest_brief=1`
   passed both CUDA grouped-batch tests, and
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpCuda(Jacobi|Pgs)ArticulatedUnifiedContactGroupedBatch_FrictionIndex' --benchmark_min_time=0.001s --benchmark_repetitions=1`
-  reported two articulated CUDA rows with `contract_ok=1`, `batch_size=18`,
-  `cuda_group_count=3`, `contact_shape_count=3`,
+  reported two articulated CUDA rows with `contract_ok=1`, `batch_size=24`,
+  `cuda_group_count=4`, `contact_shape_count=4`,
   `articulated_contact_case_count=3`, `articulated_cross_link_contact=1`,
-  `min_problem_size=3`, `max_problem_size=24`, `total_contact_count=78`, and
-  `total_problem_size=234`. A focused mixed-contact follow-up
+  `min_problem_size=3`, `max_problem_size=48`, `total_contact_count=174`, and
+  `total_problem_size=522`. A focused mixed-contact follow-up
   `test_lcp_jacobi_batch_cuda --gtest_filter='CudaLcpJacobiBatch.MixedContactGroupedBatchSatisfiesLcpContract:CudaLcpPgsBatch.MixedContactGroupedBatchSatisfiesLcpContract' --gtest_brief=1`
   passed both CUDA grouped-batch tests, and
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpCuda(Jacobi|Pgs)MixedContactGroupedBatch_FrictionIndex' --benchmark_min_time=0.001s --benchmark_repetitions=1`
@@ -1818,7 +1818,7 @@ tradeoffs evidence based.
   and grouped variable-size 1/2/4/8/16-contact DART 7 separated world-contact
   CUDA unit and benchmark evidence, plus homogeneous 5-sphere and grouped
   variable-size 2/3/4/5-sphere coupled stack-contact CUDA unit and benchmark
-  evidence and manually assembled 1-/4-/8-contact articulated unified-contact CUDA
+  evidence and manually assembled 1-/4-/8-/16-contact articulated unified-contact CUDA
   unit and benchmark evidence for link-ground, link-vs-dynamic-rigid, and
   cross-multibody link-vs-link packets for the same kernels. Added mixed grouped CUDA
   unit and benchmark evidence that combines those separated, stack, and
@@ -1920,7 +1920,7 @@ tradeoffs evidence based.
   standard/boxed/friction-index, homogeneous 4-/8-/16-contact, homogeneous
   5-sphere coupled stack, and grouped variable-size 1/2/4/8/16-contact separated
   and 2/3/4/5-sphere coupled stack world-contact batch paths, plus manually
-  assembled 1-/4-/8-contact articulated unified-contact batch paths including
+  assembled 1-/4-/8-/16-contact articulated unified-contact batch paths including
   cross-multibody link-vs-link packets, mixed
   separated/stack/articulated grouped contact batch paths, and PGS-only
   homogeneous dense box-face CUDA batches through 48 boxes, pass.
