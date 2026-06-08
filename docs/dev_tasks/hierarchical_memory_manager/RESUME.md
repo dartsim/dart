@@ -90,10 +90,13 @@ remaining solver-owned scratch remain open.
 The EnTT benchmark slice (`bench/entt-registry-allocator`, PR #2890) adds
 comparative EnTT registry/component-storage rows against foonathan/memory and
 standard-registry baselines. It distinguishes no-growth/prewarmed churn from
-build/growth, caches component storage handles, uses pool-backed world-lifetime
-DART storage for persistent no-growth churn and a resettable frame-backed DART
-bake arena for build/growth,
-reports DART counters, and keeps EnTT rows opt-in. PR #2890 has merged to
+build/growth, caches component storage handles, reports DART counters, and
+keeps EnTT rows opt-in. Current follow-up policy uses free-list-backed
+`StlAllocator` storage for persistent no-growth churn, matching the production
+`WorldRegistry` allocator role. It treats build/growth as a separate one-shot
+storage-construction role: DART uses `DefaultStlAllocator` over the default C
+heap, while foonathan/memory uses `memory_stack` marker/unwind storage.
+PR #2890 has merged to
 `main`; keep its benchmark evidence as the baseline for future allocator-policy
 loops.
 
@@ -245,8 +248,10 @@ selecting a benchmark CPU, and batch short pool, stack, frame-bulk,
 fallback-stack, STL-vector, iteration, tracked-stack, and deeply tracked pool
 comparative rows so the strict CV gate measures sustained allocator work. EnTT
 no-growth rows now use free-list-backed world-lifetime DART storage for
-reserved variable-size registry arrays, while EnTT build/growth rows use a
-resettable frame-backed bake arena. `FixedPoolAllocator` has a cache-friendly
+reserved variable-size registry arrays. EnTT build/growth rows model one-shot
+registry storage construction with DART's stateless default C-heap STL adapter,
+and compare against foonathan/memory stack marker/unwind bulk lifetime storage.
+`FixedPoolAllocator` has a cache-friendly
 stride for
 medium power-of-two slots, fixing the fixed-pool cache-set conflict that
 previously let foonathan/memory win `BM_Pool/256/256`; the steady-state churn
@@ -291,16 +296,29 @@ and standard baselines. The remaining mixed-size misses were `BM_MultiPool` and
 focused medians to 21.6 us vs 29.0 us and 239.8 us vs 334.3 us, respectively.
 The current merged broad-plus-focused result
 `.benchmark_results/allocator_comparative_lookup_table_mixed_entt_merged_check.json`
-passes all 94 foonathan/memory and standard comparisons. HMM is still open for
-production no-growth coverage, WorldRegistry bake/build sizing, and any future
-allocator baselines that map to HMM allocator roles; keep the combined
-comparative gate green as allocator policy changes.
+passes all 94 foonathan/memory and standard comparisons. A 2026-06-08
+post-policy-change foonathan-only full matrix,
+`.benchmark_results/allocator_comparative_foonathan_sustained_entt_stack_cpu13_check.json`,
+passes all 47 DART-vs-foonathan comparisons after restoring cache-line
+alignment for large allocator-backed STL storage and moving EnTT build/growth
+to a matched one-shot storage-construction comparison:
+`DefaultStlAllocator` versus foonathan/memory `memory_stack` marker/unwind. The
+focused EnTT all-baseline result,
+`.benchmark_results/allocator_entt_sustained_default_stack_cpu13_check.json`,
+passes all 12 EnTT comparisons against foonathan/memory and standard baselines.
+The full standard-registry half remains a separate fresh 94-row gate gap after
+this policy change. HMM is still open for production no-growth coverage,
+WorldRegistry bake/build sizing, and any future allocator baselines that map to
+HMM allocator roles; keep the combined comparative gate green as allocator
+policy changes.
 
-Do not treat the benchmark-only EnTT storage policies as production
-`WorldRegistry` allocation yet. Production integration now resets registry
-storage on `World::clear()` rebuild boundaries, but it still needs broader
-bake/build sizing guidance and more contact-heavy no-growth tests; it must not
-use the existing per-step frame allocator that resets inside `World::step()`.
+Treat the persistent EnTT no-growth benchmark policy as production-aligned for
+the allocator role: World registry storage uses the free-list-backed
+`StlAllocator`. Treat EnTT build/growth as matched benchmark evidence for
+one-shot storage construction, not as a claim that production registry rebuilds
+must use stack lifetime. Production integration still needs broader bake/build
+sizing guidance and more contact-heavy no-growth tests, and it must not use the
+existing per-step frame allocator that resets inside `World::step()`.
 
 Rerun the full comparative gate after allocator-policy or benchmark changes,
 including EnTT rows, and treat every foonathan/memory miss as a required

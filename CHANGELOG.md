@@ -164,12 +164,14 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     configured without an existing EnTT target. The EnTT registry benchmark rows
     now discover installed EnTT package metadata without invoking DART's
     FetchContent-backed dependency helper. The EnTT rows now benchmark cached
-    component storage handles, use frame-backed DART storage for persistent
-    no-growth registry churn, and use pool-backed DART storage for build/growth
-    churn. The no-growth row reports frame usage and overflow counters and
-    fails if reserved churn grows after prewarm. The build/growth row times the
-    uninstrumented pool-backed registry path and reports configured-allocator
-    call counters from a matching untimed probe. The focused checker now
+    component storage handles, use free-list-backed DART storage for persistent
+    no-growth registry churn, and use DART's stateless default C-heap STL
+    adapter for one-shot registry build/growth storage construction. The
+    foonathan build/growth baseline uses stack marker/unwind bulk lifetime
+    storage, matching the one-shot construction role rather than persistent pool
+    reuse. The no-growth row reports allocator-call counters and fails if
+    reserved churn grows after prewarm. The build/growth row times the
+    uninstrumented construction/destruction path. The focused checker now
     distinguishes timing loss, allocator-call regressions, frame growth, and
     noisy benchmark evidence. The checker now also requires the expected
     benchmark rows for the selected mode, so missing foonathan/memory coverage
@@ -193,14 +195,15 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Kept `StlAllocator` allocation and deallocation alignment-aware for
     allocator-backed STL storage, including fixed-pool-backed max-aligned
     values and cache-line-aligned large storage pages for allocator-aware
-    container hot loops.
+    container hot loops such as the production World registry.
   - Made `StlAllocator` a lightweight stateful allocator instead of deriving
     from `std::allocator`, matching foonathan-style container propagation
     traits and letting `std::allocator_traits` handle object
     construction/destruction for allocator-aware container hot loops.
-  - Added `DefaultStlAllocator`, a stateless STL adapter backed by
-    `MemoryAllocator::GetDefault()`, so allocator-aware containers that use the
-    process-wide default memory resource avoid per-container allocator state.
+  - Added `DefaultStlAllocator`, a stateless STL adapter backed by DART's
+    default C heap, so allocator-aware containers that use the process-wide
+    default C allocator resource avoid per-container allocator state and the
+    virtual default-allocator hop.
   - Added explicit STL allocator construct/destroy hooks that keep non-trivial
     object lifetimes correct while avoiding unnecessary trivial-destructor work
     in allocator-aware container hot loops.

@@ -38,6 +38,11 @@
 #include <utility>
 
 #include <cstddef>
+#include <cstdlib>
+
+#ifdef _WIN32
+  #include <malloc.h>
+#endif
 
 namespace dart::common {
 
@@ -124,9 +129,11 @@ StlAllocator<T>::storageAlignmentFor(size_type bytes) noexcept
     return naturalAlignment;
   }
 
-  (void)bytes;
-  (void)cacheLineAlignment;
-  return naturalAlignment;
+  if constexpr (sizeof(T) >= cacheLineAlignment) {
+    return cacheLineAlignment;
+  }
+
+  return bytes >= 2048 ? cacheLineAlignment : naturalAlignment;
 }
 
 //==============================================================================
@@ -185,7 +192,18 @@ typename DefaultStlAllocator<T>::pointer DefaultStlAllocator<T>::allocate(
   }
 
   const size_type bytes = n * sizeof(T);
-  void* memory = MemoryAllocator::GetDefault().allocate(bytes, alignof(T));
+  void* memory = nullptr;
+  if constexpr (alignof(T) <= alignof(std::max_align_t)) {
+    memory = std::malloc(bytes);
+  } else {
+#ifdef _WIN32
+    memory = _aligned_malloc(bytes, alignof(T));
+#else
+    if (posix_memalign(&memory, alignof(T), bytes) != 0) {
+      memory = nullptr;
+    }
+#endif
+  }
   pointer ptr = reinterpret_cast<pointer>(memory);
 
   if (!ptr) {
@@ -203,8 +221,16 @@ void DefaultStlAllocator<T>::deallocate(pointer pointer, size_type n) noexcept
     return;
   }
 
-  const size_type bytes = n * sizeof(T);
-  MemoryAllocator::GetDefault().deallocate(pointer, bytes, alignof(T));
+  (void)n;
+#ifdef _WIN32
+  if constexpr (alignof(T) > alignof(std::max_align_t)) {
+    _aligned_free(pointer);
+  } else {
+    std::free(pointer);
+  }
+#else
+  std::free(pointer);
+#endif
 }
 
 //==============================================================================

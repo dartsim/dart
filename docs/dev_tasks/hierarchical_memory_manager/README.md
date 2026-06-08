@@ -17,12 +17,15 @@
       baseline and the standard registry, including separate build/growth rows
       for bake-time registry storage allocation. The focused EnTT checker
       caches known component storage handles, uses free-list-backed
-      world-lifetime DART storage for persistent no-growth churn, and uses a
-      resettable frame-backed bake arena for build/growth. The no-growth row
-      reports post-prewarm allocator-call counters and fails if reserved churn
-      asks the configured allocator for storage after prewarm; the
-      build/growth row times the uninstrumented frame-backed path and reports
-      configured-allocator call counters from a matching untimed probe. The
+      world-lifetime DART storage for persistent no-growth churn, and uses
+      `DefaultStlAllocator` for one-shot registry build/growth storage
+      construction. The foonathan build/growth row now uses
+      `memory_stack` marker/unwind storage, matching the same bulk-lifetime
+      role instead of comparing against a persistent pool collection. The
+      no-growth row reports post-prewarm allocator-call counters and fails if
+      reserved churn asks the configured allocator for storage after prewarm;
+      the build/growth row times the uninstrumented
+      construction/destruction path. The
       strict checker prints DART benchmark counters
       alongside
       pass/fail ratios, so EnTT misses distinguish timing loss, allocator
@@ -110,6 +113,19 @@
       `.benchmark_results/allocator_comparative_lookup_table_mixed_entt_merged_check.json`
       passes all 94 foonathan/memory and standard comparisons, including
       `BM_MultiPool`, `BM_Realistic`, EnTT no-growth, and EnTT build/growth.
+      A 2026-06-08 follow-up restored cache-line alignment for large
+      allocator-backed STL storage pages, switched the EnTT build/growth DART
+      row to the stateless default C-heap STL adapter, and switched the
+      foonathan build/growth baseline to `memory_stack` marker/unwind bulk
+      lifetime storage. The full foonathan matrix in
+      `.benchmark_results/allocator_comparative_foonathan_sustained_entt_stack_cpu13_check.json`
+      passes all 47 DART-vs-foonathan comparisons, including EnTT no-growth
+      and build/growth. The focused EnTT run in
+      `.benchmark_results/allocator_entt_sustained_default_stack_cpu13_check.json`
+      passes all 12 EnTT comparisons against both foonathan/memory and standard
+      baselines; the full standard-registry half remains a separate
+      post-policy-change gap before making a fresh 94-row
+      standard-plus-foonathan claim.
 - [ ] Phase 3: EnTT registry/component storage allocation is configurable from
       the World memory hierarchy and covered by no-growth ECS tests.
       Allocator-aware EnTT storage now has focused `StlAllocator` and
@@ -465,11 +481,13 @@ debugging, profiling, optimization experiments, and ImGui visualization.
      --baseline foonathan --baseline std
    ```
 
-   The current benchmark policy uses cached component storage handles,
-   free-list-backed world-lifetime DART storage for persistent no-growth churn,
-   and a resettable frame-backed DART bake arena for build/growth churn. This is
-   benchmark evidence rather than production `WorldRegistry` wiring; production
-   integration needs matching no-growth tests and lifetime diagnostics.
+   The current benchmark policy uses cached component storage handles and the
+   free-list-backed `StlAllocator` role used by production `WorldRegistry`
+   storage for persistent no-growth churn. Build/growth is a separate one-shot
+   storage-construction role: DART uses `DefaultStlAllocator` over the default
+   C heap, and foonathan/memory uses `memory_stack` with marker/unwind bulk
+   lifetime. This is benchmark evidence; production integration still needs
+   matching no-growth tests and lifetime diagnostics for broader rebuild paths.
 
 5. Extend bake-time registry/component storage reservation and no-growth
    allocation tests to remaining solver scratch step paths. The rigid-body,

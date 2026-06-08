@@ -319,10 +319,10 @@ TEST(StlAllocatorTest, DefaultAllocatorConstructsAndDestroysNonTrivialObjects)
 }
 
 //==============================================================================
-TEST(StlAllocatorTest, StorageUsesNaturalAlignment)
+TEST(StlAllocatorTest, StorageUsesCacheLineAlignmentForLargeStorage)
 {
   EXPECT_EQ(StlAllocator<double>::storageAlignmentFor(128), alignof(double));
-  EXPECT_EQ(StlAllocator<double>::storageAlignmentFor(2048), alignof(double));
+  EXPECT_EQ(StlAllocator<double>::storageAlignmentFor(2048), 64u);
   EXPECT_EQ(
       StlAllocator<OverAlignedComponent>::storageAlignmentFor(
           sizeof(OverAlignedComponent)),

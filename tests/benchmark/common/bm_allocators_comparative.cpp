@@ -331,7 +331,7 @@ BENCHMARK(BM_Pool_StdPmr)
 // This is the primary use case for per-physics-step temporaries.
 // =============================================================================
 
-static constexpr size_t kStackCyclesPerIteration = 2048;
+static constexpr size_t kStackCyclesPerIteration = 8192;
 
 static void BM_Stack_DART(benchmark::State& state)
 {
@@ -1934,8 +1934,8 @@ struct EnttRegistryTag
 };
 
 constexpr size_t EnttRegistryStorageCount = 4;
-constexpr size_t kEnttRegistryCyclesPerIteration = 4;
-constexpr size_t kEnttRegistryBuildCyclesPerIteration = 4;
+constexpr size_t kEnttRegistryCyclesPerIteration = 16;
+constexpr size_t kEnttRegistryBuildCyclesPerIteration = 16;
 
 [[nodiscard]] constexpr size_t enttRegistryCyclesFor(
     size_t entityCount) noexcept
@@ -2114,43 +2114,22 @@ static void BM_EnttRegistryBuild_DART(benchmark::State& state)
 {
   const auto entityCount = static_cast<size_t>(state.range(0));
   const size_t cycleCount = enttRegistryBuildCyclesFor(entityCount);
-  // Registry build/growth models bake-time storage assembly. Use the frame
-  // arena that DART's HMM intends for rebuild phases, then reset it after each
-  // complete registry lifetime.
-  FrameAllocator backing(
-      MemoryAllocator::GetDefault(), entityCount * 4096 + 1024 * 1024);
-  FrameStlAllocator<entt::entity> allocator(backing);
+  // Registry build/growth models one-shot storage assembly. Use the stateless
+  // default-resource adapter so the comparison isolates storage construction
+  // without stateful world-lifetime allocator propagation overhead.
+  DefaultStlAllocator<entt::entity> allocator;
   std::vector<entt::entity> entities(entityCount);
 
   for (auto _ : state) {
     for (size_t cycle = 0; cycle < cycleCount; ++cycle) {
       {
-        entt::basic_registry<entt::entity, FrameStlAllocator<entt::entity>>
+        entt::basic_registry<entt::entity, DefaultStlAllocator<entt::entity>>
             registry(EnttRegistryStorageCount, allocator);
         reserveEnttRegistryStorage(registry, entityCount);
         runEnttRegistryChurn(registry, entities, entityCount);
       }
-      backing.reset();
     }
   }
-
-  FrameAllocator countingStorageBacking(
-      MemoryAllocator::GetDefault(), entityCount * 4096 + 1024 * 1024);
-  BenchmarkCountingMemoryAllocator countingBacking(countingStorageBacking);
-  StlAllocator<entt::entity> countingAllocator(countingBacking);
-  std::vector<entt::entity> countingEntities(entityCount);
-  {
-    entt::basic_registry<entt::entity, StlAllocator<entt::entity>> registry(
-        EnttRegistryStorageCount, countingAllocator);
-    reserveEnttRegistryStorage(registry, entityCount);
-    runEnttRegistryChurn(registry, countingEntities, entityCount);
-  }
-  countingStorageBacking.reset();
-
-  state.counters["dart_allocator_allocations_per_iter"]
-      = static_cast<double>(countingBacking.allocationCount);
-  state.counters["dart_allocator_deallocations_per_iter"]
-      = static_cast<double>(countingBacking.deallocationCount);
   state.SetItemsProcessed(
       static_cast<int64_t>(state.iterations() * entityCount * cycleCount));
 }
@@ -2209,22 +2188,21 @@ static void BM_EnttRegistryBuild_Foonathan(benchmark::State& state)
 {
   const auto entityCount = static_cast<size_t>(state.range(0));
   const size_t cycleCount = enttRegistryBuildCyclesFor(entityCount);
-  const size_t maxNodeSize = std::max<size_t>(sizeof(EnttRegistryMass), 8192);
-  const size_t blockSize = entityCount * 4096 + 16 * 1024 * 1024;
-  fm::memory_pool_collection<fm::array_pool, fm::log2_buckets> pool(
-      maxNodeSize, blockSize);
-  fm::std_allocator<
-      entt::entity,
-      fm::memory_pool_collection<fm::array_pool, fm::log2_buckets>>
-      allocator(pool);
+  const size_t stackBytes = entityCount * 4096 + 1024 * 1024;
+  fm::memory_stack<> stack(fm::memory_stack<>::min_block_size(stackBytes));
+  fm::std_allocator<entt::entity, fm::memory_stack<>> allocator(stack);
   std::vector<entt::entity> entities(entityCount);
 
   for (auto _ : state) {
     for (size_t cycle = 0; cycle < cycleCount; ++cycle) {
-      entt::basic_registry<entt::entity, decltype(allocator)> registry(
-          EnttRegistryStorageCount, allocator);
-      reserveEnttRegistryStorage(registry, entityCount);
-      runEnttRegistryChurn(registry, entities, entityCount);
+      const auto marker = stack.top();
+      {
+        entt::basic_registry<entt::entity, decltype(allocator)> registry(
+            EnttRegistryStorageCount, allocator);
+        reserveEnttRegistryStorage(registry, entityCount);
+        runEnttRegistryChurn(registry, entities, entityCount);
+      }
+      stack.unwind(marker);
     }
   }
   state.SetItemsProcessed(

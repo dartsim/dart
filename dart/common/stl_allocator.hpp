@@ -130,10 +130,11 @@ private:
   MemoryAllocator* mBaseAllocator;
 };
 
-/// Stateless STL-compatible allocator backed by MemoryAllocator::GetDefault().
+/// Stateless STL-compatible allocator backed by DART's default C heap.
 ///
-/// Use this adapter when container allocator state is undesirable and the
-/// process-wide default memory allocator is the intended backing resource.
+/// Use this adapter when container allocator state is undesirable and the C
+/// heap used by the process-wide default memory allocator is the intended
+/// backing resource.
 template <typename T>
 class DefaultStlAllocator
 {
@@ -161,7 +162,7 @@ public:
   template <typename U>
   constexpr DefaultStlAllocator(const DefaultStlAllocator<U>& other) noexcept;
 
-  /// Allocates n * sizeof(T) bytes through MemoryAllocator::GetDefault().
+  /// Allocates n * sizeof(T) bytes through DART's default C heap.
   [[nodiscard]] pointer allocate(size_type n, const void* hint = 0);
 
   /// Deallocates storage previously returned by allocate().
