@@ -143,9 +143,11 @@
       `WorldStepPipeline` now stores built-in non-owning stage pointers inline,
       removing its per-build `std::vector` allocation from the normal step path.
       Longer custom pipelines keep the previous arbitrary-stage behavior through
-      an overflow path. The default rigid-body velocity/contact stages and
-      semi-implicit multibody velocity/contact path now reuse baked scratch for
-      the covered rigid and articulated resting-contact scenes. The boxed-LCP
+      an overflow path. The legacy graph-backed `RigidBodyIntegrationStage` now
+      reuses stage-owned rigid-body entity and dependency-node scratch instead
+      of allocating per execute. The default rigid-body velocity/contact stages
+      and semi-implicit multibody velocity/contact path now reuse baked scratch
+      for the covered rigid and articulated resting-contact scenes. The boxed-LCP
       unified constraint stage now reuses stage-owned assembly containers and
       unified problem storage, and its shared/cross-row assembly no longer
       allocates per-step row-direction, rigid/articulated row-end, or

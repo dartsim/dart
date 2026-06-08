@@ -244,6 +244,8 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     registry storage so ECS capacities and debug-tracked registry allocations
     are released at the rebuild boundary while preserving the World memory
     hierarchy.
+  - Reused legacy graph-backed `RigidBodyIntegrationStage` scratch for rigid-body
+    entity lists and dependency nodes instead of allocating per execute.
   - Extended experimental `World` base-allocator no-growth coverage to baked
     rigid-body resting contact, non-cross articulated resting contact, and
     same-DOF cross-articulated link-contact scenes after contact prewarm.

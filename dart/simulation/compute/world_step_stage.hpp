@@ -288,6 +288,7 @@ class DART_SIMULATION_API RigidBodyIntegrationStage final
 {
 public:
   explicit RigidBodyIntegrationStage(std::size_t batchSize = 64);
+  ~RigidBodyIntegrationStage() override;
 
   [[nodiscard]] std::string_view getName() const noexcept override;
   [[nodiscard]] ComputeStageMetadata getMetadata() const noexcept override;
@@ -296,7 +297,10 @@ public:
   [[nodiscard]] std::size_t getBatchSize() const noexcept;
 
 private:
+  struct Scratch;
+
   std::size_t m_batchSize;
+  std::unique_ptr<Scratch> m_scratch;
 };
 
 /// Unconstrained rigid-body integration stage driven by the batched

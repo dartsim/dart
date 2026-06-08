@@ -51,7 +51,9 @@ registry, component storage, differentiable-parameter list, and first
 World-owned ECS scratch paths through the World memory hierarchy. They add
 base-allocator no-growth guards for baked kinematic IPC rigid-body, multibody
 variational, and single-deformable step loops, plus inline default step-pipeline
-storage. `World::clear()` now recreates the internal allocator-backed
+storage. The legacy graph-backed `RigidBodyIntegrationStage` reuses stage-owned
+rigid-body entity and dependency-node scratch instead of allocating those lists
+per execute. `World::clear()` now recreates the internal allocator-backed
 `WorldStorage`, releasing registry capacities and debug-tracked registry
 allocations at rebuild boundaries while preserving the World memory hierarchy.
 These are not the final global zero-allocation proof.

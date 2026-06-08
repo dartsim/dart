@@ -133,6 +133,18 @@ struct RigidIpcContactStage::Scratch
   std::vector<std::uint8_t> stationaryContactBody;
 };
 
+struct RigidBodyNode
+{
+  entt::entity entity;
+  ComputeNode* node;
+};
+
+struct RigidBodyIntegrationStage::Scratch
+{
+  std::vector<entt::entity> entities;
+  std::vector<RigidBodyNode> nodes;
+};
+
 namespace {
 
 constexpr double kDefaultRigidIpcContactStageActivationDistance = 1e-2;
@@ -376,13 +388,6 @@ std::vector<entt::entity> orderRigidBodiesParentBeforeChild(
 
   return ordered;
 }
-
-//==============================================================================
-struct RigidBodyNode
-{
-  entt::entity entity;
-  ComputeNode* node;
-};
 
 //==============================================================================
 ComputeNode* findRigidBodyNode(
@@ -779,9 +784,13 @@ void KinematicsStage::execute(World& world, ComputeExecutor& executor)
 
 //==============================================================================
 RigidBodyIntegrationStage::RigidBodyIntegrationStage(std::size_t batchSize)
-  : m_batchSize(std::max<std::size_t>(1, batchSize))
+  : m_batchSize(std::max<std::size_t>(1, batchSize)),
+    m_scratch(std::make_unique<Scratch>())
 {
 }
+
+//==============================================================================
+RigidBodyIntegrationStage::~RigidBodyIntegrationStage() = default;
 
 //==============================================================================
 std::string_view RigidBodyIntegrationStage::getName() const noexcept
@@ -814,20 +823,25 @@ void RigidBodyIntegrationStage::execute(World& world, ComputeExecutor& executor)
       comps::FreeFrameProperties,
       comps::FrameCache>();
 
-  auto entities = std::make_shared<std::vector<entt::entity>>();
-  entities->reserve(rigidBodyView.size_hint());
+  if (m_scratch == nullptr) {
+    m_scratch = std::make_unique<Scratch>();
+  }
+  auto& entities = m_scratch->entities;
+  entities.clear();
+  entities.reserve(rigidBodyView.size_hint());
   for (auto entity : rigidBodyView) {
-    entities->push_back(entity);
+    entities.push_back(entity);
   }
 
   ComputeGraph graph;
   const auto gravity = world.getGravity();
   const auto timeStep = world.getTimeStep();
-  if (hasRigidBodyFrameDependency(registry, *entities)) {
-    std::vector<RigidBodyNode> nodes;
-    nodes.reserve(entities->size());
+  if (hasRigidBodyFrameDependency(registry, entities)) {
+    auto& nodes = m_scratch->nodes;
+    nodes.clear();
+    nodes.reserve(entities.size());
 
-    for (const auto entity : *entities) {
+    for (const auto entity : entities) {
       auto& node = graph.addNode(
           "rigid_body_entity_" + std::to_string(entt::to_integral(entity)),
           [&registry, entity, gravity, timeStep]() {
@@ -840,7 +854,7 @@ void RigidBodyIntegrationStage::execute(World& world, ComputeExecutor& executor)
     for (const auto& entry : nodes) {
       const auto& frameState = registry.get<comps::FrameState>(entry.entity);
       const auto parentRigidBody = findNearestRigidBodyAncestor(
-          registry, frameState.parentFrame, *entities);
+          registry, frameState.parentFrame, entities);
       if (parentRigidBody == entt::null) {
         continue;
       }
@@ -858,15 +872,16 @@ void RigidBodyIntegrationStage::execute(World& world, ComputeExecutor& executor)
     return;
   }
 
-  for (std::size_t begin = 0; begin < entities->size(); begin += m_batchSize) {
-    const auto end = std::min(begin + m_batchSize, entities->size());
+  const auto* entityList = &entities;
+  for (std::size_t begin = 0; begin < entities.size(); begin += m_batchSize) {
+    const auto end = std::min(begin + m_batchSize, entities.size());
     graph.addNode(
         "rigid_body_batch_" + std::to_string(begin),
-        [&registry, entities, begin, end, gravity, timeStep]() {
+        [&registry, entityList, begin, end, gravity, timeStep]() {
           for (auto i = begin; i < end; ++i) {
             integrateRigidBody(
                 registry,
-                (*entities)[static_cast<std::size_t>(i)],
+                (*entityList)[static_cast<std::size_t>(i)],
                 gravity,
                 timeStep);
           }
