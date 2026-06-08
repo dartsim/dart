@@ -181,6 +181,17 @@ public:
 
 using RegistryStorageCapacities = std::map<entt::id_type, std::size_t>;
 
+constexpr std::size_t kDeactivationOptionTailBytes
+    = sizeof(std::uint8_t) + 6u * sizeof(double);
+constexpr std::size_t kSolverOptionTailBytes = 4u * sizeof(std::uint8_t);
+constexpr std::size_t kIgnoredCollisionPairTailBytes = sizeof(std::size_t);
+constexpr std::size_t kVariationalOptionTailBytes
+    = sizeof(std::size_t) + sizeof(double);
+constexpr std::size_t kWorldOptionTailBytes
+    = sizeof(std::uint8_t) + kSolverOptionTailBytes
+      + kIgnoredCollisionPairTailBytes + kVariationalOptionTailBytes
+      + kDeactivationOptionTailBytes;
+
 RegistryStorageCapacities registryStorageCapacities(
     const dart::simulation::detail::WorldRegistry& registry)
 {
@@ -1227,8 +1238,9 @@ TEST(Serialization, RejectsInvalidWorldSolverOptionTail)
   };
 
   const std::size_t solverSuffixBytes
-      = sizeof(std::size_t) + sizeof(std::size_t) + sizeof(double);
-  ASSERT_GE(validRecord.size(), solverSuffixBytes + 4u);
+      = kIgnoredCollisionPairTailBytes + kVariationalOptionTailBytes
+        + kDeactivationOptionTailBytes;
+  ASSERT_GE(validRecord.size(), solverSuffixBytes + kSolverOptionTailBytes);
   expectInvalidByte(solverSuffixBytes + 4u); // rigid-body solver
   expectInvalidByte(solverSuffixBytes + 3u); // contact solver method
   expectInvalidByte(solverSuffixBytes + 2u); // contact gradient mode
@@ -1244,7 +1256,9 @@ TEST(Serialization, RejectsInvalidWorldSolverOptionTail)
           EXPECT_THROW(loaded.loadBinary(input), sx::InvalidArgumentException);
         };
 
-  const std::size_t toleranceOffset = validRecord.size() - sizeof(double);
+  const std::size_t deactivationOffset
+      = validRecord.size() - kDeactivationOptionTailBytes;
+  const std::size_t toleranceOffset = deactivationOffset - sizeof(double);
   const std::size_t iterationOffset = toleranceOffset - sizeof(std::size_t);
   const std::size_t invalidIterations = 0u;
   expectInvalidTailField(
@@ -1318,15 +1332,12 @@ TEST(Serialization, LegacyWorldMetadataDoesNotConsumeTrailingBytesAsGravity)
   // Drop the current modern option tail, then erase only the v2+ gravity block
   // so this legacy-compatibility check still leaves the v1 deformable counter
   // in place before the synthetic trailer.
-  constexpr std::size_t modernWorldOptionTailBytes
-      = sizeof(std::uint8_t) + 4u * sizeof(std::uint8_t) + sizeof(std::size_t)
-        + sizeof(std::size_t) + sizeof(double);
   constexpr std::size_t legacyDeformableCounterBytes = sizeof(std::size_t);
   ASSERT_GE(
       legacyRecord.size(),
-      modernWorldOptionTailBytes + legacyDeformableCounterBytes
+      kWorldOptionTailBytes + legacyDeformableCounterBytes
           + 3u * sizeof(double));
-  legacyRecord.resize(legacyRecord.size() - modernWorldOptionTailBytes);
+  legacyRecord.resize(legacyRecord.size() - kWorldOptionTailBytes);
   const std::size_t gravityOffset = legacyRecord.size()
                                     - legacyDeformableCounterBytes
                                     - 3u * sizeof(double);

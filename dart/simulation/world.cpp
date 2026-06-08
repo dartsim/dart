@@ -3624,6 +3624,7 @@ void World::reserveRegistryStorageForSimulation()
       comps::Velocity,
       comps::MassProperties,
       comps::Force,
+      comps::DeactivationState,
       comps::DeformableBodyTag,
       comps::DeformableNodeState,
       comps::DeformableSpringModel,
