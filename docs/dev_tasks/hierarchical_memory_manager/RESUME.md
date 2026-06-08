@@ -307,13 +307,25 @@ active zero-allocation guard work
 should broaden beyond the covered rigid-body, non-cross articulated,
 same-DOF sequential cross-articulated, current boxed-LCP fallback
 resting-contact, current active 11x11 deformable self-contact friction grid,
-and basic deformable surface-snapshot scenes, while keeping remaining
+current active AVBD self-contact normal/friction row scene, and basic
+deformable surface-snapshot scenes, while keeping remaining
 public-value unified problem/solution wrappers and larger or differently shaped
 default-solver deformable allocation surfaces explicit, before making a full
 zero-dynamic-allocation claim.
 
 ## Latest Local Validation
 
+- On 2026-06-08 after merging the latest `origin/main`, the AVBD deformable
+  scratch continuation added an active two-surface self-contact scene with AVBD
+  normal/friction rows to the World base-allocator and global heap no-growth
+  guards. The implementation replaces per-step AVBD row-inventory maps with
+  reserved previous-record storage, rebuilds self-contact adjacency in place,
+  and bakes AVBD self-contact candidate/row/friction warm-start capacity during
+  `enterSimulationMode()`. Validation passed:
+  `cmake --build build/default/cpp/Release --target test_world test_avbd_rigid_block test_boxed_lcp_contact -j 8`,
+  `./build/default/cpp/Release/bin/test_world --gtest_filter=World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap:World.BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths`,
+  and
+  `ctest --test-dir build/default/cpp/Release -R '^(test_world|test_vbd_world_solver|test_avbd_rigid_block|test_boxed_lcp_contact)$' --output-on-failure`.
 - On 2026-06-08 after merging the latest `origin/main`, the deformable
   no-growth guard expanded from the 9x9 production grid to an 11x11 two-layer
   frictional self-contact grid. The focused filter

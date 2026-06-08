@@ -1193,6 +1193,7 @@ inline void buildAvbdRigidContactManifoldRows(
         contact.row));
   }
 
+  normalInventory.reserve(normalDescriptors.size());
   normalInventory.syncActiveRows(normalDescriptors, warmStartOptions);
 
   std::vector<AvbdScalarRowDescriptor> frictionDescriptors;
@@ -1223,6 +1224,7 @@ inline void buildAvbdRigidContactManifoldRows(
         contact.row));
   }
 
+  frictionInventory.reserve(frictionDescriptors.size());
   frictionInventory.syncActiveRows(frictionDescriptors, warmStartOptions);
 
   normalRows.clear();
@@ -1342,6 +1344,7 @@ inline void buildAvbdRigidPointJointRows(
     }
   }
 
+  linearInventory.reserve(descriptors.size());
   linearInventory.syncActiveRows(descriptors, warmStartOptions);
 
   linearRows.clear();
@@ -1410,6 +1413,7 @@ inline void buildAvbdRigidPointJointAngularRows(
     }
   }
 
+  angularInventory.reserve(descriptors.size());
   angularInventory.syncActiveRows(descriptors, warmStartOptions);
 
   angularRows.clear();
@@ -1467,6 +1471,7 @@ inline void buildAvbdRigidAngularMotorRows(
             motor.row));
   }
 
+  motorInventory.reserve(descriptors.size());
   motorInventory.syncActiveRows(descriptors, warmStartOptions);
 
   motorRows.clear();

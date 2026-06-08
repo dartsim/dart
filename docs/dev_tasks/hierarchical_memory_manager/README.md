@@ -192,7 +192,11 @@
       frictional self-contact patch, 5x5 two-layer grid, 7x7 two-layer large
       grid, 9x9 two-layer production grid, and 11x11 two-layer extended
       production grid reuse candidate and friction-contact storage through
-      projected-Newton line-search CCD. The
+      projected-Newton line-search CCD. AVBD self-contact normal/friction rows
+      now reuse row-inventory and self-contact adjacency storage, including
+      previous friction warm-start rows, and `prepare()` bakes topology-scaled
+      candidate and row capacity for the covered AVBD two-surface contact
+      scene. The
       current production boxed-LCP stage
       uses the in-place unified assembler and solve scratch; the public
       return-by-value unified problem and solution wrappers remain
@@ -232,9 +236,11 @@
       production grid, and an 11x11 two-layer extended production grid. The
       11x11 guard also asserts non-vacuous solver activity through public
       deformable diagnostics: active self-contact barriers, converged active
-      contacts, and positive friction dissipation. Still-larger or differently
-      shaped production-scale frictional deformable sets still need no-growth
-      gates before making the full deformable claim.
+      contacts, and positive friction dissipation. The global heap and
+      World-base no-growth guards now also cover an active AVBD self-contact
+      normal/friction row scene. Still-larger or differently shaped
+      production-scale frictional deformable sets still need no-growth gates
+      before making the full deformable claim.
 - [ ] Phase 6: Add memory-layout profiler/debugger surfaces and GUI
       visualization. `MemoryAllocatorDebugger` now exposes structured live
       bytes, peak live bytes, and live allocation count; `MemoryManager` and

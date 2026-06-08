@@ -1031,6 +1031,48 @@ void configureDeformableSelfContactFrictionExtendedProductionGridScene(
       world, 11, "friction_extended_production_grid");
 }
 
+void configureAvbdSelfContactFrictionRowsScene(dart::simulation::World& world)
+{
+  namespace sx = dart::simulation;
+
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.01);
+
+  sx::DeformableBodyOptions options;
+  options.positions
+      = {Eigen::Vector3d(-0.5, -0.5, 0.0),
+         Eigen::Vector3d(0.5, -0.5, 0.0),
+         Eigen::Vector3d(0.0, 0.6, 0.0),
+         Eigen::Vector3d(-0.2, -0.15, 0.01),
+         Eigen::Vector3d(0.2, -0.15, 0.01),
+         Eigen::Vector3d(0.0, 0.2, 0.01)};
+  options.masses = {1.0, 1.0, 1.0, 0.1, 0.1, 0.1};
+  options.fixedNodes = {0, 1, 2};
+  options.surfaceTriangles
+      = {sx::DeformableSurfaceTriangle{0, 1, 2},
+         sx::DeformableSurfaceTriangle{3, 4, 5}};
+  options.edges
+      = {sx::DeformableEdge{3, 4, -1.0},
+         sx::DeformableEdge{4, 5, -1.0},
+         sx::DeformableEdge{5, 3, -1.0}};
+  options.edgeStiffness = 500.0;
+  options.damping = 1.0;
+  options.material.frictionCoefficient = 0.8;
+  world.addDeformableBody("avbd_self_contact_friction", options);
+
+  sx::comps::DeformableVbdConfig cfg;
+  cfg.enabled = true;
+  cfg.iterations = 8;
+  cfg.useAvbdSelfContactNormalRows = true;
+  cfg.avbdAlpha = 0.0;
+  cfg.avbdGamma = 1.0;
+  cfg.avbdMaxStiffness = 1.0e6;
+  auto& registry = sx::detail::registryOf(world);
+  for (const auto entity : registry.view<sx::comps::DeformableBodyTag>()) {
+    registry.emplace_or_replace<sx::comps::DeformableVbdConfig>(entity, cfg);
+  }
+}
+
 } // namespace
 
 // Test World construction
@@ -1894,6 +1936,9 @@ TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "deformable self-contact friction extended production grid",
       configureDeformableSelfContactFrictionExtendedProductionGridScene);
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "deformable AVBD self-contact friction rows",
+      configureAvbdSelfContactFrictionRowsScene);
 }
 
 TEST(World, DeformableSelfContactFrictionProductionGridIsActive)
@@ -2155,6 +2200,9 @@ TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "deformable self-contact friction extended production grid",
       configureDeformableSelfContactFrictionExtendedProductionGridScene);
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "deformable AVBD self-contact friction rows",
+      configureAvbdSelfContactFrictionRowsScene);
 
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "deformable surface and rigid CCD snapshots", [](sx::World& world) {
