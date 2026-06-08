@@ -2925,6 +2925,15 @@ TEST(BoxedLcpContact, FourArticulatedPrismaticLinksPushDynamicRigidBodies)
 }
 
 //==============================================================================
+// Sixteen simultaneous link-vs-rigid contacts match the largest registered
+// articulated rigid-impact benchmark packet.
+TEST(BoxedLcpContact, SixteenArticulatedPrismaticLinksPushDynamicRigidBodies)
+{
+  constexpr int kPairCount = 16;
+  expectArticulatedRigidImpactPairsStepMaintainsInvariants(kPairCount);
+}
+
+//==============================================================================
 // Cross-multibody articulated contact: a prismatic link pushes a prismatic link
 // owned by a separate multibody. This exercises the unified row's second
 // articulated endpoint rather than a dynamic rigid-body endpoint.
@@ -2959,6 +2968,17 @@ TEST(
     BoxedLcpContact, FourArticulatedPrismaticLinksPushArticulatedPrismaticLinks)
 {
   constexpr int kPairCount = 4;
+  expectArticulatedLinkImpactPairsStepMaintainsInvariants(kPairCount);
+}
+
+//==============================================================================
+// Sixteen simultaneous cross-multibody contacts match the largest registered
+// articulated link-impact benchmark packet.
+TEST(
+    BoxedLcpContact,
+    SixteenArticulatedPrismaticLinksPushArticulatedPrismaticLinks)
+{
+  constexpr int kPairCount = 16;
   expectArticulatedLinkImpactPairsStepMaintainsInvariants(kPairCount);
 }
 
