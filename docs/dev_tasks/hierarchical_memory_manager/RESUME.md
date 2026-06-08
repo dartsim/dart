@@ -321,9 +321,10 @@ zero-dynamic-allocation claim.
   two-surface self-contact scene with AVBD normal/friction rows to the World
   base-allocator and global heap no-growth guards. The implementation replaces
   per-step AVBD row-inventory maps with sorted reserved previous-record
-  storage, rebuilds self-contact adjacency in place, and bakes AVBD
-  contact/friction and self-contact candidate/row/friction warm-start capacity
-  during `enterSimulationMode()`. Validation passed:
+  storage, uses the same sorted-key model for friction-projection warm starts,
+  rebuilds self-contact adjacency in place, and bakes AVBD contact/friction and
+  self-contact candidate/row/friction warm-start capacity during
+  `enterSimulationMode()`. Validation passed:
   `cmake --build build/default/cpp/Release --target test_world test_avbd_rigid_block test_boxed_lcp_contact -j 8`,
   `./build/default/cpp/Release/bin/test_world --gtest_filter=World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap:World.BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths`,
   `./build/default/cpp/Release/bin/test_world --gtest_filter=World.AvbdGroundFrictionRowsAreActive`,

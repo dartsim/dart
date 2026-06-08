@@ -889,6 +889,13 @@ std::size_t RigidBodyIntegrationStage::getBatchSize() const noexcept
 /// headers; it is stored per body and never serialized.
 struct DeformableVbdScratch
 {
+  template <typename Row>
+  struct AvbdFrictionWarmStartRecord
+  {
+    dvbd::AvbdScalarRowKey key;
+    Row row;
+  };
+
   std::vector<dvbd::SpringElement> springs;
   std::vector<dvbd::TetMeshElement> tets;
   dvbd::VertexColoring coloring;
@@ -909,18 +916,16 @@ struct DeformableVbdScratch
   std::vector<dvbd::AvbdScalarRowDescriptor> avbdFrictionDescriptors;
   dvbd::AvbdScalarRowInventory avbdFrictionInventory;
   std::vector<dvbd::AvbdHalfSpaceFrictionRow> avbdFrictionRows;
-  std::vector<dvbd::AvbdScalarRowDescriptor> previousAvbdFrictionDescriptors;
-  std::vector<dvbd::AvbdHalfSpaceFrictionRow> previousAvbdFrictionRows;
+  std::vector<AvbdFrictionWarmStartRecord<dvbd::AvbdHalfSpaceFrictionRow>>
+      previousAvbdFrictionWarmStarts;
   std::vector<dvbd::AvbdScalarRowDescriptor> avbdSelfContactDescriptors;
   dvbd::AvbdScalarRowInventory avbdSelfContactInventory;
   std::vector<dvbd::AvbdSelfContactNormalRow> avbdSelfContactRows;
   std::vector<dvbd::AvbdScalarRowDescriptor> avbdSelfContactFrictionDescriptors;
   dvbd::AvbdScalarRowInventory avbdSelfContactFrictionInventory;
   std::vector<dvbd::AvbdSelfContactFrictionRow> avbdSelfContactFrictionRows;
-  std::vector<dvbd::AvbdScalarRowDescriptor>
-      previousAvbdSelfContactFrictionDescriptors;
-  std::vector<dvbd::AvbdSelfContactFrictionRow>
-      previousAvbdSelfContactFrictionRows;
+  std::vector<AvbdFrictionWarmStartRecord<dvbd::AvbdSelfContactFrictionRow>>
+      previousAvbdSelfContactFrictionWarmStarts;
   std::vector<dvbd::AvbdScalarRowDescriptor> avbdAttachmentDescriptors;
   dvbd::AvbdScalarRowInventory avbdAttachmentInventory;
   std::vector<dvbd::AvbdPointAttachmentRow> avbdAttachmentRows;
@@ -953,16 +958,14 @@ void clearDeformableAvbdWarmStartRows(DeformableVbdScratch& scratch)
   scratch.avbdFrictionDescriptors.clear();
   scratch.avbdFrictionInventory.records().clear();
   scratch.avbdFrictionRows.clear();
-  scratch.previousAvbdFrictionDescriptors.clear();
-  scratch.previousAvbdFrictionRows.clear();
+  scratch.previousAvbdFrictionWarmStarts.clear();
   scratch.avbdSelfContactDescriptors.clear();
   scratch.avbdSelfContactInventory.records().clear();
   scratch.avbdSelfContactRows.clear();
   scratch.avbdSelfContactFrictionDescriptors.clear();
   scratch.avbdSelfContactFrictionInventory.records().clear();
   scratch.avbdSelfContactFrictionRows.clear();
-  scratch.previousAvbdSelfContactFrictionDescriptors.clear();
-  scratch.previousAvbdSelfContactFrictionRows.clear();
+  scratch.previousAvbdSelfContactFrictionWarmStarts.clear();
   scratch.avbdAttachmentDescriptors.clear();
   scratch.avbdAttachmentInventory.records().clear();
   scratch.avbdAttachmentRows.clear();
@@ -973,6 +976,44 @@ void clearDeformableAvbdWarmStartRows(DeformableVbdScratch& scratch)
   scratch.avbdTetInventory.records().clear();
   scratch.avbdTetRows.clear();
   scratch.avbdSolveFixed.clear();
+}
+
+//==============================================================================
+template <typename Row>
+void rebuildAvbdFrictionWarmStartLookup(
+    std::vector<DeformableVbdScratch::AvbdFrictionWarmStartRecord<Row>>& lookup,
+    const std::vector<dvbd::AvbdScalarRowDescriptor>& descriptors,
+    const std::vector<Row>& rows)
+{
+  lookup.clear();
+  const std::size_t rowCount = std::min(descriptors.size(), rows.size());
+  lookup.reserve(rowCount);
+  for (std::size_t i = 0; i < rowCount; ++i) {
+    lookup.push_back({descriptors[i].key, rows[i]});
+  }
+  std::sort(lookup.begin(), lookup.end(), [](const auto& lhs, const auto& rhs) {
+    return lhs.key < rhs.key;
+  });
+}
+
+//==============================================================================
+template <typename Row>
+[[nodiscard]] const Row* findAvbdFrictionWarmStartRow(
+    const std::vector<DeformableVbdScratch::AvbdFrictionWarmStartRecord<Row>>&
+        lookup,
+    const dvbd::AvbdScalarRowKey& key)
+{
+  const auto match = std::lower_bound(
+      lookup.begin(),
+      lookup.end(),
+      key,
+      [](const auto& record, const dvbd::AvbdScalarRowKey& value) {
+        return record.key < value;
+      });
+  if (match != lookup.end() && match->key == key) {
+    return &match->row;
+  }
+  return nullptr;
 }
 
 } // namespace
@@ -5373,36 +5414,11 @@ void runVbdDeformableSolve(
         && !options.useChebyshev && options.rayleighDamping <= 0.0;
 
   dvbd::BlockDescentStats result;
-  const auto findPreviousAvbdSelfContactFrictionRow =
-      [](std::span<const dvbd::AvbdScalarRowDescriptor> descriptors,
-         std::span<const dvbd::AvbdSelfContactFrictionRow> rows,
-         const dvbd::AvbdScalarRowKey& key) {
-        const std::size_t rowCount = std::min(descriptors.size(), rows.size());
-        for (std::size_t i = 0; i < rowCount; ++i) {
-          if (descriptors[i].key == key) {
-            return &rows[i];
-          }
-        }
-        return static_cast<const dvbd::AvbdSelfContactFrictionRow*>(nullptr);
-      };
-  const auto findPreviousAvbdFrictionRow =
-      [](std::span<const dvbd::AvbdScalarRowDescriptor> descriptors,
-         std::span<const dvbd::AvbdHalfSpaceFrictionRow> rows,
-         const dvbd::AvbdScalarRowKey& key) {
-        const std::size_t rowCount = std::min(descriptors.size(), rows.size());
-        for (std::size_t i = 0; i < rowCount; ++i) {
-          if (descriptors[i].key == key) {
-            return &rows[i];
-          }
-        }
-        return static_cast<const dvbd::AvbdHalfSpaceFrictionRow*>(nullptr);
-      };
   const auto projectAvbdSelfContactFrictionWarmStarts =
       [](dvbd::AvbdScalarRowInventory& inventory,
          std::vector<dvbd::AvbdSelfContactFrictionRow>& rows,
-         std::span<const dvbd::AvbdScalarRowDescriptor> previousDescriptors,
-         std::span<const dvbd::AvbdSelfContactFrictionRow> previousRows,
-         const auto& findPreviousRow) {
+         const std::vector<DeformableVbdScratch::AvbdFrictionWarmStartRecord<
+             dvbd::AvbdSelfContactFrictionRow>>& previousRows) {
         for (std::size_t i = 0; i + 1 < inventory.size() && i + 1 < rows.size();
              i += 2) {
           dvbd::AvbdScalarRowRecord& firstRecord = inventory[i];
@@ -5419,10 +5435,10 @@ void runVbdDeformableSolve(
             continue;
           }
 
-          const auto* previousFirst = findPreviousRow(
-              previousDescriptors, previousRows, firstRecord.descriptor.key);
-          const auto* previousSecond = findPreviousRow(
-              previousDescriptors, previousRows, secondRecord.descriptor.key);
+          const auto* previousFirst = findAvbdFrictionWarmStartRow(
+              previousRows, firstRecord.descriptor.key);
+          const auto* previousSecond = findAvbdFrictionWarmStartRow(
+              previousRows, secondRecord.descriptor.key);
           if (previousFirst == nullptr || previousSecond == nullptr) {
             continue;
           }
@@ -5602,14 +5618,10 @@ void runVbdDeformableSolve(
       vbdScratch.avbdSelfContactRows.push_back(row);
     }
 
-    vbdScratch.previousAvbdSelfContactFrictionDescriptors.reserve(
-        vbdScratch.avbdSelfContactFrictionDescriptors.size());
-    vbdScratch.previousAvbdSelfContactFrictionRows.reserve(
-        vbdScratch.avbdSelfContactFrictionRows.size());
-    vbdScratch.previousAvbdSelfContactFrictionDescriptors
-        = vbdScratch.avbdSelfContactFrictionDescriptors;
-    vbdScratch.previousAvbdSelfContactFrictionRows
-        = vbdScratch.avbdSelfContactFrictionRows;
+    rebuildAvbdFrictionWarmStartLookup(
+        vbdScratch.previousAvbdSelfContactFrictionWarmStarts,
+        vbdScratch.avbdSelfContactFrictionDescriptors,
+        vbdScratch.avbdSelfContactFrictionRows);
     vbdScratch.avbdSelfContactFrictionDescriptors.clear();
     if (useAvbdSelfContactFrictionRows) {
       vbdScratch.avbdSelfContactFrictionDescriptors.reserve(
@@ -5663,9 +5675,7 @@ void runVbdDeformableSolve(
     projectAvbdSelfContactFrictionWarmStarts(
         vbdScratch.avbdSelfContactFrictionInventory,
         vbdScratch.avbdSelfContactFrictionRows,
-        vbdScratch.previousAvbdSelfContactFrictionDescriptors,
-        vbdScratch.previousAvbdSelfContactFrictionRows,
-        findPreviousAvbdSelfContactFrictionRow);
+        vbdScratch.previousAvbdSelfContactFrictionWarmStarts);
 
     vbdScratch.avbdContactRows.clear();
     vbdScratch.avbdContactRows.reserve(vbdScratch.avbdContactInventory.size());
@@ -5684,13 +5694,10 @@ void runVbdDeformableSolve(
               record.descriptor.bounds});
     }
 
-    vbdScratch.previousAvbdFrictionDescriptors.reserve(
-        vbdScratch.avbdFrictionDescriptors.size());
-    vbdScratch.previousAvbdFrictionRows.reserve(
-        vbdScratch.avbdFrictionRows.size());
-    vbdScratch.previousAvbdFrictionDescriptors
-        = vbdScratch.avbdFrictionDescriptors;
-    vbdScratch.previousAvbdFrictionRows = vbdScratch.avbdFrictionRows;
+    rebuildAvbdFrictionWarmStartLookup(
+        vbdScratch.previousAvbdFrictionWarmStarts,
+        vbdScratch.avbdFrictionDescriptors,
+        vbdScratch.avbdFrictionRows);
     vbdScratch.avbdFrictionDescriptors.clear();
     if (useAvbdFrictionRows) {
       vbdScratch.avbdFrictionDescriptors.reserve(
@@ -5734,13 +5741,11 @@ void runVbdDeformableSolve(
           || secondRecord.descriptor.key != expectedSecondKey) {
         continue;
       }
-      const auto* previousFirst = findPreviousAvbdFrictionRow(
-          vbdScratch.previousAvbdFrictionDescriptors,
-          vbdScratch.previousAvbdFrictionRows,
+      const auto* previousFirst = findAvbdFrictionWarmStartRow(
+          vbdScratch.previousAvbdFrictionWarmStarts,
           firstRecord.descriptor.key);
-      const auto* previousSecond = findPreviousAvbdFrictionRow(
-          vbdScratch.previousAvbdFrictionDescriptors,
-          vbdScratch.previousAvbdFrictionRows,
+      const auto* previousSecond = findAvbdFrictionWarmStartRow(
+          vbdScratch.previousAvbdFrictionWarmStarts,
           secondRecord.descriptor.key);
       if (previousFirst == nullptr || previousSecond == nullptr) {
         continue;
@@ -5940,14 +5945,10 @@ void runVbdDeformableSolve(
     vbdScratch.avbdFrictionInventory.records().clear();
     vbdScratch.avbdSelfContactDescriptors.clear();
     vbdScratch.avbdSelfContactRows.clear();
-    vbdScratch.previousAvbdSelfContactFrictionDescriptors.reserve(
-        vbdScratch.avbdSelfContactFrictionDescriptors.size());
-    vbdScratch.previousAvbdSelfContactFrictionRows.reserve(
-        vbdScratch.avbdSelfContactFrictionRows.size());
-    vbdScratch.previousAvbdSelfContactFrictionDescriptors
-        = vbdScratch.avbdSelfContactFrictionDescriptors;
-    vbdScratch.previousAvbdSelfContactFrictionRows
-        = vbdScratch.avbdSelfContactFrictionRows;
+    rebuildAvbdFrictionWarmStartLookup(
+        vbdScratch.previousAvbdSelfContactFrictionWarmStarts,
+        vbdScratch.avbdSelfContactFrictionDescriptors,
+        vbdScratch.avbdSelfContactFrictionRows);
     vbdScratch.avbdSelfContactFrictionDescriptors.clear();
     vbdScratch.avbdSelfContactFrictionRows.clear();
     vbdScratch.avbdAttachmentDescriptors.clear();
@@ -6143,9 +6144,7 @@ void runVbdDeformableSolve(
     projectAvbdSelfContactFrictionWarmStarts(
         vbdScratch.avbdSelfContactFrictionInventory,
         vbdScratch.avbdSelfContactFrictionRows,
-        vbdScratch.previousAvbdSelfContactFrictionDescriptors,
-        vbdScratch.previousAvbdSelfContactFrictionRows,
-        findPreviousAvbdSelfContactFrictionRow);
+        vbdScratch.previousAvbdSelfContactFrictionWarmStarts);
 
     dvbd::AvbdTetMaterialFiniteStiffnessOptions tetOptions;
     tetOptions.beta = config.avbdBeta;
@@ -9610,8 +9609,7 @@ void DeformableDynamicsStage::prepare(World& world)
         vbdScratch.avbdFrictionDescriptors.reserve(frictionRowCapacity);
         vbdScratch.avbdFrictionInventory.reserve(frictionRowCapacity);
         vbdScratch.avbdFrictionRows.reserve(frictionRowCapacity);
-        vbdScratch.previousAvbdFrictionDescriptors.reserve(frictionRowCapacity);
-        vbdScratch.previousAvbdFrictionRows.reserve(frictionRowCapacity);
+        vbdScratch.previousAvbdFrictionWarmStarts.reserve(frictionRowCapacity);
       }
       if (vbdConfig->useAvbdSelfContactNormalRows
           && contactScratch.surfaceTriangles.size() >= 2) {
@@ -9657,9 +9655,7 @@ void DeformableDynamicsStage::prepare(World& world)
         vbdScratch.avbdSelfContactFrictionInventory.reserve(
             frictionRowCapacity);
         vbdScratch.avbdSelfContactFrictionRows.reserve(frictionRowCapacity);
-        vbdScratch.previousAvbdSelfContactFrictionDescriptors.reserve(
-            frictionRowCapacity);
-        vbdScratch.previousAvbdSelfContactFrictionRows.reserve(
+        vbdScratch.previousAvbdSelfContactFrictionWarmStarts.reserve(
             frictionRowCapacity);
       }
     }

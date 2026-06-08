@@ -288,8 +288,8 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     projected-Newton self-contact steps. AVBD ground contact/friction rows and
     self-contact normal/friction rows now reuse row-inventory and self-contact
     adjacency storage, with bake-time reserve sizing for covered active contact
-    steps; row warm-start lookup now uses sorted reserved storage instead of
-    map allocation or per-row linear scans.
+    steps; row and friction-projection warm-start lookup now use sorted
+    reserved storage instead of map allocation or per-row linear scans.
   - Hardened `dart::common::FixedPoolAllocator` against base-allocator failures
     during construction and block-table growth, with coverage for deterministic
     failure, fallback, reuse, and debug-guard paths.
