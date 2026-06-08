@@ -27,7 +27,15 @@ The positive-step predicate slice promoted only
 methods route through it, but hit/limited fields and limiting-primitive payloads
 remain variant-local.
 
-The current Phase 3 slice promotes the first shared benchmark-packet contract:
+The current Phase 3 slice promotes the shared conservative native-CCD option
+adapter into `detail/newton_barrier`. Rigid IPC and deformable continuous
+collision detection now use one `LineSearchOptions` -> `CcdOption` adapter for
+non-negative separation/tolerance clamping, positive iteration count clamping,
+and conservative advancement selection, while their CCD implementations,
+hit/limited result fields, and limiting-primitive payloads remain
+variant-local.
+
+The benchmark-packet utility slice promoted the first shared packet contract:
 Google Benchmark row-name canonicalization, timing-unit conversion, median-row
 lookup, and timing-field validation now live in
 `scripts/benchmark_packet_utils.py`. The ABD comparison packet checker and the
@@ -70,32 +78,41 @@ The line-search stats slice merged as PR #2937. It added
 option/stat types to the shared owner, and keeps line-search result semantics
 variant-local.
 
-The benchmark-packet utility slice lives on
-`simx/shared-newton-barrier-benchmark-packet-utils`. It is intentionally
-smaller than a projected-Newton diagnostics merge: current evidence shows rigid
-and deformable do not yet share full projected-Newton status/result semantics,
-while the ABD and Phase 5 packet checkers already need identical Google
-Benchmark row parsing. Focused local validation passed
+The positive-step predicate slice merged as PR #2938. It promoted
+`allowsPositiveLineSearchStep(stepBound, indeterminate)` into
+`detail/newton_barrier`, routing rigid IPC and deformable CCD result methods
+through it without moving hit/limited result ownership.
+
+The benchmark-packet utility slice merged as PR #2940. It promoted
+Google Benchmark row parsing into `scripts/benchmark_packet_utils.py`, routing
+the ABD comparison packet checker plus the Phase 5 GPU packet checker through
+the shared utility while keeping packet-specific metadata and gates in their
+owners. Focused local validation passed
 `pixi run python -m pytest tests/test_benchmark_packet_utils.py` and
 `pixi run lint`.
 
+The current native-CCD option adapter slice lives on
+`simx/shared-newton-barrier-ccd-option`. It is intentionally smaller than a
+projected-Newton diagnostics merge: current evidence shows rigid and deformable
+share the line-search option conversion to native conservative CCD options, but
+not yet a full projected-Newton status or solver-loop contract.
+
 ## Current Branch
 
-`simx/shared-newton-barrier-benchmark-packet-utils` - contains the Phase 3
-shared benchmark-packet row parsing utility slice. Verify the exact status with
+`simx/shared-newton-barrier-ccd-option` - contains the Phase 3 shared
+line-search native-CCD option adapter slice. Verify the exact status with
 `git status --short --branch` because this section is a resume snapshot.
 
 ## Immediate Next Step
 
 Continue Phase 3 from
 [`../../plans/083-unified-newton-barrier-multibody/abd-first-slice-design.md`](../../plans/083-unified-newton-barrier-multibody/abd-first-slice-design.md):
-validate and publish the benchmark-packet utility slice, then resume
+validate and publish the line-search native-CCD option adapter, then resume
 shared-contract scouting from the existing rigid IPC, deformable IPC, ABD, and
 benchmark-packet evidence. Do not add a two-body affine contact micro-solve for
 the current `abd-alg-affine-body` micro-packet; add projected-Newton,
-line-search result semantics, diagnostics, or additional benchmark-schema
-contracts only after second-use behavior is proven identical across variants.
-Use
+line-search result semantics, diagnostics, or benchmark-schema contracts only
+after second-use behavior is proven identical across variants. Use
 [`../../plans/083-unified-newton-barrier-multibody/implementation-roadmap.md`](../../plans/083-unified-newton-barrier-multibody/implementation-roadmap.md)
 to keep the Phase 2 packet, shared solver contracts, articulation rows,
 restitution work, mixed-domain coupling, CPU/GPU parity, and py-demos rows
@@ -131,9 +148,9 @@ VBD/OGC-adjacent work, or shared Newton-barrier infrastructure.
   `detail/newton_barrier` so rigid IPC and ABD share the same Coulomb smoothing
   branch before reduced/affine chain rules.
 - `detail/newton_barrier/line_search.hpp` owns the shared line-search
-  option/stat types plus the positive-step predicate. Do not move full
-  line-search result structs there until rigid, deformable, ABD, or another
-  variant prove identical result semantics.
+  option/stat types, the positive-step predicate, and the conservative native
+  CCD option adapter. Do not move full line-search result structs there until
+  rigid, deformable, ABD, or another variant prove identical result semantics.
 - `scripts/benchmark_packet_utils.py` owns the shared Google Benchmark row
   parsing utilities for packet validators. Keep packet-specific metadata and
   go/no-go gates in each checker until more variants prove identical semantics.
@@ -168,8 +185,9 @@ sed -n '1,220p' docs/dev_tasks/unified_newton_barrier_multibody/README.md
 sed -n '1,220p' docs/plans/083-unified-newton-barrier-multibody/abd-first-slice-design.md
 ```
 
-Then verify the current branch with the focused Python packet tests, lint, and
-`pixi run bm-abd-comparison-packet` if the ABD checker behavior changed beyond
-row parsing. After this slice, continue with Phase 3 shared-contract scouting;
-do not describe the micro-packet as a runtime ABD solver or a paper-scale
-performance row.
+Then verify the current branch with lint and the focused native-CCD adapter
+simulation tests. Re-run the focused Python packet tests or
+`pixi run bm-abd-comparison-packet` only if packet utility or ABD checker
+behavior changes beyond the merge. After this slice, continue with Phase 3
+shared-contract scouting; do not describe the micro-packet as a runtime ABD
+solver or a paper-scale performance row.
