@@ -433,17 +433,17 @@ The latest checkpoints extend direct synthetic CUDA Jacobi/PGS evidence through
 standard/boxed 256-row and friction-index 96-contact packets, extend grouped
 synthetic CPU/CUDA Jacobi/PGS rows through 192-row standard/boxed and
 64-contact friction-index groups with matching DART 7 `ParallelExecutor` rows,
-and broaden solver-internal Jacobi threading benchmark evidence with 4096-row
-banded SPD rows for worker counts 1, 8, 16, and 32. The grouped synthetic
-CPU/CUDA rows, new direct 256-row/96-contact CPU and CUDA rows, and the
-4096-row Jacobi threading rows pass focused default, SIMD-enabled, and
-CUDA-enabled build-tree benchmark gates with `contract_ok=1`.
+and broaden solver-internal Jacobi threading benchmark evidence through
+8192-row banded SPD rows. The grouped synthetic CPU/CUDA rows, new direct
+256-row/96-contact CPU and CUDA rows, and the 8192-row Jacobi threading rows
+pass focused default, SIMD-enabled, and CUDA-enabled build-tree benchmark gates
+with `contract_ok=1`.
 Push/PR work still requires explicit maintainer/user approval.
 
 ## Immediate Next Step
 
 Move from the now-verified direct 256-row/96-contact CUDA batch rows, grouped
-synthetic CPU/CUDA batch rows, 4096-row banded Jacobi solver-internal threading
+synthetic CPU/CUDA batch rows, 8192-row banded Jacobi solver-internal threading
 rows, extreme 128-row/96-contact exact rank-deficient,
 production active-set transition 128-contact, coupled mildly ill-conditioned
 24-contact, near-singular 96-contact CPU solver rows, near-singular
@@ -814,22 +814,23 @@ contact scenes.
   not satisfy the selected exact rank-deficient boxed/findex contracts.
 - `JacobiSolver::Parameters::workerThreads` enables an opt-in solver-internal
   CPU threaded update path. `LcpGeneratedCoverage.ThreadedJacobiStandardKnownSolution`
-  passes on a 128-row generated standard LCP. `BM_LCP_COMPARE` now lists 19
+  passes on a 128-row generated standard LCP. `BM_LCP_COMPARE` now lists 21
   focused Jacobi threading rows: 4 dense rows for 128-row and 512-row standard
-  problems with 1 and 8 worker threads, plus 15 banded rows for 512-row
+  problems with 1 and 8 worker threads, plus 17 banded rows for 512-row
   standard problems with 1, 4, and 8 worker threads, 1024-row standard problems
   with 1, 4, 8, and 16 worker threads, and 2048-row standard problems with 1,
   8, 16, and 32 worker threads, plus 4096-row standard problems with 1, 8,
-  16, and 32 worker threads. Default, SIMD,
+  16, and 32 worker threads, plus 8192-row standard problems with 1 and 32
+  worker threads. Default, SIMD,
   and CUDA-enabled focused runs report `contract_ok=1`, backend build-state
   counters, `solver_internal_threads`, `worker_count`,
   `jacobi_threading_banded_spd`, `band_half_width`,
   `matrix_nonzero_entries`, and `matrix_density`; the banded rows are
   sparse-structured dense-storage inputs with densities of about 0.00974,
-  0.00488, 0.00244, and 0.00122. Focused default, SIMD-enabled, and
-  CUDA-enabled checks for the new 4096-row rows passed with `contract_ok=1`,
-  `solver_internal_threads=1/8/16/32`, `matrix_nonzero_entries=20474`, and
-  `matrix_density=0.00122035`. Treat
+  0.00488, 0.00244, 0.00122, and 0.000610. Focused default, SIMD-enabled, and
+  CUDA-enabled checks for the new 8192-row rows passed with `contract_ok=1`,
+  `solver_internal_threads=1/32`, `matrix_nonzero_entries=40954`, and
+  `matrix_density=0.000610262`. Treat
   this as correctness/comparison evidence rather than a
   performance recommendation. CUDA-enabled rows are CPU Jacobi rows in a
   CUDA-enabled build, not CUDA LCP kernel execution.
