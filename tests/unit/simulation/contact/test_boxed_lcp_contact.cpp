@@ -2624,6 +2624,16 @@ TEST(BoxedLcpContact, FourCartesianPrismaticChainsGroundStepMaintainsInvariants)
 }
 
 //==============================================================================
+// Eight connected multi-DOF articulated DART 7 chains match the next registered
+// Cartesian-chain benchmark row and cover a 24-DOF unified contact packet.
+TEST(
+    BoxedLcpContact, EightCartesianPrismaticChainsGroundStepMaintainsInvariants)
+{
+  constexpr int kChainCount = 8;
+  expectCartesianPrismaticChainsGroundStepMaintainsInvariants(kChainCount);
+}
+
+//==============================================================================
 // Two-sided articulated contact: a prismatic link pushes a dynamic rigid body.
 // The boxed-LCP unified path must apply equal-and-opposite impulses to the
 // articulated generalized velocity and the rigid target velocity.

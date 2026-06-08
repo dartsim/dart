@@ -262,8 +262,9 @@
       1-/4-/8-/16-link articulated ground-step benchmark rows through the
       public unified constraint path.
 - [x] Added DART 7 boxed-LCP connected multi-DOF articulated contact evidence
-      for two- and four-chain fixed-base three-axis prismatic Cartesian chains
-      in ground contact, plus 1-/4-/8-/16-chain articulated Cartesian
+      for two-, four-, and eight-chain fixed-base three-axis prismatic
+      Cartesian chains in ground contact, plus 1-/4-/8-/16-chain articulated
+      Cartesian
       ground-step benchmark rows through the public unified constraint path.
 - [x] Added DART 7 boxed-LCP two-sided articulated contact evidence for a
       fixed-base prismatic link pushing a dynamic rigid body, plus
@@ -1482,16 +1483,21 @@ tradeoffs evidence based.
   articulated shortcut. The focused
   `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.ArticulatedPrismaticLinkGroundStepMaintainsInvariants:BoxedLcpContact.FourArticulatedPrismaticLinksGroundStepMaintainsInvariants' --gtest_brief=1`
   run passed both articulated link-ground tests.
-  `BoxedLcpContact.CartesianPrismaticChainGroundStepMaintainsInvariants` and
-  `BoxedLcpContact.FourCartesianPrismaticChainsGroundStepMaintainsInvariants`
-  advance two and four connected three-axis prismatic Cartesian chains in
-  simultaneous tip-ground contact through `World::step(200)` with
+  `BoxedLcpContact.CartesianPrismaticChainGroundStepMaintainsInvariants`,
+  `BoxedLcpContact.FourCartesianPrismaticChainsGroundStepMaintainsInvariants`,
+  and
+  `BoxedLcpContact.EightCartesianPrismaticChainsGroundStepMaintainsInvariants`
+  advance two, four, and eight connected three-axis prismatic Cartesian chains
+  in simultaneous tip-ground contact through `World::step(200)` with
   `ContactSolverMethod::BoxedLcp`, confirm all contacts touch links, and check
-  finite state, 6 and 12 total generalized coordinates, bounded tip height
-  error, bounded joint velocities, bounded planar joint speed, and parity with
-  the sequential articulated shortcut. The focused
-  `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.CartesianPrismaticChainGroundStepMaintainsInvariants:BoxedLcpContact.FourCartesianPrismaticChainsGroundStepMaintainsInvariants' --gtest_brief=1`
-  run passed both tests.
+  finite state, 6, 12, and 24 total generalized coordinates, bounded tip
+  height error, bounded joint velocities, bounded planar joint speed, and
+  parity with the sequential articulated shortcut. The focused
+  `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.CartesianPrismaticChainGroundStepMaintainsInvariants:BoxedLcpContact.FourCartesianPrismaticChainsGroundStepMaintainsInvariants:BoxedLcpContact.EightCartesianPrismaticChainsGroundStepMaintainsInvariants' --gtest_brief=1`
+  run passed all three tests. The focused
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldArticulatedCartesianGroundStep_BoxedLcp/8/200$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  row reported `invariant_ok=1`, `cartesian_chain_count=8`,
+  `articulated_dof_count=24`, `contact_count=8`, and `step_count=200`.
   `BoxedLcpContact.ArticulatedPrismaticLinkPushesDynamicRigidBody` advances a
   fixed-base prismatic striker link in contact with a dynamic rigid sphere
   through one boxed-LCP `World::step()`, confirms the contact touches both a
@@ -1500,7 +1506,7 @@ tradeoffs evidence based.
   articulated shortcut. The focused
   `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.ArticulatedPrismaticLinkPushesDynamicRigidBody' --gtest_brief=1`
   run passed. The full `test_boxed_lcp_contact --gtest_list_tests` inventory now
-  lists 52 tests.
+  lists 53 tests.
   `BoxedLcpContact.ArticulatedPrismaticLinkPushesArticulatedPrismaticLink`
   advances a fixed-base prismatic striker link in contact with a prismatic
   target link owned by a separate multibody through one boxed-LCP
@@ -1530,7 +1536,7 @@ tradeoffs evidence based.
   `FortyEightBoxWorldStepMaintainsDenseContactInvariants` extends this to 48
   boxes and 192 dense face contacts over 4000 small public boxed-LCP
   `World::step()` iterations; the focused default run passed in 84992 ms. The
-  full `test_boxed_lcp_contact --gtest_list_tests` inventory lists 52 tests; the
+  full `test_boxed_lcp_contact --gtest_list_tests` inventory lists 53 tests; the
   earlier full `--gtest_brief=1` run still emitted the dense-patch Dantzig
   warning, so Dantzig's direct dense box solve is not claimed.
 - DART 7 world-contact benchmark evidence:
