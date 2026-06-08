@@ -1222,7 +1222,9 @@ The current local evidence for this task is:
   `total_problem_size=2088`. A grouped 48-box CUDA PGS extension was probed and
   is not claimed: at 1024 and 2048 fixed iterations the grouped validation failed two
   48-box variants with fixed-variable residual/complementarity around
-  0.606/0.625. A fixed-iteration CUDA Jacobi dense-box trial
+  0.606/0.625. A homogeneous 128-box CUDA PGS extension was also probed and is
+  not claimed because `World::collide()` returned 472 box contacts while the
+  fixture contract requires 512. A fixed-iteration CUDA Jacobi dense-box trial
   failed the LCP contract and is not claimed. The earlier failed probe used the
   previous homogeneous 4-problem and grouped 1/2/4-box dense box-face fixtures:
   at 4096 iterations with relaxation 1.0 it failed with

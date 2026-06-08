@@ -1413,7 +1413,9 @@ contact scenes.
   `total_body_count=174`, and `total_problem_size=2088`. Grouped dense-box CUDA
   remains scoped to 1/2/4/8/16/24/32-box packets; a grouped 48-box CUDA PGS
   probe failed two 48-box variants at 1024 and 2048 fixed iterations with
-  fixed-variable residual/complementarity around 0.606/0.625. A
+  fixed-variable residual/complementarity around 0.606/0.625. A homogeneous
+  128-box CUDA PGS probe also remains unclaimed because `World::collide()`
+  returned 472 box contacts while the fixture contract requires 512. A
   fixed-iteration CUDA Jacobi dense-box trial failed the LCP contract, so
   Jacobi dense-contact CUDA execution remains unclaimed. The earlier failed probe used the previous
   homogeneous 4-problem and grouped 1/2/4-box dense box-face fixtures: at 4096
