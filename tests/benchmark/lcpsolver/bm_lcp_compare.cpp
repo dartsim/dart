@@ -2963,6 +2963,54 @@ static void BM_LcpJacobiSolverThreadingBanded_Standard(benchmark::State& state)
       state, JacobiThreadingProblemKind::BandedSpd);
 }
 
+void RunRedBlackGaussSeidelThreadingBenchmark(benchmark::State& state)
+{
+  const int problemSize = static_cast<int>(state.range(0));
+  const int requestedWorkerCount = static_cast<int>(state.range(1));
+  const int largestColorSize = (problemSize + 1) / 2;
+  const int workerCount = std::max(
+      1, std::min(requestedWorkerCount, std::max(1, largestColorSize)));
+
+  const auto problem = MakeStandardBandedSpdProblem(
+      problemSize, 70'001u + static_cast<unsigned>(problemSize));
+  auto options = MakeBenchmarkOptions(300);
+  dart::math::RedBlackGaussSeidelSolver::Parameters params;
+  params.workerThreads = workerCount;
+  options.customOptions = &params;
+
+  dart::math::RedBlackGaussSeidelSolver solver;
+  RunBenchmarkWithSolver(
+      state,
+      solver,
+      problem,
+      options,
+      MakeLabel(
+          workerCount == 1 ? "RedBlackGaussSeidelSerial"
+                           : "RedBlackGaussSeidelThreaded",
+          "StandardBandedSpd"));
+
+  const double problemSizeValue = static_cast<double>(problemSize);
+  const double nonzeroEntries = CountBandedSpdNonzeros(problemSize);
+  state.counters["worker_count"] = workerCount;
+  state.counters["solver_internal_threads"] = workerCount;
+  state.counters["red_black_threading"] = 1.0;
+  state.counters["red_black_color_count"] = 2.0;
+  state.counters["red_black_red_rows"] = std::ceil(problemSizeValue / 2.0);
+  state.counters["red_black_black_rows"] = std::floor(problemSizeValue / 2.0);
+  state.counters["red_black_threaded_color_updates"]
+      = workerCount > 1 ? 1.0 : 0.0;
+  state.counters["band_half_width"] = 2.0;
+  state.counters["matrix_nonzero_entries"] = nonzeroEntries;
+  state.counters["matrix_density"]
+      = nonzeroEntries / (problemSizeValue * problemSizeValue);
+}
+
+static void BM_LcpRedBlackGaussSeidelSolverThreadingBanded_Standard(
+    benchmark::State& state)
+{
+  RunRedBlackGaussSeidelThreadingBenchmark(state);
+}
+
 enum class BenchmarkProblemFamily
 {
   Standard,
@@ -12207,6 +12255,9 @@ BENCHMARK(BM_LcpJacobiSolverThreadingBanded_Standard)
     ->Args({4096, 32})
     ->Args({8192, 1})
     ->Args({8192, 32});
+BENCHMARK(BM_LcpRedBlackGaussSeidelSolverThreadingBanded_Standard)
+    ->Args({128, 1})
+    ->Args({128, 4});
 
 #if DART_BM_LCP_COMPARE_HAS_SIMULATION_CUDA
 BENCHMARK(BM_LcpCudaJacobiBatch_Standard)

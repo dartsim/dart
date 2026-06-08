@@ -855,6 +855,25 @@ TEST(RedBlackGaussSeidelSolver, InvalidDivisionEpsilon)
 }
 
 //==============================================================================
+TEST(RedBlackGaussSeidelSolver, InvalidWorkerThreadCount)
+{
+  RedBlackGaussSeidelSolver solver;
+  RedBlackGaussSeidelSolver::Parameters params;
+  params.workerThreads = 0;
+  solver.setParameters(params);
+
+  auto problem = makeDiagonalProblem(2);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+
+  LcpOptions options;
+  options.maxIterations = 10;
+  const auto result = solver.solve(problem, x, options);
+
+  EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_FALSE(result.message.empty());
+}
+
+//==============================================================================
 TEST(SymmetricPsorSolver, RejectsInvalidRelaxation)
 {
   SymmetricPsorSolver solver;
@@ -961,6 +980,32 @@ TEST(RedBlackGaussSeidelSolver, LargeProblemHitsMaxIterations)
 
   EXPECT_EQ(result.status, LcpSolverStatus::MaxIterations);
   EXPECT_TRUE(x.array().isFinite().all());
+}
+
+//==============================================================================
+TEST(RedBlackGaussSeidelSolver, ThreadedPathMatchesSerial)
+{
+  auto problem = makeSpdProblem();
+  LcpOptions options;
+  options.maxIterations = 100;
+
+  RedBlackGaussSeidelSolver serialSolver;
+  Eigen::VectorXd serialX = Eigen::VectorXd::Zero(problem.b.size());
+  const auto serialResult = serialSolver.solve(problem, serialX, options);
+  ASSERT_TRUE(serialResult.succeeded()) << serialResult.message;
+
+  RedBlackGaussSeidelSolver threadedSolver;
+  RedBlackGaussSeidelSolver::Parameters params;
+  params.workerThreads = 2;
+  threadedSolver.setParameters(params);
+
+  Eigen::VectorXd threadedX = Eigen::VectorXd::Zero(problem.b.size());
+  const auto threadedResult = threadedSolver.solve(problem, threadedX, options);
+  ASSERT_TRUE(threadedResult.succeeded()) << threadedResult.message;
+
+  ASSERT_EQ(serialX.size(), threadedX.size());
+  EXPECT_NEAR((serialX - threadedX).lpNorm<Eigen::Infinity>(), 0.0, 1e-12);
+  EXPECT_EQ(serialResult.iterations, threadedResult.iterations);
 }
 
 //==============================================================================

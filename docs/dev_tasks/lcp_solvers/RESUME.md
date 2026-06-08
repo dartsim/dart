@@ -129,8 +129,17 @@ at relaxation 0.5, 1.0, and 1.3. Focused default, SIMD-enabled, and
 CUDA-enabled build-tree runs passed with `contract_ok=1` on every row and
 recorded under/plain/over-relaxation counters plus `red_black_color_count=2`
 with the expected 12/24 red and black row counts. The CUDA-enabled rows are CPU
-solver rows in a CUDA-enabled build, not CUDA LCP kernel execution; this is not
-evidence for solver-internal threaded Red-Black execution.
+solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
+It now also adds opt-in solver-internal CPU worker threads for
+`RedBlackGaussSeidelSolver` color sweeps. Focused tests cover invalid worker
+counts, serial/threaded equivalence on a standard SPD fixture, and a 4-worker
+128-row generated known-solution case. Focused
+`BM_LcpRedBlackGaussSeidelSolverThreadingBanded_Standard/128/{1,4}` rows pass
+in default, SIMD-enabled, and CUDA-enabled build trees with `contract_ok=1`,
+`solver_internal_threads=1/4`,
+`red_black_color_count=2`, `red_black_red_rows=64`,
+`red_black_black_rows=64`, and `red_black_threaded_color_updates=0/1`. This is
+CPU threaded update-path evidence, not a speedup or CUDA-kernel claim.
 It now also adds 9 `BM_LcpApgdRestartSweep` benchmark rows for the
 `ApgdSolver` adaptive-restart path, covering standard 48-row, boxed 24-row,
 and friction-index 8-contact fixtures for adaptive restart every iteration,
@@ -446,8 +455,9 @@ solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
 `feature/dart7-lcp-solver-evidence` - local checkpoint branch with DART 7 LCP
 solver evidence commits, including native standard-Newton warm-start tests and
 default/SIMD/CUDA-enabled warm-start single-problem and batch benchmark rows,
-PGS/PSOR, symmetric PSOR, Red-Black Gauss-Seidel relaxation sweep benchmark
-rows, APGD restart-policy benchmark rows, ADMM rho/adaptive-rho benchmark
+PGS/PSOR, symmetric PSOR, Red-Black Gauss-Seidel relaxation sweep and
+solver-internal threading benchmark rows, APGD restart-policy benchmark
+rows, ADMM rho/adaptive-rho benchmark
 rows, TGS iteration-budget benchmark rows, NNCG PGS-preconditioner iteration
 benchmark rows, SubspaceMinimization PGS-iteration benchmark rows,
 ShockPropagation layer-layout benchmark rows, MPRGP SPD/check benchmark rows,
@@ -477,7 +487,7 @@ production active-set transition 192-contact, coupled mildly ill-conditioned
 serial/parallel batch rows, exact rank-deficient singular-degenerate
 friction-index and standard/boxed batch rows, and default/SIMD/CUDA Newton warm-start
 single-problem and batch benchmark rows, plus focused
-PGS/PSOR, symmetric PSOR, and Red-Black Gauss-Seidel relaxation sweep rows,
+PGS/PSOR, symmetric PSOR, and Red-Black Gauss-Seidel relaxation/threading rows,
 APGD restart-policy sweep rows, TGS iteration-budget sweep rows, NNCG
 PGS-preconditioner iteration sweep rows, SubspaceMinimization PGS-iteration
 sweep rows, ShockPropagation layer-layout sweep rows, MPRGP SPD/check sweep
@@ -909,8 +919,18 @@ contact scenes.
   `red_black_gauss_seidel_relaxation_sweep=1`, two-color counters, backend
   build-state counters, and `contact_count=8` for the friction-index rows.
   Treat the CUDA-enabled rows as CPU solver rows in a CUDA-enabled build, not
-  CUDA LCP kernel execution; these rows do not prove solver-internal threaded
-  Red-Black execution.
+  CUDA LCP kernel execution.
+- `BM_LCP_COMPARE` now lists 2 focused
+  `BM_LcpRedBlackGaussSeidelSolverThreadingBanded_Standard/128/{1,4}` rows.
+  The focused default, SIMD-enabled, and CUDA-enabled runs report
+  `contract_ok=1`, `problem_size=128`, `solver_internal_threads=1/4`,
+  `red_black_threading=1`,
+  `red_black_color_count=2`, `red_black_red_rows=64`,
+  `red_black_black_rows=64`, `red_black_threaded_color_updates=0/1`,
+  `band_half_width=2`, and backend build-state counters. The focused
+  projection and generated-coverage unit tests also pass the invalid-worker,
+  serial/threaded equivalence, and 4-worker 128-row known-solution checks.
+  This is CPU threaded update-path evidence, not a speedup or CUDA-kernel claim.
 - `BM_LCP_COMPARE` now lists 18 focused ADMM rho/adaptive-rho sweep rows for
   the same standard 48-row, boxed 24-row, and friction-index 8-contact
   fixtures at `rhoInit` 0.5, 1.0, and 4.0 under fixed and adaptive rho

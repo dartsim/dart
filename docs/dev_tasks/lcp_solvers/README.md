@@ -30,7 +30,7 @@
       standard, boxed, and friction-index fixtures.
 - [x] Added focused Red-Black Gauss-Seidel relaxation sweep benchmark rows with
       two-color partition counters on standard, boxed, and friction-index
-      fixtures.
+      fixtures, plus focused solver-internal threaded banded-standard rows.
 - [x] Added focused APGD restart-policy sweep benchmark rows on standard,
       boxed, and friction-index fixtures.
 - [x] Added focused TGS iteration-budget sweep benchmark rows on standard,
@@ -904,9 +904,19 @@ tradeoffs evidence based.
   `psor_over_relaxation`, `problem_size=24/48`, `contact_count=8` for the
   friction-index rows, and backend build-state counters. The CUDA-enabled rows
   report `build_cuda_enabled=1` but are CPU Red-Black Gauss-Seidel solver rows
-  in a CUDA-enabled build, not CUDA LCP kernel execution. These rows expose the
-  even/odd two-color partition; they do not prove solver-internal threaded
-  Red-Black execution.
+  in a CUDA-enabled build, not CUDA LCP kernel execution.
+- Verified Red-Black Gauss-Seidel solver-internal threading slice:
+  `UNIT_math_lcp_math_lcp_lcp_projection_solvers --gtest_filter='RedBlackGaussSeidelSolver.InvalidWorkerThreadCount:RedBlackGaussSeidelSolver.ThreadedPathMatchesSerial' --gtest_brief=1`
+  passed 2 focused tests, and
+  `UNIT_math_lcp_math_lcp_lcp_generated_coverage --gtest_filter='LcpGeneratedCoverage.ThreadedRedBlackGaussSeidelStandardKnownSolution' --gtest_brief=1`
+  passed the 4-worker 128-row generated known-solution test. Focused
+  `BM_LcpRedBlackGaussSeidelSolverThreadingBanded_Standard/128/{1,4}` rows
+  passed in default, SIMD-enabled, and CUDA-enabled build trees with
+  `contract_ok=1`, `problem_size=128`, `red_black_color_count=2`,
+  `red_black_red_rows=64`, `red_black_black_rows=64`, `band_half_width=2`,
+  `solver_internal_threads=1/4`, and
+  `red_black_threaded_color_updates=0/1`. This proves the opt-in CPU threaded
+  color-update path, not a solver speedup or CUDA-kernel claim.
 - Verified APGD restart-policy benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpApgdRestartSweep' | wc -l`
   reported 9 rows, and JSON checks for `BM_LcpApgdRestartSweep` reported 9
@@ -2322,9 +2332,10 @@ tradeoffs evidence based.
   mildly ill-conditioned single-problem and coupled/4x/8x/16x batch packets,
   near-singular single-problem and batch packets, singular-degenerate
   single-problem and friction-index batch packets, PGS/PSOR, symmetric PSOR,
-  and Red-Black Gauss-Seidel relaxation sweep rows, APGD restart-policy sweep
-  rows, TGS iteration-budget sweep rows, NNCG PGS-preconditioner iteration
-  sweep rows, SubspaceMinimization PGS-iteration sweep rows, ShockPropagation
+  and Red-Black Gauss-Seidel relaxation/threading rows, APGD restart-policy
+  sweep rows, TGS iteration-budget sweep rows, NNCG PGS-preconditioner
+  iteration sweep rows, SubspaceMinimization PGS-iteration sweep rows,
+  ShockPropagation
   layer-layout sweep rows, MPRGP SPD/check sweep rows, Interior Point
   path-parameter sweep rows, Staggering contact-pipeline sweep rows, Boxed
   Semi-Smooth Newton line-search sweep rows, Pivoting scale sweep rows, ADMM

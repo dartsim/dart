@@ -1709,6 +1709,29 @@ TEST(LcpGeneratedCoverage, ThreadedJacobiStandardKnownSolution)
 }
 
 //==============================================================================
+TEST(LcpGeneratedCoverage, ThreadedRedBlackGaussSeidelStandardKnownSolution)
+{
+  const auto testCase
+      = makeStandardCase(128, ConditioningClass::WellConditioned, true, 19128);
+  dart::math::RedBlackGaussSeidelSolver solver;
+  SolverRunConfig config("RedBlackGaussSeidel", testCase);
+  dart::math::RedBlackGaussSeidelSolver::Parameters params;
+  params.workerThreads = 4;
+  config.options.customOptions = &params;
+
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(testCase.problem.b.size());
+  const auto report
+      = dart::test::SolveAndCheck(solver, testCase.problem, x, config.options);
+
+  EXPECT_TRUE(report.result.succeeded()) << dart::test::DescribeReport(report);
+  EXPECT_TRUE(report.check.ok) << dart::test::DescribeReport(report);
+  ASSERT_EQ(x.size(), testCase.expected.size());
+  const double error = (x - testCase.expected).lpNorm<Eigen::Infinity>();
+  EXPECT_NEAR(error, 0.0, config.expectedTolerance)
+      << dart::test::DescribeReport(report);
+}
+
+//==============================================================================
 TEST(LcpGeneratedCoverage, InvalidProblemsReportInvalidProblem)
 {
   for (const auto& problem : makeInvalidProblems()) {
