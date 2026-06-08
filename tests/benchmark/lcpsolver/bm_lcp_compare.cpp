@@ -95,6 +95,17 @@ namespace sx = dart::simulation;
 namespace cuda_compute = dart::simulation::compute::cuda;
 #endif
 
+double MakeDenseBoxGroundHalfExtent(int boxCount)
+{
+  // Keep larger positive-quadrant box grids fully supported by the ground.
+  const int columns
+      = static_cast<int>(std::ceil(std::sqrt(static_cast<double>(boxCount))));
+  const int rows = (boxCount + columns - 1) / columns;
+  constexpr double kSpacing = 2.0;
+  return std::max(
+      20.0, kSpacing * static_cast<double>(std::max(columns, rows) - 1) + 1.0);
+}
+
 LcpOptions MakeBenchmarkOptions(int maxIterations)
 {
   LcpOptions options;
@@ -995,8 +1006,10 @@ std::optional<WorldContactBenchmarkProblem> MakeWorldBoxContactBenchmarkProblem(
   groundOptions.isStatic = true;
   groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
   auto ground = world.addRigidBody("ground", groundOptions);
+  const double groundHalfExtent = MakeDenseBoxGroundHalfExtent(boxCount);
   ground.setCollisionShape(
-      sx::CollisionShape::makeBox(Eigen::Vector3d(20.0, 20.0, 0.5)));
+      sx::CollisionShape::makeBox(
+          Eigen::Vector3d(groundHalfExtent, groundHalfExtent, 0.5)));
   ground.setFriction(kFriction);
 
   const int columns
@@ -10960,7 +10973,8 @@ void RegisterWorldBoxContactBenchmarks()
         ->Arg(32)
         ->Arg(48)
         ->Arg(64)
-        ->Arg(96);
+        ->Arg(96)
+        ->Arg(128);
   }
 }
 

@@ -1178,9 +1178,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     snapshots, both serially and through `ParallelExecutor`. Added fixed-base
     dense box-face contact evidence: a 4-contact, 12-row boxed/findex snapshot
     APGD-verified in tests, dense contact assertions in the sliding/static box
-    `World::step()` tests, and 60 scoped
+    `World::step()` tests, and 66 scoped
     `BM_LcpWorldBoxContact/FrictionIndex` benchmark rows over
-    1/2/4/8/16/24/32/48/64/96-box snapshots verified in default, SIMD-enabled, and
+    1/2/4/8/16/24/32/48/64/96/128-box snapshots verified in default, SIMD-enabled, and
     CUDA-enabled build trees,
     plus PGS-only CUDA batch coverage for homogeneous
     1/4/8/16/24/32/48/64/96-box and
