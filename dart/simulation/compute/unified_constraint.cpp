@@ -384,6 +384,61 @@ bool solveBoxedLcpInto(
   return result.succeeded() && lambda.size() == size;
 }
 
+//==============================================================================
+void setScaledVector(
+    Eigen::VectorXd& target, const Eigen::VectorXd& source, double scale)
+{
+  target.resize(source.size());
+  for (Eigen::Index i = 0; i < source.size(); ++i) {
+    target[i] = scale * source[i];
+  }
+}
+
+//==============================================================================
+void addScaledVector(
+    Eigen::VectorXd& target, const Eigen::VectorXd& source, double scale)
+{
+  DART_ASSERT(target.size() == source.size());
+  for (Eigen::Index i = 0; i < source.size(); ++i) {
+    target[i] += scale * source[i];
+  }
+}
+
+//==============================================================================
+void addJointSpaceImpulse(
+    const Eigen::MatrixXd& inverseMass,
+    const Eigen::VectorXd& generalizedImpulse,
+    Eigen::VectorXd& velocity,
+    UnifiedConstraintSolveScratch& scratch,
+    double sign)
+{
+  DART_ASSERT(inverseMass.rows() == velocity.size());
+  DART_ASSERT(inverseMass.cols() == generalizedImpulse.size());
+
+  scratch.velocityDelta.resize(inverseMass.rows());
+  scratch.velocityDelta.noalias() = inverseMass * generalizedImpulse;
+  for (Eigen::Index i = 0; i < velocity.size(); ++i) {
+    velocity[i] += sign * scratch.velocityDelta[i];
+  }
+}
+
+//==============================================================================
+void setContactImpulse(
+    UnifiedConstraintSolveScratch& scratch,
+    const Eigen::VectorXd& normalJacobian,
+    double normalImpulse,
+    const Eigen::VectorXd& tangentJacobian1,
+    double tangentImpulse1,
+    const Eigen::VectorXd& tangentJacobian2,
+    double tangentImpulse2)
+{
+  setScaledVector(scratch.generalizedImpulse, normalJacobian, normalImpulse);
+  addScaledVector(
+      scratch.generalizedImpulse, tangentJacobian1, tangentImpulse1);
+  addScaledVector(
+      scratch.generalizedImpulse, tangentJacobian2, tangentImpulse2);
+}
+
 } // namespace
 
 //==============================================================================
@@ -392,6 +447,8 @@ void UnifiedConstraintSolveScratch::clear() noexcept
   dantzig.clear();
   lambda.resize(0);
   islandLambda.resize(0);
+  generalizedImpulse.resize(0);
+  velocityDelta.resize(0);
   islandRows.clear();
   islandOffsets.clear();
   visitedRows.clear();
@@ -823,6 +880,19 @@ void applyUnifiedConstraintImpulses(
     const Eigen::VectorXd& lambda,
     std::span<Eigen::VectorXd> multibodyVelocities)
 {
+  UnifiedConstraintSolveScratch scratch;
+  applyUnifiedConstraintImpulses(
+      registry, problem, lambda, multibodyVelocities, scratch);
+}
+
+//==============================================================================
+void applyUnifiedConstraintImpulses(
+    detail::WorldRegistry& registry,
+    const UnifiedConstraintProblem& problem,
+    const Eigen::VectorXd& lambda,
+    std::span<Eigen::VectorXd> multibodyVelocities,
+    UnifiedConstraintSolveScratch& scratch)
+{
   constexpr int kRows = UnifiedConstraintProblem::kRowsPerContact;
 
   // Rigid contacts: one world-space impulse per contact applied to both bodies.
@@ -851,10 +921,20 @@ void applyUnifiedConstraintImpulses(
       const double tangentImpulse1 = lambda[normalRow + 1];
       const double tangentImpulse2 = lambda[normalRow + 2];
 
-      velocity += block.inverseMass
-                  * (row.normalJacobian * normalImpulse
-                     + row.tangentJacobian1 * tangentImpulse1
-                     + row.tangentJacobian2 * tangentImpulse2);
+      setContactImpulse(
+          scratch,
+          row.normalJacobian,
+          normalImpulse,
+          row.tangentJacobian1,
+          tangentImpulse1,
+          row.tangentJacobian2,
+          tangentImpulse2);
+      addJointSpaceImpulse(
+          block.inverseMass,
+          scratch.generalizedImpulse,
+          velocity,
+          scratch,
+          1.0);
 
       if (row.otherMultibodyIndex >= 0) {
         const auto& otherBlock
@@ -863,10 +943,20 @@ void applyUnifiedConstraintImpulses(
         Eigen::VectorXd& otherVelocity
             = multibodyVelocities[static_cast<std::size_t>(
                 row.otherMultibodyIndex)];
-        otherVelocity -= otherBlock.inverseMass
-                         * (row.otherNormalJacobian * normalImpulse
-                            + row.otherTangentJacobian1 * tangentImpulse1
-                            + row.otherTangentJacobian2 * tangentImpulse2);
+        setContactImpulse(
+            scratch,
+            row.otherNormalJacobian,
+            normalImpulse,
+            row.otherTangentJacobian1,
+            tangentImpulse1,
+            row.otherTangentJacobian2,
+            tangentImpulse2);
+        addJointSpaceImpulse(
+            otherBlock.inverseMass,
+            scratch.generalizedImpulse,
+            otherVelocity,
+            scratch,
+            -1.0);
       }
 
       if (row.otherBody != entt::null) {
@@ -1042,14 +1132,22 @@ void applyUnifiedConstraintFallback(
         accumulated - tangentVelocity / tangentDenominator, -limit, limit);
     const double delta = newImpulse - accumulated;
     accumulated = newImpulse;
-    velocity += block.inverseMass * tangentJacobian * delta;
+    setScaledVector(scratch.generalizedImpulse, tangentJacobian, delta);
+    addJointSpaceImpulse(
+        block.inverseMass, scratch.generalizedImpulse, velocity, scratch, 1.0);
     if (row.otherMultibodyIndex >= 0) {
       const auto& otherBlock = problem.multibodyBlocks[static_cast<std::size_t>(
           row.otherMultibodyIndex)];
       Eigen::VectorXd& otherVelocity
           = multibodyVelocities[static_cast<std::size_t>(
               row.otherMultibodyIndex)];
-      otherVelocity -= otherBlock.inverseMass * otherTangentJacobian * delta;
+      setScaledVector(scratch.generalizedImpulse, otherTangentJacobian, delta);
+      addJointSpaceImpulse(
+          otherBlock.inverseMass,
+          scratch.generalizedImpulse,
+          otherVelocity,
+          scratch,
+          -1.0);
     } else if (row.otherBody != entt::null) {
       auto& obstacleVelocity = registry.get<comps::Velocity>(row.otherBody);
       obstacleVelocity.linear -= delta * row.otherInvMass * tangent;
@@ -1139,7 +1237,7 @@ bool resolveUnifiedConstraints(
 {
   if (solveUnifiedConstraintProblemInto(problem, scratch)) {
     applyUnifiedConstraintImpulses(
-        registry, problem, scratch.lambda, multibodyVelocities);
+        registry, problem, scratch.lambda, multibodyVelocities, scratch);
     return true;
   }
   applyUnifiedConstraintFallback(

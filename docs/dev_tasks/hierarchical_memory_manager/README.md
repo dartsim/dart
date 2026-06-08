@@ -159,9 +159,11 @@
       overload that avoids `LcpProblem` copies for already assembled systems,
       and a same-shape no-heap regression; `UnifiedConstraintStage` owns and
       reuses unified solve scratch that carries the Dantzig scratch plus island
-      remapping/sub-problem buffers, normal-only fallback buffers, and fallback
-      tangent accumulators. Same-shape no-heap coverage now includes unified
-      island solves and rigid plus cross-multibody fallback friction sweeps.
+      remapping/sub-problem buffers, successful link impulse application
+      buffers, normal-only fallback buffers, and fallback tangent accumulators.
+      Same-shape no-heap coverage now includes unified island solves, scratch-
+      backed link impulse application, and rigid plus cross-multibody fallback
+      friction sweeps.
       The unified assembler now reuses same-shape link-block row storage
       without per-row Eigen matrix-vector temporaries; same-shape no-heap
       coverage now also includes mixed rigid plus borrowed-link unified

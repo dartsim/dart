@@ -188,15 +188,18 @@ struct UnifiedConstraintSolution
 /// that run same-shape solves repeatedly should keep one scratch instance and
 /// pass it to the `Into`/scratch overloads so island remapping, normal-only
 /// fallback buffers, tangent accumulators, and Dantzig work arrays retain
-/// capacity across frames. `lambda` stores the most recent global solved
-/// impulse vector after `solveUnifiedConstraintProblemInto()` or fallback
-/// normal solve.
+/// capacity across frames. The impulse-application buffers let successful
+/// solves apply link-space impulses without rebuilding dynamic Eigen
+/// temporaries. `lambda` stores the most recent global solved impulse vector
+/// after `solveUnifiedConstraintProblemInto()` or fallback normal solve.
 struct DART_SIMULATION_API UnifiedConstraintSolveScratch
 {
   math::DantzigSolver solver;
   math::DantzigSolver::Scratch dantzig;
   Eigen::VectorXd lambda;
   Eigen::VectorXd islandLambda;
+  Eigen::VectorXd generalizedImpulse;
+  Eigen::VectorXd velocityDelta;
 
   std::vector<Eigen::Index> islandRows;
   std::vector<Eigen::Index> islandOffsets;
@@ -275,6 +278,15 @@ DART_SIMULATION_API void applyUnifiedConstraintImpulses(
     const UnifiedConstraintProblem& problem,
     const Eigen::VectorXd& lambda,
     std::span<Eigen::VectorXd> multibodyVelocities);
+
+/// Scratch-backed overload for step-pipeline callers that already own
+/// `UnifiedConstraintSolveScratch`.
+DART_SIMULATION_API void applyUnifiedConstraintImpulses(
+    detail::WorldRegistry& registry,
+    const UnifiedConstraintProblem& problem,
+    const Eigen::VectorXd& lambda,
+    std::span<Eigen::VectorXd> multibodyVelocities,
+    UnifiedConstraintSolveScratch& scratch);
 
 /// Resolve the unified constraints when the joint solve is rank-deficient.
 ///

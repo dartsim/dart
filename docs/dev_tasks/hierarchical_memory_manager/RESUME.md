@@ -323,6 +323,14 @@ zero-dynamic-allocation claim.
 
 ## Latest Local Validation
 
+- On 2026-06-08 after adding scratch-backed unified link impulse application,
+  the successful joint-solve path now reuses caller-owned generalized-impulse
+  and velocity-delta buffers instead of relying on dynamic Eigen temporaries,
+  and `resolveUnifiedConstraints(..., scratch)` applies solved link impulses
+  through the same scratch. Focused validation passed:
+  `cmake --build build/default/cpp/Release --target test_unified_constraint --parallel "$JOBS"`
+  and
+  `build/default/cpp/Release/bin/test_unified_constraint --gtest_filter='UnifiedConstraint.ReusedScratchAvoidsHeapAllocationWhenApplyingLinkImpulses:UnifiedConstraint.FallbackFrictionUpdatesCrossMultibodyOtherEnd:UnifiedConstraint.FallbackFrictionOpposesSlidingWithoutReversing:UnifiedConstraint.ResolveUsesJointSolveWhenWellPosed'`.
 - On 2026-06-08 after the multi-island boxed-LCP scratch checkpoint, the
   cross-multibody fallback-friction test now verifies that caller-owned
   `UnifiedConstraintSolveScratch` avoids global heap allocation for same-shape

@@ -1392,6 +1392,96 @@ TEST(UnifiedConstraint, ReusedSolutionAvoidsHeapAllocationForSameShapeIslands)
 }
 
 //==============================================================================
+TEST(
+    UnifiedConstraint,
+    ReusedScratchAvoidsHeapAllocationWhenApplyingLinkImpulses)
+{
+  sx::World world;
+
+  sx::compute::UnifiedConstraintProblem problem;
+  problem.multibodyBlocks.resize(2);
+
+  auto& block = problem.multibodyBlocks[0];
+  block.blockBase = 0;
+  block.inverseMass.resize(2, 2);
+  block.inverseMass << 2.0, 0.25, 0.25, 1.5;
+  block.rows.resize(1);
+  auto& row = block.rows[0];
+  row.normalJacobian.resize(2);
+  row.tangentJacobian1.resize(2);
+  row.tangentJacobian2.resize(2);
+  row.otherNormalJacobian.resize(2);
+  row.otherTangentJacobian1.resize(2);
+  row.otherTangentJacobian2.resize(2);
+  row.normalJacobian << 1.0, 0.5;
+  row.tangentJacobian1 << 0.25, 0.75;
+  row.tangentJacobian2 << -0.5, 0.125;
+  row.otherNormalJacobian << 0.5, -0.25;
+  row.otherTangentJacobian1 << -0.125, 0.625;
+  row.otherTangentJacobian2 << 0.375, 0.5;
+  row.otherMultibodyIndex = 1;
+
+  auto& otherBlock = problem.multibodyBlocks[1];
+  otherBlock.blockBase = 3;
+  otherBlock.inverseMass.resize(2, 2);
+  otherBlock.inverseMass << 1.25, 0.1, 0.1, 1.75;
+
+  Eigen::VectorXd lambda(3);
+  lambda << 0.8, -0.2, 0.125;
+
+  std::vector<Eigen::VectorXd> multibodyVelocities(2);
+  multibodyVelocities[0].resize(2);
+  multibodyVelocities[0] << -0.5, 0.25;
+  multibodyVelocities[1].resize(2);
+  multibodyVelocities[1] << 0.125, -0.75;
+
+  sx::compute::UnifiedConstraintSolveScratch scratch;
+  sx::compute::applyUnifiedConstraintImpulses(
+      dart::simulation::detail::registryOf(world),
+      problem,
+      lambda,
+      std::span<Eigen::VectorXd>(multibodyVelocities),
+      scratch);
+  sx::compute::applyUnifiedConstraintImpulses(
+      dart::simulation::detail::registryOf(world),
+      problem,
+      lambda,
+      std::span<Eigen::VectorXd>(multibodyVelocities),
+      scratch);
+
+  const Eigen::VectorXd beforePrimary = multibodyVelocities[0];
+  const Eigen::VectorXd beforeOther = multibodyVelocities[1];
+  std::size_t allocations = 0;
+  std::size_t bytes = 0;
+  {
+    ScopedHeapAllocationCounter heapCounter;
+    sx::compute::applyUnifiedConstraintImpulses(
+        dart::simulation::detail::registryOf(world),
+        problem,
+        lambda,
+        std::span<Eigen::VectorXd>(multibodyVelocities),
+        scratch);
+    allocations = heapCounter.allocations();
+    bytes = heapCounter.bytes();
+  }
+
+  EXPECT_EQ(allocations, 0u) << "allocated " << bytes << " bytes";
+
+  const Eigen::VectorXd primaryImpulse = lambda[0] * row.normalJacobian
+                                         + lambda[1] * row.tangentJacobian1
+                                         + lambda[2] * row.tangentJacobian2;
+  const Eigen::VectorXd otherImpulse = lambda[0] * row.otherNormalJacobian
+                                       + lambda[1] * row.otherTangentJacobian1
+                                       + lambda[2] * row.otherTangentJacobian2;
+  const Eigen::VectorXd expectedPrimary
+      = beforePrimary + block.inverseMass * primaryImpulse;
+  const Eigen::VectorXd expectedOther
+      = beforeOther - otherBlock.inverseMass * otherImpulse;
+  EXPECT_TRUE(multibodyVelocities[0].isApprox(expectedPrimary, 1e-12));
+  EXPECT_TRUE(multibodyVelocities[1].isApprox(expectedOther, 1e-12));
+}
+
+//==============================================================================
 TEST(UnifiedConstraint, SolveAndApplyStopsHeadOnRigidContact)
 {
   sx::World world;
