@@ -343,15 +343,16 @@ The current local evidence for this task is:
   coupled packets, and `coupling_scale=4` or `coupling_scale=8` for the stronger-coupled
   packets.
 - `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpMildIllConditionedBatch' | wc -l`
-  reported 56 rows, and JSON benchmark checks for
-  `BM_LcpMildIllConditionedBatch(Serial|Parallel)` reported 56 rows with
+  reported 84 rows, and JSON benchmark checks for
+  `BM_LcpMildIllConditionedBatch(Serial|Parallel)` reported 84 rows with
   `contract_ok=1` in the default, SIMD-enabled, and CUDA-enabled build trees.
   These rows compare the scoped friction-index solver set over batch-size-4
-  serial and DART 7 `ParallelExecutor` runs on the 8x-coupled 16-/24-contact
-  mildly ill-conditioned packets. The rows report
-  `mildly_ill_conditioned_batch=1`, `batch_size=4`, `contact_count=16/24`,
-  `total_contact_count=64/96`, `problem_size=48/72`,
-  `total_problem_size=192/288`, `coupling_scale=8`, backend build-state
+  serial and DART 7 `ParallelExecutor` runs on the 8x-coupled
+  16-/24-/32-contact mildly ill-conditioned packets. The rows report
+  `mildly_ill_conditioned_batch=1`, `batch_size=4`,
+  `contact_count=16/24/32`, `total_contact_count=64/96/128`,
+  `problem_size=48/72/96`, `total_problem_size=192/288/384`,
+  `coupling_scale=8`, backend build-state
   counters, and parallel execution counters on the `ParallelExecutor` rows. The
   CUDA-enabled rows are CPU solver batch rows in a CUDA-enabled build, not CUDA
   LCP kernel execution.

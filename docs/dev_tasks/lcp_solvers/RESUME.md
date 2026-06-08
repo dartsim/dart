@@ -35,8 +35,9 @@ cross-contact coupling, a stronger-coupled 32-contact packet with 8x
 cross-contact coupling, ADMM/SAP-only 16x-coupled 16-/24-/32-/48-contact
 packets, and 192 matching `BM_LcpMildIllConditioned` benchmark rows verified in
 default, SIMD-enabled, and CUDA-enabled build trees. It also
-adds 56 `BM_LcpMildIllConditionedBatch(Serial|Parallel)` rows for batch-size-4
-serial and DART 7 `ParallelExecutor` runs over the 8x-coupled 16-/24-contact
+adds 84 `BM_LcpMildIllConditionedBatch(Serial|Parallel)` rows for batch-size-4
+serial and DART 7 `ParallelExecutor` runs over the 8x-coupled
+16-/24-/32-contact
 mildly ill-conditioned packets, verified in default, SIMD-enabled, and
 CUDA-enabled build trees.
 It now also adds DART 7 per-contact block-structure evidence for BGS and
@@ -433,9 +434,9 @@ contact scenes.
   transition cases. The active-set transition correctness grid now includes
   scoped scalable-solver cases for standard 32-row, 64-row, and 128-row, boxed
   32-row, 64-row, and 128-row, and coupled friction-index 8-contact,
-  12-contact, and 16-contact packets, plus a stronger-coupled production
-  coupled friction-index 24-contact packet and a stronger 32-contact packet. The
-  larger mildly ill-conditioned
+  12-contact, and 16-contact packets, plus stronger-coupled production coupled
+  friction-index 24-, 32-, and 48-contact packets. The larger mildly
+  ill-conditioned
   correctness grid now includes standard 32/64-row, boxed 16/32-row,
   friction-index 8-contact, and coupled friction-index 6-, 8-, 12-, 16-, and
   24-contact packets over a scoped solver set; `MPRGP` is excluded after a
@@ -537,11 +538,11 @@ contact scenes.
   focused default, SIMD-enabled, and CUDA-enabled runs pass with
   `contract_ok=1` on all rows and report `mildly_ill_conditioned=1` plus
   contact/coupling counters where applicable.
-  `BM_LCP_COMPARE` also lists 56
+  `BM_LCP_COMPARE` also lists 84
   `BM_LcpMildIllConditionedBatch(Serial|Parallel)` rows for batch-size-4 serial
-  and DART 7 `ParallelExecutor` runs over the 8x-coupled 16-/24-contact mildly
-  ill-conditioned packets; focused default, SIMD-enabled, and CUDA-enabled JSON
-  checks pass with `contract_ok=1` on all rows and report
+  and DART 7 `ParallelExecutor` runs over the 8x-coupled 16-/24-/32-contact
+  mildly ill-conditioned packets; focused default, SIMD-enabled, and
+  CUDA-enabled JSON checks pass with `contract_ok=1` on all rows and report
   `mildly_ill_conditioned_batch=1`, `coupling_scale=8`, contact/total-contact
   counters, backend build-state counters, and parallel execution counters on
   `ParallelExecutor` rows.
@@ -677,7 +678,7 @@ contact scenes.
   128-row, and coupled friction-index 16-/24-/32-/48-contact known-solution cases, plus
   stress and extreme active-set transition standard 64/128-row, boxed
   64/128-row, coupled friction-index 12/16-contact, and production
-  stronger-coupled friction-index 24/32-contact known-solution cases for
+  stronger-coupled friction-index 24-/32-/48-contact known-solution cases for
   scoped solver sets. Trial
   evidence keeps the near-singular test narrow: Lemke
   produced a valid complementary solution but not the selected generated

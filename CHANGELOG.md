@@ -1091,9 +1091,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     packets with 4x and 8x cross-contact coupling plus a stronger-coupled
     32-contact packet with 8x cross-contact coupling, plus ADMM/SAP-only
     16x-coupled 16-/24-/32-/48-contact packets over the scoped solver set,
-    verified across default, SIMD-enabled, and CUDA-enabled build trees, plus 56 larger
-    mildly ill-conditioned batch rows for batch-size-4 serial and DART 7
-    `ParallelExecutor` runs over the 8x-coupled 16-/24-contact packets
+    verified across default, SIMD-enabled, and CUDA-enabled build trees, plus
+    84 larger mildly ill-conditioned batch rows for batch-size-4 serial and
+    DART 7 `ParallelExecutor` runs over the 8x-coupled 16-/24-/32-contact
+    packets
     verified across default, SIMD-enabled, and CUDA-enabled build trees, plus
     21 near-singular benchmark rows for standard 8-row, boxed 8-row, and
     coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-, 32-, and 48-contact
