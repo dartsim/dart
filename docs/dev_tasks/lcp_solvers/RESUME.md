@@ -1253,11 +1253,11 @@ contact scenes.
   `CudaLcpPgsBatch.DenseBoxWorldContactBatchSatisfiesLcpContract` and
   `CudaLcpPgsBatch.DenseBoxWorldContactGroupedBatchSatisfiesLcpContract` pass
   on homogeneous and grouped variable-size dense box-face `World::collide()`
-  snapshots. `BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex/{1,4,8,16,24,32,48}/4`
-  reports `cuda_dense_box_contact_batch=1` and `contract_ok=1`; the 48-box row
-  reports `box_count=48`, `contact_count=192`, `problem_size=576`,
-  `batch_size=4`, `total_contact_count=768`, `total_body_count=192`, and
-  `total_problem_size=2304`. `BM_LcpCudaPgsWorldBoxContactGroupedBatch_FrictionIndex/2`
+  snapshots. `BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex/{1,4,8,16,24,32,48,64}/4`
+  reports `cuda_dense_box_contact_batch=1` and `contract_ok=1`; the 64-box row
+  reports `box_count=64`, `contact_count=256`, `problem_size=768`,
+  `batch_size=4`, `total_contact_count=1024`, `total_body_count=256`, and
+  `total_problem_size=3072`. `BM_LcpCudaPgsWorldBoxContactGroupedBatch_FrictionIndex/2`
   reports `cuda_group_count=7`, `box_count_shape_count=7`,
   `min_problem_size=12`, `max_problem_size=384`, `total_contact_count=696`,
   `total_body_count=174`, and `total_problem_size=2088`. Grouped dense-box CUDA
