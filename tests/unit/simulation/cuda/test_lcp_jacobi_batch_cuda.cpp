@@ -96,6 +96,20 @@ enum class SyntheticCudaFamily
   FrictionIndex
 };
 
+const char* getSyntheticCudaFamilyName(const SyntheticCudaFamily family)
+{
+  switch (family) {
+    case SyntheticCudaFamily::Standard:
+      return "Standard";
+    case SyntheticCudaFamily::Boxed:
+      return "Boxed";
+    case SyntheticCudaFamily::FrictionIndex:
+      return "FrictionIndex";
+  }
+
+  return "Unknown";
+}
+
 enum class ArticulatedCudaContactCase
 {
   Ground,
@@ -452,6 +466,29 @@ dart::math::LcpProblem makeSyntheticProblem(
   }
 
   return makeSyntheticStandardProblem(arg, variant);
+}
+
+WorldContactBatch makeSyntheticBatch(
+    const SyntheticCudaFamily family,
+    const int arg,
+    const int batchSize,
+    const std::size_t iterations)
+{
+  cuda::LcpBatchCudaProblem packet;
+  packet.problemSize = family == SyntheticCudaFamily::FrictionIndex
+                           ? static_cast<std::size_t>(3 * arg)
+                           : static_cast<std::size_t>(arg);
+  packet.iterations = iterations;
+
+  std::vector<dart::math::LcpProblem> problems;
+  problems.reserve(static_cast<std::size_t>(batchSize));
+  for (int variant = 0; variant < batchSize; ++variant) {
+    auto problem = makeSyntheticProblem(family, arg, variant);
+    appendLcpProblem(packet, problem);
+    problems.push_back(std::move(problem));
+  }
+
+  return {std::move(packet), std::move(problems)};
 }
 
 WorldContactGroupedBatch makeSyntheticGroupedBatch(
@@ -1588,6 +1625,30 @@ TEST(
 }
 
 //==============================================================================
+TEST(CudaLcpJacobiBatch, LargerSyntheticBatchSatisfiesLcpContract)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  const std::array<std::pair<SyntheticCudaFamily, int>, 3> cases{{
+      {SyntheticCudaFamily::Standard, 128},
+      {SyntheticCudaFamily::Boxed, 128},
+      {SyntheticCudaFamily::FrictionIndex, 48},
+  }};
+  for (const auto& [family, arg] : cases) {
+    SCOPED_TRACE(
+        std::string("family=") + getSyntheticCudaFamilyName(family)
+        + " arg=" + std::to_string(arg));
+    auto fixture = makeSyntheticBatch(family, arg, 4, 512);
+
+    cuda::solveBoxedLcpJacobiBatchCuda(fixture.packet);
+
+    expectBatchSatisfiesLcpContract(fixture.packet, fixture.problems);
+  }
+}
+
+//==============================================================================
 TEST(CudaLcpJacobiBatch, WorldContactBatchSatisfiesLcpContract)
 {
   if (!cuda::isCudaRuntimeAvailable()) {
@@ -1825,6 +1886,30 @@ TEST(
     cuda::solveBoxedLcpPgsGroupedBatchCuda(fixture.packets);
 
     expectGroupedBatchSatisfiesLcpContract(fixture);
+  }
+}
+
+//==============================================================================
+TEST(CudaLcpPgsBatch, LargerSyntheticBatchSatisfiesLcpContract)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  const std::array<std::pair<SyntheticCudaFamily, int>, 3> cases{{
+      {SyntheticCudaFamily::Standard, 128},
+      {SyntheticCudaFamily::Boxed, 128},
+      {SyntheticCudaFamily::FrictionIndex, 48},
+  }};
+  for (const auto& [family, arg] : cases) {
+    SCOPED_TRACE(
+        std::string("family=") + getSyntheticCudaFamilyName(family)
+        + " arg=" + std::to_string(arg));
+    auto fixture = makeSyntheticBatch(family, arg, 4, 256);
+
+    cuda::solveBoxedLcpPgsBatchCuda(fixture.packet);
+
+    expectBatchSatisfiesLcpContract(fixture.packet, fixture.problems);
   }
 }
 

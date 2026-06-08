@@ -77,7 +77,8 @@ Support abbreviations:
   opt-in solver-internal CPU worker-thread correctness and comparison slice,
   plus experimental CUDA fixed-iteration Jacobi and PGS batch paths for
   homogeneous dense standard/boxed/friction-index LCP packets. The CUDA batch
-  evidence now also includes grouped synthetic through 96-row and 32-contact
+  evidence now reaches direct synthetic 128-row standard/boxed and 48-contact
+  friction-index packets and also includes grouped synthetic through 96-row and 32-contact
   packets, CPU serial/`ParallelExecutor` Jacobi/PGS batch rows at the same
   direct CUDA packet sizes verified in default and SIMD-enabled build trees,
   separated sphere-ground, coupled stack-contact, manually assembled
@@ -89,9 +90,10 @@ Support abbreviations:
   pipeline coverage, full SIMD benchmark gates, broader solver-internal
   multi-threaded runs, general CUDA LCP solver execution, and broader
   vectorized/CUDA LCP batch-processing paths are still missing. The narrow CUDA Jacobi/PGS batch
-  evidence now includes grouped variable-size synthetic standard/boxed/findex
-  packets through 96-row and 32-contact sizes, matching CPU serial and DART 7
-  `ParallelExecutor` Jacobi/PGS batch rows at the direct CUDA packet sizes in
+  evidence now includes direct synthetic standard/boxed/findex packets through
+  128-row and 48-contact sizes and grouped variable-size synthetic
+  standard/boxed/findex packets through 96-row and 32-contact sizes, matching
+  CPU serial and DART 7 `ParallelExecutor` Jacobi/PGS batch rows at the direct CUDA packet sizes in
   default and SIMD-enabled build trees, homogeneous 4-/8-/16-contact and grouped variable-size
   1/2/4/8/16-contact DART 7 sphere-ground world-contact packets, homogeneous
   5-/6-/7-/8-sphere and grouped variable-size 2/3/4/5/6/7/8-sphere coupled stack-contact
@@ -1131,6 +1133,10 @@ The current local evidence for this task is:
   `BM_LcpCudaPgsWorldBoxContactGroupedBatch_FrictionIndex` rows ran
   successfully and reported `build_cuda_enabled=1`, `cuda_lcp_execution=1`,
   `cuda_batch_execution=1`, fixed iteration counters, and `contract_ok=1`. The
+  direct synthetic CUDA rows now cover standard/boxed 24/48/96/128-row packets
+  and friction-index 8/16/32/48-contact packets at `batch_size=4`; the largest
+  rows report standard/boxed `total_problem_size=512` and friction-index
+  `problem_size=144`, `total_problem_size=576`. The
   grouped synthetic CUDA rows cover four problem-size groups and two-/three-variant
   rows per group. The standard and boxed rows cover 16/32/48/96-row packets;
   the `/2` rows report `batch_size=8`, `cuda_group_count=4`, and
@@ -1310,8 +1316,9 @@ The current local evidence for this task is:
   a focused SIMD-enabled CPU slice passes, a focused CUDA-enabled build/runtime
   slice passes, Jacobi has opt-in CPU worker-thread correctness/comparison
   evidence, and narrow CUDA projected-Jacobi and PGS
-  standard/boxed/friction-index plus grouped variable-size synthetic
-  standard/boxed/friction-index with two- and three-variant rows, homogeneous
+  standard/boxed/friction-index through direct 128-row and 48-contact packets
+  plus grouped variable-size synthetic standard/boxed/friction-index with two-
+  and three-variant rows, homogeneous
   4-/8-/16-contact, homogeneous
   5-/6-/7-/8-sphere coupled stack, grouped variable-size 1/2/4/8/16-contact separated
   sphere-ground and 2/3/4/5/6/7/8-sphere coupled stack world-contact batch
