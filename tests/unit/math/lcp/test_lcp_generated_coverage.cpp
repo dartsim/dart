@@ -1063,7 +1063,9 @@ std::vector<GeneratedCase> makeRobustNearSingularCases()
       makeFrictionIndexCase(48, ConditioningClass::NearSingular, 16048, true),
       makeFrictionIndexCase(64, ConditioningClass::NearSingular, 16064, true),
       makeFrictionIndexCase(
-          96, ConditioningClass::NearSingular, 16096, true, 1.0, 0.08, 1e3)};
+          96, ConditioningClass::NearSingular, 16096, true, 1.0, 0.08, 1e3),
+      makeFrictionIndexCase(
+          128, ConditioningClass::NearSingular, 16128, true, 1.0, 0.08, 1e3)};
 }
 
 std::vector<GeneratedCase> makeSingularDegenerateCases()

@@ -45,11 +45,12 @@ ill-conditioned packet set: standard 32-row, boxed 16-row, friction-index
 6-/8-/12-/16-/24-/32-/48-/64-/96-/128-contact rows. Boxed Semi-Smooth Newton reports
 tuned line-search settings on the 16x rows. The slice is verified in default,
 SIMD-enabled, and CUDA-enabled build trees.
-It also adds 50 `BM_LcpNearSingularBatch(Serial|Parallel)` rows for
-batch-size-4 serial and DART 7 `ParallelExecutor` runs over near-singular
-standard 8-row, boxed 8-row, and coupled friction-index
-3-/6-/9-/12-/16-/24-/32-/48-/64-/96-contact packets, verified in default,
-SIMD-enabled, and CUDA-enabled build trees.
+The robust near-singular generated coverage now reaches coupled friction-index
+128-contact packets. It also adds 50
+`BM_LcpNearSingularBatch(Serial|Parallel)` rows for batch-size-4 serial and
+DART 7 `ParallelExecutor` runs over near-singular standard 8-row, boxed 8-row,
+and coupled friction-index 3-/6-/9-/12-/16-/24-/32-/48-/64-/96-contact packets,
+verified in default, SIMD-enabled, and CUDA-enabled build trees.
 It also adds 54
 `BM_LcpSingularDegenerateFrictionIndexBatch(Serial|Parallel)` rows for
 batch-size-4 serial and DART 7 `ParallelExecutor` runs over exact
@@ -292,13 +293,14 @@ build-state counters. Focused block-solver unit coverage passed 15 tests. The
 CUDA-enabled rows are CPU BGS/Blocked Jacobi solver rows in a CUDA-enabled
 build, not CUDA LCP kernel execution.
 It now also extends the robust near-singular generated slice to coupled
-friction-index 96-contact packets and adds 25 matching `BM_LcpNearSingular`
-benchmark rows for standard 8-row, boxed 8-row, and coupled friction-index
-3-, 6-, 9-, 12-, 16-, 24-, 32-, 48-, 64-, and 96-contact packets verified in
-default, SIMD-enabled, and CUDA-enabled build trees. The 96-contact packet
-uses the contract-verified capped normal ramp and `1e6` diagonal spread. The
-CUDA-enabled rows are CPU solver rows in a CUDA-enabled build, not CUDA LCP
-kernel execution.
+friction-index 128-contact packets and adds 25 `BM_LcpNearSingular` benchmark
+rows for standard 8-row, boxed 8-row, and coupled friction-index 3-, 6-, 9-,
+12-, 16-, 24-, 32-, 48-, 64-, and 96-contact packets verified in
+default, SIMD-enabled, and CUDA-enabled build trees. The 96- and 128-contact
+generated packets use the contract-verified capped normal ramp and `1e6`
+diagonal spread; focused generated coverage passes in default, SIMD-enabled,
+and CUDA-enabled build trees. The CUDA-enabled rows/tests are CPU solver rows
+in a CUDA-enabled build, not CUDA LCP kernel execution.
 It now also adds exact rank-deficient singular-degenerate generated coverage
 for standard 16-row, boxed 16-row, and coupled friction-index 6-contact
 packets, plus 27 matching `BM_LcpSingularDegenerate` benchmark rows verified in
@@ -448,7 +450,7 @@ Move from the now-verified direct 256-row/96-contact CUDA batch rows, grouped
 synthetic CPU/CUDA batch rows, 8192-row banded Jacobi solver-internal threading
 rows, extreme 128-row/96-contact exact rank-deficient,
 production active-set transition 128-contact, coupled mildly ill-conditioned
-24-contact, near-singular 96-contact CPU solver rows, near-singular
+24-contact, near-singular 128-contact generated CPU solver coverage, near-singular
 serial/parallel batch rows, exact rank-deficient singular-degenerate
 friction-index and standard/boxed batch rows, and default/SIMD/CUDA Newton warm-start
 single-problem and batch benchmark rows, plus focused
@@ -794,7 +796,7 @@ contact scenes.
   6-/8-/12-/16-/24-/32-/48-/64-/96-/128-contact,
   near-singular standard 8-row,
   boxed 8-row, coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-, 32-, 48-,
-  64-, and 96-contact, and exact rank-deficient
+  64-, 96-, and 128-contact, and exact rank-deficient
   singular-degenerate standard 16-row, boxed 16-row, and coupled friction-index
   6-contact
   known-solution cases, plus

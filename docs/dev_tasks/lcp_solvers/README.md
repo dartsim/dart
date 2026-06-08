@@ -115,8 +115,8 @@
 - [x] Added a near-singular generated known-solution slice for a robust scoped
       solver set covering standard 8-row, boxed 8-row, and coupled
       friction-index 3-, 6-, 9-, 12-, 16-, 24-, 32-, 48-, 64-, and
-      96-contact cases. The 96-contact packet keeps the coupled friction-index
-      topology but uses the contract-verified capped normal ramp and `1e6`
+      96- and 128-contact cases. The 96- and 128-contact packets keep the coupled friction-index
+      topology but use the contract-verified capped normal ramp and `1e6`
       diagonal spread.
 - [x] Added a singular-degenerate generated known-solution slice with exact
       rank-deficient matrices covering standard 16-row, boxed 16-row, and
@@ -793,6 +793,14 @@ tradeoffs evidence based.
   `UNIT_math_lcp_math_lcp_lcp_generated_coverage --gtest_filter='LcpGeneratedCoverage.*'`
   passed 21 tests in the default, SIMD-enabled, and CUDA-enabled build trees
   after adding the stress, extreme, and production active-set slices.
+- Verified robust near-singular generated coverage follow-up:
+  `UNIT_math_lcp_math_lcp_lcp_generated_coverage --gtest_filter='LcpGeneratedCoverage.NearSingularKnownSolutionsForRobustSolverSlice' --gtest_brief=1`
+  passes in the default, SIMD-enabled, and CUDA-enabled build trees after
+  adding the coupled friction-index 128-contact, 384-row packet. The full
+  default generated coverage suite
+  `UNIT_math_lcp_math_lcp_lcp_generated_coverage --gtest_brief=1` also passes
+  21 tests with the expanded packet. The CUDA-enabled run is CPU generated
+  solver coverage in a CUDA-enabled build, not CUDA LCP kernel execution.
 - Verified active-set transition benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpActiveSetTransition/' | wc -l`
   reported 55 rows, and
@@ -1856,9 +1864,9 @@ tradeoffs evidence based.
   friction-index 12-contact known-solution cases over scoped scalable solvers.
 - Added `LcpGeneratedCoverage.NearSingularKnownSolutionsForRobustSolverSlice`
   for standard 8-row, boxed 8-row, and coupled friction-index 3-, 6-, 9-, 12-,
-  16-, 24-, 32-, 48-, 64-, and 96-contact near-singular known-solution cases
-  over a scoped robust solver set. The 96-contact packet keeps the coupled
-  friction-index topology but uses a capped normal ramp and `1e6` diagonal
+  16-, 24-, 32-, 48-, 64-, 96-contact, and 128-contact near-singular known-solution cases
+  over a scoped robust solver set. The 96- and 128-contact packets keep the coupled
+  friction-index topology but use a capped normal ramp and `1e6` diagonal
   spread. Trial
   evidence kept this intentionally narrow: Lemke produced a valid complementary
   solution but not the selected generated solution for the 8-row singular
@@ -1931,8 +1939,9 @@ tradeoffs evidence based.
   counters, problem/total-problem-size counters, and contact/coupling counters
   where applicable.
 - Added 25 `BM_LcpNearSingular` rows for near-singular standard 8-row, boxed
-  8-row, and coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-, 32-, and
-  48-, 64-, and 96-contact packets over the generated robust near-singular solver scope.
+  8-row, and coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-, 32-, 48-, 64-,
+  and 96-contact packets over the generated robust near-singular solver scope's
+  current benchmark subset.
   These rows report `contract_ok=1`, `near_singular=1`, backend build-state
   counters, and contact/coupling counters where applicable. The CUDA-enabled
   rows are CPU solver rows in a CUDA-enabled build, not CUDA LCP kernel
@@ -2162,7 +2171,7 @@ tradeoffs evidence based.
   15-solver single-problem and batch rows for 1x-/4x-/8x-coupled mildly
   ill-conditioned 6-, 8-, 12-, 16-, 24-, 32-, 48-, 64-, and 96-contact cases
   and 16x-coupled cases through 128 contacts,
-  near-singular 96-contact
+  near-singular 128-contact
   cases, singular-degenerate 96-contact cases, and production active-set
   transition 24-, 32-, 48-, 64-, 96-, and 128-contact cases. Denser DART 7 contact-derived
   and direct backend execution evidence still need solver-specific expansion.

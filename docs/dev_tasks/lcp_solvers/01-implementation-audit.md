@@ -115,10 +115,11 @@ Support abbreviations:
   SIMD-enabled, and CUDA-enabled build trees. It now
   also includes a scoped robust near-singular slice for standard 8-row, boxed
   8-row, and coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-, 32-, and
-  48-, 64-, and 96-contact packets, plus 25 matching benchmark rows and 50
-  matching batch benchmark rows verified in default, SIMD-enabled, and
-  CUDA-enabled build trees. The 96-contact packet uses the contract-verified
-  capped normal ramp and `1e6` diagonal spread. It now
+  48-, 64-, 96-, and 128-contact generated packets; the matching 25
+  single-problem and 50 batch benchmark rows currently cover the same slice
+  through 96 contacts in default, SIMD-enabled, and CUDA-enabled build trees.
+  The 96- and 128-contact generated packets use the contract-verified capped
+  normal ramp and `1e6` diagonal spread. It now
   also includes an exact rank-deficient singular-degenerate slice for standard
   16-row, boxed 16-row, and coupled friction-index 6-contact packets, plus 27
   matching benchmark rows verified in default, SIMD-enabled, and CUDA-enabled
@@ -424,6 +425,13 @@ The current local evidence for this task is:
   `3/6/9/12/16/24/32/48/64/96`, problem sizes `9/18/27/36/48/72/96/144/192/288`, and
   `coupled=1` for the coupled packets. The CUDA-enabled rows are CPU solver
   rows in a CUDA-enabled build, not CUDA LCP kernel execution.
+- `UNIT_math_lcp_math_lcp_lcp_generated_coverage --gtest_filter='LcpGeneratedCoverage.NearSingularKnownSolutionsForRobustSolverSlice' --gtest_brief=1`
+  passes in the default, SIMD-enabled, and CUDA-enabled build trees after
+  adding the coupled friction-index 128-contact, 384-row near-singular packet.
+  The full default generated coverage suite
+  `UNIT_math_lcp_math_lcp_lcp_generated_coverage --gtest_brief=1` also passes
+  21 tests with the expanded packet. The CUDA-enabled run is CPU generated
+  solver coverage in a CUDA-enabled build, not CUDA LCP kernel execution.
 - `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpNearSingularBatch' | wc -l`
   reported 50 rows, and JSON benchmark checks for
   `BM_LcpNearSingularBatch(Serial|Parallel)` reported 50 rows with
@@ -1314,7 +1322,7 @@ The current local evidence for this task is:
   friction-index 16-contact and 24-contact, stronger-coupled mildly
   ill-conditioned 16-/24-contact cases plus a 32-contact 8x case,
   near-singular standard 8-row, boxed 8-row, coupled friction-index 3-, 6-,
-  9-, 12-, 16-, 24-, 32-, 48-, 64-, and 96-contact, and larger exact
+  9-, 12-, 16-, 24-, 32-, 48-, 64-, 96-, and 128-contact, and larger exact
   rank-deficient
   singular-degenerate standard 32-row, boxed 32-row, and coupled
   friction-index 8-contact cases, plus stress exact rank-deficient
