@@ -307,10 +307,11 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     one-tetrahedron FEM projected-Newton steps. Self-contact barrier scratch is
     sized from bake-primed candidates for covered two-triangle
     projected-Newton self-contact steps. AVBD ground contact/friction rows and
-    self-contact normal/friction rows now reuse row-inventory and self-contact
-    adjacency storage, with bake-time reserve sizing for covered active contact
-    steps; row and friction-projection warm-start lookup now use sorted
-    reserved storage instead of map allocation or per-row linear scans. Rigid
+    self-contact normal/friction rows, including a rectangular self-contact
+    grid row workload, now reuse row-inventory and self-contact adjacency
+    storage, with bake-time reserve sizing for covered active contact steps;
+    row and friction-projection warm-start lookup now use sorted reserved
+    storage instead of map allocation or per-row linear scans. Rigid
     AVBD contact projection now reuses stage-owned snapshot, point-joint,
     row-counter, row-inventory, and solve scratch for covered active rigid
     contacts and no-contact fixed-joint rows, with baked base-allocator and

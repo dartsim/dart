@@ -168,6 +168,9 @@ an 11x11 two-layer extended production grid, a 9x13 non-square production grid,
 and a 7x17 wide non-square production grid. Additional still-larger or
 differently shaped production-scale frictional deformable contact sets need
 no-growth gates before making the full deformable claim.
+AVBD self-contact row scratch is now guarded beyond the original two-triangle
+scene with a 5x9 rectangular two-layer grid row workload and replay-backed
+self-contact/friction row activity assertions.
 
 The latest continuation verified the boxed-LCP fallback and unified island
 same-shape allocation guards, then removed the avoidable final lambda copy from
@@ -330,15 +333,27 @@ resting-contact, current boxed-LCP multi-island mixed rigid/articulated
 fallback, current active 11x11 deformable self-contact friction grid, current
 active 9x13 and 7x17 deformable self-contact friction grids, current active
 AVBD ground contact/friction rows, current active AVBD self-contact
-normal/friction row scene, current active rigid AVBD contact rows, current
-active rigid AVBD fixed-joint rows, current active inter-body deformable
-surface-CCD crossing, and basic deformable surface-snapshot scenes, while
-keeping remaining public-value unified problem/solution wrappers and larger or
-differently shaped default-solver deformable allocation surfaces explicit,
-before making a full zero-dynamic-allocation claim.
+normal/friction row scene plus a 5x9 rectangular AVBD self-contact row grid,
+current active rigid AVBD contact rows, current active rigid AVBD fixed-joint
+rows, current active inter-body deformable surface-CCD crossing, and basic
+deformable surface-snapshot scenes, while keeping remaining public-value
+unified problem/solution wrappers and larger or differently shaped
+default-solver deformable allocation surfaces explicit, before making a full
+zero-dynamic-allocation claim.
 
 ## Latest Local Validation
 
+- On 2026-06-08 after the wide deformable friction checkpoint, AVBD
+  self-contact row coverage expanded from the original two-triangle scene to a
+  5x9 rectangular two-layer grid. The grid reuses the same row-inventory,
+  self-contact adjacency, and friction warm-start path, so the guard is an
+  apple-to-apple AVBD row-scratch workload rather than another projected-Newton
+  barrier solve. Focused validation passed:
+  `cmake --build build/default/cpp/Release --target test_world --parallel "$JOBS"`
+  and
+  `build/default/cpp/Release/bin/test_world --gtest_filter='World.AvbdSelfContactFrictionGridRowsAreActive:World.BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths:World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap'`.
+  Full local gates also passed: `pixi run lint`, `pixi run build`, and
+  `pixi run test-unit`.
 - On 2026-06-08 after merging the latest `origin/main`, the deformable
   self-contact friction no-growth guard expanded from the 9x13 non-square grid
   to a 7x17 wide non-square two-layer production grid. The first guard exposed

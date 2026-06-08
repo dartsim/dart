@@ -270,8 +270,9 @@
       self-contact barriers, converged active contacts, and positive friction
       dissipation. The global heap and World-base no-growth guards now also
       cover the active inter-body deformable surface-CCD crossing, active AVBD
-      ground contact/friction rows, AVBD self-contact normal/friction rows, and
-      an active rigid AVBD penetrating contact plus no-contact fixed-joint rows.
+      ground contact/friction rows, AVBD self-contact normal/friction rows
+      including a 5x9 rectangular grid row workload, and an active rigid AVBD
+      penetrating contact plus no-contact fixed-joint rows.
       Additional still-larger or differently shaped production-scale frictional
       deformable sets still need no-growth gates before making the full
       deformable claim.
@@ -481,10 +482,11 @@ debugging, profiling, optimization experiments, and ImGui visualization.
    scales the same topology-reserved candidate/friction scratch, including
    swept-AABB line-search CCD capacity, from patch, 5x5, 7x7, and 9x9 grids to
    active 11x11 square, 9x13 non-square, and 7x17 wide non-square two-layer
-   grids. Continue broadening boxed-LCP unified
-   problem assembly and additional production contact sets while moving any
-   newly exposed deformable/contact candidate buffers to backed storage before
-   making the full zero-allocation claim.
+   grids. The AVBD self-contact row guard now also covers a 5x9 rectangular
+   grid row workload with replay-backed activity assertions. Continue broadening
+   boxed-LCP unified problem assembly and additional production contact sets
+   while moving any newly exposed deformable/contact candidate buffers to backed
+   storage before making the full zero-allocation claim.
 6. Start replacing per-step `std::vector`/`Eigen` temporaries in hot stages with
    world-frame or world-pool backed storage only after the allocator evidence
    gate proves the DART allocator path is better for that workload. The
