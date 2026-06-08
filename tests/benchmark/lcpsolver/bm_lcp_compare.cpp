@@ -11983,8 +11983,10 @@ BENCHMARK(BM_LcpCudaPgsWorldStackContactBatch_FrictionIndex)
     ->Args({6, 4})
     ->Args({7, 4})
     ->Args({8, 4});
-BENCHMARK(BM_LcpCudaJacobiWorldContactGroupedBatch_FrictionIndex)->Arg(2);
-BENCHMARK(BM_LcpCudaPgsWorldContactGroupedBatch_FrictionIndex)->Arg(2);
+BENCHMARK(BM_LcpCudaJacobiWorldContactGroupedBatch_FrictionIndex)
+    ->Arg(2)
+    ->Arg(3);
+BENCHMARK(BM_LcpCudaPgsWorldContactGroupedBatch_FrictionIndex)->Arg(2)->Arg(3);
 BENCHMARK(BM_LcpCudaJacobiWorldStackContactGroupedBatch_FrictionIndex)
     ->Arg(2)
     ->Arg(3);

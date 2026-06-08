@@ -1651,7 +1651,7 @@ TEST(CudaLcpJacobiBatch, VariableSizeWorldContactBatchSatisfiesLcpContract)
   }
 
   std::string errorMessage;
-  auto fixture = makeWorldContactGroupedBatch(2, 512, errorMessage);
+  auto fixture = makeWorldContactGroupedBatch(3, 512, errorMessage);
   ASSERT_TRUE(fixture.has_value()) << errorMessage;
 
   cuda::solveBoxedLcpJacobiGroupedBatchCuda(fixture->packets);
@@ -1900,7 +1900,7 @@ TEST(CudaLcpPgsBatch, VariableSizeWorldContactBatchSatisfiesLcpContract)
   }
 
   std::string errorMessage;
-  auto fixture = makeWorldContactGroupedBatch(2, 256, errorMessage);
+  auto fixture = makeWorldContactGroupedBatch(3, 256, errorMessage);
   ASSERT_TRUE(fixture.has_value()) << errorMessage;
 
   cuda::solveBoxedLcpPgsGroupedBatchCuda(fixture->packets);

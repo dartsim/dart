@@ -358,6 +358,9 @@
       1/2/4/8/16-contact separated sphere-ground packets, covering
       fixed-iteration CUDA Jacobi and PGS unit tests and benchmark rows on the
       visible GPU.
+      The separated grouped tests now run three velocity variants per contact
+      count, and benchmark rows keep the earlier `/2` rows while adding `/3`
+      rows.
 - [x] Added grouped variable-size CUDA contact-batch evidence for DART 7
       2/3/4/5/6/7/8-sphere coupled stack-contact packets, covering fixed-iteration
       CUDA Jacobi and PGS unit tests and benchmark rows on the visible GPU.
@@ -626,7 +629,12 @@ tradeoffs evidence based.
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpCuda(Jacobi|Pgs)WorldContactGroupedBatch_FrictionIndex' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   reported two separated CUDA rows with `contract_ok=1`, `cuda_group_count=5`,
   `contact_shape_count=5`, `max_problem_size=48`, `total_contact_count=62`,
-  and `total_problem_size=186`. A focused stack follow-up
+  and `total_problem_size=186`. A focused three-variant separated follow-up
+  `BM_LCP_COMPARE --benchmark_filter='BM_LcpCuda(Jacobi|Pgs)WorldContactGroupedBatch_FrictionIndex/3$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  reported two separated CUDA rows with `contract_ok=1`,
+  `problem_variants_per_shape=3`, `batch_size=15`, `cuda_group_count=5`,
+  `contact_shape_count=5`, `min_problem_size=3`, `max_problem_size=48`,
+  `total_contact_count=93`, and `total_problem_size=279`. A focused stack follow-up
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpCuda(Jacobi|Pgs)WorldStackContactGroupedBatch_FrictionIndex' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   reported two stack CUDA rows with `contract_ok=1`, `batch_size=14`,
   `cuda_group_count=7`, `contact_shape_count=7`, `min_problem_size=6`,
@@ -2139,9 +2147,9 @@ tradeoffs evidence based.
   PGS standard/boxed/friction-index plus grouped variable-size synthetic
   standard/boxed/friction-index through 96-row and 32-contact packets,
   homogeneous 4-/8-/16-contact, homogeneous
-  5-/6-/7-/8-sphere coupled stack, and grouped variable-size 1/2/4/8/16-contact separated
-  and 2/3/4/5/6/7/8-sphere coupled stack world-contact batch paths with
-  two- and three-variant grouped benchmark rows, plus manually
+  5-/6-/7-/8-sphere coupled stack, grouped variable-size 1/2/4/8/16-contact separated
+  sphere-ground and 2/3/4/5/6/7/8-sphere coupled stack world-contact batch
+  paths with two- and three-variant grouped benchmark rows, plus manually
   assembled 1-/4-/8-/16-contact articulated unified-contact batch paths including
   cross-multibody link-vs-link packets, mixed
   separated/stack/articulated grouped contact batch paths, and PGS-only

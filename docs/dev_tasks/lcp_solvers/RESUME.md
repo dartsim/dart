@@ -391,7 +391,8 @@ both serially and through the DART 7 experimental
 4-/8-/16-contact DART 7 world-contact packets, homogeneous 5-/6-/7-/8-sphere coupled
 stack-contact packets, grouped variable-size synthetic standard/boxed/findex
 through 96-row and 32-contact packets, grouped variable-size
-1/2/4/8/16-contact separated sphere-ground packets, plus grouped variable-size
+1/2/4/8/16-contact separated sphere-ground packets with two- and three-variant
+grouped benchmark rows, plus grouped variable-size
 2/3/4/5/6/7/8-sphere coupled stack-contact packets with two- and three-variant
 grouped benchmark rows, plus grouped variable-size manually assembled 1-/4-/8-/16-contact
 articulated unified-contact packets covering link-ground, link-vs-dynamic-rigid,
@@ -1333,10 +1334,13 @@ contact scenes.
   8-sphere rows report `batch_size=4`, `contact_count=8`, `problem_size=24`,
   `total_contact_count=32`, and `total_problem_size=96`. The separated grouped
   variable-size rows are
-  sphere-ground packets with 1/2/4/8/16 contacts
-  (`batch_size=10`, `cuda_group_count=5`, `contact_shape_count=5`,
-  `min_problem_size=3`, `max_problem_size=48`, `total_contact_count=62`,
-  `total_problem_size=186`).
+  sphere-ground packets with 1/2/4/8/16 contacts. The `/2` rows report
+  `batch_size=10`, `cuda_group_count=5`, `contact_shape_count=5`,
+  `min_problem_size=3`, `max_problem_size=48`, `total_contact_count=62`, and
+  `total_problem_size=186`; the `/3` rows report
+  `problem_variants_per_shape=3`, `batch_size=15`, `cuda_group_count=5`,
+  `contact_shape_count=5`, `min_problem_size=3`, `max_problem_size=48`,
+  `total_contact_count=93`, and `total_problem_size=279`.
   The coupled stack grouped variable-size rows are 2/3/4/5/6/7/8-sphere stack
   packets. The `/2` rows report `batch_size=14`, `cuda_group_count=7`,
   `contact_shape_count=7`, `min_problem_size=6`, `max_problem_size=24`,
@@ -1526,6 +1530,10 @@ cmake --build build/default/cpp/Release \
   "--benchmark_min_time=0.001s" \
   "--benchmark_repetitions=1" \
   "--benchmark_format=json"
+python scripts/run_benchmark_smoke.py build/cuda/cpp/Release/bin/BM_LCP_COMPARE \
+  "--benchmark_filter=BM_LcpCuda(Jacobi|Pgs)WorldContactGroupedBatch_FrictionIndex/3$" \
+  "--benchmark_min_time=0.001s" \
+  "--benchmark_repetitions=1"
 python scripts/run_benchmark_smoke.py build/cuda/cpp/Release/bin/BM_LCP_COMPARE \
   "--benchmark_filter=BM_LcpCuda(Jacobi|Pgs)WorldStackContact(Batch_FrictionIndex/8/4|GroupedBatch_FrictionIndex/2$)" \
   "--benchmark_min_time=0.001s"

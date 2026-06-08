@@ -1144,10 +1144,14 @@ The current local evidence for this task is:
   `sphere_count=8`, `contact_count=8`, `problem_size=24`,
   `total_contact_count=32`, and `total_problem_size=96`.
   The separated grouped variable-size rows now
-  use 1/2/4/8/16-contact sphere-ground packets with `batch_size=10`,
+  use 1/2/4/8/16-contact sphere-ground packets. The `/2` benchmark rows report
+  `batch_size=10`,
   `cuda_group_count=5`, `contact_shape_count=5`, `min_problem_size=3`,
   `max_problem_size=48`, `total_contact_count=62`, and
-  `total_problem_size=186`. The coupled stack
+  `total_problem_size=186`; the `/3` rows report
+  `problem_variants_per_shape=3`, `batch_size=15`, `cuda_group_count=5`,
+  `contact_shape_count=5`, `min_problem_size=3`, `max_problem_size=48`,
+  `total_contact_count=93`, and `total_problem_size=279`. The coupled stack
   grouped variable-size rows now use 2/3/4/5/6/7/8-sphere stack packets. The
   `/2` benchmark rows report
   `batch_size=14`, `cuda_group_count=7`, `contact_shape_count=7`,
@@ -1298,9 +1302,9 @@ The current local evidence for this task is:
   evidence, and narrow CUDA projected-Jacobi and PGS
   standard/boxed/friction-index plus grouped variable-size synthetic
   standard/boxed/friction-index, homogeneous 4-/8-/16-contact, homogeneous
-  5-/6-/7-/8-sphere coupled stack, and grouped variable-size 1/2/4/8/16-contact separated
-  and 2/3/4/5/6/7/8-sphere coupled stack world-contact batch paths with
-  two- and three-variant grouped benchmark rows, plus manually
+  5-/6-/7-/8-sphere coupled stack, grouped variable-size 1/2/4/8/16-contact separated
+  sphere-ground and 2/3/4/5/6/7/8-sphere coupled stack world-contact batch
+  paths with two- and three-variant grouped benchmark rows, plus manually
   assembled 1-/4-/8-/16-contact articulated unified-contact batch paths including
   cross-multibody link-vs-link packets, and mixed
   separated/stack/articulated grouped contact batch paths, scoped dense
