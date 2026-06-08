@@ -897,8 +897,8 @@ The current local evidence for this task is:
   `BM_LcpWorldBoxStep_BoxedLcp/16/500`,
   `BM_LcpWorldBoxStep_BoxedLcp/24/2000`, and
   `BM_LcpWorldBoxStep_BoxedLcp/32/4000`; the benchmark now also registers
-  `BM_LcpWorldBoxStep_BoxedLcp/48/4000`. The eight-row
-  registry covers 4/8/16/32/64/96/128/192 face contacts. Focused 24-/32-box runs
+  `BM_LcpWorldBoxStep_BoxedLcp/48/4000`. The eight-row registry covers
+  4/8/16/32/64/96/128/192 face contacts. Focused 24-/32-box runs
   reported `invariant_ok=1` and `dense_box_contact=1` in default, SIMD-enabled,
   and CUDA-enabled build trees; the default 32-box row reported
   `max_height_error=1.46e-4` and `max_vertical_speed=4.38e-2`.
@@ -907,7 +907,12 @@ The current local evidence for this task is:
   `max_vertical_speed=4.38e-2`.
   A focused default 48-box run reported `invariant_ok=1`,
   `contact_count=192`, `step_count=4000`, `max_height_error=9.80e-5`, and
-  `max_vertical_speed=1.08e-2`. The CUDA-enabled rows are CPU public-step rows
+  `max_vertical_speed=1.08e-2`. Focused SIMD-enabled and CUDA-enabled 48-box
+  runs also reported `invariant_ok=1` for 192 contacts: the SIMD row reported
+  `build_simd_enabled=1`, `max_height_error=99.597u`, and
+  `max_vertical_speed=0.0288169`; the CUDA-enabled row reported
+  `build_cuda_enabled=1`, `max_height_error=98.038u`, and
+  `max_vertical_speed=0.0108071`. The CUDA-enabled rows are CPU public-step rows
   in that build tree, not CUDA LCP kernel execution.
 - `BM_LCP_COMPARE --benchmark_list_tests` listed 190 manifest-generated
   `BM_LcpCompare/<family>/<solver>/<size>` benchmarks.

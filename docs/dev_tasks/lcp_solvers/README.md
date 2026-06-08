@@ -1461,7 +1461,6 @@ tradeoffs evidence based.
   full `test_boxed_lcp_contact --gtest_list_tests` inventory lists 51 tests; the
   earlier full `--gtest_brief=1` run still emitted the dense-patch Dantzig
   warning, so Dantzig's direct dense box solve is not claimed.
-  warning; Dantzig's direct dense box solve is not claimed.
 - DART 7 world-contact benchmark evidence:
   `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` now registers 48
   manifest-generated
@@ -1695,9 +1694,13 @@ tradeoffs evidence based.
   check finite-state, contact-height, vertical-rest, and tangential-slowing
   invariants. Focused default, SIMD-enabled, and CUDA-enabled build-tree
   runs over the 24-/32-box rows reported `invariant_ok=1`, with
-  `dense_box_contact=1`, `box_count=24/32`, and `contact_count=96/128`; the
-  focused default 48-box row reported `invariant_ok=1`, `box_count=48`,
-  `contact_count=192`, and `step_count=4000`. The
+  `dense_box_contact=1`, `box_count=24/32`, and `contact_count=96/128`; focused
+  default, SIMD-enabled, and CUDA-enabled 48-box rows also reported
+  `invariant_ok=1`, `box_count=48`, `contact_count=192`, and `step_count=4000`.
+  The SIMD-enabled 48-box row reported `build_simd_enabled=1`,
+  `max_height_error=99.597u`, and `max_vertical_speed=0.0288169`; the
+  CUDA-enabled 48-box row reported `build_cuda_enabled=1`,
+  `max_height_error=98.038u`, and `max_vertical_speed=0.0108071`. The
   CUDA-enabled rows are CPU public-step rows in that build tree, not CUDA LCP
   kernel execution.
 - DART 7 articulated contact end-to-end benchmark evidence:

@@ -1195,7 +1195,12 @@ contact scenes.
   tests. A
   focused default 48-box row reported `invariant_ok=1`, `contact_count=192`,
   `step_count=4000`, `max_height_error=9.80e-5`, and
-  `max_vertical_speed=1.08e-2`. The
+  `max_vertical_speed=1.08e-2`. Focused SIMD-enabled and CUDA-enabled 48-box
+  rows also reported `invariant_ok=1`: the SIMD row reported
+  `build_simd_enabled=1`, `max_height_error=99.597u`, and
+  `max_vertical_speed=0.0288169`, and the CUDA-enabled row reported
+  `build_cuda_enabled=1`, `max_height_error=98.038u`, and
+  `max_vertical_speed=0.0108071`. The
   CUDA-enabled rows are CPU public-step rows in that build tree, not CUDA LCP
   kernel execution. The runs still emit the dense-patch Dantzig warning, so
   treat this as public-step invariant evidence,
