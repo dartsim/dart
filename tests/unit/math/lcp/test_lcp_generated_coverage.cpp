@@ -972,6 +972,12 @@ std::vector<GeneratedCase> makeLargerMildlyIllConditionedCases()
       makeFrictionIndexCase(
           24, ConditioningClass::MildlyIllConditioned, 27024, true),
       makeFrictionIndexCase(
+          32, ConditioningClass::MildlyIllConditioned, 27032, true),
+      makeFrictionIndexCase(
+          48, ConditioningClass::MildlyIllConditioned, 27048, true),
+      makeFrictionIndexCase(
+          64, ConditioningClass::MildlyIllConditioned, 27064, true),
+      makeFrictionIndexCase(
           6, ConditioningClass::MildlyIllConditioned, 28006, true, 4.0),
       makeFrictionIndexCase(
           8, ConditioningClass::MildlyIllConditioned, 28008, true, 4.0),

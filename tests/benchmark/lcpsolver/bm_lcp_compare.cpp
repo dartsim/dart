@@ -3589,6 +3589,9 @@ enum class MildIllConditionedBenchmarkCase
   CoupledFrictionIndex12,
   CoupledFrictionIndex16,
   CoupledFrictionIndex24,
+  CoupledFrictionIndex32,
+  CoupledFrictionIndex48,
+  CoupledFrictionIndex64,
   StrongCoupledFrictionIndex6,
   StrongCoupledFrictionIndex8,
   StrongCoupledFrictionIndex12,
@@ -3989,6 +3992,12 @@ std::string_view getMildIllConditionedCaseName(
       return "CoupledFrictionIndex16";
     case MildIllConditionedBenchmarkCase::CoupledFrictionIndex24:
       return "CoupledFrictionIndex24";
+    case MildIllConditionedBenchmarkCase::CoupledFrictionIndex32:
+      return "CoupledFrictionIndex32";
+    case MildIllConditionedBenchmarkCase::CoupledFrictionIndex48:
+      return "CoupledFrictionIndex48";
+    case MildIllConditionedBenchmarkCase::CoupledFrictionIndex64:
+      return "CoupledFrictionIndex64";
     case MildIllConditionedBenchmarkCase::StrongCoupledFrictionIndex6:
       return "StrongCoupledFrictionIndex6";
     case MildIllConditionedBenchmarkCase::StrongCoupledFrictionIndex8:
@@ -4056,6 +4065,9 @@ dart::test::LcpProblemSupport getMildIllConditionedProblemSupport(
     case MildIllConditionedBenchmarkCase::CoupledFrictionIndex12:
     case MildIllConditionedBenchmarkCase::CoupledFrictionIndex16:
     case MildIllConditionedBenchmarkCase::CoupledFrictionIndex24:
+    case MildIllConditionedBenchmarkCase::CoupledFrictionIndex32:
+    case MildIllConditionedBenchmarkCase::CoupledFrictionIndex48:
+    case MildIllConditionedBenchmarkCase::CoupledFrictionIndex64:
     case MildIllConditionedBenchmarkCase::StrongCoupledFrictionIndex6:
     case MildIllConditionedBenchmarkCase::StrongCoupledFrictionIndex8:
     case MildIllConditionedBenchmarkCase::StrongCoupledFrictionIndex12:
@@ -4115,6 +4127,9 @@ bool isMildIllConditionedFrictionIndexCase(
          || testCase == MildIllConditionedBenchmarkCase::CoupledFrictionIndex12
          || testCase == MildIllConditionedBenchmarkCase::CoupledFrictionIndex16
          || testCase == MildIllConditionedBenchmarkCase::CoupledFrictionIndex24
+         || testCase == MildIllConditionedBenchmarkCase::CoupledFrictionIndex32
+         || testCase == MildIllConditionedBenchmarkCase::CoupledFrictionIndex48
+         || testCase == MildIllConditionedBenchmarkCase::CoupledFrictionIndex64
          || testCase
                 == MildIllConditionedBenchmarkCase::StrongCoupledFrictionIndex6
          || testCase
@@ -4209,12 +4224,15 @@ int getMildIllConditionedContactCount(
     case MildIllConditionedBenchmarkCase::StrongerCoupledFrictionIndex24:
     case MildIllConditionedBenchmarkCase::ExtremeCoupledFrictionIndex24:
       return 24;
+    case MildIllConditionedBenchmarkCase::CoupledFrictionIndex32:
     case MildIllConditionedBenchmarkCase::StrongCoupledFrictionIndex32:
     case MildIllConditionedBenchmarkCase::StrongerCoupledFrictionIndex32:
       return 32;
+    case MildIllConditionedBenchmarkCase::CoupledFrictionIndex48:
     case MildIllConditionedBenchmarkCase::StrongCoupledFrictionIndex48:
     case MildIllConditionedBenchmarkCase::StrongerCoupledFrictionIndex48:
       return 48;
+    case MildIllConditionedBenchmarkCase::CoupledFrictionIndex64:
     case MildIllConditionedBenchmarkCase::StrongCoupledFrictionIndex64:
     case MildIllConditionedBenchmarkCase::StrongerCoupledFrictionIndex64:
       return 64;
@@ -4240,6 +4258,9 @@ bool isMildIllConditionedCoupledFrictionIndexCase(
          || testCase == MildIllConditionedBenchmarkCase::CoupledFrictionIndex12
          || testCase == MildIllConditionedBenchmarkCase::CoupledFrictionIndex16
          || testCase == MildIllConditionedBenchmarkCase::CoupledFrictionIndex24
+         || testCase == MildIllConditionedBenchmarkCase::CoupledFrictionIndex32
+         || testCase == MildIllConditionedBenchmarkCase::CoupledFrictionIndex48
+         || testCase == MildIllConditionedBenchmarkCase::CoupledFrictionIndex64
          || testCase
                 == MildIllConditionedBenchmarkCase::StrongCoupledFrictionIndex6
          || testCase
@@ -4343,6 +4364,9 @@ double getMildIllConditionedCouplingScale(
     case MildIllConditionedBenchmarkCase::CoupledFrictionIndex12:
     case MildIllConditionedBenchmarkCase::CoupledFrictionIndex16:
     case MildIllConditionedBenchmarkCase::CoupledFrictionIndex24:
+    case MildIllConditionedBenchmarkCase::CoupledFrictionIndex32:
+    case MildIllConditionedBenchmarkCase::CoupledFrictionIndex48:
+    case MildIllConditionedBenchmarkCase::CoupledFrictionIndex64:
       return 1.0;
   }
 
@@ -4369,6 +4393,12 @@ LcpProblem MakeMildIllConditionedBenchmarkProblem(
       return MakeMildIllConditionedFrictionIndexProblem(16, 27'016u, true);
     case MildIllConditionedBenchmarkCase::CoupledFrictionIndex24:
       return MakeMildIllConditionedFrictionIndexProblem(24, 27'024u, true);
+    case MildIllConditionedBenchmarkCase::CoupledFrictionIndex32:
+      return MakeMildIllConditionedFrictionIndexProblem(32, 27'032u, true);
+    case MildIllConditionedBenchmarkCase::CoupledFrictionIndex48:
+      return MakeMildIllConditionedFrictionIndexProblem(48, 27'048u, true);
+    case MildIllConditionedBenchmarkCase::CoupledFrictionIndex64:
+      return MakeMildIllConditionedFrictionIndexProblem(64, 27'064u, true);
     case MildIllConditionedBenchmarkCase::StrongCoupledFrictionIndex6:
       return MakeMildIllConditionedFrictionIndexProblem(6, 28'006u, true, 4.0);
     case MildIllConditionedBenchmarkCase::StrongCoupledFrictionIndex8:
@@ -7192,6 +7222,15 @@ std::vector<LcpProblem> MakeMildIllConditionedBatchProblems(
     case MildIllConditionedBenchmarkCase::CoupledFrictionIndex24:
       seedBase = 27'024u;
       break;
+    case MildIllConditionedBenchmarkCase::CoupledFrictionIndex32:
+      seedBase = 27'032u;
+      break;
+    case MildIllConditionedBenchmarkCase::CoupledFrictionIndex48:
+      seedBase = 27'048u;
+      break;
+    case MildIllConditionedBenchmarkCase::CoupledFrictionIndex64:
+      seedBase = 27'064u;
+      break;
     case MildIllConditionedBenchmarkCase::StrongCoupledFrictionIndex6:
       seedBase = 28'006u;
       break;
@@ -7286,6 +7325,9 @@ std::vector<LcpProblem> MakeMildIllConditionedBatchProblems(
       case MildIllConditionedBenchmarkCase::CoupledFrictionIndex12:
       case MildIllConditionedBenchmarkCase::CoupledFrictionIndex16:
       case MildIllConditionedBenchmarkCase::CoupledFrictionIndex24:
+      case MildIllConditionedBenchmarkCase::CoupledFrictionIndex32:
+      case MildIllConditionedBenchmarkCase::CoupledFrictionIndex48:
+      case MildIllConditionedBenchmarkCase::CoupledFrictionIndex64:
       case MildIllConditionedBenchmarkCase::StrongCoupledFrictionIndex6:
       case MildIllConditionedBenchmarkCase::StrongCoupledFrictionIndex8:
       case MildIllConditionedBenchmarkCase::StrongCoupledFrictionIndex12:
@@ -10754,7 +10796,7 @@ void RegisterProductionActiveSetTransitionBatchBenchmarks()
 
 void RegisterMildIllConditionedBenchmarks()
 {
-  constexpr std::array<MildIllConditionedBenchmarkCase, 32> cases{
+  constexpr std::array<MildIllConditionedBenchmarkCase, 35> cases{
       MildIllConditionedBenchmarkCase::Standard32,
       MildIllConditionedBenchmarkCase::Boxed16,
       MildIllConditionedBenchmarkCase::FrictionIndex8,
@@ -10763,6 +10805,9 @@ void RegisterMildIllConditionedBenchmarks()
       MildIllConditionedBenchmarkCase::CoupledFrictionIndex12,
       MildIllConditionedBenchmarkCase::CoupledFrictionIndex16,
       MildIllConditionedBenchmarkCase::CoupledFrictionIndex24,
+      MildIllConditionedBenchmarkCase::CoupledFrictionIndex32,
+      MildIllConditionedBenchmarkCase::CoupledFrictionIndex48,
+      MildIllConditionedBenchmarkCase::CoupledFrictionIndex64,
       MildIllConditionedBenchmarkCase::StrongCoupledFrictionIndex6,
       MildIllConditionedBenchmarkCase::StrongCoupledFrictionIndex8,
       MildIllConditionedBenchmarkCase::StrongCoupledFrictionIndex12,
@@ -10805,7 +10850,7 @@ void RegisterMildIllConditionedBenchmarks()
 
 void RegisterMildIllConditionedBatchBenchmarks()
 {
-  constexpr std::array<MildIllConditionedBenchmarkCase, 32> cases{
+  constexpr std::array<MildIllConditionedBenchmarkCase, 35> cases{
       MildIllConditionedBenchmarkCase::Standard32,
       MildIllConditionedBenchmarkCase::Boxed16,
       MildIllConditionedBenchmarkCase::FrictionIndex8,
@@ -10814,6 +10859,9 @@ void RegisterMildIllConditionedBatchBenchmarks()
       MildIllConditionedBenchmarkCase::CoupledFrictionIndex12,
       MildIllConditionedBenchmarkCase::CoupledFrictionIndex16,
       MildIllConditionedBenchmarkCase::CoupledFrictionIndex24,
+      MildIllConditionedBenchmarkCase::CoupledFrictionIndex32,
+      MildIllConditionedBenchmarkCase::CoupledFrictionIndex48,
+      MildIllConditionedBenchmarkCase::CoupledFrictionIndex64,
       MildIllConditionedBenchmarkCase::StrongCoupledFrictionIndex6,
       MildIllConditionedBenchmarkCase::StrongCoupledFrictionIndex8,
       MildIllConditionedBenchmarkCase::StrongCoupledFrictionIndex12,
