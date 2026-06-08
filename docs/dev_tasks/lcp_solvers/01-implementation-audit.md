@@ -338,6 +338,13 @@ The current local evidence for this task is:
   `coupling_scale=2/4/8/16/32`, backend
   build-state counters, and `coupled=1`. The CUDA-enabled rows are CPU solver
   rows in a CUDA-enabled build, not CUDA LCP kernel execution.
+- `UNIT_math_lcp_math_lcp_lcp_generated_coverage --gtest_filter='LcpGeneratedCoverage.ProductionActiveSetTransitionFrictionIndexKnownSolutionsForScalableSolvers' --gtest_brief=1`
+  passes in the default, SIMD-enabled, and CUDA-enabled build trees after
+  adding the generated 128-contact, 384-row production active-set packet with
+  `coupling_scale=32`. The full default generated coverage suite
+  `UNIT_math_lcp_math_lcp_lcp_generated_coverage --gtest_brief=1` also passes
+  21 tests with the expanded packet. The CUDA-enabled run is CPU generated
+  solver coverage in a CUDA-enabled build, not CUDA LCP kernel execution.
 - `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpProductionActiveSetTransitionBatch' | wc -l`
   reports 486 rows. Previous JSON benchmark checks through the 96-contact packet
   reported 454 rows with `contract_ok=1` in the default, SIMD-enabled, and

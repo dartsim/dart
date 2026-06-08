@@ -169,7 +169,7 @@
       `BM_LcpExtremeActiveSetTransition` rows for scoped standard 128-row,
       boxed 128-row, and coupled friction-index 16-contact packets, verified in
       default, SIMD-enabled, and CUDA-enabled build trees.
-- [x] Added production active-set transition coverage and 96
+- [x] Added production active-set transition generated coverage and 96
       `BM_LcpProductionActiveSetTransition` rows for stronger-coupled
       24-contact/72-row, 32-contact/96-row, 48-contact/144-row, and
       64-contact/192-row, 96-contact/288-row, and 128-contact/384-row
@@ -1131,6 +1131,15 @@ tradeoffs evidence based.
   build-state counters, `contact_count=24/32/48/64/96`,
   `problem_size=72/96/144/192/288`, `coupling_scale=2/4/8/16/32`, and `coupled=1`. The CUDA-enabled rows are CPU solver
   rows in a CUDA-enabled build, not CUDA LCP kernel execution.
+- Verified production active-set transition generated coverage slice:
+  `UNIT_math_lcp_math_lcp_lcp_generated_coverage --gtest_filter='LcpGeneratedCoverage.ProductionActiveSetTransitionFrictionIndexKnownSolutionsForScalableSolvers' --gtest_brief=1`
+  passes in the default, SIMD-enabled, and CUDA-enabled build trees after
+  adding the 128-contact, 384-row, `coupling_scale=32` packet. The full default
+  generated coverage suite
+  `UNIT_math_lcp_math_lcp_lcp_generated_coverage --gtest_brief=1` also passes
+  21 tests with the expanded production active-set packet. The CUDA-enabled
+  run is CPU generated solver coverage in a CUDA-enabled build, not CUDA LCP
+  kernel execution.
 - Verified production active-set transition batch benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpProductionActiveSetTransitionBatch' | wc -l`
   reports 486 rows. Previous JSON benchmark checks through the 96-contact packet
@@ -2155,7 +2164,7 @@ tradeoffs evidence based.
   and 16x-coupled cases through 128 contacts,
   near-singular 96-contact
   cases, singular-degenerate 96-contact cases, and production active-set
-  transition 24-, 32-, 48-, 64-, and 96-contact cases. Denser DART 7 contact-derived
+  transition 24-, 32-, 48-, 64-, 96-, and 128-contact cases. Denser DART 7 contact-derived
   and direct backend execution evidence still need solver-specific expansion.
 - Real-world cases: the current DART 7 world-contact evidence includes
   single-contact and two-contact sphere-ground boxed-LCP snapshots, a

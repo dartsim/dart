@@ -339,7 +339,9 @@ friction-index slice: stronger-coupled 24-contact, 72-row, 32-contact, 96-row,
 128-contact, 384-row packets, plus 96 matching
 `BM_LcpProductionActiveSetTransition`
 benchmark rows verified in the default, SIMD-enabled, and CUDA-enabled build
-trees. It now also adds 486
+trees. The generated coverage test now includes the same 128-contact, 384-row,
+`coupling_scale=32` production active-set packet and passes focused default,
+SIMD-enabled, and CUDA-enabled runs. It now also adds 486
 `BM_LcpProductionActiveSetTransitionBatch(Serial|Parallel)` rows for
 batch-size-4 serial and DART 7 `ParallelExecutor` runs over standard
 32/64/128-row, boxed 32/64/128-row, and coupled friction-index
@@ -738,7 +740,10 @@ contact scenes.
   `problem_size=72/96/144/192/288`, `coupling_scale=2/4/8/16/32`, and
   `contract_ok=1` on all 80 rows; the focused 128-contact production active-set
   follow-up passes in default, SIMD-enabled, and CUDA-enabled build trees with
-  16 single rows and 32 batch rows per tree. The focused
+  16 single rows and 32 batch rows per tree. The focused generated coverage
+  test now also passes the 24-/32-/48-/64-/96-/128-contact production
+  active-set packet set in default, SIMD-enabled, and CUDA-enabled build trees,
+  and the full default generated coverage suite passes 21 tests. The focused
   `BM_LcpProductionActiveSetTransitionBatch` slice passes with
   `build_cuda_enabled=1`, `build_simd_enabled=0`,
   `production_active_set_transition_batch=1`, and `contract_ok=1` on all 454

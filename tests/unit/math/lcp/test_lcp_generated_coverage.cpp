@@ -923,7 +923,8 @@ std::vector<GeneratedCase> makeProductionActiveSetTransitionCases()
       makeFrictionIndexActiveSetTransitionCase(32, 23032, 4.0),
       makeFrictionIndexActiveSetTransitionCase(48, 23048, 8.0),
       makeFrictionIndexActiveSetTransitionCase(64, 23064, 16.0),
-      makeFrictionIndexActiveSetTransitionCase(96, 23096, 32.0)};
+      makeFrictionIndexActiveSetTransitionCase(96, 23096, 32.0),
+      makeFrictionIndexActiveSetTransitionCase(128, 23128, 32.0)};
 }
 
 std::vector<GeneratedCase> makeBatchCases()
