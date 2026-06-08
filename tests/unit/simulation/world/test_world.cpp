@@ -865,6 +865,34 @@ void configureCrossMultibodyLargeStackFallbackScene(
   world.setTimeStep(0.001);
 }
 
+void configureCrossMultibodyExtendedStackFallbackScene(
+    dart::simulation::World& world)
+{
+  namespace sx = dart::simulation;
+
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  constexpr std::array<double, 8> velocities{
+      0.8, 0.55, 0.3, 0.1, -0.1, -0.3, -0.55, -0.8};
+  for (std::size_t i = 0; i < velocities.size(); ++i) {
+    auto robot
+        = world.addMultibody("extended_stack_robot_" + std::to_string(i));
+    auto base = robot.addLink("base");
+    sx::JointSpec spec;
+    spec.name = "slider";
+    spec.type = sx::JointType::Prismatic;
+    spec.axis = Eigen::Vector3d::UnitZ();
+    auto link = robot.addLink("link", base, spec);
+    link.setMass(1.0);
+    link.setCollisionShape(sx::CollisionShape::makeSphere(0.2));
+    auto joint = link.getParentJoint();
+    joint.setPosition(Eigen::VectorXd::Constant(1, 0.35 * i));
+    joint.setVelocity(Eigen::VectorXd::Constant(1, velocities[i]));
+  }
+
+  world.setTimeStep(0.001);
+}
+
 void configureDeformableSelfContactFrictionPatchScene(
     dart::simulation::World& world)
 {
@@ -1003,7 +1031,7 @@ TEST(World, MemoryManagerOptionsAndDiagnostics)
 
   const auto diagnostics = world.getMemoryDiagnostics();
   EXPECT_LE(diagnostics.frameScratchCapacityBytes, 4096u);
-  EXPECT_GE(diagnostics.frameScratchCapacityBytes + 32u, 4096u);
+  EXPECT_GE(diagnostics.frameScratchCapacityBytes + 64u, 4096u);
   EXPECT_EQ(diagnostics.frameScratchCapacityBytes % 32u, 0u);
   EXPECT_EQ(diagnostics.frameScratchUsedBytes, 0u);
   EXPECT_EQ(diagnostics.frameScratchPeakUsedBytes, 0u);
@@ -2160,6 +2188,11 @@ TEST(World, BakedBoxedLcpFallbackContactsDoNotGrowWorldBaseAllocator)
       configureCrossMultibodyLargeStackFallbackScene,
       true,
       4);
+  expectNoWorldBaseAllocatorActivityDuringBakedBoxedLcpSteps(
+      "cross multibody extended stacked fallback",
+      configureCrossMultibodyExtendedStackFallbackScene,
+      true,
+      7);
 }
 
 TEST(World, BakedBoxedLcpFallbackContactStepsDoNotAllocateGlobalHeap)
@@ -2178,6 +2211,11 @@ TEST(World, BakedBoxedLcpFallbackContactStepsDoNotAllocateGlobalHeap)
       configureCrossMultibodyLargeStackFallbackScene,
       true,
       4);
+  expectNoGlobalHeapAllocationsDuringBakedBoxedLcpSteps(
+      "cross multibody extended stacked fallback",
+      configureCrossMultibodyExtendedStackFallbackScene,
+      true,
+      7);
 }
 
 TEST(World, SequentialImpulseBakeDoesNotPrewarmRigidIpcCollisionSurfaces)
@@ -2355,7 +2393,7 @@ TEST(World, FrameScratchCapacityReportsUsableArenaBytes)
   EXPECT_LE(
       initial.frameScratchCapacityBytes, options.frameScratchInitialCapacity);
   EXPECT_GE(
-      initial.frameScratchCapacityBytes + 32u,
+      initial.frameScratchCapacityBytes + 64u,
       options.frameScratchInitialCapacity);
   ASSERT_GT(initial.frameScratchCapacityBytes, 0u);
   EXPECT_EQ(initial.frameScratchCapacityBytes % 32u, 0u);

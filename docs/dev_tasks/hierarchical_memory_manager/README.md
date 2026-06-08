@@ -190,10 +190,11 @@
       vector on every non-vertical sweep. Surface-contact candidate and sweep
       buffers now get topology-scaled bake-time reserve capacity, so the covered
       frictional self-contact patch and 5x5 two-layer grid reuse candidate and
-      friction-contact storage through projected-Newton line-search CCD.
-      Remaining
-      return-by-value unified problem and solution convenience wrappers still
-      need backed storage or call-site migration before a full hot-loop claim.
+      friction-contact storage through projected-Newton line-search CCD. The
+      current production boxed-LCP stage uses the in-place unified assembler
+      and solve scratch; the public return-by-value unified problem and
+      solution wrappers remain allocation-boundary API conveniences rather than
+      step-loop hot paths.
 - [ ] Phase 5: Add allocation/debug accounting gates for "no dynamic allocation
       during the step loop" on representative rigid, multibody, contact, and
       deformable scenes. World base-allocator no-growth guards now cover baked
@@ -205,12 +206,12 @@
       non-cross articulated resting-contact, and same-DOF cross-articulated
       contact paths. Mixed/different-DOF, stacked, and coupled multi-row
       cross-contact boxed-LCP fallback scenes now have base-allocator
-      no-growth gates and first baked-step global heap no-allocation gates,
-      and a larger five-multibody stacked contact set extends the boxed-LCP
-      fallback gate beyond the original small scenes. Broader solver coverage,
-      including remaining public-value boxed-LCP unified problem convenience
-      wrappers, still-larger contact sets, and default-solver deformable
-      storage, remains open before making a full zero-allocation claim. The
+      no-growth gates and first baked-step global heap no-allocation gates.
+      Five-multibody and eight-multibody stacked contact sets extend the
+      boxed-LCP fallback gate beyond the original small scenes. Broader solver
+      coverage, including still-larger production contact sets and
+      default-solver deformable storage, remains open before making a full
+      zero-allocation claim. The
       global heap guard now also covers a baked deformable surface-snapshot
       scene with a static rigid surface-CCD obstacle and first-baked-step active
       VBD static rigid surface-CCD point crossing. Default projected-Newton
@@ -226,9 +227,8 @@
       default-solver deformable ground-friction projected-Newton scene plus a
       multi-triangle frictional self-contact patch and a larger 5x5 two-layer
       frictional self-contact grid. Still-larger production-scale frictional
-      deformable sets plus any remaining public-value boxed-LCP return-by-value
-      convenience surfaces still need no-growth gates before making the full
-      deformable or unified-solver claim.
+      deformable sets still need no-growth gates before making the full
+      deformable claim.
 - [ ] Phase 6: Add memory-layout profiler/debugger surfaces and GUI
       visualization. `MemoryAllocatorDebugger` now exposes structured live
       bytes, peak live bytes, and live allocation count; `MemoryManager` and
@@ -415,22 +415,21 @@ debugging, profiling, optimization experiments, and ImGui visualization.
    ```
 
    The current benchmark policy uses cached component storage handles,
-   pool-backed world-lifetime DART storage for persistent no-growth churn, and
-   a resettable frame-backed DART bake arena for build/growth churn. This is benchmark
-   evidence rather than production `WorldRegistry` wiring; production
+   free-list-backed world-lifetime DART storage for persistent no-growth churn,
+   and a resettable frame-backed DART bake arena for build/growth churn. This is
+   benchmark evidence rather than production `WorldRegistry` wiring; production
    integration needs matching no-growth tests and lifetime diagnostics.
 
 5. Extend bake-time registry/component storage reservation and no-growth
    allocation tests to remaining solver scratch step paths. The rigid-body,
    non-cross articulated, same-DOF sequential cross-articulated, and boxed-LCP
-   mixed/different-DOF, stacked, coupled multi-row, and larger stacked
-   cross-articulated guards now cover World base-allocator growth and first
-   baked-step global heap allocation by priming unified constraint scratch at
-   `enterSimulationMode()`. Continue broadening boxed-LCP unified problem
-   assembly and still-larger contact sets while moving remaining
-   return-by-value unified-problem convenience wrappers and still-larger
-   frictional deformable/contact candidate buffers to backed storage before
-   making the full zero-allocation claim.
+   mixed/different-DOF, stacked, coupled multi-row, larger stacked, and
+   extended stacked cross-articulated guards now cover World base-allocator
+   growth and first baked-step global heap allocation by priming unified
+   constraint scratch at `enterSimulationMode()`. Continue broadening
+   boxed-LCP unified problem assembly and production-scale contact sets while
+   moving still-larger frictional deformable/contact candidate buffers to
+   backed storage before making the full zero-allocation claim.
 6. Start replacing per-step `std::vector`/`Eigen` temporaries in hot stages with
    world-frame or world-pool backed storage only after the allocator evidence
    gate proves the DART allocator path is better for that workload. The

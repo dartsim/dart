@@ -1,6 +1,6 @@
 # Resume: Hierarchical Memory Manager
 
-## Current Reality (2026-06-06)
+## Current Reality (2026-06-08)
 
 Use this folder's `README.md`, `docs/plans/dashboard.md`, and the current code as
 the live status. The branch-local "Current Branch", validation-command, and PR
@@ -67,10 +67,12 @@ same-DOF cross-articulated paths after contact prewarm. Mixed/different-DOF,
 stacked, and coupled multi-row cross-articulated boxed-LCP fallback scenes now
 have World base-allocator no-growth gates and first baked-step global heap
 no-allocation gates, with unified constraint scratch primed during
-`enterSimulationMode()`. A larger five-multibody stacked boxed-LCP fallback
-scene now extends those gates beyond the original small contact sets. Public
-return-by-value boxed-LCP unified convenience wrappers, still-larger contact
-sets, and remaining solver-owned scratch remain open.
+`enterSimulationMode()`. Five-multibody and eight-multibody stacked boxed-LCP
+fallback scenes now extend those gates beyond the original small contact sets.
+Public return-by-value boxed-LCP unified convenience wrappers are API
+allocation-boundary surfaces; the production boxed-LCP stage uses in-place
+unified assembly and solve scratch. Still-larger production contact sets and
+remaining solver-owned scratch remain open.
 
 The EnTT benchmark slice (`bench/entt-registry-allocator`, PR #2890) adds
 comparative EnTT registry/component-storage rows against foonathan/memory and
@@ -152,7 +154,8 @@ local scratch. It also added a caller-owned `UnifiedConstraintSolution` overload
 so same-shape callers can reuse both solve scratch and result storage without
 heap growth. This is a convenience-wrapper allocation reduction, not a full
 hot-loop claim; the return-by-value unified problem and solution convenience
-wrappers remain explicit no-growth gaps.
+wrappers remain public allocation-boundary APIs, not current production
+step-loop call sites.
 
 The latest continuation added a two-patch deformable self-contact friction
 scene to the baked World base-allocator and global heap guards. The initial
@@ -173,9 +176,10 @@ problem, extending the earlier link-only in-place assembler coverage.
 
 ## Current Branch
 
-`feature/allocator-correctness-gates` - local branch from `main` for the common
-allocator correctness slice; uncommitted changes are present and validated
-locally.
+`feature/allocator-correctness-gates` - active branch for the allocator and
+hierarchical-memory-manager follow-up slices. Check `git status -sb` for the
+live dirty state before resuming; the latest checkpoint commit has been pushed
+to `origin/feature/allocator-correctness-gates`.
 
 ## Immediate Next Step
 
