@@ -128,6 +128,9 @@ struct RigidIpcContactStage::Scratch
   std::vector<entt::entity> writebackEntities;
   std::vector<entt::entity> orderedEntities;
   std::vector<int> visitState;
+  std::vector<double> contactPowerSum;
+  std::vector<std::uint8_t> sawNonStationaryContactBody;
+  std::vector<std::uint8_t> stationaryContactBody;
 };
 
 namespace {
@@ -8345,7 +8348,10 @@ void applyRigidIpcKinematicRuntimeBodiesAfterRejectedSolve(
 //==============================================================================
 bool canApplyRestingContactNoOp(
     const std::vector<RigidIpcRuntimeBody>& bodies,
-    const sxdetail::RigidIpcProjectedNewtonSolveResult& result)
+    const sxdetail::RigidIpcProjectedNewtonSolveResult& result,
+    std::vector<double>& contactPowerSum,
+    std::vector<std::uint8_t>& sawNonStationaryContactBody,
+    std::vector<std::uint8_t>& stationaryContactBody)
 {
   if (!result.failed
       || result.status
@@ -8359,9 +8365,9 @@ bool canApplyRestingContactNoOp(
   constexpr double kStationaryVelocityTolerance = 1e-10;
   constexpr double kContactPowerTolerance = 1e-12;
   bool sawDynamicContactBody = false;
-  std::vector<double> contactPowerSum(bodies.size(), 0.0);
-  std::vector<bool> sawNonStationaryContactBody(bodies.size(), false);
-  std::vector<bool> stationaryContactBody(bodies.size(), false);
+  contactPowerSum.assign(bodies.size(), 0.0);
+  sawNonStationaryContactBody.assign(bodies.size(), std::uint8_t{0});
+  stationaryContactBody.assign(bodies.size(), std::uint8_t{0});
   const auto accumulateContactPower = [&](const auto& constraint) {
     const std::array<std::size_t, 2> bodyIndices{
         constraint.bodyA, constraint.bodyB};
@@ -8378,10 +8384,10 @@ bool canApplyRestingContactNoOp(
         return false;
       }
       if (velocity.norm() <= kStationaryVelocityTolerance) {
-        stationaryContactBody[bodyIndex] = true;
+        stationaryContactBody[bodyIndex] = std::uint8_t{1};
         continue;
       }
-      sawNonStationaryContactBody[bodyIndex] = true;
+      sawNonStationaryContactBody[bodyIndex] = std::uint8_t{1};
 
       const auto gradient = constraint.reduced.gradient.template segment<6>(
           static_cast<Eigen::Index>(6 * localBody));
@@ -8409,11 +8415,11 @@ bool canApplyRestingContactNoOp(
   }
 
   for (std::size_t bodyIndex = 0; bodyIndex < bodies.size(); ++bodyIndex) {
-    if (!stationaryContactBody[bodyIndex]
-        && !sawNonStationaryContactBody[bodyIndex]) {
+    if (stationaryContactBody[bodyIndex] == 0u
+        && sawNonStationaryContactBody[bodyIndex] == 0u) {
       continue;
     }
-    if (!sawNonStationaryContactBody[bodyIndex]) {
+    if (sawNonStationaryContactBody[bodyIndex] == 0u) {
       continue;
     }
     if (std::abs(contactPowerSum[bodyIndex]) <= kContactPowerTolerance) {
@@ -9098,6 +9104,9 @@ void RigidIpcContactStage::prepare(World& world)
   m_scratch->writebackEntities.reserve(bodyCount);
   m_scratch->orderedEntities.reserve(bodyCount);
   m_scratch->visitState.reserve(bodyCount);
+  m_scratch->contactPowerSum.reserve(bodyCount);
+  m_scratch->sawNonStationaryContactBody.reserve(bodyCount);
+  m_scratch->stationaryContactBody.reserve(bodyCount);
 
   RigidIpcSolverStats warmupStats;
   collectRigidIpcRuntimeBodies(world, warmupStats, m_scratch->runtimeBodies);
@@ -9247,9 +9256,14 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
       solverBodies.begin(), solverBodies.end(), [](const auto& body) {
         return body.kinematic;
       });
-  const bool restingContactBlocked
-      = !hasKinematicRuntimeBody && lineSearchBlocked
-        && canApplyRestingContactNoOp(solverBodies, result);
+  const bool restingContactBlocked = !hasKinematicRuntimeBody
+                                     && lineSearchBlocked
+                                     && canApplyRestingContactNoOp(
+                                         solverBodies,
+                                         result,
+                                         scratch.contactPowerSum,
+                                         scratch.sawNonStationaryContactBody,
+                                         scratch.stationaryContactBody);
 
   m_lastStats.status = toPublicRigidIpcSolveStatus(result.status);
   m_lastStats.activeConstraints = result.assembly.activeConstraints.size();

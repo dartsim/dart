@@ -58,8 +58,10 @@ These are not the final global zero-allocation proof.
 
 The global heap guard branches pre-bake the default step stage bundle and
 kinematics graph cache at `enterSimulationMode()`, reuse rigid IPC kinematic
-scratch storage, and route rigid IPC accepted/rejected writeback through that
-stage-owned entity-order scratch instead of local traversal vectors. They add
+scratch storage, route rigid IPC accepted/rejected writeback through that
+stage-owned entity-order scratch instead of local traversal vectors, and reuse
+stage-owned per-body contact-power and stationary-flag scratch for the rigid IPC
+resting-contact no-op predicate. They add
 global `operator new` guards proving baked kinematic IPC rigid-body,
 box-obstacle, rigid-body resting-contact, non-cross articulated resting-contact,
 and same-DOF sequential cross-articulated link-contact steps do not allocate
