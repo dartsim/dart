@@ -216,9 +216,11 @@ promotion PR must include:
 
 ## First Follow-Up Work Items
 
-1. Record or confirm maintainer acceptance of the current Python root facade
-   scope (`World` and `diff` only for this promotion slice) and C++ root facade
-   deferral.
+1. Use
+   [`post-promotion-source-layout-decision.md`](post-promotion-source-layout-decision.md)
+   as the current PR #2932 folder decision: the promoted `dart/simulation` tree
+   is accepted as a guarded transition layout, and broad physical moves wait for
+   owner-specific follow-up rows and gates.
 2. Keep the promoted experimental-header allowlist, strict promotion audit,
    public-header smoke, package-contract check, and installed-package smoke
    green while preparing the C++ name/target transaction.
