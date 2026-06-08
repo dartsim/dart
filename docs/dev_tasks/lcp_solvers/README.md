@@ -349,7 +349,7 @@
 - [x] Added grouped variable-size synthetic CUDA batch evidence for DART 7
       standard 16/32/48/96-row, boxed 16/32/48/96-row, and friction-index
       4/8/16/32-contact packets, covering fixed-iteration CUDA Jacobi and PGS
-      unit tests and benchmark rows on the visible GPU.
+      unit tests and two-/three-variant benchmark rows on the visible GPU.
 - [x] Added apples-to-apples DART 7 CPU serial, DART 7 `ParallelExecutor`, and
       fixed-iteration CUDA batch benchmark rows for Jacobi and PGS on the same
       standard/boxed 24-/48-/96-row and friction-index 8-/16-/32-contact
@@ -593,15 +593,23 @@ tradeoffs evidence based.
   Jacobi and PGS batches, plus grouped variable-size 1/2/4/8/16-contact
   separated sphere-ground and 2/3/4/5/6/7/8-sphere coupled stack CUDA batches. A
   focused direct/grouped synthetic follow-up
-  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpCuda(Jacobi|Pgs)(Batch|GroupedBatch)_(Standard|Boxed|FrictionIndex)' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_format=json`
-  reported 24 CUDA rows with `contract_ok=1`. The homogeneous rows cover
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpCuda(Jacobi|Pgs)(Batch|GroupedBatch)_(Standard|Boxed|FrictionIndex)' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  reported 30 CUDA rows with `contract_ok=1`. The homogeneous rows cover
   standard and boxed 24-/48-/96-row packets and friction-index 8-/16-/32-contact
   packets at batch size 4. The grouped rows report `cuda_group_count=4` and
   `batch_size=8`; the standard and boxed grouped rows report
   `min_problem_size=16`, `max_problem_size=96`, and `total_problem_size=384`,
   while the friction-index grouped rows report `min_contact_count=4`,
   `max_contact_count=32`, `total_contact_count=120`, `min_problem_size=12`,
-  `max_problem_size=96`, and `total_problem_size=360`. A focused homogeneous
+  `max_problem_size=96`, and `total_problem_size=360`. A focused grouped
+  synthetic `/3` follow-up
+  `BM_LCP_COMPARE --benchmark_filter='BM_LcpCuda(Jacobi|Pgs)GroupedBatch_(Standard|Boxed|FrictionIndex)/3$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  reported six CUDA rows with `contract_ok=1`, `batch_size=12`,
+  `cuda_group_count=4`, standard/boxed `min_problem_size=16`,
+  `max_problem_size=96`, `total_problem_size=576`, and friction-index
+  `min_contact_count=4`, `max_contact_count=32`, `min_problem_size=12`,
+  `max_problem_size=96`, `total_contact_count=180`, and
+  `total_problem_size=540`. A focused homogeneous
   apples-to-apples CPU/CUDA follow-up
   `BM_LCP_COMPARE --benchmark_filter='^BM_LcpBatch(Serial|Parallel)/(Standard|Boxed|FrictionIndex)/(Jacobi|Pgs)/(24|48|96|8|16|32)/4$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_format=json`
   in the default build reported 36 CPU rows with `contract_ok=1`,
@@ -2045,7 +2053,8 @@ tradeoffs evidence based.
   kernels for homogeneous dense standard, boxed, and friction-index LCP batches.
   Added grouped variable-size synthetic standard/boxed/friction-index CUDA unit
   and benchmark evidence for 16/32/48/96-row standard and boxed packets plus
-  4/8/16/32-contact friction-index packets. Added homogeneous 4-/8-/16-contact
+  4/8/16/32-contact friction-index packets, with two- and three-variant grouped
+  synthetic rows. Added homogeneous 4-/8-/16-contact
   and grouped variable-size 1/2/4/8/16-contact DART 7 separated world-contact
   CUDA unit and benchmark evidence, plus homogeneous 5-/6-/7-/8-sphere and grouped
   variable-size 2/3/4/5/6/7/8-sphere coupled stack-contact CUDA unit and benchmark
@@ -2153,7 +2162,8 @@ tradeoffs evidence based.
   build state, a focused local SIMD-enabled CPU slice passes, a focused
   CUDA-enabled build/runtime slice passes, and narrow CUDA projected-Jacobi and
   PGS standard/boxed/friction-index plus grouped variable-size synthetic
-  standard/boxed/friction-index through 96-row and 32-contact packets,
+  standard/boxed/friction-index through 96-row and 32-contact packets with
+  two- and three-variant grouped synthetic benchmark rows,
   homogeneous 4-/8-/16-contact, homogeneous
   5-/6-/7-/8-sphere coupled stack, grouped variable-size 1/2/4/8/16-contact separated
   sphere-ground and 2/3/4/5/6/7/8-sphere coupled stack world-contact batch

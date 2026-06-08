@@ -1535,12 +1535,16 @@ TEST(CudaLcpJacobiBatch, VariableSizeSyntheticStandardBatchSatisfiesLcpContract)
     GTEST_SKIP() << "CUDA runtime has no available device";
   }
 
-  auto fixture
-      = makeSyntheticGroupedBatch(SyntheticCudaFamily::Standard, 2, 512);
+  for (const int variantsPerProblemArg : {2, 3}) {
+    SCOPED_TRACE(
+        "variantsPerProblemArg=" + std::to_string(variantsPerProblemArg));
+    auto fixture = makeSyntheticGroupedBatch(
+        SyntheticCudaFamily::Standard, variantsPerProblemArg, 512);
 
-  cuda::solveBoxedLcpJacobiGroupedBatchCuda(fixture.packets);
+    cuda::solveBoxedLcpJacobiGroupedBatchCuda(fixture.packets);
 
-  expectGroupedBatchSatisfiesLcpContract(fixture);
+    expectGroupedBatchSatisfiesLcpContract(fixture);
+  }
 }
 
 //==============================================================================
@@ -1550,11 +1554,16 @@ TEST(CudaLcpJacobiBatch, VariableSizeSyntheticBoxedBatchSatisfiesLcpContract)
     GTEST_SKIP() << "CUDA runtime has no available device";
   }
 
-  auto fixture = makeSyntheticGroupedBatch(SyntheticCudaFamily::Boxed, 2, 512);
+  for (const int variantsPerProblemArg : {2, 3}) {
+    SCOPED_TRACE(
+        "variantsPerProblemArg=" + std::to_string(variantsPerProblemArg));
+    auto fixture = makeSyntheticGroupedBatch(
+        SyntheticCudaFamily::Boxed, variantsPerProblemArg, 512);
 
-  cuda::solveBoxedLcpJacobiGroupedBatchCuda(fixture.packets);
+    cuda::solveBoxedLcpJacobiGroupedBatchCuda(fixture.packets);
 
-  expectGroupedBatchSatisfiesLcpContract(fixture);
+    expectGroupedBatchSatisfiesLcpContract(fixture);
+  }
 }
 
 //==============================================================================
@@ -1566,12 +1575,16 @@ TEST(
     GTEST_SKIP() << "CUDA runtime has no available device";
   }
 
-  auto fixture
-      = makeSyntheticGroupedBatch(SyntheticCudaFamily::FrictionIndex, 2, 512);
+  for (const int variantsPerProblemArg : {2, 3}) {
+    SCOPED_TRACE(
+        "variantsPerProblemArg=" + std::to_string(variantsPerProblemArg));
+    auto fixture = makeSyntheticGroupedBatch(
+        SyntheticCudaFamily::FrictionIndex, variantsPerProblemArg, 512);
 
-  cuda::solveBoxedLcpJacobiGroupedBatchCuda(fixture.packets);
+    cuda::solveBoxedLcpJacobiGroupedBatchCuda(fixture.packets);
 
-  expectGroupedBatchSatisfiesLcpContract(fixture);
+    expectGroupedBatchSatisfiesLcpContract(fixture);
+  }
 }
 
 //==============================================================================
@@ -1753,12 +1766,16 @@ TEST(CudaLcpPgsBatch, VariableSizeSyntheticStandardBatchSatisfiesLcpContract)
     GTEST_SKIP() << "CUDA runtime has no available device";
   }
 
-  auto fixture
-      = makeSyntheticGroupedBatch(SyntheticCudaFamily::Standard, 2, 256);
+  for (const int variantsPerProblemArg : {2, 3}) {
+    SCOPED_TRACE(
+        "variantsPerProblemArg=" + std::to_string(variantsPerProblemArg));
+    auto fixture = makeSyntheticGroupedBatch(
+        SyntheticCudaFamily::Standard, variantsPerProblemArg, 256);
 
-  cuda::solveBoxedLcpPgsGroupedBatchCuda(fixture.packets);
+    cuda::solveBoxedLcpPgsGroupedBatchCuda(fixture.packets);
 
-  expectGroupedBatchSatisfiesLcpContract(fixture);
+    expectGroupedBatchSatisfiesLcpContract(fixture);
+  }
 }
 
 //==============================================================================
@@ -1768,11 +1785,16 @@ TEST(CudaLcpPgsBatch, VariableSizeSyntheticBoxedBatchSatisfiesLcpContract)
     GTEST_SKIP() << "CUDA runtime has no available device";
   }
 
-  auto fixture = makeSyntheticGroupedBatch(SyntheticCudaFamily::Boxed, 2, 256);
+  for (const int variantsPerProblemArg : {2, 3}) {
+    SCOPED_TRACE(
+        "variantsPerProblemArg=" + std::to_string(variantsPerProblemArg));
+    auto fixture = makeSyntheticGroupedBatch(
+        SyntheticCudaFamily::Boxed, variantsPerProblemArg, 256);
 
-  cuda::solveBoxedLcpPgsGroupedBatchCuda(fixture.packets);
+    cuda::solveBoxedLcpPgsGroupedBatchCuda(fixture.packets);
 
-  expectGroupedBatchSatisfiesLcpContract(fixture);
+    expectGroupedBatchSatisfiesLcpContract(fixture);
+  }
 }
 
 //==============================================================================
@@ -1784,12 +1806,16 @@ TEST(
     GTEST_SKIP() << "CUDA runtime has no available device";
   }
 
-  auto fixture
-      = makeSyntheticGroupedBatch(SyntheticCudaFamily::FrictionIndex, 2, 256);
+  for (const int variantsPerProblemArg : {2, 3}) {
+    SCOPED_TRACE(
+        "variantsPerProblemArg=" + std::to_string(variantsPerProblemArg));
+    auto fixture = makeSyntheticGroupedBatch(
+        SyntheticCudaFamily::FrictionIndex, variantsPerProblemArg, 256);
 
-  cuda::solveBoxedLcpPgsGroupedBatchCuda(fixture.packets);
+    cuda::solveBoxedLcpPgsGroupedBatchCuda(fixture.packets);
 
-  expectGroupedBatchSatisfiesLcpContract(fixture);
+    expectGroupedBatchSatisfiesLcpContract(fixture);
+  }
 }
 
 //==============================================================================

@@ -1309,16 +1309,18 @@ contact scenes.
   `build_cuda_enabled=1`, `cuda_lcp_execution=1`, `cuda_batch_execution=1`,
   fixed iteration counters, and `contract_ok=1`. The direct/grouped synthetic
   CUDA follow-up
-  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpCuda(Jacobi|Pgs)(Batch|GroupedBatch)_(Standard|Boxed|FrictionIndex)' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_format=json`
-  reports 24 CUDA rows with `contract_ok=1`. The homogeneous rows cover
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpCuda(Jacobi|Pgs)(Batch|GroupedBatch)_(Standard|Boxed|FrictionIndex)' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  reports 30 CUDA rows with `contract_ok=1`. The homogeneous rows cover
   standard and boxed 24-/48-/96-row packets and friction-index 8-/16-/32-contact
-  packets at batch size 4. The grouped synthetic rows use four groups and two
-  variants per group (`batch_size=8`, `cuda_group_count=4`). The standard and
-  boxed grouped rows cover 16/32/48/96-row packets with
-  `total_problem_size=384`; the friction-index grouped rows cover
-  4/8/16/32-contact packets with `min_problem_size=12`,
-  `max_problem_size=96`, `total_contact_count=120`, and
-  `total_problem_size=360`. The apples-to-apples CPU/CUDA batch follow-up
+  packets at batch size 4. The grouped synthetic rows cover four groups and
+  two-/three-variant rows per group. The `/2` rows report `batch_size=8`,
+  `cuda_group_count=4`, standard/boxed 16/32/48/96-row packets with
+  `total_problem_size=384`, and friction-index 4/8/16/32-contact packets with
+  `min_problem_size=12`, `max_problem_size=96`, `total_contact_count=120`, and
+  `total_problem_size=360`. A focused `/3` follow-up reports `batch_size=12`,
+  `cuda_group_count=4`, standard/boxed `total_problem_size=576`, and
+  friction-index `total_contact_count=180` and `total_problem_size=540` across
+  the same size groups. The apples-to-apples CPU/CUDA batch follow-up
   reports 36 CPU serial/`ParallelExecutor` rows with `contract_ok=1`,
   `batch_size=4`, standard/boxed `problem_size=24/48/96`,
   friction-index `contact_count=8/16/32`, `parallel_units=4` on
@@ -1522,6 +1524,10 @@ cmake --build build/default/cpp/Release \
   "--benchmark_min_time=0.001s" \
   "--benchmark_repetitions=1" \
   "--benchmark_format=json"
+./build/cuda/cpp/Release/bin/BM_LCP_COMPARE \
+  "--benchmark_filter=BM_LcpCuda(Jacobi|Pgs)GroupedBatch_(Standard|Boxed|FrictionIndex)/3$" \
+  "--benchmark_min_time=0.001s" \
+  "--benchmark_repetitions=1"
 ./build/default/cpp/Release/bin/BM_LCP_COMPARE \
   "--benchmark_filter=^BM_LcpBatch(Serial|Parallel)/(Standard|Boxed|FrictionIndex)/(Jacobi|Pgs)/(24|48|96|8|16|32)/4$" \
   "--benchmark_min_time=0.001s" \

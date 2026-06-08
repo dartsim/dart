@@ -1130,12 +1130,15 @@ The current local evidence for this task is:
   `BM_LcpCudaPgsWorldBoxContactGroupedBatch_FrictionIndex` rows ran
   successfully and reported `build_cuda_enabled=1`, `cuda_lcp_execution=1`,
   `cuda_batch_execution=1`, fixed iteration counters, and `contract_ok=1`. The
-  grouped synthetic CUDA rows use three problem-size groups and two variants
-  per group (`batch_size=6`, `cuda_group_count=3`). The standard and boxed rows
-  cover 16/32/48-row packets with `total_problem_size=192`; the friction-index
-  rows cover 4/8/16-contact packets with `min_problem_size=12`,
-  `max_problem_size=48`, `total_contact_count=56`, and
-  `total_problem_size=168`. The
+  grouped synthetic CUDA rows cover four problem-size groups and two-/three-variant
+  rows per group. The standard and boxed rows cover 16/32/48/96-row packets;
+  the `/2` rows report `batch_size=8`, `cuda_group_count=4`, and
+  `total_problem_size=384`, while the `/3` rows report `batch_size=12`,
+  `cuda_group_count=4`, and `total_problem_size=576`. The friction-index rows
+  cover 4/8/16/32-contact packets with `min_problem_size=12` and
+  `max_problem_size=96`; the `/2` rows report `total_contact_count=120` and
+  `total_problem_size=360`, while the `/3` rows report
+  `total_contact_count=180` and `total_problem_size=540`. The
   homogeneous world-contact CUDA rows used DART 7 `World::collide()`
   snapshots up to 16 contacts with `batch_size=4`, `contact_count=16`,
   `problem_size=48`, `total_contact_count=64`, and `total_problem_size=192`
@@ -1307,7 +1310,8 @@ The current local evidence for this task is:
   slice passes, Jacobi has opt-in CPU worker-thread correctness/comparison
   evidence, and narrow CUDA projected-Jacobi and PGS
   standard/boxed/friction-index plus grouped variable-size synthetic
-  standard/boxed/friction-index, homogeneous 4-/8-/16-contact, homogeneous
+  standard/boxed/friction-index with two- and three-variant rows, homogeneous
+  4-/8-/16-contact, homogeneous
   5-/6-/7-/8-sphere coupled stack, grouped variable-size 1/2/4/8/16-contact separated
   sphere-ground and 2/3/4/5/6/7/8-sphere coupled stack world-contact batch
   paths with two- and three-variant grouped benchmark rows, plus manually

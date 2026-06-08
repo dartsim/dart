@@ -11944,12 +11944,12 @@ BENCHMARK(BM_LcpCudaPgsBatch_FrictionIndex)
     ->Args({8, 4})
     ->Args({16, 4})
     ->Args({32, 4});
-BENCHMARK(BM_LcpCudaJacobiGroupedBatch_Standard)->Arg(2);
-BENCHMARK(BM_LcpCudaJacobiGroupedBatch_Boxed)->Arg(2);
-BENCHMARK(BM_LcpCudaJacobiGroupedBatch_FrictionIndex)->Arg(2);
-BENCHMARK(BM_LcpCudaPgsGroupedBatch_Standard)->Arg(2);
-BENCHMARK(BM_LcpCudaPgsGroupedBatch_Boxed)->Arg(2);
-BENCHMARK(BM_LcpCudaPgsGroupedBatch_FrictionIndex)->Arg(2);
+BENCHMARK(BM_LcpCudaJacobiGroupedBatch_Standard)->Arg(2)->Arg(3);
+BENCHMARK(BM_LcpCudaJacobiGroupedBatch_Boxed)->Arg(2)->Arg(3);
+BENCHMARK(BM_LcpCudaJacobiGroupedBatch_FrictionIndex)->Arg(2)->Arg(3);
+BENCHMARK(BM_LcpCudaPgsGroupedBatch_Standard)->Arg(2)->Arg(3);
+BENCHMARK(BM_LcpCudaPgsGroupedBatch_Boxed)->Arg(2)->Arg(3);
+BENCHMARK(BM_LcpCudaPgsGroupedBatch_FrictionIndex)->Arg(2)->Arg(3);
 #endif
 
 #if DART_BM_LCP_COMPARE_HAS_SIMULATION                                         \
