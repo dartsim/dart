@@ -1191,33 +1191,44 @@ std::unique_ptr<sx::World> buildArticulatedGroundScene(
 }
 
 std::unique_ptr<sx::World> buildArticulatedRigidImpactScene(
-    sx::ContactSolverMethod method)
+    sx::ContactSolverMethod method, int pairCount = 1)
 {
+  EXPECT_GT(pairCount, 0);
   sx::WorldOptions options;
   options.timeStep = 0.001;
   options.gravity = Eigen::Vector3d::Zero();
   options.contactSolverMethod = method;
   auto world = std::make_unique<sx::World>(options);
 
-  auto robot = world->addMultibody("striker_robot");
-  auto base = robot.addLink("base");
-  sx::JointSpec spec;
-  spec.name = "rail";
-  spec.type = sx::JointType::Prismatic;
-  spec.axis = Eigen::Vector3d::UnitX();
-  auto striker = robot.addLink("striker", base, spec);
-  striker.setMass(2.0);
-  striker.setInertia(Eigen::Matrix3d::Identity());
-  striker.setCollisionShape(sx::CollisionShape::makeSphere(0.2));
-  auto joint = striker.getParentJoint();
-  joint.setVelocity(Eigen::VectorXd::Constant(1, 1.0));
+  constexpr double kSpacing = 1.0;
+  for (int i = 0; i < pairCount; ++i) {
+    const double y = kSpacing * static_cast<double>(i);
+    auto robot = world->addMultibody(
+        pairCount == 1 ? "striker_robot"
+                       : "striker_robot_" + std::to_string(i));
+    auto base = robot.addLink("base");
+    sx::JointSpec spec;
+    spec.name = "rail";
+    spec.type = sx::JointType::Prismatic;
+    spec.axis = Eigen::Vector3d::UnitX();
+    spec.transformFromParent = Eigen::Isometry3d::Identity();
+    spec.transformFromParent.translation() = Eigen::Vector3d(0.0, y, 0.0);
+    auto striker = robot.addLink("striker", base, spec);
+    striker.setMass(2.0);
+    striker.setInertia(Eigen::Matrix3d::Identity());
+    striker.setCollisionShape(sx::CollisionShape::makeSphere(0.2));
+    auto joint = striker.getParentJoint();
+    joint.setVelocity(Eigen::VectorXd::Constant(1, 1.0));
 
-  sx::RigidBodyOptions targetOptions;
-  targetOptions.position = Eigen::Vector3d(0.399, 0.0, 0.0);
-  targetOptions.mass = 1.0;
-  targetOptions.inertia = Eigen::Matrix3d::Identity();
-  auto target = world->addRigidBody("target", targetOptions);
-  target.setCollisionShape(sx::CollisionShape::makeSphere(0.2));
+    sx::RigidBodyOptions targetOptions;
+    targetOptions.position = Eigen::Vector3d(0.399, y, 0.0);
+    targetOptions.mass = 1.0;
+    targetOptions.inertia = Eigen::Matrix3d::Identity();
+    auto target = world->addRigidBody(
+        pairCount == 1 ? "target" : "target_" + std::to_string(i),
+        targetOptions);
+    target.setCollisionShape(sx::CollisionShape::makeSphere(0.2));
+  }
 
   return world;
 }
@@ -1460,6 +1471,17 @@ struct ArticulatedRigidImpactResult
   std::size_t contactCount{0};
   bool contactTouchesLink{false};
   bool contactTouchesRigidBody{false};
+};
+
+struct MultiArticulatedRigidImpactResult
+{
+  double maxMomentumError{0.0};
+  double minTargetVelocity{0.0};
+  double maxStrikerVelocity{0.0};
+  std::size_t contactCount{0};
+  std::size_t linkContactCount{0};
+  std::size_t rigidBodyContactCount{0};
+  bool allFinite{true};
 };
 
 struct ArticulatedLinkImpactResult
@@ -1717,6 +1739,104 @@ ArticulatedRigidImpactResult runArticulatedRigidImpactStep(
       .contactTouchesLink = contactTouchesLink,
       .contactTouchesRigidBody = contactTouchesRigidBody,
   };
+}
+
+MultiArticulatedRigidImpactResult runMultiArticulatedRigidImpactStep(
+    sx::ContactSolverMethod method, int pairCount)
+{
+  auto world = buildArticulatedRigidImpactScene(method, pairCount);
+  EXPECT_TRUE(world != nullptr);
+  if (world == nullptr) {
+    return {};
+  }
+  world->enterSimulationMode();
+
+  const auto contacts = world->collide();
+  auto& registry = dart::simulation::detail::registryOf(*world);
+  std::size_t linkContactCount = 0;
+  std::size_t rigidBodyContactCount = 0;
+  for (const auto& contact : contacts) {
+    const entt::entity entityA
+        = sx::detail::toRegistryEntity(contact.bodyA.getEntity());
+    const entt::entity entityB
+        = sx::detail::toRegistryEntity(contact.bodyB.getEntity());
+    if (registry.all_of<sx::comps::Link>(entityA)
+        || registry.all_of<sx::comps::Link>(entityB)) {
+      ++linkContactCount;
+    }
+    if (registry.all_of<sx::comps::RigidBodyTag>(entityA)
+        || registry.all_of<sx::comps::RigidBodyTag>(entityB)) {
+      ++rigidBodyContactCount;
+    }
+  }
+
+  world->step();
+
+  MultiArticulatedRigidImpactResult result;
+  result.contactCount = contacts.size();
+  result.linkContactCount = linkContactCount;
+  result.rigidBodyContactCount = rigidBodyContactCount;
+  for (int i = 0; i < pairCount; ++i) {
+    auto robot = world->getMultibody("striker_robot_" + std::to_string(i));
+    auto target = world->getRigidBody("target_" + std::to_string(i));
+    EXPECT_TRUE(robot.has_value());
+    EXPECT_TRUE(target.has_value());
+    if (!robot.has_value() || !target.has_value()) {
+      result.allFinite = false;
+      continue;
+    }
+    auto striker = robot->getLink("striker");
+    EXPECT_TRUE(striker.has_value());
+    if (!striker.has_value()) {
+      result.allFinite = false;
+      continue;
+    }
+
+    const double strikerVelocity = striker->getParentJoint().getVelocity()[0];
+    const double targetVelocity = target->getLinearVelocity().x();
+    const double momentum = 2.0 * strikerVelocity + targetVelocity;
+    result.allFinite = result.allFinite && std::isfinite(strikerVelocity)
+                       && std::isfinite(targetVelocity);
+    result.maxMomentumError
+        = std::max(result.maxMomentumError, std::abs(momentum - 2.0));
+    if (i == 0) {
+      result.minTargetVelocity = targetVelocity;
+      result.maxStrikerVelocity = strikerVelocity;
+    } else {
+      result.minTargetVelocity
+          = std::min(result.minTargetVelocity, targetVelocity);
+      result.maxStrikerVelocity
+          = std::max(result.maxStrikerVelocity, strikerVelocity);
+    }
+  }
+
+  return result;
+}
+
+void expectArticulatedRigidImpactPairsStepMaintainsInvariants(int pairCount)
+{
+  const MultiArticulatedRigidImpactResult reference
+      = runMultiArticulatedRigidImpactStep(
+          sx::ContactSolverMethod::SequentialImpulse, pairCount);
+  const MultiArticulatedRigidImpactResult lcp
+      = runMultiArticulatedRigidImpactStep(
+          sx::ContactSolverMethod::BoxedLcp, pairCount);
+
+  ASSERT_EQ(lcp.contactCount, static_cast<std::size_t>(pairCount));
+  EXPECT_EQ(lcp.linkContactCount, static_cast<std::size_t>(pairCount));
+  EXPECT_EQ(lcp.rigidBodyContactCount, static_cast<std::size_t>(pairCount));
+  EXPECT_TRUE(lcp.allFinite);
+  EXPECT_LT(lcp.maxStrikerVelocity, 1.0);
+  EXPECT_GT(lcp.minTargetVelocity, 0.0);
+  EXPECT_NEAR(lcp.maxMomentumError, 0.0, 1e-9);
+
+  ASSERT_EQ(reference.contactCount, lcp.contactCount);
+  EXPECT_EQ(reference.linkContactCount, lcp.linkContactCount);
+  EXPECT_EQ(reference.rigidBodyContactCount, lcp.rigidBodyContactCount);
+  EXPECT_TRUE(reference.allFinite);
+  EXPECT_NEAR(reference.maxStrikerVelocity, lcp.maxStrikerVelocity, 1e-9);
+  EXPECT_NEAR(reference.minTargetVelocity, lcp.minTargetVelocity, 1e-9);
+  EXPECT_NEAR(reference.maxMomentumError, lcp.maxMomentumError, 1e-9);
 }
 
 ArticulatedLinkImpactResult runArticulatedLinkImpactStep(
@@ -2671,6 +2791,15 @@ TEST(BoxedLcpContact, ArticulatedPrismaticLinkPushesDynamicRigidBody)
   EXPECT_NEAR(reference.strikerVelocity, lcp.strikerVelocity, 1e-9);
   EXPECT_NEAR(reference.targetVelocity, lcp.targetVelocity, 1e-9);
   EXPECT_NEAR(reference.momentum, lcp.momentum, 1e-9);
+}
+
+//==============================================================================
+// Four simultaneous two-sided articulated contacts match the first benchmark-
+// sized link-vs-rigid impact packet and keep all impulses independent.
+TEST(BoxedLcpContact, FourArticulatedPrismaticLinksPushDynamicRigidBodies)
+{
+  constexpr int kPairCount = 4;
+  expectArticulatedRigidImpactPairsStepMaintainsInvariants(kPairCount);
 }
 
 //==============================================================================
