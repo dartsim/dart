@@ -211,14 +211,14 @@
       rank-deficient standard 64-row, boxed 64-row, and coupled
       friction-index 12-contact packets, verified in default, SIMD-enabled,
       and CUDA-enabled build trees.
-- [x] Added extreme exact rank-deficient singular-degenerate coverage and 39
+- [x] Added extreme exact rank-deficient singular-degenerate coverage and 42
       `BM_LcpExtremeSingularDegenerate` rows for scoped standard 128-row,
-      boxed 128-row, and coupled friction-index 16-/24-/32-/48-/64-contact packets,
+      boxed 128-row, and coupled friction-index 16-/24-/32-/48-/64-/96-contact packets,
       verified in default, SIMD-enabled, and CUDA-enabled build trees.
-- [x] Added 48
+- [x] Added 54
       `BM_LcpSingularDegenerateFrictionIndexBatch(Serial|Parallel)` benchmark
       rows for batch-size-4 runs over exact rank-deficient coupled
-      friction-index 6-/8-/12-/16-/24-/32-/48-/64-contact packets, verified in
+      friction-index 6-/8-/12-/16-/24-/32-/48-/64-/96-contact packets, verified in
       default, SIMD-enabled, and CUDA-enabled build trees.
 - [x] Added 192
       `BM_LcpSingularDegenerateStandardBoxedBatch(Serial|Parallel)` benchmark
@@ -633,7 +633,7 @@ tradeoffs evidence based.
   singular-degenerate standard 64-row, boxed 64-row, and coupled friction-index
   12-contact known-solution cases; and extreme exact rank-deficient
   singular-degenerate standard 128-row, boxed 128-row, and coupled
-  friction-index 16-/24-/32-/48-/64-contact known-solution cases for solver sets selected by observed
+  friction-index 16-/24-/32-/48-/64-/96-contact known-solution cases for solver sets selected by observed
   robustness. `MPRGP` is not included in the larger
   mildly ill-conditioned standard slice because a focused 32-row trial
   satisfied the LCP contract but missed the selected expected solution
@@ -1102,28 +1102,28 @@ tradeoffs evidence based.
   CPU solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
 - Verified extreme singular-degenerate benchmark slice:
   `BM_LCP_COMPARE --benchmark_filter='^BM_LcpExtremeSingularDegenerate/' --benchmark_min_time=0.001s --benchmark_repetitions=1`
-  ran 39 rows with `contract_ok=1` in the default, SIMD-enabled, and
+  ran 42 rows with `contract_ok=1` in the default, SIMD-enabled, and
   CUDA-enabled build trees. These rows cover exact rank-deficient standard
-  128-row, boxed 128-row, and coupled friction-index 16-/24-/32-/48-/64-contact packets
+  128-row, boxed 128-row, and coupled friction-index 16-/24-/32-/48-/64-/96-contact packets
   over the same scoped robust solver set as the generated extreme
   singular-degenerate correctness slice. The rows report
   `singular_degenerate=1`, `rank_deficient=1`, backend build-state counters,
-  contact counts `16/24/32/48/64`, problem sizes `48/72/96/144/192`, and `coupled=1`
+  contact counts `16/24/32/48/64/96`, problem sizes `48/72/96/144/192/288`, and `coupled=1`
   for the coupled packets. The CUDA-enabled rows are CPU solver rows in a CUDA-enabled
   build, not CUDA LCP kernel execution.
 - Verified singular-degenerate friction-index batch benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpSingularDegenerateFrictionIndexBatch' | wc -l`
-  reported 48 rows, and JSON benchmark checks for
-  `BM_LcpSingularDegenerateFrictionIndexBatch(Serial|Parallel)` reported 48
+  reported 54 rows, and JSON benchmark checks for
+  `BM_LcpSingularDegenerateFrictionIndexBatch(Serial|Parallel)` reported 54
   rows with `contract_ok=1` in the default, SIMD-enabled, and CUDA-enabled
   build trees. These rows cover batch-size-4 serial and DART 7
   `ParallelExecutor` runs over exact rank-deficient coupled friction-index 6-,
-  8-, 12-, 16-, 24-, 32-, 48-, and 64-contact packets. The rows report
+  8-, 12-, 16-, 24-, 32-, 48-, 64-, and 96-contact packets. The rows report
   `singular_degenerate_batch=1`, `rank_deficient=1`, `batch_size=4`,
-  `contact_count=6/8/12/16/24/32/48/64`,
-  `total_contact_count=24/32/48/64/96/128/192/256`,
-  `problem_size=18/24/36/48/72/96/144/192`,
-  `total_problem_size=72/96/144/192/288/384/576/768`, and backend build-state
+  `contact_count=6/8/12/16/24/32/48/64/96`,
+  `total_contact_count=24/32/48/64/96/128/192/256/384`,
+  `problem_size=18/24/36/48/72/96/144/192/288`,
+  `total_problem_size=72/96/144/192/288/384/576/768/1152`, and backend build-state
   counters. Parallel rows also report `profile_enabled=1`,
   `parallel_units=4`, `worker_count=20`, and observed `max_parallelism`. The
   CUDA-enabled rows are CPU solver batch rows in a CUDA-enabled build, not CUDA
@@ -1652,7 +1652,7 @@ tradeoffs evidence based.
 - Added
   `LcpGeneratedCoverage.ExtremeSingularDegenerateKnownSolutionsForRobustSolverSlice`
   for extreme exact rank-deficient standard 128-row, boxed 128-row, and coupled
-  friction-index 16-/24-/32-/48-/64-contact known-solution cases over the same
+  friction-index 16-/24-/32-/48-/64-/96-contact known-solution cases over the same
   observed-robust singular-degenerate solver scope.
 - Added `LcpGeneratedCoverage.ActiveSetTransitionKnownSolutions` for standard
   16-row, boxed 16-row, and coupled friction-index 6-contact known-solution
@@ -1720,16 +1720,16 @@ tradeoffs evidence based.
   build-state counters, and contact/coupling counters where applicable. The
   CUDA-enabled rows are CPU solver rows in a CUDA-enabled build, not CUDA LCP
   kernel execution.
-- Added 39 `BM_LcpExtremeSingularDegenerate` rows for exact rank-deficient
-  standard 128-row, boxed 128-row, and coupled friction-index 16-/24-/32-/48-/64-contact
+- Added 42 `BM_LcpExtremeSingularDegenerate` rows for exact rank-deficient
+  standard 128-row, boxed 128-row, and coupled friction-index 16-/24-/32-/48-/64-/96-contact
   packets over the generated extreme singular-degenerate solver scope. These
   rows report `contract_ok=1`, `singular_degenerate=1`, `rank_deficient=1`,
   backend build-state counters, and contact/coupling counters where applicable.
   The CUDA-enabled rows are CPU solver rows in a CUDA-enabled build, not CUDA
   LCP kernel execution.
-- Added 48 `BM_LcpSingularDegenerateFrictionIndexBatch(Serial|Parallel)` rows
+- Added 54 `BM_LcpSingularDegenerateFrictionIndexBatch(Serial|Parallel)` rows
   for batch-size-4 serial and DART 7 `ParallelExecutor` runs over exact
-  rank-deficient coupled friction-index 6-/8-/12-/16-/24-/32-/48-/64-contact
+  rank-deficient coupled friction-index 6-/8-/12-/16-/24-/32-/48-/64-/96-contact
   packets. These rows report `contract_ok=1`, `singular_degenerate_batch=1`,
   `rank_deficient=1`, backend build-state counters, and contact/coupling
   counters. The CUDA-enabled rows are CPU solver batch rows in a CUDA-enabled
@@ -1890,7 +1890,7 @@ tradeoffs evidence based.
   solver/backend registry types.
 - Coverage breadth: extend deterministic generated fixtures beyond the current
   production-scale well-conditioned, larger mildly ill-conditioned,
-  singular-degenerate through the current 128-row/64-contact slice, and
+  singular-degenerate through the current 128-row/96-contact slice, and
   active-set transition through the current stronger-coupled 64-contact slice
   into harder solver-specific friction-index coupling edge cases and direct
   backend execution evidence beyond CPU solver rows in SIMD/CUDA-enabled
@@ -1908,7 +1908,7 @@ tradeoffs evidence based.
   15-solver single-problem and batch rows for 1x-/4x-/8x-/16x-coupled mildly
   ill-conditioned 6-, 8-, 12-, 16-, 24-, 32-, 48-, 64-, and 96-contact cases,
   near-singular 96-contact
-  cases, singular-degenerate 64-contact cases, and production active-set
+  cases, singular-degenerate 96-contact cases, and production active-set
   transition 24-, 32-, 48-, and 64-contact cases. Denser DART 7 contact-derived
   and direct backend execution evidence still need solver-specific expansion.
 - Real-world cases: the current DART 7 world-contact evidence includes
@@ -1994,7 +1994,7 @@ tradeoffs evidence based.
 ## Immediate Next Steps
 
 1. Extend solver-specific friction-index conditioning/coupling grids beyond the
-   current exact rank-deficient 128-row/16-contact and production active-set
+   current exact rank-deficient 128-row/96-contact and production active-set
    transition 64-contact slices.
 2. Extend DART 7 boxed-LCP world-contact evidence from current separated
    sphere-ground, current fixed-base prismatic articulated end-to-end coverage,
