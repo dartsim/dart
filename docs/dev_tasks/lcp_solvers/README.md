@@ -108,7 +108,8 @@
       friction-index 24-contact, and coupled friction-index 12-contact cases.
 - [x] Added a near-singular generated known-solution slice for a robust scoped
       solver set covering standard 8-row, boxed 8-row, and coupled
-      friction-index 3-, 6-, 9-, 12-, 16-, 24-, 32-, and 48-contact cases.
+      friction-index 3-, 6-, 9-, 12-, 16-, 24-, 32-, 48-, and 64-contact
+      cases.
 - [x] Added a singular-degenerate generated known-solution slice with exact
       rank-deficient matrices covering standard 16-row, boxed 16-row, and
       coupled friction-index 6-contact cases. The standard packet covers 21
@@ -186,13 +187,13 @@
       and ADMM/SAP-only 16x-coupled
       6-/8-/12-/16-/24-/32-/48-/64-contact packets, verified in default,
       SIMD-enabled, and CUDA-enabled build trees.
-- [x] Added 21 `BM_LcpNearSingular` benchmark rows for the scoped robust
+- [x] Added 23 `BM_LcpNearSingular` benchmark rows for the scoped robust
       near-singular standard 8-row, boxed 8-row, and coupled friction-index
-      3-, 6-, 9-, 12-, 16-, 24-, 32-, and 48-contact packets, verified in
+      3-, 6-, 9-, 12-, 16-, 24-, 32-, 48-, and 64-contact packets, verified in
       default, SIMD-enabled, and CUDA-enabled build trees.
-- [x] Added 42 `BM_LcpNearSingularBatch(Serial|Parallel)` benchmark rows for
+- [x] Added 46 `BM_LcpNearSingularBatch(Serial|Parallel)` benchmark rows for
       batch-size-4 runs over near-singular standard 8-row, boxed 8-row, and
-      coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-, 32-, and 48-contact
+      coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-, 32-, 48-, and 64-contact
       packets, verified in default, SIMD-enabled, and CUDA-enabled build
       trees.
 - [x] Added 27 `BM_LcpSingularDegenerate` benchmark rows for the exact
@@ -1028,17 +1029,17 @@ tradeoffs evidence based.
   CUDA-enabled build, not CUDA LCP kernel execution.
 - Verified near-singular batch benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpNearSingularBatch' | wc -l`
-  reported 42 rows, and JSON benchmark checks for
-  `BM_LcpNearSingularBatch(Serial|Parallel)` reported 42 rows with
+  reported 46 rows, and JSON benchmark checks for
+  `BM_LcpNearSingularBatch(Serial|Parallel)` reported 46 rows with
   `contract_ok=1` in the default, SIMD-enabled, and CUDA-enabled build trees.
   These rows cover batch-size-4 serial and DART 7 `ParallelExecutor` runs over
   near-singular standard 8-row, boxed 8-row, and coupled friction-index 3-, 6-,
-  9-, 12-, 16-, 24-, 32-, and 48-contact packets. The rows report
+  9-, 12-, 16-, 24-, 32-, 48-, and 64-contact packets. The rows report
   `near_singular_batch=1`, `batch_size=4`, problem sizes
-  `8/9/18/27/36/48/72/96/144`, total problem sizes
-  `32/36/72/108/144/192/288/384/576`, and backend build-state counters. The
-  friction-index rows additionally report `contact_count=3/6/9/12/16/24/32/48`,
-  `total_contact_count=12/24/36/48/64/96/128/192`,
+  `8/9/18/27/36/48/72/96/144/192`, total problem sizes
+  `32/36/72/108/144/192/288/384/576/768`, and backend build-state counters. The
+  friction-index rows additionally report `contact_count=3/6/9/12/16/24/32/48/64`,
+  `total_contact_count=12/24/36/48/64/96/128/192/256`,
   and `coupled=1`. Parallel rows also report `profile_enabled=1`,
   `parallel_units=4`, `worker_count=20`, and observed `max_parallelism`. The
   CUDA-enabled rows are CPU solver batch rows in a CUDA-enabled build, not CUDA
@@ -1579,7 +1580,7 @@ tradeoffs evidence based.
   friction-index 12-contact known-solution cases over scoped scalable solvers.
 - Added `LcpGeneratedCoverage.NearSingularKnownSolutionsForRobustSolverSlice`
   for standard 8-row, boxed 8-row, and coupled friction-index 3-, 6-, 9-, 12-,
-  16-, 24-, 32-, and 48-contact near-singular known-solution cases over a
+  16-, 24-, 32-, 48-, and 64-contact near-singular known-solution cases over a
   scoped robust solver set. Trial
   evidence kept this intentionally narrow: Lemke produced a valid complementary
   solution but not the selected generated solution for the 8-row singular
@@ -1652,16 +1653,16 @@ tradeoffs evidence based.
   `contract_ok=1`, `mildly_ill_conditioned_batch=1`, backend build-state
   counters, problem/total-problem-size counters, and contact/coupling counters
   where applicable.
-- Added 21 `BM_LcpNearSingular` rows for near-singular standard 8-row, boxed
+- Added 23 `BM_LcpNearSingular` rows for near-singular standard 8-row, boxed
   8-row, and coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-, 32-, and
-  48-contact packets over the generated robust near-singular solver scope.
+  48-, and 64-contact packets over the generated robust near-singular solver scope.
   These rows report `contract_ok=1`, `near_singular=1`, backend build-state
   counters, and contact/coupling counters where applicable. The CUDA-enabled
   rows are CPU solver rows in a CUDA-enabled build, not CUDA LCP kernel
   execution.
-- Added 42 `BM_LcpNearSingularBatch(Serial|Parallel)` rows for batch-size-4
+- Added 46 `BM_LcpNearSingularBatch(Serial|Parallel)` rows for batch-size-4
   serial and DART 7 `ParallelExecutor` runs over near-singular standard 8-row,
-  boxed 8-row, and coupled friction-index 3-/6-/9-/12-/16-/24-/32-/48-contact
+  boxed 8-row, and coupled friction-index 3-/6-/9-/12-/16-/24-/32-/48-/64-contact
   packets. These rows report `contract_ok=1`, `near_singular_batch=1`, backend
   build-state counters, problem/total-problem-size counters, and
   contact/coupling counters where applicable. The CUDA-enabled rows are CPU
@@ -1870,7 +1871,7 @@ tradeoffs evidence based.
   mildly ill-conditioned 6-, 8-, 12-, 16-, and 24-contact cases, 8x-coupled
   mildly ill-conditioned 6-, 8-, 12-, 16-, 24-, and 32-contact cases,
   ADMM/SAP-only 16x-coupled mildly ill-conditioned 6-, 8-, 12-, 16-, 24-,
-  32-, 48-, and 64-contact cases, near-singular 48-contact cases, singular-degenerate
+  32-, 48-, and 64-contact cases, near-singular 64-contact cases, singular-degenerate
   64-contact cases, and production active-set transition 24-, 32-, 48-, and
   64-contact cases. Broader
   harder-conditioned coupled friction-index grids beyond the narrow ADMM/SAP

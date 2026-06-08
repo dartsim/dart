@@ -967,7 +967,7 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     slice up to standard 128-row, boxed 64-row, friction-index 24-contact, and
     coupled friction-index 12-contact problems, plus a scoped robust
     near-singular known-solution slice for standard 8-row, boxed 8-row, and
-    coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-, 32-, and 48-contact
+    coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-, 32-, 48-, and 64-contact
     packets,
     and active-set
     transition coverage near lower, upper, and friction-cone boundaries. The
@@ -1101,10 +1101,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     6-/8-/12-/16-/24-/32-contact, and
     ADMM/SAP-only 16x-coupled 6-/8-/12-/16-/24-/32-/48-/64-contact packets, verified across
     default, SIMD-enabled, and CUDA-enabled build trees, plus
-    21 near-singular benchmark rows for standard 8-row, boxed 8-row, and
-    coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-, 32-, and 48-contact
+    23 near-singular benchmark rows for standard 8-row, boxed 8-row, and
+    coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-, 32-, 48-, and 64-contact
     packets verified across default, SIMD-enabled, and CUDA-enabled build
-    trees, plus 42 near-singular batch rows for batch-size-4 serial and
+    trees, plus 46 near-singular batch rows for batch-size-4 serial and
     DART 7 `ParallelExecutor` runs over standard 8-row, boxed 8-row, and those
     coupled friction-index packets verified across default, SIMD-enabled, and
     CUDA-enabled build trees, plus

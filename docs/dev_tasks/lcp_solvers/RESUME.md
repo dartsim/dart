@@ -43,10 +43,10 @@ ill-conditioned packet set: standard 32-row, boxed 16-row, friction-index
 6-/8-/12-/16-/24-/32-contact, and ADMM/SAP-only 16x-coupled
 6-/8-/12-/16-/24-/32-/48-/64-contact packets, verified in default, SIMD-enabled,
 and CUDA-enabled build trees.
-It also adds 42 `BM_LcpNearSingularBatch(Serial|Parallel)` rows for
+It also adds 46 `BM_LcpNearSingularBatch(Serial|Parallel)` rows for
 batch-size-4 serial and DART 7 `ParallelExecutor` runs over near-singular
 standard 8-row, boxed 8-row, and coupled friction-index
-3-/6-/9-/12-/16-/24-/32-/48-contact packets, verified in default,
+3-/6-/9-/12-/16-/24-/32-/48-/64-contact packets, verified in default,
 SIMD-enabled, and CUDA-enabled build trees.
 It also adds 48
 `BM_LcpSingularDegenerateFrictionIndexBatch(Serial|Parallel)` rows for
@@ -283,9 +283,9 @@ build-state counters. Focused block-solver unit coverage passed 15 tests. The
 CUDA-enabled rows are CPU BGS/Blocked Jacobi solver rows in a CUDA-enabled
 build, not CUDA LCP kernel execution.
 It now also extends the robust near-singular generated slice to coupled
-friction-index 48-contact packets and adds 21 matching `BM_LcpNearSingular`
+friction-index 64-contact packets and adds 23 matching `BM_LcpNearSingular`
 benchmark rows for standard 8-row, boxed 8-row, and coupled friction-index
-3-, 6-, 9-, 12-, 16-, 24-, 32-, and 48-contact packets verified in default,
+3-, 6-, 9-, 12-, 16-, 24-, 32-, 48-, and 64-contact packets verified in default,
 SIMD-enabled, and CUDA-enabled build trees. The CUDA-enabled rows are CPU
 solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
 It now also adds exact rank-deficient singular-degenerate generated coverage
@@ -412,7 +412,7 @@ Push/PR work still requires explicit maintainer/user approval.
 
 Move from the now-verified extreme 128-row/64-contact exact rank-deficient,
 production active-set transition 64-contact, coupled mildly ill-conditioned
-24-contact, near-singular 48-contact CPU solver rows, near-singular
+24-contact, near-singular 64-contact CPU solver rows, near-singular
 serial/parallel batch rows, exact rank-deficient singular-degenerate
 friction-index and standard/boxed batch rows, and default/SIMD/CUDA Newton warm-start
 single-problem and batch benchmark rows, plus focused
@@ -581,18 +581,18 @@ contact scenes.
   contact/total-contact counters where applicable, coupling-scale counters for
   coupled rows, backend build-state counters, and parallel execution counters
   on `ParallelExecutor` rows.
-  `BM_LCP_COMPARE` also lists 21 `BM_LcpNearSingular` rows for standard
+  `BM_LCP_COMPARE` also lists 23 `BM_LcpNearSingular` rows for standard
   8-row, boxed 8-row, and coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-,
-  32-, and 48-contact
+  32-, 48-, and 64-contact
   packets over the scoped robust solver set; the focused default,
   SIMD-enabled, and CUDA-enabled runs pass with `contract_ok=1` on all rows and
   report `near_singular=1`, backend build-state counters, and contact/coupling
   counters where applicable. The CUDA-enabled rows are CPU solver rows in a
   CUDA-enabled build, not CUDA LCP kernel execution.
-  `BM_LCP_COMPARE` also lists 42
+  `BM_LCP_COMPARE` also lists 46
   `BM_LcpNearSingularBatch(Serial|Parallel)` rows for batch-size-4 serial and
   DART 7 `ParallelExecutor` runs over near-singular standard 8-row, boxed
-  8-row, and coupled friction-index 3-/6-/9-/12-/16-/24-/32-/48-contact
+  8-row, and coupled friction-index 3-/6-/9-/12-/16-/24-/32-/48-/64-contact
   packets; focused default, SIMD-enabled, and CUDA-enabled JSON checks pass
   with `contract_ok=1` on all rows and report `near_singular_batch=1`,
   problem/total-problem-size counters, contact/total-contact counters for the
@@ -733,8 +733,8 @@ contact scenes.
   6-/8-/12-/16-/24-contact and 8x-coupled 6-/8-/12-/16-/24-/32-contact,
   ADMM/SAP-only 16x-coupled mildly ill-conditioned 6-/8-/12-/16-/24-/32-/48-/64-contact,
   near-singular standard 8-row,
-  boxed 8-row, coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-, and
-  32-contact, and exact rank-deficient
+  boxed 8-row, coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-, 32-, 48-, and
+  64-contact, and exact rank-deficient
   singular-degenerate standard 16-row, boxed 16-row, and coupled friction-index
   6-contact
   known-solution cases, plus
@@ -748,7 +748,7 @@ contact scenes.
   16-/32-/64-/128-row exact rank-deficient cases, plus
   stress and extreme active-set transition standard 64/128-row, boxed
   64/128-row, coupled friction-index 12/16-contact, and production
-  stronger-coupled friction-index 24-/32-/48-contact known-solution cases for
+  stronger-coupled friction-index 24-/32-/48-/64-contact known-solution cases for
   scoped solver sets. Trial
   evidence keeps the near-singular test narrow: Lemke
   produced a valid complementary solution but not the selected generated
