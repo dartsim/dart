@@ -78,7 +78,7 @@ Support abbreviations:
   plus experimental CUDA fixed-iteration Jacobi and PGS batch paths for
   homogeneous dense standard/boxed/friction-index LCP packets. The CUDA batch
   evidence now reaches direct synthetic 128-row standard/boxed and 48-contact
-  friction-index packets and also includes grouped synthetic through 96-row and 32-contact
+  friction-index packets and also includes grouped synthetic through 128-row and 48-contact
   packets, CPU serial/`ParallelExecutor` Jacobi/PGS batch rows at the same
   direct CUDA packet sizes verified in default and SIMD-enabled build trees,
   separated sphere-ground, coupled stack-contact, manually assembled
@@ -92,7 +92,7 @@ Support abbreviations:
   vectorized/CUDA LCP batch-processing paths are still missing. The narrow CUDA Jacobi/PGS batch
   evidence now includes direct synthetic standard/boxed/findex packets through
   128-row and 48-contact sizes and grouped variable-size synthetic
-  standard/boxed/findex packets through 96-row and 32-contact sizes, matching
+  standard/boxed/findex packets through 128-row and 48-contact sizes, matching
   CPU serial and DART 7 `ParallelExecutor` Jacobi/PGS batch rows at the direct CUDA packet sizes in
   default and SIMD-enabled build trees, homogeneous 4-/8-/16-contact and grouped variable-size
   1/2/4/8/16-contact DART 7 sphere-ground world-contact packets, homogeneous
@@ -1137,15 +1137,15 @@ The current local evidence for this task is:
   and friction-index 8/16/32/48-contact packets at `batch_size=4`; the largest
   rows report standard/boxed `total_problem_size=512` and friction-index
   `problem_size=144`, `total_problem_size=576`. The
-  grouped synthetic CUDA rows cover four problem-size groups and two-/three-variant
-  rows per group. The standard and boxed rows cover 16/32/48/96-row packets;
-  the `/2` rows report `batch_size=8`, `cuda_group_count=4`, and
-  `total_problem_size=384`, while the `/3` rows report `batch_size=12`,
-  `cuda_group_count=4`, and `total_problem_size=576`. The friction-index rows
-  cover 4/8/16/32-contact packets with `min_problem_size=12` and
-  `max_problem_size=96`; the `/2` rows report `total_contact_count=120` and
-  `total_problem_size=360`, while the `/3` rows report
-  `total_contact_count=180` and `total_problem_size=540`. The
+  grouped synthetic CUDA rows cover five problem-size groups and two-/three-variant
+  rows per group. The standard and boxed rows cover 16/32/48/96/128-row packets;
+  the `/2` rows report `batch_size=10`, `cuda_group_count=5`, and
+  `total_problem_size=640`, while the `/3` rows report `batch_size=15`,
+  `cuda_group_count=5`, and `total_problem_size=960`. The friction-index rows
+  cover 4/8/16/32/48-contact packets with `min_problem_size=12` and
+  `max_problem_size=144`; the `/2` rows report `total_contact_count=216` and
+  `total_problem_size=648`, while the `/3` rows report
+  `total_contact_count=324` and `total_problem_size=972`. The
   homogeneous world-contact CUDA rows used DART 7 `World::collide()`
   snapshots up to 16 contacts with `batch_size=4`, `contact_count=16`,
   `problem_size=48`, `total_contact_count=64`, and `total_problem_size=192`

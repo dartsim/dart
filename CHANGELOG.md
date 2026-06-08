@@ -1137,8 +1137,8 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     projected Jacobi and PGS batch solves over homogeneous dense standard,
     boxed, and friction-index packets now reaching 128-row standard/boxed and
     48-contact friction-index synthetic cases, grouped variable-size synthetic
-    standard, boxed, and friction-index packets now reaching 16/32/48/96-row
-    standard/boxed groups and 4/8/16/32-contact friction-index groups with
+    standard, boxed, and friction-index packets now reaching 16/32/48/96/128-row
+    standard/boxed groups and 4/8/16/32/48-contact friction-index groups with
     two- and three-variant grouped rows,
     matching CPU serial and DART 7 `ParallelExecutor` Jacobi/PGS batch rows
     verified in default and SIMD-enabled builds at those 24-/48-/96-/128-row

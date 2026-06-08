@@ -5466,12 +5466,12 @@ std::optional<CudaGroupedBenchmarkBatch> MakeGroupedCudaBenchmarkBatch(
   switch (family) {
     case BenchmarkProblemFamily::Standard:
     case BenchmarkProblemFamily::Boxed:
-      for (const int rows : std::array<int, 4>{16, 32, 48, 96}) {
+      for (const int rows : std::array<int, 5>{16, 32, 48, 96, 128}) {
         appendGroup(rows);
       }
       break;
     case BenchmarkProblemFamily::FrictionIndex:
-      for (const int contactCount : std::array<int, 4>{4, 8, 16, 32}) {
+      for (const int contactCount : std::array<int, 5>{4, 8, 16, 32, 48}) {
         appendGroup(contactCount);
       }
       break;
