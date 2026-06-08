@@ -4344,13 +4344,9 @@ bool applySurfaceContactCcdLimit(
     return true;
   }
 
-  const double stepBound = std::clamp(result.stepBound, 0.0, 1.0);
-  if (stepBound <= 0.0) {
-    return false;
-  }
-
-  const double safeFraction = std::nextafter(stepBound, 0.0);
-  if (safeFraction <= 0.0 || !std::isfinite(safeFraction)) {
+  const double safeFraction
+      = nb::makeInteriorLineSearchStepScale(result.stepBound);
+  if (safeFraction <= 0.0) {
     return false;
   }
 
@@ -4446,13 +4442,8 @@ bool applyInterBodySurfaceContactCcdLimit(
     return true;
   }
 
-  stepBound = std::clamp(stepBound, 0.0, 1.0);
-  if (stepBound <= 0.0) {
-    return false;
-  }
-
-  const double safeFraction = std::nextafter(stepBound, 0.0);
-  if (safeFraction <= 0.0 || !std::isfinite(safeFraction)) {
+  const double safeFraction = nb::makeInteriorLineSearchStepScale(stepBound);
+  if (safeFraction <= 0.0) {
     return false;
   }
 
@@ -4633,14 +4624,8 @@ bool applyStaticRigidSurfaceCcdLimit(
     return true;
   }
 
-  stepBound = std::clamp(stepBound, 0.0, 1.0);
-  if (stepBound <= 0.0) {
-    ++stats.staticRigidSurfaceCcdZeroStepCount;
-    return false;
-  }
-
-  const double safeFraction = std::nextafter(stepBound, 0.0);
-  if (safeFraction <= 0.0 || !std::isfinite(safeFraction)) {
+  const double safeFraction = nb::makeInteriorLineSearchStepScale(stepBound);
+  if (safeFraction <= 0.0) {
     ++stats.staticRigidSurfaceCcdZeroStepCount;
     return false;
   }
@@ -4780,14 +4765,8 @@ bool applyMovingRigidSurfaceCcdLimit(
     return true;
   }
 
-  stepBound = std::clamp(stepBound, 0.0, 1.0);
-  if (stepBound <= 0.0) {
-    ++stats.movingRigidSurfaceCcdZeroStepCount;
-    return false;
-  }
-
-  const double safeFraction = std::nextafter(stepBound, 0.0);
-  if (safeFraction <= 0.0 || !std::isfinite(safeFraction)) {
+  const double safeFraction = nb::makeInteriorLineSearchStepScale(stepBound);
+  if (safeFraction <= 0.0) {
     ++stats.movingRigidSurfaceCcdZeroStepCount;
     return false;
   }
@@ -4842,14 +4821,8 @@ bool applyStaticGroundBarrierCcdLimit(
     return true;
   }
 
-  stepBound = std::clamp(stepBound, 0.0, 1.0);
-  if (stepBound <= 0.0) {
-    ++stats.staticGroundBarrierCcdZeroStepCount;
-    return false;
-  }
-
-  const double safeFraction = std::nextafter(stepBound, 0.0);
-  if (safeFraction <= 0.0 || !std::isfinite(safeFraction)) {
+  const double safeFraction = nb::makeInteriorLineSearchStepScale(stepBound);
+  if (safeFraction <= 0.0) {
     ++stats.staticGroundBarrierCcdZeroStepCount;
     return false;
   }
