@@ -11994,9 +11994,11 @@ BENCHMARK(BM_LcpCudaPgsWorldStackContactGroupedBatch_FrictionIndex)
     ->Arg(2)
     ->Arg(3);
 BENCHMARK(BM_LcpCudaJacobiArticulatedUnifiedContactGroupedBatch_FrictionIndex)
-    ->Arg(2);
+    ->Arg(2)
+    ->Arg(3);
 BENCHMARK(BM_LcpCudaPgsArticulatedUnifiedContactGroupedBatch_FrictionIndex)
-    ->Arg(2);
+    ->Arg(2)
+    ->Arg(3);
 BENCHMARK(BM_LcpCudaJacobiMixedContactGroupedBatch_FrictionIndex)
     ->Arg(2)
     ->Arg(3);

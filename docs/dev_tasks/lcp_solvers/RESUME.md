@@ -394,8 +394,9 @@ through 96-row and 32-contact packets, grouped variable-size
 1/2/4/8/16-contact separated sphere-ground packets with two- and three-variant
 grouped benchmark rows, plus grouped variable-size
 2/3/4/5/6/7/8-sphere coupled stack-contact packets with two- and three-variant
-grouped benchmark rows, plus grouped variable-size manually assembled 1-/4-/8-/16-contact
-articulated unified-contact packets covering link-ground, link-vs-dynamic-rigid,
+grouped benchmark rows, plus grouped variable-size manually assembled
+1-/4-/8-/16-contact articulated unified-contact packets with two- and
+three-variant grouped benchmark rows covering link-ground, link-vs-dynamic-rigid,
 and cross-multibody link-vs-link cases, plus mixed grouped contact batches that
 combine separated, stack, and 1-/4-/8-/16-contact articulated fixture families for fixed-iteration
 Jacobi and PGS. The generic CPU serial and DART 7 `ParallelExecutor` batch
@@ -1352,10 +1353,16 @@ contact scenes.
   The articulated unified-contact grouped variable-size rows are manually
   assembled fixed-base three-axis prismatic link-ground,
   link-vs-dynamic-rigid, and cross-multibody link-vs-link packets with 1, 4,
-  8, and 16 contacts (`batch_size=24`, `cuda_group_count=4`, `contact_shape_count=4`,
+  8, and 16 contacts. The `/2` rows report `batch_size=24`,
+  `cuda_group_count=4`, `contact_shape_count=4`,
   `articulated_contact_case_count=3`, `articulated_cross_link_contact=1`,
-  `min_problem_size=3`, `max_problem_size=48`, `total_contact_count=174`,
-  `total_problem_size=522`).
+  `min_problem_size=3`, `max_problem_size=48`, `total_contact_count=174`, and
+  `total_problem_size=522`; the `/3` rows report
+  `problem_variants_per_shape=3`, `batch_size=36`, `cuda_group_count=4`,
+  `contact_shape_count=4`, `articulated_contact_case_count=3`,
+  `articulated_cross_link_contact=1`, `min_problem_size=3`,
+  `max_problem_size=48`, `total_contact_count=261`, and
+  `total_problem_size=783`.
   The mixed grouped rows combine separated sphere-ground, coupled stack, and
   manually assembled articulated unified-contact packets including
   cross-multibody link-vs-link packets. The latest focused unit test covers two
@@ -1542,7 +1549,7 @@ python scripts/run_benchmark_smoke.py build/cuda/cpp/Release/bin/BM_LCP_COMPARE 
   "--benchmark_min_time=0.001s" \
   "--benchmark_repetitions=1"
 ./build/cuda/cpp/Release/bin/BM_LCP_COMPARE \
-  "--benchmark_filter=BM_LcpCuda(Jacobi|Pgs)ArticulatedUnifiedContactGroupedBatch_FrictionIndex" \
+  "--benchmark_filter=BM_LcpCuda(Jacobi|Pgs)ArticulatedUnifiedContactGroupedBatch_FrictionIndex/3$" \
   "--benchmark_min_time=0.001s" \
   "--benchmark_repetitions=1"
 ./build/cuda/cpp/Release/bin/BM_LCP_COMPARE \

@@ -96,7 +96,8 @@ Support abbreviations:
   1/2/4/8/16-contact DART 7 sphere-ground world-contact packets, homogeneous
   5-/6-/7-/8-sphere and grouped variable-size 2/3/4/5/6/7/8-sphere coupled stack-contact
   packets, grouped variable-size 1-/4-/8-/16-contact articulated unified-contact
-  packets including cross-multibody link-vs-link cases, and PGS-only
+  packets with two- and three-variant grouped benchmark rows including
+  cross-multibody link-vs-link cases, and PGS-only
   homogeneous plus grouped variable-size dense box-face contact packets, plus
   mixed grouped batches that combine separated, stack, and
   1-/4-/8-/16-contact articulated fixture families including cross-multibody link-vs-link packets,
@@ -1163,11 +1164,16 @@ The current local evidence for this task is:
   `total_problem_size=315`. The articulated
   grouped variable-size rows use manually assembled 1-/4-/8-/16-contact fixed-base
   three-axis prismatic unified-contact packets covering link-ground,
-  link-vs-dynamic-rigid, and cross-multibody link-vs-link cases with
+  link-vs-dynamic-rigid, and cross-multibody link-vs-link cases. The `/2` rows report
   `batch_size=24`, `cuda_group_count=4`, `contact_shape_count=4`,
   `articulated_contact_case_count=3`, `articulated_cross_link_contact=1`,
   `min_problem_size=3`, `max_problem_size=48`, `total_contact_count=174`, and
-  `total_problem_size=522`. The mixed grouped rows combine separated
+  `total_problem_size=522`; the `/3` rows report
+  `problem_variants_per_shape=3`, `batch_size=36`, `cuda_group_count=4`,
+  `contact_shape_count=4`, `articulated_contact_case_count=3`,
+  `articulated_cross_link_contact=1`, `min_problem_size=3`,
+  `max_problem_size=48`, `total_contact_count=261`, and
+  `total_problem_size=783`. The mixed grouped rows combine separated
   sphere-ground, coupled stack, and manually assembled 1-/4-/8-/16-contact
   articulated unified-contact packets, including cross-multibody link-vs-link
   packets, with
@@ -1305,8 +1311,9 @@ The current local evidence for this task is:
   5-/6-/7-/8-sphere coupled stack, grouped variable-size 1/2/4/8/16-contact separated
   sphere-ground and 2/3/4/5/6/7/8-sphere coupled stack world-contact batch
   paths with two- and three-variant grouped benchmark rows, plus manually
-  assembled 1-/4-/8-/16-contact articulated unified-contact batch paths including
-  cross-multibody link-vs-link packets, and mixed
+  assembled 1-/4-/8-/16-contact articulated unified-contact batch paths with
+  two- and three-variant grouped benchmark rows including cross-multibody
+  link-vs-link packets, and mixed
   separated/stack/articulated grouped contact batch paths, scoped dense
   box-face serial/parallel batch rows, and PGS-only dense
   box-face CUDA batch paths through homogeneous 1/4/8/16/24/32/48/64/96-box and grouped

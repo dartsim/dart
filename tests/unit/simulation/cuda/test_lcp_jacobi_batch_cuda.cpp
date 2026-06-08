@@ -1684,14 +1684,18 @@ TEST(
     GTEST_SKIP() << "CUDA runtime has no available device";
   }
 
-  std::string errorMessage;
-  auto fixture
-      = makeArticulatedUnifiedContactGroupedBatch(2, 1024, errorMessage);
-  ASSERT_TRUE(fixture.has_value()) << errorMessage;
+  for (const int variantsPerContactCount : {2, 3}) {
+    SCOPED_TRACE(
+        "variantsPerContactCount=" + std::to_string(variantsPerContactCount));
+    std::string errorMessage;
+    auto fixture = makeArticulatedUnifiedContactGroupedBatch(
+        variantsPerContactCount, 1024, errorMessage);
+    ASSERT_TRUE(fixture.has_value()) << errorMessage;
 
-  cuda::solveBoxedLcpJacobiGroupedBatchCuda(fixture->packets);
+    cuda::solveBoxedLcpJacobiGroupedBatchCuda(fixture->packets);
 
-  expectGroupedBatchSatisfiesLcpContract(*fixture);
+    expectGroupedBatchSatisfiesLcpContract(*fixture);
+  }
 }
 
 //==============================================================================
@@ -1931,14 +1935,18 @@ TEST(CudaLcpPgsBatch, ArticulatedUnifiedContactGroupedBatchSatisfiesLcpContract)
     GTEST_SKIP() << "CUDA runtime has no available device";
   }
 
-  std::string errorMessage;
-  auto fixture
-      = makeArticulatedUnifiedContactGroupedBatch(2, 512, errorMessage);
-  ASSERT_TRUE(fixture.has_value()) << errorMessage;
+  for (const int variantsPerContactCount : {2, 3}) {
+    SCOPED_TRACE(
+        "variantsPerContactCount=" + std::to_string(variantsPerContactCount));
+    std::string errorMessage;
+    auto fixture = makeArticulatedUnifiedContactGroupedBatch(
+        variantsPerContactCount, 512, errorMessage);
+    ASSERT_TRUE(fixture.has_value()) << errorMessage;
 
-  cuda::solveBoxedLcpPgsGroupedBatchCuda(fixture->packets);
+    cuda::solveBoxedLcpPgsGroupedBatchCuda(fixture->packets);
 
-  expectGroupedBatchSatisfiesLcpContract(*fixture);
+    expectGroupedBatchSatisfiesLcpContract(*fixture);
+  }
 }
 
 //==============================================================================
