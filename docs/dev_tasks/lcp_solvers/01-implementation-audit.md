@@ -347,20 +347,23 @@ The current local evidence for this task is:
   coupled packets, and `coupling_scale=4` or `coupling_scale=8` for the stronger-coupled
   packets.
 - `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpMildIllConditionedBatch' | wc -l`
-  reported 156 rows, and JSON benchmark checks for
-  `BM_LcpMildIllConditionedBatch(Serial|Parallel)` reported 156 rows with
+  reported 384 rows, and JSON benchmark checks for
+  `BM_LcpMildIllConditionedBatch(Serial|Parallel)` reported 384 rows with
   `contract_ok=1` in the default, SIMD-enabled, and CUDA-enabled build trees.
-  These rows compare the scoped friction-index solver set over batch-size-4
-  serial and DART 7 `ParallelExecutor` runs on the 4x-coupled 16-/24-contact,
-  8x-coupled 16-/24-/32-contact, and ADMM/SAP-only 16x-coupled
+  These rows compare the same scoped solver set as the single-problem mild rows
+  over batch-size-4 serial and DART 7 `ParallelExecutor` runs on standard
+  32-row, boxed 16-row, friction-index 8-contact, coupled friction-index
+  6-/8-/12-/16-/24-contact, 4x-coupled 16-/24-contact, 8x-coupled
+  16-/24-/32-contact, and ADMM/SAP-only 16x-coupled
   16-/24-/32-/48-contact mildly ill-conditioned packets. The rows report
-  `mildly_ill_conditioned_batch=1`, `batch_size=4`,
-  `contact_count=16/24/32/48`, `total_contact_count=64/96/128/192`,
-  `problem_size=48/72/96/144`, `total_problem_size=192/288/384/576`,
-  `coupling_scale=4/8/16`, backend build-state
-  counters, and parallel execution counters on the `ParallelExecutor` rows. The
-  CUDA-enabled rows are CPU solver batch rows in a CUDA-enabled build, not CUDA
-  LCP kernel execution.
+  `mildly_ill_conditioned_batch=1`, `batch_size=4`, problem sizes
+  `16/18/24/32/36/48/72/96/144`, total problem sizes
+  `64/72/96/128/144/192/288/384/576`, backend build-state counters, and
+  parallel execution counters on the `ParallelExecutor` rows. The
+  friction-index rows additionally report `contact_count=6/8/12/16/24/32/48`
+  and `total_contact_count=24/32/48/64/96/128/192`; coupled rows report
+  `coupled=1` and `coupling_scale=1/4/8/16`. The CUDA-enabled rows are CPU
+  solver batch rows in a CUDA-enabled build, not CUDA LCP kernel execution.
 - `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpNearSingular/' | wc -l`
   reported 21 rows, and
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpNearSingular' --benchmark_min_time=0.001s --benchmark_repetitions=1`

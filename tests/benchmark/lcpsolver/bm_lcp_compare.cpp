@@ -6781,8 +6781,32 @@ std::vector<LcpProblem> MakeMildIllConditionedBatchProblems(
 
   const int contactCount = getMildIllConditionedContactCount(testCase);
   const double couplingScale = getMildIllConditionedCouplingScale(testCase);
-  unsigned seedBase = 29'016u;
+  unsigned seedBase = 24'032u;
   switch (testCase) {
+    case MildIllConditionedBenchmarkCase::Standard32:
+      seedBase = 24'032u;
+      break;
+    case MildIllConditionedBenchmarkCase::Boxed16:
+      seedBase = 25'016u;
+      break;
+    case MildIllConditionedBenchmarkCase::FrictionIndex8:
+      seedBase = 26'008u;
+      break;
+    case MildIllConditionedBenchmarkCase::CoupledFrictionIndex6:
+      seedBase = 27'006u;
+      break;
+    case MildIllConditionedBenchmarkCase::CoupledFrictionIndex8:
+      seedBase = 27'008u;
+      break;
+    case MildIllConditionedBenchmarkCase::CoupledFrictionIndex12:
+      seedBase = 27'012u;
+      break;
+    case MildIllConditionedBenchmarkCase::CoupledFrictionIndex16:
+      seedBase = 27'016u;
+      break;
+    case MildIllConditionedBenchmarkCase::CoupledFrictionIndex24:
+      seedBase = 27'024u;
+      break;
     case MildIllConditionedBenchmarkCase::StrongCoupledFrictionIndex16:
       seedBase = 28'016u;
       break;
@@ -6815,11 +6839,36 @@ std::vector<LcpProblem> MakeMildIllConditionedBatchProblems(
   }
 
   for (const int i : std::views::iota(0, batchSize)) {
-    problems.push_back(MakeMildIllConditionedFrictionIndexProblem(
-        contactCount,
-        seedBase + static_cast<unsigned>(i),
-        true,
-        couplingScale));
+    const unsigned seed = seedBase + static_cast<unsigned>(i);
+    switch (testCase) {
+      case MildIllConditionedBenchmarkCase::Standard32:
+        problems.push_back(MakeMildIllConditionedStandardProblem(32, seed));
+        break;
+      case MildIllConditionedBenchmarkCase::Boxed16:
+        problems.push_back(MakeMildIllConditionedBoxedProblem(16, seed));
+        break;
+      case MildIllConditionedBenchmarkCase::FrictionIndex8:
+        problems.push_back(
+            MakeMildIllConditionedFrictionIndexProblem(8, seed, false));
+        break;
+      case MildIllConditionedBenchmarkCase::CoupledFrictionIndex6:
+      case MildIllConditionedBenchmarkCase::CoupledFrictionIndex8:
+      case MildIllConditionedBenchmarkCase::CoupledFrictionIndex12:
+      case MildIllConditionedBenchmarkCase::CoupledFrictionIndex16:
+      case MildIllConditionedBenchmarkCase::CoupledFrictionIndex24:
+      case MildIllConditionedBenchmarkCase::StrongCoupledFrictionIndex16:
+      case MildIllConditionedBenchmarkCase::StrongCoupledFrictionIndex24:
+      case MildIllConditionedBenchmarkCase::StrongerCoupledFrictionIndex16:
+      case MildIllConditionedBenchmarkCase::StrongerCoupledFrictionIndex24:
+      case MildIllConditionedBenchmarkCase::StrongerCoupledFrictionIndex32:
+      case MildIllConditionedBenchmarkCase::ExtremeCoupledFrictionIndex16:
+      case MildIllConditionedBenchmarkCase::ExtremeCoupledFrictionIndex24:
+      case MildIllConditionedBenchmarkCase::ExtremeCoupledFrictionIndex32:
+      case MildIllConditionedBenchmarkCase::ExtremeCoupledFrictionIndex48:
+        problems.push_back(MakeMildIllConditionedFrictionIndexProblem(
+            contactCount, seed, true, couplingScale));
+        break;
+    }
   }
 
   return problems;
@@ -6833,12 +6882,16 @@ void AddMildIllConditionedBatchCounters(
   const int contactCount = getMildIllConditionedContactCount(testCase);
   state.counters["mildly_ill_conditioned"] = 1.0;
   state.counters["mildly_ill_conditioned_batch"] = 1.0;
-  state.counters["contact_count"] = static_cast<double>(contactCount);
-  state.counters["total_contact_count"]
-      = static_cast<double>(contactCount * batchSize);
-  state.counters["coupled"] = 1.0;
-  state.counters["coupling_scale"]
-      = getMildIllConditionedCouplingScale(testCase);
+  if (isMildIllConditionedFrictionIndexCase(testCase)) {
+    state.counters["contact_count"] = static_cast<double>(contactCount);
+    state.counters["total_contact_count"]
+        = static_cast<double>(contactCount * batchSize);
+  }
+  if (isMildIllConditionedCoupledFrictionIndexCase(testCase)) {
+    state.counters["coupled"] = 1.0;
+    state.counters["coupling_scale"]
+        = getMildIllConditionedCouplingScale(testCase);
+  }
 }
 
 void RunMildIllConditionedBatchSerialBenchmark(
@@ -10142,7 +10195,15 @@ void RegisterMildIllConditionedBenchmarks()
 
 void RegisterMildIllConditionedBatchBenchmarks()
 {
-  constexpr std::array<MildIllConditionedBenchmarkCase, 9> cases{
+  constexpr std::array<MildIllConditionedBenchmarkCase, 17> cases{
+      MildIllConditionedBenchmarkCase::Standard32,
+      MildIllConditionedBenchmarkCase::Boxed16,
+      MildIllConditionedBenchmarkCase::FrictionIndex8,
+      MildIllConditionedBenchmarkCase::CoupledFrictionIndex6,
+      MildIllConditionedBenchmarkCase::CoupledFrictionIndex8,
+      MildIllConditionedBenchmarkCase::CoupledFrictionIndex12,
+      MildIllConditionedBenchmarkCase::CoupledFrictionIndex16,
+      MildIllConditionedBenchmarkCase::CoupledFrictionIndex24,
       MildIllConditionedBenchmarkCase::StrongCoupledFrictionIndex16,
       MildIllConditionedBenchmarkCase::StrongCoupledFrictionIndex24,
       MildIllConditionedBenchmarkCase::StrongerCoupledFrictionIndex16,

@@ -35,11 +35,13 @@ cross-contact coupling, a stronger-coupled 32-contact packet with 8x
 cross-contact coupling, ADMM/SAP-only 16x-coupled 16-/24-/32-/48-contact
 packets, and 192 matching `BM_LcpMildIllConditioned` benchmark rows verified in
 default, SIMD-enabled, and CUDA-enabled build trees. It also
-adds 156 `BM_LcpMildIllConditionedBatch(Serial|Parallel)` rows for batch-size-4
-serial and DART 7 `ParallelExecutor` runs over the 4x-coupled 16-/24-contact,
-8x-coupled 16-/24-/32-contact, and ADMM/SAP-only 16x-coupled
-16-/24-/32-/48-contact mildly ill-conditioned packets, verified in default,
-SIMD-enabled, and CUDA-enabled build trees.
+adds 384 `BM_LcpMildIllConditionedBatch(Serial|Parallel)` rows for batch-size-4
+serial and DART 7 `ParallelExecutor` runs over the full scoped mildly
+ill-conditioned packet set: standard 32-row, boxed 16-row, friction-index
+8-contact, coupled friction-index 6-/8-/12-/16-/24-contact, 4x-coupled
+16-/24-contact, 8x-coupled 16-/24-/32-contact, and ADMM/SAP-only 16x-coupled
+16-/24-/32-/48-contact packets, verified in default, SIMD-enabled, and
+CUDA-enabled build trees.
 It also adds 42 `BM_LcpNearSingularBatch(Serial|Parallel)` rows for
 batch-size-4 serial and DART 7 `ParallelExecutor` runs over near-singular
 standard 8-row, boxed 8-row, and coupled friction-index
@@ -556,15 +558,19 @@ contact scenes.
   focused default, SIMD-enabled, and CUDA-enabled runs pass with
   `contract_ok=1` on all rows and report `mildly_ill_conditioned=1` plus
   contact/coupling counters where applicable.
-  `BM_LCP_COMPARE` also lists 156
+  `BM_LCP_COMPARE` also lists 384
   `BM_LcpMildIllConditionedBatch(Serial|Parallel)` rows for batch-size-4 serial
-  and DART 7 `ParallelExecutor` runs over the 4x-coupled 16-/24-contact,
+  and DART 7 `ParallelExecutor` runs over the full scoped mildly
+  ill-conditioned
+  packet set: standard 32-row, boxed 16-row, friction-index 8-contact, coupled
+  friction-index 6-/8-/12-/16-/24-contact, 4x-coupled 16-/24-contact,
   8x-coupled 16-/24-/32-contact, and ADMM/SAP-only 16x-coupled
   16-/24-/32-/48-contact packets; focused default, SIMD-enabled, and
   CUDA-enabled JSON checks pass with `contract_ok=1` on all rows and report
-  `mildly_ill_conditioned_batch=1`, `coupling_scale=4/8/16`,
-  contact/total-contact counters, backend build-state counters, and parallel
-  execution counters on `ParallelExecutor` rows.
+  `mildly_ill_conditioned_batch=1`, problem/total-problem-size counters,
+  contact/total-contact counters where applicable, coupling-scale counters for
+  coupled rows, backend build-state counters, and parallel execution counters
+  on `ParallelExecutor` rows.
   `BM_LCP_COMPARE` also lists 21 `BM_LcpNearSingular` rows for standard
   8-row, boxed 8-row, and coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-,
   32-, and 48-contact
