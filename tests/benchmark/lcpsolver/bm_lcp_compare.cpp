@@ -4224,6 +4224,23 @@ LcpProblem MakeNearSingularBenchmarkProblem(
   return MakeNearSingularStandardProblem(8, 14'008u);
 }
 
+std::vector<LcpProblem> MakeNearSingularBatchProblems(
+    const NearSingularBenchmarkCase testCase, const int batchSize)
+{
+  std::vector<LcpProblem> problems;
+  problems.reserve(static_cast<std::size_t>(batchSize));
+
+  const int contactCount = getNearSingularContactCount(testCase);
+  const unsigned seedBase = 16'000u + static_cast<unsigned>(contactCount);
+
+  for (const int i : std::views::iota(0, batchSize)) {
+    problems.push_back(MakeNearSingularFrictionIndexProblem(
+        contactCount, seedBase + static_cast<unsigned>(i), true));
+  }
+
+  return problems;
+}
+
 LcpProblem MakeSingularDegenerateStandardProblem(const int n)
 {
   Eigen::MatrixXd A = Eigen::MatrixXd::Zero(n, n);
@@ -6868,6 +6885,104 @@ void RunNearSingularBenchmark(
   }
 }
 
+void AddNearSingularBatchCounters(
+    benchmark::State& state,
+    const NearSingularBenchmarkCase testCase,
+    const int batchSize)
+{
+  const int contactCount = getNearSingularContactCount(testCase);
+  state.counters["near_singular"] = 1.0;
+  state.counters["near_singular_batch"] = 1.0;
+  state.counters["contact_count"] = static_cast<double>(contactCount);
+  state.counters["total_contact_count"]
+      = static_cast<double>(contactCount * batchSize);
+  state.counters["coupled"] = 1.0;
+}
+
+void RunNearSingularBatchSerialBenchmark(
+    benchmark::State& state,
+    const dart::test::LcpSolverManifestEntry& solverEntry,
+    const NearSingularBenchmarkCase testCase)
+{
+  const int batchSize = static_cast<int>(state.range(0));
+  const auto problems = MakeNearSingularBatchProblems(testCase, batchSize);
+  SolverBenchmarkOptions storage;
+  ConfigureSolverBenchmarkOptions(storage, solverEntry, problems.front());
+  ConfigureNearSingularBenchmarkOptions(storage, testCase);
+
+  const auto solver = solverEntry.create();
+  if (solver == nullptr) {
+    state.SkipWithError("LCP solver factory returned null");
+    return;
+  }
+
+  BatchBenchmarkCounters counters;
+  for (auto _ : state) {
+    counters = RunBatchWithSolver(*solver, problems, storage.options);
+    benchmark::DoNotOptimize(counters.maxResidual);
+  }
+
+  counters = RunBatchWithSolver(*solver, problems, storage.options);
+  AddBatchBenchmarkCounters(
+      state,
+      counters,
+      static_cast<int>(problems.front().b.size()),
+      batchSize,
+      MakeLabel(
+          std::string(solverEntry.name),
+          "NearSingularBatchSerial/"
+              + std::string(getNearSingularCaseName(testCase))));
+  AddNearSingularBatchCounters(state, testCase, batchSize);
+  state.counters["batch_serial_execution"] = 1.0;
+  if (storage.hasShockPropagationParams) {
+    AddShockPropagationCounters(state, storage.shockPropagationParams);
+  }
+}
+
+#if DART_BM_LCP_COMPARE_HAS_SIMULATION
+void RunNearSingularBatchParallelBenchmark(
+    benchmark::State& state,
+    const dart::test::LcpSolverManifestEntry& solverEntry,
+    const NearSingularBenchmarkCase testCase)
+{
+  const int batchSize = static_cast<int>(state.range(0));
+  ParallelBatchFixture fixture(
+      solverEntry, MakeNearSingularBatchProblems(testCase, batchSize));
+  if (!fixture.valid) {
+    state.SkipWithError(fixture.errorMessage.c_str());
+    return;
+  }
+  ConfigureNearSingularBenchmarkOptions(fixture.storage, testCase);
+
+  compute::ParallelExecutor executor;
+  BatchBenchmarkCounters counters;
+  for (auto _ : state) {
+    executor.execute(fixture.graph);
+    counters = fixture.collectCounters();
+    benchmark::DoNotOptimize(counters.maxResidual);
+  }
+
+  const auto profile = executor.executeProfiled(fixture.graph);
+  counters = fixture.collectCounters();
+  AddBatchBenchmarkCounters(
+      state,
+      counters,
+      static_cast<int>(fixture.problems.front().b.size()),
+      batchSize,
+      MakeLabel(
+          std::string(solverEntry.name),
+          "NearSingularBatchParallel/"
+              + std::string(getNearSingularCaseName(testCase))));
+  AddNearSingularBatchCounters(state, testCase, batchSize);
+  state.counters["batch_parallel_execution"] = 1.0;
+  AddParallelExecutionCounters(state, profile, fixture.graph);
+
+  if (fixture.storage.hasShockPropagationParams) {
+    AddShockPropagationCounters(state, fixture.storage.shockPropagationParams);
+  }
+}
+#endif
+
 void ConfigureSingularDegenerateBenchmarkOptions(
     SolverBenchmarkOptions& storage,
     const SingularDegenerateBenchmarkCase testCase)
@@ -9048,6 +9163,28 @@ std::string MakeNearSingularBenchmarkName(
   return out.str();
 }
 
+std::string MakeNearSingularBatchSerialBenchmarkName(
+    const NearSingularBenchmarkCase testCase,
+    const dart::test::LcpSolverManifestEntry& solver)
+{
+  std::ostringstream out;
+  out << "BM_LcpNearSingularBatchSerial/" << getNearSingularCaseName(testCase)
+      << "/" << solver.name;
+  return out.str();
+}
+
+#if DART_BM_LCP_COMPARE_HAS_SIMULATION
+std::string MakeNearSingularBatchParallelBenchmarkName(
+    const NearSingularBenchmarkCase testCase,
+    const dart::test::LcpSolverManifestEntry& solver)
+{
+  std::ostringstream out;
+  out << "BM_LcpNearSingularBatchParallel/" << getNearSingularCaseName(testCase)
+      << "/" << solver.name;
+  return out.str();
+}
+#endif
+
 bool SolverShouldRunNearSingularBenchmark(
     const dart::test::LcpSolverManifestEntry& solver,
     const NearSingularBenchmarkCase testCase)
@@ -9739,6 +9876,48 @@ void RegisterNearSingularBenchmarks()
   }
 }
 
+void RegisterNearSingularBatchBenchmarks()
+{
+  constexpr std::array<NearSingularBenchmarkCase, 8> cases{
+      NearSingularBenchmarkCase::CoupledFrictionIndex3,
+      NearSingularBenchmarkCase::CoupledFrictionIndex6,
+      NearSingularBenchmarkCase::CoupledFrictionIndex9,
+      NearSingularBenchmarkCase::CoupledFrictionIndex12,
+      NearSingularBenchmarkCase::CoupledFrictionIndex16,
+      NearSingularBenchmarkCase::CoupledFrictionIndex24,
+      NearSingularBenchmarkCase::CoupledFrictionIndex32,
+      NearSingularBenchmarkCase::CoupledFrictionIndex48};
+  constexpr int batchSize = 4;
+
+  for (const auto testCase : cases) {
+    for (const auto& solver : dart::test::kLcpSolverManifest) {
+      if (!SolverShouldRunNearSingularBenchmark(solver, testCase)) {
+        continue;
+      }
+
+      const auto serialName
+          = MakeNearSingularBatchSerialBenchmarkName(testCase, solver);
+      benchmark::RegisterBenchmark(
+          serialName.c_str(),
+          [solver, testCase](benchmark::State& state) {
+            RunNearSingularBatchSerialBenchmark(state, solver, testCase);
+          })
+          ->Arg(batchSize);
+
+#if DART_BM_LCP_COMPARE_HAS_SIMULATION
+      const auto parallelName
+          = MakeNearSingularBatchParallelBenchmarkName(testCase, solver);
+      benchmark::RegisterBenchmark(
+          parallelName.c_str(),
+          [solver, testCase](benchmark::State& state) {
+            RunNearSingularBatchParallelBenchmark(state, solver, testCase);
+          })
+          ->Arg(batchSize);
+#endif
+    }
+  }
+}
+
 void RegisterSingularDegenerateBenchmarks()
 {
   constexpr std::array<SingularDegenerateBenchmarkCase, 3> cases{
@@ -10283,6 +10462,7 @@ const bool kManifestBenchmarksRegistered = [] {
   RegisterMildIllConditionedBenchmarks();
   RegisterMildIllConditionedBatchBenchmarks();
   RegisterNearSingularBenchmarks();
+  RegisterNearSingularBatchBenchmarks();
   RegisterSingularDegenerateBenchmarks();
   RegisterLargerSingularDegenerateBenchmarks();
   RegisterStressSingularDegenerateBenchmarks();

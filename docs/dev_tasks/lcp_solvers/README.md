@@ -182,6 +182,10 @@
       near-singular standard 8-row, boxed 8-row, and coupled friction-index
       3-, 6-, 9-, 12-, 16-, 24-, 32-, and 48-contact packets, verified in
       default, SIMD-enabled, and CUDA-enabled build trees.
+- [x] Added 32 `BM_LcpNearSingularBatch(Serial|Parallel)` benchmark rows for
+      batch-size-4 runs over the coupled friction-index 3-, 6-, 9-, 12-, 16-,
+      24-, 32-, and 48-contact near-singular packets, verified in default,
+      SIMD-enabled, and CUDA-enabled build trees.
 - [x] Added 27 `BM_LcpSingularDegenerate` benchmark rows for the exact
       rank-deficient standard 16-row, boxed 16-row, and coupled friction-index
       6-contact packets over the same solver scope proven by generated
@@ -986,6 +990,22 @@ tradeoffs evidence based.
   report `profile_enabled=1`, `parallel_units=4`, `worker_count=20`, and
   observed `max_parallelism`. The CUDA-enabled rows are CPU solver batch rows
   in a CUDA-enabled build, not CUDA LCP kernel execution.
+- Verified near-singular batch benchmark slice:
+  `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpNearSingularBatch' | wc -l`
+  reported 32 rows, and JSON benchmark checks for
+  `BM_LcpNearSingularBatch(Serial|Parallel)` reported 32 rows with
+  `contract_ok=1` in the default, SIMD-enabled, and CUDA-enabled build trees.
+  These rows cover batch-size-4 serial and DART 7 `ParallelExecutor` runs over
+  coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-, 32-, and 48-contact
+  near-singular packets. The rows report `near_singular_batch=1`,
+  `batch_size=4`, `contact_count=3/6/9/12/16/24/32/48`,
+  `total_contact_count=12/24/36/48/64/96/128/192`,
+  `problem_size=9/18/27/36/48/72/96/144`,
+  `total_problem_size=36/72/108/144/192/288/384/576`, and backend
+  build-state counters. Parallel rows also report `profile_enabled=1`,
+  `parallel_units=4`, `worker_count=20`, and observed `max_parallelism`. The
+  CUDA-enabled rows are CPU solver batch rows in a CUDA-enabled build, not CUDA
+  LCP kernel execution.
 - Verified singular-degenerate benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpSingularDegenerate/' | wc -l`
   reported 27 rows, and
@@ -1557,6 +1577,12 @@ tradeoffs evidence based.
   counters, and contact/coupling counters where applicable. The CUDA-enabled
   rows are CPU solver rows in a CUDA-enabled build, not CUDA LCP kernel
   execution.
+- Added 32 `BM_LcpNearSingularBatch(Serial|Parallel)` rows for batch-size-4
+  serial and DART 7 `ParallelExecutor` runs over the coupled friction-index 3-,
+  6-, 9-, 12-, 16-, 24-, 32-, and 48-contact near-singular packets. These rows
+  report `contract_ok=1`, `near_singular_batch=1`, backend build-state
+  counters, and contact/coupling counters. The CUDA-enabled rows are CPU solver
+  batch rows in a CUDA-enabled build, not CUDA LCP kernel execution.
 - Added 27 `BM_LcpSingularDegenerate` rows for exact rank-deficient standard
   16-row, boxed 16-row, and coupled friction-index 6-contact packets over the
   generated singular-degenerate solver scope. These rows report `contract_ok=1`,
@@ -1786,9 +1812,9 @@ tradeoffs evidence based.
 - Benchmarks: extend `tests/benchmark/lcpsolver/` beyond generated math
   fixtures, active-set, larger/stress/extreme/production active-set packets,
   production active-set serial and `ParallelExecutor` batch packets,
-  mildly ill-conditioned single-problem and 8x-coupled batch packets,
-  near-singular and singular-degenerate packets, PGS/PSOR, symmetric PSOR, and
-  Red-Black Gauss-Seidel relaxation sweep rows, APGD restart-policy sweep
+  mildly ill-conditioned single-problem and 4x/8x/16x-coupled batch packets,
+  near-singular single-problem and batch packets, singular-degenerate packets,
+  PGS/PSOR, symmetric PSOR, and Red-Black Gauss-Seidel relaxation sweep rows, APGD restart-policy sweep
   rows, TGS iteration-budget sweep rows, NNCG PGS-preconditioner iteration
   sweep rows, SubspaceMinimization PGS-iteration sweep rows, ShockPropagation
   layer-layout sweep rows, MPRGP SPD/check sweep rows, Interior Point

@@ -106,9 +106,9 @@ Support abbreviations:
   build trees. It now
   also includes a scoped robust near-singular slice for standard 8-row, boxed
   8-row, and coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-, 32-, and
-  48-contact packets, plus 21 matching
-  benchmark rows verified in default, SIMD-enabled, and CUDA-enabled build
-  trees. It now
+  48-contact packets, plus 21 matching benchmark rows and 32 matching
+  batch benchmark rows verified in default, SIMD-enabled, and CUDA-enabled
+  build trees. It now
   also includes an exact rank-deficient singular-degenerate slice for standard
   16-row, boxed 16-row, and coupled friction-index 6-contact packets, plus 27
   matching benchmark rows verified in default, SIMD-enabled, and CUDA-enabled
@@ -368,6 +368,21 @@ The current local evidence for this task is:
   `3/6/9/12/16/24/32/48`, problem sizes `9/18/27/36/48/72/96/144`, and
   `coupled=1` for the coupled packets. The CUDA-enabled rows are CPU solver
   rows in a CUDA-enabled build, not CUDA LCP kernel execution.
+- `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpNearSingularBatch' | wc -l`
+  reported 32 rows, and JSON benchmark checks for
+  `BM_LcpNearSingularBatch(Serial|Parallel)` reported 32 rows with
+  `contract_ok=1` in the default, SIMD-enabled, and CUDA-enabled build trees.
+  These rows compare `Dantzig` and `ShockPropagation` over batch-size-4 serial
+  and DART 7 `ParallelExecutor` runs on the coupled friction-index 3-, 6-, 9-,
+  12-, 16-, 24-, 32-, and 48-contact near-singular packets. The rows report
+  `near_singular_batch=1`, `batch_size=4`,
+  `contact_count=3/6/9/12/16/24/32/48`,
+  `total_contact_count=12/24/36/48/64/96/128/192`,
+  `problem_size=9/18/27/36/48/72/96/144`,
+  `total_problem_size=36/72/108/144/192/288/384/576`, backend build-state
+  counters, and parallel execution counters on the `ParallelExecutor` rows.
+  The CUDA-enabled rows are CPU solver batch rows in a CUDA-enabled build, not
+  CUDA LCP kernel execution.
 - `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpSingularDegenerate/' | wc -l`
   reported 27 rows, and
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpSingularDegenerate' --benchmark_min_time=0.001s --benchmark_repetitions=1`

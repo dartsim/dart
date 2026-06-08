@@ -40,6 +40,10 @@ serial and DART 7 `ParallelExecutor` runs over the 4x-coupled 16-/24-contact,
 8x-coupled 16-/24-/32-contact, and ADMM/SAP-only 16x-coupled
 16-/24-/32-/48-contact mildly ill-conditioned packets, verified in default,
 SIMD-enabled, and CUDA-enabled build trees.
+It also adds 32 `BM_LcpNearSingularBatch(Serial|Parallel)` rows for
+batch-size-4 serial and DART 7 `ParallelExecutor` runs over coupled
+friction-index 3-/6-/9-/12-/16-/24-/32-/48-contact near-singular packets,
+verified in default, SIMD-enabled, and CUDA-enabled build trees.
 It now also adds DART 7 per-contact block-structure evidence for BGS and
 Blocked Jacobi on a real two-contact boxed-LCP world-contact snapshot: the
 focused tests pass when blocks are derived from non-contiguous `findex`
@@ -387,8 +391,9 @@ Push/PR work still requires explicit maintainer/user approval.
 
 Move from the now-verified extreme 128-row/16-contact exact rank-deficient,
 production active-set transition 48-contact, coupled mildly ill-conditioned
-24-contact, near-singular 48-contact CPU solver rows, and default/SIMD/CUDA
-Newton warm-start single-problem and batch benchmark rows, plus focused
+24-contact, near-singular 48-contact CPU solver rows, near-singular
+serial/parallel batch rows, and default/SIMD/CUDA Newton warm-start
+single-problem and batch benchmark rows, plus focused
 PGS/PSOR, symmetric PSOR, and Red-Black Gauss-Seidel relaxation sweep rows,
 APGD restart-policy sweep rows, TGS iteration-budget sweep rows, NNCG
 PGS-preconditioner iteration sweep rows, SubspaceMinimization PGS-iteration
@@ -554,6 +559,15 @@ contact scenes.
   SIMD-enabled, and CUDA-enabled runs pass with `contract_ok=1` on all rows and
   report `near_singular=1`, backend build-state counters, and contact/coupling
   counters where applicable. The CUDA-enabled rows are CPU solver rows in a
+  CUDA-enabled build, not CUDA LCP kernel execution.
+  `BM_LCP_COMPARE` also lists 32
+  `BM_LcpNearSingularBatch(Serial|Parallel)` rows for batch-size-4 serial and
+  DART 7 `ParallelExecutor` runs over coupled friction-index
+  3-/6-/9-/12-/16-/24-/32-/48-contact near-singular packets; focused default,
+  SIMD-enabled, and CUDA-enabled JSON checks pass with `contract_ok=1` on all
+  rows and report `near_singular_batch=1`, contact/total-contact counters,
+  backend build-state counters, and parallel execution counters on
+  `ParallelExecutor` rows. The CUDA-enabled rows are CPU solver batch rows in a
   CUDA-enabled build, not CUDA LCP kernel execution.
   `BM_LCP_COMPARE` also lists 27 `BM_LcpSingularDegenerate` rows for exact
   rank-deficient standard 16-row, boxed 16-row, and coupled friction-index
