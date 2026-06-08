@@ -620,7 +620,9 @@ The current local evidence for this task is:
   passed focused stack tests, validating the boxed/findex LCP contract for
   3-sphere, 4-sphere, 5-sphere, 6-sphere, and 7-sphere vertical stacks assembled from
   DART 7 `World::collide()`, plus the 3-sphere, 4-sphere, 5-sphere, and
-  6-sphere public step invariants below. The
+  6-sphere public step invariants below. Local 7-sphere public-step probes at
+  1000 and 2000 steps failed the existing motion-invariant contract, so no
+  7-sphere public-step row is claimed. The
   4-sphere snapshot contains 4 contacts and 12 LCP rows, the 5-sphere snapshot
   contains 5 contacts and 15 LCP rows, and the 6-sphere snapshot contains
   6 contacts and 18 LCP rows; the 7-sphere snapshot contains 7 contacts and
@@ -645,7 +647,14 @@ The current local evidence for this task is:
 - `test_boxed_lcp_contact --gtest_filter=BoxedLcpContact.SevenSphereStackWorldContactSnapshotSatisfiesLcpContract:BoxedLcpContact.ThirtyTwoBoxWorldStepMaintainsDenseContactInvariants --gtest_brief=1`
   passed locally. The first test validates the 7-sphere, 7-contact, 21-row
   boxed/findex stack snapshot. This is 7-sphere snapshot evidence only; a
-  7-sphere public-step invariant is not claimed.
+  7-sphere public-step invariant is not claimed. Temporary 7-sphere public-step
+  probes were not kept: at 1000 steps the unit path failed the existing
+  near-rest vertical-velocity invariant, and
+  `BM_LcpWorldStackStep_BoxedLcp/7/1000` reported `invariant_ok=0`,
+  `min_spacing=0.999225`, and `max_vertical_speed=5.90648`; at 2000 steps the
+  unit path still failed height, spacing, and near-rest checks, and
+  `BM_LcpWorldStackStep_BoxedLcp/7/2000` reported `invariant_ok=0` with
+  `max_vertical_speed=4.599`.
 - `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.SphereStackWorldStepMaintainsContactInvariants'`
   passed 1 test, advancing the same 3-sphere vertical stack through 200 public
   boxed-LCP `World::step()` iterations and checking finite state,

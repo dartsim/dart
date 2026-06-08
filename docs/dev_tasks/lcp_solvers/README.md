@@ -1369,7 +1369,16 @@ tradeoffs evidence based.
   with 7 contacts and 21 LCP rows. The focused default
   `test_boxed_lcp_contact --gtest_filter=BoxedLcpContact.SevenSphereStackWorldContactSnapshotSatisfiesLcpContract:BoxedLcpContact.ThirtyTwoBoxWorldStepMaintainsDenseContactInvariants --gtest_brief=1`
   run passed both tests. This is 7-sphere snapshot evidence only; a 7-sphere
-  public-step invariant is not claimed.
+  public-step invariant is not claimed. A temporary
+  `SevenSphereStackWorldStepMaintainsContactInvariants` probe failed the
+  existing near-rest vertical-velocity invariant after 1000 public
+  `World::step()` iterations, with a matching
+  `BM_LcpWorldStackStep_BoxedLcp/7/1000` probe reporting `invariant_ok=0`,
+  `min_spacing=0.999225`, and `max_vertical_speed=5.90648`. A follow-up
+  2000-step probe still failed height, spacing, and near-rest checks, while
+  `BM_LcpWorldStackStep_BoxedLcp/7/2000` reported `invariant_ok=0` and
+  `max_vertical_speed=4.599`. No 7-sphere public-step row is registered from
+  those probes.
   The
   focused
   `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.*WorldContactSnapshot*'`

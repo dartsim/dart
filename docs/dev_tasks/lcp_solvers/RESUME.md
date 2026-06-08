@@ -470,7 +470,10 @@ coupled-stack, and grouped manually assembled articulated unified-contact
 including cross-multibody link-vs-link CUDA rows, plus mixed
 separated/stack/articulated CUDA benchmark rows, plus the current
 PGS-only homogeneous and grouped variable-size dense box-face CUDA batch rows.
-After that, extend
+Do not claim a 7-sphere public-step stack invariant yet: local temporary probes
+failed at both 1000 and 2000 public `World::step()` iterations under the
+existing motion-invariant contract, with benchmark probes reporting
+`invariant_ok=0`. After that, extend
 DART 7 boxed-LCP world-contact
 evidence beyond the current separated sphere-ground, fixed-base prismatic
 articulated end-to-end coverage, connected Cartesian-chain articulated
@@ -1000,6 +1003,13 @@ contact scenes.
   `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.*SphereStack*'` run
   passes these snapshot tests plus the 3-sphere 200-step, 3-sphere 500-step,
   4-sphere 200-step, 5-sphere 500-step, and 6-sphere 1000-step invariant tests.
+  Temporary 7-sphere public-step probes were removed because the 1000-step unit
+  path failed the near-rest vertical-velocity invariant and
+  `BM_LcpWorldStackStep_BoxedLcp/7/1000` reported `invariant_ok=0`,
+  `min_spacing=0.999225`, and `max_vertical_speed=5.90648`; the 2000-step
+  unit path still failed height, spacing, and near-rest checks, and the
+  matching benchmark probe reported `invariant_ok=0` with
+  `max_vertical_speed=4.599`.
   Focused default, SIMD-enabled, and CUDA-enabled
   `test_boxed_lcp_contact --gtest_filter=BoxedLcpContact.LargerStressSphereStackWorldContactSnapshotSatisfiesLcpContract:BoxedLcpContact.LargerStressSphereStackWorldStepMaintainsContactInvariants`
   runs pass the new 6-sphere tests. The full
