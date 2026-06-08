@@ -455,11 +455,11 @@ debugging, profiling, optimization experiments, and ImGui visualization.
    growth and first baked-step global heap allocation by priming unified
    constraint scratch at `enterSimulationMode()`. The current deformable
    friction guard scales the same topology-reserved candidate/friction scratch
-   from patch, 5x5, 7x7, and 9x9 grids to an active 11x11 two-layer grid.
-   Continue broadening boxed-LCP unified problem assembly and differently
-   shaped production contact sets while moving any newly exposed
-   deformable/contact candidate buffers to backed storage before making the
-   full zero-allocation claim.
+   from patch, 5x5, 7x7, and 9x9 grids to active 11x11 square and 9x13
+   non-square two-layer grids. Continue broadening boxed-LCP unified problem
+   assembly and differently shaped production contact sets while moving any
+   newly exposed deformable/contact candidate buffers to backed storage before
+   making the full zero-allocation claim.
 6. Start replacing per-step `std::vector`/`Eigen` temporaries in hot stages with
    world-frame or world-pool backed storage only after the allocator evidence
    gate proves the DART allocator path is better for that workload. The
