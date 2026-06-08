@@ -6,15 +6,18 @@
   of inherited from DART 6-era submodules or the retired
   `simulation_experimental` staging surface; physical source moves follow the
   public topology, package exports, examples, and verification gates.
-- Current evidence: the north star requires an easy public API, extensible
-  internals, and scalable compute; dartpy now promotes the ECS-backed World
-  through `dartpy.simulation.World` and the root `dartpy.World` alias, with
-  generated stubs no longer publishing `dartpy.simulation_experimental`;
+- Current evidence: PR #2932 landed the first official DART 7 simulation API
+  promotion; the north star requires an easy public API, extensible internals,
+  and scalable compute; dartpy now promotes the ECS-backed World through
+  `dartpy.simulation.World` and the root `dartpy.World` alias, with generated
+  stubs no longer publishing `dartpy.simulation_experimental`;
   `dart::simulation`, `dart/simulation/**`, the `dart-simulation` component, and
-  `python/dartpy/simulation/` now own the promoted World surface; current
-  `dart/*` folders still reflect some historical DART 6 module boundaries,
-  backend adapters, and compatibility surfaces, so the remaining work is
-  cleanup, quarantine, and enforcement rather than choosing staging names.
+  `python/dartpy/simulation/` now own the promoted World surface. The current
+  `dart/simulation` folder tree is accepted as a guarded post-promotion layout,
+  not as the final whole-repo source taxonomy. Current `dart/*` folders still
+  reflect some historical DART 6 module boundaries, backend adapters, and
+  compatibility surfaces, so the remaining work is cleanup, quarantine, and
+  enforcement rather than choosing staging names.
 
 ## Direction
 
@@ -83,8 +86,10 @@ boundary evidence.
 
 The initial decision and audit packet lives in
 [`042-dart7-public-api-and-source-layout/api-source-layout-audit.md`](042-dart7-public-api-and-source-layout/api-source-layout-audit.md).
-Keep that sidecar focused on concrete rows, gates, and follow-up work items; keep
-this owner plan focused on direction, sequencing, and acceptance criteria.
+The post-promotion folder decision lives in
+[`042-dart7-public-api-and-source-layout/post-promotion-source-layout-decision.md`](042-dart7-public-api-and-source-layout/post-promotion-source-layout-decision.md).
+Keep those sidecars focused on concrete rows, gates, and follow-up work items;
+keep this owner plan focused on direction, sequencing, and acceptance criteria.
 
 ## Review Board
 
@@ -161,6 +166,8 @@ the resulting principles and DART vocabulary, not the source projects' names.
 The first implementation task derived from this plan is a repo-wide audit map.
 The initial map lives in
 [`042-dart7-public-api-and-source-layout/api-source-layout-audit.md`](042-dart7-public-api-and-source-layout/api-source-layout-audit.md).
+The current post-PR-2932 folder decision and open follow-up rows live in
+[`042-dart7-public-api-and-source-layout/post-promotion-source-layout-decision.md`](042-dart7-public-api-and-source-layout/post-promotion-source-layout-decision.md).
 Each row uses these fields:
 
 | Field                 | Meaning                                                                             |

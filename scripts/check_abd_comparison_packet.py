@@ -5,10 +5,15 @@ from __future__ import annotations
 
 import argparse
 import json
-import math
 import subprocess
 import sys
 from pathlib import Path
+
+from benchmark_packet_utils import (
+    benchmark_row_name,
+    benchmark_timing_field_errors,
+    canonical_benchmark_name,
+)
 
 EXPECTED_BENCHMARKS = {
     "BM_AffineBodyPointTriangleBarrier",
@@ -72,13 +77,6 @@ def run_benchmark(args: argparse.Namespace) -> None:
     subprocess.run(command, check=True)
 
 
-def base_benchmark_name(name: str) -> str:
-    for suffix in ("_mean", "_median", "_stddev", "_cv"):
-        if name.endswith(suffix):
-            return name[: -len(suffix)]
-    return name
-
-
 def validate_packet(path: Path) -> None:
     with path.open(encoding="utf-8") as stream:
         payload = json.load(stream)
@@ -93,24 +91,16 @@ def validate_packet(path: Path) -> None:
         if not isinstance(row, dict):
             errors.append("benchmark row is not an object")
             continue
-        name = row.get("name")
-        if not isinstance(name, str):
+        name = benchmark_row_name(row)
+        if not name:
             errors.append("benchmark row is missing a string name")
             continue
-        base_name = base_benchmark_name(name)
+        base_name = canonical_benchmark_name(name)
         if base_name not in EXPECTED_BENCHMARKS:
             errors.append(f"unexpected benchmark row: {name}")
             continue
         seen.add(base_name)
-
-        for field in ("real_time", "cpu_time"):
-            value = row.get(field)
-            if not isinstance(value, (int, float)) or not math.isfinite(value):
-                errors.append(f"{name} has non-finite {field}: {value!r}")
-            elif value <= 0:
-                errors.append(f"{name} has non-positive {field}: {value!r}")
-        if not isinstance(row.get("time_unit"), str):
-            errors.append(f"{name} is missing time_unit")
+        errors.extend(benchmark_timing_field_errors(row, name))
 
     missing = sorted(EXPECTED_BENCHMARKS - seen)
     if missing:
