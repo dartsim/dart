@@ -1120,11 +1120,11 @@ The current local evidence for this task is:
   sphere-ground, coupled stack, and manually assembled 1-/4-/8-/16-contact
   articulated unified-contact packets, including cross-multibody link-vs-link
   packets, with
-  `batch_size=32`, `contact_fixture_family_count=3`, `cuda_group_count=6`,
-  `contact_shape_count=6`, `articulated_contact_case_count=3`,
-  `articulated_cross_link_contact=1`, `min_problem_size=3`,
-  `max_problem_size=48`, `total_contact_count=198`, and
-  `total_problem_size=594`. The dense box PGS
+  `batch_size=48`, `contact_fixture_family_count=3`, `cuda_group_count=6`,
+  `contact_shape_count=6`, `problem_variants_per_shape=3`,
+  `articulated_contact_case_count=3`, `articulated_cross_link_contact=1`,
+  `min_problem_size=3`, `max_problem_size=48`, `total_contact_count=297`, and
+  `total_problem_size=891`. The dense box PGS
   rows include homogeneous 4-problem batches for
   1-/4-/8-/16-/24-/32-/48-/64-/96-box dense face-contact `World::collide()`
   snapshots and a grouped variable-size 1/2/4/8/16/24/32-box batch. A focused

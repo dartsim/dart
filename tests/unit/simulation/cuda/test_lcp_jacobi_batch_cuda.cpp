@@ -1701,13 +1701,17 @@ TEST(CudaLcpJacobiBatch, MixedContactGroupedBatchSatisfiesLcpContract)
     GTEST_SKIP() << "CUDA runtime has no available device";
   }
 
-  std::string errorMessage;
-  auto fixture = makeMixedContactGroupedBatch(2, 1024, errorMessage);
-  ASSERT_TRUE(fixture.has_value()) << errorMessage;
+  for (const int variantsPerScenario : {2, 3}) {
+    SCOPED_TRACE("variantsPerScenario=" + std::to_string(variantsPerScenario));
+    std::string errorMessage;
+    auto fixture
+        = makeMixedContactGroupedBatch(variantsPerScenario, 1024, errorMessage);
+    ASSERT_TRUE(fixture.has_value()) << errorMessage;
 
-  cuda::solveBoxedLcpJacobiGroupedBatchCuda(fixture->packets);
+    cuda::solveBoxedLcpJacobiGroupedBatchCuda(fixture->packets);
 
-  expectGroupedBatchSatisfiesLcpContract(*fixture);
+    expectGroupedBatchSatisfiesLcpContract(*fixture);
+  }
 }
 
 //==============================================================================
@@ -1944,13 +1948,17 @@ TEST(CudaLcpPgsBatch, MixedContactGroupedBatchSatisfiesLcpContract)
     GTEST_SKIP() << "CUDA runtime has no available device";
   }
 
-  std::string errorMessage;
-  auto fixture = makeMixedContactGroupedBatch(2, 512, errorMessage);
-  ASSERT_TRUE(fixture.has_value()) << errorMessage;
+  for (const int variantsPerScenario : {2, 3}) {
+    SCOPED_TRACE("variantsPerScenario=" + std::to_string(variantsPerScenario));
+    std::string errorMessage;
+    auto fixture
+        = makeMixedContactGroupedBatch(variantsPerScenario, 512, errorMessage);
+    ASSERT_TRUE(fixture.has_value()) << errorMessage;
 
-  cuda::solveBoxedLcpPgsGroupedBatchCuda(fixture->packets);
+    cuda::solveBoxedLcpPgsGroupedBatchCuda(fixture->packets);
 
-  expectGroupedBatchSatisfiesLcpContract(*fixture);
+    expectGroupedBatchSatisfiesLcpContract(*fixture);
+  }
 }
 
 //==============================================================================

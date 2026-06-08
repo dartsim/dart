@@ -618,14 +618,15 @@ tradeoffs evidence based.
   `min_problem_size=3`, `max_problem_size=48`, `total_contact_count=174`, and
   `total_problem_size=522`. A focused mixed-contact follow-up
   `test_lcp_jacobi_batch_cuda --gtest_filter='CudaLcpJacobiBatch.MixedContactGroupedBatchSatisfiesLcpContract:CudaLcpPgsBatch.MixedContactGroupedBatchSatisfiesLcpContract' --gtest_brief=1`
-  passed both CUDA grouped-batch tests, and
-  `BM_LCP_COMPARE --benchmark_filter='BM_LcpCuda(Jacobi|Pgs)MixedContactGroupedBatch_FrictionIndex' --benchmark_min_time=0.001s --benchmark_repetitions=1`
-  reported two mixed CUDA rows with `contract_ok=1`,
-  `batch_size=32`, `contact_fixture_family_count=3`, `cuda_group_count=6`,
-  `contact_shape_count=6`, `articulated_contact_case_count=3`,
-  `articulated_cross_link_contact=1`, `min_problem_size=3`,
-  `max_problem_size=48`, `total_contact_count=198`, and
-  `total_problem_size=594`. This proves narrow
+  passed both CUDA grouped-batch tests for two and three variants per mixed
+  scenario, and
+  `BM_LCP_COMPARE --benchmark_filter='BM_LcpCuda(Jacobi|Pgs)MixedContactGroupedBatch_FrictionIndex/3$' --benchmark_min_time=0.001s`
+  reported the two new mixed CUDA rows with `contract_ok=1`,
+  `batch_size=48`, `contact_fixture_family_count=3`, `cuda_group_count=6`,
+  `contact_shape_count=6`, `problem_variants_per_shape=3`,
+  `articulated_contact_case_count=3`, `articulated_cross_link_contact=1`,
+  `min_problem_size=3`, `max_problem_size=48`, `total_contact_count=297`, and
+  `total_problem_size=891`. This proves narrow
   CUDA projected-Jacobi and
   PGS batch LCP paths; it does not prove CUDA execution for the full solver
   manifest or for dense contact CUDA batches, or end-to-end articulated

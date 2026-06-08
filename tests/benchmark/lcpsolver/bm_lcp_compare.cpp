@@ -11960,8 +11960,10 @@ BENCHMARK(BM_LcpCudaJacobiArticulatedUnifiedContactGroupedBatch_FrictionIndex)
     ->Arg(2);
 BENCHMARK(BM_LcpCudaPgsArticulatedUnifiedContactGroupedBatch_FrictionIndex)
     ->Arg(2);
-BENCHMARK(BM_LcpCudaJacobiMixedContactGroupedBatch_FrictionIndex)->Arg(2);
-BENCHMARK(BM_LcpCudaPgsMixedContactGroupedBatch_FrictionIndex)->Arg(2);
+BENCHMARK(BM_LcpCudaJacobiMixedContactGroupedBatch_FrictionIndex)
+    ->Arg(2)
+    ->Arg(3);
+BENCHMARK(BM_LcpCudaPgsMixedContactGroupedBatch_FrictionIndex)->Arg(2)->Arg(3);
 #endif
 
 #if DART_BM_LCP_COMPARE_HAS_SIMULATION
