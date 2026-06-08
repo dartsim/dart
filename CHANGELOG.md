@@ -198,6 +198,12 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     from `std::allocator`, matching foonathan-style container propagation
     traits and letting `std::allocator_traits` handle object
     construction/destruction for allocator-aware container hot loops.
+  - Added `DefaultStlAllocator`, a stateless STL adapter backed by
+    `MemoryAllocator::GetDefault()`, so allocator-aware containers that use the
+    process-wide default memory resource avoid per-container allocator state.
+  - Added explicit STL allocator construct/destroy hooks that keep non-trivial
+    object lifetimes correct while avoiding unnecessary trivial-destructor work
+    in allocator-aware container hot loops.
   - Applied the same lightweight stateful allocator traits to
     `FrameStlAllocator`, letting `std::allocator_traits` own construction and
     destruction in frame-backed allocator-aware container builds.

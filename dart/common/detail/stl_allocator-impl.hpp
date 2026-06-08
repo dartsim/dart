@@ -34,6 +34,8 @@
 #include <dart/common/stl_allocator.hpp>
 
 #include <new>
+#include <type_traits>
+#include <utility>
 
 #include <cstddef>
 
@@ -94,6 +96,24 @@ void StlAllocator<T>::deallocate(pointer pointer, size_type n) noexcept
 
 //==============================================================================
 template <typename T>
+template <typename U, typename... Args>
+void StlAllocator<T>::construct(U* pointer, Args&&... args)
+{
+  std::construct_at(pointer, std::forward<Args>(args)...);
+}
+
+//==============================================================================
+template <typename T>
+template <typename U>
+void StlAllocator<T>::destroy(U* pointer) noexcept
+{
+  if constexpr (!std::is_trivially_destructible_v<U>) {
+    std::destroy_at(pointer);
+  }
+}
+
+//==============================================================================
+template <typename T>
 constexpr typename StlAllocator<T>::size_type
 StlAllocator<T>::storageAlignmentFor(size_type bytes) noexcept
 {
@@ -145,6 +165,66 @@ std::ostream& operator<<(std::ostream& os, const StlAllocator<T>& allocator)
 {
   allocator.print(os);
   return os;
+}
+
+//==============================================================================
+template <typename T>
+template <typename U>
+constexpr DefaultStlAllocator<T>::DefaultStlAllocator(
+    const DefaultStlAllocator<U>&) noexcept
+{
+  // Do nothing
+}
+
+//==============================================================================
+template <typename T>
+typename DefaultStlAllocator<T>::pointer DefaultStlAllocator<T>::allocate(
+    size_type n, const void* hint)
+{
+  (void)hint;
+  if (n > max_size()) {
+    throw std::bad_alloc();
+  }
+
+  const size_type bytes = n * sizeof(T);
+  void* memory = MemoryAllocator::GetDefault().allocate(bytes, alignof(T));
+  pointer ptr = reinterpret_cast<pointer>(memory);
+
+  if (!ptr) {
+    throw std::bad_alloc();
+  }
+
+  return ptr;
+}
+
+//==============================================================================
+template <typename T>
+void DefaultStlAllocator<T>::deallocate(pointer pointer, size_type n) noexcept
+{
+  if (n > max_size()) {
+    return;
+  }
+
+  const size_type bytes = n * sizeof(T);
+  MemoryAllocator::GetDefault().deallocate(pointer, bytes, alignof(T));
+}
+
+//==============================================================================
+template <typename T>
+template <typename U, typename... Args>
+void DefaultStlAllocator<T>::construct(U* pointer, Args&&... args)
+{
+  std::construct_at(pointer, std::forward<Args>(args)...);
+}
+
+//==============================================================================
+template <typename T>
+template <typename U>
+void DefaultStlAllocator<T>::destroy(U* pointer) noexcept
+{
+  if constexpr (!std::is_trivially_destructible_v<U>) {
+    std::destroy_at(pointer);
+  }
 }
 
 } // namespace dart::common

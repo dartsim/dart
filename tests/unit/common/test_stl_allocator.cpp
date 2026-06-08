@@ -73,6 +73,21 @@ struct RegistryVelocity
   double values[3] = {};
 };
 
+struct NonTrivialValue
+{
+  explicit NonTrivialValue(int* destroyCount) : mDestroyCount(destroyCount)
+  {
+    // Do nothing
+  }
+
+  ~NonTrivialValue()
+  {
+    ++*mDestroyCount;
+  }
+
+  int* mDestroyCount;
+};
+
 class CountingMemoryAllocator final : public MemoryAllocator
 {
 public:
@@ -218,6 +233,28 @@ TEST(StlAllocatorTest, ExposesLightweightStatefulAllocatorTraits)
 }
 
 //==============================================================================
+TEST(StlAllocatorTest, DefaultStlAllocatorExposesEmptyStatelessTraits)
+{
+  using Allocator = DefaultStlAllocator<int>;
+  using Traits = std::allocator_traits<Allocator>;
+
+  EXPECT_FALSE((std::is_base_of_v<std::allocator<int>, Allocator>));
+  EXPECT_TRUE((std::is_empty_v<Allocator>));
+  EXPECT_EQ(sizeof(Allocator), 1u);
+  EXPECT_TRUE((std::is_trivially_copy_constructible_v<Allocator>));
+  EXPECT_TRUE((std::is_trivially_destructible_v<Allocator>));
+  EXPECT_TRUE(Traits::is_always_equal::value);
+  EXPECT_TRUE(Traits::propagate_on_container_copy_assignment::value);
+  EXPECT_TRUE(Traits::propagate_on_container_move_assignment::value);
+  EXPECT_TRUE(Traits::propagate_on_container_swap::value);
+
+  DefaultStlAllocator<int> ints;
+  DefaultStlAllocator<double> doubles(ints);
+  EXPECT_TRUE(ints == doubles);
+  EXPECT_FALSE(ints != doubles);
+}
+
+//==============================================================================
 TEST(StlAllocatorTest, SupportsOverAlignedVectorStorage)
 {
   FreeListAllocator backing;
@@ -231,6 +268,54 @@ TEST(StlAllocatorTest, SupportsOverAlignedVectorStorage)
   for (auto& value : values) {
     expectAligned(&value);
   }
+}
+
+//==============================================================================
+TEST(StlAllocatorTest, SupportsDefaultOverAlignedVectorStorage)
+{
+  DefaultStlAllocator<OverAlignedComponent> allocator;
+
+  std::vector<OverAlignedComponent, DefaultStlAllocator<OverAlignedComponent>>
+      values(allocator);
+  values.resize(8);
+
+  expectAligned(values.data());
+  for (auto& value : values) {
+    expectAligned(&value);
+  }
+}
+
+//==============================================================================
+TEST(StlAllocatorTest, ConstructsAndDestroysNonTrivialObjects)
+{
+  FreeListAllocator backing;
+  StlAllocator<NonTrivialValue> allocator(backing);
+  using Traits = std::allocator_traits<decltype(allocator)>;
+  int destroyCount = 0;
+
+  auto* value = Traits::allocate(allocator, 1);
+  Traits::construct(allocator, value, &destroyCount);
+  EXPECT_EQ(destroyCount, 0);
+
+  Traits::destroy(allocator, value);
+  EXPECT_EQ(destroyCount, 1);
+  Traits::deallocate(allocator, value, 1);
+}
+
+//==============================================================================
+TEST(StlAllocatorTest, DefaultAllocatorConstructsAndDestroysNonTrivialObjects)
+{
+  DefaultStlAllocator<NonTrivialValue> allocator;
+  using Traits = std::allocator_traits<decltype(allocator)>;
+  int destroyCount = 0;
+
+  auto* value = Traits::allocate(allocator, 1);
+  Traits::construct(allocator, value, &destroyCount);
+  EXPECT_EQ(destroyCount, 0);
+
+  Traits::destroy(allocator, value);
+  EXPECT_EQ(destroyCount, 1);
+  Traits::deallocate(allocator, value, 1);
 }
 
 //==============================================================================
@@ -311,6 +396,37 @@ TEST(StlAllocatorTest, SupportsAllocatorAwareEnttRegistryStorage)
   auto& storage = registry.storage<OverAlignedComponent>();
   StlAllocator<OverAlignedComponent> componentAllocator(registryAllocator);
   EXPECT_TRUE(storage.get_allocator() == componentAllocator);
+
+  registry.destroy(entity);
+}
+
+//==============================================================================
+TEST(StlAllocatorTest, SupportsDefaultAllocatorAwareEnttRegistryStorage)
+{
+  using DartRegistry
+      = entt::basic_registry<entt::entity, DefaultStlAllocator<entt::entity>>;
+
+  EXPECT_EQ(sizeof(DartRegistry), sizeof(entt::registry));
+
+  DartRegistry registry(DefaultStlAllocator<entt::entity>{});
+  entt::registry stdRegistry;
+  EXPECT_EQ(
+      sizeof(registry.storage<RegistryTag>()),
+      sizeof(stdRegistry.storage<RegistryTag>()));
+  EXPECT_EQ(
+      sizeof(registry.storage<RegistryVelocity>()),
+      sizeof(stdRegistry.storage<RegistryVelocity>()));
+  EXPECT_EQ(
+      sizeof(registry.storage<OverAlignedComponent>()),
+      sizeof(stdRegistry.storage<OverAlignedComponent>()));
+
+  const entt::entity entity = registry.create();
+  auto& component = registry.emplace<OverAlignedComponent>(entity);
+  expectAligned(&component);
+
+  auto& storage = registry.storage<OverAlignedComponent>();
+  EXPECT_TRUE(
+      storage.get_allocator() == DefaultStlAllocator<OverAlignedComponent>{});
 
   registry.destroy(entity);
 }

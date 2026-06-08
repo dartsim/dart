@@ -2106,20 +2106,17 @@ static void BM_EnttRegistryBuild_DART(benchmark::State& state)
 {
   const auto entityCount = static_cast<size_t>(state.range(0));
   const size_t cycleCount = enttRegistryBuildCyclesFor(entityCount);
-  FrameAllocator backing(
-      MemoryAllocator::GetDefault(), entityCount * 4096 + 1024 * 1024);
-  FrameStlAllocator<entt::entity> allocator(backing);
+  DefaultStlAllocator<entt::entity> allocator;
   std::vector<entt::entity> entities(entityCount);
 
   for (auto _ : state) {
     for (size_t cycle = 0; cycle < cycleCount; ++cycle) {
       {
-        entt::basic_registry<entt::entity, FrameStlAllocator<entt::entity>>
+        entt::basic_registry<entt::entity, DefaultStlAllocator<entt::entity>>
             registry(EnttRegistryStorageCount, allocator);
         reserveEnttRegistryStorage(registry, entityCount);
         runEnttRegistryChurn(registry, entities, entityCount);
       }
-      backing.reset();
     }
   }
 
