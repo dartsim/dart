@@ -54,6 +54,12 @@ struct LineSearchStats
   std::size_t zeroStepCount = 0;
 };
 
+[[nodiscard]] inline bool allowsPositiveLineSearchStep(
+    const double stepBound, const bool indeterminate) noexcept
+{
+  return stepBound > 0.0 && !indeterminate;
+}
+
 inline void accumulateLineSearchStats(
     LineSearchStats& total, const LineSearchStats& addend)
 {
