@@ -1117,8 +1117,11 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     trees, plus 42 exact rank-deficient singular-degenerate friction-index
     batch rows for batch-size-4 serial and DART 7 `ParallelExecutor` runs over
     coupled friction-index 6-/8-/12-/16-/24-/32-/48-contact packets verified
-    across default, SIMD-enabled, and CUDA-enabled build
-    trees. The
+    across default, SIMD-enabled, and CUDA-enabled build trees, plus 192 exact
+    rank-deficient singular-degenerate standard/boxed batch rows for
+    batch-size-4 serial and DART 7 `ParallelExecutor` runs over
+    16-/32-/64-/128-row packets verified across default, SIMD-enabled, and
+    CUDA-enabled build trees. The
     LCP benchmark rows now report scalar/SIMD/CUDA build-state counters so
     backend-specific runs are distinguishable in the benchmark output.
   - Added DART 7 experimental CUDA LCP execution paths for fixed-iteration

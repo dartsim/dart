@@ -208,6 +208,11 @@
       rows for batch-size-4 runs over exact rank-deficient coupled
       friction-index 6-/8-/12-/16-/24-/32-/48-contact packets, verified in
       default, SIMD-enabled, and CUDA-enabled build trees.
+- [x] Added 192
+      `BM_LcpSingularDegenerateStandardBoxedBatch(Serial|Parallel)` benchmark
+      rows for batch-size-4 runs over exact rank-deficient standard and boxed
+      16-/32-/64-/128-row packets, verified in default, SIMD-enabled, and
+      CUDA-enabled build trees.
 - [x] Fixed boxed semi-smooth Newton's `findex` moving-bound Jacobian so the
       coupled mildly ill-conditioned 4-contact generated case satisfies the
       all-solver contract.
@@ -1074,6 +1079,21 @@ tradeoffs evidence based.
   `parallel_units=4`, `worker_count=20`, and observed `max_parallelism`. The
   CUDA-enabled rows are CPU solver batch rows in a CUDA-enabled build, not CUDA
   LCP kernel execution.
+- Verified singular-degenerate standard/boxed batch benchmark slice:
+  `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpSingularDegenerateStandardBoxedBatch' | wc -l`
+  reported 192 rows, and JSON benchmark checks for
+  `BM_LcpSingularDegenerateStandardBoxedBatch(Serial|Parallel)` reported 192
+  rows with `contract_ok=1` in the default, SIMD-enabled, and CUDA-enabled
+  build trees. These rows cover batch-size-4 serial and DART 7
+  `ParallelExecutor` runs over exact rank-deficient standard and boxed
+  16-/32-/64-/128-row packets. The rows report
+  `singular_degenerate_batch=1`,
+  `singular_degenerate_standard_boxed_batch=1`, `rank_deficient=1`,
+  `batch_size=4`, `problem_size=16/32/64/128`,
+  `total_problem_size=64/128/256/512`, and backend build-state counters.
+  Parallel rows also report `profile_enabled=1`, `parallel_units=4`,
+  `worker_count=20`, and observed `max_parallelism`. The CUDA-enabled rows are
+  CPU solver batch rows in a CUDA-enabled build, not CUDA LCP kernel execution.
 - Verified solver-internal Jacobi threading slice:
   `JacobiSolver::Parameters::workerThreads` now enables an opt-in CPU threaded
   update path. `LcpGeneratedCoverage.ThreadedJacobiStandardKnownSolution`
@@ -1638,6 +1658,14 @@ tradeoffs evidence based.
   `rank_deficient=1`, backend build-state counters, and contact/coupling
   counters. The CUDA-enabled rows are CPU solver batch rows in a CUDA-enabled
   build, not CUDA LCP kernel execution.
+- Added 192 `BM_LcpSingularDegenerateStandardBoxedBatch(Serial|Parallel)`
+  rows for batch-size-4 serial and DART 7 `ParallelExecutor` runs over exact
+  rank-deficient standard and boxed 16-/32-/64-/128-row packets. These rows
+  report `contract_ok=1`, `singular_degenerate_batch=1`,
+  `singular_degenerate_standard_boxed_batch=1`, `rank_deficient=1`, backend
+  build-state counters, and problem/total-problem-size counters. The
+  CUDA-enabled rows are CPU solver batch rows in a CUDA-enabled build, not CUDA
+  LCP kernel execution.
 - Added 49 `BM_LcpLargerActiveSetTransition` rows for the scoped scalable
   active-set transition packets: standard 32-row, boxed 32-row, and coupled
   friction-index 8-contact. These rows report `contract_ok=1`,
@@ -1784,9 +1812,12 @@ tradeoffs evidence based.
 - Coverage breadth: extend deterministic generated fixtures beyond the current
   production-scale well-conditioned, larger mildly ill-conditioned,
   singular-degenerate through the current 128-row/48-contact slice, and
-  active-set transition through the current stronger-coupled 48-contact slice into
-  harder solver-specific friction-index coupling edge cases and direct backend
-  execution evidence beyond CPU solver rows in SIMD/CUDA-enabled builds.
+  active-set transition through the current stronger-coupled 48-contact slice
+  into harder solver-specific friction-index coupling edge cases and direct
+  backend execution evidence beyond CPU solver rows in SIMD/CUDA-enabled
+  builds. Standard/boxed exact rank-deficient singular-degenerate batch
+  evidence now reaches 16-/32-/64-/128-row packets for the scoped robust solver
+  set.
 - Harder friction-index conditioning: the current all-solver generated
   friction-index grid now includes coupled well-conditioned 2-contact and
   4-contact and 6-contact cases plus mildly ill-conditioned 2-contact and

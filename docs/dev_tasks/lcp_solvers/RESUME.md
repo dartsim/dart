@@ -49,6 +49,11 @@ It also adds 42
 batch-size-4 serial and DART 7 `ParallelExecutor` runs over exact
 rank-deficient coupled friction-index 6-/8-/12-/16-/24-/32-/48-contact
 packets, verified in default, SIMD-enabled, and CUDA-enabled build trees.
+It also adds 192
+`BM_LcpSingularDegenerateStandardBoxedBatch(Serial|Parallel)` rows for
+batch-size-4 serial and DART 7 `ParallelExecutor` runs over exact
+rank-deficient standard and boxed 16-/32-/64-/128-row packets, verified in
+default, SIMD-enabled, and CUDA-enabled build trees.
 It now also adds DART 7 per-contact block-structure evidence for BGS and
 Blocked Jacobi on a real two-contact boxed-LCP world-contact snapshot: the
 focused tests pass when blocks are derived from non-contiguous `findex`
@@ -389,7 +394,8 @@ ShockPropagation layer-layout benchmark rows, MPRGP SPD/check benchmark rows,
 Interior Point path-parameter benchmark rows, Staggering contact-pipeline
 benchmark rows, Boxed Semi-Smooth Newton line-search benchmark rows, Pivoting
 scale benchmark rows, BGS/Blocked Jacobi block-partition benchmark rows, SAP
-regularization benchmark rows, and Jacobi threading benchmark rows.
+regularization benchmark rows, Jacobi threading benchmark rows, and
+singular-degenerate standard/boxed batch benchmark rows.
 Push/PR work still requires explicit maintainer/user approval.
 
 ## Immediate Next Step
@@ -398,7 +404,7 @@ Move from the now-verified extreme 128-row/16-contact exact rank-deficient,
 production active-set transition 48-contact, coupled mildly ill-conditioned
 24-contact, near-singular 48-contact CPU solver rows, near-singular
 serial/parallel batch rows, exact rank-deficient singular-degenerate
-friction-index batch rows, and default/SIMD/CUDA Newton warm-start
+friction-index and standard/boxed batch rows, and default/SIMD/CUDA Newton warm-start
 single-problem and batch benchmark rows, plus focused
 PGS/PSOR, symmetric PSOR, and Red-Black Gauss-Seidel relaxation sweep rows,
 APGD restart-policy sweep rows, TGS iteration-budget sweep rows, NNCG
@@ -601,6 +607,17 @@ contact scenes.
   counters, and parallel execution counters on `ParallelExecutor` rows. The
   CUDA-enabled rows are CPU solver batch rows in a CUDA-enabled build, not CUDA
   LCP kernel execution.
+  `BM_LCP_COMPARE` also lists 192
+  `BM_LcpSingularDegenerateStandardBoxedBatch(Serial|Parallel)` rows for
+  batch-size-4 serial and DART 7 `ParallelExecutor` runs over exact
+  rank-deficient standard and boxed 16-/32-/64-/128-row packets; focused
+  default, SIMD-enabled, and CUDA-enabled JSON checks pass with `contract_ok=1`
+  on all rows and report `singular_degenerate_batch=1`,
+  `singular_degenerate_standard_boxed_batch=1`, `rank_deficient=1`,
+  `problem_size=16/32/64/128`, `total_problem_size=64/128/256/512`, backend
+  build-state counters, and parallel execution counters on `ParallelExecutor`
+  rows. The CUDA-enabled rows are CPU solver batch rows in a CUDA-enabled
+  build, not CUDA LCP kernel execution.
 - Standard, boxed, and friction-index benchmark registration now comes from
   `tests/common/lcpsolver/lcp_solver_manifest.hpp`; each family/size uses one
   deterministic generated problem across supported solvers. `DirectSolver` is
@@ -707,6 +724,8 @@ contact scenes.
   64-row, and coupled friction-index 12-contact known-solution cases, plus
   extreme exact rank-deficient singular-degenerate standard 128-row, boxed
   128-row, and coupled friction-index 16-/24-/32-/48-contact known-solution cases, plus
+  singular-degenerate standard/boxed batch benchmark packets over
+  16-/32-/64-/128-row exact rank-deficient cases, plus
   stress and extreme active-set transition standard 64/128-row, boxed
   64/128-row, coupled friction-index 12/16-contact, and production
   stronger-coupled friction-index 24-/32-/48-contact known-solution cases for

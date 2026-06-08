@@ -4241,18 +4241,20 @@ std::vector<LcpProblem> MakeNearSingularBatchProblems(
   return problems;
 }
 
-LcpProblem MakeSingularDegenerateStandardProblem(const int n)
+LcpProblem MakeSingularDegenerateStandardProblem(
+    const int n, const int variant = 0)
 {
   Eigen::MatrixXd A = Eigen::MatrixXd::Zero(n, n);
   Eigen::VectorXd x = Eigen::VectorXd::Zero(n);
   Eigen::VectorXd w = Eigen::VectorXd::Zero(n);
 
   for (int i = 0; i < n; ++i) {
-    if (i % 4 == 0) {
-      w[i] = 0.25 + 0.02 * static_cast<double>(i + 1);
+    const int shifted = i + variant;
+    if (shifted % 4 == 0) {
+      w[i] = 0.25 + 0.02 * static_cast<double>(shifted + 1);
     } else {
-      A(i, i) = 1.0 + 0.15 * static_cast<double>(i % 7);
-      x[i] = 0.08 + 0.03 * static_cast<double>((i % 5) + 1);
+      A(i, i) = 1.0 + 0.15 * static_cast<double>(shifted % 7);
+      x[i] = 0.08 + 0.03 * static_cast<double>((shifted % 5) + 1);
     }
   }
 
@@ -4266,7 +4268,8 @@ LcpProblem MakeSingularDegenerateStandardProblem(const int n)
       Eigen::VectorXi::Constant(n, -1));
 }
 
-LcpProblem MakeSingularDegenerateBoxedProblem(const int n)
+LcpProblem MakeSingularDegenerateBoxedProblem(
+    const int n, const int variant = 0)
 {
   Eigen::MatrixXd A = Eigen::MatrixXd::Zero(n, n);
   Eigen::VectorXd lo(n);
@@ -4276,27 +4279,28 @@ LcpProblem MakeSingularDegenerateBoxedProblem(const int n)
   const double inf = std::numeric_limits<double>::infinity();
 
   for (int i = 0; i < n; ++i) {
-    const int mode = i % 4;
+    const int shifted = i + variant;
+    const int mode = shifted % 4;
     if (mode == 0) {
       lo[i] = -0.45;
       hi[i] = 0.55;
       x[i] = lo[i];
-      w[i] = 0.2 + 0.01 * static_cast<double>(i + 1);
+      w[i] = 0.2 + 0.01 * static_cast<double>(shifted + 1);
     } else if (mode == 1) {
       lo[i] = -0.35;
       hi[i] = 0.4;
       x[i] = hi[i];
-      w[i] = -0.18 - 0.01 * static_cast<double>(i + 1);
+      w[i] = -0.18 - 0.01 * static_cast<double>(shifted + 1);
     } else if (mode == 2) {
       lo[i] = -0.7;
       hi[i] = 0.75;
-      A(i, i) = 1.2 + 0.1 * static_cast<double>(i % 5);
-      x[i] = -0.1 + 0.04 * static_cast<double>(i % 4);
+      A(i, i) = 1.2 + 0.1 * static_cast<double>(shifted % 5);
+      x[i] = -0.1 + 0.04 * static_cast<double>(shifted % 4);
     } else {
       lo[i] = -0.25;
       hi[i] = inf;
-      A(i, i) = 1.1 + 0.12 * static_cast<double>(i % 6);
-      x[i] = 0.15 + 0.03 * static_cast<double>(i % 5);
+      A(i, i) = 1.1 + 0.12 * static_cast<double>(shifted % 6);
+      x[i] = 0.15 + 0.03 * static_cast<double>(shifted % 5);
     }
   }
 
@@ -4535,6 +4539,53 @@ std::vector<LcpProblem> MakeSingularDegenerateFrictionIndexBatchProblems(
   for (const int i : std::views::iota(0, batchSize)) {
     problems.push_back(MakeSingularDegenerateFrictionIndexProblem(
         contactCount, seedBase + static_cast<unsigned>(i)));
+  }
+
+  return problems;
+}
+
+std::vector<LcpProblem> MakeSingularDegenerateStandardBoxedBatchProblems(
+    const SingularDegenerateBenchmarkCase testCase, const int batchSize)
+{
+  std::vector<LcpProblem> problems;
+  problems.reserve(static_cast<std::size_t>(batchSize));
+
+  for (const int i : std::views::iota(0, batchSize)) {
+    switch (testCase) {
+      case SingularDegenerateBenchmarkCase::Standard16:
+        problems.push_back(MakeSingularDegenerateStandardProblem(16, i));
+        break;
+      case SingularDegenerateBenchmarkCase::Boxed16:
+        problems.push_back(MakeSingularDegenerateBoxedProblem(16, i));
+        break;
+      case SingularDegenerateBenchmarkCase::Standard32:
+        problems.push_back(MakeSingularDegenerateStandardProblem(32, i));
+        break;
+      case SingularDegenerateBenchmarkCase::Boxed32:
+        problems.push_back(MakeSingularDegenerateBoxedProblem(32, i));
+        break;
+      case SingularDegenerateBenchmarkCase::Standard64:
+        problems.push_back(MakeSingularDegenerateStandardProblem(64, i));
+        break;
+      case SingularDegenerateBenchmarkCase::Boxed64:
+        problems.push_back(MakeSingularDegenerateBoxedProblem(64, i));
+        break;
+      case SingularDegenerateBenchmarkCase::Standard128:
+        problems.push_back(MakeSingularDegenerateStandardProblem(128, i));
+        break;
+      case SingularDegenerateBenchmarkCase::Boxed128:
+        problems.push_back(MakeSingularDegenerateBoxedProblem(128, i));
+        break;
+      case SingularDegenerateBenchmarkCase::CoupledFrictionIndex6:
+      case SingularDegenerateBenchmarkCase::CoupledFrictionIndex8:
+      case SingularDegenerateBenchmarkCase::CoupledFrictionIndex12:
+      case SingularDegenerateBenchmarkCase::CoupledFrictionIndex16:
+      case SingularDegenerateBenchmarkCase::CoupledFrictionIndex24:
+      case SingularDegenerateBenchmarkCase::CoupledFrictionIndex32:
+      case SingularDegenerateBenchmarkCase::CoupledFrictionIndex48:
+        problems.push_back(MakeSingularDegenerateStandardProblem(16, i));
+        break;
+    }
   }
 
   return problems;
@@ -7068,6 +7119,21 @@ void AddSingularDegenerateFrictionIndexBatchCounters(
   state.counters["coupled"] = 1.0;
 }
 
+void AddSingularDegenerateStandardBoxedBatchCounters(
+    benchmark::State& state,
+    const SingularDegenerateBenchmarkCase testCase,
+    const int batchSize)
+{
+  const auto problemSize = static_cast<double>(
+      MakeSingularDegenerateBenchmarkProblem(testCase).b.size());
+  state.counters["singular_degenerate"] = 1.0;
+  state.counters["singular_degenerate_batch"] = 1.0;
+  state.counters["singular_degenerate_standard_boxed_batch"] = 1.0;
+  state.counters["rank_deficient"] = 1.0;
+  state.counters["total_problem_size"]
+      = problemSize * static_cast<double>(batchSize);
+}
+
 void RunSingularDegenerateFrictionIndexBatchSerialBenchmark(
     benchmark::State& state,
     const dart::test::LcpSolverManifestEntry& solverEntry,
@@ -7145,6 +7211,92 @@ void RunSingularDegenerateFrictionIndexBatchParallelBenchmark(
           "SingularDegenerateFrictionIndexBatchParallel/"
               + std::string(getSingularDegenerateCaseName(testCase))));
   AddSingularDegenerateFrictionIndexBatchCounters(state, testCase, batchSize);
+  state.counters["batch_parallel_execution"] = 1.0;
+  AddParallelExecutionCounters(state, profile, fixture.graph);
+
+  if (fixture.storage.hasShockPropagationParams) {
+    AddShockPropagationCounters(state, fixture.storage.shockPropagationParams);
+  }
+}
+#endif
+
+void RunSingularDegenerateStandardBoxedBatchSerialBenchmark(
+    benchmark::State& state,
+    const dart::test::LcpSolverManifestEntry& solverEntry,
+    const SingularDegenerateBenchmarkCase testCase)
+{
+  const int batchSize = static_cast<int>(state.range(0));
+  const auto problems
+      = MakeSingularDegenerateStandardBoxedBatchProblems(testCase, batchSize);
+  SolverBenchmarkOptions storage;
+  ConfigureSolverBenchmarkOptions(storage, solverEntry, problems.front());
+  ConfigureSingularDegenerateBenchmarkOptions(storage, testCase);
+
+  const auto solver = solverEntry.create();
+  if (solver == nullptr) {
+    state.SkipWithError("LCP solver factory returned null");
+    return;
+  }
+
+  BatchBenchmarkCounters counters;
+  for (auto _ : state) {
+    counters = RunBatchWithSolver(*solver, problems, storage.options);
+    benchmark::DoNotOptimize(counters.maxResidual);
+  }
+
+  counters = RunBatchWithSolver(*solver, problems, storage.options);
+  AddBatchBenchmarkCounters(
+      state,
+      counters,
+      static_cast<int>(problems.front().b.size()),
+      batchSize,
+      MakeLabel(
+          std::string(solverEntry.name),
+          "SingularDegenerateStandardBoxedBatchSerial/"
+              + std::string(getSingularDegenerateCaseName(testCase))));
+  AddSingularDegenerateStandardBoxedBatchCounters(state, testCase, batchSize);
+  state.counters["batch_serial_execution"] = 1.0;
+  if (storage.hasShockPropagationParams) {
+    AddShockPropagationCounters(state, storage.shockPropagationParams);
+  }
+}
+
+#if DART_BM_LCP_COMPARE_HAS_SIMULATION
+void RunSingularDegenerateStandardBoxedBatchParallelBenchmark(
+    benchmark::State& state,
+    const dart::test::LcpSolverManifestEntry& solverEntry,
+    const SingularDegenerateBenchmarkCase testCase)
+{
+  const int batchSize = static_cast<int>(state.range(0));
+  ParallelBatchFixture fixture(
+      solverEntry,
+      MakeSingularDegenerateStandardBoxedBatchProblems(testCase, batchSize));
+  if (!fixture.valid) {
+    state.SkipWithError(fixture.errorMessage.c_str());
+    return;
+  }
+  ConfigureSingularDegenerateBenchmarkOptions(fixture.storage, testCase);
+
+  compute::ParallelExecutor executor;
+  BatchBenchmarkCounters counters;
+  for (auto _ : state) {
+    executor.execute(fixture.graph);
+    counters = fixture.collectCounters();
+    benchmark::DoNotOptimize(counters.maxResidual);
+  }
+
+  const auto profile = executor.executeProfiled(fixture.graph);
+  counters = fixture.collectCounters();
+  AddBatchBenchmarkCounters(
+      state,
+      counters,
+      static_cast<int>(fixture.problems.front().b.size()),
+      batchSize,
+      MakeLabel(
+          std::string(solverEntry.name),
+          "SingularDegenerateStandardBoxedBatchParallel/"
+              + std::string(getSingularDegenerateCaseName(testCase))));
+  AddSingularDegenerateStandardBoxedBatchCounters(state, testCase, batchSize);
   state.counters["batch_parallel_execution"] = 1.0;
   AddParallelExecutionCounters(state, profile, fixture.graph);
 
@@ -9402,6 +9554,28 @@ std::string MakeSingularDegenerateFrictionIndexBatchParallelBenchmarkName(
 }
 #endif
 
+std::string MakeSingularDegenerateStandardBoxedBatchSerialBenchmarkName(
+    const SingularDegenerateBenchmarkCase testCase,
+    const dart::test::LcpSolverManifestEntry& solver)
+{
+  std::ostringstream out;
+  out << "BM_LcpSingularDegenerateStandardBoxedBatchSerial/"
+      << getSingularDegenerateCaseName(testCase) << "/" << solver.name;
+  return out.str();
+}
+
+#if DART_BM_LCP_COMPARE_HAS_SIMULATION
+std::string MakeSingularDegenerateStandardBoxedBatchParallelBenchmarkName(
+    const SingularDegenerateBenchmarkCase testCase,
+    const dart::test::LcpSolverManifestEntry& solver)
+{
+  std::ostringstream out;
+  out << "BM_LcpSingularDegenerateStandardBoxedBatchParallel/"
+      << getSingularDegenerateCaseName(testCase) << "/" << solver.name;
+  return out.str();
+}
+#endif
+
 bool SolverShouldRunSingularDegenerateBenchmark(
     const dart::test::LcpSolverManifestEntry& solver,
     const SingularDegenerateBenchmarkCase testCase)
@@ -10199,6 +10373,52 @@ void RegisterSingularDegenerateFrictionIndexBatchBenchmarks()
   }
 }
 
+void RegisterSingularDegenerateStandardBoxedBatchBenchmarks()
+{
+  constexpr std::array<SingularDegenerateBenchmarkCase, 8> cases{
+      SingularDegenerateBenchmarkCase::Standard16,
+      SingularDegenerateBenchmarkCase::Boxed16,
+      SingularDegenerateBenchmarkCase::Standard32,
+      SingularDegenerateBenchmarkCase::Boxed32,
+      SingularDegenerateBenchmarkCase::Standard64,
+      SingularDegenerateBenchmarkCase::Boxed64,
+      SingularDegenerateBenchmarkCase::Standard128,
+      SingularDegenerateBenchmarkCase::Boxed128};
+  constexpr int batchSize = 4;
+
+  for (const auto testCase : cases) {
+    for (const auto& solver : dart::test::kLcpSolverManifest) {
+      if (!SolverShouldRunSingularDegenerateBenchmark(solver, testCase)) {
+        continue;
+      }
+
+      const auto serialName
+          = MakeSingularDegenerateStandardBoxedBatchSerialBenchmarkName(
+              testCase, solver);
+      benchmark::RegisterBenchmark(
+          serialName.c_str(),
+          [solver, testCase](benchmark::State& state) {
+            RunSingularDegenerateStandardBoxedBatchSerialBenchmark(
+                state, solver, testCase);
+          })
+          ->Arg(batchSize);
+
+#if DART_BM_LCP_COMPARE_HAS_SIMULATION
+      const auto parallelName
+          = MakeSingularDegenerateStandardBoxedBatchParallelBenchmarkName(
+              testCase, solver);
+      benchmark::RegisterBenchmark(
+          parallelName.c_str(),
+          [solver, testCase](benchmark::State& state) {
+            RunSingularDegenerateStandardBoxedBatchParallelBenchmark(
+                state, solver, testCase);
+          })
+          ->Arg(batchSize);
+#endif
+    }
+  }
+}
+
 void RegisterBatchBenchmarks()
 {
   constexpr std::array<BenchmarkProblemFamily, 3> families{
@@ -10655,6 +10875,7 @@ const bool kManifestBenchmarksRegistered = [] {
   RegisterStressSingularDegenerateBenchmarks();
   RegisterExtremeSingularDegenerateBenchmarks();
   RegisterSingularDegenerateFrictionIndexBatchBenchmarks();
+  RegisterSingularDegenerateStandardBoxedBatchBenchmarks();
   RegisterBatchBenchmarks();
 #if DART_BM_LCP_COMPARE_HAS_SIMULATION
   RegisterParallelBatchBenchmarks();
