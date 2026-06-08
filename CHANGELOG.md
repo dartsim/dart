@@ -1086,7 +1086,8 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     standard 32/64/128-row, boxed 32/64/128-row, and coupled friction-index
     8-/12-/16-/24-/32-/48-contact active-set packets verified across default,
     SIMD-enabled, and CUDA-enabled build trees, plus
-    284 larger mildly ill-conditioned benchmark rows for standard 32-row,
+    larger mildly ill-conditioned generated correctness coverage and 284
+    benchmark rows for standard 32-row,
     boxed 16-row, friction-index 8-contact, coupled friction-index 6-, 8-,
     12-, 16-, and 24-contact packets, 4x-coupled
     6-/8-/12-/16-/24-contact packets, and 8x-coupled
@@ -1230,7 +1231,7 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     CPU solver runs.
   - Added DART 7 ADMM/SAP solver-specific generated correctness and benchmark
     coverage for 16x-coupled mildly ill-conditioned friction-index LCP packets
-    at 6, 8, 12, 16, 24, 32, and 48 contacts, with backend build-state counters
+    at 6, 8, 12, 16, 24, 32, 48, and 64 contacts, with backend build-state counters
     distinguishing default, SIMD-enabled, and CUDA-enabled CPU solver runs.
   - Added DART 7 contact-normal standard-LCP comparison benchmark rows for
     Dantzig, Lemke, Baraff, Direct, Minimum Map Newton,

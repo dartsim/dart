@@ -59,8 +59,7 @@
       and articulated unified-contact fixtures.
 - [x] Added solver-specific ADMM/SAP generated correctness and benchmark rows
       for 16x-coupled mildly ill-conditioned DART 7 friction-index packets at
-      6, 8, 12, 16, 24, 32, and 48 contacts, plus benchmark-only 64-contact
-      rows.
+      6, 8, 12, 16, 24, 32, 48, and 64 contacts.
 - [x] Broadened the scoped larger mildly ill-conditioned DART 7 friction-index
       evidence to 4x-coupled 6-/8-/12-/16-/24-contact packets and 8x-coupled
       6-/8-/12-/16-/24-/32-contact packets.
@@ -127,8 +126,8 @@
       12-, 16-, and 24-contact cases, plus 4x-coupled
       6-/8-/12-/16-/24-contact cases and 8x-coupled
       6-/8-/12-/16-/24-/32-contact cases, plus an
-      ADMM/SAP-only 16x-coupled 6-/8-/12-/16-/24-/32-/48-contact generated
-      slice with benchmark-only rows through 64 contacts. `MPRGP` is intentionally
+      ADMM/SAP-only 16x-coupled 6-/8-/12-/16-/24-/32-/48-/64-contact
+      slice. `MPRGP` is intentionally
       excluded from the stricter standard known-solution slice after the 32-row
       trial satisfied the LCP contract but missed the selected expected-solution
       tolerance.
@@ -884,14 +883,18 @@ tradeoffs evidence based.
   reported 6 new rows with
   `contract_ok=1` in the default, SIMD-enabled, and CUDA-enabled build trees.
   These rows cover only `Admm` and `Sap` on 16x-coupled mildly ill-conditioned
-  friction-index packets, now including benchmark-only 64 contacts/192 rows in addition to the
-  existing 16 contacts/48 rows, 24 contacts/72 rows, 32 contacts/96 rows, and
-  48 contacts/144 rows. The
+  friction-index packets, now including 64 contacts/192 rows in addition to
+  the existing 16 contacts/48 rows, 24 contacts/72 rows, 32 contacts/96 rows,
+  and 48 contacts/144 rows. The
   rows report `mildly_ill_conditioned=1`, `coupled=1`,
   `coupling_scale=16`, `contact_count=16/24/32/48/64`,
   `problem_size=48/72/96/144/192`, `total_contact_count=256`,
   `total_problem_size=768`, and backend build-state counters for the new
   batch rows. The
+  focused
+  `LcpGeneratedCoverage.LargerMildlyIllConditionedKnownSolutionsForScopedSolvers`
+  unit test also passes in the default, SIMD-enabled, and CUDA-enabled build
+  trees with the 64-contact generated case included. The
   CUDA-enabled rows report
   `build_cuda_enabled=1` but are CPU ADMM/SAP solver rows in a CUDA-enabled
   build, not CUDA LCP kernel execution.
@@ -1584,7 +1587,9 @@ tradeoffs evidence based.
   for standard 32-row and 64-row, boxed 16-row and 32-row, friction-index
   8-contact, and coupled friction-index 6-, 8-, 12-, 16-, and 24-contact
   known-solution cases, plus 4x-coupled 6-/8-/12-/16-/24-contact cases and
-  8x-coupled 6-/8-/12-/16-/24-/32-contact cases, over a scoped solver set.
+  8x-coupled 6-/8-/12-/16-/24-/32-contact cases, plus ADMM/SAP-only
+  16x-coupled 6-/8-/12-/16-/24-/32-/48-/64-contact cases, over a scoped
+  solver set.
   `MPRGP` is excluded from
   this stricter known-solution slice after a focused 32-row standard trial
   satisfied the LCP contract but missed the selected expected-solution
