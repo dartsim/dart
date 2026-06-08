@@ -1017,6 +1017,13 @@ void configureDeformableSelfContactFrictionLargeGridScene(
       world, 7, "friction_large_grid");
 }
 
+void configureDeformableSelfContactFrictionProductionGridScene(
+    dart::simulation::World& world)
+{
+  configureDeformableSelfContactFrictionGridSceneWithSize(
+      world, 9, "friction_production_grid");
+}
+
 } // namespace
 
 // Test World construction
@@ -1874,6 +1881,9 @@ TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "deformable self-contact friction large grid",
       configureDeformableSelfContactFrictionLargeGridScene);
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "deformable self-contact friction production grid",
+      configureDeformableSelfContactFrictionProductionGridScene);
 }
 
 TEST(World, BakedKinematicIpcStepsDoNotAllocateGlobalHeap)
@@ -2111,6 +2121,9 @@ TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "deformable self-contact friction large grid",
       configureDeformableSelfContactFrictionLargeGridScene);
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "deformable self-contact friction production grid",
+      configureDeformableSelfContactFrictionProductionGridScene);
 
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "deformable surface and rigid CCD snapshots", [](sx::World& world) {

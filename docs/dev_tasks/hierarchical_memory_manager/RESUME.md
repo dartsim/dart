@@ -175,6 +175,12 @@ frictional self-contact grid. The existing bake-time candidate/friction reserve
 heuristic scaled to that case without additional scratch changes; the focused
 World base-allocator and global-heap no-growth filters pass.
 
+The follow-up production-grid continuation expanded the same guard family to a
+9x9 two-layer frictional self-contact grid. The existing topology-scaled
+bake-time reserve heuristic still covers that larger contact surface without
+additional scratch changes; the focused World base-allocator and global-heap
+no-growth filters pass.
+
 The same continuation also added an explicit no-heap guard for same-shape
 in-place unified assembly with both rigid contacts and a borrowed multibody link
 problem, extending the earlier link-only in-place assembler coverage.

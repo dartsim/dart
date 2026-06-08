@@ -189,9 +189,10 @@
       uses fixed-size stack storage instead of allocating a tiny footprint
       vector on every non-vertical sweep. Surface-contact candidate and sweep
       buffers now get topology-scaled bake-time reserve capacity, so the covered
-      frictional self-contact patch, 5x5 two-layer grid, and 7x7 two-layer
-      large grid reuse candidate and friction-contact storage through
-      projected-Newton line-search CCD. The current production boxed-LCP stage
+      frictional self-contact patch, 5x5 two-layer grid, 7x7 two-layer large
+      grid, and 9x9 two-layer production grid reuse candidate and
+      friction-contact storage through projected-Newton line-search CCD. The
+      current production boxed-LCP stage
       uses the in-place unified assembler and solve scratch; the public
       return-by-value unified problem and solution wrappers remain
       allocation-boundary API conveniences rather than step-loop hot paths.
@@ -226,7 +227,8 @@
       self-contact path. The global heap guard now also covers a baked
       default-solver deformable ground-friction projected-Newton scene plus a
       multi-triangle frictional self-contact patch, a 5x5 two-layer frictional
-      self-contact grid, and a 7x7 two-layer large grid. Still-larger
+      self-contact grid, a 7x7 two-layer large grid, and a 9x9 two-layer
+      production grid. Still-larger
       production-scale frictional deformable sets still need no-growth gates
       before making the full deformable claim.
 - [ ] Phase 6: Add memory-layout profiler/debugger surfaces and GUI
