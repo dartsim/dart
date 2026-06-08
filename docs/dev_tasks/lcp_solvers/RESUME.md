@@ -316,6 +316,16 @@ build-tree runs passed with `contract_ok=1` on every row and recorded
 build-state counters. Focused block-solver unit coverage passed 15 tests. The
 CUDA-enabled rows are CPU BGS/Blocked Jacobi solver rows in a CUDA-enabled
 build, not CUDA LCP kernel execution.
+It now also adds opt-in solver-internal CPU worker threads for
+`BlockedJacobiSolver` independent block solves. Focused tests cover invalid
+worker counts, serial/threaded equivalence on a standard SPD fixture, and a
+4-worker 128-row generated known-solution case. Focused
+`BM_LcpBlockedJacobiSolverThreadingBanded_Standard/128/{1,4}` rows pass in
+default, SIMD-enabled, and CUDA-enabled build trees with `contract_ok=1`,
+`solver_internal_threads=1/4`, `block_count=128`,
+`blocked_jacobi_auto_singleton_blocks=1`, and
+`blocked_jacobi_threaded_block_updates=0/1`. This is CPU threaded
+independent-block update-path evidence, not a speedup or CUDA-kernel claim.
 It now also extends the robust near-singular generated slice to coupled
 friction-index 192-contact packets and adds 29 `BM_LcpNearSingular` benchmark
 rows for standard 8-row, boxed 8-row, and coupled friction-index 3-, 6-, 9-,
@@ -456,15 +466,17 @@ solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
 solver evidence commits, including native standard-Newton warm-start tests and
 default/SIMD/CUDA-enabled warm-start single-problem and batch benchmark rows,
 PGS/PSOR, symmetric PSOR, Red-Black Gauss-Seidel relaxation sweep and
-solver-internal threading benchmark rows, APGD restart-policy benchmark
+solver-internal threading benchmark rows, Blocked Jacobi solver-internal
+threading benchmark rows, APGD restart-policy benchmark
 rows, ADMM rho/adaptive-rho benchmark
 rows, TGS iteration-budget benchmark rows, NNCG PGS-preconditioner iteration
 benchmark rows, SubspaceMinimization PGS-iteration benchmark rows,
 ShockPropagation layer-layout benchmark rows, MPRGP SPD/check benchmark rows,
 Interior Point path-parameter benchmark rows, Staggering contact-pipeline
 benchmark rows, Boxed Semi-Smooth Newton line-search benchmark rows, Pivoting
-scale benchmark rows, BGS/Blocked Jacobi block-partition benchmark rows, SAP
-regularization benchmark rows, Jacobi threading benchmark rows, and
+scale benchmark rows, BGS/Blocked Jacobi block-partition benchmark rows,
+Blocked Jacobi threading benchmark rows, SAP regularization benchmark rows,
+Jacobi threading benchmark rows, and
 singular-degenerate standard/boxed batch benchmark rows.
 The latest checkpoints extend direct synthetic CUDA Jacobi/PGS evidence through
 standard/boxed 256-row and friction-index 96-contact packets, extend grouped
@@ -493,8 +505,9 @@ PGS-preconditioner iteration sweep rows, SubspaceMinimization PGS-iteration
 sweep rows, ShockPropagation layer-layout sweep rows, MPRGP SPD/check sweep
 rows, Interior Point path-parameter sweep rows, Staggering contact-pipeline
 sweep rows, Boxed Semi-Smooth Newton line-search sweep rows, Pivoting scale
-sweep rows, BGS/Blocked Jacobi block-partition sweep rows, ADMM
-rho/adaptive-rho sweep rows, SAP regularization sweep rows, and ADMM/SAP/Boxed
+sweep rows, BGS/Blocked Jacobi block-partition sweep rows, Blocked Jacobi
+threading rows, ADMM rho/adaptive-rho sweep rows, SAP regularization sweep
+rows, and ADMM/SAP/Boxed
 Semi-Smooth Newton contact comparison sweep rows, plus contact-normal
 standard-LCP sweep rows, plus the 1x-/4x-/8x-coupled and 16x-through-128 mildly
 ill-conditioned friction-index slice, toward broader solver-specific
@@ -931,6 +944,17 @@ contact scenes.
   projection and generated-coverage unit tests also pass the invalid-worker,
   serial/threaded equivalence, and 4-worker 128-row known-solution checks.
   This is CPU threaded update-path evidence, not a speedup or CUDA-kernel claim.
+- `BM_LCP_COMPARE` now lists 2 focused
+  `BM_LcpBlockedJacobiSolverThreadingBanded_Standard/128/{1,4}` rows. The
+  focused default, SIMD-enabled, and CUDA-enabled runs report `contract_ok=1`,
+  `problem_size=128`, `solver_internal_threads=1/4`,
+  `blocked_jacobi_threading=1`, `block_count=128`,
+  `blocked_jacobi_auto_singleton_blocks=1`,
+  `blocked_jacobi_threaded_block_updates=0/1`, `band_half_width=2`, and
+  backend build-state counters. The focused projection and generated-coverage
+  unit tests also pass the invalid-worker, serial/threaded equivalence, and
+  4-worker 128-row known-solution checks. This is CPU threaded
+  independent-block update-path evidence, not a speedup or CUDA-kernel claim.
 - `BM_LCP_COMPARE` now lists 18 focused ADMM rho/adaptive-rho sweep rows for
   the same standard 48-row, boxed 24-row, and friction-index 8-contact
   fixtures at `rhoInit` 0.5, 1.0, and 4.0 under fixed and adaptive rho

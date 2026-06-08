@@ -31,6 +31,9 @@
 - [x] Added focused Red-Black Gauss-Seidel relaxation sweep benchmark rows with
       two-color partition counters on standard, boxed, and friction-index
       fixtures, plus focused solver-internal threaded banded-standard rows.
+- [x] Added opt-in solver-internal CPU worker threads for `BlockedJacobiSolver`
+      independent block solves, with focused generated correctness and
+      banded-standard benchmark rows.
 - [x] Added focused APGD restart-policy sweep benchmark rows on standard,
       boxed, and friction-index fixtures.
 - [x] Added focused TGS iteration-budget sweep benchmark rows on standard,
@@ -2171,6 +2174,18 @@ tradeoffs evidence based.
   `BlockedJacobiSolverCoverage.*:BgsSolverCoverage.*` unit coverage passed 15
   tests. The CUDA-enabled rows are CPU BGS/Blocked Jacobi rows in a
   CUDA-enabled build, not CUDA LCP kernel execution.
+- Added Blocked Jacobi solver-internal threading evidence:
+  `UNIT_math_lcp_math_lcp_lcp_projection_solvers --gtest_filter='BlockedJacobiSolver.InvalidWorkerThreadCount:BlockedJacobiSolver.ThreadedPathMatchesSerial' --gtest_brief=1`
+  passed 2 focused tests, and
+  `UNIT_math_lcp_math_lcp_lcp_generated_coverage --gtest_filter='LcpGeneratedCoverage.ThreadedBlockedJacobiStandardKnownSolution' --gtest_brief=1`
+  passed the 4-worker 128-row generated known-solution test. Focused
+  `BM_LcpBlockedJacobiSolverThreadingBanded_Standard/128/{1,4}` rows passed in
+  default, SIMD-enabled, and CUDA-enabled build trees with `contract_ok=1`,
+  `problem_size=128`, `block_count=128`,
+  `blocked_jacobi_auto_singleton_blocks=1`,
+  `solver_internal_threads=1/4`, and
+  `blocked_jacobi_threaded_block_updates=0/1`. This proves the opt-in CPU
+  threaded independent-block update path, not a speedup or CUDA-kernel claim.
 - Added end-to-end DART 7 `World::step()` evidence for the boxed-LCP path with
   two independent sphere-ground contacts advanced for 200 steps and checked
   against non-penetration, near-rest normal velocity, tangential-speed
@@ -2340,7 +2355,8 @@ tradeoffs evidence based.
   path-parameter sweep rows, Staggering contact-pipeline sweep rows, Boxed
   Semi-Smooth Newton line-search sweep rows, Pivoting scale sweep rows, ADMM
   rho/adaptive-rho sweep rows, SAP regularization sweep rows, BGS/Blocked
-  Jacobi block-partition sweep rows, ADMM/SAP/Boxed Semi-Smooth Newton
+  Jacobi block-partition sweep rows, Blocked Jacobi solver-internal threading
+  rows, ADMM/SAP/Boxed Semi-Smooth Newton
   contact comparison sweep rows, contact-normal standard-LCP sweep rows,
   independent-problem batches, simple world-contact snapshots, small coupled
   stack snapshot batches, dense box-face snapshot/step rows, and scoped dense

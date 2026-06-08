@@ -928,6 +928,25 @@ TEST(BlockedJacobiSolver, InvalidBlockPartition)
 }
 
 //==============================================================================
+TEST(BlockedJacobiSolver, InvalidWorkerThreadCount)
+{
+  BlockedJacobiSolver solver;
+  BlockedJacobiSolver::Parameters params;
+  params.workerThreads = 0;
+  solver.setParameters(params);
+
+  auto problem = makeDiagonalProblem(2);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+
+  LcpOptions options;
+  options.maxIterations = 10;
+  const auto result = solver.solve(problem, x, options);
+
+  EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_FALSE(result.message.empty());
+}
+
+//==============================================================================
 TEST(SubspaceMinimizationSolver, InvalidPgsIterations)
 {
   SubspaceMinimizationSolver solver;
@@ -997,6 +1016,32 @@ TEST(RedBlackGaussSeidelSolver, ThreadedPathMatchesSerial)
   RedBlackGaussSeidelSolver threadedSolver;
   RedBlackGaussSeidelSolver::Parameters params;
   params.workerThreads = 2;
+  threadedSolver.setParameters(params);
+
+  Eigen::VectorXd threadedX = Eigen::VectorXd::Zero(problem.b.size());
+  const auto threadedResult = threadedSolver.solve(problem, threadedX, options);
+  ASSERT_TRUE(threadedResult.succeeded()) << threadedResult.message;
+
+  ASSERT_EQ(serialX.size(), threadedX.size());
+  EXPECT_NEAR((serialX - threadedX).lpNorm<Eigen::Infinity>(), 0.0, 1e-12);
+  EXPECT_EQ(serialResult.iterations, threadedResult.iterations);
+}
+
+//==============================================================================
+TEST(BlockedJacobiSolver, ThreadedPathMatchesSerial)
+{
+  auto problem = makeSpdProblem();
+  LcpOptions options;
+  options.maxIterations = 100;
+
+  BlockedJacobiSolver serialSolver;
+  Eigen::VectorXd serialX = Eigen::VectorXd::Zero(problem.b.size());
+  const auto serialResult = serialSolver.solve(problem, serialX, options);
+  ASSERT_TRUE(serialResult.succeeded()) << serialResult.message;
+
+  BlockedJacobiSolver threadedSolver;
+  BlockedJacobiSolver::Parameters params;
+  params.workerThreads = 3;
   threadedSolver.setParameters(params);
 
   Eigen::VectorXd threadedX = Eigen::VectorXd::Zero(problem.b.size());

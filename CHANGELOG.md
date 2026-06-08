@@ -2860,6 +2860,9 @@ Capsule Rod (IPC)` py-demos scene (a cloth draping over a horizontal rod,
     constraint catalog.
   - Added dimension validation to `Problem::setDimension()` to reject dimensions exceeding `Problem::kMaxDimension` (1,000,000) with `InvalidArgumentException` instead of attempting multi-GB allocations that cause ASan aborts or `std::bad_alloc`. ([#2500](https://github.com/dartsim/dart/issues/2500))
   - Refactored the LCP solver stack under `dart::math::lcp` with unified APIs plus new solver implementations and ImGui dashboard support. ([#2202](https://github.com/dartsim/dart/pull/2202), [#2241](https://github.com/dartsim/dart/pull/2241), [#2318](https://github.com/dartsim/dart/pull/2318), [#2355](https://github.com/dartsim/dart/pull/2355))
+  - Added opt-in solver-internal CPU worker threads for the Red-Black
+    Gauss-Seidel and Blocked Jacobi LCP solvers, with focused correctness tests
+    and benchmark counters for threaded color/block updates.
   - Modernized the Dantzig solver and improved stability (C++20 optimizations, NaN fallback, warning suppression). ([#2081](https://github.com/dartsim/dart/pull/2081), [#2253](https://github.com/dartsim/dart/pull/2253), [#2111](https://github.com/dartsim/dart/pull/2111))
   - Fixed Lemke solver segfaults on macOS arm64 by avoiding Eigen stack allocations. ([#2462](https://github.com/dartsim/dart/pull/2462))
   - Test coverage audit with Codecov infrastructure improvements and 200+ new unit/integration tests across common, collision, constraint, dynamics, io, sensor, and simulation modules. ([#2462](https://github.com/dartsim/dart/pull/2462))

@@ -3011,6 +3011,53 @@ static void BM_LcpRedBlackGaussSeidelSolverThreadingBanded_Standard(
   RunRedBlackGaussSeidelThreadingBenchmark(state);
 }
 
+void RunBlockedJacobiThreadingBenchmark(benchmark::State& state)
+{
+  const int problemSize = static_cast<int>(state.range(0));
+  const int requestedWorkerCount = static_cast<int>(state.range(1));
+  const int workerCount
+      = std::max(1, std::min(requestedWorkerCount, problemSize));
+
+  const auto problem = MakeStandardBandedSpdProblem(
+      problemSize, 72'001u + static_cast<unsigned>(problemSize));
+  auto options = MakeBenchmarkOptions(300);
+  dart::math::BlockedJacobiSolver::Parameters params;
+  params.workerThreads = workerCount;
+  options.customOptions = &params;
+
+  dart::math::BlockedJacobiSolver solver;
+  RunBenchmarkWithSolver(
+      state,
+      solver,
+      problem,
+      options,
+      MakeLabel(
+          workerCount == 1 ? "BlockedJacobiSerial" : "BlockedJacobiThreaded",
+          "StandardBandedSpd"));
+
+  const double problemSizeValue = static_cast<double>(problemSize);
+  const double nonzeroEntries = CountBandedSpdNonzeros(problemSize);
+  state.counters["worker_count"] = workerCount;
+  state.counters["solver_internal_threads"] = workerCount;
+  state.counters["blocked_jacobi_threading"] = 1.0;
+  state.counters["blocked_jacobi_auto_singleton_blocks"] = 1.0;
+  state.counters["block_count"] = problemSize;
+  state.counters["min_block_size"] = 1.0;
+  state.counters["max_block_size"] = 1.0;
+  state.counters["blocked_jacobi_threaded_block_updates"]
+      = workerCount > 1 ? 1.0 : 0.0;
+  state.counters["band_half_width"] = 2.0;
+  state.counters["matrix_nonzero_entries"] = nonzeroEntries;
+  state.counters["matrix_density"]
+      = nonzeroEntries / (problemSizeValue * problemSizeValue);
+}
+
+static void BM_LcpBlockedJacobiSolverThreadingBanded_Standard(
+    benchmark::State& state)
+{
+  RunBlockedJacobiThreadingBenchmark(state);
+}
+
 enum class BenchmarkProblemFamily
 {
   Standard,
@@ -12256,6 +12303,9 @@ BENCHMARK(BM_LcpJacobiSolverThreadingBanded_Standard)
     ->Args({8192, 1})
     ->Args({8192, 32});
 BENCHMARK(BM_LcpRedBlackGaussSeidelSolverThreadingBanded_Standard)
+    ->Args({128, 1})
+    ->Args({128, 4});
+BENCHMARK(BM_LcpBlockedJacobiSolverThreadingBanded_Standard)
     ->Args({128, 1})
     ->Args({128, 4});
 
