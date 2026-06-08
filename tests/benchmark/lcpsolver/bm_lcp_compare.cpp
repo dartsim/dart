@@ -11302,7 +11302,9 @@ void RegisterWorldBoxContactBatchBenchmarks()
         })
         ->Args({24, 4})
         ->Args({64, 4})
-        ->Args({96, 4});
+        ->Args({96, 4})
+        ->Args({128, 4})
+        ->Args({192, 4});
 
     const auto parallelName
         = MakeWorldBoxContactBatchParallelBenchmarkName(solver);
@@ -11313,7 +11315,9 @@ void RegisterWorldBoxContactBatchBenchmarks()
         })
         ->Args({24, 4})
         ->Args({64, 4})
-        ->Args({96, 4});
+        ->Args({96, 4})
+        ->Args({128, 4})
+        ->Args({192, 4});
   }
 }
 #endif

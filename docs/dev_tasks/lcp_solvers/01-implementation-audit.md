@@ -803,14 +803,14 @@ The current local evidence for this task is:
   `contact_count=768`, and `problem_size=2304` in default, SIMD-enabled, and
   CUDA-enabled build trees; the CUDA-enabled rows are CPU solver rows in that
   build tree, not CUDA LCP kernel execution.
-- `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` now also registers 36
+- `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` now also registers 60
   serial and DART 7 `ParallelExecutor` dense box batch rows:
-  `BM_LcpWorldBoxContactBatch(Serial|Parallel)/FrictionIndex/<solver>/{24,64,96}/4`
+  `BM_LcpWorldBoxContactBatch(Serial|Parallel)/FrictionIndex/<solver>/{24,64,96,128,192}/4`
   for `Pgs`, `RedBlackGaussSeidel`, `NNCG`, `Apgd`, `Tgs`, and `Admm`. Focused
-  96-box runs in default, SIMD-enabled, and CUDA-enabled build trees reported
-  12 rows with `contract_ok=1`, `dense_box_contact_batch=1`, `box_count=96`,
-  `contact_count=384`, `problem_size=1152`, `batch_size=4`,
-  `total_contact_count=1536`, `total_problem_size=4608`, and
+  192-box runs in default, SIMD-enabled, and CUDA-enabled build trees reported
+  12 rows with `contract_ok=1`, `dense_box_contact_batch=1`, `box_count=192`,
+  `contact_count=768`, `problem_size=2304`, `batch_size=4`,
+  `total_contact_count=3072`, `total_problem_size=9216`, and
   `parallel_units=4` on parallel rows. The CUDA-enabled rows are CPU solver
   batch rows in that build tree, not CUDA LCP kernel execution.
 - `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldBoxStep_BoxedLcp' --benchmark_min_time=0.001s --benchmark_repetitions=1`
@@ -1201,7 +1201,7 @@ The current local evidence for this task is:
   manually assembled three-axis articulated unified-contact all-solver rows
   through 16 contacts including cross-multibody link-vs-link rows,
   plus scoped dense box face-contact rows through 192 boxes for six solvers,
-  scoped dense box serial/parallel batch rows through 96 boxes for the same
+  scoped dense box serial/parallel batch rows through 192 boxes for the same
   solver set, and PGS-only dense
   box-face CUDA batch rows through homogeneous 1/4/8/16/24/32/48/64/96-box and grouped
   1/2/4/8/16/24/32-box packets, but not broad
