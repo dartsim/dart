@@ -242,15 +242,14 @@ build/CTest entries.
 ## Current Branch
 
 `simx/plan083-phase8-completion-audit` - contains the implementation-roadmap
-Phase 8 completion audit. It is stacked on the Phase 7 branch head and should
-become one phase-scoped PR targeting `simx/plan083-phase7-gpu-parity`.
+Phase 8 completion audit. It is open as PR #2960 targeting
+`simx/plan083-phase7-gpu-parity`.
 
 ## Immediate Next Step
 
-Validate and push `simx/plan083-phase8-completion-audit`, open one
-phase-scoped PR for implementation-roadmap Phase 8, then get maintainer
-direction before deleting the temporary dev-task folder because PLAN-083
-acceptance criteria are still unmet.
+Monitor the phase-scoped PR stack through #2960 and get maintainer direction
+before deleting the temporary dev-task folder because PLAN-083 acceptance
+criteria are still unmet.
 
 ## Context That Would Be Lost
 

@@ -218,8 +218,8 @@ storage, or backend resources as public API.
 
 ## Immediate Next Steps
 
-1. Validate and push `simx/plan083-phase8-completion-audit`, then open one
-   phase-scoped PR for the completion audit targeting the Phase 7 branch.
+1. Monitor the phase-scoped PR stack through #2960, the completion-audit PR
+   targeting the Phase 7 branch.
 2. Get maintainer direction before retiring
    `docs/dev_tasks/unified_newton_barrier_multibody/`: the Phase 8 audit found
    that PLAN-083 still has planned CPU/GPU/scene rows and cannot honestly be
