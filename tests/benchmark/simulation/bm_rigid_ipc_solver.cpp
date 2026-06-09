@@ -229,11 +229,9 @@ static void BM_RigidIpcProjectedNewtonSolve_TwoBody(benchmark::State& state)
   options.newton.maxStepNorm = 0.05;
   options.maxIterations = static_cast<std::size_t>(state.range(0));
 
-  sxdetail::RigidIpcProjectedNewtonSolveResult result;
-  sxdetail::RigidIpcProjectedNewtonSolveScratch scratch;
   for (auto _ : state) {
-    sxdetail::solveRigidIpcProjectedNewtonBarrierSystem(
-        surfaces, options, result, scratch);
+    auto result = sxdetail::solveRigidIpcProjectedNewtonBarrierSystem(
+        surfaces, options);
     benchmark::DoNotOptimize(result.surfaces);
     benchmark::DoNotOptimize(result.stats.finalValue);
     benchmark::ClobberMemory();
