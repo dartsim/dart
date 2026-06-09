@@ -993,12 +993,16 @@ tradeoffs evidence based.
   passed the 4-worker 128-row generated known-solution test. Focused
   `BM_LcpRedBlackGaussSeidelSolverThreadingBanded_Standard` rows passed in
   default, SIMD-enabled, and CUDA-enabled build trees for 128-row serial/4-worker
-  and 512-/1024-row serial/4-/8-worker banded packets with `contract_ok=1`,
+  and 512-/1024-/2048-row serial/4-/8-worker banded packets with
+  `contract_ok=1`,
   `red_black_color_count=2`, `band_half_width=2`,
   `solver_internal_threads=1/4/8`, and
   `red_black_threaded_color_updates=0/1`. This proves the opt-in CPU threaded
   color-update path over larger banded packets, not a solver speedup or
   CUDA-kernel claim.
+  The focused 2048-row follow-up reported 3 rows per build tree with
+  `matrix_nonzero_entries=10234`, `contract_ok=1`, and the expected backend
+  build-state counters.
 - Verified APGD restart-policy benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpApgdRestartSweep' | wc -l`
   reported 12 rows, and JSON checks for `BM_LcpApgdRestartSweep` reported 12
@@ -2546,12 +2550,15 @@ tradeoffs evidence based.
   passed the 4-worker 128-row generated known-solution test. Focused
   `BM_LcpBlockedJacobiSolverThreadingBanded_Standard` rows passed in default,
   SIMD-enabled, and CUDA-enabled build trees for 128-row serial/4-worker and
-  512-/1024-row serial/4-/8-worker banded packets with `contract_ok=1`,
+  512-/1024-/2048-row serial/4-/8-worker banded packets with `contract_ok=1`,
   `blocked_jacobi_auto_singleton_blocks=1`,
   `solver_internal_threads=1/4/8`, and
   `blocked_jacobi_threaded_block_updates=0/1`. This proves the opt-in CPU
   threaded independent-block update path over larger banded packets, not a
   speedup or CUDA-kernel claim.
+  The focused 2048-row follow-up reported 3 rows per build tree with
+  `matrix_nonzero_entries=10234`, `contract_ok=1`, and the expected backend
+  build-state counters.
 - Added end-to-end DART 7 `World::step()` evidence for the boxed-LCP path with
   two independent sphere-ground contacts advanced for 200 steps and checked
   against non-penetration, near-rest normal velocity, tangential-speed

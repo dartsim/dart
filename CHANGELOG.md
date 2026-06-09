@@ -1006,9 +1006,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     rows are comparison evidence, not a speedup claim.
   - Extended DART 7 Red-Black Gauss-Seidel and Blocked Jacobi LCP
     solver-internal CPU threading benchmark evidence from 128-row banded
-    packets to 512- and 1024-row banded packets with serial, 4-worker, and
-    8-worker rows. These rows are correctness/comparison evidence, not solver
-    speedup or CUDA-kernel claims.
+    packets to 512-, 1024-, and 2048-row banded packets with serial, 4-worker,
+    and 8-worker rows. These rows are correctness/comparison evidence, not
+    solver speedup or CUDA-kernel claims.
   - Added DART 7 contact-derived block-structure coverage for BGS and Blocked
     Jacobi LCP solvers, proving real boxed-LCP world-contact snapshots solve
     with `findex`-derived non-contiguous per-contact blocks and reject explicit
