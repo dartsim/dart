@@ -1053,9 +1053,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     friction-index LCP fixtures, with backend build-state counters distinguishing default,
     SIMD-enabled, and CUDA-enabled CPU solver runs.
   - Added DART 7 ShockPropagation layer-layout comparison benchmark rows for
-    standard, boxed, and friction-index LCP fixtures, comparing single-layer,
-    two-layer, and serial schedules with backend build-state counters
-    distinguishing default, SIMD-enabled, and CUDA-enabled CPU solver runs.
+    standard, boxed, and 8-/16-contact friction-index LCP fixtures, comparing
+    single-layer, two-layer, and serial schedules with backend build-state
+    counters distinguishing default, SIMD-enabled, and CUDA-enabled CPU solver
+    runs.
   - Added DART 7 MPRGP SPD/positive-definite-check comparison benchmark rows
     for dense, banded, mildly ill-conditioned, and near-singular standard-LCP
     fixtures, with backend build-state counters distinguishing default,
@@ -1070,8 +1071,8 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     build-state counters distinguishing default, SIMD-enabled, and
     CUDA-enabled CPU solver runs.
   - Added DART 7 Boxed Semi-Smooth Newton line-search comparison benchmark
-    rows for standard, boxed, and friction-index fixtures, with backend
-    build-state counters distinguishing default, SIMD-enabled, and
+    rows for standard, boxed, and 8-/16-contact friction-index fixtures, with
+    backend build-state counters distinguishing default, SIMD-enabled, and
     CUDA-enabled CPU solver runs.
   - Added DART 7 pivoting scale comparison benchmark rows for Direct 2D/3D
     enumeration, Lemke and Baraff standard fixtures, and Dantzig standard,

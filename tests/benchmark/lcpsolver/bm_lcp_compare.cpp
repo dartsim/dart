@@ -3361,7 +3361,7 @@ constexpr std::array<RelaxationSweepCase, 12> kRelaxationSweepCases{{
      "Contacts16Relaxation1_3"},
 }};
 
-constexpr std::array<BoxedSsnLineSearchSweepCase, 9>
+constexpr std::array<BoxedSsnLineSearchSweepCase, 12>
     kBoxedSsnLineSearchSweepCases{{
         {BenchmarkProblemFamily::Standard, 48, 10, 0.5, "DefaultSearch"},
         {BenchmarkProblemFamily::Standard, 48, 20, 0.5, "MoreSteps"},
@@ -3372,6 +3372,21 @@ constexpr std::array<BoxedSsnLineSearchSweepCase, 9>
         {BenchmarkProblemFamily::FrictionIndex, 8, 10, 0.5, "DefaultSearch"},
         {BenchmarkProblemFamily::FrictionIndex, 8, 20, 0.5, "MoreSteps"},
         {BenchmarkProblemFamily::FrictionIndex, 8, 20, 0.8, "GentleReduction"},
+        {BenchmarkProblemFamily::FrictionIndex,
+         16,
+         10,
+         0.5,
+         "Contacts16DefaultSearch"},
+        {BenchmarkProblemFamily::FrictionIndex,
+         16,
+         20,
+         0.5,
+         "Contacts16MoreSteps"},
+        {BenchmarkProblemFamily::FrictionIndex,
+         16,
+         20,
+         0.8,
+         "Contacts16GentleReduction"},
     }};
 
 constexpr std::array<PivotingScaleSweepCase, 12> kPivotingScaleSweepCases{{
@@ -3527,7 +3542,7 @@ constexpr std::array<SubspacePgsIterationsSweepCase, 12>
         {BenchmarkProblemFamily::FrictionIndex, 16, 5, "Contacts16PgsIter5"},
     }};
 
-constexpr std::array<ShockPropagationLayerSweepCase, 9>
+constexpr std::array<ShockPropagationLayerSweepCase, 12>
     kShockPropagationLayerSweepCases{{
         {BenchmarkProblemFamily::Standard,
          48,
@@ -3565,6 +3580,18 @@ constexpr std::array<ShockPropagationLayerSweepCase, 9>
          8,
          ShockPropagationLayerProfile::SerialLayers,
          "SerialLayers"},
+        {BenchmarkProblemFamily::FrictionIndex,
+         16,
+         ShockPropagationLayerProfile::SingleLayer,
+         "Contacts16SingleLayer"},
+        {BenchmarkProblemFamily::FrictionIndex,
+         16,
+         ShockPropagationLayerProfile::TwoLayers,
+         "Contacts16TwoLayers"},
+        {BenchmarkProblemFamily::FrictionIndex,
+         16,
+         ShockPropagationLayerProfile::SerialLayers,
+         "Contacts16SerialLayers"},
     }};
 
 constexpr std::array<MprgpSpdCheckSweepCase, 9> kMprgpSpdCheckSweepCases{{

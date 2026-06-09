@@ -260,15 +260,15 @@ every row and recorded normal-row, source-problem-size, standard-problem-size,
 coupled-fixture, Direct no-fallback, and backend build-state counters. This is
 contact-normal standard-LCP evidence, not native boxed or friction-index
 support for standard-only solvers.
-It now also adds 9 `BM_LcpShockPropagationLayerSweep` benchmark rows for the
+It now also adds 12 `BM_LcpShockPropagationLayerSweep` benchmark rows for the
 `ShockPropagationSolver` layer schedule path, covering standard 48-row, boxed
-24-row, and friction-index 8-contact fixtures with single-layer, two-layer, and
-serial layer schedules built from 3-row blocks. Focused default, SIMD-enabled,
-and CUDA-enabled build-tree runs passed with `contract_ok=1` on every row and
-recorded `shock_propagation_layer_sweep`, schedule counters,
+24-row, and friction-index 8-/16-contact fixtures with single-layer,
+two-layer, and serial layer schedules built from 3-row blocks. Focused default,
+SIMD-enabled, and CUDA-enabled build-tree runs passed with `contract_ok=1` on
+every row and recorded `shock_propagation_layer_sweep`, schedule counters,
 `layer_count=1/2/8/16`, `block_count=8/16`, `max_block_size=3`,
 `max_blocks_per_layer=1/4/8/16`, backend build-state counters, and
-`contact_count=8` for the friction-index rows. The CUDA-enabled rows are CPU
+`contact_count=8/16` for the friction-index rows. The CUDA-enabled rows are CPU
 ShockPropagation solver rows in a CUDA-enabled build, not CUDA LCP kernel
 execution.
 It now also adds 9 `BM_LcpMprgpSpdCheckSweep` benchmark rows for the
@@ -303,18 +303,22 @@ every row and recorded `staggering_contact_pipeline_sweep`,
 friction-row counts `2/4/6/8/10`, coupled-contact flags, contact counts
 `1/2/3/4/5`, and backend build-state counters. The CUDA-enabled rows are CPU
 Staggering solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
-It now also adds 9 `BM_LcpBoxedSemiSmoothNewtonLineSearchSweep` benchmark rows
+It now also adds 12 `BM_LcpBoxedSemiSmoothNewtonLineSearchSweep` benchmark rows
 for the `BoxedSemiSmoothNewtonSolver` line-search path, covering standard
-48-row, boxed 24-row, and friction-index 8-contact fixtures with default line
-search, an expanded line-search step budget, and a gentler step-reduction
+48-row, boxed 24-row, and friction-index 8-/16-contact fixtures with default
+line search, an expanded line-search step budget, and a gentler step-reduction
 policy. Focused default, SIMD-enabled, and CUDA-enabled build-tree runs passed
 with `contract_ok=1` on every row and recorded
 `boxed_ssn_line_search_sweep`, `boxed_ssn_max_line_search_steps=10/20`,
 `boxed_ssn_step_reduction=0.5/0.8`, default/more-step/gentle-reduction policy
-counters, observed solver `iterations=2/7/8/9`, `contact_count=8` for the
-friction-index rows, and backend build-state counters. The CUDA-enabled rows
+counters, observed solver `iterations=2/7/8/9/15/16`, `contact_count=8/16` for
+the friction-index rows, and backend build-state counters. The CUDA-enabled rows
 are CPU BoxedSemiSmoothNewton solver rows in a CUDA-enabled build, not CUDA LCP
 kernel execution.
+The combined current ShockPropagation/BoxedSemiSmoothNewton sweep filter
+reports `rows=24`, `failures=0`, 12 rows per solver, and 6 `contact_count=16`
+rows in default, SIMD-enabled, and CUDA-enabled build trees; the SIMD and
+CUDA-enabled runs report `simd_rows=24` and `cuda_rows=24`, respectively.
 It now also adds 12 `BM_LcpPivotingScaleSweep` benchmark rows for the pivoting
 family, separating DirectSolver's 2-row and 3-row enumeration path from its
 larger-problem Dantzig fallback. The rows cover Direct 2/3-row standard

@@ -44,7 +44,7 @@
 - [x] Added focused SubspaceMinimization PGS-iteration sweep benchmark rows on
       standard, boxed, and friction-index fixtures.
 - [x] Added focused ShockPropagation layer-layout sweep benchmark rows on
-      standard, boxed, and friction-index fixtures.
+      standard, boxed, and 8-/16-contact friction-index fixtures.
 - [x] Added focused MPRGP SPD/positive-definite-check sweep benchmark rows on
       standard SPD fixtures.
 - [x] Added focused Interior Point path-parameter sweep benchmark rows on
@@ -53,7 +53,7 @@
       separated world-contact, coupled stack-contact, and articulated unified
       contact fixtures.
 - [x] Added focused Boxed Semi-Smooth Newton line-search sweep benchmark rows
-      on standard, boxed, and friction-index fixtures.
+      on standard, boxed, and 8-/16-contact friction-index fixtures.
 - [x] Added focused ADMM rho/adaptive-rho sweep benchmark rows on standard,
       boxed, and 8-/16-contact friction-index fixtures.
 - [x] Added focused SAP regularization sweep benchmark rows on standard, boxed,
@@ -1050,17 +1050,17 @@ tradeoffs evidence based.
   `cuda_rows=48`, respectively.
 - Verified ShockPropagation layer-layout benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpShockPropagationLayerSweep' | wc -l`
-  reported 9 rows, and JSON checks for `BM_LcpShockPropagationLayerSweep`
-  reported 9 rows with `contract_ok=1` in the default, SIMD-enabled, and
+  reported 12 rows, and JSON checks for `BM_LcpShockPropagationLayerSweep`
+  reported 12 rows with `contract_ok=1` in the default, SIMD-enabled, and
   CUDA-enabled build trees. These rows cover standard 48-row, boxed 24-row, and
-  friction-index 8-contact fixtures with single-layer, two-layer, and serial
-  layer schedules built from 3-row blocks. The rows report
+  friction-index 8-/16-contact fixtures with single-layer, two-layer, and
+  serial layer schedules built from 3-row blocks. The rows report
   `shock_propagation_layer_sweep=1`, schedule counters, `layer_count=1/2/8/16`,
   `block_count=8/16`, `max_block_size=3`, `max_blocks_per_layer=1/4/8/16`,
-  `problem_size=24/48`, `contact_count=8` for the friction-index rows, observed
-  solver `iterations=3/4`, and backend build-state counters. The CUDA-enabled
-  rows report `build_cuda_enabled=1` but are CPU ShockPropagation solver rows in
-  a CUDA-enabled build, not CUDA LCP kernel execution.
+  `problem_size=24/48`, `contact_count=8/16` for the friction-index rows,
+  observed solver `iterations=3/4`, and backend build-state counters. The
+  CUDA-enabled rows report `build_cuda_enabled=1` but are CPU ShockPropagation
+  solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
 - Verified MPRGP SPD/positive-definite-check benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpMprgpSpdCheckSweep' | wc -l`
   reported 9 rows, and JSON checks for `BM_LcpMprgpSpdCheckSweep` reported 9
@@ -1103,19 +1103,25 @@ tradeoffs evidence based.
   build, not CUDA LCP kernel execution.
 - Verified Boxed Semi-Smooth Newton line-search benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpBoxedSemiSmoothNewtonLineSearchSweep' | wc -l`
-  reported 9 rows, and JSON checks for
-  `BM_LcpBoxedSemiSmoothNewtonLineSearchSweep` reported 9 rows with
+  reported 12 rows, and JSON checks for
+  `BM_LcpBoxedSemiSmoothNewtonLineSearchSweep` reported 12 rows with
   `contract_ok=1` in the default, SIMD-enabled, and CUDA-enabled build trees.
-  These rows cover standard 48-row, boxed 24-row, and friction-index 8-contact
-  fixtures with default line search, an expanded line-search step budget, and a
-  gentler step-reduction policy. The rows report
+  These rows cover standard 48-row, boxed 24-row, and friction-index
+  8-/16-contact fixtures with default line search, an expanded line-search step
+  budget, and a gentler step-reduction policy. The rows report
   `boxed_ssn_line_search_sweep=1`,
   `boxed_ssn_max_line_search_steps=10/20`,
   `boxed_ssn_step_reduction=0.5/0.8`, default/more-step/gentle-reduction
-  policy counters, observed solver `iterations=2/7/8/9`, `contact_count=8` for
-  the friction-index rows, and backend build-state counters. The CUDA-enabled
-  rows report `build_cuda_enabled=1` but are CPU BoxedSemiSmoothNewton solver
-  rows in a CUDA-enabled build, not CUDA LCP kernel execution.
+  policy counters, observed solver `iterations=2/7/8/9/15/16`,
+  `contact_count=8/16` for the friction-index rows, and backend build-state
+  counters. The CUDA-enabled rows report `build_cuda_enabled=1` but are CPU
+  BoxedSemiSmoothNewton solver rows in a CUDA-enabled build, not CUDA LCP kernel
+  execution.
+  The combined current ShockPropagation/BoxedSemiSmoothNewton sweep filter
+  reports `rows=24`, `failures=0`, 12 rows per solver, and 6
+  `contact_count=16` rows in default, SIMD-enabled, and CUDA-enabled build
+  trees; the SIMD and CUDA-enabled runs report `simd_rows=24` and
+  `cuda_rows=24`, respectively.
 - Verified ADMM rho/adaptive-rho benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpAdmmRhoSweep' | wc -l`
   reported 24 rows, and JSON checks for `BM_LcpAdmmRhoSweep` reported 24 rows
