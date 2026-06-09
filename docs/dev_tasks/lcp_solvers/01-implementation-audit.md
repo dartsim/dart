@@ -1202,6 +1202,13 @@ The current local evidence for this task is:
   A focused default 64-box 75-step row reported `invariant_ok=1`,
   `dense_box_contact=1`, `contact_count=256`, `step_count=75`,
   `max_height_error=2.00e-4`, and `max_vertical_speed=8.28e-2`.
+  Focused SIMD-enabled and CUDA-enabled 64-box 75-step rows also reported
+  `invariant_ok=1`, `contact_count=256`, and `step_count=75`; the SIMD row
+  reported `build_simd_enabled=1`, `max_height_error=1.08e-4`, and
+  `max_vertical_speed=8.23e-3`, and the CUDA-enabled row reported
+  `build_cuda_enabled=1`, `max_height_error=2.00e-4`, and
+  `max_vertical_speed=8.28e-2`. The CUDA-enabled row is a CPU public-step row
+  in that build tree, not direct CUDA LCP kernel execution.
   Focused SIMD-enabled and CUDA-enabled 48-box
   runs also reported `invariant_ok=1` for 192 contacts: the SIMD row reported
   `build_simd_enabled=1`, `max_height_error=99.597u`, and

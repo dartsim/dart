@@ -587,9 +587,16 @@ advances the same scene for 75 public boxed-LCP steps under the strict settling
 invariant; the two-test focused default filter passed in 3346 ms. The new
 `BM_LcpWorldBoxStep_BoxedLcp/64/{1,75}` rows report `invariant_ok=1`,
 `dense_box_contact=1`, `contact_count=256`, and `step_count=1/75`; the 75-step
-row reports `max_height_error=2.00e-4` and `max_vertical_speed=8.28e-2`. Do
-not claim a 64-box long-horizon settling invariant: a temporary 90-step probe
-passed but was close to the vertical-rest threshold
+default row reports `max_height_error=2.00e-4` and
+`max_vertical_speed=8.28e-2`. Focused SIMD-enabled and CUDA-enabled 75-step
+rows also report `invariant_ok=1`, `contact_count=256`, and `step_count=75`;
+the SIMD row reports `build_simd_enabled=1`, `max_height_error=1.08e-4`, and
+`max_vertical_speed=8.23e-3`, and the CUDA-enabled row reports
+`build_cuda_enabled=1`, `max_height_error=2.00e-4`, and
+`max_vertical_speed=8.28e-2`. The CUDA-enabled row is a CPU public-step row in
+that build tree, not direct CUDA LCP kernel execution. Do not claim a 64-box
+long-horizon settling invariant: a temporary 90-step probe passed but was
+close to the vertical-rest threshold
 (`max_vertical_speed=9.80e-2`), and temporary probes at 100, 1000, and 4000
 public `World::step()` iterations failed the existing vertical-rest invariant
 with `LCP internal error, s <= 0` warnings and max vertical speeds above the
@@ -1698,7 +1705,13 @@ dense/robot-like contact scenes.
   `max_vertical_speed=6.94e-18`. The focused default 64-box 75-step row
   reported `invariant_ok=1`, `dense_box_contact=1`, `contact_count=256`,
   `step_count=75`, `max_height_error=2.00e-4`, and
-  `max_vertical_speed=8.28e-2`. Focused SIMD-enabled and CUDA-enabled 48-box
+  `max_vertical_speed=8.28e-2`. Focused SIMD-enabled and CUDA-enabled 64-box
+  75-step rows also reported `invariant_ok=1`, `contact_count=256`, and
+  `step_count=75`; the SIMD row reported `build_simd_enabled=1`,
+  `max_height_error=1.08e-4`, and `max_vertical_speed=8.23e-3`, and the
+  CUDA-enabled row reported `build_cuda_enabled=1`,
+  `max_height_error=2.00e-4`, and `max_vertical_speed=8.28e-2`. Focused
+  SIMD-enabled and CUDA-enabled 48-box
   rows also reported `invariant_ok=1`: the SIMD row reported
   `build_simd_enabled=1`, `max_height_error=99.597u`, and
   `max_vertical_speed=0.0288169`, and the CUDA-enabled row reported
