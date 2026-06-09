@@ -49,7 +49,8 @@ Support abbreviations:
   benchmark rows, 64-box one-step and 75-step dense box-face public-step rows,
   96-box one-step and 75-step dense box-face public-step rows, 128-box
   one-step and 75-step dense box-face public-step rows, 144-box one-step and
-  75-step dense box-face public-step rows, a
+  75-step dense box-face public-step rows, 192-box one-step dense box-face
+  public-step rows, a
   fixed-base prismatic articulated link-ground
   boxed-LCP `World::step()` invariant tests for one-link, four-link, and
   thirty-two-link scenes,
@@ -1265,7 +1266,7 @@ The current local evidence for this task is:
   ground and rigid-impact rows also reported `contract_ok=1` with
   `build_simd_enabled=1` and `build_cuda_enabled=1`, respectively; those are CPU
   solver rows in those build trees, not CUDA kernel execution.
-- `test_boxed_lcp_contact --gtest_list_tests` now lists 75 tests. The dense box
+- `test_boxed_lcp_contact --gtest_list_tests` now lists 87 tests. The dense box
   face-contact test assembles a 4-contact, 12-row boxed/findex LCP from
   `World::collide()`, checks the single-dynamic-body dense patch shape, and
   verifies the problem with APGD; the sliding and static-friction box
@@ -1308,6 +1309,14 @@ The current local evidence for this task is:
   extends the strict 75-step horizon to the same 144-box, 576-contact scene;
   the focused default run passed in 45455 ms and emitted the existing
   dense-patch Dantzig warning (`s=-7.8125e-03`).
+  `OneHundredNinetyTwoBoxWorldStepPreservesDenseContactShape` extends the
+  one-step shape smoke path to a 192-box, 768-contact dense face scene with a
+  grid-derived ground half-extent; focused default, SIMD-enabled, and
+  CUDA-enabled runs passed in 3475 ms, 2422 ms, and 4154 ms, respectively. A
+  focused 192-box 75-step strict-invariant probe remains unclaimed after
+  failing the vertical-rest gate at `max_vertical_speed=0.11772` against the
+  `0.1` threshold and emitting the existing dense-patch Dantzig warning
+  (`s=-7.8125e-03`).
   `SixtyFourBoxWorldShortHorizonMaintainsDenseContactInvariants` covers the
   same scene for 75 public boxed-LCP `World::step()` iterations under the
   existing strict settling invariant.
@@ -1358,8 +1367,9 @@ The current local evidence for this task is:
   `BM_LcpWorldBoxStep_BoxedLcp/64/{1,75}` and
   `BM_LcpWorldBoxStep_BoxedLcp/96/{1,75}` and
   `BM_LcpWorldBoxStep_BoxedLcp/128/{1,75}` and
-  `BM_LcpWorldBoxStep_BoxedLcp/144/1`. The fifteen-row registry covers
-  4/8/16/32/64/96/128/192/256/384/512/576 face contacts on the registered
+  `BM_LcpWorldBoxStep_BoxedLcp/144/{1,75}` and
+  `BM_LcpWorldBoxStep_BoxedLcp/192/1`. The seventeen-row registry covers
+  4/8/16/32/64/96/128/192/256/384/512/576/768 face contacts on the registered
   horizons.
   Focused 24-/32-box runs reported `invariant_ok=1` and
   `dense_box_contact=1` in default, SIMD-enabled, and CUDA-enabled build trees;
@@ -1423,6 +1433,12 @@ The current local evidence for this task is:
   `build_simd_enabled=1` and `max_vertical_speed=0.0420758`. The
   CUDA-enabled rows are CPU public-step rows in that build tree, not direct
   CUDA LCP kernel execution.
+  Focused default, SIMD-enabled, and CUDA-enabled 192-box one-step rows
+  reported `invariant_ok=1`, `contact_count=768`, `step_count=1`,
+  `max_height_error=0`, `min_tangential_speed_drop=0.0201629`, and
+  `max_vertical_speed<=6.94e-18`; the SIMD row reported
+  `build_simd_enabled=1`, and the CUDA-enabled row reported
+  `build_cuda_enabled=1`.
   Focused SIMD-enabled and CUDA-enabled 48-box
   runs also reported `invariant_ok=1` for 192 contacts: the SIMD row reported
   `build_simd_enabled=1`, `max_height_error=99.597u`, and

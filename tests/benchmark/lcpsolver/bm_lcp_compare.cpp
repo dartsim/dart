@@ -1899,8 +1899,10 @@ std::unique_ptr<sx::World> MakeWorldBoxStepBenchmarkWorld(
   groundOptions.isStatic = true;
   groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
   auto ground = world->addRigidBody("ground", groundOptions);
+  const double groundHalfExtent = MakeDenseBoxGroundHalfExtent(boxCount);
   ground.setCollisionShape(
-      sx::CollisionShape::makeBox(Eigen::Vector3d(24.0, 24.0, 0.5)));
+      sx::CollisionShape::makeBox(
+          Eigen::Vector3d(groundHalfExtent, groundHalfExtent, 0.5)));
   ground.setFriction(kFriction);
 
   const int columns
@@ -13275,7 +13277,8 @@ BENCHMARK(BM_LcpWorldBoxStep_BoxedLcp)
     ->Args({128, 1})
     ->Args({128, 75})
     ->Args({144, 1})
-    ->Args({144, 75});
+    ->Args({144, 75})
+    ->Args({192, 1});
 BENCHMARK(BM_LcpWorldArticulatedGroundStep_BoxedLcp)
     ->Args({1, 200})
     ->Args({4, 200})

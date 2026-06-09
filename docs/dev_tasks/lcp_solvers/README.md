@@ -532,15 +532,20 @@
       `OneHundredFortyFourBoxWorldShortHorizonMaintainsDenseContactInvariants`
       test extends the strict 75-step horizon to that 144-box/576-contact
       scene.
+      `OneHundredNinetyTwoBoxWorldStepPreservesDenseContactShape` covers one
+      public boxed-LCP step on a 192-box/768-contact dense face scene, with the
+      separated-box ground sized from the fixture grid instead of relying on
+      the historical fixed 24 m half-extent.
       `BM_LcpWorldBoxStep_BoxedLcp` rows report matching invariant counters for
       4/8/16/32-contact 200-step scenes, the 64-contact 500-step scene, the
       96-contact 2000-step scene, the 128-/192-contact 4000-step scenes, and
       the 256-contact one-step and 75-step scenes plus the 384-contact one-step
       and 75-step scenes plus the 512-contact one-step and 75-step scenes plus
-      the 576-contact one-step and 75-step scenes. The 75-step 64-box row,
+      the 576-contact one-step and 75-step scenes plus the 768-contact
+      one-step scene. The 75-step 64-box row,
       96-box one-/75-step rows, 128-box one-/75-step rows, and 144-box
-      one-/75-step rows now have focused default, SIMD-enabled, and
-      CUDA-enabled build-tree evidence.
+      one-/75-step rows, plus the 192-box one-step row, now have focused
+      default, SIMD-enabled, and CUDA-enabled build-tree evidence.
 - [x] Added DART 7 per-contact block-structure evidence for BGS and
       Blocked Jacobi on real two-contact boxed-LCP world-contact snapshots:
       the tests prove `findex`-derived non-contiguous contact blocks solve the
@@ -2004,11 +2009,14 @@ tradeoffs evidence based.
   `BM_LcpWorldBoxStep_BoxedLcp/64/{1,75}` and
   `BM_LcpWorldBoxStep_BoxedLcp/96/{1,75}` and
   `BM_LcpWorldBoxStep_BoxedLcp/128/{1,75}` and
-  `BM_LcpWorldBoxStep_BoxedLcp/144/1`, rebuild separated box-on-ground scenes,
+  `BM_LcpWorldBoxStep_BoxedLcp/144/{1,75}` and
+  `BM_LcpWorldBoxStep_BoxedLcp/192/1`, rebuild separated box-on-ground scenes,
   confirm each box contributes a 4-contact face patch before stepping, enter
   simulation mode, advance the public boxed-LCP `World::step()` path, and check
   finite-state, contact-height, vertical-rest, and tangential-slowing
-  invariants on the registered horizons. Focused default, SIMD-enabled, and
+  invariants on the registered horizons. The 192-box scene uses a grid-derived
+  ground half-extent so all 768 face contacts stay on the static ground.
+  Focused default, SIMD-enabled, and
   CUDA-enabled build-tree runs over the 24-/32-box rows reported
   `invariant_ok=1` with
   `dense_box_contact=1`, `box_count=24/32`, `contact_count=96/128`, and
@@ -2077,6 +2085,16 @@ tradeoffs evidence based.
   `build_simd_enabled=1` and `max_vertical_speed=0.0420758`. The
   CUDA-enabled rows are CPU public-step rows in that build tree, not CUDA LCP
   kernel execution.
+  Focused default, SIMD-enabled, and CUDA-enabled 192-box one-step rows
+  reported `invariant_ok=1`, `box_count=192`, `contact_count=768`,
+  `step_count=1`, `max_height_error=0`,
+  `min_tangential_speed_drop=0.0201629`, and
+  `max_vertical_speed<=6.94e-18`; the SIMD row reported
+  `build_simd_enabled=1`, and the CUDA-enabled row reported
+  `build_cuda_enabled=1`. A focused 192-box 75-step strict-invariant probe is
+  intentionally not registered or claimed: it failed the vertical-rest gate at
+  `max_vertical_speed=0.11772` against the `0.1` threshold and emitted the
+  existing dense-patch Dantzig warning (`s=-7.8125e-03`).
 - DART 7 dense box-contact CUDA batch evidence:
   `CudaLcpJacobiBatch.DenseBoxWorldContactBatchSatisfiesLcpContract` builds
   homogeneous 1-/4-/8-/16-/24-/32-/48-/64-/96-/128-box dense face-contact batches

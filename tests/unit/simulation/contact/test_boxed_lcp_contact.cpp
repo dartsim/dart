@@ -1100,6 +1100,16 @@ std::unique_ptr<sx::World> buildSeparatedSphereGroundScene(
   return world;
 }
 
+double makeDenseBoxGroundHalfExtent(int boxCount)
+{
+  const int columns
+      = static_cast<int>(std::ceil(std::sqrt(static_cast<double>(boxCount))));
+  const int rows = (boxCount + columns - 1) / columns;
+  constexpr double kSpacing = 2.0;
+  return std::max(
+      20.0, kSpacing * static_cast<double>(std::max(columns, rows) - 1) + 1.0);
+}
+
 std::unique_ptr<sx::World> buildSeparatedBoxGroundScene(
     int boxCount, double friction)
 {
@@ -1113,8 +1123,10 @@ std::unique_ptr<sx::World> buildSeparatedBoxGroundScene(
   groundOptions.isStatic = true;
   groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
   auto ground = world->addRigidBody("ground", groundOptions);
+  const double groundHalfExtent = makeDenseBoxGroundHalfExtent(boxCount);
   ground.setCollisionShape(
-      sx::CollisionShape::makeBox(Eigen::Vector3d(24.0, 24.0, 0.5)));
+      sx::CollisionShape::makeBox(
+          Eigen::Vector3d(groundHalfExtent, groundHalfExtent, 0.5)));
   ground.setFriction(friction);
 
   const int columns
@@ -3151,6 +3163,23 @@ TEST(BoxedLcpContact, OneHundredFortyFourBoxWorldStepPreservesDenseContactShape)
 {
   constexpr double kFriction = 0.5;
   constexpr int kBoxCount = 144;
+
+  auto lcp = buildSeparatedBoxGroundScene(kBoxCount, kFriction);
+
+  const std::vector<sx::Contact> contacts = lcp->collide();
+  ASSERT_EQ(contacts.size(), static_cast<std::size_t>(4 * kBoxCount));
+
+  lcp->enterSimulationMode();
+  lcp->step();
+
+  expectSeparatedBoxDenseStepSmokeInvariants(*lcp, kBoxCount);
+}
+
+//==============================================================================
+TEST(BoxedLcpContact, OneHundredNinetyTwoBoxWorldStepPreservesDenseContactShape)
+{
+  constexpr double kFriction = 0.5;
+  constexpr int kBoxCount = 192;
 
   auto lcp = buildSeparatedBoxGroundScene(kBoxCount, kFriction);
 
