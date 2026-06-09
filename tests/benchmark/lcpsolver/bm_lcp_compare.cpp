@@ -12540,7 +12540,9 @@ BENCHMARK(BM_LcpWorldStackContactAssembly_BoxedLcp)
     ->Arg(7)
     ->Arg(8)
     ->Arg(9)
-    ->Arg(10);
+    ->Arg(10)
+    ->Arg(11)
+    ->Arg(12);
 BENCHMARK(BM_LcpWorldStackStep_BoxedLcp)->Args({3, 200})->Args({3, 500});
 BENCHMARK(BM_LcpWorldStackStep_BoxedLcp)->Args({4, 200});
 BENCHMARK(BM_LcpWorldStackStep_BoxedLcp)->Args({5, 500});

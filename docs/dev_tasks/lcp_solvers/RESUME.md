@@ -496,12 +496,14 @@ and broaden solver-internal Jacobi threading benchmark evidence through
 256-row/96-contact CPU and CUDA rows, and the 8192-row Jacobi threading rows
 pass focused default, SIMD-enabled, and CUDA-enabled build-tree benchmark gates
 with `contract_ok=1`.
-The current stack slices cover 10-sphere, 10-contact, 30-row DART 7 boxed/findex
-CPU comparison rows plus the boxed-LCP assembly row, and fixed-iteration CUDA
-Jacobi/PGS homogeneous and grouped coupled-stack batch evidence through
-16-sphere packets. Focused default, SIMD-enabled, and CUDA-enabled checks pass
-for the CPU solver rows; focused CUDA unit and benchmark checks pass for the
-direct CUDA execution rows.
+The current stack slices cover 12-sphere, 12-contact, 36-row DART 7
+boxed/findex CPU snapshot and boxed-LCP assembly rows, CPU solver-comparison
+rows through the scoped 10-sphere subset, and fixed-iteration CUDA Jacobi/PGS
+homogeneous and grouped coupled-stack batch evidence through 16-sphere packets.
+Focused default, SIMD-enabled, and CUDA-enabled checks pass for the CPU
+solver-comparison rows through 10 spheres; focused default checks pass for the
+11-/12-sphere snapshot/assembly rows; focused CUDA unit and benchmark checks
+pass for the direct CUDA execution rows.
 The latest local slice corrects shared boxed-LCP validation for collapsed
 intervals (`lo == hi`): fixed rows now require the solution to stay on the bound
 but do not require zero residual force. This removes the false-negative fixed
@@ -575,7 +577,7 @@ evidence beyond the current separated sphere-ground, fixed-base prismatic
 articulated end-to-end coverage, connected Cartesian-chain articulated
 end-to-end coverage, cross-multibody articulated link-vs-link impact coverage,
 manually assembled three-axis articulated LCP snapshots, 4-/5-/6-sphere
-coupled-stack end-to-end, 10-sphere vertical stack snapshots,
+coupled-stack end-to-end, 12-sphere vertical stack snapshots,
 and the 48-box unit/benchmark dense face-contact public-step slice to
 broader articulated, longer-running coupled, and broader dense/robot-like
 contact scenes.
@@ -1177,20 +1179,30 @@ contact scenes.
   `BoxedLcpContact.LargerStressSphereStackWorldContactSnapshotSatisfiesLcpContract`,
   `BoxedLcpContact.SevenSphereStackWorldContactSnapshotSatisfiesLcpContract`,
   `BoxedLcpContact.EightSphereStackWorldContactSnapshotSatisfiesLcpContract`,
-  and `BoxedLcpContact.NineSphereStackWorldContactSnapshotSatisfiesLcpContract`
-  validate 3-sphere, 4-sphere, 5-sphere, 6-sphere, 7-sphere, 8-sphere, and
-  9-sphere, and 10-sphere
+  `BoxedLcpContact.NineSphereStackWorldContactSnapshotSatisfiesLcpContract`,
+  `BoxedLcpContact.TenSphereStackWorldContactSnapshotSatisfiesLcpContract`,
+  `BoxedLcpContact.ElevenSphereStackWorldContactSnapshotSatisfiesLcpContract`,
+  and
+  `BoxedLcpContact.TwelveSphereStackWorldContactSnapshotSatisfiesLcpContract`
+  validate 3-sphere, 4-sphere, 5-sphere, 6-sphere, 7-sphere, 8-sphere,
+  9-sphere, 10-sphere, 11-sphere, and 12-sphere
   vertical stacks assembled from `World::collide()` and check that the
   normal-contact block has nonzero off-diagonal coupling. The 4-sphere snapshot
   has 4 contacts and 12 LCP rows, the 5-sphere snapshot has 5 contacts and
   15 LCP rows, and the 6-sphere snapshot has 6 contacts and 18 LCP rows; the
   7-sphere snapshot has 7 contacts and 21 LCP rows; the 8-sphere snapshot has
   8 contacts and 24 LCP rows; the 9-sphere snapshot has 9 contacts and
-  27 LCP rows; the 10-sphere snapshot has 10 contacts and 30 LCP rows.
-  The focused
+  27 LCP rows; the 10-sphere snapshot has 10 contacts and 30 LCP rows; the
+  11-sphere snapshot has 11 contacts and 33 LCP rows; the 12-sphere snapshot
+  has 12 contacts and 36 LCP rows.
+  The earlier focused
   `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.*SphereStack*'` run
-  passes these snapshot tests plus the 3-sphere 200-step, 3-sphere 500-step,
-  4-sphere 200-step, 5-sphere 500-step, and 6-sphere 1000-step invariant tests.
+  passed the 3-/4-/5-/6-/7-/8-/9-/10-sphere snapshot tests plus the 3-sphere
+  200-step, 3-sphere 500-step, 4-sphere 200-step, 5-sphere 500-step, and
+  6-sphere 1000-step invariant tests.
+  The focused
+  `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.ElevenSphereStackWorldContactSnapshotSatisfiesLcpContract:BoxedLcpContact.TwelveSphereStackWorldContactSnapshotSatisfiesLcpContract' --gtest_brief=1`
+  run passes both 11-/12-sphere snapshot tests in the default build.
   Temporary 7-sphere public-step probes were removed because the 1000-step unit
   path failed the near-rest vertical-velocity invariant and
   `BM_LcpWorldStackStep_BoxedLcp/7/1000` reported `invariant_ok=0`,
@@ -1249,7 +1261,7 @@ contact scenes.
   `Admm`, `Sap`, and `BoxedSemiSmoothNewton`; focused 8-sphere probes reported
   `contract_ok=0` for `Pgs`, `Jacobi`, `BlockedJacobi`, and
   `ShockPropagation`, so those rows remain unclaimed at 8 and 9 spheres. The matching
-  `BM_LcpWorldStackContactAssembly_BoxedLcp/{2,3,4,5,6,7,8,9}` rows rebuild the
+  `BM_LcpWorldStackContactAssembly_BoxedLcp/{2,3,4,5,6,7,8,9,10,11,12}` rows rebuild the
   world, collide, assemble through `detail::solveBoxedLcpContacts`, solve, and
   validate the coupled stack snapshot. The focused 4-sphere benchmark run
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldStackContact/FrictionIndex/.*/4|BM_LcpWorldStackContactAssembly_BoxedLcp/4' --benchmark_min_time=0.001s --benchmark_repetitions=1`
@@ -1282,8 +1294,11 @@ contact scenes.
   runs report `contract_ok=1` for all 10 registered 9-sphere solver rows and
   the 9-sphere assembly row. Focused default, SIMD-enabled, and CUDA-enabled
   10-sphere runs report `contract_ok=1` for the same 10 registered solver rows
-  and the 10-sphere assembly row. These are CPU solver rows in each build tree,
-  including the CUDA-enabled build.
+  and the 10-sphere assembly row. The focused default
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldStackContactAssembly_BoxedLcp/(11|12)$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_format=json`
+  run reports `contract_ok=1` for the 11- and 12-sphere assembly rows with
+  `sphere_count=11/12`, `contact_count=11/12`, and `problem_size=33/36`.
+  These are CPU solver rows in each build tree, including the CUDA-enabled build.
   Treat this as small coupled-stack benchmark evidence, not evidence for
   articulated or dense-degenerate contact scenes.
 - The benchmark target now also registers 32

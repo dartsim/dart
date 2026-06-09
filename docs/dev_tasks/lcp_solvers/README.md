@@ -339,6 +339,11 @@
       and the same 10 friction-index solver benchmark rows. Focused default,
       SIMD-enabled, and CUDA-enabled runs satisfy the LCP contract; no
       10-sphere public-step invariant is claimed.
+- [x] Extended DART 7 boxed-LCP coupled stack snapshot and assembly evidence to
+      11- and 12-sphere vertical stacks, validating 11-contact/33-row and
+      12-contact/36-row boxed/findex LCP snapshots assembled from shared
+      dynamic bodies. Focused default build rows satisfy the LCP contract; no
+      11-/12-sphere public-step invariant is claimed.
 - [x] Added DART 7 world-contact `BM_LCP_COMPARE` rows that run every
       friction-index-capable solver on the same boxed-LCP snapshots assembled
       from 1, 2, and 4 separated sphere-ground contacts, plus a
@@ -1537,14 +1542,22 @@ tradeoffs evidence based.
   extends the same direct snapshot path to a 10-sphere stack with 10 contacts
   and 30 LCP rows. This is snapshot evidence only; no 10-sphere public-step
   invariant is claimed.
+  `BoxedLcpContact.ElevenSphereStackWorldContactSnapshotSatisfiesLcpContract`
+  and
+  `BoxedLcpContact.TwelveSphereStackWorldContactSnapshotSatisfiesLcpContract`
+  extend the same direct snapshot path to 11- and 12-sphere stacks with
+  11/12 contacts and 33/36 LCP rows. This is snapshot evidence only; no
+  11-/12-sphere public-step invariant is claimed. The focused
+  `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.ElevenSphereStackWorldContactSnapshotSatisfiesLcpContract:BoxedLcpContact.TwelveSphereStackWorldContactSnapshotSatisfiesLcpContract' --gtest_brief=1`
+  run passed both tests in the default build.
   The focused
   `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.*WorldContactSnapshot*'`
   run passed the single-contact and two-contact sphere-ground snapshot tests,
   the focused
   `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.*SphereStack*'`
-  run passed 13 stack tests, including the 3-/4-/5-/6-/7-/8-/9-/10-sphere snapshots
-  and the 3-sphere 200-/500-step, 4-sphere 200-step, 5-sphere 500-step, and
-  6-sphere 1000-step public-step invariants,
+  run passed 13 stack tests, including the 3-/4-/5-/6-/7-/8-/9-/10-sphere
+  snapshots and the 3-sphere 200-/500-step, 4-sphere 200-step, 5-sphere
+  500-step, and 6-sphere 1000-step public-step invariants,
   the focused
   `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.SphereStackWorldStepMaintainsContactInvariants:BoxedLcpContact.LongRunningSphereStackWorldStepMaintainsContactInvariants:BoxedLcpContact.LargerSphereStackWorldStepMaintainsContactInvariants:BoxedLcpContact.StressSphereStackWorldStepMaintainsContactInvariants'`
   run passed all four coupled stack step tests, focused
@@ -1838,7 +1851,7 @@ tradeoffs evidence based.
   These snapshots include a ground contact and sphere-sphere contacts,
   so the Delassus system couples multiple contacts through shared dynamic
   bodies. The target also registers
-  `BM_LcpWorldStackContactAssembly_BoxedLcp/{2,3,4,5,6,7,8,9}`, which
+  `BM_LcpWorldStackContactAssembly_BoxedLcp/{2,3,4,5,6,7,8,9,10,11,12}`, which
   rebuilds the stack world, calls `World::collide()`, assembles/solves through
   `detail::solveBoxedLcpContacts`, and validates the solved snapshot. The
   focused 4-sphere run
@@ -1874,6 +1887,11 @@ tradeoffs evidence based.
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldStackContact/FrictionIndex/.*/10$|BM_LcpWorldStackContactAssembly_BoxedLcp/10$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   runs reported `contract_ok=1` for all 10 registered 10-sphere solver rows and
   the 10-sphere assembly row.
+  The focused default
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldStackContactAssembly_BoxedLcp/(11|12)$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_format=json`
+  run reported `contract_ok=1` for the 11- and 12-sphere assembly rows with
+  `sphere_count=11/12`, `contact_count=11/12`, and `problem_size=33/36`; no
+  11-/12-sphere solver-comparison or public-step rows are claimed.
   The
   CUDA-enabled rows are CPU solver benchmark rows in that build tree, not CUDA
   LCP kernel execution.
@@ -2370,7 +2388,7 @@ tradeoffs evidence based.
   `NNCG`, plus 7-sphere rows for all of those solvers except `NNCG` and
   `RedBlackGaussSeidel`, plus 8-/9-/10-sphere rows for the narrower passing solver
   subset. Stack assembly/solve benchmark rows cover 2-, 3-, 4-, 5-, 6-, 7-,
-  8-, 9-, and 10-sphere scenes.
+  8-, 9-, 10-, 11-, and 12-sphere scenes.
 - Added mixed DART 7 world-contact batch benchmark rows that compare all
   friction-index-capable solvers over the same 5-problem separated-contact and
   stacked-contact snapshot batch, both serially and through the experimental
@@ -2462,11 +2480,12 @@ tradeoffs evidence based.
   over the 1/2/4 separated-contact and 2/3 stack snapshots, stress
   mixed serial and `ParallelExecutor` batch rows over the same separated
   snapshots plus 2/3/4/5 stack snapshots for all of those solvers except
-  `NNCG`, plus existing boxed-contact parity tests. Broader articulated
+  `NNCG`, 11-/12-sphere stack snapshot and assembly rows, plus existing
+  boxed-contact parity tests. Broader articulated
   contacts beyond fixed-base prismatic link-ground, connected Cartesian-chain
   ground contact, link-vs-rigid impact, and cross-multibody link-vs-link impact,
   longer denser coupled scenes, larger
-  coupled multi-contact systems beyond the current 10-sphere snapshot, and
+  coupled multi-contact systems beyond the current 12-sphere snapshot, and
   robot-like contact systems still need LCP-contract, invariant, and benchmark
   evidence.
 - Multi-contact boxed-LCP snapshots: a resting box multi-contact friction
@@ -2540,7 +2559,7 @@ tradeoffs evidence based.
    current connected Cartesian-chain articulated end-to-end coverage,
    current cross-multibody articulated link-vs-link impact coverage,
    current manually assembled three-axis articulated LCP snapshots, and
-   current 10-sphere vertical-stack snapshots and dense box face-contact
+   current 12-sphere vertical-stack snapshots and dense box face-contact
    evidence to broader articulated, longer-running, and denser coupled contact
    scenes.
 3. Add broader benchmark gates for SIMD-enabled CPU, intra-solver
