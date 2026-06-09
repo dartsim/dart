@@ -320,8 +320,10 @@
       ShockPropagation stack rows use a 512-iteration cap; Symmetric PSOR, BGS,
       and TGS use that cap on the 11-/12-sphere rows; and the NNCG stack rows
       use 20 PGS preconditioner iterations through 11 spheres and 40 at 12
-      spheres. The originally scoped non-NNCG rows have matching
-      default/SIMD/CUDA-enabled benchmark evidence.
+      spheres. Focused default, SIMD-enabled, and CUDA-enabled build-tree rows
+      pass for the 11-/12-sphere all-solver stack slice; the CUDA-enabled rows
+      are CPU solver rows in a CUDA-enabled build, not CUDA LCP kernel
+      execution.
 - [x] Extended DART 7 boxed-LCP coupled stack snapshot evidence to a 7-sphere,
       7-contact, 21-row vertical stack and matching boxed-LCP assembly
       benchmark row, plus 16 friction-index solver benchmark rows. `NNCG` uses
@@ -2047,6 +2049,11 @@ tradeoffs evidence based.
   `2.7209092579925098e-03`, and 183/37 solver iterations. ShockPropagation
   reports `shock_propagation_max_iterations=512`, residuals
   `2.3990956999897506e-03` and `2.7864848088574590e-03`, and 192/219 sweeps.
+  The same focused 11-/12-sphere stack/assembly filter passes in the
+  SIMD-enabled build tree with `rows=34`, `failures=0`, and `simd_rows=34`, and
+  in the CUDA-enabled build tree with `rows=34`, `failures=0`, and
+  `cuda_rows=34`. The CUDA-enabled rows are CPU solver rows in a CUDA-enabled
+  build, not CUDA LCP kernel execution.
   No 11-/12-sphere public-step rows are claimed.
   The focused default
   `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldStackContactAssembly_BoxedLcp/(13|14|15|16)$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_format=json`

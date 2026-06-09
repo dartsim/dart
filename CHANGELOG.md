@@ -1196,12 +1196,14 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     `Jacobi`, `BlockedJacobi`, `RedBlackGaussSeidel`, and `ShockPropagation`
     use a 512-iteration stack-contact cap; `SymmetricPsor`, `BGS`, and `Tgs`
     use that cap on the 11-/12-sphere rows; and `NNCG` uses 20 PGS
-    preconditioner iterations through 11 spheres and 40 at 12 spheres), so
-    benchmark evidence now includes coupled contact systems with shared dynamic
-    bodies. Added 3-, 4-, 5-, 6-, 7-, 8-, 9-, 10-, 11-, 12-, 13-, 14-, 15-,
-    and 16-sphere stack snapshot tests that validate nonzero normal-contact
-    coupling, plus boxed-LCP Baumgarte velocity-bias stabilization that
-    preserves kinematic contacts' static-obstacle compatibility behavior, and
+    preconditioner iterations through 11 spheres and 40 at 12 spheres). Focused
+    default, SIMD-enabled, and CUDA-enabled build-tree rows pass for the
+    11-/12-sphere all-solver stack slice; the CUDA-enabled rows are CPU solver
+    rows in a CUDA-enabled build, not CUDA LCP kernel execution. Added 3-, 4-,
+    5-, 6-, 7-, 8-, 9-, 10-, 11-, 12-, 13-, 14-, 15-, and 16-sphere stack
+    snapshot tests that validate nonzero normal-contact coupling, plus boxed-LCP
+    Baumgarte velocity-bias stabilization that preserves kinematic contacts'
+    static-obstacle compatibility behavior, and
     3-sphere 200-step, 3-sphere 500-step,
     4-sphere 200-step, 5-sphere 500-step, and 6-sphere 1000-step
     `World::step()` invariant tests with matching benchmark rows for the

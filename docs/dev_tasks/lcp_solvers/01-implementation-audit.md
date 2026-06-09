@@ -905,6 +905,11 @@ The current local evidence for this task is:
   `5.6120473527432324e-04`/`6.6932749492387700e-04`, and 263/302 iterations;
   `nncg_pgs_iterations=20/40`, residuals
   `2.3888996475616153e-03`/`2.7209092579925098e-03`, and 183/37 iterations.
+  The same focused 11-/12-sphere stack/assembly filter passes in the
+  SIMD-enabled build tree with `rows=34`, `failures=0`, and `simd_rows=34`, and
+  in the CUDA-enabled build tree with `rows=34`, `failures=0`, and
+  `cuda_rows=34`. The CUDA-enabled rows are CPU solver rows in a CUDA-enabled
+  build, not CUDA LCP kernel execution.
   These stacks include sphere-ground and sphere-sphere contacts coupled through
   shared dynamic bodies. This is small coupled-stack benchmark evidence, not
   articulated, robot-like, or dense-degenerate contact evidence.

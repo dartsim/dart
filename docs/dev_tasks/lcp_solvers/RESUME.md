@@ -538,7 +538,11 @@ NNCG uses 20 PGS preconditioner iterations through 11 spheres and 40 at 12
 spheres. Focused default PGS/Jacobi/BlockedJacobi/ShockPropagation 8-through-12,
 NNCG 2-through-12, RedBlack 2-through-12, and all-registered default
 8-/9-/10-/11-/12-sphere stack/assembly benchmark filters now report
-`contract_ok=1`.
+`contract_ok=1`. The same focused 11-/12-sphere stack/assembly filter now also
+passes in the SIMD-enabled build tree with `rows=34`, `failures=0`, and
+`simd_rows=34`, and in the CUDA-enabled build tree with `rows=34`,
+`failures=0`, and `cuda_rows=34`; the CUDA-enabled rows are CPU solver rows in a
+CUDA-enabled build, not CUDA LCP kernel execution.
 Push/PR work still requires explicit maintainer/user approval.
 
 ## Immediate Next Step
@@ -1436,6 +1440,11 @@ contact scenes.
   `sphere_count=11/12`, `contact_count=11/12`, and `problem_size=33/36`. The tuned 11-/12-sphere
   rows report `symmetric_psor_max_iterations=512`, `bgs_max_iterations=512`,
   `tgs_max_iterations=512`, and `nncg_pgs_iterations=20/40`.
+  The same focused 11-/12-sphere stack/assembly filter passes in the
+  SIMD-enabled build tree with `rows=34`, `failures=0`, and `simd_rows=34`, and
+  in the CUDA-enabled build tree with `rows=34`, `failures=0`, and
+  `cuda_rows=34`. The CUDA-enabled rows are CPU solver rows in a CUDA-enabled
+  build, not CUDA LCP kernel execution.
   The focused default
   `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldStackContactAssembly_BoxedLcp/(13|14|15|16)$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_format=json`
   run reports `contract_ok=1` for the 13-, 14-, 15-, and 16-sphere assembly
