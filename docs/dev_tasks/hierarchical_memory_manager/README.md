@@ -265,12 +265,14 @@
       default solver now carries the 13x19 rectangular production guard through
       its CG scratch path. A mixed two-body production gate now steps one
       direct-sparse rectangular grid and one matrix-free wide grid in the same
-      baked default-solver loop, and a mixed late-active production gate now
-      steps direct-sparse square and matrix-free rectangular self-contact grids
-      whose active contacts enter during the counted baked steps. These cover
+      baked default-solver loop. A mixed dense production gate now combines a
+      notched, jittered direct-sparse 13x17 grid with a matrix-free 13x19 dense
+      rectangular grid, and a mixed late-active production gate now steps
+      direct-sparse square and matrix-free rectangular self-contact grids whose
+      active contacts enter during the counted baked steps. These cover
       per-body solver/contact scratch storage for independent deformable bodies
-      with different linear-solver modes. The default projected-Newton path now
-      also has a baked
+      with different topology shapes and linear-solver modes. The default
+      projected-Newton path now also has a baked
       sphere/box/capsule static obstacle barrier gate, covering those radial and
       oriented-obstacle Hessian paths separately from the ground height-field
       barrier and surface-CCD snapshot gates. The moving rigid-surface CCD path
@@ -364,8 +366,9 @@
       a mixed two-body production scene with independent direct-sparse
       rectangular and matrix-free wide self-contact grids, a mixed late-active
       production scene with independent direct-sparse square and matrix-free
-      rectangular self-contact grids, plus a barrier-only static
-      sphere/box/capsule obstacle scene for default projected Newton.
+      rectangular self-contact grids, a mixed dense production scene with
+      notched direct-sparse and dense matrix-free grids, plus a barrier-only
+      static sphere/box/capsule obstacle scene for default projected Newton.
       The base and global-heap guards now also include default moving
       rigid-surface CCD swept-box crossings for free, single-kinematic, and
       multi-kinematic rigid obstacles, closing the previously static-only rigid
@@ -616,8 +619,10 @@ debugging, profiling, optimization experiments, and ImGui visualization.
    direct-sparse and matrix-free grids now cover dynamic contact-pattern cases
    without World-base or global-heap growth, and a mixed late-active
    production scene now covers independent direct-sparse square and matrix-free
-   rectangular self-contact grids that activate during the same baked loop. The
-   AVBD
+   rectangular self-contact grids that activate during the same baked loop. A
+   mixed dense production scene also covers a notched direct-sparse 13x17 grid
+   and matrix-free 13x19 dense rectangular grid sharing one baked World memory
+   root. The AVBD
    self-contact row guard now also covers a 5x9 rectangular grid row workload
    with replay-backed activity assertions.
    Continue broadening boxed-LCP unified problem assembly and additional

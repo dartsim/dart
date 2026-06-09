@@ -1365,8 +1365,10 @@ void configureDeformableSelfContactFrictionLargerProductionGridScene(
       Eigen::Vector3d(0.35, 0.1, -0.08));
 }
 
-void configureDeformableSelfContactFrictionIrregularProductionGridScene(
-    dart::simulation::World& world)
+void configureDeformableSelfContactFrictionIrregularProductionGridSceneWithOffset(
+    dart::simulation::World& world,
+    std::string_view bodyName,
+    const Eigen::Vector3d& offset = Eigen::Vector3d::Zero())
 {
   namespace sx = dart::simulation;
 
@@ -1415,7 +1417,8 @@ void configureDeformableSelfContactFrictionIrregularProductionGridScene(
     for (std::size_t row = 0; row < rows; ++row) {
       for (std::size_t col = 0; col < cols; ++col) {
         const Eigen::Vector2d xy = planarPosition(row, col);
-        options.positions.emplace_back(xy.x(), xy.y(), z);
+        options.positions.push_back(
+            offset + Eigen::Vector3d(xy.x(), xy.y(), z));
         options.velocities.push_back(velocity);
         if (layer == 0) {
           options.fixedNodes.push_back(nodeIndex(layer, row, col));
@@ -1472,7 +1475,14 @@ void configureDeformableSelfContactFrictionIrregularProductionGridScene(
   options.edgeStiffness = 0.0;
   options.material.frictionCoefficient = 0.8;
 
-  world.addDeformableBody("friction_irregular_production_grid", options);
+  world.addDeformableBody(bodyName, options);
+}
+
+void configureDeformableSelfContactFrictionIrregularProductionGridScene(
+    dart::simulation::World& world)
+{
+  configureDeformableSelfContactFrictionIrregularProductionGridSceneWithOffset(
+      world, "friction_irregular_production_grid");
 }
 
 void configureDeformableSelfContactFrictionLateActiveGridScene(
@@ -1587,6 +1597,24 @@ void configureMixedDeformableSelfContactFrictionProductionScene(
       Eigen::Vector3d(0.35, 0.1, -0.08),
       true,
       Eigen::Vector3d(8.0, 0.0, 0.0));
+}
+
+void configureMixedDeformableSelfContactFrictionDenseProductionScene(
+    dart::simulation::World& world)
+{
+  configureDeformableSelfContactFrictionIrregularProductionGridSceneWithOffset(
+      world,
+      "mixed_friction_irregular_direct_grid",
+      Eigen::Vector3d(-8.5, 0.0, 0.0));
+  configureDeformableSelfContactFrictionGridSceneWithShapeAndMotion(
+      world,
+      13,
+      19,
+      "mixed_friction_dense_matrix_free_rectangular_grid",
+      0.012,
+      Eigen::Vector3d(0.35, 0.1, -0.08),
+      true,
+      Eigen::Vector3d(8.5, 0.0, 0.0));
 }
 
 void configureMixedDeformableSelfContactFrictionLateActiveProductionScene(
@@ -2828,6 +2856,9 @@ TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
       "mixed deformable self-contact friction production grids",
       configureMixedDeformableSelfContactFrictionProductionScene);
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "mixed deformable self-contact friction dense production grids",
+      configureMixedDeformableSelfContactFrictionDenseProductionScene);
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "mixed deformable self-contact friction late-active production grids",
       configureMixedDeformableSelfContactFrictionLateActiveProductionScene);
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
@@ -3132,6 +3163,25 @@ TEST(World, MixedDeformableSelfContactFrictionProductionSceneIsActive)
   const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
   EXPECT_EQ(diagnostics.bodyCount, 2u);
   EXPECT_EQ(diagnostics.nodeCount, 2u * 9u * 13u + 2u * 7u * 17u);
+  EXPECT_GT(diagnostics.projectedNewtonMatrixFreeSolves, 0u);
+  EXPECT_GT(diagnostics.selfContactBarrierActiveContacts, 0u);
+  EXPECT_GT(diagnostics.convergedActiveContactCount, 0u);
+  EXPECT_GT(diagnostics.frictionDissipation, 0.0);
+}
+
+TEST(World, MixedDeformableSelfContactFrictionDenseProductionSceneIsActive)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  configureMixedDeformableSelfContactFrictionDenseProductionScene(world);
+  world.enterSimulationMode();
+
+  world.step();
+
+  const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
+  EXPECT_EQ(diagnostics.bodyCount, 2u);
+  EXPECT_EQ(diagnostics.nodeCount, 2u * 13u * 17u + 2u * 13u * 19u);
   EXPECT_GT(diagnostics.projectedNewtonMatrixFreeSolves, 0u);
   EXPECT_GT(diagnostics.selfContactBarrierActiveContacts, 0u);
   EXPECT_GT(diagnostics.convergedActiveContactCount, 0u);
@@ -3667,6 +3717,9 @@ TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "mixed deformable self-contact friction production grids",
       configureMixedDeformableSelfContactFrictionProductionScene);
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "mixed deformable self-contact friction dense production grids",
+      configureMixedDeformableSelfContactFrictionDenseProductionScene);
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "mixed deformable self-contact friction late-active production grids",
       configureMixedDeformableSelfContactFrictionLateActiveProductionScene);

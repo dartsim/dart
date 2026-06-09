@@ -10,6 +10,24 @@ allocator and diagnostics contracts (`MemoryManager`, `WorldOptions`,
 `WorldMemoryDiagnostics`) rather than exposing EnTT storage, allocator internals,
 or backend resources on the public simulation facade.
 
+## Current Continuation (2026-06-09)
+
+Active split branches are `pr/allocator-correctness-gates` (PR #2955, base
+`main`) and `pr/simulation-scratch-reuse` (PR #2956, base PR #2955). PR #2955's
+macOS Release allocator failure was fixed by making STL allocator copy
+assignment explicit, and the replacement macOS Release job passed. PR #2956 is
+the active branch for continuing HMM Phase 4/5 work.
+
+Recent PR #2956 slices added baked no-growth/no-heap coverage for
+multi-kinematic rigid surface CCD, mixed late-active direct-sparse plus
+matrix-free deformable self-contact grids, and a mixed dense production
+deformable scene combining a notched direct-sparse 13x17 grid with a
+matrix-free 13x19 dense rectangular grid. Continue from the current
+`README.md` Immediate Next Steps: broaden remaining boxed-LCP/contact and
+deformable production no-growth coverage, and move any newly exposed step-loop
+scratch to world-owned backed storage before making a full zero-allocation
+claim.
+
 ## Last Session Summary
 
 The current allocator correctness slice is active on
