@@ -420,7 +420,8 @@
       tests and benchmark rows on the visible GPU.
 - [x] Added dense box-face CUDA contact-batch evidence for DART 7:
       homogeneous 4-problem 1-/4-/8-/16-/24-/32-/48-/64-/96-box and grouped variable-size
-      1/2/4/8/16/24/32-box batches of box-face `World::collide()` snapshots pass
+      1/2/4/8/16/24/32-box batches with two and three velocity variants per
+      box-count shape of box-face `World::collide()` snapshots pass
       fixed-iteration CUDA PGS benchmark coverage on the visible GPU; CUDA PGS
       unit coverage now includes homogeneous 1-/16-/24-/32-/48-/64-/96-box packets and
       the grouped 1/2/4/8/16/24/32-box packet, plus a bounded homogeneous
@@ -1729,15 +1730,19 @@ tradeoffs evidence based.
   `dense_box_contact=1`, `box_count=1/4/8/16/24/32/48/64/96`,
   `contact_count=4/16/32/64/96/128/192/256/384`,
   `problem_size=12/48/96/192/288/384/576/768/1152`, `batch_size=4`, and
-  `total_problem_size` up to 4608. The grouped row remains scoped to
-  1/2/4/8/16/24/32-box packets and reported `batch_size=14`,
-  `cuda_group_count=7`, `box_count_shape_count=7`, `min_problem_size=12`,
-  `max_problem_size=384`, `total_contact_count=696`, `total_body_count=174`, and
-  `total_problem_size=2088`. A grouped 48-box CUDA PGS extension was probed and
-  is not claimed: at 1024 and 2048 fixed iterations the grouped validation
-  failed two 48-box variants with fixed-variable residual/complementarity around
-  0.606/0.625. The old fixed-ground homogeneous 128-box fixture loss is now
-  separated from CUDA execution:
+  `total_problem_size` up to 4608. The grouped rows remain scoped to
+  1/2/4/8/16/24/32-box packets. The two-variant row reported
+  `batch_size=14`, `cuda_group_count=7`, `box_count_shape_count=7`,
+  `min_problem_size=12`, `max_problem_size=384`, `total_contact_count=696`,
+  `total_body_count=174`, `total_problem_size=2088`, and
+  `max_residual=max_complementarity=1.0471569965395805e-07`; the
+  three-variant row reported `batch_size=21`, the same seven shape groups,
+  `total_contact_count=1044`, `total_body_count=261`, `total_problem_size=3132`,
+  and `max_residual=max_complementarity=1.5667044491254889e-07`.
+  A grouped 48-box CUDA PGS extension remains unclaimed; older probes hit fixed
+  tangent rows before the fixed-bound validation correction and have not been
+  rerun as a 48-box claim. The old fixed-ground homogeneous 128-box fixture loss
+  is now separated from CUDA execution:
   `CudaLcpDenseBoxFixture.LargerGridKeepsFaceContactShape` verifies that dynamic
   dense-ground sizing preserves 512 box-face contacts and a 1536-row LCP. The
   focused
@@ -2455,9 +2460,10 @@ tradeoffs evidence based.
   two- and three-variant grouped benchmark rows including cross-multibody
   link-vs-link packets, mixed
   separated/stack/articulated grouped contact batch paths, and PGS-only
-  homogeneous dense box-face CUDA batches through 96 boxes plus a bounded
-  128-box homogeneous batch-size-1 CUDA PGS packet pass. The 128-box
-  batch-size-4 CUDA PGS row remains unclaimed.
+  homogeneous dense box-face CUDA batches through 96 boxes, two-/three-variant
+  grouped dense box-face CUDA batches through 32 boxes, plus a bounded 128-box
+  homogeneous batch-size-1 CUDA PGS packet pass. The 128-box batch-size-4 CUDA
+  PGS row remains unclaimed.
   Jacobi has opt-in solver-internal CPU
   worker-thread correctness and benchmark evidence, including larger 8192-row
   banded rows, but the focused local rows do not establish a general speedup.

@@ -2048,13 +2048,16 @@ TEST(CudaLcpPgsBatch, DenseBoxWorldContactGroupedBatchSatisfiesLcpContract)
     GTEST_SKIP() << "CUDA runtime has no available device";
   }
 
-  std::string errorMessage;
-  auto fixture = makeWorldBoxContactGroupedBatch(2, 1024, errorMessage);
-  ASSERT_TRUE(fixture.has_value()) << errorMessage;
+  for (const int variantsPerBoxCount : {2, 3}) {
+    std::string errorMessage;
+    auto fixture = makeWorldBoxContactGroupedBatch(
+        variantsPerBoxCount, 1024, errorMessage);
+    ASSERT_TRUE(fixture.has_value()) << errorMessage;
 
-  cuda::solveBoxedLcpPgsGroupedBatchCuda(fixture->packets);
+    cuda::solveBoxedLcpPgsGroupedBatchCuda(fixture->packets);
 
-  expectGroupedBatchSatisfiesLcpContract(*fixture);
+    expectGroupedBatchSatisfiesLcpContract(*fixture);
+  }
 }
 
 //==============================================================================

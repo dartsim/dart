@@ -958,6 +958,12 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     friction sweep. Verified by the existing drop/rest/bounce/friction tests
     and a new sliding-sphere test that checks friction drives the contact slip
     to zero (rolling) through the coupled solve.
+  - Corrected shared boxed-LCP solution validation for collapsed intervals
+    (`lo == hi`): fixed variables now require the solution to sit on the bound
+    but do not require the residual force to be zero. This matches the normal
+    cone semantics of a fixed interval and removes false negatives for DART 7
+    friction-index rows whose tangent bounds collapse when the normal impulse is
+    zero.
   - Fixed boxed semi-smooth Newton LCP solves with friction-index moving
     bounds by including the bound derivative in the natural-residual
     Jacobian. Added manifest-driven coverage for coupled mildly
@@ -1218,7 +1224,8 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     build trees,
     plus PGS-only CUDA batch coverage for homogeneous
     1/4/8/16/24/32/48/64/96-box and
-    grouped 1/2/4/8/16/24/32-box dense box-face packets through
+    grouped 1/2/4/8/16/24/32-box dense box-face packets with two and three
+    velocity variants per box-count shape through
     `BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex` and
     `BM_LcpCudaPgsWorldBoxContactGroupedBatch_FrictionIndex`, and
     1/2/4/8/16/24/32-box

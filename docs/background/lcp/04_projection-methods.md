@@ -398,6 +398,10 @@ $$z^k = M^{-1}(Nx^k + b)$$
 $$x^{k+1} = \min(u, \max(l, z^k))$$
 
 For contact problems, $l$ and $u$ are often functions of the normal impulse ($\pm\mu N$), so the projection step should recompute bounds whenever $N$ changes.
+When those dynamic bounds collapse ($l = u$), the row is a fixed variable:
+validation checks that the solution stays on the fixed bound, but the residual
+force is unrestricted by complementarity because the feasible interval has no
+remaining motion.
 
 ## 6. Nonsmooth Nonlinear Conjugate Gradient (NNCG) ✅ (Implemented)
 

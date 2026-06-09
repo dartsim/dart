@@ -495,6 +495,13 @@ CUDA Jacobi/PGS homogeneous and grouped coupled-stack batch evidence to
 10-sphere packets. Focused default, SIMD-enabled, and CUDA-enabled checks pass
 for the CPU solver rows; focused CUDA unit and benchmark checks pass for the
 new direct CUDA execution rows.
+The latest local slice corrects shared boxed-LCP validation for collapsed
+intervals (`lo == hi`): fixed rows now require the solution to stay on the bound
+but do not require zero residual force. This removes the false-negative fixed
+tangent-row rejection for dense box-face CUDA grouped packets and extends
+`BM_LcpCudaPgsWorldBoxContactGroupedBatch_FrictionIndex` to both `/2` and `/3`
+rows over the same 1/2/4/8/16/24/32-box shapes, with focused default and
+CUDA-enabled validation tests plus CUDA unit/benchmark evidence passing.
 Push/PR work still requires explicit maintainer/user approval.
 
 ## Immediate Next Step
@@ -529,7 +536,8 @@ separated CUDA world-contact, and 10-sphere homogeneous/grouped CUDA
 coupled-stack, and grouped manually assembled articulated unified-contact
 including cross-multibody link-vs-link CUDA rows, plus mixed
 separated/stack/articulated CUDA benchmark rows, plus the current
-PGS-only homogeneous and grouped variable-size dense box-face CUDA batch rows;
+PGS-only homogeneous and two-/three-variant grouped variable-size dense box-face
+CUDA batch rows;
 the 128-box dense box-face fixture shape and homogeneous batch-size-1 CUDA PGS
 execution are covered, but 128-box batch-size-4 CUDA PGS execution remains
 unclaimed.
@@ -1604,15 +1612,21 @@ contact scenes.
   `contract_ok=1`, `cuda_lcp_execution=1`, `cuda_batch_execution=1`,
   `cuda_dense_box_contact_batch=1`, `dense_box_contact=1`, `box_count=128`,
   `contact_count=512`, `problem_size=1536`, `batch_size=1`, and
-  `total_problem_size=1536`. `BM_LcpCudaPgsWorldBoxContactGroupedBatch_FrictionIndex/2`
-  reports `cuda_group_count=7`, `box_count_shape_count=7`,
+  `total_problem_size=1536`.
+  `BM_LcpCudaPgsWorldBoxContactGroupedBatch_FrictionIndex/{2,3}` now reports
+  `contract_ok=1` for the 1/2/4/8/16/24/32-box grouped dense-face packets. The
+  `/2` row reports `cuda_group_count=7`, `box_count_shape_count=7`,
   `min_problem_size=12`, `max_problem_size=384`, `total_contact_count=696`,
-  `total_body_count=174`, and `total_problem_size=2088`. Grouped dense-box CUDA
-  remains scoped to 1/2/4/8/16/24/32-box packets; a grouped 48-box CUDA PGS
-  probe failed two 48-box variants at 1024 and 2048 fixed iterations with
-  fixed-variable residual/complementarity around 0.606/0.625. The old
-  fixed-ground homogeneous 128-box fixture loss is now separated from CUDA
-  execution: `CudaLcpDenseBoxFixture.LargerGridKeepsFaceContactShape` verifies
+  `total_body_count=174`, `total_problem_size=2088`, and
+  `max_residual=max_complementarity=1.0471569965395805e-07`; the `/3` row reports
+  `batch_size=21`, the same shape groups, `total_contact_count=1044`,
+  `total_body_count=261`, `total_problem_size=3132`, and
+  `max_residual=max_complementarity=1.5667044491254889e-07`. Grouped dense-box
+  CUDA remains scoped to 1/2/4/8/16/24/32-box packets; the grouped 48-box CUDA
+  PGS extension has not been rerun after the fixed-bound validation correction
+  and remains unclaimed. The old fixed-ground homogeneous 128-box fixture loss
+  is now separated from CUDA execution:
+  `CudaLcpDenseBoxFixture.LargerGridKeepsFaceContactShape` verifies
   that dynamic dense-ground sizing preserves 512 box-face contacts and a
   1536-row LCP. The focused
   `BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex/128/4` row was stopped after
