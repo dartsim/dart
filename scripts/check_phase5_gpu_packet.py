@@ -36,7 +36,10 @@ import math
 import sys
 from pathlib import Path
 
-from benchmark_packet_utils import median_timing_by_name
+from benchmark_packet_utils import (
+    benchmark_packet_timing_schema_errors,
+    median_timing_by_name,
+)
 
 DEFAULT_CPU_PREFIX = "BM_Phase5RigidBodyBatchCpuBaseline"
 DEFAULT_GPU_PREFIX = "BM_Phase5RigidBodyBatchGpu"
@@ -228,6 +231,11 @@ def _validate_metadata(
     world_count = _require_int(metadata, "world_count")
     actual_body_count = _require_int(metadata, "body_count")
     actual_step_count = _require_int(metadata, "step_count")
+    timing_schema_errors = benchmark_packet_timing_schema_errors(
+        metadata, "phase5_gpu_packet"
+    )
+    if timing_schema_errors:
+        raise Phase5PacketError(timing_schema_errors[0])
     includes_full_workload = _require_bool(
         metadata, "includes_transfer_setup_compute_readback"
     )

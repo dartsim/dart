@@ -10,6 +10,7 @@ from typing import Any
 _AGGREGATE_SUFFIX_RE = re.compile(r"_(?:mean|median|stddev|cv)$")
 _REPEATS_SUFFIX_RE = re.compile(r"/repeats:\d+")
 _UNIT_TO_NS = {"ns": 1.0, "us": 1e3, "ms": 1e6, "s": 1e9}
+SOLVER_SUBPHASE_TIMINGS_KEY = "solver_subphase_timings_ns"
 
 
 def canonical_benchmark_name(name: str) -> str:
@@ -70,4 +71,53 @@ def benchmark_timing_field_errors(
             errors.append(f"{name} has non-positive {field}: {value!r}")
     if not isinstance(row.get("time_unit"), str):
         errors.append(f"{name} is missing time_unit")
+    return errors
+
+
+def benchmark_packet_timing_schema_errors(
+    metadata: Mapping[str, Any],
+    packet_name: str,
+    *,
+    required_subphases: Iterable[str] = (),
+) -> list[str]:
+    errors: list[str] = []
+    step_count = metadata.get("step_count")
+    if not isinstance(step_count, int) or isinstance(step_count, bool):
+        errors.append(f"{packet_name}.step_count must be an integer")
+    elif step_count <= 0:
+        errors.append(f"{packet_name}.step_count must be positive")
+
+    required = tuple(required_subphases)
+    subphases = metadata.get(SOLVER_SUBPHASE_TIMINGS_KEY)
+    if subphases is None:
+        if required:
+            errors.append(f"{packet_name}.{SOLVER_SUBPHASE_TIMINGS_KEY} is missing")
+        return errors
+    if not isinstance(subphases, Mapping):
+        errors.append(f"{packet_name}.{SOLVER_SUBPHASE_TIMINGS_KEY} must be an object")
+        return errors
+
+    for subphase in required:
+        if subphase not in subphases:
+            errors.append(
+                f"{packet_name}.{SOLVER_SUBPHASE_TIMINGS_KEY}.{subphase} is missing"
+            )
+
+    for subphase, value in sorted(subphases.items()):
+        if not isinstance(subphase, str) or not subphase:
+            errors.append(
+                f"{packet_name}.{SOLVER_SUBPHASE_TIMINGS_KEY} has an invalid key"
+            )
+            continue
+        if not isinstance(value, (int, float)) or isinstance(value, bool):
+            errors.append(
+                f"{packet_name}.{SOLVER_SUBPHASE_TIMINGS_KEY}.{subphase} "
+                f"must be numeric"
+            )
+            continue
+        if not math.isfinite(float(value)) or float(value) < 0.0:
+            errors.append(
+                f"{packet_name}.{SOLVER_SUBPHASE_TIMINGS_KEY}.{subphase} "
+                f"must be finite and non-negative"
+            )
     return errors
