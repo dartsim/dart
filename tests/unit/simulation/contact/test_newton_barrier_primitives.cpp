@@ -649,9 +649,27 @@ TEST(NewtonBarrierPrimitives, RigidIpcConsumesSharedPrimitiveOwner)
   expectMatrixNear(
       potential.tangentialDisplacement, stencil.projection * displacement);
   EXPECT_NEAR(potential.value, expectedPotential.value, 1e-14);
+  EXPECT_NEAR(potential.work, expectedPotential.work, 1e-14);
   expectMatrixNear(potential.gradient.head<6>(), expectedPotential.gradient);
   expectMatrixNear(
       potential.hessian.topLeftCorner<6, 6>(), expectedPotential.hessian);
   EXPECT_TRUE(potential.active);
   EXPECT_GT(potential.value, 0.0);
+}
+
+//==============================================================================
+TEST(NewtonBarrierPrimitives, FrictionWorkUsesSharedMollifier)
+{
+  const auto staticContribution = nb::frictionWorkContribution(0.05, 4.0, 0.2);
+  EXPECT_TRUE(staticContribution.active);
+  EXPECT_FALSE(staticContribution.dynamicBranch);
+  EXPECT_NEAR(staticContribution.work, 4.0 * (0.5 - 0.0625) * 0.05, 1e-15);
+
+  const auto dynamicContribution = nb::frictionWorkContribution(0.4, 4.0, 0.2);
+  EXPECT_TRUE(dynamicContribution.active);
+  EXPECT_TRUE(dynamicContribution.dynamicBranch);
+  EXPECT_NEAR(dynamicContribution.work, 4.0 * 0.4, 1e-15);
+
+  EXPECT_FALSE(nb::frictionWorkContribution(0.1, 0.0, 0.2).active);
+  EXPECT_FALSE(nb::frictionWorkContribution(0.1, 4.0, 0.0).active);
 }

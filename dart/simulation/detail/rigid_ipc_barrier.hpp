@@ -78,6 +78,7 @@ struct RigidIpcFrictionOptions
 struct RigidIpcFrictionPotentialResult
 {
   double value = 0.0;
+  double work = 0.0;
   RigidIpcVector12d gradient = RigidIpcVector12d::Zero();
   RigidIpcMatrix12d hessian = RigidIpcMatrix12d::Zero();
   Eigen::Vector2d tangentialDisplacement = Eigen::Vector2d::Zero();

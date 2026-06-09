@@ -58,6 +58,7 @@
 #include "dart/simulation/detail/deformable_vbd/parallel_block_descent.hpp"
 #include "dart/simulation/detail/deformable_vbd/rigid_world_contact.hpp"
 #include "dart/simulation/detail/entity_conversion.hpp"
+#include "dart/simulation/detail/newton_barrier/friction_kernel.hpp"
 #include "dart/simulation/detail/newton_barrier/projected_newton.hpp"
 #include "dart/simulation/detail/newton_barrier/psd_backend.hpp"
 #include "dart/simulation/detail/rigid_ipc_barrier.hpp"
@@ -3845,9 +3846,12 @@ void accumulateFrictionDiagnostics(
                                   : Eigen::Vector3d::UnitZ();
     const Eigen::Vector3d u = positions[i] - stepStart[i];
     const double y = (u - n.dot(u) * n).norm();
-    dissipation += frictionCoefficient * groundNormalForce[i]
-                   * frictionF1(y, epsilon) * y;
-    ++activeContacts;
+    const auto contribution = nb::frictionWorkContribution(
+        y, frictionCoefficient * groundNormalForce[i], epsilon);
+    if (contribution.active) {
+      dissipation += contribution.work;
+      ++activeContacts;
+    }
   }
 
   for (const auto& contact : selfContacts) {
@@ -3860,9 +3864,12 @@ void accumulateFrictionDiagnostics(
           = positions[contact.nodes[k]] - stepStart[contact.nodes[k]];
     }
     const double y = (contact.projection * displacement).norm();
-    dissipation += frictionCoefficient * contact.normalForce
-                   * frictionF1(y, epsilon) * y;
-    ++activeContacts;
+    const auto contribution = nb::frictionWorkContribution(
+        y, frictionCoefficient * contact.normalForce, epsilon);
+    if (contribution.active) {
+      dissipation += contribution.work;
+      ++activeContacts;
+    }
   }
 }
 

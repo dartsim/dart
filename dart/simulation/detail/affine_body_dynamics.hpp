@@ -105,6 +105,7 @@ struct AffinePrimitiveBarrierResult
 struct AffinePrimitiveFrictionResult
 {
   double value = 0.0;
+  double work = 0.0;
   AffineVector24d gradient = AffineVector24d::Zero();
   AffineMatrix24d hessian = AffineMatrix24d::Zero();
   Eigen::Vector2d tangentialDisplacement = Eigen::Vector2d::Zero();

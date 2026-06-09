@@ -308,6 +308,7 @@ RigidIpcFrictionPotentialResult computeProjectedFrictionPotential(
   }
 
   result.value = potential.value;
+  result.work = potential.work;
   result.gradient.template head<Columns>() = potential.gradient;
   result.hessian.template topLeftCorner<Columns, Columns>() = potential.hessian;
   result.tangentialDisplacement = potential.tangentialDisplacement;
