@@ -59,6 +59,13 @@ struct LineSearchStats
   std::size_t zeroStepCount = 0;
 };
 
+struct LineSearchCcdOutcome
+{
+  bool hit = false;
+  bool indeterminate = false;
+  double stepBound = 1.0;
+};
+
 [[nodiscard]] inline collision::native::CcdOption makeLineSearchCcdOption(
     const LineSearchOptions& options)
 {
@@ -104,6 +111,40 @@ struct LineSearchStats
   }
 
   return interiorStepScale;
+}
+
+[[nodiscard]] inline double recordLineSearchHit(
+    LineSearchStats& stats, const double timeOfImpact) noexcept
+{
+  ++stats.hits;
+  const double stepBound = std::clamp(timeOfImpact, 0.0, 1.0);
+  if (stepBound <= 0.0) {
+    ++stats.zeroStepCount;
+  }
+  return stepBound;
+}
+
+[[nodiscard]] inline LineSearchCcdOutcome recordLineSearchCcdOutcome(
+    LineSearchStats& stats,
+    const collision::native::CcdPrimitiveResult& primitive) noexcept
+{
+  LineSearchCcdOutcome outcome;
+  if (primitive.hit) {
+    outcome.hit = true;
+    outcome.stepBound = recordLineSearchHit(stats, primitive.timeOfImpact);
+    return outcome;
+  }
+
+  if (primitive.status
+      == collision::native::CcdPrimitiveStatus::Indeterminate) {
+    ++stats.indeterminate;
+    outcome.indeterminate = true;
+    outcome.stepBound = std::clamp(primitive.timeOfImpact, 0.0, 1.0);
+    return outcome;
+  }
+
+  ++stats.misses;
+  return outcome;
 }
 
 inline void accumulateLineSearchStats(
