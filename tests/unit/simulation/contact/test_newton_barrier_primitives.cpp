@@ -191,6 +191,43 @@ TEST(NewtonBarrierPrimitives, ArticulationHingeAndConeTwist)
 }
 
 //==============================================================================
+TEST(NewtonBarrierPrimitives, ArticulationSlidingAndRelativeSliding)
+{
+  const Eigen::Vector3d point(0.6, 0.25, -0.1);
+  const Eigen::Vector3d origin(0.1, -0.05, 0.2);
+  const Eigen::Vector3d axis = Eigen::Vector3d(1.0, 2.0, -1.0).normalized();
+  const Eigen::Matrix3d projector
+      = Eigen::Matrix3d::Identity() - axis * axis.transpose();
+
+  const auto sliding = nb::slidingConstraint(point, origin, axis);
+  EXPECT_TRUE(sliding.residual.isApprox(projector * (point - origin), 1e-14));
+  EXPECT_NEAR(sliding.coordinate, axis.dot(point - origin), 1e-14);
+  EXPECT_NEAR(sliding.squaredNorm, sliding.residual.squaredNorm(), 1e-14);
+
+  const auto numericalSlidingJacobian
+      = finiteDifferenceJacobian<3, 3>(point, [&](const auto& p) {
+          return nb::slidingConstraint(p, origin, axis).residual;
+        });
+  expectMatrixNear(sliding.jacobian, numericalSlidingJacobian, 1e-10);
+
+  const Eigen::Vector3d pointB(-0.2, 0.3, 0.5);
+  Eigen::Matrix<double, 6, 1> pairState;
+  pairState << point, pointB;
+  const auto relative = nb::relativeSlidingConstraint(point, pointB, axis);
+  EXPECT_TRUE(relative.residual.isApprox(projector * (point - pointB), 1e-14));
+  EXPECT_NEAR(relative.coordinate, axis.dot(point - pointB), 1e-14);
+  EXPECT_NEAR(relative.squaredNorm, relative.residual.squaredNorm(), 1e-14);
+
+  const auto numericalRelativeJacobian
+      = finiteDifferenceJacobian<3, 6>(pairState, [&](const auto& x) {
+          return nb::relativeSlidingConstraint(
+                     x.template head<3>(), x.template tail<3>(), axis)
+              .residual;
+        });
+  expectMatrixNear(relative.jacobian, numericalRelativeJacobian, 1e-10);
+}
+
+//==============================================================================
 TEST(NewtonBarrierPrimitives, DeformableContactHeadersForwardSharedTypes)
 {
   static_assert(std::is_same_v<dc::Vector6d, nb::Vector6d>);

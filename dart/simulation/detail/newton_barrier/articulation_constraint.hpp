@@ -90,6 +90,22 @@ struct HingeAxisConstraintResult
   double squaredNorm = 0.0;
 };
 
+struct SlidingConstraintResult
+{
+  Eigen::Vector3d residual = Eigen::Vector3d::Zero();
+  Eigen::Matrix3d jacobian = Eigen::Matrix3d::Zero();
+  double coordinate = 0.0;
+  double squaredNorm = 0.0;
+};
+
+struct RelativeSlidingConstraintResult
+{
+  Eigen::Vector3d residual = Eigen::Vector3d::Zero();
+  Eigen::Matrix<double, 3, 6> jacobian = Eigen::Matrix<double, 3, 6>::Zero();
+  double coordinate = 0.0;
+  double squaredNorm = 0.0;
+};
+
 struct ConeTwistCoordinates
 {
   double bendAngle = 0.0;
@@ -122,6 +138,47 @@ struct FixedPointConstraintResult
   FixedPointConstraintResult result;
   result.residual = point - target;
   result.jacobian.setIdentity();
+  result.squaredNorm = result.residual.squaredNorm();
+  return result;
+}
+
+//==============================================================================
+[[nodiscard]] inline SlidingConstraintResult slidingConstraint(
+    const Eigen::Vector3d& point,
+    const Eigen::Vector3d& lineOrigin,
+    const Eigen::Vector3d& lineAxis)
+{
+  const Eigen::Vector3d axis
+      = detail::normalizedOr(lineAxis, Eigen::Vector3d::UnitX());
+  const Eigen::Vector3d offset = point - lineOrigin;
+  const Eigen::Matrix3d projector
+      = Eigen::Matrix3d::Identity() - axis * axis.transpose();
+
+  SlidingConstraintResult result;
+  result.residual = projector * offset;
+  result.jacobian = projector;
+  result.coordinate = axis.dot(offset);
+  result.squaredNorm = result.residual.squaredNorm();
+  return result;
+}
+
+//==============================================================================
+[[nodiscard]] inline RelativeSlidingConstraintResult relativeSlidingConstraint(
+    const Eigen::Vector3d& pointA,
+    const Eigen::Vector3d& pointB,
+    const Eigen::Vector3d& slideAxis)
+{
+  const Eigen::Vector3d axis
+      = detail::normalizedOr(slideAxis, Eigen::Vector3d::UnitX());
+  const Eigen::Vector3d offset = pointA - pointB;
+  const Eigen::Matrix3d projector
+      = Eigen::Matrix3d::Identity() - axis * axis.transpose();
+
+  RelativeSlidingConstraintResult result;
+  result.residual = projector * offset;
+  result.jacobian.leftCols<3>() = projector;
+  result.jacobian.rightCols<3>() = -projector;
+  result.coordinate = axis.dot(offset);
   result.squaredNorm = result.residual.squaredNorm();
   return result;
 }
