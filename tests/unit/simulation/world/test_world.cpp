@@ -1589,6 +1589,29 @@ void configureMixedDeformableSelfContactFrictionProductionScene(
       Eigen::Vector3d(8.0, 0.0, 0.0));
 }
 
+void configureMixedDeformableSelfContactFrictionLateActiveProductionScene(
+    dart::simulation::World& world)
+{
+  configureDeformableSelfContactFrictionGridSceneWithShapeAndMotion(
+      world,
+      11,
+      11,
+      "mixed_late_active_friction_direct_grid",
+      0.025,
+      Eigen::Vector3d(0.35, 0.1, -1.0),
+      false,
+      Eigen::Vector3d(-8.0, 0.0, 0.0));
+  configureDeformableSelfContactFrictionGridSceneWithShapeAndMotion(
+      world,
+      9,
+      13,
+      "mixed_late_active_friction_matrix_free_rectangular_grid",
+      0.025,
+      Eigen::Vector3d(0.35, 0.1, -1.0),
+      true,
+      Eigen::Vector3d(8.0, 0.0, 0.0));
+}
+
 void configureDeformableStaticObstacleBarrierScene(
     dart::simulation::World& world)
 {
@@ -2805,6 +2828,9 @@ TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
       "mixed deformable self-contact friction production grids",
       configureMixedDeformableSelfContactFrictionProductionScene);
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "mixed deformable self-contact friction late-active production grids",
+      configureMixedDeformableSelfContactFrictionLateActiveProductionScene);
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "deformable static obstacle barriers",
       configureDeformableStaticObstacleBarrierScene);
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
@@ -3110,6 +3136,41 @@ TEST(World, MixedDeformableSelfContactFrictionProductionSceneIsActive)
   EXPECT_GT(diagnostics.selfContactBarrierActiveContacts, 0u);
   EXPECT_GT(diagnostics.convergedActiveContactCount, 0u);
   EXPECT_GT(diagnostics.frictionDissipation, 0.0);
+}
+
+TEST(World, MixedDeformableSelfContactFrictionLateActiveProductionSceneIsActive)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  configureMixedDeformableSelfContactFrictionLateActiveProductionScene(world);
+  world.enterSimulationMode();
+
+  std::size_t projectedNewtonSteps = 0;
+  std::size_t matrixFreeSolves = 0;
+  std::size_t maxActiveContacts = 0;
+  std::size_t maxConvergedContacts = 0;
+  double frictionDissipation = 0.0;
+  for (int i = 0; i < 4; ++i) {
+    world.step();
+    const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
+    projectedNewtonSteps += diagnostics.projectedNewtonSteps;
+    matrixFreeSolves += diagnostics.projectedNewtonMatrixFreeSolves;
+    maxActiveContacts = std::max(
+        maxActiveContacts, diagnostics.selfContactBarrierActiveContacts);
+    maxConvergedContacts = std::max(
+        maxConvergedContacts, diagnostics.convergedActiveContactCount);
+    frictionDissipation += diagnostics.frictionDissipation;
+  }
+
+  const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
+  EXPECT_EQ(diagnostics.bodyCount, 2u);
+  EXPECT_EQ(diagnostics.nodeCount, 2u * 11u * 11u + 2u * 9u * 13u);
+  EXPECT_GT(projectedNewtonSteps, 0u);
+  EXPECT_GT(matrixFreeSolves, 0u);
+  EXPECT_GT(maxActiveContacts, 0u);
+  EXPECT_GT(maxConvergedContacts, 0u);
+  EXPECT_GT(frictionDissipation, 0.0);
 }
 
 TEST(World, DeformableStaticObstacleBarrierSceneIsActive)
@@ -3606,6 +3667,9 @@ TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "mixed deformable self-contact friction production grids",
       configureMixedDeformableSelfContactFrictionProductionScene);
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "mixed deformable self-contact friction late-active production grids",
+      configureMixedDeformableSelfContactFrictionLateActiveProductionScene);
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "deformable static obstacle barriers",
       configureDeformableStaticObstacleBarrierScene);

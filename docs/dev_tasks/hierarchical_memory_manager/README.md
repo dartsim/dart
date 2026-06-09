@@ -265,9 +265,12 @@
       default solver now carries the 13x19 rectangular production guard through
       its CG scratch path. A mixed two-body production gate now steps one
       direct-sparse rectangular grid and one matrix-free wide grid in the same
-      baked default-solver loop, covering per-body solver/contact scratch
-      storage for independent deformable bodies with different linear-solver
-      modes. The default projected-Newton path now also has a baked
+      baked default-solver loop, and a mixed late-active production gate now
+      steps direct-sparse square and matrix-free rectangular self-contact grids
+      whose active contacts enter during the counted baked steps. These cover
+      per-body solver/contact scratch storage for independent deformable bodies
+      with different linear-solver modes. The default projected-Newton path now
+      also has a baked
       sphere/box/capsule static obstacle barrier gate, covering those radial and
       oriented-obstacle Hessian paths separately from the ground height-field
       barrier and surface-CCD snapshot gates. The moving rigid-surface CCD path
@@ -359,8 +362,10 @@
       late-active direct-sparse plus matrix-free coverage for a 9x13
       rectangular grid. The same base and global-heap guards now also include
       a mixed two-body production scene with independent direct-sparse
-      rectangular and matrix-free wide self-contact grids, plus a barrier-only
-      static sphere/box/capsule obstacle scene for default projected Newton.
+      rectangular and matrix-free wide self-contact grids, a mixed late-active
+      production scene with independent direct-sparse square and matrix-free
+      rectangular self-contact grids, plus a barrier-only static
+      sphere/box/capsule obstacle scene for default projected Newton.
       The base and global-heap guards now also include default moving
       rigid-surface CCD swept-box crossings for free, single-kinematic, and
       multi-kinematic rigid obstacles, closing the previously static-only rigid
@@ -609,7 +614,10 @@ debugging, profiling, optimization experiments, and ImGui visualization.
    matrix-free 13x19, 9x13, 7x17, and 17x7 non-square two-layer grids.
    Late-active 11x11 square and 9x13 rectangular
    direct-sparse and matrix-free grids now cover dynamic contact-pattern cases
-   without World-base or global-heap growth. The AVBD
+   without World-base or global-heap growth, and a mixed late-active
+   production scene now covers independent direct-sparse square and matrix-free
+   rectangular self-contact grids that activate during the same baked loop. The
+   AVBD
    self-contact row guard now also covers a 5x9 rectangular grid row workload
    with replay-backed activity assertions.
    Continue broadening boxed-LCP unified problem assembly and additional
