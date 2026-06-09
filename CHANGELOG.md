@@ -1224,7 +1224,7 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     build trees,
     plus PGS-only CUDA batch coverage for homogeneous
     1/4/8/16/24/32/48/64/96-box and
-    grouped 1/2/4/8/16/24/32-box dense box-face packets with two and three
+    grouped 1/2/4/8/16/24/32/48-box dense box-face packets with two and three
     velocity variants per box-count shape through
     `BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex` and
     `BM_LcpCudaPgsWorldBoxContactGroupedBatch_FrictionIndex`, and

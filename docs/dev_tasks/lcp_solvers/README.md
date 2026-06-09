@@ -420,11 +420,11 @@
       tests and benchmark rows on the visible GPU.
 - [x] Added dense box-face CUDA contact-batch evidence for DART 7:
       homogeneous 4-problem 1-/4-/8-/16-/24-/32-/48-/64-/96-box and grouped variable-size
-      1/2/4/8/16/24/32-box batches with two and three velocity variants per
+      1/2/4/8/16/24/32/48-box batches with two and three velocity variants per
       box-count shape of box-face `World::collide()` snapshots pass
       fixed-iteration CUDA PGS benchmark coverage on the visible GPU; CUDA PGS
       unit coverage now includes homogeneous 1-/16-/24-/32-/48-/64-/96-box packets and
-      the grouped 1/2/4/8/16/24/32-box packet, plus a bounded homogeneous
+      the grouped 1/2/4/8/16/24/32/48-box packet, plus a bounded homogeneous
       128-box single-problem CUDA packet.
       A focused fixture boundary test now verifies that the same dense box-face
       construction keeps the 128-box grid at 512 contacts and 1536 LCP rows.
@@ -1722,7 +1722,7 @@ tradeoffs evidence based.
   homogeneous batch-size-1 CUDA PGS packet with the same fixed-iteration
   contract.
   `CudaLcpPgsBatch.DenseBoxWorldContactGroupedBatchSatisfiesLcpContract` extends
-  that to grouped variable-size 1/2/4/8/16/24/32-box packets. The
+  that to grouped variable-size 1/2/4/8/16/24/32/48-box packets. The
   focused homogeneous
   `BM_LCP_COMPARE --benchmark_filter='^BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex/(1|4|8|16|24|32|48|64|96)/4$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   CUDA run reported 9 rows with `contract_ok=1`, `cuda_lcp_execution=1`,
@@ -1731,18 +1731,16 @@ tradeoffs evidence based.
   `contact_count=4/16/32/64/96/128/192/256/384`,
   `problem_size=12/48/96/192/288/384/576/768/1152`, `batch_size=4`, and
   `total_problem_size` up to 4608. The grouped rows remain scoped to
-  1/2/4/8/16/24/32-box packets. The two-variant row reported
-  `batch_size=14`, `cuda_group_count=7`, `box_count_shape_count=7`,
-  `min_problem_size=12`, `max_problem_size=384`, `total_contact_count=696`,
-  `total_body_count=174`, `total_problem_size=2088`, and
-  `max_residual=max_complementarity=1.0471569965395805e-07`; the
-  three-variant row reported `batch_size=21`, the same seven shape groups,
-  `total_contact_count=1044`, `total_body_count=261`, `total_problem_size=3132`,
-  and `max_residual=max_complementarity=1.5667044491254889e-07`.
-  A grouped 48-box CUDA PGS extension remains unclaimed; older probes hit fixed
-  tangent rows before the fixed-bound validation correction and have not been
-  rerun as a 48-box claim. The old fixed-ground homogeneous 128-box fixture loss
-  is now separated from CUDA execution:
+  1/2/4/8/16/24/32/48-box packets. The two-variant row reported
+  `batch_size=16`, `cuda_group_count=8`, `box_count_shape_count=8`,
+  `min_problem_size=12`, `max_problem_size=576`, `total_contact_count=1080`,
+  `total_body_count=270`, `total_problem_size=3240`, and
+  `max_residual=max_complementarity=1.5667044491254889e-07`; the
+  three-variant row reported `batch_size=24`, the same eight shape groups,
+  `total_contact_count=1620`, `total_body_count=405`, `total_problem_size=4860`,
+  and `max_residual=max_complementarity=1.5667044491254889e-07`. The old
+  fixed-ground homogeneous 128-box fixture loss is now separated from CUDA
+  execution:
   `CudaLcpDenseBoxFixture.LargerGridKeepsFaceContactShape` verifies that dynamic
   dense-ground sizing preserves 512 box-face contacts and a 1536-row LCP. The
   focused
@@ -2461,7 +2459,7 @@ tradeoffs evidence based.
   link-vs-link packets, mixed
   separated/stack/articulated grouped contact batch paths, and PGS-only
   homogeneous dense box-face CUDA batches through 96 boxes, two-/three-variant
-  grouped dense box-face CUDA batches through 32 boxes, plus a bounded 128-box
+  grouped dense box-face CUDA batches through 48 boxes, plus a bounded 128-box
   homogeneous batch-size-1 CUDA PGS packet pass. The 128-box batch-size-4 CUDA
   PGS row remains unclaimed.
   Jacobi has opt-in solver-internal CPU
