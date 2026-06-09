@@ -904,18 +904,20 @@ struct StaggeringContactPipelineSweepCase
   std::string_view caseLabel;
 };
 
-constexpr std::array<StaggeringContactPipelineSweepCase, 19>
+constexpr std::array<StaggeringContactPipelineSweepCase, 24>
     kStaggeringContactPipelineSweepCases{{
         {StaggeringContactPipelineKind::WorldSeparated, 1, "WorldSeparated1"},
         {StaggeringContactPipelineKind::WorldSeparated, 2, "WorldSeparated2"},
         {StaggeringContactPipelineKind::WorldSeparated, 4, "WorldSeparated4"},
         {StaggeringContactPipelineKind::WorldSeparated, 8, "WorldSeparated8"},
         {StaggeringContactPipelineKind::WorldSeparated, 16, "WorldSeparated16"},
+        {StaggeringContactPipelineKind::WorldSeparated, 32, "WorldSeparated32"},
         {StaggeringContactPipelineKind::WorldStack, 2, "WorldStack2"},
         {StaggeringContactPipelineKind::WorldStack, 3, "WorldStack3"},
         {StaggeringContactPipelineKind::WorldStack, 5, "WorldStack5"},
         {StaggeringContactPipelineKind::WorldStack, 8, "WorldStack8"},
         {StaggeringContactPipelineKind::WorldStack, 16, "WorldStack16"},
+        {StaggeringContactPipelineKind::WorldStack, 32, "WorldStack32"},
         {StaggeringContactPipelineKind::ArticulatedGround,
          4,
          "ArticulatedGround4"},
@@ -925,6 +927,9 @@ constexpr std::array<StaggeringContactPipelineSweepCase, 19>
         {StaggeringContactPipelineKind::ArticulatedGround,
          16,
          "ArticulatedGround16"},
+        {StaggeringContactPipelineKind::ArticulatedGround,
+         32,
+         "ArticulatedGround32"},
         {StaggeringContactPipelineKind::ArticulatedRigidImpact,
          4,
          "ArticulatedRigidImpact4"},
@@ -934,6 +939,9 @@ constexpr std::array<StaggeringContactPipelineSweepCase, 19>
         {StaggeringContactPipelineKind::ArticulatedRigidImpact,
          16,
          "ArticulatedRigidImpact16"},
+        {StaggeringContactPipelineKind::ArticulatedRigidImpact,
+         32,
+         "ArticulatedRigidImpact32"},
         {StaggeringContactPipelineKind::ArticulatedCrossLinkImpact,
          4,
          "ArticulatedCrossLinkImpact4"},
@@ -943,6 +951,9 @@ constexpr std::array<StaggeringContactPipelineSweepCase, 19>
         {StaggeringContactPipelineKind::ArticulatedCrossLinkImpact,
          16,
          "ArticulatedCrossLinkImpact16"},
+        {StaggeringContactPipelineKind::ArticulatedCrossLinkImpact,
+         32,
+         "ArticulatedCrossLinkImpact32"},
     }};
 
 std::optional<WorldContactBenchmarkProblem> MakeWorldContactBenchmarkProblem(
