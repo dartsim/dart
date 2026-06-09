@@ -2065,6 +2065,29 @@ void expectSeparatedBoxStepInvariants(sx::World& world, int boxCount)
   }
 }
 
+void expectSeparatedBoxDenseStepSmokeInvariants(sx::World& world, int boxCount)
+{
+  const auto ground = world.getRigidBody("ground");
+  ASSERT_TRUE(ground.has_value());
+  EXPECT_TRUE(
+      ground->getTranslation().isApprox(Eigen::Vector3d(0.0, 0.0, -0.5)));
+
+  const std::vector<sx::Contact> contacts = world.collide();
+  EXPECT_EQ(contacts.size(), static_cast<std::size_t>(4 * boxCount));
+
+  for (int i = 0; i < boxCount; ++i) {
+    const auto box = world.getRigidBody("box_" + std::to_string(i));
+    ASSERT_TRUE(box.has_value());
+    SCOPED_TRACE("box " + std::to_string(i));
+
+    EXPECT_TRUE(box->getTranslation().allFinite());
+    EXPECT_TRUE(box->getLinearVelocity().allFinite());
+    EXPECT_TRUE(box->getAngularVelocity().allFinite());
+    EXPECT_GE(box->getTranslation().z(), 0.5 - 1e-3);
+    EXPECT_NEAR(box->getTranslation().z(), 0.5, 2e-2);
+  }
+}
+
 void expectBoxedFrictionIndexShape(
     const sx::detail::BoxedLcpContactSnapshot& snapshot,
     double friction,
@@ -2999,6 +3022,23 @@ TEST(BoxedLcpContact, FortyEightBoxWorldStepMaintainsDenseContactInvariants)
   lcp->step(4000);
 
   expectSeparatedBoxStepInvariants(*lcp, kBoxCount);
+}
+
+//==============================================================================
+TEST(BoxedLcpContact, SixtyFourBoxWorldStepPreservesDenseContactShape)
+{
+  constexpr double kFriction = 0.5;
+  constexpr int kBoxCount = 64;
+
+  auto lcp = buildSeparatedBoxGroundScene(kBoxCount, kFriction);
+
+  const std::vector<sx::Contact> contacts = lcp->collide();
+  ASSERT_EQ(contacts.size(), static_cast<std::size_t>(4 * kBoxCount));
+
+  lcp->enterSimulationMode();
+  lcp->step();
+
+  expectSeparatedBoxDenseStepSmokeInvariants(*lcp, kBoxCount);
 }
 
 //==============================================================================

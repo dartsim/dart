@@ -46,8 +46,8 @@ Support abbreviations:
   snapshot tests, 3-sphere 200-step, 3-sphere 500-step, 4-sphere 200-step,
   5-sphere 500-step, and 6-sphere 1000-step boxed-LCP `World::step()` invariant tests and benchmark
   rows, 4-/8-/16-contact separated sphere-ground step benchmark rows,
-  1-/2-/4-/8-/16-/24-/32-/48-box dense box-face step
-  benchmark rows, a
+  1-/2-/4-/8-/16-/24-/32-/48-box dense box-face long-horizon step
+  benchmark rows, a 64-box one-step dense box-face public-step row, a
   fixed-base prismatic articulated link-ground
   boxed-LCP `World::step()` invariant tests for one-link and four-link scenes,
   1-/4-/8-/16-link articulated ground-step benchmark rows, connected
@@ -1139,6 +1139,13 @@ The current local evidence for this task is:
   iterations; the focused default run passed in 84992 ms. The run still emits
   the dense-patch Dantzig warning, so
   Dantzig's direct dense box solve is not claimed.
+  `SixtyFourBoxWorldStepPreservesDenseContactShape` covers one public
+  boxed-LCP `World::step()` on a 64-box, 256-contact dense face scene and
+  checks preserved contact shape, finite state, and contact height; the
+  focused default run passed in 60 ms. Temporary 64-box probes using the
+  stricter long-horizon settling invariant failed at 1000 and 4000 public
+  `World::step()` iterations, so a 64-box long-horizon settling result remains
+  unclaimed.
 - `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` now registers 72 scoped dense
   box rows: `Pgs`, `RedBlackGaussSeidel`, `NNCG`, `Apgd`, `Tgs`, and `Admm` on
   1/2/4/8/16/24/32/48/64/96/128/192-box snapshots. Focused
@@ -1172,17 +1179,22 @@ The current local evidence for this task is:
   `BM_LcpWorldBoxStep_BoxedLcp/16/500`,
   `BM_LcpWorldBoxStep_BoxedLcp/24/2000`, and
   `BM_LcpWorldBoxStep_BoxedLcp/32/4000`; the benchmark now also registers
-  `BM_LcpWorldBoxStep_BoxedLcp/48/4000`. The eight-row registry covers
-  4/8/16/32/64/96/128/192 face contacts. Focused 24-/32-box runs
-  reported `invariant_ok=1` and `dense_box_contact=1` in default, SIMD-enabled,
-  and CUDA-enabled build trees; the default 32-box row reported
+  `BM_LcpWorldBoxStep_BoxedLcp/48/4000` and
+  `BM_LcpWorldBoxStep_BoxedLcp/64/1`. The nine-row registry covers
+  4/8/16/32/64/96/128/192/256 face contacts on the registered horizons.
+  Focused 24-/32-box runs reported `invariant_ok=1` and
+  `dense_box_contact=1` in default, SIMD-enabled, and CUDA-enabled build trees;
+  the default 32-box row reported
   `max_height_error=1.46e-4` and `max_vertical_speed=4.38e-2`.
   The latest focused default run of the 32-box row reported `invariant_ok=1`,
   `contact_count=128`, `step_count=4000`, `max_height_error=1.46e-4`, and
   `max_vertical_speed=4.38e-2`.
   A focused default 48-box run reported `invariant_ok=1`,
   `contact_count=192`, `step_count=4000`, `max_height_error=9.80e-5`, and
-  `max_vertical_speed=1.08e-2`. Focused SIMD-enabled and CUDA-enabled 48-box
+  `max_vertical_speed=1.08e-2`. A focused default 64-box one-step row reported
+  `invariant_ok=1`, `dense_box_contact=1`, `contact_count=256`,
+  `step_count=1`, `max_height_error=0`, and `max_vertical_speed=6.94e-18`.
+  Focused SIMD-enabled and CUDA-enabled 48-box
   runs also reported `invariant_ok=1` for 192 contacts: the SIMD row reported
   `build_simd_enabled=1`, `max_height_error=99.597u`, and
   `max_vertical_speed=0.0288169`; the CUDA-enabled row reported
@@ -1640,7 +1652,8 @@ The current local evidence for this task is:
   200-step/500-step
   3-sphere, 200-step 4-sphere, 500-step 5-sphere, and 1000-step 6-sphere end-to-end stack step
   rows, and 4-/8-/16-contact separated end-to-end step rows, plus
-  1-/2-/4-/8-/16-/24-/32-/48-box dense box-face end-to-end step rows, fixed-base
+  1-/2-/4-/8-/16-/24-/32-/48-box dense box-face long-horizon end-to-end step
+  rows plus a 64-box one-step dense face-contact row, fixed-base
   prismatic articulated link-ground, link-vs-rigid impact, and
   cross-multibody link-vs-link impact step rows up to 16-link or 16-pair
   benchmark scenes, plus
@@ -1691,8 +1704,8 @@ The current local evidence for this task is:
    small vertical-stack boxed-LCP
    snapshots and contact-derived benchmark rows to richer articulated,
    longer-running, and denser coupled multi-contact scenes beyond the current
-   48-box unit/benchmark dense face-contact public-step and
-   all-solver snapshot slices
+   48-box unit/benchmark dense face-contact long-horizon public-step,
+   64-box dense face-contact one-step public-step, and all-solver snapshot slices
    that validate solver outputs against motion/contact invariants.
 3. Add benchmark packets that broaden scalar CPU and SIMD-enabled CPU evidence,
    larger and sparser solver-internal multi-threaded CPU cases,
