@@ -974,7 +974,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     coupled friction-index 12-contact problems, plus a scoped robust
     near-singular known-solution slice for standard 8-row, boxed 8-row, and
     coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-, 32-, 48-, 64-, 96-,
-    128-, and 192-contact packets,
+    128-, 192-, and 256-contact packets,
+    with the friction-index exact-solution check narrowed to Dantzig after
+    `ShockPropagation` contract-succeeded but missed the selected generated
+    solution tolerance on those coupled packets,
     and active-set
     transition coverage near lower, upper, and friction-cone boundaries. The
     active-set transition correctness grid now reaches standard 128-row, boxed

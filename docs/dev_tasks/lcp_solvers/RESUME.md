@@ -62,8 +62,9 @@ execute that 128-box fixture as homogeneous batch-size-1 CUDA Jacobi and PGS
 packets. This is not a 128-box batch-size-4 CUDA execution claim; the focused
 `BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex/128/4` benchmark probe remains
 too expensive for the checkpoint gate.
-The robust near-singular generated and benchmark coverage now reaches coupled
-friction-index 192-contact packets. It also adds 58
+The robust near-singular generated coverage now reaches coupled friction-index
+256-contact packets, while near-singular benchmark coverage reaches
+192-contact packets. It also adds 58
 `BM_LcpNearSingularBatch(Serial|Parallel)` rows for batch-size-4 serial and
 DART 7 `ParallelExecutor` runs over near-singular standard 8-row, boxed 8-row,
 and coupled friction-index 3-/6-/9-/12-/16-/24-/32-/48-/64-/96-/128-/192-contact
@@ -368,14 +369,17 @@ SIMD-enabled, and CUDA-enabled build trees for 128-row serial/4-worker and
 independent-block update-path evidence over larger banded packets, not a
 speedup or CUDA-kernel claim.
 It now also extends the robust near-singular generated slice to coupled
-friction-index 192-contact packets and adds 29 `BM_LcpNearSingular` benchmark
+friction-index 256-contact packets and adds 29 `BM_LcpNearSingular` benchmark
 rows for standard 8-row, boxed 8-row, and coupled friction-index 3-, 6-, 9-,
 12-, 16-, 24-, 32-, 48-, 64-, 96-, 128-, and 192-contact packets verified in
-default, SIMD-enabled, and CUDA-enabled build trees. The 96-, 128-, and
-192-contact generated packets use the contract-verified capped normal ramp and
+default, SIMD-enabled, and CUDA-enabled build trees. The 96-, 128-, 192-, and
+256-contact generated packets use the contract-verified capped normal ramp and
 `1e6` diagonal spread; focused generated coverage and focused 192-contact
-benchmark rows pass in default, SIMD-enabled, and CUDA-enabled build trees. The
-CUDA-enabled rows/tests are CPU solver rows in a CUDA-enabled build, not CUDA
+benchmark rows pass in default, SIMD-enabled, and CUDA-enabled build trees.
+The friction-index near-singular known-solution slice is Dantzig-only after
+`ShockPropagation` contract-succeeded but missed the selected generated
+solution tolerance by 0.95 to 20.98 on the coupled packets. The CUDA-enabled
+rows/tests are CPU solver rows in a CUDA-enabled build, not CUDA
 LCP kernel execution.
 It now also adds exact rank-deficient singular-degenerate generated coverage
 for standard 16-row, boxed 16-row, and coupled friction-index 6-contact
@@ -586,7 +590,7 @@ synthetic CPU/CUDA batch rows, 8192-row banded Jacobi solver-internal threading
 rows, extreme 128-row/256-contact exact rank-deficient,
 production active-set transition 256-contact correctness, single-benchmark, and
 batch benchmark, coupled mildly ill-conditioned
-24-contact, near-singular 192-contact generated CPU solver coverage, near-singular
+24-contact, near-singular 256-contact generated CPU solver coverage, near-singular
 serial/parallel batch rows, exact rank-deficient singular-degenerate
 friction-index and standard/boxed batch rows, and default/SIMD/CUDA Newton warm-start
 single-problem and batch benchmark rows, plus focused
@@ -997,7 +1001,7 @@ contact scenes.
   6-/8-/12-/16-/24-/32-/48-/64-/96-/128-contact,
   near-singular standard 8-row,
   boxed 8-row, coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-, 32-, 48-,
-  64-, 96-, 128-, and 192-contact, and exact rank-deficient
+  64-, 96-, 128-, 192-, and 256-contact, and exact rank-deficient
   singular-degenerate standard 16-row, boxed 16-row, and coupled friction-index
   6-contact
   known-solution cases, plus

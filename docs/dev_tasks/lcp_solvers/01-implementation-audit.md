@@ -120,11 +120,14 @@ Support abbreviations:
   SIMD-enabled, and CUDA-enabled build trees. It now
   also includes a scoped robust near-singular slice for standard 8-row, boxed
   8-row, and coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-, 32-, and
-  48-, 64-, 96-, 128-, and 192-contact generated packets, plus 29 matching
+  48-, 64-, 96-, 128-, 192-, and 256-contact generated packets, plus 29 matching
   single-problem and 58 batch benchmark rows verified in default,
   SIMD-enabled, and CUDA-enabled build trees.
-  The 96-, 128-, and 192-contact generated packets use the contract-verified
-  capped normal ramp and `1e6` diagonal spread. It now
+  The 96-, 128-, 192-, and 256-contact generated packets use the
+  contract-verified capped normal ramp and `1e6` diagonal spread. The
+  friction-index near-singular known-solution slice is Dantzig-only after
+  `ShockPropagation` contract-succeeded but missed the selected generated
+  solution tolerance on those coupled packets. It now
   also includes an exact rank-deficient singular-degenerate slice for standard
   16-row, boxed 16-row, and coupled friction-index 6-contact packets, plus 27
   matching benchmark rows verified in default, SIMD-enabled, and CUDA-enabled
@@ -473,8 +476,12 @@ The current local evidence for this task is:
   rows in a CUDA-enabled build, not CUDA LCP kernel execution.
 - `UNIT_math_lcp_math_lcp_lcp_generated_coverage --gtest_filter='LcpGeneratedCoverage.NearSingularKnownSolutionsForRobustSolverSlice' --gtest_brief=1`
   passes in the default, SIMD-enabled, and CUDA-enabled build trees after
-  adding the coupled friction-index 192-contact, 576-row near-singular packet.
-  The full default generated coverage suite previously
+  adding the coupled friction-index 256-contact, 768-row near-singular packet
+  and limiting friction-index known-solution checks to Dantzig. `ShockPropagation`
+  contract-succeeded on the coupled near-singular packets but missed the
+  selected exact generated solution tolerance by 0.95 to 20.98 in the focused
+  probe, so it remains covered by near-singular benchmark contract rows rather
+  than this exact-solution slice. The full default generated coverage suite previously
   `UNIT_math_lcp_math_lcp_lcp_generated_coverage --gtest_brief=1` also passes
   21 tests through the 128-contact packet. The CUDA-enabled run is CPU generated
   solver coverage in a CUDA-enabled build, not CUDA LCP kernel execution.
@@ -1566,7 +1573,7 @@ The current local evidence for this task is:
   friction-index 16-contact and 24-contact, stronger-coupled mildly
   ill-conditioned 16-/24-contact cases plus a 32-contact 8x case,
   near-singular standard 8-row, boxed 8-row, coupled friction-index 3-, 6-,
-  9-, 12-, 16-, 24-, 32-, 48-, 64-, 96-, 128-, and 192-contact, and larger exact
+  9-, 12-, 16-, 24-, 32-, 48-, 64-, 96-, 128-, 192-, and 256-contact, and larger exact
   rank-deficient
   singular-degenerate standard 32-row, boxed 32-row, and coupled
   friction-index 8-contact cases, plus stress exact rank-deficient

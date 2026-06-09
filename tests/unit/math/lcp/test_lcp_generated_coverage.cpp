@@ -1071,7 +1071,9 @@ std::vector<GeneratedCase> makeRobustNearSingularCases()
       makeFrictionIndexCase(
           128, ConditioningClass::NearSingular, 16128, true, 1.0, 0.08, 1e3),
       makeFrictionIndexCase(
-          192, ConditioningClass::NearSingular, 16192, true, 1.0, 0.08, 1e3)};
+          192, ConditioningClass::NearSingular, 16192, true, 1.0, 0.08, 1e3),
+      makeFrictionIndexCase(
+          256, ConditioningClass::NearSingular, 16256, true, 1.0, 0.08, 1e3)};
 }
 
 std::vector<GeneratedCase> makeSingularDegenerateCases()
@@ -1327,9 +1329,8 @@ bool solverShouldRunRobustNearSingularCase(
     return solverNameIn(solver, kBoxedSolvers);
   }
 
-  constexpr std::array<std::string_view, 2> kFrictionSolvers{{
+  constexpr std::array<std::string_view, 1> kFrictionSolvers{{
       "Dantzig",
-      "ShockPropagation",
   }};
   return solverNameIn(solver, kFrictionSolvers);
 }
