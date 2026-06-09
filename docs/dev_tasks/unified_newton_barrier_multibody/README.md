@@ -105,6 +105,11 @@ storage, or backend resources as public API.
 ## Key Decisions
 
 - Phase 1 is an internal ownership and contract slice, not a behavior change.
+- Batch all work within one implementation-roadmap phase into a single branch
+  and PR. Commits within the branch stay atomic and self-describing, but the PR
+  is the review unit, not the commit. A phase may split into at most two PRs
+  only if it crosses a public-API boundary or touches unrelated CI/build
+  infrastructure.
 - The old `deformable_contact` include paths remain as forwarding
   compatibility headers to avoid unnecessary PLAN-081 merge conflicts.
 - Rigid IPC should include the new Newton-barrier owner directly because it is
@@ -133,14 +138,15 @@ storage, or backend resources as public API.
 
 ## Immediate Next Steps
 
-1. Continue Phase 3 shared-contract scouting from the existing rigid IPC,
-   deformable IPC, and ABD evidence after the fixed-size PSD projection helper,
-   first line-search option/stat helper, shared line-search positive-step
-   predicate, shared conservative native-CCD option adapter, shared
-   line-search step-scale helper, and shared Google Benchmark packet row parser.
-   Promote projected-Newton result/status terminology, line-search result
-   semantics, diagnostics, or additional benchmark-schema contracts only when a
-   second consumer proves identical behavior.
+1. Collect remaining Phase 3 shared-contract scouting into the current branch
+   and open one PR for the phase. Use the existing rigid IPC, deformable IPC,
+   and ABD evidence after the fixed-size PSD projection helper, first
+   line-search option/stat helper, shared line-search positive-step predicate,
+   shared conservative native-CCD option adapter, shared line-search step-scale
+   helper, and shared Google Benchmark packet row parser. Promote
+   projected-Newton result/status terminology, line-search result semantics,
+   diagnostics, or additional benchmark-schema contracts only when a second
+   consumer proves identical behavior.
 2. Keep the two-body affine contact micro-solve deferred until the
    `abd-alg-affine-body` row expands beyond the primitive/oracle micro-packet
    and needs a solved-state residual or runtime stepping diagnostic.
