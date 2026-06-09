@@ -69,6 +69,10 @@ public:
   /// Copy constructor
   constexpr StlAllocator(const StlAllocator& other) noexcept = default;
 
+  /// Copy assignment operator
+  constexpr StlAllocator& operator=(const StlAllocator& other) noexcept
+      = default;
+
   /// Copy constructor
   template <class U>
   constexpr StlAllocator(const StlAllocator<U>& other) noexcept;
@@ -158,6 +162,9 @@ public:
 
   constexpr DefaultStlAllocator(const DefaultStlAllocator& other) noexcept
       = default;
+
+  constexpr DefaultStlAllocator& operator=(
+      const DefaultStlAllocator& other) noexcept = default;
 
   template <typename U>
   constexpr DefaultStlAllocator(const DefaultStlAllocator<U>& other) noexcept;

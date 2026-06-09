@@ -297,6 +297,9 @@ public:
   constexpr FrameStlAllocator(const FrameStlAllocator& other) noexcept
       = default;
 
+  constexpr FrameStlAllocator& operator=(
+      const FrameStlAllocator& other) noexcept = default;
+
   template <typename U>
   constexpr FrameStlAllocator(const FrameStlAllocator<U>& other) noexcept
     : mArena(other.mArena)
