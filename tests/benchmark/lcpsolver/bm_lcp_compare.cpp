@@ -9663,7 +9663,8 @@ void RunCudaWorldBoxContactBatchBenchmark(benchmark::State& state, bool usePgs)
   state.counters["problem_size"] = static_cast<double>(12 * boxCount);
 }
 
-void RunCudaWorldBoxContactGroupedBatchBenchmark(benchmark::State& state)
+void RunCudaWorldBoxContactGroupedBatchBenchmark(
+    benchmark::State& state, bool usePgs)
 {
   if (!cuda_compute::isCudaRuntimeAvailable()) {
     state.SkipWithError("CUDA runtime has no available device");
@@ -9671,7 +9672,7 @@ void RunCudaWorldBoxContactGroupedBatchBenchmark(benchmark::State& state)
   }
 
   const int variantsPerBoxCount = static_cast<int>(state.range(0));
-  constexpr std::size_t iterations = 1024u;
+  const std::size_t iterations = usePgs ? 1024u : 8192u;
   std::string errorMessage;
   const auto batch = MakeGroupedWorldBoxContactCudaBatch(
       variantsPerBoxCount, iterations, errorMessage);
@@ -9682,25 +9683,40 @@ void RunCudaWorldBoxContactGroupedBatchBenchmark(benchmark::State& state)
 
   const auto options = MakeBenchmarkOptions(static_cast<int>(iterations));
   auto basePackets = batch->packets;
+  if (!usePgs) {
+    for (auto& packet : basePackets) {
+      packet.relaxation = 0.25;
+    }
+  }
 
   BatchBenchmarkCounters counters;
   for (auto _ : state) {
     auto packets = basePackets;
-    cuda_compute::solveBoxedLcpPgsGroupedBatchCuda(packets);
+    if (usePgs) {
+      cuda_compute::solveBoxedLcpPgsGroupedBatchCuda(packets);
+    } else {
+      cuda_compute::solveBoxedLcpJacobiGroupedBatchCuda(packets);
+    }
     for (const auto& packet : packets) {
       benchmark::DoNotOptimize(packet.x.data());
     }
   }
 
   auto packets = basePackets;
-  cuda_compute::solveBoxedLcpPgsGroupedBatchCuda(packets);
+  if (usePgs) {
+    cuda_compute::solveBoxedLcpPgsGroupedBatchCuda(packets);
+  } else {
+    cuda_compute::solveBoxedLcpJacobiGroupedBatchCuda(packets);
+  }
   counters = CheckCudaGroupedBatchResult(
       batch->problemGroups, packets, options, iterations);
   AddWorldContactBatchCounters(
       state,
       counters,
       batch->aggregate,
-      MakeLabel("PgsCuda", "WorldBoxContactGroupedBatch/FrictionIndex"));
+      MakeLabel(
+          usePgs ? "PgsCuda" : "JacobiCuda",
+          "WorldBoxContactGroupedBatch/FrictionIndex"));
   state.counters["cuda_lcp_execution"] = 1.0;
   state.counters["cuda_batch_execution"] = 1.0;
   state.counters["cuda_grouped_batch_execution"] = 1.0;
@@ -9709,6 +9725,7 @@ void RunCudaWorldBoxContactGroupedBatchBenchmark(benchmark::State& state)
   state.counters["cuda_dense_box_contact_batch"] = 1.0;
   state.counters["dense_box_contact"] = 1.0;
   state.counters["cuda_fixed_iterations"] = static_cast<double>(iterations);
+  state.counters["cuda_relaxation"] = usePgs ? 1.0 : 0.25;
   state.counters["cuda_group_count"]
       = static_cast<double>(batch->packets.size());
   state.counters["box_count_shape_count"]
@@ -12200,10 +12217,16 @@ static void BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex(
   RunCudaWorldBoxContactBatchBenchmark(state, true);
 }
 
+static void BM_LcpCudaJacobiWorldBoxContactGroupedBatch_FrictionIndex(
+    benchmark::State& state)
+{
+  RunCudaWorldBoxContactGroupedBatchBenchmark(state, false);
+}
+
 static void BM_LcpCudaPgsWorldBoxContactGroupedBatch_FrictionIndex(
     benchmark::State& state)
 {
-  RunCudaWorldBoxContactGroupedBatchBenchmark(state);
+  RunCudaWorldBoxContactGroupedBatchBenchmark(state, true);
 }
 
 static void BM_LcpCudaJacobiWorldStackContactBatch_FrictionIndex(
@@ -12450,6 +12473,9 @@ BENCHMARK(BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex)
     ->Args({64, 4})
     ->Args({96, 4})
     ->Args({128, 1});
+BENCHMARK(BM_LcpCudaJacobiWorldBoxContactGroupedBatch_FrictionIndex)
+    ->Args({2})
+    ->Args({3});
 BENCHMARK(BM_LcpCudaPgsWorldBoxContactGroupedBatch_FrictionIndex)
     ->Args({2})
     ->Args({3});

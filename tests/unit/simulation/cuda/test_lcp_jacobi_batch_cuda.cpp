@@ -1735,6 +1735,28 @@ TEST(CudaLcpJacobiBatch, DenseBoxWorldContactBatchSatisfiesLcpContract)
 }
 
 //==============================================================================
+TEST(CudaLcpJacobiBatch, DenseBoxWorldContactGroupedBatchSatisfiesLcpContract)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  for (const int variantsPerBoxCount : {2, 3}) {
+    std::string errorMessage;
+    auto fixture = makeWorldBoxContactGroupedBatch(
+        variantsPerBoxCount, 8192, errorMessage);
+    ASSERT_TRUE(fixture.has_value()) << errorMessage;
+    for (auto& packet : fixture->packets) {
+      packet.relaxation = 0.25;
+    }
+
+    cuda::solveBoxedLcpJacobiGroupedBatchCuda(fixture->packets);
+
+    expectGroupedBatchSatisfiesLcpContract(*fixture);
+  }
+}
+
+//==============================================================================
 TEST(
     CudaLcpJacobiBatch, HomogeneousStackedWorldContactBatchSatisfiesLcpContract)
 {
