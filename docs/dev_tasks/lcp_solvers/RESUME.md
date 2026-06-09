@@ -657,13 +657,16 @@ batch-size-4 CUDA PGS row now reports `contract_ok=1`,
 iterations; it is cost-boundary evidence at about 232.9s real time, not a
 routine checkpoint gate.
 The latest local slice extends DART 7 dense box-face public `World::step()`
-evidence to a bounded 64-box/256-contact path. The new
+evidence to a bounded 96-box/384-contact one-step path while keeping the
+64-box/256-contact strict-invariant boundary explicit. The
 `SixtyFourBoxWorldStepPreservesDenseContactShape` unit test advances one public
 boxed-LCP step and checks the preserved dense contact shape, finite state, and
 height envelope; the focused default run passed in 60 ms. The new
-`SixtyFourBoxWorldShortHorizonMaintainsDenseContactInvariants` unit test
+`NinetySixBoxWorldStepPreservesDenseContactShape` unit test extends that smoke
+path to a 96-box/384-contact scene; the focused default run passed in 175 ms.
+The `SixtyFourBoxWorldShortHorizonMaintainsDenseContactInvariants` unit test
 advances the same scene for 75 public boxed-LCP steps under the strict settling
-invariant; the two-test focused default filter passed in 3346 ms. The new
+invariant; the two-test focused default filter passed in 3346 ms.
 `BM_LcpWorldBoxStep_BoxedLcp/64/{1,75}` rows report `invariant_ok=1`,
 `dense_box_contact=1`, `contact_count=256`, and `step_count=1/75`; the 75-step
 default row reports `max_height_error=2.00e-4` and
@@ -672,14 +675,20 @@ rows also report `invariant_ok=1`, `contact_count=256`, and `step_count=75`;
 the SIMD row reports `build_simd_enabled=1`, `max_height_error=1.08e-4`, and
 `max_vertical_speed=8.23e-3`, and the CUDA-enabled row reports
 `build_cuda_enabled=1`, `max_height_error=2.00e-4`, and
-`max_vertical_speed=8.28e-2`. The CUDA-enabled row is a CPU public-step row in
-that build tree, not direct CUDA LCP kernel execution. Do not claim a 64-box
+`max_vertical_speed=8.28e-2`. The new
+`BM_LcpWorldBoxStep_BoxedLcp/96/1` row reports `invariant_ok=1`,
+`dense_box_contact=1`, `box_count=96`, `contact_count=384`, `step_count=1`,
+`max_height_error=0`, `min_tangential_speed_drop=0.0201629`, and
+`max_vertical_speed<=6.94e-18` in default, SIMD-enabled, and CUDA-enabled
+build trees; the SIMD row reports `build_simd_enabled=1`, and the CUDA-enabled
+row reports `build_cuda_enabled=1`. The CUDA-enabled row is a CPU public-step
+row in that build tree, not direct CUDA LCP kernel execution. Do not claim a 64-box
 long-horizon settling invariant: a temporary 90-step probe passed but was
 close to the vertical-rest threshold
 (`max_vertical_speed=9.80e-2`), and temporary probes at 100, 1000, and 4000
-public `World::step()` iterations failed the existing vertical-rest invariant
-with `LCP internal error, s <= 0` warnings and max vertical speeds above the
-`0.1` threshold.
+public `World::step()` iterations failed the existing vertical-rest invariant;
+the current 100-step benchmark probe again reported `invariant_ok=0` with
+`max_vertical_speed=0.196054` and `LCP internal error, s <= 0` warnings.
 This checkpoint extends the coupled-stack CPU solver-comparison slice by
 registering 8-/9-/10-/11-/12-/13-/14-/15-/16-/24-/32-sphere rows for the full
 solver set. PGS, RedBlackGaussSeidel, BGS, ShockPropagation, and Tgs use a
@@ -758,9 +767,10 @@ failed at both 1000 and 2000 public `World::step()` iterations under the
 existing motion-invariant contract, with benchmark probes reporting
 `invariant_ok=0`. Also do not claim a 64-box dense face-contact long-horizon
 settling invariant yet: the bounded 64-box committed evidence is one public
-step plus 75 strict invariant-checked public steps, while temporary 100-,
-1000-, and 4000-step probes failed the stricter vertical-rest contract. After
-that, extend
+step plus 75 strict invariant-checked public steps; the 96-box committed
+evidence is one public shape-preservation step; and temporary 100-, 1000-, and
+4000-step 64-box probes failed the stricter vertical-rest contract. After that,
+extend
 DART 7 boxed-LCP world-contact
 evidence beyond the current separated sphere-ground, fixed-base prismatic
 articulated end-to-end coverage, connected Cartesian-chain articulated
@@ -771,7 +781,8 @@ rows,
 64-contact articulated unified-contact all-solver snapshots,
 the 48-box unit/benchmark dense face-contact long-horizon public-step slice,
 and the 64-box dense face-contact one-step shape plus 75-step strict-invariant
-slice to broader articulated, longer-running coupled, and broader
+slice plus 96-box one-step dense face-contact shape slice to broader
+articulated, longer-running coupled, and broader
 dense/robot-like contact scenes.
 
 ## Context That Would Be Lost
@@ -1867,8 +1878,9 @@ dense/robot-like contact scenes.
   `BM_LcpWorldBoxStep_BoxedLcp/16/500`,
   `BM_LcpWorldBoxStep_BoxedLcp/24/2000`, and
   `BM_LcpWorldBoxStep_BoxedLcp/{32,48}/4000`, plus
-  `BM_LcpWorldBoxStep_BoxedLcp/64/{1,75}`, rebuild separated
-  dense box-face worlds, confirm 4/8/16/32/64/96/128/192/256 contacts before
+  `BM_LcpWorldBoxStep_BoxedLcp/64/{1,75}` and
+  `BM_LcpWorldBoxStep_BoxedLcp/96/1`, rebuild separated
+  dense box-face worlds, confirm 4/8/16/32/64/96/128/192/256/384 contacts before
   stepping, enter simulation mode, advance public boxed-LCP `World::step()`
   iterations, and report end-to-end invariant counters on the registered
   horizons. Focused default, SIMD-enabled, and CUDA-enabled build-tree runs
@@ -1894,6 +1906,12 @@ dense/robot-like contact scenes.
   `max_height_error=1.08e-4`, and `max_vertical_speed=8.23e-3`, and the
   CUDA-enabled row reported `build_cuda_enabled=1`,
   `max_height_error=2.00e-4`, and `max_vertical_speed=8.28e-2`. Focused
+  default, SIMD-enabled, and CUDA-enabled 96-box one-step rows reported
+  `invariant_ok=1`, `contact_count=384`, `step_count=1`,
+  `max_height_error=0`, `min_tangential_speed_drop=0.0201629`, and
+  `max_vertical_speed<=6.94e-18`; the SIMD row reported
+  `build_simd_enabled=1`, and the CUDA-enabled row reported
+  `build_cuda_enabled=1`. Focused
   SIMD-enabled and CUDA-enabled 48-box
   rows also reported `invariant_ok=1`: the SIMD row reported
   `build_simd_enabled=1`, `max_height_error=99.597u`, and
@@ -2516,6 +2534,6 @@ python scripts/run_benchmark_smoke.py build/cuda/cpp/Release/bin/BM_LCP_COMPARE 
 
 Then continue with harder generated-size coverage, broader DART 7 boxed-LCP
 contact coverage beyond the current 48-box dense box-face long-horizon step
-slice and 64-box one-step/75-step slices, and backend-specific
+slice, 64-box one-step/75-step slices, and 96-box one-step slice, and backend-specific
 SIMD/CUDA/solver-internal threaded benchmark evidence described in `README.md`
 and `01-implementation-audit.md`.

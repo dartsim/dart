@@ -47,7 +47,8 @@ Support abbreviations:
   5-sphere 500-step, and 6-sphere 1000-step boxed-LCP `World::step()` invariant tests and benchmark
   rows, 4-/8-/16-contact separated sphere-ground step benchmark rows,
   1-/2-/4-/8-/16-/24-/32-/48-box dense box-face long-horizon step
-  benchmark rows, 64-box one-step and 75-step dense box-face public-step rows, a
+  benchmark rows, 64-box one-step and 75-step dense box-face public-step rows,
+  a 96-box one-step dense box-face public-step row, a
   fixed-base prismatic articulated link-ground
   boxed-LCP `World::step()` invariant tests for one-link and four-link scenes,
   1-/4-/8-/16-link articulated ground-step benchmark rows, connected
@@ -1247,13 +1248,18 @@ The current local evidence for this task is:
   boxed-LCP `World::step()` on a 64-box, 256-contact dense face scene and
   checks preserved contact shape, finite state, and contact height; the
   focused default run passed in 60 ms.
+  `NinetySixBoxWorldStepPreservesDenseContactShape` extends that bounded
+  one-step shape smoke path to a 96-box, 384-contact dense face scene; the
+  focused default run passed in 175 ms.
   `SixtyFourBoxWorldShortHorizonMaintainsDenseContactInvariants` covers the
   same scene for 75 public boxed-LCP `World::step()` iterations under the
   existing strict settling invariant; the two-test focused default filter
   passed in 3346 ms. Temporary 64-box benchmark probes passed at 90 steps with
   `max_vertical_speed=9.80e-2` but failed at 100 steps with
-  `invariant_ok=0` and `max_vertical_speed=0.196`; longer 1000-/4000-step
-  probes also failed, so a 64-box long-horizon settling result remains
+  `invariant_ok=0` and `max_vertical_speed=0.196`. The current focused
+  `BM_LcpWorldBoxStep_BoxedLcp/64/100` probe again reported `invariant_ok=0`
+  and `max_vertical_speed=0.196054`; longer 1000-/4000-step probes also failed,
+  so a 64-box long-horizon settling result remains
   unclaimed.
 - `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` now registers 72 scoped dense
   box rows: `Pgs`, `RedBlackGaussSeidel`, `NNCG`, `Apgd`, `Tgs`, and `Admm` on
@@ -1289,8 +1295,9 @@ The current local evidence for this task is:
   `BM_LcpWorldBoxStep_BoxedLcp/24/2000`, and
   `BM_LcpWorldBoxStep_BoxedLcp/32/4000`; the benchmark now also registers
   `BM_LcpWorldBoxStep_BoxedLcp/48/4000` and
-  `BM_LcpWorldBoxStep_BoxedLcp/64/{1,75}`. The ten-row registry covers
-  4/8/16/32/64/96/128/192/256 face contacts on the registered horizons.
+  `BM_LcpWorldBoxStep_BoxedLcp/64/{1,75}` and
+  `BM_LcpWorldBoxStep_BoxedLcp/96/1`. The eleven-row registry covers
+  4/8/16/32/64/96/128/192/256/384 face contacts on the registered horizons.
   Focused 24-/32-box runs reported `invariant_ok=1` and
   `dense_box_contact=1` in default, SIMD-enabled, and CUDA-enabled build trees;
   the default 32-box row reported
@@ -1311,7 +1318,13 @@ The current local evidence for this task is:
   reported `build_simd_enabled=1`, `max_height_error=1.08e-4`, and
   `max_vertical_speed=8.23e-3`, and the CUDA-enabled row reported
   `build_cuda_enabled=1`, `max_height_error=2.00e-4`, and
-  `max_vertical_speed=8.28e-2`. The CUDA-enabled row is a CPU public-step row
+  `max_vertical_speed=8.28e-2`. Focused default, SIMD-enabled, and CUDA-enabled
+  96-box one-step rows reported `invariant_ok=1`, `contact_count=384`,
+  `step_count=1`, `max_height_error=0`,
+  `min_tangential_speed_drop=0.0201629`, and
+  `max_vertical_speed<=6.94e-18`; the SIMD row reported
+  `build_simd_enabled=1`, and the CUDA-enabled row reported
+  `build_cuda_enabled=1`. The CUDA-enabled row is a CPU public-step row
   in that build tree, not direct CUDA LCP kernel execution.
   Focused SIMD-enabled and CUDA-enabled 48-box
   runs also reported `invariant_ok=1` for 192 contacts: the SIMD row reported
@@ -1841,7 +1854,8 @@ The current local evidence for this task is:
    24-/32-sphere vertical-stack boxed/findex snapshot and assembly rows to richer articulated,
    longer-running, and denser coupled multi-contact scenes beyond the current
    48-box unit/benchmark dense face-contact long-horizon public-step, 64-box
-   dense face-contact one-step and 75-step public-step, and all-solver snapshot slices
+   dense face-contact one-step and 75-step public-step, 96-box dense
+   face-contact one-step public-step, and all-solver snapshot slices
    that validate solver outputs against motion/contact invariants.
 3. Add benchmark packets that broaden scalar CPU and SIMD-enabled CPU evidence,
    larger and sparser solver-internal multi-threaded CPU cases,
