@@ -13258,6 +13258,13 @@ BENCHMARK(BM_LcpWorldStackStep_BoxedLcp)->Args({6, 1000});
 BENCHMARK(BM_LcpWorldStackStep_BoxedLcp)
     ->Args({7, 1})
     ->Args({8, 1})
+    ->Args({9, 1})
+    ->Args({10, 1})
+    ->Args({11, 1})
+    ->Args({12, 1})
+    ->Args({13, 1})
+    ->Args({14, 1})
+    ->Args({15, 1})
     ->Args({16, 1})
     ->Args({24, 1})
     ->Args({32, 1});

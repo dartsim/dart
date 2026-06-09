@@ -2901,7 +2901,7 @@ TEST(BoxedLcpContact, SevenSphereStackWorldStepPreservesContactInvariants)
 TEST(BoxedLcpContact, TallSphereStackWorldStepPreservesContactInvariants)
 {
   constexpr double kFriction = 0.6;
-  const std::vector<int> sphereCounts{8, 16, 24, 32};
+  const std::vector<int> sphereCounts{8, 9, 10, 11, 12, 13, 14, 15, 16, 24, 32};
 
   for (const int sphereCount : sphereCounts) {
     SCOPED_TRACE("sphere count " + std::to_string(sphereCount));
