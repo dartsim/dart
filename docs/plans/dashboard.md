@@ -287,12 +287,12 @@ its own line so status updates remain git-history friendly.
   row until a broader ABD packet needs runtime residual evidence. Use the PLAN-083
   [`ipc-variant-consolidation.md`](083-unified-newton-barrier-multibody/ipc-variant-consolidation.md)
   sidecar to keep deformable IPC, codimensional IPC, rigid IPC, ABD, PD-IPC,
-  SPB, and VBD/OGC-adjacent obligations in the right owners. Generalize PSD
-  projection, projected-Newton, line-search, diagnostics, and benchmark schemas
-  only when second-use evidence proves a shared contract. With Phase 3
-  shared-contract scouting closed, start Phase 4 manifest expansion by adding
-  diagnostics and benchmark-packet rows only where a concrete artifact can
-  validate the row.
+  SPB, and VBD/OGC-adjacent obligations in the right owners. Implementation-
+  roadmap Phase 2 shared solver contracts are complete on the active phase
+  branch; merge the latest `origin/main`, validate, and open one phase-scoped PR
+  for that phase. After it lands, start implementation-roadmap Phase 3 Unified
+  Articulation Constraints; do not substitute dev-task Phase 4 manifest
+  expansion for the roadmap Phase 3 work.
 - Gate: Unified Newton-barrier progress is not complete until every cited
   paper/deck figure, unit test, benchmark table, and comparison scene is mapped
   to DART-owned tests, py-demos examples, benchmark/profiling packets, CPU and

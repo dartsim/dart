@@ -75,6 +75,17 @@
         policy into `detail/newton_barrier` and route rigid IPC plus deformable
         projected-Newton line-search checks through it while keeping
         variant-specific acceptance/fallback semantics local.
+  - [x] Promote the shared full-step line-search feasibility predicate into
+        `detail/newton_barrier` and route rigid IPC kinematic feasibility plus
+        deformable CCD result methods through it while keeping limited/hit
+        payloads variant-local.
+  - [x] Promote shared projected-Newton residual/tolerance helpers into
+        `detail/newton_barrier` and route rigid IPC plus deformable
+        convergence diagnostics through them while keeping solver status enums
+        variant-local.
+  - [x] Promote shared lagged-friction work diagnostics into
+        `detail/newton_barrier` and route deformable, rigid IPC, and ABD
+        friction diagnostics through the same smoothed Coulomb work contract.
   - [x] Promote the first shared Google Benchmark packet row parser into
         `scripts/benchmark_packet_utils.py` and route the ABD comparison packet
         checker plus the Phase 5 GPU packet checker through it while keeping
@@ -82,12 +93,16 @@
   - [x] Route the Phase 5 CUDA packet writer through the shared Google
         Benchmark canonical row identity helper, removing its duplicate row
         parser while keeping packet-specific max-error extraction local.
+  - [x] Promote the first benchmark packet timing schema for per-step counts
+        and solver-subphase timing fields into `scripts/benchmark_packet_utils.py`
+        while keeping packet-specific required subphases and go/no-go gates in
+        their owners.
   - [x] Close the remaining Phase 3 scouting by routing deformable
         projected-Newton backtracking through the shared Newton-barrier default
         scale and rigid IPC's option defaults through the same shared scalar
-        constants while leaving projected-Newton result/status terminology,
-        line-search result semantics, diagnostics, and additional
-        benchmark-schema contracts variant-local until another consumer proves
+        constants. The implementation-roadmap Phase 2 shared solver contracts
+        are complete; remaining solver result/status payloads and
+        packet-specific gates stay variant-local until another phase proves
         identical behavior.
 - [ ] Phase 4: expand the unified manifest into diagnostics, benchmark packets,
       CPU/GPU evidence, and visual evidence rows.
@@ -149,12 +164,11 @@ storage, or backend resources as public API.
 
 ## Immediate Next Steps
 
-1. Start Phase 4 manifest expansion: add diagnostics and benchmark-packet rows
-   only where the current rigid IPC, deformable IPC, and ABD evidence has a
-   concrete artifact to validate. Keep projected-Newton result/status
-   terminology, line-search result semantics, diagnostics, and additional
-   benchmark-schema contracts variant-local until a second consumer proves
-   identical behavior.
+1. Merge the latest `origin/main`, run the Phase 2 validation gates, and open
+   one phase-scoped PR for implementation-roadmap Phase 2: Shared Solver
+   Contracts. After that PR lands, start implementation-roadmap Phase 3:
+   Unified Articulation Constraints; do not treat dev-task Phase 4 manifest
+   expansion as the next implementation-roadmap phase.
 2. Keep the two-body affine contact micro-solve deferred until the
    `abd-alg-affine-body` row expands beyond the primitive/oracle micro-packet
    and needs a solved-state residual or runtime stepping diagnostic.
@@ -267,6 +281,13 @@ Phase 3 closeout local evidence:
 - `pixi run lint`
 - `pixi run -- cmake --build build/default/cpp/Release --target test_newton_barrier_primitives test_rigid_ipc_barrier test_world --parallel 8`
 - `pixi run -- ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(test_newton_barrier_primitives|test_rigid_ipc_barrier|test_world)$'`
+
+Implementation-roadmap Phase 2 branch-local closeout evidence:
+
+- `pixi run lint`
+- `pixi run -- cmake --build build/default/cpp/Release --target test_newton_barrier_primitives test_affine_body_dynamics test_rigid_ipc_barrier test_world test_deformable_body --parallel <safe-jobs>`
+- `pixi run -- ctest --test-dir build/default/cpp/Release --output-on-failure -j <safe-jobs> -R '^(test_newton_barrier_primitives|test_affine_body_dynamics|test_rigid_ipc_barrier|test_world|test_deformable_body)$'`
+- `pixi run python -m pytest tests/test_benchmark_packet_utils.py`
 
 ## Owner Docs
 
