@@ -407,8 +407,9 @@ contacts share dynamic bodies, plus stack assembly/solve benchmark rows and a
 3-sphere stack snapshot unit test that validates nonzero normal-contact
 coupling. It now extends that snapshot evidence to a 4-sphere, 4-contact
 stack, and adds 4-sphere stack benchmark rows for every friction-index-capable
-solver except `NNCG`; a focused `NNCG` 4-sphere benchmark trial did not satisfy
-the contract, so that row is not claimed. It now also extends the direct
+solver; the NNCG coupled-stack rows use 10 PGS preconditioner iterations after
+a focused 2-PGS-iteration 4-sphere trial did not satisfy the contract. It now
+also extends the direct
 snapshot/assembly evidence to a 5-sphere, 5-contact, 15-row coupled stack,
 verified in default, SIMD-enabled, and CUDA-enabled build trees. It also adds
 3-sphere 200-step, 3-sphere 500-step, 4-sphere 200-step, and 5-sphere 500-step
@@ -1264,12 +1265,13 @@ contact scenes.
   `BM_LcpWorldStackContact/FrictionIndex/<solver>/{4,5,6}` rows for the same
   solver set; the NNCG stack rows report `nncg_pgs_iterations=10` because a
   focused 2-PGS-iteration `NNCG` 4-sphere trial reached the benchmark cap with
-  `contract_ok=0`. A focused NNCG 2-/3-/4-/5-/6-sphere follow-up reported
-  `contract_ok=1` for all five rows, with residuals from
-  `1.2023357999796369e-05` through `6.9881776572988663e-04` and solver
-  iterations from 2 through 51. It also registers 15
-  `BM_LcpWorldStackContact/FrictionIndex/<solver>/7` rows for that set except
-  `NNCG`. A focused default 100-iteration `RedBlackGaussSeidel` 7-sphere
+  `contract_ok=0`. A focused NNCG 2-/3-/4-/5-/6-/7-sphere follow-up reports
+  `contract_ok=1` for all six rows, with residuals from
+  `1.2023357999796369e-05` through `1.0516573948082808e-03` and solver
+  iterations from 2 through 67; the 7-sphere row reports
+  `nncg_pgs_iterations=10`. It also registers 16
+  `BM_LcpWorldStackContact/FrictionIndex/<solver>/7` rows for that set. A
+  focused default 100-iteration `RedBlackGaussSeidel` 7-sphere
   probe reported `contract_ok=0`, residual
   `1.5380710201222669e-03`, and complementarity
   `1.5380710201222114e-03`; with the stack-contact cap raised to 128
@@ -1307,7 +1309,7 @@ contact scenes.
   `problem_size=21`.
   A focused default
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldStackContact/FrictionIndex/.*/7$|BM_LcpWorldStackContactAssembly_BoxedLcp/7$' --benchmark_min_time=0.001s`
-  run reports `contract_ok=1` for all 15 registered 7-sphere solver rows and
+  run reports `contract_ok=1` for all 16 registered 7-sphere solver rows and
   the 7-sphere assembly row; the `RedBlackGaussSeidel` 7-sphere row reports
   `red_black_gauss_seidel_max_iterations=128` and 107 solver iterations.
   Focused default, SIMD-enabled, and CUDA-enabled
@@ -1842,7 +1844,7 @@ cmake --build build/default/cpp/Release \
   "--benchmark_min_time=0.001s" \
   "--benchmark_repetitions=1"
 ./build/default/cpp/Release/bin/BM_LCP_COMPARE \
-  "--benchmark_filter=^BM_LcpWorldStackContact/FrictionIndex/NNCG/(2|3|4|5|6)$" \
+  "--benchmark_filter=^BM_LcpWorldStackContact/FrictionIndex/NNCG/(2|3|4|5|6|7)$" \
   "--benchmark_min_time=0.001s" \
   "--benchmark_repetitions=1" \
   "--benchmark_format=json"
