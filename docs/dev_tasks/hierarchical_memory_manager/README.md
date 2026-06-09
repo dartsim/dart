@@ -283,10 +283,10 @@
       contact paths. Mixed/different-DOF, stacked, and coupled multi-row
       cross-contact boxed-LCP fallback scenes now have base-allocator
       no-growth gates and first baked-step global heap no-allocation gates.
-      Five-multibody and eight-multibody stacked contact sets extend the
-      boxed-LCP fallback gate beyond the original small scenes. Broader solver
-      coverage, including still-larger production contact sets and
-      default-solver deformable storage, remains open before making a full
+      Five-multibody, eight-multibody, and 12-multibody stacked contact sets
+      extend the boxed-LCP fallback gate beyond the original small scenes.
+      Broader solver coverage, including still-larger production contact sets
+      and default-solver deformable storage, remains open before making a full
       zero-allocation claim. The
       global heap guard now also covers a baked deformable surface-snapshot
       scene with a static rigid surface-CCD obstacle and first-baked-step active
@@ -306,8 +306,10 @@
       default-solver deformable ground-friction projected-Newton scene plus a
       multi-triangle frictional self-contact patch, a 5x5 two-layer frictional
       self-contact grid, a 7x7 two-layer large grid, a 9x9 two-layer production
-      grid, an 11x11 two-layer extended production grid, a 9x13 non-square
-      two-layer production grid, and a 7x17 wide non-square production grid. The
+      grid, an 11x11 two-layer extended production grid, a 13x13 two-layer
+      dense production grid, a 9x13 non-square two-layer production grid, a 7x17
+      wide non-square production grid, and a 17x7 tall non-square production
+      grid. The
       larger-grid guards also assert
       non-vacuous solver activity through public deformable diagnostics: active
       self-contact barriers, converged active contacts, and positive friction
@@ -316,9 +318,8 @@
       ground contact/friction rows, AVBD self-contact normal/friction rows
       including a 5x9 rectangular grid row workload, and an active rigid AVBD
       penetrating contact plus no-contact fixed-joint rows.
-      Additional still-larger or differently shaped production-scale frictional
-      deformable sets still need no-growth gates before making the full
-      deformable claim.
+      Additional still-larger production-scale frictional deformable sets still
+      need no-growth gates before making the full deformable claim.
 - [ ] Phase 6: Add memory-layout profiler/debugger surfaces and GUI
       visualization. `MemoryAllocatorDebugger` now exposes structured live
       bytes, peak live bytes, and live allocation count; `MemoryManager` and
@@ -546,12 +547,13 @@ debugging, profiling, optimization experiments, and ImGui visualization.
    scratch at `enterSimulationMode()`. The current deformable friction guard
    scales the same topology-reserved candidate/friction scratch, including
    swept-AABB line-search CCD capacity, from patch, 5x5, 7x7, and 9x9 grids to
-   active 11x11 square, 9x13 non-square, and 7x17 wide non-square two-layer
-   grids. The AVBD self-contact row guard now also covers a 5x9 rectangular
-   grid row workload with replay-backed activity assertions. Continue broadening
-   boxed-LCP unified problem assembly and additional production contact sets
-   while moving any newly exposed deformable/contact candidate buffers to backed
-   storage before making the full zero-allocation claim.
+   active 11x11 and 13x13 square grids plus 9x13, 7x17, and 17x7 non-square
+   two-layer grids. The AVBD self-contact row guard now also covers a 5x9
+   rectangular grid row workload with replay-backed activity assertions.
+   Continue broadening boxed-LCP unified problem assembly and additional
+   production contact sets while moving any newly exposed deformable/contact
+   candidate buffers to backed storage before making the full zero-allocation
+   claim.
 6. Start replacing per-step `std::vector`/`Eigen` temporaries in hot stages with
    world-frame or world-pool backed storage only after the allocator evidence
    gate proves the DART allocator path is better for that workload. The
