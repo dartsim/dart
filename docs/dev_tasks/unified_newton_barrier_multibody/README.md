@@ -173,16 +173,19 @@ storage, or backend resources as public API.
 
 ## Immediate Next Steps
 
-1. Let implementation-roadmap Phase 2 PR #2951 land, then merge the latest
-   `origin/main` into `simx/plan083-phase-3-unified-articulation-constraints`,
-   rerun the Phase 3 validation gates, and open one phase-scoped PR for
-   implementation-roadmap Phase 3: Unified Articulation Constraints.
-2. Keep the two-body affine contact micro-solve deferred until the
+1. Validate `simx/plan083-phase3-articulation-constraints`, push the completed
+   implementation-roadmap Phase 3 branch, and open one phase-scoped PR for
+   Unified Articulation Constraints targeting `main`.
+2. Start implementation-roadmap Phase 4
+   (`simx/plan083-phase4-restitution-bdf2`) from the Phase 3 branch head and
+   implement restitution, BDF-2, and Rayleigh damping as one phase-scoped
+   branch/PR.
+3. Keep the two-body affine contact micro-solve deferred until the
    `abd-alg-affine-body` row expands beyond the primitive/oracle micro-packet
    and needs a solved-state residual or runtime stepping diagnostic.
-3. Promote only the smallest proven shared contract, with cross-variant tests
+4. Promote only the smallest proven shared contract, with cross-variant tests
    showing identical behavior; keep variant-specific terms in their owner plans.
-4. Keep runtime stepping, py-demos, and GPU claims out of scope until the
+5. Keep runtime stepping, py-demos, and GPU claims out of scope until the
    internal ABD oracle and benchmark packet exist.
 
 ## Validation Gates For Current Slices

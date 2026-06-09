@@ -99,14 +99,13 @@ their internal owners with focused cross-variant tests. This completes the
 Shared Solver Contracts phase; do not open more sub-item PRs for this phase.
 
 The implementation-roadmap Phase 3 closeout is now branch-local on
-`simx/plan083-phase-3-unified-articulation-constraints`:
+`simx/plan083-phase3-articulation-constraints`:
 `detail/newton_barrier/articulation_constraint.hpp` owns internal
 point-connection, fixed-point, hinge-axis, cone-twist, sliding,
 relative-sliding, distance, bounded-distance, sliding-range, and
 rotation-range contracts. Focused `test_newton_barrier_primitives` coverage
 checks residuals, finite-difference Jacobians/gradients, range feasibility, and
-PSD Hessian approximations. Keep this as one phase-scoped PR after Phase 2
-lands.
+PSD Hessian approximations. Keep this as one phase-scoped PR targeting `main`.
 
 ## Last Session Summary
 
@@ -188,18 +187,17 @@ build/CTest entries.
 
 ## Current Branch
 
-`simx/plan083-phase-3-unified-articulation-constraints` - contains the
-implementation-roadmap Phase 3 unified articulation constraint closeout. It is
-stacked after Phase 2 and should become one phase-scoped PR after Phase 2 PR
-#2951 lands, the latest `origin/main` is merged, and the required gates rerun.
+`simx/plan083-phase3-articulation-constraints` - contains the
+implementation-roadmap Phase 3 unified articulation constraint closeout. Phase
+2 PR #2951 has landed on `main`; this branch is based on the latest
+`origin/main` and should become one phase-scoped PR targeting `main`.
 
 ## Immediate Next Step
 
-Monitor Phase 2 PR #2951. After it lands, merge the latest `origin/main` into
-`simx/plan083-phase-3-unified-articulation-constraints`, rerun lint and the
-focused Phase 3 validation gates, then open one phase-scoped PR for
-implementation-roadmap Phase 3. Do not start implementation-roadmap Phase 4 as a
-substitute for finishing the Phase 3 PR handoff.
+Validate and push `simx/plan083-phase3-articulation-constraints`, open one
+phase-scoped PR for implementation-roadmap Phase 3, then immediately create
+`simx/plan083-phase4-restitution-bdf2` from the Phase 3 branch head and continue
+with implementation-roadmap Phase 4.
 
 ## Context That Would Be Lost
 

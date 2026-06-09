@@ -288,12 +288,11 @@ its own line so status updates remain git-history friendly.
   [`ipc-variant-consolidation.md`](083-unified-newton-barrier-multibody/ipc-variant-consolidation.md)
   sidecar to keep deformable IPC, codimensional IPC, rigid IPC, ABD, PD-IPC,
   SPB, and VBD/OGC-adjacent obligations in the right owners. Implementation-
-  roadmap Phase 2 shared solver contracts are under PR #2951, and
+  roadmap Phase 2 shared solver contracts landed in PR #2951, and
   implementation-roadmap Phase 3 Unified Articulation Constraints is complete
-  branch-locally on
-  `simx/plan083-phase-3-unified-articulation-constraints`; after PR #2951 lands,
-  merge the latest `origin/main`, validate, and open one phase-scoped PR for
-  Phase 3.
+  branch-locally on `simx/plan083-phase3-articulation-constraints`; validate,
+  push, and open one phase-scoped PR targeting `main`, then continue immediately
+  to implementation-roadmap Phase 4.
 - Gate: Unified Newton-barrier progress is not complete until every cited
   paper/deck figure, unit test, benchmark table, and comparison scene is mapped
   to DART-owned tests, py-demos examples, benchmark/profiling packets, CPU and
