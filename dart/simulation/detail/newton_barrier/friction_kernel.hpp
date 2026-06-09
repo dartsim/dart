@@ -49,6 +49,7 @@ template <int Columns>
 struct FrictionPotentialResult
 {
   double value = 0.0;
+  double work = 0.0;
   Eigen::Matrix<double, Columns, 1> gradient
       = Eigen::Matrix<double, Columns, 1>::Zero();
   Eigen::Matrix<double, Columns, Columns> hessian
@@ -56,6 +57,13 @@ struct FrictionPotentialResult
   Eigen::Vector2d tangentialDisplacement = Eigen::Vector2d::Zero();
   double tangentialDisplacementNorm = 0.0;
   double weight = 0.0;
+  bool active = false;
+  bool dynamicBranch = false;
+};
+
+struct FrictionWorkContribution
+{
+  double work = 0.0;
   bool active = false;
   bool dynamicBranch = false;
 };
@@ -88,6 +96,33 @@ inline SmoothFrictionNormResult smoothFrictionNorm(
 }
 
 //==============================================================================
+inline FrictionWorkContribution frictionWorkContribution(
+    const double tangentialDisplacementNorm,
+    const double weight,
+    const double staticDisplacement)
+{
+  FrictionWorkContribution contribution;
+  if (!(tangentialDisplacementNorm >= 0.0)
+      || !std::isfinite(tangentialDisplacementNorm) || !(weight > 0.0)
+      || !std::isfinite(weight) || !(staticDisplacement > 0.0)
+      || !std::isfinite(staticDisplacement)) {
+    return contribution;
+  }
+
+  const SmoothFrictionNormResult smooth
+      = smoothFrictionNorm(tangentialDisplacementNorm, staticDisplacement);
+  if (!std::isfinite(smooth.firstDerivative)) {
+    return contribution;
+  }
+
+  contribution.work
+      = weight * smooth.firstDerivative * tangentialDisplacementNorm;
+  contribution.active = true;
+  contribution.dynamicBranch = smooth.dynamicBranch;
+  return contribution;
+}
+
+//==============================================================================
 template <int Columns>
 inline FrictionPotentialResult<Columns> projectedFrictionPotential(
     const Eigen::Matrix<double, 2, Columns>& projection,
@@ -109,6 +144,8 @@ inline FrictionPotentialResult<Columns> projectedFrictionPotential(
       result.tangentialDisplacementNorm, staticDisplacement);
   result.weight = weight;
   result.value = weight * smooth.value;
+  result.work
+      = weight * smooth.firstDerivative * result.tangentialDisplacementNorm;
   result.active = true;
   result.dynamicBranch = smooth.dynamicBranch;
 

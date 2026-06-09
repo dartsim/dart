@@ -64,6 +64,51 @@ def test_benchmark_timing_field_errors_reject_bad_google_rows():
     ]
 
 
+def test_benchmark_packet_timing_schema_accepts_per_step_subphases():
+    utils = load_script_module("benchmark_packet_utils")
+
+    errors = utils.benchmark_packet_timing_schema_errors(
+        {
+            "step_count": 100,
+            "solver_subphase_timings_ns": {
+                "assembly": 125.0,
+                "linear_solve": 250,
+            },
+        },
+        "phase_packet",
+        required_subphases=("assembly", "linear_solve"),
+    )
+
+    assert errors == []
+
+
+def test_benchmark_packet_timing_schema_rejects_bad_fields():
+    utils = load_script_module("benchmark_packet_utils")
+
+    errors = utils.benchmark_packet_timing_schema_errors(
+        {
+            "step_count": 0,
+            "solver_subphase_timings_ns": {
+                "assembly": -1.0,
+                "": 1.0,
+                7: 2.0,
+                "linear_solve": True,
+            },
+        },
+        "phase_packet",
+        required_subphases=("assembly", "ccd"),
+    )
+
+    assert errors == [
+        "phase_packet.step_count must be positive",
+        "phase_packet.solver_subphase_timings_ns.ccd is missing",
+        "phase_packet.solver_subphase_timings_ns has an invalid key",
+        "phase_packet.solver_subphase_timings_ns has an invalid key",
+        "phase_packet.solver_subphase_timings_ns.assembly must be finite and non-negative",
+        "phase_packet.solver_subphase_timings_ns.linear_solve must be numeric",
+    ]
+
+
 def test_phase5_packet_validator_uses_shared_canonical_rows():
     phase5 = load_script_module("check_phase5_gpu_packet")
     data = phase5.make_packet_template()
