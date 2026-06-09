@@ -86,10 +86,10 @@ the same zero-step counter used for zero-time hits. Rigid IPC and deformable CCD
 still own their distinct limiting payloads and indeterminate-result policies.
 
 The Phase 3 closeout routes deformable projected-Newton backtracking through
-the shared Newton-barrier default scale, matching rigid IPC's shared
-backtracking scalar policy without moving projected-Newton result/status
-terminology, line-search result payloads, solver diagnostics, or additional
-benchmark-schema contracts out of their variant owners.
+the shared Newton-barrier default scale and routes rigid IPC's option defaults
+through the same shared scalar constants without moving projected-Newton
+result/status terminology, line-search result payloads, solver diagnostics, or
+additional benchmark-schema contracts out of their variant owners.
 
 ## Last Session Summary
 

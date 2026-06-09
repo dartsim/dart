@@ -84,7 +84,8 @@
         parser while keeping packet-specific max-error extraction local.
   - [x] Close the remaining Phase 3 scouting by routing deformable
         projected-Newton backtracking through the shared Newton-barrier default
-        scale while leaving projected-Newton result/status terminology,
+        scale and rigid IPC's option defaults through the same shared scalar
+        constants while leaving projected-Newton result/status terminology,
         line-search result semantics, diagnostics, and additional
         benchmark-schema contracts variant-local until another consumer proves
         identical behavior.
@@ -264,8 +265,8 @@ Phase 3 sufficient-decrease policy slice local evidence:
 Phase 3 closeout local evidence:
 
 - `pixi run lint`
-- `pixi run -- cmake --build build/default/cpp/Release --target test_newton_barrier_primitives test_world --parallel 8`
-- `pixi run -- ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(test_newton_barrier_primitives|test_world)$'`
+- `pixi run -- cmake --build build/default/cpp/Release --target test_newton_barrier_primitives test_rigid_ipc_barrier test_world --parallel 8`
+- `pixi run -- ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(test_newton_barrier_primitives|test_rigid_ipc_barrier|test_world)$'`
 
 ## Owner Docs
 

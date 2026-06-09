@@ -251,8 +251,9 @@ struct RigidIpcProjectedNewtonOptions
   /// candidate, the solve accepts that best decreasing candidate rather than
   /// treating the step as an unsafe CCD block.
   bool useSufficientDecreaseLineSearch = true;
-  double sufficientDecreaseFactor = 1e-4;
-  double backtrackingScale = 0.5;
+  double sufficientDecreaseFactor
+      = newton_barrier::kDefaultSufficientDecreaseFactor;
+  double backtrackingScale = newton_barrier::kDefaultBacktrackingScale;
   std::size_t maxBacktrackingIterations = 16;
 };
 
