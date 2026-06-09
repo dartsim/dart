@@ -120,8 +120,8 @@ Support abbreviations:
   SIMD-enabled, and CUDA-enabled build trees. It now
   also includes a scoped robust near-singular slice for standard 8-row, boxed
   8-row, and coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-, 32-, and
-  48-, 64-, 96-, 128-, 192-, and 256-contact generated packets, plus 29 matching
-  single-problem and 58 batch benchmark rows verified in default,
+  48-, 64-, 96-, 128-, 192-, and 256-contact generated packets, plus 31 matching
+  single-problem and 62 batch benchmark rows verified in default,
   SIMD-enabled, and CUDA-enabled build trees.
   The 96-, 128-, 192-, and 256-contact generated packets use the
   contract-verified capped normal ramp and `1e6` diagonal spread. The
@@ -461,17 +461,20 @@ The current local evidence for this task is:
   `coupled=1` and `coupling_scale=1/4/8/16`. The CUDA-enabled rows are CPU
   solver batch rows in a CUDA-enabled build, not CUDA LCP kernel execution.
 - `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpNearSingular/' | wc -l`
-  reports 29 rows. Previous full-slice rows through the 96-contact packet
+  reports 31 rows. Previous full-slice rows through the 96-contact packet
   passed with `contract_ok=1` in the default, SIMD-enabled, and CUDA-enabled
   build trees; focused 128-contact follow-up runs in those same build trees
   report 2 rows with `contract_ok=1`, and focused 192-contact follow-up runs in
-  those same build trees report another 2 rows with `contract_ok=1`. These rows
+  those same build trees report another 2 rows with `contract_ok=1`. Focused
+  256-contact follow-up runs in those same build trees report another 2 rows
+  with `contract_ok=1`, zero `failures` and `contract_failures`,
+  `near_singular=1`, `contact_count=256`, and `problem_size=768`. These rows
   cover near-singular standard 8-row, boxed 8-row, and coupled friction-index 3-,
-  6-, 9-, 12-, 16-, 24-, 32-, 48-, 64-, 96-, 128-, and 192-contact packets over
-  the scoped robust solver set. The rows report
+  6-, 9-, 12-, 16-, 24-, 32-, 48-, 64-, 96-, 128-, 192-, and 256-contact packets
+  over the scoped robust solver set. The rows report
   `near_singular=1`, backend build-state counters, contact counts
-  `3/6/9/12/16/24/32/48/64/96/128/192`, problem sizes
-  `9/18/27/36/48/72/96/144/192/288/384/576`, and
+  `3/6/9/12/16/24/32/48/64/96/128/192/256`, problem sizes
+  `9/18/27/36/48/72/96/144/192/288/384/576/768`, and
   `coupled=1` for the coupled packets. The CUDA-enabled rows are CPU solver
   rows in a CUDA-enabled build, not CUDA LCP kernel execution.
 - `UNIT_math_lcp_math_lcp_lcp_generated_coverage --gtest_filter='LcpGeneratedCoverage.NearSingularKnownSolutionsForRobustSolverSlice' --gtest_brief=1`
@@ -486,24 +489,28 @@ The current local evidence for this task is:
   21 tests through the 128-contact packet. The CUDA-enabled run is CPU generated
   solver coverage in a CUDA-enabled build, not CUDA LCP kernel execution.
 - `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpNearSingularBatch' | wc -l`
-  reports 58 rows. Previous JSON benchmark checks through the 96-contact
+  reports 62 rows. Previous JSON benchmark checks through the 96-contact
   packet reported 50 rows with `contract_ok=1` in the default, SIMD-enabled,
   and CUDA-enabled build trees; focused 128-contact follow-up runs in those
   same build trees report 4 batch rows with `contract_ok=1`, and focused
   192-contact follow-up runs in those same build trees report another 4 batch
-  rows with `contract_ok=1`.
+  rows with `contract_ok=1`. Focused 256-contact follow-up runs in those same
+  build trees report another 4 batch rows with `contract_ok=1`, zero
+  `failures` and `contract_failures`, `contact_count=256`,
+  `total_contact_count=1024`, `problem_size=768`, `total_problem_size=3072`,
+  `batch_size=4`, and `parallel_units=4` on parallel rows.
   These rows compare `Dantzig` and `Baraff` on standard 8-row packets,
   `Dantzig`, `ShockPropagation`, and `BoxedSemiSmoothNewton` on boxed 8-row
   packets, and `Dantzig` and `ShockPropagation` on coupled friction-index 3-,
-  6-, 9-, 12-, 16-, 24-, 32-, 48-, 64-, 96-, 128-, and 192-contact packets. They
+  6-, 9-, 12-, 16-, 24-, 32-, 48-, 64-, 96-, 128-, 192-, and 256-contact packets. They
   cover batch-size-4 serial and DART 7 `ParallelExecutor` runs on near-singular packets. The rows
   report `near_singular_batch=1`, `batch_size=4`, problem sizes
-  `8/9/18/27/36/48/72/96/144/192/288/384/576`, total problem sizes
-  `32/36/72/108/144/192/288/384/576/768/1152/1536/2304`, backend build-state counters, and
+  `8/9/18/27/36/48/72/96/144/192/288/384/576/768`, total problem sizes
+  `32/36/72/108/144/192/288/384/576/768/1152/1536/2304/3072`, backend build-state counters, and
   parallel execution counters on the `ParallelExecutor` rows. The
   friction-index rows additionally report
-  `contact_count=3/6/9/12/16/24/32/48/64/96/128/192`,
-  `total_contact_count=12/24/36/48/64/96/128/192/256/384/512/768`,
+  `contact_count=3/6/9/12/16/24/32/48/64/96/128/192/256`,
+  `total_contact_count=12/24/36/48/64/96/128/192/256/384/512/768/1024`,
   and `coupled=1`. The CUDA-enabled rows are CPU solver batch rows in a
   CUDA-enabled build, not CUDA LCP kernel execution.
 - `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpSingularDegenerate/' | wc -l`

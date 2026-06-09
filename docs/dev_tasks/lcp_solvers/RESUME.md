@@ -63,11 +63,12 @@ packets. This is not a 128-box batch-size-4 CUDA execution claim; the focused
 `BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex/128/4` benchmark probe remains
 too expensive for the checkpoint gate.
 The robust near-singular generated coverage now reaches coupled friction-index
-256-contact packets, while near-singular benchmark coverage reaches
-192-contact packets. It also adds 58
+256-contact packets, and near-singular benchmark coverage now reaches
+256-contact packets. It also adds 62
 `BM_LcpNearSingularBatch(Serial|Parallel)` rows for batch-size-4 serial and
 DART 7 `ParallelExecutor` runs over near-singular standard 8-row, boxed 8-row,
-and coupled friction-index 3-/6-/9-/12-/16-/24-/32-/48-/64-/96-/128-/192-contact
+and coupled friction-index
+3-/6-/9-/12-/16-/24-/32-/48-/64-/96-/128-/192-/256-contact
 packets, verified in default, SIMD-enabled, and CUDA-enabled build trees.
 It also adds 72
 `BM_LcpSingularDegenerateFrictionIndexBatch(Serial|Parallel)` rows for
@@ -369,12 +370,12 @@ SIMD-enabled, and CUDA-enabled build trees for 128-row serial/4-worker and
 independent-block update-path evidence over larger banded packets, not a
 speedup or CUDA-kernel claim.
 It now also extends the robust near-singular generated slice to coupled
-friction-index 256-contact packets and adds 29 `BM_LcpNearSingular` benchmark
+friction-index 256-contact packets and adds 31 `BM_LcpNearSingular` benchmark
 rows for standard 8-row, boxed 8-row, and coupled friction-index 3-, 6-, 9-,
-12-, 16-, 24-, 32-, 48-, 64-, 96-, 128-, and 192-contact packets verified in
+12-, 16-, 24-, 32-, 48-, 64-, 96-, 128-, 192-, and 256-contact packets verified in
 default, SIMD-enabled, and CUDA-enabled build trees. The 96-, 128-, 192-, and
 256-contact generated packets use the contract-verified capped normal ramp and
-`1e6` diagonal spread; focused generated coverage and focused 192-contact
+`1e6` diagonal spread; focused generated coverage and focused 256-contact
 benchmark rows pass in default, SIMD-enabled, and CUDA-enabled build trees.
 The friction-index near-singular known-solution slice is Dantzig-only after
 `ShockPropagation` contract-succeeded but missed the selected generated
@@ -809,18 +810,19 @@ contact scenes.
   128-contact packet, and the 16x rows report `boxed_ssn_max_line_search_steps=50`,
   `boxed_ssn_step_reduction=0.8`, and
   `boxed_ssn_jacobian_regularization=1e-8`.
-  `BM_LCP_COMPARE` also lists 29 `BM_LcpNearSingular` rows for standard
+  `BM_LCP_COMPARE` also lists 31 `BM_LcpNearSingular` rows for standard
   8-row, boxed 8-row, and coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-,
-  32-, 48-, 64-, 96-, 128-, and 192-contact
+  32-, 48-, 64-, 96-, 128-, 192-, and 256-contact
   packets over the scoped robust solver set; the focused default,
   SIMD-enabled, and CUDA-enabled runs pass with `contract_ok=1` on all rows and
   report `near_singular=1`, backend build-state counters, and contact/coupling
   counters where applicable. The CUDA-enabled rows are CPU solver rows in a
   CUDA-enabled build, not CUDA LCP kernel execution.
-  `BM_LCP_COMPARE` also lists 58
+  `BM_LCP_COMPARE` also lists 62
   `BM_LcpNearSingularBatch(Serial|Parallel)` rows for batch-size-4 serial and
   DART 7 `ParallelExecutor` runs over near-singular standard 8-row, boxed
-  8-row, and coupled friction-index 3-/6-/9-/12-/16-/24-/32-/48-/64-/96-/128-/192-contact
+  8-row, and coupled friction-index
+  3-/6-/9-/12-/16-/24-/32-/48-/64-/96-/128-/192-/256-contact
   packets; focused default, SIMD-enabled, and CUDA-enabled checks pass
   with `contract_ok=1` on all rows and report `near_singular_batch=1`,
   problem/total-problem-size counters, contact/total-contact counters for the

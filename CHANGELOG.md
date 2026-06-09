@@ -1133,12 +1133,12 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     Semi-Smooth Newton reports tuned line-search settings on the 16x rows. The
     new 192-contact batch rows are verified in the default build, and focused
     SIMD/CUDA-enabled all-solver serial/parallel 192-contact batch contract
-    gates now pass. Added 29 near-singular benchmark rows for standard 8-row,
+    gates now pass. Added 31 near-singular benchmark rows for standard 8-row,
     boxed 8-row, and
     coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-, 32-, 48-, 64-, 96-,
-    128-, and 192-contact
+    128-, 192-, and 256-contact
     packets verified across default, SIMD-enabled, and CUDA-enabled build
-    trees, plus 58 near-singular batch rows for batch-size-4 serial and
+    trees, plus 62 near-singular batch rows for batch-size-4 serial and
     DART 7 `ParallelExecutor` runs over standard 8-row, boxed 8-row, and those
     coupled friction-index packets verified across default, SIMD-enabled, and
     CUDA-enabled build trees, plus
