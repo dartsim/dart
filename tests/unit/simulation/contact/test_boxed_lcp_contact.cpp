@@ -2895,6 +2895,26 @@ TEST(BoxedLcpContact, SevenSphereStackWorldStepPreservesContactInvariants)
 }
 
 //==============================================================================
+// Taller coupled stacks already have snapshot and batch evidence. This bounded
+// one-step gate extends the public World::step() path without claiming the
+// unsupported long-horizon settling behavior.
+TEST(BoxedLcpContact, TallSphereStackWorldStepPreservesContactInvariants)
+{
+  constexpr double kFriction = 0.6;
+  const std::vector<int> sphereCounts{8, 16, 24, 32};
+
+  for (const int sphereCount : sphereCounts) {
+    SCOPED_TRACE("sphere count " + std::to_string(sphereCount));
+    auto lcp = buildSphereStackScene(sphereCount, kFriction, false);
+
+    lcp->enterSimulationMode();
+    lcp->step();
+
+    expectSphereStackStepInvariants(*lcp, sphereCount);
+  }
+}
+
+//==============================================================================
 // End-to-end DART 7 World stepping: two independent sphere-ground contacts are
 // advanced through the public BoxedLcp contact solver for many time steps. This
 // complements the direct LCP snapshot tests above by checking the integrated

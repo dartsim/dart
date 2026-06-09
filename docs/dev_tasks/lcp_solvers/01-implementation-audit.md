@@ -43,8 +43,9 @@ Support abbreviations:
   two-sphere, four-sphere, sixteen-sphere, and thirty-two-sphere boxed-LCP
   `World::step()` invariant tests, 3-/4-/5-/6-/7-/8-/9-/10-/11-/12-/13-/14-/15-/16-/24-/32-sphere coupled-stack boxed-LCP
   snapshot tests, 3-sphere 200-step, 3-sphere 500-step, 4-sphere 200-step,
-  5-sphere 500-step, and 6-sphere 1000-step boxed-LCP `World::step()` invariant tests and benchmark
-  rows, 4-/8-/16-/24-/32-contact separated sphere-ground step benchmark rows,
+  5-sphere 500-step, 6-sphere 1000-step, and bounded
+  7-/8-/16-/24-/32-sphere one-step boxed-LCP `World::step()` invariant tests
+  and benchmark rows, 4-/8-/16-/24-/32-contact separated sphere-ground step benchmark rows,
   1-/2-/4-/8-/16-/24-/32-/48-box dense box-face long-horizon step
   benchmark rows, 64-box one-step and 75-step dense box-face public-step rows,
   96-box one-step and 75-step dense box-face public-step rows, 128-box
@@ -775,7 +776,7 @@ The current local evidence for this task is:
   3-sphere, 4-sphere, 5-sphere, 6-sphere, 7-sphere, and 8-sphere vertical stacks assembled from
   DART 7 `World::collide()`, plus the 3-sphere, 4-sphere, 5-sphere, and
   6-sphere public step invariants below, and the bounded 7-sphere one-step
-  public-step invariant below. Local 7-sphere public-step probes at 1000 and
+  plus 8-/16-/24-/32-sphere one-step public-step invariants below. Local 7-sphere public-step probes at 1000 and
   2000 steps failed the existing motion-invariant contract, so no long-horizon
   7-sphere public-step row is claimed. The
   4-sphere snapshot contains 4 contacts and 12 LCP rows, the 5-sphere snapshot
@@ -815,12 +816,20 @@ The current local evidence for this task is:
   `max_vertical_speed=4.599`.
 - `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.EightSphereStackWorldContactSnapshotSatisfiesLcpContract' --gtest_brief=1`
   passed locally. This validates the 8-sphere, 8-contact, 24-row boxed/findex
-  stack snapshot only; no 8-sphere public-step invariant is claimed.
+  stack snapshot. The bounded one-step public-step path for the same
+  8-sphere stack is covered by
+  `TallSphereStackWorldStepPreservesContactInvariants`.
+- `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.TallSphereStackWorldStepPreservesContactInvariants' --gtest_brief=1`
+  passed in default, SIMD-enabled, and CUDA-enabled build trees, adding bounded
+  one-step public `World::step()` evidence for 8-/16-/24-/32-sphere coupled
+  stacks under the existing finite-state, spacing, vertical-rest,
+  lateral-drift, and static-ground invariants.
 - `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.TwentyFourSphereStackWorldContactSnapshotSatisfiesLcpContract:BoxedLcpContact.ThirtyTwoSphereStackWorldContactSnapshotSatisfiesLcpContract' --gtest_brief=1`
   passed locally. This validates the 24-/32-sphere, 24-/32-contact,
   72-/96-row boxed/findex stack snapshots assembled from DART 7
   `World::collide()` and checks nonzero normal-contact coupling. This is
-  snapshot evidence only; no 24-/32-sphere public-step invariant is claimed.
+  snapshot evidence; bounded one-step public-step coverage is recorded
+  separately for the same 24-/32-sphere stack sizes.
 - `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.SphereStackWorldStepMaintainsContactInvariants'`
   passed 1 test, advancing the same 3-sphere vertical stack through 200 public
   boxed-LCP `World::step()` iterations and checking finite state,
@@ -1087,8 +1096,8 @@ The current local evidence for this task is:
   `contact_count=24/32`, `body_count=24/32`, `problem_size=72/96`,
   `max_residual=2.1316282072803006e-14`,
   `max_complementarity=1.9650947535865271e-14`, and
-  `max_bound_violation=0`. No 24-/32-sphere public-step rows are claimed from
-  this slice.
+  `max_bound_violation=0`. This assembly slice is separate from the bounded
+  24-/32-sphere one-step public-step rows.
   Focused SIMD-enabled and CUDA-enabled build-tree
   `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldStackContactAssembly_BoxedLcp/(24|32)$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   runs each report `rows=2`, `contract_ok_rows=2`, `sphere_count=24/32`,
@@ -1143,7 +1152,8 @@ The current local evidence for this task is:
   `BM_LcpWorldStackStep_BoxedLcp/4/200`, plus
   `BM_LcpWorldStackStep_BoxedLcp/5/500` and
   `BM_LcpWorldStackStep_BoxedLcp/6/1000`, plus the bounded
-  `BM_LcpWorldStackStep_BoxedLcp/7/1` row. The rows rebuild the stack worlds,
+  `BM_LcpWorldStackStep_BoxedLcp/7/1` and
+  `BM_LcpWorldStackStep_BoxedLcp/{8,16,24,32}/1` rows. The rows rebuild the stack worlds,
   enter simulation mode, advance public boxed-LCP `World::step()` iterations,
   and report `invariant_ok=1`. The SIMD run reported `build_simd_enabled=1`,
   and the CUDA-enabled run reported `build_cuda_enabled=1`. The default
@@ -1157,7 +1167,11 @@ The current local evidence for this task is:
   7-sphere one-step rows reported `invariant_ok=1`, `contact_count=7`,
   `step_count=1`, `time_step=0.001`, `min_spacing=1.0`,
   `max_lateral_position=0`, and `max_lateral_speed=0`, with
-  `max_vertical_speed<=1.67e-16`.
+  `max_vertical_speed<=1.67e-16`. Focused default, SIMD-enabled, and
+  CUDA-enabled `BM_LcpWorldStackStep_BoxedLcp/{8,16,24,32}/1` rows reported
+  four rows per build tree with zero invariant failures, `contact_count<=32`,
+  `step_count=1`, `min_spacing=1.0`, `max_lateral_position=0`,
+  `max_lateral_speed=0`, and `max_vertical_speed<=9.61e-15`.
 - `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldSeparatedStep_BoxedLcp' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   passed locally for `BM_LcpWorldSeparatedStep_BoxedLcp/4/200`,
   `BM_LcpWorldSeparatedStep_BoxedLcp/8/200`,
@@ -1927,7 +1941,7 @@ The current local evidence for this task is:
   4-/5-/6-sphere stack snapshots for all of those solvers,
   200-step/500-step
   3-sphere, 200-step 4-sphere, 500-step 5-sphere, 1000-step 6-sphere, and
-  bounded one-step 7-sphere end-to-end stack step
+  bounded one-step 7-/8-/16-/24-/32-sphere end-to-end stack step
   rows, and 4-/8-/16-/24-/32-contact separated end-to-end step rows, plus
   1-/2-/4-/8-/16-/24-/32-/48-box dense box-face long-horizon end-to-end step
   rows plus 64-box one-step and 75-step dense face-contact rows, fixed-base
@@ -1979,8 +1993,8 @@ The current local evidence for this task is:
 2. Extend DART 7 boxed-LCP `World` contact fixtures from the current
    separated sphere-ground, fixed-base prismatic articulated, cross-multibody
    fixed-base articulated link-vs-link, manually assembled three-axis
-   articulated, 6-sphere end-to-end vertical-stack plus bounded 7-sphere
-   one-step stack, and
+   articulated, 6-sphere end-to-end vertical-stack plus bounded
+   7-/8-/16-/24-/32-sphere one-step stack rows, and
    24-/32-sphere vertical-stack boxed/findex snapshot and assembly rows to richer articulated,
    longer-running, and denser coupled multi-contact scenes beyond the current
    48-box unit/benchmark dense face-contact long-horizon public-step, 64-box

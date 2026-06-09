@@ -13255,7 +13255,12 @@ BENCHMARK(BM_LcpWorldStackStep_BoxedLcp)->Args({3, 200})->Args({3, 500});
 BENCHMARK(BM_LcpWorldStackStep_BoxedLcp)->Args({4, 200});
 BENCHMARK(BM_LcpWorldStackStep_BoxedLcp)->Args({5, 500});
 BENCHMARK(BM_LcpWorldStackStep_BoxedLcp)->Args({6, 1000});
-BENCHMARK(BM_LcpWorldStackStep_BoxedLcp)->Args({7, 1});
+BENCHMARK(BM_LcpWorldStackStep_BoxedLcp)
+    ->Args({7, 1})
+    ->Args({8, 1})
+    ->Args({16, 1})
+    ->Args({24, 1})
+    ->Args({32, 1});
 BENCHMARK(BM_LcpWorldSeparatedStep_BoxedLcp)
     ->Args({4, 200})
     ->Args({8, 200})

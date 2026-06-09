@@ -368,8 +368,9 @@
       and 16 friction-index solver benchmark rows. The `Pgs`, `Jacobi`,
       `BlockedJacobi`, `RedBlackGaussSeidel`, and `ShockPropagation` rows use a
       512-iteration cap, and the `NNCG` row uses the 20-iteration PGS
-      preconditioner after a 10-iteration probe failed. No 8-sphere public-step
-      invariant is claimed.
+      preconditioner after a 10-iteration probe failed. The bounded public-step
+      path now covers the 8-sphere one-step stack row in default, SIMD-enabled,
+      and CUDA-enabled build trees.
 - [x] Extended DART 7 boxed-LCP coupled stack snapshot evidence to a 9-sphere,
       9-contact, 27-row vertical stack, with a matching assembly benchmark row
       and 16 friction-index solver benchmark rows. Focused default,
@@ -402,7 +403,9 @@
       snapshots assembled from shared dynamic bodies. Focused default build
       assembly rows satisfy the LCP contract, focused SIMD-enabled and
       CUDA-enabled build-tree assembly rows pass for 24-/32-sphere stacks, and
-      24-/32-sphere solver-comparison rows now pass; no 15+-sphere
+      24-/32-sphere solver-comparison rows now pass. The bounded public-step
+      path now covers 16-/24-/32-sphere one-step stack rows in default,
+      SIMD-enabled, and CUDA-enabled build trees; no longer-horizon 15+-sphere
       public-step invariant is claimed.
 - [x] Added DART 7 world-contact `BM_LCP_COMPARE` rows that run every
       friction-index-capable solver on the same boxed-LCP snapshots assembled
@@ -583,8 +586,8 @@
 - [ ] Continue extending DART 7 end-to-end contact cases through the public
       simulation pipeline beyond current separated contacts, fixed-base
       articulated contacts, 7-sphere coupled snapshots, 6-sphere coupled-stack
-      public-step rows plus bounded 7-sphere one-step stack rows, 48-box
-      unit/benchmark dense face-contact long-horizon step coverage, and
+      public-step rows plus bounded 7-/8-/16-/24-/32-sphere one-step stack
+      rows, 48-box unit/benchmark dense face-contact long-horizon step coverage, and
       bounded 64-box dense face-contact one-step shape and 75-step
       strict-invariant checks plus 96-box one-step shape and 75-step
       strict-invariant coverage plus 128-box one-step shape and 75-step
@@ -1768,8 +1771,8 @@ tradeoffs evidence based.
   registered from those probes.
   `BoxedLcpContact.EightSphereStackWorldContactSnapshotSatisfiesLcpContract`
   extends the direct boxed/findex snapshot path to an 8-sphere stack with
-  8 contacts and 24 LCP rows. This is snapshot evidence only; no 8-sphere
-  public-step invariant is claimed.
+  8 contacts and 24 LCP rows. `TallSphereStackWorldStepPreservesContactInvariants`
+  adds bounded one-step public-step coverage for the same 8-sphere stack.
   `BoxedLcpContact.NineSphereStackWorldContactSnapshotSatisfiesLcpContract`
   extends the same direct snapshot path to a 9-sphere stack with 9 contacts and
   27 LCP rows. This is snapshot evidence only; no 9-sphere public-step
@@ -1793,7 +1796,9 @@ tradeoffs evidence based.
   `BoxedLcpContact.SixteenSphereStackWorldContactSnapshotSatisfiesLcpContract`
   extend the same direct snapshot path to 13-, 14-, 15-, and 16-sphere stacks
   with 13/14/15/16 contacts and 39/42/45/48 LCP rows. This is snapshot
-  evidence only; no 13-/14-/15-/16-sphere public-step invariant is claimed.
+  evidence for 13-/14-/15-sphere stacks, while
+  `TallSphereStackWorldStepPreservesContactInvariants` adds bounded one-step
+  public-step coverage for the 16-sphere stack.
   The focused
   `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.ThirteenSphereStackWorldContactSnapshotSatisfiesLcpContract:BoxedLcpContact.FourteenSphereStackWorldContactSnapshotSatisfiesLcpContract:BoxedLcpContact.FifteenSphereStackWorldContactSnapshotSatisfiesLcpContract:BoxedLcpContact.SixteenSphereStackWorldContactSnapshotSatisfiesLcpContract' --gtest_brief=1`
   run passed all four tests in the default build.
@@ -1801,8 +1806,9 @@ tradeoffs evidence based.
   and
   `BoxedLcpContact.ThirtyTwoSphereStackWorldContactSnapshotSatisfiesLcpContract`
   extend the same direct snapshot path to 24- and 32-sphere stacks with 24/32
-  contacts and 72/96 LCP rows. This is snapshot evidence only; no
-  24-/32-sphere public-step invariant is claimed. The focused
+  contacts and 72/96 LCP rows. `TallSphereStackWorldStepPreservesContactInvariants`
+  adds bounded one-step public-step coverage for the same 24-/32-sphere stacks.
+  The focused
   `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.TwentyFourSphereStackWorldContactSnapshotSatisfiesLcpContract:BoxedLcpContact.ThirtyTwoSphereStackWorldContactSnapshotSatisfiesLcpContract' --gtest_brief=1`
   run passed both tests in the default build.
   The focused
@@ -2464,15 +2470,17 @@ tradeoffs evidence based.
   `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldStackContactAssembly_BoxedLcp/(13|14|15|16)$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_format=json`
   run reported `contract_ok=1` for the 13-, 14-, 15-, and 16-sphere assembly
   rows with `sphere_count=13/14/15/16`, `contact_count=13/14/15/16`, and
-  `problem_size=39/42/45/48`; no 14-/15-/16-sphere public-step rows are
-  claimed.
+  `problem_size=39/42/45/48`; bounded 16-sphere one-step public-step evidence
+  is covered separately by `BM_LcpWorldStackStep_BoxedLcp/16/1`, while
+  14-/15-sphere public-step rows remain unclaimed.
   The focused default
   `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldStackContactAssembly_BoxedLcp/(24|32)$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_out=/tmp/dart_lcp_world_stack_assembly_32.json --benchmark_out_format=json`
   run reported `rows=2`, `contract_ok_rows=2`, `sphere_count=24/32`,
   `contact_count=24/32`, `body_count=24/32`, `problem_size=72/96`,
   `max_residual=2.1316282072803006e-14`,
   `max_complementarity=1.9650947535865271e-14`, and
-  `max_bound_violation=0`; no 24-/32-sphere public-step rows are claimed.
+  `max_bound_violation=0`; bounded 24-/32-sphere one-step public-step evidence
+  is covered separately by `BM_LcpWorldStackStep_BoxedLcp/{24,32}/1`.
   Focused SIMD-enabled and CUDA-enabled build-tree
   `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldStackContactAssembly_BoxedLcp/(24|32)$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   runs each reported `rows=2`, `contract_ok_rows=2`, `sphere_count=24/32`,
@@ -2544,7 +2552,8 @@ tradeoffs evidence based.
   `BM_LcpWorldStackStep_BoxedLcp/6/1000` extends the public step path to the
   6-sphere stack. `BM_LcpWorldStackStep_BoxedLcp/7/1` adds a bounded one-step
   public-step row for the 7-sphere stack without claiming the known failing
-  long-horizon gate. All six
+  long-horizon gate, and `BM_LcpWorldStackStep_BoxedLcp/{8,16,24,32}/1`
+  extends the same bounded one-step path to taller coupled stacks. All ten
   rows enter simulation mode, advance the
   public boxed-LCP `World::step()` path, and check the same finite-state,
   non-penetration, spacing, vertical-rest, lateral-drift, and static-ground
@@ -2567,6 +2576,12 @@ tradeoffs evidence based.
   `time_step=0.001`, `min_spacing=1.0`, `max_lateral_position=0`, and
   `max_lateral_speed=0`; maximum vertical speed was `1.67e-16` in
   default/CUDA-enabled builds and `1.11e-16` in the SIMD-enabled build.
+  Focused default, SIMD-enabled, and CUDA-enabled
+  `BM_LcpWorldStackStep_BoxedLcp/{8,16,24,32}/1` rows reported
+  `invariant_ok=1` for all 12 measured rows, `contact_count<=32`,
+  `step_count=1`, `min_spacing=1.0`, `max_lateral_position=0`, and
+  `max_lateral_speed=0`; the maximum vertical speed was `9.61e-15` in
+  default/CUDA-enabled builds and `8.72e-15` in the SIMD-enabled build.
 - DART 7 separated multi-contact end-to-end benchmark evidence:
   `BM_LcpWorldSeparatedStep_BoxedLcp/4/200`,
   `BM_LcpWorldSeparatedStep_BoxedLcp/8/200`,
