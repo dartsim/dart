@@ -4944,9 +4944,11 @@ void reserveProjectedNewtonScratch(
   scratch.projectedNewtonRhs.resize(dim);
   scratch.projectedNewtonSolution.resize(dim);
 
+  // Reserve DART-owned barrier buffers for the baked candidate capacity, not
+  // only the contacts active at bake.
   const std::size_t barrierCandidateCount
-      = scratch.barrierCandidates.pointTriangleCandidates.size()
-        + scratch.barrierCandidates.edgeEdgeCandidates.size();
+      = scratch.barrierCandidates.pointTriangleCandidates.capacity()
+        + scratch.barrierCandidates.edgeEdgeCandidates.capacity();
   const std::size_t tripletEstimate = 3 * nodeCount + 36 * model.edges.size()
                                       + 144 * topology.tetrahedra.size()
                                       + 144 * barrierCandidateCount
