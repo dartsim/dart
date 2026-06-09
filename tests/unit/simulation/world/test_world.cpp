@@ -1239,6 +1239,18 @@ void configureDeformableSelfContactFrictionExtraDenseGridScene(
       Eigen::Vector3d(0.35, 0.1, -0.08));
 }
 
+void configureDeformableSelfContactFrictionLateActiveGridScene(
+    dart::simulation::World& world)
+{
+  configureDeformableSelfContactFrictionGridSceneWithShapeAndMotion(
+      world,
+      11,
+      11,
+      "friction_late_active_direct_grid",
+      0.025,
+      Eigen::Vector3d(0.35, 0.1, -1.0));
+}
+
 void configureDeformableSelfContactFrictionLateActiveMatrixFreeGridScene(
     dart::simulation::World& world)
 {
@@ -2324,6 +2336,9 @@ TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
       "deformable self-contact friction extra-dense production grid",
       configureDeformableSelfContactFrictionExtraDenseGridScene);
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "deformable self-contact friction late-active direct grid",
+      configureDeformableSelfContactFrictionLateActiveGridScene);
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "deformable self-contact friction late-active matrix-free grid",
       configureDeformableSelfContactFrictionLateActiveMatrixFreeGridScene);
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
@@ -2428,6 +2443,39 @@ TEST(World, DeformableSelfContactFrictionLateActiveMatrixFreeGridIsActive)
   EXPECT_EQ(diagnostics.bodyCount, 1u);
   EXPECT_EQ(diagnostics.nodeCount, 2u * 11u * 11u);
   EXPECT_GT(matrixFreeSolves, 0u);
+  EXPECT_GT(maxActiveContacts, 0u);
+  EXPECT_GT(maxConvergedContacts, 0u);
+  EXPECT_GT(frictionDissipation, 0.0);
+}
+
+TEST(World, DeformableSelfContactFrictionLateActiveDirectGridIsActive)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  configureDeformableSelfContactFrictionLateActiveGridScene(world);
+  world.enterSimulationMode();
+  std::size_t projectedNewtonSteps = 0;
+  std::size_t matrixFreeSolves = 0;
+  std::size_t maxActiveContacts = 0;
+  std::size_t maxConvergedContacts = 0;
+  double frictionDissipation = 0.0;
+  for (int i = 0; i < 4; ++i) {
+    world.step();
+    const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
+    projectedNewtonSteps += diagnostics.projectedNewtonSteps;
+    matrixFreeSolves += diagnostics.projectedNewtonMatrixFreeSolves;
+    maxActiveContacts = std::max(
+        maxActiveContacts, diagnostics.selfContactBarrierActiveContacts);
+    maxConvergedContacts = std::max(
+        maxConvergedContacts, diagnostics.convergedActiveContactCount);
+    frictionDissipation += diagnostics.frictionDissipation;
+  }
+  const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
+  EXPECT_EQ(diagnostics.bodyCount, 1u);
+  EXPECT_EQ(diagnostics.nodeCount, 2u * 11u * 11u);
+  EXPECT_GT(projectedNewtonSteps, 0u);
+  EXPECT_EQ(matrixFreeSolves, 0u);
   EXPECT_GT(maxActiveContacts, 0u);
   EXPECT_GT(maxConvergedContacts, 0u);
   EXPECT_GT(frictionDissipation, 0.0);
@@ -2835,6 +2883,9 @@ TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "deformable self-contact friction extra-dense production grid",
       configureDeformableSelfContactFrictionExtraDenseGridScene);
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "deformable self-contact friction late-active direct grid",
+      configureDeformableSelfContactFrictionLateActiveGridScene);
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "deformable self-contact friction late-active matrix-free grid",
       configureDeformableSelfContactFrictionLateActiveMatrixFreeGridScene);
