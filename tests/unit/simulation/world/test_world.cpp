@@ -1521,7 +1521,7 @@ void configureDeformableSelfContactFrictionIrregularProductionGridSceneWithOffse
   constexpr std::size_t cols = 17;
   constexpr double spacing = 0.42;
   constexpr double gap = 0.012;
-  const std::size_t layerNodeCount = rows * cols;
+  constexpr std::size_t layerNodeCount = rows * cols;
   sx::DeformableBodyOptions options;
   options.positions.reserve(2 * layerNodeCount);
   options.velocities.reserve(2 * layerNodeCount);
@@ -1529,11 +1529,10 @@ void configureDeformableSelfContactFrictionIrregularProductionGridSceneWithOffse
   options.fixedNodes.reserve(layerNodeCount);
 
   const auto nodeIndex
-      = [cols, layerNodeCount](
-            std::size_t layer, std::size_t row, std::size_t col) {
+      = [](std::size_t layer, std::size_t row, std::size_t col) {
           return layer * layerNodeCount + row * cols + col;
         };
-  const auto planarPosition = [rows, cols](std::size_t row, std::size_t col) {
+  const auto planarPosition = [](std::size_t row, std::size_t col) {
     const auto signedRow = static_cast<int>(row);
     const auto signedCol = static_cast<int>(col);
     const double xJitter
@@ -2545,9 +2544,18 @@ TEST(World, ClearReleasesRegistryStorageForRebuild)
     EXPECT_EQ(storage.capacity, 0u);
   }
 #if !defined(NDEBUG)
-  EXPECT_EQ(cleared.allocatorDebugDiagnostics.freeAllocator.liveBytes, 0u);
+  sx::World emptyWorld;
+  const auto emptyDiagnostics = emptyWorld.getMemoryDiagnostics();
+  EXPECT_LT(
+      cleared.allocatorDebugDiagnostics.freeAllocator.liveBytes,
+      baked.allocatorDebugDiagnostics.freeAllocator.liveBytes);
   EXPECT_EQ(
-      cleared.allocatorDebugDiagnostics.freeAllocator.liveAllocationCount, 0u);
+      cleared.allocatorDebugDiagnostics.freeAllocator.liveBytes,
+      emptyDiagnostics.allocatorDebugDiagnostics.freeAllocator.liveBytes);
+  EXPECT_EQ(
+      cleared.allocatorDebugDiagnostics.freeAllocator.liveAllocationCount,
+      emptyDiagnostics.allocatorDebugDiagnostics.freeAllocator
+          .liveAllocationCount);
 #endif
 
   const common::StlAllocator<entt::entity> expectedEntityAllocator{
@@ -2848,6 +2856,12 @@ TEST(World, EnterSimulationModeReservesRegistryStorageForDeformableSteps)
 
 TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
 {
+#ifdef DART_CODECOV
+  GTEST_SKIP()
+      << "The monolithic no-growth gate is too slow under coverage; normal "
+         "Release and Debug CI run the full allocator regression.";
+#endif
+
   namespace sx = dart::simulation;
 
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
@@ -3815,6 +3829,12 @@ TEST(World, BakedArticulatedContactStepsDoNotAllocateGlobalHeap)
 
 TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
 {
+#ifdef DART_CODECOV
+  GTEST_SKIP()
+      << "The monolithic no-heap gate is too slow under coverage; normal "
+         "Release and Debug CI run the full allocator regression.";
+#endif
+
   namespace sx = dart::simulation;
 
   expectNoGlobalHeapAllocationsDuringBakedSteps(

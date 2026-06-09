@@ -270,7 +270,7 @@ private:
 
   std::unique_ptr<Impl> m_impl;
 
-  friend bool assembleMultibodyLinkContactProblemInto(
+  friend DART_SIMULATION_API bool assembleMultibodyLinkContactProblemInto(
       MultibodyLinkContactAssemblyScratch& scratch,
       const detail::WorldRegistry& registry,
       const comps::MultibodyStructure& structure,
