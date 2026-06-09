@@ -573,6 +573,26 @@ def test_world_scenes_use_solver_focused_categories() -> None:
             "rigid_ipc_pile",
             "rigid_ipc_tunnel",
         },
+        "PLAN-083 Mixed Corpus": {
+            "plan083_lying_flat",
+            "plan083_hanging_bridge",
+            "plan083_umbrella",
+            "plan083_candy",
+        },
+        "PLAN-083 Constraints Corpus": {
+            "plan083_pulley_system",
+            "plan083_nunchaku",
+            "plan083_windmill",
+        },
+        "PLAN-083 Robot Corpus": {
+            "plan083_terrain_vehicle",
+            "plan083_ragdolls",
+            "plan083_precession",
+        },
+        "PLAN-083 ABD Corpus": {
+            "plan083_abd_complex_geometry",
+            "plan083_abd_fem_coupling",
+        },
         "Simulation Replay": {
             "replay_scrubber",
         },

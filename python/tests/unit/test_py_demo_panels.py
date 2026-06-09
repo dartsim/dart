@@ -48,6 +48,7 @@ from examples.demos.scenes import (
     ipc_deformable_scripted_dirichlet,
     ipc_deformable_seg_strand,
     ipc_deformable_trampoline,
+    plan083_unified_newton_barrier,
     planned,
     replay_scrubber,
     rigid_body,
@@ -341,6 +342,18 @@ def test_registered_world_scenes_receive_shared_replay_controls() -> None:
         "planned_operational_space_control",
         "planned_collision_sandbox",
         "planned_mobile_manipulation",
+        "plan083_lying_flat",
+        "plan083_hanging_bridge",
+        "plan083_pulley_system",
+        "plan083_umbrella",
+        "plan083_terrain_vehicle",
+        "plan083_ragdolls",
+        "plan083_nunchaku",
+        "plan083_windmill",
+        "plan083_candy",
+        "plan083_precession",
+        "plan083_abd_complex_geometry",
+        "plan083_abd_fem_coupling",
         "diff_throw_to_target",
         "diff_cartpole_trajopt",
         "diff_drone_liftoff",
@@ -773,6 +786,28 @@ def test_planned_world_port_placeholders_expose_status_panels() -> None:
         assert "text:status: planned World demo" in builder.events
         assert any(event.startswith("text:legacy seeds: ") for event in builder.events)
         assert any(event.startswith("text:target: ") for event in builder.events)
+
+
+def test_plan083_cpu_corpus_placeholders_expose_status_panels() -> None:
+    for scene in plan083_unified_newton_barrier.PLAN083_SCENES:
+        setup = scene.build()
+        builder = _FakePanelBuilder()
+
+        assert [panel.title for panel in setup.panels] == [scene.title]
+        assert setup.info["plan083_cpu_corpus_scene"] == scene.id
+        assert setup.info["plan083_row_ids"]
+
+        setup.panels[0].build(builder, object())
+
+        assert "text:status: planned PLAN-083 CPU corpus scene" in builder.events
+        assert any(event.startswith("text:rows: ") for event in builder.events)
+        assert any(event.startswith("text:smoke: pixi run py-demos") for event in builder.events)
+        assert any(
+            event.startswith("text:visual: pixi run py-demo-capture")
+            for event in builder.events
+        )
+        assert any(event.startswith("text:benchmark: ") for event in builder.events)
+        assert any(event.startswith("text:limitation: ") for event in builder.events)
 
 
 def test_ipc_deformable_scene_exposes_diagnostics_panel() -> None:
