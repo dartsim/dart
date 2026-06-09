@@ -615,15 +615,16 @@ pass focused default, SIMD-enabled, and CUDA-enabled build-tree benchmark gates
 with `contract_ok=1`.
 The current stack slices cover 24-/32-sphere boxed/findex CPU snapshot and
 boxed-LCP assembly rows, CPU solver-comparison rows through the scoped
-13-sphere full solver set, and fixed-iteration CUDA Jacobi/PGS homogeneous and
+14-sphere full solver set in the default build, and fixed-iteration CUDA Jacobi/PGS homogeneous and
 grouped coupled-stack batch evidence through 24-/32-sphere DART 7
 `World::collide()` snapshots.
 Focused default, SIMD-enabled, and CUDA-enabled checks pass for the CPU
 solver-comparison rows through the scoped 13-sphere full solver set; focused
-default checks pass for the 13-/14-/15-/16-/24-/32-sphere snapshot/assembly
-rows; focused CUDA unit and benchmark checks pass for the direct and grouped
-CUDA execution rows, using 8192 fixed iterations for the stack-contact CUDA
-rows and Jacobi relaxation 0.25.
+default checks pass for the 14-sphere full solver set and the
+13-/14-/15-/16-/24-/32-sphere snapshot/assembly rows; focused CUDA unit and
+benchmark checks pass for the direct and grouped CUDA execution rows, using
+8192 fixed iterations for the stack-contact CUDA rows and Jacobi relaxation
+0.25.
 The latest local slice corrects shared boxed-LCP validation for collapsed
 intervals (`lo == hi`): fixed rows now require the solution to stay on the bound
 but do not require zero residual force. This removes the false-negative fixed
@@ -680,18 +681,20 @@ public `World::step()` iterations failed the existing vertical-rest invariant
 with `LCP internal error, s <= 0` warnings and max vertical speeds above the
 `0.1` threshold.
 This checkpoint extends the coupled-stack CPU solver-comparison slice by
-registering 8-/9-/10-/11-/12-/13-sphere rows for the full solver set. PGS, Jacobi,
-BlockedJacobi, RedBlackGaussSeidel, and ShockPropagation use a 512-iteration
-stack cap; SymmetricPsor, BGS, and Tgs use that cap on 11-/12-/13-sphere rows; and
-NNCG uses 20 PGS preconditioner iterations through 11 spheres and 40 at 12
-spheres. Focused default PGS/Jacobi/BlockedJacobi/ShockPropagation 8-through-13,
-NNCG 2-through-12, RedBlack 2-through-12, and all-registered default
-8-/9-/10-/11-/12-/13-sphere stack/assembly benchmark filters now report
-`contract_ok=1`. The same focused 11-/12-sphere stack/assembly filter now also
+registering 8-/9-/10-/11-/12-/13-/14-sphere rows for the full solver set. PGS,
+RedBlackGaussSeidel, and ShockPropagation use a 512-iteration stack cap;
+Jacobi and BlockedJacobi use that cap through 13 spheres and a 1024 cap at 14
+spheres; SymmetricPsor, BGS, and Tgs use that cap on 11-/12-/13-/14-sphere
+rows; and NNCG uses 20 PGS preconditioner iterations through 11 spheres and 40
+from 12 spheres onward. Focused default
+PGS/Jacobi/BlockedJacobi/ShockPropagation 8-through-14, NNCG 2-through-14,
+RedBlack 2-through-14, and all-registered default
+8-/9-/10-/11-/12-/13-/14-sphere stack benchmark filters now report
+`contract_ok=1`. The same focused 11-/12-sphere stack/assembly filter also
 passes in the SIMD-enabled build tree with `rows=34`, `failures=0`, and
 `simd_rows=34`, and in the CUDA-enabled build tree with `rows=34`,
-`failures=0`, and `cuda_rows=34`; the CUDA-enabled rows are CPU solver rows in a
-CUDA-enabled build, not CUDA LCP kernel execution.
+`failures=0`, and `cuda_rows=34`; the CUDA-enabled rows are CPU solver rows in
+a CUDA-enabled build, not CUDA LCP kernel execution.
 The latest local slice extends manually assembled articulated unified-contact
 all-solver rows from 48-contact to 64-contact packets for link-ground,
 link-vs-dynamic-rigid, and cross-multibody link-vs-link snapshots. Focused
@@ -1660,6 +1663,18 @@ dense/robot-like contact scenes.
   runs report 16 all-solver 13-sphere rows with `contract_ok=1`,
   `sphere_count=13`, `contact_count=13`, `problem_size=39`, and the expected
   backend build-state counters.
+  An initial focused default 14-sphere probe with the 512-iteration Jacobi and
+  Blocked Jacobi caps reported `contract_ok=0` for those two rows at
+  `iterations=512` and residual/complementarity `5.23658e-03`. With the
+  14-sphere Jacobi and Blocked Jacobi caps raised to 1024, the focused default
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldStackContact/FrictionIndex/.*/14$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_out=/tmp/dart_lcp_world_stack_solver_14.json --benchmark_out_format=json`
+  run reports `rows=16`, `contract_ok_rows=16`, `sphere_count=14`,
+  `contact_count=14`, `problem_size=42`,
+  `max_residual=3.7369070377817337e-03`,
+  `max_complementarity=3.7369070377816505e-03`, and
+  `max_bound_violation=0`; Jacobi and Blocked Jacobi report
+  `jacobi_max_iterations=1024`/`blocked_jacobi_max_iterations=1024` and
+  `iterations=568`.
   The focused default
   `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldStackContactAssembly_BoxedLcp/(13|14|15|16)$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_format=json`
   run reports `contract_ok=1` for the 13-, 14-, 15-, and 16-sphere assembly
