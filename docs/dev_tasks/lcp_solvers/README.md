@@ -284,8 +284,8 @@
       four independent sphere-ground contacts advanced over 200 steps, plus
       4-/8-contact separated sphere-ground step benchmark rows.
 - [x] Extended denser separated-contact DART 7 boxed-LCP end-to-end evidence to
-      16 independent sphere-ground contacts advanced over 200 steps, plus a
-      16-contact separated sphere-ground step benchmark row.
+      32 independent sphere-ground contacts advanced over 200 steps, plus
+      16-/24-/32-contact separated sphere-ground step benchmark rows.
 - [x] Added DART 7 boxed-LCP articulated contact evidence for fixed-base
       prismatic links in one-link and four-link ground-contact scenes, plus
       1-/4-/8-/16-link articulated ground-step benchmark rows through the
@@ -1809,7 +1809,7 @@ tradeoffs evidence based.
   run passed all four coupled stack step tests, focused
   `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.TwoSphereWorldStepMaintainsContactInvariants'`
   and
-  `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.FourSphereWorldStepMaintainsContactInvariants:BoxedLcpContact.SixteenSphereWorldStepMaintainsContactInvariants'`
+  `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.FourSphereWorldStepMaintainsContactInvariants:BoxedLcpContact.SixteenSphereWorldStepMaintainsContactInvariants:BoxedLcpContact.ThirtyTwoSphereWorldStepMaintainsContactInvariants'`
   runs passed.
   `BoxedLcpContact.ArticulatedPrismaticLinkGroundStepMaintainsInvariants`
   advances a fixed-base prismatic link in light ground contact through
@@ -2540,15 +2540,20 @@ tradeoffs evidence based.
   `max_vertical_speed=2.52e-6`.
 - DART 7 separated multi-contact end-to-end benchmark evidence:
   `BM_LcpWorldSeparatedStep_BoxedLcp/4/200`,
-  `BM_LcpWorldSeparatedStep_BoxedLcp/8/200`, and
-  `BM_LcpWorldSeparatedStep_BoxedLcp/16/200` rebuild separated sphere-ground
+  `BM_LcpWorldSeparatedStep_BoxedLcp/8/200`,
+  `BM_LcpWorldSeparatedStep_BoxedLcp/16/200`,
+  `BM_LcpWorldSeparatedStep_BoxedLcp/24/200`, and
+  `BM_LcpWorldSeparatedStep_BoxedLcp/32/200` rebuild separated sphere-ground
   worlds, enter simulation mode, advance the public boxed-LCP `World::step()`
   path for 200 steps, and check finite-state, contact-height, vertical-rest,
-  and tangential-slowing invariants. The focused
+  and tangential-slowing invariants. The focused default/SIMD/CUDA
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldSeparatedStep_BoxedLcp' --benchmark_min_time=0.001s --benchmark_repetitions=1`
-  run reported `invariant_ok=1` for all three rows, including
-  `contact_count=16`; the 16-contact row reported `max_height_error=0`,
-  `max_vertical_speed=0`, and `min_tangential_speed_drop=0.23816`.
+  runs reported `invariant_ok=1` for all five rows, with
+  `contact_count=32`, `step_count=200`, `max_height_error=0`,
+  `max_vertical_speed=0`, and `min_tangential_speed_drop>=0.229085`; the SIMD
+  run reported `build_simd_enabled=1` for all five rows, and the CUDA-enabled
+  run reported `build_cuda_enabled=1` for all five rows. The CUDA-enabled rows
+  are CPU public-step rows in that build tree, not CUDA LCP kernel execution.
 - DART 7 dense box-face end-to-end benchmark evidence:
   `BM_LcpWorldBoxStep_BoxedLcp/{1,2,4,8}/200` and
   `BM_LcpWorldBoxStep_BoxedLcp/16/500`,
@@ -3026,6 +3031,9 @@ tradeoffs evidence based.
   shared dynamic bodies.
 - Added DART 7 coupled stack end-to-end `World::step()` evidence for the same
   3-sphere topology over 200 and 500 public boxed-LCP steps.
+- Extended separated sphere-ground DART 7 public boxed-LCP `World::step()`
+  evidence to 32 independent contacts over 200 steps, with focused
+  default/SIMD/CUDA benchmark rows reporting `invariant_ok=1`.
 - Added boxed-LCP Baumgarte velocity-bias stabilization and DART 7 coupled
   stack end-to-end `World::step()` evidence for a 4-sphere stack over 200
   public boxed-LCP steps.

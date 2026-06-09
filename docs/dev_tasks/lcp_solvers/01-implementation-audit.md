@@ -40,12 +40,11 @@ Support abbreviations:
 - Current evidence is mostly math-layer evidence, with DART 7
   `dart::simulation::World` boxed-LCP contact snapshot tests for
   single-contact and two-contact sphere-ground friction cases, 200-step
-  two-sphere and four-sphere boxed-LCP
-  `World::step()` invariant tests, 16-sphere separated-contact boxed-LCP
+  two-sphere, four-sphere, sixteen-sphere, and thirty-two-sphere boxed-LCP
   `World::step()` invariant tests, 3-/4-/5-/6-/7-/8-/9-/10-/11-/12-/13-/14-/15-/16-/24-/32-sphere coupled-stack boxed-LCP
   snapshot tests, 3-sphere 200-step, 3-sphere 500-step, 4-sphere 200-step,
   5-sphere 500-step, and 6-sphere 1000-step boxed-LCP `World::step()` invariant tests and benchmark
-  rows, 4-/8-/16-contact separated sphere-ground step benchmark rows,
+  rows, 4-/8-/16-/24-/32-contact separated sphere-ground step benchmark rows,
   1-/2-/4-/8-/16-/24-/32-/48-box dense box-face long-horizon step
   benchmark rows, 64-box one-step and 75-step dense box-face public-step rows,
   96-box one-step and 75-step dense box-face public-step rows, 128-box
@@ -713,6 +712,11 @@ The current local evidence for this task is:
   boxed-LCP `World::step()` iterations and checking the same finite state,
   contact-height, bounded vertical velocity, tangential-speed reduction, and
   static-ground invariants.
+- `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.ThirtyTwoSphereWorldStepMaintainsContactInvariants' --gtest_brief=1`
+  passed 1 test, advancing 32 independent sphere-ground contacts for 200
+  boxed-LCP `World::step()` iterations and checking finite state,
+  contact-height, bounded vertical velocity, tangential-speed reduction, and
+  static-ground invariants.
 - `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.ArticulatedPrismaticLinkGroundStepMaintainsInvariants' --gtest_brief=1`
   passed 1 test, advancing a fixed-base prismatic articulated link in light
   ground contact for 400 boxed-LCP `World::step()` iterations. The test first
@@ -1147,12 +1151,19 @@ The current local evidence for this task is:
   `max_vertical_speed=2.52e-6`.
 - `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldSeparatedStep_BoxedLcp' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   passed locally for `BM_LcpWorldSeparatedStep_BoxedLcp/4/200`,
-  `BM_LcpWorldSeparatedStep_BoxedLcp/8/200`, and
-  `BM_LcpWorldSeparatedStep_BoxedLcp/16/200`. The rows rebuild separated
-  sphere-ground worlds, enter simulation mode, advance 200 public boxed-LCP
-  `World::step()` iterations, and report `invariant_ok=1`. The 16-contact row
-  reported `max_height_error=0`, `max_vertical_speed=0`, and
-  `min_tangential_speed_drop=0.23816`.
+  `BM_LcpWorldSeparatedStep_BoxedLcp/8/200`,
+  `BM_LcpWorldSeparatedStep_BoxedLcp/16/200`,
+  `BM_LcpWorldSeparatedStep_BoxedLcp/24/200`, and
+  `BM_LcpWorldSeparatedStep_BoxedLcp/32/200` in default, SIMD-enabled, and
+  CUDA-enabled build trees. The rows rebuild separated sphere-ground worlds,
+  enter simulation mode, advance 200 public boxed-LCP `World::step()`
+  iterations, and report `invariant_ok=1`. The focused runs reported five rows
+  with zero invariant failures, `contact_count=32`, `step_count=200`,
+  `max_height_error=0`, `max_vertical_speed=0`, and
+  `min_tangential_speed_drop>=0.229085`; the SIMD run reported
+  `build_simd_enabled=1` for all five rows, and the CUDA-enabled run reported
+  `build_cuda_enabled=1` for all five rows. The CUDA-enabled rows are CPU
+  public-step rows in that build tree, not CUDA LCP kernel execution.
 - `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldArticulated(Ground|RigidImpact|LinkImpact|CartesianGround)Step_BoxedLcp' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   passed locally in default, SIMD-enabled, and CUDA-enabled build trees for
   `BM_LcpWorldArticulatedGroundStep_BoxedLcp/{1,4,8,16,24,32}/200`. The rows rebuild
@@ -1892,7 +1903,7 @@ The current local evidence for this task is:
   4-/5-/6-sphere stack snapshots for all of those solvers,
   200-step/500-step
   3-sphere, 200-step 4-sphere, 500-step 5-sphere, and 1000-step 6-sphere end-to-end stack step
-  rows, and 4-/8-/16-contact separated end-to-end step rows, plus
+  rows, and 4-/8-/16-/24-/32-contact separated end-to-end step rows, plus
   1-/2-/4-/8-/16-/24-/32-/48-box dense box-face long-horizon end-to-end step
   rows plus 64-box one-step and 75-step dense face-contact rows, fixed-base
   prismatic articulated link-ground, link-vs-rigid impact, and

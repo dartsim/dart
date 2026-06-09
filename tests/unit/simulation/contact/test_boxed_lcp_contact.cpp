@@ -2968,6 +2968,25 @@ TEST(BoxedLcpContact, SixteenSphereWorldStepMaintainsContactInvariants)
 }
 
 //==============================================================================
+// Denser separated-contact DART 7 World stepping: thirty-two independent
+// sphere-ground contacts match the largest separated public-step benchmark row.
+TEST(BoxedLcpContact, ThirtyTwoSphereWorldStepMaintainsContactInvariants)
+{
+  constexpr double kFriction = 0.7;
+  constexpr int kSphereCount = 32;
+
+  auto lcp = buildSeparatedSphereGroundScene(kSphereCount, kFriction);
+
+  const std::vector<sx::Contact> contacts = lcp->collide();
+  ASSERT_EQ(contacts.size(), static_cast<std::size_t>(kSphereCount));
+
+  lcp->enterSimulationMode();
+  lcp->step(200);
+
+  expectSeparatedSphereStepInvariants(*lcp, kSphereCount);
+}
+
+//==============================================================================
 // Dense separated-contact DART 7 World stepping: each box contributes a
 // four-point face-contact patch, so the public BoxedLcp path advances a larger
 // dense contact set with multiple dynamic bodies.
