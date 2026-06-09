@@ -582,10 +582,15 @@ evidence to a bounded 64-box/256-contact path. The new
 `SixtyFourBoxWorldStepPreservesDenseContactShape` unit test advances one public
 boxed-LCP step and checks the preserved dense contact shape, finite state, and
 height envelope; the focused default run passed in 60 ms. The new
-`BM_LcpWorldBoxStep_BoxedLcp/64/1` row reports `invariant_ok=1`,
-`dense_box_contact=1`, `contact_count=256`, `step_count=1`,
-`max_height_error=0`, and `max_vertical_speed=6.94e-18`. Do not claim a
-64-box long-horizon settling invariant: temporary probes at 1000 and 4000
+`SixtyFourBoxWorldShortHorizonMaintainsDenseContactInvariants` unit test
+advances the same scene for 75 public boxed-LCP steps under the strict settling
+invariant; the two-test focused default filter passed in 3346 ms. The new
+`BM_LcpWorldBoxStep_BoxedLcp/64/{1,75}` rows report `invariant_ok=1`,
+`dense_box_contact=1`, `contact_count=256`, and `step_count=1/75`; the 75-step
+row reports `max_height_error=2.00e-4` and `max_vertical_speed=8.28e-2`. Do
+not claim a 64-box long-horizon settling invariant: a temporary 90-step probe
+passed but was close to the vertical-rest threshold
+(`max_vertical_speed=9.80e-2`), and temporary probes at 100, 1000, and 4000
 public `World::step()` iterations failed the existing vertical-rest invariant
 with `LCP internal error, s <= 0` warnings and max vertical speeds above the
 `0.1` threshold.
@@ -647,9 +652,10 @@ Do not claim a 7-sphere public-step stack invariant yet: local temporary probes
 failed at both 1000 and 2000 public `World::step()` iterations under the
 existing motion-invariant contract, with benchmark probes reporting
 `invariant_ok=0`. Also do not claim a 64-box dense face-contact long-horizon
-settling invariant yet: the bounded 64-box evidence is one public step only,
-and temporary 1000-/4000-step probes failed the stricter vertical-rest
-contract. After that, extend
+settling invariant yet: the bounded 64-box committed evidence is one public
+step plus 75 strict invariant-checked public steps, while temporary 100-,
+1000-, and 4000-step probes failed the stricter vertical-rest contract. After
+that, extend
 DART 7 boxed-LCP world-contact
 evidence beyond the current separated sphere-ground, fixed-base prismatic
 articulated end-to-end coverage, connected Cartesian-chain articulated
@@ -657,8 +663,9 @@ end-to-end coverage, cross-multibody articulated link-vs-link impact coverage,
 manually assembled three-axis articulated LCP snapshots, 4-/5-/6-sphere
 coupled-stack end-to-end, 16-sphere vertical stack snapshots,
 the 48-box unit/benchmark dense face-contact long-horizon public-step slice,
-and the 64-box dense face-contact one-step shape slice to broader articulated,
-longer-running coupled, and broader dense/robot-like contact scenes.
+and the 64-box dense face-contact one-step shape plus 75-step strict-invariant
+slice to broader articulated, longer-running coupled, and broader
+dense/robot-like contact scenes.
 
 ## Context That Would Be Lost
 
@@ -1624,14 +1631,18 @@ longer-running coupled, and broader dense/robot-like contact scenes.
   `SixtyFourBoxWorldStepPreservesDenseContactShape` test covers one public
   boxed-LCP `World::step()` on a 64-box, 256-contact dense face scene and
   checks preserved contact shape, finite state, and contact height; the
-  focused default run passed in 60 ms. Temporary 64-box probes using the
-  stricter long-horizon settling invariant failed at 1000 and 4000 public
-  `World::step()` iterations, so a 64-box long-horizon settling result remains
+  focused default run passed in 60 ms.
+  `SixtyFourBoxWorldShortHorizonMaintainsDenseContactInvariants` covers the
+  same scene for 75 public boxed-LCP `World::step()` iterations under the
+  existing strict settling invariant; the two-test focused default filter
+  passed in 3346 ms. Temporary 64-box benchmark probes passed at 90 steps with
+  `max_vertical_speed=9.80e-2` but failed at 100 steps with
+  `invariant_ok=0` and `max_vertical_speed=0.196`; longer 1000-/4000-step
+  probes also failed, so a 64-box long-horizon settling result remains
   unclaimed.
-  The
-  full `test_boxed_lcp_contact --gtest_list_tests` inventory lists 63 tests; the
-  earlier `--gtest_brief=1` run still
-  emitting the dense-patch Dantzig warning.
+  The full `test_boxed_lcp_contact --gtest_list_tests` inventory lists 73 tests;
+  the earlier `--gtest_brief=1` run still emitted the dense-patch Dantzig
+  warning.
 - `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` registers 72 scoped dense box
   rows: `Pgs`, `RedBlackGaussSeidel`, `NNCG`, `Apgd`, `Tgs`, and `Admm` on
   1/2/4/8/16/24/32/48/64/96/128/192-box snapshots. Focused
@@ -1666,7 +1677,7 @@ longer-running coupled, and broader dense/robot-like contact scenes.
   `BM_LcpWorldBoxStep_BoxedLcp/16/500`,
   `BM_LcpWorldBoxStep_BoxedLcp/24/2000`, and
   `BM_LcpWorldBoxStep_BoxedLcp/{32,48}/4000`, plus
-  `BM_LcpWorldBoxStep_BoxedLcp/64/1`, rebuild separated
+  `BM_LcpWorldBoxStep_BoxedLcp/64/{1,75}`, rebuild separated
   dense box-face worlds, confirm 4/8/16/32/64/96/128/192/256 contacts before
   stepping, enter simulation mode, advance public boxed-LCP `World::step()`
   iterations, and report end-to-end invariant counters on the registered
@@ -1684,7 +1695,10 @@ longer-running coupled, and broader dense/robot-like contact scenes.
   `max_vertical_speed=1.08e-2`. The focused default 64-box one-step row
   reported `invariant_ok=1`, `dense_box_contact=1`, `contact_count=256`,
   `step_count=1`, `max_height_error=0`, and
-  `max_vertical_speed=6.94e-18`. Focused SIMD-enabled and CUDA-enabled 48-box
+  `max_vertical_speed=6.94e-18`. The focused default 64-box 75-step row
+  reported `invariant_ok=1`, `dense_box_contact=1`, `contact_count=256`,
+  `step_count=75`, `max_height_error=2.00e-4`, and
+  `max_vertical_speed=8.28e-2`. Focused SIMD-enabled and CUDA-enabled 48-box
   rows also reported `invariant_ok=1`: the SIMD row reported
   `build_simd_enabled=1`, `max_height_error=99.597u`, and
   `max_vertical_speed=0.0288169`, and the CUDA-enabled row reported
@@ -2262,7 +2276,7 @@ python scripts/run_benchmark_smoke.py build/cuda/cpp/Release/bin/BM_LCP_COMPARE 
 ```
 
 Then continue with harder generated-size coverage, broader DART 7 boxed-LCP
-contact coverage beyond the current 48-box dense box-face long-horizon
-step slice and 64-box one-step shape slice, and backend-specific
-SIMD/CUDA/solver-internal threaded benchmark evidence described in
-`README.md` and `01-implementation-audit.md`.
+contact coverage beyond the current 48-box dense box-face long-horizon step
+slice and 64-box one-step/75-step slices, and backend-specific
+SIMD/CUDA/solver-internal threaded benchmark evidence described in `README.md`
+and `01-implementation-audit.md`.
