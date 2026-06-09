@@ -2492,6 +2492,22 @@ tradeoffs evidence based.
   stress parallel rows reported `profile_enabled=1`, `parallel_units=7`, and
   `worker_count=20`. The CUDA-enabled rows are CPU solver benchmark rows in
   that build tree, not CUDA LCP kernel execution.
+  The benchmark target now also registers 32
+  `BM_LcpWorldContactPipeline32Batch(Serial|Parallel)/FrictionIndex/<solver>`
+  rows for all 16 friction-index-capable solvers over one 5-problem batch made
+  from the 32-contact separated sphere-ground, 32-sphere coupled vertical
+  stack, and 32-contact articulated ground, rigid-impact, and cross-link-impact
+  fixtures. Focused default, SIMD-enabled, and CUDA-enabled
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldContactPipeline32Batch(Serial|Parallel)' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  runs each reported `contract_ok=1` for all 32 rows with `batch_size=5`,
+  `total_contact_count=160`, `total_problem_size=480`,
+  `contact_pipeline_32_batch=1`, and `parallel_units=5` on parallel rows. The
+  PGS/Jacobi/BlockedJacobi/BGS/Red-Black/ShockPropagation/TGS rows use the
+  same 32-sphere stack iteration caps as the single-problem stack benchmarks;
+  `NNCG` uses the same stronger 160-iteration PGS preconditioner. The
+  SIMD-enabled rows report `build_simd_enabled=1`, while the CUDA-enabled rows
+  are CPU solver benchmark rows in that build tree, not CUDA LCP kernel
+  execution.
 - DART 7 coupled stack end-to-end benchmark evidence:
   `BM_LcpWorldStackStep_BoxedLcp/3/200` and
   `BM_LcpWorldStackStep_BoxedLcp/3/500` rebuild the 3-sphere stack world, while
@@ -3052,6 +3068,10 @@ tradeoffs evidence based.
   friction-index-capable solvers over the same 5-problem separated-contact and
   stacked-contact snapshot batch, both serially and through the experimental
   `ParallelExecutor`.
+- Added denser mixed DART 7 world-contact pipeline batch benchmark rows that
+  compare all friction-index-capable solvers over one 5-problem batch of
+  32-contact separated, coupled stack, and articulated unified-contact
+  snapshots, both serially and through the experimental `ParallelExecutor`.
 - Added focused local SIMD-enabled CPU evidence for generated LCP correctness
   and selected serial/task-parallel batch benchmark rows.
 - Added focused local CUDA-enabled build/runtime evidence and ran generated LCP

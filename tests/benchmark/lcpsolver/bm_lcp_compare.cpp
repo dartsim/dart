@@ -885,7 +885,8 @@ struct WorldContactBenchmarkBatch
 enum class WorldContactBatchKind
 {
   Baseline,
-  StressStack
+  StressStack,
+  ContactPipeline32
 };
 
 enum class StaggeringContactPipelineKind
@@ -1581,13 +1582,33 @@ std::optional<WorldContactBenchmarkBatch> MakeWorldContactBenchmarkBatch(
   constexpr std::array<int, 3> kSeparatedContactCounts{1, 2, 4};
   constexpr std::array<int, 2> kBaselineStackSphereCounts{2, 3};
   constexpr std::array<int, 4> kStressStackSphereCounts{2, 3, 4, 5};
+  constexpr std::array<StaggeringContactPipelineSweepCase, 5>
+      kContactPipeline32Cases{{
+          {StaggeringContactPipelineKind::WorldSeparated,
+           32,
+           "WorldSeparated32"},
+          {StaggeringContactPipelineKind::WorldStack, 32, "WorldStack32"},
+          {StaggeringContactPipelineKind::ArticulatedGround,
+           32,
+           "ArticulatedGround32"},
+          {StaggeringContactPipelineKind::ArticulatedRigidImpact,
+           32,
+           "ArticulatedRigidImpact32"},
+          {StaggeringContactPipelineKind::ArticulatedCrossLinkImpact,
+           32,
+           "ArticulatedCrossLinkImpact32"},
+      }};
 
   WorldContactBenchmarkBatch batch;
-  batch.problems.reserve(
-      kSeparatedContactCounts.size()
-      + (batchKind == WorldContactBatchKind::StressStack
-             ? kStressStackSphereCounts.size()
-             : kBaselineStackSphereCounts.size()));
+  if (batchKind == WorldContactBatchKind::ContactPipeline32) {
+    batch.problems.reserve(kContactPipeline32Cases.size());
+  } else {
+    batch.problems.reserve(
+        kSeparatedContactCounts.size()
+        + (batchKind == WorldContactBatchKind::StressStack
+               ? kStressStackSphereCounts.size()
+               : kBaselineStackSphereCounts.size()));
+  }
 
   auto appendProblem = [&batch](WorldContactBenchmarkProblem& fixture) {
     batch.totalProblemSize += fixture.problem.b.size();
@@ -1595,6 +1616,18 @@ std::optional<WorldContactBenchmarkBatch> MakeWorldContactBenchmarkBatch(
     batch.totalBodyCount += fixture.bodyCount;
     batch.problems.push_back(std::move(fixture.problem));
   };
+
+  if (batchKind == WorldContactBatchKind::ContactPipeline32) {
+    for (const auto testCase : kContactPipeline32Cases) {
+      auto fixture
+          = MakeStaggeringContactPipelineSweepProblem(testCase, errorMessage);
+      if (!fixture.has_value()) {
+        return std::nullopt;
+      }
+      appendProblem(*fixture);
+    }
+    return batch;
+  }
 
   for (const int contactCount : kSeparatedContactCounts) {
     auto fixture = MakeWorldContactBenchmarkProblem(contactCount, errorMessage);
@@ -5832,6 +5865,47 @@ void ConfigureSolverBenchmarkOptions(
   }
 }
 
+void ConfigureContactPipeline32BatchOptions(
+    SolverBenchmarkOptions& storage,
+    const dart::test::LcpSolverManifestEntry& solver)
+{
+  if (solver.name == "Pgs" || solver.name == "Jacobi"
+      || solver.name == "BlockedJacobi" || solver.name == "BGS"
+      || solver.name == "RedBlackGaussSeidel"
+      || solver.name == "ShockPropagation" || solver.name == "Tgs") {
+    storage.options.maxIterations = 2048;
+  } else if (solver.name == "SymmetricPsor") {
+    storage.options.maxIterations = 512;
+  } else if (solver.name == "NNCG") {
+    storage.options.maxIterations = 4096;
+    storage.nncgParams.pgsIterations = 160;
+  }
+}
+
+void AddContactPipeline32BatchSolverCounters(
+    benchmark::State& state,
+    const SolverBenchmarkOptions& storage,
+    const dart::test::LcpSolverManifestEntry& solver)
+{
+  if (solver.name == "Pgs") {
+    AddPgsCounters(state, storage.options);
+  } else if (solver.name == "SymmetricPsor") {
+    AddSymmetricPsorCounters(state, storage.options);
+  } else if (solver.name == "Jacobi") {
+    AddJacobiCounters(state, storage.options);
+  } else if (solver.name == "RedBlackGaussSeidel") {
+    AddRedBlackGaussSeidelCounters(state, storage.options);
+  } else if (solver.name == "BlockedJacobi") {
+    AddBlockedJacobiCounters(state, storage.options);
+  } else if (solver.name == "BGS") {
+    AddBgsCounters(state, storage.options);
+  } else if (solver.name == "NNCG") {
+    AddNncgCounters(state, storage.nncgParams);
+  } else if (solver.name == "Tgs") {
+    AddTgsCounters(state, storage.options);
+  }
+}
+
 template <typename Params>
 void ConfigureNewtonWarmStartParameters(
     Params& params, const NewtonWarmStartMode mode)
@@ -9259,6 +9333,9 @@ void RunWorldContactBatchSerialBenchmark(
   SolverBenchmarkOptions storage;
   ConfigureSolverBenchmarkOptions(
       storage, solverEntry, batch->problems.front());
+  if (batchKind == WorldContactBatchKind::ContactPipeline32) {
+    ConfigureContactPipeline32BatchOptions(storage, solverEntry);
+  }
 
   const auto solver = solverEntry.create();
   if (solver == nullptr) {
@@ -9279,13 +9356,22 @@ void RunWorldContactBatchSerialBenchmark(
       *batch,
       MakeLabel(
           std::string(solverEntry.name),
-          batchKind == WorldContactBatchKind::StressStack
-              ? "WorldContactStressBatchSerial/FrictionIndex"
-              : "WorldContactBatchSerial/FrictionIndex"));
+          batchKind == WorldContactBatchKind::ContactPipeline32
+              ? "WorldContactPipeline32BatchSerial/FrictionIndex"
+              : (batchKind == WorldContactBatchKind::StressStack
+                     ? "WorldContactStressBatchSerial/FrictionIndex"
+                     : "WorldContactBatchSerial/FrictionIndex")));
   if (batchKind == WorldContactBatchKind::StressStack) {
     state.counters["stress_stack_contact_batch"] = 1.0;
     state.counters["separated_contact_shape_count"] = 3.0;
     state.counters["stack_contact_shape_count"] = 4.0;
+  } else if (batchKind == WorldContactBatchKind::ContactPipeline32) {
+    state.counters["contact_pipeline_32_batch"] = 1.0;
+    state.counters["contact_count_per_problem"] = 32.0;
+    state.counters["separated_contact_shape_count"] = 1.0;
+    state.counters["stack_contact_shape_count"] = 1.0;
+    state.counters["articulated_contact_shape_count"] = 3.0;
+    AddContactPipeline32BatchSolverCounters(state, storage, solverEntry);
   }
 
   if (storage.hasShockPropagationParams) {
@@ -9315,6 +9401,9 @@ void RunWorldContactBatchParallelBenchmark(
     state.SkipWithError(fixture.errorMessage.c_str());
     return;
   }
+  if (batchKind == WorldContactBatchKind::ContactPipeline32) {
+    ConfigureContactPipeline32BatchOptions(fixture.storage, solverEntry);
+  }
 
   compute::ParallelExecutor executor;
   BatchBenchmarkCounters counters;
@@ -9332,13 +9421,23 @@ void RunWorldContactBatchParallelBenchmark(
       *batch,
       MakeLabel(
           std::string(solverEntry.name),
-          batchKind == WorldContactBatchKind::StressStack
-              ? "WorldContactStressBatchParallel/FrictionIndex"
-              : "WorldContactBatchParallel/FrictionIndex"));
+          batchKind == WorldContactBatchKind::ContactPipeline32
+              ? "WorldContactPipeline32BatchParallel/FrictionIndex"
+              : (batchKind == WorldContactBatchKind::StressStack
+                     ? "WorldContactStressBatchParallel/FrictionIndex"
+                     : "WorldContactBatchParallel/FrictionIndex")));
   if (batchKind == WorldContactBatchKind::StressStack) {
     state.counters["stress_stack_contact_batch"] = 1.0;
     state.counters["separated_contact_shape_count"] = 3.0;
     state.counters["stack_contact_shape_count"] = 4.0;
+  } else if (batchKind == WorldContactBatchKind::ContactPipeline32) {
+    state.counters["contact_pipeline_32_batch"] = 1.0;
+    state.counters["contact_count_per_problem"] = 32.0;
+    state.counters["separated_contact_shape_count"] = 1.0;
+    state.counters["stack_contact_shape_count"] = 1.0;
+    state.counters["articulated_contact_shape_count"] = 3.0;
+    AddContactPipeline32BatchSolverCounters(
+        state, fixture.storage, solverEntry);
   }
   AddParallelExecutionCounters(state, profile, fixture.graph);
 
@@ -11032,6 +11131,24 @@ std::string MakeWorldContactStressBatchParallelBenchmarkName(
   return out.str();
 }
 
+std::string MakeWorldContactPipeline32BatchSerialBenchmarkName(
+    const dart::test::LcpSolverManifestEntry& solver)
+{
+  std::ostringstream out;
+  out << "BM_LcpWorldContactPipeline32BatchSerial/FrictionIndex/"
+      << solver.name;
+  return out.str();
+}
+
+std::string MakeWorldContactPipeline32BatchParallelBenchmarkName(
+    const dart::test::LcpSolverManifestEntry& solver)
+{
+  std::ostringstream out;
+  out << "BM_LcpWorldContactPipeline32BatchParallel/FrictionIndex/"
+      << solver.name;
+  return out.str();
+}
+
 std::string MakeWorldBoxContactBatchSerialBenchmarkName(
     const dart::test::LcpSolverManifestEntry& solver)
 {
@@ -12580,6 +12697,22 @@ void RegisterWorldContactBatchBenchmarks()
                 state, solver, WorldContactBatchKind::StressStack);
           });
     }
+
+    const auto pipeline32SerialName
+        = MakeWorldContactPipeline32BatchSerialBenchmarkName(solver);
+    benchmark::RegisterBenchmark(
+        pipeline32SerialName.c_str(), [solver](benchmark::State& state) {
+          RunWorldContactBatchSerialBenchmark(
+              state, solver, WorldContactBatchKind::ContactPipeline32);
+        });
+
+    const auto pipeline32ParallelName
+        = MakeWorldContactPipeline32BatchParallelBenchmarkName(solver);
+    benchmark::RegisterBenchmark(
+        pipeline32ParallelName.c_str(), [solver](benchmark::State& state) {
+          RunWorldContactBatchParallelBenchmark(
+              state, solver, WorldContactBatchKind::ContactPipeline32);
+        });
   }
 }
 

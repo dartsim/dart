@@ -80,7 +80,9 @@ Support abbreviations:
   6-sphere stack assembly
   rows, and a mixed 5-problem
   serial/`ParallelExecutor` batch over the 1/2/4 separated-contact and 2/3
-  stack snapshots. A focused local SIMD-enabled CPU run now exists for
+  stack snapshots, plus a denser mixed 5-problem serial/`ParallelExecutor`
+  batch over 32-contact separated, coupled stack, and articulated
+  contact-pipeline snapshots. A focused local SIMD-enabled CPU run now exists for
   generated LCP correctness and selected benchmark rows. Jacobi also has an
   opt-in solver-internal CPU worker-thread correctness and comparison slice,
   plus experimental CUDA fixed-iteration Jacobi and PGS batch paths for
@@ -1104,6 +1106,18 @@ The current local evidence for this task is:
   `profile_enabled=1`, `worker_count=20`, and `parallel_units=7`. These are
   CPU solver rows in those build trees; the CUDA-enabled rows are not CUDA LCP
   kernel execution.
+- `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldContactPipeline32Batch(Serial|Parallel)' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  passed in default, SIMD-enabled, and CUDA-enabled build trees. It runs 32
+  registered rows for all 16 friction-index-capable solvers over one 5-problem
+  DART 7 contact-pipeline batch: 32-contact separated sphere-ground,
+  32-sphere coupled vertical stack, and 32-contact articulated ground,
+  rigid-impact, and cross-link-impact snapshots. Each row reported
+  `contract_ok=1`, `batch_size=5`, `total_contact_count=160`,
+  `total_problem_size=480`, and `contact_pipeline_32_batch=1`; parallel rows
+  reported `parallel_units=5`. The iterative rows use the same 32-sphere stack
+  iteration/preconditioner settings as the single-problem stack benchmarks.
+  SIMD-enabled rows report `build_simd_enabled=1`; CUDA-enabled rows are CPU
+  solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
 - `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldStackStep_BoxedLcp' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   passed locally in default, SIMD-enabled, and CUDA-enabled build trees for
   `BM_LcpWorldStackStep_BoxedLcp/3/200`,
