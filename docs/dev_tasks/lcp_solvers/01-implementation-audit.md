@@ -42,7 +42,7 @@ Support abbreviations:
   single-contact and two-contact sphere-ground friction cases, 200-step
   two-sphere and four-sphere boxed-LCP
   `World::step()` invariant tests, 16-sphere separated-contact boxed-LCP
-  `World::step()` invariant tests, 3-, 4-, 5-, 6-, 7-, and 8-sphere coupled-stack boxed-LCP
+  `World::step()` invariant tests, 3-/4-/5-/6-/7-/8-/9-/10-/11-/12-/13-/14-/15-/16-/24-/32-sphere coupled-stack boxed-LCP
   snapshot tests, 3-sphere 200-step, 3-sphere 500-step, 4-sphere 200-step,
   5-sphere 500-step, and 6-sphere 1000-step boxed-LCP `World::step()` invariant tests and benchmark
   rows, 4-/8-/16-contact separated sphere-ground step benchmark rows,
@@ -793,6 +793,11 @@ The current local evidence for this task is:
 - `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.EightSphereStackWorldContactSnapshotSatisfiesLcpContract' --gtest_brief=1`
   passed locally. This validates the 8-sphere, 8-contact, 24-row boxed/findex
   stack snapshot only; no 8-sphere public-step invariant is claimed.
+- `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.TwentyFourSphereStackWorldContactSnapshotSatisfiesLcpContract:BoxedLcpContact.ThirtyTwoSphereStackWorldContactSnapshotSatisfiesLcpContract' --gtest_brief=1`
+  passed locally. This validates the 24-/32-sphere, 24-/32-contact,
+  72-/96-row boxed/findex stack snapshots assembled from DART 7
+  `World::collide()` and checks nonzero normal-contact coupling. This is
+  snapshot evidence only; no 24-/32-sphere public-step invariant is claimed.
 - `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.SphereStackWorldStepMaintainsContactInvariants'`
   passed 1 test, advancing the same 3-sphere vertical stack through 200 public
   boxed-LCP `World::step()` iterations and checking finite state,
@@ -801,7 +806,7 @@ The current local evidence for this task is:
 - `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.LongRunningSphereStackWorldStepMaintainsContactInvariants'`
   passed 1 test, advancing the same 3-sphere vertical stack through 500 public
   boxed-LCP `World::step()` iterations with the same motion invariants.
-- The `test_boxed_lcp_contact --gtest_list_tests` inventory now lists 63 tests.
+- The `test_boxed_lcp_contact --gtest_list_tests` inventory now lists 75 tests.
   The earlier full run still emits the existing `StaticFrictionHoldsSmallPush` degenerate-pivot
   warning, so this should not be counted as clean evidence for
   dense-degenerate multi-contact systems.
@@ -878,7 +883,7 @@ The current local evidence for this task is:
   `BM_LcpWorldStackContact/FrictionIndex/<solver>/{9,10}` rows for the same set
   including `Jacobi`, `BlockedJacobi`, `RedBlackGaussSeidel`, and
   `ShockPropagation`. The matching
-  `BM_LcpWorldStackContactAssembly_BoxedLcp/{2,3,4,5,6,7,8,9,10}` rows rebuild,
+  `BM_LcpWorldStackContactAssembly_BoxedLcp/{2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,24,32}` rows rebuild,
   collide, assemble through `detail::solveBoxedLcpContacts`, solve, and
   validate the boxed-LCP stack contact path. The focused 4-sphere benchmark run
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldStackContact/FrictionIndex/.*/4|BM_LcpWorldStackContactAssembly_BoxedLcp/4' --benchmark_min_time=0.001s --benchmark_repetitions=1`
@@ -999,6 +1004,14 @@ The current local evidence for this task is:
   `sphere_count=13`, `contact_count=13`, `problem_size=39`, and the expected
   backend build-state counters. The CUDA-enabled rows are CPU solver rows in a
   CUDA-enabled build, not CUDA LCP kernel execution.
+  A focused default
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldStackContactAssembly_BoxedLcp/(24|32)$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_out=/tmp/dart_lcp_world_stack_assembly_32.json --benchmark_out_format=json`
+  run reports `rows=2`, `contract_ok_rows=2`, `sphere_count=24/32`,
+  `contact_count=24/32`, `body_count=24/32`, `problem_size=72/96`,
+  `max_residual=2.1316282072803006e-14`,
+  `max_complementarity=1.9650947535865271e-14`, and
+  `max_bound_violation=0`. No 24-/32-sphere all-solver or public-step rows are
+  claimed from this slice.
   These stacks include sphere-ground and sphere-sphere contacts coupled through
   shared dynamic bodies. This is small coupled-stack benchmark evidence, not
   articulated, robot-like, or dense-degenerate contact evidence.
@@ -1144,7 +1157,7 @@ The current local evidence for this task is:
   ground and rigid-impact rows also reported `contract_ok=1` with
   `build_simd_enabled=1` and `build_cuda_enabled=1`, respectively; those are CPU
   solver rows in those build trees, not CUDA kernel execution.
-- `test_boxed_lcp_contact --gtest_list_tests` now lists 63 tests. The dense box
+- `test_boxed_lcp_contact --gtest_list_tests` now lists 75 tests. The dense box
   face-contact test assembles a 4-contact, 12-row boxed/findex LCP from
   `World::collide()`, checks the single-dynamic-body dense patch shape, and
   verifies the problem with APGD; the sliding and static-friction box
@@ -1654,7 +1667,8 @@ The current local evidence for this task is:
   2/3-sphere vertical stacks, 4-/5-/6-sphere vertical-stack rows for all of those
   solvers, 7-sphere rows for all of those solvers,
   8-/9-/10-/11-/12-/13-sphere rows for the full solver set, mixed contact-derived
-  serial/parallel batches, the
+  serial/parallel batches, 24-/32-sphere vertical-stack boxed/findex snapshot
+  and assembly rows, the
   3-sphere stack public step path, fixed-base prismatic articulated
   link-ground one-link and four-link `World::step()` paths, connected
   fixed-base three-axis Cartesian-chain `World::step()` paths, fixed-base
@@ -1761,8 +1775,7 @@ The current local evidence for this task is:
    separated sphere-ground, fixed-base prismatic articulated, cross-multibody
    fixed-base articulated link-vs-link, manually assembled three-axis
    articulated, 6-sphere end-to-end vertical-stack, and
-   small vertical-stack boxed-LCP
-   snapshots and contact-derived benchmark rows to richer articulated,
+   24-/32-sphere vertical-stack boxed/findex snapshot and assembly rows to richer articulated,
    longer-running, and denser coupled multi-contact scenes beyond the current
    48-box unit/benchmark dense face-contact long-horizon public-step, 64-box
    dense face-contact one-step and 75-step public-step, and all-solver snapshot slices

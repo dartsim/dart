@@ -2731,6 +2731,56 @@ TEST(
 }
 
 //==============================================================================
+// A twenty-four-sphere stack extends the direct coupled-stack snapshot boundary
+// to a 72-row friction-index LCP while still avoiding public-step stability
+// claims.
+TEST(
+    BoxedLcpContact,
+    TwentyFourSphereStackWorldContactSnapshotSatisfiesLcpContract)
+{
+  constexpr double kFriction = 0.6;
+  constexpr int kSphereCount = 24;
+
+  auto lcp = buildSphereStackScene(kSphereCount, kFriction, true);
+
+  const std::vector<sx::Contact> contacts = lcp->collide();
+  ASSERT_EQ(contacts.size(), static_cast<std::size_t>(kSphereCount));
+
+  const sx::detail::BoxedLcpContactSnapshot snapshot
+      = sx::detail::solveBoxedLcpContacts(
+          sx::detail::registryOf(*lcp), contacts, lcp->getTimeStep());
+
+  expectBoxedFrictionIndexSnapshot(
+      snapshot, kFriction, kSphereCount, kSphereCount);
+  EXPECT_GT(maxNormalContactCoupling(snapshot), 1e-6);
+}
+
+//==============================================================================
+// A thirty-two-sphere stack extends the direct coupled-stack snapshot boundary
+// to a 96-row friction-index LCP while still avoiding public-step stability
+// claims.
+TEST(
+    BoxedLcpContact,
+    ThirtyTwoSphereStackWorldContactSnapshotSatisfiesLcpContract)
+{
+  constexpr double kFriction = 0.6;
+  constexpr int kSphereCount = 32;
+
+  auto lcp = buildSphereStackScene(kSphereCount, kFriction, true);
+
+  const std::vector<sx::Contact> contacts = lcp->collide();
+  ASSERT_EQ(contacts.size(), static_cast<std::size_t>(kSphereCount));
+
+  const sx::detail::BoxedLcpContactSnapshot snapshot
+      = sx::detail::solveBoxedLcpContacts(
+          sx::detail::registryOf(*lcp), contacts, lcp->getTimeStep());
+
+  expectBoxedFrictionIndexSnapshot(
+      snapshot, kFriction, kSphereCount, kSphereCount);
+  EXPECT_GT(maxNormalContactCoupling(snapshot), 1e-6);
+}
+
+//==============================================================================
 // End-to-end DART 7 World stepping for coupled contacts: a 3-sphere stack
 // advances through the public BoxedLcp path for many time steps. This checks
 // motion-level invariants for the same shared-body contact topology validated
