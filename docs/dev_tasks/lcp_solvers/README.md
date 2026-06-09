@@ -709,33 +709,34 @@ tradeoffs evidence based.
   and `contract_ok=1` for standard, boxed, friction-index, grouped synthetic
   standard/boxed/friction-index, and homogeneous 4-, 8-, and 16-contact world-contact
   Jacobi and PGS batches, plus grouped variable-size 1/2/4/8/16-contact
-  separated sphere-ground and 2/3/4/5/6/7/8-sphere coupled stack CUDA batches. A
-  focused direct/grouped synthetic follow-up
+  separated sphere-ground and 2/3/4/5/6/7/8-sphere coupled stack CUDA batches. An
+  earlier focused direct/grouped synthetic follow-up
   `BM_LCP_COMPARE --benchmark_filter='^BM_LcpCuda(Jacobi|Pgs)(Batch|GroupedBatch)_(Standard|Boxed|FrictionIndex)' --benchmark_min_time=0.001s --benchmark_repetitions=1`
-  reported 36 CUDA rows with `contract_ok=1`. The homogeneous rows cover
-  standard and boxed 24-/48-/96-/128-row packets and friction-index
-  8-/16-/32-/48-contact
-  packets at batch size 4. A focused grouped synthetic follow-up
+  reported 36 CUDA rows with `contract_ok=1` at the then-registered sizes. The
+  direct homogeneous rows now cover standard and boxed
+  24-/48-/96-/128-/192-/256-row packets and
+  friction-index 8-/16-/32-/48-/64-/96-contact packets at batch size 4. A
+  focused grouped synthetic follow-up
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpCuda(Jacobi|Pgs)GroupedBatch_(Standard|Boxed|FrictionIndex)/(2|3)$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
-  reported 12 CUDA rows with `contract_ok=1` and `cuda_group_count=6`. The
-  `/2` rows report `batch_size=12`; the standard and boxed grouped rows report
-  `min_problem_size=16`, `max_problem_size=192`, and `total_problem_size=1024`,
+  reported 12 CUDA rows with `contract_ok=1` and `cuda_group_count=7`. The
+  `/2` rows report `batch_size=14`; the standard and boxed grouped rows report
+  `min_problem_size=16`, `max_problem_size=256`, and `total_problem_size=1536`,
   while the friction-index grouped rows report `min_contact_count=4`,
-  `max_contact_count=64`, `total_contact_count=344`, `min_problem_size=12`,
-  `max_problem_size=192`, and `total_problem_size=1032`. The `/3` rows report
-  `batch_size=18`, standard/boxed `total_problem_size=1536`, and
-  friction-index `total_contact_count=516` and `total_problem_size=1548`. A
+  `max_contact_count=96`, `total_contact_count=536`, `min_problem_size=12`,
+  `max_problem_size=288`, and `total_problem_size=1608`. The `/3` rows report
+  `batch_size=21`, standard/boxed `total_problem_size=2304`, and
+  friction-index `total_contact_count=804` and `total_problem_size=2412`. A
   focused grouped CPU follow-up
   `BM_LCP_COMPARE --benchmark_filter='^BM_LcpGroupedBatch(Serial|Parallel)/(Standard|Boxed|FrictionIndex)/(Jacobi|Pgs)/(2|3)$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   reported 24 serial/`ParallelExecutor` rows with `contract_ok=1` in default,
   SIMD-enabled, and CUDA-enabled build trees. Those rows report
-  `batch_group_count=6`; `/2` rows report `batch_size=12`,
-  standard/boxed `max_problem_size=192` and `total_problem_size=1024`, and
-  friction-index `max_contact_count=64`, `max_problem_size=192`,
-  `total_contact_count=344`, and `total_problem_size=1032`. The `/3` rows
-  report `batch_size=18`, standard/boxed `total_problem_size=1536`,
-  friction-index `total_contact_count=516` and `total_problem_size=1548`, and
-  `ParallelExecutor` rows report `parallel_units=12/18` with
+  `batch_group_count=7`; `/2` rows report `batch_size=14`,
+  standard/boxed `max_problem_size=256` and `total_problem_size=1536`, and
+  friction-index `max_contact_count=96`, `max_problem_size=288`,
+  `total_contact_count=536`, and `total_problem_size=1608`. The `/3` rows
+  report `batch_size=21`, standard/boxed `total_problem_size=2304`,
+  friction-index `total_contact_count=804` and `total_problem_size=2412`, and
+  `ParallelExecutor` rows report `parallel_units=14/21` with
   `profile_enabled=1`. A
   focused homogeneous
   apples-to-apples CPU/CUDA follow-up

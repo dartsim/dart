@@ -1516,22 +1516,23 @@ The current local evidence for this task is:
   pass in default, SIMD-enabled, and CUDA-enabled build trees with
   `contract_ok=1`, `batch_size=4`, and `parallel_units=4` on
   `ParallelExecutor` rows. The
-  grouped synthetic CUDA rows cover six problem-size groups and two-/three-variant
+  grouped synthetic CUDA rows cover seven problem-size groups and two-/three-variant
   rows per group. The standard and boxed rows cover
-  16/32/48/96/128/192-row packets; the `/2` rows report `batch_size=12`,
-  `cuda_group_count=6`, and `total_problem_size=1024`, while the `/3` rows
-  report `batch_size=18`, `cuda_group_count=6`, and `total_problem_size=1536`.
-  The friction-index rows cover 4/8/16/32/48/64-contact packets with
-  `min_problem_size=12` and `max_problem_size=192`; the `/2` rows report
-  `total_contact_count=344` and `total_problem_size=1032`, while the `/3` rows
-  report `total_contact_count=516` and `total_problem_size=1548`. The matching
+  16/32/48/96/128/192/256-row packets; the `/2` rows report
+  `batch_size=14`, `cuda_group_count=7`, and `total_problem_size=1536`,
+  while the `/3` rows report `batch_size=21`, `cuda_group_count=7`, and
+  `total_problem_size=2304`. The friction-index rows cover
+  4/8/16/32/48/64/96-contact packets with `min_problem_size=12` and
+  `max_problem_size=288`; the `/2` rows report `total_contact_count=536` and
+  `total_problem_size=1608`, while the `/3` rows report
+  `total_contact_count=804` and `total_problem_size=2412`. The matching
   grouped CPU serial and DART 7 `ParallelExecutor` rows cover Jacobi and PGS
   over the same groups in default, SIMD-enabled, and CUDA-enabled build trees;
   focused smokes report 24 rows per build tree with `contract_ok=1`,
-  `batch_group_count=6`, `batch_size=12/18`, standard/boxed
-  `total_problem_size=1024/1536`, friction-index
-  `total_contact_count=344/516`, friction-index
-  `total_problem_size=1032/1548`, and `parallel_units=12/18` with
+  `batch_group_count=7`, `batch_size=14/21`, standard/boxed
+  `total_problem_size=1536/2304`, friction-index
+  `total_contact_count=536/804`, friction-index
+  `total_problem_size=1608/2412`, and `parallel_units=14/21` with
   `profile_enabled=1` on `ParallelExecutor` rows. The
   homogeneous world-contact CUDA rows used DART 7 `World::collide()`
   snapshots up to 16 contacts with `batch_size=4`, `contact_count=16`,

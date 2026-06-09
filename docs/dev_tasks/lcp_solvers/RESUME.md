@@ -515,7 +515,7 @@ both serially and through the DART 7 experimental
 synthetic standard/boxed/findex packets through 256-row and 96-contact sizes,
 homogeneous 4-/8-/16-contact DART 7 world-contact packets, homogeneous 5-/6-/7-/8-/9-/10-/11-/12-/13-/14-/15-/16-sphere coupled
 stack-contact packets, grouped variable-size synthetic standard/boxed/findex
-through 192-row and 64-contact groups, grouped variable-size
+through 256-row and 96-contact groups, grouped variable-size
 1/2/4/8/16-contact separated sphere-ground packets with two- and three-variant
 grouped benchmark rows, plus grouped variable-size
 2/3/4/5/6/7/8/9/10/11/12/13/14/15/16-sphere coupled stack-contact packets with two- and three-variant
@@ -549,6 +549,16 @@ unified-contact fixture set from 1-/4-/8-/16-contact packets to
 tests pass, and the matching two-/three-variant benchmark rows report
 `contract_ok=1`, `cuda_group_count=6`, `max_problem_size=96`, and direct CUDA
 execution counters.
+The current slice also extends the grouped variable-size synthetic CUDA and CPU
+serial/`ParallelExecutor` rows to standard/boxed 256-row groups and
+friction-index 96-contact groups. Focused CUDA grouped-batch tests pass for
+Jacobi and PGS, the focused direct CUDA grouped benchmark reports 12 rows with
+`contract_ok=1`, `cuda_group_count=7`, standard/boxed `max_problem_size=256`,
+friction-index `max_problem_size=288`, and `max_contact_count=96`, and focused
+CPU grouped benchmark runs report 24 rows per default, SIMD-enabled, and
+CUDA-enabled build tree with `contract_ok=1`, `batch_group_count=7`,
+`batch_size=14/21`, and `parallel_units=14/21` on DART 7 `ParallelExecutor`
+rows.
 
 ## Current Branch
 
@@ -570,8 +580,8 @@ Jacobi threading benchmark rows, and
 singular-degenerate standard/boxed batch benchmark rows.
 The latest checkpoints extend direct synthetic CUDA Jacobi/PGS evidence through
 standard/boxed 256-row and friction-index 96-contact packets, extend grouped
-synthetic CPU/CUDA Jacobi/PGS rows through 192-row standard/boxed and
-64-contact friction-index groups with matching DART 7 `ParallelExecutor` rows,
+synthetic CPU/CUDA Jacobi/PGS rows through 256-row standard/boxed and
+96-contact friction-index groups with matching DART 7 `ParallelExecutor` rows,
 and broaden solver-internal Jacobi threading benchmark evidence through
 8192-row banded SPD rows. The grouped synthetic CPU/CUDA rows, new direct
 256-row/96-contact CPU and CUDA rows, and the 8192-row Jacobi threading rows
@@ -665,8 +675,8 @@ Push/PR work still requires explicit maintainer/user approval.
 
 ## Immediate Next Step
 
-Move from the now-verified direct 256-row/96-contact CUDA batch rows, grouped
-synthetic CPU/CUDA batch rows, 8192-row banded Jacobi solver-internal threading
+Move from the now-verified direct and grouped synthetic 256-row/96-contact
+CPU/CUDA batch rows, 8192-row banded Jacobi solver-internal threading
 rows, extreme 128-row/256-contact exact rank-deficient,
 production active-set transition 256-contact correctness, single-benchmark, and
 batch benchmark, coupled mildly ill-conditioned
