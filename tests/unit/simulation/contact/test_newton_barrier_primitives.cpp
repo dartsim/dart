@@ -216,6 +216,27 @@ TEST(NewtonBarrierPrimitives, LineSearchPositiveStepPredicateIsShared)
 }
 
 //==============================================================================
+TEST(NewtonBarrierPrimitives, LineSearchFullStepPredicateIsShared)
+{
+  EXPECT_TRUE(nb::allowsFullLineSearchStep(1.0, true, false));
+  EXPECT_TRUE(nb::allowsFullLineSearchStep(0.25, false, false));
+  EXPECT_FALSE(nb::allowsFullLineSearchStep(0.25, true, false));
+  EXPECT_FALSE(nb::allowsFullLineSearchStep(1.0, true, true));
+
+  dc::ContinuousCollisionStepResult deformable;
+  rigid::RigidIpcLineSearchResult rigidResult;
+  EXPECT_TRUE(deformable.allowsFullStep());
+  EXPECT_TRUE(rigidResult.allowsFullStep());
+
+  deformable.hit = true;
+  deformable.stepBound = 0.25;
+  rigidResult.limited = true;
+  rigidResult.stepBound = 0.25;
+  EXPECT_FALSE(deformable.allowsFullStep());
+  EXPECT_FALSE(rigidResult.allowsFullStep());
+}
+
+//==============================================================================
 TEST(NewtonBarrierPrimitives, LineSearchStepScaleUsesSharedClampingPolicy)
 {
   EXPECT_NEAR(nb::makeLineSearchStepScale(0.25, 0.8), 0.2, 1e-15);

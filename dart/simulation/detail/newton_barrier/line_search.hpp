@@ -86,6 +86,15 @@ struct LineSearchCcdOutcome
   return stepBound > 0.0 && !indeterminate;
 }
 
+[[nodiscard]] inline bool allowsFullLineSearchStep(
+    const double stepBound,
+    const bool limited,
+    const bool indeterminate) noexcept
+{
+  return allowsPositiveLineSearchStep(stepBound, indeterminate)
+         && (!limited || stepBound >= 1.0);
+}
+
 [[nodiscard]] inline double makeLineSearchStepScale(
     const double stepBound, const double safetyScale = 1.0) noexcept
 {

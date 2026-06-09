@@ -212,6 +212,12 @@ struct RigidIpcLineSearchResult
     return newton_barrier::allowsPositiveLineSearchStep(
         stepBound, indeterminate);
   }
+
+  [[nodiscard]] bool allowsFullStep() const noexcept
+  {
+    return newton_barrier::allowsFullLineSearchStep(
+        stepBound, limited, indeterminate);
+  }
 };
 
 enum class RigidIpcProjectedNewtonStatus

@@ -2289,8 +2289,7 @@ RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
     if (result.lineSearch.limited) {
       ++result.stats.lineSearchLimitedSteps;
     }
-    if (!result.lineSearch.allowsPositiveStep()
-        || (result.lineSearch.limited && result.lineSearch.stepBound < 1.0)) {
+    if (!result.lineSearch.allowsFullStep()) {
       result.status = RigidIpcProjectedNewtonSolveStatus::LineSearchBlocked;
       result.failed = true;
       return false;
@@ -2321,9 +2320,7 @@ RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
           if (result.lineSearch.limited) {
             ++result.stats.lineSearchLimitedSteps;
           }
-          return result.lineSearch.allowsPositiveStep()
-                 && (!result.lineSearch.limited
-                     || result.lineSearch.stepBound >= 1.0);
+          return result.lineSearch.allowsFullStep();
         };
 
   for (std::size_t frictionIteration = 0;

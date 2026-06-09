@@ -70,6 +70,12 @@ struct ContinuousCollisionStepResult
     return newton_barrier::allowsPositiveLineSearchStep(
         stepBound, indeterminate);
   }
+
+  [[nodiscard]] bool allowsFullStep() const noexcept
+  {
+    return newton_barrier::allowsFullLineSearchStep(
+        stepBound, hit, indeterminate);
+  }
 };
 
 /// Conservative step bound for one moving point-triangle pair.
