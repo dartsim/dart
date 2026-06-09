@@ -120,8 +120,9 @@ Support abbreviations:
   benchmark grid now has 629 single-problem rows through 256 contacts and 1258
   batch rows through 256 contacts. The 256-contact single rows are verified in
   default, SIMD-enabled, and CUDA-enabled build trees; all 256-contact batch
-  rows are verified in the default build, and selected 256-contact batch rows
-  are verified in SIMD-enabled and CUDA-enabled build trees. It now
+  rows are verified in the default build, and 14 of 15 registered
+  selected-solver 256-contact batch rows are verified in SIMD-enabled and
+  CUDA-enabled build trees, with `Sap` still unclaimed. It now
   also includes a scoped robust near-singular slice for standard 8-row, boxed
   8-row, and coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-, 32-, and
   48-, 64-, 96-, 128-, 192-, and 256-contact generated packets, plus 31 matching
@@ -460,12 +461,12 @@ The current local evidence for this task is:
   serial-batch, and parallel-batch run reports 45 rows with `contract_ok=1`,
   `total_contact_count=1024`, `total_problem_size=3072`, and
   `parallel_units=4` on parallel rows. Focused SIMD/CUDA-enabled selected-solver
-  256-contact serial/parallel batch gates report 12 rows in each build with
-  `contract_ok=1` for PGS, NNCG, APGD, TGS, ADMM, and Boxed Semi-Smooth Newton;
-  the CUDA-enabled rows report `cuda_lcp_execution=0`. A full SIMD 256-contact
-  single+batch probe was stopped after several minutes before producing JSON,
-  so the all-solver SIMD/CUDA 256-contact batch contract evidence is not
-  claimed. The rows report
+  256-contact serial/parallel batch gates now report 28 rows in each build with
+  `contract_ok=1` for all registered solvers except `Sap`; the CUDA-enabled rows
+  are CPU solver rows in that build tree, not CUDA LCP kernel execution. The
+  focused SIMD-enabled `Sap` 256-contact batch probe was stopped after 180s
+  before producing a benchmark row, so the all-solver SIMD/CUDA 256-contact
+  batch contract evidence is not claimed. The rows report
   `mildly_ill_conditioned_batch=1`, `batch_size=4`, problem sizes
   `16/18/24/32/36/48/72/96/144/192/288/384/576/768`, total problem sizes
   `64/72/96/128/144/192/288/384/576/768/1152/1536/2304/3072`, backend build-state
@@ -1406,7 +1407,8 @@ The current local evidence for this task is:
   `build_cuda_enabled=1`, `build_simd_enabled=0`,
   `has_simulation_experimental=1`, and `contract_ok=1` on the previous 1752
   single and batch rows; the 192-contact single and batch rows now pass in that
-  build tree, while 256-contact CUDA-enabled batch rows remain unclaimed, and the
+  build tree, and selected 256-contact CUDA-enabled batch rows now pass for 14
+  of 15 registered solvers while `Sap` remains unclaimed. The
   focused `BM_LcpStressActiveSetTransition` slice reported
   `build_cuda_enabled=1`, `build_simd_enabled=0`,
   `active_set_transition=1`, `stress_active_set_transition=1`, and

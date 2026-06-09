@@ -220,9 +220,10 @@
       SIMD-enabled, and CUDA-enabled build trees. Focused SIMD/CUDA all-solver
       serial/parallel 192-contact batch rows pass as contract gates. Focused
       SIMD/CUDA selected-solver serial/parallel 256-contact batch rows pass for
-      PGS, NNCG, APGD, TGS, ADMM, and Boxed Semi-Smooth Newton, while the full
-      all-solver 256-contact SIMD/CUDA batch gate remains unclaimed after a
-      long SIMD probe was stopped before producing JSON.
+      14 of the 15 registered solvers: all except `Sap`. A focused
+      SIMD-enabled `Sap` batch probe was stopped after 180s before producing a
+      benchmark row, so the full all-solver 256-contact SIMD/CUDA batch gate
+      remains unclaimed.
 - [x] Added 31 `BM_LcpNearSingular` benchmark rows for the scoped robust
       near-singular standard 8-row, boxed 8-row, and coupled friction-index
       3-, 6-, 9-, 12-, 16-, 24-, 32-, 48-, 64-, 96-, 128-, 192-, and
@@ -1439,16 +1440,16 @@ tradeoffs evidence based.
   `total_contact_count=1024`, `problem_size=768`,
   `total_problem_size=3072`, `coupling_scale=16`, `batch_size=4`,
   `parallel_units=4`, and `worker_count=20`. Focused SIMD/CUDA-enabled
-  selected-solver 256-contact serial/parallel batch gates report 12 rows in
-  each build with `contract_ok=1` for PGS, NNCG, APGD, TGS, ADMM, and Boxed
-  Semi-Smooth Newton; the CUDA-enabled rows report `cuda_lcp_execution=0`. The
-  full SIMD 256-contact single+batch probe was stopped after several minutes
-  before producing JSON, so all-solver SIMD/CUDA 256-contact batch contract
-  evidence is not claimed.
+  selected-solver 256-contact serial/parallel batch gates now report 28 rows in
+  each build with `contract_ok=1` for every registered solver except `Sap`; the
+  CUDA-enabled rows are CPU solver rows in that build tree, not CUDA LCP kernel
+  execution. The focused SIMD-enabled `Sap` 256-contact batch probe was stopped
+  after 180s before producing a benchmark row, so all-solver SIMD/CUDA
+  256-contact batch contract evidence is not claimed.
   These focused rows are contract gates only: several projection-like rows
-  still report large residual counters, no speedup is claimed, and the
-  SIMD-enabled `Sap` rows are contract-correct but slow enough that this is not
-  a routine checkpoint gate. The rows report
+  still report large residual counters, no speedup is claimed, and the prior
+  SIMD-enabled `Sap` rows are slow enough that this is not a routine checkpoint
+  gate. The rows report
   `mildly_ill_conditioned_batch=1`, `batch_size=4`, problem sizes
   `16/18/24/32/36/48/72/96/144/192/288/384/576/768`, total problem sizes
   `64/72/96/128/144/192/288/384/576/768/1152/1536/2304/3072`, and backend

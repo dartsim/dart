@@ -46,10 +46,12 @@ ill-conditioned packet set: standard 32-row, boxed 16-row, friction-index
 6-/8-/12-/16-/24-/32-/48-/64-/96-/128-/192-/256-contact rows. Boxed Semi-Smooth Newton reports
 tuned line-search settings on the 16x rows. The retained 192- and 256-contact
 batch rows are verified in the default build, and focused SIMD/CUDA all-solver
-serial/parallel 192-contact batch rows now pass as contract gates. The rows are
-not speedup evidence, and the slow SIMD-enabled SAP rows keep the full
-all-solver 192-contact SIMD/CUDA batch slice out of the routine checkpoint
-verifier set.
+serial/parallel 192-contact batch rows now pass as contract gates. Focused
+SIMD/CUDA selected-solver 256-contact serial/parallel batch rows now pass for
+14 of the 15 registered solvers: every solver except `Sap`. The rows are not
+speedup evidence, the CUDA-enabled rows are CPU solver rows in that build tree,
+and the slow SIMD-enabled `Sap` probe keeps the full all-solver 256-contact
+SIMD/CUDA batch slice out of the routine checkpoint verifier set.
 The dense box-face CUDA fixture now also has focused CUDA Jacobi coverage for
 homogeneous 1-/4-/8-/16-/24-/32-/48-/64-/96-/128-box batch-size-4 packets using
 8192 fixed iterations and relaxation 0.25, plus homogeneous 128-box
@@ -244,9 +246,10 @@ parallel-batch rows pass. Focused SIMD/CUDA all-solver serial/parallel
 192-contact batch rows now pass as contract gates. Focused 256-contact
 single rows pass in default, SIMD-enabled, and CUDA-enabled build trees, and
 focused default 256-contact single/batch rows pass; selected-solver SIMD/CUDA
-256-contact serial/parallel batch rows now pass for PGS, NNCG, APGD, TGS, ADMM,
-and Boxed Semi-Smooth Newton, while full all-solver SIMD/CUDA 256-contact batch
-evidence remains unclaimed. The
+256-contact serial/parallel batch rows now pass for 14 of the 15 registered
+solvers: every solver except `Sap`. The focused SIMD-enabled `Sap` batch probe
+was stopped after 180s before producing a benchmark row, so full all-solver
+SIMD/CUDA 256-contact batch evidence remains unclaimed. The
 benchmark rows record
 `coupling_scale=1/4/8/16`, `contact_count=6/8/12/16/24/32/48/64/96/128/192/256`,
 `problem_size=18/24/36/48/72/96/144/192/288/384/576/768`,
@@ -1186,9 +1189,10 @@ dense/robot-like contact scenes.
   SIMD/CUDA all-solver serial/parallel 192-contact batch rows now report 30
   rows in each build with `contract_ok=1`; SIMD/CUDA 256-contact single rows
   also pass. Focused selected-solver SIMD/CUDA 256-contact serial/parallel
-  batch gates report 12 rows in each build with `contract_ok=1` for PGS, NNCG,
-  APGD, TGS, ADMM, and Boxed Semi-Smooth Newton, but full all-solver SIMD/CUDA
-  256-contact batch rows are not claimed.
+  batch gates now report 28 rows in each build with `contract_ok=1` for all
+  registered solvers except `Sap`. The focused SIMD-enabled `Sap` batch probe
+  was stopped after 180s before producing a benchmark row, so full all-solver
+  SIMD/CUDA 256-contact batch rows are not claimed.
   Boxed Semi-Smooth Newton 16x rows report tuned line-search
   settings. Treat the CUDA-enabled rows
   as CPU solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
