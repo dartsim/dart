@@ -8465,9 +8465,9 @@ void RunWorldStackContactBenchmark(
     // spheres.
     storage.nncgParams.pgsIterations = 20;
   } else if (solverEntry.name == "RedBlackGaussSeidel") {
-    // The 8-sphere coupled stack converges in 135 two-color iterations; 128
-    // iterations leave it just outside the same LCP contract.
-    storage.options.maxIterations = 256;
+    // The 10-sphere coupled stack converges in 194 two-color iterations; 128
+    // iterations leave the 8-sphere row just outside the same LCP contract.
+    storage.options.maxIterations = 512;
   }
 
   const auto solver = solverEntry.create();
@@ -11950,7 +11950,7 @@ void RegisterWorldStackContactBenchmarks()
     if (solver.name == "Pgs") {
       registeredBenchmark->Arg(8)->Arg(9)->Arg(10);
     } else if (solver.name == "RedBlackGaussSeidel") {
-      registeredBenchmark->Arg(8);
+      registeredBenchmark->Arg(8)->Arg(9)->Arg(10);
     } else if (
         solver.name != "Pgs" && solver.name != "Jacobi"
         && solver.name != "BlockedJacobi" && solver.name != "ShockPropagation"

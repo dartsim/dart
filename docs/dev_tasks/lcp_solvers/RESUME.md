@@ -530,14 +530,15 @@ Jacobi dense box-face evidence for 1/2/4/8/16/24/32/48/64/96-box shapes, matchin
 the grouped PGS rows, with two and three variants per shape. The 128-box
 batch-size-4 CUDA Jacobi/PGS rows remain unclaimed.
 This checkpoint extends the coupled-stack CPU solver-comparison slice by
-registering 8-/9-/10-sphere NNCG stack rows and an 8-sphere
-RedBlackGaussSeidel stack row. NNCG uses 20 PGS preconditioner iterations for
-the stack family after a focused 10-PGS NNCG/8 probe hit the benchmark
-iteration cap with `contract_ok=0`; RedBlackGaussSeidel uses a
-256-iteration cap after a focused 128-iteration RedBlack/8 probe missed the
-contract. Focused default NNCG 2-through-10, RedBlack 2-through-8, and
-all-registered default 8-/9-/10-sphere stack/assembly benchmark filters now
-report `contract_ok=1`.
+registering 8-/9-/10-sphere PGS, NNCG, and RedBlackGaussSeidel stack rows. PGS
+uses a 512-iteration stack cap after a focused default 100-iteration PGS/8 probe
+missed the contract; NNCG uses 20 PGS preconditioner iterations after a focused
+10-PGS NNCG/8 probe hit the benchmark iteration cap with `contract_ok=0`;
+RedBlackGaussSeidel uses a 512-iteration stack cap after a focused
+128-iteration RedBlack/8 probe missed the contract. Focused default PGS
+8-through-10, NNCG 2-through-10, RedBlack 2-through-10, and all-registered
+default 8-/9-/10-sphere stack/assembly benchmark filters now report
+`contract_ok=1`.
 Push/PR work still requires explicit maintainer/user approval.
 
 ## Immediate Next Step
@@ -1289,12 +1290,12 @@ contact scenes.
   `1.5380710201222114e-03`; a focused 128-iteration
   `RedBlackGaussSeidel` 8-sphere probe reported `contract_ok=0`, residual
   `1.8185475652150451e-03`, and complementarity
-  `1.8185475652149619e-03`. With the stack-contact cap raised to 256
-  iterations, focused `RedBlackGaussSeidel` 2-/3-/4-/5-/6-/7-/8-sphere rows
-  report `contract_ok=1`; the 8-sphere row reports
-  `red_black_gauss_seidel_max_iterations=256`,
-  `residual=1.3859891024932125e-03`,
-  `complementarity=1.3859891024931292e-03`, and 135 solver iterations. A
+  `1.8185475652149619e-03`. With the stack-contact cap raised to 512
+  iterations, focused `RedBlackGaussSeidel`
+  2-/3-/4-/5-/6-/7-/8-/9-/10-sphere rows report `contract_ok=1`; the
+  8-/9-/10-sphere rows report residuals `1.3859891024932125e-03`,
+  `1.7007052647963761e-03`, and `2.0442842170353970e-03`, matching
+  complementarity residuals, and 135, 162, and 194 solver iterations. A
   focused default 100-iteration `Pgs` 8-sphere probe reported
   `contract_ok=0`, residual `2.7059852530237904e-03`, complementarity
   `2.7059852530237349e-03`, and 100 solver iterations. With the stack-contact
@@ -1305,12 +1306,11 @@ contact scenes.
   matching 13 `BM_LcpWorldStackContact/FrictionIndex/<solver>/8` rows cover
   `Pgs`, `Dantzig`, `SymmetricPsor`, `BGS`, `RedBlackGaussSeidel`, `NNCG`,
   `SubspaceMinimization`, `Apgd`, `Tgs`, `Staggering`, `Admm`, `Sap`, and
-  `BoxedSemiSmoothNewton`; the matching 12
+  `BoxedSemiSmoothNewton`; the matching 13
   `BM_LcpWorldStackContact/FrictionIndex/<solver>/{9,10}` rows cover the same
-  set excluding `RedBlackGaussSeidel`. Focused 8-sphere probes reported
+  set including `RedBlackGaussSeidel`. Focused 8-sphere probes reported
   `contract_ok=0` for `Jacobi`, `BlockedJacobi`, and `ShockPropagation`, so
-  those rows remain unclaimed at 8, 9, and 10 spheres, and
-  `RedBlackGaussSeidel` remains unclaimed at 9 and 10 spheres.
+  those rows remain unclaimed at 8, 9, and 10 spheres.
   The matching
   `BM_LcpWorldStackContactAssembly_BoxedLcp/{2,3,4,5,6,7,8,9,10,11,12,13,14,15,16}` rows rebuild the
   world, collide, assemble through `detail::solveBoxedLcpContacts`, solve, and
@@ -1352,28 +1352,36 @@ contact scenes.
   `residual=1.1967153422114407e-03`,
   `complementarity=1.1967153422113852e-03`, and 27 solver iterations, and the
   `RedBlackGaussSeidel` 8-sphere row reports
-  `red_black_gauss_seidel_max_iterations=256`,
+  `red_black_gauss_seidel_max_iterations=512`,
   `residual=1.3859891024932125e-03`,
   `complementarity=1.3859891024931292e-03`, and 135 solver iterations. Earlier
   focused default, SIMD-enabled, and CUDA-enabled
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldStackContact/FrictionIndex/.*/9$|BM_LcpWorldStackContactAssembly_BoxedLcp/9$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   runs report `contract_ok=1` for the original 10 non-NNCG registered
   9-sphere solver rows and the 9-sphere assembly row. A current focused default
-  run of that same filter reports `contract_ok=1` for all 12 registered
+  run of that same filter reports `contract_ok=1` for all 13 registered
   9-sphere solver rows plus the assembly row; the PGS 9-sphere row reports
   `pgs_max_iterations=512`, `pgs_relaxation=1`,
   `residual=3.9036340220555132e-04`,
   `complementarity=3.9036340220549581e-04`, and 189 solver iterations, while
+  the `RedBlackGaussSeidel` 9-sphere row reports
+  `red_black_gauss_seidel_max_iterations=512`,
+  `residual=1.7007052647963761e-03`,
+  `complementarity=1.7007052647963206e-03`, and 162 solver iterations, and
   the NNCG 9-sphere row reports `nncg_pgs_iterations=20`,
   `residual=1.5222762445965543e-03`,
   `complementarity=1.5222762445964988e-03`, and 101 solver iterations. Earlier
   focused default, SIMD-enabled, and CUDA-enabled 10-sphere runs report
   `contract_ok=1` for the original 10 non-NNCG registered solver rows and the
   10-sphere assembly row. A current focused default 10-sphere run reports
-  `contract_ok=1` for all 12 registered solver rows plus the assembly row; the
+  `contract_ok=1` for all 13 registered solver rows plus the assembly row; the
   PGS 10-sphere row reports `pgs_max_iterations=512`, `pgs_relaxation=1`,
   `residual=4.7141997313282502e-04`,
   `complementarity=4.7141997313276951e-04`, and 225 solver iterations, while
+  the `RedBlackGaussSeidel` 10-sphere row reports
+  `red_black_gauss_seidel_max_iterations=512`,
+  `residual=2.0442842170353970e-03`,
+  `complementarity=2.0442842170353137e-03`, and 194 solver iterations, and
   the NNCG 10-sphere row reports `nncg_pgs_iterations=20`,
   `residual=2.0448595218027776e-03`,
   `complementarity=2.0448595218027221e-03`, and 61 solver iterations. The
@@ -1911,7 +1919,7 @@ cmake --build build/default/cpp/Release \
   "--benchmark_repetitions=1" \
   "--benchmark_format=json"
 ./build/default/cpp/Release/bin/BM_LCP_COMPARE \
-  "--benchmark_filter=^BM_LcpWorldStackContact/FrictionIndex/RedBlackGaussSeidel/(2|3|4|5|6|7|8)$" \
+  "--benchmark_filter=^BM_LcpWorldStackContact/FrictionIndex/RedBlackGaussSeidel/(2|3|4|5|6|7|8|9|10)$" \
   "--benchmark_min_time=0.001s" \
   "--benchmark_repetitions=1" \
   "--benchmark_format=json"
