@@ -1082,8 +1082,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     distinguishing default, SIMD-enabled, and CUDA-enabled CPU solver runs.
   - Added DART 7 BGS and Blocked Jacobi block-partition comparison benchmark
     rows for full-block, 3-row block, auto `findex`, and explicit contact-block
-    partitions, with backend build-state counters distinguishing default,
-    SIMD-enabled, and CUDA-enabled CPU solver runs.
+    partitions on standard, boxed, and 4-/8-contact friction-index fixtures,
+    with backend build-state counters distinguishing default, SIMD-enabled, and
+    CUDA-enabled CPU solver runs.
   - Added manifest-generated serial and DART 7 `ParallelExecutor` batch LCP
     benchmarks so standard, boxed, and friction-index solver families compare
     the same independent-problem batches across every supporting solver. The

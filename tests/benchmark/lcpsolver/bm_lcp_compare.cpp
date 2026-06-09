@@ -3415,7 +3415,7 @@ constexpr std::array<PivotingScaleSweepCase, 12> kPivotingScaleSweepCases{{
     {"Dantzig", BenchmarkProblemFamily::FrictionIndex, 8, "Contacts8"},
 }};
 
-constexpr std::array<BlockPartitionSweepCase, 12> kBlockPartitionSweepCases{{
+constexpr std::array<BlockPartitionSweepCase, 16> kBlockPartitionSweepCases{{
     {"BGS",
      BenchmarkProblemFamily::Standard,
      12,
@@ -3446,6 +3446,16 @@ constexpr std::array<BlockPartitionSweepCase, 12> kBlockPartitionSweepCases{{
      4,
      BlockPartitionProfile::ContactBlocks,
      "ContactBlocks"},
+    {"BGS",
+     BenchmarkProblemFamily::FrictionIndex,
+     8,
+     BlockPartitionProfile::AutoFindex,
+     "Contacts8AutoFindex"},
+    {"BGS",
+     BenchmarkProblemFamily::FrictionIndex,
+     8,
+     BlockPartitionProfile::ContactBlocks,
+     "Contacts8ContactBlocks"},
     {"BlockedJacobi",
      BenchmarkProblemFamily::Standard,
      12,
@@ -3476,6 +3486,16 @@ constexpr std::array<BlockPartitionSweepCase, 12> kBlockPartitionSweepCases{{
      4,
      BlockPartitionProfile::ContactBlocks,
      "ContactBlocks"},
+    {"BlockedJacobi",
+     BenchmarkProblemFamily::FrictionIndex,
+     8,
+     BlockPartitionProfile::AutoFindex,
+     "Contacts8AutoFindex"},
+    {"BlockedJacobi",
+     BenchmarkProblemFamily::FrictionIndex,
+     8,
+     BlockPartitionProfile::ContactBlocks,
+     "Contacts8ContactBlocks"},
 }};
 
 constexpr std::array<ApgdRestartSweepCase, 12> kApgdRestartSweepCases{{

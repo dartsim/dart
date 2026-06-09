@@ -341,14 +341,15 @@ no-fallback counters, four Dantzig boxed-or-findex rows,
 build-state counters. Focused pivoting unit coverage passed 42 tests. The
 CUDA-enabled rows are CPU pivoting solver rows in a CUDA-enabled build, not
 CUDA LCP kernel execution.
-It now also adds 12 `BM_LcpBlockPartitionSweep` benchmark rows for BGS and
+It now also adds 16 `BM_LcpBlockPartitionSweep` benchmark rows for BGS and
 Blocked Jacobi, covering standard 12-row, boxed 12-row, and friction-index
-4-contact fixtures with full-block, 3-row block, auto `findex`, and explicit
+4-/8-contact fixtures with full-block, 3-row block, auto `findex`, and explicit
 contact-block partitions. Focused default, SIMD-enabled, and CUDA-enabled
 build-tree runs passed with `contract_ok=1` on every row and recorded
-`block_partition_sweep`, block counts `1/4`, block sizes `3/12`,
-`contact_count=4`, observed solver `iterations=1/4/5/6/10`, and backend
-build-state counters. Focused block-solver unit coverage passed 15 tests. The
+`block_partition_sweep`, block counts `1/4/8`, block sizes `3/12`,
+`contact_count=4/8`, `problem_size=12/24`, observed solver
+`iterations=1/4/5/6/10/19`, and backend build-state counters. Focused
+block-solver unit coverage passed 15 tests. The
 CUDA-enabled rows are CPU BGS/Blocked Jacobi solver rows in a CUDA-enabled
 build, not CUDA LCP kernel execution.
 It now also adds opt-in solver-internal CPU worker threads for

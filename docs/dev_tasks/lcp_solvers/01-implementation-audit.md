@@ -597,14 +597,14 @@ The current local evidence for this task is:
   on the merged default tree produced 22 rows with `bad_contract=0`,
   `bad_problem=0`, 8 stack rows, and 8 serial/parallel batch rows.
 - `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpBlockPartitionSweep' | wc -l`
-  listed 12 BGS/Blocked Jacobi block-partition rows. Focused JSON runs for
+  listed 16 BGS/Blocked Jacobi block-partition rows. Focused JSON runs for
   `BM_LcpBlockPartitionSweep` in default, SIMD-enabled, and CUDA-enabled build
-  trees reported 12 rows with zero `contract_ok` failures across standard
-  12-row, boxed 12-row, and friction-index 4-contact fixtures; the rows
+  trees reported 16 rows with zero `contract_ok` failures across standard
+  12-row, boxed 12-row, and friction-index 4-/8-contact fixtures; the rows
   recorded full-block, 3-row block, auto `findex`, and explicit contact-block
-  partitions, block counts `1/4`, block sizes `3/12`, friction-index
-  `contact_count=4`, observed solver `iterations=1/4/5/6/10`, and backend
-  build-state counters.
+  partitions, block counts `1/4/8`, block sizes `3/12`, friction-index
+  `contact_count=4/8`, problem sizes `12/24`, observed solver
+  `iterations=1/4/5/6/10/19`, and backend build-state counters.
 - Focused block-solver unit coverage
   `BlockedJacobiSolverCoverage.*:BgsSolverCoverage.*` passed 15 tests.
 - `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.TwoSphereWorldStepMaintainsContactInvariants'`
