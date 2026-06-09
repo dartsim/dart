@@ -12881,7 +12881,8 @@ BENCHMARK(BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex)
     ->Args({48, 4})
     ->Args({64, 4})
     ->Args({96, 4})
-    ->Args({128, 1});
+    ->Args({128, 1})
+    ->Args({128, 4});
 BENCHMARK(BM_LcpCudaJacobiWorldBoxContactGroupedBatch_FrictionIndex)
     ->Args({2})
     ->Args({3});
