@@ -1509,7 +1509,8 @@ void configureDeformableSelfContactFrictionLargerProductionGridScene(
 void configureDeformableSelfContactFrictionIrregularProductionGridSceneWithOffset(
     dart::simulation::World& world,
     std::string_view bodyName,
-    const Eigen::Vector3d& offset = Eigen::Vector3d::Zero())
+    const Eigen::Vector3d& offset = Eigen::Vector3d::Zero(),
+    bool useMatrixFreeLinearSolver = false)
 {
   namespace sx = dart::simulation;
 
@@ -1615,6 +1616,7 @@ void configureDeformableSelfContactFrictionIrregularProductionGridSceneWithOffse
 
   options.edgeStiffness = 0.0;
   options.material.frictionCoefficient = 0.8;
+  options.material.useMatrixFreeLinearSolver = useMatrixFreeLinearSolver;
 
   world.addDeformableBody(bodyName, options);
 }
@@ -1624,6 +1626,16 @@ void configureDeformableSelfContactFrictionIrregularProductionGridScene(
 {
   configureDeformableSelfContactFrictionIrregularProductionGridSceneWithOffset(
       world, "friction_irregular_production_grid");
+}
+
+void configureDeformableSelfContactFrictionIrregularMatrixFreeProductionGridScene(
+    dart::simulation::World& world)
+{
+  configureDeformableSelfContactFrictionIrregularProductionGridSceneWithOffset(
+      world,
+      "friction_irregular_matrix_free_production_grid",
+      Eigen::Vector3d::Zero(),
+      true);
 }
 
 void configureDeformableSelfContactFrictionLateActiveGridScene(
@@ -2993,6 +3005,9 @@ TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
       "deformable self-contact friction irregular production grid",
       configureDeformableSelfContactFrictionIrregularProductionGridScene);
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "deformable self-contact friction irregular matrix-free production grid",
+      configureDeformableSelfContactFrictionIrregularMatrixFreeProductionGridScene);
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "deformable self-contact friction late-active direct grid",
       configureDeformableSelfContactFrictionLateActiveGridScene);
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
@@ -3171,6 +3186,28 @@ TEST(World, DeformableSelfContactFrictionIrregularProductionGridIsActive)
   const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
   EXPECT_EQ(diagnostics.bodyCount, 1u);
   EXPECT_EQ(diagnostics.nodeCount, 2u * 13u * 17u);
+  EXPECT_GT(diagnostics.selfContactBarrierActiveContacts, 0u);
+  EXPECT_GT(diagnostics.convergedActiveContactCount, 0u);
+  EXPECT_GT(diagnostics.frictionDissipation, 0.0);
+}
+
+TEST(
+    World,
+    DeformableSelfContactFrictionIrregularMatrixFreeProductionGridIsActive)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  configureDeformableSelfContactFrictionIrregularMatrixFreeProductionGridScene(
+      world);
+  world.enterSimulationMode();
+
+  world.step();
+
+  const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
+  EXPECT_EQ(diagnostics.bodyCount, 1u);
+  EXPECT_EQ(diagnostics.nodeCount, 2u * 13u * 17u);
+  EXPECT_GT(diagnostics.projectedNewtonMatrixFreeSolves, 0u);
   EXPECT_GT(diagnostics.selfContactBarrierActiveContacts, 0u);
   EXPECT_GT(diagnostics.convergedActiveContactCount, 0u);
   EXPECT_GT(diagnostics.frictionDissipation, 0.0);
@@ -3924,6 +3961,9 @@ TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "deformable self-contact friction irregular production grid",
       configureDeformableSelfContactFrictionIrregularProductionGridScene);
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "deformable self-contact friction irregular matrix-free production grid",
+      configureDeformableSelfContactFrictionIrregularMatrixFreeProductionGridScene);
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "deformable self-contact friction late-active direct grid",
       configureDeformableSelfContactFrictionLateActiveGridScene);

@@ -299,9 +299,10 @@
       self-contact without growing step-loop candidate storage. A notched,
       jittered 13x17 two-layer production self-contact mesh now exercises the
       same direct-sparse default solver path through topology-scaled scratch
-      rather than square-grid assumptions. The matrix-free path also reuses
-      solver-owned Hessian block plus CG vector scratch instead of allocating
-      local solve temporaries.
+      rather than square-grid assumptions, and the same irregular mesh now
+      covers the matrix-free projected-Newton path. The matrix-free path also
+      reuses solver-owned Hessian block plus CG vector scratch instead of
+      allocating local solve temporaries.
       AVBD ground contact/friction rows and
       self-contact normal/friction rows now reuse row-inventory and
       self-contact adjacency storage, including previous friction warm-start
@@ -366,6 +367,7 @@
       grid, direct-sparse and matrix-free 13x19 dense rectangular production
       grids, a 7x17 wide non-square production grid, a 17x7 tall non-square
       production grid, a notched and jittered 13x17 irregular direct-sparse
+      production grid, a notched and jittered 13x17 irregular matrix-free
       production grid, and an 11x11 late-active two-layer
       direct-sparse plus matrix-free grid that starts outside the self-contact
       barrier band and enters it during the counted baked steps, with the same
@@ -631,7 +633,9 @@ debugging, profiling, optimization experiments, and ImGui visualization.
    rectangular self-contact grids that activate during the same baked loop. A
    mixed dense production scene also covers a notched direct-sparse 13x17 grid
    and matrix-free 13x19 dense rectangular grid sharing one baked World memory
-   root; a compact mixed default-solver storage scene now combines
+   root; a notched, jittered matrix-free 13x17 irregular grid now covers the CG
+   scratch path on non-grid topology; a compact mixed default-solver storage
+   scene now combines
    direct-sparse, matrix-free, and FEM ground-friction deformables under the
    same root. The AVBD
    self-contact row guard now also covers a 5x9 rectangular grid row workload
