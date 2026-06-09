@@ -11933,10 +11933,7 @@ void RegisterWorldStackContactBenchmarks()
         });
     registeredBenchmark->Arg(2)->Arg(3)->Arg(4)->Arg(5)->Arg(6);
     registeredBenchmark->Arg(7);
-    if (solver.name == "NNCG") {
-      registeredBenchmark->Arg(8);
-    } else if (
-        solver.name != "Pgs" && solver.name != "Jacobi"
+    if (solver.name != "Pgs" && solver.name != "Jacobi"
         && solver.name != "BlockedJacobi" && solver.name != "ShockPropagation"
         && solver.name != "RedBlackGaussSeidel") {
       registeredBenchmark->Arg(8)->Arg(9)->Arg(10);

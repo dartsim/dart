@@ -72,8 +72,8 @@ Support abbreviations:
   friction-index-capable
   solvers on the same 1/2/4 separated sphere-ground boxed/findex contact
   snapshots, all-solver 2/3-sphere vertical-stack boxed/findex snapshots,
-  all-solver 4-/5-/6-/7-sphere vertical-stack rows, scoped NNCG 8-sphere row,
-  6-sphere stack assembly
+  all-solver 4-/5-/6-/7-sphere vertical-stack rows, scoped NNCG
+  8-/9-/10-sphere rows, 6-sphere stack assembly
   rows, and a mixed 5-problem
   serial/`ParallelExecutor` batch over the 1/2/4 separated-contact and 2/3
   stack snapshots. A focused local SIMD-enabled CPU run now exists for
@@ -179,7 +179,7 @@ Support abbreviations:
 | PSOR                           | `02_overview.md`, `04_projection-methods.md`, `07_selection-guide.md` | Implemented through `PgsSolver` relaxation via `LcpOptions::relaxation`                                                                                                                                                                                  | Same solver support as PGS | Covered by PGS path and solver-specific tests that configure relaxation                                                                                                                                                                                                                                                                                                                          | Focused `BM_LcpPgsRelaxationSweep` rows cover standard, boxed, and friction-index fixtures at relaxation 0.5, 1.0, and 1.3 in default, SIMD-enabled, and CUDA-enabled build trees; CUDA-enabled rows are CPU solver rows, not CUDA LCP kernel execution                                                                                                                                                                                                                                                                                                                                 | Need broader end-to-end contact evidence and workload-specific relaxation tuning before making general PSOR performance claims                                                                                |
 | Symmetric PSOR                 | `02_overview.md`, `04_projection-methods.md`, `07_selection-guide.md` | `dart/math/lcp/projection/symmetric_psor_solver.hpp` exported by `all.hpp`                                                                                                                                                                               | S, B, F                    | Smoke manifest checks; comparison harness covers standard, boxed, and friction-index fixtures; solver-specific tests cover valid solves and invalid relaxation                                                                                                                                                                                                                                   | Manifest registers all three benchmark families; focused `BM_LcpSymmetricPsorRelaxationSweep` rows cover standard, boxed, and friction-index fixtures at relaxation 0.5, 1.0, and 1.3 in default, SIMD-enabled, and CUDA-enabled build trees                                                                                                                                                                                                                                                                                                                                            | Need broader end-to-end contact evidence and workload-specific relaxation tuning before making general symmetric PSOR performance claims                                                                      |
 | Blocked Gauss-Seidel           | `02_overview.md`, `04_projection-methods.md`, `07_selection-guide.md` | `dart/math/lcp/projection/bgs_solver.hpp` exported by `all.hpp`                                                                                                                                                                                          | S, B, F                    | Smoke manifest checks; comparison harness covers standard, boxed, friction-index, and explicit-block fixtures; DART 7 world-contact tests cover `findex`-derived non-contiguous contact blocks and explicit split rejection; focused block-solver coverage passes BGS tests                                                                                                                      | Manifest registers all three benchmark families; focused world-contact, stack-contact, and serial/parallel batch rows pass with `contract_ok=1`; focused `BM_LcpBlockPartitionSweep` rows cover full-block, 3-row block, auto `findex`, and explicit contact-block partitions in default, SIMD-enabled, and CUDA-enabled build trees                                                                                                                                                                                                                                                    | Need broader contact-pipeline performance/backend evidence before claiming solver-specific speedups; CUDA-enabled block-partition rows are CPU solver rows, not CUDA LCP kernel execution                     |
-| NNCG                           | `02_overview.md`, `04_projection-methods.md`, `07_selection-guide.md` | `dart/math/lcp/projection/nncg_solver.hpp` exported by `all.hpp`                                                                                                                                                                                         | S, B, F                    | Smoke manifest checks; comparison harness covers standard, boxed, and friction-index fixtures                                                                                                                                                                                                                                                                                                    | Manifest registers all three benchmark families; focused `BM_LcpNncgPgsIterationsSweep` rows cover 1, 2, and 5 PGS preconditioner iterations on standard, boxed, and friction-index fixtures in default, SIMD-enabled, and CUDA-enabled build trees; focused stack-contact rows through 8 spheres report `contract_ok=1` with `nncg_pgs_iterations=20`                                                                                                                                                                                                                                  | Still needs large generated, end-to-end contact, larger coupled-stack contact, and direct backend execution evidence; CUDA-enabled PGS-preconditioner rows are CPU solver rows, not CUDA LCP kernel execution |
+| NNCG                           | `02_overview.md`, `04_projection-methods.md`, `07_selection-guide.md` | `dart/math/lcp/projection/nncg_solver.hpp` exported by `all.hpp`                                                                                                                                                                                         | S, B, F                    | Smoke manifest checks; comparison harness covers standard, boxed, and friction-index fixtures                                                                                                                                                                                                                                                                                                    | Manifest registers all three benchmark families; focused `BM_LcpNncgPgsIterationsSweep` rows cover 1, 2, and 5 PGS preconditioner iterations on standard, boxed, and friction-index fixtures in default, SIMD-enabled, and CUDA-enabled build trees; focused stack-contact rows through 10 spheres report `contract_ok=1` with `nncg_pgs_iterations=20`                                                                                                                                                                                                                                 | Still needs large generated, end-to-end contact, larger coupled-stack contact, and direct backend execution evidence; CUDA-enabled PGS-preconditioner rows are CPU solver rows, not CUDA LCP kernel execution |
 | Subspace minimization / PGS-SM | `02_overview.md`, `04_projection-methods.md`, `07_selection-guide.md` | `dart/math/lcp/projection/subspace_minimization_solver.hpp` exported by `all.hpp`                                                                                                                                                                        | S, B, F                    | Smoke manifest checks; comparison harness covers standard, boxed, and friction-index fixtures                                                                                                                                                                                                                                                                                                    | Manifest registers all three benchmark families; focused `BM_LcpSubspaceMinimizationPgsIterationsSweep` rows cover 1, 3, and 5 PGS active-set-estimation iterations on standard, boxed, and friction-index fixtures in default, SIMD-enabled, and CUDA-enabled build trees                                                                                                                                                                                                                                                                                                              | Still needs broader size-grid, end-to-end contact, and direct backend execution evidence; CUDA-enabled PGS-iteration rows are CPU solver rows, not CUDA LCP kernel execution                                  |
 | Red-Black Gauss-Seidel         | `02_overview.md`, `04_projection-methods.md`, `07_selection-guide.md` | `dart/math/lcp/projection/red_black_gauss_seidel_solver.hpp` exported by `all.hpp`; uses an even/odd two-color partition with opt-in CPU worker threads for per-color updates                                                                            | S, B, F                    | Smoke manifest checks; comparison harness covers standard, boxed, and friction-index fixtures; solver-specific tests cover invalid relaxation, invalid worker counts, relaxed friction solves, serial/threaded equivalence, and a 4-worker generated 128-row known-solution case                                                                                                                 | Manifest registers all three benchmark families; focused `BM_LcpRedBlackGaussSeidelRelaxationSweep` rows cover standard, boxed, and friction-index fixtures at relaxation 0.5, 1.0, and 1.3 with two-color counters in default, SIMD-enabled, and CUDA-enabled build trees; focused `BM_LcpRedBlackGaussSeidelSolverThreadingBanded_Standard` rows now cover 128-row serial/4-worker and 512-/1024-row serial/4-/8-worker banded packets with threaded color-update counters in default, SIMD-enabled, and CUDA-enabled build trees                                                     | Need broader contact-pipeline performance/backend evidence before claiming solver-specific speedups; CUDA-enabled Red-Black rows are CPU solver rows, not CUDA LCP kernel execution                           |
 | Blocked Jacobi                 | `02_overview.md`, `06_other-methods.md`, `07_selection-guide.md`      | `dart/math/lcp/projection/blocked_jacobi_solver.hpp` exported by `all.hpp`; supports opt-in CPU worker threads for independent block solves                                                                                                              | S, B, F                    | Smoke manifest checks; comparison harness covers standard, boxed, friction-index, and explicit-block fixtures; DART 7 world-contact tests cover `findex`-derived non-contiguous contact blocks and explicit split rejection; focused block-solver coverage passes Blocked Jacobi tests, invalid worker counts, serial/threaded equivalence, and a 4-worker generated 128-row known-solution case | Manifest registers all three benchmark families; focused world-contact, stack-contact, and serial/parallel batch rows pass with `contract_ok=1`; focused `BM_LcpBlockPartitionSweep` rows cover full-block, 3-row block, auto `findex`, and explicit contact-block partitions in default, SIMD-enabled, and CUDA-enabled build trees; focused `BM_LcpBlockedJacobiSolverThreadingBanded_Standard` rows now cover 128-row serial/4-worker and 512-/1024-row serial/4-/8-worker banded packets with threaded block-update counters in default, SIMD-enabled, and CUDA-enabled build trees | Need broader contact-pipeline performance/backend evidence before claiming solver-specific speedups; CUDA-enabled Blocked Jacobi rows are CPU solver rows                                                     |
@@ -744,11 +744,11 @@ The current local evidence for this task is:
   `contract_ok=0`, and a focused 10-PGS-iteration `NNCG` 8-sphere trial
   reached the benchmark iteration cap with `contract_ok=0`, residual
   `1.1324957688903847e-02`, and complementarity
-  `1.1324957688903792e-02`. A focused NNCG 2-/3-/4-/5-/6-/7-/8-sphere
-  follow-up reported `contract_ok=1` for all seven rows, with residuals from
-  `1.2207031250072164e-05` through `1.1967153422114407e-03` and solver
-  iterations from 0 through 27; the 8-sphere row reported
-  `nncg_pgs_iterations=20`. It also registers 16
+  `1.1324957688903792e-02`. A focused NNCG
+  2-/3-/4-/5-/6-/7-/8-/9-/10-sphere follow-up reported `contract_ok=1` for all
+  nine rows, with residuals from `1.2207031250072164e-05` through
+  `2.0448595218027776e-03` and solver iterations from 0 through 101; the
+  8-/9-/10-sphere rows report `nncg_pgs_iterations=20`. It also registers 16
   `BM_LcpWorldStackContact/FrictionIndex/<solver>/7` rows for that set. A
   focused default 100-iteration `RedBlackGaussSeidel` 7-sphere
   probe reported `contract_ok=0`, residual
@@ -759,15 +759,16 @@ The current local evidence for this task is:
   `red_black_gauss_seidel_max_iterations=128`,
   `residual=1.0779322145615389e-03`,
   `complementarity=1.0779322145614834e-03`, and 107 solver iterations. It also
-  registers 11 `BM_LcpWorldStackContact/FrictionIndex/<solver>/8` rows for the
-  passing 8-sphere subset (`Dantzig`, `SymmetricPsor`, `BGS`, `NNCG`,
+  registers 11 `BM_LcpWorldStackContact/FrictionIndex/<solver>/{8,9,10}` rows
+  for the passing larger-stack subset (`Dantzig`, `SymmetricPsor`, `BGS`,
+  `NNCG`,
   `SubspaceMinimization`, `Apgd`, `Tgs`, `Staggering`, `Admm`, `Sap`, and
   `BoxedSemiSmoothNewton`); focused probes reported `contract_ok=0` for `Pgs`,
-  `Jacobi`, `BlockedJacobi`, and `ShockPropagation`, so those 8-sphere rows are
-  not claimed. The matching
-  `BM_LcpWorldStackContactAssembly_BoxedLcp/{2,3,4,5,6,7,8}` rows rebuild,
-  collide, assemble through `detail::solveBoxedLcpContacts`, solve, and validate the
-  boxed-LCP stack contact path. The focused 4-sphere benchmark run
+  `Jacobi`, `BlockedJacobi`, and `ShockPropagation`, so those larger-stack rows
+  are not claimed. The matching
+  `BM_LcpWorldStackContactAssembly_BoxedLcp/{2,3,4,5,6,7,8,9,10}` rows rebuild,
+  collide, assemble through `detail::solveBoxedLcpContacts`, solve, and
+  validate the boxed-LCP stack contact path. The focused 4-sphere benchmark run
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldStackContact/FrictionIndex/.*/4|BM_LcpWorldStackContactAssembly_BoxedLcp/4' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   passed with `contract_ok=1` for the original 15 non-NNCG solver rows plus
   the 4-sphere assembly row. Focused default, SIMD-enabled, and CUDA-enabled
@@ -802,6 +803,17 @@ The current local evidence for this task is:
   `complementarity=1.1967153422113852e-03`, and 27 solver iterations. These are
   CPU solver rows in each build tree where run; the CUDA-enabled evidence above
   covers the original non-NNCG 8-sphere subset.
+  Current focused default
+  `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldStackContact/FrictionIndex/.*/9$|BM_LcpWorldStackContactAssembly_BoxedLcp/9$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  and
+  `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldStackContact/FrictionIndex/.*/10$|BM_LcpWorldStackContactAssembly_BoxedLcp/10$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  runs report `contract_ok=1` for all 11 registered solver rows plus the
+  assembly row at both 9 and 10 spheres. The NNCG 9-sphere row reports
+  `nncg_pgs_iterations=20`, `residual=1.5222762445965543e-03`,
+  `complementarity=1.5222762445964988e-03`, and 101 solver iterations; the
+  NNCG 10-sphere row reports `nncg_pgs_iterations=20`,
+  `residual=2.0448595218027776e-03`,
+  `complementarity=2.0448595218027221e-03`, and 61 solver iterations.
   These stacks include sphere-ground and sphere-sphere contacts coupled through
   shared dynamic bodies. This is small coupled-stack benchmark evidence, not
   articulated, robot-like, or dense-degenerate contact evidence.
@@ -1382,7 +1394,7 @@ The current local evidence for this task is:
   benchmark rows for 1/2/4 separated sphere-ground contacts, separated
   4-/8-/16-contact step rows,
   2/3-sphere vertical stacks, 4-/5-/6-sphere vertical-stack rows for all of those
-  solvers, 7-sphere rows for all of those solvers, an 8-sphere `NNCG` row,
+  solvers, 7-sphere rows for all of those solvers, 8-/9-/10-sphere `NNCG` rows,
   8-sphere rows for the narrower passing solver
   subset, mixed contact-derived serial/parallel batches, the
   3-sphere stack public step path, fixed-base prismatic articulated
@@ -1432,8 +1444,9 @@ The current local evidence for this task is:
   World-contact
   benchmark rows now cover simple
   separated boxed-LCP contact snapshots, small coupled vertical stacks through
-  7-sphere all-solver rows, a scoped 8-sphere `NNCG` row, 8-sphere rows over the narrower passing
-  solver subset, mixed serial/task-parallel batches
+  7-sphere all-solver rows, scoped 8-/9-/10-sphere `NNCG` rows, and
+  8-/9-/10-sphere rows over the narrower passing solver subset, mixed
+  serial/task-parallel batches
   over those snapshots, stress mixed serial/task-parallel batches that include
   4-/5-/6-sphere stack snapshots for all of those solvers,
   200-step/500-step
