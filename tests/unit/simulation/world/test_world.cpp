@@ -981,6 +981,36 @@ void configureCrossMultibodyExtraDenseProductionStackFallbackScene(
   world.setTimeStep(0.001);
 }
 
+void configureCrossMultibodyStressProductionStackFallbackScene(
+    dart::simulation::World& world)
+{
+  namespace sx = dart::simulation;
+
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  constexpr std::size_t bodyCount = 32;
+  constexpr double maxSpeed = 1.6;
+  constexpr double center = 0.5 * static_cast<double>(bodyCount - 1);
+  for (std::size_t i = 0; i < bodyCount; ++i) {
+    auto robot = world.addMultibody(
+        "stress_production_stack_robot_" + std::to_string(i));
+    auto base = robot.addLink("base");
+    sx::JointSpec spec;
+    spec.name = "slider";
+    spec.type = sx::JointType::Prismatic;
+    spec.axis = Eigen::Vector3d::UnitZ();
+    auto link = robot.addLink("link", base, spec);
+    link.setMass(1.0);
+    link.setCollisionShape(sx::CollisionShape::makeSphere(0.2));
+    auto joint = link.getParentJoint();
+    joint.setPosition(Eigen::VectorXd::Constant(1, 0.35 * i));
+    const double normalized = (center - static_cast<double>(i)) / center;
+    joint.setVelocity(Eigen::VectorXd::Constant(1, maxSpeed * normalized));
+  }
+
+  world.setTimeStep(0.001);
+}
+
 struct CrossMultibodyMultiIslandFallbackSceneHandles
 {
   dart::simulation::Joint differentLowerJoint{
@@ -3456,6 +3486,11 @@ TEST(World, BakedBoxedLcpFallbackContactsDoNotGrowWorldBaseAllocator)
       true,
       23);
   expectNoWorldBaseAllocatorActivityDuringBakedBoxedLcpSteps(
+      "cross multibody stress production stacked fallback",
+      configureCrossMultibodyStressProductionStackFallbackScene,
+      true,
+      31);
+  expectNoWorldBaseAllocatorActivityDuringBakedBoxedLcpSteps(
       "cross multibody multi-island mixed fallback",
       configureCrossMultibodyMultiIslandFallbackScene,
       true,
@@ -3503,6 +3538,11 @@ TEST(World, BakedBoxedLcpFallbackContactStepsDoNotAllocateGlobalHeap)
       configureCrossMultibodyExtraDenseProductionStackFallbackScene,
       true,
       23);
+  expectNoGlobalHeapAllocationsDuringBakedBoxedLcpSteps(
+      "cross multibody stress production stacked fallback",
+      configureCrossMultibodyStressProductionStackFallbackScene,
+      true,
+      31);
   expectNoGlobalHeapAllocationsDuringBakedBoxedLcpSteps(
       "cross multibody multi-island mixed fallback",
       configureCrossMultibodyMultiIslandFallbackScene,

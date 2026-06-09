@@ -309,11 +309,11 @@
       contact paths. Mixed/different-DOF, stacked, and coupled multi-row
       cross-contact boxed-LCP fallback scenes now have base-allocator
       no-growth gates and first baked-step global heap no-allocation gates.
-      Five-multibody, eight-multibody, 12-multibody, 16-multibody, and
-      24-multibody stacked contact sets extend the boxed-LCP fallback gate
-      beyond the original small scenes, and a production multi-island mixed
-      scene now covers independent articulated and rigid contact islands with
-      12+ initial contacts.
+      Five-multibody, eight-multibody, 12-multibody, 16-multibody,
+      24-multibody, and 32-multibody stacked contact sets extend the boxed-LCP
+      fallback gate beyond the original small scenes, and a production
+      multi-island mixed scene now covers independent articulated and rigid
+      contact islands with 12+ initial contacts.
       Broader solver coverage, including still-larger production contact sets
       and default-solver deformable storage, remains open before making a full
       zero-allocation claim. The
