@@ -236,9 +236,9 @@ private:
 
   /// Rotating cache-line color for large aligned array allocations.
   ///
-  /// Start one line into the cycle so the first large registry storage page is
-  /// offset from the naturally aligned packed entity pages that precede it.
-  std::uint8_t mLargeAlignedAllocationColor{1};
+  /// Start mid-cycle so the first large registry storage page avoids the
+  /// sparse/entity pages that typically precede it.
+  std::uint8_t mLargeAlignedAllocationColor{4};
 };
 
 } // namespace dart::common
