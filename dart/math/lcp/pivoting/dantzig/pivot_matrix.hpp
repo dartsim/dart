@@ -135,6 +135,21 @@ public:
     initializeRowPointers();
   }
 
+  /// Construct a non-owning pivot matrix view over caller-owned padded storage.
+  ///
+  /// The caller must keep both `data` and `rowPointers` alive for the lifetime
+  /// of this PivotMatrix. This is intended for solver-local scratch paths that
+  /// already own mutable padded matrix storage.
+  PivotMatrix(int rows, int cols, Scalar* data, int nskip, Scalar** rowPointers)
+    : rows_(rows),
+      cols_(cols),
+      nskip_(nskip),
+      external_data_(data),
+      external_row_ptrs_(rowPointers)
+  {
+    initializeRowPointers();
+  }
+
   /// Destructor
   ~PivotMatrix() = default;
 
@@ -147,6 +162,8 @@ public:
     : rows_(other.rows_),
       cols_(other.cols_),
       nskip_(other.nskip_),
+      external_data_(other.external_data_),
+      external_row_ptrs_(other.external_row_ptrs_),
       data_(std::move(other.data_)),
       row_ptrs_(std::move(other.row_ptrs_))
   {
@@ -158,6 +175,8 @@ public:
       rows_ = other.rows_;
       cols_ = other.cols_;
       nskip_ = other.nskip_;
+      external_data_ = other.external_data_;
+      external_row_ptrs_ = other.external_row_ptrs_;
       data_ = std::move(other.data_);
       row_ptrs_ = std::move(other.row_ptrs_);
     }
@@ -170,7 +189,8 @@ public:
   void swapRows(int i, int j)
   {
     DART_ASSERT(i >= 0 && i < rows_ && j >= 0 && j < rows_);
-    std::swap(row_ptrs_[i], row_ptrs_[j]);
+    auto* rows = rowPointerData();
+    std::swap(rows[i], rows[j]);
   }
 
   /// Access row i as a pointer (for compatibility with existing LCP code)
@@ -179,7 +199,7 @@ public:
   Scalar* operator[](int i)
   {
     DART_ASSERT(i >= 0 && i < rows_);
-    return row_ptrs_[i];
+    return rowPointerData()[i];
   }
 
   /// Access row i as a pointer (const version)
@@ -188,7 +208,7 @@ public:
   const Scalar* operator[](int i) const
   {
     DART_ASSERT(i >= 0 && i < rows_);
-    return row_ptrs_[i];
+    return rowPointerData()[i];
   }
 
   /// Access element (i, j) through permuted row pointers
@@ -216,6 +236,7 @@ public:
   /// @return Reference to underlying Eigen matrix
   MatrixType& matrix()
   {
+    DART_ASSERT(external_data_ == nullptr);
     return data_;
   }
 
@@ -223,6 +244,7 @@ public:
   /// @return Const reference to underlying Eigen matrix
   const MatrixType& matrix() const
   {
+    DART_ASSERT(external_data_ == nullptr);
     return data_;
   }
 
@@ -231,28 +253,28 @@ public:
   /// @return Pointer to raw data
   Scalar* data()
   {
-    return data_.data();
+    return external_data_ != nullptr ? external_data_ : data_.data();
   }
 
   /// Get raw data pointer (const version)
   /// @return Const pointer to raw data
   const Scalar* data() const
   {
-    return data_.data();
+    return external_data_ != nullptr ? external_data_ : data_.data();
   }
 
   /// Get array of row pointers (for interfacing with existing LCP code)
   /// @return Pointer to array of row pointers
   Scalar** rowPointers()
   {
-    return row_ptrs_.data();
+    return rowPointerData();
   }
 
   /// Get array of row pointers (const version)
   /// @return Const pointer to array of row pointers
   Scalar* const* rowPointers() const
   {
-    return row_ptrs_.data();
+    return rowPointerData();
   }
 
   /// Get number of rows
@@ -283,6 +305,16 @@ public:
   /// Set all elements to zero
   void setZero()
   {
+    if (external_data_ != nullptr) {
+      for (int i = 0; i < rows_; ++i) {
+        Scalar* row = external_data_ + i * nskip_;
+        for (int j = 0; j < cols_; ++j) {
+          row[j] = Scalar(0);
+        }
+      }
+      initializeRowPointers();
+      return;
+    }
     data_.setZero();
   }
 
@@ -290,6 +322,16 @@ public:
   /// @param value Value to set
   void setConstant(Scalar value)
   {
+    if (external_data_ != nullptr) {
+      for (int i = 0; i < rows_; ++i) {
+        Scalar* row = external_data_ + i * nskip_;
+        for (int j = 0; j < cols_; ++j) {
+          row[j] = value;
+        }
+      }
+      initializeRowPointers();
+      return;
+    }
     data_.setConstant(value);
   }
 
@@ -298,6 +340,7 @@ public:
   /// @param cols New number of columns
   void resize(int rows, int cols)
   {
+    DART_ASSERT(external_data_ == nullptr && external_row_ptrs_ == nullptr);
     rows_ = rows;
     cols_ = cols;
     nskip_ = cols;
@@ -310,16 +353,35 @@ private:
   /// Initialize row pointers to point to matrix rows
   void initializeRowPointers()
   {
-    row_ptrs_.resize(rows_);
-    // With row-major storage, row i starts at data_.data() + i * cols_
+    Scalar** rowPointers = external_row_ptrs_;
+    if (rowPointers == nullptr) {
+      row_ptrs_.resize(rows_);
+      rowPointers = row_ptrs_.data();
+    }
+    const int stride = external_data_ != nullptr ? nskip_ : cols_;
+    Scalar* base = data();
     for (int i = 0; i < rows_; ++i) {
-      row_ptrs_[i] = data_.data() + i * cols_;
+      rowPointers[i] = base + i * stride;
     }
   }
 
-  int rows_;                      ///< Number of rows
-  int cols_;                      ///< Number of columns
-  int nskip_;                     ///< Leading dimension (for compatibility)
+  Scalar** rowPointerData()
+  {
+    return external_row_ptrs_ != nullptr ? external_row_ptrs_
+                                         : row_ptrs_.data();
+  }
+
+  Scalar* const* rowPointerData() const
+  {
+    return external_row_ptrs_ != nullptr ? external_row_ptrs_
+                                         : row_ptrs_.data();
+  }
+
+  int rows_;  ///< Number of rows
+  int cols_;  ///< Number of columns
+  int nskip_; ///< Leading dimension (for compatibility)
+  Scalar* external_data_ = nullptr;
+  Scalar** external_row_ptrs_ = nullptr;
   MatrixType data_;               ///< Underlying Eigen matrix storage
   std::vector<Scalar*> row_ptrs_; ///< Row pointers for O(1) swapping
 };

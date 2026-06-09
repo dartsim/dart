@@ -158,6 +158,7 @@ rows/columns and manipulate C.
 #include "dart/math/lcp/pivoting/dantzig/matrix.hpp"
 #include "dart/math/lcp/pivoting/dantzig/misc.hpp"
 
+#include <algorithm>
 #include <memory>
 #include <vector>
 
@@ -172,7 +173,7 @@ namespace dart::math {
 // an optimized Dantzig LCP driver routine for the lo-hi LCP problem.
 
 template <typename Scalar>
-bool SolveLCP(
+bool SolveLCPWithScratch(
     int n,
     Scalar* A,
     Scalar* x,
@@ -182,10 +183,14 @@ bool SolveLCP(
     Scalar* lo,
     Scalar* hi,
     int* findex,
+    DantzigLcpScratch<Scalar>& scratch,
     bool earlyTermination)
 {
   DART_ASSERT(n > 0 && A && x && b && lo && hi && nub >= 0 && nub <= n);
   const Scalar kInfinity = ScalarTraits<Scalar>::inf();
+  const int nskip = padding(n);
+  const std::size_t nSize = static_cast<std::size_t>(n);
+  const std::size_t nskipSize = static_cast<std::size_t>(nskip);
 #ifndef NDEBUG
   {
     // check restrictions on lo and hi
@@ -198,72 +203,39 @@ bool SolveLCP(
   // if all the variables are unbounded then we can just factor, solve,
   // and return
   if (nub >= n) {
-    const int nskip = padding(n);
-    const std::size_t nSize = static_cast<std::size_t>(n);
-    const std::size_t nskipSize = static_cast<std::size_t>(nskip);
-    auto d = std::make_unique_for_overwrite<Scalar[]>(nSize);
-    SetZero(d.get(), n);
+    scratch.d.resize(nSize);
+    SetZero(scratch.d.data(), n);
 
-    std::unique_ptr<Scalar[]> A_storage;
-    Scalar* A_work = nullptr;
-
-    if (n != nskip) {
-      A_storage = std::make_unique_for_overwrite<Scalar[]>(nSize * nskipSize);
-      for (int i = 0; i < n; ++i) {
-        const std::size_t rowOffset = static_cast<std::size_t>(i) * nskipSize;
-        memcpy(&A_storage[rowOffset], &A[rowOffset], nSize * sizeof(Scalar));
-      }
-      A_work = A_storage.get();
-    } else {
-      A_work = A;
-    }
-
-    dFactorLDLT(A_work, d.get(), n, nskip);
-    dSolveLDLT(A_work, d.get(), b, n, nskip);
+    dFactorLDLT(A, scratch.d.data(), n, nskip);
+    dSolveLDLT(A, scratch.d.data(), b, n, nskip);
     memcpy(x, b, n * sizeof(Scalar));
 
     return true;
   }
 
-  const int nskip = padding(n);
-  const std::size_t nSize = static_cast<std::size_t>(n);
-  const std::size_t nskipSize = static_cast<std::size_t>(nskip);
-
-  std::unique_ptr<Scalar[]> A_storage;
-  Scalar* A_work = nullptr;
-
-  if (n != nskip) {
-    A_storage = std::make_unique_for_overwrite<Scalar[]>(nSize * nskipSize);
-    for (int i = 0; i < n; ++i) {
-      const std::size_t rowOffset = static_cast<std::size_t>(i) * nskipSize;
-      memcpy(&A_storage[rowOffset], &A[rowOffset], nSize * sizeof(Scalar));
-    }
-    A_work = A_storage.get();
-  } else {
-    A_work = A;
-  }
-
-  // Create PivotMatrix from work array
-  PivotMatrix<Scalar> A_pivot(n, n, A_work, nskip);
-
-  auto L = std::make_unique_for_overwrite<Scalar[]>(nSize * nskipSize);
-  auto d = std::make_unique_for_overwrite<Scalar[]>(nSize);
-  std::unique_ptr<Scalar[]> wStorage;
+  scratch.L.resize(nSize * nskipSize);
+  scratch.d.resize(nSize);
   Scalar* w = outer_w;
   if (!w) {
-    wStorage = std::make_unique_for_overwrite<Scalar[]>(n);
-    w = wStorage.get();
+    scratch.w.resize(nSize);
+    w = scratch.w.data();
   }
-  auto delta_w = std::make_unique_for_overwrite<Scalar[]>(nSize);
-  auto delta_x = std::make_unique_for_overwrite<Scalar[]>(nSize);
-  auto Dell = std::make_unique_for_overwrite<Scalar[]>(nSize);
-  auto ell = std::make_unique_for_overwrite<Scalar[]>(nSize);
-  auto p = std::make_unique_for_overwrite<int[]>(nSize);
-  auto C = std::make_unique_for_overwrite<int[]>(nSize);
-  auto state = std::make_unique<bool[]>(nSize);
+  scratch.deltaW.resize(nSize);
+  scratch.deltaX.resize(nSize);
+  scratch.dell.resize(nSize);
+  scratch.ell.resize(nSize);
+  scratch.p.resize(nSize);
+  scratch.C.resize(nSize);
+  if (scratch.stateCapacity < nSize) {
+    scratch.state = std::make_unique<bool[]>(nSize);
+    scratch.stateCapacity = nSize;
+  }
+  std::fill_n(scratch.state.get(), nSize, false);
+  scratch.rowPointers.resize(nSize);
 
   // create LCP object. note that tmp is set to delta_w to save space, this
   // optimization relies on knowledge of how tmp is used, so be careful!
+  PivotMatrix<Scalar> A_pivot(n, n, A, nskip, scratch.rowPointers.data());
   LCP<Scalar> lcp(
       n,
       nskip,
@@ -274,15 +246,15 @@ bool SolveLCP(
       w,
       lo,
       hi,
-      L.get(),
-      d.get(),
-      Dell.get(),
-      ell.get(),
-      delta_w.get(),
-      state.get(),
+      scratch.L.data(),
+      scratch.d.data(),
+      scratch.dell.data(),
+      scratch.ell.data(),
+      scratch.deltaW.data(),
+      scratch.state.get(),
       findex,
-      p.get(),
-      C.get());
+      scratch.p.data(),
+      scratch.C.data());
   int adj_nub = lcp.getNub();
 
   // loop over all indexes adj_nub..n-1. for index i, if x(i),w(i) satisfy the
@@ -313,12 +285,12 @@ bool SolveLCP(
     if (!hit_first_friction_index && findex && findex[i] >= 0) {
       // un-permute x into delta_w, which is not being used at the moment
       for (int j = 0; j < n; ++j) {
-        delta_w[p[j]] = x[j];
+        scratch.deltaW[static_cast<std::size_t>(scratch.p[j])] = x[j];
       }
 
       // set lo and hi values
       for (int k = i; k < n; ++k) {
-        Scalar wfk = delta_w[findex[k]];
+        Scalar wfk = scratch.deltaW[static_cast<std::size_t>(findex[k])];
         if (wfk == 0) {
           hi[k] = 0;
           lo[k] = 0;
@@ -347,17 +319,17 @@ bool SolveLCP(
     // see if x(i),w(i) is in a valid region
     if (lo[i] == 0 && w[i] >= 0) {
       lcp.transfer_i_to_N(i);
-      state[i] = false;
+      scratch.state[static_cast<std::size_t>(i)] = false;
     } else if (hi[i] == 0 && w[i] <= 0) {
       lcp.transfer_i_to_N(i);
-      state[i] = true;
+      scratch.state[static_cast<std::size_t>(i)] = true;
     } else if (w[i] == 0) {
       // this is a degenerate case. by the time we get to this test we know
       // that lo != 0, which means that lo < 0 as lo is not allowed to be +ve,
       // and similarly that hi > 0. this means that the line segment
       // corresponding to set C is at least finite in extent, and we are on it.
       // NOTE: we must call lcp.solve1() before lcp.transfer_i_to_C()
-      lcp.solve1(delta_x.get(), i, 0, 1);
+      lcp.solve1(scratch.deltaX.data(), i, 0, 1);
 
       lcp.transfer_i_to_C(i);
     } else {
@@ -375,15 +347,17 @@ bool SolveLCP(
         }
 
         // compute: delta_x(C) = -dir*A(C,C)\A(C,i)
-        lcp.solve1(delta_x.get(), i, dir);
+        lcp.solve1(scratch.deltaX.data(), i, dir);
 
         // note that delta_x[i] = dirf, but we won't bother to set it
 
         // compute: delta_w = A*delta_x ... note we only care about
         // delta_w(N) and delta_w(i), the rest is ignored
-        lcp.pN_equals_ANC_times_qC(delta_w.get(), delta_x.get());
-        lcp.pN_plusequals_ANi(delta_w.get(), i, dir);
-        delta_w[i] = lcp.AiC_times_qC(i, delta_x.get()) + lcp.Aii(i) * dirf;
+        lcp.pN_equals_ANC_times_qC(
+            scratch.deltaW.data(), scratch.deltaX.data());
+        lcp.pN_plusequals_ANi(scratch.deltaW.data(), i, dir);
+        scratch.deltaW[static_cast<std::size_t>(i)]
+            = lcp.AiC_times_qC(i, scratch.deltaX.data()) + lcp.Aii(i) * dirf;
 
         // find largest step we can take (size=s), either to drive x(i),w(i)
         // to the valid LCP region or to drive an already-valid variable
@@ -391,7 +365,7 @@ bool SolveLCP(
 
         int cmd = 1; // index switching command
         int si = 0;  // si = index to switch if cmd>3
-        Scalar s = -w[i] / delta_w[i];
+        Scalar s = -w[i] / scratch.deltaW[static_cast<std::size_t>(i)];
         if (dir > 0) {
           if (hi[i] < kInfinity) {
             Scalar s2 = (hi[i] - x[i])
@@ -416,13 +390,15 @@ bool SolveLCP(
           const int numN = lcp.numN();
           for (int k = 0; k < numN; ++k) {
             const int indexN_k = lcp.indexN(k);
-            if (!state[indexN_k] ? delta_w[indexN_k] < 0
-                                 : delta_w[indexN_k] > 0) {
+            if (!scratch.state[static_cast<std::size_t>(indexN_k)]
+                    ? scratch.deltaW[static_cast<std::size_t>(indexN_k)] < 0
+                    : scratch.deltaW[static_cast<std::size_t>(indexN_k)] > 0) {
               // don't bother checking if lo=hi=0
               if (lo[indexN_k] == 0 && hi[indexN_k] == 0) {
                 continue;
               }
-              Scalar s2 = -w[indexN_k] / delta_w[indexN_k];
+              Scalar s2 = -w[indexN_k]
+                          / scratch.deltaW[static_cast<std::size_t>(indexN_k)];
               if (s2 < s) {
                 s = s2;
                 cmd = 4;
@@ -436,16 +412,20 @@ bool SolveLCP(
           const int numC = lcp.numC();
           for (int k = adj_nub; k < numC; ++k) {
             const int indexC_k = lcp.indexC(k);
-            if (delta_x[indexC_k] < 0 && lo[indexC_k] > -kInfinity) {
-              Scalar s2 = (lo[indexC_k] - x[indexC_k]) / delta_x[indexC_k];
+            if (scratch.deltaX[static_cast<std::size_t>(indexC_k)] < 0
+                && lo[indexC_k] > -kInfinity) {
+              Scalar s2 = (lo[indexC_k] - x[indexC_k])
+                          / scratch.deltaX[static_cast<std::size_t>(indexC_k)];
               if (s2 < s) {
                 s = s2;
                 cmd = 5;
                 si = indexC_k;
               }
             }
-            if (delta_x[indexC_k] > 0 && hi[indexC_k] < kInfinity) {
-              Scalar s2 = (hi[indexC_k] - x[indexC_k]) / delta_x[indexC_k];
+            if (scratch.deltaX[static_cast<std::size_t>(indexC_k)] > 0
+                && hi[indexC_k] < kInfinity) {
+              Scalar s2 = (hi[indexC_k] - x[indexC_k])
+                          / scratch.deltaX[static_cast<std::size_t>(indexC_k)];
               if (s2 < s) {
                 s = s2;
                 cmd = 6;
@@ -484,12 +464,12 @@ bool SolveLCP(
         }
 
         // apply x = x + s * delta_x
-        lcp.pC_plusequals_s_times_qC(x, s, delta_x.get());
+        lcp.pC_plusequals_s_times_qC(x, s, scratch.deltaX.data());
         x[i] += s * dirf;
 
         // apply w = w + s * delta_w
-        lcp.pN_plusequals_s_times_qN(w, s, delta_w.get());
-        w[i] += s * delta_w[i];
+        lcp.pN_plusequals_s_times_qN(w, s, scratch.deltaW.data());
+        w[i] += s * scratch.deltaW[static_cast<std::size_t>(i)];
 
         // void *tmpbuf;
         // switch indexes between sets if necessary
@@ -500,12 +480,12 @@ bool SolveLCP(
             break;
           case 2: // done
             x[i] = lo[i];
-            state[i] = false;
+            scratch.state[static_cast<std::size_t>(i)] = false;
             lcp.transfer_i_to_N(i);
             break;
           case 3: // done
             x[i] = hi[i];
-            state[i] = true;
+            scratch.state[static_cast<std::size_t>(i)] = true;
             lcp.transfer_i_to_N(i);
             break;
           case 4: // keep going
@@ -514,12 +494,12 @@ bool SolveLCP(
             break;
           case 5: // keep going
             x[si] = lo[si];
-            state[si] = false;
+            scratch.state[static_cast<std::size_t>(si)] = false;
             lcp.transfer_i_from_C_to_N(si, nullptr);
             break;
           case 6: // keep going
             x[si] = hi[si];
-            state[si] = true;
+            scratch.state[static_cast<std::size_t>(si)] = true;
             lcp.transfer_i_from_C_to_N(si, nullptr);
             break;
         }
@@ -540,7 +520,52 @@ bool SolveLCP(
   return true;
 }
 
+//==============================================================================
+template <typename Scalar>
+bool SolveLCP(
+    int n,
+    Scalar* A,
+    Scalar* x,
+    Scalar* b,
+    Scalar* outer_w /*=nullptr*/,
+    int nub,
+    Scalar* lo,
+    Scalar* hi,
+    int* findex,
+    bool earlyTermination)
+{
+  DantzigLcpScratch<Scalar> scratch;
+  return SolveLCPWithScratch(
+      n, A, x, b, outer_w, nub, lo, hi, findex, scratch, earlyTermination);
+}
+
 // Explicit template instantiations
+template DART_API bool SolveLCPWithScratch<float>(
+    int n,
+    float* A,
+    float* x,
+    float* b,
+    float* w,
+    int nub,
+    float* lo,
+    float* hi,
+    int* findex,
+    DantzigLcpScratch<float>& scratch,
+    bool earlyTermination);
+
+template DART_API bool SolveLCPWithScratch<double>(
+    int n,
+    double* A,
+    double* x,
+    double* b,
+    double* w,
+    int nub,
+    double* lo,
+    double* hi,
+    int* findex,
+    DantzigLcpScratch<double>& scratch,
+    bool earlyTermination);
+
 template DART_API bool SolveLCP<float>(
     int n,
     float* A,

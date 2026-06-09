@@ -357,7 +357,9 @@ pixi run bm-allocator-comparative-check
 when DART does not beat the selected foonathan/memory or standard-library
 baseline on matching workloads. It also rejects compared aggregate rows whose
 coefficient of variation exceeds `--max-cv` (default 10%), because noisy rows are
-not valid evidence for strict allocator decisions.
+not valid evidence for strict allocator decisions unless the saved benchmark
+mean/stddev/repetition aggregates still show DART's normal-approximation 95%
+confidence interval strictly below the selected baseline's confidence interval.
 
 Pass `--include-entt-registry` to add allocator-aware EnTT registry/component
 storage churn rows. Those rows are an evidence surface for registry allocator

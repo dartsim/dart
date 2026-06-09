@@ -56,7 +56,7 @@ def entt_registry_build_rows(*, dart_time, foonathan_time, dart_cv, foonathan_cv
     ]
 
 
-def test_noisy_rows_fail_before_timing_ratio_is_used():
+def test_noisy_rows_without_separated_statistics_fail_before_timing_ratio_is_used():
     module = load_allocator_check_module()
 
     failures, passes = module.evaluate_comparisons(
@@ -80,6 +80,61 @@ def test_noisy_rows_fail_before_timing_ratio_is_used():
             "status": "NOISY",
         }
     ]
+
+
+def test_noisy_rows_pass_when_mean_confidence_intervals_are_separated():
+    module = load_allocator_check_module()
+    rows = stl_vector_rows(
+        dart_time=90.0,
+        foonathan_time=180.0,
+        dart_cv=0.20,
+        foonathan_cv=0.20,
+    ) + [
+        aggregate_row("BM_StlVector_DART/10000", "mean", 90.0, repetitions=5),
+        aggregate_row("BM_StlVector_DART/10000", "stddev", 18.0, repetitions=5),
+        aggregate_row("BM_StlVector_Foonathan/10000", "mean", 180.0, repetitions=5),
+        aggregate_row("BM_StlVector_Foonathan/10000", "stddev", 18.0, repetitions=5),
+    ]
+
+    failures, passes = module.evaluate_comparisons(
+        rows,
+        baseline_allocators=[("Foonathan",)],
+        max_cv=0.10,
+    )
+
+    assert failures == []
+    assert len(passes) == 1
+    result = passes[0]
+    assert result["status"] == "PASS"
+    assert result["evidence"] == "MEAN_CI_SEPARATED"
+    assert result["ratio"] == 0.5
+    assert result["noisy_allocators"] == [("DART", 0.20), ("Foonathan", 0.20)]
+    assert result["dart_mean_ci_ns"] == pytest.approx([74.222, 105.778])
+    assert result["baseline_mean_ci_ns"] == pytest.approx([164.222, 195.778])
+
+
+def test_noisy_rows_still_fail_when_confidence_intervals_overlap():
+    module = load_allocator_check_module()
+    rows = stl_vector_rows(
+        dart_time=90.0,
+        foonathan_time=100.0,
+        dart_cv=0.20,
+        foonathan_cv=0.20,
+    ) + [
+        aggregate_row("BM_StlVector_DART/10000", "mean", 90.0, repetitions=5),
+        aggregate_row("BM_StlVector_DART/10000", "stddev", 18.0, repetitions=5),
+        aggregate_row("BM_StlVector_Foonathan/10000", "mean", 100.0, repetitions=5),
+        aggregate_row("BM_StlVector_Foonathan/10000", "stddev", 20.0, repetitions=5),
+    ]
+
+    failures, passes = module.evaluate_comparisons(
+        rows,
+        baseline_allocators=[("Foonathan",)],
+        max_cv=0.10,
+    )
+
+    assert passes == []
+    assert failures[0]["status"] == "NOISY"
 
 
 def test_stable_rows_still_use_strict_ratio():
@@ -182,6 +237,65 @@ def test_benchmark_filter_modes_are_explicit():
         )
         == module.ENTT_REGISTRY_ONLY_FILTER
     )
+
+
+def test_required_key_modes_are_explicit():
+    module = load_allocator_check_module()
+
+    default_keys = module.required_keys_for_mode(
+        include_entt_registry=False,
+        only_entt_registry=False,
+    )
+    include_keys = module.required_keys_for_mode(
+        include_entt_registry=True,
+        only_entt_registry=False,
+    )
+    only_keys = module.required_keys_for_mode(
+        include_entt_registry=False,
+        only_entt_registry=True,
+    )
+
+    assert "BM_Pool/32/64" in default_keys
+    assert "BM_StaticStack/256" in default_keys
+    assert "BM_Temporary/256" in default_keys
+    assert "BM_Iteration/256" in default_keys
+    assert "BM_RawHeap/256" in default_keys
+    assert "BM_RawMalloc/256" in default_keys
+    assert "BM_RawNew/256" in default_keys
+    assert "BM_AlignedStack/256" in default_keys
+    assert "BM_FallbackStack/256" in default_keys
+    assert "BM_Segregator/256" in default_keys
+    assert "BM_TrackedStack/256" in default_keys
+    assert "BM_DeepTrackedPool/256" in default_keys
+    assert "BM_EnttRegistry/256" not in default_keys
+    assert "BM_EnttRegistry/256" in include_keys
+    assert "BM_Pool/32/64" in include_keys
+    assert only_keys == module._ENTT_REQUIRED_KEYS
+
+
+def test_missing_required_benchmark_rows_fail():
+    module = load_allocator_check_module()
+
+    failures, passes = module.evaluate_comparisons(
+        stl_vector_rows(
+            dart_time=90.0,
+            foonathan_time=100.0,
+            dart_cv=0.02,
+            foonathan_cv=0.02,
+        ),
+        baseline_allocators=[("Foonathan",)],
+        required_keys=("BM_StlVector/10000", "BM_Pool/32/64"),
+        max_cv=0.10,
+    )
+
+    assert passes[0]["benchmark"] == "BM_StlVector/10000"
+    assert failures == [
+        {
+            "benchmark": "BM_Pool/32/64",
+            "baseline": "<required>",
+            "status": "MISSING_BENCHMARK",
+        }
+    ]
 
 
 def test_input_rows_are_filtered_by_entt_registry_mode():

@@ -241,41 +241,54 @@ void* FreeListAllocator::allocate(size_t bytes, size_t alignment) noexcept
     return allocate(bytes);
   }
 
-  if (mGrowthPolicy == GrowthPolicy::FixedCapacity) {
-    return allocateFromReservedBlockAligned(bytes, alignment);
-  }
-
-  void* pointer = mBaseAllocator.allocate(bytes, alignment);
-  if (pointer == nullptr) {
-    return nullptr;
-  }
-
-  mAllocatedBlocks.push_back(AllocatedBlock{pointer, bytes, alignment, true});
-  mTotalAllocatedSize += bytes;
-  recordAllocation(bytes);
-
-  return pointer;
+  return allocateFromReservedBlockAligned(bytes, alignment);
 }
 
 //==============================================================================
 void* FreeListAllocator::allocateFromReservedBlockAligned(
     size_t bytes, size_t alignment) noexcept
 {
+  // Large component/storage pages are often power-of-two sized. Rotating
+  // cache-line starts avoids mapping consecutive arrays to identical L1 sets.
+  const bool colorLargeCacheAlignedAllocation
+      = alignment == 64 && bytes >= 2048;
   size_t allocationSize = 0;
   if (!checkedAdd(bytes, sizeof(AlignedAllocationHeader), allocationSize)
-      || !checkedAdd(allocationSize, alignment - 1, allocationSize)) {
+      || !checkedAdd(allocationSize, alignment - 1, allocationSize)
+      || (colorLargeCacheAlignedAllocation
+          && !checkedAdd(allocationSize, 7 * alignment, allocationSize))) {
     return nullptr;
   }
 
+  const size_t diagnosticAllocatedSize = mDiagnosticAllocatedSize;
+  const size_t diagnosticPeakAllocatedSize = mDiagnosticPeakAllocatedSize;
+  const size_t diagnosticAllocationCount = mDiagnosticAllocationCount;
   auto* allocation = static_cast<unsigned char*>(allocate(allocationSize));
   if (allocation == nullptr) {
     return nullptr;
   }
+  mDiagnosticAllocatedSize = diagnosticAllocatedSize;
+  mDiagnosticPeakAllocatedSize = diagnosticPeakAllocatedSize;
+  mDiagnosticAllocationCount = diagnosticAllocationCount;
 
   const auto payloadBegin = reinterpret_cast<uintptr_t>(allocation)
                             + sizeof(AlignedAllocationHeader);
-  const auto alignedPayload
+  auto alignedPayload
       = (payloadBegin + alignment - 1) & ~(uintptr_t{alignment} - 1);
+  if (colorLargeCacheAlignedAllocation) {
+    const auto colorPadding
+        = static_cast<uintptr_t>(mLargeAlignedAllocationColor) * alignment;
+    if (alignedPayload > std::numeric_limits<uintptr_t>::max() - colorPadding) {
+      deallocate(allocation, allocationSize);
+      mDiagnosticAllocatedSize = diagnosticAllocatedSize;
+      mDiagnosticPeakAllocatedSize = diagnosticPeakAllocatedSize;
+      mDiagnosticAllocationCount = diagnosticAllocationCount;
+      return nullptr;
+    }
+    alignedPayload += colorPadding;
+    mLargeAlignedAllocationColor
+        = static_cast<std::uint8_t>((mLargeAlignedAllocationColor + 1u) & 7u);
+  }
   auto* header = reinterpret_cast<AlignedAllocationHeader*>(
       alignedPayload - sizeof(AlignedAllocationHeader));
   std::construct_at(
@@ -286,7 +299,6 @@ void* FreeListAllocator::allocateFromReservedBlockAligned(
           allocationSize,
           bytes,
           alignment});
-  recordDeallocation(allocationSize);
   recordAllocation(bytes);
 
   return reinterpret_cast<void*>(alignedPayload);
@@ -350,16 +362,11 @@ void FreeListAllocator::deallocate(
     return;
   }
 
-  if (!releaseDelegatedAllocation(pointer, bytes, alignment)) {
-    if (mGrowthPolicy == GrowthPolicy::FixedCapacity
-        && releaseReservedAlignedAllocation(pointer, bytes, alignment)) {
-      return;
-    }
-
-    DART_ASSERT(false);
+  if (releaseReservedAlignedAllocation(pointer, bytes, alignment)) {
     return;
   }
-  recordDeallocation(bytes);
+
+  DART_ASSERT(false);
 }
 
 //==============================================================================
@@ -395,7 +402,7 @@ bool FreeListAllocator::allocateMemoryBlock(size_t sizeToAllocate)
   );
 
   mAllocatedBlocks.push_back(
-      AllocatedBlock{memory, allocationSize, alignof(std::max_align_t), false});
+      AllocatedBlock{memory, allocationSize, alignof(std::max_align_t)});
 
   // Set the new memory block as free block
   mFreeBlock = mFirstMemoryBlock;
@@ -404,33 +411,6 @@ bool FreeListAllocator::allocateMemoryBlock(size_t sizeToAllocate)
   mTotalAllocatedBlockSize = totalAllocatedBlockSize;
 
   return true;
-}
-
-//==============================================================================
-bool FreeListAllocator::releaseDelegatedAllocation(
-    void* pointer, size_t bytes, size_t alignment)
-{
-  DART_UNUSED(bytes, alignment);
-
-  for (auto it = mAllocatedBlocks.begin(); it != mAllocatedBlocks.end(); ++it) {
-    if (!it->isOutstandingAllocation || it->pointer != pointer) {
-      continue;
-    }
-
-    DART_ASSERT(it->size == bytes);
-    DART_ASSERT(it->alignment == alignment);
-
-    const auto block = *it;
-    mAllocatedBlocks.erase(it);
-
-    mBaseAllocator.deallocate(pointer, block.size, block.alignment);
-    mTotalAllocatedSize -= block.size;
-
-    DART_TRACE("Deallocated {} bytes.", block.size);
-    return true;
-  }
-
-  return false;
 }
 
 //==============================================================================
@@ -450,10 +430,16 @@ bool FreeListAllocator::releaseReservedAlignedAllocation(
 
   void* allocationPointer = header->allocationPointer;
   const size_t allocationSize = header->allocationSize;
+  const size_t diagnosticAllocatedSize = mDiagnosticAllocatedSize;
+  const size_t diagnosticPeakAllocatedSize = mDiagnosticPeakAllocatedSize;
+  const size_t diagnosticAllocationCount = mDiagnosticAllocationCount;
   std::destroy_at(header);
-  recordDeallocation(bytes);
-  recordAllocation(allocationSize);
   deallocate(allocationPointer, allocationSize);
+  mDiagnosticAllocatedSize
+      = bytes <= diagnosticAllocatedSize ? diagnosticAllocatedSize - bytes : 0;
+  mDiagnosticPeakAllocatedSize = diagnosticPeakAllocatedSize;
+  mDiagnosticAllocationCount
+      = diagnosticAllocationCount > 0 ? diagnosticAllocationCount - 1 : 0;
 
   return true;
 }

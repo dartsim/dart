@@ -12,7 +12,7 @@ from pathlib import Path
 from benchmark_packet_utils import (
     benchmark_row_name,
     benchmark_timing_field_errors,
-    canonical_benchmark_row_name,
+    canonical_benchmark_name,
 )
 
 EXPECTED_BENCHMARKS = {
@@ -95,7 +95,7 @@ def validate_packet(path: Path) -> None:
         if not name:
             errors.append("benchmark row is missing a string name")
             continue
-        base_name = canonical_benchmark_row_name(row)
+        base_name = canonical_benchmark_name(name)
         if base_name not in EXPECTED_BENCHMARKS:
             errors.append(f"unexpected benchmark row: {name}")
             continue

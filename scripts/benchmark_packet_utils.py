@@ -24,11 +24,6 @@ def benchmark_row_name(row: Mapping[str, Any]) -> str:
     return name if isinstance(name, str) else ""
 
 
-def canonical_benchmark_row_name(row: Mapping[str, Any]) -> str:
-    """Return the canonical Google Benchmark row identity."""
-    return canonical_benchmark_name(benchmark_row_name(row))
-
-
 def timing_to_ns(value: float, unit: str) -> float:
     return value * _UNIT_TO_NS.get(unit, 1.0)
 
@@ -48,7 +43,7 @@ def median_timing_by_name(rows: Iterable[Mapping[str, Any]]) -> dict[str, float]
     for row in rows:
         if row.get("aggregate_name") != "median":
             continue
-        name = canonical_benchmark_row_name(row)
+        name = canonical_benchmark_name(benchmark_row_name(row))
         if not name:
             continue
         timing = benchmark_timing_ns(row)

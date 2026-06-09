@@ -33,7 +33,16 @@
 #include <dart/common/logging.hpp>
 #include <dart/common/stl_allocator.hpp>
 
+#include <new>
+#include <type_traits>
+#include <utility>
+
 #include <cstddef>
+#include <cstdlib>
+
+#ifdef _WIN32
+  #include <malloc.h>
+#endif
 
 namespace dart::common {
 
@@ -47,17 +56,9 @@ StlAllocator<T>::StlAllocator(MemoryAllocator& baseAllocator) noexcept
 
 //==============================================================================
 template <typename T>
-StlAllocator<T>::StlAllocator(const StlAllocator& other) throw()
-  : std::allocator<T>(other), mBaseAllocator(other.mBaseAllocator)
-{
-  // Do nothing
-}
-
-//==============================================================================
-template <typename T>
 template <class U>
-StlAllocator<T>::StlAllocator(const StlAllocator<U>& other) throw()
-  : std::allocator<T>(other), mBaseAllocator(other.mBaseAllocator)
+constexpr StlAllocator<T>::StlAllocator(const StlAllocator<U>& other) noexcept
+  : mBaseAllocator(other.mBaseAllocator)
 {
   // Do nothing
 }
@@ -68,9 +69,13 @@ typename StlAllocator<T>::pointer StlAllocator<T>::allocate(
     size_type n, const void* hint)
 {
   (void)hint;
+  if (n > max_size()) {
+    throw std::bad_alloc();
+  }
+
   void* memory = nullptr;
   const size_type bytes = n * sizeof(T);
-  memory = mBaseAllocator->allocate(bytes, alignof(T));
+  memory = mBaseAllocator->allocate(bytes, storageAlignmentFor(bytes));
   pointer ptr = reinterpret_cast<pointer>(memory);
 
   // Throw std::bad_alloc to comply 23.10.9.1
@@ -86,8 +91,49 @@ typename StlAllocator<T>::pointer StlAllocator<T>::allocate(
 template <typename T>
 void StlAllocator<T>::deallocate(pointer pointer, size_type n) noexcept
 {
+  if (n > max_size()) {
+    return;
+  }
+
   const size_type bytes = n * sizeof(T);
-  mBaseAllocator->deallocate(pointer, bytes, alignof(T));
+  mBaseAllocator->deallocate(pointer, bytes, storageAlignmentFor(bytes));
+}
+
+//==============================================================================
+template <typename T>
+template <typename U, typename... Args>
+void StlAllocator<T>::construct(U* pointer, Args&&... args)
+{
+  std::construct_at(pointer, std::forward<Args>(args)...);
+}
+
+//==============================================================================
+template <typename T>
+template <typename U>
+void StlAllocator<T>::destroy(U* pointer) noexcept
+{
+  if constexpr (!std::is_trivially_destructible_v<U>) {
+    std::destroy_at(pointer);
+  }
+}
+
+//==============================================================================
+template <typename T>
+constexpr typename StlAllocator<T>::size_type
+StlAllocator<T>::storageAlignmentFor(size_type bytes) noexcept
+{
+  constexpr size_type naturalAlignment = alignof(T);
+  constexpr size_type cacheLineAlignment = 64;
+
+  if constexpr (naturalAlignment >= cacheLineAlignment) {
+    return naturalAlignment;
+  }
+
+  if constexpr (sizeof(T) >= cacheLineAlignment) {
+    return cacheLineAlignment;
+  }
+
+  return bytes >= 2048 ? cacheLineAlignment : naturalAlignment;
 }
 
 //==============================================================================
@@ -124,6 +170,85 @@ std::ostream& operator<<(std::ostream& os, const StlAllocator<T>& allocator)
 {
   allocator.print(os);
   return os;
+}
+
+//==============================================================================
+template <typename T>
+template <typename U>
+constexpr DefaultStlAllocator<T>::DefaultStlAllocator(
+    const DefaultStlAllocator<U>&) noexcept
+{
+  // Do nothing
+}
+
+//==============================================================================
+template <typename T>
+typename DefaultStlAllocator<T>::pointer DefaultStlAllocator<T>::allocate(
+    size_type n, const void* hint)
+{
+  (void)hint;
+  if (n > max_size()) {
+    throw std::bad_alloc();
+  }
+
+  const size_type bytes = n * sizeof(T);
+  void* memory = nullptr;
+  if constexpr (alignof(T) <= alignof(std::max_align_t)) {
+    memory = std::malloc(bytes);
+  } else {
+#ifdef _WIN32
+    memory = _aligned_malloc(bytes, alignof(T));
+#else
+    if (posix_memalign(&memory, alignof(T), bytes) != 0) {
+      memory = nullptr;
+    }
+#endif
+  }
+  pointer ptr = reinterpret_cast<pointer>(memory);
+
+  if (!ptr) {
+    throw std::bad_alloc();
+  }
+
+  return ptr;
+}
+
+//==============================================================================
+template <typename T>
+void DefaultStlAllocator<T>::deallocate(pointer pointer, size_type n) noexcept
+{
+  if (n > max_size()) {
+    return;
+  }
+
+  (void)n;
+#ifdef _WIN32
+  if constexpr (alignof(T) > alignof(std::max_align_t)) {
+    _aligned_free(pointer);
+  } else {
+    std::free(pointer);
+  }
+#else
+  std::free(pointer);
+#endif
+}
+
+//==============================================================================
+template <typename T>
+template <typename U, typename... Args>
+void DefaultStlAllocator<T>::construct(U* pointer, Args&&... args)
+{
+  std::construct_at(pointer, std::forward<Args>(args)...);
+}
+
+//==============================================================================
+template <typename T>
+template <typename U>
+void DefaultStlAllocator<T>::destroy(U* pointer) noexcept
+{
+  if constexpr (!std::is_trivially_destructible_v<U>) {
+    std::destroy_at(pointer);
+  }
 }
 
 } // namespace dart::common
