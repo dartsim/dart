@@ -350,6 +350,18 @@ TEST(NewtonBarrierPrimitives, LineSearchCcdOutcomeAccountsNativeStatus)
   EXPECT_EQ(stats.hits, 1u);
   EXPECT_EQ(stats.misses, 1u);
   EXPECT_EQ(stats.indeterminate, 1u);
+  EXPECT_EQ(stats.zeroStepCount, 0u);
+
+  indeterminate.timeOfImpact = -0.25;
+  const auto zeroIndeterminateOutcome
+      = nb::recordLineSearchCcdOutcome(stats, indeterminate);
+  EXPECT_FALSE(zeroIndeterminateOutcome.hit);
+  EXPECT_TRUE(zeroIndeterminateOutcome.indeterminate);
+  EXPECT_DOUBLE_EQ(zeroIndeterminateOutcome.stepBound, 0.0);
+  EXPECT_EQ(stats.hits, 1u);
+  EXPECT_EQ(stats.misses, 1u);
+  EXPECT_EQ(stats.indeterminate, 2u);
+  EXPECT_EQ(stats.zeroStepCount, 1u);
 }
 
 //==============================================================================
