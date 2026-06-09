@@ -611,8 +611,8 @@ sweep rows, BGS/Blocked Jacobi block-partition sweep rows, Blocked Jacobi
 threading rows, ADMM rho/adaptive-rho sweep rows, SAP regularization sweep
 rows, and ADMM/SAP/Boxed
 Semi-Smooth Newton contact comparison sweep rows, plus contact-normal
-standard-LCP sweep rows, plus the 1x-/4x-/8x-coupled and 16x-through-128 mildly
-ill-conditioned friction-index slice, toward broader solver-specific
+standard-LCP sweep rows, plus the 1x-/4x-/8x-coupled and 16x-through-256 mildly
+ill-conditioned benchmark friction-index slice, toward broader solver-specific
 conditioning grids and direct backend execution evidence beyond SIMD/CUDA-enabled
 build-state counters.
 Broaden SIMD benchmark gates, solver-internal threaded benchmark evidence, and

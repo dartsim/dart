@@ -1367,8 +1367,8 @@ The current local evidence for this task is:
   `BM_LcpMildIllConditioned` slice reported
   `build_cuda_enabled=1`, `build_simd_enabled=0`,
   `has_simulation_experimental=1`, and `contract_ok=1` on the previous 1752
-  single and batch rows; the new 192-contact single rows also pass in that
-  build tree, while CUDA-enabled 192-contact batch rows remain unclaimed, and the
+  single and batch rows; the 192-contact single and batch rows now pass in that
+  build tree, while 256-contact CUDA-enabled batch rows remain unclaimed, and the
   focused `BM_LcpStressActiveSetTransition` slice reported
   `build_cuda_enabled=1`, `build_simd_enabled=0`,
   `active_set_transition=1`, `stress_active_set_transition=1`, and
