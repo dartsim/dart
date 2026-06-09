@@ -262,13 +262,13 @@
       projected-Newton line-search CCD. The direct-sparse default solver now
       carries that same no-growth coverage through 13x13, 15x15, 17x17, and
       dense 13x19 rectangular two-layer production grids, and the matrix-free
-      default solver now carries the 13x19 rectangular production guard through
-      its CG scratch path. A mixed two-body production gate now steps one
-      direct-sparse rectangular grid and one matrix-free wide grid in the same
-      baked default-solver loop. A mixed dense production gate now combines a
-      notched, jittered direct-sparse 13x17 grid with a matrix-free 13x19 dense
-      rectangular grid, and a mixed late-active production gate now steps
-      direct-sparse square and matrix-free rectangular self-contact grids whose
+      default solver now carries the 13x19 rectangular and 17x7 tall production
+      guards through its CG scratch path. A mixed two-body production gate now
+      steps one direct-sparse rectangular grid and one matrix-free wide grid in
+      the same baked default-solver loop. A mixed dense production gate now
+      combines a notched, jittered direct-sparse 13x17 grid with a matrix-free
+      13x19 dense rectangular grid, and a mixed late-active production gate now
+      steps direct-sparse square and matrix-free rectangular self-contact grids whose
       active contacts enter during the counted baked steps. These cover
       per-body solver/contact scratch storage for independent deformable bodies
       with different topology shapes and linear-solver modes. A default
@@ -365,8 +365,9 @@
       production grid, a 15x15 extra-dense two-layer production grid, a 17x17
       larger two-layer production grid, a 9x13 non-square two-layer production
       grid, direct-sparse and matrix-free 13x19 dense rectangular production
-      grids, a 7x17 wide non-square production grid, a 17x7 tall non-square
-      production grid, a notched and jittered 13x17 irregular direct-sparse
+      grids, a 7x17 wide non-square production grid, direct-sparse and
+      matrix-free 17x7 tall non-square production grids, a notched and jittered
+      13x17 irregular direct-sparse
       production grid, a notched and jittered 13x17 irregular matrix-free
       production grid, and an 11x11 late-active two-layer
       direct-sparse plus matrix-free grid that starts outside the self-contact
