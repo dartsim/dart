@@ -1066,6 +1066,15 @@ The current local evidence for this task is:
   `max_complementarity=1.9650947535865271e-14`, and
   `max_bound_violation=0`. No 24-/32-sphere public-step rows are claimed from
   this slice.
+  Focused SIMD-enabled and CUDA-enabled build-tree
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldStackContactAssembly_BoxedLcp/(24|32)$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  runs each report `rows=2`, `contract_ok_rows=2`, `sphere_count=24/32`,
+  `contact_count=24/32`, `problem_size=72/96`, and `max_bound_violation=0`;
+  the SIMD-enabled row reports `simd_rows=2`,
+  `max_residual=1.4210854715202004e-14`, and
+  `max_complementarity=1.5931700403370996e-14`, while the CUDA-enabled row
+  reports `cuda_rows=2`, `max_residual=2.1316282072803006e-14`, and
+  `max_complementarity=1.9650947535865271e-14`.
   These stacks include sphere-ground and sphere-sphere contacts coupled through
   shared dynamic bodies. This is small coupled-stack benchmark evidence, not
   articulated, robot-like, or dense-degenerate contact evidence.

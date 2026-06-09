@@ -1738,9 +1738,18 @@ dense/robot-like contact scenes.
   `max_residual=2.1316282072803006e-14`,
   `max_complementarity=1.9650947535865271e-14`, and
   `max_bound_violation=0`.
+  Focused SIMD-enabled and CUDA-enabled build-tree
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldStackContactAssembly_BoxedLcp/(24|32)$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  runs each report `rows=2`, `contract_ok_rows=2`, `sphere_count=24/32`,
+  `contact_count=24/32`, `problem_size=72/96`, and `max_bound_violation=0`;
+  the SIMD-enabled row reports `simd_rows=2`,
+  `max_residual=1.4210854715202004e-14`, and
+  `max_complementarity=1.5931700403370996e-14`, while the CUDA-enabled row
+  reports `cuda_rows=2`, `max_residual=2.1316282072803006e-14`, and
+  `max_complementarity=1.9650947535865271e-14`.
   The CUDA-enabled solver-comparison rows above are CPU solver rows in that
-  build tree, not CUDA LCP kernel execution; the 11+-sphere assembly rows cited
-  here are default-build CPU assembly rows.
+  build tree, not CUDA LCP kernel execution; the CUDA-enabled assembly rows
+  are CPU boxed-LCP assembly rows in that build tree.
   Treat this as small coupled-stack benchmark evidence, not evidence for
   articulated or dense-degenerate contact scenes.
 - The benchmark target now also registers 32

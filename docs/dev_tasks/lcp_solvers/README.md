@@ -392,9 +392,10 @@
       14-, 15-, 16-, 24-, and 32-sphere vertical stacks, validating
       14-/15-/16-/24-/32-contact and 42-/45-/48-/72-/96-row boxed/findex LCP
       snapshots assembled from shared dynamic bodies. Focused default build
-      assembly rows satisfy the LCP contract, and 24-/32-sphere
-      solver-comparison rows now pass; no 15+-sphere public-step
-      invariant is claimed.
+      assembly rows satisfy the LCP contract, focused SIMD-enabled and
+      CUDA-enabled build-tree assembly rows pass for 24-/32-sphere stacks, and
+      24-/32-sphere solver-comparison rows now pass; no 15+-sphere
+      public-step invariant is claimed.
 - [x] Added DART 7 world-contact `BM_LCP_COMPARE` rows that run every
       friction-index-capable solver on the same boxed-LCP snapshots assembled
       from 1, 2, and 4 separated sphere-ground contacts, plus a
@@ -2348,9 +2349,18 @@ tradeoffs evidence based.
   `max_residual=2.1316282072803006e-14`,
   `max_complementarity=1.9650947535865271e-14`, and
   `max_bound_violation=0`; no 24-/32-sphere public-step rows are claimed.
+  Focused SIMD-enabled and CUDA-enabled build-tree
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldStackContactAssembly_BoxedLcp/(24|32)$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  runs each reported `rows=2`, `contract_ok_rows=2`, `sphere_count=24/32`,
+  `contact_count=24/32`, `problem_size=72/96`, and `max_bound_violation=0`;
+  the SIMD-enabled row reported `simd_rows=2`,
+  `max_residual=1.4210854715202004e-14`, and
+  `max_complementarity=1.5931700403370996e-14`, while the CUDA-enabled row
+  reported `cuda_rows=2`, `max_residual=2.1316282072803006e-14`, and
+  `max_complementarity=1.9650947535865271e-14`.
   The CUDA-enabled solver-comparison rows above are CPU solver benchmark rows
-  in that build tree, not CUDA LCP kernel execution; the 11+-sphere assembly
-  rows cited here are default-build CPU assembly rows.
+  in that build tree, not CUDA LCP kernel execution; the CUDA-enabled assembly
+  rows are CPU boxed-LCP assembly rows in that build tree.
   Focused default, SIMD-enabled, and CUDA-enabled
   `BM_LcpWorldStackContactAssembly_BoxedLcp/5` runs also passed with
   `contract_ok=1`, `sphere_count=5`, `contact_count=5`, and `problem_size=15`;
