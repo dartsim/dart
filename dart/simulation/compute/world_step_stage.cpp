@@ -6816,7 +6816,7 @@ void advanceDeformableBody(
     constexpr std::size_t maxIterations = 64;
     constexpr std::size_t maxLineSearchIterations = 16;
     constexpr double gradientToleranceSquared = 1e-18;
-    constexpr double armijo = 1e-4;
+    constexpr double armijo = nb::kDefaultSufficientDecreaseFactor;
     constexpr double minStep = 1e-12;
 
     double lastGradSquared = 0.0;
@@ -7052,8 +7052,8 @@ void advanceDeformableBody(
                 &selfContactFriction,
                 femElasticityPtr,
                 barrierStiffness);
-            if (std::isfinite(candidateEnergy)
-                && candidateEnergy <= energy + armijo * directionalDerivative) {
+            if (nb::satisfiesSufficientDecrease(
+                    energy, candidateEnergy, directionalDerivative, armijo)) {
               // Record the accepted step's infinity norm (the actual per-node
               // position change). It is the converged-ness measure for stiff
               // barrier problems: it shrinks to ~0 at equilibrium even while
