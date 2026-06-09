@@ -1114,26 +1114,29 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     standard 32/64/128-row, boxed 32/64/128-row, and coupled friction-index
     8-/12-/16-/24-/32-/48-/64-/96-/128-/192-/256-contact active-set packets
     verified across default, SIMD-enabled, and CUDA-enabled build trees, plus
-    larger mildly ill-conditioned generated correctness coverage and 614
-    benchmark rows for standard 32-row,
-    boxed 16-row, friction-index 8-contact, 1x-/4x-/8x-coupled
-    6-/8-/12-/16-/24-/32-/48-/64-/96-contact packets, and 16x-coupled
-    6-/8-/12-/16-/24-/32-/48-/64-/96-/128-/192-contact packets, with Boxed
-    Semi-Smooth Newton added across those coupled single-problem rows,
-    verified across default, SIMD-enabled, and CUDA-enabled build trees. The
+    larger mildly ill-conditioned generated correctness coverage for standard
+    32/64-row, boxed 16/32-row, friction-index 8-contact,
+    1x-/4x-/8x-coupled 6-/8-/12-/16-/24-/32-/48-/64-/96-contact packets, and
+    16x-coupled packets through 192 contacts over solvers that reproduce the
+    selected generated solution, plus 629 benchmark rows with 16x-coupled
+    single-problem packets through 256 contacts. Boxed Semi-Smooth Newton is
+    included across those coupled single-problem rows. The
+    256-contact single rows are verified across default, SIMD-enabled, and
+    CUDA-enabled build trees. The
     SIMD-enabled SAP 192-contact row is contract-correct but slow and does not
     claim a speedup. Added
-    1228 larger mildly ill-conditioned batch rows for batch-size-4 serial and
+    1258 larger mildly ill-conditioned batch rows for batch-size-4 serial and
     DART 7 `ParallelExecutor` runs over standard 32-row, boxed 16-row,
     friction-index 8-contact, coupled friction-index
     6-/8-/12-/16-/24-/32-/48-/64-/96-contact, 4x-coupled
     6-/8-/12-/16-/24-/32-/48-/64-/96-contact, 8x-coupled
     6-/8-/12-/16-/24-/32-/48-/64-/96-contact, and 15-solver 16x-coupled
-    6-/8-/12-/16-/24-/32-/48-/64-/96-/128-/192-contact rows. Boxed
+    6-/8-/12-/16-/24-/32-/48-/64-/96-/128-/192-/256-contact rows. Boxed
     Semi-Smooth Newton reports tuned line-search settings on the 16x rows. The
-    new 192-contact batch rows are verified in the default build, and focused
-    SIMD/CUDA-enabled all-solver serial/parallel 192-contact batch contract
-    gates now pass. Added 31 near-singular benchmark rows for standard 8-row,
+    new 192- and 256-contact batch rows are verified in the default build, and
+    focused SIMD/CUDA-enabled all-solver serial/parallel 192-contact batch
+    contract gates now pass. The full 256-contact SIMD/CUDA batch gate remains
+    unclaimed. Added 31 near-singular benchmark rows for standard 8-row,
     boxed 8-row, and
     coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-, 32-, 48-, 64-, 96-,
     128-, 192-, and 256-contact
@@ -1317,11 +1320,11 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     articulated unified-contact friction-index fixtures up to 8 contacts, with
     backend build-state counters distinguishing default, SIMD-enabled, and
     CUDA-enabled CPU solver runs.
-  - Added DART 7 generated correctness and single/batch benchmark coverage for
+  - Added DART 7 generated correctness coverage for
     1x-/4x-/8x-coupled mildly ill-conditioned friction-index LCP packets
-    through 96 contacts, 16x-coupled single rows through 192 contacts, and
-    default-build 16x-coupled batch rows through 192 contacts across the
-    scoped iterative solver set plus Boxed Semi-Smooth Newton. Boxed
+    through 96 contacts and 16x-coupled packets through 192 contacts, plus
+    single/batch benchmark rows through 256 contacts across the scoped
+    iterative solver set plus Boxed Semi-Smooth Newton. Boxed
     Semi-Smooth Newton reports tuned line-search settings on the 16x rows.
     Focused SIMD/CUDA-enabled all-solver serial/parallel 192-contact batch
     contract gates now pass; CUDA-enabled rows are CPU solver rows in that

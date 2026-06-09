@@ -110,14 +110,16 @@ Support abbreviations:
   mixed grouped batches that combine separated, stack, and
   1-/4-/8-/16-contact articulated fixture families including cross-multibody link-vs-link packets,
   in addition to homogeneous synthetic
-  standard/boxed/findex packets. The generated synthetic grid now
-  also includes a scoped larger mildly ill-conditioned slice for standard
+  standard/boxed/findex packets. The generated synthetic grid also includes a
+  scoped larger mildly ill-conditioned slice for standard
   32/64-row, boxed 16/32-row, friction-index 8-contact, 1x-/4x-/8x-coupled
   6-/8-/12-/16-/24-/32-/48-/64-/96-contact packets, and 16x-coupled
   6-/8-/12-/16-/24-/32-/48-/64-/96-/128-/192-contact packets with Boxed
-  Semi-Smooth Newton included in single rows and coupled batch rows, and 614 matching
-  single-problem benchmark rows verified in default,
-  SIMD-enabled, and CUDA-enabled build trees. It now
+  Semi-Smooth Newton included across those coupled rows. The matching
+  benchmark grid now has 629 single-problem rows through 256 contacts and 1258
+  batch rows through 256 contacts. The 256-contact single rows are verified in
+  default, SIMD-enabled, and CUDA-enabled build trees; the 256-contact batch
+  rows are verified in the default build only. It now
   also includes a scoped robust near-singular slice for standard 8-row, boxed
   8-row, and coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-, 32-, and
   48-, 64-, 96-, 128-, 192-, and 256-contact generated packets, plus 31 matching
@@ -411,29 +413,35 @@ The current local evidence for this task is:
   The CUDA-enabled rows are CPU solver batch rows in a CUDA-enabled build, not
   CUDA LCP kernel execution.
 - `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpMildIllConditioned/' | wc -l`
-  reports 614 rows. The combined single/batch check
+  reports 629 rows. The combined single/batch check
   `BM_LCP_COMPARE --benchmark_filter='^BM_LcpMildIllConditioned(BatchSerial|BatchParallel)?/' --benchmark_min_time=0.001s --benchmark_repetitions=1`
-  previously ran all 1752 rows with `contract_ok=1` in the default,
+  previously ran the pre-256 1752 rows with `contract_ok=1` in the default,
   SIMD-enabled, and
   CUDA-enabled build trees. These rows cover standard 32-row, boxed 16-row,
   friction-index 8-contact, and coupled friction-index 6-, 8-, 12-, 16-, 24-,
   32-, 48-, 64-, and 96-contact larger mildly ill-conditioned packets, plus
   4x- and 8x-coupled 6-/8-/12-/16-/24-/32-/48-/64-/96-contact packets and
-  16x-coupled 6-/8-/12-/16-/24-/32-/48-/64-/96-/128-/192-contact packets.
+  16x-coupled
+  6-/8-/12-/16-/24-/32-/48-/64-/96-/128-/192-/256-contact packets.
   Focused default, SIMD-enabled, and CUDA-enabled smokes also pass the new
   192-contact single-problem row family with `contract_ok=1`,
   `contact_count=192`, `problem_size=576`, and `coupling_scale=16`. The
   SIMD-enabled SAP 192-contact row is contract-correct but slow and reports
   20k iterations, so this is not speedup evidence. The
+  focused 256-contact single-problem row family passes in default,
+  SIMD-enabled, and CUDA-enabled build trees with 15 rows, `contract_ok=1`,
+  `contact_count=256`, `problem_size=768`, and `coupling_scale=16`. The
+  CUDA-enabled rows are CPU solver rows in a CUDA-enabled build, not CUDA LCP
+  kernel execution. The
   rows report `mildly_ill_conditioned=1`, backend build-state
   counters, `contact_count` for friction-index packets, `coupled=1` for the
   coupled packets, and `coupling_scale=1`, `4`, `8`, or `16` for the
   stronger/extreme-coupled packets. The `BoxedSemiSmoothNewton` coupled
   single-problem rows span coupling scales `1/4/8/16`; the 16x scale now
-  includes the 128-contact and 192-contact packets, and the 16x rows report
-  the same tuned line-search counters as the batch rows.
+  includes the 128-contact, 192-contact, and 256-contact packets, and the 16x
+  rows report the same tuned line-search counters as the batch rows.
 - `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpMildIllConditionedBatch' | wc -l`
-  reports 1228 rows, and JSON benchmark checks for
+  reports 1258 rows, and JSON benchmark checks for
   `BM_LcpMildIllConditionedBatch(Serial|Parallel)` previously reported 1168 rows with
   `contract_ok=1` in the default, SIMD-enabled, and CUDA-enabled build trees.
   These rows compare the batch-scoped solver set over batch-size-4 serial and
@@ -442,11 +450,16 @@ The current local evidence for this task is:
   6-/8-/12-/16-/24-/32-/48-/64-/96-contact, 4x-coupled
   6-/8-/12-/16-/24-/32-/48-/64-/96-contact, 8x-coupled
   6-/8-/12-/16-/24-/32-/48-/64-/96-contact, and 15-solver 16x-coupled
-  6-/8-/12-/16-/24-/32-/48-/64-/96-/128-/192-contact rows. The focused default
+  6-/8-/12-/16-/24-/32-/48-/64-/96-/128-/192-/256-contact rows. The focused default
   192-contact single, serial-batch, and parallel-batch run reports 45 rows with
   `contract_ok=1`, `total_contact_count=768`, `total_problem_size=2304`, and
-  `parallel_units=4` on parallel rows. SIMD/CUDA 192-contact batch rows remain
-  unclaimed. The rows report
+  `parallel_units=4` on parallel rows. Focused SIMD/CUDA 192-contact batch rows
+  also pass with `contract_ok=1`. The focused default 256-contact single, serial-batch, and
+  parallel-batch run reports 45 rows with `contract_ok=1`,
+  `total_contact_count=1024`, `total_problem_size=3072`, and
+  `parallel_units=4` on parallel rows. A full SIMD 256-contact single+batch
+  probe was stopped after several minutes before producing JSON, so SIMD/CUDA
+  256-contact batch contract evidence is not claimed. The rows report
   `mildly_ill_conditioned_batch=1`, `batch_size=4`, problem sizes
   `16/18/24/32/36/48/72/96/144/192/288/384/576`, total problem sizes
   `64/72/96/128/144/192/288/384/576/768/1152/1536/2304`, backend build-state
@@ -1248,9 +1261,12 @@ The current local evidence for this task is:
   in default, SIMD-enabled, and CUDA-enabled build trees reported 405 rows with
   zero `contract_ok` failures across 16x-coupled mildly ill-conditioned
   friction-index packets at 6, 8, 12, 16, 24, 32, 48, 64, and 96 contacts. The
-  generated coverage test now covers those same 16x packets, and the focused
+  generated coverage test now covers 16x packets through 192 contacts for
+  solvers that reproduce the selected generated solution, and the focused
   `LcpGeneratedCoverage.LargerMildlyIllConditionedKnownSolutionsForScopedSolvers`
   unit test passes in the default, SIMD-enabled, and CUDA-enabled build trees.
+  Projection-like solvers that satisfy the LCP contract but return alternate
+  valid solutions stay covered by benchmark contract rows.
   Serial and parallel batch rows are registered for the same solver/contact
   grid; the Boxed Semi-Smooth Newton rows use the focused tuned line-search
   settings. The

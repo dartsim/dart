@@ -1265,19 +1265,14 @@ bool solverShouldRunLargerMildlyIllConditionedCase(
     return false;
   }
 
-  constexpr std::array<std::string_view, 14> kLargerMildSolvers{{
+  // These cases assert the selected generated solution, not just the LCP
+  // contract. Solvers that converge to alternative valid solutions stay covered
+  // by the benchmark contract rows instead.
+  constexpr std::array<std::string_view, 6> kLargerMildExactSolvers{{
       "Pgs",
-      "SymmetricPsor",
-      "Jacobi",
-      "RedBlackGaussSeidel",
-      "BlockedJacobi",
-      "BGS",
       "NNCG",
-      "SubspaceMinimization",
       "Apgd",
       "Tgs",
-      "ShockPropagation",
-      "Staggering",
       "Admm",
       "Sap",
   }};
@@ -1288,12 +1283,12 @@ bool solverShouldRunLargerMildlyIllConditionedCase(
         "Baraff",
     }};
     return solverNameIn(solver, kExactStandardSolvers)
-           || solverNameIn(solver, kLargerMildSolvers);
+           || solverNameIn(solver, kLargerMildExactSolvers);
   }
 
   if (testCase.family == GeneratedFamily::FrictionIndex && testCase.coupled
       && testCase.couplingScale > 8.0) {
-    return solverNameIn(solver, kLargerMildSolvers)
+    return solverNameIn(solver, kLargerMildExactSolvers)
            || solver.name == "BoxedSemiSmoothNewton";
   }
 
@@ -1302,7 +1297,7 @@ bool solverShouldRunLargerMildlyIllConditionedCase(
     return true;
   }
 
-  return solverNameIn(solver, kLargerMildSolvers);
+  return solverNameIn(solver, kLargerMildExactSolvers);
 }
 
 bool solverShouldRunRobustNearSingularCase(
