@@ -35,6 +35,7 @@
 
 #include <dart/common/memory_allocator.hpp>
 
+#include <limits>
 #include <memory>
 #include <utility>
 
@@ -44,6 +45,10 @@ namespace dart::common {
 template <typename T>
 T* MemoryAllocator::allocateAs(size_t n) noexcept
 {
+  if (n > std::numeric_limits<size_t>::max() / sizeof(T)) {
+    return nullptr;
+  }
+
   return static_cast<T*>(allocate(n * sizeof(T)));
 }
 
