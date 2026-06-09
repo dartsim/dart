@@ -1589,6 +1589,49 @@ void configureMixedDeformableSelfContactFrictionProductionScene(
       Eigen::Vector3d(8.0, 0.0, 0.0));
 }
 
+void configureDeformableStaticObstacleBarrierScene(
+    dart::simulation::World& world)
+{
+  namespace sx = dart::simulation;
+
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.01);
+
+  const auto addBarrierObstacle = [&](std::string_view name,
+                                      const Eigen::Vector3d& position,
+                                      const sx::CollisionShape& shape) {
+    sx::RigidBodyOptions obstacleOptions;
+    obstacleOptions.isStatic = true;
+    obstacleOptions.position = position;
+    auto obstacle = world.addRigidBody(name, obstacleOptions);
+    obstacle.setCollisionShape(shape);
+    obstacle.setDeformableSurfaceCcdObstacle(true);
+    obstacle.setDeformableObstacleBarrierOnly(true);
+  };
+
+  addBarrierObstacle(
+      "static_sphere_barrier",
+      Eigen::Vector3d::Zero(),
+      sx::CollisionShape::makeSphere(0.5));
+  addBarrierObstacle(
+      "static_box_barrier",
+      Eigen::Vector3d(2.0, 0.0, 0.0),
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.5)));
+  addBarrierObstacle(
+      "static_capsule_barrier",
+      Eigen::Vector3d(-2.0, 0.0, 0.0),
+      sx::CollisionShape::makeCapsule(0.2, 0.5));
+
+  sx::DeformableBodyOptions options;
+  options.positions
+      = {Eigen::Vector3d(0.51, 0.0, 0.0),
+         Eigen::Vector3d(2.51, 0.0, 0.0),
+         Eigen::Vector3d(-1.79, 0.0, 0.0)};
+  options.masses = {1.0, 1.0, 1.0};
+  options.edgeStiffness = 0.0;
+  world.addDeformableBody("static_obstacle_barrier_nodes", options);
+}
+
 void configureDeformableInterBodySurfaceCcdCrossingScene(
     dart::simulation::World& world)
 {
@@ -2677,6 +2720,9 @@ TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
       "mixed deformable self-contact friction production grids",
       configureMixedDeformableSelfContactFrictionProductionScene);
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "deformable static obstacle barriers",
+      configureDeformableStaticObstacleBarrierScene);
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "deformable inter-body surface CCD crossing",
       configureDeformableInterBodySurfaceCcdCrossingScene);
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
@@ -2970,6 +3016,27 @@ TEST(World, MixedDeformableSelfContactFrictionProductionSceneIsActive)
   EXPECT_GT(diagnostics.selfContactBarrierActiveContacts, 0u);
   EXPECT_GT(diagnostics.convergedActiveContactCount, 0u);
   EXPECT_GT(diagnostics.frictionDissipation, 0.0);
+}
+
+TEST(World, DeformableStaticObstacleBarrierSceneIsActive)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  configureDeformableStaticObstacleBarrierScene(world);
+  auto body = world.getDeformableBody("static_obstacle_barrier_nodes");
+  ASSERT_TRUE(body.has_value());
+  world.enterSimulationMode();
+
+  world.step();
+
+  const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
+  EXPECT_EQ(diagnostics.bodyCount, 1u);
+  EXPECT_EQ(diagnostics.nodeCount, 3u);
+  EXPECT_GT(diagnostics.projectedNewtonSteps, 0u);
+  EXPECT_GT(body->getPosition(0).x(), 0.51);
+  EXPECT_GT(body->getPosition(1).x(), 2.51);
+  EXPECT_GT(body->getPosition(2).x(), -1.79);
 }
 
 TEST(World, DeformableInterBodySurfaceCcdCrossingIsActive)
@@ -3357,6 +3424,9 @@ TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "mixed deformable self-contact friction production grids",
       configureMixedDeformableSelfContactFrictionProductionScene);
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "deformable static obstacle barriers",
+      configureDeformableStaticObstacleBarrierScene);
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "deformable inter-body surface CCD crossing",
       configureDeformableInterBodySurfaceCcdCrossingScene);

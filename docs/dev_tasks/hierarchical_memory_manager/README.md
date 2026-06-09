@@ -267,8 +267,12 @@
       direct-sparse rectangular grid and one matrix-free wide grid in the same
       baked default-solver loop, covering per-body solver/contact scratch
       storage for independent deformable bodies with different linear-solver
-      modes. Projected-Newton sparse assembly now reserves self-contact barrier
-      block storage from baked candidate capacity instead of only the
+      modes. The default projected-Newton path now also has a baked
+      sphere/box/capsule static obstacle barrier gate, covering those radial and
+      oriented-obstacle Hessian paths separately from the ground height-field
+      barrier and surface-CCD snapshot gates. Projected-Newton sparse assembly
+      now reserves self-contact barrier block storage from baked candidate
+      capacity instead of only the
       bake-active candidate count, so same-topology active set variation does
       not grow DART-owned barrier vectors. Motion-aware
       self-contact candidate buffers now reserve the swept late-activation
@@ -347,7 +351,8 @@
       late-active direct-sparse plus matrix-free coverage for a 9x13
       rectangular grid. The same base and global-heap guards now also include
       a mixed two-body production scene with independent direct-sparse
-      rectangular and matrix-free wide self-contact grids.
+      rectangular and matrix-free wide self-contact grids, plus a barrier-only
+      static sphere/box/capsule obstacle scene for default projected Newton.
       The
       larger-grid guards also assert
       non-vacuous solver activity through public deformable diagnostics: active
