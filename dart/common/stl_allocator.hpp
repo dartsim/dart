@@ -35,6 +35,7 @@
 
 #include <dart/common/memory_allocator.hpp>
 
+#include <limits>
 #include <memory>
 #include <type_traits>
 
@@ -42,16 +43,18 @@ namespace dart::common {
 
 /// Wrapper class for MemoryAllocator to be compatible with std::allocator
 template <typename T>
-class StlAllocator : public std::allocator<T>
+class StlAllocator
 {
 public:
   // Type aliases
-  using Base = std::allocator<T>;
-  using value_type = typename std::allocator_traits<Base>::value_type;
-  using size_type = typename std::allocator_traits<Base>::size_type;
-  using pointer = typename std::allocator_traits<Base>::pointer;
-  using const_pointer = typename std::allocator_traits<Base>::const_pointer;
+  using value_type = T;
+  using size_type = std::size_t;
+  using pointer = T*;
+  using const_pointer = const T*;
   using is_always_equal = std::false_type;
+  using propagate_on_container_copy_assignment = std::true_type;
+  using propagate_on_container_move_assignment = std::true_type;
+  using propagate_on_container_swap = std::true_type;
 
   template <typename U>
   struct rebind
@@ -64,11 +67,11 @@ public:
       MemoryAllocator& baseAllocator = MemoryAllocator::GetDefault()) noexcept;
 
   /// Copy constructor
-  StlAllocator(const StlAllocator& other) throw();
+  constexpr StlAllocator(const StlAllocator& other) noexcept = default;
 
   /// Copy constructor
   template <class U>
-  StlAllocator(const StlAllocator<U>& other) throw();
+  constexpr StlAllocator(const StlAllocator<U>& other) noexcept;
 
   /// Destructor
   ~StlAllocator() = default;
@@ -89,11 +92,23 @@ public:
   /// @param[in] n: Number of objects earlier passed to allocate().
   void deallocate(pointer pointer, size_type n) noexcept;
 
+  /// Constructs an object at previously allocated storage.
+  template <typename U, typename... Args>
+  void construct(U* pointer, Args&&... args);
+
+  /// Destroys an object constructed by this allocator.
+  template <typename U>
+  void destroy(U* pointer) noexcept;
+
   /// Upper bound on elements that can be allocated.
   [[nodiscard]] constexpr size_type max_size() const noexcept
   {
-    return std::allocator_traits<Base>::max_size(*this);
+    return std::numeric_limits<size_type>::max() / sizeof(T);
   }
+
+  /// Alignment used for an allocation of @p bytes.
+  [[nodiscard]] static constexpr size_type storageAlignmentFor(
+      size_type bytes) noexcept;
 
   template <typename U>
   [[nodiscard]] bool operator==(const StlAllocator<U>& other) const noexcept;
@@ -114,6 +129,73 @@ private:
   friend class StlAllocator;
   MemoryAllocator* mBaseAllocator;
 };
+
+/// Stateless STL-compatible allocator backed by DART's default C heap.
+///
+/// Use this adapter when container allocator state is undesirable and the C
+/// heap used by the process-wide default memory allocator is the intended
+/// backing resource.
+template <typename T>
+class DefaultStlAllocator
+{
+public:
+  using value_type = T;
+  using size_type = std::size_t;
+  using pointer = T*;
+  using const_pointer = const T*;
+  using is_always_equal = std::true_type;
+  using propagate_on_container_copy_assignment = std::true_type;
+  using propagate_on_container_move_assignment = std::true_type;
+  using propagate_on_container_swap = std::true_type;
+
+  template <typename U>
+  struct rebind
+  {
+    using other = DefaultStlAllocator<U>;
+  };
+
+  constexpr DefaultStlAllocator() noexcept = default;
+
+  constexpr DefaultStlAllocator(const DefaultStlAllocator& other) noexcept
+      = default;
+
+  template <typename U>
+  constexpr DefaultStlAllocator(const DefaultStlAllocator<U>& other) noexcept;
+
+  /// Allocates n * sizeof(T) bytes through DART's default C heap.
+  [[nodiscard]] pointer allocate(size_type n, const void* hint = 0);
+
+  /// Deallocates storage previously returned by allocate().
+  void deallocate(pointer pointer, size_type n) noexcept;
+
+  /// Constructs an object at previously allocated storage.
+  template <typename U, typename... Args>
+  void construct(U* pointer, Args&&... args);
+
+  /// Destroys an object constructed by this allocator.
+  template <typename U>
+  void destroy(U* pointer) noexcept;
+
+  /// Upper bound on elements that can be allocated.
+  [[nodiscard]] constexpr size_type max_size() const noexcept
+  {
+    return std::numeric_limits<size_type>::max() / sizeof(T);
+  }
+};
+
+template <typename T, typename U>
+[[nodiscard]] constexpr bool operator==(
+    const DefaultStlAllocator<T>&, const DefaultStlAllocator<U>&) noexcept
+{
+  return true;
+}
+
+template <typename T, typename U>
+[[nodiscard]] constexpr bool operator!=(
+    const DefaultStlAllocator<T>&, const DefaultStlAllocator<U>&) noexcept
+{
+  return false;
+}
 
 } // namespace dart::common
 

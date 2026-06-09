@@ -41,6 +41,7 @@
 #include <vector>
 
 #include <cstddef>
+#include <cstdint>
 
 namespace dart::common {
 
@@ -182,7 +183,6 @@ private:
     void* pointer;
     size_t size;
     size_t alignment;
-    bool isOutstandingAllocation;
   };
 
   struct alignas(std::max_align_t) AlignedAllocationHeader
@@ -196,9 +196,6 @@ private:
 
   [[nodiscard]] void* allocateFromReservedBlockAligned(
       size_t bytes, size_t alignment) noexcept;
-
-  bool releaseDelegatedAllocation(
-      void* pointer, size_t bytes, size_t alignment);
 
   bool releaseReservedAlignedAllocation(
       void* pointer, size_t bytes, size_t alignment);
@@ -236,6 +233,12 @@ private:
 
   /// The live user allocation count for diagnostics.
   size_t mDiagnosticAllocationCount{0};
+
+  /// Rotating cache-line color for large aligned array allocations.
+  ///
+  /// Start one line into the cycle so the first large registry storage page is
+  /// offset from the naturally aligned packed entity pages that precede it.
+  std::uint8_t mLargeAlignedAllocationColor{1};
 };
 
 } // namespace dart::common

@@ -143,6 +143,14 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Added `pixi run bm-allocator-comparative-check`, a strict allocator
     benchmark gate that compares DART allocator workloads against
     foonathan/memory and `std::pmr` baselines.
+  - Added required comparative rows for foonathan/memory static fixed-storage
+    stacks, scoped temporary allocators, and two-iteration frame allocators,
+    with matching DART frame-allocator fast-path rows and
+    `std::pmr::monotonic_buffer_resource` baselines.
+  - Added required comparative rows for foonathan/memory raw heap/malloc/new
+    allocators plus aligned, fallback, segregator, tracked, and deeply tracked
+    allocator adapters, with matching DART frame/pool HMM rows and standard
+    allocator baselines.
   - Extended the comparative allocator benchmarks with opt-in allocator-aware
     EnTT registry/component storage churn against foonathan/memory and
     standard-registry baselines, and added a CV/noise guard so strict allocator
@@ -156,29 +164,92 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     configured without an existing EnTT target. The EnTT registry benchmark rows
     now discover installed EnTT package metadata without invoking DART's
     FetchContent-backed dependency helper. The EnTT rows now benchmark cached
-    component storage handles, use frame-backed DART storage for persistent
-    no-growth registry churn, and use pool-backed DART storage for build/growth
-    churn. The no-growth row reports frame usage and overflow counters and
-    fails if reserved churn grows after prewarm. The build/growth row times the
-    uninstrumented pool-backed registry path and reports configured-allocator
-    call counters from a matching untimed probe. The focused checker now
+    component storage handles, use free-list-backed DART storage for persistent
+    no-growth registry churn, and use a resettable frame-backed DART bake arena
+    for one-shot registry build/growth storage construction. The foonathan
+    build/growth baseline uses stack marker/unwind bulk lifetime storage,
+    matching the one-shot construction role rather than persistent pool reuse.
+    The no-growth row reports allocator-call counters and fails if
+    reserved churn grows after prewarm. The build/growth row times the
+    uninstrumented construction/destruction path. The focused checker now
     distinguishes timing loss, allocator-call regressions, frame growth, and
-    noisy benchmark evidence.
-  - Optimized the frame allocator reset/accounting fast path and normal-aligned
-    `FrameStlAllocator` allocations while preserving over-aligned STL storage.
+    noisy benchmark evidence. The checker now also requires the expected
+    benchmark rows for the selected mode, so missing foonathan/memory coverage
+    cannot be treated as passing evidence.
+  - Optimized the frame allocator reset/accounting fast path, default 32-byte
+    frame allocations, and cache-line-aligned `FrameStlAllocator` allocations
+    while preserving over-aligned STL storage; frame-backed STL blocks are now
+    cache-line aligned for container hot loops such as allocator-aware EnTT
+    storage pages, and the comparative STL-vector row now batches reserve-only
+    allocator-adapter work to measure allocator throughput directly.
+  - Added an explicit `PoolAllocator::DiagnosticsPolicy` so hot-path pool
+    allocation can opt out of live/peak counter updates while preserving
+    counter behavior for existing direct `PoolAllocator` users by default.
+    Release `MemoryManager` pool allocation now uses the non-diagnostic policy,
+    and comparative DART pool workloads use that HMM hot path.
+  - Added optional CPU affinity, warmup, and random-interleaving controls to the
+    C++ benchmark runner and comparative allocator checker; the realistic
+    comparative allocator row now lets the checker control benchmark min-time,
+    and short stack/tracked-stack rows batch repeated allocator cycles for
+    stricter low-noise comparisons.
+  - Prewarmed the benchmark runner's selected CPU immediately before launching
+    an affinity-pinned C++ benchmark binary, reducing cold-frequency bias from
+    configure/build work that happens before benchmark execution.
   - Kept `StlAllocator` allocation and deallocation alignment-aware for
     allocator-backed STL storage, including fixed-pool-backed max-aligned
-    values.
+    values and cache-line-aligned large storage pages for allocator-aware
+    container hot loops such as the production World registry.
+  - Made `StlAllocator` a lightweight stateful allocator instead of deriving
+    from `std::allocator`, matching foonathan-style container propagation
+    traits and letting `std::allocator_traits` handle object
+    construction/destruction for allocator-aware container hot loops.
+  - Added `DefaultStlAllocator`, a stateless STL adapter backed by DART's
+    default C heap, so allocator-aware containers that use the process-wide
+    default C allocator resource avoid per-container allocator state and the
+    virtual default-allocator hop.
+  - Added explicit STL allocator construct/destroy hooks that keep non-trivial
+    object lifetimes correct while avoiding unnecessary trivial-destructor work
+    in allocator-aware container hot loops.
+  - Refined the comparative allocator checker so high-CV rows can pass only
+    when the benchmark mean/stddev/repetition aggregates still show DART's
+    normal-approximation 95% confidence interval strictly below the selected
+    baseline's confidence interval.
+  - Applied the same lightweight stateful allocator traits to
+    `FrameStlAllocator`, letting `std::allocator_traits` own construction and
+    destruction in frame-backed allocator-aware container builds.
   - Added a fixed-capacity growth policy to `FreeListAllocator` so
     preallocated free-list arenas can fail deterministically instead of growing
     from the base allocator after bake/build, and exposed construction-time
     free-list capacity/policy knobs through `MemoryManager` and experimental
     `WorldOptions`.
+  - Added cache-line coloring for large 64-byte-aligned
+    `FreeListAllocator` array allocations so consecutive page-sized
+    component/storage arrays avoid starting on the same L1 cache sets while
+    preserving their requested alignment.
+  - Extended shape-aware cache-line coloring to large 64-byte-aligned
+    `FrameAllocator` and frame-backed STL storage allocations, improving
+    one-shot component storage build/unwind locality without changing arena
+    lifetime semantics or padding smaller packed entity pages.
+  - Switched the EnTT build/growth comparative benchmark to DART's
+    frame-native `FrameStlAllocator`, matching foonathan's stack-native
+    `std_allocator` adapter for one-shot arena lifetimes.
+  - Tightened `FrameStlAllocator` small natural-aligned allocations to use the
+    frame allocator's inline default fast path directly instead of routing
+    through the public aligned-allocation dispatcher.
   - Fixed fixed-capacity `FreeListAllocator` aligned allocations so
     `PoolAllocator` can satisfy aligned size-class chunks from reserved arena
     bytes without growing from the base allocator.
+  - Routed expand-policy `FreeListAllocator` over-aligned allocations through
+    reserved free-list arena blocks instead of delegating them to the base
+    allocator.
   - Hardened `FreeListAllocator` reservation arithmetic so impossible fixed
     capacities and expansion sizes fail before touching the base allocator.
+  - Hardened common allocator count and size overflow guards for
+    `MemoryAllocator::allocateAs`, `FrameAllocator`, `FrameStlAllocator`, and
+    `StlAllocator`; fixed fixed-capacity `FreeListAllocator` aligned-allocation
+    diagnostics so public live/peak counters track requested bytes instead of
+    internal header padding, and added allocator-root isolation coverage for
+    independent `MemoryManager` and experimental `World` instances.
   - Added query methods on `dart::common::MemoryAllocatorDebugger`,
     `FreeListAllocator`, and `PoolAllocator` for current live bytes, peak live
     bytes, and live allocation count so allocator diagnostics can consume
@@ -186,6 +257,87 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Added structured `MemoryManager` debug diagnostics and surfaced them through
     experimental `World` memory diagnostics for free/pool allocator accounting,
     including typed borrowed allocator use.
+  - Added a read-only Memory panel to the standalone `dartsim` editor for
+    frame-scratch counters, `MemoryManager` debug counters, and ECS storage
+    capacity diagnostics.
+  - Made experimental `World::clear()` recreate its internal allocator-backed
+    registry storage so ECS capacities and debug-tracked registry allocations
+    are released at the rebuild boundary while preserving the World memory
+    hierarchy.
+  - Reused legacy graph-backed `RigidBodyIntegrationStage` scratch for rigid-body
+    entity lists and dependency nodes instead of allocating per execute.
+  - Extended experimental `World` base-allocator no-growth coverage to baked
+    rigid-body resting contact, non-cross articulated resting contact, and
+    same-DOF cross-articulated link-contact scenes after contact prewarm.
+  - Removed per-assembly heap containers from the experimental unified
+    constraint assembler for row directions, rigid/articulated row ends, and
+    shared rigid-body inertia lookup, and routed the boxed-LCP stage's
+    per-multibody link-contact row assembly through reusable
+    `MultibodyDynamicsScratch`. Cross-multibody row completion now reuses that
+    scratch for other-link point Jacobians and joint-space denominator work.
+    The Dantzig boxed-LCP solver now accepts caller-owned reusable scratch,
+    avoids `LcpProblem` input copies for already assembled systems, and is
+    routed through reusable unified-constraint solve scratch for island
+    remapping, island sub-problems, normal-only fallback, and fallback tangent
+    accumulators. Same-shape no-heap regressions cover both Dantzig solves and
+    unified island solves. The unified assembler now reuses same-shape link
+    block row storage without per-row Eigen temporaries, and the boxed-LCP
+    stage borrows per-multibody contact problems from persistent dynamics
+    scratch instead of copying them into staging containers first. Rigid
+    contact problem assembly now has an in-place scratch overload, and boxed-LCP
+    fallback world gates cover mixed/different-DOF, stacked, and coupled
+    multi-row cross-articulated contact scenes for base-allocator no-growth and
+    first baked-step global-heap no-allocation by priming unified constraint
+    scratch during `enterSimulationMode()`. Public multibody link-contact
+    assembly now has reusable scratch storage that can be borrowed by the
+    in-place unified assembler without same-shape heap growth, and the
+    boxed-LCP fallback gates include larger five- and eight-multibody stacked
+    contact sets plus a disconnected multi-island mixed rigid/articulated
+    contact set. Unified island solves now reserve island traversal scratch and
+    build the local row remap once per solve instead of once per island, and
+    successful unified link impulse application can reuse the same solve scratch
+    for generalized-impulse and velocity-delta buffers.
+    Rigid IPC accepted/rejected writeback now reuses stage-owned entity-order
+    scratch instead of allocating local traversal vectors, and the
+    resting-contact no-op predicate reuses stage-owned per-body contact-power
+    and stationary-flag scratch. The rigid IPC projected-Newton loop now reuses
+    solve-local surface buffers across line-search and sufficient-decrease
+    backtracking candidates, and its repeated solve-internal barrier assembly
+    and line-search calls reuse surface-pair/triplet scratch, including the
+    lagged-friction barrier pass. The rigid IPC contact stage now uses the
+    caller-owned projected-Newton solve overload so per-solve surface candidate
+    buffers persist in stage scratch across steps.
+    Convenience return-by-value unified problem wrappers remain a separate
+    allocation target.
+  - Reused `DeformableDynamicsStage` scratch for deformable surface snapshots,
+    static/moving rigid surface-CCD snapshots, and rigid obstacle barrier lists,
+    and primed deformable surface-contact candidate buffers during
+    `enterSimulationMode()`, including the wider swept-AABB candidate envelope
+    needed by non-square self-contact grids. Inter-body/rigid surface-CCD sweep
+    buffers are now stage/entity scratch-backed too, and VBD
+    topology/static-contact scratch is primed during `enterSimulationMode()`, so
+    baked surface-snapshot steps and first-baked-step active VBD static rigid
+    surface-CCD point crossing do not allocate from the global heap. Scripted
+    deformable boundary processing now
+    reuses per-body Dirichlet/Neumann count masks instead of allocating local
+    per-node vectors each step. Default projected-Newton deformable solves now
+    reuse per-body RHS, sparse Hessian assembly, PSD block batch, sparse
+    pattern, and solution scratch for covered mass-spring and static rigid
+    surface-CCD steps, and FEM rest-shape caches are primed for covered
+    one-tetrahedron FEM projected-Newton steps. Self-contact barrier scratch is
+    sized from bake-primed candidates for covered two-triangle
+    projected-Newton self-contact steps. AVBD ground contact/friction rows and
+    self-contact normal/friction rows, including a rectangular self-contact
+    grid row workload, now reuse row-inventory and self-contact adjacency
+    storage, with bake-time reserve sizing for covered active contact steps;
+    row and friction-projection warm-start lookup now use sorted reserved
+    storage instead of map allocation or per-row linear scans. Rigid
+    AVBD contact projection now reuses stage-owned snapshot, point-joint,
+    row-counter, row-inventory, and solve scratch for covered active rigid
+    contacts and no-contact fixed-joint rows, with baked base-allocator and
+    global-heap no-growth guards. Active inter-body deformable surface-CCD
+    crossings and two non-square production-scale deformable frictional
+    self-contact grids now have the same baked no-growth guard coverage.
   - Hardened `dart::common::FixedPoolAllocator` against base-allocator failures
     during construction and block-table growth, with coverage for deterministic
     failure, fallback, reuse, and debug-guard paths.

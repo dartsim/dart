@@ -40,8 +40,10 @@
 namespace dart::common {
 
 //==============================================================================
-PoolAllocator::PoolAllocator(MemoryAllocator& baseAllocator)
-  : mBaseAllocator(baseAllocator)
+PoolAllocator::PoolAllocator(
+    MemoryAllocator& baseAllocator, DiagnosticsPolicy diagnosticsPolicy)
+  : mBaseAllocator(baseAllocator),
+    mDiagnosticsEnabled(diagnosticsPolicy == DiagnosticsPolicy::Enabled)
 {
   static_assert(
       8 <= sizeof(MemoryUnit),
@@ -59,6 +61,13 @@ PoolAllocator::PoolAllocator(MemoryAllocator& baseAllocator)
   }
 
   mFreeMemoryUnits.fill(nullptr);
+}
+
+//==============================================================================
+PoolAllocator::PoolAllocator(DiagnosticsPolicy diagnosticsPolicy)
+  : PoolAllocator(MemoryAllocator::GetDefault(), diagnosticsPolicy)
+{
+  // Do nothing
 }
 
 //==============================================================================
@@ -108,6 +117,12 @@ size_t PoolAllocator::getPeakAllocatedSize() const
 size_t PoolAllocator::getAllocationCount() const
 {
   return mDiagnosticAllocationCount;
+}
+
+//==============================================================================
+bool PoolAllocator::isDiagnosticsEnabled() const
+{
+  return mDiagnosticsEnabled;
 }
 
 //==============================================================================
