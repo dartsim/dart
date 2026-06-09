@@ -343,7 +343,8 @@
       stack rows use 20 PGS preconditioner iterations through 11 spheres and 40
       from 12 through 16 spheres, plus 160 at 24 and 32 spheres. Focused default rows pass for the 14-/15-/16-/24-/32-sphere
       all-solver stack slice; focused default, SIMD-enabled, and CUDA-enabled
-      build-tree rows pass for the 11-/12-/13-sphere all-solver stack slice.
+      build-tree rows pass for the 11-/12-/13- and 24-/32-sphere all-solver
+      stack slices.
       The CUDA-enabled rows are CPU solver rows in a CUDA-enabled build, not
       CUDA LCP kernel execution.
 - [x] Extended DART 7 boxed-LCP coupled stack snapshot evidence to a 7-sphere,
@@ -2325,6 +2326,15 @@ tradeoffs evidence based.
   `iterations=1344` for PGS/TGS, `1672` for Jacobi/BlockedJacobi, `1071` for
   RedBlackGaussSeidel, `810` for BGS/ShockPropagation, `417` for Symmetric
   PSOR, and `157` for NNCG with `nncg_pgs_iterations=160`.
+  Focused SIMD-enabled and CUDA-enabled build-tree
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldStackContact/FrictionIndex/.*/(24|32)$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  runs each reported `rows=32`, `contract_ok_rows=32`,
+  `sphere_count=24/32`, `contact_count=24/32`, `problem_size=72/96`,
+  `max_residual=0.016532831942676296`,
+  `max_complementarity=0.016532831942677989`, and
+  `max_bound_violation=0`; the SIMD-enabled run reported `simd_rows=32`, and
+  the CUDA-enabled run reported `cuda_rows=32`. The CUDA-enabled rows are CPU
+  solver benchmark rows in that build tree, not CUDA LCP kernel execution.
   The focused default
   `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldStackContactAssembly_BoxedLcp/(13|14|15|16)$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_format=json`
   run reported `contract_ok=1` for the 13-, 14-, 15-, and 16-sphere assembly

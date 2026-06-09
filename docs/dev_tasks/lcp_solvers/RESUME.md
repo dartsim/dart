@@ -695,7 +695,11 @@ RedBlack 2-through-16, and all-registered default
 report `contract_ok=1`; the 24-/32-sphere all-solver runs report `rows=16`,
 `contact_count=24/32`, `problem_size=72/96`, maximum residual
 `9.9008759714180883e-03`/`1.6532831942676296e-02`, and
-`max_bound_violation=0`. The same focused 11-/12-sphere stack/assembly filter also
+`max_bound_violation=0`. Focused SIMD-enabled and CUDA-enabled build-tree
+24-/32-sphere all-solver filters each report `rows=32`,
+`contract_ok_rows=32`, expected `simd_rows=32`/`cuda_rows=32`, and the same
+maximum residual/complementarity with no bound violation. The same focused
+11-/12-sphere stack/assembly filter also
 passes in the SIMD-enabled build tree with `rows=34`, `failures=0`, and
 `simd_rows=34`, and in the CUDA-enabled build tree with `rows=34`,
 `failures=0`, and `cuda_rows=34`; the CUDA-enabled rows are CPU solver rows in
@@ -1713,6 +1717,15 @@ dense/robot-like contact scenes.
   `iterations=1344` for PGS/TGS, `1672` for Jacobi/BlockedJacobi, `1071` for
   RedBlackGaussSeidel, `810` for BGS/ShockPropagation, `417` for Symmetric
   PSOR, and `157` for NNCG with `nncg_pgs_iterations=160`.
+  Focused SIMD-enabled and CUDA-enabled build-tree
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldStackContact/FrictionIndex/.*/(24|32)$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  runs each report `rows=32`, `contract_ok_rows=32`,
+  `sphere_count=24/32`, `contact_count=24/32`, `problem_size=72/96`,
+  `max_residual=0.016532831942676296`,
+  `max_complementarity=0.016532831942677989`, and
+  `max_bound_violation=0`; the SIMD-enabled run reports `simd_rows=32`, and
+  the CUDA-enabled run reports `cuda_rows=32`. The CUDA-enabled rows are CPU
+  solver benchmark rows in that build tree, not CUDA LCP kernel execution.
   The focused default
   `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldStackContactAssembly_BoxedLcp/(13|14|15|16)$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_format=json`
   run reports `contract_ok=1` for the 13-, 14-, 15-, and 16-sphere assembly

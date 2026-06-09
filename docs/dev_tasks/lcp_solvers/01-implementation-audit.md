@@ -1049,6 +1049,15 @@ The current local evidence for this task is:
   `iterations=1344` for PGS/TGS, `1672` for Jacobi/BlockedJacobi, `1071` for
   RedBlackGaussSeidel, `810` for BGS/ShockPropagation, `417` for Symmetric
   PSOR, and `157` for NNCG with `nncg_pgs_iterations=160`.
+  Focused SIMD-enabled and CUDA-enabled build-tree
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldStackContact/FrictionIndex/.*/(24|32)$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  runs each report `rows=32`, `contract_ok_rows=32`,
+  `sphere_count=24/32`, `contact_count=24/32`, `problem_size=72/96`,
+  `max_residual=0.016532831942676296`,
+  `max_complementarity=0.016532831942677989`, and
+  `max_bound_violation=0`; the SIMD-enabled run reports `simd_rows=32`, and
+  the CUDA-enabled run reports `cuda_rows=32`. The CUDA-enabled rows are CPU
+  solver benchmark rows in that build tree, not CUDA LCP kernel execution.
   A focused default
   `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldStackContactAssembly_BoxedLcp/(24|32)$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_out=/tmp/dart_lcp_world_stack_assembly_32.json --benchmark_out_format=json`
   run reports `rows=2`, `contract_ok_rows=2`, `sphere_count=24/32`,
