@@ -40,6 +40,11 @@
     equivalence oracles, and `bm_affine_body_dynamics` smoke rows. Those are
     correctness foundations, not a runtime solver or paper-scale completion
     claim.
+  - ZOZO's PPF Contact Solver and Ando 2024 provide a GPU-first shell/solid/rod
+    contact and strain-limiting software baseline plus a cubic-barrier paper
+    that should be evaluated inside the Newton-barrier family. DART treats this
+    as method, API, diagnostic, example, and platform evidence, not as a
+    dependency or public solver identity.
   - PLAN-080 owns the DART 7 rigid-body dynamics and articulation path;
     PLAN-030 owns the private CPU/GPU compute gates; PLAN-103 owns the
     Python-first examples surface.
@@ -58,11 +63,13 @@
   [`../design/simulation_python_api.md`](../design/simulation_python_api.md)
 - Compute/GPU policy:
   [`../design/scalable_compute_decisions.md`](../design/scalable_compute_decisions.md)
-- Research references: `ipc-2020`, `rigid-ipc-2021`, `lan-2022-abd`, and
-  `chen-2022-unified-newton-barrier` in
+- Research references: `ipc-2020`, `rigid-ipc-2021`, `lan-2022-abd`,
+  `chen-2022-unified-newton-barrier`, and `ando-2024-cubic-barrier` in
   [`../readthedocs/papers.md`](../readthedocs/papers.md)
 - IPC-family variant consolidation map:
   [`083-unified-newton-barrier-multibody/ipc-variant-consolidation.md`](083-unified-newton-barrier-multibody/ipc-variant-consolidation.md)
+- PPF contact solver intake:
+  [`083-unified-newton-barrier-multibody/ppf-contact-solver-intake.md`](083-unified-newton-barrier-multibody/ppf-contact-solver-intake.md)
 - Implementation roadmap:
   [`083-unified-newton-barrier-multibody/implementation-roadmap.md`](083-unified-newton-barrier-multibody/implementation-roadmap.md)
 - Unified paper/deck manifest:
@@ -168,11 +175,16 @@
 6. **Mixed-domain coupling** - Convert rigid/deformable/codimensional contact
    from variant-local scaffolding into shared contact buffers and coupler seams
    compatible with the DART 7 solver architecture.
-7. **CPU/GPU performance program** - Extend PLAN-030-style private GPU gates to
+7. **PPF cubic-barrier and stack intake** - Use the PPF sidecar to evaluate
+   cubic barriers, elasticity-inclusive dynamic stiffness, strain limiting,
+   ACCD precision diagnostics, shell/solid/rod model requirements, solver logs,
+   and GPU/platform lessons before adding new shared primitives or public
+   options.
+8. **CPU/GPU performance program** - Extend PLAN-030-style private GPU gates to
    contact stencils, CCD, barrier/friction kernels, PSD projection, assembly,
    and linear solves. Each optimization must keep CPU/GPU result parity at
    matched tolerances before claiming a speedup.
-8. **Examples and visual evidence** - Port the paper/unit/benchmark scenes into
+9. **Examples and visual evidence** - Port the paper/unit/benchmark scenes into
    py-demos categories, keep scene logic single-sourced where possible, and
    attach long-horizon headless Filament evidence for promoted examples.
 
@@ -227,7 +239,12 @@
    route to an existing variant owner, inventory shared components, define the
    user-facing configuration surface, and define apples-to-apples evidence
    before duplicating primitives or adding broad public options.
-5. Keep dev-task status, resume context, and implementation gates synchronized
+5. Classify PPF's cubic-barrier paper, repository examples, solver logs,
+   shell/solid/rod assets, frontends, and GPU platform claims through
+   [`ppf-contact-solver-intake.md`](083-unified-newton-barrier-multibody/ppf-contact-solver-intake.md)
+   before promoting any cubic-barrier, strain-limit, ACCD, or public API
+   change.
+6. Keep dev-task status, resume context, and implementation gates synchronized
    with this owner plan until the active task can be retired into durable
    design, plan, benchmark, and example artifacts.
 
@@ -247,6 +264,9 @@
 - ABD evidence shows it should replace, augment, or stay separate from the
   current rigid IPC path.
 - Paper/deck manifest rows change status, split, or reveal missing assets.
+- PPF intake evidence proves a cubic barrier, strain-limit row, ACCD diagnostic,
+  shell/rod adapter, solver-log schema, or GPU platform pattern should become a
+  DART-owned shared primitive or API surface.
 - CPU/GPU benchmark evidence changes the sequencing or exposes a correctness
   gap.
 - Public API naming would leak upstream project names, solver registries, ECS
