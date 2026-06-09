@@ -591,8 +591,8 @@ synthetic CPU/CUDA batch rows, 8192-row banded Jacobi solver-internal threading
 rows, extreme 128-row/256-contact exact rank-deficient,
 production active-set transition 256-contact correctness, single-benchmark, and
 batch benchmark, coupled mildly ill-conditioned
-24-contact, near-singular 256-contact generated CPU solver coverage, near-singular
-serial/parallel batch rows, exact rank-deficient singular-degenerate
+24-contact, near-singular 256-contact generated CPU solver and benchmark
+coverage, near-singular serial/parallel batch rows, exact rank-deficient singular-degenerate
 friction-index and standard/boxed batch rows, and default/SIMD/CUDA Newton warm-start
 single-problem and batch benchmark rows, plus focused
 PGS/PSOR, symmetric PSOR, and Red-Black Gauss-Seidel relaxation/threading rows,

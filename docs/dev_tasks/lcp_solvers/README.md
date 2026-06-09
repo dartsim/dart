@@ -222,7 +222,7 @@
 - [x] Added 62 `BM_LcpNearSingularBatch(Serial|Parallel)` benchmark rows for
       batch-size-4 runs over near-singular standard 8-row, boxed 8-row, and
       coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-, 32-, 48-, 64-, 96-, 128-,
-      and 192-contact packets, verified in default, SIMD-enabled, and
+      192-, and 256-contact packets, verified in default, SIMD-enabled, and
       CUDA-enabled build trees.
 - [x] Added 27 `BM_LcpSingularDegenerate` benchmark rows for the exact
       rank-deficient standard 16-row, boxed 16-row, and coupled friction-index
@@ -2736,7 +2736,7 @@ tradeoffs evidence based.
   15-solver single-problem and batch rows for 1x-/4x-/8x-coupled mildly
   ill-conditioned 6-, 8-, 12-, 16-, 24-, 32-, 48-, 64-, and 96-contact cases
   and 16x-coupled single rows plus default batch rows through 192 contacts,
-  near-singular 256-contact generated cases plus 192-contact benchmark cases,
+  near-singular 256-contact generated and benchmark cases,
   singular-degenerate 192-contact cases, and production active-set
   transition 24-, 32-, 48-, 64-, 96-, 128-, 192-, and 256-contact
   single-problem and batch cases. Denser DART 7 contact-derived
