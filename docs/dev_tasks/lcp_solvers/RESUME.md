@@ -530,14 +530,16 @@ Jacobi dense box-face evidence for 1/2/4/8/16/24/32/48/64/96-box shapes, matchin
 the grouped PGS rows, with two and three variants per shape. The 128-box
 batch-size-4 CUDA Jacobi/PGS rows remain unclaimed.
 This checkpoint extends the coupled-stack CPU solver-comparison slice by
-registering 8-/9-/10-sphere PGS, BlockedJacobi, NNCG, and RedBlackGaussSeidel
-stack rows. PGS and BlockedJacobi use a 512-iteration stack cap after focused
-default 100-iteration probes missed the contract; NNCG uses 20 PGS
+registering 8-/9-/10-sphere PGS, Jacobi, BlockedJacobi, NNCG, and
+RedBlackGaussSeidel stack rows. PGS, Jacobi, and BlockedJacobi use a
+512-iteration stack cap after focused default 100-iteration probes missed the
+contract; NNCG uses 20 PGS
 preconditioner iterations after a focused 10-PGS NNCG/8 probe hit the benchmark
 iteration cap with `contract_ok=0`; RedBlackGaussSeidel uses a 512-iteration
 stack cap after a focused 128-iteration RedBlack/8 probe missed the contract.
-Focused default PGS 8-through-10, BlockedJacobi 8-through-10, NNCG 2-through-10,
-RedBlack 2-through-10, and all-registered default 8-/9-/10-sphere
+Focused default PGS 8-through-10, Jacobi 8-through-10, BlockedJacobi
+8-through-10, NNCG 2-through-10, RedBlack 2-through-10, and all-registered
+default 8-/9-/10-sphere
 stack/assembly benchmark filters now report `contract_ok=1`.
 Push/PR work still requires explicit maintainer/user approval.
 
@@ -1303,20 +1305,25 @@ contact scenes.
   `contract_ok=1`; the rows report residuals `3.0803965763981367e-04`,
   `3.9036340220555132e-04`, and `4.7141997313282502e-04`, matching
   complementarity residuals, and 156, 189, and 225 solver iterations. With the
-  same 512-iteration stack-contact cap, focused `BlockedJacobi`
+  same 512-iteration stack-contact cap, focused `Jacobi` 8-/9-/10-sphere rows
+  report `contract_ok=1`; the rows report `jacobi_max_iterations=512`,
+  residuals `1.3555336200852253e-03`, `1.6746823956568235e-03`, and
+  `2.0486417140315183e-03`, matching complementarity residuals, and 242, 292,
+  and 342 solver iterations. With the same 512-iteration stack-contact cap,
+  focused `BlockedJacobi`
   8-/9-/10-sphere rows report `contract_ok=1`; the rows report
   `blocked_jacobi_max_iterations=512`, residuals
   `1.3555336200852253e-03`, `1.6746823956577117e-03`, and
   `2.0486417140306301e-03`, matching complementarity residuals, and 242, 292,
-  and 342 solver iterations. The matching 14
+  and 342 solver iterations. The matching 15
   `BM_LcpWorldStackContact/FrictionIndex/<solver>/8` rows cover `Pgs`,
-  `Dantzig`, `SymmetricPsor`, `BGS`, `BlockedJacobi`, `RedBlackGaussSeidel`,
-  `NNCG`, `SubspaceMinimization`, `Apgd`, `Tgs`, `Staggering`, `Admm`, `Sap`,
-  and `BoxedSemiSmoothNewton`; the matching 14
+  `Jacobi`, `Dantzig`, `SymmetricPsor`, `BGS`, `BlockedJacobi`,
+  `RedBlackGaussSeidel`, `NNCG`, `SubspaceMinimization`, `Apgd`, `Tgs`,
+  `Staggering`, `Admm`, `Sap`, and `BoxedSemiSmoothNewton`; the matching 15
   `BM_LcpWorldStackContact/FrictionIndex/<solver>/{9,10}` rows cover the same
-  set including `BlockedJacobi` and `RedBlackGaussSeidel`. Focused 8-sphere
-  probes reported `contract_ok=0` for `Jacobi` and `ShockPropagation`, so those
-  rows remain unclaimed at 8, 9, and 10 spheres.
+  set including `Jacobi`, `BlockedJacobi`, and `RedBlackGaussSeidel`. The
+  focused 8-sphere `ShockPropagation` probe reported `contract_ok=0`, so that
+  row remains unclaimed at 8, 9, and 10 spheres.
   The matching
   `BM_LcpWorldStackContactAssembly_BoxedLcp/{2,3,4,5,6,7,8,9,10,11,12,13,14,15,16}` rows rebuild the
   world, collide, assemble through `detail::solveBoxedLcpContacts`, solve, and
@@ -1349,7 +1356,7 @@ contact scenes.
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldStackContact/FrictionIndex/.*/8$|BM_LcpWorldStackContactAssembly_BoxedLcp/8$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   runs report `contract_ok=1` for the original 10 non-NNCG registered
   8-sphere solver rows and the 8-sphere assembly row. A current focused default
-  run of that same filter reports `contract_ok=1` for all 14 registered
+  run of that same filter reports `contract_ok=1` for all 15 registered
   8-sphere solver rows plus the assembly row; the PGS 8-sphere row reports
   `pgs_max_iterations=512`, `pgs_relaxation=1`,
   `residual=3.0803965763981367e-04`,
@@ -1361,6 +1368,9 @@ contact scenes.
   `red_black_gauss_seidel_max_iterations=512`,
   `residual=1.3859891024932125e-03`,
   `complementarity=1.3859891024931292e-03`, and 135 solver iterations, and the
+  `Jacobi` 8-sphere row reports `jacobi_max_iterations=512`,
+  `residual=1.3555336200852253e-03`,
+  `complementarity=1.3555336200851698e-03`, and 242 solver iterations, and the
   `BlockedJacobi` 8-sphere row reports `blocked_jacobi_max_iterations=512`,
   `residual=1.3555336200852253e-03`,
   `complementarity=1.3555336200851698e-03`, and 242 solver iterations. Earlier
@@ -1368,7 +1378,7 @@ contact scenes.
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldStackContact/FrictionIndex/.*/9$|BM_LcpWorldStackContactAssembly_BoxedLcp/9$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   runs report `contract_ok=1` for the original 10 non-NNCG registered
   9-sphere solver rows and the 9-sphere assembly row. A current focused default
-  run of that same filter reports `contract_ok=1` for all 14 registered
+  run of that same filter reports `contract_ok=1` for all 15 registered
   9-sphere solver rows plus the assembly row; the PGS 9-sphere row reports
   `pgs_max_iterations=512`, `pgs_relaxation=1`,
   `residual=3.9036340220555132e-04`,
@@ -1377,6 +1387,9 @@ contact scenes.
   `red_black_gauss_seidel_max_iterations=512`,
   `residual=1.7007052647963761e-03`,
   `complementarity=1.7007052647963206e-03`, and 162 solver iterations, and
+  the `Jacobi` 9-sphere row reports `jacobi_max_iterations=512`,
+  `residual=1.6746823956568235e-03`,
+  `complementarity=1.6746823956567680e-03`, and 292 solver iterations, and
   the `BlockedJacobi` 9-sphere row reports `blocked_jacobi_max_iterations=512`,
   `residual=1.6746823956577117e-03`,
   `complementarity=1.6746823956576562e-03`, and 292 solver iterations, and
@@ -1386,7 +1399,7 @@ contact scenes.
   focused default, SIMD-enabled, and CUDA-enabled 10-sphere runs report
   `contract_ok=1` for the original 10 non-NNCG registered solver rows and the
   10-sphere assembly row. A current focused default 10-sphere run reports
-  `contract_ok=1` for all 14 registered solver rows plus the assembly row; the
+  `contract_ok=1` for all 15 registered solver rows plus the assembly row; the
   PGS 10-sphere row reports `pgs_max_iterations=512`, `pgs_relaxation=1`,
   `residual=4.7141997313282502e-04`,
   `complementarity=4.7141997313276951e-04`, and 225 solver iterations, while
@@ -1394,6 +1407,9 @@ contact scenes.
   `red_black_gauss_seidel_max_iterations=512`,
   `residual=2.0442842170353970e-03`,
   `complementarity=2.0442842170353137e-03`, and 194 solver iterations, and
+  the `Jacobi` 10-sphere row reports `jacobi_max_iterations=512`,
+  `residual=2.0486417140315183e-03`,
+  `complementarity=2.0486417140314628e-03`, and 342 solver iterations, and
   the `BlockedJacobi` 10-sphere row reports
   `blocked_jacobi_max_iterations=512`, `residual=2.0486417140306301e-03`,
   `complementarity=2.0486417140305746e-03`, and 342 solver iterations, and
@@ -1930,6 +1946,11 @@ cmake --build build/default/cpp/Release \
   "--benchmark_format=json"
 ./build/default/cpp/Release/bin/BM_LCP_COMPARE \
   "--benchmark_filter=^BM_LcpWorldStackContact/FrictionIndex/Pgs/(8|9|10)$" \
+  "--benchmark_min_time=0.001s" \
+  "--benchmark_repetitions=1" \
+  "--benchmark_format=json"
+./build/default/cpp/Release/bin/BM_LCP_COMPARE \
+  "--benchmark_filter=^BM_LcpWorldStackContact/FrictionIndex/Jacobi/(8|9|10)$" \
   "--benchmark_min_time=0.001s" \
   "--benchmark_repetitions=1" \
   "--benchmark_format=json"
