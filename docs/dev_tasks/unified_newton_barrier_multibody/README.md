@@ -67,6 +67,10 @@
         miss, indeterminate, and step-bound clamping through it while keeping
         limiting-payload ownership and indeterminate-result policy
         variant-local.
+  - [x] Count zero-step indeterminate native-CCD outcomes through the shared
+        line-search accounting helper so rigid IPC and deformable CCD
+        diagnostics report blocking indeterminate queries consistently while
+        keeping their limiting payloads variant-local.
   - [x] Promote the shared Armijo sufficient-decrease and backtracking scalar
         policy into `detail/newton_barrier` and route rigid IPC plus deformable
         projected-Newton line-search checks through it while keeping
@@ -146,10 +150,11 @@ storage, or backend resources as public API.
    and ABD evidence after the fixed-size PSD projection helper, first
    line-search option/stat helper, shared line-search positive-step predicate,
    shared conservative native-CCD option adapter, shared line-search step-scale
-   helper, and shared Google Benchmark packet row identity helper. Promote
-   projected-Newton result/status terminology, line-search result semantics,
-   diagnostics, or additional benchmark-schema contracts only when a second
-   consumer proves identical behavior.
+   helper, shared native-CCD zero-step diagnostic accounting, and shared Google
+   Benchmark packet row identity helper. Promote projected-Newton result/status
+   terminology, line-search result semantics, diagnostics, or additional
+   benchmark-schema contracts only when a second consumer proves identical
+   behavior.
 2. Keep the two-body affine contact micro-solve deferred until the
    `abd-alg-affine-body` row expands beyond the primitive/oracle micro-packet
    and needs a solved-state residual or runtime stepping diagnostic.
@@ -245,6 +250,11 @@ Phase 3 native-CCD primitive outcome accounting slice local evidence:
 - `pixi run test-all`
 - `pixi run -e cuda test-all` (docs passed with the existing
   `dartpy._world_render_bridge` autodoc warnings)
+
+Phase 3 native-CCD zero-step diagnostic accounting slice local evidence:
+
+- `pixi run -- cmake --build build/default/cpp/Release --target test_newton_barrier_primitives --parallel 8`
+- `pixi run -- ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_newton_barrier_primitives$'`
 
 Phase 3 sufficient-decrease policy slice local evidence:
 

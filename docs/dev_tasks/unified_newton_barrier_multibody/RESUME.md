@@ -79,6 +79,12 @@ indeterminate counter updates, hit and indeterminate time-of-impact clamping to
 indeterminate-result policy, and line-search result structs remain
 variant-local.
 
+The native-CCD zero-step diagnostic follow-up keeps that shared accounting
+contract honest for indeterminate primitive queries: if a native CCD backend can
+only prove an indeterminate zero step, `detail/newton_barrier` now increments
+the same zero-step counter used for zero-time hits. Rigid IPC and deformable CCD
+still own their distinct limiting payloads and indeterminate-result policies.
+
 ## Last Session Summary
 
 Current slice: the first ABD benchmark packet has been promoted from
