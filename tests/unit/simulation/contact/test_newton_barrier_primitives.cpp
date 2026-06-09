@@ -670,6 +670,13 @@ TEST(NewtonBarrierPrimitives, FrictionWorkUsesSharedMollifier)
   EXPECT_TRUE(dynamicContribution.dynamicBranch);
   EXPECT_NEAR(dynamicContribution.work, 4.0 * 0.4, 1e-15);
 
+  const double tinyStaticDisplacement
+      = std::numeric_limits<double>::denorm_min();
+  const auto nonFiniteSmoothContribution = nb::frictionWorkContribution(
+      tinyStaticDisplacement, 4.0, tinyStaticDisplacement);
+  EXPECT_FALSE(nonFiniteSmoothContribution.active);
+  EXPECT_DOUBLE_EQ(nonFiniteSmoothContribution.work, 0.0);
+
   EXPECT_FALSE(nb::frictionWorkContribution(0.1, 0.0, 0.2).active);
   EXPECT_FALSE(nb::frictionWorkContribution(0.1, 4.0, 0.0).active);
 }
