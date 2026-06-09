@@ -1266,6 +1266,92 @@ void configureDeformableSelfContactFrictionPatchScene(
   world.addDeformableBody("friction_patches", options);
 }
 
+void configureDeformableFemGroundFrictionBlockScene(
+    dart::simulation::World& world)
+{
+  namespace sx = dart::simulation;
+
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.002);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("fem_ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(10.0, 10.0, 0.5)));
+  ground.setDeformableGroundBarrier(true);
+
+  constexpr std::size_t cells = 2;
+  constexpr std::size_t nodesPerAxis = cells + 1;
+  constexpr double spacing = 0.1;
+  const auto nodeIndex = [](std::size_t x, std::size_t y, std::size_t z) {
+    return z * nodesPerAxis * nodesPerAxis + y * nodesPerAxis + x;
+  };
+
+  sx::DeformableBodyOptions options;
+  options.positions.reserve(nodesPerAxis * nodesPerAxis * nodesPerAxis);
+  options.velocities.reserve(nodesPerAxis * nodesPerAxis * nodesPerAxis);
+  options.masses.assign(nodesPerAxis * nodesPerAxis * nodesPerAxis, 0.1);
+  const Eigen::Vector3d origin(-0.1, -0.1, 0.004);
+  for (std::size_t z = 0; z < nodesPerAxis; ++z) {
+    for (std::size_t y = 0; y < nodesPerAxis; ++y) {
+      for (std::size_t x = 0; x < nodesPerAxis; ++x) {
+        options.positions.push_back(
+            origin
+            + spacing
+                  * Eigen::Vector3d(
+                      static_cast<double>(x),
+                      static_cast<double>(y),
+                      static_cast<double>(z)));
+        options.velocities.emplace_back(0.5, 0.0, -0.05);
+      }
+    }
+  }
+
+  const std::array<std::array<std::size_t, 4>, 6> localTets = {{
+      {0, 1, 3, 7},
+      {0, 3, 2, 7},
+      {0, 2, 6, 7},
+      {0, 6, 4, 7},
+      {0, 4, 5, 7},
+      {0, 5, 1, 7},
+  }};
+  options.tetrahedra.reserve(6 * cells * cells * cells);
+  for (std::size_t z = 0; z < cells; ++z) {
+    for (std::size_t y = 0; y < cells; ++y) {
+      for (std::size_t x = 0; x < cells; ++x) {
+        const std::array<std::size_t, 8> corner = {{
+            nodeIndex(x, y, z),
+            nodeIndex(x + 1, y, z),
+            nodeIndex(x, y + 1, z),
+            nodeIndex(x + 1, y + 1, z),
+            nodeIndex(x, y, z + 1),
+            nodeIndex(x + 1, y, z + 1),
+            nodeIndex(x, y + 1, z + 1),
+            nodeIndex(x + 1, y + 1, z + 1),
+        }};
+        for (const auto& tet : localTets) {
+          options.tetrahedra.push_back(
+              sx::DeformableTetrahedron{
+                  corner[tet[0]],
+                  corner[tet[1]],
+                  corner[tet[2]],
+                  corner[tet[3]]});
+        }
+      }
+    }
+  }
+
+  options.edgeStiffness = 0.0;
+  options.material.useFiniteElementElasticity = true;
+  options.material.youngsModulus = 5.0e4;
+  options.material.poissonRatio = 0.3;
+  options.material.frictionCoefficient = 0.8;
+
+  world.addDeformableBody("fem_ground_friction_block", options);
+}
+
 void configureDeformableSelfContactFrictionGridSceneWithShapeAndMotion(
     dart::simulation::World& world,
     std::size_t rows,
@@ -2852,6 +2938,10 @@ TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
       });
 
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "deformable FEM ground friction block",
+      configureDeformableFemGroundFrictionBlockScene);
+
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "deformable self-contact friction patch",
       configureDeformableSelfContactFrictionPatchScene);
 
@@ -2940,6 +3030,34 @@ TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "deformable AVBD ground friction rows",
       configureAvbdGroundFrictionRowsScene);
+}
+
+TEST(World, DeformableFemGroundFrictionBlockIsActive)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  configureDeformableFemGroundFrictionBlockScene(world);
+  world.enterSimulationMode();
+
+  std::size_t projectedNewtonSteps = 0;
+  std::size_t maxHessianNonZeros = 0;
+  double frictionDissipation = 0.0;
+  for (int i = 0; i < 4; ++i) {
+    world.step();
+    const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
+    projectedNewtonSteps += diagnostics.projectedNewtonSteps;
+    maxHessianNonZeros = std::max(
+        maxHessianNonZeros, diagnostics.projectedNewtonHessianNonZeros);
+    frictionDissipation += diagnostics.frictionDissipation;
+  }
+
+  const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
+  EXPECT_EQ(diagnostics.bodyCount, 1u);
+  EXPECT_EQ(diagnostics.nodeCount, 27u);
+  EXPECT_GT(projectedNewtonSteps, 0u);
+  EXPECT_GT(maxHessianNonZeros, 0u);
+  EXPECT_GT(frictionDissipation, 0.0);
 }
 
 TEST(World, DeformableSelfContactFrictionProductionGridIsActive)
@@ -3684,6 +3802,10 @@ TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
         world.addDeformableBody("tet", options);
         world.setTimeStep(0.01);
       });
+
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "deformable FEM ground friction block",
+      configureDeformableFemGroundFrictionBlockScene);
 
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "deformable self-contact projected Newton scratch", [](sx::World& world) {

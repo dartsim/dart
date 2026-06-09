@@ -271,8 +271,11 @@
       direct-sparse square and matrix-free rectangular self-contact grids whose
       active contacts enter during the counted baked steps. These cover
       per-body solver/contact scratch storage for independent deformable bodies
-      with different topology shapes and linear-solver modes. The default
-      projected-Newton path now also has a baked
+      with different topology shapes and linear-solver modes. A default
+      projected-Newton FEM ground-friction block now covers multi-tetrahedron
+      rest-shape, Hessian-block, and multi-node ground-friction storage in both
+      baked no-growth guards. The default projected-Newton path now also has a
+      baked
       sphere/box/capsule static obstacle barrier gate, covering those radial and
       oriented-obstacle Hessian paths separately from the ground height-field
       barrier and surface-CCD snapshot gates. The moving rigid-surface CCD path
@@ -351,16 +354,17 @@
       projected-Newton self-contact barrier scratch is sized from bake-primed
       contact candidates and covered for the two-triangle no-friction
       self-contact path. The global heap guard now also covers a baked
-      default-solver deformable ground-friction projected-Newton scene plus a
-      multi-triangle frictional self-contact patch, a 5x5 two-layer frictional
-      self-contact grid, a 7x7 two-layer large grid, a 9x9 two-layer production
-      grid, an 11x11 two-layer extended production grid, a 13x13 two-layer
-      dense production grid, a 15x15 extra-dense two-layer production grid,
-      a 17x17 larger two-layer production grid, a 9x13 non-square two-layer
-      production grid, direct-sparse and matrix-free 13x19 dense rectangular
-      production grids, a 7x17 wide non-square production grid, a 17x7 tall
-      non-square production grid, a notched and jittered 13x17 irregular
-      direct-sparse production grid, and an 11x11 late-active two-layer
+      default-solver deformable ground-friction projected-Newton scene, a
+      multi-tetrahedron FEM ground-friction block, plus a multi-triangle
+      frictional self-contact patch, a 5x5 two-layer frictional self-contact
+      grid, a 7x7 two-layer large grid, a 9x9 two-layer production grid, an
+      11x11 two-layer extended production grid, a 13x13 two-layer dense
+      production grid, a 15x15 extra-dense two-layer production grid, a 17x17
+      larger two-layer production grid, a 9x13 non-square two-layer production
+      grid, direct-sparse and matrix-free 13x19 dense rectangular production
+      grids, a 7x17 wide non-square production grid, a 17x7 tall non-square
+      production grid, a notched and jittered 13x17 irregular direct-sparse
+      production grid, and an 11x11 late-active two-layer
       direct-sparse plus matrix-free grid that starts outside the self-contact
       barrier band and enters it during the counted baked steps, with the same
       late-active direct-sparse plus matrix-free coverage for a 9x13
