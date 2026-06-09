@@ -8450,13 +8450,13 @@ void RunWorldStackContactBenchmark(
   ConfigureSolverBenchmarkOptions(storage, solverEntry, fixture->problem);
   if (solverEntry.name == "NNCG") {
     // Coupled stack contacts need a stronger PGS preconditioner than the
-    // generated math fixtures to satisfy the same LCP contract through 8
+    // generated math fixtures to satisfy the same LCP contract through 10
     // spheres.
     storage.nncgParams.pgsIterations = 20;
   } else if (solverEntry.name == "RedBlackGaussSeidel") {
-    // The 7-sphere coupled stack converges in 107 two-color iterations; the
-    // default 100-iteration cap leaves it just outside the LCP contract.
-    storage.options.maxIterations = 128;
+    // The 8-sphere coupled stack converges in 135 two-color iterations; 128
+    // iterations leave it just outside the same LCP contract.
+    storage.options.maxIterations = 256;
   }
 
   const auto solver = solverEntry.create();
@@ -11933,7 +11933,10 @@ void RegisterWorldStackContactBenchmarks()
         });
     registeredBenchmark->Arg(2)->Arg(3)->Arg(4)->Arg(5)->Arg(6);
     registeredBenchmark->Arg(7);
-    if (solver.name != "Pgs" && solver.name != "Jacobi"
+    if (solver.name == "RedBlackGaussSeidel") {
+      registeredBenchmark->Arg(8);
+    } else if (
+        solver.name != "Pgs" && solver.name != "Jacobi"
         && solver.name != "BlockedJacobi" && solver.name != "ShockPropagation"
         && solver.name != "RedBlackGaussSeidel") {
       registeredBenchmark->Arg(8)->Arg(9)->Arg(10);
