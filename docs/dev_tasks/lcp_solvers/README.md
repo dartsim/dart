@@ -178,8 +178,9 @@
       `BM_LcpExtremeActiveSetTransition` rows for scoped standard 128-row,
       boxed 128-row, and coupled friction-index 16-contact packets, verified in
       default, SIMD-enabled, and CUDA-enabled build trees.
-- [x] Added production active-set transition generated coverage and 112
-      `BM_LcpProductionActiveSetTransition` rows for stronger-coupled
+- [x] Added production active-set transition generated coverage through a
+      256-contact/768-row packet and 112 `BM_LcpProductionActiveSetTransition`
+      rows for stronger-coupled
       24-contact/72-row, 32-contact/96-row, 48-contact/144-row, and
       64-contact/192-row, 96-contact/288-row, 128-contact/384-row, and
       192-contact/576-row friction-index packets, verified in default,
@@ -1293,12 +1294,13 @@ tradeoffs evidence based.
 - Verified production active-set transition generated coverage slice:
   `UNIT_math_lcp_math_lcp_lcp_generated_coverage --gtest_filter='LcpGeneratedCoverage.ProductionActiveSetTransitionFrictionIndexKnownSolutionsForScalableSolvers' --gtest_brief=1`
   passes in the default, SIMD-enabled, and CUDA-enabled build trees after
-  adding the 192-contact, 576-row, `coupling_scale=32` packet. The previous
+  adding the 256-contact, 768-row, `coupling_scale=32` packet. The previous
   full default generated coverage suite
   `UNIT_math_lcp_math_lcp_lcp_generated_coverage --gtest_brief=1` also passes
-  21 tests through the 128-contact expanded production active-set packet. The CUDA-enabled
-  run is CPU generated solver coverage in a CUDA-enabled build, not CUDA LCP
-  kernel execution.
+  21 tests through the 128-contact expanded production active-set packet, and
+  earlier focused production active-set runs covered the 192-contact packet in
+  the same three build trees. The CUDA-enabled run is CPU generated solver
+  coverage in a CUDA-enabled build, not CUDA LCP kernel execution.
 - Verified production active-set transition batch benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpProductionActiveSetTransitionBatch' | wc -l`
   reports 518 rows. Previous JSON benchmark checks through the 96-contact packet
@@ -2520,6 +2522,10 @@ tradeoffs evidence based.
   `coupling_scale=2/4/8/16/32`, backend build-state counters, and `coupled=1`.
   The CUDA-enabled rows are CPU solver rows in a CUDA-enabled build, not CUDA
   LCP kernel execution.
+- Added production active-set transition generated coverage for the
+  256-contact, 768-row, `coupling_scale=32` packet. The focused
+  `LcpGeneratedCoverage.ProductionActiveSetTransitionFrictionIndexKnownSolutionsForScalableSolvers`
+  filter passes in the default, SIMD-enabled, and CUDA-enabled build trees.
 - Added 518
   `BM_LcpProductionActiveSetTransitionBatch(Serial|Parallel)` rows for
   batch-size-4 serial and DART 7 `ParallelExecutor` runs over standard
@@ -2678,7 +2684,8 @@ tradeoffs evidence based.
   singular-degenerate through the current 128-row/256-contact correctness and
   benchmark slice,
   and
-  active-set transition through the current stronger-coupled 192-contact slice
+  active-set transition through the current stronger-coupled 256-contact
+  correctness slice and 192-contact benchmark slice
   into harder solver-specific friction-index coupling edge cases and direct
   backend execution evidence beyond CPU solver rows in SIMD/CUDA-enabled
   builds. Standard/boxed exact rank-deficient singular-degenerate batch
@@ -2803,8 +2810,9 @@ tradeoffs evidence based.
 ## Immediate Next Steps
 
 1. Extend solver-specific friction-index conditioning/coupling grids beyond the
-   current exact rank-deficient 128-row/256-contact correctness/benchmark and production active-set
-   transition 192-contact slices.
+   current exact rank-deficient 128-row/256-contact correctness/benchmark,
+   production active-set transition 256-contact correctness, and production
+   active-set transition 192-contact benchmark slices.
 2. Extend DART 7 boxed-LCP world-contact evidence from current separated
    sphere-ground, current fixed-base prismatic articulated end-to-end coverage,
    current connected Cartesian-chain articulated end-to-end coverage,

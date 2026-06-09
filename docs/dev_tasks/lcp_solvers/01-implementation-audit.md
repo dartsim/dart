@@ -155,9 +155,10 @@ Support abbreviations:
   and CUDA-enabled build trees. It now also includes a production active-set
   transition slice for stronger-coupled 24-contact, 72-row, 32-contact,
   96-row, 48-contact, 144-row, 64-contact, 192-row, 96-contact, 288-row, and
-  128-contact, 384-row, and 192-contact, 576-row friction-index packets, plus 112 matching
-  benchmark rows verified in default, SIMD-enabled, and CUDA-enabled build
-  trees. It now also includes 518 serial and DART 7 `ParallelExecutor` batch
+  128-contact, 384-row, 192-contact, 576-row, and 256-contact, 768-row
+  generated friction-index packets, plus 112 matching benchmark rows through
+  192 contacts verified in default, SIMD-enabled, and CUDA-enabled build trees.
+  It now also includes 518 serial and DART 7 `ParallelExecutor` batch
   rows over the standard 32/64/128-row, boxed 32/64/128-row, and coupled
   friction-index 8-/12-/16-/24-/32-/48-/64-/96-/128-/192-contact active-set
   packets, verified in default, SIMD-enabled, and CUDA-enabled build trees.
@@ -358,11 +359,13 @@ The current local evidence for this task is:
   rows in a CUDA-enabled build, not CUDA LCP kernel execution.
 - `UNIT_math_lcp_math_lcp_lcp_generated_coverage --gtest_filter='LcpGeneratedCoverage.ProductionActiveSetTransitionFrictionIndexKnownSolutionsForScalableSolvers' --gtest_brief=1`
   passes in the default, SIMD-enabled, and CUDA-enabled build trees after
-  adding the generated 192-contact, 576-row production active-set packet with
+  adding the generated 256-contact, 768-row production active-set packet with
   `coupling_scale=32`. The previous full default generated coverage suite
   `UNIT_math_lcp_math_lcp_lcp_generated_coverage --gtest_brief=1` also passes
-  21 tests through the 128-contact expanded packet. The CUDA-enabled run is CPU generated
-  solver coverage in a CUDA-enabled build, not CUDA LCP kernel execution.
+  21 tests through the 128-contact expanded packet, and earlier focused
+  production active-set runs covered the 192-contact packet in the same three
+  build trees. The CUDA-enabled run is CPU generated solver coverage in a
+  CUDA-enabled build, not CUDA LCP kernel execution.
 - `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpProductionActiveSetTransitionBatch' | wc -l`
   reports 518 rows. Previous JSON benchmark checks through the 96-contact packet
   reported 454 rows with `contract_ok=1` in the default, SIMD-enabled, and
