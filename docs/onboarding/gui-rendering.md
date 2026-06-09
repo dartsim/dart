@@ -197,8 +197,8 @@ onRenderableSelected}` and the outliner action seam.
 The editor is feature-complete as a workbench. Its key code rule: panel and menu
 logic lives in tested, backend-hidden view-model **action seams**
 (`dartsim/ui/include/dartsim_ui/*_actions.hpp` — project, history, outliner,
-inspector, palette, relationship, simulation, console, watch, viewport), each
-with a `UNIT_dartsim_ui_*Actions` test, rather than in anonymous `editor.cpp`
+inspector, memory, palette, relationship, simulation, console, watch, viewport),
+each with a `UNIT_dartsim_ui_*Actions` test, rather than in anonymous `editor.cpp`
 lambdas. Add new behavior as a seam first, then wire it into `editor.cpp` as a
 thin view. The filtered `dartsim/engine/*` plus `dartsim/ui/*_actions` surface is
 held at ≥95% line coverage (`pixi run coverage-report-dartsim`). The
