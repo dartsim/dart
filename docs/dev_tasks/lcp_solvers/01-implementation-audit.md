@@ -1356,13 +1356,13 @@ The current local evidence for this task is:
   and `max_vertical_speed=0.196054`; longer 1000-/4000-step probes also failed,
   so a 64-box long-horizon settling result remains
   unclaimed.
-- `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` now registers 72 scoped dense
+- `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` now registers 78 scoped dense
   box rows: `Pgs`, `RedBlackGaussSeidel`, `NNCG`, `Apgd`, `Tgs`, and `Admm` on
-  1/2/4/8/16/24/32/48/64/96/128/192-box snapshots. Focused
-  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldBoxContact/FrictionIndex/.+/192$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  1/2/4/8/16/24/32/48/64/96/128/192/256-box snapshots. Focused
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldBoxContact/FrictionIndex/.+/256$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   runs reported
-  `contract_ok=1`, `dense_box_contact=1`, `box_count=192`,
-  `contact_count=768`, and `problem_size=2304` in default, SIMD-enabled, and
+  `contract_ok=1`, `dense_box_contact=1`, `box_count=256`,
+  `contact_count=1024`, and `problem_size=3072` in default, SIMD-enabled, and
   CUDA-enabled build trees; the CUDA-enabled rows are CPU solver rows in that
   build tree, not CUDA LCP kernel execution.
 - `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` now also registers 72
@@ -1977,7 +1977,7 @@ The current local evidence for this task is:
   benchmark scenes, plus
   manually assembled three-axis articulated unified-contact all-solver rows
   through 64 contacts including cross-multibody link-vs-link rows,
-  plus scoped dense box face-contact rows through 192 boxes for six solvers,
+  plus scoped dense box face-contact rows through 256 boxes for six solvers,
   scoped dense box serial/parallel batch rows through 192 boxes for the same
   solver set, and PGS-only dense
   box-face CUDA batch rows through homogeneous 1/4/8/16/24/32/48/64/96-box and grouped
