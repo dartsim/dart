@@ -129,8 +129,7 @@ Focused local validation passed `pixi run lint`, the focused
 `test_newton_barrier_primitives` / `test_rigid_ipc_barrier` / `test_world`
 CTest entries, `pixi run build`, and `pixi run test-unit`.
 
-The native-CCD primitive outcome accounting slice is on
-`simx/shared-newton-barrier-ccd-hit-accounting`, published as PR #2945 after PR
+The native-CCD primitive outcome accounting slice merged as PR #2945 after PR
 #2943 landed. Focused local validation passed the
 `test_newton_barrier_primitives`, `test_continuous_collision_step`, and
 `test_rigid_ipc_barrier` build/CTest entries plus `pixi run lint`. Stronger
@@ -140,13 +139,13 @@ the docs phase still emits the existing `dartpy._world_render_bridge` autodoc
 warnings.
 
 The PSD backend wrapper slice is on
-`simx/shared-newton-barrier-psd-backend-wrapper`, stacked after #2945 while that
-PR waits for hosted CI/review. Focused local validation passed
+`simx/shared-newton-barrier-psd-backend-wrapper`, retargeted to `main` after
+PR #2945 landed. Focused local validation passed
 `test_deformable_psd_backend` and `test_world` build/CTest entries.
 
 The sufficient-decrease policy slice is on
 `simx/shared-newton-barrier-sufficient-decrease`, stacked after the PSD backend
-wrapper slice while #2945/#2946 wait for hosted CI/review. Focused local
+wrapper slice while #2946 waits for hosted CI/review. Focused local
 validation passed `pixi run lint` plus the `test_newton_barrier_primitives`,
 `test_rigid_ipc_barrier`, and `test_world` build/CTest entries.
 
@@ -159,8 +158,8 @@ because this section is a resume snapshot.
 
 ## Immediate Next Step
 
-Publish the sufficient-decrease policy slice as a stacked PR if #2945/#2946
-remain open, or retarget/restack it after those PRs land. Then continue Phase 3
+Keep the sufficient-decrease policy slice current as a stacked PR while #2946
+finishes, or retarget/restack it after #2946 lands. Then continue Phase 3
 from
 [`../../plans/083-unified-newton-barrier-multibody/abd-first-slice-design.md`](../../plans/083-unified-newton-barrier-multibody/abd-first-slice-design.md):
 resume shared-contract scouting from the existing rigid IPC, deformable IPC,
