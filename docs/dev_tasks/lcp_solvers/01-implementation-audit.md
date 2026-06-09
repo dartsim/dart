@@ -100,7 +100,7 @@ Support abbreviations:
   256-row and 96-contact sizes and grouped variable-size synthetic
   standard/boxed/findex packets through 256-row and 96-contact groups, matching
   CPU serial and DART 7 `ParallelExecutor` Jacobi/PGS batch rows at the direct and grouped CUDA packet sizes in
-  default, SIMD-enabled, and CUDA-enabled build trees, homogeneous 4-/8-/16-contact and grouped variable-size
+  default, SIMD-enabled, and CUDA-enabled build trees, homogeneous 4-/8-/16-/24-/32-contact and grouped variable-size
   1/2/4/8/16/24/32-contact DART 7 sphere-ground world-contact packets, homogeneous
   5-/6-/7-/8-/9-/10-/11-/12-/13-/14-/15-/16-sphere and grouped variable-size
   2/3/4/5/6/7/8/9/10/11/12/13/14/15/16-sphere coupled stack-contact
@@ -1536,9 +1536,11 @@ The current local evidence for this task is:
   `total_problem_size=1608/2412`, and `parallel_units=14/21` with
   `profile_enabled=1` on `ParallelExecutor` rows. The
   homogeneous world-contact CUDA rows used DART 7 `World::collide()`
-  snapshots up to 16 contacts with `batch_size=4`, `contact_count=16`,
-  `problem_size=48`, `total_contact_count=64`, and `total_problem_size=192`
-  on the denser rows. The
+  snapshots up to 32 contacts with `batch_size=4`,
+  `contact_count=16/24/32`, `problem_size=48/72/96`,
+  `total_contact_count=64/96/128`, `total_problem_size=192/288/384`,
+  maximum residual and complementarity `1.3877787807814457e-17`, and no bound
+  violation on the denser rows. The
   homogeneous coupled stack CUDA rows use 5-/6-/7-/8-sphere DART 7
   `World::collide()` snapshots; the 8-sphere rows report `batch_size=4`,
   `sphere_count=8`, `contact_count=8`, `problem_size=24`,
@@ -1727,7 +1729,7 @@ The current local evidence for this task is:
   standard/boxed/friction-index through direct 256-row and 96-contact packets
   plus grouped variable-size synthetic standard/boxed/friction-index through
   256-row and 96-contact groups with two- and three-variant rows, homogeneous
-  4-/8-/16-contact, homogeneous
+  4-/8-/16-/24-/32-contact, homogeneous
   5-/6-/7-/8-sphere coupled stack, grouped variable-size 1/2/4/8/16/24/32-contact separated
   sphere-ground and 2/3/4/5/6/7/8-sphere coupled stack world-contact batch
   paths with two- and three-variant grouped benchmark rows, plus manually

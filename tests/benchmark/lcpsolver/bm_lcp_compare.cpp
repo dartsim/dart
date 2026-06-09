@@ -12881,11 +12881,15 @@ BENCHMARK(BM_LcpCudaPgsGroupedBatch_FrictionIndex)->Arg(2)->Arg(3);
 BENCHMARK(BM_LcpCudaJacobiWorldContactBatch_FrictionIndex)
     ->Args({4, 4})
     ->Args({8, 4})
-    ->Args({16, 4});
+    ->Args({16, 4})
+    ->Args({24, 4})
+    ->Args({32, 4});
 BENCHMARK(BM_LcpCudaPgsWorldContactBatch_FrictionIndex)
     ->Args({4, 4})
     ->Args({8, 4})
-    ->Args({16, 4});
+    ->Args({16, 4})
+    ->Args({24, 4})
+    ->Args({32, 4});
 BENCHMARK(BM_LcpCudaJacobiWorldBoxContactBatch_FrictionIndex)
     ->Args({1, 4})
     ->Args({4, 4})

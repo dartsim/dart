@@ -21,7 +21,7 @@ status. They also add opt-in solver-internal CPU worker threads for
 `JacobiSolver` with generated correctness and benchmark evidence, plus
 experimental CUDA fixed-iteration Jacobi and PGS batch paths for homogeneous
 dense standard, boxed, friction-index, grouped variable-size synthetic
-standard/boxed/friction-index, 4-/8-/16-contact world-contact, and homogeneous
+standard/boxed/friction-index, 4-/8-/16-/24-/32-contact world-contact, and homogeneous
 5-/6-/7-/8-/9-/10-/11-/12-/13-/14-/15-/16-sphere coupled stack-contact LCP packets, with grouped articulated
 unified-contact CUDA evidence later expanded to cross-multibody link-vs-link
 packets in this task log.
@@ -513,7 +513,7 @@ solvers over the same five separated-contact and stacked-contact snapshots,
 both serially and through the DART 7 experimental
 `ParallelExecutor`. The CUDA LCP batch evidence now also includes direct
 synthetic standard/boxed/findex packets through 256-row and 96-contact sizes,
-homogeneous 4-/8-/16-contact DART 7 world-contact packets, homogeneous 5-/6-/7-/8-/9-/10-/11-/12-/13-/14-/15-/16-sphere coupled
+homogeneous 4-/8-/16-/24-/32-contact DART 7 world-contact packets, homogeneous 5-/6-/7-/8-/9-/10-/11-/12-/13-/14-/15-/16-sphere coupled
 stack-contact packets, grouped variable-size synthetic standard/boxed/findex
 through 256-row and 96-contact groups, grouped variable-size
 1/2/4/8/16/24/32-contact separated sphere-ground packets with two- and
@@ -566,6 +566,14 @@ the matching two-/three-variant benchmark rows report `contract_ok=1`,
 `cuda_group_count=7`, `contact_shape_count=7`, `batch_size=14/21`,
 `max_problem_size=96`, `total_contact_count=174/261`, `total_problem_size=522/783`,
 and direct CUDA execution counters.
+The current slice also extends the direct homogeneous separated sphere-ground
+CUDA contact packets from 4/8/16 contacts to 4/8/16/24/32 contacts. Focused
+Jacobi and PGS CUDA unit tests pass over the 16-/24-/32-contact packets, and the
+matching benchmark rows report six rows with `contract_ok=1`,
+`cuda_lcp_execution=1`, `cuda_batch_execution=1`, `contact_count=16/24/32`,
+`problem_size=48/72/96`, `batch_size=4`, `total_contact_count=64/96/128`,
+`total_problem_size=192/288/384`, maximum residual and complementarity
+`1.3877787807814457e-17`, and no bound violation.
 
 ## Current Branch
 
@@ -1073,7 +1081,7 @@ dense/robot-like contact scenes.
   CPU serial/`ParallelExecutor` Jacobi/PGS batch rows at the same
   standard/boxed 24-/48-/96-/128-/192-/256-row and friction-index
   8-/16-/32-/48-/64-/96-contact sizes,
-  4-/8-/16-contact world-contact packets, and grouped
+  4-/8-/16-/24-/32-contact world-contact packets, and grouped
   1/2/4/8/16/24/32-contact separated sphere-ground packets. General CUDA execution for
   the full solver manifest remains a gap.
 - `docs/dev_tasks/lcp_solvers/01-implementation-audit.md` maps the background
@@ -1995,9 +2003,9 @@ dense/robot-like contact scenes.
   `contact_count=96` on friction-index rows, and `total_problem_size=1024/1152`.
   The homogeneous world-contact
   CUDA rows are
-  4-, 8-, and 16-contact packets; the denser rows report
-  `batch_size=4`, `contact_count=16`, `problem_size=48`,
-  `total_contact_count=64`, and `total_problem_size=192`. The homogeneous stack
+  4-, 8-, 16-, 24-, and 32-contact packets; the denser follow-up rows report
+  `batch_size=4`, `contact_count=16/24/32`, `problem_size=48/72/96`,
+  `total_contact_count=64/96/128`, and `total_problem_size=192/288/384`. The homogeneous stack
   CUDA rows now include 5-, 6-, 7-, 8-, 9-, 10-, 11-, 12-, 13-, 14-, 15-, and
   16-sphere coupled stack packets; the 13-/14-/15-/16-sphere rows report
   `batch_size=4`, `contact_count=13/14/15/16`, `problem_size=39/42/45/48`,

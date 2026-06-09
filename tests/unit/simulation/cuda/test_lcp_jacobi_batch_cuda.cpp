@@ -1724,13 +1724,16 @@ TEST(CudaLcpJacobiBatch, DenserWorldContactBatchSatisfiesLcpContract)
     GTEST_SKIP() << "CUDA runtime has no available device";
   }
 
-  std::string errorMessage;
-  auto fixture = makeWorldContactBatch(16, 4, 512, errorMessage);
-  ASSERT_TRUE(fixture.has_value()) << errorMessage;
+  for (const int contactCount : {16, 24, 32}) {
+    SCOPED_TRACE("contactCount=" + std::to_string(contactCount));
+    std::string errorMessage;
+    auto fixture = makeWorldContactBatch(contactCount, 4, 512, errorMessage);
+    ASSERT_TRUE(fixture.has_value()) << errorMessage;
 
-  cuda::solveBoxedLcpJacobiBatchCuda(fixture->packet);
+    cuda::solveBoxedLcpJacobiBatchCuda(fixture->packet);
 
-  expectBatchSatisfiesLcpContract(fixture->packet, fixture->problems);
+    expectBatchSatisfiesLcpContract(fixture->packet, fixture->problems);
+  }
 }
 
 //==============================================================================
@@ -2057,13 +2060,16 @@ TEST(CudaLcpPgsBatch, DenserWorldContactBatchSatisfiesLcpContract)
     GTEST_SKIP() << "CUDA runtime has no available device";
   }
 
-  std::string errorMessage;
-  auto fixture = makeWorldContactBatch(16, 4, 256, errorMessage);
-  ASSERT_TRUE(fixture.has_value()) << errorMessage;
+  for (const int contactCount : {16, 24, 32}) {
+    SCOPED_TRACE("contactCount=" + std::to_string(contactCount));
+    std::string errorMessage;
+    auto fixture = makeWorldContactBatch(contactCount, 4, 256, errorMessage);
+    ASSERT_TRUE(fixture.has_value()) << errorMessage;
 
-  cuda::solveBoxedLcpPgsBatchCuda(fixture->packet);
+    cuda::solveBoxedLcpPgsBatchCuda(fixture->packet);
 
-  expectBatchSatisfiesLcpContract(fixture->packet, fixture->problems);
+    expectBatchSatisfiesLcpContract(fixture->packet, fixture->problems);
+  }
 }
 
 //==============================================================================
