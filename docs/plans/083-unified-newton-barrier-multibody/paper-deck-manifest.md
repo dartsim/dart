@@ -46,6 +46,15 @@ for launchable planned py-demo placeholders, smoke commands, long-horizon
 capture commands, benchmark/profile packet paths, invariants, and current
 limitations until the paper/deck scenes are reproduced.
 
+## Private GPU Parity Sidecar
+
+Phase 7 tracks private CPU/GPU parity and speed packet obligations in
+[`gpu-parity-packet.json`](gpu-parity-packet.json), validated by
+`scripts/check_plan083_gpu_parity_packet.py`. The sidecar is the row-level source
+for same-scene parity, tolerance, setup/transfer/readback timing, kernel/solve
+timing, speedup policy, and no-public-API policy for private GPU evidence until
+the staged kernels and scene packets are measured.
+
 ## Cross-Plan Classification Policy
 
 - Use
