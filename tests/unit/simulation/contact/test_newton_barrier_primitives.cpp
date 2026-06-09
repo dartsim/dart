@@ -43,6 +43,7 @@
 #include <dart/simulation/detail/newton_barrier/tangent_stencil.hpp>
 #include <dart/simulation/detail/rigid_ipc_barrier.hpp>
 
+#include <Eigen/Eigenvalues>
 #include <gtest/gtest.h>
 
 #include <limits>
@@ -107,6 +108,18 @@ void expectScalarBarrierNear(
       actual.squaredActivationDistance,
       expected.squaredActivationDistance,
       1e-14);
+}
+
+//==============================================================================
+template <typename Derived>
+void expectSelfAdjointPsd(
+    const Eigen::MatrixBase<Derived>& matrix, const double tolerance = 1e-12)
+{
+  EXPECT_TRUE(matrix.isApprox(matrix.transpose(), tolerance));
+  const Eigen::SelfAdjointEigenSolver<typename Derived::PlainObject> solver(
+      matrix);
+  ASSERT_EQ(solver.info(), Eigen::Success);
+  EXPECT_GE(solver.eigenvalues().minCoeff(), -tolerance);
 }
 
 //==============================================================================
@@ -225,6 +238,68 @@ TEST(NewtonBarrierPrimitives, ArticulationSlidingAndRelativeSliding)
               .residual;
         });
   expectMatrixNear(relative.jacobian, numericalRelativeJacobian, 1e-10);
+}
+
+//==============================================================================
+TEST(NewtonBarrierPrimitives, ArticulationDistanceAndBoundedDistance)
+{
+  const Eigen::Vector3d pointA(0.35, -0.2, 0.45);
+  const Eigen::Vector3d pointB(-0.15, 0.1, 0.05);
+  const double targetDistance = 0.8;
+  const auto distance = nb::distanceConstraint(pointA, pointB, targetDistance);
+  EXPECT_NEAR(distance.distance, (pointA - pointB).norm(), 1e-14);
+  EXPECT_NEAR(distance.residual, distance.distance - targetDistance, 1e-14);
+
+  Eigen::Matrix<double, 6, 1> pairState;
+  pairState << pointA, pointB;
+  const auto numericalDistanceJacobian
+      = finiteDifferenceJacobian<1, 6>(pairState, [&](const auto& x) {
+          Eigen::Matrix<double, 1, 1> residual;
+          residual[0]
+              = nb::distanceConstraint(
+                    x.template head<3>(), x.template tail<3>(), targetDistance)
+                    .residual;
+          return residual;
+        });
+  expectMatrixNear(distance.jacobian, numericalDistanceJacobian, 1e-10);
+
+  const double lower = distance.distance - 0.05;
+  const double upper = distance.distance + 0.5;
+  const double activationDistance = 0.1;
+  const auto bounded = nb::boundedDistanceBarrier(
+      pointA, pointB, lower, upper, activationDistance, /*stiffness=*/2.0);
+  EXPECT_TRUE(nb::rangeBarrierFeasible(bounded.margins));
+  EXPECT_TRUE(bounded.active);
+  EXPECT_TRUE(bounded.value > 0.0);
+  EXPECT_NEAR(bounded.margins.lower, 0.05, 1e-14);
+  EXPECT_NEAR(bounded.margins.upper, 0.5, 1e-14);
+  expectSelfAdjointPsd(bounded.hessian);
+
+  const auto numericalBarrierGradient
+      = finiteDifferenceJacobian<1, 6>(pairState, [&](const auto& x) {
+          Eigen::Matrix<double, 1, 1> value;
+          value[0] = nb::boundedDistanceBarrier(
+                         x.template head<3>(),
+                         x.template tail<3>(),
+                         lower,
+                         upper,
+                         activationDistance,
+                         /*stiffness=*/2.0)
+                         .value;
+          return value;
+        });
+  expectMatrixNear(
+      bounded.gradient.transpose(), numericalBarrierGradient, 1e-8);
+
+  const auto infeasible = nb::boundedDistanceBarrier(
+      pointA,
+      pointB,
+      distance.distance + 0.1,
+      distance.distance + 0.5,
+      activationDistance);
+  EXPECT_FALSE(nb::rangeBarrierFeasible(infeasible.margins));
+  EXPECT_TRUE(infeasible.active);
+  EXPECT_TRUE(std::isfinite(infeasible.value));
 }
 
 //==============================================================================

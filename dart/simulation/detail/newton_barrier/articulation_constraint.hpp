@@ -35,6 +35,7 @@
 #include <Eigen/Geometry>
 
 #include <algorithm>
+#include <limits>
 
 #include <cmath>
 
@@ -106,6 +107,41 @@ struct RelativeSlidingConstraintResult
   double squaredNorm = 0.0;
 };
 
+struct DistanceConstraintResult
+{
+  double residual = 0.0;
+  double distance = 0.0;
+  Eigen::Matrix<double, 1, 6> jacobian = Eigen::Matrix<double, 1, 6>::Zero();
+};
+
+struct ScalarRangeMargins
+{
+  double lower = 0.0;
+  double upper = 0.0;
+  bool feasible = false;
+};
+
+struct ScalarRangeBarrierResult
+{
+  double value = 0.0;
+  double firstDerivative = 0.0;
+  double secondDerivative = 0.0;
+  ScalarRangeMargins margins;
+  bool activeLower = false;
+  bool activeUpper = false;
+  bool active = false;
+};
+
+struct BoundedDistanceBarrierResult
+{
+  double value = 0.0;
+  Eigen::Matrix<double, 6, 1> gradient = Eigen::Matrix<double, 6, 1>::Zero();
+  Eigen::Matrix<double, 6, 6> hessian = Eigen::Matrix<double, 6, 6>::Zero();
+  double distance = 0.0;
+  ScalarRangeMargins margins;
+  bool active = false;
+};
+
 struct ConeTwistCoordinates
 {
   double bendAngle = 0.0;
@@ -139,6 +175,149 @@ struct FixedPointConstraintResult
   result.residual = point - target;
   result.jacobian.setIdentity();
   result.squaredNorm = result.residual.squaredNorm();
+  return result;
+}
+
+//==============================================================================
+[[nodiscard]] inline DistanceConstraintResult distanceConstraint(
+    const Eigen::Vector3d& pointA,
+    const Eigen::Vector3d& pointB,
+    const double targetDistance)
+{
+  const Eigen::Vector3d offset = pointA - pointB;
+  const double distance = offset.norm();
+
+  DistanceConstraintResult result;
+  result.distance = distance;
+  result.residual = distance - targetDistance;
+  if (std::isfinite(distance) && distance > 0.0) {
+    const Eigen::Vector3d direction = offset / distance;
+    result.jacobian.leftCols<3>() = direction.transpose();
+    result.jacobian.rightCols<3>() = -direction.transpose();
+  }
+  return result;
+}
+
+//==============================================================================
+[[nodiscard]] inline ScalarRangeMargins scalarRangeMargins(
+    const double coordinate, const double lower, const double upper)
+{
+  ScalarRangeMargins margins;
+  margins.lower = coordinate - lower;
+  margins.upper = upper - coordinate;
+  margins.feasible = std::isfinite(margins.lower)
+                     && std::isfinite(margins.upper) && margins.lower > 0.0
+                     && margins.upper > 0.0;
+  return margins;
+}
+
+//==============================================================================
+[[nodiscard]] inline bool rangeBarrierFeasible(
+    const ScalarRangeMargins& margins)
+{
+  return margins.feasible;
+}
+
+namespace detail {
+
+struct MarginBarrierDerivatives
+{
+  double value = 0.0;
+  double firstDerivative = 0.0;
+  double secondDerivative = 0.0;
+  bool active = false;
+};
+
+//==============================================================================
+[[nodiscard]] inline MarginBarrierDerivatives marginBarrier(
+    const double margin,
+    const double activationDistance,
+    const double stiffness)
+{
+  MarginBarrierDerivatives result;
+  if (!std::isfinite(margin) || !std::isfinite(activationDistance)
+      || activationDistance <= 0.0 || !std::isfinite(stiffness)
+      || stiffness <= 0.0 || margin >= activationDistance) {
+    return result;
+  }
+
+  const double activeInteriorLimit = std::nextafter(activationDistance, 0.0);
+  const double floor = std::min(
+      std::max(
+          std::numeric_limits<double>::denorm_min(),
+          1e-16 * activationDistance),
+      activeInteriorLimit);
+  const double safeMargin = std::max(margin, floor);
+  const double offset = safeMargin - activationDistance;
+  const double logRatio = std::log(safeMargin / activationDistance);
+  const double offsetSquared = offset * offset;
+
+  result.value = stiffness * (-offsetSquared * logRatio);
+  result.firstDerivative
+      = stiffness * (-2.0 * offset * logRatio - offsetSquared / safeMargin);
+  result.secondDerivative = stiffness
+                            * (-2.0 * logRatio - 4.0 * offset / safeMargin
+                               + offsetSquared / (safeMargin * safeMargin));
+  result.active = true;
+  return result;
+}
+
+} // namespace detail
+
+//==============================================================================
+[[nodiscard]] inline ScalarRangeBarrierResult scalarRangeBarrier(
+    const double coordinate,
+    const double lower,
+    const double upper,
+    const double activationDistance,
+    const double stiffness = 1.0)
+{
+  const ScalarRangeMargins margins
+      = scalarRangeMargins(coordinate, lower, upper);
+  const auto lowerBarrier
+      = detail::marginBarrier(margins.lower, activationDistance, stiffness);
+  const auto upperBarrier
+      = detail::marginBarrier(margins.upper, activationDistance, stiffness);
+
+  ScalarRangeBarrierResult result;
+  result.value = lowerBarrier.value + upperBarrier.value;
+  result.firstDerivative
+      = lowerBarrier.firstDerivative - upperBarrier.firstDerivative;
+  result.secondDerivative
+      = lowerBarrier.secondDerivative + upperBarrier.secondDerivative;
+  result.margins = margins;
+  result.activeLower = lowerBarrier.active;
+  result.activeUpper = upperBarrier.active;
+  result.active = result.activeLower || result.activeUpper;
+  return result;
+}
+
+//==============================================================================
+[[nodiscard]] inline BoundedDistanceBarrierResult boundedDistanceBarrier(
+    const Eigen::Vector3d& pointA,
+    const Eigen::Vector3d& pointB,
+    const double lowerDistance,
+    const double upperDistance,
+    const double activationDistance,
+    const double stiffness = 1.0)
+{
+  const auto distance
+      = distanceConstraint(pointA, pointB, /*targetDistance=*/0.0);
+  const auto barrier = scalarRangeBarrier(
+      distance.distance,
+      lowerDistance,
+      upperDistance,
+      activationDistance,
+      stiffness);
+
+  BoundedDistanceBarrierResult result;
+  result.value = barrier.value;
+  result.distance = distance.distance;
+  result.margins = barrier.margins;
+  result.active = barrier.active;
+  result.gradient = barrier.firstDerivative * distance.jacobian.transpose();
+  result.hessian = std::max(0.0, barrier.secondDerivative)
+                   * (distance.jacobian.transpose() * distance.jacobian);
   return result;
 }
 
