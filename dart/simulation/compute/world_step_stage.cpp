@@ -1361,6 +1361,14 @@ struct SelfContactFrictionContact
 };
 
 //==============================================================================
+struct ProjectedNewtonMatrixFreeBlock3
+{
+  std::size_t rowNode = 0;
+  std::size_t colNode = 0;
+  Eigen::Matrix3d block = Eigen::Matrix3d::Zero();
+};
+
+//==============================================================================
 struct DeformableContactSolverScratch
 {
   std::vector<DeformableSurfaceTriangle> surfaceTriangles;
@@ -1405,6 +1413,13 @@ struct DeformableContactSolverScratch
   std::vector<std::array<std::size_t, 4>> projectedNewtonTetBlockNodes;
   std::vector<double> projectedNewtonBarrierBlocks;
   std::vector<std::array<std::size_t, 4>> projectedNewtonBarrierBlockNodes;
+  std::vector<ProjectedNewtonMatrixFreeBlock3> projectedNewtonMatrixFreeBlocks;
+  std::vector<Eigen::Matrix3d> projectedNewtonMatrixFreeDiagonalBlocks;
+  std::vector<Eigen::Matrix3d> projectedNewtonMatrixFreeInverseDiagonalBlocks;
+  Eigen::VectorXd projectedNewtonMatrixFreeResidual;
+  Eigen::VectorXd projectedNewtonMatrixFreePreconditionedResidual;
+  Eigen::VectorXd projectedNewtonMatrixFreeDirection;
+  Eigen::VectorXd projectedNewtonMatrixFreeHessianDirection;
 
   std::vector<double> groundFrictionNormalForce;
   std::vector<Eigen::Vector3d> groundFrictionNormalDirection;
@@ -1414,16 +1429,24 @@ struct DeformableContactSolverScratch
 //==============================================================================
 struct ProjectedNewtonMatrixFreeHessian
 {
-  struct Block3
+  ProjectedNewtonMatrixFreeHessian(
+      std::vector<ProjectedNewtonMatrixFreeBlock3>& blockStorage,
+      std::vector<Eigen::Matrix3d>& diagonalStorage,
+      std::vector<Eigen::Matrix3d>& inverseDiagonalStorage)
+    : blocks(blockStorage),
+      diagonalBlocks(diagonalStorage),
+      inverseDiagonalBlocks(inverseDiagonalStorage)
   {
-    std::size_t rowNode = 0;
-    std::size_t colNode = 0;
-    Eigen::Matrix3d block = Eigen::Matrix3d::Zero();
-  };
+  }
 
-  explicit ProjectedNewtonMatrixFreeHessian(std::size_t nodes)
-    : nodeCount(nodes), diagonalBlocks(nodes, Eigen::Matrix3d::Zero())
+  void reset(std::size_t nodes)
   {
+    nodeCount = nodes;
+    blocks.clear();
+    diagonalBlocks.resize(nodeCount);
+    for (auto& block : diagonalBlocks) {
+      block.setZero();
+    }
   }
 
   void addBlock3(
@@ -1435,21 +1458,20 @@ struct ProjectedNewtonMatrixFreeHessian
     }
   }
 
-  [[nodiscard]] Eigen::VectorXd multiply(const Eigen::VectorXd& x) const
+  void multiplyInto(const Eigen::VectorXd& x, Eigen::VectorXd& y) const
   {
-    Eigen::VectorXd y
-        = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(3 * nodeCount));
+    y.resize(static_cast<Eigen::Index>(3 * nodeCount));
+    y.setZero();
     for (const auto& entry : blocks) {
       y.segment<3>(static_cast<Eigen::Index>(3 * entry.rowNode))
           += entry.block
              * x.segment<3>(static_cast<Eigen::Index>(3 * entry.colNode));
     }
-    return y;
   }
 
   [[nodiscard]] bool factorBlockJacobi()
   {
-    inverseDiagonalBlocks.assign(nodeCount, Eigen::Matrix3d::Zero());
+    inverseDiagonalBlocks.resize(nodeCount);
     for (std::size_t i = 0; i < nodeCount; ++i) {
       Eigen::LLT<Eigen::Matrix3d> llt(diagonalBlocks[i]);
       if (llt.info() != Eigen::Success) {
@@ -1463,23 +1485,21 @@ struct ProjectedNewtonMatrixFreeHessian
     return true;
   }
 
-  [[nodiscard]] Eigen::VectorXd applyPreconditioner(
-      const Eigen::VectorXd& residual) const
+  void applyPreconditionerInto(
+      const Eigen::VectorXd& residual, Eigen::VectorXd& z) const
   {
-    Eigen::VectorXd z
-        = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(3 * nodeCount));
+    z.resize(static_cast<Eigen::Index>(3 * nodeCount));
     for (std::size_t i = 0; i < nodeCount; ++i) {
       z.segment<3>(static_cast<Eigen::Index>(3 * i))
           = inverseDiagonalBlocks[i]
             * residual.segment<3>(static_cast<Eigen::Index>(3 * i));
     }
-    return z;
   }
 
   std::size_t nodeCount = 0;
-  std::vector<Block3> blocks;
-  std::vector<Eigen::Matrix3d> diagonalBlocks;
-  std::vector<Eigen::Matrix3d> inverseDiagonalBlocks;
+  std::vector<ProjectedNewtonMatrixFreeBlock3>& blocks;
+  std::vector<Eigen::Matrix3d>& diagonalBlocks;
+  std::vector<Eigen::Matrix3d>& inverseDiagonalBlocks;
 };
 
 //==============================================================================
@@ -1487,12 +1507,17 @@ bool solveMatrixFreeConjugateGradient(
     ProjectedNewtonMatrixFreeHessian& hessian,
     const Eigen::VectorXd& rhs,
     Eigen::VectorXd& solution,
+    Eigen::VectorXd& residual,
+    Eigen::VectorXd& z,
+    Eigen::VectorXd& direction,
+    Eigen::VectorXd& hessianDirection,
     std::size_t& iterations,
     double& relativeResidual)
 {
   constexpr double kTolerance = 1e-8;
   const Eigen::Index maxIterations = 2 * rhs.size();
-  solution = Eigen::VectorXd::Zero(rhs.size());
+  solution.resize(rhs.size());
+  solution.setZero();
   iterations = 0;
   relativeResidual = 0.0;
 
@@ -1505,16 +1530,18 @@ bool solveMatrixFreeConjugateGradient(
     return true;
   }
 
-  Eigen::VectorXd residual = rhs;
-  Eigen::VectorXd z = hessian.applyPreconditioner(residual);
-  Eigen::VectorXd direction = z;
+  residual.resize(rhs.size());
+  residual = rhs;
+  hessian.applyPreconditionerInto(residual, z);
+  direction.resize(rhs.size());
+  direction = z;
   double rz = residual.dot(z);
   if (!std::isfinite(rz) || rz <= 0.0 || !direction.allFinite()) {
     return false;
   }
 
   for (Eigen::Index iter = 0; iter < maxIterations; ++iter) {
-    const Eigen::VectorXd hessianDirection = hessian.multiply(direction);
+    hessian.multiplyInto(direction, hessianDirection);
     const double curvature = direction.dot(hessianDirection);
     if (!std::isfinite(curvature) || curvature <= 0.0) {
       return false;
@@ -1533,13 +1560,14 @@ bool solveMatrixFreeConjugateGradient(
       return true;
     }
 
-    z = hessian.applyPreconditioner(residual);
+    hessian.applyPreconditionerInto(residual, z);
     const double nextRz = residual.dot(z);
     if (!std::isfinite(nextRz) || nextRz <= 0.0 || !z.allFinite()) {
       return false;
     }
     const double beta = nextRz / rz;
-    direction = z + beta * direction;
+    direction *= beta;
+    direction += z;
     if (!direction.allFinite()) {
       return false;
     }
@@ -4886,10 +4914,17 @@ void reserveSurfaceContactCandidateScratch(
   const std::size_t edgeCapacity = 3 * triangleCount;
   const std::size_t pointTriangleCapacity = 8 * (nodeCount + triangleCount);
   const std::size_t edgeEdgeCapacity = 12 * edgeCapacity;
+  // Motion-aware late-activation sweeps can overlap several static grid
+  // bands in one step, so reserve the swept broad-phase envelope rather than
+  // only the current-pose contact band.
+  const std::size_t sweptPointTriangleCapacity
+      = 32 * (nodeCount + triangleCount);
+  const std::size_t sweptEdgeEdgeCapacity = 48 * edgeCapacity;
 
   scratch.candidates.surfaceEdges.reserve(edgeCapacity);
-  scratch.candidates.pointTriangleCandidates.reserve(pointTriangleCapacity);
-  scratch.candidates.edgeEdgeCandidates.reserve(edgeEdgeCapacity);
+  scratch.candidates.pointTriangleCandidates.reserve(
+      sweptPointTriangleCapacity);
+  scratch.candidates.edgeEdgeCandidates.reserve(sweptEdgeEdgeCapacity);
   scratch.barrierCandidates.surfaceEdges.reserve(edgeCapacity);
   scratch.barrierCandidates.pointTriangleCandidates.reserve(
       pointTriangleCapacity);
@@ -4953,6 +4988,9 @@ void reserveProjectedNewtonScratch(
                                       + 144 * topology.tetrahedra.size()
                                       + 144 * barrierCandidateCount
                                       + 36 * nodeCount;
+  const std::size_t matrixFreeBlockEstimate
+      = 4 * nodeCount + 4 * model.edges.size() + 16 * topology.tetrahedra.size()
+        + 16 * barrierCandidateCount;
   scratch.projectedNewtonTriplets.reserve(tripletEstimate);
   scratch.projectedNewtonHessian.resize(dim, dim);
   scratch.projectedNewtonHessian.reserve(
@@ -4965,6 +5003,15 @@ void reserveProjectedNewtonScratch(
   scratch.projectedNewtonTetBlockNodes.reserve(topology.tetrahedra.size());
   scratch.projectedNewtonBarrierBlocks.reserve(144 * barrierCandidateCount);
   scratch.projectedNewtonBarrierBlockNodes.reserve(barrierCandidateCount);
+  scratch.projectedNewtonMatrixFreeBlocks.reserve(matrixFreeBlockEstimate);
+  scratch.projectedNewtonMatrixFreeDiagonalBlocks.reserve(nodeCount);
+  scratch.projectedNewtonMatrixFreeDiagonalBlocks.resize(nodeCount);
+  scratch.projectedNewtonMatrixFreeInverseDiagonalBlocks.reserve(nodeCount);
+  scratch.projectedNewtonMatrixFreeInverseDiagonalBlocks.resize(nodeCount);
+  scratch.projectedNewtonMatrixFreeResidual.resize(dim);
+  scratch.projectedNewtonMatrixFreePreconditionedResidual.resize(dim);
+  scratch.projectedNewtonMatrixFreeDirection.resize(dim);
+  scratch.projectedNewtonMatrixFreeHessianDirection.resize(dim);
 }
 
 //==============================================================================
@@ -6330,11 +6377,25 @@ bool computeProjectedNewtonDirection(
       = solverCache.projectedNewtonTriplets;
   triplets.clear();
   ProjectedNewtonMatrixFreeHessian matrixFreeHessian(
-      solveMatrixFree ? nodeCount : 0);
+      solverCache.projectedNewtonMatrixFreeBlocks,
+      solverCache.projectedNewtonMatrixFreeDiagonalBlocks,
+      solverCache.projectedNewtonMatrixFreeInverseDiagonalBlocks);
+  matrixFreeHessian.reset(solveMatrixFree ? nodeCount : 0);
   if (!solveMatrixFree) {
     triplets.reserve(tripletEstimate);
   } else {
-    matrixFreeHessian.blocks.reserve(tripletEstimate / 9u);
+    const std::size_t activeContactCount
+        = contactBarrier != nullptr && contactBarrier->candidates != nullptr
+              ? contactBarrier->candidates->pointTriangleCandidates.size()
+                    + contactBarrier->candidates->edgeEdgeCandidates.size()
+              : 0u;
+    const std::size_t matrixFreeBlockEstimate
+        = 4 * nodeCount + 4 * model.edges.size()
+          + (femElasticity != nullptr && femElasticity->tetrahedra != nullptr
+                 ? 16 * femElasticity->tetrahedra->size()
+                 : 0u)
+          + 16 * activeContactCount;
+    matrixFreeHessian.blocks.reserve(matrixFreeBlockEstimate);
   }
 
   const auto isFree = [&](std::size_t node) {
@@ -6805,7 +6866,15 @@ bool computeProjectedNewtonDirection(
     std::size_t cgIterations = 0;
     double cgError = 0.0;
     if (!solveMatrixFreeConjugateGradient(
-            matrixFreeHessian, rhs, solution, cgIterations, cgError)
+            matrixFreeHessian,
+            rhs,
+            solution,
+            solverCache.projectedNewtonMatrixFreeResidual,
+            solverCache.projectedNewtonMatrixFreePreconditionedResidual,
+            solverCache.projectedNewtonMatrixFreeDirection,
+            solverCache.projectedNewtonMatrixFreeHessianDirection,
+            cgIterations,
+            cgError)
         || !solution.allFinite()) {
       solverCache.newtonPatternValid = false;
       return false;

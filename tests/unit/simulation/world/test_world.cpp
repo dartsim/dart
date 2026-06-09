@@ -1075,7 +1075,8 @@ void configureDeformableSelfContactFrictionGridSceneWithShapeAndMotion(
     std::size_t cols,
     std::string_view bodyName,
     double gap,
-    const Eigen::Vector3d& upperLayerVelocity)
+    const Eigen::Vector3d& upperLayerVelocity,
+    bool useMatrixFreeLinearSolver = false)
 {
   namespace sx = dart::simulation;
 
@@ -1139,6 +1140,7 @@ void configureDeformableSelfContactFrictionGridSceneWithShapeAndMotion(
 
   options.edgeStiffness = 0.0;
   options.material.frictionCoefficient = 0.8;
+  options.material.useMatrixFreeLinearSolver = useMatrixFreeLinearSolver;
 
   world.addDeformableBody(bodyName, options);
 }
@@ -1205,6 +1207,19 @@ void configureDeformableSelfContactFrictionExtraDenseGridScene(
       "friction_extra_dense_production_grid",
       0.012,
       Eigen::Vector3d(0.35, 0.1, -0.08));
+}
+
+void configureDeformableSelfContactFrictionLateActiveMatrixFreeGridScene(
+    dart::simulation::World& world)
+{
+  configureDeformableSelfContactFrictionGridSceneWithShapeAndMotion(
+      world,
+      11,
+      11,
+      "friction_late_active_matrix_free_grid",
+      0.025,
+      Eigen::Vector3d(0.35, 0.1, -1.0),
+      true);
 }
 
 void configureDeformableSelfContactFrictionRectangularGridScene(
@@ -2279,6 +2294,9 @@ TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
       "deformable self-contact friction extra-dense production grid",
       configureDeformableSelfContactFrictionExtraDenseGridScene);
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "deformable self-contact friction late-active matrix-free grid",
+      configureDeformableSelfContactFrictionLateActiveMatrixFreeGridScene);
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "deformable self-contact friction rectangular grid",
       configureDeformableSelfContactFrictionRectangularGridScene);
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
@@ -2353,6 +2371,36 @@ TEST(World, DeformableSelfContactFrictionExtraDenseGridIsActive)
   EXPECT_GT(diagnostics.selfContactBarrierActiveContacts, 0u);
   EXPECT_GT(diagnostics.convergedActiveContactCount, 0u);
   EXPECT_GT(diagnostics.frictionDissipation, 0.0);
+}
+
+TEST(World, DeformableSelfContactFrictionLateActiveMatrixFreeGridIsActive)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  configureDeformableSelfContactFrictionLateActiveMatrixFreeGridScene(world);
+  world.enterSimulationMode();
+  std::size_t matrixFreeSolves = 0;
+  std::size_t maxActiveContacts = 0;
+  std::size_t maxConvergedContacts = 0;
+  double frictionDissipation = 0.0;
+  for (int i = 0; i < 4; ++i) {
+    world.step();
+    const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
+    matrixFreeSolves += diagnostics.projectedNewtonMatrixFreeSolves;
+    maxActiveContacts = std::max(
+        maxActiveContacts, diagnostics.selfContactBarrierActiveContacts);
+    maxConvergedContacts = std::max(
+        maxConvergedContacts, diagnostics.convergedActiveContactCount);
+    frictionDissipation += diagnostics.frictionDissipation;
+  }
+  const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
+  EXPECT_EQ(diagnostics.bodyCount, 1u);
+  EXPECT_EQ(diagnostics.nodeCount, 2u * 11u * 11u);
+  EXPECT_GT(matrixFreeSolves, 0u);
+  EXPECT_GT(maxActiveContacts, 0u);
+  EXPECT_GT(maxConvergedContacts, 0u);
+  EXPECT_GT(frictionDissipation, 0.0);
 }
 
 TEST(World, DeformableSelfContactFrictionRectangularGridIsActive)
@@ -2757,6 +2805,9 @@ TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "deformable self-contact friction extra-dense production grid",
       configureDeformableSelfContactFrictionExtraDenseGridScene);
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "deformable self-contact friction late-active matrix-free grid",
+      configureDeformableSelfContactFrictionLateActiveMatrixFreeGridScene);
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "deformable self-contact friction rectangular grid",
       configureDeformableSelfContactFrictionRectangularGridScene);
