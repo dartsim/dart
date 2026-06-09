@@ -291,8 +291,9 @@
       contact paths. Mixed/different-DOF, stacked, and coupled multi-row
       cross-contact boxed-LCP fallback scenes now have base-allocator
       no-growth gates and first baked-step global heap no-allocation gates.
-      Five-multibody, eight-multibody, and 12-multibody stacked contact sets
-      extend the boxed-LCP fallback gate beyond the original small scenes.
+      Five-multibody, eight-multibody, 12-multibody, and 16-multibody stacked
+      contact sets extend the boxed-LCP fallback gate beyond the original small
+      scenes.
       Broader solver coverage, including still-larger production contact sets
       and default-solver deformable storage, remains open before making a full
       zero-allocation claim. The
@@ -553,10 +554,11 @@ debugging, profiling, optimization experiments, and ImGui visualization.
    allocation tests to remaining solver scratch step paths. The rigid-body,
    non-cross articulated, same-DOF sequential cross-articulated, and boxed-LCP
    mixed/different-DOF, stacked, coupled multi-row, larger stacked, and
-   extended stacked cross-articulated guards plus a disconnected multi-island
-   mixed rigid/articulated contact guard now cover World base-allocator growth
-   and first baked-step global heap allocation by priming unified constraint
-   scratch at `enterSimulationMode()`. The current deformable friction guard
+   extended plus dense production stacked cross-articulated guards plus a
+   disconnected multi-island mixed rigid/articulated contact guard now cover
+   World base-allocator growth and first baked-step global heap allocation by
+   priming unified constraint scratch at `enterSimulationMode()`. The current
+   deformable friction guard
    scales the same topology-reserved candidate/friction scratch, including
    swept-AABB line-search CCD capacity, from patch, 5x5, 7x7, and 9x9 grids to
    active 11x11, 13x13, and 15x15 square grids plus 9x13, 7x17, and 17x7
