@@ -261,9 +261,12 @@
       self-contact candidate buffers now reserve the swept late-activation
       envelope during bake, and both the direct sparse and matrix-free
       projected-Newton paths now cover square and rectangular late-activating
-      self-contact without growing step-loop candidate storage. The matrix-free
-      path also reuses solver-owned Hessian block plus CG vector scratch
-      instead of allocating local solve temporaries.
+      self-contact without growing step-loop candidate storage. A notched,
+      jittered 13x17 two-layer production self-contact mesh now exercises the
+      same direct-sparse default solver path through topology-scaled scratch
+      rather than square-grid assumptions. The matrix-free path also reuses
+      solver-owned Hessian block plus CG vector scratch instead of allocating
+      local solve temporaries.
       AVBD ground contact/friction rows and
       self-contact normal/friction rows now reuse row-inventory and
       self-contact adjacency storage, including previous friction warm-start
@@ -320,11 +323,12 @@
       grid, an 11x11 two-layer extended production grid, a 13x13 two-layer
       dense production grid, a 15x15 extra-dense two-layer production grid,
       a 9x13 non-square two-layer production grid, a 7x17 wide non-square
-      production grid, a 17x7 tall non-square production grid, and an
-      11x11 late-active two-layer direct-sparse plus matrix-free grid that
-      starts outside the self-contact barrier band and enters it during the
-      counted baked steps, with the same late-active direct-sparse plus
-      matrix-free coverage for a 9x13 rectangular grid.
+      production grid, a 17x7 tall non-square production grid, a notched and
+      jittered 13x17 irregular direct-sparse production grid, and an 11x11
+      late-active two-layer direct-sparse plus matrix-free grid that starts
+      outside the self-contact barrier band and enters it during the counted
+      baked steps, with the same late-active direct-sparse plus matrix-free
+      coverage for a 9x13 rectangular grid.
       The
       larger-grid guards also assert
       non-vacuous solver activity through public deformable diagnostics: active
@@ -334,9 +338,8 @@
       ground contact/friction rows, AVBD self-contact normal/friction rows
       including a 5x9 rectangular grid row workload, and an active rigid AVBD
       penetrating contact plus no-contact fixed-joint rows.
-      Additional larger or more irregular production-scale frictional
-      deformable sets still need no-growth gates before making the full
-      deformable claim.
+      Additional still-larger production-scale frictional deformable sets still
+      need no-growth gates before making the full deformable claim.
 - [ ] Phase 6: Add memory-layout profiler/debugger surfaces and GUI
       visualization. `MemoryAllocatorDebugger` now exposes structured live
       bytes, peak live bytes, and live allocation count; `MemoryManager` and

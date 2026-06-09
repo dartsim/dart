@@ -1239,6 +1239,116 @@ void configureDeformableSelfContactFrictionExtraDenseGridScene(
       Eigen::Vector3d(0.35, 0.1, -0.08));
 }
 
+void configureDeformableSelfContactFrictionIrregularProductionGridScene(
+    dart::simulation::World& world)
+{
+  namespace sx = dart::simulation;
+
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.01);
+
+  constexpr std::size_t rows = 13;
+  constexpr std::size_t cols = 17;
+  constexpr double spacing = 0.42;
+  constexpr double gap = 0.012;
+  const std::size_t layerNodeCount = rows * cols;
+  sx::DeformableBodyOptions options;
+  options.positions.reserve(2 * layerNodeCount);
+  options.velocities.reserve(2 * layerNodeCount);
+  options.masses.assign(2 * layerNodeCount, 1.0);
+  options.fixedNodes.reserve(layerNodeCount);
+
+  const auto nodeIndex
+      = [cols, layerNodeCount](
+            std::size_t layer, std::size_t row, std::size_t col) {
+          return layer * layerNodeCount + row * cols + col;
+        };
+  const auto planarPosition = [rows, cols](std::size_t row, std::size_t col) {
+    const auto signedRow = static_cast<int>(row);
+    const auto signedCol = static_cast<int>(col);
+    const double xJitter
+        = 0.026
+          * static_cast<double>(static_cast<int>((row + 2 * col) % 3) - 1);
+    const double yJitter
+        = 0.018
+          * static_cast<double>(static_cast<int>((2 * row + col) % 5) - 2);
+    return Eigen::Vector2d(
+        (static_cast<double>(signedCol) - 0.5 * static_cast<double>(cols - 1))
+                * spacing
+            + 0.025 * static_cast<double>(signedRow) + xJitter,
+        (static_cast<double>(signedRow) - 0.5 * static_cast<double>(rows - 1))
+                * spacing
+            + yJitter);
+  };
+
+  for (std::size_t layer = 0; layer < 2; ++layer) {
+    const double z = layer == 0 ? 0.0 : gap;
+    const Eigen::Vector3d velocity = layer == 0
+                                         ? Eigen::Vector3d::Zero()
+                                         : Eigen::Vector3d(0.42, -0.18, -0.08);
+    for (std::size_t row = 0; row < rows; ++row) {
+      for (std::size_t col = 0; col < cols; ++col) {
+        const Eigen::Vector2d xy = planarPosition(row, col);
+        options.positions.emplace_back(xy.x(), xy.y(), z);
+        options.velocities.push_back(velocity);
+        if (layer == 0) {
+          options.fixedNodes.push_back(nodeIndex(layer, row, col));
+        }
+      }
+    }
+  }
+
+  const auto keepCell = [](std::size_t row, std::size_t col) {
+    const bool centralNotch = row >= 4 && row <= 7 && col >= 6 && col <= 10;
+    const bool boundaryCut
+        = (row == 1 && col % 5 == 0) || (row == 10 && col % 4 == 1);
+    return !centralNotch && !boundaryCut;
+  };
+
+  options.surfaceTriangles.reserve(4 * (rows - 1) * (cols - 1));
+  for (std::size_t row = 0; row + 1 < rows; ++row) {
+    for (std::size_t col = 0; col + 1 < cols; ++col) {
+      if (!keepCell(row, col)) {
+        continue;
+      }
+
+      const auto a = nodeIndex(0, row, col);
+      const auto b = nodeIndex(0, row, col + 1);
+      const auto c = nodeIndex(0, row + 1, col + 1);
+      const auto d = nodeIndex(0, row + 1, col);
+      const auto e = nodeIndex(1, row, col);
+      const auto f = nodeIndex(1, row, col + 1);
+      const auto g = nodeIndex(1, row + 1, col + 1);
+      const auto h = nodeIndex(1, row + 1, col);
+
+      if ((row + col) % 2 == 0) {
+        options.surfaceTriangles.push_back(
+            sx::DeformableSurfaceTriangle{a, b, c});
+        options.surfaceTriangles.push_back(
+            sx::DeformableSurfaceTriangle{a, c, d});
+        options.surfaceTriangles.push_back(
+            sx::DeformableSurfaceTriangle{e, g, f});
+        options.surfaceTriangles.push_back(
+            sx::DeformableSurfaceTriangle{e, h, g});
+      } else {
+        options.surfaceTriangles.push_back(
+            sx::DeformableSurfaceTriangle{a, b, d});
+        options.surfaceTriangles.push_back(
+            sx::DeformableSurfaceTriangle{b, c, d});
+        options.surfaceTriangles.push_back(
+            sx::DeformableSurfaceTriangle{e, h, f});
+        options.surfaceTriangles.push_back(
+            sx::DeformableSurfaceTriangle{f, h, g});
+      }
+    }
+  }
+
+  options.edgeStiffness = 0.0;
+  options.material.frictionCoefficient = 0.8;
+
+  world.addDeformableBody("friction_irregular_production_grid", options);
+}
+
 void configureDeformableSelfContactFrictionLateActiveGridScene(
     dart::simulation::World& world)
 {
@@ -2361,6 +2471,9 @@ TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
       "deformable self-contact friction extra-dense production grid",
       configureDeformableSelfContactFrictionExtraDenseGridScene);
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "deformable self-contact friction irregular production grid",
+      configureDeformableSelfContactFrictionIrregularProductionGridScene);
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "deformable self-contact friction late-active direct grid",
       configureDeformableSelfContactFrictionLateActiveGridScene);
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
@@ -2445,6 +2558,24 @@ TEST(World, DeformableSelfContactFrictionExtraDenseGridIsActive)
   const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
   EXPECT_EQ(diagnostics.bodyCount, 1u);
   EXPECT_EQ(diagnostics.nodeCount, 2u * 15u * 15u);
+  EXPECT_GT(diagnostics.selfContactBarrierActiveContacts, 0u);
+  EXPECT_GT(diagnostics.convergedActiveContactCount, 0u);
+  EXPECT_GT(diagnostics.frictionDissipation, 0.0);
+}
+
+TEST(World, DeformableSelfContactFrictionIrregularProductionGridIsActive)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  configureDeformableSelfContactFrictionIrregularProductionGridScene(world);
+  world.enterSimulationMode();
+
+  world.step();
+
+  const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
+  EXPECT_EQ(diagnostics.bodyCount, 1u);
+  EXPECT_EQ(diagnostics.nodeCount, 2u * 13u * 17u);
   EXPECT_GT(diagnostics.selfContactBarrierActiveContacts, 0u);
   EXPECT_GT(diagnostics.convergedActiveContactCount, 0u);
   EXPECT_GT(diagnostics.frictionDissipation, 0.0);
@@ -2933,6 +3064,9 @@ TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "deformable self-contact friction extra-dense production grid",
       configureDeformableSelfContactFrictionExtraDenseGridScene);
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "deformable self-contact friction irregular production grid",
+      configureDeformableSelfContactFrictionIrregularProductionGridScene);
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "deformable self-contact friction late-active direct grid",
       configureDeformableSelfContactFrictionLateActiveGridScene);
