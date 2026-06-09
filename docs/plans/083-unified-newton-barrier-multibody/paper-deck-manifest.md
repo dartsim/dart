@@ -37,6 +37,15 @@ benchmark/profiling packets, and visual evidence matching the row.
 - `manual`: the row is intentionally proven by a documented manual run.
 - `not-applicable`: a maintainer-visible rationale excludes the row.
 
+## CPU Scene Corpus Sidecar
+
+Phase 6 tracks py-demo, visual-evidence, and CPU benchmark obligations in
+[`cpu-scene-corpus.json`](cpu-scene-corpus.json), validated by
+`scripts/check_plan083_cpu_scene_corpus.py`. The sidecar is the row-level source
+for launchable planned py-demo placeholders, smoke commands, long-horizon
+capture commands, benchmark/profile packet paths, invariants, and current
+limitations until the paper/deck scenes are reproduced.
+
 ## Cross-Plan Classification Policy
 
 - Use
