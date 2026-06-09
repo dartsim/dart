@@ -161,6 +161,36 @@ TEST(NewtonBarrierPrimitives, ArticulationPointConnectionAndFixedPoint)
 }
 
 //==============================================================================
+TEST(NewtonBarrierPrimitives, ArticulationHingeAndConeTwist)
+{
+  const Eigen::Vector3d axisA = Eigen::Vector3d::UnitZ();
+  const Eigen::Vector3d axisB
+      = Eigen::AngleAxisd(0.25, Eigen::Vector3d::UnitY())
+        * Eigen::Vector3d::UnitZ();
+
+  const auto hinge = nb::hingeAxisConstraint(axisA, axisB);
+  EXPECT_TRUE(hinge.residual.isApprox(axisA.cross(axisB), 1e-14));
+  EXPECT_NEAR(hinge.squaredNorm, std::pow(std::sin(0.25), 2), 1e-14);
+
+  const auto aligned = nb::hingeAxisConstraint(axisA, 2.0 * axisA);
+  EXPECT_TRUE(aligned.residual.isZero(1e-14));
+  EXPECT_NEAR(aligned.squaredNorm, 0.0, 1e-14);
+
+  const double bend = 0.35;
+  const double twist = -0.45;
+  const Eigen::AngleAxisd bendRotation(bend, Eigen::Vector3d::UnitY());
+  const Eigen::AngleAxisd twistRotation(twist, axisA);
+  const Eigen::Vector3d referenceA = Eigen::Vector3d::UnitX();
+  const Eigen::Vector3d coneAxisB = bendRotation * axisA;
+  const Eigen::Vector3d referenceB = bendRotation * twistRotation * referenceA;
+
+  const auto cone
+      = nb::coneTwistCoordinates(axisA, referenceA, coneAxisB, referenceB);
+  EXPECT_NEAR(cone.bendAngle, bend, 1e-14);
+  EXPECT_NEAR(cone.twistAngle, twist, 1e-14);
+}
+
+//==============================================================================
 TEST(NewtonBarrierPrimitives, DeformableContactHeadersForwardSharedTypes)
 {
   static_assert(std::is_same_v<dc::Vector6d, nb::Vector6d>);

@@ -32,14 +32,68 @@
 #pragma once
 
 #include <Eigen/Core>
+#include <Eigen/Geometry>
+
+#include <algorithm>
+
+#include <cmath>
 
 namespace dart::simulation::detail::newton_barrier {
+
+namespace detail {
+
+//==============================================================================
+[[nodiscard]] inline Eigen::Vector3d normalizedOr(
+    const Eigen::Vector3d& vector, const Eigen::Vector3d& fallback)
+{
+  const double norm = vector.norm();
+  if (std::isfinite(norm) && norm > 0.0) {
+    return vector / norm;
+  }
+  return fallback.normalized();
+}
+
+//==============================================================================
+[[nodiscard]] inline Eigen::Vector3d perpendicularUnit(
+    const Eigen::Vector3d& axis)
+{
+  const Eigen::Vector3d candidate = std::abs(axis.x()) < 0.9
+                                        ? Eigen::Vector3d::UnitX()
+                                        : Eigen::Vector3d::UnitY();
+  return (candidate - axis * axis.dot(candidate)).normalized();
+}
+
+//==============================================================================
+[[nodiscard]] inline Eigen::Vector3d projectedUnitOr(
+    const Eigen::Vector3d& vector, const Eigen::Vector3d& normal)
+{
+  const Eigen::Vector3d projected = vector - normal * normal.dot(vector);
+  const double norm = projected.norm();
+  if (std::isfinite(norm) && norm > 0.0) {
+    return projected / norm;
+  }
+  return perpendicularUnit(normal);
+}
+
+} // namespace detail
 
 struct PointConnectionConstraintResult
 {
   Eigen::Vector3d residual = Eigen::Vector3d::Zero();
   Eigen::Matrix<double, 3, 6> jacobian = Eigen::Matrix<double, 3, 6>::Zero();
   double squaredNorm = 0.0;
+};
+
+struct HingeAxisConstraintResult
+{
+  Eigen::Vector3d residual = Eigen::Vector3d::Zero();
+  double squaredNorm = 0.0;
+};
+
+struct ConeTwistCoordinates
+{
+  double bendAngle = 0.0;
+  double twistAngle = 0.0;
 };
 
 struct FixedPointConstraintResult
@@ -70,6 +124,47 @@ struct FixedPointConstraintResult
   result.jacobian.setIdentity();
   result.squaredNorm = result.residual.squaredNorm();
   return result;
+}
+
+//==============================================================================
+[[nodiscard]] inline HingeAxisConstraintResult hingeAxisConstraint(
+    const Eigen::Vector3d& axisA, const Eigen::Vector3d& axisB)
+{
+  const Eigen::Vector3d unitA
+      = detail::normalizedOr(axisA, Eigen::Vector3d::UnitZ());
+  const Eigen::Vector3d unitB = detail::normalizedOr(axisB, unitA);
+
+  HingeAxisConstraintResult result;
+  result.residual = unitA.cross(unitB);
+  result.squaredNorm = result.residual.squaredNorm();
+  return result;
+}
+
+//==============================================================================
+[[nodiscard]] inline ConeTwistCoordinates coneTwistCoordinates(
+    const Eigen::Vector3d& axisA,
+    const Eigen::Vector3d& referenceA,
+    const Eigen::Vector3d& axisB,
+    const Eigen::Vector3d& referenceB)
+{
+  const Eigen::Vector3d unitA
+      = detail::normalizedOr(axisA, Eigen::Vector3d::UnitZ());
+  const Eigen::Vector3d unitB = detail::normalizedOr(axisB, unitA);
+  const Eigen::Vector3d refA = detail::projectedUnitOr(referenceA, unitA);
+  const Eigen::Vector3d refB = detail::projectedUnitOr(referenceB, unitB);
+
+  ConeTwistCoordinates coordinates;
+  coordinates.bendAngle = std::atan2(
+      unitA.cross(unitB).norm(), std::clamp(unitA.dot(unitB), -1.0, 1.0));
+
+  const Eigen::Quaterniond alignBToA
+      = Eigen::Quaterniond::FromTwoVectors(unitB, unitA);
+  const Eigen::Vector3d alignedRefB
+      = detail::projectedUnitOr(alignBToA * refB, unitA);
+  coordinates.twistAngle = std::atan2(
+      unitA.dot(refA.cross(alignedRefB)),
+      std::clamp(refA.dot(alignedRefB), -1.0, 1.0));
+  return coordinates;
 }
 
 } // namespace dart::simulation::detail::newton_barrier
