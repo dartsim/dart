@@ -65,7 +65,7 @@ Support abbreviations:
   articulated unified-contact
   benchmark rows for manually assembled fixed-base three-axis prismatic
   link-ground, link-vs-dynamic-rigid, and cross-multibody link-vs-link through
-  48-contact
+  64-contact
   snapshots,
   serial and DART 7 `ParallelExecutor` independent-problem batch benchmark
   packets, and world-contact benchmark rows that compare all
@@ -1099,11 +1099,11 @@ The current local evidence for this task is:
   previously passed locally for all 96
   `BM_LcpArticulatedUnifiedContact/FrictionIndex/{Ground,RigidImpact,CrossLinkImpact}/<solver>/{1,4}`
   rows. The benchmark now also registers 8-contact, 16-contact, 24-contact, and
-  32-contact and 48-contact rows, so these rows manually
+  32-contact, 48-contact, and 64-contact rows, so these rows manually
   assemble fixed-base three-axis prismatic `LinkContact` snapshots through
   `assembleMultibodyLinkContactProblem` and `assembleUnifiedConstraintProblem`,
   then compare all 16 friction-index-capable solvers on identical 3-row,
-  12-row, 24-row, 48-row, 72-row, 96-row, and 144-row LCPs. The cross-link rows complete a second articulated
+  12-row, 24-row, 48-row, 72-row, 96-row, 144-row, and 192-row LCPs. The cross-link rows complete a second articulated
   endpoint for a separate multibody, so they exercise the unified contact
   matrix's cross-multibody block. Focused default, SIMD-enabled, and
   CUDA-enabled
@@ -1128,6 +1128,13 @@ The current local evidence for this task is:
   runs reported 48 48-contact rows with `contract_ok=1`, `contact_count=48`,
   `problem_size=144`, 16 rows per articulated contact case,
   `multibody_count=48/96`, and expected backend build-state counters; the
+  maximum reported residual and complementarity counters were
+  `8.9363740896075683e-7`.
+  Focused default, SIMD-enabled, and CUDA-enabled
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpArticulatedUnifiedContact/FrictionIndex/.+/.+/64$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  runs reported 48 64-contact rows with `contract_ok=1`, `contact_count=64`,
+  `problem_size=192`, 16 rows per articulated contact case,
+  `multibody_count=64/128`, and expected backend build-state counters; the
   maximum reported residual and complementarity counters were
   `8.9363740896075683e-7`.
   This is articulated unified-contact LCP assembly evidence, not
