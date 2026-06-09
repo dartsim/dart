@@ -2610,6 +2610,104 @@ TEST(BoxedLcpContact, TwelveSphereStackWorldContactSnapshotSatisfiesLcpContract)
 }
 
 //==============================================================================
+// A thirteen-sphere stack extends the direct coupled-stack snapshot boundary to
+// a 39-row friction-index LCP while still avoiding public-step stability
+// claims.
+TEST(
+    BoxedLcpContact,
+    ThirteenSphereStackWorldContactSnapshotSatisfiesLcpContract)
+{
+  constexpr double kFriction = 0.6;
+  constexpr int kSphereCount = 13;
+
+  auto lcp = buildSphereStackScene(kSphereCount, kFriction, true);
+
+  const std::vector<sx::Contact> contacts = lcp->collide();
+  ASSERT_EQ(contacts.size(), static_cast<std::size_t>(kSphereCount));
+
+  const sx::detail::BoxedLcpContactSnapshot snapshot
+      = sx::detail::solveBoxedLcpContacts(
+          sx::detail::registryOf(*lcp), contacts, lcp->getTimeStep());
+
+  expectBoxedFrictionIndexSnapshot(
+      snapshot, kFriction, kSphereCount, kSphereCount);
+  EXPECT_GT(maxNormalContactCoupling(snapshot), 1e-6);
+}
+
+//==============================================================================
+// A fourteen-sphere stack extends the direct coupled-stack snapshot boundary to
+// a 42-row friction-index LCP while still avoiding public-step stability
+// claims.
+TEST(
+    BoxedLcpContact,
+    FourteenSphereStackWorldContactSnapshotSatisfiesLcpContract)
+{
+  constexpr double kFriction = 0.6;
+  constexpr int kSphereCount = 14;
+
+  auto lcp = buildSphereStackScene(kSphereCount, kFriction, true);
+
+  const std::vector<sx::Contact> contacts = lcp->collide();
+  ASSERT_EQ(contacts.size(), static_cast<std::size_t>(kSphereCount));
+
+  const sx::detail::BoxedLcpContactSnapshot snapshot
+      = sx::detail::solveBoxedLcpContacts(
+          sx::detail::registryOf(*lcp), contacts, lcp->getTimeStep());
+
+  expectBoxedFrictionIndexSnapshot(
+      snapshot, kFriction, kSphereCount, kSphereCount);
+  EXPECT_GT(maxNormalContactCoupling(snapshot), 1e-6);
+}
+
+//==============================================================================
+// A fifteen-sphere stack extends the direct coupled-stack snapshot boundary to
+// a 45-row friction-index LCP while still avoiding public-step stability
+// claims.
+TEST(
+    BoxedLcpContact, FifteenSphereStackWorldContactSnapshotSatisfiesLcpContract)
+{
+  constexpr double kFriction = 0.6;
+  constexpr int kSphereCount = 15;
+
+  auto lcp = buildSphereStackScene(kSphereCount, kFriction, true);
+
+  const std::vector<sx::Contact> contacts = lcp->collide();
+  ASSERT_EQ(contacts.size(), static_cast<std::size_t>(kSphereCount));
+
+  const sx::detail::BoxedLcpContactSnapshot snapshot
+      = sx::detail::solveBoxedLcpContacts(
+          sx::detail::registryOf(*lcp), contacts, lcp->getTimeStep());
+
+  expectBoxedFrictionIndexSnapshot(
+      snapshot, kFriction, kSphereCount, kSphereCount);
+  EXPECT_GT(maxNormalContactCoupling(snapshot), 1e-6);
+}
+
+//==============================================================================
+// A sixteen-sphere stack extends the direct coupled-stack snapshot boundary to
+// a 48-row friction-index LCP while still avoiding public-step stability
+// claims.
+TEST(
+    BoxedLcpContact, SixteenSphereStackWorldContactSnapshotSatisfiesLcpContract)
+{
+  constexpr double kFriction = 0.6;
+  constexpr int kSphereCount = 16;
+
+  auto lcp = buildSphereStackScene(kSphereCount, kFriction, true);
+
+  const std::vector<sx::Contact> contacts = lcp->collide();
+  ASSERT_EQ(contacts.size(), static_cast<std::size_t>(kSphereCount));
+
+  const sx::detail::BoxedLcpContactSnapshot snapshot
+      = sx::detail::solveBoxedLcpContacts(
+          sx::detail::registryOf(*lcp), contacts, lcp->getTimeStep());
+
+  expectBoxedFrictionIndexSnapshot(
+      snapshot, kFriction, kSphereCount, kSphereCount);
+  EXPECT_GT(maxNormalContactCoupling(snapshot), 1e-6);
+}
+
+//==============================================================================
 // End-to-end DART 7 World stepping for coupled contacts: a 3-sphere stack
 // advances through the public BoxedLcp path for many time steps. This checks
 // motion-level invariants for the same shared-body contact topology validated

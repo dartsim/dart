@@ -340,10 +340,11 @@
       SIMD-enabled, and CUDA-enabled runs satisfy the LCP contract; no
       10-sphere public-step invariant is claimed.
 - [x] Extended DART 7 boxed-LCP coupled stack snapshot and assembly evidence to
-      11- and 12-sphere vertical stacks, validating 11-contact/33-row and
-      12-contact/36-row boxed/findex LCP snapshots assembled from shared
-      dynamic bodies. Focused default build rows satisfy the LCP contract; no
-      11-/12-sphere public-step invariant is claimed.
+      11-, 12-, 13-, 14-, 15-, and 16-sphere vertical stacks, validating
+      11-/12-/13-/14-/15-/16-contact and 33-/36-/39-/42-/45-/48-row
+      boxed/findex LCP snapshots assembled from shared dynamic bodies. Focused
+      default build rows satisfy the LCP contract; no 11+-sphere public-step
+      invariant is claimed.
 - [x] Added DART 7 world-contact `BM_LCP_COMPARE` rows that run every
       friction-index-capable solver on the same boxed-LCP snapshots assembled
       from 1, 2, and 4 separated sphere-ground contacts, plus a
@@ -1550,6 +1551,17 @@ tradeoffs evidence based.
   11-/12-sphere public-step invariant is claimed. The focused
   `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.ElevenSphereStackWorldContactSnapshotSatisfiesLcpContract:BoxedLcpContact.TwelveSphereStackWorldContactSnapshotSatisfiesLcpContract' --gtest_brief=1`
   run passed both tests in the default build.
+  `BoxedLcpContact.ThirteenSphereStackWorldContactSnapshotSatisfiesLcpContract`,
+  `BoxedLcpContact.FourteenSphereStackWorldContactSnapshotSatisfiesLcpContract`,
+  `BoxedLcpContact.FifteenSphereStackWorldContactSnapshotSatisfiesLcpContract`,
+  and
+  `BoxedLcpContact.SixteenSphereStackWorldContactSnapshotSatisfiesLcpContract`
+  extend the same direct snapshot path to 13-, 14-, 15-, and 16-sphere stacks
+  with 13/14/15/16 contacts and 39/42/45/48 LCP rows. This is snapshot
+  evidence only; no 13-/14-/15-/16-sphere public-step invariant is claimed.
+  The focused
+  `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.ThirteenSphereStackWorldContactSnapshotSatisfiesLcpContract:BoxedLcpContact.FourteenSphereStackWorldContactSnapshotSatisfiesLcpContract:BoxedLcpContact.FifteenSphereStackWorldContactSnapshotSatisfiesLcpContract:BoxedLcpContact.SixteenSphereStackWorldContactSnapshotSatisfiesLcpContract' --gtest_brief=1`
+  run passed all four tests in the default build.
   The focused
   `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.*WorldContactSnapshot*'`
   run passed the single-contact and two-contact sphere-ground snapshot tests,
@@ -1851,7 +1863,7 @@ tradeoffs evidence based.
   These snapshots include a ground contact and sphere-sphere contacts,
   so the Delassus system couples multiple contacts through shared dynamic
   bodies. The target also registers
-  `BM_LcpWorldStackContactAssembly_BoxedLcp/{2,3,4,5,6,7,8,9,10,11,12}`, which
+  `BM_LcpWorldStackContactAssembly_BoxedLcp/{2,3,4,5,6,7,8,9,10,11,12,13,14,15,16}`, which
   rebuilds the stack world, calls `World::collide()`, assembles/solves through
   `detail::solveBoxedLcpContacts`, and validates the solved snapshot. The
   focused 4-sphere run
@@ -1892,9 +1904,15 @@ tradeoffs evidence based.
   run reported `contract_ok=1` for the 11- and 12-sphere assembly rows with
   `sphere_count=11/12`, `contact_count=11/12`, and `problem_size=33/36`; no
   11-/12-sphere solver-comparison or public-step rows are claimed.
-  The
-  CUDA-enabled rows are CPU solver benchmark rows in that build tree, not CUDA
-  LCP kernel execution.
+  The focused default
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldStackContactAssembly_BoxedLcp/(13|14|15|16)$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_format=json`
+  run reported `contract_ok=1` for the 13-, 14-, 15-, and 16-sphere assembly
+  rows with `sphere_count=13/14/15/16`, `contact_count=13/14/15/16`, and
+  `problem_size=39/42/45/48`; no 13-/14-/15-/16-sphere solver-comparison or
+  public-step rows are claimed.
+  The CUDA-enabled solver-comparison rows above are CPU solver benchmark rows
+  in that build tree, not CUDA LCP kernel execution; the 11+-sphere assembly
+  rows cited here are default-build CPU assembly rows.
   Focused default, SIMD-enabled, and CUDA-enabled
   `BM_LcpWorldStackContactAssembly_BoxedLcp/5` runs also passed with
   `contract_ok=1`, `sphere_count=5`, `contact_count=5`, and `problem_size=15`;
@@ -2388,7 +2406,7 @@ tradeoffs evidence based.
   `NNCG`, plus 7-sphere rows for all of those solvers except `NNCG` and
   `RedBlackGaussSeidel`, plus 8-/9-/10-sphere rows for the narrower passing solver
   subset. Stack assembly/solve benchmark rows cover 2-, 3-, 4-, 5-, 6-, 7-,
-  8-, 9-, 10-, 11-, and 12-sphere scenes.
+  8-, 9-, 10-, 11-, 12-, 13-, 14-, 15-, and 16-sphere scenes.
 - Added mixed DART 7 world-contact batch benchmark rows that compare all
   friction-index-capable solvers over the same 5-problem separated-contact and
   stacked-contact snapshot batch, both serially and through the experimental
@@ -2480,12 +2498,12 @@ tradeoffs evidence based.
   over the 1/2/4 separated-contact and 2/3 stack snapshots, stress
   mixed serial and `ParallelExecutor` batch rows over the same separated
   snapshots plus 2/3/4/5 stack snapshots for all of those solvers except
-  `NNCG`, 11-/12-sphere stack snapshot and assembly rows, plus existing
+  `NNCG`, 11-/12-/13-/14-/15-/16-sphere stack snapshot and assembly rows, plus existing
   boxed-contact parity tests. Broader articulated
   contacts beyond fixed-base prismatic link-ground, connected Cartesian-chain
   ground contact, link-vs-rigid impact, and cross-multibody link-vs-link impact,
   longer denser coupled scenes, larger
-  coupled multi-contact systems beyond the current 12-sphere snapshot, and
+  coupled multi-contact systems beyond the current 16-sphere snapshot, and
   robot-like contact systems still need LCP-contract, invariant, and benchmark
   evidence.
 - Multi-contact boxed-LCP snapshots: a resting box multi-contact friction
@@ -2559,7 +2577,7 @@ tradeoffs evidence based.
    current connected Cartesian-chain articulated end-to-end coverage,
    current cross-multibody articulated link-vs-link impact coverage,
    current manually assembled three-axis articulated LCP snapshots, and
-   current 12-sphere vertical-stack snapshots and dense box face-contact
+   current 16-sphere vertical-stack snapshots and dense box face-contact
    evidence to broader articulated, longer-running, and denser coupled contact
    scenes.
 3. Add broader benchmark gates for SIMD-enabled CPU, intra-solver
