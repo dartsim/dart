@@ -524,14 +524,18 @@
       invariant-checked public steps.
       `OneHundredFortyFourBoxWorldStepPreservesDenseContactShape` covers one
       public boxed-LCP step on a 144-box/576-contact dense face scene. The
+      `OneHundredFortyFourBoxWorldShortHorizonMaintainsDenseContactInvariants`
+      test extends the strict 75-step horizon to that 144-box/576-contact
+      scene.
       `BM_LcpWorldBoxStep_BoxedLcp` rows report matching invariant counters for
       4/8/16/32-contact 200-step scenes, the 64-contact 500-step scene, the
       96-contact 2000-step scene, the 128-/192-contact 4000-step scenes, and
       the 256-contact one-step and 75-step scenes plus the 384-contact one-step
       and 75-step scenes plus the 512-contact one-step and 75-step scenes plus
-      the 576-contact one-step scene. The 75-step 64-box row, 96-box
-      one-/75-step rows, 128-box one-/75-step rows, and 144-box one-step row now
-      have focused default, SIMD-enabled, and CUDA-enabled build-tree evidence.
+      the 576-contact one-step and 75-step scenes. The 75-step 64-box row,
+      96-box one-/75-step rows, 128-box one-/75-step rows, and 144-box
+      one-/75-step rows now have focused default, SIMD-enabled, and
+      CUDA-enabled build-tree evidence.
 - [x] Added DART 7 per-contact block-structure evidence for BGS and
       Blocked Jacobi on real two-contact boxed-LCP world-contact snapshots:
       the tests prove `findex`-derived non-contiguous contact blocks solve the
@@ -571,7 +575,8 @@
       step coverage, and bounded 64-box dense face-contact one-step shape and
       75-step strict-invariant checks plus 96-box one-step shape and 75-step
       strict-invariant coverage plus 128-box one-step shape and 75-step
-      strict-invariant coverage plus 144-box one-step shape coverage.
+      strict-invariant coverage plus 144-box one-step shape and 75-step
+      strict-invariant coverage.
 - [ ] Broaden apples-to-apples benchmark packets from generated problems and
       simple world-contact snapshots to broader dense/robot-like end-to-end
       contact systems, with scalar, SIMD, threaded, CUDA, and broader batch
@@ -1902,6 +1907,10 @@ tradeoffs evidence based.
   `OneHundredFortyFourBoxWorldStepPreservesDenseContactShape` extends the
   one-step shape smoke path to a 144-box, 576-contact dense face scene; the
   focused default run passed in 558 ms.
+  `OneHundredFortyFourBoxWorldShortHorizonMaintainsDenseContactInvariants`
+  extends the strict 75-step horizon to the same 144-box, 576-contact scene;
+  the focused default run passed in 45455 ms and emitted the existing
+  dense-patch Dantzig warning (`s=-7.8125e-03`).
   `SixtyFourBoxWorldShortHorizonMaintainsDenseContactInvariants` covers the
   same 64-box, 256-contact scene for 75 public boxed-LCP `World::step()`
   iterations under the existing strict settling invariant.
@@ -2045,7 +2054,16 @@ tradeoffs evidence based.
   `min_tangential_speed_drop=0.0201629`, and
   `max_vertical_speed<=6.94e-18`; the SIMD row reported
   `build_simd_enabled=1`, and the CUDA-enabled row reported
-  `build_cuda_enabled=1`.
+  `build_cuda_enabled=1`. Focused default, SIMD-enabled, and CUDA-enabled
+  144-box 75-step rows reported `invariant_ok=1`, `box_count=144`,
+  `contact_count=576`, `step_count=75`,
+  `min_tangential_speed_drop>=0.0201629`, `max_height_error<=2.77e-4`, and
+  `max_vertical_speed<=9.83e-2`; the default and CUDA-enabled rows stayed close
+  to the strict `0.1` vertical-rest gate at
+  `max_vertical_speed=0.0982543`, while the SIMD row reported
+  `build_simd_enabled=1` and `max_vertical_speed=0.0420758`. The
+  CUDA-enabled rows are CPU public-step rows in that build tree, not CUDA LCP
+  kernel execution.
 - DART 7 dense box-contact CUDA batch evidence:
   `CudaLcpJacobiBatch.DenseBoxWorldContactBatchSatisfiesLcpContract` builds
   homogeneous 1-/4-/8-/16-/24-/32-/48-/64-/96-/128-box dense face-contact batches
@@ -2560,7 +2578,14 @@ tradeoffs evidence based.
   `max_height_error=0`, `min_tangential_speed_drop=0.0201629`, and
   `max_vertical_speed<=6.94e-18`; the SIMD row reported
   `build_simd_enabled=1`, and the CUDA-enabled row reported
-  `build_cuda_enabled=1`.
+  `build_cuda_enabled=1`. Focused default, SIMD-enabled, and CUDA-enabled
+  144-box 75-step rows reported `invariant_ok=1`, `box_count=144`,
+  `contact_count=576`, `step_count=75`,
+  `min_tangential_speed_drop>=0.0201629`, `max_height_error<=2.77e-4`, and
+  `max_vertical_speed<=9.83e-2`; the default and CUDA-enabled rows stayed close
+  to the strict `0.1` vertical-rest gate at
+  `max_vertical_speed=0.0982543`, while the SIMD row reported
+  `build_simd_enabled=1` and `max_vertical_speed=0.0420758`.
   The SIMD-enabled 48-box row reported `build_simd_enabled=1`,
   `max_height_error=99.597u`, and `max_vertical_speed=0.0288169`; the
   CUDA-enabled 48-box row reported `build_cuda_enabled=1`,
@@ -3098,8 +3123,8 @@ tradeoffs evidence based.
   1-/2-/4-/8-/16-/24-/32-/48-box dense face-contact boxed-LCP `World::step()`
   benchmark rows plus 64-box one-step and 75-step dense face-contact
   public-step rows plus 96-box one-step and 75-step dense face-contact rows
-  plus 128-box one-step and 75-step dense face-contact rows plus a 144-box
-  one-step dense face-contact row,
+  plus 128-box one-step and 75-step dense face-contact rows plus 144-box
+  one-step and 75-step dense face-contact rows,
   manually assembled fixed-base three-axis prismatic articulated unified-contact
   all-solver benchmark rows through 64 contacts for link-ground,
   link-vs-dynamic-rigid, and cross-multibody link-vs-link
