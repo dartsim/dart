@@ -1632,6 +1632,31 @@ void configureDeformableStaticObstacleBarrierScene(
   world.addDeformableBody("static_obstacle_barrier_nodes", options);
 }
 
+void configureDeformableMovingRigidSurfaceCcdCrossingScene(
+    dart::simulation::World& world)
+{
+  namespace sx = dart::simulation;
+
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  sx::RigidBodyOptions obstacleOptions;
+  obstacleOptions.position = Eigen::Vector3d::Zero();
+  obstacleOptions.linearVelocity = Eigen::Vector3d(0.2, 0.0, 0.0);
+  auto obstacle = world.addRigidBody("moving_surface_box", obstacleOptions);
+  obstacle.setMass(1.0);
+  obstacle.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.05, 1.0, 1.0)));
+  obstacle.setDeformableSurfaceCcdObstacle(true);
+
+  sx::DeformableBodyOptions options;
+  options.positions = {Eigen::Vector3d(-1.0, 0.0, 0.0)};
+  options.velocities = {Eigen::Vector3d(20.0, 0.0, 0.0)};
+  options.masses = {1.0};
+  options.edgeStiffness = 0.0;
+  world.addDeformableBody("moving_surface_fast_point", options);
+}
+
 void configureDeformableInterBodySurfaceCcdCrossingScene(
     dart::simulation::World& world)
 {
@@ -2723,6 +2748,9 @@ TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
       "deformable static obstacle barriers",
       configureDeformableStaticObstacleBarrierScene);
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "deformable moving rigid surface CCD crossing",
+      configureDeformableMovingRigidSurfaceCcdCrossingScene);
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "deformable inter-body surface CCD crossing",
       configureDeformableInterBodySurfaceCcdCrossingScene);
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
@@ -3037,6 +3065,26 @@ TEST(World, DeformableStaticObstacleBarrierSceneIsActive)
   EXPECT_GT(body->getPosition(0).x(), 0.51);
   EXPECT_GT(body->getPosition(1).x(), 2.51);
   EXPECT_GT(body->getPosition(2).x(), -1.79);
+}
+
+TEST(World, DeformableMovingRigidSurfaceCcdCrossingIsActive)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  configureDeformableMovingRigidSurfaceCcdCrossingScene(world);
+  auto body = world.getDeformableBody("moving_surface_fast_point");
+  ASSERT_TRUE(body.has_value());
+  world.enterSimulationMode();
+
+  world.step();
+
+  const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
+  EXPECT_EQ(diagnostics.bodyCount, 1u);
+  EXPECT_EQ(diagnostics.nodeCount, 1u);
+  EXPECT_GT(diagnostics.projectedNewtonSteps, 0u);
+  EXPECT_GT(body->getPosition(0).x(), -1.0);
+  EXPECT_LT(body->getPosition(0).x(), -0.05);
 }
 
 TEST(World, DeformableInterBodySurfaceCcdCrossingIsActive)
@@ -3485,6 +3533,10 @@ TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
         options.edgeStiffness = 0.0;
         world.addDeformableBody("fast_point", options);
       });
+
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "default moving rigid surface CCD point crossing",
+      configureDeformableMovingRigidSurfaceCcdCrossingScene);
 
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "active static rigid surface CCD point crossing", [](sx::World& world) {
