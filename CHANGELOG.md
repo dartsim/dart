@@ -1188,8 +1188,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     separated sphere-ground boxed/findex snapshots, plus boxed-LCP
     contact assembly/solve benchmark rows for the same contact counts. Added
     coupled 2/3-sphere vertical-stack benchmark rows for the same solver set,
-    plus scoped 4-, 5-, and 6-sphere stack rows for all of those solvers except
-    `NNCG`, plus 7-sphere rows for that set except `NNCG` and
+    plus scoped 4-, 5-, and 6-sphere stack rows for all of those solvers
+    (`NNCG` uses 10 PGS preconditioner iterations for this coupled contact
+    family), plus 7-sphere rows for that set except `NNCG` and
     `RedBlackGaussSeidel`, plus 8-/9-/10-sphere rows for the narrower passing
     10-solver subset, so benchmark evidence now includes coupled contact systems
     with shared dynamic bodies. Added 3-, 4-, 5-, 6-, 7-, 8-, 9-, 10-, 11-,

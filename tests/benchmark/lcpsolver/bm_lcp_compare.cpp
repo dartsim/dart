@@ -2556,6 +2556,14 @@ void AddBoxedSsnCounters(
       = params.jacobianRegularization;
 }
 
+void AddNncgCounters(
+    benchmark::State& state, const dart::math::NncgSolver::Parameters& params)
+{
+  state.counters["nncg_pgs_iterations"] = params.pgsIterations;
+  state.counters["nncg_restart_interval"] = params.restartInterval;
+  state.counters["nncg_restart_threshold"] = params.restartThreshold;
+}
+
 #if DART_BM_LCP_COMPARE_HAS_SIMULATION
 void AddFindexShockPropagationCounters(
     benchmark::State& state, std::size_t contactCount, Eigen::Index problemSize)
@@ -5317,6 +5325,7 @@ struct SolverBenchmarkOptions
   dart::math::BoxedSemiSmoothNewtonSolver::Parameters boxedSsnParams;
   dart::math::SapSolver::Parameters sapParams;
   dart::math::ShockPropagationSolver::Parameters shockPropagationParams;
+  bool hasNncgParams{false};
   bool hasBoxedSsnParams{false};
   bool hasSapParams{false};
   bool hasShockPropagationParams{false};
@@ -5442,6 +5451,7 @@ void ConfigureSolverBenchmarkOptions(
     storage.nncgParams.restartInterval = 10;
     storage.nncgParams.restartThreshold = 1.0;
     storage.options.customOptions = &storage.nncgParams;
+    storage.hasNncgParams = true;
   } else if (solver.name == "SubspaceMinimization") {
     storage.subspaceParams.pgsIterations = 5;
     storage.options.customOptions = &storage.subspaceParams;
@@ -8430,6 +8440,11 @@ void RunWorldStackContactBenchmark(
 
   SolverBenchmarkOptions storage;
   ConfigureSolverBenchmarkOptions(storage, solverEntry, fixture->problem);
+  if (solverEntry.name == "NNCG") {
+    // Coupled stack contacts need a stronger PGS preconditioner than the
+    // generated math fixtures to satisfy the same LCP contract.
+    storage.nncgParams.pgsIterations = 10;
+  }
 
   const auto solver = solverEntry.create();
   if (solver == nullptr) {
@@ -8448,6 +8463,9 @@ void RunWorldStackContactBenchmark(
   state.counters["contact_count"] = static_cast<double>(fixture->contactCount);
   state.counters["body_count"] = static_cast<double>(fixture->bodyCount);
   state.counters["sphere_count"] = static_cast<double>(sphereCount);
+  if (storage.hasNncgParams) {
+    AddNncgCounters(state, storage.nncgParams);
+  }
   if (storage.hasShockPropagationParams) {
     if (storage.shockPropagationParams.blockSizes.empty()) {
       AddFindexShockPropagationCounters(
@@ -11897,9 +11915,8 @@ void RegisterWorldStackContactBenchmarks()
         name.c_str(), [solver](benchmark::State& state) {
           RunWorldStackContactBenchmark(state, solver);
         });
-    registeredBenchmark->Arg(2)->Arg(3);
+    registeredBenchmark->Arg(2)->Arg(3)->Arg(4)->Arg(5)->Arg(6);
     if (solver.name != "NNCG") {
-      registeredBenchmark->Arg(4)->Arg(5)->Arg(6);
       if (solver.name != "RedBlackGaussSeidel") {
         registeredBenchmark->Arg(7);
         if (solver.name != "Pgs" && solver.name != "Jacobi"

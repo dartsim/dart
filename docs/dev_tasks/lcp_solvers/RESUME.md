@@ -1260,11 +1260,14 @@ contact scenes.
 - The benchmark target also registers 32
   `BM_LcpWorldStackContact/FrictionIndex/<solver>/{2,3}` rows for all 16
   friction-index-capable solvers over DART 7 `World::collide()` snapshots from
-  2- and 3-sphere vertical stacks. It also registers 45
+  2- and 3-sphere vertical stacks. It also registers 48
   `BM_LcpWorldStackContact/FrictionIndex/<solver>/{4,5,6}` rows for the same
-  solver set except `NNCG`; a focused `NNCG` 4-sphere trial reached the
-  benchmark cap with `contract_ok=0`, so the NNCG 4-/5-/6-sphere rows are not
-  claimed. It also registers 14
+  solver set; the NNCG stack rows report `nncg_pgs_iterations=10` because a
+  focused 2-PGS-iteration `NNCG` 4-sphere trial reached the benchmark cap with
+  `contract_ok=0`. A focused NNCG 2-/3-/4-/5-/6-sphere follow-up reported
+  `contract_ok=1` for all five rows, with residuals from
+  `1.2023357999796369e-05` through `6.9881776572988663e-04` and solver
+  iterations from 2 through 51. It also registers 14
   `BM_LcpWorldStackContact/FrictionIndex/<solver>/7` rows for that set except
   `NNCG` and `RedBlackGaussSeidel`; a focused `RedBlackGaussSeidel` 7-sphere
   probe reported `contract_ok=0`, so that row is not claimed. The matching
@@ -1829,6 +1832,11 @@ cmake --build build/default/cpp/Release \
   "--benchmark_filter=BM_LcpWorldStackContact|BM_LcpWorldStackContactAssembly" \
   "--benchmark_min_time=0.001s" \
   "--benchmark_repetitions=1"
+./build/default/cpp/Release/bin/BM_LCP_COMPARE \
+  "--benchmark_filter=^BM_LcpWorldStackContact/FrictionIndex/NNCG/(2|3|4|5|6)$" \
+  "--benchmark_min_time=0.001s" \
+  "--benchmark_repetitions=1" \
+  "--benchmark_format=json"
 ./build/default/cpp/Release/bin/BM_LCP_COMPARE \
   "--benchmark_filter=BM_LcpWorldContactBatch(Serial|Parallel)" \
   "--benchmark_min_time=0.001s" \
