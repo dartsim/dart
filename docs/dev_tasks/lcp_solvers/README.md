@@ -92,11 +92,11 @@
       sphere-ground packets, grouped variable-size 2/3/4/5/6/7/8/9/10/11/12/13/14/15/16-sphere
       coupled stack-contact packets with two- and three-variant stack grouped
       benchmark rows, and
-      grouped variable-size manually assembled 1-/4-/8-/16-contact articulated
+      grouped variable-size manually assembled 1-/4-/8-/16-/24-/32-contact articulated
       unified-contact packets with two- and three-variant grouped benchmark
       rows including cross-multibody link-vs-link cases,
       plus mixed grouped contact packets combining those separated, stack, and
-      1-/4-/8-/16-contact articulated fixture families, with CUDA unit
+      1-/4-/8-/16-/24-/32-contact articulated fixture families, with CUDA unit
       coverage and benchmark rows.
       This does not yet cover a general CUDA backend for every solver.
 - [x] Completed a solver-by-solver implementation audit against
@@ -463,10 +463,10 @@
       count, matching the `/2` and `/3` benchmark rows.
 - [x] Added grouped variable-size CUDA contact-batch evidence for DART 7
       manually assembled fixed-base three-axis prismatic articulated
-      unified-contact packets with 1, 4, 8, and 16 contacts, covering fixed-iteration
+      unified-contact packets with 1, 4, 8, 16, 24, and 32 contacts, covering fixed-iteration
       CUDA Jacobi and PGS unit tests and benchmark rows on the visible GPU.
 - [x] Added mixed grouped CUDA contact-batch evidence for DART 7 separated
-      sphere-ground, coupled stack-contact, and manually assembled 1-/4-/8-/16-contact
+      sphere-ground, coupled stack-contact, and manually assembled 1-/4-/8-/16-/24-/32-contact
       articulated unified-contact packets including cross-multibody link-vs-link
       cases in one size-grouped batch, covering fixed-iteration CUDA Jacobi and PGS unit
       tests and benchmark rows on the visible GPU.
@@ -841,13 +841,14 @@ tradeoffs evidence based.
   `test_lcp_jacobi_batch_cuda --gtest_filter='CudaLcpJacobiBatch.MixedContactGroupedBatchSatisfiesLcpContract:CudaLcpPgsBatch.MixedContactGroupedBatchSatisfiesLcpContract' --gtest_brief=1`
   passed both CUDA grouped-batch tests for two and three variants per mixed
   scenario, and
-  `BM_LCP_COMPARE --benchmark_filter='BM_LcpCuda(Jacobi|Pgs)MixedContactGroupedBatch_FrictionIndex/3$' --benchmark_min_time=0.001s`
-  reported the two new mixed CUDA rows with `contract_ok=1`,
-  `batch_size=48`, `contact_fixture_family_count=3`, `cuda_group_count=6`,
-  `contact_shape_count=6`, `problem_variants_per_shape=3`,
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpCuda(Jacobi|Pgs)MixedContactGroupedBatch_FrictionIndex/[23]$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_format=json`
+  reported four mixed CUDA rows with `contract_ok=1`,
+  `batch_size=44/66`, `contact_fixture_family_count=3`, `cuda_group_count=8`,
+  `contact_shape_count=8`, `problem_variants_per_shape=2/3`,
   `articulated_contact_case_count=3`, `articulated_cross_link_contact=1`,
-  `min_problem_size=3`, `max_problem_size=48`, `total_contact_count=297`, and
-  `total_problem_size=891`. This proves narrow
+  `min_problem_size=3`, `max_problem_size=96`, `total_contact_count=534/801`,
+  `total_problem_size=1602/2403`, and
+  `max_residual=2.2204460492503131e-16`. This proves narrow
   CUDA projected-Jacobi and
   PGS batch LCP paths; it does not prove CUDA execution for the full solver
   manifest or for dense contact CUDA batches, or end-to-end articulated
@@ -2833,7 +2834,7 @@ tradeoffs evidence based.
   unified-contact CUDA unit and benchmark evidence for link-ground,
   link-vs-dynamic-rigid, and cross-multibody link-vs-link packets for the same
   kernels. Added mixed grouped CUDA unit and benchmark evidence that combines
-  those separated, stack, and 1-/4-/8-/16-contact articulated fixture families,
+  those separated, stack, and 1-/4-/8-/16-/24-/32-contact articulated fixture families,
   including cross-multibody link-vs-link packets, in one size-grouped batch.
   The current CUDA path intentionally excludes other solvers, CUDA Jacobi
   dense-contact batches, broader dense-contact CUDA execution, and end-to-end

@@ -109,7 +109,7 @@ Support abbreviations:
   packets through the 128-box batch-size-4 row, and PGS homogeneous plus
   grouped variable-size dense box-face contact packets, plus
   mixed grouped batches that combine separated, stack, and
-  1-/4-/8-/16-contact articulated fixture families including cross-multibody link-vs-link packets,
+  1-/4-/8-/16-/24-/32-contact articulated fixture families including cross-multibody link-vs-link packets,
   in addition to homogeneous synthetic
   standard/boxed/findex packets. The generated synthetic grid also includes a
   scoped larger mildly ill-conditioned slice for standard
@@ -1571,14 +1571,15 @@ The current local evidence for this task is:
   `articulated_cross_link_contact=1`, `min_problem_size=3`,
   `max_problem_size=96`, `total_contact_count=765`, and
   `total_problem_size=2295`. The mixed grouped rows combine separated
-  sphere-ground, coupled stack, and manually assembled 1-/4-/8-/16-contact
+  sphere-ground, coupled stack, and manually assembled 1-/4-/8-/16-/24-/32-contact
   articulated unified-contact packets, including cross-multibody link-vs-link
   packets, with
-  `batch_size=48`, `contact_fixture_family_count=3`, `cuda_group_count=6`,
-  `contact_shape_count=6`, `problem_variants_per_shape=3`,
+  `batch_size=44/66`, `contact_fixture_family_count=3`, `cuda_group_count=8`,
+  `contact_shape_count=8`, `problem_variants_per_shape=2/3`,
   `articulated_contact_case_count=3`, `articulated_cross_link_contact=1`,
-  `min_problem_size=3`, `max_problem_size=48`, `total_contact_count=297`, and
-  `total_problem_size=891`. The dense box CUDA rows include homogeneous
+  `min_problem_size=3`, `max_problem_size=96`, `total_contact_count=534/801`,
+  `total_problem_size=1602/2403`, and
+  `max_residual=2.2204460492503131e-16`. The dense box CUDA rows include homogeneous
   4-problem Jacobi batches for
   1-/4-/8-/16-/24-/32-/48-/64-/96-/128-box dense face-contact
   `World::collide()` snapshots, homogeneous 4-problem PGS batches for

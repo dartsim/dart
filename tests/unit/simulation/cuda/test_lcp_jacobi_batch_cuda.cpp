@@ -1419,6 +1419,24 @@ std::optional<WorldContactGroupedBatch> makeMixedContactGroupedBatch(
             ArticulatedCudaContactCase::CrossLinkImpact,
             16,
             variant,
+            errorMessage))
+        || !appendFixture(makeArticulatedUnifiedContactProblem(
+            ArticulatedCudaContactCase::Ground, 24, variant, errorMessage))
+        || !appendFixture(makeArticulatedUnifiedContactProblem(
+            ArticulatedCudaContactCase::RigidImpact, 24, variant, errorMessage))
+        || !appendFixture(makeArticulatedUnifiedContactProblem(
+            ArticulatedCudaContactCase::CrossLinkImpact,
+            24,
+            variant,
+            errorMessage))
+        || !appendFixture(makeArticulatedUnifiedContactProblem(
+            ArticulatedCudaContactCase::Ground, 32, variant, errorMessage))
+        || !appendFixture(makeArticulatedUnifiedContactProblem(
+            ArticulatedCudaContactCase::RigidImpact, 32, variant, errorMessage))
+        || !appendFixture(makeArticulatedUnifiedContactProblem(
+            ArticulatedCudaContactCase::CrossLinkImpact,
+            32,
+            variant,
             errorMessage))) {
       return std::nullopt;
     }

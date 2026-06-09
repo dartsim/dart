@@ -6267,7 +6267,7 @@ MakeGroupedMixedContactCudaBatch(
   CudaGroupedWorldContactBenchmarkBatch grouped;
   std::vector<std::size_t> groupSizes;
   grouped.aggregate.problems.reserve(
-      16 * static_cast<std::size_t>(variantsPerScenario));
+      22 * static_cast<std::size_t>(variantsPerScenario));
 
   auto appendFixture =
       [&](std::optional<WorldContactBenchmarkProblem> fixture) {
@@ -6356,6 +6356,30 @@ MakeGroupedMixedContactCudaBatch(
         || !appendFixture(MakeArticulatedUnifiedContactBenchmarkProblem(
             ArticulatedContactBenchmarkCase::CrossLinkImpact,
             16,
+            errorMessage,
+            variant))
+        || !appendFixture(MakeArticulatedUnifiedContactBenchmarkProblem(
+            ArticulatedContactBenchmarkCase::Ground, 24, errorMessage, variant))
+        || !appendFixture(MakeArticulatedUnifiedContactBenchmarkProblem(
+            ArticulatedContactBenchmarkCase::RigidImpact,
+            24,
+            errorMessage,
+            variant))
+        || !appendFixture(MakeArticulatedUnifiedContactBenchmarkProblem(
+            ArticulatedContactBenchmarkCase::CrossLinkImpact,
+            24,
+            errorMessage,
+            variant))
+        || !appendFixture(MakeArticulatedUnifiedContactBenchmarkProblem(
+            ArticulatedContactBenchmarkCase::Ground, 32, errorMessage, variant))
+        || !appendFixture(MakeArticulatedUnifiedContactBenchmarkProblem(
+            ArticulatedContactBenchmarkCase::RigidImpact,
+            32,
+            errorMessage,
+            variant))
+        || !appendFixture(MakeArticulatedUnifiedContactBenchmarkProblem(
+            ArticulatedContactBenchmarkCase::CrossLinkImpact,
+            32,
             errorMessage,
             variant))) {
       return std::nullopt;

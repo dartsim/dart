@@ -523,7 +523,7 @@ grouped benchmark rows, plus grouped variable-size manually assembled
 1-/4-/8-/16-/24-/32-contact articulated unified-contact packets with two- and
 three-variant grouped benchmark rows covering link-ground, link-vs-dynamic-rigid,
 and cross-multibody link-vs-link cases, plus mixed grouped contact batches that
-combine separated, stack, and 1-/4-/8-/16-contact articulated fixture families for fixed-iteration
+combine separated, stack, and 1-/4-/8-/16-/24-/32-contact articulated fixture families for fixed-iteration
 Jacobi and PGS. The generic CPU serial and DART 7 `ParallelExecutor` batch
 benchmark registrations now also expose Jacobi and PGS rows at the same
 grouped synthetic packet sizes plus the same standard/boxed
@@ -2019,13 +2019,14 @@ dense/robot-like contact scenes.
   The mixed grouped rows combine separated sphere-ground, coupled stack, and
   manually assembled articulated unified-contact packets including
   cross-multibody link-vs-link packets. The latest focused unit test covers two
-  and three variants per mixed scenario, and the focused `/3` benchmark rows
-  report `batch_size=48`, `contact_fixture_family_count=3`,
-  `cuda_group_count=6`, `contact_shape_count=6`,
-  `problem_variants_per_shape=3`, `articulated_contact_case_count=3`,
+  and three variants per mixed scenario, and the focused `/2` and `/3` benchmark rows
+  report `batch_size=44/66`, `contact_fixture_family_count=3`,
+  `cuda_group_count=8`, `contact_shape_count=8`,
+  `problem_variants_per_shape=2/3`, `articulated_contact_case_count=3`,
   `articulated_cross_link_contact=1`, `min_problem_size=3`,
-  `max_problem_size=48`, `total_contact_count=297`,
-  `total_problem_size=891`.
+  `max_problem_size=96`, `total_contact_count=534/801`,
+  `total_problem_size=1602/2403`, and
+  `max_residual=2.2204460492503131e-16`.
   The dense box-face CUDA rows now include bounded Jacobi coverage:
   `CudaLcpJacobiBatch.DenseBoxWorldContactBatchSatisfiesLcpContract` passes
   homogeneous 1-/4-/8-/16-/24-/32-/48-/64-/96-/128-box batch-size-4 packets with
@@ -2347,7 +2348,7 @@ python scripts/run_benchmark_smoke.py build/cuda/cpp/Release/bin/BM_LCP_COMPARE 
   "--benchmark_min_time=0.001s" \
   "--benchmark_repetitions=1"
 ./build/cuda/cpp/Release/bin/BM_LCP_COMPARE \
-  "--benchmark_filter=BM_LcpCuda(Jacobi|Pgs)MixedContactGroupedBatch_FrictionIndex" \
+  "--benchmark_filter=^BM_LcpCuda(Jacobi|Pgs)MixedContactGroupedBatch_FrictionIndex/[23]$" \
   "--benchmark_min_time=0.001s" \
   "--benchmark_repetitions=1"
 ./build/cuda/cpp/Release/bin/BM_LCP_COMPARE \
