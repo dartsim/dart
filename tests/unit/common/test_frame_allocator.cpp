@@ -391,6 +391,29 @@ TEST_F(FrameAllocatorTest, StlAllocatorCacheAlignsFrameBackedBlocks)
 }
 
 //=============================================================================
+TEST_F(FrameAllocatorTest, LargeCacheAlignedAllocationsRotateCacheLineColor)
+{
+  FrameAllocator arena(MemoryAllocator::GetDefault(), 16 * 1024);
+
+  auto* first = arena.allocate(4096, 64);
+  auto* second = arena.allocate(4096, 64);
+  ASSERT_NE(first, nullptr);
+  ASSERT_NE(second, nullptr);
+
+  const auto firstAddress = reinterpret_cast<std::uintptr_t>(first);
+  const auto secondAddress = reinterpret_cast<std::uintptr_t>(second);
+  EXPECT_EQ(firstAddress % 64u, 0u);
+  EXPECT_EQ(secondAddress % 64u, 0u);
+  EXPECT_NE(firstAddress % 512u, secondAddress % 512u);
+
+  arena.reset();
+  auto* afterReset = arena.allocate(4096, 64);
+  ASSERT_NE(afterReset, nullptr);
+  EXPECT_EQ(
+      reinterpret_cast<std::uintptr_t>(afterReset) % 512u, firstAddress % 512u);
+}
+
+//=============================================================================
 TEST_F(FrameAllocatorTest, StlAllocatorPreservesOverAlignedValues)
 {
   FrameAllocator arena(MemoryAllocator::GetDefault(), 512);

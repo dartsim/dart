@@ -318,15 +318,25 @@ keep the combined comparative gate green as allocator policy changes.
 
 A later 2026-06-08 continuation added runner-side CPU prewarm immediately
 before launching affinity-pinned benchmark binaries and added cache-line
-coloring for large 64-byte-aligned `FreeListAllocator` array allocations. The
-allocator change targets the no-growth EnTT/World registry layout case where
-consecutive page-sized component arrays can otherwise start on identical cache
-sets. Focused probes showed the 512-entity no-growth row can improve
-substantially with zero post-prewarm allocator calls, but high-load full EnTT
-runs were still rejected for high CV or unrelated build/growth misses; do not
-claim a fresh full EnTT or 94-row pass until a quiet-host checker run replaces
-`.benchmark_results/allocator_entt_nogrowth_freelist_color_512_auto_probe.json`
-with strict green evidence.
+coloring for large 64-byte-aligned `FreeListAllocator` array allocations, then
+extended that coloring to large 64-byte-aligned `FrameAllocator` storage. The
+allocator changes target the EnTT/World registry layout cases where consecutive
+page-sized component arrays can otherwise start on identical cache sets. A
+strict focused checker run after the free-list coloring passed 11/12 EnTT
+foonathan/std comparisons with zero post-prewarm allocator calls on the
+no-growth rows; the remaining stable gap was `BM_EnttRegistryBuild/512` vs
+foonathan at ratio 1.043. Frame allocator coloring reduced that direct 512
+build probe to roughly ratio 1.007; the remaining adapter mismatch is addressed
+by using DART's frame-native `FrameStlAllocator` in the build/growth row,
+matching foonathan's stack-native `std_allocator` for one-shot arena lifetimes,
+and by routing small frame-backed STL allocations directly to the inline default
+frame fast path. The current frame coloring uses four 256-byte colors only
+above 2048 bytes, keeping 2048-byte entity packed arrays compact while
+spreading true component/sparse pages; focused probes showed
+`BM_EnttRegistryBuild/512` beating foonathan with this layout. Do not claim a
+fresh full EnTT or 94-row pass until a follow-up checker run replaces
+`.benchmark_results/allocator_entt_color_after_merge_check.json` with strict
+green evidence.
 
 Treat the persistent EnTT no-growth benchmark policy as production-aligned for
 the allocator role: World registry storage uses the free-list-backed

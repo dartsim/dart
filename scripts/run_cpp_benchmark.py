@@ -286,7 +286,7 @@ def _cpu_affinity_preexec(cpu: int | None):
     return apply_affinity
 
 
-def _prewarm_cpu_affinity(cpu: int | None, seconds: float = 0.5) -> int | None:
+def _prewarm_cpu_affinity(cpu: int | None, seconds: float = 1.5) -> int | None:
     if cpu is None or not hasattr(os, "sched_setaffinity"):
         return None
 

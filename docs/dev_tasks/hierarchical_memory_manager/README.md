@@ -135,13 +135,21 @@
       zero allocator calls after prewarm. A subsequent follow-up added
       runner-side CPU prewarm immediately before affinity-pinned benchmark
       launch and cache-line coloring for large 64-byte-aligned
-      `FreeListAllocator` array allocations. The coloring is based on the
-      EnTT/World registry access pattern: consecutive page-sized component
+      `FreeListAllocator` array allocations, then extended the same policy to
+      large 64-byte-aligned `FrameAllocator` storage. The coloring is based on
+      the EnTT/World registry access pattern: consecutive page-sized component
       arrays can otherwise start on identical cache sets when their allocation
       sizes are multiples of the cache-index period. Focused probes show the
       512-entity no-growth row can close the foonathan gap with zero
-      post-prewarm allocator calls, but high-load full EnTT runs are still not
-      acceptable final evidence.
+      post-prewarm allocator calls; a stricter focused check then reduced the
+      remaining evidence gap to the `BM_EnttRegistryBuild/512` frame-backed
+      build/unwind row. Frame allocator coloring reduced that row from ratio
+      1.043 to roughly 1.007 in a focused probe; the remaining adapter overhead
+      is addressed by using DART's frame-native `FrameStlAllocator` for the
+      build/growth row and by routing small frame-backed STL allocations
+      directly to the inline default frame fast path. The final frame coloring
+      uses four 256-byte colors only above 2048 bytes, keeping the 2048-byte
+      entity packed arrays compact while spreading true component/sparse pages.
 - [ ] Phase 3: EnTT registry/component storage allocation is configurable from
       the World memory hierarchy and covered by no-growth ECS tests.
       Allocator-aware EnTT storage now has focused `StlAllocator` and
@@ -481,12 +489,19 @@ debugging, profiling, optimization experiments, and ImGui visualization.
    gate green after allocator or benchmark policy changes:
 
    A 2026-06-08 follow-up added runner-side CPU prewarm and cache-line coloring
-   for large 64-byte-aligned `FreeListAllocator` array allocations. Direct
-   focused probes improved the weak EnTT no-growth 512 row, but the local host
-   was still noisy enough that random-interleaved and sequential full EnTT runs
-   rejected rows for high CV or unrelated build/growth timing misses. Treat
-   `.benchmark_results/allocator_entt_nogrowth_freelist_color_512_auto_probe.json`
-   as directional evidence only until a quiet-host checker run replaces it.
+   for large 64-byte-aligned `FreeListAllocator` and `FrameAllocator` storage
+   allocations. Direct focused probes improved the weak EnTT no-growth 512 row;
+   the next strict focused checker run passed 11/12 EnTT foonathan/std
+   comparisons and left only `BM_EnttRegistryBuild/512` vs foonathan failing at
+   ratio 1.043. Frame allocator coloring improved a direct 512 build probe to
+   roughly ratio 1.007, and the DART row now uses the frame-native
+   `FrameStlAllocator` with a direct small-allocation fast path to match
+   foonathan's stack-native adapter. Follow-up probes showed the
+   `BM_EnttRegistryBuild/512` row beating foonathan with four 256-byte frame
+   colors and compact 2048-byte entity arrays. Treat
+   `.benchmark_results/allocator_entt_color_after_merge_check.json` as the
+   current focused evidence point until a follow-up run with frame coloring
+   replaces it.
 
    ```bash
    pixi run bm-allocator-comparative-check \

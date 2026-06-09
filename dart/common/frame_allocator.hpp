@@ -121,7 +121,7 @@ public:
     }
 
     if (alignment == 64) {
-      return allocateCacheAlignedFast(bytes, false);
+      return allocateCacheAlignedFast(bytes, bytes > 2048);
     }
     if (alignment <= 32) {
       return allocateDefaultAligned(bytes);
@@ -223,7 +223,7 @@ private:
   [[nodiscard]] inline void* allocateStlStorageCacheAligned(
       size_t bytes) noexcept
   {
-    return allocateCacheAlignedFast(bytes, false);
+    return allocateCacheAlignedFast(bytes, bytes > 2048);
   }
 
   [[nodiscard]] inline void* allocateCacheAlignedFast(
@@ -239,8 +239,11 @@ private:
     const auto remaining = static_cast<size_t>(mEnd - mCur);
     const auto addr = reinterpret_cast<uintptr_t>(mCur);
     const auto alignPadding = static_cast<size_t>((uintptr_t{0} - addr) & 63u);
+    // EnTT component pages are commonly multiples of the 4 KiB L1 index
+    // period. Four 256-byte colors spread starts across sets while bounding
+    // arena padding to less than 1 KiB per large storage allocation.
     const auto colorPadding
-        = colorStorage ? static_cast<size_t>(mCacheLineColor) * 64u : 0u;
+        = colorStorage ? static_cast<size_t>(mCacheLineColor) * 256u : 0u;
     const auto padding = alignPadding + colorPadding;
     if (padding <= remaining) [[likely]] {
       const auto available = remaining - padding;
@@ -250,7 +253,7 @@ private:
         mCur = result + padded;
         if (colorStorage) {
           mCacheLineColor
-              = static_cast<std::uint8_t>((mCacheLineColor + 1u) & 7u);
+              = static_cast<std::uint8_t>((mCacheLineColor + 1u) & 3u);
         }
         return result;
       }
@@ -313,10 +316,10 @@ public:
     // default 32-byte frame invariant to reduce cache/TLB pressure.
     if constexpr (alignof(T) > 32 || sizeof(T) >= 64) {
       p = mArena->allocateStlStorageCacheAligned(bytes);
-    } else if (bytes >= 2048) {
+    } else if (bytes > 2048) {
       p = mArena->allocateStlStorageCacheAligned(bytes);
     } else {
-      p = mArena->allocateAligned(bytes, alignof(T));
+      p = mArena->allocateDefaultAligned(bytes);
     }
     if (!p) [[unlikely]] {
       throw std::bad_alloc();

@@ -226,6 +226,16 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     array allocations so consecutive page-sized component/storage arrays avoid
     starting on the same L1 cache sets while preserving their requested
     alignment.
+  - Extended the same cache-line coloring policy to large 64-byte-aligned
+    `FrameAllocator` and frame-backed STL storage allocations, improving
+    one-shot component storage build/unwind locality without changing arena
+    lifetime semantics.
+  - Switched the EnTT build/growth comparative benchmark to DART's
+    frame-native `FrameStlAllocator`, matching foonathan's stack-native
+    `std_allocator` adapter for one-shot arena lifetimes.
+  - Tightened `FrameStlAllocator` small natural-aligned allocations to use the
+    frame allocator's inline default fast path directly instead of routing
+    through the public aligned-allocation dispatcher.
   - Fixed fixed-capacity `FreeListAllocator` aligned allocations so
     `PoolAllocator` can satisfy aligned size-class chunks from reserved arena
     bytes without growing from the base allocator.
