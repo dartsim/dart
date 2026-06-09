@@ -1222,11 +1222,12 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     1/4/8/16/32/48-box snapshots so the CPU rows match homogeneous CUDA PGS
     packet sizes through 96 boxes in default, SIMD-enabled, and CUDA-enabled
     build trees,
-    plus PGS-only CUDA batch coverage for homogeneous
-    1/4/8/16/24/32/48/64/96-box and
-    grouped 1/2/4/8/16/24/32/48-box dense box-face packets with two and three
-    velocity variants per box-count shape through
-    `BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex` and
+    plus CUDA batch coverage for homogeneous Jacobi 1/4/8/16-box rows,
+    homogeneous PGS 1/4/8/16/24/32/48/64/96-box rows, and PGS grouped
+    1/2/4/8/16/24/32/48-box dense box-face packets with two and three velocity
+    variants per box-count shape through
+    `BM_LcpCudaJacobiWorldBoxContactBatch_FrictionIndex`,
+    `BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex`, and
     `BM_LcpCudaPgsWorldBoxContactGroupedBatch_FrictionIndex`, and
     1/2/4/8/16/24/32-box
     `BM_LcpWorldBoxStep_BoxedLcp` end-to-end invariant benchmark rows verified

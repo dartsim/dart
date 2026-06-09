@@ -9601,7 +9601,7 @@ void RunCudaWorldContactBatchBenchmark(benchmark::State& state, bool usePgs)
   state.counters["problem_size"] = static_cast<double>(3 * contactCount);
 }
 
-void RunCudaWorldBoxContactBatchBenchmark(benchmark::State& state)
+void RunCudaWorldBoxContactBatchBenchmark(benchmark::State& state, bool usePgs)
 {
   if (!cuda_compute::isCudaRuntimeAvailable()) {
     state.SkipWithError("CUDA runtime has no available device");
@@ -9618,32 +9618,46 @@ void RunCudaWorldBoxContactBatchBenchmark(benchmark::State& state)
     return;
   }
 
-  constexpr std::size_t iterations = 1024u;
+  const std::size_t iterations = usePgs ? 1024u : 8192u;
   auto basePacket = MakeCudaBatchProblem(batch->problems, iterations);
+  if (!usePgs) {
+    basePacket.relaxation = 0.25;
+  }
   const auto options = MakeBenchmarkOptions(static_cast<int>(iterations));
 
   BatchBenchmarkCounters counters;
   for (auto _ : state) {
     auto packet = basePacket;
-    cuda_compute::solveBoxedLcpPgsBatchCuda(packet);
+    if (usePgs) {
+      cuda_compute::solveBoxedLcpPgsBatchCuda(packet);
+    } else {
+      cuda_compute::solveBoxedLcpJacobiBatchCuda(packet);
+    }
     benchmark::DoNotOptimize(packet.x.data());
   }
 
   auto packet = basePacket;
-  cuda_compute::solveBoxedLcpPgsBatchCuda(packet);
+  if (usePgs) {
+    cuda_compute::solveBoxedLcpPgsBatchCuda(packet);
+  } else {
+    cuda_compute::solveBoxedLcpJacobiBatchCuda(packet);
+  }
   counters
       = CheckCudaBatchResult(batch->problems, packet.x, options, iterations);
   AddWorldContactBatchCounters(
       state,
       counters,
       *batch,
-      MakeLabel("PgsCuda", "WorldBoxContactBatch/FrictionIndex"));
+      MakeLabel(
+          usePgs ? "PgsCuda" : "JacobiCuda",
+          "WorldBoxContactBatch/FrictionIndex"));
   state.counters["cuda_lcp_execution"] = 1.0;
   state.counters["cuda_batch_execution"] = 1.0;
   state.counters["cuda_world_contact_batch"] = 1.0;
   state.counters["cuda_dense_box_contact_batch"] = 1.0;
   state.counters["dense_box_contact"] = 1.0;
   state.counters["cuda_fixed_iterations"] = static_cast<double>(iterations);
+  state.counters["cuda_relaxation"] = basePacket.relaxation;
   state.counters["box_count"] = static_cast<double>(boxCount);
   state.counters["contact_count"] = static_cast<double>(4 * boxCount);
   state.counters["problem_size"] = static_cast<double>(12 * boxCount);
@@ -12174,10 +12188,16 @@ static void BM_LcpCudaPgsWorldContactBatch_FrictionIndex(
   RunCudaWorldContactBatchBenchmark(state, true);
 }
 
+static void BM_LcpCudaJacobiWorldBoxContactBatch_FrictionIndex(
+    benchmark::State& state)
+{
+  RunCudaWorldBoxContactBatchBenchmark(state, false);
+}
+
 static void BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex(
     benchmark::State& state)
 {
-  RunCudaWorldBoxContactBatchBenchmark(state);
+  RunCudaWorldBoxContactBatchBenchmark(state, true);
 }
 
 static void BM_LcpCudaPgsWorldBoxContactGroupedBatch_FrictionIndex(
@@ -12406,6 +12426,11 @@ BENCHMARK(BM_LcpCudaJacobiWorldContactBatch_FrictionIndex)
     ->Args({8, 4})
     ->Args({16, 4});
 BENCHMARK(BM_LcpCudaPgsWorldContactBatch_FrictionIndex)
+    ->Args({4, 4})
+    ->Args({8, 4})
+    ->Args({16, 4});
+BENCHMARK(BM_LcpCudaJacobiWorldBoxContactBatch_FrictionIndex)
+    ->Args({1, 4})
     ->Args({4, 4})
     ->Args({8, 4})
     ->Args({16, 4});
