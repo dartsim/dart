@@ -286,6 +286,22 @@ def _cpu_affinity_preexec(cpu: int | None):
     return apply_affinity
 
 
+def _prewarm_cpu_affinity(cpu: int | None, seconds: float = 0.5) -> int | None:
+    if cpu is None or not hasattr(os, "sched_setaffinity"):
+        return None
+
+    original_affinity = os.sched_getaffinity(0)
+    try:
+        os.sched_setaffinity(0, {cpu})
+        end_time = time.perf_counter() + seconds
+        value = 0
+        while time.perf_counter() < end_time:
+            value = (value * 1664525 + 1013904223) & 0xFFFFFFFF
+        return value
+    finally:
+        os.sched_setaffinity(0, original_affinity)
+
+
 def ensure_build_exists(build_dir: Path, build_type: str) -> None:
     if build_dir.exists():
         return
@@ -364,6 +380,7 @@ def run(
     cpu = _resolve_cpu_affinity(cpu_affinity)
     if cpu is not None:
         print(f"Pinning benchmark binary to CPU {cpu}")
+        _prewarm_cpu_affinity(cpu)
     subprocess.run(
         [str(binary), *run_args],
         check=True,

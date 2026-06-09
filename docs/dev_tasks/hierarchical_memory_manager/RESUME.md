@@ -316,6 +316,18 @@ is still open for production no-growth coverage, WorldRegistry bake/build
 sizing, and any future allocator baselines that map to HMM allocator roles;
 keep the combined comparative gate green as allocator policy changes.
 
+A later 2026-06-08 continuation added runner-side CPU prewarm immediately
+before launching affinity-pinned benchmark binaries and added cache-line
+coloring for large 64-byte-aligned `FreeListAllocator` array allocations. The
+allocator change targets the no-growth EnTT/World registry layout case where
+consecutive page-sized component arrays can otherwise start on identical cache
+sets. Focused probes showed the 512-entity no-growth row can improve
+substantially with zero post-prewarm allocator calls, but high-load full EnTT
+runs were still rejected for high CV or unrelated build/growth misses; do not
+claim a fresh full EnTT or 94-row pass until a quiet-host checker run replaces
+`.benchmark_results/allocator_entt_nogrowth_freelist_color_512_auto_probe.json`
+with strict green evidence.
+
 Treat the persistent EnTT no-growth benchmark policy as production-aligned for
 the allocator role: World registry storage uses the free-list-backed
 `StlAllocator`. Treat EnTT build/growth as matched benchmark evidence for

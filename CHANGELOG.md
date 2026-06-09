@@ -192,6 +192,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     comparative allocator row now lets the checker control benchmark min-time,
     and short stack/tracked-stack rows batch repeated allocator cycles for
     stricter low-noise comparisons.
+  - Prewarmed the benchmark runner's selected CPU immediately before launching
+    an affinity-pinned C++ benchmark binary, reducing cold-frequency bias from
+    configure/build work that happens before benchmark execution.
   - Kept `StlAllocator` allocation and deallocation alignment-aware for
     allocator-backed STL storage, including fixed-pool-backed max-aligned
     values and cache-line-aligned large storage pages for allocator-aware
@@ -219,6 +222,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     from the base allocator after bake/build, and exposed construction-time
     free-list capacity/policy knobs through `MemoryManager` and experimental
     `WorldOptions`.
+  - Added cache-line coloring for large 64-byte-aligned `FreeListAllocator`
+    array allocations so consecutive page-sized component/storage arrays avoid
+    starting on the same L1 cache sets while preserving their requested
+    alignment.
   - Fixed fixed-capacity `FreeListAllocator` aligned allocations so
     `PoolAllocator` can satisfy aligned size-class chunks from reserved arena
     bytes without growing from the base allocator.

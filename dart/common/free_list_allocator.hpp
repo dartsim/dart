@@ -41,6 +41,7 @@
 #include <vector>
 
 #include <cstddef>
+#include <cstdint>
 
 namespace dart::common {
 
@@ -232,6 +233,9 @@ private:
 
   /// The live user allocation count for diagnostics.
   size_t mDiagnosticAllocationCount{0};
+
+  /// Rotating cache-line color for large aligned array allocations.
+  std::uint8_t mLargeAlignedAllocationColor{0};
 };
 
 } // namespace dart::common

@@ -248,9 +248,15 @@ void* FreeListAllocator::allocate(size_t bytes, size_t alignment) noexcept
 void* FreeListAllocator::allocateFromReservedBlockAligned(
     size_t bytes, size_t alignment) noexcept
 {
+  // Large component/storage pages are often power-of-two sized. Rotating
+  // cache-line starts avoids mapping consecutive arrays to identical L1 sets.
+  const bool colorLargeCacheAlignedAllocation
+      = alignment == 64 && bytes >= 2048;
   size_t allocationSize = 0;
   if (!checkedAdd(bytes, sizeof(AlignedAllocationHeader), allocationSize)
-      || !checkedAdd(allocationSize, alignment - 1, allocationSize)) {
+      || !checkedAdd(allocationSize, alignment - 1, allocationSize)
+      || (colorLargeCacheAlignedAllocation
+          && !checkedAdd(allocationSize, 7 * alignment, allocationSize))) {
     return nullptr;
   }
 
@@ -267,8 +273,22 @@ void* FreeListAllocator::allocateFromReservedBlockAligned(
 
   const auto payloadBegin = reinterpret_cast<uintptr_t>(allocation)
                             + sizeof(AlignedAllocationHeader);
-  const auto alignedPayload
+  auto alignedPayload
       = (payloadBegin + alignment - 1) & ~(uintptr_t{alignment} - 1);
+  if (colorLargeCacheAlignedAllocation) {
+    const auto colorPadding
+        = static_cast<uintptr_t>(mLargeAlignedAllocationColor) * alignment;
+    if (alignedPayload > std::numeric_limits<uintptr_t>::max() - colorPadding) {
+      deallocate(allocation, allocationSize);
+      mDiagnosticAllocatedSize = diagnosticAllocatedSize;
+      mDiagnosticPeakAllocatedSize = diagnosticPeakAllocatedSize;
+      mDiagnosticAllocationCount = diagnosticAllocationCount;
+      return nullptr;
+    }
+    alignedPayload += colorPadding;
+    mLargeAlignedAllocationColor
+        = static_cast<std::uint8_t>((mLargeAlignedAllocationColor + 1u) & 7u);
+  }
   auto* header = reinterpret_cast<AlignedAllocationHeader*>(
       alignedPayload - sizeof(AlignedAllocationHeader));
   std::construct_at(

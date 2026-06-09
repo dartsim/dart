@@ -131,6 +131,29 @@ TEST(FreeListAllocatorTest, AllocateAlignedSatisfiesOverAlignment)
 }
 
 //==============================================================================
+TEST(FreeListAllocatorTest, LargeAlignedAllocationsRotateCacheLineColor)
+{
+  FreeListAllocator allocator(
+      MemoryAllocator::GetDefault(),
+      64 * 1024,
+      FreeListAllocator::GrowthPolicy::FixedCapacity);
+
+  auto* first = allocator.allocate(4096, 64);
+  auto* second = allocator.allocate(4096, 64);
+  ASSERT_NE(first, nullptr);
+  ASSERT_NE(second, nullptr);
+
+  const auto firstAddress = reinterpret_cast<std::uintptr_t>(first);
+  const auto secondAddress = reinterpret_cast<std::uintptr_t>(second);
+  EXPECT_EQ(firstAddress % 64u, 0u);
+  EXPECT_EQ(secondAddress % 64u, 0u);
+  EXPECT_NE(firstAddress % 512u, secondAddress % 512u);
+
+  allocator.deallocate(second, 4096, 64);
+  allocator.deallocate(first, 4096, 64);
+}
+
+//==============================================================================
 TEST(FreeListAllocatorTest, DestructorReleasesLeakedArenaAlignedAllocations)
 {
   MemoryAllocatorDebugger<CAllocator> baseAllocator;

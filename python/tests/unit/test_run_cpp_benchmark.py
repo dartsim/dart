@@ -107,3 +107,30 @@ def test_auto_cpu_avoids_busy_thread_sibling(monkeypatch):
     )
 
     assert module._choose_auto_cpu([4, 5, 16]) == 16
+
+
+def test_prewarm_cpu_affinity_restores_original_affinity(monkeypatch):
+    module = _load_module()
+    current_affinity = {0, 1}
+    affinity_calls = []
+
+    def fake_getaffinity(pid):
+        assert pid == 0
+        return set(current_affinity)
+
+    def fake_setaffinity(pid, cpus):
+        assert pid == 0
+        affinity_calls.append(set(cpus))
+        current_affinity.clear()
+        current_affinity.update(cpus)
+
+    times = iter([10.0, 10.2, 10.6])
+    monkeypatch.setattr(module.os, "sched_getaffinity", fake_getaffinity, raising=False)
+    monkeypatch.setattr(module.os, "sched_setaffinity", fake_setaffinity, raising=False)
+    monkeypatch.setattr(module.time, "perf_counter", lambda: next(times))
+
+    checksum = module._prewarm_cpu_affinity(3, seconds=0.5)
+
+    assert checksum is not None
+    assert affinity_calls == [{3}, {0, 1}]
+    assert current_affinity == {0, 1}

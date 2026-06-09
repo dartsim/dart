@@ -132,7 +132,16 @@
       role-correct build/growth path can beat foonathan and standard rows, but
       the persistent no-growth timing proof remains open because current runs
       are dominated by unrelated host load and the no-growth row still reports
-      zero allocator calls after prewarm.
+      zero allocator calls after prewarm. A subsequent follow-up added
+      runner-side CPU prewarm immediately before affinity-pinned benchmark
+      launch and cache-line coloring for large 64-byte-aligned
+      `FreeListAllocator` array allocations. The coloring is based on the
+      EnTT/World registry access pattern: consecutive page-sized component
+      arrays can otherwise start on identical cache sets when their allocation
+      sizes are multiples of the cache-index period. Focused probes show the
+      512-entity no-growth row can close the foonathan gap with zero
+      post-prewarm allocator calls, but high-load full EnTT runs are still not
+      acceptable final evidence.
 - [ ] Phase 3: EnTT registry/component storage allocation is configurable from
       the World memory hierarchy and covered by no-growth ECS tests.
       Allocator-aware EnTT storage now has focused `StlAllocator` and
@@ -470,6 +479,14 @@ debugging, profiling, optimization experiments, and ImGui visualization.
    `.benchmark_results/allocator_comparative_lookup_table_mixed_entt_merged_check.json`
    passes all 94 foonathan/memory and standard comparisons. Keep this combined
    gate green after allocator or benchmark policy changes:
+
+   A 2026-06-08 follow-up added runner-side CPU prewarm and cache-line coloring
+   for large 64-byte-aligned `FreeListAllocator` array allocations. Direct
+   focused probes improved the weak EnTT no-growth 512 row, but the local host
+   was still noisy enough that random-interleaved and sequential full EnTT runs
+   rejected rows for high CV or unrelated build/growth timing misses. Treat
+   `.benchmark_results/allocator_entt_nogrowth_freelist_color_512_auto_probe.json`
+   as directional evidence only until a quiet-host checker run replaces it.
 
    ```bash
    pixi run bm-allocator-comparative-check \
