@@ -256,8 +256,9 @@
       production grid reuse candidate and friction-contact storage through
       projected-Newton line-search CCD. The direct-sparse default solver now
       carries that same no-growth coverage through 13x13, 15x15, 17x17, and
-      dense 13x19 rectangular two-layer production grids. Projected-Newton
-      sparse assembly now reserves
+      dense 13x19 rectangular two-layer production grids, and the matrix-free
+      default solver now carries the 13x19 rectangular production guard through
+      its CG scratch path. Projected-Newton sparse assembly now reserves
       self-contact barrier block storage from baked candidate capacity instead
       of only the bake-active candidate count, so same-topology active set
       variation does not grow DART-owned barrier vectors. Motion-aware
@@ -326,9 +327,9 @@
       grid, an 11x11 two-layer extended production grid, a 13x13 two-layer
       dense production grid, a 15x15 extra-dense two-layer production grid,
       a 17x17 larger two-layer production grid, a 9x13 non-square two-layer
-      production grid, a 13x19 dense rectangular production grid, a 7x17 wide
-      non-square production grid, a 17x7 tall non-square production grid, a
-      notched and jittered 13x17 irregular
+      production grid, direct-sparse and matrix-free 13x19 dense rectangular
+      production grids, a 7x17 wide non-square production grid, a 17x7 tall
+      non-square production grid, a notched and jittered 13x17 irregular
       direct-sparse production grid, and an 11x11 late-active two-layer
       direct-sparse plus matrix-free grid that starts outside the self-contact
       barrier band and enters it during the counted baked steps, with the same
@@ -574,8 +575,9 @@ debugging, profiling, optimization experiments, and ImGui visualization.
    deformable friction guard
    scales the same topology-reserved candidate/friction scratch, including
    swept-AABB line-search CCD capacity, from patch, 5x5, 7x7, and 9x9 grids to
-   active 11x11, 13x13, and 15x15 square grids plus 9x13, 13x19, 7x17, and 17x7
-   non-square two-layer grids. Late-active 11x11 square and 9x13 rectangular
+   active 11x11, 13x13, and 15x15 square grids plus direct-sparse and
+   matrix-free 13x19, 9x13, 7x17, and 17x7 non-square two-layer grids.
+   Late-active 11x11 square and 9x13 rectangular
    direct-sparse and matrix-free grids now cover dynamic contact-pattern cases
    without World-base or global-heap growth. The AVBD
    self-contact row guard now also covers a 5x9 rectangular grid row workload
