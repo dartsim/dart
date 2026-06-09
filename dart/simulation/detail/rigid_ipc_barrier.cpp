@@ -2637,19 +2637,12 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
           return;
         }
 
-        double sufficientDecreaseFactor
-            = newtonOptions.sufficientDecreaseFactor;
-        if (!std::isfinite(sufficientDecreaseFactor)) {
-          sufficientDecreaseFactor = 1e-4;
-        }
-        sufficientDecreaseFactor = std::clamp(
-            sufficientDecreaseFactor, 0.0, std::nextafter(1.0, 0.0));
-
-        double backtrackingScale = newtonOptions.backtrackingScale;
-        if (!(std::isfinite(backtrackingScale) && backtrackingScale > 0.0
-              && backtrackingScale < 1.0)) {
-          backtrackingScale = 0.5;
-        }
+        const double sufficientDecreaseFactor
+            = newton_barrier::sanitizeSufficientDecreaseFactor(
+                newtonOptions.sufficientDecreaseFactor);
+        const double backtrackingScale
+            = newton_barrier::sanitizeBacktrackingScale(
+                newtonOptions.backtrackingScale);
 
         double trialScale = 1.0;
         acceptedSurfaces.clear();
@@ -2683,9 +2676,6 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
                   assemblyScratch);
           ++result.stats.sufficientDecreaseChecks;
 
-          const double sufficientDecreaseValue
-              = currentValue
-                + sufficientDecreaseFactor * trialScale * directionalDerivative;
           if (std::isfinite(candidateAssembly.value)
               && candidateAssembly.value < bestDecreasingValue) {
             bestDecreasingValue = candidateAssembly.value;
@@ -2693,9 +2683,12 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
             bestDecreasingSurfaces = candidateSurfaces;
             hasDecreasingCandidate = true;
           }
-          if (std::isfinite(candidateAssembly.value)
-              && candidateAssembly.value <= sufficientDecreaseValue) {
-            acceptedSurfaces = candidateSurfaces;
+          if (newton_barrier::satisfiesSufficientDecrease(
+                  currentValue,
+                  candidateAssembly.value,
+                  trialScale * directionalDerivative,
+                  sufficientDecreaseFactor)) {
+            acceptedSurfaces = std::move(candidateSurfaces);
             acceptedCandidate = true;
             break;
           }

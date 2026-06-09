@@ -46,6 +46,8 @@
 #include <limits>
 #include <type_traits>
 
+#include <cmath>
+
 namespace dc = dart::simulation::detail::deformable_contact;
 namespace nb = dart::simulation::detail::newton_barrier;
 namespace rigid = dart::simulation::detail;
@@ -250,6 +252,45 @@ TEST(NewtonBarrierPrimitives, InteriorLineSearchStepScaleStaysInsideBound)
       nb::makeInteriorLineSearchStepScale(
           std::numeric_limits<double>::quiet_NaN()),
       0.0);
+}
+
+//==============================================================================
+TEST(NewtonBarrierPrimitives, SufficientDecreasePolicySanitizesSharedScalars)
+{
+  EXPECT_DOUBLE_EQ(
+      nb::sanitizeSufficientDecreaseFactor(
+          std::numeric_limits<double>::quiet_NaN()),
+      nb::kDefaultSufficientDecreaseFactor);
+  EXPECT_DOUBLE_EQ(nb::sanitizeSufficientDecreaseFactor(-1.0), 0.0);
+  EXPECT_DOUBLE_EQ(
+      nb::sanitizeSufficientDecreaseFactor(2.0), std::nextafter(1.0, 0.0));
+  EXPECT_DOUBLE_EQ(nb::sanitizeSufficientDecreaseFactor(1e-3), 1e-3);
+
+  EXPECT_DOUBLE_EQ(
+      nb::sanitizeBacktrackingScale(std::numeric_limits<double>::quiet_NaN()),
+      nb::kDefaultBacktrackingScale);
+  EXPECT_DOUBLE_EQ(
+      nb::sanitizeBacktrackingScale(0.0), nb::kDefaultBacktrackingScale);
+  EXPECT_DOUBLE_EQ(
+      nb::sanitizeBacktrackingScale(1.0), nb::kDefaultBacktrackingScale);
+  EXPECT_DOUBLE_EQ(nb::sanitizeBacktrackingScale(0.25), 0.25);
+}
+
+//==============================================================================
+TEST(NewtonBarrierPrimitives, SufficientDecreasePolicyChecksArmijoThreshold)
+{
+  EXPECT_DOUBLE_EQ(nb::sufficientDecreaseThreshold(10.0, -20.0), 9.998);
+  EXPECT_TRUE(nb::satisfiesSufficientDecrease(10.0, 9.998, -20.0));
+  EXPECT_FALSE(nb::satisfiesSufficientDecrease(10.0, 9.9981, -20.0));
+
+  EXPECT_TRUE(nb::satisfiesSufficientDecrease(10.0, 9.0, -2.0, 0.5));
+  EXPECT_FALSE(nb::satisfiesSufficientDecrease(10.0, 9.1, -2.0, 0.5));
+  EXPECT_FALSE(
+      nb::satisfiesSufficientDecrease(
+          10.0, std::numeric_limits<double>::quiet_NaN(), -2.0));
+  EXPECT_FALSE(
+      nb::satisfiesSufficientDecrease(
+          10.0, 9.0, std::numeric_limits<double>::quiet_NaN()));
 }
 
 //==============================================================================
