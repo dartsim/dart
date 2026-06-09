@@ -104,6 +104,15 @@
         are complete; remaining solver result/status payloads and
         packet-specific gates stay variant-local until another phase proves
         identical behavior.
+- [x] Implementation-roadmap Phase 3: add the unified articulation constraint
+      family behind internal DART-owned Newton-barrier names.
+  - [x] Add point-connection and fixed-point residual/Jacobian helpers.
+  - [x] Add hinge-axis residuals and cone-twist bend/twist decomposition.
+  - [x] Add sliding and relative-sliding residual/Jacobian helpers.
+  - [x] Add distance residual/Jacobian helpers and bounded-distance barrier
+        diagnostics.
+  - [x] Add sliding-range and rotation-range barrier diagnostics with PSD
+        Hessian approximations.
 - [ ] Phase 4: expand the unified manifest into diagnostics, benchmark packets,
       CPU/GPU evidence, and visual evidence rows.
 - [ ] Phase 5: add runtime and py-demos scenes only after the relevant solver
@@ -164,11 +173,10 @@ storage, or backend resources as public API.
 
 ## Immediate Next Steps
 
-1. Merge the latest `origin/main`, run the Phase 2 validation gates, and open
-   one phase-scoped PR for implementation-roadmap Phase 2: Shared Solver
-   Contracts. After that PR lands, start implementation-roadmap Phase 3:
-   Unified Articulation Constraints; do not treat dev-task Phase 4 manifest
-   expansion as the next implementation-roadmap phase.
+1. Let implementation-roadmap Phase 2 PR #2951 land, then merge the latest
+   `origin/main` into `simx/plan083-phase-3-unified-articulation-constraints`,
+   rerun the Phase 3 validation gates, and open one phase-scoped PR for
+   implementation-roadmap Phase 3: Unified Articulation Constraints.
 2. Keep the two-body affine contact micro-solve deferred until the
    `abd-alg-affine-body` row expands beyond the primitive/oracle micro-packet
    and needs a solved-state residual or runtime stepping diagnostic.
@@ -288,6 +296,12 @@ Implementation-roadmap Phase 2 branch-local closeout evidence:
 - `pixi run -- cmake --build build/default/cpp/Release --target test_newton_barrier_primitives test_affine_body_dynamics test_rigid_ipc_barrier test_world test_deformable_body --parallel <safe-jobs>`
 - `pixi run -- ctest --test-dir build/default/cpp/Release --output-on-failure -j <safe-jobs> -R '^(test_newton_barrier_primitives|test_affine_body_dynamics|test_rigid_ipc_barrier|test_world|test_deformable_body)$'`
 - `pixi run python -m pytest tests/test_benchmark_packet_utils.py`
+
+Implementation-roadmap Phase 3 branch-local evidence:
+
+- `pixi run lint`
+- `pixi run -- cmake --build build/default/cpp/Release --target test_newton_barrier_primitives --parallel <safe-jobs>`
+- `pixi run -- ctest --test-dir build/default/cpp/Release --output-on-failure -j <safe-jobs> -R '^test_newton_barrier_primitives$'`
 
 ## Owner Docs
 

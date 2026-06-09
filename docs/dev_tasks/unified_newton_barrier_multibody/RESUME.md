@@ -98,6 +98,16 @@ work diagnostics, and benchmark packet timing schema helpers are shared under
 their internal owners with focused cross-variant tests. This completes the
 Shared Solver Contracts phase; do not open more sub-item PRs for this phase.
 
+The implementation-roadmap Phase 3 closeout is now branch-local on
+`simx/plan083-phase-3-unified-articulation-constraints`:
+`detail/newton_barrier/articulation_constraint.hpp` owns internal
+point-connection, fixed-point, hinge-axis, cone-twist, sliding,
+relative-sliding, distance, bounded-distance, sliding-range, and
+rotation-range contracts. Focused `test_newton_barrier_primitives` coverage
+checks residuals, finite-difference Jacobians/gradients, range feasibility, and
+PSD Hessian approximations. Keep this as one phase-scoped PR after Phase 2
+lands.
+
 ## Last Session Summary
 
 Current slice: the first ABD benchmark packet has been promoted from
@@ -178,19 +188,18 @@ build/CTest entries.
 
 ## Current Branch
 
-`simx/plan083-phase-2-shared-solver-contracts` - contains the
-implementation-roadmap Phase 2 shared solver contract closeout. It should become
-one phase-scoped PR after merging the latest `origin/main` and rerunning the
-required gates.
+`simx/plan083-phase-3-unified-articulation-constraints` - contains the
+implementation-roadmap Phase 3 unified articulation constraint closeout. It is
+stacked after Phase 2 and should become one phase-scoped PR after Phase 2 PR
+#2951 lands, the latest `origin/main` is merged, and the required gates rerun.
 
 ## Immediate Next Step
 
-Merge the latest `origin/main` into
-`simx/plan083-phase-2-shared-solver-contracts`, rerun lint and the focused Phase
-2 validation gates, then open one phase-scoped PR for implementation-roadmap
-Phase 2. After that PR lands, start implementation-roadmap Phase 3: Unified
-Articulation Constraints. Do not start dev-task Phase 4 manifest expansion as a
-substitute for the roadmap Phase 3 articulation work.
+Monitor Phase 2 PR #2951. After it lands, merge the latest `origin/main` into
+`simx/plan083-phase-3-unified-articulation-constraints`, rerun lint and the
+focused Phase 3 validation gates, then open one phase-scoped PR for
+implementation-roadmap Phase 3. Do not start implementation-roadmap Phase 4 as a
+substitute for finishing the Phase 3 PR handoff.
 
 ## Context That Would Be Lost
 
