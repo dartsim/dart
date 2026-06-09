@@ -2570,6 +2570,13 @@ void AddPgsCounters(benchmark::State& state, const LcpOptions& options)
   state.counters["pgs_relaxation"] = options.relaxation;
 }
 
+void AddBlockedJacobiCounters(
+    benchmark::State& state, const LcpOptions& options)
+{
+  state.counters["blocked_jacobi_max_iterations"] = options.maxIterations;
+  state.counters["blocked_jacobi_relaxation"] = options.relaxation;
+}
+
 void AddRedBlackGaussSeidelCounters(
     benchmark::State& state, const LcpOptions& options)
 {
@@ -8459,6 +8466,11 @@ void RunWorldStackContactBenchmark(
     // default 100-iteration cap leaves the 8-sphere row outside the LCP
     // contract.
     storage.options.maxIterations = 512;
+  } else if (solverEntry.name == "BlockedJacobi") {
+    // The 10-sphere coupled stack converges in 342 blocked Jacobi iterations;
+    // the default 100-iteration cap leaves the 8-sphere row outside the same
+    // LCP contract.
+    storage.options.maxIterations = 512;
   } else if (solverEntry.name == "NNCG") {
     // Coupled stack contacts need a stronger PGS preconditioner than the
     // generated math fixtures to satisfy the same LCP contract through 10
@@ -8489,6 +8501,9 @@ void RunWorldStackContactBenchmark(
   state.counters["sphere_count"] = static_cast<double>(sphereCount);
   if (solverEntry.name == "Pgs") {
     AddPgsCounters(state, storage.options);
+  }
+  if (solverEntry.name == "BlockedJacobi") {
+    AddBlockedJacobiCounters(state, storage.options);
   }
   if (storage.hasNncgParams) {
     AddNncgCounters(state, storage.nncgParams);
@@ -11948,6 +11963,8 @@ void RegisterWorldStackContactBenchmarks()
     registeredBenchmark->Arg(2)->Arg(3)->Arg(4)->Arg(5)->Arg(6);
     registeredBenchmark->Arg(7);
     if (solver.name == "Pgs") {
+      registeredBenchmark->Arg(8)->Arg(9)->Arg(10);
+    } else if (solver.name == "BlockedJacobi") {
       registeredBenchmark->Arg(8)->Arg(9)->Arg(10);
     } else if (solver.name == "RedBlackGaussSeidel") {
       registeredBenchmark->Arg(8)->Arg(9)->Arg(10);

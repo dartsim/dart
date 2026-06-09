@@ -315,10 +315,11 @@
 - [x] Extended DART 7 boxed-LCP coupled stack evidence to a 6-sphere, 6-contact,
       18-row vertical stack, with unit snapshot-contract coverage, a 1000-step
       public `World::step()` invariant test, all-solver stack benchmark rows
-      through 7 spheres and scoped 8-/9-/10-sphere PGS and NNCG stack
-      evidence. The PGS stack rows use a 512-iteration cap, the NNCG stack rows
-      use 20 PGS preconditioner iterations, and the originally scoped
-      non-NNCG rows have matching default/SIMD/CUDA-enabled benchmark evidence.
+      through 7 spheres and scoped 8-/9-/10-sphere PGS, Blocked Jacobi, and
+      NNCG stack evidence. The PGS and Blocked Jacobi stack rows use a
+      512-iteration cap, the NNCG stack rows use 20 PGS preconditioner
+      iterations, and the originally scoped non-NNCG rows have matching
+      default/SIMD/CUDA-enabled benchmark evidence.
 - [x] Extended DART 7 boxed-LCP coupled stack snapshot evidence to a 7-sphere,
       7-contact, 21-row vertical stack and matching boxed-LCP assembly
       benchmark row, plus 16 friction-index solver benchmark rows. `NNCG` uses
@@ -329,29 +330,30 @@
       claimed.
 - [x] Extended DART 7 boxed-LCP coupled stack snapshot evidence to an 8-sphere,
       8-contact, 24-row vertical stack, with a matching assembly benchmark row
-      and 13 friction-index solver benchmark rows. This excludes `Jacobi`,
-      `BlockedJacobi`, and `ShockPropagation` at 8 spheres because focused
-      probes did not satisfy the LCP contract for those rows; the `Pgs` row
-      uses a 512-iteration cap after the default 100-iteration cap failed, the
-      `NNCG` row uses the 20-iteration PGS preconditioner after a 10-iteration
-      probe failed, and the `RedBlackGaussSeidel` row uses a 512-iteration cap
-      after a 128-iteration probe failed. No 8-sphere public-step invariant is
+      and 14 friction-index solver benchmark rows. This excludes `Jacobi` and
+      `ShockPropagation` at 8 spheres because focused probes did not satisfy
+      the LCP contract for those rows; the `Pgs` and `BlockedJacobi` rows use a
+      512-iteration cap after the default 100-iteration cap failed, the `NNCG`
+      row uses the 20-iteration PGS preconditioner after a 10-iteration probe
+      failed, and the `RedBlackGaussSeidel` row uses a 512-iteration cap after
+      a 128-iteration probe failed. No 8-sphere public-step invariant is
       claimed.
 - [x] Extended DART 7 boxed-LCP coupled stack snapshot evidence to a 9-sphere,
       9-contact, 27-row vertical stack, with a matching assembly benchmark row
-      and 13 friction-index solver benchmark rows. Focused default,
+      and 14 friction-index solver benchmark rows. Focused default,
       SIMD-enabled, and CUDA-enabled runs satisfy the LCP contract; no 9-sphere
-      public-step invariant is claimed. The PGS and Red-Black Gauss-Seidel rows
-      use the same 512-iteration cap, and the NNCG row uses the same
-      20-iteration PGS preconditioner as the smaller coupled-stack rows.
-- [x] Extended DART 7 boxed-LCP coupled stack snapshot evidence to a 10-sphere,
-      10-contact, 30-row vertical stack, with a matching assembly benchmark row
-      and 13 friction-index solver benchmark rows. Focused default,
-      SIMD-enabled, and CUDA-enabled runs satisfy the LCP contract; no
-      10-sphere public-step invariant is claimed. The PGS and Red-Black
+      public-step invariant is claimed. The PGS, Blocked Jacobi, and Red-Black
       Gauss-Seidel rows use the same 512-iteration cap, and the NNCG row uses
       the same 20-iteration PGS preconditioner as the smaller coupled-stack
       rows.
+- [x] Extended DART 7 boxed-LCP coupled stack snapshot evidence to a 10-sphere,
+      10-contact, 30-row vertical stack, with a matching assembly benchmark row
+      and 14 friction-index solver benchmark rows. Focused default,
+      SIMD-enabled, and CUDA-enabled runs satisfy the LCP contract; no
+      10-sphere public-step invariant is claimed. The PGS, Blocked Jacobi, and
+      Red-Black Gauss-Seidel rows use the same 512-iteration cap, and the NNCG
+      row uses the same 20-iteration PGS preconditioner as the smaller
+      coupled-stack rows.
 - [x] Extended DART 7 boxed-LCP coupled stack snapshot and assembly evidence to
       11-, 12-, 13-, 14-, 15-, and 16-sphere vertical stacks, validating
       11-/12-/13-/14-/15-/16-contact and 33-/36-/39-/42-/45-/48-row
@@ -368,9 +370,9 @@
       (`NNCG` reports a 20-iteration PGS preconditioner for this coupled
       contact family), plus 7-sphere rows for that solver set, an 8-sphere
       `RedBlackGaussSeidel` row, and 8-/9-/10-sphere rows for `Pgs`,
-      `RedBlackGaussSeidel`, `NNCG`, and the narrower 10-solver passing subset,
-      so the comparison now includes larger boxed/findex snapshots where
-      contacts share dynamic bodies.
+      `BlockedJacobi`, `RedBlackGaussSeidel`, `NNCG`, and the narrower
+      10-solver passing subset, so the comparison now includes larger
+      boxed/findex snapshots where contacts share dynamic bodies.
 - [x] Added mixed DART 7 world-contact batch benchmark rows that compare every
       friction-index-capable solver over the same 5-problem batch of separated
       sphere-ground and coupled stack snapshots, both serially and through the
@@ -1893,15 +1895,20 @@ tradeoffs evidence based.
   8-/9-/10-sphere rows reported `contract_ok=1`; the rows reported residuals
   `3.0803965763981367e-04`, `3.9036340220555132e-04`, and
   `4.7141997313282502e-04`, matching complementarity residuals, and 156, 189,
-  and 225 solver iterations. It also registers 13
+  and 225 solver iterations. With the same 512-iteration stack-contact cap,
+  focused `BlockedJacobi` 8-/9-/10-sphere rows reported `contract_ok=1`; the
+  rows reported `blocked_jacobi_max_iterations=512`, residuals
+  `1.3555336200852253e-03`, `1.6746823956577117e-03`, and
+  `2.0486417140306301e-03`, matching complementarity residuals, and 242, 292,
+  and 342 solver iterations. It also registers 14
   `BM_LcpWorldStackContact/FrictionIndex/<solver>/8` rows for `Pgs`,
-  `Dantzig`, `SymmetricPsor`, `BGS`, `RedBlackGaussSeidel`, `NNCG`,
-  `SubspaceMinimization`, `Apgd`, `Tgs`, `Staggering`, `Admm`, `Sap`, and
-  `BoxedSemiSmoothNewton`, plus 13
+  `Dantzig`, `SymmetricPsor`, `BGS`, `BlockedJacobi`, `RedBlackGaussSeidel`,
+  `NNCG`, `SubspaceMinimization`, `Apgd`, `Tgs`, `Staggering`, `Admm`, `Sap`,
+  and `BoxedSemiSmoothNewton`, plus 14
   `BM_LcpWorldStackContact/FrictionIndex/<solver>/{9,10}` rows for the same set
-  including `RedBlackGaussSeidel`; focused 8-sphere probes reported
-  `contract_ok=0` for `Jacobi`, `BlockedJacobi`, and `ShockPropagation`, so
-  those rows remain unclaimed at 8, 9, and 10 spheres.
+  including `BlockedJacobi` and `RedBlackGaussSeidel`; focused 8-sphere probes
+  reported `contract_ok=0` for `Jacobi` and `ShockPropagation`, so those rows
+  remain unclaimed at 8, 9, and 10 spheres.
   These snapshots include a ground contact and sphere-sphere contacts,
   so the Delassus system couples multiple contacts through shared dynamic
   bodies. The target also registers
@@ -1935,7 +1942,7 @@ tradeoffs evidence based.
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldStackContact/FrictionIndex/.*/8$|BM_LcpWorldStackContactAssembly_BoxedLcp/8$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   runs reported `contract_ok=1` for the original 10 non-NNCG registered
   8-sphere solver rows and the 8-sphere assembly row. A current focused default
-  run of that same filter reports `contract_ok=1` for all 13 registered
+  run of that same filter reports `contract_ok=1` for all 14 registered
   8-sphere solver rows plus the assembly row; the PGS 8-sphere row reports
   `pgs_max_iterations=512`, `pgs_relaxation=1`,
   `residual=3.0803965763981367e-04`,
@@ -1946,12 +1953,15 @@ tradeoffs evidence based.
   `RedBlackGaussSeidel` 8-sphere row reports
   `red_black_gauss_seidel_max_iterations=512`,
   `residual=1.3859891024932125e-03`,
-  `complementarity=1.3859891024931292e-03`, and 135 solver iterations.
+  `complementarity=1.3859891024931292e-03`, and 135 solver iterations, and the
+  `BlockedJacobi` 8-sphere row reports `blocked_jacobi_max_iterations=512`,
+  `residual=1.3555336200852253e-03`,
+  `complementarity=1.3555336200851698e-03`, and 242 solver iterations.
   Focused default, SIMD-enabled, and CUDA-enabled
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldStackContact/FrictionIndex/.*/9$|BM_LcpWorldStackContactAssembly_BoxedLcp/9$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   runs reported `contract_ok=1` for the original 10 non-NNCG registered
   9-sphere solver rows and the 9-sphere assembly row. A current focused default
-  run of that same filter reports `contract_ok=1` for all 13 registered
+  run of that same filter reports `contract_ok=1` for all 14 registered
   9-sphere solver rows plus the assembly row; the PGS 9-sphere row reports
   `pgs_max_iterations=512`, `pgs_relaxation=1`,
   `residual=3.9036340220555132e-04`,
@@ -1962,12 +1972,15 @@ tradeoffs evidence based.
   `RedBlackGaussSeidel` 9-sphere row reports
   `red_black_gauss_seidel_max_iterations=512`,
   `residual=1.7007052647963761e-03`,
-  `complementarity=1.7007052647963206e-03`, and 162 solver iterations.
+  `complementarity=1.7007052647963206e-03`, and 162 solver iterations, and the
+  `BlockedJacobi` 9-sphere row reports `blocked_jacobi_max_iterations=512`,
+  `residual=1.6746823956577117e-03`,
+  `complementarity=1.6746823956576562e-03`, and 292 solver iterations.
   Focused default, SIMD-enabled, and CUDA-enabled
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldStackContact/FrictionIndex/.*/10$|BM_LcpWorldStackContactAssembly_BoxedLcp/10$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   runs reported `contract_ok=1` for the original 10 non-NNCG registered
   10-sphere solver rows and the 10-sphere assembly row. A current focused
-  default run of that same filter reports `contract_ok=1` for all 13 registered
+  default run of that same filter reports `contract_ok=1` for all 14 registered
   10-sphere solver rows plus the assembly row; the PGS 10-sphere row reports
   `pgs_max_iterations=512`, `pgs_relaxation=1`,
   `residual=4.7141997313282502e-04`,
@@ -1978,7 +1991,10 @@ tradeoffs evidence based.
   `RedBlackGaussSeidel` 10-sphere row reports
   `red_black_gauss_seidel_max_iterations=512`,
   `residual=2.0442842170353970e-03`,
-  `complementarity=2.0442842170353137e-03`, and 194 solver iterations.
+  `complementarity=2.0442842170353137e-03`, and 194 solver iterations, and the
+  `BlockedJacobi` 10-sphere row reports `blocked_jacobi_max_iterations=512`,
+  `residual=2.0486417140306301e-03`,
+  `complementarity=2.0486417140305746e-03`, and 342 solver iterations.
   The focused default
   `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldStackContactAssembly_BoxedLcp/(11|12)$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_format=json`
   run reported `contract_ok=1` for the 11- and 12-sphere assembly rows with
@@ -2490,7 +2506,7 @@ tradeoffs evidence based.
   friction-index-capable solvers on 2- and 3-sphere vertical stacks with shared
   dynamic bodies, plus 4-, 5-, and 6-sphere rows for all of those solvers,
   plus 7-sphere rows for all of those solvers, plus 8-/9-/10-sphere rows for
-  `Pgs`, `RedBlackGaussSeidel`, `NNCG`, and the narrower passing solver
+  `Pgs`, `BlockedJacobi`, `RedBlackGaussSeidel`, `NNCG`, and the narrower passing solver
   subset. Stack assembly/solve benchmark rows cover
   2-, 3-, 4-, 5-, 6-, 7-,
   8-, 9-, 10-, 11-, 12-, 13-, 14-, 15-, and 16-sphere scenes.
