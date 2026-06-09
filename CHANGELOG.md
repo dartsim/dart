@@ -1135,8 +1135,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     Semi-Smooth Newton reports tuned line-search settings on the 16x rows. The
     new 192- and 256-contact batch rows are verified in the default build, and
     focused SIMD/CUDA-enabled all-solver serial/parallel 192-contact batch
-    contract gates now pass. The full 256-contact SIMD/CUDA batch gate remains
-    unclaimed. Added 31 near-singular benchmark rows for standard 8-row,
+    contract gates now pass. Focused SIMD/CUDA-enabled selected-solver
+    256-contact batch gates now pass for PGS, NNCG, APGD, TGS, ADMM, and Boxed
+    Semi-Smooth Newton, while the full all-solver 256-contact SIMD/CUDA batch
+    gate remains unclaimed. Added 31 near-singular benchmark rows for standard 8-row,
     boxed 8-row, and
     coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-, 32-, 48-, 64-, 96-,
     128-, 192-, and 256-contact

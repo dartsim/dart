@@ -118,8 +118,9 @@ Support abbreviations:
   Semi-Smooth Newton included across those coupled rows. The matching
   benchmark grid now has 629 single-problem rows through 256 contacts and 1258
   batch rows through 256 contacts. The 256-contact single rows are verified in
-  default, SIMD-enabled, and CUDA-enabled build trees; the 256-contact batch
-  rows are verified in the default build only. It now
+  default, SIMD-enabled, and CUDA-enabled build trees; all 256-contact batch
+  rows are verified in the default build, and selected 256-contact batch rows
+  are verified in SIMD-enabled and CUDA-enabled build trees. It now
   also includes a scoped robust near-singular slice for standard 8-row, boxed
   8-row, and coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-, 32-, and
   48-, 64-, 96-, 128-, 192-, and 256-contact generated packets, plus 31 matching
@@ -454,23 +455,29 @@ The current local evidence for this task is:
   192-contact single, serial-batch, and parallel-batch run reports 45 rows with
   `contract_ok=1`, `total_contact_count=768`, `total_problem_size=2304`, and
   `parallel_units=4` on parallel rows. Focused SIMD/CUDA 192-contact batch rows
-  also pass with `contract_ok=1`. The focused default 256-contact single, serial-batch, and
-  parallel-batch run reports 45 rows with `contract_ok=1`,
+  also pass with `contract_ok=1`. The focused default 256-contact single,
+  serial-batch, and parallel-batch run reports 45 rows with `contract_ok=1`,
   `total_contact_count=1024`, `total_problem_size=3072`, and
-  `parallel_units=4` on parallel rows. A full SIMD 256-contact single+batch
-  probe was stopped after several minutes before producing JSON, so SIMD/CUDA
-  256-contact batch contract evidence is not claimed. The rows report
+  `parallel_units=4` on parallel rows. Focused SIMD/CUDA-enabled selected-solver
+  256-contact serial/parallel batch gates report 12 rows in each build with
+  `contract_ok=1` for PGS, NNCG, APGD, TGS, ADMM, and Boxed Semi-Smooth Newton;
+  the CUDA-enabled rows report `cuda_lcp_execution=0`. A full SIMD 256-contact
+  single+batch probe was stopped after several minutes before producing JSON,
+  so the all-solver SIMD/CUDA 256-contact batch contract evidence is not
+  claimed. The rows report
   `mildly_ill_conditioned_batch=1`, `batch_size=4`, problem sizes
-  `16/18/24/32/36/48/72/96/144/192/288/384/576`, total problem sizes
-  `64/72/96/128/144/192/288/384/576/768/1152/1536/2304`, backend build-state
+  `16/18/24/32/36/48/72/96/144/192/288/384/576/768`, total problem sizes
+  `64/72/96/128/144/192/288/384/576/768/1152/1536/2304/3072`, backend build-state
   counters, and parallel execution counters on the `ParallelExecutor` rows. The
   `BoxedSemiSmoothNewton` coupled batch rows span coupling scales `1/4/8/16`;
-  all four coupling scales include the 96-contact packet, and the 16x rows report
+  all four coupling scales include the 96-contact packet, the 16x rows include
+  the 128-, 192-, and 256-contact packets, and the 16x rows report
   `boxed_ssn_max_line_search_steps=50`,
   `boxed_ssn_step_reduction=0.8`, and
   `boxed_ssn_jacobian_regularization=1e-8`. The
-  friction-index rows additionally report `contact_count=6/8/12/16/24/32/48/64/96`
-  and `total_contact_count=24/32/48/64/96/128/192/256/384`; coupled rows report
+  friction-index rows additionally report
+  `contact_count=6/8/12/16/24/32/48/64/96/128/192/256` and
+  `total_contact_count=24/32/48/64/96/128/192/256/384/512/768/1024`; coupled rows report
   `coupled=1` and `coupling_scale=1/4/8/16`. The CUDA-enabled rows are CPU
   solver batch rows in a CUDA-enabled build, not CUDA LCP kernel execution.
 - `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpNearSingular/' | wc -l`
@@ -1253,7 +1260,7 @@ The current local evidence for this task is:
   `3/6/9/12/15/24`, and backend build-state counters. The CUDA-enabled rows
   are CPU solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
 - `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpMildIllConditioned/ExtremeCoupledFrictionIndex' | wc -l`
-  lists 135 extreme-coupling single-problem rows over `Pgs`,
+  lists 180 extreme-coupling single-problem rows over `Pgs`,
   `SymmetricPsor`, `Jacobi`, `RedBlackGaussSeidel`, `BlockedJacobi`, `BGS`,
   `NNCG`, `SubspaceMinimization`, `Apgd`, `Tgs`, `ShockPropagation`,
   `Staggering`, `Admm`, `Sap`, and `BoxedSemiSmoothNewton`. Focused runs for
@@ -1261,6 +1268,9 @@ The current local evidence for this task is:
   in default, SIMD-enabled, and CUDA-enabled build trees reported 405 rows with
   zero `contract_ok` failures across 16x-coupled mildly ill-conditioned
   friction-index packets at 6, 8, 12, 16, 24, 32, 48, 64, and 96 contacts. The
+  registered single-problem row family now reaches 128, 192, and 256 contacts;
+  focused follow-up evidence for those larger packets is listed in the larger
+  mildly ill-conditioned benchmark section above. The
   generated coverage test now covers 16x packets through 192 contacts for
   solvers that reproduce the selected generated solution, and the focused
   `LcpGeneratedCoverage.LargerMildlyIllConditionedKnownSolutionsForScopedSolvers`

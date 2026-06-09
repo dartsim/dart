@@ -218,9 +218,11 @@
       The default build verifies the retained 192- and 256-contact batch rows;
       prior rows through the 128-contact 16x packet were verified in default,
       SIMD-enabled, and CUDA-enabled build trees. Focused SIMD/CUDA all-solver
-      serial/parallel 192-contact batch rows pass as contract gates, while the
-      full 256-contact SIMD/CUDA batch gate remains unclaimed after a long SIMD
-      probe was stopped before producing JSON.
+      serial/parallel 192-contact batch rows pass as contract gates. Focused
+      SIMD/CUDA selected-solver serial/parallel 256-contact batch rows pass for
+      PGS, NNCG, APGD, TGS, ADMM, and Boxed Semi-Smooth Newton, while the full
+      all-solver 256-contact SIMD/CUDA batch gate remains unclaimed after a
+      long SIMD probe was stopped before producing JSON.
 - [x] Added 31 `BM_LcpNearSingular` benchmark rows for the scoped robust
       near-singular standard 8-row, boxed 8-row, and coupled friction-index
       3-, 6-, 9-, 12-, 16-, 24-, 32-, 48-, 64-, 96-, 128-, 192-, and
@@ -1194,7 +1196,7 @@ tradeoffs evidence based.
   report `simd_rows=36` and `cuda_rows=36`, respectively.
 - Verified scoped-solver extreme-coupling slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpMildIllConditioned/ExtremeCoupledFrictionIndex' | wc -l`
-  now reports 135 single-problem rows, and focused checks for
+  now reports 180 single-problem rows, and focused checks for
   `BM_LcpMildIllConditioned(BatchSerial|BatchParallel)?/ExtremeCoupledFrictionIndex(6|8|12|16|24|32|48|64|96)`
   reported 405 single and batch rows with
   `contract_ok=1` in the default, SIMD-enabled, and CUDA-enabled build trees.
@@ -1203,14 +1205,18 @@ tradeoffs evidence based.
   `SubspaceMinimization`, `Apgd`, `Tgs`, `ShockPropagation`, `Staggering`,
   `Admm`, `Sap`, and `BoxedSemiSmoothNewton`. These rows cover 16x-coupled
   mildly ill-conditioned friction-index packets at 6, 8, 12, 16, 24, 32, 48,
-  64, and 96 contacts. The
+  64, 96, 128, 192, and 256 contacts. The historical all-build 405-row focused
+  gate covers the 6- through 96-contact single/batch rows; focused 128-, 192-,
+  and 256-contact follow-up evidence is listed in the larger mildly
+  ill-conditioned benchmark section below. The
   rows report `mildly_ill_conditioned=1`, `coupled=1`,
-  `coupling_scale=16`, `contact_count=6/8/12/16/24/32/48/64/96`,
-  `problem_size=18/24/36/48/72/96/144/192/288`,
-  `total_contact_count=24/32/48/64/96/128/192/256/384`,
-  `total_problem_size=72/96/144/192/288/384/576/768/1152`, and backend build-state
-  counters for the batch rows. The Boxed Semi-Smooth Newton 16x rows report the
-  tuned line-search counters.
+  `coupling_scale=16`,
+  `contact_count=6/8/12/16/24/32/48/64/96/128/192/256`,
+  `problem_size=18/24/36/48/72/96/144/192/288/384/576/768`,
+  `total_contact_count=24/32/48/64/96/128/192/256/384/512/768/1024`,
+  `total_problem_size=72/96/144/192/288/384/576/768/1152/1536/2304/3072`,
+  and backend build-state counters for the batch rows. The Boxed Semi-Smooth
+  Newton 16x rows report the tuned line-search counters.
   Focused
   `LcpGeneratedCoverage.LargerMildlyIllConditionedKnownSolutionsForScopedSolvers`
   unit test also passes in the default, SIMD-enabled, and CUDA-enabled build
@@ -1424,9 +1430,13 @@ tradeoffs evidence based.
   report 45 rows with `contract_ok=1`, `contact_count=256`,
   `total_contact_count=1024`, `problem_size=768`,
   `total_problem_size=3072`, `coupling_scale=16`, `batch_size=4`,
-  `parallel_units=4`, and `worker_count=20`. The full SIMD 256-contact
-  single+batch probe was stopped after several minutes before producing JSON,
-  so SIMD/CUDA 256-contact batch contract evidence is not claimed.
+  `parallel_units=4`, and `worker_count=20`. Focused SIMD/CUDA-enabled
+  selected-solver 256-contact serial/parallel batch gates report 12 rows in
+  each build with `contract_ok=1` for PGS, NNCG, APGD, TGS, ADMM, and Boxed
+  Semi-Smooth Newton; the CUDA-enabled rows report `cuda_lcp_execution=0`. The
+  full SIMD 256-contact single+batch probe was stopped after several minutes
+  before producing JSON, so all-solver SIMD/CUDA 256-contact batch contract
+  evidence is not claimed.
   These focused rows are contract gates only: several projection-like rows
   still report large residual counters, no speedup is claimed, and the
   SIMD-enabled `Sap` rows are contract-correct but slow enough that this is not
