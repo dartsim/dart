@@ -34,6 +34,20 @@ def _load_module():
     return module
 
 
+def _replace_table_status(audit_text: str, requirement: str, status: str) -> str:
+    lines: list[str] = []
+    for line in audit_text.splitlines():
+        if not line.startswith("|"):
+            lines.append(line)
+            continue
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if len(cells) >= 2 and cells[0] == requirement:
+            cells[1] = status
+            line = "| " + " | ".join(cells) + " |"
+        lines.append(line)
+    return "\n".join(lines) + "\n"
+
+
 def test_plan083_completion_audit_matches_current_sidecars() -> None:
     module = _load_module()
     audit_text = AUDIT.read_text(encoding="utf-8")
@@ -90,13 +104,15 @@ def test_plan083_completion_audit_requires_blocked_cpu_and_gpu_rows() -> None:
         module.DEFAULT_GPU_PACKET,
         "rows",
     )
-    audit_text = AUDIT.read_text(encoding="utf-8").replace(
-        "CPU packets exist for performance rows                        | Blocked",
-        "CPU packets exist for performance rows                        | Pass",
+    audit_text = _replace_table_status(
+        AUDIT.read_text(encoding="utf-8"),
+        "CPU packets exist for performance rows",
+        "Pass",
     )
-    audit_text = audit_text.replace(
-        "GPU packets exist for GPU claims                              | Blocked",
-        "GPU packets exist for GPU claims                              | Pass",
+    audit_text = _replace_table_status(
+        audit_text,
+        "GPU packets exist for GPU claims",
+        "Pass",
     )
 
     errors = module.validate_audit(
