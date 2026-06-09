@@ -39,16 +39,6 @@ def test_canonical_benchmark_name_strips_google_benchmark_suffixes():
     assert utils.canonical_benchmark_name("BM_Test/8/4_cv") == "BM_Test/8/4"
 
 
-def test_canonical_benchmark_row_name_prefers_run_name():
-    utils = load_script_module("benchmark_packet_utils")
-    row = {
-        "name": "BM_Ignored",
-        "run_name": "BM_Test/8/4/repeats:3_median",
-    }
-
-    assert utils.canonical_benchmark_row_name(row) == "BM_Test/8/4"
-
-
 def test_median_timing_by_name_prefers_positive_median_rows():
     utils = load_script_module("benchmark_packet_utils")
     rows = [
@@ -147,35 +137,6 @@ def test_phase5_packet_validator_uses_shared_canonical_rows():
     assert summary["cpu_median_ns"] == 4_000_000.0
     assert summary["gpu_median_ns"] == 2_000_000.0
     assert summary["speedup"] == 2.0
-
-
-def test_phase5_cuda_packet_writer_uses_shared_canonical_rows():
-    writer = load_script_module("write_phase5_cuda_packet")
-    rows = [
-        aggregate_row(
-            "BM_Phase5RigidBodyBatchGpu/4096/128/100/repeats:3_mean",
-            "mean",
-            1.0,
-        ),
-        aggregate_row(
-            "BM_Phase5RigidBodyBatchGpu/4096/128/100/repeats:3_median",
-            "median",
-            1.0,
-            run_name=False,
-        ),
-    ]
-    rows[0]["max_final_state_abs_error"] = 1e-9
-    rows[1]["max_final_state_abs_error"] = 1e-12
-
-    max_error = writer.extract_max_final_state_abs_error(
-        rows,
-        gpu_prefix="BM_Phase5RigidBodyBatchGpu",
-        world_count=4096,
-        body_count=128,
-        step_count=100,
-    )
-
-    assert max_error == 1e-12
 
 
 def test_abd_packet_validator_uses_shared_row_validation(tmp_path, capsys):

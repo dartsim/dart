@@ -71,14 +71,13 @@ inline double projectToBounds(double value, double lo, double hi)
 }
 
 inline bool validateProblem(
-    const LcpProblem& problem, std::string* message = nullptr)
+    const Eigen::MatrixXd& A,
+    const Eigen::VectorXd& b,
+    const Eigen::VectorXd& lo,
+    const Eigen::VectorXd& hi,
+    const Eigen::VectorXi& findex,
+    std::string* message = nullptr)
 {
-  const auto& A = problem.A;
-  const auto& b = problem.b;
-  const auto& lo = problem.lo;
-  const auto& hi = problem.hi;
-  const auto& findex = problem.findex;
-
   const bool dimensionMismatch
       = (A.rows() != A.cols()) || (A.rows() != b.size())
         || (lo.size() != b.size()) || (hi.size() != b.size())
@@ -130,6 +129,13 @@ inline bool validateProblem(
   }
 
   return true;
+}
+
+inline bool validateProblem(
+    const LcpProblem& problem, std::string* message = nullptr)
+{
+  return validateProblem(
+      problem.A, problem.b, problem.lo, problem.hi, problem.findex, message);
 }
 
 inline bool computeEffectiveBounds(

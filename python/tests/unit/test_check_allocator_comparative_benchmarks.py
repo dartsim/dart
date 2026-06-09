@@ -52,6 +52,23 @@ def _complete_rows():
     ]
 
 
+def _required_default_rows(module):
+    def row_name(key, allocator):
+        family, _, args = key.partition("/")
+        suffix = f"/{args}" if args else ""
+        return f"{family}_{allocator}{suffix}"
+
+    rows = []
+    for key in module.required_keys_for_mode(
+        include_entt_registry=False,
+        only_entt_registry=False,
+    ):
+        rows.append(_row(row_name(key, "DART"), 90.0))
+        rows.append(_row(row_name(key, "Foonathan"), 100.0))
+        rows.append(_row(row_name(key, "StdPmr"), 300.0))
+    return rows
+
+
 def test_collect_timings_normalizes_aggregate_names():
     module = _load_module()
 
@@ -156,7 +173,7 @@ def test_main_input_path_skips_benchmark_execution(tmp_path, monkeypatch, capsys
     module = _load_module()
     input_path = tmp_path / "allocator_comparative.json"
     input_path.write_text(
-        json.dumps({"benchmarks": _complete_rows()}),
+        json.dumps({"benchmarks": _required_default_rows(module)}),
         encoding="utf-8",
     )
 
@@ -167,12 +184,12 @@ def test_main_input_path_skips_benchmark_execution(tmp_path, monkeypatch, capsys
 
     assert module.main(["--input", str(input_path)]) == 0
     captured = capsys.readouterr()
-    assert "3 comparative allocator checks performed" in captured.out
+    assert "41 comparative allocator checks performed" in captured.out
 
 
 def test_main_reports_failures(tmp_path, monkeypatch, capsys):
     module = _load_module()
-    rows = _complete_rows()
+    rows = _required_default_rows(module)
     rows[0]["cpu_time"] = 120.0
     input_path = tmp_path / "allocator_comparative.json"
     input_path.write_text(json.dumps({"benchmarks": rows}), encoding="utf-8")
@@ -185,4 +202,4 @@ def test_main_reports_failures(tmp_path, monkeypatch, capsys):
     assert module.main(["--input", str(input_path)]) == 1
     captured = capsys.readouterr()
     assert "COMPARATIVE FAILURES (1)" in captured.out
-    assert "BM_Pool/32/1024 vs Foonathan" in captured.out
+    assert "BM_Pool/32/64 vs Foonathan" in captured.out

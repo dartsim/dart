@@ -50,7 +50,8 @@ FixedPoolAllocator::FixedPoolAllocator(
       8 <= sizeof(MemoryUnit),
       "sizeof(MemoryUnit) should be equal to or greater than 8.");
 
-  mUnitSize = effectiveUnitSize(unitSize, alignof(MemoryUnit));
+  mUnitSize
+      = cacheFriendlyUnitSize(effectiveUnitSize(unitSize, alignof(MemoryUnit)));
   mBlockSize = std::max(blockSize, mUnitSize);
   mBlockAlignment = mUnitSize == 0 ? alignof(MemoryUnit)
                                    : blockAlignmentForUnitSize(mUnitSize);

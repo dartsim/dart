@@ -47,6 +47,7 @@
 #include <dartsim_ui/editor.hpp>
 #include <dartsim_ui/history_actions.hpp>
 #include <dartsim_ui/inspector_actions.hpp>
+#include <dartsim_ui/memory_actions.hpp>
 #include <dartsim_ui/outliner_actions.hpp>
 #include <dartsim_ui/palette_actions.hpp>
 #include <dartsim_ui/project_actions.hpp>
@@ -836,6 +837,58 @@ void buildWatchPanel(dart::gui::PanelBuilder& ui, EditorApp& app)
   }
 }
 
+void buildMemoryPanel(dart::gui::PanelBuilder& ui, EditorApp& app)
+{
+  const MemoryStatus status = buildMemoryStatus(app.engine);
+  ui.text(status.frameScratchLabel);
+  ui.text(
+      "Frame scratch resets: " + std::to_string(status.frameScratchResetCount));
+  ui.text(
+      "Frame scratch overflow: "
+      + std::to_string(status.frameScratchOverflowCount) + " blocks, "
+      + std::to_string(status.frameScratchOverflowBytes) + " bytes");
+
+  ui.separator();
+  ui.text(status.allocatorDebugLabel);
+  for (const MemoryAllocatorStatus& allocator : status.allocators) {
+    ui.text(
+        allocator.name + ": " + std::to_string(allocator.liveBytes)
+        + " live bytes, " + std::to_string(allocator.peakLiveBytes)
+        + " peak bytes, " + std::to_string(allocator.liveAllocationCount)
+        + " live allocations");
+  }
+
+  ui.separator();
+  ui.text(status.ecsSummaryLabel);
+  ui.text("ECS storages: " + std::to_string(status.ecsStorageCount));
+  if (status.largestStorages.empty()) {
+    ui.text("(no ECS component storages)");
+    return;
+  }
+
+  const std::array<std::string_view, 3> columns{"Storage", "Live", "Capacity"};
+  if (ui.beginTable("ECS Storage Capacity", columns)) {
+    for (const MemoryEcsStorageStatus& storage : status.largestStorages) {
+      ui.tableNextRow();
+      ui.tableNextColumn();
+      ui.text(std::to_string(storage.storageId));
+      ui.tableNextColumn();
+      ui.text(std::to_string(storage.size));
+      ui.tableNextColumn();
+      ui.text(std::to_string(storage.capacity));
+    }
+    ui.endTable();
+    return;
+  }
+
+  for (const MemoryEcsStorageStatus& storage : status.largestStorages) {
+    ui.text(
+        "Storage " + std::to_string(storage.storageId) + ": "
+        + std::to_string(storage.size) + " live / "
+        + std::to_string(storage.capacity) + " capacity");
+  }
+}
+
 std::string cameraControlMenuLabel(const ViewportCameraControlAction& action);
 void buildViewportLayerFilterMenu(dart::gui::PanelBuilder& ui, EditorApp& app);
 
@@ -1585,6 +1638,13 @@ int runEditor(int argc, char* argv[])
       {280.0, 220.0},
       dart::gui::DockSide::Right,
       [app](dart::gui::PanelBuilder& ui) { buildWatchPanel(ui, *app); }));
+  options.panels.push_back(makePanel(
+      "Memory",
+      false,
+      {1000.0, 630.0},
+      {280.0, 220.0},
+      dart::gui::DockSide::Right,
+      [app](dart::gui::PanelBuilder& ui) { buildMemoryPanel(ui, *app); }));
   options.panels.push_back(makePanel(
       "Console",
       false,

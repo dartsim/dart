@@ -37,6 +37,7 @@
 
 #include <gtest/gtest.h>
 
+#include <limits>
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -153,6 +154,16 @@ TEST(MemoryAllocatorTest, AllocateAsPreservesByteDeallocateCompatibility)
   auto* raw = allocator.allocateAs<OverAlignedObject>();
   ASSERT_NE(raw, nullptr);
   allocator.deallocate(raw, sizeof(OverAlignedObject));
+}
+
+TEST(MemoryAllocatorTest, AllocateAsRejectsCountOverflow)
+{
+  BareMemoryAllocator allocator;
+
+  EXPECT_EQ(
+      allocator.allocateAs<OverAlignedObject>(
+          std::numeric_limits<size_t>::max() / sizeof(OverAlignedObject) + 1),
+      nullptr);
 }
 
 TEST(MemoryAllocatorTest, BaseAlignedFallbackRejectsUnsupportedOverAlignment)
