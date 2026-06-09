@@ -302,7 +302,7 @@
 - [x] Added DART 7 articulated unified-contact benchmark rows that compare all
       friction-index-capable solvers on the same manually assembled fixed-base
       three-axis prismatic link-ground, link-vs-dynamic-rigid, and
-      cross-multibody link-vs-link LCP snapshots through 32-contact packets.
+      cross-multibody link-vs-link LCP snapshots through 48-contact packets.
 - [x] Added a DART 7 boxed-LCP coupled stack snapshot test for a 3-sphere
       vertical stack, validating the LCP contract and nonzero normal-contact
       coupling from shared dynamic bodies.
@@ -2403,12 +2403,12 @@ tradeoffs evidence based.
   multi-DOF articulated contact evidence, not broad articulated robot contact
   coverage.
 - DART 7 articulated unified-contact solver benchmark evidence:
-  `BM_LcpArticulatedUnifiedContact/FrictionIndex/{Ground,RigidImpact,CrossLinkImpact}/<solver>/{1,4,8,16,24,32}`
+  `BM_LcpArticulatedUnifiedContact/FrictionIndex/{Ground,RigidImpact,CrossLinkImpact}/<solver>/{1,4,8,16,24,32,48}`
   manually assembles fixed-base three-axis prismatic `LinkContact` snapshots
   through `assembleMultibodyLinkContactProblem` and
   `assembleUnifiedConstraintProblem`, then compares all 16
   friction-index-capable solvers on the same 3-row, 12-row, 24-row, 48-row,
-  72-row, and 96-row LCPs.
+  72-row, 96-row, and 144-row LCPs.
   The cross-link rows complete a second articulated endpoint for a separate
   multibody, so they exercise the unified contact matrix's cross-multibody
   block. Focused default, SIMD-enabled, and CUDA-enabled
@@ -2417,12 +2417,19 @@ tradeoffs evidence based.
   `articulated_unified_contact=1`, `contact_count=24`, `problem_size=72`,
   `multibody_count=24` for ground/rigid-impact rows, and `multibody_count=48`
   plus `articulated_cross_link_contact=1` for cross-link rows. The full
-  articulated unified-contact registration now lists 288 rows. Focused
+  articulated unified-contact registration now lists 336 rows. Focused
   default, SIMD-enabled, and CUDA-enabled
   `BM_LCP_COMPARE --benchmark_filter='^BM_LcpArticulatedUnifiedContact/FrictionIndex/.*/.*/32$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_format=json`
   runs reported 48 rows with `contract_ok=1`, `contact_count=32`,
   `problem_size=96`, 16 ground rows, 16 rigid-impact rows, 16 cross-link rows,
   and the expected backend build-state counters.
+  Focused default, SIMD-enabled, and CUDA-enabled
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpArticulatedUnifiedContact/FrictionIndex/.+/.+/48$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  runs reported 48 rows with `contract_ok=1`, `contact_count=48`,
+  `problem_size=144`, 16 rows per articulated contact case,
+  `multibody_count=48/96`, and the expected backend build-state counters; the
+  maximum reported residual and complementarity counters were
+  `8.9363740896075683e-7`.
   The SAP rows use the same robust benchmark parameters as generated coverage
   (`sap_regularization=1e-6`, `sap_max_line_search_iterations=32`,
   `maxIterations=5000`) and report those SAP counters in the articulated
@@ -2776,7 +2783,7 @@ tradeoffs evidence based.
 - Added DART 7 articulated unified-contact all-solver benchmark evidence for
   manually assembled fixed-base three-axis prismatic link-ground and
   link-vs-dynamic-rigid LCP snapshots, now extended to cross-multibody
-  link-vs-link snapshots and 32-contact packets.
+  link-vs-link snapshots and 48-contact packets.
 - Added DART 7 world-contact benchmark rows that compare all
   friction-index-capable solvers on the same real boxed/findex contact
   snapshots from 1, 2, and 4 separated sphere-ground contacts, plus a benchmark
@@ -2872,7 +2879,7 @@ tradeoffs evidence based.
   benchmark rows plus 64-box one-step and 75-step dense face-contact
   public-step rows,
   manually assembled fixed-base three-axis prismatic articulated unified-contact
-  all-solver benchmark rows through 16 contacts for link-ground,
+  all-solver benchmark rows through 48 contacts for link-ground,
   link-vs-dynamic-rigid, and cross-multibody link-vs-link
   snapshots,
   contact-derived benchmark rows for 1/2/4 separated sphere-ground contacts,
