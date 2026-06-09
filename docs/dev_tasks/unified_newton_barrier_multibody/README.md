@@ -113,8 +113,16 @@
         diagnostics.
   - [x] Add sliding-range and rotation-range barrier diagnostics with PSD
         Hessian approximations.
-- [ ] Phase 4: expand the unified manifest into diagnostics, benchmark packets,
-      CPU/GPU evidence, and visual evidence rows.
+- [x] Implementation-roadmap Phase 4: add internal restitution, BDF-2, and
+      Rayleigh damping diagnostic contracts.
+  - [x] Add restitution target, BDF-2 inertial target, restart, velocity-update,
+        and serializable history helpers under `detail/newton_barrier`.
+  - [x] Add falling-box energy diagnostics across timestep, Young's modulus,
+        barrier stiffness, activation distance, and gravity sweeps.
+  - [x] Add semi-implicit Rayleigh damping terms for contact/barrier and
+        articulation potentials using PSD-projected Hessians.
+  - [x] Add hinge damping sweep evidence through the scalar articulation
+        damping path.
 - [ ] Phase 5: add runtime and py-demos scenes only after the relevant solver
       slices exist and have correctness/performance evidence.
 
@@ -173,13 +181,12 @@ storage, or backend resources as public API.
 
 ## Immediate Next Steps
 
-1. Validate `simx/plan083-phase3-articulation-constraints`, push the completed
-   implementation-roadmap Phase 3 branch, and open one phase-scoped PR for
-   Unified Articulation Constraints targeting `main`.
-2. Start implementation-roadmap Phase 4
-   (`simx/plan083-phase4-restitution-bdf2`) from the Phase 3 branch head and
-   implement restitution, BDF-2, and Rayleigh damping as one phase-scoped
-   branch/PR.
+1. Validate `simx/plan083-phase4-restitution-bdf2`, push the completed
+   implementation-roadmap Phase 4 branch, and open one phase-scoped PR for
+   Restitution, BDF-2, and Rayleigh Damping targeting the Phase 3 branch.
+2. Start implementation-roadmap Phase 5
+   (`simx/plan083-phase5-mixed-domain-coupling`) from the Phase 4 branch head
+   and implement mixed-domain coupling as one phase-scoped branch/PR.
 3. Keep the two-body affine contact micro-solve deferred until the
    `abd-alg-affine-body` row expands beyond the primitive/oracle micro-packet
    and needs a solved-state residual or runtime stepping diagnostic.
@@ -305,6 +312,14 @@ Implementation-roadmap Phase 3 branch-local evidence:
 - `pixi run lint`
 - `pixi run -- cmake --build build/default/cpp/Release --target test_newton_barrier_primitives --parallel <safe-jobs>`
 - `pixi run -- ctest --test-dir build/default/cpp/Release --output-on-failure -j <safe-jobs> -R '^test_newton_barrier_primitives$'`
+
+Implementation-roadmap Phase 4 branch-local evidence:
+
+- `pixi run lint`
+- `pixi run -- cmake --build build/default/cpp/Release --target test_newton_barrier_primitives --parallel <safe-jobs>`
+- `pixi run -- ctest --test-dir build/default/cpp/Release --output-on-failure -j <safe-jobs> -R '^test_newton_barrier_primitives$'`
+- `pixi run build`
+- `pixi run test-unit`
 
 ## Owner Docs
 
