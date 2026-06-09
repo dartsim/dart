@@ -142,6 +142,26 @@ struct BoundedDistanceBarrierResult
   bool active = false;
 };
 
+struct SlidingRangeBarrierResult
+{
+  double value = 0.0;
+  Eigen::Vector3d gradient = Eigen::Vector3d::Zero();
+  Eigen::Matrix3d hessian = Eigen::Matrix3d::Zero();
+  double coordinate = 0.0;
+  ScalarRangeMargins margins;
+  bool active = false;
+};
+
+struct RotationRangeBarrierResult
+{
+  double value = 0.0;
+  double firstDerivative = 0.0;
+  double secondDerivative = 0.0;
+  double angle = 0.0;
+  ScalarRangeMargins margins;
+  bool active = false;
+};
+
 struct ConeTwistCoordinates
 {
   double bendAngle = 0.0;
@@ -363,6 +383,33 @@ struct MarginBarrierDerivatives
 }
 
 //==============================================================================
+[[nodiscard]] inline SlidingRangeBarrierResult slidingRangeBarrier(
+    const Eigen::Vector3d& point,
+    const Eigen::Vector3d& lineOrigin,
+    const Eigen::Vector3d& lineAxis,
+    const double lower,
+    const double upper,
+    const double activationDistance,
+    const double stiffness = 1.0)
+{
+  const Eigen::Vector3d axis
+      = detail::normalizedOr(lineAxis, Eigen::Vector3d::UnitX());
+  const double coordinate = axis.dot(point - lineOrigin);
+  const auto barrier = scalarRangeBarrier(
+      coordinate, lower, upper, activationDistance, stiffness);
+
+  SlidingRangeBarrierResult result;
+  result.value = barrier.value;
+  result.gradient = barrier.firstDerivative * axis;
+  result.hessian
+      = std::max(0.0, barrier.secondDerivative) * (axis * axis.transpose());
+  result.coordinate = coordinate;
+  result.margins = barrier.margins;
+  result.active = barrier.active;
+  return result;
+}
+
+//==============================================================================
 [[nodiscard]] inline HingeAxisConstraintResult hingeAxisConstraint(
     const Eigen::Vector3d& axisA, const Eigen::Vector3d& axisB)
 {
@@ -401,6 +448,44 @@ struct MarginBarrierDerivatives
       unitA.dot(refA.cross(alignedRefB)),
       std::clamp(refA.dot(alignedRefB), -1.0, 1.0));
   return coordinates;
+}
+
+//==============================================================================
+[[nodiscard]] inline RotationRangeBarrierResult rotationRangeBarrier(
+    const double angle,
+    const double lower,
+    const double upper,
+    const double activationDistance,
+    const double stiffness = 1.0)
+{
+  const auto barrier
+      = scalarRangeBarrier(angle, lower, upper, activationDistance, stiffness);
+
+  RotationRangeBarrierResult result;
+  result.value = barrier.value;
+  result.firstDerivative = barrier.firstDerivative;
+  result.secondDerivative = std::max(0.0, barrier.secondDerivative);
+  result.angle = angle;
+  result.margins = barrier.margins;
+  result.active = barrier.active;
+  return result;
+}
+
+//==============================================================================
+[[nodiscard]] inline RotationRangeBarrierResult coneTwistRotationRangeBarrier(
+    const Eigen::Vector3d& axisA,
+    const Eigen::Vector3d& referenceA,
+    const Eigen::Vector3d& axisB,
+    const Eigen::Vector3d& referenceB,
+    const double lower,
+    const double upper,
+    const double activationDistance,
+    const double stiffness = 1.0)
+{
+  const auto coordinates
+      = coneTwistCoordinates(axisA, referenceA, axisB, referenceB);
+  return rotationRangeBarrier(
+      coordinates.twistAngle, lower, upper, activationDistance, stiffness);
 }
 
 } // namespace dart::simulation::detail::newton_barrier

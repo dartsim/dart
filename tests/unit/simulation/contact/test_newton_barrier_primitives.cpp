@@ -303,6 +303,83 @@ TEST(NewtonBarrierPrimitives, ArticulationDistanceAndBoundedDistance)
 }
 
 //==============================================================================
+TEST(NewtonBarrierPrimitives, ArticulationSlidingRangeAndRotationRange)
+{
+  const Eigen::Vector3d point(0.4, -0.2, 0.15);
+  const Eigen::Vector3d origin(-0.1, 0.3, -0.05);
+  const Eigen::Vector3d axis = Eigen::Vector3d(2.0, -1.0, 1.0).normalized();
+  const double coordinate = axis.dot(point - origin);
+  const double lower = coordinate - 0.04;
+  const double upper = coordinate + 0.5;
+  const double activationDistance = 0.1;
+
+  const auto sliding = nb::slidingRangeBarrier(
+      point, origin, axis, lower, upper, activationDistance, /*stiffness=*/3.0);
+  EXPECT_TRUE(nb::rangeBarrierFeasible(sliding.margins));
+  EXPECT_TRUE(sliding.active);
+  EXPECT_NEAR(sliding.coordinate, coordinate, 1e-14);
+  EXPECT_NEAR(sliding.margins.lower, 0.04, 1e-14);
+  EXPECT_NEAR(sliding.margins.upper, 0.5, 1e-14);
+  expectSelfAdjointPsd(sliding.hessian);
+
+  const auto numericalSlidingRangeGradient
+      = finiteDifferenceJacobian<1, 3>(point, [&](const auto& p) {
+          Eigen::Matrix<double, 1, 1> value;
+          value[0] = nb::slidingRangeBarrier(
+                         p,
+                         origin,
+                         axis,
+                         lower,
+                         upper,
+                         activationDistance,
+                         /*stiffness=*/3.0)
+                         .value;
+          return value;
+        });
+  expectMatrixNear(
+      sliding.gradient.transpose(), numericalSlidingRangeGradient, 1e-8);
+
+  const double angle = 0.08;
+  const auto rotation = nb::rotationRangeBarrier(
+      angle, /*lower=*/0.0, /*upper=*/1.0, activationDistance, 2.0);
+  EXPECT_TRUE(nb::rangeBarrierFeasible(rotation.margins));
+  EXPECT_TRUE(rotation.active);
+  EXPECT_GE(rotation.secondDerivative, 0.0);
+
+  const auto numericalRotationDerivative = finiteDifferenceJacobian<1, 1>(
+      Eigen::Matrix<double, 1, 1>::Constant(angle), [&](const auto& x) {
+        Eigen::Matrix<double, 1, 1> value;
+        value[0] = nb::rotationRangeBarrier(
+                       x[0],
+                       /*lower=*/0.0,
+                       /*upper=*/1.0,
+                       activationDistance,
+                       2.0)
+                       .value;
+        return value;
+      });
+  EXPECT_NEAR(
+      rotation.firstDerivative, numericalRotationDerivative(0, 0), 1e-8);
+
+  const Eigen::Vector3d twistAxis = Eigen::Vector3d::UnitZ();
+  const Eigen::Vector3d referenceA = Eigen::Vector3d::UnitX();
+  const Eigen::Vector3d axisB = twistAxis;
+  const Eigen::Vector3d referenceB
+      = Eigen::AngleAxisd(angle, twistAxis) * referenceA;
+  const auto coneTwistRange = nb::coneTwistRotationRangeBarrier(
+      twistAxis,
+      referenceA,
+      axisB,
+      referenceB,
+      /*lower=*/0.0,
+      /*upper=*/1.0,
+      activationDistance,
+      2.0);
+  EXPECT_NEAR(coneTwistRange.angle, angle, 1e-14);
+  EXPECT_NEAR(coneTwistRange.value, rotation.value, 1e-14);
+}
+
+//==============================================================================
 TEST(NewtonBarrierPrimitives, DeformableContactHeadersForwardSharedTypes)
 {
   static_assert(std::is_same_v<dc::Vector6d, nb::Vector6d>);
