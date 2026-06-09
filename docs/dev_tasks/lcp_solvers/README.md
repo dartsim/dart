@@ -315,11 +315,13 @@
 - [x] Extended DART 7 boxed-LCP coupled stack evidence to a 6-sphere, 6-contact,
       18-row vertical stack, with unit snapshot-contract coverage, a 1000-step
       public `World::step()` invariant test, all-solver stack benchmark rows
-      through 7 spheres and scoped 8-/9-/10-sphere all-solver stack evidence.
-      The PGS, Jacobi, Blocked Jacobi, Red-Black Gauss-Seidel, and
-      ShockPropagation stack rows use a 512-iteration cap, and the NNCG stack
-      rows use 20 PGS preconditioner iterations. The originally scoped non-NNCG
-      rows have matching default/SIMD/CUDA-enabled benchmark evidence.
+      through 7 spheres and scoped 8-/9-/10-/11-/12-sphere all-solver stack
+      evidence. The PGS, Jacobi, Blocked Jacobi, Red-Black Gauss-Seidel, and
+      ShockPropagation stack rows use a 512-iteration cap; Symmetric PSOR, BGS,
+      and TGS use that cap on the 11-/12-sphere rows; and the NNCG stack rows
+      use 20 PGS preconditioner iterations through 11 spheres and 40 at 12
+      spheres. The originally scoped non-NNCG rows have matching
+      default/SIMD/CUDA-enabled benchmark evidence.
 - [x] Extended DART 7 boxed-LCP coupled stack snapshot evidence to a 7-sphere,
       7-contact, 21-row vertical stack and matching boxed-LCP assembly
       benchmark row, plus 16 friction-index solver benchmark rows. `NNCG` uses
@@ -351,11 +353,17 @@
       Jacobi, Red-Black Gauss-Seidel, and ShockPropagation rows use the same
       512-iteration cap, and the NNCG row uses the same 20-iteration PGS
       preconditioner as the smaller coupled-stack rows.
+- [x] Extended DART 7 boxed-LCP coupled stack snapshot and solver-comparison
+      evidence to 11- and 12-sphere vertical stacks, validating 11-/12-contact
+      and 33-/36-row boxed/findex LCP snapshots assembled from shared dynamic
+      bodies. Focused default build rows satisfy the LCP contract for all 16
+      friction-index solvers plus the assembly rows; no 11-/12-sphere
+      public-step invariant is claimed.
 - [x] Extended DART 7 boxed-LCP coupled stack snapshot and assembly evidence to
-      11-, 12-, 13-, 14-, 15-, and 16-sphere vertical stacks, validating
-      11-/12-/13-/14-/15-/16-contact and 33-/36-/39-/42-/45-/48-row
-      boxed/findex LCP snapshots assembled from shared dynamic bodies. Focused
-      default build rows satisfy the LCP contract; no 11+-sphere public-step
+      13-, 14-, 15-, and 16-sphere vertical stacks, validating
+      13-/14-/15-/16-contact and 39-/42-/45-/48-row boxed/findex LCP snapshots
+      assembled from shared dynamic bodies. Focused default build assembly rows
+      satisfy the LCP contract; no 13+-sphere solver-comparison or public-step
       invariant is claimed.
 - [x] Added DART 7 world-contact `BM_LCP_COMPARE` rows that run every
       friction-index-capable solver on the same boxed-LCP snapshots assembled
@@ -366,9 +374,9 @@
       4-, 5-, and 6-sphere vertical-stack rows for the same solver set
       (`NNCG` reports a 20-iteration PGS preconditioner for this coupled
       contact family), plus 7-sphere rows for that solver set, an 8-sphere
-      `RedBlackGaussSeidel` row, and 8-/9-/10-sphere rows for the full solver
-      set, so the comparison now includes larger boxed/findex snapshots where
-      contacts share dynamic bodies.
+      `RedBlackGaussSeidel` row, and 8-/9-/10-/11-/12-sphere rows for the full
+      solver set, so the comparison now includes larger boxed/findex snapshots
+      where contacts share dynamic bodies.
 - [x] Added mixed DART 7 world-contact batch benchmark rows that compare every
       friction-index-capable solver over the same 5-problem batch of separated
       sphere-ground and coupled stack snapshots, both serially and through the
@@ -2020,10 +2028,26 @@ tradeoffs evidence based.
   `shock_propagation_max_iterations=512`, `residual=2.0335581005710424e-03`,
   `complementarity=2.0335581005709868e-03`, and 166 solver iterations.
   The focused default
-  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldStackContactAssembly_BoxedLcp/(11|12)$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_format=json`
-  run reported `contract_ok=1` for the 11- and 12-sphere assembly rows with
-  `sphere_count=11/12`, `contact_count=11/12`, and `problem_size=33/36`; no
-  11-/12-sphere solver-comparison or public-step rows are claimed.
+  `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldStackContact/FrictionIndex/.*/(11|12)$|BM_LcpWorldStackContactAssembly_BoxedLcp/(11|12)$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_format=json`
+  run reported `rows=34` and `failures=0` for all 16 registered solver
+  families at both 11 and 12 spheres plus the 11-/12-sphere assembly rows, with
+  `sphere_count=11/12`, `contact_count=11/12`, and `problem_size=33/36`. The 11-/12-sphere PGS rows
+  report `pgs_max_iterations=512`, residuals `5.6120473527432324e-04` and
+  `6.6932749492387700e-04`, and 263/302 solver iterations; the Jacobi and
+  Blocked Jacobi rows report 512-iteration caps, residuals near
+  `2.3853672623e-03` and `2.8080594569e-03`, and 398/452 iterations.
+  Symmetric PSOR reports `symmetric_psor_max_iterations=512`, residuals
+  `2.3669321495569662e-03` and `2.7337675689045327e-03`, and 106/120
+  iterations; BGS reports `bgs_max_iterations=512`, residuals
+  `2.3990956999897506e-03` and `2.7864848088574590e-03`, and 192/219
+  iterations; TGS reports `tgs_max_iterations=512`, residuals
+  `5.6120473527432324e-04` and `6.6932749492387700e-04`, and 263/302
+  iterations. NNCG reports `nncg_pgs_iterations=20` at 11 spheres and `40` at
+  12 spheres, residuals `2.3888996475616153e-03` and
+  `2.7209092579925098e-03`, and 183/37 solver iterations. ShockPropagation
+  reports `shock_propagation_max_iterations=512`, residuals
+  `2.3990956999897506e-03` and `2.7864848088574590e-03`, and 192/219 sweeps.
+  No 11-/12-sphere public-step rows are claimed.
   The focused default
   `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldStackContactAssembly_BoxedLcp/(13|14|15|16)$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_format=json`
   run reported `contract_ok=1` for the 13-, 14-, 15-, and 16-sphere assembly
@@ -2529,8 +2553,8 @@ tradeoffs evidence based.
 - Added coupled DART 7 world-contact stack benchmark rows that compare all
   friction-index-capable solvers on 2- and 3-sphere vertical stacks with shared
   dynamic bodies, plus 4-, 5-, and 6-sphere rows for all of those solvers,
-  plus 7-sphere rows for all of those solvers, plus 8-/9-/10-sphere rows for
-  the full solver set. Stack assembly/solve benchmark rows cover
+  plus 7-sphere rows for all of those solvers, plus 8-/9-/10-/11-/12-sphere
+  rows for the full solver set. Stack assembly/solve benchmark rows cover
   2-, 3-, 4-, 5-, 6-, 7-,
   8-, 9-, 10-, 11-, 12-, 13-, 14-, 15-, and 16-sphere scenes.
 - Added mixed DART 7 world-contact batch benchmark rows that compare all
@@ -2618,8 +2642,8 @@ tradeoffs evidence based.
   contact-derived benchmark rows for 1/2/4 separated sphere-ground contacts,
   coupled benchmark rows for 2-/3-/4-/5-/6-sphere vertical stacks across all
   friction-index-capable solvers, 7-sphere stack rows for all of those
-  solvers, 8-/9-/10-sphere stack rows for the full solver set, mixed serial and
-  `ParallelExecutor` batch rows
+  solvers, 8-/9-/10-/11-/12-sphere stack rows for the full solver set, mixed
+  serial and `ParallelExecutor` batch rows
   over the 1/2/4 separated-contact and 2/3 stack snapshots, stress
   mixed serial and `ParallelExecutor` batch rows over the same separated
   snapshots plus 2/3/4/5 stack snapshots for all of those solvers except
@@ -2704,7 +2728,8 @@ tradeoffs evidence based.
    current connected Cartesian-chain articulated end-to-end coverage,
    current cross-multibody articulated link-vs-link impact coverage,
    current manually assembled three-axis articulated LCP snapshots, and
-   current 16-sphere vertical-stack snapshots and dense box face-contact
+   current 12-sphere all-solver vertical-stack solver rows, current 16-sphere
+   vertical-stack snapshots, and dense box face-contact
    evidence to broader articulated, longer-running, and denser coupled contact
    scenes.
 3. Add broader benchmark gates for SIMD-enabled CPU, intra-solver

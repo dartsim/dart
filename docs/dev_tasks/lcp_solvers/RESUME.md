@@ -499,12 +499,13 @@ pass focused default, SIMD-enabled, and CUDA-enabled build-tree benchmark gates
 with `contract_ok=1`.
 The current stack slices cover 16-sphere, 16-contact, 48-row DART 7
 boxed/findex CPU snapshot and boxed-LCP assembly rows, CPU solver-comparison
-rows through the scoped 10-sphere subset, and fixed-iteration CUDA Jacobi/PGS
+rows through the scoped 12-sphere full solver set, and fixed-iteration CUDA Jacobi/PGS
 homogeneous and grouped coupled-stack batch evidence through 16-sphere packets.
 Focused default, SIMD-enabled, and CUDA-enabled checks pass for the CPU
 solver-comparison rows through 10 spheres; focused default checks pass for the
-11-/12-/13-/14-/15-/16-sphere snapshot/assembly rows; focused CUDA unit and
-benchmark checks pass for the direct CUDA execution rows.
+11-/12-sphere solver-comparison and assembly rows and the
+13-/14-/15-/16-sphere snapshot/assembly rows; focused CUDA unit and benchmark
+checks pass for the direct CUDA execution rows.
 The latest local slice corrects shared boxed-LCP validation for collapsed
 intervals (`lo == hi`): fixed rows now require the solution to stay on the bound
 but do not require zero residual force. This removes the false-negative fixed
@@ -530,13 +531,14 @@ Jacobi dense box-face evidence for 1/2/4/8/16/24/32/48/64/96-box shapes, matchin
 the grouped PGS rows, with two and three variants per shape. The 128-box
 batch-size-4 CUDA Jacobi/PGS rows remain unclaimed.
 This checkpoint extends the coupled-stack CPU solver-comparison slice by
-registering 8-/9-/10-sphere rows for the full solver set. PGS, Jacobi,
+registering 8-/9-/10-/11-/12-sphere rows for the full solver set. PGS, Jacobi,
 BlockedJacobi, RedBlackGaussSeidel, and ShockPropagation use a 512-iteration
-stack cap; NNCG uses 20 PGS preconditioner iterations after a focused 10-PGS
-NNCG/8 probe hit the benchmark iteration cap with `contract_ok=0`. Focused
-default PGS/Jacobi/BlockedJacobi/ShockPropagation 8-through-10, NNCG
-2-through-10, RedBlack 2-through-10, and all-registered default
-8-/9-/10-sphere stack/assembly benchmark filters now report `contract_ok=1`.
+stack cap; SymmetricPsor, BGS, and Tgs use that cap on 11-/12-sphere rows; and
+NNCG uses 20 PGS preconditioner iterations through 11 spheres and 40 at 12
+spheres. Focused default PGS/Jacobi/BlockedJacobi/ShockPropagation 8-through-12,
+NNCG 2-through-12, RedBlack 2-through-12, and all-registered default
+8-/9-/10-/11-/12-sphere stack/assembly benchmark filters now report
+`contract_ok=1`.
 Push/PR work still requires explicit maintainer/user approval.
 
 ## Immediate Next Step
@@ -1428,9 +1430,12 @@ contact scenes.
   `residual=2.0448595218027776e-03`,
   `complementarity=2.0448595218027221e-03`, and 61 solver iterations. The
   focused default
-  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldStackContactAssembly_BoxedLcp/(11|12)$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_format=json`
-  run reports `contract_ok=1` for the 11- and 12-sphere assembly rows with
-  `sphere_count=11/12`, `contact_count=11/12`, and `problem_size=33/36`.
+  `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldStackContact/FrictionIndex/.*/(11|12)$|BM_LcpWorldStackContactAssembly_BoxedLcp/(11|12)$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_format=json`
+  run reports `rows=34` and `failures=0` for all 16 registered solver
+  families at both 11 and 12 spheres plus the 11-/12-sphere assembly rows, with
+  `sphere_count=11/12`, `contact_count=11/12`, and `problem_size=33/36`. The tuned 11-/12-sphere
+  rows report `symmetric_psor_max_iterations=512`, `bgs_max_iterations=512`,
+  `tgs_max_iterations=512`, and `nncg_pgs_iterations=20/40`.
   The focused default
   `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldStackContactAssembly_BoxedLcp/(13|14|15|16)$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_format=json`
   run reports `contract_ok=1` for the 13-, 14-, 15-, and 16-sphere assembly
@@ -1951,32 +1956,32 @@ cmake --build build/default/cpp/Release \
   "--benchmark_min_time=0.001s" \
   "--benchmark_repetitions=1"
 ./build/default/cpp/Release/bin/BM_LCP_COMPARE \
-  "--benchmark_filter=^BM_LcpWorldStackContact/FrictionIndex/NNCG/(2|3|4|5|6|7|8|9|10)$" \
+  "--benchmark_filter=^BM_LcpWorldStackContact/FrictionIndex/NNCG/(2|3|4|5|6|7|8|9|10|11|12)$" \
   "--benchmark_min_time=0.001s" \
   "--benchmark_repetitions=1" \
   "--benchmark_format=json"
 ./build/default/cpp/Release/bin/BM_LCP_COMPARE \
-  "--benchmark_filter=^BM_LcpWorldStackContact/FrictionIndex/Pgs/(8|9|10)$" \
+  "--benchmark_filter=^BM_LcpWorldStackContact/FrictionIndex/Pgs/(8|9|10|11|12)$" \
   "--benchmark_min_time=0.001s" \
   "--benchmark_repetitions=1" \
   "--benchmark_format=json"
 ./build/default/cpp/Release/bin/BM_LCP_COMPARE \
-  "--benchmark_filter=^BM_LcpWorldStackContact/FrictionIndex/Jacobi/(8|9|10)$" \
+  "--benchmark_filter=^BM_LcpWorldStackContact/FrictionIndex/Jacobi/(8|9|10|11|12)$" \
   "--benchmark_min_time=0.001s" \
   "--benchmark_repetitions=1" \
   "--benchmark_format=json"
 ./build/default/cpp/Release/bin/BM_LCP_COMPARE \
-  "--benchmark_filter=^BM_LcpWorldStackContact/FrictionIndex/BlockedJacobi/(8|9|10)$" \
+  "--benchmark_filter=^BM_LcpWorldStackContact/FrictionIndex/BlockedJacobi/(8|9|10|11|12)$" \
   "--benchmark_min_time=0.001s" \
   "--benchmark_repetitions=1" \
   "--benchmark_format=json"
 ./build/default/cpp/Release/bin/BM_LCP_COMPARE \
-  "--benchmark_filter=^BM_LcpWorldStackContact/FrictionIndex/RedBlackGaussSeidel/(2|3|4|5|6|7|8|9|10)$" \
+  "--benchmark_filter=^BM_LcpWorldStackContact/FrictionIndex/RedBlackGaussSeidel/(2|3|4|5|6|7|8|9|10|11|12)$" \
   "--benchmark_min_time=0.001s" \
   "--benchmark_repetitions=1" \
   "--benchmark_format=json"
 ./build/default/cpp/Release/bin/BM_LCP_COMPARE \
-  "--benchmark_filter=^BM_LcpWorldStackContact/FrictionIndex/ShockPropagation/(8|9|10)$" \
+  "--benchmark_filter=^BM_LcpWorldStackContact/FrictionIndex/ShockPropagation/(8|9|10|11|12)$" \
   "--benchmark_min_time=0.001s" \
   "--benchmark_repetitions=1" \
   "--benchmark_format=json"
@@ -1986,7 +1991,7 @@ cmake --build build/default/cpp/Release \
   "--benchmark_repetitions=1" \
   "--benchmark_format=json"
 ./build/default/cpp/Release/bin/BM_LCP_COMPARE \
-  "--benchmark_filter=BM_LcpWorldStackContact/FrictionIndex/.*/(8|9|10)$|BM_LcpWorldStackContactAssembly_BoxedLcp/(8|9|10)$" \
+  "--benchmark_filter=BM_LcpWorldStackContact/FrictionIndex/.*/(8|9|10|11|12)$|BM_LcpWorldStackContactAssembly_BoxedLcp/(8|9|10|11|12)$" \
   "--benchmark_min_time=0.001s" \
   "--benchmark_repetitions=1" \
   "--benchmark_format=json"

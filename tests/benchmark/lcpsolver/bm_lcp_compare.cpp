@@ -2570,6 +2570,18 @@ void AddNncgCounters(
   state.counters["nncg_restart_threshold"] = params.restartThreshold;
 }
 
+void AddSymmetricPsorCounters(
+    benchmark::State& state, const LcpOptions& options)
+{
+  state.counters["symmetric_psor_max_iterations"] = options.maxIterations;
+  state.counters["symmetric_psor_relaxation"] = options.relaxation;
+}
+
+void AddBgsCounters(benchmark::State& state, const LcpOptions& options)
+{
+  state.counters["bgs_max_iterations"] = options.maxIterations;
+}
+
 void AddPgsCounters(benchmark::State& state, const LcpOptions& options)
 {
   state.counters["pgs_max_iterations"] = options.maxIterations;
@@ -2595,6 +2607,11 @@ void AddRedBlackGaussSeidelCounters(
   state.counters["red_black_gauss_seidel_max_iterations"]
       = options.maxIterations;
   state.counters["red_black_gauss_seidel_relaxation"] = options.relaxation;
+}
+
+void AddTgsCounters(benchmark::State& state, const LcpOptions& options)
+{
+  state.counters["tgs_max_iterations"] = options.maxIterations;
 }
 
 #if DART_BM_LCP_COMPARE_HAS_SIMULATION
@@ -8474,34 +8491,55 @@ void RunWorldStackContactBenchmark(
   SolverBenchmarkOptions storage;
   ConfigureSolverBenchmarkOptions(storage, solverEntry, fixture->problem);
   if (solverEntry.name == "Pgs") {
-    // The 10-sphere coupled stack converges in 225 PGS iterations; the
+    // The 12-sphere coupled stack converges in 302 PGS iterations; the
     // default 100-iteration cap leaves the 8-sphere row outside the LCP
     // contract.
     storage.options.maxIterations = 512;
   } else if (solverEntry.name == "Jacobi") {
-    // The 10-sphere coupled stack converges in 342 Jacobi iterations; the
+    // The 12-sphere coupled stack converges in 452 Jacobi iterations; the
     // default 100-iteration cap leaves the 8-sphere row outside the same LCP
     // contract.
     storage.options.maxIterations = 512;
   } else if (solverEntry.name == "BlockedJacobi") {
-    // The 10-sphere coupled stack converges in 342 blocked Jacobi iterations;
+    // The 12-sphere coupled stack converges in 452 blocked Jacobi iterations;
     // the default 100-iteration cap leaves the 8-sphere row outside the same
     // LCP contract.
     storage.options.maxIterations = 512;
   } else if (solverEntry.name == "NNCG") {
     // Coupled stack contacts need a stronger PGS preconditioner than the
-    // generated math fixtures to satisfy the same LCP contract through 10
-    // spheres.
+    // generated math fixtures; the 12-sphere row needs a stronger
+    // preconditioner than the smaller coupled-stack rows.
     storage.nncgParams.pgsIterations = 20;
+    if (sphereCount >= 11) {
+      storage.options.maxIterations = 512;
+    }
+    if (sphereCount >= 12) {
+      storage.nncgParams.pgsIterations = 40;
+    }
+  } else if (solverEntry.name == "SymmetricPsor") {
+    // The 11-/12-sphere rows converge just past the default 100-iteration cap.
+    if (sphereCount >= 11) {
+      storage.options.maxIterations = 512;
+    }
+  } else if (solverEntry.name == "BGS") {
+    // The 12-sphere row needs 219 block Gauss-Seidel iterations.
+    if (sphereCount >= 11) {
+      storage.options.maxIterations = 512;
+    }
   } else if (solverEntry.name == "RedBlackGaussSeidel") {
-    // The 10-sphere coupled stack converges in 194 two-color iterations; 128
+    // The 12-sphere coupled stack converges in 259 two-color iterations; 128
     // iterations leave the 8-sphere row just outside the same LCP contract.
     storage.options.maxIterations = 512;
   } else if (solverEntry.name == "ShockPropagation") {
-    // The 7-sphere coupled stack already needs 95 shock-propagation sweeps, so
+    // The 12-sphere coupled stack needs 219 shock-propagation sweeps, so
     // the larger stack rows use the same bounded cap as the iterative
     // projection-style stack rows.
     storage.options.maxIterations = 512;
+  } else if (solverEntry.name == "Tgs") {
+    // The 12-sphere row needs 302 temporal Gauss-Seidel iterations.
+    if (sphereCount >= 11) {
+      storage.options.maxIterations = 512;
+    }
   }
 
   const auto solver = solverEntry.create();
@@ -8524,6 +8562,12 @@ void RunWorldStackContactBenchmark(
   if (solverEntry.name == "Pgs") {
     AddPgsCounters(state, storage.options);
   }
+  if (solverEntry.name == "SymmetricPsor") {
+    AddSymmetricPsorCounters(state, storage.options);
+  }
+  if (solverEntry.name == "BGS") {
+    AddBgsCounters(state, storage.options);
+  }
   if (solverEntry.name == "Jacobi") {
     AddJacobiCounters(state, storage.options);
   }
@@ -8535,6 +8579,9 @@ void RunWorldStackContactBenchmark(
   }
   if (solverEntry.name == "RedBlackGaussSeidel") {
     AddRedBlackGaussSeidelCounters(state, storage.options);
+  }
+  if (solverEntry.name == "Tgs") {
+    AddTgsCounters(state, storage.options);
   }
   if (storage.hasShockPropagationParams) {
     if (storage.shockPropagationParams.blockSizes.empty()) {
@@ -12004,6 +12051,7 @@ void RegisterWorldStackContactBenchmarks()
         && solver.name != "RedBlackGaussSeidel") {
       registeredBenchmark->Arg(8)->Arg(9)->Arg(10);
     }
+    registeredBenchmark->Arg(11)->Arg(12);
   }
 }
 

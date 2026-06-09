@@ -73,7 +73,7 @@ Support abbreviations:
   solvers on the same 1/2/4 separated sphere-ground boxed/findex contact
   snapshots, all-solver 2/3-sphere vertical-stack boxed/findex snapshots,
   all-solver 4-/5-/6-/7-sphere vertical-stack rows, scoped all-solver
-  8-/9-/10-sphere rows,
+  8-/9-/10-/11-/12-sphere rows,
   6-sphere stack assembly
   rows, and a mixed 5-problem
   serial/`ParallelExecutor` batch over the 1/2/4 separated-contact and 2/3
@@ -893,6 +893,18 @@ The current local evidence for this task is:
   NNCG 10-sphere row reports `nncg_pgs_iterations=20`,
   `residual=2.0448595218027776e-03`,
   `complementarity=2.0448595218027221e-03`, and 61 solver iterations.
+  A current focused default
+  `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldStackContact/FrictionIndex/.*/(11|12)$|BM_LcpWorldStackContactAssembly_BoxedLcp/(11|12)$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_format=json`
+  run reports `rows=34` and `failures=0` for all 16 registered solver
+  families at both 11 and 12 spheres plus the 11-/12-sphere assembly rows. The tuned 11-/12-sphere
+  rows report: `symmetric_psor_max_iterations=512`, residuals
+  `2.3669321495569662e-03`/`2.7337675689045327e-03`, and 106/120 iterations;
+  `bgs_max_iterations=512`, residuals
+  `2.3990956999897506e-03`/`2.7864848088574590e-03`, and 192/219 iterations;
+  `tgs_max_iterations=512`, residuals
+  `5.6120473527432324e-04`/`6.6932749492387700e-04`, and 263/302 iterations;
+  `nncg_pgs_iterations=20/40`, residuals
+  `2.3888996475616153e-03`/`2.7209092579925098e-03`, and 183/37 iterations.
   These stacks include sphere-ground and sphere-sphere contacts coupled through
   shared dynamic bodies. This is small coupled-stack benchmark evidence, not
   articulated, robot-like, or dense-degenerate contact evidence.
@@ -1473,8 +1485,9 @@ The current local evidence for this task is:
   benchmark rows for 1/2/4 separated sphere-ground contacts, separated
   4-/8-/16-contact step rows,
   2/3-sphere vertical stacks, 4-/5-/6-sphere vertical-stack rows for all of those
-  solvers, 7-sphere rows for all of those solvers, 8-/9-/10-sphere rows for the
-  full solver set, mixed contact-derived serial/parallel batches, the
+  solvers, 7-sphere rows for all of those solvers,
+  8-/9-/10-/11-/12-sphere rows for the full solver set, mixed contact-derived
+  serial/parallel batches, the
   3-sphere stack public step path, fixed-base prismatic articulated
   link-ground one-link and four-link `World::step()` paths, connected
   fixed-base three-axis Cartesian-chain `World::step()` paths, fixed-base
@@ -1522,8 +1535,8 @@ The current local evidence for this task is:
   World-contact
   benchmark rows now cover simple
   separated boxed-LCP contact snapshots, small coupled vertical stacks through
-  7-sphere all-solver rows, scoped 8-/9-/10-sphere rows over the full solver
-  set, mixed serial/task-parallel batches
+  7-sphere all-solver rows, scoped 8-/9-/10-/11-/12-sphere rows over the full
+  solver set, mixed serial/task-parallel batches
   over those snapshots, stress mixed serial/task-parallel batches that include
   4-/5-/6-sphere stack snapshots for all of those solvers,
   200-step/500-step
