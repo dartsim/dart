@@ -294,10 +294,11 @@ its own line so status updates remain git-history friendly.
   and Rayleigh Damping is open as PR #2954 targeting the Phase 3 branch, and
   implementation-roadmap Phase 5 Mixed-Domain Coupling is open as PR #2957
   targeting the Phase 4 branch. Implementation-roadmap Phase 6 CPU Scene Corpus
-  And Py-Demos is complete branch-locally on
-  `simx/plan083-phase6-cpu-scenes-pydemos`; validate, push, and open one
-  phase-scoped PR targeting the Phase 5 branch, then continue immediately to
-  implementation-roadmap Phase 7.
+  And Py-Demos is open as PR #2958 targeting the Phase 5 branch.
+  Implementation-roadmap Phase 7 Private GPU Parity And Speed is complete
+  branch-locally on `simx/plan083-phase7-gpu-parity`; validate, push, and open
+  one phase-scoped PR targeting the Phase 6 branch, then continue immediately to
+  implementation-roadmap Phase 8.
 - Gate: Unified Newton-barrier progress is not complete until every cited
   paper/deck figure, unit test, benchmark table, and comparison scene is mapped
   to DART-owned tests, py-demos examples, benchmark/profiling packets, CPU and

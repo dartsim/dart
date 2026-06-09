@@ -139,6 +139,19 @@ benchmark/profile packet path, expected invariant, and current limitation.
 `scripts/check_plan083_cpu_scene_corpus.py` plus focused Python tests guard that
 the row map stays explicit without claiming runtime paper-scene reproduction.
 
+The implementation-roadmap Phase 7 closeout is now branch-local on
+`simx/plan083-phase7-gpu-parity`:
+`docs/plans/083-unified-newton-barrier-multibody/gpu-parity-packet.json`
+records the private GPU parity packet rows for contact stencils/candidate
+filtering, CCD/line search, barrier/friction local kernels, PSD projection,
+assembly/linear solve, and scene-level parity/speedup. The checked packet keeps
+same-scene parity, tolerance, setup/transfer/readback timing, kernel/solve
+timing, speedup, and no-public-API policies explicit while leaving rows without
+landed kernels as planned/in-progress limitations instead of GPU speed claims.
+Local validation on the Phase 7 branch passed the packet checker, focused
+packet tests, `pixi run lint`, `pixi run build`, and
+`pixi run -e cuda test-cuda` on the visible RTX 4080 Laptop GPU.
+
 ## Last Session Summary
 
 Current slice: the first ABD benchmark packet has been promoted from
@@ -219,17 +232,17 @@ build/CTest entries.
 
 ## Current Branch
 
-`simx/plan083-phase6-cpu-scenes-pydemos` - contains the implementation-roadmap
-Phase 6 CPU scene corpus and planned py-demo placeholder closeout. It is stacked
-on the Phase 5 branch head and should become one phase-scoped PR targeting
-`simx/plan083-phase5-mixed-domain-coupling`.
+`simx/plan083-phase7-gpu-parity` - contains the implementation-roadmap Phase 7
+private GPU parity packet closeout. It is stacked on the Phase 6 branch head and
+should become one phase-scoped PR targeting
+`simx/plan083-phase6-cpu-scenes-pydemos`.
 
 ## Immediate Next Step
 
-Push `simx/plan083-phase6-cpu-scenes-pydemos`, open one phase-scoped PR for
-implementation-roadmap Phase 6, then immediately create
-`simx/plan083-phase7-gpu-parity` from the Phase 6 branch head and continue with
-implementation-roadmap Phase 7.
+Validate and push `simx/plan083-phase7-gpu-parity`, open one phase-scoped PR for
+implementation-roadmap Phase 7, then immediately create
+`simx/plan083-phase8-completion-audit` from the Phase 7 branch head and continue
+with implementation-roadmap Phase 8.
 
 ## Context That Would Be Lost
 
@@ -274,6 +287,10 @@ implementation-roadmap Phase 7.
   visual capture commands, benchmark/profile packet paths, invariants, and
   limitations. The placeholders are launchable catalog entries, not runtime
   paper-scene reproductions.
+- `docs/plans/083-unified-newton-barrier-multibody/gpu-parity-packet.json` owns
+  the Phase 7 private GPU row map. Its checked rows are evidence contracts for
+  same-scene parity, timing, tolerance, speedup, and no-public-API policy; they
+  are not GPU kernel or public backend promotion claims.
 - `scripts/benchmark_packet_utils.py` owns the shared Google Benchmark row
   parsing utilities plus the per-step/subphase timing schema for packet
   validators and writers. Keep packet-specific metadata and go/no-go gates in
@@ -308,10 +325,11 @@ git status --short --branch
 sed -n '1,220p' docs/dev_tasks/unified_newton_barrier_multibody/README.md
 sed -n '1,220p' docs/plans/083-unified-newton-barrier-multibody/implementation-roadmap.md
 pixi run python scripts/check_plan083_cpu_scene_corpus.py
+pixi run python scripts/check_plan083_gpu_parity_packet.py
 ```
 
-Then merge the latest Phase 5 base branch, verify the Phase 6 branch with lint
-and focused Python/catalog tests, and open one PR for the whole
-implementation-roadmap Phase 6. After that PR is open, continue immediately with
-roadmap Phase 7 from the Phase 6 branch head; do not describe the planned
-py-demo placeholders as runtime paper-scene reproductions.
+Then merge the latest Phase 6 base branch, verify the Phase 7 branch with lint
+and the focused GPU packet tests, and open one PR for the whole
+implementation-roadmap Phase 7. After that PR is open, continue immediately with
+roadmap Phase 8 from the Phase 7 branch head; do not describe planned GPU rows
+as speed claims or public backend promotion.

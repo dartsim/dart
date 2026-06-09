@@ -145,7 +145,14 @@
         placeholder panels/catalog categories.
   - [x] Keep real paper-scene reproduction, runtime mixed stepping, and
         performance claims gated behind the row-specific limitations.
-- [ ] Implementation-roadmap Phase 7: add private GPU parity and speed packets.
+- [x] Implementation-roadmap Phase 7: add private GPU parity and speed packets.
+  - [x] Add a checked private GPU parity packet sidecar for contact
+        stencils/candidates, CCD/line search, local barrier/friction kernels,
+        PSD projection, assembly/linear solve, and scene-level speedup rows.
+  - [x] Encode same-scene parity, tolerance, transfer/setup/readback timing,
+        kernel/solve timing, speedup, and no-public-API policies for every row.
+  - [x] Keep rows without landed kernels explicit as planned/in-progress
+        limitations instead of GPU speed claims.
 - [ ] Implementation-roadmap Phase 8: complete the PLAN-083 audit and retire
       temporary task state.
 
@@ -205,12 +212,13 @@ storage, or backend resources as public API.
 
 ## Immediate Next Steps
 
-1. Validate `simx/plan083-phase6-cpu-scenes-pydemos`, push the completed
-   implementation-roadmap Phase 6 branch, and open one phase-scoped PR for CPU
-   Scene Corpus And Py-Demos targeting the Phase 5 branch.
-2. Start implementation-roadmap Phase 7
-   (`simx/plan083-phase7-gpu-parity`) from the Phase 6 branch head and
-   implement private GPU parity and speed packets as one phase-scoped branch/PR.
+1. Validate `simx/plan083-phase7-gpu-parity`, push the completed
+   implementation-roadmap Phase 7 branch, and open one phase-scoped PR for
+   Private GPU Parity And Speed targeting the Phase 6 branch.
+2. Start implementation-roadmap Phase 8
+   (`simx/plan083-phase8-completion-audit`) from the Phase 7 branch head and
+   complete the PLAN-083 audit and temporary task cleanup as one
+   phase-scoped branch/PR.
 3. Keep the two-body affine contact micro-solve deferred until the
    `abd-alg-affine-body` row expands beyond the primitive/oracle micro-packet
    and needs a solved-state residual or runtime stepping diagnostic.
@@ -361,6 +369,14 @@ Implementation-roadmap Phase 6 branch-local evidence:
 - `PYTHONPATH=build/default/cpp/Release-docking/python:build/default/cpp/Release/python:python pixi run python -m pytest tests/test_plan083_cpu_scene_corpus.py python/tests/unit/test_py_demo_panels.py::test_plan083_cpu_corpus_placeholders_expose_status_panels python/tests/unit/test_py_demo_panels.py::test_registered_world_scenes_receive_shared_replay_controls python/tests/integration/test_demos_cycle.py::test_world_scenes_use_solver_focused_categories`
 - `PYTHONPATH=build/default/cpp/Release-docking/python:build/default/cpp/Release/python:python pixi run py-demos -- --list`
 - `pixi run test-py`
+
+Implementation-roadmap Phase 7 branch-local evidence:
+
+- `pixi run python scripts/check_plan083_gpu_parity_packet.py`
+- `pixi run python -m pytest tests/test_plan083_gpu_parity_packet.py`
+- `pixi run lint`
+- `pixi run build`
+- `pixi run -e cuda test-cuda`
 
 ## Owner Docs
 
