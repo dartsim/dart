@@ -44,11 +44,11 @@ ill-conditioned packet set: standard 32-row, boxed 16-row, friction-index
 6-/8-/12-/16-/24-/32-/48-/64-/96-contact, and 15-solver 16x-coupled
 6-/8-/12-/16-/24-/32-/48-/64-/96-/128-/192-contact rows. Boxed Semi-Smooth Newton reports
 tuned line-search settings on the 16x rows. The retained 192-contact batch rows
-are verified in the default build, and focused SIMD/CUDA PGS/Jacobi
-serial/parallel 192-contact batch smoke rows now pass. Broader all-solver
-SIMD/CUDA 192-contact batch rows remain unclaimed. Earlier broader probes
-confirmed that unbounded SIMD/batch gates are too expensive to treat as a
-routine checkpoint verifier for this slice.
+are verified in the default build, and focused SIMD/CUDA all-solver
+serial/parallel 192-contact batch rows now pass as contract gates. The rows are
+not speedup evidence, and the slow SIMD-enabled SAP rows keep the full
+all-solver 192-contact SIMD/CUDA batch slice out of the routine checkpoint
+verifier set.
 The dense box-face CUDA fixture now also has focused CUDA Jacobi coverage for
 homogeneous 1-/4-/8-/16-/24-/32-/48-/64-/96-box batch-size-4 packets using
 8192 fixed iterations and relaxation 0.25, plus homogeneous 128-box
@@ -214,9 +214,8 @@ SIMD-enabled, and CUDA-enabled build-tree runs passed
 and previously passed with `contract_ok=1` on all 1752 mild single and batch
 rows; focused new 192-contact single rows pass in default, SIMD-enabled, and
 CUDA-enabled build trees, and the default 192-contact serial-batch and
-parallel-batch rows pass. Focused SIMD/CUDA PGS/Jacobi serial/parallel
-192-contact batch smoke rows now pass; broader all-solver SIMD/CUDA
-192-contact batch rows remain unclaimed. The
+parallel-batch rows pass. Focused SIMD/CUDA all-solver serial/parallel
+192-contact batch rows now pass as contract gates. The
 benchmark rows record
 `coupling_scale=1/4/8/16`, `contact_count=6/8/12/16/24/32/48/64/96/128/192`,
 `problem_size=18/24/36/48/72/96/144/192/288/384/576`,
@@ -723,11 +722,14 @@ contact scenes.
   6-/8-/12-/16-/24-/32-/48-/64-/96-contact, and 15-solver 16x-coupled
   6-/8-/12-/16-/24-/32-/48-/64-/96-/128-/192-contact rows; the focused default
   192-contact single, serial-batch, and parallel-batch run reports 45 rows with
-  `contract_ok=1`. Focused SIMD/CUDA `Pgs`/`Jacobi` serial/parallel
-  `ExtremeCoupledFrictionIndex192/4` rows now pass with `contract_ok=1`,
-  `contact_count=192`, `total_contact_count=768`, `problem_size=576`,
-  `total_problem_size=2304`, `coupling_scale=16`, and `batch_size=4`;
-  broader all-solver SIMD/CUDA 192-contact batch rows are not claimed. The rows
+  `contract_ok=1`. Focused SIMD/CUDA all-solver serial/parallel
+  `ExtremeCoupledFrictionIndex192/4` rows now report 30 rows in each build with
+  `contract_ok=1`, covering `Pgs`, `SymmetricPsor`, `Jacobi`,
+  `RedBlackGaussSeidel`, `BlockedJacobi`, `BGS`, `NNCG`,
+  `SubspaceMinimization`, `Apgd`, `Tgs`, `ShockPropagation`, `Staggering`,
+  `Admm`, `Sap`, and `BoxedSemiSmoothNewton`, with `contact_count=192`,
+  `total_contact_count=768`, `problem_size=576`, `total_problem_size=2304`,
+  `coupling_scale=16`, and `batch_size=4`. The rows
   report `mildly_ill_conditioned_batch=1`, problem/total-problem-size counters,
   contact/total-contact counters where applicable, coupling-scale counters for
   coupled rows, backend build-state counters, and parallel execution counters
@@ -834,10 +836,10 @@ contact scenes.
   generated coverage plus the focused `BM_LcpMildIllConditioned` slice passed
   with `build_cuda_enabled=1`, `build_simd_enabled=0`, and `contract_ok=1` on
   the previous 1752 single and batch rows plus the new 192-contact single rows.
-  Focused CUDA-enabled `Pgs`/`Jacobi` serial/parallel
-  `ExtremeCoupledFrictionIndex192/4` batch smoke rows now pass with
-  `contract_ok=1`; broader all-solver CUDA-enabled 192-contact batch rows
-  remain unclaimed. The focused
+  Focused CUDA-enabled all-solver serial/parallel
+  `ExtremeCoupledFrictionIndex192/4` batch rows now report 30 rows with
+  `contract_ok=1`; these are CPU solver rows in the CUDA-enabled build, not
+  CUDA LCP kernel execution. The focused
   `BM_LcpStressActiveSetTransition` slice also passes
   with `build_cuda_enabled=1`, `build_simd_enabled=0`, and `contract_ok=1` on
   all 49 rows; those rows are CPU solver rows in a CUDA-enabled build, not CUDA
@@ -1050,10 +1052,9 @@ contact scenes.
   `6/8/12/16/24/32/48/64/96/128/192`, problem sizes
   `18/24/36/48/72/96/144/192/288/384/576`, and backend build-state counters.
   The focused default 192-contact single/batch run reports 45 rows with
-  `contract_ok=1`; SIMD/CUDA 192-contact single rows also pass, while
-  focused SIMD/CUDA `Pgs`/`Jacobi` serial/parallel 192-contact batch smoke rows
-  now pass and broader all-solver SIMD/CUDA 192-contact batch rows remain
-  unclaimed.
+  `contract_ok=1`; SIMD/CUDA 192-contact single rows also pass, and focused
+  SIMD/CUDA all-solver serial/parallel 192-contact batch rows now report 30
+  rows in each build with `contract_ok=1`.
   Boxed Semi-Smooth Newton 16x rows report tuned line-search
   settings. Treat the CUDA-enabled rows
   as CPU solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.

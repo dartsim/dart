@@ -66,9 +66,8 @@
       16x-coupled single rows through 192 contacts and default batch rows
       through 192 contacts. Boxed
       Semi-Smooth Newton reports tuned line-search settings on the 16x batch
-      rows; focused SIMD/CUDA PGS/Jacobi serial/parallel 192-contact batch
-      smoke rows now pass, while broader all-solver SIMD/CUDA 192-contact
-      batch rows remain unclaimed.
+      rows; focused SIMD/CUDA all-solver serial/parallel 192-contact batch
+      rows now pass as contract gates.
 - [x] Broadened the scoped larger mildly ill-conditioned DART 7 friction-index
       evidence to 1x-, 4x-, and 8x-coupled
       6-/8-/12-/16-/24-/32-/48-/64-/96-contact packets plus 16x-coupled
@@ -207,9 +206,8 @@
       Semi-Smooth Newton reports tuned line-search settings on the 16x rows.
       The default build verifies the retained 192-contact batch rows; prior
       rows through the 128-contact 16x packet were verified in default,
-      SIMD-enabled, and CUDA-enabled build trees. Focused SIMD/CUDA
-      PGS/Jacobi serial/parallel 192-contact batch smoke rows now pass;
-      broader all-solver SIMD/CUDA 192-contact batch rows remain unclaimed.
+      SIMD-enabled, and CUDA-enabled build trees. Focused SIMD/CUDA all-solver
+      serial/parallel 192-contact batch rows now pass as contract gates.
 - [x] Added 29 `BM_LcpNearSingular` benchmark rows for the scoped robust
       near-singular standard 8-row, boxed 8-row, and coupled friction-index
       3-, 6-, 9-, 12-, 16-, 24-, 32-, 48-, 64-, 96-, 128-, and 192-contact packets,
@@ -610,9 +608,9 @@ tradeoffs evidence based.
   `build_cuda_enabled=1`, `build_simd_enabled=0`,
   `has_simulation_experimental=1`, and `contract_ok=1` for the previous 1752
   `BM_LcpMildIllConditioned` single and batch rows; the new 192-contact single
-  rows also pass in that build tree, and focused CUDA-enabled PGS/Jacobi
-  serial/parallel 192-contact batch smoke rows now pass, while broader
-  all-solver CUDA-enabled 192-contact batch rows remain unclaimed. The focused
+  rows also pass in that build tree, and focused CUDA-enabled all-solver
+  serial/parallel 192-contact batch rows now report 30 rows with
+  `contract_ok=1`. The focused
   `BM_LcpStressActiveSetTransition` slice reported
   `build_cuda_enabled=1`, `build_simd_enabled=0`,
   `active_set_transition=1`, `stress_active_set_transition=1`, and
@@ -1292,16 +1290,20 @@ tradeoffs evidence based.
   check for `ExtremeCoupledFrictionIndex192` single, serial-batch, and
   parallel-batch rows reports 45 rows with `contract_ok=1`,
   `total_contact_count=768`, `total_problem_size=2304`, and `parallel_units=4`
-  on parallel rows. Focused SIMD-enabled and CUDA-enabled smokes for
-  `Pgs`/`Jacobi` serial/parallel `ExtremeCoupledFrictionIndex192/4` rows each
-  report 4 rows with `contract_ok=1`, `contact_count=192`,
+  on parallel rows. Focused SIMD-enabled and CUDA-enabled all-solver follow-ups
+  for serial/parallel `ExtremeCoupledFrictionIndex192/4` rows each report
+  30 rows with `contract_ok=1`, covering `Pgs`, `SymmetricPsor`, `Jacobi`,
+  `RedBlackGaussSeidel`, `BlockedJacobi`, `BGS`, `NNCG`,
+  `SubspaceMinimization`, `Apgd`, `Tgs`, `ShockPropagation`, `Staggering`,
+  `Admm`, `Sap`, and `BoxedSemiSmoothNewton`, with `contact_count=192`,
   `total_contact_count=768`, `problem_size=576`,
   `total_problem_size=2304`, `coupling_scale=16`, and `batch_size=4`; the
   SIMD run reports `build_simd_enabled=1`, the CUDA-enabled run reports
   `build_cuda_enabled=1`, and parallel rows report `max_parallelism=4`.
-  These focused rows are contract gates only: Jacobi residual counters are
-  large, no speedup is claimed, and broader all-solver SIMD/CUDA 192-contact
-  batch rows remain unclaimed. The rows report
+  These focused rows are contract gates only: several projection-like rows
+  still report large residual counters, no speedup is claimed, and the
+  SIMD-enabled `Sap` rows are contract-correct but slow enough that this is not
+  a routine checkpoint gate. The rows report
   `mildly_ill_conditioned_batch=1`, `batch_size=4`, problem sizes
   `16/18/24/32/36/48/72/96/144/192/288/384/576`, total problem sizes
   `64/72/96/128/144/192/288/384/576/768/1152/1536/2304`, and backend
