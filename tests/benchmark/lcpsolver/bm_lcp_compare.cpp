@@ -12235,7 +12235,7 @@ void RegisterWorldStackContactBenchmarks()
         && solver.name != "RedBlackGaussSeidel") {
       registeredBenchmark->Arg(8)->Arg(9)->Arg(10);
     }
-    registeredBenchmark->Arg(11)->Arg(12);
+    registeredBenchmark->Arg(11)->Arg(12)->Arg(13);
   }
 }
 
