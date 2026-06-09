@@ -49,6 +49,13 @@ Phase 5 GPU packet checker share those row-level rules while keeping their
 packet-specific expected rows, metadata, speedup gates, and evidence flags in
 their variant owners.
 
+The current Phase 3 scout promotes only the native-CCD primitive outcome
+accounting that is identical across rigid IPC and deformable CCD: hit/miss/
+indeterminate counter updates, hit and indeterminate time-of-impact clamping to
+`[0, 1]`, and zero-step counting. Limiting-payload ownership,
+indeterminate-result policy, and line-search result structs remain
+variant-local.
+
 ## Last Session Summary
 
 Current slice: the first ABD benchmark packet has been promoted from
@@ -97,32 +104,43 @@ owners. Focused local validation passed
 `pixi run python -m pytest tests/test_benchmark_packet_utils.py` and
 `pixi run lint`.
 
-The current line-search step-scale slice lives on
-`simx/shared-newton-barrier-step-scale`. It is intentionally smaller than a
-line-search result or projected-Newton diagnostics merge: current evidence
-shows rigid and deformable share finite step-bound scaling and the
-strictly-interior CCD fraction, but not yet full line-search result payloads,
-projected-Newton status terminology, or solver-loop diagnostics.
+The line-search step-scale slice merged as PR #2943. It is intentionally
+smaller than a line-search result or projected-Newton diagnostics merge:
+current evidence shows rigid and deformable share finite step-bound scaling and
+the strictly-interior CCD fraction, but not yet full line-search result
+payloads, projected-Newton status terminology, or solver-loop diagnostics.
 Focused local validation passed `pixi run lint`, the focused
 `test_newton_barrier_primitives` / `test_rigid_ipc_barrier` / `test_world`
 CTest entries, `pixi run build`, and `pixi run test-unit`.
 
+The native-CCD primitive outcome accounting slice is on
+`simx/shared-newton-barrier-ccd-hit-accounting`, rebased directly onto
+`origin/main` after PR #2943 landed. Focused local validation passed the
+`test_newton_barrier_primitives`, `test_continuous_collision_step`, and
+`test_rigid_ipc_barrier` build/CTest entries plus `pixi run lint`. Stronger
+local validation also passed `pixi run build`, `pixi run test-unit`,
+`pixi run test-all`, and `pixi run -e cuda test-all`. Both full gates passed;
+the docs phase still emits the existing `dartpy._world_render_bridge` autodoc
+warnings.
+
 ## Current Branch
 
-`simx/shared-newton-barrier-step-scale` - contains the Phase 3 shared
-line-search step-scale policy slice. Verify the exact status with
+`simx/shared-newton-barrier-ccd-hit-accounting` - contains the Phase 3 shared
+native-CCD primitive outcome accounting slice, rebased directly onto
+`origin/main` after PR #2943 landed. Verify the exact status with
 `git status --short --branch` because this section is a resume snapshot.
 
 ## Immediate Next Step
 
 Continue Phase 3 from
 [`../../plans/083-unified-newton-barrier-multibody/abd-first-slice-design.md`](../../plans/083-unified-newton-barrier-multibody/abd-first-slice-design.md):
-validate and publish the line-search step-scale policy, then resume
-shared-contract scouting from the existing rigid IPC, deformable IPC, ABD, and
-benchmark-packet evidence. Do not add a two-body affine contact micro-solve for
-the current `abd-alg-affine-body` micro-packet; add projected-Newton,
-line-search result semantics, diagnostics, or benchmark-schema contracts only
-after second-use behavior is proven identical across variants. Use
+publish the native-CCD primitive outcome accounting slice against `main`, then
+resume shared-contract scouting from the existing rigid IPC, deformable IPC,
+ABD, and benchmark-packet evidence. Do not add a two-body affine contact
+micro-solve for the current `abd-alg-affine-body` micro-packet; add
+projected-Newton, line-search result semantics, diagnostics, or
+benchmark-schema contracts only after second-use behavior is proven identical
+across variants. Use
 [`../../plans/083-unified-newton-barrier-multibody/implementation-roadmap.md`](../../plans/083-unified-newton-barrier-multibody/implementation-roadmap.md)
 to keep the Phase 2 packet, shared solver contracts, articulation rows,
 restitution work, mixed-domain coupling, CPU/GPU parity, and py-demos rows

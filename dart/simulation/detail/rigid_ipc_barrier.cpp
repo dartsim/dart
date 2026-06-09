@@ -832,12 +832,10 @@ void recordLineSearchCandidate(
     const std::size_t bodyB,
     const std::array<std::size_t, 4>& vertices)
 {
-  if (candidate.hit) {
-    ++aggregate.stats.hits;
-    const double candidateStep = std::clamp(candidate.timeOfImpact, 0.0, 1.0);
-    if (candidateStep <= 0.0) {
-      ++aggregate.stats.zeroStepCount;
-    }
+  const auto outcome
+      = newton_barrier::recordLineSearchCcdOutcome(aggregate.stats, candidate);
+  if (outcome.hit) {
+    const double candidateStep = outcome.stepBound;
     if (!aggregate.limited || candidateStep < aggregate.stepBound) {
       aggregate.limited = true;
       aggregate.stepBound = candidateStep;
@@ -849,9 +847,7 @@ void recordLineSearchCandidate(
     return;
   }
 
-  if (candidate.status
-      == collision::native::CcdPrimitiveStatus::Indeterminate) {
-    ++aggregate.stats.indeterminate;
+  if (outcome.indeterminate) {
     // The ACCD could not prove a definitive hit/miss within its budget, but
     // each conservative advance it took was a provably contact-free sub-step,
     // so it did prove the pair separated over [0, timeOfImpact]. Use that as a
@@ -861,7 +857,7 @@ void recordLineSearchCandidate(
     // true TOI) while letting dense resting contacts -- where a couple of tight
     // pairs never fully resolve -- still advance. Only if no safe progress was
     // proven (timeOfImpact == 0) do we fall back to the blocking zero step.
-    const double safeTime = std::clamp(candidate.timeOfImpact, 0.0, 1.0);
+    const double safeTime = outcome.stepBound;
     if (safeTime <= 0.0) {
       aggregate.indeterminate = true;
       aggregate.limited = true;
@@ -882,8 +878,6 @@ void recordLineSearchCandidate(
     }
     return;
   }
-
-  ++aggregate.stats.misses;
 }
 
 RigidIpcProjectedNewtonStep computeRigidIpcProjectedNewtonStepImpl(

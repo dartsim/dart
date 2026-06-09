@@ -44,16 +44,12 @@ namespace {
 //==============================================================================
 void recordHit(
     ContinuousCollisionStepResult& result,
-    const double timeOfImpact,
+    const newton_barrier::LineSearchCcdOutcome& outcome,
     const ContinuousCollisionPrimitive primitive)
 {
   result.hit = true;
-  result.stepBound = std::clamp(timeOfImpact, 0.0, 1.0);
+  result.stepBound = outcome.stepBound;
   result.limitingPrimitive = primitive;
-  ++result.stats.hits;
-  if (result.stepBound <= 0.0) {
-    ++result.stats.zeroStepCount;
-  }
 }
 
 //==============================================================================
@@ -113,20 +109,14 @@ ContinuousCollisionStepResult pointTriangleStepBound(
       cEnd,
       newton_barrier::makeLineSearchCcdOption(options),
       nativeResult);
+  const auto outcome
+      = newton_barrier::recordLineSearchCcdOutcome(result.stats, nativeResult);
 
   if (hit) {
-    recordHit(
-        result,
-        nativeResult.timeOfImpact,
-        ContinuousCollisionPrimitive::PointTriangle);
-  } else if (
-      nativeResult.status
-      == collision::native::CcdPrimitiveStatus::Indeterminate) {
+    recordHit(result, outcome, ContinuousCollisionPrimitive::PointTriangle);
+  } else if (outcome.indeterminate) {
     result.indeterminate = true;
     result.stepBound = 0.0;
-    ++result.stats.indeterminate;
-  } else {
-    ++result.stats.misses;
   }
 
   return result;
@@ -159,20 +149,14 @@ ContinuousCollisionStepResult edgeEdgeStepBound(
       dEnd,
       newton_barrier::makeLineSearchCcdOption(options),
       nativeResult);
+  const auto outcome
+      = newton_barrier::recordLineSearchCcdOutcome(result.stats, nativeResult);
 
   if (hit) {
-    recordHit(
-        result,
-        nativeResult.timeOfImpact,
-        ContinuousCollisionPrimitive::EdgeEdge);
-  } else if (
-      nativeResult.status
-      == collision::native::CcdPrimitiveStatus::Indeterminate) {
+    recordHit(result, outcome, ContinuousCollisionPrimitive::EdgeEdge);
+  } else if (outcome.indeterminate) {
     result.indeterminate = true;
     result.stepBound = 0.0;
-    ++result.stats.indeterminate;
-  } else {
-    ++result.stats.misses;
   }
 
   return result;
