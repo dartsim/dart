@@ -613,10 +613,11 @@ and broaden solver-internal Jacobi threading benchmark evidence through
 256-row/96-contact CPU and CUDA rows, and the 8192-row Jacobi threading rows
 pass focused default, SIMD-enabled, and CUDA-enabled build-tree benchmark gates
 with `contract_ok=1`.
-The current stack slices cover 24-/32-sphere, 24-/32-contact, 72-/96-row DART 7
-boxed/findex CPU snapshot and boxed-LCP assembly rows, CPU solver-comparison
-rows through the scoped 13-sphere full solver set, and fixed-iteration CUDA Jacobi/PGS
-homogeneous and grouped coupled-stack batch evidence through 24-/32-sphere packets.
+The current stack slices cover 16-sphere boxed/findex CPU snapshot and boxed-LCP
+assembly rows, CPU solver-comparison rows through the scoped 13-sphere full
+solver set, and fixed-iteration CUDA Jacobi/PGS homogeneous and grouped
+coupled-stack batch evidence through 24-/32-sphere DART 7 `World::collide()`
+snapshots.
 Focused default, SIMD-enabled, and CUDA-enabled checks pass for the CPU
 solver-comparison rows through the scoped 13-sphere full solver set; focused
 default checks pass for the
