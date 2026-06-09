@@ -2564,6 +2564,14 @@ void AddNncgCounters(
   state.counters["nncg_restart_threshold"] = params.restartThreshold;
 }
 
+void AddRedBlackGaussSeidelCounters(
+    benchmark::State& state, const LcpOptions& options)
+{
+  state.counters["red_black_gauss_seidel_max_iterations"]
+      = options.maxIterations;
+  state.counters["red_black_gauss_seidel_relaxation"] = options.relaxation;
+}
+
 #if DART_BM_LCP_COMPARE_HAS_SIMULATION
 void AddFindexShockPropagationCounters(
     benchmark::State& state, std::size_t contactCount, Eigen::Index problemSize)
@@ -8444,6 +8452,10 @@ void RunWorldStackContactBenchmark(
     // Coupled stack contacts need a stronger PGS preconditioner than the
     // generated math fixtures to satisfy the same LCP contract.
     storage.nncgParams.pgsIterations = 10;
+  } else if (solverEntry.name == "RedBlackGaussSeidel") {
+    // The 7-sphere coupled stack converges in 107 two-color iterations; the
+    // default 100-iteration cap leaves it just outside the LCP contract.
+    storage.options.maxIterations = 128;
   }
 
   const auto solver = solverEntry.create();
@@ -8465,6 +8477,9 @@ void RunWorldStackContactBenchmark(
   state.counters["sphere_count"] = static_cast<double>(sphereCount);
   if (storage.hasNncgParams) {
     AddNncgCounters(state, storage.nncgParams);
+  }
+  if (solverEntry.name == "RedBlackGaussSeidel") {
+    AddRedBlackGaussSeidelCounters(state, storage.options);
   }
   if (storage.hasShockPropagationParams) {
     if (storage.shockPropagationParams.blockSizes.empty()) {
@@ -11917,13 +11932,11 @@ void RegisterWorldStackContactBenchmarks()
         });
     registeredBenchmark->Arg(2)->Arg(3)->Arg(4)->Arg(5)->Arg(6);
     if (solver.name != "NNCG") {
-      if (solver.name != "RedBlackGaussSeidel") {
-        registeredBenchmark->Arg(7);
-        if (solver.name != "Pgs" && solver.name != "Jacobi"
-            && solver.name != "BlockedJacobi"
-            && solver.name != "ShockPropagation") {
-          registeredBenchmark->Arg(8)->Arg(9)->Arg(10);
-        }
+      registeredBenchmark->Arg(7);
+      if (solver.name != "Pgs" && solver.name != "Jacobi"
+          && solver.name != "BlockedJacobi" && solver.name != "ShockPropagation"
+          && solver.name != "RedBlackGaussSeidel") {
+        registeredBenchmark->Arg(8)->Arg(9)->Arg(10);
       }
     }
   }

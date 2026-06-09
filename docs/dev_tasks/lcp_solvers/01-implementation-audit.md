@@ -73,7 +73,7 @@ Support abbreviations:
   solvers on the same 1/2/4 separated sphere-ground boxed/findex contact
   snapshots, all-solver 2/3-sphere vertical-stack boxed/findex snapshots,
   all-solver 4-/5-/6-sphere vertical-stack rows, scoped 7-sphere
-  rows excluding `NNCG` and `RedBlackGaussSeidel`, 6-sphere stack assembly
+  rows excluding `NNCG`, 6-sphere stack assembly
   rows, and a mixed 5-problem
   serial/`ParallelExecutor` batch over the 1/2/4 separated-contact and 2/3
   stack snapshots. A focused local SIMD-enabled CPU run now exists for
@@ -744,10 +744,17 @@ The current local evidence for this task is:
   `contract_ok=0`. A focused NNCG 2-/3-/4-/5-/6-sphere follow-up reported
   `contract_ok=1` for all five rows, with residuals from
   `1.2023357999796369e-05` through `6.9881776572988663e-04` and solver
-  iterations from 2 through 51. It also registers 14
+  iterations from 2 through 51. It also registers 15
   `BM_LcpWorldStackContact/FrictionIndex/<solver>/7` rows for that set except
-  `NNCG` and `RedBlackGaussSeidel`; a focused `RedBlackGaussSeidel` 7-sphere
-  probe reported `contract_ok=0`, so that row is not claimed. It also
+  `NNCG`. A focused default 100-iteration `RedBlackGaussSeidel` 7-sphere
+  probe reported `contract_ok=0`, residual
+  `1.5380710201222669e-03`, and complementarity
+  `1.5380710201222114e-03`; with the stack-contact cap raised to 128
+  iterations, focused `RedBlackGaussSeidel` 2-/3-/4-/5-/6-/7-sphere rows
+  reported `contract_ok=1`, and the 7-sphere row reported
+  `red_black_gauss_seidel_max_iterations=128`,
+  `residual=1.0779322145615389e-03`,
+  `complementarity=1.0779322145614834e-03`, and 107 solver iterations. It also
   registers 10 `BM_LcpWorldStackContact/FrictionIndex/<solver>/8` rows for the
   passing 8-sphere subset (`Dantzig`, `SymmetricPsor`, `BGS`,
   `SubspaceMinimization`, `Apgd`, `Tgs`, `Staggering`, `Admm`, `Sap`, and
@@ -758,27 +765,29 @@ The current local evidence for this task is:
   collide, assemble through `detail::solveBoxedLcpContacts`, solve, and validate the
   boxed-LCP stack contact path. The focused 4-sphere benchmark run
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldStackContact/FrictionIndex/.*/4|BM_LcpWorldStackContactAssembly_BoxedLcp/4' --benchmark_min_time=0.001s --benchmark_repetitions=1`
-  passed with `contract_ok=1` for all 16 registered rows. Focused default,
-  SIMD-enabled, and CUDA-enabled
+  passed with `contract_ok=1` for the original 15 non-NNCG solver rows plus
+  the 4-sphere assembly row. Focused default, SIMD-enabled, and CUDA-enabled
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldStackContact/FrictionIndex/.*/5$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
-  runs also passed with `contract_ok=1` for all 15 registered 5-sphere solver
-  rows, with `sphere_count=5`, `contact_count=5`, and `problem_size=15`; the
+  runs also passed with `contract_ok=1` for the original 15 non-NNCG
+  5-sphere solver rows, with `sphere_count=5`, `contact_count=5`, and
+  `problem_size=15`; the
   CUDA-enabled rows are CPU solver benchmark rows in that build tree, not CUDA
   LCP kernel execution. Focused default, SIMD-enabled, and CUDA-enabled
   `BM_LcpWorldStackContactAssembly_BoxedLcp/5` runs also passed with
   `contract_ok=1`, `sphere_count=5`, `contact_count=5`, and `problem_size=15`.
   Focused default, SIMD-enabled, and CUDA-enabled
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldStackContact/FrictionIndex/.*/6$|BM_LcpWorldStackContactAssembly_BoxedLcp/6|BM_LcpWorldStackStep_BoxedLcp/6/1000$' --benchmark_min_time=0.001s`
-  runs reported `contract_ok=1` for all 15 registered 6-sphere solver rows,
-  `contract_ok=1` for the 6-sphere assembly row, and `invariant_ok=1` for the
-  6-sphere 1000-step public `World::step()` row.
+  runs reported `contract_ok=1` for the original 15 non-NNCG 6-sphere solver
+  rows, `contract_ok=1` for the 6-sphere assembly row, and `invariant_ok=1`
+  for the 6-sphere 1000-step public `World::step()` row.
   A focused default run of `BM_LcpWorldStackContactAssembly_BoxedLcp/7`
   reported `contract_ok=1`, `sphere_count=7`, `contact_count=7`, and
   `problem_size=21`.
   A focused default
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldStackContact/FrictionIndex/.*/7$|BM_LcpWorldStackContactAssembly_BoxedLcp/7$' --benchmark_min_time=0.001s`
-  run reported `contract_ok=1` for all 14 registered 7-sphere solver rows and
-  the 7-sphere assembly row.
+  run reported `contract_ok=1` for all 15 registered 7-sphere solver rows and
+  the 7-sphere assembly row; the `RedBlackGaussSeidel` 7-sphere row reported
+  `red_black_gauss_seidel_max_iterations=128` and 107 solver iterations.
   Focused default, SIMD-enabled, and CUDA-enabled
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldStackContact/FrictionIndex/.*/8$|BM_LcpWorldStackContactAssembly_BoxedLcp/8$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   runs reported `contract_ok=1` for all 10 registered 8-sphere solver rows and
@@ -1364,8 +1373,8 @@ The current local evidence for this task is:
   benchmark rows for 1/2/4 separated sphere-ground contacts, separated
   4-/8-/16-contact step rows,
   2/3-sphere vertical stacks, 4-/5-/6-sphere vertical-stack rows for all of those
-  solvers, 7-sphere rows for all of those solvers except `NNCG`
-  and `RedBlackGaussSeidel`, 8-sphere rows for the narrower passing solver
+  solvers, 7-sphere rows for all of those solvers except `NNCG`,
+  8-sphere rows for the narrower passing solver
   subset, mixed contact-derived serial/parallel batches, the
   3-sphere stack public step path, fixed-base prismatic articulated
   link-ground one-link and four-link `World::step()` paths, connected
@@ -1414,8 +1423,8 @@ The current local evidence for this task is:
   World-contact
   benchmark rows now cover simple
   separated boxed-LCP contact snapshots, small coupled vertical stacks through
-  6-sphere all-solver rows, scoped 7-sphere rows excluding `NNCG`
-  and `RedBlackGaussSeidel`, scoped 8-sphere rows over the narrower passing
+  6-sphere all-solver rows, scoped 7-sphere rows excluding `NNCG`,
+  scoped 8-sphere rows over the narrower passing
   solver subset, mixed serial/task-parallel batches
   over those snapshots, stress mixed serial/task-parallel batches that include
   4-/5-/6-sphere stack snapshots for all of those solvers,
