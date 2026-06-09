@@ -75,6 +75,9 @@
         `scripts/benchmark_packet_utils.py` and route the ABD comparison packet
         checker plus the Phase 5 GPU packet checker through it while keeping
         packet-specific metadata rules in their owners.
+  - [x] Route the Phase 5 CUDA packet writer through the shared Google
+        Benchmark canonical row identity helper, removing its duplicate row
+        parser while keeping packet-specific max-error extraction local.
   - [ ] Continue scouting projected-Newton, line-search result, diagnostics, or
         benchmark-schema contracts only when another variant needs identical
         behavior.
@@ -137,7 +140,8 @@ storage, or backend resources as public API.
    deformable IPC, and ABD evidence after the fixed-size PSD projection helper,
    first line-search option/stat helper, shared line-search positive-step
    predicate, shared conservative native-CCD option adapter, shared
-   line-search step-scale helper, and shared Google Benchmark packet row parser.
+   line-search step-scale helper, and shared Google Benchmark packet row
+   identity helper.
    Promote projected-Newton result/status terminology, line-search result
    semantics, diagnostics, or additional benchmark-schema contracts only when a
    second consumer proves identical behavior.
@@ -209,6 +213,11 @@ Phase 3 line-search positive-step predicate slice local evidence:
 - `pixi run lint`
 
 Phase 3 benchmark packet utility slice local evidence:
+
+- `pixi run python -m pytest tests/test_benchmark_packet_utils.py`
+- `pixi run lint`
+
+Phase 3 benchmark row identity slice local evidence:
 
 - `pixi run python -m pytest tests/test_benchmark_packet_utils.py`
 - `pixi run lint`

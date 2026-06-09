@@ -63,7 +63,9 @@ lookup, and timing-field validation now live in
 `scripts/benchmark_packet_utils.py`. The ABD comparison packet checker and the
 Phase 5 GPU packet checker share those row-level rules while keeping their
 packet-specific expected rows, metadata, speedup gates, and evidence flags in
-their variant owners.
+their variant owners. The shared canonical row identity helper is also consumed
+by the Phase 5 CUDA packet writer so packet generation and validation strip
+Google Benchmark repeat/aggregate suffixes the same way.
 
 The native-CCD primitive outcome accounting scout promoted only the outcome
 accounting that is identical across rigid IPC and deformable CCD: hit/miss/
@@ -116,9 +118,10 @@ The benchmark-packet utility slice merged as PR #2940. It promoted
 Google Benchmark row parsing into `scripts/benchmark_packet_utils.py`, routing
 the ABD comparison packet checker plus the Phase 5 GPU packet checker through
 the shared utility while keeping packet-specific metadata and gates in their
-owners. Focused local validation passed
-`pixi run python -m pytest tests/test_benchmark_packet_utils.py` and
-`pixi run lint`.
+owners. The follow-up row-identity slice routes the Phase 5 CUDA packet writer
+through the same canonical row identity helper and removes its duplicate parser.
+Focused local validation passed `pixi run python -m pytest
+tests/test_benchmark_packet_utils.py` and `pixi run lint`.
 
 The line-search step-scale slice merged as PR #2943. It is intentionally
 smaller than a line-search result or projected-Newton diagnostics merge:
@@ -208,8 +211,9 @@ VBD/OGC-adjacent work, or shared Newton-barrier infrastructure.
   result structs there until rigid, deformable, ABD, or another variant prove
   identical result semantics.
 - `scripts/benchmark_packet_utils.py` owns the shared Google Benchmark row
-  parsing utilities for packet validators. Keep packet-specific metadata and
-  go/no-go gates in each checker until more variants prove identical semantics.
+  parsing utilities for packet validators and writers. Keep packet-specific
+  metadata and go/no-go gates in each checker until more variants prove
+  identical semantics.
 - `bm_affine_body_dynamics` currently contains the first ABD benchmark packet:
   affine point-triangle barrier mapping, matched rigid IPC point-triangle oracle
   row, and orthogonality energy.
