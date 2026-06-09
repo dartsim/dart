@@ -290,11 +290,12 @@ its own line so status updates remain git-history friendly.
   SPB, and VBD/OGC-adjacent obligations in the right owners. Implementation-
   roadmap Phase 2 shared solver contracts landed in PR #2951, and
   implementation-roadmap Phase 3 Unified Articulation Constraints is open as PR
-  #2953 targeting `main`. Implementation-roadmap Phase 4 Restitution, BDF-2,
-  and Rayleigh Damping is complete branch-locally on
-  `simx/plan083-phase4-restitution-bdf2`; validate, push, and open one
-  phase-scoped PR targeting the Phase 3 branch, then continue immediately to
-  implementation-roadmap Phase 5.
+  #2953 targeting `main`, and implementation-roadmap Phase 4 Restitution,
+  BDF-2, and Rayleigh Damping is open as PR #2954 targeting the Phase 3 branch.
+  Implementation-roadmap Phase 5 Mixed-Domain Coupling is complete
+  branch-locally on `simx/plan083-phase5-mixed-domain-coupling`; validate,
+  push, and open one phase-scoped PR targeting the Phase 4 branch, then continue
+  immediately to implementation-roadmap Phase 6.
 - Gate: Unified Newton-barrier progress is not complete until every cited
   paper/deck figure, unit test, benchmark table, and comparison scene is mapped
   to DART-owned tests, py-demos examples, benchmark/profiling packets, CPU and

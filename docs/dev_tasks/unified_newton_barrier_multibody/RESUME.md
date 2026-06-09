@@ -117,6 +117,18 @@ BDF-2 velocity accuracy, timestep/Young's-modulus/barrier/gravity diagnostic
 sweeps, PSD-projected damping, and hinge damping evidence. Existing rigid
 stepping defaults remain unchanged.
 
+The implementation-roadmap Phase 5 closeout is now branch-local on
+`simx/plan083-phase5-mixed-domain-coupling`:
+`detail/newton_barrier/mixed_domain_coupling.hpp` owns internal mixed-domain
+surface adapters, deterministic primitive candidate generation, point-pair CCD
+reduction, barrier/friction diagnostics, oracle-owner routing, and restart
+candidate keys for rigid, deformable, affine, particle, rod, shell, and
+codimensional domains. Focused `test_newton_barrier_primitives` coverage checks
+all domain adapters, primitive-family candidates, finite barrier energy,
+friction diagnostics, variant-owner preservation, conservative point CCD, and
+deterministic restart keys. Runtime coupler promotion, py-demos, and GPU
+packets remain future phases.
+
 ## Last Session Summary
 
 Current slice: the first ABD benchmark packet has been promoted from
@@ -197,17 +209,17 @@ build/CTest entries.
 
 ## Current Branch
 
-`simx/plan083-phase4-restitution-bdf2` - contains the implementation-roadmap
-Phase 4 restitution, BDF-2, and Rayleigh damping closeout. It is stacked on the
-Phase 3 branch head and should become one phase-scoped PR targeting
-`simx/plan083-phase3-articulation-constraints`.
+`simx/plan083-phase5-mixed-domain-coupling` - contains the
+implementation-roadmap Phase 5 mixed-domain coupling closeout. It is stacked on
+the Phase 4 branch head and should become one phase-scoped PR targeting
+`simx/plan083-phase4-restitution-bdf2`.
 
 ## Immediate Next Step
 
-Validate and push `simx/plan083-phase4-restitution-bdf2`, open one
-phase-scoped PR for implementation-roadmap Phase 4, then immediately create
-`simx/plan083-phase5-mixed-domain-coupling` from the Phase 4 branch head and
-continue with implementation-roadmap Phase 5.
+Validate and push `simx/plan083-phase5-mixed-domain-coupling`, open one
+phase-scoped PR for implementation-roadmap Phase 5, then immediately create
+`simx/plan083-phase6-cpu-scenes-pydemos` from the Phase 5 branch head and
+continue with implementation-roadmap Phase 6.
 
 ## Context That Would Be Lost
 
@@ -242,6 +254,11 @@ continue with implementation-roadmap Phase 5.
   updates, falling-box diagnostic sweeps, and PSD-projected Rayleigh damping.
   Do not wire it into runtime defaults until a separate promotion gate proves
   full solver parity.
+- `detail/newton_barrier/mixed_domain_coupling.hpp` owns the first internal
+  Phase 5 mixed-domain seam for shared surface adapters, primitive candidate
+  keys, point-pair CCD reduction, and diagnostic ownership routing. Do not
+  replace variant-local runtime contact buffers until scene-level mixed-domain
+  stepping tests and py-demo evidence land.
 - `scripts/benchmark_packet_utils.py` owns the shared Google Benchmark row
   parsing utilities plus the per-step/subphase timing schema for packet
   validators and writers. Keep packet-specific metadata and go/no-go gates in

@@ -123,8 +123,22 @@
         articulation potentials using PSD-projected Hessians.
   - [x] Add hinge damping sweep evidence through the scalar articulation
         damping path.
-- [ ] Phase 5: add runtime and py-demos scenes only after the relevant solver
-      slices exist and have correctness/performance evidence.
+- [x] Implementation-roadmap Phase 5: add internal mixed-domain coupling
+      contracts.
+  - [x] Add shared surface adapters for rigid, deformable, affine, particle,
+        rod, shell, and codimensional domains.
+  - [x] Add deterministic mixed-domain candidate generation for point-point,
+        point-edge, edge-edge, and point-triangle primitive families.
+  - [x] Add conservative point-pair CCD reduction plus deterministic restart
+        keys for mixed-domain candidate sets.
+  - [x] Add barrier, friction, and oracle-owner diagnostics that preserve
+        variant-specific correctness owners.
+- [ ] Implementation-roadmap Phase 6: port the CPU scene corpus and py-demos
+      categories after the relevant solver slices exist and have
+      correctness/performance evidence.
+- [ ] Implementation-roadmap Phase 7: add private GPU parity and speed packets.
+- [ ] Implementation-roadmap Phase 8: complete the PLAN-083 audit and retire
+      temporary task state.
 
 ## Goal
 
@@ -181,12 +195,12 @@ storage, or backend resources as public API.
 
 ## Immediate Next Steps
 
-1. Validate `simx/plan083-phase4-restitution-bdf2`, push the completed
-   implementation-roadmap Phase 4 branch, and open one phase-scoped PR for
-   Restitution, BDF-2, and Rayleigh Damping targeting the Phase 3 branch.
-2. Start implementation-roadmap Phase 5
-   (`simx/plan083-phase5-mixed-domain-coupling`) from the Phase 4 branch head
-   and implement mixed-domain coupling as one phase-scoped branch/PR.
+1. Validate `simx/plan083-phase5-mixed-domain-coupling`, push the completed
+   implementation-roadmap Phase 5 branch, and open one phase-scoped PR for
+   Mixed-Domain Coupling targeting the Phase 4 branch.
+2. Start implementation-roadmap Phase 6
+   (`simx/plan083-phase6-cpu-scenes-pydemos`) from the Phase 5 branch head and
+   implement the CPU scene corpus and py-demos as one phase-scoped branch/PR.
 3. Keep the two-body affine contact micro-solve deferred until the
    `abd-alg-affine-body` row expands beyond the primitive/oracle micro-packet
    and needs a solved-state residual or runtime stepping diagnostic.
@@ -314,6 +328,14 @@ Implementation-roadmap Phase 3 branch-local evidence:
 - `pixi run -- ctest --test-dir build/default/cpp/Release --output-on-failure -j <safe-jobs> -R '^test_newton_barrier_primitives$'`
 
 Implementation-roadmap Phase 4 branch-local evidence:
+
+- `pixi run lint`
+- `pixi run -- cmake --build build/default/cpp/Release --target test_newton_barrier_primitives --parallel <safe-jobs>`
+- `pixi run -- ctest --test-dir build/default/cpp/Release --output-on-failure -j <safe-jobs> -R '^test_newton_barrier_primitives$'`
+- `pixi run build`
+- `pixi run test-unit`
+
+Implementation-roadmap Phase 5 branch-local evidence:
 
 - `pixi run lint`
 - `pixi run -- cmake --build build/default/cpp/Release --target test_newton_barrier_primitives --parallel <safe-jobs>`
