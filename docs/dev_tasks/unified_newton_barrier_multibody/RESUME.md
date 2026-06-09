@@ -129,6 +129,16 @@ friction diagnostics, variant-owner preservation, conservative point CCD, and
 deterministic restart keys. Runtime coupler promotion, py-demos, and GPU
 packets remain future phases.
 
+The implementation-roadmap Phase 6 closeout is now branch-local on
+`simx/plan083-phase6-cpu-scenes-pydemos`: the py-demo catalog exposes
+launchable planned PLAN-083 CPU corpus placeholders for mixed, constraint,
+robot, and ABD categories, and
+`docs/plans/083-unified-newton-barrier-multibody/cpu-scene-corpus.json` records
+each paper/deck scene row's smoke command, long-horizon capture command,
+benchmark/profile packet path, expected invariant, and current limitation.
+`scripts/check_plan083_cpu_scene_corpus.py` plus focused Python tests guard that
+the row map stays explicit without claiming runtime paper-scene reproduction.
+
 ## Last Session Summary
 
 Current slice: the first ABD benchmark packet has been promoted from
@@ -209,17 +219,17 @@ build/CTest entries.
 
 ## Current Branch
 
-`simx/plan083-phase5-mixed-domain-coupling` - contains the
-implementation-roadmap Phase 5 mixed-domain coupling closeout. It is stacked on
-the Phase 4 branch head and should become one phase-scoped PR targeting
-`simx/plan083-phase4-restitution-bdf2`.
+`simx/plan083-phase6-cpu-scenes-pydemos` - contains the implementation-roadmap
+Phase 6 CPU scene corpus and planned py-demo placeholder closeout. It is stacked
+on the Phase 5 branch head and should become one phase-scoped PR targeting
+`simx/plan083-phase5-mixed-domain-coupling`.
 
 ## Immediate Next Step
 
-Validate and push `simx/plan083-phase5-mixed-domain-coupling`, open one
-phase-scoped PR for implementation-roadmap Phase 5, then immediately create
-`simx/plan083-phase6-cpu-scenes-pydemos` from the Phase 5 branch head and
-continue with implementation-roadmap Phase 6.
+Push `simx/plan083-phase6-cpu-scenes-pydemos`, open one phase-scoped PR for
+implementation-roadmap Phase 6, then immediately create
+`simx/plan083-phase7-gpu-parity` from the Phase 6 branch head and continue with
+implementation-roadmap Phase 7.
 
 ## Context That Would Be Lost
 
@@ -259,6 +269,11 @@ continue with implementation-roadmap Phase 6.
   keys, point-pair CCD reduction, and diagnostic ownership routing. Do not
   replace variant-local runtime contact buffers until scene-level mixed-domain
   stepping tests and py-demo evidence land.
+- `docs/plans/083-unified-newton-barrier-multibody/cpu-scene-corpus.json` owns
+  the Phase 6 row map for py-demo placeholders, smoke commands, long-horizon
+  visual capture commands, benchmark/profile packet paths, invariants, and
+  limitations. The placeholders are launchable catalog entries, not runtime
+  paper-scene reproductions.
 - `scripts/benchmark_packet_utils.py` owns the shared Google Benchmark row
   parsing utilities plus the per-step/subphase timing schema for packet
   validators and writers. Keep packet-specific metadata and go/no-go gates in
@@ -291,11 +306,12 @@ continue with implementation-roadmap Phase 6.
 ```bash
 git status --short --branch
 sed -n '1,220p' docs/dev_tasks/unified_newton_barrier_multibody/README.md
-sed -n '1,220p' docs/plans/083-unified-newton-barrier-multibody/abd-first-slice-design.md
+sed -n '1,220p' docs/plans/083-unified-newton-barrier-multibody/implementation-roadmap.md
+pixi run python scripts/check_plan083_cpu_scene_corpus.py
 ```
 
-Then merge the latest `origin/main`, verify the current branch with lint and
-the focused Phase 2 simulation/Python tests, and open one PR for the whole
-implementation-roadmap Phase 2. After that PR lands, continue with roadmap Phase
-3 articulation constraints; do not describe the micro-packet as a runtime ABD
-solver or a paper-scale performance row.
+Then merge the latest Phase 5 base branch, verify the Phase 6 branch with lint
+and focused Python/catalog tests, and open one PR for the whole
+implementation-roadmap Phase 6. After that PR is open, continue immediately with
+roadmap Phase 7 from the Phase 6 branch head; do not describe the planned
+py-demo placeholders as runtime paper-scene reproductions.

@@ -133,9 +133,18 @@
         keys for mixed-domain candidate sets.
   - [x] Add barrier, friction, and oracle-owner diagnostics that preserve
         variant-specific correctness owners.
-- [ ] Implementation-roadmap Phase 6: port the CPU scene corpus and py-demos
+- [x] Implementation-roadmap Phase 6: port the CPU scene corpus and py-demos
       categories after the relevant solver slices exist and have
       correctness/performance evidence.
+  - [x] Add launchable planned py-demo placeholders for the PLAN-083 mixed,
+        constraint, robot, and ABD CPU corpus categories.
+  - [x] Add a checked CPU scene corpus sidecar that records each row's smoke
+        command, long-horizon visual capture command, benchmark/profile packet
+        path, invariant, and current limitation.
+  - [x] Add local validation coverage for the corpus manifest and py-demo
+        placeholder panels/catalog categories.
+  - [x] Keep real paper-scene reproduction, runtime mixed stepping, and
+        performance claims gated behind the row-specific limitations.
 - [ ] Implementation-roadmap Phase 7: add private GPU parity and speed packets.
 - [ ] Implementation-roadmap Phase 8: complete the PLAN-083 audit and retire
       temporary task state.
@@ -152,7 +161,8 @@ storage, or backend resources as public API.
 
 - No public API changes.
 - No dartpy binding changes.
-- No scene, fixture, or py-demos migration.
+- No paper-scale runtime scene reproduction or fixture asset migration beyond
+  the launchable planned py-demo placeholders and checked corpus manifest.
 - No rigid curved-trajectory CCD move.
 - No sparse Newton loop merge.
 - No rigid IPC default behavior change.
@@ -195,19 +205,19 @@ storage, or backend resources as public API.
 
 ## Immediate Next Steps
 
-1. Validate `simx/plan083-phase5-mixed-domain-coupling`, push the completed
-   implementation-roadmap Phase 5 branch, and open one phase-scoped PR for
-   Mixed-Domain Coupling targeting the Phase 4 branch.
-2. Start implementation-roadmap Phase 6
-   (`simx/plan083-phase6-cpu-scenes-pydemos`) from the Phase 5 branch head and
-   implement the CPU scene corpus and py-demos as one phase-scoped branch/PR.
+1. Validate `simx/plan083-phase6-cpu-scenes-pydemos`, push the completed
+   implementation-roadmap Phase 6 branch, and open one phase-scoped PR for CPU
+   Scene Corpus And Py-Demos targeting the Phase 5 branch.
+2. Start implementation-roadmap Phase 7
+   (`simx/plan083-phase7-gpu-parity`) from the Phase 6 branch head and
+   implement private GPU parity and speed packets as one phase-scoped branch/PR.
 3. Keep the two-body affine contact micro-solve deferred until the
    `abd-alg-affine-body` row expands beyond the primitive/oracle micro-packet
    and needs a solved-state residual or runtime stepping diagnostic.
 4. Promote only the smallest proven shared contract, with cross-variant tests
    showing identical behavior; keep variant-specific terms in their owner plans.
-5. Keep runtime stepping, py-demos, and GPU claims out of scope until the
-   internal ABD oracle and benchmark packet exist.
+5. Keep runtime stepping and GPU claims out of scope until the row-specific CPU
+   corpus packets and Phase 7 GPU parity evidence exist.
 
 ## Validation Gates For Current Slices
 
@@ -342,6 +352,15 @@ Implementation-roadmap Phase 5 branch-local evidence:
 - `pixi run -- ctest --test-dir build/default/cpp/Release --output-on-failure -j <safe-jobs> -R '^test_newton_barrier_primitives$'`
 - `pixi run build`
 - `pixi run test-unit`
+
+Implementation-roadmap Phase 6 branch-local evidence:
+
+- `pixi run lint`
+- `pixi run build`
+- `pixi run python scripts/check_plan083_cpu_scene_corpus.py`
+- `PYTHONPATH=build/default/cpp/Release-docking/python:build/default/cpp/Release/python:python pixi run python -m pytest tests/test_plan083_cpu_scene_corpus.py python/tests/unit/test_py_demo_panels.py::test_plan083_cpu_corpus_placeholders_expose_status_panels python/tests/unit/test_py_demo_panels.py::test_registered_world_scenes_receive_shared_replay_controls python/tests/integration/test_demos_cycle.py::test_world_scenes_use_solver_focused_categories`
+- `PYTHONPATH=build/default/cpp/Release-docking/python:build/default/cpp/Release/python:python pixi run py-demos -- --list`
+- `pixi run test-py`
 
 ## Owner Docs
 
