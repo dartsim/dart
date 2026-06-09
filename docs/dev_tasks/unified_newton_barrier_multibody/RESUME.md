@@ -2,6 +2,11 @@
 
 ## Current Reality (2026-06-08)
 
+PR granularity: batch all work within one implementation-roadmap phase into a
+single branch and PR. Keep commits atomic within the branch. A phase may split
+into at most two PRs only when it crosses a public-API boundary or touches
+unrelated CI/build infrastructure.
+
 Use this folder's `README.md`, PLAN-083, `docs/plans/dashboard.md`, and the
 current code as the live status. The branch-local "Current Branch" section below
 is historical handoff context, not current checkout state. Treat IPC as the
@@ -161,8 +166,9 @@ resume snapshot.
 
 ## Immediate Next Step
 
-Finish the sufficient-decrease policy slice against `main`, then continue Phase
-3 from
+With the sufficient-decrease policy slice merged to `main`, collect remaining
+Phase 3 work into the current branch and open one PR for the phase. Continue
+from
 [`../../plans/083-unified-newton-barrier-multibody/abd-first-slice-design.md`](../../plans/083-unified-newton-barrier-multibody/abd-first-slice-design.md):
 resume shared-contract scouting from the existing rigid IPC, deformable IPC,
 ABD, and benchmark-packet evidence. Do not add a two-body affine contact
