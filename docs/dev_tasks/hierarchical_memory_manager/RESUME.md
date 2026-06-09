@@ -204,6 +204,12 @@ hot-loop claim; the return-by-value unified problem and solution convenience
 wrappers remain public allocation-boundary APIs, not current production
 step-loop call sites.
 
+A follow-up continuation broadened the boxed-LCP production contact guard from
+the 12-contact mixed multi-island scene to a 30-contact stress multi-island
+scene with independent articulated and rigid stacks. The new scene is included
+in both the baked World base-allocator no-growth gate and the global heap
+no-allocation gate.
+
 The latest continuation added a two-patch deformable self-contact friction
 scene to the baked World base-allocator and global heap guards. The initial
 guard exposed per-step surface-contact candidate vector growth in the

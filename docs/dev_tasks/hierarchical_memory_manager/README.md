@@ -330,10 +330,12 @@
       24-multibody, and 32-multibody stacked contact sets extend the boxed-LCP
       fallback gate beyond the original small scenes, and a production
       multi-island mixed scene now covers independent articulated and rigid
-      contact islands with 12+ initial contacts.
-      Broader solver coverage, including still-larger production contact sets
-      and default-solver deformable storage, remains open before making a full
-      zero-allocation claim. The
+      contact islands with 12+ initial contacts; the stress multi-island gate
+      extends that shape to 30+ initial contacts across independent
+      articulated and rigid islands. Broader solver coverage, including
+      default-solver deformable storage and any newly exposed production
+      contact shapes, remains open before making a full zero-allocation claim.
+      The
       global heap guard now also covers a baked deformable surface-snapshot
       scene with a static rigid surface-CCD obstacle and first-baked-step active
       VBD static rigid surface-CCD point crossing. Default projected-Newton
@@ -625,8 +627,8 @@ debugging, profiling, optimization experiments, and ImGui visualization.
    root. The AVBD
    self-contact row guard now also covers a 5x9 rectangular grid row workload
    with replay-backed activity assertions.
-   Continue broadening boxed-LCP unified problem assembly and additional
-   production contact sets while moving any newly exposed deformable/contact
+   Continue broadening boxed-LCP unified problem assembly only for newly
+   exposed contact shapes, and keep moving any newly exposed deformable/contact
    candidate buffers to backed storage before making the full zero-allocation
    claim.
 6. Start replacing per-step `std::vector`/`Eigen` temporaries in hot stages with
