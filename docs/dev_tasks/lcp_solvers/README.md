@@ -27,10 +27,11 @@
       evidence, including larger 8192-row banded packets.
 - [x] Added focused PGS/PSOR and symmetric PSOR relaxation sweep benchmark rows
       covering under-relaxation, plain relaxation, and over-relaxation on
-      standard, boxed, and friction-index fixtures.
+      standard, boxed, and 8-/16-contact friction-index fixtures.
 - [x] Added focused Red-Black Gauss-Seidel relaxation sweep benchmark rows with
-      two-color partition counters on standard, boxed, and friction-index
-      fixtures, plus focused solver-internal threaded banded-standard rows.
+      two-color partition counters on standard, boxed, and 8-/16-contact
+      friction-index fixtures, plus focused solver-internal threaded
+      banded-standard rows.
 - [x] Added opt-in solver-internal CPU worker threads for `BlockedJacobiSolver`
       independent block solves, with focused generated correctness and
       banded-standard benchmark rows.
@@ -935,45 +936,50 @@ tradeoffs evidence based.
   in a CUDA-enabled build, not CUDA LCP kernel execution.
 - Verified PGS/PSOR relaxation sweep benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpPgsRelaxationSweep' | wc -l`
-  reported 9 rows, and JSON checks for
-  `BM_LcpPgsRelaxationSweep` reported 9 rows with `contract_ok=1` in the
+  reported 12 rows, and JSON checks for
+  `BM_LcpPgsRelaxationSweep` reported 12 rows with `contract_ok=1` in the
   default, SIMD-enabled, and CUDA-enabled build trees. These rows cover the
-  standard 48-row, boxed 24-row, and friction-index 8-contact benchmark
+  standard 48-row, boxed 24-row, and friction-index 8-/16-contact benchmark
   fixtures at relaxation 0.5, 1.0, and 1.3. The rows report
   `pgs_relaxation_sweep=1`, `psor_relaxation`,
   `psor_under_relaxation`, `psor_plain_pgs`, `psor_over_relaxation`,
-  `problem_size=24/48`, `contact_count=8` for the friction-index rows, and
+  `problem_size=24/48`, `contact_count=8/16` for the friction-index rows, and
   backend build-state counters. The CUDA-enabled rows report
   `build_cuda_enabled=1` but are CPU PGS solver rows in a CUDA-enabled build,
   not CUDA LCP kernel execution.
 - Verified symmetric PSOR relaxation sweep benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpSymmetricPsorRelaxationSweep' | wc -l`
-  reported 9 rows, and JSON checks for
-  `BM_LcpSymmetricPsorRelaxationSweep` reported 9 rows with `contract_ok=1` in
+  reported 12 rows, and JSON checks for
+  `BM_LcpSymmetricPsorRelaxationSweep` reported 12 rows with `contract_ok=1` in
   the default, SIMD-enabled, and CUDA-enabled build trees. These rows cover the
-  standard 48-row, boxed 24-row, and friction-index 8-contact benchmark
+  standard 48-row, boxed 24-row, and friction-index 8-/16-contact benchmark
   fixtures at relaxation 0.5, 1.0, and 1.3. The rows report
   `symmetric_psor_relaxation_sweep=1`, `psor_relaxation`,
   `psor_under_relaxation`, `psor_plain_symmetric_psor`,
-  `psor_over_relaxation`, `problem_size=24/48`, `contact_count=8` for the
+  `psor_over_relaxation`, `problem_size=24/48`, `contact_count=8/16` for the
   friction-index rows, and backend build-state counters. The CUDA-enabled rows
   report `build_cuda_enabled=1` but are CPU symmetric PSOR solver rows in a
   CUDA-enabled build, not CUDA LCP kernel execution.
 - Verified Red-Black Gauss-Seidel relaxation sweep benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpRedBlackGaussSeidelRelaxationSweep' | wc -l`
-  reported 9 rows, and JSON checks for
-  `BM_LcpRedBlackGaussSeidelRelaxationSweep` reported 9 rows with
+  reported 12 rows, and JSON checks for
+  `BM_LcpRedBlackGaussSeidelRelaxationSweep` reported 12 rows with
   `contract_ok=1` in the default, SIMD-enabled, and CUDA-enabled build trees.
   These rows cover the standard 48-row, boxed 24-row, and friction-index
-  8-contact benchmark fixtures at relaxation 0.5, 1.0, and 1.3. The rows
+  8-/16-contact benchmark fixtures at relaxation 0.5, 1.0, and 1.3. The rows
   report `red_black_gauss_seidel_relaxation_sweep=1`,
   `red_black_color_count=2`, `red_black_red_rows=12/24`,
   `red_black_black_rows=12/24`, `psor_relaxation`,
   `psor_under_relaxation`, `psor_plain_red_black_gauss_seidel`,
-  `psor_over_relaxation`, `problem_size=24/48`, `contact_count=8` for the
+  `psor_over_relaxation`, `problem_size=24/48`, `contact_count=8/16` for the
   friction-index rows, and backend build-state counters. The CUDA-enabled rows
   report `build_cuda_enabled=1` but are CPU Red-Black Gauss-Seidel solver rows
   in a CUDA-enabled build, not CUDA LCP kernel execution.
+  The combined current relaxation-sweep filter for PGS, symmetric PSOR, and
+  Red-Black Gauss-Seidel reports `rows=36`, `failures=0`, 12 rows per solver,
+  and 9 `contact_count=16` rows in default, SIMD-enabled, and CUDA-enabled
+  build trees; the SIMD and CUDA-enabled runs report `simd_rows=36` and
+  `cuda_rows=36`, respectively.
 - Verified Red-Black Gauss-Seidel solver-internal threading slice:
   `UNIT_math_lcp_math_lcp_lcp_projection_solvers --gtest_filter='RedBlackGaussSeidelSolver.InvalidWorkerThreadCount:RedBlackGaussSeidelSolver.ThreadedPathMatchesSerial' --gtest_brief=1`
   passed 2 focused tests, and

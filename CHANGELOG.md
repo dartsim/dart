@@ -1030,8 +1030,8 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     active-set transition packets. The CUDA-enabled rows are CPU solver rows,
     not CUDA LCP kernel execution.
   - Added focused DART 7 PGS/PSOR, symmetric PSOR, and Red-Black Gauss-Seidel
-    relaxation sweep benchmark rows for standard, boxed, and friction-index
-    fixtures at relaxation 0.5, 1.0, and 1.3, verified in default,
+    relaxation sweep benchmark rows for standard, boxed, and 8-/16-contact
+    friction-index fixtures at relaxation 0.5, 1.0, and 1.3, verified in default,
     SIMD-enabled, and CUDA-enabled build trees. The rows distinguish
     under-relaxation, plain relaxation, and over-relaxation; Red-Black rows also
     report two-color partition counters. CUDA-enabled rows are CPU solver rows,

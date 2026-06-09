@@ -111,23 +111,29 @@ build-tree runs passed with `contract_ok=1` on every row. The rows record
 `parallel_units=4`, `worker_count=20`, observed `max_parallelism` up to 4, and
 backend build-state counters. The CUDA-enabled rows are CPU solver batch rows
 in a CUDA-enabled build, not CUDA LCP kernel execution.
-It now also adds 9 `BM_LcpPgsRelaxationSweep` benchmark rows for the
+It now also adds 12 `BM_LcpPgsRelaxationSweep` benchmark rows for the
 `PgsSolver`/PSOR relaxation path, covering standard 48-row, boxed 24-row, and
-friction-index 8-contact fixtures at relaxation 0.5, 1.0, and 1.3. Focused
+friction-index 8-/16-contact fixtures at relaxation 0.5, 1.0, and 1.3. Focused
 default, SIMD-enabled, and CUDA-enabled build-tree runs passed with
 `contract_ok=1` on every row and recorded under/plain/over-relaxation counters.
-The CUDA-enabled rows are CPU PGS solver rows in a CUDA-enabled build, not CUDA
-LCP kernel execution.
-It now also adds 9 `BM_LcpSymmetricPsorRelaxationSweep` benchmark rows for the
+The 16-contact follow-up rows report `rows=9`, `failures=0`, `problem_size=48`,
+and `contact_count=16` across the PGS, symmetric PSOR, and Red-Black
+relaxation sweeps. The combined current relaxation-sweep filter reports
+`rows=36`, `failures=0`, 12 rows per solver, and 9 `contact_count=16` rows in
+default, SIMD-enabled, and CUDA-enabled build trees; the SIMD and CUDA-enabled
+runs report `simd_rows=36` and `cuda_rows=36`, respectively. The CUDA-enabled
+rows are CPU PGS solver rows in a CUDA-enabled build, not CUDA LCP kernel
+execution.
+It now also adds 12 `BM_LcpSymmetricPsorRelaxationSweep` benchmark rows for the
 `SymmetricPsorSolver` relaxation path, covering standard 48-row, boxed 24-row,
-and friction-index 8-contact fixtures at relaxation 0.5, 1.0, and 1.3. Focused
-default, SIMD-enabled, and CUDA-enabled build-tree runs passed with
+and friction-index 8-/16-contact fixtures at relaxation 0.5, 1.0, and 1.3.
+Focused default, SIMD-enabled, and CUDA-enabled build-tree runs passed with
 `contract_ok=1` on every row and recorded symmetric under/plain/over-relaxation
 counters. The CUDA-enabled rows are CPU symmetric PSOR solver rows in a
 CUDA-enabled build, not CUDA LCP kernel execution.
-It now also adds 9 `BM_LcpRedBlackGaussSeidelRelaxationSweep` benchmark rows
+It now also adds 12 `BM_LcpRedBlackGaussSeidelRelaxationSweep` benchmark rows
 for the `RedBlackGaussSeidelSolver` relaxation and two-color partition path,
-covering standard 48-row, boxed 24-row, and friction-index 8-contact fixtures
+covering standard 48-row, boxed 24-row, and friction-index 8-/16-contact fixtures
 at relaxation 0.5, 1.0, and 1.3. Focused default, SIMD-enabled, and
 CUDA-enabled build-tree runs passed with `contract_ok=1` on every row and
 recorded under/plain/over-relaxation counters plus `red_black_color_count=2`
@@ -502,8 +508,8 @@ boxed/findex CPU snapshot and boxed-LCP assembly rows, CPU solver-comparison
 rows through the scoped 12-sphere full solver set, and fixed-iteration CUDA Jacobi/PGS
 homogeneous and grouped coupled-stack batch evidence through 16-sphere packets.
 Focused default, SIMD-enabled, and CUDA-enabled checks pass for the CPU
-solver-comparison rows through 10 spheres; focused default checks pass for the
-11-/12-sphere solver-comparison and assembly rows and the
+solver-comparison rows through the scoped 12-sphere full solver set; focused
+default checks pass for the
 13-/14-/15-/16-sphere snapshot/assembly rows; focused CUDA unit and benchmark
 checks pass for the direct CUDA execution rows.
 The latest local slice corrects shared boxed-LCP validation for collapsed
@@ -981,27 +987,27 @@ contact scenes.
   this as correctness/comparison evidence rather than a
   performance recommendation. CUDA-enabled rows are CPU Jacobi rows in a
   CUDA-enabled build, not CUDA LCP kernel execution.
-- `BM_LCP_COMPARE` now lists 9 focused PGS/PSOR relaxation sweep rows for
-  standard 48-row, boxed 24-row, and friction-index 8-contact fixtures at
+- `BM_LCP_COMPARE` now lists 12 focused PGS/PSOR relaxation sweep rows for
+  standard 48-row, boxed 24-row, and friction-index 8-/16-contact fixtures at
   relaxation 0.5, 1.0, and 1.3. Default, SIMD, and CUDA-enabled focused runs
   report `contract_ok=1`, `pgs_relaxation_sweep=1`,
   under/plain/over-relaxation counters, backend build-state counters, and
-  `contact_count=8` for the friction-index rows. Treat the CUDA-enabled rows as
-  CPU PGS solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
-- `BM_LCP_COMPARE` now lists 9 focused symmetric PSOR relaxation sweep rows for
-  the same standard 48-row, boxed 24-row, and friction-index 8-contact
+  `contact_count=8/16` for the friction-index rows. Treat the CUDA-enabled rows
+  as CPU PGS solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
+- `BM_LCP_COMPARE` now lists 12 focused symmetric PSOR relaxation sweep rows for
+  the same standard 48-row, boxed 24-row, and friction-index 8-/16-contact
   fixtures at relaxation 0.5, 1.0, and 1.3. Default, SIMD, and CUDA-enabled
   focused runs report `contract_ok=1`, `symmetric_psor_relaxation_sweep=1`,
   under/plain/over-relaxation counters, backend build-state counters, and
-  `contact_count=8` for the friction-index rows. Treat the CUDA-enabled rows as
-  CPU symmetric PSOR solver rows in a CUDA-enabled build, not CUDA LCP kernel
+  `contact_count=8/16` for the friction-index rows. Treat the CUDA-enabled rows
+  as CPU symmetric PSOR solver rows in a CUDA-enabled build, not CUDA LCP kernel
   execution.
-- `BM_LCP_COMPARE` now lists 9 focused Red-Black Gauss-Seidel relaxation sweep
-  rows for the same standard 48-row, boxed 24-row, and friction-index 8-contact
-  fixtures at relaxation 0.5, 1.0, and 1.3. Default, SIMD, and CUDA-enabled
-  focused runs report `contract_ok=1`,
+- `BM_LCP_COMPARE` now lists 12 focused Red-Black Gauss-Seidel relaxation sweep
+  rows for the same standard 48-row, boxed 24-row, and friction-index
+  8-/16-contact fixtures at relaxation 0.5, 1.0, and 1.3. Default, SIMD, and
+  CUDA-enabled focused runs report `contract_ok=1`,
   `red_black_gauss_seidel_relaxation_sweep=1`, two-color counters, backend
-  build-state counters, and `contact_count=8` for the friction-index rows.
+  build-state counters, and `contact_count=8/16` for the friction-index rows.
   Treat the CUDA-enabled rows as CPU solver rows in a CUDA-enabled build, not
   CUDA LCP kernel execution.
 - `BM_LCP_COMPARE` now lists 8 focused

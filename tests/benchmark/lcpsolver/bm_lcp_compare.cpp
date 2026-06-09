@@ -3298,7 +3298,7 @@ constexpr std::array<std::string_view, 9> kContactNormalStandardSolverNames{
     "MPRGP",
 };
 
-constexpr std::array<RelaxationSweepCase, 9> kRelaxationSweepCases{{
+constexpr std::array<RelaxationSweepCase, 12> kRelaxationSweepCases{{
     {BenchmarkProblemFamily::Standard,
      48,
      RelaxationSweepKind::Under,
@@ -3344,6 +3344,21 @@ constexpr std::array<RelaxationSweepCase, 9> kRelaxationSweepCases{{
      RelaxationSweepKind::Over,
      1.3,
      "Relaxation1_3"},
+    {BenchmarkProblemFamily::FrictionIndex,
+     16,
+     RelaxationSweepKind::Under,
+     0.5,
+     "Contacts16Relaxation0_5"},
+    {BenchmarkProblemFamily::FrictionIndex,
+     16,
+     RelaxationSweepKind::Plain,
+     1.0,
+     "Contacts16Relaxation1_0"},
+    {BenchmarkProblemFamily::FrictionIndex,
+     16,
+     RelaxationSweepKind::Over,
+     1.3,
+     "Contacts16Relaxation1_3"},
 }};
 
 constexpr std::array<BoxedSsnLineSearchSweepCase, 9>
