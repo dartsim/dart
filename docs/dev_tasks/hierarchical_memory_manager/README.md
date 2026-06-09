@@ -254,10 +254,12 @@
       frictional self-contact patch, 5x5 two-layer grid, 7x7 two-layer large
       grid, 9x9 two-layer production grid, and 11x11 two-layer extended
       production grid reuse candidate and friction-contact storage through
-      projected-Newton line-search CCD. Projected-Newton sparse assembly now
-      reserves self-contact barrier block storage from baked candidate capacity
-      instead of only the bake-active candidate count, so same-topology active
-      set variation does not grow DART-owned barrier vectors. Motion-aware
+      projected-Newton line-search CCD. The direct-sparse default solver now
+      carries that same no-growth coverage through 13x13, 15x15, and 17x17
+      two-layer production grids. Projected-Newton sparse assembly now reserves
+      self-contact barrier block storage from baked candidate capacity instead
+      of only the bake-active candidate count, so same-topology active set
+      variation does not grow DART-owned barrier vectors. Motion-aware
       self-contact candidate buffers now reserve the swept late-activation
       envelope during bake, and both the direct sparse and matrix-free
       projected-Newton paths now cover square and rectangular late-activating
@@ -322,13 +324,14 @@
       self-contact grid, a 7x7 two-layer large grid, a 9x9 two-layer production
       grid, an 11x11 two-layer extended production grid, a 13x13 two-layer
       dense production grid, a 15x15 extra-dense two-layer production grid,
-      a 9x13 non-square two-layer production grid, a 7x17 wide non-square
-      production grid, a 17x7 tall non-square production grid, a notched and
-      jittered 13x17 irregular direct-sparse production grid, and an 11x11
-      late-active two-layer direct-sparse plus matrix-free grid that starts
-      outside the self-contact barrier band and enters it during the counted
-      baked steps, with the same late-active direct-sparse plus matrix-free
-      coverage for a 9x13 rectangular grid.
+      a 17x17 larger two-layer production grid, a 9x13 non-square two-layer
+      production grid, a 7x17 wide non-square production grid, a 17x7 tall
+      non-square production grid, a notched and jittered 13x17 irregular
+      direct-sparse production grid, and an 11x11 late-active two-layer
+      direct-sparse plus matrix-free grid that starts outside the self-contact
+      barrier band and enters it during the counted baked steps, with the same
+      late-active direct-sparse plus matrix-free coverage for a 9x13
+      rectangular grid.
       The
       larger-grid guards also assert
       non-vacuous solver activity through public deformable diagnostics: active
@@ -338,7 +341,7 @@
       ground contact/friction rows, AVBD self-contact normal/friction rows
       including a 5x9 rectangular grid row workload, and an active rigid AVBD
       penetrating contact plus no-contact fixed-joint rows.
-      Additional still-larger production-scale frictional deformable sets still
+      Additional broader production-scale frictional deformable scenarios still
       need no-growth gates before making the full deformable claim.
 - [ ] Phase 6: Add memory-layout profiler/debugger surfaces and GUI
       visualization. `MemoryAllocatorDebugger` now exposes structured live
