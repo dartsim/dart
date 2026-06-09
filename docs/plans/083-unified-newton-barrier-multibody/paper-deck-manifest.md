@@ -55,6 +55,14 @@ for same-scene parity, tolerance, setup/transfer/readback timing, kernel/solve
 timing, speedup policy, and no-public-API policy for private GPU evidence until
 the staged kernels and scene packets are measured.
 
+## Completion Audit Sidecar
+
+Phase 8 tracks the current completion audit in
+[`completion-audit.md`](completion-audit.md), validated by
+`scripts/check_plan083_completion_audit.py`. The audit records that PLAN-083 is
+not complete while planned CPU/GPU/scene rows remain, and it blocks temporary
+dev-task retirement pending maintainer direction.
+
 ## Cross-Plan Classification Policy
 
 - Use

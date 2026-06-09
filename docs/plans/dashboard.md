@@ -291,14 +291,16 @@ its own line so status updates remain git-history friendly.
   roadmap Phase 2 shared solver contracts landed in PR #2951, and
   implementation-roadmap Phase 3 Unified Articulation Constraints is open as PR
   #2953 targeting `main`, implementation-roadmap Phase 4 Restitution, BDF-2,
-  and Rayleigh Damping is open as PR #2954 targeting the Phase 3 branch, and
+  and Rayleigh Damping is open as PR #2954 targeting the Phase 3 branch,
   implementation-roadmap Phase 5 Mixed-Domain Coupling is open as PR #2957
-  targeting the Phase 4 branch. Implementation-roadmap Phase 6 CPU Scene Corpus
-  And Py-Demos is open as PR #2958 targeting the Phase 5 branch.
-  Implementation-roadmap Phase 7 Private GPU Parity And Speed is complete
-  branch-locally on `simx/plan083-phase7-gpu-parity`; validate, push, and open
-  one phase-scoped PR targeting the Phase 6 branch, then continue immediately to
-  implementation-roadmap Phase 8.
+  targeting the Phase 4 branch, implementation-roadmap Phase 6 CPU Scene Corpus
+  And Py-Demos is open as PR #2958 targeting the Phase 5 branch, and
+  implementation-roadmap Phase 7 Private GPU Parity And Speed is open as PR
+  #2959 targeting the Phase 6 branch. Implementation-roadmap Phase 8 Completion
+  Audit is branch-local on `simx/plan083-phase8-completion-audit`; it records
+  that PLAN-083 is not complete while planned manifest, CPU corpus, and GPU
+  parity rows remain, so dev-task retirement needs maintainer direction before
+  deletion.
 - Gate: Unified Newton-barrier progress is not complete until every cited
   paper/deck figure, unit test, benchmark table, and comparison scene is mapped
   to DART-owned tests, py-demos examples, benchmark/profiling packets, CPU and

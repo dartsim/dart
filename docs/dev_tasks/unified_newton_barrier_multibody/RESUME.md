@@ -152,6 +152,15 @@ Local validation on the Phase 7 branch passed the packet checker, focused
 packet tests, `pixi run lint`, `pixi run build`, and
 `pixi run -e cuda test-cuda` on the visible RTX 4080 Laptop GPU.
 
+The implementation-roadmap Phase 8 audit is now branch-local on
+`simx/plan083-phase8-completion-audit`:
+`docs/plans/083-unified-newton-barrier-multibody/completion-audit.md` records
+that PLAN-083 is not complete because planned manifest, CPU scene corpus, and
+GPU parity packet rows remain. The audit intentionally blocks retiring
+`docs/dev_tasks/unified_newton_barrier_multibody/` until a maintainer decides
+whether the remaining work stays active there or moves fully into durable plan
+sidecars.
+
 ## Last Session Summary
 
 Current slice: the first ABD benchmark packet has been promoted from
@@ -232,17 +241,16 @@ build/CTest entries.
 
 ## Current Branch
 
-`simx/plan083-phase7-gpu-parity` - contains the implementation-roadmap Phase 7
-private GPU parity packet closeout. It is stacked on the Phase 6 branch head and
-should become one phase-scoped PR targeting
-`simx/plan083-phase6-cpu-scenes-pydemos`.
+`simx/plan083-phase8-completion-audit` - contains the implementation-roadmap
+Phase 8 completion audit. It is stacked on the Phase 7 branch head and should
+become one phase-scoped PR targeting `simx/plan083-phase7-gpu-parity`.
 
 ## Immediate Next Step
 
-Validate and push `simx/plan083-phase7-gpu-parity`, open one phase-scoped PR for
-implementation-roadmap Phase 7, then immediately create
-`simx/plan083-phase8-completion-audit` from the Phase 7 branch head and continue
-with implementation-roadmap Phase 8.
+Validate and push `simx/plan083-phase8-completion-audit`, open one
+phase-scoped PR for implementation-roadmap Phase 8, then get maintainer
+direction before deleting the temporary dev-task folder because PLAN-083
+acceptance criteria are still unmet.
 
 ## Context That Would Be Lost
 

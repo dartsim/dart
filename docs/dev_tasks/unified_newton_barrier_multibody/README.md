@@ -155,6 +155,12 @@
         limitations instead of GPU speed claims.
 - [ ] Implementation-roadmap Phase 8: complete the PLAN-083 audit and retire
       temporary task state.
+  - [x] Add a checked completion audit sidecar that records the current
+        manifest, CPU corpus, and GPU packet status counts.
+  - [x] Record that PLAN-083 is not complete while planned CPU/GPU/scene rows
+        remain.
+  - [ ] Retire the temporary dev-task folder only after maintainer direction;
+        material planned work remains.
 
 ## Goal
 
@@ -212,13 +218,12 @@ storage, or backend resources as public API.
 
 ## Immediate Next Steps
 
-1. Validate `simx/plan083-phase7-gpu-parity`, push the completed
-   implementation-roadmap Phase 7 branch, and open one phase-scoped PR for
-   Private GPU Parity And Speed targeting the Phase 6 branch.
-2. Start implementation-roadmap Phase 8
-   (`simx/plan083-phase8-completion-audit`) from the Phase 7 branch head and
-   complete the PLAN-083 audit and temporary task cleanup as one
-   phase-scoped branch/PR.
+1. Validate and push `simx/plan083-phase8-completion-audit`, then open one
+   phase-scoped PR for the completion audit targeting the Phase 7 branch.
+2. Get maintainer direction before retiring
+   `docs/dev_tasks/unified_newton_barrier_multibody/`: the Phase 8 audit found
+   that PLAN-083 still has planned CPU/GPU/scene rows and cannot honestly be
+   called complete yet.
 3. Keep the two-body affine contact micro-solve deferred until the
    `abd-alg-affine-body` row expands beyond the primitive/oracle micro-packet
    and needs a solved-state residual or runtime stepping diagnostic.
@@ -246,6 +251,13 @@ GPU-backed path:
 ```bash
 pixi run -e cuda test-cuda
 ```
+
+Phase 8 local evidence:
+
+- `pixi run python scripts/check_plan083_completion_audit.py`
+- `pixi run python -m pytest tests/test_plan083_completion_audit.py`
+- `pixi run lint`
+- `pixi run build`
 
 Phase 1 local evidence:
 
