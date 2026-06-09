@@ -1144,13 +1144,14 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     27 stress exact rank-deficient singular-degenerate benchmark rows for
     standard 64-row, boxed 64-row, and coupled friction-index 12-contact
     packets, each verified across default, SIMD-enabled, and CUDA-enabled build
-    trees, plus 48 extreme exact rank-deficient singular-degenerate rows for
+    trees, plus 51 extreme exact rank-deficient singular-degenerate rows for
     standard 128-row, boxed 128-row, and coupled friction-index
-    16-/24-/32-/48-/64-/96-/128-/192-contact packets verified across default,
+    16-/24-/32-/48-/64-/96-/128-/192-/256-contact packets verified across default,
     SIMD-enabled, and CUDA-enabled build
-    trees, plus 66 exact rank-deficient singular-degenerate friction-index
+    trees, plus 72 exact rank-deficient singular-degenerate friction-index
     batch rows for batch-size-4 serial and DART 7 `ParallelExecutor` runs over
-    coupled friction-index 6-/8-/12-/16-/24-/32-/48-/64-/96-/128-/192-contact packets verified
+    coupled friction-index
+    6-/8-/12-/16-/24-/32-/48-/64-/96-/128-/192-/256-contact packets verified
     across default, SIMD-enabled, and CUDA-enabled build trees, plus 192 exact
     rank-deficient singular-degenerate standard/boxed batch rows for
     batch-size-4 serial and DART 7 `ParallelExecutor` runs over

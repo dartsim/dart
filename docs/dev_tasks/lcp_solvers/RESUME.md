@@ -68,11 +68,11 @@ friction-index 192-contact packets. It also adds 58
 DART 7 `ParallelExecutor` runs over near-singular standard 8-row, boxed 8-row,
 and coupled friction-index 3-/6-/9-/12-/16-/24-/32-/48-/64-/96-/128-/192-contact
 packets, verified in default, SIMD-enabled, and CUDA-enabled build trees.
-It also adds 66
+It also adds 72
 `BM_LcpSingularDegenerateFrictionIndexBatch(Serial|Parallel)` rows for
 batch-size-4 serial and DART 7 `ParallelExecutor` runs over exact
 rank-deficient coupled friction-index
-6-/8-/12-/16-/24-/32-/48-/64-/96-/128-/192-contact packets, verified in
+6-/8-/12-/16-/24-/32-/48-/64-/96-/128-/192-/256-contact packets, verified in
 default, SIMD-enabled, and CUDA-enabled build trees.
 It also adds 192
 `BM_LcpSingularDegenerateStandardBoxedBatch(Serial|Parallel)` rows for
@@ -397,7 +397,7 @@ the default, SIMD-enabled, and CUDA-enabled build trees. The CUDA-enabled rows
 are CPU solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
 It now also extends that exact rank-deficient coverage to an extreme slice:
 standard 128-row, boxed 128-row, and coupled friction-index
-16-/24-/32-/48-/64-/96-/128-/192-contact packets, plus 48 matching
+16-/24-/32-/48-/64-/96-/128-/192-/256-contact packets, plus 51 matching
 `BM_LcpExtremeSingularDegenerate` benchmark rows
 verified in the default, SIMD-enabled, and CUDA-enabled build trees. The
 CUDA-enabled rows are CPU solver rows in a CUDA-enabled build, not CUDA LCP
@@ -581,7 +581,7 @@ Push/PR work still requires explicit maintainer/user approval.
 
 Move from the now-verified direct 256-row/96-contact CUDA batch rows, grouped
 synthetic CPU/CUDA batch rows, 8192-row banded Jacobi solver-internal threading
-rows, extreme 128-row/192-contact exact rank-deficient,
+rows, extreme 128-row/256-contact exact rank-deficient,
 production active-set transition 192-contact, coupled mildly ill-conditioned
 24-contact, near-singular 192-contact generated CPU solver coverage, near-singular
 serial/parallel batch rows, exact rank-deficient singular-degenerate
@@ -732,19 +732,21 @@ contact scenes.
   and `contact_count=12`/`coupled=1` for the coupled friction-index packet. The
   CUDA-enabled rows are CPU solver rows in a CUDA-enabled build, not CUDA LCP
   kernel execution.
-  `BM_LCP_COMPARE` also lists 48 `BM_LcpExtremeSingularDegenerate` rows for
+  `BM_LCP_COMPARE` also lists 51 `BM_LcpExtremeSingularDegenerate` rows for
   exact rank-deficient standard 128-row, boxed 128-row, and coupled
-  friction-index 16-/24-/32-/48-/64-/96-/128-/192-contact packets over the generated
+  friction-index 16-/24-/32-/48-/64-/96-/128-/192-/256-contact packets over the generated
   extreme singular-degenerate solver scope; previous focused default,
   SIMD-enabled, and CUDA-enabled full-slice runs through the 96-contact packet
   passed with `contract_ok=1`, and focused 128-contact follow-up runs in those
   same build trees report 3 added rows with `contract_ok=1`; focused
   192-contact follow-up runs in those same build trees report another 3 added
-  rows with `contract_ok=1`. The rows report
+  rows with `contract_ok=1`; focused 256-contact follow-up runs in those same
+  build trees report another 3 added rows with `contract_ok=1`,
+  `contact_count=256`, and `problem_size=768`. The rows report
   `singular_degenerate=1`,
   `rank_deficient=1`, backend build-state counters, and
-  contact counts `16/24/32/48/64/96/128/192`, problem sizes
-  `48/72/96/144/192/288/384/576`, and `coupled=1` for the coupled friction-index
+  contact counts `16/24/32/48/64/96/128/192/256`, problem sizes
+  `48/72/96/144/192/288/384/576/768`, and `coupled=1` for the coupled friction-index
   packets. The
   CUDA-enabled rows are CPU solver rows in a CUDA-enabled build, not CUDA LCP
   kernel execution.
@@ -821,16 +823,19 @@ contact scenes.
   and `contact_count=8`/`coupled=1` for the coupled friction-index packet. The
   CUDA-enabled rows are CPU solver rows in a CUDA-enabled build, not CUDA LCP
   kernel execution.
-  `BM_LCP_COMPARE` also lists 66
+  `BM_LCP_COMPARE` also lists 72
   `BM_LcpSingularDegenerateFrictionIndexBatch(Serial|Parallel)` rows for
   batch-size-4 serial and DART 7 `ParallelExecutor` runs over exact
   rank-deficient coupled friction-index
-  6-/8-/12-/16-/24-/32-/48-/64-/96-/128-/192-contact packets; previous focused
+  6-/8-/12-/16-/24-/32-/48-/64-/96-/128-/192-/256-contact packets; previous focused
   default, SIMD-enabled, and CUDA-enabled JSON checks through the 96-contact
   packet pass with `contract_ok=1`, and focused 128-contact follow-up runs in
   those same build trees report 6 added batch rows with `contract_ok=1`;
   focused 192-contact follow-up runs in those same build trees report another
-  6 added batch rows with `contract_ok=1`.
+  6 added batch rows with `contract_ok=1`; focused 256-contact follow-up runs
+  in those same build trees report another 6 added batch rows with
+  `contract_ok=1`, `contact_count=256`, `total_contact_count=1024`,
+  `problem_size=768`, and `total_problem_size=3072`.
   The rows report `singular_degenerate_batch=1`, `rank_deficient=1`,
   contact/total-contact counters, backend build-state counters, and parallel
   execution counters on `ParallelExecutor` rows. The
@@ -877,7 +882,8 @@ contact scenes.
   `BM_LcpExtremeActiveSetTransition` rows, all 48 focused
   `BM_LcpProductionActiveSetTransition` rows, the focused
   `BM_LcpExtremeSingularDegenerate` rows through the 96-contact packet, and
-  the focused 128-contact `BM_LcpExtremeSingularDegenerate` follow-up rows.
+  the focused 128-/192-/256-contact `BM_LcpExtremeSingularDegenerate`
+  follow-up rows.
   A separate `build/cuda/cpp/Release` build configured by
   `pixi run -e cuda build-cuda Release` reported DART 7.0.0 with
   `DART_ENABLE_EXPERIMENTAL_CUDA=ON` and `DART_CUDA_ARCHITECTURES=89`; the
@@ -901,6 +907,11 @@ contact scenes.
   `BM_LcpStressSingularDegenerate` slice also passes with
   `build_cuda_enabled=1`, `build_simd_enabled=0`, `rank_deficient=1`, and
   `contract_ok=1` on all 27 rows. The focused
+  `BM_LcpExtremeSingularDegenerate/CoupledFrictionIndex256` and
+  `BM_LcpSingularDegenerateFrictionIndexBatch(Serial|Parallel)/CoupledFrictionIndex256/4`
+  rows pass in default, SIMD-enabled, and CUDA-enabled build trees with
+  `contract_ok=1`, `contact_count=256`, `problem_size=768`, and
+  `total_problem_size=3072` on batch rows. The focused
   `BM_LcpExtremeActiveSetTransition` slice passes with
   `build_cuda_enabled=1`, `build_simd_enabled=0`, and `contract_ok=1` on all
   49 rows, the focused `BM_LcpProductionActiveSetTransition` slice passes with
@@ -977,7 +988,7 @@ contact scenes.
   64-row, and coupled friction-index 12-contact known-solution cases, plus
   extreme exact rank-deficient singular-degenerate standard 128-row, boxed
   128-row, and coupled friction-index
-  16-/24-/32-/48-/64-/96-/128-/192-contact known-solution cases, plus
+  16-/24-/32-/48-/64-/96-/128-/192-/256-contact benchmark cases, plus
   singular-degenerate standard/boxed batch benchmark packets over
   16-/32-/64-/128-row exact rank-deficient cases, plus
   stress and extreme active-set transition standard 64/128-row, boxed
