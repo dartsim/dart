@@ -94,21 +94,23 @@ remain delegated for those three solvers.
 It now also adds opt-in PGS warm starts for those same standard Newton paths,
 accepting the PGS seed only when it reduces the solver-specific merit before
 Newton line search.
-It now also adds 24 `BM_LcpNewtonWarmStart` benchmark rows for the three native
+It now also adds 36 `BM_LcpNewtonWarmStart` benchmark rows for the three native
 standard-LCP Newton solvers, comparing no seed, PGS, projected gradient
-descent, and PGS-then-gradient modes on identical 32-row and 64-row active-set
-transition packets. Focused default, SIMD-enabled, and CUDA-enabled build-tree
+descent, and PGS-then-gradient modes on identical 32-row, 64-row, and 128-row
+active-set transition packets. Focused default, SIMD-enabled, and CUDA-enabled build-tree
 runs passed with `contract_ok=1` on every row and recorded mode/iteration
-counters in the JSON output. The CUDA-enabled rows are CPU solver rows in a
-CUDA-enabled build, not CUDA LCP kernel execution.
-It now also adds 48
+counters in the JSON output, including 12 `problem_size=128` single rows. The
+CUDA-enabled rows are CPU solver rows in a CUDA-enabled build, not CUDA LCP
+kernel execution.
+It now also adds 72
 `BM_LcpNewtonWarmStartBatch(Serial|Parallel)` benchmark rows for batch-size-4
 serial and DART 7 `ParallelExecutor` runs over the same standard active-set
 transition packets and the same no-seed, PGS-only, gradient-only, and
 PGS-then-gradient mode matrix. Focused default, SIMD-enabled, and CUDA-enabled
 build-tree runs passed with `contract_ok=1` on every row. The rows record
 `newton_warm_start_batch=1`, serial/parallel execution counters,
-`parallel_units=4`, `worker_count=20`, observed `max_parallelism` up to 4, and
+`total_problem_size=128/256/512`, `parallel_units=4`, `worker_count=20`,
+observed `max_parallelism` up to 4, and
 backend build-state counters. The CUDA-enabled rows are CPU solver batch rows
 in a CUDA-enabled build, not CUDA LCP kernel execution.
 It now also adds 12 `BM_LcpPgsRelaxationSweep` benchmark rows for the

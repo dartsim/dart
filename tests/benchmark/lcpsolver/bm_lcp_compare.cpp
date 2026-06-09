@@ -11438,7 +11438,8 @@ void RegisterNewtonWarmStartBenchmarks()
             RunNewtonWarmStartBenchmark(state, solver, mode);
           })
           ->Arg(32)
-          ->Arg(64);
+          ->Arg(64)
+          ->Arg(128);
 
       const auto serialBatchName
           = MakeNewtonWarmStartBatchSerialBenchmarkName(solver, mode);
@@ -11448,7 +11449,8 @@ void RegisterNewtonWarmStartBenchmarks()
             RunNewtonWarmStartBatchSerialBenchmark(state, solver, mode);
           })
           ->Args({32, 4})
-          ->Args({64, 4});
+          ->Args({64, 4})
+          ->Args({128, 4});
 
 #if DART_BM_LCP_COMPARE_HAS_SIMULATION
       const auto parallelBatchName
@@ -11459,7 +11461,8 @@ void RegisterNewtonWarmStartBenchmarks()
             RunNewtonWarmStartBatchParallelBenchmark(state, solver, mode);
           })
           ->Args({32, 4})
-          ->Args({64, 4});
+          ->Args({64, 4})
+          ->Args({128, 4});
 #endif
     }
   }

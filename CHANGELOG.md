@@ -1021,14 +1021,14 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     initializer reduces its solver-specific merit before Newton line search.
     Added opt-in PGS warm starts for those same standard Newton paths, accepting
     PGS seeds only when they reduce the solver-specific Newton merit. Boxed/findex
-    problems remain delegated for those three solvers. Added 24 benchmark rows
+    problems remain delegated for those three solvers. Added 36 benchmark rows
     comparing no seed, PGS, projected gradient descent, and PGS-then-gradient
-    modes on identical 32-row and 64-row standard active-set transition packets
-    for those solvers, verified in default, SIMD-enabled, and CUDA-enabled
-    build trees. Added 48 batch benchmark rows for the same warm-start mode
-    matrix over batch-size-4 serial and DART 7 `ParallelExecutor` standard
-    active-set transition packets. The CUDA-enabled rows are CPU solver rows,
-    not CUDA LCP kernel execution.
+    modes on identical 32-row, 64-row, and 128-row standard active-set
+    transition packets for those solvers, verified in default, SIMD-enabled,
+    and CUDA-enabled build trees. Added 72 batch benchmark rows for the same
+    warm-start mode matrix over batch-size-4 serial and DART 7
+    `ParallelExecutor` standard active-set transition packets. The
+    CUDA-enabled rows are CPU solver rows, not CUDA LCP kernel execution.
   - Added focused DART 7 PGS/PSOR, symmetric PSOR, and Red-Black Gauss-Seidel
     relaxation sweep benchmark rows for standard, boxed, and 8-/16-contact
     friction-index fixtures at relaxation 0.5, 1.0, and 1.3, verified in default,

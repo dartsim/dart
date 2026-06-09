@@ -228,6 +228,12 @@ The current local evidence for this task is:
   Fischer-Burmeister Newton.
 - `UNIT_math_lcp_math_lcp_lcp_validation_and_solvers` passed 162 tests after
   the Newton warm-start updates.
+- `BM_LCP_COMPARE` lists 36 `BM_LcpNewtonWarmStart` rows and 72
+  `BM_LcpNewtonWarmStartBatch(Serial|Parallel)` rows after adding 128-row
+  standard active-set packets. Focused JSON runs for `^BM_LcpNewtonWarmStart`
+  in default, SIMD-enabled, and CUDA-enabled build trees reported 108 rows with
+  zero `contract_ok` failures, 36 rows at `problem_size=128`, 24 batch rows at
+  `total_problem_size=512`, and the expected backend build-state counters.
 - `UNIT_math_lcp_math_lcp_lcp_generated_coverage` passed 21
   `LcpGeneratedCoverage.*` tests in the default, SIMD-enabled, and
   CUDA-enabled build trees, covering

@@ -499,12 +499,12 @@
 - [x] Added opt-in PGS warm starts for the same native standard-LCP Newton
       paths, with focused tests proving each accepted seed reduces its
       solver-specific merit before Newton line search.
-- [x] Added 24 `BM_LcpNewtonWarmStart` benchmark rows that compare no seed,
+- [x] Added 36 `BM_LcpNewtonWarmStart` benchmark rows that compare no seed,
       PGS, projected gradient descent, and PGS-then-gradient modes for the
-      three native standard-LCP Newton solvers on identical 32-row and 64-row
-      active-set transition packets, verified in default, SIMD-enabled, and
-      CUDA-enabled build trees.
-- [x] Added 48
+      three native standard-LCP Newton solvers on identical 32-row, 64-row,
+      and 128-row active-set transition packets, verified in default,
+      SIMD-enabled, and CUDA-enabled build trees.
+- [x] Added 72
       `BM_LcpNewtonWarmStartBatch(Serial|Parallel)` benchmark rows that run the
       same Newton warm-start mode matrix over batch-size-4 standard active-set
       transition packets, both serially and through DART 7 `ParallelExecutor`,
@@ -907,31 +907,34 @@ tradeoffs evidence based.
   `build/cuda/cpp/Release` with `build_cuda_enabled=1`.
 - Verified Newton warm-start benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpNewtonWarmStart/' | wc -l`
-  reported 24 rows, and
+  reported 36 rows, and
   `BM_LCP_COMPARE --benchmark_filter='^BM_LcpNewtonWarmStart/' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   ran all rows with `contract_ok=1` in the default, SIMD-enabled, and
   CUDA-enabled build trees. These rows cover `MinimumMapNewton`,
   `FischerBurmeisterNewton`, and
   `PenalizedFischerBurmeisterNewton` on the same standard active-set transition
-  packets at 32 and 64 rows. The rows report `active_set_transition=1`,
+  packets at 32, 64, and 128 rows. The rows report `active_set_transition=1`,
   `newton_pgs_warm_start`, `newton_gradient_warm_start`,
   `newton_pgs_warm_start_iterations`, and
   `newton_gradient_warm_start_iterations`, so no-seed, PGS-only,
   gradient-only, and PGS-then-gradient modes are distinguishable in the JSON
-  output. The SIMD-enabled rows report `build_simd_enabled=1`; the
+  output. The focused filter reports 12 `problem_size=128` single rows. The
+  SIMD-enabled rows report `build_simd_enabled=1`; the
   CUDA-enabled rows report `build_cuda_enabled=1` but are CPU solver rows in a
   CUDA-enabled build, not CUDA LCP kernel execution.
 - Verified Newton warm-start batch benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpNewtonWarmStartBatch' | wc -l`
-  reported 48 rows, and
+  reported 72 rows, and
   `BM_LCP_COMPARE --benchmark_filter='^BM_LcpNewtonWarmStartBatch' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   ran all rows with `contract_ok=1` in the default, SIMD-enabled, and
   CUDA-enabled build trees. These rows cover batch-size-4 serial and DART 7
   `ParallelExecutor` runs for `MinimumMapNewton`, `FischerBurmeisterNewton`,
-  and `PenalizedFischerBurmeisterNewton` on the same 32-row and 64-row
+  and `PenalizedFischerBurmeisterNewton` on the same 32-row, 64-row, and
+  128-row
   standard active-set transition packets and the same no-seed, PGS-only,
   gradient-only, and PGS-then-gradient mode matrix. The rows report
-  `newton_warm_start_batch=1`, `batch_size=4`, `total_problem_size=128/256`,
+  `newton_warm_start_batch=1`, `batch_size=4`,
+  `total_problem_size=128/256/512`,
   warm-start mode/iteration counters, serial or parallel execution counters,
   and backend build-state counters. Parallel rows report `parallel_units=4`,
   `worker_count=20`, and observed `max_parallelism` values up to 4. The
