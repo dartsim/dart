@@ -225,6 +225,7 @@ TEST(StlAllocatorTest, ExposesLightweightStatefulAllocatorTraits)
   EXPECT_FALSE((std::is_base_of_v<std::allocator<int>, Allocator>));
   EXPECT_EQ(sizeof(Allocator), sizeof(void*));
   EXPECT_TRUE((std::is_trivially_copy_constructible_v<Allocator>));
+  EXPECT_TRUE((std::is_trivially_copy_assignable_v<Allocator>));
   EXPECT_TRUE((std::is_trivially_destructible_v<Allocator>));
   EXPECT_FALSE(Traits::is_always_equal::value);
   EXPECT_TRUE(Traits::propagate_on_container_copy_assignment::value);
@@ -242,6 +243,7 @@ TEST(StlAllocatorTest, DefaultStlAllocatorExposesEmptyStatelessTraits)
   EXPECT_TRUE((std::is_empty_v<Allocator>));
   EXPECT_EQ(sizeof(Allocator), 1u);
   EXPECT_TRUE((std::is_trivially_copy_constructible_v<Allocator>));
+  EXPECT_TRUE((std::is_trivially_copy_assignable_v<Allocator>));
   EXPECT_TRUE((std::is_trivially_destructible_v<Allocator>));
   EXPECT_TRUE(Traits::is_always_equal::value);
   EXPECT_TRUE(Traits::propagate_on_container_copy_assignment::value);

@@ -287,12 +287,15 @@ its own line so status updates remain git-history friendly.
   row until a broader ABD packet needs runtime residual evidence. Use the PLAN-083
   [`ipc-variant-consolidation.md`](083-unified-newton-barrier-multibody/ipc-variant-consolidation.md)
   sidecar to keep deformable IPC, codimensional IPC, rigid IPC, ABD, PD-IPC,
-  SPB, and VBD/OGC-adjacent obligations in the right owners. Implementation-
-  roadmap Phase 2 shared solver contracts are complete on the active phase
-  branch; merge the latest `origin/main`, validate, and open one phase-scoped PR
-  for that phase. After it lands, start implementation-roadmap Phase 3 Unified
-  Articulation Constraints; do not substitute dev-task Phase 4 manifest
-  expansion for the roadmap Phase 3 work.
+  SPB, PPF cubic-barrier/strain-limiting, and VBD/OGC-adjacent obligations in
+  the right owners; use
+  [`ppf-contact-solver-intake.md`](083-unified-newton-barrier-multibody/ppf-contact-solver-intake.md)
+  for PPF's paper, repository, API, diagnostics, examples, and GPU-platform
+  lessons. Implementation-roadmap Phase 2 shared solver contracts are complete
+  on the active phase branch; merge the latest `origin/main`, validate, and open
+  one phase-scoped PR for that phase. After it lands, start
+  implementation-roadmap Phase 3 Unified Articulation Constraints; do not
+  substitute dev-task Phase 4 manifest expansion for the roadmap Phase 3 work.
 - Gate: Unified Newton-barrier progress is not complete until every cited
   paper/deck figure, unit test, benchmark table, and comparison scene is mapped
   to DART-owned tests, py-demos examples, benchmark/profiling packets, CPU and
@@ -304,7 +307,9 @@ its own line so status updates remain git-history friendly.
   serializable where result-affecting, and backend-neutral; `pixi run lint`,
   docs gates, focused C++/Python tests,
   benchmark smokes, and `check-api-boundaries` stay green for each promoted
-  slice.
+  slice. PPF-derived cubic barriers, strain-limit rows, ACCD diagnostics,
+  solver logs, shell/rod state adapters, or frontend/platform patterns require
+  the PPF intake sidecar plus CPU/GPU comparison evidence before promotion.
 
 ### PLAN-104: Vertex Block Descent Solver
 
@@ -444,6 +449,33 @@ its own line so status updates remain git-history friendly.
   tests, benchmarks, `py-demos`, and visual evidence; and records benchmark JSON
   proving DART beats both the reference demo repositories and the published
   paper numbers for every claimed CPU/GPU case.
+
+### PLAN-105: Simplicits Geometry-Agnostic Elastic Solver
+
+- Owner doc:
+  [`105-simplicits-geometry-agnostic-elastic-solver.md`](105-simplicits-geometry-agnostic-elastic-solver.md)
+- Status: Active
+- Horizon: Next
+- Dimension: Algorithm extensibility
+- Next step: Use the PLAN-105 source list and solver-family intake to build a
+  corpus manifest before implementation. The manifest must classify every
+  Simplicits paper/project/video/Kaolin row into tests, benchmark JSON,
+  `py-demos`, visual evidence, CPU reference comparison, GPU parity, and DART 7
+  pipeline surface. Only after that, start a dedicated `docs/dev_tasks/`
+  tracker and prototype the
+  first CPU baked-reduced-basis slice without exposing Simplicits, Kaolin, Warp,
+  Torch, CUDA, solver-registry, ECS, or backend-resource types through the
+  public API.
+- Gate: Simplicits progress is not complete until DART implements the
+  occupancy/point-sampling pipeline, learned or baked skinning-weight reduced
+  basis, reduced mass/deformation-gradient operators, implicit
+  time-integration/Newton solve, boundary/floor/gravity controls, contact,
+  friction, CPU and GPU runtime paths, all paper/site/video/Kaolin demos and
+  supplemental-table benchmark rows, and benchmark JSON proving DART beats
+  Kaolin/reference and paper numbers at matched scene parameters. Every slice
+  must keep public APIs DART-owned and backend-neutral and keep
+  `pixi run lint`, `pixi run build`, focused C++/Python tests, benchmark smokes,
+  `check-api-boundaries`, and relevant CUDA gates green.
 
 ### PLAN-082: Linear-Time Variational Integrator
 
