@@ -1264,6 +1264,31 @@ void configureDeformableSelfContactFrictionLateActiveMatrixFreeGridScene(
       true);
 }
 
+void configureDeformableSelfContactFrictionLateActiveRectangularGridScene(
+    dart::simulation::World& world)
+{
+  configureDeformableSelfContactFrictionGridSceneWithShapeAndMotion(
+      world,
+      9,
+      13,
+      "friction_late_active_rectangular_direct_grid",
+      0.025,
+      Eigen::Vector3d(0.35, 0.1, -1.0));
+}
+
+void configureDeformableSelfContactFrictionLateActiveMatrixFreeRectangularGridScene(
+    dart::simulation::World& world)
+{
+  configureDeformableSelfContactFrictionGridSceneWithShapeAndMotion(
+      world,
+      9,
+      13,
+      "friction_late_active_rectangular_matrix_free_grid",
+      0.025,
+      Eigen::Vector3d(0.35, 0.1, -1.0),
+      true);
+}
+
 void configureDeformableSelfContactFrictionRectangularGridScene(
     dart::simulation::World& world)
 {
@@ -2342,6 +2367,13 @@ TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
       "deformable self-contact friction late-active matrix-free grid",
       configureDeformableSelfContactFrictionLateActiveMatrixFreeGridScene);
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "deformable self-contact friction late-active rectangular grid",
+      configureDeformableSelfContactFrictionLateActiveRectangularGridScene);
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "deformable self-contact friction late-active matrix-free rectangular "
+      "grid",
+      configureDeformableSelfContactFrictionLateActiveMatrixFreeRectangularGridScene);
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "deformable self-contact friction rectangular grid",
       configureDeformableSelfContactFrictionRectangularGridScene);
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
@@ -2418,42 +2450,18 @@ TEST(World, DeformableSelfContactFrictionExtraDenseGridIsActive)
   EXPECT_GT(diagnostics.frictionDissipation, 0.0);
 }
 
-TEST(World, DeformableSelfContactFrictionLateActiveMatrixFreeGridIsActive)
+template <typename ConfigureScene>
+void expectLateActiveSelfContactFrictionSceneIsActive(
+    std::string_view scene,
+    ConfigureScene&& configureScene,
+    std::size_t expectedNodeCount,
+    bool expectMatrixFree)
 {
   namespace sx = dart::simulation;
 
+  SCOPED_TRACE(scene);
   sx::World world;
-  configureDeformableSelfContactFrictionLateActiveMatrixFreeGridScene(world);
-  world.enterSimulationMode();
-  std::size_t matrixFreeSolves = 0;
-  std::size_t maxActiveContacts = 0;
-  std::size_t maxConvergedContacts = 0;
-  double frictionDissipation = 0.0;
-  for (int i = 0; i < 4; ++i) {
-    world.step();
-    const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
-    matrixFreeSolves += diagnostics.projectedNewtonMatrixFreeSolves;
-    maxActiveContacts = std::max(
-        maxActiveContacts, diagnostics.selfContactBarrierActiveContacts);
-    maxConvergedContacts = std::max(
-        maxConvergedContacts, diagnostics.convergedActiveContactCount);
-    frictionDissipation += diagnostics.frictionDissipation;
-  }
-  const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
-  EXPECT_EQ(diagnostics.bodyCount, 1u);
-  EXPECT_EQ(diagnostics.nodeCount, 2u * 11u * 11u);
-  EXPECT_GT(matrixFreeSolves, 0u);
-  EXPECT_GT(maxActiveContacts, 0u);
-  EXPECT_GT(maxConvergedContacts, 0u);
-  EXPECT_GT(frictionDissipation, 0.0);
-}
-
-TEST(World, DeformableSelfContactFrictionLateActiveDirectGridIsActive)
-{
-  namespace sx = dart::simulation;
-
-  sx::World world;
-  configureDeformableSelfContactFrictionLateActiveGridScene(world);
+  configureScene(world);
   world.enterSimulationMode();
   std::size_t projectedNewtonSteps = 0;
   std::size_t matrixFreeSolves = 0;
@@ -2473,12 +2481,54 @@ TEST(World, DeformableSelfContactFrictionLateActiveDirectGridIsActive)
   }
   const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
   EXPECT_EQ(diagnostics.bodyCount, 1u);
-  EXPECT_EQ(diagnostics.nodeCount, 2u * 11u * 11u);
+  EXPECT_EQ(diagnostics.nodeCount, expectedNodeCount);
   EXPECT_GT(projectedNewtonSteps, 0u);
-  EXPECT_EQ(matrixFreeSolves, 0u);
+  if (expectMatrixFree) {
+    EXPECT_GT(matrixFreeSolves, 0u);
+  } else {
+    EXPECT_EQ(matrixFreeSolves, 0u);
+  }
   EXPECT_GT(maxActiveContacts, 0u);
   EXPECT_GT(maxConvergedContacts, 0u);
   EXPECT_GT(frictionDissipation, 0.0);
+}
+
+TEST(World, DeformableSelfContactFrictionLateActiveMatrixFreeGridIsActive)
+{
+  expectLateActiveSelfContactFrictionSceneIsActive(
+      "late-active matrix-free square grid",
+      configureDeformableSelfContactFrictionLateActiveMatrixFreeGridScene,
+      2u * 11u * 11u,
+      true);
+}
+
+TEST(World, DeformableSelfContactFrictionLateActiveDirectGridIsActive)
+{
+  expectLateActiveSelfContactFrictionSceneIsActive(
+      "late-active direct square grid",
+      configureDeformableSelfContactFrictionLateActiveGridScene,
+      2u * 11u * 11u,
+      false);
+}
+
+TEST(
+    World,
+    DeformableSelfContactFrictionLateActiveMatrixFreeRectangularGridIsActive)
+{
+  expectLateActiveSelfContactFrictionSceneIsActive(
+      "late-active matrix-free rectangular grid",
+      configureDeformableSelfContactFrictionLateActiveMatrixFreeRectangularGridScene,
+      2u * 9u * 13u,
+      true);
+}
+
+TEST(World, DeformableSelfContactFrictionLateActiveRectangularGridIsActive)
+{
+  expectLateActiveSelfContactFrictionSceneIsActive(
+      "late-active direct rectangular grid",
+      configureDeformableSelfContactFrictionLateActiveRectangularGridScene,
+      2u * 9u * 13u,
+      false);
 }
 
 TEST(World, DeformableSelfContactFrictionRectangularGridIsActive)
@@ -2889,6 +2939,13 @@ TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "deformable self-contact friction late-active matrix-free grid",
       configureDeformableSelfContactFrictionLateActiveMatrixFreeGridScene);
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "deformable self-contact friction late-active rectangular grid",
+      configureDeformableSelfContactFrictionLateActiveRectangularGridScene);
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "deformable self-contact friction late-active matrix-free rectangular "
+      "grid",
+      configureDeformableSelfContactFrictionLateActiveMatrixFreeRectangularGridScene);
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "deformable self-contact friction rectangular grid",
       configureDeformableSelfContactFrictionRectangularGridScene);
