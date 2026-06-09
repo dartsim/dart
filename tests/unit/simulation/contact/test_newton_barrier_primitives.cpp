@@ -37,6 +37,7 @@
 #include <dart/simulation/detail/newton_barrier/friction_kernel.hpp>
 #include <dart/simulation/detail/newton_barrier/line_search.hpp>
 #include <dart/simulation/detail/newton_barrier/primitive_distance.hpp>
+#include <dart/simulation/detail/newton_barrier/projected_newton.hpp>
 #include <dart/simulation/detail/newton_barrier/psd_projection.hpp>
 #include <dart/simulation/detail/newton_barrier/tangent_stencil.hpp>
 #include <dart/simulation/detail/rigid_ipc_barrier.hpp>
@@ -408,6 +409,30 @@ TEST(NewtonBarrierPrimitives, LineSearchResultsUseSharedPositiveStepPredicate)
   rigidResult.indeterminate = true;
   EXPECT_FALSE(deformable.allowsPositiveStep());
   EXPECT_FALSE(rigidResult.allowsPositiveStep());
+}
+
+//==============================================================================
+TEST(NewtonBarrierPrimitives, ProjectedNewtonDiagnosticsUseSharedPolicy)
+{
+  EXPECT_DOUBLE_EQ(nb::sanitizeProjectedNewtonTolerance(-1.0), 0.0);
+  EXPECT_DOUBLE_EQ(
+      nb::sanitizeProjectedNewtonTolerance(
+          std::numeric_limits<double>::quiet_NaN()),
+      0.0);
+  EXPECT_DOUBLE_EQ(nb::sanitizeProjectedNewtonTolerance(1e-8), 1e-8);
+
+  EXPECT_DOUBLE_EQ(nb::projectedNewtonResidualNormFromSquared(-1.0), 0.0);
+  EXPECT_DOUBLE_EQ(nb::projectedNewtonResidualNormFromSquared(4.0), 2.0);
+
+  EXPECT_TRUE(nb::projectedNewtonResidualConverged(1e-9, 1e-8));
+  EXPECT_FALSE(nb::projectedNewtonResidualConverged(1e-7, 1e-8));
+  EXPECT_TRUE(nb::projectedNewtonSquaredResidualConverged(1e-18, 1e-9));
+  EXPECT_FALSE(nb::projectedNewtonSquaredResidualConverged(1e-16, 1e-9));
+
+  EXPECT_DOUBLE_EQ(
+      nb::projectedNewtonEffectiveGradientTolerance(1e-8, 1e-3, 2.0), 2e-3);
+  EXPECT_DOUBLE_EQ(
+      nb::projectedNewtonEffectiveGradientTolerance(1e-8, -1.0, 2.0), 1e-8);
 }
 
 //==============================================================================
