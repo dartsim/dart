@@ -139,28 +139,27 @@ the docs phase still emits the existing `dartpy._world_render_bridge` autodoc
 warnings.
 
 The PSD backend wrapper slice is on
-`simx/shared-newton-barrier-psd-backend-wrapper`, retargeted to `main` after
+`simx/shared-newton-barrier-psd-backend-wrapper`, merged as PR #2946 after
 PR #2945 landed. Focused local validation passed
 `test_deformable_psd_backend` and `test_world` build/CTest entries.
 
 The sufficient-decrease policy slice is on
-`simx/shared-newton-barrier-sufficient-decrease`, stacked after the PSD backend
-wrapper slice while #2946 waits for hosted CI/review. Focused local
-validation passed `pixi run lint` plus the `test_newton_barrier_primitives`,
-`test_rigid_ipc_barrier`, and `test_world` build/CTest entries.
+`simx/shared-newton-barrier-sufficient-decrease`, retargeted to `main` after
+PR #2946 landed. Focused local validation passed `pixi run lint` plus the
+`test_newton_barrier_primitives`, `test_rigid_ipc_barrier`, and `test_world`
+build/CTest entries.
 
 ## Current Branch
 
 `simx/shared-newton-barrier-sufficient-decrease` - contains the Phase 3
-Newton-barrier sufficient-decrease policy slice, stacked after the PSD backend
-wrapper slice. Verify the exact status with `git status --short --branch`
-because this section is a resume snapshot.
+Newton-barrier sufficient-decrease policy slice after PR #2946 landed. Verify
+the exact status with `git status --short --branch` because this section is a
+resume snapshot.
 
 ## Immediate Next Step
 
-Keep the sufficient-decrease policy slice current as a stacked PR while #2946
-finishes, or retarget/restack it after #2946 lands. Then continue Phase 3
-from
+Finish the sufficient-decrease policy slice against `main`, then continue Phase
+3 from
 [`../../plans/083-unified-newton-barrier-multibody/abd-first-slice-design.md`](../../plans/083-unified-newton-barrier-multibody/abd-first-slice-design.md):
 resume shared-contract scouting from the existing rigid IPC, deformable IPC,
 ABD, and benchmark-packet evidence. Do not add a two-body affine contact
