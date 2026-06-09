@@ -2886,6 +2886,7 @@ void UnifiedConstraintStage::prepare(World& world)
   // enterSimulationMode() without writing impulses back to the World state.
   auto& scratch = *m_scratch;
   solveUnifiedConstraintProblemInto(scratch.problem, scratch.solveScratch);
+  primeUnifiedConstraintFallbackScratch(scratch.problem, scratch.solveScratch);
 }
 
 //==============================================================================

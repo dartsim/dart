@@ -219,7 +219,12 @@
       rigid contact problem instead of building a by-value temporary each step.
       `UnifiedConstraintStage::prepare()` now primes the initial boxed-LCP
       contact shape during `enterSimulationMode()`, moving the current World
-      fallback scenes' first active solve allocation out of the step loop.
+      fallback scenes' first active solve allocation out of the step loop. The
+      same bake path now also primes normal-only fallback scratch
+      unconditionally, so a same-shape solve that switches from the full
+      boxed-LCP to the rank-deficient fallback does not allocate fallback
+      matrices, tangent accumulators, or joint-space impulse buffers in the
+      counted step loop.
       Public multibody link-contact assembly now has reusable scratch storage
       that can be borrowed by the in-place unified assembler without same-shape
       heap growth. The no-scratch public boxed-LCP solve wrapper now moves the
@@ -302,7 +307,9 @@
       no-growth gates and first baked-step global heap no-allocation gates.
       Five-multibody, eight-multibody, 12-multibody, 16-multibody, and
       24-multibody stacked contact sets extend the boxed-LCP fallback gate
-      beyond the original small scenes.
+      beyond the original small scenes, and a production multi-island mixed
+      scene now covers independent articulated and rigid contact islands with
+      12+ initial contacts.
       Broader solver coverage, including still-larger production contact sets
       and default-solver deformable storage, remains open before making a full
       zero-allocation claim. The

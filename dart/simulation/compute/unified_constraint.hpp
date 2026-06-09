@@ -314,6 +314,14 @@ DART_SIMULATION_API void applyUnifiedConstraintFallback(
     std::size_t frictionIterations,
     UnifiedConstraintSolveScratch& scratch);
 
+/// Prime fallback-only solve buffers without applying impulses. Stage prepare
+/// calls this when the full boxed-LCP solve is expected to fall back, so the
+/// normal-only LCP, tangent accumulators, and joint-space impulse buffers keep
+/// capacity for same-shape baked steps.
+DART_SIMULATION_API void primeUnifiedConstraintFallbackScratch(
+    const UnifiedConstraintProblem& problem,
+    UnifiedConstraintSolveScratch& scratch);
+
 /// Solve and apply the unified constraints, falling back when the joint solve
 /// is rank-deficient. Returns true if the joint Dantzig solve succeeded (false
 /// if the fallback was used). This is the entry point the constraint stage

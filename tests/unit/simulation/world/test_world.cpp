@@ -1088,6 +1088,58 @@ void configureCrossMultibodyMultiIslandFallbackScene(
   (void)configureCrossMultibodyMultiIslandFallbackSceneWithHandles(world);
 }
 
+void configureCrossMultibodyProductionMultiIslandFallbackScene(
+    dart::simulation::World& world)
+{
+  namespace sx = dart::simulation;
+
+  (void)configureCrossMultibodyMultiIslandFallbackSceneWithHandles(world);
+
+  const auto makeOffsetSphere = [](double xOffset) {
+    auto shape = sx::CollisionShape::makeSphere(0.2);
+    shape.localTransform.translation() = Eigen::Vector3d(xOffset, 0.0, 0.0);
+    return shape;
+  };
+
+  const auto addSlider
+      = [&](std::string_view robotName, double xOffset, double z, double v) {
+          auto robot = world.addMultibody(robotName);
+          auto base = robot.addLink("base");
+          sx::JointSpec spec;
+          spec.name = "slider";
+          spec.type = sx::JointType::Prismatic;
+          spec.axis = Eigen::Vector3d::UnitZ();
+          auto link = robot.addLink("link", base, spec);
+          link.setMass(1.0);
+          link.setCollisionShape(makeOffsetSphere(xOffset));
+          auto joint = link.getParentJoint();
+          joint.setPosition(Eigen::VectorXd::Constant(1, z));
+          joint.setVelocity(Eigen::VectorXd::Constant(1, v));
+        };
+
+  constexpr std::array<double, 6> articulatedVelocities{
+      0.9, 0.55, 0.2, -0.2, -0.55, -0.9};
+  for (std::size_t i = 0; i < articulatedVelocities.size(); ++i) {
+    addSlider(
+        "multi_island_production_stack_" + std::to_string(i),
+        7.5,
+        0.35 * static_cast<double>(i),
+        articulatedVelocities[i]);
+  }
+
+  constexpr std::array<double, 4> rigidVelocities{0.6, 0.2, -0.2, -0.6};
+  for (std::size_t i = 0; i < rigidVelocities.size(); ++i) {
+    sx::RigidBodyOptions options;
+    options.position
+        = Eigen::Vector3d(10.0, 0.0, 0.35 * static_cast<double>(i));
+    options.linearVelocity = Eigen::Vector3d(0.0, 0.0, rigidVelocities[i]);
+    auto body = world.addRigidBody(
+        "multi_island_production_rigid_" + std::to_string(i), options);
+    body.setMass(1.0);
+    body.setCollisionShape(sx::CollisionShape::makeSphere(0.2));
+  }
+}
+
 void configureDeformableSelfContactFrictionPatchScene(
     dart::simulation::World& world)
 {
@@ -3358,6 +3410,11 @@ TEST(World, BakedBoxedLcpFallbackContactsDoNotGrowWorldBaseAllocator)
       configureCrossMultibodyMultiIslandFallbackScene,
       true,
       4);
+  expectNoWorldBaseAllocatorActivityDuringBakedBoxedLcpSteps(
+      "cross multibody production multi-island mixed fallback",
+      configureCrossMultibodyProductionMultiIslandFallbackScene,
+      true,
+      12);
 }
 
 TEST(World, BakedBoxedLcpFallbackContactStepsDoNotAllocateGlobalHeap)
@@ -3401,6 +3458,11 @@ TEST(World, BakedBoxedLcpFallbackContactStepsDoNotAllocateGlobalHeap)
       configureCrossMultibodyMultiIslandFallbackScene,
       true,
       4);
+  expectNoGlobalHeapAllocationsDuringBakedBoxedLcpSteps(
+      "cross multibody production multi-island mixed fallback",
+      configureCrossMultibodyProductionMultiIslandFallbackScene,
+      true,
+      12);
 }
 
 TEST(World, SequentialImpulseBakeDoesNotPrewarmRigidIpcCollisionSurfaces)

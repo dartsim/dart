@@ -976,35 +976,15 @@ void applyUnifiedConstraintImpulses(
 }
 
 //==============================================================================
-void applyUnifiedConstraintFallback(
-    detail::WorldRegistry& registry,
+void primeUnifiedConstraintFallbackScratch(
     const UnifiedConstraintProblem& problem,
-    std::span<Eigen::VectorXd> multibodyVelocities,
-    std::size_t frictionIterations)
-{
-  UnifiedConstraintSolveScratch scratch;
-  applyUnifiedConstraintFallback(
-      registry, problem, multibodyVelocities, frictionIterations, scratch);
-}
-
-//==============================================================================
-void applyUnifiedConstraintFallback(
-    detail::WorldRegistry& registry,
-    const UnifiedConstraintProblem& problem,
-    std::span<Eigen::VectorXd> multibodyVelocities,
-    std::size_t frictionIterations,
     UnifiedConstraintSolveScratch& scratch)
 {
-  constexpr int kRows = UnifiedConstraintProblem::kRowsPerContact;
   const Eigen::Index size = problem.rhs.size();
   if (size == 0) {
     return;
   }
 
-  // 1. Coupled NORMAL-only boxed-LCP. Gather the normal rows in ASCENDING
-  // global-row order so a multibody-free set reproduces the legacy i*3 stride
-  // byte-for-byte. The normal-row sub-block already carries the rigid-rigid,
-  // within-multibody, and shared-obstacle normal coupling.
   auto& normalRows = scratch.normalRows;
   normalRows.clear();
   normalRows.reserve(static_cast<std::size_t>(size));
@@ -1043,8 +1023,6 @@ void applyUnifiedConstraintFallback(
         scratch.dantzig,
         options);
     if (!result.succeeded() || scratch.normalLambda.size() != normalCount) {
-      // Last resort: an uncoupled diagonal projection (works for both kinds;
-      // the diagonal is positive for every active contact).
       scratch.normalLambda.resize(normalCount);
       for (Eigen::Index a = 0; a < normalCount; ++a) {
         const double diagonal = scratch.normalA(a, a);
@@ -1055,30 +1033,68 @@ void applyUnifiedConstraintFallback(
     }
   }
 
-  // 2. Apply the solved normal impulses to both domains (friction rows zero).
   scratch.lambda.setZero(size);
   for (Eigen::Index a = 0; a < normalCount; ++a) {
     scratch.lambda[normalRows[static_cast<std::size_t>(a)]]
         = std::max(0.0, scratch.normalLambda[a]);
   }
-  applyUnifiedConstraintImpulses(
-      registry, problem, scratch.lambda, multibodyVelocities);
 
-  // 3. Sequential Coulomb friction sweep bounded by each contact's solved
-  // normal impulse, over rigid contacts then link contacts (ascending global
-  // order), reading live velocities each pass.
   const auto rigidContactCount = problem.rigidConstraints.size();
   scratch.rigidTangent1.assign(rigidContactCount, 0.0);
   scratch.rigidTangent2.assign(rigidContactCount, 0.0);
   scratch.linkTangentOffsets.resize(problem.multibodyBlocks.size() + 1);
   std::size_t totalLinkRows = 0;
+  Eigen::Index maxJointDofs = 0;
   for (std::size_t k = 0; k < problem.multibodyBlocks.size(); ++k) {
+    const auto& block = problem.multibodyBlocks[k];
     scratch.linkTangentOffsets[k] = totalLinkRows;
-    totalLinkRows += problem.multibodyBlocks[k].rows.size();
+    totalLinkRows += block.rows.size();
+    maxJointDofs = std::max(maxJointDofs, block.inverseMass.rows());
+    maxJointDofs = std::max(maxJointDofs, block.inverseMass.cols());
   }
   scratch.linkTangentOffsets[problem.multibodyBlocks.size()] = totalLinkRows;
   scratch.linkTangent1.assign(totalLinkRows, 0.0);
   scratch.linkTangent2.assign(totalLinkRows, 0.0);
+  scratch.generalizedImpulse.resize(maxJointDofs);
+  scratch.velocityDelta.resize(maxJointDofs);
+}
+
+//==============================================================================
+void applyUnifiedConstraintFallback(
+    detail::WorldRegistry& registry,
+    const UnifiedConstraintProblem& problem,
+    std::span<Eigen::VectorXd> multibodyVelocities,
+    std::size_t frictionIterations)
+{
+  UnifiedConstraintSolveScratch scratch;
+  applyUnifiedConstraintFallback(
+      registry, problem, multibodyVelocities, frictionIterations, scratch);
+}
+
+//==============================================================================
+void applyUnifiedConstraintFallback(
+    detail::WorldRegistry& registry,
+    const UnifiedConstraintProblem& problem,
+    std::span<Eigen::VectorXd> multibodyVelocities,
+    std::size_t frictionIterations,
+    UnifiedConstraintSolveScratch& scratch)
+{
+  constexpr int kRows = UnifiedConstraintProblem::kRowsPerContact;
+  const Eigen::Index size = problem.rhs.size();
+  if (size == 0) {
+    return;
+  }
+
+  primeUnifiedConstraintFallbackScratch(problem, scratch);
+
+  // 1. Apply the solved normal impulses to both domains (friction rows zero).
+  applyUnifiedConstraintImpulses(
+      registry, problem, scratch.lambda, multibodyVelocities);
+
+  // 2. Sequential Coulomb friction sweep bounded by each contact's solved
+  // normal impulse, over rigid contacts then link contacts (ascending global
+  // order), reading live velocities each pass.
+  const auto rigidContactCount = problem.rigidConstraints.size();
 
   const auto solveRigidTangent =
       [&](const RigidBodyContactConstraint& constraint,
