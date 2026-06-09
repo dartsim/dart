@@ -1715,13 +1715,13 @@ TEST(CudaLcpJacobiBatch, DenserWorldContactBatchSatisfiesLcpContract)
 }
 
 //==============================================================================
-TEST(CudaLcpJacobiBatch, DenseBoxWorldContactSmallBatchSatisfiesLcpContract)
+TEST(CudaLcpJacobiBatch, DenseBoxWorldContactBatchSatisfiesLcpContract)
 {
   if (!cuda::isCudaRuntimeAvailable()) {
     GTEST_SKIP() << "CUDA runtime has no available device";
   }
 
-  for (const int boxCount : {1, 4, 8, 16}) {
+  for (const int boxCount : {1, 4, 8, 16, 24, 32, 48, 64, 96}) {
     SCOPED_TRACE("boxCount=" + std::to_string(boxCount));
     std::string errorMessage;
     auto fixture = makeWorldBoxContactBatch(boxCount, 4, 8192, errorMessage);
