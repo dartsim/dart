@@ -22,7 +22,7 @@ status. They also add opt-in solver-internal CPU worker threads for
 experimental CUDA fixed-iteration Jacobi and PGS batch paths for homogeneous
 dense standard, boxed, friction-index, grouped variable-size synthetic
 standard/boxed/friction-index, 4-/8-/16-/24-/32-contact world-contact, and homogeneous
-5-/6-/7-/8-/9-/10-/11-/12-/13-/14-/15-/16-sphere coupled stack-contact LCP packets, with grouped articulated
+5-/6-/7-/8-/9-/10-/11-/12-/13-/14-/15-/16-/24-/32-sphere coupled stack-contact LCP packets, with grouped articulated
 unified-contact CUDA evidence later expanded to cross-multibody link-vs-link
 packets in this task log.
 They also fix boxed semi-smooth Newton's `findex` moving-bound Jacobian and add
@@ -513,12 +513,12 @@ solvers over the same five separated-contact and stacked-contact snapshots,
 both serially and through the DART 7 experimental
 `ParallelExecutor`. The CUDA LCP batch evidence now also includes direct
 synthetic standard/boxed/findex packets through 256-row and 96-contact sizes,
-homogeneous 4-/8-/16-/24-/32-contact DART 7 world-contact packets, homogeneous 5-/6-/7-/8-/9-/10-/11-/12-/13-/14-/15-/16-sphere coupled
+homogeneous 4-/8-/16-/24-/32-contact DART 7 world-contact packets, homogeneous 5-/6-/7-/8-/9-/10-/11-/12-/13-/14-/15-/16-/24-/32-sphere coupled
 stack-contact packets, grouped variable-size synthetic standard/boxed/findex
 through 256-row and 96-contact groups, grouped variable-size
 1/2/4/8/16/24/32-contact separated sphere-ground packets with two- and
 three-variant grouped benchmark rows, plus grouped variable-size
-2/3/4/5/6/7/8/9/10/11/12/13/14/15/16-sphere coupled stack-contact packets with two- and three-variant
+2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/24/32-sphere coupled stack-contact packets with two- and three-variant
 grouped benchmark rows, plus grouped variable-size manually assembled
 1-/4-/8-/16-/24-/32-contact articulated unified-contact packets with two- and
 three-variant grouped benchmark rows covering link-ground, link-vs-dynamic-rigid,
@@ -574,6 +574,17 @@ matching benchmark rows report six rows with `contract_ok=1`,
 `problem_size=48/72/96`, `batch_size=4`, `total_contact_count=64/96/128`,
 `total_problem_size=192/288/384`, maximum residual and complementarity
 `1.3877787807814457e-17`, and no bound violation.
+The current slice also extends the homogeneous and grouped coupled stack-contact
+CUDA packets to 24-/32-sphere DART 7 `World::collide()` snapshots. Focused
+Jacobi and PGS CUDA unit tests pass over the direct and grouped stack paths, and
+the matching benchmark rows report eight rows with `contract_ok=1`,
+`cuda_lcp_execution=1`, `cuda_batch_execution=1`, `cuda_fixed_iterations=8192`,
+homogeneous `sphere_count=24/32`, `problem_size=72/96`, grouped
+`cuda_group_count=17`, grouped `batch_size=34/51`, grouped
+`total_contact_count=382/573`, grouped `total_problem_size=1146/1719`, Jacobi
+`cuda_relaxation=0.25`, PGS `cuda_relaxation=1`, maximum residual
+`0.010586090253440261`, maximum complementarity `0.010586090253441927`, and no
+bound violation.
 
 ## Current Branch
 
@@ -602,15 +613,16 @@ and broaden solver-internal Jacobi threading benchmark evidence through
 256-row/96-contact CPU and CUDA rows, and the 8192-row Jacobi threading rows
 pass focused default, SIMD-enabled, and CUDA-enabled build-tree benchmark gates
 with `contract_ok=1`.
-The current stack slices cover 16-sphere, 16-contact, 48-row DART 7
+The current stack slices cover 24-/32-sphere, 24-/32-contact, 72-/96-row DART 7
 boxed/findex CPU snapshot and boxed-LCP assembly rows, CPU solver-comparison
 rows through the scoped 13-sphere full solver set, and fixed-iteration CUDA Jacobi/PGS
-homogeneous and grouped coupled-stack batch evidence through 16-sphere packets.
+homogeneous and grouped coupled-stack batch evidence through 24-/32-sphere packets.
 Focused default, SIMD-enabled, and CUDA-enabled checks pass for the CPU
 solver-comparison rows through the scoped 13-sphere full solver set; focused
 default checks pass for the
 13-/14-/15-/16-sphere snapshot/assembly rows; focused CUDA unit and benchmark
-checks pass for the direct CUDA execution rows.
+checks pass for the direct and grouped CUDA execution rows, using 8192 fixed
+iterations for the stack-contact CUDA rows and Jacobi relaxation 0.25.
 The latest local slice corrects shared boxed-LCP validation for collapsed
 intervals (`lo == hi`): fixed rows now require the solution to stay on the bound
 but do not require zero residual force. This removes the false-negative fixed
@@ -1914,15 +1926,17 @@ dense/robot-like contact scenes.
 - CUDA was enabled and validated through the documented DART 7
   `simulation-experimental-cuda` smoke path on a visible RTX 4080 Laptop GPU,
   and the LCP generated coverage plus selected LCP benchmark rows pass in that
-  CUDA-enabled build. `test_lcp_jacobi_batch_cuda` passes 33 tests, including
+  CUDA-enabled build. The CUDA unit target covers
   standard, boxed, friction-index, grouped variable-size synthetic
   standard/boxed/friction-index, contact-derived world-contact, homogeneous
-  5-/6-/7-/8-/9-/10-/11-/12-/13-/14-/15-/16-sphere coupled stack-contact batches, and grouped variable-size
-  1/2/4/8/16/24/32-contact separated world-contact and 2/3/4/5/6/7/8/9/10/11/12/13/14/15/16-sphere coupled
+  5-/6-/7-/8-/9-/10-/11-/12-/13-/14-/15-/16-/24-/32-sphere coupled stack-contact batches, and grouped variable-size
+  1/2/4/8/16/24/32-contact separated world-contact and 2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/24/32-sphere coupled
   stack-contact batches with two and three variants per contact or sphere
   count, plus grouped manually assembled
   1-/4-/8-/16-/24-/32-contact articulated unified-contact batches, plus mixed grouped contact
-  batches executed on CUDA for Jacobi and PGS.
+  batches executed on CUDA for Jacobi and PGS. The focused stack-contact CUDA
+  unit command passes the four homogeneous and grouped Jacobi/PGS stack tests
+  after adding the 24-/32-sphere shapes.
   `BM_LcpCudaJacobiBatch_*`, `BM_LcpCudaPgsBatch_*`,
   `BM_LcpCudaJacobiGroupedBatch_*`, `BM_LcpCudaPgsGroupedBatch_*`,
   `BM_LcpCudaJacobiWorldContactBatch_FrictionIndex`,
@@ -2006,11 +2020,10 @@ dense/robot-like contact scenes.
   4-, 8-, 16-, 24-, and 32-contact packets; the denser follow-up rows report
   `batch_size=4`, `contact_count=16/24/32`, `problem_size=48/72/96`,
   `total_contact_count=64/96/128`, and `total_problem_size=192/288/384`. The homogeneous stack
-  CUDA rows now include 5-, 6-, 7-, 8-, 9-, 10-, 11-, 12-, 13-, 14-, 15-, and
-  16-sphere coupled stack packets; the 13-/14-/15-/16-sphere rows report
-  `batch_size=4`, `contact_count=13/14/15/16`, `problem_size=39/42/45/48`,
-  `total_contact_count=52/56/60/64`, and
-  `total_problem_size=156/168/180/192`.
+  CUDA rows now include 5-, 6-, 7-, 8-, 9-, 10-, 11-, 12-, 13-, 14-, 15-, 16-,
+  24-, and 32-sphere coupled stack packets; the 24-/32-sphere rows report
+  `batch_size=4`, `contact_count=24/32`, `problem_size=72/96`,
+  `total_contact_count=96/128`, and `total_problem_size=288/384`.
   The separated grouped
   variable-size rows are
   sphere-ground packets with 1/2/4/8/16/24/32 contacts. The `/2` rows report
@@ -2021,13 +2034,13 @@ dense/robot-like contact scenes.
   `contact_shape_count=7`, `min_problem_size=3`, `max_problem_size=96`,
   `total_contact_count=261`, and `total_problem_size=783`.
   The coupled stack grouped variable-size rows are
-  2/3/4/5/6/7/8/9/10/11/12/13/14/15/16-sphere stack packets. The `/2` rows
-  report `batch_size=30`, `cuda_group_count=15`, `contact_shape_count=15`,
-  `min_problem_size=6`, `max_problem_size=48`, `total_contact_count=270`, and
-  `total_problem_size=810`; the `/3` rows report
-  `problem_variants_per_shape=3`, `batch_size=45`, `cuda_group_count=15`,
-  `contact_shape_count=15`, `min_problem_size=6`, `max_problem_size=48`,
-  `total_contact_count=405`, and `total_problem_size=1215`.
+  2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/24/32-sphere stack packets. The `/2` rows
+  report `batch_size=34`, `cuda_group_count=17`, `contact_shape_count=17`,
+  `min_problem_size=6`, `max_problem_size=96`, `total_contact_count=382`, and
+  `total_problem_size=1146`; the `/3` rows report
+  `problem_variants_per_shape=3`, `batch_size=51`, `cuda_group_count=17`,
+  `contact_shape_count=17`, `min_problem_size=6`, `max_problem_size=96`,
+  `total_contact_count=573`, and `total_problem_size=1719`.
   The articulated unified-contact grouped variable-size rows are manually
   assembled fixed-base three-axis prismatic link-ground,
   link-vs-dynamic-rigid, and cross-multibody link-vs-link packets with 1, 4,

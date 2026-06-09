@@ -102,8 +102,8 @@ Support abbreviations:
   CPU serial and DART 7 `ParallelExecutor` Jacobi/PGS batch rows at the direct and grouped CUDA packet sizes in
   default, SIMD-enabled, and CUDA-enabled build trees, homogeneous 4-/8-/16-/24-/32-contact and grouped variable-size
   1/2/4/8/16/24/32-contact DART 7 sphere-ground world-contact packets, homogeneous
-  5-/6-/7-/8-/9-/10-/11-/12-/13-/14-/15-/16-sphere and grouped variable-size
-  2/3/4/5/6/7/8/9/10/11/12/13/14/15/16-sphere coupled stack-contact
+  5-/6-/7-/8-/9-/10-/11-/12-/13-/14-/15-/16-/24-/32-sphere and grouped variable-size
+  2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/24/32-sphere coupled stack-contact
   packets, grouped variable-size 1-/4-/8-/16-/24-/32-contact articulated unified-contact
   packets with two- and three-variant grouped benchmark rows including
   cross-multibody link-vs-link cases, Jacobi homogeneous dense box-face
@@ -1461,16 +1461,16 @@ The current local evidence for this task is:
   rows, and the focused 2048-row banded Jacobi rows passed with
   `solver_internal_threads=1/8/16`; this remains CPU Jacobi execution in a
   CUDA-enabled build.
-- `test_lcp_jacobi_batch_cuda --gtest_brief=1` passed 33 tests in the
-  CUDA-enabled build, including standard, boxed, friction-index, and
+- The CUDA unit target covers standard, boxed, friction-index, and
   grouped variable-size synthetic standard/boxed/friction-index plus
-  contact-derived world-contact, homogeneous 5-/6-/7-/8-sphere and grouped
+  contact-derived world-contact, homogeneous 5-/6-/7-/8-/9-/10-/11-/12-/13-/14-/15-/16-/24-/32-sphere and grouped
   variable-size 1/2/4/8/16/24/32-contact separated world-contact and
-  2/3/4/5/6/7/8-sphere coupled stack-contact with two and three variants per
+  2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/24/32-sphere coupled stack-contact with two and three variants per
   contact or sphere count, and articulated
   unified-contact batches including cross-multibody link-vs-link packets, plus
   mixed grouped contact batches executed on CUDA for fixed-iteration Jacobi and
-  PGS.
+  PGS. The focused stack-contact CUDA unit command passed the four homogeneous
+  and grouped Jacobi/PGS stack tests after adding the 24-/32-sphere shapes.
   Focused `BM_LcpCudaJacobiBatch_*`,
   `BM_LcpCudaPgsBatch_*`, `BM_LcpCudaJacobiGroupedBatch_*`,
   `BM_LcpCudaPgsGroupedBatch_*`,
@@ -1541,10 +1541,11 @@ The current local evidence for this task is:
   `total_contact_count=64/96/128`, `total_problem_size=192/288/384`,
   maximum residual and complementarity `1.3877787807814457e-17`, and no bound
   violation on the denser rows. The
-  homogeneous coupled stack CUDA rows use 5-/6-/7-/8-sphere DART 7
-  `World::collide()` snapshots; the 8-sphere rows report `batch_size=4`,
-  `sphere_count=8`, `contact_count=8`, `problem_size=24`,
-  `total_contact_count=32`, and `total_problem_size=96`.
+  homogeneous coupled stack CUDA rows use 5-/6-/7-/8-/9-/10-/11-/12-/13-/14-/15-/16-/24-/32-sphere DART 7
+  `World::collide()` snapshots; the 24-/32-sphere rows report `batch_size=4`,
+  `sphere_count=24/32`, `contact_count=24/32`, `problem_size=72/96`,
+  `total_contact_count=96/128`, `total_problem_size=288/384`,
+  `cuda_fixed_iterations=8192`, and Jacobi `cuda_relaxation=0.25`.
   The separated grouped variable-size rows now
   use 1/2/4/8/16/24/32-contact sphere-ground packets. The `/2` benchmark rows
   report `batch_size=14`, `cuda_group_count=7`, `contact_shape_count=7`,
@@ -1553,15 +1554,18 @@ The current local evidence for this task is:
   `problem_variants_per_shape=3`, `batch_size=21`, `cuda_group_count=7`,
   `contact_shape_count=7`, `min_problem_size=3`, `max_problem_size=96`,
   `total_contact_count=261`, and `total_problem_size=783`. The coupled stack
-  grouped variable-size rows now use 2/3/4/5/6/7/8-sphere stack packets. The
+  grouped variable-size rows now use 2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/24/32-sphere stack packets. The
   `/2` benchmark rows report
-  `batch_size=14`, `cuda_group_count=7`, `contact_shape_count=7`,
-  `min_problem_size=6`, `max_problem_size=24`,
-  `total_contact_count=70`, and `total_problem_size=210`; the `/3` rows
-  report `problem_variants_per_shape=3`, `batch_size=21`,
-  `cuda_group_count=7`, `contact_shape_count=7`, `min_problem_size=6`,
-  `max_problem_size=24`, `total_contact_count=105`, and
-  `total_problem_size=315`. The articulated
+  `batch_size=34`, `cuda_group_count=17`, `contact_shape_count=17`,
+  `min_problem_size=6`, `max_problem_size=96`,
+  `total_contact_count=382`, and `total_problem_size=1146`; the `/3` rows
+  report `problem_variants_per_shape=3`, `batch_size=51`,
+  `cuda_group_count=17`, `contact_shape_count=17`, `min_problem_size=6`,
+  `max_problem_size=96`, `total_contact_count=573`, and
+  `total_problem_size=1719`. Across the 24-/32-sphere direct and grouped
+  stack CUDA rows, maximum residual and complementarity are
+  `0.010586090253440261` and `0.010586090253441927`, with no bound violation.
+  The articulated
   grouped variable-size rows use manually assembled 1-/4-/8-/16-/24-/32-contact fixed-base
   three-axis prismatic unified-contact packets covering link-ground,
   link-vs-dynamic-rigid, and cross-multibody link-vs-link cases. The `/2` rows report
@@ -1730,8 +1734,8 @@ The current local evidence for this task is:
   plus grouped variable-size synthetic standard/boxed/friction-index through
   256-row and 96-contact groups with two- and three-variant rows, homogeneous
   4-/8-/16-/24-/32-contact, homogeneous
-  5-/6-/7-/8-sphere coupled stack, grouped variable-size 1/2/4/8/16/24/32-contact separated
-  sphere-ground and 2/3/4/5/6/7/8-sphere coupled stack world-contact batch
+  5-/6-/7-/8-/9-/10-/11-/12-/13-/14-/15-/16-/24-/32-sphere coupled stack, grouped variable-size 1/2/4/8/16/24/32-contact separated
+  sphere-ground and 2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/24/32-sphere coupled stack world-contact batch
   paths with two- and three-variant grouped benchmark rows, plus manually
   assembled 1-/4-/8-/16-/24-/32-contact articulated unified-contact batch paths with
   two- and three-variant grouped benchmark rows including cross-multibody

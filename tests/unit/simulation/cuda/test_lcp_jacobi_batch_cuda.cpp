@@ -1263,8 +1263,8 @@ std::optional<WorldContactGroupedBatch> makeWorldStackContactGroupedBatch(
     return std::nullopt;
   }
 
-  constexpr std::array<int, 15> kSphereCounts{
-      2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+  constexpr std::array<int, 17> kSphereCounts{
+      2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 24, 32};
   WorldContactGroupedBatch grouped;
   grouped.packets.reserve(kSphereCounts.size());
   grouped.problemsByGroup.reserve(kSphereCounts.size());
@@ -1806,12 +1806,14 @@ TEST(
     GTEST_SKIP() << "CUDA runtime has no available device";
   }
 
-  for (const int sphereCount : {5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}) {
+  for (const int sphereCount :
+       {5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 24, 32}) {
     SCOPED_TRACE("sphereCount=" + std::to_string(sphereCount));
     std::string errorMessage;
     auto fixture
-        = makeWorldStackContactBatch(sphereCount, 4, 1024, errorMessage);
+        = makeWorldStackContactBatch(sphereCount, 4, 8192, errorMessage);
     ASSERT_TRUE(fixture.has_value()) << errorMessage;
+    fixture->packet.relaxation = 0.25;
 
     cuda::solveBoxedLcpJacobiBatchCuda(fixture->packet);
 
@@ -1852,8 +1854,11 @@ TEST(CudaLcpJacobiBatch, StackedWorldContactGroupedBatchSatisfiesLcpContract)
         "variantsPerSphereCount=" + std::to_string(variantsPerSphereCount));
     std::string errorMessage;
     auto fixture = makeWorldStackContactGroupedBatch(
-        variantsPerSphereCount, 1024, errorMessage);
+        variantsPerSphereCount, 8192, errorMessage);
     ASSERT_TRUE(fixture.has_value()) << errorMessage;
+    for (auto& packet : fixture->packets) {
+      packet.relaxation = 0.25;
+    }
 
     cuda::solveBoxedLcpJacobiGroupedBatchCuda(fixture->packets);
 
@@ -2154,11 +2159,12 @@ TEST(CudaLcpPgsBatch, HomogeneousStackedWorldContactBatchSatisfiesLcpContract)
     GTEST_SKIP() << "CUDA runtime has no available device";
   }
 
-  for (const int sphereCount : {5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}) {
+  for (const int sphereCount :
+       {5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 24, 32}) {
     SCOPED_TRACE("sphereCount=" + std::to_string(sphereCount));
     std::string errorMessage;
     auto fixture
-        = makeWorldStackContactBatch(sphereCount, 4, 512, errorMessage);
+        = makeWorldStackContactBatch(sphereCount, 4, 8192, errorMessage);
     ASSERT_TRUE(fixture.has_value()) << errorMessage;
 
     cuda::solveBoxedLcpPgsBatchCuda(fixture->packet);
@@ -2200,7 +2206,7 @@ TEST(CudaLcpPgsBatch, StackedWorldContactGroupedBatchSatisfiesLcpContract)
         "variantsPerSphereCount=" + std::to_string(variantsPerSphereCount));
     std::string errorMessage;
     auto fixture = makeWorldStackContactGroupedBatch(
-        variantsPerSphereCount, 512, errorMessage);
+        variantsPerSphereCount, 8192, errorMessage);
     ASSERT_TRUE(fixture.has_value()) << errorMessage;
 
     cuda::solveBoxedLcpPgsGroupedBatchCuda(fixture->packets);

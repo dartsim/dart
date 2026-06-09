@@ -6129,8 +6129,8 @@ MakeGroupedWorldStackContactCudaBatch(
     return std::nullopt;
   }
 
-  constexpr std::array<int, 15> kSphereCounts{
-      2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+  constexpr std::array<int, 17> kSphereCounts{
+      2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 24, 32};
 
   CudaGroupedWorldContactBenchmarkBatch grouped;
   std::vector<std::size_t> groupSizes;
@@ -10156,8 +10156,11 @@ void RunCudaWorldStackContactBatchBenchmark(
     return;
   }
 
-  const std::size_t iterations = usePgs ? 512u : 1024u;
+  constexpr std::size_t iterations = 8192u;
   auto basePacket = MakeCudaBatchProblem(batch->problems, iterations);
+  if (!usePgs) {
+    basePacket.relaxation = 0.25;
+  }
   const auto options = MakeBenchmarkOptions(static_cast<int>(iterations));
 
   BatchBenchmarkCounters counters;
@@ -10192,6 +10195,7 @@ void RunCudaWorldStackContactBatchBenchmark(
   state.counters["cuda_world_stack_contact_batch"] = 1.0;
   state.counters["cuda_coupled_contact_batch"] = 1.0;
   state.counters["cuda_fixed_iterations"] = static_cast<double>(iterations);
+  state.counters["cuda_relaxation"] = usePgs ? 1.0 : 0.25;
   state.counters["sphere_count"] = sphereCount;
   state.counters["contact_count"] = sphereCount;
   state.counters["problem_size"] = static_cast<double>(3 * sphereCount);
@@ -10271,7 +10275,7 @@ void RunCudaWorldStackContactGroupedBatchBenchmark(
   }
 
   const int variantsPerSphereCount = static_cast<int>(state.range(0));
-  const std::size_t iterations = usePgs ? 512u : 1024u;
+  constexpr std::size_t iterations = 8192u;
   std::string errorMessage;
   const auto batch = MakeGroupedWorldStackContactCudaBatch(
       variantsPerSphereCount, iterations, errorMessage);
@@ -10280,11 +10284,17 @@ void RunCudaWorldStackContactGroupedBatchBenchmark(
     return;
   }
 
+  auto basePackets = batch->packets;
+  if (!usePgs) {
+    for (auto& packet : basePackets) {
+      packet.relaxation = 0.25;
+    }
+  }
   const auto options = MakeBenchmarkOptions(static_cast<int>(iterations));
 
   BatchBenchmarkCounters counters;
   for (auto _ : state) {
-    auto packets = batch->packets;
+    auto packets = basePackets;
     if (usePgs) {
       cuda_compute::solveBoxedLcpPgsGroupedBatchCuda(packets);
     } else {
@@ -10295,7 +10305,7 @@ void RunCudaWorldStackContactGroupedBatchBenchmark(
     }
   }
 
-  auto packets = batch->packets;
+  auto packets = basePackets;
   if (usePgs) {
     cuda_compute::solveBoxedLcpPgsGroupedBatchCuda(packets);
   } else {
@@ -10318,6 +10328,7 @@ void RunCudaWorldStackContactGroupedBatchBenchmark(
   state.counters["cuda_world_stack_contact_batch"] = 1.0;
   state.counters["cuda_coupled_contact_batch"] = 1.0;
   state.counters["cuda_fixed_iterations"] = static_cast<double>(iterations);
+  state.counters["cuda_relaxation"] = usePgs ? 1.0 : 0.25;
   state.counters["cuda_group_count"]
       = static_cast<double>(batch->packets.size());
   state.counters["contact_shape_count"]
@@ -12932,7 +12943,9 @@ BENCHMARK(BM_LcpCudaJacobiWorldStackContactBatch_FrictionIndex)
     ->Args({13, 4})
     ->Args({14, 4})
     ->Args({15, 4})
-    ->Args({16, 4});
+    ->Args({16, 4})
+    ->Args({24, 4})
+    ->Args({32, 4});
 BENCHMARK(BM_LcpCudaPgsWorldStackContactBatch_FrictionIndex)
     ->Args({5, 4})
     ->Args({6, 4})
@@ -12945,7 +12958,9 @@ BENCHMARK(BM_LcpCudaPgsWorldStackContactBatch_FrictionIndex)
     ->Args({13, 4})
     ->Args({14, 4})
     ->Args({15, 4})
-    ->Args({16, 4});
+    ->Args({16, 4})
+    ->Args({24, 4})
+    ->Args({32, 4});
 BENCHMARK(BM_LcpCudaJacobiWorldContactGroupedBatch_FrictionIndex)
     ->Arg(2)
     ->Arg(3);
