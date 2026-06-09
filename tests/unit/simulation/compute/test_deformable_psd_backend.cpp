@@ -31,6 +31,7 @@
  */
 
 #include <dart/simulation/compute/deformable_psd_backend.hpp>
+#include <dart/simulation/detail/newton_barrier/psd_backend.hpp>
 
 #include <gtest/gtest.h>
 
@@ -41,6 +42,7 @@
 namespace {
 
 using namespace dart::simulation::compute;
+namespace nb = dart::simulation::detail::newton_barrier;
 
 // A fake accelerator backed by file-static state, registered through the
 // backend-neutral hook with plain function pointers. No device technology is
@@ -126,6 +128,24 @@ TEST_F(DeformablePsdAcceleratorTest, DisableWithoutHookRestoresCpuProjector)
   setDeformablePsdAccelerator({&fakeAvailable, &fakeEnable, nullptr});
   EXPECT_FALSE(setDeformablePsdAccelerated(false));
   EXPECT_EQ(deformablePsdBlockProjector(), &projectSymmetricBlocksToPsdCpu);
+}
+
+TEST_F(DeformablePsdAcceleratorTest, NewtonBarrierWrapperRoutesCoreBackend)
+{
+  EXPECT_EQ(nb::psdBlockProjector(), &projectSymmetricBlocksToPsdCpu);
+  EXPECT_EQ(
+      nb::setPsdBlockProjector(&noopProjector),
+      &projectSymmetricBlocksToPsdCpu);
+  EXPECT_EQ(deformablePsdBlockProjector(), &noopProjector);
+  EXPECT_EQ(nb::setPsdBlockProjector(nullptr), &noopProjector);
+  EXPECT_EQ(nb::psdBlockProjector(), &projectSymmetricBlocksToPsdCpu);
+
+  std::array<double, 4> block{-1.0, 0.0, 0.0, 2.0};
+  nb::projectSymmetricBlocksToPsd(block.data(), 2, 1);
+  EXPECT_NEAR(block[0], 0.0, 1e-9);
+  EXPECT_NEAR(block[1], 0.0, 1e-9);
+  EXPECT_NEAR(block[2], 0.0, 1e-9);
+  EXPECT_NEAR(block[3], 2.0, 1e-9);
 }
 
 TEST(DeformablePsdBackend, CpuProjectionClampsNegativeEigenvalues)

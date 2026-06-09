@@ -4,16 +4,24 @@
 
 Use this folder's `README.md`, PLAN-083, `docs/plans/dashboard.md`, and the
 current code as the live status. The branch-local "Current Branch" section below
-is historical handoff context, not current checkout state. Unified
-Newton-barrier work should continue by promoting shared primitives and solver
-contracts consumed by rigid IPC, deformable IPC, ABD, and future couplers rather
-than adding another public solver stack.
+is historical handoff context, not current checkout state. Treat IPC as the
+representative solver-family name when PLAN-083's unified Newton-barrier method
+is the most advanced shared IPC variant. Unified Newton-barrier work should
+continue by promoting shared primitives and solver contracts consumed by rigid
+IPC, deformable IPC, ABD, and future couplers rather than adding another public
+solver stack.
 
 The first Phase 3 shared-contract slice promotes fixed-size symmetric PSD
 projection into `detail/newton_barrier`. Rigid IPC and ABD now use the same
 helper for reduced/affine Hessian projection; this is intentionally smaller
 than the existing deformable batched CPU/CUDA PSD backend and does not rename or
 generalize that backend yet.
+
+The PSD backend wrapper slice promotes only the solver-family owner name for
+the existing deformable batched CPU/CUDA seam: `detail/newton_barrier` now wraps
+the compute PSD backend, and deformable projected-Newton Hessian batching calls
+through that internal owner. The core CPU/CUDA backend hooks, acceleration
+control, and public compute names stay unchanged.
 
 The next Phase 3 slice promotes the first shared line-search option/stat
 contract into `detail/newton_barrier`. Rigid IPC and deformable continuous
@@ -113,9 +121,8 @@ Focused local validation passed `pixi run lint`, the focused
 `test_newton_barrier_primitives` / `test_rigid_ipc_barrier` / `test_world`
 CTest entries, `pixi run build`, and `pixi run test-unit`.
 
-The native-CCD primitive outcome accounting slice is on
-`simx/shared-newton-barrier-ccd-hit-accounting`, rebased directly onto
-`origin/main` after PR #2943 landed. Focused local validation passed the
+The native-CCD primitive outcome accounting slice merged as PR #2945 after PR
+#2943 landed. Focused local validation passed the
 `test_newton_barrier_primitives`, `test_continuous_collision_step`, and
 `test_rigid_ipc_barrier` build/CTest entries plus `pixi run lint`. Stronger
 local validation also passed `pixi run build`, `pixi run test-unit`,
@@ -123,21 +130,27 @@ local validation also passed `pixi run build`, `pixi run test-unit`,
 the docs phase still emits the existing `dartpy._world_render_bridge` autodoc
 warnings.
 
+The PSD backend wrapper slice is on
+`simx/shared-newton-barrier-psd-backend-wrapper`, retargeted to `main` after
+PR #2945 landed. Focused local validation passed
+`test_deformable_psd_backend` and `test_world` build/CTest entries.
+
 ## Current Branch
 
-`simx/shared-newton-barrier-ccd-hit-accounting` - contains the Phase 3 shared
-native-CCD primitive outcome accounting slice, rebased directly onto
-`origin/main` after PR #2943 landed. Verify the exact status with
-`git status --short --branch` because this section is a resume snapshot.
+`simx/shared-newton-barrier-psd-backend-wrapper` - contains the Phase 3
+Newton-barrier PSD backend wrapper slice after PR #2945 landed. Verify the
+exact status with `git status --short --branch` because this section is a
+resume snapshot.
 
 ## Immediate Next Step
 
 Continue Phase 3 from
 [`../../plans/083-unified-newton-barrier-multibody/abd-first-slice-design.md`](../../plans/083-unified-newton-barrier-multibody/abd-first-slice-design.md):
-publish the native-CCD primitive outcome accounting slice against `main`, then
-resume shared-contract scouting from the existing rigid IPC, deformable IPC,
-ABD, and benchmark-packet evidence. Do not add a two-body affine contact
-micro-solve for the current `abd-alg-affine-body` micro-packet; add
+finish the PSD backend wrapper slice against `main`, then continue with the
+sufficient-decrease policy slice and resume shared-contract scouting from the
+existing rigid IPC, deformable IPC, ABD, and benchmark-packet evidence. Do not
+add a two-body affine contact micro-solve for the current
+`abd-alg-affine-body` micro-packet; add
 projected-Newton, line-search result semantics, diagnostics, or
 benchmark-schema contracts only after second-use behavior is proven identical
 across variants. Use

@@ -7,9 +7,12 @@ status, horizon, next step, and gate.
 
 ## Consolidation Rule
 
-PLAN-083 owns the shared DART method family: public capability names, internal
-Newton-barrier primitive contracts, cross-variant benchmark shape, CPU/GPU
-parity rules, and py-demos integration discipline.
+PLAN-083 owns the shared DART IPC method family: public capability names,
+internal Newton-barrier primitive contracts, cross-variant benchmark shape,
+CPU/GPU parity rules, and py-demos integration discipline. Use IPC as the
+representative solver-family name when the unified Newton-barrier method is the
+most advanced shared IPC variant; use Newton-barrier for the implementation
+contracts and the paper-specific method lineage.
 
 Variant plans keep their specialized obligations until shared evidence proves a
 piece should move:
