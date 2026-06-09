@@ -995,54 +995,59 @@ tradeoffs evidence based.
   CUDA-kernel claim.
 - Verified APGD restart-policy benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpApgdRestartSweep' | wc -l`
-  reported 9 rows, and JSON checks for `BM_LcpApgdRestartSweep` reported 9
+  reported 12 rows, and JSON checks for `BM_LcpApgdRestartSweep` reported 12
   rows with `contract_ok=1` in the default, SIMD-enabled, and CUDA-enabled
   build trees. These rows cover standard 48-row, boxed 24-row, and
-  friction-index 8-contact fixtures for adaptive restart every iteration,
+  friction-index 8-/16-contact fixtures for adaptive restart every iteration,
   adaptive restart every 5 iterations, and no restart. The rows report
   `apgd_restart_sweep=1`, `apgd_adaptive_restart`,
   `apgd_restart_check_interval`, `apgd_relaxation=1`, `problem_size=24/48`,
-  `contact_count=8` for the friction-index rows, and backend build-state
+  `contact_count=8/16` for the friction-index rows, and backend build-state
   counters. The CUDA-enabled rows report `build_cuda_enabled=1` but are CPU
   APGD solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
 - Verified TGS iteration-budget benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpTgsIterationBudgetSweep' | wc -l`
-  reported 9 rows, and JSON checks for `BM_LcpTgsIterationBudgetSweep`
-  reported 9 rows with `contract_ok=1` in the default, SIMD-enabled, and
+  reported 12 rows, and JSON checks for `BM_LcpTgsIterationBudgetSweep`
+  reported 12 rows with `contract_ok=1` in the default, SIMD-enabled, and
   CUDA-enabled build trees. These rows cover standard 48-row, boxed 24-row, and
-  friction-index 8-contact fixtures at 10-, 50-, and 100-iteration budgets.
+  friction-index 8-/16-contact fixtures at 10-, 50-, and 100-iteration budgets.
   The rows report `tgs_iteration_budget_sweep=1`, `tgs_max_iterations`,
-  `tgs_relaxation=1`, `problem_size=24/48`, `contact_count=8` for the
+  `tgs_relaxation=1`, `problem_size=24/48`, `contact_count=8/16` for the
   friction-index rows, observed `iterations=5/6`, and backend build-state
   counters. The CUDA-enabled rows report `build_cuda_enabled=1` but are CPU TGS
   solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
 - Verified NNCG PGS-preconditioner iteration benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpNncgPgsIterationsSweep' | wc -l`
-  reported 9 rows, and JSON checks for `BM_LcpNncgPgsIterationsSweep`
-  reported 9 rows with `contract_ok=1` in the default, SIMD-enabled, and
+  reported 12 rows, and JSON checks for `BM_LcpNncgPgsIterationsSweep`
+  reported 12 rows with `contract_ok=1` in the default, SIMD-enabled, and
   CUDA-enabled build trees. These rows cover standard 48-row, boxed 24-row, and
-  friction-index 8-contact fixtures at 1, 2, and 5 PGS preconditioner
+  friction-index 8-/16-contact fixtures at 1, 2, and 5 PGS preconditioner
   iterations while holding NNCG restart interval 10 and restart threshold 1.0.
   The rows report `nncg_pgs_iterations_sweep=1`, `nncg_pgs_iterations`,
   `nncg_restart_interval=10`, `nncg_restart_threshold=1`, `problem_size=24/48`,
-  `contact_count=8` for the friction-index rows, observed outer
+  `contact_count=8/16` for the friction-index rows, observed outer
   `iterations=0/2/4/5`, and backend build-state counters. The CUDA-enabled
   rows report `build_cuda_enabled=1` but are CPU NNCG solver rows in a
   CUDA-enabled build, not CUDA LCP kernel execution.
 - Verified SubspaceMinimization PGS-iteration benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpSubspaceMinimizationPgsIterationsSweep' | wc -l`
-  reported 9 rows, and JSON checks for
-  `BM_LcpSubspaceMinimizationPgsIterationsSweep` reported 9 rows with
+  reported 12 rows, and JSON checks for
+  `BM_LcpSubspaceMinimizationPgsIterationsSweep` reported 12 rows with
   `contract_ok=1` in the default, SIMD-enabled, and CUDA-enabled build trees.
-  These rows cover standard 48-row, boxed 24-row, and friction-index 8-contact
+  These rows cover standard 48-row, boxed 24-row, and friction-index 8-/16-contact
   fixtures at 1, 3, and 5 PGS active-set-estimation iterations while holding
   active-set tolerance 0.0. The rows report
   `subspace_pgs_iterations_sweep=1`, `subspace_pgs_iterations`,
-  `subspace_active_set_tolerance=0`, `problem_size=24/48`, `contact_count=8`
+  `subspace_active_set_tolerance=0`, `problem_size=24/48`, `contact_count=8/16`
   for the friction-index rows, observed outer `iterations=1/2`, and backend
   build-state counters. The CUDA-enabled rows report `build_cuda_enabled=1`
   but are CPU SubspaceMinimization solver rows in a CUDA-enabled build, not
   CUDA LCP kernel execution.
+  The combined current projection-sweep filter for APGD, TGS, NNCG, and
+  SubspaceMinimization reports `rows=48`, `failures=0`, 12 rows per solver, and
+  12 `contact_count=16` rows in default, SIMD-enabled, and CUDA-enabled build
+  trees; the SIMD and CUDA-enabled runs report `simd_rows=48` and
+  `cuda_rows=48`, respectively.
 - Verified ShockPropagation layer-layout benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpShockPropagationLayerSweep' | wc -l`
   reported 9 rows, and JSON checks for `BM_LcpShockPropagationLayerSweep`

@@ -3452,7 +3452,7 @@ constexpr std::array<BlockPartitionSweepCase, 12> kBlockPartitionSweepCases{{
      "ContactBlocks"},
 }};
 
-constexpr std::array<ApgdRestartSweepCase, 9> kApgdRestartSweepCases{{
+constexpr std::array<ApgdRestartSweepCase, 12> kApgdRestartSweepCases{{
     {BenchmarkProblemFamily::Standard, 48, true, 0, "AdaptiveEveryIter"},
     {BenchmarkProblemFamily::Standard, 48, true, 5, "AdaptiveEvery5"},
     {BenchmarkProblemFamily::Standard, 48, false, 0, "NoRestart"},
@@ -3462,9 +3462,24 @@ constexpr std::array<ApgdRestartSweepCase, 9> kApgdRestartSweepCases{{
     {BenchmarkProblemFamily::FrictionIndex, 8, true, 0, "AdaptiveEveryIter"},
     {BenchmarkProblemFamily::FrictionIndex, 8, true, 5, "AdaptiveEvery5"},
     {BenchmarkProblemFamily::FrictionIndex, 8, false, 0, "NoRestart"},
+    {BenchmarkProblemFamily::FrictionIndex,
+     16,
+     true,
+     0,
+     "Contacts16AdaptiveEveryIter"},
+    {BenchmarkProblemFamily::FrictionIndex,
+     16,
+     true,
+     5,
+     "Contacts16AdaptiveEvery5"},
+    {BenchmarkProblemFamily::FrictionIndex,
+     16,
+     false,
+     0,
+     "Contacts16NoRestart"},
 }};
 
-constexpr std::array<TgsIterationBudgetSweepCase, 9>
+constexpr std::array<TgsIterationBudgetSweepCase, 12>
     kTgsIterationBudgetSweepCases{{
         {BenchmarkProblemFamily::Standard, 48, 10, "Iter10"},
         {BenchmarkProblemFamily::Standard, 48, 50, "Iter50"},
@@ -3475,9 +3490,12 @@ constexpr std::array<TgsIterationBudgetSweepCase, 9>
         {BenchmarkProblemFamily::FrictionIndex, 8, 10, "Iter10"},
         {BenchmarkProblemFamily::FrictionIndex, 8, 50, "Iter50"},
         {BenchmarkProblemFamily::FrictionIndex, 8, 100, "Iter100"},
+        {BenchmarkProblemFamily::FrictionIndex, 16, 10, "Contacts16Iter10"},
+        {BenchmarkProblemFamily::FrictionIndex, 16, 50, "Contacts16Iter50"},
+        {BenchmarkProblemFamily::FrictionIndex, 16, 100, "Contacts16Iter100"},
     }};
 
-constexpr std::array<NncgPgsIterationsSweepCase, 9>
+constexpr std::array<NncgPgsIterationsSweepCase, 12>
     kNncgPgsIterationsSweepCases{{
         {BenchmarkProblemFamily::Standard, 48, 1, "PgsIter1"},
         {BenchmarkProblemFamily::Standard, 48, 2, "PgsIter2"},
@@ -3488,9 +3506,12 @@ constexpr std::array<NncgPgsIterationsSweepCase, 9>
         {BenchmarkProblemFamily::FrictionIndex, 8, 1, "PgsIter1"},
         {BenchmarkProblemFamily::FrictionIndex, 8, 2, "PgsIter2"},
         {BenchmarkProblemFamily::FrictionIndex, 8, 5, "PgsIter5"},
+        {BenchmarkProblemFamily::FrictionIndex, 16, 1, "Contacts16PgsIter1"},
+        {BenchmarkProblemFamily::FrictionIndex, 16, 2, "Contacts16PgsIter2"},
+        {BenchmarkProblemFamily::FrictionIndex, 16, 5, "Contacts16PgsIter5"},
     }};
 
-constexpr std::array<SubspacePgsIterationsSweepCase, 9>
+constexpr std::array<SubspacePgsIterationsSweepCase, 12>
     kSubspacePgsIterationsSweepCases{{
         {BenchmarkProblemFamily::Standard, 48, 1, "PgsIter1"},
         {BenchmarkProblemFamily::Standard, 48, 3, "PgsIter3"},
@@ -3501,6 +3522,9 @@ constexpr std::array<SubspacePgsIterationsSweepCase, 9>
         {BenchmarkProblemFamily::FrictionIndex, 8, 1, "PgsIter1"},
         {BenchmarkProblemFamily::FrictionIndex, 8, 3, "PgsIter3"},
         {BenchmarkProblemFamily::FrictionIndex, 8, 5, "PgsIter5"},
+        {BenchmarkProblemFamily::FrictionIndex, 16, 1, "Contacts16PgsIter1"},
+        {BenchmarkProblemFamily::FrictionIndex, 16, 3, "Contacts16PgsIter3"},
+        {BenchmarkProblemFamily::FrictionIndex, 16, 5, "Contacts16PgsIter5"},
     }};
 
 constexpr std::array<ShockPropagationLayerSweepCase, 9>

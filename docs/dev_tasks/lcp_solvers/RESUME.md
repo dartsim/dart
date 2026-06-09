@@ -151,46 +151,50 @@ and 512-/1024-row serial/4-/8-worker banded packets with `contract_ok=1`,
 `red_black_black_rows=64/256/512`, and
 `red_black_threaded_color_updates=0/1`. This is
 larger CPU threaded update-path evidence, not a speedup or CUDA-kernel claim.
-It now also adds 9 `BM_LcpApgdRestartSweep` benchmark rows for the
+It now also adds 12 `BM_LcpApgdRestartSweep` benchmark rows for the
 `ApgdSolver` adaptive-restart path, covering standard 48-row, boxed 24-row,
-and friction-index 8-contact fixtures for adaptive restart every iteration,
+and friction-index 8-/16-contact fixtures for adaptive restart every iteration,
 adaptive restart every 5 iterations, and no restart. Focused default,
 SIMD-enabled, and CUDA-enabled build-tree runs passed with `contract_ok=1` on
 every row and recorded `apgd_restart_sweep`, `apgd_adaptive_restart`,
 `apgd_restart_check_interval`, `apgd_relaxation=1`, backend build-state
-counters, and `contact_count=8` for the friction-index rows. The CUDA-enabled
+counters, and `contact_count=8/16` for the friction-index rows. The CUDA-enabled
 rows are CPU APGD solver rows in a CUDA-enabled build, not CUDA LCP kernel
 execution.
-It now also adds 9 `BM_LcpTgsIterationBudgetSweep` benchmark rows for the
+It now also adds 12 `BM_LcpTgsIterationBudgetSweep` benchmark rows for the
 `TgsSolver` standalone boxed-LCP sweep, covering standard 48-row, boxed
-24-row, and friction-index 8-contact fixtures at 10-, 50-, and
+24-row, and friction-index 8-/16-contact fixtures at 10-, 50-, and
 100-iteration budgets. Focused default, SIMD-enabled, and CUDA-enabled
 build-tree runs passed with `contract_ok=1` on every row and recorded
 `tgs_iteration_budget_sweep`, `tgs_max_iterations`, `tgs_relaxation=1`,
 observed `iterations=5/6`, backend build-state counters, and
-`contact_count=8` for the friction-index rows. The CUDA-enabled rows are CPU
+`contact_count=8/16` for the friction-index rows. The CUDA-enabled rows are CPU
 TGS solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
-It now also adds 9 `BM_LcpNncgPgsIterationsSweep` benchmark rows for the
+It now also adds 12 `BM_LcpNncgPgsIterationsSweep` benchmark rows for the
 `NncgSolver` PGS-preconditioner path, covering standard 48-row, boxed 24-row,
-and friction-index 8-contact fixtures at 1, 2, and 5 PGS preconditioner
+and friction-index 8-/16-contact fixtures at 1, 2, and 5 PGS preconditioner
 iterations while holding restart interval 10 and restart threshold 1.0.
 Focused default, SIMD-enabled, and CUDA-enabled build-tree runs passed with
 `contract_ok=1` on every row and recorded `nncg_pgs_iterations_sweep`,
 `nncg_pgs_iterations`, `nncg_restart_interval=10`,
 `nncg_restart_threshold=1`, observed outer `iterations=0/2/4/5`, backend
-build-state counters, and `contact_count=8` for the friction-index rows. The
+build-state counters, and `contact_count=8/16` for the friction-index rows. The
 CUDA-enabled rows are CPU NNCG solver rows in a CUDA-enabled build, not CUDA
 LCP kernel execution.
-It now also adds 9 `BM_LcpSubspaceMinimizationPgsIterationsSweep` benchmark
+It now also adds 12 `BM_LcpSubspaceMinimizationPgsIterationsSweep` benchmark
 rows for the `SubspaceMinimizationSolver` active-set-estimation path, covering
-standard 48-row, boxed 24-row, and friction-index 8-contact fixtures at 1, 3,
+standard 48-row, boxed 24-row, and friction-index 8-/16-contact fixtures at 1, 3,
 and 5 PGS iterations while holding active-set tolerance 0.0. Focused default,
 SIMD-enabled, and CUDA-enabled build-tree runs passed with `contract_ok=1` on
 every row and recorded `subspace_pgs_iterations_sweep`,
 `subspace_pgs_iterations`, `subspace_active_set_tolerance=0`, observed outer
-`iterations=1/2`, backend build-state counters, and `contact_count=8` for the
+`iterations=1/2`, backend build-state counters, and `contact_count=8/16` for the
 friction-index rows. The CUDA-enabled rows are CPU SubspaceMinimization solver
 rows in a CUDA-enabled build, not CUDA LCP kernel execution.
+The combined current projection-sweep filter reports `rows=48`, `failures=0`,
+12 rows per solver, and 12 `contact_count=16` rows in default, SIMD-enabled,
+and CUDA-enabled build trees; the SIMD and CUDA-enabled runs report
+`simd_rows=48` and `cuda_rows=48`, respectively.
 It now also adds 18 `BM_LcpAdmmRhoSweep` benchmark rows for the `AdmmSolver`
 rho/adaptive-rho path, covering standard 48-row, boxed 24-row, and
 friction-index 8-contact fixtures at `rhoInit` 0.5, 1.0, and 4.0 with fixed

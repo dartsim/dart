@@ -1037,18 +1037,20 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     report two-color partition counters. CUDA-enabled rows are CPU solver rows,
     not CUDA LCP kernel execution.
   - Added DART 7 APGD restart-policy comparison benchmark rows for standard,
-    boxed, and friction-index LCP fixtures, with backend build-state counters
-    distinguishing default, SIMD-enabled, and CUDA-enabled CPU solver runs.
+    boxed, and 8-/16-contact friction-index LCP fixtures, with backend
+    build-state counters distinguishing default, SIMD-enabled, and CUDA-enabled
+    CPU solver runs.
   - Added DART 7 TGS iteration-budget comparison benchmark rows for standard,
-    boxed, and friction-index LCP fixtures, with backend build-state counters
-    distinguishing default, SIMD-enabled, and CUDA-enabled CPU solver runs.
+    boxed, and 8-/16-contact friction-index LCP fixtures, with backend
+    build-state counters distinguishing default, SIMD-enabled, and CUDA-enabled
+    CPU solver runs.
   - Added DART 7 NNCG PGS-preconditioner iteration comparison benchmark rows
-    for standard, boxed, and friction-index LCP fixtures, with backend
+    for standard, boxed, and 8-/16-contact friction-index LCP fixtures, with backend
     build-state counters distinguishing default, SIMD-enabled, and
     CUDA-enabled CPU solver runs.
   - Added DART 7 SubspaceMinimization PGS active-set-estimation iteration
-    comparison benchmark rows for standard, boxed, and friction-index LCP
-    fixtures, with backend build-state counters distinguishing default,
+    comparison benchmark rows for standard, boxed, and 8-/16-contact
+    friction-index LCP fixtures, with backend build-state counters distinguishing default,
     SIMD-enabled, and CUDA-enabled CPU solver runs.
   - Added DART 7 ShockPropagation layer-layout comparison benchmark rows for
     standard, boxed, and friction-index LCP fixtures, comparing single-layer,
