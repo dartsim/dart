@@ -272,12 +272,14 @@
       oriented-obstacle Hessian paths separately from the ground height-field
       barrier and surface-CCD snapshot gates. The moving rigid-surface CCD path
       now has baked swept-box point-crossing gates for both free predicted
-      motion and kinematic trace-backed motion. `prepare()` primes the
-      kinematic swept-box snapshot buffers before a current-frame trace exists,
-      so stage-owned moving rigid snapshot storage and surface-sweep candidate
-      scratch are covered separately from static rigid snapshots. Projected-
-      Newton sparse assembly now reserves self-contact barrier block storage
-      from baked candidate
+      motion and kinematic trace-backed motion, including a multi-kinematic
+      traced-obstacle scene that reuses combined swept snapshot capacity across
+      independent deformable bodies. `prepare()` primes the kinematic swept-box
+      snapshot buffers before a current-frame trace exists, so stage-owned
+      moving rigid snapshot storage and surface-sweep candidate scratch are
+      covered separately from static rigid snapshots. Projected-Newton sparse
+      assembly now reserves self-contact barrier block storage from baked
+      candidate
       capacity instead of only the
       bake-active candidate count, so same-topology active set variation does
       not grow DART-owned barrier vectors. Motion-aware
@@ -360,9 +362,9 @@
       rectangular and matrix-free wide self-contact grids, plus a barrier-only
       static sphere/box/capsule obstacle scene for default projected Newton.
       The base and global-heap guards now also include default moving
-      rigid-surface CCD swept-box crossings for free and kinematic rigid
-      obstacles, closing the previously static-only rigid surface snapshot
-      coverage and the first-traced-kinematic allocation gap.
+      rigid-surface CCD swept-box crossings for free, single-kinematic, and
+      multi-kinematic rigid obstacles, closing the previously static-only rigid
+      surface snapshot coverage and the first-traced-kinematic allocation gap.
       The
       larger-grid guards also assert
       non-vacuous solver activity through public deformable diagnostics: active

@@ -1683,6 +1683,40 @@ void configureDeformableKinematicRigidSurfaceCcdCrossingScene(
   world.addDeformableBody("kinematic_surface_fast_point", options);
 }
 
+void configureDeformableMultiKinematicRigidSurfaceCcdScene(
+    dart::simulation::World& world)
+{
+  namespace sx = dart::simulation;
+
+  world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  const auto addKinematicObstacle = [&](std::string_view name, const double y) {
+    sx::RigidBodyOptions obstacleOptions;
+    obstacleOptions.position = Eigen::Vector3d(0.0, y, 0.0);
+    obstacleOptions.linearVelocity = Eigen::Vector3d(0.2, 0.0, 0.0);
+    auto obstacle = world.addRigidBody(name, obstacleOptions);
+    obstacle.setKinematic(true);
+    obstacle.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(0.05, 0.5, 0.5)));
+    obstacle.setDeformableSurfaceCcdObstacle(true);
+  };
+  addKinematicObstacle("multi_kinematic_surface_box_a", 0.0);
+  addKinematicObstacle("multi_kinematic_surface_box_b", 2.0);
+
+  const auto addCrossingPoint = [&](std::string_view name, const double y) {
+    sx::DeformableBodyOptions options;
+    options.positions = {Eigen::Vector3d(-1.0, y, 0.0)};
+    options.velocities = {Eigen::Vector3d(20.0, 0.0, 0.0)};
+    options.masses = {1.0};
+    options.edgeStiffness = 0.0;
+    world.addDeformableBody(name, options);
+  };
+  addCrossingPoint("multi_kinematic_surface_fast_point_a", 0.0);
+  addCrossingPoint("multi_kinematic_surface_fast_point_b", 2.0);
+}
+
 void configureDeformableInterBodySurfaceCcdCrossingScene(
     dart::simulation::World& world)
 {
@@ -2780,6 +2814,9 @@ TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
       "deformable kinematic rigid surface CCD crossing",
       configureDeformableKinematicRigidSurfaceCcdCrossingScene);
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "deformable multi-kinematic rigid surface CCD crossing",
+      configureDeformableMultiKinematicRigidSurfaceCcdScene);
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "deformable inter-body surface CCD crossing",
       configureDeformableInterBodySurfaceCcdCrossingScene);
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
@@ -3145,6 +3182,43 @@ TEST(World, DeformableKinematicRigidSurfaceCcdCrossingIsActive)
   EXPECT_GT(diagnostics.projectedNewtonSteps, 0u);
   EXPECT_GT(body->getPosition(0).x(), -1.0);
   EXPECT_LT(body->getPosition(0).x(), -0.05);
+}
+
+TEST(World, DeformableMultiKinematicRigidSurfaceCcdSceneIsActive)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  configureDeformableMultiKinematicRigidSurfaceCcdScene(world);
+  auto firstBody
+      = world.getDeformableBody("multi_kinematic_surface_fast_point_a");
+  ASSERT_TRUE(firstBody.has_value());
+  auto secondBody
+      = world.getDeformableBody("multi_kinematic_surface_fast_point_b");
+  ASSERT_TRUE(secondBody.has_value());
+  auto kinematicObstacle = world.getRigidBody("multi_kinematic_surface_box_b");
+  ASSERT_TRUE(kinematicObstacle.has_value());
+  world.enterSimulationMode();
+
+  world.step();
+
+  const auto& registry = sx::detail::registryOf(world);
+  const auto kinematicObstacleEntity
+      = sx::detail::toRegistryEntity(kinematicObstacle->getEntity());
+  const auto* trace = registry.try_get<sx::comps::KinematicBodyStepTrace>(
+      kinematicObstacleEntity);
+  ASSERT_NE(trace, nullptr);
+  EXPECT_LT(
+      trace->startTransform.position.x(), trace->endTransform.position.x());
+
+  const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
+  EXPECT_EQ(diagnostics.bodyCount, 2u);
+  EXPECT_EQ(diagnostics.nodeCount, 2u);
+  EXPECT_GT(diagnostics.projectedNewtonSteps, 0u);
+  EXPECT_GT(firstBody->getPosition(0).x(), -1.0);
+  EXPECT_LT(firstBody->getPosition(0).x(), 0.0);
+  EXPECT_GT(secondBody->getPosition(0).x(), -1.0);
+  EXPECT_LT(secondBody->getPosition(0).x(), 0.0);
 }
 
 TEST(World, DeformableInterBodySurfaceCcdCrossingIsActive)
@@ -3601,6 +3675,10 @@ TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "default kinematic rigid surface CCD point crossing",
       configureDeformableKinematicRigidSurfaceCcdCrossingScene);
+
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "default multi-kinematic rigid surface CCD point crossings",
+      configureDeformableMultiKinematicRigidSurfaceCcdScene);
 
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "active static rigid surface CCD point crossing", [](sx::World& world) {
