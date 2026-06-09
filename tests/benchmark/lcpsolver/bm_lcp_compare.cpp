@@ -5835,7 +5835,8 @@ MakeGroupedWorldStackContactCudaBatch(
     return std::nullopt;
   }
 
-  constexpr std::array<int, 9> kSphereCounts{2, 3, 4, 5, 6, 7, 8, 9, 10};
+  constexpr std::array<int, 11> kSphereCounts{
+      2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
 
   CudaGroupedWorldContactBenchmarkBatch grouped;
   std::vector<std::size_t> groupSizes;
@@ -12486,14 +12487,18 @@ BENCHMARK(BM_LcpCudaJacobiWorldStackContactBatch_FrictionIndex)
     ->Args({7, 4})
     ->Args({8, 4})
     ->Args({9, 4})
-    ->Args({10, 4});
+    ->Args({10, 4})
+    ->Args({11, 4})
+    ->Args({12, 4});
 BENCHMARK(BM_LcpCudaPgsWorldStackContactBatch_FrictionIndex)
     ->Args({5, 4})
     ->Args({6, 4})
     ->Args({7, 4})
     ->Args({8, 4})
     ->Args({9, 4})
-    ->Args({10, 4});
+    ->Args({10, 4})
+    ->Args({11, 4})
+    ->Args({12, 4});
 BENCHMARK(BM_LcpCudaJacobiWorldContactGroupedBatch_FrictionIndex)
     ->Arg(2)
     ->Arg(3);

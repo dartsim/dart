@@ -1263,7 +1263,8 @@ std::optional<WorldContactGroupedBatch> makeWorldStackContactGroupedBatch(
     return std::nullopt;
   }
 
-  constexpr std::array<int, 9> kSphereCounts{2, 3, 4, 5, 6, 7, 8, 9, 10};
+  constexpr std::array<int, 11> kSphereCounts{
+      2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
   WorldContactGroupedBatch grouped;
   grouped.packets.reserve(kSphereCounts.size());
   grouped.problemsByGroup.reserve(kSphereCounts.size());
@@ -1785,7 +1786,7 @@ TEST(
     GTEST_SKIP() << "CUDA runtime has no available device";
   }
 
-  for (const int sphereCount : {5, 6, 7, 8, 9, 10}) {
+  for (const int sphereCount : {5, 6, 7, 8, 9, 10, 11, 12}) {
     SCOPED_TRACE("sphereCount=" + std::to_string(sphereCount));
     std::string errorMessage;
     auto fixture
@@ -2130,7 +2131,7 @@ TEST(CudaLcpPgsBatch, HomogeneousStackedWorldContactBatchSatisfiesLcpContract)
     GTEST_SKIP() << "CUDA runtime has no available device";
   }
 
-  for (const int sphereCount : {5, 6, 7, 8, 9, 10}) {
+  for (const int sphereCount : {5, 6, 7, 8, 9, 10, 11, 12}) {
     SCOPED_TRACE("sphereCount=" + std::to_string(sphereCount));
     std::string errorMessage;
     auto fixture
