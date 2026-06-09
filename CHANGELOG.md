@@ -165,11 +165,11 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     now discover installed EnTT package metadata without invoking DART's
     FetchContent-backed dependency helper. The EnTT rows now benchmark cached
     component storage handles, use free-list-backed DART storage for persistent
-    no-growth registry churn, and use DART's stateless default C-heap STL
-    adapter for one-shot registry build/growth storage construction. The
-    foonathan build/growth baseline uses stack marker/unwind bulk lifetime
-    storage, matching the one-shot construction role rather than persistent pool
-    reuse. The no-growth row reports allocator-call counters and fails if
+    no-growth registry churn, and use a resettable frame-backed DART bake arena
+    for one-shot registry build/growth storage construction. The foonathan
+    build/growth baseline uses stack marker/unwind bulk lifetime storage,
+    matching the one-shot construction role rather than persistent pool reuse.
+    The no-growth row reports allocator-call counters and fails if
     reserved churn grows after prewarm. The build/growth row times the
     uninstrumented construction/destruction path. The focused checker now
     distinguishes timing loss, allocator-call regressions, frame growth, and

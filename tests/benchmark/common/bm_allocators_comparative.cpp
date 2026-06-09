@@ -2114,20 +2114,23 @@ static void BM_EnttRegistryBuild_DART(benchmark::State& state)
 {
   const auto entityCount = static_cast<size_t>(state.range(0));
   const size_t cycleCount = enttRegistryBuildCyclesFor(entityCount);
-  // Registry build/growth models one-shot storage assembly. Use the stateless
-  // default-resource adapter so the comparison isolates storage construction
-  // without stateful world-lifetime allocator propagation overhead.
-  DefaultStlAllocator<entt::entity> allocator;
+  // Registry build/growth models one-shot storage assembly. Use a resettable
+  // frame-backed bake arena so the DART row matches the foonathan memory_stack
+  // marker/unwind lifetime below.
+  const size_t arenaBytes = entityCount * 4096 + 1024 * 1024;
+  FrameAllocator bakeArena(MemoryAllocator::GetDefault(), arenaBytes);
+  StlAllocator<entt::entity> allocator(bakeArena);
   std::vector<entt::entity> entities(entityCount);
 
   for (auto _ : state) {
     for (size_t cycle = 0; cycle < cycleCount; ++cycle) {
       {
-        entt::basic_registry<entt::entity, DefaultStlAllocator<entt::entity>>
-            registry(EnttRegistryStorageCount, allocator);
+        entt::basic_registry<entt::entity, StlAllocator<entt::entity>> registry(
+            EnttRegistryStorageCount, allocator);
         reserveEnttRegistryStorage(registry, entityCount);
         runEnttRegistryChurn(registry, entities, entityCount);
       }
+      bakeArena.reset();
     }
   }
   state.SetItemsProcessed(

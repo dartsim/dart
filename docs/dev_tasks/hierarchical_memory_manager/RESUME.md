@@ -94,8 +94,9 @@ build/growth, caches component storage handles, reports DART counters, and
 keeps EnTT rows opt-in. Current follow-up policy uses free-list-backed
 `StlAllocator` storage for persistent no-growth churn, matching the production
 `WorldRegistry` allocator role. It treats build/growth as a separate one-shot
-storage-construction role: DART uses `DefaultStlAllocator` over the default C
-heap, while foonathan/memory uses `memory_stack` marker/unwind storage.
+storage-construction role: DART uses `StlAllocator` over a resettable
+`FrameAllocator` bake arena, while foonathan/memory uses `memory_stack`
+marker/unwind storage.
 PR #2890 has merged to
 `main`; keep its benchmark evidence as the baseline for future allocator-policy
 loops.
@@ -302,15 +303,18 @@ post-policy-change foonathan-only full matrix,
 passes all 47 DART-vs-foonathan comparisons after restoring cache-line
 alignment for large allocator-backed STL storage and moving EnTT build/growth
 to a matched one-shot storage-construction comparison:
-`DefaultStlAllocator` versus foonathan/memory `memory_stack` marker/unwind. The
-focused EnTT all-baseline result,
+`DefaultStlAllocator` versus foonathan/memory `memory_stack` marker/unwind. A
+later continuation corrected that DART row to `StlAllocator` over a resettable
+`FrameAllocator` bake arena, which is the DART allocator role that matches the
+foonathan `memory_stack` marker/unwind lifetime. The focused EnTT all-baseline result,
 `.benchmark_results/allocator_entt_sustained_default_stack_cpu13_check.json`,
 passes all 12 EnTT comparisons against foonathan/memory and standard baselines.
 The full standard-registry half remains a separate fresh 94-row gate gap after
-this policy change. HMM is still open for production no-growth coverage,
-WorldRegistry bake/build sizing, and any future allocator baselines that map to
-HMM allocator roles; keep the combined comparative gate green as allocator
-policy changes.
+this policy change, and current high-load CPU6/CPU16 probes are not acceptable
+final no-growth timing evidence despite zero post-prewarm allocator calls. HMM
+is still open for production no-growth coverage, WorldRegistry bake/build
+sizing, and any future allocator baselines that map to HMM allocator roles;
+keep the combined comparative gate green as allocator policy changes.
 
 Treat the persistent EnTT no-growth benchmark policy as production-aligned for
 the allocator role: World registry storage uses the free-list-backed
