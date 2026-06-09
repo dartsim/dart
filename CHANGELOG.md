@@ -1192,10 +1192,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     (`NNCG` uses 20 PGS preconditioner iterations for this coupled contact
     family), plus 7-sphere rows for that full solver set
     (`RedBlackGaussSeidel` reports a 512-iteration stack-contact cap for this
-    family), plus 8-sphere rows for `Pgs`, `Jacobi`, `BlockedJacobi`,
-    `RedBlackGaussSeidel`, and `NNCG`, and 8-/9-/10-sphere rows for `Pgs`,
-    `Jacobi`, `BlockedJacobi`, `RedBlackGaussSeidel`, `NNCG`, and the narrower
-    passing 10-solver subset, so
+    family), plus 8-/9-/10-sphere rows for that full solver set (`Pgs`,
+    `Jacobi`, `BlockedJacobi`, `RedBlackGaussSeidel`, and `ShockPropagation`
+    use a 512-iteration stack-contact cap, and `NNCG` uses 20 PGS
+    preconditioner iterations), so
     benchmark evidence now includes coupled contact systems with shared dynamic
     bodies. Added 3-, 4-, 5-, 6-, 7-, 8-, 9-, 10-, 11-, 12-, 13-, 14-, 15-,
     and 16-sphere stack snapshot tests that validate nonzero normal-contact

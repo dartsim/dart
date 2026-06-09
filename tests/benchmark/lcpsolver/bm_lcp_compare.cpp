@@ -2544,6 +2544,12 @@ void AddShockPropagationCounters(
   state.counters["max_blocks_per_layer"] = maxBlocksPerLayer;
 }
 
+void AddShockPropagationOptionCounters(
+    benchmark::State& state, const LcpOptions& options)
+{
+  state.counters["shock_propagation_max_iterations"] = options.maxIterations;
+}
+
 void AddBoxedSsnCounters(
     benchmark::State& state,
     const dart::math::BoxedSemiSmoothNewtonSolver::Parameters& params)
@@ -8491,6 +8497,11 @@ void RunWorldStackContactBenchmark(
     // The 10-sphere coupled stack converges in 194 two-color iterations; 128
     // iterations leave the 8-sphere row just outside the same LCP contract.
     storage.options.maxIterations = 512;
+  } else if (solverEntry.name == "ShockPropagation") {
+    // The 7-sphere coupled stack already needs 95 shock-propagation sweeps, so
+    // the larger stack rows use the same bounded cap as the iterative
+    // projection-style stack rows.
+    storage.options.maxIterations = 512;
   }
 
   const auto solver = solverEntry.create();
@@ -8532,6 +8543,7 @@ void RunWorldStackContactBenchmark(
     } else {
       AddShockPropagationCounters(state, storage.shockPropagationParams);
     }
+    AddShockPropagationOptionCounters(state, storage.options);
   }
 }
 
@@ -11983,6 +11995,8 @@ void RegisterWorldStackContactBenchmarks()
     } else if (solver.name == "BlockedJacobi") {
       registeredBenchmark->Arg(8)->Arg(9)->Arg(10);
     } else if (solver.name == "RedBlackGaussSeidel") {
+      registeredBenchmark->Arg(8)->Arg(9)->Arg(10);
+    } else if (solver.name == "ShockPropagation") {
       registeredBenchmark->Arg(8)->Arg(9)->Arg(10);
     } else if (
         solver.name != "Pgs" && solver.name != "Jacobi"
