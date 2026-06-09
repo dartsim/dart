@@ -657,7 +657,8 @@ batch-size-4 CUDA PGS row now reports `contract_ok=1`,
 iterations; it is cost-boundary evidence at about 232.9s real time, not a
 routine checkpoint gate.
 The latest local slice extends DART 7 dense box-face public `World::step()`
-evidence to a bounded 128-box/512-contact one-step and 75-step path plus a
+evidence to a bounded 144-box/576-contact one-step path plus a
+128-box/512-contact one-step and 75-step path plus a
 96-box/384-contact 75-step path while keeping the 64-box/256-contact
 strict-invariant boundary explicit. The
 `SixtyFourBoxWorldStepPreservesDenseContactShape` unit test advances one public
@@ -672,6 +673,9 @@ The new
 `OneHundredTwentyEightBoxWorldShortHorizonMaintainsDenseContactInvariants`
 unit test extends the strict 75-step horizon to that same 128-box scene; the
 focused default run passed in 24068 ms.
+The new `OneHundredFortyFourBoxWorldStepPreservesDenseContactShape` unit test
+extends the one-step shape path to a 144-box/576-contact scene; the focused
+default run passed in 558 ms.
 The `SixtyFourBoxWorldShortHorizonMaintainsDenseContactInvariants` unit test
 advances the same scene for 75 public boxed-LCP steps under the strict settling
 invariant; the two-test focused default filter passed in 3346 ms.
@@ -715,7 +719,13 @@ vertical-rest gate at `max_vertical_speed=0.098815`, the SIMD row reports
 `build_simd_enabled=1` and `max_vertical_speed=0.0420758`, and the
 CUDA-enabled row reports `build_cuda_enabled=1`. The CUDA-enabled rows in this
 slice are CPU public-step rows in that build tree, not direct CUDA LCP kernel
-execution. Do not claim a 64-box
+execution. The new `BM_LcpWorldBoxStep_BoxedLcp/144/1` row reports
+`invariant_ok=1`, `dense_box_contact=1`, `box_count=144`, `contact_count=576`,
+`step_count=1`, `max_height_error=0`,
+`min_tangential_speed_drop=0.0201629`, and
+`max_vertical_speed<=6.94e-18` in default, SIMD-enabled, and CUDA-enabled build
+trees; the SIMD row reports `build_simd_enabled=1`, and the CUDA-enabled row
+reports `build_cuda_enabled=1`. Do not claim a 64-box
 long-horizon settling invariant: a temporary 90-step probe passed but was
 close to the vertical-rest threshold
 (`max_vertical_speed=9.80e-2`), and temporary probes at 100, 1000, and 4000
@@ -803,9 +813,10 @@ settling invariant yet: the bounded 64-box committed evidence is one public
 step plus 75 strict invariant-checked public steps; the 96-box committed
 evidence is one public shape-preservation step plus 75 strict invariant-checked
 public steps; the 128-box committed evidence is one public shape-preservation
-step plus 75 strict invariant-checked public steps; and temporary 100-, 1000-,
-and 4000-step 64-box probes failed the stricter vertical-rest contract. After
-that, extend
+step plus 75 strict invariant-checked public steps; the 144-box committed
+evidence is one public shape-preservation step; and temporary 100-, 1000-, and
+4000-step 64-box probes failed the stricter vertical-rest contract. After that,
+extend
 DART 7 boxed-LCP world-contact
 evidence beyond the current separated sphere-ground, fixed-base prismatic
 articulated end-to-end coverage, connected Cartesian-chain articulated
@@ -818,8 +829,9 @@ the 48-box unit/benchmark dense face-contact long-horizon public-step slice,
 and the 64-box dense face-contact one-step shape plus 75-step strict-invariant
 slice plus 96-box one-step shape and 75-step strict-invariant dense
 face-contact slice plus 128-box one-step shape and 75-step strict-invariant
-dense face-contact slice to broader articulated, longer-running coupled, and
-broader dense/robot-like contact scenes.
+dense face-contact slice plus 144-box one-step shape slice to broader
+articulated, longer-running coupled, and broader dense/robot-like contact
+scenes.
 
 ## Context That Would Be Lost
 
@@ -1916,11 +1928,13 @@ broader dense/robot-like contact scenes.
   `BM_LcpWorldBoxStep_BoxedLcp/{32,48}/4000`, plus
   `BM_LcpWorldBoxStep_BoxedLcp/64/{1,75}` and
   `BM_LcpWorldBoxStep_BoxedLcp/96/{1,75}` and
-  `BM_LcpWorldBoxStep_BoxedLcp/128/{1,75}`, rebuild separated
-  dense box-face worlds, confirm 4/8/16/32/64/96/128/192/256/384/512 contacts before
-  stepping, enter simulation mode, advance public boxed-LCP `World::step()`
-  iterations, and report end-to-end invariant counters on the registered
-  horizons. Focused default, SIMD-enabled, and CUDA-enabled build-tree runs
+  `BM_LcpWorldBoxStep_BoxedLcp/128/{1,75}` and
+  `BM_LcpWorldBoxStep_BoxedLcp/144/1`, rebuild separated
+  dense box-face worlds, confirm
+  4/8/16/32/64/96/128/192/256/384/512/576 contacts before stepping, enter
+  simulation mode, advance public boxed-LCP `World::step()` iterations, and
+  report end-to-end invariant counters on the registered horizons. Focused
+  default, SIMD-enabled, and CUDA-enabled build-tree runs
   over the 24-/32-box rows reported
   `invariant_ok=1`, `dense_box_contact=1`, `box_count=24/32`,
   `contact_count=96/128`, and `step_count=2000/4000`; the default 32-box row
@@ -1967,6 +1981,12 @@ broader dense/robot-like contact scenes.
   `max_vertical_speed=0.098815`, the SIMD row reported
   `build_simd_enabled=1` and `max_vertical_speed=0.0420758`, and the
   CUDA-enabled row reported `build_cuda_enabled=1`. Focused
+  default, SIMD-enabled, and CUDA-enabled 144-box one-step rows reported
+  `invariant_ok=1`, `contact_count=576`, `step_count=1`,
+  `max_height_error=0`, `min_tangential_speed_drop=0.0201629`, and
+  `max_vertical_speed<=6.94e-18`; the SIMD row reported
+  `build_simd_enabled=1`, and the CUDA-enabled row reported
+  `build_cuda_enabled=1`. Focused
   SIMD-enabled and CUDA-enabled 48-box
   rows also reported `invariant_ok=1`: the SIMD row reported
   `build_simd_enabled=1`, `max_height_error=99.597u`, and
@@ -2590,6 +2610,6 @@ python scripts/run_benchmark_smoke.py build/cuda/cpp/Release/bin/BM_LCP_COMPARE 
 Then continue with harder generated-size coverage, broader DART 7 boxed-LCP
 contact coverage beyond the current 48-box dense box-face long-horizon step
 slice, 64-box one-step/75-step slices, 96-box one-step/75-step slices, and
-128-box one-step/75-step slices, and backend-specific SIMD/CUDA/solver-internal
-threaded benchmark evidence described in `README.md` and
-`01-implementation-audit.md`.
+128-box one-step/75-step slices, and 144-box one-step slice, and
+backend-specific SIMD/CUDA/solver-internal threaded benchmark evidence
+described in `README.md` and `01-implementation-audit.md`.
