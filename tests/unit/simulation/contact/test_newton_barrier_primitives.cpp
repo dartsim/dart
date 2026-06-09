@@ -33,6 +33,7 @@
 #include <dart/simulation/detail/deformable_contact/continuous_collision_step.hpp>
 #include <dart/simulation/detail/deformable_contact/primitive_distance.hpp>
 #include <dart/simulation/detail/deformable_contact/tangent_stencil.hpp>
+#include <dart/simulation/detail/newton_barrier/articulation_constraint.hpp>
 #include <dart/simulation/detail/newton_barrier/barrier_kernel.hpp>
 #include <dart/simulation/detail/newton_barrier/friction_kernel.hpp>
 #include <dart/simulation/detail/newton_barrier/line_search.hpp>
@@ -108,7 +109,56 @@ void expectScalarBarrierNear(
       1e-14);
 }
 
+//==============================================================================
+template <int Outputs, int Inputs, typename Function>
+Eigen::Matrix<double, Outputs, Inputs> finiteDifferenceJacobian(
+    const Eigen::Matrix<double, Inputs, 1>& x,
+    Function&& function,
+    const double epsilon = 1e-6)
+{
+  Eigen::Matrix<double, Outputs, Inputs> jacobian;
+  for (int col = 0; col < Inputs; ++col) {
+    Eigen::Matrix<double, Inputs, 1> xPlus = x;
+    Eigen::Matrix<double, Inputs, 1> xMinus = x;
+    xPlus[col] += epsilon;
+    xMinus[col] -= epsilon;
+    jacobian.col(col) = (function(xPlus) - function(xMinus)) / (2.0 * epsilon);
+  }
+  return jacobian;
+}
+
 } // namespace
+
+//==============================================================================
+TEST(NewtonBarrierPrimitives, ArticulationPointConnectionAndFixedPoint)
+{
+  Eigen::Vector3d pointA(0.25, -0.1, 0.4);
+  Eigen::Vector3d pointB(-0.2, 0.3, 0.1);
+  const auto connection = nb::pointConnectionConstraint(pointA, pointB);
+  EXPECT_TRUE(connection.residual.isApprox(pointA - pointB, 1e-14));
+  EXPECT_NEAR(connection.squaredNorm, (pointA - pointB).squaredNorm(), 1e-14);
+
+  Eigen::Matrix<double, 6, 1> pairState;
+  pairState << pointA, pointB;
+  const auto numericalConnectionJacobian
+      = finiteDifferenceJacobian<3, 6>(pairState, [](const auto& x) {
+          return nb::pointConnectionConstraint(
+                     x.template head<3>(), x.template tail<3>())
+              .residual;
+        });
+  expectMatrixNear(connection.jacobian, numericalConnectionJacobian, 1e-10);
+
+  const Eigen::Vector3d target(0.0, -0.2, 0.5);
+  const auto fixed = nb::fixedPointConstraint(pointA, target);
+  EXPECT_TRUE(fixed.residual.isApprox(pointA - target, 1e-14));
+  EXPECT_NEAR(fixed.squaredNorm, (pointA - target).squaredNorm(), 1e-14);
+
+  const auto numericalFixedJacobian
+      = finiteDifferenceJacobian<3, 3>(pointA, [&](const auto& point) {
+          return nb::fixedPointConstraint(point, target).residual;
+        });
+  expectMatrixNear(fixed.jacobian, numericalFixedJacobian, 1e-10);
+}
 
 //==============================================================================
 TEST(NewtonBarrierPrimitives, DeformableContactHeadersForwardSharedTypes)
