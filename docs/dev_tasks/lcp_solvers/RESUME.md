@@ -415,12 +415,12 @@ are CPU solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
 It now also extends active-set transition coverage to a production
 friction-index slice: stronger-coupled 24-contact, 72-row, 32-contact, 96-row,
 48-contact, 144-row, 64-contact, 192-row, 96-contact, 288-row, and
-128-contact, 384-row, and 192-contact, 576-row packets, plus 112 matching
-`BM_LcpProductionActiveSetTransition`
+128-contact, 384-row, 192-contact, 576-row, and 256-contact, 768-row packets,
+plus 128 matching `BM_LcpProductionActiveSetTransition`
 benchmark rows verified in the default, SIMD-enabled, and CUDA-enabled build
-trees. The generated coverage test now includes the same 192-contact, 576-row,
-`coupling_scale=32` production active-set packet and passes focused default,
-SIMD-enabled, and CUDA-enabled runs. It now also adds 518
+trees. The generated coverage and single-benchmark rows now include the same
+256-contact, 768-row, `coupling_scale=32` production active-set packet and pass
+focused default, SIMD-enabled, and CUDA-enabled runs. It now also adds 518
 `BM_LcpProductionActiveSetTransitionBatch(Serial|Parallel)` rows for
 batch-size-4 serial and DART 7 `ParallelExecutor` runs over standard
 32/64/128-row, boxed 32/64/128-row, and coupled friction-index
@@ -582,8 +582,8 @@ Push/PR work still requires explicit maintainer/user approval.
 Move from the now-verified direct 256-row/96-contact CUDA batch rows, grouped
 synthetic CPU/CUDA batch rows, 8192-row banded Jacobi solver-internal threading
 rows, extreme 128-row/256-contact exact rank-deficient,
-production active-set transition 256-contact correctness and 192-contact
-benchmark, coupled mildly ill-conditioned
+production active-set transition 256-contact correctness/single-benchmark and
+192-contact batch benchmark, coupled mildly ill-conditioned
 24-contact, near-singular 192-contact generated CPU solver coverage, near-singular
 serial/parallel batch rows, exact rank-deficient singular-degenerate
 friction-index and standard/boxed batch rows, and default/SIMD/CUDA Newton warm-start
@@ -700,20 +700,20 @@ contact scenes.
   `contact_count=16`/`coupled=1` for the coupled friction-index packet. The
   CUDA-enabled rows are CPU solver rows in a CUDA-enabled build, not CUDA LCP
   kernel execution.
-  `BM_LCP_COMPARE` also lists 112
+  `BM_LCP_COMPARE` also lists 128
   `BM_LcpProductionActiveSetTransition` rows for stronger-coupled 24-contact,
   72-row, 32-contact, 96-row, 48-contact, 144-row, 64-contact, 192-row,
   96-contact, 288-row, 128-contact, 384-row, 192-contact, 576-row, and
   256-contact, 768-row generated friction-index active-set packets; focused
-  256-contact generated-coverage runs in the default, SIMD-enabled, and
-  CUDA-enabled build trees pass. The benchmark rows still stop at the
-  192-contact packet; focused 192-contact follow-up runs in the default,
-  SIMD-enabled, and CUDA-enabled build trees report the 16 added rows with
-  `contract_ok=1` and report `active_set_transition=1`,
-  `production_active_set_transition=1`, `contact_count=192`,
-  `problem_size=576`, `coupling_scale=32`, and `coupled=1`. The CUDA-enabled
-  rows are CPU solver rows in a CUDA-enabled build, not CUDA LCP kernel
-  execution.
+  256-contact generated-coverage and single-benchmark runs in the default,
+  SIMD-enabled, and CUDA-enabled build trees pass. The focused 192-contact
+  follow-up runs in those build trees report 16 rows with `contract_ok=1`,
+  `contact_count=192`, `problem_size=576`, `coupling_scale=32`, and
+  `coupled=1`; the focused 256-contact benchmark follow-up reports another 16
+  rows with zero `failures` and `contract_failures`, `contract_ok=1`,
+  `contact_count=256`, `problem_size=768`, `coupling_scale=32`, and
+  `coupled=1`. The CUDA-enabled rows are CPU solver rows in a CUDA-enabled
+  build, not CUDA LCP kernel execution.
   `BM_LCP_COMPARE` also lists 518
   `BM_LcpProductionActiveSetTransitionBatch(Serial|Parallel)` rows for
   batch-size-4 serial and DART 7 `ParallelExecutor` runs over standard
@@ -928,7 +928,10 @@ contact scenes.
   `problem_size=72/96/144/192/288`, `coupling_scale=2/4/8/16/32`, and
   `contract_ok=1` on all 80 rows; the focused 128-contact and 192-contact
   production active-set follow-ups pass in default, SIMD-enabled, and
-  CUDA-enabled build trees with 16 single rows and 32 batch rows per tree. The
+  CUDA-enabled build trees with 16 single rows and 32 batch rows per tree, and
+  the focused 256-contact single follow-up passes in those build trees with 16
+  rows, zero `failures` and `contract_failures`, `contact_count=256`,
+  `problem_size=768`, and `coupling_scale=32`. The
   focused generated coverage test now also passes the
   24-/32-/48-/64-/96-/128-/192-/256-contact production
   active-set packet set in default, SIMD-enabled, and CUDA-enabled build trees,

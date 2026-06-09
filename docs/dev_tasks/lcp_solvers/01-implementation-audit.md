@@ -156,8 +156,9 @@ Support abbreviations:
   transition slice for stronger-coupled 24-contact, 72-row, 32-contact,
   96-row, 48-contact, 144-row, 64-contact, 192-row, 96-contact, 288-row, and
   128-contact, 384-row, 192-contact, 576-row, and 256-contact, 768-row
-  generated friction-index packets, plus 112 matching benchmark rows through
-  192 contacts verified in default, SIMD-enabled, and CUDA-enabled build trees.
+  generated friction-index packets, plus 128 matching single-problem benchmark
+  rows through 256 contacts verified in default, SIMD-enabled, and
+  CUDA-enabled build trees.
   It now also includes 518 serial and DART 7 `ParallelExecutor` batch
   rows over the standard 32/64/128-row, boxed 32/64/128-row, and coupled
   friction-index 8-/12-/16-/24-/32-/48-/64-/96-/128-/192-contact active-set
@@ -334,7 +335,7 @@ The current local evidence for this task is:
   coupled packet. The CUDA-enabled rows are CPU solver rows in a CUDA-enabled
   build, not CUDA LCP kernel execution.
 - `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpProductionActiveSetTransition/' | wc -l`
-  reports 112 rows. Previous full-slice runs through the 96-contact packet
+  reports 128 rows. Previous full-slice runs through the 96-contact packet
   passed in default, SIMD-enabled, and CUDA-enabled build trees; focused
   128-contact follow-up runs in those same build trees reported 16 rows with
   `contract_ok=1`, `active_set_transition=1`,
@@ -342,18 +343,24 @@ The current local evidence for this task is:
   `problem_size=384`, `coupling_scale=32`, and `coupled=1`. Focused
   192-contact follow-up runs in those same build trees reported the 16 added
   rows with `contract_ok=1`, `contact_count=192`, `problem_size=576`,
-  `coupling_scale=32`, and `coupled=1`. The previous full-slice
+  `coupling_scale=32`, and `coupled=1`. Focused 256-contact follow-up runs in
+  those same build trees report another 16 rows with `contract_ok=1`, zero
+  `failures` and `contract_failures`, `active_set_transition=1`,
+  `production_active_set_transition=1`, `contact_count=256`,
+  `problem_size=768`, `coupling_scale=32`, and `coupled=1`; the SIMD-enabled
+  rows report `build_simd_enabled=1`, and the CUDA-enabled rows report
+  `build_cuda_enabled=1`. The previous full-slice
   `BM_LCP_COMPARE --benchmark_filter='^BM_LcpProductionActiveSetTransition(BatchSerial|BatchParallel)?/' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   ran 534 production active-set single and batch rows with `contract_ok=1` in the default,
   SIMD-enabled, and CUDA-enabled build trees. These rows compare all 16
   friction-index-capable manifest solvers on stronger-coupled 24-contact,
   72-row, 32-contact, 96-row, 48-contact, 144-row, 64-contact, 192-row,
-  96-contact, 288-row, 128-contact, 384-row, and 192-contact, 576-row friction-index
-  active-set transition packets.
+  96-contact, 288-row, 128-contact, 384-row, 192-contact, 576-row, and
+  256-contact, 768-row friction-index active-set transition packets.
   The rows report
   `active_set_transition=1`, `production_active_set_transition=1`,
-  `contact_count=24/32/48/64/96/128/192`,
-  `problem_size=72/96/144/192/288/384/576`,
+  `contact_count=24/32/48/64/96/128/192/256`,
+  `problem_size=72/96/144/192/288/384/576/768`,
   `coupling_scale=2/4/8/16/32`, backend
   build-state counters, and `coupled=1`. The CUDA-enabled rows are CPU solver
   rows in a CUDA-enabled build, not CUDA LCP kernel execution.
@@ -1564,7 +1571,8 @@ The current local evidence for this task is:
   standard 32-row, 64-row, and 128-row, boxed 32-row, 64-row, and 128-row, and
   coupled friction-index 8-contact, 12-contact, and 16-contact cases near
   lower, upper, and friction-cone boundaries, plus stronger-coupled production
-  coupled friction-index 24-, 32-, 48-, 64-, 96-, 128-, and 192-contact active-set packets, plus
+  coupled friction-index 24-, 32-, 48-, 64-, 96-, 128-, 192-, and 256-contact
+  active-set packets, plus
   1x-/4x-/8x-coupled mildly ill-conditioned
   6-/8-/12-/16-/24-/32-/48-/64-/96-contact and 16x-coupled
   6-/8-/12-/16-/24-/32-/48-/64-/96-/128-contact

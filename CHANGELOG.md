@@ -980,8 +980,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     active-set transition correctness grid now reaches standard 128-row, boxed
     128-row, and coupled friction-index 16-contact packets over scoped
     scalable solvers, plus production coupled friction-index 24-, 32-, 48-,
-    and 64-contact active-set transition packets with stronger cross-contact
-    coupling. Added a scoped larger mildly ill-conditioned known-solution slice
+    64-, 96-, 128-, 192-, and 256-contact active-set transition packets with
+    stronger cross-contact coupling. Added a scoped larger mildly
+    ill-conditioned known-solution slice
     for standard
     32/64-row, boxed 16/32-row, friction-index 8-contact, and
     1x-/4x-/8x-coupled friction-index
@@ -1099,12 +1100,13 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     active-set transition rows for standard 128-row, boxed 128-row, and coupled
     friction-index 16-contact packets verified across default, SIMD-enabled,
     and CUDA-enabled build trees, plus generated production active-set
-    correctness coverage through a 256-contact/768-row packet and 112
+    correctness coverage through a 256-contact/768-row packet and 128
     production active-set transition benchmark rows for
     24-contact/72-row, 32-contact/96-row, 48-contact/144-row, and
     64-contact/192-row, 96-contact/288-row, 128-contact/384-row, and
-    192-contact/576-row coupled friction-index packets verified across default,
-    SIMD-enabled, and CUDA-enabled build trees, plus 518 production active-set transition batch
+    192-contact/576-row and 256-contact/768-row coupled friction-index packets
+    verified across default, SIMD-enabled, and CUDA-enabled build trees, plus
+    518 production active-set transition batch
     rows for batch-size-4 serial and DART 7 `ParallelExecutor` runs over the
     standard 32/64/128-row, boxed 32/64/128-row, and coupled friction-index
     8-/12-/16-/24-/32-/48-/64-/96-/128-/192-contact active-set packets verified across default,
