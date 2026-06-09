@@ -116,7 +116,7 @@ Support abbreviations:
   packets, grouped variable-size 1-/4-/8-/16-/24-/32-contact articulated unified-contact
   packets with two- and three-variant grouped benchmark rows including
   cross-multibody link-vs-link cases, Jacobi homogeneous dense box-face
-  packets through the 192-box batch-size-4 row, and PGS homogeneous plus
+  packets through the 256-box batch-size-4 row, and PGS homogeneous plus
   grouped variable-size dense box-face contact packets, plus
   mixed grouped batches that combine separated, stack, and
   1-/4-/8-/16-/24-/32-contact articulated fixture families including cross-multibody link-vs-link packets,
@@ -1830,7 +1830,7 @@ The current local evidence for this task is:
   `total_problem_size=1602/2403`, and
   `max_residual=2.2204460492503131e-16`. The dense box CUDA rows include homogeneous
   4-problem Jacobi batches for
-  1-/4-/8-/16-/24-/32-/48-/64-/96-/128-/192-box dense face-contact
+  1-/4-/8-/16-/24-/32-/48-/64-/96-/128-/192-/256-box dense face-contact
   `World::collide()` snapshots, homogeneous 4-problem PGS batches for
   1-/4-/8-/16-/24-/32-/48-/64-/96-box snapshots, and grouped variable-size
   1/2/4/8/16/24/32/48/64/96-box Jacobi and PGS packets. The focused
@@ -1850,7 +1850,15 @@ The current local evidence for this task is:
   `contact_count=768`, `problem_size=2304`, `batch_size=4`,
   `total_problem_size=9216`, `max_bound_violation=4.3368086899420177e-19`,
   `max_residual=max_complementarity=6.9388939039072284e-18`, and about
-  13.2s real time / 13.2s CPU time. The old fixed-ground homogeneous 128-box
+  13.2s real time / 13.2s CPU time. The focused
+  `BM_LcpCudaJacobiWorldBoxContactBatch_FrictionIndex/256/4` CUDA row reports
+  `contract_ok=1`, `cuda_lcp_execution=1`, `cuda_batch_execution=1`,
+  `cuda_dense_box_contact_batch=1`, `dense_box_contact=1`,
+  `cuda_fixed_iterations=8192`, `cuda_relaxation=0.25`, `box_count=256`,
+  `contact_count=1024`, `problem_size=3072`, `batch_size=4`,
+  `total_problem_size=12288`, `max_bound_violation=4.3368086899420177e-19`,
+  `max_residual=max_complementarity=6.9388939039072284e-18`, and about
+  24.7s real time / 24.6s CPU time. The old fixed-ground homogeneous 128-box
   fixture loss is now separated from CUDA execution:
   `CudaLcpDenseBoxFixture.LargerGridKeepsFaceContactShape` verifies that dynamic
   dense-ground sizing preserves 512 box-face contacts and a 1536-row LCP, and
@@ -1871,14 +1879,14 @@ The current local evidence for this task is:
   `max_residual=max_complementarity=3.4694469519536142e-18`, with about
   232.9s real time / 231.9s CPU time. An earlier fixed-iteration CUDA Jacobi
   dense-box trial failed before the fixed-bound validation correction; after
-  that correction, the bounded homogeneous CUDA Jacobi rows through 128-box
+  that correction, the bounded homogeneous CUDA Jacobi rows through 256-box
   batch-size-4 and grouped CUDA Jacobi rows through 96-box shapes pass. This is
   real CUDA LCP batch execution evidence for fixed-iteration projected Jacobi
   and PGS on homogeneous dense standard/boxed/friction-index packets plus
   separated sphere-ground and small coupled stack world-contact packets plus
   manually assembled articulated unified-contact packets and mixed grouped
   contact packets, plus dense box-face CUDA contact packets: Jacobi through the
-  homogeneous 192-box batch-size-4 row and grouped 96-box shapes, and PGS
+  homogeneous 256-box batch-size-4 row and grouped 96-box shapes, and PGS
   through homogeneous 128-box batch-size-4 and grouped 96-box shapes. This is
   not evidence for CUDA execution across the full solver manifest or end-to-end
   articulated world-step CUDA execution.
@@ -1994,7 +2002,7 @@ The current local evidence for this task is:
   link-vs-link packets, and mixed
   separated/stack/articulated grouped contact batch paths, scoped dense
   box-face serial/parallel batch rows, dense box-face CUDA Jacobi batch paths
-  through homogeneous 128-box batch-size-4 and grouped 1/2/4/8/16/24/32/48/64/96-box
+  through homogeneous 256-box batch-size-4 and grouped 1/2/4/8/16/24/32/48/64/96-box
   packets, and dense box-face CUDA PGS batch paths through homogeneous
   1/4/8/16/24/32/48/64/96/128-box and grouped
   1/2/4/8/16/24/32/48/64/96-box packets.

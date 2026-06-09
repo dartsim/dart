@@ -492,7 +492,7 @@
       cases in one size-grouped batch, covering fixed-iteration CUDA Jacobi and PGS unit
       tests and benchmark rows on the visible GPU.
 - [x] Added dense box-face CUDA contact-batch evidence for DART 7:
-      homogeneous 4-problem 1-/4-/8-/16-/24-/32-/48-/64-/96-/128-/192-box CUDA
+      homogeneous 4-problem 1-/4-/8-/16-/24-/32-/48-/64-/96-/128-/192-/256-box CUDA
       Jacobi rows, homogeneous 4-problem 1-/4-/8-/16-/24-/32-/48-/64-/96-/128-box CUDA PGS rows,
       and grouped
       variable-size 1/2/4/8/16/24/32/48/64/96-box CUDA Jacobi and PGS batches with two and three
@@ -505,8 +505,8 @@
       homogeneous 128-box single-problem CUDA Jacobi and PGS packets.
       A focused fixture boundary test now verifies that the same dense box-face
       construction keeps the 128-box grid at 512 contacts and 1536 LCP rows.
-      The focused 192-box batch-size-4 CUDA Jacobi benchmark row reports
-      `contract_ok=1` with 768 contacts, 2304 LCP rows per problem, and 9216
+      The focused 256-box batch-size-4 CUDA Jacobi benchmark row reports
+      `contract_ok=1` with 1024 contacts, 3072 LCP rows per problem, and 12288
       total rows.
       The focused 128-box batch-size-4 CUDA PGS benchmark row now reports
       `contract_ok=1` with 512 contacts, 1536 LCP rows per problem, and 6144
@@ -2185,7 +2185,16 @@ tradeoffs evidence based.
   `problem_size=2304`, `batch_size=4`, `total_problem_size=9216`,
   `max_bound_violation=4.3368086899420177e-19`,
   `max_residual=max_complementarity=6.9388939039072284e-18`, and about
-  13.2s real time / 13.2s CPU time. The focused grouped
+  13.2s real time / 13.2s CPU time. The focused 256-box follow-up
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpCudaJacobiWorldBoxContactBatch_FrictionIndex/256/4$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_format=json`
+  CUDA row reported `contract_ok=1`, `cuda_lcp_execution=1`,
+  `cuda_batch_execution=1`, `cuda_dense_box_contact_batch=1`,
+  `dense_box_contact=1`, `cuda_fixed_iterations=8192`,
+  `cuda_relaxation=0.25`, `box_count=256`, `contact_count=1024`,
+  `problem_size=3072`, `batch_size=4`, `total_problem_size=12288`,
+  `max_bound_violation=4.3368086899420177e-19`,
+  `max_residual=max_complementarity=6.9388939039072284e-18`, and about
+  24.7s real time / 24.6s CPU time. The focused grouped
   Jacobi
   `BM_LCP_COMPARE --benchmark_filter='^BM_LcpCudaJacobiWorldBoxContactGroupedBatch_FrictionIndex/(2|3)$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_format=json`
   CUDA run reported 2 rows with `contract_ok=1`, `cuda_lcp_execution=1`,
