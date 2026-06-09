@@ -83,16 +83,18 @@
 - [x] Added experimental CUDA LCP execution paths: fixed-iteration projected
       Jacobi and PGS batch solves for homogeneous dense standard, boxed, and
       friction-index LCP packets, grouped variable-size synthetic standard,
-      boxed, and friction-index packets, homogeneous 4-, 8-, and 16-contact DART 7
-      world-contact packets, homogeneous 5-/6-/7-/8-sphere coupled stack-contact
-      packets, grouped variable-size 1/2/4/8/16-contact sphere-ground packets,
-      grouped variable-size 2/3/4/5/6/7/8-sphere coupled stack-contact packets
-      with two- and three-variant stack grouped benchmark rows, and
+      boxed, and friction-index packets, homogeneous 4-, 8-, and 16-contact
+      DART 7 world-contact packets, homogeneous 5-/6-/7-/8-/9-sphere coupled
+      stack-contact packets, grouped variable-size 1/2/4/8/16-contact
+      sphere-ground packets, grouped variable-size 2/3/4/5/6/7/8/9-sphere
+      coupled stack-contact packets with two- and three-variant stack grouped
+      benchmark rows, and
       grouped variable-size manually assembled 1-/4-/8-/16-contact articulated
       unified-contact packets with two- and three-variant grouped benchmark
       rows including cross-multibody link-vs-link cases,
       plus mixed grouped contact packets combining those separated, stack, and
-      1-/4-/8-/16-contact articulated fixture families, with CUDA unit coverage and benchmark rows.
+      1-/4-/8-/16-contact articulated fixture families, with CUDA unit
+      coverage and benchmark rows.
       This does not yet cover a general CUDA backend for every solver.
 - [x] Completed a solver-by-solver implementation audit against
       `docs/background/lcp/`.
@@ -326,6 +328,11 @@
       `RedBlackGaussSeidel`, `Pgs`, `Jacobi`, `BlockedJacobi`, and
       `ShockPropagation` at 8 spheres because focused probes did not satisfy the
       LCP contract for those rows; no 8-sphere public-step invariant is claimed.
+- [x] Extended DART 7 boxed-LCP coupled stack snapshot evidence to a 9-sphere,
+      9-contact, 27-row vertical stack, with a matching assembly benchmark row
+      and the same 10 friction-index solver benchmark rows. Focused default,
+      SIMD-enabled, and CUDA-enabled runs satisfy the LCP contract; no 9-sphere
+      public-step invariant is claimed.
 - [x] Added DART 7 world-contact `BM_LCP_COMPARE` rows that run every
       friction-index-capable solver on the same boxed-LCP snapshots assembled
       from 1, 2, and 4 separated sphere-ground contacts, plus a
@@ -334,9 +341,9 @@
       3-sphere vertical stacks across every friction-index-capable solver, plus
       4-, 5-, and 6-sphere vertical-stack rows for the same solver set except
       `NNCG`, plus 7-sphere rows for that set except `NNCG` and
-      `RedBlackGaussSeidel`, plus 8-sphere rows for the narrower 10-solver
-      passing subset, so the comparison now includes larger boxed/findex
-      snapshots where contacts share dynamic bodies.
+      `RedBlackGaussSeidel`, plus 8- and 9-sphere rows for the narrower
+      10-solver passing subset, so the comparison now includes larger
+      boxed/findex snapshots where contacts share dynamic bodies.
 - [x] Added mixed DART 7 world-contact batch benchmark rows that compare every
       friction-index-capable solver over the same 5-problem batch of separated
       sphere-ground and coupled stack snapshots, both serially and through the
@@ -361,11 +368,12 @@
 - [x] Added contact-derived CUDA batch evidence for homogeneous 4-, 8-, and
       16-contact DART 7 world-contact packets, covering fixed-iteration CUDA
       Jacobi and PGS unit tests and benchmark rows on the visible GPU.
-- [x] Added contact-derived CUDA batch evidence for homogeneous 5-/6-/7-/8-sphere
-      DART 7 coupled stack-contact packets, covering fixed-iteration CUDA
-      Jacobi and PGS unit tests and benchmark rows on the visible GPU.
+- [x] Added contact-derived CUDA batch evidence for homogeneous
+      5-/6-/7-/8-/9-sphere DART 7 coupled stack-contact packets, covering
+      fixed-iteration CUDA Jacobi and PGS unit tests and benchmark rows on the
+      visible GPU.
 - [x] Extended contact-derived CUDA batch evidence to homogeneous and grouped
-      variable-size 8-sphere DART 7 coupled stack-contact packets. Focused
+      variable-size 9-sphere DART 7 coupled stack-contact packets. Focused
       CUDA benchmark rows report `contract_ok=1`, `cuda_lcp_execution=1`, and
       `cuda_world_stack_contact_batch=1` for both fixed-iteration Jacobi and
       PGS.
@@ -392,7 +400,7 @@
       The separated grouped tests now run two and three velocity variants per
       contact count, matching the `/2` and `/3` benchmark rows.
 - [x] Added grouped variable-size CUDA contact-batch evidence for DART 7
-      2/3/4/5/6/7/8-sphere coupled stack-contact packets, covering fixed-iteration
+      2/3/4/5/6/7/8/9-sphere coupled stack-contact packets, covering fixed-iteration
       CUDA Jacobi and PGS unit tests and benchmark rows on the visible GPU.
       The stack grouped tests now run two and three velocity variants per sphere
       count, matching the `/2` and `/3` benchmark rows.
@@ -613,14 +621,19 @@ tradeoffs evidence based.
   passed. `build/cuda/cpp/Release/bin/test_lcp_jacobi_batch_cuda --gtest_brief=1`
   passed 33 tests, including standard, boxed, friction-index, grouped
   variable-size synthetic standard/boxed/friction-index CUDA batches,
-  homogeneous contact-derived world-contact CUDA batches, homogeneous 5-/6-/7-/8-sphere
-  coupled stack-contact CUDA batches, and grouped variable-size 1/2/4/8/16-contact
-  separated world-contact and 2/3/4/5/6/7/8-sphere coupled stack world-contact
+  homogeneous contact-derived world-contact CUDA batches, homogeneous
+  5-/6-/7-/8-sphere coupled stack-contact CUDA batches, and grouped
+  variable-size 1/2/4/8/16-contact separated world-contact and
+  2/3/4/5/6/7/8-sphere coupled stack world-contact
   packets with two and three variants per contact or sphere count, and manually assembled
   1-/4-/8-/16-contact articulated unified-contact CUDA batches covering link-ground,
   link-vs-dynamic-rigid, and cross-multibody link-vs-link packets, plus mixed
   grouped contact batches combining the separated, stack, and articulated
   fixture families for Jacobi and PGS on the visible GPU.
+  A focused current follow-up
+  `test_lcp_jacobi_batch_cuda --gtest_filter='CudaLcpJacobiBatch.HomogeneousStackedWorldContactBatchSatisfiesLcpContract:CudaLcpJacobiBatch.StackedWorldContactGroupedBatchSatisfiesLcpContract:CudaLcpPgsBatch.HomogeneousStackedWorldContactBatchSatisfiesLcpContract:CudaLcpPgsBatch.StackedWorldContactGroupedBatchSatisfiesLcpContract' --gtest_brief=1`
+  passed the four stack CUDA tests after adding the 9-sphere homogeneous and
+  grouped coupled-stack packets.
   `build/cuda/cpp/Release/bin/BM_LCP_COMPARE --benchmark_filter='BM_LcpBatchSerial/(Standard|Boxed|FrictionIndex)/(Jacobi|Pgs)|BM_LcpBatchParallel/(Standard|Boxed|FrictionIndex)/(Jacobi|Pgs)|BM_LcpCuda(Jacobi|Pgs)Batch|BM_LcpCuda(Jacobi|Pgs)GroupedBatch|BM_LcpCuda(Jacobi|Pgs)WorldContactBatch|BM_LcpCuda(Jacobi|Pgs)WorldContactGroupedBatch' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   ran successfully. The CUDA rows reported `build_cuda_enabled=1`,
   `cuda_lcp_execution=1`, `cuda_batch_execution=1`, fixed iteration counters,
@@ -704,6 +717,13 @@ tradeoffs evidence based.
   reported four stack CUDA rows with `contract_ok=1`; the homogeneous 8-sphere
   rows reported `sphere_count=8`, `contact_count=8`, `problem_size=24`,
   `batch_size=4`, `total_contact_count=32`, and `total_problem_size=96`.
+  The focused current 9-sphere follow-up
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpCuda(Jacobi|Pgs)WorldStackContactBatch_FrictionIndex/9/4$|^BM_LcpCuda(Jacobi|Pgs)WorldStackContactGroupedBatch_FrictionIndex/[23]$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_format=json`
+  reported six CUDA execution rows with `contract_ok=1` and
+  `cuda_lcp_execution=1`; the homogeneous 9-sphere rows reported
+  `problem_size=27`, `batch_size=4`, and `total_problem_size=108`, while the
+  grouped `/2` and `/3` rows reported `max_problem_size=27`, `batch_size=16/24`,
+  and `total_problem_size=264/396`.
   A focused
   separated-contact follow-up
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpCuda(Jacobi|Pgs)WorldContactGroupedBatch_FrictionIndex' --benchmark_min_time=0.001s --benchmark_repetitions=1`
@@ -1488,12 +1508,16 @@ tradeoffs evidence based.
   extends the direct boxed/findex snapshot path to an 8-sphere stack with
   8 contacts and 24 LCP rows. This is snapshot evidence only; no 8-sphere
   public-step invariant is claimed.
+  `BoxedLcpContact.NineSphereStackWorldContactSnapshotSatisfiesLcpContract`
+  extends the same direct snapshot path to a 9-sphere stack with 9 contacts and
+  27 LCP rows. This is snapshot evidence only; no 9-sphere public-step
+  invariant is claimed.
   The focused
   `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.*WorldContactSnapshot*'`
   run passed the single-contact and two-contact sphere-ground snapshot tests,
   the focused
   `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.*SphereStack*'`
-  run passed 11 stack tests, including the 3-/4-/5-/6-/7-/8-sphere snapshots
+  run passed 12 stack tests, including the 3-/4-/5-/6-/7-/8-/9-sphere snapshots
   and the 3-sphere 200-/500-step, 4-sphere 200-step, 5-sphere 500-step, and
   6-sphere 1000-step public-step invariants,
   the focused
@@ -1738,15 +1762,15 @@ tradeoffs evidence based.
   `NNCG` and `RedBlackGaussSeidel`; focused 7-sphere probes reported
   `contract_ok=0` for `RedBlackGaussSeidel`, so that row is not claimed.
   It also registers 10
-  `BM_LcpWorldStackContact/FrictionIndex/<solver>/8` rows for `Dantzig`,
+  `BM_LcpWorldStackContact/FrictionIndex/<solver>/{8,9}` rows for `Dantzig`,
   `SymmetricPsor`, `BGS`, `SubspaceMinimization`, `Apgd`, `Tgs`,
   `Staggering`, `Admm`, `Sap`, and `BoxedSemiSmoothNewton`; focused 8-sphere
   probes reported `contract_ok=0` for `Pgs`, `Jacobi`, `BlockedJacobi`, and
-  `ShockPropagation`, so those rows are not claimed.
+  `ShockPropagation`, so those rows remain unclaimed at 8 and 9 spheres.
   These snapshots include a ground contact and sphere-sphere contacts,
   so the Delassus system couples multiple contacts through shared dynamic
   bodies. The target also registers
-  `BM_LcpWorldStackContactAssembly_BoxedLcp/{2,3,4,5,6,7,8}`, which
+  `BM_LcpWorldStackContactAssembly_BoxedLcp/{2,3,4,5,6,7,8,9}`, which
   rebuilds the stack world, calls `World::collide()`, assembles/solves through
   `detail::solveBoxedLcpContacts`, and validates the solved snapshot. The
   focused 4-sphere run
@@ -1774,6 +1798,10 @@ tradeoffs evidence based.
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldStackContact/FrictionIndex/.*/8$|BM_LcpWorldStackContactAssembly_BoxedLcp/8$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   runs reported `contract_ok=1` for all 10 registered 8-sphere solver rows and
   the 8-sphere assembly row.
+  Focused default, SIMD-enabled, and CUDA-enabled
+  `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldStackContact/FrictionIndex/.*/9$|BM_LcpWorldStackContactAssembly_BoxedLcp/9$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  runs reported `contract_ok=1` for all 10 registered 9-sphere solver rows and
+  the 9-sphere assembly row.
   The
   CUDA-enabled rows are CPU solver benchmark rows in that build tree, not CUDA
   LCP kernel execution.
@@ -2268,9 +2296,9 @@ tradeoffs evidence based.
   friction-index-capable solvers on 2- and 3-sphere vertical stacks with shared
   dynamic bodies, plus 4-, 5-, and 6-sphere rows for all of those solvers except
   `NNCG`, plus 7-sphere rows for all of those solvers except `NNCG` and
-  `RedBlackGaussSeidel`, plus 8-sphere rows for the narrower passing solver
+  `RedBlackGaussSeidel`, plus 8-/9-sphere rows for the narrower passing solver
   subset. Stack assembly/solve benchmark rows cover 2-, 3-, 4-, 5-, 6-, 7-,
-  and 8-sphere scenes.
+  8-, and 9-sphere scenes.
 - Added mixed DART 7 world-contact batch benchmark rows that compare all
   friction-index-capable solvers over the same 5-problem separated-contact and
   stacked-contact snapshot batch, both serially and through the experimental
@@ -2290,14 +2318,14 @@ tradeoffs evidence based.
   4/8/16/32/48/64-contact friction-index packets, with two- and three-variant
   grouped synthetic rows. Added homogeneous 4-/8-/16-contact
   and grouped variable-size 1/2/4/8/16-contact DART 7 separated world-contact
-  CUDA unit and benchmark evidence, plus homogeneous 5-/6-/7-/8-sphere and grouped
-  variable-size 2/3/4/5/6/7/8-sphere coupled stack-contact CUDA unit and benchmark
-  evidence and manually assembled 1-/4-/8-/16-contact articulated unified-contact CUDA
-  unit and benchmark evidence for link-ground, link-vs-dynamic-rigid, and
-  cross-multibody link-vs-link packets for the same kernels. Added mixed grouped CUDA
-  unit and benchmark evidence that combines those separated, stack, and
-  1-/4-/8-/16-contact articulated fixture families, including cross-multibody link-vs-link packets,
-  in one size-grouped batch.
+  CUDA unit and benchmark evidence, plus homogeneous 5-/6-/7-/8-/9-sphere and
+  grouped variable-size 2/3/4/5/6/7/8/9-sphere coupled stack-contact CUDA unit and
+  benchmark evidence and manually assembled 1-/4-/8-/16-contact articulated
+  unified-contact CUDA unit and benchmark evidence for link-ground,
+  link-vs-dynamic-rigid, and cross-multibody link-vs-link packets for the same
+  kernels. Added mixed grouped CUDA unit and benchmark evidence that combines
+  those separated, stack, and 1-/4-/8-/16-contact articulated fixture families,
+  including cross-multibody link-vs-link packets, in one size-grouped batch.
   The current CUDA path intentionally excludes other solvers, CUDA Jacobi
   dense-contact batches, broader dense-contact CUDA execution, and end-to-end
   articulated world-step CUDA execution.
@@ -2357,8 +2385,8 @@ tradeoffs evidence based.
   coupled benchmark rows for 2- and 3-sphere vertical stacks across all
   friction-index-capable solvers, 4-/5-/6-sphere stack snapshot and benchmark rows
   for all of those solvers except `NNCG`, 7-sphere stack rows for all of those
-  solvers except `NNCG` and `RedBlackGaussSeidel`, 8-sphere stack rows for a
-  narrower 10-solver subset, mixed serial and `ParallelExecutor` batch rows
+  solvers except `NNCG` and `RedBlackGaussSeidel`, 8-/9-sphere stack rows for
+  a narrower 10-solver subset, mixed serial and `ParallelExecutor` batch rows
   over the 1/2/4 separated-contact and 2/3 stack snapshots, stress
   mixed serial and `ParallelExecutor` batch rows over the same separated
   snapshots plus 2/3/4/5 stack snapshots for all of those solvers except
@@ -2366,7 +2394,7 @@ tradeoffs evidence based.
   contacts beyond fixed-base prismatic link-ground, connected Cartesian-chain
   ground contact, link-vs-rigid impact, and cross-multibody link-vs-link impact,
   longer denser coupled scenes, larger
-  coupled multi-contact systems beyond the current 8-sphere snapshot, and
+  coupled multi-contact systems beyond the current 9-sphere snapshot, and
   robot-like contact systems still need LCP-contract, invariant, and benchmark
   evidence.
 - Multi-contact boxed-LCP snapshots: a resting box multi-contact friction
@@ -2406,9 +2434,10 @@ tradeoffs evidence based.
   three-variant grouped synthetic
   benchmark rows,
   homogeneous 4-/8-/16-contact, homogeneous
-  5-/6-/7-/8-sphere coupled stack, grouped variable-size 1/2/4/8/16-contact separated
-  sphere-ground and 2/3/4/5/6/7/8-sphere coupled stack world-contact batch
-  paths with two- and three-variant grouped benchmark rows, plus manually
+  5-/6-/7-/8-/9-sphere coupled stack, grouped variable-size
+  1/2/4/8/16-contact separated sphere-ground and
+  2/3/4/5/6/7/8/9-sphere coupled stack world-contact batch paths with two- and
+  three-variant grouped benchmark rows, plus manually
   assembled 1-/4-/8-/16-contact articulated unified-contact batch paths with
   two- and three-variant grouped benchmark rows including cross-multibody
   link-vs-link packets, mixed
@@ -2436,7 +2465,7 @@ tradeoffs evidence based.
    current connected Cartesian-chain articulated end-to-end coverage,
    current cross-multibody articulated link-vs-link impact coverage,
    current manually assembled three-axis articulated LCP snapshots, and
-   current 8-sphere vertical-stack snapshots and dense box face-contact
+   current 9-sphere vertical-stack snapshots and dense box face-contact
    evidence to broader articulated, longer-running, and denser coupled contact
    scenes.
 3. Add broader benchmark gates for SIMD-enabled CPU, intra-solver

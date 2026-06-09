@@ -5835,7 +5835,7 @@ MakeGroupedWorldStackContactCudaBatch(
     return std::nullopt;
   }
 
-  constexpr std::array<int, 7> kSphereCounts{2, 3, 4, 5, 6, 7, 8};
+  constexpr std::array<int, 8> kSphereCounts{2, 3, 4, 5, 6, 7, 8, 9};
 
   CudaGroupedWorldContactBenchmarkBatch grouped;
   std::vector<std::size_t> groupSizes;
@@ -11873,7 +11873,7 @@ void RegisterWorldStackContactBenchmarks()
         if (solver.name != "Pgs" && solver.name != "Jacobi"
             && solver.name != "BlockedJacobi"
             && solver.name != "ShockPropagation") {
-          registeredBenchmark->Arg(8);
+          registeredBenchmark->Arg(8)->Arg(9);
         }
       }
     }
@@ -12425,12 +12425,14 @@ BENCHMARK(BM_LcpCudaJacobiWorldStackContactBatch_FrictionIndex)
     ->Args({5, 4})
     ->Args({6, 4})
     ->Args({7, 4})
-    ->Args({8, 4});
+    ->Args({8, 4})
+    ->Args({9, 4});
 BENCHMARK(BM_LcpCudaPgsWorldStackContactBatch_FrictionIndex)
     ->Args({5, 4})
     ->Args({6, 4})
     ->Args({7, 4})
-    ->Args({8, 4});
+    ->Args({8, 4})
+    ->Args({9, 4});
 BENCHMARK(BM_LcpCudaJacobiWorldContactGroupedBatch_FrictionIndex)
     ->Arg(2)
     ->Arg(3);
@@ -12462,7 +12464,8 @@ BENCHMARK(BM_LcpWorldStackContactAssembly_BoxedLcp)
     ->Arg(5)
     ->Arg(6)
     ->Arg(7)
-    ->Arg(8);
+    ->Arg(8)
+    ->Arg(9);
 BENCHMARK(BM_LcpWorldStackStep_BoxedLcp)->Args({3, 200})->Args({3, 500});
 BENCHMARK(BM_LcpWorldStackStep_BoxedLcp)->Args({4, 200});
 BENCHMARK(BM_LcpWorldStackStep_BoxedLcp)->Args({5, 500});
