@@ -1294,15 +1294,23 @@ contact scenes.
   report `contract_ok=1`; the 8-sphere row reports
   `red_black_gauss_seidel_max_iterations=256`,
   `residual=1.3859891024932125e-03`,
-  `complementarity=1.3859891024931292e-03`, and 135 solver iterations. The
-  matching 12 `BM_LcpWorldStackContact/FrictionIndex/<solver>/8` rows cover
-  `Dantzig`, `SymmetricPsor`, `BGS`, `RedBlackGaussSeidel`, `NNCG`,
+  `complementarity=1.3859891024931292e-03`, and 135 solver iterations. A
+  focused default 100-iteration `Pgs` 8-sphere probe reported
+  `contract_ok=0`, residual `2.7059852530237904e-03`, complementarity
+  `2.7059852530237349e-03`, and 100 solver iterations. With the stack-contact
+  cap raised to 512 iterations, focused `Pgs` 8-/9-/10-sphere rows report
+  `contract_ok=1`; the rows report residuals `3.0803965763981367e-04`,
+  `3.9036340220555132e-04`, and `4.7141997313282502e-04`, matching
+  complementarity residuals, and 156, 189, and 225 solver iterations. The
+  matching 13 `BM_LcpWorldStackContact/FrictionIndex/<solver>/8` rows cover
+  `Pgs`, `Dantzig`, `SymmetricPsor`, `BGS`, `RedBlackGaussSeidel`, `NNCG`,
   `SubspaceMinimization`, `Apgd`, `Tgs`, `Staggering`, `Admm`, `Sap`, and
-  `BoxedSemiSmoothNewton`; the matching 11
+  `BoxedSemiSmoothNewton`; the matching 12
   `BM_LcpWorldStackContact/FrictionIndex/<solver>/{9,10}` rows cover the same
   set excluding `RedBlackGaussSeidel`. Focused 8-sphere probes reported
-  `contract_ok=0` for `Pgs`, `Jacobi`, `BlockedJacobi`, and
-  `ShockPropagation`, so those rows remain unclaimed at 8, 9, and 10 spheres.
+  `contract_ok=0` for `Jacobi`, `BlockedJacobi`, and `ShockPropagation`, so
+  those rows remain unclaimed at 8, 9, and 10 spheres, and
+  `RedBlackGaussSeidel` remains unclaimed at 9 and 10 spheres.
   The matching
   `BM_LcpWorldStackContactAssembly_BoxedLcp/{2,3,4,5,6,7,8,9,10,11,12,13,14,15,16}` rows rebuild the
   world, collide, assemble through `detail::solveBoxedLcpContacts`, solve, and
@@ -1335,11 +1343,15 @@ contact scenes.
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldStackContact/FrictionIndex/.*/8$|BM_LcpWorldStackContactAssembly_BoxedLcp/8$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   runs report `contract_ok=1` for the original 10 non-NNCG registered
   8-sphere solver rows and the 8-sphere assembly row. A current focused default
-  run of that same filter reports `contract_ok=1` for all 12 registered
-  8-sphere solver rows plus the assembly row; the NNCG 8-sphere row reports
-  `nncg_pgs_iterations=20`, `residual=1.1967153422114407e-03`,
-  `complementarity=1.1967153422113852e-03`, and 27 solver iterations, while
-  the `RedBlackGaussSeidel` 8-sphere row reports
+  run of that same filter reports `contract_ok=1` for all 13 registered
+  8-sphere solver rows plus the assembly row; the PGS 8-sphere row reports
+  `pgs_max_iterations=512`, `pgs_relaxation=1`,
+  `residual=3.0803965763981367e-04`,
+  `complementarity=3.0803965763975816e-04`, and 156 solver iterations, the
+  NNCG 8-sphere row reports `nncg_pgs_iterations=20`,
+  `residual=1.1967153422114407e-03`,
+  `complementarity=1.1967153422113852e-03`, and 27 solver iterations, and the
+  `RedBlackGaussSeidel` 8-sphere row reports
   `red_black_gauss_seidel_max_iterations=256`,
   `residual=1.3859891024932125e-03`,
   `complementarity=1.3859891024931292e-03`, and 135 solver iterations. Earlier
@@ -1347,15 +1359,22 @@ contact scenes.
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpWorldStackContact/FrictionIndex/.*/9$|BM_LcpWorldStackContactAssembly_BoxedLcp/9$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   runs report `contract_ok=1` for the original 10 non-NNCG registered
   9-sphere solver rows and the 9-sphere assembly row. A current focused default
-  run of that same filter reports `contract_ok=1` for all 11 registered
-  9-sphere solver rows plus the assembly row; the NNCG 9-sphere row reports
-  `nncg_pgs_iterations=20`, `residual=1.5222762445965543e-03`,
+  run of that same filter reports `contract_ok=1` for all 12 registered
+  9-sphere solver rows plus the assembly row; the PGS 9-sphere row reports
+  `pgs_max_iterations=512`, `pgs_relaxation=1`,
+  `residual=3.9036340220555132e-04`,
+  `complementarity=3.9036340220549581e-04`, and 189 solver iterations, while
+  the NNCG 9-sphere row reports `nncg_pgs_iterations=20`,
+  `residual=1.5222762445965543e-03`,
   `complementarity=1.5222762445964988e-03`, and 101 solver iterations. Earlier
   focused default, SIMD-enabled, and CUDA-enabled 10-sphere runs report
   `contract_ok=1` for the original 10 non-NNCG registered solver rows and the
   10-sphere assembly row. A current focused default 10-sphere run reports
-  `contract_ok=1` for all 11 registered solver rows plus the assembly row; the
-  NNCG 10-sphere row reports `nncg_pgs_iterations=20`,
+  `contract_ok=1` for all 12 registered solver rows plus the assembly row; the
+  PGS 10-sphere row reports `pgs_max_iterations=512`, `pgs_relaxation=1`,
+  `residual=4.7141997313282502e-04`,
+  `complementarity=4.7141997313276951e-04`, and 225 solver iterations, while
+  the NNCG 10-sphere row reports `nncg_pgs_iterations=20`,
   `residual=2.0448595218027776e-03`,
   `complementarity=2.0448595218027221e-03`, and 61 solver iterations. The
   focused default
@@ -1883,6 +1902,11 @@ cmake --build build/default/cpp/Release \
   "--benchmark_repetitions=1"
 ./build/default/cpp/Release/bin/BM_LCP_COMPARE \
   "--benchmark_filter=^BM_LcpWorldStackContact/FrictionIndex/NNCG/(2|3|4|5|6|7|8|9|10)$" \
+  "--benchmark_min_time=0.001s" \
+  "--benchmark_repetitions=1" \
+  "--benchmark_format=json"
+./build/default/cpp/Release/bin/BM_LCP_COMPARE \
+  "--benchmark_filter=^BM_LcpWorldStackContact/FrictionIndex/Pgs/(8|9|10)$" \
   "--benchmark_min_time=0.001s" \
   "--benchmark_repetitions=1" \
   "--benchmark_format=json"

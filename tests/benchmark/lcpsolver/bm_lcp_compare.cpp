@@ -2564,6 +2564,12 @@ void AddNncgCounters(
   state.counters["nncg_restart_threshold"] = params.restartThreshold;
 }
 
+void AddPgsCounters(benchmark::State& state, const LcpOptions& options)
+{
+  state.counters["pgs_max_iterations"] = options.maxIterations;
+  state.counters["pgs_relaxation"] = options.relaxation;
+}
+
 void AddRedBlackGaussSeidelCounters(
     benchmark::State& state, const LcpOptions& options)
 {
@@ -8448,7 +8454,12 @@ void RunWorldStackContactBenchmark(
 
   SolverBenchmarkOptions storage;
   ConfigureSolverBenchmarkOptions(storage, solverEntry, fixture->problem);
-  if (solverEntry.name == "NNCG") {
+  if (solverEntry.name == "Pgs") {
+    // The 10-sphere coupled stack converges in 225 PGS iterations; the
+    // default 100-iteration cap leaves the 8-sphere row outside the LCP
+    // contract.
+    storage.options.maxIterations = 512;
+  } else if (solverEntry.name == "NNCG") {
     // Coupled stack contacts need a stronger PGS preconditioner than the
     // generated math fixtures to satisfy the same LCP contract through 10
     // spheres.
@@ -8476,6 +8487,9 @@ void RunWorldStackContactBenchmark(
   state.counters["contact_count"] = static_cast<double>(fixture->contactCount);
   state.counters["body_count"] = static_cast<double>(fixture->bodyCount);
   state.counters["sphere_count"] = static_cast<double>(sphereCount);
+  if (solverEntry.name == "Pgs") {
+    AddPgsCounters(state, storage.options);
+  }
   if (storage.hasNncgParams) {
     AddNncgCounters(state, storage.nncgParams);
   }
@@ -11933,7 +11947,9 @@ void RegisterWorldStackContactBenchmarks()
         });
     registeredBenchmark->Arg(2)->Arg(3)->Arg(4)->Arg(5)->Arg(6);
     registeredBenchmark->Arg(7);
-    if (solver.name == "RedBlackGaussSeidel") {
+    if (solver.name == "Pgs") {
+      registeredBenchmark->Arg(8)->Arg(9)->Arg(10);
+    } else if (solver.name == "RedBlackGaussSeidel") {
       registeredBenchmark->Arg(8);
     } else if (
         solver.name != "Pgs" && solver.name != "Jacobi"
