@@ -248,6 +248,25 @@ struct MarginBarrierDerivatives
   bool active = false;
 };
 
+constexpr double kRangeBarrierMarginFloorScale = 1e-16;
+
+//==============================================================================
+[[nodiscard]] inline double safeRangeBarrierMargin(
+    const double margin, const double activationDistance)
+{
+  const double activeInteriorLimit = std::nextafter(activationDistance, 0.0);
+  if (!(activeInteriorLimit > 0.0)) {
+    return std::max(margin, activationDistance);
+  }
+
+  const double floor = std::min(
+      std::max(
+          std::numeric_limits<double>::denorm_min(),
+          kRangeBarrierMarginFloorScale * activationDistance),
+      activeInteriorLimit);
+  return std::max(margin, floor);
+}
+
 //==============================================================================
 [[nodiscard]] inline MarginBarrierDerivatives marginBarrier(
     const double margin,
@@ -261,13 +280,12 @@ struct MarginBarrierDerivatives
     return result;
   }
 
-  const double activeInteriorLimit = std::nextafter(activationDistance, 0.0);
-  const double floor = std::min(
-      std::max(
-          std::numeric_limits<double>::denorm_min(),
-          1e-16 * activationDistance),
-      activeInteriorLimit);
-  const double safeMargin = std::max(margin, floor);
+  const double safeMargin = safeRangeBarrierMargin(margin, activationDistance);
+  if (!(safeMargin > 0.0) || safeMargin >= activationDistance) {
+    result.active = true;
+    return result;
+  }
+
   const double offset = safeMargin - activationDistance;
   const double logRatio = std::log(safeMargin / activationDistance);
   const double offsetSquared = offset * offset;

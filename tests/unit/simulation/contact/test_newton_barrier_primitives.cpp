@@ -380,6 +380,23 @@ TEST(NewtonBarrierPrimitives, ArticulationSlidingRangeAndRotationRange)
 }
 
 //==============================================================================
+TEST(NewtonBarrierPrimitives, ArticulationRangeBarrierHandlesTinyActivation)
+{
+  const double tiny = std::numeric_limits<double>::denorm_min();
+  const auto barrier = nb::scalarRangeBarrier(
+      /*coordinate=*/0.0,
+      /*lower=*/0.0,
+      /*upper=*/1.0,
+      /*activationDistance=*/tiny,
+      /*stiffness=*/1.0);
+
+  EXPECT_TRUE(barrier.activeLower);
+  EXPECT_TRUE(std::isfinite(barrier.value));
+  EXPECT_TRUE(std::isfinite(barrier.firstDerivative));
+  EXPECT_TRUE(std::isfinite(barrier.secondDerivative));
+}
+
+//==============================================================================
 TEST(NewtonBarrierPrimitives, DeformableContactHeadersForwardSharedTypes)
 {
   static_assert(std::is_same_v<dc::Vector6d, nb::Vector6d>);
