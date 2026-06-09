@@ -23,9 +23,10 @@ multi-kinematic rigid surface CCD, mixed late-active direct-sparse plus
 matrix-free deformable self-contact grids, and a mixed dense production
 deformable scene combining a notched direct-sparse 13x17 grid with a
 matrix-free 13x19 dense rectangular grid. The latest continuation extends the
-notched/jittered 13x17 irregular mesh and the 17x7 tall rectangular grid to the
-matrix-free projected-Newton path, so non-square and non-grid topology now
-cover both sparse assembly and CG-block scratch.
+notched/jittered 13x17 irregular mesh, the 17x7 tall rectangular grid, and the
+17x17 larger square production grid to the matrix-free projected-Newton path, so
+larger square, non-square, and non-grid topology now cover both sparse assembly
+and CG-block scratch.
 Continue from the current `README.md` Immediate Next Steps: broaden remaining
 boxed-LCP/contact and deformable production no-growth coverage, and move any
 newly exposed step-loop scratch to world-owned backed storage before making a
@@ -196,11 +197,12 @@ and the guard covers a
 multi-triangle frictional self-contact patch, a 5x5 two-layer frictional
 self-contact grid, a 7x7 two-layer large grid, a 9x9 two-layer production grid,
 an 11x11 two-layer extended production grid, a 9x13 non-square production grid,
-a 7x17 wide non-square production grid, and a 17x7 tall non-square production
-grid. The tall rectangular and notched/jittered 13x17 irregular
-production grids now also cover the matrix-free projected-Newton path.
-Additional still-larger or differently shaped production-scale frictional
-deformable contact sets need no-growth gates before making the full deformable
+a 7x17 wide non-square production grid, a 17x7 tall non-square production grid,
+and a 17x17 larger square production grid. The larger square, tall rectangular,
+and notched/jittered 13x17 irregular production grids now also cover the
+matrix-free projected-Newton path. Additional still-larger or differently
+shaped production-scale frictional deformable contact sets need no-growth gates
+before making the full deformable
 claim.
 AVBD self-contact row scratch is now guarded beyond the original two-triangle
 scene with a 5x9 rectangular two-layer grid row workload and replay-backed
