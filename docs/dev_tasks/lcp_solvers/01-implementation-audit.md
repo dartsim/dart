@@ -1016,11 +1016,12 @@ The current local evidence for this task is:
 - `BM_LCP_COMPARE --benchmark_filter='BM_LcpArticulatedUnifiedContact' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   previously passed locally for all 96
   `BM_LcpArticulatedUnifiedContact/FrictionIndex/{Ground,RigidImpact,CrossLinkImpact}/<solver>/{1,4}`
-  rows. The benchmark now also registers 8-contact, 16-contact, and 24-contact rows, so these rows manually
+  rows. The benchmark now also registers 8-contact, 16-contact, 24-contact, and
+  32-contact rows, so these rows manually
   assemble fixed-base three-axis prismatic `LinkContact` snapshots through
   `assembleMultibodyLinkContactProblem` and `assembleUnifiedConstraintProblem`,
   then compare all 16 friction-index-capable solvers on identical 3-row,
-  12-row, 24-row, 48-row, and 72-row LCPs. The cross-link rows complete a second articulated
+  12-row, 24-row, 48-row, 72-row, and 96-row LCPs. The cross-link rows complete a second articulated
   endpoint for a separate multibody, so they exercise the unified contact
   matrix's cross-multibody block. Focused default, SIMD-enabled, and
   CUDA-enabled
@@ -1035,6 +1036,11 @@ The current local evidence for this task is:
   `maxIterations=5000`) and report those SAP counters in the articulated
   unified-contact benchmark output; the focused 24-contact runs reported SAP
   iteration counts of 2 and 97 across the three articulated contact cases.
+  Focused default, SIMD-enabled, and CUDA-enabled
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpArticulatedUnifiedContact/FrictionIndex/.*/.*/32$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_format=json`
+  runs reported 48 32-contact rows with `contract_ok=1`, `contact_count=32`,
+  `problem_size=96`, 16 rows per articulated contact case, and the expected
+  backend build-state counters.
   This is articulated unified-contact LCP assembly evidence, not
   collision-discovered or end-to-end stepping evidence. Focused
   SIMD-enabled and CUDA-enabled build-tree runs over the Dantzig/Jacobi/SAP

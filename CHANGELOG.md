@@ -1284,7 +1284,7 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     all-solver articulated unified-contact benchmark rows for manually
     assembled fixed-base three-axis prismatic link-ground and
     link-vs-dynamic-rigid LCP snapshots, now extended to cross-multibody
-    link-vs-link LCP snapshots and 24-contact packets, plus CUDA grouped-batch Jacobi/PGS
+    link-vs-link LCP snapshots and 32-contact packets, plus CUDA grouped-batch Jacobi/PGS
     execution rows over manually assembled 1-/4-/8-/16-contact articulated
     unified-contact packets covering link-ground, link-vs-dynamic-rigid, and
     cross-multibody link-vs-link cases and mixed CUDA grouped-batch rows that

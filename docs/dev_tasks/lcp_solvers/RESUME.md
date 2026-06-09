@@ -472,7 +472,7 @@ adds
 all-solver articulated unified-contact benchmark rows for
 manually assembled fixed-base three-axis prismatic link-ground and
 link-vs-dynamic-rigid LCP snapshots, now extended to cross-multibody
-link-vs-link LCP snapshots and 24-contact packets. It now also adds mixed
+link-vs-link LCP snapshots and 32-contact packets. It now also adds mixed
 world-contact batch benchmark rows that compare all friction-index-capable
 solvers over the same five separated-contact and stacked-contact snapshots,
 both serially and through the DART 7 experimental
@@ -1678,12 +1678,12 @@ contact scenes.
   `invariant_ok=1` for all four rows with `cartesian_chain_count=1`, `4`, `8`,
   and `16`, `articulated_dof_count=3`, `12`, `24`, and `48`, and
   `serial_prismatic_chain=1`.
-- `BM_LcpArticulatedUnifiedContact/FrictionIndex/{Ground,RigidImpact,CrossLinkImpact}/<solver>/{1,4,8,16,24}`
+- `BM_LcpArticulatedUnifiedContact/FrictionIndex/{Ground,RigidImpact,CrossLinkImpact}/<solver>/{1,4,8,16,24,32}`
   manually assemble fixed-base three-axis prismatic `LinkContact` snapshots
   through `assembleMultibodyLinkContactProblem` and
   `assembleUnifiedConstraintProblem`, then compare all 16
-  friction-index-capable solvers on identical 3-row, 12-row, 24-row, 48-row, and
-  72-row LCPs. The cross-link rows complete a second articulated endpoint for a separate
+  friction-index-capable solvers on identical 3-row, 12-row, 24-row, 48-row,
+  72-row, and 96-row LCPs. The cross-link rows complete a second articulated endpoint for a separate
   multibody, so they exercise the unified contact matrix's cross-multibody
   block. Focused default, SIMD-enabled, and CUDA-enabled
   `BM_LCP_COMPARE --benchmark_filter='^BM_LcpArticulatedUnifiedContact/FrictionIndex/.+/24$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
@@ -1691,7 +1691,12 @@ contact scenes.
   `articulated_unified_contact=1`, `contact_count=24`, `problem_size=72`,
   `multibody_count=24` for ground/rigid-impact rows, and `multibody_count=48`
   plus `articulated_cross_link_contact=1` for cross-link rows. The full
-  articulated unified-contact registration now lists 240 rows.
+  articulated unified-contact registration now lists 288 rows. Focused
+  default, SIMD-enabled, and CUDA-enabled
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpArticulatedUnifiedContact/FrictionIndex/.*/.*/32$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_format=json`
+  runs reported 48 rows with `contract_ok=1`, `contact_count=32`,
+  `problem_size=96`, 16 ground rows, 16 rigid-impact rows, 16 cross-link rows,
+  and the expected backend build-state counters.
   The SAP rows use the same robust benchmark parameters as generated coverage
   (`sap_regularization=1e-6`, `sap_max_line_search_iterations=32`,
   `maxIterations=5000`) and report those SAP counters in the articulated
