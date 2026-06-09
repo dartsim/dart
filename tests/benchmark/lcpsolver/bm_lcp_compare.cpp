@@ -3594,7 +3594,7 @@ constexpr std::array<ShockPropagationLayerSweepCase, 12>
          "Contacts16SerialLayers"},
     }};
 
-constexpr std::array<MprgpSpdCheckSweepCase, 9> kMprgpSpdCheckSweepCases{{
+constexpr std::array<MprgpSpdCheckSweepCase, 12> kMprgpSpdCheckSweepCases{{
     {StandardSpdProblemKind::DenseSpd,
      32,
      true,
@@ -3649,9 +3649,27 @@ constexpr std::array<MprgpSpdCheckSweepCase, 9> kMprgpSpdCheckSweepCases{{
      "NearSingular",
      "PdCheckOff",
      0x6014u},
+    {StandardSpdProblemKind::DenseSpd,
+     128,
+     true,
+     "DenseSpd",
+     "PdCheckOn",
+     0x6015u},
+    {StandardSpdProblemKind::BandedSpd,
+     128,
+     true,
+     "BandedSpd",
+     "PdCheckOn",
+     0x6016u},
+    {StandardSpdProblemKind::NearSingular,
+     16,
+     true,
+     "NearSingular",
+     "PdCheckOn",
+     0x6017u},
 }};
 
-constexpr std::array<InteriorPointPathSweepCase, 9>
+constexpr std::array<InteriorPointPathSweepCase, 12>
     kInteriorPointPathSweepCases{{
         {StandardSpdProblemKind::DenseSpd,
          32,
@@ -3725,6 +3743,30 @@ constexpr std::array<InteriorPointPathSweepCase, 9>
          "Sigma0_1",
          "Step0_99",
          0x7014u},
+        {StandardSpdProblemKind::DenseSpd,
+         128,
+         0.1,
+         0.99,
+         "DenseSpd",
+         "Sigma0_1",
+         "Step0_99",
+         0x7015u},
+        {StandardSpdProblemKind::BandedSpd,
+         128,
+         0.1,
+         0.99,
+         "BandedSpd",
+         "Sigma0_1",
+         "Step0_99",
+         0x7016u},
+        {StandardSpdProblemKind::NearSingular,
+         16,
+         0.1,
+         0.99,
+         "NearSingular",
+         "Sigma0_1",
+         "Step0_99",
+         0x7017u},
     }};
 
 constexpr std::array<AdmmRhoSweepCase, 24> kAdmmRhoSweepCases{{

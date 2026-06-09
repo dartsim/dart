@@ -1063,30 +1063,35 @@ tradeoffs evidence based.
   solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
 - Verified MPRGP SPD/positive-definite-check benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpMprgpSpdCheckSweep' | wc -l`
-  reported 9 rows, and JSON checks for `BM_LcpMprgpSpdCheckSweep` reported 9
+  reported 12 rows, and JSON checks for `BM_LcpMprgpSpdCheckSweep` reported 12
   rows with `contract_ok=1` in the default, SIMD-enabled, and CUDA-enabled build
-  trees. These rows cover dense SPD 32/64-row, banded SPD 64-row, mildly
-  ill-conditioned SPD 32-row, and near-singular SPD 8-row standard-LCP fixtures
-  with `MprgpSolver::Parameters::checkPositiveDefinite` enabled and disabled
-  where paired. The rows report `mprgp_spd_check_sweep=1`,
-  `mprgp_positive_definite_check`, SPD-kind counters, `problem_size=8/32/64`,
-  observed solver `iterations=3/5/15`, `mprgp_symmetry_tolerance=1e-9`,
-  `mprgp_epsilon_for_division=1e-12`, and backend build-state counters. The
-  CUDA-enabled rows report `build_cuda_enabled=1` but are CPU MPRGP solver rows
-  in a CUDA-enabled build, not CUDA LCP kernel execution.
+  trees. These rows cover dense SPD 32/64/128-row, banded SPD 64/128-row,
+  mildly ill-conditioned SPD 32-row, and near-singular SPD 8/16-row
+  standard-LCP fixtures with `MprgpSolver::Parameters::checkPositiveDefinite`
+  enabled and disabled where paired. The rows report
+  `mprgp_spd_check_sweep=1`, `mprgp_positive_definite_check`, SPD-kind
+  counters, `problem_size=8/16/32/64/128`, observed solver `iterations=3/4/5/15`,
+  `mprgp_symmetry_tolerance=1e-9`, `mprgp_epsilon_for_division=1e-12`, and
+  backend build-state counters. The CUDA-enabled rows report
+  `build_cuda_enabled=1` but are CPU MPRGP solver rows in a CUDA-enabled build,
+  not CUDA LCP kernel execution.
 - Verified Interior Point path-parameter benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpInteriorPointPathSweep' | wc -l`
-  reported 9 rows, and JSON checks for `BM_LcpInteriorPointPathSweep` reported 9
-  rows with `contract_ok=1` in the default, SIMD-enabled, and CUDA-enabled build
-  trees. These rows cover dense SPD 32/64-row, banded SPD 64-row, mildly
-  ill-conditioned SPD 32-row, and near-singular SPD 8-row standard-LCP fixtures
-  with centering parameter `sigma=0.1/0.3` and step scale `0.75/0.99`. The rows
-  report `interior_point_path_sweep=1`, `interior_point_sigma`,
-  `interior_point_step_scale`, SPD-kind counters, `problem_size=8/32/64`,
-  observed solver `iterations=14/16/27/31/32/41/51/53`, and backend build-state
-  counters. The CUDA-enabled rows report `build_cuda_enabled=1` but are CPU
-  Interior Point solver rows in a CUDA-enabled build, not CUDA LCP kernel
-  execution.
+  reported 12 rows, and JSON checks for `BM_LcpInteriorPointPathSweep` reported
+  12 rows with `contract_ok=1` in the default, SIMD-enabled, and CUDA-enabled
+  build trees. These rows cover dense SPD 32/64/128-row, banded SPD 64/128-row,
+  mildly ill-conditioned SPD 32-row, and near-singular SPD 8/16-row
+  standard-LCP fixtures with centering parameter `sigma=0.1/0.3` and step scale
+  `0.75/0.99`. The rows report `interior_point_path_sweep=1`,
+  `interior_point_sigma`, `interior_point_step_scale`, SPD-kind counters,
+  `problem_size=8/16/32/64/128`, observed solver
+  `iterations=14/16/27/31/32/33/41/51/53/58`, and backend build-state counters.
+  The CUDA-enabled rows report `build_cuda_enabled=1` but are CPU Interior Point
+  solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
+  The combined current MPRGP/Interior Point sweep filter reports `rows=24`,
+  `failures=0`, 12 rows per solver, and 6 large or 16-row near-singular rows in
+  default, SIMD-enabled, and CUDA-enabled build trees; the SIMD and CUDA-enabled
+  runs report `simd_rows=24` and `cuda_rows=24`, respectively.
 - Verified Staggering contact-pipeline benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpStaggeringContactPipelineSweep' | wc -l`
   reported 9 rows, and JSON checks for

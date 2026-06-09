@@ -1059,12 +1059,14 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     runs.
   - Added DART 7 MPRGP SPD/positive-definite-check comparison benchmark rows
     for dense, banded, mildly ill-conditioned, and near-singular standard-LCP
-    fixtures, with backend build-state counters distinguishing default,
-    SIMD-enabled, and CUDA-enabled CPU solver runs.
+    fixtures up to 128 dense/banded rows and 16 near-singular rows, with
+    backend build-state counters distinguishing default, SIMD-enabled, and
+    CUDA-enabled CPU solver runs.
   - Added DART 7 Interior Point path-parameter comparison benchmark rows for
     dense, banded, mildly ill-conditioned, and near-singular standard-LCP
-    fixtures, with backend build-state counters distinguishing default,
-    SIMD-enabled, and CUDA-enabled CPU solver runs.
+    fixtures up to 128 dense/banded rows and 16 near-singular rows, with
+    backend build-state counters distinguishing default, SIMD-enabled, and
+    CUDA-enabled CPU solver runs.
   - Added DART 7 Staggering contact-pipeline comparison benchmark rows for
     separated world-contact, coupled stack-contact, and articulated unified
     contact fixtures, with normal/friction split counters and backend

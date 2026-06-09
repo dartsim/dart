@@ -271,27 +271,33 @@ every row and recorded `shock_propagation_layer_sweep`, schedule counters,
 `contact_count=8/16` for the friction-index rows. The CUDA-enabled rows are CPU
 ShockPropagation solver rows in a CUDA-enabled build, not CUDA LCP kernel
 execution.
-It now also adds 9 `BM_LcpMprgpSpdCheckSweep` benchmark rows for the
-`MprgpSolver` standard-SPD path, covering dense SPD 32/64-row, banded SPD
-64-row, mildly ill-conditioned SPD 32-row, and near-singular SPD 8-row
+It now also adds 12 `BM_LcpMprgpSpdCheckSweep` benchmark rows for the
+`MprgpSolver` standard-SPD path, covering dense SPD 32/64/128-row, banded SPD
+64/128-row, mildly ill-conditioned SPD 32-row, and near-singular SPD 8/16-row
 standard-LCP fixtures with `checkPositiveDefinite` enabled and disabled where
 paired. Focused default, SIMD-enabled, and CUDA-enabled build-tree runs passed
 with `contract_ok=1` on every row and recorded `mprgp_spd_check_sweep`,
-`mprgp_positive_definite_check`, SPD-kind counters, `problem_size=8/32/64`,
-observed solver `iterations=3/5/15`, `mprgp_symmetry_tolerance=1e-9`,
-`mprgp_epsilon_for_division=1e-12`, and backend build-state counters. The
-CUDA-enabled rows are CPU MPRGP solver rows in a CUDA-enabled build, not CUDA
-LCP kernel execution.
-It now also adds 9 `BM_LcpInteriorPointPathSweep` benchmark rows for the
-`InteriorPointSolver` standard-LCP path, covering dense SPD 32/64-row, banded
-SPD 64-row, mildly ill-conditioned SPD 32-row, and near-singular SPD 8-row
-standard-LCP fixtures with `sigma=0.1/0.3` and `stepScale=0.75/0.99`. Focused
-default, SIMD-enabled, and CUDA-enabled build-tree runs passed with
-`contract_ok=1` on every row and recorded `interior_point_path_sweep`,
-`interior_point_sigma`, `interior_point_step_scale`, SPD-kind counters,
-`problem_size=8/32/64`, observed solver `iterations=14/16/27/31/32/41/51/53`,
-and backend build-state counters. The CUDA-enabled rows are CPU Interior Point
-solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
+`mprgp_positive_definite_check`, SPD-kind counters,
+`problem_size=8/16/32/64/128`, observed solver `iterations=3/4/5/15`,
+`mprgp_symmetry_tolerance=1e-9`, `mprgp_epsilon_for_division=1e-12`, and
+backend build-state counters. The CUDA-enabled rows are CPU MPRGP solver rows
+in a CUDA-enabled build, not CUDA LCP kernel execution.
+It now also adds 12 `BM_LcpInteriorPointPathSweep` benchmark rows for the
+`InteriorPointSolver` standard-LCP path, covering dense SPD 32/64/128-row,
+banded SPD 64/128-row, mildly ill-conditioned SPD 32-row, and near-singular SPD
+8/16-row standard-LCP fixtures with `sigma=0.1/0.3` and
+`stepScale=0.75/0.99`. Focused default, SIMD-enabled, and CUDA-enabled
+build-tree runs passed with `contract_ok=1` on every row and recorded
+`interior_point_path_sweep`, `interior_point_sigma`,
+`interior_point_step_scale`, SPD-kind counters,
+`problem_size=8/16/32/64/128`, observed solver
+`iterations=14/16/27/31/32/33/41/51/53/58`, and backend build-state counters.
+The CUDA-enabled rows are CPU Interior Point solver rows in a CUDA-enabled
+build, not CUDA LCP kernel execution.
+The combined current MPRGP/Interior Point sweep filter reports `rows=24`,
+`failures=0`, 12 rows per solver, and 6 large or 16-row near-singular rows in
+default, SIMD-enabled, and CUDA-enabled build trees; the SIMD and CUDA-enabled
+runs report `simd_rows=24` and `cuda_rows=24`, respectively.
 It now also adds 9 `BM_LcpStaggeringContactPipelineSweep` benchmark rows for
 the `StaggeringSolver` normal/friction split on DART 7 contact-pipeline
 fixtures. The rows cover separated sphere-ground 1/2/4-contact fixtures,
