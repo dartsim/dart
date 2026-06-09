@@ -8760,7 +8760,7 @@ void RunWorldStackContactBenchmark(
   } else if (solverEntry.name == "Jacobi") {
     // The 12-sphere coupled stack converges in 452 Jacobi iterations; the
     // default 100-iteration cap leaves the 8-sphere row outside the same LCP
-    // contract. The 14-sphere row needs 568 iterations.
+    // contract. The 14-/15-/16-sphere rows need 568/628/688 iterations.
     storage.options.maxIterations = 512;
     if (sphereCount >= 14) {
       storage.options.maxIterations = 1024;
@@ -8768,7 +8768,7 @@ void RunWorldStackContactBenchmark(
   } else if (solverEntry.name == "BlockedJacobi") {
     // The 12-sphere coupled stack converges in 452 blocked Jacobi iterations;
     // the default 100-iteration cap leaves the 8-sphere row outside the same
-    // LCP contract. The 14-sphere row needs 568 iterations.
+    // LCP contract. The 14-/15-/16-sphere rows need 568/628/688 iterations.
     storage.options.maxIterations = 512;
     if (sphereCount >= 14) {
       storage.options.maxIterations = 1024;
@@ -12341,7 +12341,7 @@ void RegisterWorldStackContactBenchmarks()
         && solver.name != "RedBlackGaussSeidel") {
       registeredBenchmark->Arg(8)->Arg(9)->Arg(10);
     }
-    registeredBenchmark->Arg(11)->Arg(12)->Arg(13)->Arg(14);
+    registeredBenchmark->Arg(11)->Arg(12)->Arg(13)->Arg(14)->Arg(15)->Arg(16);
   }
 }
 

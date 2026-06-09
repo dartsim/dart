@@ -615,12 +615,12 @@ pass focused default, SIMD-enabled, and CUDA-enabled build-tree benchmark gates
 with `contract_ok=1`.
 The current stack slices cover 24-/32-sphere boxed/findex CPU snapshot and
 boxed-LCP assembly rows, CPU solver-comparison rows through the scoped
-14-sphere full solver set in the default build, and fixed-iteration CUDA Jacobi/PGS homogeneous and
+16-sphere full solver set in the default build, and fixed-iteration CUDA Jacobi/PGS homogeneous and
 grouped coupled-stack batch evidence through 24-/32-sphere DART 7
 `World::collide()` snapshots.
 Focused default, SIMD-enabled, and CUDA-enabled checks pass for the CPU
 solver-comparison rows through the scoped 13-sphere full solver set; focused
-default checks pass for the 14-sphere full solver set and the
+default checks pass for the 14-/15-/16-sphere full solver set and the
 13-/14-/15-/16-/24-/32-sphere snapshot/assembly rows; focused CUDA unit and
 benchmark checks pass for the direct and grouped CUDA execution rows, using
 8192 fixed iterations for the stack-contact CUDA rows and Jacobi relaxation
@@ -681,15 +681,15 @@ public `World::step()` iterations failed the existing vertical-rest invariant
 with `LCP internal error, s <= 0` warnings and max vertical speeds above the
 `0.1` threshold.
 This checkpoint extends the coupled-stack CPU solver-comparison slice by
-registering 8-/9-/10-/11-/12-/13-/14-sphere rows for the full solver set. PGS,
-RedBlackGaussSeidel, and ShockPropagation use a 512-iteration stack cap;
-Jacobi and BlockedJacobi use that cap through 13 spheres and a 1024 cap at 14
-spheres; SymmetricPsor, BGS, and Tgs use that cap on 11-/12-/13-/14-sphere
-rows; and NNCG uses 20 PGS preconditioner iterations through 11 spheres and 40
+registering 8-/9-/10-/11-/12-/13-/14-/15-/16-sphere rows for the full solver
+set. PGS, RedBlackGaussSeidel, and ShockPropagation use a 512-iteration stack
+cap; Jacobi and BlockedJacobi use that cap through 13 spheres and a 1024 cap
+from 14 spheres onward; SymmetricPsor, BGS, and Tgs use that cap on
+11-/12-/13-/14-/15-/16-sphere rows; and NNCG uses 20 PGS preconditioner iterations through 11 spheres and 40
 from 12 spheres onward. Focused default
-PGS/Jacobi/BlockedJacobi/ShockPropagation 8-through-14, NNCG 2-through-14,
-RedBlack 2-through-14, and all-registered default
-8-/9-/10-/11-/12-/13-/14-sphere stack benchmark filters now report
+PGS/Jacobi/BlockedJacobi/ShockPropagation 8-through-16, NNCG 2-through-16,
+RedBlack 2-through-16, and all-registered default
+8-/9-/10-/11-/12-/13-/14-/15-/16-sphere stack benchmark filters now report
 `contract_ok=1`. The same focused 11-/12-sphere stack/assembly filter also
 passes in the SIMD-enabled build tree with `rows=34`, `failures=0`, and
 `simd_rows=34`, and in the CUDA-enabled build tree with `rows=34`,
@@ -1675,6 +1675,16 @@ dense/robot-like contact scenes.
   `max_bound_violation=0`; Jacobi and Blocked Jacobi report
   `jacobi_max_iterations=1024`/`blocked_jacobi_max_iterations=1024` and
   `iterations=568`.
+  The focused default
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldStackContact/FrictionIndex/.*/(15|16)$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_out=/tmp/dart_lcp_world_stack_solver_16.json --benchmark_out_format=json`
+  run reports `rows=32`, `contract_ok_rows=32`, `sphere_count=15/16`,
+  `contact_count=15/16`, `problem_size=45/48`,
+  `max_residual=4.7627529003619884e-03`,
+  `max_complementarity=4.7627529003619051e-03`, and
+  `max_bound_violation=0`; Jacobi and Blocked Jacobi report
+  `jacobi_max_iterations=1024`/`blocked_jacobi_max_iterations=1024` and
+  `iterations=628/688`, and NNCG reports `nncg_pgs_iterations=40` and
+  `iterations=91/281`.
   The focused default
   `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldStackContactAssembly_BoxedLcp/(13|14|15|16)$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_format=json`
   run reports `contract_ok=1` for the 13-, 14-, 15-, and 16-sphere assembly
