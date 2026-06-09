@@ -37,6 +37,7 @@
 #include <dart/simulation/detail/newton_barrier/barrier_kernel.hpp>
 #include <dart/simulation/detail/newton_barrier/friction_kernel.hpp>
 #include <dart/simulation/detail/newton_barrier/line_search.hpp>
+#include <dart/simulation/detail/newton_barrier/mixed_domain_coupling.hpp>
 #include <dart/simulation/detail/newton_barrier/primitive_distance.hpp>
 #include <dart/simulation/detail/newton_barrier/projected_newton.hpp>
 #include <dart/simulation/detail/newton_barrier/psd_projection.hpp>
@@ -49,6 +50,7 @@
 
 #include <limits>
 #include <type_traits>
+#include <vector>
 
 #include <cmath>
 
@@ -600,6 +602,166 @@ TEST(NewtonBarrierPrimitives, RayleighDampingProjectsHessianAndDissipates)
       nb::makeSemiImplicitRayleighDampingTerm<2>(
           displacement, indefinite, /*coefficient=*/0.0, /*timeStep=*/0.01)
           .active);
+}
+
+//==============================================================================
+TEST(NewtonBarrierPrimitives, MixedDomainOracleOwnersPreserveVariantRows)
+{
+  EXPECT_EQ(
+      nb::mixedDomainOracleOwner(
+          nb::MixedDomainType::Rigid, nb::MixedDomainType::Rigid),
+      nb::MixedDomainOracleOwner::RigidIpc);
+  EXPECT_EQ(
+      nb::mixedDomainOracleOwner(
+          nb::MixedDomainType::Deformable, nb::MixedDomainType::Deformable),
+      nb::MixedDomainOracleOwner::DeformableIpc);
+  EXPECT_EQ(
+      nb::mixedDomainOracleOwner(
+          nb::MixedDomainType::Affine, nb::MixedDomainType::Affine),
+      nb::MixedDomainOracleOwner::AffineBodyDynamics);
+  EXPECT_EQ(
+      nb::mixedDomainOracleOwner(
+          nb::MixedDomainType::Rod, nb::MixedDomainType::Rod),
+      nb::MixedDomainOracleOwner::DeformableIpc);
+  EXPECT_EQ(
+      nb::mixedDomainOracleOwner(
+          nb::MixedDomainType::Shell, nb::MixedDomainType::Codimensional),
+      nb::MixedDomainOracleOwner::MixedNewtonBarrier);
+  EXPECT_EQ(
+      nb::mixedDomainOracleOwner(
+          nb::MixedDomainType::Rigid, nb::MixedDomainType::Affine),
+      nb::MixedDomainOracleOwner::MixedNewtonBarrier);
+}
+
+//==============================================================================
+TEST(NewtonBarrierPrimitives, MixedDomainSurfacesCoverAllAdapters)
+{
+  std::vector<nb::MixedDomainSurface> surfaces;
+  const std::vector<nb::MixedDomainType> domains{
+      nb::MixedDomainType::Rigid,
+      nb::MixedDomainType::Deformable,
+      nb::MixedDomainType::Affine,
+      nb::MixedDomainType::Particle,
+      nb::MixedDomainType::Rod,
+      nb::MixedDomainType::Shell,
+      nb::MixedDomainType::Codimensional};
+  for (std::size_t i = 0; i < domains.size(); ++i) {
+    surfaces.push_back(
+        nb::makeMixedDomainSurface(
+            domains[i],
+            i,
+            {Eigen::Vector3d(0.001 * static_cast<double>(i), 0.0, 0.0)}));
+  }
+
+  nb::MixedDomainCandidateOptions options;
+  options.activationDistance = 0.1;
+  options.exactDistanceFilter = false;
+  options.includePointEdge = false;
+  options.includeEdgeEdge = false;
+  options.includePointTriangle = false;
+  const auto candidates
+      = nb::buildMixedDomainContactCandidates(surfaces, options);
+
+  EXPECT_EQ(candidates.stats.surfaceCount, domains.size());
+  EXPECT_EQ(candidates.stats.activeSurfaceCount, domains.size());
+  EXPECT_EQ(candidates.stats.dynamicSurfaceCount, domains.size());
+  for (std::size_t i = 0; i < domains.size(); ++i) {
+    EXPECT_EQ(candidates.stats.domainCounts[i], 1u);
+  }
+  EXPECT_EQ(candidates.candidates.size(), 21u);
+
+  const auto restartSurfaces = surfaces;
+  const auto restartCandidates
+      = nb::buildMixedDomainContactCandidates(restartSurfaces, options);
+  EXPECT_EQ(
+      nb::mixedDomainCandidateKeys(candidates),
+      nb::mixedDomainCandidateKeys(restartCandidates));
+}
+
+//==============================================================================
+TEST(NewtonBarrierPrimitives, MixedDomainCandidatesCoverPrimitiveFamilies)
+{
+  auto rigid = nb::makeMixedDomainSurface(
+      nb::MixedDomainType::Rigid,
+      0,
+      {Eigen::Vector3d(0.0, 0.0, 0.0),
+       Eigen::Vector3d(1.0, 0.0, 0.0),
+       Eigen::Vector3d(0.0, 1.0, 0.0)},
+      {Eigen::Vector3i(0, 1, 2)});
+  rigid.frictionCoefficient = 0.4;
+
+  auto deformable = nb::makeMixedDomainSurface(
+      nb::MixedDomainType::Deformable,
+      0,
+      {Eigen::Vector3d(0.05, 0.05, 0.02),
+       Eigen::Vector3d(0.75, 0.05, 0.02),
+       Eigen::Vector3d(0.05, 0.75, 0.02)},
+      {Eigen::Vector3i(0, 1, 2)});
+  deformable.frictionCoefficient = 0.7;
+
+  const std::vector<nb::MixedDomainSurface> surfaces{rigid, deformable};
+  nb::MixedDomainCandidateOptions options;
+  options.activationDistance = 1.0;
+  const auto candidates
+      = nb::buildMixedDomainContactCandidates(surfaces, options);
+
+  EXPECT_EQ(candidates.stats.domainCounts[0], 1u);
+  EXPECT_EQ(candidates.stats.domainCounts[1], 1u);
+  EXPECT_EQ(candidates.stats.broadPhasePairCount, 1u);
+  EXPECT_GT(candidates.stats.pointPointCandidateCount, 0u);
+  EXPECT_GT(candidates.stats.pointEdgeCandidateCount, 0u);
+  EXPECT_GT(candidates.stats.edgeEdgeCandidateCount, 0u);
+  EXPECT_GT(candidates.stats.pointTriangleCandidateCount, 0u);
+
+  const auto diagnostics = nb::evaluateMixedDomainBarrierDiagnostics(
+      surfaces, candidates, 1.0, 2.0);
+  EXPECT_TRUE(diagnostics.finite);
+  EXPECT_EQ(diagnostics.candidateCount, candidates.candidates.size());
+  EXPECT_GT(diagnostics.activeBarrierCount, 0u);
+  EXPECT_GT(diagnostics.value, 0.0);
+  EXPECT_NEAR(diagnostics.maxFrictionCoefficient, 0.7, 1e-14);
+  EXPECT_TRUE(std::isfinite(diagnostics.minSquaredDistance));
+}
+
+//==============================================================================
+TEST(NewtonBarrierPrimitives, MixedDomainPointCcdProducesDeterministicRestart)
+{
+  auto particleA = nb::makeMixedDomainSurface(
+      nb::MixedDomainType::Particle, 0, {Eigen::Vector3d(-0.5, 0.0, 0.0)});
+  nb::setMixedDomainEndVertices(particleA, {Eigen::Vector3d(0.5, 0.0, 0.0)});
+
+  auto particleB = nb::makeMixedDomainSurface(
+      nb::MixedDomainType::Particle, 1, {Eigen::Vector3d(0.5, 0.0, 0.0)});
+  nb::setMixedDomainEndVertices(particleB, {Eigen::Vector3d(-0.5, 0.0, 0.0)});
+
+  const std::vector<nb::MixedDomainSurface> surfaces{particleA, particleB};
+  nb::MixedDomainCandidateOptions candidateOptions;
+  candidateOptions.activationDistance = 2.0;
+  candidateOptions.includePointEdge = false;
+  candidateOptions.includeEdgeEdge = false;
+  candidateOptions.includePointTriangle = false;
+  const auto candidates
+      = nb::buildMixedDomainContactCandidates(surfaces, candidateOptions);
+  ASSERT_EQ(candidates.candidates.size(), 1u);
+
+  nb::LineSearchOptions lineSearch;
+  lineSearch.minSeparation = 0.1;
+  const auto ccd
+      = nb::mixedDomainPointPointLinearCcd(surfaces, candidates, lineSearch);
+  EXPECT_TRUE(ccd.limited);
+  EXPECT_TRUE(ccd.allowsPositiveStep());
+  EXPECT_NEAR(ccd.stepBound, 0.45, 1e-14);
+  EXPECT_EQ(ccd.stats.pointPointChecks, 1u);
+  EXPECT_EQ(ccd.stats.hits, 1u);
+
+  const auto restartCandidates
+      = nb::buildMixedDomainContactCandidates(surfaces, candidateOptions);
+  const auto restartCcd = nb::mixedDomainPointPointLinearCcd(
+      surfaces, restartCandidates, lineSearch);
+  EXPECT_EQ(
+      nb::mixedDomainCandidateKeys(candidates),
+      nb::mixedDomainCandidateKeys(restartCandidates));
+  EXPECT_DOUBLE_EQ(ccd.stepBound, restartCcd.stepBound);
 }
 
 //==============================================================================
