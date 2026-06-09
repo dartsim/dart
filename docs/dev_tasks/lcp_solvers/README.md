@@ -1314,28 +1314,30 @@ tradeoffs evidence based.
   `cuda_rows=96` in the backend build-tree runs.
 - Verified contact-normal standard-LCP benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpContactNormalStandardSweep' | wc -l`
-  reported 156 rows, and JSON checks for
-  `BM_LcpContactNormalStandardSweep` reported 156 rows with `contract_ok=1` in
+  reported 196 rows, and JSON checks for
+  `BM_LcpContactNormalStandardSweep` reported 196 rows with `contract_ok=1` in
   the default, SIMD-enabled, and CUDA-enabled build trees. These rows extract
   only the normal rows from the same DART 7 separated sphere-ground
-  1/2/4/8/16-contact fixtures, coupled vertical-stack 2/3/5/8/16-contact fixtures,
-  and articulated unified ground, rigid-impact, and cross-link-impact
-  4-/8-/16-contact fixtures, then run them as standard LCPs. The list-test
-  evidence includes 40 rows sourced from the five 8-contact fixtures and 40
-  rows sourced from the five 16-contact fixtures. The rows compare `Dantzig`,
-  `Lemke`, `Baraff`, `Direct`, `MinimumMapNewton`, `FischerBurmeisterNewton`,
-  `PenalizedFischerBurmeisterNewton`, `InteriorPoint`, and `MPRGP`; `Direct`
-  is intentionally limited to four 1-, 2-, and 3-row contact-normal rows so the
-  benchmark measures its enumeration path rather than Dantzig fallback. The
-  rows report `contact_normal_standard_sweep=1`,
-  `normal_row_count=1/2/3/4/5/8/16`,
-  `source_problem_size=3/6/9/12/15/24/48`,
-  `problem_size=1/2/3/4/5/8/16`, `contact_normal_direct_no_fallback=1` for all
-  Direct rows, coupled-fixture counters, and backend build-state counters. The
-  CUDA-enabled rows report `build_cuda_enabled=1` but are CPU solver rows in a
-  CUDA-enabled build, not CUDA LCP kernel execution. This is contact-normal
-  standard-LCP evidence, not native boxed or friction-index support for
-  standard-only solvers.
+  1/2/4/8/16/32-contact fixtures, coupled vertical-stack
+  2/3/5/8/16/32-contact fixtures, and articulated unified ground,
+  rigid-impact, and cross-link-impact 4-/8-/16-/32-contact fixtures, then run
+  them as standard LCPs. The list-test evidence includes 40 rows sourced from
+  each of the five 8-, 16-, and 32-contact fixture tiers. The rows compare
+  `Dantzig`, `Lemke`, `Baraff`, `Direct`, `MinimumMapNewton`,
+  `FischerBurmeisterNewton`, `PenalizedFischerBurmeisterNewton`,
+  `InteriorPoint`, and `MPRGP`; `Direct` is intentionally limited to four 1-,
+  2-, and 3-row contact-normal rows so the benchmark measures its enumeration
+  path rather than Dantzig fallback. The rows report
+  `contact_normal_standard_sweep=1`,
+  `normal_row_count=1/2/3/4/5/8/16/32`,
+  `source_problem_size=3/6/9/12/15/24/48/96`,
+  `problem_size=1/2/3/4/5/8/16/32`,
+  `contact_normal_direct_no_fallback=1` for all Direct rows, coupled-fixture
+  counters, and backend build-state counters. The SIMD-enabled rows report
+  `build_simd_enabled=1` for all 196 rows; the CUDA-enabled rows report
+  `build_cuda_enabled=1` but are CPU solver rows in a CUDA-enabled build, not
+  CUDA LCP kernel execution. This is contact-normal standard-LCP evidence, not
+  native boxed or friction-index support for standard-only solvers.
 - Verified larger active-set transition benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpLargerActiveSetTransition/' | wc -l`
   reported 49 rows, and
