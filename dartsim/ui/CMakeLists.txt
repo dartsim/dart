@@ -25,6 +25,7 @@ add_library(
   src/editor.cpp
   src/history_actions.cpp
   src/inspector_actions.cpp
+  src/memory_actions.cpp
   src/outliner_actions.cpp
   src/palette_actions.cpp
   src/project_actions.cpp

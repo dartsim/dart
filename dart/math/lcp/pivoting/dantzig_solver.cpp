@@ -46,6 +46,22 @@
 namespace dart::math {
 
 //==============================================================================
+void DantzigSolver::Scratch::clear() noexcept
+{
+  Adata.clear();
+  xdata.clear();
+  wdata.clear();
+  bdata.clear();
+  loData.clear();
+  hiData.clear();
+  findexData.clear();
+  w.resize(0);
+  loEff.resize(0);
+  hiEff.resize(0);
+  lcp.clear();
+}
+
+//==============================================================================
 DantzigSolver::DantzigSolver()
 {
   mDefaultOptions.warmStart = true;
@@ -55,16 +71,43 @@ DantzigSolver::DantzigSolver()
 LcpResult DantzigSolver::solve(
     const LcpProblem& problem, Eigen::VectorXd& x, const LcpOptions& options)
 {
+  Scratch scratch;
+  return solve(problem, x, scratch, options);
+}
+
+//==============================================================================
+LcpResult DantzigSolver::solve(
+    const LcpProblem& problem,
+    Eigen::VectorXd& x,
+    Scratch& scratch,
+    const LcpOptions& options)
+{
+  return solve(
+      problem.A,
+      problem.b,
+      problem.lo,
+      problem.hi,
+      problem.findex,
+      x,
+      scratch,
+      options);
+}
+
+//==============================================================================
+LcpResult DantzigSolver::solve(
+    const Eigen::MatrixXd& A,
+    const Eigen::VectorXd& b,
+    const Eigen::VectorXd& lo,
+    const Eigen::VectorXd& hi,
+    const Eigen::VectorXi& findex,
+    Eigen::VectorXd& x,
+    Scratch& scratch,
+    const LcpOptions& options)
+{
   LcpResult result;
 
-  const auto& A = problem.A;
-  const auto& b = problem.b;
-  const auto& lo = problem.lo;
-  const auto& hi = problem.hi;
-  const auto& findex = problem.findex;
-
   std::string problemMessage;
-  if (!detail::validateProblem(problem, &problemMessage)) {
+  if (!detail::validateProblem(A, b, lo, hi, findex, &problemMessage)) {
     result.status = LcpSolverStatus::InvalidProblem;
     result.message = problemMessage;
     return result;
@@ -86,46 +129,62 @@ LcpResult DantzigSolver::solve(
   }
   const int nSkip = padding(static_cast<int>(n));
 
-  std::vector<double> Adata(n * nSkip, 0.0);
-  std::vector<double> xdata(n, 0.0);
-  std::vector<double> wdata(n, 0.0);
-  std::vector<double> bdata(n, 0.0);
-  std::vector<double> loData(n, 0.0);
-  std::vector<double> hiData(n, 0.0);
-  std::vector<int> findexData(n, -1);
+  const auto vectorSize = static_cast<std::size_t>(n);
+  const auto matrixSize = vectorSize * static_cast<std::size_t>(nSkip);
+  scratch.Adata.assign(matrixSize, 0.0);
+  scratch.xdata.resize(vectorSize);
+  scratch.wdata.resize(vectorSize);
+  scratch.bdata.resize(vectorSize);
+  scratch.loData.resize(vectorSize);
+  scratch.hiData.resize(vectorSize);
+  scratch.findexData.resize(vectorSize);
 
   for (int i = 0; i < n; ++i) {
-    bdata[i] = b[i];
-    loData[i] = lo[i];
-    hiData[i] = hi[i];
-    findexData[i] = findex[i];
-    xdata[i] = (options.warmStart && std::isfinite(x[i])) ? x[i] : 0.0;
+    const auto offset = static_cast<std::size_t>(i);
+    scratch.bdata[offset] = b[i];
+    scratch.loData[offset] = lo[i];
+    scratch.hiData[offset] = hi[i];
+    scratch.findexData[offset] = findex[i];
+    scratch.wdata[offset] = 0.0;
+    scratch.xdata[offset]
+        = (options.warmStart && std::isfinite(x[i])) ? x[i] : 0.0;
     for (int j = 0; j < n; ++j) {
-      Adata[i * nSkip + j] = A(i, j);
+      scratch.Adata[static_cast<std::size_t>(i * nSkip + j)] = A(i, j);
     }
   }
 
-  const bool success = SolveLCP<double>(
+  const bool success = SolveLCPWithScratch<double>(
       static_cast<int>(n),
-      Adata.data(),
-      xdata.data(),
-      bdata.data(),
-      wdata.data(),
+      scratch.Adata.data(),
+      scratch.xdata.data(),
+      scratch.bdata.data(),
+      scratch.wdata.data(),
       0,
-      loData.data(),
-      hiData.data(),
-      findexData.data(),
+      scratch.loData.data(),
+      scratch.hiData.data(),
+      scratch.findexData.data(),
+      scratch.lcp,
       options.earlyTermination);
 
-  x = Eigen::VectorXd::Map(xdata.data(), n);
-  const Eigen::VectorXd w = A * x - b;
+  if (x.size() != n) {
+    x.resize(n);
+  }
+  for (int i = 0; i < n; ++i) {
+    x[i] = scratch.xdata[static_cast<std::size_t>(i)];
+  }
+  scratch.w.resize(n);
+  for (int row = 0; row < n; ++row) {
+    double value = -b[row];
+    for (int col = 0; col < n; ++col) {
+      value += A(row, col) * x[col];
+    }
+    scratch.w[row] = value;
+  }
   result.iterations = 1;
 
-  Eigen::VectorXd loEff;
-  Eigen::VectorXd hiEff;
   std::string boundsMessage;
   const bool boundsOk = detail::computeEffectiveBounds(
-      lo, hi, findex, x, loEff, hiEff, &boundsMessage);
+      lo, hi, findex, x, scratch.loEff, scratch.hiEff, &boundsMessage);
   if (!boundsOk) {
     result.status = LcpSolverStatus::InvalidProblem;
     result.message = boundsMessage;
@@ -135,9 +194,10 @@ LcpResult DantzigSolver::solve(
   const double absTol = (options.absoluteTolerance > 0)
                             ? options.absoluteTolerance
                             : mDefaultOptions.absoluteTolerance;
-  result.residual = detail::naturalResidualInfinityNorm(x, w, loEff, hiEff);
-  result.complementarity
-      = detail::complementarityInfinityNorm(x, w, loEff, hiEff, absTol);
+  result.residual = detail::naturalResidualInfinityNorm(
+      x, scratch.w, scratch.loEff, scratch.hiEff);
+  result.complementarity = detail::complementarityInfinityNorm(
+      x, scratch.w, scratch.loEff, scratch.hiEff, absTol);
   result.status = success ? LcpSolverStatus::Success : LcpSolverStatus::Failed;
 
   if (options.validateSolution && result.status == LcpSolverStatus::Success) {
@@ -147,7 +207,12 @@ LcpResult DantzigSolver::solve(
     const double validationTol = std::max(absTol, compTol);
     std::string validationMessage;
     const bool feasible = detail::validateSolution(
-        x, w, loEff, hiEff, validationTol, &validationMessage);
+        x,
+        scratch.w,
+        scratch.loEff,
+        scratch.hiEff,
+        validationTol,
+        &validationMessage);
     result.validated = true;
     if (!feasible) {
       result.status = LcpSolverStatus::NumericalError;
