@@ -146,12 +146,135 @@ TEST(PoolAllocatorTest, Constructors)
 TEST(PoolAllocatorTest, AllocateAlignedUsesAlignedSlots)
 {
   PoolAllocator allocator;
+  EXPECT_TRUE(allocator.isDiagnosticsEnabled());
 
   auto* ptr = allocator.allocate(sizeof(OverAlignedObject), 64);
   ASSERT_NE(ptr, nullptr);
   EXPECT_EQ(reinterpret_cast<std::uintptr_t>(ptr) % 64u, 0u);
 
   allocator.deallocate(ptr, sizeof(OverAlignedObject), 64);
+}
+
+//==============================================================================
+TEST(PoolAllocatorTest, DefaultPowerOfTwoSlotsUseCacheFriendlyStride)
+{
+  PoolAllocator allocator;
+
+  void* first = allocator.allocate(1024);
+  void* second = allocator.allocate(1024);
+  ASSERT_NE(first, nullptr);
+  ASSERT_NE(second, nullptr);
+
+  const auto firstAddress = reinterpret_cast<std::uintptr_t>(first);
+  const auto secondAddress = reinterpret_cast<std::uintptr_t>(second);
+  EXPECT_EQ(secondAddress - firstAddress, 1056u);
+
+  allocator.deallocate(second, 1024);
+  allocator.deallocate(first, 1024);
+}
+
+//==============================================================================
+TEST(PoolAllocatorTest, RejectsInvalidSizesWithoutBaseAllocation)
+{
+  CountingMemoryAllocator base;
+  PoolAllocator allocator(base);
+  const size_t allocationAttemptsAfterConstruction = base.allocationAttempts;
+
+  EXPECT_EQ(allocator.allocate(std::numeric_limits<size_t>::max()), nullptr);
+  EXPECT_EQ(allocator.allocate(16, 3), nullptr);
+  EXPECT_EQ(
+      allocator.allocate(std::numeric_limits<size_t>::max(), 64), nullptr);
+  EXPECT_EQ(base.allocationAttempts, allocationAttemptsAfterConstruction);
+  EXPECT_EQ(allocator.getAllocatedSize(), 0u);
+  EXPECT_EQ(allocator.getPeakAllocatedSize(), 0u);
+  EXPECT_EQ(allocator.getAllocationCount(), 0u);
+}
+
+//==============================================================================
+TEST(PoolAllocatorTest, FailedBaseAllocationDoesNotRecordDiagnostics)
+{
+  CountingMemoryAllocator base;
+  base.allocationLimit = 0;
+  PoolAllocator allocator(base);
+
+  EXPECT_EQ(allocator.allocate(2048, 64), nullptr);
+  EXPECT_EQ(base.alignedAllocationAttempts, 1u);
+  EXPECT_EQ(allocator.getAllocatedSize(), 0u);
+  EXPECT_EQ(allocator.getPeakAllocatedSize(), 0u);
+  EXPECT_EQ(allocator.getAllocationCount(), 0u);
+}
+
+//==============================================================================
+TEST(PoolAllocatorTest, DiagnosticsTrackLivePeakAndSlotReuse)
+{
+  PoolAllocator allocator;
+
+  void* first = allocator.allocate(16);
+  ASSERT_NE(first, nullptr);
+  EXPECT_EQ(allocator.getAllocatedSize(), 16u);
+  EXPECT_EQ(allocator.getPeakAllocatedSize(), 16u);
+  EXPECT_EQ(allocator.getAllocationCount(), 1u);
+  EXPECT_EQ(allocator.getNumAllocatedMemoryBlocks(), 1);
+
+  void* second = allocator.allocate(24);
+  ASSERT_NE(second, nullptr);
+  EXPECT_EQ(allocator.getAllocatedSize(), 40u);
+  EXPECT_EQ(allocator.getPeakAllocatedSize(), 40u);
+  EXPECT_EQ(allocator.getAllocationCount(), 2u);
+  EXPECT_EQ(allocator.getNumAllocatedMemoryBlocks(), 2);
+
+  allocator.deallocate(first, 16);
+  EXPECT_EQ(allocator.getAllocatedSize(), 24u);
+  EXPECT_EQ(allocator.getPeakAllocatedSize(), 40u);
+  EXPECT_EQ(allocator.getAllocationCount(), 1u);
+
+  void* reused = allocator.allocate(16);
+  EXPECT_EQ(reused, first);
+  EXPECT_EQ(allocator.getAllocatedSize(), 40u);
+  EXPECT_EQ(allocator.getPeakAllocatedSize(), 40u);
+  EXPECT_EQ(allocator.getAllocationCount(), 2u);
+  EXPECT_EQ(allocator.getNumAllocatedMemoryBlocks(), 2);
+
+  allocator.deallocate(second, 24);
+  allocator.deallocate(reused, 16);
+  EXPECT_EQ(allocator.getAllocatedSize(), 0u);
+  EXPECT_EQ(allocator.getAllocationCount(), 0u);
+}
+
+//==============================================================================
+TEST(PoolAllocatorTest, DiagnosticsCanBeDisabledForHotPathUse)
+{
+  PoolAllocator allocator(PoolAllocator::DiagnosticsPolicy::Disabled);
+  EXPECT_FALSE(allocator.isDiagnosticsEnabled());
+
+  void* ptr = allocator.allocate(16);
+  ASSERT_NE(ptr, nullptr);
+  EXPECT_EQ(allocator.getAllocatedSize(), 0u);
+  EXPECT_EQ(allocator.getPeakAllocatedSize(), 0u);
+  EXPECT_EQ(allocator.getAllocationCount(), 0u);
+
+  allocator.deallocate(ptr, 16);
+  EXPECT_EQ(allocator.getAllocatedSize(), 0u);
+  EXPECT_EQ(allocator.getPeakAllocatedSize(), 0u);
+  EXPECT_EQ(allocator.getAllocationCount(), 0u);
+
+  void* hotPathPtr = allocator.allocateUntracked(24);
+  ASSERT_NE(hotPathPtr, nullptr);
+  EXPECT_EQ(allocator.getAllocatedSize(), 0u);
+  EXPECT_EQ(allocator.getPeakAllocatedSize(), 0u);
+  EXPECT_EQ(allocator.getAllocationCount(), 0u);
+  allocator.deallocateUntracked(hotPathPtr, 24);
+
+  void* alignedHotPathPtr
+      = allocator.allocateUntracked(sizeof(OverAlignedObject), 64);
+  ASSERT_NE(alignedHotPathPtr, nullptr);
+  EXPECT_EQ(reinterpret_cast<std::uintptr_t>(alignedHotPathPtr) % 64u, 0u);
+  allocator.deallocateUntracked(
+      alignedHotPathPtr, sizeof(OverAlignedObject), 64);
+
+  EXPECT_EQ(allocator.getAllocatedSize(), 0u);
+  EXPECT_EQ(allocator.getPeakAllocatedSize(), 0u);
+  EXPECT_EQ(allocator.getAllocationCount(), 0u);
 }
 
 //==============================================================================
@@ -166,6 +289,45 @@ TEST(FixedPoolAllocatorTest, Constructors)
   EXPECT_EQ(zeroSizedAllocator.getUnitSize(), 0u);
   EXPECT_EQ(zeroSizedAllocator.allocate(1), nullptr);
   EXPECT_EQ(zeroSizedAllocator.allocate(), nullptr);
+}
+
+//==============================================================================
+TEST(FixedPoolAllocatorTest, PowerOfTwoSlotsUseCacheFriendlyStride)
+{
+  FixedPoolAllocator allocator(256);
+
+  EXPECT_EQ(allocator.getUnitSize(), 288u);
+}
+
+//==============================================================================
+TEST(FixedPoolAllocatorTest, ZeroByteRequestsDoNotAllocateBlocks)
+{
+  CountingMemoryAllocator base;
+  FixedPoolAllocator allocator(32, base, 32 * 4);
+  const size_t allocationsAfterConstruction = base.allocationCount;
+
+  EXPECT_EQ(allocator.allocate(0), nullptr);
+  EXPECT_EQ(allocator.allocate(0, 64), nullptr);
+  EXPECT_EQ(allocator.getNumAllocatedMemoryBlocks(), 0);
+  EXPECT_EQ(base.allocationCount, allocationsAfterConstruction);
+
+  allocator.deallocate(nullptr);
+  allocator.deallocate(nullptr, 32);
+  allocator.deallocate(nullptr, 32, 64);
+  EXPECT_EQ(allocator.getNumAllocatedMemoryBlocks(), 0);
+}
+
+//==============================================================================
+TEST(FixedPoolAllocatorTest, RejectsOverflowingAlignedRequests)
+{
+  CountingMemoryAllocator base;
+  FixedPoolAllocator allocator(32, base, 32 * 4);
+  const size_t allocationAttemptsAfterConstruction = base.allocationAttempts;
+
+  EXPECT_EQ(
+      allocator.allocate(std::numeric_limits<size_t>::max(), 64), nullptr);
+  EXPECT_EQ(base.allocationAttempts, allocationAttemptsAfterConstruction);
+  EXPECT_EQ(allocator.getNumAllocatedMemoryBlocks(), 0);
 }
 
 //==============================================================================
@@ -431,6 +593,26 @@ TEST(PoolAllocatorTest, DeallocateNullptr)
 }
 
 //==============================================================================
+TEST(PoolAllocatorTest, DebugRejectsMismatchedAndDoubleFree)
+{
+  auto allocator = PoolAllocator::Debug();
+
+  void* ptr = allocator.allocate(16);
+  ASSERT_NE(ptr, nullptr);
+  EXPECT_TRUE(allocator.hasAllocated(ptr, 16));
+
+  allocator.deallocate(ptr, 8);
+  EXPECT_TRUE(allocator.hasAllocated(ptr, 16));
+  EXPECT_FALSE(allocator.isEmpty());
+
+  allocator.deallocate(ptr, 16);
+  EXPECT_TRUE(allocator.isEmpty());
+
+  allocator.deallocate(ptr, 16);
+  EXPECT_TRUE(allocator.isEmpty());
+}
+
+//==============================================================================
 TEST(PoolAllocatorTest, RawAllocatorGrowsMemoryBlockTable)
 {
   PoolAllocator allocator;
@@ -439,13 +621,13 @@ TEST(PoolAllocatorTest, RawAllocatorGrowsMemoryBlockTable)
   EXPECT_EQ(&constAllocator.getBaseAllocator(), &MemoryAllocator::GetDefault());
 
   std::vector<std::pair<void*, std::size_t>> allocations;
-  for (std::size_t size = 8; size <= 8 * 65; size += 8) {
+  for (std::size_t size = 8; size <= 8 * 66; size += 8) {
     auto* ptr = allocator.allocate(size);
     ASSERT_NE(ptr, nullptr);
     allocations.emplace_back(ptr, size);
   }
 
-  EXPECT_EQ(allocator.getNumAllocatedMemoryBlocks(), 65);
+  EXPECT_GT(allocator.getNumAllocatedMemoryBlocks(), 64);
 
   for (const auto& [ptr, size] : allocations) {
     allocator.deallocate(ptr, size);

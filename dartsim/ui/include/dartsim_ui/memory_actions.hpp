@@ -19,7 +19,7 @@
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
  *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR
  *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
  *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
  *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
@@ -32,64 +32,54 @@
 
 #pragma once
 
-#include <dart/math/lcp/lcp_solver.hpp>
-#include <dart/math/lcp/pivoting/dantzig/lcp.hpp>
+#include <dartsim_engine/sim_engine.hpp>
 
+#include <string>
 #include <vector>
 
-namespace dart::math {
+#include <cstddef>
 
-/// Wrapper around the legacy Dantzig BLCP solver exposing the modern
-/// `LcpSolver` interface.
-class DART_API DantzigSolver : public LcpSolver
+namespace dartsim::ui {
+
+struct MemoryAllocatorStatus
 {
-public:
-  /// Reusable work storage for repeated same-shape Dantzig solves.
-  struct DART_API Scratch
-  {
-    std::vector<double> Adata;
-    std::vector<double> xdata;
-    std::vector<double> wdata;
-    std::vector<double> bdata;
-    std::vector<double> loData;
-    std::vector<double> hiData;
-    std::vector<int> findexData;
-    Eigen::VectorXd w;
-    Eigen::VectorXd loEff;
-    Eigen::VectorXd hiEff;
-    DantzigLcpScratch<double> lcp;
-
-    void clear() noexcept;
-  };
-
-  DantzigSolver();
-  ~DantzigSolver() override = default;
-
-  using LcpSolver::solve;
-
-  LcpResult solve(
-      const LcpProblem& problem,
-      Eigen::VectorXd& x,
-      const LcpOptions& options) override;
-
-  LcpResult solve(
-      const LcpProblem& problem,
-      Eigen::VectorXd& x,
-      Scratch& scratch,
-      const LcpOptions& options);
-
-  LcpResult solve(
-      const Eigen::MatrixXd& A,
-      const Eigen::VectorXd& b,
-      const Eigen::VectorXd& lo,
-      const Eigen::VectorXd& hi,
-      const Eigen::VectorXi& findex,
-      Eigen::VectorXd& x,
-      Scratch& scratch,
-      const LcpOptions& options);
-
-  std::string getName() const override;
-  std::string getCategory() const override;
+  std::string name;
+  std::size_t liveBytes = 0;
+  std::size_t peakLiveBytes = 0;
+  std::size_t liveAllocationCount = 0;
 };
 
-} // namespace dart::math
+struct MemoryEcsStorageStatus
+{
+  std::size_t storageId = 0;
+  std::size_t size = 0;
+  std::size_t capacity = 0;
+};
+
+/// Snapshot consumed by the editor Memory panel.
+struct MemoryStatus
+{
+  bool allocatorDebugEnabled = false;
+  std::string frameScratchLabel;
+  std::string allocatorDebugLabel;
+  std::string ecsSummaryLabel;
+  std::size_t frameScratchCapacityBytes = 0;
+  std::size_t frameScratchUsedBytes = 0;
+  std::size_t frameScratchPeakUsedBytes = 0;
+  std::size_t frameScratchOverflowCount = 0;
+  std::size_t frameScratchOverflowBytes = 0;
+  std::size_t frameScratchResetCount = 0;
+  std::size_t ecsEntityCount = 0;
+  std::size_t ecsEntityCapacity = 0;
+  std::size_t ecsStorageCount = 0;
+  std::size_t ecsComponentCount = 0;
+  std::size_t ecsComponentCapacity = 0;
+  std::vector<MemoryAllocatorStatus> allocators;
+  std::vector<MemoryEcsStorageStatus> largestStorages;
+};
+
+/// Build read-only panel data from the current DART 7 World diagnostics.
+[[nodiscard]] MemoryStatus buildMemoryStatus(
+    const SimEngine& engine, std::size_t storageLimit = 8);
+
+} // namespace dartsim::ui
