@@ -55,9 +55,9 @@
 - [x] Added focused Boxed Semi-Smooth Newton line-search sweep benchmark rows
       on standard, boxed, and friction-index fixtures.
 - [x] Added focused ADMM rho/adaptive-rho sweep benchmark rows on standard,
-      boxed, and friction-index fixtures.
+      boxed, and 8-/16-contact friction-index fixtures.
 - [x] Added focused SAP regularization sweep benchmark rows on standard, boxed,
-      and friction-index fixtures.
+      and 8-/16-contact friction-index fixtures.
 - [x] Added focused ADMM, SAP, and Boxed Semi-Smooth Newton contact comparison
       benchmark rows on DART 7 separated world-contact, coupled stack-contact,
       and articulated unified-contact fixtures.
@@ -1118,28 +1118,32 @@ tradeoffs evidence based.
   rows in a CUDA-enabled build, not CUDA LCP kernel execution.
 - Verified ADMM rho/adaptive-rho benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpAdmmRhoSweep' | wc -l`
-  reported 18 rows, and JSON checks for `BM_LcpAdmmRhoSweep` reported 18 rows
+  reported 24 rows, and JSON checks for `BM_LcpAdmmRhoSweep` reported 24 rows
   with `contract_ok=1` in the default, SIMD-enabled, and CUDA-enabled build
   trees. These rows cover standard 48-row, boxed 24-row, and friction-index
-  8-contact fixtures at `rhoInit` 0.5, 1.0, and 4.0 with fixed and adaptive
+  8-/16-contact fixtures at `rhoInit` 0.5, 1.0, and 4.0 with fixed and adaptive
   rho policies. The rows report `admm_rho_sweep=1`, `admm_rho_init`,
   `admm_fixed_rho`, `admm_adaptive_rho`,
   `admm_adaptive_rho_tolerance`, `admm_mu_prox`, `problem_size=24/48`,
-  `contact_count=8` for the friction-index rows, and backend build-state
+  `contact_count=8/16` for the friction-index rows, and backend build-state
   counters. The CUDA-enabled rows report `build_cuda_enabled=1` but are CPU
   ADMM solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
 - Verified SAP regularization benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpSapRegularizationSweep' | wc -l`
-  reported 9 rows, and JSON checks for `BM_LcpSapRegularizationSweep` reported
-  9 rows with `contract_ok=1` in the default, SIMD-enabled, and CUDA-enabled
+  reported 12 rows, and JSON checks for `BM_LcpSapRegularizationSweep` reported
+  12 rows with `contract_ok=1` in the default, SIMD-enabled, and CUDA-enabled
   build trees. These rows cover standard 48-row, boxed 24-row, and
-  friction-index 8-contact fixtures at regularization values `1e-6`, `1e-5`,
-  and `1e-4`. The rows report `sap_regularization_sweep=1`,
+  friction-index 8-/16-contact fixtures at regularization values `1e-6`,
+  `1e-5`, and `1e-4`. The rows report `sap_regularization_sweep=1`,
   `sap_regularization`, `sap_armijo_parameter`, `sap_backtracking_factor`,
-  `sap_max_line_search_iterations`, `problem_size=24/48`, `contact_count=8`
+  `sap_max_line_search_iterations`, `problem_size=24/48`, `contact_count=8/16`
   for the friction-index rows, and backend build-state counters. The
   CUDA-enabled rows report `build_cuda_enabled=1` but are CPU SAP solver rows
   in a CUDA-enabled build, not CUDA LCP kernel execution.
+  The combined current ADMM/SAP sweep filter reports `rows=36`, `failures=0`,
+  24 ADMM rows, 12 SAP rows, and 9 `contact_count=16` rows in default,
+  SIMD-enabled, and CUDA-enabled build trees; the SIMD and CUDA-enabled runs
+  report `simd_rows=36` and `cuda_rows=36`, respectively.
 - Verified scoped-solver extreme-coupling slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpMildIllConditioned/ExtremeCoupledFrictionIndex' | wc -l`
   now reports 135 single-problem rows, and focused checks for

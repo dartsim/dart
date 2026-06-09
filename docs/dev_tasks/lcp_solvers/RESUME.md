@@ -195,24 +195,28 @@ The combined current projection-sweep filter reports `rows=48`, `failures=0`,
 12 rows per solver, and 12 `contact_count=16` rows in default, SIMD-enabled,
 and CUDA-enabled build trees; the SIMD and CUDA-enabled runs report
 `simd_rows=48` and `cuda_rows=48`, respectively.
-It now also adds 18 `BM_LcpAdmmRhoSweep` benchmark rows for the `AdmmSolver`
+It now also adds 24 `BM_LcpAdmmRhoSweep` benchmark rows for the `AdmmSolver`
 rho/adaptive-rho path, covering standard 48-row, boxed 24-row, and
-friction-index 8-contact fixtures at `rhoInit` 0.5, 1.0, and 4.0 with fixed
-and adaptive rho policies. Focused default, SIMD-enabled, and CUDA-enabled
+friction-index 8-/16-contact fixtures at `rhoInit` 0.5, 1.0, and 4.0 with
+fixed and adaptive rho policies. Focused default, SIMD-enabled, and CUDA-enabled
 build-tree runs passed with `contract_ok=1` on every row and recorded
 `admm_rho_sweep`, `admm_rho_init`, fixed/adaptive policy counters,
 `admm_adaptive_rho_tolerance`, `admm_mu_prox`, backend build-state counters,
-and `contact_count=8` for the friction-index rows. The CUDA-enabled rows are
+and `contact_count=8/16` for the friction-index rows. The CUDA-enabled rows are
 CPU ADMM solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
-It now also adds 9 `BM_LcpSapRegularizationSweep` benchmark rows for the
+It now also adds 12 `BM_LcpSapRegularizationSweep` benchmark rows for the
 `SapSolver` regularized objective path, covering standard 48-row, boxed
-24-row, and friction-index 8-contact fixtures at regularization values `1e-6`,
-`1e-5`, and `1e-4`. Focused default, SIMD-enabled, and CUDA-enabled build-tree
-runs passed with `contract_ok=1` on every row and recorded
+24-row, and friction-index 8-/16-contact fixtures at regularization values
+`1e-6`, `1e-5`, and `1e-4`. Focused default, SIMD-enabled, and CUDA-enabled
+build-tree runs passed with `contract_ok=1` on every row and recorded
 `sap_regularization_sweep`, `sap_regularization`, Armijo/backtracking
 parameters, `sap_max_line_search_iterations`, backend build-state counters,
-and `contact_count=8` for the friction-index rows. The CUDA-enabled rows are
+and `contact_count=8/16` for the friction-index rows. The CUDA-enabled rows are
 CPU SAP solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
+The combined current ADMM/SAP sweep filter reports `rows=36`, `failures=0`, 24
+ADMM rows, 12 SAP rows, and 9 `contact_count=16` rows in default, SIMD-enabled,
+and CUDA-enabled build trees; the SIMD and CUDA-enabled runs report
+`simd_rows=36` and `cuda_rows=36`, respectively.
 It now also broadens the 1x-/4x-/8x-coupled mildly ill-conditioned
 friction-index slice to the scoped iterative solvers plus Boxed Semi-Smooth Newton: the
 generated known-solution coverage and
@@ -1040,12 +1044,12 @@ contact scenes.
   unit tests also pass the invalid-worker, serial/threaded equivalence, and
   4-worker 128-row known-solution checks. This is CPU threaded
   independent-block update-path evidence, not a speedup or CUDA-kernel claim.
-- `BM_LCP_COMPARE` now lists 18 focused ADMM rho/adaptive-rho sweep rows for
-  the same standard 48-row, boxed 24-row, and friction-index 8-contact
+- `BM_LCP_COMPARE` now lists 24 focused ADMM rho/adaptive-rho sweep rows for
+  the same standard 48-row, boxed 24-row, and friction-index 8-/16-contact
   fixtures at `rhoInit` 0.5, 1.0, and 4.0 under fixed and adaptive rho
   policies. Default, SIMD, and CUDA-enabled focused runs report
   `contract_ok=1`, `admm_rho_sweep=1`, rho/policy counters, backend
-  build-state counters, and `contact_count=8` for the friction-index rows.
+  build-state counters, and `contact_count=8/16` for the friction-index rows.
   Treat the CUDA-enabled rows as CPU ADMM solver rows in a CUDA-enabled build,
   not CUDA LCP kernel execution.
 - `BM_LCP_COMPARE` now lists 27 focused contact comparison rows for `Admm`,

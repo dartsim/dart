@@ -3700,7 +3700,7 @@ constexpr std::array<InteriorPointPathSweepCase, 9>
          0x7014u},
     }};
 
-constexpr std::array<AdmmRhoSweepCase, 18> kAdmmRhoSweepCases{{
+constexpr std::array<AdmmRhoSweepCase, 24> kAdmmRhoSweepCases{{
     {BenchmarkProblemFamily::Standard, 48, 0.5, false, "Rho0_5", "Fixed"},
     {BenchmarkProblemFamily::Standard, 48, 1.0, false, "Rho1_0", "Fixed"},
     {BenchmarkProblemFamily::Standard, 48, 4.0, false, "Rho4_0", "Fixed"},
@@ -3719,9 +3719,45 @@ constexpr std::array<AdmmRhoSweepCase, 18> kAdmmRhoSweepCases{{
     {BenchmarkProblemFamily::FrictionIndex, 8, 0.5, true, "Rho0_5", "Adaptive"},
     {BenchmarkProblemFamily::FrictionIndex, 8, 1.0, true, "Rho1_0", "Adaptive"},
     {BenchmarkProblemFamily::FrictionIndex, 8, 4.0, true, "Rho4_0", "Adaptive"},
+    {BenchmarkProblemFamily::FrictionIndex,
+     16,
+     0.5,
+     false,
+     "Contacts16Rho0_5",
+     "Fixed"},
+    {BenchmarkProblemFamily::FrictionIndex,
+     16,
+     1.0,
+     false,
+     "Contacts16Rho1_0",
+     "Fixed"},
+    {BenchmarkProblemFamily::FrictionIndex,
+     16,
+     4.0,
+     false,
+     "Contacts16Rho4_0",
+     "Fixed"},
+    {BenchmarkProblemFamily::FrictionIndex,
+     16,
+     0.5,
+     true,
+     "Contacts16Rho0_5",
+     "Adaptive"},
+    {BenchmarkProblemFamily::FrictionIndex,
+     16,
+     1.0,
+     true,
+     "Contacts16Rho1_0",
+     "Adaptive"},
+    {BenchmarkProblemFamily::FrictionIndex,
+     16,
+     4.0,
+     true,
+     "Contacts16Rho4_0",
+     "Adaptive"},
 }};
 
-constexpr std::array<SapRegularizationSweepCase, 9>
+constexpr std::array<SapRegularizationSweepCase, 12>
     kSapRegularizationSweepCases{{
         {BenchmarkProblemFamily::Standard, 48, 1e-6, "Reg1e_6"},
         {BenchmarkProblemFamily::Standard, 48, 1e-5, "Reg1e_5"},
@@ -3732,6 +3768,9 @@ constexpr std::array<SapRegularizationSweepCase, 9>
         {BenchmarkProblemFamily::FrictionIndex, 8, 1e-6, "Reg1e_6"},
         {BenchmarkProblemFamily::FrictionIndex, 8, 1e-5, "Reg1e_5"},
         {BenchmarkProblemFamily::FrictionIndex, 8, 1e-4, "Reg1e_4"},
+        {BenchmarkProblemFamily::FrictionIndex, 16, 1e-6, "Contacts16Reg1e_6"},
+        {BenchmarkProblemFamily::FrictionIndex, 16, 1e-5, "Contacts16Reg1e_5"},
+        {BenchmarkProblemFamily::FrictionIndex, 16, 1e-4, "Contacts16Reg1e_4"},
     }};
 
 std::string_view getNewtonWarmStartModeName(const NewtonWarmStartMode mode)

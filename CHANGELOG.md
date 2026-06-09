@@ -1293,11 +1293,13 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     `kLcpSolverManifest` by the all-solvers smoke test so documented DART 7 LCP
     solver availability cannot drift silently from implementation coverage.
   - Added DART 7 ADMM rho/adaptive-rho comparison benchmark rows for standard,
-    boxed, and friction-index LCP fixtures, with backend build-state counters
-    distinguishing default, SIMD-enabled, and CUDA-enabled CPU solver runs.
+    boxed, and 8-/16-contact friction-index LCP fixtures, with backend
+    build-state counters distinguishing default, SIMD-enabled, and CUDA-enabled
+    CPU solver runs.
   - Added DART 7 SAP regularization comparison benchmark rows for standard,
-    boxed, and friction-index LCP fixtures, with backend build-state counters
-    distinguishing default, SIMD-enabled, and CUDA-enabled CPU solver runs.
+    boxed, and 8-/16-contact friction-index LCP fixtures, with backend
+    build-state counters distinguishing default, SIMD-enabled, and CUDA-enabled
+    CPU solver runs.
   - Added DART 7 ADMM, SAP, and Boxed Semi-Smooth Newton contact comparison
     benchmark rows for separated world-contact, coupled stack-contact, and
     articulated unified-contact friction-index fixtures, with backend
