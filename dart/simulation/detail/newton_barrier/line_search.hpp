@@ -40,6 +40,9 @@
 
 namespace dart::simulation::detail::newton_barrier {
 
+inline constexpr double kDefaultSufficientDecreaseFactor = 1e-4;
+inline constexpr double kDefaultBacktrackingScale = 0.5;
+
 struct LineSearchOptions
 {
   double minSeparation = 0.0;
@@ -111,6 +114,51 @@ struct LineSearchCcdOutcome
   }
 
   return interiorStepScale;
+}
+
+[[nodiscard]] inline double sanitizeSufficientDecreaseFactor(
+    const double factor) noexcept
+{
+  if (!std::isfinite(factor)) {
+    return kDefaultSufficientDecreaseFactor;
+  }
+
+  return std::clamp(factor, 0.0, std::nextafter(1.0, 0.0));
+}
+
+[[nodiscard]] inline double sanitizeBacktrackingScale(
+    const double scale) noexcept
+{
+  if (!(std::isfinite(scale) && scale > 0.0 && scale < 1.0)) {
+    return kDefaultBacktrackingScale;
+  }
+
+  return scale;
+}
+
+[[nodiscard]] inline double sufficientDecreaseThreshold(
+    const double currentValue,
+    const double scaledDirectionalDerivative,
+    const double factor = kDefaultSufficientDecreaseFactor) noexcept
+{
+  return currentValue
+         + sanitizeSufficientDecreaseFactor(factor)
+               * scaledDirectionalDerivative;
+}
+
+[[nodiscard]] inline bool satisfiesSufficientDecrease(
+    const double currentValue,
+    const double candidateValue,
+    const double scaledDirectionalDerivative,
+    const double factor = kDefaultSufficientDecreaseFactor) noexcept
+{
+  if (!std::isfinite(currentValue) || !std::isfinite(candidateValue)
+      || !std::isfinite(scaledDirectionalDerivative)) {
+    return false;
+  }
+
+  return candidateValue <= sufficientDecreaseThreshold(
+             currentValue, scaledDirectionalDerivative, factor);
 }
 
 [[nodiscard]] inline double recordLineSearchHit(
