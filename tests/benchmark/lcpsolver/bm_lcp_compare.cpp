@@ -8755,7 +8755,7 @@ void RunWorldStackContactBenchmark(
   if (solverEntry.name == "Pgs") {
     // The 12-sphere coupled stack converges in 302 PGS iterations; the
     // default 100-iteration cap leaves the 8-sphere row outside the LCP
-    // contract. The 24-sphere row needs 886 iterations.
+    // contract. The 24-/32-sphere rows need 886/1344 iterations.
     storage.options.maxIterations = 512;
     if (sphereCount >= 24) {
       storage.options.maxIterations = 2048;
@@ -8763,7 +8763,7 @@ void RunWorldStackContactBenchmark(
   } else if (solverEntry.name == "Jacobi") {
     // The 12-sphere coupled stack converges in 452 Jacobi iterations; the
     // default 100-iteration cap leaves the 8-sphere row outside the same LCP
-    // contract. The 14-/15-/16-/24-sphere rows need 568/628/688/1184
+    // contract. The 14-/15-/16-/24-/32-sphere rows need 568/628/688/1184/1672
     // iterations.
     storage.options.maxIterations = 512;
     if (sphereCount >= 14) {
@@ -8775,7 +8775,8 @@ void RunWorldStackContactBenchmark(
   } else if (solverEntry.name == "BlockedJacobi") {
     // The 12-sphere coupled stack converges in 452 blocked Jacobi iterations;
     // the default 100-iteration cap leaves the 8-sphere row outside the same
-    // LCP contract. The 14-/15-/16-/24-sphere rows need 568/628/688/1184
+    // LCP contract. The 14-/15-/16-/24-/32-sphere rows need
+    // 568/628/688/1184/1672
     // iterations.
     storage.options.maxIterations = 512;
     if (sphereCount >= 14) {
@@ -8787,8 +8788,8 @@ void RunWorldStackContactBenchmark(
   } else if (solverEntry.name == "NNCG") {
     // Coupled stack contacts need a stronger PGS preconditioner than the
     // generated math fixtures; the 12-sphere row needs a stronger
-    // preconditioner than the smaller coupled-stack rows, and the 24-sphere row
-    // needs 160 PGS preconditioner iterations.
+    // preconditioner than the smaller coupled-stack rows, and the 24-/32-sphere
+    // rows need 160 PGS preconditioner iterations.
     storage.nncgParams.pgsIterations = 20;
     if (sphereCount >= 11) {
       storage.options.maxIterations = 512;
@@ -8801,12 +8802,14 @@ void RunWorldStackContactBenchmark(
       storage.nncgParams.pgsIterations = 160;
     }
   } else if (solverEntry.name == "SymmetricPsor") {
-    // The 11-/12-sphere rows converge just past the default 100-iteration cap.
+    // The 11-/12-/24-/32-sphere rows converge past the default 100-iteration
+    // cap.
     if (sphereCount >= 11) {
       storage.options.maxIterations = 512;
     }
   } else if (solverEntry.name == "BGS") {
-    // The 12-/24-sphere rows need 219/573 block Gauss-Seidel iterations.
+    // The 12-/24-/32-sphere rows need 219/573/810 block Gauss-Seidel
+    // iterations.
     if (sphereCount >= 11) {
       storage.options.maxIterations = 512;
     }
@@ -8816,19 +8819,21 @@ void RunWorldStackContactBenchmark(
   } else if (solverEntry.name == "RedBlackGaussSeidel") {
     // The 12-sphere coupled stack converges in 259 two-color iterations; 128
     // iterations leave the 8-sphere row just outside the same LCP contract.
-    // The 24-sphere row needs 727 iterations.
+    // The 24-/32-sphere rows need 727/1071 iterations.
     storage.options.maxIterations = 512;
     if (sphereCount >= 24) {
       storage.options.maxIterations = 2048;
     }
   } else if (solverEntry.name == "ShockPropagation") {
-    // The 12-/24-sphere coupled stacks need 219/573 shock-propagation sweeps.
+    // The 12-/24-/32-sphere coupled stacks need 219/573/810
+    // shock-propagation sweeps.
     storage.options.maxIterations = 512;
     if (sphereCount >= 24) {
       storage.options.maxIterations = 2048;
     }
   } else if (solverEntry.name == "Tgs") {
-    // The 12-/24-sphere rows need 302/886 temporal Gauss-Seidel iterations.
+    // The 12-/24-/32-sphere rows need 302/886/1344 temporal Gauss-Seidel
+    // iterations.
     if (sphereCount >= 11) {
       storage.options.maxIterations = 512;
     }
@@ -12369,7 +12374,7 @@ void RegisterWorldStackContactBenchmarks()
       registeredBenchmark->Arg(8)->Arg(9)->Arg(10);
     }
     registeredBenchmark->Arg(11)->Arg(12)->Arg(13)->Arg(14)->Arg(15)->Arg(16);
-    registeredBenchmark->Arg(24);
+    registeredBenchmark->Arg(24)->Arg(32);
   }
 }
 
