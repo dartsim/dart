@@ -157,12 +157,16 @@ counts, serial/threaded equivalence on a standard SPD fixture, and a 4-worker
 128-row generated known-solution case. Focused
 `BM_LcpRedBlackGaussSeidelSolverThreadingBanded_Standard` rows pass in
 default, SIMD-enabled, and CUDA-enabled build trees for 128-row serial/4-worker
-and 512-/1024-/2048-row serial/4-/8-worker banded packets with `contract_ok=1`,
-`solver_internal_threads=1/4/8`,
-`red_black_color_count=2`, `red_black_red_rows=64/256/512/1024`,
-`red_black_black_rows=64/256/512/1024`, and
+and 512-/1024-/2048-row serial/4-/8-worker banded packets plus
+4096-/8192-row serial/32-worker banded packets with `contract_ok=1`,
+`solver_internal_threads=1/4/8/32`,
+`red_black_color_count=2`, `red_black_red_rows=64/256/512/1024/2048/4096`,
+`red_black_black_rows=64/256/512/1024/2048/4096`, and
 `red_black_threaded_color_updates=0/1`. This is
 larger CPU threaded update-path evidence, not a speedup or CUDA-kernel claim.
+The focused 4096-/8192-row follow-up rows report
+`matrix_nonzero_entries=20474/40954`, `matrix_density=0.001220345/0.000610262`,
+and `contract_ok=1` in default, SIMD-enabled, and CUDA-enabled build trees.
 It now also adds 12 `BM_LcpApgdRestartSweep` benchmark rows for the
 `ApgdSolver` adaptive-restart path, covering standard 48-row, boxed 24-row,
 and friction-index 8-/16-contact fixtures for adaptive restart every iteration,
@@ -379,12 +383,15 @@ worker counts, serial/threaded equivalence on a standard SPD fixture, and a
 4-worker 128-row generated known-solution case. Focused
 `BM_LcpBlockedJacobiSolverThreadingBanded_Standard` rows pass in default,
 SIMD-enabled, and CUDA-enabled build trees for 128-row serial/4-worker and
-512-/1024-/2048-row serial/4-/8-worker banded packets with `contract_ok=1`,
-`solver_internal_threads=1/4/8`, `block_count=128/512/1024/2048`,
+512-/1024-/2048-row serial/4-/8-worker banded packets plus
+4096-/8192-row serial/32-worker banded packets with `contract_ok=1`,
+`solver_internal_threads=1/4/8/32`, `block_count=128/512/1024/2048/4096/8192`,
 `blocked_jacobi_auto_singleton_blocks=1`, and
 `blocked_jacobi_threaded_block_updates=0/1`. This is CPU threaded
 independent-block update-path evidence over larger banded packets, not a
-speedup or CUDA-kernel claim.
+speedup or CUDA-kernel claim. The focused 4096-/8192-row follow-up rows report
+`matrix_nonzero_entries=20474/40954`, `matrix_density=0.001220345/0.000610262`,
+and `contract_ok=1` in default, SIMD-enabled, and CUDA-enabled build trees.
 It now also extends the robust near-singular generated slice to coupled
 friction-index 256-contact packets and adds 31 `BM_LcpNearSingular` benchmark
 rows for standard 8-row, boxed 8-row, and coupled friction-index 3-, 6-, 9-,
@@ -1120,29 +1127,34 @@ dense/robot-like contact scenes.
   build-state counters, and `contact_count=8/16` for the friction-index rows.
   Treat the CUDA-enabled rows as CPU solver rows in a CUDA-enabled build, not
   CUDA LCP kernel execution.
-- `BM_LCP_COMPARE` now lists 11 focused
+- `BM_LCP_COMPARE` now lists 15 focused
   `BM_LcpRedBlackGaussSeidelSolverThreadingBanded_Standard` rows for 128-row
-  serial/4-worker and 512-/1024-/2048-row serial/4-/8-worker banded packets.
-  The focused default, SIMD-enabled, and CUDA-enabled runs report
-  `contract_ok=1`, `problem_size=128/512/1024/2048`,
-  `solver_internal_threads=1/4/8`,
+  serial/4-worker, 512-/1024-/2048-row serial/4-/8-worker, and
+  4096-/8192-row serial/32-worker banded packets. The focused default,
+  SIMD-enabled, and CUDA-enabled runs report
+  `contract_ok=1`, `problem_size=128/512/1024/2048/4096/8192`,
+  `solver_internal_threads=1/4/8/32`,
   `red_black_threading=1`, `red_black_color_count=2`,
-  `red_black_red_rows=64/256/512/1024`,
-  `red_black_black_rows=64/256/512/1024`,
+  `red_black_red_rows=64/256/512/1024/2048/4096`,
+  `red_black_black_rows=64/256/512/1024/2048/4096`,
   `red_black_threaded_color_updates=0/1`,
-  `band_half_width=2`, and backend build-state counters. The focused
+  `band_half_width=2`, `matrix_nonzero_entries=20474/40954` on the new
+  4096-/8192-row rows, and backend build-state counters. The focused
   projection and generated-coverage unit tests also pass the invalid-worker,
   serial/threaded equivalence, and 4-worker 128-row known-solution checks.
   This is CPU threaded update-path evidence, not a speedup or CUDA-kernel claim.
-- `BM_LCP_COMPARE` now lists 11 focused
+- `BM_LCP_COMPARE` now lists 15 focused
   `BM_LcpBlockedJacobiSolverThreadingBanded_Standard` rows for 128-row
-  serial/4-worker and 512-/1024-/2048-row serial/4-/8-worker banded packets. The
-  focused default, SIMD-enabled, and CUDA-enabled runs report `contract_ok=1`,
-  `problem_size=128/512/1024/2048`, `solver_internal_threads=1/4/8`,
-  `blocked_jacobi_threading=1`, `block_count=128/512/1024/2048`,
+  serial/4-worker, 512-/1024-/2048-row serial/4-/8-worker, and
+  4096-/8192-row serial/32-worker banded packets. The focused default,
+  SIMD-enabled, and CUDA-enabled runs report `contract_ok=1`,
+  `problem_size=128/512/1024/2048/4096/8192`,
+  `solver_internal_threads=1/4/8/32`,
+  `blocked_jacobi_threading=1`, `block_count=128/512/1024/2048/4096/8192`,
   `blocked_jacobi_auto_singleton_blocks=1`,
   `blocked_jacobi_threaded_block_updates=0/1`, `band_half_width=2`, and
-  backend build-state counters. The focused projection and generated-coverage
+  `matrix_nonzero_entries=20474/40954` on the new 4096-/8192-row rows. The
+  focused projection and generated-coverage
   unit tests also pass the invalid-worker, serial/threaded equivalence, and
   4-worker 128-row known-solution checks. This is CPU threaded
   independent-block update-path evidence, not a speedup or CUDA-kernel claim.
