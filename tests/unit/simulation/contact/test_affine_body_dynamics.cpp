@@ -287,6 +287,7 @@ void expectRigidFrictionOracleMatches(
   ASSERT_TRUE(affine.active);
   ASSERT_TRUE(rigid.active);
   EXPECT_NEAR(affine.value, rigid.value, 1e-14);
+  EXPECT_NEAR(affine.work, rigid.potential.work, 1e-14);
   expectVectorNear(
       affine.tangentialDisplacement,
       rigid.potential.tangentialDisplacement,

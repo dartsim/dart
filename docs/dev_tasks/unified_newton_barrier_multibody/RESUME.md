@@ -85,6 +85,19 @@ only prove an indeterminate zero step, `detail/newton_barrier` now increments
 the same zero-step counter used for zero-time hits. Rigid IPC and deformable CCD
 still own their distinct limiting payloads and indeterminate-result policies.
 
+The Phase 3 closeout routes deformable projected-Newton backtracking through
+the shared Newton-barrier default scale and routes rigid IPC's option defaults
+through the same shared scalar constants without moving projected-Newton
+result/status terminology, line-search result payloads, solver diagnostics, or
+additional benchmark-schema contracts out of their variant owners.
+
+The implementation-roadmap Phase 2 closeout is now branch-local on
+`simx/plan083-phase-2-shared-solver-contracts`: full-step line-search
+feasibility, projected-Newton residual/tolerance diagnostics, lagged-friction
+work diagnostics, and benchmark packet timing schema helpers are shared under
+their internal owners with focused cross-variant tests. This completes the
+Shared Solver Contracts phase; do not open more sub-item PRs for this phase.
+
 ## Last Session Summary
 
 Current slice: the first ABD benchmark packet has been promoted from
@@ -165,34 +178,19 @@ build/CTest entries.
 
 ## Current Branch
 
-`simx/shared-newton-barrier-sufficient-decrease` - contains the Phase 3
-Newton-barrier sufficient-decrease policy slice after PR #2946 landed. Verify
-the exact status with `git status --short --branch` because this section is a
-resume snapshot.
+`simx/plan083-phase-2-shared-solver-contracts` - contains the
+implementation-roadmap Phase 2 shared solver contract closeout. It should become
+one phase-scoped PR after merging the latest `origin/main` and rerunning the
+required gates.
 
 ## Immediate Next Step
 
-With the sufficient-decrease policy slice merged to `main`, collect remaining
-Phase 3 work into the current branch and open one PR for the phase. Continue
-from
-[`../../plans/083-unified-newton-barrier-multibody/abd-first-slice-design.md`](../../plans/083-unified-newton-barrier-multibody/abd-first-slice-design.md):
-resume shared-contract scouting from the existing rigid IPC, deformable IPC,
-ABD, and benchmark-packet evidence. Do not add a two-body affine contact
-micro-solve for the current
-`abd-alg-affine-body` micro-packet; add
-projected-Newton, line-search result semantics, diagnostics, or
-benchmark-schema contracts only after second-use behavior is proven identical
-across variants. Use
-[`../../plans/083-unified-newton-barrier-multibody/implementation-roadmap.md`](../../plans/083-unified-newton-barrier-multibody/implementation-roadmap.md)
-to keep the Phase 2 packet, shared solver contracts, articulation rows,
-restitution work, mixed-domain coupling, CPU/GPU parity, and py-demos rows
-sequenced without lowering the final completion target. Add a two-body affine
-contact micro-solve only if a later manifest row needs a solved-state residual
-or runtime stepping diagnostic. Use the new
-[`../../plans/083-unified-newton-barrier-multibody/ipc-variant-consolidation.md`](../../plans/083-unified-newton-barrier-multibody/ipc-variant-consolidation.md)
-sidecar when deciding whether a primitive/API/benchmark row belongs to
-deformable IPC, codimensional IPC, rigid IPC, ABD, PD-IPC GPU, SPB recovery,
-VBD/OGC-adjacent work, or shared Newton-barrier infrastructure.
+Merge the latest `origin/main` into
+`simx/plan083-phase-2-shared-solver-contracts`, rerun lint and the focused Phase
+2 validation gates, then open one phase-scoped PR for implementation-roadmap
+Phase 2. After that PR lands, start implementation-roadmap Phase 3: Unified
+Articulation Constraints. Do not start dev-task Phase 4 manifest expansion as a
+substitute for the roadmap Phase 3 articulation work.
 
 ## Context That Would Be Lost
 
@@ -218,14 +216,14 @@ VBD/OGC-adjacent work, or shared Newton-barrier infrastructure.
   `detail/newton_barrier` so rigid IPC and ABD share the same Coulomb smoothing
   branch before reduced/affine chain rules.
 - `detail/newton_barrier/line_search.hpp` owns the shared line-search
-  option/stat types, the positive-step predicate, the conservative native CCD
+  option/stat types, positive/full-step predicates, the conservative native CCD
   option adapter, and the step-scale helpers. Do not move full line-search
   result structs there until rigid, deformable, ABD, or another variant prove
   identical result semantics.
 - `scripts/benchmark_packet_utils.py` owns the shared Google Benchmark row
-  parsing utilities for packet validators and writers. Keep packet-specific
-  metadata and go/no-go gates in each checker until more variants prove
-  identical semantics.
+  parsing utilities plus the per-step/subphase timing schema for packet
+  validators and writers. Keep packet-specific metadata and go/no-go gates in
+  each checker until more variants prove identical semantics.
 - `bm_affine_body_dynamics` currently contains the first ABD benchmark packet:
   affine point-triangle barrier mapping, matched rigid IPC point-triangle oracle
   row, and orthogonality energy.
@@ -257,9 +255,8 @@ sed -n '1,220p' docs/dev_tasks/unified_newton_barrier_multibody/README.md
 sed -n '1,220p' docs/plans/083-unified-newton-barrier-multibody/abd-first-slice-design.md
 ```
 
-Then verify the current branch with lint and the focused line-search helper
-simulation tests. Re-run the focused Python packet tests or
-`pixi run bm-abd-comparison-packet` only if packet utility or ABD checker
-behavior changes beyond the merge. After this slice, continue with Phase 3
-shared-contract scouting; do not describe the micro-packet as a runtime ABD
+Then merge the latest `origin/main`, verify the current branch with lint and
+the focused Phase 2 simulation/Python tests, and open one PR for the whole
+implementation-roadmap Phase 2. After that PR lands, continue with roadmap Phase
+3 articulation constraints; do not describe the micro-packet as a runtime ABD
 solver or a paper-scale performance row.
