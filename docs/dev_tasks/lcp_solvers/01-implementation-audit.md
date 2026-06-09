@@ -98,11 +98,12 @@ Support abbreviations:
   vectorized/CUDA LCP batch-processing paths are still missing. The narrow CUDA
   Jacobi/PGS batch evidence now includes direct synthetic standard/boxed/findex packets through
   256-row and 96-contact sizes and grouped variable-size synthetic
-  standard/boxed/findex packets through 192-row and 64-contact groups, matching
+  standard/boxed/findex packets through 256-row and 96-contact groups, matching
   CPU serial and DART 7 `ParallelExecutor` Jacobi/PGS batch rows at the direct and grouped CUDA packet sizes in
   default, SIMD-enabled, and CUDA-enabled build trees, homogeneous 4-/8-/16-contact and grouped variable-size
-  1/2/4/8/16-contact DART 7 sphere-ground world-contact packets, homogeneous
-  5-/6-/7-/8-sphere and grouped variable-size 2/3/4/5/6/7/8-sphere coupled stack-contact
+  1/2/4/8/16/24/32-contact DART 7 sphere-ground world-contact packets, homogeneous
+  5-/6-/7-/8-/9-/10-/11-/12-/13-/14-/15-/16-sphere and grouped variable-size
+  2/3/4/5/6/7/8/9/10/11/12/13/14/15/16-sphere coupled stack-contact
   packets, grouped variable-size 1-/4-/8-/16-/24-/32-contact articulated unified-contact
   packets with two- and three-variant grouped benchmark rows including
   cross-multibody link-vs-link cases, Jacobi homogeneous dense box-face
@@ -1464,7 +1465,7 @@ The current local evidence for this task is:
   CUDA-enabled build, including standard, boxed, friction-index, and
   grouped variable-size synthetic standard/boxed/friction-index plus
   contact-derived world-contact, homogeneous 5-/6-/7-/8-sphere and grouped
-  variable-size 1/2/4/8/16-contact separated world-contact and
+  variable-size 1/2/4/8/16/24/32-contact separated world-contact and
   2/3/4/5/6/7/8-sphere coupled stack-contact with two and three variants per
   contact or sphere count, and articulated
   unified-contact batches including cross-multibody link-vs-link packets, plus
@@ -1543,14 +1544,13 @@ The current local evidence for this task is:
   `sphere_count=8`, `contact_count=8`, `problem_size=24`,
   `total_contact_count=32`, and `total_problem_size=96`.
   The separated grouped variable-size rows now
-  use 1/2/4/8/16-contact sphere-ground packets. The `/2` benchmark rows report
-  `batch_size=10`,
-  `cuda_group_count=5`, `contact_shape_count=5`, `min_problem_size=3`,
-  `max_problem_size=48`, `total_contact_count=62`, and
-  `total_problem_size=186`; the `/3` rows report
-  `problem_variants_per_shape=3`, `batch_size=15`, `cuda_group_count=5`,
-  `contact_shape_count=5`, `min_problem_size=3`, `max_problem_size=48`,
-  `total_contact_count=93`, and `total_problem_size=279`. The coupled stack
+  use 1/2/4/8/16/24/32-contact sphere-ground packets. The `/2` benchmark rows
+  report `batch_size=14`, `cuda_group_count=7`, `contact_shape_count=7`,
+  `min_problem_size=3`, `max_problem_size=96`, `total_contact_count=174`, and
+  `total_problem_size=522`; the `/3` rows report
+  `problem_variants_per_shape=3`, `batch_size=21`, `cuda_group_count=7`,
+  `contact_shape_count=7`, `min_problem_size=3`, `max_problem_size=96`,
+  `total_contact_count=261`, and `total_problem_size=783`. The coupled stack
   grouped variable-size rows now use 2/3/4/5/6/7/8-sphere stack packets. The
   `/2` benchmark rows report
   `batch_size=14`, `cuda_group_count=7`, `contact_shape_count=7`,
@@ -1726,9 +1726,9 @@ The current local evidence for this task is:
   and PGS
   standard/boxed/friction-index through direct 256-row and 96-contact packets
   plus grouped variable-size synthetic standard/boxed/friction-index through
-  192-row and 64-contact groups with two- and three-variant rows, homogeneous
+  256-row and 96-contact groups with two- and three-variant rows, homogeneous
   4-/8-/16-contact, homogeneous
-  5-/6-/7-/8-sphere coupled stack, grouped variable-size 1/2/4/8/16-contact separated
+  5-/6-/7-/8-sphere coupled stack, grouped variable-size 1/2/4/8/16/24/32-contact separated
   sphere-ground and 2/3/4/5/6/7/8-sphere coupled stack world-contact batch
   paths with two- and three-variant grouped benchmark rows, plus manually
   assembled 1-/4-/8-/16-/24-/32-contact articulated unified-contact batch paths with

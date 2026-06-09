@@ -88,7 +88,7 @@
       friction-index LCP packets, grouped variable-size synthetic standard,
       boxed, and friction-index packets, homogeneous 4-, 8-, and 16-contact
       DART 7 world-contact packets, homogeneous 5-/6-/7-/8-/9-/10-/11-/12-/13-/14-/15-/16-sphere coupled
-      stack-contact packets, grouped variable-size 1/2/4/8/16-contact
+      stack-contact packets, grouped variable-size 1/2/4/8/16/24/32-contact
       sphere-ground packets, grouped variable-size 2/3/4/5/6/7/8/9/10/11/12/13/14/15/16-sphere
       coupled stack-contact packets with two- and three-variant stack grouped
       benchmark rows, and
@@ -451,7 +451,7 @@
       8-/16-/32-/48-/64-/96-contact packets at batch size 4, verified in default,
       SIMD-enabled, and CUDA-enabled build trees.
 - [x] Added grouped variable-size CUDA contact-batch evidence for DART 7
-      1/2/4/8/16-contact separated sphere-ground packets, covering
+      1/2/4/8/16/24/32-contact separated sphere-ground packets, covering
       fixed-iteration CUDA Jacobi and PGS unit tests and benchmark rows on the
       visible GPU.
       The separated grouped tests now run two and three velocity variants per
@@ -692,7 +692,7 @@ tradeoffs evidence based.
   variable-size synthetic standard/boxed/friction-index CUDA batches,
   homogeneous contact-derived world-contact CUDA batches, homogeneous
   5-/6-/7-/8-sphere coupled stack-contact CUDA batches, and grouped
-  variable-size 1/2/4/8/16-contact separated world-contact and
+  variable-size 1/2/4/8/16/24/32-contact separated world-contact and
   2/3/4/5/6/7/8-sphere coupled stack world-contact
   packets with two and three variants per contact or sphere count, and manually assembled
   1-/4-/8-/16-contact articulated unified-contact CUDA batches covering link-ground,
@@ -708,7 +708,7 @@ tradeoffs evidence based.
   `cuda_lcp_execution=1`, `cuda_batch_execution=1`, fixed iteration counters,
   and `contract_ok=1` for standard, boxed, friction-index, grouped synthetic
   standard/boxed/friction-index, and homogeneous 4-, 8-, and 16-contact world-contact
-  Jacobi and PGS batches, plus grouped variable-size 1/2/4/8/16-contact
+  Jacobi and PGS batches, plus grouped variable-size 1/2/4/8/16/24/32-contact
   separated sphere-ground and 2/3/4/5/6/7/8-sphere coupled stack CUDA batches. An
   earlier focused direct/grouped synthetic follow-up
   `BM_LCP_COMPARE --benchmark_filter='^BM_LcpCuda(Jacobi|Pgs)(Batch|GroupedBatch)_(Standard|Boxed|FrictionIndex)' --benchmark_min_time=0.001s --benchmark_repetitions=1`
@@ -798,15 +798,11 @@ tradeoffs evidence based.
   and `total_problem_size=810/1215`.
   A focused
   separated-contact follow-up
-  `BM_LCP_COMPARE --benchmark_filter='BM_LcpCuda(Jacobi|Pgs)WorldContactGroupedBatch_FrictionIndex' --benchmark_min_time=0.001s --benchmark_repetitions=1`
-  reported two separated CUDA rows with `contract_ok=1`, `cuda_group_count=5`,
-  `contact_shape_count=5`, `max_problem_size=48`, `total_contact_count=62`,
-  and `total_problem_size=186`. A focused three-variant separated follow-up
-  `BM_LCP_COMPARE --benchmark_filter='BM_LcpCuda(Jacobi|Pgs)WorldContactGroupedBatch_FrictionIndex/3$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
-  reported two separated CUDA rows with `contract_ok=1`,
-  `problem_variants_per_shape=3`, `batch_size=15`, `cuda_group_count=5`,
-  `contact_shape_count=5`, `min_problem_size=3`, `max_problem_size=48`,
-  `total_contact_count=93`, and `total_problem_size=279`. A focused stack follow-up
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpCuda(Jacobi|Pgs)WorldContactGroupedBatch_FrictionIndex/[23]$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  reported four separated CUDA rows with `contract_ok=1`, `cuda_group_count=7`,
+  `contact_shape_count=7`, `min_problem_size=3`, `max_problem_size=96`,
+  `batch_size=14/21`, `total_contact_count=174/261`, and
+  `total_problem_size=522/783`. A focused stack follow-up
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpCuda(Jacobi|Pgs)WorldStackContactGroupedBatch_FrictionIndex' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   reported two stack CUDA rows with `contract_ok=1`, `batch_size=30`,
   `cuda_group_count=15`, `contact_shape_count=15`, `min_problem_size=6`,
@@ -2945,13 +2941,13 @@ tradeoffs evidence based.
   CUDA-enabled build/runtime slice passes, and narrow CUDA projected-Jacobi and
   PGS standard/boxed/friction-index through direct 256-row and 96-contact
   packets plus grouped variable-size synthetic standard/boxed/friction-index
-  through 192-row and 64-contact groups with matching CPU
+  through 256-row and 96-contact groups with matching CPU
   serial/`ParallelExecutor` rows and fixed-iteration CUDA rows for the two- and
   three-variant grouped synthetic
   benchmark rows,
   homogeneous 4-/8-/16-contact, homogeneous
   5-/6-/7-/8-/9-/10-/11-/12-/13-/14-/15-/16-sphere coupled stack, grouped variable-size
-  1/2/4/8/16-contact separated sphere-ground and
+  1/2/4/8/16/24/32-contact separated sphere-ground and
   2/3/4/5/6/7/8/9/10/11/12/13/14/15/16-sphere coupled stack world-contact batch paths with two- and
   three-variant grouped benchmark rows, plus manually
   assembled 1-/4-/8-/16-/24-/32-contact articulated unified-contact batch paths with

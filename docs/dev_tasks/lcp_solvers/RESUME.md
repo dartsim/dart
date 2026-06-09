@@ -516,8 +516,8 @@ synthetic standard/boxed/findex packets through 256-row and 96-contact sizes,
 homogeneous 4-/8-/16-contact DART 7 world-contact packets, homogeneous 5-/6-/7-/8-/9-/10-/11-/12-/13-/14-/15-/16-sphere coupled
 stack-contact packets, grouped variable-size synthetic standard/boxed/findex
 through 256-row and 96-contact groups, grouped variable-size
-1/2/4/8/16-contact separated sphere-ground packets with two- and three-variant
-grouped benchmark rows, plus grouped variable-size
+1/2/4/8/16/24/32-contact separated sphere-ground packets with two- and
+three-variant grouped benchmark rows, plus grouped variable-size
 2/3/4/5/6/7/8/9/10/11/12/13/14/15/16-sphere coupled stack-contact packets with two- and three-variant
 grouped benchmark rows, plus grouped variable-size manually assembled
 1-/4-/8-/16-/24-/32-contact articulated unified-contact packets with two- and
@@ -559,6 +559,13 @@ CPU grouped benchmark runs report 24 rows per default, SIMD-enabled, and
 CUDA-enabled build tree with `contract_ok=1`, `batch_group_count=7`,
 `batch_size=14/21`, and `parallel_units=14/21` on DART 7 `ParallelExecutor`
 rows.
+The current slice also extends the grouped variable-size separated
+sphere-ground CUDA contact packets from 1/2/4/8/16 contacts to
+1/2/4/8/16/24/32 contacts. Focused Jacobi and PGS grouped CUDA tests pass, and
+the matching two-/three-variant benchmark rows report `contract_ok=1`,
+`cuda_group_count=7`, `contact_shape_count=7`, `batch_size=14/21`,
+`max_problem_size=96`, `total_contact_count=174/261`, `total_problem_size=522/783`,
+and direct CUDA execution counters.
 
 ## Current Branch
 
@@ -1062,12 +1069,12 @@ dense/robot-like contact scenes.
   variable-size world-contact CUDA batch rows,
   proving narrow CUDA fixed-iteration projected-Jacobi and PGS batch paths for
   standard, boxed, friction-index, grouped variable-size synthetic
-  standard/boxed/findex through 192-row and 64-contact groups,
+  standard/boxed/findex through 256-row and 96-contact groups,
   CPU serial/`ParallelExecutor` Jacobi/PGS batch rows at the same
   standard/boxed 24-/48-/96-/128-/192-/256-row and friction-index
   8-/16-/32-/48-/64-/96-contact sizes,
   4-/8-/16-contact world-contact packets, and grouped
-  1/2/4/8/16-contact separated sphere-ground packets. General CUDA execution for
+  1/2/4/8/16/24/32-contact separated sphere-ground packets. General CUDA execution for
   the full solver manifest remains a gap.
 - `docs/dev_tasks/lcp_solvers/01-implementation-audit.md` maps the background
   docs, current exports, manifest support, correctness tests, benchmark
@@ -1903,7 +1910,7 @@ dense/robot-like contact scenes.
   standard, boxed, friction-index, grouped variable-size synthetic
   standard/boxed/friction-index, contact-derived world-contact, homogeneous
   5-/6-/7-/8-/9-/10-/11-/12-/13-/14-/15-/16-sphere coupled stack-contact batches, and grouped variable-size
-  1/2/4/8/16-contact separated world-contact and 2/3/4/5/6/7/8/9/10/11/12/13/14/15/16-sphere coupled
+  1/2/4/8/16/24/32-contact separated world-contact and 2/3/4/5/6/7/8/9/10/11/12/13/14/15/16-sphere coupled
   stack-contact batches with two and three variants per contact or sphere
   count, plus grouped manually assembled
   1-/4-/8-/16-/24-/32-contact articulated unified-contact batches, plus mixed grouped contact
@@ -1998,13 +2005,13 @@ dense/robot-like contact scenes.
   `total_problem_size=156/168/180/192`.
   The separated grouped
   variable-size rows are
-  sphere-ground packets with 1/2/4/8/16 contacts. The `/2` rows report
-  `batch_size=10`, `cuda_group_count=5`, `contact_shape_count=5`,
-  `min_problem_size=3`, `max_problem_size=48`, `total_contact_count=62`, and
-  `total_problem_size=186`; the `/3` rows report
-  `problem_variants_per_shape=3`, `batch_size=15`, `cuda_group_count=5`,
-  `contact_shape_count=5`, `min_problem_size=3`, `max_problem_size=48`,
-  `total_contact_count=93`, and `total_problem_size=279`.
+  sphere-ground packets with 1/2/4/8/16/24/32 contacts. The `/2` rows report
+  `batch_size=14`, `cuda_group_count=7`, `contact_shape_count=7`,
+  `min_problem_size=3`, `max_problem_size=96`, `total_contact_count=174`, and
+  `total_problem_size=522`; the `/3` rows report
+  `problem_variants_per_shape=3`, `batch_size=21`, `cuda_group_count=7`,
+  `contact_shape_count=7`, `min_problem_size=3`, `max_problem_size=96`,
+  `total_contact_count=261`, and `total_problem_size=783`.
   The coupled stack grouped variable-size rows are
   2/3/4/5/6/7/8/9/10/11/12/13/14/15/16-sphere stack packets. The `/2` rows
   report `batch_size=30`, `cuda_group_count=15`, `contact_shape_count=15`,
