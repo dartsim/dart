@@ -85,6 +85,12 @@ only prove an indeterminate zero step, `detail/newton_barrier` now increments
 the same zero-step counter used for zero-time hits. Rigid IPC and deformable CCD
 still own their distinct limiting payloads and indeterminate-result policies.
 
+The Phase 3 closeout routes deformable projected-Newton backtracking through
+the shared Newton-barrier default scale, matching rigid IPC's shared
+backtracking scalar policy without moving projected-Newton result/status
+terminology, line-search result payloads, solver diagnostics, or additional
+benchmark-schema contracts out of their variant owners.
+
 ## Last Session Summary
 
 Current slice: the first ABD benchmark packet has been promoted from
@@ -172,13 +178,13 @@ resume snapshot.
 
 ## Immediate Next Step
 
-With the sufficient-decrease policy slice merged to `main`, collect remaining
-Phase 3 work into the current branch and open one PR for the phase. Continue
-from
+With Phase 3 shared-contract scouting closed, start Phase 4 manifest expansion.
+Continue from
 [`../../plans/083-unified-newton-barrier-multibody/abd-first-slice-design.md`](../../plans/083-unified-newton-barrier-multibody/abd-first-slice-design.md):
-resume shared-contract scouting from the existing rigid IPC, deformable IPC,
-ABD, and benchmark-packet evidence. Do not add a two-body affine contact
-micro-solve for the current
+use the existing rigid IPC, deformable IPC, ABD, and benchmark-packet evidence
+to add diagnostics and benchmark-packet rows only where a concrete artifact can
+validate the row. Do not add a two-body affine contact micro-solve for the
+current
 `abd-alg-affine-body` micro-packet; add
 projected-Newton, line-search result semantics, diagnostics, or
 benchmark-schema contracts only after second-use behavior is proven identical

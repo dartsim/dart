@@ -6818,6 +6818,8 @@ void advanceDeformableBody(
     constexpr double gradientToleranceSquared = 1e-18;
     constexpr double armijo = nb::kDefaultSufficientDecreaseFactor;
     constexpr double minStep = 1e-12;
+    const double backtrackingScale
+        = nb::sanitizeBacktrackingScale(nb::kDefaultBacktrackingScale);
 
     double lastGradSquared = 0.0;
     double lastAcceptedStepInfinityNorm = 0.0;
@@ -7079,7 +7081,7 @@ void advanceDeformableBody(
           }
 
           ++stats.rejectedLineSearchCandidates;
-          step *= 0.5;
+          step *= backtrackingScale;
           if (step < minStep) {
             break;
           }

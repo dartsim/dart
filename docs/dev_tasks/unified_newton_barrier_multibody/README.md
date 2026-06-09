@@ -35,7 +35,7 @@
         `abd-alg-affine-body` comparison row. Add
         `pixi run bm-abd-comparison-packet` to generate/validate
         `.benchmark_results/abd_comparison_packet.json`.
-- [ ] Phase 3: generalize second-use PSD projection and projected-Newton
+- [x] Phase 3: generalize second-use PSD projection and projected-Newton
       contracts when ABD or another solver-family slice needs the shared
       contract; use the PLAN-083 variant consolidation map to keep IPC-family
       responsibilities in the right owner while promoting only proven
@@ -82,9 +82,12 @@
   - [x] Route the Phase 5 CUDA packet writer through the shared Google
         Benchmark canonical row identity helper, removing its duplicate row
         parser while keeping packet-specific max-error extraction local.
-  - [ ] Continue scouting projected-Newton, line-search result, diagnostics, or
-        benchmark-schema contracts only when another variant needs identical
-        behavior.
+  - [x] Close the remaining Phase 3 scouting by routing deformable
+        projected-Newton backtracking through the shared Newton-barrier default
+        scale while leaving projected-Newton result/status terminology,
+        line-search result semantics, diagnostics, and additional
+        benchmark-schema contracts variant-local until another consumer proves
+        identical behavior.
 - [ ] Phase 4: expand the unified manifest into diagnostics, benchmark packets,
       CPU/GPU evidence, and visual evidence rows.
 - [ ] Phase 5: add runtime and py-demos scenes only after the relevant solver
@@ -145,16 +148,12 @@ storage, or backend resources as public API.
 
 ## Immediate Next Steps
 
-1. Collect remaining Phase 3 shared-contract scouting into the current branch
-   and open one PR for the phase. Use the existing rigid IPC, deformable IPC,
-   and ABD evidence after the fixed-size PSD projection helper, first
-   line-search option/stat helper, shared line-search positive-step predicate,
-   shared conservative native-CCD option adapter, shared line-search step-scale
-   helper, shared native-CCD zero-step diagnostic accounting, and shared Google
-   Benchmark packet row identity helper. Promote projected-Newton result/status
-   terminology, line-search result semantics, diagnostics, or additional
-   benchmark-schema contracts only when a second consumer proves identical
-   behavior.
+1. Start Phase 4 manifest expansion: add diagnostics and benchmark-packet rows
+   only where the current rigid IPC, deformable IPC, and ABD evidence has a
+   concrete artifact to validate. Keep projected-Newton result/status
+   terminology, line-search result semantics, diagnostics, and additional
+   benchmark-schema contracts variant-local until a second consumer proves
+   identical behavior.
 2. Keep the two-body affine contact micro-solve deferred until the
    `abd-alg-affine-body` row expands beyond the primitive/oracle micro-packet
    and needs a solved-state residual or runtime stepping diagnostic.
@@ -261,6 +260,12 @@ Phase 3 sufficient-decrease policy slice local evidence:
 - `pixi run lint`
 - `pixi run -- cmake --build build/default/cpp/Release --target test_newton_barrier_primitives test_rigid_ipc_barrier test_world --parallel <safe-jobs>`
 - `pixi run -- ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(test_newton_barrier_primitives|test_rigid_ipc_barrier|test_world)$'`
+
+Phase 3 closeout local evidence:
+
+- `pixi run lint`
+- `pixi run -- cmake --build build/default/cpp/Release --target test_newton_barrier_primitives test_world --parallel 8`
+- `pixi run -- ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(test_newton_barrier_primitives|test_world)$'`
 
 ## Owner Docs
 
