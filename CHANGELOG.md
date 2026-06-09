@@ -1069,8 +1069,8 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     CUDA-enabled CPU solver runs.
   - Added DART 7 Staggering contact-pipeline comparison benchmark rows for
     separated world-contact, coupled stack-contact, and articulated unified
-    contact fixtures, with normal/friction split counters and backend
-    build-state counters distinguishing default, SIMD-enabled, and
+    contact fixtures up to 8 contacts, with normal/friction split counters and
+    backend build-state counters distinguishing default, SIMD-enabled, and
     CUDA-enabled CPU solver runs.
   - Added DART 7 Boxed Semi-Smooth Newton line-search comparison benchmark
     rows for standard, boxed, and 8-/16-contact friction-index fixtures, with
@@ -1305,9 +1305,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     CPU solver runs.
   - Added DART 7 ADMM, SAP, and Boxed Semi-Smooth Newton contact comparison
     benchmark rows for separated world-contact, coupled stack-contact, and
-    articulated unified-contact friction-index fixtures, with backend
-    build-state counters distinguishing default, SIMD-enabled, and CUDA-enabled
-    CPU solver runs.
+    articulated unified-contact friction-index fixtures up to 8 contacts, with
+    backend build-state counters distinguishing default, SIMD-enabled, and
+    CUDA-enabled CPU solver runs.
   - Added DART 7 generated correctness and single/batch benchmark coverage for
     1x-/4x-/8x-coupled mildly ill-conditioned friction-index LCP packets
     through 96 contacts, 16x-coupled single rows through 192 contacts, and
@@ -1322,8 +1322,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     Fischer-Burmeister Newton, Penalized Fischer-Burmeister Newton, Interior
     Point, and MPRGP on normal-only subproblems extracted from separated
     world-contact, coupled stack-contact, and articulated unified-contact
-    snapshots. Direct rows are limited to 1-, 2-, and 3-row subproblems to
-    avoid benchmarking its Dantzig fallback as direct enumeration.
+    snapshots up to 8 contacts. Direct rows are limited to 1-, 2-, and 3-row
+    subproblems to avoid benchmarking its Dantzig fallback as direct
+    enumeration.
   - Replaced the experimental rigid-body contact stage's per-contact
     sequential normal impulses with a coupled boxed-LCP solve over all
     rigid-rigid contacts (`dart/math/lcp` Dantzig solver). It assembles the

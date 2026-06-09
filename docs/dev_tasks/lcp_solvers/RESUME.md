@@ -239,17 +239,18 @@ build-state counters. The Boxed Semi-Smooth Newton 16x rows report tuned
 line-search settings. The
 CUDA-enabled rows are CPU solver rows in a
 CUDA-enabled build, not CUDA LCP kernel execution.
-It now also adds 27 `BM_LcpContactSolverComparisonSweep` benchmark rows for
+It now also adds 42 `BM_LcpContactSolverComparisonSweep` benchmark rows for
 `Admm`, `Sap`, and `BoxedSemiSmoothNewton` over the same DART 7 contact-derived
 fixtures used by the Staggering contact-pipeline sweep: separated world-contact
-1/2/4-contact snapshots, coupled vertical-stack 2/3/5-contact snapshots, and
-articulated unified ground, rigid-impact, and cross-link-impact 4-contact
-snapshots. Focused default, SIMD-enabled, and CUDA-enabled build-tree runs
-passed with `contract_ok=1` on every row and recorded solver identity,
-fixture-family, normal/friction row-count, contact-count, problem-size, and
-backend build-state counters. The CUDA-enabled rows are CPU solver rows in a
+1/2/4/8-contact snapshots, coupled vertical-stack 2/3/5/8-contact snapshots,
+and articulated unified ground, rigid-impact, and cross-link-impact
+4-/8-contact snapshots. Focused default, SIMD-enabled, and CUDA-enabled
+build-tree runs passed with `contract_ok=1` on every row and recorded solver
+identity, fixture-family, normal/friction row-count, contact-count,
+problem-size, and backend build-state counters. The list-test evidence includes
+15 `contact_count=8` rows. The CUDA-enabled rows are CPU solver rows in a
 CUDA-enabled build, not CUDA LCP kernel execution.
-It now also adds 76 `BM_LcpContactNormalStandardSweep` benchmark rows that
+It now also adds 116 `BM_LcpContactNormalStandardSweep` benchmark rows that
 extract normal-only standard LCP subproblems from those same DART 7
 contact-derived fixtures. The rows compare `Dantzig`, `Lemke`, `Baraff`,
 `Direct`, `MinimumMapNewton`, `FischerBurmeisterNewton`,
@@ -257,9 +258,10 @@ contact-derived fixtures. The rows compare `Dantzig`, `Lemke`, `Baraff`,
 limited to four 1-, 2-, and 3-row no-fallback rows. Focused default,
 SIMD-enabled, and CUDA-enabled build-tree runs passed with `contract_ok=1` on
 every row and recorded normal-row, source-problem-size, standard-problem-size,
-coupled-fixture, Direct no-fallback, and backend build-state counters. This is
-contact-normal standard-LCP evidence, not native boxed or friction-index
-support for standard-only solvers.
+coupled-fixture, Direct no-fallback, and backend build-state counters. The
+list-test evidence includes 40 rows sourced from the five 8-contact fixtures.
+This is contact-normal standard-LCP evidence, not native boxed or
+friction-index support for standard-only solvers.
 It now also adds 12 `BM_LcpShockPropagationLayerSweep` benchmark rows for the
 `ShockPropagationSolver` layer schedule path, covering standard 48-row, boxed
 24-row, and friction-index 8-/16-contact fixtures with single-layer,
@@ -298,16 +300,18 @@ The combined current MPRGP/Interior Point sweep filter reports `rows=24`,
 `failures=0`, 12 rows per solver, and 6 large or 16-row near-singular rows in
 default, SIMD-enabled, and CUDA-enabled build trees; the SIMD and CUDA-enabled
 runs report `simd_rows=24` and `cuda_rows=24`, respectively.
-It now also adds 9 `BM_LcpStaggeringContactPipelineSweep` benchmark rows for
+It now also adds 14 `BM_LcpStaggeringContactPipelineSweep` benchmark rows for
 the `StaggeringSolver` normal/friction split on DART 7 contact-pipeline
-fixtures. The rows cover separated sphere-ground 1/2/4-contact fixtures,
-coupled vertical-stack 2/3/5-contact fixtures, and articulated unified ground,
-rigid-impact, and cross-link-impact 4-contact fixtures. Focused default,
-SIMD-enabled, and CUDA-enabled build-tree runs passed with `contract_ok=1` on
-every row and recorded `staggering_contact_pipeline_sweep`,
-`staggering_normal_friction_split`, normal-row counts `1/2/3/4/5`,
-friction-row counts `2/4/6/8/10`, coupled-contact flags, contact counts
-`1/2/3/4/5`, and backend build-state counters. The CUDA-enabled rows are CPU
+fixtures. The rows cover separated sphere-ground 1/2/4/8-contact fixtures,
+coupled vertical-stack 2/3/5/8-contact fixtures, and articulated unified
+ground, rigid-impact, and cross-link-impact 4-/8-contact fixtures. Focused
+default, SIMD-enabled, and CUDA-enabled build-tree runs passed with
+`contract_ok=1` on every row and recorded `staggering_contact_pipeline_sweep`,
+`staggering_normal_friction_split`, normal-row counts `1/2/3/4/5/8`,
+friction-row counts `2/4/6/8/10/16`, coupled-contact flags, contact counts
+`1/2/3/4/5/8`, and backend build-state counters. The current focused filter
+reports `rows=14`, `failures=0`, 5 `contact_count=8` rows, and `simd_rows=14`
+or `cuda_rows=14` in the backend build-tree runs. The CUDA-enabled rows are CPU
 Staggering solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
 It now also adds 12 `BM_LcpBoxedSemiSmoothNewtonLineSearchSweep` benchmark rows
 for the `BoxedSemiSmoothNewtonSolver` line-search path, covering standard
@@ -1062,26 +1066,26 @@ contact scenes.
   build-state counters, and `contact_count=8/16` for the friction-index rows.
   Treat the CUDA-enabled rows as CPU ADMM solver rows in a CUDA-enabled build,
   not CUDA LCP kernel execution.
-- `BM_LCP_COMPARE` now lists 27 focused contact comparison rows for `Admm`,
+- `BM_LCP_COMPARE` now lists 42 focused contact comparison rows for `Admm`,
   `Sap`, and `BoxedSemiSmoothNewton` on the same DART 7 contact-derived
   separated world-contact, coupled stack-contact, and articulated unified-contact
   fixtures. Default, SIMD, and CUDA-enabled focused runs report
-  `contract_ok=1`, solver identity counters, contact counts `1/2/3/4/5`,
-  problem sizes `3/6/9/12/15`, normal/friction row-count counters, and backend
-  build-state counters. Treat the CUDA-enabled rows as CPU solver rows in a
-  CUDA-enabled build, not CUDA LCP kernel execution.
-- `BM_LCP_COMPARE` now lists 76 focused contact-normal standard-LCP rows for
+  `contract_ok=1`, solver identity counters, contact counts `1/2/3/4/5/8`,
+  problem sizes `3/6/9/12/15/24`, normal/friction row-count counters, and
+  backend build-state counters. Treat the CUDA-enabled rows as CPU solver rows
+  in a CUDA-enabled build, not CUDA LCP kernel execution.
+- `BM_LCP_COMPARE` now lists 116 focused contact-normal standard-LCP rows for
   `Dantzig`, `Lemke`, `Baraff`, `Direct`, `MinimumMapNewton`,
   `FischerBurmeisterNewton`, `PenalizedFischerBurmeisterNewton`,
   `InteriorPoint`, and `MPRGP` on normal-only subproblems extracted from DART 7
   separated world-contact, coupled stack-contact, and articulated
   unified-contact fixtures. Default, SIMD, and CUDA-enabled focused runs report
-  `contract_ok=1`, normal-row counts `1/2/3/4/5`, source problem sizes
-  `3/6/9/12/15`, standard problem sizes `1/2/3/4/5`, four Direct rows with
-  `contact_normal_direct_no_fallback=1`, coupled-fixture counters, and backend
-  build-state counters. Treat the CUDA-enabled rows as CPU solver rows in a
-  CUDA-enabled build, not CUDA LCP kernel execution; this does not claim native
-  boxed or friction-index support for standard-only solvers.
+  `contract_ok=1`, normal-row counts `1/2/3/4/5/8`, source problem sizes
+  `3/6/9/12/15/24`, standard problem sizes `1/2/3/4/5/8`, four Direct rows
+  with `contact_normal_direct_no_fallback=1`, coupled-fixture counters, and
+  backend build-state counters. Treat the CUDA-enabled rows as CPU solver rows
+  in a CUDA-enabled build, not CUDA LCP kernel execution; this does not claim
+  native boxed or friction-index support for standard-only solvers.
 - The generated LCP coverage now includes the scoped iterative solvers plus
   Boxed Semi-Smooth Newton on 1x-/4x-/8x-coupled mildly ill-conditioned
   friction-index packets at 6, 8, 12, 16, 24, 32, 48, 64, and 96 contacts plus

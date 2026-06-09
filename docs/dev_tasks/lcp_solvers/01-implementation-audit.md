@@ -203,7 +203,7 @@ Support abbreviations:
 | Interior Point    | `02_overview.md`, `06_other-methods.md`, `07_selection-guide.md` | `dart/math/lcp/other/interior_point_solver.hpp` exported by `all.hpp`    | S                | Smoke manifest checks; comparison harness covers standard fixtures                                                   | Manifest registers `BM_LcpCompare/Standard/InteriorPoint/*`; focused `BM_LcpInteriorPointPathSweep` rows cover dense SPD, banded SPD, mildly ill-conditioned SPD, and near-singular SPD standard-LCP fixtures up to 128 dense/banded rows and 16 near-singular rows in default, SIMD-enabled, and CUDA-enabled build trees; focused `BM_LcpContactNormalStandardSweep/InteriorPoint/*` rows cover DART 7 contact-normal standard subproblems in those build trees                                                                                                                                     | Manifest does not claim native boxed or friction-index support; need full-contact and direct backend execution evidence                                                                                                   |
 | MPRGP             | `02_overview.md`, `06_other-methods.md`, `07_selection-guide.md` | `dart/math/lcp/other/mprgp_solver.hpp` exported by `all.hpp`             | S                | Smoke manifest checks; comparison harness covers standard fixtures                                                   | Manifest registers `BM_LcpCompare/Standard/MPRGP/*`; focused `BM_LcpMprgpSpdCheckSweep` rows cover dense SPD, banded SPD, mildly ill-conditioned SPD, and near-singular SPD standard-LCP fixtures up to 128 dense/banded rows and 16 near-singular rows in default, SIMD-enabled, and CUDA-enabled build trees; focused `BM_LcpContactNormalStandardSweep/MPRGP/*` rows cover DART 7 contact-normal standard subproblems in those build trees                                                                                                                                                         | Docs narrow this to standard SPD LCPs; need full-contact and direct backend execution evidence                                                                                                                            |
 | Shock Propagation | `02_overview.md`, `06_other-methods.md`, `07_selection-guide.md` | `dart/math/lcp/other/shock_propagation_solver.hpp` exported by `all.hpp` | S, B, F          | Smoke manifest checks; comparison harness covers standard, boxed, and friction-index fixtures                        | Manifest registers all three benchmark families plus focused coupled stack-contact rows through 12 spheres with `shock_propagation_max_iterations=512`; focused `BM_LcpShockPropagationLayerSweep` rows compare single-layer, two-layer, and serial schedules on standard, boxed, and 8-/16-contact friction-index fixtures in default, SIMD-enabled, and CUDA-enabled build trees                                                                                                                                                                                                                    | Need broader end-to-end stacked-contact scenes beyond the focused coupled-stack rows; CUDA-enabled layer rows are CPU solver rows, not CUDA LCP kernel execution                                                          |
-| Staggering        | `02_overview.md`, `06_other-methods.md`, `07_selection-guide.md` | `dart/math/lcp/other/staggering_solver.hpp` exported by `all.hpp`        | S, B, F          | Smoke manifest checks; comparison harness covers standard, boxed, friction-index, and normal/friction pass behavior  | Manifest registers all three benchmark families; focused `BM_LcpStaggeringContactPipelineSweep` rows cover separated world contacts, coupled vertical stacks, and articulated unified ground/rigid-impact/cross-link contact fixtures in default, SIMD-enabled, and CUDA-enabled build trees                                                                                                                                                                                                                                                                                                          | Need longer-running and denser contact-pipeline scenes plus direct backend execution evidence; CUDA-enabled contact-pipeline rows are CPU solver rows, not CUDA LCP kernel execution                                      |
+| Staggering        | `02_overview.md`, `06_other-methods.md`, `07_selection-guide.md` | `dart/math/lcp/other/staggering_solver.hpp` exported by `all.hpp`        | S, B, F          | Smoke manifest checks; comparison harness covers standard, boxed, friction-index, and normal/friction pass behavior  | Manifest registers all three benchmark families; focused `BM_LcpStaggeringContactPipelineSweep` rows cover separated world contacts, coupled vertical stacks, and articulated unified ground/rigid-impact/cross-link contact fixtures up to 8 contacts in default, SIMD-enabled, and CUDA-enabled build trees                                                                                                                                                                                                                                                                                         | Need longer-running and denser contact-pipeline scenes plus direct backend execution evidence; CUDA-enabled contact-pipeline rows are CPU solver rows, not CUDA LCP kernel execution                                      |
 | ADMM              | `02_overview.md`, `06_other-methods.md`, `07_selection-guide.md` | `dart/math/lcp/other/admm_solver.hpp` exported by `all.hpp`              | S, B, F          | Smoke manifest checks; comparison harness covers standard, boxed, and friction-index fixtures                        | Manifest registers all three benchmark families; focused `BM_LcpAdmmRhoSweep` rows cover fixed and adaptive rho policies at `rhoInit` 0.5, 1.0, and 4.0 on standard, boxed, and 8-/16-contact friction-index fixtures in default, SIMD-enabled, and CUDA-enabled build trees; focused `BM_LcpContactSolverComparisonSweep/Admm/*` rows cover separated world-contact, coupled stack-contact, and articulated unified-contact fixtures in those build trees; focused `BM_LcpMildIllConditioned/ExtremeCoupledFrictionIndex*/Admm` rows cover 16x-coupled mildly ill-conditioned friction-index packets | Still needs longer-running/denser end-to-end contact and direct backend execution evidence; CUDA-enabled rho-sweep, contact-comparison, and extreme-coupling rows are CPU solver rows, not CUDA LCP kernel execution      |
 | SAP               | `02_overview.md`, `06_other-methods.md`, `07_selection-guide.md` | `dart/math/lcp/other/sap_solver.hpp` exported by `all.hpp`               | S, B, F          | Smoke manifest checks; comparison harness covers standard, boxed, and friction-index fixtures with custom parameters | Manifest registers all three benchmark families; focused `BM_LcpSapRegularizationSweep` rows cover regularization values `1e-6`, `1e-5`, and `1e-4` on standard, boxed, and 8-/16-contact friction-index fixtures in default, SIMD-enabled, and CUDA-enabled build trees; focused `BM_LcpContactSolverComparisonSweep/Sap/*` rows cover separated world-contact, coupled stack-contact, and articulated unified-contact fixtures in those build trees; focused `BM_LcpMildIllConditioned/ExtremeCoupledFrictionIndex*/Sap` rows cover 16x-coupled mildly ill-conditioned friction-index packets       | Still needs longer-running/denser end-to-end contact and direct backend execution evidence; CUDA-enabled regularization, contact-comparison, and extreme-coupling rows are CPU solver rows, not CUDA LCP kernel execution |
 
@@ -1147,15 +1147,15 @@ The current local evidence for this task is:
   observed solver `iterations=14/16/27/31/32/33/41/51/53/58`, and backend
   build-state counters.
 - `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpStaggeringContactPipelineSweep' | wc -l`
-  listed 9 Staggering contact-pipeline rows. Focused JSON runs for
+  listed 14 Staggering contact-pipeline rows. Focused JSON runs for
   `BM_LcpStaggeringContactPipelineSweep` in default, SIMD-enabled, and
-  CUDA-enabled build trees reported 9 rows with zero `contract_ok` failures
-  across separated world-contact 1/2/4-contact fixtures, coupled vertical-stack
-  2/3/5-contact fixtures, and articulated unified ground, rigid-impact, and
-  cross-link-impact 4-contact fixtures; the rows recorded
-  `staggering_normal_friction_split=1`, normal-row counts `1/2/3/4/5`,
-  friction-row counts `2/4/6/8/10`, coupled-contact flags, contact counts
-  `1/2/3/4/5`, and backend build-state counters.
+  CUDA-enabled build trees reported 14 rows with zero `contract_ok` failures
+  across separated world-contact 1/2/4/8-contact fixtures, coupled
+  vertical-stack 2/3/5/8-contact fixtures, and articulated unified ground,
+  rigid-impact, and cross-link-impact 4-/8-contact fixtures; the rows recorded
+  `staggering_normal_friction_split=1`, normal-row counts `1/2/3/4/5/8`,
+  friction-row counts `2/4/6/8/10/16`, coupled-contact flags, contact counts
+  `1/2/3/4/5/8`, and backend build-state counters.
 - `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpBoxedSemiSmoothNewtonLineSearchSweep' | wc -l`
   listed 12 Boxed Semi-Smooth Newton line-search rows. Focused JSON runs for
   `BM_LcpBoxedSemiSmoothNewtonLineSearchSweep` in default, SIMD-enabled, and
@@ -1167,16 +1167,17 @@ The current local evidence for this task is:
   policy counters, observed solver `iterations=2/7/8/9/15/16`, and backend
   build-state counters.
 - `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpContactSolverComparisonSweep' | wc -l`
-  listed 27 ADMM/SAP/Boxed Semi-Smooth Newton contact comparison rows. Focused
+  listed 42 ADMM/SAP/Boxed Semi-Smooth Newton contact comparison rows. Focused
   JSON runs for `BM_LcpContactSolverComparisonSweep` in default, SIMD-enabled,
-  and CUDA-enabled build trees reported 27 rows with zero `contract_ok`
-  failures across separated world-contact 1/2/4-contact fixtures, coupled
-  vertical-stack 2/3/5-contact fixtures, and articulated unified ground,
-  rigid-impact, and cross-link-impact 4-contact fixtures. The rows recorded
-  solver identity counters, normal-row counts `1/2/3/4/5`, friction-row counts
-  `2/4/6/8/10`, contact counts `1/2/3/4/5`, problem sizes `3/6/9/12/15`, and
-  backend build-state counters. The CUDA-enabled rows are CPU solver rows in a
-  CUDA-enabled build, not CUDA LCP kernel execution.
+  and CUDA-enabled build trees reported 42 rows with zero `contract_ok`
+  failures across separated world-contact 1/2/4/8-contact fixtures, coupled
+  vertical-stack 2/3/5/8-contact fixtures, and articulated unified ground,
+  rigid-impact, and cross-link-impact 4-/8-contact fixtures. The list-test
+  evidence includes 15 `contact_count=8` rows. The rows recorded solver
+  identity counters, normal-row counts `1/2/3/4/5/8`, friction-row counts
+  `2/4/6/8/10/16`, contact counts `1/2/3/4/5/8`, problem sizes
+  `3/6/9/12/15/24`, and backend build-state counters. The CUDA-enabled rows
+  are CPU solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
 - `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpMildIllConditioned/ExtremeCoupledFrictionIndex' | wc -l`
   lists 135 extreme-coupling single-problem rows over `Pgs`,
   `SymmetricPsor`, `Jacobi`, `RedBlackGaussSeidel`, `BlockedJacobi`, `BGS`,
@@ -1195,22 +1196,24 @@ The current local evidence for this task is:
   CUDA-enabled rows are CPU solver rows in a CUDA-enabled build, not CUDA LCP
   kernel execution.
 - `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpContactNormalStandardSweep' | wc -l`
-  listed 76 contact-normal standard-LCP rows. Focused JSON runs for
+  listed 116 contact-normal standard-LCP rows. Focused JSON runs for
   `BM_LcpContactNormalStandardSweep` in default, SIMD-enabled, and CUDA-enabled
-  build trees reported 76 rows with zero `contract_ok` failures across
-  normal-only standard LCPs extracted from separated world-contact 1/2/4-contact
-  fixtures, coupled vertical-stack 2/3/5-contact fixtures, and articulated
-  unified ground, rigid-impact, and cross-link-impact 4-contact fixtures. The
-  rows compare `Dantzig`, `Lemke`, `Baraff`, `Direct`, `MinimumMapNewton`,
-  `FischerBurmeisterNewton`, `PenalizedFischerBurmeisterNewton`,
-  `InteriorPoint`, and `MPRGP`; `Direct` is intentionally limited to four
-  1-, 2-, and 3-row subproblems so every Direct row reports
-  `contact_normal_direct_no_fallback=1`. The rows recorded normal-row counts
-  `1/2/3/4/5`, source contact problem sizes `3/6/9/12/15`, standard problem
-  sizes `1/2/3/4/5`, coupled-fixture counters, and backend build-state
-  counters. The CUDA-enabled rows are CPU solver rows in a CUDA-enabled build,
-  not CUDA LCP kernel execution. This is contact-normal standard-LCP evidence,
-  not native boxed or friction-index support for standard-only solvers.
+  build trees reported 116 rows with zero `contract_ok` failures across
+  normal-only standard LCPs extracted from separated world-contact
+  1/2/4/8-contact fixtures, coupled vertical-stack 2/3/5/8-contact fixtures,
+  and articulated unified ground, rigid-impact, and cross-link-impact
+  4-/8-contact fixtures. The list-test evidence includes 40 rows sourced from
+  the five 8-contact fixtures. The rows compare `Dantzig`, `Lemke`, `Baraff`,
+  `Direct`, `MinimumMapNewton`, `FischerBurmeisterNewton`,
+  `PenalizedFischerBurmeisterNewton`, `InteriorPoint`, and `MPRGP`; `Direct`
+  is intentionally limited to four 1-, 2-, and 3-row subproblems so every
+  Direct row reports `contact_normal_direct_no_fallback=1`. The rows recorded
+  normal-row counts `1/2/3/4/5/8`, source contact problem sizes
+  `3/6/9/12/15/24`, standard problem sizes `1/2/3/4/5/8`, coupled-fixture
+  counters, and backend build-state counters. The CUDA-enabled rows are CPU
+  solver rows in a CUDA-enabled build, not CUDA LCP kernel execution. This is
+  contact-normal standard-LCP evidence, not native boxed or friction-index
+  support for standard-only solvers.
 - `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpPivotingScaleSweep' | wc -l`
   listed 12 pivoting scale rows. Focused JSON runs for
   `BM_LcpPivotingScaleSweep` in default, SIMD-enabled, and CUDA-enabled build

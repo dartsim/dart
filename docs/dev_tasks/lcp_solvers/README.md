@@ -51,7 +51,7 @@
       standard SPD fixtures.
 - [x] Added focused Staggering contact-pipeline sweep benchmark rows on DART 7
       separated world-contact, coupled stack-contact, and articulated unified
-      contact fixtures.
+      contact fixtures up to 8 contacts.
 - [x] Added focused Boxed Semi-Smooth Newton line-search sweep benchmark rows
       on standard, boxed, and 8-/16-contact friction-index fixtures.
 - [x] Added focused ADMM rho/adaptive-rho sweep benchmark rows on standard,
@@ -1094,18 +1094,20 @@ tradeoffs evidence based.
   runs report `simd_rows=24` and `cuda_rows=24`, respectively.
 - Verified Staggering contact-pipeline benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpStaggeringContactPipelineSweep' | wc -l`
-  reported 9 rows, and JSON checks for
-  `BM_LcpStaggeringContactPipelineSweep` reported 9 rows with `contract_ok=1`
+  reported 14 rows, and JSON checks for
+  `BM_LcpStaggeringContactPipelineSweep` reported 14 rows with `contract_ok=1`
   in the default, SIMD-enabled, and CUDA-enabled build trees. These rows cover
-  separated sphere-ground 1/2/4-contact fixtures, coupled vertical-stack
-  2/3/5-contact fixtures, and articulated unified ground, rigid-impact, and
-  cross-link-impact 4-contact fixtures. The rows report
+  separated sphere-ground 1/2/4/8-contact fixtures, coupled vertical-stack
+  2/3/5/8-contact fixtures, and articulated unified ground, rigid-impact, and
+  cross-link-impact 4-/8-contact fixtures. The rows report
   `staggering_contact_pipeline_sweep=1`,
-  `staggering_normal_friction_split=1`, normal-row counts `1/2/3/4/5`,
-  friction-row counts `2/4/6/8/10`, coupled-contact flags, contact counts
-  `1/2/3/4/5`, and backend build-state counters. The CUDA-enabled rows report
+  `staggering_normal_friction_split=1`, normal-row counts `1/2/3/4/5/8`,
+  friction-row counts `2/4/6/8/10/16`, coupled-contact flags, contact counts
+  `1/2/3/4/5/8`, and backend build-state counters. The CUDA-enabled rows report
   `build_cuda_enabled=1` but are CPU Staggering solver rows in a CUDA-enabled
-  build, not CUDA LCP kernel execution.
+  build, not CUDA LCP kernel execution. The current focused filter reports
+  `rows=14`, `failures=0`, 5 `contact_count=8` rows, and `simd_rows=14` or
+  `cuda_rows=14` in the backend build-tree runs.
 - Verified Boxed Semi-Smooth Newton line-search benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpBoxedSemiSmoothNewtonLineSearchSweep' | wc -l`
   reported 12 rows, and JSON checks for
@@ -1184,34 +1186,37 @@ tradeoffs evidence based.
 - Verified ADMM/SAP/Boxed Semi-Smooth Newton contact comparison benchmark
   slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpContactSolverComparisonSweep' | wc -l`
-  reported 27 rows, and JSON checks for
-  `BM_LcpContactSolverComparisonSweep` reported 27 rows with `contract_ok=1`
+  reported 42 rows, and JSON checks for
+  `BM_LcpContactSolverComparisonSweep` reported 42 rows with `contract_ok=1`
   in the default, SIMD-enabled, and CUDA-enabled build trees. These rows run
   `Admm`, `Sap`, and `BoxedSemiSmoothNewton` over the same DART 7 separated
-  sphere-ground 1/2/4-contact fixtures, coupled vertical-stack 2/3/5-contact
-  fixtures, and articulated unified ground, rigid-impact, and cross-link-impact
-  4-contact fixtures. The rows report
+  sphere-ground 1/2/4/8-contact fixtures, coupled vertical-stack
+  2/3/5/8-contact fixtures, and articulated unified ground, rigid-impact, and
+  cross-link-impact 4-/8-contact fixtures. The list-test evidence includes
+  15 `contact_count=8` rows. The rows report
   `contact_solver_comparison_sweep=1`, solver identity counters,
-  fixture-family counters, `contact_count=1/2/3/4/5`,
-  `normal_row_count=1/2/3/4/5`, `friction_row_count=2/4/6/8/10`,
-  `problem_size=3/6/9/12/15`, and backend build-state counters. The
+  fixture-family counters, `contact_count=1/2/3/4/5/8`,
+  `normal_row_count=1/2/3/4/5/8`, `friction_row_count=2/4/6/8/10/16`,
+  `problem_size=3/6/9/12/15/24`, and backend build-state counters. The
   CUDA-enabled rows report `build_cuda_enabled=1` but are CPU solver rows in a
   CUDA-enabled build, not CUDA LCP kernel execution.
 - Verified contact-normal standard-LCP benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpContactNormalStandardSweep' | wc -l`
-  reported 76 rows, and JSON checks for
-  `BM_LcpContactNormalStandardSweep` reported 76 rows with `contract_ok=1` in
+  reported 116 rows, and JSON checks for
+  `BM_LcpContactNormalStandardSweep` reported 116 rows with `contract_ok=1` in
   the default, SIMD-enabled, and CUDA-enabled build trees. These rows extract
-  only the normal rows from the same DART 7 separated sphere-ground 1/2/4-contact
-  fixtures, coupled vertical-stack 2/3/5-contact fixtures, and articulated
-  unified ground, rigid-impact, and cross-link-impact 4-contact fixtures, then
-  run them as standard LCPs. The rows compare `Dantzig`, `Lemke`, `Baraff`,
-  `Direct`, `MinimumMapNewton`, `FischerBurmeisterNewton`,
+  only the normal rows from the same DART 7 separated sphere-ground
+  1/2/4/8-contact fixtures, coupled vertical-stack 2/3/5/8-contact fixtures,
+  and articulated unified ground, rigid-impact, and cross-link-impact
+  4-/8-contact fixtures, then run them as standard LCPs. The list-test
+  evidence includes 40 rows sourced from the five 8-contact fixtures. The rows
+  compare `Dantzig`, `Lemke`, `Baraff`, `Direct`, `MinimumMapNewton`,
+  `FischerBurmeisterNewton`,
   `PenalizedFischerBurmeisterNewton`, `InteriorPoint`, and `MPRGP`; `Direct`
   is intentionally limited to four 1-, 2-, and 3-row contact-normal rows so the
   benchmark measures its enumeration path rather than Dantzig fallback. The
-  rows report `contact_normal_standard_sweep=1`, `normal_row_count=1/2/3/4/5`,
-  `source_problem_size=3/6/9/12/15`, `problem_size=1/2/3/4/5`,
+  rows report `contact_normal_standard_sweep=1`, `normal_row_count=1/2/3/4/5/8`,
+  `source_problem_size=3/6/9/12/15/24`, `problem_size=1/2/3/4/5/8`,
   `contact_normal_direct_no_fallback=1` for all Direct rows, coupled-fixture
   counters, and backend build-state counters. The CUDA-enabled rows report
   `build_cuda_enabled=1` but are CPU solver rows in a CUDA-enabled build, not
