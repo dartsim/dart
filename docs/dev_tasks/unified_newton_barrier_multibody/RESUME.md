@@ -121,8 +121,7 @@ Focused local validation passed `pixi run lint`, the focused
 `test_newton_barrier_primitives` / `test_rigid_ipc_barrier` / `test_world`
 CTest entries, `pixi run build`, and `pixi run test-unit`.
 
-The native-CCD primitive outcome accounting slice is on
-`simx/shared-newton-barrier-ccd-hit-accounting`, published as PR #2945 after PR
+The native-CCD primitive outcome accounting slice merged as PR #2945 after PR
 #2943 landed. Focused local validation passed the
 `test_newton_barrier_primitives`, `test_continuous_collision_step`, and
 `test_rigid_ipc_barrier` build/CTest entries plus `pixi run lint`. Stronger
@@ -132,25 +131,25 @@ the docs phase still emits the existing `dartpy._world_render_bridge` autodoc
 warnings.
 
 The PSD backend wrapper slice is on
-`simx/shared-newton-barrier-psd-backend-wrapper`, stacked after #2945 while that
-PR waits for hosted CI/review. Focused local validation passed
+`simx/shared-newton-barrier-psd-backend-wrapper`, retargeted to `main` after
+PR #2945 landed. Focused local validation passed
 `test_deformable_psd_backend` and `test_world` build/CTest entries.
 
 ## Current Branch
 
 `simx/shared-newton-barrier-psd-backend-wrapper` - contains the Phase 3
-Newton-barrier PSD backend wrapper slice, stacked after #2945. Verify the exact
-status with `git status --short --branch` because this section is a resume
-snapshot.
+Newton-barrier PSD backend wrapper slice after PR #2945 landed. Verify the
+exact status with `git status --short --branch` because this section is a
+resume snapshot.
 
 ## Immediate Next Step
 
 Continue Phase 3 from
 [`../../plans/083-unified-newton-barrier-multibody/abd-first-slice-design.md`](../../plans/083-unified-newton-barrier-multibody/abd-first-slice-design.md):
-publish the PSD backend wrapper slice as a stacked PR if #2945 remains open, or
-retarget/restack it to `main` after #2945 lands. Then resume shared-contract
-scouting from the existing rigid IPC, deformable IPC, ABD, and benchmark-packet
-evidence. Do not add a two-body affine contact micro-solve for the current
+finish the PSD backend wrapper slice against `main`, then continue with the
+sufficient-decrease policy slice and resume shared-contract scouting from the
+existing rigid IPC, deformable IPC, ABD, and benchmark-packet evidence. Do not
+add a two-body affine contact micro-solve for the current
 `abd-alg-affine-body` micro-packet; add
 projected-Newton, line-search result semantics, diagnostics, or
 benchmark-schema contracts only after second-use behavior is proven identical
