@@ -359,8 +359,10 @@
       a 20-iteration PGS preconditioner for the coupled stack family; the
       `RedBlackGaussSeidel` row uses a 512-iteration stack-contact cap after
       focused 100- and 128-iteration probes did not satisfy the LCP contract at
-      the current larger stack sizes. A 7-sphere public-step invariant is not
-      claimed.
+      the current larger stack sizes. A bounded 7-sphere public-step unit test
+      and matching `BM_LcpWorldStackStep_BoxedLcp/7/1` row now pass in default,
+      SIMD-enabled, and CUDA-enabled build trees; the 1000-/2000-step
+      7-sphere public-step horizon remains unclaimed.
 - [x] Extended DART 7 boxed-LCP coupled stack snapshot evidence to an 8-sphere,
       8-contact, 24-row vertical stack, with a matching assembly benchmark row
       and 16 friction-index solver benchmark rows. The `Pgs`, `Jacobi`,
@@ -581,12 +583,13 @@
 - [ ] Continue extending DART 7 end-to-end contact cases through the public
       simulation pipeline beyond current separated contacts, fixed-base
       articulated contacts, 7-sphere coupled snapshots, 6-sphere coupled-stack
-      public-step rows, 48-box unit/benchmark dense face-contact long-horizon
-      step coverage, and bounded 64-box dense face-contact one-step shape and
-      75-step strict-invariant checks plus 96-box one-step shape and 75-step
+      public-step rows plus bounded 7-sphere one-step stack rows, 48-box
+      unit/benchmark dense face-contact long-horizon step coverage, and
+      bounded 64-box dense face-contact one-step shape and 75-step
+      strict-invariant checks plus 96-box one-step shape and 75-step
       strict-invariant coverage plus 128-box one-step shape and 75-step
       strict-invariant coverage plus 144-box one-step shape and 75-step
-      strict-invariant coverage.
+      strict-invariant coverage plus 192-box one-step shape coverage.
 - [ ] Broaden apples-to-apples benchmark packets from generated problems and
       simple world-contact snapshots to broader dense/robot-like end-to-end
       contact systems, with scalar, SIMD, threaded, CUDA, and broader batch
@@ -1751,8 +1754,9 @@ tradeoffs evidence based.
   extends the same real DART 7 boxed/findex snapshot path to a 7-sphere stack
   with 7 contacts and 21 LCP rows. The focused default
   `test_boxed_lcp_contact --gtest_filter=BoxedLcpContact.SevenSphereStackWorldContactSnapshotSatisfiesLcpContract:BoxedLcpContact.ThirtyTwoBoxWorldStepMaintainsDenseContactInvariants --gtest_brief=1`
-  run passed both tests. This is 7-sphere snapshot evidence only; a 7-sphere
-  public-step invariant is not claimed. A temporary
+  run passed both tests. `SevenSphereStackWorldStepPreservesContactInvariants`
+  now adds a bounded one-step public-step path for the same 7-sphere stack;
+  focused default, SIMD-enabled, and CUDA-enabled runs passed. A longer
   `SevenSphereStackWorldStepMaintainsContactInvariants` probe failed the
   existing near-rest vertical-velocity invariant after 1000 public
   `World::step()` iterations, with a matching
@@ -1760,8 +1764,8 @@ tradeoffs evidence based.
   `min_spacing=0.999225`, and `max_vertical_speed=5.90648`. A follow-up
   2000-step probe still failed height, spacing, and near-rest checks, while
   `BM_LcpWorldStackStep_BoxedLcp/7/2000` reported `invariant_ok=0` and
-  `max_vertical_speed=4.599`. No 7-sphere public-step row is registered from
-  those probes.
+  `max_vertical_speed=4.599`. No long-horizon 7-sphere public-step row is
+  registered from those probes.
   `BoxedLcpContact.EightSphereStackWorldContactSnapshotSatisfiesLcpContract`
   extends the direct boxed/findex snapshot path to an 8-sphere stack with
   8 contacts and 24 LCP rows. This is snapshot evidence only; no 8-sphere
@@ -2538,7 +2542,9 @@ tradeoffs evidence based.
   a smaller 0.001 s step, `BM_LcpWorldStackStep_BoxedLcp/5/500` rebuilds the
   5-sphere stack world with the same 0.001 s step and a longer horizon, and
   `BM_LcpWorldStackStep_BoxedLcp/6/1000` extends the public step path to the
-  6-sphere stack. All five
+  6-sphere stack. `BM_LcpWorldStackStep_BoxedLcp/7/1` adds a bounded one-step
+  public-step row for the 7-sphere stack without claiming the known failing
+  long-horizon gate. All six
   rows enter simulation mode, advance the
   public boxed-LCP `World::step()` path, and check the same finite-state,
   non-penetration, spacing, vertical-rest, lateral-drift, and static-ground
@@ -2555,7 +2561,12 @@ tradeoffs evidence based.
   `time_step=0.001`, `min_spacing=0.9999`, and
   `max_vertical_speed=1.26e-5`; the default 6-sphere row reported
   `time_step=0.001`, `min_spacing=0.9999`, and
-  `max_vertical_speed=2.52e-6`.
+  `max_vertical_speed=2.52e-6`. The focused default, SIMD-enabled, and
+  CUDA-enabled 7-sphere one-step rows reported `invariant_ok=1`,
+  `sphere_count=7`, `contact_count=7`, `step_count=1`,
+  `time_step=0.001`, `min_spacing=1.0`, `max_lateral_position=0`, and
+  `max_lateral_speed=0`; maximum vertical speed was `1.67e-16` in
+  default/CUDA-enabled builds and `1.11e-16` in the SIMD-enabled build.
 - DART 7 separated multi-contact end-to-end benchmark evidence:
   `BM_LcpWorldSeparatedStep_BoxedLcp/4/200`,
   `BM_LcpWorldSeparatedStep_BoxedLcp/8/200`,

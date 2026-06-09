@@ -2879,6 +2879,22 @@ TEST(
 }
 
 //==============================================================================
+// The 7-sphere stack is known not to satisfy the strict long-horizon settling
+// gate, but one public step still exercises the taller coupled contact chain.
+TEST(BoxedLcpContact, SevenSphereStackWorldStepPreservesContactInvariants)
+{
+  constexpr double kFriction = 0.6;
+  constexpr int kSphereCount = 7;
+
+  auto lcp = buildSphereStackScene(kSphereCount, kFriction, false);
+
+  lcp->enterSimulationMode();
+  lcp->step();
+
+  expectSphereStackStepInvariants(*lcp, kSphereCount);
+}
+
+//==============================================================================
 // End-to-end DART 7 World stepping: two independent sphere-ground contacts are
 // advanced through the public BoxedLcp contact solver for many time steps. This
 // complements the direct LCP snapshot tests above by checking the integrated
