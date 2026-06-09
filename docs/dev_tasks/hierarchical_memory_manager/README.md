@@ -274,8 +274,10 @@
       with different topology shapes and linear-solver modes. A default
       projected-Newton FEM ground-friction block now covers multi-tetrahedron
       rest-shape, Hessian-block, and multi-node ground-friction storage in both
-      baked no-growth guards. The default projected-Newton path now also has a
-      baked
+      baked no-growth guards; a compact mixed default-solver storage gate now
+      combines direct-sparse self-contact, matrix-free self-contact, and FEM
+      ground-friction bodies in one baked World memory root. The default
+      projected-Newton path now also has a baked
       sphere/box/capsule static obstacle barrier gate, covering those radial and
       oriented-obstacle Hessian paths separately from the ground height-field
       barrier and surface-CCD snapshot gates. The moving rigid-surface CCD path
@@ -628,7 +630,9 @@ debugging, profiling, optimization experiments, and ImGui visualization.
    rectangular self-contact grids that activate during the same baked loop. A
    mixed dense production scene also covers a notched direct-sparse 13x17 grid
    and matrix-free 13x19 dense rectangular grid sharing one baked World memory
-   root. The AVBD
+   root; a compact mixed default-solver storage scene now combines
+   direct-sparse, matrix-free, and FEM ground-friction deformables under the
+   same root. The AVBD
    self-contact row guard now also covers a 5x9 rectangular grid row workload
    with replay-backed activity assertions.
    Continue broadening boxed-LCP unified problem assembly only for newly

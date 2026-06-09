@@ -183,9 +183,11 @@ surface-CCD point crossing. FEM rest-shape caches are primed during
 projected-Newton path. A follow-up default-solver gate now adds a
 multi-tetrahedron FEM block on a ground-friction barrier to cover FEM rest
 shape, Hessian-block, and multi-node ground-friction storage in both the World
-base-allocator and global heap baked-step guards. Projected-Newton self-contact
-barrier scratch is sized from bake-primed contact candidates, and the guard
-covers the two-triangle no-friction self-contact path. Surface-contact
+base-allocator and global heap baked-step guards. Another compact mixed storage
+gate combines direct-sparse self-contact, matrix-free self-contact, and FEM
+ground-friction bodies in one baked default-solver World. Projected-Newton
+self-contact barrier scratch is sized from bake-primed contact candidates, and
+the guard covers the two-triangle no-friction self-contact path. Surface-contact
 candidate and sweep buffers now get topology-scaled bake-time reserve capacity,
 and the guard covers a
 multi-triangle frictional self-contact patch, a 5x5 two-layer frictional
