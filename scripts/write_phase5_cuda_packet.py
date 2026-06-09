@@ -6,7 +6,6 @@ from __future__ import annotations
 import argparse
 import json
 import math
-import re
 import sys
 from pathlib import Path
 
@@ -15,11 +14,9 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
 import check_phase5_gpu_packet as packet_check
+from benchmark_packet_utils import canonical_benchmark_row_name
 
 DEFAULT_OUTPUT = Path(".benchmark_results/phase5_cuda_packet.json")
-
-_AGGREGATE_SUFFIX_RE = re.compile(r"_(?:mean|median|stddev|cv)$")
-_REPEATS_SUFFIX_RE = re.compile(r"/repeats:\d+")
 
 
 class Phase5CudaPacketError(RuntimeError):
@@ -96,15 +93,6 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def _canonical_name(name: str) -> str:
-    return _AGGREGATE_SUFFIX_RE.sub("", _REPEATS_SUFFIX_RE.sub("", name))
-
-
-def _row_name(row: dict) -> str:
-    name = row.get("run_name", row.get("name", ""))
-    return name if isinstance(name, str) else ""
-
-
 def _load_benchmark_json(path: Path) -> dict:
     with path.open(encoding="utf-8") as f:
         data = json.load(f)
@@ -125,7 +113,7 @@ def _matching_rows(
     step_count: int,
 ) -> list[dict]:
     target = f"{prefix}/{world_count}/{body_count}/{step_count}"
-    return [row for row in rows if _canonical_name(_row_name(row)) == target]
+    return [row for row in rows if canonical_benchmark_row_name(row) == target]
 
 
 def _finite_counter(row: dict, key: str) -> float | None:

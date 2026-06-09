@@ -2,6 +2,11 @@
 
 ## Current Reality (2026-06-08)
 
+PR granularity: batch all work within one implementation-roadmap phase into a
+single branch and PR. Keep commits atomic within the branch. A phase may split
+into at most two PRs only when it crosses a public-API boundary or touches
+unrelated CI/build infrastructure.
+
 Use this folder's `README.md`, PLAN-083, `docs/plans/dashboard.md`, and the
 current code as the live status. The branch-local "Current Branch" section below
 is historical handoff context, not current checkout state. Treat IPC as the
@@ -63,7 +68,9 @@ lookup, and timing-field validation now live in
 `scripts/benchmark_packet_utils.py`. The ABD comparison packet checker and the
 Phase 5 GPU packet checker share those row-level rules while keeping their
 packet-specific expected rows, metadata, speedup gates, and evidence flags in
-their variant owners.
+their variant owners. The shared canonical row identity helper is also consumed
+by the Phase 5 CUDA packet writer so packet generation and validation strip
+Google Benchmark repeat/aggregate suffixes the same way.
 
 The native-CCD primitive outcome accounting scout promoted only the outcome
 accounting that is identical across rigid IPC and deformable CCD: hit/miss/
@@ -71,6 +78,12 @@ indeterminate counter updates, hit and indeterminate time-of-impact clamping to
 `[0, 1]`, and zero-step counting. Limiting-payload ownership,
 indeterminate-result policy, and line-search result structs remain
 variant-local.
+
+The native-CCD zero-step diagnostic follow-up keeps that shared accounting
+contract honest for indeterminate primitive queries: if a native CCD backend can
+only prove an indeterminate zero step, `detail/newton_barrier` now increments
+the same zero-step counter used for zero-time hits. Rigid IPC and deformable CCD
+still own their distinct limiting payloads and indeterminate-result policies.
 
 ## Last Session Summary
 
@@ -116,9 +129,10 @@ The benchmark-packet utility slice merged as PR #2940. It promoted
 Google Benchmark row parsing into `scripts/benchmark_packet_utils.py`, routing
 the ABD comparison packet checker plus the Phase 5 GPU packet checker through
 the shared utility while keeping packet-specific metadata and gates in their
-owners. Focused local validation passed
-`pixi run python -m pytest tests/test_benchmark_packet_utils.py` and
-`pixi run lint`.
+owners. The follow-up row-identity slice routes the Phase 5 CUDA packet writer
+through the same canonical row identity helper and removes its duplicate parser.
+Focused local validation passed `pixi run python -m pytest
+tests/test_benchmark_packet_utils.py` and `pixi run lint`.
 
 The line-search step-scale slice merged as PR #2943. It is intentionally
 smaller than a line-search result or projected-Newton diagnostics merge:
@@ -158,8 +172,9 @@ resume snapshot.
 
 ## Immediate Next Step
 
-Finish the sufficient-decrease policy slice against `main`, then continue Phase
-3 from
+With the sufficient-decrease policy slice merged to `main`, collect remaining
+Phase 3 work into the current branch and open one PR for the phase. Continue
+from
 [`../../plans/083-unified-newton-barrier-multibody/abd-first-slice-design.md`](../../plans/083-unified-newton-barrier-multibody/abd-first-slice-design.md):
 resume shared-contract scouting from the existing rigid IPC, deformable IPC,
 ABD, and benchmark-packet evidence. Do not add a two-body affine contact
@@ -208,8 +223,9 @@ VBD/OGC-adjacent work, or shared Newton-barrier infrastructure.
   result structs there until rigid, deformable, ABD, or another variant prove
   identical result semantics.
 - `scripts/benchmark_packet_utils.py` owns the shared Google Benchmark row
-  parsing utilities for packet validators. Keep packet-specific metadata and
-  go/no-go gates in each checker until more variants prove identical semantics.
+  parsing utilities for packet validators and writers. Keep packet-specific
+  metadata and go/no-go gates in each checker until more variants prove
+  identical semantics.
 - `bm_affine_body_dynamics` currently contains the first ABD benchmark packet:
   affine point-triangle barrier mapping, matched rigid IPC point-triangle oracle
   row, and orthogonality energy.

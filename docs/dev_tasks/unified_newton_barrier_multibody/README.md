@@ -67,6 +67,10 @@
         miss, indeterminate, and step-bound clamping through it while keeping
         limiting-payload ownership and indeterminate-result policy
         variant-local.
+  - [x] Count zero-step indeterminate native-CCD outcomes through the shared
+        line-search accounting helper so rigid IPC and deformable CCD
+        diagnostics report blocking indeterminate queries consistently while
+        keeping their limiting payloads variant-local.
   - [x] Promote the shared Armijo sufficient-decrease and backtracking scalar
         policy into `detail/newton_barrier` and route rigid IPC plus deformable
         projected-Newton line-search checks through it while keeping
@@ -75,6 +79,9 @@
         `scripts/benchmark_packet_utils.py` and route the ABD comparison packet
         checker plus the Phase 5 GPU packet checker through it while keeping
         packet-specific metadata rules in their owners.
+  - [x] Route the Phase 5 CUDA packet writer through the shared Google
+        Benchmark canonical row identity helper, removing its duplicate row
+        parser while keeping packet-specific max-error extraction local.
   - [ ] Continue scouting projected-Newton, line-search result, diagnostics, or
         benchmark-schema contracts only when another variant needs identical
         behavior.
@@ -105,6 +112,11 @@ storage, or backend resources as public API.
 ## Key Decisions
 
 - Phase 1 is an internal ownership and contract slice, not a behavior change.
+- Batch all work within one implementation-roadmap phase into a single branch
+  and PR. Commits within the branch stay atomic and self-describing, but the PR
+  is the review unit, not the commit. A phase may split into at most two PRs
+  only if it crosses a public-API boundary or touches unrelated CI/build
+  infrastructure.
 - The old `deformable_contact` include paths remain as forwarding
   compatibility headers to avoid unnecessary PLAN-081 merge conflicts.
 - Rigid IPC should include the new Newton-barrier owner directly because it is
@@ -133,14 +145,16 @@ storage, or backend resources as public API.
 
 ## Immediate Next Steps
 
-1. Continue Phase 3 shared-contract scouting from the existing rigid IPC,
-   deformable IPC, and ABD evidence after the fixed-size PSD projection helper,
-   first line-search option/stat helper, shared line-search positive-step
-   predicate, shared conservative native-CCD option adapter, shared
-   line-search step-scale helper, and shared Google Benchmark packet row parser.
-   Promote projected-Newton result/status terminology, line-search result
-   semantics, diagnostics, or additional benchmark-schema contracts only when a
-   second consumer proves identical behavior.
+1. Collect remaining Phase 3 shared-contract scouting into the current branch
+   and open one PR for the phase. Use the existing rigid IPC, deformable IPC,
+   and ABD evidence after the fixed-size PSD projection helper, first
+   line-search option/stat helper, shared line-search positive-step predicate,
+   shared conservative native-CCD option adapter, shared line-search step-scale
+   helper, shared native-CCD zero-step diagnostic accounting, and shared Google
+   Benchmark packet row identity helper. Promote projected-Newton result/status
+   terminology, line-search result semantics, diagnostics, or additional
+   benchmark-schema contracts only when a second consumer proves identical
+   behavior.
 2. Keep the two-body affine contact micro-solve deferred until the
    `abd-alg-affine-body` row expands beyond the primitive/oracle micro-packet
    and needs a solved-state residual or runtime stepping diagnostic.
@@ -213,6 +227,11 @@ Phase 3 benchmark packet utility slice local evidence:
 - `pixi run python -m pytest tests/test_benchmark_packet_utils.py`
 - `pixi run lint`
 
+Phase 3 benchmark row identity slice local evidence:
+
+- `pixi run python -m pytest tests/test_benchmark_packet_utils.py`
+- `pixi run lint`
+
 Phase 3 line-search step-scale slice local evidence:
 
 - `pixi run lint`
@@ -231,6 +250,11 @@ Phase 3 native-CCD primitive outcome accounting slice local evidence:
 - `pixi run test-all`
 - `pixi run -e cuda test-all` (docs passed with the existing
   `dartpy._world_render_bridge` autodoc warnings)
+
+Phase 3 native-CCD zero-step diagnostic accounting slice local evidence:
+
+- `pixi run -- cmake --build build/default/cpp/Release --target test_newton_barrier_primitives --parallel 8`
+- `pixi run -- ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_newton_barrier_primitives$'`
 
 Phase 3 sufficient-decrease policy slice local evidence:
 
