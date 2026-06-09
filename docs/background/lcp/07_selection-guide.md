@@ -273,29 +273,42 @@ Pivoting ─> Interior Point ─> Newton ─> BGS ─> PGS ─> Jacobi
 
 Available solvers:
 
-- ✅ **Dantzig**: BLCP with bounds, friction support
-- ✅ **Lemke**: Standard LCP
-- ✅ **Baraff**: Incremental pivoting for symmetric PSD standard LCPs
-- ✅ **Direct 2D/3D**: Enumeration solver for tiny standard LCPs
-- ✅ **Interior Point**: Primal-dual method for robust standard LCP solves
-- ✅ **MPRGP**: QP-based solver for standard SPD LCPs
-- ✅ **PGS/PSOR**: Iterative boxed LCP with friction index fallback (tune
+The backticked names in this block are checked against
+`tests/common/lcpsolver/lcp_solver_manifest.hpp` by
+`AllSolversSmokeTest.DocumentedSolverAvailabilityMatchesManifest`.
+
+<!-- dart-lcp-solver-manifest: begin -->
+
+- ✅ `Dantzig`: BLCP with bounds, friction support
+- ✅ `Lemke`: Standard LCP
+- ✅ `Baraff`: Incremental pivoting for symmetric PSD standard LCPs
+- ✅ `Direct`: Direct 2D/3D enumeration solver for tiny standard LCPs
+- ✅ `Pgs`: Iterative PGS/PSOR boxed LCP with friction index fallback (tune
   `LcpOptions::relaxation`)
-- ✅ **Symmetric PSOR**: Forward/backward sweep variant for reduced bias
-- ✅ **Jacobi**: Projected Jacobi baseline (parallel-friendly)
-- ✅ **Blocked Jacobi**: Parallel block updates for contact-style problems
-- ✅ **Red-Black GS**: Two-color Gauss-Seidel variant for parallel-style updates
-- ✅ **Staggering**: Normal/friction block staggering for contact structure
-- ✅ **Shock Propagation**: Layered contact solve for gravity-dominated scenes
-- ✅ **BGS**: Blocked Gauss-Seidel for per-contact blocks
-- ✅ **PGS-SM**: Subspace minimization hybrid for medium problems
-- ✅ **APGD**: Nesterov-accelerated PGS-style projection
-- ✅ **TGS**: Temporal Gauss-Seidel style boxed-LCP projection
-- ✅ **Newton (Minimum Map, FB, Penalized FB)**: Standard LCP only
-- ✅ **Boxed Semi-Smooth Newton**: Newton-style boxed/findex solve
-- ✅ **NNCG**: Conjugate-gradient acceleration on PGS sweeps
-- ✅ **ADMM**: Operator-splitting boxed-LCP solve
-- ✅ **SAP**: Regularized SAP-inspired boxed-LCP solve
+- ✅ `SymmetricPsor`: Forward/backward sweep variant for reduced bias
+- ✅ `Jacobi`: Projected Jacobi baseline (parallel-friendly)
+- ✅ `RedBlackGaussSeidel`: Two-color Gauss-Seidel variant for parallel-style
+  updates
+- ✅ `BlockedJacobi`: Parallel block updates for contact-style problems
+- ✅ `BGS`: Blocked Gauss-Seidel for per-contact blocks
+- ✅ `NNCG`: Conjugate-gradient acceleration on PGS sweeps
+- ✅ `SubspaceMinimization`: PGS-SM hybrid for medium problems
+- ✅ `Apgd`: Nesterov-accelerated PGS-style projection
+- ✅ `Tgs`: Temporal Gauss-Seidel style boxed-LCP projection
+- ✅ `MinimumMapNewton`: Minimum-map Newton solve for standard LCPs
+- ✅ `FischerBurmeisterNewton`: Fischer-Burmeister Newton solve for standard
+  LCPs
+- ✅ `PenalizedFischerBurmeisterNewton`: Penalized Fischer-Burmeister Newton
+  solve for standard LCPs
+- ✅ `InteriorPoint`: Primal-dual method for robust standard LCP solves
+- ✅ `MPRGP`: QP-based solver for standard SPD LCPs
+- ✅ `ShockPropagation`: Layered contact solve for gravity-dominated scenes
+- ✅ `Staggering`: Normal/friction block staggering for contact structure
+- ✅ `Admm`: Operator-splitting boxed-LCP solve
+- ✅ `Sap`: Regularized SAP-inspired boxed-LCP solve
+- ✅ `BoxedSemiSmoothNewton`: Newton-style boxed/findex solve
+
+<!-- dart-lcp-solver-manifest: end -->
 
 **Best Practices Now**:
 

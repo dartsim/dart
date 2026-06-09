@@ -1280,6 +1280,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Updated the DART 7 LCP background taxonomy and selection guide to include
     APGD, TGS, boxed semi-smooth Newton, ADMM, and SAP alongside the shared
     solver manifest, correctness coverage, and benchmark registration.
+    The selection guide's available-solver block is now checked against
+    `kLcpSolverManifest` by the all-solvers smoke test so documented DART 7 LCP
+    solver availability cannot drift silently from implementation coverage.
   - Added DART 7 ADMM rho/adaptive-rho comparison benchmark rows for standard,
     boxed, and friction-index LCP fixtures, with backend build-state counters
     distinguishing default, SIMD-enabled, and CUDA-enabled CPU solver runs.

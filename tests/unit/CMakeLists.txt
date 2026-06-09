@@ -351,6 +351,12 @@ dart_build_tests(
     math/lcp/test_lcp_newton_solvers.cpp
     math/lcp/test_lcp_projection_solvers.cpp
 )
+if(TARGET UNIT_math_lcp_math_lcp_all_solvers_smoke)
+  target_compile_definitions(
+    UNIT_math_lcp_math_lcp_all_solvers_smoke
+    PRIVATE DART_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+  )
+endif()
 
 # Math Lie group tests
 dart_build_tests(

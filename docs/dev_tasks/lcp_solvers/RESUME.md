@@ -1948,6 +1948,9 @@ python scripts/run_benchmark_smoke.py build/cuda/cpp/Release/bin/BM_LCP_COMPARE 
   "--benchmark_filter=^BM_LcpWorldBoxContactBatch(Serial|Parallel)/FrictionIndex/Pgs/(1|4|8|16|24|32|48|64|96)/4$" \
   "--benchmark_min_time=0.001s" \
   "--benchmark_repetitions=1"
+./build/default/cpp/Release/bin/UNIT_math_lcp_math_lcp_all_solvers_smoke \
+  "--gtest_filter=AllSolversSmokeTest.DocumentedSolverAvailabilityMatchesManifest" \
+  "--gtest_brief=1"
 ./build/simd/cpp/Release/bin/BM_LCP_COMPARE \
   "--benchmark_filter=^BM_LcpWorldBoxContactBatch(Serial|Parallel)/FrictionIndex/Pgs/(1|4|8|16|24|32|48|64|96)/4$" \
   "--benchmark_min_time=0.001s" \

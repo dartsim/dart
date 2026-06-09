@@ -35,7 +35,10 @@
 
 #include <gtest/gtest.h>
 
+#include <filesystem>
+#include <fstream>
 #include <string>
+#include <vector>
 
 #include <cmath>
 
@@ -69,6 +72,57 @@ bool producedIterate(const LcpResult& result)
 {
   return result.status == LcpSolverStatus::Success
          || result.status == LcpSolverStatus::MaxIterations;
+}
+
+std::filesystem::path dartSourcePath()
+{
+  return std::filesystem::path(DART_SOURCE_DIR);
+}
+
+std::vector<std::string> readDocumentedSolverManifestNames()
+{
+  const auto path
+      = dartSourcePath() / "docs/background/lcp/07_selection-guide.md";
+  std::ifstream input(path);
+  if (!input) {
+    return {};
+  }
+
+  constexpr std::string_view kBegin
+      = "<!-- dart-lcp-solver-manifest: begin -->";
+  constexpr std::string_view kEnd = "<!-- dart-lcp-solver-manifest: end -->";
+
+  bool inManifestBlock = false;
+  std::vector<std::string> names;
+  std::string line;
+  while (std::getline(input, line)) {
+    if (line == kBegin) {
+      inManifestBlock = true;
+      continue;
+    }
+    if (line == kEnd) {
+      break;
+    }
+    if (!inManifestBlock) {
+      continue;
+    }
+
+    if (line.rfind("- ", 0) != 0) {
+      continue;
+    }
+
+    const auto firstTick = line.find('`');
+    if (firstTick == std::string::npos) {
+      continue;
+    }
+    const auto secondTick = line.find('`', firstTick + 1);
+    if (secondTick == std::string::npos) {
+      continue;
+    }
+    names.push_back(line.substr(firstTick + 1, secondTick - firstTick - 1));
+  }
+
+  return names;
 }
 
 void expectWithinEffectiveBounds(
@@ -115,6 +169,17 @@ TEST_F(AllSolversSmokeTest, ManifestMatchesConstructedSolverMetadata)
     ASSERT_NE(solver, nullptr) << solverCase.name;
     EXPECT_EQ(solver->getName(), std::string(solverCase.name))
         << solverCase.name;
+  }
+}
+
+TEST_F(AllSolversSmokeTest, DocumentedSolverAvailabilityMatchesManifest)
+{
+  const auto documentedNames = readDocumentedSolverManifestNames();
+  ASSERT_EQ(documentedNames.size(), kLcpSolverManifest.size());
+
+  for (std::size_t i = 0; i < kLcpSolverManifest.size(); ++i) {
+    EXPECT_EQ(documentedNames[i], std::string(kLcpSolverManifest[i].name))
+        << "docs/background/lcp/07_selection-guide.md entry " << i;
   }
 }
 

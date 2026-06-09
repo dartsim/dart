@@ -2087,6 +2087,12 @@ tradeoffs evidence based.
 - Added comparison coverage drift checks against the manifest and expanded
   `ShockPropagationSolver` comparison coverage from standard-only to standard
   plus boxed fixtures.
+- Added a documentation-manifest drift guard: the selection guide's DART 7
+  available-solver block now lists exact `LcpSolver::getName()` values between
+  machine-readable markers, and
+  `AllSolversSmokeTest.DocumentedSolverAvailabilityMatchesManifest` reads that
+  block from `docs/background/lcp/07_selection-guide.md` and compares it with
+  `kLcpSolverManifest` in order.
 - Replaced per-solver benchmark registration for standard, boxed, and
   friction-index families with manifest-generated benchmarks. These benchmark
   families now use the same deterministic generated problem for every solver at
@@ -2565,7 +2571,9 @@ tradeoffs evidence based.
   and broader vectorized/CUDA LCP batch-processing paths still need separate
   evidence.
 - Background taxonomy upkeep: keep `docs/background/lcp/`, the solver manifest,
-  and benchmark registration synchronized whenever solver support changes.
+  and benchmark registration synchronized whenever solver support changes. The
+  selection guide's available-solver block is now mechanically checked against
+  `kLcpSolverManifest`.
 
 ## Immediate Next Steps
 
