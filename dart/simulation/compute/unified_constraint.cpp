@@ -41,10 +41,12 @@
 #include <entt/entt.hpp>
 
 #include <algorithm>
+#include <array>
 #include <limits>
-#include <unordered_map>
 #include <utility>
 #include <vector>
+
+#include <cstddef>
 
 namespace dart::simulation::compute {
 
@@ -126,6 +128,14 @@ int findMultibodyBlockIndex(
 }
 
 //==============================================================================
+const MultibodyLinkContactProblem& problemOf(
+    const UnifiedMultibodyContact& contact)
+{
+  return contact.borrowedProblem != nullptr ? *contact.borrowedProblem
+                                            : contact.problem;
+}
+
+//==============================================================================
 // One rigid body a row's impulse acts on: the body, the signed
 // relative-velocity convention (-1 for bodyA, +1 for bodyB; -1 for a link's
 // dynamic obstacle), and that body's world inverse mass/inertia and contact
@@ -147,7 +157,7 @@ struct ArticulatedEnd
   int multibodyIndex = -1;
   double sign = 0.0;
   bool primary = false;
-  Eigen::VectorXd jacobian;
+  const Eigen::VectorXd* jacobian = nullptr;
 };
 
 //==============================================================================
@@ -167,24 +177,152 @@ double sharedBodyEntry(
 }
 
 //==============================================================================
-std::vector<std::vector<Eigen::Index>> computeRowIslands(
-    const UnifiedConstraintProblem& problem)
+bool findRigidConstraintInertia(
+    std::span<const RigidBodyContactConstraint> constraints,
+    entt::entity body,
+    double& invMass,
+    Eigen::Matrix3d& invInertia)
+{
+  for (const auto& constraint : constraints) {
+    if (constraint.bodyA == body) {
+      invMass = constraint.invMassA;
+      invInertia = constraint.invInertiaA;
+      return true;
+    }
+    if (constraint.bodyB == body) {
+      invMass = constraint.invMassB;
+      invInertia = constraint.invInertiaB;
+      return true;
+    }
+  }
+  return false;
+}
+
+//==============================================================================
+const Eigen::Vector3d& rowDirection(
+    const UnifiedConstraintProblem& problem, Eigen::Index rowIndex)
+{
+  const auto& owner = problem.rowOwners[static_cast<std::size_t>(rowIndex)];
+  if (owner.domain == UnifiedContactDomain::Rigid) {
+    return directionOfRigid(
+        problem.rigidConstraints[owner.sourceIndex], owner.direction);
+  }
+
+  const auto& block
+      = problem.multibodyBlocks[static_cast<std::size_t>(owner.multibodyIndex)];
+  return directionOfLink(block.rows[owner.sourceIndex], owner.direction);
+}
+
+//==============================================================================
+std::size_t rowRigidEnds(
+    const UnifiedConstraintProblem& problem,
+    Eigen::Index rowIndex,
+    std::array<RigidEnd, 2>& ends)
+{
+  const auto& owner = problem.rowOwners[static_cast<std::size_t>(rowIndex)];
+  if (owner.domain == UnifiedContactDomain::Rigid) {
+    const auto& constraint = problem.rigidConstraints[owner.sourceIndex];
+    ends[0]
+        = {constraint.bodyA,
+           -1.0,
+           constraint.invMassA,
+           constraint.invInertiaA,
+           constraint.armA};
+    ends[1]
+        = {constraint.bodyB,
+           +1.0,
+           constraint.invMassB,
+           constraint.invInertiaB,
+           constraint.armB};
+    return 2;
+  }
+
+  const auto& block
+      = problem.multibodyBlocks[static_cast<std::size_t>(owner.multibodyIndex)];
+  const auto& row = block.rows[owner.sourceIndex];
+  if (row.otherBody == entt::null) {
+    return 0;
+  }
+
+  ends[0] = {
+      row.otherBody, -1.0, row.otherInvMass, row.otherInvInertia, row.otherArm};
+  return 1;
+}
+
+//==============================================================================
+std::size_t rowArticulatedEnds(
+    const UnifiedConstraintProblem& problem,
+    Eigen::Index rowIndex,
+    std::array<ArticulatedEnd, 2>& ends)
+{
+  const auto& owner = problem.rowOwners[static_cast<std::size_t>(rowIndex)];
+  if (owner.domain != UnifiedContactDomain::Link) {
+    return 0;
+  }
+
+  const auto& block
+      = problem.multibodyBlocks[static_cast<std::size_t>(owner.multibodyIndex)];
+  const auto& row = block.rows[owner.sourceIndex];
+
+  std::size_t count = 0;
+  ends[count++]
+      = {owner.multibodyIndex, +1.0, true, &jacobianOf(row, owner.direction)};
+  if (row.otherMultibodyIndex >= 0) {
+    ends[count++]
+        = {row.otherMultibodyIndex,
+           -1.0,
+           false,
+           &otherJacobianOf(row, owner.direction)};
+  }
+  return count;
+}
+
+//==============================================================================
+double jointSpaceEntry(
+    const Eigen::MatrixXd& inverseMass,
+    const Eigen::VectorXd& lhs,
+    const Eigen::VectorXd& rhs)
+{
+  DART_ASSERT(inverseMass.rows() == lhs.size());
+  DART_ASSERT(inverseMass.cols() == rhs.size());
+
+  double value = 0.0;
+  for (Eigen::Index row = 0; row < inverseMass.rows(); ++row) {
+    double rowValue = 0.0;
+    for (Eigen::Index col = 0; col < inverseMass.cols(); ++col) {
+      rowValue += inverseMass(row, col) * rhs[col];
+    }
+    value += lhs[row] * rowValue;
+  }
+  return value;
+}
+
+//==============================================================================
+void computeRowIslandsInto(
+    const UnifiedConstraintProblem& problem,
+    UnifiedConstraintSolveScratch& scratch)
 {
   const Eigen::Index size = problem.rhs.size();
-  std::vector<std::vector<Eigen::Index>> islands;
-  std::vector<char> visited(static_cast<std::size_t>(size), 0);
-  std::vector<Eigen::Index> stack;
+  const auto rowCount = static_cast<std::size_t>(size);
+  scratch.islandRows.clear();
+  scratch.islandRows.reserve(rowCount);
+  scratch.islandOffsets.clear();
+  scratch.islandOffsets.reserve(rowCount + 1u);
+  scratch.rowStack.clear();
+  scratch.rowStack.reserve(rowCount);
+  scratch.visitedRows.assign(rowCount, 0);
+  scratch.islandOffsets.push_back(0);
 
   const auto visit = [&](Eigen::Index row) {
     if (row < 0 || row >= size) {
       return false;
     }
-    auto& wasVisited = visited[static_cast<std::size_t>(row)];
+    auto& wasVisited = scratch.visitedRows[static_cast<std::size_t>(row)];
     if (wasVisited != 0) {
       return false;
     }
     wasVisited = 1;
-    stack.push_back(row);
+    scratch.rowStack.push_back(row);
     return true;
   };
 
@@ -193,11 +331,11 @@ std::vector<std::vector<Eigen::Index>> computeRowIslands(
       continue;
     }
 
-    std::vector<Eigen::Index> island;
-    while (!stack.empty()) {
-      const Eigen::Index row = stack.back();
-      stack.pop_back();
-      island.push_back(row);
+    const auto islandBegin = scratch.islandRows.size();
+    while (!scratch.rowStack.empty()) {
+      const Eigen::Index row = scratch.rowStack.back();
+      scratch.rowStack.pop_back();
+      scratch.islandRows.push_back(row);
 
       const Eigen::Index normalRow = problem.findex[row];
       visit(normalRow);
@@ -212,42 +350,128 @@ std::vector<std::vector<Eigen::Index>> computeRowIslands(
         }
       }
     }
-    std::sort(island.begin(), island.end());
-    islands.push_back(std::move(island));
+    std::sort(
+        scratch.islandRows.begin() + static_cast<std::ptrdiff_t>(islandBegin),
+        scratch.islandRows.end());
+    scratch.islandOffsets.push_back(scratch.islandRows.size());
   }
-
-  return islands;
 }
 
 //==============================================================================
-UnifiedConstraintSolution solveBoxedLcp(
+bool solveBoxedLcpInto(
     const Eigen::MatrixXd& delassus,
     const Eigen::VectorXd& rhs,
     const Eigen::VectorXd& lo,
     const Eigen::VectorXd& hi,
-    const Eigen::VectorXi& findex)
+    const Eigen::VectorXi& findex,
+    Eigen::VectorXd& lambda,
+    UnifiedConstraintSolveScratch& scratch)
 {
-  UnifiedConstraintSolution solution;
   const Eigen::Index size = rhs.size();
   if (size == 0) {
-    solution.succeeded = true;
-    return solution;
+    lambda.resize(0);
+    return true;
   }
 
-  const math::LcpProblem lcpProblem(delassus, rhs, lo, hi, findex);
-  math::DantzigSolver solver;
   // Pin the options to the solver default + early termination. A
   // default-constructed LcpOptions would change the validation/tolerance fields
   // that decide succeeded(), and thus flip the rank-deficient fallback
   // decision.
-  math::LcpOptions options = solver.getDefaultOptions();
+  math::LcpOptions options = scratch.solver.getDefaultOptions();
   options.earlyTermination = true;
-  const auto result = solver.solve(lcpProblem, solution.lambda, options);
-  solution.succeeded = result.succeeded() && solution.lambda.size() == size;
-  return solution;
+  const auto result = scratch.solver.solve(
+      delassus, rhs, lo, hi, findex, lambda, scratch.dantzig, options);
+  return result.succeeded() && lambda.size() == size;
+}
+
+//==============================================================================
+void setScaledVector(
+    Eigen::VectorXd& target, const Eigen::VectorXd& source, double scale)
+{
+  target.resize(source.size());
+  for (Eigen::Index i = 0; i < source.size(); ++i) {
+    target[i] = scale * source[i];
+  }
+}
+
+//==============================================================================
+void addScaledVector(
+    Eigen::VectorXd& target, const Eigen::VectorXd& source, double scale)
+{
+  DART_ASSERT(target.size() == source.size());
+  for (Eigen::Index i = 0; i < source.size(); ++i) {
+    target[i] += scale * source[i];
+  }
+}
+
+//==============================================================================
+void addJointSpaceImpulse(
+    const Eigen::MatrixXd& inverseMass,
+    const Eigen::VectorXd& generalizedImpulse,
+    Eigen::VectorXd& velocity,
+    UnifiedConstraintSolveScratch& scratch,
+    double sign)
+{
+  DART_ASSERT(inverseMass.rows() == velocity.size());
+  DART_ASSERT(inverseMass.cols() == generalizedImpulse.size());
+
+  scratch.velocityDelta.resize(inverseMass.rows());
+  scratch.velocityDelta.noalias() = inverseMass * generalizedImpulse;
+  for (Eigen::Index i = 0; i < velocity.size(); ++i) {
+    velocity[i] += sign * scratch.velocityDelta[i];
+  }
+}
+
+//==============================================================================
+void setContactImpulse(
+    UnifiedConstraintSolveScratch& scratch,
+    const Eigen::VectorXd& normalJacobian,
+    double normalImpulse,
+    const Eigen::VectorXd& tangentJacobian1,
+    double tangentImpulse1,
+    const Eigen::VectorXd& tangentJacobian2,
+    double tangentImpulse2)
+{
+  setScaledVector(scratch.generalizedImpulse, normalJacobian, normalImpulse);
+  addScaledVector(
+      scratch.generalizedImpulse, tangentJacobian1, tangentImpulse1);
+  addScaledVector(
+      scratch.generalizedImpulse, tangentJacobian2, tangentImpulse2);
 }
 
 } // namespace
+
+//==============================================================================
+void UnifiedConstraintSolveScratch::clear() noexcept
+{
+  dantzig.clear();
+  lambda.resize(0);
+  islandLambda.resize(0);
+  generalizedImpulse.resize(0);
+  velocityDelta.resize(0);
+  islandRows.clear();
+  islandOffsets.clear();
+  visitedRows.clear();
+  rowStack.clear();
+  localIndex.clear();
+  islandDelassus.resize(0, 0);
+  islandRhs.resize(0);
+  islandLo.resize(0);
+  islandHi.resize(0);
+  islandFindex.resize(0);
+  normalRows.clear();
+  normalA.resize(0, 0);
+  normalB.resize(0);
+  normalLo.resize(0);
+  normalHi.resize(0);
+  normalFindex.resize(0);
+  normalLambda.resize(0);
+  rigidTangent1.clear();
+  rigidTangent2.clear();
+  linkTangentOffsets.clear();
+  linkTangent1.clear();
+  linkTangent2.clear();
+}
 
 //==============================================================================
 void assembleUnifiedConstraintProblemInto(
@@ -272,14 +496,22 @@ void assembleUnifiedConstraintProblemInto(
   problem.multibodyBlocks.resize(multibodyContacts.size());
   for (std::size_t k = 0; k < multibodyContacts.size(); ++k) {
     const auto& contact = multibodyContacts[k];
+    const auto& linkProblem = problemOf(contact);
     auto& block = problem.multibodyBlocks[k];
     block.multibody = contact.multibody;
-    block.inverseMass = contact.problem.inverseMass;
-    block.rows.clear();
-    block.rows.reserve(contact.problem.rows.size());
-    for (const auto& row : contact.problem.rows) {
+    block.inverseMass = linkProblem.inverseMass;
+
+    std::size_t activeRowCount = 0;
+    for (const auto& row : linkProblem.rows) {
       if (row.active) {
-        block.rows.push_back(row);
+        ++activeRowCount;
+      }
+    }
+    block.rows.resize(activeRowCount);
+    std::size_t compactedRow = 0;
+    for (const auto& row : linkProblem.rows) {
+      if (row.active) {
+        block.rows[compactedRow++] = row;
       }
     }
     block.blockBase = nextBase;
@@ -374,15 +606,14 @@ void assembleUnifiedConstraintProblemInto(
       const Eigen::Index normalRowI = block.blockBase + ci * kRows;
       for (int a = 0; a < kRows; ++a) {
         const auto direction = static_cast<UnifiedContactDirection>(a);
-        const Eigen::VectorXd inverseMassJacobian
-            = inverseMass * jacobianOf(rowI, direction);
         for (Eigen::Index cj = 0; cj < rowCount; ++cj) {
           const auto& rowJ = block.rows[static_cast<std::size_t>(cj)];
           const Eigen::Index normalRowJ = block.blockBase + cj * kRows;
           for (int b = 0; b < kRows; ++b) {
-            problem.delassus(normalRowI + a, normalRowJ + b)
-                = jacobianOf(rowJ, static_cast<UnifiedContactDirection>(b))
-                      .dot(inverseMassJacobian);
+            problem.delassus(normalRowI + a, normalRowJ + b) = jointSpaceEntry(
+                inverseMass,
+                jacobianOf(rowJ, static_cast<UnifiedContactDirection>(b)),
+                jacobianOf(rowI, direction));
           }
         }
       }
@@ -394,80 +625,22 @@ void assembleUnifiedConstraintProblemInto(
   // everywhere, or A is not a consistent Delassus of one operator. The rigid
   // and link assemblers normalize the orientation and handle LDLT failure
   // differently, so adopt the rigid path's value (canonical) for any shared
-  // body and overwrite the link rows' obstacle inertia. ---
-  std::unordered_map<entt::entity, std::pair<double, Eigen::Matrix3d>>
-      rigidInertia;
-  rigidInertia.reserve(problem.rigidConstraints.size() * 2);
-  for (const auto& constraint : problem.rigidConstraints) {
-    rigidInertia[constraint.bodyA]
-        = {constraint.invMassA, constraint.invInertiaA};
-    rigidInertia[constraint.bodyB]
-        = {constraint.invMassB, constraint.invInertiaB};
-  }
+  // body and overwrite the link rows' obstacle inertia. Keep this as a small
+  // linear scan instead of a per-step hash table: the stage's hot path should
+  // not allocate scratch containers just to reconcile the already-assembled
+  // rigid rows.
+  // ---
   for (auto& block : problem.multibodyBlocks) {
     for (auto& row : block.rows) {
       if (row.otherBody == entt::null) {
         continue;
       }
-      const auto it = rigidInertia.find(row.otherBody);
-      if (it != rigidInertia.end()) {
-        row.otherInvMass = it->second.first;
-        row.otherInvInertia = it->second.second;
-      }
-    }
-  }
-
-  // --- Per-row direction and rigid-body ends. A rigid row touches its two
-  // contact bodies; a link row touches only its dynamic obstacle (its link side
-  // is the J^T M^-1 J coupling already filled above). ---
-  std::vector<Eigen::Vector3d> rowDirection(static_cast<std::size_t>(size));
-  std::vector<std::vector<RigidEnd>> rowEnds(static_cast<std::size_t>(size));
-  std::vector<std::vector<ArticulatedEnd>> rowArticulatedEnds(
-      static_cast<std::size_t>(size));
-  std::vector<char> rowIsLink(static_cast<std::size_t>(size), 0);
-  for (Eigen::Index r = 0; r < size; ++r) {
-    const auto& owner = problem.rowOwners[static_cast<std::size_t>(r)];
-    auto& ends = rowEnds[static_cast<std::size_t>(r)];
-    auto& articulatedEnds = rowArticulatedEnds[static_cast<std::size_t>(r)];
-    if (owner.domain == UnifiedContactDomain::Rigid) {
-      const auto& constraint = problem.rigidConstraints[owner.sourceIndex];
-      rowDirection[static_cast<std::size_t>(r)]
-          = directionOfRigid(constraint, owner.direction);
-      ends.push_back(
-          {constraint.bodyA,
-           -1.0,
-           constraint.invMassA,
-           constraint.invInertiaA,
-           constraint.armA});
-      ends.push_back(
-          {constraint.bodyB,
-           +1.0,
-           constraint.invMassB,
-           constraint.invInertiaB,
-           constraint.armB});
-    } else {
-      rowIsLink[static_cast<std::size_t>(r)] = 1;
-      const auto& block = problem.multibodyBlocks[static_cast<std::size_t>(
-          owner.multibodyIndex)];
-      const auto& row = block.rows[owner.sourceIndex];
-      rowDirection[static_cast<std::size_t>(r)]
-          = directionOfLink(row, owner.direction);
-      articulatedEnds.push_back(
-          {owner.multibodyIndex, +1.0, true, jacobianOf(row, owner.direction)});
-      if (row.otherMultibodyIndex >= 0) {
-        articulatedEnds.push_back(
-            {row.otherMultibodyIndex,
-             -1.0,
-             false,
-             otherJacobianOf(row, owner.direction)});
-      }
-      if (row.otherBody != entt::null) {
-        ends.push_back(
-            {row.otherBody,
-             -1.0,
-             row.otherInvMass,
-             row.otherInvInertia,
-             row.otherArm});
+      double invMass = 0.0;
+      Eigen::Matrix3d invInertia = Eigen::Matrix3d::Zero();
+      if (findRigidConstraintInertia(
+              problem.rigidConstraints, row.otherBody, invMass, invInertia)) {
+        row.otherInvMass = invMass;
+        row.otherInvInertia = invInertia;
       }
     }
   }
@@ -481,29 +654,33 @@ void assembleUnifiedConstraintProblemInto(
   // different multibody); and rigid<->link coupling through a body that is both
   // a rigid contact participant and a link obstacle. ---
   for (Eigen::Index i = 0; i < size; ++i) {
-    const auto& endsI = rowEnds[static_cast<std::size_t>(i)];
-    if (endsI.empty()) {
+    std::array<RigidEnd, 2> endsI;
+    const std::size_t endsICount = rowRigidEnds(problem, i, endsI);
+    if (endsICount == 0u) {
       continue;
     }
-    const bool linkI = rowIsLink[static_cast<std::size_t>(i)] != 0;
-    const Eigen::Vector3d& directionI
-        = rowDirection[static_cast<std::size_t>(i)];
+    const auto& ownerI = problem.rowOwners[static_cast<std::size_t>(i)];
+    const bool linkI = ownerI.domain == UnifiedContactDomain::Link;
+    const Eigen::Vector3d& directionI = rowDirection(problem, i);
     for (Eigen::Index j = 0; j < size; ++j) {
-      const auto& endsJ = rowEnds[static_cast<std::size_t>(j)];
-      if (endsJ.empty()) {
+      std::array<RigidEnd, 2> endsJ;
+      const std::size_t endsJCount = rowRigidEnds(problem, j, endsJ);
+      if (endsJCount == 0u) {
         continue;
       }
-      if (!linkI && rowIsLink[static_cast<std::size_t>(j)] == 0) {
+      const auto& ownerJ = problem.rowOwners[static_cast<std::size_t>(j)];
+      if (!linkI && ownerJ.domain != UnifiedContactDomain::Link) {
         continue; // rigid-rigid coupling already in the verbatim block
       }
-      const Eigen::Vector3d& directionJ
-          = rowDirection[static_cast<std::size_t>(j)];
+      const Eigen::Vector3d& directionJ = rowDirection(problem, j);
       double addend = 0.0;
-      for (const auto& endI : endsI) {
+      for (std::size_t endIIndex = 0; endIIndex < endsICount; ++endIIndex) {
+        const auto& endI = endsI[endIIndex];
         if (endI.invMass == 0.0) {
           continue; // static side contributes nothing
         }
-        for (const auto& endJ : endsJ) {
+        for (std::size_t endJIndex = 0; endJIndex < endsJCount; ++endJIndex) {
+          const auto& endJ = endsJ[endJIndex];
           if (endI.entity != endJ.entity) {
             continue; // not the same shared body
           }
@@ -522,21 +699,25 @@ void assembleUnifiedConstraintProblemInto(
   // every term involving such non-primary ends here, including their self
   // contribution and coupling against rows owned by the other multibody.
   for (Eigen::Index i = 0; i < size; ++i) {
-    const auto& endsI = rowArticulatedEnds[static_cast<std::size_t>(i)];
-    if (endsI.empty()) {
+    std::array<ArticulatedEnd, 2> endsI;
+    const std::size_t endsICount = rowArticulatedEnds(problem, i, endsI);
+    if (endsICount == 0u) {
       continue;
     }
     for (Eigen::Index j = 0; j < size; ++j) {
-      const auto& endsJ = rowArticulatedEnds[static_cast<std::size_t>(j)];
-      if (endsJ.empty()) {
+      std::array<ArticulatedEnd, 2> endsJ;
+      const std::size_t endsJCount = rowArticulatedEnds(problem, j, endsJ);
+      if (endsJCount == 0u) {
         continue;
       }
       double addend = 0.0;
-      for (const auto& endI : endsI) {
+      for (std::size_t endIIndex = 0; endIIndex < endsICount; ++endIIndex) {
+        const auto& endI = endsI[endIIndex];
         if (endI.multibodyIndex < 0) {
           continue;
         }
-        for (const auto& endJ : endsJ) {
+        for (std::size_t endJIndex = 0; endJIndex < endsJCount; ++endJIndex) {
+          const auto& endJ = endsJ[endJIndex];
           if (endI.multibodyIndex != endJ.multibodyIndex) {
             continue;
           }
@@ -546,7 +727,8 @@ void assembleUnifiedConstraintProblemInto(
           const auto& block = problem.multibodyBlocks[static_cast<std::size_t>(
               endI.multibodyIndex)];
           addend += endI.sign * endJ.sign
-                    * endJ.jacobian.dot(block.inverseMass * endI.jacobian);
+                    * jointSpaceEntry(
+                        block.inverseMass, *endJ.jacobian, *endI.jacobian);
         }
       }
       if (addend != 0.0) {
@@ -571,73 +753,123 @@ UnifiedConstraintProblem assembleUnifiedConstraintProblem(
 UnifiedConstraintSolution solveUnifiedConstraintProblem(
     const UnifiedConstraintProblem& problem)
 {
+  UnifiedConstraintSolveScratch scratch;
   UnifiedConstraintSolution solution;
+  solution.succeeded = solveUnifiedConstraintProblemInto(problem, scratch);
+  solution.lambda = std::move(scratch.lambda);
+  return solution;
+}
+
+//==============================================================================
+bool solveUnifiedConstraintProblemInto(
+    const UnifiedConstraintProblem& problem,
+    UnifiedConstraintSolveScratch& scratch)
+{
   const Eigen::Index size = problem.rhs.size();
   if (size == 0) {
-    solution.succeeded = true;
-    return solution;
+    scratch.lambda.resize(0);
+    return true;
   }
 
-  const std::vector<std::vector<Eigen::Index>> islands
-      = computeRowIslands(problem);
-  if (islands.size() == 1
-      && static_cast<Eigen::Index>(islands[0].size()) == size) {
-    return solveBoxedLcp(
-        problem.delassus, problem.rhs, problem.lo, problem.hi, problem.findex);
+  computeRowIslandsInto(problem, scratch);
+  const auto islandCount = scratch.islandOffsets.empty()
+                               ? std::size_t{0}
+                               : scratch.islandOffsets.size() - 1;
+  if (islandCount == 1
+      && static_cast<Eigen::Index>(
+             scratch.islandOffsets[1] - scratch.islandOffsets[0])
+             == size) {
+    return solveBoxedLcpInto(
+        problem.delassus,
+        problem.rhs,
+        problem.lo,
+        problem.hi,
+        problem.findex,
+        scratch.lambda,
+        scratch);
   }
 
-  solution.lambda = Eigen::VectorXd::Zero(size);
-  for (const auto& island : islands) {
-    const auto islandSize = static_cast<Eigen::Index>(island.size());
-    std::vector<Eigen::Index> localIndex(static_cast<std::size_t>(size), -1);
+  scratch.lambda.setZero(size);
+  scratch.localIndex.assign(static_cast<std::size_t>(size), -1);
+  for (std::size_t islandIndex = 0; islandIndex < islandCount; ++islandIndex) {
+    const auto islandBegin = scratch.islandOffsets[islandIndex];
+    const auto islandEnd = scratch.islandOffsets[islandIndex + 1];
+    const auto islandSize = static_cast<Eigen::Index>(islandEnd - islandBegin);
     for (Eigen::Index local = 0; local < islandSize; ++local) {
-      localIndex[static_cast<std::size_t>(
-          island[static_cast<std::size_t>(local)])] = local;
+      scratch.localIndex[static_cast<std::size_t>(
+          scratch.islandRows[islandBegin + static_cast<std::size_t>(local)])]
+          = local;
     }
 
-    Eigen::MatrixXd islandDelassus(islandSize, islandSize);
-    Eigen::VectorXd islandRhs(islandSize);
-    Eigen::VectorXd islandLo(islandSize);
-    Eigen::VectorXd islandHi(islandSize);
-    Eigen::VectorXi islandFindex = Eigen::VectorXi::Constant(islandSize, -1);
+    scratch.islandDelassus.resize(islandSize, islandSize);
+    scratch.islandRhs.resize(islandSize);
+    scratch.islandLo.resize(islandSize);
+    scratch.islandHi.resize(islandSize);
+    scratch.islandFindex.setConstant(islandSize, -1);
     for (Eigen::Index row = 0; row < islandSize; ++row) {
-      const Eigen::Index globalRow = island[static_cast<std::size_t>(row)];
-      islandRhs[row] = problem.rhs[globalRow];
-      islandLo[row] = problem.lo[globalRow];
-      islandHi[row] = problem.hi[globalRow];
+      const Eigen::Index globalRow
+          = scratch.islandRows[islandBegin + static_cast<std::size_t>(row)];
+      scratch.islandRhs[row] = problem.rhs[globalRow];
+      scratch.islandLo[row] = problem.lo[globalRow];
+      scratch.islandHi[row] = problem.hi[globalRow];
       const Eigen::Index globalFindex = problem.findex[globalRow];
       if (globalFindex >= 0) {
         if (globalFindex >= size) {
-          solution.succeeded = false;
-          return solution;
+          return false;
         }
         const Eigen::Index remapped
-            = localIndex[static_cast<std::size_t>(globalFindex)];
+            = scratch.localIndex[static_cast<std::size_t>(globalFindex)];
         if (remapped < 0) {
-          solution.succeeded = false;
-          return solution;
+          return false;
         }
-        islandFindex[row] = static_cast<int>(remapped);
+        scratch.islandFindex[row] = static_cast<int>(remapped);
       }
       for (Eigen::Index col = 0; col < islandSize; ++col) {
-        islandDelassus(row, col) = problem.delassus(
-            globalRow, island[static_cast<std::size_t>(col)]);
+        scratch.islandDelassus(row, col) = problem.delassus(
+            globalRow,
+            scratch.islandRows[islandBegin + static_cast<std::size_t>(col)]);
       }
     }
 
-    const UnifiedConstraintSolution islandSolution = solveBoxedLcp(
-        islandDelassus, islandRhs, islandLo, islandHi, islandFindex);
-    if (!islandSolution.succeeded) {
-      solution.succeeded = false;
-      return solution;
+    const bool islandSucceeded = solveBoxedLcpInto(
+        scratch.islandDelassus,
+        scratch.islandRhs,
+        scratch.islandLo,
+        scratch.islandHi,
+        scratch.islandFindex,
+        scratch.islandLambda,
+        scratch);
+    if (!islandSucceeded) {
+      return false;
     }
     for (Eigen::Index local = 0; local < islandSize; ++local) {
-      solution.lambda[island[static_cast<std::size_t>(local)]]
-          = islandSolution.lambda[local];
+      scratch.lambda
+          [scratch.islandRows[islandBegin + static_cast<std::size_t>(local)]]
+          = scratch.islandLambda[local];
     }
   }
 
-  solution.succeeded = true;
+  return true;
+}
+
+//==============================================================================
+bool solveUnifiedConstraintProblemInto(
+    const UnifiedConstraintProblem& problem,
+    UnifiedConstraintSolution& solution,
+    UnifiedConstraintSolveScratch& scratch)
+{
+  solution.succeeded = solveUnifiedConstraintProblemInto(problem, scratch);
+  solution.lambda = scratch.lambda;
+  return solution.succeeded;
+}
+
+//==============================================================================
+UnifiedConstraintSolution solveUnifiedConstraintProblem(
+    const UnifiedConstraintProblem& problem,
+    UnifiedConstraintSolveScratch& scratch)
+{
+  UnifiedConstraintSolution solution;
+  solveUnifiedConstraintProblemInto(problem, solution, scratch);
   return solution;
 }
 
@@ -647,6 +879,19 @@ void applyUnifiedConstraintImpulses(
     const UnifiedConstraintProblem& problem,
     const Eigen::VectorXd& lambda,
     std::span<Eigen::VectorXd> multibodyVelocities)
+{
+  UnifiedConstraintSolveScratch scratch;
+  applyUnifiedConstraintImpulses(
+      registry, problem, lambda, multibodyVelocities, scratch);
+}
+
+//==============================================================================
+void applyUnifiedConstraintImpulses(
+    detail::WorldRegistry& registry,
+    const UnifiedConstraintProblem& problem,
+    const Eigen::VectorXd& lambda,
+    std::span<Eigen::VectorXd> multibodyVelocities,
+    UnifiedConstraintSolveScratch& scratch)
 {
   constexpr int kRows = UnifiedConstraintProblem::kRowsPerContact;
 
@@ -676,10 +921,20 @@ void applyUnifiedConstraintImpulses(
       const double tangentImpulse1 = lambda[normalRow + 1];
       const double tangentImpulse2 = lambda[normalRow + 2];
 
-      velocity += block.inverseMass
-                  * (row.normalJacobian * normalImpulse
-                     + row.tangentJacobian1 * tangentImpulse1
-                     + row.tangentJacobian2 * tangentImpulse2);
+      setContactImpulse(
+          scratch,
+          row.normalJacobian,
+          normalImpulse,
+          row.tangentJacobian1,
+          tangentImpulse1,
+          row.tangentJacobian2,
+          tangentImpulse2);
+      addJointSpaceImpulse(
+          block.inverseMass,
+          scratch.generalizedImpulse,
+          velocity,
+          scratch,
+          1.0);
 
       if (row.otherMultibodyIndex >= 0) {
         const auto& otherBlock
@@ -688,10 +943,20 @@ void applyUnifiedConstraintImpulses(
         Eigen::VectorXd& otherVelocity
             = multibodyVelocities[static_cast<std::size_t>(
                 row.otherMultibodyIndex)];
-        otherVelocity -= otherBlock.inverseMass
-                         * (row.otherNormalJacobian * normalImpulse
-                            + row.otherTangentJacobian1 * tangentImpulse1
-                            + row.otherTangentJacobian2 * tangentImpulse2);
+        setContactImpulse(
+            scratch,
+            row.otherNormalJacobian,
+            normalImpulse,
+            row.otherTangentJacobian1,
+            tangentImpulse1,
+            row.otherTangentJacobian2,
+            tangentImpulse2);
+        addJointSpaceImpulse(
+            otherBlock.inverseMass,
+            scratch.generalizedImpulse,
+            otherVelocity,
+            scratch,
+            -1.0);
       }
 
       if (row.otherBody != entt::null) {
@@ -717,6 +982,19 @@ void applyUnifiedConstraintFallback(
     std::span<Eigen::VectorXd> multibodyVelocities,
     std::size_t frictionIterations)
 {
+  UnifiedConstraintSolveScratch scratch;
+  applyUnifiedConstraintFallback(
+      registry, problem, multibodyVelocities, frictionIterations, scratch);
+}
+
+//==============================================================================
+void applyUnifiedConstraintFallback(
+    detail::WorldRegistry& registry,
+    const UnifiedConstraintProblem& problem,
+    std::span<Eigen::VectorXd> multibodyVelocities,
+    std::size_t frictionIterations,
+    UnifiedConstraintSolveScratch& scratch)
+{
   constexpr int kRows = UnifiedConstraintProblem::kRowsPerContact;
   const Eigen::Index size = problem.rhs.size();
   if (size == 0) {
@@ -727,7 +1005,8 @@ void applyUnifiedConstraintFallback(
   // global-row order so a multibody-free set reproduces the legacy i*3 stride
   // byte-for-byte. The normal-row sub-block already carries the rigid-rigid,
   // within-multibody, and shared-obstacle normal coupling.
-  std::vector<Eigen::Index> normalRows;
+  auto& normalRows = scratch.normalRows;
+  normalRows.clear();
   normalRows.reserve(static_cast<std::size_t>(size));
   for (Eigen::Index r = 0; r < size; ++r) {
     if (problem.findex[r] < 0) {
@@ -736,62 +1015,70 @@ void applyUnifiedConstraintFallback(
   }
   const auto normalCount = static_cast<Eigen::Index>(normalRows.size());
 
-  Eigen::VectorXd normalLambda = Eigen::VectorXd::Zero(normalCount);
+  scratch.normalLambda.setZero(normalCount);
   if (normalCount > 0) {
-    Eigen::MatrixXd normalA(normalCount, normalCount);
-    Eigen::VectorXd normalB(normalCount);
+    scratch.normalA.resize(normalCount, normalCount);
+    scratch.normalB.resize(normalCount);
     for (Eigen::Index a = 0; a < normalCount; ++a) {
-      normalB[a] = problem.rhs[normalRows[static_cast<std::size_t>(a)]];
+      scratch.normalB[a] = problem.rhs[normalRows[static_cast<std::size_t>(a)]];
       for (Eigen::Index b = 0; b < normalCount; ++b) {
-        normalA(a, b) = problem.delassus(
+        scratch.normalA(a, b) = problem.delassus(
             normalRows[static_cast<std::size_t>(a)],
             normalRows[static_cast<std::size_t>(b)]);
       }
     }
-    const math::LcpProblem normalProblem(
-        normalA,
-        normalB,
-        Eigen::VectorXd::Zero(normalCount),
-        Eigen::VectorXd::Constant(
-            normalCount, std::numeric_limits<double>::infinity()),
-        Eigen::VectorXi::Constant(normalCount, -1));
-    math::DantzigSolver solver;
-    math::LcpOptions options = solver.getDefaultOptions();
+    scratch.normalLo.setZero(normalCount);
+    scratch.normalHi.setConstant(
+        normalCount, std::numeric_limits<double>::infinity());
+    scratch.normalFindex.setConstant(normalCount, -1);
+    math::LcpOptions options = scratch.solver.getDefaultOptions();
     options.earlyTermination = true;
-    const auto result = solver.solve(normalProblem, normalLambda, options);
-    if (!result.succeeded() || normalLambda.size() != normalCount) {
+    const auto result = scratch.solver.solve(
+        scratch.normalA,
+        scratch.normalB,
+        scratch.normalLo,
+        scratch.normalHi,
+        scratch.normalFindex,
+        scratch.normalLambda,
+        scratch.dantzig,
+        options);
+    if (!result.succeeded() || scratch.normalLambda.size() != normalCount) {
       // Last resort: an uncoupled diagonal projection (works for both kinds;
       // the diagonal is positive for every active contact).
-      normalLambda.resize(normalCount);
+      scratch.normalLambda.resize(normalCount);
       for (Eigen::Index a = 0; a < normalCount; ++a) {
-        const double diagonal = normalA(a, a);
-        normalLambda[a]
-            = diagonal > 0.0 ? std::max(0.0, normalB[a] / diagonal) : 0.0;
+        const double diagonal = scratch.normalA(a, a);
+        scratch.normalLambda[a]
+            = diagonal > 0.0 ? std::max(0.0, scratch.normalB[a] / diagonal)
+                             : 0.0;
       }
     }
   }
 
   // 2. Apply the solved normal impulses to both domains (friction rows zero).
-  Eigen::VectorXd lambda = Eigen::VectorXd::Zero(size);
+  scratch.lambda.setZero(size);
   for (Eigen::Index a = 0; a < normalCount; ++a) {
-    lambda[normalRows[static_cast<std::size_t>(a)]]
-        = std::max(0.0, normalLambda[a]);
+    scratch.lambda[normalRows[static_cast<std::size_t>(a)]]
+        = std::max(0.0, scratch.normalLambda[a]);
   }
   applyUnifiedConstraintImpulses(
-      registry, problem, lambda, multibodyVelocities);
+      registry, problem, scratch.lambda, multibodyVelocities);
 
   // 3. Sequential Coulomb friction sweep bounded by each contact's solved
   // normal impulse, over rigid contacts then link contacts (ascending global
   // order), reading live velocities each pass.
   const auto rigidContactCount = problem.rigidConstraints.size();
-  std::vector<double> rigidTangent1(rigidContactCount, 0.0);
-  std::vector<double> rigidTangent2(rigidContactCount, 0.0);
-  std::vector<std::vector<double>> linkTangent1(problem.multibodyBlocks.size());
-  std::vector<std::vector<double>> linkTangent2(problem.multibodyBlocks.size());
+  scratch.rigidTangent1.assign(rigidContactCount, 0.0);
+  scratch.rigidTangent2.assign(rigidContactCount, 0.0);
+  scratch.linkTangentOffsets.resize(problem.multibodyBlocks.size() + 1);
+  std::size_t totalLinkRows = 0;
   for (std::size_t k = 0; k < problem.multibodyBlocks.size(); ++k) {
-    linkTangent1[k].assign(problem.multibodyBlocks[k].rows.size(), 0.0);
-    linkTangent2[k].assign(problem.multibodyBlocks[k].rows.size(), 0.0);
+    scratch.linkTangentOffsets[k] = totalLinkRows;
+    totalLinkRows += problem.multibodyBlocks[k].rows.size();
   }
+  scratch.linkTangentOffsets[problem.multibodyBlocks.size()] = totalLinkRows;
+  scratch.linkTangent1.assign(totalLinkRows, 0.0);
+  scratch.linkTangent2.assign(totalLinkRows, 0.0);
 
   const auto solveRigidTangent =
       [&](const RigidBodyContactConstraint& constraint,
@@ -845,14 +1132,22 @@ void applyUnifiedConstraintFallback(
         accumulated - tangentVelocity / tangentDenominator, -limit, limit);
     const double delta = newImpulse - accumulated;
     accumulated = newImpulse;
-    velocity += block.inverseMass * tangentJacobian * delta;
+    setScaledVector(scratch.generalizedImpulse, tangentJacobian, delta);
+    addJointSpaceImpulse(
+        block.inverseMass, scratch.generalizedImpulse, velocity, scratch, 1.0);
     if (row.otherMultibodyIndex >= 0) {
       const auto& otherBlock = problem.multibodyBlocks[static_cast<std::size_t>(
           row.otherMultibodyIndex)];
       Eigen::VectorXd& otherVelocity
           = multibodyVelocities[static_cast<std::size_t>(
               row.otherMultibodyIndex)];
-      otherVelocity -= otherBlock.inverseMass * otherTangentJacobian * delta;
+      setScaledVector(scratch.generalizedImpulse, otherTangentJacobian, delta);
+      addJointSpaceImpulse(
+          otherBlock.inverseMass,
+          scratch.generalizedImpulse,
+          otherVelocity,
+          scratch,
+          -1.0);
     } else if (row.otherBody != entt::null) {
       auto& obstacleVelocity = registry.get<comps::Velocity>(row.otherBody);
       obstacleVelocity.linear -= delta * row.otherInvMass * tangent;
@@ -865,7 +1160,7 @@ void applyUnifiedConstraintFallback(
     for (std::size_t i = 0; i < rigidContactCount; ++i) {
       const auto& constraint = problem.rigidConstraints[i];
       const Eigen::Index normalRow = static_cast<Eigen::Index>(i) * kRows;
-      const double limit = constraint.friction * lambda[normalRow];
+      const double limit = constraint.friction * scratch.lambda[normalRow];
       if (limit <= 0.0) {
         continue;
       }
@@ -873,13 +1168,13 @@ void applyUnifiedConstraintFallback(
           constraint,
           constraint.tangent1,
           constraint.tangentMass1,
-          rigidTangent1[i],
+          scratch.rigidTangent1[i],
           limit);
       solveRigidTangent(
           constraint,
           constraint.tangent2,
           constraint.tangentMass2,
-          rigidTangent2[i],
+          scratch.rigidTangent2[i],
           limit);
     }
 
@@ -890,10 +1185,11 @@ void applyUnifiedConstraintFallback(
         const auto& row = block.rows[c];
         const Eigen::Index normalRow
             = block.blockBase + static_cast<Eigen::Index>(c) * kRows;
-        const double limit = row.friction * lambda[normalRow];
+        const double limit = row.friction * scratch.lambda[normalRow];
         if (limit <= 0.0) {
           continue;
         }
+        const std::size_t tangentIndex = scratch.linkTangentOffsets[k] + c;
         solveLinkTangent(
             block,
             row,
@@ -902,7 +1198,7 @@ void applyUnifiedConstraintFallback(
             row.tangentJacobian1,
             row.otherTangentJacobian1,
             row.tangentDenominator1,
-            linkTangent1[k][c],
+            scratch.linkTangent1[tangentIndex],
             limit);
         solveLinkTangent(
             block,
@@ -912,7 +1208,7 @@ void applyUnifiedConstraintFallback(
             row.tangentJacobian2,
             row.otherTangentJacobian2,
             row.tangentDenominator2,
-            linkTangent2[k][c],
+            scratch.linkTangent2[tangentIndex],
             limit);
       }
     }
@@ -926,14 +1222,26 @@ bool resolveUnifiedConstraints(
     std::span<Eigen::VectorXd> multibodyVelocities,
     std::size_t frictionIterations)
 {
-  const auto solution = solveUnifiedConstraintProblem(problem);
-  if (solution.succeeded) {
+  UnifiedConstraintSolveScratch scratch;
+  return resolveUnifiedConstraints(
+      registry, problem, multibodyVelocities, frictionIterations, scratch);
+}
+
+//==============================================================================
+bool resolveUnifiedConstraints(
+    detail::WorldRegistry& registry,
+    const UnifiedConstraintProblem& problem,
+    std::span<Eigen::VectorXd> multibodyVelocities,
+    std::size_t frictionIterations,
+    UnifiedConstraintSolveScratch& scratch)
+{
+  if (solveUnifiedConstraintProblemInto(problem, scratch)) {
     applyUnifiedConstraintImpulses(
-        registry, problem, solution.lambda, multibodyVelocities);
+        registry, problem, scratch.lambda, multibodyVelocities, scratch);
     return true;
   }
   applyUnifiedConstraintFallback(
-      registry, problem, multibodyVelocities, frictionIterations);
+      registry, problem, multibodyVelocities, frictionIterations, scratch);
   return false;
 }
 

@@ -1166,6 +1166,32 @@ inline void applyAvbdRigidBodyStep(
 }
 
 //==============================================================================
+struct AvbdRigidContactManifoldRowScratch
+{
+  std::vector<AvbdRigidContactManifoldPoint> activeContacts;
+  std::vector<AvbdScalarRowDescriptor> normalDescriptors;
+  std::vector<AvbdScalarRowDescriptor> frictionDescriptors;
+};
+
+struct AvbdRigidPointJointActiveAxis
+{
+  AvbdRigidPointJoint joint;
+  std::uint8_t axis = 0;
+};
+
+struct AvbdRigidPointJointRowScratch
+{
+  std::vector<AvbdRigidPointJointActiveAxis> activeRows;
+  std::vector<AvbdScalarRowDescriptor> descriptors;
+};
+
+struct AvbdRigidAngularMotorRowScratch
+{
+  std::vector<AvbdRigidAngularMotor> activeRows;
+  std::vector<AvbdScalarRowDescriptor> descriptors;
+};
+
+//==============================================================================
 inline void buildAvbdRigidContactManifoldRows(
     const std::vector<AvbdRigidBodyState>& states,
     std::span<const AvbdRigidContactManifoldPoint> contacts,
@@ -1173,11 +1199,14 @@ inline void buildAvbdRigidContactManifoldRows(
     AvbdScalarRowInventory& frictionInventory,
     std::vector<AvbdRigidBodyPointPairRow>& normalRows,
     std::vector<AvbdRigidBodyPointPairFrictionRows>& frictionRows,
+    AvbdRigidContactManifoldRowScratch& scratch,
     const AvbdRowWarmStartOptions& warmStartOptions = {})
 {
-  std::vector<AvbdRigidContactManifoldPoint> activeContacts;
+  auto& activeContacts = scratch.activeContacts;
+  activeContacts.clear();
   activeContacts.reserve(contacts.size());
-  std::vector<AvbdScalarRowDescriptor> normalDescriptors;
+  auto& normalDescriptors = scratch.normalDescriptors;
+  normalDescriptors.clear();
   normalDescriptors.reserve(contacts.size());
   for (const AvbdRigidContactManifoldPoint& contact : contacts) {
     if (!detail::isValidAvbdRigidContactManifoldPoint(contact, states.size())) {
@@ -1193,9 +1222,11 @@ inline void buildAvbdRigidContactManifoldRows(
         contact.row));
   }
 
+  normalInventory.reserve(normalDescriptors.size());
   normalInventory.syncActiveRows(normalDescriptors, warmStartOptions);
 
-  std::vector<AvbdScalarRowDescriptor> frictionDescriptors;
+  auto& frictionDescriptors = scratch.frictionDescriptors;
+  frictionDescriptors.clear();
   frictionDescriptors.reserve(2 * activeContacts.size());
   for (std::size_t i = 0; i < activeContacts.size(); ++i) {
     const AvbdRigidContactManifoldPoint& contact = activeContacts[i];
@@ -1223,6 +1254,7 @@ inline void buildAvbdRigidContactManifoldRows(
         contact.row));
   }
 
+  frictionInventory.reserve(frictionDescriptors.size());
   frictionInventory.syncActiveRows(frictionDescriptors, warmStartOptions);
 
   normalRows.clear();
@@ -1303,22 +1335,41 @@ inline void buildAvbdRigidContactManifoldRows(
 }
 
 //==============================================================================
+inline void buildAvbdRigidContactManifoldRows(
+    const std::vector<AvbdRigidBodyState>& states,
+    std::span<const AvbdRigidContactManifoldPoint> contacts,
+    AvbdScalarRowInventory& normalInventory,
+    AvbdScalarRowInventory& frictionInventory,
+    std::vector<AvbdRigidBodyPointPairRow>& normalRows,
+    std::vector<AvbdRigidBodyPointPairFrictionRows>& frictionRows,
+    const AvbdRowWarmStartOptions& warmStartOptions = {})
+{
+  AvbdRigidContactManifoldRowScratch scratch;
+  buildAvbdRigidContactManifoldRows(
+      states,
+      contacts,
+      normalInventory,
+      frictionInventory,
+      normalRows,
+      frictionRows,
+      scratch,
+      warmStartOptions);
+}
+
+//==============================================================================
 inline void buildAvbdRigidPointJointRows(
     const std::vector<AvbdRigidBodyState>& states,
     std::span<const AvbdRigidPointJoint> joints,
     AvbdScalarRowInventory& linearInventory,
     std::vector<AvbdRigidBodyPointPairRow>& linearRows,
+    AvbdRigidPointJointRowScratch& scratch,
     const AvbdRowWarmStartOptions& warmStartOptions = {})
 {
-  struct ActiveJointAxis
-  {
-    AvbdRigidPointJoint joint;
-    std::uint8_t axis = 0;
-  };
-
-  std::vector<ActiveJointAxis> activeRows;
+  auto& activeRows = scratch.activeRows;
+  activeRows.clear();
   activeRows.reserve(3 * joints.size());
-  std::vector<AvbdScalarRowDescriptor> descriptors;
+  auto& descriptors = scratch.descriptors;
+  descriptors.clear();
   descriptors.reserve(3 * joints.size());
   for (const AvbdRigidPointJoint& joint : joints) {
     if (!detail::isValidAvbdRigidPointJoint(joint, states.size())) {
@@ -1330,7 +1381,7 @@ inline void buildAvbdRigidPointJointRows(
         continue;
       }
 
-      activeRows.push_back(ActiveJointAxis{joint, axis});
+      activeRows.push_back(AvbdRigidPointJointActiveAxis{joint, axis});
       descriptors.push_back(
           detail::makeAvbdRigidJointLinearRowDescriptor(
               joint.endpointA,
@@ -1342,6 +1393,7 @@ inline void buildAvbdRigidPointJointRows(
     }
   }
 
+  linearInventory.reserve(descriptors.size());
   linearInventory.syncActiveRows(descriptors, warmStartOptions);
 
   linearRows.clear();
@@ -1371,22 +1423,32 @@ inline void buildAvbdRigidPointJointRows(
 }
 
 //==============================================================================
+inline void buildAvbdRigidPointJointRows(
+    const std::vector<AvbdRigidBodyState>& states,
+    std::span<const AvbdRigidPointJoint> joints,
+    AvbdScalarRowInventory& linearInventory,
+    std::vector<AvbdRigidBodyPointPairRow>& linearRows,
+    const AvbdRowWarmStartOptions& warmStartOptions = {})
+{
+  AvbdRigidPointJointRowScratch scratch;
+  buildAvbdRigidPointJointRows(
+      states, joints, linearInventory, linearRows, scratch, warmStartOptions);
+}
+
+//==============================================================================
 inline void buildAvbdRigidPointJointAngularRows(
     const std::vector<AvbdRigidBodyState>& states,
     std::span<const AvbdRigidPointJoint> joints,
     AvbdScalarRowInventory& angularInventory,
     std::vector<AvbdRigidBodyAngularPairRow>& angularRows,
+    AvbdRigidPointJointRowScratch& scratch,
     const AvbdRowWarmStartOptions& warmStartOptions = {})
 {
-  struct ActiveJointAxis
-  {
-    AvbdRigidPointJoint joint;
-    std::uint8_t axis = 0;
-  };
-
-  std::vector<ActiveJointAxis> activeRows;
+  auto& activeRows = scratch.activeRows;
+  activeRows.clear();
   activeRows.reserve(3 * joints.size());
-  std::vector<AvbdScalarRowDescriptor> descriptors;
+  auto& descriptors = scratch.descriptors;
+  descriptors.clear();
   descriptors.reserve(3 * joints.size());
   for (const AvbdRigidPointJoint& joint : joints) {
     if (!detail::isValidAvbdRigidPointJoint(joint, states.size())) {
@@ -1398,7 +1460,7 @@ inline void buildAvbdRigidPointJointAngularRows(
         continue;
       }
 
-      activeRows.push_back(ActiveJointAxis{joint, axis});
+      activeRows.push_back(AvbdRigidPointJointActiveAxis{joint, axis});
       descriptors.push_back(
           detail::makeAvbdRigidJointAngularRowDescriptor(
               joint.endpointA,
@@ -1410,6 +1472,7 @@ inline void buildAvbdRigidPointJointAngularRows(
     }
   }
 
+  angularInventory.reserve(descriptors.size());
   angularInventory.syncActiveRows(descriptors, warmStartOptions);
 
   angularRows.clear();
@@ -1439,17 +1502,33 @@ inline void buildAvbdRigidPointJointAngularRows(
 }
 
 //==============================================================================
+inline void buildAvbdRigidPointJointAngularRows(
+    const std::vector<AvbdRigidBodyState>& states,
+    std::span<const AvbdRigidPointJoint> joints,
+    AvbdScalarRowInventory& angularInventory,
+    std::vector<AvbdRigidBodyAngularPairRow>& angularRows,
+    const AvbdRowWarmStartOptions& warmStartOptions = {})
+{
+  AvbdRigidPointJointRowScratch scratch;
+  buildAvbdRigidPointJointAngularRows(
+      states, joints, angularInventory, angularRows, scratch, warmStartOptions);
+}
+
+//==============================================================================
 inline void buildAvbdRigidAngularMotorRows(
     const std::vector<AvbdRigidBodyState>& states,
     std::span<const AvbdRigidAngularMotor> motors,
     AvbdScalarRowInventory& motorInventory,
     std::vector<AvbdRigidBodyAngularPairRow>& motorRows,
     double timeStep,
+    AvbdRigidAngularMotorRowScratch& scratch,
     const AvbdRowWarmStartOptions& warmStartOptions = {})
 {
-  std::vector<AvbdRigidAngularMotor> activeRows;
+  auto& activeRows = scratch.activeRows;
+  activeRows.clear();
   activeRows.reserve(motors.size());
-  std::vector<AvbdScalarRowDescriptor> descriptors;
+  auto& descriptors = scratch.descriptors;
+  descriptors.clear();
   descriptors.reserve(motors.size());
   for (const AvbdRigidAngularMotor& motor : motors) {
     if (!detail::isValidAvbdRigidAngularMotor(motor, states.size(), timeStep)) {
@@ -1467,6 +1546,7 @@ inline void buildAvbdRigidAngularMotorRows(
             motor.row));
   }
 
+  motorInventory.reserve(descriptors.size());
   motorInventory.syncActiveRows(descriptors, warmStartOptions);
 
   motorRows.clear();
@@ -1494,6 +1574,54 @@ inline void buildAvbdRigidAngularMotorRows(
 }
 
 //==============================================================================
+inline void buildAvbdRigidAngularMotorRows(
+    const std::vector<AvbdRigidBodyState>& states,
+    std::span<const AvbdRigidAngularMotor> motors,
+    AvbdScalarRowInventory& motorInventory,
+    std::vector<AvbdRigidBodyAngularPairRow>& motorRows,
+    double timeStep,
+    const AvbdRowWarmStartOptions& warmStartOptions = {})
+{
+  AvbdRigidAngularMotorRowScratch scratch;
+  buildAvbdRigidAngularMotorRows(
+      states,
+      motors,
+      motorInventory,
+      motorRows,
+      timeStep,
+      scratch,
+      warmStartOptions);
+}
+
+//==============================================================================
+inline void buildAvbdRigidPointJointConstraintRows(
+    const std::vector<AvbdRigidBodyState>& states,
+    std::span<const AvbdRigidPointJoint> joints,
+    AvbdScalarRowInventory& linearInventory,
+    AvbdScalarRowInventory& angularInventory,
+    std::vector<AvbdRigidBodyPointPairRow>& linearRows,
+    std::vector<AvbdRigidBodyAngularPairRow>& angularRows,
+    AvbdRigidPointJointRowScratch& linearScratch,
+    AvbdRigidPointJointRowScratch& angularScratch,
+    const AvbdRowWarmStartOptions& warmStartOptions = {})
+{
+  buildAvbdRigidPointJointRows(
+      states,
+      joints,
+      linearInventory,
+      linearRows,
+      linearScratch,
+      warmStartOptions);
+  buildAvbdRigidPointJointAngularRows(
+      states,
+      joints,
+      angularInventory,
+      angularRows,
+      angularScratch,
+      warmStartOptions);
+}
+
+//==============================================================================
 inline void buildAvbdRigidPointJointConstraintRows(
     const std::vector<AvbdRigidBodyState>& states,
     std::span<const AvbdRigidPointJoint> joints,
@@ -1503,10 +1631,18 @@ inline void buildAvbdRigidPointJointConstraintRows(
     std::vector<AvbdRigidBodyAngularPairRow>& angularRows,
     const AvbdRowWarmStartOptions& warmStartOptions = {})
 {
-  buildAvbdRigidPointJointRows(
-      states, joints, linearInventory, linearRows, warmStartOptions);
-  buildAvbdRigidPointJointAngularRows(
-      states, joints, angularInventory, angularRows, warmStartOptions);
+  AvbdRigidPointJointRowScratch linearScratch;
+  AvbdRigidPointJointRowScratch angularScratch;
+  buildAvbdRigidPointJointConstraintRows(
+      states,
+      joints,
+      linearInventory,
+      angularInventory,
+      linearRows,
+      angularRows,
+      linearScratch,
+      angularScratch,
+      warmStartOptions);
 }
 
 //==============================================================================

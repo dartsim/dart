@@ -238,6 +238,47 @@ struct MultibodyLinkContactProblem
   Eigen::MatrixXd inverseMass; ///< joint-space M^-1 (size DOF x DOF)
 };
 
+/// Reusable storage for public link-contact boxed-LCP assembly.
+///
+/// The return-by-value assembly wrapper below remains convenient for one-shot
+/// tests and tools. Repeated or hot-loop callers should keep this scratch and
+/// pass it to `assembleMultibodyLinkContactProblemInto()`, then borrow
+/// `getProblem()` into the unified constraint assembler. The scratch owns the
+/// intermediate dynamics work arrays as well as the assembled
+/// `MultibodyLinkContactProblem`, so same-shape calls can retain vector and
+/// Eigen storage across frames without exposing private dynamics-tree types.
+class DART_SIMULATION_API MultibodyLinkContactAssemblyScratch final
+{
+public:
+  MultibodyLinkContactAssemblyScratch();
+  ~MultibodyLinkContactAssemblyScratch();
+
+  MultibodyLinkContactAssemblyScratch(
+      const MultibodyLinkContactAssemblyScratch&) = delete;
+  MultibodyLinkContactAssemblyScratch& operator=(
+      const MultibodyLinkContactAssemblyScratch&) = delete;
+  MultibodyLinkContactAssemblyScratch(
+      MultibodyLinkContactAssemblyScratch&&) noexcept;
+  MultibodyLinkContactAssemblyScratch& operator=(
+      MultibodyLinkContactAssemblyScratch&&) noexcept;
+
+  [[nodiscard]] MultibodyLinkContactProblem& getProblem() noexcept;
+  [[nodiscard]] const MultibodyLinkContactProblem& getProblem() const noexcept;
+
+private:
+  struct Impl;
+
+  std::unique_ptr<Impl> m_impl;
+
+  friend bool assembleMultibodyLinkContactProblemInto(
+      MultibodyLinkContactAssemblyScratch& scratch,
+      const detail::WorldRegistry& registry,
+      const comps::MultibodyStructure& structure,
+      const Eigen::VectorXd& nextVelocity,
+      double timeStep,
+      std::span<const LinkContact> linkContacts);
+};
+
 /// Assemble the link-contact rows for a single multibody at its current
 /// configuration.
 ///
@@ -258,6 +299,19 @@ struct MultibodyLinkContactProblem
 ///         multibody's movable degree-of-freedom count.
 [[nodiscard]] DART_SIMULATION_API MultibodyLinkContactProblem
 assembleMultibodyLinkContactProblem(
+    const detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure,
+    const Eigen::VectorXd& nextVelocity,
+    double timeStep,
+    std::span<const LinkContact> linkContacts);
+
+/// Assemble link-contact rows into reusable caller-owned scratch.
+///
+/// Returns `true` when the multibody structure has a valid dynamics layout for
+/// contact assembly. The assembled problem is available through
+/// `scratch.getProblem()` even when no active rows remain.
+DART_SIMULATION_API bool assembleMultibodyLinkContactProblemInto(
+    MultibodyLinkContactAssemblyScratch& scratch,
     const detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     const Eigen::VectorXd& nextVelocity,
@@ -355,12 +409,16 @@ public:
 
   [[nodiscard]] std::string_view getName() const noexcept override;
   [[nodiscard]] ComputeStageMetadata getMetadata() const noexcept override;
+  void prepare(World& world);
   void execute(World& world, ComputeExecutor& executor) override;
 
   [[nodiscard]] std::size_t getFrictionIterations() const noexcept;
 
 private:
   struct Scratch;
+
+  bool assembleProblemIntoScratch(
+      World& world, const std::vector<Contact>& contacts);
 
   std::size_t m_frictionIterations;
   std::unique_ptr<Scratch> m_scratch;

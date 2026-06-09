@@ -1402,6 +1402,9 @@ private:
       case Slot::MultibodyVariationalIntegration:
         multibodyVariational.prepare(world);
         return;
+      case Slot::UnifiedConstraint:
+        unifiedConstraint.prepare(world);
+        return;
       case Slot::DeformableDynamics:
         deformableDynamics.prepare(world);
         return;
@@ -1412,7 +1415,6 @@ private:
       case Slot::MultibodyVelocity:
       case Slot::MultibodyForwardDynamics:
       case Slot::MultibodyPosition:
-      case Slot::UnifiedConstraint:
         return; // LCOV_EXCL_LINE
     }
   }
