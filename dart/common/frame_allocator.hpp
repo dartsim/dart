@@ -311,14 +311,9 @@ public:
 
     const std::size_t bytes = n * sizeof(T);
     void* p;
-    // Color true page-sized storage arrays, but keep smaller packed scalar
-    // pages compact in frame arenas used for one-shot registry builds.
-    bool colorStorage;
-    if constexpr (sizeof(T) <= 8 && alignof(T) <= 8) {
-      colorStorage = bytes >= 8u * 1024u;
-    } else {
-      colorStorage = bytes >= 16u * 1024u;
-    }
+    // Keep frame-backed STL storage dense for one-shot registry builds; the
+    // large-allocation cache coloring policy belongs to persistent arenas.
+    const bool colorStorage = false;
     // Cache-line alignment helps large value pages, over-aligned SIMD payloads,
     // and bulk storage pages. Smaller scalar allocations stay compact on the
     // default 32-byte frame invariant to reduce cache/TLB pressure.
