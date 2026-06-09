@@ -2214,6 +2214,28 @@ comps::Transform predictRigidBodyEndTransform(
 }
 
 //==============================================================================
+comps::Transform predictKinematicRigidSurfaceCcdEndTransform(
+    const World& world,
+    const detail::WorldRegistry& registry,
+    const entt::entity entity,
+    const comps::Transform& transform,
+    const comps::Velocity& velocity)
+{
+  double timeStep = world.getTimeStep();
+  if (const auto* tag = registry.try_get<comps::KinematicBodyTag>(entity);
+      tag != nullptr && tag->maxTime.has_value()
+      && std::isfinite(*tag->maxTime)) {
+    const double remainingTime = *tag->maxTime - world.getTime();
+    if (!(remainingTime > 0.0)) {
+      timeStep = 0.0;
+    } else {
+      timeStep = std::min(timeStep, remainingTime);
+    }
+  }
+  return predictRigidBodyEndTransform(transform, velocity, timeStep);
+}
+
+//==============================================================================
 // Number of intermediate static box poses that tile a moving obstacle's swept
 // motion. Below the cap, consecutive sample centers are one box min-half-extent
 // apart so the sampled boxes overlap with margin. The count is capped so a
@@ -2276,7 +2298,8 @@ void collectMovingRigidSurfaceCcdObstaclesInto(
     const double timeStep,
     DeformableSolverStats& stats,
     std::vector<SurfaceContactSnapshot>& snapshots,
-    std::size_t& snapshotCount)
+    std::size_t& snapshotCount,
+    const bool primeKinematicWithoutCurrentTrace = false)
 {
   ++stats.movingRigidSurfaceCcdSnapshotBuilds;
   snapshotCount = 0;
@@ -2304,21 +2327,28 @@ void collectMovingRigidSurfaceCcdObstaclesInto(
     const auto& velocity = view.get<comps::Velocity>(entity);
     const bool isKinematic = registry.all_of<comps::KinematicBodyTag>(entity);
     const auto* trace = registry.try_get<comps::KinematicBodyStepTrace>(entity);
-    if (isKinematic && (trace == nullptr || trace->frame != world.getFrame())) {
-      continue;
-    }
     if (shape->type != CollisionShapeType::Box
         || !shape->halfExtents.allFinite()
         || (shape->halfExtents.array() <= 0.0).any()
         || !velocity.linear.allFinite() || !velocity.angular.allFinite()) {
       continue;
     }
-    const comps::Transform startTransform
-        = isKinematic ? trace->startTransform : transform;
-    const comps::Transform endTransform
-        = isKinematic
-              ? trace->endTransform
-              : predictRigidBodyEndTransform(transform, velocity, timeStep);
+    comps::Transform startTransform = transform;
+    comps::Transform endTransform;
+    if (isKinematic) {
+      if (trace != nullptr && trace->frame == world.getFrame()) {
+        startTransform = trace->startTransform;
+        endTransform = trace->endTransform;
+      } else if (primeKinematicWithoutCurrentTrace) {
+        endTransform = predictKinematicRigidSurfaceCcdEndTransform(
+            world, registry, entity, transform, velocity);
+      } else {
+        continue;
+      }
+    } else {
+      endTransform
+          = predictRigidBodyEndTransform(transform, velocity, timeStep);
+    }
     const auto startShapeTransform
         = collisionShapeWorldTransform(startTransform, *shape);
     if (!startShapeTransform.has_value()) {
@@ -9721,7 +9751,8 @@ void DeformableDynamicsStage::prepare(World& world)
       world.getTimeStep(),
       stats,
       scratch.movingRigidSurfaceSnapshots,
-      scratch.movingRigidSurfaceSnapshotCount);
+      scratch.movingRigidSurfaceSnapshotCount,
+      true);
   collectDeformableSurfaceSnapshotsInto(
       registry, scratch.surfaceSnapshots, scratch.surfaceSnapshotCount);
 
