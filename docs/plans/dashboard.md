@@ -291,9 +291,11 @@ its own line so status updates remain git-history friendly.
   the right owners; use
   [`ppf-contact-solver-intake.md`](083-unified-newton-barrier-multibody/ppf-contact-solver-intake.md)
   for PPF's paper, repository, API, diagnostics, examples, and GPU-platform
-  lessons. Generalize PSD projection, projected-Newton, line-search,
-  diagnostics, and benchmark schemas only when second-use evidence proves a
-  shared contract.
+  lessons. Implementation-roadmap Phase 2 shared solver contracts are complete
+  on the active phase branch; merge the latest `origin/main`, validate, and open
+  one phase-scoped PR for that phase. After it lands, start
+  implementation-roadmap Phase 3 Unified Articulation Constraints; do not
+  substitute dev-task Phase 4 manifest expansion for the roadmap Phase 3 work.
 - Gate: Unified Newton-barrier progress is not complete until every cited
   paper/deck figure, unit test, benchmark table, and comparison scene is mapped
   to DART-owned tests, py-demos examples, benchmark/profiling packets, CPU and

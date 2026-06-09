@@ -58,6 +58,8 @@
 #include "dart/simulation/detail/deformable_vbd/parallel_block_descent.hpp"
 #include "dart/simulation/detail/deformable_vbd/rigid_world_contact.hpp"
 #include "dart/simulation/detail/entity_conversion.hpp"
+#include "dart/simulation/detail/newton_barrier/friction_kernel.hpp"
+#include "dart/simulation/detail/newton_barrier/projected_newton.hpp"
 #include "dart/simulation/detail/newton_barrier/psd_backend.hpp"
 #include "dart/simulation/detail/rigid_ipc_barrier.hpp"
 #include "dart/simulation/detail/world_registry_access.hpp"
@@ -3844,9 +3846,12 @@ void accumulateFrictionDiagnostics(
                                   : Eigen::Vector3d::UnitZ();
     const Eigen::Vector3d u = positions[i] - stepStart[i];
     const double y = (u - n.dot(u) * n).norm();
-    dissipation += frictionCoefficient * groundNormalForce[i]
-                   * frictionF1(y, epsilon) * y;
-    ++activeContacts;
+    const auto contribution = nb::frictionWorkContribution(
+        y, frictionCoefficient * groundNormalForce[i], epsilon);
+    if (contribution.active) {
+      dissipation += contribution.work;
+      ++activeContacts;
+    }
   }
 
   for (const auto& contact : selfContacts) {
@@ -3859,9 +3864,12 @@ void accumulateFrictionDiagnostics(
           = positions[contact.nodes[k]] - stepStart[contact.nodes[k]];
     }
     const double y = (contact.projection * displacement).norm();
-    dissipation += frictionCoefficient * contact.normalForce
-                   * frictionF1(y, epsilon) * y;
-    ++activeContacts;
+    const auto contribution = nb::frictionWorkContribution(
+        y, frictionCoefficient * contact.normalForce, epsilon);
+    if (contribution.active) {
+      dissipation += contribution.work;
+      ++activeContacts;
+    }
   }
 }
 
@@ -6815,9 +6823,11 @@ void advanceDeformableBody(
   } else {
     constexpr std::size_t maxIterations = 64;
     constexpr std::size_t maxLineSearchIterations = 16;
-    constexpr double gradientToleranceSquared = 1e-18;
+    constexpr double gradientTolerance = 1e-9;
     constexpr double armijo = nb::kDefaultSufficientDecreaseFactor;
     constexpr double minStep = 1e-12;
+    const double backtrackingScale
+        = nb::sanitizeBacktrackingScale(nb::kDefaultBacktrackingScale);
 
     double lastGradSquared = 0.0;
     double lastAcceptedStepInfinityNorm = 0.0;
@@ -6942,7 +6952,8 @@ void advanceDeformableBody(
       const double gradSquared
           = gradientNormSquared(scratch.gradient, scratch.activeFixed);
       lastGradSquared = gradSquared;
-      if (gradSquared <= gradientToleranceSquared) {
+      if (nb::projectedNewtonSquaredResidualConverged(
+              gradSquared, gradientTolerance)) {
         brokeEarly = true;
         break;
       }
@@ -7079,7 +7090,7 @@ void advanceDeformableBody(
           }
 
           ++stats.rejectedLineSearchCandidates;
-          step *= 0.5;
+          step *= backtrackingScale;
           if (step < minStep) {
             break;
           }
@@ -7237,8 +7248,9 @@ void advanceDeformableBody(
     // Record the worst-case solve residual across the step's bodies (the
     // gradient norm at termination), a convergence diagnostic for the
     // benchmark statistics.
-    stats.finalGradientResidualNorm
-        = std::max(stats.finalGradientResidualNorm, std::sqrt(lastGradSquared));
+    stats.finalGradientResidualNorm = std::max(
+        stats.finalGradientResidualNorm,
+        nb::projectedNewtonResidualNormFromSquared(lastGradSquared));
     // Converged-ness measure that stays meaningful for stiff barrier problems:
     // the worst-case last accepted step (infinity norm) across the step's
     // bodies. It tends to zero at equilibrium even when the gradient residual

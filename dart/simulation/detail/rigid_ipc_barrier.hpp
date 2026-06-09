@@ -78,6 +78,7 @@ struct RigidIpcFrictionOptions
 struct RigidIpcFrictionPotentialResult
 {
   double value = 0.0;
+  double work = 0.0;
   RigidIpcVector12d gradient = RigidIpcVector12d::Zero();
   RigidIpcMatrix12d hessian = RigidIpcMatrix12d::Zero();
   Eigen::Vector2d tangentialDisplacement = Eigen::Vector2d::Zero();
@@ -212,6 +213,12 @@ struct RigidIpcLineSearchResult
     return newton_barrier::allowsPositiveLineSearchStep(
         stepBound, indeterminate);
   }
+
+  [[nodiscard]] bool allowsFullStep() const noexcept
+  {
+    return newton_barrier::allowsFullLineSearchStep(
+        stepBound, limited, indeterminate);
+  }
 };
 
 enum class RigidIpcProjectedNewtonStatus
@@ -251,8 +258,9 @@ struct RigidIpcProjectedNewtonOptions
   /// candidate, the solve accepts that best decreasing candidate rather than
   /// treating the step as an unsafe CCD block.
   bool useSufficientDecreaseLineSearch = true;
-  double sufficientDecreaseFactor = 1e-4;
-  double backtrackingScale = 0.5;
+  double sufficientDecreaseFactor
+      = newton_barrier::kDefaultSufficientDecreaseFactor;
+  double backtrackingScale = newton_barrier::kDefaultBacktrackingScale;
   std::size_t maxBacktrackingIterations = 16;
 };
 

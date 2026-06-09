@@ -37,6 +37,7 @@
 #include <dart/simulation/detail/newton_barrier/friction_kernel.hpp>
 #include <dart/simulation/detail/newton_barrier/line_search.hpp>
 #include <dart/simulation/detail/newton_barrier/primitive_distance.hpp>
+#include <dart/simulation/detail/newton_barrier/projected_newton.hpp>
 #include <dart/simulation/detail/newton_barrier/psd_projection.hpp>
 #include <dart/simulation/detail/newton_barrier/tangent_stencil.hpp>
 #include <dart/simulation/detail/rigid_ipc_barrier.hpp>
@@ -216,6 +217,27 @@ TEST(NewtonBarrierPrimitives, LineSearchPositiveStepPredicateIsShared)
 }
 
 //==============================================================================
+TEST(NewtonBarrierPrimitives, LineSearchFullStepPredicateIsShared)
+{
+  EXPECT_TRUE(nb::allowsFullLineSearchStep(1.0, true, false));
+  EXPECT_TRUE(nb::allowsFullLineSearchStep(0.25, false, false));
+  EXPECT_FALSE(nb::allowsFullLineSearchStep(0.25, true, false));
+  EXPECT_FALSE(nb::allowsFullLineSearchStep(1.0, true, true));
+
+  dc::ContinuousCollisionStepResult deformable;
+  rigid::RigidIpcLineSearchResult rigidResult;
+  EXPECT_TRUE(deformable.allowsFullStep());
+  EXPECT_TRUE(rigidResult.allowsFullStep());
+
+  deformable.hit = true;
+  deformable.stepBound = 0.25;
+  rigidResult.limited = true;
+  rigidResult.stepBound = 0.25;
+  EXPECT_FALSE(deformable.allowsFullStep());
+  EXPECT_FALSE(rigidResult.allowsFullStep());
+}
+
+//==============================================================================
 TEST(NewtonBarrierPrimitives, LineSearchStepScaleUsesSharedClampingPolicy)
 {
   EXPECT_NEAR(nb::makeLineSearchStepScale(0.25, 0.8), 0.2, 1e-15);
@@ -387,6 +409,30 @@ TEST(NewtonBarrierPrimitives, LineSearchResultsUseSharedPositiveStepPredicate)
   rigidResult.indeterminate = true;
   EXPECT_FALSE(deformable.allowsPositiveStep());
   EXPECT_FALSE(rigidResult.allowsPositiveStep());
+}
+
+//==============================================================================
+TEST(NewtonBarrierPrimitives, ProjectedNewtonDiagnosticsUseSharedPolicy)
+{
+  EXPECT_DOUBLE_EQ(nb::sanitizeProjectedNewtonTolerance(-1.0), 0.0);
+  EXPECT_DOUBLE_EQ(
+      nb::sanitizeProjectedNewtonTolerance(
+          std::numeric_limits<double>::quiet_NaN()),
+      0.0);
+  EXPECT_DOUBLE_EQ(nb::sanitizeProjectedNewtonTolerance(1e-8), 1e-8);
+
+  EXPECT_DOUBLE_EQ(nb::projectedNewtonResidualNormFromSquared(-1.0), 0.0);
+  EXPECT_DOUBLE_EQ(nb::projectedNewtonResidualNormFromSquared(4.0), 2.0);
+
+  EXPECT_TRUE(nb::projectedNewtonResidualConverged(1e-9, 1e-8));
+  EXPECT_FALSE(nb::projectedNewtonResidualConverged(1e-7, 1e-8));
+  EXPECT_TRUE(nb::projectedNewtonSquaredResidualConverged(1e-18, 1e-9));
+  EXPECT_FALSE(nb::projectedNewtonSquaredResidualConverged(1e-16, 1e-9));
+
+  EXPECT_DOUBLE_EQ(
+      nb::projectedNewtonEffectiveGradientTolerance(1e-8, 1e-3, 2.0), 2e-3);
+  EXPECT_DOUBLE_EQ(
+      nb::projectedNewtonEffectiveGradientTolerance(1e-8, -1.0, 2.0), 1e-8);
 }
 
 //==============================================================================
@@ -603,9 +649,34 @@ TEST(NewtonBarrierPrimitives, RigidIpcConsumesSharedPrimitiveOwner)
   expectMatrixNear(
       potential.tangentialDisplacement, stencil.projection * displacement);
   EXPECT_NEAR(potential.value, expectedPotential.value, 1e-14);
+  EXPECT_NEAR(potential.work, expectedPotential.work, 1e-14);
   expectMatrixNear(potential.gradient.head<6>(), expectedPotential.gradient);
   expectMatrixNear(
       potential.hessian.topLeftCorner<6, 6>(), expectedPotential.hessian);
   EXPECT_TRUE(potential.active);
   EXPECT_GT(potential.value, 0.0);
+}
+
+//==============================================================================
+TEST(NewtonBarrierPrimitives, FrictionWorkUsesSharedMollifier)
+{
+  const auto staticContribution = nb::frictionWorkContribution(0.05, 4.0, 0.2);
+  EXPECT_TRUE(staticContribution.active);
+  EXPECT_FALSE(staticContribution.dynamicBranch);
+  EXPECT_NEAR(staticContribution.work, 4.0 * (0.5 - 0.0625) * 0.05, 1e-15);
+
+  const auto dynamicContribution = nb::frictionWorkContribution(0.4, 4.0, 0.2);
+  EXPECT_TRUE(dynamicContribution.active);
+  EXPECT_TRUE(dynamicContribution.dynamicBranch);
+  EXPECT_NEAR(dynamicContribution.work, 4.0 * 0.4, 1e-15);
+
+  const double tinyStaticDisplacement
+      = std::numeric_limits<double>::denorm_min();
+  const auto nonFiniteSmoothContribution = nb::frictionWorkContribution(
+      tinyStaticDisplacement, 4.0, tinyStaticDisplacement);
+  EXPECT_FALSE(nonFiniteSmoothContribution.active);
+  EXPECT_DOUBLE_EQ(nonFiniteSmoothContribution.work, 0.0);
+
+  EXPECT_FALSE(nb::frictionWorkContribution(0.1, 0.0, 0.2).active);
+  EXPECT_FALSE(nb::frictionWorkContribution(0.1, 4.0, 0.0).active);
 }

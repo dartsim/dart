@@ -31,6 +31,7 @@
 
 #include <dart/simulation/detail/deformable_contact/candidate_set.hpp>
 #include <dart/simulation/detail/newton_barrier/friction_kernel.hpp>
+#include <dart/simulation/detail/newton_barrier/projected_newton.hpp>
 #include <dart/simulation/detail/newton_barrier/psd_projection.hpp>
 #include <dart/simulation/detail/newton_barrier/tangent_stencil.hpp>
 #include <dart/simulation/detail/rigid_ipc_barrier.hpp>
@@ -307,6 +308,7 @@ RigidIpcFrictionPotentialResult computeProjectedFrictionPotential(
   }
 
   result.value = potential.value;
+  result.work = potential.work;
   result.gradient.template head<Columns>() = potential.gradient;
   result.hessian.template topLeftCorner<Columns, Columns>() = potential.hessian;
   result.tangentialDisplacement = potential.tangentialDisplacement;
@@ -883,8 +885,8 @@ RigidIpcProjectedNewtonStep computeRigidIpcProjectedNewtonStepImpl(
     return result;
   }
 
-  const double gradientTolerance = std::max(0.0, options.gradientTolerance);
-  if (result.stats.gradientNorm <= gradientTolerance) {
+  if (newton_barrier::projectedNewtonResidualConverged(
+          result.stats.gradientNorm, options.gradientTolerance)) {
     result.status = RigidIpcProjectedNewtonStatus::Converged;
     result.success = true;
     result.converged = true;
@@ -2289,8 +2291,7 @@ RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
     if (result.lineSearch.limited) {
       ++result.stats.lineSearchLimitedSteps;
     }
-    if (!result.lineSearch.allowsPositiveStep()
-        || (result.lineSearch.limited && result.lineSearch.stepBound < 1.0)) {
+    if (!result.lineSearch.allowsFullStep()) {
       result.status = RigidIpcProjectedNewtonSolveStatus::LineSearchBlocked;
       result.failed = true;
       return false;
@@ -2321,9 +2322,7 @@ RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
           if (result.lineSearch.limited) {
             ++result.stats.lineSearchLimitedSteps;
           }
-          return result.lineSearch.allowsPositiveStep()
-                 && (!result.lineSearch.limited
-                     || result.lineSearch.stepBound >= 1.0);
+          return result.lineSearch.allowsFullStep();
         };
 
   for (std::size_t frictionIteration = 0;
@@ -2368,11 +2367,11 @@ RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
       recordSolveAssemblyStats(
           result, frictionIteration == 0u && iteration == 0u);
       if (frictionIteration == 0u && iteration == 0u) {
-        const double relativeFloor
-            = std::max(0.0, options.newton.relativeGradientTolerance)
-              * result.stats.initialGradientNorm;
         newtonOptions.gradientTolerance
-            = std::max(options.newton.gradientTolerance, relativeFloor);
+            = newton_barrier::projectedNewtonEffectiveGradientTolerance(
+                options.newton.gradientTolerance,
+                options.newton.relativeGradientTolerance,
+                result.stats.initialGradientNorm);
       }
 
       RigidIpcProjectedNewtonStep step
