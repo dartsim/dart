@@ -260,7 +260,7 @@ The current local evidence for this task is:
   rank-deficient singular-degenerate standard 64-row, boxed 64-row, and coupled
   friction-index 12-contact known-solution cases, and extreme exact
   rank-deficient singular-degenerate standard 128-row, boxed 128-row, and
-  coupled friction-index 16-/24-/32-/48-/64-/96-/128-/192-contact known-solution
+  coupled friction-index 16-/24-/32-/48-/64-/96-/128-/192-/256-contact known-solution
   cases. The active-set
   transition grid now also includes scoped scalable-solver cases for standard
   32-row, 64-row, and 128-row, boxed 32-row, 64-row, and 128-row, and coupled
@@ -523,10 +523,15 @@ The current local evidence for this task is:
   Focused 256-contact follow-up runs in those same build trees report another
   3 added rows with `contract_ok=1`, `contact_count=256`, and
   `problem_size=768`.
+  The matching generated-coverage filter
+  `UNIT_math_lcp_math_lcp_lcp_generated_coverage --gtest_filter=LcpGeneratedCoverage.ExtremeSingularDegenerateKnownSolutionsForRobustSolverSlice`
+  passed in the default, SIMD-enabled, and CUDA-enabled build trees after
+  adding the 256-contact known-solution packet.
   These rows cover exact
   rank-deficient standard 128-row, boxed 128-row, and coupled friction-index
   16-/24-/32-/48-/64-/96-/128-/192-/256-contact packets over the same scoped robust
-  solver set as the generated extreme singular-degenerate correctness slice.
+  solver set as the generated extreme singular-degenerate correctness slice,
+  which now includes the same 256-contact packet.
   The rows report `singular_degenerate=1`, `rank_deficient=1`, backend
   build-state counters, contact counts `16/24/32/48/64/96/128/192/256`, problem
   sizes `48/72/96/144/192/288/384/576/768`, and `coupled=1` for the coupled

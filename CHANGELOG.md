@@ -996,7 +996,7 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     friction-index 12-contact packets over the solver scope proven by the
     generated harness, plus an extreme exact rank-deficient
     singular-degenerate slice for standard 128-row, boxed 128-row, and coupled
-    friction-index 16-, 24-, 32-, 48-, 64-, 96-, 128-, and 192-contact
+    friction-index 16-, 24-, 32-, 48-, 64-, 96-, 128-, 192-, and 256-contact
     packets.
   - Added an opt-in CPU worker-thread update path for the DART 7 projected
     Jacobi LCP solver (`JacobiSolver::Parameters::workerThreads`), with

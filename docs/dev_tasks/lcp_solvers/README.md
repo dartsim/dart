@@ -863,7 +863,7 @@ tradeoffs evidence based.
   singular-degenerate standard 64-row, boxed 64-row, and coupled friction-index
   12-contact known-solution cases; and extreme exact rank-deficient
   singular-degenerate standard 128-row, boxed 128-row, and coupled
-  friction-index 16-/24-/32-/48-/64-/96-/128-/192-contact known-solution cases for
+  friction-index 16-/24-/32-/48-/64-/96-/128-/192-/256-contact known-solution cases for
   solver sets selected by observed robustness. `MPRGP` is not included in the larger
   mildly ill-conditioned standard slice because a focused 32-row trial
   satisfied the LCP contract but missed the selected expected solution
@@ -1463,10 +1463,15 @@ tradeoffs evidence based.
   Focused 256-contact follow-up runs in those same build trees report another
   3 added rows with `contract_ok=1`, `contact_count=256`, and
   `problem_size=768`.
+  The matching generated-coverage filter
+  `UNIT_math_lcp_math_lcp_lcp_generated_coverage --gtest_filter=LcpGeneratedCoverage.ExtremeSingularDegenerateKnownSolutionsForRobustSolverSlice`
+  passed in the default, SIMD-enabled, and CUDA-enabled build trees after
+  adding the 256-contact known-solution packet.
   These rows cover exact
   rank-deficient standard 128-row, boxed 128-row, and coupled friction-index
   16-/24-/32-/48-/64-/96-/128-/192-/256-contact packets over the same scoped robust
-  solver set as the generated extreme singular-degenerate correctness slice.
+  solver set as the generated extreme singular-degenerate correctness slice,
+  which now includes the same 256-contact packet.
   The rows report `singular_degenerate=1`, `rank_deficient=1`, backend
   build-state counters, contact counts `16/24/32/48/64/96/128/192/256`, problem
   sizes `48/72/96/144/192/288/384/576/768`, and `coupled=1` for the coupled
@@ -2389,7 +2394,7 @@ tradeoffs evidence based.
 - Added
   `LcpGeneratedCoverage.ExtremeSingularDegenerateKnownSolutionsForRobustSolverSlice`
   for extreme exact rank-deficient standard 128-row, boxed 128-row, and coupled
-  friction-index 16-/24-/32-/48-/64-/96-/128-/192-contact known-solution cases over
+  friction-index 16-/24-/32-/48-/64-/96-/128-/192-/256-contact known-solution cases over
   the same observed-robust singular-degenerate solver scope.
 - Added `LcpGeneratedCoverage.ActiveSetTransitionKnownSolutions` for standard
   16-row, boxed 16-row, and coupled friction-index 6-contact known-solution
@@ -2670,7 +2675,8 @@ tradeoffs evidence based.
   solver/backend registry types.
 - Coverage breadth: extend deterministic generated fixtures beyond the current
   production-scale well-conditioned, larger mildly ill-conditioned,
-  singular-degenerate through the current 128-row/256-contact benchmark slice,
+  singular-degenerate through the current 128-row/256-contact correctness and
+  benchmark slice,
   and
   active-set transition through the current stronger-coupled 192-contact slice
   into harder solver-specific friction-index coupling edge cases and direct
@@ -2797,7 +2803,7 @@ tradeoffs evidence based.
 ## Immediate Next Steps
 
 1. Extend solver-specific friction-index conditioning/coupling grids beyond the
-   current exact rank-deficient 128-row/256-contact benchmark and production active-set
+   current exact rank-deficient 128-row/256-contact correctness/benchmark and production active-set
    transition 192-contact slices.
 2. Extend DART 7 boxed-LCP world-contact evidence from current separated
    sphere-ground, current fixed-base prismatic articulated end-to-end coverage,

@@ -662,7 +662,8 @@ contact scenes.
   over the same scoped robust solver set.
   The extreme singular-degenerate correctness grid covers exact
   rank-deficient standard 128-row, boxed 128-row, and coupled friction-index
-  16-/24-/32-/48-/64-/96-contact packets over the same scoped robust solver set.
+  16-/24-/32-/48-/64-/96-/128-/192-/256-contact packets over the same scoped
+  robust solver set.
   `BM_LCP_COMPARE` now lists 55 `BM_LcpActiveSetTransition` rows and the
   focused active-set benchmark slice passes with `contract_ok=1` for standard
   16-row, boxed 16-row, and coupled friction-index 6-contact packets.
@@ -735,14 +736,18 @@ contact scenes.
   `BM_LCP_COMPARE` also lists 51 `BM_LcpExtremeSingularDegenerate` rows for
   exact rank-deficient standard 128-row, boxed 128-row, and coupled
   friction-index 16-/24-/32-/48-/64-/96-/128-/192-/256-contact packets over the generated
-  extreme singular-degenerate solver scope; previous focused default,
+  extreme singular-degenerate correctness scope; previous focused default,
   SIMD-enabled, and CUDA-enabled full-slice runs through the 96-contact packet
   passed with `contract_ok=1`, and focused 128-contact follow-up runs in those
   same build trees report 3 added rows with `contract_ok=1`; focused
   192-contact follow-up runs in those same build trees report another 3 added
   rows with `contract_ok=1`; focused 256-contact follow-up runs in those same
   build trees report another 3 added rows with `contract_ok=1`,
-  `contact_count=256`, and `problem_size=768`. The rows report
+  `contact_count=256`, and `problem_size=768`. The matching
+  generated-coverage filter
+  `UNIT_math_lcp_math_lcp_lcp_generated_coverage --gtest_filter=LcpGeneratedCoverage.ExtremeSingularDegenerateKnownSolutionsForRobustSolverSlice`
+  passes in default, SIMD-enabled, and CUDA-enabled build trees after adding the
+  256-contact known-solution packet. The rows report
   `singular_degenerate=1`,
   `rank_deficient=1`, backend build-state counters, and
   contact counts `16/24/32/48/64/96/128/192/256`, problem sizes
@@ -988,7 +993,7 @@ contact scenes.
   64-row, and coupled friction-index 12-contact known-solution cases, plus
   extreme exact rank-deficient singular-degenerate standard 128-row, boxed
   128-row, and coupled friction-index
-  16-/24-/32-/48-/64-/96-/128-/192-/256-contact benchmark cases, plus
+  16-/24-/32-/48-/64-/96-/128-/192-/256-contact known-solution cases, plus
   singular-degenerate standard/boxed batch benchmark packets over
   16-/32-/64-/128-row exact rank-deficient cases, plus
   stress and extreme active-set transition standard 64/128-row, boxed
