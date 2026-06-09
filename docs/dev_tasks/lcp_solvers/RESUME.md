@@ -511,20 +511,22 @@ tangent-row rejection for dense box-face CUDA grouped packets and extends
 rows over the same 1/2/4/8/16/24/32/48-box shapes, with focused default and
 CUDA-enabled validation tests plus CUDA unit/benchmark evidence passing.
 The latest local slice extends the grouped dense box-face CUDA fixture and
-benchmark rows to include the 64-box shape for both PGS and Jacobi. Focused
+benchmark rows to include the 96-box shape for both PGS and Jacobi. Focused
 CUDA grouped unit tests pass for both fixed-iteration solvers, and the matching
 Jacobi/PGS grouped benchmark rows report `contract_ok=1`,
 `cuda_lcp_execution=1`, `cuda_grouped_batch_execution=1`,
-`cuda_group_count=9`, and `max_problem_size=768`.
+`cuda_group_count=10`, and `max_problem_size=1152`. The PGS grouped benchmark
+rows are contract-correct but expensive at about 140.8s and 142.1s real time
+for `/2` and `/3`.
 The CUDA Jacobi dense box-face evidence covers
 homogeneous batch-size-4 1-/4-/8-/16-/24-/32-/48-/64-/96-box packets with 8192
 fixed iterations and relaxation 0.25. The focused CUDA unit and benchmark rows
 pass with `contract_ok=1`. It also covers a 128-box batch-size-1 CUDA Jacobi
 row with `contract_ok=1`, `problem_size=1536`, and
 `max_residual=max_complementarity=3.4694469519536142e-18`, plus grouped CUDA
-Jacobi dense box-face evidence for 1/2/4/8/16/24/32/48/64-box shapes, matching
+Jacobi dense box-face evidence for 1/2/4/8/16/24/32/48/64/96-box shapes, matching
 the grouped PGS rows, with two and three variants per shape. The 128-box
-batch-size-4 and grouped-beyond-64 dense-box CUDA Jacobi rows remain unclaimed.
+batch-size-4 CUDA Jacobi/PGS rows remain unclaimed.
 Push/PR work still requires explicit maintainer/user approval.
 
 ## Immediate Next Step
@@ -561,11 +563,10 @@ including cross-multibody link-vs-link CUDA rows, plus mixed
 separated/stack/articulated CUDA benchmark rows, plus the current bounded
 homogeneous CUDA Jacobi dense box-face rows and Jacobi/PGS
 homogeneous/two-/three-variant grouped variable-size dense box-face CUDA batch rows
-through 64 boxes;
+through 96 boxes;
 the 128-box dense box-face fixture shape and homogeneous batch-size-1 CUDA
 Jacobi/PGS execution are covered, but 128-box batch-size-4 CUDA Jacobi/PGS
-execution remains unclaimed, and grouped-beyond-64 dense-box CUDA Jacobi rows
-remain unclaimed.
+execution remains unclaimed.
 Do not claim a 7-sphere public-step stack invariant yet: local temporary probes
 failed at both 1000 and 2000 public `World::step()` iterations under the
 existing motion-invariant contract, with benchmark probes reporting
@@ -1668,10 +1669,10 @@ contact scenes.
   `cuda_batch_execution=1`, `cuda_grouped_batch_execution=1`,
   `cuda_variable_problem_size_batch=1`, `contract_ok=1`,
   `cuda_fixed_iterations=8192`, `cuda_relaxation=0.25`,
-  `batch_size=18/27`, `cuda_group_count=9`, `box_count_shape_count=9`,
-  `min_problem_size=12`, `max_problem_size=768`,
-  `total_contact_count=1592/2388`, `total_body_count=398/597`,
-  `total_problem_size=4776/7164`, and
+  `batch_size=20/30`, `cuda_group_count=10`, `box_count_shape_count=10`,
+  `min_problem_size=12`, `max_problem_size=1152`,
+  `total_contact_count=2360/3540`, `total_body_count=590/885`,
+  `total_problem_size=7080/10620`, and
   `max_residual=max_complementarity=3.4890495707873281e-08`.
   `BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex/{1,4,8,16,24,32,48,64,96}/4`
   reports 9 homogeneous rows with `cuda_dense_box_contact_batch=1`,
@@ -1686,15 +1687,17 @@ contact scenes.
   `contact_count=512`, `problem_size=1536`, `batch_size=1`, and
   `total_problem_size=1536`.
   `BM_LcpCudaPgsWorldBoxContactGroupedBatch_FrictionIndex/{2,3}` now reports
-  `contract_ok=1` for the 1/2/4/8/16/24/32/48/64-box grouped dense-face packets.
-  The `/2` row reports `cuda_group_count=9`, `box_count_shape_count=9`,
-  `min_problem_size=12`, `max_problem_size=768`, `total_contact_count=1592`,
-  `total_body_count=398`, `total_problem_size=4776`, and
+  `contract_ok=1` for the 1/2/4/8/16/24/32/48/64/96-box grouped dense-face packets.
+  The `/2` row reports `cuda_group_count=10`, `box_count_shape_count=10`,
+  `min_problem_size=12`, `max_problem_size=1152`, `total_contact_count=2360`,
+  `total_body_count=590`, `total_problem_size=7080`, and
   `max_residual=max_complementarity=1.5667044491254889e-07`; the `/3` row
-  reports `batch_size=27`, the same shape groups, `total_contact_count=2388`,
-  `total_body_count=597`, `total_problem_size=7164`, and
-  `max_residual=max_complementarity=1.5667044491254889e-07`. Grouped dense-box
-  CUDA remains scoped to 1/2/4/8/16/24/32/48/64-box packets. The old fixed-ground
+  reports `batch_size=30`, the same ten shape groups, `total_contact_count=3540`,
+  `total_body_count=885`, `total_problem_size=10620`, and
+  `max_residual=max_complementarity=1.5667044491254889e-07`. The `/2` and `/3`
+  rows took about 140.8s and 142.1s real time, so they are cost-boundary
+  evidence rather than routine checkpoint gates. Grouped dense-box CUDA now
+  reaches 1/2/4/8/16/24/32/48/64/96-box packets. The old fixed-ground
   homogeneous 128-box fixture loss is now separated from CUDA execution:
   `CudaLcpDenseBoxFixture.LargerGridKeepsFaceContactShape` verifies
   that dynamic dense-ground sizing preserves 512 box-face contacts and a
@@ -1706,11 +1709,11 @@ contact scenes.
   validation because fixed rows required zero residual; after the fixed-bound
   validation correction, the bounded
   1-/4-/8-/16-/24-/32-/48-/64-/96-box homogeneous CUDA Jacobi rows and
-  1/2/4/8/16/24/32/48/64-box grouped CUDA Jacobi rows, plus the 128-box
+  1/2/4/8/16/24/32/48/64/96-box grouped CUDA Jacobi rows, plus the 128-box
   batch-size-1 CUDA Jacobi row, pass. The 128-box batch-size-4 CUDA Jacobi/PGS
-  rows and grouped-beyond-64 dense-box CUDA Jacobi rows remain unclaimed.
+  rows remain unclaimed.
   Treat this as narrow CUDA LCP batch evidence only; general CUDA execution for
-  the full solver manifest, 128-box batch-size-4 and grouped-beyond-64 CUDA Jacobi dense-contact batches,
+  the full solver manifest, 128-box batch-size-4 CUDA dense-contact batches,
   and end-to-end articulated world-step CUDA execution are still missing.
 - `pixi run test-lcpsolver` currently builds the full test suite before the LCP
   filter. For focused iteration, use the exact CMake target once the build tree

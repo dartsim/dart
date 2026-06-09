@@ -423,20 +423,19 @@
       homogeneous 4-problem 1-/4-/8-/16-/24-/32-/48-/64-/96-box CUDA Jacobi
       rows, homogeneous 4-problem 1-/4-/8-/16-/24-/32-/48-/64-/96-box CUDA PGS rows,
       and grouped
-      variable-size 1/2/4/8/16/24/32/48/64-box CUDA Jacobi and PGS batches with two and three
+      variable-size 1/2/4/8/16/24/32/48/64/96-box CUDA Jacobi and PGS batches with two and three
       velocity variants per box-count shape of box-face `World::collide()`
       snapshots pass fixed-iteration CUDA benchmark coverage on the visible
       GPU; CUDA unit coverage now includes homogeneous Jacobi
       1-/4-/8-/16-/24-/32-/48-/64-/96-box packets, homogeneous PGS
       1-/16-/24-/32-/48-/64-/96-box packets, the grouped
-      1/2/4/8/16/24/32/48/64-box Jacobi and PGS packets, and bounded
+      1/2/4/8/16/24/32/48/64/96-box Jacobi and PGS packets, and bounded
       homogeneous 128-box single-problem CUDA Jacobi and PGS packets.
       A focused fixture boundary test now verifies that the same dense box-face
       construction keeps the 128-box grid at 512 contacts and 1536 LCP rows.
       The 128-box batch-size-4 CUDA PGS row remains unclaimed because its
       focused benchmark probe was too expensive for a checkpoint gate.
-      The 128-box batch-size-4 CUDA Jacobi/PGS rows and grouped dense-box CUDA
-      Jacobi rows beyond 64 boxes remain unclaimed.
+      The 128-box batch-size-4 CUDA Jacobi/PGS rows remain unclaimed.
 - [x] Added dense box-face DART 7 end-to-end unit and benchmark evidence:
       `FourBoxWorldStepMaintainsDenseContactInvariants` and
       `EightBoxWorldStepMaintainsDenseContactInvariants` advance 4-box and
@@ -1744,7 +1743,7 @@ tradeoffs evidence based.
   homogeneous batch-size-1 CUDA PGS packet with the same fixed-iteration
   contract.
   `CudaLcpPgsBatch.DenseBoxWorldContactGroupedBatchSatisfiesLcpContract` extends
-  that to grouped variable-size 1/2/4/8/16/24/32/48/64-box packets; the matching
+  that to grouped variable-size 1/2/4/8/16/24/32/48/64/96-box packets; the matching
   `CudaLcpJacobiBatch.DenseBoxWorldContactGroupedBatchSatisfiesLcpContract`
   covers the same grouped shape with 8192 iterations and relaxation 0.25. The
   focused homogeneous Jacobi
@@ -1772,10 +1771,10 @@ tradeoffs evidence based.
   `cuda_batch_execution=1`, `cuda_grouped_batch_execution=1`,
   `cuda_variable_problem_size_batch=1`, `cuda_dense_box_contact_batch=1`,
   `dense_box_contact=1`, `cuda_fixed_iterations=8192`,
-  `cuda_relaxation=0.25`, `batch_size=18/27`, `cuda_group_count=9`,
-  `box_count_shape_count=9`, `min_problem_size=12`, `max_problem_size=768`,
-  `total_contact_count=1592/2388`, `total_body_count=398/597`,
-  `total_problem_size=4776/7164`, and
+  `cuda_relaxation=0.25`, `batch_size=20/30`, `cuda_group_count=10`,
+  `box_count_shape_count=10`, `min_problem_size=12`, `max_problem_size=1152`,
+  `total_contact_count=2360/3540`, `total_body_count=590/885`,
+  `total_problem_size=7080/10620`, and
   `max_residual=max_complementarity=3.4890495707873281e-08`. The focused
   homogeneous PGS
   `BM_LCP_COMPARE --benchmark_filter='^BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex/(1|4|8|16|24|32|48|64|96)/4$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
@@ -1785,14 +1784,17 @@ tradeoffs evidence based.
   `contact_count=4/16/32/64/96/128/192/256/384`,
   `problem_size=12/48/96/192/288/384/576/768/1152`, `batch_size=4`, and
   `total_problem_size` up to 4608. The grouped rows now cover
-  1/2/4/8/16/24/32/48/64-box packets. The two-variant row reported
-  `batch_size=18`, `cuda_group_count=9`, `box_count_shape_count=9`,
-  `min_problem_size=12`, `max_problem_size=768`, `total_contact_count=1592`,
-  `total_body_count=398`, `total_problem_size=4776`, and
+  1/2/4/8/16/24/32/48/64/96-box packets. The two-variant row reported
+  `batch_size=20`, `cuda_group_count=10`, `box_count_shape_count=10`,
+  `min_problem_size=12`, `max_problem_size=1152`, `total_contact_count=2360`,
+  `total_body_count=590`, `total_problem_size=7080`, and
   `max_residual=max_complementarity=1.5667044491254889e-07`; the
-  three-variant row reported `batch_size=27`, the same nine shape groups,
-  `total_contact_count=2388`, `total_body_count=597`, `total_problem_size=7164`,
-  and `max_residual=max_complementarity=1.5667044491254889e-07`. The old
+  three-variant row reported `batch_size=30`, the same ten shape groups,
+  `total_contact_count=3540`, `total_body_count=885`, `total_problem_size=10620`,
+  and `max_residual=max_complementarity=1.5667044491254889e-07`. The PGS
+  grouped benchmark rows are contract-correct but expensive, with the `/2` and
+  `/3` rows reporting about 140.8s and 142.1s real time respectively, so these
+  are not routine checkpoint gates. The old
   fixed-ground homogeneous 128-box fixture loss is now separated from CUDA
   execution:
   `CudaLcpDenseBoxFixture.LargerGridKeepsFaceContactShape` verifies that dynamic
@@ -1809,9 +1811,9 @@ tradeoffs evidence based.
   Jacobi probe failed under the prior collapsed-interval validation because
   fixed rows required zero residual; after the fixed-bound validation correction,
   the bounded 1-/4-/8-/16-/24-/32-/48-/64-/96-box homogeneous CUDA Jacobi rows,
-  1/2/4/8/16/24/32/48/64-box grouped CUDA Jacobi rows, and the 128-box
+  1/2/4/8/16/24/32/48/64/96-box grouped CUDA Jacobi rows, and the 128-box
   batch-size-1 CUDA Jacobi row pass. The 128-box batch-size-4 CUDA Jacobi/PGS
-  rows and grouped dense-box CUDA Jacobi rows beyond 64 boxes remain unclaimed.
+  rows remain unclaimed.
 - DART 7 coupled world-contact stack benchmark evidence:
   `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` now also registers 32
   manifest-generated
@@ -2512,16 +2514,15 @@ tradeoffs evidence based.
   separated/stack/articulated grouped contact batch paths, homogeneous Jacobi
   dense box-face CUDA batches through 96 boxes, homogeneous PGS dense box-face
   CUDA batches through 96 boxes, two-/three-variant grouped Jacobi and PGS
-  dense box-face CUDA batches through 64 boxes, plus bounded 128-box
+  dense box-face CUDA batches through 96 boxes, plus bounded 128-box
   homogeneous batch-size-1 CUDA Jacobi and PGS packet passes. The 128-box
-  batch-size-4 CUDA Jacobi/PGS rows plus grouped-beyond-64 dense-box CUDA
-  Jacobi rows remain unclaimed.
+  batch-size-4 CUDA Jacobi/PGS rows remain unclaimed.
   Jacobi has opt-in solver-internal CPU
   worker-thread correctness and benchmark evidence, including larger 8192-row
   banded rows, but the focused local rows do not establish a general speedup.
   Other intra-solver multi-threaded
-  CPU paths, general CUDA LCP solver execution, 128-box batch-size-4 and
-  grouped-beyond-64 CUDA Jacobi dense-contact execution, end-to-end articulated world-step CUDA execution,
+  CPU paths, general CUDA LCP solver execution, 128-box batch-size-4 CUDA
+  dense-contact execution, end-to-end articulated world-step CUDA execution,
   and broader vectorized/CUDA LCP batch-processing paths still need separate
   evidence.
 - Background taxonomy upkeep: keep `docs/background/lcp/`, the solver manifest,

@@ -1118,9 +1118,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     6-/8-/12-/16-/24-/32-/48-/64-/96-contact, and 15-solver 16x-coupled
     6-/8-/12-/16-/24-/32-/48-/64-/96-/128-/192-contact rows. Boxed
     Semi-Smooth Newton reports tuned line-search settings on the 16x rows. The
-    new 192-contact batch rows are verified in the default build; SIMD/CUDA
-    192-contact batch rows remain unclaimed. Added 29 near-singular benchmark
-    rows for standard 8-row, boxed 8-row, and
+    new 192-contact batch rows are verified in the default build, and focused
+    SIMD/CUDA-enabled all-solver serial/parallel 192-contact batch contract
+    gates now pass. Added 29 near-singular benchmark rows for standard 8-row,
+    boxed 8-row, and
     coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-, 32-, 48-, 64-, 96-,
     128-, and 192-contact
     packets verified across default, SIMD-enabled, and CUDA-enabled build
@@ -1227,7 +1228,7 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     batch-size-1 row,
     homogeneous PGS 1/4/8/16/24/32/48/64/96-box batch-size-4 rows and a
     128-box batch-size-1 row, and Jacobi/PGS grouped
-    1/2/4/8/16/24/32/48/64-box dense box-face packets with two and three velocity
+    1/2/4/8/16/24/32/48/64/96-box dense box-face packets with two and three velocity
     variants per box-count shape through
     `BM_LcpCudaJacobiWorldBoxContactBatch_FrictionIndex`,
     `BM_LcpCudaJacobiWorldBoxContactGroupedBatch_FrictionIndex`,
@@ -1291,9 +1292,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     default-build 16x-coupled batch rows through 192 contacts across the
     scoped iterative solver set plus Boxed Semi-Smooth Newton. Boxed
     Semi-Smooth Newton reports tuned line-search settings on the 16x rows.
-    SIMD/CUDA 192-contact batch rows remain unclaimed; backend build-state
-    counters distinguish default, SIMD-enabled, and CUDA-enabled CPU solver
-    runs.
+    Focused SIMD/CUDA-enabled all-solver serial/parallel 192-contact batch
+    contract gates now pass; CUDA-enabled rows are CPU solver rows in that
+    build tree, not CUDA LCP kernel execution.
   - Added DART 7 contact-normal standard-LCP comparison benchmark rows for
     Dantzig, Lemke, Baraff, Direct, Minimum Map Newton,
     Fischer-Burmeister Newton, Penalized Fischer-Burmeister Newton, Interior
