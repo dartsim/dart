@@ -1193,20 +1193,21 @@ tradeoffs evidence based.
   runs report `simd_rows=24` and `cuda_rows=24`, respectively.
 - Verified Staggering contact-pipeline benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpStaggeringContactPipelineSweep' | wc -l`
-  reported 14 rows, and JSON checks for
-  `BM_LcpStaggeringContactPipelineSweep` reported 14 rows with `contract_ok=1`
+  reported 19 rows, and JSON checks for
+  `BM_LcpStaggeringContactPipelineSweep` reported 19 rows with `contract_ok=1`
   in the default, SIMD-enabled, and CUDA-enabled build trees. These rows cover
-  separated sphere-ground 1/2/4/8-contact fixtures, coupled vertical-stack
-  2/3/5/8-contact fixtures, and articulated unified ground, rigid-impact, and
-  cross-link-impact 4-/8-contact fixtures. The rows report
+  separated sphere-ground 1/2/4/8/16-contact fixtures, coupled vertical-stack
+  2/3/5/8/16-contact fixtures, and articulated unified ground, rigid-impact,
+  and cross-link-impact 4-/8-/16-contact fixtures. The rows report
   `staggering_contact_pipeline_sweep=1`,
-  `staggering_normal_friction_split=1`, normal-row counts `1/2/3/4/5/8`,
-  friction-row counts `2/4/6/8/10/16`, coupled-contact flags, contact counts
-  `1/2/3/4/5/8`, and backend build-state counters. The CUDA-enabled rows report
-  `build_cuda_enabled=1` but are CPU Staggering solver rows in a CUDA-enabled
-  build, not CUDA LCP kernel execution. The current focused filter reports
-  `rows=14`, `failures=0`, 5 `contact_count=8` rows, and `simd_rows=14` or
-  `cuda_rows=14` in the backend build-tree runs.
+  `staggering_normal_friction_split=1`, normal-row counts `1/2/3/4/5/8/16`,
+  friction-row counts `2/4/6/8/10/16/32`, coupled-contact flags, contact counts
+  `1/2/3/4/5/8/16`, problem sizes `3/6/9/12/15/24/48`, and backend build-state
+  counters. The CUDA-enabled rows report `build_cuda_enabled=1` but are CPU
+  Staggering solver rows in a CUDA-enabled build, not CUDA LCP kernel
+  execution. The current focused filter reports `rows=19`, `failures=0`, 5
+  `contact_count=16` rows, and `simd_rows=19` or `cuda_rows=19` in the backend
+  build-tree runs.
 - Verified Boxed Semi-Smooth Newton line-search benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpBoxedSemiSmoothNewtonLineSearchSweep' | wc -l`
   reported 12 rows, and JSON checks for
@@ -1292,20 +1293,24 @@ tradeoffs evidence based.
 - Verified ADMM/SAP/Boxed Semi-Smooth Newton contact comparison benchmark
   slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpContactSolverComparisonSweep' | wc -l`
-  reported 42 rows, and JSON checks for
-  `BM_LcpContactSolverComparisonSweep` reported 42 rows with `contract_ok=1`
+  reported 57 rows, and JSON checks for
+  `BM_LcpContactSolverComparisonSweep` reported 57 rows with `contract_ok=1`
   in the default, SIMD-enabled, and CUDA-enabled build trees. These rows run
   `Admm`, `Sap`, and `BoxedSemiSmoothNewton` over the same DART 7 separated
-  sphere-ground 1/2/4/8-contact fixtures, coupled vertical-stack
-  2/3/5/8-contact fixtures, and articulated unified ground, rigid-impact, and
-  cross-link-impact 4-/8-contact fixtures. The list-test evidence includes
-  15 `contact_count=8` rows. The rows report
+  sphere-ground 1/2/4/8/16-contact fixtures, coupled vertical-stack
+  2/3/5/8/16-contact fixtures, and articulated unified ground, rigid-impact,
+  and cross-link-impact 4-/8-/16-contact fixtures. The list-test evidence
+  includes 15 `contact_count=16` rows. The rows report
   `contact_solver_comparison_sweep=1`, solver identity counters,
-  fixture-family counters, `contact_count=1/2/3/4/5/8`,
-  `normal_row_count=1/2/3/4/5/8`, `friction_row_count=2/4/6/8/10/16`,
-  `problem_size=3/6/9/12/15/24`, and backend build-state counters. The
-  CUDA-enabled rows report `build_cuda_enabled=1` but are CPU solver rows in a
-  CUDA-enabled build, not CUDA LCP kernel execution.
+  fixture-family counters, `contact_count=1/2/3/4/5/8/16`,
+  `normal_row_count=1/2/3/4/5/8/16`,
+  `friction_row_count=2/4/6/8/10/16/32`,
+  `problem_size=3/6/9/12/15/24/48`, 19 rows per solver, and backend
+  build-state counters. The CUDA-enabled rows report `build_cuda_enabled=1`
+  but are CPU solver rows in a CUDA-enabled build, not CUDA LCP kernel
+  execution. The combined Staggering/contact-comparison filter now reports
+  `rows=76`, `failures=0`, 20 `contact_count=16` rows, and `simd_rows=76` or
+  `cuda_rows=76` in the backend build-tree runs.
 - Verified contact-normal standard-LCP benchmark slice:
   `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpContactNormalStandardSweep' | wc -l`
   reported 156 rows, and JSON checks for
