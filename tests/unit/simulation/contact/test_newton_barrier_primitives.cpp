@@ -40,6 +40,7 @@
 #include <dart/simulation/detail/newton_barrier/primitive_distance.hpp>
 #include <dart/simulation/detail/newton_barrier/projected_newton.hpp>
 #include <dart/simulation/detail/newton_barrier/psd_projection.hpp>
+#include <dart/simulation/detail/newton_barrier/restitution_damping.hpp>
 #include <dart/simulation/detail/newton_barrier/tangent_stencil.hpp>
 #include <dart/simulation/detail/rigid_ipc_barrier.hpp>
 
@@ -394,6 +395,211 @@ TEST(NewtonBarrierPrimitives, ArticulationRangeBarrierHandlesTinyActivation)
   EXPECT_TRUE(std::isfinite(barrier.value));
   EXPECT_TRUE(std::isfinite(barrier.firstDerivative));
   EXPECT_TRUE(std::isfinite(barrier.secondDerivative));
+}
+
+//==============================================================================
+TEST(NewtonBarrierPrimitives, RestitutionVelocityTargetActivatesOnApproach)
+{
+  const auto target
+      = nb::makeRestitutionVelocityTarget(/*approachVelocity=*/-2.0, 0.75);
+  EXPECT_TRUE(target.active);
+  EXPECT_DOUBLE_EQ(target.coefficient, 0.75);
+  EXPECT_DOUBLE_EQ(target.targetSeparatingVelocity, 1.5);
+
+  const auto clamped
+      = nb::makeRestitutionVelocityTarget(/*approachVelocity=*/-2.0, 3.0);
+  EXPECT_TRUE(clamped.active);
+  EXPECT_DOUBLE_EQ(clamped.coefficient, 1.0);
+  EXPECT_DOUBLE_EQ(clamped.targetSeparatingVelocity, 2.0);
+
+  EXPECT_FALSE(
+      nb::makeRestitutionVelocityTarget(/*approachVelocity=*/0.1, 0.75).active);
+  EXPECT_FALSE(
+      nb::makeRestitutionVelocityTarget(/*approachVelocity=*/-1e-4, 0.75)
+          .active);
+  EXPECT_FALSE(
+      nb::makeRestitutionVelocityTarget(
+          std::numeric_limits<double>::quiet_NaN(), 0.75)
+          .active);
+}
+
+//==============================================================================
+TEST(NewtonBarrierPrimitives, Bdf2HistoryRestartsThenSerializes)
+{
+  constexpr double timeStep = 0.1;
+  nb::Bdf2StepHistory<1> history;
+  history.currentPosition << 0.0;
+  history.currentVelocity << 2.0;
+
+  const auto restartTerm
+      = nb::makeBdf2InertialTerm(history, /*mass=*/3.0, timeStep);
+  ASSERT_TRUE(restartTerm.active);
+  EXPECT_TRUE(restartTerm.restarted);
+  EXPECT_EQ(restartTerm.order, 1);
+  EXPECT_NEAR(restartTerm.scalarWeight, 300.0, 1e-12);
+  EXPECT_NEAR(restartTerm.targetPosition[0], 0.2, 1e-14);
+
+  Eigen::Matrix<double, 1, 1> acceptedPosition;
+  acceptedPosition << 0.25;
+  const auto restartVelocity
+      = nb::makeBdf2VelocityUpdate(history, acceptedPosition, timeStep);
+  ASSERT_TRUE(restartVelocity.active);
+  EXPECT_TRUE(restartVelocity.restarted);
+  EXPECT_EQ(restartVelocity.order, 1);
+  EXPECT_NEAR(restartVelocity.velocity[0], 2.5, 1e-14);
+
+  const auto advanced = nb::advanceBdf2History(
+      history, acceptedPosition, restartVelocity.velocity);
+  EXPECT_TRUE(advanced.hasPreviousPosition);
+  EXPECT_NEAR(advanced.previousPosition[0], 0.0, 1e-14);
+  EXPECT_NEAR(advanced.currentPosition[0], 0.25, 1e-14);
+
+  const auto serialized = advanced;
+  const auto bdf2Term
+      = nb::makeBdf2InertialTerm(serialized, /*mass=*/3.0, timeStep);
+  ASSERT_TRUE(bdf2Term.active);
+  EXPECT_FALSE(bdf2Term.restarted);
+  EXPECT_EQ(bdf2Term.order, 2);
+  EXPECT_NEAR(bdf2Term.scalarWeight, 675.0, 1e-12);
+  EXPECT_NEAR(bdf2Term.targetPosition[0], 1.0 / 3.0, 1e-14);
+
+  Eigen::Matrix<double, 1, 1> offsetCandidate;
+  offsetCandidate << bdf2Term.targetPosition[0] + 0.2;
+  EXPECT_NEAR(
+      nb::evaluateInertialEnergy(bdf2Term, offsetCandidate),
+      0.5 * 675.0 * 0.04,
+      1e-12);
+}
+
+//==============================================================================
+TEST(NewtonBarrierPrimitives, Bdf2VelocityImprovesQuadraticSample)
+{
+  constexpr double timeStep = 0.01;
+  nb::Bdf2StepHistory<1> history;
+  history.hasPreviousPosition = true;
+  history.previousPosition << 0.0;
+  history.currentPosition << timeStep * timeStep;
+  history.currentVelocity << 2.0 * timeStep;
+
+  Eigen::Matrix<double, 1, 1> acceptedPosition;
+  acceptedPosition << 4.0 * timeStep * timeStep;
+
+  const auto bdf2
+      = nb::makeBdf2VelocityUpdate(history, acceptedPosition, timeStep);
+  ASSERT_TRUE(bdf2.active);
+  EXPECT_EQ(bdf2.order, 2);
+
+  history.hasPreviousPosition = false;
+  const auto backwardEuler
+      = nb::makeBdf2VelocityUpdate(history, acceptedPosition, timeStep);
+  ASSERT_TRUE(backwardEuler.active);
+  EXPECT_EQ(backwardEuler.order, 1);
+
+  const double exactVelocityAtAcceptedTime = 4.0 * timeStep;
+  EXPECT_NEAR(bdf2.velocity[0], exactVelocityAtAcceptedTime, 1e-14);
+  EXPECT_LT(
+      std::abs(bdf2.velocity[0] - exactVelocityAtAcceptedTime),
+      std::abs(backwardEuler.velocity[0] - exactVelocityAtAcceptedTime));
+}
+
+//==============================================================================
+TEST(NewtonBarrierPrimitives, FallingBoxEnergyDiagnosticSweepsAreMonotone)
+{
+  nb::FallingBoxEnergyDiagnosticOptions base;
+  base.height = 0.25;
+  base.velocity = -1.5;
+  base.clearance = 0.004;
+  base.activationDistance = 0.01;
+  base.barrierStiffness = 2.0;
+  base.compression = 0.002;
+
+  for (const double timeStep : {0.1, 0.01, 0.001, 0.0001}) {
+    auto options = base;
+    options.timeStep = timeStep;
+    const auto sample = nb::makeFallingBoxEnergyDiagnostic(options);
+    EXPECT_TRUE(sample.active);
+    EXPECT_TRUE(sample.barrierActive);
+    EXPECT_TRUE(std::isfinite(sample.totalEnergy));
+  }
+
+  auto soft = base;
+  soft.youngModulus = 1e5;
+  auto stiff = base;
+  stiff.youngModulus = 1e8;
+  EXPECT_LT(
+      nb::makeFallingBoxEnergyDiagnostic(soft).elasticEnergy,
+      nb::makeFallingBoxEnergyDiagnostic(stiff).elasticEnergy);
+
+  auto lowKappa = base;
+  lowKappa.barrierStiffness = 1.0;
+  auto highKappa = base;
+  highKappa.barrierStiffness = 10.0;
+  EXPECT_LT(
+      nb::makeFallingBoxEnergyDiagnostic(lowKappa).barrierEnergy,
+      nb::makeFallingBoxEnergyDiagnostic(highKappa).barrierEnergy);
+
+  auto narrowActivation = base;
+  narrowActivation.activationDistance = 0.006;
+  auto wideActivation = base;
+  wideActivation.activationDistance = 0.02;
+  EXPECT_LT(
+      nb::makeFallingBoxEnergyDiagnostic(narrowActivation).barrierEnergy,
+      nb::makeFallingBoxEnergyDiagnostic(wideActivation).barrierEnergy);
+
+  auto lowGravity = base;
+  lowGravity.gravity = 1.0;
+  auto highGravity = base;
+  highGravity.gravity = 8.0;
+  EXPECT_LT(
+      nb::makeFallingBoxEnergyDiagnostic(lowGravity).gravitationalEnergy,
+      nb::makeFallingBoxEnergyDiagnostic(highGravity).gravitationalEnergy);
+
+  base.timeStep = -0.01;
+  EXPECT_FALSE(nb::makeFallingBoxEnergyDiagnostic(base).active);
+}
+
+//==============================================================================
+TEST(NewtonBarrierPrimitives, RayleighDampingProjectsHessianAndDissipates)
+{
+  Eigen::Vector2d displacement;
+  displacement << 0.2, -0.4;
+  Eigen::Matrix2d indefinite;
+  indefinite << 2.0, 0.5, 0.5, -1.0;
+
+  const auto contactDamping = nb::makeSemiImplicitRayleighDampingTerm<2>(
+      displacement, indefinite, /*coefficient=*/0.25, /*timeStep=*/0.01);
+  ASSERT_TRUE(contactDamping.active);
+  EXPECT_NEAR(contactDamping.scale, 25.0, 1e-14);
+  expectSelfAdjointPsd(contactDamping.hessian);
+  EXPECT_GE(contactDamping.energy, 0.0);
+  EXPECT_LE(contactDamping.generalizedForce.dot(displacement), 1e-14);
+  expectMatrixNear(
+      contactDamping.gradient, -contactDamping.generalizedForce, 1e-14);
+
+  Eigen::Matrix<double, 1, 1> hingeDisplacement;
+  hingeDisplacement << 0.15;
+  Eigen::Matrix<double, 1, 1> hingeHessian;
+  hingeHessian << 12.0;
+
+  const auto lowHingeDamping = nb::makeSemiImplicitRayleighDampingTerm<1>(
+      hingeDisplacement,
+      hingeHessian,
+      /*coefficient=*/0.05,
+      /*timeStep=*/0.01);
+  const auto highHingeDamping = nb::makeSemiImplicitRayleighDampingTerm<1>(
+      hingeDisplacement,
+      hingeHessian,
+      /*coefficient=*/0.5,
+      /*timeStep=*/0.01);
+  ASSERT_TRUE(lowHingeDamping.active);
+  ASSERT_TRUE(highHingeDamping.active);
+  EXPECT_LT(lowHingeDamping.energy, highHingeDamping.energy);
+  EXPECT_LT(highHingeDamping.generalizedForce[0], 0.0);
+
+  EXPECT_FALSE(
+      nb::makeSemiImplicitRayleighDampingTerm<2>(
+          displacement, indefinite, /*coefficient=*/0.0, /*timeStep=*/0.01)
+          .active);
 }
 
 //==============================================================================
