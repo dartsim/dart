@@ -12,11 +12,11 @@ or backend resources on the public simulation facade.
 
 ## Current Continuation (2026-06-09)
 
-Active split branches are `pr/allocator-correctness-gates` (PR #2955, base
-`main`) and `pr/simulation-scratch-reuse` (PR #2956, base PR #2955). PR #2955's
-macOS Release allocator failure was fixed by making STL allocator copy
-assignment explicit, and the replacement macOS Release job passed. PR #2956 is
-the active branch for continuing HMM Phase 4/5 work.
+`pr/allocator-correctness-gates` (PR #2955) is merged to `main`. Its macOS
+Release allocator failure was fixed by making STL allocator copy assignment
+explicit, and the replacement macOS Release job passed. PR #2956,
+`pr/simulation-scratch-reuse`, is now based on `main` and is the active branch
+for continuing HMM Phase 4/5 work.
 
 Recent PR #2956 slices added baked no-growth/no-heap coverage for
 multi-kinematic rigid surface CCD, mixed late-active direct-sparse plus

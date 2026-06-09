@@ -390,8 +390,9 @@
       ground contact/friction rows, AVBD self-contact normal/friction rows
       including a 5x9 rectangular grid row workload, and an active rigid AVBD
       penetrating contact plus no-contact fixed-joint rows.
-      Additional broader production-scale frictional deformable scenarios still
-      need no-growth gates before making the full deformable claim.
+      Additional broader or differently shaped production-scale frictional
+      deformable scenarios still need no-growth gates before making the full
+      deformable claim.
 - [ ] Phase 6: Add memory-layout profiler/debugger surfaces and GUI
       visualization. `MemoryAllocatorDebugger` now exposes structured live
       bytes, peak live bytes, and live allocation count; `MemoryManager` and
