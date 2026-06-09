@@ -1188,7 +1188,8 @@ void configureDeformableSelfContactFrictionGridSceneWithShapeAndMotion(
     std::string_view bodyName,
     double gap,
     const Eigen::Vector3d& upperLayerVelocity,
-    bool useMatrixFreeLinearSolver = false)
+    bool useMatrixFreeLinearSolver = false,
+    const Eigen::Vector3d& offset = Eigen::Vector3d::Zero())
 {
   namespace sx = dart::simulation;
 
@@ -1215,10 +1216,11 @@ void configureDeformableSelfContactFrictionGridSceneWithShapeAndMotion(
         = layer == 0 ? Eigen::Vector3d::Zero() : upperLayerVelocity;
     for (std::size_t row = 0; row < rows; ++row) {
       for (std::size_t col = 0; col < cols; ++col) {
-        options.positions.emplace_back(
+        const Eigen::Vector3d position(
             (static_cast<double>(col) - 1.0) * spacing,
             (static_cast<double>(row) - 1.0) * spacing,
             z);
+        options.positions.push_back(offset + position);
         options.velocities.push_back(velocity);
         if (layer == 0) {
           options.fixedNodes.push_back(nodeIndex(layer, row, col));
@@ -1532,6 +1534,29 @@ void configureDeformableSelfContactFrictionTallRectangularGridScene(
 {
   configureDeformableSelfContactFrictionGridSceneWithShape(
       world, 17, 7, "friction_tall_rectangular_production_grid");
+}
+
+void configureMixedDeformableSelfContactFrictionProductionScene(
+    dart::simulation::World& world)
+{
+  configureDeformableSelfContactFrictionGridSceneWithShapeAndMotion(
+      world,
+      9,
+      13,
+      "mixed_friction_direct_rectangular_grid",
+      0.012,
+      Eigen::Vector3d(0.35, 0.1, -0.08),
+      false,
+      Eigen::Vector3d(-8.0, 0.0, 0.0));
+  configureDeformableSelfContactFrictionGridSceneWithShapeAndMotion(
+      world,
+      7,
+      17,
+      "mixed_friction_matrix_free_wide_grid",
+      0.012,
+      Eigen::Vector3d(0.35, 0.1, -0.08),
+      true,
+      Eigen::Vector3d(8.0, 0.0, 0.0));
 }
 
 void configureDeformableInterBodySurfaceCcdCrossingScene(
@@ -2619,6 +2644,9 @@ TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
       "deformable self-contact friction tall rectangular grid",
       configureDeformableSelfContactFrictionTallRectangularGridScene);
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "mixed deformable self-contact friction production grids",
+      configureMixedDeformableSelfContactFrictionProductionScene);
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "deformable inter-body surface CCD crossing",
       configureDeformableInterBodySurfaceCcdCrossingScene);
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
@@ -2890,6 +2918,25 @@ TEST(World, DeformableSelfContactFrictionTallRectangularGridIsActive)
   const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
   EXPECT_EQ(diagnostics.bodyCount, 1u);
   EXPECT_EQ(diagnostics.nodeCount, 2u * 17u * 7u);
+  EXPECT_GT(diagnostics.selfContactBarrierActiveContacts, 0u);
+  EXPECT_GT(diagnostics.convergedActiveContactCount, 0u);
+  EXPECT_GT(diagnostics.frictionDissipation, 0.0);
+}
+
+TEST(World, MixedDeformableSelfContactFrictionProductionSceneIsActive)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  configureMixedDeformableSelfContactFrictionProductionScene(world);
+  world.enterSimulationMode();
+
+  world.step();
+
+  const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
+  EXPECT_EQ(diagnostics.bodyCount, 2u);
+  EXPECT_EQ(diagnostics.nodeCount, 2u * 9u * 13u + 2u * 7u * 17u);
+  EXPECT_GT(diagnostics.projectedNewtonMatrixFreeSolves, 0u);
   EXPECT_GT(diagnostics.selfContactBarrierActiveContacts, 0u);
   EXPECT_GT(diagnostics.convergedActiveContactCount, 0u);
   EXPECT_GT(diagnostics.frictionDissipation, 0.0);
@@ -3277,6 +3324,9 @@ TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "deformable self-contact friction tall rectangular grid",
       configureDeformableSelfContactFrictionTallRectangularGridScene);
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "mixed deformable self-contact friction production grids",
+      configureMixedDeformableSelfContactFrictionProductionScene);
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "deformable inter-body surface CCD crossing",
       configureDeformableInterBodySurfaceCcdCrossingScene);

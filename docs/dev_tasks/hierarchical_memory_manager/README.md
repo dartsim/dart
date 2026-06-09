@@ -263,10 +263,14 @@
       carries that same no-growth coverage through 13x13, 15x15, 17x17, and
       dense 13x19 rectangular two-layer production grids, and the matrix-free
       default solver now carries the 13x19 rectangular production guard through
-      its CG scratch path. Projected-Newton sparse assembly now reserves
-      self-contact barrier block storage from baked candidate capacity instead
-      of only the bake-active candidate count, so same-topology active set
-      variation does not grow DART-owned barrier vectors. Motion-aware
+      its CG scratch path. A mixed two-body production gate now steps one
+      direct-sparse rectangular grid and one matrix-free wide grid in the same
+      baked default-solver loop, covering per-body solver/contact scratch
+      storage for independent deformable bodies with different linear-solver
+      modes. Projected-Newton sparse assembly now reserves self-contact barrier
+      block storage from baked candidate capacity instead of only the
+      bake-active candidate count, so same-topology active set variation does
+      not grow DART-owned barrier vectors. Motion-aware
       self-contact candidate buffers now reserve the swept late-activation
       envelope during bake, and both the direct sparse and matrix-free
       projected-Newton paths now cover square and rectangular late-activating
@@ -341,7 +345,9 @@
       direct-sparse plus matrix-free grid that starts outside the self-contact
       barrier band and enters it during the counted baked steps, with the same
       late-active direct-sparse plus matrix-free coverage for a 9x13
-      rectangular grid.
+      rectangular grid. The same base and global-heap guards now also include
+      a mixed two-body production scene with independent direct-sparse
+      rectangular and matrix-free wide self-contact grids.
       The
       larger-grid guards also assert
       non-vacuous solver activity through public deformable diagnostics: active
