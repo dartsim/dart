@@ -11616,7 +11616,7 @@ void RegisterProductionActiveSetTransitionBenchmarks()
 
 void RegisterProductionActiveSetTransitionBatchBenchmarks()
 {
-  constexpr std::array<LargerActiveSetTransitionBenchmarkCase, 16> cases{
+  constexpr std::array<LargerActiveSetTransitionBenchmarkCase, 17> cases{
       LargerActiveSetTransitionBenchmarkCase::Standard32,
       LargerActiveSetTransitionBenchmarkCase::Boxed32,
       LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex8,
@@ -11632,7 +11632,8 @@ void RegisterProductionActiveSetTransitionBatchBenchmarks()
       LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex64,
       LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex96,
       LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex128,
-      LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex192};
+      LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex192,
+      LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex256};
   constexpr int batchSize = 4;
 
   for (const auto testCase : cases) {
