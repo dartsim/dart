@@ -329,16 +329,17 @@ The combined current ShockPropagation/BoxedSemiSmoothNewton sweep filter
 reports `rows=24`, `failures=0`, 12 rows per solver, and 6 `contact_count=16`
 rows in default, SIMD-enabled, and CUDA-enabled build trees; the SIMD and
 CUDA-enabled runs report `simd_rows=24` and `cuda_rows=24`, respectively.
-It now also adds 12 `BM_LcpPivotingScaleSweep` benchmark rows for the pivoting
+It now also adds 15 `BM_LcpPivotingScaleSweep` benchmark rows for the pivoting
 family, separating DirectSolver's 2-row and 3-row enumeration path from its
 larger-problem Dantzig fallback. The rows cover Direct 2/3-row standard
 fixtures, Lemke and Baraff 8/16-row standard fixtures, and Dantzig 8/16-row
-standard, 12/24-row boxed, and 4/8-contact friction-index fixtures. Focused
-default, SIMD-enabled, and CUDA-enabled build-tree runs passed with
+and 32-row standard, 12/24/48-row boxed, and 4/8/16-contact friction-index
+fixtures. Focused default, SIMD-enabled, and CUDA-enabled build-tree runs passed with
 `contract_ok=1` on every row and recorded `pivoting_scale_sweep`, Direct
-no-fallback counters, four Dantzig boxed-or-findex rows,
-`contact_count=4/8`, observed solver `iterations=1/4/8/16`, and backend
-build-state counters. Focused pivoting unit coverage passed 42 tests. The
+no-fallback counters, six Dantzig boxed-or-findex rows,
+`contact_count=4/8/16`, `problem_size=2/3/8/12/16/24/32/48`, observed solver
+`iterations=1/4/8/16`, and backend build-state counters. Focused pivoting unit
+coverage passed 42 tests. The
 CUDA-enabled rows are CPU pivoting solver rows in a CUDA-enabled build, not
 CUDA LCP kernel execution.
 It now also adds 16 `BM_LcpBlockPartitionSweep` benchmark rows for BGS and

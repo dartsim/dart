@@ -1077,8 +1077,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     backend build-state counters distinguishing default, SIMD-enabled, and
     CUDA-enabled CPU solver runs.
   - Added DART 7 pivoting scale comparison benchmark rows for Direct 2D/3D
-    enumeration, Lemke and Baraff standard fixtures, and Dantzig standard,
-    boxed, and friction-index fixtures, with backend build-state counters
+    enumeration, Lemke and Baraff standard fixtures, and Dantzig standard
+    through 32 rows, boxed through 48 rows, and friction-index through 16
+    contacts, with backend build-state counters
     distinguishing default, SIMD-enabled, and CUDA-enabled CPU solver runs.
   - Added DART 7 BGS and Blocked Jacobi block-partition comparison benchmark
     rows for full-block, 3-row block, auto `findex`, and explicit contact-block

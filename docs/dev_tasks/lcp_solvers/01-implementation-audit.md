@@ -1215,13 +1215,14 @@ The current local evidence for this task is:
   contact-normal standard-LCP evidence, not native boxed or friction-index
   support for standard-only solvers.
 - `BM_LCP_COMPARE --benchmark_list_tests | rg '^BM_LcpPivotingScaleSweep' | wc -l`
-  listed 12 pivoting scale rows. Focused JSON runs for
+  listed 15 pivoting scale rows. Focused JSON runs for
   `BM_LcpPivotingScaleSweep` in default, SIMD-enabled, and CUDA-enabled build
-  trees reported 12 rows with zero `contract_ok` failures across Direct 2/3-row
+  trees reported 15 rows with zero `contract_ok` failures across Direct 2/3-row
   standard fixtures, Lemke and Baraff 8/16-row standard fixtures, and Dantzig
-  8/16-row standard, 12/24-row boxed, and 4/8-contact friction-index fixtures;
-  the rows recorded Direct no-fallback counters, four Dantzig
-  boxed-or-findex rows, friction-index `contact_count=4/8`, observed solver
+  8/16/32-row standard, 12/24/48-row boxed, and 4/8/16-contact
+  friction-index fixtures; the rows recorded Direct no-fallback counters, six
+  Dantzig boxed-or-findex rows, friction-index `contact_count=4/8/16`,
+  problem sizes `2/3/8/12/16/24/32/48`, observed solver
   `iterations=1/4/8/16`, and backend build-state counters.
 - Focused pivoting unit coverage
   `DantzigMatrixCoverage.*:LemkeSolverCoverage.*:DantzigSolverCoverage.*:DirectSolverCoverage.*:BaraffSolverCoverage.*`

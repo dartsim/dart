@@ -3400,7 +3400,7 @@ constexpr std::array<BoxedSsnLineSearchSweepCase, 12>
          "Contacts16GentleReduction"},
     }};
 
-constexpr std::array<PivotingScaleSweepCase, 12> kPivotingScaleSweepCases{{
+constexpr std::array<PivotingScaleSweepCase, 15> kPivotingScaleSweepCases{{
     {"Direct", BenchmarkProblemFamily::Standard, 2, "Rows2"},
     {"Direct", BenchmarkProblemFamily::Standard, 3, "Rows3"},
     {"Lemke", BenchmarkProblemFamily::Standard, 8, "Rows8"},
@@ -3409,10 +3409,13 @@ constexpr std::array<PivotingScaleSweepCase, 12> kPivotingScaleSweepCases{{
     {"Baraff", BenchmarkProblemFamily::Standard, 16, "Rows16"},
     {"Dantzig", BenchmarkProblemFamily::Standard, 8, "Rows8"},
     {"Dantzig", BenchmarkProblemFamily::Standard, 16, "Rows16"},
+    {"Dantzig", BenchmarkProblemFamily::Standard, 32, "Rows32"},
     {"Dantzig", BenchmarkProblemFamily::Boxed, 12, "Rows12"},
     {"Dantzig", BenchmarkProblemFamily::Boxed, 24, "Rows24"},
+    {"Dantzig", BenchmarkProblemFamily::Boxed, 48, "Rows48"},
     {"Dantzig", BenchmarkProblemFamily::FrictionIndex, 4, "Contacts4"},
     {"Dantzig", BenchmarkProblemFamily::FrictionIndex, 8, "Contacts8"},
+    {"Dantzig", BenchmarkProblemFamily::FrictionIndex, 16, "Contacts16"},
 }};
 
 constexpr std::array<BlockPartitionSweepCase, 16> kBlockPartitionSweepCases{{
