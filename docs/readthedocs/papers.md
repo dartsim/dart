@@ -197,6 +197,7 @@ Springer, 2006.
 | `chen-2022-unified-newton-barrier` | Chen et al., "A Unified Newton Barrier Method for Multibody Dynamics" (2022)                                               | contact/integration/multibody      | planned     | high     | adopt     |
 | `lan-2022-pdipc`                   | Lan et al., "Penetration-free Projective Dynamics on the GPU" (2022)                                                       | contact/integration/GPU            | planned     | high     | evaluate  |
 | `chen-2023-spb`                    | Chen, Diaz & Yuksel, "Shortest Path to Boundary for Self-Intersecting Meshes" (2023)                                       | contact/collision                  | planned     | high     | evaluate  |
+| `ando-2024-cubic-barrier`          | Ando, "A Cubic Barrier with Elasticity-Inclusive Dynamic Stiffness" (2024)                                                 | contact/deformable/GPU             | planned     | high     | evaluate  |
 | `werling-2021`                     | Werling et al., "Fast and Feature-Complete Differentiable Physics … Articulated Rigid Bodies" (2021)                       | differentiable                     | in-progress | high     | adopt     |
 | `howell-2022-dojo`                 | Howell et al., "Dojo: A Differentiable Physics Engine for Robotics" (2022)                                                 | differentiable/contact/integration | planned     | high     | evaluate  |
 | `lee-vi-2016`                      | Lee, Liu, Park & Srinivasa, "A Linear-Time Variational Integrator for Multibody Systems" (2016)                            | integration                        | planned     | high     | adopt     |
@@ -204,6 +205,7 @@ Springer, 2006.
 | `chen-2024-vbd`                    | Chen et al., "Vertex Block Descent" (SIGGRAPH 2024)                                                                        | integration                        | in-progress | high     | adopt     |
 | `vbd-2024`                         | Chen et al., "Vertex Block Descent" (2024) — VI contact survey                                                             | contact                            | referenced  | medium   | evaluate  |
 | `avbd-2025`                        | Giles et al., "Augmented Vertex Block Descent" (2025)                                                                      | contact/integration                | in-progress | high     | adopt     |
+| `modi-2024-simplicits`             | Modi et al., "Simplicits: Mesh-Free, Geometry-Agnostic, Elastic Simulation" (2024)                                         | integration/deformable             | planned     | high     | adopt     |
 | `smith-2012-rosi`                  | Smith et al., "Reflections on Simultaneous Impact" (2012)                                                                  | contact/impact                     | referenced  | medium   | baseline  |
 | `zhang-2015-qce`                   | Zhang et al., "Quadratic Contact Energy Model for Multi-impact Simulation" (2015)                                          | contact/impact                     | referenced  | medium   | evaluate  |
 | `vouga-2017-all-well`              | Vouga et al., "All's Well That Ends Well: Guaranteed Resolution of Simultaneous Rigid Body Impact" (2017)                  | contact/impact                     | referenced  | medium   | evaluate  |
@@ -770,6 +772,98 @@ Related public resources:
   benchmark packets proving DART beats the reference demo repositories and the
   published RTX-4090 paper numbers before any parity claim.
 
+### `ando-2024-cubic-barrier`
+
+Ryoichi Ando. "A Cubic Barrier with Elasticity-Inclusive Dynamic Stiffness."
+_ACM Transactions on Graphics_ 43(6), 2024, 1-13. DOI:
+[10.1145/3687908](https://doi.org/10.1145/3687908).
+
+Related public resources:
+
+- Software baseline:
+  [st-tech/ppf-contact-solver](https://github.com/st-tech/ppf-contact-solver)
+- SIGGRAPH Asia 2024 reference branch noted by the project:
+  [project branch](https://github.com/st-tech/ppf-contact-solver/tree/sigasia-2024)
+- Project articles:
+  [hindsight](https://github.com/st-tech/ppf-contact-solver/blob/main/articles/hindsight.md),
+  [elastic eigenvalue notes](https://github.com/st-tech/ppf-contact-solver/blob/main/articles/eigensys.md)
+
+```bib
+@article{Ando2024CubicBarrier,
+  author = {Ryoichi Ando},
+  title = {A Cubic Barrier with Elasticity-Inclusive Dynamic Stiffness},
+  journal = {ACM Transactions on Graphics},
+  volume = {43},
+  number = {6},
+  pages = {1--13},
+  year = {2024},
+  doi = {10.1145/3687908}
+}
+```
+
+- **Type:** paper · **Topic:** contact/deformable/GPU · **Status:** planned · **Priority:** high · **Verdict:** evaluate
+- **Where used:** [`PLAN-083 PPF intake`](https://github.com/dartsim/dart/blob/main/docs/plans/083-unified-newton-barrier-multibody/ppf-contact-solver-intake.md).
+- **Notes:** Evaluate as a candidate internal contact and strain-limiting
+  primitive for DART's unified Newton-barrier family. The method combines a
+  cubic barrier, elasticity-inclusive dynamic stiffness, friction, and strain
+  limiting for contact-rich shells, solids, and rods, with a GPU-first reference
+  implementation in ZOZO's Contact Solver. DART should compare its formulas,
+  ACCD precision caveats, strain-limit rows, solver diagnostics, and
+  single-precision GPU behavior against the existing IPC, rigid IPC, VBD/AVBD,
+  and deformable solver plans before adopting any shared primitive or public
+  option.
+
+### `modi-2024-simplicits`
+
+Vismay Modi, Nicholas Sharp, Or Perel, Shinjiro Sueda, and David I. W. Levin.
+"Simplicits: Mesh-Free, Geometry-Agnostic, Elastic Simulation." _ACM
+Transactions on Graphics_ 43(4), Article 117, 2024. DOI:
+[10.1145/3658184](https://doi.org/10.1145/3658184).
+
+Related public resources:
+
+- Project page:
+  [research.nvidia.com/labs/toronto-ai/simplicits](https://research.nvidia.com/labs/toronto-ai/simplicits/)
+- arXiv / PDF:
+  [2407.09497](https://arxiv.org/abs/2407.09497),
+  [Simplicits.pdf](https://research.nvidia.com/labs/toronto-ai/simplicits/assets/Simplicits.pdf)
+- Supplemental parameter/time table:
+  [SimplicitsSupplementalTable.pdf](https://research.nvidia.com/labs/toronto-ai/simplicits/assets/SimplicitsSupplementalTable.pdf)
+- Videos:
+  [Barely Rendered](https://www.youtube.com/watch?v=3Zameqg66aA) and
+  [NVIDIA Research](https://www.youtube.com/watch?v=kxEpXkSv2cM)
+- Kaolin notes and tutorial sources:
+  [Kaolin Simplicits notes](https://kaolin.readthedocs.io/en/latest/notes/simplicits.html),
+  [examples/tutorial/physics](https://github.com/NVIDIAGameWorks/kaolin/tree/master/examples/tutorial/physics)
+
+```bib
+@article{Modi2024Simplicits,
+  author = {Vismay Modi and Nicholas Sharp and Or Perel and Shinjiro Sueda and David I. W. Levin},
+  title = {Simplicits: Mesh-Free, Geometry-Agnostic, Elastic Simulation},
+  journal = {ACM Transactions on Graphics},
+  volume = {43},
+  number = {4},
+  articleno = {117},
+  year = {2024},
+  doi = {10.1145/3658184}
+}
+```
+
+- **Type:** paper · **Topic:** integration/deformable · **Status:** planned · **Priority:** high · **Verdict:** adopt
+- **Where used:** [`PLAN-105`](https://github.com/dartsim/dart/blob/main/docs/plans/105-simplicits-geometry-agnostic-elastic-solver.md).
+- **Notes:** Adopted as a new DART-owned geometry-agnostic reduced elastic
+  solver family. The method treats input geometry through occupancy/point
+  sampling, trains implicit neural skinning weights as a reduced deformation
+  basis from random perturbations and Monte Carlo elastic-energy sampling, then
+  advances handle-space dynamics with implicit integration/Newton solves and
+  maps deformations back to the original representation. DART should compare
+  against the Kaolin `kaolin.physics.simplicits` implementation and the paper /
+  supplemental table rows, but must not expose Simplicits, Kaolin, Warp, Torch,
+  CUDA resources, solver registries, or ECS storage through public APIs. Full
+  completion requires CPU and GPU paths, every paper/site/video/Kaolin demo in
+  DART tests/benchmarks/`py-demos`/visual evidence, and benchmark packets
+  proving DART beats the reference and paper numbers before any parity claim.
+
 ### `smith-2012-rosi`
 
 Breannan Smith, Danny M. Kaufman, Etienne Vouga, Rasmus Tamstorf, and Eitan
@@ -1145,20 +1239,22 @@ MuJoCo XML (MJCF). <https://mujoco.readthedocs.io/en/stable/XMLreference.html>
 Software references that informed the DART 7 API shape, terminology, and
 algorithm-family choices. These are baselines/comparisons, not dependencies.
 
-| ID            | Engine                               | Used for                                                                    | Status     | Verdict   |
-| ------------- | ------------------------------------ | --------------------------------------------------------------------------- | ---------- | --------- |
-| `drake`       | Drake (`MultibodyPlant`)             | terminology, constraints, stepping API                                      | referenced | baseline  |
-| `pinocchio`   | Pinocchio (Stack-of-Tasks)           | terminology (Spherical/FreeFlyer), dynamics algos                           | referenced | baseline  |
-| `rbdl`        | RBDL                                 | terminology (FloatingBase/Helical), ABA/RNEA/CRBA                           | referenced | baseline  |
-| `mujoco`      | MuJoCo / MJX                         | stepping, equality constraints, state vocabulary                            | referenced | baseline  |
-| `physx-isaac` | NVIDIA PhysX / Isaac Sim / Isaac Lab | articulation concept, closed-loop rigging                                   | referenced | reference |
-| `newton`      | NVIDIA Newton (Warp)                 | model/solver split, GPU direction                                           | referenced | reference |
-| `genesis`     | Genesis                              | entity/morph model, batched sim                                             | referenced | reference |
-| `bullet`      | Bullet / PyBullet                    | facade-over-engine pattern, `btMultiBody`                                   | referenced | reference |
-| `gazebo`      | Gazebo / gz-physics / SDFormat       | downstream integration, kinematic loops                                     | referenced | baseline  |
-| `gaia`        | Gaia (VBD research framework)        | VBD correctness/performance baseline (`chen-2024-vbd`)                      | referenced | baseline  |
-| `tinyvbd`     | TinyVBD (minimal VBD reference)      | VBD algorithm reference (`chen-2024-vbd`)                                   | referenced | baseline  |
-| `dojo`        | Dojo.jl                              | Dojo-style differentiable rigid-body solver evaluation (`howell-2022-dojo`) | referenced | evaluate  |
+| ID                   | Engine                                    | Used for                                                                                | Status     | Verdict   |
+| -------------------- | ----------------------------------------- | --------------------------------------------------------------------------------------- | ---------- | --------- |
+| `drake`              | Drake (`MultibodyPlant`)                  | terminology, constraints, stepping API                                                  | referenced | baseline  |
+| `pinocchio`          | Pinocchio (Stack-of-Tasks)                | terminology (Spherical/FreeFlyer), dynamics algos                                       | referenced | baseline  |
+| `rbdl`               | RBDL                                      | terminology (FloatingBase/Helical), ABA/RNEA/CRBA                                       | referenced | baseline  |
+| `mujoco`             | MuJoCo / MJX                              | stepping, equality constraints, state vocabulary                                        | referenced | baseline  |
+| `physx-isaac`        | NVIDIA PhysX / Isaac Sim / Isaac Lab      | articulation concept, closed-loop rigging                                               | referenced | reference |
+| `newton`             | NVIDIA Newton (Warp)                      | model/solver split, GPU direction                                                       | referenced | reference |
+| `genesis`            | Genesis                                   | entity/morph model, batched sim                                                         | referenced | reference |
+| `bullet`             | Bullet / PyBullet                         | facade-over-engine pattern, `btMultiBody`                                               | referenced | reference |
+| `gazebo`             | Gazebo / gz-physics / SDFormat            | downstream integration, kinematic loops                                                 | referenced | baseline  |
+| `gaia`               | Gaia (VBD research framework)             | VBD correctness/performance baseline (`chen-2024-vbd`)                                  | referenced | baseline  |
+| `tinyvbd`            | TinyVBD (minimal VBD reference)           | VBD algorithm reference (`chen-2024-vbd`)                                               | referenced | baseline  |
+| `kaolin-simplicits`  | NVIDIA Kaolin `kaolin.physics.simplicits` | Simplicits method/API/code baseline (`modi-2024-simplicits`)                            | referenced | baseline  |
+| `ppf-contact-solver` | ZOZO's Contact Solver                     | GPU shell/solid/rod contact stack and API/platform baseline (`ando-2024-cubic-barrier`) | referenced | baseline  |
+| `dojo`               | Dojo.jl                                   | Dojo-style differentiable rigid-body solver evaluation (`howell-2022-dojo`)             | referenced | evaluate  |
 
 ### Notes on engine verdicts
 
@@ -1174,6 +1270,18 @@ algorithm-family choices. These are baselines/comparisons, not dependencies.
   Block Descent (`chen-2024-vbd`). DART's PLAN-104 VBD solver is compared
   against them for correctness and performance on matched scenes, but DART
   reimplements VBD independently and does not vendor or link them.
+- **`kaolin-simplicits` — baseline:** NVIDIA Kaolin's
+  `kaolin.physics.simplicits` module, notes, and tutorial notebooks provide
+  the public Simplicits method/API/code baseline for PLAN-105. DART should use
+  them for source audit, tests, demos, and benchmark comparison, but must not
+  make Kaolin, Warp, Torch, or notebook infrastructure a runtime dependency.
+- **`ppf-contact-solver` — baseline:** ZOZO's Contact Solver is an
+  independent Apache-2.0 software stack around `ando-2024-cubic-barrier`, with
+  Python frontends, solver logs, Rust/C++/CUDA internals, Docker/Windows
+  deployment, Blender/Jupyter workflows, and large contact-rich shell/solid/rod
+  examples. DART should use it to audit API, diagnostics, examples, precision,
+  and GPU performance lessons for PLAN-083, but must not vendor it or expose
+  PPF, ZOZO, server, CUDA, or frontend-specific concepts through public APIs.
 - **`dojo` — evaluate:** a Julia implementation and paper/site reference for a
   differentiable maximal-coordinate variational hard-contact NCP/IPM solver.
   PLAN-110 uses it as method evidence for a possible second solver family, but
