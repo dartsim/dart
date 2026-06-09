@@ -51,16 +51,21 @@ not speedup evidence, and the slow SIMD-enabled SAP rows keep the full
 all-solver 192-contact SIMD/CUDA batch slice out of the routine checkpoint
 verifier set.
 The dense box-face CUDA fixture now also has focused CUDA Jacobi coverage for
-homogeneous 1-/4-/8-/16-/24-/32-/48-/64-/96-box batch-size-4 packets using
+homogeneous 1-/4-/8-/16-/24-/32-/48-/64-/96-/128-box batch-size-4 packets using
 8192 fixed iterations and relaxation 0.25, plus homogeneous 128-box
-batch-size-1 coverage with the same settings. It also has focused 128-box
-boundary evidence:
+batch-size-1 coverage with the same settings. The focused
+`BM_LcpCudaJacobiWorldBoxContactBatch_FrictionIndex/128/4` CUDA row reports
+`contract_ok=1`, `cuda_lcp_execution=1`, `cuda_batch_execution=1`,
+`cuda_dense_box_contact_batch=1`, `contact_count=512`, `problem_size=1536`,
+`batch_size=4`, `total_problem_size=6144`, and
+`max_residual=max_complementarity=6.9388939039072284e-18`. It also has focused
+128-box boundary evidence:
 `CudaLcpDenseBoxFixture.LargerGridKeepsFaceContactShape` verifies that dynamic
 dense-ground sizing preserves 512 contacts and a 1536-row LCP, and
 `CudaLcpJacobiBatch.DenseBoxWorldContactLargestFixtureSatisfiesLcpContract`
 and `CudaLcpPgsBatch.DenseBoxWorldContactLargestFixtureSatisfiesLcpContract`
 execute that 128-box fixture as homogeneous batch-size-1 CUDA Jacobi and PGS
-packets. This is not a 128-box batch-size-4 CUDA execution claim; the focused
+packets. The focused
 `BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex/128/4` benchmark probe remains
 too expensive for the checkpoint gate.
 The robust near-singular generated coverage now reaches coupled friction-index
@@ -569,14 +574,17 @@ Jacobi/PGS grouped benchmark rows report `contract_ok=1`,
 rows are contract-correct but expensive at about 140.8s and 142.1s real time
 for `/2` and `/3`.
 The CUDA Jacobi dense box-face evidence covers
-homogeneous batch-size-4 1-/4-/8-/16-/24-/32-/48-/64-/96-box packets with 8192
+homogeneous batch-size-4 1-/4-/8-/16-/24-/32-/48-/64-/96-/128-box packets with 8192
 fixed iterations and relaxation 0.25. The focused CUDA unit and benchmark rows
-pass with `contract_ok=1`. It also covers a 128-box batch-size-1 CUDA Jacobi
-row with `contract_ok=1`, `problem_size=1536`, and
+pass with `contract_ok=1`. The 128-box batch-size-4 row reports
+`total_problem_size=6144` and
+`max_residual=max_complementarity=6.9388939039072284e-18`. It also covers a
+128-box batch-size-1 CUDA Jacobi row with `contract_ok=1`,
+`problem_size=1536`, and
 `max_residual=max_complementarity=3.4694469519536142e-18`, plus grouped CUDA
 Jacobi dense box-face evidence for 1/2/4/8/16/24/32/48/64/96-box shapes, matching
 the grouped PGS rows, with two and three variants per shape. The 128-box
-batch-size-4 CUDA Jacobi/PGS rows remain unclaimed.
+batch-size-4 CUDA PGS row remains unclaimed.
 The latest local slice extends DART 7 dense box-face public `World::step()`
 evidence to a bounded 64-box/256-contact path. The new
 `SixtyFourBoxWorldStepPreservesDenseContactShape` unit test advances one public
@@ -649,12 +657,12 @@ separated CUDA world-contact, and 16-sphere homogeneous/grouped CUDA
 coupled-stack, and grouped manually assembled articulated unified-contact
 including cross-multibody link-vs-link CUDA rows, plus mixed
 separated/stack/articulated CUDA benchmark rows, plus the current bounded
-homogeneous CUDA Jacobi dense box-face rows and Jacobi/PGS
+homogeneous CUDA Jacobi dense box-face rows through 128 boxes and Jacobi/PGS
 homogeneous/two-/three-variant grouped variable-size dense box-face CUDA batch rows
 through 96 boxes;
 the 128-box dense box-face fixture shape and homogeneous batch-size-1 CUDA
-Jacobi/PGS execution are covered, but 128-box batch-size-4 CUDA Jacobi/PGS
-execution remains unclaimed.
+Jacobi/PGS execution are covered, and 128-box batch-size-4 CUDA Jacobi execution
+is covered. The 128-box batch-size-4 CUDA PGS row remains unclaimed.
 Do not claim a 7-sphere public-step stack invariant yet: local temporary probes
 failed at both 1000 and 2000 public `World::step()` iterations under the
 existing motion-invariant contract, with benchmark probes reporting
@@ -1951,7 +1959,7 @@ dense/robot-like contact scenes.
   `total_problem_size=891`.
   The dense box-face CUDA rows now include bounded Jacobi coverage:
   `CudaLcpJacobiBatch.DenseBoxWorldContactBatchSatisfiesLcpContract` passes
-  homogeneous 1-/4-/8-/16-/24-/32-/48-/64-/96-box batch-size-4 packets with
+  homogeneous 1-/4-/8-/16-/24-/32-/48-/64-/96-/128-box batch-size-4 packets with
   8192 fixed iterations and relaxation 0.25.
   `CudaLcpPgsBatch.DenseBoxWorldContactBatchSatisfiesLcpContract` and
   `CudaLcpPgsBatch.DenseBoxWorldContactGroupedBatchSatisfiesLcpContract` pass
@@ -1982,6 +1990,15 @@ dense/robot-like contact scenes.
   `contact_count=512`, `problem_size=1536`, `batch_size=1`,
   `total_problem_size=1536`, and
   `max_residual=max_complementarity=3.4694469519536142e-18`.
+  `BM_LcpCudaJacobiWorldBoxContactBatch_FrictionIndex/128/4` reports
+  `contract_ok=1`, `cuda_lcp_execution=1`, `cuda_batch_execution=1`,
+  `cuda_dense_box_contact_batch=1`, `dense_box_contact=1`,
+  `cuda_fixed_iterations=8192`, `cuda_relaxation=0.25`, `box_count=128`,
+  `contact_count=512`, `problem_size=1536`, `batch_size=4`,
+  `total_body_count=512`, `total_contact_count=2048`,
+  `total_problem_size=6144`, `max_bound_violation=4.3368086899420177e-19`,
+  `max_residual=max_complementarity=6.9388939039072284e-18`, and about
+  8.096s real time / 8.065s CPU time.
   `BM_LcpCudaJacobiWorldBoxContactGroupedBatch_FrictionIndex/{2,3}` reports 2
   grouped rows with `cuda_dense_box_contact_batch=1`, `cuda_lcp_execution=1`,
   `cuda_batch_execution=1`, `cuda_grouped_batch_execution=1`,
@@ -2028,10 +2045,10 @@ dense/robot-like contact scenes.
   validation correction, the bounded
   1-/4-/8-/16-/24-/32-/48-/64-/96-box homogeneous CUDA Jacobi rows and
   1/2/4/8/16/24/32/48/64/96-box grouped CUDA Jacobi rows, plus the 128-box
-  batch-size-1 CUDA Jacobi row, pass. The 128-box batch-size-4 CUDA Jacobi/PGS
-  rows remain unclaimed.
+  batch-size-1 and batch-size-4 CUDA Jacobi rows, pass. The 128-box
+  batch-size-4 CUDA PGS row remains unclaimed.
   Treat this as narrow CUDA LCP batch evidence only; general CUDA execution for
-  the full solver manifest, 128-box batch-size-4 CUDA dense-contact batches,
+  the full solver manifest, 128-box batch-size-4 CUDA PGS dense-contact batches,
   and end-to-end articulated world-step CUDA execution are still missing.
 - `pixi run test-lcpsolver` currently builds the full test suite before the LCP
   filter. For focused iteration, use the exact CMake target once the build tree
@@ -2186,7 +2203,7 @@ cmake --build build/default/cpp/Release \
   "--gtest_filter=CudaLcpJacobiBatch.MixedContactGroupedBatchSatisfiesLcpContract:CudaLcpPgsBatch.MixedContactGroupedBatchSatisfiesLcpContract" \
   "--gtest_brief=1"
 ./build/cuda/cpp/Release/bin/test_lcp_jacobi_batch_cuda \
-  "--gtest_filter=CudaLcpJacobiBatch.DenseBoxWorldContactBatchSatisfiesLcpContract:CudaLcpJacobiBatch.DenseBoxWorldContactGroupedBatchSatisfiesLcpContract:CudaLcpPgsBatch.DenseBoxWorldContactBatchSatisfiesLcpContract:CudaLcpPgsBatch.DenseBoxWorldContactLargestFixtureSatisfiesLcpContract:CudaLcpPgsBatch.DenseBoxWorldContactGroupedBatchSatisfiesLcpContract" \
+  "--gtest_filter=CudaLcpJacobiBatch.DenseBoxWorldContactBatchSatisfiesLcpContract:CudaLcpJacobiBatch.DenseBoxWorldContactLargestFixtureSatisfiesLcpContract:CudaLcpJacobiBatch.DenseBoxWorldContactGroupedBatchSatisfiesLcpContract:CudaLcpPgsBatch.DenseBoxWorldContactBatchSatisfiesLcpContract:CudaLcpPgsBatch.DenseBoxWorldContactLargestFixtureSatisfiesLcpContract:CudaLcpPgsBatch.DenseBoxWorldContactGroupedBatchSatisfiesLcpContract" \
   "--gtest_brief=1"
 ./build/cuda/cpp/Release/bin/BM_LCP_COMPARE \
   "--benchmark_filter=^BM_LcpCuda(Jacobi|Pgs)(Batch|GroupedBatch)_(Standard|Boxed|FrictionIndex)" \
@@ -2259,6 +2276,11 @@ python scripts/run_benchmark_smoke.py build/cuda/cpp/Release/bin/BM_LCP_COMPARE 
   "--benchmark_filter=BM_LcpCuda(Jacobi|Pgs)MixedContactGroupedBatch_FrictionIndex" \
   "--benchmark_min_time=0.001s" \
   "--benchmark_repetitions=1"
+./build/cuda/cpp/Release/bin/BM_LCP_COMPARE \
+  "--benchmark_filter=^BM_LcpCudaJacobiWorldBoxContactBatch_FrictionIndex/128/4$" \
+  "--benchmark_min_time=0.001s" \
+  "--benchmark_repetitions=1" \
+  "--benchmark_format=json"
 ./build/cuda/cpp/Release/bin/BM_LCP_COMPARE \
   "--benchmark_filter=BM_LcpCudaPgsWorldBoxContact(Batch|GroupedBatch)_FrictionIndex" \
   "--benchmark_min_time=0.001s" \

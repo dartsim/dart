@@ -1722,7 +1722,7 @@ TEST(CudaLcpJacobiBatch, DenseBoxWorldContactBatchSatisfiesLcpContract)
     GTEST_SKIP() << "CUDA runtime has no available device";
   }
 
-  for (const int boxCount : {1, 4, 8, 16, 24, 32, 48, 64, 96}) {
+  for (const int boxCount : {1, 4, 8, 16, 24, 32, 48, 64, 96, 128}) {
     SCOPED_TRACE("boxCount=" + std::to_string(boxCount));
     std::string errorMessage;
     auto fixture = makeWorldBoxContactBatch(boxCount, 4, 8192, errorMessage);
@@ -1758,9 +1758,8 @@ TEST(CudaLcpJacobiBatch, DenseBoxWorldContactGroupedBatchSatisfiesLcpContract)
 }
 
 //==============================================================================
-// Execute the largest dense box-face fixture as a single-problem CUDA batch.
-// The heavier batch-size-4 row is tracked separately because it is a runtime
-// cost boundary rather than a shape issue.
+// Execute the largest dense box-face fixture as a single-problem CUDA batch for
+// the dedicated largest-fixture gate.
 TEST(CudaLcpJacobiBatch, DenseBoxWorldContactLargestFixtureSatisfiesLcpContract)
 {
   if (!cuda::isCudaRuntimeAvailable()) {
