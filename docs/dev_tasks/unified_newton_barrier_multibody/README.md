@@ -67,6 +67,10 @@
         miss, indeterminate, and step-bound clamping through it while keeping
         limiting-payload ownership and indeterminate-result policy
         variant-local.
+  - [x] Promote the shared Armijo sufficient-decrease and backtracking scalar
+        policy into `detail/newton_barrier` and route rigid IPC plus deformable
+        projected-Newton line-search checks through it while keeping
+        variant-specific acceptance/fallback semantics local.
   - [x] Promote the first shared Google Benchmark packet row parser into
         `scripts/benchmark_packet_utils.py` and route the ABD comparison packet
         checker plus the Phase 5 GPU packet checker through it while keeping
@@ -227,6 +231,12 @@ Phase 3 native-CCD primitive outcome accounting slice local evidence:
 - `pixi run test-all`
 - `pixi run -e cuda test-all` (docs passed with the existing
   `dartpy._world_render_bridge` autodoc warnings)
+
+Phase 3 sufficient-decrease policy slice local evidence:
+
+- `pixi run lint`
+- `pixi run -- cmake --build build/default/cpp/Release --target test_newton_barrier_primitives test_rigid_ipc_barrier test_world --parallel <safe-jobs>`
+- `pixi run -- ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(test_newton_barrier_primitives|test_rigid_ipc_barrier|test_world)$'`
 
 ## Owner Docs
 
