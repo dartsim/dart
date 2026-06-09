@@ -818,20 +818,26 @@ tradeoffs evidence based.
   `total_contact_count=405`, and `total_problem_size=1215`. A focused
   articulated unified-contact follow-up
   `test_lcp_jacobi_batch_cuda --gtest_filter='CudaLcpJacobiBatch.ArticulatedUnifiedContactGroupedBatchSatisfiesLcpContract:CudaLcpPgsBatch.ArticulatedUnifiedContactGroupedBatchSatisfiesLcpContract' --gtest_brief=1`
-  passed both CUDA grouped-batch tests, and
+  previously passed both CUDA grouped-batch tests, and
   `BM_LCP_COMPARE --benchmark_filter='BM_LcpCuda(Jacobi|Pgs)ArticulatedUnifiedContactGroupedBatch_FrictionIndex' --benchmark_min_time=0.001s --benchmark_repetitions=1`
-  reported two articulated CUDA rows with `contract_ok=1`, `batch_size=24`,
+  previously reported two articulated CUDA rows with `contract_ok=1`, `batch_size=24`,
   `cuda_group_count=4`, `contact_shape_count=4`,
   `articulated_contact_case_count=3`, `articulated_cross_link_contact=1`,
   `min_problem_size=3`, `max_problem_size=48`, `total_contact_count=174`, and
-  `total_problem_size=522`. A focused three-variant articulated follow-up
-  `BM_LCP_COMPARE --benchmark_filter='BM_LcpCuda(Jacobi|Pgs)ArticulatedUnifiedContactGroupedBatch_FrictionIndex/3$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
-  reported two articulated CUDA rows with `contract_ok=1`,
-  `problem_variants_per_shape=3`, `batch_size=36`, `cuda_group_count=4`,
-  `contact_shape_count=4`, `articulated_contact_case_count=3`,
-  `articulated_cross_link_contact=1`, `min_problem_size=3`,
-  `max_problem_size=48`, `total_contact_count=261`, and
-  `total_problem_size=783`. A focused mixed-contact follow-up
+  `total_problem_size=522`. A focused current articulated follow-up
+  `test_lcp_jacobi_batch_cuda --gtest_filter='CudaLcpJacobiBatch.ArticulatedUnifiedContactGroupedBatchSatisfiesLcpContract:CudaLcpPgsBatch.ArticulatedUnifiedContactGroupedBatchSatisfiesLcpContract' --gtest_brief=1`
+  passed both CUDA grouped-batch tests after adding 24- and 32-contact packets.
+  The matching
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpCuda(Jacobi|Pgs)ArticulatedUnifiedContactGroupedBatch_FrictionIndex/[23]$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_format=json`
+  run reported four articulated CUDA rows with `contract_ok=1`,
+  `cuda_lcp_execution=1`, `cuda_grouped_batch_execution=1`,
+  `cuda_group_count=6`, `contact_shape_count=6`, `min_problem_size=3`,
+  `max_problem_size=96`, `batch_size=36/54`,
+  `total_contact_count=510/765`, `total_body_count=170/255`,
+  `total_problem_size=1530/2295`, `cuda_fixed_iterations=512/1024`,
+  `max_bound_violation=0`, and
+  `max_residual=max_complementarity=2.7755575615628914e-17`. A focused
+  mixed-contact follow-up
   `test_lcp_jacobi_batch_cuda --gtest_filter='CudaLcpJacobiBatch.MixedContactGroupedBatchSatisfiesLcpContract:CudaLcpPgsBatch.MixedContactGroupedBatchSatisfiesLcpContract' --gtest_brief=1`
   passed both CUDA grouped-batch tests for two and three variants per mixed
   scenario, and
@@ -2823,7 +2829,7 @@ tradeoffs evidence based.
   and grouped variable-size 1/2/4/8/16-contact DART 7 separated world-contact
   CUDA unit and benchmark evidence, plus homogeneous 5-/6-/7-/8-/9-/10-/11-/12-/13-/14-/15-/16-sphere and
   grouped variable-size 2/3/4/5/6/7/8/9/10/11/12/13/14/15/16-sphere coupled stack-contact CUDA unit and
-  benchmark evidence and manually assembled 1-/4-/8-/16-contact articulated
+  benchmark evidence and manually assembled 1-/4-/8-/16-/24-/32-contact articulated
   unified-contact CUDA unit and benchmark evidence for link-ground,
   link-vs-dynamic-rigid, and cross-multibody link-vs-link packets for the same
   kernels. Added mixed grouped CUDA unit and benchmark evidence that combines
@@ -2946,7 +2952,7 @@ tradeoffs evidence based.
   1/2/4/8/16-contact separated sphere-ground and
   2/3/4/5/6/7/8/9/10/11/12/13/14/15/16-sphere coupled stack world-contact batch paths with two- and
   three-variant grouped benchmark rows, plus manually
-  assembled 1-/4-/8-/16-contact articulated unified-contact batch paths with
+  assembled 1-/4-/8-/16-/24-/32-contact articulated unified-contact batch paths with
   two- and three-variant grouped benchmark rows including cross-multibody
   link-vs-link packets, mixed
   separated/stack/articulated grouped contact batch paths, homogeneous Jacobi

@@ -1308,7 +1308,7 @@ makeArticulatedUnifiedContactGroupedBatch(
     return std::nullopt;
   }
 
-  constexpr std::array<int, 4> kContactCounts{1, 4, 8, 16};
+  constexpr std::array<int, 6> kContactCounts{1, 4, 8, 16, 24, 32};
   WorldContactGroupedBatch grouped;
   grouped.packets.reserve(kContactCounts.size());
   grouped.problemsByGroup.reserve(kContactCounts.size());

@@ -520,7 +520,7 @@ through 192-row and 64-contact groups, grouped variable-size
 grouped benchmark rows, plus grouped variable-size
 2/3/4/5/6/7/8/9/10/11/12/13/14/15/16-sphere coupled stack-contact packets with two- and three-variant
 grouped benchmark rows, plus grouped variable-size manually assembled
-1-/4-/8-/16-contact articulated unified-contact packets with two- and
+1-/4-/8-/16-/24-/32-contact articulated unified-contact packets with two- and
 three-variant grouped benchmark rows covering link-ground, link-vs-dynamic-rigid,
 and cross-multibody link-vs-link cases, plus mixed grouped contact batches that
 combine separated, stack, and 1-/4-/8-/16-contact articulated fixture families for fixed-iteration
@@ -543,6 +543,12 @@ packets. Focused default, SIMD-enabled, and CUDA-enabled build-tree filters
 over those 64-contact rows report `contract_ok=1` for all 48 rows, with
 expected backend build-state counters; these remain CPU solver rows in the
 SIMD/CUDA-enabled build trees, not CUDA kernel execution.
+The current slice also extends the direct CUDA grouped articulated
+unified-contact fixture set from 1-/4-/8-/16-contact packets to
+1-/4-/8-/16-/24-/32-contact packets. Focused Jacobi and PGS CUDA grouped-batch
+tests pass, and the matching two-/three-variant benchmark rows report
+`contract_ok=1`, `cuda_group_count=6`, `max_problem_size=96`, and direct CUDA
+execution counters.
 
 ## Current Branch
 
@@ -1890,7 +1896,7 @@ dense/robot-like contact scenes.
   1/2/4/8/16-contact separated world-contact and 2/3/4/5/6/7/8/9/10/11/12/13/14/15/16-sphere coupled
   stack-contact batches with two and three variants per contact or sphere
   count, plus grouped manually assembled
-  1-/4-/8-/16-contact articulated unified-contact batches, plus mixed grouped contact
+  1-/4-/8-/16-/24-/32-contact articulated unified-contact batches, plus mixed grouped contact
   batches executed on CUDA for Jacobi and PGS.
   `BM_LcpCudaJacobiBatch_*`, `BM_LcpCudaPgsBatch_*`,
   `BM_LcpCudaJacobiGroupedBatch_*`, `BM_LcpCudaPgsGroupedBatch_*`,
@@ -1923,6 +1929,14 @@ dense/robot-like contact scenes.
   `total_problem_size=1032`. The `/3` rows report `batch_size=18`,
   standard/boxed `total_problem_size=1536`, and friction-index
   `total_contact_count=516` and `total_problem_size=1548` across the same size
+  set. A focused current articulated grouped CUDA follow-up
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpCuda(Jacobi|Pgs)ArticulatedUnifiedContactGroupedBatch_FrictionIndex/[23]$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_format=json`
+  reports four rows with `contract_ok=1`, `cuda_lcp_execution=1`,
+  `cuda_grouped_batch_execution=1`, `cuda_group_count=6`,
+  `contact_shape_count=6`, `min_problem_size=3`, `max_problem_size=96`,
+  `batch_size=36/54`, `total_contact_count=510/765`,
+  `total_problem_size=1530/2295`, and
+  `max_residual=max_complementarity=2.7755575615628914e-17` across the same size
   groups. The grouped CPU serial/`ParallelExecutor` follow-up reports 24 rows
   in each default, SIMD-enabled, and CUDA-enabled build tree with
   `contract_ok=1`, `batch_group_count=6`, `batch_size=12/18`,
@@ -1992,16 +2006,16 @@ dense/robot-like contact scenes.
   The articulated unified-contact grouped variable-size rows are manually
   assembled fixed-base three-axis prismatic link-ground,
   link-vs-dynamic-rigid, and cross-multibody link-vs-link packets with 1, 4,
-  8, and 16 contacts. The `/2` rows report `batch_size=24`,
-  `cuda_group_count=4`, `contact_shape_count=4`,
+  8, 16, 24, and 32 contacts. The `/2` rows report `batch_size=36`,
+  `cuda_group_count=6`, `contact_shape_count=6`,
   `articulated_contact_case_count=3`, `articulated_cross_link_contact=1`,
-  `min_problem_size=3`, `max_problem_size=48`, `total_contact_count=174`, and
-  `total_problem_size=522`; the `/3` rows report
-  `problem_variants_per_shape=3`, `batch_size=36`, `cuda_group_count=4`,
-  `contact_shape_count=4`, `articulated_contact_case_count=3`,
+  `min_problem_size=3`, `max_problem_size=96`, `total_contact_count=510`, and
+  `total_problem_size=1530`; the `/3` rows report
+  `problem_variants_per_shape=3`, `batch_size=54`, `cuda_group_count=6`,
+  `contact_shape_count=6`, `articulated_contact_case_count=3`,
   `articulated_cross_link_contact=1`, `min_problem_size=3`,
-  `max_problem_size=48`, `total_contact_count=261`, and
-  `total_problem_size=783`.
+  `max_problem_size=96`, `total_contact_count=765`, and
+  `total_problem_size=2295`.
   The mixed grouped rows combine separated sphere-ground, coupled stack, and
   manually assembled articulated unified-contact packets including
   cross-multibody link-vs-link packets. The latest focused unit test covers two
@@ -2329,7 +2343,7 @@ python scripts/run_benchmark_smoke.py build/cuda/cpp/Release/bin/BM_LCP_COMPARE 
   "--benchmark_min_time=0.001s" \
   "--benchmark_repetitions=1"
 ./build/cuda/cpp/Release/bin/BM_LCP_COMPARE \
-  "--benchmark_filter=BM_LcpCuda(Jacobi|Pgs)ArticulatedUnifiedContactGroupedBatch_FrictionIndex/3$" \
+  "--benchmark_filter=^BM_LcpCuda(Jacobi|Pgs)ArticulatedUnifiedContactGroupedBatch_FrictionIndex/[23]$" \
   "--benchmark_min_time=0.001s" \
   "--benchmark_repetitions=1"
 ./build/cuda/cpp/Release/bin/BM_LCP_COMPARE \

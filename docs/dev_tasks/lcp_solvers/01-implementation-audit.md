@@ -103,7 +103,7 @@ Support abbreviations:
   default, SIMD-enabled, and CUDA-enabled build trees, homogeneous 4-/8-/16-contact and grouped variable-size
   1/2/4/8/16-contact DART 7 sphere-ground world-contact packets, homogeneous
   5-/6-/7-/8-sphere and grouped variable-size 2/3/4/5/6/7/8-sphere coupled stack-contact
-  packets, grouped variable-size 1-/4-/8-/16-contact articulated unified-contact
+  packets, grouped variable-size 1-/4-/8-/16-/24-/32-contact articulated unified-contact
   packets with two- and three-variant grouped benchmark rows including
   cross-multibody link-vs-link cases, Jacobi homogeneous dense box-face
   packets through the 128-box batch-size-4 row, and PGS homogeneous plus
@@ -1502,6 +1502,15 @@ The current local evidence for this task is:
   run
   `test_lcp_jacobi_batch_cuda --gtest_filter='CudaLcpJacobiBatch.LargerSyntheticBatchSatisfiesLcpContract:CudaLcpPgsBatch.LargerSyntheticBatchSatisfiesLcpContract' --gtest_brief=1`
   passed both larger synthetic batch tests with those cases included. Matching
+  focused articulated grouped-batch CUDA tests now pass after adding 24- and
+  32-contact packets, and the focused
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpCuda(Jacobi|Pgs)ArticulatedUnifiedContactGroupedBatch_FrictionIndex/[23]$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_format=json`
+  run reports four articulated CUDA rows with `contract_ok=1`,
+  `cuda_lcp_execution=1`, `cuda_grouped_batch_execution=1`,
+  `cuda_group_count=6`, `contact_shape_count=6`, `min_problem_size=3`,
+  `max_problem_size=96`, `batch_size=36/54`,
+  `total_contact_count=510/765`, `total_problem_size=1530/2295`, and
+  `max_residual=max_complementarity=2.7755575615628914e-17`. Matching
   CPU serial
   and DART 7 `ParallelExecutor` rows for the same 256-row/96-contact packets
   pass in default, SIMD-enabled, and CUDA-enabled build trees with
@@ -1550,18 +1559,18 @@ The current local evidence for this task is:
   `cuda_group_count=7`, `contact_shape_count=7`, `min_problem_size=6`,
   `max_problem_size=24`, `total_contact_count=105`, and
   `total_problem_size=315`. The articulated
-  grouped variable-size rows use manually assembled 1-/4-/8-/16-contact fixed-base
+  grouped variable-size rows use manually assembled 1-/4-/8-/16-/24-/32-contact fixed-base
   three-axis prismatic unified-contact packets covering link-ground,
   link-vs-dynamic-rigid, and cross-multibody link-vs-link cases. The `/2` rows report
-  `batch_size=24`, `cuda_group_count=4`, `contact_shape_count=4`,
+  `batch_size=36`, `cuda_group_count=6`, `contact_shape_count=6`,
   `articulated_contact_case_count=3`, `articulated_cross_link_contact=1`,
-  `min_problem_size=3`, `max_problem_size=48`, `total_contact_count=174`, and
-  `total_problem_size=522`; the `/3` rows report
-  `problem_variants_per_shape=3`, `batch_size=36`, `cuda_group_count=4`,
-  `contact_shape_count=4`, `articulated_contact_case_count=3`,
+  `min_problem_size=3`, `max_problem_size=96`, `total_contact_count=510`, and
+  `total_problem_size=1530`; the `/3` rows report
+  `problem_variants_per_shape=3`, `batch_size=54`, `cuda_group_count=6`,
+  `contact_shape_count=6`, `articulated_contact_case_count=3`,
   `articulated_cross_link_contact=1`, `min_problem_size=3`,
-  `max_problem_size=48`, `total_contact_count=261`, and
-  `total_problem_size=783`. The mixed grouped rows combine separated
+  `max_problem_size=96`, `total_contact_count=765`, and
+  `total_problem_size=2295`. The mixed grouped rows combine separated
   sphere-ground, coupled stack, and manually assembled 1-/4-/8-/16-contact
   articulated unified-contact packets, including cross-multibody link-vs-link
   packets, with
@@ -1699,7 +1708,7 @@ The current local evidence for this task is:
   cross-multibody link-vs-link impact step rows up to 16-link or 16-pair
   benchmark scenes, plus
   manually assembled three-axis articulated unified-contact all-solver rows
-  through 16 contacts including cross-multibody link-vs-link rows,
+  through 64 contacts including cross-multibody link-vs-link rows,
   plus scoped dense box face-contact rows through 192 boxes for six solvers,
   scoped dense box serial/parallel batch rows through 192 boxes for the same
   solver set, and PGS-only dense
@@ -1720,7 +1729,7 @@ The current local evidence for this task is:
   5-/6-/7-/8-sphere coupled stack, grouped variable-size 1/2/4/8/16-contact separated
   sphere-ground and 2/3/4/5/6/7/8-sphere coupled stack world-contact batch
   paths with two- and three-variant grouped benchmark rows, plus manually
-  assembled 1-/4-/8-/16-contact articulated unified-contact batch paths with
+  assembled 1-/4-/8-/16-/24-/32-contact articulated unified-contact batch paths with
   two- and three-variant grouped benchmark rows including cross-multibody
   link-vs-link packets, and mixed
   separated/stack/articulated grouped contact batch paths, scoped dense
