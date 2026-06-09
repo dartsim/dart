@@ -544,15 +544,17 @@
       public boxed-LCP step on a 192-box/768-contact dense face scene, with the
       separated-box ground sized from the fixture grid instead of relying on
       the historical fixed 24 m half-extent.
+      `TwoHundredFiftySixBoxWorldStepPreservesDenseContactShape` extends the
+      same one-step shape path to a 256-box/1024-contact dense face scene.
       `BM_LcpWorldBoxStep_BoxedLcp` rows report matching invariant counters for
       4/8/16/32-contact 200-step scenes, the 64-contact 500-step scene, the
       96-contact 2000-step scene, the 128-/192-contact 4000-step scenes, and
       the 256-contact one-step and 75-step scenes plus the 384-contact one-step
       and 75-step scenes plus the 512-contact one-step and 75-step scenes plus
       the 576-contact one-step and 75-step scenes plus the 768-contact
-      one-step scene. The 75-step 64-box row,
+      one-step scene plus the 1024-contact one-step scene. The 75-step 64-box row,
       96-box one-/75-step rows, 128-box one-/75-step rows, and 144-box
-      one-/75-step rows, plus the 192-box one-step row, now have focused
+      one-/75-step rows, plus the 192-/256-box one-step rows, now have focused
       default, SIMD-enabled, and CUDA-enabled build-tree evidence.
 - [x] Added DART 7 per-contact block-structure evidence for BGS and
       Blocked Jacobi on real two-contact boxed-LCP world-contact snapshots:
@@ -596,7 +598,7 @@
       strict-invariant checks plus 96-box one-step shape and 75-step
       strict-invariant coverage plus 128-box one-step shape and 75-step
       strict-invariant coverage plus 144-box one-step shape and 75-step
-      strict-invariant coverage plus 192-box one-step shape coverage.
+      strict-invariant coverage plus 192-/256-box one-step shape coverage.
 - [ ] Broaden apples-to-apples benchmark packets from generated problems and
       simple world-contact snapshots to broader dense/robot-like end-to-end
       contact systems, with scalar, SIMD, threaded, CUDA, and broader batch
@@ -1885,7 +1887,7 @@ tradeoffs evidence based.
   rows reported `invariant_ok=1`, `articulated_link_count=16`,
   `dynamic_rigid_body_count=16`, `contact_count=16`, and `step_count` values 1
   and 200. The full `test_boxed_lcp_contact --gtest_list_tests` inventory now
-  lists 89 tests.
+  lists 90 tests.
   `BoxedLcpContact.ArticulatedPrismaticLinkPushesArticulatedPrismaticLink` and
   `BoxedLcpContact.FourArticulatedPrismaticLinksPushArticulatedPrismaticLinks`
   and
@@ -1961,7 +1963,7 @@ tradeoffs evidence based.
   `BM_LcpWorldBoxStep_BoxedLcp/64/100` probe again reported `invariant_ok=0`
   and `max_vertical_speed=0.196054`; longer 1000-/4000-step probes also failed,
   so a 64-box long-horizon settling result is not claimed.
-  The full `test_boxed_lcp_contact --gtest_list_tests` inventory lists 89 tests; the
+  The full `test_boxed_lcp_contact --gtest_list_tests` inventory lists 90 tests; the
   earlier full `--gtest_brief=1` run still emitted the dense-patch Dantzig
   warning, so Dantzig's direct dense box solve is not claimed.
 - DART 7 world-contact benchmark evidence:
@@ -2029,12 +2031,14 @@ tradeoffs evidence based.
   `BM_LcpWorldBoxStep_BoxedLcp/96/{1,75}` and
   `BM_LcpWorldBoxStep_BoxedLcp/128/{1,75}` and
   `BM_LcpWorldBoxStep_BoxedLcp/144/{1,75}` and
-  `BM_LcpWorldBoxStep_BoxedLcp/192/1`, rebuild separated box-on-ground scenes,
+  `BM_LcpWorldBoxStep_BoxedLcp/192/1` and
+  `BM_LcpWorldBoxStep_BoxedLcp/256/1`, rebuild separated box-on-ground scenes,
   confirm each box contributes a 4-contact face patch before stepping, enter
   simulation mode, advance the public boxed-LCP `World::step()` path, and check
   finite-state, contact-height, vertical-rest, and tangential-slowing
-  invariants on the registered horizons. The 192-box scene uses a grid-derived
-  ground half-extent so all 768 face contacts stay on the static ground.
+  invariants on the registered horizons. The 192-/256-box scenes use a
+  grid-derived ground half-extent so all 768/1024 face contacts stay on the
+  static ground.
   Focused default, SIMD-enabled, and
   CUDA-enabled build-tree runs over the 24-/32-box rows reported
   `invariant_ok=1` with
@@ -2107,6 +2111,12 @@ tradeoffs evidence based.
   Focused default, SIMD-enabled, and CUDA-enabled 192-box one-step rows
   reported `invariant_ok=1`, `box_count=192`, `contact_count=768`,
   `step_count=1`, `max_height_error=0`,
+  `min_tangential_speed_drop=0.0201629`, and
+  `max_vertical_speed<=6.94e-18`; the SIMD row reported
+  `build_simd_enabled=1`, and the CUDA-enabled row reported
+  `build_cuda_enabled=1`. Focused default, SIMD-enabled, and CUDA-enabled
+  256-box one-step rows reported `invariant_ok=1`, `box_count=256`,
+  `contact_count=1024`, `step_count=1`, `max_height_error=0`,
   `min_tangential_speed_drop=0.0201629`, and
   `max_vertical_speed<=6.94e-18`; the SIMD row reported
   `build_simd_enabled=1`, and the CUDA-enabled row reported
@@ -2617,8 +2627,9 @@ tradeoffs evidence based.
   `BM_LcpWorldBoxStep_BoxedLcp/64/{1,75}` and
   `BM_LcpWorldBoxStep_BoxedLcp/96/{1,75}` and
   `BM_LcpWorldBoxStep_BoxedLcp/128/{1,75}` and
-  `BM_LcpWorldBoxStep_BoxedLcp/144/1`, rebuild separated
-  dense box-face worlds,
+  `BM_LcpWorldBoxStep_BoxedLcp/144/{1,75}` and
+  `BM_LcpWorldBoxStep_BoxedLcp/192/1` and
+  `BM_LcpWorldBoxStep_BoxedLcp/256/1`, rebuild separated dense box-face worlds,
   enter simulation mode, advance the public boxed-LCP `World::step()` path, and
   check finite-state, contact-height, vertical-rest, and tangential-slowing
   invariants on the registered horizons. Focused default, SIMD-enabled, and
@@ -2675,6 +2686,12 @@ tradeoffs evidence based.
   to the strict `0.1` vertical-rest gate at
   `max_vertical_speed=0.0982543`, while the SIMD row reported
   `build_simd_enabled=1` and `max_vertical_speed=0.0420758`.
+  Focused default, SIMD-enabled, and CUDA-enabled 192-/256-box one-step rows
+  reported `invariant_ok=1`, `contact_count=768/1024`, `step_count=1`,
+  `max_height_error=0`, `min_tangential_speed_drop=0.0201629`, and
+  `max_vertical_speed<=6.94e-18`; the SIMD rows reported
+  `build_simd_enabled=1`, and the CUDA-enabled rows reported
+  `build_cuda_enabled=1`.
   The SIMD-enabled 48-box row reported `build_simd_enabled=1`,
   `max_height_error=99.597u`, and `max_vertical_speed=0.0288169`; the
   CUDA-enabled 48-box row reported `build_cuda_enabled=1`,

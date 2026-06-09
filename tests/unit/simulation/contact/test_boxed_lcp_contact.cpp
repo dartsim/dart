@@ -3229,6 +3229,23 @@ TEST(BoxedLcpContact, OneHundredNinetyTwoBoxWorldStepPreservesDenseContactShape)
 }
 
 //==============================================================================
+TEST(BoxedLcpContact, TwoHundredFiftySixBoxWorldStepPreservesDenseContactShape)
+{
+  constexpr double kFriction = 0.5;
+  constexpr int kBoxCount = 256;
+
+  auto lcp = buildSeparatedBoxGroundScene(kBoxCount, kFriction);
+
+  const std::vector<sx::Contact> contacts = lcp->collide();
+  ASSERT_EQ(contacts.size(), static_cast<std::size_t>(4 * kBoxCount));
+
+  lcp->enterSimulationMode();
+  lcp->step();
+
+  expectSeparatedBoxDenseStepSmokeInvariants(*lcp, kBoxCount);
+}
+
+//==============================================================================
 TEST(
     BoxedLcpContact,
     SixtyFourBoxWorldShortHorizonMaintainsDenseContactInvariants)

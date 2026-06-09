@@ -50,8 +50,8 @@ Support abbreviations:
   benchmark rows, 64-box one-step and 75-step dense box-face public-step rows,
   96-box one-step and 75-step dense box-face public-step rows, 128-box
   one-step and 75-step dense box-face public-step rows, 144-box one-step and
-  75-step dense box-face public-step rows, 192-box one-step dense box-face
-  public-step rows, a
+  75-step dense box-face public-step rows, 192-/256-box one-step dense
+  box-face public-step rows, a
   fixed-base prismatic articulated link-ground
   boxed-LCP `World::step()` invariant tests for one-link, four-link, and
   thirty-two-link scenes,
@@ -838,7 +838,7 @@ The current local evidence for this task is:
 - `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.LongRunningSphereStackWorldStepMaintainsContactInvariants'`
   passed 1 test, advancing the same 3-sphere vertical stack through 500 public
   boxed-LCP `World::step()` iterations with the same motion invariants.
-- The `test_boxed_lcp_contact --gtest_list_tests` inventory now lists 89 tests.
+- The `test_boxed_lcp_contact --gtest_list_tests` inventory now lists 90 tests.
   The earlier full run still emits the existing `StaticFrictionHoldsSmallPush` degenerate-pivot
   warning, so this should not be counted as clean evidence for
   dense-degenerate multi-contact systems.
@@ -1288,7 +1288,7 @@ The current local evidence for this task is:
   ground and rigid-impact rows also reported `contract_ok=1` with
   `build_simd_enabled=1` and `build_cuda_enabled=1`, respectively; those are CPU
   solver rows in those build trees, not CUDA kernel execution.
-- `test_boxed_lcp_contact --gtest_list_tests` now lists 89 tests. The dense box
+- `test_boxed_lcp_contact --gtest_list_tests` now lists 90 tests. The dense box
   face-contact test assembles a 4-contact, 12-row boxed/findex LCP from
   `World::collide()`, checks the single-dynamic-body dense patch shape, and
   verifies the problem with APGD; the sliding and static-friction box
@@ -1339,6 +1339,10 @@ The current local evidence for this task is:
   failing the vertical-rest gate at `max_vertical_speed=0.11772` against the
   `0.1` threshold and emitting the existing dense-patch Dantzig warning
   (`s=-7.8125e-03`).
+  `TwoHundredFiftySixBoxWorldStepPreservesDenseContactShape` extends the same
+  one-step shape smoke path to a 256-box, 1024-contact dense face scene;
+  focused default, SIMD-enabled, and CUDA-enabled runs passed in 4239 ms,
+  1990 ms, and 3481 ms, respectively.
   `SixtyFourBoxWorldShortHorizonMaintainsDenseContactInvariants` covers the
   same scene for 75 public boxed-LCP `World::step()` iterations under the
   existing strict settling invariant.
@@ -1390,9 +1394,10 @@ The current local evidence for this task is:
   `BM_LcpWorldBoxStep_BoxedLcp/96/{1,75}` and
   `BM_LcpWorldBoxStep_BoxedLcp/128/{1,75}` and
   `BM_LcpWorldBoxStep_BoxedLcp/144/{1,75}` and
-  `BM_LcpWorldBoxStep_BoxedLcp/192/1`. The seventeen-row registry covers
-  4/8/16/32/64/96/128/192/256/384/512/576/768 face contacts on the registered
-  horizons.
+  `BM_LcpWorldBoxStep_BoxedLcp/192/1` and
+  `BM_LcpWorldBoxStep_BoxedLcp/256/1`. The eighteen-row registry covers
+  4/8/16/32/64/96/128/192/256/384/512/576/768/1024 face contacts on the
+  registered horizons.
   Focused 24-/32-box runs reported `invariant_ok=1` and
   `dense_box_contact=1` in default, SIMD-enabled, and CUDA-enabled build trees;
   the default 32-box row reported
@@ -1457,6 +1462,12 @@ The current local evidence for this task is:
   CUDA LCP kernel execution.
   Focused default, SIMD-enabled, and CUDA-enabled 192-box one-step rows
   reported `invariant_ok=1`, `contact_count=768`, `step_count=1`,
+  `max_height_error=0`, `min_tangential_speed_drop=0.0201629`, and
+  `max_vertical_speed<=6.94e-18`; the SIMD row reported
+  `build_simd_enabled=1`, and the CUDA-enabled row reported
+  `build_cuda_enabled=1`.
+  Focused default, SIMD-enabled, and CUDA-enabled 256-box one-step rows
+  reported `invariant_ok=1`, `contact_count=1024`, `step_count=1`,
   `max_height_error=0`, `min_tangential_speed_drop=0.0201629`, and
   `max_vertical_speed<=6.94e-18`; the SIMD row reported
   `build_simd_enabled=1`, and the CUDA-enabled row reported
@@ -2001,7 +2012,7 @@ The current local evidence for this task is:
    dense face-contact one-step and 75-step public-step, 96-box dense
    face-contact one-step and 75-step public-step, 128-box dense face-contact
    one-step and 75-step public-step, 144-box dense face-contact one-step and
-   75-step public-step, 192-box dense face-contact one-step public-step, and all-solver snapshot slices
+   75-step public-step, 192-/256-box dense face-contact one-step public-step, and all-solver snapshot slices
    that validate solver outputs against motion/contact invariants.
 3. Add benchmark packets that broaden scalar CPU and SIMD-enabled CPU evidence,
    larger and sparser solver-internal multi-threaded CPU cases,

@@ -13291,7 +13291,8 @@ BENCHMARK(BM_LcpWorldBoxStep_BoxedLcp)
     ->Args({128, 75})
     ->Args({144, 1})
     ->Args({144, 75})
-    ->Args({192, 1});
+    ->Args({192, 1})
+    ->Args({256, 1});
 BENCHMARK(BM_LcpWorldArticulatedGroundStep_BoxedLcp)
     ->Args({1, 200})
     ->Args({4, 200})
