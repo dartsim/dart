@@ -101,6 +101,7 @@ def test_benchmark_packet_timing_schema_rejects_bad_fields():
             "solver_subphase_timings_ns": {
                 "assembly": -1.0,
                 "": 1.0,
+                7: 2.0,
                 "linear_solve": True,
             },
         },
@@ -111,6 +112,7 @@ def test_benchmark_packet_timing_schema_rejects_bad_fields():
     assert errors == [
         "phase_packet.step_count must be positive",
         "phase_packet.solver_subphase_timings_ns.ccd is missing",
+        "phase_packet.solver_subphase_timings_ns has an invalid key",
         "phase_packet.solver_subphase_timings_ns has an invalid key",
         "phase_packet.solver_subphase_timings_ns.assembly must be finite and non-negative",
         "phase_packet.solver_subphase_timings_ns.linear_solve must be numeric",

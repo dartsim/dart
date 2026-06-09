@@ -103,7 +103,7 @@ def benchmark_packet_timing_schema_errors(
                 f"{packet_name}.{SOLVER_SUBPHASE_TIMINGS_KEY}.{subphase} is missing"
             )
 
-    for subphase, value in sorted(subphases.items()):
+    for subphase, value in sorted(subphases.items(), key=lambda item: str(item[0])):
         if not isinstance(subphase, str) or not subphase:
             errors.append(
                 f"{packet_name}.{SOLVER_SUBPHASE_TIMINGS_KEY} has an invalid key"
