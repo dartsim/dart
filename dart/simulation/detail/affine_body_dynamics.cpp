@@ -129,6 +129,7 @@ chainPrimitiveFrictionToAffineBodies(
 {
   AffinePrimitiveFrictionResult result;
   result.value = potential.value;
+  result.work = potential.work;
   result.tangentialDisplacement = potential.tangentialDisplacement;
   result.tangentialDisplacementNorm = potential.tangentialDisplacementNorm;
   result.weight = potential.weight;
