@@ -31,7 +31,9 @@ default-solver storage and AVBD self-contact row guards, and adds a production
 rectangular inter-body deformable surface-CCD crossing for sweep/candidate
 scratch plus a production static-obstacle friction patch for shared
 sphere/box/capsule normal-force, normal-direction, and sparse/matrix-free
-Hessian scratch.
+Hessian scratch. The latest continuation combines sparse static-obstacle
+friction and matrix-free self-contact deformables in one baked World memory
+root.
 Continue from the current `README.md` Immediate Next Steps: broaden remaining
 boxed-LCP/contact and deformable production no-growth coverage, and move any
 newly exposed step-loop scratch to world-owned backed storage before making a

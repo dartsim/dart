@@ -286,6 +286,9 @@
       capsule barriers in one default projected-Newton solve, covering the
       shared static-obstacle normal/friction scratch for both sparse and
       matrix-free projected-Newton paths separately from self-contact friction.
+      A mixed production gate now steps sparse static-obstacle friction and
+      matrix-free self-contact bodies in the same baked World root, covering
+      simultaneous obstacle and self-contact scratch without shared-root growth.
       The moving rigid-surface CCD path now has baked
       swept-box point-crossing gates for both free predicted motion and
       kinematic trace-backed motion, including a multi-kinematic traced-obstacle
@@ -390,7 +393,9 @@
       production rectangular inter-body deformable surface-CCD crossing, a
       barrier-only static sphere/box/capsule obstacle scene, and a production
       static sphere/box/capsule obstacle friction patch for sparse and
-      matrix-free default projected Newton.
+      matrix-free default projected Newton, plus a mixed static-obstacle and
+      self-contact production scene that exercises both scratch families under
+      one World memory root.
       The base and global-heap guards now also include default moving
       rigid-surface CCD swept-box crossings for free, single-kinematic, and
       multi-kinematic rigid obstacles, closing the previously static-only rigid
@@ -655,7 +660,9 @@ debugging, profiling, optimization experiments, and ImGui visualization.
    inter-body sweep/candidate scratch beyond the tiny two-triangle crossing;
    and a production static-obstacle friction patch now covers shared
    sphere/box/capsule normal-force, normal-direction, and Hessian scratch under
-   sparse and matrix-free no-growth guards.
+   sparse and matrix-free no-growth guards. A mixed production scene now
+   combines sparse static-obstacle friction and matrix-free self-contact bodies
+   under one baked World root.
    The AVBD self-contact row guard now also covers 5x9 and 9x13 rectangular
    grid row workloads with replay-backed activity assertions.
    Continue broadening boxed-LCP unified problem assembly only for newly
