@@ -3,8 +3,9 @@
 ## Current Reality (2026-06-10)
 
 PR #2956 is wrapped and should stay frozen except for PR-management fixes. The
-active HMM Phase 4/5 continuation is on `pr/hmm-phase45-follow-up`, based on
-the finalized `pr/simulation-scratch-reuse` head.
+active HMM Phase 4/5 continuation is on
+`pr/hmm-phase45-follow-up-clean`, based on `origin/main` after PR #2956
+landed.
 
 This follow-up slice closes a real VBD allocation gap exposed by a new
 World-base/global-heap gate: enabled VBD self-contact previously only baked
@@ -653,41 +654,46 @@ test and is covered by the full `UNIT_dartsim_ui_` test filter.
 
 ## Current Branch
 
-`feature/allocator-correctness-gates` - active branch for the allocator and
-hierarchical-memory-manager follow-up slices. Check `git status -sb` for the
-live dirty state before resuming; checkpoint commits are pushed to
-`origin/feature/allocator-correctness-gates`.
+`pr/hmm-phase45-follow-up-clean` - active branch for post-#2956 HMM follow-up
+slices, currently based directly on `origin/main`. Check `git status -sb` for
+the live dirty state before resuming. Do not push or open the follow-up PR
+without explicit maintainer approval.
 
 ## Immediate Next Step
 
-Continue Phase 2 production-integration work with the allocator performance gate
-green. The latest allocator slices keep `FrameStlAllocator` blocks cache-line
-aligned without per-block cache coloring, add allocator overflow and
-`construct`/`destroy` hooks to the STL adapters, keep the non-diagnostic
-`PoolAllocator` hot path for release `MemoryManager` pool allocation, remove
-the hardcoded realistic-row benchmark min-time, add CPU affinity controls to the
-benchmark runner/checker, make auto-affinity sample per-CPU utilization before
-selecting a benchmark CPU, and batch short pool, stack, frame-bulk,
-fallback-stack, STL-vector, iteration, tracked-stack, and deeply tracked pool
-comparative rows so the strict CV gate measures sustained allocator work. EnTT
-no-growth rows now use free-list-backed world-lifetime DART storage for
-reserved variable-size registry arrays. EnTT build/growth rows model one-shot
-registry storage construction with DART's stateless default C-heap STL adapter,
-and compare against foonathan/memory stack marker/unwind bulk lifetime storage.
-`FixedPoolAllocator` has a cache-friendly
-stride for
+Continue with evidence-first HMM follow-up work on `origin/main`: either route
+the remaining built-in stage-owned scratch objects through the World allocator
+root with allocator-aware stage construction, or first run/probe existing
+no-growth gates to expose the next concrete allocation path. Do not add new
+production scenes unless profiling or a failing no-growth/no-heap gate shows a
+real gap not covered by the current shipped scenes.
+
+Keep the allocator performance gate green. The latest allocator slices keep
+`FrameStlAllocator` blocks cache-line aligned without per-block cache coloring,
+add allocator overflow and `construct`/`destroy` hooks to the STL adapters, keep
+the non-diagnostic `PoolAllocator` hot path for release `MemoryManager` pool
+allocation, remove the hardcoded realistic-row benchmark min-time, add CPU
+affinity controls to the benchmark runner/checker, make auto-affinity sample
+per-CPU utilization before selecting a benchmark CPU, and batch short pool,
+stack, frame-bulk, fallback-stack, STL-vector, iteration, tracked-stack, and
+deeply tracked pool comparative rows so the strict CV gate measures sustained
+allocator work. EnTT no-growth rows now use free-list-backed world-lifetime
+DART storage for reserved variable-size registry arrays. EnTT build/growth rows
+model one-shot registry storage construction with DART's stateless default
+C-heap STL adapter, and compare against foonathan/memory stack marker/unwind
+bulk lifetime storage. `FixedPoolAllocator` has a cache-friendly stride for
 medium power-of-two slots, fixing the fixed-pool cache-set conflict that
 previously let foonathan/memory win `BM_Pool/256/256`; the steady-state churn
 row now uses that fixed-pool path for same-size allocation churn instead of the
 generic size-classed pool. `PoolAllocator` default-size requests now use a
 constexpr heap-index table for the existing rounded/skewed size classes, which
 removes repeated size-class arithmetic from mixed-size allocation/deallocation
-hot paths. The default matrix covers foonathan/memory static
-fixed-storage stacks, scoped temporary allocators, two-iteration frame
-allocators, raw heap/malloc/new rows, aligned/fallback/segregator/tracked/
-deeply tracked adapter rows, and EnTT no-growth/build rows mapped to DART HMM
-roles. A 2026-06-06 CPU-affined foonathan-plus-standard-plus-EnTT matrix passed
-all 94 strict checker rows after merging focused replacement rows into the full
+hot paths. The default matrix covers foonathan/memory static fixed-storage
+stacks, scoped temporary allocators, two-iteration frame allocators, raw
+heap/malloc/new rows, aligned/fallback/segregator/tracked/deeply tracked adapter
+rows, and EnTT no-growth/build rows mapped to DART HMM roles. A 2026-06-06
+CPU-affined foonathan-plus-standard-plus-EnTT matrix passed all 94 strict
+checker rows after merging focused replacement rows into the full
 result JSON. After the latest policy changes, a 2026-06-07 foonathan-only
 matrix plus focused strict-CV replacement rows passes all 47 DART-vs-foonathan
 checks in
