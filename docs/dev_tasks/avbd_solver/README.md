@@ -9,6 +9,13 @@ Corpus matrix:
 
 ## Current Status
 
+- Latest local follow-up: `test_boxed_lcp_contact` now avoids a repeated MSVC
+  19.44 internal compiler error in the primitive endpoint-row helper by using
+  an explicit `PrimitiveRowKey` struct instead of a nested
+  `std::pair<AvbdContactEndpointId, AvbdContactEndpointId>` alias in that
+  section. The focused Linux target rebuild and full
+  `test_boxed_lcp_contact` binary passed locally. This is CI portability only;
+  it does not close any AVBD solver, CPU-win, GPU, or paper-number gate.
 - Latest local follow-up: point-pair and angular constraint caches now use exact
   component equality for repeated local anchors and target orientations instead
   of zero-tolerance approximate comparisons. This keeps the block-solver
