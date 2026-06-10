@@ -183,7 +183,9 @@
       ground-contact dual state and compliant contact-point scratch are now
       sized at `enterSimulationMode()` and covered by World-base allocator
       no-growth tests that step multiple variational contact sliders without
-      registry capacity growth.
+      registry capacity growth. Compliant variational contact also reuses the
+      baked ground-contact solver scratch with zero duals, so the contact hook
+      no longer copies contact-point storage in the step loop.
       Broader solver scratch coverage remains open.
 - [ ] Phase 4: Built-in simulation stages borrow world memory for transient
       buffers and avoid growth after simulation is baked. The default
@@ -197,8 +199,11 @@
       for the covered rigid and articulated resting-contact scenes. The
       variational multibody stage now owns cache-only reusable contact/constraint
       scratch, bakes loop-closure and hard AVBD point-joint constraint capacity,
-      and bakes compliant and augmented-Lagrangian ground-contact vectors before
-      contact-heavy steps. The boxed-LCP
+      reuses baked solver scratch for compliant and augmented-Lagrangian ground
+      contact, and bakes those vectors before contact-heavy steps. A stronger
+      compliant-contact global-heap probe still exposes allocations in the
+      variational residual/contact linearization path, so that remains open
+      scratch-reuse work. The boxed-LCP
       unified constraint stage now reuses stage-owned assembly containers and
       unified problem storage, and its shared/cross-row assembly no longer
       allocates per-step row-direction, rigid/articulated row-end, or

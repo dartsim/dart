@@ -38,9 +38,12 @@ constraint scratch into a cache-only component, bakes loop-closure, hard AVBD
 point-joint, compliant ground-contact, and augmented-Lagrangian ground-contact
 dual capacity during `enterSimulationMode()`, and adds contact-heavy
 variational contact plus loop-closure scratch no-growth gates. It also adds the
+compliant variational contact solver-scratch reuse with zero duals, plus the
 complementary mixed deformable production gate for matrix-free static-obstacle
-friction plus direct-sparse irregular self-contact under the same baked World
-root.
+friction and direct-sparse irregular self-contact under the same baked World
+root. A local probe of the stronger compliant-contact global-heap gate still
+allocates in variational residual/contact linearization, so that gate remains a
+future scratch-reuse target rather than a closed claim.
 Continue from the current `README.md` Immediate Next Steps: broaden remaining
 boxed-LCP/contact and deformable production no-growth coverage, and move any
 newly exposed step-loop scratch to world-owned backed storage before making a

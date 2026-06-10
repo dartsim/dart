@@ -2126,6 +2126,11 @@ void reserveMultibodyVariationalRegistryStorage(
         || scratch.groundContact.points.empty()) {
       continue;
     }
+    if (!scratch.groundContactSolver.has_value()) {
+      scratch.groundContactSolver.emplace(scratch.groundContact);
+    } else {
+      scratch.groundContactSolver->resetContact(scratch.groundContact);
+    }
     if (contactConfig->dualUpdateCadence == 0u) {
       continue;
     }
@@ -2135,11 +2140,6 @@ void reserveMultibodyVariationalRegistryStorage(
     if (dualState.duals.size() != scratch.groundContact.points.size()) {
       dualState.duals.assign(scratch.groundContact.points.size(), 0.0);
       dualState.stepsSinceDualUpdate = 0;
-    }
-    if (!scratch.groundContactSolver.has_value()) {
-      scratch.groundContactSolver.emplace(scratch.groundContact);
-    } else {
-      scratch.groundContactSolver->resetContact(scratch.groundContact);
     }
     scratch.groundContactSolver->setDuals(
         std::span<const double>{
@@ -2219,6 +2219,13 @@ void MultibodyVariationalIntegrationStage::execute(
       configureGroundContactScratch(*contactConfig, scratch);
       const auto& contact = scratch.groundContact;
       if (contact.stiffness > 0.0 && !contact.points.empty()) {
+        if (!scratch.groundContactSolver.has_value()) {
+          scratch.groundContactSolver.emplace(contact);
+        } else {
+          scratch.groundContactSolver->resetContact(contact);
+        }
+        VariationalGroundContactSolver& groundContactSolver
+            = *scratch.groundContactSolver;
         if (contactConfig->dualUpdateCadence > 0) {
           // C3: a stateful AL solver seeded from the persisted (warm-started)
           // duals. The solver must outlive the integrate call -- its hook reads
@@ -2231,19 +2238,12 @@ void MultibodyVariationalIntegrationStage::execute(
             dualState.duals.assign(contact.points.size(), 0.0);
             dualState.stepsSinceDualUpdate = 0;
           }
-          if (!scratch.groundContactSolver.has_value()) {
-            scratch.groundContactSolver.emplace(contact);
-          } else {
-            scratch.groundContactSolver->resetContact(contact);
-          }
-          scratch.groundContactSolver->setDuals(
+          groundContactSolver.setDuals(
               std::span<const double>{
                   dualState.duals.data(), dualState.duals.size()});
-          alSolver = &*scratch.groundContactSolver;
-          contactHook = alSolver->hook();
-        } else {
-          contactHook = makeVariationalGroundContactHook(contact);
+          alSolver = &groundContactSolver;
         }
+        contactHook = groundContactSolver.hook();
       }
     }
     integrateMultibodyVariational(
