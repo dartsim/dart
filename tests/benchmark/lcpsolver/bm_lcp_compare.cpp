@@ -13332,7 +13332,8 @@ BENCHMARK(BM_LcpWorldArticulatedCartesianGroundStep_BoxedLcp)
     ->Args({8, 200})
     ->Args({16, 200})
     ->Args({24, 200})
-    ->Args({32, 200});
+    ->Args({32, 200})
+    ->Args({64, 200});
 #endif
 
 BENCHMARK(BM_LCP_COMPARE_SMOKE);

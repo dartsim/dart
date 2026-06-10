@@ -57,7 +57,8 @@ Support abbreviations:
   thirty-two-link scenes,
   1-/4-/8-/16-/24-/32-link articulated ground-step benchmark rows, connected
   fixed-base three-axis prismatic Cartesian-chain boxed-LCP `World::step()`
-  invariant coverage for two-, four-, eight-, sixteen-, and thirty-two-chain scenes, 1-/4-/8-/16-/24-/32-chain
+  invariant coverage for two-, four-, eight-, sixteen-, thirty-two-, and
+  sixty-four-chain scenes, 1-/4-/8-/16-/24-/32-/64-chain
   articulated Cartesian benchmark rows, fixed-base prismatic
   link-vs-dynamic-rigid boxed-LCP `World::step()` invariant tests for one-pair,
   four-pair, eight-pair, sixteen-pair, and thirty-two-pair scenes including
@@ -771,6 +772,10 @@ The current local evidence for this task is:
   impact contacts, and 32 cross-multibody link-vs-link impact contacts. The
   tests keep the existing finite-state, contact-count, bounded-height or
   momentum, post-impact separation, and sequential-shortcut parity checks.
+- `test_boxed_lcp_contact --gtest_filter=BoxedLcpContact.SixtyFourCartesianPrismaticChainsGroundStepMaintainsInvariants --gtest_brief=1`
+  passed in default, SIMD-enabled, and CUDA-enabled build trees, extending the
+  connected Cartesian-chain public-step regression to 64 contacts and 192
+  generalized coordinates.
 - `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.*SphereStack*'`
   passed focused stack tests, validating the boxed/findex LCP contract for
   3-sphere, 4-sphere, 5-sphere, 6-sphere, 7-sphere, and 8-sphere vertical stacks assembled from

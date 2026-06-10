@@ -101,10 +101,11 @@
       coverage and benchmark rows.
       This does not yet cover a general CUDA backend for every solver.
 - [x] Extended DART 7 boxed-LCP articulated public-step coverage to
-      32-contact/pair fixed-base link-ground, link-vs-rigid, cross-multibody
-      link-vs-link, and connected Cartesian-chain scenes, including 32-case
-      regression tests and 200-step benchmark rows in default, SIMD-enabled,
-      and CUDA-enabled build trees.
+      32-contact/pair fixed-base link-ground, link-vs-rigid, and
+      cross-multibody link-vs-link scenes plus 64-contact connected
+      Cartesian-chain scenes, including 32-/64-case regression tests and
+      200-step benchmark rows in default, SIMD-enabled, and CUDA-enabled build
+      trees.
 - [x] Completed a solver-by-solver implementation audit against
       `docs/background/lcp/`.
 - [x] Added manifest-driven generated known-solution coverage for all supporting
@@ -2781,14 +2782,20 @@ tradeoffs evidence based.
   `articulated_link_count=64`, `articulated_dof_count=64`,
   `cross_multibody_link_contact=1`, `max_momentum_error=0`,
   `min_relative_velocity=0.18`, and `invariant_ok=1`.
-  `BM_LcpWorldArticulatedCartesianGroundStep_BoxedLcp/{1,4,8,16,24,32}/200`
+  `BM_LcpWorldArticulatedCartesianGroundStep_BoxedLcp/{1,4,8,16,24,32,64}/200`
   rebuilds connected fixed-base three-axis prismatic Cartesian-chain worlds,
   enters simulation mode in the world factory, advances the public boxed-LCP
   `World::step()` path for 200 steps, and checks finite tip height, bounded
   joint velocities, and bounded planar joint speed after ground contact. The
   32-chain rows reported `cartesian_chain_count=32`,
   `articulated_dof_count=96`, `contact_count=32`, and `invariant_ok=1` in all
-  three build trees. This is connected fixed-base
+  three build trees. The focused 64-chain follow-up row reported
+  `cartesian_chain_count=64`, `articulated_dof_count=192`,
+  `contact_count=64`, `step_count=200`, `max_height_error=1e-4`,
+  `max_abs_joint_velocity=4.45e-15`, `max_planar_joint_speed=0`, and
+  `invariant_ok=1` in default, SIMD-enabled, and CUDA-enabled build trees; the
+  SIMD row reported `build_simd_enabled=1`, and the CUDA-enabled row reported
+  `build_cuda_enabled=1`. This is connected fixed-base
   multi-DOF articulated contact evidence, not broad articulated robot contact
   coverage.
 - DART 7 articulated unified-contact solver benchmark evidence:
@@ -3204,10 +3211,11 @@ tradeoffs evidence based.
   snapshots, both serially and through the experimental `ParallelExecutor`.
 - Added denser DART 7 boxed-LCP articulated public-step unit and benchmark
   coverage through 32 link-ground contacts, 32 link-vs-rigid impact pairs,
-  32 cross-multibody link-vs-link impact pairs, and 32 connected Cartesian
+  32 cross-multibody link-vs-link impact pairs, and 64 connected Cartesian
   chains. Focused default, SIMD-enabled, and CUDA-enabled benchmark runs report
-  28 rows with `invariant_ok=1`; the CUDA-enabled rows are CPU public-step rows
-  in that build tree, not CUDA LCP kernel execution.
+  `invariant_ok=1` on the registered articulated rows and on the 64-chain
+  follow-up row; the CUDA-enabled rows are CPU public-step rows in that build
+  tree, not CUDA LCP kernel execution.
 - Added focused local SIMD-enabled CPU evidence for generated LCP correctness
   and selected serial/task-parallel batch benchmark rows.
 - Added focused local CUDA-enabled build/runtime evidence and ran generated LCP

@@ -3460,6 +3460,17 @@ TEST(
 }
 
 //==============================================================================
+// Sixty-four connected three-axis chains extend the public-step articulated
+// ground-contact coverage to a 192-DOF unified contact packet.
+TEST(
+    BoxedLcpContact,
+    SixtyFourCartesianPrismaticChainsGroundStepMaintainsInvariants)
+{
+  constexpr int kChainCount = 64;
+  expectCartesianPrismaticChainsGroundStepMaintainsInvariants(kChainCount);
+}
+
+//==============================================================================
 // Two-sided articulated contact: a prismatic link pushes a dynamic rigid body.
 // The boxed-LCP unified path must apply equal-and-opposite impulses to the
 // articulated generalized velocity and the rigid target velocity.

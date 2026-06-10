@@ -2096,15 +2096,21 @@ scenes.
   `cross_multibody_link_contact=1`, `max_momentum_error=0`,
   `max_striker_velocity=0.606667`, `min_target_velocity=0.786667`, and
   `min_relative_velocity=0.18`.
-- `BM_LcpWorldArticulatedCartesianGroundStep_BoxedLcp/{1,4,8,16}/200`
+- `BM_LcpWorldArticulatedCartesianGroundStep_BoxedLcp/{1,4,8,16,24,32,64}/200`
   rebuild connected fixed-base three-axis prismatic Cartesian-chain worlds,
   enters simulation mode inside the world factory so link kinematics are
   current before `World::collide()`, advances 200 public boxed-LCP
-  `World::step()` iterations, and reports end-to-end invariant counters. The
+  `World::step()` iterations, and reports end-to-end invariant counters. Prior
   focused default, SIMD-enabled, and CUDA-enabled build-tree runs reported
-  `invariant_ok=1` for all four rows with `cartesian_chain_count=1`, `4`, `8`,
-  and `16`, `articulated_dof_count=3`, `12`, `24`, and `48`, and
-  `serial_prismatic_chain=1`.
+  `invariant_ok=1` for the smaller rows with `cartesian_chain_count=1`, `4`,
+  `8`, `16`, `24`, and `32`. The focused 64-chain follow-up passed the unit
+  regression in all three build trees and its benchmark row reported
+  `invariant_ok=1`, `cartesian_chain_count=64`, `contact_count=64`,
+  `articulated_dof_count=192`, `step_count=200`,
+  `max_height_error=1e-4`, `max_abs_joint_velocity=4.45e-15`, and
+  `max_planar_joint_speed=0`; the SIMD row reported `build_simd_enabled=1`,
+  and the CUDA-enabled row reported `build_cuda_enabled=1`. This remains CPU
+  public-step evidence in those build trees, not CUDA LCP kernel execution.
 - `BM_LcpArticulatedUnifiedContact/FrictionIndex/{Ground,RigidImpact,CrossLinkImpact}/<solver>/{1,4,8,16,24,32,48,64}`
   manually assemble fixed-base three-axis prismatic `LinkContact` snapshots
   through `assembleMultibodyLinkContactProblem` and
