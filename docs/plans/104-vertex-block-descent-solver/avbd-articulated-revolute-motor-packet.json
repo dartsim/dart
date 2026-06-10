@@ -1,0 +1,217 @@
+{
+  "benchmark": {
+    "benchmark": "BM_AvbdArticulatedRevoluteMotorStep/1",
+    "context": {
+      "executable": "build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint",
+      "json_schema_version": 1,
+      "library_build_type": "release",
+      "library_version": "v1.9.5",
+      "mhz_per_cpu": 399,
+      "num_cpus": 20
+    },
+    "cpu_time_per_step_ns": 5837.953628777517,
+    "invariants": {
+      "max_torque_nm": 800.0,
+      "motors": 1,
+      "target_speed_rad_per_s": 0.5,
+      "time_step": 0.005
+    },
+    "json_sha256": "a646d02158373b46211ea727200b30ba3fb80b3bb5b6d3fa81d8d5ca8ee49cc3",
+    "rows": [
+      {
+        "cpu_time": 5837.953628777516,
+        "family_index": 0,
+        "iterations": 182031,
+        "motors": 1.0,
+        "name": "BM_AvbdArticulatedRevoluteMotorStep/1",
+        "per_family_instance_index": 0,
+        "real_time": 5851.490790004119,
+        "repetition_index": 0,
+        "repetitions": 5,
+        "run_name": "BM_AvbdArticulatedRevoluteMotorStep/1",
+        "run_type": "iteration",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "cpu_time": 5949.258219753777,
+        "family_index": 0,
+        "iterations": 182031,
+        "motors": 1.0,
+        "name": "BM_AvbdArticulatedRevoluteMotorStep/1",
+        "per_family_instance_index": 0,
+        "real_time": 5964.10358128944,
+        "repetition_index": 1,
+        "repetitions": 5,
+        "run_name": "BM_AvbdArticulatedRevoluteMotorStep/1",
+        "run_type": "iteration",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "cpu_time": 5870.670237487021,
+        "family_index": 0,
+        "iterations": 182031,
+        "motors": 1.0,
+        "name": "BM_AvbdArticulatedRevoluteMotorStep/1",
+        "per_family_instance_index": 0,
+        "real_time": 5883.858469128512,
+        "repetition_index": 2,
+        "repetitions": 5,
+        "run_name": "BM_AvbdArticulatedRevoluteMotorStep/1",
+        "run_type": "iteration",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "cpu_time": 5706.286956617277,
+        "family_index": 0,
+        "iterations": 182031,
+        "motors": 1.0,
+        "name": "BM_AvbdArticulatedRevoluteMotorStep/1",
+        "per_family_instance_index": 0,
+        "real_time": 5718.690162720351,
+        "repetition_index": 3,
+        "repetitions": 5,
+        "run_name": "BM_AvbdArticulatedRevoluteMotorStep/1",
+        "run_type": "iteration",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "cpu_time": 5633.613889941825,
+        "family_index": 0,
+        "iterations": 182031,
+        "motors": 1.0,
+        "name": "BM_AvbdArticulatedRevoluteMotorStep/1",
+        "per_family_instance_index": 0,
+        "real_time": 5645.264378089596,
+        "repetition_index": 4,
+        "repetitions": 5,
+        "run_name": "BM_AvbdArticulatedRevoluteMotorStep/1",
+        "run_type": "iteration",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "mean",
+        "aggregate_unit": "time",
+        "cpu_time": 5799.556586515484,
+        "family_index": 0,
+        "iterations": 5,
+        "motors": 1.0,
+        "name": "BM_AvbdArticulatedRevoluteMotorStep/1_mean",
+        "per_family_instance_index": 0,
+        "real_time": 5812.681476246404,
+        "repetitions": 5,
+        "run_name": "BM_AvbdArticulatedRevoluteMotorStep/1",
+        "run_type": "aggregate",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "median",
+        "aggregate_unit": "time",
+        "cpu_time": 5837.953628777517,
+        "family_index": 0,
+        "iterations": 5,
+        "motors": 1.0,
+        "name": "BM_AvbdArticulatedRevoluteMotorStep/1_median",
+        "per_family_instance_index": 0,
+        "real_time": 5851.490790004119,
+        "repetitions": 5,
+        "run_name": "BM_AvbdArticulatedRevoluteMotorStep/1",
+        "run_type": "aggregate",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "stddev",
+        "aggregate_unit": "time",
+        "cpu_time": 127.65017196484914,
+        "family_index": 0,
+        "iterations": 5,
+        "motors": 0.0,
+        "name": "BM_AvbdArticulatedRevoluteMotorStep/1_stddev",
+        "per_family_instance_index": 0,
+        "real_time": 128.8058935174835,
+        "repetitions": 5,
+        "run_name": "BM_AvbdArticulatedRevoluteMotorStep/1",
+        "run_type": "aggregate",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "cv",
+        "aggregate_unit": "percentage",
+        "cpu_time": 0.022010333041951484,
+        "family_index": 0,
+        "iterations": 5,
+        "motors": 0.0,
+        "name": "BM_AvbdArticulatedRevoluteMotorStep/1_cv",
+        "per_family_instance_index": 0,
+        "real_time": 0.022159461866928437,
+        "repetitions": 5,
+        "run_name": "BM_AvbdArticulatedRevoluteMotorStep/1",
+        "run_type": "aggregate",
+        "threads": 1,
+        "time_unit": "ns"
+      }
+    ]
+  },
+  "packet": "avbd_articulated_revolute_motor",
+  "remaining_gates": [
+    "articulated prismatic motor visual/benchmark packet",
+    "broad motor lifecycle and command-update corpus",
+    "motor break/reset packet coverage",
+    "GPU AVBD row parity and same-hardware benchmark packets",
+    "paper/site/video scene visual and performance packets"
+  ],
+  "reproduction": {
+    "benchmark_command": "build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter=BM_AvbdArticulatedRevoluteMotorStep/1$ --benchmark_min_time=0.5s --benchmark_repetitions=3 --benchmark_out=<benchmark-json> --benchmark_out_format=json",
+    "capture_command": "LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe python scripts/capture_py_demo.py --scene avbd_articulated_revolute_motor --frames 8 --width 640 --height 360 --output-dir <capture-dir>"
+  },
+  "scene": "avbd_articulated_revolute_motor",
+  "schema_version": 1,
+  "target": {
+    "broad_motor_lifecycle_complete": false,
+    "row_family": "public articulated revolute velocity motor",
+    "scope": "single public articulated revolute motor command-update visual and benchmark"
+  },
+  "visual_capture": {
+    "frames": {
+      "count": 8,
+      "directory": "png_frames",
+      "first_frame": {
+        "file": "png_frames/frame_000001.png",
+        "sha256": "dca62ca7b7083a41c91c910821c7ecd50ea84de8b9a8d77cf29e332126fe056e"
+      },
+      "last_frame": {
+        "file": "png_frames/frame_000008.png",
+        "sha256": "89c4d1e56411381d01ab561b7916a2a0070d516719e0fecd5f7944193ceebe4d"
+      }
+    },
+    "manifest_sha256": "2b2cf9e48942fff98bc0b6c60cdd5b0251748e0abcef761f312d7910005a9c55",
+    "scene": "avbd_articulated_revolute_motor",
+    "screenshot": {
+      "file": "avbd_articulated_revolute_motor.png",
+      "height": 360,
+      "sha256": "89c4d1e56411381d01ab561b7916a2a0070d516719e0fecd5f7944193ceebe4d",
+      "width": 640
+    },
+    "show_ui": false,
+    "ui_ready": {
+      "dropped_warmup_frames": 0,
+      "required": false
+    }
+  },
+  "visual_scene_invariants": {
+    "command_switch_time_s": 0.15,
+    "links": 2,
+    "max_torque_nm": 900.0,
+    "motors": 1,
+    "multibodies": 1,
+    "target_speed_rad_per_s": 1.0,
+    "time_step": 0.005
+  }
+}

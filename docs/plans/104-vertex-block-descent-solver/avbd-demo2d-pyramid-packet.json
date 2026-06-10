@@ -1,0 +1,299 @@
+{
+  "comparison": {
+    "dart_cpu_time_per_step_ns": 250990.15307262575,
+    "dart_faster_than_reference": true,
+    "dart_to_reference_cpu_time_ratio": 0.10166589850839189,
+    "performance_claim": "DART beats the native avbd-demo2d Pyramid row",
+    "reference_cpu_time_per_step_ns": 2468774.2572
+  },
+  "dart_benchmark": {
+    "benchmark": "BM_AvbdDemo2dPyramidStep",
+    "context": {
+      "executable": "build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint",
+      "json_schema_version": 1,
+      "library_build_type": "release",
+      "library_version": "v1.9.5",
+      "mhz_per_cpu": 4944,
+      "num_cpus": 20
+    },
+    "cpu_time_per_step_ns": 250990.15307262575,
+    "invariants": {
+      "collision_shapes": 211,
+      "rigid_bodies": 211,
+      "rigid_body_joints": 0,
+      "source_scene_index": 4,
+      "time_step": 0.016666666666666666
+    },
+    "json_sha256": "3a21bba4d6c7ba7af99bab40cdf80e3c064e79c44779e7edbfc0bfb4fa4c7a34",
+    "rows": [
+      {
+        "collision_shapes": 211.0,
+        "cpu_time": 237528.65139664806,
+        "family_index": 0,
+        "iterations": 2685,
+        "name": "BM_AvbdDemo2dPyramidStep",
+        "per_family_instance_index": 0,
+        "real_time": 238079.58807940184,
+        "repetition_index": 0,
+        "repetitions": 3,
+        "rigid_bodies": 211.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo2dPyramidStep",
+        "run_type": "iteration",
+        "source_scene_index": 4.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "collision_shapes": 211.0,
+        "cpu_time": 254598.79366852882,
+        "family_index": 0,
+        "iterations": 2685,
+        "name": "BM_AvbdDemo2dPyramidStep",
+        "per_family_instance_index": 0,
+        "real_time": 255348.45288761402,
+        "repetition_index": 1,
+        "repetitions": 3,
+        "rigid_bodies": 211.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo2dPyramidStep",
+        "run_type": "iteration",
+        "source_scene_index": 4.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "collision_shapes": 211.0,
+        "cpu_time": 250990.15307262578,
+        "family_index": 0,
+        "iterations": 2685,
+        "name": "BM_AvbdDemo2dPyramidStep",
+        "per_family_instance_index": 0,
+        "real_time": 251717.51657338705,
+        "repetition_index": 2,
+        "repetitions": 3,
+        "rigid_bodies": 211.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo2dPyramidStep",
+        "run_type": "iteration",
+        "source_scene_index": 4.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "mean",
+        "aggregate_unit": "time",
+        "collision_shapes": 211.0,
+        "cpu_time": 247705.86604593418,
+        "family_index": 0,
+        "iterations": 3,
+        "name": "BM_AvbdDemo2dPyramidStep_mean",
+        "per_family_instance_index": 0,
+        "real_time": 248381.85251346763,
+        "repetitions": 3,
+        "rigid_bodies": 211.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo2dPyramidStep",
+        "run_type": "aggregate",
+        "source_scene_index": 4.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "median",
+        "aggregate_unit": "time",
+        "collision_shapes": 211.0,
+        "cpu_time": 250990.15307262575,
+        "family_index": 0,
+        "iterations": 3,
+        "name": "BM_AvbdDemo2dPyramidStep_median",
+        "per_family_instance_index": 0,
+        "real_time": 251717.51657338705,
+        "repetitions": 3,
+        "rigid_bodies": 211.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo2dPyramidStep",
+        "run_type": "aggregate",
+        "source_scene_index": 4.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "stddev",
+        "aggregate_unit": "time",
+        "collision_shapes": 0.0,
+        "cpu_time": 8996.518507225015,
+        "family_index": 0,
+        "iterations": 3,
+        "name": "BM_AvbdDemo2dPyramidStep_stddev",
+        "per_family_instance_index": 0,
+        "real_time": 9104.85661510163,
+        "repetitions": 3,
+        "rigid_bodies": 0.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo2dPyramidStep",
+        "run_type": "aggregate",
+        "source_scene_index": 0.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "cv",
+        "aggregate_unit": "percentage",
+        "collision_shapes": 0.0,
+        "cpu_time": 0.03631935993617815,
+        "family_index": 0,
+        "iterations": 3,
+        "name": "BM_AvbdDemo2dPyramidStep_cv",
+        "per_family_instance_index": 0,
+        "real_time": 0.03665669018475475,
+        "repetitions": 3,
+        "rigid_bodies": 0.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo2dPyramidStep",
+        "run_type": "aggregate",
+        "source_scene_index": 0.0,
+        "threads": 1,
+        "time_unit": "ns"
+      }
+    ]
+  },
+  "packet": "avbd_demo2d_pyramid_source_demo",
+  "reference_timing": {
+    "compile_command": [
+      "g++",
+      "-std=c++17",
+      "-O3",
+      "-DNDEBUG",
+      "-I<source-dir>/source",
+      "<temp-dir>/reference_runner.cpp",
+      "<source-dir>/source/solver.cpp",
+      "<source-dir>/source/rigid.cpp",
+      "<source-dir>/source/force.cpp",
+      "<source-dir>/source/joint.cpp",
+      "<source-dir>/source/spring.cpp",
+      "<source-dir>/source/motor.cpp",
+      "<source-dir>/source/manifold.cpp",
+      "<source-dir>/source/collide.cpp",
+      "-lGL",
+      "-o",
+      "<temp-dir>/reference_runner"
+    ],
+    "compile_flags": "-std=c++17 -O3 -DNDEBUG",
+    "compiler": "g++",
+    "cpu_time_per_step_ns": 2468774.2572,
+    "elapsed_ns": 24687742572,
+    "invariants": {
+      "collision_shapes": 211,
+      "dynamic_bodies": 210,
+      "final_time": 168.800003,
+      "joints": 0,
+      "max_friction": 0.5,
+      "min_friction": 0.5,
+      "pyramid_size": 20,
+      "rigid_bodies": 211,
+      "static_bodies": 1
+    },
+    "json_sha256": "ec701a35cfb7aa72d920c2a95bd956a95f6a8cf41039923a56047124dfed621b",
+    "repository": "https://github.com/savant117/avbd-demo2d",
+    "scene_builder": "scenePyramid",
+    "scene_index": 4,
+    "scene_name": "Pyramid",
+    "source_demo": "avbd-demo2d",
+    "source_revision": "74699a11f858",
+    "steps": 10000,
+    "warmup_steps": 128
+  },
+  "remaining_gates": [
+    "remaining avbd-demo2d source-scene ports",
+    "broad rigid stacking and contact persistence coverage",
+    "GPU AVBD row parity and same-hardware benchmark packets",
+    "paper/site/video scene visual and performance packets"
+  ],
+  "reproduction": {
+    "capture_command": "LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe python scripts/capture_py_demo.py --scene avbd_demo2d_pyramid --frames 24 --width 640 --height 360 --output-dir <capture-dir>",
+    "dart_benchmark_command": "build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter=BM_AvbdDemo2dPyramidStep$ --benchmark_min_time=0.5s --benchmark_repetitions=3 --benchmark_out=<benchmark-json> --benchmark_out_format=json",
+    "reference_timing_command": "python scripts/run_avbd_demo2d_reference_timing.py --source-dir <avbd-demo2d-source-dir> --scene pyramid --warmup-steps 128 --steps 10000 --output <reference-timing-json>"
+  },
+  "scene": "avbd_demo2d_pyramid",
+  "schema_version": 1,
+  "source_demo_reference_row": {
+    "demo": "avbd-demo2d",
+    "dimension": 2,
+    "expected_counts": {
+      "collision_shapes": 211,
+      "dynamic_bodies": 210,
+      "joints": 0,
+      "rigid_bodies": 211,
+      "static_bodies": 1
+    },
+    "repository": "https://github.com/savant117/avbd-demo2d",
+    "revision": "74699a11f858",
+    "scene_builder": "scenePyramid",
+    "scene_count": 19,
+    "scene_index": 4,
+    "scene_name": "Pyramid",
+    "solver_defaults": {
+      "gravity": -10.0,
+      "gravity_axis": "y",
+      "iterations": 10,
+      "time_step": 0.016666666666666666
+    },
+    "source_shapes": {
+      "boxes": {
+        "base_y": 0.0,
+        "count": 210,
+        "density": 1.0,
+        "friction": 0.5,
+        "pyramid_size": 20,
+        "row_x_offset": 0.5,
+        "size": [
+          1.0,
+          0.5
+        ],
+        "x_spacing": 1.1,
+        "y_spacing": 0.85
+      },
+      "ground": {
+        "density": 0.0,
+        "friction": 0.5,
+        "position": [
+          0.0,
+          -2.0,
+          0.0
+        ],
+        "size": [
+          100.0,
+          0.5
+        ]
+      }
+    }
+  },
+  "visual_capture": {
+    "frames": {
+      "count": 24,
+      "directory": "png_frames",
+      "first_frame": {
+        "file": "png_frames/frame_000001.png",
+        "sha256": "961832690fcc4a97d9df5396a0ea229b4033ba76c4df96f355713ab55e758993"
+      },
+      "last_frame": {
+        "file": "png_frames/frame_000024.png",
+        "sha256": "77db4b8a5a55bcd673bcaca134fbf860468b1968b8789ca0d58f48565549da17"
+      }
+    },
+    "manifest_sha256": "8b1a66a94d07d52708229da7467bfd228749b972d25d2e2c630d42d64dfbac88",
+    "scene": "avbd_demo2d_pyramid",
+    "screenshot": {
+      "file": "avbd_demo2d_pyramid.png",
+      "height": 360,
+      "sha256": "77db4b8a5a55bcd673bcaca134fbf860468b1968b8789ca0d58f48565549da17",
+      "width": 640
+    },
+    "show_ui": false,
+    "ui_ready": {
+      "dropped_warmup_frames": 0,
+      "required": false
+    }
+  }
+}
