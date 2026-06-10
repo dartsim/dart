@@ -72,7 +72,7 @@ Support abbreviations:
   articulated unified-contact
   benchmark rows for manually assembled fixed-base three-axis prismatic
   link-ground, link-vs-dynamic-rigid, and cross-multibody link-vs-link through
-  64-contact
+  96-contact
   snapshots,
   serial and DART 7 `ParallelExecutor` independent-problem batch benchmark
   packets, and world-contact benchmark rows that compare all
@@ -1288,6 +1288,14 @@ The current local evidence for this task is:
   `multibody_count=64/128`, and expected backend build-state counters; the
   maximum reported residual and complementarity counters were
   `8.9363740896075683e-7`.
+  Focused default, SIMD-enabled, and CUDA-enabled
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpArticulatedUnifiedContact/FrictionIndex/.+/.+/96$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_format=json`
+  runs reported 48 96-contact rows with `contract_ok=1`, `contact_count=96`,
+  `problem_size=288`, 16 rows per articulated contact case,
+  `multibody_count=96/192`, and expected backend build-state counters. The
+  default row summary reported zero residual, complementarity, and
+  bound-violation maxima; the SIMD/CUDA-enabled row summaries reported 48
+  `build_simd_enabled=1` or `build_cuda_enabled=1` rows, respectively.
   This is articulated unified-contact LCP assembly evidence, not
   collision-discovered or end-to-end stepping evidence. Focused
   SIMD-enabled and CUDA-enabled build-tree runs over the Dantzig/Jacobi/SAP

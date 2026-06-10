@@ -519,7 +519,7 @@ adds
 all-solver articulated unified-contact benchmark rows for
 manually assembled fixed-base three-axis prismatic link-ground and
 link-vs-dynamic-rigid LCP snapshots, now extended to cross-multibody
-link-vs-link LCP snapshots and 64-contact packets. It now also adds mixed
+link-vs-link LCP snapshots and 96-contact packets. It now also adds mixed
 world-contact batch benchmark rows that compare all friction-index-capable
 solvers over the same five separated-contact and stacked-contact snapshots,
 both serially and through the DART 7 experimental
@@ -549,12 +549,13 @@ and coupled friction-index 8-contact. Focused default, SIMD-enabled, and
 CUDA-enabled runs pass with `contract_ok=1`; the CUDA-enabled rows are CPU
 solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
 The current slice extends the manually assembled DART 7 articulated
-unified-contact all-solver benchmark registration through 64-contact,
-192-row link-ground, link-vs-dynamic-rigid, and cross-multibody link-vs-link
+unified-contact all-solver benchmark registration through 96-contact,
+288-row link-ground, link-vs-dynamic-rigid, and cross-multibody link-vs-link
 packets. Focused default, SIMD-enabled, and CUDA-enabled build-tree filters
-over those 64-contact rows report `contract_ok=1` for all 48 rows, with
-expected backend build-state counters; these remain CPU solver rows in the
-SIMD/CUDA-enabled build trees, not CUDA kernel execution.
+over those 96-contact rows report `contract_ok=1` for all 48 rows, with
+expected backend build-state counters. The focused default summary reports
+zero residual, complementarity, and bound-violation maxima; these remain CPU
+solver rows in the SIMD/CUDA-enabled build trees, not CUDA kernel execution.
 The current slice also extends the direct CUDA grouped articulated
 unified-contact fixture set from 1-/4-/8-/16-contact packets to
 1-/4-/8-/16-/24-/32-contact packets. Focused Jacobi and PGS CUDA grouped-batch
@@ -778,12 +779,14 @@ passes in the SIMD-enabled build tree with `rows=34`, `failures=0`, and
 `failures=0`, and `cuda_rows=34`; the CUDA-enabled rows are CPU solver rows in
 a CUDA-enabled build, not CUDA LCP kernel execution.
 The latest local slice extends manually assembled articulated unified-contact
-all-solver rows from 48-contact to 64-contact packets for link-ground,
+all-solver rows from 64-contact to 96-contact packets for link-ground,
 link-vs-dynamic-rigid, and cross-multibody link-vs-link snapshots. Focused
-default, SIMD-enabled, and CUDA-enabled filters over the new 64-contact rows
-all report `contract_ok=1`, `contact_count=64`, `problem_size=192`, and the
-expected backend build-state counters. The CUDA-enabled rows are CPU solver
-rows in a CUDA-enabled build, not CUDA LCP kernel execution.
+default, SIMD-enabled, and CUDA-enabled filters over the new 96-contact rows
+all report `contract_ok=1`, `contact_count=96`, `problem_size=288`, and the
+expected backend build-state counters. The focused default summary reports
+zero residual, complementarity, and bound-violation maxima. The CUDA-enabled
+rows are CPU solver rows in a CUDA-enabled build, not CUDA LCP kernel
+execution.
 The latest local checkpoint extends dense box-face solver-comparison snapshots
 to 256 boxes and 1024 contacts for `Pgs`, `RedBlackGaussSeidel`, `NNCG`,
 `Apgd`, `Tgs`, and `Admm`; focused default, SIMD-enabled, and CUDA-enabled
@@ -2108,12 +2111,12 @@ scenes.
   the CUDA-enabled follow-up reported 6 rows with `build_cuda_enabled=1`. This
   remains CPU public-step evidence in those build trees, not CUDA LCP kernel
   execution.
-- `BM_LcpArticulatedUnifiedContact/FrictionIndex/{Ground,RigidImpact,CrossLinkImpact}/<solver>/{1,4,8,16,24,32,48,64}`
+- `BM_LcpArticulatedUnifiedContact/FrictionIndex/{Ground,RigidImpact,CrossLinkImpact}/<solver>/{1,4,8,16,24,32,48,64,96}`
   manually assemble fixed-base three-axis prismatic `LinkContact` snapshots
   through `assembleMultibodyLinkContactProblem` and
   `assembleUnifiedConstraintProblem`, then compare all 16
   friction-index-capable solvers on identical 3-row, 12-row, 24-row, 48-row,
-  72-row, 96-row, 144-row, and 192-row LCPs. The cross-link rows complete a second articulated endpoint for a separate
+  72-row, 96-row, 144-row, 192-row, and 288-row LCPs. The cross-link rows complete a second articulated endpoint for a separate
   multibody, so they exercise the unified contact matrix's cross-multibody
   block. Focused default, SIMD-enabled, and CUDA-enabled
   `BM_LCP_COMPARE --benchmark_filter='^BM_LcpArticulatedUnifiedContact/FrictionIndex/.+/24$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
@@ -2121,7 +2124,7 @@ scenes.
   `articulated_unified_contact=1`, `contact_count=24`, `problem_size=72`,
   `multibody_count=24` for ground/rigid-impact rows, and `multibody_count=48`
   plus `articulated_cross_link_contact=1` for cross-link rows. The full
-  articulated unified-contact registration now lists 384 rows. Focused
+  articulated unified-contact registration now lists 432 rows. Focused
   default, SIMD-enabled, and CUDA-enabled
   `BM_LCP_COMPARE --benchmark_filter='^BM_LcpArticulatedUnifiedContact/FrictionIndex/.*/.*/32$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_format=json`
   runs reported 48 rows with `contract_ok=1`, `contact_count=32`,
@@ -2141,6 +2144,14 @@ scenes.
   `multibody_count=64/128`, and expected backend build-state counters; the
   maximum reported residual and complementarity counters were
   `8.9363740896075683e-7`.
+  Focused default, SIMD-enabled, and CUDA-enabled
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpArticulatedUnifiedContact/FrictionIndex/.+/.+/96$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_format=json`
+  runs reported 48 rows with `contract_ok=1`, `contact_count=96`,
+  `problem_size=288`, 16 rows per articulated contact case,
+  `multibody_count=96/192`, and expected backend build-state counters. The
+  focused default row summary reported zero residual, complementarity, and
+  bound-violation maxima; the SIMD run reported 48 `build_simd_enabled=1`
+  rows, and the CUDA-enabled run reported 48 `build_cuda_enabled=1` rows.
   The SAP rows use the same robust benchmark parameters as generated coverage
   (`sap_regularization=1e-6`, `sap_max_line_search_iterations=32`,
   `maxIterations=5000`) and report those SAP counters in the articulated
