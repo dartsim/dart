@@ -133,7 +133,6 @@ struct BuiltInWorldStepSchedule
     case BuiltInWorldStepStageSlot::RigidBodyContact:
     case BuiltInWorldStepStageSlot::RigidIpcContact:
     case BuiltInWorldStepStageSlot::MultibodyVariationalIntegration:
-    case BuiltInWorldStepStageSlot::UnifiedConstraint:
     case BuiltInWorldStepStageSlot::DeformableDynamics:
     case BuiltInWorldStepStageSlot::Kinematics:
       return true;
@@ -141,6 +140,7 @@ struct BuiltInWorldStepSchedule
     case BuiltInWorldStepStageSlot::MultibodyVelocity:
     case BuiltInWorldStepStageSlot::MultibodyForwardDynamics:
     case BuiltInWorldStepStageSlot::MultibodyPosition:
+    case BuiltInWorldStepStageSlot::UnifiedConstraint:
       return false;
   }
 

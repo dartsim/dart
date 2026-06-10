@@ -114,6 +114,18 @@ World-native follow-ups for inverse kinematics, SIMBICON walking,
 operational-space control, robot puppets, collision sandbox workflows, and
 mobile manipulation.
 
+## PLAN-083 CPU Corpus
+
+The **`PLAN-083 Mixed Corpus`**, **`PLAN-083 Constraints Corpus`**,
+**`PLAN-083 Robot Corpus`**, and **`PLAN-083 ABD Corpus`** categories expose
+launchable placeholders for the unified Newton-barrier paper/deck scene rows.
+Each placeholder records its manifest row IDs, smoke command, long-horizon
+visual capture command, benchmark packet target, and current limitation. They
+are not paper-scene reproductions yet; the checked corpus sidecar lives at
+`docs/plans/083-unified-newton-barrier-multibody/cpu-scene-corpus.json` and
+keeps the py-demo, visual evidence, and CPU benchmark obligations explicit until
+runtime mixed-domain stepping and ABD scene support land.
+
 ## IPC Deformable scenes
 
 The dedicated **`IPC Deformable`** category groups the deformable-body

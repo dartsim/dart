@@ -104,10 +104,63 @@
         are complete; remaining solver result/status payloads and
         packet-specific gates stay variant-local until another phase proves
         identical behavior.
-- [ ] Phase 4: expand the unified manifest into diagnostics, benchmark packets,
-      CPU/GPU evidence, and visual evidence rows.
-- [ ] Phase 5: add runtime and py-demos scenes only after the relevant solver
-      slices exist and have correctness/performance evidence.
+- [x] Implementation-roadmap Phase 3: add the unified articulation constraint
+      family behind internal DART-owned Newton-barrier names.
+  - [x] Add point-connection and fixed-point residual/Jacobian helpers.
+  - [x] Add hinge-axis residuals and cone-twist bend/twist decomposition.
+  - [x] Add sliding and relative-sliding residual/Jacobian helpers.
+  - [x] Add distance residual/Jacobian helpers and bounded-distance barrier
+        diagnostics.
+  - [x] Add sliding-range and rotation-range barrier diagnostics with PSD
+        Hessian approximations.
+- [x] Implementation-roadmap Phase 4: add internal restitution, BDF-2, and
+      Rayleigh damping diagnostic contracts.
+  - [x] Add restitution target, BDF-2 inertial target, restart, velocity-update,
+        and serializable history helpers under `detail/newton_barrier`.
+  - [x] Add falling-box energy diagnostics across timestep, Young's modulus,
+        barrier stiffness, activation distance, and gravity sweeps.
+  - [x] Add semi-implicit Rayleigh damping terms for contact/barrier and
+        articulation potentials using PSD-projected Hessians.
+  - [x] Add hinge damping sweep evidence through the scalar articulation
+        damping path.
+- [x] Implementation-roadmap Phase 5: add internal mixed-domain coupling
+      contracts.
+  - [x] Add shared surface adapters for rigid, deformable, affine, particle,
+        rod, shell, and codimensional domains.
+  - [x] Add deterministic mixed-domain candidate generation for point-point,
+        point-edge, edge-edge, and point-triangle primitive families.
+  - [x] Add conservative point-pair CCD reduction plus deterministic restart
+        keys for mixed-domain candidate sets.
+  - [x] Add barrier, friction, and oracle-owner diagnostics that preserve
+        variant-specific correctness owners.
+- [x] Implementation-roadmap Phase 6: port the CPU scene corpus and py-demos
+      categories after the relevant solver slices exist and have
+      correctness/performance evidence.
+  - [x] Add launchable planned py-demo placeholders for the PLAN-083 mixed,
+        constraint, robot, and ABD CPU corpus categories.
+  - [x] Add a checked CPU scene corpus sidecar that records each row's smoke
+        command, long-horizon visual capture command, benchmark/profile packet
+        path, invariant, and current limitation.
+  - [x] Add local validation coverage for the corpus manifest and py-demo
+        placeholder panels/catalog categories.
+  - [x] Keep real paper-scene reproduction, runtime mixed stepping, and
+        performance claims gated behind the row-specific limitations.
+- [x] Implementation-roadmap Phase 7: add private GPU parity and speed packets.
+  - [x] Add a checked private GPU parity packet sidecar for contact
+        stencils/candidates, CCD/line search, local barrier/friction kernels,
+        PSD projection, assembly/linear solve, and scene-level speedup rows.
+  - [x] Encode same-scene parity, tolerance, transfer/setup/readback timing,
+        kernel/solve timing, speedup, and no-public-API policies for every row.
+  - [x] Keep rows without landed kernels explicit as planned/in-progress
+        limitations instead of GPU speed claims.
+- [ ] Implementation-roadmap Phase 8: complete the PLAN-083 audit and retire
+      temporary task state.
+  - [x] Add a checked completion audit sidecar that records the current
+        manifest, CPU corpus, and GPU packet status counts.
+  - [x] Record that PLAN-083 is not complete while planned CPU/GPU/scene rows
+        remain.
+  - [ ] Retire the temporary dev-task folder only after maintainer direction;
+        material planned work remains.
 
 ## Goal
 
@@ -121,7 +174,8 @@ storage, or backend resources as public API.
 
 - No public API changes.
 - No dartpy binding changes.
-- No scene, fixture, or py-demos migration.
+- No paper-scale runtime scene reproduction or fixture asset migration beyond
+  the launchable planned py-demo placeholders and checked corpus manifest.
 - No rigid curved-trajectory CCD move.
 - No sparse Newton loop merge.
 - No rigid IPC default behavior change.
@@ -164,18 +218,19 @@ storage, or backend resources as public API.
 
 ## Immediate Next Steps
 
-1. Merge the latest `origin/main`, run the Phase 2 validation gates, and open
-   one phase-scoped PR for implementation-roadmap Phase 2: Shared Solver
-   Contracts. After that PR lands, start implementation-roadmap Phase 3:
-   Unified Articulation Constraints; do not treat dev-task Phase 4 manifest
-   expansion as the next implementation-roadmap phase.
-2. Keep the two-body affine contact micro-solve deferred until the
+1. Monitor the phase-scoped PR stack through #2960, the completion-audit PR
+   targeting the Phase 7 branch.
+2. Get maintainer direction before retiring
+   `docs/dev_tasks/unified_newton_barrier_multibody/`: the Phase 8 audit found
+   that PLAN-083 still has planned CPU/GPU/scene rows and cannot honestly be
+   called complete yet.
+3. Keep the two-body affine contact micro-solve deferred until the
    `abd-alg-affine-body` row expands beyond the primitive/oracle micro-packet
    and needs a solved-state residual or runtime stepping diagnostic.
-3. Promote only the smallest proven shared contract, with cross-variant tests
+4. Promote only the smallest proven shared contract, with cross-variant tests
    showing identical behavior; keep variant-specific terms in their owner plans.
-4. Keep runtime stepping, py-demos, and GPU claims out of scope until the
-   internal ABD oracle and benchmark packet exist.
+5. Keep runtime stepping and GPU claims out of scope until the row-specific CPU
+   corpus packets and Phase 7 GPU parity evidence exist.
 
 ## Validation Gates For Current Slices
 
@@ -196,6 +251,13 @@ GPU-backed path:
 ```bash
 pixi run -e cuda test-cuda
 ```
+
+Phase 8 local evidence:
+
+- `pixi run python scripts/check_plan083_completion_audit.py`
+- `pixi run python -m pytest tests/test_plan083_completion_audit.py`
+- `pixi run lint`
+- `pixi run build`
 
 Phase 1 local evidence:
 
@@ -288,6 +350,45 @@ Implementation-roadmap Phase 2 branch-local closeout evidence:
 - `pixi run -- cmake --build build/default/cpp/Release --target test_newton_barrier_primitives test_affine_body_dynamics test_rigid_ipc_barrier test_world test_deformable_body --parallel <safe-jobs>`
 - `pixi run -- ctest --test-dir build/default/cpp/Release --output-on-failure -j <safe-jobs> -R '^(test_newton_barrier_primitives|test_affine_body_dynamics|test_rigid_ipc_barrier|test_world|test_deformable_body)$'`
 - `pixi run python -m pytest tests/test_benchmark_packet_utils.py`
+
+Implementation-roadmap Phase 3 branch-local evidence:
+
+- `pixi run lint`
+- `pixi run -- cmake --build build/default/cpp/Release --target test_newton_barrier_primitives --parallel <safe-jobs>`
+- `pixi run -- ctest --test-dir build/default/cpp/Release --output-on-failure -j <safe-jobs> -R '^test_newton_barrier_primitives$'`
+
+Implementation-roadmap Phase 4 branch-local evidence:
+
+- `pixi run lint`
+- `pixi run -- cmake --build build/default/cpp/Release --target test_newton_barrier_primitives --parallel <safe-jobs>`
+- `pixi run -- ctest --test-dir build/default/cpp/Release --output-on-failure -j <safe-jobs> -R '^test_newton_barrier_primitives$'`
+- `pixi run build`
+- `pixi run test-unit`
+
+Implementation-roadmap Phase 5 branch-local evidence:
+
+- `pixi run lint`
+- `pixi run -- cmake --build build/default/cpp/Release --target test_newton_barrier_primitives --parallel <safe-jobs>`
+- `pixi run -- ctest --test-dir build/default/cpp/Release --output-on-failure -j <safe-jobs> -R '^test_newton_barrier_primitives$'`
+- `pixi run build`
+- `pixi run test-unit`
+
+Implementation-roadmap Phase 6 branch-local evidence:
+
+- `pixi run lint`
+- `pixi run build`
+- `pixi run python scripts/check_plan083_cpu_scene_corpus.py`
+- `PYTHONPATH=build/default/cpp/Release-docking/python:build/default/cpp/Release/python:python pixi run python -m pytest tests/test_plan083_cpu_scene_corpus.py python/tests/unit/test_py_demo_panels.py::test_plan083_cpu_corpus_placeholders_expose_status_panels python/tests/unit/test_py_demo_panels.py::test_registered_world_scenes_receive_shared_replay_controls python/tests/integration/test_demos_cycle.py::test_world_scenes_use_solver_focused_categories`
+- `PYTHONPATH=build/default/cpp/Release-docking/python:build/default/cpp/Release/python:python pixi run py-demos -- --list`
+- `pixi run test-py`
+
+Implementation-roadmap Phase 7 branch-local evidence:
+
+- `pixi run python scripts/check_plan083_gpu_parity_packet.py`
+- `pixi run python -m pytest tests/test_plan083_gpu_parity_packet.py`
+- `pixi run lint`
+- `pixi run build`
+- `pixi run -e cuda test-cuda`
 
 ## Owner Docs
 
