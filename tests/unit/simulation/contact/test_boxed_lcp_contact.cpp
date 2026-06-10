@@ -63,6 +63,7 @@
 #include <memory>
 #include <optional>
 #include <sstream>
+#include <utility>
 #include <vector>
 
 #include <cmath>
@@ -901,7 +902,79 @@ void expectPlanePrimitiveRowsPersistAcrossSmallPose(
 }
 
 //==============================================================================
-void expectPrimitiveEndpointOrderRowsAndWarmStarts(
+using PrimitiveRowKey
+    = std::pair<dvbd::AvbdContactEndpointId, dvbd::AvbdContactEndpointId>;
+
+struct PrimitiveObservedRow
+{
+  PrimitiveRowKey key;
+  std::uint32_t row = 0u;
+  Eigen::Vector3d point = Eigen::Vector3d::Zero();
+  double depth = 0.0;
+  double frictionCoefficient = 0.0;
+};
+
+//==============================================================================
+PrimitiveRowKey primitiveRowKey(
+    const dvbd::AvbdRigidContactManifoldPoint& contact)
+{
+  return dvbd::canonicalizeAvbdContactEndpoints(
+      contact.endpointA, contact.endpointB);
+}
+
+//==============================================================================
+std::vector<PrimitiveObservedRow> collectPrimitiveRows(
+    const dvbd::AvbdRigidWorldContactSnapshot& snapshot,
+    std::uint64_t primitiveObject,
+    dvbd::AvbdContactFeatureKind expectedFeatureKind,
+    std::uint64_t expectedFeatureLocalIndex)
+{
+  std::vector<PrimitiveObservedRow> rows;
+  rows.reserve(snapshot.contacts.size());
+  for (const dvbd::AvbdRigidContactManifoldPoint& contact : snapshot.contacts) {
+    const dvbd::AvbdContactEndpointId primitiveEndpoint
+        = contact.endpointA.object == primitiveObject ? contact.endpointA
+                                                      : contact.endpointB;
+    EXPECT_EQ(primitiveEndpoint.object, primitiveObject);
+    if (primitiveEndpoint.object != primitiveObject) {
+      continue;
+    }
+    EXPECT_EQ(
+        dvbd::avbdContactFeatureKind(primitiveEndpoint.feature),
+        expectedFeatureKind);
+    EXPECT_EQ(
+        dvbd::avbdContactFeatureLocalIndex(primitiveEndpoint.feature),
+        expectedFeatureLocalIndex);
+    EXPECT_NEAR(contact.frictionCoefficient, 0.4, 1e-12);
+    rows.push_back(
+        PrimitiveObservedRow{
+            primitiveRowKey(contact),
+            contact.row,
+            contact.point,
+            contact.depth,
+            contact.frictionCoefficient});
+  }
+  return rows;
+}
+
+//==============================================================================
+std::optional<PrimitiveObservedRow> observedPrimitiveRowAtPoint(
+    const std::vector<PrimitiveObservedRow>& rows,
+    const PrimitiveRowKey& key,
+    const Eigen::Vector3d& point,
+    double depth)
+{
+  for (const PrimitiveObservedRow& observed : rows) {
+    if (observed.key == key && (observed.point - point).norm() <= 1e-10
+        && std::abs(observed.depth - depth) <= 1e-10) {
+      return observed;
+    }
+  }
+  return std::nullopt;
+}
+
+//==============================================================================
+void expectPrimitiveEndpointRowsMatch(
     const dvbd::AvbdRigidWorldContactSnapshot& forward,
     const dvbd::AvbdRigidWorldContactSnapshot& swapped,
     std::uint64_t primitiveObject,
@@ -911,74 +984,19 @@ void expectPrimitiveEndpointOrderRowsAndWarmStarts(
   ASSERT_EQ(forward.contacts.size(), swapped.contacts.size());
   ASSERT_GE(forward.contacts.size(), 2u);
 
-  using RowKey
-      = std::pair<dvbd::AvbdContactEndpointId, dvbd::AvbdContactEndpointId>;
-  struct ObservedRow
-  {
-    RowKey key;
-    std::uint32_t row = 0u;
-    Eigen::Vector3d point = Eigen::Vector3d::Zero();
-    double depth = 0.0;
-    double frictionCoefficient = 0.0;
-  };
-
-  const auto rowKey = [](const dvbd::AvbdRigidContactManifoldPoint& contact) {
-    return dvbd::canonicalizeAvbdContactEndpoints(
-        contact.endpointA, contact.endpointB);
-  };
-  const auto collectRows
-      = [&](const dvbd::AvbdRigidWorldContactSnapshot& snapshot) {
-          std::vector<ObservedRow> rows;
-          rows.reserve(snapshot.contacts.size());
-          for (const dvbd::AvbdRigidContactManifoldPoint& contact :
-               snapshot.contacts) {
-            const dvbd::AvbdContactEndpointId primitiveEndpoint
-                = contact.endpointA.object == primitiveObject
-                      ? contact.endpointA
-                      : contact.endpointB;
-            EXPECT_EQ(primitiveEndpoint.object, primitiveObject);
-            if (primitiveEndpoint.object != primitiveObject) {
-              continue;
-            }
-            EXPECT_EQ(
-                dvbd::avbdContactFeatureKind(primitiveEndpoint.feature),
-                expectedFeatureKind);
-            EXPECT_EQ(
-                dvbd::avbdContactFeatureLocalIndex(primitiveEndpoint.feature),
-                expectedFeatureLocalIndex);
-            EXPECT_NEAR(contact.frictionCoefficient, 0.4, 1e-12);
-            rows.push_back(
-                ObservedRow{
-                    rowKey(contact),
-                    contact.row,
-                    contact.point,
-                    contact.depth,
-                    contact.frictionCoefficient});
-          }
-          return rows;
-        };
-  const auto observedAtPoint = [](const std::vector<ObservedRow>& rows,
-                                  const RowKey& key,
-                                  const Eigen::Vector3d& point,
-                                  double depth) -> std::optional<ObservedRow> {
-    for (const ObservedRow& observed : rows) {
-      if (observed.key == key && (observed.point - point).norm() <= 1e-10
-          && std::abs(observed.depth - depth) <= 1e-10) {
-        return observed;
-      }
-    }
-    return std::nullopt;
-  };
-
-  const std::vector<ObservedRow> forwardRows = collectRows(forward);
-  const std::vector<ObservedRow> swappedRows = collectRows(swapped);
+  const std::vector<PrimitiveObservedRow> forwardRows = collectPrimitiveRows(
+      forward, primitiveObject, expectedFeatureKind, expectedFeatureLocalIndex);
+  const std::vector<PrimitiveObservedRow> swappedRows = collectPrimitiveRows(
+      swapped, primitiveObject, expectedFeatureKind, expectedFeatureLocalIndex);
   ASSERT_EQ(forwardRows.size(), forward.contacts.size());
   ASSERT_EQ(swappedRows.size(), swapped.contacts.size());
 
-  std::vector<std::pair<RowKey, std::vector<std::uint32_t>>> groupedRows;
-  for (const ObservedRow& forwardRow : forwardRows) {
-    const std::optional<ObservedRow> swappedRow = observedAtPoint(
-        swappedRows, forwardRow.key, forwardRow.point, forwardRow.depth);
+  std::vector<std::pair<PrimitiveRowKey, std::vector<std::uint32_t>>>
+      groupedRows;
+  for (const PrimitiveObservedRow& forwardRow : forwardRows) {
+    const std::optional<PrimitiveObservedRow> swappedRow
+        = observedPrimitiveRowAtPoint(
+            swappedRows, forwardRow.key, forwardRow.point, forwardRow.depth);
     ASSERT_TRUE(swappedRow.has_value());
     EXPECT_EQ(forwardRow.row, swappedRow->row);
     EXPECT_NEAR(
@@ -987,9 +1005,8 @@ void expectPrimitiveEndpointOrderRowsAndWarmStarts(
     auto groupIt = std::find_if(
         groupedRows.begin(),
         groupedRows.end(),
-        [&](const std::pair<RowKey, std::vector<std::uint32_t>>& group) {
-          return group.first == forwardRow.key;
-        });
+        [&](const std::pair<PrimitiveRowKey, std::vector<std::uint32_t>>&
+                group) { return group.first == forwardRow.key; });
     if (groupIt == groupedRows.end()) {
       groupedRows.push_back({forwardRow.key, {forwardRow.row}});
     } else {
@@ -1010,7 +1027,88 @@ void expectPrimitiveEndpointOrderRowsAndWarmStarts(
     }
   }
   EXPECT_GE(sameFeatureGroups, 1u);
+}
 
+//==============================================================================
+double primitiveKeyFingerprint(const dvbd::AvbdScalarRowKey& key)
+{
+  return static_cast<double>(
+      key.objectA % 17u + 2u * (key.objectB % 19u) + 3u * (key.featureA % 23u)
+      + 5u * (key.featureB % 29u));
+}
+
+//==============================================================================
+double primitiveExpectedNormalLambda(const dvbd::AvbdScalarRowKey& key)
+{
+  return 23.0 + static_cast<double>(key.row)
+         + 0.01 * primitiveKeyFingerprint(key);
+}
+
+//==============================================================================
+double primitiveExpectedFrictionLambda(const dvbd::AvbdScalarRowKey& key)
+{
+  return 7.0 + 0.5 * static_cast<double>(key.row)
+         + 0.125 * static_cast<double>(key.axis)
+         + 0.01 * primitiveKeyFingerprint(key);
+}
+
+struct PrimitivePreviousFrictionPair
+{
+  dvbd::AvbdScalarRowKey key;
+  Eigen::Vector3d worldDual = Eigen::Vector3d::Zero();
+};
+
+//==============================================================================
+bool samePrimitiveFrictionPair(
+    const dvbd::AvbdScalarRowKey& lhs, const dvbd::AvbdScalarRowKey& rhs)
+{
+  return lhs.role == rhs.role && lhs.objectA == rhs.objectA
+         && lhs.objectB == rhs.objectB && lhs.featureA == rhs.featureA
+         && lhs.featureB == rhs.featureB && lhs.row == rhs.row;
+}
+
+//==============================================================================
+std::vector<PrimitivePreviousFrictionPair>
+collectPrimitivePreviousFrictionPairs(
+    const dvbd::AvbdScalarRowInventory& frictionInventory)
+{
+  std::vector<PrimitivePreviousFrictionPair> previousFrictionPairs;
+  for (const dvbd::AvbdScalarRowRecord& record : frictionInventory.records()) {
+    auto pairIt = std::find_if(
+        previousFrictionPairs.begin(),
+        previousFrictionPairs.end(),
+        [&](const PrimitivePreviousFrictionPair& pair) {
+          return samePrimitiveFrictionPair(pair.key, record.descriptor.key);
+        });
+    if (pairIt == previousFrictionPairs.end()) {
+      previousFrictionPairs.push_back(
+          PrimitivePreviousFrictionPair{
+              record.descriptor.key, record.state.lambda * record.direction});
+    } else {
+      pairIt->worldDual += record.state.lambda * record.direction;
+    }
+  }
+  return previousFrictionPairs;
+}
+
+//==============================================================================
+std::optional<PrimitivePreviousFrictionPair> findPrimitivePreviousFrictionPair(
+    const std::vector<PrimitivePreviousFrictionPair>& previousFrictionPairs,
+    const dvbd::AvbdScalarRowKey& key)
+{
+  for (const PrimitivePreviousFrictionPair& pair : previousFrictionPairs) {
+    if (samePrimitiveFrictionPair(pair.key, key)) {
+      return pair;
+    }
+  }
+  return std::nullopt;
+}
+
+//==============================================================================
+void expectPrimitiveEndpointWarmStarts(
+    const dvbd::AvbdRigidWorldContactSnapshot& forward,
+    const dvbd::AvbdRigidWorldContactSnapshot& swapped)
+{
   dvbd::AvbdScalarRowInventory normalInventory;
   dvbd::AvbdScalarRowInventory frictionInventory;
   std::vector<dvbd::AvbdRigidBodyPointPairRow> normalRows;
@@ -1032,66 +1130,20 @@ void expectPrimitiveEndpointOrderRowsAndWarmStarts(
   ASSERT_EQ(frictionInventory.size(), 2u * forward.contacts.size());
   ASSERT_EQ(frictionRows.size(), forward.contacts.size());
 
-  const auto keyFingerprint = [](const dvbd::AvbdScalarRowKey& key) {
-    return static_cast<double>(
-        key.objectA % 17u + 2u * (key.objectB % 19u) + 3u * (key.featureA % 23u)
-        + 5u * (key.featureB % 29u));
-  };
-  const auto expectedNormalLambda = [&](const dvbd::AvbdScalarRowKey& key) {
-    return 23.0 + static_cast<double>(key.row) + 0.01 * keyFingerprint(key);
-  };
-  const auto expectedFrictionLambda = [&](const dvbd::AvbdScalarRowKey& key) {
-    return 7.0 + 0.5 * static_cast<double>(key.row)
-           + 0.125 * static_cast<double>(key.axis) + 0.01 * keyFingerprint(key);
-  };
-
   for (dvbd::AvbdScalarRowRecord& record : normalInventory.records()) {
     EXPECT_EQ(
         record.descriptor.key.role, dvbd::AvbdScalarRowRole::ContactNormal);
-    record.state.lambda = expectedNormalLambda(record.descriptor.key);
+    record.state.lambda = primitiveExpectedNormalLambda(record.descriptor.key);
   }
   for (dvbd::AvbdScalarRowRecord& record : frictionInventory.records()) {
     EXPECT_EQ(
         record.descriptor.key.role, dvbd::AvbdScalarRowRole::FrictionTangent);
-    record.state.lambda = expectedFrictionLambda(record.descriptor.key);
+    record.state.lambda
+        = primitiveExpectedFrictionLambda(record.descriptor.key);
   }
 
-  struct PreviousFrictionPair
-  {
-    dvbd::AvbdScalarRowKey key;
-    Eigen::Vector3d worldDual = Eigen::Vector3d::Zero();
-  };
-  const auto sameFrictionPair = [](const dvbd::AvbdScalarRowKey& lhs,
-                                   const dvbd::AvbdScalarRowKey& rhs) {
-    return lhs.role == rhs.role && lhs.objectA == rhs.objectA
-           && lhs.objectB == rhs.objectB && lhs.featureA == rhs.featureA
-           && lhs.featureB == rhs.featureB && lhs.row == rhs.row;
-  };
-  std::vector<PreviousFrictionPair> previousFrictionPairs;
-  for (const dvbd::AvbdScalarRowRecord& record : frictionInventory.records()) {
-    auto pairIt = std::find_if(
-        previousFrictionPairs.begin(),
-        previousFrictionPairs.end(),
-        [&](const PreviousFrictionPair& pair) {
-          return sameFrictionPair(pair.key, record.descriptor.key);
-        });
-    if (pairIt == previousFrictionPairs.end()) {
-      previousFrictionPairs.push_back(
-          PreviousFrictionPair{
-              record.descriptor.key, record.state.lambda * record.direction});
-    } else {
-      pairIt->worldDual += record.state.lambda * record.direction;
-    }
-  }
-  const auto previousFrictionPairForKey = [&](const dvbd::AvbdScalarRowKey& key)
-      -> std::optional<PreviousFrictionPair> {
-    for (const PreviousFrictionPair& pair : previousFrictionPairs) {
-      if (sameFrictionPair(pair.key, key)) {
-        return pair;
-      }
-    }
-    return std::nullopt;
-  };
+  const std::vector<PrimitivePreviousFrictionPair> previousFrictionPairs
+      = collectPrimitivePreviousFrictionPairs(frictionInventory);
 
   dvbd::buildAvbdRigidContactManifoldRows(
       swapped.states,
@@ -1111,17 +1163,19 @@ void expectPrimitiveEndpointOrderRowsAndWarmStarts(
         record.descriptor.key.role, dvbd::AvbdScalarRowRole::ContactNormal);
     EXPECT_NEAR(
         record.state.lambda,
-        expectedNormalLambda(record.descriptor.key),
+        primitiveExpectedNormalLambda(record.descriptor.key),
         1e-12);
   }
   for (const dvbd::AvbdScalarRowRecord& record : frictionInventory.records()) {
     EXPECT_EQ(
         record.descriptor.key.role, dvbd::AvbdScalarRowRole::FrictionTangent);
-    const double forceLimit = 0.4 * expectedNormalLambda(record.descriptor.key);
+    const double forceLimit
+        = 0.4 * primitiveExpectedNormalLambda(record.descriptor.key);
     EXPECT_NEAR(record.descriptor.bounds.lower, -forceLimit, 1e-12);
     EXPECT_NEAR(record.descriptor.bounds.upper, forceLimit, 1e-12);
-    const std::optional<PreviousFrictionPair> previousPair
-        = previousFrictionPairForKey(record.descriptor.key);
+    const std::optional<PrimitivePreviousFrictionPair> previousPair
+        = findPrimitivePreviousFrictionPair(
+            previousFrictionPairs, record.descriptor.key);
     ASSERT_TRUE(previousPair.has_value());
     EXPECT_NEAR(
         record.state.lambda,
@@ -1138,6 +1192,23 @@ void expectPrimitiveEndpointOrderRowsAndWarmStarts(
         frictionInventory[2u * i + 1u].state.lambda,
         1e-12);
   }
+}
+
+//==============================================================================
+void expectPrimitiveEndpointOrderRowsAndWarmStarts(
+    const dvbd::AvbdRigidWorldContactSnapshot& forward,
+    const dvbd::AvbdRigidWorldContactSnapshot& swapped,
+    std::uint64_t primitiveObject,
+    dvbd::AvbdContactFeatureKind expectedFeatureKind,
+    std::uint64_t expectedFeatureLocalIndex)
+{
+  expectPrimitiveEndpointRowsMatch(
+      forward,
+      swapped,
+      primitiveObject,
+      expectedFeatureKind,
+      expectedFeatureLocalIndex);
+  expectPrimitiveEndpointWarmStarts(forward, swapped);
 }
 
 //==============================================================================

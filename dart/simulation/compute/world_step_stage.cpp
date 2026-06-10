@@ -83,7 +83,6 @@
 #include <algorithm>
 #include <array>
 #include <limits>
-#include <map>
 #include <memory>
 #include <optional>
 #include <span>
@@ -131,6 +130,23 @@ struct RigidIpcContactStage::Scratch
   std::vector<entt::entity> writebackEntities;
   std::vector<entt::entity> orderedEntities;
   std::vector<int> visitState;
+  std::vector<double> contactPowerSum;
+  std::vector<std::uint8_t> sawNonStationaryContactBody;
+  std::vector<std::uint8_t> stationaryContactBody;
+  sxdetail::RigidIpcProjectedNewtonSolveResult solveResult;
+  sxdetail::RigidIpcProjectedNewtonSolveScratch solveScratch;
+};
+
+struct RigidBodyNode
+{
+  entt::entity entity;
+  ComputeNode* node;
+};
+
+struct RigidBodyIntegrationStage::Scratch
+{
+  std::vector<entt::entity> entities;
+  std::vector<RigidBodyNode> nodes;
 };
 
 namespace {
@@ -363,26 +379,6 @@ void orderRigidBodiesParentBeforeChild(
         registry, rigidBodyEntities, visitState, ordered, i);
   }
 }
-
-//==============================================================================
-std::vector<entt::entity> orderRigidBodiesParentBeforeChild(
-    const detail::WorldRegistry& registry,
-    const std::vector<entt::entity>& rigidBodyEntities)
-{
-  std::vector<entt::entity> ordered;
-  std::vector<int> visitState;
-  orderRigidBodiesParentBeforeChild(
-      registry, rigidBodyEntities, ordered, visitState);
-
-  return ordered;
-}
-
-//==============================================================================
-struct RigidBodyNode
-{
-  entt::entity entity;
-  ComputeNode* node;
-};
 
 //==============================================================================
 ComputeNode* findRigidBodyNode(
@@ -781,9 +777,13 @@ void KinematicsStage::execute(World& world, ComputeExecutor& executor)
 
 //==============================================================================
 RigidBodyIntegrationStage::RigidBodyIntegrationStage(std::size_t batchSize)
-  : m_batchSize(std::max<std::size_t>(1, batchSize))
+  : m_batchSize(std::max<std::size_t>(1, batchSize)),
+    m_scratch(std::make_unique<Scratch>())
 {
 }
+
+//==============================================================================
+RigidBodyIntegrationStage::~RigidBodyIntegrationStage() = default;
 
 //==============================================================================
 std::string_view RigidBodyIntegrationStage::getName() const noexcept
@@ -816,20 +816,25 @@ void RigidBodyIntegrationStage::execute(World& world, ComputeExecutor& executor)
       comps::FreeFrameProperties,
       comps::FrameCache>();
 
-  auto entities = std::make_shared<std::vector<entt::entity>>();
-  entities->reserve(rigidBodyView.size_hint());
+  if (m_scratch == nullptr) {
+    m_scratch = std::make_unique<Scratch>();
+  }
+  auto& entities = m_scratch->entities;
+  entities.clear();
+  entities.reserve(rigidBodyView.size_hint());
   for (auto entity : rigidBodyView) {
-    entities->push_back(entity);
+    entities.push_back(entity);
   }
 
   ComputeGraph graph;
   const auto gravity = world.getGravity();
   const auto timeStep = world.getTimeStep();
-  if (hasRigidBodyFrameDependency(registry, *entities)) {
-    std::vector<RigidBodyNode> nodes;
-    nodes.reserve(entities->size());
+  if (hasRigidBodyFrameDependency(registry, entities)) {
+    auto& nodes = m_scratch->nodes;
+    nodes.clear();
+    nodes.reserve(entities.size());
 
-    for (const auto entity : *entities) {
+    for (const auto entity : entities) {
       auto& node = graph.addNode(
           "rigid_body_entity_" + std::to_string(entt::to_integral(entity)),
           [&registry, entity, gravity, timeStep]() {
@@ -842,7 +847,7 @@ void RigidBodyIntegrationStage::execute(World& world, ComputeExecutor& executor)
     for (const auto& entry : nodes) {
       const auto& frameState = registry.get<comps::FrameState>(entry.entity);
       const auto parentRigidBody = findNearestRigidBodyAncestor(
-          registry, frameState.parentFrame, *entities);
+          registry, frameState.parentFrame, entities);
       if (parentRigidBody == entt::null) {
         continue;
       }
@@ -860,15 +865,16 @@ void RigidBodyIntegrationStage::execute(World& world, ComputeExecutor& executor)
     return;
   }
 
-  for (std::size_t begin = 0; begin < entities->size(); begin += m_batchSize) {
-    const auto end = std::min(begin + m_batchSize, entities->size());
+  const auto* entityList = &entities;
+  for (std::size_t begin = 0; begin < entities.size(); begin += m_batchSize) {
+    const auto end = std::min(begin + m_batchSize, entities.size());
     graph.addNode(
         "rigid_body_batch_" + std::to_string(begin),
-        [&registry, entities, begin, end, gravity, timeStep]() {
+        [&registry, entityList, begin, end, gravity, timeStep]() {
           for (auto i = begin; i < end; ++i) {
             integrateRigidBody(
                 registry,
-                (*entities)[static_cast<std::size_t>(i)],
+                (*entityList)[static_cast<std::size_t>(i)],
                 gravity,
                 timeStep);
           }
@@ -894,6 +900,13 @@ std::size_t RigidBodyIntegrationStage::getBatchSize() const noexcept
 /// headers; it is stored per body and never serialized.
 struct DeformableVbdScratch
 {
+  template <typename Row>
+  struct AvbdFrictionWarmStartRecord
+  {
+    dvbd::AvbdScalarRowKey key;
+    Row row;
+  };
+
   std::vector<dvbd::SpringElement> springs;
   std::vector<dvbd::TetMeshElement> tets;
   dvbd::VertexColoring coloring;
@@ -914,12 +927,16 @@ struct DeformableVbdScratch
   std::vector<dvbd::AvbdScalarRowDescriptor> avbdFrictionDescriptors;
   dvbd::AvbdScalarRowInventory avbdFrictionInventory;
   std::vector<dvbd::AvbdHalfSpaceFrictionRow> avbdFrictionRows;
+  std::vector<AvbdFrictionWarmStartRecord<dvbd::AvbdHalfSpaceFrictionRow>>
+      previousAvbdFrictionWarmStarts;
   std::vector<dvbd::AvbdScalarRowDescriptor> avbdSelfContactDescriptors;
   dvbd::AvbdScalarRowInventory avbdSelfContactInventory;
   std::vector<dvbd::AvbdSelfContactNormalRow> avbdSelfContactRows;
   std::vector<dvbd::AvbdScalarRowDescriptor> avbdSelfContactFrictionDescriptors;
   dvbd::AvbdScalarRowInventory avbdSelfContactFrictionInventory;
   std::vector<dvbd::AvbdSelfContactFrictionRow> avbdSelfContactFrictionRows;
+  std::vector<AvbdFrictionWarmStartRecord<dvbd::AvbdSelfContactFrictionRow>>
+      previousAvbdSelfContactFrictionWarmStarts;
   std::vector<dvbd::AvbdScalarRowDescriptor> avbdAttachmentDescriptors;
   dvbd::AvbdScalarRowInventory avbdAttachmentInventory;
   std::vector<dvbd::AvbdPointAttachmentRow> avbdAttachmentRows;
@@ -952,12 +969,14 @@ void clearDeformableAvbdWarmStartRows(DeformableVbdScratch& scratch)
   scratch.avbdFrictionDescriptors.clear();
   scratch.avbdFrictionInventory.records().clear();
   scratch.avbdFrictionRows.clear();
+  scratch.previousAvbdFrictionWarmStarts.clear();
   scratch.avbdSelfContactDescriptors.clear();
   scratch.avbdSelfContactInventory.records().clear();
   scratch.avbdSelfContactRows.clear();
   scratch.avbdSelfContactFrictionDescriptors.clear();
   scratch.avbdSelfContactFrictionInventory.records().clear();
   scratch.avbdSelfContactFrictionRows.clear();
+  scratch.previousAvbdSelfContactFrictionWarmStarts.clear();
   scratch.avbdAttachmentDescriptors.clear();
   scratch.avbdAttachmentInventory.records().clear();
   scratch.avbdAttachmentRows.clear();
@@ -968,6 +987,44 @@ void clearDeformableAvbdWarmStartRows(DeformableVbdScratch& scratch)
   scratch.avbdTetInventory.records().clear();
   scratch.avbdTetRows.clear();
   scratch.avbdSolveFixed.clear();
+}
+
+//==============================================================================
+template <typename Row>
+void rebuildAvbdFrictionWarmStartLookup(
+    std::vector<DeformableVbdScratch::AvbdFrictionWarmStartRecord<Row>>& lookup,
+    const std::vector<dvbd::AvbdScalarRowDescriptor>& descriptors,
+    const std::vector<Row>& rows)
+{
+  lookup.clear();
+  const std::size_t rowCount = std::min(descriptors.size(), rows.size());
+  lookup.reserve(rowCount);
+  for (std::size_t i = 0; i < rowCount; ++i) {
+    lookup.push_back({descriptors[i].key, rows[i]});
+  }
+  std::sort(lookup.begin(), lookup.end(), [](const auto& lhs, const auto& rhs) {
+    return lhs.key < rhs.key;
+  });
+}
+
+//==============================================================================
+template <typename Row>
+[[nodiscard]] const Row* findAvbdFrictionWarmStartRow(
+    const std::vector<DeformableVbdScratch::AvbdFrictionWarmStartRecord<Row>>&
+        lookup,
+    const dvbd::AvbdScalarRowKey& key)
+{
+  const auto match = std::lower_bound(
+      lookup.begin(),
+      lookup.end(),
+      key,
+      [](const auto& record, const dvbd::AvbdScalarRowKey& value) {
+        return record.key < value;
+      });
+  if (match != lookup.end() && match->key == key) {
+    return &match->row;
+  }
+  return nullptr;
 }
 
 } // namespace
@@ -1107,14 +1164,93 @@ void assembleRigidBodyForces(
 }
 
 //==============================================================================
-RigidBodyForceBatch assembleRigidBodyForces(
-    const World& world,
-    bool includeGravity,
-    RigidBodyForceAssemblyMode mode = RigidBodyForceAssemblyMode::AllBodies)
+void extractRigidBodyStateInto(const World& world, RigidBodyStateBatch& batch)
 {
-  RigidBodyForceBatch batch;
-  assembleRigidBodyForces(world, includeGravity, batch, mode);
-  return batch;
+  const auto& registry = dart::simulation::detail::registryOf(world);
+  auto view
+      = registry.view<comps::RigidBodyTag, comps::Transform, comps::Velocity>();
+
+  batch.worldCount = 1;
+  batch.bodyCount = 0;
+  batch.position.clear();
+  batch.orientation.clear();
+  batch.linearVelocity.clear();
+  batch.angularVelocity.clear();
+
+  const auto bodyCount = view.size_hint();
+  batch.position.reserve(3 * bodyCount);
+  batch.orientation.reserve(4 * bodyCount);
+  batch.linearVelocity.reserve(3 * bodyCount);
+  batch.angularVelocity.reserve(3 * bodyCount);
+
+  for (const auto entity : view) {
+    ++batch.bodyCount;
+
+    const auto& transform = view.get<comps::Transform>(entity);
+    const auto& velocity = view.get<comps::Velocity>(entity);
+
+    batch.position.push_back(transform.position.x());
+    batch.position.push_back(transform.position.y());
+    batch.position.push_back(transform.position.z());
+
+    batch.orientation.push_back(transform.orientation.w());
+    batch.orientation.push_back(transform.orientation.x());
+    batch.orientation.push_back(transform.orientation.y());
+    batch.orientation.push_back(transform.orientation.z());
+
+    batch.linearVelocity.push_back(velocity.linear.x());
+    batch.linearVelocity.push_back(velocity.linear.y());
+    batch.linearVelocity.push_back(velocity.linear.z());
+
+    batch.angularVelocity.push_back(velocity.angular.x());
+    batch.angularVelocity.push_back(velocity.angular.y());
+    batch.angularVelocity.push_back(velocity.angular.z());
+  }
+}
+
+//==============================================================================
+void extractRigidBodyModelBatchInto(
+    const World& world, RigidBodyModelBatch& model)
+{
+  const auto& registry = dart::simulation::detail::registryOf(world);
+  auto view
+      = registry.view<comps::RigidBodyTag, comps::Transform, comps::Velocity>();
+
+  model.worldCount = 1;
+  model.bodyCount = 0;
+  model.inverseMass.clear();
+  model.inertia.clear();
+
+  const auto bodyCount = view.size_hint();
+  model.inverseMass.reserve(bodyCount);
+  model.inertia.reserve(9 * bodyCount);
+
+  for (const auto entity : view) {
+    ++model.bodyCount;
+
+    const auto& mass = registry.get<comps::MassProperties>(entity);
+    const double inverse
+        = (mass.mass > 0.0 && std::isfinite(mass.mass)) ? 1.0 / mass.mass : 0.0;
+    model.inverseMass.push_back(inverse);
+
+    for (int row = 0; row < 3; ++row) {
+      for (int col = 0; col < 3; ++col) {
+        model.inertia.push_back(mass.inertia(row, col));
+      }
+    }
+  }
+}
+
+//==============================================================================
+void copyRigidBodyStateBatch(
+    const RigidBodyStateBatch& source, RigidBodyStateBatch& target)
+{
+  target.worldCount = source.worldCount;
+  target.bodyCount = source.bodyCount;
+  target.position = source.position;
+  target.orientation = source.orientation;
+  target.linearVelocity = source.linearVelocity;
+  target.angularVelocity = source.angularVelocity;
 }
 
 //==============================================================================
@@ -1318,6 +1454,26 @@ struct CapsuleObstacleBarrier
 };
 
 //==============================================================================
+// A lagged self-contact friction contact: the four stencil nodes, the lagged
+// normal-force magnitude, and the tangent projection (2x12) that maps the
+// stacked four-node displacement to tangential relative motion. Computed once
+// per outer iteration (standard IPC lagging) at the current iterate.
+struct SelfContactFrictionContact
+{
+  std::array<std::size_t, 4> nodes{};
+  double normalForce = 0.0;
+  dc::Matrix2x12d projection = dc::Matrix2x12d::Zero();
+};
+
+//==============================================================================
+struct ProjectedNewtonMatrixFreeBlock3
+{
+  std::size_t rowNode = 0;
+  std::size_t colNode = 0;
+  Eigen::Matrix3d block = Eigen::Matrix3d::Zero();
+};
+
+//==============================================================================
 struct DeformableContactSolverScratch
 {
   std::vector<DeformableSurfaceTriangle> surfaceTriangles;
@@ -1334,6 +1490,7 @@ struct DeformableContactSolverScratch
   std::vector<dc::detail::SweepItem> interBodyObstacleTriangleItems;
   std::vector<dc::detail::SweepItem> interBodyCurrentEdgeItems;
   std::vector<dc::detail::SweepItem> interBodyObstacleEdgeItems;
+  std::vector<std::size_t> interBodySweepLinks;
 
   // Persistent projected-Newton sparse Cholesky. The fill-reducing symbolic
   // factorization is reused across iterations and steps whenever the assembled
@@ -1350,21 +1507,51 @@ struct DeformableContactSolverScratch
   // (when the cached count first matches the body's tetrahedron count) and
   // reused every step instead of re-inverting each tet's rest edges per step.
   std::vector<fem::TetRestShape> femRestShapes;
+
+  Eigen::VectorXd projectedNewtonRhs;
+  Eigen::VectorXd projectedNewtonSolution;
+  Eigen::SparseMatrix<double> projectedNewtonHessian;
+  std::vector<Eigen::Triplet<double>> projectedNewtonTriplets;
+  std::vector<double> projectedNewtonEdgeBlocks;
+  std::vector<std::array<std::size_t, 2>> projectedNewtonEdgeBlockNodes;
+  std::vector<double> projectedNewtonTetBlocks;
+  std::vector<std::array<std::size_t, 4>> projectedNewtonTetBlockNodes;
+  std::vector<double> projectedNewtonBarrierBlocks;
+  std::vector<std::array<std::size_t, 4>> projectedNewtonBarrierBlockNodes;
+  std::vector<ProjectedNewtonMatrixFreeBlock3> projectedNewtonMatrixFreeBlocks;
+  std::vector<Eigen::Matrix3d> projectedNewtonMatrixFreeDiagonalBlocks;
+  std::vector<Eigen::Matrix3d> projectedNewtonMatrixFreeInverseDiagonalBlocks;
+  Eigen::VectorXd projectedNewtonMatrixFreeResidual;
+  Eigen::VectorXd projectedNewtonMatrixFreePreconditionedResidual;
+  Eigen::VectorXd projectedNewtonMatrixFreeDirection;
+  Eigen::VectorXd projectedNewtonMatrixFreeHessianDirection;
+
+  std::vector<double> groundFrictionNormalForce;
+  std::vector<Eigen::Vector3d> groundFrictionNormalDirection;
+  std::vector<SelfContactFrictionContact> selfContactFrictionContacts;
 };
 
 //==============================================================================
 struct ProjectedNewtonMatrixFreeHessian
 {
-  struct Block3
+  ProjectedNewtonMatrixFreeHessian(
+      std::vector<ProjectedNewtonMatrixFreeBlock3>& blockStorage,
+      std::vector<Eigen::Matrix3d>& diagonalStorage,
+      std::vector<Eigen::Matrix3d>& inverseDiagonalStorage)
+    : blocks(blockStorage),
+      diagonalBlocks(diagonalStorage),
+      inverseDiagonalBlocks(inverseDiagonalStorage)
   {
-    std::size_t rowNode = 0;
-    std::size_t colNode = 0;
-    Eigen::Matrix3d block = Eigen::Matrix3d::Zero();
-  };
+  }
 
-  explicit ProjectedNewtonMatrixFreeHessian(std::size_t nodes)
-    : nodeCount(nodes), diagonalBlocks(nodes, Eigen::Matrix3d::Zero())
+  void reset(std::size_t nodes)
   {
+    nodeCount = nodes;
+    blocks.clear();
+    diagonalBlocks.resize(nodeCount);
+    for (auto& block : diagonalBlocks) {
+      block.setZero();
+    }
   }
 
   void addBlock3(
@@ -1376,21 +1563,20 @@ struct ProjectedNewtonMatrixFreeHessian
     }
   }
 
-  [[nodiscard]] Eigen::VectorXd multiply(const Eigen::VectorXd& x) const
+  void multiplyInto(const Eigen::VectorXd& x, Eigen::VectorXd& y) const
   {
-    Eigen::VectorXd y
-        = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(3 * nodeCount));
+    y.resize(static_cast<Eigen::Index>(3 * nodeCount));
+    y.setZero();
     for (const auto& entry : blocks) {
       y.segment<3>(static_cast<Eigen::Index>(3 * entry.rowNode))
           += entry.block
              * x.segment<3>(static_cast<Eigen::Index>(3 * entry.colNode));
     }
-    return y;
   }
 
   [[nodiscard]] bool factorBlockJacobi()
   {
-    inverseDiagonalBlocks.assign(nodeCount, Eigen::Matrix3d::Zero());
+    inverseDiagonalBlocks.resize(nodeCount);
     for (std::size_t i = 0; i < nodeCount; ++i) {
       Eigen::LLT<Eigen::Matrix3d> llt(diagonalBlocks[i]);
       if (llt.info() != Eigen::Success) {
@@ -1404,23 +1590,21 @@ struct ProjectedNewtonMatrixFreeHessian
     return true;
   }
 
-  [[nodiscard]] Eigen::VectorXd applyPreconditioner(
-      const Eigen::VectorXd& residual) const
+  void applyPreconditionerInto(
+      const Eigen::VectorXd& residual, Eigen::VectorXd& z) const
   {
-    Eigen::VectorXd z
-        = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(3 * nodeCount));
+    z.resize(static_cast<Eigen::Index>(3 * nodeCount));
     for (std::size_t i = 0; i < nodeCount; ++i) {
       z.segment<3>(static_cast<Eigen::Index>(3 * i))
           = inverseDiagonalBlocks[i]
             * residual.segment<3>(static_cast<Eigen::Index>(3 * i));
     }
-    return z;
   }
 
   std::size_t nodeCount = 0;
-  std::vector<Block3> blocks;
-  std::vector<Eigen::Matrix3d> diagonalBlocks;
-  std::vector<Eigen::Matrix3d> inverseDiagonalBlocks;
+  std::vector<ProjectedNewtonMatrixFreeBlock3>& blocks;
+  std::vector<Eigen::Matrix3d>& diagonalBlocks;
+  std::vector<Eigen::Matrix3d>& inverseDiagonalBlocks;
 };
 
 //==============================================================================
@@ -1428,12 +1612,17 @@ bool solveMatrixFreeConjugateGradient(
     ProjectedNewtonMatrixFreeHessian& hessian,
     const Eigen::VectorXd& rhs,
     Eigen::VectorXd& solution,
+    Eigen::VectorXd& residual,
+    Eigen::VectorXd& z,
+    Eigen::VectorXd& direction,
+    Eigen::VectorXd& hessianDirection,
     std::size_t& iterations,
     double& relativeResidual)
 {
   constexpr double kTolerance = 1e-8;
   const Eigen::Index maxIterations = 2 * rhs.size();
-  solution = Eigen::VectorXd::Zero(rhs.size());
+  solution.resize(rhs.size());
+  solution.setZero();
   iterations = 0;
   relativeResidual = 0.0;
 
@@ -1446,16 +1635,18 @@ bool solveMatrixFreeConjugateGradient(
     return true;
   }
 
-  Eigen::VectorXd residual = rhs;
-  Eigen::VectorXd z = hessian.applyPreconditioner(residual);
-  Eigen::VectorXd direction = z;
+  residual.resize(rhs.size());
+  residual = rhs;
+  hessian.applyPreconditionerInto(residual, z);
+  direction.resize(rhs.size());
+  direction = z;
   double rz = residual.dot(z);
   if (!std::isfinite(rz) || rz <= 0.0 || !direction.allFinite()) {
     return false;
   }
 
   for (Eigen::Index iter = 0; iter < maxIterations; ++iter) {
-    const Eigen::VectorXd hessianDirection = hessian.multiply(direction);
+    hessian.multiplyInto(direction, hessianDirection);
     const double curvature = direction.dot(hessianDirection);
     if (!std::isfinite(curvature) || curvature <= 0.0) {
       return false;
@@ -1474,13 +1665,14 @@ bool solveMatrixFreeConjugateGradient(
       return true;
     }
 
-    z = hessian.applyPreconditioner(residual);
+    hessian.applyPreconditionerInto(residual, z);
     const double nextRz = residual.dot(z);
     if (!std::isfinite(nextRz) || nextRz <= 0.0 || !z.allFinite()) {
       return false;
     }
     const double beta = nextRz / rz;
-    direction = z + beta * direction;
+    direction *= beta;
+    direction += z;
     if (!direction.allFinite()) {
       return false;
     }
@@ -1499,6 +1691,23 @@ struct SurfaceContactSnapshot
   std::vector<std::uint8_t> surfaceContactPointMask;
   std::vector<dc::SurfaceEdge> surfaceEdges;
 };
+
+//==============================================================================
+SurfaceContactSnapshot& nextSurfaceContactSnapshot(
+    std::vector<SurfaceContactSnapshot>& snapshots, std::size_t& count)
+{
+  if (count == snapshots.size()) {
+    snapshots.emplace_back();
+  }
+  return snapshots[count++];
+}
+
+//==============================================================================
+std::span<const SurfaceContactSnapshot> activeSurfaceContactSnapshots(
+    const std::vector<SurfaceContactSnapshot>& snapshots, std::size_t count)
+{
+  return std::span<const SurfaceContactSnapshot>(snapshots.data(), count);
+}
 
 //==============================================================================
 struct InterBodySurfaceContactResult
@@ -1770,7 +1979,8 @@ InterBodySurfaceContactResult interBodySurfaceContactStepBound(
             obstacle.positions[triangle.nodeC],
             ccdOptions);
         considerInterBodyContactResult(aggregate, result);
-      });
+      },
+      scratch.interBodySweepLinks);
 
   dc::detail::visitSweepPairs(
       scratch.interBodyObstaclePointItems,
@@ -1789,7 +1999,8 @@ InterBodySurfaceContactResult interBodySurfaceContactStepBound(
             currentEnd[triangle.nodeC],
             ccdOptions);
         considerInterBodyContactResult(aggregate, result);
-      });
+      },
+      scratch.interBodySweepLinks);
 
   buildEdgeSweepItems(
       currentStart,
@@ -1821,20 +2032,25 @@ InterBodySurfaceContactResult interBodySurfaceContactStepBound(
             obstacle.positions[b.nodeB],
             ccdOptions);
         considerInterBodyContactResult(aggregate, result);
-      });
+      },
+      scratch.interBodySweepLinks);
 
   return aggregate;
 }
 
 //==============================================================================
-SurfaceContactSnapshot makeStaticBoxSurfaceCcdSnapshot(
+void fillStaticBoxSurfaceCcdSnapshot(
+    SurfaceContactSnapshot& snapshot,
     entt::entity entity,
     const Eigen::Vector3d& halfExtents,
     const comps::Transform& transform)
 {
-  SurfaceContactSnapshot snapshot;
   snapshot.entity = entity;
+  snapshot.positions.clear();
   snapshot.positions.reserve(8);
+  snapshot.surfaceTriangles.clear();
+  snapshot.surfaceContactPointMask.clear();
+  snapshot.surfaceEdges.clear();
 
   const Eigen::Matrix3d rotation
       = normalizeOrIdentity(transform.orientation).toRotationMatrix();
@@ -1890,8 +2106,6 @@ SurfaceContactSnapshot makeStaticBoxSurfaceCcdSnapshot(
     snapshot.surfaceEdges.push_back(
         dc::detail::makeSurfaceEdge(edge[0], edge[1]));
   }
-
-  return snapshot;
 }
 
 //==============================================================================
@@ -1904,8 +2118,11 @@ SurfaceContactSnapshot makeStaticBoxSurfaceCcdSnapshot(
 // outward inflation is the modest over-conservatism this introduces (smaller
 // with finer tessellation), analogous to the box supersampling's thin-corner
 // over-coverage.
-SurfaceContactSnapshot makeStaticSphereSurfaceCcdSnapshot(
-    entt::entity entity, double radius, const comps::Transform& transform)
+void fillStaticSphereSurfaceCcdSnapshot(
+    SurfaceContactSnapshot& snapshot,
+    entt::entity entity,
+    double radius,
+    const comps::Transform& transform)
 {
   constexpr int kLongitude = 16; // segments around the equator
   constexpr int kLatitude = 8;   // bands from pole to pole
@@ -1928,8 +2145,11 @@ SurfaceContactSnapshot makeStaticSphereSurfaceCcdSnapshot(
     return Eigen::Vector3d(transform.position + rotation * local);
   };
 
-  SurfaceContactSnapshot snapshot;
   snapshot.entity = entity;
+  snapshot.positions.clear();
+  snapshot.surfaceTriangles.clear();
+  snapshot.surfaceContactPointMask.clear();
+  snapshot.surfaceEdges.clear();
 
   // Vertices: north pole, (kLatitude - 1) interior rings of kLongitude vertices
   // each, then the south pole.
@@ -1982,8 +2202,6 @@ SurfaceContactSnapshot makeStaticSphereSurfaceCcdSnapshot(
   // sphere tessellation edge lies on the surface, so the full unique edge set
   // is the correct edge-edge CCD input.
   dc::buildUniqueSurfaceEdges(snapshot.surfaceTriangles, snapshot.surfaceEdges);
-
-  return snapshot;
 }
 
 //==============================================================================
@@ -2003,10 +2221,14 @@ bool hasCurrentKinematicStepTrace(const World& world, const entt::entity entity)
 }
 
 //==============================================================================
-std::vector<SurfaceContactSnapshot> collectStaticRigidSurfaceCcdObstacles(
-    const World& world, DeformableSolverStats& stats)
+void collectStaticRigidSurfaceCcdObstaclesInto(
+    const World& world,
+    DeformableSolverStats& stats,
+    std::vector<SurfaceContactSnapshot>& snapshots,
+    std::size_t& snapshotCount)
 {
   ++stats.staticRigidSurfaceCcdSnapshotBuilds;
+  snapshotCount = 0;
 
   const auto& registry = dart::simulation::detail::registryOf(world);
   // Barrier-only obstacles keep their contact barrier but are excluded from the
@@ -2018,7 +2240,6 @@ std::vector<SurfaceContactSnapshot> collectStaticRigidSurfaceCcdObstacles(
       comps::CollisionGeometry,
       comps::Transform>(entt::exclude<comps::DeformableObstacleNoCcdTag>);
 
-  std::vector<SurfaceContactSnapshot> snapshots;
   for (const auto entity : view) {
     if (!isCurrentPoseRigidSurfaceCcdObstacle(registry, entity)) {
       continue;
@@ -2041,33 +2262,33 @@ std::vector<SurfaceContactSnapshot> collectStaticRigidSurfaceCcdObstacles(
       continue;
     }
 
-    SurfaceContactSnapshot snapshot;
     if (shape->type == CollisionShapeType::Box) {
       if (!shape->halfExtents.allFinite()
           || (shape->halfExtents.array() <= 0.0).any()) {
         continue;
       }
-      snapshot = makeStaticBoxSurfaceCcdSnapshot(
-          entity, shape->halfExtents, *shapeTransform);
+      auto& snapshot = nextSurfaceContactSnapshot(snapshots, snapshotCount);
+      fillStaticBoxSurfaceCcdSnapshot(
+          snapshot, entity, shape->halfExtents, *shapeTransform);
       ++stats.staticRigidSurfaceCcdBoxCount;
+      stats.staticRigidSurfaceCcdTriangleCount
+          += snapshot.surfaceTriangles.size();
+      stats.staticRigidSurfaceCcdEdgeCount += snapshot.surfaceEdges.size();
     } else if (shape->type == CollisionShapeType::Sphere) {
       if (!std::isfinite(shape->radius) || shape->radius <= 0.0) {
         continue;
       }
-      snapshot = makeStaticSphereSurfaceCcdSnapshot(
-          entity, shape->radius, *shapeTransform);
+      auto& snapshot = nextSurfaceContactSnapshot(snapshots, snapshotCount);
+      fillStaticSphereSurfaceCcdSnapshot(
+          snapshot, entity, shape->radius, *shapeTransform);
       ++stats.staticRigidSurfaceCcdSphereCount;
+      stats.staticRigidSurfaceCcdTriangleCount
+          += snapshot.surfaceTriangles.size();
+      stats.staticRigidSurfaceCcdEdgeCount += snapshot.surfaceEdges.size();
     } else {
       continue;
     }
-
-    stats.staticRigidSurfaceCcdTriangleCount
-        += snapshot.surfaceTriangles.size();
-    stats.staticRigidSurfaceCcdEdgeCount += snapshot.surfaceEdges.size();
-    snapshots.push_back(std::move(snapshot));
   }
-
-  return snapshots;
 }
 
 //==============================================================================
@@ -2093,6 +2314,28 @@ comps::Transform predictRigidBodyEndTransform(
   }
   end.orientation = normalizeOrIdentity(orientation);
   return end;
+}
+
+//==============================================================================
+comps::Transform predictKinematicRigidSurfaceCcdEndTransform(
+    const World& world,
+    const detail::WorldRegistry& registry,
+    const entt::entity entity,
+    const comps::Transform& transform,
+    const comps::Velocity& velocity)
+{
+  double timeStep = world.getTimeStep();
+  if (const auto* tag = registry.try_get<comps::KinematicBodyTag>(entity);
+      tag != nullptr && tag->maxTime.has_value()
+      && std::isfinite(*tag->maxTime)) {
+    const double remainingTime = *tag->maxTime - world.getTime();
+    if (!(remainingTime > 0.0)) {
+      timeStep = 0.0;
+    } else {
+      timeStep = std::min(timeStep, remainingTime);
+    }
+  }
+  return predictRigidBodyEndTransform(transform, velocity, timeStep);
 }
 
 //==============================================================================
@@ -2153,10 +2396,16 @@ std::size_t movingRigidSurfaceCcdSampleCount(
 // the box min axis for axis-aligned motion; for diagonal motion a bounded,
 // half-extent-scale thin-corner under-coverage remains, inherent to all box
 // supersampling.
-std::vector<SurfaceContactSnapshot> collectMovingRigidSurfaceCcdObstacles(
-    const World& world, const double timeStep, DeformableSolverStats& stats)
+void collectMovingRigidSurfaceCcdObstaclesInto(
+    const World& world,
+    const double timeStep,
+    DeformableSolverStats& stats,
+    std::vector<SurfaceContactSnapshot>& snapshots,
+    std::size_t& snapshotCount,
+    const bool primeKinematicWithoutCurrentTrace = false)
 {
   ++stats.movingRigidSurfaceCcdSnapshotBuilds;
+  snapshotCount = 0;
 
   const auto& registry = dart::simulation::detail::registryOf(world);
   // Moving obstacles are free rigid bodies integrated by RigidBodyPositionStage
@@ -2171,7 +2420,6 @@ std::vector<SurfaceContactSnapshot> collectMovingRigidSurfaceCcdObstacles(
       comps::Transform,
       comps::Velocity>(entt::exclude<comps::StaticBodyTag>);
 
-  std::vector<SurfaceContactSnapshot> snapshots;
   for (const auto entity : view) {
     const auto& geometry = view.get<comps::CollisionGeometry>(entity);
     const auto* shape = geometry.getPrimaryShape();
@@ -2182,21 +2430,28 @@ std::vector<SurfaceContactSnapshot> collectMovingRigidSurfaceCcdObstacles(
     const auto& velocity = view.get<comps::Velocity>(entity);
     const bool isKinematic = registry.all_of<comps::KinematicBodyTag>(entity);
     const auto* trace = registry.try_get<comps::KinematicBodyStepTrace>(entity);
-    if (isKinematic && (trace == nullptr || trace->frame != world.getFrame())) {
-      continue;
-    }
     if (shape->type != CollisionShapeType::Box
         || !shape->halfExtents.allFinite()
         || (shape->halfExtents.array() <= 0.0).any()
         || !velocity.linear.allFinite() || !velocity.angular.allFinite()) {
       continue;
     }
-    const comps::Transform startTransform
-        = isKinematic ? trace->startTransform : transform;
-    const comps::Transform endTransform
-        = isKinematic
-              ? trace->endTransform
-              : predictRigidBodyEndTransform(transform, velocity, timeStep);
+    comps::Transform startTransform = transform;
+    comps::Transform endTransform;
+    if (isKinematic) {
+      if (trace != nullptr && trace->frame == world.getFrame()) {
+        startTransform = trace->startTransform;
+        endTransform = trace->endTransform;
+      } else if (primeKinematicWithoutCurrentTrace) {
+        endTransform = predictKinematicRigidSurfaceCcdEndTransform(
+            world, registry, entity, transform, velocity);
+      } else {
+        continue;
+      }
+    } else {
+      endTransform
+          = predictRigidBodyEndTransform(transform, velocity, timeStep);
+    }
     const auto startShapeTransform
         = collisionShapeWorldTransform(startTransform, *shape);
     if (!startShapeTransform.has_value()) {
@@ -2254,18 +2509,16 @@ std::vector<SurfaceContactSnapshot> collectMovingRigidSurfaceCcdObstacles(
       sampleTransform.orientation
           = startOrientation.slerp(fraction, endOrientation);
 
-      auto snapshot = makeStaticBoxSurfaceCcdSnapshot(
-          entity, sampleHalfExtents, sampleTransform);
+      auto& snapshot = nextSurfaceContactSnapshot(snapshots, snapshotCount);
+      fillStaticBoxSurfaceCcdSnapshot(
+          snapshot, entity, sampleHalfExtents, sampleTransform);
       stats.movingRigidSurfaceCcdTriangleCount
           += snapshot.surfaceTriangles.size();
       stats.movingRigidSurfaceCcdEdgeCount += snapshot.surfaceEdges.size();
       ++stats.movingRigidSurfaceCcdSampleCount;
-      snapshots.push_back(std::move(snapshot));
     }
     ++stats.movingRigidSurfaceCcdBoxCount;
   }
-
-  return snapshots;
 }
 
 //==============================================================================
@@ -2353,8 +2606,11 @@ std::optional<StaticGroundContact> boxContactAt(
 }
 
 //==============================================================================
-std::vector<StaticGroundBarrier> collectStaticGroundBarriers(const World& world)
+void collectStaticGroundBarriersInto(
+    const World& world, std::vector<StaticGroundBarrier>& barriers)
 {
+  barriers.clear();
+
   const auto& registry = dart::simulation::detail::registryOf(world);
   auto view = registry.view<
       comps::RigidBodyTag,
@@ -2363,7 +2619,6 @@ std::vector<StaticGroundBarrier> collectStaticGroundBarriers(const World& world)
       comps::CollisionGeometry,
       comps::Transform>();
 
-  std::vector<StaticGroundBarrier> barriers;
   for (const auto entity : view) {
     const auto& geometry = view.get<comps::CollisionGeometry>(entity);
     const auto* shape = geometry.getPrimaryShape();
@@ -2414,8 +2669,6 @@ std::vector<StaticGroundBarrier> collectStaticGroundBarriers(const World& world)
         break;
     }
   }
-
-  return barriers;
 }
 
 //==============================================================================
@@ -2425,9 +2678,11 @@ std::vector<StaticGroundBarrier> collectStaticGroundBarriers(const World& world)
 // tessellation). Boxes opted in as surface-CCD obstacles are skipped here --
 // their barrier force is a later increment -- and the surface CCD limiter
 // remains the conservative no-penetration gate.
-std::vector<SphereObstacleBarrier> collectSphereObstacleBarriers(
-    const World& world)
+void collectSphereObstacleBarriersInto(
+    const World& world, std::vector<SphereObstacleBarrier>& obstacles)
 {
+  obstacles.clear();
+
   const auto& registry = dart::simulation::detail::registryOf(world);
   auto view = registry.view<
       comps::RigidBodyTag,
@@ -2435,7 +2690,6 @@ std::vector<SphereObstacleBarrier> collectSphereObstacleBarriers(
       comps::CollisionGeometry,
       comps::Transform>();
 
-  std::vector<SphereObstacleBarrier> obstacles;
   for (const auto entity : view) {
     if (!isCurrentPoseRigidSurfaceCcdObstacle(registry, entity)) {
       continue;
@@ -2455,12 +2709,14 @@ std::vector<SphereObstacleBarrier> collectSphereObstacleBarriers(
     obstacles.push_back(
         SphereObstacleBarrier{shapeTransform->position, shape->radius});
   }
-  return obstacles;
 }
 
 //==============================================================================
-std::vector<BoxObstacleBarrier> collectBoxObstacleBarriers(const World& world)
+void collectBoxObstacleBarriersInto(
+    const World& world, std::vector<BoxObstacleBarrier>& obstacles)
 {
+  obstacles.clear();
+
   const auto& registry = dart::simulation::detail::registryOf(world);
   auto view = registry.view<
       comps::RigidBodyTag,
@@ -2468,7 +2724,6 @@ std::vector<BoxObstacleBarrier> collectBoxObstacleBarriers(const World& world)
       comps::CollisionGeometry,
       comps::Transform>();
 
-  std::vector<BoxObstacleBarrier> obstacles;
   for (const auto entity : view) {
     if (!isCurrentPoseRigidSurfaceCcdObstacle(registry, entity)) {
       continue;
@@ -2494,13 +2749,14 @@ std::vector<BoxObstacleBarrier> collectBoxObstacleBarriers(const World& world)
     obstacle.halfExtents = shape->halfExtents;
     obstacles.push_back(obstacle);
   }
-  return obstacles;
 }
 
 //==============================================================================
-std::vector<CapsuleObstacleBarrier> collectCapsuleObstacleBarriers(
-    const World& world)
+void collectCapsuleObstacleBarriersInto(
+    const World& world, std::vector<CapsuleObstacleBarrier>& obstacles)
 {
+  obstacles.clear();
+
   const auto& registry = dart::simulation::detail::registryOf(world);
   auto view = registry.view<
       comps::RigidBodyTag,
@@ -2508,7 +2764,6 @@ std::vector<CapsuleObstacleBarrier> collectCapsuleObstacleBarriers(
       comps::CollisionGeometry,
       comps::Transform>();
 
-  std::vector<CapsuleObstacleBarrier> obstacles;
   for (const auto entity : view) {
     if (!isCurrentPoseRigidSurfaceCcdObstacle(registry, entity)) {
       continue;
@@ -2540,7 +2795,6 @@ std::vector<CapsuleObstacleBarrier> collectCapsuleObstacleBarriers(
     obstacle.radius = radius;
     obstacles.push_back(obstacle);
   }
-  return obstacles;
 }
 
 //==============================================================================
@@ -2632,11 +2886,41 @@ struct TimeInterval
 };
 
 //==============================================================================
-std::vector<Eigen::Vector2d> projectedBoxFootprint(
-    const StaticGroundBarrier& barrier)
+struct ProjectedBoxFootprint
 {
-  std::vector<Eigen::Vector2d> points;
-  points.reserve(8);
+  std::array<Eigen::Vector2d, 16> points{};
+  std::size_t size = 0;
+
+  void pushBack(const Eigen::Vector2d& point)
+  {
+    points[size++] = point;
+  }
+
+  void popBack()
+  {
+    --size;
+  }
+
+  [[nodiscard]] Eigen::Vector2d& back()
+  {
+    return points[size - 1];
+  }
+
+  [[nodiscard]] const Eigen::Vector2d& back() const
+  {
+    return points[size - 1];
+  }
+
+  [[nodiscard]] std::span<const Eigen::Vector2d> span() const
+  {
+    return std::span<const Eigen::Vector2d>(points.data(), size);
+  }
+};
+
+//==============================================================================
+ProjectedBoxFootprint projectedBoxFootprint(const StaticGroundBarrier& barrier)
+{
+  ProjectedBoxFootprint points;
   for (const double xSign : {-1.0, 1.0}) {
     for (const double ySign : {-1.0, 1.0}) {
       for (const double zSign : {-1.0, 1.0}) {
@@ -2645,53 +2929,59 @@ std::vector<Eigen::Vector2d> projectedBoxFootprint(
             ySign * barrier.halfExtents.y(),
             zSign * barrier.halfExtents.z());
         const Eigen::Vector3d world = barrier.center + barrier.rotation * local;
-        points.push_back(world.head<2>());
+        points.pushBack(world.head<2>());
       }
     }
   }
 
   constexpr double tolerance = 1e-12;
   std::sort(
-      points.begin(),
-      points.end(),
+      points.points.begin(),
+      points.points.begin() + static_cast<std::ptrdiff_t>(points.size),
       [](const Eigen::Vector2d& lhs, const Eigen::Vector2d& rhs) {
         return std::tie(lhs.x(), lhs.y()) < std::tie(rhs.x(), rhs.y());
       });
-  points.erase(
-      std::unique(
-          points.begin(),
-          points.end(),
-          [](const Eigen::Vector2d& lhs, const Eigen::Vector2d& rhs) {
-            return (lhs - rhs).squaredNorm() <= tolerance * tolerance;
-          }),
-      points.end());
+  const auto uniqueEnd = std::unique(
+      points.points.begin(),
+      points.points.begin() + static_cast<std::ptrdiff_t>(points.size),
+      [](const Eigen::Vector2d& lhs, const Eigen::Vector2d& rhs) {
+        return (lhs - rhs).squaredNorm() <= tolerance * tolerance;
+      });
+  points.size = static_cast<std::size_t>(
+      std::distance(points.points.begin(), uniqueEnd));
 
-  if (points.size() <= 2) {
+  if (points.size <= 2) {
     return points;
   }
 
-  std::vector<Eigen::Vector2d> hull;
-  hull.reserve(points.size() * 2);
-  for (const auto& point : points) {
-    while (hull.size() >= 2
-           && cross2d(hull.back() - hull[hull.size() - 2], point - hull.back())
+  ProjectedBoxFootprint hull;
+  for (std::size_t i = 0; i < points.size; ++i) {
+    const auto& point = points.points[i];
+    while (hull.size >= 2
+           && cross2d(
+                  hull.back() - hull.points[hull.size - 2], point - hull.back())
                   <= tolerance) {
-      hull.pop_back();
+      hull.popBack();
     }
-    hull.push_back(point);
+    hull.pushBack(point);
   }
 
-  const auto lowerSize = hull.size();
-  for (auto it = points.rbegin() + 1; it != points.rend(); ++it) {
-    while (hull.size() > lowerSize
-           && cross2d(hull.back() - hull[hull.size() - 2], *it - hull.back())
+  const auto lowerSize = hull.size;
+  for (std::size_t i = points.size - 2; i < points.size; --i) {
+    const auto& point = points.points[i];
+    while (hull.size > lowerSize
+           && cross2d(
+                  hull.back() - hull.points[hull.size - 2], point - hull.back())
                   <= tolerance) {
-      hull.pop_back();
+      hull.popBack();
     }
-    hull.push_back(*it);
+    hull.pushBack(point);
+    if (i == 0) {
+      break;
+    }
   }
-  if (!hull.empty()) {
-    hull.pop_back();
+  if (hull.size > 0) {
+    hull.popBack();
   }
 
   return hull;
@@ -2701,7 +2991,7 @@ std::vector<Eigen::Vector2d> projectedBoxFootprint(
 std::optional<TimeInterval> clipSegmentToConvexFootprint(
     const Eigen::Vector2d& start,
     const Eigen::Vector2d& end,
-    const std::vector<Eigen::Vector2d>& footprint)
+    std::span<const Eigen::Vector2d> footprint)
 {
   if (footprint.size() < 3) {
     return std::nullopt;
@@ -2790,9 +3080,11 @@ std::optional<TimeInterval> staticGroundBarrierFootprintInterval(
     const Eigen::Vector3d& end)
 {
   switch (barrier.shape) {
-    case StaticGroundBarrier::Shape::Box:
+    case StaticGroundBarrier::Shape::Box: {
+      const auto footprint = projectedBoxFootprint(barrier);
       return clipSegmentToConvexFootprint(
-          start.head<2>(), end.head<2>(), projectedBoxFootprint(barrier));
+          start.head<2>(), end.head<2>(), footprint.span());
+    }
     case StaticGroundBarrier::Shape::Sphere:
       return sphereFootprintInterval(barrier, start, end);
   }
@@ -3714,18 +4006,6 @@ double addSelfContactBarrierEnergy(
 
   return energy;
 }
-
-//==============================================================================
-// A lagged self-contact friction contact: the four stencil nodes, the lagged
-// normal-force magnitude, and the tangent projection (2x12) that maps the
-// stacked four-node displacement to tangential relative motion. Computed once
-// per outer iteration (standard IPC lagging) at the current iterate.
-struct SelfContactFrictionContact
-{
-  std::array<std::size_t, 4> nodes{};
-  double normalForce = 0.0;
-  dc::Matrix2x12d projection = dc::Matrix2x12d::Zero();
-};
 
 struct SelfContactFrictionInputs
 {
@@ -4763,6 +5043,141 @@ void reserveDeformableSolverScratch(
   scratch.externalAccelerations.reserve(nodeCount);
   scratch.activeFixed.reserve(nodeCount);
   scratch.activeDirichlet.reserve(nodeCount);
+  scratch.countedDirichlet.reserve(nodeCount);
+  scratch.countedNeumann.reserve(nodeCount);
+}
+
+//==============================================================================
+void reserveSurfaceContactCandidateScratch(
+    std::size_t nodeCount, DeformableContactSolverScratch& scratch)
+{
+  const std::size_t triangleCount = scratch.surfaceTriangles.size();
+  const std::size_t edgeCapacity = 3 * triangleCount;
+  const std::size_t pointTriangleCapacity = 8 * (nodeCount + triangleCount);
+  const std::size_t edgeEdgeCapacity = 12 * edgeCapacity;
+  // Motion-aware late-activation sweeps can overlap several static grid
+  // bands in one step, so reserve the swept broad-phase envelope rather than
+  // only the current-pose contact band.
+  const std::size_t sweptPointTriangleCapacity
+      = 32 * (nodeCount + triangleCount);
+  const std::size_t sweptEdgeEdgeCapacity = 48 * edgeCapacity;
+
+  scratch.candidates.surfaceEdges.reserve(edgeCapacity);
+  scratch.candidates.pointTriangleCandidates.reserve(
+      sweptPointTriangleCapacity);
+  scratch.candidates.edgeEdgeCandidates.reserve(sweptEdgeEdgeCapacity);
+  scratch.barrierCandidates.surfaceEdges.reserve(edgeCapacity);
+  scratch.barrierCandidates.pointTriangleCandidates.reserve(
+      pointTriangleCapacity);
+  scratch.barrierCandidates.edgeEdgeCandidates.reserve(edgeEdgeCapacity);
+  scratch.sweepScratch.pointItems.reserve(nodeCount);
+  scratch.sweepScratch.triangleItems.reserve(triangleCount);
+  scratch.sweepScratch.edgeItems.reserve(edgeCapacity);
+  scratch.sweepScratch.sweepLinks.reserve(
+      std::max(nodeCount, std::max(triangleCount, edgeCapacity)));
+}
+
+//==============================================================================
+void reserveVbdSelfContactCandidateScratch(
+    std::size_t nodeCount,
+    std::size_t triangleCount,
+    DeformableVbdScratch& scratch)
+{
+  const std::size_t edgeCapacity = 3 * triangleCount;
+  const std::size_t pointTriangleCapacity = 4 * (nodeCount + triangleCount);
+  const std::size_t edgeEdgeCapacity = 6 * edgeCapacity;
+
+  scratch.selfContactCandidates.surfaceEdges.reserve(edgeCapacity);
+  scratch.selfContactCandidates.pointTriangleCandidates.reserve(
+      pointTriangleCapacity);
+  scratch.selfContactCandidates.edgeEdgeCandidates.reserve(edgeEdgeCapacity);
+  scratch.selfContactSweepScratch.pointItems.reserve(nodeCount);
+  scratch.selfContactSweepScratch.triangleItems.reserve(triangleCount);
+  scratch.selfContactSweepScratch.edgeItems.reserve(edgeCapacity);
+  scratch.selfContactSweepScratch.sweepLinks.reserve(
+      std::max(nodeCount, std::max(triangleCount, edgeCapacity)));
+}
+
+//==============================================================================
+void reserveDeformableFrictionScratch(
+    std::size_t nodeCount, DeformableContactSolverScratch& scratch)
+{
+  scratch.groundFrictionNormalForce.reserve(nodeCount);
+  scratch.groundFrictionNormalDirection.reserve(nodeCount);
+  scratch.selfContactFrictionContacts.reserve(
+      scratch.barrierCandidates.pointTriangleCandidates.capacity()
+      + scratch.barrierCandidates.edgeEdgeCandidates.capacity());
+}
+
+//==============================================================================
+void reserveProjectedNewtonScratch(
+    std::size_t nodeCount,
+    const comps::DeformableSpringModel& model,
+    const comps::DeformableMeshTopology& topology,
+    DeformableContactSolverScratch& scratch)
+{
+  const auto dim = static_cast<Eigen::Index>(3 * nodeCount);
+  scratch.projectedNewtonRhs.resize(dim);
+  scratch.projectedNewtonSolution.resize(dim);
+
+  // Reserve DART-owned barrier buffers for the baked candidate capacity, not
+  // only the contacts active at bake.
+  const std::size_t barrierCandidateCount
+      = scratch.barrierCandidates.pointTriangleCandidates.capacity()
+        + scratch.barrierCandidates.edgeEdgeCandidates.capacity();
+  const std::size_t tripletEstimate = 3 * nodeCount + 36 * model.edges.size()
+                                      + 144 * topology.tetrahedra.size()
+                                      + 144 * barrierCandidateCount
+                                      + 36 * nodeCount;
+  const std::size_t matrixFreeBlockEstimate
+      = 4 * nodeCount + 4 * model.edges.size() + 16 * topology.tetrahedra.size()
+        + 16 * barrierCandidateCount;
+  scratch.projectedNewtonTriplets.reserve(tripletEstimate);
+  scratch.projectedNewtonHessian.resize(dim, dim);
+  scratch.projectedNewtonHessian.reserve(
+      static_cast<Eigen::Index>(tripletEstimate));
+  scratch.newtonPatternOuter.reserve(static_cast<std::size_t>(dim + 1));
+  scratch.newtonPatternInner.reserve(tripletEstimate);
+  scratch.projectedNewtonEdgeBlocks.reserve(36 * model.edges.size());
+  scratch.projectedNewtonEdgeBlockNodes.reserve(model.edges.size());
+  scratch.projectedNewtonTetBlocks.reserve(144 * topology.tetrahedra.size());
+  scratch.projectedNewtonTetBlockNodes.reserve(topology.tetrahedra.size());
+  scratch.projectedNewtonBarrierBlocks.reserve(144 * barrierCandidateCount);
+  scratch.projectedNewtonBarrierBlockNodes.reserve(barrierCandidateCount);
+  scratch.projectedNewtonMatrixFreeBlocks.reserve(matrixFreeBlockEstimate);
+  scratch.projectedNewtonMatrixFreeDiagonalBlocks.reserve(nodeCount);
+  scratch.projectedNewtonMatrixFreeDiagonalBlocks.resize(nodeCount);
+  scratch.projectedNewtonMatrixFreeInverseDiagonalBlocks.reserve(nodeCount);
+  scratch.projectedNewtonMatrixFreeInverseDiagonalBlocks.resize(nodeCount);
+  scratch.projectedNewtonMatrixFreeResidual.resize(dim);
+  scratch.projectedNewtonMatrixFreePreconditionedResidual.resize(dim);
+  scratch.projectedNewtonMatrixFreeDirection.resize(dim);
+  scratch.projectedNewtonMatrixFreeHessianDirection.resize(dim);
+}
+
+//==============================================================================
+void syncFemRestShapeScratch(
+    std::size_t nodeCount,
+    const comps::DeformableMeshTopology& topology,
+    const comps::DeformableMaterial& material,
+    DeformableContactSolverScratch& scratch)
+{
+  if (!material.useFiniteElementElasticity || topology.tetrahedra.empty()
+      || topology.restPositions.size() != nodeCount
+      || scratch.femRestShapes.size() == topology.tetrahedra.size()) {
+    return;
+  }
+
+  scratch.femRestShapes.clear();
+  scratch.femRestShapes.reserve(topology.tetrahedra.size());
+  for (const auto& tet : topology.tetrahedra) {
+    scratch.femRestShapes.push_back(
+        fem::makeTetRestShape(
+            topology.restPositions[tet.nodeA],
+            topology.restPositions[tet.nodeB],
+            topology.restPositions[tet.nodeC],
+            topology.restPositions[tet.nodeD]));
+  }
 }
 
 //==============================================================================
@@ -4785,7 +5200,7 @@ void prepareDeformableBoundaryConditions(
     return;
   }
 
-  std::vector<std::uint8_t> countedDirichlet(nodeCount, 0u);
+  scratch.countedDirichlet.assign(nodeCount, 0u);
   for (const auto& boundary : boundaryConditions->dirichlet) {
     if (!isBoundaryActiveAtStepStart(
             time, boundary.startTime, boundary.endTime)) {
@@ -4815,14 +5230,14 @@ void prepareDeformableBoundaryConditions(
       state.velocities[node] = velocity;
       scratch.activeFixed[node] = 1u;
       scratch.activeDirichlet[node] = 1u;
-      if (countedDirichlet[node] == 0u) {
-        countedDirichlet[node] = 1u;
+      if (scratch.countedDirichlet[node] == 0u) {
+        scratch.countedDirichlet[node] = 1u;
         ++stats.activeDirichletNodeCount;
       }
     }
   }
 
-  std::vector<std::uint8_t> countedNeumann(nodeCount, 0u);
+  scratch.countedNeumann.assign(nodeCount, 0u);
   for (const auto& boundary : boundaryConditions->neumann) {
     if (!isBoundaryActiveAtStepStart(
             time, boundary.startTime, boundary.endTime)) {
@@ -4841,8 +5256,8 @@ void prepareDeformableBoundaryConditions(
       }
 
       scratch.externalAccelerations[node] += boundary.acceleration;
-      if (countedNeumann[node] == 0u) {
-        countedNeumann[node] = 1u;
+      if (scratch.countedNeumann[node] == 0u) {
+        scratch.countedNeumann[node] = 1u;
         ++stats.activeNeumannNodeCount;
       }
     }
@@ -4854,6 +5269,76 @@ inline constexpr std::uint64_t kAvbdStaticSphereObjectId = 2;
 inline constexpr std::uint64_t kAvbdStaticBoxObjectId = 3;
 inline constexpr std::uint32_t kAvbdSelfContactPointTriangleRow = 0;
 inline constexpr std::uint32_t kAvbdSelfContactEdgeEdgeRow = 1;
+
+//==============================================================================
+void syncVbdTopologyScratch(
+    std::size_t nodeCount,
+    const comps::DeformableSpringModel& model,
+    const comps::DeformableMeshTopology& topology,
+    DeformableVbdScratch& vbdScratch)
+{
+  if (vbdScratch.initialized && vbdScratch.cachedNodeCount == nodeCount
+      && vbdScratch.cachedEdgeCount == model.edges.size()
+      && vbdScratch.cachedTetCount == topology.tetrahedra.size()) {
+    return;
+  }
+
+  vbdScratch.springs.clear();
+  vbdScratch.springs.reserve(model.edges.size());
+  for (const auto& edge : model.edges) {
+    vbdScratch.springs.push_back(
+        {static_cast<std::uint32_t>(edge.nodeA),
+         static_cast<std::uint32_t>(edge.nodeB),
+         edge.restLength});
+  }
+
+  vbdScratch.tets.clear();
+  vbdScratch.tets.reserve(topology.tetrahedra.size());
+  for (const auto& tet : topology.tetrahedra) {
+    const std::array<std::uint32_t, 4> vertices
+        = {static_cast<std::uint32_t>(tet.nodeA),
+           static_cast<std::uint32_t>(tet.nodeB),
+           static_cast<std::uint32_t>(tet.nodeC),
+           static_cast<std::uint32_t>(tet.nodeD)};
+    const dvbd::TetRestShape rest = dvbd::makeTetRestShape(
+        {topology.restPositions[tet.nodeA],
+         topology.restPositions[tet.nodeB],
+         topology.restPositions[tet.nodeC],
+         topology.restPositions[tet.nodeD]});
+    vbdScratch.tets.push_back({vertices, rest});
+  }
+
+  vbdScratch.coloring
+      = dvbd::colorDeformable(nodeCount, vbdScratch.springs, vbdScratch.tets);
+  vbdScratch.springAdjacency
+      = dvbd::SpringAdjacency::build(nodeCount, vbdScratch.springs);
+  vbdScratch.tetAdjacency
+      = dvbd::TetAdjacency::build(nodeCount, vbdScratch.tets);
+  vbdScratch.cachedNodeCount = nodeCount;
+  vbdScratch.cachedEdgeCount = model.edges.size();
+  vbdScratch.cachedTetCount = topology.tetrahedra.size();
+  vbdScratch.initialized = true;
+}
+
+//==============================================================================
+void primeVbdStaticContactScratch(
+    std::size_t nodeCount,
+    const std::vector<StaticGroundBarrier>& barriers,
+    const std::vector<SphereObstacleBarrier>& sphereObstacles,
+    const std::vector<BoxObstacleBarrier>& boxObstacles,
+    const comps::DeformableVbdConfig& config,
+    DeformableVbdScratch& vbdScratch)
+{
+  const bool anyStaticContact
+      = !barriers.empty() || !sphereObstacles.empty() || !boxObstacles.empty();
+  if (config.contactStiffness <= 0.0 || !anyStaticContact) {
+    return;
+  }
+
+  vbdScratch.contactPlanes.assign(nodeCount, dvbd::ContactPlane{});
+  vbdScratch.contactObjectIds.assign(nodeCount, 0);
+  vbdScratch.contactFeatureIds.assign(nodeCount, 0);
+}
 
 //==============================================================================
 /// Solve one implicit-Euler step for a deformable body with the
@@ -4890,45 +5375,7 @@ void runVbdDeformableSolve(
 {
   const std::size_t nodeCount = scratch.next.size();
 
-  if (!vbdScratch.initialized || vbdScratch.cachedNodeCount != nodeCount
-      || vbdScratch.cachedEdgeCount != model.edges.size()
-      || vbdScratch.cachedTetCount != topology.tetrahedra.size()) {
-    vbdScratch.springs.clear();
-    vbdScratch.springs.reserve(model.edges.size());
-    for (const auto& edge : model.edges) {
-      vbdScratch.springs.push_back(
-          {static_cast<std::uint32_t>(edge.nodeA),
-           static_cast<std::uint32_t>(edge.nodeB),
-           edge.restLength});
-    }
-
-    vbdScratch.tets.clear();
-    vbdScratch.tets.reserve(topology.tetrahedra.size());
-    for (const auto& tet : topology.tetrahedra) {
-      const std::array<std::uint32_t, 4> vertices
-          = {static_cast<std::uint32_t>(tet.nodeA),
-             static_cast<std::uint32_t>(tet.nodeB),
-             static_cast<std::uint32_t>(tet.nodeC),
-             static_cast<std::uint32_t>(tet.nodeD)};
-      const dvbd::TetRestShape rest = dvbd::makeTetRestShape(
-          {topology.restPositions[tet.nodeA],
-           topology.restPositions[tet.nodeB],
-           topology.restPositions[tet.nodeC],
-           topology.restPositions[tet.nodeD]});
-      vbdScratch.tets.push_back({vertices, rest});
-    }
-
-    vbdScratch.coloring
-        = dvbd::colorDeformable(nodeCount, vbdScratch.springs, vbdScratch.tets);
-    vbdScratch.springAdjacency
-        = dvbd::SpringAdjacency::build(nodeCount, vbdScratch.springs);
-    vbdScratch.tetAdjacency
-        = dvbd::TetAdjacency::build(nodeCount, vbdScratch.tets);
-    vbdScratch.cachedNodeCount = nodeCount;
-    vbdScratch.cachedEdgeCount = model.edges.size();
-    vbdScratch.cachedTetCount = topology.tetrahedra.size();
-    vbdScratch.initialized = true;
-  }
+  syncVbdTopologyScratch(nodeCount, model, topology, vbdScratch);
 
   for (std::size_t i = 0; i < nodeCount; ++i) {
     if (scratch.activeFixed[i] == 0u) {
@@ -5098,7 +5545,7 @@ void runVbdDeformableSolve(
         vbdScratch.selfContactSweepScratch);
     filterSurfaceContactPointCandidates(
         vbdScratch.selfContactCandidates, surfaceContactPointMask);
-    vbdScratch.selfContactAdjacency = dvbd::SelfContactAdjacency::build(
+    vbdScratch.selfContactAdjacency.rebuild(
         nodeCount,
         vbdScratch.selfContactCandidates,
         surfaceTriangles,
@@ -5152,23 +5599,11 @@ void runVbdDeformableSolve(
         && !options.useChebyshev && options.rayleighDamping <= 0.0;
 
   dvbd::BlockDescentStats result;
-  const auto capturePreviousAvbdSelfContactFrictionRows =
-      [](const std::vector<dvbd::AvbdScalarRowDescriptor>& descriptors,
-         const std::vector<dvbd::AvbdSelfContactFrictionRow>& rows) {
-        std::map<dvbd::AvbdScalarRowKey, dvbd::AvbdSelfContactFrictionRow>
-            previousRows;
-        const std::size_t rowCount = std::min(descriptors.size(), rows.size());
-        for (std::size_t i = 0; i < rowCount; ++i) {
-          previousRows.emplace(descriptors[i].key, rows[i]);
-        }
-        return previousRows;
-      };
   const auto projectAvbdSelfContactFrictionWarmStarts =
       [](dvbd::AvbdScalarRowInventory& inventory,
          std::vector<dvbd::AvbdSelfContactFrictionRow>& rows,
-         const std::map<
-             dvbd::AvbdScalarRowKey,
-             dvbd::AvbdSelfContactFrictionRow>& previousRows) {
+         const std::vector<DeformableVbdScratch::AvbdFrictionWarmStartRecord<
+             dvbd::AvbdSelfContactFrictionRow>>& previousRows) {
         for (std::size_t i = 0; i + 1 < inventory.size() && i + 1 < rows.size();
              i += 2) {
           dvbd::AvbdScalarRowRecord& firstRecord = inventory[i];
@@ -5185,12 +5620,11 @@ void runVbdDeformableSolve(
             continue;
           }
 
-          const auto previousFirst
-              = previousRows.find(firstRecord.descriptor.key);
-          const auto previousSecond
-              = previousRows.find(secondRecord.descriptor.key);
-          if (previousFirst == previousRows.end()
-              || previousSecond == previousRows.end()) {
+          const auto* previousFirst = findAvbdFrictionWarmStartRow(
+              previousRows, firstRecord.descriptor.key);
+          const auto* previousSecond = findAvbdFrictionWarmStartRow(
+              previousRows, secondRecord.descriptor.key);
+          if (previousFirst == nullptr || previousSecond == nullptr) {
             continue;
           }
 
@@ -5198,8 +5632,8 @@ void runVbdDeformableSolve(
               = dvbd::projectAvbdSelfContactFrictionDualToTangentPair(
                   firstRow.state.lambda,
                   secondRow.state.lambda,
-                  previousFirst->second,
-                  previousSecond->second,
+                  *previousFirst,
+                  *previousSecond,
                   firstRow,
                   secondRow);
           firstRow.state.lambda
@@ -5307,10 +5741,16 @@ void runVbdDeformableSolve(
     warmStartOptions.alpha = config.avbdAlpha;
     warmStartOptions.gamma = config.avbdGamma;
     warmStartOptions.maxStiffness = config.avbdMaxStiffness;
+    vbdScratch.avbdSelfContactInventory.reserve(
+        vbdScratch.avbdSelfContactDescriptors.size());
     vbdScratch.avbdSelfContactInventory.syncActiveRows(
         vbdScratch.avbdSelfContactDescriptors, warmStartOptions);
+    vbdScratch.avbdContactInventory.reserve(
+        vbdScratch.avbdContactDescriptors.size());
     vbdScratch.avbdContactInventory.syncActiveRows(
         vbdScratch.avbdContactDescriptors, warmStartOptions);
+    vbdScratch.avbdAttachmentInventory.reserve(
+        vbdScratch.avbdAttachmentDescriptors.size());
     vbdScratch.avbdAttachmentInventory.syncActiveRows(
         vbdScratch.avbdAttachmentDescriptors, warmStartOptions);
 
@@ -5363,10 +5803,10 @@ void runVbdDeformableSolve(
       vbdScratch.avbdSelfContactRows.push_back(row);
     }
 
-    const auto previousAvbdSelfContactFrictionRows
-        = capturePreviousAvbdSelfContactFrictionRows(
-            vbdScratch.avbdSelfContactFrictionDescriptors,
-            vbdScratch.avbdSelfContactFrictionRows);
+    rebuildAvbdFrictionWarmStartLookup(
+        vbdScratch.previousAvbdSelfContactFrictionWarmStarts,
+        vbdScratch.avbdSelfContactFrictionDescriptors,
+        vbdScratch.avbdSelfContactFrictionRows);
     vbdScratch.avbdSelfContactFrictionDescriptors.clear();
     if (useAvbdSelfContactFrictionRows) {
       vbdScratch.avbdSelfContactFrictionDescriptors.reserve(
@@ -5395,6 +5835,8 @@ void runVbdDeformableSolve(
         }
       }
     }
+    vbdScratch.avbdSelfContactFrictionInventory.reserve(
+        vbdScratch.avbdSelfContactFrictionDescriptors.size());
     vbdScratch.avbdSelfContactFrictionInventory.syncActiveRows(
         vbdScratch.avbdSelfContactFrictionDescriptors, warmStartOptions);
 
@@ -5418,7 +5860,7 @@ void runVbdDeformableSolve(
     projectAvbdSelfContactFrictionWarmStarts(
         vbdScratch.avbdSelfContactFrictionInventory,
         vbdScratch.avbdSelfContactFrictionRows,
-        previousAvbdSelfContactFrictionRows);
+        vbdScratch.previousAvbdSelfContactFrictionWarmStarts);
 
     vbdScratch.avbdContactRows.clear();
     vbdScratch.avbdContactRows.reserve(vbdScratch.avbdContactInventory.size());
@@ -5437,17 +5879,10 @@ void runVbdDeformableSolve(
               record.descriptor.bounds});
     }
 
-    std::map<dvbd::AvbdScalarRowKey, dvbd::AvbdHalfSpaceFrictionRow>
-        previousAvbdFrictionRows;
-    const std::size_t previousAvbdFrictionRowCount = std::min(
-        vbdScratch.avbdFrictionDescriptors.size(),
-        vbdScratch.avbdFrictionRows.size());
-    for (std::size_t i = 0; i < previousAvbdFrictionRowCount; ++i) {
-      previousAvbdFrictionRows.emplace(
-          vbdScratch.avbdFrictionDescriptors[i].key,
-          vbdScratch.avbdFrictionRows[i]);
-    }
-
+    rebuildAvbdFrictionWarmStartLookup(
+        vbdScratch.previousAvbdFrictionWarmStarts,
+        vbdScratch.avbdFrictionDescriptors,
+        vbdScratch.avbdFrictionRows);
     vbdScratch.avbdFrictionDescriptors.clear();
     if (useAvbdFrictionRows) {
       vbdScratch.avbdFrictionDescriptors.reserve(
@@ -5475,6 +5910,8 @@ void runVbdDeformableSolve(
         }
       }
     }
+    vbdScratch.avbdFrictionInventory.reserve(
+        vbdScratch.avbdFrictionDescriptors.size());
     vbdScratch.avbdFrictionInventory.syncActiveRows(
         vbdScratch.avbdFrictionDescriptors, warmStartOptions);
     for (std::size_t i = 0; i + 1 < vbdScratch.avbdFrictionInventory.size();
@@ -5489,12 +5926,13 @@ void runVbdDeformableSolve(
           || secondRecord.descriptor.key != expectedSecondKey) {
         continue;
       }
-      const auto previousFirst
-          = previousAvbdFrictionRows.find(firstRecord.descriptor.key);
-      const auto previousSecond
-          = previousAvbdFrictionRows.find(secondRecord.descriptor.key);
-      if (previousFirst == previousAvbdFrictionRows.end()
-          || previousSecond == previousAvbdFrictionRows.end()) {
+      const auto* previousFirst = findAvbdFrictionWarmStartRow(
+          vbdScratch.previousAvbdFrictionWarmStarts,
+          firstRecord.descriptor.key);
+      const auto* previousSecond = findAvbdFrictionWarmStartRow(
+          vbdScratch.previousAvbdFrictionWarmStarts,
+          secondRecord.descriptor.key);
+      if (previousFirst == nullptr || previousSecond == nullptr) {
         continue;
       }
 
@@ -5507,8 +5945,8 @@ void runVbdDeformableSolve(
           = dvbd::projectAvbdFrictionDualToTangentPair(
               firstRecord.state.lambda,
               secondRecord.state.lambda,
-              previousFirst->second.axis,
-              previousSecond->second.axis,
+              previousFirst->axis,
+              previousSecond->axis,
               basis.col(0),
               basis.col(1));
       firstRecord.state.lambda = dvbd::clampAvbdRowForce(
@@ -5583,6 +6021,8 @@ void runVbdDeformableSolve(
         vbdScratch.avbdSpringDescriptors.push_back(descriptor);
       }
     }
+    vbdScratch.avbdSpringInventory.reserve(
+        vbdScratch.avbdSpringDescriptors.size());
     vbdScratch.avbdSpringInventory.syncActiveRows(
         vbdScratch.avbdSpringDescriptors, warmStartOptions);
 
@@ -5690,10 +6130,10 @@ void runVbdDeformableSolve(
     vbdScratch.avbdFrictionInventory.records().clear();
     vbdScratch.avbdSelfContactDescriptors.clear();
     vbdScratch.avbdSelfContactRows.clear();
-    const auto previousAvbdSelfContactFrictionRows
-        = capturePreviousAvbdSelfContactFrictionRows(
-            vbdScratch.avbdSelfContactFrictionDescriptors,
-            vbdScratch.avbdSelfContactFrictionRows);
+    rebuildAvbdFrictionWarmStartLookup(
+        vbdScratch.previousAvbdSelfContactFrictionWarmStarts,
+        vbdScratch.avbdSelfContactFrictionDescriptors,
+        vbdScratch.avbdSelfContactFrictionRows);
     vbdScratch.avbdSelfContactFrictionDescriptors.clear();
     vbdScratch.avbdSelfContactFrictionRows.clear();
     vbdScratch.avbdAttachmentDescriptors.clear();
@@ -5722,6 +6162,7 @@ void runVbdDeformableSolve(
       descriptor.maxStiffness = 1.0;
       vbdScratch.avbdTetDescriptors.push_back(descriptor);
     }
+    vbdScratch.avbdTetInventory.reserve(vbdScratch.avbdTetDescriptors.size());
     vbdScratch.avbdTetInventory.syncActiveRows(
         vbdScratch.avbdTetDescriptors, warmStartOptions);
 
@@ -5781,6 +6222,8 @@ void runVbdDeformableSolve(
         vbdScratch.avbdSelfContactDescriptors.push_back(descriptor);
       }
     }
+    vbdScratch.avbdSelfContactInventory.reserve(
+        vbdScratch.avbdSelfContactDescriptors.size());
     vbdScratch.avbdSelfContactInventory.syncActiveRows(
         vbdScratch.avbdSelfContactDescriptors, hardRowWarmStartOptions);
 
@@ -5861,6 +6304,8 @@ void runVbdDeformableSolve(
         }
       }
     }
+    vbdScratch.avbdSelfContactFrictionInventory.reserve(
+        vbdScratch.avbdSelfContactFrictionDescriptors.size());
     vbdScratch.avbdSelfContactFrictionInventory.syncActiveRows(
         vbdScratch.avbdSelfContactFrictionDescriptors, hardRowWarmStartOptions);
 
@@ -5884,7 +6329,7 @@ void runVbdDeformableSolve(
     projectAvbdSelfContactFrictionWarmStarts(
         vbdScratch.avbdSelfContactFrictionInventory,
         vbdScratch.avbdSelfContactFrictionRows,
-        previousAvbdSelfContactFrictionRows);
+        vbdScratch.previousAvbdSelfContactFrictionWarmStarts);
 
     dvbd::AvbdTetMaterialFiniteStiffnessOptions tetOptions;
     tetOptions.beta = config.avbdBeta;
@@ -6042,7 +6487,9 @@ bool computeProjectedNewtonDirection(
   const double invDt2 = 1.0 / (timeStep * timeStep);
 
   // Right-hand side: -gradient on free DOFs, zero on pinned (fixed) DOFs.
-  Eigen::VectorXd rhs = Eigen::VectorXd::Zero(dim);
+  Eigen::VectorXd& rhs = solverCache.projectedNewtonRhs;
+  rhs.resize(dim);
+  rhs.setZero();
   for (std::size_t i = 0; i < nodeCount; ++i) {
     if (fixed[i] != 0u) {
       continue;
@@ -6067,13 +6514,29 @@ bool computeProjectedNewtonDirection(
            * (contactBarrier->candidates->pointTriangleCandidates.size()
               + contactBarrier->candidates->edgeEdgeCandidates.size());
   }
-  std::vector<Eigen::Triplet<double>> triplets;
+  std::vector<Eigen::Triplet<double>>& triplets
+      = solverCache.projectedNewtonTriplets;
+  triplets.clear();
   ProjectedNewtonMatrixFreeHessian matrixFreeHessian(
-      solveMatrixFree ? nodeCount : 0);
+      solverCache.projectedNewtonMatrixFreeBlocks,
+      solverCache.projectedNewtonMatrixFreeDiagonalBlocks,
+      solverCache.projectedNewtonMatrixFreeInverseDiagonalBlocks);
+  matrixFreeHessian.reset(solveMatrixFree ? nodeCount : 0);
   if (!solveMatrixFree) {
     triplets.reserve(tripletEstimate);
   } else {
-    matrixFreeHessian.blocks.reserve(tripletEstimate / 9u);
+    const std::size_t activeContactCount
+        = contactBarrier != nullptr && contactBarrier->candidates != nullptr
+              ? contactBarrier->candidates->pointTriangleCandidates.size()
+                    + contactBarrier->candidates->edgeEdgeCandidates.size()
+              : 0u;
+    const std::size_t matrixFreeBlockEstimate
+        = 4 * nodeCount + 4 * model.edges.size()
+          + (femElasticity != nullptr && femElasticity->tetrahedra != nullptr
+                 ? 16 * femElasticity->tetrahedra->size()
+                 : 0u)
+          + 16 * activeContactCount;
+    matrixFreeHessian.blocks.reserve(matrixFreeBlockEstimate);
   }
 
   const auto isFree = [&](std::size_t node) {
@@ -6127,8 +6590,11 @@ bool computeProjectedNewtonDirection(
   // inline per-block projection.
   constexpr double minLength = 1e-12;
   constexpr std::size_t kEdgeBlockEntries = 36; // 6x6
-  std::vector<double> edgeBlocks;
-  std::vector<std::array<std::size_t, 2>> edgeBlockNodes;
+  std::vector<double>& edgeBlocks = solverCache.projectedNewtonEdgeBlocks;
+  std::vector<std::array<std::size_t, 2>>& edgeBlockNodes
+      = solverCache.projectedNewtonEdgeBlockNodes;
+  edgeBlocks.clear();
+  edgeBlockNodes.clear();
   edgeBlocks.reserve(kEdgeBlockEntries * model.edges.size());
   edgeBlockNodes.reserve(model.edges.size());
   for (const auto& edge : model.edges) {
@@ -6177,8 +6643,11 @@ bool computeProjectedNewtonDirection(
     const auto& rests = *femElasticity->restShapes;
     const std::size_t tetCount = std::min(tets.size(), rests.size());
     constexpr std::size_t kTetBlockEntries = 144; // 12x12
-    std::vector<double> tetBlocks;
-    std::vector<std::array<std::size_t, 4>> tetBlockNodes;
+    std::vector<double>& tetBlocks = solverCache.projectedNewtonTetBlocks;
+    std::vector<std::array<std::size_t, 4>>& tetBlockNodes
+        = solverCache.projectedNewtonTetBlockNodes;
+    tetBlocks.clear();
+    tetBlockNodes.clear();
     tetBlocks.reserve(kTetBlockEntries * tetCount);
     tetBlockNodes.reserve(tetCount);
     for (std::size_t t = 0; t < tetCount; ++t) {
@@ -6222,8 +6691,12 @@ bool computeProjectedNewtonDirection(
     const double sqAct = contactBarrier->squaredActivationDistance;
     const double kappa = contactBarrier->stiffness;
     constexpr std::size_t kBarrierBlockEntries = 144; // 12x12
-    std::vector<double> barrierBlocks;
-    std::vector<std::array<std::size_t, 4>> barrierBlockNodes;
+    std::vector<double>& barrierBlocks
+        = solverCache.projectedNewtonBarrierBlocks;
+    std::vector<std::array<std::size_t, 4>>& barrierBlockNodes
+        = solverCache.projectedNewtonBarrierBlockNodes;
+    barrierBlocks.clear();
+    barrierBlockNodes.clear();
     const auto collect12 = [&](const dc::Matrix12d& blockHessian,
                                const std::array<std::size_t, 4>& nodes) {
       const std::size_t offset = barrierBlocks.size();
@@ -6510,9 +6983,11 @@ bool computeProjectedNewtonDirection(
     }
   }
 
-  Eigen::SparseMatrix<double> hessian;
+  Eigen::SparseMatrix<double>& hessian = solverCache.projectedNewtonHessian;
   if (!solveMatrixFree) {
     hessian.resize(dim, dim);
+    hessian.setZero();
+    hessian.reserve(static_cast<Eigen::Index>(triplets.size()));
     hessian.setFromTriplets(triplets.begin(), triplets.end());
     hessian.makeCompressed();
     const auto hessianNonZeros = static_cast<std::size_t>(hessian.nonZeros());
@@ -6527,12 +7002,20 @@ bool computeProjectedNewtonDirection(
         stats.projectedNewtonHessianStorageBytes, hessianStorageBytes);
   }
 
-  Eigen::VectorXd solution;
+  Eigen::VectorXd& solution = solverCache.projectedNewtonSolution;
   if (solveMatrixFree) {
     std::size_t cgIterations = 0;
     double cgError = 0.0;
     if (!solveMatrixFreeConjugateGradient(
-            matrixFreeHessian, rhs, solution, cgIterations, cgError)
+            matrixFreeHessian,
+            rhs,
+            solution,
+            solverCache.projectedNewtonMatrixFreeResidual,
+            solverCache.projectedNewtonMatrixFreePreconditionedResidual,
+            solverCache.projectedNewtonMatrixFreeDirection,
+            solverCache.projectedNewtonMatrixFreeHessianDirection,
+            cgIterations,
+            cgError)
         || !solution.allFinite()) {
       solverCache.newtonPatternValid = false;
       return false;
@@ -6705,18 +7188,7 @@ void advanceDeformableBody(
   const FemElasticityInputs* femElasticityPtr = nullptr;
   if (material.useFiniteElementElasticity && !topology.tetrahedra.empty()
       && topology.restPositions.size() == nodeCount) {
-    if (contactScratch.femRestShapes.size() != topology.tetrahedra.size()) {
-      contactScratch.femRestShapes.clear();
-      contactScratch.femRestShapes.reserve(topology.tetrahedra.size());
-      for (const auto& tet : topology.tetrahedra) {
-        contactScratch.femRestShapes.push_back(
-            fem::makeTetRestShape(
-                topology.restPositions[tet.nodeA],
-                topology.restPositions[tet.nodeB],
-                topology.restPositions[tet.nodeC],
-                topology.restPositions[tet.nodeD]));
-      }
-    }
+    syncFemRestShapeScratch(nodeCount, topology, material, contactScratch);
     femElasticity.tetrahedra = &topology.tetrahedra;
     femElasticity.restShapes = &contactScratch.femRestShapes;
     femElasticity.lame
@@ -6752,6 +7224,7 @@ void advanceDeformableBody(
       nodeCount,
       !topology.tetrahedra.empty(),
       contactScratch);
+  reserveDeformableFrictionScratch(nodeCount, contactScratch);
 
   scratch.inertialTargets.resize(nodeCount);
   scratch.next.resize(nodeCount);
@@ -6872,9 +7345,11 @@ void advanceDeformableBody(
     // or non-finite energy) rather than exhausting the iteration cap. It gates
     // the terminal-residual recompute below.
     bool brokeEarly = false;
-    std::vector<double> groundFrictionNormalForce;
-    std::vector<Eigen::Vector3d> groundFrictionNormalDirection;
-    std::vector<SelfContactFrictionContact> selfContactFrictionContacts;
+    auto& groundFrictionNormalForce = contactScratch.groundFrictionNormalForce;
+    auto& groundFrictionNormalDirection
+        = contactScratch.groundFrictionNormalDirection;
+    auto& selfContactFrictionContacts
+        = contactScratch.selfContactFrictionContacts;
     const double frictionEpsilon
         = staticGroundFrictionVelocityThreshold() * timeStep;
     for (std::size_t iteration = 0; iteration < maxIterations; ++iteration) {
@@ -7941,10 +8416,13 @@ void applyKinematicRuntimeBody(World& world, const RigidIpcRuntimeBody& body)
 void applyRigidIpcRuntimeResult(
     World& world,
     const std::vector<RigidIpcRuntimeBody>& bodies,
-    const sxdetail::RigidIpcProjectedNewtonSolveResult& result)
+    const sxdetail::RigidIpcProjectedNewtonSolveResult& result,
+    std::vector<entt::entity>& writebackEntities,
+    std::vector<entt::entity>& orderedEntities,
+    std::vector<int>& visitState)
 {
   auto& registry = dart::simulation::detail::registryOf(world);
-  std::vector<entt::entity> writebackEntities;
+  writebackEntities.clear();
   writebackEntities.reserve(bodies.size());
   for (const auto& body : bodies) {
     if (body.surface.dynamic || body.kinematic) {
@@ -7952,8 +8430,8 @@ void applyRigidIpcRuntimeResult(
     }
   }
 
-  const auto orderedEntities
-      = orderRigidBodiesParentBeforeChild(registry, writebackEntities);
+  orderRigidBodiesParentBeforeChild(
+      registry, writebackEntities, orderedEntities, visitState);
   for (const auto entity : orderedEntities) {
     const std::size_t bodyIndex = findRuntimeBodyIndex(bodies, entity);
     if (bodyIndex >= bodies.size()) {
@@ -8025,11 +8503,12 @@ void blockRejectedRigidIpcKinematicBody(
 }
 
 //==============================================================================
-std::vector<entt::entity> blockedKinematicEntitiesAfterRejectedRigidIpcSolve(
+void blockedKinematicEntitiesAfterRejectedRigidIpcSolve(
     const std::vector<RigidIpcRuntimeBody>& solverBodies,
-    const sxdetail::RigidIpcProjectedNewtonSolveResult& result)
+    const sxdetail::RigidIpcProjectedNewtonSolveResult& result,
+    std::vector<entt::entity>& blockedEntities)
 {
-  std::vector<entt::entity> blockedEntities;
+  blockedEntities.clear();
   const auto blockBodyPair = [&](const std::size_t bodyA,
                                  const std::size_t bodyB) {
     blockRejectedRigidIpcKinematicBody(solverBodies, bodyA, blockedEntities);
@@ -8045,8 +8524,6 @@ std::vector<entt::entity> blockedKinematicEntitiesAfterRejectedRigidIpcSolve(
   if (result.lineSearch.limited || !result.lineSearch.allowsPositiveStep()) {
     blockBodyPair(result.lineSearch.bodyA, result.lineSearch.bodyB);
   }
-
-  return blockedEntities;
 }
 
 //==============================================================================
@@ -8054,18 +8531,19 @@ void applyRigidIpcKinematicRuntimeBodiesAfterRejectedSolve(
     World& world,
     const std::vector<RigidIpcRuntimeBody>& runtimeBodies,
     const std::vector<RigidIpcRuntimeBody>& solverBodies,
-    const sxdetail::RigidIpcProjectedNewtonSolveResult& result)
+    const sxdetail::RigidIpcProjectedNewtonSolveResult& result,
+    std::vector<entt::entity>& blockedEntities,
+    std::vector<entt::entity>& writebackEntities,
+    std::vector<entt::entity>& orderedEntities,
+    std::vector<int>& visitState)
 {
   // Rejected dynamic solve results are discarded, but kinematic bodies that did
   // not participate in active IPC rows or the limiting CCD pair still have an
   // independent prescribed motion. Block only the involved supported surfaces;
   // unsupported kinematic bodies never entered the solve and remain
   // advanceable.
-  auto blockedEntities = blockedKinematicEntitiesAfterRejectedRigidIpcSolve(
-      solverBodies, result);
-  std::vector<entt::entity> writebackEntities;
-  std::vector<entt::entity> orderedEntities;
-  std::vector<int> visitState;
+  blockedKinematicEntitiesAfterRejectedRigidIpcSolve(
+      solverBodies, result, blockedEntities);
   applyRigidIpcKinematicRuntimeBodies(
       world,
       runtimeBodies,
@@ -8078,7 +8556,10 @@ void applyRigidIpcKinematicRuntimeBodiesAfterRejectedSolve(
 //==============================================================================
 bool canApplyRestingContactNoOp(
     const std::vector<RigidIpcRuntimeBody>& bodies,
-    const sxdetail::RigidIpcProjectedNewtonSolveResult& result)
+    const sxdetail::RigidIpcProjectedNewtonSolveResult& result,
+    std::vector<double>& contactPowerSum,
+    std::vector<std::uint8_t>& sawNonStationaryContactBody,
+    std::vector<std::uint8_t>& stationaryContactBody)
 {
   if (!result.failed
       || result.status
@@ -8092,9 +8573,9 @@ bool canApplyRestingContactNoOp(
   constexpr double kStationaryVelocityTolerance = 1e-10;
   constexpr double kContactPowerTolerance = 1e-12;
   bool sawDynamicContactBody = false;
-  std::vector<double> contactPowerSum(bodies.size(), 0.0);
-  std::vector<bool> sawNonStationaryContactBody(bodies.size(), false);
-  std::vector<bool> stationaryContactBody(bodies.size(), false);
+  contactPowerSum.assign(bodies.size(), 0.0);
+  sawNonStationaryContactBody.assign(bodies.size(), std::uint8_t{0});
+  stationaryContactBody.assign(bodies.size(), std::uint8_t{0});
   const auto accumulateContactPower = [&](const auto& constraint) {
     const std::array<std::size_t, 2> bodyIndices{
         constraint.bodyA, constraint.bodyB};
@@ -8111,10 +8592,10 @@ bool canApplyRestingContactNoOp(
         return false;
       }
       if (velocity.norm() <= kStationaryVelocityTolerance) {
-        stationaryContactBody[bodyIndex] = true;
+        stationaryContactBody[bodyIndex] = std::uint8_t{1};
         continue;
       }
-      sawNonStationaryContactBody[bodyIndex] = true;
+      sawNonStationaryContactBody[bodyIndex] = std::uint8_t{1};
 
       const auto gradient = constraint.reduced.gradient.template segment<6>(
           static_cast<Eigen::Index>(6 * localBody));
@@ -8142,11 +8623,11 @@ bool canApplyRestingContactNoOp(
   }
 
   for (std::size_t bodyIndex = 0; bodyIndex < bodies.size(); ++bodyIndex) {
-    if (!stationaryContactBody[bodyIndex]
-        && !sawNonStationaryContactBody[bodyIndex]) {
+    if (stationaryContactBody[bodyIndex] == 0u
+        && sawNonStationaryContactBody[bodyIndex] == 0u) {
       continue;
     }
-    if (!sawNonStationaryContactBody[bodyIndex]) {
+    if (sawNonStationaryContactBody[bodyIndex] == 0u) {
       continue;
     }
     if (std::abs(contactPowerSum[bodyIndex]) <= kContactPowerTolerance) {
@@ -8160,9 +8641,35 @@ bool canApplyRestingContactNoOp(
 } // namespace
 
 //==============================================================================
+struct DeformableDynamicsStage::Scratch
+{
+  std::vector<StaticGroundBarrier> barriers;
+  std::vector<SphereObstacleBarrier> sphereObstacles;
+  std::vector<BoxObstacleBarrier> boxObstacles;
+  std::vector<CapsuleObstacleBarrier> capsuleObstacles;
+  std::vector<SurfaceContactSnapshot> surfaceSnapshots;
+  std::vector<SurfaceContactSnapshot> rigidSurfaceSnapshots;
+  std::vector<SurfaceContactSnapshot> movingRigidSurfaceSnapshots;
+  std::size_t surfaceSnapshotCount = 0;
+  std::size_t rigidSurfaceSnapshotCount = 0;
+  std::size_t movingRigidSurfaceSnapshotCount = 0;
+};
+
+//==============================================================================
 struct RigidBodyVelocityStage::Scratch
 {
   RigidBodyForceBatch forces;
+};
+
+//==============================================================================
+struct BatchedRigidBodyIntegrationStage::Scratch
+{
+  RigidBodyForceBatch forces;
+  RigidBodyStateBatch state;
+  RigidBodyStateBatch initialState;
+  RigidBodyModelBatch model;
+  std::vector<entt::entity> frameUpdateOrder;
+  std::vector<int> visitState;
 };
 
 //==============================================================================
@@ -8278,30 +8785,65 @@ struct RigidBodyContactStage::AvbdScratch
 {
   void clear()
   {
+    dvbd::clearAvbdRigidWorldContactSnapshot(snapshot);
+    pointJoints.clear();
+    distanceSprings.clear();
+    buildScratch.rowCounters.clear();
+    buildScratch.contactRowOrder.clear();
     normalInventory.records().clear();
     frictionInventory.records().clear();
     jointLinearInventory.records().clear();
     jointAngularInventory.records().clear();
     motorInventory.records().clear();
     distanceSpringInventory.records().clear();
-    pointJointInputs.clear();
-    distanceSpringInputs.clear();
-    dvbd::clearAvbdRigidWorldContactSnapshot(pointJointSnapshot);
-    dvbd::clearAvbdRigidWorldContactSnapshot(contactSnapshot);
     solveScratch.clear();
   }
 
+  void reserve(
+      std::size_t bodyCapacity,
+      std::size_t contactCapacity,
+      std::size_t jointCapacity,
+      std::size_t distanceSpringCapacity)
+  {
+    dvbd::reserveAvbdRigidWorldContactSnapshot(
+        snapshot,
+        bodyCapacity,
+        contactCapacity,
+        jointCapacity,
+        jointCapacity,
+        distanceSpringCapacity);
+    pointJoints.reserve(jointCapacity);
+    distanceSprings.reserve(distanceSpringCapacity);
+    buildScratch.rowCounters.reserve(
+        std::max(
+            contactCapacity, std::max(jointCapacity, distanceSpringCapacity)));
+    buildScratch.contactRowOrder.reserve(contactCapacity);
+    dvbd::reserveAvbdRigidWorldContactSolveScratch(
+        solveScratch,
+        contactCapacity,
+        jointCapacity,
+        jointCapacity,
+        bodyCapacity,
+        distanceSpringCapacity);
+    normalInventory.reserve(contactCapacity);
+    frictionInventory.reserve(2u * contactCapacity);
+    jointLinearInventory.reserve(3u * jointCapacity);
+    jointAngularInventory.reserve(3u * jointCapacity);
+    motorInventory.reserve(jointCapacity);
+    distanceSpringInventory.reserve(distanceSpringCapacity);
+  }
+
+  dvbd::AvbdRigidWorldContactSnapshot snapshot;
+  std::vector<dvbd::AvbdRigidWorldPointJointInput> pointJoints;
+  std::vector<dvbd::AvbdRigidWorldDistanceSpringInput> distanceSprings;
+  dvbd::AvbdRigidWorldContactBuildScratch buildScratch;
+  dvbd::AvbdRigidWorldContactSolveScratch solveScratch;
   dvbd::AvbdScalarRowInventory normalInventory;
   dvbd::AvbdScalarRowInventory frictionInventory;
   dvbd::AvbdScalarRowInventory jointLinearInventory;
   dvbd::AvbdScalarRowInventory jointAngularInventory;
   dvbd::AvbdScalarRowInventory motorInventory;
   dvbd::AvbdScalarRowInventory distanceSpringInventory;
-  std::vector<dvbd::AvbdRigidWorldPointJointInput> pointJointInputs;
-  std::vector<dvbd::AvbdRigidWorldDistanceSpringInput> distanceSpringInputs;
-  dvbd::AvbdRigidWorldContactSnapshot pointJointSnapshot;
-  dvbd::AvbdRigidWorldContactSnapshot contactSnapshot;
-  dvbd::AvbdRigidWorldContactSolveScratch solveScratch;
 };
 
 //==============================================================================
@@ -8385,6 +8927,24 @@ void RigidBodyContactStage::prepare(World& world)
             ? collisionShapeCount * kContactConstraintCapacityPerShape
             : std::numeric_limits<std::size_t>::max();
   constraints.reserve(contactConstraintCapacity);
+
+  const auto& contacts = world.queryContacts(CollisionQueryOptions{});
+
+  if (m_avbdScratch == nullptr) {
+    m_avbdScratch = std::make_unique<AvbdScratch>();
+  }
+  const std::size_t jointCapacity
+      = registry.view<comps::Joint, dvbd::AvbdRigidWorldPointJointConfig>()
+            .size_hint();
+  std::size_t distanceSpringCapacity = 0u;
+  for ([[maybe_unused]] const entt::entity entity :
+       registry.view<dvbd::AvbdRigidWorldDistanceSpringConfig>()) {
+    ++distanceSpringCapacity;
+  }
+  const std::size_t bodyCapacity
+      = 2u * (contacts.size() + jointCapacity + distanceSpringCapacity);
+  m_avbdScratch->reserve(
+      bodyCapacity, contacts.size(), jointCapacity, distanceSpringCapacity);
 }
 
 //==============================================================================
@@ -8404,60 +8964,64 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
     if (m_avbdScratch == nullptr) {
       m_avbdScratch = std::make_unique<AvbdScratch>();
     }
-
-    auto& joints = m_avbdScratch->pointJointInputs;
+    auto& scratch = *m_avbdScratch;
     if (hasPointJointConfigs) {
       dvbd::extractAvbdRigidWorldPointJointInputsInto(
-          registry, joints, /*includeWorldAnchors=*/false);
+          registry, scratch.pointJoints, /*includeWorldAnchors=*/false);
     } else {
-      joints.clear();
+      scratch.pointJoints.clear();
     }
-    auto& distanceSprings = m_avbdScratch->distanceSpringInputs;
     if (hasDistanceSpringConfigs) {
       dvbd::extractAvbdRigidWorldDistanceSpringInputsInto(
-          registry, distanceSprings, /*includeWorldAnchors=*/false);
+          registry, scratch.distanceSprings, /*includeWorldAnchors=*/false);
     } else {
-      distanceSprings.clear();
+      scratch.distanceSprings.clear();
     }
-    if (joints.empty() && distanceSprings.empty()) {
+    if (scratch.pointJoints.empty() && scratch.distanceSprings.empty()) {
       return false;
     }
 
-    auto& snapshot = m_avbdScratch->pointJointSnapshot;
-    dvbd::clearAvbdRigidWorldContactSnapshot(snapshot);
+    dvbd::clearAvbdRigidWorldContactSnapshot(scratch.snapshot);
     const std::size_t appendedJoints
-        = joints.empty() ? 0u
-                         : dvbd::appendAvbdRigidWorldPointJoints(
-                               registry, joints, snapshot);
+        = scratch.pointJoints.empty() ? 0u
+                                      : dvbd::appendAvbdRigidWorldPointJoints(
+                                            registry,
+                                            scratch.pointJoints,
+                                            scratch.snapshot,
+                                            scratch.buildScratch);
     const std::size_t appendedDistanceSprings
-        = distanceSprings.empty() ? 0u
-                                  : dvbd::appendAvbdRigidWorldDistanceSprings(
-                                        registry, distanceSprings, snapshot);
+        = scratch.distanceSprings.empty()
+              ? 0u
+              : dvbd::appendAvbdRigidWorldDistanceSprings(
+                    registry,
+                    scratch.distanceSprings,
+                    scratch.snapshot,
+                    scratch.buildScratch);
     if (appendedJoints == 0u && appendedDistanceSprings == 0u) {
       return false;
     }
 
     const double timeStep = world.getTimeStep();
     dvbd::predictAvbdRigidWorldContactInertialTargets(
-        registry, snapshot, timeStep);
+        registry, scratch.snapshot, timeStep);
 
     dvbd::AvbdRigidWorldContactSolveOptions solveOptions;
     solveOptions.descent.iterations = m_iterations;
     solveOptions.descent.regularization = 1e-12;
     const dvbd::AvbdRigidWorldContactSolveResult solveResult
         = dvbd::solveAvbdRigidWorldContactSnapshot(
-            snapshot,
-            m_avbdScratch->normalInventory,
-            m_avbdScratch->frictionInventory,
-            m_avbdScratch->jointLinearInventory,
-            m_avbdScratch->jointAngularInventory,
-            m_avbdScratch->motorInventory,
-            m_avbdScratch->distanceSpringInventory,
-            m_avbdScratch->solveScratch,
+            scratch.snapshot,
+            scratch.normalInventory,
+            scratch.frictionInventory,
+            scratch.jointLinearInventory,
+            scratch.jointAngularInventory,
+            scratch.motorInventory,
+            scratch.distanceSpringInventory,
             timeStep,
+            scratch.solveScratch,
             solveOptions);
     (void)dvbd::markAvbdRigidWorldFracturedPointJoints(
-        registry, snapshot, solveResult.fracturedJointIndices);
+        registry, scratch.snapshot, solveResult.fracturedJointIndices);
     if (solveResult.jointLinearRows == 0u && solveResult.jointAngularRows == 0u
         && solveResult.motorRows == 0u
         && solveResult.distanceSpringRows == 0u) {
@@ -8466,7 +9030,7 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
 
     const dvbd::AvbdRigidWorldContactApplyResult projection
         = dvbd::applyAvbdRigidWorldContactVelocityProjection(
-            registry, snapshot, timeStep);
+            registry, scratch.snapshot, timeStep);
     return projection.bodies != 0u;
   };
 
@@ -8504,49 +9068,53 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
     if (m_avbdScratch == nullptr) {
       m_avbdScratch = std::make_unique<AvbdScratch>();
     }
+    auto& scratch = *m_avbdScratch;
 
     dvbd::AvbdRigidWorldContactOptions contactOptions;
     contactOptions.startStiffness = std::max(0.0, avbdConfig->startStiffness);
     contactOptions.maxStiffness
         = std::max(contactOptions.startStiffness, avbdConfig->maxStiffness);
-    auto& snapshot = m_avbdScratch->contactSnapshot;
-    dvbd::buildAvbdRigidWorldContactSnapshotInto(
-        registry, contacts, snapshot, contactOptions);
+    dvbd::buildAvbdRigidWorldContactSnapshot(
+        registry,
+        contacts,
+        scratch.snapshot,
+        scratch.buildScratch,
+        contactOptions);
     std::size_t appendedJoints = 0u;
     std::size_t appendedDistanceSprings = 0u;
-    auto& joints = m_avbdScratch->pointJointInputs;
-    auto& distanceSprings = m_avbdScratch->distanceSpringInputs;
-    const bool hasPointJointConfigs
-        = dvbd::hasAvbdRigidWorldPointJointConfigs(registry);
-    const bool hasDistanceSpringConfigs
-        = dvbd::hasAvbdRigidWorldDistanceSpringConfigs(registry);
-    if (hasPointJointConfigs) {
+    if (dvbd::hasAvbdRigidWorldPointJointConfigs(registry)) {
       dvbd::extractAvbdRigidWorldPointJointInputsInto(
-          registry, joints, /*includeWorldAnchors=*/false);
-      if (!joints.empty()) {
-        appendedJoints
-            = dvbd::appendAvbdRigidWorldPointJoints(registry, joints, snapshot);
+          registry, scratch.pointJoints, /*includeWorldAnchors=*/false);
+      if (!scratch.pointJoints.empty()) {
+        appendedJoints = dvbd::appendAvbdRigidWorldPointJoints(
+            registry,
+            scratch.pointJoints,
+            scratch.snapshot,
+            scratch.buildScratch);
       }
     } else {
-      joints.clear();
+      scratch.pointJoints.clear();
     }
-    if (hasDistanceSpringConfigs) {
+    if (dvbd::hasAvbdRigidWorldDistanceSpringConfigs(registry)) {
       dvbd::extractAvbdRigidWorldDistanceSpringInputsInto(
-          registry, distanceSprings, /*includeWorldAnchors=*/false);
-      if (!distanceSprings.empty()) {
+          registry, scratch.distanceSprings, /*includeWorldAnchors=*/false);
+      if (!scratch.distanceSprings.empty()) {
         appendedDistanceSprings = dvbd::appendAvbdRigidWorldDistanceSprings(
-            registry, distanceSprings, snapshot);
+            registry,
+            scratch.distanceSprings,
+            scratch.snapshot,
+            scratch.buildScratch);
       }
     } else {
-      distanceSprings.clear();
+      scratch.distanceSprings.clear();
     }
 
-    if (snapshot.contacts.size() == contacts.size()
-        && (!snapshot.contacts.empty() || appendedJoints != 0u
+    if (scratch.snapshot.contacts.size() == contacts.size()
+        && (!scratch.snapshot.contacts.empty() || appendedJoints != 0u
             || appendedDistanceSprings != 0u)) {
       const double timeStep = world.getTimeStep();
       dvbd::predictAvbdRigidWorldContactInertialTargets(
-          registry, snapshot, timeStep);
+          registry, scratch.snapshot, timeStep);
 
       dvbd::AvbdRigidWorldContactSolveOptions solveOptions;
       solveOptions.warmStart.alpha = avbdConfig->alpha;
@@ -8565,25 +9133,25 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
 
       const dvbd::AvbdRigidWorldContactSolveResult solveResult
           = dvbd::solveAvbdRigidWorldContactSnapshot(
-              snapshot,
-              m_avbdScratch->normalInventory,
-              m_avbdScratch->frictionInventory,
-              m_avbdScratch->jointLinearInventory,
-              m_avbdScratch->jointAngularInventory,
-              m_avbdScratch->motorInventory,
-              m_avbdScratch->distanceSpringInventory,
-              m_avbdScratch->solveScratch,
+              scratch.snapshot,
+              scratch.normalInventory,
+              scratch.frictionInventory,
+              scratch.jointLinearInventory,
+              scratch.jointAngularInventory,
+              scratch.motorInventory,
+              scratch.distanceSpringInventory,
               timeStep,
+              scratch.solveScratch,
               solveOptions);
       (void)dvbd::markAvbdRigidWorldFracturedPointJoints(
-          registry, snapshot, solveResult.fracturedJointIndices);
+          registry, scratch.snapshot, solveResult.fracturedJointIndices);
       if (solveResult.normalRows != 0u || solveResult.frictionRows != 0u
           || solveResult.jointLinearRows != 0u
           || solveResult.jointAngularRows != 0u || solveResult.motorRows != 0u
           || solveResult.distanceSpringRows != 0u) {
         const dvbd::AvbdRigidWorldContactApplyResult projection
             = dvbd::applyAvbdRigidWorldContactVelocityProjection(
-                registry, snapshot, timeStep);
+                registry, scratch.snapshot, timeStep);
         if (projection.bodies != 0u) {
           return;
         }
@@ -8874,6 +9442,15 @@ void RigidIpcContactStage::prepare(World& world)
   m_scratch->writebackEntities.reserve(bodyCount);
   m_scratch->orderedEntities.reserve(bodyCount);
   m_scratch->visitState.reserve(bodyCount);
+  m_scratch->contactPowerSum.reserve(bodyCount);
+  m_scratch->sawNonStationaryContactBody.reserve(bodyCount);
+  m_scratch->stationaryContactBody.reserve(bodyCount);
+  m_scratch->solveResult.surfaces.reserve(bodyCount);
+  m_scratch->solveScratch.laggedSurfaces.reserve(bodyCount);
+  m_scratch->solveScratch.lineSearchStartSurfaces.reserve(bodyCount);
+  m_scratch->solveScratch.candidateSurfaces.reserve(bodyCount);
+  m_scratch->solveScratch.acceptedSurfaces.reserve(bodyCount);
+  m_scratch->solveScratch.bestDecreasingSurfaces.reserve(bodyCount);
 
   RigidIpcSolverStats warmupStats;
   collectRigidIpcRuntimeBodies(world, warmupStats, m_scratch->runtimeBodies);
@@ -9004,13 +9581,13 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
   options.newton.relativeGradientTolerance = 1e-6;
   options.stepTolerance = 1e-12;
 
-  sxdetail::RigidIpcProjectedNewtonSolveResult result;
+  sxdetail::RigidIpcProjectedNewtonSolveResult& result = scratch.solveResult;
   ComputeGraph graph;
   graph.addNode(
       "rigid_ipc_projected_newton_solve",
       [&]() {
-        result = sxdetail::solveRigidIpcProjectedNewtonBarrierSystem(
-            surfaces, options);
+        sxdetail::solveRigidIpcProjectedNewtonBarrierSystem(
+            surfaces, options, result, scratch.solveScratch);
       },
       getMetadata());
   executor.execute(graph);
@@ -9023,9 +9600,14 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
       solverBodies.begin(), solverBodies.end(), [](const auto& body) {
         return body.kinematic;
       });
-  const bool restingContactBlocked
-      = !hasKinematicRuntimeBody && lineSearchBlocked
-        && canApplyRestingContactNoOp(solverBodies, result);
+  const bool restingContactBlocked = !hasKinematicRuntimeBody
+                                     && lineSearchBlocked
+                                     && canApplyRestingContactNoOp(
+                                         solverBodies,
+                                         result,
+                                         scratch.contactPowerSum,
+                                         scratch.sawNonStationaryContactBody,
+                                         scratch.stationaryContactBody);
 
   m_lastStats.status = toPublicRigidIpcSolveStatus(result.status);
   m_lastStats.activeConstraints = result.assembly.activeConstraints.size();
@@ -9085,7 +9667,14 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
   // preserved by leaving the runtime state untouched.
   if (result.failed && !restingContactBlocked) {
     applyRigidIpcKinematicRuntimeBodiesAfterRejectedSolve(
-        world, runtimeBodies, solverBodies, result);
+        world,
+        runtimeBodies,
+        solverBodies,
+        result,
+        scratch.blockedEntities,
+        scratch.writebackEntities,
+        scratch.orderedEntities,
+        scratch.visitState);
     return;
   }
   // Otherwise apply the last intersection-free iterate the bounded solve
@@ -9102,12 +9691,25 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
   if (!result.converged && !result.madeProgress() && !restingContactBlocked) {
     m_lastStats.nonConvergedResultSkipped = true;
     applyRigidIpcKinematicRuntimeBodiesAfterRejectedSolve(
-        world, runtimeBodies, solverBodies, result);
+        world,
+        runtimeBodies,
+        solverBodies,
+        result,
+        scratch.blockedEntities,
+        scratch.writebackEntities,
+        scratch.orderedEntities,
+        scratch.visitState);
     return;
   }
 
   m_lastStats.resultApplied = true;
-  applyRigidIpcRuntimeResult(world, runtimeBodies, result);
+  applyRigidIpcRuntimeResult(
+      world,
+      runtimeBodies,
+      result,
+      scratch.writebackEntities,
+      scratch.orderedEntities,
+      scratch.visitState);
 }
 
 //==============================================================================
@@ -9153,6 +9755,15 @@ const RigidIpcSolverStats& RigidIpcContactStage::getLastStats() const noexcept
 }
 
 //==============================================================================
+DeformableDynamicsStage::DeformableDynamicsStage()
+  : m_scratch(std::make_unique<Scratch>())
+{
+}
+
+//==============================================================================
+DeformableDynamicsStage::~DeformableDynamicsStage() = default;
+
+//==============================================================================
 std::string_view DeformableDynamicsStage::getName() const noexcept
 {
   return "deformable_dynamics";
@@ -9173,6 +9784,146 @@ ComputeStageMetadata DeformableDynamicsStage::getMetadata() const noexcept
        {"rigid_body.kinematic_step_trace", ComputeAccessMode::Read},
        {"static_collision_geometry", ComputeAccessMode::Read}}};
 }
+
+namespace {
+
+//==============================================================================
+void primeSurfaceContactCandidateScratch(
+    const comps::DeformableNodeState& state,
+    DeformableContactSolverScratch& contactScratch)
+{
+  if (contactScratch.surfaceTriangles.empty()) {
+    return;
+  }
+
+  reserveSurfaceContactCandidateScratch(state.positions.size(), contactScratch);
+
+  dc::buildMotionAwareContactCandidatesSweep(
+      state.positions,
+      state.positions,
+      contactScratch.surfaceTriangles,
+      makeSurfaceContactCandidateOptions(),
+      contactScratch.candidates,
+      contactScratch.sweepScratch);
+  filterSurfaceContactPointCandidates(
+      contactScratch.candidates, contactScratch.surfaceContactPointMask);
+
+  dc::ContactCandidateOptions barrierOptions;
+  barrierOptions.activationDistance = selfContactBarrierActivationDistance();
+  barrierOptions.exactDistanceFilter = true;
+  barrierOptions.excludeIncidentPointTriangles = true;
+  barrierOptions.excludeAdjacentEdges = true;
+  dc::buildContactCandidatesSweep(
+      state.positions,
+      contactScratch.surfaceTriangles,
+      barrierOptions,
+      contactScratch.barrierCandidates,
+      contactScratch.sweepScratch);
+  filterSurfaceContactPointCandidates(
+      contactScratch.barrierCandidates, contactScratch.surfaceContactPointMask);
+}
+
+//==============================================================================
+void collectDeformableSurfaceSnapshotsInto(
+    const sxdetail::WorldRegistry& registry,
+    std::vector<SurfaceContactSnapshot>& snapshots,
+    std::size_t& snapshotCount)
+{
+  auto view = registry.view<
+      comps::DeformableBodyTag,
+      comps::DeformableNodeState,
+      comps::DeformableMeshTopology>();
+
+  snapshotCount = 0;
+  for (const auto entity : view) {
+    const auto& state = view.get<comps::DeformableNodeState>(entity);
+    const auto& topology = view.get<comps::DeformableMeshTopology>(entity);
+    if (topology.surfaceTriangles.empty()) {
+      continue;
+    }
+
+    auto& snapshot = nextSurfaceContactSnapshot(snapshots, snapshotCount);
+    snapshot.entity = entity;
+    snapshot.positions = state.positions;
+    copySurfaceContactTopology(
+        topology.surfaceTriangles,
+        state.positions.size(),
+        !topology.tetrahedra.empty(),
+        snapshot.surfaceTriangles,
+        snapshot.surfaceContactPointMask);
+    dc::buildUniqueSurfaceEdges(
+        snapshot.surfaceTriangles, snapshot.surfaceEdges);
+  }
+}
+
+//==============================================================================
+void primeSurfaceContactSnapshotSweepScratch(
+    std::span<const Eigen::Vector3d> positions,
+    std::span<const SurfaceContactSnapshot> snapshots,
+    DeformableContactSolverScratch& contactScratch)
+{
+  const auto candidateOptions = makeSurfaceContactCandidateOptions();
+  const auto ccdOptions = makeSurfaceContactCcdOptions();
+  for (const auto& snapshot : snapshots) {
+    if (snapshot.surfaceTriangles.empty()) {
+      continue;
+    }
+
+    (void)interBodySurfaceContactStepBound(
+        positions,
+        positions,
+        contactScratch.surfaceTriangles,
+        contactScratch.surfaceContactPointMask,
+        contactScratch.interBodyCurrentEdges,
+        snapshot,
+        candidateOptions,
+        ccdOptions,
+        contactScratch);
+  }
+}
+
+//==============================================================================
+void primeInterBodySurfaceContactScratch(
+    entt::entity entity,
+    const comps::DeformableNodeState& state,
+    std::span<const SurfaceContactSnapshot> surfaceSnapshots,
+    std::span<const SurfaceContactSnapshot> rigidSurfaceSnapshots,
+    std::span<const SurfaceContactSnapshot> movingRigidSurfaceSnapshots,
+    DeformableContactSolverScratch& contactScratch)
+{
+  if (contactScratch.surfaceTriangles.empty()) {
+    contactScratch.interBodyCurrentEdges.clear();
+  } else {
+    dc::buildUniqueSurfaceEdges(
+        contactScratch.surfaceTriangles, contactScratch.interBodyCurrentEdges);
+
+    const auto candidateOptions = makeSurfaceContactCandidateOptions();
+    const auto ccdOptions = makeSurfaceContactCcdOptions();
+    for (const auto& snapshot : surfaceSnapshots) {
+      if (snapshot.entity == entity || snapshot.surfaceTriangles.empty()) {
+        continue;
+      }
+
+      (void)interBodySurfaceContactStepBound(
+          state.positions,
+          state.positions,
+          contactScratch.surfaceTriangles,
+          contactScratch.surfaceContactPointMask,
+          contactScratch.interBodyCurrentEdges,
+          snapshot,
+          candidateOptions,
+          ccdOptions,
+          contactScratch);
+    }
+  }
+
+  primeSurfaceContactSnapshotSweepScratch(
+      state.positions, rigidSurfaceSnapshots, contactScratch);
+  primeSurfaceContactSnapshotSweepScratch(
+      state.positions, movingRigidSurfaceSnapshots, contactScratch);
+}
+
+} // namespace
 
 //==============================================================================
 void DeformableDynamicsStage::prepare(World& world)
@@ -9202,7 +9953,137 @@ void DeformableDynamicsStage::prepare(World& world)
         state.positions.size(),
         !topology.tetrahedra.empty(),
         contactScratch);
+    primeSurfaceContactCandidateScratch(state, contactScratch);
+    reserveDeformableFrictionScratch(state.positions.size(), contactScratch);
+    if (const auto* model
+        = registry.try_get<comps::DeformableSpringModel>(entity)) {
+      reserveProjectedNewtonScratch(
+          state.positions.size(), *model, topology, contactScratch);
+    }
+    if (const auto* material
+        = registry.try_get<comps::DeformableMaterial>(entity)) {
+      syncFemRestShapeScratch(
+          state.positions.size(), topology, *material, contactScratch);
+    }
     (void)registry.get_or_emplace<DeformableVbdScratch>(entity);
+  }
+
+  auto& scratch = *m_scratch;
+  collectStaticGroundBarriersInto(world, scratch.barriers);
+  collectSphereObstacleBarriersInto(world, scratch.sphereObstacles);
+  collectBoxObstacleBarriersInto(world, scratch.boxObstacles);
+  collectCapsuleObstacleBarriersInto(world, scratch.capsuleObstacles);
+  DeformableSolverStats stats;
+  collectStaticRigidSurfaceCcdObstaclesInto(
+      world,
+      stats,
+      scratch.rigidSurfaceSnapshots,
+      scratch.rigidSurfaceSnapshotCount);
+  collectMovingRigidSurfaceCcdObstaclesInto(
+      world,
+      world.getTimeStep(),
+      stats,
+      scratch.movingRigidSurfaceSnapshots,
+      scratch.movingRigidSurfaceSnapshotCount,
+      true);
+  collectDeformableSurfaceSnapshotsInto(
+      registry, scratch.surfaceSnapshots, scratch.surfaceSnapshotCount);
+
+  const auto surfaceSnapshots = activeSurfaceContactSnapshots(
+      scratch.surfaceSnapshots, scratch.surfaceSnapshotCount);
+  const auto rigidSurfaceSnapshots = activeSurfaceContactSnapshots(
+      scratch.rigidSurfaceSnapshots, scratch.rigidSurfaceSnapshotCount);
+  const auto movingRigidSurfaceSnapshots = activeSurfaceContactSnapshots(
+      scratch.movingRigidSurfaceSnapshots,
+      scratch.movingRigidSurfaceSnapshotCount);
+  for (const auto entity : view) {
+    const auto& state = view.get<comps::DeformableNodeState>(entity);
+    const auto& topology = view.get<comps::DeformableMeshTopology>(entity);
+    auto& contactScratch
+        = registry.get_or_emplace<DeformableContactSolverScratch>(entity);
+    primeInterBodySurfaceContactScratch(
+        entity,
+        state,
+        surfaceSnapshots,
+        rigidSurfaceSnapshots,
+        movingRigidSurfaceSnapshots,
+        contactScratch);
+    auto* vbdConfig = registry.try_get<comps::DeformableVbdConfig>(entity);
+    const auto* model = registry.try_get<comps::DeformableSpringModel>(entity);
+    if (vbdConfig != nullptr && vbdConfig->enabled && model != nullptr
+        && scratch.capsuleObstacles.empty()
+        && movingRigidSurfaceSnapshots.empty()) {
+      auto& vbdScratch = registry.get_or_emplace<DeformableVbdScratch>(entity);
+      syncVbdTopologyScratch(
+          state.positions.size(), *model, topology, vbdScratch);
+      primeVbdStaticContactScratch(
+          state.positions.size(),
+          scratch.barriers,
+          scratch.sphereObstacles,
+          scratch.boxObstacles,
+          *vbdConfig,
+          vbdScratch);
+      if (vbdConfig->useAvbdContactNormalRows
+          && vbdConfig->contactStiffness > 0.0) {
+        const std::size_t contactRowCapacity = state.positions.size();
+        vbdScratch.avbdSolveFixed.reserve(state.positions.size());
+        vbdScratch.avbdContactDescriptors.reserve(contactRowCapacity);
+        vbdScratch.avbdContactInventory.reserve(contactRowCapacity);
+        vbdScratch.avbdContactRows.reserve(contactRowCapacity);
+        const std::size_t frictionRowCapacity = 2 * contactRowCapacity;
+        vbdScratch.avbdFrictionDescriptors.reserve(frictionRowCapacity);
+        vbdScratch.avbdFrictionInventory.reserve(frictionRowCapacity);
+        vbdScratch.avbdFrictionRows.reserve(frictionRowCapacity);
+        vbdScratch.previousAvbdFrictionWarmStarts.reserve(frictionRowCapacity);
+      }
+      if (vbdConfig->useAvbdSelfContactNormalRows
+          && contactScratch.surfaceTriangles.size() >= 2) {
+        vbdScratch.avbdSolveFixed.reserve(state.positions.size());
+        reserveVbdSelfContactCandidateScratch(
+            state.positions.size(),
+            contactScratch.surfaceTriangles.size(),
+            vbdScratch);
+
+        const double dHat = selfContactBarrierActivationDistance();
+        dc::ContactCandidateOptions candidateOptions;
+        candidateOptions.activationDistance = dHat;
+        candidateOptions.exactDistanceFilter = true;
+        candidateOptions.excludeIncidentPointTriangles = true;
+        candidateOptions.excludeAdjacentEdges = true;
+        dc::buildMotionAwareContactCandidatesSweep(
+            state.positions,
+            state.positions,
+            contactScratch.surfaceTriangles,
+            candidateOptions,
+            vbdScratch.selfContactCandidates,
+            vbdScratch.selfContactSweepScratch);
+        filterSurfaceContactPointCandidates(
+            vbdScratch.selfContactCandidates,
+            contactScratch.surfaceContactPointMask);
+        vbdScratch.selfContactAdjacency.rebuild(
+            state.positions.size(),
+            vbdScratch.selfContactCandidates,
+            contactScratch.surfaceTriangles,
+            dHat * dHat,
+            selfContactBarrierStiffness());
+
+        const std::size_t selfContactRowCapacity
+            = vbdScratch.selfContactCandidates.pointTriangleCandidates
+                  .capacity()
+              + vbdScratch.selfContactCandidates.edgeEdgeCandidates.capacity();
+        vbdScratch.avbdSelfContactDescriptors.reserve(selfContactRowCapacity);
+        vbdScratch.avbdSelfContactInventory.reserve(selfContactRowCapacity);
+        vbdScratch.avbdSelfContactRows.reserve(selfContactRowCapacity);
+        const std::size_t frictionRowCapacity = 2 * selfContactRowCapacity;
+        vbdScratch.avbdSelfContactFrictionDescriptors.reserve(
+            frictionRowCapacity);
+        vbdScratch.avbdSelfContactFrictionInventory.reserve(
+            frictionRowCapacity);
+        vbdScratch.avbdSelfContactFrictionRows.reserve(frictionRowCapacity);
+        vbdScratch.previousAvbdSelfContactFrictionWarmStarts.reserve(
+            frictionRowCapacity);
+      }
+    }
   }
 }
 
@@ -9223,16 +10104,34 @@ void DeformableDynamicsStage::execute(
     return;
   }
 
-  const auto barriers = collectStaticGroundBarriers(world);
-  const auto sphereObstacles = collectSphereObstacleBarriers(world);
-  const auto boxObstacles = collectBoxObstacleBarriers(world);
-  const auto capsuleObstacles = collectCapsuleObstacleBarriers(world);
-  const auto rigidSurfaceSnapshots
-      = collectStaticRigidSurfaceCcdObstacles(world, m_lastStats);
+  auto& stageScratch = *m_scratch;
+  collectStaticGroundBarriersInto(world, stageScratch.barriers);
+  collectSphereObstacleBarriersInto(world, stageScratch.sphereObstacles);
+  collectBoxObstacleBarriersInto(world, stageScratch.boxObstacles);
+  collectCapsuleObstacleBarriersInto(world, stageScratch.capsuleObstacles);
+  collectStaticRigidSurfaceCcdObstaclesInto(
+      world,
+      m_lastStats,
+      stageScratch.rigidSurfaceSnapshots,
+      stageScratch.rigidSurfaceSnapshotCount);
   const auto timeStep = world.getTimeStep();
-  const auto movingRigidSurfaceSnapshots
-      = collectMovingRigidSurfaceCcdObstacles(world, timeStep, m_lastStats);
+  collectMovingRigidSurfaceCcdObstaclesInto(
+      world,
+      timeStep,
+      m_lastStats,
+      stageScratch.movingRigidSurfaceSnapshots,
+      stageScratch.movingRigidSurfaceSnapshotCount);
   const auto gravity = world.getGravity();
+  const auto& barriers = stageScratch.barriers;
+  const auto& sphereObstacles = stageScratch.sphereObstacles;
+  const auto& boxObstacles = stageScratch.boxObstacles;
+  const auto& capsuleObstacles = stageScratch.capsuleObstacles;
+  const auto rigidSurfaceSnapshots = activeSurfaceContactSnapshots(
+      stageScratch.rigidSurfaceSnapshots,
+      stageScratch.rigidSurfaceSnapshotCount);
+  const auto movingRigidSurfaceSnapshots = activeSurfaceContactSnapshots(
+      stageScratch.movingRigidSurfaceSnapshots,
+      stageScratch.movingRigidSurfaceSnapshotCount);
   m_lastStats.staticGroundBarrierCount = barriers.size();
 
   for (const auto entity : view) {
@@ -9251,27 +10150,12 @@ void DeformableDynamicsStage::execute(
         m_lastStats);
   }
 
-  std::vector<SurfaceContactSnapshot> surfaceSnapshots;
-  for (const auto entity : view) {
-    const auto& state = view.get<comps::DeformableNodeState>(entity);
-    const auto& topology = view.get<comps::DeformableMeshTopology>(entity);
-    if (topology.surfaceTriangles.empty()) {
-      continue;
-    }
-
-    SurfaceContactSnapshot snapshot;
-    snapshot.entity = entity;
-    snapshot.positions = state.positions;
-    copySurfaceContactTopology(
-        topology.surfaceTriangles,
-        state.positions.size(),
-        !topology.tetrahedra.empty(),
-        snapshot.surfaceTriangles,
-        snapshot.surfaceContactPointMask);
-    dc::buildUniqueSurfaceEdges(
-        snapshot.surfaceTriangles, snapshot.surfaceEdges);
-    surfaceSnapshots.push_back(std::move(snapshot));
-  }
+  collectDeformableSurfaceSnapshotsInto(
+      registry,
+      stageScratch.surfaceSnapshots,
+      stageScratch.surfaceSnapshotCount);
+  const auto surfaceSnapshots = activeSurfaceContactSnapshots(
+      stageScratch.surfaceSnapshots, stageScratch.surfaceSnapshotCount);
 
   for (const auto entity : view) {
     auto& state = view.get<comps::DeformableNodeState>(entity);
@@ -9343,6 +10227,15 @@ void reserveDeformableDynamicsRegistryStorage(
 }
 
 //==============================================================================
+BatchedRigidBodyIntegrationStage::BatchedRigidBodyIntegrationStage()
+  : m_scratch(std::make_unique<Scratch>())
+{
+}
+
+//==============================================================================
+BatchedRigidBodyIntegrationStage::~BatchedRigidBodyIntegrationStage() = default;
+
+//==============================================================================
 std::string_view BatchedRigidBodyIntegrationStage::getName() const noexcept
 {
   return "batched_rigid_body_integration";
@@ -9362,41 +10255,41 @@ ComputeStageMetadata BatchedRigidBodyIntegrationStage::getMetadata()
 
 //==============================================================================
 void BatchedRigidBodyIntegrationStage::execute(
-    World& world, ComputeExecutor& executor)
+    World& world, ComputeExecutor& /*executor*/)
 {
   auto& registry = dart::simulation::detail::registryOf(world);
-  const auto forces = assembleRigidBodyForces(world, true);
+  if (m_scratch == nullptr) {
+    m_scratch = std::make_unique<Scratch>();
+  }
+
+  auto& scratch = *m_scratch;
+  assembleRigidBodyForces(world, true, scratch.forces);
+  const auto& forces = scratch.forces;
   const auto& entities = forces.entities;
 
   if (entities.empty()) {
     return;
   }
 
-  auto state = extractRigidBodyState(world);
-  const auto initialState = state;
-  const auto model = extractRigidBodyModelBatch(world);
+  extractRigidBodyStateInto(world, scratch.state);
+  copyRigidBodyStateBatch(scratch.state, scratch.initialState);
+  extractRigidBodyModelBatchInto(world, scratch.model);
   const auto timeStep = world.getTimeStep();
 
-  ComputeGraph graph;
-  graph.addNode(
-      "soa_rigid_body_integration",
-      [&state, &model, &forces, timeStep]() {
-        integrateRigidBodyStateBatch(
-            state, model, forces.force, forces.torque, timeStep);
-      },
-      getMetadata());
-  executor.execute(graph);
+  integrateRigidBodyStateBatch(
+      scratch.state, scratch.model, forces.force, forces.torque, timeStep);
 
-  restorePrescribedRigidBodyState(registry, entities, initialState, state);
-  applyRigidBodyState(world, state);
+  restorePrescribedRigidBodyState(
+      registry, entities, scratch.initialState, scratch.state);
+  applyRigidBodyState(world, scratch.state);
 
   // Restore frame-cache consistency the same way the per-entity integrator
   // does, now that the world-space Transform has been written back. The SoA
   // integration itself is world-space and flat, but local transforms for
   // frame-coupled bodies must be written parent-before-child.
-  const auto frameUpdateOrder
-      = orderRigidBodiesParentBeforeChild(registry, entities);
-  for (const auto entity : frameUpdateOrder) {
+  orderRigidBodiesParentBeforeChild(
+      registry, entities, scratch.frameUpdateOrder, scratch.visitState);
+  for (const auto entity : scratch.frameUpdateOrder) {
     const auto& transform = registry.get<comps::Transform>(entity);
     auto& props = registry.get<comps::FreeFrameProperties>(entity);
     const auto worldTransform = toIsometry(transform, transform.orientation);

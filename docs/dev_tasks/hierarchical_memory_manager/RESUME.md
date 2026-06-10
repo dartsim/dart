@@ -10,6 +10,59 @@ allocator and diagnostics contracts (`MemoryManager`, `WorldOptions`,
 `WorldMemoryDiagnostics`) rather than exposing EnTT storage, allocator internals,
 or backend resources on the public simulation facade.
 
+## Current Continuation (2026-06-09)
+
+`pr/allocator-correctness-gates` (PR #2955) is merged to `main`. Its macOS
+Release allocator failure was fixed by making STL allocator copy assignment
+explicit, and the replacement macOS Release job passed. PR #2956,
+`pr/simulation-scratch-reuse`, is now based on `main` and is the active branch
+for continuing HMM Phase 4/5 work.
+
+Recent PR #2956 slices added baked no-growth/no-heap coverage for
+multi-kinematic rigid surface CCD, mixed late-active direct-sparse plus
+matrix-free deformable self-contact grids, and a mixed dense production
+deformable scene combining a notched direct-sparse 13x17 grid with a
+matrix-free 13x19 dense rectangular grid. The latest continuation extends the
+notched/jittered 13x17 irregular mesh, the 7x17 wide and 17x7 tall rectangular
+grids, and the 17x17 larger square production grid to the matrix-free
+projected-Newton path, so larger square, non-square, and non-grid topology now
+cover both sparse assembly and CG-block scratch. It also extends production
+default-solver storage and AVBD self-contact row guards, and adds a production
+rectangular inter-body deformable surface-CCD crossing for sweep/candidate
+scratch plus a production static-obstacle friction patch for shared
+sphere/box/capsule normal-force, normal-direction, and sparse/matrix-free
+Hessian scratch. The latest continuation combines sparse static-obstacle
+friction and matrix-free self-contact deformables in one baked World memory
+root. The current continuation also moves variational multibody contact and
+constraint scratch into a cache-only component, bakes loop-closure, hard AVBD
+point-joint, compliant ground-contact, and augmented-Lagrangian ground-contact
+dual capacity during `enterSimulationMode()`, and adds contact-heavy
+variational contact plus loop-closure scratch no-growth gates. It also adds the
+compliant variational contact solver-scratch reuse with zero duals, plus the
+complementary mixed deformable production gate for matrix-free static-obstacle
+friction and direct-sparse irregular self-contact under the same baked World
+root. The current continuation closes the stronger compliant-contact global
+heap gap for the single-prismatic World-surface path by evaluating
+ground-contact force through baked solver scratch and the existing scalar
+single-prismatic fast path; the baked multi-slider compliant contact row now
+passes the monolithic global-heap gate. The next slice adds a mixed default
+contact-family production scene that combines direct static-obstacle friction,
+matrix-free self-contact friction, and inter-body surface CCD under one baked
+World root, with non-vacuous activity coverage plus World-base and global-heap
+no-growth gates. The latest continuation adds the complementary contact-family
+production scene: matrix-free static-obstacle friction, direct-sparse irregular
+self-contact, and production inter-body surface CCD under the same baked root.
+The latest slice also closes the batched SoA rigid-body integration stage's
+same-shape allocation surface by moving force, state, model, initial-state, and
+parent-before-child frame-order containers into stage scratch and by executing
+the single SoA kernel directly instead of rebuilding a one-node compute graph.
+It adds a focused heap guard for a prewarmed frame-coupled parent/child rigid
+body pair.
+Continue from the current `README.md` Immediate Next Steps: broaden remaining
+boxed-LCP/contact and deformable production no-growth coverage, and move any
+newly exposed step-loop scratch to world-owned backed storage before making a
+full zero-allocation claim.
+
 ## Last Session Summary
 
 The current allocator correctness slice is active on
@@ -79,9 +132,12 @@ cross-articulated paths after contact prewarm. Mixed/different-DOF, stacked,
 and coupled multi-row cross-articulated boxed-LCP fallback scenes now have World
 base-allocator no-growth gates and first baked-step global heap no-allocation
 gates, with unified constraint scratch primed during `enterSimulationMode()`.
-Five-multibody and eight-multibody stacked boxed-LCP fallback scenes plus a
-disconnected multi-island mixed rigid/articulated contact scene now extend those
-gates beyond the original small contact sets.
+Five-multibody, eight-multibody, 12-multibody, 16-multibody, 24-multibody, and
+32-multibody stacked boxed-LCP fallback scenes plus disconnected multi-island
+mixed rigid/articulated contact scenes now extend those gates beyond the
+original small contact sets. The latest mixed stress boxed-LCP guard combines
+the 32-multibody stacked fallback and stress multi-island shape under one baked
+World root with 60+ initial contacts.
 Public return-by-value boxed-LCP unified convenience wrappers are API
 allocation-boundary surfaces; the production boxed-LCP stage uses in-place
 unified assembly and solve scratch. Still-larger production contact sets and
@@ -162,19 +218,32 @@ solution storage on reusable per-body scratch for the covered mass-spring path;
 the first-baked-step global heap guard also covers default static rigid
 surface-CCD point crossing. FEM rest-shape caches are primed during
 `enterSimulationMode()`, and the guard covers a one-tetrahedron FEM
-projected-Newton path. Projected-Newton self-contact barrier scratch is sized
-from bake-primed contact candidates, and the guard covers the two-triangle
-no-friction self-contact path. Surface-contact candidate and sweep buffers now
-get topology-scaled bake-time reserve capacity, and the guard covers a
+projected-Newton path. A follow-up default-solver gate now adds a
+multi-tetrahedron FEM block on a ground-friction barrier to cover FEM rest
+shape, Hessian-block, and multi-node ground-friction storage in both the World
+base-allocator and global heap baked-step guards. Compact and production mixed
+storage gates combine direct-sparse self-contact, matrix-free self-contact, and
+FEM ground-friction bodies in one baked default-solver World. The latest FEM
+storage gate combines direct and matrix-free 4x4x4-node ground-friction blocks
+under the same baked root, covering both FEM projected-Newton solver storage
+families.
+Projected-Newton self-contact barrier scratch is sized from bake-primed contact
+candidates, and the guard covers the two-triangle no-friction self-contact
+path. Surface-contact candidate and sweep buffers now get topology-scaled
+bake-time reserve capacity, and the guard covers a
 multi-triangle frictional self-contact patch, a 5x5 two-layer frictional
 self-contact grid, a 7x7 two-layer large grid, a 9x9 two-layer production grid,
 an 11x11 two-layer extended production grid, a 9x13 non-square production grid,
-and a 7x17 wide non-square production grid. Additional still-larger or
+a 7x17 wide non-square production grid, a 17x7 tall non-square production grid,
+and a 17x17 larger square production grid. The larger square, wide/tall
+rectangular, and notched/jittered 13x17 irregular production grids now also
+cover the matrix-free projected-Newton path. Additional still-larger or
 differently shaped production-scale frictional deformable contact sets need
-no-growth gates before making the full deformable claim.
+no-growth gates before making the full deformable
+claim.
 AVBD self-contact row scratch is now guarded beyond the original two-triangle
-scene with a 5x9 rectangular two-layer grid row workload and replay-backed
-self-contact/friction row activity assertions.
+scene with 5x9 and 9x13 rectangular two-layer grid row workloads and
+replay-backed self-contact/friction row activity assertions.
 
 The latest continuation verified the boxed-LCP fallback and unified island
 same-shape allocation guards, then removed the avoidable final lambda copy from
@@ -185,6 +254,12 @@ heap growth. This is a convenience-wrapper allocation reduction, not a full
 hot-loop claim; the return-by-value unified problem and solution convenience
 wrappers remain public allocation-boundary APIs, not current production
 step-loop call sites.
+
+A follow-up continuation broadened the boxed-LCP production contact guard from
+the 12-contact mixed multi-island scene to a 30-contact stress multi-island
+scene with independent articulated and rigid stacks. The new scene is included
+in both the baked World base-allocator no-growth gate and the global heap
+no-allocation gate.
 
 The latest continuation added a two-patch deformable self-contact friction
 scene to the baked World base-allocator and global heap guards. The initial
@@ -346,8 +421,9 @@ the allocator role: World registry storage uses the free-list-backed
 `StlAllocator`. Treat EnTT build/growth as matched benchmark evidence for
 one-shot storage construction, not as a claim that production registry rebuilds
 must use stack lifetime. Production integration still needs broader bake/build
-sizing guidance and more contact-heavy no-growth tests, and it must not use the
-existing per-step frame allocator that resets inside `World::step()`.
+sizing guidance and additional contact-heavy no-growth tests after the new
+variational dual-state gate, and it must not use the existing per-step frame
+allocator that resets inside `World::step()`.
 
 Rerun the full comparative gate after allocator-policy or benchmark changes,
 including EnTT rows, and treat every foonathan/memory miss as a required
@@ -380,10 +456,12 @@ resting-contact, current boxed-LCP multi-island mixed rigid/articulated
 fallback, current active 11x11 deformable self-contact friction grid, current
 active 9x13 and 7x17 deformable self-contact friction grids, current active
 AVBD ground contact/friction rows, current active AVBD self-contact
-normal/friction row scene plus a 5x9 rectangular AVBD self-contact row grid,
+normal/friction row scene plus 5x9 and 9x13 rectangular AVBD self-contact row
+grids,
 current active rigid AVBD contact rows, current active rigid AVBD fixed-joint
-rows, current active inter-body deformable surface-CCD crossing, and basic
-deformable surface-snapshot scenes, while keeping remaining public-value
+rows, current active compact and production rectangular inter-body deformable
+surface-CCD crossings, and basic deformable surface-snapshot scenes, while
+keeping remaining public-value
 unified problem/solution wrappers and larger or differently shaped
 default-solver deformable allocation surfaces explicit, before making a full
 zero-dynamic-allocation claim.
@@ -392,7 +470,8 @@ zero-dynamic-allocation claim.
 
 - On 2026-06-08 after the wide deformable friction checkpoint, AVBD
   self-contact row coverage expanded from the original two-triangle scene to a
-  5x9 rectangular two-layer grid. The grid reuses the same row-inventory,
+  5x9 and 9x13 rectangular two-layer grids. The grids reuse the same
+  row-inventory,
   self-contact adjacency, and friction warm-start path, so the guard is an
   apple-to-apple AVBD row-scratch workload rather than another projected-Newton
   barrier solve. Focused validation passed:

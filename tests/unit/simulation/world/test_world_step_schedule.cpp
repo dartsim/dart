@@ -328,6 +328,9 @@ TEST(BuiltInWorldStepSchedule, PreparationContractCoversStatefulStages)
       sxdetail::builtInWorldStepScheduleNeedsPreparation(
           Slot::DeformableDynamics));
   EXPECT_TRUE(
+      sxdetail::builtInWorldStepScheduleNeedsPreparation(
+          Slot::UnifiedConstraint));
+  EXPECT_TRUE(
       sxdetail::builtInWorldStepScheduleNeedsPreparation(Slot::Kinematics));
 
   EXPECT_FALSE(
@@ -336,9 +339,6 @@ TEST(BuiltInWorldStepSchedule, PreparationContractCoversStatefulStages)
   EXPECT_FALSE(
       sxdetail::builtInWorldStepScheduleNeedsPreparation(
           Slot::MultibodyForwardDynamics));
-  EXPECT_FALSE(
-      sxdetail::builtInWorldStepScheduleNeedsPreparation(
-          Slot::UnifiedConstraint));
   EXPECT_FALSE(
       sxdetail::builtInWorldStepScheduleNeedsPreparation(
           static_cast<Slot>(99)));
