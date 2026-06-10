@@ -70,6 +70,7 @@
 #include <Eigen/Geometry>
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <array>
 #include <atomic>
 
@@ -10183,6 +10184,28 @@ TEST(World, RigidIpcContactStageUsesDeformableSurfaceObstacle)
   const double kineticEnergy
       = 0.5 * box.getMass() * box.getLinearVelocity().squaredNorm();
   EXPECT_TRUE(std::isfinite(kineticEnergy));
+}
+
+TEST(World, RigidIpcContactStageMetadataDeclaresMixedDomainReads)
+{
+  namespace sx = dart::simulation;
+
+  sx::compute::RigidIpcContactStage ipcStage;
+  const auto metadata = ipcStage.getMetadata();
+
+  const auto hasRead = [&metadata](const std::string_view resource) {
+    return std::any_of(
+        metadata.resources.begin(),
+        metadata.resources.end(),
+        [resource](const sx::compute::ComputeResourceAccess& access) {
+          return access.resource == resource
+                 && access.mode == sx::compute::ComputeAccessMode::Read;
+        });
+  };
+
+  EXPECT_TRUE(hasRead("deformable_body.state"));
+  EXPECT_TRUE(hasRead("deformable_body.model"));
+  EXPECT_TRUE(hasRead("deformable_body.topology"));
 }
 
 // Test that the opt-in rigid IPC stage assembles active barrier constraints
