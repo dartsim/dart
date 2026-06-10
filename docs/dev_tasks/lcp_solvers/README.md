@@ -101,10 +101,10 @@
       coverage and benchmark rows.
       This does not yet cover a general CUDA backend for every solver.
 - [x] Extended DART 7 boxed-LCP articulated public-step coverage to
-      64-contact/pair fixed-base link-ground, link-vs-rigid, cross-multibody
-      link-vs-link, and connected Cartesian-chain scenes, including 64-case
-      regression tests and 200-step benchmark rows in default, SIMD-enabled,
-      and CUDA-enabled build trees.
+      96-contact/pair fixed-base link-ground, link-vs-rigid, cross-multibody
+      link-vs-link, and connected Cartesian-chain scenes, including 64- and
+      96-case regression tests and 200-step benchmark rows in default,
+      SIMD-enabled, and CUDA-enabled build trees.
 - [x] Completed a solver-by-solver implementation audit against
       `docs/background/lcp/`.
 - [x] Added manifest-driven generated known-solution coverage for all supporting
@@ -2749,58 +2749,46 @@ tradeoffs evidence based.
   CUDA-enabled rows are CPU public-step rows in that build tree, not CUDA LCP
   kernel execution.
 - DART 7 articulated contact end-to-end benchmark evidence:
-  `BM_LcpWorldArticulatedGroundStep_BoxedLcp/{1,4,8,16,24,32,64}/200` rebuilds fixed-base
-  prismatic-link worlds, enters simulation mode in the world factory, advances
-  the public boxed-LCP `World::step()` path for 200 steps, and checks finite
-  link height plus near-zero joint velocity after ground contact. The focused
-  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldArticulated(Ground|RigidImpact|LinkImpact|CartesianGround)Step_BoxedLcp' --benchmark_min_time=0.001s --benchmark_repetitions=1`
-  default/SIMD/CUDA build-tree runs reported `invariant_ok=1` for all 28
-  articulated public-step rows, with ground-step
-  `articulated_link_count=1`, `4`, `8`, `16`, `24`, and `32`; the SIMD run
-  reported `build_simd_enabled=1` for all 28 rows, and the CUDA-enabled run
-  reported `build_cuda_enabled=1` for all 28 rows. These CUDA-enabled rows are
-  CPU public-step rows in that build tree, not CUDA LCP kernel execution. This
-  is fixed-base prismatic-link ground-contact evidence, not broad articulated
-  robot contact coverage.
-  `BM_LcpWorldArticulatedRigidImpactStep_BoxedLcp/{1,4,8,16,24,32,64}/1` rebuilds
-  fixed-base prismatic striker worlds with dynamic rigid targets, enters
-  simulation mode in the world factory, advances one public boxed-LCP
+  `BM_LcpWorldArticulatedGroundStep_BoxedLcp/{1,4,8,16,24,32,64,96}/200`
+  rebuilds fixed-base prismatic-link worlds, enters simulation mode in the
+  world factory, advances the public boxed-LCP `World::step()` path for 200
+  steps, and checks finite link height plus near-zero joint velocity after
+  ground contact. Earlier focused broad filters covered the pre-96 rows; the
+  96-contact extension was verified with
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldArticulated(Ground|RigidImpact|LinkImpact|CartesianGround)Step_BoxedLcp/96/(1|200)$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_format=json`
+  in default, SIMD-enabled, and CUDA-enabled build trees.
+  `BM_LcpWorldArticulatedRigidImpactStep_BoxedLcp/{1,4,8,16,24,32,64,96}/1`
+  rebuilds fixed-base prismatic striker worlds with dynamic rigid targets,
+  enters simulation mode in the world factory, advances one public boxed-LCP
   `World::step()`, and checks target motion, striker slowdown, and X-momentum
-  conservation. The same focused runs also cover
-  `BM_LcpWorldArticulatedRigidImpactStep_BoxedLcp/{16,32,64}/200`; the 32-pair
-  rows reported `contact_count=32`, `articulated_link_count=32`,
-  `max_momentum_error=0`, and `invariant_ok=1`.
-  `BM_LcpWorldArticulatedLinkImpactStep_BoxedLcp/{1,4,8,16,24,32,64}/1` rebuilds
-  cross-multibody fixed-base prismatic striker/target link worlds, enters
-  simulation mode in the world factory, advances one public boxed-LCP
+  conservation. The registered long-horizon rows now cover
+  `BM_LcpWorldArticulatedRigidImpactStep_BoxedLcp/{16,32,64,96}/200`.
+  `BM_LcpWorldArticulatedLinkImpactStep_BoxedLcp/{1,4,8,16,24,32,64,96}/1`
+  rebuilds cross-multibody fixed-base prismatic striker/target link worlds,
+  enters simulation mode in the world factory, advances one public boxed-LCP
   `World::step()`, and checks target-link motion, striker-link slowdown,
   nonnegative post-step separation velocity, and X-momentum conservation. The
-  same focused runs also cover
-  `BM_LcpWorldArticulatedLinkImpactStep_BoxedLcp/{16,32,64}/200`; the 32-pair
-  rows reported `contact_count=32`, `articulated_pair_count=32`,
-  `articulated_link_count=64`, `articulated_dof_count=64`,
-  `cross_multibody_link_contact=1`, `max_momentum_error=0`,
-  `min_relative_velocity=0.18`, and `invariant_ok=1`.
-  `BM_LcpWorldArticulatedCartesianGroundStep_BoxedLcp/{1,4,8,16,24,32,64}/200`
+  registered long-horizon rows now cover
+  `BM_LcpWorldArticulatedLinkImpactStep_BoxedLcp/{16,32,64,96}/200`.
+  `BM_LcpWorldArticulatedCartesianGroundStep_BoxedLcp/{1,4,8,16,24,32,64,96}/200`
   rebuilds connected fixed-base three-axis prismatic Cartesian-chain worlds,
   enters simulation mode in the world factory, advances the public boxed-LCP
   `World::step()` path for 200 steps, and checks finite tip height, bounded
   joint velocities, and bounded planar joint speed after ground contact. The
-  32-chain rows reported `cartesian_chain_count=32`,
-  `articulated_dof_count=96`, `contact_count=32`, and `invariant_ok=1` in all
-  three build trees. The focused 64-contact/pair follow-up filter reported 6
-  rows with `invariant_ok=1` and zero failures in default, SIMD-enabled, and
-  CUDA-enabled build trees, covering link-ground 64/200, link-vs-rigid 64/1 and
-  64/200, cross-link 64/1 and 64/200, and Cartesian-chain 64/200. The 64-row
-  counters include `contact_count=64`, ground `articulated_link_count=64`,
-  rigid-impact `min_target_velocity=0.786667`,
-  cross-link `articulated_pair_count=64`, `articulated_link_count=128`,
-  `articulated_dof_count=128`, `min_relative_velocity=0.18`, and
-  Cartesian-chain `articulated_dof_count=192`, with `max_momentum_error=0`,
+  focused 96-contact/pair follow-up filter reported 6 rows with
+  `invariant_ok=1` and zero failures in default, SIMD-enabled, and
+  CUDA-enabled build trees, covering link-ground 96/200, link-vs-rigid 96/1
+  and 96/200, cross-link 96/1 and 96/200, and Cartesian-chain 96/200. The
+  96-row counters include `contact_count=96`, ground
+  `articulated_link_count=96`, rigid-impact `min_target_velocity=0.786667`,
+  cross-link `articulated_pair_count=96`, `articulated_link_count=192`,
+  `articulated_dof_count=192`, `min_relative_velocity=0.18`, and
+  Cartesian-chain `articulated_dof_count=288`, with `max_momentum_error=0`,
   `max_height_error=1e-4`, `max_abs_joint_velocity=4.45e-15`, and
   `max_planar_joint_speed=0` where applicable. The SIMD run reported 6 rows
   with `build_simd_enabled=1`, and the CUDA-enabled run reported 6 rows with
-  `build_cuda_enabled=1`. This is connected fixed-base
+  `build_cuda_enabled=1`. These CUDA-enabled rows are CPU public-step rows in
+  that build tree, not CUDA LCP kernel execution. This is connected fixed-base
   multi-DOF articulated contact evidence, not broad articulated robot contact
   coverage.
 - DART 7 articulated unified-contact solver benchmark evidence:
