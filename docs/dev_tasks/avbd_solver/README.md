@@ -9,6 +9,14 @@ Corpus matrix:
 
 ## Current Status
 
+- Latest local follow-up: `RigidBodyContactStage::prepare()` now uses the same
+  no-dynamic-collision-geometry skip predicate as execute before sizing contact
+  scratch, so no-collision source rows such as the 2D Motor row avoid a
+  redundant `World::queryContacts()` call during stage preparation. Focused
+  world/contact-stage tests and step-profiling tests passed, and a selected
+  Motor benchmark smoke improved from about 13.5 us to about 9.2 us median CPU
+  time under changing host load. This is no-contact prepare-overhead evidence
+  only; it does not close the Motor CPU-win, GPU, or paper-number gates.
 - Latest local follow-up: point-pair and angular constraint caches now use exact
   component equality for repeated local anchors and target orientations instead
   of zero-tolerance approximate comparisons. This keeps the block-solver

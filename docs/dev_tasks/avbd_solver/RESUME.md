@@ -2,6 +2,15 @@
 
 ## Last Session Summary
 
+Latest local follow-up: `RigidBodyContactStage::prepare()` now checks the same
+no-dynamic-collision-geometry predicate as execute before sizing contact
+scratch, avoiding a redundant `World::queryContacts()` call for no-collision
+source rows such as the 2D Motor row. Focused world/contact-stage tests and
+step-profiling tests passed, and a selected Motor benchmark smoke moved from
+about 13.5 us to about 9.2 us median CPU under changing host load. This is
+no-contact prepare-overhead evidence only; it does not close the Motor CPU-win,
+GPU, or paper-number gates.
+
 Latest local follow-up: point-pair and angular constraint caches now use exact
 component equality for repeated local anchors and target orientations instead
 of zero-tolerance approximate comparisons. This keeps the block-solver cache-hit
@@ -1601,6 +1610,13 @@ motor/fracture/facade lifecycle coverage, or paper/reference benchmark packet is
 complete.
 
 ## Current Branch
+
+Current reality (2026-06-10): the active split stack is PR #2967
+(`avbd/tests-benchmarks`, base `main`) plus PR #2968 (`avbd/python-demos`, base
+`avbd/tests-benchmarks`), and this checkout is `avbd/python-demos`. The older
+checkpoint branch description below is historical context for the raw
+33-hour checkpoint and should not be treated as the current checkout without
+re-verifying `git status --short --branch` and the open PR heads.
 
 `feature/avbd-articulated-masked-rows` - staged local slice based on cached
 `origin/main` at `dbac6c63e9f`, including the scalar-row foundation,
