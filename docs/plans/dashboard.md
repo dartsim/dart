@@ -292,18 +292,11 @@ its own line so status updates remain git-history friendly.
   [`ppf-contact-solver-intake.md`](083-unified-newton-barrier-multibody/ppf-contact-solver-intake.md)
   for PPF's paper, repository, API, diagnostics, examples, and GPU-platform
   lessons. Implementation-roadmap Phase 2 shared solver contracts landed in PR
-  #2951, implementation-roadmap Phase 3 Unified Articulation Constraints is open
-  as PR #2953 targeting `main`, and implementation-roadmap Phase 4 Restitution,
-  BDF-2, and Rayleigh Damping is open as PR #2954 targeting the Phase 3 branch.
-  Implementation-roadmap Phase 5 Mixed-Domain Coupling is open as PR #2957
-  targeting the Phase 4 branch, and implementation-roadmap Phase 6 CPU Scene
-  Corpus And Py-Demos is open as PR #2958 targeting the Phase 5 branch.
-  Implementation-roadmap Phase 7 Private GPU Parity And Speed is open as PR
-  #2959 targeting the Phase 6 branch, and implementation-roadmap Phase 8
-  Completion Audit is open as PR #2960 targeting the Phase 7 branch. The audit
-  records that PLAN-083 is not complete while planned manifest, CPU corpus, and
-  GPU parity rows remain, so dev-task retirement needs maintainer direction
-  before deletion.
+  #2951. Implementation-roadmap Phases 3-8 landed together in PR #2960 because
+  the remaining internal slices were small enough for one reviewer-facing PR.
+  The Phase 8 audit records that PLAN-083 is not complete while planned
+  manifest, CPU corpus, and GPU parity rows remain, so dev-task retirement
+  needs maintainer direction before deletion.
 - Gate: Unified Newton-barrier progress is not complete until every cited
   paper/deck figure, unit test, benchmark table, and comparison scene is mapped
   to DART-owned tests, py-demos examples, benchmark/profiling packets, CPU and

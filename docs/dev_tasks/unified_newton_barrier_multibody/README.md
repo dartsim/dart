@@ -185,11 +185,11 @@ storage, or backend resources as public API.
 ## Key Decisions
 
 - Phase 1 is an internal ownership and contract slice, not a behavior change.
-- Batch all work within one implementation-roadmap phase into a single branch
-  and PR. Commits within the branch stay atomic and self-describing, but the PR
-  is the review unit, not the commit. A phase may split into at most two PRs
-  only if it crosses a public-API boundary or touches unrelated CI/build
-  infrastructure.
+- Batch work into the smallest reviewer-useful PR unit: default to one branch
+  and PR per implementation-roadmap phase, but consolidate adjacent small
+  internal phases into one PR when that keeps review clearer. Commits within the
+  branch stay atomic and self-describing. Split only for public-API boundaries,
+  unrelated CI/build infrastructure, or reviewability.
 - The old `deformable_contact` include paths remain as forwarding
   compatibility headers to avoid unnecessary PLAN-081 merge conflicts.
 - Rigid IPC should include the new Newton-barrier owner directly because it is
@@ -218,8 +218,8 @@ storage, or backend resources as public API.
 
 ## Immediate Next Steps
 
-1. Monitor the phase-scoped PR stack through #2960, the completion-audit PR
-   targeting the Phase 7 branch.
+1. Use merged PR #2960 as the baseline for implementation-roadmap Phases 3-8;
+   do not reopen the old phase-scoped stack.
 2. Get maintainer direction before retiring
    `docs/dev_tasks/unified_newton_barrier_multibody/`: the Phase 8 audit found
    that PLAN-083 still has planned CPU/GPU/scene rows and cannot honestly be
