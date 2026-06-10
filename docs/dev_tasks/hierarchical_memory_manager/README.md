@@ -185,7 +185,9 @@
       no-growth tests that step multiple variational contact sliders without
       registry capacity growth. Compliant variational contact also reuses the
       baked ground-contact solver scratch with zero duals, so the contact hook
-      no longer copies contact-point storage in the step loop.
+      no longer copies contact-point storage in the step loop, and the
+      single-prismatic World-surface contact path now evaluates ground contact
+      without constructing the general residual/contact work vectors.
       Broader solver scratch coverage remains open.
 - [ ] Phase 4: Built-in simulation stages borrow world memory for transient
       buffers and avoid growth after simulation is baked. The default
@@ -200,10 +202,11 @@
       variational multibody stage now owns cache-only reusable contact/constraint
       scratch, bakes loop-closure and hard AVBD point-joint constraint capacity,
       reuses baked solver scratch for compliant and augmented-Lagrangian ground
-      contact, and bakes those vectors before contact-heavy steps. A stronger
-      compliant-contact global-heap probe still exposes allocations in the
-      variational residual/contact linearization path, so that remains open
-      scratch-reuse work. The boxed-LCP
+      contact, bakes those vectors before contact-heavy steps, and now routes
+      the single-prismatic compliant ground-contact stage path through a scalar
+      scratch-free solver fast path. A stronger compliant-contact global-heap
+      probe now covers the baked multi-slider World-surface path without
+      step-loop heap allocations. The boxed-LCP
       unified constraint stage now reuses stage-owned assembly containers and
       unified problem storage, and its shared/cross-row assembly no longer
       allocates per-step row-direction, rigid/articulated row-end, or
@@ -352,7 +355,8 @@
       rigid-body resting-contact, non-cross articulated resting-contact, and
       same-DOF cross-articulated link-contact paths after contact prewarm; a
       global heap guard covers the same baked kinematic IPC, rigid-body,
-      multibody variational, deformable, rigid-body resting-contact,
+      multibody variational, compliant variational contact, deformable,
+      rigid-body resting-contact,
       non-cross articulated resting-contact, and same-DOF cross-articulated
       contact paths. Mixed/different-DOF, stacked, and coupled multi-row
       cross-contact boxed-LCP fallback scenes now have base-allocator

@@ -4540,6 +4540,10 @@ TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
       });
 
   expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "multibody variational compliant contact scratch",
+      configureCompliantVariationalContactSliderScene);
+
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
       "single deformable particle", [](sx::World& world) {
         sx::DeformableBodyOptions options;
         options.positions = {Eigen::Vector3d(0.0, 0.0, 1.0)};

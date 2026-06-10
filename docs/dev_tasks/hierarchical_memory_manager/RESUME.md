@@ -41,9 +41,11 @@ variational contact plus loop-closure scratch no-growth gates. It also adds the
 compliant variational contact solver-scratch reuse with zero duals, plus the
 complementary mixed deformable production gate for matrix-free static-obstacle
 friction and direct-sparse irregular self-contact under the same baked World
-root. A local probe of the stronger compliant-contact global-heap gate still
-allocates in variational residual/contact linearization, so that gate remains a
-future scratch-reuse target rather than a closed claim.
+root. The current continuation closes the stronger compliant-contact global
+heap gap for the single-prismatic World-surface path by evaluating
+ground-contact force through baked solver scratch and the existing scalar
+single-prismatic fast path; the baked multi-slider compliant contact row now
+passes the monolithic global-heap gate.
 Continue from the current `README.md` Immediate Next Steps: broaden remaining
 boxed-LCP/contact and deformable production no-growth coverage, and move any
 newly exposed step-loop scratch to world-owned backed storage before making a

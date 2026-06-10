@@ -231,6 +231,12 @@ public:
   /// hook reads this solver's live duals, so build it once and reuse it.
   [[nodiscard]] VariationalContactHook hook() const;
 
+  /// Evaluate the current contact force into caller-owned storage. The output
+  /// is resized to the context DOF count and overwritten.
+  void computeForceInto(
+      const VariationalContactContext& context,
+      Eigen::VectorXd& generalizedForce) const;
+
   /// Advance the duals after a converged step, from the per-link world
   /// transforms at the converged configuration (same link order as the
   /// context).
@@ -255,6 +261,18 @@ private:
   std::vector<double> mDuals; ///< per contact point, >= 0
 };
 
+/// Reusable storage for variational contact-force evaluation.
+struct VariationalContactEvaluationScratch
+{
+  std::vector<Eigen::Isometry3d> previousWorldTransforms;
+  std::vector<Eigen::Isometry3d> trialRelativeTransforms;
+  std::vector<Eigen::Isometry3d> trialWorldTransforms;
+  std::vector<Eigen::MatrixXd> previousJacobians;
+  std::vector<Eigen::MatrixXd> trialJacobians;
+  Eigen::VectorXd contactForce;
+  Eigen::VectorXd forcing;
+};
+
 /// Cache-only scratch reused by the variational multibody stage.
 ///
 /// The persisted `MultibodyVariationalState` remains the two-step dynamics
@@ -267,6 +285,7 @@ struct MultibodyVariationalScratch
   std::vector<VariationalLoopConstraint> constraints;
   VariationalGroundContact groundContact;
   std::optional<VariationalGroundContactSolver> groundContactSolver;
+  VariationalContactEvaluationScratch contactEvaluation;
   std::vector<Eigen::Isometry3d> postContactTransforms;
 };
 
