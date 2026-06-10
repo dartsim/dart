@@ -1244,6 +1244,16 @@ void validateLoopClosureDynamicsPolicySupport(
 //==============================================================================
 struct WorldStepPipelineStages
 {
+  explicit WorldStepPipelineStages(common::MemoryManager& memoryManager)
+    : rigidBodyVelocity(&memoryManager),
+      rigidBodyContact(8, &memoryManager),
+      rigidIpcContact(compute::RigidIpcContactStageOptions{}, &memoryManager),
+      unifiedConstraint(8, &memoryManager),
+      deformableDynamics(&memoryManager),
+      kinematics(&memoryManager)
+  {
+  }
+
   compute::RigidBodyVelocityStage rigidBodyVelocity;
   compute::RigidBodyContactStage rigidBodyContact;
   compute::RigidBodyPositionStage rigidBodyPosition;
@@ -2257,6 +2267,11 @@ Eigen::Isometry3d toIsometry(
 //==============================================================================
 struct World::StepPipelineCache
 {
+  explicit StepPipelineCache(common::MemoryManager& memoryManager)
+    : stages(memoryManager)
+  {
+  }
+
   WorldStepPipelineStages stages;
 };
 
@@ -2307,7 +2322,8 @@ void World::CollisionQueryCacheDeleter::operator()(void* cache) const noexcept
 World::StepPipelineCachePtr World::makeStepPipelineCache(
     common::MemoryManager& memoryManager)
 {
-  auto* cache = memoryManager.constructUsingFree<StepPipelineCache>();
+  auto* cache
+      = memoryManager.constructUsingFree<StepPipelineCache>(memoryManager);
   if (cache == nullptr) {
     throw std::bad_alloc();
   }

@@ -67,16 +67,20 @@ using WorldRegistry
     = entt::basic_registry<entt::entity, WorldRegistryAllocator>;
 ```
 
-`WorldStorage` itself, the private built-in step-pipeline cache, the lazy
-collision query cache, and the optional replay controller object are allocated
-from the World free-list allocator.
+`WorldStorage` itself, the private built-in step-pipeline cache, the built-in
+stage-owned scratch/cache objects inside that pipeline cache, the lazy collision
+query cache, and the optional replay controller object are allocated from the
+World free-list allocator. Standalone custom stage instances keep their heap
+fallback constructors unless a caller provides a `MemoryManager`.
 `WorldStorage` constructs the registry and differentiable-parameter list with a
 `StlAllocator` that borrows `World::getMemoryManager().getFreeAllocator()`.
 `World::enterSimulationMode()` runs the bake path that materializes queried
 component storages, reserves existing storages, and asks domain-specific reserve
 helpers to pre-size private ECS scratch for the current shape. Repeated
 same-shape steps should not materialize new registry storages or grow existing
-storage capacity.
+storage capacity. Nested `std::vector`/Eigen payload capacity inside those
+stage scratch objects is still governed by the same-shape world-base and global
+heap no-growth gates.
 
 `World::clear()` recreates `WorldStorage` and the built-in step-pipeline cache
 with the same world free allocator, drops the lazy collision query cache, and

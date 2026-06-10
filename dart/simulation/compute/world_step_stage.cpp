@@ -71,6 +71,8 @@
 #include <dart/math/lcp/lcp_types.hpp>
 #include <dart/math/lcp/pivoting/dantzig_solver.hpp>
 
+#include <dart/common/memory_manager.hpp>
+
 #include <Eigen/Cholesky>
 #include <Eigen/Dense>
 #include <Eigen/Eigenvalues>
@@ -104,6 +106,40 @@ namespace dvbd = dart::simulation::detail::deformable_vbd;
 namespace fem = dart::simulation::detail::deformable_elasticity;
 namespace nb = dart::simulation::detail::newton_barrier;
 namespace sxdetail = dart::simulation::detail;
+
+namespace {
+
+template <typename T, typename... Args>
+[[nodiscard]] T* constructStageOwnedScratch(
+    common::MemoryManager* memoryManager, Args&&... args)
+{
+  if (memoryManager != nullptr) {
+    auto* scratch
+        = memoryManager->constructUsingFree<T>(std::forward<Args>(args)...);
+    if (scratch == nullptr) {
+      throw std::bad_alloc();
+    }
+    return scratch;
+  }
+
+  return new T(std::forward<Args>(args)...);
+}
+
+template <typename T>
+void destroyStageOwnedScratch(
+    common::MemoryManager* memoryManager, T* scratch) noexcept
+{
+  if (scratch == nullptr) {
+    return;
+  }
+  if (memoryManager != nullptr) {
+    memoryManager->destroyUsingFree(scratch);
+  } else {
+    delete scratch;
+  }
+}
+
+} // namespace
 
 struct RigidIpcRuntimeBody
 {
@@ -737,10 +773,24 @@ std::string_view KinematicsStage::getName() const noexcept
 }
 
 //==============================================================================
-KinematicsStage::KinematicsStage() = default;
+KinematicsStage::KinematicsStage() : KinematicsStage(nullptr) {}
+
+//==============================================================================
+KinematicsStage::KinematicsStage(common::MemoryManager* memoryManager)
+  : m_memoryManager(memoryManager),
+    m_cachedGraph(nullptr, CachedGraphDeleter{memoryManager})
+{
+}
 
 //==============================================================================
 KinematicsStage::~KinematicsStage() = default;
+
+//==============================================================================
+void KinematicsStage::CachedGraphDeleter::operator()(
+    WorldKinematicsGraph* graph) const noexcept
+{
+  destroyStageOwnedScratch(memoryManager, graph);
+}
 
 //==============================================================================
 ComputeStageMetadata KinematicsStage::getMetadata() const noexcept
@@ -755,7 +805,10 @@ ComputeStageMetadata KinematicsStage::getMetadata() const noexcept
 void KinematicsStage::prepare(World& world)
 {
   if (m_cachedWorld != &world || !m_cachedGraph) {
-    m_cachedGraph = std::make_unique<WorldKinematicsGraph>(world);
+    m_cachedGraph = std::unique_ptr<WorldKinematicsGraph, CachedGraphDeleter>(
+        constructStageOwnedScratch<WorldKinematicsGraph>(
+            m_memoryManager, world),
+        CachedGraphDeleter{m_memoryManager});
     m_cachedWorld = &world;
     return;
   }
@@ -8653,12 +8706,29 @@ struct BatchedRigidBodyIntegrationStage::Scratch
 
 //==============================================================================
 RigidBodyVelocityStage::RigidBodyVelocityStage()
-  : m_scratch(std::make_unique<Scratch>())
+  : RigidBodyVelocityStage(nullptr)
+{
+}
+
+//==============================================================================
+RigidBodyVelocityStage::RigidBodyVelocityStage(
+    common::MemoryManager* memoryManager)
+  : m_memoryManager(memoryManager),
+    m_scratch(
+        constructStageOwnedScratch<Scratch>(memoryManager),
+        ScratchDeleter{memoryManager})
 {
 }
 
 //==============================================================================
 RigidBodyVelocityStage::~RigidBodyVelocityStage() = default;
+
+//==============================================================================
+void RigidBodyVelocityStage::ScratchDeleter::operator()(
+    Scratch* scratch) const noexcept
+{
+  destroyStageOwnedScratch(memoryManager, scratch);
+}
 
 //==============================================================================
 std::string_view RigidBodyVelocityStage::getName() const noexcept
@@ -8679,7 +8749,9 @@ ComputeStageMetadata RigidBodyVelocityStage::getMetadata() const noexcept
 void RigidBodyVelocityStage::prepare(World& world)
 {
   if (m_scratch == nullptr) {
-    m_scratch = std::make_unique<Scratch>();
+    m_scratch = ScratchPtr(
+        constructStageOwnedScratch<Scratch>(m_memoryManager),
+        ScratchDeleter{m_memoryManager});
   }
 
   assembleRigidBodyForces(world, true, m_scratch->forces);
@@ -8692,7 +8764,9 @@ void RigidBodyVelocityStage::execute(
   auto& registry = dart::simulation::detail::registryOf(world);
   const auto timeStep = world.getTimeStep();
   if (m_scratch == nullptr) {
-    m_scratch = std::make_unique<Scratch>();
+    m_scratch = ScratchPtr(
+        constructStageOwnedScratch<Scratch>(m_memoryManager),
+        ScratchDeleter{m_memoryManager});
   }
   auto& forces = m_scratch->forces;
   assembleRigidBodyForces(world, true, forces);
@@ -8836,14 +8910,40 @@ struct RigidBodyContactStage::ContactScratch
 
 //==============================================================================
 RigidBodyContactStage::RigidBodyContactStage(std::size_t iterations)
+  : RigidBodyContactStage(iterations, nullptr)
+{
+}
+
+//==============================================================================
+RigidBodyContactStage::RigidBodyContactStage(
+    std::size_t iterations, common::MemoryManager* memoryManager)
   : m_iterations(std::max<std::size_t>(1, iterations)),
-    m_avbdScratch(std::make_unique<AvbdScratch>()),
-    m_contactScratch(std::make_unique<ContactScratch>())
+    m_memoryManager(memoryManager),
+    m_avbdScratch(
+        constructStageOwnedScratch<AvbdScratch>(memoryManager),
+        AvbdScratchDeleter{memoryManager}),
+    m_contactScratch(
+        constructStageOwnedScratch<ContactScratch>(memoryManager),
+        ContactScratchDeleter{memoryManager})
 {
 }
 
 //==============================================================================
 RigidBodyContactStage::~RigidBodyContactStage() = default;
+
+//==============================================================================
+void RigidBodyContactStage::AvbdScratchDeleter::operator()(
+    AvbdScratch* scratch) const noexcept
+{
+  destroyStageOwnedScratch(memoryManager, scratch);
+}
+
+//==============================================================================
+void RigidBodyContactStage::ContactScratchDeleter::operator()(
+    ContactScratch* scratch) const noexcept
+{
+  destroyStageOwnedScratch(memoryManager, scratch);
+}
 
 //==============================================================================
 std::string_view RigidBodyContactStage::getName() const noexcept
@@ -8864,14 +8964,18 @@ ComputeStageMetadata RigidBodyContactStage::getMetadata() const noexcept
 void RigidBodyContactStage::prepare(World& world)
 {
   if (m_contactScratch == nullptr) {
-    m_contactScratch = std::make_unique<ContactScratch>();
+    m_contactScratch = ContactScratchPtr(
+        constructStageOwnedScratch<ContactScratch>(m_memoryManager),
+        ContactScratchDeleter{m_memoryManager});
   }
 
   const auto& contacts = world.queryContacts(CollisionQueryOptions{});
   m_contactScratch->constraints.reserve(contacts.size());
 
   if (m_avbdScratch == nullptr) {
-    m_avbdScratch = std::make_unique<AvbdScratch>();
+    m_avbdScratch = AvbdScratchPtr(
+        constructStageOwnedScratch<AvbdScratch>(m_memoryManager),
+        AvbdScratchDeleter{m_memoryManager});
   }
   auto& registry = dart::simulation::detail::registryOf(world);
   const std::size_t jointCapacity
@@ -8889,7 +8993,9 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
 
   const auto projectAvbdRigidPointJoints = [&]() {
     if (m_avbdScratch == nullptr) {
-      m_avbdScratch = std::make_unique<AvbdScratch>();
+      m_avbdScratch = AvbdScratchPtr(
+          constructStageOwnedScratch<AvbdScratch>(m_memoryManager),
+          AvbdScratchDeleter{m_memoryManager});
     }
     auto& scratch = *m_avbdScratch;
     dvbd::extractAvbdRigidWorldPointJointInputs(registry, scratch.pointJoints);
@@ -8955,7 +9061,9 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
   // fall through to the sequential-impulse path below.
   if (const auto avbdConfig = rigidAvbdContactStageConfig(registry, contacts)) {
     if (m_avbdScratch == nullptr) {
-      m_avbdScratch = std::make_unique<AvbdScratch>();
+      m_avbdScratch = AvbdScratchPtr(
+          constructStageOwnedScratch<AvbdScratch>(m_memoryManager),
+          AvbdScratchDeleter{m_memoryManager});
     }
     auto& scratch = *m_avbdScratch;
 
@@ -9049,7 +9157,9 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
   };
 
   if (m_contactScratch == nullptr) {
-    m_contactScratch = std::make_unique<ContactScratch>();
+    m_contactScratch = ContactScratchPtr(
+        constructStageOwnedScratch<ContactScratch>(m_memoryManager),
+        ContactScratchDeleter{m_memoryManager});
   }
   auto& constraints = m_contactScratch->constraints;
   constraints.clear();
@@ -9253,14 +9363,40 @@ RigidIpcContactStage::RigidIpcContactStage(const std::size_t maxIterations)
 }
 
 //==============================================================================
+RigidIpcContactStage::RigidIpcContactStage(
+    const std::size_t maxIterations, common::MemoryManager* memoryManager)
+  : RigidIpcContactStage(
+        makeRigidIpcContactStageOptionsForMaxIterations(maxIterations),
+        memoryManager)
+{
+}
+
+//==============================================================================
 RigidIpcContactStage::RigidIpcContactStage(RigidIpcContactStageOptions options)
+  : RigidIpcContactStage(options, nullptr)
+{
+}
+
+//==============================================================================
+RigidIpcContactStage::RigidIpcContactStage(
+    RigidIpcContactStageOptions options, common::MemoryManager* memoryManager)
   : m_options(sanitizeRigidIpcContactStageOptions(options)),
-    m_scratch(std::make_unique<Scratch>())
+    m_memoryManager(memoryManager),
+    m_scratch(
+        constructStageOwnedScratch<Scratch>(memoryManager),
+        ScratchDeleter{memoryManager})
 {
 }
 
 //==============================================================================
 RigidIpcContactStage::~RigidIpcContactStage() = default;
+
+//==============================================================================
+void RigidIpcContactStage::ScratchDeleter::operator()(
+    Scratch* scratch) const noexcept
+{
+  destroyStageOwnedScratch(memoryManager, scratch);
+}
 
 //==============================================================================
 std::string_view RigidIpcContactStage::getName() const noexcept
@@ -9616,12 +9752,29 @@ const RigidIpcSolverStats& RigidIpcContactStage::getLastStats() const noexcept
 
 //==============================================================================
 DeformableDynamicsStage::DeformableDynamicsStage()
-  : m_scratch(std::make_unique<Scratch>())
+  : DeformableDynamicsStage(nullptr)
+{
+}
+
+//==============================================================================
+DeformableDynamicsStage::DeformableDynamicsStage(
+    common::MemoryManager* memoryManager)
+  : m_memoryManager(memoryManager),
+    m_scratch(
+        constructStageOwnedScratch<Scratch>(memoryManager),
+        ScratchDeleter{memoryManager})
 {
 }
 
 //==============================================================================
 DeformableDynamicsStage::~DeformableDynamicsStage() = default;
+
+//==============================================================================
+void DeformableDynamicsStage::ScratchDeleter::operator()(
+    Scratch* scratch) const noexcept
+{
+  destroyStageOwnedScratch(memoryManager, scratch);
+}
 
 //==============================================================================
 std::string_view DeformableDynamicsStage::getName() const noexcept
@@ -9788,6 +9941,12 @@ void primeInterBodySurfaceContactScratch(
 //==============================================================================
 void DeformableDynamicsStage::prepare(World& world)
 {
+  if (m_scratch == nullptr) {
+    m_scratch = std::unique_ptr<Scratch, ScratchDeleter>(
+        constructStageOwnedScratch<Scratch>(m_memoryManager),
+        ScratchDeleter{m_memoryManager});
+  }
+
   auto& registry = dart::simulation::detail::registryOf(world);
   auto view = registry.view<
       comps::DeformableBodyTag,
@@ -9957,6 +10116,12 @@ void DeformableDynamicsStage::execute(
     World& world, ComputeExecutor& /*executor*/)
 {
   m_lastStats.reset();
+
+  if (m_scratch == nullptr) {
+    m_scratch = std::unique_ptr<Scratch, ScratchDeleter>(
+        constructStageOwnedScratch<Scratch>(m_memoryManager),
+        ScratchDeleter{m_memoryManager});
+  }
 
   auto& registry = dart::simulation::detail::registryOf(world);
   auto view = registry.view<

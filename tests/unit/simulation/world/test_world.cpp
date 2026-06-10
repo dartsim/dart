@@ -2715,13 +2715,16 @@ TEST(World, MemoryManagersAreIsolatedAcrossWorlds)
 TEST(World, WorldPersistentStorageUsesWorldFreeAllocator)
 {
   namespace sx = dart::simulation;
+  constexpr std::size_t kWorldStorageAndBuiltInStageRootAllocations = 8u;
 
   sx::World world;
   auto& memoryManager = world.getMemoryManager();
   EXPECT_GE(
       memoryManager.getFreeListAllocator().getAllocatedSize(),
       sizeof(sx::detail::WorldStorage));
-  EXPECT_GE(memoryManager.getFreeListAllocator().getAllocationCount(), 2u);
+  EXPECT_GE(
+      memoryManager.getFreeListAllocator().getAllocationCount(),
+      kWorldStorageAndBuiltInStageRootAllocations);
 
 #if !defined(NDEBUG)
   auto* storage = &sx::detail::storageOf(world);
@@ -2730,17 +2733,23 @@ TEST(World, WorldPersistentStorageUsesWorldFreeAllocator)
 #endif
 
   (void)world.collide();
-  EXPECT_GE(memoryManager.getFreeListAllocator().getAllocationCount(), 3u);
+  EXPECT_GE(
+      memoryManager.getFreeListAllocator().getAllocationCount(),
+      kWorldStorageAndBuiltInStageRootAllocations + 1u);
 
   world.setReplayRecordingEnabled(true);
-  EXPECT_GE(memoryManager.getFreeListAllocator().getAllocationCount(), 4u);
+  EXPECT_GE(
+      memoryManager.getFreeListAllocator().getAllocationCount(),
+      kWorldStorageAndBuiltInStageRootAllocations + 2u);
 
   world.addFreeFrame("frame_before_clear");
   world.clear();
   EXPECT_GE(
       memoryManager.getFreeListAllocator().getAllocatedSize(),
       sizeof(sx::detail::WorldStorage));
-  EXPECT_GE(memoryManager.getFreeListAllocator().getAllocationCount(), 3u);
+  EXPECT_GE(
+      memoryManager.getFreeListAllocator().getAllocationCount(),
+      kWorldStorageAndBuiltInStageRootAllocations + 1u);
 
 #if !defined(NDEBUG)
   auto* rebuiltStorage = &sx::detail::storageOf(world);

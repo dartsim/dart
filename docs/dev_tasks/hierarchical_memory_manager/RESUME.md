@@ -141,19 +141,19 @@ lifetime roles, EnTT registry bake/rebuild boundaries, and the direct
 world-base/global-heap evidence expected before broader zero-allocation claims.
 
 The current root-routing slice moves the opaque `WorldStorage` object itself,
-the private built-in step-pipeline cache, the lazy collision query cache, and
-the optional replay controller object onto the World free-list allocator,
-matching the allocator already used by the EnTT registry and
-differentiable-parameter list. The focused world test checks initial
-construction, lazy collision-cache construction, lazy replay-controller
-construction, and `World::clear()` rebuilds through free-list live-allocation
-counters, and still directly probes the `WorldStorage` pointer through
+the private built-in step-pipeline cache, built-in stage-owned scratch/cache
+objects, the lazy collision query cache, and the optional replay controller
+object onto the World free-list allocator, matching the allocator already used
+by the EnTT registry and differentiable-parameter list. The focused world test
+checks initial construction, built-in stage scratch construction, lazy
+collision-cache construction, lazy replay-controller construction, and
+`World::clear()` rebuilds through free-list live-allocation counters, and still
+directly probes the `WorldStorage` pointer through
 `MemoryManager::hasAllocated()` in debug builds. `World::clear()` now drops the
 collision query cache so rebuild boundaries release cached collision query
-capacity; replay frame payload vectors remain opt-in recording data, not a
-same-shape step-loop no-heap claim. Stage-owned member scratch inside the
-pipeline cache remains a separate root-routing follow-up unless already covered
-by the same-shape no-growth/no-heap gates.
+capacity; replay frame payload vectors and nested stage scratch payload vectors
+remain governed by the existing same-shape no-growth/no-heap gates, not by this
+allocator-root ownership check.
 
 The current allocator-correctness slice closes a debug-accounting gap in
 `MemoryAllocatorDebugger`: aligned allocations now keep their requested
@@ -661,12 +661,13 @@ without explicit maintainer approval.
 
 ## Immediate Next Step
 
-Continue with evidence-first HMM follow-up work on `origin/main`: either route
-the remaining built-in stage-owned scratch objects through the World allocator
-root with allocator-aware stage construction, or first run/probe existing
-no-growth gates to expose the next concrete allocation path. Do not add new
-production scenes unless profiling or a failing no-growth/no-heap gate shows a
-real gap not covered by the current shipped scenes.
+Continue with evidence-first HMM follow-up work on `origin/main`: built-in
+stage-owned scratch/cache object roots are now allocator-aware, so the next
+slice should either probe existing no-growth/no-heap gates to expose a concrete
+nested payload allocation path, or route a proven nested scratch payload through
+world-owned allocator-backed storage. Do not add new production scenes unless
+profiling or a failing no-growth/no-heap gate shows a real gap not covered by
+the current shipped scenes.
 
 Keep the allocator performance gate green. The latest allocator slices keep
 `FrameStlAllocator` blocks cache-line aligned without per-block cache coloring,

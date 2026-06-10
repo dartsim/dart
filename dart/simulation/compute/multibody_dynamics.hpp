@@ -49,6 +49,10 @@
 #include <string_view>
 #include <vector>
 
+namespace dart::common {
+class MemoryManager;
+} // namespace dart::common
+
 namespace dart::simulation::comps {
 struct MultibodyStructure;
 } // namespace dart::simulation::comps
@@ -458,6 +462,8 @@ class DART_SIMULATION_API UnifiedConstraintStage final : public WorldStepStage
 {
 public:
   explicit UnifiedConstraintStage(std::size_t frictionIterations = 8);
+  UnifiedConstraintStage(
+      std::size_t frictionIterations, common::MemoryManager* memoryManager);
   ~UnifiedConstraintStage() override;
 
   UnifiedConstraintStage(const UnifiedConstraintStage&) = delete;
@@ -474,12 +480,20 @@ public:
 
 private:
   struct Scratch;
+  struct ScratchDeleter
+  {
+    common::MemoryManager* memoryManager = nullptr;
+    void operator()(Scratch* scratch) const noexcept;
+  };
+
+  using ScratchPtr = std::unique_ptr<Scratch, ScratchDeleter>;
 
   bool assembleProblemIntoScratch(
       World& world, const std::vector<Contact>& contacts);
 
   std::size_t m_frictionIterations;
-  std::unique_ptr<Scratch> m_scratch;
+  common::MemoryManager* m_memoryManager = nullptr;
+  ScratchPtr m_scratch;
 };
 
 } // namespace dart::simulation::compute

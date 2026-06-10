@@ -48,6 +48,8 @@
 #include "dart/simulation/detail/world_registry_access.hpp"
 #include "dart/simulation/world.hpp"
 
+#include <dart/common/memory_manager.hpp>
+
 #include <Eigen/Cholesky>
 #include <Eigen/Geometry>
 #include <entt/entt.hpp>
@@ -72,6 +74,36 @@ using detail::skew;
 using detail::spatialInertia;
 using detail::Subspace;
 using detail::Vector6;
+
+template <typename T, typename... Args>
+[[nodiscard]] T* constructStageOwnedScratch(
+    common::MemoryManager* memoryManager, Args&&... args)
+{
+  if (memoryManager != nullptr) {
+    auto* scratch
+        = memoryManager->constructUsingFree<T>(std::forward<Args>(args)...);
+    if (scratch == nullptr) {
+      throw std::bad_alloc();
+    }
+    return scratch;
+  }
+
+  return new T(std::forward<Args>(args)...);
+}
+
+template <typename T>
+void destroyStageOwnedScratch(
+    common::MemoryManager* memoryManager, T* scratch) noexcept
+{
+  if (scratch == nullptr) {
+    return;
+  }
+  if (memoryManager != nullptr) {
+    memoryManager->destroyUsingFree(scratch);
+  } else {
+    delete scratch;
+  }
+}
 
 //==============================================================================
 bool hasPrescribedRigidBodyContactResponse(
@@ -2879,13 +2911,30 @@ bool UnifiedConstraintStage::assembleProblemIntoScratch(
 
 //==============================================================================
 UnifiedConstraintStage::UnifiedConstraintStage(std::size_t frictionIterations)
+  : UnifiedConstraintStage(frictionIterations, nullptr)
+{
+}
+
+//==============================================================================
+UnifiedConstraintStage::UnifiedConstraintStage(
+    std::size_t frictionIterations, common::MemoryManager* memoryManager)
   : m_frictionIterations(std::max<std::size_t>(1, frictionIterations)),
-    m_scratch(std::make_unique<Scratch>())
+    m_memoryManager(memoryManager),
+    m_scratch(
+        constructStageOwnedScratch<Scratch>(memoryManager),
+        ScratchDeleter{memoryManager})
 {
 }
 
 //==============================================================================
 UnifiedConstraintStage::~UnifiedConstraintStage() = default;
+
+//==============================================================================
+void UnifiedConstraintStage::ScratchDeleter::operator()(
+    Scratch* scratch) const noexcept
+{
+  destroyStageOwnedScratch(memoryManager, scratch);
+}
 
 //==============================================================================
 UnifiedConstraintStage::UnifiedConstraintStage(
