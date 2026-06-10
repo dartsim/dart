@@ -50,6 +50,12 @@ contact-family production scene that combines direct static-obstacle friction,
 matrix-free self-contact friction, and inter-body surface CCD under one baked
 World root, with non-vacuous activity coverage plus World-base and global-heap
 no-growth gates.
+The latest slice also closes the batched SoA rigid-body integration stage's
+same-shape allocation surface by moving force, state, model, initial-state, and
+parent-before-child frame-order containers into stage scratch and by executing
+the single SoA kernel directly instead of rebuilding a one-node compute graph.
+It adds a focused heap guard for a prewarmed frame-coupled parent/child rigid
+body pair.
 Continue from the current `README.md` Immediate Next Steps: broaden remaining
 boxed-LCP/contact and deformable production no-growth coverage, and move any
 newly exposed step-loop scratch to world-owned backed storage before making a

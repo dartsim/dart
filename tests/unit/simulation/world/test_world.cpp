@@ -11856,14 +11856,7 @@ TEST(World, BatchedRigidBodyIntegrationStageMatchesFrameCoupledBodies)
   compute::RigidBodyIntegrationStage perEntityStage;
   compute::BatchedRigidBodyIntegrationStage batchedStage;
   perEntityStage.execute(perEntityWorld, executor);
-  RecordingExecutor batchedExecutor;
-  batchedStage.execute(batchedWorld, batchedExecutor);
-
-  ASSERT_EQ(batchedExecutor.executeCount, 1u);
-  ASSERT_EQ(batchedExecutor.nodeCount, 1u);
-  ASSERT_EQ(batchedExecutor.edgeCount, 0u);
-  ASSERT_FALSE(batchedExecutor.graphNodeNames[0].empty());
-  EXPECT_EQ(batchedExecutor.graphNodeNames[0][0], "soa_rigid_body_integration");
+  batchedStage.execute(batchedWorld, executor);
 
   EXPECT_TRUE(perEntityParent.getLocalTransform().isApprox(
       batchedParent.getLocalTransform()));
@@ -11873,6 +11866,50 @@ TEST(World, BatchedRigidBodyIntegrationStageMatchesFrameCoupledBodies)
       perEntityParent.getTransform().isApprox(batchedParent.getTransform()));
   EXPECT_TRUE(
       perEntityChild.getTransform().isApprox(batchedChild.getTransform()));
+}
+
+// Test that the batched SoA rigid-body integration stage reuses same-shape
+// batch and frame-order scratch once prewarmed. The scene includes a
+// frame-coupled child so the parent-before-child local-transform writeback path
+// is covered in addition to the state/model/force arrays.
+TEST(
+    World,
+    BatchedRigidBodyIntegrationStageDoesNotAllocateHeapAfterPrewarmForFrameCoupledBodies)
+{
+  namespace sx = dart::simulation;
+  namespace compute = dart::simulation::compute;
+
+  sx::World world;
+  sx::RigidBodyOptions parentOptions;
+  parentOptions.position = Eigen::Vector3d(10.0, 0.0, 0.0);
+  parentOptions.linearVelocity = Eigen::Vector3d(2.0, 0.0, 0.0);
+  auto parent = world.addRigidBody("parent", parentOptions);
+
+  sx::RigidBodyOptions childOptions;
+  childOptions.position = Eigen::Vector3d(20.0, 0.0, 0.0);
+  childOptions.linearVelocity = Eigen::Vector3d(1.0, 0.0, 0.0);
+  auto child = world.addRigidBody("child", childOptions);
+  child.setParentFrame(parent);
+
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.25);
+  world.enterSimulationMode();
+
+  compute::SequentialExecutor executor;
+  compute::BatchedRigidBodyIntegrationStage stage;
+  stage.execute(world, executor);
+
+  ScopedHeapAllocationCounter heapCounter;
+  for (int i = 0; i < 4; ++i) {
+    stage.execute(world, executor);
+  }
+  heapCounter.stop();
+
+  EXPECT_EQ(heapCounter.allocationCount(), 0u)
+      << "global heap bytes allocated by prewarmed batched rigid-body "
+         "integration: "
+      << heapCounter.allocationBytes();
+  EXPECT_EQ(heapCounter.allocationBytes(), 0u);
 }
 
 // Test that the experimental step path can swap the kinematics stage contract.

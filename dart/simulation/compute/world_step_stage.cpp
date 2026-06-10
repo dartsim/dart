@@ -381,19 +381,6 @@ void orderRigidBodiesParentBeforeChild(
 }
 
 //==============================================================================
-std::vector<entt::entity> orderRigidBodiesParentBeforeChild(
-    const detail::WorldRegistry& registry,
-    const std::vector<entt::entity>& rigidBodyEntities)
-{
-  std::vector<entt::entity> ordered;
-  std::vector<int> visitState;
-  orderRigidBodiesParentBeforeChild(
-      registry, rigidBodyEntities, ordered, visitState);
-
-  return ordered;
-}
-
-//==============================================================================
 ComputeNode* findRigidBodyNode(
     const std::vector<RigidBodyNode>& nodes, entt::entity entity)
 {
@@ -1160,12 +1147,93 @@ void assembleRigidBodyForces(
 }
 
 //==============================================================================
-RigidBodyForceBatch assembleRigidBodyForces(
-    const World& world, bool includeGravity)
+void extractRigidBodyStateInto(const World& world, RigidBodyStateBatch& batch)
 {
-  RigidBodyForceBatch batch;
-  assembleRigidBodyForces(world, includeGravity, batch);
-  return batch;
+  const auto& registry = dart::simulation::detail::registryOf(world);
+  auto view
+      = registry.view<comps::RigidBodyTag, comps::Transform, comps::Velocity>();
+
+  batch.worldCount = 1;
+  batch.bodyCount = 0;
+  batch.position.clear();
+  batch.orientation.clear();
+  batch.linearVelocity.clear();
+  batch.angularVelocity.clear();
+
+  const auto bodyCount = view.size_hint();
+  batch.position.reserve(3 * bodyCount);
+  batch.orientation.reserve(4 * bodyCount);
+  batch.linearVelocity.reserve(3 * bodyCount);
+  batch.angularVelocity.reserve(3 * bodyCount);
+
+  for (const auto entity : view) {
+    ++batch.bodyCount;
+
+    const auto& transform = view.get<comps::Transform>(entity);
+    const auto& velocity = view.get<comps::Velocity>(entity);
+
+    batch.position.push_back(transform.position.x());
+    batch.position.push_back(transform.position.y());
+    batch.position.push_back(transform.position.z());
+
+    batch.orientation.push_back(transform.orientation.w());
+    batch.orientation.push_back(transform.orientation.x());
+    batch.orientation.push_back(transform.orientation.y());
+    batch.orientation.push_back(transform.orientation.z());
+
+    batch.linearVelocity.push_back(velocity.linear.x());
+    batch.linearVelocity.push_back(velocity.linear.y());
+    batch.linearVelocity.push_back(velocity.linear.z());
+
+    batch.angularVelocity.push_back(velocity.angular.x());
+    batch.angularVelocity.push_back(velocity.angular.y());
+    batch.angularVelocity.push_back(velocity.angular.z());
+  }
+}
+
+//==============================================================================
+void extractRigidBodyModelBatchInto(
+    const World& world, RigidBodyModelBatch& model)
+{
+  const auto& registry = dart::simulation::detail::registryOf(world);
+  auto view
+      = registry.view<comps::RigidBodyTag, comps::Transform, comps::Velocity>();
+
+  model.worldCount = 1;
+  model.bodyCount = 0;
+  model.inverseMass.clear();
+  model.inertia.clear();
+
+  const auto bodyCount = view.size_hint();
+  model.inverseMass.reserve(bodyCount);
+  model.inertia.reserve(9 * bodyCount);
+
+  for (const auto entity : view) {
+    ++model.bodyCount;
+
+    const auto& mass = registry.get<comps::MassProperties>(entity);
+    const double inverse
+        = (mass.mass > 0.0 && std::isfinite(mass.mass)) ? 1.0 / mass.mass : 0.0;
+    model.inverseMass.push_back(inverse);
+
+    for (int row = 0; row < 3; ++row) {
+      for (int col = 0; col < 3; ++col) {
+        model.inertia.push_back(mass.inertia(row, col));
+      }
+    }
+  }
+}
+
+//==============================================================================
+void copyRigidBodyStateBatch(
+    const RigidBodyStateBatch& source, RigidBodyStateBatch& target)
+{
+  target.worldCount = source.worldCount;
+  target.bodyCount = source.bodyCount;
+  target.position = source.position;
+  target.orientation = source.orientation;
+  target.linearVelocity = source.linearVelocity;
+  target.angularVelocity = source.angularVelocity;
 }
 
 //==============================================================================
@@ -8559,6 +8627,17 @@ struct RigidBodyVelocityStage::Scratch
 };
 
 //==============================================================================
+struct BatchedRigidBodyIntegrationStage::Scratch
+{
+  RigidBodyForceBatch forces;
+  RigidBodyStateBatch state;
+  RigidBodyStateBatch initialState;
+  RigidBodyModelBatch model;
+  std::vector<entt::entity> frameUpdateOrder;
+  std::vector<int> visitState;
+};
+
+//==============================================================================
 RigidBodyVelocityStage::RigidBodyVelocityStage()
   : m_scratch(std::make_unique<Scratch>())
 {
@@ -9994,6 +10073,15 @@ void reserveDeformableDynamicsRegistryStorage(
 }
 
 //==============================================================================
+BatchedRigidBodyIntegrationStage::BatchedRigidBodyIntegrationStage()
+  : m_scratch(std::make_unique<Scratch>())
+{
+}
+
+//==============================================================================
+BatchedRigidBodyIntegrationStage::~BatchedRigidBodyIntegrationStage() = default;
+
+//==============================================================================
 std::string_view BatchedRigidBodyIntegrationStage::getName() const noexcept
 {
   return "batched_rigid_body_integration";
@@ -10013,41 +10101,41 @@ ComputeStageMetadata BatchedRigidBodyIntegrationStage::getMetadata()
 
 //==============================================================================
 void BatchedRigidBodyIntegrationStage::execute(
-    World& world, ComputeExecutor& executor)
+    World& world, ComputeExecutor& /*executor*/)
 {
   auto& registry = dart::simulation::detail::registryOf(world);
-  const auto forces = assembleRigidBodyForces(world, true);
+  if (m_scratch == nullptr) {
+    m_scratch = std::make_unique<Scratch>();
+  }
+
+  auto& scratch = *m_scratch;
+  assembleRigidBodyForces(world, true, scratch.forces);
+  const auto& forces = scratch.forces;
   const auto& entities = forces.entities;
 
   if (entities.empty()) {
     return;
   }
 
-  auto state = extractRigidBodyState(world);
-  const auto initialState = state;
-  const auto model = extractRigidBodyModelBatch(world);
+  extractRigidBodyStateInto(world, scratch.state);
+  copyRigidBodyStateBatch(scratch.state, scratch.initialState);
+  extractRigidBodyModelBatchInto(world, scratch.model);
   const auto timeStep = world.getTimeStep();
 
-  ComputeGraph graph;
-  graph.addNode(
-      "soa_rigid_body_integration",
-      [&state, &model, &forces, timeStep]() {
-        integrateRigidBodyStateBatch(
-            state, model, forces.force, forces.torque, timeStep);
-      },
-      getMetadata());
-  executor.execute(graph);
+  integrateRigidBodyStateBatch(
+      scratch.state, scratch.model, forces.force, forces.torque, timeStep);
 
-  restorePrescribedRigidBodyState(registry, entities, initialState, state);
-  applyRigidBodyState(world, state);
+  restorePrescribedRigidBodyState(
+      registry, entities, scratch.initialState, scratch.state);
+  applyRigidBodyState(world, scratch.state);
 
   // Restore frame-cache consistency the same way the per-entity integrator
   // does, now that the world-space Transform has been written back. The SoA
   // integration itself is world-space and flat, but local transforms for
   // frame-coupled bodies must be written parent-before-child.
-  const auto frameUpdateOrder
-      = orderRigidBodiesParentBeforeChild(registry, entities);
-  for (const auto entity : frameUpdateOrder) {
+  orderRigidBodiesParentBeforeChild(
+      registry, entities, scratch.frameUpdateOrder, scratch.visitState);
+  for (const auto entity : scratch.frameUpdateOrder) {
     const auto& transform = registry.get<comps::Transform>(entity);
     auto& props = registry.get<comps::FreeFrameProperties>(entity);
     const auto worldTransform = toIsometry(transform, transform.orientation);

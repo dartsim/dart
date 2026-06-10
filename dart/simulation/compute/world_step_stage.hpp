@@ -318,9 +318,16 @@ class DART_SIMULATION_API BatchedRigidBodyIntegrationStage final
   : public WorldStepStage
 {
 public:
+  BatchedRigidBodyIntegrationStage();
+  ~BatchedRigidBodyIntegrationStage() override;
+
   [[nodiscard]] std::string_view getName() const noexcept override;
   [[nodiscard]] ComputeStageMetadata getMetadata() const noexcept override;
   void execute(World& world, ComputeExecutor& executor) override;
+
+private:
+  struct Scratch;
+  std::unique_ptr<Scratch> m_scratch;
 };
 
 /// Updates free rigid-body velocities from the assembled transient force buffer

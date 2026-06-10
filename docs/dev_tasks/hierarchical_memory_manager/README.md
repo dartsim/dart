@@ -196,9 +196,13 @@
       Longer custom pipelines keep the previous arbitrary-stage behavior through
       an overflow path. The legacy graph-backed `RigidBodyIntegrationStage` now
       reuses stage-owned rigid-body entity and dependency-node scratch instead
-      of allocating per execute. The default rigid-body velocity/contact stages
-      and semi-implicit multibody velocity/contact path now reuse baked scratch
-      for the covered rigid and articulated resting-contact scenes. The
+      of allocating per execute. The batched SoA rigid-body integration stage
+      now reuses stage-owned force, state, model, initial-state, and
+      parent-before-child frame-order scratch, and runs its single SoA kernel
+      directly instead of rebuilding a one-node compute graph every execute.
+      The default rigid-body velocity/contact stages and semi-implicit
+      multibody velocity/contact path now reuse baked scratch for the covered
+      rigid and articulated resting-contact scenes. The
       variational multibody stage now owns cache-only reusable contact/constraint
       scratch, bakes loop-closure and hard AVBD point-joint constraint capacity,
       reuses baked solver scratch for compliant and augmented-Lagrangian ground
@@ -361,6 +365,10 @@
       contact paths. Mixed/different-DOF, stacked, and coupled multi-row
       cross-contact boxed-LCP fallback scenes now have base-allocator
       no-growth gates and first baked-step global heap no-allocation gates.
+      A focused same-shape guard also covers the prewarmed batched SoA
+      rigid-body integration stage on a frame-coupled parent/child body pair,
+      proving its batch arrays and frame-order scratch do not allocate after
+      prewarm.
       Five-multibody, eight-multibody, 12-multibody, 16-multibody,
       24-multibody, and 32-multibody stacked contact sets extend the boxed-LCP
       fallback gate beyond the original small scenes, and a production
