@@ -3728,6 +3728,15 @@ TEST(World, DeformableFemGroundFrictionBlockIsActive)
   EXPECT_GT(frictionDissipation, 0.0);
 }
 
+#if defined(DART_CODECOV)
+TEST(World, DeformableProductionSelfContactActiveScenesSkippedUnderCoverage)
+{
+  GTEST_SKIP()
+      << "Production-scale deformable self-contact active-scene probes are "
+         "too slow under coverage; normal Release/Debug CI and allocation "
+         "gates run these shapes.";
+}
+#else
 TEST(World, DeformableSelfContactFrictionProductionGridIsActive)
 {
   namespace sx = dart::simulation;
@@ -4246,6 +4255,7 @@ TEST(World, MixedDefaultDeformableFemProductionStorageSceneIsActive)
   EXPECT_GT(maxHessianNonZeros, 0u);
   EXPECT_GT(frictionDissipation, 0.0);
 }
+#endif
 
 TEST(World, DeformableStaticObstacleBarrierSceneIsActive)
 {
@@ -4268,6 +4278,15 @@ TEST(World, DeformableStaticObstacleBarrierSceneIsActive)
   EXPECT_GT(body->getPosition(2).x(), -1.79);
 }
 
+#if defined(DART_CODECOV)
+TEST(World, DeformableProductionObstacleActiveScenesSkippedUnderCoverage)
+{
+  GTEST_SKIP()
+      << "Production-scale deformable obstacle/contact-family active-scene "
+         "probes are too slow under coverage; normal Release/Debug CI and "
+         "allocation gates run these shapes.";
+}
+#else
 TEST(World, DeformableStaticObstacleFrictionProductionSceneIsActive)
 {
   namespace sx = dart::simulation;
@@ -4401,6 +4420,7 @@ TEST(World, MixedComplementaryDefaultContactFamiliesProductionSceneIsActive)
   EXPECT_GT(movingSurface->getPosition(0).x(), -1.0);
   EXPECT_LT(movingSurface->getPosition(0).x(), 0.0);
 }
+#endif
 
 TEST(World, DeformableMovingRigidSurfaceCcdCrossingIsActive)
 {
@@ -4509,6 +4529,15 @@ TEST(World, DeformableInterBodySurfaceCcdCrossingIsActive)
   EXPECT_LT(movingSurface->getPosition(0).x(), 0.0);
 }
 
+#if defined(DART_CODECOV)
+TEST(World, DeformableProductionSurfaceCcdActiveScenesSkippedUnderCoverage)
+{
+  GTEST_SKIP()
+      << "Production-scale deformable surface-CCD active-scene probes are too "
+         "slow under coverage; normal Release/Debug CI and allocation gates "
+         "run these shapes.";
+}
+#else
 TEST(World, DeformableInterBodySurfaceCcdProductionGridIsActive)
 {
   namespace sx = dart::simulation;
@@ -4529,6 +4558,7 @@ TEST(World, DeformableInterBodySurfaceCcdProductionGridIsActive)
   EXPECT_GT(movingSurface->getPosition(0).x(), -1.0);
   EXPECT_LT(movingSurface->getPosition(0).x(), 0.0);
 }
+#endif
 
 TEST(World, AvbdGroundFrictionRowsAreActive)
 {
@@ -4574,6 +4604,15 @@ TEST(World, AvbdSelfContactFrictionGridRowsAreActive)
       2u * states[0].selfContactRows.size());
 }
 
+#if defined(DART_CODECOV)
+TEST(World, AvbdProductionSelfContactRowsSkippedUnderCoverage)
+{
+  GTEST_SKIP()
+      << "Production-scale AVBD self-contact row probes are too slow under "
+         "coverage; normal Release/Debug CI and allocation gates run these "
+         "shapes.";
+}
+#else
 TEST(World, AvbdSelfContactFrictionProductionGridRowsAreActive)
 {
   namespace sx = dart::simulation;
@@ -4597,6 +4636,7 @@ TEST(World, AvbdSelfContactFrictionProductionGridRowsAreActive)
       states[0].selfContactFrictionRows.size(),
       2u * states[0].selfContactRows.size());
 }
+#endif
 
 TEST(World, RigidAvbdContactRowsAreActive)
 {
