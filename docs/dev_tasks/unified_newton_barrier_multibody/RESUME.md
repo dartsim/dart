@@ -170,6 +170,13 @@ over the CPU reference. This moves only the local PSD projection row to
 `measured`; contact candidates, CCD/line search, barrier/friction kernels,
 assembly/solve, and scene-level GPU speedups remain planned.
 
+The follow-up barrier-force diagnostic slice adds
+`NewtonBarrierPrimitives.BarrierForceCurveCapturesKappaSensitivity`, which
+checks Fig. 17-style activation cutoff, kappa scaling, and near-contact slope
+growth against the private Newton-barrier scalar kernel. This moves only
+`unb-fig-17` to `in-progress`; runtime force plots and accepted default-kappa
+policy remain future evidence.
+
 ## Last Session Summary
 
 Current slice: the first ABD benchmark packet has been promoted from

@@ -119,6 +119,8 @@
         and serializable history helpers under `detail/newton_barrier`.
   - [x] Add falling-box energy diagnostics across timestep, Young's modulus,
         barrier stiffness, activation distance, and gravity sweeps.
+  - [x] Add a Fig. 17-style barrier-force curve diagnostic for activation
+        cutoff, kappa scaling, and near-contact slope growth.
   - [x] Add semi-implicit Rayleigh damping terms for contact/barrier and
         articulation potentials using PSD-projected Hessians.
   - [x] Add hinge damping sweep evidence through the scalar articulation

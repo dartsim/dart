@@ -294,10 +294,11 @@ its own line so status updates remain git-history friendly.
   lessons. Implementation-roadmap Phase 2 shared solver contracts landed in PR
   #2951. Implementation-roadmap Phases 3-8 landed together in PR #2960 because
   the remaining internal slices were small enough for one reviewer-facing PR.
-  The follow-up private GPU PSD projection packet is measured, but the Phase 8
-  audit records that PLAN-083 is not complete while planned manifest, CPU
-  corpus, and non-PSD GPU parity rows remain, so dev-task retirement needs
-  maintainer direction before deletion.
+  Follow-up local work measures the private GPU PSD projection packet and adds
+  the Fig. 17 barrier-force diagnostic, but the Phase 8 audit records that
+  PLAN-083 is not complete while planned manifest, CPU corpus, and non-PSD GPU
+  parity rows remain, so dev-task retirement needs maintainer direction before
+  deletion.
 - Gate: Unified Newton-barrier progress is not complete until every cited
   paper/deck figure, unit test, benchmark table, and comparison scene is mapped
   to DART-owned tests, py-demos examples, benchmark/profiling packets, CPU and
