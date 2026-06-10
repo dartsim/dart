@@ -382,6 +382,7 @@
       notched direct-sparse and dense matrix-free grids, a production mixed
       default-solver storage scene with direct-sparse self-contact,
       matrix-free self-contact, and FEM ground-friction bodies, plus a
+      production rectangular inter-body deformable surface-CCD crossing and a
       barrier-only static sphere/box/capsule obstacle scene for default
       projected Newton.
       The base and global-heap guards now also include default moving
@@ -393,10 +394,11 @@
       non-vacuous solver activity through public deformable diagnostics: active
       self-contact barriers, converged active contacts, and positive friction
       dissipation. The global heap and World-base no-growth guards now also
-      cover the active inter-body deformable surface-CCD crossing, active AVBD
-      ground contact/friction rows, AVBD self-contact normal/friction rows
-      including 5x9 and 9x13 rectangular grid row workloads, and an active
-      rigid AVBD penetrating contact plus no-contact fixed-joint rows.
+      cover the compact and production rectangular inter-body deformable
+      surface-CCD crossings, active AVBD ground contact/friction rows, AVBD
+      self-contact normal/friction rows including 5x9 and 9x13 rectangular grid
+      row workloads, and an active rigid AVBD penetrating contact plus
+      no-contact fixed-joint rows.
       Additional broader or differently shaped production-scale frictional
       deformable scenarios still need no-growth gates before making the full
       deformable claim.
@@ -642,9 +644,11 @@ debugging, profiling, optimization experiments, and ImGui visualization.
    root; a notched, jittered matrix-free 13x17 irregular grid now covers the CG
    scratch path on non-grid topology; compact and production mixed
    default-solver storage scenes now combine direct-sparse, matrix-free, and
-   FEM ground-friction deformables under the same root. The AVBD
-   self-contact row guard now also covers 5x9 and 9x13 rectangular grid row
-   workloads with replay-backed activity assertions.
+   FEM ground-friction deformables under the same root; a production
+   rectangular inter-body deformable surface-CCD crossing now exercises
+   inter-body sweep/candidate scratch beyond the tiny two-triangle crossing.
+   The AVBD self-contact row guard now also covers 5x9 and 9x13 rectangular
+   grid row workloads with replay-backed activity assertions.
    Continue broadening boxed-LCP unified problem assembly only for newly
    exposed contact shapes, and keep moving any newly exposed deformable/contact
    candidate buffers to backed storage before making the full zero-allocation

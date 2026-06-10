@@ -26,7 +26,10 @@ matrix-free 13x19 dense rectangular grid. The latest continuation extends the
 notched/jittered 13x17 irregular mesh, the 7x17 wide and 17x7 tall rectangular
 grids, and the 17x17 larger square production grid to the matrix-free
 projected-Newton path, so larger square, non-square, and non-grid topology now
-cover both sparse assembly and CG-block scratch.
+cover both sparse assembly and CG-block scratch. It also extends production
+default-solver storage and AVBD self-contact row guards, and adds a production
+rectangular inter-body deformable surface-CCD crossing for sweep/candidate
+scratch.
 Continue from the current `README.md` Immediate Next Steps: broaden remaining
 boxed-LCP/contact and deformable production no-growth coverage, and move any
 newly exposed step-loop scratch to world-owned backed storage before making a
@@ -421,8 +424,9 @@ AVBD ground contact/friction rows, current active AVBD self-contact
 normal/friction row scene plus 5x9 and 9x13 rectangular AVBD self-contact row
 grids,
 current active rigid AVBD contact rows, current active rigid AVBD fixed-joint
-rows, current active inter-body deformable surface-CCD crossing, and basic
-deformable surface-snapshot scenes, while keeping remaining public-value
+rows, current active compact and production rectangular inter-body deformable
+surface-CCD crossings, and basic deformable surface-snapshot scenes, while
+keeping remaining public-value
 unified problem/solution wrappers and larger or differently shaped
 default-solver deformable allocation surfaces explicit, before making a full
 zero-dynamic-allocation claim.

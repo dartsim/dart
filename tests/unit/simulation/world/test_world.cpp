@@ -2040,6 +2040,72 @@ void configureDeformableInterBodySurfaceCcdCrossingScene(
   world.addDeformableBody("moving_deformable_surface", movingOptions);
 }
 
+void configureDeformableInterBodySurfaceCcdProductionGridScene(
+    dart::simulation::World& world)
+{
+  namespace sx = dart::simulation;
+
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  constexpr std::size_t rows = 9;
+  constexpr std::size_t cols = 13;
+  constexpr double spacing = 0.18;
+  const auto nodeIndex = [](std::size_t row, std::size_t col) {
+    return row * cols + col;
+  };
+
+  const auto addSurfaceGrid = [&](std::string_view name,
+                                  double x,
+                                  bool fixed,
+                                  bool moving) {
+    sx::DeformableBodyOptions options;
+    options.positions.reserve(rows * cols);
+    options.velocities.reserve(rows * cols);
+    options.masses.assign(rows * cols, 1.0);
+    if (fixed) {
+      options.fixedNodes.reserve(rows * cols);
+    }
+
+    for (std::size_t row = 0; row < rows; ++row) {
+      for (std::size_t col = 0; col < cols; ++col) {
+        const double y
+            = (static_cast<double>(col) - 0.5 * static_cast<double>(cols - 1))
+              * spacing;
+        const double z
+            = (static_cast<double>(row) - 0.5 * static_cast<double>(rows - 1))
+              * spacing;
+        options.positions.emplace_back(x, y, z);
+        options.velocities.emplace_back(
+            moving ? Eigen::Vector3d(20.0, 0.0, 0.0) : Eigen::Vector3d::Zero());
+        if (fixed) {
+          options.fixedNodes.push_back(nodeIndex(row, col));
+        }
+      }
+    }
+
+    options.surfaceTriangles.reserve(2 * (rows - 1) * (cols - 1));
+    for (std::size_t row = 0; row + 1 < rows; ++row) {
+      for (std::size_t col = 0; col + 1 < cols; ++col) {
+        const auto a = nodeIndex(row, col);
+        const auto b = nodeIndex(row, col + 1);
+        const auto c = nodeIndex(row + 1, col + 1);
+        const auto d = nodeIndex(row + 1, col);
+        options.surfaceTriangles.push_back(
+            sx::DeformableSurfaceTriangle{a, b, c});
+        options.surfaceTriangles.push_back(
+            sx::DeformableSurfaceTriangle{a, c, d});
+      }
+    }
+
+    options.edgeStiffness = 0.0;
+    world.addDeformableBody(name, options);
+  };
+
+  addSurfaceGrid("fixed_deformable_production_surface", 0.0, true, false);
+  addSurfaceGrid("moving_deformable_production_surface", -1.0, false, true);
+}
+
 void enableAvbdSelfContactFrictionRows(dart::simulation::World& world)
 {
   namespace sx = dart::simulation;
@@ -3161,6 +3227,9 @@ TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
       "deformable inter-body surface CCD crossing",
       configureDeformableInterBodySurfaceCcdCrossingScene);
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "deformable inter-body surface CCD production grid crossing",
+      configureDeformableInterBodySurfaceCcdProductionGridScene);
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "deformable AVBD self-contact friction rows",
       configureAvbdSelfContactFrictionRowsScene);
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
@@ -3818,6 +3887,27 @@ TEST(World, DeformableInterBodySurfaceCcdCrossingIsActive)
   EXPECT_LT(movingSurface->getPosition(0).x(), 0.0);
 }
 
+TEST(World, DeformableInterBodySurfaceCcdProductionGridIsActive)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  configureDeformableInterBodySurfaceCcdProductionGridScene(world);
+  auto movingSurface
+      = world.getDeformableBody("moving_deformable_production_surface");
+  ASSERT_TRUE(movingSurface.has_value());
+  world.enterSimulationMode();
+
+  world.step();
+
+  const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
+  EXPECT_EQ(diagnostics.bodyCount, 2u);
+  EXPECT_EQ(diagnostics.nodeCount, 2u * 9u * 13u);
+  EXPECT_GT(diagnostics.projectedNewtonSteps, 0u);
+  EXPECT_GT(movingSurface->getPosition(0).x(), -1.0);
+  EXPECT_LT(movingSurface->getPosition(0).x(), 0.0);
+}
+
 TEST(World, AvbdGroundFrictionRowsAreActive)
 {
   namespace sx = dart::simulation;
@@ -4248,6 +4338,9 @@ TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "deformable inter-body surface CCD crossing",
       configureDeformableInterBodySurfaceCcdCrossingScene);
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "deformable inter-body surface CCD production grid crossing",
+      configureDeformableInterBodySurfaceCcdProductionGridScene);
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "deformable AVBD self-contact friction rows",
       configureAvbdSelfContactFrictionRowsScene);
