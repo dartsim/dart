@@ -35,6 +35,7 @@
 #include "dart/simulation/body/rigid_body.hpp"
 #include "dart/simulation/common/exceptions.hpp"
 #include "dart/simulation/comps/all.hpp"
+#include "dart/simulation/detail/deformable_vbd/rigid_world_contact.hpp"
 #include "dart/simulation/detail/entity_conversion.hpp"
 #include "dart/simulation/detail/world_registry_access.hpp"
 #include "dart/simulation/multibody/link.hpp"
@@ -131,6 +132,84 @@ comps::Joint& getJointComponent(World* world, Entity entityToken)
       "Invalid joint handle");
 
   return registry.get<comps::Joint>(entity);
+}
+
+detail::deformable_vbd::AvbdRigidWorldPointJointConfig*
+tryGetAvbdRigidWorldPointJointConfig(World* world, Entity entityToken)
+{
+  (void)getJointComponent(world, entityToken);
+  auto& registry = dart::simulation::detail::registryOf(*world);
+  const auto entity = detail::toRegistryEntity(entityToken);
+  return registry
+      .try_get<detail::deformable_vbd::AvbdRigidWorldPointJointConfig>(entity);
+}
+
+void validateAvbdRigidWorldPointJointFacade(
+    const dart::simulation::detail::WorldRegistry& registry,
+    entt::entity jointEntity,
+    const comps::Joint& joint)
+{
+  DART_SIMULATION_THROW_T_IF(
+      !detail::deformable_vbd::isAvbdRigidWorldPointJointFacade(
+          registry, jointEntity, joint),
+      InvalidArgumentException,
+      "Joint is not an AVBD point-joint facade");
+}
+
+void materializeAvbdStiffnessState(
+    const dart::simulation::detail::WorldRegistry& registry,
+    entt::entity jointEntity,
+    comps::Joint& joint)
+{
+  if (joint.hasAvbdStiffnessState) {
+    return;
+  }
+
+  if (const auto* config
+      = registry
+            .try_get<detail::deformable_vbd::AvbdRigidWorldPointJointConfig>(
+                jointEntity)) {
+    joint.avbdStartStiffness = config->startStiffness;
+    joint.avbdLinearStiffness = config->linearMaterialStiffness;
+    joint.avbdAngularStiffness = config->angularMaterialStiffness;
+    joint.avbdMaxStiffness = config->maxStiffness;
+    joint.hasAvbdStiffnessState = true;
+    return;
+  }
+
+  double startStiffness = 0.0;
+  double maxStiffness = 0.0;
+  DART_SIMULATION_THROW_T_IF(
+      !detail::deformable_vbd::computeAvbdRigidWorldPointJointDefaultStiffness(
+          registry, joint, startStiffness, maxStiffness),
+      InvalidArgumentException,
+      "Joint is not an AVBD point-joint facade");
+
+  joint.avbdStartStiffness = startStiffness;
+  joint.avbdMaxStiffness = maxStiffness;
+  joint.hasAvbdStiffnessState = true;
+}
+
+void validateFiniteNonnegative(
+    double value, std::string_view fieldName, std::string_view jointName)
+{
+  DART_SIMULATION_THROW_T_IF(
+      !std::isfinite(value) || value < 0.0,
+      InvalidArgumentException,
+      "Joint '{}' {} must be finite and non-negative",
+      jointName,
+      fieldName);
+}
+
+void validateMaterialStiffness(
+    double value, std::string_view fieldName, std::string_view jointName)
+{
+  DART_SIMULATION_THROW_T_IF(
+      std::isnan(value) || value < 0.0,
+      InvalidArgumentException,
+      "Joint '{}' {} must be non-negative or infinity",
+      jointName,
+      fieldName);
 }
 
 void validateJointStateVector(
@@ -574,6 +653,124 @@ bool Joint::isBroken() const
 void Joint::resetBreakage()
 {
   getJointComponent(m_world, m_entity).broken = false;
+}
+
+//==============================================================================
+void Joint::setAvbdStartStiffness(double stiffness)
+{
+  auto& jointComp = getJointComponent(m_world, m_entity);
+  auto& registry = dart::simulation::detail::registryOf(*m_world);
+  const auto entity = detail::toRegistryEntity(m_entity);
+  validateAvbdRigidWorldPointJointFacade(registry, entity, jointComp);
+  validateFiniteNonnegative(stiffness, "AVBD start stiffness", jointComp.name);
+  materializeAvbdStiffnessState(registry, entity, jointComp);
+
+  DART_SIMULATION_THROW_T_IF(
+      stiffness > jointComp.avbdMaxStiffness,
+      InvalidArgumentException,
+      "Joint '{}' AVBD start stiffness must not exceed max stiffness",
+      jointComp.name);
+  jointComp.avbdStartStiffness = stiffness;
+  if (auto* config = tryGetAvbdRigidWorldPointJointConfig(m_world, m_entity)) {
+    config->startStiffness = stiffness;
+  }
+}
+
+//==============================================================================
+double Joint::getAvbdStartStiffness() const
+{
+  auto& jointComp = getJointComponent(m_world, m_entity);
+  auto& registry = dart::simulation::detail::registryOf(*m_world);
+  const auto entity = detail::toRegistryEntity(m_entity);
+  validateAvbdRigidWorldPointJointFacade(registry, entity, jointComp);
+  if (!jointComp.hasAvbdStiffnessState) {
+    if (const auto* config
+        = registry
+              .try_get<detail::deformable_vbd::AvbdRigidWorldPointJointConfig>(
+                  entity)) {
+      return config->startStiffness;
+    }
+
+    double startStiffness = 0.0;
+    double maxStiffness = 0.0;
+    DART_SIMULATION_THROW_T_IF(
+        !detail::deformable_vbd::
+            computeAvbdRigidWorldPointJointDefaultStiffness(
+                registry, jointComp, startStiffness, maxStiffness),
+        InvalidArgumentException,
+        "Joint is not an AVBD point-joint facade");
+    return startStiffness;
+  }
+  return jointComp.avbdStartStiffness;
+}
+
+//==============================================================================
+void Joint::setAvbdLinearStiffness(double stiffness)
+{
+  auto& jointComp = getJointComponent(m_world, m_entity);
+  auto& registry = dart::simulation::detail::registryOf(*m_world);
+  const auto entity = detail::toRegistryEntity(m_entity);
+  validateAvbdRigidWorldPointJointFacade(registry, entity, jointComp);
+  validateMaterialStiffness(stiffness, "AVBD linear stiffness", jointComp.name);
+  materializeAvbdStiffnessState(registry, entity, jointComp);
+
+  jointComp.avbdLinearStiffness = stiffness;
+  if (auto* config = tryGetAvbdRigidWorldPointJointConfig(m_world, m_entity)) {
+    config->linearMaterialStiffness = stiffness;
+  }
+}
+
+//==============================================================================
+double Joint::getAvbdLinearStiffness() const
+{
+  auto& jointComp = getJointComponent(m_world, m_entity);
+  auto& registry = dart::simulation::detail::registryOf(*m_world);
+  const auto entity = detail::toRegistryEntity(m_entity);
+  validateAvbdRigidWorldPointJointFacade(registry, entity, jointComp);
+  if (!jointComp.hasAvbdStiffnessState) {
+    if (const auto* config
+        = registry
+              .try_get<detail::deformable_vbd::AvbdRigidWorldPointJointConfig>(
+                  entity)) {
+      return config->linearMaterialStiffness;
+    }
+  }
+  return jointComp.avbdLinearStiffness;
+}
+
+//==============================================================================
+void Joint::setAvbdAngularStiffness(double stiffness)
+{
+  auto& jointComp = getJointComponent(m_world, m_entity);
+  auto& registry = dart::simulation::detail::registryOf(*m_world);
+  const auto entity = detail::toRegistryEntity(m_entity);
+  validateAvbdRigidWorldPointJointFacade(registry, entity, jointComp);
+  validateMaterialStiffness(
+      stiffness, "AVBD angular stiffness", jointComp.name);
+  materializeAvbdStiffnessState(registry, entity, jointComp);
+
+  jointComp.avbdAngularStiffness = stiffness;
+  if (auto* config = tryGetAvbdRigidWorldPointJointConfig(m_world, m_entity)) {
+    config->angularMaterialStiffness = stiffness;
+  }
+}
+
+//==============================================================================
+double Joint::getAvbdAngularStiffness() const
+{
+  auto& jointComp = getJointComponent(m_world, m_entity);
+  auto& registry = dart::simulation::detail::registryOf(*m_world);
+  const auto entity = detail::toRegistryEntity(m_entity);
+  validateAvbdRigidWorldPointJointFacade(registry, entity, jointComp);
+  if (!jointComp.hasAvbdStiffnessState) {
+    if (const auto* config
+        = registry
+              .try_get<detail::deformable_vbd::AvbdRigidWorldPointJointConfig>(
+                  entity)) {
+      return config->angularMaterialStiffness;
+    }
+  }
+  return jointComp.avbdAngularStiffness;
 }
 
 //==============================================================================

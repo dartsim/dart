@@ -12,6 +12,8 @@
 
 #include <string>
 
+#include <cstddef>
+
 namespace dart::simulation {
 
 /// World-level solver/integration configuration for the multibody domain.
@@ -32,6 +34,14 @@ struct MultibodyOptions
   /// discrete-mechanics integrator). `World::setMultibodyOptions()` throws
   /// InvalidArgumentException for unknown names.
   std::string integrationFamily = "semi-implicit";
+
+  /// Maximum RIQN iterations for the variational integrator on the default
+  /// `World::step()` path. Must be positive.
+  std::size_t variationalMaxIterations = 100;
+
+  /// Per-coordinate convergence tolerance for the variational integrator on
+  /// the default `World::step()` path. Must be positive and finite.
+  double variationalTolerance = 1e-10;
 };
 
 } // namespace dart::simulation
