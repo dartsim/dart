@@ -754,6 +754,11 @@ Follow-up progress after PR #2956:
   uses the World free allocator; a focused heap-counter test verifies first
   `prepare()` does not allocate from the global heap. Other nested stage
   scratch payloads remain evidence-first follow-up work.
+- The next nested route covers `RigidBodyContactStage`'s sequential-impulse
+  constraint vector. A focused compact contact prepare verifies the vector's
+  first reserve increases the World free-list allocation count. AVBD contact
+  scratch internals remain separate follow-up work because they own a broader
+  bundle of snapshots, row scratch, and warm-start inventories.
 
 Remaining Phase 4/5 follow-up items for the next PR:
 

@@ -79,8 +79,9 @@ component storages, reserves existing storages, and asks domain-specific reserve
 helpers to pre-size private ECS scratch for the current shape. Repeated
 same-shape steps should not materialize new registry storages or grow existing
 storage capacity. The rigid-body velocity stage's force-batch payload vectors
-also borrow the World free allocator when the built-in pipeline constructs that
-stage. Other nested `std::vector`/Eigen payload capacity inside stage scratch
+and the rigid-body contact stage's sequential-impulse constraint vector also
+borrow the World free allocator when the built-in pipeline constructs those
+stages. Other nested `std::vector`/Eigen payload capacity inside stage scratch
 objects is still governed by the same-shape world-base and global heap
 no-growth gates.
 

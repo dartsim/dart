@@ -155,12 +155,16 @@ capacity; replay frame payload vectors and nested stage scratch payload vectors
 remain governed by the existing same-shape no-growth/no-heap gates, not by this
 allocator-root ownership check.
 
-The current nested-payload slice starts with the `RigidBodyVelocityStage`
+The current nested-payload slices start with the `RigidBodyVelocityStage`
 force batch: allocator-aware stage construction now gives the entity, force,
 and torque vectors a `StlAllocator` backed by the World free allocator. The
 focused world test constructs that stage with `World::getMemoryManager()` and
 checks first `prepare()` under the heap counter to prove this specific nested
-payload does not allocate from the global heap.
+payload does not allocate from the global heap. The same follow-up line routes
+`RigidBodyContactStage`'s sequential-impulse constraint vector through the
+World free allocator and checks a compact contact prepare increases the World
+free-list allocation count. AVBD contact scratch internals remain open because
+they own separate snapshots, row scratch, and warm-start inventories.
 
 The current allocator-correctness slice closes a debug-accounting gap in
 `MemoryAllocatorDebugger`: aligned allocations now keep their requested
@@ -670,7 +674,8 @@ without explicit maintainer approval.
 
 Continue with evidence-first HMM follow-up work on `origin/main`: built-in
 stage-owned scratch/cache object roots are now allocator-aware, and the
-rigid-body velocity force-batch payload is the first nested stage payload routed
+rigid-body velocity force-batch payload plus rigid-body contact
+sequential-impulse constraint vector are the first nested stage payloads routed
 through world-owned allocator-backed storage. The next slice should probe
 existing no-growth/no-heap gates or stage-local heap counters for another
 concrete nested payload path before changing broader scratch layouts. Do not

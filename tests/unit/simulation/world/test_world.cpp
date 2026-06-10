@@ -2780,6 +2780,40 @@ TEST(World, RigidBodyVelocityScratchPayloadUsesWorldAllocator)
   EXPECT_EQ(heapCounter.allocationBytes(), 0u);
 }
 
+TEST(World, RigidBodyContactScratchPayloadUsesWorldAllocator)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.25);
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(2.0, 2.0, 0.25)));
+
+  sx::RigidBodyOptions boxOptions;
+  boxOptions.position = Eigen::Vector3d(0.0, 0.0, 0.18);
+  auto box = world.addRigidBody("box", boxOptions);
+  box.setMass(1.0);
+  box.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.2, 0.2, 0.2)));
+
+  ASSERT_FALSE(world.collide().empty());
+
+  sx::compute::RigidBodyContactStage stage(8, &world.getMemoryManager());
+  auto& freeList = world.getMemoryManager().getFreeListAllocator();
+  const auto allocationsBeforePrepare = freeList.getAllocationCount();
+
+  stage.prepare(world);
+
+  EXPECT_GT(freeList.getAllocationCount(), allocationsBeforePrepare)
+      << "allocator-aware rigid contact scratch should reserve sequential "
+         "impulse constraints from the World free allocator";
+}
+
 TEST(World, WorldOptionsConfigureDomainSolverFamilies)
 {
   namespace sx = dart::simulation;

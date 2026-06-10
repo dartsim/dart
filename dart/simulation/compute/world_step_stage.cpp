@@ -8935,7 +8935,16 @@ struct RigidBodyContactStage::ContactScratch
     double friction;
   };
 
-  std::vector<NormalConstraint> constraints;
+  using ConstraintAllocator = common::StlAllocator<NormalConstraint>;
+
+  ContactScratch() = default;
+
+  explicit ContactScratch(common::MemoryAllocator& allocator)
+    : constraints(ConstraintAllocator{allocator})
+  {
+  }
+
+  std::vector<NormalConstraint, ConstraintAllocator> constraints;
 };
 
 //==============================================================================
@@ -8953,7 +8962,7 @@ RigidBodyContactStage::RigidBodyContactStage(
         constructStageOwnedScratch<AvbdScratch>(memoryManager),
         AvbdScratchDeleter{memoryManager}),
     m_contactScratch(
-        constructStageOwnedScratch<ContactScratch>(memoryManager),
+        createContactScratch(memoryManager),
         ContactScratchDeleter{memoryManager})
 {
 }
@@ -8976,6 +8985,18 @@ void RigidBodyContactStage::ContactScratchDeleter::operator()(
 }
 
 //==============================================================================
+RigidBodyContactStage::ContactScratch*
+RigidBodyContactStage::createContactScratch(
+    common::MemoryManager* memoryManager)
+{
+  if (memoryManager != nullptr) {
+    return constructStageOwnedScratch<ContactScratch>(
+        memoryManager, memoryManager->getFreeAllocator());
+  }
+  return constructStageOwnedScratch<ContactScratch>(nullptr);
+}
+
+//==============================================================================
 std::string_view RigidBodyContactStage::getName() const noexcept
 {
   return "rigid_body_contact";
@@ -8995,7 +9016,7 @@ void RigidBodyContactStage::prepare(World& world)
 {
   if (m_contactScratch == nullptr) {
     m_contactScratch = ContactScratchPtr(
-        constructStageOwnedScratch<ContactScratch>(m_memoryManager),
+        createContactScratch(m_memoryManager),
         ContactScratchDeleter{m_memoryManager});
   }
 
@@ -9188,7 +9209,7 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
 
   if (m_contactScratch == nullptr) {
     m_contactScratch = ContactScratchPtr(
-        constructStageOwnedScratch<ContactScratch>(m_memoryManager),
+        createContactScratch(m_memoryManager),
         ContactScratchDeleter{m_memoryManager});
   }
   auto& constraints = m_contactScratch->constraints;
