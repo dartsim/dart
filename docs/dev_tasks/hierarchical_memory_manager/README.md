@@ -179,8 +179,11 @@
       cycling is covered after explicit reserve. `World::clear()` now recreates
       the internal allocator-backed registry storage so ECS capacities and
       debug-tracked registry allocations reset at the rebuild boundary while
-      preserving the World memory hierarchy. Broader solver scratch coverage
-      remains open.
+      preserving the World memory hierarchy. Contact-heavy variational
+      ground-contact dual state is now sized at `enterSimulationMode()` and
+      covered by a World-base allocator no-growth test that steps multiple
+      augmented-Lagrangian contact sliders without registry capacity growth.
+      Broader solver scratch coverage remains open.
 - [ ] Phase 4: Built-in simulation stages borrow world memory for transient
       buffers and avoid growth after simulation is baked. The default
       `WorldStepPipeline` now stores built-in non-owning stage pointers inline,
@@ -190,7 +193,10 @@
       reuses stage-owned rigid-body entity and dependency-node scratch instead
       of allocating per execute. The default rigid-body velocity/contact stages
       and semi-implicit multibody velocity/contact path now reuse baked scratch
-      for the covered rigid and articulated resting-contact scenes. The boxed-LCP
+      for the covered rigid and articulated resting-contact scenes. The
+      variational multibody stage now owns cache-only reusable contact/constraint
+      scratch and bakes augmented-Lagrangian ground-contact dual vectors before
+      contact-heavy steps. The boxed-LCP
       unified constraint stage now reuses stage-owned assembly containers and
       unified problem storage, and its shared/cross-row assembly no longer
       allocates per-step row-direction, rigid/articulated row-end, or
@@ -528,9 +534,11 @@ debugging, profiling, optimization experiments, and ImGui visualization.
    production `WorldRegistry` bake/build guidance and integration: free-list
    backed world-lifetime storage for reserved no-growth arrays, and resettable
    rebuild-lifetime frame storage for bake/growth. Production wiring now resets
-   registry storage on `World::clear()` rebuild boundaries, but still needs
-   broader bake/build sizing guidance and contact-heavy no-growth tests; it
-   must not use the per-step frame scratch allocator that resets inside
+   registry storage on `World::clear()` rebuild boundaries, and a contact-heavy
+   variational dual-state gate covers one solver-owned ECS storage path, but
+   broader bake/build sizing guidance and additional contact-heavy no-growth
+   tests remain open; it must not use the per-step frame scratch allocator that
+   resets inside
    `World::step()`.
 2. Continue extending allocator correctness tests for remaining
    leak/debug-accounting gaps and production workload cases after the new

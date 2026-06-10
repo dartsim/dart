@@ -1251,6 +1251,25 @@ void normalizeGroundContact(VariationalGroundContact& contact)
       "VariationalGroundContact damping coefficient must be non-negative");
 }
 
+void configureGroundContactScratch(
+    const comps::VariationalContact& config,
+    MultibodyVariationalScratch& scratch)
+{
+  auto& contact = scratch.groundContact;
+  contact.planeNormal = config.planeNormal;
+  contact.planePoint = config.planePoint;
+  contact.stiffness = config.stiffness;
+  contact.frictionCoefficient = config.frictionCoefficient;
+  contact.frictionRegularization = config.frictionRegularization;
+  contact.dampingCoefficient = config.dampingCoefficient;
+  contact.points.clear();
+  contact.points.reserve(config.pointLinkIndices.size());
+  for (std::size_t i = 0; i < config.pointLinkIndices.size(); ++i) {
+    contact.points.push_back(
+        {config.pointLinkIndices[i], config.pointLocalPositions[i]});
+  }
+}
+
 // Per-contact-point generalized force at the trial config: the augmented-
 // Lagrangian normal force max(0, dual + k(-d)) plus C1 lagged regularized-
 // Coulomb friction bounded by that normal magnitude (the friction direction is
@@ -1317,10 +1336,8 @@ Eigen::VectorXd groundContactPointForce(
 //==============================================================================
 VariationalGroundContactSolver::VariationalGroundContactSolver(
     VariationalGroundContact contact)
-  : mContact(std::move(contact))
 {
-  normalizeGroundContact(mContact);
-  mDuals.assign(mContact.points.size(), 0.0);
+  resetContact(contact);
 }
 
 //==============================================================================
@@ -1341,14 +1358,34 @@ VariationalContactHook VariationalGroundContactSolver::hook() const
 }
 
 //==============================================================================
-void VariationalGroundContactSolver::setDuals(std::vector<double> duals)
+void VariationalGroundContactSolver::setDuals(std::span<const double> duals)
 {
   DART_SIMULATION_THROW_T_IF(
       duals.size() != mContact.points.size(),
       InvalidOperationException,
       "VariationalGroundContactSolver::setDuals size must match the contact "
       "point count");
-  mDuals = std::move(duals);
+  std::copy(duals.begin(), duals.end(), mDuals.begin());
+}
+
+//==============================================================================
+void VariationalGroundContactSolver::resetContact(
+    const VariationalGroundContact& contact)
+{
+  mContact.planeNormal = contact.planeNormal;
+  mContact.planePoint = contact.planePoint;
+  mContact.stiffness = contact.stiffness;
+  mContact.frictionCoefficient = contact.frictionCoefficient;
+  mContact.frictionRegularization = contact.frictionRegularization;
+  mContact.dampingCoefficient = contact.dampingCoefficient;
+  mContact.points.assign(contact.points.begin(), contact.points.end());
+  normalizeGroundContact(mContact);
+
+  if (mDuals.size() != mContact.points.size()) {
+    mDuals.assign(mContact.points.size(), 0.0);
+  } else {
+    std::fill(mDuals.begin(), mDuals.end(), 0.0);
+  }
 }
 
 //==============================================================================
@@ -2043,6 +2080,60 @@ VariationalLoopClosureBinding bindVariationalLoopClosure(
 }
 
 //==============================================================================
+void reserveMultibodyVariationalRegistryStorage(
+    detail::WorldRegistry& registry, std::size_t multibodyCount)
+{
+  auto& stateStorage = registry.storage<MultibodyVariationalState>();
+  auto& scratchStorage = registry.storage<MultibodyVariationalScratch>();
+  stateStorage.reserve(multibodyCount);
+  scratchStorage.reserve(multibodyCount);
+
+  if (multibodyCount == 0u) {
+    return;
+  }
+
+  auto view = registry.view<comps::MultibodyStructure>();
+  for (auto entity : view) {
+    const auto& structure = view.get<comps::MultibodyStructure>(entity);
+    auto& state = registry.get_or_emplace<MultibodyVariationalState>(entity);
+    state.previousDeltaTransform.reserve(structure.links.size());
+    state.previousMomentum.reserve(structure.links.size());
+
+    auto& scratch
+        = registry.get_or_emplace<MultibodyVariationalScratch>(entity);
+    scratch.postContactTransforms.resize(structure.links.size());
+
+    const auto* contactConfig
+        = registry.try_get<comps::VariationalContact>(entity);
+    if (contactConfig == nullptr || contactConfig->dualUpdateCadence == 0u
+        || contactConfig->pointLinkIndices.empty()) {
+      continue;
+    }
+
+    configureGroundContactScratch(*contactConfig, scratch);
+    if (scratch.groundContact.stiffness <= 0.0
+        || scratch.groundContact.points.empty()) {
+      continue;
+    }
+
+    auto& dualState
+        = registry.get_or_emplace<comps::VariationalContactDualState>(entity);
+    if (dualState.duals.size() != scratch.groundContact.points.size()) {
+      dualState.duals.assign(scratch.groundContact.points.size(), 0.0);
+      dualState.stepsSinceDualUpdate = 0;
+    }
+    if (!scratch.groundContactSolver.has_value()) {
+      scratch.groundContactSolver.emplace(scratch.groundContact);
+    } else {
+      scratch.groundContactSolver->resetContact(scratch.groundContact);
+    }
+    scratch.groundContactSolver->setDuals(
+        std::span<const double>{
+            dualState.duals.data(), dualState.duals.size()});
+  }
+}
+
+//==============================================================================
 std::string_view MultibodyVariationalIntegrationStage::getName() const noexcept
 {
   return "multibody_variational_integration";
@@ -2062,12 +2153,12 @@ void MultibodyVariationalIntegrationStage::prepare(World& world)
 {
   auto& registry = dart::simulation::detail::registryOf(world);
   auto view = registry.view<comps::MultibodyStructure>();
+  std::size_t multibodyCount = 0;
   for (auto entity : view) {
-    const auto& structure = view.get<comps::MultibodyStructure>(entity);
-    auto& state = registry.get_or_emplace<MultibodyVariationalState>(entity);
-    state.previousDeltaTransform.reserve(structure.links.size());
-    state.previousMomentum.reserve(structure.links.size());
+    static_cast<void>(entity);
+    ++multibodyCount;
   }
+  reserveMultibodyVariationalRegistryStorage(registry, multibodyCount);
 }
 
 //==============================================================================
@@ -2087,7 +2178,10 @@ void MultibodyVariationalIntegrationStage::execute(
   for (auto entity : view) {
     const auto& structure = view.get<comps::MultibodyStructure>(entity);
     auto& state = registry.get_or_emplace<MultibodyVariationalState>(entity);
-    std::vector<VariationalLoopConstraint> constraints;
+    auto& scratch
+        = registry.get_or_emplace<MultibodyVariationalScratch>(entity);
+    auto& constraints = scratch.constraints;
+    constraints.clear();
     for (auto closureEntity : closures) {
       const auto binding = bindVariationalLoopClosure(registry, closureEntity);
       if (binding.status == VariationalLoopClosureBinding::Status::Supported
@@ -2104,24 +2198,12 @@ void MultibodyVariationalIntegrationStage::execute(
     // cadence after the step. Absent => contact-free.
     const auto* contactConfig
         = registry.try_get<comps::VariationalContact>(entity);
-    std::optional<VariationalGroundContactSolver> alSolver;
+    VariationalGroundContactSolver* alSolver = nullptr;
     std::size_t dualUpdateCadence = 0;
     VariationalContactHook contactHook;
     if (contactConfig != nullptr) {
-      VariationalGroundContact contact;
-      contact.planeNormal = contactConfig->planeNormal;
-      contact.planePoint = contactConfig->planePoint;
-      contact.stiffness = contactConfig->stiffness;
-      contact.frictionCoefficient = contactConfig->frictionCoefficient;
-      contact.frictionRegularization = contactConfig->frictionRegularization;
-      contact.dampingCoefficient = contactConfig->dampingCoefficient;
-      const std::size_t pointCount = contactConfig->pointLinkIndices.size();
-      contact.points.reserve(pointCount);
-      for (std::size_t i = 0; i < pointCount; ++i) {
-        contact.points.push_back(
-            {contactConfig->pointLinkIndices[i],
-             contactConfig->pointLocalPositions[i]});
-      }
+      configureGroundContactScratch(*contactConfig, scratch);
+      const auto& contact = scratch.groundContact;
       if (contact.stiffness > 0.0 && !contact.points.empty()) {
         if (contactConfig->dualUpdateCadence > 0) {
           // C3: a stateful AL solver seeded from the persisted (warm-started)
@@ -2135,8 +2217,15 @@ void MultibodyVariationalIntegrationStage::execute(
             dualState.duals.assign(contact.points.size(), 0.0);
             dualState.stepsSinceDualUpdate = 0;
           }
-          alSolver.emplace(contact);
-          alSolver->setDuals(dualState.duals);
+          if (!scratch.groundContactSolver.has_value()) {
+            scratch.groundContactSolver.emplace(contact);
+          } else {
+            scratch.groundContactSolver->resetContact(contact);
+          }
+          scratch.groundContactSolver->setDuals(
+              std::span<const double>{
+                  dualState.duals.data(), dualState.duals.size()});
+          alSolver = &*scratch.groundContactSolver;
           contactHook = alSolver->hook();
         } else {
           contactHook = makeVariationalGroundContactHook(contact);
@@ -2159,18 +2248,20 @@ void MultibodyVariationalIntegrationStage::execute(
     // configured cadence from the post-step per-link world transforms (a fresh
     // VarTree reads the converged joint positions), then persist them for the
     // next step and for save/load.
-    if (alSolver.has_value()) {
+    if (alSolver != nullptr) {
       auto& dualState
           = registry.get<comps::VariationalContactDualState>(entity);
       if (++dualState.stepsSinceDualUpdate >= dualUpdateCadence) {
         dualState.stepsSinceDualUpdate = 0;
         const VarTree postTree = buildVarTree(registry, structure);
-        std::vector<Eigen::Isometry3d> postTransforms(postTree.links.size());
+        auto& postTransforms = scratch.postContactTransforms;
+        postTransforms.resize(postTree.links.size());
         for (std::size_t i = 0; i < postTree.links.size(); ++i) {
           postTransforms[i] = postTree.links[i].worldTransform;
         }
         alSolver->updateDuals(postTransforms);
-        dualState.duals = alSolver->duals();
+        const auto& solverDuals = alSolver->duals();
+        dualState.duals.assign(solverDuals.begin(), solverDuals.end());
       }
     }
 

@@ -33,7 +33,10 @@ scratch plus a production static-obstacle friction patch for shared
 sphere/box/capsule normal-force, normal-direction, and sparse/matrix-free
 Hessian scratch. The latest continuation combines sparse static-obstacle
 friction and matrix-free self-contact deformables in one baked World memory
-root.
+root. The current continuation also moves variational multibody contact and
+constraint scratch into a cache-only component, bakes augmented-Lagrangian
+ground-contact dual vectors during `enterSimulationMode()`, and adds a
+contact-heavy variational dual-state no-growth gate.
 Continue from the current `README.md` Immediate Next Steps: broaden remaining
 boxed-LCP/contact and deformable production no-growth coverage, and move any
 newly exposed step-loop scratch to world-owned backed storage before making a
@@ -391,8 +394,9 @@ the allocator role: World registry storage uses the free-list-backed
 `StlAllocator`. Treat EnTT build/growth as matched benchmark evidence for
 one-shot storage construction, not as a claim that production registry rebuilds
 must use stack lifetime. Production integration still needs broader bake/build
-sizing guidance and more contact-heavy no-growth tests, and it must not use the
-existing per-step frame allocator that resets inside `World::step()`.
+sizing guidance and additional contact-heavy no-growth tests after the new
+variational dual-state gate, and it must not use the existing per-step frame
+allocator that resets inside `World::step()`.
 
 Rerun the full comparative gate after allocator-policy or benchmark changes,
 including EnTT rows, and treat every foonathan/memory miss as a required
