@@ -27,6 +27,14 @@ import pytest
 from examples.demos import make_demo_scenes, run  # noqa: E402
 
 
+@pytest.fixture(autouse=True)
+def _force_headless_gui_software_renderer(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Keep headless Filament screenshot tests off host GPU/display state."""
+
+    monkeypatch.setenv("LIBGL_ALWAYS_SOFTWARE", "1")
+    monkeypatch.setenv("MESA_LOADER_DRIVER_OVERRIDE", "llvmpipe")
+
+
 def _capture_py_demo_module():
     root = pathlib.Path(__file__).resolve().parents[3]
     spec = importlib.util.spec_from_file_location(
