@@ -7418,8 +7418,9 @@ TEST(World, RigidIpcKinematicTurntableCarriesRestingBox)
 }
 
 // Test that public fixed joints feed the IPC rigid-body solver through private
-// articulation equality rows instead of exposing solver-internal contracts.
-TEST(World, RigidIpcContactStageProjectsFixedJointPointConnection)
+// point and orientation equality rows instead of exposing solver-internal
+// contracts.
+TEST(World, RigidIpcContactStageProjectsFixedJointPose)
 {
   namespace sx = dart::simulation;
 
@@ -7436,6 +7437,8 @@ TEST(World, RigidIpcContactStageProjectsFixedJointPointConnection)
   parent.setCollisionShape(sx::CollisionShape::makeBox({0.1, 0.1, 0.1}));
   auto child = world.addRigidBody("child", childOptions);
   child.setCollisionShape(sx::CollisionShape::makeBox({0.1, 0.1, 0.1}));
+  child.setAngularVelocity(Eigen::Vector3d(0.0, 0.25, 0.0));
+  child.setTorque(Eigen::Vector3d(0.0, 1.0, 0.0));
   (void)world.addRigidBodyFixedJoint("fixed", parent, child);
 
   sx::compute::SequentialExecutor executor;
@@ -7445,17 +7448,21 @@ TEST(World, RigidIpcContactStageProjectsFixedJointPointConnection)
   world.step(executor, pipeline);
 
   const auto& stats = ipcStage.getLastStats();
-  EXPECT_EQ(stats.activeArticulationConstraints, 1u);
+  EXPECT_EQ(stats.activeArticulationConstraints, 3u);
   EXPECT_TRUE(stats.converged);
   EXPECT_FALSE(stats.failed);
   EXPECT_TRUE(stats.resultApplied);
   EXPECT_LT(stats.finalEqualityResidualNorm, 1e-8);
 
-  // The fixed joint captured the child's initial center as a point connection.
-  // Gravity is balanced by the equality row, so the child cannot drop away from
-  // the parent-side anchor.
+  // The fixed joint captured the child's initial pose. Gravity and torque are
+  // balanced by the equality rows, so the child cannot translate or rotate away
+  // from the parent-side pose.
   EXPECT_TRUE(child.getTranslation().isApprox(Eigen::Vector3d::UnitX(), 1e-10));
   EXPECT_LT(child.getLinearVelocity().norm(), 1e-10);
+  EXPECT_LT(
+      (child.getTransform().linear() - Eigen::Matrix3d::Identity()).norm(),
+      1e-10);
+  EXPECT_LT(child.getAngularVelocity().norm(), 1e-10);
 }
 
 // Test that public revolute joints feed the IPC rigid-body solver through

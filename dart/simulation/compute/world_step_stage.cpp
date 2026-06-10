@@ -8203,12 +8203,34 @@ std::size_t findSolverBodyIndex(
 }
 
 //==============================================================================
-Eigen::Vector3d localRigidIpcDirection(
-    const RigidIpcRuntimeBody& body, const Eigen::Vector3d& worldDirection)
+bool appendRigidIpcHingeAxisConstraint(
+    const std::size_t bodyA,
+    const std::size_t bodyB,
+    const Eigen::Vector3d& parentLocalAxis,
+    const Eigen::Quaterniond& targetParentToChild,
+    std::vector<sxdetail::RigidIpcArticulationConstraintInput>& constraints)
 {
-  const Eigen::Matrix3d rotation
-      = sxdetail::rigidIpcRotationVectorToMatrix(body.initialPose.rotation);
-  return rotation.transpose() * worldDirection.normalized();
+  if (!parentLocalAxis.allFinite() || parentLocalAxis.squaredNorm() <= 0.0
+      || !targetParentToChild.coeffs().allFinite()
+      || targetParentToChild.norm() == 0.0) {
+    return false;
+  }
+
+  const Eigen::Vector3d localAxisA = parentLocalAxis.normalized();
+  const Eigen::Vector3d localAxisB
+      = targetParentToChild.conjugate() * localAxisA;
+  if (!localAxisB.allFinite() || localAxisB.squaredNorm() <= 0.0) {
+    return false;
+  }
+
+  sxdetail::RigidIpcArticulationConstraintInput hinge;
+  hinge.type = sxdetail::RigidIpcArticulationConstraintType::HingeAxis;
+  hinge.bodyA = bodyA;
+  hinge.bodyB = bodyB;
+  hinge.localAxisA = localAxisA;
+  hinge.localAxisB = localAxisB.normalized();
+  constraints.push_back(hinge);
+  return true;
 }
 
 //==============================================================================
@@ -8230,8 +8252,10 @@ void collectRigidIpcArticulationConstraints(
         || joint.parentLink == entt::null || joint.childLink == entt::null
         || (joint.type != comps::JointType::Fixed
             && joint.type != comps::JointType::Revolute)
-        || !config.localAnchorA.allFinite()
-        || !config.localAnchorB.allFinite()) {
+        || !config.localAnchorA.allFinite() || !config.localAnchorB.allFinite()
+        || !config.angularAxes.allFinite()
+        || !config.targetRelativeOrientation.coeffs().allFinite()
+        || config.targetRelativeOrientation.norm() == 0.0) {
       continue;
     }
 
@@ -8252,20 +8276,29 @@ void collectRigidIpcArticulationConstraints(
     constraints.push_back(point);
 
     if (joint.type != comps::JointType::Revolute) {
-      continue;
-    }
-    const Eigen::Vector3d axisWorld = config.angularAxes.col(2);
-    if (!axisWorld.allFinite() || axisWorld.squaredNorm() <= 0.0) {
+      const Eigen::Quaterniond targetParentToChild
+          = config.targetRelativeOrientation.normalized();
+      appendRigidIpcHingeAxisConstraint(
+          bodyA,
+          bodyB,
+          config.angularAxes.col(0),
+          targetParentToChild,
+          constraints);
+      appendRigidIpcHingeAxisConstraint(
+          bodyA,
+          bodyB,
+          config.angularAxes.col(1),
+          targetParentToChild,
+          constraints);
       continue;
     }
 
-    sxdetail::RigidIpcArticulationConstraintInput hinge;
-    hinge.type = sxdetail::RigidIpcArticulationConstraintType::HingeAxis;
-    hinge.bodyA = bodyA;
-    hinge.bodyB = bodyB;
-    hinge.localAxisA = localRigidIpcDirection(solverBodies[bodyA], axisWorld);
-    hinge.localAxisB = localRigidIpcDirection(solverBodies[bodyB], axisWorld);
-    constraints.push_back(hinge);
+    appendRigidIpcHingeAxisConstraint(
+        bodyA,
+        bodyB,
+        config.angularAxes.col(2),
+        config.targetRelativeOrientation.normalized(),
+        constraints);
   }
 }
 
