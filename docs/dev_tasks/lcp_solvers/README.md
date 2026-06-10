@@ -513,7 +513,9 @@
       `contract_ok=1` with 512 contacts, 1536 LCP rows per problem, and 6144
       total rows. The focused 192-box batch-size-1 CUDA PGS benchmark row
       reports `contract_ok=1` with 768 contacts and 2304 LCP rows as
-      cost-boundary evidence.
+      cost-boundary evidence. A guarded 256-box batch-size-1 CUDA PGS probe
+      timed out before producing a complete benchmark JSON row, so no 256-box
+      CUDA PGS dense-box claim is made.
 - [x] Added dense box-face DART 7 end-to-end unit and benchmark evidence:
       `FourBoxWorldStepMaintainsDenseContactInvariants` and
       `EightBoxWorldStepMaintainsDenseContactInvariants` advance 4-box and
@@ -2269,7 +2271,10 @@ tradeoffs evidence based.
   `total_problem_size=2304`, `max_bound_violation=0`, and
   `max_residual=max_complementarity=3.4694469519536142e-18`, with about
   295.3s real time / 294.0s CPU time. Treat both PGS large dense-box rows as
-  cost-boundary evidence, not routine checkpoint gates. The earlier dense-box Jacobi probe
+  cost-boundary evidence, not routine checkpoint gates. A guarded
+  `BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex/256/1` probe timed out
+  before producing a complete benchmark JSON row, so no 256-box CUDA PGS
+  dense-box claim is made. The earlier dense-box Jacobi probe
   failed under the prior collapsed-interval validation because fixed rows
   required zero residual; after the fixed-bound validation correction, the
   bounded 1-/4-/8-/16-/24-/32-/48-/64-/96-box homogeneous CUDA Jacobi rows,
@@ -3354,7 +3359,8 @@ tradeoffs evidence based.
   CUDA batches through 128 boxes, two-/three-variant grouped Jacobi and PGS
   dense box-face CUDA batches through 96 boxes, plus bounded 128-box
   homogeneous batch-size-1 and batch-size-4 CUDA Jacobi and PGS packet passes
-  and a 192-box batch-size-1 CUDA PGS cost-boundary packet pass.
+  and a 192-box batch-size-1 CUDA PGS cost-boundary packet pass; 256-box CUDA
+  PGS dense-box execution remains unclaimed after a guarded timeout.
   Jacobi has opt-in solver-internal CPU
   worker-thread correctness and benchmark evidence, including larger 8192-row
   banded Jacobi, Red-Black Gauss-Seidel, and Blocked Jacobi rows, but the

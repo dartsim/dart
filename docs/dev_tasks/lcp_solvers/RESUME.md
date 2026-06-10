@@ -84,6 +84,9 @@ at batch size 1. The focused CUDA benchmark row reports `contract_ok=1`,
 `max_residual=max_complementarity=3.4694469519536142e-18`; it is also
 cost-boundary evidence at about 295.3s real time, not a routine checkpoint
 gate.
+A guarded `BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex/256/1` probe timed
+out before producing a complete benchmark JSON row, so no 256-box CUDA PGS
+dense-box claim is made.
 The robust near-singular generated coverage now reaches coupled friction-index
 256-contact packets, and near-singular benchmark coverage now reaches
 256-contact packets. It also adds 62
@@ -671,6 +674,9 @@ The 192-box batch-size-1 CUDA PGS row now also reports `contract_ok=1`,
 `max_residual=max_complementarity=3.4694469519536142e-18`; it is
 cost-boundary evidence at about 295.3s real time, not a routine checkpoint
 gate.
+A guarded 256-box batch-size-1 CUDA PGS probe timed out before producing a
+complete benchmark JSON row, so 256-box CUDA PGS dense-box execution remains
+unclaimed.
 The latest local slice extends DART 7 dense box-face public `World::step()`
 evidence to a bounded 144-box/576-contact one-step path plus a
 128-box/512-contact one-step and 75-step path plus a
@@ -836,6 +842,9 @@ cost-boundary benchmark row, with `contract_ok=1` and `total_problem_size=6144`.
 The 192-box batch-size-1 CUDA PGS row is now covered as another cost-boundary
 benchmark row, with `contract_ok=1`, `cuda_lcp_execution=1`, and
 `total_problem_size=2304`.
+The guarded 256-box batch-size-1 CUDA PGS probe timed out before producing a
+complete benchmark JSON row, so do not claim 256-box CUDA PGS dense-box
+execution.
 Do not claim a 7-sphere public-step stack invariant yet: local temporary probes
 failed at both 1000 and 2000 public `World::step()` iterations under the
 existing motion-invariant contract, with benchmark probes reporting
@@ -2379,6 +2388,9 @@ scenes.
   `max_residual=max_complementarity=3.4694469519536142e-18`, with about
   295.3s real time / 294.0s CPU time. Treat both PGS large dense-box rows as
   cost-boundary evidence, not routine checkpoint gates.
+  A guarded `BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex/256/1` probe
+  timed out before producing a complete benchmark JSON row, so no 256-box CUDA
+  PGS dense-box claim is made.
   The earlier fixed-iteration CUDA Jacobi
   dense-box probe failed under the prior collapsed-interval validation because
   fixed rows required zero residual; after the fixed-bound validation
