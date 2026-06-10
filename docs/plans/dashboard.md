@@ -294,8 +294,9 @@ its own line so status updates remain git-history friendly.
   lessons. Implementation-roadmap Phase 2 shared solver contracts landed in PR
   #2951. Implementation-roadmap Phases 3-8 landed together in PR #2960 because
   the remaining internal slices were small enough for one reviewer-facing PR.
-  Follow-up local work measures the private GPU PSD projection packet and adds
-  the Fig. 17 barrier-force diagnostic, but the Phase 8 audit records that
+  Follow-up local work measures the private GPU PSD projection packet, adds the
+  Fig. 17 barrier-force diagnostic, and aligns articulation-only figure rows
+  with landed Phase 3 private diagnostics, but the Phase 8 audit records that
   PLAN-083 is not complete while planned manifest, CPU corpus, and non-PSD GPU
   parity rows remain, so dev-task retirement needs maintainer direction before
   deletion.

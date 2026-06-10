@@ -177,6 +177,12 @@ growth against the private Newton-barrier scalar kernel. This moves only
 `unb-fig-17` to `in-progress`; runtime force plots and accepted default-kappa
 policy remain future evidence.
 
+The follow-up articulation manifest alignment moves `unb-fig-05`,
+`unb-fig-06`, `unb-fig-07`, `unb-fig-08`, `unb-fig-12`, and `unb-fig-13` to
+`in-progress` based on the landed Phase 3 private articulation diagnostics.
+Those rows still do not claim runtime articulated scenes, cloth snapshots,
+direct internal-contact speedups, or scaling packets.
+
 ## Last Session Summary
 
 Current slice: the first ABD benchmark packet has been promoted from
