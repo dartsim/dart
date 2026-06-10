@@ -1118,16 +1118,6 @@ RigidIpcProjectedNewtonStep computeRigidIpcProjectedNewtonStepImpl(
     return result;
   }
 
-  if (hasEqualityRows
-      && rawStep.norm() <= std::max(0.0, options.gradientTolerance)
-      && assembly.equalityResidual.norm()
-             <= std::max(0.0, options.gradientTolerance)) {
-    result.status = RigidIpcProjectedNewtonStatus::Converged;
-    result.success = true;
-    result.converged = true;
-    return result;
-  }
-
   result.stats.rawStepNorm = rawStep.norm();
   double stepScale = 1.0;
   if (std::isfinite(options.maxStepNorm) && options.maxStepNorm >= 0.0

@@ -54,6 +54,7 @@
 #include <dart/simulation/compute/world_batch.hpp>
 #include <dart/simulation/compute/world_step_stage.hpp>
 #include <dart/simulation/constraint/loop_closure_spec.hpp>
+#include <dart/simulation/detail/deformable_vbd/rigid_world_contact.hpp>
 #include <dart/simulation/detail/entity_conversion.hpp>
 #include <dart/simulation/detail/world_registry_access.hpp>
 #include <dart/simulation/detail/world_storage.hpp>
@@ -1090,7 +1091,7 @@ TEST(World, EnterSimulationModeReservesRegistryStorageForMultibodySteps)
   auto carriage = robot.addLink("carriage", base, spec);
   carriage.setMass(3.0);
 
-  world.setTimeStep(0.01);
+  world.setTimeStep(0.001);
   world.enterSimulationMode();
 
   const auto& registry = sx::detail::registryOf(world);
@@ -7296,6 +7297,7 @@ TEST(World, RigidIpcContactStageProjectsFixedJointPointConnection)
 
   sx::World world;
   world.setTimeStep(0.01);
+  world.setGravity(-9.81 * Eigen::Vector3d::UnitY());
   auto parent = world.addRigidBody("parent", parentOptions);
   parent.setCollisionShape(sx::CollisionShape::makeBox({0.1, 0.1, 0.1}));
   auto child = world.addRigidBody("child", childOptions);
@@ -7320,6 +7322,62 @@ TEST(World, RigidIpcContactStageProjectsFixedJointPointConnection)
   // the parent-side anchor.
   EXPECT_TRUE(child.getTranslation().isApprox(Eigen::Vector3d::UnitX(), 1e-10));
   EXPECT_LT(child.getLinearVelocity().norm(), 1e-10);
+}
+
+// Test that public revolute joints feed the IPC rigid-body solver through
+// private point and hinge-axis equality rows, preserving the hinge axis while
+// letting gravity swing the body around the captured pivot.
+TEST(World, RigidIpcContactStageProjectsRevoluteJointHingeAxis)
+{
+  namespace sx = dart::simulation;
+  namespace dvbd = sx::detail::deformable_vbd;
+
+  sx::RigidBodyOptions parentOptions;
+  parentOptions.isStatic = true;
+  sx::RigidBodyOptions childOptions;
+  childOptions.position = Eigen::Vector3d::UnitX();
+  childOptions.mass = 1.0;
+
+  sx::World world;
+  world.setTimeStep(0.001);
+  world.setGravity(-9.81 * Eigen::Vector3d::UnitY());
+  auto parent = world.addRigidBody("parent", parentOptions);
+  parent.setCollisionShape(sx::CollisionShape::makeBox({0.1, 0.1, 0.1}));
+  auto child = world.addRigidBody("child", childOptions);
+  child.setCollisionShape(sx::CollisionShape::makeBox({0.1, 0.1, 0.1}));
+  auto joint = world.addRigidBodyRevoluteJoint(
+      "hinge", parent, child, Eigen::Vector3d::UnitZ());
+
+  auto& registry = sx::detail::registryOf(world);
+  auto& config = registry.get<dvbd::AvbdRigidWorldPointJointConfig>(
+      sx::detail::toRegistryEntity(joint.getEntity()));
+  config.localAnchorA = Eigen::Vector3d::Zero();
+  config.localAnchorB = -Eigen::Vector3d::UnitX();
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage(64);
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+  world.step(executor, pipeline);
+
+  const auto& stats = ipcStage.getLastStats();
+  EXPECT_EQ(stats.activeArticulationConstraints, 2u);
+  EXPECT_EQ(stats.activeDynamicsTerms, 1u);
+  EXPECT_GT(stats.acceptedSteps, 0u);
+  EXPECT_TRUE(stats.converged);
+  EXPECT_FALSE(stats.failed);
+  EXPECT_TRUE(stats.resultApplied);
+  EXPECT_LT(stats.finalEqualityResidualNorm, 1e-8);
+
+  const Eigen::Vector3d pivot
+      = child.getTransform() * (-Eigen::Vector3d::UnitX());
+  EXPECT_LT(pivot.norm(), 1e-8);
+
+  const Eigen::Vector3d childAxis
+      = child.getTransform().linear() * Eigen::Vector3d::UnitZ();
+  EXPECT_LT(childAxis.cross(Eigen::Vector3d::UnitZ()).norm(), 1e-8);
+  EXPECT_LT(child.getTranslation().y(), -1e-9);
+  EXPECT_LT(child.getAngularVelocity().z(), -1e-7);
 }
 
 // Test that unsupported rigid-body joint types still reject the IPC solver.
