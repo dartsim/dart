@@ -2,6 +2,12 @@
 
 ## Last Session Summary
 
+Latest local follow-up: `test_boxed_lcp_contact` now uses a source-local MSVC
+optimization guard after target-level `/Od` alone still hit C1001 in MSVC
+19.44. This keeps the AVBD contact regressions compiled and running on Windows.
+This is CI portability only; it does not close any AVBD solver, CPU-win, GPU, or
+paper-number gate.
+
 Latest local follow-up: the IPC bake allocation regression now compares the
 unsupported plane scene against the same IPC contact-query-only setup with
 supported collision geometry instead of against the sequential solver's
@@ -9,12 +15,6 @@ allocation baseline. This keeps the guard focused on accidental IPC query
 prewarm work after the sequential prepare path was tightened. This is CI-test
 calibration only; it does not close any AVBD solver, CPU-win, GPU, or
 paper-number gate.
-
-Latest local follow-up: the Windows-only `test_boxed_lcp_contact` target now
-disables MSVC optimization for that single test binary to avoid a repeated MSVC
-19.44 internal compiler error while still compiling and running the AVBD contact
-regressions on Windows. This is CI portability only; it does not close any AVBD
-solver, CPU-win, GPU, or paper-number gate.
 
 Latest local follow-up: `test_boxed_lcp_contact` now avoids a repeated MSVC
 19.44 internal compiler error in the primitive endpoint-row helper by using an

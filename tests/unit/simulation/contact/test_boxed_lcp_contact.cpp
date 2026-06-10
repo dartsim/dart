@@ -68,6 +68,12 @@
 
 #include <cmath>
 
+#if defined(_MSC_VER)
+  // MSVC 19.44 hits C1001 in this large AVBD contact regression file when the
+  // Release configuration optimizes the translation unit.
+  #pragma optimize("", off)
+#endif
+
 namespace sx = dart::simulation;
 namespace dvbd = dart::simulation::detail::deformable_vbd;
 
