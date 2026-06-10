@@ -2164,13 +2164,18 @@ void configureDeformableInterBodySurfaceCcdCrossingScene(
   world.addDeformableBody("moving_deformable_surface", movingOptions);
 }
 
-void configureDeformableInterBodySurfaceCcdProductionGridScene(
-    dart::simulation::World& world)
+void configureDeformableInterBodySurfaceCcdProductionGridSceneWithOffset(
+    dart::simulation::World& world,
+    std::string_view fixedName,
+    std::string_view movingName,
+    const Eigen::Vector3d& offset,
+    double timeStep,
+    double crossingSpeed)
 {
   namespace sx = dart::simulation;
 
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setTimeStep(0.1);
+  world.setTimeStep(timeStep);
 
   constexpr std::size_t rows = 9;
   constexpr std::size_t cols = 13;
@@ -2179,55 +2184,88 @@ void configureDeformableInterBodySurfaceCcdProductionGridScene(
     return row * cols + col;
   };
 
-  const auto addSurfaceGrid = [&](std::string_view name,
-                                  double x,
-                                  bool fixed,
-                                  bool moving) {
-    sx::DeformableBodyOptions options;
-    options.positions.reserve(rows * cols);
-    options.velocities.reserve(rows * cols);
-    options.masses.assign(rows * cols, 1.0);
-    if (fixed) {
-      options.fixedNodes.reserve(rows * cols);
-    }
+  const auto addSurfaceGrid
+      = [&](std::string_view name, double x, bool fixed, bool moving) {
+          sx::DeformableBodyOptions options;
+          options.positions.reserve(rows * cols);
+          options.velocities.reserve(rows * cols);
+          options.masses.assign(rows * cols, 1.0);
+          if (fixed) {
+            options.fixedNodes.reserve(rows * cols);
+          }
 
-    for (std::size_t row = 0; row < rows; ++row) {
-      for (std::size_t col = 0; col < cols; ++col) {
-        const double y
-            = (static_cast<double>(col) - 0.5 * static_cast<double>(cols - 1))
-              * spacing;
-        const double z
-            = (static_cast<double>(row) - 0.5 * static_cast<double>(rows - 1))
-              * spacing;
-        options.positions.emplace_back(x, y, z);
-        options.velocities.emplace_back(
-            moving ? Eigen::Vector3d(20.0, 0.0, 0.0) : Eigen::Vector3d::Zero());
-        if (fixed) {
-          options.fixedNodes.push_back(nodeIndex(row, col));
-        }
-      }
-    }
+          for (std::size_t row = 0; row < rows; ++row) {
+            for (std::size_t col = 0; col < cols; ++col) {
+              const double y = (static_cast<double>(col)
+                                - 0.5 * static_cast<double>(cols - 1))
+                               * spacing;
+              const double z = (static_cast<double>(row)
+                                - 0.5 * static_cast<double>(rows - 1))
+                               * spacing;
+              options.positions.push_back(offset + Eigen::Vector3d(x, y, z));
+              options.velocities.emplace_back(
+                  moving ? Eigen::Vector3d(crossingSpeed, 0.0, 0.0)
+                         : Eigen::Vector3d::Zero());
+              if (fixed) {
+                options.fixedNodes.push_back(nodeIndex(row, col));
+              }
+            }
+          }
 
-    options.surfaceTriangles.reserve(2 * (rows - 1) * (cols - 1));
-    for (std::size_t row = 0; row + 1 < rows; ++row) {
-      for (std::size_t col = 0; col + 1 < cols; ++col) {
-        const auto a = nodeIndex(row, col);
-        const auto b = nodeIndex(row, col + 1);
-        const auto c = nodeIndex(row + 1, col + 1);
-        const auto d = nodeIndex(row + 1, col);
-        options.surfaceTriangles.push_back(
-            sx::DeformableSurfaceTriangle{a, b, c});
-        options.surfaceTriangles.push_back(
-            sx::DeformableSurfaceTriangle{a, c, d});
-      }
-    }
+          options.surfaceTriangles.reserve(2 * (rows - 1) * (cols - 1));
+          for (std::size_t row = 0; row + 1 < rows; ++row) {
+            for (std::size_t col = 0; col + 1 < cols; ++col) {
+              const auto a = nodeIndex(row, col);
+              const auto b = nodeIndex(row, col + 1);
+              const auto c = nodeIndex(row + 1, col + 1);
+              const auto d = nodeIndex(row + 1, col);
+              options.surfaceTriangles.push_back(
+                  sx::DeformableSurfaceTriangle{a, b, c});
+              options.surfaceTriangles.push_back(
+                  sx::DeformableSurfaceTriangle{a, c, d});
+            }
+          }
 
-    options.edgeStiffness = 0.0;
-    world.addDeformableBody(name, options);
-  };
+          options.edgeStiffness = 0.0;
+          world.addDeformableBody(name, options);
+        };
 
-  addSurfaceGrid("fixed_deformable_production_surface", 0.0, true, false);
-  addSurfaceGrid("moving_deformable_production_surface", -1.0, false, true);
+  addSurfaceGrid(fixedName, 0.0, true, false);
+  addSurfaceGrid(movingName, -1.0, false, true);
+}
+
+void configureDeformableInterBodySurfaceCcdProductionGridScene(
+    dart::simulation::World& world)
+{
+  configureDeformableInterBodySurfaceCcdProductionGridSceneWithOffset(
+      world,
+      "fixed_deformable_production_surface",
+      "moving_deformable_production_surface",
+      Eigen::Vector3d::Zero(),
+      0.1,
+      20.0);
+}
+
+void configureMixedDefaultContactFamiliesProductionScene(
+    dart::simulation::World& world)
+{
+  configureDeformableStaticObstacleFrictionProductionScene(world);
+  configureDeformableSelfContactFrictionGridSceneWithShapeAndMotion(
+      world,
+      9,
+      13,
+      "mixed_contact_families_matrix_free_self_contact_grid",
+      0.012,
+      Eigen::Vector3d(0.35, 0.1, -0.08),
+      true,
+      Eigen::Vector3d(0.0, 8.0, 0.0));
+  configureDeformableInterBodySurfaceCcdProductionGridSceneWithOffset(
+      world,
+      "mixed_contact_families_fixed_surface",
+      "mixed_contact_families_moving_surface",
+      Eigen::Vector3d(0.0, -8.0, 0.0),
+      0.01,
+      200.0);
 }
 
 void enableAvbdSelfContactFrictionRows(dart::simulation::World& world)
@@ -3527,6 +3565,9 @@ TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
       "deformables",
       configureMixedMatrixFreeStaticObstacleAndDirectSelfContactProductionScene);
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "mixed default contact-family production deformables",
+      configureMixedDefaultContactFamiliesProductionScene);
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "deformable moving rigid surface CCD crossing",
       configureDeformableMovingRigidSurfaceCcdCrossingScene);
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
@@ -4172,6 +4213,33 @@ TEST(
   EXPECT_GT(diagnostics.frictionDissipation, 0.0);
 }
 
+TEST(World, MixedDefaultContactFamiliesProductionSceneIsActive)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  configureMixedDefaultContactFamiliesProductionScene(world);
+  auto movingSurface
+      = world.getDeformableBody("mixed_contact_families_moving_surface");
+  ASSERT_TRUE(movingSurface.has_value());
+  world.enterSimulationMode();
+
+  world.step();
+
+  const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
+  EXPECT_EQ(diagnostics.bodyCount, 4u);
+  EXPECT_EQ(
+      diagnostics.nodeCount, 3u * 5u * 5u + 2u * 9u * 13u + 2u * 9u * 13u);
+  EXPECT_GT(diagnostics.projectedNewtonSteps, 0u);
+  EXPECT_GT(diagnostics.projectedNewtonMatrixFreeSolves, 0u);
+  EXPECT_GT(diagnostics.projectedNewtonHessianNonZeros, 0u);
+  EXPECT_GT(diagnostics.selfContactBarrierActiveContacts, 0u);
+  EXPECT_GT(diagnostics.convergedActiveContactCount, 0u);
+  EXPECT_GT(diagnostics.frictionDissipation, 0.0);
+  EXPECT_GT(movingSurface->getPosition(0).x(), -1.0);
+  EXPECT_LT(movingSurface->getPosition(0).x(), 0.0);
+}
+
 TEST(World, DeformableMovingRigidSurfaceCcdCrossingIsActive)
 {
   namespace sx = dart::simulation;
@@ -4744,6 +4812,9 @@ TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
       "mixed matrix-free static obstacle and direct self-contact production "
       "deformables",
       configureMixedMatrixFreeStaticObstacleAndDirectSelfContactProductionScene);
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "mixed default contact-family production deformables",
+      configureMixedDefaultContactFamiliesProductionScene);
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "deformable inter-body surface CCD crossing",
       configureDeformableInterBodySurfaceCcdCrossingScene);

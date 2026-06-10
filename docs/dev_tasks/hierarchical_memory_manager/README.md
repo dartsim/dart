@@ -416,7 +416,10 @@
       matrix-free default projected Newton, plus a mixed static-obstacle and
       self-contact production scene and the complementary matrix-free
       static-obstacle plus direct irregular self-contact scene that exercise
-      both scratch families under one World memory root.
+      both scratch families under one World memory root. A further mixed
+      default-solver contact-family production scene now combines direct static
+      obstacle friction, matrix-free self-contact friction, and inter-body
+      surface CCD under one baked World root.
       The base and global-heap guards now also include default moving
       rigid-surface CCD swept-box crossings for free, single-kinematic, and
       multi-kinematic rigid obstacles, closing the previously static-only rigid
@@ -687,6 +690,9 @@ debugging, profiling, optimization experiments, and ImGui visualization.
    combines sparse static-obstacle friction and matrix-free self-contact bodies
    under one baked World root; the complementary matrix-free static-obstacle
    plus direct irregular self-contact scene covers the opposite solver pairing.
+   A mixed default contact-family production scene now combines direct static
+   obstacle friction, matrix-free self-contact friction, and inter-body surface
+   CCD under the same baked World root.
    The AVBD self-contact row guard now also covers 5x9 and 9x13 rectangular
    grid row workloads with replay-backed activity assertions.
    Continue broadening boxed-LCP unified problem assembly only for newly

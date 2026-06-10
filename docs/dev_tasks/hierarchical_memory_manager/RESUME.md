@@ -45,7 +45,11 @@ root. The current continuation closes the stronger compliant-contact global
 heap gap for the single-prismatic World-surface path by evaluating
 ground-contact force through baked solver scratch and the existing scalar
 single-prismatic fast path; the baked multi-slider compliant contact row now
-passes the monolithic global-heap gate.
+passes the monolithic global-heap gate. The next slice adds a mixed default
+contact-family production scene that combines direct static-obstacle friction,
+matrix-free self-contact friction, and inter-body surface CCD under one baked
+World root, with non-vacuous activity coverage plus World-base and global-heap
+no-growth gates.
 Continue from the current `README.md` Immediate Next Steps: broaden remaining
 boxed-LCP/contact and deformable production no-growth coverage, and move any
 newly exposed step-loop scratch to world-owned backed storage before making a
