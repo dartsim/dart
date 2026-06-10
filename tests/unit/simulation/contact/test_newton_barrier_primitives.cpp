@@ -33,19 +33,24 @@
 #include <dart/simulation/detail/deformable_contact/continuous_collision_step.hpp>
 #include <dart/simulation/detail/deformable_contact/primitive_distance.hpp>
 #include <dart/simulation/detail/deformable_contact/tangent_stencil.hpp>
+#include <dart/simulation/detail/newton_barrier/articulation_constraint.hpp>
 #include <dart/simulation/detail/newton_barrier/barrier_kernel.hpp>
 #include <dart/simulation/detail/newton_barrier/friction_kernel.hpp>
 #include <dart/simulation/detail/newton_barrier/line_search.hpp>
+#include <dart/simulation/detail/newton_barrier/mixed_domain_coupling.hpp>
 #include <dart/simulation/detail/newton_barrier/primitive_distance.hpp>
 #include <dart/simulation/detail/newton_barrier/projected_newton.hpp>
 #include <dart/simulation/detail/newton_barrier/psd_projection.hpp>
+#include <dart/simulation/detail/newton_barrier/restitution_damping.hpp>
 #include <dart/simulation/detail/newton_barrier/tangent_stencil.hpp>
 #include <dart/simulation/detail/rigid_ipc_barrier.hpp>
 
+#include <Eigen/Eigenvalues>
 #include <gtest/gtest.h>
 
 #include <limits>
 #include <type_traits>
+#include <vector>
 
 #include <cmath>
 
@@ -108,7 +113,656 @@ void expectScalarBarrierNear(
       1e-14);
 }
 
+//==============================================================================
+template <typename Derived>
+void expectSelfAdjointPsd(
+    const Eigen::MatrixBase<Derived>& matrix, const double tolerance = 1e-12)
+{
+  EXPECT_TRUE(matrix.isApprox(matrix.transpose(), tolerance));
+  const Eigen::SelfAdjointEigenSolver<typename Derived::PlainObject> solver(
+      matrix);
+  ASSERT_EQ(solver.info(), Eigen::Success);
+  EXPECT_GE(solver.eigenvalues().minCoeff(), -tolerance);
+}
+
+//==============================================================================
+template <int Outputs, int Inputs, typename Function>
+Eigen::Matrix<double, Outputs, Inputs> finiteDifferenceJacobian(
+    const Eigen::Matrix<double, Inputs, 1>& x,
+    Function&& function,
+    const double epsilon = 1e-6)
+{
+  Eigen::Matrix<double, Outputs, Inputs> jacobian;
+  for (int col = 0; col < Inputs; ++col) {
+    Eigen::Matrix<double, Inputs, 1> xPlus = x;
+    Eigen::Matrix<double, Inputs, 1> xMinus = x;
+    xPlus[col] += epsilon;
+    xMinus[col] -= epsilon;
+    jacobian.col(col) = (function(xPlus) - function(xMinus)) / (2.0 * epsilon);
+  }
+  return jacobian;
+}
+
 } // namespace
+
+//==============================================================================
+TEST(NewtonBarrierPrimitives, ArticulationPointConnectionAndFixedPoint)
+{
+  Eigen::Vector3d pointA(0.25, -0.1, 0.4);
+  Eigen::Vector3d pointB(-0.2, 0.3, 0.1);
+  const auto connection = nb::pointConnectionConstraint(pointA, pointB);
+  EXPECT_TRUE(connection.residual.isApprox(pointA - pointB, 1e-14));
+  EXPECT_NEAR(connection.squaredNorm, (pointA - pointB).squaredNorm(), 1e-14);
+
+  Eigen::Matrix<double, 6, 1> pairState;
+  pairState << pointA, pointB;
+  const auto numericalConnectionJacobian
+      = finiteDifferenceJacobian<3, 6>(pairState, [](const auto& x) {
+          return nb::pointConnectionConstraint(
+                     x.template head<3>(), x.template tail<3>())
+              .residual;
+        });
+  expectMatrixNear(connection.jacobian, numericalConnectionJacobian, 1e-10);
+
+  const Eigen::Vector3d target(0.0, -0.2, 0.5);
+  const auto fixed = nb::fixedPointConstraint(pointA, target);
+  EXPECT_TRUE(fixed.residual.isApprox(pointA - target, 1e-14));
+  EXPECT_NEAR(fixed.squaredNorm, (pointA - target).squaredNorm(), 1e-14);
+
+  const auto numericalFixedJacobian
+      = finiteDifferenceJacobian<3, 3>(pointA, [&](const auto& point) {
+          return nb::fixedPointConstraint(point, target).residual;
+        });
+  expectMatrixNear(fixed.jacobian, numericalFixedJacobian, 1e-10);
+}
+
+//==============================================================================
+TEST(NewtonBarrierPrimitives, ArticulationHingeAndConeTwist)
+{
+  const Eigen::Vector3d axisA = Eigen::Vector3d::UnitZ();
+  const Eigen::Vector3d axisB
+      = Eigen::AngleAxisd(0.25, Eigen::Vector3d::UnitY())
+        * Eigen::Vector3d::UnitZ();
+
+  const auto hinge = nb::hingeAxisConstraint(axisA, axisB);
+  EXPECT_TRUE(hinge.residual.isApprox(axisA.cross(axisB), 1e-14));
+  EXPECT_NEAR(hinge.squaredNorm, std::pow(std::sin(0.25), 2), 1e-14);
+
+  const auto aligned = nb::hingeAxisConstraint(axisA, 2.0 * axisA);
+  EXPECT_TRUE(aligned.residual.isZero(1e-14));
+  EXPECT_NEAR(aligned.squaredNorm, 0.0, 1e-14);
+
+  const double bend = 0.35;
+  const double twist = -0.45;
+  const Eigen::AngleAxisd bendRotation(bend, Eigen::Vector3d::UnitY());
+  const Eigen::AngleAxisd twistRotation(twist, axisA);
+  const Eigen::Vector3d referenceA = Eigen::Vector3d::UnitX();
+  const Eigen::Vector3d coneAxisB = bendRotation * axisA;
+  const Eigen::Vector3d referenceB = bendRotation * twistRotation * referenceA;
+
+  const auto cone
+      = nb::coneTwistCoordinates(axisA, referenceA, coneAxisB, referenceB);
+  EXPECT_NEAR(cone.bendAngle, bend, 1e-14);
+  EXPECT_NEAR(cone.twistAngle, twist, 1e-14);
+}
+
+//==============================================================================
+TEST(NewtonBarrierPrimitives, ArticulationSlidingAndRelativeSliding)
+{
+  const Eigen::Vector3d point(0.6, 0.25, -0.1);
+  const Eigen::Vector3d origin(0.1, -0.05, 0.2);
+  const Eigen::Vector3d axis = Eigen::Vector3d(1.0, 2.0, -1.0).normalized();
+  const Eigen::Matrix3d projector
+      = Eigen::Matrix3d::Identity() - axis * axis.transpose();
+
+  const auto sliding = nb::slidingConstraint(point, origin, axis);
+  EXPECT_TRUE(sliding.residual.isApprox(projector * (point - origin), 1e-14));
+  EXPECT_NEAR(sliding.coordinate, axis.dot(point - origin), 1e-14);
+  EXPECT_NEAR(sliding.squaredNorm, sliding.residual.squaredNorm(), 1e-14);
+
+  const auto numericalSlidingJacobian
+      = finiteDifferenceJacobian<3, 3>(point, [&](const auto& p) {
+          return nb::slidingConstraint(p, origin, axis).residual;
+        });
+  expectMatrixNear(sliding.jacobian, numericalSlidingJacobian, 1e-10);
+
+  const Eigen::Vector3d pointB(-0.2, 0.3, 0.5);
+  Eigen::Matrix<double, 6, 1> pairState;
+  pairState << point, pointB;
+  const auto relative = nb::relativeSlidingConstraint(point, pointB, axis);
+  EXPECT_TRUE(relative.residual.isApprox(projector * (point - pointB), 1e-14));
+  EXPECT_NEAR(relative.coordinate, axis.dot(point - pointB), 1e-14);
+  EXPECT_NEAR(relative.squaredNorm, relative.residual.squaredNorm(), 1e-14);
+
+  const auto numericalRelativeJacobian
+      = finiteDifferenceJacobian<3, 6>(pairState, [&](const auto& x) {
+          return nb::relativeSlidingConstraint(
+                     x.template head<3>(), x.template tail<3>(), axis)
+              .residual;
+        });
+  expectMatrixNear(relative.jacobian, numericalRelativeJacobian, 1e-10);
+}
+
+//==============================================================================
+TEST(NewtonBarrierPrimitives, ArticulationDistanceAndBoundedDistance)
+{
+  const Eigen::Vector3d pointA(0.35, -0.2, 0.45);
+  const Eigen::Vector3d pointB(-0.15, 0.1, 0.05);
+  const double targetDistance = 0.8;
+  const auto distance = nb::distanceConstraint(pointA, pointB, targetDistance);
+  EXPECT_NEAR(distance.distance, (pointA - pointB).norm(), 1e-14);
+  EXPECT_NEAR(distance.residual, distance.distance - targetDistance, 1e-14);
+
+  Eigen::Matrix<double, 6, 1> pairState;
+  pairState << pointA, pointB;
+  const auto numericalDistanceJacobian
+      = finiteDifferenceJacobian<1, 6>(pairState, [&](const auto& x) {
+          Eigen::Matrix<double, 1, 1> residual;
+          residual[0]
+              = nb::distanceConstraint(
+                    x.template head<3>(), x.template tail<3>(), targetDistance)
+                    .residual;
+          return residual;
+        });
+  expectMatrixNear(distance.jacobian, numericalDistanceJacobian, 1e-10);
+
+  const double lower = distance.distance - 0.05;
+  const double upper = distance.distance + 0.5;
+  const double activationDistance = 0.1;
+  const auto bounded = nb::boundedDistanceBarrier(
+      pointA, pointB, lower, upper, activationDistance, /*stiffness=*/2.0);
+  EXPECT_TRUE(nb::rangeBarrierFeasible(bounded.margins));
+  EXPECT_TRUE(bounded.active);
+  EXPECT_TRUE(bounded.value > 0.0);
+  EXPECT_NEAR(bounded.margins.lower, 0.05, 1e-14);
+  EXPECT_NEAR(bounded.margins.upper, 0.5, 1e-14);
+  expectSelfAdjointPsd(bounded.hessian);
+
+  const auto numericalBarrierGradient
+      = finiteDifferenceJacobian<1, 6>(pairState, [&](const auto& x) {
+          Eigen::Matrix<double, 1, 1> value;
+          value[0] = nb::boundedDistanceBarrier(
+                         x.template head<3>(),
+                         x.template tail<3>(),
+                         lower,
+                         upper,
+                         activationDistance,
+                         /*stiffness=*/2.0)
+                         .value;
+          return value;
+        });
+  expectMatrixNear(
+      bounded.gradient.transpose(), numericalBarrierGradient, 1e-8);
+
+  const auto infeasible = nb::boundedDistanceBarrier(
+      pointA,
+      pointB,
+      distance.distance + 0.1,
+      distance.distance + 0.5,
+      activationDistance);
+  EXPECT_FALSE(nb::rangeBarrierFeasible(infeasible.margins));
+  EXPECT_TRUE(infeasible.active);
+  EXPECT_TRUE(std::isfinite(infeasible.value));
+}
+
+//==============================================================================
+TEST(NewtonBarrierPrimitives, ArticulationSlidingRangeAndRotationRange)
+{
+  const Eigen::Vector3d point(0.4, -0.2, 0.15);
+  const Eigen::Vector3d origin(-0.1, 0.3, -0.05);
+  const Eigen::Vector3d axis = Eigen::Vector3d(2.0, -1.0, 1.0).normalized();
+  const double coordinate = axis.dot(point - origin);
+  const double lower = coordinate - 0.04;
+  const double upper = coordinate + 0.5;
+  const double activationDistance = 0.1;
+
+  const auto sliding = nb::slidingRangeBarrier(
+      point, origin, axis, lower, upper, activationDistance, /*stiffness=*/3.0);
+  EXPECT_TRUE(nb::rangeBarrierFeasible(sliding.margins));
+  EXPECT_TRUE(sliding.active);
+  EXPECT_NEAR(sliding.coordinate, coordinate, 1e-14);
+  EXPECT_NEAR(sliding.margins.lower, 0.04, 1e-14);
+  EXPECT_NEAR(sliding.margins.upper, 0.5, 1e-14);
+  expectSelfAdjointPsd(sliding.hessian);
+
+  const auto numericalSlidingRangeGradient
+      = finiteDifferenceJacobian<1, 3>(point, [&](const auto& p) {
+          Eigen::Matrix<double, 1, 1> value;
+          value[0] = nb::slidingRangeBarrier(
+                         p,
+                         origin,
+                         axis,
+                         lower,
+                         upper,
+                         activationDistance,
+                         /*stiffness=*/3.0)
+                         .value;
+          return value;
+        });
+  expectMatrixNear(
+      sliding.gradient.transpose(), numericalSlidingRangeGradient, 1e-8);
+
+  const double angle = 0.08;
+  const auto rotation = nb::rotationRangeBarrier(
+      angle, /*lower=*/0.0, /*upper=*/1.0, activationDistance, 2.0);
+  EXPECT_TRUE(nb::rangeBarrierFeasible(rotation.margins));
+  EXPECT_TRUE(rotation.active);
+  EXPECT_GE(rotation.secondDerivative, 0.0);
+
+  const auto numericalRotationDerivative = finiteDifferenceJacobian<1, 1>(
+      Eigen::Matrix<double, 1, 1>::Constant(angle), [&](const auto& x) {
+        Eigen::Matrix<double, 1, 1> value;
+        value[0] = nb::rotationRangeBarrier(
+                       x[0],
+                       /*lower=*/0.0,
+                       /*upper=*/1.0,
+                       activationDistance,
+                       2.0)
+                       .value;
+        return value;
+      });
+  EXPECT_NEAR(
+      rotation.firstDerivative, numericalRotationDerivative(0, 0), 1e-8);
+
+  const Eigen::Vector3d twistAxis = Eigen::Vector3d::UnitZ();
+  const Eigen::Vector3d referenceA = Eigen::Vector3d::UnitX();
+  const Eigen::Vector3d axisB = twistAxis;
+  const Eigen::Vector3d referenceB
+      = Eigen::AngleAxisd(angle, twistAxis) * referenceA;
+  const auto coneTwistRange = nb::coneTwistRotationRangeBarrier(
+      twistAxis,
+      referenceA,
+      axisB,
+      referenceB,
+      /*lower=*/0.0,
+      /*upper=*/1.0,
+      activationDistance,
+      2.0);
+  EXPECT_NEAR(coneTwistRange.angle, angle, 1e-14);
+  EXPECT_NEAR(coneTwistRange.value, rotation.value, 1e-14);
+}
+
+//==============================================================================
+TEST(NewtonBarrierPrimitives, ArticulationRangeBarrierHandlesTinyActivation)
+{
+  const double tiny = std::numeric_limits<double>::denorm_min();
+  const auto barrier = nb::scalarRangeBarrier(
+      /*coordinate=*/0.0,
+      /*lower=*/0.0,
+      /*upper=*/1.0,
+      /*activationDistance=*/tiny,
+      /*stiffness=*/1.0);
+
+  EXPECT_TRUE(barrier.activeLower);
+  EXPECT_TRUE(std::isfinite(barrier.value));
+  EXPECT_TRUE(std::isfinite(barrier.firstDerivative));
+  EXPECT_TRUE(std::isfinite(barrier.secondDerivative));
+}
+
+//==============================================================================
+TEST(NewtonBarrierPrimitives, RestitutionVelocityTargetActivatesOnApproach)
+{
+  const auto target
+      = nb::makeRestitutionVelocityTarget(/*approachVelocity=*/-2.0, 0.75);
+  EXPECT_TRUE(target.active);
+  EXPECT_DOUBLE_EQ(target.coefficient, 0.75);
+  EXPECT_DOUBLE_EQ(target.targetSeparatingVelocity, 1.5);
+
+  const auto clamped
+      = nb::makeRestitutionVelocityTarget(/*approachVelocity=*/-2.0, 3.0);
+  EXPECT_TRUE(clamped.active);
+  EXPECT_DOUBLE_EQ(clamped.coefficient, 1.0);
+  EXPECT_DOUBLE_EQ(clamped.targetSeparatingVelocity, 2.0);
+
+  EXPECT_FALSE(
+      nb::makeRestitutionVelocityTarget(/*approachVelocity=*/0.1, 0.75).active);
+  EXPECT_FALSE(
+      nb::makeRestitutionVelocityTarget(/*approachVelocity=*/-1e-4, 0.75)
+          .active);
+  EXPECT_FALSE(
+      nb::makeRestitutionVelocityTarget(
+          std::numeric_limits<double>::quiet_NaN(), 0.75)
+          .active);
+}
+
+//==============================================================================
+TEST(NewtonBarrierPrimitives, Bdf2HistoryRestartsThenSerializes)
+{
+  constexpr double timeStep = 0.1;
+  nb::Bdf2StepHistory<1> history;
+  history.currentPosition << 0.0;
+  history.currentVelocity << 2.0;
+
+  const auto restartTerm
+      = nb::makeBdf2InertialTerm(history, /*mass=*/3.0, timeStep);
+  ASSERT_TRUE(restartTerm.active);
+  EXPECT_TRUE(restartTerm.restarted);
+  EXPECT_EQ(restartTerm.order, 1);
+  EXPECT_NEAR(restartTerm.scalarWeight, 300.0, 1e-12);
+  EXPECT_NEAR(restartTerm.targetPosition[0], 0.2, 1e-14);
+
+  Eigen::Matrix<double, 1, 1> acceptedPosition;
+  acceptedPosition << 0.25;
+  const auto restartVelocity
+      = nb::makeBdf2VelocityUpdate(history, acceptedPosition, timeStep);
+  ASSERT_TRUE(restartVelocity.active);
+  EXPECT_TRUE(restartVelocity.restarted);
+  EXPECT_EQ(restartVelocity.order, 1);
+  EXPECT_NEAR(restartVelocity.velocity[0], 2.5, 1e-14);
+
+  const auto advanced = nb::advanceBdf2History(
+      history, acceptedPosition, restartVelocity.velocity);
+  EXPECT_TRUE(advanced.hasPreviousPosition);
+  EXPECT_NEAR(advanced.previousPosition[0], 0.0, 1e-14);
+  EXPECT_NEAR(advanced.currentPosition[0], 0.25, 1e-14);
+
+  const auto serialized = advanced;
+  const auto bdf2Term
+      = nb::makeBdf2InertialTerm(serialized, /*mass=*/3.0, timeStep);
+  ASSERT_TRUE(bdf2Term.active);
+  EXPECT_FALSE(bdf2Term.restarted);
+  EXPECT_EQ(bdf2Term.order, 2);
+  EXPECT_NEAR(bdf2Term.scalarWeight, 675.0, 1e-12);
+  EXPECT_NEAR(bdf2Term.targetPosition[0], 1.0 / 3.0, 1e-14);
+
+  Eigen::Matrix<double, 1, 1> offsetCandidate;
+  offsetCandidate << bdf2Term.targetPosition[0] + 0.2;
+  EXPECT_NEAR(
+      nb::evaluateInertialEnergy(bdf2Term, offsetCandidate),
+      0.5 * 675.0 * 0.04,
+      1e-12);
+}
+
+//==============================================================================
+TEST(NewtonBarrierPrimitives, Bdf2VelocityImprovesQuadraticSample)
+{
+  constexpr double timeStep = 0.01;
+  nb::Bdf2StepHistory<1> history;
+  history.hasPreviousPosition = true;
+  history.previousPosition << 0.0;
+  history.currentPosition << timeStep * timeStep;
+  history.currentVelocity << 2.0 * timeStep;
+
+  Eigen::Matrix<double, 1, 1> acceptedPosition;
+  acceptedPosition << 4.0 * timeStep * timeStep;
+
+  const auto bdf2
+      = nb::makeBdf2VelocityUpdate(history, acceptedPosition, timeStep);
+  ASSERT_TRUE(bdf2.active);
+  EXPECT_EQ(bdf2.order, 2);
+
+  history.hasPreviousPosition = false;
+  const auto backwardEuler
+      = nb::makeBdf2VelocityUpdate(history, acceptedPosition, timeStep);
+  ASSERT_TRUE(backwardEuler.active);
+  EXPECT_EQ(backwardEuler.order, 1);
+
+  const double exactVelocityAtAcceptedTime = 4.0 * timeStep;
+  EXPECT_NEAR(bdf2.velocity[0], exactVelocityAtAcceptedTime, 1e-14);
+  EXPECT_LT(
+      std::abs(bdf2.velocity[0] - exactVelocityAtAcceptedTime),
+      std::abs(backwardEuler.velocity[0] - exactVelocityAtAcceptedTime));
+}
+
+//==============================================================================
+TEST(NewtonBarrierPrimitives, FallingBoxEnergyDiagnosticSweepsAreMonotone)
+{
+  nb::FallingBoxEnergyDiagnosticOptions base;
+  base.height = 0.25;
+  base.velocity = -1.5;
+  base.clearance = 0.004;
+  base.activationDistance = 0.01;
+  base.barrierStiffness = 2.0;
+  base.compression = 0.002;
+
+  for (const double timeStep : {0.1, 0.01, 0.001, 0.0001}) {
+    auto options = base;
+    options.timeStep = timeStep;
+    const auto sample = nb::makeFallingBoxEnergyDiagnostic(options);
+    EXPECT_TRUE(sample.active);
+    EXPECT_TRUE(sample.barrierActive);
+    EXPECT_TRUE(std::isfinite(sample.totalEnergy));
+  }
+
+  auto soft = base;
+  soft.youngModulus = 1e5;
+  auto stiff = base;
+  stiff.youngModulus = 1e8;
+  EXPECT_LT(
+      nb::makeFallingBoxEnergyDiagnostic(soft).elasticEnergy,
+      nb::makeFallingBoxEnergyDiagnostic(stiff).elasticEnergy);
+
+  auto lowKappa = base;
+  lowKappa.barrierStiffness = 1.0;
+  auto highKappa = base;
+  highKappa.barrierStiffness = 10.0;
+  EXPECT_LT(
+      nb::makeFallingBoxEnergyDiagnostic(lowKappa).barrierEnergy,
+      nb::makeFallingBoxEnergyDiagnostic(highKappa).barrierEnergy);
+
+  auto narrowActivation = base;
+  narrowActivation.activationDistance = 0.006;
+  auto wideActivation = base;
+  wideActivation.activationDistance = 0.02;
+  EXPECT_LT(
+      nb::makeFallingBoxEnergyDiagnostic(narrowActivation).barrierEnergy,
+      nb::makeFallingBoxEnergyDiagnostic(wideActivation).barrierEnergy);
+
+  auto lowGravity = base;
+  lowGravity.gravity = 1.0;
+  auto highGravity = base;
+  highGravity.gravity = 8.0;
+  EXPECT_LT(
+      nb::makeFallingBoxEnergyDiagnostic(lowGravity).gravitationalEnergy,
+      nb::makeFallingBoxEnergyDiagnostic(highGravity).gravitationalEnergy);
+
+  base.timeStep = -0.01;
+  EXPECT_FALSE(nb::makeFallingBoxEnergyDiagnostic(base).active);
+}
+
+//==============================================================================
+TEST(NewtonBarrierPrimitives, RayleighDampingProjectsHessianAndDissipates)
+{
+  Eigen::Vector2d displacement;
+  displacement << 0.2, -0.4;
+  Eigen::Matrix2d indefinite;
+  indefinite << 2.0, 0.5, 0.5, -1.0;
+
+  const auto contactDamping = nb::makeSemiImplicitRayleighDampingTerm<2>(
+      displacement, indefinite, /*coefficient=*/0.25, /*timeStep=*/0.01);
+  ASSERT_TRUE(contactDamping.active);
+  EXPECT_NEAR(contactDamping.scale, 25.0, 1e-14);
+  expectSelfAdjointPsd(contactDamping.hessian);
+  EXPECT_GE(contactDamping.energy, 0.0);
+  EXPECT_LE(contactDamping.generalizedForce.dot(displacement), 1e-14);
+  expectMatrixNear(
+      contactDamping.gradient, -contactDamping.generalizedForce, 1e-14);
+
+  Eigen::Matrix<double, 1, 1> hingeDisplacement;
+  hingeDisplacement << 0.15;
+  Eigen::Matrix<double, 1, 1> hingeHessian;
+  hingeHessian << 12.0;
+
+  const auto lowHingeDamping = nb::makeSemiImplicitRayleighDampingTerm<1>(
+      hingeDisplacement,
+      hingeHessian,
+      /*coefficient=*/0.05,
+      /*timeStep=*/0.01);
+  const auto highHingeDamping = nb::makeSemiImplicitRayleighDampingTerm<1>(
+      hingeDisplacement,
+      hingeHessian,
+      /*coefficient=*/0.5,
+      /*timeStep=*/0.01);
+  ASSERT_TRUE(lowHingeDamping.active);
+  ASSERT_TRUE(highHingeDamping.active);
+  EXPECT_LT(lowHingeDamping.energy, highHingeDamping.energy);
+  EXPECT_LT(highHingeDamping.generalizedForce[0], 0.0);
+
+  EXPECT_FALSE(
+      nb::makeSemiImplicitRayleighDampingTerm<2>(
+          displacement, indefinite, /*coefficient=*/0.0, /*timeStep=*/0.01)
+          .active);
+}
+
+//==============================================================================
+TEST(NewtonBarrierPrimitives, MixedDomainOracleOwnersPreserveVariantRows)
+{
+  EXPECT_EQ(
+      nb::mixedDomainOracleOwner(
+          nb::MixedDomainType::Rigid, nb::MixedDomainType::Rigid),
+      nb::MixedDomainOracleOwner::RigidIpc);
+  EXPECT_EQ(
+      nb::mixedDomainOracleOwner(
+          nb::MixedDomainType::Deformable, nb::MixedDomainType::Deformable),
+      nb::MixedDomainOracleOwner::DeformableIpc);
+  EXPECT_EQ(
+      nb::mixedDomainOracleOwner(
+          nb::MixedDomainType::Affine, nb::MixedDomainType::Affine),
+      nb::MixedDomainOracleOwner::AffineBodyDynamics);
+  EXPECT_EQ(
+      nb::mixedDomainOracleOwner(
+          nb::MixedDomainType::Rod, nb::MixedDomainType::Rod),
+      nb::MixedDomainOracleOwner::DeformableIpc);
+  EXPECT_EQ(
+      nb::mixedDomainOracleOwner(
+          nb::MixedDomainType::Shell, nb::MixedDomainType::Codimensional),
+      nb::MixedDomainOracleOwner::MixedNewtonBarrier);
+  EXPECT_EQ(
+      nb::mixedDomainOracleOwner(
+          nb::MixedDomainType::Rigid, nb::MixedDomainType::Affine),
+      nb::MixedDomainOracleOwner::MixedNewtonBarrier);
+}
+
+//==============================================================================
+TEST(NewtonBarrierPrimitives, MixedDomainSurfacesCoverAllAdapters)
+{
+  std::vector<nb::MixedDomainSurface> surfaces;
+  const std::vector<nb::MixedDomainType> domains{
+      nb::MixedDomainType::Rigid,
+      nb::MixedDomainType::Deformable,
+      nb::MixedDomainType::Affine,
+      nb::MixedDomainType::Particle,
+      nb::MixedDomainType::Rod,
+      nb::MixedDomainType::Shell,
+      nb::MixedDomainType::Codimensional};
+  for (std::size_t i = 0; i < domains.size(); ++i) {
+    surfaces.push_back(
+        nb::makeMixedDomainSurface(
+            domains[i],
+            i,
+            {Eigen::Vector3d(0.001 * static_cast<double>(i), 0.0, 0.0)}));
+  }
+
+  nb::MixedDomainCandidateOptions options;
+  options.activationDistance = 0.1;
+  options.exactDistanceFilter = false;
+  options.includePointEdge = false;
+  options.includeEdgeEdge = false;
+  options.includePointTriangle = false;
+  const auto candidates
+      = nb::buildMixedDomainContactCandidates(surfaces, options);
+
+  EXPECT_EQ(candidates.stats.surfaceCount, domains.size());
+  EXPECT_EQ(candidates.stats.activeSurfaceCount, domains.size());
+  EXPECT_EQ(candidates.stats.dynamicSurfaceCount, domains.size());
+  for (std::size_t i = 0; i < domains.size(); ++i) {
+    EXPECT_EQ(candidates.stats.domainCounts[i], 1u);
+  }
+  EXPECT_EQ(candidates.candidates.size(), 21u);
+
+  const auto restartSurfaces = surfaces;
+  const auto restartCandidates
+      = nb::buildMixedDomainContactCandidates(restartSurfaces, options);
+  EXPECT_EQ(
+      nb::mixedDomainCandidateKeys(candidates),
+      nb::mixedDomainCandidateKeys(restartCandidates));
+}
+
+//==============================================================================
+TEST(NewtonBarrierPrimitives, MixedDomainCandidatesCoverPrimitiveFamilies)
+{
+  auto rigid = nb::makeMixedDomainSurface(
+      nb::MixedDomainType::Rigid,
+      0,
+      {Eigen::Vector3d(0.0, 0.0, 0.0),
+       Eigen::Vector3d(1.0, 0.0, 0.0),
+       Eigen::Vector3d(0.0, 1.0, 0.0)},
+      {Eigen::Vector3i(0, 1, 2)});
+  rigid.frictionCoefficient = 0.4;
+
+  auto deformable = nb::makeMixedDomainSurface(
+      nb::MixedDomainType::Deformable,
+      0,
+      {Eigen::Vector3d(0.05, 0.05, 0.02),
+       Eigen::Vector3d(0.75, 0.05, 0.02),
+       Eigen::Vector3d(0.05, 0.75, 0.02)},
+      {Eigen::Vector3i(0, 1, 2)});
+  deformable.frictionCoefficient = 0.7;
+
+  const std::vector<nb::MixedDomainSurface> surfaces{rigid, deformable};
+  nb::MixedDomainCandidateOptions options;
+  options.activationDistance = 1.0;
+  const auto candidates
+      = nb::buildMixedDomainContactCandidates(surfaces, options);
+
+  EXPECT_EQ(candidates.stats.domainCounts[0], 1u);
+  EXPECT_EQ(candidates.stats.domainCounts[1], 1u);
+  EXPECT_EQ(candidates.stats.broadPhasePairCount, 1u);
+  EXPECT_GT(candidates.stats.pointPointCandidateCount, 0u);
+  EXPECT_GT(candidates.stats.pointEdgeCandidateCount, 0u);
+  EXPECT_GT(candidates.stats.edgeEdgeCandidateCount, 0u);
+  EXPECT_GT(candidates.stats.pointTriangleCandidateCount, 0u);
+
+  const auto diagnostics = nb::evaluateMixedDomainBarrierDiagnostics(
+      surfaces, candidates, 1.0, 2.0);
+  EXPECT_TRUE(diagnostics.finite);
+  EXPECT_EQ(diagnostics.candidateCount, candidates.candidates.size());
+  EXPECT_GT(diagnostics.activeBarrierCount, 0u);
+  EXPECT_GT(diagnostics.value, 0.0);
+  EXPECT_NEAR(diagnostics.maxFrictionCoefficient, 0.7, 1e-14);
+  EXPECT_TRUE(std::isfinite(diagnostics.minSquaredDistance));
+}
+
+//==============================================================================
+TEST(NewtonBarrierPrimitives, MixedDomainPointCcdProducesDeterministicRestart)
+{
+  auto particleA = nb::makeMixedDomainSurface(
+      nb::MixedDomainType::Particle, 0, {Eigen::Vector3d(-0.5, 0.0, 0.0)});
+  nb::setMixedDomainEndVertices(particleA, {Eigen::Vector3d(0.5, 0.0, 0.0)});
+
+  auto particleB = nb::makeMixedDomainSurface(
+      nb::MixedDomainType::Particle, 1, {Eigen::Vector3d(0.5, 0.0, 0.0)});
+  nb::setMixedDomainEndVertices(particleB, {Eigen::Vector3d(-0.5, 0.0, 0.0)});
+
+  const std::vector<nb::MixedDomainSurface> surfaces{particleA, particleB};
+  nb::MixedDomainCandidateOptions candidateOptions;
+  candidateOptions.activationDistance = 2.0;
+  candidateOptions.includePointEdge = false;
+  candidateOptions.includeEdgeEdge = false;
+  candidateOptions.includePointTriangle = false;
+  const auto candidates
+      = nb::buildMixedDomainContactCandidates(surfaces, candidateOptions);
+  ASSERT_EQ(candidates.candidates.size(), 1u);
+
+  nb::LineSearchOptions lineSearch;
+  lineSearch.minSeparation = 0.1;
+  const auto ccd
+      = nb::mixedDomainPointPointLinearCcd(surfaces, candidates, lineSearch);
+  EXPECT_TRUE(ccd.limited);
+  EXPECT_TRUE(ccd.allowsPositiveStep());
+  EXPECT_NEAR(ccd.stepBound, 0.45, 1e-14);
+  EXPECT_EQ(ccd.stats.pointPointChecks, 1u);
+  EXPECT_EQ(ccd.stats.hits, 1u);
+
+  const auto restartCandidates
+      = nb::buildMixedDomainContactCandidates(surfaces, candidateOptions);
+  const auto restartCcd = nb::mixedDomainPointPointLinearCcd(
+      surfaces, restartCandidates, lineSearch);
+  EXPECT_EQ(
+      nb::mixedDomainCandidateKeys(candidates),
+      nb::mixedDomainCandidateKeys(restartCandidates));
+  EXPECT_DOUBLE_EQ(ccd.stepBound, restartCcd.stepBound);
+}
 
 //==============================================================================
 TEST(NewtonBarrierPrimitives, DeformableContactHeadersForwardSharedTypes)

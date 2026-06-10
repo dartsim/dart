@@ -62,8 +62,8 @@ The post-MVP **workbench completion** brought `dartsim` to feature parity. The
 durable UI architecture decision it established: every panel and menu drives the
 engine through tested, backend-hidden view-model **action seams** under
 `dartsim/ui/include/dartsim_ui/*_actions.hpp` (project, history, outliner,
-inspector, palette, relationship, simulation, console, watch, viewport), each
-with its own `UNIT_dartsim_ui_*Actions` target, rather than anonymous
+inspector, memory, palette, relationship, simulation, console, watch, viewport),
+each with its own `UNIT_dartsim_ui_*Actions` target, rather than anonymous
 `editor.cpp` lambdas. New editor behavior is added as an action/view-model seam
 first and then wired into `editor.cpp` as a thin view. The completed surface
 covers project lifecycle (native picker plus in-app browser/manual-path
@@ -75,9 +75,11 @@ restart and first/prev/next/last replay navigation, a Watch panel with persisted
 named presets, editor-owned camera/range/contact sensor and collision
 descriptors, viewport camera presets/modes/lock with selection tracking,
 view-only layer filters, and a single/four-view layout with per-pane camera
-memory and all-pane fit/focus. Console automation drives the same seams. The
-filtered `dartsim/engine/*` plus testable `dartsim/ui/*_actions` surface is held
-at ≥95% line coverage, measured by `pixi run coverage-report-dartsim`.
+memory and all-pane fit/focus. The Memory panel exposes DART 7 World allocator,
+frame-scratch, and ECS storage diagnostics through the same seam pattern.
+Console automation drives the same seams. The filtered `dartsim/engine/*` plus
+testable `dartsim/ui/*_actions` surface is held at ≥95% line coverage, measured
+by `pixi run coverage-report-dartsim`.
 
 The native file picker is the only OS/windowing dependency in `dartsim/ui`
 (`project_file_dialog.cpp`, nativefiledialog-extended). It crosses the

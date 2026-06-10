@@ -98,6 +98,69 @@ work diagnostics, and benchmark packet timing schema helpers are shared under
 their internal owners with focused cross-variant tests. This completes the
 Shared Solver Contracts phase; do not open more sub-item PRs for this phase.
 
+The implementation-roadmap Phase 3 closeout is now branch-local on
+`simx/plan083-phase3-articulation-constraints`:
+`detail/newton_barrier/articulation_constraint.hpp` owns internal
+point-connection, fixed-point, hinge-axis, cone-twist, sliding,
+relative-sliding, distance, bounded-distance, sliding-range, and
+rotation-range contracts. Focused `test_newton_barrier_primitives` coverage
+checks residuals, finite-difference Jacobians/gradients, range feasibility, and
+PSD Hessian approximations. Keep this as one phase-scoped PR targeting `main`.
+
+The implementation-roadmap Phase 4 closeout is now branch-local on
+`simx/plan083-phase4-restitution-bdf2`:
+`detail/newton_barrier/restitution_damping.hpp` owns internal restitution
+target, BDF-2 history/inertial/velocity-update, falling-box energy diagnostic,
+and semi-implicit Rayleigh damping contracts. Focused
+`test_newton_barrier_primitives` coverage checks restart/serialization,
+BDF-2 velocity accuracy, timestep/Young's-modulus/barrier/gravity diagnostic
+sweeps, PSD-projected damping, and hinge damping evidence. Existing rigid
+stepping defaults remain unchanged.
+
+The implementation-roadmap Phase 5 closeout is now branch-local on
+`simx/plan083-phase5-mixed-domain-coupling`:
+`detail/newton_barrier/mixed_domain_coupling.hpp` owns internal mixed-domain
+surface adapters, deterministic primitive candidate generation, point-pair CCD
+reduction, barrier/friction diagnostics, oracle-owner routing, and restart
+candidate keys for rigid, deformable, affine, particle, rod, shell, and
+codimensional domains. Focused `test_newton_barrier_primitives` coverage checks
+all domain adapters, primitive-family candidates, finite barrier energy,
+friction diagnostics, variant-owner preservation, conservative point CCD, and
+deterministic restart keys. Runtime coupler promotion, py-demos, and GPU
+packets remain future phases.
+
+The implementation-roadmap Phase 6 closeout is now branch-local on
+`simx/plan083-phase6-cpu-scenes-pydemos`: the py-demo catalog exposes
+launchable planned PLAN-083 CPU corpus placeholders for mixed, constraint,
+robot, and ABD categories, and
+`docs/plans/083-unified-newton-barrier-multibody/cpu-scene-corpus.json` records
+each paper/deck scene row's smoke command, long-horizon capture command,
+benchmark/profile packet path, expected invariant, and current limitation.
+`scripts/check_plan083_cpu_scene_corpus.py` plus focused Python tests guard that
+the row map stays explicit without claiming runtime paper-scene reproduction.
+
+The implementation-roadmap Phase 7 closeout is now branch-local on
+`simx/plan083-phase7-gpu-parity`:
+`docs/plans/083-unified-newton-barrier-multibody/gpu-parity-packet.json`
+records the private GPU parity packet rows for contact stencils/candidate
+filtering, CCD/line search, barrier/friction local kernels, PSD projection,
+assembly/linear solve, and scene-level parity/speedup. The checked packet keeps
+same-scene parity, tolerance, setup/transfer/readback timing, kernel/solve
+timing, speedup, and no-public-API policies explicit while leaving rows without
+landed kernels as planned/in-progress limitations instead of GPU speed claims.
+Local validation on the Phase 7 branch passed the packet checker, focused
+packet tests, `pixi run lint`, `pixi run build`, and
+`pixi run -e cuda test-cuda` on the visible RTX 4080 Laptop GPU.
+
+The implementation-roadmap Phase 8 audit is now branch-local on
+`simx/plan083-phase8-completion-audit`:
+`docs/plans/083-unified-newton-barrier-multibody/completion-audit.md` records
+that PLAN-083 is not complete because planned manifest, CPU scene corpus, and
+GPU parity packet rows remain. The audit intentionally blocks retiring
+`docs/dev_tasks/unified_newton_barrier_multibody/` until a maintainer decides
+whether the remaining work stays active there or moves fully into durable plan
+sidecars.
+
 ## Last Session Summary
 
 Current slice: the first ABD benchmark packet has been promoted from
@@ -178,19 +241,15 @@ build/CTest entries.
 
 ## Current Branch
 
-`simx/plan083-phase-2-shared-solver-contracts` - contains the
-implementation-roadmap Phase 2 shared solver contract closeout. It should become
-one phase-scoped PR after merging the latest `origin/main` and rerunning the
-required gates.
+`simx/plan083-phase8-completion-audit` - contains the implementation-roadmap
+Phase 8 completion audit. It is open as PR #2960 targeting
+`simx/plan083-phase7-gpu-parity`.
 
 ## Immediate Next Step
 
-Merge the latest `origin/main` into
-`simx/plan083-phase-2-shared-solver-contracts`, rerun lint and the focused Phase
-2 validation gates, then open one phase-scoped PR for implementation-roadmap
-Phase 2. After that PR lands, start implementation-roadmap Phase 3: Unified
-Articulation Constraints. Do not start dev-task Phase 4 manifest expansion as a
-substitute for the roadmap Phase 3 articulation work.
+Monitor the phase-scoped PR stack through #2960 and get maintainer direction
+before deleting the temporary dev-task folder because PLAN-083 acceptance
+criteria are still unmet.
 
 ## Context That Would Be Lost
 
@@ -220,6 +279,25 @@ substitute for the roadmap Phase 3 articulation work.
   option adapter, and the step-scale helpers. Do not move full line-search
   result structs there until rigid, deformable, ABD, or another variant prove
   identical result semantics.
+- `detail/newton_barrier/restitution_damping.hpp` owns the first internal
+  Phase 4 contracts for restitution targets, BDF-2 history and velocity
+  updates, falling-box diagnostic sweeps, and PSD-projected Rayleigh damping.
+  Do not wire it into runtime defaults until a separate promotion gate proves
+  full solver parity.
+- `detail/newton_barrier/mixed_domain_coupling.hpp` owns the first internal
+  Phase 5 mixed-domain seam for shared surface adapters, primitive candidate
+  keys, point-pair CCD reduction, and diagnostic ownership routing. Do not
+  replace variant-local runtime contact buffers until scene-level mixed-domain
+  stepping tests and py-demo evidence land.
+- `docs/plans/083-unified-newton-barrier-multibody/cpu-scene-corpus.json` owns
+  the Phase 6 row map for py-demo placeholders, smoke commands, long-horizon
+  visual capture commands, benchmark/profile packet paths, invariants, and
+  limitations. The placeholders are launchable catalog entries, not runtime
+  paper-scene reproductions.
+- `docs/plans/083-unified-newton-barrier-multibody/gpu-parity-packet.json` owns
+  the Phase 7 private GPU row map. Its checked rows are evidence contracts for
+  same-scene parity, timing, tolerance, speedup, and no-public-API policy; they
+  are not GPU kernel or public backend promotion claims.
 - `scripts/benchmark_packet_utils.py` owns the shared Google Benchmark row
   parsing utilities plus the per-step/subphase timing schema for packet
   validators and writers. Keep packet-specific metadata and go/no-go gates in
@@ -252,11 +330,13 @@ substitute for the roadmap Phase 3 articulation work.
 ```bash
 git status --short --branch
 sed -n '1,220p' docs/dev_tasks/unified_newton_barrier_multibody/README.md
-sed -n '1,220p' docs/plans/083-unified-newton-barrier-multibody/abd-first-slice-design.md
+sed -n '1,220p' docs/plans/083-unified-newton-barrier-multibody/implementation-roadmap.md
+pixi run python scripts/check_plan083_cpu_scene_corpus.py
+pixi run python scripts/check_plan083_gpu_parity_packet.py
 ```
 
-Then merge the latest `origin/main`, verify the current branch with lint and
-the focused Phase 2 simulation/Python tests, and open one PR for the whole
-implementation-roadmap Phase 2. After that PR lands, continue with roadmap Phase
-3 articulation constraints; do not describe the micro-packet as a runtime ABD
-solver or a paper-scale performance row.
+Then merge the latest Phase 6 base branch, verify the Phase 7 branch with lint
+and the focused GPU packet tests, and open one PR for the whole
+implementation-roadmap Phase 7. After that PR is open, continue immediately with
+roadmap Phase 8 from the Phase 7 branch head; do not describe planned GPU rows
+as speed claims or public backend promotion.

@@ -255,6 +255,8 @@ struct DeformableSolverScratch
   std::vector<Eigen::Vector3d> externalAccelerations;
   std::vector<std::uint8_t> activeFixed;
   std::vector<std::uint8_t> activeDirichlet;
+  std::vector<std::uint8_t> countedDirichlet;
+  std::vector<std::uint8_t> countedNeumann;
 };
 
 void registerDeformableBodySerializers(

@@ -50,12 +50,22 @@ class DART_API PoolAllocator : public MemoryAllocator
 public:
   using Debug = MemoryAllocatorDebugger<PoolAllocator>;
 
+  enum class DiagnosticsPolicy
+  {
+    Enabled,
+    Disabled,
+  };
+
   /// Constructor
   ///
   /// @param[in] baseAllocator: (optional) Base memory allocator.
-  /// @param[in] initialAllocation: (optional) Bytes to initially allocate.
+  /// @param[in] diagnosticsPolicy: Whether to update live/peak counters on
+  /// the hot allocation path.
   explicit PoolAllocator(
-      MemoryAllocator& baseAllocator = MemoryAllocator::GetDefault());
+      MemoryAllocator& baseAllocator = MemoryAllocator::GetDefault(),
+      DiagnosticsPolicy diagnosticsPolicy = DiagnosticsPolicy::Enabled);
+
+  explicit PoolAllocator(DiagnosticsPolicy diagnosticsPolicy);
 
   /// Destructor
   ~PoolAllocator() override;
@@ -82,6 +92,117 @@ public:
   /// Returns the number of currently live allocations from this allocator.
   [[nodiscard]] size_t getAllocationCount() const;
 
+  /// Returns whether live/peak counters are updated on the hot path.
+  [[nodiscard]] bool isDiagnosticsEnabled() const;
+
+  /// Allocates without updating diagnostic counters.
+  ///
+  /// This is intended for release hot paths that deliberately own diagnostics
+  /// at a higher level.
+  [[nodiscard]] inline void* allocateUntracked(size_t bytes) noexcept
+  {
+    if (bytes == 0) [[unlikely]] {
+      return nullptr;
+    }
+
+    if (bytes > MAX_POOL_REQUEST_SIZE) [[unlikely]] {
+      if (defaultUnitSize(bytes) == 0) {
+        return nullptr;
+      }
+      return mBaseAllocator.allocate(bytes);
+    }
+
+    const int heapIndex = heapIndexForDefaultBytes(bytes);
+
+    if (MemoryUnit* unit = mFreeMemoryUnits[heapIndex]) [[likely]] {
+      mFreeMemoryUnits[heapIndex] = unit->mNext;
+      return unit;
+    }
+
+    return allocateSlow(heapIndex);
+  }
+
+  /// Allocates aligned storage without updating diagnostic counters.
+  [[nodiscard]] inline void* allocateUntracked(
+      size_t bytes, size_t alignment) noexcept
+  {
+    if (!isPowerOfTwo(alignment)) [[unlikely]] {
+      return nullptr;
+    }
+
+    if (alignment <= alignof(MemoryUnit)) {
+      return allocateUntracked(bytes);
+    }
+
+    const size_t unitSize = effectiveUnitSize(bytes, alignment);
+    if (unitSize == 0) [[unlikely]] {
+      return nullptr;
+    }
+
+    if (unitSize > MAX_UNIT_SIZE) [[unlikely]] {
+      return mBaseAllocator.allocate(bytes, alignment);
+    }
+
+    const int heapIndex = heapIndexForUnitSize(unitSize);
+
+    if (MemoryUnit* unit = mFreeMemoryUnits[heapIndex]) [[likely]] {
+      mFreeMemoryUnits[heapIndex] = unit->mNext;
+      return unit;
+    }
+
+    return allocateSlow(heapIndex);
+  }
+
+  /// Deallocates without updating diagnostic counters.
+  inline void deallocateUntracked(void* pointer, size_t bytes) noexcept
+  {
+    if (pointer == nullptr || bytes == 0) [[unlikely]] {
+      return;
+    }
+
+    if (bytes > MAX_POOL_REQUEST_SIZE) [[unlikely]] {
+      if (defaultUnitSize(bytes) == 0) {
+        return;
+      }
+      mBaseAllocator.deallocate(pointer, bytes);
+      return;
+    }
+
+    const int heapIndex = heapIndexForDefaultBytes(bytes);
+    MemoryUnit* releasedUnit = static_cast<MemoryUnit*>(pointer);
+    releasedUnit->mNext = mFreeMemoryUnits[heapIndex];
+    mFreeMemoryUnits[heapIndex] = releasedUnit;
+  }
+
+  /// Deallocates aligned storage without updating diagnostic counters.
+  inline void deallocateUntracked(
+      void* pointer, size_t bytes, size_t alignment) noexcept
+  {
+    if (!isPowerOfTwo(alignment)) [[unlikely]] {
+      return;
+    }
+
+    if (alignment <= alignof(MemoryUnit)) {
+      deallocateUntracked(pointer, bytes);
+      return;
+    }
+
+    const size_t unitSize = effectiveUnitSize(bytes, alignment);
+    if (pointer == nullptr || unitSize == 0) [[unlikely]] {
+      return;
+    }
+
+    if (unitSize > MAX_UNIT_SIZE) [[unlikely]] {
+      mBaseAllocator.deallocate(pointer, bytes, alignment);
+      return;
+    }
+
+    const int heapIndex = heapIndexForUnitSize(unitSize);
+    MemoryUnit* releasedUnit = static_cast<MemoryUnit*>(pointer);
+    releasedUnit->mNext = mFreeMemoryUnits[heapIndex];
+    mFreeMemoryUnits[heapIndex] = releasedUnit;
+  }
+
   // PERF: These fast paths MUST stay inline. Moving them out-of-line causes
   // 2-5x regression from function-call overhead (benchmarked). Do NOT move
   // to .cpp — see tests/benchmark/common/bm_allocators.cpp.
@@ -89,66 +210,22 @@ public:
   // Documentation inherited
   [[nodiscard]] inline void* allocate(size_t bytes) noexcept override
   {
-    if (bytes == 0) [[unlikely]] {
-      return nullptr;
+    void* unit = allocateUntracked(bytes);
+    if (unit != nullptr) {
+      recordAllocationIfEnabled(bytes);
     }
-
-    if (bytes > MAX_UNIT_SIZE) [[unlikely]] {
-      if (defaultUnitSize(bytes) == 0) {
-        return nullptr;
-      }
-      void* pointer = mBaseAllocator.allocate(bytes);
-      if (pointer != nullptr) {
-        recordAllocation(bytes);
-      }
-      return pointer;
-    }
-
-    const int heapIndex = heapIndexForDefaultBytes(bytes);
-
-    if (MemoryUnit* unit = mFreeMemoryUnits[heapIndex]) [[likely]] {
-      mFreeMemoryUnits[heapIndex] = unit->mNext;
-      recordAllocation(bytes);
-      return unit;
-    }
-
-    void* pointer = allocateSlow(heapIndex);
-    if (pointer != nullptr) {
-      recordAllocation(bytes);
-    }
-    return pointer;
+    return unit;
   }
 
   // Documentation inherited
   [[nodiscard]] inline void* allocate(
       size_t bytes, size_t alignment) noexcept override
   {
-    const size_t unitSize = effectiveUnitSize(bytes, alignment);
-    if (unitSize == 0) [[unlikely]] {
-      return nullptr;
+    void* unit = allocateUntracked(bytes, alignment);
+    if (unit != nullptr) {
+      recordAllocationIfEnabled(bytes);
     }
-
-    if (unitSize > MAX_UNIT_SIZE) [[unlikely]] {
-      void* pointer = mBaseAllocator.allocate(bytes, alignment);
-      if (pointer != nullptr) {
-        recordAllocation(bytes);
-      }
-      return pointer;
-    }
-
-    const int heapIndex = heapIndexForUnitSize(unitSize);
-
-    if (MemoryUnit* unit = mFreeMemoryUnits[heapIndex]) [[likely]] {
-      mFreeMemoryUnits[heapIndex] = unit->mNext;
-      recordAllocation(bytes);
-      return unit;
-    }
-
-    void* pointer = allocateSlow(heapIndex);
-    if (pointer != nullptr) {
-      recordAllocation(bytes);
-    }
-    return pointer;
+    return unit;
   }
 
   // Documentation inherited
@@ -157,42 +234,25 @@ public:
     if (pointer == nullptr || bytes == 0) [[unlikely]] {
       return;
     }
-
-    if (bytes > MAX_UNIT_SIZE) [[unlikely]] {
-      if (defaultUnitSize(bytes) == 0) {
-        return;
-      }
-      mBaseAllocator.deallocate(pointer, bytes);
-      recordDeallocation(bytes);
+    if (bytes > MAX_POOL_REQUEST_SIZE && defaultUnitSize(bytes) == 0)
+        [[unlikely]] {
       return;
     }
 
-    const int heapIndex = heapIndexForDefaultBytes(bytes);
-    MemoryUnit* releasedUnit = static_cast<MemoryUnit*>(pointer);
-    releasedUnit->mNext = mFreeMemoryUnits[heapIndex];
-    mFreeMemoryUnits[heapIndex] = releasedUnit;
-    recordDeallocation(bytes);
+    deallocateUntracked(pointer, bytes);
+    recordDeallocationIfEnabled(bytes);
   }
 
   // Documentation inherited
   inline void deallocate(void* pointer, size_t bytes, size_t alignment) override
   {
-    const size_t unitSize = effectiveUnitSize(bytes, alignment);
-    if (pointer == nullptr || unitSize == 0) [[unlikely]] {
+    if (pointer == nullptr || effectiveUnitSize(bytes, alignment) == 0)
+        [[unlikely]] {
       return;
     }
 
-    if (unitSize > MAX_UNIT_SIZE) [[unlikely]] {
-      mBaseAllocator.deallocate(pointer, bytes, alignment);
-      recordDeallocation(bytes);
-      return;
-    }
-
-    const int heapIndex = heapIndexForUnitSize(unitSize);
-    MemoryUnit* releasedUnit = static_cast<MemoryUnit*>(pointer);
-    releasedUnit->mNext = mFreeMemoryUnits[heapIndex];
-    mFreeMemoryUnits[heapIndex] = releasedUnit;
-    recordDeallocation(bytes);
+    deallocateUntracked(pointer, bytes, alignment);
+    recordDeallocationIfEnabled(bytes);
   }
 
   // Documentation inherited
@@ -211,6 +271,24 @@ private:
   };
 
   [[nodiscard]] void* allocateSlow(int heapIndex) noexcept;
+
+  void recordAllocationIfEnabled(size_t bytes) noexcept
+  {
+    if (!mDiagnosticsEnabled) [[likely]] {
+      return;
+    }
+
+    recordAllocation(bytes);
+  }
+
+  void recordDeallocationIfEnabled(size_t bytes) noexcept
+  {
+    if (!mDiagnosticsEnabled) [[likely]] {
+      return;
+    }
+
+    recordDeallocation(bytes);
+  }
 
   void recordAllocation(size_t bytes) noexcept
   {
@@ -277,7 +355,7 @@ private:
         > std::numeric_limits<size_t>::max() - (UNIT_GRANULARITY - 1)) {
       return 0;
     }
-    return roundUp(minimumSize, UNIT_GRANULARITY);
+    return cacheFriendlyUnitSize(roundUp(minimumSize, UNIT_GRANULARITY));
   }
 
   [[nodiscard]] static constexpr int heapIndexForUnitSize(
@@ -289,7 +367,7 @@ private:
   [[nodiscard]] static constexpr int heapIndexForDefaultBytes(
       size_t bytes) noexcept
   {
-    return static_cast<int>((bytes - 1) / UNIT_GRANULARITY);
+    return mDefaultHeapIndices[bytes];
   }
 
   [[nodiscard]] static constexpr size_t blockAlignmentForUnitSize(
@@ -302,11 +380,29 @@ private:
     return alignment;
   }
 
-  inline static constexpr int HEAP_COUNT = 128;
+  [[nodiscard]] static constexpr size_t cacheFriendlyUnitSize(
+      size_t unitSize) noexcept
+  {
+    constexpr size_t cacheSkewBytes = 32;
+    // Default pool requests carry no over-alignment contract. Skew medium
+    // power-of-two slots so sequential same-size allocations do not repeatedly
+    // map to the same small subset of L1 cache sets.
+    if (unitSize >= 8 * cacheSkewBytes && unitSize <= MAX_POOL_REQUEST_SIZE
+        && isPowerOfTwo(unitSize)
+        && unitSize <= std::numeric_limits<size_t>::max() - cacheSkewBytes) {
+      return unitSize + cacheSkewBytes;
+    }
+    return unitSize;
+  }
 
-  inline static constexpr size_t MAX_UNIT_SIZE = 1024;
+  inline static constexpr size_t MAX_POOL_REQUEST_SIZE = 1024;
 
-  inline static constexpr size_t BLOCK_SIZE = 16 * MAX_UNIT_SIZE;
+  inline static constexpr size_t MAX_UNIT_SIZE = MAX_POOL_REQUEST_SIZE + 32;
+
+  inline static constexpr int HEAP_COUNT
+      = static_cast<int>(MAX_UNIT_SIZE / UNIT_GRANULARITY);
+
+  inline static constexpr size_t BLOCK_SIZE = 16 * MAX_POOL_REQUEST_SIZE;
 
   inline static constexpr std::array<size_t, HEAP_COUNT> mUnitSizes = [] {
     std::array<size_t, HEAP_COUNT> sizes{};
@@ -316,7 +412,26 @@ private:
     return sizes;
   }();
 
+  inline static constexpr std::array<int, MAX_POOL_REQUEST_SIZE + 1>
+      mDefaultHeapIndices = [] {
+        std::array<int, MAX_POOL_REQUEST_SIZE + 1> indices{};
+        for (size_t bytes = 1; bytes < indices.size(); ++bytes) {
+          const size_t minimumSize
+              = bytes < sizeof(MemoryUnit) ? sizeof(MemoryUnit) : bytes;
+          size_t unitSize
+              = (minimumSize + UNIT_GRANULARITY - 1) & ~(UNIT_GRANULARITY - 1);
+          if (unitSize >= 8 * 32 && unitSize <= MAX_POOL_REQUEST_SIZE
+              && (unitSize & (unitSize - 1)) == 0) {
+            unitSize += 32;
+          }
+          indices[bytes] = static_cast<int>(unitSize / UNIT_GRANULARITY - 1);
+        }
+        return indices;
+      }();
+
   MemoryAllocator& mBaseAllocator;
+
+  bool mDiagnosticsEnabled{true};
 
   MemoryBlock* mMemoryBlocks;
 

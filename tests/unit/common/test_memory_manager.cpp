@@ -60,7 +60,8 @@ void usePlainAllocators(MemoryManager& mm)
   mm.mUseDebugAllocators = false;
   mm.mFreeListAllocator
       = std::make_unique<FreeListAllocator>(mm.mBaseAllocator);
-  mm.mPoolAllocator = std::make_unique<PoolAllocator>(*mm.mFreeListAllocator);
+  mm.mPoolAllocator = std::make_unique<PoolAllocator>(
+      *mm.mFreeListAllocator, PoolAllocator::DiagnosticsPolicy::Disabled);
 }
 
 class CountingMemoryAllocator final : public MemoryAllocator
@@ -217,6 +218,78 @@ TEST(MemoryManagerTest, FixedCapacityPoolUsesReservedAlignedChunks)
   EXPECT_EQ(baseAllocator.allocationCount, initialBaseAllocations);
 
   mm.deallocateUsingPool(ptr, 32);
+}
+
+//==============================================================================
+TEST(MemoryManagerTest, ManagersKeepAllocatorRootsIsolated)
+{
+  CountingMemoryAllocator firstBaseAllocator;
+  CountingMemoryAllocator secondBaseAllocator;
+  MemoryManager::Options options;
+  options.freeListInitialAllocation = 4096;
+  options.frameAllocatorInitialCapacity = 512;
+
+  MemoryManager first(firstBaseAllocator, options);
+  MemoryManager second(secondBaseAllocator, options);
+
+  EXPECT_EQ(&first.getBaseAllocator(), &firstBaseAllocator);
+  EXPECT_EQ(&second.getBaseAllocator(), &secondBaseAllocator);
+  EXPECT_NE(&first.getBaseAllocator(), &second.getBaseAllocator());
+  EXPECT_NE(&first.getFreeListAllocator(), &second.getFreeListAllocator());
+  EXPECT_NE(&first.getPoolAllocator(), &second.getPoolAllocator());
+  EXPECT_NE(&first.getFrameAllocator(), &second.getFrameAllocator());
+
+  const auto secondAllocationsBefore = secondBaseAllocator.allocationCount;
+  const auto secondDeallocationsBefore = secondBaseAllocator.deallocationCount;
+  const auto secondDiagnosticsBefore = second.getDebugDiagnostics();
+
+  auto* firstBasePtr = first.allocate(MemoryManager::Type::Base, 24);
+  ASSERT_NE(firstBasePtr, nullptr);
+  auto* firstFreePtr = first.allocateUsingFree(64);
+  ASSERT_NE(firstFreePtr, nullptr);
+  auto* firstPoolPtr = first.allocateUsingPool(32);
+  ASSERT_NE(firstPoolPtr, nullptr);
+  auto* firstFramePtr = first.allocateUsingFrame(128);
+  ASSERT_NE(firstFramePtr, nullptr);
+
+  EXPECT_EQ(secondBaseAllocator.allocationCount, secondAllocationsBefore);
+  EXPECT_EQ(secondBaseAllocator.deallocationCount, secondDeallocationsBefore);
+  EXPECT_FALSE(second.hasAllocated(firstFreePtr, 64));
+  EXPECT_FALSE(second.hasAllocated(firstPoolPtr, 32));
+
+  const auto secondDiagnosticsAfter = second.getDebugDiagnostics();
+  EXPECT_EQ(secondDiagnosticsAfter.enabled, secondDiagnosticsBefore.enabled);
+  EXPECT_EQ(
+      secondDiagnosticsAfter.freeAllocator.liveBytes,
+      secondDiagnosticsBefore.freeAllocator.liveBytes);
+  EXPECT_EQ(
+      secondDiagnosticsAfter.freeAllocator.peakLiveBytes,
+      secondDiagnosticsBefore.freeAllocator.peakLiveBytes);
+  EXPECT_EQ(
+      secondDiagnosticsAfter.freeAllocator.liveAllocationCount,
+      secondDiagnosticsBefore.freeAllocator.liveAllocationCount);
+  EXPECT_EQ(
+      secondDiagnosticsAfter.poolAllocator.liveBytes,
+      secondDiagnosticsBefore.poolAllocator.liveBytes);
+  EXPECT_EQ(
+      secondDiagnosticsAfter.poolAllocator.peakLiveBytes,
+      secondDiagnosticsBefore.poolAllocator.peakLiveBytes);
+  EXPECT_EQ(
+      secondDiagnosticsAfter.poolAllocator.liveAllocationCount,
+      secondDiagnosticsBefore.poolAllocator.liveAllocationCount);
+
+#if !defined(NDEBUG)
+  EXPECT_TRUE(first.hasAllocated(firstFreePtr, 64));
+  EXPECT_TRUE(first.hasAllocated(firstPoolPtr, 32));
+#else
+  EXPECT_FALSE(first.hasAllocated(firstFreePtr, 64));
+  EXPECT_FALSE(first.hasAllocated(firstPoolPtr, 32));
+#endif
+
+  first.deallocateUsingPool(firstPoolPtr, 32);
+  first.deallocateUsingFree(firstFreePtr, 64);
+  first.deallocateUsingFrame(firstFramePtr, 128);
+  first.deallocate(MemoryManager::Type::Base, firstBasePtr, 24);
 }
 
 //==============================================================================
