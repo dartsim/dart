@@ -284,8 +284,9 @@
       barrier and surface-CCD snapshot gates. A production static-obstacle
       friction patch now slides independent node patches near sphere, box, and
       capsule barriers in one default projected-Newton solve, covering the
-      shared static-obstacle normal/friction scratch separately from
-      self-contact friction. The moving rigid-surface CCD path now has baked
+      shared static-obstacle normal/friction scratch for both sparse and
+      matrix-free projected-Newton paths separately from self-contact friction.
+      The moving rigid-surface CCD path now has baked
       swept-box point-crossing gates for both free predicted motion and
       kinematic trace-backed motion, including a multi-kinematic traced-obstacle
       scene that reuses combined swept snapshot capacity across independent
@@ -388,8 +389,8 @@
       matrix-free self-contact, and FEM ground-friction bodies, plus a
       production rectangular inter-body deformable surface-CCD crossing, a
       barrier-only static sphere/box/capsule obstacle scene, and a production
-      static sphere/box/capsule obstacle friction patch for default projected
-      Newton.
+      static sphere/box/capsule obstacle friction patch for sparse and
+      matrix-free default projected Newton.
       The base and global-heap guards now also include default moving
       rigid-surface CCD swept-box crossings for free, single-kinematic, and
       multi-kinematic rigid obstacles, closing the previously static-only rigid
@@ -654,7 +655,7 @@ debugging, profiling, optimization experiments, and ImGui visualization.
    inter-body sweep/candidate scratch beyond the tiny two-triangle crossing;
    and a production static-obstacle friction patch now covers shared
    sphere/box/capsule normal-force, normal-direction, and Hessian scratch under
-   no-growth guards.
+   sparse and matrix-free no-growth guards.
    The AVBD self-contact row guard now also covers 5x9 and 9x13 rectangular
    grid row workloads with replay-backed activity assertions.
    Continue broadening boxed-LCP unified problem assembly only for newly
