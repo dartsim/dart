@@ -2098,6 +2098,15 @@ void configureAvbdSelfContactFrictionGridRowsScene(
   enableAvbdSelfContactFrictionRows(world);
 }
 
+void configureAvbdSelfContactFrictionProductionGridRowsScene(
+    dart::simulation::World& world)
+{
+  configureDeformableSelfContactFrictionGridSceneWithShape(
+      world, 9, 13, "avbd_self_contact_friction_production_grid");
+
+  enableAvbdSelfContactFrictionRows(world);
+}
+
 void configureAvbdGroundFrictionRowsScene(dart::simulation::World& world)
 {
   namespace sx = dart::simulation;
@@ -3158,6 +3167,9 @@ TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
       "deformable AVBD self-contact friction grid rows",
       configureAvbdSelfContactFrictionGridRowsScene);
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "deformable AVBD self-contact friction production grid rows",
+      configureAvbdSelfContactFrictionProductionGridRowsScene);
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "deformable AVBD ground friction rows",
       configureAvbdGroundFrictionRowsScene);
 }
@@ -3850,6 +3862,30 @@ TEST(World, AvbdSelfContactFrictionGridRowsAreActive)
       2u * states[0].selfContactRows.size());
 }
 
+TEST(World, AvbdSelfContactFrictionProductionGridRowsAreActive)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  configureAvbdSelfContactFrictionProductionGridRowsScene(world);
+  auto& registry = sx::detail::registryOf(world);
+  world.enterSimulationMode();
+
+  world.step();
+
+  const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
+  EXPECT_EQ(diagnostics.bodyCount, 1u);
+  EXPECT_EQ(diagnostics.nodeCount, 2u * 9u * 13u);
+  const auto states
+      = sx::compute::avbd_replay::captureDeformableAvbdWarmStartReplayState(
+          registry);
+  ASSERT_EQ(states.size(), 1u);
+  EXPECT_GT(states[0].selfContactRows.size(), 0u);
+  EXPECT_EQ(
+      states[0].selfContactFrictionRows.size(),
+      2u * states[0].selfContactRows.size());
+}
+
 TEST(World, RigidAvbdContactRowsAreActive)
 {
   namespace sx = dart::simulation;
@@ -4218,6 +4254,9 @@ TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "deformable AVBD self-contact friction grid rows",
       configureAvbdSelfContactFrictionGridRowsScene);
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "deformable AVBD self-contact friction production grid rows",
+      configureAvbdSelfContactFrictionProductionGridRowsScene);
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "deformable AVBD ground friction rows",
       configureAvbdGroundFrictionRowsScene);

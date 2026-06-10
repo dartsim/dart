@@ -205,8 +205,8 @@ differently shaped production-scale frictional deformable contact sets need
 no-growth gates before making the full deformable
 claim.
 AVBD self-contact row scratch is now guarded beyond the original two-triangle
-scene with a 5x9 rectangular two-layer grid row workload and replay-backed
-self-contact/friction row activity assertions.
+scene with 5x9 and 9x13 rectangular two-layer grid row workloads and
+replay-backed self-contact/friction row activity assertions.
 
 The latest continuation verified the boxed-LCP fallback and unified island
 same-shape allocation guards, then removed the avoidable final lambda copy from
@@ -418,7 +418,8 @@ resting-contact, current boxed-LCP multi-island mixed rigid/articulated
 fallback, current active 11x11 deformable self-contact friction grid, current
 active 9x13 and 7x17 deformable self-contact friction grids, current active
 AVBD ground contact/friction rows, current active AVBD self-contact
-normal/friction row scene plus a 5x9 rectangular AVBD self-contact row grid,
+normal/friction row scene plus 5x9 and 9x13 rectangular AVBD self-contact row
+grids,
 current active rigid AVBD contact rows, current active rigid AVBD fixed-joint
 rows, current active inter-body deformable surface-CCD crossing, and basic
 deformable surface-snapshot scenes, while keeping remaining public-value
@@ -430,7 +431,8 @@ zero-dynamic-allocation claim.
 
 - On 2026-06-08 after the wide deformable friction checkpoint, AVBD
   self-contact row coverage expanded from the original two-triangle scene to a
-  5x9 rectangular two-layer grid. The grid reuses the same row-inventory,
+  5x9 and 9x13 rectangular two-layer grids. The grids reuse the same
+  row-inventory,
   self-contact adjacency, and friction warm-start path, so the guard is an
   apple-to-apple AVBD row-scratch workload rather than another projected-Newton
   barrier solve. Focused validation passed:

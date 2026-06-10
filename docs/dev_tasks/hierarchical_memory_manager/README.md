@@ -395,8 +395,8 @@
       dissipation. The global heap and World-base no-growth guards now also
       cover the active inter-body deformable surface-CCD crossing, active AVBD
       ground contact/friction rows, AVBD self-contact normal/friction rows
-      including a 5x9 rectangular grid row workload, and an active rigid AVBD
-      penetrating contact plus no-contact fixed-joint rows.
+      including 5x9 and 9x13 rectangular grid row workloads, and an active
+      rigid AVBD penetrating contact plus no-contact fixed-joint rows.
       Additional broader or differently shaped production-scale frictional
       deformable scenarios still need no-growth gates before making the full
       deformable claim.
@@ -643,8 +643,8 @@ debugging, profiling, optimization experiments, and ImGui visualization.
    scratch path on non-grid topology; compact and production mixed
    default-solver storage scenes now combine direct-sparse, matrix-free, and
    FEM ground-friction deformables under the same root. The AVBD
-   self-contact row guard now also covers a 5x9 rectangular grid row workload
-   with replay-backed activity assertions.
+   self-contact row guard now also covers 5x9 and 9x13 rectangular grid row
+   workloads with replay-backed activity assertions.
    Continue broadening boxed-LCP unified problem assembly only for newly
    exposed contact shapes, and keep moving any newly exposed deformable/contact
    candidate buffers to backed storage before making the full zero-allocation
