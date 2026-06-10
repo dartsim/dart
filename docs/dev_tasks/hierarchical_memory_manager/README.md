@@ -737,13 +737,15 @@ Follow-up progress after PR #2956:
   `MemoryManager`, allocator lifetime roles, registry bake/rebuild boundaries,
   and the direct evidence expected before making broader zero-allocation
   claims.
-- The opaque `WorldStorage` object and private built-in step-pipeline cache now
-  use the same World free-list allocator as the EnTT registry and
-  differentiable-parameter storage. A focused allocator-root test verifies both
-  initial construction and `World::clear()` rebuilds keep this persistent World
-  state under the World memory hierarchy. Stage-owned member scratch containers
-  remain a separate root-routing follow-up item unless already covered by the
-  existing same-shape no-growth/no-heap gates.
+- The opaque `WorldStorage` object, private built-in step-pipeline cache, and
+  lazy collision query cache now use the same World free-list allocator as the
+  EnTT registry and differentiable-parameter storage. A focused allocator-root
+  test verifies initial construction, lazy collision-cache construction, and
+  `World::clear()` rebuilds keep persistent World state under the World memory
+  hierarchy while dropping cached collision query state at the rebuild boundary.
+  Stage-owned member scratch containers remain a separate root-routing
+  follow-up item unless already covered by the existing same-shape
+  no-growth/no-heap gates.
 
 Remaining Phase 4/5 follow-up items for the next PR:
 

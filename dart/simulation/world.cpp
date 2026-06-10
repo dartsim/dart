@@ -2283,6 +2283,27 @@ void World::WorldStorageDeleter::operator()(void* storage) const noexcept
 }
 
 //==============================================================================
+World::CollisionQueryCachePtr World::makeCollisionQueryCache(
+    common::MemoryManager& memoryManager)
+{
+  auto* cache = memoryManager.constructUsingFree<CollisionQueryCache>();
+  if (cache == nullptr) {
+    throw std::bad_alloc();
+  }
+
+  return CollisionQueryCachePtr(
+      cache, CollisionQueryCacheDeleter{&memoryManager});
+}
+
+//==============================================================================
+void World::CollisionQueryCacheDeleter::operator()(void* cache) const noexcept
+{
+  if (cache != nullptr && memoryManager != nullptr) {
+    memoryManager->destroyUsingFree(static_cast<CollisionQueryCache*>(cache));
+  }
+}
+
+//==============================================================================
 World::StepPipelineCachePtr World::makeStepPipelineCache(
     common::MemoryManager& memoryManager)
 {
@@ -2304,6 +2325,8 @@ void World::StepPipelineCacheDeleter::operator()(void* cache) const noexcept
 
 World::World()
   : m_storage(makeWorldStorage(m_memoryManager)),
+    m_collisionQueryCache(
+        nullptr, CollisionQueryCacheDeleter{&m_memoryManager}),
     m_stepPipelineCache(makeStepPipelineCache(m_memoryManager))
 {
   // Empty.
@@ -2320,6 +2343,8 @@ World::World(const WorldOptions& options)
     m_differentiable(options.differentiable),
     m_contactSolverMethod(options.contactSolverMethod),
     m_contactGradientMode(options.contactGradientMode),
+    m_collisionQueryCache(
+        nullptr, CollisionQueryCacheDeleter{&m_memoryManager}),
     m_stepPipelineCache(makeStepPipelineCache(m_memoryManager))
 {
   DART_SIMULATION_THROW_T_IF(
@@ -2444,9 +2469,7 @@ void World::clear()
   m_deformableBodyCounter = 0;
   m_linkCounter = 0;
   m_jointCounter = 0;
-  if (m_collisionQueryCache) {
-    m_collisionQueryCache->clear();
-  }
+  m_collisionQueryCache.reset();
   m_stepPipelineCache = makeStepPipelineCache(m_memoryManager);
   if (m_replay) {
     m_replay->recordingEnabled = false;
@@ -4459,7 +4482,7 @@ void World::restoreReplayFrame(std::size_t index)
       replayFrame.differentiableParameters.end());
 
   if (m_collisionQueryCache) {
-    m_collisionQueryCache->clear();
+    m_collisionQueryCache.reset();
   }
   markFrameCachesDirty(m_storage->registry);
   if (m_simulationMode) {
@@ -4656,7 +4679,7 @@ const std::vector<Contact>& World::queryContacts(
     const CollisionQueryOptions& options)
 {
   if (!m_collisionQueryCache) {
-    m_collisionQueryCache = std::make_unique<CollisionQueryCache>();
+    m_collisionQueryCache = makeCollisionQueryCache(m_memoryManager);
   }
   auto& cache = *m_collisionQueryCache;
   auto& specs = cache.specs;

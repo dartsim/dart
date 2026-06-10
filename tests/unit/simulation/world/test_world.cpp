@@ -2729,6 +2729,9 @@ TEST(World, WorldPersistentStorageUsesWorldFreeAllocator)
       memoryManager.hasAllocated(storage, sizeof(sx::detail::WorldStorage)));
 #endif
 
+  (void)world.collide();
+  EXPECT_GE(memoryManager.getFreeListAllocator().getAllocationCount(), 3u);
+
   world.addFreeFrame("frame_before_clear");
   world.clear();
   EXPECT_GE(
