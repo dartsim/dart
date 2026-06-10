@@ -566,7 +566,11 @@ debugging, profiling, optimization experiments, and ImGui visualization.
 
 ## PR #2956 Phase 4/5 Wrap-Up
 
-Current Phase 4 scratch-reuse coverage in this PR includes:
+PR #2956 stops at the proven coverage below. Remaining Phase 4/5 work moves to
+a follow-up branch so this PR can ship the current allocation gates without
+adding more scene surface.
+
+Current Phase 4 scratch-reuse coverage shipped by this PR includes:
 
 - Inline built-in stage storage for the default `WorldStepPipeline`, legacy
   graph-backed rigid integration scratch, and batched SoA rigid integration
@@ -588,7 +592,7 @@ Current Phase 4 scratch-reuse coverage in this PR includes:
   warm-start lookup, rigid AVBD contact projection rows, inertial targets, and
   no-contact fixed-joint rows.
 
-Current Phase 5 no-growth/no-heap gates in this PR include:
+Current Phase 5 no-growth/no-heap gates shipped by this PR include:
 
 - Baked rigid, kinematic IPC, resting-contact, batched SoA rigid integration,
   multibody variational, compliant-contact, same-DOF cross-articulated, and
@@ -611,7 +615,7 @@ Current Phase 5 no-growth/no-heap gates in this PR include:
 Phase 4/5 follow-up items for the next PR:
 
 - Do not add more production scenes or scratch-reuse work to PR #2956; continue
-  the remaining no-growth and scratch work on a new follow-up branch.
+  any remaining no-growth and scratch work on a new follow-up branch.
 - Broaden projected-Newton deformable scratch reuse only where profiling or a
   no-growth gate exposes a real allocation path, especially for differently
   shaped frictional self-contact, static-obstacle, and inter-body CCD mixes not
