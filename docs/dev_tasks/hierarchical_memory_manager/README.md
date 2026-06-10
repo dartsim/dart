@@ -180,9 +180,10 @@
       the internal allocator-backed registry storage so ECS capacities and
       debug-tracked registry allocations reset at the rebuild boundary while
       preserving the World memory hierarchy. Contact-heavy variational
-      ground-contact dual state is now sized at `enterSimulationMode()` and
-      covered by a World-base allocator no-growth test that steps multiple
-      augmented-Lagrangian contact sliders without registry capacity growth.
+      ground-contact dual state and compliant contact-point scratch are now
+      sized at `enterSimulationMode()` and covered by World-base allocator
+      no-growth tests that step multiple variational contact sliders without
+      registry capacity growth.
       Broader solver scratch coverage remains open.
 - [ ] Phase 4: Built-in simulation stages borrow world memory for transient
       buffers and avoid growth after simulation is baked. The default
@@ -196,7 +197,7 @@
       for the covered rigid and articulated resting-contact scenes. The
       variational multibody stage now owns cache-only reusable contact/constraint
       scratch, bakes loop-closure and hard AVBD point-joint constraint capacity,
-      and bakes augmented-Lagrangian ground-contact dual vectors before
+      and bakes compliant and augmented-Lagrangian ground-contact vectors before
       contact-heavy steps. The boxed-LCP
       unified constraint stage now reuses stage-owned assembly containers and
       unified problem storage, and its shared/cross-row assembly no longer

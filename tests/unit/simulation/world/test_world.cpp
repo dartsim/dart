@@ -3183,6 +3183,84 @@ TEST(World, EnterSimulationModeReservesContactHeavyVariationalDualState)
   EXPECT_EQ(allocator.alignedDeallocationCount, alignedDeallocationsAfterBake);
 }
 
+TEST(World, EnterSimulationModeReservesCompliantVariationalContactScratch)
+{
+  namespace sx = dart::simulation;
+
+  CountingMemoryAllocator allocator;
+  sx::WorldOptions options;
+  options.baseAllocator = &allocator;
+  options.multibodyOptions.integrationFamily = "variational integrator";
+  sx::World world(options);
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(1.0e-3);
+
+  constexpr std::size_t kRobotCount = 6;
+  constexpr std::size_t kContactPointsPerRobot = 4;
+  for (std::size_t i = 0; i < kRobotCount; ++i) {
+    auto robot
+        = world.addMultibody("compliant_contact_slider_" + std::to_string(i));
+    auto base = robot.addLink("base");
+    sx::JointSpec spec;
+    spec.name = "rail";
+    spec.type = sx::JointType::Prismatic;
+    spec.axis = Eigen::Vector3d::UnitZ();
+    auto carriage = robot.addLink("carriage", base, spec);
+    carriage.setMass(1.0);
+    carriage.setInertia(Eigen::Vector3d(0.01, 0.01, 0.01).asDiagonal());
+    auto joint = carriage.getParentJoint();
+    joint.setPosition(Eigen::VectorXd::Constant(1, -0.001));
+
+    robot.setGroundContact(
+        Eigen::Vector3d::UnitZ(),
+        Eigen::Vector3d::Zero(),
+        1.0e4,
+        /*frictionCoefficient=*/0.0,
+        /*frictionRegularization=*/1.0e-4,
+        /*dampingCoefficient=*/20.0,
+        /*dualUpdateCadence=*/0);
+    robot.addGroundContactPoint(carriage, Eigen::Vector3d(0.0, 0.0, 0.0));
+    robot.addGroundContactPoint(carriage, Eigen::Vector3d(0.02, 0.0, 0.0));
+    robot.addGroundContactPoint(carriage, Eigen::Vector3d(0.0, 0.02, 0.0));
+    robot.addGroundContactPoint(carriage, Eigen::Vector3d(0.02, 0.02, 0.0));
+  }
+
+  world.enterSimulationMode();
+
+  const auto& registry = sx::detail::registryOf(world);
+  const auto capacities = registryStorageCapacities(registry);
+
+  std::size_t scratchCount = 0;
+  for (const auto entity :
+       registry.view<sx::compute::MultibodyVariationalScratch>()) {
+    const auto& scratch
+        = registry.get<sx::compute::MultibodyVariationalScratch>(entity);
+    EXPECT_EQ(scratch.groundContact.points.size(), kContactPointsPerRobot);
+    EXPECT_GE(scratch.groundContact.points.capacity(), kContactPointsPerRobot);
+    EXPECT_FALSE(scratch.groundContactSolver.has_value());
+    ++scratchCount;
+  }
+  EXPECT_EQ(scratchCount, kRobotCount);
+  const auto dualStates
+      = registry.view<sx::comps::VariationalContactDualState>();
+  EXPECT_TRUE(dualStates.begin() == dualStates.end());
+
+  const auto allocationsAfterBake = allocator.allocationCount;
+  const auto deallocationsAfterBake = allocator.deallocationCount;
+  const auto alignedAllocationsAfterBake = allocator.alignedAllocationCount;
+  const auto alignedDeallocationsAfterBake = allocator.alignedDeallocationCount;
+
+  for (int i = 0; i < 3; ++i) {
+    world.step();
+    expectRegistryStorageCapacitiesUnchanged(capacities, registry);
+  }
+
+  EXPECT_EQ(allocator.allocationCount, allocationsAfterBake);
+  EXPECT_EQ(allocator.deallocationCount, deallocationsAfterBake);
+  EXPECT_EQ(allocator.alignedAllocationCount, alignedAllocationsAfterBake);
+  EXPECT_EQ(allocator.alignedDeallocationCount, alignedDeallocationsAfterBake);
+}
+
 TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
 {
 #ifdef DART_CODECOV

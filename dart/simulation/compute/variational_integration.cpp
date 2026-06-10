@@ -2117,14 +2117,16 @@ void reserveMultibodyVariationalRegistryStorage(
 
     const auto* contactConfig
         = registry.try_get<comps::VariationalContact>(entity);
-    if (contactConfig == nullptr || contactConfig->dualUpdateCadence == 0u
-        || contactConfig->pointLinkIndices.empty()) {
+    if (contactConfig == nullptr || contactConfig->pointLinkIndices.empty()) {
       continue;
     }
 
     configureGroundContactScratch(*contactConfig, scratch);
     if (scratch.groundContact.stiffness <= 0.0
         || scratch.groundContact.points.empty()) {
+      continue;
+    }
+    if (contactConfig->dualUpdateCadence == 0u) {
       continue;
     }
 
