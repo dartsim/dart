@@ -1157,6 +1157,24 @@ bool hasRigidBodyJoints(const World& world)
 }
 
 //==============================================================================
+bool hasRigidBodyJointsUnsupportedByIpc(const World& world)
+{
+  const auto& registry = detail::registryOf(world);
+  const auto view = registry.view<comps::Joint>();
+  for (auto entity : view) {
+    const auto& joint = view.get<comps::Joint>(entity);
+    if (!isRigidBodyJoint(registry, joint)) {
+      continue;
+    }
+    if (joint.type != comps::JointType::Fixed
+        && joint.type != comps::JointType::Revolute) {
+      return true;
+    }
+  }
+  return false;
+}
+
+//==============================================================================
 void validateRigidBodyJointPipelineSupport(
     const World& world, RigidBodySolver solver)
 {
@@ -1165,10 +1183,17 @@ void validateRigidBodyJointPipelineSupport(
   }
 
   if (solver == RigidBodySolver::Ipc) {
-    DART_SIMULATION_THROW_T(
+    DART_SIMULATION_THROW_T_IF(
+        hasRigidBodyJointsUnsupportedByIpc(world),
         InvalidOperationException,
-        "Rigid-body joints are not supported by the IPC rigid-body "
-        "solver");
+        "Only fixed and revolute rigid-body joints are supported by the IPC "
+        "rigid-body solver");
+    DART_SIMULATION_THROW_T_IF(
+        hasMultibodyStructures(world),
+        InvalidOperationException,
+        "Rigid-body joints are not supported in worlds with multibody "
+        "structures");
+    return;
   }
 
   DART_SIMULATION_THROW_T_IF(
@@ -2965,9 +2990,12 @@ Joint World::addRigidBodyJoint(
       InvalidArgumentException,
       "Joint endpoints must be valid rigid bodies");
   DART_SIMULATION_THROW_T_IF(
-      m_rigidBodySolver == RigidBodySolver::Ipc,
+      m_rigidBodySolver == RigidBodySolver::Ipc
+          && componentType != comps::JointType::Fixed
+          && componentType != comps::JointType::Revolute,
       InvalidOperationException,
-      "Rigid-body joints are not supported by the IPC rigid-body solver");
+      "Only fixed and revolute rigid-body joints are supported by the IPC "
+      "rigid-body solver");
   DART_SIMULATION_THROW_T_IF(
       hasMultibodyStructures(*this),
       InvalidOperationException,

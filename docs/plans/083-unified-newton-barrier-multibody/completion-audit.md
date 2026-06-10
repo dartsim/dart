@@ -15,7 +15,7 @@ entirely into durable plan sidecars.
 
 | Artifact                 | Row count | Status counts                                         |
 | ------------------------ | --------- | ----------------------------------------------------- |
-| `paper-deck-manifest.md` | 48        | `in-progress`: 15, `planned`: 33                      |
+| `paper-deck-manifest.md` | 48        | `in-progress`: 16, `planned`: 32                      |
 | `cpu-scene-corpus.json`  | 26        | `in-progress`: 15, `not-applicable`: 1, `planned`: 10 |
 | `gpu-parity-packet.json` | 6         | `in-progress`: 1, `planned`: 5                        |
 

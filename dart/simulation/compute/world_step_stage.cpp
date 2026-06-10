@@ -39,6 +39,7 @@
 #include "dart/simulation/comps/deformable_body.hpp"
 #include "dart/simulation/comps/dynamics.hpp"
 #include "dart/simulation/comps/frame_types.hpp"
+#include "dart/simulation/comps/joint.hpp"
 #include "dart/simulation/comps/rigid_body.hpp"
 #include "dart/simulation/compute/compute_executor.hpp"
 #include "dart/simulation/compute/compute_graph.hpp"
@@ -126,6 +127,8 @@ struct RigidIpcContactStage::Scratch
   std::vector<sxdetail::RigidIpcBarrierSurface> surfaces;
   std::vector<sxdetail::RigidIpcBodyDynamicsTerm> dynamicsTerms;
   std::vector<sxdetail::RigidIpcBodyDynamicsTerm> solveDynamicsTerms;
+  std::vector<sxdetail::RigidIpcArticulationConstraintInput>
+      articulationConstraints;
   std::vector<entt::entity> tracedEntities;
   std::vector<entt::entity> blockedEntities;
   std::vector<entt::entity> writebackEntities;
@@ -7825,6 +7828,85 @@ std::size_t findRuntimeBodyIndex(
 }
 
 //==============================================================================
+std::size_t findSolverBodyIndex(
+    const std::vector<RigidIpcRuntimeBody>& bodies, const entt::entity entity)
+{
+  for (std::size_t i = 0; i < bodies.size(); ++i) {
+    if (bodies[i].entity == entity) {
+      return i;
+    }
+  }
+  return bodies.size();
+}
+
+//==============================================================================
+Eigen::Vector3d localRigidIpcDirection(
+    const RigidIpcRuntimeBody& body, const Eigen::Vector3d& worldDirection)
+{
+  const Eigen::Matrix3d rotation
+      = sxdetail::rigidIpcRotationVectorToMatrix(body.initialPose.rotation);
+  return rotation.transpose() * worldDirection.normalized();
+}
+
+//==============================================================================
+void collectRigidIpcArticulationConstraints(
+    const World& world,
+    const std::vector<RigidIpcRuntimeBody>& solverBodies,
+    std::vector<sxdetail::RigidIpcArticulationConstraintInput>& constraints)
+{
+  const auto& registry = dart::simulation::detail::registryOf(world);
+  constraints.clear();
+
+  auto view
+      = registry.view<comps::Joint, dvbd::AvbdRigidWorldPointJointConfig>();
+  for (const auto jointEntity : view) {
+    const auto& joint = view.get<comps::Joint>(jointEntity);
+    const auto& config
+        = view.get<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
+    if (!config.enabled || joint.broken || joint.breakForce > 0.0
+        || joint.parentLink == entt::null || joint.childLink == entt::null
+        || (joint.type != comps::JointType::Fixed
+            && joint.type != comps::JointType::Revolute)
+        || !config.localAnchorA.allFinite()
+        || !config.localAnchorB.allFinite()) {
+      continue;
+    }
+
+    const std::size_t bodyA
+        = findSolverBodyIndex(solverBodies, joint.parentLink);
+    const std::size_t bodyB
+        = findSolverBodyIndex(solverBodies, joint.childLink);
+    if (bodyA >= solverBodies.size() || bodyB >= solverBodies.size()) {
+      continue;
+    }
+
+    sxdetail::RigidIpcArticulationConstraintInput point;
+    point.type = sxdetail::RigidIpcArticulationConstraintType::PointConnection;
+    point.bodyA = bodyA;
+    point.bodyB = bodyB;
+    point.localPointA = config.localAnchorA;
+    point.localPointB = config.localAnchorB;
+    constraints.push_back(point);
+
+    if (joint.type != comps::JointType::Revolute) {
+      continue;
+    }
+    const Eigen::Vector3d axisWorld = config.angularAxes.col(2);
+    if (!axisWorld.allFinite() || axisWorld.squaredNorm() <= 0.0) {
+      continue;
+    }
+
+    sxdetail::RigidIpcArticulationConstraintInput hinge;
+    hinge.type = sxdetail::RigidIpcArticulationConstraintType::HingeAxis;
+    hinge.bodyA = bodyA;
+    hinge.bodyB = bodyB;
+    hinge.localAxisA = localRigidIpcDirection(solverBodies[bodyA], axisWorld);
+    hinge.localAxisB = localRigidIpcDirection(solverBodies[bodyB], axisWorld);
+    constraints.push_back(hinge);
+  }
+}
+
+//==============================================================================
 void clearKinematicBodyStepTraces(
     World& world, std::vector<entt::entity>& tracedEntities)
 {
@@ -8003,6 +8085,9 @@ std::vector<entt::entity> blockedKinematicEntitiesAfterRejectedRigidIpcSolve(
     blockBodyPair(constraint.bodyA, constraint.bodyB);
   }
   for (const auto& constraint : result.assembly.activeFrictionConstraints) {
+    blockBodyPair(constraint.bodyA, constraint.bodyB);
+  }
+  for (const auto& constraint : result.assembly.activeArticulationConstraints) {
     blockBodyPair(constraint.bodyA, constraint.bodyB);
   }
   if (result.lineSearch.limited || !result.lineSearch.allowsPositiveStep()) {
@@ -8731,6 +8816,7 @@ void RigidIpcContactStage::prepare(World& world)
   m_scratch->surfaces.reserve(bodyCount);
   m_scratch->dynamicsTerms.reserve(bodyCount);
   m_scratch->solveDynamicsTerms.reserve(bodyCount);
+  m_scratch->articulationConstraints.reserve(bodyCount);
   m_scratch->tracedEntities.reserve(kinematicCount);
   m_scratch->blockedEntities.reserve(kinematicCount);
   m_scratch->writebackEntities.reserve(bodyCount);
@@ -8782,7 +8868,10 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
   auto& surfaces = scratch.surfaces;
   auto& dynamicsTerms = scratch.dynamicsTerms;
   auto& solveDynamicsTerms = scratch.solveDynamicsTerms;
+  auto& articulationConstraints = scratch.articulationConstraints;
   solveDynamicsTerms.assign(dynamicsTerms.begin(), dynamicsTerms.end());
+  collectRigidIpcArticulationConstraints(
+      world, solverBodies, articulationConstraints);
 
   // Adaptive barrier-stiffness inputs: the world AABB diagonal over all
   // collision surfaces and the average dynamic-body mass. These drive the IPC
@@ -8849,6 +8938,7 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
   options.friction.staticFrictionDisplacement
       = std::max(0.0, m_options.staticFrictionSpeedBound * world.getTimeStep());
   options.dynamicsTerms = std::move(solveDynamicsTerms);
+  options.articulationConstraints = articulationConstraints;
   options.maxIterations = m_options.maxIterations;
   options.frictionIterations = m_options.frictionIterations;
   options.frictionConvergenceTolerance = m_options.frictionConvergenceTolerance;
@@ -8893,6 +8983,8 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
   m_lastStats.activeConstraints = result.assembly.activeConstraints.size();
   m_lastStats.activeFrictionConstraints
       = result.assembly.activeFrictionConstraints.size();
+  m_lastStats.activeArticulationConstraints
+      = result.assembly.activeArticulationConstraints.size();
   m_lastStats.activeDynamicsTerms = result.assembly.activeDynamicsTerms;
   m_lastStats.solverIterations = result.stats.iterations;
   m_lastStats.frictionIterations = result.stats.frictionIterations;
@@ -8902,6 +8994,10 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
   m_lastStats.finalValue = result.stats.finalValue;
   m_lastStats.initialGradientNorm = result.stats.initialGradientNorm;
   m_lastStats.finalGradientNorm = result.stats.finalGradientNorm;
+  m_lastStats.initialEqualityResidualNorm
+      = result.stats.initialEqualityResidualNorm;
+  m_lastStats.finalEqualityResidualNorm
+      = result.stats.finalEqualityResidualNorm;
   m_lastStats.finalMomentumBalance = result.stats.finalMomentumBalance;
   m_lastStats.lastStepNorm = result.stats.lastStepNorm;
   m_lastStats.barrierStiffness = result.stats.barrierStiffness;

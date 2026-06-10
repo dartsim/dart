@@ -7282,9 +7282,48 @@ TEST(World, RigidIpcKinematicTurntableCarriesRestingBox)
   EXPECT_LE(failCount, 3);
 }
 
-// Test that public fixed joints reject the IPC rigid-body solver instead of
-// accepting a joint that the IPC pipeline will not project.
-TEST(World, RigidBodyFixedJointsRejectIpcSolver)
+// Test that public fixed joints feed the IPC rigid-body solver through private
+// articulation equality rows instead of exposing solver-internal contracts.
+TEST(World, RigidIpcContactStageProjectsFixedJointPointConnection)
+{
+  namespace sx = dart::simulation;
+
+  sx::RigidBodyOptions parentOptions;
+  parentOptions.isStatic = true;
+  sx::RigidBodyOptions childOptions;
+  childOptions.position = Eigen::Vector3d::UnitX();
+  childOptions.mass = 1.0;
+
+  sx::World world;
+  world.setTimeStep(0.01);
+  auto parent = world.addRigidBody("parent", parentOptions);
+  parent.setCollisionShape(sx::CollisionShape::makeBox({0.1, 0.1, 0.1}));
+  auto child = world.addRigidBody("child", childOptions);
+  child.setCollisionShape(sx::CollisionShape::makeBox({0.1, 0.1, 0.1}));
+  (void)world.addRigidBodyFixedJoint("fixed", parent, child);
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage(16);
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+  world.step(executor, pipeline);
+
+  const auto& stats = ipcStage.getLastStats();
+  EXPECT_EQ(stats.activeArticulationConstraints, 1u);
+  EXPECT_TRUE(stats.converged);
+  EXPECT_FALSE(stats.failed);
+  EXPECT_TRUE(stats.resultApplied);
+  EXPECT_LT(stats.finalEqualityResidualNorm, 1e-8);
+
+  // The fixed joint captured the child's initial center as a point connection.
+  // Gravity is balanced by the equality row, so the child cannot drop away from
+  // the parent-side anchor.
+  EXPECT_TRUE(child.getTranslation().isApprox(Eigen::Vector3d::UnitX(), 1e-10));
+  EXPECT_LT(child.getLinearVelocity().norm(), 1e-10);
+}
+
+// Test that unsupported rigid-body joint types still reject the IPC solver.
+TEST(World, RigidBodyPrismaticJointsRejectIpcSolver)
 {
   namespace sx = dart::simulation;
 
@@ -7298,20 +7337,18 @@ TEST(World, RigidBodyFixedJointsRejectIpcSolver)
   auto solverFirstParent = solverFirst.addRigidBody("parent", parentOptions);
   auto solverFirstChild = solverFirst.addRigidBody("child", childOptions);
   EXPECT_THROW(
-      solverFirst.addRigidBodyFixedJoint(
-          "fixed", solverFirstParent, solverFirstChild),
+      solverFirst.addRigidBodyPrismaticJoint(
+          "slide",
+          solverFirstParent,
+          solverFirstChild,
+          Eigen::Vector3d::UnitX()),
       sx::InvalidOperationException);
-
-  const auto solverFirstJoints
-      = dart::simulation::detail::registryOf(solverFirst)
-            .view<sx::comps::Joint>();
-  EXPECT_EQ(solverFirstJoints.begin(), solverFirstJoints.end());
 
   sx::World jointFirst;
   auto jointFirstParent = jointFirst.addRigidBody("parent", parentOptions);
   auto jointFirstChild = jointFirst.addRigidBody("child", childOptions);
-  (void)jointFirst.addRigidBodyFixedJoint(
-      "fixed", jointFirstParent, jointFirstChild);
+  (void)jointFirst.addRigidBodyPrismaticJoint(
+      "slide", jointFirstParent, jointFirstChild, Eigen::Vector3d::UnitX());
 
   EXPECT_THROW(
       jointFirst.setRigidBodySolver(sx::RigidBodySolver::Ipc),

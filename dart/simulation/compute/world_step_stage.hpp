@@ -405,6 +405,7 @@ struct RigidIpcSolverStats
   std::size_t skippedUnsupportedShapeCount = 0;
   std::size_t activeConstraints = 0;
   std::size_t activeFrictionConstraints = 0;
+  std::size_t activeArticulationConstraints = 0;
   std::size_t activeDynamicsTerms = 0;
   std::size_t solverIterations = 0;
   std::size_t frictionIterations = 0;
@@ -414,6 +415,8 @@ struct RigidIpcSolverStats
   double finalValue = 0.0;
   double initialGradientNorm = 0.0;
   double finalGradientNorm = 0.0;
+  double initialEqualityResidualNorm = 0.0;
+  double finalEqualityResidualNorm = 0.0;
   double finalMomentumBalance = 0.0;
   double lastStepNorm = 0.0;
   double barrierStiffness = 0.0;
