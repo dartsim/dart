@@ -52,6 +52,7 @@
 #include <dart/simulation/compute/sequential_executor.hpp>
 #include <dart/simulation/compute/variational_integration.hpp>
 #include <dart/simulation/compute/world_batch.hpp>
+#include <dart/simulation/compute/world_kinematics_graph.hpp>
 #include <dart/simulation/compute/world_step_stage.hpp>
 #include <dart/simulation/constraint/loop_closure_spec.hpp>
 #include <dart/simulation/detail/deformable_vbd/rigid_world_contact.hpp>
@@ -2812,6 +2813,29 @@ TEST(World, RigidBodyContactScratchPayloadUsesWorldAllocator)
   EXPECT_GT(freeList.getAllocationCount(), allocationsBeforePrepare)
       << "allocator-aware rigid contact scratch should reserve sequential "
          "impulse constraints from the World free allocator";
+}
+
+TEST(World, WorldKinematicsGraphEntityNodesUseWorldAllocator)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  (void)world.addFreeFrame("kinematics_allocator_frame");
+
+  auto& memoryManager = world.getMemoryManager();
+  auto& freeList = memoryManager.getFreeListAllocator();
+  const auto allocationsBeforeGraph = freeList.getAllocationCount();
+
+  {
+    sx::compute::WorldKinematicsGraph graph(
+        world, memoryManager.getFreeAllocator());
+    EXPECT_GT(graph.getGraph().getNodeCount(), 0u);
+    EXPECT_GT(freeList.getAllocationCount(), allocationsBeforeGraph)
+        << "allocator-aware kinematics graph should reserve entity-node "
+           "cache storage from the World free allocator";
+  }
+
+  EXPECT_EQ(freeList.getAllocationCount(), allocationsBeforeGraph);
 }
 
 TEST(World, WorldOptionsConfigureDomainSolverFamilies)

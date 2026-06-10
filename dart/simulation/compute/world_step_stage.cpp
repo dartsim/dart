@@ -806,10 +806,14 @@ ComputeStageMetadata KinematicsStage::getMetadata() const noexcept
 void KinematicsStage::prepare(World& world)
 {
   if (m_cachedWorld != &world || !m_cachedGraph) {
+    auto* graph
+        = m_memoryManager != nullptr
+              ? constructStageOwnedScratch<WorldKinematicsGraph>(
+                    m_memoryManager, world, m_memoryManager->getFreeAllocator())
+              : constructStageOwnedScratch<WorldKinematicsGraph>(
+                    nullptr, world);
     m_cachedGraph = std::unique_ptr<WorldKinematicsGraph, CachedGraphDeleter>(
-        constructStageOwnedScratch<WorldKinematicsGraph>(
-            m_memoryManager, world),
-        CachedGraphDeleter{m_memoryManager});
+        graph, CachedGraphDeleter{m_memoryManager});
     m_cachedWorld = &world;
     return;
   }

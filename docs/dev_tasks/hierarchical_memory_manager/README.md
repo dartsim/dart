@@ -759,6 +759,12 @@ Follow-up progress after PR #2956:
   first reserve increases the World free-list allocation count. AVBD contact
   scratch internals remain separate follow-up work because they own a broader
   bundle of snapshots, row scratch, and warm-start inventories.
+- The kinematics cache follow-up routes `WorldKinematicsGraph`'s entity-node
+  lookup vector through the World free allocator when the graph is constructed
+  by the built-in kinematics stage. A focused stack-constructed graph test
+  verifies that entity-node cache storage increases the World free-list live
+  allocation count and releases it when the graph is destroyed. General
+  `ComputeGraph` node storage remains a separate follow-up.
 
 Remaining Phase 4/5 follow-up items for the next PR:
 

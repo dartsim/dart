@@ -152,7 +152,15 @@ std::string frameCacheResource(entt::entity entity)
 } // namespace
 
 //==============================================================================
-WorldKinematicsGraph::WorldKinematicsGraph(World& world) : m_world(world)
+WorldKinematicsGraph::WorldKinematicsGraph(World& world)
+  : WorldKinematicsGraph(world, common::MemoryAllocator::GetDefault())
+{
+}
+
+//==============================================================================
+WorldKinematicsGraph::WorldKinematicsGraph(
+    World& world, common::MemoryAllocator& allocator)
+  : m_world(world), m_entityNodes(EntityNodeAllocator{allocator})
 {
   rebuild();
 }

@@ -81,9 +81,11 @@ same-shape steps should not materialize new registry storages or grow existing
 storage capacity. The rigid-body velocity stage's force-batch payload vectors
 and the rigid-body contact stage's sequential-impulse constraint vector also
 borrow the World free allocator when the built-in pipeline constructs those
-stages. Other nested `std::vector`/Eigen payload capacity inside stage scratch
-objects is still governed by the same-shape world-base and global heap
-no-growth gates.
+stages. `WorldKinematicsGraph` also uses the World free allocator for its
+frame-entity-to-node cache when constructed by the built-in kinematics stage.
+Other nested `std::vector`/Eigen payload capacity inside stage scratch objects
+and the general `ComputeGraph` node storage are still governed by the
+same-shape world-base and global heap no-growth gates.
 
 `World::clear()` recreates `WorldStorage` and the built-in step-pipeline cache
 with the same world free allocator, drops the lazy collision query cache, and
