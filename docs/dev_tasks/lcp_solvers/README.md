@@ -592,26 +592,24 @@
       same Newton warm-start mode matrix over batch-size-4 standard active-set
       transition packets, both serially and through DART 7 `ParallelExecutor`,
       verified in default, SIMD-enabled, and CUDA-enabled build trees.
-- [ ] Continue expanding synthetic coverage beyond the current production-scale,
-      larger mildly ill-conditioned, extreme singular-degenerate, and extreme
-      active-set transition benchmark slices into harder solver-specific
-      friction-index conditioning/coupling cases and broader backend execution
-      evidence beyond CPU solver rows in SIMD/CUDA-enabled builds.
-- [ ] Continue extending DART 7 end-to-end contact cases through the public
-      simulation pipeline beyond current separated contacts, fixed-base
-      articulated contacts, 7-sphere coupled snapshots, 6-sphere coupled-stack
-      public-step rows plus bounded
-      7-/8-/9-/10-/11-/12-/13-/14-/15-/16-/24-/32-sphere one-step stack
-      rows, 48-box unit/benchmark dense face-contact long-horizon step coverage,
-      and bounded 64-box dense face-contact one-step shape and 75-step
-      strict-invariant checks plus 96-box one-step shape and 75-step
-      strict-invariant coverage plus 128-box one-step shape and 75-step
-      strict-invariant coverage plus 144-box one-step shape and 75-step
-      strict-invariant coverage plus 192-/256-box one-step shape coverage.
-- [ ] Broaden apples-to-apples benchmark packets from generated problems and
-      simple world-contact snapshots to broader dense/robot-like end-to-end
-      contact systems, with scalar, SIMD, threaded, CUDA, and broader batch
-      evidence separated.
+- [x] Synthetic correctness and benchmark coverage reaches production-scale
+      256-contact coupled friction-index packets, near-singular 256-contact
+      packets, exact rank-deficient 256-contact friction-index packets, and
+      128-row standard/boxed singular-degenerate packets. Further
+      solver-specific conditioning and backend expansion is deferred to future
+      work.
+- [x] DART 7 end-to-end contact coverage reaches 32-sphere coupled-stack
+      snapshots, dense face-contact scenes through 256 boxes, 2048-link
+      fixed-base articulated contacts, 2048-chain Cartesian contacts, and
+      2048-pair link-vs-rigid and cross-multibody link-vs-link public-step
+      scenes. Broader robot-like and longer-running contact scenes are deferred
+      to future work.
+- [x] Apples-to-apples benchmark packets cover generated problems,
+      world-contact snapshots, dense face-contact snapshots, public-step
+      contact scenes, scalar/default builds, SIMD-enabled builds,
+      solver-internal threaded CPU rows, DART 7 `ParallelExecutor` batch rows,
+      and direct CUDA Jacobi/PGS batch execution. Broader robot-like systems
+      and general CUDA execution for every solver are deferred.
 
 ## Goal
 
@@ -944,7 +942,8 @@ tradeoffs evidence based.
   variables, friction-index contact counts 1/2/4/8 with mixed cone activity,
   coupled friction-index 2-contact, 4-contact, and 6-contact well-conditioned
   cases, coupled mildly ill-conditioned 2-contact and 4-contact friction-index
-  cases, batch-shaped solver reuse across families, pivoting-solver
+  cases over exact-solution scoped solvers, batch-shaped solver reuse across
+  families, pivoting-solver
   near-singular standard cases, and invalid-problem rejection with diagnostic
   messages across the full manifest. Separate scoped larger-case tests cover
   standard 32-row and 64-row, boxed 32-row, friction-index 16-contact, and
@@ -3416,19 +3415,8 @@ tradeoffs evidence based.
 
 ## Immediate Next Steps
 
-1. Extend solver-specific friction-index conditioning/coupling grids beyond the
-   current exact rank-deficient 128-row/256-contact correctness/benchmark,
-   and production active-set transition 256-contact correctness, single-benchmark,
-   and batch benchmark slices.
-2. Extend DART 7 boxed-LCP world-contact evidence from current separated
-   sphere-ground, current fixed-base prismatic articulated end-to-end coverage,
-   current connected Cartesian-chain articulated end-to-end coverage,
-   current cross-multibody articulated link-vs-link impact coverage,
-   current manually assembled three-axis articulated LCP snapshots, and
-   current 24-/32-sphere all-solver vertical-stack solver rows, current 24-/32-sphere
-   vertical-stack snapshots and assembly rows, and dense box face-contact
-   evidence to broader articulated, longer-running, and denser coupled contact
-   scenes.
-3. Add broader benchmark gates for SIMD-enabled CPU, intra-solver
-   multi-threaded CPU, general CUDA LCP solver execution, and vectorized/CUDA
-   batch-processing paths.
+1. Open the DART 7 LCP evidence PR against `main`.
+2. File a deferred-work issue for the scope-capped expansion areas that should
+   not be added to this evidence branch.
+3. Keep `docs/dev_tasks/lcp_solvers/` until the evidence PR merges, then move
+   durable guidance to long-lived docs before deleting the task folder.

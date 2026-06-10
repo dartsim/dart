@@ -1422,6 +1422,33 @@ void runGeneratedCasesForSupportingSolvers(
   }
 }
 
+bool solverShouldRunCoupledFrictionIndexKnownSolutionCase(
+    const LcpSolverManifestEntry& solver, const GeneratedCase& testCase)
+{
+  if (!solverShouldRun(solver, testCase)) {
+    return false;
+  }
+
+  if (testCase.conditioning != ConditioningClass::MildlyIllConditioned) {
+    return true;
+  }
+
+  // These cases assert the selected generated solution, not just any valid
+  // LCP solution. Solvers that converge to alternate valid mildly coupled
+  // friction-index solutions stay covered by benchmark contract rows.
+  constexpr std::array<std::string_view, 8> kMildCoupledExactSolvers{{
+      "Dantzig",
+      "Pgs",
+      "NNCG",
+      "Apgd",
+      "Tgs",
+      "Admm",
+      "Sap",
+      "BoxedSemiSmoothNewton",
+  }};
+  return solverNameIn(solver, kMildCoupledExactSolvers);
+}
+
 void expectSolverRejectsInvalidProblem(
     const LcpSolverManifestEntry& solverEntry, const LcpProblem& problem)
 {
@@ -1469,7 +1496,15 @@ TEST(LcpGeneratedCoverage, FrictionIndexKnownSolutionsAcrossContactCounts)
 TEST(
     LcpGeneratedCoverage, CoupledFrictionIndexKnownSolutionsAcrossContactCounts)
 {
-  runGeneratedCasesForSupportingSolvers(makeCoupledFrictionIndexCases());
+  for (const auto& testCase : makeCoupledFrictionIndexCases()) {
+    for (const auto& solver : dart::test::kLcpSolverManifest) {
+      if (!solverShouldRunCoupledFrictionIndexKnownSolutionCase(
+              solver, testCase)) {
+        continue;
+      }
+      expectSolverPassesGeneratedCase(solver, testCase);
+    }
+  }
 }
 
 //==============================================================================
