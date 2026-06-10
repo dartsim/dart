@@ -41,6 +41,7 @@ from .scenes.ipc_deformable_scripted_dirichlet import SCENE as IPC_DEFORMABLE_SC
 from .scenes.ipc_deformable_seg_strand import SCENE as IPC_DEFORMABLE_SEG_STRAND
 from .scenes.ipc_deformable_trampoline import SCENE as IPC_DEFORMABLE_TRAMPOLINE
 from .scenes.loop_closure import SCENE as LOOP_CLOSURE
+from .scenes.plan083_unified_newton_barrier import PLAN083_SCENES
 from .scenes.planned import COLLISION_SANDBOX as PLANNED_COLLISION_SANDBOX
 from .scenes.planned import INVERSE_KINEMATICS as PLANNED_INVERSE_KINEMATICS
 from .scenes.planned import MOBILE_MANIPULATION as PLANNED_MOBILE_MANIPULATION
@@ -114,6 +115,10 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         RIGID_IPC_EDGE_DROP,
         RIGID_IPC_PILE,
         RIGID_IPC_TUNNEL,
+        # PLAN-083 unified Newton-barrier CPU corpus placeholders. These are
+        # launchable py-demo rows with explicit smoke/visual/benchmark commands
+        # but intentionally remain planned until runtime mixed stepping exists.
+        *PLAN083_SCENES,
         REPLAY_SCRUBBER,
         VARIATIONAL_CHAIN,
         VARIATIONAL_TUMBLER,

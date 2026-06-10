@@ -263,6 +263,14 @@ lint-phase5-cuda-workflow = { cmd = [
   "python",
   "scripts/check_phase5_cuda_workflow.py",
 ] }
+lint-plan083-gpu-parity-packet = { cmd = [
+  "python",
+  "scripts/check_plan083_gpu_parity_packet.py",
+] }
+lint-plan083-completion-audit = { cmd = [
+  "python",
+  "scripts/check_plan083_completion_audit.py",
+] }
 
 update-api-boundary-inventory = { cmd = [
   "python",
@@ -289,6 +297,8 @@ lint = { depends-on = [
   "lint-no-gpu-runtime-dependencies",
   "lint-phase5-cuda-benchmark-contract",
   "lint-phase5-cuda-workflow",
+  "lint-plan083-gpu-parity-packet",
+  "lint-plan083-completion-audit",
   "sync-ai-commands",
 ] }
 
@@ -345,6 +355,14 @@ check-phase5-cuda-workflow = { cmd = [
   "python",
   "scripts/check_phase5_cuda_workflow.py",
 ] }
+check-plan083-gpu-parity-packet = { cmd = [
+  "python",
+  "scripts/check_plan083_gpu_parity_packet.py",
+] }
+check-plan083-completion-audit = { cmd = [
+  "python",
+  "scripts/check_plan083_completion_audit.py",
+] }
 
 check-api-boundary-inventory = { cmd = [
   "python",
@@ -381,6 +399,8 @@ check-lint = { depends-on = [
   "check-no-gpu-runtime-dependencies",
   "check-phase5-cuda-benchmark-contract",
   "check-phase5-cuda-workflow",
+  "check-plan083-gpu-parity-packet",
+  "check-plan083-completion-audit",
   "check-api-boundary-inventory",
   "check-ai-commands",
 ] }
@@ -1426,6 +1446,8 @@ bm-abd-comparison-packet = { cmd = "python scripts/check_abd_comparison_packet.p
 ] }
 bm-phase5-cuda-packet = { cmd = "python scripts/write_phase5_cuda_packet.py" }
 bm-phase5-gpu-packet-check = { cmd = "python scripts/check_phase5_gpu_packet.py" }
+bm-plan083-gpu-parity-packet-check = { cmd = "python scripts/check_plan083_gpu_parity_packet.py" }
+bm-plan083-completion-audit-check = { cmd = "python scripts/check_plan083_completion_audit.py" }
 bm-dashboard-surfaces = { cmd = "python scripts/run_performance_dashboard_benchmarks.py", depends-on = [
   "config",
 ] }
