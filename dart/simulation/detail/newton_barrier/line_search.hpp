@@ -197,9 +197,6 @@ struct LineSearchCcdOutcome
     ++stats.indeterminate;
     outcome.indeterminate = true;
     outcome.stepBound = std::clamp(primitive.timeOfImpact, 0.0, 1.0);
-    if (outcome.stepBound <= 0.0) {
-      ++stats.zeroStepCount;
-    }
     return outcome;
   }
 
