@@ -62,6 +62,7 @@
 #include "dart/simulation/detail/newton_barrier/friction_kernel.hpp"
 #include "dart/simulation/detail/newton_barrier/projected_newton.hpp"
 #include "dart/simulation/detail/newton_barrier/psd_backend.hpp"
+#include "dart/simulation/detail/newton_barrier/restitution_damping.hpp"
 #include "dart/simulation/detail/rigid_ipc_barrier.hpp"
 #include "dart/simulation/detail/world_registry_access.hpp"
 #include "dart/simulation/world.hpp"
@@ -107,6 +108,30 @@ namespace fem = dart::simulation::detail::deformable_elasticity;
 namespace nb = dart::simulation::detail::newton_barrier;
 namespace sxdetail = dart::simulation::detail;
 
+struct RigidIpcBdf2StepState
+{
+  bool active = false;
+  bool hasPreviousPosition = false;
+  sxdetail::RigidIpcVector6d previousPosition
+      = sxdetail::RigidIpcVector6d::Zero();
+  sxdetail::RigidIpcVector6d currentPosition
+      = sxdetail::RigidIpcVector6d::Zero();
+  sxdetail::RigidIpcVector6d currentVelocity
+      = sxdetail::RigidIpcVector6d::Zero();
+};
+
+struct RigidIpcBdf2HistoryEntry
+{
+  entt::entity entity = entt::null;
+  bool hasPreviousPosition = false;
+  sxdetail::RigidIpcVector6d previousPosition
+      = sxdetail::RigidIpcVector6d::Zero();
+  sxdetail::RigidIpcVector6d currentPosition
+      = sxdetail::RigidIpcVector6d::Zero();
+  sxdetail::RigidIpcVector6d currentVelocity
+      = sxdetail::RigidIpcVector6d::Zero();
+};
+
 struct RigidIpcRuntimeBody
 {
   entt::entity entity = entt::null;
@@ -116,6 +141,7 @@ struct RigidIpcRuntimeBody
   sxdetail::RigidIpcPose initialPose;
   sxdetail::RigidIpcVector6d initialVelocity
       = sxdetail::RigidIpcVector6d::Zero();
+  RigidIpcBdf2StepState bdf2StepState;
   sxdetail::RigidIpcBarrierSurface surface;
   sxdetail::RigidIpcBodyDynamicsTerm dynamicsTerm;
 };
@@ -129,6 +155,7 @@ struct RigidIpcContactStage::Scratch
   std::vector<sxdetail::RigidIpcBodyDynamicsTerm> solveDynamicsTerms;
   std::vector<sxdetail::RigidIpcArticulationConstraintInput>
       articulationConstraints;
+  std::vector<RigidIpcBdf2HistoryEntry> bdf2Histories;
   std::vector<entt::entity> tracedEntities;
   std::vector<entt::entity> blockedEntities;
   std::vector<entt::entity> writebackEntities;
@@ -139,6 +166,17 @@ struct RigidIpcContactStage::Scratch
 namespace {
 
 constexpr double kDefaultRigidIpcContactStageActivationDistance = 1e-2;
+
+[[nodiscard]] bool isValidRigidIpcTimeIntegration(
+    const RigidIpcTimeIntegration integration) noexcept
+{
+  switch (integration) {
+    case RigidIpcTimeIntegration::SemiImplicit:
+    case RigidIpcTimeIntegration::Bdf2:
+      return true;
+  }
+  return false;
+}
 
 [[nodiscard]] RigidIpcContactStageOptions
 makeRigidIpcContactStageOptionsForMaxIterations(const std::size_t maxIterations)
@@ -162,6 +200,9 @@ makeRigidIpcContactStageOptionsForMaxIterations(const std::size_t maxIterations)
   if (!std::isfinite(options.frictionConvergenceTolerance)
       || options.frictionConvergenceTolerance < 0.0) {
     options.frictionConvergenceTolerance = 0.0;
+  }
+  if (!isValidRigidIpcTimeIntegration(options.timeIntegration)) {
+    options.timeIntegration = RigidIpcTimeIntegration::SemiImplicit;
   }
   return options;
 }
@@ -7355,6 +7396,7 @@ void resetRigidIpcRuntimeBodyPreservingSurface(
   body.surfaceIndex = std::numeric_limits<std::size_t>::max();
   body.initialPose = sxdetail::RigidIpcPose{};
   body.initialVelocity.setZero();
+  body.bdf2StepState = RigidIpcBdf2StepState{};
   body.dynamicsTerm = sxdetail::RigidIpcBodyDynamicsTerm{};
 
   body.surface.body = 0u;
@@ -7392,6 +7434,7 @@ void copyRigidIpcRuntimeBodyPreservingSurfaceCapacity(
   target.surfaceIndex = source.surfaceIndex;
   target.initialPose = source.initialPose;
   target.initialVelocity = source.initialVelocity;
+  target.bdf2StepState = source.bdf2StepState;
   copyRigidIpcSurfacePreservingCapacity(source.surface, target.surface);
   target.dynamicsTerm = source.dynamicsTerm;
 }
@@ -7445,6 +7488,71 @@ comps::Transform toTransform(const sxdetail::RigidIpcPose& pose)
   transform.position = pose.position;
   transform.orientation = quaternionFromRotationVector(pose.rotation);
   return transform;
+}
+
+//==============================================================================
+sxdetail::RigidIpcVector6d poseVector(const sxdetail::RigidIpcPose& pose)
+{
+  sxdetail::RigidIpcVector6d vector;
+  vector.head<3>() = pose.position;
+  vector.tail<3>() = pose.rotation;
+  return vector;
+}
+
+//==============================================================================
+sxdetail::RigidIpcPose poseFromVector(const sxdetail::RigidIpcVector6d& vector)
+{
+  sxdetail::RigidIpcPose pose;
+  pose.position = vector.head<3>();
+  pose.rotation = vector.tail<3>();
+  return pose;
+}
+
+//==============================================================================
+RigidIpcBdf2HistoryEntry* findRigidIpcBdf2History(
+    std::vector<RigidIpcBdf2HistoryEntry>& histories, const entt::entity entity)
+{
+  auto it = std::find_if(
+      histories.begin(), histories.end(), [entity](const auto& history) {
+        return history.entity == entity;
+      });
+  return it == histories.end() ? nullptr : std::addressof(*it);
+}
+
+//==============================================================================
+RigidIpcBdf2HistoryEntry& findOrCreateRigidIpcBdf2History(
+    std::vector<RigidIpcBdf2HistoryEntry>& histories, const entt::entity entity)
+{
+  if (auto* history = findRigidIpcBdf2History(histories, entity);
+      history != nullptr) {
+    return *history;
+  }
+
+  RigidIpcBdf2HistoryEntry history;
+  history.entity = entity;
+  histories.push_back(history);
+  return histories.back();
+}
+
+//==============================================================================
+void pruneRigidIpcBdf2Histories(
+    std::vector<RigidIpcBdf2HistoryEntry>& histories,
+    const std::vector<RigidIpcRuntimeBody>& bodies)
+{
+  histories.erase(
+      std::remove_if(
+          histories.begin(),
+          histories.end(),
+          [&bodies](const RigidIpcBdf2HistoryEntry& history) {
+            return history.entity == entt::null
+                   || std::none_of(
+                       bodies.begin(), bodies.end(), [&](const auto& body) {
+                         return body.entity == history.entity
+                                && body.hasSupportedSurface
+                                && body.surface.dynamic;
+                       });
+          }),
+      histories.end());
 }
 
 //==============================================================================
@@ -7730,6 +7838,106 @@ sxdetail::RigidIpcBodyDynamicsTerm makeRuntimeRigidIpcDynamicsTerm(
 }
 
 //==============================================================================
+sxdetail::RigidIpcBodyDynamicsTerm makeRuntimeRigidIpcBdf2DynamicsTerm(
+    const World& world,
+    const entt::entity entity,
+    const sxdetail::RigidIpcPose& pose,
+    RigidIpcBdf2HistoryEntry& history,
+    RigidIpcBdf2StepState& stepState)
+{
+  sxdetail::RigidIpcBodyDynamicsTerm term;
+
+  const auto& registry = dart::simulation::detail::registryOf(world);
+  const bool isStatic = registry.all_of<comps::StaticBodyTag>(entity);
+  const bool isKinematic = registry.all_of<comps::KinematicBodyTag>(entity);
+  const bool prescribedMotion = isStatic || isKinematic;
+  const auto& velocity = registry.get<comps::Velocity>(entity);
+  const auto& mass = registry.get<comps::MassProperties>(entity);
+  const auto& force = registry.get<comps::Force>(entity);
+
+  sxdetail::RigidIpcVector6d currentPosition = poseVector(pose);
+  sxdetail::RigidIpcVector6d currentVelocity
+      = sxdetail::RigidIpcVector6d::Zero();
+  currentVelocity.head<3>() = velocity.linear;
+  currentVelocity.tail<3>() = velocity.angular;
+
+  constexpr double kHistoryPoseTolerance = 1e-8;
+  if ((history.currentPosition - currentPosition).norm()
+      > kHistoryPoseTolerance) {
+    history.hasPreviousPosition = false;
+    history.previousPosition.setZero();
+  }
+  if (!history.currentPosition.allFinite()) {
+    history.hasPreviousPosition = false;
+  }
+
+  nb::Bdf2StepHistory<6> bdf2History;
+  bdf2History.active = !prescribedMotion;
+  bdf2History.hasPreviousPosition
+      = history.hasPreviousPosition && history.previousPosition.allFinite();
+  bdf2History.previousPosition = history.previousPosition;
+  bdf2History.currentPosition = currentPosition;
+  bdf2History.currentVelocity = currentVelocity;
+
+  const auto inertial = nb::makeBdf2InertialTerm<6>(
+      bdf2History, /*mass=*/1.0, world.getTimeStep());
+  if (!inertial.active || !std::isfinite(mass.mass) || mass.mass <= 0.0
+      || !mass.inertia.allFinite()) {
+    return term;
+  }
+
+  term.active = true;
+  term.targetPose = poseFromVector(inertial.targetPosition);
+  term.diagonalWeights.head<3>().setConstant(mass.mass * inertial.scalarWeight);
+  term.diagonalWeights.tail<3>()
+      = (mass.inertia.diagonal().array().max(0.0) * inertial.scalarWeight)
+            .matrix();
+  term.generalizedForce.head<3>() = force.force;
+  term.generalizedForce.tail<3>() = force.torque;
+  if (!prescribedMotion) {
+    term.generalizedForce.head<3>() += mass.mass * world.getGravity();
+  }
+
+  stepState.active = true;
+  stepState.hasPreviousPosition = bdf2History.hasPreviousPosition;
+  stepState.previousPosition = bdf2History.previousPosition;
+  stepState.currentPosition = bdf2History.currentPosition;
+  stepState.currentVelocity = bdf2History.currentVelocity;
+  return term;
+}
+
+//==============================================================================
+void applyRigidIpcBdf2DynamicsTerms(
+    const World& world,
+    std::vector<RigidIpcBdf2HistoryEntry>& histories,
+    std::vector<RigidIpcRuntimeBody>& bodies,
+    RigidIpcSolverStats& stats)
+{
+  pruneRigidIpcBdf2Histories(histories, bodies);
+
+  for (RigidIpcRuntimeBody& body : bodies) {
+    if (!body.hasSupportedSurface || !body.surface.dynamic) {
+      continue;
+    }
+
+    RigidIpcBdf2HistoryEntry& history
+        = findOrCreateRigidIpcBdf2History(histories, body.entity);
+    history.entity = body.entity;
+    body.bdf2StepState = RigidIpcBdf2StepState{};
+    body.dynamicsTerm = makeRuntimeRigidIpcBdf2DynamicsTerm(
+        world, body.entity, body.initialPose, history, body.bdf2StepState);
+    if (!body.dynamicsTerm.active || !body.bdf2StepState.active) {
+      continue;
+    }
+    if (body.bdf2StepState.hasPreviousPosition) {
+      ++stats.bdf2SecondOrderDynamicsTerms;
+    } else {
+      ++stats.bdf2RestartedDynamicsTerms;
+    }
+  }
+}
+
+//==============================================================================
 void collectRigidIpcRuntimeBodies(
     const World& world,
     RigidIpcSolverStats& stats,
@@ -7926,18 +8134,50 @@ void clearKinematicBodyStepTraces(
 void applyRigidIpcPoseToRuntimeBody(
     World& world,
     const RigidIpcRuntimeBody& body,
-    const sxdetail::RigidIpcPose& pose)
+    const sxdetail::RigidIpcPose& pose,
+    std::vector<RigidIpcBdf2HistoryEntry>* bdf2Histories)
 {
   auto& registry = dart::simulation::detail::registryOf(world);
   auto& transform = registry.get<comps::Transform>(body.entity);
   auto& velocity = registry.get<comps::Velocity>(body.entity);
 
   const double timeStep = world.getTimeStep();
+  const sxdetail::RigidIpcVector6d acceptedPosition = poseVector(pose);
+  sxdetail::RigidIpcVector6d acceptedVelocity
+      = sxdetail::RigidIpcVector6d::Zero();
   transform.position = pose.position;
   transform.orientation = quaternionFromRotationVector(pose.rotation);
   if (timeStep > 0.0 && std::isfinite(timeStep)) {
-    velocity.linear = (pose.position - body.initialPose.position) / timeStep;
-    velocity.angular = (pose.rotation - body.initialPose.rotation) / timeStep;
+    acceptedVelocity.head<3>()
+        = (pose.position - body.initialPose.position) / timeStep;
+    acceptedVelocity.tail<3>()
+        = (pose.rotation - body.initialPose.rotation) / timeStep;
+    if (bdf2Histories != nullptr && body.bdf2StepState.active) {
+      nb::Bdf2StepHistory<6> history;
+      history.active = true;
+      history.hasPreviousPosition = body.bdf2StepState.hasPreviousPosition;
+      history.previousPosition = body.bdf2StepState.previousPosition;
+      history.currentPosition = body.bdf2StepState.currentPosition;
+      history.currentVelocity = body.bdf2StepState.currentVelocity;
+      const auto update
+          = nb::makeBdf2VelocityUpdate<6>(history, acceptedPosition, timeStep);
+      if (update.active && update.velocity.allFinite()) {
+        acceptedVelocity = update.velocity;
+      }
+    }
+    velocity.linear = acceptedVelocity.head<3>();
+    velocity.angular = acceptedVelocity.tail<3>();
+  }
+
+  if (bdf2Histories != nullptr && body.bdf2StepState.active
+      && acceptedPosition.allFinite() && acceptedVelocity.allFinite()) {
+    RigidIpcBdf2HistoryEntry& history
+        = findOrCreateRigidIpcBdf2History(*bdf2Histories, body.entity);
+    history.entity = body.entity;
+    history.hasPreviousPosition = true;
+    history.previousPosition = body.bdf2StepState.currentPosition;
+    history.currentPosition = acceptedPosition;
+    history.currentVelocity = acceptedVelocity;
   }
 
   auto& props = registry.get<comps::FreeFrameProperties>(body.entity);
@@ -7986,7 +8226,8 @@ void applyKinematicRuntimeBody(World& world, const RigidIpcRuntimeBody& body)
 void applyRigidIpcRuntimeResult(
     World& world,
     const std::vector<RigidIpcRuntimeBody>& bodies,
-    const sxdetail::RigidIpcProjectedNewtonSolveResult& result)
+    const sxdetail::RigidIpcProjectedNewtonSolveResult& result,
+    std::vector<RigidIpcBdf2HistoryEntry>* bdf2Histories = nullptr)
 {
   auto& registry = dart::simulation::detail::registryOf(world);
   std::vector<entt::entity> writebackEntities;
@@ -8012,7 +8253,7 @@ void applyRigidIpcRuntimeResult(
         continue;
       }
       applyRigidIpcPoseToRuntimeBody(
-          world, body, result.surfaces[body.surfaceIndex].pose);
+          world, body, result.surfaces[body.surfaceIndex].pose, bdf2Histories);
     }
   }
 }
@@ -8840,6 +9081,12 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
   clearKinematicBodyStepTraces(world, scratch.tracedEntities);
 
   collectRigidIpcRuntimeBodies(world, m_lastStats, scratch.runtimeBodies);
+  if (m_options.timeIntegration == RigidIpcTimeIntegration::Bdf2) {
+    applyRigidIpcBdf2DynamicsTerms(
+        world, scratch.bdf2Histories, scratch.runtimeBodies, m_lastStats);
+  } else {
+    scratch.bdf2Histories.clear();
+  }
   const auto& runtimeBodies = scratch.runtimeBodies;
 
   if (runtimeBodies.empty()) {
@@ -9065,7 +9312,13 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
   }
 
   m_lastStats.resultApplied = true;
-  applyRigidIpcRuntimeResult(world, runtimeBodies, result);
+  applyRigidIpcRuntimeResult(
+      world,
+      runtimeBodies,
+      result,
+      m_options.timeIntegration == RigidIpcTimeIntegration::Bdf2
+          ? std::addressof(scratch.bdf2Histories)
+          : nullptr);
 }
 
 //==============================================================================

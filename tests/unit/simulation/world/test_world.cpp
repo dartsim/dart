@@ -6144,6 +6144,78 @@ TEST(World, RigidIpcContactStageAdvancesSphereBodyFromRuntimeDynamics)
   EXPECT_NEAR(body.getLinearVelocity().x(), 1.2, 1e-8);
 }
 
+// Test that the opt-in BDF-2 rigid IPC path builds its inertial target from
+// per-body runtime history while preserving the default first-order restart on
+// the first accepted step.
+TEST(World, RigidIpcContactStageBdf2FallingBoxEnergyStaysFinite)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  world.setTimeStep(0.01);
+
+  sx::RigidBodyOptions options;
+  options.position = Eigen::Vector3d(0.0, 0.0, 1.0);
+  options.mass = 1.0;
+  auto box = world.addRigidBody("bdf2_box", options);
+  box.setCollisionShape(sx::CollisionShape::makeBox({0.1, 0.1, 0.1}));
+
+  const auto mechanicalEnergy = [&]() {
+    const double kinetic
+        = 0.5 * box.getMass() * box.getLinearVelocity().squaredNorm();
+    const double potential
+        = -box.getMass() * world.getGravity().dot(box.getTranslation());
+    return kinetic + potential;
+  };
+  const double initialHeight = box.getTranslation().z();
+  const double initialEnergy = mechanicalEnergy();
+
+  sx::compute::RigidIpcContactStageOptions stageOptions;
+  stageOptions.maxIterations = 16;
+  stageOptions.timeIntegration = sx::compute::RigidIpcTimeIntegration::Bdf2;
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage(stageOptions);
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+
+  world.step(executor, pipeline);
+  const double firstStepHeight = box.getTranslation().z();
+  {
+    const auto& stats = ipcStage.getLastStats();
+    EXPECT_EQ(stats.activeDynamicsTerms, 1u);
+    EXPECT_EQ(stats.bdf2RestartedDynamicsTerms, 1u);
+    EXPECT_EQ(stats.bdf2SecondOrderDynamicsTerms, 0u);
+    EXPECT_TRUE(stats.converged);
+    EXPECT_TRUE(stats.resultApplied);
+  }
+
+  world.step(executor, pipeline);
+  const double finalHeight = box.getTranslation().z();
+  {
+    const auto& stats = ipcStage.getLastStats();
+    EXPECT_EQ(stats.activeDynamicsTerms, 1u);
+    EXPECT_EQ(stats.bdf2RestartedDynamicsTerms, 0u);
+    EXPECT_EQ(stats.bdf2SecondOrderDynamicsTerms, 1u);
+    EXPECT_TRUE(stats.converged);
+    EXPECT_TRUE(stats.resultApplied);
+  }
+
+  const double finalEnergy = mechanicalEnergy();
+  const double expectedBdf2Velocity
+      = (3.0 * finalHeight - 4.0 * firstStepHeight + initialHeight)
+        / (2.0 * world.getTimeStep());
+  const double backwardDifferenceVelocity
+      = (finalHeight - firstStepHeight) / world.getTimeStep();
+  EXPECT_TRUE(std::isfinite(finalEnergy));
+  EXPECT_GT(finalEnergy, 0.99 * initialEnergy);
+  EXPECT_LT(finalEnergy, 1.01 * initialEnergy);
+  EXPECT_LT(finalHeight, initialHeight);
+  EXPECT_LT(box.getLinearVelocity().z(), 0.0);
+  EXPECT_NEAR(box.getLinearVelocity().z(), expectedBdf2Velocity, 1e-10);
+  EXPECT_GT(
+      std::abs(box.getLinearVelocity().z() - backwardDifferenceVelocity), 1e-6);
+}
+
 // Test that the opt-in rigid IPC stage assembles active barrier constraints
 // from runtime mesh surfaces and pushes a dynamic body away from a static one.
 // Body-body generalization of the freeze fix: a stack of two free boxes on
