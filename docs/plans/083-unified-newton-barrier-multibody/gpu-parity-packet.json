@@ -16,7 +16,7 @@
   "summary": {
     "row_count": 6,
     "status_counts": {
-      "in-progress": 1,
+      "measured": 1,
       "planned": 5
     }
   },
@@ -76,9 +76,9 @@
       "row_id": "psd-projection",
       "roadmap_item": "PSD projection",
       "owner": "PLAN-081 + PLAN-083",
-      "status": "in-progress",
+      "status": "measured",
       "cpu_evidence_command": "pixi run test-unit -- --gtest_filter='*PsdProjection*'",
-      "gpu_evidence_command": "pixi run -e cuda test-cuda",
+      "gpu_evidence_command": "pixi run -e cuda bm-plan083-gpu-psd-packet",
       "parity_evidence_artifact": ".benchmark_results/plan083/gpu/psd_projection_parity.json",
       "benchmark_profile_artifact": ".benchmark_results/plan083/gpu/psd_projection_benchmark.json",
       "same_scene_policy": "Use identical symmetric block batches and solver-realistic PSD dimensions on CPU and GPU.",
@@ -86,8 +86,23 @@
       "timing_policy": "Report setup, host_to_device, PSD kernel, solve=0 for local projection, device_to_host, readback, and CPU reference timing.",
       "speedup_policy": "Require >=1.25x over DART CPU PSD projection before recording a PLAN-083 speed claim.",
       "public_api_policy": "No public CUDA or backend exposure; existing PSD backend install seam remains private and opt-in.",
-      "limitation_status": "CUDA parity tests exist, but no PLAN-083 same-scene PSD speed packet has been checked in yet.",
-      "notes_or_gap": "This row is in-progress because the CUDA PSD projection path already has parity tests; it still needs the Phase 7 packet artifact before any speed claim."
+      "limitation_status": "Measured packet exists for 4096 symmetric 12x12 PSD blocks; this is a local-kernel packet, not a scene-level GPU claim.",
+      "notes_or_gap": "The PSD projection packet measured max_result_abs_error=2.4868995751603507e-14 and speedup=4.451557656446166x on 2026-06-09; remaining GPU rows stay planned until their own kernels and same-scene packets land.",
+      "same_scene_cpu_gpu": true,
+      "block_dimension": 12,
+      "block_count": 4096,
+      "max_result_abs_error": 2.4868995751603507e-14,
+      "result_abs_error_tolerance": 1e-9,
+      "speedup": 4.451557656446166,
+      "min_speedup": 1.25,
+      "timing_ns": {
+        "setup": 321619.5,
+        "host_to_device": 572091.0,
+        "kernel": 5562031.0,
+        "solve": 0.0,
+        "device_to_host": 768212.0,
+        "readback": 0.0
+      }
     },
     {
       "row_id": "assembly-linear-solve",

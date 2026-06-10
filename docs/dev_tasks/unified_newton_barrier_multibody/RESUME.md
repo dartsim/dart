@@ -1,11 +1,11 @@
 # Resume: Unified Newton-Barrier Multibody
 
-## Current Reality (2026-06-08)
+## Current Reality (2026-06-09)
 
-PR granularity: batch all work within one implementation-roadmap phase into a
-single branch and PR. Keep commits atomic within the branch. A phase may split
-into at most two PRs only when it crosses a public-API boundary or touches
-unrelated CI/build infrastructure.
+PR granularity: default to one branch and PR per implementation-roadmap phase,
+but consolidate adjacent small internal phases into one PR when that keeps
+review clearer. Keep commits atomic within the branch. Split only for
+public-API boundaries, unrelated CI/build infrastructure, or reviewability.
 
 Use this folder's `README.md`, PLAN-083, `docs/plans/dashboard.md`, and the
 current code as the live status. The branch-local "Current Branch" section below
@@ -152,8 +152,8 @@ Local validation on the Phase 7 branch passed the packet checker, focused
 packet tests, `pixi run lint`, `pixi run build`, and
 `pixi run -e cuda test-cuda` on the visible RTX 4080 Laptop GPU.
 
-The implementation-roadmap Phase 8 audit is now branch-local on
-`simx/plan083-phase8-completion-audit`:
+Implementation-roadmap Phases 3-8 landed together in PR #2960. The Phase 8
+audit at
 `docs/plans/083-unified-newton-barrier-multibody/completion-audit.md` records
 that PLAN-083 is not complete because planned manifest, CPU scene corpus, and
 GPU parity packet rows remain. The audit intentionally blocks retiring
@@ -161,7 +161,29 @@ GPU parity packet rows remain. The audit intentionally blocks retiring
 whether the remaining work stays active there or moves fully into durable plan
 sidecars.
 
-The runtime-wiring follow-up is now branch-local on
+The follow-up PSD projection packet slice adds
+`bm_plan083_gpu_psd_projection` plus
+`scripts/write_plan083_gpu_psd_packet.py`. On 2026-06-09,
+`pixi run -e cuda bm-plan083-gpu-psd-packet` measured the 4096-block 12x12 PSD
+row with max error `2.4868995751603507e-14` and `4.451557656446166x` speedup
+over the CPU reference. This moves only the local PSD projection row to
+`measured`; contact candidates, CCD/line search, barrier/friction kernels,
+assembly/solve, and scene-level GPU speedups remain planned.
+
+The follow-up barrier-force diagnostic slice adds
+`NewtonBarrierPrimitives.BarrierForceCurveCapturesKappaSensitivity`, which
+checks Fig. 17-style activation cutoff, kappa scaling, and near-contact slope
+growth against the private Newton-barrier scalar kernel. This moves only
+`unb-fig-17` to `in-progress`; runtime force plots and accepted default-kappa
+policy remain future evidence.
+
+The follow-up articulation manifest alignment moves `unb-fig-05`,
+`unb-fig-06`, `unb-fig-07`, `unb-fig-08`, `unb-fig-12`, and `unb-fig-13` to
+`in-progress` based on the landed Phase 3 private articulation diagnostics.
+Those rows still do not claim runtime articulated scenes, cloth snapshots,
+direct internal-contact speedups, or scaling packets.
+
+The runtime-wiring follow-up is branch-local on
 `feature/newton-barrier-runtime-wiring`: rigid IPC `World::step` consumes the
 landed point-connection/fixed and hinge-axis contracts, exposes opt-in BDF-2
 integration through the rigid IPC contact stage, routes deformable surfaces as
@@ -252,11 +274,12 @@ the already small runtime slices into separate PRs.
 
 ## Immediate Next Step
 
-Finish the final docs/audit commit, run the full local gates, merge latest
-`main`, push `feature/newton-barrier-runtime-wiring`, and open one PR targeting
-`main`. After the PR is open, keep managing it through review/CI while leaving
-the dev-task folder active because PLAN-083 acceptance criteria are still
-unmet.
+Resolve the `main` merge for PR #2970, rerun the required validation gates, push
+`feature/newton-barrier-runtime-wiring`, and keep managing that single PR
+through review/CI. Leave the dev-task folder active because PLAN-083 acceptance
+criteria are still unmet; if the task later moves out of this folder, get
+maintainer direction before deleting it and keep the remaining planned
+CPU/GPU/scene rows in durable sidecars.
 
 ## Context That Would Be Lost
 
@@ -342,8 +365,7 @@ pixi run python scripts/check_plan083_cpu_scene_corpus.py
 pixi run python scripts/check_plan083_gpu_parity_packet.py
 ```
 
-Then merge the latest Phase 6 base branch, verify the Phase 7 branch with lint
-and the focused GPU packet tests, and open one PR for the whole
-implementation-roadmap Phase 7. After that PR is open, continue immediately with
-roadmap Phase 8 from the Phase 7 branch head; do not describe planned GPU rows
-as speed claims or public backend promotion.
+Then sync `main`, verify the audit sidecars, and start the next implementation
+slice from the planned CPU/GPU/scene rows only after the maintainer confirms
+this dev-task folder remains the active tracker. Do not describe planned GPU
+rows as speed claims or public backend promotion.
