@@ -1365,18 +1365,29 @@ The current local evidence for this task is:
   `contact_count=1024`, and `problem_size=3072` in default, SIMD-enabled, and
   CUDA-enabled build trees; the CUDA-enabled rows are CPU solver rows in that
   build tree, not CUDA LCP kernel execution.
-- `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` now also registers 72
+- `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` now also registers 82
   serial and DART 7 `ParallelExecutor` dense box batch rows. `Pgs`,
-  `RedBlackGaussSeidel`, `NNCG`, `Apgd`, `Tgs`, and `Admm` cover
-  24/64/96/128/192-box snapshots at batch size 4; `Pgs` additionally covers
-  1/4/8/16/32/48-box snapshots so the CPU serial and `ParallelExecutor` rows
-  match the homogeneous CUDA PGS packet sizes through 96 boxes. Focused
+  `RedBlackGaussSeidel`, `NNCG`, `Apgd`, and `Tgs` cover
+  24/64/96/128/192/256-box snapshots at batch size 4; `Admm` remains covered
+  through 192 boxes. `Pgs` additionally covers 1/4/8/16/32/48-box snapshots so
+  the CPU serial and `ParallelExecutor` rows match the homogeneous CUDA PGS
+  packet sizes through 96 boxes. Focused
   192-box runs in default, SIMD-enabled, and CUDA-enabled build trees reported
   12 rows with `contract_ok=1`, `dense_box_contact_batch=1`, `box_count=192`,
   `contact_count=768`, `problem_size=2304`, `batch_size=4`,
   `total_contact_count=3072`, `total_problem_size=9216`, and
   `parallel_units=4` on parallel rows. The CUDA-enabled rows are CPU solver
   batch rows in that build tree, not CUDA LCP kernel execution.
+  Focused 256-box runs in default, SIMD-enabled, and CUDA-enabled build trees
+  reported 10 rows for `Pgs`, `RedBlackGaussSeidel`, `NNCG`, `Apgd`, and
+  `Tgs`, with `contract_ok=1`, `dense_box_contact_batch=1`, `box_count=256`,
+  `contact_count=1024`, `problem_size=3072`, `batch_size=4`,
+  `total_contact_count=4096`, `total_problem_size=12288`,
+  `parallel_units=4` on five parallel rows, and
+  `max_residual=max_complementarity=9.870582960894853e-05` across the combined
+  JSON summaries. An all-six 256-box probe reached the TGS rows but was
+  interrupted when the ADMM row exceeded the bounded local runtime, so no ADMM
+  256/4 batch claim is made.
   Focused matching-size PGS CPU runs in default, SIMD-enabled, and CUDA-enabled
   build trees reported 18 rows with `contract_ok=1`,
   `dense_box_contact_batch=1`, `box_count=1/4/8/16/24/32/48/64/96`,
@@ -1978,8 +1989,8 @@ The current local evidence for this task is:
   manually assembled three-axis articulated unified-contact all-solver rows
   through 64 contacts including cross-multibody link-vs-link rows,
   plus scoped dense box face-contact rows through 256 boxes for six solvers,
-  scoped dense box serial/parallel batch rows through 192 boxes for the same
-  solver set, and PGS-only dense
+  scoped dense box serial/parallel batch rows through 256 boxes for five
+  solvers and through 192 boxes for `Admm`, and PGS-only dense
   box-face CUDA batch rows through homogeneous 1/4/8/16/24/32/48/64/96-box and grouped
   1/2/4/8/16/24/32-box packets, but not broad
   robot-like or general dense CUDA contact systems.

@@ -763,6 +763,19 @@ default, SIMD-enabled, and CUDA-enabled filters over the new 64-contact rows
 all report `contract_ok=1`, `contact_count=64`, `problem_size=192`, and the
 expected backend build-state counters. The CUDA-enabled rows are CPU solver
 rows in a CUDA-enabled build, not CUDA LCP kernel execution.
+The latest local checkpoint extends dense box-face solver-comparison snapshots
+to 256 boxes and 1024 contacts for `Pgs`, `RedBlackGaussSeidel`, `NNCG`,
+`Apgd`, `Tgs`, and `Admm`; focused default, SIMD-enabled, and CUDA-enabled
+filters report 18 rows with `contract_ok=1`. It also extends dense box-face
+serial and `ParallelExecutor` batch rows to 256 boxes at batch size 4 for
+`Pgs`, `RedBlackGaussSeidel`, `NNCG`, `Apgd`, and `Tgs`; focused default,
+SIMD-enabled, and CUDA-enabled filters report 30 rows with `contract_ok=1`,
+`total_contact_count=4096`, `total_problem_size=12288`, and
+`max_residual=max_complementarity=9.870582960894853e-05`. The all-six 256-box
+batch probe reached the TGS rows but was interrupted when the ADMM row exceeded
+the bounded local runtime, so ADMM remains capped at 192-box batch evidence.
+The CUDA-enabled rows in this checkpoint are CPU solver rows in that build
+tree, not CUDA LCP kernel execution.
 Push/PR work still requires explicit maintainer/user approval.
 
 ## Immediate Next Step

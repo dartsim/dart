@@ -12735,7 +12735,8 @@ void RegisterWorldBoxContactBatchBenchmarks()
                 ->Args({64, 4})
                 ->Args({96, 4})
                 ->Args({128, 4})
-                ->Args({192, 4});
+                ->Args({192, 4})
+                ->Args({256, 4});
             return;
           }
 
@@ -12744,6 +12745,9 @@ void RegisterWorldBoxContactBatchBenchmarks()
               ->Args({96, 4})
               ->Args({128, 4})
               ->Args({192, 4});
+          if (solver.name != "Admm") {
+            registeredBenchmark->Args({256, 4});
+          }
         };
 
   for (const auto& solver : dart::test::kLcpSolverManifest) {

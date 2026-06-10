@@ -437,12 +437,13 @@
       1/2/4/8/16/24/32/48/64/96/128/192/256-box snapshots verified in default, SIMD-enabled, and
       CUDA-enabled build trees.
 - [x] Added DART 7 dense box-face serial and `ParallelExecutor` batch benchmark
-      rows: 72 `BM_LcpWorldBoxContactBatch(Serial|Parallel)/FrictionIndex`
-      rows cover `Pgs`, `RedBlackGaussSeidel`, `NNCG`, `Apgd`, `Tgs`, and
-      `Admm` over 24/64/96/128/192-box snapshots with batch size 4. `Pgs` also
-      covers 1/4/8/16/32/48-box snapshots, so the CPU serial and
-      `ParallelExecutor` rows match the homogeneous CUDA PGS packet sizes
-      through 96 boxes in default, SIMD-enabled, and CUDA-enabled build trees.
+      rows: 82 `BM_LcpWorldBoxContactBatch(Serial|Parallel)/FrictionIndex`
+      rows cover `Pgs`, `RedBlackGaussSeidel`, `NNCG`, `Apgd`, and `Tgs` over
+      24/64/96/128/192/256-box snapshots with batch size 4, while `Admm`
+      remains covered through 192 boxes. `Pgs` also covers
+      1/4/8/16/32/48-box snapshots, so the CPU serial and `ParallelExecutor`
+      rows match the homogeneous CUDA PGS packet sizes through 96 boxes in
+      default, SIMD-enabled, and CUDA-enabled build trees.
 - [x] Added contact-derived CUDA batch evidence for homogeneous 4-, 8-, 16-,
       24-, and 32-contact DART 7 world-contact packets, covering fixed-iteration CUDA
       Jacobi and PGS unit tests and benchmark rows on the visible GPU.
@@ -2001,13 +2002,13 @@ tradeoffs evidence based.
   CUDA LCP kernel execution. This is dense contact-snapshot evidence, not
   broad robot-like or CUDA dense-contact execution evidence.
 - DART 7 dense box-contact serial/parallel batch benchmark evidence:
-  `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` now also registers 72
+  `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` now also registers 82
   `BM_LcpWorldBoxContactBatch(Serial|Parallel)/FrictionIndex` rows. `Pgs`,
-  `RedBlackGaussSeidel`, `NNCG`, `Apgd`, `Tgs`, and `Admm` cover
-  24/64/96/128/192-box snapshots at batch size 4; `Pgs` additionally covers
-  1/4/8/16/32/48-box snapshots so the CPU serial and DART 7
-  `ParallelExecutor` rows match the homogeneous CUDA PGS packet sizes through
-  96 boxes.
+  `RedBlackGaussSeidel`, `NNCG`, `Apgd`, and `Tgs` cover
+  24/64/96/128/192/256-box snapshots at batch size 4; `Admm` remains covered
+  through 192 boxes. `Pgs` additionally covers 1/4/8/16/32/48-box snapshots so
+  the CPU serial and DART 7 `ParallelExecutor` rows match the homogeneous CUDA
+  PGS packet sizes through 96 boxes.
   Focused default, SIMD-enabled, and CUDA-enabled
   `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldBoxContactBatch(Serial|Parallel)/FrictionIndex/.+/192/4$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   runs each reported 12 rows with `contract_ok=1`, `dense_box_contact=1`,
@@ -2017,6 +2018,17 @@ tradeoffs evidence based.
   build counters reported `build_simd_enabled=1` in the SIMD build tree and
   `build_cuda_enabled=1` in the CUDA-enabled build tree. The CUDA-enabled rows
   are CPU solver batch rows in that build tree, not CUDA LCP kernel execution.
+  Focused default, SIMD-enabled, and CUDA-enabled
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldBoxContactBatch(Serial|Parallel)/FrictionIndex/.+/256/4$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  runs reported 10 rows for `Pgs`, `RedBlackGaussSeidel`, `NNCG`, `Apgd`, and
+  `Tgs`, with `contract_ok=1`, `dense_box_contact_batch=1`, `box_count=256`,
+  `contact_count=1024`, `problem_size=3072`, `batch_size=4`,
+  `total_contact_count=4096`, `total_problem_size=12288`,
+  `parallel_units=4` on five parallel rows, and
+  `max_residual=max_complementarity=9.870582960894853e-05` across the combined
+  JSON summaries. An all-six 256-box probe reached the TGS rows but was
+  interrupted when the ADMM row exceeded the bounded local runtime, so no ADMM
+  256/4 batch claim is made.
   Focused matching-size
   `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldBoxContactBatch(Serial|Parallel)/FrictionIndex/Pgs/(1|4|8|16|24|32|48|64|96)/4$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
   runs in default, SIMD-enabled, and CUDA-enabled build trees each reported 18
