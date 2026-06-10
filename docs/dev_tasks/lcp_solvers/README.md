@@ -101,11 +101,10 @@
       coverage and benchmark rows.
       This does not yet cover a general CUDA backend for every solver.
 - [x] Extended DART 7 boxed-LCP articulated public-step coverage to
-      32-contact/pair fixed-base link-ground, link-vs-rigid, and
-      cross-multibody link-vs-link scenes plus 64-contact connected
-      Cartesian-chain scenes, including 32-/64-case regression tests and
-      200-step benchmark rows in default, SIMD-enabled, and CUDA-enabled build
-      trees.
+      64-contact/pair fixed-base link-ground, link-vs-rigid, cross-multibody
+      link-vs-link, and connected Cartesian-chain scenes, including 64-case
+      regression tests and 200-step benchmark rows in default, SIMD-enabled,
+      and CUDA-enabled build trees.
 - [x] Completed a solver-by-solver implementation audit against
       `docs/background/lcp/`.
 - [x] Added manifest-driven generated known-solution coverage for all supporting
@@ -2750,7 +2749,7 @@ tradeoffs evidence based.
   CUDA-enabled rows are CPU public-step rows in that build tree, not CUDA LCP
   kernel execution.
 - DART 7 articulated contact end-to-end benchmark evidence:
-  `BM_LcpWorldArticulatedGroundStep_BoxedLcp/{1,4,8,16,24,32}/200` rebuilds fixed-base
+  `BM_LcpWorldArticulatedGroundStep_BoxedLcp/{1,4,8,16,24,32,64}/200` rebuilds fixed-base
   prismatic-link worlds, enters simulation mode in the world factory, advances
   the public boxed-LCP `World::step()` path for 200 steps, and checks finite
   link height plus near-zero joint velocity after ground contact. The focused
@@ -2763,21 +2762,21 @@ tradeoffs evidence based.
   CPU public-step rows in that build tree, not CUDA LCP kernel execution. This
   is fixed-base prismatic-link ground-contact evidence, not broad articulated
   robot contact coverage.
-  `BM_LcpWorldArticulatedRigidImpactStep_BoxedLcp/{1,4,8,16,24,32}/1` rebuilds
+  `BM_LcpWorldArticulatedRigidImpactStep_BoxedLcp/{1,4,8,16,24,32,64}/1` rebuilds
   fixed-base prismatic striker worlds with dynamic rigid targets, enters
   simulation mode in the world factory, advances one public boxed-LCP
   `World::step()`, and checks target motion, striker slowdown, and X-momentum
   conservation. The same focused runs also cover
-  `BM_LcpWorldArticulatedRigidImpactStep_BoxedLcp/{16,32}/200`; the 32-pair
+  `BM_LcpWorldArticulatedRigidImpactStep_BoxedLcp/{16,32,64}/200`; the 32-pair
   rows reported `contact_count=32`, `articulated_link_count=32`,
   `max_momentum_error=0`, and `invariant_ok=1`.
-  `BM_LcpWorldArticulatedLinkImpactStep_BoxedLcp/{1,4,8,16,24,32}/1` rebuilds
+  `BM_LcpWorldArticulatedLinkImpactStep_BoxedLcp/{1,4,8,16,24,32,64}/1` rebuilds
   cross-multibody fixed-base prismatic striker/target link worlds, enters
   simulation mode in the world factory, advances one public boxed-LCP
   `World::step()`, and checks target-link motion, striker-link slowdown,
   nonnegative post-step separation velocity, and X-momentum conservation. The
   same focused runs also cover
-  `BM_LcpWorldArticulatedLinkImpactStep_BoxedLcp/{16,32}/200`; the 32-pair
+  `BM_LcpWorldArticulatedLinkImpactStep_BoxedLcp/{16,32,64}/200`; the 32-pair
   rows reported `contact_count=32`, `articulated_pair_count=32`,
   `articulated_link_count=64`, `articulated_dof_count=64`,
   `cross_multibody_link_contact=1`, `max_momentum_error=0`,
@@ -2789,12 +2788,18 @@ tradeoffs evidence based.
   joint velocities, and bounded planar joint speed after ground contact. The
   32-chain rows reported `cartesian_chain_count=32`,
   `articulated_dof_count=96`, `contact_count=32`, and `invariant_ok=1` in all
-  three build trees. The focused 64-chain follow-up row reported
-  `cartesian_chain_count=64`, `articulated_dof_count=192`,
-  `contact_count=64`, `step_count=200`, `max_height_error=1e-4`,
-  `max_abs_joint_velocity=4.45e-15`, `max_planar_joint_speed=0`, and
-  `invariant_ok=1` in default, SIMD-enabled, and CUDA-enabled build trees; the
-  SIMD row reported `build_simd_enabled=1`, and the CUDA-enabled row reported
+  three build trees. The focused 64-contact/pair follow-up filter reported 6
+  rows with `invariant_ok=1` and zero failures in default, SIMD-enabled, and
+  CUDA-enabled build trees, covering link-ground 64/200, link-vs-rigid 64/1 and
+  64/200, cross-link 64/1 and 64/200, and Cartesian-chain 64/200. The 64-row
+  counters include `contact_count=64`, ground `articulated_link_count=64`,
+  rigid-impact `min_target_velocity=0.786667`,
+  cross-link `articulated_pair_count=64`, `articulated_link_count=128`,
+  `articulated_dof_count=128`, `min_relative_velocity=0.18`, and
+  Cartesian-chain `articulated_dof_count=192`, with `max_momentum_error=0`,
+  `max_height_error=1e-4`, `max_abs_joint_velocity=4.45e-15`, and
+  `max_planar_joint_speed=0` where applicable. The SIMD run reported 6 rows
+  with `build_simd_enabled=1`, and the CUDA-enabled run reported 6 rows with
   `build_cuda_enabled=1`. This is connected fixed-base
   multi-DOF articulated contact evidence, not broad articulated robot contact
   coverage.
@@ -3210,11 +3215,11 @@ tradeoffs evidence based.
   32-contact separated, coupled stack, and articulated unified-contact
   snapshots, both serially and through the experimental `ParallelExecutor`.
 - Added denser DART 7 boxed-LCP articulated public-step unit and benchmark
-  coverage through 32 link-ground contacts, 32 link-vs-rigid impact pairs,
-  32 cross-multibody link-vs-link impact pairs, and 64 connected Cartesian
+  coverage through 64 link-ground contacts, 64 link-vs-rigid impact pairs,
+  64 cross-multibody link-vs-link impact pairs, and 64 connected Cartesian
   chains. Focused default, SIMD-enabled, and CUDA-enabled benchmark runs report
-  `invariant_ok=1` on the registered articulated rows and on the 64-chain
-  follow-up row; the CUDA-enabled rows are CPU public-step rows in that build
+  `invariant_ok=1` on the registered articulated rows and on the 64-contact
+  follow-up rows; the CUDA-enabled rows are CPU public-step rows in that build
   tree, not CUDA LCP kernel execution.
 - Added focused local SIMD-enabled CPU evidence for generated LCP correctness
   and selected serial/task-parallel batch benchmark rows.

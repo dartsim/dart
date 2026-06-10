@@ -54,21 +54,20 @@ Support abbreviations:
   box-face public-step rows, a
   fixed-base prismatic articulated link-ground
   boxed-LCP `World::step()` invariant tests for one-link, four-link, and
-  thirty-two-link scenes,
-  1-/4-/8-/16-/24-/32-link articulated ground-step benchmark rows, connected
+  thirty-two-link, and sixty-four-link scenes,
+  1-/4-/8-/16-/24-/32-/64-link articulated ground-step benchmark rows, connected
   fixed-base three-axis prismatic Cartesian-chain boxed-LCP `World::step()`
   invariant coverage for two-, four-, eight-, sixteen-, thirty-two-, and
   sixty-four-chain scenes, 1-/4-/8-/16-/24-/32-/64-chain
   articulated Cartesian benchmark rows, fixed-base prismatic
   link-vs-dynamic-rigid boxed-LCP `World::step()` invariant tests for one-pair,
-  four-pair, eight-pair, sixteen-pair, and thirty-two-pair scenes including
-  sixteen-pair and thirty-two-pair
-  200-step scenes, and 1-/4-/8-/16-/24-/32-pair one-step plus 16-/32-pair 200-step articulated
+  four-pair, eight-pair, sixteen-pair, thirty-two-pair, and sixty-four-pair
+  scenes, and
+  1-/4-/8-/16-/24-/32-/64-pair one-step plus 16-/32-/64-pair 200-step articulated
   rigid-impact benchmark rows, cross-multibody fixed-base prismatic
   link-vs-link boxed-LCP `World::step()` invariant tests for one-pair,
-  four-pair, eight-pair, sixteen-pair, and thirty-two-pair scenes including
-  sixteen-pair and thirty-two-pair
-  200-step scenes, and 1-/4-/8-/16-/24-/32-pair one-step plus 16-/32-pair 200-step
+  four-pair, eight-pair, sixteen-pair, thirty-two-pair, and sixty-four-pair
+  scenes, and 1-/4-/8-/16-/24-/32-/64-pair one-step plus 16-/32-/64-pair 200-step
   articulated link-impact benchmark rows, plus all-solver
   articulated unified-contact
   benchmark rows for manually assembled fixed-base three-axis prismatic
@@ -772,10 +771,12 @@ The current local evidence for this task is:
   impact contacts, and 32 cross-multibody link-vs-link impact contacts. The
   tests keep the existing finite-state, contact-count, bounded-height or
   momentum, post-impact separation, and sequential-shortcut parity checks.
-- `test_boxed_lcp_contact --gtest_filter=BoxedLcpContact.SixtyFourCartesianPrismaticChainsGroundStepMaintainsInvariants --gtest_brief=1`
-  passed in default, SIMD-enabled, and CUDA-enabled build trees, extending the
-  connected Cartesian-chain public-step regression to 64 contacts and 192
-  generalized coordinates.
+- `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.SixtyFourArticulatedPrismaticLinksGroundStepMaintainsInvariants:BoxedLcpContact.SixtyFourArticulatedPrismaticLinksPushDynamicRigidBodies:BoxedLcpContact.SixtyFourArticulatedPrismaticLinksPushArticulatedPrismaticLinks:BoxedLcpContact.SixtyFourCartesianPrismaticChainsGroundStepMaintainsInvariants' --gtest_brief=1`
+  passed 4 tests in default, SIMD-enabled, and CUDA-enabled build trees,
+  extending the public boxed-LCP `World::step()` regression to 64 fixed-base
+  link-ground contacts, 64 connected three-axis Cartesian-chain contacts with
+  192 generalized coordinates, 64 link-vs-rigid impact contacts, and 64
+  cross-multibody link-vs-link impact contacts.
 - `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.*SphereStack*'`
   passed focused stack tests, validating the boxed/findex LCP contract for
   3-sphere, 4-sphere, 5-sphere, 6-sphere, 7-sphere, and 8-sphere vertical stacks assembled from
