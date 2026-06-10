@@ -37,7 +37,10 @@ root. The current continuation also moves variational multibody contact and
 constraint scratch into a cache-only component, bakes loop-closure, hard AVBD
 point-joint, compliant ground-contact, and augmented-Lagrangian ground-contact
 dual capacity during `enterSimulationMode()`, and adds contact-heavy
-variational contact plus loop-closure scratch no-growth gates.
+variational contact plus loop-closure scratch no-growth gates. It also adds the
+complementary mixed deformable production gate for matrix-free static-obstacle
+friction plus direct-sparse irregular self-contact under the same baked World
+root.
 Continue from the current `README.md` Immediate Next Steps: broaden remaining
 boxed-LCP/contact and deformable production no-growth coverage, and move any
 newly exposed step-loop scratch to world-owned backed storage before making a

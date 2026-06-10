@@ -2035,6 +2035,16 @@ void configureMixedStaticObstacleAndSelfContactProductionScene(
       Eigen::Vector3d(0.0, 8.0, 0.0));
 }
 
+void configureMixedMatrixFreeStaticObstacleAndDirectSelfContactProductionScene(
+    dart::simulation::World& world)
+{
+  configureDeformableStaticObstacleFrictionMatrixFreeProductionScene(world);
+  configureDeformableSelfContactFrictionIrregularProductionGridSceneWithOffset(
+      world,
+      "mixed_matrix_free_obstacle_direct_irregular_grid",
+      Eigen::Vector3d(0.0, 8.0, 0.0));
+}
+
 void configureDeformableMovingRigidSurfaceCcdCrossingScene(
     dart::simulation::World& world)
 {
@@ -3493,6 +3503,10 @@ TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
       "mixed static obstacle and self-contact production deformables",
       configureMixedStaticObstacleAndSelfContactProductionScene);
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "mixed matrix-free static obstacle and direct self-contact production "
+      "deformables",
+      configureMixedMatrixFreeStaticObstacleAndDirectSelfContactProductionScene);
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "deformable moving rigid surface CCD crossing",
       configureDeformableMovingRigidSurfaceCcdCrossingScene);
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
@@ -4114,6 +4128,30 @@ TEST(World, MixedStaticObstacleAndSelfContactProductionSceneIsActive)
   EXPECT_GT(diagnostics.frictionDissipation, 0.0);
 }
 
+TEST(
+    World,
+    MixedMatrixFreeStaticObstacleAndDirectSelfContactProductionSceneIsActive)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  configureMixedMatrixFreeStaticObstacleAndDirectSelfContactProductionScene(
+      world);
+  world.enterSimulationMode();
+
+  world.step();
+
+  const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
+  EXPECT_EQ(diagnostics.bodyCount, 2u);
+  EXPECT_EQ(diagnostics.nodeCount, 3u * 5u * 5u + 2u * 13u * 17u);
+  EXPECT_GT(diagnostics.projectedNewtonSteps, 0u);
+  EXPECT_GT(diagnostics.projectedNewtonMatrixFreeSolves, 0u);
+  EXPECT_GT(diagnostics.projectedNewtonHessianNonZeros, 0u);
+  EXPECT_GT(diagnostics.selfContactBarrierActiveContacts, 0u);
+  EXPECT_GT(diagnostics.convergedActiveContactCount, 0u);
+  EXPECT_GT(diagnostics.frictionDissipation, 0.0);
+}
+
 TEST(World, DeformableMovingRigidSurfaceCcdCrossingIsActive)
 {
   namespace sx = dart::simulation;
@@ -4678,6 +4716,10 @@ TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "mixed static obstacle and self-contact production deformables",
       configureMixedStaticObstacleAndSelfContactProductionScene);
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "mixed matrix-free static obstacle and direct self-contact production "
+      "deformables",
+      configureMixedMatrixFreeStaticObstacleAndDirectSelfContactProductionScene);
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "deformable inter-body surface CCD crossing",
       configureDeformableInterBodySurfaceCcdCrossingScene);
