@@ -34,9 +34,10 @@ sphere/box/capsule normal-force, normal-direction, and sparse/matrix-free
 Hessian scratch. The latest continuation combines sparse static-obstacle
 friction and matrix-free self-contact deformables in one baked World memory
 root. The current continuation also moves variational multibody contact and
-constraint scratch into a cache-only component, bakes augmented-Lagrangian
-ground-contact dual vectors during `enterSimulationMode()`, and adds a
-contact-heavy variational dual-state no-growth gate.
+constraint scratch into a cache-only component, bakes loop-closure, hard AVBD
+point-joint, and augmented-Lagrangian ground-contact dual capacity during
+`enterSimulationMode()`, and adds contact-heavy variational dual-state plus
+loop-closure scratch no-growth gates.
 Continue from the current `README.md` Immediate Next Steps: broaden remaining
 boxed-LCP/contact and deformable production no-growth coverage, and move any
 newly exposed step-loop scratch to world-owned backed storage before making a

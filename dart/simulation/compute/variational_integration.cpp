@@ -2093,6 +2093,7 @@ void reserveMultibodyVariationalRegistryStorage(
   }
 
   auto view = registry.view<comps::MultibodyStructure>();
+  auto closures = registry.view<comps::LoopClosure>();
   for (auto entity : view) {
     const auto& structure = view.get<comps::MultibodyStructure>(entity);
     auto& state = registry.get_or_emplace<MultibodyVariationalState>(entity);
@@ -2102,6 +2103,17 @@ void reserveMultibodyVariationalRegistryStorage(
     auto& scratch
         = registry.get_or_emplace<MultibodyVariationalScratch>(entity);
     scratch.postContactTransforms.resize(structure.links.size());
+    scratch.constraints.clear();
+    for (auto closureEntity : closures) {
+      const auto binding = bindVariationalLoopClosure(registry, closureEntity);
+      if (binding.status == VariationalLoopClosureBinding::Status::Supported
+          && binding.structure == entity) {
+        scratch.constraints.push_back(binding.constraint);
+      }
+    }
+    appendAvbdRigidWorldArticulatedPointJointConstraints(
+        registry, entity, scratch.constraints);
+    scratch.constraints.clear();
 
     const auto* contactConfig
         = registry.try_get<comps::VariationalContact>(entity);

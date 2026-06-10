@@ -195,7 +195,8 @@
       and semi-implicit multibody velocity/contact path now reuse baked scratch
       for the covered rigid and articulated resting-contact scenes. The
       variational multibody stage now owns cache-only reusable contact/constraint
-      scratch and bakes augmented-Lagrangian ground-contact dual vectors before
+      scratch, bakes loop-closure and hard AVBD point-joint constraint capacity,
+      and bakes augmented-Lagrangian ground-contact dual vectors before
       contact-heavy steps. The boxed-LCP
       unified constraint stage now reuses stage-owned assembly containers and
       unified problem storage, and its shared/cross-row assembly no longer

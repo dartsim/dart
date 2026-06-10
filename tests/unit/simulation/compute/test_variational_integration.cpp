@@ -995,6 +995,62 @@ TEST(VariationalIntegration, LoopClosureSolvedThroughWorldStep)
   EXPECT_GT(motion, 1e-3);      // the arm still flexes under gravity
 }
 
+TEST(VariationalIntegration, LoopClosureConstraintScratchIsBaked)
+{
+  sx::World world;
+  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  auto robot = world.addMultibody("arm");
+  auto parent = robot.addLink("base");
+  const double bend[5] = {0.0, 0.5, -0.5, 0.5, -0.5};
+  Eigen::Isometry3d tipFromBase = Eigen::Isometry3d::Identity();
+  for (int i = 0; i < 5; ++i) {
+    Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+    offset.linear() = Eigen::AngleAxisd(bend[i], Eigen::Vector3d::UnitY())
+                          .toRotationMatrix();
+    offset.translation() = Eigen::Vector3d(0.3, 0.0, 0.0);
+    sx::JointSpec spec;
+    spec.name = "j" + std::to_string(i);
+    spec.type = sx::JointType::Revolute;
+    spec.axis = (i == 0) ? Eigen::Vector3d::UnitZ() : Eigen::Vector3d::UnitY();
+    spec.transformFromParent = offset;
+    auto link = robot.addLink("l" + std::to_string(i), parent, spec);
+    link.setMass(0.8);
+    link.setInertia(Eigen::Vector3d(0.02, 0.02, 0.02).asDiagonal());
+    parent = link;
+    tipFromBase = tipFromBase * offset;
+  }
+
+  auto tip = robot.getLinks().back();
+  Eigen::Isometry3d anchorFrame = Eigen::Isometry3d::Identity();
+  anchorFrame.translation() = tipFromBase.translation();
+  auto closure = world.addLoopClosure(
+      "pin",
+      {.frameA = tip,
+       .frameB = sx::Frame::world(),
+       .family = sx::LoopClosureFamily::Point,
+       .offsetB = anchorFrame});
+  closure.setRuntimePolicy(
+      {.enabled = true,
+       .kinematics = sx::ClosureKinematicsPolicy::ResidualOnly,
+       .dynamics = sx::ClosureDynamicsPolicy::Solve});
+
+  world.setTimeStep(1e-3);
+  world.enterSimulationMode();
+
+  auto& registry = dart::simulation::detail::registryOf(world);
+  auto structures = registry.view<sx::comps::MultibodyStructure>();
+  ASSERT_FALSE(structures.empty());
+  auto& scratch
+      = registry.get<sxc::MultibodyVariationalScratch>(*structures.begin());
+  const auto constraintCapacity = scratch.constraints.capacity();
+  EXPECT_GE(constraintCapacity, 1u);
+
+  for (int i = 0; i < 4; ++i) {
+    world.step();
+    EXPECT_EQ(scratch.constraints.capacity(), constraintCapacity);
+  }
+}
+
 // Phase B2 deliverable (rejection): a Point closure spanning two multibodies
 // cannot be enforced by the per-multibody variational solver and must be
 // rejected at step time (the architect-flagged correctness trap), not silently
