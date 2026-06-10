@@ -75,6 +75,15 @@ reports `contract_ok=1`, `cuda_lcp_execution=1`, `cuda_batch_execution=1`,
 `max_residual=max_complementarity=3.4694469519536142e-18`; it is
 cost-boundary evidence at about 232.9s real time, not a routine checkpoint
 gate.
+`BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex/192/1` now extends actual PGS
+CUDA execution to a 192-box, 768-contact, 2304-row dense face-contact fixture
+at batch size 1. The focused CUDA benchmark row reports `contract_ok=1`,
+`cuda_lcp_execution=1`, `cuda_batch_execution=1`,
+`cuda_dense_box_contact_batch=1`, `cuda_fixed_iterations=1024`,
+`cuda_relaxation=1`, `total_problem_size=2304`, and
+`max_residual=max_complementarity=3.4694469519536142e-18`; it is also
+cost-boundary evidence at about 295.3s real time, not a routine checkpoint
+gate.
 The robust near-singular generated coverage now reaches coupled friction-index
 256-contact packets, and near-singular benchmark coverage now reaches
 256-contact packets. It also adds 62
@@ -656,6 +665,12 @@ batch-size-4 CUDA PGS row now reports `contract_ok=1`,
 `max_residual=max_complementarity=3.4694469519536142e-18` with 1024 fixed
 iterations; it is cost-boundary evidence at about 232.9s real time, not a
 routine checkpoint gate.
+The 192-box batch-size-1 CUDA PGS row now also reports `contract_ok=1`,
+`cuda_lcp_execution=1`, `cuda_dense_box_contact_batch=1`,
+`total_problem_size=2304`, and
+`max_residual=max_complementarity=3.4694469519536142e-18`; it is
+cost-boundary evidence at about 295.3s real time, not a routine checkpoint
+gate.
 The latest local slice extends DART 7 dense box-face public `World::step()`
 evidence to a bounded 144-box/576-contact one-step path plus a
 128-box/512-contact one-step and 75-step path plus a
@@ -818,6 +833,9 @@ the 128-box dense box-face fixture shape and homogeneous batch-size-1 CUDA
 Jacobi/PGS execution are covered, and 128-box batch-size-4 CUDA Jacobi execution
 is covered. The 128-box batch-size-4 CUDA PGS row is now also covered as a
 cost-boundary benchmark row, with `contract_ok=1` and `total_problem_size=6144`.
+The 192-box batch-size-1 CUDA PGS row is now covered as another cost-boundary
+benchmark row, with `contract_ok=1`, `cuda_lcp_execution=1`, and
+`total_problem_size=2304`.
 Do not claim a 7-sphere public-step stack invariant yet: local temporary probes
 failed at both 1000 and 2000 public `World::step()` iterations under the
 existing motion-invariant contract, with benchmark probes reporting
@@ -2350,7 +2368,18 @@ scenes.
   `total_contact_count=2048`, `total_problem_size=6144`,
   `max_bound_violation=0`, and
   `max_residual=max_complementarity=3.4694469519536142e-18`, with about
-  232.9s real time / 231.9s CPU time. The earlier fixed-iteration CUDA Jacobi
+  232.9s real time / 231.9s CPU time.
+  `BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex/192/1` now extends actual
+  PGS CUDA execution to a 192-box, 768-contact, 2304-row dense face-contact
+  fixture at batch size 1. It reports `contract_ok=1`,
+  `cuda_lcp_execution=1`, `cuda_batch_execution=1`,
+  `cuda_dense_box_contact_batch=1`, `cuda_fixed_iterations=1024`,
+  `cuda_relaxation=1`, `total_contact_count=768`,
+  `total_problem_size=2304`, `max_bound_violation=0`, and
+  `max_residual=max_complementarity=3.4694469519536142e-18`, with about
+  295.3s real time / 294.0s CPU time. Treat both PGS large dense-box rows as
+  cost-boundary evidence, not routine checkpoint gates.
+  The earlier fixed-iteration CUDA Jacobi
   dense-box probe failed under the prior collapsed-interval validation because
   fixed rows required zero residual; after the fixed-bound validation
   correction, the bounded

@@ -1888,7 +1888,17 @@ The current local evidence for this task is:
   `total_contact_count=2048`, `total_problem_size=6144`,
   `max_bound_violation=0`, and
   `max_residual=max_complementarity=3.4694469519536142e-18`, with about
-  232.9s real time / 231.9s CPU time. An earlier fixed-iteration CUDA Jacobi
+  232.9s real time / 231.9s CPU time. The focused
+  `BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex/192/1` CUDA row extends
+  actual PGS CUDA execution to a 192-box, 768-contact, 2304-row dense
+  face-contact fixture at batch size 1. It reports `contract_ok=1`,
+  `cuda_lcp_execution=1`, `cuda_batch_execution=1`,
+  `cuda_dense_box_contact_batch=1`, `cuda_fixed_iterations=1024`,
+  `cuda_relaxation=1`, `total_contact_count=768`,
+  `total_problem_size=2304`, `max_bound_violation=0`, and
+  `max_residual=max_complementarity=3.4694469519536142e-18`, with about
+  295.3s real time / 294.0s CPU time. Treat both PGS large dense-box rows as
+  cost-boundary evidence, not routine checkpoint gates. An earlier fixed-iteration CUDA Jacobi
   dense-box trial failed before the fixed-bound validation correction; after
   that correction, the bounded homogeneous CUDA Jacobi rows through 256-box
   batch-size-4 and grouped CUDA Jacobi rows through 96-box shapes pass. This is
@@ -2015,8 +2025,8 @@ The current local evidence for this task is:
   box-face serial/parallel batch rows, dense box-face CUDA Jacobi batch paths
   through homogeneous 256-box batch-size-4 and grouped 1/2/4/8/16/24/32/48/64/96-box
   packets, and dense box-face CUDA PGS batch paths through homogeneous
-  1/4/8/16/24/32/48/64/96/128-box and grouped
-  1/2/4/8/16/24/32/48/64/96-box packets.
+  1/4/8/16/24/32/48/64/96/128-box, a cost-boundary 192-box batch-size-1
+  packet, and grouped 1/2/4/8/16/24/32/48/64/96-box packets.
   This still does
   not prove broader solver-internal multi-threaded speedups, general CUDA LCP
   solver execution, full-manifest CUDA dense-contact execution, end-to-end articulated

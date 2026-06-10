@@ -511,7 +511,9 @@
       total rows.
       The focused 128-box batch-size-4 CUDA PGS benchmark row now reports
       `contract_ok=1` with 512 contacts, 1536 LCP rows per problem, and 6144
-      total rows.
+      total rows. The focused 192-box batch-size-1 CUDA PGS benchmark row
+      reports `contract_ok=1` with 768 contacts and 2304 LCP rows as
+      cost-boundary evidence.
 - [x] Added dense box-face DART 7 end-to-end unit and benchmark evidence:
       `FourBoxWorldStepMaintainsDenseContactInvariants` and
       `EightBoxWorldStepMaintainsDenseContactInvariants` advance 4-box and
@@ -2257,7 +2259,17 @@ tradeoffs evidence based.
   `total_contact_count=2048`, `total_problem_size=6144`,
   `max_bound_violation=0`,
   `max_residual=max_complementarity=3.4694469519536142e-18`, and about
-  232.9s real time / 231.9s CPU time. The earlier dense-box Jacobi probe
+  232.9s real time / 231.9s CPU time. The focused
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex/192/1$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_format=json`
+  CUDA row extends actual PGS CUDA execution to a 192-box, 768-contact,
+  2304-row dense face-contact fixture at batch size 1. It reports
+  `contract_ok=1`, `cuda_lcp_execution=1`, `cuda_batch_execution=1`,
+  `cuda_dense_box_contact_batch=1`, `cuda_fixed_iterations=1024`,
+  `cuda_relaxation=1`, `total_contact_count=768`,
+  `total_problem_size=2304`, `max_bound_violation=0`, and
+  `max_residual=max_complementarity=3.4694469519536142e-18`, with about
+  295.3s real time / 294.0s CPU time. Treat both PGS large dense-box rows as
+  cost-boundary evidence, not routine checkpoint gates. The earlier dense-box Jacobi probe
   failed under the prior collapsed-interval validation because fixed rows
   required zero residual; after the fixed-bound validation correction, the
   bounded 1-/4-/8-/16-/24-/32-/48-/64-/96-box homogeneous CUDA Jacobi rows,
@@ -3341,7 +3353,8 @@ tradeoffs evidence based.
   dense box-face CUDA batches through 128 boxes, homogeneous PGS dense box-face
   CUDA batches through 128 boxes, two-/three-variant grouped Jacobi and PGS
   dense box-face CUDA batches through 96 boxes, plus bounded 128-box
-  homogeneous batch-size-1 and batch-size-4 CUDA Jacobi and PGS packet passes.
+  homogeneous batch-size-1 and batch-size-4 CUDA Jacobi and PGS packet passes
+  and a 192-box batch-size-1 CUDA PGS cost-boundary packet pass.
   Jacobi has opt-in solver-internal CPU
   worker-thread correctness and benchmark evidence, including larger 8192-row
   banded Jacobi, Red-Black Gauss-Seidel, and Blocked Jacobi rows, but the
