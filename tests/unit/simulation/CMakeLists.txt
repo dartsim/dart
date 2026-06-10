@@ -45,6 +45,12 @@ if(DART_SIMULATION_BUILD_TESTS)
   dart_add_unit_test_dir(common ${CMAKE_CURRENT_SOURCE_DIR}/common)
   dart_add_unit_test_dir(compute ${CMAKE_CURRENT_SOURCE_DIR}/compute)
   dart_add_unit_test_dir(contact ${CMAKE_CURRENT_SOURCE_DIR}/contact)
+  if(MSVC AND TARGET test_boxed_lcp_contact)
+    # MSVC 19.44 repeatedly hits an internal compiler error while optimizing the
+    # large AVBD contact regression target. Keep the Windows test compiled and
+    # runnable by disabling optimization for this test target only.
+    target_compile_options(test_boxed_lcp_contact PRIVATE /Od)
+  endif()
   dart_add_unit_test_dir(
     elasticity ${CMAKE_CURRENT_SOURCE_DIR}/elasticity
   )
