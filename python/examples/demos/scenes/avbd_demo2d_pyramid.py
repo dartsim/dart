@@ -1,0 +1,217 @@
+"""AVBD port of the avbd-demo2d Pyramid source scene."""
+
+from __future__ import annotations
+
+from collections import deque
+from typing import Any
+
+import numpy as np
+
+import dartpy as dart
+import dartpy as sx
+
+from .._world_bridge import WorldRenderBridge
+from ..runner import PythonDemoScene, ScenePanel, SceneSetup
+
+_TIME_STEP = 1.0 / 60.0
+_GRAVITY = -10.0
+_FRICTION = 0.5
+_THICKNESS = 0.2
+_PYRAMID_SIZE = 20
+_BOX_COUNT = _PYRAMID_SIZE * (_PYRAMID_SIZE + 1) // 2
+_GROUND_SIZE_2D = np.array([100.0, 0.5])
+_GROUND_SIZE = np.array([100.0, 0.5, _THICKNESS])
+_BOX_SIZE_2D = np.array([1.0, 0.5])
+_BOX_SIZE = np.array([1.0, 0.5, _THICKNESS])
+_SOURCE_ROW: dict[str, Any] = {
+    "demo": "avbd-demo2d",
+    "repository": "https://github.com/savant117/avbd-demo2d",
+    "revision": "74699a11f858",
+    "dimension": 2,
+    "scene_index": 4,
+    "scene_name": "Pyramid",
+    "scene_count": 19,
+    "scene_builder": "scenePyramid",
+    "solver_defaults": {
+        "time_step": _TIME_STEP,
+        "gravity_axis": "y",
+        "gravity": _GRAVITY,
+        "iterations": 10,
+    },
+    "source_shapes": {
+        "ground": {
+            "size": tuple(_GROUND_SIZE_2D),
+            "density": 0.0,
+            "friction": _FRICTION,
+            "position": (0.0, -2.0, 0.0),
+        },
+        "boxes": {
+            "pyramid_size": _PYRAMID_SIZE,
+            "count": _BOX_COUNT,
+            "size": tuple(_BOX_SIZE_2D),
+            "density": 1.0,
+            "friction": _FRICTION,
+            "x_spacing": 1.1,
+            "row_x_offset": 0.5,
+            "y_spacing": 0.85,
+            "base_y": 0.0,
+        },
+    },
+    "expected_counts": {
+        "rigid_bodies": 211,
+        "dynamic_bodies": 210,
+        "static_bodies": 1,
+        "joints": 0,
+        "collision_shapes": 211,
+    },
+}
+
+
+def _box_mass_2d(size_xy: np.ndarray, density: float) -> float:
+    return float(np.prod(size_xy) * density)
+
+
+def _full_box_inertia(size: np.ndarray, mass: float) -> np.ndarray:
+    return np.diag(
+        [
+            mass * float(size[1] * size[1] + size[2] * size[2]) / 12.0,
+            mass * float(size[0] * size[0] + size[2] * size[2]) / 12.0,
+            mass * float(size[0] * size[0] + size[1] * size[1]) / 12.0,
+        ]
+    )
+
+
+def _source_row() -> dict[str, Any]:
+    return {
+        **_SOURCE_ROW,
+        "solver_defaults": dict(_SOURCE_ROW["solver_defaults"]),
+        "source_shapes": {
+            name: dict(shape)
+            for name, shape in _SOURCE_ROW["source_shapes"].items()
+        },
+        "expected_counts": dict(_SOURCE_ROW["expected_counts"]),
+    }
+
+
+def _source_box_position(column: int, row: int) -> np.ndarray:
+    return np.array(
+        [
+            float(column) * 1.1 + float(row) * 0.5 - float(_PYRAMID_SIZE) / 2.0,
+            float(row) * 0.85,
+            0.0,
+        ]
+    )
+
+
+def _add_source_box(
+    world: sx.World,
+    name: str,
+    *,
+    size: np.ndarray,
+    size_2d: np.ndarray,
+    density: float,
+    position: np.ndarray,
+    is_static: bool = False,
+) -> sx.RigidBody:
+    body = world.add_rigid_body(name, position=tuple(position))
+    body.is_static = is_static
+    body.friction = _FRICTION
+    body.set_collision_shape(sx.CollisionShape.box(0.5 * size))
+    if not is_static:
+        mass = _box_mass_2d(size_2d, density)
+        body.mass = mass
+        body.inertia = _full_box_inertia(size, mass)
+    return body
+
+
+def build() -> SceneSetup:
+    world = sx.World(time_step=_TIME_STEP, gravity=(0.0, _GRAVITY, 0.0))
+
+    ground = _add_source_box(
+        world,
+        "avbd_demo2d_pyramid_ground",
+        size=_GROUND_SIZE,
+        size_2d=_GROUND_SIZE_2D,
+        density=0.0,
+        position=np.array([0.0, -2.0, 0.0]),
+        is_static=True,
+    )
+
+    boxes: list[sx.RigidBody] = []
+    box_rows: list[int] = []
+    for row in range(_PYRAMID_SIZE):
+        for column in range(_PYRAMID_SIZE - row):
+            boxes.append(
+                _add_source_box(
+                    world,
+                    f"avbd_demo2d_pyramid_box_{column}_{row}",
+                    size=_BOX_SIZE,
+                    size_2d=_BOX_SIZE_2D,
+                    density=1.0,
+                    position=_source_box_position(column, row),
+                )
+            )
+            box_rows.append(row)
+
+    world.enter_simulation_mode()
+
+    bridge = WorldRenderBridge(world, name="avbd_demo2d_pyramid_render")
+    bridge.add_rigid_body_visual(
+        ground,
+        dart.BoxShape(_GROUND_SIZE),
+        (0.40, 0.41, 0.43),
+        name="avbd_demo2d_pyramid_ground_visual",
+    )
+    for index, box in enumerate(boxes):
+        blend = float(box_rows[index]) / float(_PYRAMID_SIZE - 1)
+        color = (0.84 - 0.38 * blend, 0.48 + 0.22 * blend, 0.22 + 0.44 * blend)
+        bridge.add_rigid_body_visual(
+            box,
+            dart.BoxShape(_BOX_SIZE),
+            color,
+            name=f"avbd_demo2d_pyramid_box_{index}_visual",
+        )
+    bridge.sync()
+
+    contact_history: deque[float] = deque(maxlen=160)
+    top_box = boxes[-1]
+    initial_top_y = float(np.asarray(top_box.translation, dtype=float).reshape(3)[1])
+
+    def build_panel(builder: object, context: object) -> None:
+        top_y = float(np.asarray(top_box.translation, dtype=float).reshape(3)[1])
+        contacts = len(world.collide())
+        contact_history.append(float(contacts))
+
+        builder.text("source corpus: avbd-demo2d Pyramid")
+        builder.text("source scene: scenePyramid, index 4 of 19")
+        builder.text(f"rigid bodies: {world.num_rigid_bodies}")
+        builder.text(f"collision shapes: {1 + len(boxes)}")
+        builder.text(f"contacts: {contacts}")
+        builder.text(f"top-box dy: {top_y - initial_top_y:.3f} m")
+        builder.text(f"world time: {world.time:.3f} s")
+        builder.plot_lines("Contacts", list(contact_history))
+        builder.separator()
+        bridge.build_control_panel(builder, context)
+
+    return SceneSetup(
+        world=bridge.render_world,
+        pre_step=bridge.pre_step,
+        force_drag=bridge.force_drag,
+        panels=[ScenePanel("AVBD Demo2D Pyramid", build_panel)],
+        info={
+            "sx_world": world,
+            "ground": ground,
+            "boxes": boxes,
+            "source_demo_row": "avbd-demo2d pyramid",
+            "source_demo_reference": _source_row(),
+        },
+    )
+
+
+SCENE = PythonDemoScene(
+    id="avbd_demo2d_pyramid",
+    title="AVBD Demo2D Pyramid (sx)",
+    category="AVBD Rigid Constraints (sx)",
+    summary="A source-demo Pyramid row port with a triangular 2D rigid-body pile.",
+    build=build,
+)

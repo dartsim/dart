@@ -45,8 +45,190 @@ def test_humanize_new_solver_surfaces():
         == "FEM bar step · 24 cells"
     )
     assert (
+        module.humanize_name("BM_AvbdEmptyWorldStep")
+        == "AVBD empty baseline step"
+    )
+    assert (
         module.humanize_name("BM_AvbdRigidFixedJointStep/8")
         == "AVBD fixed-joint step · 8 links"
+    )
+    assert (
+        module.humanize_name("BM_AvbdDemo2dMotorStep")
+        == "AVBD demo2d motor step"
+    )
+    assert (
+        module.humanize_name("BM_AvbdDemo2dHangingRopeStep")
+        == "AVBD demo2d hanging rope step"
+    )
+    assert (
+        module.humanize_name("BM_AvbdDemo2dFractureStep")
+        == "AVBD demo2d fracture step"
+    )
+    assert (
+        module.humanize_name("BM_AvbdDemo2dDynamicFrictionStep")
+        == "AVBD demo2d dynamic friction step"
+    )
+    assert (
+        module.humanize_name("BM_AvbdDemo2dStaticFrictionStep")
+        == "AVBD demo2d static friction step"
+    )
+    assert (
+        module.humanize_name("BM_AvbdDemo2dPyramidStep")
+        == "AVBD demo2d pyramid step"
+    )
+    assert (
+        module.humanize_name("BM_AvbdDemo2dCardsStep") == "AVBD demo2d cards step"
+    )
+    assert (
+        module.humanize_name("BM_AvbdDemo2dGroundStep")
+        == "AVBD demo2d ground step"
+    )
+    assert (
+        module.humanize_name("BM_AvbdDemo2dStackStep")
+        == "AVBD demo2d stack step"
+    )
+    assert (
+        module.humanize_name("BM_AvbdDemo2dStackRatioStep")
+        == "AVBD demo2d stack ratio step"
+    )
+    assert module.humanize_name("BM_AvbdDemo2dRodStep") == "AVBD demo2d rod step"
+    assert (
+        module.humanize_name("BM_AvbdDemo2dSoftBodyStep")
+        == "AVBD demo2d soft body step"
+    )
+    assert (
+        module.humanize_name("BM_AvbdDemo2dJointGridStep")
+        == "AVBD demo2d joint grid step"
+    )
+    assert (
+        module.humanize_name("BM_AvbdDemo2dRopeStep") == "AVBD demo2d rope step"
+    )
+    assert (
+        module.humanize_name("BM_AvbdDemo2dHeavyRopeStep")
+        == "AVBD demo2d heavy rope step"
+    )
+    assert (
+        module.humanize_name("BM_AvbdDemo2dSpringStep")
+        == "AVBD demo2d spring step"
+    )
+    assert (
+        module.humanize_name("BM_AvbdDemo2dSpringRatioStep")
+        == "AVBD demo2d spring ratio step"
+    )
+    assert module.humanize_name("BM_AvbdDemo2dNetStep") == "AVBD demo2d net step"
+    assert (
+        module.humanize_name("BM_AvbdDemo3dGroundStep")
+        == "AVBD demo3d ground step"
+    )
+    assert (
+        module.humanize_name("BM_AvbdDemo3dDynamicFrictionStep")
+        == "AVBD demo3d dynamic friction step"
+    )
+    assert (
+        module.humanize_name("BM_AvbdDemo3dStaticFrictionStep")
+        == "AVBD demo3d static friction step"
+    )
+    assert (
+        module.humanize_name("BM_AvbdDemo3dPyramidStep")
+        == "AVBD demo3d pyramid step"
+    )
+    assert (
+        module.humanize_name("BM_AvbdDemo3dRopeStep")
+        == "AVBD demo3d rope step"
+    )
+    assert (
+        module.humanize_name("BM_AvbdDemo3dHeavyRopeStep")
+        == "AVBD demo3d heavy rope step"
+    )
+    assert (
+        module.humanize_name("BM_AvbdDemo3dSpringStep")
+        == "AVBD demo3d spring step"
+    )
+    assert (
+        module.humanize_name("BM_AvbdDemo3dSpringRatioStep")
+        == "AVBD demo3d spring ratio step"
+    )
+    assert (
+        module.humanize_name("BM_AvbdDemo3dStackStep")
+        == "AVBD demo3d stack step"
+    )
+    assert (
+        module.humanize_name("BM_AvbdDemo3dStackRatioStep")
+        == "AVBD demo3d stack ratio step"
+    )
+    assert (
+        module.humanize_name("BM_AvbdDemo3dSoftBodyStep")
+        == "AVBD demo3d soft body step"
+    )
+    assert (
+        module.humanize_name("BM_AvbdDemo3dBridgeStep")
+        == "AVBD demo3d bridge step"
+    )
+    assert (
+        module.humanize_name("BM_AvbdDemo3dBreakableStep")
+        == "AVBD demo3d breakable step"
+    )
+    assert (
+        module.humanize_name("BM_AvbdRigidBreakableJointStep/8")
+        == "AVBD breakable-joint step · 8 breakable joints"
+    )
+    assert (
+        module.humanize_name("BM_AvbdRigidSphericalBreakableJointStep/8")
+        == "AVBD spherical breakable-joint step · 8 breakable joints"
+    )
+    assert (
+        module.humanize_name("BM_AvbdRigidPrismaticMotorStep/8")
+        == "AVBD prismatic-motor step · 8 motors"
+    )
+    assert (
+        module.humanize_name("BM_AvbdArticulatedRevoluteMotorStep/8")
+        == "AVBD articulated revolute-motor step · 8 motors"
+    )
+    assert (
+        module.humanize_name("BM_AvbdArticulatedBreakableMotorStep/8")
+        == "AVBD articulated breakable-motor step · 8 breakable motors"
+    )
+    assert (
+        module.humanize_name("BM_AvbdArticulatedPrismaticMotorStep/8")
+        == "AVBD articulated prismatic-motor step · 8 motors"
+    )
+    assert (
+        module.humanize_name("BM_AvbdArticulatedPrismaticBreakableMotorStep/8")
+        == "AVBD articulated prismatic breakable-motor step · 8 breakable motors"
+    )
+    assert (
+        module.humanize_name("BM_AvbdArticulatedWorldPrismaticBreakableMotorStep/8")
+        == "AVBD articulated world-prismatic breakable-motor step · 8 breakable motors"
+    )
+    assert (
+        module.humanize_name("BM_AvbdArticulatedWorldRevoluteBreakableMotorStep/8")
+        == "AVBD articulated world-revolute breakable-motor step · 8 breakable motors"
+    )
+    assert (
+        module.humanize_name("BM_AvbdArticulatedBreakableJointStep/8")
+        == "AVBD articulated breakable-joint step · 8 breakable joints"
+    )
+    assert (
+        module.humanize_name("BM_AvbdArticulatedWorldSphericalBreakableJointStep/8")
+        == (
+            "AVBD articulated world-spherical breakable-joint step · "
+            "8 breakable joints"
+        )
+    )
+    assert (
+        module.humanize_name("BM_AvbdArticulatedSphericalPairBreakableJointStep/8")
+        == (
+            "AVBD articulated spherical-pair breakable-joint step · "
+            "8 breakable joints"
+        )
+    )
+    assert (
+        module.humanize_name("BM_AvbdArticulatedHighRatioChainStep")
+        == "AVBD articulated high-ratio chain step"
+    )
+    assert (
+        module.humanize_name("BM_AvbdPaperScaleHighRatioChainStep")
+        == "AVBD paper-scale high-ratio chain step"
     )
 
 
@@ -64,7 +246,90 @@ def test_family_grouping():
     assert module.family_of("BM_RigidWorldStep_Ipc/4") == module.FAMILY_RIGID
     assert module.family_of("BM_VbdWorldStepDefault/8") == module.FAMILY_VBD
     assert module.family_of("BM_DeformableFemBarStep/2") == module.FAMILY_FEM
+    assert module.family_of("BM_AvbdEmptyWorldStep") == module.FAMILY_AVBD
+    assert module.family_of("BM_AvbdDemo2dMotorStep") == module.FAMILY_AVBD
+    assert module.family_of("BM_AvbdDemo2dHangingRopeStep") == module.FAMILY_AVBD
+    assert module.family_of("BM_AvbdDemo2dFractureStep") == module.FAMILY_AVBD
+    assert (
+        module.family_of("BM_AvbdDemo2dDynamicFrictionStep")
+        == module.FAMILY_AVBD
+    )
+    assert (
+        module.family_of("BM_AvbdDemo2dStaticFrictionStep")
+        == module.FAMILY_AVBD
+    )
+    assert module.family_of("BM_AvbdDemo2dGroundStep") == module.FAMILY_AVBD
+    assert module.family_of("BM_AvbdDemo2dPyramidStep") == module.FAMILY_AVBD
+    assert module.family_of("BM_AvbdDemo2dCardsStep") == module.FAMILY_AVBD
+    assert module.family_of("BM_AvbdDemo2dStackStep") == module.FAMILY_AVBD
+    assert module.family_of("BM_AvbdDemo2dStackRatioStep") == module.FAMILY_AVBD
+    assert module.family_of("BM_AvbdDemo2dRodStep") == module.FAMILY_AVBD
+    assert module.family_of("BM_AvbdDemo2dJointGridStep") == module.FAMILY_AVBD
+    assert module.family_of("BM_AvbdDemo2dRopeStep") == module.FAMILY_AVBD
+    assert module.family_of("BM_AvbdDemo2dHeavyRopeStep") == module.FAMILY_AVBD
+    assert module.family_of("BM_AvbdDemo2dSpringStep") == module.FAMILY_AVBD
+    assert module.family_of("BM_AvbdDemo2dSpringRatioStep") == module.FAMILY_AVBD
+    assert module.family_of("BM_AvbdDemo2dNetStep") == module.FAMILY_AVBD
+    assert module.family_of("BM_AvbdDemo3dGroundStep") == module.FAMILY_AVBD
+    assert (
+        module.family_of("BM_AvbdDemo3dDynamicFrictionStep") == module.FAMILY_AVBD
+    )
+    assert module.family_of("BM_AvbdDemo3dStaticFrictionStep") == module.FAMILY_AVBD
+    assert module.family_of("BM_AvbdDemo3dPyramidStep") == module.FAMILY_AVBD
+    assert module.family_of("BM_AvbdDemo3dRopeStep") == module.FAMILY_AVBD
+    assert module.family_of("BM_AvbdDemo3dHeavyRopeStep") == module.FAMILY_AVBD
+    assert module.family_of("BM_AvbdDemo3dSpringStep") == module.FAMILY_AVBD
+    assert module.family_of("BM_AvbdDemo3dSpringRatioStep") == module.FAMILY_AVBD
+    assert module.family_of("BM_AvbdDemo3dStackStep") == module.FAMILY_AVBD
+    assert module.family_of("BM_AvbdDemo3dStackRatioStep") == module.FAMILY_AVBD
+    assert module.family_of("BM_AvbdDemo3dSoftBodyStep") == module.FAMILY_AVBD
+    assert module.family_of("BM_AvbdDemo3dBridgeStep") == module.FAMILY_AVBD
+    assert module.family_of("BM_AvbdDemo3dBreakableStep") == module.FAMILY_AVBD
     assert module.family_of("BM_AvbdRigidFixedJointStep/1") == module.FAMILY_AVBD
+    assert (
+        module.family_of("BM_AvbdArticulatedRevoluteMotorStep/1")
+        == module.FAMILY_AVBD
+    )
+    assert (
+        module.family_of("BM_AvbdArticulatedBreakableMotorStep/1")
+        == module.FAMILY_AVBD
+    )
+    assert (
+        module.family_of("BM_AvbdArticulatedPrismaticBreakableMotorStep/1")
+        == module.FAMILY_AVBD
+    )
+    assert (
+        module.family_of("BM_AvbdArticulatedWorldPrismaticBreakableMotorStep/1")
+        == module.FAMILY_AVBD
+    )
+    assert (
+        module.family_of("BM_AvbdArticulatedWorldRevoluteBreakableMotorStep/1")
+        == module.FAMILY_AVBD
+    )
+    assert (
+        module.family_of("BM_AvbdArticulatedBreakableJointStep/1")
+        == module.FAMILY_AVBD
+    )
+    assert (
+        module.family_of("BM_AvbdRigidSphericalBreakableJointStep/1")
+        == module.FAMILY_AVBD
+    )
+    assert (
+        module.family_of("BM_AvbdArticulatedWorldSphericalBreakableJointStep/1")
+        == module.FAMILY_AVBD
+    )
+    assert (
+        module.family_of("BM_AvbdArticulatedSphericalPairBreakableJointStep/1")
+        == module.FAMILY_AVBD
+    )
+    assert (
+        module.family_of("BM_AvbdArticulatedHighRatioChainStep")
+        == module.FAMILY_AVBD
+    )
+    assert (
+        module.family_of("BM_AvbdPaperScaleHighRatioChainStep")
+        == module.FAMILY_AVBD
+    )
     assert module.family_of("BM_Unmapped") == module.FAMILY_OTHER
 
 

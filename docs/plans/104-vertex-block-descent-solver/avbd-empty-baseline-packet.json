@@ -1,0 +1,257 @@
+{
+  "benchmark": {
+    "benchmark": "BM_AvbdEmptyWorldStep",
+    "context": {
+      "executable": "./build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint",
+      "json_schema_version": 1,
+      "library_build_type": "release",
+      "library_version": "v1.9.5",
+      "mhz_per_cpu": 848,
+      "num_cpus": 20
+    },
+    "invariants": {
+      "multibodies": 0,
+      "rigid_bodies": 0,
+      "time_advances_without_simulated_bodies": true
+    },
+    "json_sha256": "3f2adee0fc056c58d46f04068562a1cb03f9d815de7db1d1ffda9341143e06c6",
+    "rows": [
+      {
+        "cpu_time": 17.811486383976952,
+        "family_index": 0,
+        "iterations": 38447313,
+        "multibodies": 0.0,
+        "name": "BM_AvbdEmptyWorldStep",
+        "per_family_instance_index": 0,
+        "real_time": 17.848383292727007,
+        "repetition_index": 0,
+        "repetitions": 5,
+        "rigid_bodies": 0.0,
+        "run_name": "BM_AvbdEmptyWorldStep",
+        "run_type": "iteration",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "cpu_time": 18.78890506600552,
+        "family_index": 0,
+        "iterations": 38447313,
+        "multibodies": 0.0,
+        "name": "BM_AvbdEmptyWorldStep",
+        "per_family_instance_index": 0,
+        "real_time": 18.837321531413473,
+        "repetition_index": 1,
+        "repetitions": 5,
+        "rigid_bodies": 0.0,
+        "run_name": "BM_AvbdEmptyWorldStep",
+        "run_type": "iteration",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "cpu_time": 18.39759602966272,
+        "family_index": 0,
+        "iterations": 38447313,
+        "multibodies": 0.0,
+        "name": "BM_AvbdEmptyWorldStep",
+        "per_family_instance_index": 0,
+        "real_time": 18.4476215021937,
+        "repetition_index": 2,
+        "repetitions": 5,
+        "rigid_bodies": 0.0,
+        "run_name": "BM_AvbdEmptyWorldStep",
+        "run_type": "iteration",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "cpu_time": 18.4599690230628,
+        "family_index": 0,
+        "iterations": 38447313,
+        "multibodies": 0.0,
+        "name": "BM_AvbdEmptyWorldStep",
+        "per_family_instance_index": 0,
+        "real_time": 18.507498352356986,
+        "repetition_index": 3,
+        "repetitions": 5,
+        "rigid_bodies": 0.0,
+        "run_name": "BM_AvbdEmptyWorldStep",
+        "run_type": "iteration",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "cpu_time": 18.198125028919446,
+        "family_index": 0,
+        "iterations": 38447313,
+        "multibodies": 0.0,
+        "name": "BM_AvbdEmptyWorldStep",
+        "per_family_instance_index": 0,
+        "real_time": 18.244095887779217,
+        "repetition_index": 4,
+        "repetitions": 5,
+        "rigid_bodies": 0.0,
+        "run_name": "BM_AvbdEmptyWorldStep",
+        "run_type": "iteration",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "mean",
+        "aggregate_unit": "time",
+        "cpu_time": 18.331216306325487,
+        "family_index": 0,
+        "iterations": 5,
+        "multibodies": 0.0,
+        "name": "BM_AvbdEmptyWorldStep_mean",
+        "per_family_instance_index": 0,
+        "real_time": 18.37698411329408,
+        "repetitions": 5,
+        "rigid_bodies": 0.0,
+        "run_name": "BM_AvbdEmptyWorldStep",
+        "run_type": "aggregate",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "median",
+        "aggregate_unit": "time",
+        "cpu_time": 18.39759602966272,
+        "family_index": 0,
+        "iterations": 5,
+        "multibodies": 0.0,
+        "name": "BM_AvbdEmptyWorldStep_median",
+        "per_family_instance_index": 0,
+        "real_time": 18.447621502193698,
+        "repetitions": 5,
+        "rigid_bodies": 0.0,
+        "run_name": "BM_AvbdEmptyWorldStep",
+        "run_type": "aggregate",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "stddev",
+        "aggregate_unit": "time",
+        "cpu_time": 0.3599635435641119,
+        "family_index": 0,
+        "iterations": 5,
+        "multibodies": 0.0,
+        "name": "BM_AvbdEmptyWorldStep_stddev",
+        "per_family_instance_index": 0,
+        "real_time": 0.3643529380333823,
+        "repetitions": 5,
+        "rigid_bodies": 0.0,
+        "run_name": "BM_AvbdEmptyWorldStep",
+        "run_type": "aggregate",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "cv",
+        "aggregate_unit": "percentage",
+        "cpu_time": 0.0196366426291037,
+        "family_index": 0,
+        "iterations": 5,
+        "multibodies": 0.0,
+        "name": "BM_AvbdEmptyWorldStep_cv",
+        "per_family_instance_index": 0,
+        "real_time": 0.019826590467029143,
+        "repetitions": 5,
+        "rigid_bodies": 0.0,
+        "run_name": "BM_AvbdEmptyWorldStep",
+        "run_type": "aggregate",
+        "threads": 1,
+        "time_unit": "ns"
+      }
+    ]
+  },
+  "packet": "avbd_empty_source_demo_baseline",
+  "remaining_gates": [
+    "non-empty avbd-demo2d/avbd-demo3d source-scene ports",
+    "CPU reference-demo timing comparisons",
+    "GPU AVBD row parity and same-hardware benchmark packets",
+    "paper/site/video scene visual and performance packets"
+  ],
+  "reproduction": {
+    "benchmark_command": "build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter=BM_AvbdEmptyWorldStep$ --benchmark_out=<benchmark-json> --benchmark_out_format=json",
+    "capture_command": "LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe python scripts/capture_py_demo.py --scene avbd_empty_baseline --frames 8 --width 640 --height 360 --output-dir <capture-dir>"
+  },
+  "scene": "avbd_empty_baseline",
+  "schema_version": 1,
+  "source_demo_reference_rows": [
+    {
+      "demo": "avbd-demo2d",
+      "dimension": 2,
+      "expected_counts": {
+        "joints": 0,
+        "motors": 0,
+        "rigid_bodies": 0,
+        "springs": 0
+      },
+      "repository": "https://github.com/savant117/avbd-demo2d",
+      "revision": "74699a11f858",
+      "scene_builder": "sceneEmpty",
+      "scene_count": 19,
+      "scene_effect": "solver->clear()",
+      "scene_index": 0,
+      "scene_name": "Empty",
+      "solver_defaults": {
+        "gravity": -10.0,
+        "gravity_axis": "y",
+        "iterations": 10,
+        "time_step": 0.016666666666666666
+      }
+    },
+    {
+      "demo": "avbd-demo3d",
+      "dimension": 3,
+      "expected_counts": {
+        "joints": 0,
+        "motors": 0,
+        "rigid_bodies": 0,
+        "springs": 0
+      },
+      "repository": "https://github.com/savant117/avbd-demo3d",
+      "revision": "7701bd427d55",
+      "scene_builder": "sceneEmpty",
+      "scene_count": 14,
+      "scene_effect": "solver->clear()",
+      "scene_index": 0,
+      "scene_name": "Empty",
+      "solver_defaults": {
+        "gravity": -10.0,
+        "gravity_axis": "z",
+        "iterations": 10,
+        "time_step": 0.016666666666666666
+      }
+    }
+  ],
+  "visual_capture": {
+    "frames": {
+      "count": 8,
+      "directory": "png_frames",
+      "first_frame": {
+        "file": "png_frames/frame_000001.png",
+        "sha256": "82dfe75eb749f1f0817eb9813a956e3f6b408fb6aee656011441df8c639fb136"
+      },
+      "last_frame": {
+        "file": "png_frames/frame_000008.png",
+        "sha256": "10bccbcff395835633e3979ca3c8cafd3385806b6fc2792b5e94d58a0b700da1"
+      }
+    },
+    "manifest_sha256": "06d6c714e31fdf23465454a8ffcd8ac9a874dbfc65ff6c0af9587f2c6ef9e962",
+    "scene": "avbd_empty_baseline",
+    "screenshot": {
+      "file": "avbd_empty_baseline.png",
+      "height": 360,
+      "sha256": "10bccbcff395835633e3979ca3c8cafd3385806b6fc2792b5e94d58a0b700da1",
+      "width": 640
+    },
+    "show_ui": false,
+    "ui_ready": {
+      "dropped_warmup_frames": 0,
+      "required": false
+    }
+  }
+}

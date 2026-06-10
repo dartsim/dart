@@ -1,0 +1,353 @@
+{
+  "comparison": {
+    "dart_cpu_time_per_step_ns": 253251.7550972025,
+    "dart_faster_than_reference": false,
+    "dart_to_reference_cpu_time_ratio": 9.579646748437053,
+    "performance_claim": "DART does not yet beat the native avbd-demo2d Rod row",
+    "reference_cpu_time_per_step_ns": 26436.439855
+  },
+  "dart_benchmark": {
+    "benchmark": "BM_AvbdDemo2dRodStep",
+    "context": {
+      "executable": "build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint",
+      "json_schema_version": 1,
+      "library_build_type": "release",
+      "library_version": "v1.9.5",
+      "mhz_per_cpu": 994,
+      "num_cpus": 20
+    },
+    "cpu_time_per_step_ns": 253251.7550972025,
+    "invariants": {
+      "collision_shapes": 20,
+      "fixed_joints": 19,
+      "rigid_bodies": 20,
+      "rigid_body_joints": 19,
+      "source_scene_index": 13,
+      "time_step": 0.016666666666666666
+    },
+    "json_sha256": "d54123450c5513d67d07fa864e214d8fbca41327b8320d69eeb5ffd8302cb91d",
+    "rows": [
+      {
+        "collision_shapes": 20.0,
+        "cpu_time": 253251.75509720246,
+        "family_index": 0,
+        "fixed_joints": 19.0,
+        "iterations": 4218,
+        "name": "BM_AvbdDemo2dRodStep",
+        "per_family_instance_index": 0,
+        "real_time": 254152.71123593664,
+        "repetition_index": 0,
+        "repetitions": 5,
+        "rigid_bodies": 20.0,
+        "rigid_body_joints": 19.0,
+        "run_name": "BM_AvbdDemo2dRodStep",
+        "run_type": "iteration",
+        "source_scene_index": 13.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "collision_shapes": 20.0,
+        "cpu_time": 248580.36107159787,
+        "family_index": 0,
+        "fixed_joints": 19.0,
+        "iterations": 4218,
+        "name": "BM_AvbdDemo2dRodStep",
+        "per_family_instance_index": 0,
+        "real_time": 249403.51066718317,
+        "repetition_index": 1,
+        "repetitions": 5,
+        "rigid_bodies": 20.0,
+        "rigid_body_joints": 19.0,
+        "run_name": "BM_AvbdDemo2dRodStep",
+        "run_type": "iteration",
+        "source_scene_index": 13.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "collision_shapes": 20.0,
+        "cpu_time": 270498.85443338077,
+        "family_index": 0,
+        "fixed_joints": 19.0,
+        "iterations": 4218,
+        "name": "BM_AvbdDemo2dRodStep",
+        "per_family_instance_index": 0,
+        "real_time": 271528.25201257237,
+        "repetition_index": 2,
+        "repetitions": 5,
+        "rigid_bodies": 20.0,
+        "rigid_body_joints": 19.0,
+        "run_name": "BM_AvbdDemo2dRodStep",
+        "run_type": "iteration",
+        "source_scene_index": 13.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "collision_shapes": 20.0,
+        "cpu_time": 297564.97131341865,
+        "family_index": 0,
+        "fixed_joints": 19.0,
+        "iterations": 4218,
+        "name": "BM_AvbdDemo2dRodStep",
+        "per_family_instance_index": 0,
+        "real_time": 298698.279986389,
+        "repetition_index": 3,
+        "repetitions": 5,
+        "rigid_bodies": 20.0,
+        "rigid_body_joints": 19.0,
+        "run_name": "BM_AvbdDemo2dRodStep",
+        "run_type": "iteration",
+        "source_scene_index": 13.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "collision_shapes": 20.0,
+        "cpu_time": 251031.78710289238,
+        "family_index": 0,
+        "fixed_joints": 19.0,
+        "iterations": 4218,
+        "name": "BM_AvbdDemo2dRodStep",
+        "per_family_instance_index": 0,
+        "real_time": 251770.20957553692,
+        "repetition_index": 4,
+        "repetitions": 5,
+        "rigid_bodies": 20.0,
+        "rigid_body_joints": 19.0,
+        "run_name": "BM_AvbdDemo2dRodStep",
+        "run_type": "iteration",
+        "source_scene_index": 13.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "mean",
+        "aggregate_unit": "time",
+        "collision_shapes": 20.0,
+        "cpu_time": 264185.5458036985,
+        "family_index": 0,
+        "fixed_joints": 19.0,
+        "iterations": 5,
+        "name": "BM_AvbdDemo2dRodStep_mean",
+        "per_family_instance_index": 0,
+        "real_time": 265110.59269552364,
+        "repetitions": 5,
+        "rigid_bodies": 20.0,
+        "rigid_body_joints": 19.0,
+        "run_name": "BM_AvbdDemo2dRodStep",
+        "run_type": "aggregate",
+        "source_scene_index": 13.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "median",
+        "aggregate_unit": "time",
+        "collision_shapes": 20.0,
+        "cpu_time": 253251.7550972025,
+        "family_index": 0,
+        "fixed_joints": 19.0,
+        "iterations": 5,
+        "name": "BM_AvbdDemo2dRodStep_median",
+        "per_family_instance_index": 0,
+        "real_time": 254152.71123593667,
+        "repetitions": 5,
+        "rigid_bodies": 20.0,
+        "rigid_body_joints": 19.0,
+        "run_name": "BM_AvbdDemo2dRodStep",
+        "run_type": "aggregate",
+        "source_scene_index": 13.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "stddev",
+        "aggregate_unit": "time",
+        "collision_shapes": 0.0,
+        "cpu_time": 20555.6248439936,
+        "family_index": 0,
+        "fixed_joints": 0.0,
+        "iterations": 5,
+        "name": "BM_AvbdDemo2dRodStep_stddev",
+        "per_family_instance_index": 0,
+        "real_time": 20700.67935101474,
+        "repetitions": 5,
+        "rigid_bodies": 0.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo2dRodStep",
+        "run_type": "aggregate",
+        "source_scene_index": 0.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "cv",
+        "aggregate_unit": "percentage",
+        "collision_shapes": 0.0,
+        "cpu_time": 0.07780753023962687,
+        "family_index": 0,
+        "fixed_joints": 0.0,
+        "iterations": 5,
+        "name": "BM_AvbdDemo2dRodStep_cv",
+        "per_family_instance_index": 0,
+        "real_time": 0.07808318460812776,
+        "repetitions": 5,
+        "rigid_bodies": 0.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo2dRodStep",
+        "run_type": "aggregate",
+        "source_scene_index": 0.0,
+        "threads": 1,
+        "time_unit": "ns"
+      }
+    ]
+  },
+  "packet": "avbd_demo2d_rod_source_demo",
+  "reference_timing": {
+    "compile_command": [
+      "g++",
+      "-std=c++17",
+      "-O3",
+      "-DNDEBUG",
+      "-I<source-dir>/source",
+      "<temp-dir>/reference_runner.cpp",
+      "<source-dir>/source/solver.cpp",
+      "<source-dir>/source/rigid.cpp",
+      "<source-dir>/source/force.cpp",
+      "<source-dir>/source/joint.cpp",
+      "<source-dir>/source/spring.cpp",
+      "<source-dir>/source/motor.cpp",
+      "<source-dir>/source/manifold.cpp",
+      "<source-dir>/source/collide.cpp",
+      "-lGL",
+      "-o",
+      "<temp-dir>/reference_runner"
+    ],
+    "compile_flags": "-std=c++17 -O3 -DNDEBUG",
+    "compiler": "g++",
+    "cpu_time_per_step_ns": 26436.439855,
+    "elapsed_ns": 5287287971,
+    "invariants": {
+      "collision_shapes": 20,
+      "dynamic_bodies": 19,
+      "final_time": 3335.4668,
+      "fixed_joints": 19,
+      "joints": 19,
+      "max_friction": 0.5,
+      "min_friction": 0.5,
+      "rigid_bodies": 20,
+      "rod_links": 20,
+      "static_bodies": 1
+    },
+    "json_sha256": "c9b1918be39825e63dec969140ffbca49041f05e142ab88cf6085b4c9b49c815",
+    "repository": "https://github.com/savant117/avbd-demo2d",
+    "scene_builder": "sceneRod",
+    "scene_index": 13,
+    "scene_name": "Rod",
+    "source_demo": "avbd-demo2d",
+    "source_revision": "74699a11f858",
+    "steps": 200000,
+    "warmup_steps": 128
+  },
+  "remaining_gates": [
+    "DART CPU performance for this Rod row must beat the native reference before a CPU win is claimed",
+    "remaining avbd-demo2d card tower, spring, spring ratio, soft-body, joint-grid, and net source rows",
+    "GPU AVBD row parity and same-hardware benchmark packets",
+    "paper/site/video scene visual and performance packets",
+    "broad rod/strand and high-ratio articulated stability coverage beyond this source row"
+  ],
+  "reproduction": {
+    "capture_command": "LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe python scripts/capture_py_demo.py --scene avbd_demo2d_rod --frames 24 --width 640 --height 360 --output-dir <capture-dir>",
+    "dart_benchmark_command": "build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter=BM_AvbdDemo2dRodStep$ --benchmark_min_time=0.5s --benchmark_repetitions=3 --benchmark_out=<benchmark-json> --benchmark_out_format=json",
+    "reference_timing_command": "python scripts/run_avbd_demo2d_reference_timing.py --source-dir <avbd-demo2d-source-dir> --scene rod --output <reference-timing-json>"
+  },
+  "scene": "avbd_demo2d_rod",
+  "schema_version": 1,
+  "source_demo_reference_row": {
+    "demo": "avbd-demo2d",
+    "dimension": 2,
+    "expected_counts": {
+      "collision_shapes": 20,
+      "dynamic_bodies": 19,
+      "fixed_joints": 19,
+      "joints": 19,
+      "rigid_bodies": 20,
+      "static_bodies": 1
+    },
+    "repository": "https://github.com/savant117/avbd-demo2d",
+    "revision": "74699a11f858",
+    "scene_builder": "sceneRod",
+    "scene_count": 19,
+    "scene_index": 13,
+    "scene_name": "Rod",
+    "solver_defaults": {
+      "gravity": -10.0,
+      "gravity_axis": "y",
+      "iterations": 10,
+      "time_step": 0.016666666666666666
+    },
+    "source_constraints": {
+      "all_axis_fixed_joints": {
+        "angular_stiffness": "infinity",
+        "child_anchor": [
+          -0.5,
+          0.0
+        ],
+        "count": 19,
+        "fracture": "infinity",
+        "linear_stiffness": "infinity",
+        "parent_anchor": [
+          0.5,
+          0.0
+        ]
+      }
+    },
+    "source_shapes": {
+      "rod_link": {
+        "count": 20,
+        "dynamic_density": 1.0,
+        "first_position": [
+          0.0,
+          10.0,
+          0.0
+        ],
+        "friction": 0.5,
+        "size": [
+          1.0,
+          0.5
+        ],
+        "static_anchor_density": 0.0,
+        "x_spacing": 1.0
+      }
+    }
+  },
+  "visual_capture": {
+    "frames": {
+      "count": 24,
+      "directory": "png_frames",
+      "first_frame": {
+        "file": "png_frames/frame_000001.png",
+        "sha256": "cd5e1fe43bdb31a1b5054b3c527af5218e9254b83c963105d749949d9add1911"
+      },
+      "last_frame": {
+        "file": "png_frames/frame_000024.png",
+        "sha256": "25e9ab75d83737240f16043ca74c671ccccf3925f8fc25280909abe039bbb308"
+      }
+    },
+    "manifest_sha256": "f9b14cbcf805b3189eeda6d0f342207586a786d1f40d2ca00b5940c44c940a08",
+    "scene": "avbd_demo2d_rod",
+    "screenshot": {
+      "file": "avbd_demo2d_rod.png",
+      "height": 360,
+      "sha256": "25e9ab75d83737240f16043ca74c671ccccf3925f8fc25280909abe039bbb308",
+      "width": 640
+    },
+    "show_ui": false,
+    "ui_ready": {
+      "dropped_warmup_frames": 0,
+      "required": false
+    }
+  }
+}

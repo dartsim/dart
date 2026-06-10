@@ -1,0 +1,331 @@
+{
+  "comparison": {
+    "dart_cpu_time_per_step_ns": 517369.2760000001,
+    "dart_faster_than_reference": false,
+    "dart_to_reference_cpu_time_ratio": 5.378300444161105,
+    "performance_claim": "DART does not yet beat the native avbd-demo2d Cards row",
+    "reference_cpu_time_per_step_ns": 96195.6814
+  },
+  "dart_benchmark": {
+    "benchmark": "BM_AvbdDemo2dCardsStep",
+    "context": {
+      "executable": "build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint",
+      "json_schema_version": 1,
+      "library_build_type": "release",
+      "library_version": "v1.9.5",
+      "mhz_per_cpu": 1222,
+      "num_cpus": 20
+    },
+    "cpu_time_per_step_ns": 517369.2760000001,
+    "invariants": {
+      "cards": 40,
+      "collision_shapes": 41,
+      "rigid_bodies": 41,
+      "rigid_body_joints": 0,
+      "source_scene_index": 5,
+      "time_step": 0.016666666666666666
+    },
+    "json_sha256": "4959fc5a00ab980b7db19c33661848eb9200e2650d88476051c18ffc525c786e",
+    "rows": [
+      {
+        "cards": 40.0,
+        "collision_shapes": 41.0,
+        "cpu_time": 520028.834,
+        "family_index": 0,
+        "iterations": 1000,
+        "name": "BM_AvbdDemo2dCardsStep",
+        "per_family_instance_index": 0,
+        "real_time": 521425.81800580956,
+        "repetition_index": 0,
+        "repetitions": 3,
+        "rigid_bodies": 41.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo2dCardsStep",
+        "run_type": "iteration",
+        "source_scene_index": 5.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "cards": 40.0,
+        "collision_shapes": 41.0,
+        "cpu_time": 482237.58699999994,
+        "family_index": 0,
+        "iterations": 1000,
+        "name": "BM_AvbdDemo2dCardsStep",
+        "per_family_instance_index": 0,
+        "real_time": 483298.0700011831,
+        "repetition_index": 1,
+        "repetitions": 3,
+        "rigid_bodies": 41.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo2dCardsStep",
+        "run_type": "iteration",
+        "source_scene_index": 5.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "cards": 40.0,
+        "collision_shapes": 41.0,
+        "cpu_time": 517369.2760000002,
+        "family_index": 0,
+        "iterations": 1000,
+        "name": "BM_AvbdDemo2dCardsStep",
+        "per_family_instance_index": 0,
+        "real_time": 518586.4999948535,
+        "repetition_index": 2,
+        "repetitions": 3,
+        "rigid_bodies": 41.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo2dCardsStep",
+        "run_type": "iteration",
+        "source_scene_index": 5.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "mean",
+        "aggregate_unit": "time",
+        "cards": 40.0,
+        "collision_shapes": 41.0,
+        "cpu_time": 506545.2323333333,
+        "family_index": 0,
+        "iterations": 3,
+        "name": "BM_AvbdDemo2dCardsStep_mean",
+        "per_family_instance_index": 0,
+        "real_time": 507770.1293339487,
+        "repetitions": 3,
+        "rigid_bodies": 41.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo2dCardsStep",
+        "run_type": "aggregate",
+        "source_scene_index": 5.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "median",
+        "aggregate_unit": "time",
+        "cards": 40.0,
+        "collision_shapes": 41.0,
+        "cpu_time": 517369.2760000001,
+        "family_index": 0,
+        "iterations": 3,
+        "name": "BM_AvbdDemo2dCardsStep_median",
+        "per_family_instance_index": 0,
+        "real_time": 518586.4999948535,
+        "repetitions": 3,
+        "rigid_bodies": 41.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo2dCardsStep",
+        "run_type": "aggregate",
+        "source_scene_index": 5.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "stddev",
+        "aggregate_unit": "time",
+        "cards": 0.0,
+        "collision_shapes": 0.0,
+        "cpu_time": 21092.99714187977,
+        "family_index": 0,
+        "iterations": 3,
+        "name": "BM_AvbdDemo2dCardsStep_stddev",
+        "per_family_instance_index": 0,
+        "real_time": 21240.920358629945,
+        "repetitions": 3,
+        "rigid_bodies": 0.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo2dCardsStep",
+        "run_type": "aggregate",
+        "source_scene_index": 0.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "cv",
+        "aggregate_unit": "percentage",
+        "cards": 0.0,
+        "collision_shapes": 0.0,
+        "cpu_time": 0.041640895611074424,
+        "family_index": 0,
+        "iterations": 3,
+        "name": "BM_AvbdDemo2dCardsStep_cv",
+        "per_family_instance_index": 0,
+        "real_time": 0.041831764279817024,
+        "repetitions": 3,
+        "rigid_bodies": 0.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo2dCardsStep",
+        "run_type": "aggregate",
+        "source_scene_index": 0.0,
+        "threads": 1,
+        "time_unit": "ns"
+      }
+    ]
+  },
+  "packet": "avbd_demo2d_cards_source_demo",
+  "reference_timing": {
+    "compile_command": [
+      "g++",
+      "-std=c++17",
+      "-O3",
+      "-DNDEBUG",
+      "-I<source-dir>/source",
+      "<temp-dir>/reference_runner.cpp",
+      "<source-dir>/source/solver.cpp",
+      "<source-dir>/source/rigid.cpp",
+      "<source-dir>/source/force.cpp",
+      "<source-dir>/source/joint.cpp",
+      "<source-dir>/source/spring.cpp",
+      "<source-dir>/source/motor.cpp",
+      "<source-dir>/source/manifold.cpp",
+      "<source-dir>/source/collide.cpp",
+      "-lGL",
+      "-o",
+      "<temp-dir>/reference_runner"
+    ],
+    "compile_flags": "-std=c++17 -O3 -DNDEBUG",
+    "compiler": "g++",
+    "cpu_time_per_step_ns": 96195.6814,
+    "elapsed_ns": 1923913628,
+    "invariants": {
+      "angle_horizontal": 1.57079506,
+      "angle_negative": -0.436331928,
+      "angle_positive": 0.436331928,
+      "card_count": 40,
+      "card_height": 0.4,
+      "card_levels": 5,
+      "card_thickness": 0.002,
+      "collision_shapes": 41,
+      "dynamic_bodies": 40,
+      "final_time": 335.466675,
+      "ground_height": 4.0,
+      "ground_width": 80.0,
+      "horizontal_card_count": 10,
+      "joints": 0,
+      "leaning_card_count": 30,
+      "max_friction": 0.7,
+      "min_friction": 0.7,
+      "negative_card_count": 15,
+      "positive_card_count": 15,
+      "rigid_bodies": 41,
+      "static_bodies": 1
+    },
+    "json_sha256": "18074bc730e9b1cd6443475353a513f1b354ada099f4195d2ff868c7b21fae42",
+    "repository": "https://github.com/savant117/avbd-demo2d",
+    "scene_builder": "sceneCards",
+    "scene_index": 5,
+    "scene_name": "Cards",
+    "source_demo": "avbd-demo2d",
+    "source_revision": "74699a11f858",
+    "steps": 20000,
+    "warmup_steps": 128
+  },
+  "remaining_gates": [
+    "DART CPU performance for this Cards row must beat the native reference before a CPU win is claimed",
+    "remaining avbd-demo2d source-scene ports",
+    "GPU AVBD row parity and same-hardware benchmark packets",
+    "paper/site/video scene visual and performance packets",
+    "broad card-tower contact stability beyond this narrow source row"
+  ],
+  "reproduction": {
+    "capture_command": "LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe python scripts/capture_py_demo.py --scene avbd_demo2d_cards --frames 24 --width 640 --height 360 --output-dir <capture-dir>",
+    "dart_benchmark_command": "build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter=BM_AvbdDemo2dCardsStep$ --benchmark_min_time=0.5s --benchmark_repetitions=3 --benchmark_out=<benchmark-json> --benchmark_out_format=json",
+    "reference_timing_command": "python scripts/run_avbd_demo2d_reference_timing.py --source-dir <avbd-demo2d-source-dir> --scene cards --warmup-steps 128 --steps 20000 --output <reference-timing-json>"
+  },
+  "scene": "avbd_demo2d_cards",
+  "schema_version": 1,
+  "source_demo_reference_row": {
+    "demo": "avbd-demo2d",
+    "dimension": 2,
+    "expected_counts": {
+      "collision_shapes": 41,
+      "dynamic_bodies": 40,
+      "joints": 0,
+      "rigid_bodies": 41,
+      "static_bodies": 1
+    },
+    "repository": "https://github.com/savant117/avbd-demo2d",
+    "revision": "74699a11f858",
+    "scene_builder": "sceneCards",
+    "scene_count": 19,
+    "scene_index": 5,
+    "scene_name": "Cards",
+    "solver_defaults": {
+      "gravity": -10.0,
+      "gravity_axis": "y",
+      "iterations": 10,
+      "time_step": 0.016666666666666666
+    },
+    "source_shapes": {
+      "cards": {
+        "angle_horizontal": 1.570795,
+        "angle_negative": -0.43633194444444445,
+        "angle_positive": 0.43633194444444445,
+        "count": 40,
+        "density": 1.0,
+        "first_position": [
+          0.25,
+          0.36,
+          1.570795
+        ],
+        "friction": 0.7,
+        "horizontal_count": 10,
+        "last_position": [
+          0.875,
+          1.62,
+          0.43633194444444445
+        ],
+        "leaning_count": 30,
+        "levels": 5,
+        "size": [
+          0.002,
+          0.4
+        ]
+      },
+      "ground": {
+        "density": 0.0,
+        "friction": 0.7,
+        "position": [
+          0.0,
+          -2.0,
+          0.0
+        ],
+        "size": [
+          80.0,
+          4.0
+        ]
+      }
+    }
+  },
+  "visual_capture": {
+    "frames": {
+      "count": 24,
+      "directory": "png_frames",
+      "first_frame": {
+        "file": "png_frames/frame_000001.png",
+        "sha256": "ffa73e8ba1902cb6072aa8ec5ac0db2806b52be9420f25b2e4a6f367e3e475a7"
+      },
+      "last_frame": {
+        "file": "png_frames/frame_000024.png",
+        "sha256": "f02df8c78bb63c4aef562e12998ecba8b90f777ee71140bc1da1fb077b6a2a49"
+      }
+    },
+    "manifest_sha256": "6ba1667ef61c50f84eca9ea07717330dc45d58e58055e4d5692edc9f2ed8b34a",
+    "scene": "avbd_demo2d_cards",
+    "screenshot": {
+      "file": "avbd_demo2d_cards.png",
+      "height": 360,
+      "sha256": "f02df8c78bb63c4aef562e12998ecba8b90f777ee71140bc1da1fb077b6a2a49",
+      "width": 640
+    },
+    "show_ui": false,
+    "ui_ready": {
+      "dropped_warmup_frames": 0,
+      "required": false
+    }
+  }
+}

@@ -1,0 +1,387 @@
+{
+  "comparison": {
+    "dart_cpu_time_per_step_ns": 286062.7350963693,
+    "dart_faster_than_reference": false,
+    "dart_to_reference_cpu_time_ratio": 1.2343302292473124,
+    "performance_claim": "DART does not yet beat the native avbd-demo2d Net row",
+    "reference_cpu_time_per_step_ns": 231755.431665
+  },
+  "dart_benchmark": {
+    "benchmark": "BM_AvbdDemo2dNetStep",
+    "context": {
+      "executable": "build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint",
+      "json_schema_version": 1,
+      "library_build_type": "release",
+      "library_version": "v1.9.5",
+      "mhz_per_cpu": 465,
+      "num_cpus": 20
+    },
+    "cpu_time_per_step_ns": 286062.7350963693,
+    "invariants": {
+      "collision_shapes": 91,
+      "linear_point_joints": 39,
+      "rigid_bodies": 91,
+      "rigid_body_joints": 39,
+      "source_scene_index": 16,
+      "time_step": 0.016666666666666666
+    },
+    "json_sha256": "ec1d6d71f9be03c510c0bbb7ab5eb08007ba67c9bc606507e0e178b0b36d0fde",
+    "rows": [
+      {
+        "collision_shapes": 91.0,
+        "cpu_time": 302225.9825190498,
+        "family_index": 0,
+        "iterations": 2231,
+        "linear_point_joints": 39.0,
+        "name": "BM_AvbdDemo2dNetStep",
+        "per_family_instance_index": 0,
+        "real_time": 303040.120124705,
+        "repetition_index": 0,
+        "repetitions": 5,
+        "rigid_bodies": 91.0,
+        "rigid_body_joints": 39.0,
+        "run_name": "BM_AvbdDemo2dNetStep",
+        "run_type": "iteration",
+        "source_scene_index": 16.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "collision_shapes": 91.0,
+        "cpu_time": 298500.4943971315,
+        "family_index": 0,
+        "iterations": 2231,
+        "linear_point_joints": 39.0,
+        "name": "BM_AvbdDemo2dNetStep",
+        "per_family_instance_index": 0,
+        "real_time": 299193.3128644933,
+        "repetition_index": 1,
+        "repetitions": 5,
+        "rigid_bodies": 91.0,
+        "rigid_body_joints": 39.0,
+        "run_name": "BM_AvbdDemo2dNetStep",
+        "run_type": "iteration",
+        "source_scene_index": 16.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "collision_shapes": 91.0,
+        "cpu_time": 285178.81577767804,
+        "family_index": 0,
+        "iterations": 2231,
+        "linear_point_joints": 39.0,
+        "name": "BM_AvbdDemo2dNetStep",
+        "per_family_instance_index": 0,
+        "real_time": 285882.91393968236,
+        "repetition_index": 2,
+        "repetitions": 5,
+        "rigid_bodies": 91.0,
+        "rigid_body_joints": 39.0,
+        "run_name": "BM_AvbdDemo2dNetStep",
+        "run_type": "iteration",
+        "source_scene_index": 16.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "collision_shapes": 91.0,
+        "cpu_time": 286062.73509636923,
+        "family_index": 0,
+        "iterations": 2231,
+        "linear_point_joints": 39.0,
+        "name": "BM_AvbdDemo2dNetStep",
+        "per_family_instance_index": 0,
+        "real_time": 286667.39937170106,
+        "repetition_index": 3,
+        "repetitions": 5,
+        "rigid_bodies": 91.0,
+        "rigid_body_joints": 39.0,
+        "run_name": "BM_AvbdDemo2dNetStep",
+        "run_type": "iteration",
+        "source_scene_index": 16.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "collision_shapes": 91.0,
+        "cpu_time": 282249.6418646347,
+        "family_index": 0,
+        "iterations": 2231,
+        "linear_point_joints": 39.0,
+        "name": "BM_AvbdDemo2dNetStep",
+        "per_family_instance_index": 0,
+        "real_time": 282844.20752992306,
+        "repetition_index": 4,
+        "repetitions": 5,
+        "rigid_bodies": 91.0,
+        "rigid_body_joints": 39.0,
+        "run_name": "BM_AvbdDemo2dNetStep",
+        "run_type": "iteration",
+        "source_scene_index": 16.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "mean",
+        "aggregate_unit": "time",
+        "collision_shapes": 91.0,
+        "cpu_time": 290843.5339309727,
+        "family_index": 0,
+        "iterations": 5,
+        "linear_point_joints": 39.0,
+        "name": "BM_AvbdDemo2dNetStep_mean",
+        "per_family_instance_index": 0,
+        "real_time": 291525.590766101,
+        "repetitions": 5,
+        "rigid_bodies": 91.0,
+        "rigid_body_joints": 39.0,
+        "run_name": "BM_AvbdDemo2dNetStep",
+        "run_type": "aggregate",
+        "source_scene_index": 16.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "median",
+        "aggregate_unit": "time",
+        "collision_shapes": 91.0,
+        "cpu_time": 286062.7350963693,
+        "family_index": 0,
+        "iterations": 5,
+        "linear_point_joints": 39.0,
+        "name": "BM_AvbdDemo2dNetStep_median",
+        "per_family_instance_index": 0,
+        "real_time": 286667.39937170106,
+        "repetitions": 5,
+        "rigid_bodies": 91.0,
+        "rigid_body_joints": 39.0,
+        "run_name": "BM_AvbdDemo2dNetStep",
+        "run_type": "aggregate",
+        "source_scene_index": 16.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "stddev",
+        "aggregate_unit": "time",
+        "collision_shapes": 0.0,
+        "cpu_time": 8902.095673795182,
+        "family_index": 0,
+        "iterations": 5,
+        "linear_point_joints": 0.0,
+        "name": "BM_AvbdDemo2dNetStep_stddev",
+        "per_family_instance_index": 0,
+        "real_time": 8974.778392997818,
+        "repetitions": 5,
+        "rigid_bodies": 0.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo2dNetStep",
+        "run_type": "aggregate",
+        "source_scene_index": 0.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "cv",
+        "aggregate_unit": "percentage",
+        "collision_shapes": 0.0,
+        "cpu_time": 0.030607851422641424,
+        "family_index": 0,
+        "iterations": 5,
+        "linear_point_joints": 0.0,
+        "name": "BM_AvbdDemo2dNetStep_cv",
+        "per_family_instance_index": 0,
+        "real_time": 0.030785559406338807,
+        "repetitions": 5,
+        "rigid_bodies": 0.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo2dNetStep",
+        "run_type": "aggregate",
+        "source_scene_index": 0.0,
+        "threads": 1,
+        "time_unit": "ns"
+      }
+    ]
+  },
+  "packet": "avbd_demo2d_net_source_demo",
+  "reference_timing": {
+    "compile_command": [
+      "g++",
+      "-std=c++17",
+      "-O3",
+      "-DNDEBUG",
+      "-I<source-dir>/source",
+      "<temp-dir>/reference_runner.cpp",
+      "<source-dir>/source/solver.cpp",
+      "<source-dir>/source/rigid.cpp",
+      "<source-dir>/source/force.cpp",
+      "<source-dir>/source/joint.cpp",
+      "<source-dir>/source/spring.cpp",
+      "<source-dir>/source/motor.cpp",
+      "<source-dir>/source/manifold.cpp",
+      "<source-dir>/source/collide.cpp",
+      "-lGL",
+      "-o",
+      "<temp-dir>/reference_runner"
+    ],
+    "compile_flags": "-std=c++17 -O3 -DNDEBUG",
+    "compiler": "g++",
+    "cpu_time_per_step_ns": 231755.431665,
+    "elapsed_ns": 46351086333,
+    "invariants": {
+      "collision_shapes": 91,
+      "dynamic_bodies": 88,
+      "falling_blocks": 50,
+      "final_time": 3335.4668,
+      "ground_bodies": 1,
+      "joints": 39,
+      "linear_point_joints": 39,
+      "max_friction": 0.5,
+      "min_friction": 0.5,
+      "net_links": 40,
+      "rigid_bodies": 91,
+      "static_bodies": 3
+    },
+    "json_sha256": "76bcf26d4bb4cace4d8660dc2b3e1761b656386c752cb5331b4f71872ed094bf",
+    "repository": "https://github.com/savant117/avbd-demo2d",
+    "scene_builder": "sceneNet",
+    "scene_index": 16,
+    "scene_name": "Net",
+    "source_demo": "avbd-demo2d",
+    "source_revision": "74699a11f858",
+    "steps": 200000,
+    "warmup_steps": 128
+  },
+  "remaining_gates": [
+    "DART CPU performance for this Net row must beat the native reference before a CPU win is claimed",
+    "remaining avbd-demo2d spring, spring ratio, and soft-body source rows",
+    "broader soft/rigid net contact and friction coverage beyond this rigid source row",
+    "GPU AVBD row parity and same-hardware benchmark packets",
+    "paper/site/video scene visual and performance packets"
+  ],
+  "reproduction": {
+    "capture_command": "LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe python scripts/capture_py_demo.py --scene avbd_demo2d_net --frames 24 --width 640 --height 360 --output-dir <capture-dir>",
+    "dart_benchmark_command": "build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter=BM_AvbdDemo2dNetStep$ --benchmark_min_time=0.5s --benchmark_repetitions=3 --benchmark_out=<benchmark-json> --benchmark_out_format=json",
+    "reference_timing_command": "python scripts/run_avbd_demo2d_reference_timing.py --source-dir <avbd-demo2d-source-dir> --scene net --output <reference-timing-json>"
+  },
+  "scene": "avbd_demo2d_net",
+  "schema_version": 1,
+  "source_demo_reference_row": {
+    "demo": "avbd-demo2d",
+    "dimension": 2,
+    "expected_counts": {
+      "collision_shapes": 91,
+      "dynamic_bodies": 88,
+      "joints": 39,
+      "linear_point_joints": 39,
+      "rigid_bodies": 91,
+      "static_bodies": 3
+    },
+    "repository": "https://github.com/savant117/avbd-demo2d",
+    "revision": "74699a11f858",
+    "scene_builder": "sceneNet",
+    "scene_count": 19,
+    "scene_index": 16,
+    "scene_name": "Net",
+    "solver_defaults": {
+      "gravity": -10.0,
+      "gravity_axis": "y",
+      "iterations": 10,
+      "time_step": 0.016666666666666666
+    },
+    "source_constraints": {
+      "linear_point_joints": {
+        "angular_stiffness": 0.0,
+        "child_anchor": [
+          -0.5,
+          0.0
+        ],
+        "count": 39,
+        "fracture": "infinity",
+        "linear_stiffness": "infinity",
+        "parent_anchor": [
+          0.5,
+          0.0
+        ]
+      }
+    },
+    "source_shapes": {
+      "falling_block": {
+        "columns": 10,
+        "count": 50,
+        "density": 1.0,
+        "first_position": [
+          -5.0,
+          15.0,
+          0.0
+        ],
+        "friction": 0.5,
+        "rows": 5,
+        "size": [
+          1.0,
+          1.0
+        ],
+        "x_spacing": 1.0,
+        "y_spacing": 1.0
+      },
+      "ground": {
+        "count": 1,
+        "density": 0.0,
+        "friction": 0.5,
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "size": [
+          100.0,
+          0.5
+        ]
+      },
+      "net_link": {
+        "count": 40,
+        "dynamic_density": 1.0,
+        "first_position": [
+          -20.0,
+          10.0,
+          0.0
+        ],
+        "friction": 0.5,
+        "size": [
+          1.0,
+          0.5
+        ],
+        "static_endpoint_density": 0.0,
+        "x_spacing": 1.0
+      }
+    }
+  },
+  "visual_capture": {
+    "frames": {
+      "count": 24,
+      "directory": "png_frames",
+      "first_frame": {
+        "file": "png_frames/frame_000001.png",
+        "sha256": "28fad8cb5e889c2ac0463ed6ab631066861d94bc482022896c438bf90a1ea781"
+      },
+      "last_frame": {
+        "file": "png_frames/frame_000024.png",
+        "sha256": "3fefc59ebafc0a4b6681adf0b52ce79ebcec44dd226103fb0b70eda35da781ac"
+      }
+    },
+    "manifest_sha256": "ec9ca0971d4fa244d2f0eebf0ad91d58ea0a365d79826b3bca5218dfdb13eba7",
+    "scene": "avbd_demo2d_net",
+    "screenshot": {
+      "file": "avbd_demo2d_net.png",
+      "height": 360,
+      "sha256": "3fefc59ebafc0a4b6681adf0b52ce79ebcec44dd226103fb0b70eda35da781ac",
+      "width": 640
+    },
+    "show_ui": false,
+    "ui_ready": {
+      "dropped_warmup_frames": 0,
+      "required": false
+    }
+  }
+}
