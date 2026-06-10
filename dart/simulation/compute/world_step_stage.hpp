@@ -416,6 +416,11 @@ struct RigidIpcSolverStats
   std::size_t activeDynamicsTerms = 0;
   std::size_t bdf2RestartedDynamicsTerms = 0;
   std::size_t bdf2SecondOrderDynamicsTerms = 0;
+  std::size_t mixedDomainSurfaceCount = 0;
+  std::size_t mixedDomainDeformableSurfaceCount = 0;
+  std::size_t mixedDomainCandidateCount = 0;
+  std::size_t mixedDomainActiveBarrierCount = 0;
+  double mixedDomainBarrierValue = 0.0;
   std::size_t solverIterations = 0;
   std::size_t frictionIterations = 0;
   std::size_t acceptedSteps = 0;

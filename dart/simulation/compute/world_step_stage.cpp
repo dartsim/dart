@@ -60,6 +60,7 @@
 #include "dart/simulation/detail/deformable_vbd/rigid_world_contact.hpp"
 #include "dart/simulation/detail/entity_conversion.hpp"
 #include "dart/simulation/detail/newton_barrier/friction_kernel.hpp"
+#include "dart/simulation/detail/newton_barrier/mixed_domain_coupling.hpp"
 #include "dart/simulation/detail/newton_barrier/projected_newton.hpp"
 #include "dart/simulation/detail/newton_barrier/psd_backend.hpp"
 #include "dart/simulation/detail/newton_barrier/restitution_damping.hpp"
@@ -156,6 +157,7 @@ struct RigidIpcContactStage::Scratch
   std::vector<sxdetail::RigidIpcArticulationConstraintInput>
       articulationConstraints;
   std::vector<RigidIpcBdf2HistoryEntry> bdf2Histories;
+  std::vector<nb::MixedDomainSurface> mixedDomainSurfaces;
   std::vector<entt::entity> tracedEntities;
   std::vector<entt::entity> blockedEntities;
   std::vector<entt::entity> writebackEntities;
@@ -8024,6 +8026,159 @@ void collectRigidIpcRuntimeBodies(
 }
 
 //==============================================================================
+bool appendRigidIpcDeformableSurface(
+    entt::entity entity,
+    const comps::DeformableNodeState& state,
+    const comps::DeformableMeshTopology& topology,
+    double frictionCoefficient,
+    RigidIpcSolverStats& stats,
+    std::vector<RigidIpcRuntimeBody>& bodies)
+{
+  if (state.positions.empty() || topology.surfaceTriangles.empty()) {
+    return false;
+  }
+
+  std::vector<Eigen::Vector3i> triangles;
+  triangles.reserve(topology.surfaceTriangles.size());
+  for (const auto& triangle : topology.surfaceTriangles) {
+    if (triangle.nodeA >= state.positions.size()
+        || triangle.nodeB >= state.positions.size()
+        || triangle.nodeC >= state.positions.size()
+        || triangle.nodeA == triangle.nodeB || triangle.nodeA == triangle.nodeC
+        || triangle.nodeB == triangle.nodeC) {
+      continue;
+    }
+    const Eigen::Vector3d& a = state.positions[triangle.nodeA];
+    const Eigen::Vector3d& b = state.positions[triangle.nodeB];
+    const Eigen::Vector3d& c = state.positions[triangle.nodeC];
+    if (!a.allFinite() || !b.allFinite() || !c.allFinite()
+        || (b - a).cross(c - a).squaredNorm() <= 0.0) {
+      continue;
+    }
+    triangles.emplace_back(
+        static_cast<int>(triangle.nodeA),
+        static_cast<int>(triangle.nodeB),
+        static_cast<int>(triangle.nodeC));
+  }
+
+  if (triangles.empty()) {
+    return false;
+  }
+
+  bodies.emplace_back();
+  RigidIpcRuntimeBody& body = bodies.back();
+  resetRigidIpcRuntimeBodyPreservingSurface(body);
+  body.entity = entity;
+  body.hasSupportedSurface = true;
+  body.surfaceIndex = stats.surfaceCount;
+  body.surface.body = bodies.size() - 1u;
+  body.surface.pose = sxdetail::RigidIpcPose{};
+  body.surface.vertices = state.positions;
+  body.surface.triangles = std::move(triangles);
+  body.surface.dynamic = false;
+  body.surface.kinematic = false;
+  body.surface.frictionCoefficient = std::isfinite(frictionCoefficient)
+                                         ? std::max(0.0, frictionCoefficient)
+                                         : 0.0;
+  ++stats.surfaceCount;
+  ++stats.mixedDomainDeformableSurfaceCount;
+  return true;
+}
+
+//==============================================================================
+void appendRigidIpcDeformableSurfaces(
+    const World& world,
+    RigidIpcSolverStats& stats,
+    std::vector<RigidIpcRuntimeBody>& bodies)
+{
+  const auto& registry = dart::simulation::detail::registryOf(world);
+  auto view = registry.view<
+      comps::DeformableBodyTag,
+      comps::DeformableNodeState,
+      comps::DeformableMeshTopology,
+      comps::DeformableMaterial>();
+
+  for (const auto entity : view) {
+    const auto& state = view.get<comps::DeformableNodeState>(entity);
+    const auto& topology = view.get<comps::DeformableMeshTopology>(entity);
+    const auto& material = view.get<comps::DeformableMaterial>(entity);
+    appendRigidIpcDeformableSurface(
+        entity, state, topology, material.frictionCoefficient, stats, bodies);
+  }
+}
+
+//==============================================================================
+std::vector<Eigen::Vector3d> rigidIpcSurfaceWorldVertices(
+    const sxdetail::RigidIpcBarrierSurface& surface,
+    const sxdetail::RigidIpcPose& pose)
+{
+  std::vector<Eigen::Vector3d> vertices;
+  vertices.reserve(surface.vertices.size());
+  for (const Eigen::Vector3d& vertex : surface.vertices) {
+    vertices.push_back(sxdetail::transformRigidIpcPoint(vertex, pose));
+  }
+  return vertices;
+}
+
+//==============================================================================
+void collectRigidIpcMixedDomainCandidateStats(
+    const dart::simulation::detail::WorldRegistry& registry,
+    const std::vector<RigidIpcRuntimeBody>& bodies,
+    const double activationDistance,
+    RigidIpcSolverStats& stats,
+    std::vector<nb::MixedDomainSurface>& surfaces)
+{
+  if (stats.mixedDomainDeformableSurfaceCount == 0u) {
+    stats.mixedDomainSurfaceCount = 0u;
+    stats.mixedDomainCandidateCount = 0u;
+    stats.mixedDomainActiveBarrierCount = 0u;
+    stats.mixedDomainBarrierValue = 0.0;
+    return;
+  }
+
+  surfaces.clear();
+  surfaces.reserve(bodies.size());
+  for (std::size_t i = 0; i < bodies.size(); ++i) {
+    const RigidIpcRuntimeBody& body = bodies[i];
+    if (!body.hasSupportedSurface) {
+      continue;
+    }
+
+    const bool deformableSurface
+        = body.entity != entt::null
+          && registry.all_of<comps::DeformableBodyTag>(body.entity);
+    nb::MixedDomainSurface surface;
+    surface.domain = deformableSurface ? nb::MixedDomainType::Deformable
+                                       : nb::MixedDomainType::Rigid;
+    surface.domainInstance = i;
+    surface.active = true;
+    surface.dynamic = body.surface.dynamic;
+    surface.frictionCoefficient = body.surface.frictionCoefficient;
+    surface.startVertices = rigidIpcSurfaceWorldVertices(
+        body.surface,
+        body.surface.kinematic ? body.surface.kinematicStartPose
+                               : body.surface.pose);
+    surface.endVertices
+        = rigidIpcSurfaceWorldVertices(body.surface, body.surface.pose);
+    surface.triangles = body.surface.triangles;
+    surfaces.push_back(std::move(surface));
+  }
+
+  nb::MixedDomainCandidateOptions options;
+  options.activationDistance = activationDistance;
+  options.exactDistanceFilter = true;
+  const nb::MixedDomainCandidateSet candidateSet
+      = nb::buildMixedDomainContactCandidates(surfaces, options);
+  const nb::MixedDomainBarrierDiagnostics diagnostics
+      = nb::evaluateMixedDomainBarrierDiagnostics(
+          surfaces, candidateSet, activationDistance);
+  stats.mixedDomainSurfaceCount = candidateSet.stats.surfaceCount;
+  stats.mixedDomainCandidateCount = candidateSet.candidates.size();
+  stats.mixedDomainActiveBarrierCount = diagnostics.activeBarrierCount;
+  stats.mixedDomainBarrierValue = diagnostics.value;
+}
+
+//==============================================================================
 std::size_t findRuntimeBodyIndex(
     const std::vector<RigidIpcRuntimeBody>& bodies, const entt::entity entity)
 {
@@ -9081,6 +9236,13 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
   clearKinematicBodyStepTraces(world, scratch.tracedEntities);
 
   collectRigidIpcRuntimeBodies(world, m_lastStats, scratch.runtimeBodies);
+  appendRigidIpcDeformableSurfaces(world, m_lastStats, scratch.runtimeBodies);
+  collectRigidIpcMixedDomainCandidateStats(
+      dart::simulation::detail::registryOf(world),
+      scratch.runtimeBodies,
+      m_options.activationDistance,
+      m_lastStats,
+      scratch.mixedDomainSurfaces);
   if (m_options.timeIntegration == RigidIpcTimeIntegration::Bdf2) {
     applyRigidIpcBdf2DynamicsTerms(
         world, scratch.bdf2Histories, scratch.runtimeBodies, m_lastStats);

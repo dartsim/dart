@@ -6216,6 +6216,68 @@ TEST(World, RigidIpcContactStageBdf2FallingBoxEnergyStaysFinite)
       std::abs(box.getLinearVelocity().z() - backwardDifferenceVelocity), 1e-6);
 }
 
+TEST(World, RigidIpcContactStageUsesDeformableSurfaceObstacle)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.02);
+
+  sx::DeformableBodyOptions sheetOptions;
+  sheetOptions.positions
+      = {Eigen::Vector3d(-0.5, -0.5, 0.0),
+         Eigen::Vector3d(0.5, -0.5, 0.0),
+         Eigen::Vector3d(-0.5, 0.5, 0.0),
+         Eigen::Vector3d(0.5, 0.5, 0.0)};
+  sheetOptions.masses = {1.0, 1.0, 1.0, 1.0};
+  sheetOptions.fixedNodes = {0, 1, 2, 3};
+  sheetOptions.surfaceTriangles
+      = {sx::DeformableSurfaceTriangle{0, 1, 2},
+         sx::DeformableSurfaceTriangle{1, 3, 2}};
+  sheetOptions.material.frictionCoefficient = 0.0;
+  auto sheet = world.addDeformableBody("deformable_surface", sheetOptions);
+
+  sx::RigidBodyOptions boxOptions;
+  boxOptions.mass = 1.0;
+  boxOptions.position = Eigen::Vector3d(0.0, 0.0, 0.055);
+  boxOptions.linearVelocity = Eigen::Vector3d(0.0, 0.0, -1.0);
+  auto box = world.addRigidBody("falling_box", boxOptions);
+  box.setCollisionShape(sx::CollisionShape::makeBox({0.05, 0.05, 0.05}));
+
+  sx::compute::RigidIpcContactStageOptions stageOptions;
+  stageOptions.maxIterations = 64;
+  stageOptions.activationDistance = 0.02;
+  stageOptions.frictionIterations = 0;
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage(stageOptions);
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+  world.step(executor, pipeline);
+
+  const auto& stats = ipcStage.getLastStats();
+  EXPECT_EQ(stats.bodyCount, 1u);
+  EXPECT_EQ(stats.dynamicBodyCount, 1u);
+  EXPECT_EQ(stats.surfaceCount, 2u);
+  EXPECT_EQ(stats.mixedDomainDeformableSurfaceCount, 1u);
+  EXPECT_GE(stats.mixedDomainSurfaceCount, 2u);
+  EXPECT_GT(stats.mixedDomainCandidateCount, 0u);
+  EXPECT_GT(stats.mixedDomainActiveBarrierCount, 0u);
+  EXPECT_GT(stats.activeConstraints, 0u);
+  EXPECT_TRUE(stats.resultApplied);
+  EXPECT_FALSE(stats.failed);
+
+  const double boxBottom = box.getTranslation().z() - 0.05;
+  EXPECT_GT(boxBottom, -1e-6);
+  for (std::size_t node = 0; node < sheet.getNodeCount(); ++node) {
+    EXPECT_TRUE(sheet.getPosition(node).allFinite());
+    EXPECT_NEAR(sheet.getPosition(node).z(), 0.0, 1e-12);
+  }
+  const double kineticEnergy
+      = 0.5 * box.getMass() * box.getLinearVelocity().squaredNorm();
+  EXPECT_TRUE(std::isfinite(kineticEnergy));
+}
+
 // Test that the opt-in rigid IPC stage assembles active barrier constraints
 // from runtime mesh surfaces and pushes a dynamic body away from a static one.
 // Body-body generalization of the freeze fix: a stack of two free boxes on
