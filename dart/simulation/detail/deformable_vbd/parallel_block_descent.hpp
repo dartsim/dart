@@ -190,7 +190,9 @@ inline BlockDescentStats parallelBlockDescentDeformable(
     const std::vector<Eigen::Vector3d>* stepStartPositions = nullptr,
     const std::vector<ContactPlane>* contactPlanes = nullptr,
     double contactFriction = 0.0,
-    const SelfContactAdjacency* selfContact = nullptr)
+    const SelfContactAdjacency* selfContact = nullptr,
+    std::vector<Eigen::Vector3d>* chebyshevTwoStepsBackScratch = nullptr,
+    std::vector<Eigen::Vector3d>* chebyshevBeforeSweepScratch = nullptr)
 {
   if (threadCount <= 1 || (selfContact != nullptr && selfContact->active())) {
     return blockDescentDeformable(
@@ -211,7 +213,9 @@ inline BlockDescentStats parallelBlockDescentDeformable(
         stepStartPositions,
         contactPlanes,
         contactFriction,
-        selfContact);
+        selfContact,
+        chebyshevTwoStepsBackScratch,
+        chebyshevBeforeSweepScratch);
   }
 
   const std::size_t vertexCount = positions.size();

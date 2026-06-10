@@ -950,6 +950,8 @@ struct DeformableVbdScratch
   dc::ContactCandidateSet selfContactCandidates;
   dc::detail::ContactCandidateSweepScratch selfContactSweepScratch;
   dvbd::SelfContactAdjacency selfContactAdjacency;
+  std::vector<Eigen::Vector3d> chebyshevTwoStepsBack;
+  std::vector<Eigen::Vector3d> chebyshevBeforeSweep;
   std::size_t cachedNodeCount = 0;
   std::size_t cachedEdgeCount = 0;
   std::size_t cachedTetCount = 0;
@@ -5049,8 +5051,8 @@ void reserveVbdSelfContactCandidateScratch(
     DeformableVbdScratch& scratch)
 {
   const std::size_t edgeCapacity = 3 * triangleCount;
-  const std::size_t pointTriangleCapacity = 4 * (nodeCount + triangleCount);
-  const std::size_t edgeEdgeCapacity = 6 * edgeCapacity;
+  const std::size_t pointTriangleCapacity = 32 * (nodeCount + triangleCount);
+  const std::size_t edgeEdgeCapacity = 48 * edgeCapacity;
 
   scratch.selfContactCandidates.surfaceEdges.reserve(edgeCapacity);
   scratch.selfContactCandidates.pointTriangleCandidates.reserve(
@@ -5061,6 +5063,16 @@ void reserveVbdSelfContactCandidateScratch(
   scratch.selfContactSweepScratch.edgeItems.reserve(edgeCapacity);
   scratch.selfContactSweepScratch.sweepLinks.reserve(
       std::max(nodeCount, std::max(triangleCount, edgeCapacity)));
+  scratch.selfContactAdjacency.reserve(
+      nodeCount, pointTriangleCapacity + edgeEdgeCapacity);
+}
+
+//==============================================================================
+void reserveVbdChebyshevScratch(
+    std::size_t nodeCount, DeformableVbdScratch& scratch)
+{
+  scratch.chebyshevTwoStepsBack.reserve(nodeCount);
+  scratch.chebyshevBeforeSweep.reserve(nodeCount);
 }
 
 //==============================================================================
@@ -6392,7 +6404,9 @@ void runVbdDeformableSolve(
         &state.positions,
         contactPlanes,
         frictionCoeff,
-        selfContact);
+        selfContact,
+        &vbdScratch.chebyshevTwoStepsBack,
+        &vbdScratch.chebyshevBeforeSweep);
   }
 
   ++stats.vbdBodyCount;
@@ -9862,6 +9876,9 @@ void DeformableDynamicsStage::prepare(World& world)
       auto& vbdScratch = registry.get_or_emplace<DeformableVbdScratch>(entity);
       syncVbdTopologyScratch(
           state.positions.size(), *model, topology, vbdScratch);
+      if (vbdConfig->useChebyshev) {
+        reserveVbdChebyshevScratch(state.positions.size(), vbdScratch);
+      }
       primeVbdStaticContactScratch(
           state.positions.size(),
           scratch.barriers,
@@ -9869,6 +9886,12 @@ void DeformableDynamicsStage::prepare(World& world)
           scratch.boxObstacles,
           *vbdConfig,
           vbdScratch);
+      if (contactScratch.surfaceTriangles.size() >= 2) {
+        reserveVbdSelfContactCandidateScratch(
+            state.positions.size(),
+            contactScratch.surfaceTriangles.size(),
+            vbdScratch);
+      }
       if (vbdConfig->useAvbdContactNormalRows
           && vbdConfig->contactStiffness > 0.0) {
         const std::size_t contactRowCapacity = state.positions.size();
@@ -9885,10 +9908,6 @@ void DeformableDynamicsStage::prepare(World& world)
       if (vbdConfig->useAvbdSelfContactNormalRows
           && contactScratch.surfaceTriangles.size() >= 2) {
         vbdScratch.avbdSolveFixed.reserve(state.positions.size());
-        reserveVbdSelfContactCandidateScratch(
-            state.positions.size(),
-            contactScratch.surfaceTriangles.size(),
-            vbdScratch);
 
         const double dHat = selfContactBarrierActivationDistance();
         dc::ContactCandidateOptions candidateOptions;

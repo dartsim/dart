@@ -1044,10 +1044,63 @@ TEST(VariationalIntegration, LoopClosureConstraintScratchIsBaked)
       = registry.get<sxc::MultibodyVariationalScratch>(*structures.begin());
   const auto constraintCapacity = scratch.constraints.capacity();
   EXPECT_GE(constraintCapacity, 1u);
+  EXPECT_EQ(scratch.tree.linkCount(), 6u);
+  EXPECT_EQ(scratch.tree.dofCount(), 5u);
+  ASSERT_EQ(scratch.step.currentSpatialVelocities.size(), 6u);
+  EXPECT_EQ(scratch.step.position.size(), 5);
+  EXPECT_EQ(scratch.step.velocity.size(), 5);
+  EXPECT_EQ(scratch.step.appliedForce.size(), 5);
+  EXPECT_EQ(scratch.step.nextPosition.size(), 5);
+  EXPECT_EQ(scratch.step.residual.size(), 5);
+  EXPECT_EQ(scratch.step.zeroAcceleration.size(), 5);
+  ASSERT_EQ(scratch.anderson.stepDeltas.size(), 5u);
+  ASSERT_EQ(scratch.anderson.iterateDeltas.size(), 5u);
+  EXPECT_EQ(scratch.anderson.stepDeltas.front().size(), 5);
+  EXPECT_EQ(scratch.anderson.iterateDeltas.front().size(), 5);
+  EXPECT_EQ(scratch.anderson.stepMatrix.rows(), 5);
+  EXPECT_EQ(scratch.anderson.stepMatrix.cols(), 5);
+  EXPECT_EQ(scratch.anderson.mixMatrix.rows(), 5);
+  EXPECT_EQ(scratch.anderson.mixMatrix.cols(), 5);
+  EXPECT_GE(scratch.anderson.jointDelta.size(), 1);
+  ASSERT_EQ(scratch.linearSolve.articulated.size(), 6u);
+  ASSERT_EQ(scratch.linearSolve.forceProjector.size(), 6u);
+  ASSERT_EQ(scratch.linearSolve.motionProjector.size(), 6u);
+  EXPECT_EQ(scratch.linearSolve.rhs.size(), 5);
+  EXPECT_EQ(scratch.linearSolve.result.size(), 5);
+  EXPECT_GE(scratch.linearSolve.jointWork.size(), 1);
+  EXPECT_GE(scratch.linearSolve.jointSolveWork.size(), 1);
+  EXPECT_EQ(scratch.linearSolve.forceProjector.back().rows(), 6);
+  EXPECT_EQ(scratch.linearSolve.forceProjector.back().cols(), 1);
+  EXPECT_EQ(scratch.linearSolve.jointMatrix.back().rows(), 1);
+  EXPECT_EQ(scratch.linearSolve.jointMatrix.back().cols(), 1);
+  ASSERT_EQ(scratch.projection.jacobians.size(), 6u);
+  EXPECT_EQ(scratch.projection.jacobians.back().rows(), 6);
+  EXPECT_EQ(scratch.projection.jacobians.back().cols(), 5);
+  EXPECT_EQ(scratch.projection.residual.size(), 3);
+  EXPECT_EQ(scratch.projection.jacobian.rows(), 3);
+  EXPECT_EQ(scratch.projection.jacobian.cols(), 5);
+  EXPECT_EQ(scratch.projection.inverseMassJt.rows(), 5);
+  EXPECT_EQ(scratch.projection.inverseMassJt.cols(), 3);
+  EXPECT_EQ(scratch.projection.constraintMass.rows(), 3);
+  EXPECT_EQ(scratch.projection.constraintMass.cols(), 3);
+  EXPECT_EQ(scratch.projection.correction.size(), 5);
 
   for (int i = 0; i < 4; ++i) {
     world.step();
     EXPECT_EQ(scratch.constraints.capacity(), constraintCapacity);
+    EXPECT_EQ(scratch.tree.linkCount(), 6u);
+    EXPECT_EQ(scratch.tree.dofCount(), 5u);
+    EXPECT_EQ(scratch.anderson.stepDeltas.size(), 5u);
+    EXPECT_EQ(scratch.anderson.stepMatrix.rows(), 5);
+    EXPECT_EQ(scratch.anderson.stepMatrix.cols(), 5);
+    EXPECT_EQ(scratch.step.position.size(), 5);
+    EXPECT_EQ(scratch.step.residual.size(), 5);
+    EXPECT_EQ(scratch.step.zeroAcceleration.size(), 5);
+    EXPECT_EQ(scratch.linearSolve.result.size(), 5);
+    EXPECT_EQ(scratch.linearSolve.rhs.size(), 5);
+    EXPECT_EQ(scratch.projection.residual.size(), 3);
+    EXPECT_EQ(scratch.projection.jacobian.rows(), 3);
+    EXPECT_EQ(scratch.projection.inverseMassJt.cols(), 3);
   }
 }
 

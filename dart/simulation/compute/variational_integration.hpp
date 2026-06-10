@@ -12,16 +12,19 @@
 
 #include <dart/simulation/comps/component_category.hpp>
 #include <dart/simulation/compute/compute_stage_metadata.hpp>
+#include <dart/simulation/compute/multibody_dynamics.hpp>
 #include <dart/simulation/compute/world_step_stage.hpp>
 #include <dart/simulation/detail/world_registry_types.hpp>
 #include <dart/simulation/export.hpp>
 #include <dart/simulation/fwd.hpp>
 
+#include <Eigen/Cholesky>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <entt/entt.hpp>
 
 #include <functional>
+#include <memory>
 #include <optional>
 #include <span>
 #include <string_view>
@@ -34,6 +37,8 @@ struct MultibodyStructure;
 } // namespace dart::simulation::comps
 
 namespace dart::simulation::compute {
+
+struct MultibodyVariationalTreeScratchAccess;
 
 /// Persistent two-step discrete-mechanics history for one multibody, indexed by
 /// link construction order (parent-before-child).
@@ -273,6 +278,102 @@ struct VariationalContactEvaluationScratch
   Eigen::VectorXd forcing;
 };
 
+/// Reusable storage for variational articulated linear solves.
+struct VariationalLinearSolveScratch
+{
+  std::vector<Eigen::Matrix<double, 6, 6>> articulated;
+  std::vector<Eigen::Matrix<double, 6, 1>> bias;
+  std::vector<Eigen::Matrix<double, 6, 6>> motionToChild;
+  std::vector<Eigen::Matrix<double, 6, 1>> spatial;
+  std::vector<Eigen::MatrixXd> forceProjector;
+  std::vector<Eigen::MatrixXd> motionProjector;
+  std::vector<Eigen::MatrixXd> jointMatrix;
+  std::vector<Eigen::MatrixXd> jointMatrixInverse;
+  std::vector<Eigen::VectorXd> jointRhs;
+  Eigen::VectorXd jointWork;
+  Eigen::VectorXd jointSolveWork;
+  Eigen::VectorXd rhs;
+  Eigen::VectorXd result;
+};
+
+/// Reusable storage for one variational multibody step.
+struct VariationalStepScratch
+{
+  std::vector<Eigen::Matrix<double, 6, 1>> currentSpatialVelocities;
+  Eigen::VectorXd position;
+  Eigen::VectorXd velocity;
+  Eigen::VectorXd appliedForce;
+  Eigen::VectorXd nextPosition;
+  Eigen::VectorXd residual;
+  Eigen::VectorXd zeroAcceleration;
+};
+
+/// Reusable storage for variational multibody tree construction.
+class DART_SIMULATION_API MultibodyVariationalTreeScratch final
+{
+public:
+  MultibodyVariationalTreeScratch();
+  ~MultibodyVariationalTreeScratch();
+
+  MultibodyVariationalTreeScratch(const MultibodyVariationalTreeScratch&)
+      = delete;
+  MultibodyVariationalTreeScratch& operator=(
+      const MultibodyVariationalTreeScratch&) = delete;
+  MultibodyVariationalTreeScratch(MultibodyVariationalTreeScratch&&) noexcept;
+  MultibodyVariationalTreeScratch& operator=(
+      MultibodyVariationalTreeScratch&&) noexcept;
+
+  [[nodiscard]] std::size_t linkCount() const noexcept;
+  [[nodiscard]] std::size_t dofCount() const noexcept;
+
+private:
+  struct Impl;
+
+  std::unique_ptr<Impl> m_impl;
+
+  friend struct MultibodyVariationalTreeScratchAccess;
+};
+
+/// Reusable storage for variational loop-closure projection.
+struct VariationalConstraintProjectionScratch
+{
+  std::vector<Eigen::MatrixXd> jacobians;
+  Eigen::MatrixXd pointJacobianA;
+  Eigen::MatrixXd pointJacobianB;
+  Eigen::MatrixXd angularJacobianA;
+  Eigen::MatrixXd angularJacobianB;
+  Eigen::MatrixXd pointJacobianWork;
+  Eigen::VectorXd residual;
+  Eigen::MatrixXd jacobian;
+  Eigen::MatrixXd inverseMassJt;
+  Eigen::MatrixXd constraintMass;
+  Eigen::LDLT<Eigen::MatrixXd> constraintFactorization;
+  Eigen::VectorXd lambdaRhs;
+  Eigen::VectorXd lambda;
+  Eigen::VectorXd correction;
+};
+
+/// Reusable storage for manifold Anderson acceleration in the variational
+/// multibody stage.
+struct VariationalAndersonScratch
+{
+  std::vector<Eigen::VectorXd> stepDeltas;
+  std::vector<Eigen::VectorXd> iterateDeltas;
+  std::size_t historyCount = 0;
+  Eigen::VectorXd previousStep;
+  Eigen::VectorXd previousPosition;
+  Eigen::VectorXd jointDelta;
+  Eigen::VectorXd trialPosition;
+  Eigen::VectorXd andersonPosition;
+  Eigen::VectorXd andersonIncrement;
+  Eigen::MatrixXd stepMatrix;
+  Eigen::MatrixXd mixMatrix;
+  Eigen::MatrixXd ftf;
+  Eigen::MatrixXd regularized;
+  Eigen::VectorXd normalRhs;
+  Eigen::VectorXd gamma;
+};
+
 /// Cache-only scratch reused by the variational multibody stage.
 ///
 /// The persisted `MultibodyVariationalState` remains the two-step dynamics
@@ -285,7 +386,13 @@ struct MultibodyVariationalScratch
   std::vector<VariationalLoopConstraint> constraints;
   VariationalGroundContact groundContact;
   std::optional<VariationalGroundContactSolver> groundContactSolver;
+  MultibodyVariationalTreeScratch tree;
   VariationalContactEvaluationScratch contactEvaluation;
+  VariationalStepScratch step;
+  VariationalLinearSolveScratch linearSolve;
+  MultibodyInverseDynamicsScratch inverseDynamics;
+  VariationalConstraintProjectionScratch projection;
+  VariationalAndersonScratch anderson;
   std::vector<Eigen::Isometry3d> postContactTransforms;
 };
 

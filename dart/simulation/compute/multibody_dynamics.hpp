@@ -100,6 +100,64 @@ computeMultibodyInverseDynamics(
     const Eigen::Vector3d& gravity,
     const Eigen::VectorXd& desiredAcceleration);
 
+/// Reusable storage for inverse-dynamics evaluation.
+///
+/// The return-by-value wrapper above remains convenient for one-shot callers.
+/// Repeated or stage-loop callers should keep this scratch and pass it to
+/// `computeMultibodyInverseDynamicsInto()` so dynamics-tree, RNEA, and output
+/// storage can be retained across same-shape steps without exposing private
+/// dynamics-tree types.
+class DART_SIMULATION_API MultibodyInverseDynamicsScratch final
+{
+public:
+  MultibodyInverseDynamicsScratch();
+  ~MultibodyInverseDynamicsScratch();
+
+  MultibodyInverseDynamicsScratch(const MultibodyInverseDynamicsScratch&)
+      = delete;
+  MultibodyInverseDynamicsScratch& operator=(
+      const MultibodyInverseDynamicsScratch&) = delete;
+  MultibodyInverseDynamicsScratch(MultibodyInverseDynamicsScratch&&) noexcept;
+  MultibodyInverseDynamicsScratch& operator=(
+      MultibodyInverseDynamicsScratch&&) noexcept;
+
+private:
+  struct Impl;
+
+  std::unique_ptr<Impl> m_impl;
+
+  friend DART_SIMULATION_API void reserveMultibodyInverseDynamicsScratch(
+      MultibodyInverseDynamicsScratch& scratch,
+      detail::WorldRegistry& registry,
+      const comps::MultibodyStructure& structure);
+
+  friend DART_SIMULATION_API void computeMultibodyInverseDynamicsInto(
+      MultibodyInverseDynamicsScratch& scratch,
+      detail::WorldRegistry& registry,
+      const comps::MultibodyStructure& structure,
+      const Eigen::Vector3d& gravity,
+      const Eigen::VectorXd& desiredAcceleration,
+      Eigen::VectorXd& result);
+};
+
+/// Reserve inverse-dynamics scratch for the current multibody shape.
+DART_SIMULATION_API void reserveMultibodyInverseDynamicsScratch(
+    MultibodyInverseDynamicsScratch& scratch,
+    detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure);
+
+/// Compute inverse dynamics into reusable caller-owned storage.
+///
+/// `result` is resized and overwritten with the generalized force vector. For a
+/// multibody with no movable degrees of freedom, `result` is empty.
+DART_SIMULATION_API void computeMultibodyInverseDynamicsInto(
+    MultibodyInverseDynamicsScratch& scratch,
+    detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure,
+    const Eigen::Vector3d& gravity,
+    const Eigen::VectorXd& desiredAcceleration,
+    Eigen::VectorXd& result);
+
 /// Analytic inverse-dynamics partial derivatives, ∂τ/∂q and ∂τ/∂q̇, evaluated
 /// at the multibody's current `(q, q̇)` and the supplied generalized
 /// acceleration `qddot`, where `τ = M(q) qddot + C(q, q̇) q̇ + g(q)`.

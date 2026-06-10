@@ -85,6 +85,7 @@
 #include <limits>
 #include <map>
 #include <memory>
+#include <new>
 #include <ostream>
 #include <set>
 #include <span>
@@ -2259,10 +2260,30 @@ struct World::StepPipelineCache
   WorldStepPipelineStages stages;
 };
 
+//==============================================================================
+World::WorldStoragePtr World::makeWorldStorage(
+    common::MemoryManager& memoryManager)
+{
+  auto* storage = memoryManager.constructUsingFree<detail::WorldStorage>(
+      memoryManager.getFreeAllocator());
+  if (storage == nullptr) {
+    throw std::bad_alloc();
+  }
+
+  return WorldStoragePtr(storage, WorldStorageDeleter{&memoryManager});
+}
+
+//==============================================================================
+void World::WorldStorageDeleter::operator()(void* storage) const noexcept
+{
+  if (storage != nullptr && memoryManager != nullptr) {
+    memoryManager->destroyUsingFree(
+        static_cast<detail::WorldStorage*>(storage));
+  }
+}
+
 World::World()
-  : m_storage(
-        std::make_unique<detail::WorldStorage>(
-            m_memoryManager.getFreeAllocator())),
+  : m_storage(makeWorldStorage(m_memoryManager)),
     m_stepPipelineCache(std::make_unique<StepPipelineCache>())
 {
   // Empty.
@@ -2272,9 +2293,7 @@ World::World()
 World::World(const WorldOptions& options)
   : m_memoryManager(
         resolveBaseAllocator(options), makeMemoryManagerOptions(options)),
-    m_storage(
-        std::make_unique<detail::WorldStorage>(
-            m_memoryManager.getFreeAllocator())),
+    m_storage(makeWorldStorage(m_memoryManager)),
     m_gravity(options.gravity),
     m_rigidBodySolver(options.rigidBodySolver),
     m_timeStep(options.timeStep),
@@ -2377,8 +2396,7 @@ void World::clear()
   // Recreate the opaque storage at the rebuild boundary so registry/component
   // capacities and other allocator-backed build artifacts release their live
   // allocations instead of surviving as stale storage in an empty World.
-  m_storage = std::make_unique<detail::WorldStorage>(
-      m_memoryManager.getFreeAllocator());
+  m_storage = makeWorldStorage(m_memoryManager);
   markFrameTopologyChanged();
   m_simulationMode = false;
   m_gravity = Eigen::Vector3d(0.0, 0.0, -9.81);

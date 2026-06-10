@@ -606,30 +606,6 @@ void recursiveNewtonEulerInto(
   }
 }
 
-Eigen::VectorXd recursiveNewtonEuler(
-    const std::vector<LinkDynamics>& links,
-    const Vector6& baseAcceleration,
-    std::size_t dofCount,
-    const Eigen::VectorXd& qddot,
-    const Eigen::VectorXd& qdot)
-{
-  Eigen::VectorXd tau;
-  std::vector<Vector6> velocity;
-  std::vector<Vector6> acceleration;
-  std::vector<Vector6> force;
-  recursiveNewtonEulerInto(
-      links,
-      baseAcceleration,
-      dofCount,
-      qddot,
-      qdot,
-      tau,
-      velocity,
-      acceleration,
-      force);
-  return tau;
-}
-
 //==============================================================================
 // Joint-space mass matrix and bias (Coriolis/centrifugal + gravity) forces for
 // a precomputed tree at the supplied generalized velocity.
@@ -2167,6 +2143,113 @@ struct MultibodyLinkContactAssemblyScratch::Impl
 };
 
 //==============================================================================
+struct MultibodyInverseDynamicsScratch::Impl
+{
+  MultibodyDynamicsScratch scratch;
+};
+
+//==============================================================================
+MultibodyInverseDynamicsScratch::MultibodyInverseDynamicsScratch() = default;
+
+//==============================================================================
+MultibodyInverseDynamicsScratch::~MultibodyInverseDynamicsScratch() = default;
+
+//==============================================================================
+MultibodyInverseDynamicsScratch::MultibodyInverseDynamicsScratch(
+    MultibodyInverseDynamicsScratch&&) noexcept = default;
+
+//==============================================================================
+MultibodyInverseDynamicsScratch& MultibodyInverseDynamicsScratch::operator=(
+    MultibodyInverseDynamicsScratch&&) noexcept = default;
+
+//==============================================================================
+void reserveMultibodyInverseDynamicsScratch(
+    MultibodyInverseDynamicsScratch& scratch,
+    detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure)
+{
+  if (scratch.m_impl == nullptr) {
+    scratch.m_impl = std::make_unique<MultibodyInverseDynamicsScratch::Impl>();
+  }
+
+  auto& storage = scratch.m_impl->scratch;
+  buildDynamicsTreeInto(
+      registry,
+      structure,
+      storage.tree,
+      storage.linkIndexOf,
+      storage.jointFrameSubspace);
+
+  const auto linkCount = storage.tree.links.size();
+  const auto dof = static_cast<Eigen::Index>(storage.tree.dofCount);
+  storage.qdot.resize(dof);
+  storage.rneaResponse.resize(dof);
+  storage.rneaVelocity.resize(linkCount);
+  storage.rneaAcceleration.resize(linkCount);
+  storage.rneaForce.resize(linkCount);
+}
+
+//==============================================================================
+void computeMultibodyInverseDynamicsInto(
+    MultibodyInverseDynamicsScratch& scratch,
+    detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure,
+    const Eigen::Vector3d& gravity,
+    const Eigen::VectorXd& desiredAcceleration,
+    Eigen::VectorXd& result)
+{
+  if (scratch.m_impl == nullptr) {
+    scratch.m_impl = std::make_unique<MultibodyInverseDynamicsScratch::Impl>();
+  }
+
+  if (structure.links.empty()) {
+    result.resize(0);
+    return;
+  }
+
+  auto& storage = scratch.m_impl->scratch;
+  buildDynamicsTreeInto(
+      registry,
+      structure,
+      storage.tree,
+      storage.linkIndexOf,
+      storage.jointFrameSubspace);
+  if (storage.tree.dofCount == 0) {
+    result.resize(0);
+    return;
+  }
+
+  DART_SIMULATION_THROW_T_IF(
+      desiredAcceleration.size()
+          != static_cast<Eigen::Index>(storage.tree.dofCount),
+      InvalidArgumentException,
+      "Desired acceleration dimension ({}) must match the multibody DOF count "
+      "({})",
+      desiredAcceleration.size(),
+      storage.tree.dofCount);
+
+  gatherMultibodyVelocityInto(registry, storage.tree, storage.qdot);
+
+  Vector6 baseAcceleration = Vector6::Zero();
+  baseAcceleration.tail<3>() = -gravity;
+  recursiveNewtonEulerInto(
+      storage.tree.links,
+      baseAcceleration,
+      storage.tree.dofCount,
+      desiredAcceleration,
+      storage.qdot,
+      result,
+      storage.rneaVelocity,
+      storage.rneaAcceleration,
+      storage.rneaForce);
+
+  // Armature contributes diag(armature) * qddot to the joint forces.
+  if (storage.tree.armature.size() == desiredAcceleration.size()) {
+    result += storage.tree.armature.cwiseProduct(desiredAcceleration);
+  }
+}
+
+//==============================================================================
 MultibodyLinkContactAssemblyScratch::MultibodyLinkContactAssemblyScratch()
   : m_impl(std::make_unique<Impl>())
 {
@@ -2277,45 +2360,11 @@ Eigen::VectorXd computeMultibodyInverseDynamics(
     const Eigen::Vector3d& gravity,
     const Eigen::VectorXd& desiredAcceleration)
 {
-  if (structure.links.empty()) {
-    return {};
-  }
-
-  const DynamicsTree tree = buildDynamicsTree(registry, structure);
-  if (tree.dofCount == 0) {
-    return {};
-  }
-
-  DART_SIMULATION_THROW_T_IF(
-      desiredAcceleration.size() != static_cast<Eigen::Index>(tree.dofCount),
-      InvalidArgumentException,
-      "Desired acceleration dimension ({}) must match the multibody DOF count "
-      "({})",
-      desiredAcceleration.size(),
-      tree.dofCount);
-
-  Eigen::VectorXd qdot
-      = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(tree.dofCount));
-  for (std::size_t i = 0; i < tree.links.size(); ++i) {
-    if (tree.links[i].dof == 0) {
-      continue;
-    }
-    const auto& joint = registry.get<comps::Joint>(tree.jointOf[i]);
-    qdot.segment(tree.links[i].dofOffset, tree.links[i].dof) = joint.velocity;
-  }
-
-  Vector6 baseAcceleration = Vector6::Zero();
-  baseAcceleration.tail<3>() = -gravity;
-
-  Eigen::VectorXd tau = recursiveNewtonEuler(
-      tree.links, baseAcceleration, tree.dofCount, desiredAcceleration, qdot);
-
-  // Armature contributes diag(armature) * qddot to the joint forces.
-  if (tree.armature.size() == desiredAcceleration.size()) {
-    tau += tree.armature.cwiseProduct(desiredAcceleration);
-  }
-
-  return tau;
+  MultibodyInverseDynamicsScratch scratch;
+  Eigen::VectorXd result;
+  computeMultibodyInverseDynamicsInto(
+      scratch, registry, structure, gravity, desiredAcceleration, result);
+  return result;
 }
 
 //==============================================================================

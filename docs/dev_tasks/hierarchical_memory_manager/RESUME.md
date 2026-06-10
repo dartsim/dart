@@ -1,5 +1,343 @@
 # Resume: Hierarchical Memory Manager
 
+## Current Reality (2026-06-10)
+
+PR #2956 is wrapped and should stay frozen except for PR-management fixes. The
+active HMM Phase 4/5 continuation is on `pr/hmm-phase45-follow-up`, based on
+the finalized `pr/simulation-scratch-reuse` head.
+
+This follow-up slice closes a real VBD allocation gap exposed by a new
+World-base/global-heap gate: enabled VBD self-contact previously only baked
+self-contact candidate sweep storage when AVBD self-contact rows were enabled,
+but ordinary VBD Chebyshev self-contact also builds that swept candidate set in
+the step loop. The current branch moves Chebyshev history vectors into
+`DeformableVbdScratch`, bakes VBD self-contact sweep/adjacency capacity for all
+enabled VBD surface bodies, and adds an active 5x9 two-layer VBD Chebyshev
+self-contact gate.
+
+The next follow-up slice adds a focused `WorldRegistry` rebuild-boundary gate
+for contact-heavy solver-owned ECS storage. It reuses the existing compliant
+variational contact slider setup, verifies baked contact scratch and registry
+capacity stability during steps, clears the `World`, checks registry capacities
+release to zero while the registry still uses the world free-list allocator, and
+then rebuilds the same contact-heavy shape with identical baked storage
+capacities and no base allocator activity in the baked step loop.
+
+The current follow-up slice also adds a small scripted deformable boundary gate
+for active Dirichlet/Neumann processing. It proves the per-body boundary masks
+and external-acceleration buffers stay inside baked deformable solver scratch
+with no World-base growth and no global heap allocation after prewarm.
+
+The latest slice moves variational multibody manifold Anderson acceleration
+history and least-squares temporaries into `MultibodyVariationalScratch`.
+`enterSimulationMode()` pre-sizes the World-stage scratch for the baked
+multibody shape, while the public one-shot helper keeps a local scratch
+fallback. The existing loop-closure scratch bake test now asserts the Anderson
+work storage shape, and the spherical/floating manifold Anderson regressions
+still pass.
+
+The current slice moves variational multibody articulated inverse-mass and
+exact recursive-Newton solve buffers into baked `MultibodyVariationalScratch`.
+The World-stage path now reuses articulated operators, spatial bias/twist
+buffers, joint projectors, factored joint blocks, right-hand sides, and result
+vectors across RIQN iterations and loop-closure projections; the public
+one-shot helper keeps local fallback scratch.
+
+The latest slice extends that variational multibody scratch reuse to per-step
+state and residual storage. Generalized position, velocity, applied force,
+next-position trial, bootstrap spatial velocities, and forced-DEL residuals
+now live in baked `MultibodyVariationalScratch`; residual evaluation writes
+into caller-owned storage for each RIQN/line-search trial instead of returning
+a fresh vector.
+
+The current slice routes the variational stage's initial-guess inverse-dynamics
+bias query through a reusable scratch-backed overload. The public
+`computeMultibodyInverseDynamics()` helper remains available for one-shot
+callers, but the World-stage path now reuses baked dynamics-tree/RNEA storage
+and a baked zero-acceleration vector instead of allocating temporary dynamics
+work on same-shape steps.
+
+The latest slice moves dense variational loop-closure projection work into
+`MultibodyVariationalScratch`: body Jacobians, residual/Jacobian matrices,
+inverse-mass transpose blocks, constraint-mass factorization, lambda RHS, lambda,
+and correction storage are pre-sized at bake and reused by the World-stage
+projection loop. A follow-up in the same line removes the per-projection
+`buildVarTree()` rebuild: the loop now refreshes the existing step tree's
+configuration-dependent transforms/Jacobians in place for each candidate and
+restores the tree to the base configuration before final residual/history
+evaluation. The current slice moves the initial per-step variational tree build
+into baked `MultibodyVariationalScratch`, so same-shape steps reuse the tree
+link vector, link-index map, per-link child lists, and link-frame subspace
+matrices instead of constructing fresh containers. The follow-up gate exposed
+and closed the last link-index allocation in that path: same-shape steps now
+reuse the existing unordered-map nodes instead of clearing and repopulating the
+map. The World baked-step global-heap gate now includes the active loop-closure
+chain shape.
+
+The latest rebuild-boundary slice reuses the existing mixed default-deformable
+storage scenes as compact, production, contact-family production, and
+complementary contact-family production gates for direct-sparse self-contact,
+matrix-free self-contact, FEM ground-friction, static-obstacle friction, and
+inter-body surface-CCD solver storage. Each gate bakes the scene, checks
+same-shape steps do not grow the World base allocator or ECS storage capacities,
+clears the `World` back to zero registry capacity, then rebuilds the same shape
+with identical baked storage capacities under the world free-list allocator.
+
+The current rebuild-boundary slice extends the same proof to existing AVBD/VBD
+scenes without adding new scene definitions. AVBD self-contact friction, VBD
+Chebyshev self-contact, and AVBD ground-friction storage now bake, keep ECS
+storage capacity stable during same-shape steps, clear to zero registry
+capacity, and rebuild with identical storage capacities under the same World
+free-list allocator.
+
+The latest rebuild-boundary slice extends the same proof to the existing
+variational loop-closure chain. The gate asserts baked
+`MultibodyVariationalScratch` tree, step, linear-solve, projection, and
+Anderson dimensions for the active point loop closure, verifies same-shape
+steps keep registry storage capacity stable with no World-base allocator
+activity, clears the `World` to zero registry capacity, and rebuilds the same
+shape with identical capacities.
+
+The current rebuild-boundary slice extends the same proof to existing boxed-LCP
+multibody contact scenes. Stacked cross-multibody fallback and multi-island
+fallback shapes now bake active contact rows, step without World-base allocator
+activity or ECS capacity changes, clear the `World` to zero registry capacity,
+and rebuild the same shape with identical storage capacities.
+
+The latest rebuild-boundary slice extends the same proof to the existing
+kinematic IPC surface-CCD crossing scene. The gate exercises the active
+`KinematicBodyStepTrace` writer, verifies same-shape steps keep registry
+storage capacity stable without World-base allocator activity, clears the
+`World` to zero registry capacity, and rebuilds the same trace storage shape
+under the World free-list allocator.
+
+The current rebuild-boundary slice extends the same proof to existing rigid
+AVBD contact and fixed-joint scenes. It covers baked `RigidAvbdContactConfig`
+storage for contact rows and generated `AvbdRigidWorldPointJointConfig` storage
+for fixed-joint projection rows, then steps without World-base allocator
+activity or ECS capacity changes, clears the `World` to zero registry capacity,
+and rebuilds the same storage shapes.
+
+The latest rebuild-boundary slice extends the same proof to the contact-heavy
+variational dual-state setup that previously only had bake/no-growth coverage.
+Six sliders with four persistent contact duals each now bake
+`VariationalContactDualState` storage, step without World-base allocator
+activity or ECS capacity changes, clear the `World` to zero registry capacity,
+and rebuild the same dual-state capacities.
+
+The current rebuild-boundary slice extends the same proof to the semi-implicit
+one-slider multibody path. The gate covers the all-storage capacity map
+populated by `reserveMultibodyDynamicsRegistryStorage()` for the active private
+`MultibodyDynamicsScratch`/`PendingMultibodyVelocity` path, steps without
+World-base allocator activity or ECS capacity changes, clears the `World` to
+zero registry capacity, and rebuilds the same storage shape.
+
+The latest docs slice refreshes `docs/design/hierarchical_allocator.md` from a
+stale pre-implementation proposal into the durable design note for the current
+experimental DART 7 `World` memory hierarchy. It now records the public
+`WorldOptions` allocator knobs, `MemoryManager` ownership model, allocator
+lifetime roles, EnTT registry bake/rebuild boundaries, and the direct
+world-base/global-heap evidence expected before broader zero-allocation claims.
+
+The current root-routing slice moves the opaque `WorldStorage` object itself
+onto the World free-list allocator, matching the allocator already used by its
+EnTT registry and differentiable-parameter list. The new focused world test
+checks both initial construction and `World::clear()` rebuilds through
+`MemoryManager::hasAllocated()` in debug builds.
+
+The current allocator-correctness slice closes a debug-accounting gap in
+`MemoryAllocatorDebugger`: aligned allocations now keep their requested
+alignment in the live allocation record, and mismatched aligned deallocation
+calls are rejected without forwarding the bad alignment to the wrapped
+allocator. The focused unit test also verifies that an aligned allocation is not
+released through the unaligned deallocation overload. The same slice makes the
+debugger destructor honor its leak-release contract by freeing still-tracked
+allocations with the recorded size/alignment after reporting them.
+
+Current allocator debug-accounting evidence passed locally:
+
+```bash
+cmake --build build/default/cpp/Release --target UNIT_common_memory_allocator -j$(nproc)
+ctest --test-dir build/default/cpp/Release \
+  -R '^UNIT_common_memory_allocator$' --output-on-failure
+pixi run lint
+pixi run build
+ctest --test-dir build/default/cpp/Release \
+  -R '^UNIT_common_' --output-on-failure
+```
+
+Current complementary contact-family rebuild evidence passed locally:
+
+```bash
+cmake --build build/default/cpp/Release --target test_world -j$(nproc)
+build/default/cpp/Release/bin/test_world \
+  --gtest_filter='World.ProductionComplementaryDefaultContactFamilyRegistryStorageRebuildsAfterClear'
+pixi run lint
+pixi run build
+build/default/cpp/Release/bin/test_world \
+  --gtest_filter='World.ProductionComplementaryDefaultContactFamilyRegistryStorageRebuildsAfterClear'
+```
+
+Current AVBD/VBD rebuild-boundary evidence passed locally:
+
+```bash
+cmake --build build/default/cpp/Release --target test_world -j$(nproc)
+build/default/cpp/Release/bin/test_world \
+  --gtest_filter='World.AvbdSelfContactRegistryStorageRebuildsAfterClear:World.VbdChebyshevRegistryStorageRebuildsAfterClear:World.AvbdGroundFrictionRegistryStorageRebuildsAfterClear'
+```
+
+Current variational loop-closure rebuild-boundary evidence passed locally:
+
+```bash
+cmake --build build/default/cpp/Release --target test_world -j$(nproc)
+build/default/cpp/Release/bin/test_world \
+  --gtest_filter='World.VariationalLoopClosureRegistryStorageRebuildsAfterClear'
+```
+
+Current boxed-LCP rebuild-boundary evidence passed locally:
+
+```bash
+cmake --build build/default/cpp/Release --target test_world -j$(nproc)
+build/default/cpp/Release/bin/test_world \
+  --gtest_filter='World.BoxedLcpMultibodyRegistryStorageRebuildsAfterClear'
+```
+
+Current kinematic IPC surface-CCD rebuild-boundary evidence passed locally:
+
+```bash
+cmake --build build/default/cpp/Release --target test_world -j$(nproc)
+build/default/cpp/Release/bin/test_world \
+  --gtest_filter='World.KinematicIpcSurfaceCcdRegistryStorageRebuildsAfterClear'
+```
+
+Current rigid AVBD rebuild-boundary evidence passed locally:
+
+```bash
+cmake --build build/default/cpp/Release --target test_world -j$(nproc)
+build/default/cpp/Release/bin/test_world \
+  --gtest_filter='World.RigidAvbdRegistryStorageRebuildsAfterClear'
+```
+
+Current variational dual-state rebuild-boundary evidence passed locally:
+
+```bash
+cmake --build build/default/cpp/Release --target test_world -j$(nproc)
+build/default/cpp/Release/bin/test_world \
+  --gtest_filter='World.EnterSimulationModeReservesContactHeavyVariationalDualState:World.VariationalContactDualStateRegistryStorageRebuildsAfterClear'
+```
+
+Current semi-implicit multibody rebuild-boundary evidence passed locally:
+
+```bash
+cmake --build build/default/cpp/Release --target test_world -j$(nproc)
+build/default/cpp/Release/bin/test_world \
+  --gtest_filter='World.SemiImplicitMultibodyRegistryStorageRebuildsAfterClear'
+```
+
+Current focused evidence passed locally before the checkpoint commit:
+
+```bash
+pixi run lint
+pixi run build
+cmake --build build/default/cpp/Release --target test_variational_integration -j$(nproc)
+ctest --test-dir build/default/cpp/Release \
+  -R '^test_variational_integration$' --output-on-failure
+cmake --build build/default/cpp/Release --target test_world -j$(nproc)
+build/default/cpp/Release/bin/test_world \
+  --gtest_filter='World.EnterSimulationModeReservesRegistryStorageForMultibodySteps:World.SetMultibodyOptionsReservesVariationalStateAfterBake:World.EnterSimulationModeReservesCompliantVariationalContactScratch:World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap'
+cmake --build build/default/cpp/Release \
+  --target test_variational_integration test_world test_unified_constraint \
+           test_avbd_constraint test_world_step_schedule \
+           test_deformable_psd_backend -j$(nproc)
+ctest --test-dir build/default/cpp/Release --output-on-failure \
+  -R '^(test_variational_integration|test_world|test_unified_constraint|test_avbd_constraint|test_world_step_schedule|test_deformable_psd_backend)$'
+```
+
+Current rebuild-boundary evidence also passed locally:
+
+```bash
+pixi run lint
+cmake --build build/default/cpp/Release --target test_world -j$(nproc)
+build/default/cpp/Release/bin/test_world \
+  --gtest_filter='World.EnterSimulationModeReservesCompliantVariationalContactScratch:World.ContactHeavyRegistryStorageRebuildsAfterClear:World.DefaultDeformableRegistryStorageRebuildsAfterClear:World.ProductionDefaultDeformableRegistryStorageRebuildsAfterClear:World.ProductionDefaultContactFamilyRegistryStorageRebuildsAfterClear'
+cmake --build build/default/cpp/Release -j$(nproc)
+ctest --test-dir build/default/cpp/Release --output-on-failure \
+  -R '^(test_world|test_unified_constraint|test_avbd_constraint|test_world_step_schedule|test_deformable_psd_backend)$'
+```
+
+Current variational Anderson scratch evidence also passed locally:
+
+```bash
+cmake --build build/default/cpp/Release --target test_variational_integration test_world -j$(nproc)
+build/default/cpp/Release/bin/test_variational_integration \
+  --gtest_filter='VariationalIntegration.LoopClosureConstraintScratchIsBaked:VariationalIntegration.ManifoldAndersonAcceleratesSphericalChain:VariationalIntegration.ManifoldAndersonFloatingSphericalChainStaysCorrect'
+build/default/cpp/Release/bin/test_world \
+  --gtest_filter='World.EnterSimulationModeReservesRegistryStorageForMultibodySteps:World.SetMultibodyOptionsReservesVariationalStateAfterBake:World.EnterSimulationModeReservesCompliantVariationalContactScratch'
+pixi run lint
+pixi run build
+ctest --test-dir build/default/cpp/Release --output-on-failure \
+  -R '^test_variational_integration$'
+```
+
+Current variational linear-solve scratch evidence also passed locally:
+
+```bash
+cmake --build build/default/cpp/Release --target test_variational_integration test_world -j$(nproc)
+build/default/cpp/Release/bin/test_variational_integration \
+  --gtest_filter='VariationalIntegration.ArticulatedInverseMassMatchesDenseSolve:VariationalIntegration.LongChainConvergesWithinDefaultBudget:VariationalIntegration.LongChainExactPreconditionerConvergesWithinBudget:VariationalIntegration.LoopClosureConstraintScratchIsBaked:VariationalIntegration.ManifoldAndersonAcceleratesSphericalChain:VariationalIntegration.ManifoldAndersonFloatingSphericalChainStaysCorrect'
+build/default/cpp/Release/bin/test_world \
+  --gtest_filter='World.EnterSimulationModeReservesRegistryStorageForMultibodySteps:World.SetMultibodyOptionsReservesVariationalStateAfterBake:World.EnterSimulationModeReservesCompliantVariationalContactScratch'
+```
+
+Current variational step-state scratch evidence also passed locally:
+
+```bash
+cmake --build build/default/cpp/Release --target test_variational_integration test_world -j$(nproc)
+build/default/cpp/Release/bin/test_variational_integration \
+  --gtest_filter='VariationalIntegration.ArticulatedInverseMassMatchesDenseSolve:VariationalIntegration.LongChainConvergesWithinDefaultBudget:VariationalIntegration.LongChainExactPreconditionerConvergesWithinBudget:VariationalIntegration.LoopClosureConstraintScratchIsBaked:VariationalIntegration.ManifoldAndersonAcceleratesSphericalChain:VariationalIntegration.ManifoldAndersonFloatingSphericalChainStaysCorrect'
+build/default/cpp/Release/bin/test_world \
+  --gtest_filter='World.EnterSimulationModeReservesRegistryStorageForMultibodySteps:World.SetMultibodyOptionsReservesVariationalStateAfterBake:World.EnterSimulationModeReservesCompliantVariationalContactScratch'
+```
+
+Current variational inverse-dynamics scratch evidence also passed locally:
+
+```bash
+cmake --build build/default/cpp/Release -j$(nproc)
+pixi run lint
+pixi run build
+cmake --build build/default/cpp/Release --target test_variational_integration test_world test_unified_constraint test_avbd_constraint test_world_step_schedule test_deformable_psd_backend -j$(nproc)
+ctest --test-dir build/default/cpp/Release --output-on-failure \
+  -R '^(test_variational_integration|test_world|test_unified_constraint|test_avbd_constraint|test_world_step_schedule|test_deformable_psd_backend)$'
+```
+
+Current variational projection scratch evidence also passed locally:
+
+```bash
+cmake --build build/default/cpp/Release --target test_variational_integration -j$(nproc)
+ctest --test-dir build/default/cpp/Release -R '^test_variational_integration$' --output-on-failure
+cmake --build build/default/cpp/Release --target test_world -j$(nproc)
+build/default/cpp/Release/bin/test_world \
+  --gtest_filter='World.EnterSimulationModeReservesRegistryStorageForMultibodySteps:World.SetMultibodyOptionsReservesVariationalStateAfterBake:World.EnterSimulationModeReservesCompliantVariationalContactScratch:World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap'
+```
+
+Current variational projection tree-refresh evidence also passed locally:
+
+```bash
+cmake --build build/default/cpp/Release --target test_variational_integration -j$(nproc)
+ctest --test-dir build/default/cpp/Release -R '^test_variational_integration$' --output-on-failure
+```
+
+Current variational tree scratch evidence also passed locally:
+
+```bash
+cmake --build build/default/cpp/Release --target test_variational_integration -j$(nproc)
+ctest --test-dir build/default/cpp/Release -R '^test_variational_integration$' --output-on-failure
+```
+
+Immediate next step: continue selecting remaining Phase 4/5 gaps from
+`README.md` on a follow-up PR branch, not on PR #2956. Push/open the follow-up
+only after explicit maintainer approval.
+
 ## Current Reality (2026-06-08)
 
 Use this folder's `README.md`, `docs/plans/dashboard.md`, and the current code as

@@ -744,9 +744,19 @@ private:
   friend detail::WorldStorage& detail::storageOf(World& world);
   friend const detail::WorldStorage& detail::storageOf(const World& world);
 
+  struct WorldStorageDeleter
+  {
+    common::MemoryManager* memoryManager = nullptr;
+    void operator()(void* storage) const noexcept;
+  };
+
+  using WorldStoragePtr
+      = std::unique_ptr<detail::WorldStorage, WorldStorageDeleter>;
+
   Frame resolveParentFrame(const Frame& parent) const;
   struct CollisionQueryCache;
   struct StepPipelineCache;
+  static WorldStoragePtr makeWorldStorage(common::MemoryManager& memoryManager);
   Entity createFrameEntity(
       std::string_view name,
       const Frame& parentFrame,
@@ -796,10 +806,11 @@ private:
   /// parameters, and the cached step Jacobians). Held by pointer so the
   /// promoted public `world.hpp` names no EnTT symbols; the complete type lives
   /// in the internal `detail/world_storage.hpp`. Because this is a `unique_ptr`
-  /// to an incomplete type, `~World()` (and the move operations, were they
-  /// enabled) must be declared here and defined out-of-line in `world.cpp`.
+  /// to an incomplete type with a root-allocator deleter, `~World()` (and the
+  /// move operations, were they enabled) must be declared here and defined
+  /// out-of-line in `world.cpp`.
   /// Always non-null after construction.
-  std::unique_ptr<detail::WorldStorage> m_storage;
+  WorldStoragePtr m_storage;
   bool m_simulationMode{false};
   Eigen::Vector3d m_gravity{0.0, 0.0, -9.81};
   RigidBodySolver m_rigidBodySolver{RigidBodySolver::SequentialImpulse};

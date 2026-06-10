@@ -112,97 +112,81 @@ Eigen::Isometry3d jointMotionTransform(
   }
 }
 
-// Joint motion subspace in the joint frame (Phase A1), [angular; linear].
-Subspace jointSubspaceInJointFrame(const comps::Joint& joint)
-{
-  switch (joint.type) {
-    case comps::JointType::Fixed:
-      return Subspace(6, 0);
-    case comps::JointType::Revolute: {
-      Subspace subspace(6, 1);
-      subspace.col(0).head<3>() = joint.axis;
-      subspace.col(0).tail<3>().setZero();
-      return subspace;
-    }
-    case comps::JointType::Prismatic: {
-      Subspace subspace(6, 1);
-      subspace.col(0).head<3>().setZero();
-      subspace.col(0).tail<3>() = joint.axis;
-      return subspace;
-    }
-    case comps::JointType::Spherical: {
-      // Generalized velocity is the body angular velocity (matching the
-      // rotation-vector position): angular = I, linear = 0.
-      Subspace subspace = Subspace::Zero(6, 3);
-      subspace.topRows<3>() = Eigen::Matrix3d::Identity();
-      return subspace;
-    }
-    case comps::JointType::Floating: {
-      // Generalized velocity is [linear; angular] body twist (matching the
-      // position layout [translation; rotation vector]); the subspace permutes
-      // it into the [angular; linear] spatial convention.
-      Subspace subspace = Subspace::Zero(6, 6);
-      subspace.bottomLeftCorner<3, 3>() = Eigen::Matrix3d::Identity();
-      subspace.topRightCorner<3, 3>() = Eigen::Matrix3d::Identity();
-      return subspace;
-    }
-    default:
-      DART_SIMULATION_THROW_T(
-          InvalidOperationException,
-          "The variational integrator supports fixed, revolute, prismatic, "
-          "spherical, and floating joints");
-  }
-}
-
 // Retract a joint configuration `q` along a generalized-coordinate increment
 // `delta` (the same space as generalized velocity). Euclidean joints add
 // directly; spherical/floating joints apply the increment on the SO(3)/SE(3)
 // manifold, matching the semi-implicit integration convention
 // (R_new = R exp(omega), p_new = p + R v).
+void jointRetractInto(
+    const comps::Joint& joint,
+    const Eigen::Ref<const Eigen::VectorXd>& q,
+    const Eigen::Ref<const Eigen::VectorXd>& delta,
+    Eigen::Ref<Eigen::VectorXd> result)
+{
+  switch (joint.type) {
+    case comps::JointType::Spherical: {
+      result.head<3>() = rotationLog3(
+          rotationExp3(q.head<3>()) * rotationExp3(delta.head<3>()));
+      break;
+    }
+    case comps::JointType::Floating: {
+      const Eigen::Matrix3d rotation = rotationExp3(q.tail<3>());
+      result.head<3>() = q.head<3>() + rotation * delta.head<3>();
+      result.tail<3>() = rotationLog3(rotation * rotationExp3(delta.tail<3>()));
+      break;
+    }
+    default:
+      result = q + delta;
+      break;
+  }
+}
+
 Eigen::VectorXd jointRetract(
     const comps::Joint& joint,
     const Eigen::VectorXd& q,
     const Eigen::VectorXd& delta)
 {
-  switch (joint.type) {
-    case comps::JointType::Spherical:
-      return rotationLog3(
-          rotationExp3(q.head<3>()) * rotationExp3(delta.head<3>()));
-    case comps::JointType::Floating: {
-      const Eigen::Matrix3d rotation = rotationExp3(q.tail<3>());
-      Eigen::VectorXd result(6);
-      result.head<3>() = q.head<3>() + rotation * delta.head<3>();
-      result.tail<3>() = rotationLog3(rotation * rotationExp3(delta.tail<3>()));
-      return result;
-    }
-    default:
-      return q + delta;
-  }
+  Eigen::VectorXd result(q.size());
+  jointRetractInto(joint, q, delta, result);
+  return result;
 }
 
 // The generalized-coordinate tangent `tau` with `jointRetract(q, tau) == qNext`
 // (so the generalized velocity is `tau / dt`). Inverse of jointRetract.
+void jointLogDifferenceInto(
+    const comps::Joint& joint,
+    const Eigen::Ref<const Eigen::VectorXd>& qNext,
+    const Eigen::Ref<const Eigen::VectorXd>& q,
+    Eigen::Ref<Eigen::VectorXd> result)
+{
+  switch (joint.type) {
+    case comps::JointType::Spherical: {
+      result.head<3>() = rotationLog3(
+          rotationExp3(q.head<3>()).transpose()
+          * rotationExp3(qNext.head<3>()));
+      break;
+    }
+    case comps::JointType::Floating: {
+      const Eigen::Matrix3d rotation = rotationExp3(q.tail<3>());
+      result.head<3>() = rotation.transpose() * (qNext.head<3>() - q.head<3>());
+      result.tail<3>()
+          = rotationLog3(rotation.transpose() * rotationExp3(qNext.tail<3>()));
+      break;
+    }
+    default:
+      result = qNext - q;
+      break;
+  }
+}
+
 Eigen::VectorXd jointLogDifference(
     const comps::Joint& joint,
     const Eigen::VectorXd& qNext,
     const Eigen::VectorXd& q)
 {
-  switch (joint.type) {
-    case comps::JointType::Spherical:
-      return rotationLog3(
-          rotationExp3(q.head<3>()).transpose()
-          * rotationExp3(qNext.head<3>()));
-    case comps::JointType::Floating: {
-      const Eigen::Matrix3d rotation = rotationExp3(q.tail<3>());
-      Eigen::VectorXd result(6);
-      result.head<3>() = rotation.transpose() * (qNext.head<3>() - q.head<3>());
-      result.tail<3>()
-          = rotationLog3(rotation.transpose() * rotationExp3(qNext.tail<3>()));
-      return result;
-    }
-    default:
-      return qNext - q;
-  }
+  Eigen::VectorXd result(q.size());
+  jointLogDifferenceInto(joint, qNext, q, result);
+  return result;
 }
 
 // Per-link data for the discrete recursion, in construction order
@@ -238,20 +222,104 @@ struct VarTree
   std::size_t dofCount = 0;
 };
 
-VarTree buildVarTree(
+void resetVarLinkForBuild(VarLink& link)
+{
+  link.parent = -1;
+  link.joint = entt::null;
+  link.dof = 0;
+  link.dofOffset = 0;
+  link.parentToJoint.setIdentity();
+  link.offset.setIdentity();
+  link.inertia.setZero();
+  link.currentRelative.setIdentity();
+  link.worldTransform.setIdentity();
+  link.externalForce.setZero();
+  link.children.clear();
+  link.deltaTransform.setIdentity();
+  link.nextRelative.setIdentity();
+  link.averageVelocity.setZero();
+  link.momentum.setZero();
+}
+
+void setLinkFrameJointSubspaceInto(
+    const comps::Joint& joint,
+    const Eigen::Isometry3d& linkFromJoint,
+    Subspace& subspace)
+{
+  const Matrix6 jointToLinkAdjoint = adjoint(linkFromJoint.inverse());
+  switch (joint.type) {
+    case comps::JointType::Fixed:
+      subspace.resize(6, 0);
+      return;
+    case comps::JointType::Revolute: {
+      subspace.resize(6, 1);
+      Vector6 jointFrameSubspace = Vector6::Zero();
+      jointFrameSubspace.head<3>() = joint.axis;
+      subspace.col(0).noalias() = jointToLinkAdjoint * jointFrameSubspace;
+      return;
+    }
+    case comps::JointType::Prismatic: {
+      subspace.resize(6, 1);
+      Vector6 jointFrameSubspace = Vector6::Zero();
+      jointFrameSubspace.tail<3>() = joint.axis;
+      subspace.col(0).noalias() = jointToLinkAdjoint * jointFrameSubspace;
+      return;
+    }
+    case comps::JointType::Spherical: {
+      subspace.resize(6, 3);
+      Eigen::Matrix<double, 6, 3> jointFrameSubspace;
+      jointFrameSubspace.setZero();
+      jointFrameSubspace.topRows<3>().setIdentity();
+      subspace.noalias() = jointToLinkAdjoint * jointFrameSubspace;
+      return;
+    }
+    case comps::JointType::Floating: {
+      subspace.resize(6, 6);
+      Matrix6 jointFrameSubspace = Matrix6::Zero();
+      jointFrameSubspace.bottomLeftCorner<3, 3>().setIdentity();
+      jointFrameSubspace.topRightCorner<3, 3>().setIdentity();
+      subspace.noalias() = jointToLinkAdjoint * jointFrameSubspace;
+      return;
+    }
+    default:
+      DART_SIMULATION_THROW_T(
+          InvalidOperationException,
+          "The variational integrator supports fixed, revolute, prismatic, "
+          "spherical, and floating joints");
+  }
+}
+
+void buildVarTreeInto(
     const detail::WorldRegistry& registry,
-    const comps::MultibodyStructure& structure)
+    const comps::MultibodyStructure& structure,
+    VarTree& tree,
+    std::unordered_map<entt::entity, std::size_t>& indexOf)
 {
   const auto& linkEntities = structure.links;
-  VarTree tree;
-  tree.links.assign(linkEntities.size(), VarLink{});
+  tree.links.resize(linkEntities.size());
+  tree.dofCount = 0;
+  for (auto& link : tree.links) {
+    resetVarLinkForBuild(link);
+  }
 
-  // O(1) link-index lookup so building the tree stays O(n); a linear scan per
-  // link would make the whole step O(n^2) and defeat the linear-time solve.
-  std::unordered_map<entt::entity, std::size_t> indexOf;
-  indexOf.reserve(linkEntities.size());
-  for (std::size_t i = 0; i < linkEntities.size(); ++i) {
-    indexOf.emplace(linkEntities[i], i);
+  // O(1) link-index lookup so building the tree stays O(n); keep the map nodes
+  // alive across same-shape steps instead of clearing and reallocating them.
+  bool indexMatches = indexOf.size() == linkEntities.size();
+  if (indexMatches) {
+    for (std::size_t i = 0; i < linkEntities.size(); ++i) {
+      const auto it = indexOf.find(linkEntities[i]);
+      if (it == indexOf.end() || it->second != i) {
+        indexMatches = false;
+        break;
+      }
+    }
+  }
+  if (!indexMatches) {
+    indexOf.clear();
+    indexOf.reserve(linkEntities.size());
+    for (std::size_t i = 0; i < linkEntities.size(); ++i) {
+      indexOf.emplace(linkEntities[i], i);
+    }
   }
 
   for (std::size_t i = 0; i < linkEntities.size(); ++i) {
@@ -266,6 +334,7 @@ VarTree buildVarTree(
     if (linkComp.parentJoint == entt::null) {
       const auto& cache = registry.get<comps::FrameCache>(linkEntity);
       link.worldTransform = cache.worldTransform;
+      link.subspace.resize(6, 0);
       link.parent = -1;
       continue;
     }
@@ -279,11 +348,10 @@ VarTree buildVarTree(
         "Multibody link parent is not part of the same multibody");
     link.parent = static_cast<int>(parentIt->second);
 
-    const Subspace jointFrameSubspace = jointSubspaceInJointFrame(joint);
-    link.dof = static_cast<std::size_t>(jointFrameSubspace.cols());
+    setLinkFrameJointSubspaceInto(joint, link.offset, link.subspace);
+    link.dof = static_cast<std::size_t>(link.subspace.cols());
     link.dofOffset = tree.dofCount;
     tree.dofCount += link.dof;
-    link.subspace = adjoint(link.offset.inverse()) * jointFrameSubspace;
     link.currentRelative = link.parentToJoint
                            * jointMotionTransform(joint, joint.position)
                            * link.offset;
@@ -293,7 +361,116 @@ VarTree buildVarTree(
     tree.links[static_cast<std::size_t>(link.parent)].children.push_back(
         static_cast<int>(i));
   }
+}
+
+VarTree buildVarTree(
+    const detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure)
+{
+  VarTree tree;
+  std::unordered_map<entt::entity, std::size_t> indexOf;
+  buildVarTreeInto(registry, structure, tree, indexOf);
   return tree;
+}
+
+void updateVarTreeConfigurationInto(
+    const detail::WorldRegistry& registry,
+    VarTree& tree,
+    const Eigen::VectorXd& position)
+{
+  for (std::size_t i = 0; i < tree.links.size(); ++i) {
+    auto& link = tree.links[i];
+    if (link.parent < 0) {
+      continue;
+    }
+    const auto& joint = registry.get<comps::Joint>(link.joint);
+    const auto seg = static_cast<Eigen::Index>(link.dofOffset);
+    const auto n = static_cast<Eigen::Index>(link.dof);
+    link.currentRelative
+        = link.parentToJoint
+          * jointMotionTransform(joint, position.segment(seg, n)) * link.offset;
+    link.worldTransform
+        = tree.links[static_cast<std::size_t>(link.parent)].worldTransform
+          * link.currentRelative;
+  }
+}
+
+void reserveVariationalAndersonScratch(
+    const VarTree& tree,
+    std::size_t andersonDepth,
+    VariationalAndersonScratch& scratch)
+{
+  const auto dofCount = static_cast<Eigen::Index>(tree.dofCount);
+  const auto depth = static_cast<Eigen::Index>(andersonDepth);
+  scratch.historyCount = 0;
+  scratch.stepDeltas.resize(andersonDepth);
+  scratch.iterateDeltas.resize(andersonDepth);
+  for (auto& delta : scratch.stepDeltas) {
+    delta.resize(dofCount);
+  }
+  for (auto& delta : scratch.iterateDeltas) {
+    delta.resize(dofCount);
+  }
+  scratch.previousStep.resize(dofCount);
+  scratch.previousPosition.resize(dofCount);
+  scratch.trialPosition.resize(dofCount);
+  scratch.andersonPosition.resize(dofCount);
+  scratch.andersonIncrement.resize(dofCount);
+  Eigen::Index maxJointDof = 0;
+  for (const auto& link : tree.links) {
+    maxJointDof = std::max(maxJointDof, static_cast<Eigen::Index>(link.dof));
+  }
+  scratch.jointDelta.resize(maxJointDof);
+  scratch.stepMatrix.resize(dofCount, depth);
+  scratch.mixMatrix.resize(dofCount, depth);
+  scratch.ftf.resize(depth, depth);
+  scratch.regularized.resize(depth, depth);
+  scratch.normalRhs.resize(depth);
+  scratch.gamma.resize(depth);
+}
+
+void reserveVariationalLinearSolveScratch(
+    const VarTree& tree, VariationalLinearSolveScratch& scratch)
+{
+  const std::size_t linkCount = tree.links.size();
+  const auto dofCount = static_cast<Eigen::Index>(tree.dofCount);
+  scratch.articulated.resize(linkCount);
+  scratch.bias.resize(linkCount);
+  scratch.motionToChild.resize(linkCount);
+  scratch.spatial.resize(linkCount);
+  scratch.forceProjector.resize(linkCount);
+  scratch.motionProjector.resize(linkCount);
+  scratch.jointMatrix.resize(linkCount);
+  scratch.jointMatrixInverse.resize(linkCount);
+  scratch.jointRhs.resize(linkCount);
+
+  Eigen::Index maxJointDof = 0;
+  for (std::size_t i = 0; i < linkCount; ++i) {
+    const auto dof = static_cast<Eigen::Index>(tree.links[i].dof);
+    maxJointDof = std::max(maxJointDof, dof);
+    scratch.forceProjector[i].resize(6, dof);
+    scratch.motionProjector[i].resize(6, dof);
+    scratch.jointMatrix[i].resize(dof, dof);
+    scratch.jointMatrixInverse[i].resize(dof, dof);
+    scratch.jointRhs[i].resize(dof);
+  }
+  scratch.jointWork.resize(maxJointDof);
+  scratch.jointSolveWork.resize(maxJointDof);
+  scratch.rhs.resize(dofCount);
+  scratch.result.resize(dofCount);
+}
+
+void reserveVariationalStepScratch(
+    const VarTree& tree, VariationalStepScratch& scratch)
+{
+  const auto dofCount = static_cast<Eigen::Index>(tree.dofCount);
+  scratch.currentSpatialVelocities.resize(tree.links.size());
+  scratch.position.resize(dofCount);
+  scratch.velocity.resize(dofCount);
+  scratch.appliedForce.resize(dofCount);
+  scratch.nextPosition.resize(dofCount);
+  scratch.residual.resize(dofCount);
+  scratch.zeroAcceleration.resize(dofCount);
 }
 
 entt::entity findOwningMultibodyStructure(
@@ -416,9 +593,12 @@ void gatherState(
     Eigen::VectorXd& appliedForce)
 {
   const auto dof = static_cast<Eigen::Index>(tree.dofCount);
-  position = Eigen::VectorXd::Zero(dof);
-  velocity = Eigen::VectorXd::Zero(dof);
-  appliedForce = Eigen::VectorXd::Zero(dof);
+  position.resize(dof);
+  velocity.resize(dof);
+  appliedForce.resize(dof);
+  position.setZero();
+  velocity.setZero();
+  appliedForce.setZero();
   for (const auto& link : tree.links) {
     if (link.dof == 0) {
       continue;
@@ -429,7 +609,8 @@ void gatherState(
     position.segment(seg, n) = joint.position;
     velocity.segment(seg, n) = joint.velocity;
 
-    Eigen::VectorXd effort = Eigen::VectorXd::Zero(n);
+    auto effort = appliedForce.segment(seg, n);
+    effort.setZero();
     if (joint.actuatorType == comps::ActuatorType::Force
         && joint.torque.size() == n) {
       effort = joint.torque;
@@ -446,7 +627,6 @@ void gatherState(
     if (joint.dampingCoefficient.size() == n) {
       effort -= joint.dampingCoefficient.cwiseProduct(joint.velocity);
     }
-    appliedForce.segment(seg, n) = effort;
   }
 }
 
@@ -636,38 +816,50 @@ std::optional<VariationalSolveReport> tryIntegrateSinglePrismaticVariational(
 
 // Forward velocity recursion at the current configuration: body spatial
 // velocity V_i = Ad(T_i^{-1}) V_parent + S_i qdot_i.
-std::vector<Vector6> currentSpatialVelocities(
-    const VarTree& tree, const Eigen::VectorXd& velocity)
+void currentSpatialVelocitiesInto(
+    const VarTree& tree,
+    const Eigen::VectorXd& velocity,
+    std::vector<Vector6>& spatialVelocities)
 {
-  std::vector<Vector6> v(tree.links.size(), Vector6::Zero());
+  spatialVelocities.resize(tree.links.size());
   for (std::size_t i = 0; i < tree.links.size(); ++i) {
     const auto& link = tree.links[i];
     if (link.parent < 0) {
-      v[i].setZero();
+      spatialVelocities[i].setZero();
     } else {
-      v[i] = adjoint(link.currentRelative.inverse())
-             * v[static_cast<std::size_t>(link.parent)];
+      spatialVelocities[i].noalias()
+          = adjoint(link.currentRelative.inverse())
+            * spatialVelocities[static_cast<std::size_t>(link.parent)];
     }
     if (link.dof > 0) {
-      v[i] += link.subspace
-              * velocity.segment(
-                  static_cast<Eigen::Index>(link.dofOffset),
-                  static_cast<Eigen::Index>(link.dof));
+      spatialVelocities[i].noalias()
+          += link.subspace
+             * velocity.segment(
+                 static_cast<Eigen::Index>(link.dofOffset),
+                 static_cast<Eigen::Index>(link.dof));
     }
   }
+}
+
+std::vector<Vector6> currentSpatialVelocities(
+    const VarTree& tree, const Eigen::VectorXd& velocity)
+{
+  std::vector<Vector6> v;
+  currentSpatialVelocitiesInto(tree, velocity, v);
   return v;
 }
 
 // Evaluate the forced discrete Euler-Lagrange residual f(qNext) in O(n) via a
 // forward (average-velocity) sweep and a backward (momentum/impulse) sweep.
-Eigen::VectorXd computeResidual(
+void computeResidualInto(
     const detail::WorldRegistry& registry,
     VarTree& tree,
     const Eigen::VectorXd& nextPosition,
     const MultibodyVariationalState& state,
     const Eigen::Vector3d& gravity,
     double timeStep,
-    const Eigen::VectorXd& appliedForce)
+    const Eigen::VectorXd& appliedForce,
+    Eigen::VectorXd& residual)
 {
   // Forward sweep: relative displacement dT_i and average velocity V_i.
   for (std::size_t i = 0; i < tree.links.size(); ++i) {
@@ -691,8 +883,8 @@ Eigen::VectorXd computeResidual(
   }
 
   // Backward sweep: discrete momentum, transmitted impulse, joint residual.
-  Eigen::VectorXd residual
-      = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(tree.dofCount));
+  residual.resize(static_cast<Eigen::Index>(tree.dofCount));
+  residual.setZero();
   for (std::size_t reverse = 0; reverse < tree.links.size(); ++reverse) {
     const auto i = tree.links.size() - 1 - reverse;
     auto& link = tree.links[i];
@@ -722,7 +914,6 @@ Eigen::VectorXd computeResidual(
                                  - timeStep * appliedForce.segment(seg, n);
     }
   }
-  return residual;
 }
 
 // O(n) articulated-body-inertia solve of M(q)^{-1} * b for the precomputed tree
@@ -733,19 +924,21 @@ Eigen::VectorXd computeResidual(
 // test). Frames follow the [angular; linear] convention: parentToChild maps a
 // spatial motion parent->child, its transpose maps a spatial force
 // child->parent.
-Eigen::VectorXd applyArticulatedInverseMass(
-    const VarTree& tree, const Eigen::VectorXd& b)
+void applyArticulatedInverseMassInto(
+    const VarTree& tree,
+    const Eigen::VectorXd& b,
+    VariationalLinearSolveScratch& scratch,
+    Eigen::VectorXd& qddot)
 {
   const std::size_t n = tree.links.size();
-  std::vector<Matrix6> articulatedInertia(n);
-  std::vector<Vector6> biasForce(n, Vector6::Zero());
-  std::vector<Eigen::MatrixXd> u(n); // U_i = I^A_i S_i        (6 x dof)
-  std::vector<Eigen::MatrixXd> dInverse(
-      n);                                 // (S_i^T U_i)^{-1}       (dof x dof)
-  std::vector<Eigen::VectorXd> uForce(n); // u_i = b_i - S_i^T p^A_i (dof)
-  std::vector<Matrix6> parentToChild(n, Matrix6::Identity());
+  reserveVariationalLinearSolveScratch(tree, scratch);
+  qddot.resize(static_cast<Eigen::Index>(tree.dofCount));
+  qddot.setZero();
   for (std::size_t i = 0; i < n; ++i) {
-    articulatedInertia[i] = tree.links[i].inertia;
+    scratch.articulated[i] = tree.links[i].inertia;
+    scratch.bias[i].setZero();
+    scratch.motionToChild[i].setIdentity();
+    scratch.spatial[i].setZero();
   }
 
   // Backward sweep: accumulate articulated inertia and bias toward the root.
@@ -755,53 +948,70 @@ Eigen::VectorXd applyArticulatedInverseMass(
     if (link.dof > 0) {
       const auto seg = static_cast<Eigen::Index>(link.dofOffset);
       const auto dof = static_cast<Eigen::Index>(link.dof);
-      u[i] = articulatedInertia[i] * link.subspace;
-      const Eigen::MatrixXd d = link.subspace.transpose() * u[i];
-      dInverse[i] = d.inverse();
-      uForce[i]
-          = b.segment(seg, dof) - link.subspace.transpose() * biasForce[i];
+      scratch.forceProjector[i].noalias()
+          = scratch.articulated[i] * link.subspace;
+      scratch.jointMatrix[i].noalias()
+          = link.subspace.transpose() * scratch.forceProjector[i];
+      scratch.jointMatrixInverse[i] = scratch.jointMatrix[i].inverse();
+      scratch.jointRhs[i] = b.segment(seg, dof);
+      scratch.jointWork.head(dof).noalias()
+          = link.subspace.transpose() * scratch.bias[i];
+      scratch.jointRhs[i] -= scratch.jointWork.head(dof);
     }
     if (link.parent >= 0) {
-      Matrix6 ia = articulatedInertia[i];
-      Vector6 pa = biasForce[i];
+      Matrix6 ia = scratch.articulated[i];
+      Vector6 pa = scratch.bias[i];
       if (link.dof > 0) {
-        ia.noalias() -= u[i] * dInverse[i] * u[i].transpose();
-        pa.noalias() += u[i] * (dInverse[i] * uForce[i]);
+        const auto dof = static_cast<Eigen::Index>(link.dof);
+        ia.noalias() -= scratch.forceProjector[i]
+                        * scratch.jointMatrixInverse[i]
+                        * scratch.forceProjector[i].transpose();
+        scratch.jointWork.head(dof).noalias()
+            = scratch.jointMatrixInverse[i] * scratch.jointRhs[i];
+        pa.noalias() += scratch.forceProjector[i] * scratch.jointWork.head(dof);
       }
-      parentToChild[i] = adjoint(link.currentRelative.inverse());
-      const Matrix6 forceToParent = parentToChild[i].transpose();
+      scratch.motionToChild[i] = adjoint(link.currentRelative.inverse());
+      const Matrix6 forceToParent = scratch.motionToChild[i].transpose();
       const auto p = static_cast<std::size_t>(link.parent);
-      articulatedInertia[p].noalias() += forceToParent * ia * parentToChild[i];
-      biasForce[p].noalias() += forceToParent * pa;
+      scratch.articulated[p].noalias()
+          += forceToParent * ia * scratch.motionToChild[i];
+      scratch.bias[p].noalias() += forceToParent * pa;
     }
   }
 
   // Forward sweep: propagate spatial accelerations and read joint
   // accelerations.
-  Eigen::VectorXd qddot
-      = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(tree.dofCount));
-  std::vector<Vector6> acceleration(n, Vector6::Zero());
   for (std::size_t i = 0; i < n; ++i) {
     const VarLink& link = tree.links[i];
     if (link.parent < 0) {
-      acceleration[i].setZero();
+      scratch.spatial[i].setZero();
       continue;
     }
-    const Vector6 parentAccel
-        = parentToChild[i]
-          * acceleration[static_cast<std::size_t>(link.parent)];
+    scratch.spatial[i].noalias()
+        = scratch.motionToChild[i]
+          * scratch.spatial[static_cast<std::size_t>(link.parent)];
     if (link.dof > 0) {
       const auto seg = static_cast<Eigen::Index>(link.dofOffset);
       const auto dof = static_cast<Eigen::Index>(link.dof);
-      const Eigen::VectorXd jointAccel
-          = dInverse[i] * (uForce[i] - u[i].transpose() * parentAccel);
-      qddot.segment(seg, dof) = jointAccel;
-      acceleration[i] = parentAccel + link.subspace * jointAccel;
-    } else {
-      acceleration[i] = parentAccel;
+      scratch.jointWork.head(dof) = scratch.jointRhs[i];
+      scratch.jointSolveWork.head(dof).noalias()
+          = scratch.forceProjector[i].transpose() * scratch.spatial[i];
+      scratch.jointWork.head(dof) -= scratch.jointSolveWork.head(dof);
+      scratch.jointSolveWork.head(dof).noalias()
+          = scratch.jointMatrixInverse[i] * scratch.jointWork.head(dof);
+      qddot.segment(seg, dof) = scratch.jointSolveWork.head(dof);
+      scratch.spatial[i].noalias()
+          += link.subspace * scratch.jointSolveWork.head(dof);
     }
   }
-  return qddot;
+}
+
+Eigen::VectorXd applyArticulatedInverseMass(
+    const VarTree& tree, const Eigen::VectorXd& b)
+{
+  VariationalLinearSolveScratch scratch;
+  applyArticulatedInverseMassInto(tree, b, scratch, scratch.result);
+  return scratch.result;
 }
 
 // O(n) exact recursive-Jacobian (Newton) step: solve J(q^k+1) * dq = b for the
@@ -842,19 +1052,22 @@ Eigen::VectorXd applyArticulatedInverseMass(
 //
 // Scope: Euclidean joints (revolute/prismatic, single-DOF here). The motion
 // subspace S_i is the link-frame joint subspace (a 6-vector for A1 joints).
-Eigen::VectorXd applyExactNewtonStep(
-    const VarTree& tree, const Eigen::VectorXd& b, double timeStep)
+void applyExactNewtonStepInto(
+    const VarTree& tree,
+    const Eigen::VectorXd& b,
+    double timeStep,
+    VariationalLinearSolveScratch& scratch,
+    Eigen::VectorXd& dq)
 {
   const std::size_t n = tree.links.size();
-  std::vector<Matrix6> articulated(n, Matrix6::Zero());
-  std::vector<Vector6> bias(n, Vector6::Zero());
-  std::vector<Matrix6> motionToChild(n, Matrix6::Identity()); // A_i (motion)
-  std::vector<Eigen::MatrixXd> forceProjector(
-      n); // U_i = Pi_i S_i      (6 x dof)
-  std::vector<Eigen::MatrixXd> motionProjector(
-      n); // M_i = Pi_i^T S_i (so M_i^T = S_i^T Pi_i)            (6 x dof)
-  std::vector<Eigen::MatrixXd> dInverse(n); // (S_i^T Pi_i S_i)^{-1}
-  std::vector<Eigen::VectorXd> uForce(n);   // b_i - S_i^T bias_i  (dof)
+  reserveVariationalLinearSolveScratch(tree, scratch);
+  dq.resize(static_cast<Eigen::Index>(tree.dofCount));
+  dq.setZero();
+  for (std::size_t i = 0; i < n; ++i) {
+    scratch.bias[i].setZero();
+    scratch.motionToChild[i].setIdentity();
+    scratch.spatial[i].setZero();
+  }
 
   // Per-link effective operator K_i = (1/dt) D_i Jr_i, where
   //   D_i = dmu_i/dVbar_i is the *exact* sensitivity of the discrete momentum
@@ -884,7 +1097,7 @@ Eigen::VectorXd applyExactNewtonStep(
     }
     const Matrix6 velocitySensitivity
         = dm::dexpInvMatrixRight(timeStep * velocity);
-    articulated[i]
+    scratch.articulated[i]
         = (1.0 / timeStep) * momentumSensitivity * velocitySensitivity;
   }
 
@@ -899,50 +1112,58 @@ Eigen::VectorXd applyExactNewtonStep(
     if (link.dof > 0) {
       const auto seg = static_cast<Eigen::Index>(link.dofOffset);
       const auto dof = static_cast<Eigen::Index>(link.dof);
-      forceProjector[i] = articulated[i] * link.subspace; // 6 x dof
-      motionProjector[i]
-          = articulated[i].transpose() * link.subspace; // 6 x dof
-      const Eigen::MatrixXd d = link.subspace.transpose() * forceProjector[i];
-      dInverse[i] = d.inverse();
-      uForce[i] = b.segment(seg, dof) - link.subspace.transpose() * bias[i];
+      scratch.forceProjector[i].noalias()
+          = scratch.articulated[i] * link.subspace; // 6 x dof
+      scratch.motionProjector[i].noalias()
+          = scratch.articulated[i].transpose() * link.subspace; // 6 x dof
+      scratch.jointMatrix[i].noalias()
+          = link.subspace.transpose() * scratch.forceProjector[i];
+      scratch.jointMatrixInverse[i] = scratch.jointMatrix[i].inverse();
+      scratch.jointRhs[i] = b.segment(seg, dof);
+      scratch.jointWork.head(dof).noalias()
+          = link.subspace.transpose() * scratch.bias[i];
+      scratch.jointRhs[i] -= scratch.jointWork.head(dof);
     }
     if (link.parent >= 0) {
-      Matrix6 ia = articulated[i];
-      Vector6 pa = bias[i];
+      Matrix6 ia = scratch.articulated[i];
+      Vector6 pa = scratch.bias[i];
       if (link.dof > 0) {
+        const auto dof = static_cast<Eigen::Index>(link.dof);
         // Non-symmetric rank-1 elimination: force-side projector Pi_i S_i times
         // the motion-side row S_i^T Pi_i (= motionProjector_i^T). For the
         // symmetric mass-matrix limit (D_i -> G_i) this reduces to the standard
         // U D^{-1} U^T of `applyArticulatedInverseMass`.
-        ia.noalias() -= forceProjector[i] * dInverse[i]
-                        * (motionProjector[i].transpose());
-        pa.noalias() += forceProjector[i] * (dInverse[i] * uForce[i]);
+        ia.noalias() -= scratch.forceProjector[i]
+                        * scratch.jointMatrixInverse[i]
+                        * (scratch.motionProjector[i].transpose());
+        scratch.jointWork.head(dof).noalias()
+            = scratch.jointMatrixInverse[i] * scratch.jointRhs[i];
+        pa.noalias() += scratch.forceProjector[i] * scratch.jointWork.head(dof);
       }
       // Distinct transports: motion parent->child uses the q^{k+1} relative;
       // force child->parent uses the q^k relative (the constant force transport
       // of the residual's backward sweep).
-      motionToChild[i] = adjoint(link.nextRelative.inverse());
+      scratch.motionToChild[i] = adjoint(link.nextRelative.inverse());
       const Matrix6 forceToParent
           = adjoint(link.currentRelative.inverse()).transpose();
       const auto p = static_cast<std::size_t>(link.parent);
-      articulated[p].noalias() += forceToParent * ia * motionToChild[i];
-      bias[p].noalias() += forceToParent * pa;
+      scratch.articulated[p].noalias()
+          += forceToParent * ia * scratch.motionToChild[i];
+      scratch.bias[p].noalias() += forceToParent * pa;
     }
   }
 
   // Forward sweep: propagate the body-frame delta-twist xi and read the joint
   // increments dq.
-  Eigen::VectorXd dq
-      = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(tree.dofCount));
-  std::vector<Vector6> twist(n, Vector6::Zero());
   for (std::size_t i = 0; i < n; ++i) {
     const VarLink& link = tree.links[i];
     if (link.parent < 0) {
-      twist[i].setZero();
+      scratch.spatial[i].setZero();
       continue;
     }
-    const Vector6 parentTwist
-        = motionToChild[i] * twist[static_cast<std::size_t>(link.parent)];
+    scratch.spatial[i].noalias()
+        = scratch.motionToChild[i]
+          * scratch.spatial[static_cast<std::size_t>(link.parent)];
     if (link.dof > 0) {
       const auto seg = static_cast<Eigen::Index>(link.dofOffset);
       const auto dof = static_cast<Eigen::Index>(link.dof);
@@ -953,39 +1174,17 @@ Eigen::VectorXd applyExactNewtonStep(
       // the force-side S_i^T Pi_i^T. They coincide only for a symmetric
       // articulated operator; for finite-rotation / high-average-twist links
       // Pi_i is non-symmetric and the force-side row solves the wrong system.
-      const Eigen::VectorXd jointDelta
-          = dInverse[i]
-            * (uForce[i] - motionProjector[i].transpose() * parentTwist);
-      dq.segment(seg, dof) = jointDelta;
-      twist[i] = parentTwist + link.subspace * jointDelta;
-    } else {
-      twist[i] = parentTwist;
+      scratch.jointWork.head(dof) = scratch.jointRhs[i];
+      scratch.jointSolveWork.head(dof).noalias()
+          = scratch.motionProjector[i].transpose() * scratch.spatial[i];
+      scratch.jointWork.head(dof) -= scratch.jointSolveWork.head(dof);
+      scratch.jointSolveWork.head(dof).noalias()
+          = scratch.jointMatrixInverse[i] * scratch.jointWork.head(dof);
+      dq.segment(seg, dof) = scratch.jointSolveWork.head(dof);
+      scratch.spatial[i].noalias()
+          += link.subspace * scratch.jointSolveWork.head(dof);
     }
   }
-  return dq;
-}
-
-// Body-frame spatial Jacobian of every link (6 x dofCount, [angular; linear] in
-// the link frame): J_i = Ad(T_i^{-1}) J_parent with the link's own joint
-// columns set to its motion subspace.
-std::vector<Eigen::MatrixXd> bodyJacobians(const VarTree& tree)
-{
-  const auto dof = static_cast<Eigen::Index>(tree.dofCount);
-  std::vector<Eigen::MatrixXd> jacobian(
-      tree.links.size(), Eigen::MatrixXd::Zero(6, dof));
-  for (std::size_t i = 0; i < tree.links.size(); ++i) {
-    const VarLink& link = tree.links[i];
-    if (link.parent >= 0) {
-      jacobian[i] = adjoint(link.currentRelative.inverse())
-                    * jacobian[static_cast<std::size_t>(link.parent)];
-    }
-    if (link.dof > 0) {
-      jacobian[i].middleCols(
-          static_cast<Eigen::Index>(link.dofOffset),
-          static_cast<Eigen::Index>(link.dof)) = link.subspace;
-    }
-  }
-  return jacobian;
 }
 
 void resizeBodyJacobianScratch(
@@ -999,6 +1198,50 @@ void resizeBodyJacobianScratch(
   for (Eigen::MatrixXd& jacobian : jacobians) {
     jacobian.setZero(6, dof);
   }
+}
+
+Eigen::Index constraintRowCount(
+    const std::vector<VariationalLoopConstraint>& constraints)
+{
+  Eigen::Index rows = 0;
+  for (const auto& constraint : constraints) {
+    rows += constraint.distance ? 1 : (constraint.rigid ? 6 : 3);
+  }
+  return rows;
+}
+
+void reserveConstraintProjectionScratch(
+    const VarTree& tree,
+    Eigen::Index rows,
+    VariationalConstraintProjectionScratch& scratch)
+{
+  const auto linkCount = tree.links.size();
+  const auto dof = static_cast<Eigen::Index>(tree.dofCount);
+  resizeBodyJacobianScratch(scratch.jacobians, linkCount, dof);
+  scratch.pointJacobianA.resize(3, dof);
+  scratch.pointJacobianB.resize(3, dof);
+  scratch.angularJacobianA.resize(3, dof);
+  scratch.angularJacobianB.resize(3, dof);
+  scratch.pointJacobianWork.resize(3, dof);
+  scratch.residual.resize(rows);
+  scratch.jacobian.resize(rows, dof);
+  scratch.inverseMassJt.resize(dof, rows);
+  scratch.constraintMass.resize(rows, rows);
+  if (scratch.constraintFactorization.rows() != rows) {
+    scratch.constraintFactorization = Eigen::LDLT<Eigen::MatrixXd>(rows);
+  }
+  scratch.lambdaRhs.resize(rows);
+  scratch.lambda.resize(rows);
+  scratch.correction.resize(dof);
+}
+
+void reserveConstraintProjectionScratch(
+    const VarTree& tree,
+    const std::vector<VariationalLoopConstraint>& constraints,
+    VariationalConstraintProjectionScratch& scratch)
+{
+  reserveConstraintProjectionScratch(
+      tree, constraintRowCount(constraints), scratch);
 }
 
 void bodyJacobiansInto(
@@ -1060,25 +1303,39 @@ void reserveContactEvaluationScratch(
 // World-frame translational Jacobian (3 x dofCount) of a body-fixed point at
 // local offset `point` on link `i`: J_world = R_i (J_linear - [point]
 // J_angular).
-Eigen::MatrixXd worldPointJacobian(
+void worldPointJacobianInto(
     const VarTree& tree,
     const std::vector<Eigen::MatrixXd>& jacobians,
     std::size_t i,
-    const Eigen::Vector3d& point)
+    const Eigen::Vector3d& point,
+    VariationalConstraintProjectionScratch& scratch,
+    Eigen::MatrixXd& output)
 {
   const Eigen::Matrix3d rotation = tree.links[i].worldTransform.linear();
-  const Eigen::MatrixXd angular = jacobians[i].topRows<3>();
-  const Eigen::MatrixXd linear = jacobians[i].bottomRows<3>();
-  return rotation * (linear - skew(point) * angular);
+  scratch.pointJacobianWork.noalias() = skew(point) * jacobians[i].topRows<3>();
+  output.noalias() = jacobians[i].bottomRows<3>() - scratch.pointJacobianWork;
+  scratch.pointJacobianWork = output;
+  output.noalias() = rotation * scratch.pointJacobianWork;
+}
+
+void worldAngularJacobianInto(
+    const VarTree& tree,
+    const std::vector<Eigen::MatrixXd>& jacobians,
+    std::size_t i,
+    Eigen::MatrixXd& output)
+{
+  output.noalias()
+      = tree.links[i].worldTransform.linear() * jacobians[i].topRows<3>();
 }
 
 // Stack the holonomic residual g(q) and Jacobian J = dg/dq for the loop
 // closures on a tree built at the current configuration.
-std::pair<Eigen::VectorXd, Eigen::MatrixXd> constraintResidualAndJacobian(
+void constraintResidualAndJacobianInto(
     const comps::MultibodyStructure& structure,
     const VarTree& tree,
     const std::vector<Eigen::MatrixXd>& jacobians,
-    const std::vector<VariationalLoopConstraint>& constraints)
+    const std::vector<VariationalLoopConstraint>& constraints,
+    VariationalConstraintProjectionScratch& scratch)
 {
   const auto& links = structure.links;
   const auto indexOf = [&](entt::entity e) -> int {
@@ -1086,13 +1343,22 @@ std::pair<Eigen::VectorXd, Eigen::MatrixXd> constraintResidualAndJacobian(
     return it == links.end() ? -1 : static_cast<int>(it - links.begin());
   };
   const auto dof = static_cast<Eigen::Index>(tree.dofCount);
-
-  Eigen::Index rows = 0;
-  for (const auto& c : constraints) {
-    rows += c.distance ? 1 : (c.rigid ? 6 : 3);
-  }
-  Eigen::VectorXd g(rows);
-  Eigen::MatrixXd jac = Eigen::MatrixXd::Zero(rows, dof);
+  const Eigen::Index rows = constraintRowCount(constraints);
+  scratch.pointJacobianA.resize(3, dof);
+  scratch.pointJacobianB.resize(3, dof);
+  scratch.angularJacobianA.resize(3, dof);
+  scratch.angularJacobianB.resize(3, dof);
+  scratch.pointJacobianWork.resize(3, dof);
+  scratch.residual.resize(rows);
+  scratch.jacobian.resize(rows, dof);
+  scratch.inverseMassJt.resize(dof, rows);
+  scratch.constraintMass.resize(rows, rows);
+  scratch.lambdaRhs.resize(rows);
+  scratch.lambda.resize(rows);
+  scratch.correction.resize(dof);
+  Eigen::VectorXd& g = scratch.residual;
+  Eigen::MatrixXd& jac = scratch.jacobian;
+  jac.setZero();
 
   Eigen::Index row = 0;
   for (const auto& c : constraints) {
@@ -1100,20 +1366,30 @@ std::pair<Eigen::VectorXd, Eigen::MatrixXd> constraintResidualAndJacobian(
     const int ib = (c.linkB != entt::null) ? indexOf(c.linkB) : -1;
 
     Eigen::Vector3d pointA = c.pointA;
-    Eigen::MatrixXd jacA = Eigen::MatrixXd::Zero(3, dof);
+    scratch.pointJacobianA.setZero();
     if (ia >= 0) {
       pointA
           = tree.links[static_cast<std::size_t>(ia)].worldTransform * c.pointA;
-      jacA = worldPointJacobian(
-          tree, jacobians, static_cast<std::size_t>(ia), c.pointA);
+      worldPointJacobianInto(
+          tree,
+          jacobians,
+          static_cast<std::size_t>(ia),
+          c.pointA,
+          scratch,
+          scratch.pointJacobianA);
     }
     Eigen::Vector3d pointB = c.pointB;
-    Eigen::MatrixXd jacB = Eigen::MatrixXd::Zero(3, dof);
+    scratch.pointJacobianB.setZero();
     if (ib >= 0) {
       pointB
           = tree.links[static_cast<std::size_t>(ib)].worldTransform * c.pointB;
-      jacB = worldPointJacobian(
-          tree, jacobians, static_cast<std::size_t>(ib), c.pointB);
+      worldPointJacobianInto(
+          tree,
+          jacobians,
+          static_cast<std::size_t>(ib),
+          c.pointB,
+          scratch,
+          scratch.pointJacobianB);
     }
 
     if (c.distance) {
@@ -1122,14 +1398,17 @@ std::pair<Eigen::VectorXd, Eigen::MatrixXd> constraintResidualAndJacobian(
       const Eigen::Vector3d dir = dist > 1e-12 ? Eigen::Vector3d(offset / dist)
                                                : Eigen::Vector3d::UnitX();
       g[row] = dist - c.length;
-      jac.row(row) = dir.transpose() * (jacA - jacB);
+      scratch.pointJacobianWork.noalias()
+          = scratch.pointJacobianA - scratch.pointJacobianB;
+      jac.row(row).noalias() = dir.transpose() * scratch.pointJacobianWork;
       row += 1;
       continue;
     }
 
     // Position rows (Point, and the first 3 rows of Rigid).
     g.segment<3>(row) = pointA - pointB;
-    jac.middleRows<3>(row) = jacA - jacB;
+    jac.middleRows<3>(row).noalias()
+        = scratch.pointJacobianA - scratch.pointJacobianB;
     row += 3;
 
     if (c.rigid) {
@@ -1151,21 +1430,27 @@ std::pair<Eigen::VectorXd, Eigen::MatrixXd> constraintResidualAndJacobian(
       const Eigen::Matrix3d rotB = worldRotation(ib, c.rotationB);
       g.segment<3>(row) = rotB * rotationLog3(rotB.transpose() * rotA);
 
-      Eigen::MatrixXd angA = Eigen::MatrixXd::Zero(3, dof);
-      Eigen::MatrixXd angB = Eigen::MatrixXd::Zero(3, dof);
+      scratch.angularJacobianA.setZero();
+      scratch.angularJacobianB.setZero();
       if (ia >= 0) {
-        angA = tree.links[static_cast<std::size_t>(ia)].worldTransform.linear()
-               * jacobians[static_cast<std::size_t>(ia)].topRows<3>();
+        worldAngularJacobianInto(
+            tree,
+            jacobians,
+            static_cast<std::size_t>(ia),
+            scratch.angularJacobianA);
       }
       if (ib >= 0) {
-        angB = tree.links[static_cast<std::size_t>(ib)].worldTransform.linear()
-               * jacobians[static_cast<std::size_t>(ib)].topRows<3>();
+        worldAngularJacobianInto(
+            tree,
+            jacobians,
+            static_cast<std::size_t>(ib),
+            scratch.angularJacobianB);
       }
-      jac.middleRows<3>(row) = angA - angB;
+      jac.middleRows<3>(row).noalias()
+          = scratch.angularJacobianA - scratch.angularJacobianB;
       row += 3;
     }
   }
-  return {g, jac};
 }
 
 void evaluateContactForceInto(
@@ -1238,6 +1523,66 @@ void evaluateContactForceInto(
       InvalidOperationException,
       "Variational contact hook returned a generalized force of the wrong "
       "dimension");
+}
+
+} // namespace
+
+//==============================================================================
+struct MultibodyVariationalTreeScratch::Impl
+{
+  VarTree tree;
+  std::unordered_map<entt::entity, std::size_t> linkIndexOf;
+};
+
+//==============================================================================
+MultibodyVariationalTreeScratch::MultibodyVariationalTreeScratch() = default;
+
+//==============================================================================
+MultibodyVariationalTreeScratch::~MultibodyVariationalTreeScratch() = default;
+
+//==============================================================================
+MultibodyVariationalTreeScratch::MultibodyVariationalTreeScratch(
+    MultibodyVariationalTreeScratch&&) noexcept = default;
+
+//==============================================================================
+MultibodyVariationalTreeScratch& MultibodyVariationalTreeScratch::operator=(
+    MultibodyVariationalTreeScratch&&) noexcept = default;
+
+//==============================================================================
+std::size_t MultibodyVariationalTreeScratch::linkCount() const noexcept
+{
+  return m_impl == nullptr ? 0u : m_impl->tree.links.size();
+}
+
+//==============================================================================
+std::size_t MultibodyVariationalTreeScratch::dofCount() const noexcept
+{
+  return m_impl == nullptr ? 0u : m_impl->tree.dofCount;
+}
+
+//==============================================================================
+struct MultibodyVariationalTreeScratchAccess
+{
+  static auto& ensure(MultibodyVariationalTreeScratch& scratch)
+  {
+    if (scratch.m_impl == nullptr) {
+      scratch.m_impl
+          = std::make_unique<MultibodyVariationalTreeScratch::Impl>();
+    }
+    return *scratch.m_impl;
+  }
+};
+
+namespace {
+
+VarTree& buildVarTreeIntoScratch(
+    MultibodyVariationalTreeScratch& scratch,
+    const detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure)
+{
+  auto& storage = MultibodyVariationalTreeScratchAccess::ensure(scratch);
+  buildVarTreeInto(registry, structure, storage.tree, storage.linkIndexOf);
+  return storage.tree;
 }
 
 } // namespace
@@ -1705,7 +2050,13 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
     const VariationalContactHook& contactHook,
     const VariationalGroundContact* fastGroundContact,
     const VariationalGroundContactSolver* groundContactSolver,
-    VariationalContactEvaluationScratch* contactScratch)
+    VariationalContactEvaluationScratch* contactScratch,
+    MultibodyVariationalTreeScratch* treeScratch,
+    VariationalStepScratch* stepScratch,
+    VariationalLinearSolveScratch* linearSolveScratch,
+    MultibodyInverseDynamicsScratch* inverseDynamicsScratch,
+    VariationalConstraintProjectionScratch* projectionScratch,
+    VariationalAndersonScratch* andersonScratch)
 {
   VariationalSolveReport report;
   if (structure.links.empty()) {
@@ -1743,14 +2094,39 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
     }
   }
 
-  VarTree tree = buildVarTree(registry, structure);
+  MultibodyVariationalTreeScratch localTreeScratch;
+  VarTree& tree
+      = treeScratch != nullptr
+            ? buildVarTreeIntoScratch(*treeScratch, registry, structure)
+            : buildVarTreeIntoScratch(localTreeScratch, registry, structure);
   if (tree.dofCount == 0) {
     return report;
   }
+  VariationalAndersonScratch localAndersonScratch;
+  auto& anderson
+      = andersonScratch != nullptr ? *andersonScratch : localAndersonScratch;
+  VariationalStepScratch localStepScratch;
+  auto& stepScratchStorage
+      = stepScratch != nullptr ? *stepScratch : localStepScratch;
+  reserveVariationalStepScratch(tree, stepScratchStorage);
+  VariationalLinearSolveScratch localLinearSolveScratch;
+  auto& linearSolve = linearSolveScratch != nullptr ? *linearSolveScratch
+                                                    : localLinearSolveScratch;
+  reserveVariationalLinearSolveScratch(tree, linearSolve);
+  MultibodyInverseDynamicsScratch localInverseDynamicsScratch;
+  auto& inverseDynamics = inverseDynamicsScratch != nullptr
+                              ? *inverseDynamicsScratch
+                              : localInverseDynamicsScratch;
+  VariationalConstraintProjectionScratch localProjectionScratch;
+  auto& projectionScratchStorage = projectionScratch != nullptr
+                                       ? *projectionScratch
+                                       : localProjectionScratch;
+  reserveConstraintProjectionScratch(
+      tree, constraints, projectionScratchStorage);
 
-  Eigen::VectorXd position;
-  Eigen::VectorXd velocity;
-  Eigen::VectorXd appliedForce;
+  Eigen::VectorXd& position = stepScratchStorage.position;
+  Eigen::VectorXd& velocity = stepScratchStorage.velocity;
+  Eigen::VectorXd& appliedForce = stepScratchStorage.appliedForce;
   gatherState(registry, tree, position, velocity, appliedForce);
 
   // Bootstrap the two-step history from the current generalized velocity: seed
@@ -1758,15 +2134,19 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
   // step's momentum-transport term is consistent.
   if (!state.bootstrapped
       || state.previousDeltaTransform.size() != tree.links.size()) {
-    const std::vector<Vector6> v0 = currentSpatialVelocities(tree, velocity);
+    currentSpatialVelocitiesInto(
+        tree, velocity, stepScratchStorage.currentSpatialVelocities);
     state.previousDeltaTransform.assign(
         tree.links.size(), Eigen::Isometry3d::Identity());
     state.previousMomentum.assign(tree.links.size(), Vector6::Zero());
     for (std::size_t i = 0; i < tree.links.size(); ++i) {
-      const Vector6 scaled = timeStep * v0[i];
+      const Vector6 scaled
+          = timeStep * stepScratchStorage.currentSpatialVelocities[i];
       state.previousDeltaTransform[i] = dm::se3Exp(scaled);
-      state.previousMomentum[i]
-          = dm::dexpInvTranspose(scaled, tree.links[i].inertia * v0[i]);
+      state.previousMomentum[i] = dm::dexpInvTranspose(
+          scaled,
+          tree.links[i].inertia
+              * stepScratchStorage.currentSpatialVelocities[i]);
     }
     state.bootstrapped = true;
   }
@@ -1777,14 +2157,23 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
   // acceleration ddq = M(q)^{-1}(appliedForce - (C(q,qdot) qdot + g(q))) reuses
   // the O(n) inverse-mass apply, so the initial guess stays linear-time. A1
   // joints are Euclidean, so the guess uses plain vector arithmetic.
-  const Eigen::VectorXd bias = computeMultibodyInverseDynamics(
+  Eigen::VectorXd& zeroAcceleration = stepScratchStorage.zeroAcceleration;
+  zeroAcceleration.resize(static_cast<Eigen::Index>(tree.dofCount));
+  zeroAcceleration.setZero();
+  computeMultibodyInverseDynamicsInto(
+      inverseDynamics,
       registry,
       structure,
       gravity,
-      Eigen::VectorXd::Zero(static_cast<Eigen::Index>(tree.dofCount)));
-  const Eigen::VectorXd guessAcceleration
-      = applyArticulatedInverseMass(tree, appliedForce - bias);
-  Eigen::VectorXd nextPosition = position;
+      zeroAcceleration,
+      linearSolve.result);
+  linearSolve.rhs = appliedForce;
+  linearSolve.rhs -= linearSolve.result;
+  applyArticulatedInverseMassInto(
+      tree, linearSolve.rhs, linearSolve, linearSolve.result);
+  const Eigen::VectorXd& guessAcceleration = linearSolve.result;
+  Eigen::VectorXd& nextPosition = stepScratchStorage.nextPosition;
+  nextPosition = position;
   for (const auto& link : tree.links) {
     if (link.dof == 0) {
       continue;
@@ -1792,11 +2181,15 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
     const auto& joint = registry.get<comps::Joint>(link.joint);
     const auto seg = static_cast<Eigen::Index>(link.dofOffset);
     const auto n = static_cast<Eigen::Index>(link.dof);
-    const Eigen::VectorXd tangent
-        = timeStep * velocity.segment(seg, n)
-          + timeStep * timeStep * guessAcceleration.segment(seg, n);
-    nextPosition.segment(seg, n)
-        = jointRetract(joint, position.segment(seg, n), tangent);
+    linearSolve.jointWork.head(n).noalias()
+        = timeStep * velocity.segment(seg, n);
+    linearSolve.jointWork.head(n).noalias()
+        += timeStep * timeStep * guessAcceleration.segment(seg, n);
+    jointRetractInto(
+        joint,
+        position.segment(seg, n),
+        linearSolve.jointWork.head(n),
+        nextPosition.segment(seg, n));
   }
 
   // Root-find policy. Two linear-time preconditioners are available:
@@ -1839,14 +2232,19 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
       break;
     }
   }
+  const std::size_t reservedAndersonDepth
+      = (andersonScratch != nullptr || !euclideanCoordinates) ? andersonDepth
+                                                              : 0u;
+  reserveVariationalAndersonScratch(tree, reservedAndersonDepth, anderson);
 
   // Retract `base` by `-scale * increment` per joint (the Newton update,
   // damped by `scale`), so spherical/floating coordinates stay on their
   // manifolds. Shared by the line search and the accepted update.
-  const auto retractStep = [&](const Eigen::VectorXd& base,
-                               const Eigen::VectorXd& increment,
-                               double scale) {
-    Eigen::VectorXd result = base;
+  const auto retractStepInto = [&](const Eigen::VectorXd& base,
+                                   const Eigen::VectorXd& increment,
+                                   double scale,
+                                   Eigen::VectorXd& result) {
+    result = base;
     for (const auto& link : tree.links) {
       if (link.dof == 0) {
         continue;
@@ -1854,10 +2252,13 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
       const auto& joint = registry.get<comps::Joint>(link.joint);
       const auto seg = static_cast<Eigen::Index>(link.dofOffset);
       const auto n = static_cast<Eigen::Index>(link.dof);
-      result.segment(seg, n) = jointRetract(
-          joint, base.segment(seg, n), -scale * increment.segment(seg, n));
+      anderson.jointDelta.head(n) = -scale * increment.segment(seg, n);
+      jointRetractInto(
+          joint,
+          base.segment(seg, n),
+          anderson.jointDelta.head(n),
+          result.segment(seg, n));
     }
-    return result;
   };
 
   // The tangent displacement from iterate `from` to iterate `to`, stacked per
@@ -1865,22 +2266,24 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
   // tau_a) == to_a. This is the manifold-correct "to - from" the tangent-space
   // Anderson history mixes (a spherical/floating joint's raw coordinate
   // difference is not a tangent vector; its per-joint log is).
-  const auto perJointLogDifference
-      = [&](const Eigen::VectorXd& to, const Eigen::VectorXd& from) {
-          Eigen::VectorXd tangent
-              = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(tree.dofCount));
-          for (const auto& link : tree.links) {
-            if (link.dof == 0) {
-              continue;
-            }
-            const auto& joint = registry.get<comps::Joint>(link.joint);
-            const auto seg = static_cast<Eigen::Index>(link.dofOffset);
-            const auto n = static_cast<Eigen::Index>(link.dof);
-            tangent.segment(seg, n) = jointLogDifference(
-                joint, to.segment(seg, n), from.segment(seg, n));
-          }
-          return tangent;
-        };
+  const auto perJointLogDifferenceInto = [&](const Eigen::VectorXd& to,
+                                             const Eigen::VectorXd& from,
+                                             Eigen::VectorXd& tangent) {
+    tangent.setZero();
+    for (const auto& link : tree.links) {
+      if (link.dof == 0) {
+        continue;
+      }
+      const auto& joint = registry.get<comps::Joint>(link.joint);
+      const auto seg = static_cast<Eigen::Index>(link.dofOffset);
+      const auto n = static_cast<Eigen::Index>(link.dof);
+      jointLogDifferenceInto(
+          joint,
+          to.segment(seg, n),
+          from.segment(seg, n),
+          tangent.segment(seg, n));
+    }
+  };
 
   // Tangent-space Anderson (type-II) acceleration of the manifold quasi-Newton
   // fixed point. The fixed-point map is q^{k+1} = retract(q^k, -step^k) with
@@ -1898,10 +2301,6 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
   // step -> 0; this matched the test without transport (the globalization below
   // also caps any early-iterate excursion). m = 1 recovers Aitken/secant
   // acceleration; the Euclidean exact-Newton path never enters this branch.
-  std::vector<Eigen::VectorXd> stepDeltas;
-  std::vector<Eigen::VectorXd> iterateDeltas;
-  Eigen::VectorXd previousStep;     // tangent update at q^{k-1}
-  Eigen::VectorXd previousPosition; // q^{k-1}
   VariationalContactEvaluationScratch localContactScratch;
   auto& contactEvaluation
       = contactScratch != nullptr ? *contactScratch : localContactScratch;
@@ -1914,7 +2313,8 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
   // line-search trial. With no hook/solver the contact force is empty and the
   // call reduces to the plain `computeResidual(appliedForce)`, so the
   // no-contact path is numerically identical and does no extra work.
-  const auto residualAt = [&](const Eigen::VectorXd& trialPosition) {
+  const auto residualAt = [&](const Eigen::VectorXd& trialPosition,
+                              Eigen::VectorXd& residual) -> Eigen::VectorXd& {
     evaluateContactForceInto(
         registry,
         tree,
@@ -1926,25 +2326,29 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
         contactEvaluation,
         contactEvaluation.contactForce);
     if (contactEvaluation.contactForce.size() == 0) {
-      return computeResidual(
+      computeResidualInto(
           registry,
           tree,
           trialPosition,
           state,
           gravity,
           timeStep,
-          appliedForce);
+          appliedForce,
+          residual);
+      return residual;
     }
     contactEvaluation.forcing = appliedForce;
     contactEvaluation.forcing += contactEvaluation.contactForce;
-    return computeResidual(
+    computeResidualInto(
         registry,
         tree,
         trialPosition,
         state,
         gravity,
         timeStep,
-        contactEvaluation.forcing);
+        contactEvaluation.forcing,
+        residual);
+    return residual;
   };
 
   // `tolerance` is a per-coordinate accuracy; the convergence test is on the
@@ -1955,7 +2359,8 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
   const double normTolerance
       = tolerance * std::sqrt(static_cast<double>(tree.dofCount));
   for (int iteration = 0; iteration < maxIterations; ++iteration) {
-    const Eigen::VectorXd residual = residualAt(nextPosition);
+    Eigen::VectorXd& residual
+        = residualAt(nextPosition, stepScratchStorage.residual);
     report.iterations = static_cast<std::size_t>(iteration) + 1;
     report.residualNorm = residual.norm();
     const double residualNorm = report.residualNorm;
@@ -1969,10 +2374,15 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
     // an increment to *subtract* from the current iterate. `computeResidual`
     // populated the per-link average velocity and q^{k+1} relative transforms
     // the exact step needs.
-    const Eigen::VectorXd step
-        = euclideanCoordinates
-              ? applyExactNewtonStep(tree, residual, timeStep)
-              : applyArticulatedInverseMass(tree, timeStep * residual);
+    if (euclideanCoordinates) {
+      applyExactNewtonStepInto(
+          tree, residual, timeStep, linearSolve, linearSolve.result);
+    } else {
+      linearSolve.rhs.noalias() = timeStep * residual;
+      applyArticulatedInverseMassInto(
+          tree, linearSolve.rhs, linearSolve, linearSolve.result);
+    }
+    const Eigen::VectorXd& step = linearSolve.result;
 
     // Manifold tangent-space Anderson mixing (spherical/floating path only).
     // Accumulate the step/iterate-displacement history and form the accelerated
@@ -1983,40 +2393,55 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
     // produces a wild gamma that throws the increment far off -- the
     // regularizer (plus the opportunistic accept/safeguard below) keeps the
     // acceleration stable on long stiff manifold chains.
-    Eigen::VectorXd andersonIncrement;
     bool haveAnderson = false;
     if (!euclideanCoordinates && andersonDepth > 0 && iteration > 0) {
-      stepDeltas.push_back(step - previousStep);
-      iterateDeltas.push_back(
-          perJointLogDifference(nextPosition, previousPosition));
-      if (stepDeltas.size() > andersonDepth) {
-        stepDeltas.erase(stepDeltas.begin());
-        iterateDeltas.erase(iterateDeltas.begin());
+      const auto depthLimit = anderson.stepDeltas.size();
+      std::size_t slot = 0;
+      if (anderson.historyCount < depthLimit) {
+        slot = anderson.historyCount++;
+      } else {
+        for (std::size_t i = 1; i < depthLimit; ++i) {
+          anderson.stepDeltas[i - 1] = anderson.stepDeltas[i];
+          anderson.iterateDeltas[i - 1] = anderson.iterateDeltas[i];
+        }
+        slot = depthLimit - 1;
       }
-      const auto m = static_cast<Eigen::Index>(stepDeltas.size());
-      Eigen::MatrixXd stepMatrix(step.size(), m);
-      Eigen::MatrixXd iterateMatrix(step.size(), m);
+      anderson.stepDeltas[slot].noalias() = step - anderson.previousStep;
+      perJointLogDifferenceInto(
+          nextPosition,
+          anderson.previousPosition,
+          anderson.iterateDeltas[slot]);
+      const auto m = static_cast<Eigen::Index>(anderson.historyCount);
+      auto stepMatrix = anderson.stepMatrix.leftCols(m);
+      auto mixMatrix = anderson.mixMatrix.leftCols(m);
       for (Eigen::Index c = 0; c < m; ++c) {
-        stepMatrix.col(c) = stepDeltas[static_cast<std::size_t>(c)];
-        iterateMatrix.col(c) = iterateDeltas[static_cast<std::size_t>(c)];
+        const auto index = static_cast<std::size_t>(c);
+        stepMatrix.col(c) = anderson.stepDeltas[index];
+        mixMatrix.col(c).noalias()
+            = anderson.iterateDeltas[index] - anderson.stepDeltas[index];
       }
       // Solve (F^T F + lambda I) gamma = F^T step (normal equations with a
       // ridge scaled by the column magnitudes) for the type-II mixing
       // coefficients.
-      const Eigen::MatrixXd ftf = stepMatrix.transpose() * stepMatrix;
+      auto ftf = anderson.ftf.topLeftCorner(m, m);
+      ftf.noalias() = stepMatrix.transpose() * stepMatrix;
       const double ridge
           = 1e-12 * (ftf.trace() / static_cast<double>(m) + 1e-30);
-      const Eigen::MatrixXd regularized
-          = ftf + ridge * Eigen::MatrixXd::Identity(m, m);
-      const Eigen::VectorXd gamma
-          = regularized.ldlt().solve(stepMatrix.transpose() * step);
+      auto regularized = anderson.regularized.topLeftCorner(m, m);
+      regularized = ftf;
+      regularized.diagonal().array() += ridge;
+      auto normalRhs = anderson.normalRhs.head(m);
+      normalRhs.noalias() = stepMatrix.transpose() * step;
+      auto gamma = anderson.gamma.head(m);
+      gamma = regularized.ldlt().solve(normalRhs);
       if (gamma.allFinite()) {
-        andersonIncrement = step + (iterateMatrix - stepMatrix) * gamma;
-        haveAnderson = andersonIncrement.allFinite();
+        anderson.andersonIncrement = step;
+        anderson.andersonIncrement.noalias() += mixMatrix * gamma;
+        haveAnderson = anderson.andersonIncrement.allFinite();
       }
     }
-    previousStep = step;
-    previousPosition = nextPosition;
+    anderson.previousStep = step;
+    anderson.previousPosition = nextPosition;
 
     // Globalization differs by preconditioner because the two steps have
     // different convergence structure.
@@ -2042,30 +2467,40 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
     // direction make progress worse than the plain fixed point.
     if (euclideanCoordinates) {
       double alpha = 1.0;
-      Eigen::VectorXd trialPosition = retractStep(nextPosition, step, alpha);
-      double trialNorm = residualAt(trialPosition).norm();
+      retractStepInto(nextPosition, step, alpha, anderson.trialPosition);
+      double trialNorm
+          = residualAt(anderson.trialPosition, stepScratchStorage.residual)
+                .norm();
       constexpr int kMaxBacktracks = 20;
       for (int backtrack = 0;
            backtrack < kMaxBacktracks && !(trialNorm < residualNorm);
            ++backtrack) {
         alpha *= 0.5;
-        trialPosition = retractStep(nextPosition, step, alpha);
-        trialNorm = residualAt(trialPosition).norm();
+        retractStepInto(nextPosition, step, alpha, anderson.trialPosition);
+        trialNorm
+            = residualAt(anderson.trialPosition, stepScratchStorage.residual)
+                  .norm();
       }
-      nextPosition = std::move(trialPosition);
+      nextPosition = anderson.trialPosition;
       continue;
     }
 
     if (haveAnderson) {
-      Eigen::VectorXd andersonPosition
-          = retractStep(nextPosition, andersonIncrement, 1.0);
-      const double andersonNorm = residualAt(andersonPosition).norm();
+      retractStepInto(
+          nextPosition,
+          anderson.andersonIncrement,
+          1.0,
+          anderson.andersonPosition);
+      const double andersonNorm
+          = residualAt(anderson.andersonPosition, stepScratchStorage.residual)
+                .norm();
       if (andersonNorm < residualNorm) {
-        nextPosition = std::move(andersonPosition);
+        nextPosition = anderson.andersonPosition;
         continue;
       }
     }
-    nextPosition = retractStep(nextPosition, step, 1.0);
+    retractStepInto(nextPosition, step, 1.0, anderson.trialPosition);
+    nextPosition = anderson.trialPosition;
   }
 
   // Non-convergence is a hard error, not a silent best-effort step: the caller
@@ -2088,35 +2523,45 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
   if (!constraints.empty()) {
     constexpr double constraintTolerance = 1e-10;
     constexpr int maxProjectionIterations = 32;
+    bool treeConfigurationChanged = false;
     for (int projection = 0; projection < maxProjectionIterations;
          ++projection) {
-      // Reflect the candidate configuration in the joints so a freshly built
-      // tree carries the world transforms and Jacobians at nextPosition.
-      for (const VarLink& link : tree.links) {
-        if (link.dof == 0) {
-          continue;
-        }
-        registry.get<comps::Joint>(link.joint).position = nextPosition.segment(
-            static_cast<Eigen::Index>(link.dofOffset),
-            static_cast<Eigen::Index>(link.dof));
-      }
-      const VarTree nextTree = buildVarTree(registry, structure);
-      const std::vector<Eigen::MatrixXd> jacobians = bodyJacobians(nextTree);
-      const auto [g, jacobian] = constraintResidualAndJacobian(
-          structure, nextTree, jacobians, constraints);
+      // Reuse the step tree topology and refresh only the configuration-
+      // dependent transforms/Jacobians for the projection candidate. The tree
+      // is restored to the step base configuration before final residual
+      // evaluation so the DEL history update remains based on q^k -> q^{k+1}.
+      updateVarTreeConfigurationInto(registry, tree, nextPosition);
+      treeConfigurationChanged = true;
+      bodyJacobiansInto(tree, projectionScratchStorage.jacobians);
+      constraintResidualAndJacobianInto(
+          structure,
+          tree,
+          projectionScratchStorage.jacobians,
+          constraints,
+          projectionScratchStorage);
+      const Eigen::VectorXd& g = projectionScratchStorage.residual;
+      const Eigen::MatrixXd& jacobian = projectionScratchStorage.jacobian;
       if (g.norm() <= constraintTolerance) {
         break;
       }
       const Eigen::Index rows = g.size();
-      Eigen::MatrixXd inverseMassJt(
-          static_cast<Eigen::Index>(nextTree.dofCount), rows);
       for (Eigen::Index r = 0; r < rows; ++r) {
-        inverseMassJt.col(r) = applyArticulatedInverseMass(
-            nextTree, jacobian.row(r).transpose());
+        linearSolve.rhs = jacobian.row(r).transpose();
+        applyArticulatedInverseMassInto(
+            tree, linearSolve.rhs, linearSolve, linearSolve.result);
+        projectionScratchStorage.inverseMassJt.col(r) = linearSolve.result;
       }
-      const Eigen::MatrixXd constraintMass = jacobian * inverseMassJt;
-      const Eigen::VectorXd lambda = constraintMass.ldlt().solve(-g);
-      const Eigen::VectorXd correction = inverseMassJt * lambda;
+      projectionScratchStorage.constraintMass.noalias()
+          = jacobian * projectionScratchStorage.inverseMassJt;
+      projectionScratchStorage.constraintFactorization.compute(
+          projectionScratchStorage.constraintMass);
+      projectionScratchStorage.lambdaRhs = -g;
+      projectionScratchStorage.lambda
+          = projectionScratchStorage.constraintFactorization.solve(
+              projectionScratchStorage.lambdaRhs);
+      projectionScratchStorage.correction.noalias()
+          = projectionScratchStorage.inverseMassJt
+            * projectionScratchStorage.lambda;
       for (const VarLink& link : tree.links) {
         if (link.dof == 0) {
           continue;
@@ -2125,8 +2570,13 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
         const auto seg = static_cast<Eigen::Index>(link.dofOffset);
         const auto n = static_cast<Eigen::Index>(link.dof);
         nextPosition.segment(seg, n) = jointRetract(
-            joint, nextPosition.segment(seg, n), correction.segment(seg, n));
+            joint,
+            nextPosition.segment(seg, n),
+            projectionScratchStorage.correction.segment(seg, n));
       }
+    }
+    if (treeConfigurationChanged) {
+      updateVarTreeConfigurationInto(registry, tree, position);
     }
   }
 
@@ -2135,8 +2585,8 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
   // in the contact force (if any) so the reported residual reflects the actual
   // forced-DEL root; the forward (dT/average-velocity) sweep is independent of
   // the forcing, so the history shift is unaffected by the hook.
-  const Eigen::VectorXd finalResidual = residualAt(nextPosition);
-  report.residualNorm = finalResidual.norm();
+  report.residualNorm
+      = residualAt(nextPosition, stepScratchStorage.residual).norm();
 
   // Write back joint position/velocity/acceleration (Euclidean, Phase A1).
   for (auto& link : tree.links) {
@@ -2148,8 +2598,8 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
     const auto n = static_cast<Eigen::Index>(link.dof);
     const Eigen::VectorXd previousVelocity = joint.velocity;
     const Eigen::VectorXd newPosition = nextPosition.segment(seg, n);
-    // q^k is the captured `position` (the loop-closure projection may have
-    // already mutated `joint.position` to the candidate qNext).
+    // q^k is the captured `position`; loop-closure projection works on the
+    // scratch tree and leaves registry joint state unchanged until writeback.
     joint.velocity
         = jointLogDifference(joint, newPosition, position.segment(seg, n))
           / timeStep;
@@ -2199,6 +2649,12 @@ VariationalSolveReport integrateMultibodyVariational(
       constraints,
       andersonDepth,
       contactHook,
+      nullptr,
+      nullptr,
+      nullptr,
+      nullptr,
+      nullptr,
+      nullptr,
       nullptr,
       nullptr,
       nullptr);
@@ -2265,11 +2721,12 @@ VariationalConstraintLinearization computeVariationalConstraintLinearization(
     return result;
   }
   const VarTree tree = buildVarTree(registry, structure);
-  const std::vector<Eigen::MatrixXd> jacobians = bodyJacobians(tree);
-  auto [g, jac]
-      = constraintResidualAndJacobian(structure, tree, jacobians, constraints);
-  result.residual = std::move(g);
-  result.jacobian = std::move(jac);
+  VariationalConstraintProjectionScratch scratch;
+  bodyJacobiansInto(tree, scratch.jacobians);
+  constraintResidualAndJacobianInto(
+      structure, tree, scratch.jacobians, constraints, scratch);
+  result.residual = std::move(scratch.residual);
+  result.jacobian = std::move(scratch.jacobian);
   return result;
 }
 
@@ -2389,7 +2846,20 @@ void reserveMultibodyVariationalRegistryStorage(
     }
     appendAvbdRigidWorldArticulatedPointJointConstraints(
         registry, entity, scratch.constraints);
+    const Eigen::Index projectionRows = constraintRowCount(scratch.constraints);
     scratch.constraints.clear();
+
+    const VarTree& tree
+        = buildVarTreeIntoScratch(scratch.tree, registry, structure);
+    if (tree.dofCount > 0u) {
+      reserveVariationalStepScratch(tree, scratch.step);
+      reserveVariationalLinearSolveScratch(tree, scratch.linearSolve);
+      reserveMultibodyInverseDynamicsScratch(
+          scratch.inverseDynamics, registry, structure);
+      reserveConstraintProjectionScratch(
+          tree, projectionRows, scratch.projection);
+      reserveVariationalAndersonScratch(tree, 5, scratch.anderson);
+    }
 
     const auto* contactConfig
         = registry.try_get<comps::VariationalContact>(entity);
@@ -2408,7 +2878,6 @@ void reserveMultibodyVariationalRegistryStorage(
     } else {
       scratch.groundContactSolver->resetContact(scratch.groundContact);
     }
-    const VarTree tree = buildVarTree(registry, structure);
     if (tree.dofCount > 0u) {
       reserveContactEvaluationScratch(tree, scratch.contactEvaluation);
     }
@@ -2541,7 +3010,13 @@ void MultibodyVariationalIntegrationStage::execute(
         contactHook,
         groundContactSolver != nullptr ? &scratch.groundContact : nullptr,
         groundContactSolver,
-        &scratch.contactEvaluation);
+        &scratch.contactEvaluation,
+        &scratch.tree,
+        &scratch.step,
+        &scratch.linearSolve,
+        &scratch.inverseDynamics,
+        &scratch.projection,
+        &scratch.anderson);
 
     // C3 outer loop: after the converged step, advance the AL duals on the
     // configured cadence from the post-step per-link world transforms (a fresh
@@ -2552,7 +3027,8 @@ void MultibodyVariationalIntegrationStage::execute(
           = registry.get<comps::VariationalContactDualState>(entity);
       if (++dualState.stepsSinceDualUpdate >= dualUpdateCadence) {
         dualState.stepsSinceDualUpdate = 0;
-        const VarTree postTree = buildVarTree(registry, structure);
+        const VarTree& postTree
+            = buildVarTreeIntoScratch(scratch.tree, registry, structure);
         auto& postTransforms = scratch.postContactTransforms;
         postTransforms.resize(postTree.links.size());
         for (std::size_t i = 0; i < postTree.links.size(); ++i) {

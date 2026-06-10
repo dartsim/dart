@@ -541,6 +541,11 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     `FreeListAllocator`, and `PoolAllocator` for current live bytes, peak live
     bytes, and live allocation count so allocator diagnostics can consume
     structured counters instead of parsing debug text.
+  - Hardened `dart::common::MemoryAllocatorDebugger` so aligned allocations
+    keep their requested alignment in the debug record and mismatched aligned
+    deallocations are rejected without forwarding to the wrapped allocator.
+    The debugger destructor now also releases any still-tracked allocations
+    with the recorded size/alignment after reporting the leak.
   - Added structured `MemoryManager` debug diagnostics and surfaced them through
     experimental `World` memory diagnostics for free/pool allocator accounting,
     including typed borrowed allocator use.
@@ -550,7 +555,13 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Made experimental `World::clear()` recreate its internal allocator-backed
     registry storage so ECS capacities and debug-tracked registry allocations
     are released at the rebuild boundary while preserving the World memory
-    hierarchy.
+    hierarchy. Clear/rebuild no-growth coverage includes compact, production,
+    and complementary default-solver deformable contact-family storage paths,
+    plus AVBD/VBD self-contact, ground-friction, variational loop-closure, and
+    boxed-LCP multibody contact storage paths, plus active kinematic IPC
+    surface-CCD trace, rigid AVBD contact/joint storage, and variational
+    contact dual-state storage. The semi-implicit multibody dynamics path now
+    has the same rebuild-boundary guard for its baked private dynamics storage.
   - Reused legacy graph-backed `RigidBodyIntegrationStage` scratch for rigid-body
     entity lists and dependency nodes instead of allocating per execute.
   - Extended experimental `World` base-allocator no-growth coverage to baked
@@ -594,6 +605,19 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     lagged-friction barrier pass. The rigid IPC contact stage now uses the
     caller-owned projected-Newton solve overload so per-solve surface candidate
     buffers persist in stage scratch across steps.
+    The variational multibody stage now reuses baked inverse-dynamics scratch
+    for its initial-guess bias query instead of calling the public
+    return-by-value helper on same-shape steps. It also reuses baked dense
+    loop-closure projection storage for Jacobians, inverse-mass transpose
+    blocks, constraint-mass factorization, lambda, and correction vectors, and
+    refreshes the projection tree configuration in place instead of rebuilding
+    topology from the registry on every projection iteration. The variational
+    stage now also keeps its tree topology, link-index map, and child-list
+    storage in baked scratch across same-shape steps, preserving same-shape
+    link-index map nodes instead of repopulating them in the step loop.
+    World registry rebuild gates now also cover the existing compact and
+    production mixed default-deformable direct-sparse, matrix-free, FEM, and
+    contact-family storage paths across `World::clear()` and rebuild.
     Convenience return-by-value unified problem wrappers remain a separate
     allocation target.
   - Reused `DeformableDynamicsStage` scratch for deformable surface snapshots,

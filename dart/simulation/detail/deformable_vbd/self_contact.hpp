@@ -84,6 +84,18 @@ struct SelfContactAdjacency
            && !incident.empty();
   }
 
+  void reserve(std::size_t vertexCount, std::size_t candidateCapacity)
+  {
+    incident.resize(vertexCount);
+    const std::size_t entryCapacity
+        = vertexCount == 0
+              ? 0
+              : (4 * candidateCapacity + vertexCount - 1) / vertexCount;
+    for (auto& entries : incident) {
+      entries.reserve(entryCapacity);
+    }
+  }
+
   void rebuild(
       std::size_t vertexCount,
       const contact::ContactCandidateSet& candidates,

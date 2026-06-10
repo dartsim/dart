@@ -67,6 +67,115 @@ public:
   }
 };
 
+class AlignmentTrackingAllocator final : public MemoryAllocator
+{
+public:
+  static std::string_view getStaticType()
+  {
+    return "AlignmentTrackingAllocator";
+  }
+
+  std::string_view getType() const override
+  {
+    return getStaticType();
+  }
+
+  void* allocate(size_t bytes) noexcept override
+  {
+    ++allocationCount;
+    return mBacking.allocate(bytes);
+  }
+
+  void* allocate(size_t bytes, size_t alignment) noexcept override
+  {
+    ++allocationCount;
+    ++alignedAllocationCount;
+    return mBacking.allocate(bytes, alignment);
+  }
+
+  void deallocate(void* pointer, size_t bytes) override
+  {
+    ++deallocationCount;
+    mBacking.deallocate(pointer, bytes);
+  }
+
+  void deallocate(void* pointer, size_t bytes, size_t alignment) override
+  {
+    ++deallocationCount;
+    ++alignedDeallocationCount;
+    lastDeallocationAlignment = alignment;
+    mBacking.deallocate(pointer, bytes, alignment);
+  }
+
+  size_t allocationCount = 0;
+  size_t alignedAllocationCount = 0;
+  size_t deallocationCount = 0;
+  size_t alignedDeallocationCount = 0;
+  size_t lastDeallocationAlignment = 0;
+
+private:
+  CAllocator mBacking;
+};
+
+struct LeakReleaseCounters
+{
+  size_t deallocationCount = 0;
+  size_t alignedDeallocationCount = 0;
+  size_t deallocatedBytes = 0;
+  size_t lastAlignedDeallocationBytes = 0;
+  size_t lastAlignedDeallocationAlignment = 0;
+};
+
+class LeakReleaseAllocator final : public MemoryAllocator
+{
+public:
+  explicit LeakReleaseAllocator(LeakReleaseCounters& counters)
+    : mCounters(&counters)
+  {
+  }
+
+  static std::string_view getStaticType()
+  {
+    return "LeakReleaseAllocator";
+  }
+
+  std::string_view getType() const override
+  {
+    return getStaticType();
+  }
+
+  void* allocate(size_t bytes) noexcept override
+  {
+    return mBacking.allocate(bytes);
+  }
+
+  void* allocate(size_t bytes, size_t alignment) noexcept override
+  {
+    return mBacking.allocate(bytes, alignment);
+  }
+
+  void deallocate(void* pointer, size_t bytes) override
+  {
+    ++mCounters->deallocationCount;
+    mCounters->deallocatedBytes += bytes;
+    mBacking.deallocate(pointer, bytes);
+  }
+
+  void deallocate(void* pointer, size_t bytes, size_t alignment) override
+  {
+    ++mCounters->deallocationCount;
+    ++mCounters->alignedDeallocationCount;
+    mCounters->deallocatedBytes += bytes;
+    mCounters->lastAlignedDeallocationBytes = bytes;
+    mCounters->lastAlignedDeallocationAlignment = alignment;
+    mBacking.deallocate(pointer, bytes, alignment);
+  }
+
+private:
+  LeakReleaseCounters* mCounters;
+  CAllocator mBacking;
+};
+
 struct alignas(64) OverAlignedObject
 {
   double values[8] = {};
@@ -272,4 +381,64 @@ TEST(MemoryAllocatorTest, DebuggerTracksAlignedAllocationOverload)
   EXPECT_EQ(allocator.getAllocatedSize(), 0u);
   EXPECT_EQ(allocator.getPeakAllocatedSize(), sizeof(OverAlignedObject));
   EXPECT_EQ(allocator.getAllocationCount(), 0u);
+}
+
+TEST(MemoryAllocatorTest, DebuggerRejectsMismatchedAlignedDeallocations)
+{
+  MemoryAllocatorDebugger<AlignmentTrackingAllocator> allocator;
+
+  auto* raw = static_cast<OverAlignedObject*>(allocator.allocate(
+      sizeof(OverAlignedObject), alignof(OverAlignedObject)));
+  expectAligned(raw);
+
+  allocator.deallocate(
+      raw, sizeof(OverAlignedObject), alignof(OverAlignedObject) / 2);
+  EXPECT_TRUE(allocator.hasAllocated(raw, sizeof(OverAlignedObject)));
+  EXPECT_EQ(allocator.getAllocatedSize(), sizeof(OverAlignedObject));
+  EXPECT_EQ(allocator.getAllocationCount(), 1u);
+  EXPECT_EQ(allocator.getInternalAllocator().alignedDeallocationCount, 0u);
+
+  allocator.deallocate(raw, sizeof(OverAlignedObject));
+  EXPECT_TRUE(allocator.hasAllocated(raw, sizeof(OverAlignedObject)));
+  EXPECT_EQ(allocator.getAllocatedSize(), sizeof(OverAlignedObject));
+  EXPECT_EQ(allocator.getAllocationCount(), 1u);
+  EXPECT_EQ(allocator.getInternalAllocator().deallocationCount, 0u);
+
+  allocator.deallocate(
+      raw, sizeof(OverAlignedObject), alignof(OverAlignedObject));
+  EXPECT_TRUE(allocator.isEmpty());
+  EXPECT_EQ(allocator.getAllocatedSize(), 0u);
+  EXPECT_EQ(allocator.getPeakAllocatedSize(), sizeof(OverAlignedObject));
+  EXPECT_EQ(allocator.getAllocationCount(), 0u);
+  EXPECT_EQ(allocator.getInternalAllocator().alignedDeallocationCount, 1u);
+  EXPECT_EQ(
+      allocator.getInternalAllocator().lastDeallocationAlignment,
+      alignof(OverAlignedObject));
+}
+
+TEST(MemoryAllocatorTest, DebuggerDestructorReleasesLeakedAllocations)
+{
+  LeakReleaseCounters counters;
+
+  {
+    MemoryAllocatorDebugger<LeakReleaseAllocator> allocator(counters);
+
+    void* plain = allocator.allocate(24);
+    ASSERT_NE(plain, nullptr);
+
+    auto* aligned = static_cast<OverAlignedObject*>(allocator.allocate(
+        sizeof(OverAlignedObject), alignof(OverAlignedObject)));
+    expectAligned(aligned);
+
+    EXPECT_EQ(counters.deallocationCount, 0u);
+    EXPECT_EQ(counters.alignedDeallocationCount, 0u);
+    EXPECT_EQ(counters.deallocatedBytes, 0u);
+  }
+
+  EXPECT_EQ(counters.deallocationCount, 2u);
+  EXPECT_EQ(counters.alignedDeallocationCount, 1u);
+  EXPECT_EQ(counters.deallocatedBytes, 24u + sizeof(OverAlignedObject));
+  EXPECT_EQ(counters.lastAlignedDeallocationBytes, sizeof(OverAlignedObject));
+  EXPECT_EQ(
+      counters.lastAlignedDeallocationAlignment, alignof(OverAlignedObject));
 }

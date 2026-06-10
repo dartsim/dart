@@ -1384,7 +1384,9 @@ inline BlockDescentStats blockDescentDeformable(
     const std::vector<Eigen::Vector3d>* stepStartPositions = nullptr,
     const std::vector<ContactPlane>* contactPlanes = nullptr,
     double contactFriction = 0.0,
-    const SelfContactAdjacency* selfContact = nullptr)
+    const SelfContactAdjacency* selfContact = nullptr,
+    std::vector<Eigen::Vector3d>* chebyshevTwoStepsBackScratch = nullptr,
+    std::vector<Eigen::Vector3d>* chebyshevBeforeSweepScratch = nullptr)
 {
   BlockDescentStats stats;
   const std::size_t vertexCount = positions.size();
@@ -1446,14 +1448,20 @@ inline BlockDescentStats blockDescentDeformable(
 
   const double convergenceSquared
       = options.convergenceDisplacement * options.convergenceDisplacement;
-  std::vector<Eigen::Vector3d> twoStepsBack;
+  std::vector<Eigen::Vector3d> localTwoStepsBack;
+  std::vector<Eigen::Vector3d> localBeforeSweep;
+  std::vector<Eigen::Vector3d>& twoStepsBack
+      = chebyshevTwoStepsBackScratch != nullptr ? *chebyshevTwoStepsBackScratch
+                                                : localTwoStepsBack;
+  std::vector<Eigen::Vector3d>& beforeSweep
+      = chebyshevBeforeSweepScratch != nullptr ? *chebyshevBeforeSweepScratch
+                                               : localBeforeSweep;
   if (options.useChebyshev) {
     twoStepsBack = positions;
   }
   double omega = 1.0;
   for (std::size_t iteration = 0; iteration < options.iterations; ++iteration) {
     ++stats.iterations;
-    std::vector<Eigen::Vector3d> beforeSweep;
     if (options.useChebyshev) {
       beforeSweep = positions;
     }

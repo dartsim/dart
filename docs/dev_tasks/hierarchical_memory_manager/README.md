@@ -53,10 +53,12 @@
       pool/free-list/fixed-pool/frame/STL allocator coverage for invalid sizes,
       reuse, bounded failure, diagnostics, debug misuse paths, and
       allocator-root isolation across independent `MemoryManager` and
-      experimental `World` instances, and keeps fixed-capacity free-list
-      aligned-allocation diagnostics on user-requested bytes instead of internal
-      header padding. `FrameStlAllocator` blocks are cache-line aligned without
-      per-block cache coloring, so frame-backed STL pages used by
+      experimental `World` instances, keeps aligned debug allocations tied to
+      the matching aligned deallocation contract, releases debugger-tracked
+      leaks with their recorded size/alignment during debugger destruction, and
+      keeps fixed-capacity free-list aligned-allocation diagnostics on
+      user-requested bytes instead of internal header padding. `FrameStlAllocator` blocks are cache-line
+      aligned without per-block cache coloring, so frame-backed STL pages used by
       allocator-aware EnTT storage keep the alignment benefit without avoidable
       arena padding, and the frame allocator now has cheaper no-overflow
       reset plus 32-byte and cache-line-aligned fast paths for the comparative
@@ -349,6 +351,9 @@
       row-inventory, inertial-target, and solve-row scratch for covered active
       rigid contacts and no-contact fixed-joint rows; the public
       return-by-value AVBD helpers remain allocation-boundary conveniences. The
+      follow-up VBD path now also reuses stage-owned Chebyshev history vectors
+      and bakes self-contact candidate sweep plus adjacency capacity for all
+      enabled VBD surface bodies, not only AVBD self-contact row bodies. The
       current
       production boxed-LCP stage
       uses the in-place unified assembler and solve scratch; the public
@@ -455,6 +460,10 @@
       Additional broader or differently shaped production-scale frictional
       deformable scenarios still need no-growth gates before making the full
       deformable claim.
+      The follow-up branch adds an active VBD Chebyshev self-contact grid to
+      both the World-base no-growth and global-heap no-allocation guards,
+      proving the baked VBD Chebyshev/self-contact path does not allocate after
+      prewarm for that covered shape.
 - [ ] Phase 6: Add memory-layout profiler/debugger surfaces and GUI
       visualization. `MemoryAllocatorDebugger` now exposes structured live
       bytes, peak live bytes, and live allocation count; `MemoryManager` and
@@ -612,7 +621,128 @@ Current Phase 5 no-growth/no-heap gates shipped by this PR include:
   no-contact fixed-joint guards with World-base no-growth and global-heap
   no-allocation coverage after bake.
 
-Phase 4/5 follow-up items for the next PR:
+Follow-up progress after PR #2956:
+
+- The VBD Chebyshev self-contact path now borrows stage-owned Chebyshev history
+  vectors, bakes self-contact sweep/adjacency capacity for all enabled
+  VBD surface bodies, and has active-scene plus World-base/global-heap gates for
+  a 5x9 two-layer self-contact grid.
+- Contact-heavy `WorldRegistry` rebuild coverage now reuses the existing
+  compliant variational contact slider setup to bake/step solver-owned ECS
+  scratch, clear the `World`, verify registry capacities release to zero while
+  preserving the world free-list allocator wiring, rebuild the same contact
+  shape, and re-step with identical baked storage capacities and no base
+  allocator activity in the baked step loop.
+- Scripted deformable Dirichlet/Neumann boundary processing now has a focused
+  active-scene check plus World-base/global-heap baked-step allocation guards,
+  proving the per-body boundary masks and external-acceleration scratch stay
+  inside the baked deformable solver storage after prewarm.
+- Variational multibody manifold Anderson acceleration now uses the baked
+  `MultibodyVariationalScratch` component for its step/iterate history,
+  per-joint tangent temporary, least-squares work matrices, and trial
+  positions. The World-stage path pre-sizes this storage during
+  `enterSimulationMode()`, while the public one-shot integration helper keeps a
+  local fallback scratch. Focused coverage extends the existing loop-closure
+  scratch bake test and keeps the manifold Anderson spherical/floating
+  regression tests passing.
+- Variational multibody articulated inverse-mass and exact recursive-Newton
+  solves now share baked linear-solve scratch for articulated operators, spatial
+  bias/twist buffers, joint projectors, factored joint blocks, right-hand sides,
+  and result vectors. The World-stage bake path pre-sizes this storage with the
+  multibody shape, the public helper keeps a local fallback, and focused
+  coverage checks the baked scratch shape while preserving dense inverse-mass,
+  long-chain exact-Newton, loop-closure, and manifold Anderson regressions.
+- Variational multibody step state now reuses baked scratch for generalized
+  position, velocity, applied force, next-position trial, bootstrap spatial
+  velocities, and forced-DEL residual storage. The hot-loop residual evaluation
+  writes into caller-owned storage instead of returning a fresh vector per
+  root-find or line-search trial, and the initial-guess retraction reuses
+  existing per-joint tangent storage. The stage also routes its initial-guess
+  inverse-dynamics query through a reusable scratch-backed overload, so
+  same-shape baked steps no longer use the public return-by-value dynamics
+  helper or allocate a temporary zero-acceleration vector for that bias query.
+  Loop-closure projection now also reuses baked Jacobian, inverse-mass
+  transpose, constraint-mass, factorization, lambda, and correction storage
+  instead of allocating dense projection work matrices on every projection
+  iteration. The projection loop refreshes the step tree's configuration in
+  place for each candidate instead of rebuilding the tree topology, index map,
+  and child vectors from the registry on every projection iteration. The
+  initial per-step variational tree build now also writes into baked
+  `MultibodyVariationalScratch` storage, so same-shape steps reuse the tree
+  topology vector, link-index map, per-link child lists, and link-frame
+  subspace matrices instead of constructing fresh containers; the same-shape
+  map nodes stay alive rather than being cleared/reallocated in the step loop.
+  The existing World baked-step global-heap gate now includes an active
+  loop-closure chain, covering the variational tree/projection scratch path at
+  World level without broadening production scene scope.
+- The existing compact and production mixed default-deformable storage scenes
+  now have World registry clear/rebuild gates. They prove direct-sparse
+  self-contact, matrix-free self-contact, and FEM ground-friction solver
+  storage can be baked, stepped without base-allocator growth, cleared back to
+  zero registry capacity, and rebuilt with the same storage capacities under
+  the world free-list allocator.
+- The production mixed default contact-family scene and its complementary
+  matrix-free/static-obstacle plus direct-irregular/self-contact pairing now
+  have the same clear/rebuild coverage, adding static-obstacle friction,
+  self-contact friction, and inter-body surface CCD solver storage to the
+  rebuild-boundary proof across both default-solver storage pairings.
+- Existing AVBD/VBD scenes now have the same `World::clear()` rebuild-boundary
+  proof without adding new scene definitions: AVBD self-contact friction, VBD
+  Chebyshev self-contact, and AVBD ground-friction storage bake, step without
+  World-base allocator growth or ECS capacity changes, clear to zero registry
+  capacity, and rebuild with the same storage shape.
+- The existing variational loop-closure chain now has a matching clear/rebuild
+  gate that asserts the baked `MultibodyVariationalScratch` tree, step,
+  linear-solve, projection, and Anderson storage dimensions, then rebuilds the
+  same shape with identical registry capacities under the World allocator root.
+- Existing boxed-LCP multibody contact scenes now have clear/rebuild coverage
+  for semi-implicit multibody contact storage using stacked and multi-island
+  fallback shapes. The gate bakes active contact rows, verifies same-shape
+  steps do not grow the World base allocator or ECS capacities, clears the
+  registry to zero capacity, and rebuilds with identical storage capacities.
+- The existing kinematic IPC surface-CCD crossing scene now has a matching
+  clear/rebuild gate for `KinematicBodyStepTrace` storage. It bakes the active
+  kinematic trace path, verifies same-shape steps keep ECS capacities stable
+  without World-base allocator growth, clears the registry to zero capacity,
+  and rebuilds the same trace storage shape under the World free-list
+  allocator.
+- Existing rigid AVBD contact and fixed-joint scenes now cover the remaining
+  rigid AVBD registry storage rebuild boundary. The gate proves
+  `RigidAvbdContactConfig` and generated `AvbdRigidWorldPointJointConfig`
+  storage can be baked, stepped without World-base allocator growth or ECS
+  capacity changes, cleared to zero registry capacity, and rebuilt with the
+  same storage capacities under the World free-list allocator.
+- The existing contact-heavy variational dual-state setup now has matching
+  clear/rebuild coverage for `VariationalContactDualState` storage. The gate
+  bakes six sliders with four persistent contact duals each, verifies
+  same-shape steps keep dual vector capacity and ECS storage capacity stable
+  without World-base allocator growth, clears the registry to zero capacity,
+  and rebuilds the same dual-state shape.
+- The semi-implicit one-slider multibody path now has the same clear/rebuild
+  proof for baked private multibody dynamics storage. The gate covers the
+  all-storage capacity map created by `reserveMultibodyDynamicsRegistryStorage`
+  for the active `MultibodyDynamicsScratch`/`PendingMultibodyVelocity` path,
+  then verifies same-shape steps do not grow World-base allocator counts or ECS
+  capacities, clears to zero registry capacity, and rebuilds the same storage
+  shape.
+- `MemoryAllocatorDebugger` now records the requested alignment alongside live
+  byte counts for aligned allocations and rejects mismatched aligned
+  deallocations without forwarding them to the wrapped allocator, closing one
+  remaining debug-accounting misuse gap. Its destructor also releases any
+  still-tracked leaked allocations with the recorded size/alignment after
+  reporting the leak.
+- `docs/design/hierarchical_allocator.md` now reflects the implemented
+  experimental DART 7 `World` hierarchy instead of the original proposal: the
+  durable design note describes `WorldOptions`, the World-owned
+  `MemoryManager`, allocator lifetime roles, registry bake/rebuild boundaries,
+  and the direct evidence expected before making broader zero-allocation
+  claims.
+- The opaque `WorldStorage` object now uses the same World free-list allocator
+  as its EnTT registry and differentiable-parameter storage. A focused
+  allocator-root test verifies both initial construction and `World::clear()`
+  rebuilds keep the storage object under the World memory hierarchy.
+
+Remaining Phase 4/5 follow-up items for the next PR:
 
 - Do not add more production scenes or scratch-reuse work to PR #2956; continue
   any remaining no-growth and scratch work on a new follow-up branch.
@@ -622,12 +752,14 @@ Phase 4/5 follow-up items for the next PR:
   represented by the current gates.
 - Add any remaining default-solver deformable storage/no-heap gates for
   solver-private paths not exercised by the current direct-sparse,
-  matrix-free, FEM, obstacle, and surface-CCD mixed scenes.
+  matrix-free, FEM, obstacle, surface-CCD, and compact/production
+  clear/rebuild mixed/contact-family scenes.
 - Expand production contact-set coverage only for newly exposed boxed-LCP or
   unified-assembly shapes that are not covered by the current stacked,
   multi-island, mixed-stress, and contact-family gates.
-- Continue production `WorldRegistry` bake/build sizing guidance for
-  contact-heavy ECS storage and rebuild boundaries.
+- Continue production `WorldRegistry` bake/build sizing guidance beyond the
+  current compliant-contact clear/rebuild gate, especially for differently
+  shaped solver-owned ECS storages and rebuild boundaries.
 - Re-run allocator comparative evidence when allocator, STL, or frame policy
   changes; keep the current foonathan/memory and standard-baseline evidence
   green instead of adding allocator-policy work to this PR.
@@ -638,18 +770,25 @@ Phase 4/5 follow-up items for the next PR:
    production `WorldRegistry` bake/build guidance and integration: free-list
    backed world-lifetime storage for reserved no-growth arrays, and resettable
    rebuild-lifetime frame storage for bake/growth. Production wiring now resets
-   registry storage on `World::clear()` rebuild boundaries, and a contact-heavy
-   variational dual-state gate covers one solver-owned ECS storage path, but
-   broader bake/build sizing guidance and additional contact-heavy no-growth
-   tests remain open; it must not use the per-step frame scratch allocator that
-   resets inside
+   registry storage on `World::clear()` rebuild boundaries, and the follow-up
+   branch adds compliant-contact dual-state, compact, production, mixed and
+   complementary contact-family default-deformable, AVBD/VBD, boxed-LCP
+   multibody contact, semi-implicit multibody dynamics, kinematic IPC
+   surface-CCD trace, rigid AVBD contact/joint, and variational loop-closure
+   clear/rebuild no-growth gates for baked solver scratch plus baked
+   variational Anderson, step-state, and
+   linear-solve/inverse-dynamics/projection work storage. Broader bake/build
+   sizing guidance for other solver-owned ECS storage shapes remains open; it
+   must not use the per-step frame scratch allocator that resets inside
    `World::step()`.
 2. Continue extending allocator correctness tests for remaining
    leak/debug-accounting gaps and production workload cases after the new
-   count/size overflow, over-alignment, reuse, diagnostics, and bounded-failure
-   coverage for `MemoryAllocator`, `FixedPoolAllocator`, `PoolAllocator`,
-   `FreeListAllocator`, `FrameAllocator`, `FrameStlAllocator`, `StlAllocator`,
-   `MemoryManager`, and experimental `World` allocator-root isolation.
+   count/size overflow, over-alignment, aligned debug-deallocation,
+   debug-leak release, reuse, diagnostics, and bounded-failure coverage for
+   `MemoryAllocator`, `MemoryAllocatorDebugger`, `FixedPoolAllocator`,
+   `PoolAllocator`, `FreeListAllocator`, `FrameAllocator`,
+   `FrameStlAllocator`, `StlAllocator`, `MemoryManager`, and experimental
+   `World` allocator-root isolation.
 3. Keep the strict allocator comparative checker green as allocator policy
    changes land, and extend it to any remaining foonathan/memory baselines that
    map to HMM allocator roles. The current foonathan-plus-standard-plus-EnTT
