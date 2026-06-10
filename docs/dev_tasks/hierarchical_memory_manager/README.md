@@ -311,7 +311,9 @@
       simultaneous obstacle and self-contact scratch without shared-root growth;
       a complementary mixed gate pairs matrix-free static-obstacle friction
       with a direct-sparse irregular self-contact grid to cover the opposite
-      solver pairing in one root.
+      solver pairing in one root. A complementary contact-family production
+      gate now combines that matrix-free obstacle/direct-irregular
+      self-contact pairing with inter-body surface CCD in one baked root.
       The moving rigid-surface CCD path now has baked
       swept-box point-crossing gates for both free predicted motion and
       kinematic trace-backed motion, including a multi-kinematic traced-obstacle
@@ -432,7 +434,10 @@
       both scratch families under one World memory root. A further mixed
       default-solver contact-family production scene now combines direct static
       obstacle friction, matrix-free self-contact friction, and inter-body
-      surface CCD under one baked World root.
+      surface CCD under one baked World root; the complementary contact-family
+      scene now flips the static-obstacle path to matrix-free and the
+      self-contact path to direct irregular topology while keeping production
+      inter-body surface CCD in the same baked root.
       The base and global-heap guards now also include default moving
       rigid-surface CCD swept-box crossings for free, single-kinematic, and
       multi-kinematic rigid obstacles, closing the previously static-only rigid
@@ -708,7 +713,9 @@ debugging, profiling, optimization experiments, and ImGui visualization.
    plus direct irregular self-contact scene covers the opposite solver pairing.
    A mixed default contact-family production scene now combines direct static
    obstacle friction, matrix-free self-contact friction, and inter-body surface
-   CCD under the same baked World root.
+   CCD under the same baked World root, with a complementary contact-family
+   scene covering matrix-free static-obstacle friction, direct irregular
+   self-contact, and production inter-body surface CCD in one root.
    The AVBD self-contact row guard now also covers 5x9 and 9x13 rectangular
    grid row workloads with replay-backed activity assertions.
    Continue broadening boxed-LCP unified problem assembly only for newly

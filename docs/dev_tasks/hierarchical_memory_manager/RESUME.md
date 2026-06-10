@@ -49,7 +49,9 @@ passes the monolithic global-heap gate. The next slice adds a mixed default
 contact-family production scene that combines direct static-obstacle friction,
 matrix-free self-contact friction, and inter-body surface CCD under one baked
 World root, with non-vacuous activity coverage plus World-base and global-heap
-no-growth gates.
+no-growth gates. The latest continuation adds the complementary contact-family
+production scene: matrix-free static-obstacle friction, direct-sparse irregular
+self-contact, and production inter-body surface CCD under the same baked root.
 The latest slice also closes the batched SoA rigid-body integration stage's
 same-shape allocation surface by moving force, state, model, initial-state, and
 parent-before-child frame-order containers into stage scratch and by executing

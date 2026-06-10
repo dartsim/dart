@@ -2349,6 +2349,23 @@ void configureMixedDefaultContactFamiliesProductionScene(
       200.0);
 }
 
+void configureMixedComplementaryDefaultContactFamiliesProductionScene(
+    dart::simulation::World& world)
+{
+  configureDeformableStaticObstacleFrictionMatrixFreeProductionScene(world);
+  configureDeformableSelfContactFrictionIrregularProductionGridSceneWithOffset(
+      world,
+      "mixed_complementary_contact_direct_irregular_grid",
+      Eigen::Vector3d(0.0, 8.0, 0.0));
+  configureDeformableInterBodySurfaceCcdProductionGridSceneWithOffset(
+      world,
+      "mixed_complementary_contact_fixed_surface",
+      "mixed_complementary_contact_moving_surface",
+      Eigen::Vector3d(0.0, -8.0, 0.0),
+      0.01,
+      200.0);
+}
+
 void enableAvbdSelfContactFrictionRows(dart::simulation::World& world)
 {
   namespace sx = dart::simulation;
@@ -3652,6 +3669,9 @@ TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
       "mixed default contact-family production deformables",
       configureMixedDefaultContactFamiliesProductionScene);
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "mixed complementary default contact-family production deformables",
+      configureMixedComplementaryDefaultContactFamiliesProductionScene);
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "deformable moving rigid surface CCD crossing",
       configureDeformableMovingRigidSurfaceCcdCrossingScene);
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
@@ -4355,6 +4375,33 @@ TEST(World, MixedDefaultContactFamiliesProductionSceneIsActive)
   EXPECT_LT(movingSurface->getPosition(0).x(), 0.0);
 }
 
+TEST(World, MixedComplementaryDefaultContactFamiliesProductionSceneIsActive)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  configureMixedComplementaryDefaultContactFamiliesProductionScene(world);
+  auto movingSurface
+      = world.getDeformableBody("mixed_complementary_contact_moving_surface");
+  ASSERT_TRUE(movingSurface.has_value());
+  world.enterSimulationMode();
+
+  world.step();
+
+  const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
+  EXPECT_EQ(diagnostics.bodyCount, 4u);
+  EXPECT_EQ(
+      diagnostics.nodeCount, 3u * 5u * 5u + 2u * 13u * 17u + 2u * 9u * 13u);
+  EXPECT_GT(diagnostics.projectedNewtonSteps, 0u);
+  EXPECT_GT(diagnostics.projectedNewtonMatrixFreeSolves, 0u);
+  EXPECT_GT(diagnostics.projectedNewtonHessianNonZeros, 0u);
+  EXPECT_GT(diagnostics.selfContactBarrierActiveContacts, 0u);
+  EXPECT_GT(diagnostics.convergedActiveContactCount, 0u);
+  EXPECT_GT(diagnostics.frictionDissipation, 0.0);
+  EXPECT_GT(movingSurface->getPosition(0).x(), -1.0);
+  EXPECT_LT(movingSurface->getPosition(0).x(), 0.0);
+}
+
 TEST(World, DeformableMovingRigidSurfaceCcdCrossingIsActive)
 {
   namespace sx = dart::simulation;
@@ -4933,6 +4980,9 @@ TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "mixed default contact-family production deformables",
       configureMixedDefaultContactFamiliesProductionScene);
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "mixed complementary default contact-family production deformables",
+      configureMixedComplementaryDefaultContactFamiliesProductionScene);
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "deformable inter-body surface CCD crossing",
       configureDeformableInterBodySurfaceCcdCrossingScene);
