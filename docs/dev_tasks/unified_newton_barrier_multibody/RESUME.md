@@ -1,11 +1,11 @@
 # Resume: Unified Newton-Barrier Multibody
 
-## Current Reality (2026-06-08)
+## Current Reality (2026-06-09)
 
-PR granularity: batch all work within one implementation-roadmap phase into a
-single branch and PR. Keep commits atomic within the branch. A phase may split
-into at most two PRs only when it crosses a public-API boundary or touches
-unrelated CI/build infrastructure.
+PR granularity: default to one branch and PR per implementation-roadmap phase,
+but consolidate adjacent small internal phases into one PR when that keeps
+review clearer. Keep commits atomic within the branch. Split only for
+public-API boundaries, unrelated CI/build infrastructure, or reviewability.
 
 Use this folder's `README.md`, PLAN-083, `docs/plans/dashboard.md`, and the
 current code as the live status. The branch-local "Current Branch" section below
@@ -152,14 +152,36 @@ Local validation on the Phase 7 branch passed the packet checker, focused
 packet tests, `pixi run lint`, `pixi run build`, and
 `pixi run -e cuda test-cuda` on the visible RTX 4080 Laptop GPU.
 
-The implementation-roadmap Phase 8 audit is now branch-local on
-`simx/plan083-phase8-completion-audit`:
+Implementation-roadmap Phases 3-8 landed together in PR #2960. The Phase 8
+audit at
 `docs/plans/083-unified-newton-barrier-multibody/completion-audit.md` records
 that PLAN-083 is not complete because planned manifest, CPU scene corpus, and
 GPU parity packet rows remain. The audit intentionally blocks retiring
 `docs/dev_tasks/unified_newton_barrier_multibody/` until a maintainer decides
 whether the remaining work stays active there or moves fully into durable plan
 sidecars.
+
+The follow-up PSD projection packet slice adds
+`bm_plan083_gpu_psd_projection` plus
+`scripts/write_plan083_gpu_psd_packet.py`. On 2026-06-09,
+`pixi run -e cuda bm-plan083-gpu-psd-packet` measured the 4096-block 12x12 PSD
+row with max error `2.4868995751603507e-14` and `4.451557656446166x` speedup
+over the CPU reference. This moves only the local PSD projection row to
+`measured`; contact candidates, CCD/line search, barrier/friction kernels,
+assembly/solve, and scene-level GPU speedups remain planned.
+
+The follow-up barrier-force diagnostic slice adds
+`NewtonBarrierPrimitives.BarrierForceCurveCapturesKappaSensitivity`, which
+checks Fig. 17-style activation cutoff, kappa scaling, and near-contact slope
+growth against the private Newton-barrier scalar kernel. This moves only
+`unb-fig-17` to `in-progress`; runtime force plots and accepted default-kappa
+policy remain future evidence.
+
+The follow-up articulation manifest alignment moves `unb-fig-05`,
+`unb-fig-06`, `unb-fig-07`, `unb-fig-08`, `unb-fig-12`, and `unb-fig-13` to
+`in-progress` based on the landed Phase 3 private articulation diagnostics.
+Those rows still do not claim runtime articulated scenes, cloth snapshots,
+direct internal-contact speedups, or scaling packets.
 
 ## Last Session Summary
 
@@ -241,15 +263,16 @@ build/CTest entries.
 
 ## Current Branch
 
-`simx/plan083-phase8-completion-audit` - contains the implementation-roadmap
-Phase 8 completion audit. It is open as PR #2960 targeting
-`simx/plan083-phase7-gpu-parity`.
+`main` at merged PR #2960 contains implementation-roadmap Phases 3-8 and the
+Phase 8 completion audit.
 
 ## Immediate Next Step
 
-Monitor the phase-scoped PR stack through #2960 and get maintainer direction
-before deleting the temporary dev-task folder because PLAN-083 acceptance
-criteria are still unmet.
+Get maintainer direction before deleting the temporary dev-task folder because
+PLAN-083 acceptance criteria are still unmet. If the task stays active here,
+continue from the planned CPU/GPU/scene rows recorded in the audit sidecars;
+the next GPU rows need real contact-candidate, CCD/line-search, or
+barrier/friction kernels before they can move beyond packet-shape placeholders.
 
 ## Context That Would Be Lost
 
@@ -335,8 +358,7 @@ pixi run python scripts/check_plan083_cpu_scene_corpus.py
 pixi run python scripts/check_plan083_gpu_parity_packet.py
 ```
 
-Then merge the latest Phase 6 base branch, verify the Phase 7 branch with lint
-and the focused GPU packet tests, and open one PR for the whole
-implementation-roadmap Phase 7. After that PR is open, continue immediately with
-roadmap Phase 8 from the Phase 7 branch head; do not describe planned GPU rows
-as speed claims or public backend promotion.
+Then sync `main`, verify the audit sidecars, and start the next implementation
+slice from the planned CPU/GPU/scene rows only after the maintainer confirms
+this dev-task folder remains the active tracker. Do not describe planned GPU
+rows as speed claims or public backend promotion.

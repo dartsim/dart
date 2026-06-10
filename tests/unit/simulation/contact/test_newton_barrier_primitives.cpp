@@ -561,6 +561,60 @@ TEST(NewtonBarrierPrimitives, FallingBoxEnergyDiagnosticSweepsAreMonotone)
 }
 
 //==============================================================================
+TEST(NewtonBarrierPrimitives, BarrierForceCurveCapturesKappaSensitivity)
+{
+  constexpr double activationDistance = 0.01;
+  constexpr double squaredActivationDistance
+      = activationDistance * activationDistance;
+
+  const auto normalForceMagnitude = [](const double clearance,
+                                       const double stiffness) {
+    const auto barrier = nb::c2ClampedLogBarrier(
+        clearance * clearance, squaredActivationDistance);
+    if (!barrier.active) {
+      return 0.0;
+    }
+    return std::abs(stiffness * barrier.firstDerivative * 2.0 * clearance);
+  };
+
+  EXPECT_FALSE(
+      nb::c2ClampedLogBarrier(
+          squaredActivationDistance, squaredActivationDistance)
+          .active);
+  EXPECT_NEAR(
+      normalForceMagnitude(activationDistance, /*stiffness=*/1.0), 0.0, 1e-14);
+
+  const double farForce
+      = normalForceMagnitude(/*clearance=*/0.008, /*stiffness=*/1.0);
+  const double middleForce
+      = normalForceMagnitude(/*clearance=*/0.004, /*stiffness=*/1.0);
+  const double nearForce
+      = normalForceMagnitude(/*clearance=*/0.002, /*stiffness=*/1.0);
+  EXPECT_GT(farForce, 0.0);
+  EXPECT_LT(farForce, middleForce);
+  EXPECT_LT(middleForce, nearForce);
+
+  const double lowKappaForce
+      = normalForceMagnitude(/*clearance=*/0.004, /*stiffness=*/0.1);
+  const double highKappaForce
+      = normalForceMagnitude(/*clearance=*/0.004, /*stiffness=*/10.0);
+  EXPECT_NEAR(lowKappaForce, 0.1 * middleForce, 1e-12);
+  EXPECT_NEAR(highKappaForce, 10.0 * middleForce, 1e-12);
+
+  const double nearSlope
+      = (normalForceMagnitude(/*clearance=*/0.0015, /*stiffness=*/1.0)
+         - normalForceMagnitude(/*clearance=*/0.0025, /*stiffness=*/1.0))
+        / 0.001;
+  const double farSlope
+      = (normalForceMagnitude(/*clearance=*/0.006, /*stiffness=*/1.0)
+         - normalForceMagnitude(/*clearance=*/0.007, /*stiffness=*/1.0))
+        / 0.001;
+  EXPECT_TRUE(std::isfinite(nearSlope));
+  EXPECT_TRUE(std::isfinite(farSlope));
+  EXPECT_GT(nearSlope, 2.0 * farSlope);
+}
+
+//==============================================================================
 TEST(NewtonBarrierPrimitives, RayleighDampingProjectsHessianAndDissipates)
 {
   Eigen::Vector2d displacement;
