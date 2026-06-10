@@ -902,8 +902,17 @@ void expectPlanePrimitiveRowsPersistAcrossSmallPose(
 }
 
 //==============================================================================
-using PrimitiveRowKey
-    = std::pair<dvbd::AvbdContactEndpointId, dvbd::AvbdContactEndpointId>;
+struct PrimitiveRowKey
+{
+  dvbd::AvbdContactEndpointId endpointA;
+  dvbd::AvbdContactEndpointId endpointB;
+};
+
+bool primitiveRowKeysEqual(
+    const PrimitiveRowKey& lhs, const PrimitiveRowKey& rhs)
+{
+  return lhs.endpointA == rhs.endpointA && lhs.endpointB == rhs.endpointB;
+}
 
 struct PrimitiveObservedRow
 {
@@ -918,8 +927,9 @@ struct PrimitiveObservedRow
 PrimitiveRowKey primitiveRowKey(
     const dvbd::AvbdRigidContactManifoldPoint& contact)
 {
-  return dvbd::canonicalizeAvbdContactEndpoints(
+  const auto endpoints = dvbd::canonicalizeAvbdContactEndpoints(
       contact.endpointA, contact.endpointB);
+  return PrimitiveRowKey{endpoints.first, endpoints.second};
 }
 
 //==============================================================================
@@ -965,7 +975,8 @@ std::optional<PrimitiveObservedRow> observedPrimitiveRowAtPoint(
     double depth)
 {
   for (const PrimitiveObservedRow& observed : rows) {
-    if (observed.key == key && (observed.point - point).norm() <= 1e-10
+    if (primitiveRowKeysEqual(observed.key, key)
+        && (observed.point - point).norm() <= 1e-10
         && std::abs(observed.depth - depth) <= 1e-10) {
       return observed;
     }
@@ -1006,7 +1017,9 @@ void expectPrimitiveEndpointRowsMatch(
         groupedRows.begin(),
         groupedRows.end(),
         [&](const std::pair<PrimitiveRowKey, std::vector<std::uint32_t>>&
-                group) { return group.first == forwardRow.key; });
+                group) {
+          return primitiveRowKeysEqual(group.first, forwardRow.key);
+        });
     if (groupIt == groupedRows.end()) {
       groupedRows.push_back({forwardRow.key, {forwardRow.row}});
     } else {

@@ -9,6 +9,13 @@ Corpus matrix:
 
 ## Current Status
 
+- Latest local follow-up: `test_boxed_lcp_contact` now avoids a repeated MSVC
+  19.44 internal compiler error in the primitive endpoint-row helper by using
+  an explicit `PrimitiveRowKey` struct instead of a nested
+  `std::pair<AvbdContactEndpointId, AvbdContactEndpointId>` alias in that
+  section. The focused Linux target rebuild and full
+  `test_boxed_lcp_contact` binary passed locally. This is CI portability only;
+  it does not close any AVBD solver, CPU-win, GPU, or paper-number gate.
 - Latest local follow-up: `RigidBodyContactStage::prepare()` now uses the same
   no-dynamic-collision-geometry skip predicate as execute before sizing contact
   scratch, so no-collision source rows such as the 2D Motor row avoid a
