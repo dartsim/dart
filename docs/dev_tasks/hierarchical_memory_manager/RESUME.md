@@ -124,9 +124,12 @@ cross-articulated paths after contact prewarm. Mixed/different-DOF, stacked,
 and coupled multi-row cross-articulated boxed-LCP fallback scenes now have World
 base-allocator no-growth gates and first baked-step global heap no-allocation
 gates, with unified constraint scratch primed during `enterSimulationMode()`.
-Five-multibody and eight-multibody stacked boxed-LCP fallback scenes plus a
-disconnected multi-island mixed rigid/articulated contact scene now extend those
-gates beyond the original small contact sets.
+Five-multibody, eight-multibody, 12-multibody, 16-multibody, 24-multibody, and
+32-multibody stacked boxed-LCP fallback scenes plus disconnected multi-island
+mixed rigid/articulated contact scenes now extend those gates beyond the
+original small contact sets. The latest mixed stress boxed-LCP guard combines
+the 32-multibody stacked fallback and stress multi-island shape under one baked
+World root with 60+ initial contacts.
 Public return-by-value boxed-LCP unified convenience wrappers are API
 allocation-boundary surfaces; the production boxed-LCP stage uses in-place
 unified assembly and solve scratch. Still-larger production contact sets and

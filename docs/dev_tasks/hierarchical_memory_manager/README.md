@@ -367,9 +367,12 @@
       multi-island mixed scene now covers independent articulated and rigid
       contact islands with 12+ initial contacts; the stress multi-island gate
       extends that shape to 30+ initial contacts across independent
-      articulated and rigid islands. Broader solver coverage, including
-      default-solver deformable storage and any newly exposed production
-      contact shapes, remains open before making a full zero-allocation claim.
+      articulated and rigid islands. A mixed stress boxed-LCP scene now combines
+      the 32-multibody stacked fallback and stress multi-island shape under one
+      baked World root with 60+ initial contacts. Broader solver coverage,
+      including default-solver deformable storage and any newly exposed
+      production contact shapes, remains open before making a full
+      zero-allocation claim.
       The
       global heap guard now also covers a baked deformable surface-snapshot
       scene with a static rigid surface-CCD obstacle and first-baked-step active
@@ -659,12 +662,13 @@ debugging, profiling, optimization experiments, and ImGui visualization.
 5. Extend bake-time registry/component storage reservation and no-growth
    allocation tests to remaining solver scratch step paths. The rigid-body,
    non-cross articulated, same-DOF sequential cross-articulated, and boxed-LCP
-   mixed/different-DOF, stacked, coupled multi-row, larger stacked, and
-   extended, dense production, and extra-dense production stacked
-   cross-articulated guards plus a disconnected multi-island mixed
-   rigid/articulated contact guard now cover World base-allocator growth and
-   first baked-step global heap allocation by priming unified constraint scratch
-   at `enterSimulationMode()`. The current
+   mixed/different-DOF, stacked, coupled multi-row, larger stacked, extended,
+   dense production, extra-dense production, and stress production stacked
+   cross-articulated guards plus disconnected multi-island mixed
+   rigid/articulated contact guards, including a mixed stress stack plus
+   multi-island scene with 60+ initial contacts, now cover World base-allocator
+   growth and first baked-step global heap allocation by priming unified
+   constraint scratch at `enterSimulationMode()`. The current
    deformable friction guard
    scales the same topology-reserved candidate/friction scratch, including
    swept-AABB line-search CCD capacity, from patch, 5x5, 7x7, and 9x9 grids to

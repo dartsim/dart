@@ -1226,6 +1226,41 @@ void configureCrossMultibodyStressMultiIslandFallbackScene(
   }
 }
 
+void configureCrossMultibodyMixedStressFallbackScene(
+    dart::simulation::World& world)
+{
+  namespace sx = dart::simulation;
+
+  configureCrossMultibodyStressMultiIslandFallbackScene(world);
+
+  const auto makeOffsetSphere = [](double xOffset) {
+    auto shape = sx::CollisionShape::makeSphere(0.2);
+    shape.localTransform.translation() = Eigen::Vector3d(xOffset, 0.0, 0.0);
+    return shape;
+  };
+
+  constexpr std::size_t bodyCount = 32;
+  constexpr double maxSpeed = 1.6;
+  constexpr double center = 0.5 * static_cast<double>(bodyCount - 1);
+  for (std::size_t i = 0; i < bodyCount; ++i) {
+    auto robot
+        = world.addMultibody("mixed_stress_stack_robot_" + std::to_string(i));
+    auto base = robot.addLink("base");
+    sx::JointSpec spec;
+    spec.name = "slider";
+    spec.type = sx::JointType::Prismatic;
+    spec.axis = Eigen::Vector3d::UnitZ();
+    auto link = robot.addLink("link", base, spec);
+    link.setMass(1.0);
+    link.setCollisionShape(makeOffsetSphere(20.0));
+    auto joint = link.getParentJoint();
+    joint.setPosition(
+        Eigen::VectorXd::Constant(1, 0.35 * static_cast<double>(i)));
+    const double normalized = (center - static_cast<double>(i)) / center;
+    joint.setVelocity(Eigen::VectorXd::Constant(1, maxSpeed * normalized));
+  }
+}
+
 void configureDeformableSelfContactFrictionPatchScene(
     dart::simulation::World& world)
 {
@@ -4981,6 +5016,11 @@ TEST(World, BakedBoxedLcpFallbackContactsDoNotGrowWorldBaseAllocator)
       configureCrossMultibodyStressMultiIslandFallbackScene,
       true,
       30);
+  expectNoWorldBaseAllocatorActivityDuringBakedBoxedLcpSteps(
+      "cross multibody mixed stress stack and multi-island fallback",
+      configureCrossMultibodyMixedStressFallbackScene,
+      true,
+      61);
 }
 
 TEST(World, BakedBoxedLcpFallbackContactStepsDoNotAllocateGlobalHeap)
@@ -5039,6 +5079,11 @@ TEST(World, BakedBoxedLcpFallbackContactStepsDoNotAllocateGlobalHeap)
       configureCrossMultibodyStressMultiIslandFallbackScene,
       true,
       30);
+  expectNoGlobalHeapAllocationsDuringBakedBoxedLcpSteps(
+      "cross multibody mixed stress stack and multi-island fallback",
+      configureCrossMultibodyMixedStressFallbackScene,
+      true,
+      61);
 }
 
 TEST(World, SequentialImpulseBakeDoesNotPrewarmRigidIpcCollisionSurfaces)
