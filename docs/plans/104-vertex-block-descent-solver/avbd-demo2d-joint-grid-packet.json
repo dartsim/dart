@@ -1,0 +1,392 @@
+{
+  "comparison": {
+    "dart_cpu_time_per_step_ns": 15081245.186440682,
+    "dart_faster_than_reference": false,
+    "dart_to_reference_cpu_time_ratio": 2.0588178200999243,
+    "performance_claim": "DART does not yet beat the native avbd-demo2d Joint Grid row",
+    "reference_cpu_time_per_step_ns": 7325196.546875
+  },
+  "dart_benchmark": {
+    "benchmark": "BM_AvbdDemo2dJointGridStep",
+    "context": {
+      "executable": "build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint",
+      "json_schema_version": 1,
+      "library_build_type": "release",
+      "library_version": "v1.9.5",
+      "mhz_per_cpu": 994,
+      "num_cpus": 20
+    },
+    "cpu_time_per_step_ns": 15081245.186440682,
+    "invariants": {
+      "collision_shapes": 625,
+      "fixed_joints": 1200,
+      "ignored_collision_pairs": 1152,
+      "rigid_bodies": 625,
+      "rigid_body_joints": 1200,
+      "source_scene_index": 15,
+      "time_step": 0.016666666666666666
+    },
+    "json_sha256": "d54123450c5513d67d07fa864e214d8fbca41327b8320d69eeb5ffd8302cb91d",
+    "rows": [
+      {
+        "collision_shapes": 625.0,
+        "cpu_time": 15374584.406779652,
+        "family_index": 1,
+        "fixed_joints": 1200.0,
+        "ignored_collision_pairs": 1152.0,
+        "iterations": 59,
+        "name": "BM_AvbdDemo2dJointGridStep",
+        "per_family_instance_index": 0,
+        "real_time": 15432285.694938185,
+        "repetition_index": 0,
+        "repetitions": 5,
+        "rigid_bodies": 625.0,
+        "rigid_body_joints": 1200.0,
+        "run_name": "BM_AvbdDemo2dJointGridStep",
+        "run_type": "iteration",
+        "source_scene_index": 15.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "collision_shapes": 625.0,
+        "cpu_time": 15404316.983050851,
+        "family_index": 1,
+        "fixed_joints": 1200.0,
+        "ignored_collision_pairs": 1152.0,
+        "iterations": 59,
+        "name": "BM_AvbdDemo2dJointGridStep",
+        "per_family_instance_index": 0,
+        "real_time": 15456644.186781624,
+        "repetition_index": 1,
+        "repetitions": 5,
+        "rigid_bodies": 625.0,
+        "rigid_body_joints": 1200.0,
+        "run_name": "BM_AvbdDemo2dJointGridStep",
+        "run_type": "iteration",
+        "source_scene_index": 15.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "collision_shapes": 625.0,
+        "cpu_time": 15081245.186440686,
+        "family_index": 1,
+        "fixed_joints": 1200.0,
+        "ignored_collision_pairs": 1152.0,
+        "iterations": 59,
+        "name": "BM_AvbdDemo2dJointGridStep",
+        "per_family_instance_index": 0,
+        "real_time": 15129386.57661079,
+        "repetition_index": 2,
+        "repetitions": 5,
+        "rigid_bodies": 625.0,
+        "rigid_body_joints": 1200.0,
+        "run_name": "BM_AvbdDemo2dJointGridStep",
+        "run_type": "iteration",
+        "source_scene_index": 15.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "collision_shapes": 625.0,
+        "cpu_time": 14245966.254237307,
+        "family_index": 1,
+        "fixed_joints": 1200.0,
+        "ignored_collision_pairs": 1152.0,
+        "iterations": 59,
+        "name": "BM_AvbdDemo2dJointGridStep",
+        "per_family_instance_index": 0,
+        "real_time": 14289188.16964142,
+        "repetition_index": 3,
+        "repetitions": 5,
+        "rigid_bodies": 625.0,
+        "rigid_body_joints": 1200.0,
+        "run_name": "BM_AvbdDemo2dJointGridStep",
+        "run_type": "iteration",
+        "source_scene_index": 15.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "collision_shapes": 625.0,
+        "cpu_time": 14221867.237288138,
+        "family_index": 1,
+        "fixed_joints": 1200.0,
+        "ignored_collision_pairs": 1152.0,
+        "iterations": 59,
+        "name": "BM_AvbdDemo2dJointGridStep",
+        "per_family_instance_index": 0,
+        "real_time": 14263301.423821852,
+        "repetition_index": 4,
+        "repetitions": 5,
+        "rigid_bodies": 625.0,
+        "rigid_body_joints": 1200.0,
+        "run_name": "BM_AvbdDemo2dJointGridStep",
+        "run_type": "iteration",
+        "source_scene_index": 15.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "mean",
+        "aggregate_unit": "time",
+        "collision_shapes": 625.0,
+        "cpu_time": 14865596.013559327,
+        "family_index": 1,
+        "fixed_joints": 1200.0,
+        "ignored_collision_pairs": 1152.0,
+        "iterations": 5,
+        "name": "BM_AvbdDemo2dJointGridStep_mean",
+        "per_family_instance_index": 0,
+        "real_time": 14914161.210358774,
+        "repetitions": 5,
+        "rigid_bodies": 625.0,
+        "rigid_body_joints": 1200.0,
+        "run_name": "BM_AvbdDemo2dJointGridStep",
+        "run_type": "aggregate",
+        "source_scene_index": 15.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "median",
+        "aggregate_unit": "time",
+        "collision_shapes": 625.0,
+        "cpu_time": 15081245.186440682,
+        "family_index": 1,
+        "fixed_joints": 1200.0,
+        "ignored_collision_pairs": 1152.0,
+        "iterations": 5,
+        "name": "BM_AvbdDemo2dJointGridStep_median",
+        "per_family_instance_index": 0,
+        "real_time": 15129386.576610789,
+        "repetitions": 5,
+        "rigid_bodies": 625.0,
+        "rigid_body_joints": 1200.0,
+        "run_name": "BM_AvbdDemo2dJointGridStep",
+        "run_type": "aggregate",
+        "source_scene_index": 15.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "stddev",
+        "aggregate_unit": "time",
+        "collision_shapes": 0.0,
+        "cpu_time": 590364.677382617,
+        "family_index": 1,
+        "fixed_joints": 0.0,
+        "ignored_collision_pairs": 0.0,
+        "iterations": 5,
+        "name": "BM_AvbdDemo2dJointGridStep_stddev",
+        "per_family_instance_index": 0,
+        "real_time": 596504.9209482266,
+        "repetitions": 5,
+        "rigid_bodies": 0.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo2dJointGridStep",
+        "run_type": "aggregate",
+        "source_scene_index": 0.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "cv",
+        "aggregate_unit": "percentage",
+        "collision_shapes": 0.0,
+        "cpu_time": 0.039713488570799906,
+        "family_index": 1,
+        "fixed_joints": 0.0,
+        "ignored_collision_pairs": 0.0,
+        "iterations": 5,
+        "name": "BM_AvbdDemo2dJointGridStep_cv",
+        "per_family_instance_index": 0,
+        "real_time": 0.03999587456074421,
+        "repetitions": 5,
+        "rigid_bodies": 0.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo2dJointGridStep",
+        "run_type": "aggregate",
+        "source_scene_index": 0.0,
+        "threads": 1,
+        "time_unit": "ns"
+      }
+    ]
+  },
+  "packet": "avbd_demo2d_joint_grid_source_demo",
+  "reference_timing": {
+    "compile_command": [
+      "g++",
+      "-std=c++17",
+      "-O3",
+      "-DNDEBUG",
+      "-I<source-dir>/source",
+      "<temp-dir>/reference_runner.cpp",
+      "<source-dir>/source/solver.cpp",
+      "<source-dir>/source/rigid.cpp",
+      "<source-dir>/source/force.cpp",
+      "<source-dir>/source/joint.cpp",
+      "<source-dir>/source/spring.cpp",
+      "<source-dir>/source/motor.cpp",
+      "<source-dir>/source/manifold.cpp",
+      "<source-dir>/source/collide.cpp",
+      "-lGL",
+      "-o",
+      "<temp-dir>/reference_runner"
+    ],
+    "compile_flags": "-std=c++17 -O3 -DNDEBUG",
+    "compiler": "g++",
+    "cpu_time_per_step_ns": 7325196.546875,
+    "elapsed_ns": 3750500632,
+    "invariants": {
+      "collision_shapes": 625,
+      "diagonal_ignore_collision_pairs": 1152,
+      "dynamic_bodies": 623,
+      "final_time": 8.80000019,
+      "fixed_joints": 1200,
+      "joint_grid_cells": 625,
+      "joint_grid_height": 25,
+      "joint_grid_width": 25,
+      "joints": 1200,
+      "max_friction": 0.5,
+      "min_friction": 0.5,
+      "rigid_bodies": 625,
+      "static_bodies": 2
+    },
+    "json_sha256": "34f6d82069a87ca1626d55cf4e6dd4bcd91f6390c49c12371ebc440eafd3b9df",
+    "repository": "https://github.com/savant117/avbd-demo2d",
+    "scene_builder": "sceneJointGrid",
+    "scene_index": 15,
+    "scene_name": "Joint Grid",
+    "source_demo": "avbd-demo2d",
+    "source_revision": "74699a11f858",
+    "steps": 512,
+    "warmup_steps": 16
+  },
+  "remaining_gates": [
+    "DART CPU performance for this Joint Grid row must beat the native reference before a CPU win is claimed",
+    "remaining avbd-demo2d card tower, spring, spring ratio, soft-body, and net source rows",
+    "GPU AVBD row parity and same-hardware benchmark packets",
+    "paper/site/video scene visual and performance packets",
+    "broad joint-grid and high-ratio articulated stability coverage beyond this source row"
+  ],
+  "reproduction": {
+    "capture_command": "LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe python scripts/capture_py_demo.py --scene avbd_demo2d_joint_grid --frames 8 --width 640 --height 360 --output-dir <capture-dir>",
+    "dart_benchmark_command": "build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter=BM_AvbdDemo2dJointGridStep$ --benchmark_min_time=0.5s --benchmark_repetitions=3 --benchmark_out=<benchmark-json> --benchmark_out_format=json",
+    "reference_timing_command": "python scripts/run_avbd_demo2d_reference_timing.py --source-dir <avbd-demo2d-source-dir> --scene joint_grid --warmup-steps 16 --steps 512 --output <reference-timing-json>"
+  },
+  "scene": "avbd_demo2d_joint_grid",
+  "schema_version": 1,
+  "source_demo_reference_row": {
+    "demo": "avbd-demo2d",
+    "dimension": 2,
+    "expected_counts": {
+      "collision_shapes": 625,
+      "dynamic_bodies": 623,
+      "fixed_joints": 1200,
+      "joints": 1200,
+      "rigid_bodies": 625,
+      "static_bodies": 2
+    },
+    "repository": "https://github.com/savant117/avbd-demo2d",
+    "revision": "74699a11f858",
+    "scene_builder": "sceneJointGrid",
+    "scene_count": 19,
+    "scene_index": 15,
+    "scene_name": "Joint Grid",
+    "solver_defaults": {
+      "gravity": -10.0,
+      "gravity_axis": "y",
+      "iterations": 10,
+      "time_step": 0.016666666666666666
+    },
+    "source_collision_filters": {
+      "diagonal_ignore_collision_pairs": 1152
+    },
+    "source_constraints": {
+      "all_axis_fixed_joints": {
+        "angular_stiffness": "infinity",
+        "count": 1200,
+        "fracture": "infinity",
+        "horizontal_child_anchor": [
+          -0.5,
+          0.0
+        ],
+        "horizontal_count": 600,
+        "horizontal_parent_anchor": [
+          0.5,
+          0.0
+        ],
+        "linear_stiffness": "infinity",
+        "vertical_child_anchor": [
+          0.0,
+          -0.5
+        ],
+        "vertical_count": 600,
+        "vertical_parent_anchor": [
+          0.0,
+          0.5
+        ]
+      }
+    },
+    "source_shapes": {
+      "grid_cell": {
+        "count": 625,
+        "dynamic_density": 1.0,
+        "first_position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "friction": 0.5,
+        "height": 25,
+        "size": [
+          1.0,
+          1.0
+        ],
+        "static_corner_density": 0.0,
+        "static_corner_positions": [
+          [
+            0.0,
+            24.0,
+            0.0
+          ],
+          [
+            24.0,
+            24.0,
+            0.0
+          ]
+        ],
+        "width": 25
+      }
+    }
+  },
+  "visual_capture": {
+    "frames": {
+      "count": 8,
+      "directory": "png_frames",
+      "first_frame": {
+        "file": "png_frames/frame_000001.png",
+        "sha256": "51162b9e7280ee142c3a7fff8a8a43fba198be709d5fad4e67502f457cb03886"
+      },
+      "last_frame": {
+        "file": "png_frames/frame_000008.png",
+        "sha256": "f53e7136582250299553ccb7094663d38e2d10f444fdd3bf0e639cbc389504ed"
+      }
+    },
+    "manifest_sha256": "13969308e789c8e71048fa84f3f901cf9e8e83796c4d1d6262e85e5169dc036e",
+    "scene": "avbd_demo2d_joint_grid",
+    "screenshot": {
+      "file": "avbd_demo2d_joint_grid.png",
+      "height": 360,
+      "sha256": "f53e7136582250299553ccb7094663d38e2d10f444fdd3bf0e639cbc389504ed",
+      "width": 640
+    },
+    "show_ui": false,
+    "ui_ready": {
+      "dropped_warmup_frames": 0,
+      "required": false
+    }
+  }
+}

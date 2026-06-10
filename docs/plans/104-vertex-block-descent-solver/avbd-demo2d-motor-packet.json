@@ -1,0 +1,316 @@
+{
+  "comparison": {
+    "dart_cpu_time_per_step_ns": 8867.190722214778,
+    "dart_faster_than_reference": false,
+    "dart_to_reference_cpu_time_ratio": 6.178772532172732,
+    "performance_claim": "DART does not yet beat the native avbd-demo2d Motor row",
+    "reference_cpu_time_per_step_ns": 1435.105545
+  },
+  "dart_benchmark": {
+    "benchmark": "BM_AvbdDemo2dMotorStep",
+    "context": {
+      "executable": "build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint",
+      "json_schema_version": 1,
+      "library_build_type": "release",
+      "library_version": "v1.9.5",
+      "mhz_per_cpu": 840,
+      "num_cpus": 20
+    },
+    "cpu_time_per_step_ns": 8867.190722214778,
+    "invariants": {
+      "collision_shapes": 0,
+      "max_torque": 50.0,
+      "motors": 1,
+      "rigid_bodies": 2,
+      "rigid_body_joints": 1,
+      "source_scene_index": 17,
+      "target_speed_rad_per_s": 20.0,
+      "time_step": 0.016666666666666666
+    },
+    "json_sha256": "c5dfd0bfae1367418285d834462aa01ddd93326013f78b26ed96a4be5b45517d",
+    "rows": [
+      {
+        "collision_shapes": 0.0,
+        "cpu_time": 8484.125446281698,
+        "family_index": 0,
+        "iterations": 82067,
+        "motors": 1.0,
+        "name": "BM_AvbdDemo2dMotorStep",
+        "per_family_instance_index": 0,
+        "real_time": 8524.169410357477,
+        "repetition_index": 0,
+        "repetitions": 3,
+        "rigid_bodies": 2.0,
+        "rigid_body_joints": 1.0,
+        "run_name": "BM_AvbdDemo2dMotorStep",
+        "run_type": "iteration",
+        "source_scene_index": 17.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "collision_shapes": 0.0,
+        "cpu_time": 9049.806219308613,
+        "family_index": 0,
+        "iterations": 82067,
+        "motors": 1.0,
+        "name": "BM_AvbdDemo2dMotorStep",
+        "per_family_instance_index": 0,
+        "real_time": 9111.513763155921,
+        "repetition_index": 1,
+        "repetitions": 3,
+        "rigid_bodies": 2.0,
+        "rigid_body_joints": 1.0,
+        "run_name": "BM_AvbdDemo2dMotorStep",
+        "run_type": "iteration",
+        "source_scene_index": 17.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "collision_shapes": 0.0,
+        "cpu_time": 8867.190722214778,
+        "family_index": 0,
+        "iterations": 82067,
+        "motors": 1.0,
+        "name": "BM_AvbdDemo2dMotorStep",
+        "per_family_instance_index": 0,
+        "real_time": 8887.974411073523,
+        "repetition_index": 2,
+        "repetitions": 3,
+        "rigid_bodies": 2.0,
+        "rigid_body_joints": 1.0,
+        "run_name": "BM_AvbdDemo2dMotorStep",
+        "run_type": "iteration",
+        "source_scene_index": 17.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "mean",
+        "aggregate_unit": "time",
+        "collision_shapes": 0.0,
+        "cpu_time": 8800.374129268363,
+        "family_index": 0,
+        "iterations": 3,
+        "motors": 1.0,
+        "name": "BM_AvbdDemo2dMotorStep_mean",
+        "per_family_instance_index": 0,
+        "real_time": 8841.219194862308,
+        "repetitions": 3,
+        "rigid_bodies": 2.0,
+        "rigid_body_joints": 1.0,
+        "run_name": "BM_AvbdDemo2dMotorStep",
+        "run_type": "aggregate",
+        "source_scene_index": 17.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "median",
+        "aggregate_unit": "time",
+        "collision_shapes": 0.0,
+        "cpu_time": 8867.190722214778,
+        "family_index": 0,
+        "iterations": 3,
+        "motors": 1.0,
+        "name": "BM_AvbdDemo2dMotorStep_median",
+        "per_family_instance_index": 0,
+        "real_time": 8887.974411073523,
+        "repetitions": 3,
+        "rigid_bodies": 2.0,
+        "rigid_body_joints": 1.0,
+        "run_name": "BM_AvbdDemo2dMotorStep",
+        "run_type": "aggregate",
+        "source_scene_index": 17.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "stddev",
+        "aggregate_unit": "time",
+        "collision_shapes": 0.0,
+        "cpu_time": 288.6988518557426,
+        "family_index": 0,
+        "iterations": 3,
+        "motors": 0.0,
+        "name": "BM_AvbdDemo2dMotorStep_stddev",
+        "per_family_instance_index": 0,
+        "real_time": 296.4504762574939,
+        "repetitions": 3,
+        "rigid_bodies": 0.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo2dMotorStep",
+        "run_type": "aggregate",
+        "source_scene_index": 0.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "cv",
+        "aggregate_unit": "percentage",
+        "collision_shapes": 0.0,
+        "cpu_time": 0.032805293004030976,
+        "family_index": 0,
+        "iterations": 3,
+        "motors": 0.0,
+        "name": "BM_AvbdDemo2dMotorStep_cv",
+        "per_family_instance_index": 0,
+        "real_time": 0.03353049729043742,
+        "repetitions": 3,
+        "rigid_bodies": 0.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo2dMotorStep",
+        "run_type": "aggregate",
+        "source_scene_index": 0.0,
+        "threads": 1,
+        "time_unit": "ns"
+      }
+    ]
+  },
+  "packet": "avbd_demo2d_motor_source_demo",
+  "reference_timing": {
+    "compile_command": [
+      "g++",
+      "-std=c++17",
+      "-O3",
+      "-DNDEBUG",
+      "-I<source-dir>/source",
+      "<temp-dir>/reference_runner.cpp",
+      "<source-dir>/source/solver.cpp",
+      "<source-dir>/source/rigid.cpp",
+      "<source-dir>/source/force.cpp",
+      "<source-dir>/source/joint.cpp",
+      "<source-dir>/source/spring.cpp",
+      "<source-dir>/source/motor.cpp",
+      "<source-dir>/source/manifold.cpp",
+      "<source-dir>/source/collide.cpp",
+      "-lGL",
+      "-o",
+      "<temp-dir>/reference_runner"
+    ],
+    "compile_flags": "-std=c++17 -O3 -DNDEBUG",
+    "compiler": "g++",
+    "cpu_time_per_step_ns": 1435.105545,
+    "elapsed_ns": 287021109,
+    "invariants": {
+      "final_time": 3335.4668,
+      "joints": 1,
+      "motors": 1,
+      "rigid_bodies": 2
+    },
+    "json_sha256": "9c992cf5b6219977086f928badfb85324e6f6193259ea1e7349f0e8535f5b56e",
+    "repository": "https://github.com/savant117/avbd-demo2d",
+    "scene_builder": "sceneMotor",
+    "scene_index": 17,
+    "scene_name": "Motor",
+    "source_demo": "avbd-demo2d",
+    "source_revision": "74699a11f858",
+    "steps": 200000,
+    "warmup_steps": 128
+  },
+  "remaining_gates": [
+    "DART CPU performance for this Motor row must beat the native reference before a CPU win is claimed",
+    "remaining non-empty avbd-demo2d and avbd-demo3d source-scene ports",
+    "GPU AVBD row parity and same-hardware benchmark packets",
+    "paper/site/video scene visual and performance packets"
+  ],
+  "reproduction": {
+    "capture_command": "LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe python scripts/capture_py_demo.py --scene avbd_demo2d_motor --frames 24 --width 640 --height 360 --output-dir <capture-dir>",
+    "dart_benchmark_command": "build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter=BM_AvbdDemo2dMotorStep$ --benchmark_min_time=0.5s --benchmark_repetitions=3 --benchmark_out=<benchmark-json> --benchmark_out_format=json",
+    "reference_timing_command": "python scripts/run_avbd_demo2d_reference_timing.py --source-dir <avbd-demo2d-source-dir> --scene motor --output <reference-timing-json>"
+  },
+  "scene": "avbd_demo2d_motor",
+  "schema_version": 1,
+  "source_demo_reference_row": {
+    "demo": "avbd-demo2d",
+    "dimension": 2,
+    "expected_counts": {
+      "joints": 1,
+      "motors": 1,
+      "rigid_bodies": 2
+    },
+    "repository": "https://github.com/savant117/avbd-demo2d",
+    "revision": "74699a11f858",
+    "scene_builder": "sceneMotor",
+    "scene_count": 19,
+    "scene_index": 17,
+    "scene_name": "Motor",
+    "solver_defaults": {
+      "gravity": -10.0,
+      "gravity_axis": "y",
+      "iterations": 10,
+      "time_step": 0.016666666666666666
+    },
+    "source_constraints": {
+      "motor": {
+        "body_a": null,
+        "body_b": "bar",
+        "max_torque": 50.0,
+        "speed": 20.0
+      },
+      "world_joint": {
+        "anchor_a": [
+          0.0,
+          0.0
+        ],
+        "anchor_b": [
+          0.0,
+          0.0
+        ],
+        "body_a": null,
+        "body_b": "bar",
+        "stiffness": [
+          "infinity",
+          "infinity",
+          0.0
+        ]
+      }
+    },
+    "source_shapes": {
+      "bar": {
+        "friction": 0.5,
+        "mass": 1.0,
+        "size": [
+          5.0,
+          0.5
+        ]
+      },
+      "ground": {
+        "friction": 0.5,
+        "mass": 0.0,
+        "size": [
+          100.0,
+          0.5
+        ]
+      }
+    }
+  },
+  "visual_capture": {
+    "frames": {
+      "count": 24,
+      "directory": "png_frames",
+      "first_frame": {
+        "file": "png_frames/frame_000001.png",
+        "sha256": "f70003ebbc76e8ce517a4b99fc434dbdce25768dbc15f23f4b1b3e17e596a2ea"
+      },
+      "last_frame": {
+        "file": "png_frames/frame_000024.png",
+        "sha256": "32b5272dd6b17bd5e0709146bfa848a945214851db7d1f806a6ba097bce591b7"
+      }
+    },
+    "manifest_sha256": "655ea94dc182320e85d53f615c222c9be0b2db29afeeaf2b6bae9d54407ec5cd",
+    "scene": "avbd_demo2d_motor",
+    "screenshot": {
+      "file": "avbd_demo2d_motor.png",
+      "height": 360,
+      "sha256": "32b5272dd6b17bd5e0709146bfa848a945214851db7d1f806a6ba097bce591b7",
+      "width": 640
+    },
+    "show_ui": false,
+    "ui_ready": {
+      "dropped_warmup_frames": 0,
+      "required": false
+    }
+  }
+}

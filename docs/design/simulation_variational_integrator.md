@@ -197,9 +197,12 @@ The selection mechanism is now implemented as a facade-safe integration-family
 selector: `WorldOptions::multibodyOptions` at construction,
 `World::setMultibodyOptions(...)` after construction, and the dartpy
 `MultibodyOptions` binding carry the `"variational integrator"` method-family
-name. The built-in `World::step()` schedule is centralized in
-`detail/world_step_schedule.hpp`; when the variational family is selected and a
-multibody domain is active, the schedule substitutes
+name. The same value object carries the variational solve budget
+(`variationalMaxIterations` / `variationalTolerance`) so paper-scale stability
+smokes can raise the default `100` / `1e-10` budget without exposing solver,
+stage, or component types. The built-in `World::step()` schedule is
+centralized in `detail/world_step_schedule.hpp`; when the variational family is
+selected and a multibody domain is active, the schedule substitutes
 `MultibodyVariationalIntegrationStage` for the semi-implicit multibody stage
 instead of appending both. The custom-final-stage `step(executor, stage)` path
 reuses the same built-in schedule before the caller's final stage, so it does not

@@ -1,0 +1,281 @@
+{
+  "comparison": {
+    "dart_cpu_time_per_step_ns": 5488.023412911644,
+    "dart_faster_than_reference": true,
+    "dart_to_reference_cpu_time_ratio": 0.8994568557416414,
+    "performance_claim": "DART beats the native avbd-demo3d Ground row",
+    "reference_cpu_time_per_step_ns": 6101.486
+  },
+  "dart_benchmark": {
+    "benchmark": "BM_AvbdDemo3dGroundStep",
+    "context": {
+      "executable": "build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint",
+      "json_schema_version": 1,
+      "library_build_type": "release",
+      "library_version": "v1.9.5",
+      "mhz_per_cpu": 1328,
+      "num_cpus": 20
+    },
+    "cpu_time_per_step_ns": 5488.023412911644,
+    "invariants": {
+      "collision_shapes": 2,
+      "rigid_bodies": 2,
+      "rigid_body_joints": 0,
+      "source_scene_index": 1,
+      "time_step": 0.016666666666666666
+    },
+    "json_sha256": "f4486dc853882e9c26d8618db0fbda57d1973f08d2fc98bbb5f2dd67c1112da0",
+    "rows": [
+      {
+        "collision_shapes": 2.0,
+        "cpu_time": 5933.298096261611,
+        "family_index": 0,
+        "iterations": 130270,
+        "name": "BM_AvbdDemo3dGroundStep",
+        "per_family_instance_index": 0,
+        "real_time": 5951.429615398301,
+        "repetition_index": 0,
+        "repetitions": 3,
+        "rigid_bodies": 2.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo3dGroundStep",
+        "run_type": "iteration",
+        "source_scene_index": 1.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "collision_shapes": 2.0,
+        "cpu_time": 5488.023412911645,
+        "family_index": 0,
+        "iterations": 130270,
+        "name": "BM_AvbdDemo3dGroundStep",
+        "per_family_instance_index": 0,
+        "real_time": 5502.257856803186,
+        "repetition_index": 1,
+        "repetitions": 3,
+        "rigid_bodies": 2.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo3dGroundStep",
+        "run_type": "iteration",
+        "source_scene_index": 1.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "collision_shapes": 2.0,
+        "cpu_time": 5452.728763337684,
+        "family_index": 0,
+        "iterations": 130270,
+        "name": "BM_AvbdDemo3dGroundStep",
+        "per_family_instance_index": 0,
+        "real_time": 5467.058562945941,
+        "repetition_index": 2,
+        "repetitions": 3,
+        "rigid_bodies": 2.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo3dGroundStep",
+        "run_type": "iteration",
+        "source_scene_index": 1.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "mean",
+        "aggregate_unit": "time",
+        "collision_shapes": 2.0,
+        "cpu_time": 5624.683424170314,
+        "family_index": 0,
+        "iterations": 3,
+        "name": "BM_AvbdDemo3dGroundStep_mean",
+        "per_family_instance_index": 0,
+        "real_time": 5640.248678382474,
+        "repetitions": 3,
+        "rigid_bodies": 2.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo3dGroundStep",
+        "run_type": "aggregate",
+        "source_scene_index": 1.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "median",
+        "aggregate_unit": "time",
+        "collision_shapes": 2.0,
+        "cpu_time": 5488.023412911644,
+        "family_index": 0,
+        "iterations": 3,
+        "name": "BM_AvbdDemo3dGroundStep_median",
+        "per_family_instance_index": 0,
+        "real_time": 5502.257856803186,
+        "repetitions": 3,
+        "rigid_bodies": 2.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo3dGroundStep",
+        "run_type": "aggregate",
+        "source_scene_index": 1.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "stddev",
+        "aggregate_unit": "time",
+        "collision_shapes": 0.0,
+        "cpu_time": 267.85012589997217,
+        "family_index": 0,
+        "iterations": 3,
+        "name": "BM_AvbdDemo3dGroundStep_stddev",
+        "per_family_instance_index": 0,
+        "real_time": 270.0646760380925,
+        "repetitions": 3,
+        "rigid_bodies": 0.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo3dGroundStep",
+        "run_type": "aggregate",
+        "source_scene_index": 0.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "cv",
+        "aggregate_unit": "percentage",
+        "collision_shapes": 0.0,
+        "cpu_time": 0.0476204802476474,
+        "family_index": 0,
+        "iterations": 3,
+        "name": "BM_AvbdDemo3dGroundStep_cv",
+        "per_family_instance_index": 0,
+        "real_time": 0.047881696612629206,
+        "repetitions": 3,
+        "rigid_bodies": 0.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo3dGroundStep",
+        "run_type": "aggregate",
+        "source_scene_index": 0.0,
+        "threads": 1,
+        "time_unit": "ns"
+      }
+    ]
+  },
+  "packet": "avbd_demo3d_ground_source_demo",
+  "reference_timing": {
+    "compile_command": [
+      "g++",
+      "-std=c++17",
+      "-O3",
+      "-DNDEBUG",
+      "-I<source-dir>/source",
+      "<temp-dir>/reference_runner.cpp",
+      "<source-dir>/source/solver.cpp",
+      "<source-dir>/source/rigid.cpp",
+      "<source-dir>/source/force.cpp",
+      "<source-dir>/source/joint.cpp",
+      "<source-dir>/source/spring.cpp",
+      "<source-dir>/source/manifold.cpp",
+      "<source-dir>/source/collide.cpp",
+      "-lGL",
+      "-o",
+      "<temp-dir>/reference_runner"
+    ],
+    "compile_flags": "-std=c++17 -O3 -DNDEBUG",
+    "compiler": "g++",
+    "cpu_time_per_step_ns": 6101.486,
+    "elapsed_ns": 122029720,
+    "invariants": {
+      "collision_shapes": 2,
+      "final_time": 335.466675,
+      "joints": 0,
+      "rigid_bodies": 2
+    },
+    "json_sha256": "98f8670e46b9bb57eee22e7630ee21cca3cafbcffd0bdbc4a0d31c3e5bc4d040",
+    "repository": "https://github.com/savant117/avbd-demo3d",
+    "scene_builder": "sceneGround",
+    "scene_index": 1,
+    "scene_name": "Ground",
+    "source_demo": "avbd-demo3d",
+    "source_revision": "7701bd427d55",
+    "steps": 20000,
+    "warmup_steps": 128
+  },
+  "remaining_gates": [
+    "remaining non-empty avbd-demo2d and avbd-demo3d source-scene ports",
+    "GPU AVBD row parity and same-hardware benchmark packets",
+    "paper/site/video scene visual and performance packets"
+  ],
+  "reproduction": {
+    "capture_command": "LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe python scripts/capture_py_demo.py --scene avbd_demo3d_ground --frames 24 --width 640 --height 360 --output-dir <capture-dir>",
+    "dart_benchmark_command": "build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter=BM_AvbdDemo3dGroundStep$ --benchmark_min_time=0.5s --benchmark_repetitions=3 --benchmark_out=<benchmark-json> --benchmark_out_format=json",
+    "reference_timing_command": "python scripts/run_avbd_demo3d_reference_timing.py --source-dir <avbd-demo3d-source-dir> --scene ground --output <reference-timing-json>"
+  },
+  "scene": "avbd_demo3d_ground",
+  "schema_version": 1,
+  "source_demo_reference_row": {
+    "demo": "avbd-demo3d",
+    "dimension": 3,
+    "expected_counts": {
+      "collision_shapes": 2,
+      "joints": 0,
+      "rigid_bodies": 2
+    },
+    "repository": "https://github.com/savant117/avbd-demo3d",
+    "revision": "7701bd427d55",
+    "scene_builder": "sceneGround",
+    "scene_count": 14,
+    "scene_index": 1,
+    "scene_name": "Ground",
+    "solver_defaults": {
+      "gravity": -10.0,
+      "gravity_axis": "z",
+      "iterations": 10,
+      "time_step": 0.016666666666666666
+    },
+    "source_shapes": {
+      "box": {
+        "density": 1.0,
+        "friction": 0.5,
+        "size": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "ground": {
+        "density": 0.0,
+        "friction": 0.5,
+        "size": [
+          100.0,
+          100.0,
+          1.0
+        ]
+      }
+    }
+  },
+  "visual_capture": {
+    "frames": {
+      "count": 24,
+      "directory": "png_frames",
+      "first_frame": {
+        "file": "png_frames/frame_000001.png",
+        "sha256": "5f1c84f07b234a5fd7b78533a052978554accae83342725a188582322c952b48"
+      },
+      "last_frame": {
+        "file": "png_frames/frame_000024.png",
+        "sha256": "cff39d6689bf2aba75bbec2a8394b54fbc3265e61ac3eb7eadcbfc7c15b5b095"
+      }
+    },
+    "manifest_sha256": "b97ca0b510af4a7b65a119cad7fc64d4bdf928a3d9362a7ecd8b7a233fc74d9c",
+    "scene": "avbd_demo3d_ground",
+    "screenshot": {
+      "file": "avbd_demo3d_ground.png",
+      "height": 360,
+      "sha256": "cff39d6689bf2aba75bbec2a8394b54fbc3265e61ac3eb7eadcbfc7c15b5b095",
+      "width": 640
+    },
+    "show_ui": false,
+    "ui_ready": {
+      "dropped_warmup_frames": 0,
+      "required": false
+    }
+  }
+}

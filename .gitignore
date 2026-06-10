@@ -118,6 +118,12 @@ rp3d_profiling_*.txt
 # Benchmark results
 docs/**/results/*.json
 
+# AVBD plan evidence intentionally tracks curated avbd-*-packet.json fixtures
+# referenced by the plan/docs and packet-writer tests, while ignoring scratch
+# JSON dumps in the same folder.
+docs/plans/104-vertex-block-descent-solver/*.json
+!docs/plans/104-vertex-block-descent-solver/avbd-*-packet.json
+
 # AI tool local state
 .omc/
 .sisyphus/

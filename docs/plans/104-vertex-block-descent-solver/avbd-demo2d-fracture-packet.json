@@ -1,0 +1,417 @@
+{
+  "comparison": {
+    "dart_cpu_time_per_step_ns": 51195.086541330944,
+    "dart_faster_than_reference": true,
+    "dart_to_reference_cpu_time_ratio": 0.8343643034182534,
+    "performance_claim": "DART beats the native avbd-demo2d Fracture row",
+    "reference_cpu_time_per_step_ns": 61358.193695
+  },
+  "dart_benchmark": {
+    "benchmark": "BM_AvbdDemo2dFractureStep",
+    "context": {
+      "executable": "build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint",
+      "json_schema_version": 1,
+      "library_build_type": "release",
+      "library_version": "v1.9.5",
+      "mhz_per_cpu": 690,
+      "num_cpus": 20
+    },
+    "cpu_time_per_step_ns": 51195.086541330944,
+    "invariants": {
+      "break_force": 500.0,
+      "breakable_joints": 10,
+      "chain_links": 11,
+      "collision_shapes": 29,
+      "falling_blocks": 15,
+      "joint_connected_collision_pairs": 10,
+      "rigid_bodies": 29,
+      "rigid_body_joints": 10,
+      "source_scene_index": 18,
+      "support_blocks": 2,
+      "time_step": 0.016666666666666666
+    },
+    "json_sha256": "ff706ad4a8a536815b56a85bcc71fb554d4bb5caec4253da93f893bc9da50dcf",
+    "rows": [
+      {
+        "breakable_joints": 10.0,
+        "collision_shapes": 29.0,
+        "cpu_time": 51195.086541330944,
+        "family_index": 0,
+        "iterations": 13404,
+        "joint_connected_collision_pairs": 10.0,
+        "name": "BM_AvbdDemo2dFractureStep",
+        "per_family_instance_index": 0,
+        "real_time": 51307.39734463699,
+        "repetition_index": 0,
+        "repetitions": 5,
+        "rigid_bodies": 29.0,
+        "rigid_body_joints": 10.0,
+        "run_name": "BM_AvbdDemo2dFractureStep",
+        "run_type": "iteration",
+        "source_scene_index": 18.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "breakable_joints": 10.0,
+        "collision_shapes": 29.0,
+        "cpu_time": 52092.6985974336,
+        "family_index": 0,
+        "iterations": 13404,
+        "joint_connected_collision_pairs": 10.0,
+        "name": "BM_AvbdDemo2dFractureStep",
+        "per_family_instance_index": 0,
+        "real_time": 52203.732542328835,
+        "repetition_index": 1,
+        "repetitions": 5,
+        "rigid_bodies": 29.0,
+        "rigid_body_joints": 10.0,
+        "run_name": "BM_AvbdDemo2dFractureStep",
+        "run_type": "iteration",
+        "source_scene_index": 18.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "breakable_joints": 10.0,
+        "collision_shapes": 29.0,
+        "cpu_time": 50544.01007162041,
+        "family_index": 0,
+        "iterations": 13404,
+        "joint_connected_collision_pairs": 10.0,
+        "name": "BM_AvbdDemo2dFractureStep",
+        "per_family_instance_index": 0,
+        "real_time": 50663.885930090335,
+        "repetition_index": 2,
+        "repetitions": 5,
+        "rigid_bodies": 29.0,
+        "rigid_body_joints": 10.0,
+        "run_name": "BM_AvbdDemo2dFractureStep",
+        "run_type": "iteration",
+        "source_scene_index": 18.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "breakable_joints": 10.0,
+        "collision_shapes": 29.0,
+        "cpu_time": 51023.47538048341,
+        "family_index": 0,
+        "iterations": 13404,
+        "joint_connected_collision_pairs": 10.0,
+        "name": "BM_AvbdDemo2dFractureStep",
+        "per_family_instance_index": 0,
+        "real_time": 51147.108921190316,
+        "repetition_index": 3,
+        "repetitions": 5,
+        "rigid_bodies": 29.0,
+        "rigid_body_joints": 10.0,
+        "run_name": "BM_AvbdDemo2dFractureStep",
+        "run_type": "iteration",
+        "source_scene_index": 18.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "breakable_joints": 10.0,
+        "collision_shapes": 29.0,
+        "cpu_time": 51859.63108027453,
+        "family_index": 0,
+        "iterations": 13404,
+        "joint_connected_collision_pairs": 10.0,
+        "name": "BM_AvbdDemo2dFractureStep",
+        "per_family_instance_index": 0,
+        "real_time": 51981.85250800705,
+        "repetition_index": 4,
+        "repetitions": 5,
+        "rigid_bodies": 29.0,
+        "rigid_body_joints": 10.0,
+        "run_name": "BM_AvbdDemo2dFractureStep",
+        "run_type": "iteration",
+        "source_scene_index": 18.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "mean",
+        "aggregate_unit": "time",
+        "breakable_joints": 10.0,
+        "collision_shapes": 29.0,
+        "cpu_time": 51342.98033422859,
+        "family_index": 0,
+        "iterations": 5,
+        "joint_connected_collision_pairs": 10.0,
+        "name": "BM_AvbdDemo2dFractureStep_mean",
+        "per_family_instance_index": 0,
+        "real_time": 51460.7954492507,
+        "repetitions": 5,
+        "rigid_bodies": 29.0,
+        "rigid_body_joints": 10.0,
+        "run_name": "BM_AvbdDemo2dFractureStep",
+        "run_type": "aggregate",
+        "source_scene_index": 18.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "median",
+        "aggregate_unit": "time",
+        "breakable_joints": 10.0,
+        "collision_shapes": 29.0,
+        "cpu_time": 51195.086541330944,
+        "family_index": 0,
+        "iterations": 5,
+        "joint_connected_collision_pairs": 10.0,
+        "name": "BM_AvbdDemo2dFractureStep_median",
+        "per_family_instance_index": 0,
+        "real_time": 51307.39734463699,
+        "repetitions": 5,
+        "rigid_bodies": 29.0,
+        "rigid_body_joints": 10.0,
+        "run_name": "BM_AvbdDemo2dFractureStep",
+        "run_type": "aggregate",
+        "source_scene_index": 18.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "stddev",
+        "aggregate_unit": "time",
+        "breakable_joints": 0.0,
+        "collision_shapes": 0.0,
+        "cpu_time": 630.7366600942482,
+        "family_index": 0,
+        "iterations": 5,
+        "joint_connected_collision_pairs": 0.0,
+        "name": "BM_AvbdDemo2dFractureStep_stddev",
+        "per_family_instance_index": 0,
+        "real_time": 628.5799433775767,
+        "repetitions": 5,
+        "rigid_bodies": 0.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo2dFractureStep",
+        "run_type": "aggregate",
+        "source_scene_index": 0.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "cv",
+        "aggregate_unit": "percentage",
+        "breakable_joints": 0.0,
+        "collision_shapes": 0.0,
+        "cpu_time": 0.012284769134715736,
+        "family_index": 0,
+        "iterations": 5,
+        "joint_connected_collision_pairs": 0.0,
+        "name": "BM_AvbdDemo2dFractureStep_cv",
+        "per_family_instance_index": 0,
+        "real_time": 0.012214734301910777,
+        "repetitions": 5,
+        "rigid_bodies": 0.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo2dFractureStep",
+        "run_type": "aggregate",
+        "source_scene_index": 0.0,
+        "threads": 1,
+        "time_unit": "ns"
+      }
+    ]
+  },
+  "packet": "avbd_demo2d_fracture_source_demo",
+  "reference_timing": {
+    "compile_command": [
+      "g++",
+      "-std=c++17",
+      "-O3",
+      "-DNDEBUG",
+      "-I<source-dir>/source",
+      "<temp-dir>/reference_runner.cpp",
+      "<source-dir>/source/solver.cpp",
+      "<source-dir>/source/rigid.cpp",
+      "<source-dir>/source/force.cpp",
+      "<source-dir>/source/joint.cpp",
+      "<source-dir>/source/spring.cpp",
+      "<source-dir>/source/motor.cpp",
+      "<source-dir>/source/manifold.cpp",
+      "<source-dir>/source/collide.cpp",
+      "-lGL",
+      "-o",
+      "<temp-dir>/reference_runner"
+    ],
+    "compile_flags": "-std=c++17 -O3 -DNDEBUG",
+    "compiler": "g++",
+    "cpu_time_per_step_ns": 61358.193695,
+    "elapsed_ns": 12271638739,
+    "invariants": {
+      "break_force": 500.0,
+      "breakable_joints": 10,
+      "broken_joints_after_timing": 0,
+      "chain_links": 11,
+      "collision_shapes": 29,
+      "dynamic_bodies": 28,
+      "falling_blocks": 15,
+      "final_time": 3335.4668,
+      "joint_connected_collision_pairs": 10,
+      "joints": 10,
+      "max_friction": 0.5,
+      "min_friction": 0.5,
+      "rigid_bodies": 29,
+      "static_bodies": 1,
+      "support_blocks": 2
+    },
+    "json_sha256": "bf8a6fe580a2f0cd1513ff8a411a4a7c752e1eb0ead0dbcc5609deedc04f0730",
+    "repository": "https://github.com/savant117/avbd-demo2d",
+    "scene_builder": "sceneFracture",
+    "scene_index": 18,
+    "scene_name": "Fracture",
+    "source_demo": "avbd-demo2d",
+    "source_revision": "74699a11f858",
+    "steps": 200000,
+    "warmup_steps": 128
+  },
+  "remaining_gates": [
+    "remaining avbd-demo2d rope, spring, and source rows",
+    "GPU AVBD row parity and same-hardware benchmark packets",
+    "paper/site/video scene visual and performance packets",
+    "broad breakable constraint and fracture coverage beyond this source row"
+  ],
+  "reproduction": {
+    "capture_command": "LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe python scripts/capture_py_demo.py --scene avbd_demo2d_fracture --frames 24 --width 640 --height 360 --output-dir <capture-dir>",
+    "dart_benchmark_command": "build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter=BM_AvbdDemo2dFractureStep$ --benchmark_min_time=0.5s --benchmark_repetitions=3 --benchmark_out=<benchmark-json> --benchmark_out_format=json",
+    "reference_timing_command": "python scripts/run_avbd_demo2d_reference_timing.py --source-dir <avbd-demo2d-source-dir> --scene fracture --output <reference-timing-json>"
+  },
+  "scene": "avbd_demo2d_fracture",
+  "schema_version": 1,
+  "source_demo_reference_row": {
+    "demo": "avbd-demo2d",
+    "dimension": 2,
+    "expected_counts": {
+      "breakable_joints": 10,
+      "collision_shapes": 29,
+      "dynamic_bodies": 28,
+      "joints": 10,
+      "rigid_bodies": 29,
+      "static_bodies": 1
+    },
+    "repository": "https://github.com/savant117/avbd-demo2d",
+    "revision": "74699a11f858",
+    "scene_builder": "sceneFracture",
+    "scene_count": 19,
+    "scene_index": 18,
+    "scene_name": "Fracture",
+    "solver_defaults": {
+      "gravity": -10.0,
+      "gravity_axis": "y",
+      "iterations": 10,
+      "time_step": 0.016666666666666666
+    },
+    "source_collision_filters": {
+      "joint_connected_collision_pairs": 10
+    },
+    "source_constraints": {
+      "breakable_fixed_joints": {
+        "anchor_a": [
+          0.5,
+          0.0
+        ],
+        "anchor_b": [
+          -0.5,
+          0.0
+        ],
+        "angular_stiffness": "infinity",
+        "break_force": 500.0,
+        "count": 10,
+        "linear_stiffness": "infinity"
+      }
+    },
+    "source_shapes": {
+      "chain": {
+        "count": 11,
+        "density": 1.0,
+        "first_position": [
+          -5.0,
+          6.0,
+          0.0
+        ],
+        "friction": 0.5,
+        "size": [
+          1.0,
+          0.5
+        ],
+        "x_spacing": 1.0
+      },
+      "falling_block": {
+        "count": 15,
+        "density": 1.0,
+        "first_position": [
+          0.0,
+          8.0,
+          0.0
+        ],
+        "friction": 0.5,
+        "size": [
+          2.0,
+          1.0
+        ],
+        "y_spacing": 2.0
+      },
+      "ground": {
+        "density": 0.0,
+        "friction": 0.5,
+        "size": [
+          100.0,
+          0.5
+        ]
+      },
+      "support": {
+        "count": 2,
+        "density": 1.0,
+        "friction": 0.5,
+        "positions": [
+          [
+            -5.0,
+            2.5,
+            0.0
+          ],
+          [
+            5.0,
+            2.5,
+            0.0
+          ]
+        ],
+        "size": [
+          1.0,
+          5.0
+        ]
+      }
+    }
+  },
+  "visual_capture": {
+    "frames": {
+      "count": 24,
+      "directory": "png_frames",
+      "first_frame": {
+        "file": "png_frames/frame_000001.png",
+        "sha256": "dac857c89c2cf77bc97ab4f68c25f0efcbd1c414209daafac3b3fc9e42978e93"
+      },
+      "last_frame": {
+        "file": "png_frames/frame_000024.png",
+        "sha256": "4e787852b1d5c413fee51191a8e29a918bcb9f4244be124dd0943582ce71fd50"
+      }
+    },
+    "manifest_sha256": "d363cd266ce74bc10c503dbf32a995fc35b3e8b2d744996fe2387731ba654021",
+    "scene": "avbd_demo2d_fracture",
+    "screenshot": {
+      "file": "avbd_demo2d_fracture.png",
+      "height": 360,
+      "sha256": "4e787852b1d5c413fee51191a8e29a918bcb9f4244be124dd0943582ce71fd50",
+      "width": 640
+    },
+    "show_ui": false,
+    "ui_ready": {
+      "dropped_warmup_frames": 0,
+      "required": false
+    }
+  }
+}
