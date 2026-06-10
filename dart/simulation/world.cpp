@@ -1402,6 +1402,9 @@ private:
       case Slot::MultibodyVariationalIntegration:
         multibodyVariational.prepare(world);
         return;
+      case Slot::UnifiedConstraint:
+        unifiedConstraint.prepare(world);
+        return;
       case Slot::DeformableDynamics:
         deformableDynamics.prepare(world);
         return;
@@ -1412,7 +1415,6 @@ private:
       case Slot::MultibodyVelocity:
       case Slot::MultibodyForwardDynamics:
       case Slot::MultibodyPosition:
-      case Slot::UnifiedConstraint:
         return; // LCOV_EXCL_LINE
     }
   }
@@ -2485,6 +2487,7 @@ void World::reserveRegistryStorageForSimulation()
       comps::VariationalContact,
       comps::VariationalContactDualState,
       compute::MultibodyVariationalState,
+      compute::MultibodyVariationalScratch,
       detail::deformable_vbd::AvbdRigidWorldPointJointConfig>(registry);
 
   reserveExistingRegistryStorages(registry);
@@ -2514,29 +2517,8 @@ void World::reserveRegistryStorageForSimulation()
   }
   if (m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational
       && multibodyCount > 0u) {
-    auto multibodies = registry.view<comps::MultibodyStructure>();
-    reserveAndPrimeDefaultComponentStorage<compute::MultibodyVariationalState>(
-        registry, multibodies, multibodyCount);
-  }
-
-  const auto variationalContactCount
-      = existingComponentStorageSize<comps::VariationalContact>(registry);
-  if (variationalContactCount > 0u) {
-    auto variationalContacts = registry.view<comps::VariationalContact>();
-    auto& variationalDualStorage
-        = registry.storage<comps::VariationalContactDualState>();
-    variationalDualStorage.reserve(variationalContactCount);
-    for (const auto entity : variationalContacts) {
-      const auto& contact
-          = variationalContacts.get<comps::VariationalContact>(entity);
-      if (contact.dualUpdateCadence == 0 || contact.pointLinkIndices.empty()
-          || registry.all_of<comps::VariationalContactDualState>(entity)) {
-        continue;
-      }
-
-      registry.emplace<comps::VariationalContactDualState>(entity);
-      registry.remove<comps::VariationalContactDualState>(entity);
-    }
+    compute::reserveMultibodyVariationalRegistryStorage(
+        registry, multibodyCount);
   }
 
   const auto jointCount = existingComponentStorageSize<comps::Joint>(registry);

@@ -22,6 +22,8 @@
 #include <entt/entt.hpp>
 
 #include <functional>
+#include <optional>
+#include <span>
 #include <string_view>
 #include <vector>
 
@@ -229,6 +231,12 @@ public:
   /// hook reads this solver's live duals, so build it once and reuse it.
   [[nodiscard]] VariationalContactHook hook() const;
 
+  /// Evaluate the current contact force into caller-owned storage. The output
+  /// is resized to the context DOF count and overwritten.
+  void computeForceInto(
+      const VariationalContactContext& context,
+      Eigen::VectorXd& generalizedForce) const;
+
   /// Advance the duals after a converged step, from the per-link world
   /// transforms at the converged configuration (same link order as the
   /// context).
@@ -243,11 +251,42 @@ public:
   /// Seed the duals, e.g. warm-started from persisted state across a save/load
   /// (or across the `World::step()` stage's per-step solver rebuild). The size
   /// must match the contact-point count; throws otherwise.
-  void setDuals(std::vector<double> duals);
+  void setDuals(std::span<const double> duals);
+
+  /// Replace the contact geometry while preserving existing vector capacity.
+  void resetContact(const VariationalGroundContact& contact);
 
 private:
   VariationalGroundContact mContact;
   std::vector<double> mDuals; ///< per contact point, >= 0
+};
+
+/// Reusable storage for variational contact-force evaluation.
+struct VariationalContactEvaluationScratch
+{
+  std::vector<Eigen::Isometry3d> previousWorldTransforms;
+  std::vector<Eigen::Isometry3d> trialRelativeTransforms;
+  std::vector<Eigen::Isometry3d> trialWorldTransforms;
+  std::vector<Eigen::MatrixXd> previousJacobians;
+  std::vector<Eigen::MatrixXd> trialJacobians;
+  Eigen::VectorXd contactForce;
+  Eigen::VectorXd forcing;
+};
+
+/// Cache-only scratch reused by the variational multibody stage.
+///
+/// The persisted `MultibodyVariationalState` remains the two-step dynamics
+/// history; this component owns rebuildable contact/constraint buffers that
+/// should be sized during bake and reused by the step loop.
+struct MultibodyVariationalScratch
+{
+  DART_SIMULATION_CACHE_COMPONENT(MultibodyVariationalScratch);
+
+  std::vector<VariationalLoopConstraint> constraints;
+  VariationalGroundContact groundContact;
+  std::optional<VariationalGroundContactSolver> groundContactSolver;
+  VariationalContactEvaluationScratch contactEvaluation;
+  std::vector<Eigen::Isometry3d> postContactTransforms;
 };
 
 /// **EXPERIMENTAL (PLAN-082 Phase C -- link-vs-link).** A sphere-sphere contact
@@ -430,6 +469,11 @@ struct VariationalLoopClosureBinding
 [[nodiscard]] DART_SIMULATION_API VariationalLoopClosureBinding
 bindVariationalLoopClosure(
     const detail::WorldRegistry& registry, entt::entity closureEntity);
+
+/// Reserve variational-stage registry storage and per-multibody scratch for the
+/// current baked multibody/contact shape.
+DART_SIMULATION_API void reserveMultibodyVariationalRegistryStorage(
+    detail::WorldRegistry& registry, std::size_t multibodyCount);
 
 /// Variational-integrator multibody stage (a peer of
 /// `MultibodyForwardDynamicsStage`, selected by the `variational integrator`

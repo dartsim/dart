@@ -187,6 +187,47 @@ TEST(AvbdConstraint, RowInventoryKeepsDescriptorOrderAndSeparatesAxes)
 }
 
 //==============================================================================
+TEST(AvbdConstraint, RowInventoryWarmStartsOutOfOrderPreviousRows)
+{
+  vbd::AvbdScalarRowDescriptor first
+      = makeRow(vbd::AvbdScalarRowRole::ContactNormal, 1);
+  vbd::AvbdScalarRowDescriptor second
+      = makeRow(vbd::AvbdScalarRowRole::ContactNormal, 2);
+  vbd::AvbdScalarRowDescriptor third
+      = makeRow(vbd::AvbdScalarRowRole::ContactNormal, 3);
+
+  vbd::AvbdScalarRowInventory inventory;
+  std::vector<vbd::AvbdScalarRowDescriptor> descriptors
+      = {third, first, second};
+  inventory.syncActiveRows(descriptors, {});
+  ASSERT_EQ(inventory.size(), descriptors.size());
+  inventory[0].state.stiffness = 30.0;
+  inventory[0].state.lambda = 3.0;
+  inventory[1].state.stiffness = 10.0;
+  inventory[1].state.lambda = 1.0;
+  inventory[2].state.stiffness = 20.0;
+  inventory[2].state.lambda = 2.0;
+
+  vbd::AvbdRowWarmStartOptions options;
+  options.alpha = 0.5;
+  options.gamma = 0.5;
+
+  descriptors = {second, third, first};
+  inventory.syncActiveRows(descriptors, options);
+
+  ASSERT_EQ(inventory.size(), descriptors.size());
+  EXPECT_EQ(inventory[0].descriptor.key, second.key);
+  EXPECT_DOUBLE_EQ(inventory[0].state.lambda, 0.5);
+  EXPECT_DOUBLE_EQ(inventory[0].state.stiffness, 10.0);
+  EXPECT_EQ(inventory[1].descriptor.key, third.key);
+  EXPECT_DOUBLE_EQ(inventory[1].state.lambda, 0.75);
+  EXPECT_DOUBLE_EQ(inventory[1].state.stiffness, 15.0);
+  EXPECT_EQ(inventory[2].descriptor.key, first.key);
+  EXPECT_DOUBLE_EQ(inventory[2].state.lambda, 0.25);
+  EXPECT_DOUBLE_EQ(inventory[2].state.stiffness, 5.0);
+}
+
+//==============================================================================
 TEST(AvbdConstraint, RowInventoryFiniteRowsDropLambdaAndClampToMaterial)
 {
   vbd::AvbdScalarRowDescriptor descriptor
