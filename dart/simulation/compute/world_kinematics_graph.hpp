@@ -57,7 +57,7 @@ class DART_SIMULATION_API WorldKinematicsGraph
 {
 public:
   explicit WorldKinematicsGraph(World& world);
-  WorldKinematicsGraph(World& world, common::MemoryAllocator& allocator);
+  WorldKinematicsGraph(World& world, dart::common::MemoryAllocator& allocator);
 
   void rebuild();
   [[nodiscard]] bool isTopologyCurrent() const noexcept;
@@ -74,7 +74,7 @@ private:
     entt::entity entity;
     ComputeNode* node;
   };
-  using EntityNodeAllocator = common::StlAllocator<EntityNode>;
+  using EntityNodeAllocator = dart::common::StlAllocator<EntityNode>;
 
   [[nodiscard]] ComputeNode* findNode(entt::entity entity) const;
 

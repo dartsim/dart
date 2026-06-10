@@ -37,6 +37,7 @@
 #include <algorithm>
 #include <functional>
 #include <iterator>
+#include <new>
 #include <queue>
 #include <unordered_map>
 #include <utility>
@@ -53,6 +54,37 @@ bool containsPointer(
 }
 
 } // namespace
+
+//==============================================================================
+ComputeGraph::ComputeGraph()
+  : ComputeGraph(dart::common::MemoryAllocator::GetDefault())
+{
+}
+
+//==============================================================================
+ComputeGraph::ComputeGraph(dart::common::MemoryAllocator& allocator)
+  : m_allocator(&allocator),
+    m_nodes(ComputeNodePtrAllocator{allocator}),
+    m_nodesByName(
+        0,
+        std::hash<std::string>{},
+        std::equal_to<std::string>{},
+        NodeNameLookupAllocator{allocator})
+{
+}
+
+//==============================================================================
+void ComputeGraph::ComputeNodeDeleter::operator()(
+    ComputeNode* node) const noexcept
+{
+  if (node == nullptr) {
+    return;
+  }
+  auto& targetAllocator = allocator != nullptr
+                              ? *allocator
+                              : dart::common::MemoryAllocator::GetDefault();
+  targetAllocator.destroy(node);
+}
 
 //==============================================================================
 ComputeNode& ComputeGraph::addNode(
@@ -72,11 +104,20 @@ ComputeNode& ComputeGraph::addNode(
       "A compute node named '{}' already exists",
       nameString);
 
-  auto node
-      = std::make_unique<ComputeNode>(nameString, std::move(fn), metadata);
+  auto node = ComputeNodePtr(
+      m_allocator->construct<ComputeNode>(nameString, std::move(fn), metadata),
+      ComputeNodeDeleter{m_allocator});
+  if (node == nullptr) {
+    throw std::bad_alloc();
+  }
   auto* nodePtr = node.get();
   m_nodes.push_back(std::move(node));
-  m_nodesByName.emplace(nameString, nodePtr);
+  try {
+    m_nodesByName.emplace(nameString, nodePtr);
+  } catch (...) {
+    m_nodes.pop_back();
+    throw;
+  }
   invalidateTraversalCache();
   return *nodePtr;
 }

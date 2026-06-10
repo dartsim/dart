@@ -763,8 +763,14 @@ Follow-up progress after PR #2956:
   lookup vector through the World free allocator when the graph is constructed
   by the built-in kinematics stage. A focused stack-constructed graph test
   verifies that entity-node cache storage increases the World free-list live
-  allocation count and releases it when the graph is destroyed. General
-  `ComputeGraph` node storage remains a separate follow-up.
+  allocation count and releases it when the graph is destroyed.
+- The `ComputeGraph` follow-up adds allocator-aware graph construction and
+  routes owned `ComputeNode` objects plus the node-name lookup table through
+  the supplied allocator. A focused compute-graph test verifies node storage
+  uses the provided World free allocator and releases it on graph destruction.
+  `ComputeGraph`'s API-exposed edge and topological-order vectors remain a
+  separate follow-up because their public accessors currently return concrete
+  `std::vector` references.
 
 Remaining Phase 4/5 follow-up items for the next PR:
 

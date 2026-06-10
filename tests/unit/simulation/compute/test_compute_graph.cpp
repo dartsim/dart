@@ -42,6 +42,8 @@
 #include <dart/simulation/compute/rigid_body_state_batch.hpp>
 #include <dart/simulation/compute/sequential_executor.hpp>
 
+#include <dart/common/memory_manager.hpp>
+
 #include <gtest/gtest.h>
 
 #include <atomic>
@@ -56,6 +58,8 @@
 
 namespace compute = dart::simulation::compute;
 namespace sx = dart::simulation;
+
+namespace common = dart::common;
 
 //==============================================================================
 TEST(SimulationComputeNode, ExecutesCallable)
@@ -134,6 +138,26 @@ TEST(SimulationComputeGraph, EmptyGraphIsValid)
   EXPECT_EQ(graph.getEdgeCount(), 0u);
   EXPECT_TRUE(graph.getParallelLevels().empty());
   EXPECT_TRUE(graph.validate());
+}
+
+//==============================================================================
+TEST(SimulationComputeGraph, AllocatorAwareGraphUsesProvidedAllocator)
+{
+  common::MemoryManager memoryManager;
+  auto& freeList = memoryManager.getFreeListAllocator();
+  const auto allocationsBeforeGraph = freeList.getAllocationCount();
+
+  {
+    compute::ComputeGraph graph(memoryManager.getFreeAllocator());
+    auto& node = graph.addNode("allocator_node", []() {});
+
+    EXPECT_EQ(graph.getNode("allocator_node"), &node);
+    EXPECT_GT(freeList.getAllocationCount(), allocationsBeforeGraph)
+        << "allocator-aware ComputeGraph should allocate owned node storage "
+           "from the provided allocator";
+  }
+
+  EXPECT_EQ(freeList.getAllocationCount(), allocationsBeforeGraph);
 }
 
 //==============================================================================

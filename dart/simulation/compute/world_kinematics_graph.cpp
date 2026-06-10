@@ -153,14 +153,16 @@ std::string frameCacheResource(entt::entity entity)
 
 //==============================================================================
 WorldKinematicsGraph::WorldKinematicsGraph(World& world)
-  : WorldKinematicsGraph(world, common::MemoryAllocator::GetDefault())
+  : WorldKinematicsGraph(world, dart::common::MemoryAllocator::GetDefault())
 {
 }
 
 //==============================================================================
 WorldKinematicsGraph::WorldKinematicsGraph(
-    World& world, common::MemoryAllocator& allocator)
-  : m_world(world), m_entityNodes(EntityNodeAllocator{allocator})
+    World& world, dart::common::MemoryAllocator& allocator)
+  : m_world(world),
+    m_graph(allocator),
+    m_entityNodes(EntityNodeAllocator{allocator})
 {
   rebuild();
 }
