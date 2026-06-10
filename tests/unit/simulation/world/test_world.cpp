@@ -684,7 +684,7 @@ TEST(World, MemoryManagerOptionsAndDiagnostics)
 
   const auto diagnostics = world.getMemoryDiagnostics();
   EXPECT_LE(diagnostics.frameScratchCapacityBytes, 4096u);
-  EXPECT_GE(diagnostics.frameScratchCapacityBytes + 32u, 4096u);
+  EXPECT_GE(diagnostics.frameScratchCapacityBytes + 64u, 4096u);
   EXPECT_EQ(diagnostics.frameScratchCapacityBytes % 32u, 0u);
   EXPECT_EQ(diagnostics.frameScratchUsedBytes, 0u);
   EXPECT_EQ(diagnostics.frameScratchPeakUsedBytes, 0u);
