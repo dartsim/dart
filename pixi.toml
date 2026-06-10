@@ -688,6 +688,7 @@ CMAKE_BUILD_DIR=${BUILD_DIR} python scripts/cmake_build.py \
   --target test_deformable_psd_projection_cuda \
   --target test_vbd_block_descent_cuda \
   --target bm_cuda_rigid_body_state_batch \
+  --target bm_plan083_gpu_psd_projection \
   --target bm_vbd_cuda
 """,
 ], depends-on = [
@@ -1144,6 +1145,9 @@ python scripts/run_benchmark_smoke.py "${BUILD_DIR}/bin/bm_cuda_rigid_body_state
 python scripts/run_benchmark_smoke.py "${BUILD_DIR}/bin/bm_cuda_rigid_body_state_batch" \
   --benchmark_filter='BM_(CpuSingleThread|CpuMulticore|CudaResident)RigidBodyStateBatchLinearRollout/4/256/1$' \
   --benchmark_min_time=0.001s
+python scripts/run_benchmark_smoke.py "${BUILD_DIR}/bin/bm_plan083_gpu_psd_projection" \
+  --benchmark_filter='BM_Plan083PsdProjection(Cpu|Cuda)/1024(/real_time)?$' \
+  --benchmark_min_time=0.001s
 python scripts/run_benchmark_smoke.py "${BUILD_DIR}/bin/bm_vbd_cuda" \
   --benchmark_filter='BM_Vbd(Cpu|Cuda)Step/32$' \
   --benchmark_min_time=0.001s
@@ -1447,6 +1451,11 @@ bm-abd-comparison-packet = { cmd = "python scripts/check_abd_comparison_packet.p
 bm-phase5-cuda-packet = { cmd = "python scripts/write_phase5_cuda_packet.py" }
 bm-phase5-gpu-packet-check = { cmd = "python scripts/check_phase5_gpu_packet.py" }
 bm-plan083-gpu-parity-packet-check = { cmd = "python scripts/check_plan083_gpu_parity_packet.py" }
+bm-plan083-gpu-psd-packet = { cmd = "python scripts/write_plan083_gpu_psd_packet.py", depends-on = [
+  { task = "build-cuda", args = [
+    "Release",
+  ] },
+] }
 bm-plan083-completion-audit-check = { cmd = "python scripts/check_plan083_completion_audit.py" }
 bm-dashboard-surfaces = { cmd = "python scripts/run_performance_dashboard_benchmarks.py", depends-on = [
   "config",

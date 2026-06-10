@@ -153,6 +153,9 @@
         kernel/solve timing, speedup, and no-public-API policies for every row.
   - [x] Keep rows without landed kernels explicit as planned/in-progress
         limitations instead of GPU speed claims.
+  - [x] Add the measured private PSD projection packet generator and benchmark
+        row; keep it scoped to local-kernel evidence, not scene-level GPU
+        parity.
 - [ ] Implementation-roadmap Phase 8: complete the PLAN-083 audit and retire
       temporary task state.
   - [x] Add a checked completion audit sidecar that records the current
@@ -229,8 +232,8 @@ storage, or backend resources as public API.
    and needs a solved-state residual or runtime stepping diagnostic.
 4. Promote only the smallest proven shared contract, with cross-variant tests
    showing identical behavior; keep variant-specific terms in their owner plans.
-5. Keep runtime stepping and GPU claims out of scope until the row-specific CPU
-   corpus packets and Phase 7 GPU parity evidence exist.
+5. Keep runtime stepping and non-PSD GPU claims out of scope until the
+   row-specific CPU corpus packets and Phase 7 GPU parity evidence exist.
 
 ## Validation Gates For Current Slices
 
@@ -258,6 +261,12 @@ Phase 8 local evidence:
 - `pixi run python -m pytest tests/test_plan083_completion_audit.py`
 - `pixi run lint`
 - `pixi run build`
+
+Phase 7 PSD packet evidence:
+
+- `pixi run python -m pytest tests/test_plan083_gpu_psd_packet.py`
+- `pixi run -e cuda build-cuda`
+- `pixi run -e cuda bm-plan083-gpu-psd-packet`
 
 Phase 1 local evidence:
 

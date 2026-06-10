@@ -161,6 +161,15 @@ GPU parity packet rows remain. The audit intentionally blocks retiring
 whether the remaining work stays active there or moves fully into durable plan
 sidecars.
 
+The follow-up PSD projection packet slice adds
+`bm_plan083_gpu_psd_projection` plus
+`scripts/write_plan083_gpu_psd_packet.py`. On 2026-06-09,
+`pixi run -e cuda bm-plan083-gpu-psd-packet` measured the 4096-block 12x12 PSD
+row with max error `2.4868995751603507e-14` and `4.451557656446166x` speedup
+over the CPU reference. This moves only the local PSD projection row to
+`measured`; contact candidates, CCD/line search, barrier/friction kernels,
+assembly/solve, and scene-level GPU speedups remain planned.
+
 ## Last Session Summary
 
 Current slice: the first ABD benchmark packet has been promoted from
@@ -248,7 +257,9 @@ Phase 8 completion audit.
 
 Get maintainer direction before deleting the temporary dev-task folder because
 PLAN-083 acceptance criteria are still unmet. If the task stays active here,
-continue from the planned CPU/GPU/scene rows recorded in the audit sidecars.
+continue from the planned CPU/GPU/scene rows recorded in the audit sidecars;
+the next GPU rows need real contact-candidate, CCD/line-search, or
+barrier/friction kernels before they can move beyond packet-shape placeholders.
 
 ## Context That Would Be Lost
 
