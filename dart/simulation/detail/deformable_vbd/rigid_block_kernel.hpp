@@ -43,6 +43,7 @@
 #include <array>
 #include <limits>
 #include <span>
+#include <utility>
 #include <vector>
 
 #include <cmath>
@@ -344,6 +345,68 @@ struct AvbdRigidBodyRowIndexScratch
     frictionPairRowCursor.clear();
     frictionPairRowBodyKeys.clear();
     frictionPairRowBodyCount = 0u;
+  }
+
+  void reserve(
+      std::size_t bodyCapacity,
+      std::size_t attachmentRowCapacity,
+      std::size_t pointPairRowCapacity,
+      std::size_t distanceSpringRowCapacity,
+      std::size_t angularPairRowCapacity,
+      std::size_t frictionPairRowCapacity)
+  {
+    const std::size_t offsetCapacity
+        = bodyCapacity < std::numeric_limits<std::size_t>::max()
+              ? bodyCapacity + 1u
+              : bodyCapacity;
+    const auto reserveFamily = [offsetCapacity](
+                                   std::vector<std::size_t>& offsets,
+                                   std::vector<std::size_t>& indices,
+                                   std::vector<std::size_t>& cursor,
+                                   std::vector<std::uint64_t>& keys,
+                                   std::size_t rowCapacity,
+                                   std::size_t indexCapacity) {
+      offsets.reserve(offsetCapacity);
+      indices.reserve(indexCapacity);
+      cursor.reserve(offsetCapacity);
+      keys.reserve(rowCapacity);
+    };
+
+    reserveFamily(
+        attachmentRowOffsets,
+        attachmentRowIndices,
+        attachmentRowCursor,
+        attachmentRowBodyKeys,
+        attachmentRowCapacity,
+        attachmentRowCapacity);
+    reserveFamily(
+        pointPairRowOffsets,
+        pointPairRowIndices,
+        pointPairRowCursor,
+        pointPairRowBodyKeys,
+        pointPairRowCapacity,
+        2u * pointPairRowCapacity);
+    reserveFamily(
+        distanceSpringRowOffsets,
+        distanceSpringRowIndices,
+        distanceSpringRowCursor,
+        distanceSpringRowBodyKeys,
+        distanceSpringRowCapacity,
+        2u * distanceSpringRowCapacity);
+    reserveFamily(
+        angularPairRowOffsets,
+        angularPairRowIndices,
+        angularPairRowCursor,
+        angularPairRowBodyKeys,
+        angularPairRowCapacity,
+        2u * angularPairRowCapacity);
+    reserveFamily(
+        frictionPairRowOffsets,
+        frictionPairRowIndices,
+        frictionPairRowCursor,
+        frictionPairRowBodyKeys,
+        frictionPairRowCapacity,
+        2u * frictionPairRowCapacity);
   }
 
   std::vector<std::size_t> attachmentRowOffsets;
@@ -1881,6 +1944,34 @@ inline void applyAvbdRigidBodyStep(
 }
 
 //==============================================================================
+struct AvbdRigidContactManifoldRowScratch
+{
+  std::vector<AvbdRigidContactManifoldPoint> activeContacts;
+  std::vector<AvbdScalarRowDescriptor> normalDescriptors;
+  std::vector<AvbdScalarRowDescriptor> frictionDescriptors;
+  std::vector<std::pair<AvbdScalarRowKey, Eigen::Vector3d>>
+      previousFrictionDirections;
+};
+
+struct AvbdRigidPointJointActiveAxis
+{
+  AvbdRigidPointJoint joint;
+  std::uint8_t axis = 0;
+};
+
+struct AvbdRigidPointJointRowScratch
+{
+  std::vector<AvbdRigidPointJointActiveAxis> activeRows;
+  std::vector<AvbdScalarRowDescriptor> descriptors;
+};
+
+struct AvbdRigidAngularMotorRowScratch
+{
+  std::vector<AvbdRigidAngularMotor> activeRows;
+  std::vector<AvbdScalarRowDescriptor> descriptors;
+};
+
+//==============================================================================
 inline void buildAvbdRigidContactManifoldRows(
     const std::vector<AvbdRigidBodyState>& states,
     std::span<const AvbdRigidContactManifoldPoint> contacts,
@@ -1888,11 +1979,14 @@ inline void buildAvbdRigidContactManifoldRows(
     AvbdScalarRowInventory& frictionInventory,
     std::vector<AvbdRigidBodyPointPairRow>& normalRows,
     std::vector<AvbdRigidBodyPointPairFrictionRows>& frictionRows,
+    AvbdRigidContactManifoldRowScratch& scratch,
     const AvbdRowWarmStartOptions& warmStartOptions = {})
 {
-  std::vector<AvbdRigidContactManifoldPoint> activeContacts;
+  auto& activeContacts = scratch.activeContacts;
+  activeContacts.clear();
   activeContacts.reserve(contacts.size());
-  std::vector<AvbdScalarRowDescriptor> normalDescriptors;
+  auto& normalDescriptors = scratch.normalDescriptors;
+  normalDescriptors.clear();
   normalDescriptors.reserve(contacts.size());
   for (const AvbdRigidContactManifoldPoint& contact : contacts) {
     if (!detail::isValidAvbdRigidContactManifoldPoint(contact, states.size())) {
@@ -1908,17 +2002,40 @@ inline void buildAvbdRigidContactManifoldRows(
         contact.row));
   }
 
-  std::map<AvbdScalarRowKey, Eigen::Vector3d> previousFrictionDirections;
+  auto& previousFrictionDirections = scratch.previousFrictionDirections;
+  previousFrictionDirections.clear();
+  previousFrictionDirections.reserve(frictionInventory.records().size());
   for (const AvbdScalarRowRecord& record : frictionInventory.records()) {
     if (isValidAvbdRigidContactFrictionDirection(record.direction)) {
-      previousFrictionDirections.emplace(
+      previousFrictionDirections.emplace_back(
           record.descriptor.key, record.direction);
     }
   }
+  std::sort(
+      previousFrictionDirections.begin(),
+      previousFrictionDirections.end(),
+      [](const auto& lhs, const auto& rhs) { return lhs.first < rhs.first; });
+  const auto findPreviousFrictionDirection
+      = [&previousFrictionDirections](
+            const AvbdScalarRowKey& key) -> const Eigen::Vector3d* {
+    const auto found = std::lower_bound(
+        previousFrictionDirections.begin(),
+        previousFrictionDirections.end(),
+        key,
+        [](const auto& value, const AvbdScalarRowKey& target) {
+          return value.first < target;
+        });
+    if (found == previousFrictionDirections.end() || found->first != key) {
+      return nullptr;
+    }
+    return &found->second;
+  };
 
+  normalInventory.reserve(normalDescriptors.size());
   normalInventory.syncActiveRows(normalDescriptors, warmStartOptions);
 
-  std::vector<AvbdScalarRowDescriptor> frictionDescriptors;
+  auto& frictionDescriptors = scratch.frictionDescriptors;
+  frictionDescriptors.clear();
   frictionDescriptors.reserve(2 * activeContacts.size());
   for (std::size_t i = 0; i < activeContacts.size(); ++i) {
     const AvbdRigidContactManifoldPoint& contact = activeContacts[i];
@@ -1951,6 +2068,7 @@ inline void buildAvbdRigidContactManifoldRows(
         contact.row));
   }
 
+  frictionInventory.reserve(frictionDescriptors.size());
   frictionInventory.syncActiveRows(frictionDescriptors, warmStartOptions);
 
   normalRows.clear();
@@ -1997,17 +2115,15 @@ inline void buildAvbdRigidContactManifoldRows(
         states[contact.bodyA], states[contact.bodyB], seed);
     const Eigen::Matrix<double, 3, 2> basis
         = avbdRigidContactTangentBasis(contact.normalFromAtoB);
-    if (const auto previousFirst
-        = previousFrictionDirections.find(firstRecord.descriptor.key);
-        previousFirst != previousFrictionDirections.end()) {
-      if (const auto previousSecond
-          = previousFrictionDirections.find(secondRecord.descriptor.key);
-          previousSecond != previousFrictionDirections.end()) {
+    if (const Eigen::Vector3d* previousFirst
+        = findPreviousFrictionDirection(firstRecord.descriptor.key)) {
+      if (const Eigen::Vector3d* previousSecond
+          = findPreviousFrictionDirection(secondRecord.descriptor.key)) {
         const Eigen::Vector2d projected = projectAvbdFrictionDualToTangentPair(
             firstRecord.state.lambda,
             secondRecord.state.lambda,
-            previousFirst->second,
-            previousSecond->second,
+            *previousFirst,
+            *previousSecond,
             basis.col(0),
             basis.col(1));
         firstRecord.state.lambda
@@ -2050,91 +2166,42 @@ inline void buildAvbdRigidContactManifoldRows(
 }
 
 //==============================================================================
+inline void buildAvbdRigidContactManifoldRows(
+    const std::vector<AvbdRigidBodyState>& states,
+    std::span<const AvbdRigidContactManifoldPoint> contacts,
+    AvbdScalarRowInventory& normalInventory,
+    AvbdScalarRowInventory& frictionInventory,
+    std::vector<AvbdRigidBodyPointPairRow>& normalRows,
+    std::vector<AvbdRigidBodyPointPairFrictionRows>& frictionRows,
+    const AvbdRowWarmStartOptions& warmStartOptions = {})
+{
+  AvbdRigidContactManifoldRowScratch scratch;
+  buildAvbdRigidContactManifoldRows(
+      states,
+      contacts,
+      normalInventory,
+      frictionInventory,
+      normalRows,
+      frictionRows,
+      scratch,
+      warmStartOptions);
+}
+
+//==============================================================================
 inline void buildAvbdRigidPointJointRows(
     const std::vector<AvbdRigidBodyState>& states,
     std::span<const AvbdRigidPointJoint> joints,
     AvbdScalarRowInventory& linearInventory,
     std::vector<AvbdRigidBodyPointPairRow>& linearRows,
+    AvbdRigidPointJointRowScratch& scratch,
     const AvbdRowWarmStartOptions& warmStartOptions = {})
 {
-  struct ActiveJointAxis
-  {
-    const AvbdRigidPointJoint* joint = nullptr;
-    std::uint8_t axis = 0;
-  };
-
-  const auto appendLinearRows = [&](const auto& activeRows,
-                                    std::size_t activeRowCount) {
-    linearRows.clear();
-    linearRows.reserve(linearInventory.size());
-    for (std::size_t recordIndex = 0; recordIndex < activeRowCount;
-         ++recordIndex) {
-      if (recordIndex >= linearInventory.size()) {
-        return;
-      }
-
-      const AvbdRigidPointJoint& joint = *activeRows[recordIndex].joint;
-      const std::uint8_t axis = activeRows[recordIndex].axis;
-      const AvbdScalarRowRecord& record = linearInventory[recordIndex];
-      AvbdRigidBodyPointPairRow indexedRow;
-      indexedRow.bodyA = joint.bodyA;
-      indexedRow.bodyB = joint.bodyB;
-      indexedRow.row.localPointA = joint.localPointA;
-      indexedRow.row.localPointB = joint.localPointB;
-      indexedRow.row.axis = normalizedAvbdRigidPointPairAxis(
-          joint.linearAxes.col(axis), Eigen::Vector3d::Unit(axis));
-      indexedRow.row.state = record.state;
-      indexedRow.row.materialStiffness = record.descriptor.materialStiffness;
-      indexedRow.row.bounds = record.descriptor.bounds;
-      if (!avbdRigidRowUsesFiniteMaterial(indexedRow.row.materialStiffness)) {
-        indexedRow.row.previousConstraintValue
-            = avbdRigidPointPairConstraintValue(
-                states[joint.bodyA], states[joint.bodyB], indexedRow.row);
-      }
-      linearRows.push_back(indexedRow);
-    }
-  };
-
-  const std::size_t maxActiveRows = 3u * joints.size();
-  if (maxActiveRows <= detail::kAvbdRigidSmallRowStackCapacity) {
-    std::array<ActiveJointAxis, detail::kAvbdRigidSmallRowStackCapacity>
-        activeRows;
-    std::array<AvbdScalarRowDescriptor, detail::kAvbdRigidSmallRowStackCapacity>
-        descriptors;
-    std::size_t activeRowCount = 0u;
-    for (const AvbdRigidPointJoint& joint : joints) {
-      if (!detail::isValidAvbdRigidPointJoint(joint, states.size())) {
-        continue;
-      }
-
-      for (std::uint8_t axis = 0; axis < 3u; ++axis) {
-        if (!detail::avbdRigidJointAxisEnabled(joint.linearAxisMask, axis)) {
-          continue;
-        }
-
-        activeRows[activeRowCount] = ActiveJointAxis{&joint, axis};
-        descriptors[activeRowCount]
-            = detail::makeAvbdRigidJointLinearRowDescriptor(
-                joint.endpointA,
-                joint.endpointB,
-                joint.startStiffness,
-                joint.linearMaterialStiffness,
-                joint.maxStiffness,
-                joint.row,
-                axis);
-        ++activeRowCount;
-      }
-    }
-
-    linearInventory.syncActiveRows(
-        std::span<const AvbdScalarRowDescriptor>{
-            descriptors.data(), activeRowCount},
-        warmStartOptions);
-    appendLinearRows(activeRows, activeRowCount);
-    return;
-  }
-
-  std::vector<ActiveJointAxis> activeRows;
+  auto& activeRows = scratch.activeRows;
+  activeRows.clear();
+  activeRows.reserve(3 * joints.size());
+  auto& descriptors = scratch.descriptors;
+  descriptors.clear();
+  descriptors.reserve(3 * joints.size());
   for (const AvbdRigidPointJoint& joint : joints) {
     if (!detail::isValidAvbdRigidPointJoint(joint, states.size())) {
       continue;
@@ -2145,39 +2212,63 @@ inline void buildAvbdRigidPointJointRows(
         continue;
       }
 
-      if (activeRows.empty()) {
-        activeRows.reserve(maxActiveRows);
-      }
-      activeRows.push_back(ActiveJointAxis{&joint, axis});
+      activeRows.push_back(AvbdRigidPointJointActiveAxis{joint, axis});
+      descriptors.push_back(
+          detail::makeAvbdRigidJointLinearRowDescriptor(
+              joint.endpointA,
+              joint.endpointB,
+              joint.startStiffness,
+              joint.linearMaterialStiffness,
+              joint.maxStiffness,
+              joint.row,
+              axis));
     }
   }
 
-  linearInventory.syncActiveRowsByIndex(
-      activeRows.size(),
-      [&](std::size_t index) {
-        const ActiveJointAxis& activeRow = activeRows[index];
-        const AvbdRigidPointJoint& joint = *activeRow.joint;
-        return makeAvbdEndpointPairRowKey(
-            AvbdScalarRowRole::JointLinear,
-            joint.endpointA,
-            joint.endpointB,
-            joint.row,
-            activeRow.axis);
-      },
-      [&](std::size_t index) {
-        const ActiveJointAxis& activeRow = activeRows[index];
-        const AvbdRigidPointJoint& joint = *activeRow.joint;
-        return detail::makeAvbdRigidJointLinearRowDescriptor(
-            joint.endpointA,
-            joint.endpointB,
-            joint.startStiffness,
-            joint.linearMaterialStiffness,
-            joint.maxStiffness,
-            joint.row,
-            activeRow.axis);
-      },
-      warmStartOptions);
-  appendLinearRows(activeRows, activeRows.size());
+  linearInventory.reserve(descriptors.size());
+  linearInventory.syncActiveRows(descriptors, warmStartOptions);
+
+  linearRows.clear();
+  linearRows.reserve(linearInventory.size());
+  for (std::size_t recordIndex = 0; recordIndex < activeRows.size();
+       ++recordIndex) {
+    if (recordIndex >= linearInventory.size()) {
+      return;
+    }
+
+    const AvbdRigidPointJoint& joint = activeRows[recordIndex].joint;
+    const std::uint8_t axis = activeRows[recordIndex].axis;
+    const AvbdScalarRowRecord& record = linearInventory[recordIndex];
+    AvbdRigidBodyPointPairRow indexedRow;
+    indexedRow.bodyA = joint.bodyA;
+    indexedRow.bodyB = joint.bodyB;
+    indexedRow.row.localPointA = joint.localPointA;
+    indexedRow.row.localPointB = joint.localPointB;
+    indexedRow.row.axis = normalizedAvbdRigidPointPairAxis(
+        joint.linearAxes.col(axis), Eigen::Vector3d::Unit(axis));
+    indexedRow.row.state = record.state;
+    indexedRow.row.materialStiffness = record.descriptor.materialStiffness;
+    indexedRow.row.bounds = record.descriptor.bounds;
+    if (!avbdRigidRowUsesFiniteMaterial(indexedRow.row.materialStiffness)) {
+      indexedRow.row.previousConstraintValue
+          = avbdRigidPointPairConstraintValue(
+              states[joint.bodyA], states[joint.bodyB], indexedRow.row);
+    }
+    linearRows.push_back(indexedRow);
+  }
+}
+
+//==============================================================================
+inline void buildAvbdRigidPointJointRows(
+    const std::vector<AvbdRigidBodyState>& states,
+    std::span<const AvbdRigidPointJoint> joints,
+    AvbdScalarRowInventory& linearInventory,
+    std::vector<AvbdRigidBodyPointPairRow>& linearRows,
+    const AvbdRowWarmStartOptions& warmStartOptions = {})
+{
+  AvbdRigidPointJointRowScratch scratch;
+  buildAvbdRigidPointJointRows(
+      states, joints, linearInventory, linearRows, scratch, warmStartOptions);
 }
 
 //==============================================================================
@@ -2186,85 +2277,15 @@ inline void buildAvbdRigidPointJointAngularRows(
     std::span<const AvbdRigidPointJoint> joints,
     AvbdScalarRowInventory& angularInventory,
     std::vector<AvbdRigidBodyAngularPairRow>& angularRows,
+    AvbdRigidPointJointRowScratch& scratch,
     const AvbdRowWarmStartOptions& warmStartOptions = {})
 {
-  struct ActiveJointAxis
-  {
-    const AvbdRigidPointJoint* joint = nullptr;
-    std::uint8_t axis = 0;
-  };
-
-  const auto appendAngularRows = [&](const auto& activeRows,
-                                     std::size_t activeRowCount) {
-    angularRows.clear();
-    angularRows.reserve(angularInventory.size());
-    for (std::size_t recordIndex = 0; recordIndex < activeRowCount;
-         ++recordIndex) {
-      if (recordIndex >= angularInventory.size()) {
-        return;
-      }
-
-      const AvbdRigidPointJoint& joint = *activeRows[recordIndex].joint;
-      const std::uint8_t axis = activeRows[recordIndex].axis;
-      const AvbdScalarRowRecord& record = angularInventory[recordIndex];
-      AvbdRigidBodyAngularPairRow indexedRow;
-      indexedRow.bodyA = joint.bodyA;
-      indexedRow.bodyB = joint.bodyB;
-      indexedRow.row = makeAvbdRigidJointAngularRow(
-          joint.targetRelativeOrientation,
-          joint.angularAxes.col(axis),
-          record.state);
-      indexedRow.row.materialStiffness = record.descriptor.materialStiffness;
-      indexedRow.row.bounds = record.descriptor.bounds;
-      if (!avbdRigidRowUsesFiniteMaterial(indexedRow.row.materialStiffness)) {
-        indexedRow.row.previousConstraintValue
-            = avbdRigidAngularPairConstraintValue(
-                states[joint.bodyA], states[joint.bodyB], indexedRow.row);
-      }
-      angularRows.push_back(indexedRow);
-    }
-  };
-
-  const std::size_t maxActiveRows = 3u * joints.size();
-  if (maxActiveRows <= detail::kAvbdRigidSmallRowStackCapacity) {
-    std::array<ActiveJointAxis, detail::kAvbdRigidSmallRowStackCapacity>
-        activeRows;
-    std::array<AvbdScalarRowDescriptor, detail::kAvbdRigidSmallRowStackCapacity>
-        descriptors;
-    std::size_t activeRowCount = 0u;
-    for (const AvbdRigidPointJoint& joint : joints) {
-      if (!detail::isValidAvbdRigidPointJoint(joint, states.size())) {
-        continue;
-      }
-
-      for (std::uint8_t axis = 0; axis < 3u; ++axis) {
-        if (!detail::avbdRigidJointAxisEnabled(joint.angularAxisMask, axis)) {
-          continue;
-        }
-
-        activeRows[activeRowCount] = ActiveJointAxis{&joint, axis};
-        descriptors[activeRowCount]
-            = detail::makeAvbdRigidJointAngularRowDescriptor(
-                joint.endpointA,
-                joint.endpointB,
-                joint.startStiffness,
-                joint.angularMaterialStiffness,
-                joint.maxStiffness,
-                joint.row,
-                axis);
-        ++activeRowCount;
-      }
-    }
-
-    angularInventory.syncActiveRows(
-        std::span<const AvbdScalarRowDescriptor>{
-            descriptors.data(), activeRowCount},
-        warmStartOptions);
-    appendAngularRows(activeRows, activeRowCount);
-    return;
-  }
-
-  std::vector<ActiveJointAxis> activeRows;
+  auto& activeRows = scratch.activeRows;
+  activeRows.clear();
+  activeRows.reserve(3 * joints.size());
+  auto& descriptors = scratch.descriptors;
+  descriptors.clear();
+  descriptors.reserve(3 * joints.size());
   for (const AvbdRigidPointJoint& joint : joints) {
     if (!detail::isValidAvbdRigidPointJoint(joint, states.size())) {
       continue;
@@ -2275,39 +2296,62 @@ inline void buildAvbdRigidPointJointAngularRows(
         continue;
       }
 
-      if (activeRows.empty()) {
-        activeRows.reserve(maxActiveRows);
-      }
-      activeRows.push_back(ActiveJointAxis{&joint, axis});
+      activeRows.push_back(AvbdRigidPointJointActiveAxis{joint, axis});
+      descriptors.push_back(
+          detail::makeAvbdRigidJointAngularRowDescriptor(
+              joint.endpointA,
+              joint.endpointB,
+              joint.startStiffness,
+              joint.angularMaterialStiffness,
+              joint.maxStiffness,
+              joint.row,
+              axis));
     }
   }
 
-  angularInventory.syncActiveRowsByIndex(
-      activeRows.size(),
-      [&](std::size_t index) {
-        const ActiveJointAxis& activeRow = activeRows[index];
-        const AvbdRigidPointJoint& joint = *activeRow.joint;
-        return makeAvbdEndpointPairRowKey(
-            AvbdScalarRowRole::JointAngular,
-            joint.endpointA,
-            joint.endpointB,
-            joint.row,
-            activeRow.axis);
-      },
-      [&](std::size_t index) {
-        const ActiveJointAxis& activeRow = activeRows[index];
-        const AvbdRigidPointJoint& joint = *activeRow.joint;
-        return detail::makeAvbdRigidJointAngularRowDescriptor(
-            joint.endpointA,
-            joint.endpointB,
-            joint.startStiffness,
-            joint.angularMaterialStiffness,
-            joint.maxStiffness,
-            joint.row,
-            activeRow.axis);
-      },
-      warmStartOptions);
-  appendAngularRows(activeRows, activeRows.size());
+  angularInventory.reserve(descriptors.size());
+  angularInventory.syncActiveRows(descriptors, warmStartOptions);
+
+  angularRows.clear();
+  angularRows.reserve(angularInventory.size());
+  for (std::size_t recordIndex = 0; recordIndex < activeRows.size();
+       ++recordIndex) {
+    if (recordIndex >= angularInventory.size()) {
+      return;
+    }
+
+    const AvbdRigidPointJoint& joint = activeRows[recordIndex].joint;
+    const std::uint8_t axis = activeRows[recordIndex].axis;
+    const AvbdScalarRowRecord& record = angularInventory[recordIndex];
+    AvbdRigidBodyAngularPairRow indexedRow;
+    indexedRow.bodyA = joint.bodyA;
+    indexedRow.bodyB = joint.bodyB;
+    indexedRow.row = makeAvbdRigidJointAngularRow(
+        joint.targetRelativeOrientation,
+        joint.angularAxes.col(axis),
+        record.state);
+    indexedRow.row.materialStiffness = record.descriptor.materialStiffness;
+    indexedRow.row.bounds = record.descriptor.bounds;
+    if (!avbdRigidRowUsesFiniteMaterial(indexedRow.row.materialStiffness)) {
+      indexedRow.row.previousConstraintValue
+          = avbdRigidAngularPairConstraintValue(
+              states[joint.bodyA], states[joint.bodyB], indexedRow.row);
+    }
+    angularRows.push_back(indexedRow);
+  }
+}
+
+//==============================================================================
+inline void buildAvbdRigidPointJointAngularRows(
+    const std::vector<AvbdRigidBodyState>& states,
+    std::span<const AvbdRigidPointJoint> joints,
+    AvbdScalarRowInventory& angularInventory,
+    std::vector<AvbdRigidBodyAngularPairRow>& angularRows,
+    const AvbdRowWarmStartOptions& warmStartOptions = {})
+{
+  AvbdRigidPointJointRowScratch scratch;
+  buildAvbdRigidPointJointAngularRows(
+      states, joints, angularInventory, angularRows, scratch, warmStartOptions);
 }
 
 //==============================================================================
@@ -2317,40 +2361,33 @@ inline void buildAvbdRigidAngularMotorRows(
     AvbdScalarRowInventory& motorInventory,
     std::vector<AvbdRigidBodyAngularPairRow>& motorRows,
     double timeStep,
+    AvbdRigidAngularMotorRowScratch& scratch,
     const AvbdRowWarmStartOptions& warmStartOptions = {})
 {
-  std::vector<AvbdRigidAngularMotor> activeRows;
+  auto& activeRows = scratch.activeRows;
+  activeRows.clear();
   activeRows.reserve(motors.size());
+  auto& descriptors = scratch.descriptors;
+  descriptors.clear();
+  descriptors.reserve(motors.size());
   for (const AvbdRigidAngularMotor& motor : motors) {
     if (!detail::isValidAvbdRigidAngularMotor(motor, states.size(), timeStep)) {
       continue;
     }
 
     activeRows.push_back(motor);
-  }
-
-  motorInventory.syncActiveRowsByIndex(
-      activeRows.size(),
-      [&](std::size_t index) {
-        const AvbdRigidAngularMotor& motor = activeRows[index];
-        return makeAvbdEndpointPairRowKey(
-            AvbdScalarRowRole::Motor,
-            motor.endpointA,
-            motor.endpointB,
-            motor.row,
-            /*axis=*/0);
-      },
-      [&](std::size_t index) {
-        const AvbdRigidAngularMotor& motor = activeRows[index];
-        return detail::makeAvbdRigidAngularMotorRowDescriptor(
+    descriptors.push_back(
+        detail::makeAvbdRigidAngularMotorRowDescriptor(
             motor.endpointA,
             motor.endpointB,
             motor.maxTorque,
             motor.startStiffness,
             motor.maxStiffness,
-            motor.row);
-      },
-      warmStartOptions);
+            motor.row));
+  }
+
+  motorInventory.reserve(descriptors.size());
+  motorInventory.syncActiveRows(descriptors, warmStartOptions);
 
   motorRows.clear();
   motorRows.reserve(motorInventory.size());
@@ -2374,6 +2411,26 @@ inline void buildAvbdRigidAngularMotorRows(
     indexedRow.row.bounds = record.descriptor.bounds;
     motorRows.push_back(indexedRow);
   }
+}
+
+//==============================================================================
+inline void buildAvbdRigidAngularMotorRows(
+    const std::vector<AvbdRigidBodyState>& states,
+    std::span<const AvbdRigidAngularMotor> motors,
+    AvbdScalarRowInventory& motorInventory,
+    std::vector<AvbdRigidBodyAngularPairRow>& motorRows,
+    double timeStep,
+    const AvbdRowWarmStartOptions& warmStartOptions = {})
+{
+  AvbdRigidAngularMotorRowScratch scratch;
+  buildAvbdRigidAngularMotorRows(
+      states,
+      motors,
+      motorInventory,
+      motorRows,
+      timeStep,
+      scratch,
+      warmStartOptions);
 }
 
 //==============================================================================
@@ -2583,12 +2640,48 @@ inline void buildAvbdRigidPointJointConstraintRows(
     AvbdScalarRowInventory& angularInventory,
     std::vector<AvbdRigidBodyPointPairRow>& linearRows,
     std::vector<AvbdRigidBodyAngularPairRow>& angularRows,
+    AvbdRigidPointJointRowScratch& linearScratch,
+    AvbdRigidPointJointRowScratch& angularScratch,
     const AvbdRowWarmStartOptions& warmStartOptions = {})
 {
   buildAvbdRigidPointJointRows(
-      states, joints, linearInventory, linearRows, warmStartOptions);
+      states,
+      joints,
+      linearInventory,
+      linearRows,
+      linearScratch,
+      warmStartOptions);
   buildAvbdRigidPointJointAngularRows(
-      states, joints, angularInventory, angularRows, warmStartOptions);
+      states,
+      joints,
+      angularInventory,
+      angularRows,
+      angularScratch,
+      warmStartOptions);
+}
+
+//==============================================================================
+inline void buildAvbdRigidPointJointConstraintRows(
+    const std::vector<AvbdRigidBodyState>& states,
+    std::span<const AvbdRigidPointJoint> joints,
+    AvbdScalarRowInventory& linearInventory,
+    AvbdScalarRowInventory& angularInventory,
+    std::vector<AvbdRigidBodyPointPairRow>& linearRows,
+    std::vector<AvbdRigidBodyAngularPairRow>& angularRows,
+    const AvbdRowWarmStartOptions& warmStartOptions = {})
+{
+  AvbdRigidPointJointRowScratch linearScratch;
+  AvbdRigidPointJointRowScratch angularScratch;
+  buildAvbdRigidPointJointConstraintRows(
+      states,
+      joints,
+      linearInventory,
+      angularInventory,
+      linearRows,
+      angularRows,
+      linearScratch,
+      angularScratch,
+      warmStartOptions);
 }
 
 //==============================================================================

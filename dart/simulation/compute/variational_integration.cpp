@@ -32,6 +32,7 @@
 #include <entt/entt.hpp>
 
 #include <algorithm>
+#include <limits>
 #include <optional>
 #include <unordered_map>
 #include <utility>
@@ -79,7 +80,8 @@ Eigen::Vector3d rotationLog3(const Eigen::Matrix3d& rotation)
 // Relative transform produced by a joint at the given generalized position
 // (Phase A1: fixed/revolute/prismatic), before the post-joint link offset.
 Eigen::Isometry3d jointMotionTransform(
-    const comps::Joint& joint, const Eigen::VectorXd& position)
+    const comps::Joint& joint,
+    const Eigen::Ref<const Eigen::VectorXd>& position)
 {
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
   switch (joint.type) {
@@ -1003,7 +1005,9 @@ std::optional<VariationalSolveReport> tryIntegrateSinglePrismaticVariational(
     double timeStep,
     MultibodyVariationalState& state,
     const std::vector<VariationalLoopConstraint>& constraints,
-    const VariationalContactHook& contactHook)
+    const VariationalContactHook& contactHook,
+    const VariationalGroundContact* groundContact,
+    std::span<const double> groundContactDuals)
 {
   if (!constraints.empty() || contactHook || structure.links.size() != 2u
       || structure.joints.size() != 1u) {
@@ -1066,14 +1070,92 @@ std::optional<VariationalSolveReport> tryIntegrateSinglePrismaticVariational(
   const double generalizedGravity = effectiveMass * axisWorld.dot(gravity);
   const double generalizedExternal
       = linkFrameSubspace.dot(childLink.externalForce);
-  const double acceleration
-      = (effort + generalizedExternal + generalizedGravity) / effectiveMass;
+  const double noContactGeneralizedForce
+      = effort + generalizedExternal + generalizedGravity;
 
   const double previousPosition = joint.position[0];
   const double previousVelocity = joint.velocity[0];
+  const Eigen::Isometry3d childOffset = childLink.transformFromParentJoint;
+  const Eigen::Isometry3d parentToJoint = childLink.transformFromParentToJoint;
+
+  const auto contactGeneralizedForce = [&](double trialPosition) {
+    if (groundContact == nullptr) {
+      return 0.0;
+    }
+    if (groundContactDuals.size() != groundContact->points.size()) {
+      return std::numeric_limits<double>::quiet_NaN();
+    }
+
+    double generalizedForce = 0.0;
+    Eigen::Isometry3d jointMotion = Eigen::Isometry3d::Identity();
+    jointMotion.translation() = joint.axis * trialPosition;
+    const Eigen::Isometry3d childWorld
+        = baseCache.worldTransform * parentToJoint * jointMotion * childOffset;
+    const Eigen::Vector3d pointVelocity = axisWorld * previousVelocity;
+    const double normalVelocity = pointVelocity.dot(groundContact->planeNormal);
+
+    for (std::size_t i = 0; i < groundContact->points.size(); ++i) {
+      const VariationalContactPoint& point = groundContact->points[i];
+      if (point.linkIndex != 1u) {
+        return std::numeric_limits<double>::quiet_NaN();
+      }
+      const Eigen::Vector3d worldPoint = childWorld * point.localPoint;
+      const double signedDistance = groundContact->planeNormal.dot(
+          worldPoint - groundContact->planePoint);
+      double rawNormal = groundContactDuals[i]
+                         + groundContact->stiffness * (-signedDistance);
+      if (timeStep > 0.0) {
+        rawNormal -= groundContact->dampingCoefficient * normalVelocity;
+      }
+      const double normalMagnitude = std::max(0.0, rawNormal);
+      if (normalMagnitude <= 0.0) {
+        continue;
+      }
+      Eigen::Vector3d contactForce
+          = normalMagnitude * groundContact->planeNormal;
+      if (groundContact->frictionCoefficient > 0.0 && timeStep > 0.0) {
+        const Eigen::Vector3d tangentVelocity
+            = pointVelocity - normalVelocity * groundContact->planeNormal;
+        const double epsilon = groundContact->frictionRegularization;
+        contactForce
+            -= groundContact->frictionCoefficient * normalMagnitude
+               * tangentVelocity
+               / std::sqrt(tangentVelocity.squaredNorm() + epsilon * epsilon);
+      }
+      generalizedForce += axisWorld.dot(contactForce);
+    }
+    return generalizedForce;
+  };
+
+  double acceleration = noContactGeneralizedForce / effectiveMass;
+  double nextPosition = previousPosition + timeStep * previousVelocity
+                        + timeStep * timeStep * acceleration;
+  if (groundContact != nullptr) {
+    constexpr int maxScalarIterations = 12;
+    for (int iteration = 0; iteration < maxScalarIterations; ++iteration) {
+      const double contactForce = contactGeneralizedForce(nextPosition);
+      if (!std::isfinite(contactForce)) {
+        return std::nullopt;
+      }
+      acceleration = (noContactGeneralizedForce + contactForce) / effectiveMass;
+      const double candidate = previousPosition + timeStep * previousVelocity
+                               + timeStep * timeStep * acceleration;
+      if (std::abs(candidate - nextPosition) <= 1e-14) {
+        nextPosition = candidate;
+        break;
+      }
+      nextPosition = candidate;
+    }
+    const double contactForce = contactGeneralizedForce(nextPosition);
+    if (!std::isfinite(contactForce)) {
+      return std::nullopt;
+    }
+    acceleration = (noContactGeneralizedForce + contactForce) / effectiveMass;
+    nextPosition = previousPosition + timeStep * previousVelocity
+                   + timeStep * timeStep * acceleration;
+  }
+
   const double nextVelocity = previousVelocity + timeStep * acceleration;
-  const double nextPosition = previousPosition + timeStep * previousVelocity
-                              + timeStep * timeStep * acceleration;
 
   joint.position[0] = nextPosition;
   joint.velocity[0] = nextVelocity;
@@ -1146,7 +1228,7 @@ Eigen::VectorXd computeResidual(
       continue;
     }
     const auto& joint = registry.get<comps::Joint>(link.joint);
-    const Eigen::VectorXd seg = nextPosition.segment(
+    const auto seg = nextPosition.segment(
         static_cast<Eigen::Index>(link.dofOffset),
         static_cast<Eigen::Index>(link.dof));
     link.nextRelative
@@ -1456,6 +1538,75 @@ std::vector<Eigen::MatrixXd> bodyJacobians(const VarTree& tree)
   return jacobian;
 }
 
+void resizeBodyJacobianScratch(
+    std::vector<Eigen::MatrixXd>& jacobians,
+    const std::size_t linkCount,
+    const Eigen::Index dof)
+{
+  if (jacobians.size() != linkCount) {
+    jacobians.resize(linkCount);
+  }
+  for (Eigen::MatrixXd& jacobian : jacobians) {
+    jacobian.setZero(6, dof);
+  }
+}
+
+void bodyJacobiansInto(
+    const VarTree& tree, std::vector<Eigen::MatrixXd>& jacobians)
+{
+  const auto dof = static_cast<Eigen::Index>(tree.dofCount);
+  resizeBodyJacobianScratch(jacobians, tree.links.size(), dof);
+  for (std::size_t i = 0; i < tree.links.size(); ++i) {
+    const VarLink& link = tree.links[i];
+    if (link.parent >= 0) {
+      jacobians[i].noalias()
+          = adjoint(link.currentRelative.inverse())
+            * jacobians[static_cast<std::size_t>(link.parent)];
+    }
+    if (link.dof > 0) {
+      jacobians[i].middleCols(
+          static_cast<Eigen::Index>(link.dofOffset),
+          static_cast<Eigen::Index>(link.dof)) = link.subspace;
+    }
+  }
+}
+
+void bodyJacobiansInto(
+    const VarTree& tree,
+    const std::vector<Eigen::Isometry3d>& relativeTransforms,
+    std::vector<Eigen::MatrixXd>& jacobians)
+{
+  const auto dof = static_cast<Eigen::Index>(tree.dofCount);
+  resizeBodyJacobianScratch(jacobians, tree.links.size(), dof);
+  for (std::size_t i = 0; i < tree.links.size(); ++i) {
+    const VarLink& link = tree.links[i];
+    if (link.parent >= 0) {
+      jacobians[i].noalias()
+          = adjoint(relativeTransforms[i].inverse())
+            * jacobians[static_cast<std::size_t>(link.parent)];
+    }
+    if (link.dof > 0) {
+      jacobians[i].middleCols(
+          static_cast<Eigen::Index>(link.dofOffset),
+          static_cast<Eigen::Index>(link.dof)) = link.subspace;
+    }
+  }
+}
+
+void reserveContactEvaluationScratch(
+    const VarTree& tree, VariationalContactEvaluationScratch& scratch)
+{
+  const auto linkCount = tree.links.size();
+  const auto dof = static_cast<Eigen::Index>(tree.dofCount);
+  scratch.previousWorldTransforms.resize(linkCount);
+  scratch.trialRelativeTransforms.resize(linkCount);
+  scratch.trialWorldTransforms.resize(linkCount);
+  resizeBodyJacobianScratch(scratch.previousJacobians, linkCount, dof);
+  resizeBodyJacobianScratch(scratch.trialJacobians, linkCount, dof);
+  scratch.contactForce.resize(dof);
+  scratch.forcing.resize(dof);
+}
+
 // World-frame translational Jacobian (3 x dofCount) of a body-fixed point at
 // local offset `point` on link `i`: J_world = R_i (J_linear - [point]
 // J_angular).
@@ -1603,70 +1754,76 @@ std::pair<Eigen::VectorXd, Eigen::MatrixXd> constraintResidualAndJacobian(
   return {g, jac};
 }
 
-// EXPERIMENTAL SPIKE (contact-roadmap gate 2): evaluate the in-loop contact
-// hook at the trial configuration `nextPosition` and return the per-DOF
-// generalized contact force `Q_c` to fold into the residual (`residual -= dt *
-// Q_c`). Builds the trial-config per-link world transforms (a forward
-// kinematics sweep over nextPosition: worldTrial_i = worldTrial_parent *
-// relTrial_i) and body Jacobians, packs them into a VariationalContactContext,
-// and calls the hook. Returns an empty vector when no hook is set, so the
-// no-contact path does no work and stays numerically identical.
-Eigen::VectorXd evaluateContactForce(
+void evaluateContactForceInto(
     const detail::WorldRegistry& registry,
     const VarTree& tree,
     const Eigen::VectorXd& nextPosition,
     double timeStep,
     const Eigen::VectorXd& previousVelocity,
-    const VariationalContactHook& contactHook)
+    const VariationalContactHook& contactHook,
+    const VariationalGroundContactSolver* groundContactSolver,
+    VariationalContactEvaluationScratch& scratch,
+    Eigen::VectorXd& contactForce)
 {
-  if (!contactHook) {
-    return {};
+  if (groundContactSolver == nullptr && !contactHook) {
+    contactForce.resize(0);
+    return;
   }
-  // q^k (step-start) per-link world transforms + body Jacobians, for lagged
-  // contact laws (friction): `tree` is the un-advanced q^k tree.
-  std::vector<Eigen::Isometry3d> previousWorldTransforms(tree.links.size());
-  for (std::size_t i = 0; i < tree.links.size(); ++i) {
-    previousWorldTransforms[i] = tree.links[i].worldTransform;
+
+  const auto linkCount = tree.links.size();
+  if (scratch.previousWorldTransforms.size() != linkCount
+      || scratch.trialRelativeTransforms.size() != linkCount
+      || scratch.trialWorldTransforms.size() != linkCount
+      || scratch.contactForce.size() != static_cast<Eigen::Index>(tree.dofCount)
+      || scratch.forcing.size() != static_cast<Eigen::Index>(tree.dofCount)) {
+    reserveContactEvaluationScratch(tree, scratch);
   }
-  const std::vector<Eigen::MatrixXd> previousJacobians = bodyJacobians(tree);
-  // Trial-configuration kinematics: a VarTree copy whose relative/world
-  // transforms are advanced to q^{k+1} (the q^k tree is left untouched).
-  VarTree trial = tree;
-  for (std::size_t i = 0; i < trial.links.size(); ++i) {
-    VarLink& link = trial.links[i];
+
+  for (std::size_t i = 0; i < linkCount; ++i) {
+    const VarLink& link = tree.links[i];
+    scratch.previousWorldTransforms[i] = link.worldTransform;
+    scratch.trialRelativeTransforms[i] = link.currentRelative;
+    scratch.trialWorldTransforms[i] = link.worldTransform;
+  }
+  bodyJacobiansInto(tree, scratch.previousJacobians);
+
+  for (std::size_t i = 0; i < linkCount; ++i) {
+    const VarLink& link = tree.links[i];
     if (link.parent < 0) {
       continue; // root keeps its fixed world transform from buildVarTree.
     }
     const auto& joint = registry.get<comps::Joint>(link.joint);
-    const Eigen::VectorXd seg = nextPosition.segment(
+    const auto seg = nextPosition.segment(
         static_cast<Eigen::Index>(link.dofOffset),
         static_cast<Eigen::Index>(link.dof));
-    link.currentRelative
+    scratch.trialRelativeTransforms[i]
         = link.parentToJoint * jointMotionTransform(joint, seg) * link.offset;
-    link.worldTransform
-        = trial.links[static_cast<std::size_t>(link.parent)].worldTransform
-          * link.currentRelative;
+    scratch.trialWorldTransforms[i]
+        = scratch.trialWorldTransforms[static_cast<std::size_t>(link.parent)]
+          * scratch.trialRelativeTransforms[i];
   }
-  std::vector<Eigen::Isometry3d> worldTransforms(trial.links.size());
-  for (std::size_t i = 0; i < trial.links.size(); ++i) {
-    worldTransforms[i] = trial.links[i].worldTransform;
-  }
-  const std::vector<Eigen::MatrixXd> jacobians = bodyJacobians(trial);
+  bodyJacobiansInto(
+      tree, scratch.trialRelativeTransforms, scratch.trialJacobians);
+
   const VariationalContactContext context{
-      worldTransforms,
-      jacobians,
-      trial.dofCount,
-      previousWorldTransforms,
-      previousJacobians,
+      scratch.trialWorldTransforms,
+      scratch.trialJacobians,
+      tree.dofCount,
+      scratch.previousWorldTransforms,
+      scratch.previousJacobians,
       previousVelocity,
       timeStep};
-  Eigen::VectorXd contactForce = contactHook(context);
+  if (groundContactSolver != nullptr) {
+    groundContactSolver->computeForceInto(context, contactForce);
+  } else {
+    contactForce = contactHook(context);
+  }
+
   DART_SIMULATION_THROW_T_IF(
-      contactForce.size() != static_cast<Eigen::Index>(trial.dofCount),
+      contactForce.size() != static_cast<Eigen::Index>(tree.dofCount),
       InvalidOperationException,
       "Variational contact hook returned a generalized force of the wrong "
       "dimension");
-  return contactForce;
 }
 
 } // namespace
@@ -1691,6 +1848,24 @@ Eigen::VectorXd variationalContactPointForce(
 }
 
 namespace {
+
+void variationalContactPointForceInto(
+    const VariationalContactContext& context,
+    std::size_t linkIndex,
+    const Eigen::Vector3d& localPoint,
+    const Eigen::Vector3d& worldForce,
+    Eigen::VectorXd& generalizedForce)
+{
+  const Eigen::Matrix3d rotation
+      = context.linkWorldTransforms[linkIndex].linear();
+  const Eigen::MatrixXd& jacobian = context.linkBodyJacobians[linkIndex];
+  const Eigen::Vector3d bodyForce = rotation.transpose() * worldForce;
+  generalizedForce.noalias()
+      += jacobian.bottomRows<3>().transpose() * bodyForce;
+  generalizedForce.noalias()
+      -= jacobian.topRows<3>().transpose()
+         * (detail::skew(localPoint).transpose() * bodyForce);
+}
 
 Eigen::VectorXd variationalWorldTorque(
     const VariationalContactContext& context,
@@ -1764,18 +1939,20 @@ VariationalContactHook makeVariationalCompliantLoopConstraintHook(
         const Eigen::Vector3d forceA
             = -row.stiffness * rowAxis.dot(positionResidual) * rowAxis;
         if (constraint.linkA >= 0) {
-          generalizedForce += variationalContactPointForce(
+          variationalContactPointForceInto(
               context,
               static_cast<std::size_t>(constraint.linkA),
               constraint.pointA,
-              forceA);
+              forceA,
+              generalizedForce);
         }
         if (constraint.linkB >= 0) {
-          generalizedForce += variationalContactPointForce(
+          variationalContactPointForceInto(
               context,
               static_cast<std::size_t>(constraint.linkB),
               constraint.pointB,
-              -forceA);
+              -forceA,
+              generalizedForce);
         }
       }
 
@@ -1939,8 +2116,12 @@ VariationalContactHook makeVariationalGroundContactHook(
                        tangentVelocity.squaredNorm() + epsilon * epsilon);
           }
         }
-        generalizedForce += variationalContactPointForce(
-            context, point.linkIndex, point.localPoint, contactForce);
+        variationalContactPointForceInto(
+            context,
+            point.linkIndex,
+            point.localPoint,
+            contactForce,
+            generalizedForce);
       }
     }
     return generalizedForce;
@@ -1978,16 +2159,36 @@ void normalizeGroundContact(VariationalGroundContact& contact)
       "VariationalGroundContact damping coefficient must be non-negative");
 }
 
+void configureGroundContactScratch(
+    const comps::VariationalContact& config,
+    MultibodyVariationalScratch& scratch)
+{
+  auto& contact = scratch.groundContact;
+  contact.planeNormal = config.planeNormal;
+  contact.planePoint = config.planePoint;
+  contact.stiffness = config.stiffness;
+  contact.frictionCoefficient = config.frictionCoefficient;
+  contact.frictionRegularization = config.frictionRegularization;
+  contact.dampingCoefficient = config.dampingCoefficient;
+  contact.points.clear();
+  contact.points.reserve(config.pointLinkIndices.size());
+  for (std::size_t i = 0; i < config.pointLinkIndices.size(); ++i) {
+    contact.points.push_back(
+        {config.pointLinkIndices[i], config.pointLocalPositions[i]});
+  }
+}
+
 // Per-contact-point generalized force at the trial config: the augmented-
 // Lagrangian normal force max(0, dual + k(-d)) plus C1 lagged regularized-
 // Coulomb friction bounded by that normal magnitude (the friction direction is
 // taken at q^k, so it stays smooth across the RIQN iterates). `dual = 0`
 // recovers the C2 compliant penalty. Empty result when inactive (force <= 0).
-Eigen::VectorXd groundContactPointForce(
+bool groundContactPointForceInto(
     const VariationalContactContext& context,
     const VariationalGroundContact& contact,
     const VariationalContactPoint& point,
-    double dual)
+    double dual,
+    Eigen::VectorXd& generalizedForce)
 {
   DART_SIMULATION_THROW_T_IF(
       point.linkIndex >= context.linkWorldTransforms.size(),
@@ -2026,7 +2227,7 @@ Eigen::VectorXd groundContactPointForce(
   }
   const double normalMagnitude = std::max(0.0, rawNormal);
   if (normalMagnitude <= 0.0) {
-    return {};
+    return false;
   }
   Eigen::Vector3d contactForce = normalMagnitude * contact.planeNormal;
   if (contact.frictionCoefficient > 0.0 && context.timeStep > 0.0) {
@@ -2035,8 +2236,13 @@ Eigen::VectorXd groundContactPointForce(
         -= contact.frictionCoefficient * normalMagnitude * tangentVelocity
            / std::sqrt(tangentVelocity.squaredNorm() + epsilon * epsilon);
   }
-  return variationalContactPointForce(
-      context, point.linkIndex, point.localPoint, contactForce);
+  variationalContactPointForceInto(
+      context,
+      point.linkIndex,
+      point.localPoint,
+      contactForce,
+      generalizedForce);
+  return true;
 }
 
 } // namespace
@@ -2044,38 +2250,61 @@ Eigen::VectorXd groundContactPointForce(
 //==============================================================================
 VariationalGroundContactSolver::VariationalGroundContactSolver(
     VariationalGroundContact contact)
-  : mContact(std::move(contact))
 {
-  normalizeGroundContact(mContact);
-  mDuals.assign(mContact.points.size(), 0.0);
+  resetContact(contact);
 }
 
 //==============================================================================
 VariationalContactHook VariationalGroundContactSolver::hook() const
 {
   return [this](const VariationalContactContext& context) -> Eigen::VectorXd {
-    Eigen::VectorXd generalizedForce
-        = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(context.dofCount));
-    for (std::size_t i = 0; i < mContact.points.size(); ++i) {
-      const Eigen::VectorXd pointForce = groundContactPointForce(
-          context, mContact, mContact.points[i], mDuals[i]);
-      if (pointForce.size() != 0) {
-        generalizedForce += pointForce;
-      }
-    }
+    Eigen::VectorXd generalizedForce;
+    computeForceInto(context, generalizedForce);
     return generalizedForce;
   };
 }
 
 //==============================================================================
-void VariationalGroundContactSolver::setDuals(std::vector<double> duals)
+void VariationalGroundContactSolver::computeForceInto(
+    const VariationalContactContext& context,
+    Eigen::VectorXd& generalizedForce) const
+{
+  generalizedForce.setZero(static_cast<Eigen::Index>(context.dofCount));
+  for (std::size_t i = 0; i < mContact.points.size(); ++i) {
+    groundContactPointForceInto(
+        context, mContact, mContact.points[i], mDuals[i], generalizedForce);
+  }
+}
+
+//==============================================================================
+void VariationalGroundContactSolver::setDuals(std::span<const double> duals)
 {
   DART_SIMULATION_THROW_T_IF(
       duals.size() != mContact.points.size(),
       InvalidOperationException,
       "VariationalGroundContactSolver::setDuals size must match the contact "
       "point count");
-  mDuals = std::move(duals);
+  std::copy(duals.begin(), duals.end(), mDuals.begin());
+}
+
+//==============================================================================
+void VariationalGroundContactSolver::resetContact(
+    const VariationalGroundContact& contact)
+{
+  mContact.planeNormal = contact.planeNormal;
+  mContact.planePoint = contact.planePoint;
+  mContact.stiffness = contact.stiffness;
+  mContact.frictionCoefficient = contact.frictionCoefficient;
+  mContact.frictionRegularization = contact.frictionRegularization;
+  mContact.dampingCoefficient = contact.dampingCoefficient;
+  mContact.points.assign(contact.points.begin(), contact.points.end());
+  normalizeGroundContact(mContact);
+
+  if (mDuals.size() != mContact.points.size()) {
+    mDuals.assign(mContact.points.size(), 0.0);
+  } else {
+    std::fill(mDuals.begin(), mDuals.end(), 0.0);
+  }
 }
 
 //==============================================================================
@@ -2168,17 +2397,27 @@ VariationalContactHook makeVariationalLinkSphereContactHook(
             = std::max(0.0, forceMagnitude - dampingCoefficient * approachRate);
       }
       // Equal and opposite: push A along -n, B along +n.
-      generalizedForce += variationalContactPointForce(
-          context, pair.linkA, pair.centerA, -forceMagnitude * normal);
-      generalizedForce += variationalContactPointForce(
-          context, pair.linkB, pair.centerB, forceMagnitude * normal);
+      variationalContactPointForceInto(
+          context,
+          pair.linkA,
+          pair.centerA,
+          -forceMagnitude * normal,
+          generalizedForce);
+      variationalContactPointForceInto(
+          context,
+          pair.linkB,
+          pair.centerB,
+          forceMagnitude * normal,
+          generalizedForce);
     }
     return generalizedForce;
   };
 }
 
 //==============================================================================
-VariationalSolveReport integrateMultibodyVariational(
+namespace {
+
+VariationalSolveReport integrateMultibodyVariationalImpl(
     detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     const Eigen::Vector3d& gravity,
@@ -2188,22 +2427,45 @@ VariationalSolveReport integrateMultibodyVariational(
     double tolerance,
     const std::vector<VariationalLoopConstraint>& constraints,
     std::size_t andersonDepth,
-    const VariationalContactHook& contactHook)
+    const VariationalContactHook& contactHook,
+    const VariationalGroundContact* fastGroundContact,
+    const VariationalGroundContactSolver* groundContactSolver,
+    VariationalContactEvaluationScratch* contactScratch)
 {
   VariationalSolveReport report;
   if (structure.links.empty()) {
     return report;
   }
 
-  if (auto fastReport = tryIntegrateSinglePrismaticVariational(
-          registry,
-          structure,
-          gravity,
-          timeStep,
-          state,
-          constraints,
-          contactHook)) {
-    return *fastReport;
+  if (groundContactSolver == nullptr) {
+    std::span<const double> groundContactDuals;
+    if (auto fastReport = tryIntegrateSinglePrismaticVariational(
+            registry,
+            structure,
+            gravity,
+            timeStep,
+            state,
+            constraints,
+            contactHook,
+            fastGroundContact,
+            groundContactDuals)) {
+      return *fastReport;
+    }
+  } else {
+    const auto& duals = groundContactSolver->duals();
+    std::span<const double> groundContactDuals{duals.data(), duals.size()};
+    if (auto fastReport = tryIntegrateSinglePrismaticVariational(
+            registry,
+            structure,
+            gravity,
+            timeStep,
+            state,
+            constraints,
+            contactHook,
+            fastGroundContact,
+            groundContactDuals)) {
+      return *fastReport;
+    }
   }
 
   VarTree tree = buildVarTree(registry, structure);
@@ -2365,19 +2627,30 @@ VariationalSolveReport integrateMultibodyVariational(
   std::vector<Eigen::VectorXd> iterateDeltas;
   Eigen::VectorXd previousStep;     // tangent update at q^{k-1}
   Eigen::VectorXd previousPosition; // q^{k-1}
+  VariationalContactEvaluationScratch localContactScratch;
+  auto& contactEvaluation
+      = contactScratch != nullptr ? *contactScratch : localContactScratch;
 
   // EXPERIMENTAL SPIKE (contact-roadmap gate 2): evaluate the forced-DEL
   // residual at a trial configuration, folding the in-loop contact hook's
   // generalized force `Q_c(trial)` onto the same forcing side as the applied
   // force (`residual -= dt * Q_c`). Re-evaluating the hook here is what couples
   // the contact potential's curvature into every RIQN iterate and every
-  // line-search trial. With no hook `evaluateContactForce` returns an empty
-  // vector and the call reduces to the plain `computeResidual(appliedForce)`,
-  // so the no-contact path is numerically identical and does no extra work.
+  // line-search trial. With no hook/solver the contact force is empty and the
+  // call reduces to the plain `computeResidual(appliedForce)`, so the
+  // no-contact path is numerically identical and does no extra work.
   const auto residualAt = [&](const Eigen::VectorXd& trialPosition) {
-    const Eigen::VectorXd contactForce = evaluateContactForce(
-        registry, tree, trialPosition, timeStep, velocity, contactHook);
-    if (contactForce.size() == 0) {
+    evaluateContactForceInto(
+        registry,
+        tree,
+        trialPosition,
+        timeStep,
+        velocity,
+        contactHook,
+        groundContactSolver,
+        contactEvaluation,
+        contactEvaluation.contactForce);
+    if (contactEvaluation.contactForce.size() == 0) {
       return computeResidual(
           registry,
           tree,
@@ -2387,9 +2660,16 @@ VariationalSolveReport integrateMultibodyVariational(
           timeStep,
           appliedForce);
     }
-    const Eigen::VectorXd forcing = appliedForce + contactForce;
+    contactEvaluation.forcing = appliedForce;
+    contactEvaluation.forcing += contactEvaluation.contactForce;
     return computeResidual(
-        registry, tree, trialPosition, state, gravity, timeStep, forcing);
+        registry,
+        tree,
+        trialPosition,
+        state,
+        gravity,
+        timeStep,
+        contactEvaluation.forcing);
   };
 
   // `tolerance` is a per-coordinate accuracy; the convergence test is on the
@@ -2704,6 +2984,37 @@ VariationalSolveReport integrateMultibodyVariational(
   return report;
 }
 
+} // namespace
+
+//==============================================================================
+VariationalSolveReport integrateMultibodyVariational(
+    detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure,
+    const Eigen::Vector3d& gravity,
+    double timeStep,
+    MultibodyVariationalState& state,
+    int maxIterations,
+    double tolerance,
+    const std::vector<VariationalLoopConstraint>& constraints,
+    std::size_t andersonDepth,
+    const VariationalContactHook& contactHook)
+{
+  return integrateMultibodyVariationalImpl(
+      registry,
+      structure,
+      gravity,
+      timeStep,
+      state,
+      maxIterations,
+      tolerance,
+      constraints,
+      andersonDepth,
+      contactHook,
+      nullptr,
+      nullptr,
+      nullptr);
+}
+
 //==============================================================================
 double computeMultibodyMechanicalEnergy(
     const detail::WorldRegistry& registry,
@@ -2856,6 +3167,79 @@ VariationalLoopClosureBinding bindVariationalLoopClosure(
 }
 
 //==============================================================================
+void reserveMultibodyVariationalRegistryStorage(
+    detail::WorldRegistry& registry, std::size_t multibodyCount)
+{
+  auto& stateStorage = registry.storage<MultibodyVariationalState>();
+  auto& scratchStorage = registry.storage<MultibodyVariationalScratch>();
+  stateStorage.reserve(multibodyCount);
+  scratchStorage.reserve(multibodyCount);
+
+  if (multibodyCount == 0u) {
+    return;
+  }
+
+  auto view = registry.view<comps::MultibodyStructure>();
+  auto closures = registry.view<comps::LoopClosure>();
+  for (auto entity : view) {
+    const auto& structure = view.get<comps::MultibodyStructure>(entity);
+    auto& state = registry.get_or_emplace<MultibodyVariationalState>(entity);
+    state.previousDeltaTransform.reserve(structure.links.size());
+    state.previousMomentum.reserve(structure.links.size());
+
+    auto& scratch
+        = registry.get_or_emplace<MultibodyVariationalScratch>(entity);
+    scratch.postContactTransforms.resize(structure.links.size());
+    scratch.constraints.clear();
+    for (auto closureEntity : closures) {
+      const auto binding = bindVariationalLoopClosure(registry, closureEntity);
+      if (binding.status == VariationalLoopClosureBinding::Status::Supported
+          && binding.structure == entity) {
+        scratch.constraints.push_back(binding.constraint);
+      }
+    }
+    appendAvbdRigidWorldArticulatedPointJointConstraints(
+        registry, entity, scratch.constraints);
+    scratch.constraints.clear();
+
+    const auto* contactConfig
+        = registry.try_get<comps::VariationalContact>(entity);
+    if (contactConfig == nullptr || contactConfig->pointLinkIndices.empty()) {
+      continue;
+    }
+
+    configureGroundContactScratch(*contactConfig, scratch);
+    if (scratch.groundContact.stiffness <= 0.0
+        || scratch.groundContact.points.empty()) {
+      continue;
+    }
+    normalizeGroundContact(scratch.groundContact);
+    if (!scratch.groundContactSolver.has_value()) {
+      scratch.groundContactSolver.emplace(scratch.groundContact);
+    } else {
+      scratch.groundContactSolver->resetContact(scratch.groundContact);
+    }
+    const VarTree tree = buildVarTree(registry, structure);
+    if (tree.dofCount > 0u) {
+      reserveContactEvaluationScratch(tree, scratch.contactEvaluation);
+    }
+    if (contactConfig->dualUpdateCadence == 0u) {
+      continue;
+    }
+
+    auto& dualState
+        = registry.get_or_emplace<comps::VariationalContactDualState>(entity);
+    if (dualState.duals.size() != scratch.groundContact.points.size()) {
+      dualState.duals.assign(scratch.groundContact.points.size(), 0.0);
+      dualState.stepsSinceDualUpdate = 0;
+    }
+    scratch.groundContactSolver->setDuals(
+        std::span<const double>{
+            dualState.duals.data(), dualState.duals.size()});
+  }
+}
+
+//==============================================================================
 std::string_view MultibodyVariationalIntegrationStage::getName() const noexcept
 {
   return "multibody_variational_integration";
@@ -2879,12 +3263,12 @@ void MultibodyVariationalIntegrationStage::prepare(World& world)
 
   auto& registry = dart::simulation::detail::registryOf(world);
   auto view = registry.view<comps::MultibodyStructure>();
+  std::size_t multibodyCount = 0;
   for (auto entity : view) {
-    const auto& structure = view.get<comps::MultibodyStructure>(entity);
-    auto& state = registry.get_or_emplace<MultibodyVariationalState>(entity);
-    state.previousDeltaTransform.reserve(structure.links.size());
-    state.previousMomentum.reserve(structure.links.size());
+    static_cast<void>(entity);
+    ++multibodyCount;
   }
+  reserveMultibodyVariationalRegistryStorage(registry, multibodyCount);
 }
 
 //==============================================================================
@@ -2904,8 +3288,11 @@ void MultibodyVariationalIntegrationStage::execute(
   for (auto entity : view) {
     const auto& structure = view.get<comps::MultibodyStructure>(entity);
     auto& state = registry.get_or_emplace<MultibodyVariationalState>(entity);
-    std::vector<VariationalLoopConstraint> constraints;
     std::vector<VariationalCompliantLoopConstraint> compliantConstraints;
+    auto& scratch
+        = registry.get_or_emplace<MultibodyVariationalScratch>(entity);
+    auto& constraints = scratch.constraints;
+    constraints.clear();
     for (auto closureEntity : closures) {
       const auto binding = bindVariationalLoopClosure(registry, closureEntity);
       if (binding.status == VariationalLoopClosureBinding::Status::Supported
@@ -2932,29 +3319,26 @@ void MultibodyVariationalIntegrationStage::execute(
     // cadence after the step. Absent => contact-free.
     const auto* contactConfig
         = registry.try_get<comps::VariationalContact>(entity);
-    std::optional<VariationalGroundContactSolver> alSolver;
+    VariationalGroundContactSolver* groundContactSolver = nullptr;
+    VariationalGroundContactSolver* alSolver = nullptr;
     std::size_t dualUpdateCadence = 0;
     VariationalContactHook contactHook;
     if (contactConfig != nullptr) {
-      VariationalGroundContact contact;
-      contact.planeNormal = contactConfig->planeNormal;
-      contact.planePoint = contactConfig->planePoint;
-      contact.stiffness = contactConfig->stiffness;
-      contact.frictionCoefficient = contactConfig->frictionCoefficient;
-      contact.frictionRegularization = contactConfig->frictionRegularization;
-      contact.dampingCoefficient = contactConfig->dampingCoefficient;
-      const std::size_t pointCount = contactConfig->pointLinkIndices.size();
-      contact.points.reserve(pointCount);
-      for (std::size_t i = 0; i < pointCount; ++i) {
-        contact.points.push_back(
-            {contactConfig->pointLinkIndices[i],
-             contactConfig->pointLocalPositions[i]});
-      }
+      configureGroundContactScratch(*contactConfig, scratch);
+      const auto& contact = scratch.groundContact;
       if (contact.stiffness > 0.0 && !contact.points.empty()) {
+        normalizeGroundContact(scratch.groundContact);
+        if (!scratch.groundContactSolver.has_value()) {
+          scratch.groundContactSolver.emplace(contact);
+        } else {
+          scratch.groundContactSolver->resetContact(contact);
+        }
+        VariationalGroundContactSolver& solver = *scratch.groundContactSolver;
+        groundContactSolver = &solver;
         if (contactConfig->dualUpdateCadence > 0) {
           // C3: a stateful AL solver seeded from the persisted (warm-started)
-          // duals. The solver must outlive the integrate call -- its hook reads
-          // the live duals by reference -- so it is held in `alSolver` here.
+          // duals. The solver must outlive the integrate call and the later
+          // dual update, so it is also held in `alSolver` here.
           dualUpdateCadence = contactConfig->dualUpdateCadence;
           auto& dualState
               = registry.get_or_emplace<comps::VariationalContactDualState>(
@@ -2963,18 +3347,17 @@ void MultibodyVariationalIntegrationStage::execute(
             dualState.duals.assign(contact.points.size(), 0.0);
             dualState.stepsSinceDualUpdate = 0;
           }
-          alSolver.emplace(contact);
-          alSolver->setDuals(dualState.duals);
-          contactHook = alSolver->hook();
-        } else {
-          contactHook = makeVariationalGroundContactHook(contact);
+          solver.setDuals(
+              std::span<const double>{
+                  dualState.duals.data(), dualState.duals.size()});
+          alSolver = &solver;
         }
       }
     }
     contactHook = combineVariationalContactHooks(
         std::move(contactHook),
         makeVariationalCompliantLoopConstraintHook(compliantConstraints));
-    integrateMultibodyVariational(
+    integrateMultibodyVariationalImpl(
         registry,
         structure,
         gravity,
@@ -2984,7 +3367,10 @@ void MultibodyVariationalIntegrationStage::execute(
         m_tolerance,
         constraints,
         5,
-        contactHook);
+        contactHook,
+        groundContactSolver != nullptr ? &scratch.groundContact : nullptr,
+        groundContactSolver,
+        &scratch.contactEvaluation);
     if (compliantScratch != nullptr && !compliantConstraints.empty()) {
       updateVariationalCompliantLoopConstraintRows(
           registry, structure, compliantConstraints, *compliantScratch);
@@ -2994,18 +3380,20 @@ void MultibodyVariationalIntegrationStage::execute(
     // configured cadence from the post-step per-link world transforms (a fresh
     // VarTree reads the converged joint positions), then persist them for the
     // next step and for save/load.
-    if (alSolver.has_value()) {
+    if (alSolver != nullptr) {
       auto& dualState
           = registry.get<comps::VariationalContactDualState>(entity);
       if (++dualState.stepsSinceDualUpdate >= dualUpdateCadence) {
         dualState.stepsSinceDualUpdate = 0;
         const VarTree postTree = buildVarTree(registry, structure);
-        std::vector<Eigen::Isometry3d> postTransforms(postTree.links.size());
+        auto& postTransforms = scratch.postContactTransforms;
+        postTransforms.resize(postTree.links.size());
         for (std::size_t i = 0; i < postTree.links.size(); ++i) {
           postTransforms[i] = postTree.links[i].worldTransform;
         }
         alSolver->updateDuals(postTransforms);
-        dualState.duals = alSolver->duals();
+        const auto& solverDuals = alSolver->duals();
+        dualState.duals.assign(solverDuals.begin(), solverDuals.end());
       }
     }
 

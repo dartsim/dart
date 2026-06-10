@@ -225,6 +225,33 @@ struct AvbdRigidWorldContactSolveResult
   std::vector<std::size_t> fracturedJointIndices;
 };
 
+struct AvbdRigidWorldContactApplyResult
+{
+  std::size_t bodies = 0;
+};
+
+using AvbdRigidWorldRowCounterKey
+    = std::pair<AvbdContactEndpointId, AvbdContactEndpointId>;
+
+struct AvbdRigidWorldContactRowOrder
+{
+  AvbdRigidWorldRowCounterKey rowKey;
+  Eigen::Vector3d localPoint = Eigen::Vector3d::Zero();
+  std::size_t contact = 0u;
+};
+
+struct AvbdRigidWorldRowCounter
+{
+  AvbdRigidWorldRowCounterKey key;
+  std::uint32_t nextRow = 0;
+};
+
+struct AvbdRigidWorldContactBuildScratch
+{
+  std::vector<AvbdRigidWorldRowCounter> rowCounters;
+  std::vector<AvbdRigidWorldContactRowOrder> contactRowOrder;
+};
+
 struct AvbdRigidWorldContactSolveScratch
 {
   void clear()
@@ -244,6 +271,10 @@ struct AvbdRigidWorldContactSolveScratch
     // any family whose body layout changed and clears absent families.
   }
 
+  AvbdRigidContactManifoldRowScratch contactRows;
+  AvbdRigidPointJointRowScratch jointLinearRowsScratch;
+  AvbdRigidPointJointRowScratch jointAngularRowsScratch;
+  AvbdRigidAngularMotorRowScratch motorRowsScratch;
   std::vector<AvbdRigidBodyPointPairRow> normalRows;
   std::vector<AvbdRigidBodyPointPairFrictionRows> frictionRows;
   std::vector<AvbdRigidBodyPointPairRow> jointLinearRows;
@@ -258,10 +289,71 @@ struct AvbdRigidWorldContactSolveScratch
   AvbdRigidBodyRowIndexScratch rowIndexScratch;
 };
 
-struct AvbdRigidWorldContactApplyResult
+inline void reserveAvbdRigidWorldContactSnapshot(
+    AvbdRigidWorldContactSnapshot& snapshot,
+    std::size_t bodyCapacity,
+    std::size_t contactCapacity,
+    std::size_t jointCapacity,
+    std::size_t motorCapacity,
+    std::size_t distanceSpringCapacity = 0)
 {
-  std::size_t bodies = 0;
-};
+  snapshot.entities.reserve(bodyCapacity);
+  if (bodyCapacity > snapshot.entityBodyIndices.bucket_count()) {
+    snapshot.entityBodyIndices.reserve(bodyCapacity);
+  }
+  snapshot.states.reserve(bodyCapacity);
+  snapshot.inertialTargets.reserve(bodyCapacity);
+  snapshot.masses.reserve(bodyCapacity);
+  snapshot.bodyInertias.reserve(bodyCapacity);
+  snapshot.fixed.reserve(bodyCapacity);
+  snapshot.contacts.reserve(contactCapacity);
+  snapshot.joints.reserve(jointCapacity);
+  snapshot.jointEntities.reserve(jointCapacity);
+  snapshot.linearMotors.reserve(motorCapacity);
+  snapshot.motors.reserve(motorCapacity);
+  snapshot.distanceSprings.reserve(distanceSpringCapacity);
+  snapshot.distanceSpringEntities.reserve(distanceSpringCapacity);
+}
+
+inline void reserveAvbdRigidWorldContactSolveScratch(
+    AvbdRigidWorldContactSolveScratch& scratch,
+    std::size_t contactCapacity,
+    std::size_t jointCapacity,
+    std::size_t motorCapacity,
+    std::size_t bodyCapacity = 0,
+    std::size_t distanceSpringCapacity = 0)
+{
+  scratch.contactRows.activeContacts.reserve(contactCapacity);
+  scratch.contactRows.normalDescriptors.reserve(contactCapacity);
+  scratch.contactRows.frictionDescriptors.reserve(2u * contactCapacity);
+  scratch.contactRows.previousFrictionDirections.reserve(2u * contactCapacity);
+  scratch.jointLinearRowsScratch.activeRows.reserve(3u * jointCapacity);
+  scratch.jointLinearRowsScratch.descriptors.reserve(3u * jointCapacity);
+  scratch.jointAngularRowsScratch.activeRows.reserve(3u * jointCapacity);
+  scratch.jointAngularRowsScratch.descriptors.reserve(3u * jointCapacity);
+  scratch.motorRowsScratch.activeRows.reserve(motorCapacity);
+  scratch.motorRowsScratch.descriptors.reserve(motorCapacity);
+  scratch.normalRows.reserve(contactCapacity);
+  scratch.frictionRows.reserve(contactCapacity);
+  scratch.jointLinearRows.reserve(3u * jointCapacity);
+  scratch.jointAngularRows.reserve(3u * jointCapacity);
+  scratch.linearMotorRows.reserve(motorCapacity);
+  scratch.motorRows.reserve(motorCapacity);
+  scratch.distanceSpringRows.reserve(distanceSpringCapacity);
+  const std::size_t pointPairRowCapacity
+      = contactCapacity + 3u * jointCapacity + motorCapacity;
+  const std::size_t angularPairRowCapacity = 3u * jointCapacity + motorCapacity;
+  scratch.pointPairRows.reserve(pointPairRowCapacity);
+  scratch.angularRows.reserve(angularPairRowCapacity);
+  scratch.fallbackInertialTargets.reserve(bodyCapacity);
+  scratch.rowIndexScratch.reserve(
+      bodyCapacity,
+      /*attachmentRowCapacity=*/0u,
+      pointPairRowCapacity,
+      distanceSpringCapacity,
+      angularPairRowCapacity,
+      contactCapacity);
+}
 
 struct AvbdRigidWorldContactStepOptions
 {
@@ -1429,13 +1521,6 @@ inline Eigen::Vector3d avbdRigidWorldContactCanonicalLocalPoint(
 }
 
 //==============================================================================
-struct AvbdRigidWorldContactRowOrder
-{
-  std::pair<AvbdContactEndpointId, AvbdContactEndpointId> rowKey;
-  Eigen::Vector3d localPoint = Eigen::Vector3d::Zero();
-  std::size_t contact = 0u;
-};
-
 using AvbdRigidWorldEndpointPairKey
     = std::pair<AvbdContactEndpointId, AvbdContactEndpointId>;
 
@@ -1464,9 +1549,11 @@ using AvbdRigidWorldRowCounterMap = std::unordered_map<
 
 //==============================================================================
 inline void assignAvbdRigidWorldContactRows(
-    AvbdRigidWorldContactSnapshot& snapshot)
+    AvbdRigidWorldContactSnapshot& snapshot,
+    std::vector<AvbdRigidWorldContactRowOrder>& rows,
+    std::vector<AvbdRigidWorldRowCounter>& rowCounters)
 {
-  std::vector<AvbdRigidWorldContactRowOrder> rows;
+  rows.clear();
   rows.reserve(snapshot.contacts.size());
   for (std::size_t contact = 0; contact < snapshot.contacts.size(); ++contact) {
     const AvbdRigidContactManifoldPoint& manifoldPoint
@@ -1499,34 +1586,97 @@ inline void assignAvbdRigidWorldContactRows(
         return lhs.contact < rhs.contact;
       });
 
-  AvbdRigidWorldRowCounterMap rowCounters;
+  rowCounters.clear();
   rowCounters.reserve(rows.size());
   for (const AvbdRigidWorldContactRowOrder& row : rows) {
-    std::uint32_t& nextRow = rowCounters[row.rowKey];
-    snapshot.contacts[row.contact].row = nextRow;
-    if (nextRow < std::numeric_limits<std::uint32_t>::max()) {
-      ++nextRow;
+    const auto found = std::lower_bound(
+        rowCounters.begin(),
+        rowCounters.end(),
+        row.rowKey,
+        [](const AvbdRigidWorldRowCounter& counter,
+           const AvbdRigidWorldRowCounterKey& value) {
+          return counter.key < value;
+        });
+    AvbdRigidWorldRowCounter& counter
+        = found != rowCounters.end() && found->key == row.rowKey
+              ? *found
+              : *rowCounters.insert(
+                    found, AvbdRigidWorldRowCounter{row.rowKey, 0u});
+    snapshot.contacts[row.contact].row = counter.nextRow;
+    if (counter.nextRow < std::numeric_limits<std::uint32_t>::max()) {
+      ++counter.nextRow;
     }
   }
 }
 
+//==============================================================================
+inline void assignAvbdRigidWorldContactRows(
+    AvbdRigidWorldContactSnapshot& snapshot)
+{
+  std::vector<AvbdRigidWorldContactRowOrder> rows;
+  std::vector<AvbdRigidWorldRowCounter> rowCounters;
+  assignAvbdRigidWorldContactRows(snapshot, rows, rowCounters);
+}
+
 } // namespace detail
 
+inline void resetAvbdRigidWorldRowCounters(
+    AvbdRigidWorldContactBuildScratch& scratch, std::size_t capacity)
+{
+  scratch.rowCounters.clear();
+  scratch.rowCounters.reserve(capacity);
+}
+
 //==============================================================================
-inline void buildAvbdRigidWorldContactSnapshotInto(
+inline AvbdRigidWorldRowCounter& ensureAvbdRigidWorldRowCounter(
+    std::vector<AvbdRigidWorldRowCounter>& rowCounters,
+    const AvbdRigidWorldRowCounterKey& key)
+{
+  const auto it = std::lower_bound(
+      rowCounters.begin(),
+      rowCounters.end(),
+      key,
+      [](const AvbdRigidWorldRowCounter& counter,
+         const AvbdRigidWorldRowCounterKey& value) {
+        return counter.key < value;
+      });
+  if (it != rowCounters.end() && it->key == key) {
+    return *it;
+  }
+  return *rowCounters.insert(it, AvbdRigidWorldRowCounter{key, 0u});
+}
+
+//==============================================================================
+inline std::uint32_t claimNextAvbdRigidWorldRow(
+    std::vector<AvbdRigidWorldRowCounter>& rowCounters,
+    const AvbdRigidWorldRowCounterKey& key)
+{
+  AvbdRigidWorldRowCounter& counter
+      = ensureAvbdRigidWorldRowCounter(rowCounters, key);
+  const std::uint32_t row = counter.nextRow;
+  if (counter.nextRow < std::numeric_limits<std::uint32_t>::max()) {
+    ++counter.nextRow;
+  }
+  return row;
+}
+
+//==============================================================================
+inline void buildAvbdRigidWorldContactSnapshot(
     const ::dart::simulation::detail::WorldRegistry& registry,
     std::span<const Contact> contacts,
     AvbdRigidWorldContactSnapshot& snapshot,
+    AvbdRigidWorldContactBuildScratch& scratch,
     const AvbdRigidWorldContactOptions& options = {})
 {
   clearAvbdRigidWorldContactSnapshot(snapshot);
-  snapshot.contacts.reserve(contacts.size());
-  snapshot.entities.reserve(2u * contacts.size());
-  detail::reserveAvbdRigidWorldBodyIndexMap(snapshot, 2u * contacts.size());
-  snapshot.states.reserve(2u * contacts.size());
-  snapshot.masses.reserve(2u * contacts.size());
-  snapshot.bodyInertias.reserve(2u * contacts.size());
-  snapshot.fixed.reserve(2u * contacts.size());
+  reserveAvbdRigidWorldContactSnapshot(
+      snapshot,
+      /*bodyCapacity=*/2u * contacts.size(),
+      /*contactCapacity=*/contacts.size(),
+      /*jointCapacity=*/0u,
+      /*motorCapacity=*/0u,
+      /*distanceSpringCapacity=*/0u);
+  resetAvbdRigidWorldRowCounters(scratch, contacts.size());
 
   for (std::size_t contactIndex = 0; contactIndex < contacts.size();
        ++contactIndex) {
@@ -1584,10 +1734,13 @@ inline void buildAvbdRigidWorldContactSnapshotInto(
         * detail::avbdRigidWorldContactFriction(registry, entityB));
     manifoldPoint.startStiffness = options.startStiffness;
     manifoldPoint.maxStiffness = options.maxStiffness;
+    const auto rowKey = canonicalizeAvbdContactEndpoints(
+        manifoldPoint.endpointA, manifoldPoint.endpointB);
+    manifoldPoint.row = claimNextAvbdRigidWorldRow(scratch.rowCounters, rowKey);
     snapshot.contacts.push_back(manifoldPoint);
   }
-
-  detail::assignAvbdRigidWorldContactRows(snapshot);
+  detail::assignAvbdRigidWorldContactRows(
+      snapshot, scratch.contactRowOrder, scratch.rowCounters);
 }
 
 //==============================================================================
@@ -1597,45 +1750,52 @@ inline AvbdRigidWorldContactSnapshot buildAvbdRigidWorldContactSnapshot(
     const AvbdRigidWorldContactOptions& options = {})
 {
   AvbdRigidWorldContactSnapshot snapshot;
-  buildAvbdRigidWorldContactSnapshotInto(registry, contacts, snapshot, options);
-
+  AvbdRigidWorldContactBuildScratch scratch;
+  buildAvbdRigidWorldContactSnapshot(
+      registry, contacts, snapshot, scratch, options);
   return snapshot;
+}
+
+//==============================================================================
+inline void buildAvbdRigidWorldContactSnapshotInto(
+    const ::dart::simulation::detail::WorldRegistry& registry,
+    std::span<const Contact> contacts,
+    AvbdRigidWorldContactSnapshot& snapshot,
+    const AvbdRigidWorldContactOptions& options = {})
+{
+  AvbdRigidWorldContactBuildScratch scratch;
+  buildAvbdRigidWorldContactSnapshot(
+      registry, contacts, snapshot, scratch, options);
 }
 
 //==============================================================================
 inline std::size_t appendAvbdRigidWorldPointJoints(
     const ::dart::simulation::detail::WorldRegistry& registry,
     std::span<const AvbdRigidWorldPointJointInput> inputs,
-    AvbdRigidWorldContactSnapshot& snapshot)
+    AvbdRigidWorldContactSnapshot& snapshot,
+    AvbdRigidWorldContactBuildScratch& scratch)
 {
-  const bool singleNewRow = snapshot.joints.empty() && inputs.size() == 1u;
-  detail::AvbdRigidWorldRowCounterMap rowCounters;
-  if (!singleNewRow) {
-    rowCounters.reserve(snapshot.joints.size() + inputs.size());
-  }
   if (!inputs.empty()) {
     const std::size_t maxNewBodies = 2u * inputs.size();
-    snapshot.entities.reserve(snapshot.entities.size() + maxNewBodies);
-    detail::reserveAvbdRigidWorldBodyIndexMap(
-        snapshot, snapshot.entities.size() + maxNewBodies);
-    snapshot.states.reserve(snapshot.states.size() + maxNewBodies);
-    snapshot.masses.reserve(snapshot.masses.size() + maxNewBodies);
-    snapshot.bodyInertias.reserve(snapshot.bodyInertias.size() + maxNewBodies);
-    snapshot.fixed.reserve(snapshot.fixed.size() + maxNewBodies);
-    snapshot.joints.reserve(snapshot.joints.size() + inputs.size());
-    snapshot.jointEntities.reserve(
-        snapshot.jointEntities.size() + inputs.size());
+    reserveAvbdRigidWorldContactSnapshot(
+        snapshot,
+        snapshot.entities.size() + maxNewBodies,
+        snapshot.contacts.size(),
+        snapshot.joints.size() + inputs.size(),
+        snapshot.linearMotors.size() + snapshot.motors.size() + inputs.size(),
+        snapshot.distanceSprings.size());
   }
-  if (!singleNewRow) {
-    for (const AvbdRigidPointJoint& joint : snapshot.joints) {
-      const auto rowKey
-          = canonicalizeAvbdContactEndpoints(joint.endpointA, joint.endpointB);
-      std::uint32_t& nextRow = rowCounters[rowKey];
-      if (joint.row < std::numeric_limits<std::uint32_t>::max()) {
-        nextRow = std::max(nextRow, joint.row + 1u);
-      } else {
-        nextRow = std::numeric_limits<std::uint32_t>::max();
-      }
+  resetAvbdRigidWorldRowCounters(
+      scratch, snapshot.joints.size() + inputs.size());
+  for (const AvbdRigidPointJoint& joint : snapshot.joints) {
+    const auto rowKey
+        = canonicalizeAvbdContactEndpoints(joint.endpointA, joint.endpointB);
+    AvbdRigidWorldRowCounter& counter
+        = ensureAvbdRigidWorldRowCounter(scratch.rowCounters, rowKey);
+    if (joint.row < std::numeric_limits<std::uint32_t>::max()) {
+      counter.nextRow = std::max(counter.nextRow, joint.row + 1u);
+    } else {
+      counter.nextRow = std::numeric_limits<std::uint32_t>::max();
     }
   }
 
@@ -1699,17 +1859,9 @@ inline std::size_t appendAvbdRigidWorldPointJoints(
     joint.maxStiffness = std::max(joint.startStiffness, input.maxStiffness);
     joint.fractureThreshold = input.fractureThreshold;
 
-    if (singleNewRow) {
-      joint.row = 0u;
-    } else {
-      const auto rowKey
-          = canonicalizeAvbdContactEndpoints(joint.endpointA, joint.endpointB);
-      std::uint32_t& nextRow = rowCounters[rowKey];
-      joint.row = nextRow;
-      if (nextRow < std::numeric_limits<std::uint32_t>::max()) {
-        ++nextRow;
-      }
-    }
+    const auto rowKey
+        = canonicalizeAvbdContactEndpoints(joint.endpointA, joint.endpointB);
+    joint.row = claimNextAvbdRigidWorldRow(scratch.rowCounters, rowKey);
 
     if (input.useAngularMotor && input.angularAxes.allFinite()
         && std::isfinite(input.motorTargetSpeed) && input.motorMaxTorque > 0.0
@@ -1761,39 +1913,31 @@ inline std::size_t appendAvbdRigidWorldPointJoints(
 inline std::size_t appendAvbdRigidWorldDistanceSprings(
     const ::dart::simulation::detail::WorldRegistry& registry,
     std::span<const AvbdRigidWorldDistanceSpringInput> inputs,
-    AvbdRigidWorldContactSnapshot& snapshot)
+    AvbdRigidWorldContactSnapshot& snapshot,
+    AvbdRigidWorldContactBuildScratch& scratch)
 {
-  const bool singleNewRow
-      = snapshot.distanceSprings.empty() && inputs.size() == 1u;
-  detail::AvbdRigidWorldRowCounterMap rowCounters;
-  if (!singleNewRow) {
-    rowCounters.reserve(snapshot.distanceSprings.size() + inputs.size());
-  }
   if (!inputs.empty()) {
     const std::size_t maxNewBodies = 2u * inputs.size();
-    snapshot.entities.reserve(snapshot.entities.size() + maxNewBodies);
-    detail::reserveAvbdRigidWorldBodyIndexMap(
-        snapshot, snapshot.entities.size() + maxNewBodies);
-    snapshot.states.reserve(snapshot.states.size() + maxNewBodies);
-    snapshot.masses.reserve(snapshot.masses.size() + maxNewBodies);
-    snapshot.bodyInertias.reserve(snapshot.bodyInertias.size() + maxNewBodies);
-    snapshot.fixed.reserve(snapshot.fixed.size() + maxNewBodies);
-    snapshot.distanceSprings.reserve(
+    reserveAvbdRigidWorldContactSnapshot(
+        snapshot,
+        snapshot.entities.size() + maxNewBodies,
+        snapshot.contacts.size(),
+        snapshot.joints.size(),
+        snapshot.linearMotors.size() + snapshot.motors.size(),
         snapshot.distanceSprings.size() + inputs.size());
-    snapshot.distanceSpringEntities.reserve(
-        snapshot.distanceSpringEntities.size() + inputs.size());
   }
-  if (!singleNewRow) {
-    for (const AvbdRigidBodyPointPairDistanceSpringRow& spring :
-         snapshot.distanceSprings) {
-      const auto rowKey = canonicalizeAvbdContactEndpoints(
-          spring.endpointA, spring.endpointB);
-      std::uint32_t& nextRow = rowCounters[rowKey];
-      if (spring.rowIndex < std::numeric_limits<std::uint32_t>::max()) {
-        nextRow = std::max(nextRow, spring.rowIndex + 1u);
-      } else {
-        nextRow = std::numeric_limits<std::uint32_t>::max();
-      }
+  resetAvbdRigidWorldRowCounters(
+      scratch, snapshot.distanceSprings.size() + inputs.size());
+  for (const AvbdRigidBodyPointPairDistanceSpringRow& spring :
+       snapshot.distanceSprings) {
+    const auto rowKey
+        = canonicalizeAvbdContactEndpoints(spring.endpointA, spring.endpointB);
+    AvbdRigidWorldRowCounter& counter
+        = ensureAvbdRigidWorldRowCounter(scratch.rowCounters, rowKey);
+    if (spring.rowIndex < std::numeric_limits<std::uint32_t>::max()) {
+      counter.nextRow = std::max(counter.nextRow, spring.rowIndex + 1u);
+    } else {
+      counter.nextRow = std::numeric_limits<std::uint32_t>::max();
     }
   }
 
@@ -1847,17 +1991,9 @@ inline std::size_t appendAvbdRigidWorldDistanceSprings(
     spring.startStiffness = std::max(0.0, input.startStiffness);
     spring.maxStiffness = std::max(spring.startStiffness, input.maxStiffness);
 
-    if (singleNewRow) {
-      spring.rowIndex = 0u;
-    } else {
-      const auto rowKey = canonicalizeAvbdContactEndpoints(
-          spring.endpointA, spring.endpointB);
-      std::uint32_t& nextRow = rowCounters[rowKey];
-      spring.rowIndex = nextRow;
-      if (nextRow < std::numeric_limits<std::uint32_t>::max()) {
-        ++nextRow;
-      }
-    }
+    const auto rowKey
+        = canonicalizeAvbdContactEndpoints(spring.endpointA, spring.endpointB);
+    spring.rowIndex = claimNextAvbdRigidWorldRow(scratch.rowCounters, rowKey);
 
     snapshot.distanceSprings.push_back(spring);
     snapshot.distanceSpringEntities.push_back(input.spring);
@@ -1865,6 +2001,27 @@ inline std::size_t appendAvbdRigidWorldDistanceSprings(
   }
 
   return appended;
+}
+
+//==============================================================================
+inline std::size_t appendAvbdRigidWorldPointJoints(
+    const ::dart::simulation::detail::WorldRegistry& registry,
+    std::span<const AvbdRigidWorldPointJointInput> inputs,
+    AvbdRigidWorldContactSnapshot& snapshot)
+{
+  AvbdRigidWorldContactBuildScratch scratch;
+  return appendAvbdRigidWorldPointJoints(registry, inputs, snapshot, scratch);
+}
+
+//==============================================================================
+inline std::size_t appendAvbdRigidWorldDistanceSprings(
+    const ::dart::simulation::detail::WorldRegistry& registry,
+    std::span<const AvbdRigidWorldDistanceSpringInput> inputs,
+    AvbdRigidWorldContactSnapshot& snapshot)
+{
+  AvbdRigidWorldContactBuildScratch scratch;
+  return appendAvbdRigidWorldDistanceSprings(
+      registry, inputs, snapshot, scratch);
 }
 
 //==============================================================================
@@ -1918,8 +2075,8 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
     AvbdScalarRowInventory& jointAngularInventory,
     AvbdScalarRowInventory& motorInventory,
     AvbdScalarRowInventory& distanceSpringInventory,
-    AvbdRigidWorldContactSolveScratch& scratch,
     double timeStep,
+    AvbdRigidWorldContactSolveScratch& scratch,
     const AvbdRigidWorldContactSolveOptions& options = {})
 {
   AvbdRigidWorldContactSolveResult result;
@@ -1930,75 +2087,53 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
   scratch.clear();
   auto& normalRows = scratch.normalRows;
   auto& frictionRows = scratch.frictionRows;
-  if (snapshot.contacts.empty()) {
-    normalInventory.clear();
-    frictionInventory.clear();
-    normalRows.clear();
-    frictionRows.clear();
-  } else {
-    buildAvbdRigidContactManifoldRows(
-        snapshot.states,
-        snapshot.contacts,
-        normalInventory,
-        frictionInventory,
-        normalRows,
-        frictionRows,
-        options.warmStart);
-  }
+  buildAvbdRigidContactManifoldRows(
+      snapshot.states,
+      snapshot.contacts,
+      normalInventory,
+      frictionInventory,
+      normalRows,
+      frictionRows,
+      scratch.contactRows,
+      options.warmStart);
   result.normalRows = normalRows.size();
   result.frictionRows = 2u * frictionRows.size();
 
   auto& jointLinearRows = scratch.jointLinearRows;
   auto& jointAngularRows = scratch.jointAngularRows;
-  if (snapshot.joints.empty()) {
-    jointLinearInventory.clear();
-    jointAngularInventory.clear();
-    jointLinearRows.clear();
-    jointAngularRows.clear();
-  } else {
-    buildAvbdRigidPointJointConstraintRows(
-        snapshot.states,
-        snapshot.joints,
-        jointLinearInventory,
-        jointAngularInventory,
-        jointLinearRows,
-        jointAngularRows,
-        options.warmStart);
-  }
+  buildAvbdRigidPointJointConstraintRows(
+      snapshot.states,
+      snapshot.joints,
+      jointLinearInventory,
+      jointAngularInventory,
+      jointLinearRows,
+      jointAngularRows,
+      scratch.jointLinearRowsScratch,
+      scratch.jointAngularRowsScratch,
+      options.warmStart);
   result.jointLinearRows = jointLinearRows.size();
   result.jointAngularRows = jointAngularRows.size();
 
   auto& linearMotorRows = scratch.linearMotorRows;
   auto& motorRows = scratch.motorRows;
-  if (snapshot.linearMotors.empty() && snapshot.motors.empty()) {
-    motorInventory.clear();
-    linearMotorRows.clear();
-    motorRows.clear();
-  } else {
-    buildAvbdRigidMotorRows(
-        snapshot.states,
-        snapshot.linearMotors,
-        snapshot.motors,
-        motorInventory,
-        linearMotorRows,
-        motorRows,
-        timeStep,
-        options.warmStart);
-  }
+  buildAvbdRigidMotorRows(
+      snapshot.states,
+      snapshot.linearMotors,
+      snapshot.motors,
+      motorInventory,
+      linearMotorRows,
+      motorRows,
+      timeStep,
+      options.warmStart);
   result.motorRows = linearMotorRows.size() + motorRows.size();
 
   auto& distanceSpringRows = scratch.distanceSpringRows;
-  if (snapshot.distanceSprings.empty()) {
-    distanceSpringInventory.clear();
-    distanceSpringRows.clear();
-  } else {
-    buildAvbdRigidDistanceSpringRows(
-        snapshot.states,
-        snapshot.distanceSprings,
-        distanceSpringInventory,
-        distanceSpringRows,
-        options.warmStart);
-  }
+  buildAvbdRigidDistanceSpringRows(
+      snapshot.states,
+      snapshot.distanceSprings,
+      distanceSpringInventory,
+      distanceSpringRows,
+      options.warmStart);
   result.distanceSpringRows = distanceSpringRows.size();
 
   const std::size_t normalRowCount = normalRows.size();
@@ -2029,6 +2164,7 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
       linearMotorOffset = 0u;
     }
   } else {
+    pointPairRows.clear();
     pointPairRows.reserve(
         normalRowCount + jointLinearRowCount + linearMotorRowCount);
     pointPairRows.insert(
@@ -2053,6 +2189,7 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
       angularMotorOffset = 0u;
     }
   } else {
+    angularRows.clear();
     angularRows.reserve(jointAngularRowCount + angularMotorRowCount);
     angularRows.insert(
         angularRows.end(), jointAngularRows.begin(), jointAngularRows.end());
@@ -2178,8 +2315,34 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
     AvbdScalarRowInventory& jointLinearInventory,
     AvbdScalarRowInventory& jointAngularInventory,
     AvbdScalarRowInventory& motorInventory,
+    AvbdScalarRowInventory& distanceSpringInventory,
     AvbdRigidWorldContactSolveScratch& scratch,
     double timeStep,
+    const AvbdRigidWorldContactSolveOptions& options = {})
+{
+  return solveAvbdRigidWorldContactSnapshot(
+      snapshot,
+      normalInventory,
+      frictionInventory,
+      jointLinearInventory,
+      jointAngularInventory,
+      motorInventory,
+      distanceSpringInventory,
+      timeStep,
+      scratch,
+      options);
+}
+
+//==============================================================================
+inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
+    AvbdRigidWorldContactSnapshot& snapshot,
+    AvbdScalarRowInventory& normalInventory,
+    AvbdScalarRowInventory& frictionInventory,
+    AvbdScalarRowInventory& jointLinearInventory,
+    AvbdScalarRowInventory& jointAngularInventory,
+    AvbdScalarRowInventory& motorInventory,
+    double timeStep,
+    AvbdRigidWorldContactSolveScratch& scratch,
     const AvbdRigidWorldContactSolveOptions& options = {})
 {
   AvbdScalarRowInventory distanceSpringInventory;
@@ -2191,8 +2354,8 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
       jointAngularInventory,
       motorInventory,
       distanceSpringInventory,
-      scratch,
       timeStep,
+      scratch,
       options);
 }
 
@@ -2217,8 +2380,8 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
       jointAngularInventory,
       motorInventory,
       distanceSpringInventory,
-      scratch,
       timeStep,
+      scratch,
       options);
 }
 
@@ -2456,8 +2619,8 @@ inline AvbdRigidWorldContactStepResult runAvbdRigidWorldContactStep(
       jointAngularInventory,
       motorInventory,
       distanceSpringInventory,
-      scratch,
       timeStep,
+      scratch,
       options.solve);
   result.fracturedJoints = markAvbdRigidWorldFracturedPointJoints(
       registry, snapshot, result.solve.fracturedJointIndices);
@@ -2537,9 +2700,9 @@ inline void extractAvbdRigidWorldPointJointInputsInto(
     std::vector<AvbdRigidWorldPointJointInput>& inputs,
     bool includeWorldAnchors = true)
 {
-  inputs.clear();
   const auto view
       = registry.view<comps::Joint, AvbdRigidWorldPointJointConfig>();
+  inputs.clear();
   inputs.reserve(view.size_hint());
 
   for (const entt::entity entity : view) {
@@ -2657,6 +2820,14 @@ inline void extractAvbdRigidWorldPointJointInputsInto(
     input.fractureThreshold = joint.breakForce;
     inputs.push_back(input);
   }
+}
+
+//==============================================================================
+inline void extractAvbdRigidWorldPointJointInputs(
+    const ::dart::simulation::detail::WorldRegistry& registry,
+    std::vector<AvbdRigidWorldPointJointInput>& inputs)
+{
+  extractAvbdRigidWorldPointJointInputsInto(registry, inputs);
 }
 
 //==============================================================================

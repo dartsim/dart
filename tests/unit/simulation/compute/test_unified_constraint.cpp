@@ -24,11 +24,18 @@
 #include <entt/entt.hpp>
 #include <gtest/gtest.h>
 
+#include <atomic>
 #include <limits>
+#include <new>
 #include <span>
 #include <vector>
 
 #include <cmath>
+#include <cstdlib>
+
+#if defined(_WIN32)
+  #include <malloc.h>
+#endif
 
 namespace {
 
@@ -56,6 +63,90 @@ void expectVectorExactlyEqual(const Vector& lhs, const Vector& rhs)
     EXPECT_EQ(lhs[i], rhs[i]) << "at " << i;
   }
 }
+
+std::atomic<bool> g_heapAllocationTrackingEnabled{false};
+std::atomic<std::size_t> g_heapAllocationCount{0};
+std::atomic<std::size_t> g_heapAllocationBytes{0};
+
+void recordHeapAllocation(std::size_t bytes) noexcept
+{
+  if (g_heapAllocationTrackingEnabled.load(std::memory_order_relaxed)) {
+    g_heapAllocationCount.fetch_add(1, std::memory_order_relaxed);
+    g_heapAllocationBytes.fetch_add(bytes, std::memory_order_relaxed);
+  }
+}
+
+[[nodiscard]] void* allocateRaw(std::size_t bytes) noexcept
+{
+  return std::malloc(bytes == 0 ? 1 : bytes);
+}
+
+[[nodiscard]] void* allocateAlignedRaw(
+    std::size_t bytes, std::size_t alignment) noexcept
+{
+  if (alignment <= __STDCPP_DEFAULT_NEW_ALIGNMENT__) {
+    return allocateRaw(bytes);
+  }
+
+#if defined(_WIN32)
+  return _aligned_malloc(bytes == 0 ? 1 : bytes, alignment);
+#else
+  const auto requested = bytes == 0 ? 1 : bytes;
+  if (alignment == 0 || (alignment & (alignment - 1)) != 0) {
+    return nullptr;
+  }
+  if (alignment < alignof(void*)) {
+    alignment = alignof(void*);
+  }
+  void* pointer = nullptr;
+  return posix_memalign(&pointer, alignment, requested) == 0 ? pointer
+                                                             : nullptr;
+#endif
+}
+
+void deallocateAlignedRaw(void* pointer, std::size_t alignment) noexcept
+{
+  if (alignment <= __STDCPP_DEFAULT_NEW_ALIGNMENT__) {
+    std::free(pointer);
+    return;
+  }
+
+#if defined(_WIN32)
+  _aligned_free(pointer);
+#else
+  std::free(pointer);
+#endif
+}
+
+class ScopedHeapAllocationCounter final
+{
+public:
+  ScopedHeapAllocationCounter()
+  {
+    g_heapAllocationCount.store(0, std::memory_order_relaxed);
+    g_heapAllocationBytes.store(0, std::memory_order_relaxed);
+    g_heapAllocationTrackingEnabled.store(true, std::memory_order_relaxed);
+  }
+
+  ~ScopedHeapAllocationCounter()
+  {
+    g_heapAllocationTrackingEnabled.store(false, std::memory_order_relaxed);
+  }
+
+  ScopedHeapAllocationCounter(const ScopedHeapAllocationCounter&) = delete;
+  ScopedHeapAllocationCounter& operator=(const ScopedHeapAllocationCounter&)
+      = delete;
+
+  [[nodiscard]] std::size_t allocations() const noexcept
+  {
+    return g_heapAllocationCount.load(std::memory_order_relaxed);
+  }
+
+  [[nodiscard]] std::size_t bytes() const noexcept
+  {
+    return g_heapAllocationBytes.load(std::memory_order_relaxed);
+  }
+};
 
 //==============================================================================
 // Three rigid bodies in a vertical stack on a static ground, mirroring the
@@ -105,6 +196,138 @@ sx::compute::RigidBodyContactProblem buildRigidStackProblem(sx::World& world)
 }
 
 } // namespace
+
+void* operator new(std::size_t bytes)
+{
+  recordHeapAllocation(bytes);
+  if (auto* ptr = allocateRaw(bytes)) {
+    return ptr;
+  }
+  throw std::bad_alloc();
+}
+
+void* operator new[](std::size_t bytes)
+{
+  recordHeapAllocation(bytes);
+  if (auto* ptr = allocateRaw(bytes)) {
+    return ptr;
+  }
+  throw std::bad_alloc();
+}
+
+void* operator new(std::size_t bytes, const std::nothrow_t&) noexcept
+{
+  recordHeapAllocation(bytes);
+  return allocateRaw(bytes);
+}
+
+void* operator new[](std::size_t bytes, const std::nothrow_t&) noexcept
+{
+  recordHeapAllocation(bytes);
+  return allocateRaw(bytes);
+}
+
+void* operator new(std::size_t bytes, std::align_val_t alignment)
+{
+  recordHeapAllocation(bytes);
+  if (auto* ptr
+      = allocateAlignedRaw(bytes, static_cast<std::size_t>(alignment))) {
+    return ptr;
+  }
+  throw std::bad_alloc();
+}
+
+void* operator new[](std::size_t bytes, std::align_val_t alignment)
+{
+  recordHeapAllocation(bytes);
+  if (auto* ptr
+      = allocateAlignedRaw(bytes, static_cast<std::size_t>(alignment))) {
+    return ptr;
+  }
+  throw std::bad_alloc();
+}
+
+void* operator new(
+    std::size_t bytes,
+    std::align_val_t alignment,
+    const std::nothrow_t&) noexcept
+{
+  recordHeapAllocation(bytes);
+  return allocateAlignedRaw(bytes, static_cast<std::size_t>(alignment));
+}
+
+void* operator new[](
+    std::size_t bytes,
+    std::align_val_t alignment,
+    const std::nothrow_t&) noexcept
+{
+  recordHeapAllocation(bytes);
+  return allocateAlignedRaw(bytes, static_cast<std::size_t>(alignment));
+}
+
+void operator delete(void* pointer) noexcept
+{
+  std::free(pointer);
+}
+
+void operator delete[](void* pointer) noexcept
+{
+  std::free(pointer);
+}
+
+void operator delete(void* pointer, std::size_t) noexcept
+{
+  std::free(pointer);
+}
+
+void operator delete[](void* pointer, std::size_t) noexcept
+{
+  std::free(pointer);
+}
+
+void operator delete(void* pointer, const std::nothrow_t&) noexcept
+{
+  std::free(pointer);
+}
+
+void operator delete[](void* pointer, const std::nothrow_t&) noexcept
+{
+  std::free(pointer);
+}
+
+void operator delete(void* pointer, std::align_val_t alignment) noexcept
+{
+  deallocateAlignedRaw(pointer, static_cast<std::size_t>(alignment));
+}
+
+void operator delete[](void* pointer, std::align_val_t alignment) noexcept
+{
+  deallocateAlignedRaw(pointer, static_cast<std::size_t>(alignment));
+}
+
+void operator delete(
+    void* pointer, std::size_t, std::align_val_t alignment) noexcept
+{
+  deallocateAlignedRaw(pointer, static_cast<std::size_t>(alignment));
+}
+
+void operator delete[](
+    void* pointer, std::size_t, std::align_val_t alignment) noexcept
+{
+  deallocateAlignedRaw(pointer, static_cast<std::size_t>(alignment));
+}
+
+void operator delete(
+    void* pointer, std::align_val_t alignment, const std::nothrow_t&) noexcept
+{
+  deallocateAlignedRaw(pointer, static_cast<std::size_t>(alignment));
+}
+
+void operator delete[](
+    void* pointer, std::align_val_t alignment, const std::nothrow_t&) noexcept
+{
+  deallocateAlignedRaw(pointer, static_cast<std::size_t>(alignment));
+}
 
 //==============================================================================
 TEST(UnifiedConstraint, MultibodyFreeReproducesRigidProblemByteForByte)
@@ -183,6 +406,199 @@ TEST(UnifiedConstraint, InPlaceAssemblerMatchesReturnValue)
   }
   EXPECT_EQ(actual.rigidConstraints.size(), expected.rigidConstraints.size());
   EXPECT_TRUE(actual.multibodyBlocks.empty());
+}
+
+//==============================================================================
+TEST(UnifiedConstraint, InPlaceAssemblerReusesSameShapeLinkStorage)
+{
+  sx::compute::RigidBodyContactProblem rigid;
+
+  sx::compute::MultibodyLinkContactProblem linkProblem;
+  linkProblem.inverseMass.resize(2, 2);
+  linkProblem.inverseMass << 2.0, 0.25, 0.25, 1.5;
+  linkProblem.rows.resize(2);
+  for (std::size_t i = 0; i < linkProblem.rows.size(); ++i) {
+    auto& row = linkProblem.rows[i];
+    row.active = true;
+    row.normalJacobian.resize(2);
+    row.tangentJacobian1.resize(2);
+    row.tangentJacobian2.resize(2);
+    row.otherNormalJacobian.resize(2);
+    row.otherTangentJacobian1.resize(2);
+    row.otherTangentJacobian2.resize(2);
+    row.normalJacobian << 1.0 + static_cast<double>(i), 0.5;
+    row.tangentJacobian1 << 0.25, 0.75 + static_cast<double>(i);
+    row.tangentJacobian2 << 0.5, -0.25 - static_cast<double>(i);
+    row.otherNormalJacobian.setZero();
+    row.otherTangentJacobian1.setZero();
+    row.otherTangentJacobian2.setZero();
+    row.normalRhs = 1.0 + static_cast<double>(i);
+    row.tangentRhs1 = -0.25;
+    row.tangentRhs2 = 0.125;
+    row.friction = 0.4;
+  }
+
+  std::vector<sx::compute::UnifiedMultibodyContact> contacts(1);
+  contacts[0].multibody = static_cast<entt::entity>(1);
+  contacts[0].borrowedProblem = &linkProblem;
+
+  sx::compute::UnifiedConstraintProblem problem;
+  sx::compute::assembleUnifiedConstraintProblemInto(problem, rigid, contacts);
+  sx::compute::assembleUnifiedConstraintProblemInto(problem, rigid, contacts);
+
+  std::size_t allocations = 0;
+  std::size_t bytes = 0;
+  {
+    ScopedHeapAllocationCounter heapCounter;
+    sx::compute::assembleUnifiedConstraintProblemInto(problem, rigid, contacts);
+    allocations = heapCounter.allocations();
+    bytes = heapCounter.bytes();
+  }
+
+  EXPECT_EQ(allocations, 0u) << "allocated " << bytes << " bytes";
+  ASSERT_EQ(problem.multibodyBlocks.size(), 1u);
+  ASSERT_EQ(problem.multibodyBlocks[0].rows.size(), 2u);
+  EXPECT_EQ(problem.rhs.size(), 6);
+}
+
+//==============================================================================
+TEST(UnifiedConstraint, InPlaceAssemblerReusesSameShapeMixedStorage)
+{
+  sx::World world;
+  const auto rigid = buildRigidStackProblem(world);
+  ASSERT_EQ(rigid.constraints.size(), 2u);
+
+  sx::compute::MultibodyLinkContactProblem linkProblem;
+  linkProblem.inverseMass.resize(1, 1);
+  linkProblem.inverseMass << 2.0;
+  linkProblem.rows.resize(1);
+  auto& row = linkProblem.rows[0];
+  row.active = true;
+  row.normalJacobian.resize(1);
+  row.tangentJacobian1.resize(1);
+  row.tangentJacobian2.resize(1);
+  row.otherNormalJacobian.resize(1);
+  row.otherTangentJacobian1.resize(1);
+  row.otherTangentJacobian2.resize(1);
+  row.normalJacobian << 1.0;
+  row.tangentJacobian1 << 0.25;
+  row.tangentJacobian2 << -0.5;
+  row.otherNormalJacobian.setZero();
+  row.otherTangentJacobian1.setZero();
+  row.otherTangentJacobian2.setZero();
+  row.normalRhs = 0.5;
+  row.tangentRhs1 = 0.125;
+  row.tangentRhs2 = -0.25;
+  row.friction = 0.3;
+
+  std::vector<sx::compute::UnifiedMultibodyContact> contacts(1);
+  contacts[0].multibody = static_cast<entt::entity>(1);
+  contacts[0].borrowedProblem = &linkProblem;
+
+  sx::compute::UnifiedConstraintProblem problem;
+  sx::compute::assembleUnifiedConstraintProblemInto(problem, rigid, contacts);
+  sx::compute::assembleUnifiedConstraintProblemInto(problem, rigid, contacts);
+
+  std::size_t allocations = 0;
+  std::size_t bytes = 0;
+  {
+    ScopedHeapAllocationCounter heapCounter;
+    sx::compute::assembleUnifiedConstraintProblemInto(problem, rigid, contacts);
+    allocations = heapCounter.allocations();
+    bytes = heapCounter.bytes();
+  }
+
+  EXPECT_EQ(allocations, 0u) << "allocated " << bytes << " bytes";
+  ASSERT_EQ(problem.rigidConstraints.size(), rigid.constraints.size());
+  ASSERT_EQ(problem.multibodyBlocks.size(), 1u);
+  ASSERT_EQ(problem.multibodyBlocks[0].rows.size(), 1u);
+  EXPECT_EQ(problem.rhs.size(), 9);
+}
+
+//==============================================================================
+TEST(UnifiedConstraint, PublicLinkScratchFeedsBorrowedUnifiedAssembly)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  auto robot = world.addMultibody("robot");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "slider";
+  spec.type = sx::JointType::Prismatic;
+  spec.axis = Eigen::Vector3d::UnitZ();
+  auto link = robot.addLink("link", base, spec);
+  link.setMass(1.0);
+
+  const auto robotEntity
+      = dart::simulation::detail::toRegistryEntity(robot.getEntity());
+  const auto linkEntity
+      = dart::simulation::detail::toRegistryEntity(link.getEntity());
+
+  sx::compute::LinkContact contact;
+  contact.link = linkEntity;
+  contact.normal = Eigen::Vector3d::UnitZ();
+  contact.point = Eigen::Vector3d::Zero();
+  contact.depth = 0.01;
+  contact.friction = 0.5;
+
+  Eigen::VectorXd nextVelocity(1);
+  nextVelocity << -0.5;
+  const std::vector<sx::compute::LinkContact> linkContacts{contact};
+
+  auto& registry = dart::simulation::detail::registryOf(world);
+  const auto& structure
+      = registry.get<sx::comps::MultibodyStructure>(robotEntity);
+  sx::compute::MultibodyLinkContactAssemblyScratch linkScratch;
+  ASSERT_TRUE(
+      sx::compute::assembleMultibodyLinkContactProblemInto(
+          linkScratch, registry, structure, nextVelocity, 0.01, linkContacts));
+
+  const auto expected = sx::compute::assembleMultibodyLinkContactProblem(
+      registry, structure, nextVelocity, 0.01, linkContacts);
+  ASSERT_EQ(linkScratch.getProblem().rows.size(), expected.rows.size());
+  ASSERT_EQ(linkScratch.getProblem().rows.size(), 1u);
+  EXPECT_EQ(linkScratch.getProblem().inverseMass, expected.inverseMass);
+  EXPECT_EQ(
+      linkScratch.getProblem().rows[0].normalJacobian,
+      expected.rows[0].normalJacobian);
+
+  sx::compute::RigidBodyContactProblem emptyRigid;
+  std::vector<sx::compute::UnifiedMultibodyContact> multibodyContacts(1);
+  multibodyContacts[0].multibody = robotEntity;
+  multibodyContacts[0].borrowedProblem = &linkScratch.getProblem();
+
+  sx::compute::UnifiedConstraintProblem unified;
+  sx::compute::assembleUnifiedConstraintProblemInto(
+      unified, emptyRigid, multibodyContacts);
+  ASSERT_TRUE(
+      sx::compute::assembleMultibodyLinkContactProblemInto(
+          linkScratch, registry, structure, nextVelocity, 0.01, linkContacts));
+  sx::compute::assembleUnifiedConstraintProblemInto(
+      unified, emptyRigid, multibodyContacts);
+
+  std::size_t allocations = 0;
+  std::size_t bytes = 0;
+  {
+    ScopedHeapAllocationCounter heapCounter;
+    ASSERT_TRUE(
+        sx::compute::assembleMultibodyLinkContactProblemInto(
+            linkScratch,
+            registry,
+            structure,
+            nextVelocity,
+            0.01,
+            linkContacts));
+    sx::compute::assembleUnifiedConstraintProblemInto(
+        unified, emptyRigid, multibodyContacts);
+    allocations = heapCounter.allocations();
+    bytes = heapCounter.bytes();
+  }
+
+  EXPECT_EQ(allocations, 0u) << "allocated " << bytes << " bytes";
+  ASSERT_EQ(unified.multibodyBlocks.size(), 1u);
+  ASSERT_EQ(unified.multibodyBlocks[0].rows.size(), 1u);
+  EXPECT_EQ(unified.rhs.size(), 3);
 }
 
 //==============================================================================
@@ -521,6 +937,39 @@ TEST(UnifiedConstraint, FallbackFrictionUpdatesCrossMultibodyOtherEnd)
   EXPECT_LT(std::abs(tangentAfter), std::abs(tangentBefore));
   EXPECT_LT(velocities[0][1], velocityA[1]);
   EXPECT_GT(velocities[1][1], velocityB[1]);
+
+  sx::compute::UnifiedConstraintSolveScratch scratch;
+  std::vector<Eigen::VectorXd> scratchVelocities{velocityA, velocityB};
+  sx::compute::applyUnifiedConstraintFallback(
+      registry,
+      unified,
+      std::span<Eigen::VectorXd>(scratchVelocities),
+      8,
+      scratch);
+  scratchVelocities = {velocityA, velocityB};
+  sx::compute::applyUnifiedConstraintFallback(
+      registry,
+      unified,
+      std::span<Eigen::VectorXd>(scratchVelocities),
+      8,
+      scratch);
+
+  std::size_t allocations = 0;
+  std::size_t bytes = 0;
+  scratchVelocities = {velocityA, velocityB};
+  {
+    ScopedHeapAllocationCounter heapCounter;
+    sx::compute::applyUnifiedConstraintFallback(
+        registry,
+        unified,
+        std::span<Eigen::VectorXd>(scratchVelocities),
+        8,
+        scratch);
+    allocations = heapCounter.allocations();
+    bytes = heapCounter.bytes();
+  }
+
+  EXPECT_EQ(allocations, 0u) << "allocated " << bytes << " bytes";
 }
 
 //==============================================================================
@@ -856,6 +1305,183 @@ TEST(UnifiedConstraint, SolvesIndependentIslandsWithLocalFindex)
 }
 
 //==============================================================================
+TEST(UnifiedConstraint, ReusedScratchAvoidsHeapAllocationForSameShapeIslands)
+{
+  sx::compute::UnifiedConstraintProblem problem;
+  problem.delassus = Eigen::MatrixXd::Identity(6, 6);
+  problem.rhs.resize(6);
+  problem.rhs << 1.0, 2.0, -2.0, 2.0, -3.0, 3.0;
+  problem.lo.resize(6);
+  problem.lo << 0.0, -0.5, -0.5, 0.0, -0.25, -0.25;
+  problem.hi.resize(6);
+  problem.hi << std::numeric_limits<double>::infinity(), 0.5, 0.5,
+      std::numeric_limits<double>::infinity(), 0.25, 0.25;
+  problem.findex.resize(6);
+  problem.findex << -1, 0, 0, -1, 3, 3;
+
+  sx::compute::UnifiedConstraintSolveScratch scratch;
+  ASSERT_TRUE(sx::compute::solveUnifiedConstraintProblemInto(problem, scratch));
+  ASSERT_TRUE(sx::compute::solveUnifiedConstraintProblemInto(problem, scratch));
+
+  bool solved = false;
+  std::size_t allocations = 0;
+  std::size_t bytes = 0;
+  {
+    ScopedHeapAllocationCounter heapCounter;
+    solved = sx::compute::solveUnifiedConstraintProblemInto(problem, scratch);
+    allocations = heapCounter.allocations();
+    bytes = heapCounter.bytes();
+  }
+
+  EXPECT_TRUE(solved);
+  EXPECT_EQ(allocations, 0u) << "allocated " << bytes << " bytes";
+  ASSERT_EQ(scratch.lambda.size(), 6);
+  EXPECT_DOUBLE_EQ(scratch.lambda[0], 1.0);
+  EXPECT_DOUBLE_EQ(scratch.lambda[1], 0.5);
+  EXPECT_DOUBLE_EQ(scratch.lambda[2], -0.5);
+  EXPECT_DOUBLE_EQ(scratch.lambda[3], 2.0);
+  EXPECT_DOUBLE_EQ(scratch.lambda[4], -0.5);
+  EXPECT_DOUBLE_EQ(scratch.lambda[5], 0.5);
+}
+
+//==============================================================================
+TEST(UnifiedConstraint, ReusedSolutionAvoidsHeapAllocationForSameShapeIslands)
+{
+  sx::compute::UnifiedConstraintProblem problem;
+  problem.delassus = Eigen::MatrixXd::Identity(6, 6);
+  problem.rhs.resize(6);
+  problem.rhs << 1.0, 2.0, -2.0, 2.0, -3.0, 3.0;
+  problem.lo.resize(6);
+  problem.lo << 0.0, -0.5, -0.5, 0.0, -0.25, -0.25;
+  problem.hi.resize(6);
+  problem.hi << std::numeric_limits<double>::infinity(), 0.5, 0.5,
+      std::numeric_limits<double>::infinity(), 0.25, 0.25;
+  problem.findex.resize(6);
+  problem.findex << -1, 0, 0, -1, 3, 3;
+
+  sx::compute::UnifiedConstraintSolveScratch scratch;
+  sx::compute::UnifiedConstraintSolution solution;
+  ASSERT_TRUE(
+      sx::compute::solveUnifiedConstraintProblemInto(
+          problem, solution, scratch));
+  ASSERT_TRUE(
+      sx::compute::solveUnifiedConstraintProblemInto(
+          problem, solution, scratch));
+
+  bool solved = false;
+  std::size_t allocations = 0;
+  std::size_t bytes = 0;
+  {
+    ScopedHeapAllocationCounter heapCounter;
+    solved = sx::compute::solveUnifiedConstraintProblemInto(
+        problem, solution, scratch);
+    allocations = heapCounter.allocations();
+    bytes = heapCounter.bytes();
+  }
+
+  EXPECT_TRUE(solved);
+  EXPECT_TRUE(solution.succeeded);
+  EXPECT_EQ(allocations, 0u) << "allocated " << bytes << " bytes";
+  ASSERT_EQ(solution.lambda.size(), 6);
+  EXPECT_DOUBLE_EQ(solution.lambda[0], 1.0);
+  EXPECT_DOUBLE_EQ(solution.lambda[1], 0.5);
+  EXPECT_DOUBLE_EQ(solution.lambda[2], -0.5);
+  EXPECT_DOUBLE_EQ(solution.lambda[3], 2.0);
+  EXPECT_DOUBLE_EQ(solution.lambda[4], -0.5);
+  EXPECT_DOUBLE_EQ(solution.lambda[5], 0.5);
+}
+
+//==============================================================================
+TEST(
+    UnifiedConstraint,
+    ReusedScratchAvoidsHeapAllocationWhenApplyingLinkImpulses)
+{
+  sx::World world;
+
+  sx::compute::UnifiedConstraintProblem problem;
+  problem.multibodyBlocks.resize(2);
+
+  auto& block = problem.multibodyBlocks[0];
+  block.blockBase = 0;
+  block.inverseMass.resize(2, 2);
+  block.inverseMass << 2.0, 0.25, 0.25, 1.5;
+  block.rows.resize(1);
+  auto& row = block.rows[0];
+  row.normalJacobian.resize(2);
+  row.tangentJacobian1.resize(2);
+  row.tangentJacobian2.resize(2);
+  row.otherNormalJacobian.resize(2);
+  row.otherTangentJacobian1.resize(2);
+  row.otherTangentJacobian2.resize(2);
+  row.normalJacobian << 1.0, 0.5;
+  row.tangentJacobian1 << 0.25, 0.75;
+  row.tangentJacobian2 << -0.5, 0.125;
+  row.otherNormalJacobian << 0.5, -0.25;
+  row.otherTangentJacobian1 << -0.125, 0.625;
+  row.otherTangentJacobian2 << 0.375, 0.5;
+  row.otherMultibodyIndex = 1;
+
+  auto& otherBlock = problem.multibodyBlocks[1];
+  otherBlock.blockBase = 3;
+  otherBlock.inverseMass.resize(2, 2);
+  otherBlock.inverseMass << 1.25, 0.1, 0.1, 1.75;
+
+  Eigen::VectorXd lambda(3);
+  lambda << 0.8, -0.2, 0.125;
+
+  std::vector<Eigen::VectorXd> multibodyVelocities(2);
+  multibodyVelocities[0].resize(2);
+  multibodyVelocities[0] << -0.5, 0.25;
+  multibodyVelocities[1].resize(2);
+  multibodyVelocities[1] << 0.125, -0.75;
+
+  sx::compute::UnifiedConstraintSolveScratch scratch;
+  sx::compute::applyUnifiedConstraintImpulses(
+      dart::simulation::detail::registryOf(world),
+      problem,
+      lambda,
+      std::span<Eigen::VectorXd>(multibodyVelocities),
+      scratch);
+  sx::compute::applyUnifiedConstraintImpulses(
+      dart::simulation::detail::registryOf(world),
+      problem,
+      lambda,
+      std::span<Eigen::VectorXd>(multibodyVelocities),
+      scratch);
+
+  const Eigen::VectorXd beforePrimary = multibodyVelocities[0];
+  const Eigen::VectorXd beforeOther = multibodyVelocities[1];
+  std::size_t allocations = 0;
+  std::size_t bytes = 0;
+  {
+    ScopedHeapAllocationCounter heapCounter;
+    sx::compute::applyUnifiedConstraintImpulses(
+        dart::simulation::detail::registryOf(world),
+        problem,
+        lambda,
+        std::span<Eigen::VectorXd>(multibodyVelocities),
+        scratch);
+    allocations = heapCounter.allocations();
+    bytes = heapCounter.bytes();
+  }
+
+  EXPECT_EQ(allocations, 0u) << "allocated " << bytes << " bytes";
+
+  const Eigen::VectorXd primaryImpulse = lambda[0] * row.normalJacobian
+                                         + lambda[1] * row.tangentJacobian1
+                                         + lambda[2] * row.tangentJacobian2;
+  const Eigen::VectorXd otherImpulse = lambda[0] * row.otherNormalJacobian
+                                       + lambda[1] * row.otherTangentJacobian1
+                                       + lambda[2] * row.otherTangentJacobian2;
+  const Eigen::VectorXd expectedPrimary
+      = beforePrimary + block.inverseMass * primaryImpulse;
+  const Eigen::VectorXd expectedOther
+      = beforeOther - otherBlock.inverseMass * otherImpulse;
+  EXPECT_TRUE(multibodyVelocities[0].isApprox(expectedPrimary, 1e-12));
+  EXPECT_TRUE(multibodyVelocities[1].isApprox(expectedOther, 1e-12));
+}
+
+//==============================================================================
 TEST(UnifiedConstraint, SolveAndApplyStopsHeadOnRigidContact)
 {
   sx::World world;
@@ -1151,6 +1777,36 @@ TEST(UnifiedConstraint, FallbackFrictionOpposesSlidingWithoutReversing)
   EXPECT_GE(boxVelocity.z(), -1e-9);
   EXPECT_GT(boxVelocity.x(), 0.0); // still sliding in the same direction
   EXPECT_LT(boxVelocity.x(), 2.0); // but decelerated by friction
+
+  sx::compute::UnifiedConstraintSolveScratch scratch;
+  sx::compute::applyUnifiedConstraintFallback(
+      dart::simulation::detail::registryOf(world),
+      unified,
+      std::span<Eigen::VectorXd>(noMultibodyVelocities),
+      16,
+      scratch);
+  sx::compute::applyUnifiedConstraintFallback(
+      dart::simulation::detail::registryOf(world),
+      unified,
+      std::span<Eigen::VectorXd>(noMultibodyVelocities),
+      16,
+      scratch);
+
+  std::size_t allocations = 0;
+  std::size_t bytes = 0;
+  {
+    ScopedHeapAllocationCounter heapCounter;
+    sx::compute::applyUnifiedConstraintFallback(
+        dart::simulation::detail::registryOf(world),
+        unified,
+        std::span<Eigen::VectorXd>(noMultibodyVelocities),
+        16,
+        scratch);
+    allocations = heapCounter.allocations();
+    bytes = heapCounter.bytes();
+  }
+
+  EXPECT_EQ(allocations, 0u) << "allocated " << bytes << " bytes";
 }
 
 //==============================================================================
