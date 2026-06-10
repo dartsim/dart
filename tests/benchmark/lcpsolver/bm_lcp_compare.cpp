@@ -13336,7 +13336,8 @@ BENCHMARK(BM_LcpWorldArticulatedGroundStep_BoxedLcp)
     ->Args({256, 200})
     ->Args({384, 200})
     ->Args({512, 200})
-    ->Args({768, 200});
+    ->Args({768, 200})
+    ->Args({1024, 200});
 BENCHMARK(BM_LcpWorldArticulatedRigidImpactStep_BoxedLcp)
     ->Args({1, 1})
     ->Args({4, 1})
@@ -13361,7 +13362,9 @@ BENCHMARK(BM_LcpWorldArticulatedRigidImpactStep_BoxedLcp)
     ->Args({512, 1})
     ->Args({512, 200})
     ->Args({768, 1})
-    ->Args({768, 200});
+    ->Args({768, 200})
+    ->Args({1024, 1})
+    ->Args({1024, 200});
 BENCHMARK(BM_LcpWorldArticulatedLinkImpactStep_BoxedLcp)
     ->Args({1, 1})
     ->Args({4, 1})
@@ -13386,7 +13389,9 @@ BENCHMARK(BM_LcpWorldArticulatedLinkImpactStep_BoxedLcp)
     ->Args({512, 1})
     ->Args({512, 200})
     ->Args({768, 1})
-    ->Args({768, 200});
+    ->Args({768, 200})
+    ->Args({1024, 1})
+    ->Args({1024, 200});
 BENCHMARK(BM_LcpWorldArticulatedCartesianGroundStep_BoxedLcp)
     ->Args({1, 200})
     ->Args({4, 200})
@@ -13401,7 +13406,8 @@ BENCHMARK(BM_LcpWorldArticulatedCartesianGroundStep_BoxedLcp)
     ->Args({256, 200})
     ->Args({384, 200})
     ->Args({512, 200})
-    ->Args({768, 200});
+    ->Args({768, 200})
+    ->Args({1024, 200});
 #endif
 
 BENCHMARK(BM_LCP_COMPARE_SMOKE);
