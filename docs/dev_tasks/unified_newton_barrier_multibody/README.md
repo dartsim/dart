@@ -119,6 +119,8 @@
         and serializable history helpers under `detail/newton_barrier`.
   - [x] Add falling-box energy diagnostics across timestep, Young's modulus,
         barrier stiffness, activation distance, and gravity sweeps.
+  - [x] Add a Fig. 17-style barrier-force curve diagnostic for activation
+        cutoff, kappa scaling, and near-contact slope growth.
   - [x] Add semi-implicit Rayleigh damping terms for contact/barrier and
         articulation potentials using PSD-projected Hessians.
   - [x] Add hinge damping sweep evidence through the scalar articulation
@@ -153,6 +155,9 @@
         kernel/solve timing, speedup, and no-public-API policies for every row.
   - [x] Keep rows without landed kernels explicit as planned/in-progress
         limitations instead of GPU speed claims.
+  - [x] Add the measured private PSD projection packet generator and benchmark
+        row; keep it scoped to local-kernel evidence, not scene-level GPU
+        parity.
 - [ ] Implementation-roadmap Phase 8: complete the PLAN-083 audit and retire
       temporary task state.
   - [x] Add a checked completion audit sidecar that records the current
@@ -185,11 +190,11 @@ storage, or backend resources as public API.
 ## Key Decisions
 
 - Phase 1 is an internal ownership and contract slice, not a behavior change.
-- Batch all work within one implementation-roadmap phase into a single branch
-  and PR. Commits within the branch stay atomic and self-describing, but the PR
-  is the review unit, not the commit. A phase may split into at most two PRs
-  only if it crosses a public-API boundary or touches unrelated CI/build
-  infrastructure.
+- Batch work into the smallest reviewer-useful PR unit: default to one branch
+  and PR per implementation-roadmap phase, but consolidate adjacent small
+  internal phases into one PR when that keeps review clearer. Commits within the
+  branch stay atomic and self-describing. Split only for public-API boundaries,
+  unrelated CI/build infrastructure, or reviewability.
 - The old `deformable_contact` include paths remain as forwarding
   compatibility headers to avoid unnecessary PLAN-081 merge conflicts.
 - Rigid IPC should include the new Newton-barrier owner directly because it is
@@ -218,8 +223,8 @@ storage, or backend resources as public API.
 
 ## Immediate Next Steps
 
-1. Monitor the phase-scoped PR stack through #2960, the completion-audit PR
-   targeting the Phase 7 branch.
+1. Use merged PR #2960 as the baseline for implementation-roadmap Phases 3-8;
+   do not reopen the old phase-scoped stack.
 2. Get maintainer direction before retiring
    `docs/dev_tasks/unified_newton_barrier_multibody/`: the Phase 8 audit found
    that PLAN-083 still has planned CPU/GPU/scene rows and cannot honestly be
@@ -229,8 +234,8 @@ storage, or backend resources as public API.
    and needs a solved-state residual or runtime stepping diagnostic.
 4. Promote only the smallest proven shared contract, with cross-variant tests
    showing identical behavior; keep variant-specific terms in their owner plans.
-5. Keep runtime stepping and GPU claims out of scope until the row-specific CPU
-   corpus packets and Phase 7 GPU parity evidence exist.
+5. Keep runtime stepping and non-PSD GPU claims out of scope until the
+   row-specific CPU corpus packets and Phase 7 GPU parity evidence exist.
 
 ## Validation Gates For Current Slices
 
@@ -258,6 +263,12 @@ Phase 8 local evidence:
 - `pixi run python -m pytest tests/test_plan083_completion_audit.py`
 - `pixi run lint`
 - `pixi run build`
+
+Phase 7 PSD packet evidence:
+
+- `pixi run python -m pytest tests/test_plan083_gpu_psd_packet.py`
+- `pixi run -e cuda build-cuda`
+- `pixi run -e cuda bm-plan083-gpu-psd-packet`
 
 Phase 1 local evidence:
 
