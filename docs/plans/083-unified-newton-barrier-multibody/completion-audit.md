@@ -1,15 +1,16 @@
 # PLAN-083 Completion Audit
 
-Audit date: 2026-06-09
+Audit date: 2026-06-10
 
 Verdict: NOT COMPLETE.
 
-PLAN-083 has completed the implementation-roadmap Phase 8 audit step, but the
-plan itself cannot be called complete yet. The manifest, CPU scene corpus, and
-private GPU parity packet still contain planned rows and explicit limitations.
-Do not retire `docs/dev_tasks/unified_newton_barrier_multibody/` until a
-maintainer decides whether the remaining work stays tracked there or moves
-entirely into durable plan sidecars.
+PLAN-083 has completed the implementation-roadmap Phase 8 audit step and now has
+branch-local runtime smoke coverage for several landed Newton-barrier contracts,
+but the plan itself cannot be called complete yet. The manifest, CPU scene
+corpus, and private GPU parity packet still contain planned rows and explicit
+limitations. Do not retire `docs/dev_tasks/unified_newton_barrier_multibody/`
+until a maintainer decides whether the remaining work stays tracked there or
+moves entirely into durable plan sidecars.
 
 ## Evidence Snapshot
 
@@ -21,28 +22,31 @@ entirely into durable plan sidecars.
 
 ## Phase 8 Checklist
 
-| Requirement                                                   | Audit result | Notes                                                                                                                                                       |
-| ------------------------------------------------------------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `paper-deck-manifest.md` has zero unclassified rows           | Pass         | Every manifest row has an explicit status. The current statuses are `planned` or `in-progress`; none are unclassified.                                      |
-| Every non-planned row links to concrete evidence or rationale | Partial      | In-progress rows name branch-local artifacts, tests, packets, or limitations, but they do not yet prove paper-scale runtime behavior or performance parity. |
-| CPU packets exist for performance rows                        | Blocked      | `cpu-scene-corpus.json` records commands and artifact paths, but 10 performance/comparison rows remain `planned` and many others are placeholders.          |
-| GPU packets exist for GPU claims                              | Blocked      | `gpu-parity-packet.json` intentionally contains no speed claim; five rows remain `planned` and one PSD row remains `in-progress`.                           |
-| Public headers and dartpy remain backend-neutral              | Pass         | Phase 8 validation keeps API-boundary gates in the local evidence set; no public CUDA/backend/solver-registry API is added by this audit.                   |
-| Durable docs own landed architecture                          | Partial      | Durable plan sidecars own the manifest, CPU corpus, GPU packet, and this audit. The temporary dev-task folder remains active because acceptance is unmet.   |
-| Temporary dev-task folder retired                             | Blocked      | Retirement requires maintainer direction because material planned work remains.                                                                             |
+| Requirement                                                   | Audit result | Notes                                                                                                                                                                                                                                                   |
+| ------------------------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `paper-deck-manifest.md` has zero unclassified rows           | Pass         | Every manifest row has an explicit status. The current statuses are `planned` or `in-progress`; none are unclassified.                                                                                                                                  |
+| Every non-planned row links to concrete evidence or rationale | Partial      | In-progress rows name branch-local artifacts, tests, packets, or limitations. Runtime wiring now covers point/hinge constraints, BDF-2, deformable surface obstacles, and a reduced hanging bridge, but not paper-scale behavior or performance parity. |
+| CPU packets exist for performance rows                        | Blocked      | `cpu-scene-corpus.json` records commands and artifact paths, but 10 performance/comparison rows remain `planned` and many others are placeholders.                                                                                                      |
+| GPU packets exist for GPU claims                              | Blocked      | `gpu-parity-packet.json` intentionally contains no speed claim; five rows remain `planned` and one PSD row remains `in-progress`.                                                                                                                       |
+| Public headers and dartpy remain backend-neutral              | Pass         | Phase 8 validation keeps API-boundary gates in the local evidence set; no public CUDA/backend/solver-registry API is added by this audit.                                                                                                               |
+| Durable docs own landed architecture                          | Partial      | Durable plan sidecars own the manifest, CPU corpus, GPU packet, and this audit. The temporary dev-task folder remains active because acceptance is unmet.                                                                                               |
+| Temporary dev-task folder retired                             | Blocked      | Retirement requires maintainer direction because material planned work remains.                                                                                                                                                                         |
 
 ## Remaining Blockers
 
-- Runtime mixed-domain stepping and sparse equality-constraint solving are not
-  promoted for the paper-scale scenes.
+- Runtime mixed-domain stepping and sparse equality-constraint solving are only
+  partially promoted: rigid IPC now covers point/fixed and hinge constraints,
+  opt-in BDF-2, deformable surface obstacles, and one reduced hanging-bridge
+  smoke scene, but paper-scale mixed scenes remain unproven.
 - CPU benchmark/profile packets do not yet reproduce or explain every paper/deck
   performance row against DART incumbents, audited references, and paper/deck
   numbers.
 - Private GPU packets do not yet prove same-scene CPU/GPU parity or speedups for
   contact candidates, CCD/line search, local barrier/friction kernels, assembly,
   linear solve, or scene-level workloads.
-- Launchable py-demo placeholders exist, but paper-scale scenes still need
-  long-horizon headless visual captures and nonblank/motion evidence.
+- Launchable py-demo placeholders exist, and the reduced hanging-bridge scene
+  has local headless smoke/capture evidence, but the remaining paper-scale
+  scenes still need long-horizon visual captures and nonblank/motion evidence.
 - ABD remains an internal primitive/oracle micro-packet, not a runtime affine
   solver or a replacement for the rigid IPC correctness oracle.
 

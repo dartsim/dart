@@ -277,33 +277,16 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Algorithm extensibility
-- Next step: Continue the active
-  [`../dev_tasks/unified_newton_barrier_multibody/`](../dev_tasks/unified_newton_barrier_multibody/):
-  Phase 1 promoted shared distance/barrier/tangent/friction primitives into
-  `detail/newton_barrier`, Phase 2 has internal ABD barrier/friction derivative
-  oracles, and the first `abd-alg-affine-body` benchmark packet is now an
-  in-progress primitive/oracle manifest row. The current packet does not need a
-  two-body affine contact micro-solve before Phase 3; defer that solved-state
-  row until a broader ABD packet needs runtime residual evidence. Use the PLAN-083
-  [`ipc-variant-consolidation.md`](083-unified-newton-barrier-multibody/ipc-variant-consolidation.md)
-  sidecar to keep deformable IPC, codimensional IPC, rigid IPC, ABD, PD-IPC,
-  SPB, PPF cubic-barrier/strain-limiting, and VBD/OGC-adjacent obligations in
-  the right owners; use
-  [`ppf-contact-solver-intake.md`](083-unified-newton-barrier-multibody/ppf-contact-solver-intake.md)
-  for PPF's paper, repository, API, diagnostics, examples, and GPU-platform
-  lessons. Implementation-roadmap Phase 2 shared solver contracts landed in PR
-  #2951, implementation-roadmap Phase 3 Unified Articulation Constraints is open
-  as PR #2953 targeting `main`, and implementation-roadmap Phase 4 Restitution,
-  BDF-2, and Rayleigh Damping is open as PR #2954 targeting the Phase 3 branch.
-  Implementation-roadmap Phase 5 Mixed-Domain Coupling is open as PR #2957
-  targeting the Phase 4 branch, and implementation-roadmap Phase 6 CPU Scene
-  Corpus And Py-Demos is open as PR #2958 targeting the Phase 5 branch.
-  Implementation-roadmap Phase 7 Private GPU Parity And Speed is open as PR
-  #2959 targeting the Phase 6 branch, and implementation-roadmap Phase 8
-  Completion Audit is open as PR #2960 targeting the Phase 7 branch. The audit
-  records that PLAN-083 is not complete while planned manifest, CPU corpus, and
-  GPU parity rows remain, so dev-task retirement needs maintainer direction
-  before deletion.
+- Next step: Land the active
+  [`../dev_tasks/unified_newton_barrier_multibody/`](../dev_tasks/unified_newton_barrier_multibody/)
+  runtime-wiring branch as one PR. The branch
+  `feature/newton-barrier-runtime-wiring` wires landed point/fixed and hinge
+  constraints into rigid IPC `World::step`, adds opt-in BDF-2 stepping, routes
+  deformable surfaces as fixed mixed-domain contact obstacles, and runs a
+  reduced hanging-bridge py-demo through `World::step` plus headless capture.
+  The completion audit still records PLAN-083 as incomplete while planned
+  manifest, CPU corpus, and GPU parity rows remain, so dev-task retirement
+  needs maintainer direction before deletion.
 - Gate: Unified Newton-barrier progress is not complete until every cited
   paper/deck figure, unit test, benchmark table, and comparison scene is mapped
   to DART-owned tests, py-demos examples, benchmark/profiling packets, CPU and
