@@ -567,9 +567,8 @@ TEST(NewtonBarrierPrimitives, BarrierForceCurveCapturesKappaSensitivity)
   constexpr double squaredActivationDistance
       = activationDistance * activationDistance;
 
-  const auto normalForceMagnitude = [squaredActivationDistance](
-                                        const double clearance,
-                                        const double stiffness) {
+  const auto normalForceMagnitude = [](const double clearance,
+                                       const double stiffness) {
     const auto barrier = nb::c2ClampedLogBarrier(
         clearance * clearance, squaredActivationDistance);
     if (!barrier.active) {
