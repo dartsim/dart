@@ -29,6 +29,14 @@ CPU-only work may land first when that keeps reviewable slices small. It is not
 the final target. GPU work stays private and benchmark-gated until same-scene
 CPU/GPU parity and timing packets exist.
 
+## PR Discipline
+
+Default to one PR per implementation-roadmap phase, with atomic
+self-describing commits inside the branch. Adjacent small internal phases may
+be consolidated into one PR when that keeps review clearer, as Phases 3-8 did
+in PR #2960. Split only for public-API boundaries, unrelated CI/build
+infrastructure, or reviewability.
+
 ## Phase 0: Current Foundation
 
 Current branch evidence:
