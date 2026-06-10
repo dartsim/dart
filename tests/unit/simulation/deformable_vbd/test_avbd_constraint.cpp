@@ -160,6 +160,96 @@ TEST(AvbdConstraint, RowInventoryWarmStartsPersistentHardRows)
 }
 
 //==============================================================================
+TEST(AvbdConstraint, RowInventoryWarmStartsStableOrderInPlace)
+{
+  vbd::AvbdScalarRowDescriptor contact
+      = makeRow(vbd::AvbdScalarRowRole::ContactNormal, 7);
+  vbd::AvbdScalarRowDescriptor attachment
+      = makeRow(vbd::AvbdScalarRowRole::Attachment, 3);
+
+  vbd::AvbdScalarRowInventory inventory;
+  const std::vector<vbd::AvbdScalarRowDescriptor> descriptors
+      = {contact, attachment};
+  inventory.syncActiveRows(descriptors, {});
+  ASSERT_EQ(inventory.size(), 2u);
+  inventory[0].state.stiffness = 40.0;
+  inventory[0].state.lambda = 10.0;
+  inventory[0].direction = Eigen::Vector3d::UnitX();
+  inventory[1].state.stiffness = 20.0;
+  inventory[1].state.lambda = 5.0;
+  inventory[1].direction = Eigen::Vector3d::UnitY();
+
+  vbd::AvbdRowWarmStartOptions options;
+  options.alpha = 0.5;
+  options.gamma = 0.25;
+  inventory.syncActiveRows(descriptors, options);
+
+  ASSERT_EQ(inventory.size(), 2u);
+  EXPECT_EQ(inventory[0].descriptor.key, contact.key);
+  EXPECT_DOUBLE_EQ(inventory[0].state.lambda, 1.25);
+  EXPECT_DOUBLE_EQ(inventory[0].state.stiffness, 10.0);
+  EXPECT_TRUE(inventory[0].direction.isZero());
+  EXPECT_EQ(inventory[1].descriptor.key, attachment.key);
+  EXPECT_DOUBLE_EQ(inventory[1].state.lambda, 0.625);
+  EXPECT_DOUBLE_EQ(inventory[1].state.stiffness, 5.0);
+  EXPECT_TRUE(inventory[1].direction.isZero());
+}
+
+//==============================================================================
+TEST(AvbdConstraint, RowInventoryWarmStartsGeneratedStableOrderInPlace)
+{
+  vbd::AvbdScalarRowDescriptor contact
+      = makeRow(vbd::AvbdScalarRowRole::ContactNormal, 7);
+  vbd::AvbdScalarRowDescriptor attachment
+      = makeRow(vbd::AvbdScalarRowRole::Attachment, 3);
+  const std::vector<vbd::AvbdScalarRowDescriptor> descriptors
+      = {contact, attachment};
+
+  vbd::AvbdScalarRowInventory inventory;
+  std::size_t keyCalls = 0u;
+  std::size_t descriptorCalls = 0u;
+  const auto keyAt = [&](std::size_t index) {
+    ++keyCalls;
+    return descriptors[index].key;
+  };
+  const auto descriptorAt = [&](std::size_t index) {
+    ++descriptorCalls;
+    return descriptors[index];
+  };
+
+  inventory.syncActiveRowsByIndex(descriptors.size(), keyAt, descriptorAt, {});
+  ASSERT_EQ(inventory.size(), 2u);
+  EXPECT_EQ(keyCalls, 0u);
+  EXPECT_EQ(descriptorCalls, descriptors.size());
+  inventory[0].state.stiffness = 40.0;
+  inventory[0].state.lambda = 10.0;
+  inventory[0].direction = Eigen::Vector3d::UnitX();
+  inventory[1].state.stiffness = 20.0;
+  inventory[1].state.lambda = 5.0;
+  inventory[1].direction = Eigen::Vector3d::UnitY();
+
+  vbd::AvbdRowWarmStartOptions options;
+  options.alpha = 0.5;
+  options.gamma = 0.25;
+  keyCalls = 0u;
+  descriptorCalls = 0u;
+  inventory.syncActiveRowsByIndex(
+      descriptors.size(), keyAt, descriptorAt, options);
+
+  ASSERT_EQ(inventory.size(), 2u);
+  EXPECT_EQ(keyCalls, descriptors.size());
+  EXPECT_EQ(descriptorCalls, descriptors.size());
+  EXPECT_EQ(inventory[0].descriptor.key, contact.key);
+  EXPECT_DOUBLE_EQ(inventory[0].state.lambda, 1.25);
+  EXPECT_DOUBLE_EQ(inventory[0].state.stiffness, 10.0);
+  EXPECT_TRUE(inventory[0].direction.isZero());
+  EXPECT_EQ(inventory[1].descriptor.key, attachment.key);
+  EXPECT_DOUBLE_EQ(inventory[1].state.lambda, 0.625);
+  EXPECT_DOUBLE_EQ(inventory[1].state.stiffness, 5.0);
+  EXPECT_TRUE(inventory[1].direction.isZero());
+}
+
+//==============================================================================
 TEST(AvbdConstraint, RowInventoryKeepsDescriptorOrderAndSeparatesAxes)
 {
   vbd::AvbdScalarRowDescriptor normal
