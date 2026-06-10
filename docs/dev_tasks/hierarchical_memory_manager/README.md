@@ -281,11 +281,15 @@
       root. The default projected-Newton path now also has a baked
       sphere/box/capsule static obstacle barrier gate, covering those radial and
       oriented-obstacle Hessian paths separately from the ground height-field
-      barrier and surface-CCD snapshot gates. The moving rigid-surface CCD path
-      now has baked swept-box point-crossing gates for both free predicted
-      motion and kinematic trace-backed motion, including a multi-kinematic
-      traced-obstacle scene that reuses combined swept snapshot capacity across
-      independent deformable bodies. `prepare()` primes the kinematic swept-box
+      barrier and surface-CCD snapshot gates. A production static-obstacle
+      friction patch now slides independent node patches near sphere, box, and
+      capsule barriers in one default projected-Newton solve, covering the
+      shared static-obstacle normal/friction scratch separately from
+      self-contact friction. The moving rigid-surface CCD path now has baked
+      swept-box point-crossing gates for both free predicted motion and
+      kinematic trace-backed motion, including a multi-kinematic traced-obstacle
+      scene that reuses combined swept snapshot capacity across independent
+      deformable bodies. `prepare()` primes the kinematic swept-box
       snapshot buffers before a current-frame trace exists, so stage-owned
       moving rigid snapshot storage and surface-sweep candidate scratch are
       covered separately from static rigid snapshots. Projected-Newton sparse
@@ -382,9 +386,10 @@
       notched direct-sparse and dense matrix-free grids, a production mixed
       default-solver storage scene with direct-sparse self-contact,
       matrix-free self-contact, and FEM ground-friction bodies, plus a
-      production rectangular inter-body deformable surface-CCD crossing and a
-      barrier-only static sphere/box/capsule obstacle scene for default
-      projected Newton.
+      production rectangular inter-body deformable surface-CCD crossing, a
+      barrier-only static sphere/box/capsule obstacle scene, and a production
+      static sphere/box/capsule obstacle friction patch for default projected
+      Newton.
       The base and global-heap guards now also include default moving
       rigid-surface CCD swept-box crossings for free, single-kinematic, and
       multi-kinematic rigid obstacles, closing the previously static-only rigid
@@ -646,7 +651,10 @@ debugging, profiling, optimization experiments, and ImGui visualization.
    default-solver storage scenes now combine direct-sparse, matrix-free, and
    FEM ground-friction deformables under the same root; a production
    rectangular inter-body deformable surface-CCD crossing now exercises
-   inter-body sweep/candidate scratch beyond the tiny two-triangle crossing.
+   inter-body sweep/candidate scratch beyond the tiny two-triangle crossing;
+   and a production static-obstacle friction patch now covers shared
+   sphere/box/capsule normal-force, normal-direction, and Hessian scratch under
+   no-growth guards.
    The AVBD self-contact row guard now also covers 5x9 and 9x13 rectangular
    grid row workloads with replay-backed activity assertions.
    Continue broadening boxed-LCP unified problem assembly only for newly

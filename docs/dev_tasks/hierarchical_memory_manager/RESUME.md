@@ -29,7 +29,8 @@ projected-Newton path, so larger square, non-square, and non-grid topology now
 cover both sparse assembly and CG-block scratch. It also extends production
 default-solver storage and AVBD self-contact row guards, and adds a production
 rectangular inter-body deformable surface-CCD crossing for sweep/candidate
-scratch.
+scratch plus a production static-obstacle friction patch for shared
+sphere/box/capsule normal-force, normal-direction, and Hessian scratch.
 Continue from the current `README.md` Immediate Next Steps: broaden remaining
 boxed-LCP/contact and deformable production no-growth coverage, and move any
 newly exposed step-loop scratch to world-owned backed storage before making a
