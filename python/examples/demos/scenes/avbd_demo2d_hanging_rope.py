@@ -24,6 +24,7 @@ _HEAVY_SIZE = 10.0
 _HEAVY_BLOCK_SIZE_2D = np.array([_HEAVY_SIZE, _HEAVY_SIZE])
 _HEAVY_BLOCK_SIZE = np.array([_HEAVY_SIZE, _HEAVY_SIZE, _THICKNESS])
 _FRICTION = 0.5
+_HARD_ROW_START_STIFFNESS = 1.0e6
 _PARENT_ANCHOR = np.array([0.0, -0.5, 0.0])
 _REGULAR_CHILD_ANCHOR = np.array([0.0, 0.5, 0.0])
 _HEAVY_CHILD_ANCHOR = np.array([0.0, _HEAVY_SIZE * 0.5, 0.0])
@@ -182,15 +183,15 @@ def build() -> SceneSetup:
 
     joints = []
     for index, (parent, child) in enumerate(zip(links, links[1:])):
-        joints.append(
-            world.add_rigid_body_spherical_joint(
-                f"avbd_demo2d_hanging_rope_point_joint_{index:02d}",
-                parent,
-                child,
-                parent_anchor=tuple(_PARENT_ANCHOR),
-                child_anchor=tuple(_child_anchor(index)),
-            )
+        joint = world.add_rigid_body_spherical_joint(
+            f"avbd_demo2d_hanging_rope_point_joint_{index:02d}",
+            parent,
+            child,
+            parent_anchor=tuple(_PARENT_ANCHOR),
+            child_anchor=tuple(_child_anchor(index)),
         )
+        joint.avbd_start_stiffness = _HARD_ROW_START_STIFFNESS
+        joints.append(joint)
 
     world.enter_simulation_mode()
 

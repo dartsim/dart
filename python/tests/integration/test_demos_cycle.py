@@ -1790,6 +1790,9 @@ def test_avbd_demo2d_hanging_rope_scene_matches_source_row() -> None:
     assert len(joints) == 49
     assert all(joint.type == sx.JointType.SPHERICAL for joint in joints)
     assert [joint.num_dofs for joint in joints] == [3] * 49
+    assert [joint.avbd_start_stiffness for joint in joints] == pytest.approx(
+        [1.0e6] * 49
+    )
     assert [len(link.collision_shapes) for link in links] == [1] * 50
     assert [link.friction for link in links] == pytest.approx([0.5] * 50)
     assert links[0].is_static
@@ -1835,7 +1838,7 @@ def test_avbd_demo2d_hanging_rope_scene_matches_source_row() -> None:
     )
     assert sx_world.time == pytest.approx(float(step_count) * sx_world.time_step)
     assert np.isfinite(final_positions).all()
-    assert final_positions[-1, 1] > initial_positions[-1, 1] + 1.0
+    assert final_positions[-1, 1] > initial_positions[-1, 1] + 0.25
     assert max(endpoint_errors()) < 1.0
 
 
