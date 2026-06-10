@@ -3519,6 +3519,34 @@ TEST(
 }
 
 //==============================================================================
+// Two hundred fifty-six simultaneous link-ground contacts extend the
+// public-step fixed-base prismatic coverage beyond the 192-link packet.
+TEST(
+    BoxedLcpContact,
+    TwoHundredFiftySixArticulatedPrismaticLinksGroundStepMaintainsInvariants)
+{
+  constexpr int kLinkCount = 256;
+
+  const MultiArticulatedGroundStepResult reference
+      = runMultiArticulatedGroundStep(
+          sx::ContactSolverMethod::SequentialImpulse, kLinkCount);
+  const MultiArticulatedGroundStepResult lcp = runMultiArticulatedGroundStep(
+      sx::ContactSolverMethod::BoxedLcp, kLinkCount);
+
+  ASSERT_EQ(lcp.contactCount, static_cast<std::size_t>(kLinkCount));
+  EXPECT_EQ(lcp.linkContactCount, static_cast<std::size_t>(kLinkCount));
+  EXPECT_TRUE(lcp.allFinite);
+  EXPECT_LE(lcp.maxHeightError, 2e-2);
+  EXPECT_LT(lcp.maxAbsJointVelocity, 0.12);
+
+  ASSERT_EQ(reference.contactCount, lcp.contactCount);
+  EXPECT_EQ(reference.linkContactCount, lcp.linkContactCount);
+  EXPECT_TRUE(reference.allFinite);
+  EXPECT_NEAR(reference.maxHeightError, lcp.maxHeightError, 2e-2);
+  EXPECT_NEAR(reference.maxAbsJointVelocity, lcp.maxAbsJointVelocity, 0.12);
+}
+
+//==============================================================================
 // Connected multi-DOF articulated DART 7 World stepping: each robot is a
 // serial three-axis prismatic chain, and its tip link contacts ground through
 // the public BoxedLcp unified path. This extends the one-DOF link-ground cases
@@ -3613,6 +3641,17 @@ TEST(
     OneHundredNinetyTwoCartesianPrismaticChainsGroundStepMaintainsInvariants)
 {
   constexpr int kChainCount = 192;
+  expectCartesianPrismaticChainsGroundStepMaintainsInvariants(kChainCount);
+}
+
+//==============================================================================
+// Two hundred fifty-six connected three-axis chains cover a 768-DOF
+// public-step unified articulated contact packet.
+TEST(
+    BoxedLcpContact,
+    TwoHundredFiftySixCartesianPrismaticChainsGroundStepMaintainsInvariants)
+{
+  constexpr int kChainCount = 256;
   expectCartesianPrismaticChainsGroundStepMaintainsInvariants(kChainCount);
 }
 
@@ -3717,6 +3756,17 @@ TEST(
     OneHundredNinetyTwoArticulatedPrismaticLinksPushDynamicRigidBodies)
 {
   constexpr int kPairCount = 192;
+  expectArticulatedRigidImpactPairsStepMaintainsInvariants(kPairCount);
+}
+
+//==============================================================================
+// Two hundred fifty-six link-vs-rigid contacts extend the public-step
+// two-sided articulated impact path beyond the 192-pair packet.
+TEST(
+    BoxedLcpContact,
+    TwoHundredFiftySixArticulatedPrismaticLinksPushDynamicRigidBodies)
+{
+  constexpr int kPairCount = 256;
   expectArticulatedRigidImpactPairsStepMaintainsInvariants(kPairCount);
 }
 
@@ -3845,6 +3895,17 @@ TEST(
     OneHundredNinetyTwoArticulatedPrismaticLinksPushArticulatedPrismaticLinks)
 {
   constexpr int kPairCount = 192;
+  expectArticulatedLinkImpactPairsStepMaintainsInvariants(kPairCount);
+}
+
+//==============================================================================
+// Two hundred fifty-six cross-multibody link-vs-link contacts extend the
+// two-articulated-endpoint public-step packet beyond the 192-pair boundary.
+TEST(
+    BoxedLcpContact,
+    TwoHundredFiftySixArticulatedPrismaticLinksPushArticulatedPrismaticLinks)
+{
+  constexpr int kPairCount = 256;
   expectArticulatedLinkImpactPairsStepMaintainsInvariants(kPairCount);
 }
 
