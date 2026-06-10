@@ -308,7 +308,7 @@
 - [x] Added DART 7 articulated unified-contact benchmark rows that compare all
       friction-index-capable solvers on the same manually assembled fixed-base
       three-axis prismatic link-ground, link-vs-dynamic-rigid, and
-      cross-multibody link-vs-link LCP snapshots through 128-contact packets.
+      cross-multibody link-vs-link LCP snapshots through 192-contact packets.
 - [x] Added a DART 7 boxed-LCP coupled stack snapshot test for a 3-sphere
       vertical stack, validating the LCP contract and nonzero normal-contact
       coupling from shared dynamic bodies.
@@ -2804,12 +2804,12 @@ tradeoffs evidence based.
   multi-DOF articulated contact evidence, not broad articulated robot contact
   coverage.
 - DART 7 articulated unified-contact solver benchmark evidence:
-  `BM_LcpArticulatedUnifiedContact/FrictionIndex/{Ground,RigidImpact,CrossLinkImpact}/<solver>/{1,4,8,16,24,32,48,64,96,128}`
+  `BM_LcpArticulatedUnifiedContact/FrictionIndex/{Ground,RigidImpact,CrossLinkImpact}/<solver>/{1,4,8,16,24,32,48,64,96,128,192}`
   manually assembles fixed-base three-axis prismatic `LinkContact` snapshots
   through `assembleMultibodyLinkContactProblem` and
   `assembleUnifiedConstraintProblem`, then compares all 16
   friction-index-capable solvers on the same 3-row, 12-row, 24-row, 48-row,
-  72-row, 96-row, 144-row, 192-row, 288-row, and 384-row LCPs.
+  72-row, 96-row, 144-row, 192-row, 288-row, 384-row, and 576-row LCPs.
   The cross-link rows complete a second articulated endpoint for a separate
   multibody, so they exercise the unified contact matrix's cross-multibody
   block. Focused default, SIMD-enabled, and CUDA-enabled
@@ -2818,7 +2818,7 @@ tradeoffs evidence based.
   `articulated_unified_contact=1`, `contact_count=24`, `problem_size=72`,
   `multibody_count=24` for ground/rigid-impact rows, and `multibody_count=48`
   plus `articulated_cross_link_contact=1` for cross-link rows. The full
-  articulated unified-contact registration now lists 480 rows. Focused
+  articulated unified-contact registration now lists 528 rows. Focused
   default, SIMD-enabled, and CUDA-enabled
   `BM_LCP_COMPARE --benchmark_filter='^BM_LcpArticulatedUnifiedContact/FrictionIndex/.*/.*/32$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_format=json`
   runs reported 48 rows with `contract_ok=1`, `contact_count=32`,
@@ -2851,6 +2851,15 @@ tradeoffs evidence based.
   runs reported 48 rows with `contract_ok=1`, `contact_count=128`,
   `problem_size=384`, 16 rows per articulated contact case,
   `multibody_count=128/256`, and the expected backend build-state counters; the
+  focused row summaries reported zero residual, complementarity, and
+  bound-violation maxima in default, SIMD-enabled, and CUDA-enabled build
+  trees, with 48 `build_simd_enabled=1` rows and 48 `build_cuda_enabled=1`
+  rows in the corresponding builds.
+  Focused default, SIMD-enabled, and CUDA-enabled
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpArticulatedUnifiedContact/FrictionIndex/.+/.+/192$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_format=json`
+  runs reported 48 rows with `contract_ok=1`, `contact_count=192`,
+  `problem_size=576`, 16 rows per articulated contact case,
+  `multibody_count=192/384`, and the expected backend build-state counters; the
   focused row summaries reported zero residual, complementarity, and
   bound-violation maxima in default, SIMD-enabled, and CUDA-enabled build
   trees, with 48 `build_simd_enabled=1` rows and 48 `build_cuda_enabled=1`
