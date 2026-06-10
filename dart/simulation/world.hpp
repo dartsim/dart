@@ -775,6 +775,14 @@ private:
       common::MemoryManager& memoryManager);
   static StepPipelineCachePtr makeStepPipelineCache(
       common::MemoryManager& memoryManager);
+  struct ReplayState;
+  struct ReplayStateDeleter
+  {
+    common::MemoryManager* memoryManager = nullptr;
+    void operator()(void* replayState) const noexcept;
+  };
+  using ReplayStatePtr = std::unique_ptr<ReplayState, ReplayStateDeleter>;
+  static ReplayStatePtr makeReplayState(common::MemoryManager& memoryManager);
   Entity createFrameEntity(
       std::string_view name,
       const Frame& parentFrame,
@@ -865,9 +873,7 @@ private:
   std::size_t m_jointCounter{0};
   mutable CollisionQueryCachePtr m_collisionQueryCache;
   StepPipelineCachePtr m_stepPipelineCache;
-
-  struct ReplayState;
-  std::unique_ptr<ReplayState> m_replay;
+  ReplayStatePtr m_replay;
 };
 
 } // namespace dart::simulation

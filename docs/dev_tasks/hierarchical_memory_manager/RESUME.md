@@ -140,16 +140,19 @@ lifetime roles, EnTT registry bake/rebuild boundaries, and the direct
 world-base/global-heap evidence expected before broader zero-allocation claims.
 
 The current root-routing slice moves the opaque `WorldStorage` object itself,
-the private built-in step-pipeline cache, and the lazy collision query cache
-onto the World free-list allocator, matching the allocator already used by the
-EnTT registry and differentiable-parameter list. The focused world test checks
-initial construction, lazy collision-cache construction, and `World::clear()`
-rebuilds through free-list live-allocation counters, and still directly probes
-the `WorldStorage` pointer through `MemoryManager::hasAllocated()` in debug
-builds. `World::clear()` now drops the collision query cache so rebuild
-boundaries release cached collision query capacity. Stage-owned member scratch
-inside the pipeline cache remains a separate root-routing follow-up unless
-already covered by the same-shape no-growth/no-heap gates.
+the private built-in step-pipeline cache, the lazy collision query cache, and
+the optional replay controller object onto the World free-list allocator,
+matching the allocator already used by the EnTT registry and
+differentiable-parameter list. The focused world test checks initial
+construction, lazy collision-cache construction, lazy replay-controller
+construction, and `World::clear()` rebuilds through free-list live-allocation
+counters, and still directly probes the `WorldStorage` pointer through
+`MemoryManager::hasAllocated()` in debug builds. `World::clear()` now drops the
+collision query cache so rebuild boundaries release cached collision query
+capacity; replay frame payload vectors remain opt-in recording data, not a
+same-shape step-loop no-heap claim. Stage-owned member scratch inside the
+pipeline cache remains a separate root-routing follow-up unless already covered
+by the same-shape no-growth/no-heap gates.
 
 The current allocator-correctness slice closes a debug-accounting gap in
 `MemoryAllocatorDebugger`: aligned allocations now keep their requested

@@ -67,8 +67,9 @@ using WorldRegistry
     = entt::basic_registry<entt::entity, WorldRegistryAllocator>;
 ```
 
-`WorldStorage` itself, the private built-in step-pipeline cache, and the lazy
-collision query cache are allocated from the World free-list allocator.
+`WorldStorage` itself, the private built-in step-pipeline cache, the lazy
+collision query cache, and the optional replay controller object are allocated
+from the World free-list allocator.
 `WorldStorage` constructs the registry and differentiable-parameter list with a
 `StlAllocator` that borrows `World::getMemoryManager().getFreeAllocator()`.
 `World::enterSimulationMode()` runs the bake path that materializes queried
@@ -78,13 +79,14 @@ same-shape steps should not materialize new registry storages or grow existing
 storage capacity.
 
 `World::clear()` recreates `WorldStorage` and the built-in step-pipeline cache
-with the same world free allocator, and drops the lazy collision query cache.
-This intentionally releases registry/component capacities and private cached
-query state at the rebuild boundary while preserving the `World` memory
-hierarchy and allocator policy. Rebuild-boundary tests should therefore prove
-both sides of the contract: same-shape baked steps keep capacity stable, and
-clear/rebuild returns to the same baked capacity shape from zero registry
-capacity.
+with the same world free allocator, drops the lazy collision query cache, and
+clears replay frames while keeping the replay controller under the same root if
+it was materialized. This intentionally releases registry/component capacities
+and private cached query state at the rebuild boundary while preserving the
+`World` memory hierarchy and allocator policy. Rebuild-boundary tests should
+therefore prove both sides of the contract: same-shape baked steps keep
+capacity stable, and clear/rebuild returns to the same baked capacity shape
+from zero registry capacity.
 
 ## Simulation Loop Contract
 

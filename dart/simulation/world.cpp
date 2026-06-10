@@ -2323,11 +2323,32 @@ void World::StepPipelineCacheDeleter::operator()(void* cache) const noexcept
   }
 }
 
+//==============================================================================
+World::ReplayStatePtr World::makeReplayState(
+    common::MemoryManager& memoryManager)
+{
+  auto* replayState = memoryManager.constructUsingFree<ReplayState>();
+  if (replayState == nullptr) {
+    throw std::bad_alloc();
+  }
+
+  return ReplayStatePtr(replayState, ReplayStateDeleter{&memoryManager});
+}
+
+//==============================================================================
+void World::ReplayStateDeleter::operator()(void* replayState) const noexcept
+{
+  if (replayState != nullptr && memoryManager != nullptr) {
+    memoryManager->destroyUsingFree(static_cast<ReplayState*>(replayState));
+  }
+}
+
 World::World()
   : m_storage(makeWorldStorage(m_memoryManager)),
     m_collisionQueryCache(
         nullptr, CollisionQueryCacheDeleter{&m_memoryManager}),
-    m_stepPipelineCache(makeStepPipelineCache(m_memoryManager))
+    m_stepPipelineCache(makeStepPipelineCache(m_memoryManager)),
+    m_replay(nullptr, ReplayStateDeleter{&m_memoryManager})
 {
   // Empty.
 }
@@ -2345,7 +2366,8 @@ World::World(const WorldOptions& options)
     m_contactGradientMode(options.contactGradientMode),
     m_collisionQueryCache(
         nullptr, CollisionQueryCacheDeleter{&m_memoryManager}),
-    m_stepPipelineCache(makeStepPipelineCache(m_memoryManager))
+    m_stepPipelineCache(makeStepPipelineCache(m_memoryManager)),
+    m_replay(nullptr, ReplayStateDeleter{&m_memoryManager})
 {
   DART_SIMULATION_THROW_T_IF(
       !std::isfinite(options.timeStep) || options.timeStep <= 0.0,
@@ -4158,7 +4180,7 @@ const compute::WorldStepProfile& World::getLastStepProfile() const noexcept
 void World::setReplayRecordingEnabled(bool enabled)
 {
   if (!m_replay) {
-    m_replay = std::make_unique<ReplayState>();
+    m_replay = makeReplayState(m_memoryManager);
   }
 
   if (enabled == m_replay->recordingEnabled) {

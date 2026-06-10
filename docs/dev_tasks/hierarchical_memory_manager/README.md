@@ -737,15 +737,17 @@ Follow-up progress after PR #2956:
   `MemoryManager`, allocator lifetime roles, registry bake/rebuild boundaries,
   and the direct evidence expected before making broader zero-allocation
   claims.
-- The opaque `WorldStorage` object, private built-in step-pipeline cache, and
-  lazy collision query cache now use the same World free-list allocator as the
-  EnTT registry and differentiable-parameter storage. A focused allocator-root
-  test verifies initial construction, lazy collision-cache construction, and
+- The opaque `WorldStorage` object, private built-in step-pipeline cache, lazy
+  collision query cache, and optional replay controller object now use the same
+  World free-list allocator as the EnTT registry and differentiable-parameter
+  storage. A focused allocator-root test verifies initial construction, lazy
+  collision-cache construction, lazy replay-controller construction, and
   `World::clear()` rebuilds keep persistent World state under the World memory
   hierarchy while dropping cached collision query state at the rebuild boundary.
-  Stage-owned member scratch containers remain a separate root-routing
-  follow-up item unless already covered by the existing same-shape
-  no-growth/no-heap gates.
+  Replay frame payload vectors remain opt-in recording data, not a same-shape
+  step-loop no-heap claim. Stage-owned member scratch containers remain a
+  separate root-routing follow-up item unless already covered by the existing
+  same-shape no-growth/no-heap gates.
 
 Remaining Phase 4/5 follow-up items for the next PR:
 

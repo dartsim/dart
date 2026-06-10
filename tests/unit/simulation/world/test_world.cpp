@@ -2732,12 +2732,15 @@ TEST(World, WorldPersistentStorageUsesWorldFreeAllocator)
   (void)world.collide();
   EXPECT_GE(memoryManager.getFreeListAllocator().getAllocationCount(), 3u);
 
+  world.setReplayRecordingEnabled(true);
+  EXPECT_GE(memoryManager.getFreeListAllocator().getAllocationCount(), 4u);
+
   world.addFreeFrame("frame_before_clear");
   world.clear();
   EXPECT_GE(
       memoryManager.getFreeListAllocator().getAllocatedSize(),
       sizeof(sx::detail::WorldStorage));
-  EXPECT_GE(memoryManager.getFreeListAllocator().getAllocationCount(), 2u);
+  EXPECT_GE(memoryManager.getFreeListAllocator().getAllocationCount(), 3u);
 
 #if !defined(NDEBUG)
   auto* rebuiltStorage = &sx::detail::storageOf(world);
