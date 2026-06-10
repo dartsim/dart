@@ -1,0 +1,340 @@
+{
+  "comparison": {
+    "dart_cpu_time_per_step_ns": 48273.36414866497,
+    "dart_faster_than_reference": true,
+    "dart_to_reference_cpu_time_ratio": 0.9289457340624037,
+    "performance_claim": "DART beats the native avbd-demo3d Static Friction row",
+    "reference_cpu_time_per_step_ns": 51965.75255
+  },
+  "dart_benchmark": {
+    "benchmark": "BM_AvbdDemo3dStaticFrictionStep",
+    "context": {
+      "executable": "build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint",
+      "json_schema_version": 1,
+      "library_build_type": "release",
+      "library_version": "v1.9.5",
+      "mhz_per_cpu": 400,
+      "num_cpus": 20
+    },
+    "cpu_time_per_step_ns": 48273.36414866497,
+    "invariants": {
+      "collision_shapes": 13,
+      "rigid_bodies": 13,
+      "rigid_body_joints": 0,
+      "source_scene_index": 3,
+      "time_step": 0.016666666666666666
+    },
+    "json_sha256": "d77e25a226196308c619e10712c616c2522e0222550ad46e9ce506fe525bc411",
+    "rows": [
+      {
+        "collision_shapes": 13.0,
+        "cpu_time": 48466.83590500469,
+        "family_index": 0,
+        "iterations": 14906,
+        "name": "BM_AvbdDemo3dStaticFrictionStep",
+        "per_family_instance_index": 0,
+        "real_time": 48616.74721502832,
+        "repetition_index": 0,
+        "repetitions": 5,
+        "rigid_bodies": 13.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo3dStaticFrictionStep",
+        "run_type": "iteration",
+        "source_scene_index": 3.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "collision_shapes": 13.0,
+        "cpu_time": 48594.438816583934,
+        "family_index": 0,
+        "iterations": 14906,
+        "name": "BM_AvbdDemo3dStaticFrictionStep",
+        "per_family_instance_index": 0,
+        "real_time": 48725.72776069652,
+        "repetition_index": 1,
+        "repetitions": 5,
+        "rigid_bodies": 13.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo3dStaticFrictionStep",
+        "run_type": "iteration",
+        "source_scene_index": 3.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "collision_shapes": 13.0,
+        "cpu_time": 48273.36414866497,
+        "family_index": 0,
+        "iterations": 14906,
+        "name": "BM_AvbdDemo3dStaticFrictionStep",
+        "per_family_instance_index": 0,
+        "real_time": 48413.47148777337,
+        "repetition_index": 2,
+        "repetitions": 5,
+        "rigid_bodies": 13.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo3dStaticFrictionStep",
+        "run_type": "iteration",
+        "source_scene_index": 3.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "collision_shapes": 13.0,
+        "cpu_time": 46767.68992352074,
+        "family_index": 0,
+        "iterations": 14906,
+        "name": "BM_AvbdDemo3dStaticFrictionStep",
+        "per_family_instance_index": 0,
+        "real_time": 46891.00147515025,
+        "repetition_index": 3,
+        "repetitions": 5,
+        "rigid_bodies": 13.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo3dStaticFrictionStep",
+        "run_type": "iteration",
+        "source_scene_index": 3.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "collision_shapes": 13.0,
+        "cpu_time": 45523.05205957334,
+        "family_index": 0,
+        "iterations": 14906,
+        "name": "BM_AvbdDemo3dStaticFrictionStep",
+        "per_family_instance_index": 0,
+        "real_time": 45631.99436512075,
+        "repetition_index": 4,
+        "repetitions": 5,
+        "rigid_bodies": 13.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo3dStaticFrictionStep",
+        "run_type": "iteration",
+        "source_scene_index": 3.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "mean",
+        "aggregate_unit": "time",
+        "collision_shapes": 13.0,
+        "cpu_time": 47525.07617066954,
+        "family_index": 0,
+        "iterations": 5,
+        "name": "BM_AvbdDemo3dStaticFrictionStep_mean",
+        "per_family_instance_index": 0,
+        "real_time": 47655.78846075384,
+        "repetitions": 5,
+        "rigid_bodies": 13.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo3dStaticFrictionStep",
+        "run_type": "aggregate",
+        "source_scene_index": 3.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "median",
+        "aggregate_unit": "time",
+        "collision_shapes": 13.0,
+        "cpu_time": 48273.36414866497,
+        "family_index": 0,
+        "iterations": 5,
+        "name": "BM_AvbdDemo3dStaticFrictionStep_median",
+        "per_family_instance_index": 0,
+        "real_time": 48413.47148777338,
+        "repetitions": 5,
+        "rigid_bodies": 13.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo3dStaticFrictionStep",
+        "run_type": "aggregate",
+        "source_scene_index": 3.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "stddev",
+        "aggregate_unit": "time",
+        "collision_shapes": 0.0,
+        "cpu_time": 1339.040443048821,
+        "family_index": 0,
+        "iterations": 5,
+        "name": "BM_AvbdDemo3dStaticFrictionStep_stddev",
+        "per_family_instance_index": 0,
+        "real_time": 1353.0462923787131,
+        "repetitions": 5,
+        "rigid_bodies": 0.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo3dStaticFrictionStep",
+        "run_type": "aggregate",
+        "source_scene_index": 0.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "cv",
+        "aggregate_unit": "percentage",
+        "collision_shapes": 0.0,
+        "cpu_time": 0.02817545075025508,
+        "family_index": 0,
+        "iterations": 5,
+        "name": "BM_AvbdDemo3dStaticFrictionStep_cv",
+        "per_family_instance_index": 0,
+        "real_time": 0.028392066023479868,
+        "repetitions": 5,
+        "rigid_bodies": 0.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo3dStaticFrictionStep",
+        "run_type": "aggregate",
+        "source_scene_index": 0.0,
+        "threads": 1,
+        "time_unit": "ns"
+      }
+    ]
+  },
+  "packet": "avbd_demo3d_static_friction_source_demo",
+  "reference_timing": {
+    "compile_command": [
+      "g++",
+      "-std=c++17",
+      "-O3",
+      "-DNDEBUG",
+      "-I<source-dir>/source",
+      "<temp-dir>/reference_runner.cpp",
+      "<source-dir>/source/solver.cpp",
+      "<source-dir>/source/rigid.cpp",
+      "<source-dir>/source/force.cpp",
+      "<source-dir>/source/joint.cpp",
+      "<source-dir>/source/spring.cpp",
+      "<source-dir>/source/manifold.cpp",
+      "<source-dir>/source/collide.cpp",
+      "-lGL",
+      "-o",
+      "<temp-dir>/reference_runner"
+    ],
+    "compile_flags": "-std=c++17 -O3 -DNDEBUG",
+    "compiler": "g++",
+    "cpu_time_per_step_ns": 51965.75255,
+    "elapsed_ns": 1039315051,
+    "invariants": {
+      "collision_shapes": 13,
+      "dynamic_bodies": 11,
+      "dynamic_max_friction": 0.5,
+      "dynamic_min_friction": 0.25,
+      "final_time": 335.466675,
+      "joints": 0,
+      "max_friction": 1.0,
+      "min_friction": 0.25,
+      "rigid_bodies": 13,
+      "static_bodies": 2
+    },
+    "json_sha256": "8418c719d2275aff0962861e51d26073e68005438b975b4414178f8a43eb3c5a",
+    "repository": "https://github.com/savant117/avbd-demo3d",
+    "scene_builder": "sceneStaticFriction",
+    "scene_index": 3,
+    "scene_name": "Static Friction",
+    "source_demo": "avbd-demo3d",
+    "source_revision": "7701bd427d55",
+    "steps": 20000,
+    "warmup_steps": 128
+  },
+  "remaining_gates": [
+    "remaining non-empty avbd-demo2d and avbd-demo3d source-scene ports",
+    "GPU AVBD row parity and same-hardware benchmark packets",
+    "paper/site/video scene visual and performance packets",
+    "broad static friction persistence and stacking coverage"
+  ],
+  "reproduction": {
+    "capture_command": "LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe python scripts/capture_py_demo.py --scene avbd_demo3d_static_friction --frames 24 --width 640 --height 360 --output-dir <capture-dir>",
+    "dart_benchmark_command": "build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter=BM_AvbdDemo3dStaticFrictionStep$ --benchmark_min_time=0.5s --benchmark_repetitions=3 --benchmark_out=<benchmark-json> --benchmark_out_format=json",
+    "reference_timing_command": "python scripts/run_avbd_demo3d_reference_timing.py --source-dir <avbd-demo3d-source-dir> --scene static_friction --output <reference-timing-json>"
+  },
+  "scene": "avbd_demo3d_static_friction",
+  "schema_version": 1,
+  "source_demo_reference_row": {
+    "demo": "avbd-demo3d",
+    "dimension": 3,
+    "expected_counts": {
+      "collision_shapes": 13,
+      "dynamic_bodies": 11,
+      "joints": 0,
+      "rigid_bodies": 13,
+      "static_bodies": 2
+    },
+    "repository": "https://github.com/savant117/avbd-demo3d",
+    "revision": "7701bd427d55",
+    "scene_builder": "sceneStaticFriction",
+    "scene_count": 14,
+    "scene_index": 3,
+    "scene_name": "Static Friction",
+    "solver_defaults": {
+      "gravity": -10.0,
+      "gravity_axis": "z",
+      "iterations": 10,
+      "time_step": 0.016666666666666666
+    },
+    "source_shapes": {
+      "boxes": {
+        "count": 11,
+        "density": 1.0,
+        "friction_range": [
+          0.25,
+          0.5
+        ],
+        "size": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "ground": {
+        "density": 0.0,
+        "friction": 0.5,
+        "size": [
+          100.0,
+          100.0,
+          1.0
+        ]
+      },
+      "ramp": {
+        "angle_degrees": 30.0,
+        "density": 0.0,
+        "friction": 1.0,
+        "size": [
+          40.0,
+          24.0,
+          1.0
+        ]
+      }
+    }
+  },
+  "visual_capture": {
+    "frames": {
+      "count": 24,
+      "directory": "png_frames",
+      "first_frame": {
+        "file": "png_frames/frame_000001.png",
+        "sha256": "d497193ab77040a3917ae943fab794feb1fe21f0360ea05c69bcd58fda9dd848"
+      },
+      "last_frame": {
+        "file": "png_frames/frame_000024.png",
+        "sha256": "b4d9e9e2deed9b5b88697cb6efaf1d9d4fdd92a19b50a6baecf890cce4b2dc50"
+      }
+    },
+    "manifest_sha256": "8ff28583d5ae5777334ed0f9299cbbdcecd4912daf4dc7c46a27fbb451e61d4b",
+    "scene": "avbd_demo3d_static_friction",
+    "screenshot": {
+      "file": "avbd_demo3d_static_friction.png",
+      "height": 360,
+      "sha256": "b4d9e9e2deed9b5b88697cb6efaf1d9d4fdd92a19b50a6baecf890cce4b2dc50",
+      "width": 640
+    },
+    "show_ui": false,
+    "ui_ready": {
+      "dropped_warmup_frames": 0,
+      "required": false
+    }
+  }
+}
