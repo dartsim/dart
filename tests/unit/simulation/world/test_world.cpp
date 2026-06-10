@@ -10206,6 +10206,7 @@ TEST(World, RigidIpcContactStageMetadataDeclaresMixedDomainReads)
   EXPECT_TRUE(hasRead("deformable_body.state"));
   EXPECT_TRUE(hasRead("deformable_body.model"));
   EXPECT_TRUE(hasRead("deformable_body.topology"));
+  EXPECT_TRUE(hasRead("rigid_body.joint"));
 }
 
 // Test that the opt-in rigid IPC stage assembles active barrier constraints

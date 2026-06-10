@@ -9779,6 +9779,7 @@ ComputeStageMetadata RigidIpcContactStage::getMetadata() const noexcept
        {"rigid_body.velocity", ComputeAccessMode::ReadWrite},
        {"rigid_body.mass", ComputeAccessMode::Read},
        {"rigid_body.force", ComputeAccessMode::Read},
+       {"rigid_body.joint", ComputeAccessMode::Read},
        {"rigid_body.kinematic_step_trace", ComputeAccessMode::ReadWrite},
        {"deformable_body.state", ComputeAccessMode::Read},
        {"deformable_body.model", ComputeAccessMode::Read},
