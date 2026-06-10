@@ -2,6 +2,14 @@
 
 ## Last Session Summary
 
+Latest local follow-up: the IPC bake allocation regression now compares the
+unsupported plane scene against the same IPC contact-query-only setup with
+supported collision geometry instead of against the sequential solver's
+allocation baseline. This keeps the guard focused on accidental IPC query
+prewarm work after the sequential prepare path was tightened. This is CI-test
+calibration only; it does not close any AVBD solver, CPU-win, GPU, or
+paper-number gate.
+
 Latest local follow-up: the Windows-only `test_boxed_lcp_contact` target now
 disables MSVC optimization for that single test binary to avoid a repeated MSVC
 19.44 internal compiler error while still compiling and running the AVBD contact
