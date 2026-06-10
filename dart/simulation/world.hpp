@@ -756,7 +756,16 @@ private:
   Frame resolveParentFrame(const Frame& parent) const;
   struct CollisionQueryCache;
   struct StepPipelineCache;
+  struct StepPipelineCacheDeleter
+  {
+    common::MemoryManager* memoryManager = nullptr;
+    void operator()(void* cache) const noexcept;
+  };
+  using StepPipelineCachePtr
+      = std::unique_ptr<StepPipelineCache, StepPipelineCacheDeleter>;
   static WorldStoragePtr makeWorldStorage(common::MemoryManager& memoryManager);
+  static StepPipelineCachePtr makeStepPipelineCache(
+      common::MemoryManager& memoryManager);
   Entity createFrameEntity(
       std::string_view name,
       const Frame& parentFrame,
@@ -846,7 +855,7 @@ private:
   std::size_t m_linkCounter{0};
   std::size_t m_jointCounter{0};
   mutable std::unique_ptr<CollisionQueryCache> m_collisionQueryCache;
-  std::unique_ptr<StepPipelineCache> m_stepPipelineCache;
+  StepPipelineCachePtr m_stepPipelineCache;
 
   struct ReplayState;
   std::unique_ptr<ReplayState> m_replay;

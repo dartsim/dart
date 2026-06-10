@@ -140,10 +140,14 @@ lifetime roles, EnTT registry bake/rebuild boundaries, and the direct
 world-base/global-heap evidence expected before broader zero-allocation claims.
 
 The current root-routing slice moves the opaque `WorldStorage` object itself
-onto the World free-list allocator, matching the allocator already used by its
-EnTT registry and differentiable-parameter list. The new focused world test
-checks both initial construction and `World::clear()` rebuilds through
-`MemoryManager::hasAllocated()` in debug builds.
+and the private built-in step-pipeline cache onto the World free-list allocator,
+matching the allocator already used by the EnTT registry and
+differentiable-parameter list. The focused world test checks both initial
+construction and `World::clear()` rebuilds through free-list live-allocation
+counters, and still directly probes the `WorldStorage` pointer through
+`MemoryManager::hasAllocated()` in debug builds. Stage-owned member scratch
+inside the cache remains a separate root-routing follow-up unless already
+covered by the same-shape no-growth/no-heap gates.
 
 The current allocator-correctness slice closes a debug-accounting gap in
 `MemoryAllocatorDebugger`: aligned allocations now keep their requested

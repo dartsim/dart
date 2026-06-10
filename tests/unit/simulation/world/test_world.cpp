@@ -2712,7 +2712,7 @@ TEST(World, MemoryManagersAreIsolatedAcrossWorlds)
   firstManager.deallocateUsingFree(firstFreePtr, 64);
 }
 
-TEST(World, WorldStorageObjectUsesWorldFreeAllocator)
+TEST(World, WorldPersistentStorageUsesWorldFreeAllocator)
 {
   namespace sx = dart::simulation;
 
@@ -2721,7 +2721,7 @@ TEST(World, WorldStorageObjectUsesWorldFreeAllocator)
   EXPECT_GE(
       memoryManager.getFreeListAllocator().getAllocatedSize(),
       sizeof(sx::detail::WorldStorage));
-  EXPECT_GE(memoryManager.getFreeListAllocator().getAllocationCount(), 1u);
+  EXPECT_GE(memoryManager.getFreeListAllocator().getAllocationCount(), 2u);
 
 #if !defined(NDEBUG)
   auto* storage = &sx::detail::storageOf(world);
@@ -2734,7 +2734,7 @@ TEST(World, WorldStorageObjectUsesWorldFreeAllocator)
   EXPECT_GE(
       memoryManager.getFreeListAllocator().getAllocatedSize(),
       sizeof(sx::detail::WorldStorage));
-  EXPECT_GE(memoryManager.getFreeListAllocator().getAllocationCount(), 1u);
+  EXPECT_GE(memoryManager.getFreeListAllocator().getAllocationCount(), 2u);
 
 #if !defined(NDEBUG)
   auto* rebuiltStorage = &sx::detail::storageOf(world);

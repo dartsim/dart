@@ -2282,9 +2282,29 @@ void World::WorldStorageDeleter::operator()(void* storage) const noexcept
   }
 }
 
+//==============================================================================
+World::StepPipelineCachePtr World::makeStepPipelineCache(
+    common::MemoryManager& memoryManager)
+{
+  auto* cache = memoryManager.constructUsingFree<StepPipelineCache>();
+  if (cache == nullptr) {
+    throw std::bad_alloc();
+  }
+
+  return StepPipelineCachePtr(cache, StepPipelineCacheDeleter{&memoryManager});
+}
+
+//==============================================================================
+void World::StepPipelineCacheDeleter::operator()(void* cache) const noexcept
+{
+  if (cache != nullptr && memoryManager != nullptr) {
+    memoryManager->destroyUsingFree(static_cast<StepPipelineCache*>(cache));
+  }
+}
+
 World::World()
   : m_storage(makeWorldStorage(m_memoryManager)),
-    m_stepPipelineCache(std::make_unique<StepPipelineCache>())
+    m_stepPipelineCache(makeStepPipelineCache(m_memoryManager))
 {
   // Empty.
 }
@@ -2300,7 +2320,7 @@ World::World(const WorldOptions& options)
     m_differentiable(options.differentiable),
     m_contactSolverMethod(options.contactSolverMethod),
     m_contactGradientMode(options.contactGradientMode),
-    m_stepPipelineCache(std::make_unique<StepPipelineCache>())
+    m_stepPipelineCache(makeStepPipelineCache(m_memoryManager))
 {
   DART_SIMULATION_THROW_T_IF(
       !std::isfinite(options.timeStep) || options.timeStep <= 0.0,
@@ -2427,7 +2447,7 @@ void World::clear()
   if (m_collisionQueryCache) {
     m_collisionQueryCache->clear();
   }
-  m_stepPipelineCache = std::make_unique<StepPipelineCache>();
+  m_stepPipelineCache = makeStepPipelineCache(m_memoryManager);
   if (m_replay) {
     m_replay->recordingEnabled = false;
     m_replay->frames.clear();

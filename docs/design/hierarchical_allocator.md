@@ -45,13 +45,13 @@ component IDs.
 
 ## Allocation Roles
 
-| Role                               | Lifetime                            | Allocator                                               | Rule                                                                                        |
-| ---------------------------------- | ----------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| World object and component storage | World or rebuild boundary           | Free-list allocator                                     | Reserve/bake before steady-state stepping; release on `World::clear()`.                     |
-| Solver-owned persistent scratch    | World or rebuild boundary           | Free-list allocator through registry/storage components | Size from the baked shape, keep capacity stable across same-shape steps.                    |
-| Per-step transient scratch         | Current `World::step()`             | Frame allocator                                         | Borrow only for data that cannot survive the frame-scratch reset at the next step boundary. |
-| Fixed-size slots                   | Explicit fixed-slot workloads       | Fixed pool allocator                                    | Use only when the workload is genuinely fixed-size.                                         |
-| Mixed small objects                | Size-classed small-object workloads | Pool allocator                                          | Keep diagnostics optional so hot paths can use the non-diagnostic fast path.                |
+| Role                                | Lifetime                            | Allocator                                               | Rule                                                                                        |
+| ----------------------------------- | ----------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| World objects and component storage | World or rebuild boundary           | Free-list allocator                                     | Reserve/bake before steady-state stepping; release on `World::clear()`.                     |
+| Solver-owned persistent scratch     | World or rebuild boundary           | Free-list allocator through registry/storage components | Size from the baked shape, keep capacity stable across same-shape steps.                    |
+| Per-step transient scratch          | Current `World::step()`             | Frame allocator                                         | Borrow only for data that cannot survive the frame-scratch reset at the next step boundary. |
+| Fixed-size slots                    | Explicit fixed-slot workloads       | Fixed pool allocator                                    | Use only when the workload is genuinely fixed-size.                                         |
+| Mixed small objects                 | Size-classed small-object workloads | Pool allocator                                          | Keep diagnostics optional so hot paths can use the non-diagnostic fast path.                |
 
 `World::step()` resets frame scratch at the step boundary. Any storage that must
 survive across iterations, contacts, solver warm starts, bake/rebuild, or
@@ -67,9 +67,10 @@ using WorldRegistry
     = entt::basic_registry<entt::entity, WorldRegistryAllocator>;
 ```
 
-`WorldStorage` itself is allocated from the World free-list allocator, and it
-constructs the registry and differentiable-parameter list with a `StlAllocator`
-that borrows `World::getMemoryManager().getFreeAllocator()`.
+`WorldStorage` itself and the private built-in step-pipeline cache are allocated
+from the World free-list allocator. `WorldStorage` constructs the registry and
+differentiable-parameter list with a `StlAllocator` that borrows
+`World::getMemoryManager().getFreeAllocator()`.
 `World::enterSimulationMode()` runs the bake path that materializes queried
 component storages, reserves existing storages, and asks domain-specific reserve
 helpers to pre-size private ECS scratch for the current shape. Repeated
