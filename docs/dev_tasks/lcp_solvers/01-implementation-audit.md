@@ -55,23 +55,25 @@ Support abbreviations:
   fixed-base prismatic articulated link-ground
   boxed-LCP `World::step()` invariant tests for one-link, four-link,
   thirty-two-link, sixty-four-link, ninety-six-link, 128-link, 192-link, and
-  256-link, 384-link, and 512-link scenes,
-  1-/4-/8-/16-/24-/32-/64-/96-/128-/192-/256-/384-/512-link articulated ground-step
+  256-link, 384-link, 512-link, and 768-link scenes,
+  1-/4-/8-/16-/24-/32-/64-/96-/128-/192-/256-/384-/512-/768-link articulated ground-step
   benchmark rows, connected
   fixed-base three-axis prismatic Cartesian-chain boxed-LCP `World::step()`
   invariant coverage for two-, four-, eight-, sixteen-, thirty-two-, and
-  sixty-four-, ninety-six-, 128-, 192-, 256-, 384-, and 512-chain scenes, 1-/4-/8-/16-/24-/32-/64-/96-/128-/192-/256-/384-/512-chain
+  sixty-four-, ninety-six-, 128-, 192-, 256-, 384-, 512-, and 768-chain scenes, 1-/4-/8-/16-/24-/32-/64-/96-/128-/192-/256-/384-/512-/768-chain
   articulated Cartesian benchmark rows, fixed-base prismatic
   link-vs-dynamic-rigid boxed-LCP `World::step()` invariant tests for one-pair,
   four-pair, eight-pair, sixteen-pair, thirty-two-pair, sixty-four-pair, and
-  ninety-six-pair, 128-pair, 192-pair, 256-pair, 384-pair, and 512-pair
+  ninety-six-pair, 128-pair, 192-pair, 256-pair, 384-pair, 512-pair, and
+  768-pair
   scenes, and
-  1-/4-/8-/16-/24-/32-/64-/96-/128-/192-/256-/384-/512-pair one-step plus 16-/32-/64-/96-/128-/192-/256-/384-/512-pair 200-step articulated
+  1-/4-/8-/16-/24-/32-/64-/96-/128-/192-/256-/384-/512-/768-pair one-step plus 16-/32-/64-/96-/128-/192-/256-/384-/512-/768-pair 200-step articulated
   rigid-impact benchmark rows, cross-multibody fixed-base prismatic
   link-vs-link boxed-LCP `World::step()` invariant tests for one-pair,
   four-pair, eight-pair, sixteen-pair, thirty-two-pair, sixty-four-pair, and
-  ninety-six-pair, 128-pair, 192-pair, 256-pair, 384-pair, and 512-pair
-  scenes, and 1-/4-/8-/16-/24-/32-/64-/96-/128-/192-/256-/384-/512-pair one-step plus 16-/32-/64-/96-/128-/192-/256-/384-/512-pair 200-step
+  ninety-six-pair, 128-pair, 192-pair, 256-pair, 384-pair, 512-pair, and
+  768-pair
+  scenes, and 1-/4-/8-/16-/24-/32-/64-/96-/128-/192-/256-/384-/512-/768-pair one-step plus 16-/32-/64-/96-/128-/192-/256-/384-/512-/768-pair 200-step
   articulated link-impact benchmark rows, plus all-solver
   articulated unified-contact
   benchmark rows for manually assembled fixed-base three-axis prismatic
@@ -820,6 +822,12 @@ The current local evidence for this task is:
   link-ground contacts, 512 connected three-axis Cartesian-chain contacts with
   1536 generalized coordinates, 512 link-vs-rigid impact contacts, and 512
   cross-multibody link-vs-link impact contacts.
+- `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.SevenHundredSixtyEightArticulatedPrismaticLinksGroundStepMaintainsInvariants:BoxedLcpContact.SevenHundredSixtyEightCartesianPrismaticChainsGroundStepMaintainsInvariants:BoxedLcpContact.SevenHundredSixtyEightArticulatedPrismaticLinksPushDynamicRigidBodies:BoxedLcpContact.SevenHundredSixtyEightArticulatedPrismaticLinksPushArticulatedPrismaticLinks' --gtest_brief=1`
+  passed 4 tests in default, SIMD-enabled, and CUDA-enabled build trees,
+  extending the public boxed-LCP `World::step()` regression to 768 fixed-base
+  link-ground contacts, 768 connected three-axis Cartesian-chain contacts with
+  2304 generalized coordinates, 768 link-vs-rigid impact contacts, and 768
+  cross-multibody link-vs-link impact contacts.
 - `test_boxed_lcp_contact --gtest_filter='BoxedLcpContact.*SphereStack*'`
   passed focused stack tests, validating the boxed/findex LCP contract for
   3-sphere, 4-sphere, 5-sphere, 6-sphere, 7-sphere, and 8-sphere vertical stacks assembled from
@@ -1240,12 +1248,12 @@ The current local evidence for this task is:
   passed locally in default, SIMD-enabled, and CUDA-enabled build trees for
   the earlier public-step articulated rows. The benchmark registration now
   includes
-  `BM_LcpWorldArticulatedGroundStep_BoxedLcp/{1,4,8,16,24,32,64,96,128,192,256,384,512}/200`,
-  `BM_LcpWorldArticulatedRigidImpactStep_BoxedLcp/{1,4,8,16,24,32,64,96,128,192,256,384,512}/1`,
-  `BM_LcpWorldArticulatedRigidImpactStep_BoxedLcp/{16,32,64,96,128,192,256,384,512}/200`,
-  `BM_LcpWorldArticulatedLinkImpactStep_BoxedLcp/{1,4,8,16,24,32,64,96,128,192,256,384,512}/1`,
-  `BM_LcpWorldArticulatedLinkImpactStep_BoxedLcp/{16,32,64,96,128,192,256,384,512}/200`, and
-  `BM_LcpWorldArticulatedCartesianGroundStep_BoxedLcp/{1,4,8,16,24,32,64,96,128,192,256,384,512}/200`.
+  `BM_LcpWorldArticulatedGroundStep_BoxedLcp/{1,4,8,16,24,32,64,96,128,192,256,384,512,768}/200`,
+  `BM_LcpWorldArticulatedRigidImpactStep_BoxedLcp/{1,4,8,16,24,32,64,96,128,192,256,384,512,768}/1`,
+  `BM_LcpWorldArticulatedRigidImpactStep_BoxedLcp/{16,32,64,96,128,192,256,384,512,768}/200`,
+  `BM_LcpWorldArticulatedLinkImpactStep_BoxedLcp/{1,4,8,16,24,32,64,96,128,192,256,384,512,768}/1`,
+  `BM_LcpWorldArticulatedLinkImpactStep_BoxedLcp/{16,32,64,96,128,192,256,384,512,768}/200`, and
+  `BM_LcpWorldArticulatedCartesianGroundStep_BoxedLcp/{1,4,8,16,24,32,64,96,128,192,256,384,512,768}/200`.
   These rows rebuild fixed-base prismatic-link, link-vs-rigid, cross-multibody
   link-vs-link, and connected Cartesian-chain worlds, enter simulation mode
   inside the world factory so link kinematics are current before
@@ -1254,16 +1262,16 @@ The current local evidence for this task is:
   evidence for the public unified constraint path, not broad robot-like contact
   coverage.
 - The focused
-  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldArticulated(Ground|RigidImpact|LinkImpact|CartesianGround)Step_BoxedLcp/512/(1|200)$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_format=json`
+  `BM_LCP_COMPARE --benchmark_filter='^BM_LcpWorldArticulated(Ground|RigidImpact|LinkImpact|CartesianGround)Step_BoxedLcp/768/(1|200)$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_format=json`
   follow-up passed in default, SIMD-enabled, and CUDA-enabled build trees with
-  6 rows, `invariant_ok=1`, and zero failures, covering link-ground 512/200,
-  link-vs-rigid 512/1 and 512/200, cross-link 512/1 and 512/200, and
-  Cartesian-chain 512/200. The 512-row counters include `contact_count=512`,
-  ground `articulated_link_count=512`, rigid-impact
-  `min_target_velocity=0.786667`, cross-link `articulated_pair_count=512`,
-  `articulated_link_count=1024`, `articulated_dof_count=1024`,
+  6 rows, `invariant_ok=1`, and zero failures, covering link-ground 768/200,
+  link-vs-rigid 768/1 and 768/200, cross-link 768/1 and 768/200, and
+  Cartesian-chain 768/200. The 768-row counters include `contact_count=768`,
+  ground `articulated_link_count=768`, rigid-impact
+  `min_target_velocity=0.786667`, cross-link `articulated_pair_count=768`,
+  `articulated_link_count=1536`, `articulated_dof_count=1536`,
   `min_relative_velocity=0.18`, and Cartesian-chain
-  `articulated_dof_count=1536`, with `max_momentum_error=0`,
+  `articulated_dof_count=2304`, with `max_momentum_error=0`,
   `max_height_error=1e-4`, `max_abs_joint_velocity=4.45e-15`, and
   `max_planar_joint_speed=0` where applicable. The SIMD run reported 6 rows
   with `build_simd_enabled=1`, and the CUDA-enabled run reported 6 rows with
