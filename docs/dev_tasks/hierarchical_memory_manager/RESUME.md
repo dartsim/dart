@@ -155,6 +155,13 @@ capacity; replay frame payload vectors and nested stage scratch payload vectors
 remain governed by the existing same-shape no-growth/no-heap gates, not by this
 allocator-root ownership check.
 
+The current nested-payload slice starts with the `RigidBodyVelocityStage`
+force batch: allocator-aware stage construction now gives the entity, force,
+and torque vectors a `StlAllocator` backed by the World free allocator. The
+focused world test constructs that stage with `World::getMemoryManager()` and
+checks first `prepare()` under the heap counter to prove this specific nested
+payload does not allocate from the global heap.
+
 The current allocator-correctness slice closes a debug-accounting gap in
 `MemoryAllocatorDebugger`: aligned allocations now keep their requested
 alignment in the live allocation record, and mismatched aligned deallocation
@@ -662,12 +669,13 @@ without explicit maintainer approval.
 ## Immediate Next Step
 
 Continue with evidence-first HMM follow-up work on `origin/main`: built-in
-stage-owned scratch/cache object roots are now allocator-aware, so the next
-slice should either probe existing no-growth/no-heap gates to expose a concrete
-nested payload allocation path, or route a proven nested scratch payload through
-world-owned allocator-backed storage. Do not add new production scenes unless
-profiling or a failing no-growth/no-heap gate shows a real gap not covered by
-the current shipped scenes.
+stage-owned scratch/cache object roots are now allocator-aware, and the
+rigid-body velocity force-batch payload is the first nested stage payload routed
+through world-owned allocator-backed storage. The next slice should probe
+existing no-growth/no-heap gates or stage-local heap counters for another
+concrete nested payload path before changing broader scratch layouts. Do not
+add new production scenes unless profiling or a failing no-growth/no-heap gate
+shows a real gap not covered by the current shipped scenes.
 
 Keep the allocator performance gate green. The latest allocator slices keep
 `FrameStlAllocator` blocks cache-line aligned without per-block cache coloring,

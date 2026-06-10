@@ -748,6 +748,12 @@ Follow-up progress after PR #2956:
   rebuild boundary. Replay frame payload vectors and nested stage scratch
   payload vectors remain governed by the existing same-shape no-growth/no-heap
   gates, not by this allocator-root ownership check.
+- The first nested stage-scratch payload route covers
+  `RigidBodyVelocityStage` force-batch vectors. When that stage borrows the
+  World `MemoryManager`, its entity, force, and torque reserve/growth traffic
+  uses the World free allocator; a focused heap-counter test verifies first
+  `prepare()` does not allocate from the global heap. Other nested stage
+  scratch payloads remain evidence-first follow-up work.
 
 Remaining Phase 4/5 follow-up items for the next PR:
 

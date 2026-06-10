@@ -72,6 +72,7 @@
 #include <dart/math/lcp/pivoting/dantzig_solver.hpp>
 
 #include <dart/common/memory_manager.hpp>
+#include <dart/common/stl_allocator.hpp>
 
 #include <Eigen/Cholesky>
 #include <Eigen/Dense>
@@ -1147,8 +1148,20 @@ void avbd_replay::restoreDeformableAvbdWarmStartReplayState(
 namespace {
 
 //==============================================================================
-struct RigidBodyForceBatch
+template <
+    typename EntityAllocator = std::allocator<entt::entity>,
+    typename ScalarAllocator = std::allocator<double>>
+struct BasicRigidBodyForceBatch
 {
+  BasicRigidBodyForceBatch() = default;
+
+  explicit BasicRigidBodyForceBatch(common::MemoryAllocator& allocator)
+    : entities(EntityAllocator{allocator}),
+      force(ScalarAllocator{allocator}),
+      torque(ScalarAllocator{allocator})
+  {
+  }
+
   void clearAndReserve(std::size_t bodyCount)
   {
     entities.clear();
@@ -1159,14 +1172,20 @@ struct RigidBodyForceBatch
     torque.reserve(3 * bodyCount);
   }
 
-  std::vector<entt::entity> entities;
-  std::vector<double> force;
-  std::vector<double> torque;
+  std::vector<entt::entity, EntityAllocator> entities;
+  std::vector<double, ScalarAllocator> force;
+  std::vector<double, ScalarAllocator> torque;
 };
 
+using RigidBodyForceBatch = BasicRigidBodyForceBatch<>;
+using AllocatorAwareRigidBodyForceBatch = BasicRigidBodyForceBatch<
+    common::StlAllocator<entt::entity>,
+    common::StlAllocator<double>>;
+
 //==============================================================================
+template <typename ForceBatch>
 void assembleRigidBodyForces(
-    const World& world, bool includeGravity, RigidBodyForceBatch& batch)
+    const World& world, bool includeGravity, ForceBatch& batch)
 {
   const auto& registry = dart::simulation::detail::registryOf(world);
   auto view
@@ -8690,7 +8709,11 @@ struct DeformableDynamicsStage::Scratch
 //==============================================================================
 struct RigidBodyVelocityStage::Scratch
 {
-  RigidBodyForceBatch forces;
+  Scratch() = default;
+
+  explicit Scratch(common::MemoryAllocator& allocator) : forces(allocator) {}
+
+  AllocatorAwareRigidBodyForceBatch forces;
 };
 
 //==============================================================================
@@ -8714,9 +8737,7 @@ RigidBodyVelocityStage::RigidBodyVelocityStage()
 RigidBodyVelocityStage::RigidBodyVelocityStage(
     common::MemoryManager* memoryManager)
   : m_memoryManager(memoryManager),
-    m_scratch(
-        constructStageOwnedScratch<Scratch>(memoryManager),
-        ScratchDeleter{memoryManager})
+    m_scratch(createScratch(memoryManager), ScratchDeleter{memoryManager})
 {
 }
 
@@ -8728,6 +8749,17 @@ void RigidBodyVelocityStage::ScratchDeleter::operator()(
     Scratch* scratch) const noexcept
 {
   destroyStageOwnedScratch(memoryManager, scratch);
+}
+
+//==============================================================================
+RigidBodyVelocityStage::Scratch* RigidBodyVelocityStage::createScratch(
+    common::MemoryManager* memoryManager)
+{
+  if (memoryManager != nullptr) {
+    return constructStageOwnedScratch<Scratch>(
+        memoryManager, memoryManager->getFreeAllocator());
+  }
+  return constructStageOwnedScratch<Scratch>(nullptr);
 }
 
 //==============================================================================
@@ -8750,8 +8782,7 @@ void RigidBodyVelocityStage::prepare(World& world)
 {
   if (m_scratch == nullptr) {
     m_scratch = ScratchPtr(
-        constructStageOwnedScratch<Scratch>(m_memoryManager),
-        ScratchDeleter{m_memoryManager});
+        createScratch(m_memoryManager), ScratchDeleter{m_memoryManager});
   }
 
   assembleRigidBodyForces(world, true, m_scratch->forces);
@@ -8765,8 +8796,7 @@ void RigidBodyVelocityStage::execute(
   const auto timeStep = world.getTimeStep();
   if (m_scratch == nullptr) {
     m_scratch = ScratchPtr(
-        constructStageOwnedScratch<Scratch>(m_memoryManager),
-        ScratchDeleter{m_memoryManager});
+        createScratch(m_memoryManager), ScratchDeleter{m_memoryManager});
   }
   auto& forces = m_scratch->forces;
   assembleRigidBodyForces(world, true, forces);

@@ -2758,6 +2758,28 @@ TEST(World, WorldPersistentStorageUsesWorldFreeAllocator)
 #endif
 }
 
+TEST(World, RigidBodyVelocityScratchPayloadUsesWorldAllocator)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  auto body = world.addRigidBody("velocity_scratch_body");
+  body.setMass(2.0);
+  body.setLinearVelocity(Eigen::Vector3d(0.25, 0.0, 0.0));
+
+  sx::compute::RigidBodyVelocityStage stage(&world.getMemoryManager());
+
+  ScopedHeapAllocationCounter heapCounter;
+  stage.prepare(world);
+  heapCounter.stop();
+
+  EXPECT_EQ(heapCounter.allocationCount(), 0u)
+      << "global heap bytes allocated while preparing allocator-aware rigid "
+         "velocity scratch: "
+      << heapCounter.allocationBytes();
+  EXPECT_EQ(heapCounter.allocationBytes(), 0u);
+}
+
 TEST(World, WorldOptionsConfigureDomainSolverFamilies)
 {
   namespace sx = dart::simulation;

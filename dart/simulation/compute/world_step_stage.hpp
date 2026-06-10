@@ -368,6 +368,8 @@ private:
 
   using ScratchPtr = std::unique_ptr<Scratch, ScratchDeleter>;
 
+  static Scratch* createScratch(common::MemoryManager* memoryManager);
+
   common::MemoryManager* m_memoryManager = nullptr;
   ScratchPtr m_scratch;
 };

@@ -78,9 +78,11 @@ fallback constructors unless a caller provides a `MemoryManager`.
 component storages, reserves existing storages, and asks domain-specific reserve
 helpers to pre-size private ECS scratch for the current shape. Repeated
 same-shape steps should not materialize new registry storages or grow existing
-storage capacity. Nested `std::vector`/Eigen payload capacity inside those
-stage scratch objects is still governed by the same-shape world-base and global
-heap no-growth gates.
+storage capacity. The rigid-body velocity stage's force-batch payload vectors
+also borrow the World free allocator when the built-in pipeline constructs that
+stage. Other nested `std::vector`/Eigen payload capacity inside stage scratch
+objects is still governed by the same-shape world-base and global heap
+no-growth gates.
 
 `World::clear()` recreates `WorldStorage` and the built-in step-pipeline cache
 with the same world free allocator, drops the lazy collision query cache, and
