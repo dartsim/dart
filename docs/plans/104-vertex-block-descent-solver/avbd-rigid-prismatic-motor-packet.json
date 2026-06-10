@@ -1,0 +1,184 @@
+{
+  "benchmark": {
+    "benchmark": "BM_AvbdRigidPrismaticMotorStep/1",
+    "context": {
+      "executable": "build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint",
+      "json_schema_version": 1,
+      "library_build_type": "release",
+      "library_version": "v1.9.5",
+      "mhz_per_cpu": 1029,
+      "num_cpus": 20
+    },
+    "cpu_time_per_step_ns": 7524.485734356423,
+    "invariants": {
+      "max_force_n": 700.0,
+      "motors": 1,
+      "target_speed_m_per_s": 0.6,
+      "time_step": 0.005
+    },
+    "json_sha256": "017a654e69dda14484170205f2cdca271573c07003fadd4c9fb005b5d2e43e5c",
+    "rows": [
+      {
+        "cpu_time": 7429.73160056198,
+        "family_index": 0,
+        "iterations": 92530,
+        "motors": 1.0,
+        "name": "BM_AvbdRigidPrismaticMotorStep/1",
+        "per_family_instance_index": 0,
+        "real_time": 7449.002485516171,
+        "repetition_index": 0,
+        "repetitions": 3,
+        "run_name": "BM_AvbdRigidPrismaticMotorStep/1",
+        "run_type": "iteration",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "cpu_time": 8187.835339889765,
+        "family_index": 0,
+        "iterations": 92530,
+        "motors": 1.0,
+        "name": "BM_AvbdRigidPrismaticMotorStep/1",
+        "per_family_instance_index": 0,
+        "real_time": 8218.258056770714,
+        "repetition_index": 1,
+        "repetitions": 3,
+        "run_name": "BM_AvbdRigidPrismaticMotorStep/1",
+        "run_type": "iteration",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "cpu_time": 7524.485734356424,
+        "family_index": 0,
+        "iterations": 92530,
+        "motors": 1.0,
+        "name": "BM_AvbdRigidPrismaticMotorStep/1",
+        "per_family_instance_index": 0,
+        "real_time": 7543.044580364278,
+        "repetition_index": 2,
+        "repetitions": 3,
+        "run_name": "BM_AvbdRigidPrismaticMotorStep/1",
+        "run_type": "iteration",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "mean",
+        "aggregate_unit": "time",
+        "cpu_time": 7714.017558269388,
+        "family_index": 0,
+        "iterations": 3,
+        "motors": 1.0,
+        "name": "BM_AvbdRigidPrismaticMotorStep/1_mean",
+        "per_family_instance_index": 0,
+        "real_time": 7736.768374217052,
+        "repetitions": 3,
+        "run_name": "BM_AvbdRigidPrismaticMotorStep/1",
+        "run_type": "aggregate",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "median",
+        "aggregate_unit": "time",
+        "cpu_time": 7524.485734356423,
+        "family_index": 0,
+        "iterations": 3,
+        "motors": 1.0,
+        "name": "BM_AvbdRigidPrismaticMotorStep/1_median",
+        "per_family_instance_index": 0,
+        "real_time": 7543.044580364276,
+        "repetitions": 3,
+        "run_name": "BM_AvbdRigidPrismaticMotorStep/1",
+        "run_type": "aggregate",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "stddev",
+        "aggregate_unit": "time",
+        "cpu_time": 413.06422515452533,
+        "family_index": 0,
+        "iterations": 3,
+        "motors": 0.0,
+        "name": "BM_AvbdRigidPrismaticMotorStep/1_stddev",
+        "per_family_instance_index": 0,
+        "real_time": 419.62508826938824,
+        "repetitions": 3,
+        "run_name": "BM_AvbdRigidPrismaticMotorStep/1",
+        "run_type": "aggregate",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "cv",
+        "aggregate_unit": "percentage",
+        "cpu_time": 0.05354722387321021,
+        "family_index": 0,
+        "iterations": 3,
+        "motors": 0.0,
+        "name": "BM_AvbdRigidPrismaticMotorStep/1_cv",
+        "per_family_instance_index": 0,
+        "real_time": 0.05423777318548115,
+        "repetitions": 3,
+        "run_name": "BM_AvbdRigidPrismaticMotorStep/1",
+        "run_type": "aggregate",
+        "threads": 1,
+        "time_unit": "ns"
+      }
+    ]
+  },
+  "packet": "avbd_rigid_prismatic_motor",
+  "remaining_gates": [
+    "broad motor lifecycle and command-update corpus",
+    "motor fracture packet coverage",
+    "GPU AVBD row parity and same-hardware benchmark packets",
+    "paper/site/video scene visual and performance packets"
+  ],
+  "reproduction": {
+    "benchmark_command": "build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter=BM_AvbdRigidPrismaticMotorStep/1$ --benchmark_min_time=0.5s --benchmark_repetitions=3 --benchmark_out=<benchmark-json> --benchmark_out_format=json",
+    "capture_command": "LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe python scripts/capture_py_demo.py --scene avbd_rigid_prismatic_motor --frames 8 --width 640 --height 360 --output-dir <capture-dir>"
+  },
+  "scene": "avbd_rigid_prismatic_motor",
+  "schema_version": 1,
+  "target": {
+    "broad_motor_lifecycle_complete": false,
+    "row_family": "public free-rigid-body prismatic velocity motor",
+    "scope": "single public free-rigid prismatic motor visual and benchmark"
+  },
+  "visual_capture": {
+    "frames": {
+      "count": 8,
+      "directory": "png_frames",
+      "first_frame": {
+        "file": "png_frames/frame_000001.png",
+        "sha256": "f343262b605c8238f962ef86a8077b2c5b42f96f4dd18513cc28cbc24a95daf4"
+      },
+      "last_frame": {
+        "file": "png_frames/frame_000008.png",
+        "sha256": "2105139f6a6e4d76eb8ddd8994d17986e7729626573157447352978ab9933497"
+      }
+    },
+    "manifest_sha256": "7ed4d194c55fc87e699619f27b2d2274d4a65d1a0d9a23ce6406872207751725",
+    "scene": "avbd_rigid_prismatic_motor",
+    "screenshot": {
+      "file": "avbd_rigid_prismatic_motor.png",
+      "height": 360,
+      "sha256": "2105139f6a6e4d76eb8ddd8994d17986e7729626573157447352978ab9933497",
+      "width": 640
+    },
+    "show_ui": false,
+    "ui_ready": {
+      "dropped_warmup_frames": 0,
+      "required": false
+    }
+  },
+  "visual_scene_invariants": {
+    "max_force_n": 800.0,
+    "motors": 1,
+    "rigid_bodies": 2,
+    "target_speed_m_per_s": 0.8,
+    "time_step": 0.005
+  }
+}

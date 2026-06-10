@@ -1,0 +1,232 @@
+{
+  "benchmark": {
+    "benchmark": "BM_AvbdArticulatedBreakableJointStep/1",
+    "context": {
+      "executable": "build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint",
+      "json_schema_version": 1,
+      "library_build_type": "release",
+      "library_version": "v1.9.5",
+      "mhz_per_cpu": 3862,
+      "num_cpus": 20
+    },
+    "cpu_time_per_step_ns": 12636.600301769246,
+    "invariants": {
+      "break_force_n": 1000000000000.0,
+      "breakable_joints": 1,
+      "gravity_m_per_s2": [
+        0.0,
+        -9.81,
+        0.0
+      ],
+      "joint_anchor_scope": "same_multibody_pair",
+      "time_step": 0.005
+    },
+    "json_sha256": "024e1a5b0ae92141516d676dcc652fcb6b2964693675ee712fb3c341980e03c5",
+    "rows": [
+      {
+        "breakable_joints": 1.0,
+        "cpu_time": 22587.524202380082,
+        "family_index": 0,
+        "iterations": 41091,
+        "name": "BM_AvbdArticulatedBreakableJointStep/1",
+        "per_family_instance_index": 0,
+        "real_time": 22662.667858722754,
+        "repetition_index": 0,
+        "repetitions": 5,
+        "run_name": "BM_AvbdArticulatedBreakableJointStep/1",
+        "run_type": "iteration",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "breakable_joints": 1.0,
+        "cpu_time": 12636.600301769246,
+        "family_index": 0,
+        "iterations": 41091,
+        "name": "BM_AvbdArticulatedBreakableJointStep/1",
+        "per_family_instance_index": 0,
+        "real_time": 12666.098318453669,
+        "repetition_index": 1,
+        "repetitions": 5,
+        "run_name": "BM_AvbdArticulatedBreakableJointStep/1",
+        "run_type": "iteration",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "breakable_joints": 1.0,
+        "cpu_time": 11643.068774184121,
+        "family_index": 0,
+        "iterations": 41091,
+        "name": "BM_AvbdArticulatedBreakableJointStep/1",
+        "per_family_instance_index": 0,
+        "real_time": 11679.168114355156,
+        "repetition_index": 2,
+        "repetitions": 5,
+        "run_name": "BM_AvbdArticulatedBreakableJointStep/1",
+        "run_type": "iteration",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "breakable_joints": 1.0,
+        "cpu_time": 12029.247913168329,
+        "family_index": 0,
+        "iterations": 41091,
+        "name": "BM_AvbdArticulatedBreakableJointStep/1",
+        "per_family_instance_index": 0,
+        "real_time": 12055.048185630554,
+        "repetition_index": 3,
+        "repetitions": 5,
+        "run_name": "BM_AvbdArticulatedBreakableJointStep/1",
+        "run_type": "iteration",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "breakable_joints": 1.0,
+        "cpu_time": 13963.010537587312,
+        "family_index": 0,
+        "iterations": 41091,
+        "name": "BM_AvbdArticulatedBreakableJointStep/1",
+        "per_family_instance_index": 0,
+        "real_time": 14000.92119922615,
+        "repetition_index": 4,
+        "repetitions": 5,
+        "run_name": "BM_AvbdArticulatedBreakableJointStep/1",
+        "run_type": "iteration",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "mean",
+        "aggregate_unit": "time",
+        "breakable_joints": 1.0,
+        "cpu_time": 14571.89034581782,
+        "family_index": 0,
+        "iterations": 5,
+        "name": "BM_AvbdArticulatedBreakableJointStep/1_mean",
+        "per_family_instance_index": 0,
+        "real_time": 14612.780735277654,
+        "repetitions": 5,
+        "run_name": "BM_AvbdArticulatedBreakableJointStep/1",
+        "run_type": "aggregate",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "median",
+        "aggregate_unit": "time",
+        "breakable_joints": 1.0,
+        "cpu_time": 12636.600301769246,
+        "family_index": 0,
+        "iterations": 5,
+        "name": "BM_AvbdArticulatedBreakableJointStep/1_median",
+        "per_family_instance_index": 0,
+        "real_time": 12666.09831845367,
+        "repetitions": 5,
+        "run_name": "BM_AvbdArticulatedBreakableJointStep/1",
+        "run_type": "aggregate",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "stddev",
+        "aggregate_unit": "time",
+        "breakable_joints": 0.0,
+        "cpu_time": 4566.439932724071,
+        "family_index": 0,
+        "iterations": 5,
+        "name": "BM_AvbdArticulatedBreakableJointStep/1_stddev",
+        "per_family_instance_index": 0,
+        "real_time": 4585.648973405948,
+        "repetitions": 5,
+        "run_name": "BM_AvbdArticulatedBreakableJointStep/1",
+        "run_type": "aggregate",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "cv",
+        "aggregate_unit": "percentage",
+        "breakable_joints": 0.0,
+        "cpu_time": 0.313373201716046,
+        "family_index": 0,
+        "iterations": 5,
+        "name": "BM_AvbdArticulatedBreakableJointStep/1_cv",
+        "per_family_instance_index": 0,
+        "real_time": 0.31381083836667967,
+        "repetitions": 5,
+        "run_name": "BM_AvbdArticulatedBreakableJointStep/1",
+        "run_type": "aggregate",
+        "threads": 1,
+        "time_unit": "ns"
+      }
+    ]
+  },
+  "packet": "avbd_articulated_breakable_joint",
+  "remaining_gates": [
+    "spherical and same-multibody break/reset packets",
+    "broad breakable-constraint corpus",
+    "GPU AVBD row parity and same-hardware benchmark packets",
+    "paper/site/video scene visual and performance packets"
+  ],
+  "reproduction": {
+    "benchmark_command": "build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter=BM_AvbdArticulatedBreakableJointStep/1$ --benchmark_min_time=0.5s --benchmark_repetitions=3 --benchmark_out=<benchmark-json> --benchmark_out_format=json",
+    "capture_command": "LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe python scripts/capture_py_demo.py --scene avbd_articulated_breakable_joint --frames 8 --width 640 --height 360 --output-dir <capture-dir>"
+  },
+  "scene": "avbd_articulated_breakable_joint",
+  "schema_version": 1,
+  "target": {
+    "broad_breakable_constraint_complete": false,
+    "row_family": "public articulated fixed point-joint break/reset",
+    "scope": "single public world-link articulated fixed point-joint break/reset visual plus same-multibody break-force-armed benchmark"
+  },
+  "visual_capture": {
+    "frames": {
+      "count": 8,
+      "directory": "png_frames",
+      "first_frame": {
+        "file": "png_frames/frame_000001.png",
+        "sha256": "fd6b4ed2f4efe169912f1e65772e7d57c90d1ebf8384d5faf2ab8269717fcbd7"
+      },
+      "last_frame": {
+        "file": "png_frames/frame_000008.png",
+        "sha256": "d6c4d2db0167b78eb57470f414d4de8bac5349b10757a851eaa9c208f7c20afa"
+      }
+    },
+    "manifest_sha256": "b12dff0d17385d875a73ed6205ecda65bee77c83f6dc80db9a38667f5317086c",
+    "scene": "avbd_articulated_breakable_joint",
+    "screenshot": {
+      "file": "avbd_articulated_breakable_joint.png",
+      "height": 360,
+      "sha256": "d6c4d2db0167b78eb57470f414d4de8bac5349b10757a851eaa9c208f7c20afa",
+      "width": 640
+    },
+    "show_ui": false,
+    "ui_ready": {
+      "dropped_warmup_frames": 0,
+      "required": false
+    }
+  },
+  "visual_scene_invariants": {
+    "break_force_n": 1e-18,
+    "breakable_joints": 1,
+    "captured_position_m": [
+      0.68,
+      0.0,
+      0.0
+    ],
+    "captured_yaw_rad": 0.22,
+    "joint_anchor_scope": "world_link",
+    "links": 2,
+    "multibodies": 1,
+    "pull_force_n": [
+      0.0,
+      5.0,
+      0.0
+    ],
+    "reset_break_force_n": 1000000.0,
+    "time_step": 0.005
+  }
+}
