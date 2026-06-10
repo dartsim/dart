@@ -1,0 +1,227 @@
+{
+  "benchmark": {
+    "benchmark": "BM_AvbdPaperScaleHighRatioChainStep",
+    "context": {
+      "executable": "build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint",
+      "json_schema_version": 1,
+      "library_build_type": "release",
+      "library_version": "v1.9.5",
+      "mhz_per_cpu": 2500,
+      "num_cpus": 20
+    },
+    "cpu_time_per_step_ns": 3328184.4027777775,
+    "invariants": {
+      "links": 50,
+      "mass_ratio": 50000.0,
+      "max_iterations": 200,
+      "replay_seconds": 0.16,
+      "replay_steps": 32,
+      "time_step": 0.005,
+      "tolerance": 1e-09
+    },
+    "json_sha256": "da2ff5a8b5f1831abf57202fd8bcdaa04a6b5ef77ab3200a4f66533f6e3b4af9",
+    "rows": [
+      {
+        "cpu_time": 3296302.902777778,
+        "family_index": 0,
+        "iterations": 72,
+        "links": 50.0,
+        "mass_ratio": 50000.0,
+        "max_iterations": 200.0,
+        "name": "BM_AvbdPaperScaleHighRatioChainStep",
+        "per_family_instance_index": 0,
+        "real_time": 3326461.055419511,
+        "repetition_index": 0,
+        "repetitions": 3,
+        "replay_seconds": 0.16,
+        "replay_steps": 32.0,
+        "run_name": "BM_AvbdPaperScaleHighRatioChainStep",
+        "run_type": "iteration",
+        "threads": 1,
+        "time_unit": "ns",
+        "tolerance": 1e-09
+      },
+      {
+        "cpu_time": 3328184.4027777775,
+        "family_index": 0,
+        "iterations": 72,
+        "links": 50.0,
+        "mass_ratio": 50000.0,
+        "max_iterations": 200.0,
+        "name": "BM_AvbdPaperScaleHighRatioChainStep",
+        "per_family_instance_index": 0,
+        "real_time": 3361077.1109427637,
+        "repetition_index": 1,
+        "repetitions": 3,
+        "replay_seconds": 0.16,
+        "replay_steps": 32.0,
+        "run_name": "BM_AvbdPaperScaleHighRatioChainStep",
+        "run_type": "iteration",
+        "threads": 1,
+        "time_unit": "ns",
+        "tolerance": 1e-09
+      },
+      {
+        "cpu_time": 3484403.3472222234,
+        "family_index": 0,
+        "iterations": 72,
+        "links": 50.0,
+        "mass_ratio": 50000.0,
+        "max_iterations": 200.0,
+        "name": "BM_AvbdPaperScaleHighRatioChainStep",
+        "per_family_instance_index": 0,
+        "real_time": 3535206.7360589798,
+        "repetition_index": 2,
+        "repetitions": 3,
+        "replay_seconds": 0.16,
+        "replay_steps": 32.0,
+        "run_name": "BM_AvbdPaperScaleHighRatioChainStep",
+        "run_type": "iteration",
+        "threads": 1,
+        "time_unit": "ns",
+        "tolerance": 1e-09
+      },
+      {
+        "aggregate_name": "mean",
+        "aggregate_unit": "time",
+        "cpu_time": 3369630.217592593,
+        "family_index": 0,
+        "iterations": 3,
+        "links": 50.0,
+        "mass_ratio": 50000.0,
+        "max_iterations": 200.0,
+        "name": "BM_AvbdPaperScaleHighRatioChainStep_mean",
+        "per_family_instance_index": 0,
+        "real_time": 3407581.6341404184,
+        "repetitions": 3,
+        "replay_seconds": 0.15999999999999998,
+        "replay_steps": 32.0,
+        "run_name": "BM_AvbdPaperScaleHighRatioChainStep",
+        "run_type": "aggregate",
+        "threads": 1,
+        "time_unit": "ns",
+        "tolerance": 1e-09
+      },
+      {
+        "aggregate_name": "median",
+        "aggregate_unit": "time",
+        "cpu_time": 3328184.4027777775,
+        "family_index": 0,
+        "iterations": 3,
+        "links": 50.0,
+        "mass_ratio": 50000.0,
+        "max_iterations": 200.0,
+        "name": "BM_AvbdPaperScaleHighRatioChainStep_median",
+        "per_family_instance_index": 0,
+        "real_time": 3361077.1109427637,
+        "repetitions": 3,
+        "replay_seconds": 0.16,
+        "replay_steps": 32.0,
+        "run_name": "BM_AvbdPaperScaleHighRatioChainStep",
+        "run_type": "aggregate",
+        "threads": 1,
+        "time_unit": "ns",
+        "tolerance": 1e-09
+      },
+      {
+        "aggregate_name": "stddev",
+        "aggregate_unit": "time",
+        "cpu_time": 100666.58320564416,
+        "family_index": 0,
+        "iterations": 3,
+        "links": 0.0,
+        "mass_ratio": 0.0,
+        "max_iterations": 0.0,
+        "name": "BM_AvbdPaperScaleHighRatioChainStep_stddev",
+        "per_family_instance_index": 0,
+        "real_time": 111873.55721879505,
+        "repetitions": 3,
+        "replay_seconds": 3.951267047896315e-09,
+        "replay_steps": 0.0,
+        "run_name": "BM_AvbdPaperScaleHighRatioChainStep",
+        "run_type": "aggregate",
+        "threads": 1,
+        "time_unit": "ns",
+        "tolerance": 0.0
+      },
+      {
+        "aggregate_name": "cv",
+        "aggregate_unit": "percentage",
+        "cpu_time": 0.029874667754364058,
+        "family_index": 0,
+        "iterations": 3,
+        "links": 0.0,
+        "mass_ratio": 0.0,
+        "max_iterations": 0.0,
+        "name": "BM_AvbdPaperScaleHighRatioChainStep_cv",
+        "per_family_instance_index": 0,
+        "real_time": 0.03283077831443231,
+        "repetitions": 3,
+        "replay_seconds": 2.4695419049351973e-08,
+        "replay_steps": 0.0,
+        "run_name": "BM_AvbdPaperScaleHighRatioChainStep",
+        "run_type": "aggregate",
+        "threads": 1,
+        "time_unit": "ns",
+        "tolerance": 0.0
+      }
+    ]
+  },
+  "packet": "avbd_paper_scale_high_ratio_chain",
+  "remaining_gates": [
+    "same-hardware paper-number comparison for the 50-link 50,000:1 chain",
+    "two-heavy-ball chain visual and invariant",
+    "broad articulated hard-constraint stability coverage",
+    "GPU AVBD row parity and same-hardware benchmark packets",
+    "paper/site/video scene visual and performance packets"
+  ],
+  "reproduction": {
+    "benchmark_command": "build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter=BM_AvbdPaperScaleHighRatioChainStep$ --benchmark_min_time=0.5s --benchmark_repetitions=3 --benchmark_out=<benchmark-json> --benchmark_out_format=json",
+    "capture_command": "LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe python scripts/capture_py_demo.py --scene avbd_paper_scale_high_ratio_chain --frames 8 --width 640 --height 360 --output-dir <capture-dir>"
+  },
+  "scene": "avbd_paper_scale_high_ratio_chain",
+  "scene_invariants": {
+    "light_link_mass": 1.0,
+    "links": 50,
+    "mass_ratio": 50000.0,
+    "max_iterations": 200,
+    "replay_seconds": 0.16,
+    "replay_steps": 32,
+    "time_step": 0.005,
+    "tip_link_mass": 50000.0,
+    "tolerance": 1e-09
+  },
+  "schema_version": 1,
+  "target": {
+    "complete_paper_reproduction": false,
+    "paper_gap": "50-body pendulum with 50,000:1 mass ratio",
+    "scope": "paper-scale 50-link articulated-chain visual/CPU benchmark smoke with a 50,000:1 heavy tip"
+  },
+  "visual_capture": {
+    "frames": {
+      "count": 8,
+      "directory": "png_frames",
+      "first_frame": {
+        "file": "png_frames/frame_000001.png",
+        "sha256": "651abe0363e3febd797850b4800e26af6553a9a97986b06d484f8348db14c2b6"
+      },
+      "last_frame": {
+        "file": "png_frames/frame_000008.png",
+        "sha256": "1b75e2b20d9d23af3730040f68c21b137f95104f7d773dd4b37393d7db61398c"
+      }
+    },
+    "manifest_sha256": "76212bd9e0867d9a0afa1e9aa6b4ef66170c18604ead5db90fe1da32dce11c6b",
+    "scene": "avbd_paper_scale_high_ratio_chain",
+    "screenshot": {
+      "file": "avbd_paper_scale_high_ratio_chain.png",
+      "height": 360,
+      "sha256": "1b75e2b20d9d23af3730040f68c21b137f95104f7d773dd4b37393d7db61398c",
+      "width": 640
+    },
+    "show_ui": false,
+    "ui_ready": {
+      "dropped_warmup_frames": 0,
+      "required": false
+    }
+  }
+}

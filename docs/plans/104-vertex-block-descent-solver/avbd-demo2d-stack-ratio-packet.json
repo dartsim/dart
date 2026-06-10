@@ -1,0 +1,330 @@
+{
+  "comparison": {
+    "dart_cpu_time_per_step_ns": 3617.219238231906,
+    "dart_faster_than_reference": true,
+    "dart_to_reference_cpu_time_ratio": 0.4504768735039691,
+    "performance_claim": "DART beats the native avbd-demo2d Stack Ratio row",
+    "reference_cpu_time_per_step_ns": 8029.75569
+  },
+  "dart_benchmark": {
+    "benchmark": "BM_AvbdDemo2dStackRatioStep",
+    "context": {
+      "executable": "build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint",
+      "json_schema_version": 1,
+      "library_build_type": "release",
+      "library_version": "v1.9.5",
+      "mhz_per_cpu": 3772,
+      "num_cpus": 20
+    },
+    "cpu_time_per_step_ns": 3617.219238231906,
+    "invariants": {
+      "collision_shapes": 7,
+      "rigid_bodies": 7,
+      "rigid_body_joints": 0,
+      "source_scene_index": 12,
+      "time_step": 0.016666666666666666
+    },
+    "json_sha256": "813243ed2803d43e7c6414742a04aae3120700f158e06465091eeff19a20f0b2",
+    "rows": [
+      {
+        "collision_shapes": 7.0,
+        "cpu_time": 3617.219238231905,
+        "family_index": 0,
+        "iterations": 197908,
+        "name": "BM_AvbdDemo2dStackRatioStep",
+        "per_family_instance_index": 0,
+        "real_time": 3626.3393040801725,
+        "repetition_index": 0,
+        "repetitions": 3,
+        "rigid_bodies": 7.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo2dStackRatioStep",
+        "run_type": "iteration",
+        "source_scene_index": 12.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "collision_shapes": 7.0,
+        "cpu_time": 3539.069330193828,
+        "family_index": 0,
+        "iterations": 197908,
+        "name": "BM_AvbdDemo2dStackRatioStep",
+        "per_family_instance_index": 0,
+        "real_time": 3547.6900781884856,
+        "repetition_index": 1,
+        "repetitions": 3,
+        "rigid_bodies": 7.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo2dStackRatioStep",
+        "run_type": "iteration",
+        "source_scene_index": 12.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "collision_shapes": 7.0,
+        "cpu_time": 4212.413373890897,
+        "family_index": 0,
+        "iterations": 197908,
+        "name": "BM_AvbdDemo2dStackRatioStep",
+        "per_family_instance_index": 0,
+        "real_time": 4233.633279081198,
+        "repetition_index": 2,
+        "repetitions": 3,
+        "rigid_bodies": 7.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo2dStackRatioStep",
+        "run_type": "iteration",
+        "source_scene_index": 12.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "mean",
+        "aggregate_unit": "time",
+        "collision_shapes": 7.0,
+        "cpu_time": 3789.567314105543,
+        "family_index": 0,
+        "iterations": 3,
+        "name": "BM_AvbdDemo2dStackRatioStep_mean",
+        "per_family_instance_index": 0,
+        "real_time": 3802.554220449952,
+        "repetitions": 3,
+        "rigid_bodies": 7.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo2dStackRatioStep",
+        "run_type": "aggregate",
+        "source_scene_index": 12.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "median",
+        "aggregate_unit": "time",
+        "collision_shapes": 7.0,
+        "cpu_time": 3617.219238231906,
+        "family_index": 0,
+        "iterations": 3,
+        "name": "BM_AvbdDemo2dStackRatioStep_median",
+        "per_family_instance_index": 0,
+        "real_time": 3626.3393040801725,
+        "repetitions": 3,
+        "rigid_bodies": 7.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo2dStackRatioStep",
+        "run_type": "aggregate",
+        "source_scene_index": 12.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "stddev",
+        "aggregate_unit": "time",
+        "collision_shapes": 0.0,
+        "cpu_time": 368.274279224866,
+        "family_index": 0,
+        "iterations": 3,
+        "name": "BM_AvbdDemo2dStackRatioStep_stddev",
+        "per_family_instance_index": 0,
+        "real_time": 375.390851348481,
+        "repetitions": 3,
+        "rigid_bodies": 0.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo2dStackRatioStep",
+        "run_type": "aggregate",
+        "source_scene_index": 0.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "cv",
+        "aggregate_unit": "percentage",
+        "collision_shapes": 0.0,
+        "cpu_time": 0.0971810892114448,
+        "family_index": 0,
+        "iterations": 3,
+        "name": "BM_AvbdDemo2dStackRatioStep_cv",
+        "per_family_instance_index": 0,
+        "real_time": 0.09872070970866037,
+        "repetitions": 3,
+        "rigid_bodies": 0.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo2dStackRatioStep",
+        "run_type": "aggregate",
+        "source_scene_index": 0.0,
+        "threads": 1,
+        "time_unit": "ns"
+      }
+    ]
+  },
+  "packet": "avbd_demo2d_stack_ratio_source_demo",
+  "reference_timing": {
+    "compile_command": [
+      "g++",
+      "-std=c++17",
+      "-O3",
+      "-DNDEBUG",
+      "-I<source-dir>/source",
+      "<temp-dir>/reference_runner.cpp",
+      "<source-dir>/source/solver.cpp",
+      "<source-dir>/source/rigid.cpp",
+      "<source-dir>/source/force.cpp",
+      "<source-dir>/source/joint.cpp",
+      "<source-dir>/source/spring.cpp",
+      "<source-dir>/source/motor.cpp",
+      "<source-dir>/source/manifold.cpp",
+      "<source-dir>/source/collide.cpp",
+      "-lGL",
+      "-o",
+      "<temp-dir>/reference_runner"
+    ],
+    "compile_flags": "-std=c++17 -O3 -DNDEBUG",
+    "compiler": "g++",
+    "cpu_time_per_step_ns": 8029.75569,
+    "elapsed_ns": 1605951138,
+    "invariants": {
+      "collision_shapes": 7,
+      "dynamic_bodies": 6,
+      "final_time": 3335.4668,
+      "initial_size": 1.0,
+      "joints": 0,
+      "max_box_size": 32.0,
+      "max_friction": 0.5,
+      "min_friction": 0.5,
+      "rigid_bodies": 7,
+      "size_multiplier": 2.0,
+      "stack_ratio_box_count": 6,
+      "static_bodies": 1
+    },
+    "json_sha256": "e9c9e73d55d098fcccafb248891a38d3dbeb971f6c1eb6685f57e6eefb060703",
+    "repository": "https://github.com/savant117/avbd-demo2d",
+    "scene_builder": "sceneStackRatio",
+    "scene_index": 12,
+    "scene_name": "Stack Ratio",
+    "source_demo": "avbd-demo2d",
+    "source_revision": "74699a11f858",
+    "steps": 200000,
+    "warmup_steps": 128
+  },
+  "remaining_gates": [
+    "remaining avbd-demo2d card tower, spring, spring ratio, rod, soft-body, joint-grid, and net source rows",
+    "GPU AVBD row parity and same-hardware benchmark packets",
+    "paper/site/video scene visual and performance packets",
+    "broad size-ratio stacking and high-ratio stability coverage beyond this source row"
+  ],
+  "reproduction": {
+    "capture_command": "LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe python scripts/capture_py_demo.py --scene avbd_demo2d_stack_ratio --frames 24 --width 640 --height 360 --output-dir <capture-dir>",
+    "dart_benchmark_command": "build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter=BM_AvbdDemo2dStackRatioStep$ --benchmark_min_time=0.5s --benchmark_repetitions=3 --benchmark_out=<benchmark-json> --benchmark_out_format=json",
+    "reference_timing_command": "python scripts/run_avbd_demo2d_reference_timing.py --source-dir <avbd-demo2d-source-dir> --scene stack_ratio --output <reference-timing-json>"
+  },
+  "scene": "avbd_demo2d_stack_ratio",
+  "schema_version": 1,
+  "source_demo_reference_row": {
+    "demo": "avbd-demo2d",
+    "dimension": 2,
+    "expected_counts": {
+      "collision_shapes": 7,
+      "dynamic_bodies": 6,
+      "joints": 0,
+      "rigid_bodies": 7,
+      "static_bodies": 1
+    },
+    "repository": "https://github.com/savant117/avbd-demo2d",
+    "revision": "74699a11f858",
+    "scene_builder": "sceneStackRatio",
+    "scene_count": 19,
+    "scene_index": 12,
+    "scene_name": "Stack Ratio",
+    "solver_defaults": {
+      "gravity": -10.0,
+      "gravity_axis": "y",
+      "iterations": 10,
+      "time_step": 0.016666666666666666
+    },
+    "source_shapes": {
+      "boxes": {
+        "centers_y": [
+          1.0,
+          2.0,
+          5.0,
+          11.0,
+          23.0,
+          47.0
+        ],
+        "count": 6,
+        "density": 1.0,
+        "friction": 0.5,
+        "initial_size": 1.0,
+        "max_box_size": 32.0,
+        "size_multiplier": 2.0,
+        "sizes": [
+          [
+            1.0,
+            1.0
+          ],
+          [
+            2.0,
+            2.0
+          ],
+          [
+            4.0,
+            4.0
+          ],
+          [
+            8.0,
+            8.0
+          ],
+          [
+            16.0,
+            16.0
+          ],
+          [
+            32.0,
+            32.0
+          ]
+        ]
+      },
+      "ground": {
+        "density": 0.0,
+        "friction": 0.5,
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "size": [
+          100.0,
+          1.0
+        ]
+      }
+    }
+  },
+  "visual_capture": {
+    "frames": {
+      "count": 24,
+      "directory": "png_frames",
+      "first_frame": {
+        "file": "png_frames/frame_000001.png",
+        "sha256": "dd2abc198ae19743a2c93e7bd521b9ee5dcc180eb3981099fa6c1508224b952c"
+      },
+      "last_frame": {
+        "file": "png_frames/frame_000024.png",
+        "sha256": "7be3f72a3a55aa0466d3a4f82195c6c0ce7b2d6dd2daf1bf6acd5858fd1a0017"
+      }
+    },
+    "manifest_sha256": "21cf36b0208026963770194436b80913dcc6b95ca3d71eea8f72c639ad6e9455",
+    "scene": "avbd_demo2d_stack_ratio",
+    "screenshot": {
+      "file": "avbd_demo2d_stack_ratio.png",
+      "height": 360,
+      "sha256": "7be3f72a3a55aa0466d3a4f82195c6c0ce7b2d6dd2daf1bf6acd5858fd1a0017",
+      "width": 640
+    },
+    "show_ui": false,
+    "ui_ready": {
+      "dropped_warmup_frames": 0,
+      "required": false
+    }
+  }
+}

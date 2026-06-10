@@ -102,14 +102,301 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     facades with C++ and dartpy bindings, generated stubs, tests, and a
     `sx_rigid_limited_joints` py-demo so users can exercise the narrow AVBD
     one-DOF rigid-joint path without touching ECS internals.
-  - Added public experimental joint break-force and broken-state accessors,
-    wired free rigid-body AVBD point joints to mark and skip broken joints, and
-    added an `avbd_rigid_breakable_joint` py-demo for the narrow breakable-joint
-    lifecycle.
+  - Added public experimental joint break-force, broken-state, and reset
+    accessors, wired free rigid-body AVBD point joints to mark and skip broken
+    joints, and added `avbd_rigid_breakable_joint` and
+    `avbd_rigid_spherical_breakable_joint` py-demos for narrow free-rigid
+    break/re-engagement lifecycles, with a tracked
+    `avbd-rigid-breakable-joint-packet.json` visual/benchmark packet for the
+    fixed point-joint path and a tracked
+    `avbd-rigid-spherical-breakable-joint-packet.json` visual/benchmark packet
+    for the spherical point-joint path.
   - Bridged private hard fixed-link AVBD point-joint endpoints into the
     articulated variational solve path, covered that private path with C++ tests
     and a benchmark row, and added a `variational_endpoint_loop_closure` py-demo
-    for public multibody-link point-closure behavior.
+    for public multibody-link point-closure behavior. Non-topology multibody-link
+    private point-joint entities can now also generate hard AVBD configs from
+    the simulation-entry current pose while tree-topology joints stay skipped,
+    and public experimental `World` articulated
+    fixed/revolute/prismatic/spherical link-link and world-link facades now
+    expose that narrow AVBD bridge through
+    C++ and dartpy, including focused public revolute/prismatic bounded
+    velocity-actuator, same-multibody/world-anchored command-update and tiny
+    effort-limit coverage, private revolute/prismatic command-update plus
+    fixed-row and revolute/prismatic break/reset re-engagement, and
+    same-multibody/world-anchored public one-DOF motor break/skip coverage
+    including focused dartpy stepping tests for same-multibody/world-link
+    revolute and prismatic explicit-anchor break/skip and reset/re-engagement
+    cases, plus
+    dartpy fixed point-joint break/skip/reset coverage for same-multibody,
+    movable-movable same-multibody, and world-link explicit all-axis anchor
+    rows, plus
+    same-multibody/world-anchored public one-DOF motor break/reset
+    re-engagement, plus movable-movable same-multibody revolute/prismatic motor
+    break/reset regressions with explicit off-origin anchors covered in C++ and
+    dartpy and fixed break/reset regressions, plus a world-fixed
+    break/reset regression. The
+    articulated point-joint facade also accepts explicit local/world anchor
+    points in C++ and dartpy, with same-multibody and world-anchored
+    fixed/revolute/prismatic off-origin regressions, and exposes spherical
+    articulated point joints as linear-only pinned-anchor rows that leave
+    relative orientation free, including explicit link-link and world-link
+    anchor overload coverage plus focused spherical break/skip and
+    same-multibody/world-link reset coverage for those linear-only rows,
+    including explicit-anchor dartpy stepping coverage and C++ save/load
+    regressions proving same-multibody link-link
+    and world-link fixed/spherical facade state rebuilds the private AVBD
+    all-axis or linear rows after load, plus same-multibody and world-link
+    revolute/prismatic motor
+    facade state rebuilds the private hard rows and free-axis motor row after
+    load, plus same-multibody/world-link fixed/spherical/revolute/prismatic
+    broken-state save/load regressions, including explicit-anchor fixed,
+    movable-movable fixed, and one-DOF motor cases, proving restored broken
+    joints remain skipped until reset re-engages the AVBD rows.
+    Direct private world-link `AvbdRigidWorldPointJointConfig`
+    revolute/prismatic rows now also survive broken-state binary save/load,
+    preserving anchors, bases, masks, stiffness fields, actuator command, and
+    effort-limit state until reset re-engages the hard rows plus updated
+    free-axis motor motion.
+    Multibody position writes now also mark link frame caches dirty before the
+    clean-cache kinematics graph shortcut, keeping public link transforms
+    current after semi-implicit and variational multibody steps.
+    Added
+    `avbd_articulated_revolute_motor`
+    and `avbd_articulated_prismatic_motor` py-demos for public articulated
+    velocity-motor command updates, with a tracked
+    `avbd-articulated-revolute-motor-packet.json` visual/benchmark packet for
+    the revolute path and a tracked
+    `avbd-articulated-prismatic-motor-packet.json` visual/benchmark packet for
+    the prismatic path,
+    an `avbd_articulated_motor_breakable_joint` py-demo for same-multibody
+    public articulated motor break/reset with a tracked
+    `avbd-articulated-breakable-motor-packet.json` visual/benchmark packet,
+    an `avbd_articulated_prismatic_pair_motor_breakable_joint` py-demo for
+    same-multibody public articulated prismatic motor break/reset with a
+    tracked `avbd-articulated-prismatic-pair-breakable-motor-packet.json`
+    visual/benchmark packet,
+    an `avbd_articulated_prismatic_motor_breakable_joint` py-demo for
+    world-anchored public articulated prismatic motor break/reset with a
+    tracked `avbd-articulated-world-prismatic-breakable-motor-packet.json`
+    visual/benchmark packet, an
+    `avbd_articulated_world_revolute_motor_breakable_joint` py-demo for
+    world-anchored public articulated revolute motor break/reset with a tracked
+    `avbd-articulated-world-revolute-breakable-motor-packet.json`
+    visual/benchmark packet, a
+    `avbd_articulated_breakable_joint` py-demo for public articulated fixed
+    point-joint break/reset with a tracked
+    `avbd-articulated-breakable-joint-packet.json` visual/benchmark packet, a
+    `BM_AvbdArticulatedBreakableMotorStep` dashboard row for the active
+    break-force armed articulated revolute motor path, a
+    `BM_AvbdArticulatedPrismaticBreakableMotorStep` dashboard row for the
+    active break-force armed articulated prismatic motor path, a
+    `BM_AvbdArticulatedWorldPrismaticBreakableMotorStep` dashboard row for the
+    active break-force armed world-anchored articulated prismatic motor path,
+    a `BM_AvbdArticulatedWorldRevoluteBreakableMotorStep` dashboard row for
+    the active break-force armed world-anchored articulated revolute motor path,
+    and an `avbd_articulated_fixed_pair_breakable_joint` py-demo
+    for the public same-multibody fixed break/reset path with a tracked
+    `avbd-articulated-fixed-pair-breakable-joint-packet.json` visual/benchmark
+    packet, an
+    `avbd_articulated_spherical_breakable_joint` py-demo for
+    the public world-link spherical break/reset path with a tracked
+    `avbd-articulated-spherical-breakable-joint-packet.json` visual/benchmark
+    packet, and an
+    `avbd_articulated_spherical_pair_breakable_joint` py-demo for the public
+    same-multibody spherical break/reset path over the variational bridge with a
+    tracked `avbd-articulated-spherical-pair-breakable-joint-packet.json`
+    visual/benchmark packet, plus
+    an `avbd_articulated_high_ratio_chain` py-demo for a narrow 200:1
+    articulated high mass-ratio variational-chain smoke case and
+    `BM_AvbdArticulatedHighRatioChainStep` dashboard row with a tracked
+    `avbd-articulated-high-ratio-chain-packet.json` visual/benchmark packet,
+    plus `avbd_paper_scale_high_ratio_chain`,
+    `BM_AvbdPaperScaleHighRatioChainStep`, and a tracked
+    `avbd-paper-scale-high-ratio-chain-packet.json` visual/benchmark packet for
+    a 50-link/50,000:1 CPU smoke that keeps the same-hardware and GPU gates open,
+    plus tracked `avbd-rigid-revolute-motor-packet.json` and
+    `avbd-rigid-prismatic-motor-packet.json` visual/benchmark packets for the
+    public free-rigid revolute and prismatic motor rows,
+    plus
+    an `avbd_empty_baseline` py-demo
+    for the first source-demo empty-scene smoke baseline,
+    `avbd_demo2d_ground` for the static `avbd-demo2d` Ground source row, and
+    `avbd_demo2d_motor` for the first one-DOF motor `avbd-demo2d` source
+    row, plus `avbd_demo2d_hanging_rope` for the `avbd-demo2d` Hanging Rope
+    source row, plus `avbd_demo2d_spring` and
+    `avbd_demo2d_spring_ratio` for the first radial rigid distance-spring source
+    harnesses, plus `avbd_demo2d_fracture` for the `avbd-demo2d` Fracture
+    source row, plus `avbd_demo2d_dynamic_friction` for the `avbd-demo2d`
+    Dynamic Friction source row, plus `avbd_demo2d_static_friction` for the
+    `avbd-demo2d` Static Friction source row, plus `avbd_demo2d_pyramid` for
+    the `avbd-demo2d` Pyramid source row, plus `avbd_demo2d_cards` for the
+    `avbd-demo2d` Cards source row, plus `avbd_demo2d_stack` for the
+    `avbd-demo2d` Stack source row, plus `avbd_demo2d_stack_ratio` for the
+    `avbd-demo2d` Stack Ratio source row, plus `avbd_demo2d_rod` for the
+    `avbd-demo2d` Rod source row, plus `avbd_demo2d_soft_body` for the
+    `avbd-demo2d` Soft Body source row, plus `avbd_demo2d_joint_grid` for the
+    `avbd-demo2d` Joint Grid source row, plus `avbd_demo2d_rope` for the
+    `avbd-demo2d` Rope source row, plus `avbd_demo2d_heavy_rope` for the
+    `avbd-demo2d` Heavy Rope source row, plus `avbd_demo2d_net` for the
+    `avbd-demo2d` Net source row, plus `avbd_demo3d_ground`,
+    `avbd_demo3d_dynamic_friction`,
+    `avbd_demo3d_static_friction`, `avbd_demo3d_pyramid`,
+    `avbd_demo3d_rope`, `avbd_demo3d_heavy_rope`,
+    `avbd_demo3d_spring`, `avbd_demo3d_spring_ratio`,
+    `avbd_demo3d_stack`, `avbd_demo3d_stack_ratio`,
+    `avbd_demo3d_soft_body`,
+    `avbd_demo3d_bridge`, and `avbd_demo3d_breakable` py-demos for the first
+    non-empty `avbd-demo3d`
+    source rows, each with reference revision
+    and default-parameter
+    metadata. The empty
+    baseline is backed by a tracked visual/benchmark packet. The 2D Ground row
+    has a tracked visual/DART-benchmark/native-reference timing packet that
+    keeps the CPU-win gate explicit: after skipping static-only contact queries,
+    no-op rigid dynamics stages, clean frame-cache graph execution, and the
+    clean no-work default step pipeline with a cheap scratch reset, DART records
+    the static Ground row about 1.51x faster than the native source runner on
+    this host, closing that narrow source row. The Motor row
+    has a tracked visual/DART-benchmark/native-reference timing packet that keeps
+    the CPU-win gate explicit: after skipping contact queries for
+    no-collision-geometry worlds in contact-stage prepare/execute, DART still
+    records the public World Motor row about 6.18x slower than the native source
+    runner on this host. The Hanging
+    Rope row has a tracked visual/DART-benchmark/native-reference timing packet
+    and records DART about 7.84x slower than the native source runner on this
+    host. The 2D Spring and Spring Ratio rows have tracked
+    visual/DART-benchmark/native-reference timing packets that record DART
+    about 17.8x and 11.1x slower than their native source runners on this host,
+    keeping those CPU-win gates open. The 3D Spring and Spring Ratio rows have
+    tracked visual/DART-benchmark/native-reference timing packets that record
+    DART about 3.17x and 5.78x slower than their native source runners on this
+    host, keeping those CPU-win gates open. The Fracture row has a tracked
+    visual/DART-benchmark/native-reference
+    timing packet and records DART about 1.20x faster than the native source
+    runner on this host after a refreshed same-source timing run. The
+    rigid AVBD contact stage now also reuses its extracted point-joint input
+    scratch, solve-row scratch, and per-body row-index scratch, and avoids
+    copying already-predicted inertial targets in the World contact path. The
+    rigid contact stage also no longer
+    performs a duplicate prepare-time collision query just to reserve
+    sequential-contact scratch; execute-time contact discovery remains the
+    authoritative query.
+    Collision queries now also suppress live public rigid-body joint endpoint
+    pairs from reusable query-cache scratch, mirroring the source demo solver's
+    constrained-pair broadphase rule while allowing broken AVBD joints to
+    become collidable again; focused coverage verifies warmed filtered queries
+    do not allocate. The Fracture source-row metadata and packet writer record
+    the 10 joint-connected collision pairs, but the packet was not refreshed
+    because diagnostic timing remained noisy. Known and unknown-index rigid
+    contact snapshots now map the world contact point through body and shape
+    transforms before feature coding, while explicit endpoint-A/B compound
+    shape-index feature coding now uses the narrow-phase shape-local contact
+    point. Focused coverage now also verifies actual `World::collide()`
+    sphere/cylinder/capsule/plane/mesh contacts feed their narrow-phase
+    endpoints into AVBD feature coding, including shape-scoped sphere body
+    features. Unknown-index inference now also recognizes unique
+    compound plane and triangle-mesh matches, assigning shape-scoped plane face
+    IDs and mesh face/edge/vertex feature IDs while preserving the body fallback
+    for ambiguous compounds; same-feature manifold row ordinals are now assigned
+    from deterministic canonical-local contact-point ordering so reversed
+    narrow-phase contact order or swapped contact body endpoints do not swap
+    warm-start state, with actual `World::collide()` sphere/plane contact-point
+    replay and live box-box manifold box-face feature coverage. Persisting
+    private rigid contact friction rows now also store their tangent directions
+    and project the warm-started paired dual into the current tangent basis when
+    the contact normal rotates. The `avbd-demo2d`
+    Dynamic Friction row has a tracked
+    visual/DART-benchmark/native-reference timing packet and records DART about
+    1.83x faster than the native source runner on this host. The
+    `avbd-demo2d` Static Friction row has a tracked
+    visual/DART-benchmark/native-reference timing packet and records DART about
+    2.68x faster than the native source runner on this host. The
+    `avbd-demo2d` Pyramid row has a tracked
+    visual/DART-benchmark/native-reference timing packet and records DART about
+    9.84x faster than the 10,000-step native source runner on this host. The
+    `avbd-demo2d` Cards row has a tracked
+    visual/DART-benchmark/native-reference timing packet and records DART about
+    5.38x slower than the native source runner on this host. The
+    `avbd-demo2d` Stack row has a tracked
+    visual/DART-benchmark/native-reference timing packet and records DART about
+    2.17x faster than the native source runner on this host. The
+    `avbd-demo2d` Stack Ratio row has a tracked
+    visual/DART-benchmark/native-reference timing packet and records DART about
+    2.22x faster than the native source runner on this host. The
+    `avbd-demo2d` Rod row has a tracked
+    visual/DART-benchmark/native-reference timing packet and records DART about
+    9.58x slower than the native source runner on this host. The
+    `avbd-demo2d` Soft Body row has a tracked
+    visual/DART-benchmark/native-reference timing packet and records DART about
+    6.30x slower than the native source runner on this host. The AVBD scalar
+    row inventory now reuses stable same-order descriptor lists in place,
+    avoiding the previous per-step previous-row map rebuild for unchanged row
+    sets while preserving the existing fallback for dropped or reordered rows;
+    rigid World contact snapshots also use reserved endpoint-pair hash counters
+    for contact/joint/spring row ordinals instead of per-step tree maps, and
+    append paths seed the body-index cache when they fall back to an existing
+    snapshot entity scan. The rigid row driver skips per-body row-index scratch
+    setup for row families absent from a solve.
+    The
+    `avbd-demo2d` Joint Grid row has a tracked
+    visual/DART-benchmark/native-reference timing packet and records DART about
+    2.06x slower than the native source runner on this host after reusing
+    per-body row-index scratch and caching snapshot body indices, while
+    configuring the source's 1152 diagonal ignore-collision pairs through the
+    public per-pair collision filter. The
+    `avbd-demo2d` Rope row has a tracked
+    visual/DART-benchmark/native-reference timing packet and records DART about
+    5.20x slower than the native source runner on this host. The
+    `avbd-demo2d` Heavy Rope row has a tracked
+    visual/DART-benchmark/native-reference timing packet and records DART about
+    5.85x slower than the native source runner on this host after reusing
+    per-body row-index scratch and caching snapshot body indices. The
+    `avbd-demo3d`
+    Ground
+    row has a tracked visual/DART-benchmark/native-reference timing packet and
+    records DART about 1.11x faster than the native source runner on this host,
+    the Dynamic Friction row records DART about 1.41x faster, while the
+    Static Friction row records DART about 1.08x faster, the Pyramid row records
+    DART about 2.83x faster, the Rope row records DART about 3.75x slower, the
+    Heavy Rope row records DART about 3.84x slower, the
+    Stack row records DART about 1.80x faster, the
+    Stack Ratio row records DART about 2.32x faster, the Soft Body row records
+    DART about 2.33x slower, the Bridge row records DART about 1.61x faster,
+    and the Breakable row records DART about 1.42x faster.
+    The dashboard's AVBD World slice now also tracks an empty-baseline step row,
+    an `avbd-demo2d` Motor source-row step benchmark,
+    an `avbd-demo2d` Ground source-row step benchmark,
+    an `avbd-demo2d` Hanging Rope source-row step benchmark,
+    an `avbd-demo2d` Fracture source-row step benchmark,
+    an `avbd-demo2d` Dynamic Friction source-row step benchmark,
+    an `avbd-demo2d` Static Friction source-row step benchmark,
+    an `avbd-demo2d` Pyramid source-row step benchmark,
+    an `avbd-demo2d` Cards source-row step benchmark,
+    an `avbd-demo2d` Stack source-row step benchmark,
+    an `avbd-demo2d` Stack Ratio source-row step benchmark,
+    an `avbd-demo2d` Rod source-row step benchmark,
+    an `avbd-demo2d` Soft Body source-row step benchmark,
+    an `avbd-demo2d` Joint Grid source-row step benchmark,
+    an `avbd-demo2d` Rope source-row step benchmark,
+    an `avbd-demo2d` Heavy Rope source-row step benchmark,
+    an `avbd-demo3d` Ground source-row step benchmark,
+    an `avbd-demo3d` Dynamic Friction source-row step benchmark,
+    an `avbd-demo3d` Static Friction source-row step benchmark,
+    an `avbd-demo3d` Pyramid source-row step benchmark,
+    an `avbd-demo3d` Rope source-row step benchmark,
+    an `avbd-demo3d` Heavy Rope source-row step benchmark,
+    an `avbd-demo3d` Stack source-row step benchmark,
+    an `avbd-demo3d` Stack Ratio source-row step benchmark,
+    an `avbd-demo3d` Soft Body source-row step benchmark,
+    an `avbd-demo3d` Bridge source-row step benchmark,
+    an `avbd-demo3d` Breakable source-row step benchmark,
+    public articulated
+    revolute and prismatic motor step benchmark rows, plus public
+    free-rigid/articulated breakable fixed point-joint benchmark rows, and adds a
+    durable AVBD demo/benchmark corpus matrix that maps the required 2D/3D
+    source-demo, paper, website/video, and performance rows to missing or partial
+    DART evidence.
   - Made `dart::gui` UI scaling DPI-aware: `--gui-scale` now acts as a manual
     user multiplier on top of GLFW content-scale detection, `DART_GUI_DPI_SCALE`
     can override misreported DPI, implicit interactive app windows now use a
@@ -913,7 +1200,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     side/cap/rim endpoint features, so cylinder contacts warm-start across
     same-feature motion but reset when they move between barrel, cap, and rim
     manifolds. Capsule side/top-cap/bottom-cap endpoint features provide the
-    same private warm-start partitioning for capsule contacts.
+    same private warm-start partitioning for capsule contacts. Known-shape
+    contacts now map world contact points through body and collision-shape local
+    transforms before feature coding, and unknown-index contacts use the same
+    shape-frame path when exactly one collision shape can be inferred.
   - Added a private AVBD rigid World point-joint snapshot path that appends
     world-space point-joint inputs to the same rigid snapshot/solve/apply
     wrapper and combined step helper with persistent linear and angular joint
@@ -926,6 +1216,11 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     `World.add_rigid_body_fixed_joint()` for design-mode fixed constraints
     between two free rigid bodies, backed by the private AVBD fixed-joint
     projection path and covered by a `py-demos` rigid fixed-joint scene.
+  - Added experimental AVBD point-joint stiffness controls on public joint
+    handles (`Joint::setAvbdStartStiffness()`, `setAvbdLinearStiffness()`, and
+    `setAvbdAngularStiffness()`, plus dartpy properties) so rigid point-joint
+    facades can choose hard rows or finite material-stiffness rows without
+    exposing solver row storage.
   - Added explicit rigid-body endpoint accessors for public experimental
     rigid-body fixed joints (`Joint::getParentRigidBody()`/
     `getChildRigidBody()`, dartpy `joint.parent_rigid_body`/
