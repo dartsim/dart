@@ -1302,34 +1302,29 @@ void configureDeformableSelfContactFrictionPatchScene(
   world.addDeformableBody("friction_patches", options);
 }
 
-void configureDeformableFemGroundFrictionBlockScene(
-    dart::simulation::World& world)
+void addDeformableFemGroundFrictionBlock(
+    dart::simulation::World& world,
+    std::string_view bodyName,
+    const Eigen::Vector3d& offset,
+    std::size_t cells,
+    bool useMatrixFreeLinearSolver)
 {
   namespace sx = dart::simulation;
 
-  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
-  world.setTimeStep(0.002);
-
-  sx::RigidBodyOptions groundOptions;
-  groundOptions.isStatic = true;
-  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
-  auto ground = world.addRigidBody("fem_ground", groundOptions);
-  ground.setCollisionShape(
-      sx::CollisionShape::makeBox(Eigen::Vector3d(10.0, 10.0, 0.5)));
-  ground.setDeformableGroundBarrier(true);
-
-  constexpr std::size_t cells = 2;
-  constexpr std::size_t nodesPerAxis = cells + 1;
+  const std::size_t nodesPerAxis = cells + 1;
   constexpr double spacing = 0.1;
-  const auto nodeIndex = [](std::size_t x, std::size_t y, std::size_t z) {
-    return z * nodesPerAxis * nodesPerAxis + y * nodesPerAxis + x;
-  };
+  const auto nodeIndex
+      = [nodesPerAxis](std::size_t x, std::size_t y, std::size_t z) {
+          return z * nodesPerAxis * nodesPerAxis + y * nodesPerAxis + x;
+        };
 
   sx::DeformableBodyOptions options;
   options.positions.reserve(nodesPerAxis * nodesPerAxis * nodesPerAxis);
   options.velocities.reserve(nodesPerAxis * nodesPerAxis * nodesPerAxis);
   options.masses.assign(nodesPerAxis * nodesPerAxis * nodesPerAxis, 0.1);
-  const Eigen::Vector3d origin(-0.1, -0.1, 0.004);
+  const double halfExtent = 0.5 * static_cast<double>(cells) * spacing;
+  const Eigen::Vector3d origin
+      = offset + Eigen::Vector3d(-halfExtent, -halfExtent, 0.004);
   for (std::size_t z = 0; z < nodesPerAxis; ++z) {
     for (std::size_t y = 0; y < nodesPerAxis; ++y) {
       for (std::size_t x = 0; x < nodesPerAxis; ++x) {
@@ -1384,8 +1379,59 @@ void configureDeformableFemGroundFrictionBlockScene(
   options.material.youngsModulus = 5.0e4;
   options.material.poissonRatio = 0.3;
   options.material.frictionCoefficient = 0.8;
+  options.material.useMatrixFreeLinearSolver = useMatrixFreeLinearSolver;
 
-  world.addDeformableBody("fem_ground_friction_block", options);
+  world.addDeformableBody(bodyName, options);
+}
+
+void configureDeformableFemGroundFrictionBlockScene(
+    dart::simulation::World& world)
+{
+  namespace sx = dart::simulation;
+
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.002);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("fem_ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(10.0, 10.0, 0.5)));
+  ground.setDeformableGroundBarrier(true);
+
+  addDeformableFemGroundFrictionBlock(
+      world, "fem_ground_friction_block", Eigen::Vector3d::Zero(), 2, false);
+}
+
+void configureMixedDefaultDeformableFemProductionStorageScene(
+    dart::simulation::World& world)
+{
+  namespace sx = dart::simulation;
+
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.002);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("mixed_fem_ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(12.0, 12.0, 0.5)));
+  ground.setDeformableGroundBarrier(true);
+
+  addDeformableFemGroundFrictionBlock(
+      world,
+      "mixed_fem_direct_production_block",
+      Eigen::Vector3d(-1.0, 0.0, 0.0),
+      3,
+      false);
+  addDeformableFemGroundFrictionBlock(
+      world,
+      "mixed_fem_matrix_free_production_block",
+      Eigen::Vector3d(1.0, 0.0, 0.0),
+      3,
+      true);
 }
 
 void configureDeformableSelfContactFrictionGridSceneWithShapeAndMotion(
@@ -3584,6 +3630,9 @@ TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
       "mixed production default deformable storage paths",
       configureMixedDefaultDeformableProductionStorageScene);
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "mixed production default FEM solver storage paths",
+      configureMixedDefaultDeformableFemProductionStorageScene);
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "deformable static obstacle barriers",
       configureDeformableStaticObstacleBarrierScene);
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
@@ -4144,6 +4193,37 @@ TEST(World, MixedDefaultDeformableProductionStorageSceneIsActive)
   EXPECT_GT(matrixFreeSolves, 0u);
   EXPECT_GT(maxHessianNonZeros, 0u);
   EXPECT_GT(maxActiveContacts, 0u);
+  EXPECT_GT(frictionDissipation, 0.0);
+}
+
+TEST(World, MixedDefaultDeformableFemProductionStorageSceneIsActive)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  configureMixedDefaultDeformableFemProductionStorageScene(world);
+  world.enterSimulationMode();
+
+  std::size_t projectedNewtonSteps = 0;
+  std::size_t matrixFreeSolves = 0;
+  std::size_t maxHessianNonZeros = 0;
+  double frictionDissipation = 0.0;
+  for (int i = 0; i < 4; ++i) {
+    world.step();
+    const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
+    projectedNewtonSteps += diagnostics.projectedNewtonSteps;
+    matrixFreeSolves += diagnostics.projectedNewtonMatrixFreeSolves;
+    maxHessianNonZeros = std::max(
+        maxHessianNonZeros, diagnostics.projectedNewtonHessianNonZeros);
+    frictionDissipation += diagnostics.frictionDissipation;
+  }
+
+  const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
+  EXPECT_EQ(diagnostics.bodyCount, 2u);
+  EXPECT_EQ(diagnostics.nodeCount, 2u * 4u * 4u * 4u);
+  EXPECT_GT(projectedNewtonSteps, 0u);
+  EXPECT_GT(matrixFreeSolves, 0u);
+  EXPECT_GT(maxHessianNonZeros, 0u);
   EXPECT_GT(frictionDissipation, 0.0);
 }
 
@@ -4831,6 +4911,9 @@ TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "mixed production default deformable storage paths",
       configureMixedDefaultDeformableProductionStorageScene);
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "mixed production default FEM solver storage paths",
+      configureMixedDefaultDeformableFemProductionStorageScene);
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "deformable static obstacle barriers",
       configureDeformableStaticObstacleBarrierScene);

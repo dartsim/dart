@@ -412,8 +412,10 @@
       rectangular self-contact grids, a mixed dense production scene with
       notched direct-sparse and dense matrix-free grids, a production mixed
       default-solver storage scene with direct-sparse self-contact,
-      matrix-free self-contact, and FEM ground-friction bodies, plus a
-      production rectangular inter-body deformable surface-CCD crossing, a
+      matrix-free self-contact, and FEM ground-friction bodies, a mixed
+      production FEM ground-friction scene with direct and matrix-free
+      4x4x4-node blocks, plus a production rectangular inter-body deformable
+      surface-CCD crossing, a
       barrier-only static sphere/box/capsule obstacle scene, and a production
       static sphere/box/capsule obstacle friction patch for sparse and
       matrix-free default projected Newton, plus a mixed static-obstacle and
@@ -685,8 +687,10 @@ debugging, profiling, optimization experiments, and ImGui visualization.
    root; a notched, jittered matrix-free 13x17 irregular grid now covers the CG
    scratch path on non-grid topology; compact and production mixed
    default-solver storage scenes now combine direct-sparse, matrix-free, and
-   FEM ground-friction deformables under the same root; a production
-   rectangular inter-body deformable surface-CCD crossing now exercises
+   FEM ground-friction deformables under the same root; a mixed production FEM
+   scene now combines direct and matrix-free 4x4x4-node ground-friction blocks
+   under one baked root; a production rectangular inter-body deformable
+   surface-CCD crossing now exercises
    inter-body sweep/candidate scratch beyond the tiny two-triangle crossing;
    and a production static-obstacle friction patch now covers shared
    sphere/box/capsule normal-force, normal-direction, and Hessian scratch under

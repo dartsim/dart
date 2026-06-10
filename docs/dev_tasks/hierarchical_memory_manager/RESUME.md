@@ -215,7 +215,10 @@ multi-tetrahedron FEM block on a ground-friction barrier to cover FEM rest
 shape, Hessian-block, and multi-node ground-friction storage in both the World
 base-allocator and global heap baked-step guards. Compact and production mixed
 storage gates combine direct-sparse self-contact, matrix-free self-contact, and
-FEM ground-friction bodies in one baked default-solver World.
+FEM ground-friction bodies in one baked default-solver World. The latest FEM
+storage gate combines direct and matrix-free 4x4x4-node ground-friction blocks
+under the same baked root, covering both FEM projected-Newton solver storage
+families.
 Projected-Newton self-contact barrier scratch is sized from bake-primed contact
 candidates, and the guard covers the two-triangle no-friction self-contact
 path. Surface-contact candidate and sweep buffers now get topology-scaled
