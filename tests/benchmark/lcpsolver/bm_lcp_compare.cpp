@@ -106,6 +106,17 @@ double MakeDenseBoxGroundHalfExtent(int boxCount)
       20.0, kSpacing * static_cast<double>(std::max(columns, rows) - 1) + 1.0);
 }
 
+double MakePositiveGridGroundHalfExtent(
+    int itemCount, double spacing, double minimumHalfExtent)
+{
+  const int columns
+      = static_cast<int>(std::ceil(std::sqrt(static_cast<double>(itemCount))));
+  const int rows = (itemCount + columns - 1) / columns;
+  return std::max(
+      minimumHalfExtent,
+      spacing * static_cast<double>(std::max(columns, rows) - 1) + 1.0);
+}
+
 LcpOptions MakeBenchmarkOptions(int maxIterations)
 {
   LcpOptions options;
@@ -2043,16 +2054,19 @@ std::unique_ptr<sx::World> MakeWorldArticulatedGroundStepBenchmarkWorld(
   options.contactSolverMethod = sx::ContactSolverMethod::BoxedLcp;
   auto world = std::make_unique<sx::World>(options);
 
+  constexpr double kSpacing = 1.5;
   sx::RigidBodyOptions groundOptions;
   groundOptions.isStatic = true;
   groundOptions.position = Eigen::Vector3d(0.0, 0.0, -1.0);
   auto ground = world->addRigidBody("ground", groundOptions);
+  const double groundHalfExtent
+      = MakePositiveGridGroundHalfExtent(linkCount, kSpacing, 24.0);
   ground.setCollisionShape(
-      sx::CollisionShape::makeBox(Eigen::Vector3d(24.0, 24.0, 0.5)));
+      sx::CollisionShape::makeBox(
+          Eigen::Vector3d(groundHalfExtent, groundHalfExtent, 0.5)));
 
   const int columns
       = static_cast<int>(std::ceil(std::sqrt(static_cast<double>(linkCount))));
-  constexpr double kSpacing = 1.5;
   for (const int i : std::views::iota(0, linkCount)) {
     const int row = i / columns;
     const int col = i - row * columns;
@@ -2348,16 +2362,19 @@ MakeWorldCartesianArticulatedGroundStepBenchmarkWorld(
   options.contactSolverMethod = sx::ContactSolverMethod::BoxedLcp;
   auto world = std::make_unique<sx::World>(options);
 
+  constexpr double kSpacing = 1.5;
   sx::RigidBodyOptions groundOptions;
   groundOptions.isStatic = true;
   groundOptions.position = Eigen::Vector3d(0.0, 0.0, -1.0);
   auto ground = world->addRigidBody("ground", groundOptions);
+  const double groundHalfExtent
+      = MakePositiveGridGroundHalfExtent(chainCount, kSpacing, 24.0);
   ground.setCollisionShape(
-      sx::CollisionShape::makeBox(Eigen::Vector3d(24.0, 24.0, 0.5)));
+      sx::CollisionShape::makeBox(
+          Eigen::Vector3d(groundHalfExtent, groundHalfExtent, 0.5)));
 
   const int columns
       = static_cast<int>(std::ceil(std::sqrt(static_cast<double>(chainCount))));
-  constexpr double kSpacing = 1.5;
   for (const int i : std::views::iota(0, chainCount)) {
     const int row = i / columns;
     const int col = i - row * columns;
@@ -13316,7 +13333,8 @@ BENCHMARK(BM_LcpWorldArticulatedGroundStep_BoxedLcp)
     ->Args({96, 200})
     ->Args({128, 200})
     ->Args({192, 200})
-    ->Args({256, 200});
+    ->Args({256, 200})
+    ->Args({384, 200});
 BENCHMARK(BM_LcpWorldArticulatedRigidImpactStep_BoxedLcp)
     ->Args({1, 1})
     ->Args({4, 1})
@@ -13335,7 +13353,9 @@ BENCHMARK(BM_LcpWorldArticulatedRigidImpactStep_BoxedLcp)
     ->Args({192, 1})
     ->Args({192, 200})
     ->Args({256, 1})
-    ->Args({256, 200});
+    ->Args({256, 200})
+    ->Args({384, 1})
+    ->Args({384, 200});
 BENCHMARK(BM_LcpWorldArticulatedLinkImpactStep_BoxedLcp)
     ->Args({1, 1})
     ->Args({4, 1})
@@ -13354,7 +13374,9 @@ BENCHMARK(BM_LcpWorldArticulatedLinkImpactStep_BoxedLcp)
     ->Args({192, 1})
     ->Args({192, 200})
     ->Args({256, 1})
-    ->Args({256, 200});
+    ->Args({256, 200})
+    ->Args({384, 1})
+    ->Args({384, 200});
 BENCHMARK(BM_LcpWorldArticulatedCartesianGroundStep_BoxedLcp)
     ->Args({1, 200})
     ->Args({4, 200})
@@ -13366,7 +13388,8 @@ BENCHMARK(BM_LcpWorldArticulatedCartesianGroundStep_BoxedLcp)
     ->Args({96, 200})
     ->Args({128, 200})
     ->Args({192, 200})
-    ->Args({256, 200});
+    ->Args({256, 200})
+    ->Args({384, 200});
 #endif
 
 BENCHMARK(BM_LCP_COMPARE_SMOKE);

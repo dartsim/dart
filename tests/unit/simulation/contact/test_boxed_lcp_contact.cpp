@@ -1110,6 +1110,17 @@ double makeDenseBoxGroundHalfExtent(int boxCount)
       20.0, kSpacing * static_cast<double>(std::max(columns, rows) - 1) + 1.0);
 }
 
+double makePositiveGridGroundHalfExtent(
+    int itemCount, double spacing, double minimumHalfExtent)
+{
+  const int columns
+      = static_cast<int>(std::ceil(std::sqrt(static_cast<double>(itemCount))));
+  const int rows = (itemCount + columns - 1) / columns;
+  return std::max(
+      minimumHalfExtent,
+      spacing * static_cast<double>(std::max(columns, rows) - 1) + 1.0);
+}
+
 std::unique_ptr<sx::World> buildSeparatedBoxGroundScene(
     int boxCount, double friction)
 {
@@ -1196,8 +1207,11 @@ std::unique_ptr<sx::World> buildArticulatedGroundScene(
   groundOptions.isStatic = true;
   groundOptions.position = Eigen::Vector3d(0.0, 0.0, -1.0);
   auto ground = world->addRigidBody("ground", groundOptions);
+  const double groundHalfExtent
+      = makePositiveGridGroundHalfExtent(linkCount, kSpacing, 24.0);
   ground.setCollisionShape(
-      sx::CollisionShape::makeBox(Eigen::Vector3d(24.0, 24.0, 0.5)));
+      sx::CollisionShape::makeBox(
+          Eigen::Vector3d(groundHalfExtent, groundHalfExtent, 0.5)));
 
   return world;
 }
@@ -1312,12 +1326,15 @@ std::unique_ptr<sx::World> buildCartesianArticulatedGroundScene(
   groundOptions.isStatic = true;
   groundOptions.position = Eigen::Vector3d(0.0, 0.0, -1.0);
   auto ground = world->addRigidBody("ground", groundOptions);
+  constexpr double kSpacing = 1.5;
+  const double groundHalfExtent
+      = makePositiveGridGroundHalfExtent(chainCount, kSpacing, 24.0);
   ground.setCollisionShape(
-      sx::CollisionShape::makeBox(Eigen::Vector3d(24.0, 24.0, 0.5)));
+      sx::CollisionShape::makeBox(
+          Eigen::Vector3d(groundHalfExtent, groundHalfExtent, 0.5)));
 
   const int columns
       = static_cast<int>(std::ceil(std::sqrt(static_cast<double>(chainCount))));
-  constexpr double kSpacing = 1.5;
   for (int i = 0; i < chainCount; ++i) {
     const int row = i / columns;
     const int col = i - row * columns;
@@ -3547,6 +3564,34 @@ TEST(
 }
 
 //==============================================================================
+// Three hundred eighty-four simultaneous link-ground contacts extend the
+// public-step fixed-base prismatic coverage beyond the 256-link packet.
+TEST(
+    BoxedLcpContact,
+    ThreeHundredEightyFourArticulatedPrismaticLinksGroundStepMaintainsInvariants)
+{
+  constexpr int kLinkCount = 384;
+
+  const MultiArticulatedGroundStepResult reference
+      = runMultiArticulatedGroundStep(
+          sx::ContactSolverMethod::SequentialImpulse, kLinkCount);
+  const MultiArticulatedGroundStepResult lcp = runMultiArticulatedGroundStep(
+      sx::ContactSolverMethod::BoxedLcp, kLinkCount);
+
+  ASSERT_EQ(lcp.contactCount, static_cast<std::size_t>(kLinkCount));
+  EXPECT_EQ(lcp.linkContactCount, static_cast<std::size_t>(kLinkCount));
+  EXPECT_TRUE(lcp.allFinite);
+  EXPECT_LE(lcp.maxHeightError, 2e-2);
+  EXPECT_LT(lcp.maxAbsJointVelocity, 0.12);
+
+  ASSERT_EQ(reference.contactCount, lcp.contactCount);
+  EXPECT_EQ(reference.linkContactCount, lcp.linkContactCount);
+  EXPECT_TRUE(reference.allFinite);
+  EXPECT_NEAR(reference.maxHeightError, lcp.maxHeightError, 2e-2);
+  EXPECT_NEAR(reference.maxAbsJointVelocity, lcp.maxAbsJointVelocity, 0.12);
+}
+
+//==============================================================================
 // Connected multi-DOF articulated DART 7 World stepping: each robot is a
 // serial three-axis prismatic chain, and its tip link contacts ground through
 // the public BoxedLcp unified path. This extends the one-DOF link-ground cases
@@ -3652,6 +3697,17 @@ TEST(
     TwoHundredFiftySixCartesianPrismaticChainsGroundStepMaintainsInvariants)
 {
   constexpr int kChainCount = 256;
+  expectCartesianPrismaticChainsGroundStepMaintainsInvariants(kChainCount);
+}
+
+//==============================================================================
+// Three hundred eighty-four connected three-axis chains cover a 1152-DOF
+// public-step unified articulated contact packet.
+TEST(
+    BoxedLcpContact,
+    ThreeHundredEightyFourCartesianPrismaticChainsGroundStepMaintainsInvariants)
+{
+  constexpr int kChainCount = 384;
   expectCartesianPrismaticChainsGroundStepMaintainsInvariants(kChainCount);
 }
 
@@ -3767,6 +3823,17 @@ TEST(
     TwoHundredFiftySixArticulatedPrismaticLinksPushDynamicRigidBodies)
 {
   constexpr int kPairCount = 256;
+  expectArticulatedRigidImpactPairsStepMaintainsInvariants(kPairCount);
+}
+
+//==============================================================================
+// Three hundred eighty-four link-vs-rigid contacts extend the public-step
+// two-sided articulated impact path beyond the 256-pair packet.
+TEST(
+    BoxedLcpContact,
+    ThreeHundredEightyFourArticulatedPrismaticLinksPushDynamicRigidBodies)
+{
+  constexpr int kPairCount = 384;
   expectArticulatedRigidImpactPairsStepMaintainsInvariants(kPairCount);
 }
 
@@ -3906,6 +3973,17 @@ TEST(
     TwoHundredFiftySixArticulatedPrismaticLinksPushArticulatedPrismaticLinks)
 {
   constexpr int kPairCount = 256;
+  expectArticulatedLinkImpactPairsStepMaintainsInvariants(kPairCount);
+}
+
+//==============================================================================
+// Three hundred eighty-four cross-multibody link-vs-link contacts extend the
+// two-articulated-endpoint public-step packet beyond the 256-pair boundary.
+TEST(
+    BoxedLcpContact,
+    ThreeHundredEightyFourArticulatedPrismaticLinksPushArticulatedPrismaticLinks)
+{
+  constexpr int kPairCount = 384;
   expectArticulatedLinkImpactPairsStepMaintainsInvariants(kPairCount);
 }
 
