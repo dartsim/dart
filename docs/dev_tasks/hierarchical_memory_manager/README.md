@@ -275,10 +275,10 @@
       with different topology shapes and linear-solver modes. A default
       projected-Newton FEM ground-friction block now covers multi-tetrahedron
       rest-shape, Hessian-block, and multi-node ground-friction storage in both
-      baked no-growth guards; a compact mixed default-solver storage gate now
-      combines direct-sparse self-contact, matrix-free self-contact, and FEM
-      ground-friction bodies in one baked World memory root. The default
-      projected-Newton path now also has a baked
+      baked no-growth guards; compact and production mixed default-solver
+      storage gates now combine direct-sparse self-contact, matrix-free
+      self-contact, and FEM ground-friction bodies in one baked World memory
+      root. The default projected-Newton path now also has a baked
       sphere/box/capsule static obstacle barrier gate, covering those radial and
       oriented-obstacle Hessian paths separately from the ground height-field
       barrier and surface-CCD snapshot gates. The moving rigid-surface CCD path
@@ -379,8 +379,11 @@
       rectangular and matrix-free wide self-contact grids, a mixed late-active
       production scene with independent direct-sparse square and matrix-free
       rectangular self-contact grids, a mixed dense production scene with
-      notched direct-sparse and dense matrix-free grids, plus a barrier-only
-      static sphere/box/capsule obstacle scene for default projected Newton.
+      notched direct-sparse and dense matrix-free grids, a production mixed
+      default-solver storage scene with direct-sparse self-contact,
+      matrix-free self-contact, and FEM ground-friction bodies, plus a
+      barrier-only static sphere/box/capsule obstacle scene for default
+      projected Newton.
       The base and global-heap guards now also include default moving
       rigid-surface CCD swept-box crossings for free, single-kinematic, and
       multi-kinematic rigid obstacles, closing the previously static-only rigid
@@ -637,10 +640,9 @@ debugging, profiling, optimization experiments, and ImGui visualization.
    mixed dense production scene also covers a notched direct-sparse 13x17 grid
    and matrix-free 13x19 dense rectangular grid sharing one baked World memory
    root; a notched, jittered matrix-free 13x17 irregular grid now covers the CG
-   scratch path on non-grid topology; a compact mixed default-solver storage
-   scene now combines
-   direct-sparse, matrix-free, and FEM ground-friction deformables under the
-   same root. The AVBD
+   scratch path on non-grid topology; compact and production mixed
+   default-solver storage scenes now combine direct-sparse, matrix-free, and
+   FEM ground-friction deformables under the same root. The AVBD
    self-contact row guard now also covers a 5x9 rectangular grid row workload
    with replay-backed activity assertions.
    Continue broadening boxed-LCP unified problem assembly only for newly
