@@ -180,7 +180,29 @@ RigidBodyContactProblem assembleRigidBodyContactProblem(
     const detail::WorldRegistry& registry, std::span<const Contact> contacts)
 {
   RigidBodyContactProblem problem;
-  problem.constraints.reserve(contacts.size());
+  assembleRigidBodyContactProblemInto(problem, registry, contacts);
+  return problem;
+}
+
+//==============================================================================
+void assembleRigidBodyContactProblemInto(
+    RigidBodyContactProblem& problem,
+    const detail::WorldRegistry& registry,
+    std::span<const Contact> contacts)
+{
+  problem.constraints.clear();
+
+  std::size_t rigidContactCount = 0;
+  for (const auto& contact : contacts) {
+    const auto entityA = detail::toRegistryEntity(contact.bodyA.getEntity());
+    const auto entityB = detail::toRegistryEntity(contact.bodyB.getEntity());
+    if (registry.all_of<comps::RigidBodyTag>(entityA)
+        && registry.all_of<comps::RigidBodyTag>(entityB)) {
+      ++rigidContactCount;
+    }
+  }
+  problem.constraints.reserve(rigidContactCount);
+
   for (const auto& contact : contacts) {
     const auto entityA = detail::toRegistryEntity(contact.bodyA.getEntity());
     const auto entityB = detail::toRegistryEntity(contact.bodyB.getEntity());
@@ -328,8 +350,6 @@ RigidBodyContactProblem assembleRigidBodyContactProblem(
       }
     }
   }
-
-  return problem;
 }
 
 //==============================================================================

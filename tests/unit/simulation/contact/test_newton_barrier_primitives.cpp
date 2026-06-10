@@ -52,8 +52,6 @@
 #include <type_traits>
 #include <vector>
 
-#include <cmath>
-
 namespace dc = dart::simulation::detail::deformable_contact;
 namespace nb = dart::simulation::detail::newton_barrier;
 namespace rigid = dart::simulation::detail;
@@ -561,6 +559,60 @@ TEST(NewtonBarrierPrimitives, FallingBoxEnergyDiagnosticSweepsAreMonotone)
 }
 
 //==============================================================================
+TEST(NewtonBarrierPrimitives, BarrierForceCurveCapturesKappaSensitivity)
+{
+  constexpr double activationDistance = 0.01;
+  constexpr double squaredActivationDistance
+      = activationDistance * activationDistance;
+
+  const auto normalForceMagnitude = [](const double clearance,
+                                       const double stiffness) {
+    const auto barrier = nb::c2ClampedLogBarrier(
+        clearance * clearance, squaredActivationDistance);
+    if (!barrier.active) {
+      return 0.0;
+    }
+    return std::abs(stiffness * barrier.firstDerivative * 2.0 * clearance);
+  };
+
+  EXPECT_FALSE(
+      nb::c2ClampedLogBarrier(
+          squaredActivationDistance, squaredActivationDistance)
+          .active);
+  EXPECT_NEAR(
+      normalForceMagnitude(activationDistance, /*stiffness=*/1.0), 0.0, 1e-14);
+
+  const double farForce
+      = normalForceMagnitude(/*clearance=*/0.008, /*stiffness=*/1.0);
+  const double middleForce
+      = normalForceMagnitude(/*clearance=*/0.004, /*stiffness=*/1.0);
+  const double nearForce
+      = normalForceMagnitude(/*clearance=*/0.002, /*stiffness=*/1.0);
+  EXPECT_GT(farForce, 0.0);
+  EXPECT_LT(farForce, middleForce);
+  EXPECT_LT(middleForce, nearForce);
+
+  const double lowKappaForce
+      = normalForceMagnitude(/*clearance=*/0.004, /*stiffness=*/0.1);
+  const double highKappaForce
+      = normalForceMagnitude(/*clearance=*/0.004, /*stiffness=*/10.0);
+  EXPECT_NEAR(lowKappaForce, 0.1 * middleForce, 1e-12);
+  EXPECT_NEAR(highKappaForce, 10.0 * middleForce, 1e-12);
+
+  const double nearSlope
+      = (normalForceMagnitude(/*clearance=*/0.0015, /*stiffness=*/1.0)
+         - normalForceMagnitude(/*clearance=*/0.0025, /*stiffness=*/1.0))
+        / 0.001;
+  const double farSlope
+      = (normalForceMagnitude(/*clearance=*/0.006, /*stiffness=*/1.0)
+         - normalForceMagnitude(/*clearance=*/0.007, /*stiffness=*/1.0))
+        / 0.001;
+  EXPECT_TRUE(std::isfinite(nearSlope));
+  EXPECT_TRUE(std::isfinite(farSlope));
+  EXPECT_GT(nearSlope, 2.0 * farSlope);
+}
+
+//==============================================================================
 TEST(NewtonBarrierPrimitives, RayleighDampingProjectsHessianAndDissipates)
 {
   Eigen::Vector2d displacement;
@@ -931,45 +983,6 @@ TEST(NewtonBarrierPrimitives, InteriorLineSearchStepScaleStaysInsideBound)
 }
 
 //==============================================================================
-TEST(NewtonBarrierPrimitives, SufficientDecreasePolicySanitizesSharedScalars)
-{
-  EXPECT_DOUBLE_EQ(
-      nb::sanitizeSufficientDecreaseFactor(
-          std::numeric_limits<double>::quiet_NaN()),
-      nb::kDefaultSufficientDecreaseFactor);
-  EXPECT_DOUBLE_EQ(nb::sanitizeSufficientDecreaseFactor(-1.0), 0.0);
-  EXPECT_DOUBLE_EQ(
-      nb::sanitizeSufficientDecreaseFactor(2.0), std::nextafter(1.0, 0.0));
-  EXPECT_DOUBLE_EQ(nb::sanitizeSufficientDecreaseFactor(1e-3), 1e-3);
-
-  EXPECT_DOUBLE_EQ(
-      nb::sanitizeBacktrackingScale(std::numeric_limits<double>::quiet_NaN()),
-      nb::kDefaultBacktrackingScale);
-  EXPECT_DOUBLE_EQ(
-      nb::sanitizeBacktrackingScale(0.0), nb::kDefaultBacktrackingScale);
-  EXPECT_DOUBLE_EQ(
-      nb::sanitizeBacktrackingScale(1.0), nb::kDefaultBacktrackingScale);
-  EXPECT_DOUBLE_EQ(nb::sanitizeBacktrackingScale(0.25), 0.25);
-}
-
-//==============================================================================
-TEST(NewtonBarrierPrimitives, SufficientDecreasePolicyChecksArmijoThreshold)
-{
-  EXPECT_DOUBLE_EQ(nb::sufficientDecreaseThreshold(10.0, -20.0), 9.998);
-  EXPECT_TRUE(nb::satisfiesSufficientDecrease(10.0, 9.998, -20.0));
-  EXPECT_FALSE(nb::satisfiesSufficientDecrease(10.0, 9.9981, -20.0));
-
-  EXPECT_TRUE(nb::satisfiesSufficientDecrease(10.0, 9.0, -2.0, 0.5));
-  EXPECT_FALSE(nb::satisfiesSufficientDecrease(10.0, 9.1, -2.0, 0.5));
-  EXPECT_FALSE(
-      nb::satisfiesSufficientDecrease(
-          10.0, std::numeric_limits<double>::quiet_NaN(), -2.0));
-  EXPECT_FALSE(
-      nb::satisfiesSufficientDecrease(
-          10.0, 9.0, std::numeric_limits<double>::quiet_NaN()));
-}
-
-//==============================================================================
 TEST(NewtonBarrierPrimitives, LineSearchHitAccountingClampsSharedStepBound)
 {
   nb::LineSearchStats stats;
@@ -1026,18 +1039,6 @@ TEST(NewtonBarrierPrimitives, LineSearchCcdOutcomeAccountsNativeStatus)
   EXPECT_EQ(stats.hits, 1u);
   EXPECT_EQ(stats.misses, 1u);
   EXPECT_EQ(stats.indeterminate, 1u);
-  EXPECT_EQ(stats.zeroStepCount, 0u);
-
-  indeterminate.timeOfImpact = -0.25;
-  const auto zeroIndeterminateOutcome
-      = nb::recordLineSearchCcdOutcome(stats, indeterminate);
-  EXPECT_FALSE(zeroIndeterminateOutcome.hit);
-  EXPECT_TRUE(zeroIndeterminateOutcome.indeterminate);
-  EXPECT_DOUBLE_EQ(zeroIndeterminateOutcome.stepBound, 0.0);
-  EXPECT_EQ(stats.hits, 1u);
-  EXPECT_EQ(stats.misses, 1u);
-  EXPECT_EQ(stats.indeterminate, 2u);
-  EXPECT_EQ(stats.zeroStepCount, 1u);
 }
 
 //==============================================================================

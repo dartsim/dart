@@ -1,0 +1,429 @@
+{
+  "comparison": {
+    "dart_cpu_time_per_step_ns": 3933366.421686747,
+    "dart_faster_than_reference": true,
+    "dart_to_reference_cpu_time_ratio": 0.8268394012421686,
+    "performance_claim": "DART beats the native avbd-demo3d Soft Body row",
+    "reference_cpu_time_per_step_ns": 4757110.529297
+  },
+  "dart_benchmark": {
+    "benchmark": "BM_AvbdDemo3dSoftBodyStep",
+    "context": {
+      "executable": "build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint",
+      "json_schema_version": 1,
+      "library_build_type": "release",
+      "library_version": "v1.9.5",
+      "mhz_per_cpu": 4075,
+      "num_cpus": 20
+    },
+    "cpu_time_per_step_ns": 3933366.421686747,
+    "invariants": {
+      "collision_shapes": 193,
+      "finite_stiffness_fixed_joints": 432,
+      "fixed_joints": 432,
+      "ignored_collision_pairs": 648,
+      "rigid_bodies": 193,
+      "rigid_body_joints": 432,
+      "source_scene_index": 11,
+      "time_step": 0.016666666666666666
+    },
+    "json_sha256": "48f8f5e395063ac3e1a3970e435273e499b9534291181c802be0de44a38cc3fc",
+    "rows": [
+      {
+        "collision_shapes": 193.0,
+        "cpu_time": 4400966.08433735,
+        "family_index": 0,
+        "finite_stiffness_fixed_joints": 432.0,
+        "fixed_joints": 432.0,
+        "ignored_collision_pairs": 648.0,
+        "iterations": 166,
+        "name": "BM_AvbdDemo3dSoftBodyStep",
+        "per_family_instance_index": 0,
+        "real_time": 4417411.518075079,
+        "repetition_index": 0,
+        "repetitions": 5,
+        "rigid_bodies": 193.0,
+        "rigid_body_joints": 432.0,
+        "run_name": "BM_AvbdDemo3dSoftBodyStep",
+        "run_type": "iteration",
+        "source_scene_index": 11.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "collision_shapes": 193.0,
+        "cpu_time": 4223207.295180724,
+        "family_index": 0,
+        "finite_stiffness_fixed_joints": 432.0,
+        "fixed_joints": 432.0,
+        "ignored_collision_pairs": 648.0,
+        "iterations": 166,
+        "name": "BM_AvbdDemo3dSoftBodyStep",
+        "per_family_instance_index": 0,
+        "real_time": 4243046.795187205,
+        "repetition_index": 1,
+        "repetitions": 5,
+        "rigid_bodies": 193.0,
+        "rigid_body_joints": 432.0,
+        "run_name": "BM_AvbdDemo3dSoftBodyStep",
+        "run_type": "iteration",
+        "source_scene_index": 11.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "collision_shapes": 193.0,
+        "cpu_time": 3933366.421686747,
+        "family_index": 0,
+        "finite_stiffness_fixed_joints": 432.0,
+        "fixed_joints": 432.0,
+        "ignored_collision_pairs": 648.0,
+        "iterations": 166,
+        "name": "BM_AvbdDemo3dSoftBodyStep",
+        "per_family_instance_index": 0,
+        "real_time": 3944909.234939905,
+        "repetition_index": 2,
+        "repetitions": 5,
+        "rigid_bodies": 193.0,
+        "rigid_body_joints": 432.0,
+        "run_name": "BM_AvbdDemo3dSoftBodyStep",
+        "run_type": "iteration",
+        "source_scene_index": 11.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "collision_shapes": 193.0,
+        "cpu_time": 3927963.6144578313,
+        "family_index": 0,
+        "finite_stiffness_fixed_joints": 432.0,
+        "fixed_joints": 432.0,
+        "ignored_collision_pairs": 648.0,
+        "iterations": 166,
+        "name": "BM_AvbdDemo3dSoftBodyStep",
+        "per_family_instance_index": 0,
+        "real_time": 3941247.3915616423,
+        "repetition_index": 3,
+        "repetitions": 5,
+        "rigid_bodies": 193.0,
+        "rigid_body_joints": 432.0,
+        "run_name": "BM_AvbdDemo3dSoftBodyStep",
+        "run_type": "iteration",
+        "source_scene_index": 11.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "collision_shapes": 193.0,
+        "cpu_time": 3895378.807228916,
+        "family_index": 0,
+        "finite_stiffness_fixed_joints": 432.0,
+        "fixed_joints": 432.0,
+        "ignored_collision_pairs": 648.0,
+        "iterations": 166,
+        "name": "BM_AvbdDemo3dSoftBodyStep",
+        "per_family_instance_index": 0,
+        "real_time": 3906650.4638637514,
+        "repetition_index": 4,
+        "repetitions": 5,
+        "rigid_bodies": 193.0,
+        "rigid_body_joints": 432.0,
+        "run_name": "BM_AvbdDemo3dSoftBodyStep",
+        "run_type": "iteration",
+        "source_scene_index": 11.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "mean",
+        "aggregate_unit": "time",
+        "collision_shapes": 193.0,
+        "cpu_time": 4076176.4445783137,
+        "family_index": 0,
+        "finite_stiffness_fixed_joints": 432.0,
+        "fixed_joints": 432.0,
+        "ignored_collision_pairs": 648.0,
+        "iterations": 5,
+        "name": "BM_AvbdDemo3dSoftBodyStep_mean",
+        "per_family_instance_index": 0,
+        "real_time": 4090653.080725517,
+        "repetitions": 5,
+        "rigid_bodies": 193.0,
+        "rigid_body_joints": 432.0,
+        "run_name": "BM_AvbdDemo3dSoftBodyStep",
+        "run_type": "aggregate",
+        "source_scene_index": 11.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "median",
+        "aggregate_unit": "time",
+        "collision_shapes": 193.0,
+        "cpu_time": 3933366.421686747,
+        "family_index": 0,
+        "finite_stiffness_fixed_joints": 432.0,
+        "fixed_joints": 432.0,
+        "ignored_collision_pairs": 648.0,
+        "iterations": 5,
+        "name": "BM_AvbdDemo3dSoftBodyStep_median",
+        "per_family_instance_index": 0,
+        "real_time": 3944909.2349399053,
+        "repetitions": 5,
+        "rigid_bodies": 193.0,
+        "rigid_body_joints": 432.0,
+        "run_name": "BM_AvbdDemo3dSoftBodyStep",
+        "run_type": "aggregate",
+        "source_scene_index": 11.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "stddev",
+        "aggregate_unit": "time",
+        "collision_shapes": 0.0,
+        "cpu_time": 224808.75897381967,
+        "family_index": 0,
+        "finite_stiffness_fixed_joints": 0.0,
+        "fixed_joints": 0.0,
+        "ignored_collision_pairs": 0.0,
+        "iterations": 5,
+        "name": "BM_AvbdDemo3dSoftBodyStep_stddev",
+        "per_family_instance_index": 0,
+        "real_time": 227714.30133910663,
+        "repetitions": 5,
+        "rigid_bodies": 0.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo3dSoftBodyStep",
+        "run_type": "aggregate",
+        "source_scene_index": 0.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "cv",
+        "aggregate_unit": "percentage",
+        "collision_shapes": 0.0,
+        "cpu_time": 0.055151871375154975,
+        "family_index": 0,
+        "finite_stiffness_fixed_joints": 0.0,
+        "fixed_joints": 0.0,
+        "ignored_collision_pairs": 0.0,
+        "iterations": 5,
+        "name": "BM_AvbdDemo3dSoftBodyStep_cv",
+        "per_family_instance_index": 0,
+        "real_time": 0.055666979537340594,
+        "repetitions": 5,
+        "rigid_bodies": 0.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo3dSoftBodyStep",
+        "run_type": "aggregate",
+        "source_scene_index": 0.0,
+        "threads": 1,
+        "time_unit": "ns"
+      }
+    ]
+  },
+  "packet": "avbd_demo3d_soft_body_source_demo",
+  "reference_timing": {
+    "compile_command": [
+      "g++",
+      "-std=c++17",
+      "-O3",
+      "-DNDEBUG",
+      "-I<source-dir>/source",
+      "<temp-dir>/reference_runner.cpp",
+      "<source-dir>/source/solver.cpp",
+      "<source-dir>/source/rigid.cpp",
+      "<source-dir>/source/force.cpp",
+      "<source-dir>/source/joint.cpp",
+      "<source-dir>/source/spring.cpp",
+      "<source-dir>/source/manifold.cpp",
+      "<source-dir>/source/collide.cpp",
+      "-lGL",
+      "-o",
+      "<temp-dir>/reference_runner"
+    ],
+    "compile_flags": "-std=c++17 -O3 -DNDEBUG",
+    "compiler": "g++",
+    "cpu_time_per_step_ns": 4757110.529297,
+    "elapsed_ns": 2435640591,
+    "invariants": {
+      "collision_shapes": 193,
+      "diagonal_ignore_collision_pairs": 648,
+      "dynamic_bodies": 192,
+      "final_time": 8.80000019,
+      "finite_stiffness_fixed_joints": 432,
+      "fixed_joints": 432,
+      "joints": 432,
+      "max_angular_stiffness": 250.0,
+      "max_friction": 0.5,
+      "max_linear_stiffness": 1000.0,
+      "min_angular_stiffness": 250.0,
+      "min_friction": 0.5,
+      "min_linear_stiffness": 1000.0,
+      "rigid_bodies": 193,
+      "soft_body_cells": 192,
+      "soft_body_depth": 4,
+      "soft_body_height": 4,
+      "soft_body_stacks": 3,
+      "soft_body_width": 4,
+      "static_bodies": 1
+    },
+    "json_sha256": "f70eb1a26f21fc5aa2000076f1bb13f8dd54cf899c9d23d0bcf386b901043813",
+    "repository": "https://github.com/savant117/avbd-demo3d",
+    "scene_builder": "sceneSoftBody",
+    "scene_index": 11,
+    "scene_name": "Soft Body",
+    "source_demo": "avbd-demo3d",
+    "source_revision": "7701bd427d55",
+    "steps": 512,
+    "warmup_steps": 16
+  },
+  "remaining_gates": [
+    "GPU AVBD row parity and same-hardware benchmark packets",
+    "paper/site/video scene visual and performance packets",
+    "broader soft-body deformation and contact stability coverage beyond this source row"
+  ],
+  "reproduction": {
+    "capture_command": "LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe python scripts/capture_py_demo.py --scene avbd_demo3d_soft_body --frames 8 --width 640 --height 360 --output-dir <capture-dir>",
+    "dart_benchmark_command": "build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter=BM_AvbdDemo3dSoftBodyStep$ --benchmark_min_time=0.5s --benchmark_repetitions=3 --benchmark_out=<benchmark-json> --benchmark_out_format=json",
+    "reference_timing_command": "python scripts/run_avbd_demo3d_reference_timing.py --source-dir <avbd-demo3d-source-dir> --scene soft_body --warmup-steps 16 --steps 512 --output <reference-timing-json>"
+  },
+  "scene": "avbd_demo3d_soft_body",
+  "schema_version": 1,
+  "source_demo_reference_row": {
+    "demo": "avbd-demo3d",
+    "dimension": 3,
+    "expected_counts": {
+      "collision_shapes": 193,
+      "dynamic_bodies": 192,
+      "finite_stiffness_fixed_joints": 432,
+      "fixed_joints": 432,
+      "joints": 432,
+      "rigid_bodies": 193,
+      "static_bodies": 1
+    },
+    "repository": "https://github.com/savant117/avbd-demo3d",
+    "revision": "7701bd427d55",
+    "scene_builder": "sceneSoftBody",
+    "scene_count": 14,
+    "scene_index": 11,
+    "scene_name": "Soft Body",
+    "solver_defaults": {
+      "gravity": -10.0,
+      "gravity_axis": "z",
+      "iterations": 10,
+      "time_step": 0.016666666666666666
+    },
+    "source_collision_filters": {
+      "diagonal_ignore_collision_pairs": 648
+    },
+    "source_constraints": {
+      "finite_all_axis_fixed_joints": {
+        "angular_stiffness": 250.0,
+        "count": 432,
+        "fracture": "infinity",
+        "linear_stiffness": 1000.0,
+        "x_child_anchor": [
+          -0.4,
+          0.0,
+          0.0
+        ],
+        "x_count": 144,
+        "x_parent_anchor": [
+          0.4,
+          0.0,
+          0.0
+        ],
+        "y_child_anchor": [
+          0.0,
+          -0.4,
+          0.0
+        ],
+        "y_count": 144,
+        "y_parent_anchor": [
+          0.0,
+          0.4,
+          0.0
+        ],
+        "z_child_anchor": [
+          0.0,
+          0.0,
+          -0.4
+        ],
+        "z_count": 144,
+        "z_parent_anchor": [
+          0.0,
+          0.0,
+          0.4
+        ]
+      }
+    },
+    "source_shapes": {
+      "ground": {
+        "count": 1,
+        "density": 0.0,
+        "friction": 0.5,
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "size": [
+          100.0,
+          100.0,
+          1.0
+        ]
+      },
+      "soft_cell": {
+        "base_z": 8.0,
+        "count": 192,
+        "density": 1.0,
+        "depth": 4,
+        "first_position": [
+          -1.2,
+          -1.2,
+          8.0
+        ],
+        "friction": 0.5,
+        "height": 4,
+        "size": [
+          0.8,
+          0.8,
+          0.8
+        ],
+        "stack_gap": 2.0,
+        "stacks": 3,
+        "width": 4
+      }
+    }
+  },
+  "visual_capture": {
+    "frames": {
+      "count": 8,
+      "directory": "png_frames",
+      "first_frame": {
+        "file": "png_frames/frame_000001.png",
+        "sha256": "633d4f818f854698327ffaec19035b1268b01202f07321bfe25896658f9af347"
+      },
+      "last_frame": {
+        "file": "png_frames/frame_000008.png",
+        "sha256": "e98bf3c0970a301c2dbedf0d2718ca6641bcd557b09a2bdcb5f0bfd3e4f05ef6"
+      }
+    },
+    "manifest_sha256": "edb60ecca22ed3cc679a9aaee9a6327217684177e3621d13287f8e7cbba4d8a7",
+    "scene": "avbd_demo3d_soft_body",
+    "screenshot": {
+      "file": "avbd_demo3d_soft_body.png",
+      "height": 360,
+      "sha256": "e98bf3c0970a301c2dbedf0d2718ca6641bcd557b09a2bdcb5f0bfd3e4f05ef6",
+      "width": 640
+    },
+    "show_ui": false,
+    "ui_ready": {
+      "dropped_warmup_frames": 0,
+      "required": false
+    }
+  }
+}

@@ -1,15 +1,1350 @@
 # Resume: AVBD Solver
 
-## Current Reality (2026-06-06)
-
-Use this folder's `README.md`, PLAN-104, `docs/plans/dashboard.md`, and the
-current code as the live status. The branch-local "Current Branch" and handoff
-sections below are historical session notes, not current checkout instructions.
-AVBD work should continue through the DART-owned VBD/AVBD deformable family,
-shared row/diagnostic contracts, and facade-safe deformable configuration
-rather than adding public solver registries or isolated paper-specific stacks.
-
 ## Last Session Summary
+
+Latest local follow-up: point-pair and angular constraint caches now use exact
+component equality for repeated local anchors and target orientations instead
+of zero-tolerance approximate comparisons. This keeps the block-solver cache-hit
+path aligned with how joint rows copy shared descriptors. Focused
+`test_avbd_rigid_block` validation passed. A selected source-row benchmark smoke
+ran under host load average around 12.8 and is treated only as noisy overhead
+evidence; source-row CPU-win, GPU, and paper-number gates remain open.
+
+Latest local follow-up: the rigid block solver's inlined angular row-state
+update now skips capped finite-stiffness angular rows before recomputing
+orientation error, matching the existing standalone angular updater and finite
+point-pair fast path. Focused `test_avbd_rigid_block` validation passed. A
+same-session selected source-row benchmark smoke ran under high host load and
+is treated only as overhead evidence; source-row CPU-win, GPU, and paper-number
+gates remain open.
+
+Latest local follow-up: after fetching `origin/main` through HTTPS and
+fast-forwarding the branch to `f1fa9f386f9`, rigid AVBD point-pair rows now
+avoid computing `previousConstraintValue` for finite-stiffness joint rows and
+reuse consecutive point-pair world-anchor transforms during block assembly and
+row-state updates. Focused `test_avbd_rigid_block` validation passed, and a
+short selected-row benchmark smoke recorded `BM_AvbdDemo2dSoftBodyStep_median`
+at about 2.03 ms plus Rod/Joint Grid/Soft Body/Rope/Net at about
+0.149 ms / 10.8 ms / 1.70 ms / 0.113 ms / 0.360 ms under load. This is local
+overhead evidence only; the 2D Soft Body packet still does not beat the native
+source runner, and CPU-win, GPU, and paper-number gates remain open.
+
+Latest local follow-up: dartpy public articulated joint-list lifetime coverage
+now has `test_simulation_world_articulated_joint_list_keeps_world_alive`. It
+returns link-link and world-link articulated facade handles from a temporary
+World, forces Python garbage collection, then verifies endpoint access still
+keeps the original World alive. This is only a narrow dartpy public API lifetime
+guard and does not close broader articulated motor lifecycle, CPU-win, GPU, or
+paper/source-runner gates.
+
+Latest local follow-up: public articulated facade generated-name persistence
+now has
+`Serialization.PreservesJointCounterAcrossArticulatedGeneratedNames` and
+`test_simulation_world_articulated_generated_names_resume_after_binary_roundtrip`.
+They save explicit `joint_001` plus generated `joint_002`, reload them, and
+prove the next empty-name public articulated facade advances past the restored
+topology joint component to `joint_004` instead of reusing an existing public
+articulated joint name. This is only a narrow
+serialization/name-counter robustness guard and does not close broader
+articulated motor lifecycle, CPU-win, GPU, or paper/source-runner gates.
+
+Latest local follow-up: public articulated facade generated-name coverage now
+has `World.ArticulatedPointJointsGenerateUniqueFacadeNames` and
+`test_simulation_world_articulated_point_joints_generate_unique_names`. They
+seed an explicit `joint_001`, create empty-name fixed/revolute/prismatic
+non-topology articulated facades, and verify generated names skip the existing
+joint, appear through articulated name/list lookups, and reject duplicates.
+This is only a narrow public facade/corpus robustness guard and does not close
+broader articulated motor lifecycle, CPU-win, GPU, or paper/source-runner
+gates.
+
+Latest local follow-up: dartpy public articulated lifecycle coverage now has
+`test_simulation_world_clear_invalidates_articulated_joint_handles_from_python`.
+It steps a world-link articulated revolute motor through Python, calls
+`World.clear()`, verifies the old multibody/link/joint handles plus
+articulated-joint name/list lookups are invalidated, then rebuilds a fresh
+world-link prismatic motor and verifies it steps along its free axis. This is
+only a narrow Python public API clear/rebuild guard and does not close broader
+articulated motor lifecycle, CPU-win, GPU, or paper/source-runner gates.
+
+Latest local follow-up: public world-link articulated AVBD lifecycle coverage
+now has
+`VariationalIntegration.AvbdPublicArticulatedWorldFacadeClearDropsExtractedRowsAndRebuilds`.
+It extracts private rows for a world-link revolute facade, steps it, calls
+`World::clear()`, verifies the old public handles and facade state are gone,
+then rebuilds a fresh world-link prismatic facade and verifies its private rows
+extract and drive only the free slider axis. This is only a narrow
+clear/rebuild lifecycle guard and does not close broader articulated motor
+lifecycle, CPU-win, GPU, or paper/source-runner gates.
+
+Latest local follow-up: public world-link articulated motor demo coverage now
+explicitly guards the world-prismatic and world-revolute break/reset scenes as
+child-only world-endpoint facades from Python, and the
+`avbd-articulated-world-prismatic-breakable-motor-packet.json` remaining gates
+no longer list the already-staged world-revolute packet. This is only a narrow
+demo/packet consistency guard and does not close broader articulated motor
+lifecycle, CPU-win, GPU, or paper/source-runner gates.
+
+Latest local follow-up: live contact-stage AVBD friction coverage now reaches
+the two-lower, two-upper box-pile topology through
+`World.RigidBodyContactStageAvbdWarmStartedMultiTopBoxPileManifoldFrictionReducesSlip`
+and
+`World.RigidBodyContactStageAvbdWarmStartedMultiTopBoxPileManifoldFrictionRunsThroughDefaultWorldStep`.
+They configure both lower supports and both independent upper boxes for private
+AVBD contact, then verify warm-started friction reduces each upper/lower
+contact-point slip in both the explicit `RigidBodyContactStage` path and the
+built-in `World::step()` schedule. This closes only a narrow live multi-top
+box-pile contact-stage/default-step friction slice and no broad pile/contact
+persistence, CPU-win, GPU, or paper-number gate.
+
+Latest local follow-up: private stacked static/dynamic plus dynamic/dynamic
+box-manifold contact-order replay now has
+`AvbdContact.WorldCollideStackedManifoldsFrictionRowsIgnoreContactOrder`.
+It reverses the live stacked `World::collide()` contact vector and verifies
+canonical endpoint rows, per-pair friction coefficients, Coulomb bounds, and
+warm-started normal/friction lambdas survive raw narrow-phase contact-order
+changes. This closes only a private stacked-manifold contact-order slice and no
+broad pile/contact persistence, CPU-win, GPU, or paper-number gate.
+
+Latest local follow-up: private rigid-contact multi-top pile endpoint-order
+replay now has
+`AvbdContact.WorldCollideMultiTopBoxPileFrictionRowsIgnoreEndpointOrder`.
+It swaps every raw contact endpoint for the two-lower, two-upper box pile and
+verifies canonical endpoint rows, distinct per-pair friction coefficients,
+Coulomb bounds, and paired tangent-dual projection survive swapped physical
+tangent bases. This closes only a private multi-top box-pile endpoint-order
+slice and no broad pile/contact persistence, CPU-win, GPU, or paper-number
+gate.
+
+Latest local follow-up: private rigid-contact multi-top pile contact-order
+replay now has
+`AvbdContact.WorldCollideMultiTopBoxPileFrictionRowsIgnoreContactOrder`.
+It reverses the live `World::collide()` contact vector for a two-lower,
+two-upper box pile and verifies canonical endpoint rows, row ordinals, distinct
+per-pair friction coefficients, Coulomb bounds, and warm-started normal/friction
+lambdas survive raw narrow-phase contact-order changes. This closes only a
+private multi-top box-pile contact-order slice and no broad pile/contact
+persistence, CPU-win, GPU, or paper-number gate.
+
+Latest local follow-up: generated current-pose same-multibody prismatic
+finite-force coverage now uses a non-cardinal slider basis in
+`VariationalIntegration.AvbdPrismaticPointJointCurrentPoseExtractorRespectsTinyForceLimitOnMovablePair`.
+This proves the generated hard rows preserve the captured pose while the finite
+motor row remains bounded off the cardinal axes. Focused validation passed for
+this newest slice. This closes only a narrow generated prismatic
+movable-pair finite-force coverage slice and no broad articulated fracture,
+motor-lifecycle, CPU-win, GPU, or paper-number gate.
+
+Recent local follow-up: direct private fixed world-link save/load/reset now has
+`VariationalIntegration.AvbdBreakableParentPointJointConfigResetReengagesFixedRows`.
+It covers the missing floating parent-link endpoint polarity with an off-origin
+anchor and non-identity target orientation, preserves the broken-state
+`AvbdRigidWorldPointJointConfig` across binary load, and proves reset
+re-engages all fixed rows. The branch was first fast-forwarded to
+`origin/main` at `dbac6c63e9f`; the `World::clear()` conflict was resolved by
+keeping main's storage recreation and the AVBD variational-integrator defaults.
+`pixi run lint`, the focused `test_variational_integration` rebuild, and the
+five-test fixed/spherical save-load-reset endpoint-polarity filter passed
+locally. This closes only a narrow direct private fixed world-link polarity
+slice and no broad articulated fracture, motor-lifecycle, CPU-win, GPU, or
+paper-number gate.
+
+Recent local follow-up: private generated fixed/spherical current-pose
+extraction now has
+`VariationalIntegration.AvbdFixedPointJointCurrentPoseExtractorWiresParentWorldLinkEndpoint`
+and
+`VariationalIntegration.AvbdSphericalPointJointCurrentPoseExtractorWiresWorldLinkEndpointPolarities`.
+They cover parent-link world-link endpoint polarity for non-topology private
+fixed and spherical point joints (plus the spherical child-link polarity),
+verify the generated anchor storage and all-axis fixed or linear-only
+spherical row masks, and prove the variational solve pins the extracted anchor
+while leaving spherical orientation free. The focused filters passed locally.
+This closes only narrow private fixed/spherical world-link current-pose
+polarity slices and no broad articulated fracture, motor-lifecycle, CPU-win,
+GPU, or paper-number gate.
+
+Latest local diagnostic: a conservative small-scene broad-sphere precheck before
+`RigidBodyContactStage` contact queries was prototyped for the open
+Spring/Spring Ratio source-row CPU gap and then reverted. The same-session
+focused `BM_AvbdDemo(2d|3d)Spring*` smoke moved the medians from about
+3.79 us / 34.26 us / 3.90 us / 28.94 us to about
+4.01 us / 33.51 us / 4.44 us / 29.75 us for 2D Spring, 2D Spring Ratio,
+3D Spring, and 3D Spring Ratio respectively, so the result was mixed and did
+not justify carrying an extra pre-query bound pass. Treat this as rejected
+non-packet performance evidence only; the Spring/Spring Ratio CPU-win and GPU
+gates remain open.
+
+Latest local follow-up: private rigid-contact pile row-persistence coverage now
+has
+`AvbdContact.WorldCollideMultiTopBoxPileFrictionRowsPersistAcrossSmallPose`.
+It keeps two lower dynamic supports on static ground plus two independent upper
+dynamic bodies active in one live pile and verifies stable canonical
+endpoint-key row ordinals, distinct per-pair friction coefficients, Coulomb
+bounds, warm-started normal lambdas, and paired friction duals across a small
+same-feature pose nudge. The focused `AvbdContact.WorldCollide*` filter passed
+40/40 after lint. This closes only a private multi-top box-pile row-persistence
+slice and no broad pile/contact persistence, CPU-win, GPU, or paper-number gate.
+
+Latest local follow-up: mesh private rigid-contact endpoint-order coverage now
+has `AvbdContact.WorldCollideMeshFaceRowsIgnoreEndpointOrder`,
+`AvbdContact.WorldCollideMeshEdgeRowsIgnoreEndpointOrder`, and
+`AvbdContact.WorldCollideMeshVertexRowsIgnoreEndpointOrder`. They swap raw
+endpoint order for live sphere/mesh face, edge, and vertex contacts and verify
+stable canonical endpoint-key row ordinals, mesh feature IDs, Coulomb bounds,
+warm-started normal lambdas, and projected friction duals. The focused
+`AvbdContact.WorldCollide*` filter passed 39/39 after lint. This closes only
+mesh endpoint-order coverage and no broad pile/contact persistence, CPU-win,
+GPU, or paper-number gate.
+
+Latest local follow-up: cylinder/capsule primitive rigid-contact endpoint-order
+coverage now has
+`AvbdContact.WorldCollideCylinderCapRowsIgnoreEndpointOrder`,
+`AvbdContact.WorldCollideCylinderSideRowsIgnoreEndpointOrder`,
+`AvbdContact.WorldCollideCylinderRimRowsIgnoreEndpointOrder`,
+`AvbdContact.WorldCollideCapsuleCapRowsIgnoreEndpointOrder`, and
+`AvbdContact.WorldCollideCapsuleSideRowsIgnoreEndpointOrder`. They swap raw
+endpoint order for live cap/side/rim contacts and verify stable canonical
+endpoint-key row ordinals, primitive feature IDs, Coulomb bounds, warm-started
+normal lambdas, and projected friction duals. The focused
+`AvbdContact.WorldCollide*` filter passed 36/36 after lint. This closes only
+primitive endpoint-order coverage and no broad
+pile/contact persistence, CPU-win, GPU, or paper-number gate.
+
+Latest local follow-up: cylinder/capsule primitive rigid-contact small-pose
+persistence now has
+`AvbdContact.WorldCollideCylinderCapRowsPersistAcrossSmallPose`,
+`AvbdContact.WorldCollideCylinderSideRowsPersistAcrossSmallPose`,
+`AvbdContact.WorldCollideCylinderRimRowsPersistAcrossSmallPose`,
+`AvbdContact.WorldCollideCapsuleCapRowsPersistAcrossSmallPose`, and
+`AvbdContact.WorldCollideCapsuleSideRowsPersistAcrossSmallPose`. They replay
+live cap/side/rim contacts under small same-feature nudges and verify stable
+endpoint-key row ordinals, primitive feature IDs, Coulomb bounds, warm-started
+normal lambdas, and projected friction duals where the tangent basis rotates.
+The focused `AvbdContact.WorldCollide*` filter passed 31/31 after lint. This
+closes only
+cylinder/capsule small-pose persistence and no broad pile/contact persistence,
+CPU-win, GPU, or paper-number gate.
+
+Latest local follow-up: mesh-face and mesh-edge private rigid-contact
+small-pose persistence now have
+`AvbdContact.WorldCollideMeshFaceRowsPersistAcrossSmallPose` and
+`AvbdContact.WorldCollideMeshEdgeRowsPersistAcrossSmallPose`. They replay live
+sphere/mesh contacts on the same triangle face or edge, nudge the contact
+locations while preserving the feature, and verify stable endpoint-key row
+ordinals, feature IDs, Coulomb bounds, warm-started normal lambdas, and
+projected world-space friction duals. The focused two-test filter passed
+locally. This closes only mesh face/edge small-pose persistence and no broad
+pile/contact persistence, CPU-win, GPU, or paper-number gate.
+
+Latest local follow-up: mesh-vertex private rigid-contact small-pose
+persistence now has
+`AvbdContact.WorldCollideMeshVertexRowsPersistAcrossSmallPose`. It keeps live
+sphere/mesh contacts active at all three triangle vertex endpoint features,
+nudges the sphere poses within the same vertex regions, and verifies stable
+endpoint-key rows, vertex feature local indices, Coulomb bounds, warm-started
+normal lambdas, and projected world-space friction duals. The focused
+`AvbdContact.WorldCollide*` filter passed 24/24 locally. This closes only a
+mesh-vertex small-pose persistence slice and no broad pile/contact
+persistence, CPU-win, GPU, or paper-number gate.
+
+Latest local follow-up: mesh-vertex private rigid-contact replay coverage now
+has `AvbdContact.WorldCollideMeshVertexRowsIgnoreContactOrder`. It replays live
+sphere/mesh contacts at all three triangle vertex endpoint features in reverse
+order, verifying vertex feature local indices, stable endpoint-key rows,
+Coulomb bounds, and warm-started normal/friction lambdas. The focused
+`AvbdContact.WorldCollide*` filter passed 23/23 locally. This closes only a
+mesh-vertex replay slice and no broad
+pile/contact persistence, CPU-win, GPU, or paper-number gate.
+
+Latest local follow-up: private rigid-contact box-pile contact-order coverage
+now has
+`AvbdContact.WorldCollideBoxPileFrictionRowsIgnoreContactOrder`. It reuses the
+wider two-lower-box plus one-spanning-top pile, reverses the live
+`World::collide()` contact vector, and verifies row ordinals, per-pair friction
+coefficients, Coulomb bounds, and warm-started normal/friction lambdas survive
+raw contact-order changes. The focused `AvbdContact.WorldCollide*` filter
+passed 22/22 after lint. This closes only a private box-pile contact-order
+slice and no broad pile/contact persistence, CPU-win, GPU, or paper-number
+gate.
+
+Latest local follow-up: live contact-stage box-pile friction coverage now has
+explicit-stage and default-schedule regressions,
+`World.RigidBodyContactStageAvbdWarmStartedBoxPileManifoldFrictionReducesSlip`
+and
+`World.RigidBodyContactStageAvbdWarmStartedBoxPileManifoldFrictionRunsThroughDefaultWorldStep`.
+They reuse the wider two-lower-box plus one-spanning-top pile, configure all
+dynamic bodies for private AVBD contact, and verify warm-started friction
+reduces top/lower tangential slip through both the manual `RigidBodyContactStage`
+pipeline and built-in `World::step()` schedule. The focused
+`World.RigidBodyContactStageAvbd*` filter passed 42/42 after lint. This closes
+only a narrow live box-pile contact-stage slice and no broad pile/contact
+persistence, CPU-win, GPU, or paper-number gate.
+
+Latest local follow-up: private rigid-contact endpoint-order coverage now also
+has a wider live box-pile friction regression,
+`AvbdContact.WorldCollideBoxPileFrictionRowsIgnoreEndpointOrder`. It reuses
+the two-lower-box plus one-spanning-top pile, swaps every raw contact endpoint,
+and verifies that per-pair Coulomb bounds persist while paired tangent duals
+project into the swapped physical tangent basis. The focused test and
+`AvbdContact.WorldCollide*` filter passed locally. This closes only a private
+box-pile endpoint-order slice and no broad pile/contact persistence, CPU-win,
+GPU, or paper-number gate.
+
+Latest local follow-up: private rigid-contact row-persistence coverage now has
+a wider live pile-style regression,
+`AvbdContact.WorldCollideBoxPileFrictionRowsPersistAcrossSmallPose`. The test
+uses two lower dynamic boxes on a static ground with one wider top body spanning
+both supports, then verifies that per-pair row ordinals, friction coefficients,
+Coulomb bounds, and warm-started friction dual state persist across a small
+pose nudge. The focused test passed locally. This closes only a private
+box-pile row-persistence slice and no broad pile/contact persistence, CPU-win,
+GPU, or paper-number gate.
+
+Latest local follow-up: default `World::step()` contact-stage AVBD coverage now
+also reaches the multi-top stacked box-manifold friction path through
+`World.RigidBodyContactStageAvbdWarmStartedMultiTopStackedBoxManifoldFrictionRunsThroughDefaultWorldStep`.
+The test keeps a static ground, one lower dynamic box, and two independently
+sliding upper dynamic boxes active with normal load, then checks that friction
+reduces both upper/lower dynamic contact-point slips against a frictionless
+baseline. The focused test passed locally. This closes only the default-step
+schedule evidence for that narrow multi-contact stacked friction slice and no
+broad pile/contact persistence, CPU-win, GPU, or paper-number gate.
+
+Latest local follow-up: contact-stage AVBD coverage now also includes a
+multi-top stacked box-manifold friction regression,
+`World.RigidBodyContactStageAvbdWarmStartedMultiTopStackedBoxManifoldFrictionReducesSlip`.
+The test configures a static ground, one supported lower dynamic box, and two
+independently sliding upper dynamic boxes in one live contact set, then checks
+that warm-started friction reduces both upper/lower dynamic contact-point slips
+against a frictionless baseline. The focused test passed locally. This closes
+only a narrow multi-contact stacked contact-stage friction slice and no
+default-step pile, broad pile/contact persistence, CPU-win, GPU, or
+paper-number gate.
+
+Latest local follow-up: default `World::step()` contact-stage AVBD coverage now
+also reaches the stacked static/dynamic plus dynamic/dynamic box-manifold
+warm-started friction path through
+`World.RigidBodyContactStageAvbdWarmStartedStackedBoxManifoldFrictionRunsThroughDefaultWorldStep`.
+The test keeps the stacked manifolds active with normal load, then checks that
+friction reduces upper/lower contact-point slip against a frictionless
+baseline. The focused test passed locally. This closes only the default-step
+schedule evidence for the stacked contact-stage friction slice and no broad
+pile/contact persistence, CPU-win, GPU, or paper-number gate.
+
+Latest local follow-up: contact-stage AVBD coverage now includes a stacked
+static/dynamic plus dynamic/dynamic box-manifold warm-started friction
+regression,
+`World.RigidBodyContactStageAvbdWarmStartedStackedBoxManifoldFrictionReducesSlip`.
+The test configures a static ground, lower dynamic box, and sliding upper
+dynamic box in one live contact set, then checks that friction reduces the
+upper/lower contact-point slip against a frictionless baseline. The focused
+test passed locally. This closes only the stacked contact-stage friction slice
+and no broad pile/contact persistence, CPU-win, GPU, or paper-number gate.
+
+Latest local follow-up: contact-stage AVBD now also keeps default
+`World::step()` dynamic/dynamic box-box manifold friction active when a moving
+manifold has active penetration but no lagged normal force yet, using a
+depth-based normal-force fallback for Coulomb row bounds. The new
+`World.RigidBodyContactStageAvbdWarmStartedDynamicBoxManifoldFrictionRunsThroughDefaultWorldStep`
+regression passed, and the full `World.RigidBodyContactStageAvbd*` focused
+filter now passes 36 tests locally. This closes only the default-step
+dynamic/dynamic box-manifold friction slice and no CPU-win, GPU, or
+paper-number gate.
+
+Latest local follow-up: dartpy explicit-anchor one-DOF articulated motor
+break/skip/reset coverage now also asserts endpoint and axis shape after reset
+across same-multibody and world-link revolute/prismatic cases, including the
+non-cardinal same-multibody pair and world-link reset regressions. The focused
+selected pytest filter over those five articulated motor reset tests passed
+locally after rebuilding dartpy. This closes only the endpoint/axis-shape
+assertion slice and no broad articulated motor lifecycle, fracture corpus,
+CPU-win, GPU, or paper-number gate.
+
+Latest local follow-up: contact-stage AVBD coverage now also includes live
+dynamic/dynamic box-box manifold warm-started friction through
+`World.RigidBodyContactStageAvbdWarmStartedDynamicBoxManifoldFrictionReducesSlip`.
+The focused dynamic/dynamic box-manifold filter passed locally; the full
+`World.RigidBodyContactStageAvbd*` focused filter now passes 35 tests locally.
+This closes only the stage-level dynamic/dynamic box-manifold friction slice
+and no default-step persistence, CPU-win, GPU, or paper-number gate.
+
+Latest local follow-up: contact-stage AVBD coverage now also includes live
+box-box manifold warm-started friction through
+`World.RigidBodyContactStageAvbdWarmStartedBoxManifoldFrictionReducesSlide`
+and
+`World.RigidBodyContactStageAvbdWarmStartedBoxManifoldFrictionRunsThroughDefaultWorldStep`.
+The full `World.RigidBodyContactStageAvbd*` focused filter now passes 34 tests
+locally; this closes only the narrow box-manifold static/dynamic friction slice
+and no CPU-win, GPU, or paper-number gate.
+
+Latest local follow-up: contact-stage AVBD coverage now also includes
+simultaneous multi-contact warm-started friction through
+`World.RigidBodyContactStageAvbdWarmStartedMultipleConfiguredContactsFrictionReducesSlide`
+and
+`World.RigidBodyContactStageAvbdWarmStartedMultipleConfiguredContactsFrictionRunsThroughDefaultWorldStep`.
+The full `World.RigidBodyContactStageAvbd*` focused filter now passes 32
+tests locally; this closes only the simultaneous configured static/dynamic
+friction slice and no CPU-win, GPU, or paper-number gate.
+
+Latest local follow-up: contact-stage AVBD coverage now also includes
+enabled-peer/disabled-peer warm-started friction through
+`World.RigidBodyContactStageAvbdWarmStartedEnabledPeerWithDisabledConfigFrictionReducesSlide`
+and
+`World.RigidBodyContactStageAvbdWarmStartedEnabledPeerWithDisabledConfigFrictionRunsThroughDefaultWorldStep`.
+The full `World.RigidBodyContactStageAvbd*` focused filter now passes 30
+tests locally; this closes only the paired-config static/dynamic friction slice
+and no CPU-win, GPU, or paper-number gate.
+
+Latest local follow-up: after the requested latest `origin/main` merge, the
+branch is based on `03c306e6ca4` ("Plan Simplicits and PPF solver intake
+(#2952)") and the staged AVBD batch was restored without conflicts. The project
+`.gitignore` now ignores scratch JSON dumps under the PLAN-104 AVBD evidence
+folder while allowing curated `avbd-*-packet.json` fixtures that are referenced
+by docs and packet-writer tests. Contact-stage AVBD coverage now also includes
+kinematic-owned warm-started friction through
+`World.RigidBodyContactStageAvbdWarmStartedKinematicOwnedFrictionReducesSlide`
+and
+`World.RigidBodyContactStageAvbdWarmStartedKinematicOwnedFrictionRunsThroughDefaultWorldStep`.
+The full `World.RigidBodyContactStageAvbd*` focused filter passed locally; this
+closes only the
+kinematic-owned static/dynamic friction slice and no CPU-win, GPU, or
+paper-number gate.
+
+Latest local follow-up: contact-stage AVBD coverage now includes the first live
+both-configured dynamic/dynamic, single-config dynamic/dynamic, dynamic-owned
+static/dynamic, default-step both-configured dynamic/dynamic,
+default-step single-config dynamic/dynamic, contact-to-position pipeline
+integration, default
+`World::step()` integration, static-owned static/dynamic,
+default-step static-owned static/dynamic,
+stored-static-velocity ignore, kinematic-as-prescribed endpoint,
+default-step kinematic-prescribed endpoint, enabled-peer/disabled-peer,
+default-step enabled-peer/disabled-peer, configured multi-contact,
+default-step configured multi-contact, mixed-config,
+default-step mixed-config,
+disabled-config, default-step disabled-config, static/dynamic friction,
+static-owned static/dynamic friction, default-step static/dynamic friction,
+kinematic-owned static/dynamic friction, default-step static-owned
+static/dynamic friction, default-step kinematic-owned static/dynamic friction,
+enabled-peer/disabled-peer static/dynamic friction, default-step
+enabled-peer/disabled-peer static/dynamic friction, simultaneous
+multi-contact static/dynamic friction, default-step simultaneous multi-contact
+static/dynamic friction, box-manifold static/dynamic friction,
+dynamic/dynamic box-manifold friction, default-step box-manifold
+static/dynamic friction, default-step dynamic/dynamic box-manifold friction,
+dynamic/dynamic friction, and default-step dynamic/dynamic friction rigid-body
+contact-stage regressions.
+The new
+`World.RigidBodyContactStageAvbdProjectsDynamicDynamicContactVelocity` case
+configures two overlapping dynamic free rigid bodies with the private
+`RigidAvbdContactConfig`, and the new
+`World.RigidBodyContactStageAvbdProjectsDynamicPairWithSingleConfig` case
+checks the same dynamic/dynamic activation rule when only one dynamic endpoint
+is configured. The
+new `World.RigidBodyContactStageAvbdDynamicDynamicRunsThroughDefaultWorldStep`
+case checks that the both-configured dynamic/dynamic projection feeds through
+the built-in `World::step()` schedule, and the new
+`World.RigidBodyContactStageAvbdDynamicPairWithSingleConfigRunsThroughDefaultWorldStep`
+case checks the same default schedule path when only one dynamic endpoint is
+configured. The
+`World.RigidBodyContactStageAvbdProjectsStaticDynamicContactVelocity` checks a
+static ground/dynamic sphere contact where only the dynamic body opts in. The
+new `World.RigidBodyContactStageAvbdFeedsRigidBodyPositionStage` case checks
+that the projected velocity advances the dynamic sphere when
+`RigidBodyPositionStage` follows the contact stage in the same pipeline. The
+new `World.RigidBodyContactStageAvbdRunsThroughDefaultWorldStep` case checks
+the same AVBD contact projection through the built-in `World::step()` schedule.
+The
+new `World.RigidBodyContactStageAvbdProjectsStaticOwnedContactConfig` case
+checks the opposite static-owned opt-in path where the static ground carries the
+private config. The new
+`World.RigidBodyContactStageAvbdStaticOwnedRunsThroughDefaultWorldStep` case
+checks the same static-owned opt-in path through the built-in `World::step()`
+schedule. The new
+`World.RigidBodyContactStageAvbdIgnoresStoredStaticVelocity` case checks that a
+stored static-body velocity does not perturb the static-owned AVBD projection
+compared with an otherwise identical zero-static-velocity baseline. The new
+`World.RigidBodyContactStageAvbdTreatsKinematicBodyAsStaticObstacle` case
+checks that kinematic endpoints stay fixed in the AVBD snapshot and that their
+prescribed velocity does not perturb the dynamic body's projected contact-stage
+velocity compared with a zero-kinematic-velocity baseline. The new
+`World.RigidBodyContactStageAvbdKinematicRunsThroughDefaultWorldStep` case
+checks the same prescribed-endpoint behavior through the built-in
+`World::step()` schedule and verifies the projected velocity feeds the rigid
+position stage while the kinematic endpoint remains fixed. The new
+`World.RigidBodyContactStageAvbdProjectsEnabledPeerWithDisabledConfig` case
+checks that an explicitly disabled peer config does not veto AVBD activation
+when the other contact endpoint carries an enabled private config. The new
+`World.RigidBodyContactStageAvbdEnabledPeerWithDisabledConfigRunsThroughDefaultWorldStep`
+case checks the same enabled-peer/disabled-peer activation through the built-in
+`World::step()` schedule. The new
+`World.RigidBodyContactStageAvbdProjectsMultipleConfiguredContacts` case
+checks two configured dynamic spheres against one static ground in the same live
+contact set. The new
+`World.RigidBodyContactStageAvbdMultipleConfiguredContactsRunThroughDefaultWorldStep`
+case checks the same configured multi-contact projection through the built-in
+`World::step()` schedule. The new
+`World.RigidBodyContactStageAvbdFallsBackForUnconfiguredContactSet` case checks
+that a contact set containing any unconfigured contact falls back as a whole
+instead of partially routing configured contacts through AVBD. The new
+`World.RigidBodyContactStageAvbdMixedConfigFallsBackThroughDefaultWorldStep`
+case checks the same all-or-nothing fallback through the built-in
+`World::step()` schedule. The new
+`World.RigidBodyContactStageAvbdDisabledConfigFallsBack` case checks that
+`RigidAvbdContactConfig::enabled = false` opts out to the ordinary rigid contact
+response. The new
+`World.RigidBodyContactStageAvbdDisabledConfigFallsBackThroughDefaultWorldStep`
+case checks the same disabled opt-out through the built-in `World::step()`
+schedule. The new
+`World.RigidBodyContactStageAvbdWarmStartedFrictionReducesSlide` case enables
+retained normal-dual warm starting and verifies live contact-stage friction
+tangent rows reduce static/dynamic contact-point slip against a frictionless
+baseline. The new
+`World.RigidBodyContactStageAvbdWarmStartedStaticOwnedFrictionReducesSlide`
+case verifies the same stage-only warm-started friction behavior when the
+private opt-in config is attached to the static endpoint. The new
+`World.RigidBodyContactStageAvbdWarmStartedKinematicOwnedFrictionReducesSlide`
+case verifies the adjacent kinematic-owned warm-started friction path and
+checks that a prescribed kinematic tangential velocity is preserved but ignored
+as contact slip input. The new
+`World.RigidBodyContactStageAvbdWarmStartedEnabledPeerWithDisabledConfigFrictionReducesSlide`
+case verifies that a disabled peer config does not veto warm-started friction
+rows when the other endpoint carries an enabled private config. The new
+`World.RigidBodyContactStageAvbdWarmStartedMultipleConfiguredContactsFrictionReducesSlide`
+case verifies simultaneous configured static/dynamic contacts both feed
+warm-started friction rows in one contact-stage solve. The new
+`World.RigidBodyContactStageAvbdWarmStartedBoxManifoldFrictionReducesSlide`
+case verifies that live box-box manifolds with multiple narrow-phase contact
+points feed warm-started contact-stage friction rows. The new
+`World.RigidBodyContactStageAvbdWarmStartedDynamicBoxManifoldFrictionReducesSlip`
+case verifies that a live dynamic/dynamic box-box manifold feeds the same
+warm-started contact-stage friction rows and reduces relative contact-point
+slip against a frictionless baseline. The new
+`World.RigidBodyContactStageAvbdWarmStartedDynamicFrictionReducesSlip` case
+uses the same retained normal-dual warm start to verify dynamic/dynamic sphere
+contacts reduce relative tangential contact-point slip. The new
+`World.RigidBodyContactStageAvbdWarmStartedFrictionRunsThroughDefaultWorldStep`
+case verifies the built-in `World::step()` schedule reaches the same
+warm-started static/dynamic friction path, and the new
+`World.RigidBodyContactStageAvbdWarmStartedStaticOwnedFrictionRunsThroughDefaultWorldStep`
+case verifies the built-in schedule reaches the static-owned warm-started
+static/dynamic friction path. The new
+`World.RigidBodyContactStageAvbdWarmStartedKinematicOwnedFrictionRunsThroughDefaultWorldStep`
+case verifies the built-in schedule reaches the kinematic-owned warm-started
+static/dynamic friction path without using the prescribed kinematic tangential
+velocity as slip input. The new
+`World.RigidBodyContactStageAvbdWarmStartedEnabledPeerWithDisabledConfigFrictionRunsThroughDefaultWorldStep`
+case verifies the built-in schedule reaches the paired enabled-peer/disabled-
+peer warm-started static/dynamic friction path. The new
+`World.RigidBodyContactStageAvbdWarmStartedMultipleConfiguredContactsFrictionRunsThroughDefaultWorldStep`
+case verifies the built-in schedule reaches simultaneous configured
+static/dynamic warm-started friction contacts. The new
+`World.RigidBodyContactStageAvbdWarmStartedBoxManifoldFrictionRunsThroughDefaultWorldStep`
+case verifies the built-in schedule reaches live box-box manifold
+warm-started friction contacts. The new
+`World.RigidBodyContactStageAvbdWarmStartedDynamicFrictionRunsThroughDefaultWorldStep`
+case does the same for dynamic/dynamic sphere contacts. The stage-only cases
+verify separating velocity projection without direct pose moves, the pipeline
+case verifies the velocity feeds the following rigid position stage, the
+default-step cases verify the built-in schedule reaches the same
+static/dynamic, kinematic, enabled-peer/disabled-peer, configured
+multi-contact, box-manifold, fallback, disabled-config, and friction paths, the
+static-velocity case verifies static-body stored velocities are ignored by the
+static-owned AVBD projection, and the friction cases verify the lagged
+normal-force contact-stage friction path.
+Focused validation built and ran the C++ world AVBD
+contact-stage filter. This closes only narrow contact-stage dynamic-contact
+activation/fallback/friction evidence slices; broader contact-stage coverage,
+CPU-win, GPU, and paper-number gates remain open.
+
+Latest local follow-up: dartpy now exposes `World.save_binary(path)` and
+`World.load_binary(path)` for the existing simulation binary serializer. The
+new `test_simulation_world_articulated_binary_roundtrip_from_python` and
+`test_simulation_world_articulated_binary_roundtrip_from_python_completes_one_dof_endpoint_types`
+cases round-trip all same-multibody/world-link public articulated
+revolute/prismatic broken motor rows through Python, verify endpoint/type, axis,
+command, and effort-limit state after load, and prove reset rebuilds the hard
+rows plus reversed free-axis motor motion. The companion
+`test_simulation_world_articulated_fixed_spherical_binary_roundtrip_from_python`
+and
+`test_simulation_world_articulated_fixed_spherical_binary_roundtrip_from_python_completes_endpoint_types`
+cases now round-trip all same-multibody/world-link fixed/spherical broken rows,
+verify restored endpoint/type shape, and prove reset rebuilds fixed all-axis
+rows and spherical linear rows while leaving spherical orientation free. The
+additional `test_simulation_world_articulated_design_binary_rebuild_from_python`
+and
+`test_simulation_world_articulated_design_binary_rebuild_from_python_completes_fixed_spherical_endpoint_types`
+cases save all same-multibody/world-link fixed/spherical/revolute/prismatic
+public facades before simulation mode, reload them through dartpy, and prove
+simulation entry rebuilds the private all-axis fixed rows, one-DOF hard rows
+plus free-axis motor rows, and spherical linear rows while leaving spherical
+orientation free. Focused validation rebuilt dartpy and ran the Python binary
+roundtrip/rebuild regressions plus the API-name check.
+This closes only one dartpy public-facade persistence evidence slice; it closes
+no CPU-win, GPU, or paper-number gate.
+
+Latest local follow-up: finite-effort articulated motor projection now gives
+hard anchor/axis rows priority after clamping bounded free-axis motor impulses,
+so a saturated tiny effort cap cannot leak into locked off-origin coordinates.
+The broadened
+`test_simulation_world_articulated_non_cardinal_off_origin_tiny_effort_motors_from_python`
+case verifies the Python public facades preserve tiny effort-limit arrays,
+normalize non-cardinal axes, keep off-origin hard rows bounded, and keep
+free-axis motion far below unbounded velocity targets for all four public
+one-DOF endpoint/type combinations. Focused validation also rebuilt dartpy and
+reran the broadened direct C++ tiny-limit filter for same-multibody,
+movable-pair, and world-link off-origin anchors. This closes only one
+public-facade finite-effort cap evidence slice; it closes no CPU-win, GPU, or
+paper-number gate.
+
+Latest local follow-up: dartpy same-multibody articulated revolute/prismatic
+motor break/reset coverage now also includes non-cardinal explicit-anchor axes.
+The new
+`test_simulation_world_articulated_non_cardinal_pair_motors_reset_from_python`
+case verifies the Python public facades normalize both axes, break each motor,
+allow constrained anchor/axis drift while skipped, and re-engage the
+non-cardinal same-multibody one-DOF rows after reset with reversed velocity
+commands. This closes only one Python public-facade articulated pair lifecycle
+evidence slice; it closes no CPU-win, GPU, or paper-number gate.
+
+Latest local follow-up: dartpy world-link revolute motor break/reset coverage
+now also includes a non-cardinal explicit-anchor axis. The new
+`test_simulation_world_articulated_non_cardinal_revolute_reset_from_python`
+case verifies the Python public facade normalizes the axis, breaks the motor,
+allows anchor drift while skipped, and re-engages the non-cardinal revolute
+rows after reset with a reversed velocity command. This closes only one Python
+public-facade articulated one-DOF lifecycle evidence slice; it closes no
+CPU-win, GPU, or paper-number gate.
+
+Latest local follow-up: dartpy world-link prismatic motor break/reset coverage
+now includes a non-cardinal explicit-anchor axis. The new
+`test_simulation_world_articulated_non_cardinal_prismatic_reset_from_python`
+case verifies the Python public facade normalizes the axis, breaks the motor,
+allows orthogonal drift while skipped, and re-engages the non-cardinal
+prismatic rows after reset with reversed velocity command. This closes only one
+Python public-facade articulated one-DOF lifecycle evidence slice; it closes no
+CPU-win, GPU, or paper-number gate.
+
+Latest local follow-up: live mesh-vertex endpoint feature coverage now verifies
+that an actual sphere/triangle-vertex `World::collide()` contact carries the
+mesh vertex shape-local point into AVBD feature encoding. The new
+`AvbdContact.PlaneAndMeshFeatureKeysUseNarrowPhaseShapeLocalPoints` block
+checks vertex feature kind/index 0 for the contacted mesh endpoint instead of
+leaving vertex coverage to the geometric encoder alone. Focused validation
+passed `pixi run build-simulation-tests` and
+`test_boxed_lcp_contact --gtest_filter='AvbdContact.PlaneAndMeshFeatureKeysUseNarrowPhaseShapeLocalPoints'`.
+This closes only one mesh-vertex endpoint-feature evidence slice; it closes no
+CPU-win, GPU, or paper-number gate.
+
+Latest local follow-up: live mesh-edge row-order coverage now replays actual
+sphere/triangle-edge `World::collide()` contacts at multiple positions on the
+same mesh edge. `AvbdContact.WorldCollideMeshEdgeRowsIgnoreContactOrder`
+checks the mesh endpoint is encoded as the packed vertex-pair edge feature and
+that reversing contact order keeps deterministic canonical endpoint-pair row
+ordinals. The existing mesh-face replay helper now also pins the mesh face
+local feature ID instead of only checking row order. Focused validation passed
+`pixi run build-simulation-tests` and
+`test_boxed_lcp_contact --gtest_filter='AvbdContact.WorldCollideMeshFaceRowsIgnoreContactOrder:AvbdContact.WorldCollideMeshEdgeRowsIgnoreContactOrder:AvbdContact.WorldCollide*'`.
+This closes only one mesh edge/face feature replay evidence slice; it closes no
+CPU-win, GPU, or paper-number gate.
+
+Latest local follow-up: live cylinder-cap and capsule-cap row-order coverage
+now verifies both positive and negative cap feature codes. The tests replay
+real primitive/plane `World::collide()` contacts against upward- and
+downward-facing planes and keep deterministic canonical endpoint-pair row
+ordinals when replayed in reverse contact order.
+`AvbdContact.WorldCollideCylinderCapRowsIgnoreContactOrder` and
+`AvbdContact.WorldCollideCapsuleCapRowsIgnoreContactOrder` now pin the cap
+local feature IDs instead of checking only generic face kind. Focused validation
+passed `pixi run build-simulation-tests` and
+`test_boxed_lcp_contact --gtest_filter='AvbdContact.WorldCollideCylinderCapRowsIgnoreContactOrder:AvbdContact.WorldCollideCapsuleCapRowsIgnoreContactOrder:AvbdContact.WorldCollide*'`.
+This closes only one curved cap primitive row-order evidence slice; it closes
+no CPU-win, GPU, or paper-number gate.
+
+Latest local follow-up: live cylinder-rim row-order coverage now verifies that
+real sphere/cylinder `World::collide()` contacts on the top and bottom rims
+encode the cylinder endpoint as positive/negative edge features and keep
+deterministic canonical endpoint-pair row ordinals when replayed in reverse
+contact order.
+`AvbdContact.WorldCollideCylinderRimRowsIgnoreContactOrder` extends the live
+curved-primitive coverage beyond cap and side face patches. Focused validation
+passed `pixi run build-simulation-tests` and
+`test_boxed_lcp_contact --gtest_filter='AvbdContact.WorldCollideCylinderRimRowsIgnoreContactOrder:AvbdContact.WorldCollide*'`.
+This closes only one curved rim/edge primitive row-order evidence slice; it
+closes no CPU-win, GPU, or paper-number gate.
+
+Latest local follow-up: live cylinder-side and capsule-side row-order coverage
+now verifies that real sphere/primitive `World::collide()` contacts on curved
+side patches keep the same canonical endpoint-pair row ordinals when replayed
+in reverse contact order. `AvbdContact.WorldCollideCylinderSideRowsIgnoreContactOrder`
+and `AvbdContact.WorldCollideCapsuleSideRowsIgnoreContactOrder` also check the
+side-patch feature codes rather than the already covered cap features. Focused
+validation passed `pixi run build-simulation-tests` and
+`test_boxed_lcp_contact --gtest_filter='AvbdContact.WorldCollideCylinderSideRowsIgnoreContactOrder:AvbdContact.WorldCollideCapsuleSideRowsIgnoreContactOrder:AvbdContact.WorldCollide*'`.
+This closes only one curved-side primitive row-order evidence slice; it closes
+no CPU-win, GPU, or paper-number gate.
+
+Latest local follow-up: live sphere/plane friction tangent projection now
+verifies that when a real `World::collide()` plane normal changes, persisted
+paired tangent-row dual state is projected as a physical world tangent impulse
+into the new contact tangent basis instead of being reused as basis-local
+scalars. `AvbdContact.WorldCollideFrictionRowsProjectAcrossChangingPlaneNormal`
+also checks stable canonical endpoint keys, stable row ordinals, friction
+coefficient combination, Coulomb bounds from the persisted normal row, and the
+generated friction-row state. Focused validation passed
+`pixi run build-simulation-tests` and
+`test_boxed_lcp_contact --gtest_filter='AvbdContact.WorldCollideFrictionRowsProjectAcrossChangingPlaneNormal:AvbdContact.WorldCollide*'`.
+This closes only one live normal-rotation rigid-contact friction evidence
+slice; it closes no CPU-win, GPU, or paper-number gate.
+
+Latest local follow-up: live stacked endpoint-swapped friction coverage now
+verifies that simultaneous static/dynamic and dynamic/dynamic box manifolds
+preserve paired tangent-row warm-start state as a physical world tangent dual
+when every raw `World::collide()` contact arrives with body endpoints, shape
+indices, local points, and normal polarity swapped.
+`AvbdContact.WorldCollideStackedManifoldsFrictionRowsIgnoreEndpointOrder` also
+checks multiple canonical face-pair row groups, distinct per-pair friction
+coefficients, and per-pair Coulomb bounds. Focused validation passed
+`pixi run build-simulation-tests`,
+`test_boxed_lcp_contact --gtest_filter='AvbdContact.WorldCollideStackedManifoldsFrictionRowsIgnoreEndpointOrder:AvbdContact.WorldCollide*'`,
+and `pixi run lint`. This closes only one stacked endpoint-order friction-row
+persistence evidence slice; it closes no CPU-win, GPU, or paper-number gate.
+
+Latest local follow-up: live endpoint-swapped box-box manifold friction
+coverage now verifies that paired tangent-row warm-start state projects as a
+physical world tangent dual when every raw `World::collide()` contact arrives
+with body endpoints, shape indices, local points, and normal polarity swapped.
+`AvbdContact.WorldCollideLiveManifoldFrictionRowsIgnoreEndpointOrder` also
+checks the same canonical face-pair row groups and Coulomb bounds as the
+normal-row endpoint-order coverage. Focused validation passed
+`pixi run build-simulation-tests` and
+`test_boxed_lcp_contact --gtest_filter='AvbdContact.WorldCollideLiveManifoldFrictionRowsIgnoreEndpointOrder:AvbdContact.WorldCollide*'`.
+This closes only one endpoint-order friction-row persistence evidence slice; it
+closes no CPU-win, GPU, or paper-number gate.
+
+Latest local follow-up: live stacked-box manifold friction tangent warm-start
+coverage now verifies that simultaneous static/dynamic and dynamic/dynamic box
+manifolds retain paired tangent-row dual state and per-pair Coulomb bounds by
+endpoint/feature row key across a small stack nudge through
+`AvbdContact.WorldCollideStackedManifoldsFrictionRowsPersistAcrossSmallPose`.
+Focused validation passed `pixi run build-simulation-tests` and
+`test_boxed_lcp_contact --gtest_filter='AvbdContact.WorldCollide*'`, plus
+`pixi run lint`. This closes only one stacked rigid-contact friction-row
+persistence evidence slice; it closes no CPU-win, GPU, or paper-number gate.
+
+Latest local follow-up: live box-box manifold friction tangent warm-start
+coverage now verifies that a small pose-preserving box-box nudge retains
+paired tangent-row dual state and Coulomb bounds by the same endpoint/feature
+row keys through
+`AvbdContact.WorldCollideLiveManifoldFrictionRowsPersistAcrossSmallPose`.
+Focused validation passed `pixi run build-simulation-tests` and
+`test_boxed_lcp_contact --gtest_filter='AvbdContact.WorldCollide*'`, plus
+`pixi run lint`. This closes only one live box-box friction-row persistence
+evidence slice; it closes no CPU-win, GPU, or paper-number gate.
+
+Latest local follow-up: live sphere/plane friction tangent warm-start coverage
+now verifies that reversing actual `World::collide()` contact order preserves
+paired tangent-row dual state and Coulomb bounds by row key through
+`AvbdContact.WorldCollideFrictionRowsIgnoreContactOrder`. Live
+sphere/mesh-face row-order coverage now replays
+actual mesh-face contacts at multiple positions and verifies that reversing
+the contact input does not move same-feature row ordinals through
+`AvbdContact.WorldCollideMeshFaceRowsIgnoreContactOrder`. Live box-box
+manifold row-persistence coverage now also
+nudges one box by a small amount along the contact normal and verifies that the
+same canonical face-pair rows retain their row ordinals and in-face local
+coordinates through
+`AvbdContact.WorldCollideLiveManifoldSameFeatureRowsPersistAcrossSmallPose`.
+Curved primitive row-order coverage now replays actual cylinder-cap/plane and
+capsule-cap/plane contacts at multiple positions and verifies that reversing
+the contact input does not move same-feature row ordinals through
+`AvbdContact.WorldCollideCylinderCapRowsIgnoreContactOrder` and
+`AvbdContact.WorldCollideCapsuleCapRowsIgnoreContactOrder`.
+Live stacked box coverage now also verifies that simultaneous static/dynamic
+and dynamic/dynamic box manifolds preserve canonical endpoint-pair row ordinals
+and in-plane local coordinates across a small pose-preserving nudge through
+`AvbdContact.WorldCollideStackedManifoldsPersistRowsAcrossSmallPose`. Focused
+validation passed `pixi run build-simulation-tests` and
+`test_boxed_lcp_contact --gtest_filter='AvbdContact.WorldCollide*'` plus
+`pixi run lint`. This closes only the curved-primitive row-order and small-pose
+live rigid-contact row-persistence evidence slices; it closes no CPU-win, GPU,
+or paper-number gate.
+
+Latest local follow-up: after the requested latest `origin/main` merge, the
+branch is based on `556b894fb5f` ("Share Phase 3 benchmark and CCD diagnostics
+contracts (#2948)") and the staged AVBD batch was restored with
+`git stash apply --index stash@{0}` without conflicts. Live `World::collide()`
+endpoint-order regressions now prove that swapping contact body endpoints,
+shape indices, local points, and normal polarity preserves the canonical
+endpoint row key and row ordinal for both sphere/plane contact points and the
+multi-point box-box manifold. Focused validation passed
+`pixi run build-simulation-tests`,
+`test_boxed_lcp_contact --gtest_filter='AvbdContact.WorldCollide*'`, and
+`pixi run lint`. This closes only the live endpoint-order row-identity evidence
+slice; it closes no CPU-win, GPU, or paper-number gate.
+
+Latest local follow-up: the branch was fast-forwarded to live `origin/main`
+at `0adb97229ff` using an HTTPS fetch after SSH fetch failed with
+`Network is unreachable`, and the staged AVBD batch was restored with
+`git stash apply --index` without conflicts. The merge backup remains at
+`stash@{0}` and should not be dropped without maintainer approval. Post-merge
+focused validation passed `pixi run build-simulation-tests`, rebuilt
+`bm_avbd_rigid_fixed_joint`, passed the focused C++ ctest set
+(`test_variational_integration`, `test_boxed_lcp_contact`,
+`test_serialization`, `test_world`, and `test_world_step_profiling`), and
+passed the 13 focused packet-writer tests for the refreshed 2D/3D Spring and
+3D Soft Body rows. A 2D Soft Body endpoint-uniqueness row-counter fast path was
+implemented experimentally, rebuilt, and then reverted because packet-style
+benchmark smoke did not support keeping it. This closes no CPU-win, GPU, or
+paper-number gate.
+
+Latest local follow-up: the public articulated revolute/prismatic motor
+py-demos now opt into the shared replay panel as stateless world-time-driven
+controllers, and the high-ratio articulated-chain py-demo now captures and
+restores its replay-loop UI state while syncing the render bridge. This fixed
+the `test_registered_world_scenes_receive_shared_replay_controls` failure found
+by `pixi run test-py`; the focused replay-panel regression and the full Python
+gate now pass. This is demo/replay validation coverage only and closes no
+source-row CPU-win, GPU, or paper-number gate.
+
+Latest local follow-up: private direct world-link AVBD revolute/prismatic
+point-joint configs now serialize their `AvbdRigidWorldPointJointConfig` rows
+through binary save/load, including anchors, masks, bases, stiffness fields, and
+free-axis velocity motor state. Focused C++ coverage in
+`VariationalIntegration.AvbdBreakableRevoluteVelocityPointJointConfigSurvivesSaveLoadAndReset`
+and
+`VariationalIntegration.AvbdBreakablePrismaticVelocityPointJointConfigSurvivesSaveLoadAndReset`
+reloads broken private rows, verifies the restored config, proves broken rows
+stay skipped under external force, then resets and re-engages the hard rows plus
+updated motor command. While validating this, a kinematics-cache regression from
+the clean-frame graph shortcut was fixed by marking multibody link frame caches
+dirty after semi-implicit and variational multibody position writes. Focused
+validation rebuilt `test_variational_integration`, reran the previously stale
+articulated motor filters plus `ExternalForce.*`, and reran the two new
+save/load/reset regressions. This is still a narrow private lifecycle and
+cache-correctness slice; it closes no broad paper-parity, GPU, or source-row
+benchmark gate.
+
+Latest local follow-up: rigid AVBD finite-stiffness point-pair, angular-pair,
+and distance-spring row updates now return immediately once the effective
+stiffness is already at the material cap, clearing the finite-row dual without
+recomputing the current constraint geometry. This preserves the existing update
+result for capped public rigid distance springs and capped compliant
+point-joint rows. Focused coverage now includes
+`AvbdRigidBlock.PointPairFiniteUpdateKeepsCappedStiffness`,
+`AvbdRigidBlock.RigidAngularFiniteUpdateKeepsCappedStiffness`, and
+`AvbdRigidBlock.PointPairDistanceSpringUpdateKeepsCappedStiffness`. Focused
+validation rebuilt `dart_simulation_tests`, ran the full 87-test
+`test_avbd_rigid_block` binary, rebuilt `bm_avbd_rigid_fixed_joint`, and
+smoke-ran selected Rod/Joint Grid/Soft Body/Spring rows. The broader diagnostic
+ran under load average around 11.7, so it is capped-row overhead smoke only; no
+refreshed packet CPU-win, GPU, or paper-number gate is closed.
+
+Latest local follow-up: rigid AVBD friction tangent-pair evaluation now detects
+the common contact-row case where the two tangent rows share the same body-local
+anchors, then reuses the first row's transformed world anchors for the second
+row in the generic force helper, direct block assembly, and row-state update
+path. Hand-built rows with distinct anchors still take the existing per-row
+transform path. Focused validation rebuilt `dart_simulation_tests`, ran the
+full 84-test `test_avbd_rigid_block` binary, and smoke-ran
+`BM_AvbdDemo2dDynamicFrictionStep`, `BM_AvbdDemo2dStaticFrictionStep`,
+`BM_AvbdDemo2dCardsStep`, and `BM_AvbdDemo2dNetStep` with
+`--benchmark_min_time=0.1s`. The diagnostic smoke ran under load average around
+4.3, recording about 22.9 us Dynamic Friction, 5.99 us Static Friction,
+0.507 ms Cards, and 0.433 ms Net CPU time per step. This is mechanical
+hot-path cleanup evidence only; no refreshed packet CPU-win, GPU, or
+paper-number gate is closed.
+
+Latest local follow-up: rigid AVBD friction tangent-pair row-state updates now
+reuse the regularized 2D tangent constraint vector that is already needed for
+stiffness growth when computing the cone-projected friction force, instead of
+calling the older force helper and recomputing the same tangent constraints.
+Focused validation rebuilt `dart_simulation_tests`, ran the full 84-test
+`test_avbd_rigid_block` binary, and smoke-ran
+`BM_AvbdDemo2dDynamicFrictionStep`, `BM_AvbdDemo2dStaticFrictionStep`, and
+`BM_AvbdDemo2dCardsStep` with `--benchmark_min_time=0.1s`. The diagnostic
+smoke ran under load average around 7.5, recording about 14.2 us Dynamic
+Friction, 5.51 us Static Friction, and 0.472 ms Cards CPU time per step. This
+is still local overhead-cleanup evidence only; no refreshed packet CPU-win,
+GPU, or paper-number gate is closed.
+
+Latest local follow-up: rigid AVBD friction tangent-pair assembly now computes
+each tangent row's world anchors once, feeds the precomputed constraint values
+through the shared static/dynamic friction force helper, and stamps both body
+directions from those same world points. This preserves the existing friction
+cone semantics while avoiding repeated local-to-world point transforms inside a
+single tangent-pair evaluation. Focused validation rebuilt
+`dart_simulation_tests`, ran the full 84-test `test_avbd_rigid_block` binary,
+and smoke-ran `BM_AvbdDemo2dCardsStep`, `BM_AvbdDemo2dJointGridStep`,
+`BM_AvbdDemo2dSoftBodyStep`, `BM_AvbdDemo2dRopeStep`, and
+`BM_AvbdDemo2dNetStep` with `--benchmark_min_time=0.1s`. The diagnostic smoke
+ran under load average around 6.9 and low reported CPU frequency, recording
+about 0.550 ms Cards, 10.7 ms Joint Grid, 2.43 ms Soft Body, 0.135 ms Rope, and
+0.442 ms Net CPU time per step. This is still overhead-cleanup evidence only;
+no refreshed packet CPU-win, GPU, or paper-number gate is closed.
+
+Latest local follow-up: after fetching `origin/main` through a one-shot HTTPS
+transport override, the requested merge was a no-op (`Already up to date`).
+Rigid AVBD point-pair and distance-spring helpers now carry the world anchors
+they already compute for constraint values through direct force directions and
+the distance-spring Hessian/Jacobian path. The local-point Hessian API remains
+available for direct callers, while the block assembly and direct spring helper
+avoid recomputing the same local-to-world point just to build a point Jacobian.
+Focused validation rebuilt `dart_simulation_tests`, ran the full 84-test
+`test_avbd_rigid_block` binary, and smoke-ran
+`BM_AvbdDemo2dJointGridStep`, `BM_AvbdDemo2dSoftBodyStep`,
+`BM_AvbdDemo2dRopeStep`, and `BM_AvbdDemo2dNetStep` with
+`--benchmark_min_time=0.1s`. The second diagnostic smoke, under load average
+around 5.5 and low reported CPU frequency, recorded about 10.1 ms Joint Grid,
+3.78 ms Soft Body, 0.207 ms Rope, and 0.359 ms Net CPU time per step, so this
+is overhead-cleanup evidence only; no refreshed packet CPU-win, GPU, or
+paper-number gate is closed.
+
+Latest local follow-up: the rigid AVBD block row assembly now reuses the
+per-row world anchor points, relative vector, and spring axis that it already
+computed for point-pair and distance-spring constraint values when stamping the
+same body's force/Hessian contribution. This avoids redundant local-to-world
+point transforms in the contact-stage projection loop for rope, net,
+Joint Grid, and soft-body source rows without changing row identities or solver
+semantics. The same block loop now also reuses the shared angular orientation
+error across consecutive all-axis angular rows, avoiding three identical
+quaternion error evaluations per fixed-joint angular triplet during block
+assembly and row-state updates. Focused validation rebuilt
+`dart_simulation_tests`, ran the full 84-test `test_avbd_rigid_block` binary,
+smoke-ran `BM_AvbdDemo2dJointGridStep`, `BM_AvbdDemo2dSoftBodyStep`,
+`BM_AvbdDemo2dRopeStep`, and `BM_AvbdDemo2dNetStep` with
+`--benchmark_min_time=0.1s`, and ran the matching four Python source-row cycle
+tests. The smoke reported about 10.1 ms Joint Grid, 2.14 ms Soft Body,
+0.120 ms Rope, and 0.389 ms Net CPU time per step on this host, but this is
+still non-packet evidence; no CPU-win, GPU, or paper-number gate is closed
+without refreshed same-command packets.
+
+Latest local follow-up: reserved AVBD rigid-world body-index maps now become
+active immediately once a large source-row snapshot requests hash lookup
+capacity, instead of leaving the first 16 bodies on the linear lookup path
+before the map is populated. Small snapshots still keep the no-map fast path,
+with focused coverage in
+`AvbdRigidBlock.RigidWorldAppendRowsUseLinearBodyIndexForSmallSnapshots` and
+the new
+`AvbdRigidBlock.RigidWorldAppendRowsUseReservedBodyIndexMapImmediately`
+regression. While validating the affected public source rows, the Hanging Rope
+source-row invariant was adjusted to wait through the heavy-block settling
+transient before asserting lift and endpoint contraction. Focused validation
+rebuilt `dart_simulation_tests`, ran the new filters, ran the full 84-test
+`test_avbd_rigid_block` binary, rebuilt `bm_avbd_rigid_fixed_joint`, smoke-ran
+the Joint Grid, Soft Body, Rope, Heavy Rope, Hanging Rope, and Net 2D benchmark
+rows under high load, and ran the matching six Python source-row invariants.
+This is a source-row lookup overhead and invariant-hardening cleanup only; no
+CPU-win, GPU, or paper-number gate is closed without refreshed same-command
+packets.
+
+Latest local follow-up: `KinematicsStage::prepare()` now reuses its cached
+`WorldKinematicsGraph` until the world's frame-topology revision changes,
+instead of rebuilding the graph on every prepared step. The stale-topology path
+still rebuilds through `WorldKinematicsGraph::isTopologyCurrent()`, while
+unchanged source rows avoid a no-op prepare-time graph rebuild before the
+existing clean-frame-cache execution skip. Focused validation rebuilt
+`dart_simulation_tests`, ran the clean/stale kinematics graph regressions, the
+full `test_world_step_profiling` binary, and the full 83-test
+`test_avbd_rigid_block` binary. The `bm_avbd_rigid_fixed_joint` target also
+rebuilt, and a short diagnostic smoke over the Motor, Rope, Hanging Rope,
+Spring, and Spring Ratio 2D source rows reported about 10.1 us, 160 us, 334 us,
+4.6 us, and 40.5 us per step respectively. Python step profiling for those
+rows still shows rigid-body contact as the dominant stage, so this is a narrow
+kinematics-prepare overhead cleanup only. It closes no source-row CPU-win, GPU,
+or paper-number gate without refreshed same-command packets.
+
+Latest local follow-up: after merging the latest `origin/main`, rigid AVBD
+point-joint and distance-spring extraction now carries the already-validated
+projectable endpoint transform/mass/static metadata into the append step. The
+appenders still fall back to registry lookup for hand-built test inputs, but
+the production contact-stage source-row path no longer refetches the same
+endpoint metadata immediately after extraction. Focused validation rebuilt
+`dart_simulation_tests` and ran the full 83-test `test_avbd_rigid_block`
+binary. While validating the merged branch, the clean no-work `World::step()`
+and clean kinematics-graph shortcuts were also made profiling-aware, so normal
+steps still take the fast path but built-in step profiling records the expected
+pipeline and nested graph profiles. Focused validation also ran the full
+`test_world_step_profiling` binary plus the clean-kinematics skip regression.
+This is another pair-constraint/profiling-surface cleanup only; no source-row
+CPU, GPU, or paper-number gate is closed without refreshed same-command
+packets.
+The AVBD rigid benchmark target also rebuilt, and a short diagnostic smoke over
+the Motor, Rope, Hanging Rope, Spring, and Spring Ratio 2D source rows completed
+under load average around 5.7-6.2; the smoke is intentionally non-packet
+evidence.
+
+Latest local follow-up: `AvbdScalarRowInventory` now has a generated-descriptor
+sync path that compares cheap row keys for stable row order and only
+materializes full descriptors once per active row on the same-order fast path.
+The large rigid point-joint, motor, and distance-spring row builders use that
+path, avoiding a per-step descriptor-vector allocation for large stable source
+rows such as Joint Grid, rope, and soft-body fixed-joint lattices while keeping
+the existing descriptor-vector fallback for row reorder/drop cases. Focused
+validation rebuilt `dart_simulation_tests`, ran the new inventory regression,
+the full `test_avbd_constraint` binary, the full 83-test
+`test_avbd_rigid_block` binary, rebuilt `bm_avbd_rigid_fixed_joint`, and
+smoke-ran the open spring/rope/Joint Grid/soft-body dashboard rows. The smoke
+was host-clock/load sensitive and is not a same-command packet refresh, so no
+source-row CPU, GPU, or paper-number gate is closed.
+
+Latest local follow-up: large AVBD point-joint row builders now reserve their
+heap scratch lazily only after finding a linear or angular axis that actually
+emits a row. Linear-only spherical/rope-style joint sets still clear stale
+angular inventories, but they no longer pre-reserve angular active-row and
+descriptor vectors before discovering that every angular mask is empty. Focused
+validation rebuilt `dart_simulation_tests`, ran the new large linear-only
+rigid-block regression plus neighboring point-joint mask/spherical filters, ran
+the full 83-test `test_avbd_rigid_block` binary, rebuilt
+`bm_avbd_rigid_fixed_joint`, and smoke-ran the 2D/3D rope/net linear-only
+source rows. The benchmark smoke stayed noisy and non-packet, so this is only a
+row-builder allocation cleanup; no source-row CPU, GPU, or paper-number gate is
+closed.
+
+Latest local follow-up: the contact-stage AVBD pair-constraint hot path now can
+extract point-joint and distance-spring anchors directly in body-local
+coordinates for the private production `World::step()` path, avoiding redundant
+world-anchor reconstruction immediately before the row appenders convert those
+anchors back to local space. The public extraction helpers still default to
+world-space anchors, while the local-only path is pinned by rigid-block
+regressions including a nonzero current-pose fixed-joint anchor. Focused
+validation rebuilt `dart_simulation_tests`, ran the focused AVBD rigid-block
+filters plus the full 82-test `test_avbd_rigid_block` binary, and rebuilt/
+smoke-ran the affected source-demo benchmark rows. Benchmark diagnostics were
+mixed and CPU-frequency sensitive, so no Soft Body, Spring, Motor, GPU, or
+paper-number gate is closed by this cleanup.
+
+Latest local follow-up: clean no-work default `World::step()` paths now skip the
+built-in step pipeline when the prepared schedule has no advanceable rigid-body,
+multibody, deformable, joint, or loop-closure work and all frame caches are
+clean. `WorldKinematicsGraph` also skips executing its compute graph when frame
+caches are already clean. Focused coverage in
+`World.StepSkipsCleanKinematicsGraph` proves counted clean steps still advance
+time/frame without graph execution and that dirtying a parent frame re-enables
+the graph and refreshes child transforms. The refreshed
+`avbd-demo2d-ground-packet.json` records a 24-frame headless visual capture,
+`BM_AvbdDemo2dGroundStep` at 16.3 ns median CPU time per step, and fresh native
+`avbd-demo2d` Ground timing at 24.5 ns/step, so the narrow Ground CPU-win gate
+is closed at about 1.51x faster than native. Broad ground-contact, GPU, and
+paper-number gates are still open.
+
+Latest local follow-up: the AVBD articulated high-ratio benchmark helper now
+also exposes `BM_AvbdPaperScaleHighRatioChainStep`, a 50-link/50,000:1
+variational-chain dashboard row using the same configured `World::step()`
+solve-budget envelope as `PaperScaleHighRatioChainStaysFiniteAndResets`
+(`200` iterations, `1e-9` tolerance). The performance dashboard dry-run and
+display-name surfaces include the new row, and
+`avbd_paper_scale_high_ratio_chain` plus
+`avbd-paper-scale-high-ratio-chain-packet.json` now record an 8-frame headless
+visual capture and benchmark packet for the same 50-link/50,000:1 smoke. This
+does not add a same-hardware paper-number comparison, GPU path, or broad
+source-corpus completion.
+
+Latest local follow-up: the six public non-motor breakable fixed/spherical
+py-demos now expose a testable weak re-arm hook matching their UI controls.
+Focused integration coverage for the free-rigid fixed, free-rigid spherical,
+world-link articulated fixed, same-multibody articulated fixed, world-link
+articulated spherical, and same-multibody articulated spherical demos now
+breaks the weak joint, resets at the high break force, verifies re-engagement,
+then re-arms the weak break force and verifies the joint breaks again. Focused
+validation ran those six pytest targets with the built dartpy extension path.
+This is narrow user-facing breakable-joint lifecycle evidence only; broad
+fracture corpus, GPU, and paper benchmark gates remain open.
+
+Latest local follow-up: the four public articulated breakable velocity-motor
+py-demos now carry mutable command state for their reset lifecycle. The
+same-multibody revolute, same-multibody prismatic, world-anchored prismatic,
+and world-anchored revolute break/reset integration tests now reset at a high
+break force, reverse the target velocity, and verify the re-engaged motor rows
+follow that updated command while the hard rows stay constrained, then re-arm
+the weak break force and verify the same updated-command path breaks again.
+Focused validation ran those four pytest targets with the built dartpy
+extension path. This is narrow user-facing motor lifecycle evidence only; broad
+motor, articulated fracture/source-corpus, GPU, and paper benchmark gates remain
+open.
+
+Latest local follow-up: the `avbd_demo2d_fracture` and
+`avbd_demo3d_breakable` source-demo rows now have focused break/reset lifecycle
+coverage in `test_demos_cycle.py`. The new regressions step each public
+fixed-joint source row until most of the chain joints break, raise every joint's
+reset break force, reset the broken rows, and verify the rows stay unbroken
+while their anchor residuals contract again. Focused validation ran both new
+pytest targets with the built dartpy extension path. This closes only the
+narrow 2D Fracture/3D Breakable source-demo fixed-joint lifecycle evidence;
+broad motor, articulated fracture/source-corpus, GPU, and paper benchmark gates
+remain open.
+
+Latest local follow-up: private generated current-pose movable-pair fixed
+all-axis breakage now also has simulation-mode binary save/load/reset coverage.
+The regression saves after generated fixed rows are marked broken, reloads,
+verifies restored endpoints plus captured anchors, lets the broken anchor and
+relative orientation drift, then resets breakage and checks the generated
+linear and angular hard rows both re-engage. Focused validation rebuilt
+`test_variational_integration` and ran the new fixed save/load filter plus the
+full eight-test generated current-pose movable-pair lifecycle filter. This
+completes narrow generated fixed/revolute/prismatic/spherical movable-pair
+persistence coverage only; broad motor, fracture, source-corpus, GPU, and paper
+benchmark gates remain open.
+
+Latest local follow-up: private generated current-pose movable-pair spherical
+linear-row breakage now also has simulation-mode binary save/load/reset
+coverage. The regression saves after the generated spherical row is marked
+broken, reloads, verifies restored endpoints and captured anchors, lets the
+broken anchor drift while free relative orientation changes, then resets
+breakage and checks only the linear rows re-engage. Focused validation rebuilt
+`test_variational_integration` and ran the new spherical save/load filter plus
+the neighboring spherical current-pose reset filter. This is narrow private
+generated spherical lifecycle coverage only; broad motor, fracture,
+source-corpus, GPU, and paper benchmark gates remain open.
+
+Latest local follow-up: private generated current-pose movable-pair revolute
+and prismatic velocity rows now have simulation-mode binary save/load/reset
+regressions. The tests create private non-topology `Joint` entities, let
+simulation entry capture anchors and non-cardinal free-axis bases, save after
+breakage, reload, verify restored endpoint/type/axis/actuator command and
+effort-limit state plus captured anchors, let broken rows drift, then reset
+breakage with an updated command and check hard rows plus free-axis motor motion
+re-engage across two movable links. Focused validation rebuilt
+`test_variational_integration` and ran the new two-test filter plus the
+neighboring four-test current-pose movable-pair lifecycle filter. `origin/main`
+was fetched through a one-off HTTPS fetch after SSH was unavailable, and
+`git merge origin/main` was a no-op because the branch was already current.
+This is narrow private generated one-DOF lifecycle coverage only; broad motor,
+fracture, source-corpus, GPU, and paper benchmark gates remain open.
+
+Latest local follow-up: public same-multibody movable-pair revolute and
+prismatic articulated velocity motors now have simulation-mode binary
+save/load/reset regressions. The tests reload a broken joint, verify restored
+endpoint/type/axis/actuator command and effort-limit state, let broken rows
+drift under opposing endpoint forces, then reset breakage with an updated
+command and check the hard rows plus free-axis motor motion re-engage across
+two movable links. Focused
+validation rebuilt `test_variational_integration`, ran the movable-pair
+fixed/revolute/prismatic save/load and break/reset filters, and ran
+`pixi run lint`. This is narrow public one-DOF lifecycle coverage only; broad
+motor, fracture, source-corpus, GPU, and paper benchmark gates remain open.
+
+Previous local follow-up: rigid AVBD point-joint and distance-spring extraction
+and append paths now use the projectable-body metadata helper, so the hot path
+no longer classifies each endpoint and then fetches the same transform a second
+time, and no longer materializes no-op static-static pair constraints. Rigid
+contact-snapshot body insertion also reuses the already-checked projectable
+transform, mass, and static tag when materializing new body state. Focused
+validation rebuilt `dart_simulation_tests`, ran the rigid block
+static-static/pair-constraint extraction, point-joint, and distance-spring
+filters, and ran `pixi run lint`. This remains an overhead cleanup only; the
+source-demo CPU-win packet gates stay open until refreshed same-command
+source-runner comparisons beat the native rows.
+
+Previous local follow-up: articulated point-joint extraction now builds a
+per-multibody link-index cache before scanning AVBD point-joint configs, so
+same-multibody and world-link private rows no longer rediscover endpoint
+ownership by scanning every structure/link for every joint. Focused validation
+rebuilt `dart_simulation_tests`, ran
+`test_variational_integration --gtest_filter='VariationalIntegration.AvbdPublicArticulated*:VariationalIntegration.PaperScaleHighRatioChainStaysFiniteAndResets'`,
+ran `test_world --gtest_filter='World.ArticulatedPointJoints*'`, rebuilt the
+`bm_avbd_rigid_fixed_joint` benchmark target after the staged `WorldOptions`
+layout change, and smoke-ran articulated `/32` motor/joint rows plus
+`BM_AvbdArticulatedHighRatioChainStep`. The source-demo CPU-win packet gates
+remain open because this is an articulated extractor hot-path cleanup, not a
+refreshed same-command source-runner comparison.
+
+Previous local follow-up: private articulated two-movable-link lifecycle coverage
+now includes direct revolute motor reset, current-pose fixed all-axis reset,
+current-pose revolute/prismatic motor reset, spherical current-pose
+linear-row reset, non-cardinal current-pose revolute/prismatic motor-axis
+coverage, current-pose revolute/prismatic finite-limit coverage, public
+same-multibody/world-anchored articulated revolute/prismatic
+floating-endpoint plus selected off-origin-anchor facade non-cardinal axis
+coverage, selected same-multibody/world-link facade save/load non-cardinal
+axis-basis persistence, selected one-DOF broken-state save/load/reset
+non-cardinal axis-basis persistence, selected direct one-DOF break/skip/reset
+non-cardinal axis-basis coverage, public same-multibody/world-link one-DOF
+non-cardinal off-origin finite-limit coverage, and public same-multibody movable-pair
+non-cardinal motor-axis and finite-limit coverage. The dartpy fixed point-joint
+break/skip/reset regression now also asserts the same-multibody and world-link
+fixed endpoint shapes while exercising explicit all-axis anchors, and the
+dartpy spherical break/skip/reset regressions now assert same-multibody and
+world-link endpoint shapes while keeping orientation free. The dartpy
+one-DOF motor break/skip/reset regressions now also assert public endpoint and
+axis shapes for same-multibody, world-link, and movable-pair revolute/prismatic
+cases. The C++ same-multibody fixed/revolute/prismatic and world-link
+spherical/revolute/prismatic save/load regressions now also assert restored
+endpoint shape before rebuilding the private AVBD rows.
+The same-multibody/world-link revolute/prismatic broken-state save/load
+regressions now also assert restored one-DOF motor effort limits alongside the
+velocity actuator command state.
+`PaperScaleHighRatioChainStaysFiniteAndResets` now exercises a
+50-link/50,000:1 articulated chain through configured `World::step()`
+variational solve-budget fields (`200` iterations, `1e-9` tolerance) and
+verifies finite rollout plus reset. This is stability evidence only; benchmark
+packet parity remains open.
+The new fixed current-pose regression builds a same-multibody private
+`comps::Joint`, lets simulation entry generate the hard AVBD config from the
+current pose, verifies break-force marking skips later rows while opposing
+endpoint forces separate/rotate the captured pair, then clears the broken state
+and checks the captured anchor and relative orientation re-engage. The companion
+revolute current-pose regressions reverse the motor command to check
+anchor/hinge rows plus free-axis motor re-engagement, and the generated
+current-pose drive regressions now use non-cardinal revolute/prismatic axes and
+check the generated free-axis basis column. The public same-multibody and
+world-anchored articulated revolute/prismatic floating-endpoint and
+selected off-origin-anchor drive regressions now use non-cardinal axes and
+assert the facade-generated AVBD free-axis basis column before stepping. Public
+save/load regressions now also preserve non-cardinal same-multibody/world-link
+revolute axes and the world-link prismatic axis, then assert the rebuilt AVBD
+free-axis basis columns after simulation entry. Public one-DOF broken-state
+save/load/reset regressions now also preserve non-cardinal
+same-multibody/world-link revolute/prismatic axes through the binary
+round-trip, assert the reset-rebuilt AVBD basis columns, and verify free-axis
+motion resumes after reset. Public direct same-multibody/world-link
+revolute/prismatic one-DOF break/skip/reset regressions now also use
+non-cardinal axes, assert the generated AVBD basis columns, and verify the
+free-axis motor rows keep progressing after reset while the masked hard rows
+re-engage. Public same-multibody/world-link revolute/prismatic tiny-limit
+facade regressions now also use non-cardinal axes, assert the generated AVBD
+basis columns, and prove tiny effort caps keep the free-axis motion far below
+the commanded unbounded target. Public
+same-multibody movable-pair revolute/prismatic facade
+regressions now also use non-cardinal axes, assert the generated AVBD basis
+columns, and cap the velocity motors with tiny effort limits to prove both
+movable endpoints preserve the hard anchor/hinge/masked rows without turning
+the free axis into an unbounded target. The companion finite-limit regressions
+cap generated velocity motors with tiny effort limits to prove
+generated free-axis rows honor bounds without turning into hard unbounded
+velocity targets. The synthetic current-pose extractor fixtures now also mark
+`hasAvbdStiffnessState = false` so they exercise endpoint default inference
+rather than the serialized stiffness-state defaults. Focused validation ran
+`pixi run build-simulation-tests` plus the current-pose extractor, public
+same-multibody/world-anchored floating-endpoint/off-origin-anchor facade
+non-cardinal axis, selected save/load and broken-state save/load/reset
+non-cardinal axis-basis, selected direct break/skip/reset non-cardinal
+axis-basis, public same-multibody/world-link one-DOF non-cardinal
+finite-limit, public
+same-multibody movable-pair non-cardinal motor-axis and finite-limit, and
+movable-pair fixed/revolute/prismatic/spherical lifecycle plus explicit-anchor
+dartpy fixed/spherical endpoint-shape, one-DOF endpoint/axis-shape, restored
+same-multibody/world-link save/load endpoint-shape, restored one-DOF
+effort-limit state, and revolute/prismatic tiny-limit filters.
+This is narrow articulated lifecycle and axis-basis evidence only; it does not
+close broad motor, fracture, source-corpus, GPU, or paper benchmark gates.
+
+Previous local follow-up: rigid AVBD row-index layouts now stay warm across
+frames, single-family point-pair/angular solves route directly without copying
+into combined work vectors, one-new-row point-joint/distance-spring appends skip
+endpoint row-counter hash-map setup, and small point-joint/motor/distance-spring
+row builders use stack descriptor/active-row storage for up to 16 candidate rows
+instead of allocating temporary vectors. The contact stage also extracts and
+appends point-joint and distance-spring families independently, so Motor rows
+do not scan spring configs and Spring rows do not scan point-joint configs, and
+the snapshot solve now clears absent row-family inventories directly instead
+of calling empty contact/joint/motor/spring builders. Focused validation ran
+`pixi run build-simulation-tests` and the rigid row-driver/contact-stage
+`test_avbd_rigid_block` filters. Local profile/benchmark smoke reports
+`BM_AvbdDemo2dMotorStep_median` around 8.43 us,
+`BM_AvbdDemo2dSpringStep_median` around 3.98 us, and
+`BM_AvbdDemo2dSpringRatioStep_median` around 36.16 us, but this remains
+overhead cleanup rather than refreshed packet evidence or a CPU-win claim.
+
+Previous local follow-up: the rigid AVBD contact stage now skips point-joint and
+distance-spring input extraction when the registry has no AVBD pair-constraint
+configs, and the contact-enabled AVBD path only extracts/appends those rows
+when such configs exist. The split rigid-body velocity stage also now assembles
+force batches only for advanceable rigid bodies, leaving the all-body force
+batch path in the standalone batched SoA integration stage intact. Focused
+coverage in
+`AvbdRigidBlock.RigidWorldPairConstraintConfigPresenceGuardsExtraction` checks
+the new registry guards and that stale extraction vectors are cleared, and
+`World.RigidBodyVelocityStageSkipsPrescribedBodyForces` keeps static/kinematic
+force immunity plus dynamic force/gravity behavior covered. The `.gitignore`
+comment now also makes explicit that `avbd-*-packet.json` files are curated
+plan/test fixtures while other JSON dumps in the PLAN-104 folder stay ignored.
+This is overhead cleanup only; it is not packet evidence or a CPU-win claim.
+
+Previous local follow-up: the rigid AVBD contact stage now reuses a scratch
+contact snapshot through `buildAvbdRigidWorldContactSnapshotInto`, avoiding
+per-step contact-snapshot vector/map reallocation while preserving the
+value-returning helper for tests and standalone callers. Focused coverage in
+`AvbdRigidBlock.RigidWorldContactSnapshotBuildIntoClearsReusedState` proves the
+in-place builder clears stale joint/motor/spring state and preserves reused
+vector capacity. Same-command benchmark smoke over selected 2D contact-heavy
+source rows was mixed and host-load sensitive, so this is not packet evidence
+or a CPU-win claim.
+
+Previous local follow-up: focused serialization coverage now reloads broken
+public free-rigid fixed, revolute, prismatic, and spherical joints in
+simulation mode, verifies each restored joint stays broken and no longer
+filters overlapping endpoint contacts, then checks `resetBreakage()` restores
+contact filtering. Same-multibody and world-link articulated fixed, revolute,
+prismatic, and spherical point joints now also have a focused simulation-mode
+binary round-trip regression for broken-state reset; the revolute/prismatic
+cases preserve velocity-actuator command and effort-limit state across the
+round trip. Public AVBD point-joint start/linear/angular stiffness facade state
+now lives on the serialized `Joint` component, with free-rigid and articulated
+design-mode binary save/load coverage proving those setters still work before
+simulation entry rebuilds the private AVBD rows. Direct public facade validation
+now also covers same-multibody and world-link articulated fixed, revolute,
+prismatic, and spherical start/linear/angular stiffness defaults, finite
+setters, and invalid setter rejection from both C++ and dartpy, plus C++/dartpy
+same-link, cross-multibody, and cross-world endpoint-ownership rejection for the
+public articulated point-joint facade. A focused legacy v15 binary metadata
+regression also keeps solver-family options loading before the v16
+ignored-collision-pair tail. The curated AVBD plan packet JSON files are
+intentionally trackable as `avbd-*-packet.json`, while scratch JSON in that plan
+folder is ignored by `.gitignore`.
+
+Previous local follow-up: private free-rigid AVBD linear motor rows now sit beside
+the existing angular motor rows in the 6-DOF rigid kernel. Public free-rigid
+prismatic velocity actuators now extract to those bounded linear motor rows,
+the contact-stage motor inventory handles linear and angular rows together, and
+the branch now adds the matching `avbd_rigid_prismatic_motor` py-demo,
+`BM_AvbdRigidPrismaticMotorStep` dashboard row, packet writer, and tracked
+`avbd-rigid-prismatic-motor-packet.json` evidence packet. Focused C++ coverage
+checks the linear builder, row solve direction, and public World extraction
+while dartpy coverage steps the public prismatic velocity motor from Python.
+
+Previous local follow-up: focused C++ coverage now reloads a broken public fixed
+point joint between two movable same-multibody links, verifies the restored
+broken joint stays skipped, and resets it to rebuild the explicit AVBD anchor
+rows. Focused dartpy coverage now also steps that movable same-multibody fixed
+break/reset path plus movable same-multibody revolute/prismatic motor
+break/reset paths through the public Python facade, and focused C++ coverage now
+exercises the same explicit off-origin movable-pair revolute/prismatic motor
+break/reset paths. The row-inventory/contact
+follow-up also has AVBD scalar row inventories
+now warm-start stable
+same-order descriptor lists in place instead of rebuilding the previous-row
+`std::map` every step, preserving the existing map path for dropped or reordered
+rows. Rigid World contact snapshots now also assign contact/joint/spring row
+ordinals through reserved endpoint-pair hash counters instead of per-step tree
+maps. The rigid row driver now also leaves per-body row-index scratch tables
+unbuilt for row families that are absent in the current solve, avoiding
+attachment/friction/spring table setup on joint-only rows. Append paths now
+also seed the snapshot body-index cache when a fallback scan finds a preseeded
+entity. Focused coverage checks same-order warm-start semantics, resets per-row
+scratch direction, preserves repeated endpoint-pair row ordinals across
+multiple append calls, caches fallback body indices without duplicating bodies,
+and keeps unused row-index scratch empty while point-pair and distance-spring
+rows still solve. Narrow benchmark smoke remains thermal/frequency sensitive,
+so it is not packet evidence or a CPU-win claim. Keep the checked source-row
+packet CPU gates open until refreshed same-command packets beat the native
+runners.
+
+The previous local follow-up ported the `avbd-demo3d` Soft Body source row
+through the public rigid-body fixed-joint facade using finite AVBD linear and
+angular material stiffness. The new `avbd_demo3d_soft_body` py-demo matches the
+source `sceneSoftBody` row at revision `7701bd427d55` with one static ground,
+three 4x4x4 dynamic rigid-box lattices, 432 finite-stiffness all-axis fixed
+joints (`Klin=1000`, `Kang=250`), and 648 diagonal ignored collision pairs.
+`BM_AvbdDemo3dSoftBodyStep`,
+`scripts/run_avbd_demo3d_reference_timing.py --scene soft_body`,
+`scripts/write_avbd_demo3d_soft_body_packet.py`, focused Python source-row and
+packet tests, and
+`docs/plans/104-vertex-block-descent-solver/avbd-demo3d-soft-body-packet.json`
+provide the visual/DART-benchmark/native-reference evidence. The packet records
+DART at 3.93 ms/step median versus 4.76 ms/step for the native source runner
+on this host, so the narrow CPU reference-comparison gate is closed while GPU
+parity, broader soft/rigid coupling, and paper-number gates remain open.
 
 The AVBD paper, project page, 2D demo source, and 3D demo source were inspected
 and folded into PLAN-104. The implementation now has an internal scalar row
@@ -65,10 +1400,30 @@ the private World-contact snapshot and 6-DOF row solve as a velocity projection
 consumed by the standard rigid position stage, while unsupported envelopes fall
 back to sequential impulses. The private rigid contact snapshot also derives box
 face/edge/corner endpoint feature IDs plus cylinder side/cap/rim and capsule
-side/top-cap/bottom-cap endpoint feature IDs and scopes row ordinals per
-canonical endpoint pair so unrelated manifolds do not perturb row identity. The
-private rigid block path also has
-point-joint linear, angular, and combined row builders for fixed-anchor
+side/top-cap/bottom-cap endpoint feature IDs, scopes row ordinals per canonical
+endpoint pair, and now assigns same-feature manifold rows from deterministic
+canonical-local contact-point ordering so narrow-phase contact order changes do
+not swap warm-start state. Focused private and live `World::collide()`
+endpoint-order coverage now also proves swapped contact body endpoints keep the
+same row ordinals and warm-started normal state for both sphere/plane contact
+points and live box-box manifolds. Actual `World::collide()` sphere/plane
+contact-point replay and live box-box manifold box-face feature coverage remain
+in place.
+Known and unknown-index fallback contacts now map world points through body and
+collision-shape local transforms before rigid feature coding, while explicit
+endpoint-A and endpoint-B compound shape-index contacts use the narrow-phase
+shape-local contact point before feature coding, with actual `World::collide()`
+sphere/cylinder/capsule/plane/mesh contacts now covered through primitive
+feature IDs, including shape-scoped sphere body features.
+Explicit and inferred offset shape contacts persist the shape-frame face/edge
+identity; unique compound
+plane contacts now derive
+shape-scoped face IDs, triangle-mesh contacts now derive face/edge/vertex
+feature IDs, and ambiguous compound contacts keep the body-level fallback.
+Private rigid contact friction rows now also store previous tangent directions
+and project the warm-started paired dual into the current tangent basis when
+the contact normal rotates. The private rigid block path also has point-joint linear,
+angular, and combined row builders for fixed-anchor
 translation and orientation constraints, with step-start previous constraint
 values seeded for AVBD alpha regularization. Those private point-joint rows can
 now be appended to the World rigid snapshot/solve/apply wrapper and combined
@@ -89,39 +1444,172 @@ and preserve configured axes/masks through World point-joint input, snapshot
 assembly, and solve coverage. Simulation-entry current-pose initialization and
 extraction now also cover private rigid-body ECS revolute/prismatic joint
 entities, deriving the same axes/masks from their configured joint axis while
-keeping masked multibody link endpoints unsupported until articulated AVBD rows
-exist. The private endpoint layer now classifies free rigid bodies separately
-from multibody links, and hard fixed multibody-link point-joint configs can bridge
-into the variational articulated solve path. Public DART 7 `World`
-facades now expose free rigid-body
+the private articulated bridge now accepts explicitly hard masked multibody-link
+point-joint configs for AVBD revolute/prismatic rows through the variational
+loop-constraint projection path. The private endpoint layer now classifies free
+rigid bodies separately from multibody links, and hard fixed multibody-link
+point-joint configs can bridge into the variational articulated solve path.
+Explicitly hard breakable multibody-link point-joint configs also enter that
+projection path and mark their source joint broken from the projection load, so
+future steps skip them.
+Public DART 7 `World` facades now expose free rigid-body
 revolute and prismatic joints through C++ and dartpy, with generated stubs,
 focused C++/Python tests, and the categorized `sx_rigid_limited_joints`
 py-demo. This branch also adds the first AVBD-specific `py-demos`
 rigid-constraint scene, `avbd_rigid_fixed_joint_contact`, so users can inspect
 the public fixed-joint row path while ordinary rigid contact acts on the
-payload. The current follow-up adds private angular-motor rows and rigid
+payload. The current follow-up adds private angular/linear motor rows and rigid
 fracture dual-threshold/reset helpers in the 6-DOF row kernel, then wires
-public rigid-body revolute velocity actuators into those bounded AVBD motor
-rows with persistent contact-stage motor inventory, focused C++ coverage, and
-the categorized `avbd_rigid_revolute_motor` py-demo. The AVBD dashboard
-benchmark target also has a first end-to-end public-World
-`BM_AvbdRigidRevoluteMotorStep` row for that motor path. The narrow public
-fracture lifecycle now exposes `Joint` break-force and broken-state accessors,
+public rigid-body revolute and prismatic velocity actuators into those bounded
+AVBD motor rows with persistent contact-stage motor inventory, focused C++
+coverage, and dartpy public prismatic stepping coverage. The categorized
+`avbd_rigid_revolute_motor` and `avbd_rigid_prismatic_motor` py-demos plus
+tracked visual/benchmark packets cover those narrow free-rigid motor paths.
+The AVBD dashboard benchmark target also has end-to-end public-World
+`BM_AvbdRigidRevoluteMotorStep` and `BM_AvbdRigidPrismaticMotorStep` rows for
+those motor paths. The dashboard's
+bounded AVBD World slice now also includes `BM_AvbdEmptyWorldStep` for the empty
+source-corpus baseline with source-default timestep/gravity metadata and a
+tracked `avbd-empty-baseline-packet.json` visual/benchmark packet,
+`BM_AvbdDemo2dGroundStep` for the static `avbd-demo2d` Ground source-row port,
+`BM_AvbdDemo2dMotorStep` for the first one-DOF motor `avbd-demo2d` Motor
+source-row port,
+`BM_AvbdDemo2dHangingRopeStep` for the `avbd-demo2d` Hanging Rope source-row
+port,
+`BM_AvbdDemo2dFractureStep` for the `avbd-demo2d` Fracture source-row port,
+`BM_AvbdDemo2dDynamicFrictionStep` for the `avbd-demo2d` Dynamic Friction
+source-row port,
+`BM_AvbdDemo2dStaticFrictionStep` for the `avbd-demo2d` Static Friction
+source-row port,
+`BM_AvbdDemo2dPyramidStep` for the `avbd-demo2d` Pyramid source-row port,
+`BM_AvbdDemo2dCardsStep` for the `avbd-demo2d` Cards source-row port,
+`BM_AvbdDemo2dStackStep` for the `avbd-demo2d` Stack source-row port,
+`BM_AvbdDemo2dStackRatioStep` for the `avbd-demo2d` Stack Ratio source-row port,
+`BM_AvbdDemo2dRodStep` for the `avbd-demo2d` Rod source-row port,
+`BM_AvbdDemo2dJointGridStep` for the `avbd-demo2d` Joint Grid source-row port,
+`BM_AvbdDemo2dRopeStep` for the `avbd-demo2d` Rope source-row port,
+`BM_AvbdDemo2dHeavyRopeStep` for the `avbd-demo2d` Heavy Rope source-row port,
+`BM_AvbdDemo2dNetStep` for the `avbd-demo2d` Net source-row port,
+`BM_AvbdDemo3dGroundStep` for the `avbd-demo3d` Ground source-row port,
+`BM_AvbdDemo3dDynamicFrictionStep` for the `avbd-demo3d` Dynamic Friction
+source-row port,
+`BM_AvbdDemo3dStaticFrictionStep` for the `avbd-demo3d` Static Friction
+source-row port,
+`BM_AvbdDemo3dPyramidStep` for the `avbd-demo3d` Pyramid source-row port,
+`BM_AvbdDemo3dRopeStep` for the `avbd-demo3d` Rope source-row port,
+`BM_AvbdDemo3dHeavyRopeStep` for the `avbd-demo3d` Heavy Rope source-row port,
+`BM_AvbdDemo3dStackStep` for the `avbd-demo3d` Stack source-row port,
+`BM_AvbdDemo3dStackRatioStep` for the `avbd-demo3d` Stack Ratio source-row port,
+`BM_AvbdDemo3dBridgeStep` for the `avbd-demo3d` Bridge source-row port,
+`BM_AvbdDemo3dBreakableStep` for the `avbd-demo3d` Breakable source-row port,
+`BM_AvbdArticulatedRevoluteMotorStep` and
+`BM_AvbdArticulatedPrismaticMotorStep` rows for the public articulated
+one-DOF velocity motor paths, with the revolute `/1` row backed by
+`avbd-articulated-revolute-motor-packet.json` and the prismatic `/1` row
+backed by `avbd-articulated-prismatic-motor-packet.json`,
+`BM_AvbdArticulatedBreakableMotorStep` for the active break-force armed
+articulated motor path with
+`avbd-articulated-breakable-motor-packet.json` packet evidence,
+`BM_AvbdArticulatedPrismaticBreakableMotorStep` for the active break-force
+armed articulated prismatic motor path with
+`avbd-articulated-prismatic-pair-breakable-motor-packet.json` packet evidence,
+`BM_AvbdArticulatedWorldPrismaticBreakableMotorStep` for the active
+world-anchored articulated prismatic motor path with
+`avbd-articulated-world-prismatic-breakable-motor-packet.json` packet evidence,
+`BM_AvbdArticulatedWorldRevoluteBreakableMotorStep` for the active
+world-anchored articulated revolute motor path with
+`avbd-articulated-world-revolute-breakable-motor-packet.json` packet evidence,
+plus
+`BM_AvbdRigidBreakableJointStep` and
+`BM_AvbdArticulatedBreakableJointStep` rows for the public free-rigid and
+articulated breakable fixed point-joint paths with
+`avbd-rigid-breakable-joint-packet.json` and
+`avbd-articulated-breakable-joint-packet.json` packet evidence, plus
+`BM_AvbdRigidSphericalBreakableJointStep`,
+`BM_AvbdArticulatedWorldSphericalBreakableJointStep`, and
+`BM_AvbdArticulatedSphericalPairBreakableJointStep` rows with matching
+spherical packet evidence. The narrow public fracture
+lifecycle now exposes
+`Joint` break-force and broken-state accessors,
 marks free rigid-body AVBD point joints broken when solved row load exceeds the
 threshold, skips broken joints on later extraction, and adds a categorized
-`avbd_rigid_breakable_joint` py-demo. This is still a narrow free-rigid-body
-path only: no articulated multibody state path, GPU path, paper-corpus demo,
-broad motor/fracture lifecycle coverage, or paper/reference benchmark packet is
+`avbd_rigid_breakable_joint` py-demo with break, release, reset, and captured
+fixed-pose re-engagement coverage plus
+`avbd_rigid_spherical_breakable_joint` py-demo coverage for free-rigid spherical
+break/reset with orientation left free. The current follow-up adds
+`avbd_articulated_revolute_motor` and `avbd_articulated_prismatic_motor`,
+public articulated one-DOF velocity-motor py-demos with command reversals
+through the variational articulated bridge, plus
+`avbd_articulated_motor_breakable_joint`, a same-multibody public articulated
+revolute motor break/reset py-demo over that bridge, plus
+`avbd_articulated_prismatic_motor_breakable_joint`, a world-anchored public
+articulated prismatic motor break/reset py-demo over that bridge, plus
+`avbd_articulated_breakable_joint`, a public articulated fixed point-joint
+break/reset py-demo over that bridge, plus
+`avbd_articulated_spherical_breakable_joint`, a public articulated spherical
+point-joint break/reset py-demo over the linear-only row bridge, now backed by
+`avbd-articulated-spherical-breakable-joint-packet.json` packet evidence. It
+also adds
+focused C++ regressions for
+public same-multibody articulated revolute/prismatic velocity motors, explicit
+local/world anchor bindings with same-multibody and world-anchored
+fixed/revolute/prismatic off-origin regressions, and fixed break/reset
+lifecycle when both point-joint endpoints are movable floating links. Public
+same-multibody articulated revolute/prismatic velocity motors also now mark
+their source joint broken and skip later hard/motor rows in focused C++
+regressions. Public articulated spherical point-joint facades now expose
+linear-only pinned-anchor rows through C++/dartpy/stubs, preserving the
+captured anchor while leaving orientation free in focused C++ and Python
+endpoint coverage, including explicit link-link and world-link anchor overloads.
+Focused dartpy stepping coverage now also exercises the same-multibody and
+world-link spherical break/skip/reset paths that re-pin the anchor without
+adding orientation rows. Focused C++ coverage now
+also saves and reloads same-multibody link-link and world-link spherical
+facades, then verifies `enterSimulationMode()` rebuilds the private AVBD
+linear-only rows from the serialized public joint state.
+The current source-corpus follow-up adds `avbd_demo2d_rod`, a
+matched-metadata `avbd-demo2d` Rod py-demo with 20 source-shaped rigid links,
+19 all-axis fixed joints, focused Python source-row coverage,
+`BM_AvbdDemo2dRodStep`, and
+`avbd-demo2d-rod-packet.json`; that packet records DART about 9.58x slower than
+the native source runner on this host, so the CPU-win gate remains open. The
+current source-corpus follow-up also adds `avbd_demo2d_joint_grid`, a
+matched-metadata `avbd-demo2d` Joint Grid py-demo with 625 source-shaped rigid
+boxes, two static top-corner anchors, 1200 public all-axis fixed joints,
+focused Python source-row coverage, `BM_AvbdDemo2dJointGridStep`, and
+`avbd-demo2d-joint-grid-packet.json`; that packet records DART about 2.06x
+slower than the native source runner on this host after reusing per-body
+row-index scratch and caching snapshot body indices, so the CPU-win gate remains
+open. The source's 1152 diagonal `IgnoreCollision` pairs are now configured
+through DART's public per-pair collision filter. The latest source-corpus
+follow-up adds `avbd_demo2d_soft_body`, a matched-metadata `avbd-demo2d` Soft
+Body py-demo with one static ground slab, two 15x5 dynamic rigid-box lattices,
+260 finite-stiffness all-axis fixed joints, 224 diagonal ignored collision
+pairs, focused Python source-row coverage, `BM_AvbdDemo2dSoftBodyStep`, and
+`avbd-demo2d-soft-body-packet.json`; that packet records DART about 6.30x
+slower than the native source runner on this host, so the CPU-win gate remains
+open. The current
+source-corpus follow-up also adds `avbd_demo2d_cards`, a
+matched-metadata `avbd-demo2d` Cards py-demo with one source-shaped ground slab,
+40 thin source-shaped dynamic cards across five levels, focused Python
+source-row coverage, `BM_AvbdDemo2dCardsStep`, and
+`avbd-demo2d-cards-packet.json`; that packet records DART about 5.38x slower
+than the native source runner on this host, so the CPU-win gate remains open.
+This is still narrow lifecycle evidence only: no broad
+articulated motor/fracture corpus, GPU path, paper-corpus demo, broad
+motor/fracture/facade lifecycle coverage, or paper/reference benchmark packet is
 complete.
 
 ## Current Branch
 
-`feature/avbd-paper-parity-plan-next` - checkpoint branch based on
-current `origin/main`, including the scalar-row foundation, mass-spring AVBD row
+`feature/avbd-articulated-masked-rows` - staged local slice based on cached
+`origin/main` at `dbac6c63e9f`, including the scalar-row foundation,
+mass-spring AVBD row
 families, standalone tet-material rows, and World wiring for supported pure-tet
 finite-stiffness material rows, plus supported World static-contact friction
 tangent rows, static box feature IDs, static half-space tangent dual projection,
-self-contact tangent dual projection, supported World self-contact
+self-contact tangent dual projection, private rigid contact tangent dual
+projection, supported World self-contact
 normal/friction rows, combined static/self-contact friction row coexistence
 coverage, and the first private 6-DOF rigid block plus contact/friction
 point-pair row foundation. Private rigid point-pair friction tangent pairs now
@@ -134,10 +1622,14 @@ and paired tangent rows for that driver. A private World-contact snapshot helper
 now translates rigid-body `World::collide()` contacts into those
 manifold-point inputs and verifies that they can drive the private serial rigid
 row solve plus dynamic rigid-body ECS writeback through a combined private
-wrapper. The current branch additionally adds the first internal
+wrapper. Persisting private rigid contact friction rows now project their
+warm-started paired tangent dual into the current tangent basis when contact
+normals rotate, preserving the physical tangent impulse across basis changes.
+The current branch additionally adds the first internal
 `RigidAvbdContactConfig` contact-stage activation for supported free rigid-body
 contacts as a velocity-level projection and box-feature/pair-scoped rigid
-contact row identity for the private snapshot path, plus private point-joint
+contact row identity plus live sphere/plane and box-box manifold endpoint-order
+row identity for the private snapshot path, plus private point-joint
 linear, angular, and combined row builders with World snapshot/step
 append/solve/apply coverage for world-space point-joint inputs and a private
 fixed-joint ECS extractor plus step-helper overload for rigid-body-linked joint
@@ -158,49 +1650,1037 @@ adds the `avbd_rigid_fixed_joint_contact` Python demo scene and catalog/test/doc
 coverage for the first narrow user-visible AVBD rigid-constraint showcase. The
 current local follow-up adds private angular-motor row construction, bounded
 motor descriptors, solver-direction coverage, rigid fracture
-dual-threshold/reset helpers, public rigid-body revolute velocity actuator
-extraction into AVBD motor rows, persistent motor inventory in the contact
-stage, the `avbd_rigid_revolute_motor` py-demo, and the AVBD dashboard
-`BM_AvbdRigidRevoluteMotorStep` benchmark row. The public free-rigid-body
-break-force lifecycle and `avbd_rigid_breakable_joint` py-demo are merged on
+dual-threshold/reset helpers, public rigid-body revolute/prismatic velocity
+actuator extraction into AVBD angular/linear motor rows, persistent motor
+inventory in the contact stage, focused free-rigid prismatic public stepping
+coverage, the `avbd_rigid_revolute_motor` and `avbd_rigid_prismatic_motor`
+py-demos, the `avbd-rigid-revolute-motor-packet.json` and
+`avbd-rigid-prismatic-motor-packet.json` packets, and the AVBD dashboard
+`BM_AvbdRigidRevoluteMotorStep` and `BM_AvbdRigidPrismaticMotorStep` benchmark
+rows. The current benchmark follow-up
+also adds `BM_AvbdArticulatedRevoluteMotorStep` and
+`BM_AvbdArticulatedPrismaticMotorStep` rows to the same bounded AVBD World
+dashboard slice for the public articulated motor paths and a tracked
+`avbd-articulated-revolute-motor-packet.json` for the revolute `/1` row plus a
+tracked `avbd-articulated-prismatic-motor-packet.json` for the prismatic `/1`
+row, plus
+`BM_AvbdArticulatedBreakableMotorStep` for the active break-force armed
+articulated motor path with a tracked
+`avbd-articulated-breakable-motor-packet.json` for the `/1` row,
+`BM_AvbdArticulatedPrismaticBreakableMotorStep` for the active break-force
+armed articulated prismatic motor path with a tracked
+`avbd-articulated-prismatic-pair-breakable-motor-packet.json` for the `/1`
+row, plus
+`BM_AvbdArticulatedWorldPrismaticBreakableMotorStep` for the active
+world-anchored articulated prismatic motor path with a tracked
+`avbd-articulated-world-prismatic-breakable-motor-packet.json` for the `/1`
+row, plus
+`BM_AvbdArticulatedWorldRevoluteBreakableMotorStep` for the active
+world-anchored articulated revolute motor path with a tracked
+`avbd-articulated-world-revolute-breakable-motor-packet.json` for the `/1`
+row, plus
+`BM_AvbdRigidBreakableJointStep` and
+`BM_AvbdArticulatedBreakableJointStep` rows for the public free-rigid and
+articulated breakable fixed point-joint paths with tracked
+`avbd-rigid-breakable-joint-packet.json` and
+`avbd-articulated-breakable-joint-packet.json` evidence, plus tracked
+spherical break/reset packet evidence for the free-rigid, world-link
+articulated, and same-multibody articulated spherical `/1` rows. The public
+free-rigid-body break-force lifecycle and `avbd_rigid_breakable_joint` py-demo
+are merged on
 `main`; the next branch should not treat that narrow lifecycle as pending. The
 current branch adds the private free-rigid versus multibody-link endpoint
 classifier, `BM_AvbdRigidEndpointClassification`, and a hard fixed multibody-link
 point-joint bridge into the variational articulated solve path, with
 focused C++ bridge coverage plus a related
 `variational_endpoint_loop_closure` public loop-closure py-demo. That py-demo
-does not exercise the private AVBD point-joint config extractor. Masked
-articulated revolute/prismatic, compliant fixed, motor, and breakable rows are
-still missing.
+does not exercise the private AVBD point-joint config extractor. This local
+slice extends simulation-entry current-pose extraction so non-topology
+multibody-link fixed/revolute/prismatic point-joint entities can generate hard
+AVBD configs while tree-topology joints are still skipped. It also extends the
+articulated bridge so explicitly hard masked
+revolute/prismatic multibody-link configs project only their active
+linear/angular axes through variational loop constraints, and so explicitly
+hard breakable multibody-link point-joint configs mark their source joint broken
+from the projection load, with focused floating-link, fixed-breakable
+mark/reset, and masked-breakable tests, including prismatic velocity-motor row
+indexing and reset re-engagement.
+The variational articulated projection path also now handles public one-DOF
+`Velocity` actuators on revolute and prismatic topology joints as coordinate
+motor targets, with focused single and coupled-chain tests. Private hard
+revolute and prismatic AVBD point-joint velocity actuators on articulated
+endpoints now also project one free-axis angular/linear motor row, with focused
+start-of-step accumulation, revolute/prismatic command-update lifecycle,
+private fixed-row break/reset, revolute/prismatic break/reset re-engagement,
+and tiny positive effort-limit coverage.
+Finite-stiffness private AVBD fixed
+point-joint configs on articulated endpoints now also contribute compliant
+variational forces through persistent per-axis finite-stiffness row state, with
+focused floating-link and stiffness-ramp coverage. Public DART 7 `World`
+articulated fixed/revolute/prismatic/spherical facades now create
+same-multibody link-link and world-link non-topology point joints through C++
+and dartpy, expose lookup/list/count helpers, and feed the simulation-entry
+current-pose extractor into the variational articulated projection path.
+Focused public C++ coverage now also exercises spherical linear-only
+pinned-anchor behavior with free orientation and explicit link-link/world-link
+anchors, bounded revolute/prismatic velocity-actuator projection,
+same-multibody and world-anchored public command updates, explicit local/world
+anchor binding plus same-multibody and world-anchored
+fixed/revolute/prismatic off-origin anchor projection,
+movable-movable same-multibody link-pair motor projection and break/reset,
+same-multibody and world-anchored break/reset behavior including world-fixed
+and public one-DOF motor-row re-engagement,
+same-multibody/world-anchored public one-DOF motor-row break/skip and
+reset/re-engagement, and
+spherical linear-row break/skip/reset for same-multibody and world-link
+endpoints, world-anchored
+point-joint save/load rebuilding for fixed all-axis and spherical linear rows,
+and
+same-multibody/world-link revolute/prismatic motor save/load rebuilding through
+that facade, plus same-multibody/world-link fixed/spherical/revolute/prismatic
+broken-state save/load/reset persistence with focused C++ binary round-trips
+that also preserve revolute/prismatic velocity-actuator state. Focused
+dartpy coverage now also steps the
+same-multibody/world-link revolute and prismatic public one-DOF motor
+explicit-anchor break/skip and reset/re-engagement lifecycle, fixed point-joint
+break/skip and reset/re-engagement for same-multibody and world-link all-axis
+rows, plus the
+same-multibody/world-link spherical linear-row break/skip/reset lifecycle from
+Python. The local py-demo catalog now includes
+`avbd_articulated_revolute_motor` and
+`avbd_articulated_prismatic_motor` for same-multibody public articulated
+command-update motor paths,
+`avbd_articulated_motor_breakable_joint` for the same-multibody public
+articulated revolute motor break/reset path,
+`avbd_articulated_prismatic_pair_motor_breakable_joint` for the same-multibody
+public articulated prismatic motor break/reset path,
+`avbd_articulated_prismatic_motor_breakable_joint` for the world-anchored
+public articulated prismatic motor break/reset path,
+`avbd_articulated_world_revolute_motor_breakable_joint` for the world-anchored
+public articulated revolute motor break/reset path, and
+`avbd_articulated_breakable_joint` for the world-link public articulated fixed
+point-joint break/reset path, with tracked
+`avbd-articulated-breakable-joint-packet.json` packet evidence, plus
+`avbd-articulated-fixed-pair-breakable-joint-packet.json` for the
+same-multibody fixed break/reset path, plus
+`avbd_articulated_spherical_breakable_joint` for the world-link public
+articulated spherical break/reset path, with tracked
+`avbd-articulated-spherical-breakable-joint-packet.json` packet evidence. It
+also now includes
+`avbd_empty_baseline`, the first runnable source-corpus baseline for
+the 2D/3D empty-scene rows, with focused Python smoke coverage that checks the
+reference revisions, scene indices/counts, default timestep/gravity/iteration
+metadata, and `sceneEmpty` zero-count invariant. The tracked
+`avbd-empty-baseline-packet.json` records the headless capture hashes and
+benchmark row for that empty baseline.
+The local py-demo catalog also now includes `avbd_demo2d_ground`, a static
+`avbd-demo2d` Ground source-row port with one static slab, one rigid body, one
+collision shape, no joints, focused Python source-row coverage, and a
+`BM_AvbdDemo2dGroundStep` dashboard row. The tracked
+`avbd-demo2d-ground-packet.json` records headless visual capture, DART
+benchmark JSON, and native `avbd-demo2d` source timing; after skipping
+static-only contact queries, no-op rigid dynamics stages, clean frame-cache
+graph execution, and the clean no-work default step pipeline, the refreshed
+packet records DART at 16.3 ns median CPU time per step versus 24.5 ns for the
+native static source runner on this host, closing the narrow source row while
+leaving broad ground-contact, GPU, and paper-number gates open.
+The local py-demo catalog also now includes `avbd_demo2d_motor`, the first
+one-DOF motor `avbd-demo2d` source-row port, with source revision, scene index,
+default parameter, target-speed, and effort-limit metadata plus a focused Python
+source-row invariant and `BM_AvbdDemo2dMotorStep` dashboard row. That Motor row
+now has a tracked `avbd-demo2d-motor-packet.json` with headless visual capture,
+DART benchmark JSON, and native `avbd-demo2d` source timing. The rigid contact
+stage now skips contact queries for worlds with no collision geometry in
+prepare/execute; the refreshed packet records the no-collision-geometry DART row
+at 8.87 us median CPU time per step versus 1.435 us for the native source runner
+on this host, so the row remains partial. A later local follow-up now reuses the
+contact-stage point-joint snapshot storage across steps instead of allocating a
+fresh snapshot for no-contact point-joint/motor projection. The focused motor
+row tests still pass, but the exploratory benchmark ran under high load and
+reported a noisy 10.04 us median, so the tracked Motor packet was not refreshed.
+The local py-demo catalog now also includes `avbd_demo2d_hanging_rope`, a
+matched-metadata `avbd-demo2d` Hanging Rope source-row port with 49 regular
+links, one 10 m endpoint block, 49 linear-only public spherical point joints,
+50 collision shapes, focused Python source-row coverage, and a
+`BM_AvbdDemo2dHangingRopeStep` dashboard row. The tracked
+`avbd-demo2d-hanging-rope-packet.json` records headless visual capture, DART
+benchmark JSON, and native `avbd-demo2d` source timing; it records DART at
+0.392 ms median CPU time per step versus 50.1 us for the native source runner
+on this host, so the row remains partial.
+The local py-demo catalog now also includes `avbd_demo2d_fracture`, a
+matched-metadata `avbd-demo2d` Fracture source-row port with 11 chain links,
+two dynamic supports, 15 falling blocks, 10 public breakable fixed joints, 29
+collision shapes, focused Python source-row coverage, and a
+`BM_AvbdDemo2dFractureStep` dashboard row. The tracked
+`avbd-demo2d-fracture-packet.json` records headless visual capture, DART
+benchmark JSON, and native `avbd-demo2d` source timing; it records DART at
+51.2 us median CPU time per step versus 61.4 us for the native source runner
+on this host after a refreshed same-source timing run, closing only this narrow
+source-row CPU comparison.
+The local py-demo catalog now also includes `avbd_demo2d_dynamic_friction`, a
+matched-metadata `avbd-demo2d` Dynamic Friction source-row port with 11 sliding
+boxes, source friction coefficients from 5.0 down to 0.0, a static ground, 12
+collision shapes, focused Python source-row coverage, and a
+`BM_AvbdDemo2dDynamicFrictionStep` dashboard row. The tracked
+`avbd-demo2d-dynamic-friction-packet.json` records headless visual capture,
+DART benchmark JSON, and native `avbd-demo2d` source timing; it records DART
+at 5.73 us median CPU time per step versus 10.49 us for the native source
+runner on this host, so the narrow source row is closed while broad friction,
+GPU, and paper-number gates remain open.
+The local py-demo catalog now also includes `avbd_demo2d_static_friction`, a
+matched-metadata `avbd-demo2d` Static Friction source-row port with one rotated
+static ground slab, 11 rotated dynamic boxes, uniform source friction 1.0, 12
+collision shapes, focused Python source-row coverage, and a
+`BM_AvbdDemo2dStaticFrictionStep` dashboard row. The tracked
+`avbd-demo2d-static-friction-packet.json` records headless visual capture, DART
+benchmark JSON, and native `avbd-demo2d` source timing; it records DART at
+5.44 us median CPU time per step versus 14.56 us for the native source runner
+on this host, so the narrow source row is closed while broad friction, GPU, and
+paper-number gates remain open.
+The local py-demo catalog now also includes `avbd_demo2d_pyramid`, a
+matched-metadata `avbd-demo2d` Pyramid source-row port with a static ground,
+210 dynamic boxes in the source pyramid layout, 211 collision shapes, focused
+Python source-row coverage, and a `BM_AvbdDemo2dPyramidStep` dashboard row. The
+tracked `avbd-demo2d-pyramid-packet.json` records headless visual capture, DART
+benchmark JSON, and native `avbd-demo2d` source timing; it records DART at
+0.251 ms median CPU time per step versus 2.47 ms for the 10,000-step native
+source runner on this host, so the narrow Pyramid row is closed without closing
+broad rigid stacking, GPU, or paper-number gates.
+The local py-demo catalog now also includes `avbd_demo2d_stack`, a
+matched-metadata `avbd-demo2d` Stack source-row port with 20 vertical dynamic
+boxes over static ground, 21 collision shapes, focused Python source-row
+coverage, and a `BM_AvbdDemo2dStackStep` dashboard row. The tracked
+`avbd-demo2d-stack-packet.json` records headless visual capture, DART benchmark
+JSON, and native `avbd-demo2d` source timing; it records DART at 10.37 us
+median CPU time per step versus 22.46 us for the native source runner on this
+host, so the narrow Stack row is closed without closing broad rigid stacking,
+GPU, or paper-number gates.
+The local py-demo catalog now also includes `avbd_demo2d_stack_ratio`, a
+matched-metadata `avbd-demo2d` Stack Ratio source-row port with six
+geometric-size dynamic boxes over static ground, 7 collision shapes, focused
+Python source-row coverage, and a `BM_AvbdDemo2dStackRatioStep` dashboard row.
+The tracked `avbd-demo2d-stack-ratio-packet.json` records headless visual
+capture, DART benchmark JSON, and native `avbd-demo2d` source timing; it
+records DART at 3.62 us median CPU time per step versus 8.03 us for the native
+source runner on this host, so the narrow Stack Ratio row is closed without
+closing broad rigid stacking, high-ratio stability, GPU, or paper-number gates.
+The local py-demo catalog now also includes `avbd_demo2d_rod`, a
+matched-metadata `avbd-demo2d` Rod source-row port with 20 rigid links, one
+static anchor link, 19 all-axis public fixed joints, 20 collision shapes,
+focused Python source-row coverage, and a `BM_AvbdDemo2dRodStep` dashboard row.
+The tracked `avbd-demo2d-rod-packet.json` records headless visual capture, DART
+benchmark JSON, and native `avbd-demo2d` source timing; it records DART at
+0.253 ms median CPU time per step versus 26.4 us for the native source runner on
+this host, so the row remains partial.
+The local py-demo catalog now also includes `avbd_demo2d_joint_grid`, a
+matched-metadata `avbd-demo2d` Joint Grid source-row port with 625 source-shaped
+rigid boxes, two static top-corner anchors, 1200 all-axis public fixed joints,
+625 collision shapes, focused Python source-row coverage, and a
+`BM_AvbdDemo2dJointGridStep` dashboard row. The tracked
+`avbd-demo2d-joint-grid-packet.json` records headless visual capture, DART
+benchmark JSON, and native `avbd-demo2d` source timing; it records DART at
+15.1 ms median CPU time per step versus 7.33 ms for the native source runner on
+this host, so the row remains partial. The source's 1152 diagonal
+`IgnoreCollision` pairs are configured through DART's public per-pair collision
+filter.
+The local py-demo catalog now also includes `avbd_demo2d_soft_body`, a
+matched-metadata `avbd-demo2d` Soft Body source-row port with one static ground
+slab, two 15x5 dynamic rigid-box lattices, 260 finite-stiffness all-axis public
+fixed joints, 224 diagonal ignored collision pairs, 151 collision shapes,
+focused Python source-row coverage, and a `BM_AvbdDemo2dSoftBodyStep` dashboard
+row. The tracked `avbd-demo2d-soft-body-packet.json` records headless visual
+capture, DART benchmark JSON, and native `avbd-demo2d` source timing; it records
+DART at 3.58 ms median CPU time per step versus 0.568 ms for the native source
+runner on this host, so the row remains partial.
+The local py-demo catalog now also includes `avbd_demo2d_cards`, a
+matched-metadata `avbd-demo2d` Cards source-row port with one source-shaped
+ground slab, 40 thin dynamic cards, 41 collision shapes, focused Python
+source-row coverage, and a `BM_AvbdDemo2dCardsStep` dashboard row. The tracked
+`avbd-demo2d-cards-packet.json` records headless visual capture, DART benchmark
+JSON, and native `avbd-demo2d` source timing; it records DART at 0.517 ms
+median CPU time per step versus 96.2 us for the native source runner on this
+host, so the row remains partial.
+The local py-demo catalog now also includes `avbd_demo2d_rope`, a
+matched-metadata `avbd-demo2d` Rope source-row port with 20 rigid links, 19
+linear-only public spherical point joints, 20 collision shapes, focused Python
+source-row coverage, and a `BM_AvbdDemo2dRopeStep` dashboard row. The tracked
+`avbd-demo2d-rope-packet.json` records headless visual capture, DART benchmark
+JSON, and native `avbd-demo2d` source timing; it records DART at 0.133 ms
+median CPU time per step versus 25.6 us for the native source runner on this
+host, so the row remains partial.
+The local py-demo catalog now also includes `avbd_demo2d_heavy_rope`, a
+matched-metadata `avbd-demo2d` Heavy Rope source-row port with 19 regular
+links, one 30 m endpoint block, 19 linear-only public spherical point joints,
+20 collision shapes, focused Python source-row coverage, and a
+`BM_AvbdDemo2dHeavyRopeStep` dashboard row. The tracked
+`avbd-demo2d-heavy-rope-packet.json` records headless visual capture, DART
+benchmark JSON, and native `avbd-demo2d` source timing; after reusing per-body
+row-index scratch and caching snapshot body indices, it records DART at 0.149
+ms median CPU time per step versus 25.4 us for the native source runner on this
+host, so the row remains partial.
+The local py-demo catalog now also includes `avbd_demo2d_net`, a
+matched-metadata `avbd-demo2d` Net source-row port with one static ground slab,
+40 net links with static endpoints, 50 falling rigid blocks, 39 linear-only
+public spherical point joints, 91 collision shapes, focused Python source-row
+coverage, and a `BM_AvbdDemo2dNetStep` dashboard row. The tracked
+`avbd-demo2d-net-packet.json` records headless visual capture, DART benchmark
+JSON, and native `avbd-demo2d` source timing; after caching snapshot body
+indices and using a stable full-rank linear basis for local-anchor spherical
+point-joint extraction, it records DART at 0.286 ms median CPU time per step
+versus 0.232 ms for the native source runner on this host, so the row remains
+partial.
+The local py-demo catalog now also includes `avbd_demo3d_ground`, a
+matched-metadata `avbd-demo3d` Ground source-row port with a static floor,
+falling rigid box, 2 rigid bodies, 2 collision shapes, focused Python
+source-row coverage that observes rigid ground contact, and a
+`BM_AvbdDemo3dGroundStep` dashboard row. The tracked
+`avbd-demo3d-ground-packet.json` records headless visual capture, DART
+benchmark JSON, and native `avbd-demo3d` source timing; it records DART at
+5.49 us median CPU time per step versus 6.10 us for the native source runner
+on this host, so the narrow Ground row is closed without closing broad
+rigid-contact, GPU, or paper-number gates.
+The local py-demo catalog now also includes `avbd_demo3d_dynamic_friction`, a
+matched-metadata `avbd-demo3d` Dynamic Friction source-row port with 11 sliding
+boxes over a static floor, 12 collision shapes, focused Python source-row
+coverage that shows high-friction boxes slow while the zero-friction box keeps
+sliding, and a `BM_AvbdDemo3dDynamicFrictionStep` dashboard row. The tracked
+`avbd-demo3d-dynamic-friction-packet.json` records headless visual capture,
+DART benchmark JSON, and native `avbd-demo3d` source timing; it records DART at
+36.85 us median CPU time per step versus 51.98 us for the native source runner
+on this host, so the narrow Dynamic Friction row is closed without closing
+broad contact-manifold friction persistence, stacking/friction sweeps, GPU, or
+paper-number gates.
+The local py-demo catalog now also includes `avbd_demo3d_static_friction`, a
+matched-metadata `avbd-demo3d` Static Friction source-row port with a static
+floor, inclined static ramp, 11 sliding boxes, 13 collision shapes, focused
+Python source-row coverage that shows the lower-friction box sliding farther
+than the high-friction box, and a `BM_AvbdDemo3dStaticFrictionStep` dashboard
+row. The tracked `avbd-demo3d-static-friction-packet.json` records headless
+visual capture, DART benchmark JSON, and native `avbd-demo3d` source timing; it
+records DART at 48.27 us median CPU time per step versus 51.97 us for the
+native source runner on this host, closing that narrow source row.
+The local py-demo catalog now also includes `avbd_demo3d_pyramid`, a
+matched-metadata `avbd-demo3d` Pyramid source-row port with a static ground,
+136 dynamic boxes in the source triangular pile layout, 137 collision shapes,
+focused Python source-row coverage that observes finite settling and contact
+generation, and a `BM_AvbdDemo3dPyramidStep` dashboard row. The tracked
+`avbd-demo3d-pyramid-packet.json` records headless visual capture, DART
+benchmark JSON, and native `avbd-demo3d` source timing; it records DART at
+0.991 ms median CPU time per step versus 2.80 ms for the native source runner
+on this host, so the narrow Pyramid row is closed without closing broad rigid
+stacking, GPU, or paper-number gates.
+The local py-demo catalog now also includes `avbd_demo3d_rope`, a
+matched-metadata `avbd-demo3d` Rope source-row port with 20 rigid links, 19
+anchored linear-only public spherical point joints, 21 collision shapes,
+focused Python source-row coverage, and a `BM_AvbdDemo3dRopeStep` dashboard
+row. The tracked `avbd-demo3d-rope-packet.json` records headless visual
+capture, DART benchmark JSON, and native `avbd-demo3d` source timing; after
+reusing per-body row-index scratch and caching snapshot body indices, it
+records DART at 0.134 ms median CPU time per step versus 35.9 us for the native
+source runner on this host, so the row remains partial.
+The local py-demo catalog now also includes `avbd_demo3d_heavy_rope`, a
+matched-metadata `avbd-demo3d` Heavy Rope source-row port with 19 regular
+links, a 5 m endpoint block, 19 anchored linear-only public spherical point
+joints, the source row's intentional 0.5 m initial residual at the oversized
+endpoint block, 21 collision shapes, focused Python source-row coverage, and a
+`BM_AvbdDemo3dHeavyRopeStep` dashboard row. The tracked
+`avbd-demo3d-heavy-rope-packet.json` records headless visual capture, DART
+benchmark JSON, and native `avbd-demo3d` source timing; after reusing per-body
+row-index scratch and caching snapshot body indices, it records DART at 0.128
+ms median CPU time per step versus 33.4 us for the native source runner on this
+host, so the row remains partial.
+The local py-demo catalog now also includes `avbd_demo3d_stack`, a
+matched-metadata `avbd-demo3d` Stack source-row port with 10 vertical dynamic
+boxes over static ground, 11 collision shapes, focused Python source-row
+coverage, and a `BM_AvbdDemo3dStackStep` dashboard row. The tracked
+`avbd-demo3d-stack-packet.json` records headless visual capture, DART benchmark
+JSON, and native `avbd-demo3d` source timing; it records DART at 42.1 us median
+CPU time per step versus 75.7 us for the native source runner on this host, so
+the narrow Stack row is closed without closing broad rigid stacking, high-ratio
+stability, GPU, or paper-number gates.
+The local py-demo catalog now also includes `avbd_demo3d_stack_ratio`, a
+matched-metadata `avbd-demo3d` Stack Ratio source-row port with four
+geometric-size dynamic boxes over static ground, 5 collision shapes, focused
+Python source-row coverage, and a `BM_AvbdDemo3dStackRatioStep` dashboard row.
+The tracked `avbd-demo3d-stack-ratio-packet.json` records headless visual
+capture, DART benchmark JSON, and native `avbd-demo3d` source timing; it records
+DART at 18.1 us median CPU time per step versus 42.0 us for the native source
+runner on this host, so the narrow Stack Ratio row is closed without closing
+broad size-ratio stability, GPU, or paper-number gates.
+The local py-demo catalog now also includes `avbd_demo3d_bridge`, a
+matched-metadata `avbd-demo3d` Bridge source-row port with 40 planks, 50 load
+boxes, 78 paired linear-only public spherical point joints, 91 collision
+shapes, focused Python source-row coverage, and a `BM_AvbdDemo3dBridgeStep`
+dashboard row. The tracked `avbd-demo3d-bridge-packet.json` records headless
+visual capture, DART benchmark JSON, and native `avbd-demo3d` source timing;
+after reusing per-body row-index scratch and caching snapshot body indices, it
+records DART at 0.746 ms median CPU time per step versus 1.20 ms for the native
+source runner on this host, so the narrow Bridge row is closed without closing
+broad coupled-constraint, GPU, or paper-number gates.
+The local py-demo catalog now also includes `avbd_demo3d_breakable`, a
+matched-metadata `avbd-demo3d` Breakable source-row port with 19 rigid bodies,
+10 breakable fixed joints, 19 collision shapes, focused Python source-row
+coverage, and a `BM_AvbdDemo3dBreakableStep` dashboard row. The tracked
+`avbd-demo3d-breakable-packet.json` records headless visual capture, DART
+benchmark JSON, and native `avbd-demo3d` source timing; it records DART at
+79.5 us median CPU time per step versus 112.7 us for the native source runner
+on this host, closing the narrow Breakable source-row CPU gate.
+Broader persistent private
+articulated motor lifecycle coverage beyond the one-DOF lifecycle checks,
+broad articulated fracture lifecycle/corpus coverage, and broader public
+articulated World facade coverage beyond the current link-link/world-link
+entrypoints, explicit anchors, spherical linear-only pinned-anchor rows,
+same-multibody link-link and world-link fixed/spherical save/load rebuilding,
+same-multibody/world-link revolute/prismatic motor save/load rebuilding,
+same-multibody/world-link fixed/spherical/revolute/prismatic broken-state
+save/load/reset persistence,
+same-multibody/world-anchored off-origin fixed/revolute/prismatic anchors and
+motors,
+same-multibody/world-anchored one-DOF motor break/skip, spherical linear-row
+break/skip/reset including focused dartpy spherical stepping, and movable
+link-pair motor/break-reset projection. A narrow
+`avbd_articulated_high_ratio_chain` py-demo now covers a five-link 200:1
+high mass-ratio variational-chain smoke, and
+`BM_AvbdArticulatedHighRatioChainStep` adds a matching dashboard row. The
+tracked `avbd-articulated-high-ratio-chain-packet.json` records an 8-frame
+headless capture and 47.6 us median CPU time per step for that narrow smoke.
+The C++ `PaperScaleHighRatioChainStaysFiniteAndResets` regression now adds a
+50-link/50,000:1 finite/reset smoke through configured `World::step()`
+solve-budget fields, and `avbd_paper_scale_high_ratio_chain` plus
+`avbd-paper-scale-high-ratio-chain-packet.json` add matching paper-scale visual
+and benchmark evidence. Same-hardware paper-number comparison, GPU, and broad
+articulated hard-constraint coverage remain missing.
+The durable AVBD corpus matrix now lives at
+`docs/plans/104-vertex-block-descent-solver/avbd-demo-corpus.md`; it maps every
+required `avbd-demo2d`, `avbd-demo3d`, paper, website/video, and performance
+row to missing/partial DART evidence. It is a tracking artifact only, not a
+parity claim.
 
 ## Immediate Next Step
 
+The local branch and cached `origin/main` are both at `f1fa9f386f9` after the
+requested latest-main merge was refreshed through HTTPS and applied as a
+fast-forward. The earlier SSH fetch path failed in this environment with
+`ssh: connect to host github.com port 22: Network is unreachable`, so keep using
+HTTPS when a fresh main refresh is needed here. The pre-merge backup stashes
+remain present and should not be dropped without maintainer approval. The
+project `.gitignore` intentionally ignores scratch JSON dumps in the PLAN-104
+evidence folder while allowing curated `avbd-*-packet.json` fixtures referenced
+by plan docs and packet-writer tests to be checked in.
+
+The current newest local follow-up adds dartpy articulated joint-list lifetime
+coverage, proving link-link and world-link public facade handles returned from a
+temporary World list keep endpoint access valid after garbage collection. The
+previous local follow-up added C++ and dartpy serialization coverage
+for public articulated generated-name persistence across save/load, proving
+restored explicit/generated facade names plus the restored topology joint
+component advance the shared joint-name counter before the next empty-name
+facade is created. The earlier local follow-up added C++ and
+dartpy generated-name coverage
+for public non-topology articulated facades, proving empty-name facades skip an
+existing `joint_001`, appear through articulated name/list lookups, and reject
+duplicates. The earlier local follow-up added dartpy public articulated
+`World.clear()` lifecycle coverage, verifying that world-link articulated joint
+handles and name/list lookups are invalidated and that a fresh world-link
+prismatic motor can be rebuilt and stepped after the reset. Another earlier local
+follow-up added the C++
+`VariationalIntegration.AvbdPublicArticulatedWorldFacadeClearDropsExtractedRowsAndRebuilds`
+row-extraction clear/rebuild guard. Another earlier local follow-up tightened
+public world-link articulated motor demo coverage for the world-prismatic and
+world-revolute break/reset scenes and removed the stale world-revolute
+remaining gate from the world-prismatic packet metadata. Another earlier local
+follow-up added
+`World.RigidBodyContactStageAvbdWarmStartedMultiTopBoxPileManifoldFrictionReducesSlip`
+and
+`World.RigidBodyContactStageAvbdWarmStartedMultiTopBoxPileManifoldFrictionRunsThroughDefaultWorldStep`
+for live two-lower/two-upper box-pile contact-stage/default-step friction
+slip-reduction. The earlier local follow-up added
+`AvbdContact.WorldCollideStackedManifoldsFrictionRowsIgnoreContactOrder` for
+private stacked static/dynamic plus dynamic/dynamic contact-order replay.
+Another earlier local follow-up added
+`AvbdContact.WorldCollideMultiTopBoxPileFrictionRowsIgnoreEndpointOrder` for
+private multi-top box-pile endpoint-order replay. Another earlier local follow-up
+added
+`AvbdContact.WorldCollideMultiTopBoxPileFrictionRowsIgnoreContactOrder` for
+private multi-top box-pile contact-order replay. Earlier local follow-ups added
+live endpoint-order row-identity evidence in
+`AvbdContact.WorldCollideSameFeatureRowsIgnoreEndpointOrder` and
+`AvbdContact.WorldCollideLiveManifoldSameFeatureRowsIgnoreEndpointOrder`, and
+live sphere/mesh-face, sphere/mesh-edge, and mesh-vertex row-order evidence in
+`AvbdContact.WorldCollideMeshFaceRowsIgnoreContactOrder`,
+`AvbdContact.WorldCollideMeshEdgeRowsIgnoreContactOrder`, and
+`AvbdContact.WorldCollideMeshVertexRowsIgnoreContactOrder`,
+live mesh face/edge/vertex endpoint-order warm-start evidence in
+`AvbdContact.WorldCollideMeshFaceRowsIgnoreEndpointOrder`,
+`AvbdContact.WorldCollideMeshEdgeRowsIgnoreEndpointOrder`, and
+`AvbdContact.WorldCollideMeshVertexRowsIgnoreEndpointOrder`,
+live sphere/plane friction tangent warm-start evidence in
+`AvbdContact.WorldCollideFrictionRowsIgnoreContactOrder`,
+live sphere/plane normal-rotation friction tangent projection evidence in
+`AvbdContact.WorldCollideFrictionRowsProjectAcrossChangingPlaneNormal`,
+live endpoint-swapped box-box friction tangent projection evidence in
+`AvbdContact.WorldCollideLiveManifoldFrictionRowsIgnoreEndpointOrder`,
+live stacked endpoint-swapped friction tangent projection evidence in
+`AvbdContact.WorldCollideStackedManifoldsFrictionRowsIgnoreEndpointOrder`,
+live cylinder-cap/plane row-order evidence in
+`AvbdContact.WorldCollideCylinderCapRowsIgnoreContactOrder`,
+live capsule-cap/plane row-order evidence in
+`AvbdContact.WorldCollideCapsuleCapRowsIgnoreContactOrder`,
+live cylinder-side and capsule-side row-order evidence in
+`AvbdContact.WorldCollideCylinderSideRowsIgnoreContactOrder` and
+`AvbdContact.WorldCollideCapsuleSideRowsIgnoreContactOrder`,
+live cylinder-rim row-order evidence in
+`AvbdContact.WorldCollideCylinderRimRowsIgnoreContactOrder`,
+live cylinder/capsule cap/side/rim endpoint-order warm-start evidence in
+`AvbdContact.WorldCollideCylinderCapRowsIgnoreEndpointOrder`,
+`AvbdContact.WorldCollideCylinderSideRowsIgnoreEndpointOrder`,
+`AvbdContact.WorldCollideCylinderRimRowsIgnoreEndpointOrder`,
+`AvbdContact.WorldCollideCapsuleCapRowsIgnoreEndpointOrder`, and
+`AvbdContact.WorldCollideCapsuleSideRowsIgnoreEndpointOrder`,
+small-pose live box-box row-persistence evidence in
+`AvbdContact.WorldCollideLiveManifoldSameFeatureRowsPersistAcrossSmallPose`,
+live box-box manifold friction tangent warm-start persistence in
+`AvbdContact.WorldCollideLiveManifoldFrictionRowsPersistAcrossSmallPose`,
+and live stacked-box row-persistence evidence in
+`AvbdContact.WorldCollideStackedManifoldsPersistRowsAcrossSmallPose`, plus
+stacked-box friction warm-start persistence in
+`AvbdContact.WorldCollideStackedManifoldsFrictionRowsPersistAcrossSmallPose`,
+stacked-box contact-order replay in
+`AvbdContact.WorldCollideStackedManifoldsFrictionRowsIgnoreContactOrder`,
+and live multi-top box-pile row-persistence evidence in
+`AvbdContact.WorldCollideMultiTopBoxPileFrictionRowsPersistAcrossSmallPose`;
+continue with a different remaining AVBD gap rather than repeating
+generic endpoint-order, same mesh/primitive endpoint-order, same
+mesh-face/mesh-edge/mesh-vertex/cylinder-cap/capsule-cap/cylinder-side/capsule-side/cylinder-rim row-order, same
+sphere/plane friction warm-start mapping, same
+endpoint-swapped box-box friction tangent projection, same stacked
+endpoint-swapped friction tangent projection, same sphere/plane
+normal-rotation friction projection, same box-box small-pose, same
+box-box friction warm-start
+persistence, same stacked-box nudge, same stacked-box friction persistence,
+same stacked-box contact-order replay,
+same multi-top stacked contact-stage/default-step friction slip coverage, or
+same spanning-top or multi-top box-pile private row-persistence/contact-order/
+endpoint-order or contact-stage/default-step coverage. Good next slices remain broader
+rigid-contact feature persistence across realistic piles/frictional stacks, broader
+articulated lifecycle/corpus coverage, or a source-demo corpus
+implementation/performance row. Focused green tests here do not close the full
+paper/source-demo, CPU/GPU, or published-number gates.
+
+The latest local follow-up keeps rigid AVBD row-index layouts warm across
+frames, avoids copying generated point-pair/angular rows into combined work
+vectors when only one row family is active, skips endpoint row-counter hash-map
+setup for one-new-row point-joint/distance-spring appends, and keeps small
+point-joint/motor/distance-spring row-builder descriptor/active-row temporaries
+on the stack for up to 16 candidate rows. The contact stage now also extracts
+and appends point-joint and distance-spring families independently instead of
+scanning both families whenever either config exists. The snapshot solve now
+also clears absent row-family inventories directly instead of calling empty
+contact/joint/motor/spring builders. This is aimed at source rows such as Joint
+Grid that generate thousands of stable fixed-joint rows and small Motor/Spring
+rows where fixed row-family setup can be a visible fraction of the step.
+Focused validation ran `pixi run build-simulation-tests` and the
+`test_avbd_rigid_block` rigid row-driver/contact-stage filters. Current Google
+Benchmark smoke reports `BM_AvbdDemo2dMotorStep_median` at about 8.43 us,
+`BM_AvbdDemo2dSpringStep_median` at about 3.98 us, and
+`BM_AvbdDemo2dSpringRatioStep_median` at about 36.16 us, but this is still
+overhead cleanup rather than a checked packet CPU-win gate.
+
+The previous local follow-up skips no-op AVBD pair-constraint extraction in the
+rigid contact stage when the registry has no point-joint or distance-spring
+configs, and makes the split rigid-body velocity stage assemble force batches
+only for advanceable bodies. Contact-only rows still build and solve their
+contact snapshot, joint/spring rows still extract/append when present, and the
+standalone batched SoA integration stage still uses all bodies for its
+index-aligned force batch. This is source-row overhead cleanup, not a checked
+CPU-win gate.
+
+The previous local follow-up refreshed the 2D Rope, Heavy Rope, Hanging Rope, 3D
+Rope, 3D Heavy Rope, and 3D Bridge source-row timing packets after the snapshot
+body-index cache. The regenerated 2D packets record Rope at 0.133 ms versus
+25.6 us (5.20x slower), Heavy Rope at 0.149 ms versus 25.4 us (5.85x slower),
+and Hanging Rope at 0.392 ms versus 50.1 us (7.84x slower). The regenerated 3D
+packets record Rope at 0.134 ms versus 35.9 us (3.75x slower), Heavy Rope at
+0.128 ms versus 33.4 us (3.84x slower), and Bridge at 0.746 ms versus 1.20 ms
+(1.61x faster), so only the narrow Bridge CPU row stays closed. The project
+`.gitignore` intentionally ignores scratch JSON dumps in the PLAN-104 evidence
+folder while allowing curated `*-packet.json` files to be checked in.
+
+The next source-row audit checked the `avbd-demo2d` Spring/Spring Ratio scenes
+against the DART row families that existed at the time. The source uses one-row
+radial rigid distance springs between rigid body centers, while the earlier DART
+foundations covered deformable distance springs, hard multibody distance loop
+closures, and articulated per-axis compliant point-joint rows. Public distance
+loop closures are hard constraints and reject free rigid-body endpoints, so they
+are not a faithful source Spring substitute. The follow-up below removes the
+World/API source-scene wiring blocker for rigid radial distance springs; later
+packet evidence closes the packet/CPU-reference evidence gate, but not CPU
+performance or GPU parity.
+
+A previous local follow-up adds the first supported free-rigid radial spring
+extraction path: `World::addRigidBodyDistanceSpring` and the dartpy
+`add_rigid_body_distance_spring` binding create design-mode distance-spring
+configs, the rigid contact stage extracts them into `AvbdRigidWorldDistanceSpring`
+inputs, and the snapshot solve feeds them through persistent finite-stiffness
+row inventory into the private serial rigid row driver. Focused coverage now
+includes `AvbdRigidBlock.PointPairDistanceSpring*`,
+`AvbdRigidBlock.RigidRowDriverReducesDistanceSpringStretch`,
+`AvbdRigidBlock.RigidWorldDistanceSpringApiFeedsRadialRows`, and
+`test_simulation_world_rigid_body_distance_spring_reduces_stretch`. Local
+validation for this slice ran `pixi run lint`, `pixi run build-simulation-tests`,
+`build/default/cpp/Release/bin/test_avbd_rigid_block --gtest_filter='AvbdRigidBlock.RigidWorldDistanceSpringApiFeedsRadialRows:AvbdRigidBlock.RigidRowDriverReducesDistanceSpringStretch'`,
+and
+`PYTHONPATH=build/default/cpp/Release/python pixi run python -m pytest python/tests/unit/simulation/test_world.py -k 'distance_spring or api_exposes_python_names_only'`.
+This removes the missing internal primitive/driver/API extraction foundation,
+but Spring/Spring Ratio still need CPU performance resolution and GPU parity
+before they can be called source ports.
+
+The next local follow-up adds the first `avbd_demo2d_spring` and
+`avbd_demo2d_spring_ratio` source-scene harnesses over that rigid radial
+distance-spring API, registers both scenes in `python/examples/demos`, adds
+source-row invariants in `python/tests/integration/test_demos_cycle.py`, wires
+`BM_AvbdDemo2dSpringStep` and `BM_AvbdDemo2dSpringRatioStep` into the AVBD World
+dashboard slice, and extends `scripts/run_avbd_demo2d_reference_timing.py` with
+`--scene spring` and `--scene spring_ratio` native source timing entrypoints.
+Focused validation for this follow-up ran the Spring/Spring Ratio pytest slice.
+At that point, tracked packet evidence, generated CPU reference comparison,
+performance resolution, and GPU parity remained missing.
+
+The latest local follow-up adds
+`scripts/write_avbd_demo2d_spring_packet.py`,
+`scripts/write_avbd_demo2d_spring_ratio_packet.py`, and focused packet-writer
+tests, then generates
+`avbd-demo2d-spring-packet.json` and
+`avbd-demo2d-spring-ratio-packet.json` from headless captures,
+`BM_AvbdDemo2dSpringStep`/`BM_AvbdDemo2dSpringRatioStep` benchmark JSON, and
+native source timing JSON. Refreshed packet evidence records DART about 5.09x
+slower than the native Spring row and about 4.25x slower than the native Spring
+Ratio row on
+this host, so CPU performance resolution and GPU parity remain open.
+
+The latest local follow-up adds `avbd_demo3d_spring` and
+`avbd_demo3d_spring_ratio` source-scene harnesses over the same public radial
+rigid distance-spring API, registers both scenes in `python/examples/demos`,
+adds source-row invariants in `python/tests/integration/test_demos_cycle.py`,
+wires `BM_AvbdDemo3dSpringStep` and `BM_AvbdDemo3dSpringRatioStep` into the
+AVBD World dashboard slice, and extends
+`scripts/run_avbd_demo3d_reference_timing.py` with `--scene spring` and
+`--scene spring_ratio`. It also adds `scripts/write_avbd_demo3d_spring_packet.py`,
+`scripts/write_avbd_demo3d_spring_ratio_packet.py`, and focused packet-writer
+tests, then generates `avbd-demo3d-spring-packet.json` and
+`avbd-demo3d-spring-ratio-packet.json` from headless captures,
+`BM_AvbdDemo3dSpringStep`/`BM_AvbdDemo3dSpringRatioStep` benchmark JSON, and
+native source timing JSON. Refreshed packet evidence records DART about 1.96x
+slower than the native Spring row and about 3.70x slower than the native Spring
+Ratio row on
+this host, so CPU performance resolution and GPU parity remain open for both
+3D rows.
+
+An earlier local follow-up broadens
+`VariationalIntegration.AvbdPublicArticulatedBreakageSurvivesSaveLoadAndReset`
+and
+`VariationalIntegration.AvbdPublicArticulatedWorldFixedBreakageSurvivesSaveLoadAndReset`
+so same-multibody and world-link public fixed point-joint broken-state
+save/load/reset persistence now uses explicit local/world anchors, verifying
+the restored all-axis rows stay skipped under force and reset re-engages the
+captured anchor constraints. The previous local follow-up broadened
+`VariationalIntegration.AvbdPublicArticulatedRevoluteBreakageSurvivesSaveLoadAndReset`,
+`VariationalIntegration.AvbdPublicArticulatedPrismaticBreakageSurvivesSaveLoadAndReset`,
+`VariationalIntegration.AvbdPublicArticulatedWorldRevoluteBreakageSurvivesSaveLoadAndReset`,
+and
+`VariationalIntegration.AvbdPublicArticulatedWorldPrismaticBreakageSurvivesSaveLoadAndReset`
+so same-multibody and world-link public one-DOF motor broken-state
+save/load/reset persistence now uses explicit local/world anchors, verifying
+the restored broken rows stay skipped under force and reset re-engages the
+captured anchor constraints; the latest local follow-up now also preserves
+non-cardinal revolute/prismatic axes through those binary round-trips and
+asserts the reset-rebuilt AVBD basis columns before checking resumed free-axis
+motion. The latest local follow-up also broadens the direct same-multibody and
+world-link revolute/prismatic `BreakForce*` C++ lifecycle regressions so
+one-DOF break/skip/reset paths use non-cardinal axes, assert the generated AVBD
+basis columns, and check resumed free-axis motor progress after reset. The
+previous local follow-up broadened
+`test_simulation_world_articulated_point_joint_facade_exposes_link_endpoints`
+with explicit-anchor same-multibody prismatic and world-link
+revolute/prismatic overload coverage, so the public dartpy endpoint facade now
+checks all fixed/revolute/prismatic/spherical link-link and world-link anchor
+forms. The previous local follow-up broadened
+`test_simulation_world_articulated_motor_breakage_reset_reengages_from_python`
+and
+`test_simulation_world_articulated_complementary_motor_breakage_reset_from_python`
+so their same-multibody and world-link revolute/prismatic public one-DOF motor
+break/skip/reset coverage uses explicit link-link and world-link anchors,
+verifying broken rows can drift under external force and reset re-engages the
+masked hard rows while the free-axis motor continues. The previous local
+follow-up broadened
+`test_simulation_world_articulated_fixed_breakage_reset_reengages_from_python`
+so its same-multibody and world-link public articulated fixed point-joint
+break/skip/reset coverage uses explicit link-link and world-link anchors,
+verifying the all-axis rows re-engage the captured anchor pose after reset. The
+previous local follow-up added
+`test_simulation_world_articulated_spherical_pair_breakage_reset_reengages_from_python`,
+which steps the same-multibody public articulated spherical point-joint
+break/skip/reset lifecycle through dartpy with explicit link-link anchors,
+verifying the linear rows re-engage the captured anchor pair after reset while
+orientation remains free. The previous local follow-up added
+`test_simulation_world_articulated_complementary_motor_breakage_reset_from_python`,
+which steps the complementary same-multibody prismatic and world-link revolute
+public one-DOF motor break/skip/reset lifecycles through dartpy, verifying the
+masked hard rows and free-axis motor rows re-engage after reset. The previous
+local follow-up added
+`test_simulation_world_articulated_fixed_breakage_reset_reengages_from_python`,
+which originally stepped same-multibody and world-link public articulated fixed
+point joints through dartpy break/skip/reset and verified the all-axis rows
+re-engage the captured pose after reset. This is narrow public facade lifecycle
+evidence only; it does not close broader articulated facade, fracture, motor,
+source-corpus, GPU, or benchmark parity gates. The previous local follow-up broadened focused
+broken-state save/load coverage for public articulated facades:
+`VariationalIntegration.AvbdPublicArticulatedLinkSphericalBreakageSurvivesSaveLoadAndReset`
+reloads a broken same-multibody public spherical point joint, verifies the
+restored linear-only rows stay skipped, and then resets it to re-engage the
+loaded anchor pair while preserving free relative orientation.
+`VariationalIntegration.AvbdPublicArticulatedWorldFixedBreakageSurvivesSaveLoadAndReset`
+reloads a broken world-link public fixed point joint, verifies the restored
+all-axis rows stay skipped, and then resets it to re-engage the explicit
+world/link anchor and loaded orientation.
+`VariationalIntegration.AvbdPublicArticulatedRevoluteBreakageSurvivesSaveLoadAndReset`
+and
+`VariationalIntegration.AvbdPublicArticulatedPrismaticBreakageSurvivesSaveLoadAndReset`
+reload broken same-multibody public one-DOF velocity motors, verify the
+restored hard rows stay skipped, and then reset them to re-engage the loaded
+pose plus free-axis motor progression. The previous local follow-up added
+`VariationalIntegration.AvbdPublicArticulatedWorldSphericalBreakageSurvivesSaveLoadAndReset`
+which reloads a broken world-link public spherical point joint, verifies the restored
+linear-only rows stay skipped, and then resets it to re-engage the loaded world
+anchor while preserving free orientation.
+`VariationalIntegration.AvbdPublicArticulatedWorldRevoluteBreakageSurvivesSaveLoadAndReset`
+does the same for a world-link public revolute velocity motor, including
+free-axis motor progress after reset. The earlier local follow-up added
+`VariationalIntegration.AvbdPublicArticulatedBreakageSurvivesSaveLoadAndReset`
+for a same-multibody public fixed joint after it has broken, verifying the
+restored joint stays broken and skipped, then resets it and checks the AVBD rows
+re-engage the explicit link-link anchor pair and loaded orientation.
+`VariationalIntegration.AvbdPublicArticulatedWorldPrismaticBreakageSurvivesSaveLoadAndReset`
+does the same for a world-link public prismatic velocity motor, including
+free-axis motor progress after reset. This is narrow public facade persistence
+evidence only; it does not close broader articulated facade, fracture, motor,
+source-corpus, GPU, or benchmark parity gates. An earlier local follow-up
+broadens focused C++ save/load coverage for public
+articulated facades:
+`VariationalIntegration.AvbdPublicArticulatedFixedJointFacadeSurvivesSaveLoad`
+and
+`VariationalIntegration.AvbdPublicArticulatedWorldFixedJointFacadeSurvivesSaveLoad`
+reload public same-multibody link-link and world-link fixed point joints, check
+preserved break-force/facade state, and verify simulation entry rebuilds the
+private AVBD all-axis rows that hold the serialized anchors and orientation.
+`VariationalIntegration.AvbdPublicArticulatedWorldSphericalJointFacadeSurvivesSaveLoad`
+and
+`VariationalIntegration.AvbdPublicArticulatedLinkSphericalJointFacadeSurvivesSaveLoad`
+reload public world-link and same-multibody link-link joints, check preserved
+break-force/facade state, and verify simulation entry rebuilds the private AVBD
+linear-only rows that pin the serialized anchors while leaving orientation
+free. `VariationalIntegration.AvbdPublicArticulatedRevoluteJointFacadeSurvivesSaveLoad`,
+`VariationalIntegration.AvbdPublicArticulatedWorldRevoluteJointFacadeSurvivesSaveLoad`,
+`VariationalIntegration.AvbdPublicArticulatedPrismaticJointFacadeSurvivesSaveLoad`,
+and
+`VariationalIntegration.AvbdPublicArticulatedWorldPrismaticJointFacadeSurvivesSaveLoad`
+also reload same-multibody and world-link revolute/prismatic velocity-motor
+facades and verify the private hard rows plus free-axis motor row rebuild from
+serialized actuator, anchor, effort-limit, and break-force state; the
+same-multibody/world-link revolute cases and the world-link prismatic case now
+preserve non-cardinal axes through the binary round-trip and assert the rebuilt
+AVBD basis columns after simulation entry. This is
+narrow public facade persistence evidence only; it does not close broader
+articulated facade, fracture, motor, source-corpus, GPU, or benchmark parity
+gates. The earlier
+local follow-up adds `avbd_articulated_high_ratio_chain`, a
+five-link 200:1 high mass-ratio articulated variational-chain smoke py-demo,
+plus focused integration coverage for swing motion and reset, and adds
+`BM_AvbdArticulatedHighRatioChainStep` as the corresponding narrow dashboard
+row. The current local follow-up adds the matching
+`avbd-articulated-high-ratio-chain-packet.json` visual/benchmark packet. This
+is narrow paper-gap evidence only; the later
+`PaperScaleHighRatioChainStaysFiniteAndResets` smoke covers a 50-link/50,000:1
+finite/reset envelope through configured `World::step()` solve-budget fields,
+but it does not close the paper benchmark-packet, GPU, or broad
+articulated-chain gates. The
+previous local follow-up adds
+`avbd_rigid_spherical_breakable_joint`, a public free-rigid
+spherical point-joint break/reset py-demo, plus focused integration coverage for
+break, release, reset, captured anchor re-engagement, and orientation remaining
+free, now backed by `avbd-rigid-spherical-breakable-joint-packet.json` packet
+evidence. The earlier local follow-up extends
+`avbd_rigid_breakable_joint`, the public free-rigid fixed point-joint break-force
+demo, with reset/re-engagement controls, tracked
+`avbd-rigid-breakable-joint-packet.json` packet evidence, and focused
+integration coverage for break, release, reset, and captured fixed-pose
+re-engagement. The earlier local follow-up adds
+`avbd_articulated_fixed_pair_breakable_joint`, a same-multibody public
+articulated fixed break/reset py-demo, plus tracked
+`avbd-articulated-fixed-pair-breakable-joint-packet.json` packet evidence and
+focused integration coverage for break, release, reset, and captured
+relative-pose re-engagement. The previous local follow-up added
+`avbd_articulated_spherical_pair_breakable_joint`, a same-multibody public
+articulated spherical break/reset py-demo, plus focused integration coverage
+for break, release, reset, anchor re-engagement, and orientation remaining
+free, now backed by
+`avbd-articulated-spherical-pair-breakable-joint-packet.json` packet evidence.
+The earlier local follow-up added
+`avbd_articulated_prismatic_pair_motor_breakable_joint`, a same-multibody
+public articulated prismatic motor break/reset py-demo, plus focused
+integration coverage for break, lateral release, reset, and re-engagement.
+The prior local follow-up added
+`avbd_articulated_world_revolute_motor_breakable_joint`, a world-anchored
+public articulated revolute motor break/reset py-demo, plus focused integration
+coverage for the matching world-anchored revolute lifecycle. An earlier
+follow-up added
+`avbd_articulated_prismatic_motor_breakable_joint`, a world-anchored public
+articulated prismatic motor break/reset py-demo, plus focused integration
+coverage for the matching prismatic lifecycle. These are narrow
+CPU/user-visible evidence only; they do not close broader articulated motor or
+fracture lifecycle, fracture-corpus, GPU, or paper/source-runner performance
+gates.
+
+The latest local follow-up refreshed the `avbd_demo2d_fracture` packet from a
+fresh same-source DART/native timing pair: it records DART at 51.2 us/step
+versus 61.4 us/step for the native source runner, about 1.20x faster. This
+closes only the narrow Fracture source-row CPU comparison; broad fracture
+corpus, GPU, and paper-number gates remain open. Existing local work also keeps
+a mechanical rigid-contact-stage allocation cleanup: `RigidBodyContactStage` reuses its
+extracted AVBD point-joint input scratch, AVBD solve-row scratch, and per-body
+row-index scratch, and the
+rigid contact snapshot solve passes already-predicted inertial targets by span
+while preserving the old copy fallback for direct solves that have no predicted
+targets. It also closes a source-row mismatch from the pinned native
+`sceneFracture`: the source solver's broadphase skips body pairs connected by a
+live force, so DART collision queries now suppress live public rigid-body joint
+endpoint pairs while allowing broken AVBD joints to become collidable again.
+The contact stage now also replaces its old duplicate prepare-time collision
+query with collision-shape-count constraint prewarm, so execute-time contact
+discovery remains the only authoritative rigid contact query. The live-pair set
+now reuses `CollisionQueryCache` scratch, no longer needs a `Name` component
+view, skips empty ignored-pair lookups, and the contact-stage preflight scan now
+combines collision-geometry and dynamic-endpoint checks. Focused `test_world`
+coverage checks warmed filtered queries do not allocate global heap. The
+Fracture py-demo metadata, source timing runner, C++ benchmark counter, and
+packet writer now record the 10 joint-connected collision pairs without adding
+persistent `setCollisionPairIgnored()` state. Focused `test_avbd_rigid_block`,
+`test_world`, AVBD `test_variational_integration`, and Fracture Python packet
+slices pass, but benchmark attempts in
+`/tmp/avbd_inertial_span_benchmark.json` and
+`/tmp/avbd_joint_input_reuse_benchmark.json`, same-turn diagnostic runs in
+`/tmp/avbd_fracture_solve_scratch_final.json` and
+`/tmp/avbd_solve_scratch_adjacent_rows.json`,
+`/tmp/avbd_fracture_joint_filter_diagnostic.json`, and
+`/tmp/avbd_fracture_joint_filter_cached_pairs.json`, plus the later
+`/tmp/avbd_demo2d_fracture_after_prepare_skip.json`, and a later unsaved
+same-host diagnostic after the query-filter micro-cleanup that reported about
+139 us median CPU time with host load above 22, all remain non-packet
+diagnostics. The refreshed packet uses the fresh same-turn
+`/tmp/avbd-demo2d-fracture-refresh.json` DART benchmark and
+`/tmp/avbd-demo2d-fracture-reference-refresh.json` native timing. A
+local-anchor point-joint extraction experiment was reverted because same-turn
+diagnostic timing did not support keeping the larger input payload. A narrower
+later follow-up keeps only an `anchorsAreLocal` flag on the existing input
+payloads and uses it only when the private contact-stage path asks extraction to
+skip world-anchor reconstruction.
+
+Latest continuation: `AvbdBreakablePointJointConfigResetReengagesFixedRows`
+and `AvbdBreakableChildPointJointConfigResetReengagesFixedRows` now save the
+broken private explicit fixed point-joint configs, reload them, check restored
+entity/config state, and reset the loaded worlds so this private fixed-row
+lifecycle is covered across binary save/load for parent-link and child-link
+endpoint polarity rather than only in-memory.
+`AvbdBreakableSphericalPointJointConfigSurvivesSaveLoadAndReset`
+and
+`AvbdBreakableSphericalChildPointJointConfigSurvivesSaveLoadAndReset` now add
+the matching private explicit world-link spherical paths, preserving the
+linear-only row mask, endpoint shape, and broken state across binary save/load
+for parent-link and child-link endpoint polarity before reset re-engages only
+the anchor rows while orientation remains free.
+`AvbdBreakableRevoluteVelocityParentPointJointConfigSurvivesSaveLoadAndReset`
+and
+`AvbdBreakablePrismaticVelocityParentPointJointConfigSurvivesSaveLoadAndReset`
+now add direct private one-DOF velocity-motor persistence with the multibody
+link on the parent side of the world-link joint, covering the opposite endpoint
+polarity from the child-link save/load/reset paths; the existing child-link
+direct one-DOF save/load/reset paths now also assert restored endpoint shape.
+`AvbdBreakableRevoluteVelocityParentPointJointConfigResetReengagesMotorRows`
+and
+`AvbdBreakablePrismaticVelocityParentPointJointConfigResetReengagesMotorRows`
+now add direct private in-memory parent-endpoint reset/re-engagement coverage
+for the one-DOF motor rows, proving the opposite free-axis sign is rebuilt
+without relying on the binary round trip.
+`AvbdRevolutePointJointVelocityActuatorParentEndpointRespectsTinyTorqueLimit`
+and
+`AvbdPrismaticPointJointVelocityActuatorParentEndpointRespectsTinyForceLimit`
+now add the matching direct private parent-endpoint tiny effort-limit coverage,
+proving bounded free-axis motor rows stay capped for the opposite world-link
+endpoint polarity.
+`AvbdRevolutePointJointVelocityActuatorParentEndpointFollowsCommandUpdates`
+and
+`AvbdPrismaticPointJointVelocityActuatorParentEndpointFollowsCommandUpdates`
+now add direct private parent-endpoint command-update coverage for the same
+one-DOF motor rows, proving command changes rebuild the opposite-sign
+world-link motor targets instead of reusing stale child-endpoint polarity.
+`AvbdRevolutePointJointVelocityActuatorParentEndpointFollowsNonCardinalCommandUpdates`
+and
+`AvbdPrismaticPointJointVelocityActuatorParentEndpointFollowsNonCardinalCommandUpdates`
+now add the matching direct private parent-endpoint command-update coverage for
+generated non-cardinal free-axis bases, proving the opposite-sign parent
+polarity is not an artifact of the cardinal X/Z rows.
+`AvbdRevolutePointJointVelocityActuatorFollowsNonCardinalCommandUpdates` and
+`AvbdPrismaticPointJointVelocityActuatorFollowsNonCardinalCommandUpdates` now
+add direct private child-endpoint command-update coverage for generated
+non-cardinal free-axis bases, completing the child/parent world-link
+non-cardinal command-update polarity slice.
+`AvbdRevolutePointJointVelocityActuatorRespectsTinyTorqueLimitOnNonCardinalAxis`,
+`AvbdRevolutePointJointVelocityActuatorParentEndpointRespectsTinyTorqueLimitOnNonCardinalAxis`,
+`AvbdPrismaticPointJointVelocityActuatorRespectsTinyForceLimitOnNonCardinalAxis`,
+and
+`AvbdPrismaticPointJointVelocityActuatorParentEndpointRespectsTinyForceLimitOnNonCardinalAxis`
+now add direct private child/parent finite-effort coverage for generated
+non-cardinal free-axis bases, proving tiny positive effort limits stay capped
+without relying on the cardinal X/Z rows.
+
 Continue the next bounded AVBD contact/friction or rigid-block step:
-masked articulated multibody AVBD extraction, full narrow-phase feature
-extraction, or paper/source-demo corpus mapping are the preferred row-family
-gaps now that
+broader private articulated motor lifecycle coverage, broader articulated
+fracture lifecycle/corpus coverage beyond the current private/public
+same-multibody, world-link, explicit-anchor, off-origin, binary-save/load/reset,
+spherical linear-row including direct private world-link fixed/spherical
+parent/child save/load/reset, and
+one-DOF motor regression set including direct revolute/prismatic parent/child
+command-update including child/parent non-cardinal axis-basis coverage,
+save/load, tiny-limit including child/parent non-cardinal axis-basis coverage,
+and in-memory reset endpoint polarity,
+or public articulated World facade/demo-packet coverage for combinations not
+yet promoted into the corpus,
+or optimize the measured 2D Soft Body source-row CPU gap.
+Other open rigid-row gaps remain: full narrow-phase feature extraction for
+remaining realistic manifolds, broader
+rigid-contact feature persistence beyond the current
+box/sphere/cylinder/capsule/plane/mesh known/unknown shape-frame
+local-transform inference, endpoint-A/B explicit-shape local-point evidence,
+actual narrow-phase primitive-feature evidence, and same-feature sphere/plane
+replay plus sphere/mesh-face, sphere/mesh-edge, and mesh-vertex replay, live cylinder-cap/plane row-order evidence, live box-box row-order,
+endpoint-order, and small-pose persistence evidence plus the first live stacked
+static/dynamic and dynamic/dynamic manifold row-persistence evidence,
+or the first implementation row from the AVBD
+corpus matrix are the preferred row-family gaps now that
 private dynamic/rigid contact feature IDs, canonical two-endpoint row keys, and
 normal/friction row descriptor helpers plus private rigid contact/friction
 point-pair constructors, paired friction-cone helpers, and a private serial
 rigid row driver plus private rigid contact-manifold row builder and
 World-contact snapshot/solve/writeback helpers plus a combined private wrapper,
 first internal contact-stage activation, box-feature/pair-scoped row identity,
+live sphere/plane and box-box manifold endpoint-order row identity,
+deterministic same-feature contact row ordering including actual `World::collide()`
+sphere/plane plus sphere/mesh-face, sphere/mesh-edge, and mesh-vertex replay, live
+cylinder-cap/plane and capsule-cap/plane row-order coverage, live
+sphere/plane friction tangent row warm-start mapping, live cylinder-side and
+capsule-side row-order coverage, live cylinder-rim row-order coverage, live endpoint-swapped
+box-box friction tangent projection, live stacked endpoint-swapped friction
+tangent projection, live sphere/plane normal-rotation friction tangent
+projection, and live box-box manifold box-face feature coverage,
 private cylinder side/cap/rim and capsule side/top-cap/bottom-cap endpoint
-features, and private point-joint linear/angular/combined rows with step-start
-previous constraint values and private World snapshot/step append/solve/apply
-coverage plus fixed-joint ECS extraction through the step helper and an
-explicit current-pose rigid-body fixed-joint config bridge plus simulation-entry
+features, known/unknown shape-frame feature mapping with endpoint-A/B
+explicit-shape local-point coverage, actual narrow-phase
+sphere/cylinder/capsule/plane/mesh primitive-feature coverage, and private
+point-joint linear/angular/combined rows with step-start previous constraint
+values and private World snapshot/step append/solve/apply coverage plus
+fixed-joint ECS extraction through the step helper and an explicit current-pose
+rigid-body fixed-joint config bridge plus simulation-entry
 config initialization for opt-in rigid bodies, masked private point-joint row
 generation for constrained linear/angular axes, and named private
 revolute/prismatic point-joint configs with arbitrary joint-axis bases plus
 private rigid-body ECS current-pose extraction for those one-DOF joint
 entities, and public free rigid-body revolute/prismatic facades with dartpy
-bindings, stubs, tests, and py-demo coverage, plus fixed-joint/contact and
-revolute-motor AVBD py-demos, the breakable-joint py-demo, and the narrow
-free-rigid-body break-force lifecycle plus private free-rigid versus
-multibody-link endpoint classification, endpoint benchmark row, focused hard fixed
-articulated endpoint bridge tests, and related public variational endpoint
-loop-closure py-demo exist.
+bindings, stubs, tests, and py-demo coverage, plus fixed-joint/contact,
+free-rigid revolute/prismatic-motor, articulated revolute/prismatic-motor, and
+free-rigid
+plus world-link articulated fixed and spherical breakable-joint AVBD py-demos,
+the empty
+source-corpus baseline py-demo, the first non-empty `avbd-demo2d` Ground,
+Motor, Hanging Rope, Fracture, Dynamic Friction, Static Friction, Pyramid, and
+Stack source-row py-demos and packets, the `avbd-demo2d` Rope and Heavy Rope
+source-row py-demos and packets, the `avbd-demo2d` Stack Ratio, Rod, and Joint
+Grid source-row py-demos and packets, the `avbd-demo3d` Ground and Dynamic
+Friction source-row py-demos and packets, the `avbd-demo3d` Static Friction
+source-row py-demo and packet, the `avbd-demo3d` Pyramid source-row py-demo and
+packet, the `avbd-demo3d` Rope and Heavy Rope source-row py-demos and packets,
+the `avbd-demo3d` Stack, Stack Ratio, and Soft Body source-row py-demos and packets, the
+`avbd-demo3d` Bridge source-row py-demo and packet,
+the `avbd-demo3d` Breakable source-row py-demo and packet, narrow
+free-rigid and
+articulated motor, active breakable-motor, and breakable fixed point-joint
+benchmark rows, and the
+narrow free-rigid-body break-force
+lifecycle plus fixed/revolute/prismatic/spherical binary save/load broken-state
+reset coverage and free-rigid/articulated design-mode AVBD point-joint
+stiffness facade save/load coverage, private free-rigid versus multibody-link endpoint
+classification, endpoint benchmark row, focused hard fixed articulated endpoint
+bridge tests, related public variational endpoint loop-closure py-demo, and
+public articulated fixed/revolute/prismatic/spherical link-link and world-link
+point-joint facades exist, with focused spherical linear-only pinned-anchor and
+break/skip/reset coverage plus world-anchored one-DOF tiny effort-limit
+coverage.
+The 2D Ground packet records the static DART public World row about 1.51x
+faster than the native source runner on this host after skipping static-only
+contact queries, no-op rigid dynamics stages, clean frame-cache graph
+execution, and the clean no-work default step pipeline with a cheap scratch
+reset, closing that narrow source row while broad ground-contact, GPU, and
+paper-number gates remain open.
+The Motor packet records the no-collision-geometry DART public World row still
+about 6.18x slower than the native source runner on this host after skipping
+contact queries in contact-stage prepare/execute, so that CPU gate also remains
+open. The
+Hanging Rope packet
+records the DART public World row about 7.84x slower than the native source
+runner on this host, so that CPU gate also remains open. The Fracture packet
+records the DART public World row about 1.20x faster than the native source
+runner on this host after a refreshed same-source timing run, closing only that
+narrow source row. The 3D Breakable packet
+records the DART public World row about 1.42x faster than the native source
+runner on this host, closing that narrow source row. The 3D Ground packet
+records the DART public World row about 1.11x faster than the native source
+runner on this host, and the 3D Dynamic Friction packet records the DART public
+World row about 1.41x faster than the native source runner on this host,
+closing only those narrow source rows. The 2D Stack packet records the DART
+public World row about 2.17x faster than the native source runner on this host,
+closing only that narrow source row. The 2D Stack Ratio packet records the DART
+public World row about 2.22x faster than the native source runner on this host,
+closing only that narrow source row. The 2D Static Friction packet records the
+DART public World row about 2.68x faster than the native source runner on this
+host, closing only that narrow source row. The 2D Pyramid packet records the
+DART public World row about 9.84x faster than the 10,000-step native source
+runner on this host, closing only that narrow source row. The 3D Static Friction
+packet records the DART public World row about 1.08x faster than the native
+source runner on this host, closing only that narrow source row. The 3D Pyramid
+packet records the DART public World row about 2.83x faster than the native
+source runner on this host, closing only that narrow source row. The 2D Rope
+packet records the DART public World row about 5.20x slower than the native
+source runner on this host, so that CPU gate also remains open. The 2D Rod
+packet records the DART public World row about 9.58x slower than the native
+source runner on this host, so that CPU gate also remains open. The 2D Heavy
+Rope packet records the DART public World row about 5.85x slower than the native
+source runner on this host, so that CPU gate also remains open. The 3D Rope
+packet records the DART public World row about 3.75x slower than the native
+source runner on this host, so that CPU gate also remains open. The 2D Joint
+Grid packet records the DART public World row about 2.06x slower than the native
+source runner on this host after reusing per-body row-index scratch and caching
+snapshot body indices, with its source diagonal ignore-collision pairs
+configured through the public per-pair filter. The 2D Cards packet records the
+DART public World row about 5.38x slower than the native source runner on this
+host, so that CPU gate also remains open. The 3D Heavy Rope packet records the DART
+public World row about 3.84x slower than the native source
+runner on this host, so that CPU gate also remains open. The Stack and Stack
+Ratio packets record the DART public World rows about 1.80x and 2.32x faster
+than the native source
+runners on this host, closing only those narrow source rows. The Bridge packet
+records the DART public World row about 1.61x faster than the native source
+runner on this host, closing only that narrow source row. The next source-corpus
+step should either optimize a measured source-runner CPU gap or record why
+another ready row is the smaller correctness/performance gate.
 Keep the supported envelope narrow and preserve fallback coverage for topology
 mixes,
 damping/acceleration, parallel solves, and unsupported requested row
@@ -257,9 +2737,21 @@ combinations.
   identity helpers now pack contact feature kind/index IDs, canonicalize
   two-endpoint contact row keys, derive private box face/edge/corner endpoint
   feature IDs and cylinder side/cap/rim plus capsule side/top-cap/bottom-cap
-  endpoint features for rigid snapshots, scope row ordinals per canonical
-  endpoint pair, and create normal/friction/joint-linear/joint-angular row
-  descriptors, with private point-joint rows now seeding step-start previous
+  endpoint features for rigid snapshots, map known and unknown-index contacts
+  through body and collision-shape local transforms before feature coding, use
+  narrow-phase shape-local contact points for explicit endpoint-A/B compound
+  shape-index feature coding, cover actual `World::collide()`
+  sphere/cylinder/capsule/plane/mesh contacts through primitive feature IDs, and
+  include unique plane compound matches that derive shape-scoped face IDs and
+  mesh compound matches that derive
+  face/edge/vertex feature IDs, scope row ordinals per canonical endpoint pair,
+  assign same-feature contact rows from deterministic canonical-local point
+  ordering with actual `World::collide()` sphere/plane plus sphere/mesh-face,
+  sphere/mesh-edge, and mesh-vertex replay, live cylinder-cap/plane and capsule-cap/plane row-order
+  coverage, live sphere/plane friction tangent row warm-start mapping, and live
+  box-box manifold box-face feature coverage, and create
+  normal/friction/joint-linear/joint-angular row descriptors,
+  with private point-joint rows now seeding step-start previous
   constraint values and participating in the private World snapshot/solve/apply
   wrapper and combined step helper from world-space point-joint inputs, plus
   private fixed-joint ECS extraction through the step helper and internal
@@ -268,19 +2760,94 @@ combinations.
   configs now preserve arbitrary joint-axis bases and leave one rotational or
   translational axis free, and private rigid-body ECS revolute/prismatic joint
   entities now initialize and extract through the same current-pose bridge.
-  Public rigid-body revolute velocity actuators now extract to AVBD motor rows,
-  and the private extractor now classifies free-rigid endpoints separately from
-  multibody links with benchmark and focused fixed-bridge test coverage, but full
-  narrow-phase feature extraction, masked articulated AVBD rows, broad
-  motor/fracture lifecycle and benchmark coverage, public articulated World
-  joint wiring, paper/source-demo py-demos, and CPU/GPU parity are not solved
-  yet.
+  Public rigid-body revolute/prismatic velocity actuators now extract to AVBD
+  angular/linear motor rows, and the private extractor now classifies
+  free-rigid endpoints separately from multibody links with benchmark and
+  focused fixed/masked/breakable bridge test coverage. Public one-DOF
+  articulated velocity actuators now also project
+  through the variational path, and private hard revolute/prismatic AVBD
+  point-joint velocity actuators now project one articulated motor row along
+  their free axis with revolute/prismatic command-update, private fixed-row
+  break/reset, revolute/prismatic break/reset re-engagement, and tiny positive
+  effort-limit coverage. Finite-stiffness
+  private AVBD fixed point-joint
+  configs on articulated endpoints now contribute compliant variational forces
+  through persistent stiffness-ramped rows.
+  Non-topology multibody-link fixed/revolute/prismatic point-joint entities now
+  also initialize hard private AVBD configs from the simulation-entry current
+  pose, and public same-multibody/world-link articulated
+  fixed/revolute/prismatic/spherical facades now feed that extractor through
+  C++/dartpy with focused spherical linear-only pinned-anchor behavior including
+  explicit link-link/world-link anchors, same-multibody link-link and
+  world-link fixed/spherical save/load rebuilding,
+  bounded revolute/prismatic
+  velocity-motor, same-multibody and
+  world-anchored command updates and tiny effort-limit behavior, explicit
+  local/world anchor projection including same-multibody and world-anchored
+  off-origin fixed/revolute/prismatic anchors and revolute/prismatic motors,
+  same-multibody/world-link fixed/spherical/revolute/prismatic broken-state
+  save/load/reset persistence including explicit-anchor fixed and one-DOF motor
+  rows,
+  movable-movable same-multibody motor projection
+  and fixed break/reset, private fixed-row and revolute/prismatic break/reset
+  re-engagement, same-multibody and world-anchored public break/reset
+  re-engagement including world-fixed and one-DOF motor rows,
+  same-multibody/world-anchored public one-DOF motor break/skip and
+  reset/re-engagement including focused dartpy stepping coverage for
+  same-multibody/world-link revolute and prismatic explicit-anchor cases, spherical
+  linear-row break/skip/reset,
+  world-anchor and spherical facade tests, and the
+  `avbd_articulated_revolute_motor`,
+  `avbd_articulated_prismatic_motor`, and
+  `avbd_articulated_breakable_joint`,
+  `avbd_articulated_fixed_pair_breakable_joint`, and
+  `avbd_articulated_spherical_breakable_joint` and
+  `avbd_articulated_spherical_pair_breakable_joint` py-demos, plus
+  `avbd-articulated-breakable-joint-packet.json`,
+  `avbd-articulated-fixed-pair-breakable-joint-packet.json`,
+  `avbd-articulated-spherical-breakable-joint-packet.json`,
+  `avbd-articulated-spherical-pair-breakable-joint-packet.json`,
+  `avbd_articulated_high_ratio_chain`,
+  `BM_AvbdArticulatedHighRatioChainStep`,
+  `avbd-articulated-high-ratio-chain-packet.json`,
+  `avbd_empty_baseline`,
+  `avbd_demo2d_ground`, `avbd_demo2d_motor`, `avbd_demo2d_hanging_rope`,
+  `avbd_demo2d_fracture`,
+  `avbd_demo2d_dynamic_friction`, `avbd_demo2d_static_friction`,
+  `avbd_demo2d_cards`,
+  `avbd_demo2d_stack`,
+  `avbd_demo2d_stack_ratio`,
+  `avbd_demo2d_rod`,
+  `avbd_demo2d_joint_grid`,
+  `avbd_demo2d_rope`,
+  `avbd_demo2d_heavy_rope`,
+  `avbd_demo2d_net`,
+  `avbd_demo3d_ground`,
+  `avbd_demo3d_dynamic_friction`, `avbd_demo3d_static_friction`,
+  `avbd_demo3d_pyramid`, `avbd_demo3d_rope`, `avbd_demo3d_heavy_rope`,
+  `avbd_demo3d_bridge`, and `avbd_demo3d_breakable`, narrow CPU dashboard
+  benchmark rows for the matched-metadata empty source-corpus baseline, the
+  matching empty-row visual/benchmark packet, the first non-empty
+  2D Motor/Hanging Rope/Fracture/Dynamic Friction/Static Friction/Cards/Stack/Stack Ratio/Rod/Joint Grid/Rope/Heavy Rope/Net
+  and 3D Ground/Dynamic Friction/Static Friction/Pyramid/Rope/Heavy
+  Rope/Bridge/Breakable source rows and packets,
+  public motor, and breakable fixed point-joint paths including private
+  explicit fixed binary save/load/reset.
+  Full
+  narrow-phase feature extraction, broad
+  motor/fracture lifecycle and benchmark coverage beyond these fixed/world-link
+  reset rows, spherical linear-row fracture checks, and public one-DOF motor
+  break/skip checks, broader public articulated
+  World facade coverage, paper/source-demo py-demos, and CPU/GPU parity are not
+  solved yet.
 
 ## How to Resume
 
 ```bash
 git status --short --branch
 pixi run build-simulation-tests
+build/default/cpp/Release/bin/test_variational_integration --gtest_filter='VariationalIntegration.Avbd*'
+build/default/cpp/Release/bin/test_variational_integration --gtest_filter='VariationalIntegration.VelocityActuator*'
 build/default/cpp/Release/bin/test_avbd_constraint
 build/default/cpp/Release/bin/test_avbd_rigid_block
 build/default/cpp/Release/bin/test_boxed_lcp_contact --gtest_filter='AvbdContact.*:BoxedLcpContact.MethodSelectorReflectsConstruction'

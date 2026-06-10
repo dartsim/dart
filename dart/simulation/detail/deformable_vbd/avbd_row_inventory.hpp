@@ -36,7 +36,6 @@
 
 #include <algorithm>
 #include <limits>
-#include <map>
 #include <span>
 #include <tuple>
 #include <vector>
@@ -198,20 +197,34 @@ public:
       std::span<const AvbdScalarRowDescriptor> descriptors,
       const AvbdRowWarmStartOptions& options)
   {
-    std::map<AvbdScalarRowKey, AvbdScalarRowState> previous;
-    for (const AvbdScalarRowRecord& record : mRecords) {
-      previous.emplace(record.descriptor.key, record.state);
-    }
+    mPreviousRecords.clear();
+    mPreviousRecords.insert(
+        mPreviousRecords.end(), mRecords.begin(), mRecords.end());
+    std::sort(
+        mPreviousRecords.begin(),
+        mPreviousRecords.end(),
+        [](const AvbdScalarRowRecord& lhs, const AvbdScalarRowRecord& rhs) {
+          return lhs.descriptor.key < rhs.descriptor.key;
+        });
 
     mRecords.clear();
     mRecords.reserve(descriptors.size());
     for (const AvbdScalarRowDescriptor& descriptor : descriptors) {
       AvbdScalarRowState state = initialAvbdScalarRowState(descriptor, options);
-      if (const auto it = previous.find(descriptor.key); it != previous.end()) {
-        state = warmStartAvbdScalarRowState(it->second, descriptor, options);
+      if (const AvbdScalarRowRecord* previous
+          = findInSorted(mPreviousRecords, descriptor.key)) {
+        state
+            = warmStartAvbdScalarRowState(previous->state, descriptor, options);
       }
       mRecords.push_back(AvbdScalarRowRecord{descriptor, state});
     }
+  }
+
+  //==============================================================================
+  void reserve(std::size_t capacity)
+  {
+    mRecords.reserve(capacity);
+    mPreviousRecords.reserve(capacity);
   }
 
   //==============================================================================
@@ -275,7 +288,26 @@ public:
   }
 
 private:
+  //==============================================================================
+  [[nodiscard]] static const AvbdScalarRowRecord* findInSorted(
+      std::span<const AvbdScalarRowRecord> records,
+      const AvbdScalarRowKey& key) noexcept
+  {
+    const auto match = std::lower_bound(
+        records.begin(),
+        records.end(),
+        key,
+        [](const AvbdScalarRowRecord& record, const AvbdScalarRowKey& value) {
+          return record.descriptor.key < value;
+        });
+    if (match != records.end() && match->descriptor.key == key) {
+      return &*match;
+    }
+    return nullptr;
+  }
+
   std::vector<AvbdScalarRowRecord> mRecords;
+  std::vector<AvbdScalarRowRecord> mPreviousRecords;
 };
 
 } // namespace dart::simulation::detail::deformable_vbd

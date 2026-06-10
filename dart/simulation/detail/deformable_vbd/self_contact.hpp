@@ -84,24 +84,26 @@ struct SelfContactAdjacency
            && !incident.empty();
   }
 
-  static SelfContactAdjacency build(
+  void rebuild(
       std::size_t vertexCount,
       const contact::ContactCandidateSet& candidates,
       const std::vector<DeformableSurfaceTriangle>& triangles,
       double squaredActivationDistance,
       double stiffness)
   {
-    SelfContactAdjacency adjacency;
-    adjacency.squaredActivationDistance = squaredActivationDistance;
-    adjacency.stiffness = stiffness;
-    adjacency.incident.resize(vertexCount);
+    this->squaredActivationDistance = squaredActivationDistance;
+    this->stiffness = stiffness;
+    incident.resize(vertexCount);
+    for (auto& entries : incident) {
+      entries.clear();
+    }
 
     const auto scatter = [&](const std::array<std::uint32_t, 4>& nodes,
                              bool isEdgeEdge,
                              std::uint32_t constraint) {
       for (std::uint8_t k = 0; k < 4; ++k) {
         if (nodes[k] < vertexCount) {
-          adjacency.incident[nodes[k]].push_back(
+          incident[nodes[k]].push_back(
               SelfContactEntry{nodes, k, isEdgeEdge, constraint});
         }
       }
@@ -129,6 +131,22 @@ struct SelfContactAdjacency
           /*isEdgeEdge=*/true,
           constraint++);
     }
+  }
+
+  static SelfContactAdjacency build(
+      std::size_t vertexCount,
+      const contact::ContactCandidateSet& candidates,
+      const std::vector<DeformableSurfaceTriangle>& triangles,
+      double squaredActivationDistance,
+      double stiffness)
+  {
+    SelfContactAdjacency adjacency;
+    adjacency.rebuild(
+        vertexCount,
+        candidates,
+        triangles,
+        squaredActivationDistance,
+        stiffness);
     return adjacency;
   }
 };
