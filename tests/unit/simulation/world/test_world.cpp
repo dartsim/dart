@@ -1734,6 +1734,19 @@ void configureDeformableSelfContactFrictionWideRectangularGridScene(
       world, 7, 17, "friction_wide_rectangular_production_grid");
 }
 
+void configureDeformableSelfContactFrictionWideRectangularMatrixFreeGridScene(
+    dart::simulation::World& world)
+{
+  configureDeformableSelfContactFrictionGridSceneWithShapeAndMotion(
+      world,
+      7,
+      17,
+      "friction_wide_rectangular_matrix_free_production_grid",
+      0.012,
+      Eigen::Vector3d(0.35, 0.1, -0.08),
+      true);
+}
+
 void configureDeformableSelfContactFrictionTallRectangularGridScene(
     dart::simulation::World& world)
 {
@@ -3076,6 +3089,9 @@ TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
       "deformable self-contact friction wide rectangular grid",
       configureDeformableSelfContactFrictionWideRectangularGridScene);
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "deformable self-contact friction wide rectangular matrix-free grid",
+      configureDeformableSelfContactFrictionWideRectangularMatrixFreeGridScene);
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "deformable self-contact friction tall rectangular grid",
       configureDeformableSelfContactFrictionTallRectangularGridScene);
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
@@ -3429,6 +3445,26 @@ TEST(World, DeformableSelfContactFrictionWideRectangularGridIsActive)
   const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
   EXPECT_EQ(diagnostics.bodyCount, 1u);
   EXPECT_EQ(diagnostics.nodeCount, 2u * 7u * 17u);
+  EXPECT_GT(diagnostics.selfContactBarrierActiveContacts, 0u);
+  EXPECT_GT(diagnostics.convergedActiveContactCount, 0u);
+  EXPECT_GT(diagnostics.frictionDissipation, 0.0);
+}
+
+TEST(World, DeformableSelfContactFrictionWideRectangularMatrixFreeGridIsActive)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  configureDeformableSelfContactFrictionWideRectangularMatrixFreeGridScene(
+      world);
+  world.enterSimulationMode();
+
+  world.step();
+
+  const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
+  EXPECT_EQ(diagnostics.bodyCount, 1u);
+  EXPECT_EQ(diagnostics.nodeCount, 2u * 7u * 17u);
+  EXPECT_GT(diagnostics.projectedNewtonMatrixFreeSolves, 0u);
   EXPECT_GT(diagnostics.selfContactBarrierActiveContacts, 0u);
   EXPECT_GT(diagnostics.convergedActiveContactCount, 0u);
   EXPECT_GT(diagnostics.frictionDissipation, 0.0);
@@ -4084,6 +4120,9 @@ TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "deformable self-contact friction wide rectangular grid",
       configureDeformableSelfContactFrictionWideRectangularGridScene);
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "deformable self-contact friction wide rectangular matrix-free grid",
+      configureDeformableSelfContactFrictionWideRectangularMatrixFreeGridScene);
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "deformable self-contact friction tall rectangular grid",
       configureDeformableSelfContactFrictionTallRectangularGridScene);
