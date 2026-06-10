@@ -564,6 +564,70 @@ debugging, profiling, optimization experiments, and ImGui visualization.
 - Boundary rule: keep EnTT allocator/storage types out of the promoted public
   facade; expose only DART-owned memory options and diagnostics.
 
+## PR #2956 Phase 4/5 Wrap-Up
+
+Current Phase 4 scratch-reuse coverage in this PR includes:
+
+- Inline built-in stage storage for the default `WorldStepPipeline`, legacy
+  graph-backed rigid integration scratch, and batched SoA rigid integration
+  scratch for force/state/model/initial-state/frame-order buffers.
+- Rigid IPC stage scratch for accepted/rejected writeback, resting-contact
+  no-op detection, projected-Newton surface buffers, barrier assembly, line
+  search, and lagged-friction passes.
+- Unified/boxed-LCP scratch for in-place rigid and multibody assembly, Dantzig
+  solve reuse, island remapping, link impulse application, normal-only
+  fallback, tangent accumulators, and same-shape fallback friction sweeps.
+- Variational multibody scratch for baked loop-closure and hard AVBD
+  point-joint constraints, compliant/augmented-Lagrangian ground contact, and
+  the scalar single-prismatic compliant-contact fast path.
+- Default projected-Newton deformable scratch for obstacle lists, static and
+  moving rigid surface snapshots, surface-contact candidates, boundary masks,
+  friction buffers, sparse/matrix-free solver storage, FEM blocks, static
+  obstacle friction, self-contact, and inter-body surface CCD.
+- AVBD scratch for ground contact/friction rows, self-contact adjacency and
+  warm-start lookup, rigid AVBD contact projection rows, inertial targets, and
+  no-contact fixed-joint rows.
+
+Current Phase 5 no-growth/no-heap gates in this PR include:
+
+- Baked rigid, kinematic IPC, resting-contact, batched SoA rigid integration,
+  multibody variational, compliant-contact, same-DOF cross-articulated, and
+  mixed/different-DOF boxed-LCP fallback scenes.
+- Production boxed-LCP contact sets up to 32 stacked multibodies, independent
+  multi-island rigid/articulated contacts, stress multi-island contacts, and a
+  mixed stress stack plus multi-island scene with 60+ initial contacts.
+- Default-solver deformable guards for frictional self-contact patches,
+  square/rectangular/irregular direct-sparse and matrix-free two-layer grids,
+  late-active contact patterns, mixed direct/matrix-free roots, FEM
+  ground-friction blocks, static sphere/box/capsule obstacle friction, moving
+  rigid-surface CCD, and inter-body surface CCD.
+- Mixed contact-family default-solver scenes that combine static-obstacle
+  friction, self-contact friction, and production inter-body surface CCD under
+  one baked World memory root for both direct-sparse and matrix-free pairings.
+- AVBD ground-contact, self-contact, rectangular-row, rigid-contact, and
+  no-contact fixed-joint guards with World-base no-growth and global-heap
+  no-allocation coverage after bake.
+
+Phase 4/5 follow-up items for the next PR:
+
+- Do not add more production scenes or scratch-reuse work to PR #2956; continue
+  the remaining no-growth and scratch work on a new follow-up branch.
+- Broaden projected-Newton deformable scratch reuse only where profiling or a
+  no-growth gate exposes a real allocation path, especially for differently
+  shaped frictional self-contact, static-obstacle, and inter-body CCD mixes not
+  represented by the current gates.
+- Add any remaining default-solver deformable storage/no-heap gates for
+  solver-private paths not exercised by the current direct-sparse,
+  matrix-free, FEM, obstacle, and surface-CCD mixed scenes.
+- Expand production contact-set coverage only for newly exposed boxed-LCP or
+  unified-assembly shapes that are not covered by the current stacked,
+  multi-island, mixed-stress, and contact-family gates.
+- Continue production `WorldRegistry` bake/build sizing guidance for
+  contact-heavy ECS storage and rebuild boundaries.
+- Re-run allocator comparative evidence when allocator, STL, or frame policy
+  changes; keep the current foonathan/memory and standard-baseline evidence
+  green instead of adding allocator-policy work to this PR.
+
 ## Immediate Next Steps
 
 1. Continue promoting the benchmark-only EnTT storage policies toward
