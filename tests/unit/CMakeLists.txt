@@ -357,6 +357,12 @@ if(TARGET UNIT_math_lcp_math_lcp_all_solvers_smoke)
     PRIVATE DART_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
   )
 endif()
+if(DART_CODECOV AND TARGET UNIT_math_lcp_math_lcp_lcp_generated_coverage)
+  target_compile_definitions(
+    UNIT_math_lcp_math_lcp_lcp_generated_coverage
+    PRIVATE DART_CODECOV=1
+  )
+endif()
 
 # Math Lie group tests
 dart_build_tests(

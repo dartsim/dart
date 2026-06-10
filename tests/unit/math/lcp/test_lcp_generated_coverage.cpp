@@ -1100,6 +1100,7 @@ std::vector<GeneratedCase> makeStressSingularDegenerateCases()
       makeSingularDegenerateFrictionIndexCase(12)};
 }
 
+#ifndef DART_CODECOV
 std::vector<GeneratedCase> makeExtremeSingularDegenerateCases()
 {
   return {
@@ -1115,6 +1116,7 @@ std::vector<GeneratedCase> makeExtremeSingularDegenerateCases()
       makeSingularDegenerateFrictionIndexCase(192),
       makeSingularDegenerateFrictionIndexCase(256)};
 }
+#endif
 
 std::vector<LcpProblem> makeInvalidProblems()
 {
@@ -1705,6 +1707,9 @@ TEST(
   }
 }
 
+// Code coverage instrumentation makes this largest rank-deficient slice exceed
+// the CI per-test timeout. Normal CI still runs it without DART_CODECOV.
+#ifndef DART_CODECOV
 //==============================================================================
 TEST(
     LcpGeneratedCoverage,
@@ -1719,6 +1724,7 @@ TEST(
     }
   }
 }
+#endif
 
 //==============================================================================
 TEST(LcpGeneratedCoverage, ThreadedJacobiStandardKnownSolution)

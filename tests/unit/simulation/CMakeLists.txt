@@ -109,6 +109,9 @@ if(DART_SIMULATION_BUILD_TESTS)
       set_tests_properties(test_world PROPERTIES TIMEOUT 3600)
       target_compile_definitions(test_world PRIVATE DART_CODECOV=1)
     endif()
+    if(TARGET test_boxed_lcp_contact)
+      target_compile_definitions(test_boxed_lcp_contact PRIVATE DART_CODECOV=1)
+    endif()
   endif()
 
   # Differentiable simulation (PLAN-110 WS1). The zero-cost parity test uses only

@@ -3107,6 +3107,10 @@ TEST(BoxedLcpContact, SixteenBoxWorldStepMaintainsDenseContactInvariants)
   expectSeparatedBoxStepInvariants(*lcp, kBoxCount);
 }
 
+// Code coverage instrumentation makes the largest dense and articulated
+// public-step evidence cases exceed the CI per-test timeout. Normal CI still
+// runs these DART 7 evidence cases without DART_CODECOV.
+#ifndef DART_CODECOV
 //==============================================================================
 TEST(BoxedLcpContact, TwentyFourBoxWorldStepMaintainsDenseContactInvariants)
 {
@@ -4305,6 +4309,7 @@ TEST(
   expectArticulatedLinkImpactPairsStepMaintainsInvariants(
       kPairCount, kStepCount);
 }
+#endif
 
 //==============================================================================
 // Kinetic-friction parity: a box sliding horizontally on a frictional ground
