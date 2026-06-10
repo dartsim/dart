@@ -7549,6 +7549,42 @@ TEST(World, RigidBodyPrismaticJointsRejectIpcSolver)
       jointFirst.getRigidBodySolver(), sx::RigidBodySolver::SequentialImpulse);
 }
 
+// Test that breakable rigid-body joints reject the IPC solver instead of being
+// silently skipped by the private equality-row projection path.
+TEST(World, RigidBodyBreakableJointsRejectIpcSolver)
+{
+  namespace sx = dart::simulation;
+
+  sx::RigidBodyOptions parentOptions;
+  parentOptions.isStatic = true;
+  sx::RigidBodyOptions childOptions;
+  childOptions.position = Eigen::Vector3d::UnitX();
+
+  sx::World solverFirst;
+  solverFirst.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+  auto solverFirstParent = solverFirst.addRigidBody("parent", parentOptions);
+  auto solverFirstChild = solverFirst.addRigidBody("child", childOptions);
+  auto solverFirstJoint = solverFirst.addRigidBodyFixedJoint(
+      "fixed", solverFirstParent, solverFirstChild);
+  solverFirstJoint.setBreakForce(10.0);
+
+  EXPECT_THROW(
+      solverFirst.enterSimulationMode(), sx::InvalidOperationException);
+
+  sx::World jointFirst;
+  auto jointFirstParent = jointFirst.addRigidBody("parent", parentOptions);
+  auto jointFirstChild = jointFirst.addRigidBody("child", childOptions);
+  auto jointFirstJoint = jointFirst.addRigidBodyFixedJoint(
+      "fixed", jointFirstParent, jointFirstChild);
+  jointFirstJoint.setBreakForce(10.0);
+
+  EXPECT_THROW(
+      jointFirst.setRigidBodySolver(sx::RigidBodySolver::Ipc),
+      sx::InvalidOperationException);
+  EXPECT_EQ(
+      jointFirst.getRigidBodySolver(), sx::RigidBodySolver::SequentialImpulse);
+}
+
 // Test that public fixed joints reject mixed multibody worlds instead of
 // accepting a joint that the unified contact pipeline will not project.
 TEST(World, RigidBodyFixedJointsRejectUnifiedMultibodyPipeline)

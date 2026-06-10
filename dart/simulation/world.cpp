@@ -1170,6 +1170,9 @@ bool hasRigidBodyJointsUnsupportedByIpc(const World& world)
         && joint.type != comps::JointType::Revolute) {
       return true;
     }
+    if (!std::isfinite(joint.breakForce) || joint.breakForce > 0.0) {
+      return true;
+    }
   }
   return false;
 }
@@ -1186,8 +1189,8 @@ void validateRigidBodyJointPipelineSupport(
     DART_SIMULATION_THROW_T_IF(
         hasRigidBodyJointsUnsupportedByIpc(world),
         InvalidOperationException,
-        "Only fixed and revolute rigid-body joints are supported by the IPC "
-        "rigid-body solver");
+        "Only non-breakable fixed and revolute rigid-body joints are "
+        "supported by the IPC rigid-body solver");
     DART_SIMULATION_THROW_T_IF(
         hasMultibodyStructures(world),
         InvalidOperationException,
@@ -2994,8 +2997,8 @@ Joint World::addRigidBodyJoint(
           && componentType != comps::JointType::Fixed
           && componentType != comps::JointType::Revolute,
       InvalidOperationException,
-      "Only fixed and revolute rigid-body joints are supported by the IPC "
-      "rigid-body solver");
+      "Only non-breakable fixed and revolute rigid-body joints are supported "
+      "by the IPC rigid-body solver");
   DART_SIMULATION_THROW_T_IF(
       hasMultibodyStructures(*this),
       InvalidOperationException,
