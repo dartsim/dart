@@ -4162,6 +4162,31 @@ void expectCompliantVariationalContactScratchBaked(
     EXPECT_GE(
         scratch.groundContact.points.capacity(),
         kCompliantVariationalContactPointsPerRobot);
+    EXPECT_EQ(scratch.contactEvaluation.contactForce.size(), 1);
+    EXPECT_EQ(scratch.contactEvaluation.forcing.size(), 1);
+    EXPECT_FALSE(scratch.groundContactSolver.has_value())
+        << "pure compliant contact evaluates directly from baked "
+           "ground-contact "
+           "scratch; only AL contact owns solver dual storage";
+    ++scratchCount;
+  }
+  EXPECT_EQ(scratchCount, kCompliantVariationalContactRobotCount);
+
+  const auto dualStates
+      = registry.view<sx::comps::VariationalContactDualState>();
+  EXPECT_TRUE(dualStates.begin() == dualStates.end());
+}
+
+void expectVariationalContactGroundSolverBaked(
+    const dart::simulation::detail::WorldRegistry& registry)
+{
+  namespace sx = dart::simulation;
+
+  std::size_t scratchCount = 0;
+  for (const auto entity :
+       registry.view<sx::compute::MultibodyVariationalScratch>()) {
+    const auto& scratch
+        = registry.get<sx::compute::MultibodyVariationalScratch>(entity);
     ASSERT_TRUE(scratch.groundContactSolver.has_value());
     EXPECT_EQ(
         scratch.groundContactSolver->duals().size(),
@@ -4172,10 +4197,6 @@ void expectCompliantVariationalContactScratchBaked(
     ++scratchCount;
   }
   EXPECT_EQ(scratchCount, kCompliantVariationalContactRobotCount);
-
-  const auto dualStates
-      = registry.view<sx::comps::VariationalContactDualState>();
-  EXPECT_TRUE(dualStates.begin() == dualStates.end());
 }
 
 void expectVariationalContactDualStateBaked(
@@ -4350,6 +4371,7 @@ TEST(World, EnterSimulationModeReservesContactHeavyVariationalDualState)
   expectVariationalContactConfigUsesAllocator(registry, worldFreeAllocator);
   expectVariationalStateUsesAllocator(registry, worldFreeAllocator);
   expectVariationalContactDualStateBaked(registry, &expectedDualAllocator);
+  expectVariationalContactGroundSolverBaked(registry);
   EXPECT_GE(
       worldFreeList.getAllocationCount(),
       worldAllocationsBeforeBake + kCompliantVariationalContactRobotCount)

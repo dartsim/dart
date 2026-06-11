@@ -185,11 +185,15 @@
       ground-contact dual state and compliant contact-point scratch are now
       sized at `enterSimulationMode()` and covered by World-base allocator
       no-growth tests that step multiple variational contact sliders without
-      registry capacity growth. Compliant variational contact also reuses the
-      baked ground-contact solver scratch with zero duals, so the contact hook
-      no longer copies contact-point storage in the step loop, and the
-      single-prismatic World-surface contact path now evaluates ground contact
-      without constructing the general residual/contact work vectors.
+      registry capacity growth. Pure compliant variational contact now
+      evaluates directly from baked ground-contact scratch and reusable
+      contact-evaluation vectors, so it no longer constructs the
+      augmented-Lagrangian solver's dual vector; AL contact still owns solver
+      dual scratch only when a positive dual-update cadence requires it. The
+      compliant contact hook no longer copies contact-point storage in the
+      step loop, and the single-prismatic World-surface contact path now
+      evaluates ground contact without constructing the general residual/contact
+      work vectors.
       Broader solver scratch coverage remains open.
 - [ ] Phase 4: Built-in simulation stages borrow world memory for transient
       buffers and avoid growth after simulation is baked. The default
@@ -210,10 +214,11 @@
       rigid and articulated resting-contact scenes. The
       variational multibody stage now owns cache-only reusable contact/constraint
       scratch, bakes loop-closure and hard AVBD point-joint constraint capacity,
-      reuses baked solver scratch for compliant and augmented-Lagrangian ground
-      contact, bakes those vectors before contact-heavy steps, and now routes
-      the single-prismatic compliant ground-contact stage path through a scalar
-      scratch-free solver fast path. A stronger compliant-contact global-heap
+      evaluates pure compliant ground contact from baked ground-contact scratch,
+      reserves augmented-Lagrangian solver scratch only for positive dual-update
+      cadence contact, and bakes those vectors before contact-heavy steps. It
+      now routes the single-prismatic compliant ground-contact stage path through
+      a scalar scratch-free solver fast path. A stronger compliant-contact global-heap
       probe now covers the baked multi-slider World-surface path without
       step-loop heap allocations. The boxed-LCP
       unified constraint stage now reuses stage-owned assembly containers and
@@ -760,6 +765,14 @@ Follow-up progress after PR #2956:
   pre-sizes and synchronizes the row inventories for baked point-joint shapes;
   and the compliant contact hook reads that baked scratch directly instead of
   copying constraints into a default-heap vector.
+- Pure compliant variational ground contact now bypasses
+  `VariationalGroundContactSolver` and its default-heap dual vector entirely.
+  Baked `MultibodyVariationalScratch` still owns the normalized ground-contact
+  points plus contact-evaluation force/forcing vectors, while the
+  augmented-Lagrangian path keeps solver-owned dual scratch only for positive
+  `dualUpdateCadence` configurations. Existing compliant-contact World gates now
+  assert the no-solver pure-compliant path, and the contact-heavy dual-state gate
+  still asserts solver dual scratch for AL contact.
 - The semi-implicit one-slider multibody path now has the same clear/rebuild
   proof for baked private multibody dynamics storage. The gate covers the
   all-storage capacity map created by `reserveMultibodyDynamicsRegistryStorage`

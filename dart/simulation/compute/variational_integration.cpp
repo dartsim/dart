@@ -2200,6 +2200,13 @@ void constraintResidualAndJacobianInto(
   }
 }
 
+bool groundContactPointForceInto(
+    const VariationalContactContext& context,
+    const VariationalGroundContact& contact,
+    const VariationalContactPoint& point,
+    double dual,
+    Eigen::VectorXd& generalizedForce);
+
 void evaluateContactForceInto(
     const detail::WorldRegistry& registry,
     const VarTree& tree,
@@ -2207,11 +2214,13 @@ void evaluateContactForceInto(
     double timeStep,
     const Eigen::VectorXd& previousVelocity,
     const VariationalContactHook& contactHook,
+    const VariationalGroundContact* groundContact,
     const VariationalGroundContactSolver* groundContactSolver,
     VariationalContactEvaluationScratch& scratch,
     Eigen::VectorXd& contactForce)
 {
-  if (groundContactSolver == nullptr && !contactHook) {
+  if (groundContact == nullptr && groundContactSolver == nullptr
+      && !contactHook) {
     contactForce.resize(0);
     return;
   }
@@ -2259,10 +2268,23 @@ void evaluateContactForceInto(
       scratch.previousJacobians,
       previousVelocity,
       timeStep};
+  contactForce.setZero(static_cast<Eigen::Index>(tree.dofCount));
   if (groundContactSolver != nullptr) {
     groundContactSolver->computeForceInto(context, contactForce);
-  } else {
-    contactForce = contactHook(context);
+  } else if (groundContact != nullptr) {
+    for (const VariationalContactPoint& point : groundContact->points) {
+      groundContactPointForceInto(
+          context, *groundContact, point, /*dual=*/0.0, contactForce);
+    }
+  }
+  if (contactHook) {
+    const Eigen::VectorXd hookForce = contactHook(context);
+    DART_SIMULATION_THROW_T_IF(
+        hookForce.size() != static_cast<Eigen::Index>(tree.dofCount),
+        InvalidOperationException,
+        "Variational contact hook returned a generalized force of the wrong "
+        "dimension");
+    contactForce += hookForce;
   }
 
   DART_SIMULATION_THROW_T_IF(
@@ -3215,6 +3237,7 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
         timeStep,
         velocity,
         contactHook,
+        fastGroundContact,
         groundContactSolver,
         contactEvaluation,
         contactEvaluation.contactForce);
@@ -3903,16 +3926,17 @@ void reserveMultibodyVariationalRegistryStorage(
       continue;
     }
     normalizeGroundContact(scratch.groundContact);
-    if (!scratch.groundContactSolver.has_value()) {
-      scratch.groundContactSolver.emplace(scratch.groundContact);
-    } else {
-      scratch.groundContactSolver->resetContact(scratch.groundContact);
-    }
     if (tree.dofCount > 0u) {
       reserveContactEvaluationScratch(tree, scratch.contactEvaluation);
     }
     if (contactConfig->dualUpdateCadence == 0u) {
+      scratch.groundContactSolver.reset();
       continue;
+    }
+    if (!scratch.groundContactSolver.has_value()) {
+      scratch.groundContactSolver.emplace(scratch.groundContact);
+    } else {
+      scratch.groundContactSolver->resetContact(scratch.groundContact);
     }
 
     auto& dualState
@@ -4023,6 +4047,7 @@ void MultibodyVariationalIntegrationStage::execute(
     // duals persist in VariationalContactDualState and advance on an outer-loop
     // cadence after the step. Absent => contact-free.
     auto* contactConfig = registry.try_get<comps::VariationalContact>(entity);
+    const VariationalGroundContact* groundContact = nullptr;
     VariationalGroundContactSolver* groundContactSolver = nullptr;
     VariationalGroundContactSolver* alSolver = nullptr;
     std::size_t dualUpdateCadence = 0;
@@ -4033,17 +4058,18 @@ void MultibodyVariationalIntegrationStage::execute(
       const auto& contact = scratch.groundContact;
       if (contact.stiffness > 0.0 && !contact.points.empty()) {
         normalizeGroundContact(scratch.groundContact);
-        if (!scratch.groundContactSolver.has_value()) {
-          scratch.groundContactSolver.emplace(contact);
-        } else {
-          scratch.groundContactSolver->resetContact(contact);
-        }
-        VariationalGroundContactSolver& solver = *scratch.groundContactSolver;
-        groundContactSolver = &solver;
+        groundContact = &scratch.groundContact;
         if (contactConfig->dualUpdateCadence > 0) {
           // C3: a stateful AL solver seeded from the persisted (warm-started)
           // duals. The solver must outlive the integrate call and the later
           // dual update, so it is also held in `alSolver` here.
+          if (!scratch.groundContactSolver.has_value()) {
+            scratch.groundContactSolver.emplace(contact);
+          } else {
+            scratch.groundContactSolver->resetContact(contact);
+          }
+          VariationalGroundContactSolver& solver = *scratch.groundContactSolver;
+          groundContactSolver = &solver;
           dualUpdateCadence = contactConfig->dualUpdateCadence;
           auto& dualState
               = registry.get_or_emplace<comps::VariationalContactDualState>(
@@ -4060,6 +4086,8 @@ void MultibodyVariationalIntegrationStage::execute(
               std::span<const double>{
                   dualState.duals.data(), dualState.duals.size()});
           alSolver = &solver;
+        } else {
+          scratch.groundContactSolver.reset();
         }
       }
     }
@@ -4077,7 +4105,7 @@ void MultibodyVariationalIntegrationStage::execute(
         constraints,
         5,
         contactHook,
-        groundContactSolver != nullptr ? &scratch.groundContact : nullptr,
+        groundContact,
         groundContactSolver,
         &scratch.contactEvaluation,
         &scratch.tree,

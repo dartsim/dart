@@ -667,7 +667,11 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     Variational velocity-actuator projection now counts rows during bake, writes
     actuator targets directly into the reusable projection residual/Jacobian, and
     applies projection retractions through existing scratch instead of allocating
-    a per-step constraint vector or per-joint retract result.
+    a per-step constraint vector or per-joint retract result. Pure compliant
+    variational ground contact now evaluates directly from baked ground-contact
+    scratch and contact-evaluation vectors instead of constructing the
+    augmented-Lagrangian solver's dual vector; AL contact still owns solver
+    dual scratch only when a positive dual-update cadence requires it.
     World registry rebuild gates now also cover the existing compact and
     production mixed default-deformable direct-sparse, matrix-free, FEM, and
     contact-family storage paths across `World::clear()` and rebuild.

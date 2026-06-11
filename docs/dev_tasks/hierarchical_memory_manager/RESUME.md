@@ -134,6 +134,15 @@ target rows directly into the reusable residual/Jacobian storage, and projection
 retractions reuse existing scratch instead of building a per-step constraint
 vector or returning a temporary per-joint retract vector.
 
+The current continuation narrows variational ground-contact scratch ownership:
+pure compliant contact now evaluates from baked `groundContact` plus reusable
+contact-evaluation force/forcing vectors and resets the AL solver optional,
+avoiding construction of the solver's default-heap dual vector. Positive
+`dualUpdateCadence` configurations still construct and reuse
+`VariationalGroundContactSolver` so augmented-Lagrangian dual state remains
+warm-started and persisted. Focused variational ground-contact tests and World
+reservation/rebuild tests cover both sides of that split.
+
 The next follow-up slice adds a focused `WorldRegistry` rebuild-boundary gate
 for contact-heavy solver-owned ECS storage. It reuses the existing compliant
 variational contact slider setup, verifies baked contact scratch and registry
