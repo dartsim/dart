@@ -63,6 +63,32 @@ def _nunchaku_packet(**overrides):
     return {"benchmarks": [row]}
 
 
+def _nunchaku_scaling_packet(**overrides):
+    rows = []
+    for size in (20, 40, 60, 80, 100):
+        row = {
+            "name": f"BM_Plan083CpuScene_nunchaku_scaling_reduced_world_step/{size}_median",
+            "run_name": f"BM_Plan083CpuScene_nunchaku_scaling_reduced_world_step/{size}",
+            "aggregate_name": "median",
+            "real_time": float(size),
+            "cpu_time": float(size),
+            "time_unit": "ms",
+            "nunchaku_pair_count": size,
+            "body_count": 2 * size,
+            "dynamic_body_count": size,
+            "revolute_joint_count": size,
+            "active_articulation_constraints": 2 * size,
+            "solver_iterations": 0,
+            "failed_steps": 0,
+            "final_equality_residual_norm": 0.0,
+            "free_axis_angular_velocity_rad_s": 1.5,
+        }
+        if overrides.get("size") == size:
+            row.update({k: v for k, v in overrides.items() if k != "size"})
+        rows.append(row)
+    return {"benchmarks": rows}
+
+
 def _windmill_packet(**overrides):
     row = {
         "name": "BM_Plan083CpuScene_windmill_reduced_world_step_median",
@@ -198,6 +224,25 @@ def test_plan083_cpu_scene_packet_accepts_reduced_nunchaku() -> None:
     assert row["wall_time_ns"] == 3.0e6
 
 
+def test_plan083_cpu_scene_packet_accepts_reduced_nunchaku_scaling() -> None:
+    module = _load_module()
+
+    packet = module.make_packet(
+        _nunchaku_scaling_packet(),
+        max_equality_residual=1e-8,
+        scene="nunchaku_scaling",
+    )
+
+    row = packet["plan083_cpu_scene_packet"]
+    assert row["row_id"] == "unb-fig-25"
+    assert row["scene_id"] == "plan083_nunchaku"
+    assert row["paper_scale"] is False
+    assert row["sample_sizes"] == [20, 40, 60, 80, 100]
+    assert row["sample_count"] == 5
+    assert row["samples"][0]["body_count"] == 40
+    assert row["samples"][-1]["revolute_joint_count"] == 100
+
+
 def test_plan083_cpu_scene_packet_accepts_reduced_windmill() -> None:
     module = _load_module()
 
@@ -325,6 +370,19 @@ def test_plan083_cpu_scene_packet_rejects_nunchaku_without_hinge() -> None:
             _nunchaku_packet(revolute_joint_count=0),
             max_equality_residual=1e-8,
             scene="nunchaku_single",
+        )
+
+
+def test_plan083_cpu_scene_packet_rejects_nunchaku_scaling_without_size() -> None:
+    module = _load_module()
+    packet = _nunchaku_scaling_packet()
+    packet["benchmarks"] = packet["benchmarks"][:-1]
+
+    with pytest.raises(module.Plan083CpuScenePacketError, match="missing median"):
+        module.make_packet(
+            packet,
+            max_equality_residual=1e-8,
+            scene="nunchaku_scaling",
         )
 
 

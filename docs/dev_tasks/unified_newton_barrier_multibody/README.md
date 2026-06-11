@@ -190,6 +190,9 @@
         panel while keeping angular-velocity sweeps future work.
   - [x] Add a reduced ragdoll CPU scene packet and runtime status panel while
         keeping cone-twist joints and 60-ragdoll scale future work.
+  - [x] Add a reduced nunchaku scaling CPU packet for sizes 20, 40, 60, 80,
+        and 100 while keeping cone-twist and coupled contact scaling future
+        work.
   - [ ] Add paper-scale CPU packets only after the corresponding scene assets,
         mixed-domain stepping, and comparison baselines exist.
 
@@ -447,6 +450,7 @@ Runtime-wiring branch-local evidence:
 - `LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe pixi run py-demo-capture -- --scene plan083_hanging_bridge --frames 4 --width 320 --height 240 --output-dir /tmp/dart_plan083_hanging_bridge_capture`
 - `pixi run bm-plan083-cpu-hanging-bridge-packet`
 - `pixi run bm-plan083-cpu-nunchaku-packet`
+- `pixi run bm-plan083-cpu-nunchaku-scaling-packet`
 - `pixi run bm-plan083-cpu-ragdoll-packet`
 - `pixi run python scripts/check_plan083_cpu_scene_corpus.py`
 - `pixi run python scripts/check_plan083_completion_audit.py`

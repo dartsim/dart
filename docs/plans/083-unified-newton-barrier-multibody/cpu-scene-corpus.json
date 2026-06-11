@@ -256,11 +256,11 @@
       "smoke_command": "pixi run py-demos -- --scene plan083_nunchaku --headless --frames 4",
       "long_horizon_visual_command": "pixi run py-demo-capture -- --scene plan083_nunchaku --frames 240 --width 1280 --height 720",
       "visual_evidence_artifact": ".benchmark_results/plan083/visual/nunchaku/manifest.json",
-      "benchmark_command": "pixi run bm bm_plan083_cpu_scene_corpus -- --benchmark_filter=nunchaku_scaling",
+      "benchmark_command": "pixi run bm-plan083-cpu-nunchaku-scaling-packet",
       "benchmark_profile_artifact": ".benchmark_results/plan083/cpu_scene_corpus/nunchaku_scaling.json",
       "expected_invariant": "N-by-N nunchaku timing grows linearly for N = 20, 40, 60, 80, 100 at matched tolerances.",
-      "limitation_status": "Reduced single-hinge smoke only; waiting for sparse constraint solve and scaling benchmark.",
-      "notes_or_gap": "Shares the reduced nunchaku scene with Fig. 13, but the N-by-N scaling packet remains planned."
+      "limitation_status": "Reduced independent-hinge scaling packet only; cone-twist ranges, coupled N-by-N contact, and paper-scale linear-growth claims remain planned.",
+      "notes_or_gap": "Shares the reduced nunchaku scene with Fig. 13; bm-plan083-cpu-nunchaku-scaling-packet validates sizes N = 20, 40, 60, 80, 100 through rigid IPC World::step without claiming paper-scale cone-twist scaling."
     },
     {
       "row_id": "unb-table-02",

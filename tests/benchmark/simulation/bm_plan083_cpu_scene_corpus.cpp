@@ -271,6 +271,81 @@ struct NunchakuFixture
   std::vector<BodySnapshot> snapshots;
 };
 
+struct NunchakuScalingFixture
+{
+  explicit NunchakuScalingFixture(std::size_t pairCount)
+  {
+    world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+    world.setTimeStep(0.005);
+    world.setGravity(Eigen::Vector3d::Zero());
+
+    const std::size_t columns = static_cast<std::size_t>(
+        std::ceil(std::sqrt(static_cast<double>(pairCount))));
+    anchors.reserve(pairCount);
+    swinging.reserve(pairCount);
+    for (std::size_t index = 0; index < pairCount; ++index) {
+      const Eigen::Vector3d basePosition(
+          1.2 * static_cast<double>(index % columns),
+          1.2 * static_cast<double>(index / columns),
+          0.75);
+
+      sx::RigidBodyOptions anchorOptions;
+      anchorOptions.isStatic = true;
+      anchorOptions.position = basePosition;
+      auto anchor = world.addRigidBody(
+          "plan083_nunchaku_scaling_anchor_" + std::to_string(index),
+          anchorOptions);
+      anchor.setCollisionShape(makeOffsetBox(
+          kNunchakuHandleHalfExtents,
+          Eigen::Vector3d(-kNunchakuHandleHalfExtents.x(), 0.0, 0.0)));
+
+      sx::RigidBodyOptions swingOptions;
+      swingOptions.mass = 0.2;
+      swingOptions.position = basePosition;
+      swingOptions.angularVelocity = Eigen::Vector3d(0.0, 0.0, 1.5);
+      auto swing = world.addRigidBody(
+          "plan083_nunchaku_scaling_swing_" + std::to_string(index),
+          swingOptions);
+      swing.setCollisionShape(makeOffsetBox(
+          kNunchakuHandleHalfExtents,
+          Eigen::Vector3d(kNunchakuHandleHalfExtents.x(), 0.0, 0.0)));
+
+      (void)world.addRigidBodyRevoluteJoint(
+          "plan083_nunchaku_scaling_hinge_" + std::to_string(index),
+          anchor,
+          swing,
+          Eigen::Vector3d::UnitZ());
+
+      anchors.push_back(anchor);
+      swinging.push_back(swing);
+    }
+
+    for (const auto& anchor : anchors) {
+      snapshotBody(snapshots, anchor);
+    }
+    for (const auto& swing : swinging) {
+      snapshotBody(snapshots, swing);
+    }
+
+    world.enterSimulationMode();
+  }
+
+  void reset()
+  {
+    world.setTime(0.0);
+    for (auto& snapshot : snapshots) {
+      snapshot.body.setTransform(snapshot.transform);
+      snapshot.body.setLinearVelocity(snapshot.linearVelocity);
+      snapshot.body.setAngularVelocity(snapshot.angularVelocity);
+    }
+  }
+
+  sx::World world;
+  std::vector<sx::RigidBody> anchors;
+  std::vector<sx::RigidBody> swinging;
+  std::vector<BodySnapshot> snapshots;
+};
+
 struct WindmillFixture
 {
   WindmillFixture()
@@ -688,6 +763,66 @@ static void BM_Plan083CpuScene_nunchaku_single_reduced_world_step(
       = fixture.swinging->getAngularVelocity().z();
 }
 BENCHMARK(BM_Plan083CpuScene_nunchaku_single_reduced_world_step)
+    ->Unit(benchmark::kMillisecond);
+
+//==============================================================================
+static void BM_Plan083CpuScene_nunchaku_scaling_reduced_world_step(
+    benchmark::State& state)
+{
+  const auto pairCount = static_cast<std::size_t>(state.range(0));
+  NunchakuScalingFixture fixture(pairCount);
+  sx::compute::SequentialExecutor executor;
+
+  std::size_t failedSteps = 0;
+  sx::compute::RigidIpcSolverStats lastStats;
+  for (auto _ : state) {
+    state.PauseTiming();
+    fixture.reset();
+    sx::compute::RigidIpcContactStage ipcStage(64);
+    sx::compute::WorldStepPipeline pipeline;
+    pipeline.addStage(ipcStage);
+    state.ResumeTiming();
+
+    fixture.world.step(executor, pipeline);
+    lastStats = ipcStage.getLastStats();
+    const bool residualOk
+        = std::isfinite(lastStats.finalEqualityResidualNorm)
+          && lastStats.finalEqualityResidualNorm <= kMaxReducedEqualityResidual;
+    const bool satisfiedNoOp
+        = residualOk && lastStats.solverIterations == 0u
+          && lastStats.activeArticulationConstraints >= 2u * pairCount;
+    if (!residualOk || (lastStats.failed && !satisfiedNoOp)) {
+      ++failedSteps;
+    }
+    benchmark::DoNotOptimize(fixture.swinging.front().getTransform().data());
+    benchmark::DoNotOptimize(fixture.swinging.back().getTransform().data());
+    benchmark::ClobberMemory();
+  }
+
+  state.counters["row_unb_fig_25"] = 1.0;
+  state.counters["paper_scale"] = 0.0;
+  state.counters["nunchaku_pair_count"] = static_cast<double>(pairCount);
+  state.counters["body_count"] = static_cast<double>(lastStats.bodyCount);
+  state.counters["dynamic_body_count"]
+      = static_cast<double>(lastStats.dynamicBodyCount);
+  state.counters["revolute_joint_count"]
+      = static_cast<double>(fixture.world.getRigidBodyJointCount());
+  state.counters["active_articulation_constraints"]
+      = static_cast<double>(lastStats.activeArticulationConstraints);
+  state.counters["solver_iterations"]
+      = static_cast<double>(lastStats.solverIterations);
+  state.counters["failed_steps"] = static_cast<double>(failedSteps);
+  state.counters["final_equality_residual_norm"]
+      = lastStats.finalEqualityResidualNorm;
+  state.counters["free_axis_angular_velocity_rad_s"]
+      = fixture.swinging.front().getAngularVelocity().z();
+}
+BENCHMARK(BM_Plan083CpuScene_nunchaku_scaling_reduced_world_step)
+    ->Arg(20)
+    ->Arg(40)
+    ->Arg(60)
+    ->Arg(80)
+    ->Arg(100)
     ->Unit(benchmark::kMillisecond);
 
 //==============================================================================

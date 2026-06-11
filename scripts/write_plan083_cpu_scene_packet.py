@@ -31,9 +31,11 @@ DEFAULT_PACKET_OUTPUT = Path(
 )
 
 DEFAULT_SCENE = "hanging_bridge"
+NUNCHAKU_SCALING_SIZES = (20, 40, 60, 80, 100)
 SCENE_ROWS = {
     "hanging_bridge": "BM_Plan083CpuScene_hanging_bridge_reduced_world_step",
     "nunchaku_single": "BM_Plan083CpuScene_nunchaku_single_reduced_world_step",
+    "nunchaku_scaling": "BM_Plan083CpuScene_nunchaku_scaling_reduced_world_step",
     "precession": "BM_Plan083CpuScene_precession_reduced_world_step",
     "ragdoll_reduced": "BM_Plan083CpuScene_ragdoll_reduced_world_step",
     "terrain_vehicle": "BM_Plan083CpuScene_terrain_vehicle_reduced_world_step",
@@ -43,6 +45,9 @@ SCENE_BENCHMARK_OUTPUTS = {
     "hanging_bridge": DEFAULT_BENCHMARK_OUTPUT,
     "nunchaku_single": Path(
         ".benchmark_results/plan083/cpu_scene_corpus/nunchaku_single_benchmark.json"
+    ),
+    "nunchaku_scaling": Path(
+        ".benchmark_results/plan083/cpu_scene_corpus/nunchaku_scaling_benchmark.json"
     ),
     "precession": Path(
         ".benchmark_results/plan083/cpu_scene_corpus/precession_benchmark.json"
@@ -61,6 +66,9 @@ SCENE_PACKET_OUTPUTS = {
     "hanging_bridge": DEFAULT_PACKET_OUTPUT,
     "nunchaku_single": Path(
         ".benchmark_results/plan083/cpu_scene_corpus/nunchaku_single.json"
+    ),
+    "nunchaku_scaling": Path(
+        ".benchmark_results/plan083/cpu_scene_corpus/nunchaku_scaling.json"
     ),
     "precession": Path(".benchmark_results/plan083/cpu_scene_corpus/precession.json"),
     "ragdoll_reduced": Path(
@@ -136,6 +144,9 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 def run_benchmark(args: argparse.Namespace) -> None:
     args.benchmark_json.parent.mkdir(parents=True, exist_ok=True)
     benchmark_row = SCENE_ROWS[args.scene]
+    benchmark_filter = f"^{benchmark_row}$"
+    if args.scene == "nunchaku_scaling":
+        benchmark_filter = f"^{benchmark_row}/"
     command = [
         sys.executable,
         "scripts/run_cpp_benchmark.py",
@@ -144,7 +155,7 @@ def run_benchmark(args: argparse.Namespace) -> None:
         "--build-type",
         args.build_type,
         "--",
-        f"--benchmark_filter=^{benchmark_row}$",
+        f"--benchmark_filter={benchmark_filter}",
         f"--benchmark_min_time={args.benchmark_min_time}",
         f"--benchmark_repetitions={args.benchmark_repetitions}",
         "--benchmark_report_aggregates_only=true",
@@ -228,6 +239,13 @@ def make_packet(
     typed_rows = [row for row in rows if isinstance(row, Mapping)]
     if len(typed_rows) != len(rows):
         raise Plan083CpuScenePacketError("benchmark JSON has non-object rows")
+
+    if scene == "nunchaku_scaling":
+        return _make_nunchaku_scaling_packet(
+            typed_rows,
+            rows,
+            max_equality_residual=max_equality_residual,
+        )
 
     row = _representative_row(typed_rows, SCENE_ROWS[scene])
     timing_ns = benchmark_timing_ns(row)
@@ -412,6 +430,135 @@ def _make_nunchaku_packet(
                 "Reduced single-hinge runtime smoke packet only; cone-twist "
                 "ranges, sparse N-by-N scaling, and Fig. 25 remain planned."
             ),
+        },
+        "benchmarks": rows,
+    }
+
+
+def _make_nunchaku_scaling_packet(
+    typed_rows: list[Mapping[str, Any]],
+    rows: list[Any],
+    *,
+    max_equality_residual: float,
+) -> dict[str, Any]:
+    expected_row = SCENE_ROWS["nunchaku_scaling"]
+    found: dict[int, Mapping[str, Any]] = {}
+    errors: list[str] = []
+    for row in typed_rows:
+        name = benchmark_row_name(row)
+        if not name:
+            errors.append("benchmark row is missing a name")
+            continue
+        canonical = _packet_row_name(row)
+        prefix = f"{expected_row}/"
+        if not canonical.startswith(prefix):
+            errors.append(f"unexpected benchmark row: {name}")
+            continue
+        size_text = canonical[len(prefix) :]
+        try:
+            size = int(size_text)
+        except ValueError:
+            errors.append(f"{name}: expected integer nunchaku scaling size")
+            continue
+        if size not in NUNCHAKU_SCALING_SIZES:
+            errors.append(f"{name}: unexpected nunchaku scaling size {size}")
+            continue
+        if row.get("aggregate_name") == "median":
+            found[size] = row
+        errors.extend(benchmark_timing_field_errors(row, name))
+
+    for size in NUNCHAKU_SCALING_SIZES:
+        if size not in found:
+            errors.append(f"missing median benchmark row: {expected_row}/{size}")
+
+    if errors:
+        raise Plan083CpuScenePacketError("\n".join(errors))
+
+    samples = []
+    per_pair_times = []
+    for size in NUNCHAKU_SCALING_SIZES:
+        row = found[size]
+        timing_ns = benchmark_timing_ns(row)
+        if not math.isfinite(timing_ns) or timing_ns <= 0.0:
+            raise Plan083CpuScenePacketError(
+                f"{benchmark_row_name(row)} timing is not positive"
+            )
+        failed_steps = _finite_number(row, "failed_steps")
+        if failed_steps != 0.0:
+            raise Plan083CpuScenePacketError(
+                f"reduced nunchaku scaling size {size} reported "
+                f"{failed_steps:g} failed steps"
+            )
+        final_residual = _finite_number(row, "final_equality_residual_norm")
+        if final_residual > max_equality_residual:
+            raise Plan083CpuScenePacketError(
+                f"reduced nunchaku scaling size {size} equality residual "
+                f"{final_residual:.3g} exceeds {max_equality_residual:.3g}"
+            )
+
+        body_count = int(_finite_number(row, "body_count"))
+        dynamic_body_count = int(_finite_number(row, "dynamic_body_count"))
+        revolute_joint_count = int(_finite_number(row, "revolute_joint_count"))
+        active_articulation_constraints = int(
+            _finite_number(row, "active_articulation_constraints")
+        )
+        if body_count != 2 * size:
+            raise Plan083CpuScenePacketError(
+                f"size {size}: expected {2 * size} rigid bodies, got {body_count}"
+            )
+        if dynamic_body_count != size:
+            raise Plan083CpuScenePacketError(
+                f"size {size}: expected {size} dynamic handles, got {dynamic_body_count}"
+            )
+        if revolute_joint_count != size:
+            raise Plan083CpuScenePacketError(
+                f"size {size}: expected {size} revolute joints, got {revolute_joint_count}"
+            )
+        if active_articulation_constraints < 2 * size:
+            raise Plan083CpuScenePacketError(
+                f"size {size}: expected active hinge articulation rows"
+            )
+
+        free_axis_velocity = _finite_number(row, "free_axis_angular_velocity_rad_s")
+        if abs(free_axis_velocity) <= 1e-9:
+            raise Plan083CpuScenePacketError(
+                f"size {size}: nunchaku free-axis angular velocity was lost"
+            )
+        per_pair_time = timing_ns / size
+        per_pair_times.append(per_pair_time)
+        samples.append(
+            {
+                "nunchaku_pair_count": size,
+                "benchmark_row": _packet_row_name(row),
+                "wall_time_ns": timing_ns,
+                "time_per_pair_ns": per_pair_time,
+                "body_count": body_count,
+                "dynamic_body_count": dynamic_body_count,
+                "revolute_joint_count": revolute_joint_count,
+                "active_articulation_constraints": active_articulation_constraints,
+                "solver_iterations": int(_finite_number(row, "solver_iterations")),
+                "final_equality_residual_norm": final_residual,
+                "max_equality_residual": max_equality_residual,
+                "free_axis_angular_velocity_rad_s": free_axis_velocity,
+            }
+        )
+
+    return {
+        "plan083_cpu_scene_packet": {
+            "row_id": "unb-fig-25",
+            "scene_id": "plan083_nunchaku",
+            "paper_scale": False,
+            "runtime_path": "rigid IPC World::step",
+            "sample_sizes": list(NUNCHAKU_SCALING_SIZES),
+            "sample_count": len(samples),
+            "min_time_per_pair_ns": min(per_pair_times),
+            "max_time_per_pair_ns": max(per_pair_times),
+            "limitation_status": (
+                "Reduced independent-hinge scaling packet only; cone-twist "
+                "ranges, coupled N-by-N contact, and paper-scale linear-growth "
+                "claims remain planned."
+            ),
+            "samples": samples,
         },
         "benchmarks": rows,
     }
@@ -728,12 +875,19 @@ def main(argv: list[str]) -> int:
 
     write_packet(args.output, packet)
     row = packet["plan083_cpu_scene_packet"]
-    print(
-        "PLAN-083 CPU scene packet OK: "
-        f"{row['scene_id']} bodies={row['body_count']} "
-        f"residual={row['final_equality_residual_norm']:.3g} "
-        f"time={row['wall_time_ns']:.3g} ns"
-    )
+    if "body_count" in row:
+        print(
+            "PLAN-083 CPU scene packet OK: "
+            f"{row['scene_id']} bodies={row['body_count']} "
+            f"residual={row['final_equality_residual_norm']:.3g} "
+            f"time={row['wall_time_ns']:.3g} ns"
+        )
+    else:
+        print(
+            "PLAN-083 CPU scene packet OK: "
+            f"{row['scene_id']} samples={row['sample_sizes']} "
+            f"max_time_per_pair={row['max_time_per_pair_ns']:.3g} ns"
+        )
     print(f"Wrote {args.output}")
     return 0
 
