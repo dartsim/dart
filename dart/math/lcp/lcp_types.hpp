@@ -335,7 +335,21 @@ struct DART_API LcpProblem
       return false;
     }
 
-    return (findex.array() >= 0).any();
+    bool hasCoupling = false;
+    for (Eigen::Index i = 0; i < n; ++i) {
+      const int ref = findex[i];
+      if (ref < 0) {
+        continue;
+      }
+
+      if (ref >= n || ref == i) {
+        return false;
+      }
+
+      hasCoupling = true;
+    }
+
+    return hasCoupling;
   }
 
   /// Returns a single prioritized classification for this problem form.

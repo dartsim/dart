@@ -121,6 +121,30 @@ def test_lcp_problem_rejects_findex_with_invalid_bound_dimensions() -> None:
     assert not dart.DantzigSolver().supports_problem(problem)
 
 
+@pytest.mark.parametrize(
+    "findex",
+    (
+        np.array([-1, 2], dtype=np.int32),
+        np.array([-1, 1], dtype=np.int32),
+    ),
+)
+def test_lcp_problem_rejects_invalid_findex_references(
+    findex: np.ndarray,
+) -> None:
+    problem = dart.LcpProblem(
+        np.eye(2),
+        np.array([1.0, 2.0]),
+        np.array([0.0, -1.0]),
+        np.array([np.inf, 1.0]),
+        findex,
+    )
+
+    assert problem.get_type() == dart.LcpProblemType.INVALID
+    assert not problem.is_boxed_lcp()
+    assert not problem.has_friction_index()
+    assert not dart.DantzigSolver().supports_problem(problem)
+
+
 @pytest.mark.parametrize("solver_type", SOLVER_TYPES)
 def test_all_lcp_solvers_are_available_from_dartpy_math(solver_type: type) -> None:
     problem = dart.LcpProblem(np.eye(3), np.array([1.0, 0.5, 2.0]))

@@ -216,3 +216,31 @@ TEST(LcpTypesTest, FrictionIndexClassificationRejectsInvalidBoundsDimensions)
   EXPECT_FALSE(problem.hasFrictionIndex());
   EXPECT_EQ(problem.getType(), LcpProblemType::Invalid);
 }
+
+TEST(LcpTypesTest, FrictionIndexClassificationRejectsInvalidReferences)
+{
+  Eigen::Vector2d lo;
+  lo << 0.0, -1.0;
+  Eigen::Vector2d hi;
+  hi << std::numeric_limits<double>::infinity(), 1.0;
+
+  const LcpProblem outOfRangeProblem(
+      Eigen::Matrix2d::Identity(),
+      Eigen::Vector2d(0.5, 0.25),
+      lo,
+      hi,
+      Eigen::Vector2i(-1, 2));
+
+  EXPECT_FALSE(outOfRangeProblem.hasFrictionIndex());
+  EXPECT_EQ(outOfRangeProblem.getType(), LcpProblemType::Invalid);
+
+  const LcpProblem selfReferenceProblem(
+      Eigen::Matrix2d::Identity(),
+      Eigen::Vector2d(0.5, 0.25),
+      lo,
+      hi,
+      Eigen::Vector2i(-1, 1));
+
+  EXPECT_FALSE(selfReferenceProblem.hasFrictionIndex());
+  EXPECT_EQ(selfReferenceProblem.getType(), LcpProblemType::Invalid);
+}
