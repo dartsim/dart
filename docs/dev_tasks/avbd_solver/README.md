@@ -9,6 +9,11 @@ Corpus matrix:
 
 ## Current Status
 
+- Latest local follow-up: Linux Release CI now runs the ASAN build with
+  `DART_PARALLEL_JOBS=4` after the hosted runner killed the ASAN compilation
+  with exit 137 while rebuilding the full test target set. This is CI resource
+  calibration only; it does not close any AVBD solver, CPU-win, GPU, or
+  paper-number gate.
 - Latest local follow-up: the AVBD-only contact regressions in
   `test_boxed_lcp_contact` are excluded on MSVC after both target-level `/Od`
   and a source-local optimization guard still hit C1001 in MSVC 19.44. The
