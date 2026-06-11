@@ -154,6 +154,56 @@ struct AffinePointTriangleMicroSolveResult
   bool barrierActive = false;
 };
 
+struct AffinePointTriangleRuntimeStepOptions
+{
+  AffinePointTriangleMicroSolveOptions solve;
+  double timeStep = 0.01;
+  Eigen::Vector3d gravity = Eigen::Vector3d(0.0, 0.0, -9.81);
+};
+
+struct AffinePointTriangleRuntimeStepResult
+{
+  AffineBodyState initialState;
+  AffineBodyState inertialTarget;
+  AffinePointTriangleMicroSolveResult solve;
+  double displacementNorm = 0.0;
+  double linearSpeed = 0.0;
+  double affineVelocityNorm = 0.0;
+  bool valid = false;
+  bool converged = false;
+};
+
+struct AffinePointTrianglePairMicroSolveResult
+{
+  AffineBodyState pointState;
+  AffineBodyState triangleState;
+  double initialValue = 0.0;
+  double finalValue = 0.0;
+  double initialGradientNorm = 0.0;
+  double finalGradientNorm = 0.0;
+  double initialSquaredDistance = 0.0;
+  double finalSquaredDistance = 0.0;
+  int iterations = 0;
+  bool valid = false;
+  bool converged = false;
+  bool barrierActive = false;
+};
+
+struct AffinePointTrianglePairRuntimeStepResult
+{
+  AffineBodyState initialPointState;
+  AffineBodyState initialTriangleState;
+  AffineBodyState pointInertialTarget;
+  AffineBodyState triangleInertialTarget;
+  AffinePointTrianglePairMicroSolveResult solve;
+  double pointDisplacementNorm = 0.0;
+  double triangleDisplacementNorm = 0.0;
+  double maxLinearSpeed = 0.0;
+  double maxAffineVelocityNorm = 0.0;
+  bool valid = false;
+  bool converged = false;
+};
+
 [[nodiscard]] DART_SIMULATION_API AffineVector12d
 affineBodyStateToVector(const AffineBodyState& state);
 
@@ -273,5 +323,37 @@ affinePointTriangleMicroSolve(
     const Eigen::Vector3d& triangleB,
     const Eigen::Vector3d& triangleC,
     const AffinePointTriangleMicroSolveOptions& options);
+
+[[nodiscard]] DART_SIMULATION_API AffinePointTriangleRuntimeStepResult
+affinePointTriangleRuntimeStep(
+    const AffineBodyState& initialPointBody,
+    const Eigen::Vector3d& point,
+    const AffineBodyState& triangleBody,
+    const Eigen::Vector3d& triangleA,
+    const Eigen::Vector3d& triangleB,
+    const Eigen::Vector3d& triangleC,
+    const AffinePointTriangleRuntimeStepOptions& options);
+
+[[nodiscard]] DART_SIMULATION_API AffinePointTrianglePairMicroSolveResult
+affinePointTrianglePairMicroSolve(
+    const AffineBodyState& initialPointBody,
+    const AffineBodyState& pointInertialTarget,
+    const Eigen::Vector3d& point,
+    const AffineBodyState& initialTriangleBody,
+    const AffineBodyState& triangleInertialTarget,
+    const Eigen::Vector3d& triangleA,
+    const Eigen::Vector3d& triangleB,
+    const Eigen::Vector3d& triangleC,
+    const AffinePointTriangleMicroSolveOptions& options);
+
+[[nodiscard]] DART_SIMULATION_API AffinePointTrianglePairRuntimeStepResult
+affinePointTrianglePairRuntimeStep(
+    const AffineBodyState& initialPointBody,
+    const Eigen::Vector3d& point,
+    const AffineBodyState& initialTriangleBody,
+    const Eigen::Vector3d& triangleA,
+    const Eigen::Vector3d& triangleB,
+    const Eigen::Vector3d& triangleC,
+    const AffinePointTriangleRuntimeStepOptions& options);
 
 } // namespace dart::simulation::detail

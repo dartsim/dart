@@ -2,15 +2,48 @@
 
 ## Last Session Summary
 
-Latest local follow-up: `RigidBodyContactStage::prepare()` now avoids the
-collision-shape capacity scan when the contact query is already skipped, and
+Latest local follow-up: after merging `origin/main` at `0dc865abdb6`, the
+narrow `RigidBodyContactStage::prepare()` source-row cleanup still builds and
+focused AVBD source-row tests plus `pixi run test-unit` pass. The cleanup avoids
+the collision-shape capacity scan when the contact query is already skipped, and
 uses the distance-spring storage size for AVBD scratch reserve capacity instead
-of iterating spring configs just to count them. Local benchmark smoke moved
-`BM_AvbdDemo2dMotorStep_median` from about 9.34 us to 8.83 us,
-`BM_AvbdDemo2dSpringStep_median` from about 5.04 us to 4.28 us, and
-`BM_AvbdDemo2dSpringRatioStep_median` from about 45.3 us to 37.1 us on this
-host. This is only no-contact/source-row overhead evidence; it does not close
-any source CPU-win, GPU, or paper-number gate.
+of iterating the spring configs just to count them. Earlier same-branch
+benchmark smoke under lower host load moved `BM_AvbdDemo2dMotorStep_median` from
+about 9.34 us to 8.83 us, `BM_AvbdDemo2dSpringStep_median` from about 5.04 us to
+4.28 us, and `BM_AvbdDemo2dSpringRatioStep_median` from about 45.3 us to
+37.1 us; post-merge reruns under host load average around 20 were noisy enough
+to treat as smoke only. This remains no-contact/source-row overhead evidence
+and does not close any source CPU-win, GPU, or paper-number gate.
+
+Latest local follow-up: CUDA boxed-LCP PGS dense world-contact tests now keep
+the largest 128-box fixture as a cheap shape gate while bounding the default
+runtime-contract CUDA sweeps to smaller dense packets. #2973's CUDA failure
+timed out in the pre-existing `test_lcp_jacobi_batch_cuda` dense PGS suite;
+`main` passed the same binary but only with about 1099 seconds of runtime. This
+is CI-runtime calibration only; it does not close any AVBD solver, CPU-win,
+GPU, or paper-number gate.
+
+Latest local follow-up: the large BoxedLcp dense/articulated scaling packets in
+`test_boxed_lcp_contact` are now opt-in behind
+`DART_BOXED_LCP_CONTACT_ENABLE_EXPENSIVE_SCALING_TESTS`, while representative
+default coverage still includes dense-contact shape smoke and small/mid-size
+articulated public-step cases. This keeps routine CI from spending minutes in
+the dense fallback path while preserving the larger packets for dedicated
+evidence/performance runs. `pixi run lint`, focused CTest, and the dartpy world
+test passed locally. This is CI-runtime calibration only; it does not close any
+AVBD solver, CPU-win, GPU, or paper-number gate.
+
+Latest local follow-up: dartpy public articulated fixed, spherical, cardinal
+one-DOF motor, and non-cardinal one-DOF motor break/reset coverage now rechecks
+endpoint shape, joint type, DOF count, and motor axis after reset re-engages the
+rows for same-multibody, world-link, and movable-pair cases; the non-cardinal
+direct cases now also recheck that shape while broken rows are being skipped
+before reset. Broken-state binary round-trip tests now also recheck the
+restored facade shape after reset re-engages same-multibody/world-link fixed,
+spherical, and one-DOF rows. The focused selected pytest filters passed. This
+is only a narrow public facade lifecycle assertion slice; it does not close
+broader articulated fracture, motor lifecycle, source-corpus, CPU-win, GPU, or
+paper-number gates.
 
 Latest local follow-up: small AVBD rigid world-contact snapshots no longer
 reserve the endpoint entity-index hash map while the body count is within the
@@ -1667,13 +1700,14 @@ complete.
 
 Current reality (2026-06-11): this checkout is
 `avbd/source-row-perf-slice`, a local branch from `main` for a narrow
-contact-stage prepare overhead cleanup. The active PR branches are separate:
-PR #2973 (`avbd/articulated-reset-endpoint-shape`) and PR #2975
-(`avbd/articulated-stiffness-roundtrip`) are draft/open and should not be
-grown with unrelated source-row performance work. The older checkpoint branch
-description below is historical context for the raw 33-hour checkpoint and
-should not be treated as the current checkout without re-verifying
-`git status --short --branch` and the open PR heads.
+contact-stage prepare overhead cleanup, now being merged forward to
+`origin/main` at `0dc865abdb6` after #2973 and #2974 landed. PR #2975
+(`avbd/articulated-stiffness-roundtrip`) remains the separate open
+stiffness-roundtrip PR and should not be grown with unrelated source-row
+performance work. The older checkpoint branch description below is historical
+context for the raw 33-hour checkpoint and should not be treated as the current
+checkout without re-verifying `git status --short --branch` and the open PR
+heads.
 
 `feature/avbd-articulated-masked-rows` - staged local slice based on cached
 `origin/main` at `dbac6c63e9f`, including the scalar-row foundation,
@@ -2131,19 +2165,18 @@ parity claim.
 
 ## Immediate Next Step
 
-Current newest local follow-up: verify and land the narrow
+Current newest local follow-up: finish verifying the narrow
 `RigidBodyContactStage::prepare()` overhead cleanup from
-`avbd/source-row-perf-slice` if the local lint/build/test/benchmark evidence
-remains clean. The branch currently has local benchmark smoke showing improved
-Motor/Spring/Spring Ratio source rows, but this does not close any source
-CPU-win, GPU, or paper-number gate. The earlier SSH fetch path failed in this
-environment with `ssh: connect to host github.com port 22: Network is
-unreachable`, so keep using HTTPS when a fresh main refresh is needed here. The
-pre-merge backup stashes remain present and should not be dropped without
-maintainer approval. The project `.gitignore` intentionally ignores scratch JSON
-dumps in the PLAN-104 evidence folder while allowing curated
-`avbd-*-packet.json` fixtures referenced by plan docs and packet-writer tests to
-be checked in.
+`avbd/source-row-perf-slice` after the latest `origin/main` merge. The branch
+currently has local benchmark smoke showing improved Motor/Spring/Spring Ratio
+source rows, but this does not close any source CPU-win, GPU, or paper-number
+gate. The earlier SSH fetch path failed in this environment with
+`ssh: connect to host github.com port 22: Network is unreachable`, so keep using
+HTTPS when a fresh main refresh is needed here. The pre-merge backup stashes
+remain present and should not be dropped without maintainer approval. The
+project `.gitignore` intentionally ignores scratch JSON dumps in the PLAN-104
+evidence folder while allowing curated `avbd-*-packet.json` fixtures referenced
+by plan docs and packet-writer tests to be checked in.
 
 The previous local follow-up adds dartpy articulated joint-list lifetime
 coverage, proving link-link and world-link public facade handles returned from a

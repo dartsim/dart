@@ -186,6 +186,7 @@ if(DART_SIMULATION_BUILD_TESTS)
       LIBRARY ${PROJECT_NAME}-simulation-cuda
       LABEL simulation-cuda
     )
+    set_tests_properties(test_lcp_jacobi_batch_cuda PROPERTIES TIMEOUT 3600)
   endif()
 
   # In-tree tests that poke ECS internals include <entt/entt.hpp> directly.

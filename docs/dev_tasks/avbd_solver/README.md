@@ -9,15 +9,37 @@ Corpus matrix:
 
 ## Current Status
 
-- Latest local follow-up: `RigidBodyContactStage::prepare()` now avoids the
-  collision-shape capacity scan when the contact query is already skipped, and
-  uses the distance-spring storage size for AVBD scratch reserve capacity
-  instead of iterating the spring configs just to count them. On this host, the
-  selected local benchmark smoke moved `BM_AvbdDemo2dMotorStep_median` from
-  about 9.34 us to 8.83 us, `BM_AvbdDemo2dSpringStep_median` from about
-  5.04 us to 4.28 us, and `BM_AvbdDemo2dSpringRatioStep_median` from about
-  45.3 us to 37.1 us. This is only no-contact/source-row overhead evidence; it
+- Latest local follow-up: after merging `origin/main` at `0dc865abdb6`, the
+  narrow `RigidBodyContactStage::prepare()` source-row cleanup still builds and
+  focused AVBD source-row tests plus `pixi run test-unit` pass. The cleanup
+  avoids the collision-shape capacity scan when the contact query is already
+  skipped, and uses the distance-spring storage size for AVBD scratch reserve
+  capacity instead of iterating the spring configs just to count them. Earlier
+  same-branch benchmark smoke under lower host load moved
+  `BM_AvbdDemo2dMotorStep_median` from about 9.34 us to 8.83 us,
+  `BM_AvbdDemo2dSpringStep_median` from about 5.04 us to 4.28 us, and
+  `BM_AvbdDemo2dSpringRatioStep_median` from about 45.3 us to 37.1 us;
+  post-merge reruns under host load average around 20 were noisy enough to
+  treat as smoke only. This remains no-contact/source-row overhead evidence and
   does not close any source CPU-win, GPU, or paper-number gate.
+- Latest local follow-up: CUDA boxed-LCP PGS dense world-contact tests now keep
+  the largest 128-box fixture as a cheap shape gate while bounding the default
+  runtime-contract CUDA sweeps to smaller dense packets. #2973's CUDA failure
+  timed out in the pre-existing `test_lcp_jacobi_batch_cuda` dense PGS suite;
+  `main` passed the same binary but only with about 1099 seconds of runtime.
+  This is CI-runtime calibration only; it does not close any AVBD solver,
+  CPU-win, GPU, or paper-number gate.
+- Latest local follow-up: dartpy public articulated fixed, spherical, cardinal
+  one-DOF motor, and non-cardinal one-DOF motor break/reset coverage now
+  rechecks endpoint shape, joint type, DOF count, and motor axis after reset
+  re-engages the rows for same-multibody, world-link, and movable-pair cases;
+  the non-cardinal direct cases now also recheck that shape while broken rows
+  are being skipped before reset. Broken-state binary round-trip tests now also
+  recheck the restored facade shape after reset re-engages
+  same-multibody/world-link fixed, spherical, and one-DOF rows. The focused
+  selected pytest filters passed. This is only a narrow public facade lifecycle
+  assertion slice; it does not close broader articulated fracture, motor
+  lifecycle, source-corpus, CPU-win, GPU, or paper-number gates.
 - Latest local follow-up: small AVBD rigid world-contact snapshots no longer
   reserve the endpoint entity-index hash map while the body count is within the
   small-row linear-scan capacity. Focused snapshot-index tests passed, and a
