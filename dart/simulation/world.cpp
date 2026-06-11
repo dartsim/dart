@@ -1492,7 +1492,8 @@ struct WorldStepPipelineStages
       rigidIpcContact(compute::RigidIpcContactStageOptions{}, &memoryManager),
       unifiedConstraint(8, &memoryManager),
       deformableDynamics(&memoryManager),
-      kinematics(&memoryManager)
+      kinematics(&memoryManager),
+      pipeline(memoryManager.getFreeAllocator())
   {
   }
 

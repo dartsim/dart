@@ -567,6 +567,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     `BatchedRigidBodyIntegrationStage` now also accepts a `MemoryManager` and
     routes its force and frame-order scratch vectors through the provided
     allocator root for custom allocator-aware stage use.
+    `WorldStepPipeline` overflow stage-pointer storage can now also borrow a
+    DART allocator, and the built-in World pipeline cache routes that spillover
+    path through the World free allocator.
   - Extended experimental `World` base-allocator no-growth coverage to baked
     rigid-body resting contact, non-cross articulated resting contact, and
     same-DOF cross-articulated link-contact scenes after contact prewarm.

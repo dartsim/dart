@@ -18164,6 +18164,37 @@ TEST(World, StepPipelineAllowsMoreThanInlineStageCapacity)
   EXPECT_EQ(pipeline.getStageCount(), 0u);
 }
 
+TEST(World, StepPipelineOverflowUsesProvidedAllocator)
+{
+  namespace common = dart::common;
+  namespace compute = dart::simulation::compute;
+
+  common::MemoryManager memoryManager;
+  auto& freeList = memoryManager.getFreeListAllocator();
+  const auto allocationsBeforePipeline = freeList.getAllocationCount();
+
+  {
+    compute::WorldStepPipeline pipeline(memoryManager.getFreeAllocator());
+    std::array<
+        NoOpWorldStage,
+        compute::WorldStepPipeline::kInlineStageCount + 1u>
+        stages;
+
+    for (std::size_t i = 0; i < compute::WorldStepPipeline::kInlineStageCount;
+         ++i) {
+      pipeline.addStage(stages[i]);
+    }
+    EXPECT_EQ(freeList.getAllocationCount(), allocationsBeforePipeline);
+
+    pipeline.addStage(stages.back());
+    EXPECT_GT(freeList.getAllocationCount(), allocationsBeforePipeline)
+        << "allocator-aware custom pipeline overflow storage should reserve "
+           "from the provided free allocator";
+  }
+
+  EXPECT_EQ(freeList.getAllocationCount(), allocationsBeforePipeline);
+}
+
 // Test that repeated stepping can reuse a caller-owned executor and pipeline.
 TEST(World, StepCountAcceptsMultiDomainSolverPipeline)
 {

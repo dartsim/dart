@@ -782,6 +782,11 @@ Follow-up progress after PR #2956:
   vectors and parent-before-child frame-order/visit-state vectors reserve from
   the provided free allocator while the existing same-shape heap guard still
   covers the prewarmed frame-coupled path.
+- `WorldStepPipeline` overflow stage-pointer storage can now borrow a provided
+  allocator. The built-in World pipeline cache uses the World free allocator
+  for that spillover path, and a focused custom-pipeline test verifies inline
+  stages stay allocation-free while the first overflow reserve is charged to
+  the provided allocator and released with the pipeline.
 - The next nested route covers `RigidBodyContactStage`'s sequential-impulse
   constraint vector. A focused compact contact prepare verifies the vector's
   first reserve increases the World free-list allocation count. AVBD contact

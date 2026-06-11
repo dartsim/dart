@@ -37,6 +37,8 @@
 #include <dart/simulation/export.hpp>
 #include <dart/simulation/fwd.hpp>
 
+#include <dart/common/stl_allocator.hpp>
+
 #include <array>
 #include <memory>
 #include <string_view>
@@ -45,6 +47,7 @@
 #include <cstddef>
 
 namespace dart::common {
+class MemoryAllocator;
 class MemoryManager;
 } // namespace dart::common
 
@@ -240,7 +243,8 @@ public:
 class DART_SIMULATION_API WorldStepPipeline
 {
 public:
-  WorldStepPipeline() = default;
+  WorldStepPipeline();
+  explicit WorldStepPipeline(common::MemoryAllocator& allocator);
   ~WorldStepPipeline() = default;
 
   WorldStepPipeline(const WorldStepPipeline&) = delete;
@@ -264,7 +268,8 @@ public:
 
 private:
   std::array<WorldStepStage*, kInlineStageCount> m_stages{};
-  std::vector<WorldStepStage*> m_overflowStages;
+  std::vector<WorldStepStage*, common::StlAllocator<WorldStepStage*>>
+      m_overflowStages;
   std::size_t m_stageCount = 0;
 };
 

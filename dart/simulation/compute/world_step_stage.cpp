@@ -738,6 +738,15 @@ ComputeStageMetadata WorldStepStage::getMetadata() const noexcept
 }
 
 //==============================================================================
+WorldStepPipeline::WorldStepPipeline() = default;
+
+//==============================================================================
+WorldStepPipeline::WorldStepPipeline(common::MemoryAllocator& allocator)
+  : m_overflowStages(common::StlAllocator<WorldStepStage*>{allocator})
+{
+}
+
+//==============================================================================
 WorldStepPipeline& WorldStepPipeline::addStage(WorldStepStage& stage)
 {
   if (m_stageCount >= m_stages.size()) {
