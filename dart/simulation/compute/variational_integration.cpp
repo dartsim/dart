@@ -559,7 +559,7 @@ Eigen::Index variationalLoopConstraintRowCount(
   return rows;
 }
 
-dvbd::AvbdScalarRowBounds variationalMotorProjectionBounds(
+VariationalProjectionRowBounds variationalMotorProjectionBounds(
     double maxEffort, double timeStep)
 {
   if (maxEffort <= 0.0 || std::isnan(maxEffort) || timeStep <= 0.0
@@ -575,15 +575,23 @@ dvbd::AvbdScalarRowBounds variationalMotorProjectionBounds(
 }
 
 bool variationalProjectionRowHasFiniteBounds(
-    const dvbd::AvbdScalarRowBounds& bounds)
+    const VariationalProjectionRowBounds& bounds)
 {
   return std::isfinite(bounds.lower) || std::isfinite(bounds.upper);
 }
 
-std::vector<dvbd::AvbdScalarRowBounds> variationalLoopConstraintRowBounds(
-    const std::vector<VariationalLoopConstraint>& constraints, double timeStep)
+double clampVariationalProjectionRowForce(
+    double value, const VariationalProjectionRowBounds& bounds)
 {
-  std::vector<dvbd::AvbdScalarRowBounds> bounds;
+  return std::clamp(value, bounds.lower, bounds.upper);
+}
+
+void variationalLoopConstraintRowBoundsInto(
+    const std::vector<VariationalLoopConstraint>& constraints,
+    double timeStep,
+    std::vector<VariationalProjectionRowBounds>& bounds)
+{
+  bounds.clear();
   for (const auto& constraint : constraints) {
     bounds.reserve(
         bounds.size() + variationalLoopConstraintRowCount(constraint));
@@ -619,7 +627,6 @@ std::vector<dvbd::AvbdScalarRowBounds> variationalLoopConstraintRowBounds(
           constraint.angularMotorMaxTorque, timeStep));
     }
   }
-  return bounds;
 }
 
 Eigen::Vector3d normalizedVariationalLoopAxis(
@@ -1785,6 +1792,17 @@ void reserveConstraintProjectionScratch(
   scratch.lambdaRhs.resize(rows);
   scratch.lambda.resize(rows);
   scratch.correction.resize(dof);
+  scratch.projectionBounds.reserve(static_cast<std::size_t>(rows));
+  scratch.projectionBounds.resize(static_cast<std::size_t>(rows));
+  scratch.hardRows.reserve(static_cast<std::size_t>(rows));
+  scratch.boundedRows.reserve(static_cast<std::size_t>(rows));
+  scratch.hardConstraintMass.resize(rows, rows);
+  if (scratch.hardConstraintFactorization.rows() != rows) {
+    scratch.hardConstraintFactorization = Eigen::LDLT<Eigen::MatrixXd>(rows);
+  }
+  scratch.hardConstraintRhs.resize(rows);
+  scratch.hardConstraintLambda.resize(rows);
+  scratch.projectionLambda.resize(rows);
 }
 
 void reserveConstraintProjectionScratch(
@@ -3260,7 +3278,7 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
   if (!constraints.empty() || !velocityConstraints.empty()) {
     constexpr double constraintTolerance = 1e-10;
     constexpr int maxProjectionIterations = 32;
-    Eigen::VectorXd projectionLambda;
+    bool projectionLambdaInitialized = false;
     bool treeConfigurationChanged = false;
     for (int projection = 0; projection < maxProjectionIterations;
          ++projection) {
@@ -3276,10 +3294,13 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
           = constraints.empty() ? 0 : constraintRowCount(constraints);
       const Eigen::Index rows
           = loopRows + static_cast<Eigen::Index>(velocityConstraints.size());
-      std::vector<dvbd::AvbdScalarRowBounds> projectionBounds
-          = constraints.empty()
-                ? std::vector<dvbd::AvbdScalarRowBounds>{}
-                : variationalLoopConstraintRowBounds(constraints, timeStep);
+      auto& projectionBounds = projectionScratchStorage.projectionBounds;
+      if (constraints.empty()) {
+        projectionBounds.clear();
+      } else {
+        variationalLoopConstraintRowBoundsInto(
+            constraints, timeStep, projectionBounds);
+      }
       projectionBounds.resize(static_cast<std::size_t>(rows));
       if (!constraints.empty()) {
         constraintResidualAndJacobianInto(
@@ -3329,19 +3350,18 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
       projectionScratchStorage.lambda
           = projectionScratchStorage.constraintFactorization.solve(
               projectionScratchStorage.lambdaRhs);
-      std::vector<Eigen::Index> hardRows;
-      std::vector<Eigen::Index> boundedRows;
-      hardRows.reserve(
-          static_cast<std::size_t>(projectionScratchStorage.lambda.size()));
-      boundedRows.reserve(
-          static_cast<std::size_t>(projectionScratchStorage.lambda.size()));
+      auto& hardRows = projectionScratchStorage.hardRows;
+      auto& boundedRows = projectionScratchStorage.boundedRows;
+      hardRows.clear();
+      boundedRows.clear();
       for (Eigen::Index r = 0; r < projectionScratchStorage.lambda.size();
            ++r) {
         const auto& bounds = projectionBounds[static_cast<std::size_t>(r)];
         if (variationalProjectionRowHasFiniteBounds(bounds)) {
           boundedRows.push_back(r);
-          projectionScratchStorage.lambda[r] = dvbd::clampAvbdRowForce(
-              projectionScratchStorage.lambda[r], bounds);
+          projectionScratchStorage.lambda[r]
+              = clampVariationalProjectionRowForce(
+                  projectionScratchStorage.lambda[r], bounds);
         } else {
           hardRows.push_back(r);
         }
@@ -3350,8 +3370,12 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
         // Bounded motor rows may saturate before reaching their target. Keep
         // hard joint/anchor rows authoritative after those impulses are
         // clamped so finite effort cannot leak into locked coordinates.
-        Eigen::MatrixXd hardMass(hardRows.size(), hardRows.size());
-        Eigen::VectorXd hardRhs(hardRows.size());
+        const auto hardRowCount = static_cast<Eigen::Index>(hardRows.size());
+        auto hardMass
+            = projectionScratchStorage.hardConstraintMass.topLeftCorner(
+                hardRowCount, hardRowCount);
+        auto hardRhs
+            = projectionScratchStorage.hardConstraintRhs.head(hardRowCount);
         for (std::size_t i = 0; i < hardRows.size(); ++i) {
           const Eigen::Index hardRow = hardRows[i];
           hardRhs[static_cast<Eigen::Index>(i)] = -g[hardRow];
@@ -3365,14 +3389,22 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
                 = projectionScratchStorage.constraintMass(hardRow, hardRows[j]);
           }
         }
-        const Eigen::VectorXd hardLambda = hardMass.ldlt().solve(hardRhs);
+        projectionScratchStorage.hardConstraintFactorization.compute(hardMass);
+        projectionScratchStorage.hardConstraintLambda.head(hardRowCount)
+            = projectionScratchStorage.hardConstraintFactorization.solve(
+                hardRhs);
         for (std::size_t i = 0; i < hardRows.size(); ++i) {
           projectionScratchStorage.lambda[hardRows[i]]
-              = hardLambda[static_cast<Eigen::Index>(i)];
+              = projectionScratchStorage
+                    .hardConstraintLambda[static_cast<Eigen::Index>(i)];
         }
       }
-      if (projectionLambda.size() != projectionScratchStorage.lambda.size()) {
+      auto& projectionLambda = projectionScratchStorage.projectionLambda;
+      if (!projectionLambdaInitialized
+          || projectionLambda.size()
+                 != projectionScratchStorage.lambda.size()) {
         projectionLambda = projectionScratchStorage.lambda.cwiseAbs();
+        projectionLambdaInitialized = true;
       } else {
         projectionLambda = projectionLambda.cwiseMax(
             projectionScratchStorage.lambda.cwiseAbs());
@@ -3393,9 +3425,10 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
             projectionScratchStorage.correction.segment(seg, n));
       }
     }
-    if (projectionLambda.size() > 0) {
+    if (projectionLambdaInitialized
+        && projectionScratchStorage.projectionLambda.size() > 0) {
       markBrokenAvbdVariationalLoopConstraints(
-          registry, constraints, projectionLambda);
+          registry, constraints, projectionScratchStorage.projectionLambda);
     }
     if (treeConfigurationChanged) {
       updateVarTreeConfigurationInto(registry, tree, position);

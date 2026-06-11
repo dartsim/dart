@@ -618,14 +618,17 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     well, and Chebyshev history scratch preserves caller-provided allocator
     storage while preserving the existing solver row vector contracts. Baked VBD
     spring/tet topology element lists now also use the World allocator through
-    span-based read-only topology inputs.
+    span-based read-only topology inputs, and cached VBD coloring plus
+    spring/tetrahedron/self-contact incident adjacency now preserve
+    caller-provided allocators for their nested vectors.
     The variational multibody stage now reuses baked inverse-dynamics scratch
     for its initial-guess bias query instead of calling the public
     return-by-value helper on same-shape steps. It also reuses baked dense
     loop-closure projection storage for Jacobians, inverse-mass transpose
-    blocks, constraint-mass factorization, lambda, and correction vectors, and
-    refreshes the projection tree configuration in place instead of rebuilding
-    topology from the registry on every projection iteration. The variational
+    blocks, constraint-mass factorization, lambda, correction vectors,
+    projection row bounds, and bounded/hard row partitions, and refreshes the
+    projection tree configuration in place instead of rebuilding topology from
+    the registry on every projection iteration. The variational
     stage now also keeps its tree topology, link-index map, and child-list
     storage in baked scratch across same-shape steps, preserving same-shape
     link-index map nodes instead of repopulating them in the step loop.

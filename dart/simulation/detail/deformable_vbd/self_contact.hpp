@@ -39,6 +39,8 @@
 #include <dart/simulation/detail/deformable_vbd/avbd_constraint.hpp>
 #include <dart/simulation/detail/deformable_vbd/vertex_block_kernel.hpp>
 
+#include <dart/common/stl_allocator.hpp>
+
 #include <Eigen/Core>
 
 #include <algorithm>
@@ -75,7 +77,24 @@ struct SelfContactEntry
 /// three triangle nodes; each edge-edge candidate to its four edge nodes.
 struct SelfContactAdjacency
 {
-  std::vector<std::vector<SelfContactEntry>> incident;
+  using IncidentVector = std::
+      vector<SelfContactEntry, ::dart::common::StlAllocator<SelfContactEntry>>;
+  using IncidentVectorAllocator = ::dart::common::StlAllocator<IncidentVector>;
+  using IncidentRows = std::vector<IncidentVector, IncidentVectorAllocator>;
+
+  SelfContactAdjacency()
+    : SelfContactAdjacency(::dart::common::MemoryAllocator::GetDefault())
+  {
+    // Intentionally empty.
+  }
+
+  explicit SelfContactAdjacency(::dart::common::MemoryAllocator& allocator)
+    : incident(IncidentVectorAllocator{allocator}), m_allocator(&allocator)
+  {
+    // Intentionally empty.
+  }
+
+  IncidentRows incident;
   double squaredActivationDistance = 0.0;
   double stiffness = 0.0;
 
@@ -87,7 +106,7 @@ struct SelfContactAdjacency
 
   void reserve(std::size_t vertexCount, std::size_t candidateCapacity)
   {
-    incident.resize(vertexCount);
+    resizeIncidentRows(vertexCount);
     const std::size_t entryCapacity
         = vertexCount == 0
               ? 0
@@ -106,7 +125,7 @@ struct SelfContactAdjacency
   {
     this->squaredActivationDistance = squaredActivationDistance;
     this->stiffness = stiffness;
-    incident.resize(vertexCount);
+    resizeIncidentRows(vertexCount);
     for (auto& entries : incident) {
       entries.clear();
     }
@@ -151,9 +170,11 @@ struct SelfContactAdjacency
       const contact::ContactCandidateSet& candidates,
       const std::vector<DeformableSurfaceTriangle>& triangles,
       double squaredActivationDistance,
-      double stiffness)
+      double stiffness,
+      ::dart::common::MemoryAllocator& allocator
+      = ::dart::common::MemoryAllocator::GetDefault())
   {
-    SelfContactAdjacency adjacency;
+    SelfContactAdjacency adjacency(allocator);
     adjacency.rebuild(
         vertexCount,
         candidates,
@@ -162,6 +183,22 @@ struct SelfContactAdjacency
         stiffness);
     return adjacency;
   }
+
+private:
+  void resizeIncidentRows(std::size_t vertexCount)
+  {
+    if (vertexCount < incident.size()) {
+      incident.resize(vertexCount);
+      return;
+    }
+    incident.reserve(vertexCount);
+    while (incident.size() < vertexCount) {
+      incident.emplace_back(
+          ::dart::common::StlAllocator<SelfContactEntry>{*m_allocator});
+    }
+  }
+
+  ::dart::common::MemoryAllocator* m_allocator;
 };
 
 /// One active AVBD self-contact normal row for a point-triangle or edge-edge

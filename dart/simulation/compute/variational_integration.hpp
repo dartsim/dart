@@ -24,6 +24,7 @@
 #include <entt/entt.hpp>
 
 #include <functional>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <span>
@@ -40,6 +41,12 @@ struct MultibodyStructure;
 namespace dart::simulation::compute {
 
 struct MultibodyVariationalTreeScratchAccess;
+
+struct VariationalProjectionRowBounds
+{
+  double lower = -std::numeric_limits<double>::infinity();
+  double upper = std::numeric_limits<double>::infinity();
+};
 
 /// Persistent two-step discrete-mechanics history for one multibody, indexed by
 /// link construction order (parent-before-child).
@@ -376,6 +383,14 @@ struct VariationalConstraintProjectionScratch
   Eigen::VectorXd lambdaRhs;
   Eigen::VectorXd lambda;
   Eigen::VectorXd correction;
+  std::vector<VariationalProjectionRowBounds> projectionBounds;
+  std::vector<Eigen::Index> hardRows;
+  std::vector<Eigen::Index> boundedRows;
+  Eigen::MatrixXd hardConstraintMass;
+  Eigen::LDLT<Eigen::MatrixXd> hardConstraintFactorization;
+  Eigen::VectorXd hardConstraintRhs;
+  Eigen::VectorXd hardConstraintLambda;
+  Eigen::VectorXd projectionLambda;
 };
 
 /// Reusable storage for manifold Anderson acceleration in the variational

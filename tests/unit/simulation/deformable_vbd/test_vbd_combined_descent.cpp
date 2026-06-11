@@ -33,6 +33,9 @@
 #include <dart/simulation/detail/deformable_elasticity/fem_tet_element.hpp>
 #include <dart/simulation/detail/deformable_vbd/block_descent.hpp>
 
+#include <dart/common/memory_manager.hpp>
+#include <dart/common/stl_allocator.hpp>
+
 #include <gtest/gtest.h>
 
 #include <algorithm>
@@ -42,6 +45,7 @@
 #include <cmath>
 
 namespace vbd = dart::simulation::detail::deformable_vbd;
+namespace common = dart::common;
 
 namespace {
 
@@ -195,6 +199,37 @@ TEST(VbdCombinedDescent, ColoringIsProperForSpringsAndTets)
   const vbd::VertexColoring coloring
       = vbd::colorDeformable(scene.positions.size(), scene.springs, scene.tets);
   EXPECT_TRUE(vbd::isProperColoring(adjacency, coloring));
+}
+
+//==============================================================================
+TEST(VbdCombinedDescent, TopologyAdjacencyUsesProvidedAllocator)
+{
+  const CombinedScene scene = makeSpringTetBar();
+  common::MemoryManager memoryManager;
+  auto& allocator = memoryManager.getFreeListAllocator();
+  const auto allocationsBefore = allocator.getAllocationCount();
+
+  const vbd::SpringAdjacency springAdjacency = vbd::SpringAdjacency::build(
+      scene.positions.size(), scene.springs, allocator);
+  const vbd::TetAdjacency tetAdjacency
+      = vbd::TetAdjacency::build(scene.positions.size(), scene.tets, allocator);
+
+  EXPECT_GT(allocator.getAllocationCount(), allocationsBefore);
+  ASSERT_FALSE(springAdjacency.incidentSprings.empty());
+  ASSERT_FALSE(tetAdjacency.incidentTets.empty());
+  EXPECT_EQ(
+      springAdjacency.incidentSprings.get_allocator(),
+      common::StlAllocator<vbd::SpringAdjacency::IncidentSpringVector>{
+          allocator});
+  EXPECT_EQ(
+      springAdjacency.incidentSprings[0].get_allocator(),
+      common::StlAllocator<std::uint32_t>{allocator});
+  EXPECT_EQ(
+      tetAdjacency.incidentTets.get_allocator(),
+      common::StlAllocator<vbd::TetAdjacency::IncidentTetVector>{allocator});
+  EXPECT_EQ(
+      tetAdjacency.incidentTets[0].get_allocator(),
+      common::StlAllocator<vbd::TetAdjacency::IncidentTet>{allocator});
 }
 
 //==============================================================================

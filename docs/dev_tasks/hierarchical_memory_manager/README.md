@@ -669,7 +669,8 @@ Follow-up progress after PR #2956:
   helper or allocate a temporary zero-acceleration vector for that bias query.
   Loop-closure projection now also reuses baked Jacobian, inverse-mass
   transpose, constraint-mass, factorization, lambda, and correction storage
-  instead of allocating dense projection work matrices on every projection
+  plus projection row bounds/row partitions instead of allocating dense
+  projection work matrices or temporary row lists on every projection
   iteration. The projection loop refreshes the step tree's configuration in
   place for each candidate instead of rebuilding the tree topology, index map,
   and child vectors from the registry on every projection iteration. The
@@ -828,8 +829,10 @@ Follow-up progress after PR #2956:
   allocators while standalone one-shot callers keep default local storage. The
   spring/tet topology element lists now use the same allocator-backed
   `DeformableVbdScratch` route after narrowing read-only VBD topology inputs to
-  spans; coloring and adjacency structures still own nested vector storage and
-  remain a separate allocator-aware builder pass.
+  spans. The cached VBD coloring plus spring, tetrahedron, and self-contact
+  incident-adjacency builders now preserve caller-provided allocators for their
+  nested vectors, so World-owned VBD topology scratch no longer falls back to
+  default heap storage for those cached structures.
 - Default deformable projected-Newton assembly scratch now borrows that same
   World free allocator for sparse-pattern arrays, triplet assembly, PSD
   edge/tet/barrier block batches, and matrix-free block/diagonal storage. The
@@ -867,9 +870,6 @@ Remaining Phase 4/5 follow-up items for the next PR:
   solver-private paths not exercised by the current direct-sparse,
   matrix-free, FEM, obstacle, surface-CCD, and compact/production
   clear/rebuild mixed/contact-family scenes.
-- Convert the remaining VBD coloring/adjacency builders to allocator-aware
-  storage once a no-growth gate or profile shows those nested vector structures
-  on the simulation-loop path.
 - Expand production contact-set coverage only for newly exposed boxed-LCP or
   unified-assembly shapes that are not covered by the current stacked,
   multi-island, mixed-stress, and contact-family gates.

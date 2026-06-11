@@ -1143,8 +1143,12 @@ struct DeformableVbdScratch
   DeformableVbdScratch() = default;
 
   explicit DeformableVbdScratch(common::MemoryAllocator& allocator)
-    : springs(common::StlAllocator<dvbd::SpringElement>{allocator}),
+    : memoryAllocator(&allocator),
+      springs(common::StlAllocator<dvbd::SpringElement>{allocator}),
       tets(common::StlAllocator<dvbd::TetMeshElement>{allocator}),
+      coloring(allocator),
+      springAdjacency(allocator),
+      tetAdjacency(allocator),
       contactPlanes(common::StlAllocator<dvbd::ContactPlane>{allocator}),
       contactObjectIds(common::StlAllocator<std::uint64_t>{allocator}),
       contactFeatureIds(common::StlAllocator<std::uint64_t>{allocator}),
@@ -1180,11 +1184,14 @@ struct DeformableVbdScratch
       avbdSolveFixed(common::StlAllocator<std::uint8_t>{allocator}),
       selfContactCandidates(allocator),
       selfContactSweepScratch(allocator),
+      selfContactAdjacency(allocator),
       chebyshevTwoStepsBack(common::StlAllocator<Eigen::Vector3d>{allocator}),
       chebyshevBeforeSweep(common::StlAllocator<Eigen::Vector3d>{allocator})
   {
   }
 
+  common::MemoryAllocator* memoryAllocator
+      = &common::MemoryAllocator::GetDefault();
   SpringVector springs;
   TetVector tets;
   dvbd::VertexColoring coloring;
@@ -5739,12 +5746,13 @@ void syncVbdTopologyScratch(
     vbdScratch.tets.push_back({vertices, rest});
   }
 
-  vbdScratch.coloring
-      = dvbd::colorDeformable(nodeCount, vbdScratch.springs, vbdScratch.tets);
+  auto& allocator = *vbdScratch.memoryAllocator;
+  vbdScratch.coloring = dvbd::colorDeformable(
+      nodeCount, vbdScratch.springs, vbdScratch.tets, allocator);
   vbdScratch.springAdjacency
-      = dvbd::SpringAdjacency::build(nodeCount, vbdScratch.springs);
+      = dvbd::SpringAdjacency::build(nodeCount, vbdScratch.springs, allocator);
   vbdScratch.tetAdjacency
-      = dvbd::TetAdjacency::build(nodeCount, vbdScratch.tets);
+      = dvbd::TetAdjacency::build(nodeCount, vbdScratch.tets, allocator);
   vbdScratch.cachedNodeCount = nodeCount;
   vbdScratch.cachedEdgeCount = model.edges.size();
   vbdScratch.cachedTetCount = topology.tetrahedra.size();

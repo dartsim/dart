@@ -33,6 +33,9 @@
 #include <dart/simulation/detail/deformable_vbd/block_descent.hpp>
 #include <dart/simulation/detail/deformable_vbd/contact_kernel.hpp>
 
+#include <dart/common/memory_manager.hpp>
+#include <dart/common/stl_allocator.hpp>
+
 #include <Eigen/Eigenvalues>
 #include <gtest/gtest.h>
 
@@ -43,6 +46,7 @@
 #include <cstdint>
 
 namespace vbd = dart::simulation::detail::deformable_vbd;
+namespace common = dart::common;
 
 namespace {
 
@@ -94,6 +98,27 @@ TEST(VbdContact, PenaltyForceMatchesFiniteDifferenceWhenPenetrating)
   EXPECT_NEAR((block.force - numericForce).norm(), 0.0, 1e-3);
   // Force pushes out along +normal.
   EXPECT_GT(block.force.dot(plane.normal), 0.0);
+}
+
+//==============================================================================
+TEST(VbdContact, SelfContactAdjacencyUsesProvidedAllocator)
+{
+  common::MemoryManager memoryManager;
+  auto& allocator = memoryManager.getFreeListAllocator();
+  const auto allocationsBefore = allocator.getAllocationCount();
+
+  vbd::SelfContactAdjacency adjacency(allocator);
+  adjacency.reserve(/*vertexCount=*/4, /*candidateCapacity=*/8);
+
+  EXPECT_GT(allocator.getAllocationCount(), allocationsBefore);
+  ASSERT_EQ(adjacency.incident.size(), 4u);
+  EXPECT_EQ(
+      adjacency.incident.get_allocator(),
+      common::StlAllocator<vbd::SelfContactAdjacency::IncidentVector>{
+          allocator});
+  EXPECT_EQ(
+      adjacency.incident[0].get_allocator(),
+      common::StlAllocator<vbd::SelfContactEntry>{allocator});
 }
 
 //==============================================================================

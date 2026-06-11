@@ -42,6 +42,8 @@
 #include <dart/simulation/detail/deformable_vbd/vertex_block_kernel.hpp>
 #include <dart/simulation/detail/deformable_vbd/vertex_coloring.hpp>
 
+#include <dart/common/stl_allocator.hpp>
+
 #include <Eigen/Core>
 
 #include <algorithm>
@@ -72,13 +74,36 @@ struct SpringElement
 /// of every spring touching vertex `v`.
 struct SpringAdjacency
 {
-  std::vector<std::vector<std::uint32_t>> incidentSprings;
+  using IncidentSpringVector
+      = std::vector<std::uint32_t, ::dart::common::StlAllocator<std::uint32_t>>;
+  using IncidentSpringVectorAllocator
+      = ::dart::common::StlAllocator<IncidentSpringVector>;
+  using IncidentSpringRows
+      = std::vector<IncidentSpringVector, IncidentSpringVectorAllocator>;
+
+  SpringAdjacency()
+    : SpringAdjacency(::dart::common::MemoryAllocator::GetDefault())
+  {
+    // Intentionally empty.
+  }
+
+  explicit SpringAdjacency(::dart::common::MemoryAllocator& allocator)
+    : incidentSprings(IncidentSpringVectorAllocator{allocator}),
+      m_allocator(&allocator)
+  {
+    // Intentionally empty.
+  }
+
+  IncidentSpringRows incidentSprings;
 
   static SpringAdjacency build(
-      std::size_t vertexCount, std::span<const SpringElement> springs)
+      std::size_t vertexCount,
+      std::span<const SpringElement> springs,
+      ::dart::common::MemoryAllocator& allocator
+      = ::dart::common::MemoryAllocator::GetDefault())
   {
-    SpringAdjacency adjacency;
-    adjacency.incidentSprings.resize(vertexCount);
+    SpringAdjacency adjacency(allocator);
+    adjacency.resize(vertexCount);
     for (std::uint32_t s = 0; s < springs.size(); ++s) {
       const SpringElement& spring = springs[s];
       if (spring.a < vertexCount) {
@@ -90,13 +115,32 @@ struct SpringAdjacency
     }
     return adjacency;
   }
+
+private:
+  void resize(std::size_t vertexCount)
+  {
+    if (vertexCount < incidentSprings.size()) {
+      incidentSprings.resize(vertexCount);
+      return;
+    }
+    incidentSprings.reserve(vertexCount);
+    while (incidentSprings.size() < vertexCount) {
+      incidentSprings.emplace_back(
+          ::dart::common::StlAllocator<std::uint32_t>{*m_allocator});
+    }
+  }
+
+  ::dart::common::MemoryAllocator* m_allocator;
 };
 
 /// Build the vertex-graph coloring induced by a spring list.
 inline VertexColoring colorSprings(
-    std::size_t vertexCount, std::span<const SpringElement> springs)
+    std::size_t vertexCount,
+    std::span<const SpringElement> springs,
+    ::dart::common::MemoryAllocator& allocator
+    = ::dart::common::MemoryAllocator::GetDefault())
 {
-  VertexAdjacency adjacency(vertexCount);
+  VertexAdjacency adjacency(vertexCount, allocator);
   for (const SpringElement& spring : springs) {
     adjacency.addEdge(spring.a, spring.b);
   }
@@ -769,13 +813,36 @@ struct TetMeshElement
 /// (0..3) within that tet.
 struct TetAdjacency
 {
-  std::vector<std::vector<std::pair<std::uint32_t, std::uint8_t>>> incidentTets;
+  using IncidentTet = std::pair<std::uint32_t, std::uint8_t>;
+  using IncidentTetVector
+      = std::vector<IncidentTet, ::dart::common::StlAllocator<IncidentTet>>;
+  using IncidentTetVectorAllocator
+      = ::dart::common::StlAllocator<IncidentTetVector>;
+  using IncidentTetRows
+      = std::vector<IncidentTetVector, IncidentTetVectorAllocator>;
+
+  TetAdjacency() : TetAdjacency(::dart::common::MemoryAllocator::GetDefault())
+  {
+    // Intentionally empty.
+  }
+
+  explicit TetAdjacency(::dart::common::MemoryAllocator& allocator)
+    : incidentTets(IncidentTetVectorAllocator{allocator}),
+      m_allocator(&allocator)
+  {
+    // Intentionally empty.
+  }
+
+  IncidentTetRows incidentTets;
 
   static TetAdjacency build(
-      std::size_t vertexCount, std::span<const TetMeshElement> tets)
+      std::size_t vertexCount,
+      std::span<const TetMeshElement> tets,
+      ::dart::common::MemoryAllocator& allocator
+      = ::dart::common::MemoryAllocator::GetDefault())
   {
-    TetAdjacency adjacency;
-    adjacency.incidentTets.resize(vertexCount);
+    TetAdjacency adjacency(allocator);
+    adjacency.resize(vertexCount);
     for (std::uint32_t t = 0; t < tets.size(); ++t) {
       for (std::uint8_t local = 0; local < 4; ++local) {
         const std::uint32_t vertex = tets[t].vertices[local];
@@ -786,14 +853,33 @@ struct TetAdjacency
     }
     return adjacency;
   }
+
+private:
+  void resize(std::size_t vertexCount)
+  {
+    if (vertexCount < incidentTets.size()) {
+      incidentTets.resize(vertexCount);
+      return;
+    }
+    incidentTets.reserve(vertexCount);
+    while (incidentTets.size() < vertexCount) {
+      incidentTets.emplace_back(
+          ::dart::common::StlAllocator<IncidentTet>{*m_allocator});
+    }
+  }
+
+  ::dart::common::MemoryAllocator* m_allocator;
 };
 
 /// Build the vertex-graph coloring induced by a tetrahedral mesh (each tet is a
 /// 4-vertex clique in the vertex graph).
 inline VertexColoring colorTetMesh(
-    std::size_t vertexCount, std::span<const TetMeshElement> tets)
+    std::size_t vertexCount,
+    std::span<const TetMeshElement> tets,
+    ::dart::common::MemoryAllocator& allocator
+    = ::dart::common::MemoryAllocator::GetDefault())
 {
-  VertexAdjacency adjacency(vertexCount);
+  VertexAdjacency adjacency(vertexCount, allocator);
   for (const TetMeshElement& tet : tets) {
     adjacency.addTetrahedron(
         tet.vertices[0], tet.vertices[1], tet.vertices[2], tet.vertices[3]);
@@ -1259,9 +1345,11 @@ inline double tetMeshObjective(
 inline VertexColoring colorDeformable(
     std::size_t vertexCount,
     std::span<const SpringElement> springs,
-    std::span<const TetMeshElement> tets)
+    std::span<const TetMeshElement> tets,
+    ::dart::common::MemoryAllocator& allocator
+    = ::dart::common::MemoryAllocator::GetDefault())
 {
-  VertexAdjacency adjacency(vertexCount);
+  VertexAdjacency adjacency(vertexCount, allocator);
   for (const SpringElement& spring : springs) {
     adjacency.addEdge(spring.a, spring.b);
   }

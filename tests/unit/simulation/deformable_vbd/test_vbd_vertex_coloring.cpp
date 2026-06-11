@@ -32,12 +32,16 @@
 
 #include <dart/simulation/detail/deformable_vbd/vertex_coloring.hpp>
 
+#include <dart/common/memory_manager.hpp>
+#include <dart/common/stl_allocator.hpp>
+
 #include <gtest/gtest.h>
 
 #include <set>
 #include <vector>
 
 namespace vbd = dart::simulation::detail::deformable_vbd;
+namespace common = dart::common;
 
 namespace {
 
@@ -186,4 +190,29 @@ TEST(VbdVertexColoring, ColoringIsDeterministic)
   const vbd::VertexColoring first = vbd::greedyColorVertices(a);
   const vbd::VertexColoring second = vbd::greedyColorVertices(b);
   EXPECT_EQ(first.colorOfVertex, second.colorOfVertex);
+}
+
+//==============================================================================
+TEST(VbdVertexColoring, ColoringUsesProvidedAllocatorForNestedStorage)
+{
+  common::MemoryManager memoryManager;
+  auto& allocator = memoryManager.getFreeListAllocator();
+  const auto allocationsBefore = allocator.getAllocationCount();
+
+  vbd::VertexAdjacency adjacency(4, allocator);
+  adjacency.addTetrahedron(0, 1, 2, 3);
+  const vbd::VertexColoring coloring = vbd::greedyColorVertices(adjacency);
+
+  EXPECT_TRUE(vbd::isProperColoring(adjacency, coloring));
+  EXPECT_GT(allocator.getAllocationCount(), allocationsBefore);
+  EXPECT_EQ(
+      adjacency.neighbors(0).get_allocator(),
+      common::StlAllocator<std::uint32_t>{allocator});
+  EXPECT_EQ(
+      coloring.colorOfVertex.get_allocator(),
+      common::StlAllocator<std::uint32_t>{allocator});
+  ASSERT_FALSE(coloring.groups.empty());
+  EXPECT_EQ(
+      coloring.groups[0].get_allocator(),
+      common::StlAllocator<std::uint32_t>{allocator});
 }
