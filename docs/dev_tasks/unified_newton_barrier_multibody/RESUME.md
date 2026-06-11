@@ -195,21 +195,22 @@ speed claims as remaining PLAN-083 work.
 
 The CPU corpus evidence follow-up is branch-local on
 `feature/newton-barrier-corpus-evidence`: the first packets cover only the
-reduced hanging-bridge, nunchaku, and windmill runtime smoke paths with
-`bm_plan083_cpu_scene_corpus` and
+reduced hanging-bridge, terrain vehicle, nunchaku, and windmill runtime smoke
+paths with `bm_plan083_cpu_scene_corpus` and
 `scripts/write_plan083_cpu_scene_packet.py`. They validate finite reduced-scene
 runtime stepping plus fixed/revolute equality residuals and reduced
-hinge/contact diagnostics, but they are not paper-scale rod/codimensional
-coupling, cone-twist range validation, Bullet/reference comparison, Table 2
-reproduction, scaling evidence, or a completion claim.
+hinge/contact/terrain diagnostics, but they are not paper-scale
+rod/codimensional coupling, cone-twist range validation, terrain navigation,
+Bullet/reference comparison, Table 2 reproduction, scaling evidence, or a
+completion claim.
 
 ## Last Session Summary
 
 Current slice: the one-branch runtime wiring follow-up has five checkpoint
 commits, and the follow-on CPU corpus evidence branch adds reduced
-hanging-bridge, nunchaku, and windmill packets. The final docs pass should
-preserve that this is runtime smoke/correctness evidence, not paper-scale
-completion.
+hanging-bridge, terrain vehicle, nunchaku, and windmill packets. The final docs
+pass should preserve that this is runtime smoke/correctness evidence, not
+paper-scale completion.
 
 PLAN-083 was created for the unified Newton-barrier multibody solver family,
 covering the supplied unified Newton barrier paper, the ABD deck, existing

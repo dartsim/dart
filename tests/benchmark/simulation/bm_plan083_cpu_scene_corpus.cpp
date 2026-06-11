@@ -69,6 +69,15 @@ const Eigen::Vector3d kNunchakuHandleHalfExtents(0.18, 0.035, 0.035);
 const Eigen::Vector3d kWindmillHubHalfExtents(0.05, 0.05, 0.05);
 const Eigen::Vector3d kWindmillBladeHalfExtents(0.045, 0.22, 0.025);
 const Eigen::Vector3d kWindmillStrikerHalfExtents(0.09, 0.09, 0.09);
+const Eigen::Vector3d kTerrainHalfExtents(0.70, 0.45, 0.025);
+const Eigen::Vector3d kTerrainChassisHalfExtents(0.22, 0.12, 0.04);
+constexpr double kTerrainWheelRadius = 0.06;
+const std::array<Eigen::Vector3d, 4> kTerrainWheelOffsets{{
+    Eigen::Vector3d(-0.16, -0.14, -0.10),
+    Eigen::Vector3d(-0.16, 0.14, -0.10),
+    Eigen::Vector3d(0.16, -0.14, -0.10),
+    Eigen::Vector3d(0.16, 0.14, -0.10),
+}};
 
 sx::CollisionShape makeOffsetBox(
     const Eigen::Vector3d& halfExtents, const Eigen::Vector3d& localOffset)
@@ -323,6 +332,90 @@ struct WindmillFixture
   std::vector<BodySnapshot> snapshots;
 };
 
+struct TerrainVehicleFixture
+{
+  TerrainVehicleFixture()
+  {
+    world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+    world.setTimeStep(0.005);
+    world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+
+    sx::RigidBodyOptions terrainOptions;
+    terrainOptions.isStatic = true;
+    terrainOptions.position = Eigen::Vector3d(0.0, 0.0, -0.025);
+    terrain.emplace(
+        world.addRigidBody("plan083_vehicle_terrain", terrainOptions));
+    terrain->setFriction(0.8);
+    terrain->setCollisionShape(
+        sx::CollisionShape::makeBox(kTerrainHalfExtents));
+
+    sx::RigidBodyOptions chassisOptions;
+    chassisOptions.mass = 0.45;
+    chassisOptions.position = Eigen::Vector3d(0.0, 0.0, 0.17);
+    chassisOptions.linearVelocity = Eigen::Vector3d(0.12, 0.0, 0.0);
+    chassis.emplace(
+        world.addRigidBody("plan083_vehicle_chassis", chassisOptions));
+    chassis->setFriction(0.7);
+    chassis->setCollisionShape(
+        sx::CollisionShape::makeBox(kTerrainChassisHalfExtents));
+
+    wheels.reserve(kTerrainWheelOffsets.size());
+    for (std::size_t index = 0; index < kTerrainWheelOffsets.size(); ++index) {
+      sx::RigidBodyOptions wheelOptions;
+      wheelOptions.mass = 0.08;
+      wheelOptions.position
+          = chassisOptions.position + kTerrainWheelOffsets[index];
+      wheelOptions.angularVelocity = Eigen::Vector3d(0.0, 3.0, 0.0);
+      auto wheel = world.addRigidBody(
+          "plan083_vehicle_passive_wheel_" + std::to_string(index),
+          wheelOptions);
+      wheel.setFriction(0.9);
+      wheel.setCollisionShape(
+          sx::CollisionShape::makeSphere(kTerrainWheelRadius));
+      (void)world.addRigidBodyRevoluteJoint(
+          "plan083_vehicle_wheel_hinge_" + std::to_string(index),
+          *chassis,
+          wheel,
+          Eigen::Vector3d::UnitY());
+      wheels.push_back(wheel);
+    }
+
+    snapshotBody(snapshots, *terrain);
+    snapshotBody(snapshots, *chassis);
+    for (const auto& wheel : wheels) {
+      snapshotBody(snapshots, wheel);
+    }
+
+    world.enterSimulationMode();
+  }
+
+  void reset()
+  {
+    world.setTime(0.0);
+    for (auto& snapshot : snapshots) {
+      snapshot.body.setTransform(snapshot.transform);
+      snapshot.body.setLinearVelocity(snapshot.linearVelocity);
+      snapshot.body.setAngularVelocity(snapshot.angularVelocity);
+    }
+  }
+
+  double minWheelGroundClearance() const
+  {
+    double clearance = std::numeric_limits<double>::infinity();
+    for (const auto& wheel : wheels) {
+      clearance = std::min(
+          clearance, wheel.getTranslation().z() - kTerrainWheelRadius);
+    }
+    return clearance;
+  }
+
+  sx::World world;
+  std::optional<sx::RigidBody> terrain;
+  std::optional<sx::RigidBody> chassis;
+  std::vector<sx::RigidBody> wheels;
+  std::vector<BodySnapshot> snapshots;
+};
+
 } // namespace
 
 //==============================================================================
@@ -483,6 +576,64 @@ static void BM_Plan083CpuScene_windmill_reduced_world_step(
   state.counters["striker_blade_clearance_m"] = fixture.strikerBladeClearance();
 }
 BENCHMARK(BM_Plan083CpuScene_windmill_reduced_world_step)
+    ->Unit(benchmark::kMillisecond);
+
+//==============================================================================
+static void BM_Plan083CpuScene_terrain_vehicle_reduced_world_step(
+    benchmark::State& state)
+{
+  TerrainVehicleFixture fixture;
+  sx::compute::SequentialExecutor executor;
+
+  std::size_t failedSteps = 0;
+  sx::compute::RigidIpcSolverStats lastStats;
+  for (auto _ : state) {
+    state.PauseTiming();
+    fixture.reset();
+    sx::compute::RigidIpcContactStage ipcStage(64);
+    sx::compute::WorldStepPipeline pipeline;
+    pipeline.addStage(ipcStage);
+    state.ResumeTiming();
+
+    fixture.world.step(executor, pipeline);
+    lastStats = ipcStage.getLastStats();
+    const bool residualOk
+        = std::isfinite(lastStats.finalEqualityResidualNorm)
+          && lastStats.finalEqualityResidualNorm <= kMaxReducedEqualityResidual;
+    const bool satisfiedNoOp = residualOk && lastStats.solverIterations == 0u
+                               && lastStats.activeArticulationConstraints >= 8u;
+    if (!residualOk || (lastStats.failed && !satisfiedNoOp)) {
+      ++failedSteps;
+    }
+    benchmark::DoNotOptimize(fixture.chassis->getTranslation().data());
+    benchmark::DoNotOptimize(fixture.wheels.front().getTransform().data());
+    benchmark::ClobberMemory();
+  }
+
+  state.counters["row_unb_fig_10"] = 1.0;
+  state.counters["paper_scale"] = 0.0;
+  state.counters["body_count"] = static_cast<double>(lastStats.bodyCount);
+  state.counters["dynamic_body_count"]
+      = static_cast<double>(lastStats.dynamicBodyCount);
+  state.counters["wheel_count"] = static_cast<double>(fixture.wheels.size());
+  state.counters["revolute_joint_count"]
+      = static_cast<double>(fixture.world.getRigidBodyJointCount());
+  state.counters["active_constraints"]
+      = static_cast<double>(lastStats.activeConstraints);
+  state.counters["active_friction_constraints"]
+      = static_cast<double>(lastStats.activeFrictionConstraints);
+  state.counters["active_articulation_constraints"]
+      = static_cast<double>(lastStats.activeArticulationConstraints);
+  state.counters["solver_iterations"]
+      = static_cast<double>(lastStats.solverIterations);
+  state.counters["failed_steps"] = static_cast<double>(failedSteps);
+  state.counters["final_equality_residual_norm"]
+      = lastStats.finalEqualityResidualNorm;
+  state.counters["chassis_height_m"] = fixture.chassis->getTranslation().z();
+  state.counters["min_wheel_ground_clearance_m"]
+      = fixture.minWheelGroundClearance();
+}
+BENCHMARK(BM_Plan083CpuScene_terrain_vehicle_reduced_world_step)
     ->Unit(benchmark::kMillisecond);
 
 BENCHMARK_MAIN();

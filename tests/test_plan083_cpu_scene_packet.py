@@ -87,6 +87,30 @@ def _windmill_packet(**overrides):
     return {"benchmarks": [row]}
 
 
+def _terrain_vehicle_packet(**overrides):
+    row = {
+        "name": "BM_Plan083CpuScene_terrain_vehicle_reduced_world_step_median",
+        "run_name": "BM_Plan083CpuScene_terrain_vehicle_reduced_world_step",
+        "aggregate_name": "median",
+        "real_time": 5.0,
+        "cpu_time": 5.0,
+        "time_unit": "ms",
+        "body_count": 6,
+        "dynamic_body_count": 5,
+        "wheel_count": 4,
+        "revolute_joint_count": 4,
+        "active_constraints": 18,
+        "active_friction_constraints": 10,
+        "active_articulation_constraints": 8,
+        "failed_steps": 0,
+        "final_equality_residual_norm": 1e-10,
+        "chassis_height_m": 0.17,
+        "min_wheel_ground_clearance_m": 0.01,
+    }
+    row.update(overrides)
+    return {"benchmarks": [row]}
+
+
 def test_plan083_cpu_scene_packet_accepts_reduced_hanging_bridge() -> None:
     module = _load_module()
 
@@ -146,6 +170,27 @@ def test_plan083_cpu_scene_packet_accepts_reduced_windmill() -> None:
     assert row["wall_time_ns"] == 4.0e6
 
 
+def test_plan083_cpu_scene_packet_accepts_reduced_terrain_vehicle() -> None:
+    module = _load_module()
+
+    packet = module.make_packet(
+        _terrain_vehicle_packet(),
+        max_equality_residual=1e-8,
+        scene="terrain_vehicle",
+    )
+
+    row = packet["plan083_cpu_scene_packet"]
+    assert row["row_id"] == "unb-fig-10"
+    assert row["scene_id"] == "plan083_terrain_vehicle"
+    assert row["paper_scale"] is False
+    assert row["body_count"] == 6
+    assert row["dynamic_body_count"] == 5
+    assert row["wheel_count"] == 4
+    assert row["revolute_joint_count"] == 4
+    assert row["active_articulation_constraints"] == 8
+    assert row["wall_time_ns"] == 5.0e6
+
+
 def test_plan083_cpu_scene_packet_rejects_failed_bridge_step() -> None:
     module = _load_module()
 
@@ -202,4 +247,15 @@ def test_plan083_cpu_scene_packet_rejects_windmill_penetration() -> None:
             _windmill_packet(striker_blade_clearance_m=-1e-3),
             max_equality_residual=1e-8,
             scene="windmill",
+        )
+
+
+def test_plan083_cpu_scene_packet_rejects_terrain_vehicle_without_wheels() -> None:
+    module = _load_module()
+
+    with pytest.raises(module.Plan083CpuScenePacketError, match="passive wheels"):
+        module.make_packet(
+            _terrain_vehicle_packet(wheel_count=3),
+            max_equality_residual=1e-8,
+            scene="terrain_vehicle",
         )

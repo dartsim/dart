@@ -112,3 +112,48 @@ def test_windmill_demo_steps_rigid_ipc_world() -> None:
     assert np.all(np.isfinite(final_striker))
     assert not np.allclose(final_blade[:3, :3], initial_blade[:3, :3])
     assert final_striker[2] < initial_striker[2]
+
+
+def test_terrain_vehicle_demo_steps_rigid_ipc_world() -> None:
+    sx = _sx()
+    from examples.demos.scenes.plan083_unified_newton_barrier import PLAN083_SCENES
+
+    scene = next(
+        scene for scene in PLAN083_SCENES if scene.id == "plan083_terrain_vehicle"
+    )
+    setup = scene.build()
+    sx_world = setup.info["sx_world"]
+    chassis = setup.info["chassis"]
+    wheels = setup.info["wheels"]
+
+    assert setup.info["runtime_smoke_scene"] is True
+    assert sx_world.rigid_body_solver == sx.RigidBodySolver.IPC
+    assert sx_world.num_rigid_body_joints == 4
+    assert len(wheels) == 4
+    assert setup.info["plan083_benchmark_command"] == (
+        "pixi run bm-plan083-cpu-terrain-vehicle-packet"
+    )
+    assert setup.pre_step is not None
+
+    initial_time = sx_world.time
+    initial_chassis = np.asarray(chassis.translation, dtype=float).reshape(3).copy()
+    initial_wheels = [
+        np.asarray(wheel.translation, dtype=float).reshape(3).copy()
+        for wheel in wheels
+    ]
+    for _ in range(24):
+        setup.pre_step()
+
+    final_chassis = np.asarray(chassis.translation, dtype=float).reshape(3)
+    final_wheels = [
+        np.asarray(wheel.translation, dtype=float).reshape(3)
+        for wheel in wheels
+    ]
+    assert sx_world.time > initial_time
+    assert np.all(np.isfinite(final_chassis))
+    assert all(np.all(np.isfinite(wheel)) for wheel in final_wheels)
+    assert final_chassis[0] > initial_chassis[0]
+    assert all(
+        wheel[0] > initial_wheel[0]
+        for wheel, initial_wheel in zip(final_wheels, initial_wheels)
+    )

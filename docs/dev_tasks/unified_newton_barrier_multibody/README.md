@@ -182,6 +182,8 @@
         writer for the runtime smoke path.
   - [x] Add a reduced nunchaku hinge CPU scene packet and runtime status panel
         for the public revolute-joint path.
+  - [x] Add a reduced terrain vehicle CPU scene packet and runtime status panel
+        for chassis/passive wheel hinges over flat terrain.
   - [x] Add a reduced windmill hinge/contact CPU scene packet and runtime
         status panel while keeping Bullet/reference comparison future work.
   - [ ] Add paper-scale CPU packets only after the corresponding scene assets,
@@ -200,8 +202,8 @@ storage, or backend resources as public API.
 - No public API changes.
 - No dartpy binding changes.
 - No paper-scale runtime scene reproduction or fixture asset migration beyond
-  the reduced hanging-bridge, nunchaku, and windmill smoke scenes, launchable
-  planned py-demo placeholders, and checked corpus manifest.
+  the reduced hanging-bridge, terrain vehicle, nunchaku, and windmill smoke
+  scenes, launchable planned py-demo placeholders, and checked corpus manifest.
 - No rigid curved-trajectory CCD move.
 - No sparse Newton loop merge.
 - No rigid IPC default behavior change.

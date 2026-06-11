@@ -34,12 +34,16 @@ DEFAULT_SCENE = "hanging_bridge"
 SCENE_ROWS = {
     "hanging_bridge": "BM_Plan083CpuScene_hanging_bridge_reduced_world_step",
     "nunchaku_single": "BM_Plan083CpuScene_nunchaku_single_reduced_world_step",
+    "terrain_vehicle": "BM_Plan083CpuScene_terrain_vehicle_reduced_world_step",
     "windmill": "BM_Plan083CpuScene_windmill_reduced_world_step",
 }
 SCENE_BENCHMARK_OUTPUTS = {
     "hanging_bridge": DEFAULT_BENCHMARK_OUTPUT,
     "nunchaku_single": Path(
         ".benchmark_results/plan083/cpu_scene_corpus/nunchaku_single_benchmark.json"
+    ),
+    "terrain_vehicle": Path(
+        ".benchmark_results/plan083/cpu_scene_corpus/terrain_vehicle_benchmark.json"
     ),
     "windmill": Path(
         ".benchmark_results/plan083/cpu_scene_corpus/windmill_benchmark.json"
@@ -49,6 +53,9 @@ SCENE_PACKET_OUTPUTS = {
     "hanging_bridge": DEFAULT_PACKET_OUTPUT,
     "nunchaku_single": Path(
         ".benchmark_results/plan083/cpu_scene_corpus/nunchaku_single.json"
+    ),
+    "terrain_vehicle": Path(
+        ".benchmark_results/plan083/cpu_scene_corpus/terrain_vehicle.json"
     ),
     "windmill": Path(".benchmark_results/plan083/cpu_scene_corpus/windmill.json"),
 }
@@ -239,6 +246,14 @@ def make_packet(
         )
     if scene == "nunchaku_single":
         return _make_nunchaku_packet(
+            row,
+            rows,
+            timing_ns=timing_ns,
+            final_residual=final_residual,
+            max_equality_residual=max_equality_residual,
+        )
+    if scene == "terrain_vehicle":
+        return _make_terrain_vehicle_packet(
             row,
             rows,
             timing_ns=timing_ns,
@@ -438,6 +453,78 @@ def _make_windmill_packet(
             "limitation_status": (
                 "Reduced hinge/contact smoke packet only; Bullet/reference "
                 "comparison, cube piles, and paper-scale timing remain planned."
+            ),
+        },
+        "benchmarks": rows,
+    }
+
+
+def _make_terrain_vehicle_packet(
+    row: Mapping[str, Any],
+    rows: list[Any],
+    *,
+    timing_ns: float,
+    final_residual: float,
+    max_equality_residual: float,
+) -> dict[str, Any]:
+    body_count = int(_finite_number(row, "body_count"))
+    dynamic_body_count = int(_finite_number(row, "dynamic_body_count"))
+    wheel_count = int(_finite_number(row, "wheel_count"))
+    revolute_joint_count = int(_finite_number(row, "revolute_joint_count"))
+    active_articulation_constraints = int(
+        _finite_number(row, "active_articulation_constraints")
+    )
+    if body_count != 6:
+        raise Plan083CpuScenePacketError(f"expected 6 rigid bodies, got {body_count}")
+    if dynamic_body_count != 5:
+        raise Plan083CpuScenePacketError(
+            f"expected 5 dynamic rigid bodies, got {dynamic_body_count}"
+        )
+    if wheel_count != 4:
+        raise Plan083CpuScenePacketError(
+            f"expected 4 passive wheels, got {wheel_count}"
+        )
+    if revolute_joint_count != 4:
+        raise Plan083CpuScenePacketError(
+            f"expected 4 revolute wheel joints, got {revolute_joint_count}"
+        )
+    if active_articulation_constraints < 8:
+        raise Plan083CpuScenePacketError(
+            "expected wheel-hinge articulation rows for the reduced terrain vehicle"
+        )
+
+    ground_clearance = _finite_number(row, "min_wheel_ground_clearance_m")
+    if ground_clearance < -1e-5:
+        raise Plan083CpuScenePacketError(
+            "terrain vehicle wheel penetrated the reduced terrain smoke scene"
+        )
+
+    return {
+        "plan083_cpu_scene_packet": {
+            "row_id": "unb-fig-10",
+            "scene_id": "plan083_terrain_vehicle",
+            "benchmark_row": _packet_row_name(row),
+            "paper_scale": False,
+            "runtime_path": "rigid IPC World::step",
+            "step_count": 1,
+            "wall_time_ns": timing_ns,
+            "body_count": body_count,
+            "dynamic_body_count": dynamic_body_count,
+            "wheel_count": wheel_count,
+            "revolute_joint_count": revolute_joint_count,
+            "active_constraints": int(_finite_number(row, "active_constraints")),
+            "active_friction_constraints": int(
+                _finite_number(row, "active_friction_constraints")
+            ),
+            "active_articulation_constraints": active_articulation_constraints,
+            "final_equality_residual_norm": final_residual,
+            "max_equality_residual": max_equality_residual,
+            "chassis_height_m": _finite_number(row, "chassis_height_m"),
+            "min_wheel_ground_clearance_m": ground_clearance,
+            "limitation_status": (
+                "Reduced chassis/passive-wheel terrain smoke packet only; "
+                "paper-scale terrain mesh, navigation controls, and Table 2 "
+                "timings remain planned."
             ),
         },
         "benchmarks": rows,

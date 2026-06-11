@@ -16,6 +16,15 @@ _BRIDGE_POST_HALF_EXTENTS = np.array([0.05, 0.2, 0.08])
 _BRIDGE_TRAVELER_HALF_EXTENTS = np.array([0.07, 0.07, 0.07])
 _BRIDGE_BOARD_X = np.linspace(-0.45, 0.45, 4)
 _NUNCHAKU_HANDLE_HALF_EXTENTS = np.array([0.18, 0.035, 0.035])
+_TERRAIN_HALF_EXTENTS = np.array([0.70, 0.45, 0.025])
+_TERRAIN_CHASSIS_HALF_EXTENTS = np.array([0.22, 0.12, 0.04])
+_TERRAIN_WHEEL_RADIUS = 0.06
+_TERRAIN_WHEEL_OFFSETS = (
+    np.array([-0.16, -0.14, -0.10]),
+    np.array([-0.16, 0.14, -0.10]),
+    np.array([0.16, -0.14, -0.10]),
+    np.array([0.16, 0.14, -0.10]),
+)
 _WINDMILL_HUB_HALF_EXTENTS = np.array([0.05, 0.05, 0.05])
 _WINDMILL_BLADE_HALF_EXTENTS = np.array([0.045, 0.22, 0.025])
 _WINDMILL_STRIKER_HALF_EXTENTS = np.array([0.09, 0.09, 0.09])
@@ -446,11 +455,129 @@ def _build_windmill_runtime(target: Plan083SceneTarget) -> SceneSetup:
     )
 
 
+def _build_terrain_vehicle_runtime(target: Plan083SceneTarget) -> SceneSetup:
+    world = dart.World(
+        time_step=0.005,
+        gravity=(0.0, 0.0, -9.81),
+        rigid_body_solver=dart.RigidBodySolver.IPC,
+    )
+
+    terrain = world.add_rigid_body("plan083_vehicle_terrain", position=(0.0, 0.0, -0.025))
+    terrain.is_static = True
+    terrain.friction = 0.8
+    terrain.set_collision_shape(dart.CollisionShape.box(_TERRAIN_HALF_EXTENTS))
+
+    chassis = world.add_rigid_body(
+        "plan083_vehicle_chassis",
+        position=(0.0, 0.0, 0.17),
+        linear_velocity=(0.12, 0.0, 0.0),
+    )
+    chassis.mass = 0.45
+    chassis.friction = 0.7
+    chassis.set_collision_shape(dart.CollisionShape.box(_TERRAIN_CHASSIS_HALF_EXTENTS))
+
+    wheels = []
+    chassis_position = np.asarray(chassis.translation, dtype=float).reshape(3)
+    for index, offset in enumerate(_TERRAIN_WHEEL_OFFSETS):
+        wheel = world.add_rigid_body(
+            f"plan083_vehicle_passive_wheel_{index}",
+            position=tuple(chassis_position + offset),
+            angular_velocity=(0.0, 3.0, 0.0),
+        )
+        wheel.mass = 0.08
+        wheel.friction = 0.9
+        wheel.set_collision_shape(dart.CollisionShape.sphere(_TERRAIN_WHEEL_RADIUS))
+        world.add_rigid_body_revolute_joint(
+            f"plan083_vehicle_wheel_hinge_{index}",
+            chassis,
+            wheel,
+            axis=(0.0, 1.0, 0.0),
+        )
+        wheels.append(wheel)
+
+    world.enter_simulation_mode()
+
+    bridge = WorldRenderBridge(world, name="plan083_terrain_vehicle_runtime")
+    bridge.add_rigid_body_visual(
+        terrain,
+        dart.BoxShape(_full(_TERRAIN_HALF_EXTENTS)),
+        (0.34, 0.43, 0.32),
+        name="plan083_vehicle_terrain_visual",
+    )
+    bridge.add_rigid_body_visual(
+        chassis,
+        dart.BoxShape(_full(_TERRAIN_CHASSIS_HALF_EXTENTS)),
+        (0.24, 0.42, 0.78),
+        name="plan083_vehicle_chassis_visual",
+    )
+    for index, wheel in enumerate(wheels):
+        bridge.add_rigid_body_visual(
+            wheel,
+            dart.SphereShape(_TERRAIN_WHEEL_RADIUS),
+            (0.10, 0.12, 0.14),
+            name=f"plan083_vehicle_wheel_{index}_visual",
+        )
+    bridge.sync()
+
+    chassis_height_history: deque[float] = deque(maxlen=120)
+    min_clearance_history: deque[float] = deque(maxlen=120)
+
+    def build_panel(builder: object, context: object) -> None:
+        chassis_position = np.asarray(chassis.translation, dtype=float).reshape(3)
+        wheel_clearances = [
+            float(np.asarray(wheel.translation, dtype=float).reshape(3)[2])
+            - _TERRAIN_WHEEL_RADIUS
+            for wheel in wheels
+        ]
+        min_clearance = min(wheel_clearances)
+        chassis_height_history.append(float(chassis_position[2]))
+        min_clearance_history.append(min_clearance)
+
+        builder.text("status: reduced runtime smoke scene")
+        builder.text("solver: rigid IPC World.step")
+        builder.text(f"row: {', '.join(target.row_ids)}")
+        builder.text(f"rigid bodies: {world.num_rigid_bodies}")
+        builder.text(f"passive wheels: {len(wheels)}")
+        builder.text(f"revolute joints: {world.num_rigid_body_joints}")
+        builder.text(f"world time: {world.time:.3f} s")
+        builder.text(f"chassis height: {chassis_position[2]:.3f} m")
+        builder.text(f"min wheel clearance: {min_clearance:.4f} m")
+        builder.text(f"benchmark: {target.benchmark_command}")
+        builder.text(f"limitation: {target.limitation}")
+        builder.separator()
+        bridge.build_control_panel(builder, context)
+        if chassis_height_history:
+            builder.separator()
+            builder.plot_lines("Chassis height", list(chassis_height_history))
+            builder.plot_lines("Min wheel clearance", list(min_clearance_history))
+
+    info = _target_info(target)
+    info.update(
+        {
+            "sx_world": world,
+            "runtime_smoke_scene": True,
+            "rigid_body_solver": "ipc",
+            "terrain": terrain,
+            "chassis": chassis,
+            "wheels": tuple(wheels),
+        }
+    )
+    return SceneSetup(
+        world=bridge.render_world,
+        pre_step=bridge.pre_step,
+        force_drag=bridge.force_drag,
+        panels=[ScenePanel(target.title, build_panel)],
+        info=info,
+    )
+
+
 def _scene(target: Plan083SceneTarget) -> PythonDemoScene:
     if target.scene_id == "plan083_hanging_bridge":
         build = lambda target=target: _build_hanging_bridge_runtime(target)
     elif target.scene_id == "plan083_nunchaku":
         build = lambda target=target: _build_nunchaku_runtime(target)
+    elif target.scene_id == "plan083_terrain_vehicle":
+        build = lambda target=target: _build_terrain_vehicle_runtime(target)
     elif target.scene_id == "plan083_windmill":
         build = lambda target=target: _build_windmill_runtime(target)
     else:
@@ -519,12 +646,12 @@ PLAN083_SCENE_TARGETS: tuple[Plan083SceneTarget, ...] = (
         title="PLAN-083 Terrain Vehicle",
         row_ids=("unb-fig-10",),
         category="PLAN-083 Robot Corpus",
-        summary="Planned terrain vehicle with hinges, passive wheels, and friction.",
-        target="Paper Fig. 10 / Table 2 terrain navigation scene.",
+        summary="Reduced terrain vehicle smoke scene running through World::step.",
+        target="Paper Fig. 10 / Table 2 terrain navigation scene; reduced to a chassis, passive wheel hinges, and flat terrain contact for runtime smoke evidence.",
         smoke_command="pixi run py-demos -- --scene plan083_terrain_vehicle --headless --frames 4",
         visual_command="pixi run py-demo-capture -- --scene plan083_terrain_vehicle --frames 240 --width 1280 --height 720",
-        benchmark_command="pixi run bm bm_plan083_cpu_scene_corpus -- --benchmark_filter=terrain_vehicle",
-        limitation="Waiting for articulated rigid IPC scene assembly.",
+        benchmark_command="pixi run bm-plan083-cpu-terrain-vehicle-packet",
+        limitation="Reduced chassis/passive-wheel terrain smoke and CPU packet only; terrain mesh, navigation controls, and Table 2 timing remain planned.",
     ),
     Plan083SceneTarget(
         scene_id="plan083_ragdolls",
