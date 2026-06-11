@@ -320,12 +320,23 @@ struct RigidIpcAdaptiveStiffnessOptions
 
 struct RigidIpcProjectedNewtonSolveOptions
 {
+  using DynamicsTermAllocator
+      = dart::common::StlAllocator<RigidIpcBodyDynamicsTerm>;
+
+  RigidIpcProjectedNewtonSolveOptions() = default;
+
+  explicit RigidIpcProjectedNewtonSolveOptions(
+      dart::common::MemoryAllocator& allocator)
+    : dynamicsTerms(DynamicsTermAllocator{allocator})
+  {
+  }
+
   RigidIpcBarrierOptions barrier;
   RigidIpcFrictionOptions friction;
   RigidIpcLineSearchOptions lineSearch;
   RigidIpcProjectedNewtonOptions newton;
   RigidIpcAdaptiveStiffnessOptions adaptiveStiffness;
-  std::vector<RigidIpcBodyDynamicsTerm> dynamicsTerms;
+  std::vector<RigidIpcBodyDynamicsTerm, DynamicsTermAllocator> dynamicsTerms;
   std::size_t maxIterations = 16;
   std::size_t frictionIterations = 1;
   double stepTolerance = 1e-10;
@@ -362,11 +373,21 @@ struct RigidIpcProjectedNewtonSolveStats
 
 struct RigidIpcProjectedNewtonSolveResult
 {
+  using SurfaceAllocator = dart::common::StlAllocator<RigidIpcBarrierSurface>;
+
+  RigidIpcProjectedNewtonSolveResult() = default;
+
+  explicit RigidIpcProjectedNewtonSolveResult(
+      dart::common::MemoryAllocator& allocator)
+    : surfaces(SurfaceAllocator{allocator})
+  {
+  }
+
   RigidIpcProjectedNewtonSolveStatus status
       = RigidIpcProjectedNewtonSolveStatus::MaxIterations;
   bool converged = false;
   bool failed = false;
-  std::vector<RigidIpcBarrierSurface> surfaces;
+  std::vector<RigidIpcBarrierSurface, SurfaceAllocator> surfaces;
   RigidIpcBarrierAssembly assembly;
   RigidIpcLineSearchResult lineSearch;
   RigidIpcProjectedNewtonStep lastStep;

@@ -187,16 +187,16 @@ references; that API-sensitive route remains separate follow-up work.
 
 The current rigid IPC scratch slice adds an allocator-aware
 `RigidIpcContactStage::Scratch` constructor for the top-level runtime-body,
-solver-body, surface, kinematic-trace, writeback-order, and resting-contact
-scratch vectors. Built-in stages already pass the World `MemoryManager`, so
-those reserves now grow from the World free allocator; the focused custom-stage
-test verifies reserve growth and release against the provided free-list live
-allocation count. `RigidIpcProjectedNewtonSolveScratch` now also accepts a
-`MemoryAllocator`, and the stage passes its allocator into that nested solve
-scratch so lagged, line-search, candidate, accepted, and best-decreasing surface
-work vectors borrow the same root. Solver option/result vectors and nested
-surface mesh payloads remain default-vector follow-up work because they cross
-the detail solver API boundary.
+solver-body, surface, dynamics-term, projected-Newton result, kinematic-trace,
+writeback-order, and resting-contact scratch vectors. Built-in stages already
+pass the World `MemoryManager`, so those reserves now grow from the World free
+allocator; the focused custom-stage test verifies reserve growth and release
+against the provided free-list live allocation count.
+`RigidIpcProjectedNewtonSolveScratch` now also accepts a `MemoryAllocator`, and
+the stage passes its allocator into that nested solve scratch so lagged,
+line-search, candidate, accepted, and best-decreasing surface work vectors
+borrow the same root. Nested surface mesh payloads remain default-vector
+follow-up work because they cross the detail solver API boundary.
 
 The current deformable stage scratch slice adds allocator-aware construction
 for `DeformableDynamicsStage::Scratch` top-level barrier and snapshot vectors:
@@ -730,7 +730,8 @@ stage-owned scratch/cache object roots are now allocator-aware, and the
 rigid-body velocity force-batch payload plus rigid-body contact
 sequential-impulse constraint vector, plus the `WorldKinematicsGraph`
 entity-node cache, `ComputeGraph` owned node/name lookup storage, rigid IPC
-top-level scratch vectors, and rigid IPC projected-Newton solve scratch vectors,
+top-level scratch vectors, rigid IPC solver option/result vectors, and rigid IPC
+projected-Newton solve scratch vectors,
 deformable stage top-level barrier/snapshot vectors plus nested
 `SurfaceContactSnapshot` payload vectors, and the rigid AVBD contact snapshot,
 row-counter scratch, solve scratch vectors, warm-start inventories, and
@@ -738,10 +739,9 @@ point-joint input vectors are the first nested stage payloads routed through
 world-owned
 allocator-backed storage. The next slice should probe existing no-growth/no-heap
 gates or stage-local heap counters for another concrete nested payload path
-before changing broader scratch layouts; likely candidates are the remaining
-solver option/result vectors in rigid IPC, or an API-compatible plan for
-`ComputeGraph`'s exposed edge/topological-order vector storage. Do not add new
-production scenes unless
+before changing broader scratch layouts; likely candidates are nested rigid IPC
+surface mesh payloads or an API-compatible plan for `ComputeGraph`'s exposed
+edge/topological-order vector storage. Do not add new production scenes unless
 profiling or a failing no-growth/no-heap gate shows a real gap not covered by
 the current shipped scenes.
 

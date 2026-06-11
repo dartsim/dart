@@ -85,10 +85,9 @@ scratch, warm-start inventories, and point-joint input vector also borrow the
 World free allocator when the built-in pipeline constructs those stages. The
 rigid IPC
 contact stage similarly routes its top-level runtime, solver, surface,
-writeback, and resting-contact scratch vectors through the World free allocator,
-and its projected-Newton solve scratch vectors borrow the same allocator when
-the stage constructs the solver scratch. Solver
-option/result vectors and nested surface mesh payloads remain separate.
+writeback, resting-contact, dynamics-term, projected-Newton result, and solver
+scratch vectors through the World free allocator when the stage constructs the
+solver scratch. Nested surface mesh payloads remain separate.
 `DeformableDynamicsStage` routes its stage-owned ground-barrier,
 static-obstacle, deformable-surface snapshot, static rigid surface-CCD snapshot,
 and moving rigid surface-CCD snapshot vectors through the same World free

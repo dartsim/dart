@@ -164,6 +164,10 @@ struct RigidIpcContactStage::Scratch
       solverBodies(common::StlAllocator<RigidIpcRuntimeBody>{allocator}),
       surfaces(
           common::StlAllocator<sxdetail::RigidIpcBarrierSurface>{allocator}),
+      dynamicsTerms(
+          common::StlAllocator<sxdetail::RigidIpcBodyDynamicsTerm>{allocator}),
+      solveDynamicsTerms(
+          common::StlAllocator<sxdetail::RigidIpcBodyDynamicsTerm>{allocator}),
       tracedEntities(common::StlAllocator<entt::entity>{allocator}),
       blockedEntities(common::StlAllocator<entt::entity>{allocator}),
       writebackEntities(common::StlAllocator<entt::entity>{allocator}),
@@ -173,6 +177,7 @@ struct RigidIpcContactStage::Scratch
       sawNonStationaryContactBody(
           common::StlAllocator<std::uint8_t>{allocator}),
       stationaryContactBody(common::StlAllocator<std::uint8_t>{allocator}),
+      solveResult(allocator),
       solveScratch(allocator)
   {
   }
@@ -185,8 +190,14 @@ struct RigidIpcContactStage::Scratch
       sxdetail::RigidIpcBarrierSurface,
       common::StlAllocator<sxdetail::RigidIpcBarrierSurface>>
       surfaces;
-  std::vector<sxdetail::RigidIpcBodyDynamicsTerm> dynamicsTerms;
-  std::vector<sxdetail::RigidIpcBodyDynamicsTerm> solveDynamicsTerms;
+  std::vector<
+      sxdetail::RigidIpcBodyDynamicsTerm,
+      common::StlAllocator<sxdetail::RigidIpcBodyDynamicsTerm>>
+      dynamicsTerms;
+  std::vector<
+      sxdetail::RigidIpcBodyDynamicsTerm,
+      common::StlAllocator<sxdetail::RigidIpcBodyDynamicsTerm>>
+      solveDynamicsTerms;
   std::vector<entt::entity, common::StlAllocator<entt::entity>> tracedEntities;
   std::vector<entt::entity, common::StlAllocator<entt::entity>> blockedEntities;
   std::vector<entt::entity, common::StlAllocator<entt::entity>>
@@ -9725,7 +9736,14 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
   const double averageMass
       = massCount > 0u ? massSum / static_cast<double>(massCount) : 1.0;
 
-  sxdetail::RigidIpcProjectedNewtonSolveOptions options;
+  auto makeSolveOptions = [&]() {
+    return m_memoryManager != nullptr
+               ? sxdetail::
+                     RigidIpcProjectedNewtonSolveOptions{m_memoryManager
+                                                             ->getFreeAllocator()}
+               : sxdetail::RigidIpcProjectedNewtonSolveOptions{};
+  };
+  sxdetail::RigidIpcProjectedNewtonSolveOptions options = makeSolveOptions();
   options.barrier.squaredActivationDistance
       = m_options.activationDistance * m_options.activationDistance;
   options.barrier.stiffness
