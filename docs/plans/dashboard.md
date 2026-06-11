@@ -277,27 +277,18 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Algorithm extensibility
-- Next step: Continue the active
-  [`../dev_tasks/unified_newton_barrier_multibody/`](../dev_tasks/unified_newton_barrier_multibody/):
-  Phase 1 promoted shared distance/barrier/tangent/friction primitives into
-  `detail/newton_barrier`, Phase 2 has internal ABD barrier/friction derivative
-  oracles, and the first `abd-alg-affine-body` benchmark packet is now an
-  in-progress primitive/oracle manifest row. The current packet does not need a
-  two-body affine contact micro-solve before Phase 3; defer that solved-state
-  row until a broader ABD packet needs runtime residual evidence. Use the PLAN-083
-  [`ipc-variant-consolidation.md`](083-unified-newton-barrier-multibody/ipc-variant-consolidation.md)
-  sidecar to keep deformable IPC, codimensional IPC, rigid IPC, ABD, PD-IPC,
-  SPB, PPF cubic-barrier/strain-limiting, and VBD/OGC-adjacent obligations in
-  the right owners; use
-  [`ppf-contact-solver-intake.md`](083-unified-newton-barrier-multibody/ppf-contact-solver-intake.md)
-  for PPF's paper, repository, API, diagnostics, examples, and GPU-platform
-  lessons. Implementation-roadmap Phase 2 shared solver contracts landed in PR
-  #2951. Implementation-roadmap Phases 3-8 landed together in PR #2960 because
-  the remaining internal slices were small enough for one reviewer-facing PR.
-  Follow-up local work measures the private GPU PSD projection packet, adds the
-  Fig. 17 barrier-force diagnostic, and aligns articulation-only figure rows
-  with landed Phase 3 private diagnostics, but the Phase 8 audit records that
-  PLAN-083 is not complete while planned manifest, CPU corpus, and non-PSD GPU
+- Next step: Land the active
+  [`../dev_tasks/unified_newton_barrier_multibody/`](../dev_tasks/unified_newton_barrier_multibody/)
+  runtime-wiring branch as one PR after merging current `main`. PR #2960 landed
+  implementation-roadmap Phases 3-8, and follow-up PR #2961 measured the
+  private GPU PSD projection packet, added the Fig. 17 barrier-force
+  diagnostic, and aligned articulation-only figure rows with landed private
+  diagnostics. The active branch `feature/newton-barrier-runtime-wiring` wires
+  landed point/fixed and hinge constraints into rigid IPC `World::step`, adds
+  opt-in BDF-2 stepping, routes deformable surfaces as fixed mixed-domain
+  contact obstacles, and runs a reduced hanging-bridge py-demo through
+  `World::step` plus headless capture. The completion audit still records
+  PLAN-083 as incomplete while planned manifest, CPU corpus, and non-PSD GPU
   parity rows remain, so dev-task retirement needs maintainer direction before
   deletion.
 - Gate: Unified Newton-barrier progress is not complete until every cited
