@@ -1888,6 +1888,14 @@ def test_simulation_world_articulated_non_cardinal_prismatic_reset_from_python()
             max_broken_orthogonal_residual, orthogonal_anchor_residual()
         )
     assert max_broken_orthogonal_residual > 1e-4
+    assert slider.type == sx.JointType.PRISMATIC
+    assert slider.num_dofs == 1
+    assert slider.child_link == body
+    with pytest.raises(Exception, match="parent endpoint"):
+        _ = slider.parent_link
+    assert np.asarray(slider.axis, dtype=float).tolist() == pytest.approx(
+        slider_axis.tolist()
+    )
 
     body.parent_joint.velocity = [0.0] * 6
     slider.command_velocity = [-target_speed]
@@ -1996,6 +2004,14 @@ def test_simulation_world_articulated_non_cardinal_revolute_reset_from_python():
             max_broken_anchor_residual, anchor_residual()
         )
     assert max_broken_anchor_residual > 1e-4
+    assert hinge.type == sx.JointType.REVOLUTE
+    assert hinge.num_dofs == 1
+    assert hinge.child_link == body
+    with pytest.raises(Exception, match="parent endpoint"):
+        _ = hinge.parent_link
+    assert np.asarray(hinge.axis, dtype=float).tolist() == pytest.approx(
+        hinge_axis.tolist()
+    )
 
     body.parent_joint.velocity = [0.0] * 6
     hinge.command_velocity = [-target_speed]
@@ -2101,6 +2117,13 @@ def test_simulation_world_articulated_non_cardinal_pair_motors_reset_from_python
             max_slider_broken_orthogonal_residual, slider_orthogonal_residual()
         )
     assert max_slider_broken_orthogonal_residual > 1e-4
+    assert slider.type == sx.JointType.PRISMATIC
+    assert slider.num_dofs == 1
+    assert slider.parent_link == slider_parent
+    assert slider.child_link == slider_child
+    assert np.asarray(slider.axis, dtype=float).tolist() == pytest.approx(
+        slider_axis.tolist()
+    )
 
     slider_parent.parent_joint.velocity = [0.0] * 6
     slider_child.parent_joint.velocity = [0.0] * 6
@@ -2235,6 +2258,13 @@ def test_simulation_world_articulated_non_cardinal_pair_motors_reset_from_python
         )
     assert max_hinge_broken_anchor_residual > 1e-4
     assert max_hinge_broken_axis_tilt > 1e-4
+    assert hinge.type == sx.JointType.REVOLUTE
+    assert hinge.num_dofs == 1
+    assert hinge.parent_link == hinge_parent
+    assert hinge.child_link == hinge_child
+    assert np.asarray(hinge.axis, dtype=float).tolist() == pytest.approx(
+        hinge_axis.tolist()
+    )
 
     hinge_parent.parent_joint.velocity = [0.0] * 6
     hinge_child.parent_joint.velocity = [0.0] * 6

@@ -5,12 +5,14 @@
 Latest local follow-up: dartpy public articulated fixed, spherical, cardinal
 one-DOF motor, and non-cardinal one-DOF motor break/reset coverage now rechecks
 endpoint shape, joint type, DOF count, and motor axis after reset re-engages the
-rows for same-multibody, world-link, and movable-pair cases; broken-state binary
-round-trip tests now also recheck the restored facade shape after reset
-re-engages same-multibody/world-link fixed, spherical, and one-DOF rows. The
-focused selected pytest filters passed. This is only a narrow public facade
-lifecycle assertion slice; it does not close broader articulated fracture,
-motor lifecycle, source-corpus, CPU-win, GPU, or paper-number gates.
+rows for same-multibody, world-link, and movable-pair cases; the non-cardinal
+direct cases now also recheck that shape while broken rows are being skipped
+before reset. Broken-state binary round-trip tests now also recheck the
+restored facade shape after reset re-engages same-multibody/world-link fixed,
+spherical, and one-DOF rows. The focused selected pytest filters passed. This
+is only a narrow public facade lifecycle assertion slice; it does not close
+broader articulated fracture, motor lifecycle, source-corpus, CPU-win, GPU, or
+paper-number gates.
 
 Latest local follow-up: small AVBD rigid world-contact snapshots no longer
 reserve the endpoint entity-index hash map while the body count is within the
