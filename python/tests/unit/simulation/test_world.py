@@ -1281,6 +1281,73 @@ def test_simulation_world_articulated_generated_names_resume_after_binary_roundt
     assert restored_world.num_articulated_joints == 3
 
 
+def test_simulation_world_articulated_avbd_stiffness_roundtrip_from_python(
+    tmp_path: Path,
+):
+    sx = _simulation()
+
+    world = sx.World()
+    world.multibody_options = sx.MultibodyOptions(
+        integration_family="variational integrator"
+    )
+    arm = world.add_multibody("serialized_articulated_stiffness_arm")
+    base = arm.add_link("base")
+    body = arm.add_link(
+        "body",
+        parent=base,
+        joint=sx.JointSpec(name="floating", type=sx.JointType.FLOATING),
+    )
+
+    fixed = world.add_articulated_fixed_joint("stiff_fixed", base, body)
+    fixed.avbd_start_stiffness = 3.0
+    fixed.avbd_linear_stiffness = 234.0
+    fixed.avbd_angular_stiffness = 567.0
+
+    hinge = world.add_articulated_revolute_joint(
+        "stiff_world_hinge", body, axis=(0.0, 1.0, 0.0)
+    )
+    hinge.avbd_start_stiffness = 4.0
+    hinge.avbd_linear_stiffness = 345.0
+    hinge.avbd_angular_stiffness = 678.0
+
+    binary_path = tmp_path / "articulated_avbd_stiffness.bin"
+    world.save_binary(binary_path)
+
+    restored_world = sx.World()
+    restored_world.load_binary(binary_path)
+    restored_fixed = restored_world.get_articulated_joint("stiff_fixed")
+    restored_hinge = restored_world.get_articulated_joint("stiff_world_hinge")
+
+    assert restored_fixed is not None
+    assert restored_fixed.avbd_start_stiffness == pytest.approx(3.0)
+    assert restored_fixed.avbd_linear_stiffness == pytest.approx(234.0)
+    assert restored_fixed.avbd_angular_stiffness == pytest.approx(567.0)
+
+    assert restored_hinge is not None
+    assert restored_hinge.avbd_start_stiffness == pytest.approx(4.0)
+    assert restored_hinge.avbd_linear_stiffness == pytest.approx(345.0)
+    assert restored_hinge.avbd_angular_stiffness == pytest.approx(678.0)
+
+    restored_fixed.avbd_linear_stiffness = 432.0
+    restored_fixed.avbd_angular_stiffness = 765.0
+    restored_hinge.avbd_linear_stiffness = 543.0
+    restored_hinge.avbd_angular_stiffness = 876.0
+
+    restored_world.enter_simulation_mode()
+    restored_fixed = restored_world.get_articulated_joint("stiff_fixed")
+    restored_hinge = restored_world.get_articulated_joint("stiff_world_hinge")
+
+    assert restored_fixed is not None
+    assert restored_fixed.avbd_start_stiffness == pytest.approx(3.0)
+    assert restored_fixed.avbd_linear_stiffness == pytest.approx(432.0)
+    assert restored_fixed.avbd_angular_stiffness == pytest.approx(765.0)
+
+    assert restored_hinge is not None
+    assert restored_hinge.avbd_start_stiffness == pytest.approx(4.0)
+    assert restored_hinge.avbd_linear_stiffness == pytest.approx(543.0)
+    assert restored_hinge.avbd_angular_stiffness == pytest.approx(876.0)
+
+
 def test_simulation_world_clear_resets_articulated_generated_names():
     sx = _simulation()
 
