@@ -49,6 +49,10 @@ def test_humanize_new_solver_surfaces():
         == "LCP world box contact · FrictionIndex surface · NNCG solver · 4 boxes"
     )
     assert (
+        module.humanize_name("BM_LcpWorldBilliardsStep_BoxedLcp/4/1")
+        == "LCP billiards world step · 4 pairs · 1 steps"
+    )
+    assert (
         module.humanize_name("BM_LcpWorldCardPileStep_BoxedLcp/7/200")
         == "LCP card-pile world step · 7 cards · 200 steps"
     )
