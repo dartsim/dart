@@ -154,6 +154,25 @@ struct AffinePointTriangleMicroSolveResult
   bool barrierActive = false;
 };
 
+struct AffinePointTriangleRuntimeStepOptions
+{
+  AffinePointTriangleMicroSolveOptions solve;
+  double timeStep = 0.01;
+  Eigen::Vector3d gravity = Eigen::Vector3d(0.0, 0.0, -9.81);
+};
+
+struct AffinePointTriangleRuntimeStepResult
+{
+  AffineBodyState initialState;
+  AffineBodyState inertialTarget;
+  AffinePointTriangleMicroSolveResult solve;
+  double displacementNorm = 0.0;
+  double linearSpeed = 0.0;
+  double affineVelocityNorm = 0.0;
+  bool valid = false;
+  bool converged = false;
+};
+
 [[nodiscard]] DART_SIMULATION_API AffineVector12d
 affineBodyStateToVector(const AffineBodyState& state);
 
@@ -273,5 +292,15 @@ affinePointTriangleMicroSolve(
     const Eigen::Vector3d& triangleB,
     const Eigen::Vector3d& triangleC,
     const AffinePointTriangleMicroSolveOptions& options);
+
+[[nodiscard]] DART_SIMULATION_API AffinePointTriangleRuntimeStepResult
+affinePointTriangleRuntimeStep(
+    const AffineBodyState& initialPointBody,
+    const Eigen::Vector3d& point,
+    const AffineBodyState& triangleBody,
+    const Eigen::Vector3d& triangleA,
+    const Eigen::Vector3d& triangleB,
+    const Eigen::Vector3d& triangleC,
+    const AffinePointTriangleRuntimeStepOptions& options);
 
 } // namespace dart::simulation::detail

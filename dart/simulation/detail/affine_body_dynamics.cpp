@@ -212,6 +212,14 @@ struct AffinePointTriangleMicroSolveEvaluation
          && options.maxIterations > 0 && options.maxLineSearchIterations > 0;
 }
 
+[[nodiscard]] bool hasValidRuntimeStepOptions(
+    const AffinePointTriangleRuntimeStepOptions& options)
+{
+  return hasValidMicroSolveOptions(options.solve)
+         && std::isfinite(options.timeStep) && options.timeStep > 0.0
+         && options.gravity.allFinite();
+}
+
 [[nodiscard]] AffinePointTriangleMicroSolveEvaluation
 evaluateAffinePointTriangleMicroSolve(
     const AffineVector12d& vector,
@@ -871,6 +879,64 @@ AffinePointTriangleMicroSolveResult affinePointTriangleMicroSolve(
     result.converged = newton_barrier::projectedNewtonResidualConverged(
         result.finalGradientNorm, tolerance);
   }
+  return result;
+}
+
+AffinePointTriangleRuntimeStepResult affinePointTriangleRuntimeStep(
+    const AffineBodyState& initialPointBody,
+    const Eigen::Vector3d& point,
+    const AffineBodyState& triangleBody,
+    const Eigen::Vector3d& triangleA,
+    const Eigen::Vector3d& triangleB,
+    const Eigen::Vector3d& triangleC,
+    const AffinePointTriangleRuntimeStepOptions& options)
+{
+  AffinePointTriangleRuntimeStepResult result;
+  result.initialState = initialPointBody;
+  result.inertialTarget = initialPointBody;
+  if (!hasValidRuntimeStepOptions(options) || !hasValidState(initialPointBody)
+      || !hasValidState(triangleBody) || !point.allFinite()
+      || !triangleA.allFinite() || !triangleB.allFinite()
+      || !triangleC.allFinite()) {
+    return result;
+  }
+
+  const double dt = options.timeStep;
+  result.inertialTarget.translation
+      += dt * (initialPointBody.linearVelocity + dt * options.gravity);
+  result.inertialTarget.linearMap += dt * initialPointBody.affineVelocity;
+
+  result.solve = affinePointTriangleMicroSolve(
+      initialPointBody,
+      result.inertialTarget,
+      point,
+      triangleBody,
+      triangleA,
+      triangleB,
+      triangleC,
+      options.solve);
+  if (!result.solve.valid) {
+    return result;
+  }
+
+  AffineBodyState stepped = result.solve.state;
+  stepped.linearVelocity
+      = (stepped.translation - initialPointBody.translation) / dt;
+  stepped.affineVelocity
+      = (stepped.linearMap - initialPointBody.linearMap) / dt;
+  result.solve.state = stepped;
+  result.displacementNorm
+      = (stepped.translation - initialPointBody.translation).norm();
+  result.linearSpeed = stepped.linearVelocity.norm();
+  result.affineVelocityNorm = stepped.affineVelocity.norm();
+  result.valid = stepped.translation.allFinite()
+                 && stepped.linearMap.allFinite()
+                 && stepped.linearVelocity.allFinite()
+                 && stepped.affineVelocity.allFinite()
+                 && std::isfinite(result.displacementNorm)
+                 && std::isfinite(result.linearSpeed)
+                 && std::isfinite(result.affineVelocityNorm);
+  result.converged = result.solve.converged;
   return result;
 }
 

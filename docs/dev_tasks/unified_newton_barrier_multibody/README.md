@@ -277,28 +277,25 @@ storage, or backend resources as public API.
 
 ## Immediate Next Steps
 
-1. Use merged PR #2960 and follow-up PR #2961 as the baseline for remaining
+1. Use merged PRs #2960, #2961, #2970, and #2971 as the baseline for remaining
    work; do not reopen the old phase-scoped stack.
-2. Finish validating and managing
-   `feature/newton-barrier-runtime-wiring` as one runtime-wiring PR targeting
-   `main`; do not split the small runtime slices into separate PRs.
-3. Continue corpus evidence on `feature/newton-barrier-corpus-evidence` by
-   adding reduced packets only where runtime evidence exists; do not mark
-   paper-scale rows complete without paper-scale scene assets and comparison
-   evidence.
+2. Continue Phase 6 CPU corpus evidence on
+   `simx/plan083-phase6-abd-runtime-evidence` by adding reduced packets only
+   where runtime evidence exists; do not mark paper-scale rows complete without
+   paper-scale scene assets and comparison evidence.
    The reduced packets may move only row-specific runtime smoke evidence;
    analytical force comparison, paper-scale rope/rod coupling, affine packing,
    twisted shell, and self-contact parity remain planned.
+3. Use the reduced ABD runtime-step packet only as internal runtime evidence;
+   broader ABD CPU packets still require scene-level runtime residuals, scene
+   assets, and comparison baselines.
 4. Get maintainer direction before retiring
    `docs/dev_tasks/unified_newton_barrier_multibody/`: the Phase 8 audit found
    that PLAN-083 still has planned CPU/GPU/scene rows and cannot honestly be
    called complete yet.
-5. Use the reduced affine point-triangle micro-solve only as internal
-   solved-state evidence; broader ABD CPU packets still require scene-level
-   runtime residuals, scene assets, and comparison baselines.
-6. Promote only the smallest proven shared contract, with cross-variant tests
+5. Promote only the smallest proven shared contract, with cross-variant tests
    showing identical behavior; keep variant-specific terms in their owner plans.
-7. Keep paper-scale runtime stepping and non-PSD GPU claims out of scope until
+6. Keep paper-scale runtime stepping and non-PSD GPU claims out of scope until
    the row-specific CPU corpus packets and Phase 7 GPU parity evidence exist.
 
 ## Validation Gates For Current Slices

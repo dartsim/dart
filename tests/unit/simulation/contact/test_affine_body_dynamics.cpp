@@ -1055,3 +1055,63 @@ TEST(AffineBodyDynamics, PointTriangleMicroSolveReducesImplicitObjective)
             .value;
   EXPECT_LT(finalOrthogonality, targetOrthogonality);
 }
+
+//==============================================================================
+TEST(AffineBodyDynamics, PointTriangleRuntimeStepUpdatesVelocityAndState)
+{
+  detail::AffineBodyState initialPointBody;
+  initialPointBody.translation = {0.0, 0.0, 0.08};
+  initialPointBody.linearMap
+      = Eigen::AngleAxisd(0.08, Eigen::Vector3d::UnitX()).toRotationMatrix();
+  initialPointBody.linearVelocity = {0.05, -0.02, -2.0};
+  initialPointBody.affineVelocity(0, 1) = 0.7;
+  initialPointBody.affineVelocity(1, 2) = -0.5;
+  initialPointBody.mass = 2.0;
+
+  detail::AffineBodyState triangleBody;
+  triangleBody.dynamic = false;
+
+  const Eigen::Vector3d point(0.2, 0.15, 0.0);
+  const Eigen::Vector3d triangleA(0.0, 0.0, 0.0);
+  const Eigen::Vector3d triangleB(1.0, 0.0, 0.0);
+  const Eigen::Vector3d triangleC(0.0, 1.0, 0.0);
+
+  detail::AffinePointTriangleRuntimeStepOptions options;
+  options.solve = makeAffineMicroSolveOptions();
+  options.timeStep = 0.03;
+  options.gravity = Eigen::Vector3d(0.0, 0.0, -9.81);
+
+  const auto result = detail::affinePointTriangleRuntimeStep(
+      initialPointBody,
+      point,
+      triangleBody,
+      triangleA,
+      triangleB,
+      triangleC,
+      options);
+
+  ASSERT_TRUE(result.valid);
+  EXPECT_TRUE(result.converged);
+  EXPECT_TRUE(result.solve.valid);
+  EXPECT_TRUE(result.solve.barrierActive);
+  EXPECT_LT(result.solve.finalValue, result.solve.initialValue);
+
+  const double targetSquaredDistance = pointTriangleSquaredDistance(
+      result.inertialTarget,
+      point,
+      triangleBody,
+      triangleA,
+      triangleB,
+      triangleC,
+      options.solve.barrier);
+  EXPECT_GT(result.solve.finalSquaredDistance, targetSquaredDistance);
+
+  const Eigen::Vector3d targetVelocity
+      = (result.inertialTarget.translation - initialPointBody.translation)
+        / options.timeStep;
+  EXPECT_GT(result.solve.state.linearVelocity.z(), targetVelocity.z());
+  EXPECT_GT(result.displacementNorm, 0.0);
+  EXPECT_GT(result.linearSpeed, 0.0);
+  EXPECT_GT(result.affineVelocityNorm, 0.0);
+  EXPECT_DOUBLE_EQ(result.solve.state.mass, initialPointBody.mass);
+}

@@ -225,6 +225,16 @@ and KKT solve equivalence, and routes the rigid IPC equality step through that
 private contract. This moves `unb-alg-change-var` to `in-progress` but does not
 claim paper-scale pulley/sliding scene reproduction.
 
+The ABD runtime-evidence follow-up is branch-local on
+`simx/plan083-phase6-abd-runtime-evidence`: the private ABD point-triangle
+micro-solve now has a reduced runtime-step helper that builds an inertial target
+from timestep, velocity, and gravity, then updates affine linear/affine
+velocities from the solved state. The branch adds a reduced house-of-cards
+packet row for `abd-vs-rigid-cards` with convergence, active-barrier,
+objective-decrease, contact-distance, and velocity-update counters. It is not a
+card-stack asset import, rigid IPC timing comparison, paper-scale ABD solver, or
+completion claim.
+
 ## Last Session Summary
 
 Current slice: the one-branch runtime wiring follow-up has five checkpoint
@@ -304,23 +314,21 @@ build/CTest entries.
 
 ## Current Branch
 
-`feature/newton-barrier-runtime-wiring` - contains the single runtime-wiring PR
-body. Keep all remaining cleanup for this branch in the same PR; do not split
-the already small runtime slices into separate PRs.
-
-`feature/newton-barrier-corpus-evidence` - starts the next CPU corpus evidence
-slice from the runtime-wiring head. Keep it separate from PR #2970 until the
-runtime-wiring PR lands or needs a CI-only rerun.
+`simx/plan083-phase6-abd-runtime-evidence` - continues Phase 6 CPU corpus
+evidence after merged PRs #2970 and #2971. Keep reduced ABD runtime-step packet
+work and docs on this branch until the current Phase 6 follow-up is
+reviewer-sized; do not split each planned ABD row into a micro-PR.
 
 ## Immediate Next Step
 
-Keep managing PR #2970 through hosted CI; the latest local conflict check says
-it merges cleanly with `main`, so the current blocker is CI state rather than a
-file conflict. While #2970 waits on hosted CI, continue
-`feature/newton-barrier-corpus-evidence` with reduced CPU corpus packets only
-where runtime evidence exists. Leave the dev-task folder active because
-PLAN-083 acceptance criteria are still unmet; if the task later moves out of
-this folder, get maintainer direction before deleting it and keep the remaining
+Continue `simx/plan083-phase6-abd-runtime-evidence` with reduced CPU corpus
+packets only where runtime evidence exists. The current entry point is the
+reduced ABD house-of-cards packet for `abd-vs-rigid-cards`; keep the row
+explicitly `in-progress` and limited to internal runtime-step evidence until
+card-stack assets, rigid IPC comparison timing, and paper-scale scene
+reproduction exist. Leave the dev-task folder active because PLAN-083
+acceptance criteria are still unmet; if the task later moves out of this
+folder, get maintainer direction before deleting it and keep the remaining
 planned CPU/GPU/scene rows in durable sidecars.
 
 ## Context That Would Be Lost

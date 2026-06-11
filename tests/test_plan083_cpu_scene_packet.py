@@ -139,6 +139,35 @@ def _candy_packet(**overrides):
     return {"benchmarks": [row]}
 
 
+def _abd_house_cards_packet(**overrides):
+    row = {
+        "name": "BM_Plan083CpuScene_abd_house_of_cards_reduced_runtime_step_median",
+        "run_name": "BM_Plan083CpuScene_abd_house_of_cards_reduced_runtime_step",
+        "aggregate_name": "median",
+        "real_time": 7.0,
+        "cpu_time": 7.0,
+        "time_unit": "ms",
+        "affine_body_count": 8,
+        "static_triangle_body_count": 1,
+        "point_triangle_pair_count": 8,
+        "valid_step_count": 8,
+        "failed_steps": 0,
+        "converged_solve_count": 8,
+        "barrier_active_count": 8,
+        "solver_iterations": 64,
+        "total_objective_decrease": 0.12,
+        "max_final_gradient_norm": 1e-8,
+        "min_target_squared_distance": 1e-4,
+        "min_final_squared_distance": 2e-3,
+        "squared_activation_distance": 0.25,
+        "max_linear_speed_m_s": 0.8,
+        "max_affine_velocity_norm": 1.2,
+        "max_displacement_norm_m": 0.03,
+    }
+    row.update(overrides)
+    return {"benchmarks": [row]}
+
+
 def _lying_flat_packet(**overrides):
     row = {
         "name": "BM_Plan083CpuScene_lying_flat_reduced_world_step_median",
@@ -427,6 +456,26 @@ def test_plan083_cpu_scene_packet_accepts_reduced_candy() -> None:
     assert row["wall_time_ns"] == 10.0e6
 
 
+def test_plan083_cpu_scene_packet_accepts_reduced_abd_house_cards() -> None:
+    module = _load_module()
+
+    packet = module.make_packet(
+        _abd_house_cards_packet(),
+        max_equality_residual=1e-8,
+        scene="abd_house_of_cards",
+    )
+
+    row = packet["plan083_cpu_scene_packet"]
+    assert row["row_id"] == "abd-vs-rigid-cards"
+    assert row["scene_id"] == "plan083_abd_house_of_cards"
+    assert row["paper_scale"] is False
+    assert row["runtime_path"] == "detail affine point-triangle runtime step"
+    assert row["affine_body_count"] == 8
+    assert row["converged_solve_count"] == 8
+    assert row["barrier_active_count"] == 8
+    assert row["wall_time_ns"] == 7.0e6
+
+
 def test_plan083_cpu_scene_packet_accepts_reduced_lying_flat() -> None:
     module = _load_module()
 
@@ -678,6 +727,28 @@ def test_plan083_cpu_scene_packet_rejects_candy_penetration() -> None:
             _candy_packet(min_cloth_height_m=-1e-3),
             max_equality_residual=1e-8,
             scene="candy",
+        )
+
+
+def test_plan083_cpu_scene_packet_rejects_abd_cards_without_convergence() -> None:
+    module = _load_module()
+
+    with pytest.raises(module.Plan083CpuScenePacketError, match="converged"):
+        module.make_packet(
+            _abd_house_cards_packet(converged_solve_count=7),
+            max_equality_residual=1e-8,
+            scene="abd_house_of_cards",
+        )
+
+
+def test_plan083_cpu_scene_packet_rejects_abd_cards_with_large_gradient() -> None:
+    module = _load_module()
+
+    with pytest.raises(module.Plan083CpuScenePacketError, match="gradient"):
+        module.make_packet(
+            _abd_house_cards_packet(max_final_gradient_norm=1.1e-5),
+            max_equality_residual=1e-8,
+            scene="abd_house_of_cards",
         )
 
 

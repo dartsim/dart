@@ -41,6 +41,7 @@
 #include <dart/simulation/body/rigid_body_options.hpp>
 #include <dart/simulation/compute/sequential_executor.hpp>
 #include <dart/simulation/compute/world_step_stage.hpp>
+#include <dart/simulation/detail/affine_body_dynamics.hpp>
 #include <dart/simulation/multibody/joint.hpp>
 #include <dart/simulation/world.hpp>
 
@@ -58,6 +59,7 @@
 #include <cmath>
 
 namespace sx = dart::simulation;
+namespace sxdetail = dart::simulation::detail;
 
 namespace {
 
@@ -99,6 +101,7 @@ const Eigen::Vector3d kRagdollTorsoHalfExtents(0.10, 0.07, 0.14);
 const Eigen::Vector3d kRagdollArmHalfExtents(0.12, 0.025, 0.035);
 const Eigen::Vector3d kRagdollLegHalfExtents(0.035, 0.04, 0.16);
 constexpr double kRagdollHeadRadius = 0.055;
+constexpr std::size_t kAbdReducedCardCount = 8;
 const std::array<Eigen::Vector3d, 4> kTerrainWheelOffsets{{
     Eigen::Vector3d(-0.16, -0.14, -0.10),
     Eigen::Vector3d(-0.16, 0.14, -0.10),
@@ -1101,6 +1104,75 @@ struct RagdollFixture
   std::vector<BodySnapshot> snapshots;
 };
 
+struct AbdHouseOfCardsFixture
+{
+  AbdHouseOfCardsFixture()
+  {
+    options.solve.barrier.squaredActivationDistance = 0.25;
+    options.solve.barrier.stiffness = 0.04;
+    options.solve.barrier.projectHessianToPsd = true;
+    options.solve.inertialWeight = 1.0;
+    options.solve.orthogonalityStiffness = 0.5;
+    options.solve.gradientTolerance = 1e-5;
+    options.solve.maxIterations = 64;
+    options.solve.maxLineSearchIterations = 32;
+    options.solve.maxStepNorm = 0.2;
+    options.timeStep = 0.03;
+    options.gravity = Eigen::Vector3d(0.0, 0.0, -9.81);
+
+    triangleBody.dynamic = false;
+    triangleA = Eigen::Vector3d(-0.6, -0.4, 0.0);
+    triangleB = Eigen::Vector3d(0.6, -0.4, 0.0);
+    triangleC = Eigen::Vector3d(-0.6, 0.6, 0.0);
+    point = Eigen::Vector3d(0.0, 0.0, 0.0);
+
+    initialCards.reserve(kAbdReducedCardCount);
+    for (std::size_t index = 0; index < kAbdReducedCardCount; ++index) {
+      sxdetail::AffineBodyState card;
+      const double row = static_cast<double>(index / 4u);
+      const double col = static_cast<double>(index % 4u);
+      card.translation
+          = Eigen::Vector3d(-0.24 + 0.16 * col, -0.08 + 0.18 * row, 0.08);
+      card.linearMap = Eigen::AngleAxisd(
+                           0.04 * static_cast<double>(index + 1u),
+                           Eigen::Vector3d::UnitY())
+                           .toRotationMatrix();
+      card.linearMap(0, 1) += index % 2u == 0u ? 0.015 : -0.015;
+      card.linearVelocity = Eigen::Vector3d(0.02 * col, 0.0, -2.0);
+      card.affineVelocity(0, 1) = 0.4 + 0.05 * row;
+      card.affineVelocity(1, 2) = -0.3 - 0.02 * col;
+      card.mass = 0.15;
+      initialCards.push_back(card);
+    }
+  }
+
+  std::vector<sxdetail::AffinePointTriangleRuntimeStepResult> stepAll() const
+  {
+    std::vector<sxdetail::AffinePointTriangleRuntimeStepResult> results;
+    results.reserve(initialCards.size());
+    for (const auto& card : initialCards) {
+      results.push_back(
+          sxdetail::affinePointTriangleRuntimeStep(
+              card,
+              point,
+              triangleBody,
+              triangleA,
+              triangleB,
+              triangleC,
+              options));
+    }
+    return results;
+  }
+
+  sxdetail::AffinePointTriangleRuntimeStepOptions options;
+  sxdetail::AffineBodyState triangleBody;
+  Eigen::Vector3d point = Eigen::Vector3d::Zero();
+  Eigen::Vector3d triangleA = Eigen::Vector3d::Zero();
+  Eigen::Vector3d triangleB = Eigen::Vector3d::Zero();
+  Eigen::Vector3d triangleC = Eigen::Vector3d::Zero();
+  std::vector<sxdetail::AffineBodyState> initialCards;
+};
+
 } // namespace
 
 //==============================================================================
@@ -1710,6 +1782,99 @@ static void BM_Plan083CpuScene_ragdoll_reduced_world_step(
       = fixture.minLegGroundClearance();
 }
 BENCHMARK(BM_Plan083CpuScene_ragdoll_reduced_world_step)
+    ->Unit(benchmark::kMillisecond);
+
+//==============================================================================
+static void BM_Plan083CpuScene_abd_house_of_cards_reduced_runtime_step(
+    benchmark::State& state)
+{
+  AbdHouseOfCardsFixture fixture;
+
+  std::vector<sxdetail::AffinePointTriangleRuntimeStepResult> lastResults;
+  for (auto _ : state) {
+    lastResults = fixture.stepAll();
+    for (const auto& result : lastResults) {
+      benchmark::DoNotOptimize(result.solve.state.translation.data());
+      benchmark::DoNotOptimize(result.solve.state.linearMap.data());
+    }
+    benchmark::ClobberMemory();
+  }
+
+  std::size_t convergedSolveCount = 0;
+  std::size_t barrierActiveCount = 0;
+  std::size_t validStepCount = 0;
+  std::size_t failedStepCount = 0;
+  std::size_t solverIterations = 0;
+  double totalObjectiveDecrease = 0.0;
+  double maxFinalGradientNorm = 0.0;
+  double minTargetSquaredDistance = std::numeric_limits<double>::infinity();
+  double minFinalSquaredDistance = std::numeric_limits<double>::infinity();
+  double maxLinearSpeed = 0.0;
+  double maxAffineVelocityNorm = 0.0;
+  double maxDisplacementNorm = 0.0;
+
+  for (const auto& result : lastResults) {
+    if (result.valid) {
+      ++validStepCount;
+    }
+    if (result.converged) {
+      ++convergedSolveCount;
+    }
+    if (result.solve.barrierActive) {
+      ++barrierActiveCount;
+    }
+    if (!result.valid || !result.converged || !result.solve.barrierActive) {
+      ++failedStepCount;
+    }
+    solverIterations += static_cast<std::size_t>(result.solve.iterations);
+    totalObjectiveDecrease
+        += result.solve.initialValue - result.solve.finalValue;
+    maxFinalGradientNorm
+        = std::max(maxFinalGradientNorm, result.solve.finalGradientNorm);
+    maxLinearSpeed = std::max(maxLinearSpeed, result.linearSpeed);
+    maxAffineVelocityNorm
+        = std::max(maxAffineVelocityNorm, result.affineVelocityNorm);
+    maxDisplacementNorm
+        = std::max(maxDisplacementNorm, result.displacementNorm);
+    const auto targetBarrier = sxdetail::affinePointTriangleBarrier(
+        result.inertialTarget,
+        fixture.point,
+        fixture.triangleBody,
+        fixture.triangleA,
+        fixture.triangleB,
+        fixture.triangleC,
+        fixture.options.solve.barrier);
+    minTargetSquaredDistance = std::min(
+        minTargetSquaredDistance, targetBarrier.primitive.squaredDistance);
+    minFinalSquaredDistance
+        = std::min(minFinalSquaredDistance, result.solve.finalSquaredDistance);
+  }
+
+  state.counters["row_abd_vs_rigid_cards"] = 1.0;
+  state.counters["paper_scale"] = 0.0;
+  state.counters["affine_body_count"]
+      = static_cast<double>(fixture.initialCards.size());
+  state.counters["static_triangle_body_count"] = 1.0;
+  state.counters["point_triangle_pair_count"]
+      = static_cast<double>(fixture.initialCards.size());
+  state.counters["valid_step_count"] = static_cast<double>(validStepCount);
+  state.counters["failed_steps"] = static_cast<double>(failedStepCount);
+  state.counters["converged_solve_count"]
+      = static_cast<double>(convergedSolveCount);
+  state.counters["barrier_active_count"]
+      = static_cast<double>(barrierActiveCount);
+  state.counters["solver_iterations"] = static_cast<double>(solverIterations);
+  state.counters["total_objective_decrease"] = totalObjectiveDecrease;
+  state.counters["max_final_gradient_norm"] = maxFinalGradientNorm;
+  state.counters["min_target_squared_distance"] = minTargetSquaredDistance;
+  state.counters["min_final_squared_distance"] = minFinalSquaredDistance;
+  state.counters["squared_activation_distance"]
+      = fixture.options.solve.barrier.squaredActivationDistance;
+  state.counters["max_linear_speed_m_s"] = maxLinearSpeed;
+  state.counters["max_affine_velocity_norm"] = maxAffineVelocityNorm;
+  state.counters["max_displacement_norm_m"] = maxDisplacementNorm;
+}
+BENCHMARK(BM_Plan083CpuScene_abd_house_of_cards_reduced_runtime_step)
     ->Unit(benchmark::kMillisecond);
 
 BENCHMARK_MAIN();
