@@ -2,12 +2,19 @@
 
 from __future__ import annotations
 
+from collections import deque
 from dataclasses import dataclass
 
 import dartpy as dart
 import numpy as np
 
+from .._world_bridge import WorldRenderBridge
 from ..runner import PythonDemoScene, ScenePanel, SceneSetup
+
+_BRIDGE_BOARD_HALF_EXTENTS = np.array([0.10, 0.16, 0.025])
+_BRIDGE_POST_HALF_EXTENTS = np.array([0.05, 0.2, 0.08])
+_BRIDGE_TRAVELER_HALF_EXTENTS = np.array([0.07, 0.07, 0.07])
+_BRIDGE_BOARD_X = np.linspace(-0.45, 0.45, 4)
 
 
 @dataclass(frozen=True)
@@ -28,6 +35,21 @@ def _translation(x: float, y: float, z: float) -> np.ndarray:
     transform = np.eye(4)
     transform[:3, 3] = (x, y, z)
     return transform
+
+
+def _full(half_extents: np.ndarray) -> np.ndarray:
+    return 2.0 * np.asarray(half_extents, dtype=float)
+
+
+def _target_info(target: Plan083SceneTarget) -> dict[str, object]:
+    return {
+        "plan083_cpu_corpus_scene": target.scene_id,
+        "plan083_row_ids": target.row_ids,
+        "plan083_smoke_command": target.smoke_command,
+        "plan083_visual_command": target.visual_command,
+        "plan083_benchmark_command": target.benchmark_command,
+        "plan083_limitation": target.limitation,
+    }
 
 
 def _build_placeholder(target: Plan083SceneTarget) -> SceneSetup:
@@ -60,24 +82,152 @@ def _build_placeholder(target: Plan083SceneTarget) -> SceneSetup:
     return SceneSetup(
         world=world,
         panels=[ScenePanel(target.title, build_panel)],
-        info={
-            "plan083_cpu_corpus_scene": target.scene_id,
-            "plan083_row_ids": target.row_ids,
-            "plan083_smoke_command": target.smoke_command,
-            "plan083_visual_command": target.visual_command,
-            "plan083_benchmark_command": target.benchmark_command,
-            "plan083_limitation": target.limitation,
-        },
+        info=_target_info(target),
+    )
+
+
+def _build_hanging_bridge_runtime(target: Plan083SceneTarget) -> SceneSetup:
+    world = dart.World(
+        time_step=0.005,
+        gravity=(0.0, 0.0, -9.81),
+        rigid_body_solver=dart.RigidBodySolver.IPC,
+    )
+
+    left_post = world.add_rigid_body(
+        "plan083_bridge_left_post", position=(-0.65, 0.0, 0.56)
+    )
+    left_post.is_static = True
+    left_post.set_collision_shape(dart.CollisionShape.box(_BRIDGE_POST_HALF_EXTENTS))
+
+    right_post = world.add_rigid_body(
+        "plan083_bridge_right_post", position=(0.65, 0.0, 0.56)
+    )
+    right_post.is_static = True
+    right_post.set_collision_shape(dart.CollisionShape.box(_BRIDGE_POST_HALF_EXTENTS))
+
+    boards = []
+    parent = left_post
+    for index, x in enumerate(_BRIDGE_BOARD_X):
+        board = world.add_rigid_body(
+            f"plan083_bridge_board_{index}",
+            position=(float(x), 0.0, 0.50),
+        )
+        board.mass = 0.25
+        board.friction = 0.7
+        board.set_collision_shape(dart.CollisionShape.box(_BRIDGE_BOARD_HALF_EXTENTS))
+        world.add_rigid_body_fixed_joint(
+            f"plan083_bridge_point_connection_{index}",
+            parent,
+            board,
+        )
+        boards.append(board)
+        parent = board
+
+    traveler = world.add_rigid_body(
+        "plan083_bridge_traveler",
+        position=(-0.60, 0.0, 0.82),
+        linear_velocity=(0.35, 0.0, -0.05),
+    )
+    traveler.mass = 0.12
+    traveler.friction = 0.4
+    traveler.set_collision_shape(dart.CollisionShape.box(_BRIDGE_TRAVELER_HALF_EXTENTS))
+
+    world.enter_simulation_mode()
+
+    bridge = WorldRenderBridge(world, name="plan083_hanging_bridge_runtime")
+    bridge.add_rigid_body_visual(
+        left_post,
+        dart.BoxShape(_full(_BRIDGE_POST_HALF_EXTENTS)),
+        (0.32, 0.34, 0.38),
+        name="plan083_bridge_left_post_visual",
+    )
+    bridge.add_rigid_body_visual(
+        right_post,
+        dart.BoxShape(_full(_BRIDGE_POST_HALF_EXTENTS)),
+        (0.32, 0.34, 0.38),
+        name="plan083_bridge_right_post_visual",
+    )
+    board_palette = (
+        (0.72, 0.46, 0.22),
+        (0.76, 0.50, 0.25),
+    )
+    for index, board in enumerate(boards):
+        bridge.add_rigid_body_visual(
+            board,
+            dart.BoxShape(_full(_BRIDGE_BOARD_HALF_EXTENTS)),
+            board_palette[index % len(board_palette)],
+            name=f"plan083_bridge_board_{index}_visual",
+        )
+    bridge.add_rigid_body_visual(
+        traveler,
+        dart.BoxShape(_full(_BRIDGE_TRAVELER_HALF_EXTENTS)),
+        (0.18, 0.50, 0.84),
+        name="plan083_bridge_traveler_visual",
+    )
+    bridge.sync()
+
+    traveler_height_history: deque[float] = deque(maxlen=120)
+    traveler_x_history: deque[float] = deque(maxlen=120)
+    board_sag_history: deque[float] = deque(maxlen=120)
+
+    def build_panel(builder: object, context: object) -> None:
+        traveler_position = np.asarray(traveler.translation, dtype=float).reshape(3)
+        board_heights = [
+            float(np.asarray(board.translation, dtype=float).reshape(3)[2])
+            for board in boards
+        ]
+        traveler_height_history.append(float(traveler_position[2]))
+        traveler_x_history.append(float(traveler_position[0]))
+        board_sag_history.append(0.50 - min(board_heights))
+
+        builder.text("status: runtime smoke scene")
+        builder.text("solver: rigid IPC World.step")
+        builder.text(f"row: {', '.join(target.row_ids)}")
+        builder.text(f"rigid bodies: {world.num_rigid_bodies}")
+        builder.text(f"point connections: {world.num_rigid_body_fixed_joints}")
+        builder.text(f"world time: {world.time:.3f} s")
+        builder.text(f"traveler x: {traveler_position[0]:.3f} m")
+        builder.text(f"traveler height: {traveler_position[2]:.3f} m")
+        builder.text(f"max board sag: {board_sag_history[-1]:.4f} m")
+        builder.separator()
+        bridge.build_control_panel(builder, context)
+        if traveler_height_history:
+            builder.separator()
+            builder.plot_lines("Traveler height", list(traveler_height_history))
+            builder.plot_lines("Traveler x", list(traveler_x_history))
+            builder.plot_lines("Board sag", list(board_sag_history))
+
+    info = _target_info(target)
+    info.update(
+        {
+            "sx_world": world,
+            "runtime_smoke_scene": True,
+            "rigid_body_solver": "ipc",
+            "boards": tuple(boards),
+            "traveler": traveler,
+        }
+    )
+    return SceneSetup(
+        world=bridge.render_world,
+        pre_step=bridge.pre_step,
+        force_drag=bridge.force_drag,
+        panels=[ScenePanel(target.title, build_panel)],
+        info=info,
     )
 
 
 def _scene(target: Plan083SceneTarget) -> PythonDemoScene:
+    if target.scene_id == "plan083_hanging_bridge":
+        build = lambda target=target: _build_hanging_bridge_runtime(target)
+    else:
+        build = lambda target=target: _build_placeholder(target)
+
     return PythonDemoScene(
         id=target.scene_id,
         title=target.title,
         category=target.category,
         summary=target.summary,
-        build=lambda target=target: _build_placeholder(target),
+        build=build,
     )
 
 
@@ -99,12 +249,12 @@ PLAN083_SCENE_TARGETS: tuple[Plan083SceneTarget, ...] = (
         title="PLAN-083 Hanging Bridge",
         row_ids=("unb-fig-02",),
         category="PLAN-083 Mixed Corpus",
-        summary="Planned bridge with rods, boards, point connections, and coupling.",
-        target="Paper Fig. 2 / Table 2 hanging bridge scene.",
+        summary="Reduced hanging-bridge smoke scene running through World::step.",
+        target="Paper Fig. 2 / Table 2 hanging bridge scene; reduced to rigid boards, point connections, and a traveler for runtime smoke evidence.",
         smoke_command="pixi run py-demos -- --scene plan083_hanging_bridge --headless --frames 4",
         visual_command="pixi run py-demo-capture -- --scene plan083_hanging_bridge --frames 240 --width 1280 --height 720",
         benchmark_command="pixi run bm bm_plan083_cpu_scene_corpus -- --benchmark_filter=hanging_bridge",
-        limitation="Waiting for rod/rigid/codimensional runtime coupling.",
+        limitation="Reduced runtime smoke only; waiting for rod, rigid, and codimensional paper-scale coupling.",
     ),
     Plan083SceneTarget(
         scene_id="plan083_pulley_system",

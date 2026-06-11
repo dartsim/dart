@@ -46,6 +46,9 @@ public:
   {
     /// Optional explicit block sizes; otherwise blocks are derived from findex.
     std::vector<int> blockSizes;
+
+    /// Number of worker threads for independent block solves.
+    int workerThreads{1};
   };
 
   BlockedJacobiSolver();

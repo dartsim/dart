@@ -166,6 +166,16 @@
         remain.
   - [ ] Retire the temporary dev-task folder only after maintainer direction;
         material planned work remains.
+- [x] Runtime wiring follow-up: consume landed Newton-barrier contracts from
+      rigid IPC runtime paths without opening per-slice PRs.
+  - [x] Route point-connection/fixed-joint and hinge-axis constraints through
+        the rigid IPC `World::step` projected-Newton loop.
+  - [x] Add opt-in BDF-2 integration to the rigid IPC contact stage while
+        keeping semi-implicit stepping as the default.
+  - [x] Route deformable surfaces as fixed mixed-domain obstacles through the
+        rigid IPC contact solve.
+  - [x] Add a reduced hanging-bridge py-demo smoke scene that steps through
+        `World::step` and supports headless capture.
 
 ## Goal
 
@@ -180,7 +190,8 @@ storage, or backend resources as public API.
 - No public API changes.
 - No dartpy binding changes.
 - No paper-scale runtime scene reproduction or fixture asset migration beyond
-  the launchable planned py-demo placeholders and checked corpus manifest.
+  the reduced hanging-bridge smoke scene, launchable planned py-demo
+  placeholders, and checked corpus manifest.
 - No rigid curved-trajectory CCD move.
 - No sparse Newton loop merge.
 - No rigid IPC default behavior change.
@@ -223,19 +234,22 @@ storage, or backend resources as public API.
 
 ## Immediate Next Steps
 
-1. Use merged PR #2960 as the baseline for implementation-roadmap Phases 3-8;
-   do not reopen the old phase-scoped stack.
-2. Get maintainer direction before retiring
+1. Use merged PR #2960 and follow-up PR #2961 as the baseline for remaining
+   work; do not reopen the old phase-scoped stack.
+2. Finish resolving, validating, and managing
+   `feature/newton-barrier-runtime-wiring` as one runtime-wiring PR targeting
+   `main`; do not split the small runtime slices into separate PRs.
+3. Get maintainer direction before retiring
    `docs/dev_tasks/unified_newton_barrier_multibody/`: the Phase 8 audit found
    that PLAN-083 still has planned CPU/GPU/scene rows and cannot honestly be
    called complete yet.
-3. Keep the two-body affine contact micro-solve deferred until the
+4. Keep the two-body affine contact micro-solve deferred until the
    `abd-alg-affine-body` row expands beyond the primitive/oracle micro-packet
    and needs a solved-state residual or runtime stepping diagnostic.
-4. Promote only the smallest proven shared contract, with cross-variant tests
+5. Promote only the smallest proven shared contract, with cross-variant tests
    showing identical behavior; keep variant-specific terms in their owner plans.
-5. Keep runtime stepping and non-PSD GPU claims out of scope until the
-   row-specific CPU corpus packets and Phase 7 GPU parity evidence exist.
+6. Keep paper-scale runtime stepping and non-PSD GPU claims out of scope until
+   the row-specific CPU corpus packets and Phase 7 GPU parity evidence exist.
 
 ## Validation Gates For Current Slices
 
@@ -400,6 +414,18 @@ Implementation-roadmap Phase 7 branch-local evidence:
 - `pixi run lint`
 - `pixi run build`
 - `pixi run -e cuda test-cuda`
+
+Runtime-wiring branch-local evidence:
+
+- `pixi run lint`
+- `pixi run build`
+- `pixi run test-unit`
+- `pixi run test-py`
+- `ctest --test-dir build/default/cpp/Release -R 'test_world|test_rigid_ipc_barrier' --output-on-failure`
+- `LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe pixi run py-demos -- --scene plan083_hanging_bridge --headless --frames 4 --width 320 --height 240`
+- `LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe pixi run py-demo-capture -- --scene plan083_hanging_bridge --frames 4 --width 320 --height 240 --output-dir /tmp/dart_plan083_hanging_bridge_capture`
+- `pixi run python scripts/check_plan083_cpu_scene_corpus.py`
+- `pixi run python scripts/check_plan083_completion_audit.py`
 
 ## Owner Docs
 

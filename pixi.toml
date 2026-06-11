@@ -687,6 +687,7 @@ CMAKE_BUILD_DIR=${BUILD_DIR} python scripts/cmake_build.py \
   --target test_rigid_body_state_batch_cuda \
   --target test_deformable_psd_projection_cuda \
   --target test_vbd_block_descent_cuda \
+  --target test_lcp_jacobi_batch_cuda \
   --target bm_cuda_rigid_body_state_batch \
   --target bm_plan083_gpu_psd_projection \
   --target bm_vbd_cuda

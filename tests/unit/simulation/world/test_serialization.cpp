@@ -2177,6 +2177,187 @@ TEST(Serialization, AvbdPointJointConfigSerializerRoundTripsAllFields)
   EXPECT_DOUBLE_EQ(restored.maxStiffness, config.maxStiffness);
 }
 
+TEST(Serialization, AvbdDistanceSpringConfigSerializerRoundTripsAllFields)
+{
+  namespace sx = dart::simulation;
+  namespace dvbd = dart::simulation::detail::deformable_vbd;
+
+  const auto* serializer = sx::io::SerializerRegistry::instance().getSerializer(
+      "dart::simulation::detail::deformable_vbd::"
+      "AvbdRigidWorldDistanceSpringConfig");
+  ASSERT_NE(serializer, nullptr);
+
+  sx::detail::WorldRegistry registry1;
+  const entt::entity bodyA = registry1.create();
+  const entt::entity bodyB = registry1.create();
+  const entt::entity springEntity = registry1.create();
+  auto& config = registry1.emplace<dvbd::AvbdRigidWorldDistanceSpringConfig>(
+      springEntity);
+  config.enabled = false;
+  config.bodyA = bodyA;
+  config.bodyB = bodyB;
+  config.localAnchorA = Eigen::Vector3d(1.0, -2.0, 3.0);
+  config.localAnchorB = Eigen::Vector3d(-4.0, 5.0, -6.0);
+  config.restLength = 7.0;
+  config.startStiffness = 8.0;
+  config.materialStiffness = 9.0;
+  config.maxStiffness = 10.0;
+
+  sx::io::EntityMap entityMap;
+  entityMap.emplace(bodyA, bodyA);
+  entityMap.emplace(bodyB, bodyB);
+  std::stringstream stream;
+  serializer->save(stream, springEntity, registry1, entityMap);
+
+  sx::detail::WorldRegistry registry2;
+  const entt::entity restoredEntity = registry2.create();
+  serializer->load(stream, restoredEntity, registry2);
+
+  ASSERT_TRUE(registry2.all_of<dvbd::AvbdRigidWorldDistanceSpringConfig>(
+      restoredEntity));
+  const auto& restored
+      = registry2.get<dvbd::AvbdRigidWorldDistanceSpringConfig>(restoredEntity);
+  EXPECT_FALSE(restored.enabled);
+  EXPECT_EQ(restored.bodyA, config.bodyA);
+  EXPECT_EQ(restored.bodyB, config.bodyB);
+  EXPECT_TRUE(restored.localAnchorA.isApprox(config.localAnchorA));
+  EXPECT_TRUE(restored.localAnchorB.isApprox(config.localAnchorB));
+  EXPECT_DOUBLE_EQ(restored.restLength, config.restLength);
+  EXPECT_DOUBLE_EQ(restored.startStiffness, config.startStiffness);
+  EXPECT_DOUBLE_EQ(restored.materialStiffness, config.materialStiffness);
+  EXPECT_DOUBLE_EQ(restored.maxStiffness, config.maxStiffness);
+}
+
+TEST(Serialization, AvbdDistanceSpringConfigLoadAllEntitiesRemapsBodies)
+{
+  namespace sx = dart::simulation;
+  namespace dvbd = dart::simulation::detail::deformable_vbd;
+
+  sx::detail::WorldRegistry registry1;
+  const entt::entity bodyA = registry1.create();
+  registry1.emplace<sx::comps::Name>(bodyA, "body_a");
+  const entt::entity bodyB = registry1.create();
+  registry1.emplace<sx::comps::Name>(bodyB, "body_b");
+  const entt::entity springEntity = registry1.create();
+  registry1.emplace<sx::comps::Name>(springEntity, "spring");
+
+  auto& config = registry1.emplace<dvbd::AvbdRigidWorldDistanceSpringConfig>(
+      springEntity);
+  config.bodyA = bodyA;
+  config.bodyB = bodyB;
+  config.localAnchorA = Eigen::Vector3d(0.1, 0.2, 0.3);
+  config.localAnchorB = Eigen::Vector3d(-0.4, 0.5, -0.6);
+  config.restLength = 1.25;
+  config.startStiffness = 12.0;
+  config.materialStiffness = 34.0;
+  config.maxStiffness = 56.0;
+
+  sx::io::EntityMap saveMap;
+  std::stringstream stream;
+  sx::io::SerializerRegistry::instance().saveAllEntities(
+      stream, registry1, saveMap);
+
+  sx::detail::WorldRegistry registry2;
+  const entt::entity dummy = registry2.create();
+  registry2.emplace<sx::comps::Name>(dummy, "dummy");
+
+  sx::io::EntityMap loadMap;
+  sx::io::SerializerRegistry::instance().loadAllEntities(
+      stream, registry2, loadMap, sx::io::kBinaryFormatVersion);
+
+  const auto findNamedEntity
+      = [&registry2](std::string_view name) -> entt::entity {
+    const auto view = registry2.view<sx::comps::Name>();
+    for (const entt::entity entity : view) {
+      if (view.get<sx::comps::Name>(entity).name == name) {
+        return entity;
+      }
+    }
+    return entt::null;
+  };
+
+  const entt::entity restoredBodyA = findNamedEntity("body_a");
+  const entt::entity restoredBodyB = findNamedEntity("body_b");
+  const entt::entity restoredSpring = findNamedEntity("spring");
+  const entt::entity nullEntity = entt::null;
+  ASSERT_NE(restoredBodyA, nullEntity);
+  ASSERT_NE(restoredBodyB, nullEntity);
+  ASSERT_NE(restoredSpring, nullEntity);
+  EXPECT_NE(restoredBodyA, saveMap.at(bodyA));
+  EXPECT_NE(restoredBodyB, saveMap.at(bodyB));
+
+  ASSERT_TRUE(registry2.all_of<dvbd::AvbdRigidWorldDistanceSpringConfig>(
+      restoredSpring));
+  const auto& restored
+      = registry2.get<dvbd::AvbdRigidWorldDistanceSpringConfig>(restoredSpring);
+  EXPECT_EQ(restored.bodyA, restoredBodyA);
+  EXPECT_EQ(restored.bodyB, restoredBodyB);
+  EXPECT_TRUE(restored.localAnchorA.isApprox(config.localAnchorA));
+  EXPECT_TRUE(restored.localAnchorB.isApprox(config.localAnchorB));
+  EXPECT_DOUBLE_EQ(restored.restLength, config.restLength);
+  EXPECT_DOUBLE_EQ(restored.startStiffness, config.startStiffness);
+  EXPECT_DOUBLE_EQ(restored.materialStiffness, config.materialStiffness);
+  EXPECT_DOUBLE_EQ(restored.maxStiffness, config.maxStiffness);
+}
+
+TEST(Serialization, AvbdDistanceSpringWorldBinaryRoundTrips)
+{
+  namespace sx = dart::simulation;
+  namespace dvbd = dart::simulation::detail::deformable_vbd;
+
+  sx::World world1;
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world1.addRigidBody("base", baseOptions);
+
+  sx::RigidBodyOptions linkOptions;
+  linkOptions.mass = 2.0;
+  linkOptions.position = Eigen::Vector3d(2.0, 0.0, 0.0);
+  auto link = world1.addRigidBody("link", linkOptions);
+
+  const Eigen::Vector3d anchorA(0.1, 0.2, 0.3);
+  const Eigen::Vector3d anchorB(-0.4, 0.5, -0.6);
+  world1.addRigidBodyDistanceSpring(
+      "spring",
+      base,
+      link,
+      /*restLength=*/1.25,
+      /*stiffness=*/42.0,
+      anchorA,
+      anchorB);
+
+  std::stringstream stream;
+  world1.saveBinary(stream);
+
+  sx::World world2;
+  world2.loadBinary(stream);
+
+  const auto restoredBase = world2.getRigidBody("base");
+  const auto restoredLink = world2.getRigidBody("link");
+  ASSERT_TRUE(restoredBase.has_value());
+  ASSERT_TRUE(restoredLink.has_value());
+
+  std::vector<dvbd::AvbdRigidWorldDistanceSpringInput> springs;
+  dvbd::extractAvbdRigidWorldDistanceSpringInputsInto(
+      sx::detail::registryOf(world2),
+      springs,
+      /*includeWorldAnchors=*/false);
+  ASSERT_EQ(springs.size(), 1u);
+  EXPECT_TRUE(springs[0].anchorsAreLocal);
+  EXPECT_EQ(
+      springs[0].bodyA,
+      sx::detail::toRegistryEntity(restoredBase->getEntity()));
+  EXPECT_EQ(
+      springs[0].bodyB,
+      sx::detail::toRegistryEntity(restoredLink->getEntity()));
+  EXPECT_TRUE(springs[0].anchorA.isApprox(anchorA));
+  EXPECT_TRUE(springs[0].anchorB.isApprox(anchorB));
+  EXPECT_DOUBLE_EQ(springs[0].restLength, 1.25);
+  EXPECT_DOUBLE_EQ(springs[0].startStiffness, 42.0);
+  EXPECT_DOUBLE_EQ(springs[0].materialStiffness, 42.0);
+  EXPECT_DOUBLE_EQ(springs[0].maxStiffness, 42.0);
+}
+
 // Test auto-generated names are preserved
 TEST(Serialization, EmptyNames)
 {

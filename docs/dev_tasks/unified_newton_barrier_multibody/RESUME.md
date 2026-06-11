@@ -183,18 +183,23 @@ The follow-up articulation manifest alignment moves `unb-fig-05`,
 Those rows still do not claim runtime articulated scenes, cloth snapshots,
 direct internal-contact speedups, or scaling packets.
 
+The runtime-wiring follow-up is branch-local on
+`feature/newton-barrier-runtime-wiring`: rigid IPC `World::step` consumes the
+landed point-connection/fixed and hinge-axis contracts, exposes opt-in BDF-2
+integration through the rigid IPC contact stage, routes deformable surfaces as
+fixed obstacles through the mixed-domain surface adapter, and runs a reduced
+hanging-bridge py-demo smoke scene through `World::step` plus headless capture.
+This branch intentionally keeps paper-scale mixed-domain scenes, sparse
+equality-constraint solving, complete CPU benchmark packets, and GPU parity
+speed claims as remaining PLAN-083 work.
+
 ## Last Session Summary
 
-Current slice: the first ABD benchmark packet has been promoted from
-smoke-only evidence into the PLAN-083 manifest.
-`pixi run bm-abd-comparison-packet` now builds/runs `bm_affine_body_dynamics`, writes
-`.benchmark_results/abd_comparison_packet.json`, and validates the affine
-point-triangle barrier, matched rigid IPC oracle, and orthogonality-energy rows.
-The `abd-alg-affine-body` manifest row is now `in-progress`, explicitly limited
-to this internal primitive/oracle micro-packet rather than a runtime ABD solver
-or paper-scale claim. The micro-packet does not require a two-body affine
-contact micro-solve before Phase 3 shared-contract scouting; add that
-solved-state row only when a broader ABD packet needs runtime residuals.
+Current slice: the one-branch runtime wiring follow-up has five checkpoint
+commits. It wires point-connection/fixed joints, hinge-axis joints, opt-in
+BDF-2 stepping, deformable surface obstacles, and the first reduced
+hanging-bridge py-demo into runtime paths. The final docs pass should preserve
+that this is runtime smoke/correctness evidence, not paper-scale completion.
 
 PLAN-083 was created for the unified Newton-barrier multibody solver family,
 covering the supplied unified Newton barrier paper, the ABD deck, existing
@@ -263,16 +268,18 @@ build/CTest entries.
 
 ## Current Branch
 
-`main` at merged PR #2960 contains implementation-roadmap Phases 3-8 and the
-Phase 8 completion audit.
+`feature/newton-barrier-runtime-wiring` - contains the single runtime-wiring PR
+body. Keep all remaining cleanup for this branch in the same PR; do not split
+the already small runtime slices into separate PRs.
 
 ## Immediate Next Step
 
-Get maintainer direction before deleting the temporary dev-task folder because
-PLAN-083 acceptance criteria are still unmet. If the task stays active here,
-continue from the planned CPU/GPU/scene rows recorded in the audit sidecars;
-the next GPU rows need real contact-candidate, CCD/line-search, or
-barrier/friction kernels before they can move beyond packet-shape placeholders.
+Resolve the `main` merge for PR #2970, rerun the required validation gates, push
+`feature/newton-barrier-runtime-wiring`, and keep managing that single PR
+through review/CI. Leave the dev-task folder active because PLAN-083 acceptance
+criteria are still unmet; if the task later moves out of this folder, get
+maintainer direction before deleting it and keep the remaining planned
+CPU/GPU/scene rows in durable sidecars.
 
 ## Context That Would Be Lost
 

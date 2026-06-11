@@ -63,7 +63,13 @@ Equivalently: $z = x^k - r \oslash \text{diag}(A)$; $x^{k+1} = \max(0, z)$.
 - **Time**: $O(n)$ per iteration
 - **Storage**: $O(n)$
 - **Convergence**: Linear (if converges)
-- **Parallelization**: Fully parallel
+- **Parallelization**: Fully parallel update rule; DART 7 exposes an opt-in
+  CPU worker-thread path for this solver, but current dense and banded
+  benchmark evidence shows correctness/comparability rather than a general
+  speedup claim for the tested 128/512-row dense and 512/1024-row banded
+  standard cases. DART 7 also has an experimental CUDA fixed-iteration batch
+  path for homogeneous dense standard, boxed, and friction-index Jacobi packets,
+  plus a grouped host path for variable-size world-contact packet batches.
 
 ### Advantages/Disadvantages
 
@@ -81,8 +87,23 @@ dart::math::LcpOptions options = solver.getDefaultOptions();
 // Optional: damped Jacobi via relaxation (0 < relaxation <= 2)
 options.relaxation = 1.0;
 
+// Optional: solver-internal CPU worker threads for the Jacobi update.
+// The default is 1; benchmark before enabling for a workload.
+dart::math::JacobiSolver::Parameters params;
+params.workerThreads = 4;
+options.customOptions = &params;
+
 solver.solve(problem, x, options);
 ```
+
+The experimental CUDA Jacobi batch path lives under
+`dart::simulation::experimental::compute::cuda` and is intentionally separate
+from the general `LcpSolver` interface while backend evidence is still narrow:
+it solves same-size dense standard, boxed, and friction-index batches with fixed
+Jacobi iterations. Variable-size contact batches are currently represented as
+homogeneous CUDA groups by problem size, with evidence for separated
+1/2/4-contact DART 7 world-contact packets and coupled 2/3/4-sphere
+stack-contact packets.
 
 ## 2. Projected Gauss-Seidel (PGS) ✅ (Implemented)
 
@@ -126,6 +147,10 @@ function PGS(A, b, x, max_iter, epsilon):
     `dart::math::PgsSolver::setParameters()`.
   - Use `dart::math::LcpOptions::relaxation` to enable PSOR-style relaxation
     (`1.0` = PGS, `>1` = over-relaxation, `<1` = under-relaxation).
+  - DART 7 also has an experimental CUDA fixed-iteration PGS batch path for
+    homogeneous dense standard, boxed, and friction-index packets, plus grouped
+    variable-size world-contact packet batches. It is batch execution evidence,
+    not a general `LcpSolver` backend.
 - **DART support**: `dart::math::NncgSolver` accelerates PGS for boxed LCPs,
   sharing the same bounds and `findex` handling.
 
@@ -184,6 +209,12 @@ options.maxIterations = 100;
 solver.solve(problem, x, options);
 ```
 
+DART 7 benchmark evidence includes `BM_LcpPgsRelaxationSweep` rows for standard
+48-row, boxed 24-row, and friction-index 8-contact fixtures at $\lambda=0.5$,
+$1.0$, and $1.3$. Focused default, SIMD-enabled, and CUDA-enabled build-tree
+runs all reported `contract_ok=1`; the CUDA-enabled rows are CPU PGS solver
+rows in a CUDA-enabled build, not CUDA LCP kernel execution.
+
 ### Coordinate-descent view
 
 For symmetric $A$, PGS/PSOR are equivalent to coordinate descent on the quadratic objective:
@@ -233,6 +264,13 @@ dart::math::LcpOptions options = solver.getDefaultOptions();
 options.relaxation = 1.2;  // Optional PSOR-style relaxation
 solver.solve(problem, x, options);
 ```
+
+DART 7 benchmark evidence includes
+`BM_LcpSymmetricPsorRelaxationSweep` rows for standard 48-row, boxed 24-row,
+and friction-index 8-contact fixtures at $\lambda=0.5$, $1.0$, and $1.3$.
+Focused default, SIMD-enabled, and CUDA-enabled build-tree runs all reported
+`contract_ok=1`; the CUDA-enabled rows are CPU symmetric PSOR solver rows in a
+CUDA-enabled build, not CUDA LCP kernel execution.
 
 ### Generic projected iteration
 
@@ -296,6 +334,16 @@ solver.solve(problem, x, options);
 > Note: DART uses `DirectSolver` for standard blocks up to 3 variables and
 > falls back to `DantzigSolver` for boxed or larger blocks.
 
+DART 7 benchmark evidence includes `BM_LcpBlockPartitionSweep`, which runs BGS
+on standard, boxed, and friction-index fixtures with full-block, 3-row block,
+auto `findex` contact-block, and explicit contact-block partitions. Focused
+default, SIMD-enabled, and CUDA-enabled build-tree runs reported 12 BGS/Blocked
+Jacobi rows overall with `contract_ok=1`; the BGS rows covered block counts
+`1/4`, block sizes `3/12`, friction-index `contact_count=4`, observed solver
+iterations `1/4/5/6/10`, and backend build-state counters. The CUDA-enabled
+rows are CPU BGS solver rows in a CUDA-enabled build, not CUDA LCP kernel
+execution.
+
 For common contact splittings:
 
 - Normal sub-block: 1D projection ($x_n = \max(0, x_n - r_n / A_{nn})$).
@@ -350,6 +398,10 @@ $$z^k = M^{-1}(Nx^k + b)$$
 $$x^{k+1} = \min(u, \max(l, z^k))$$
 
 For contact problems, $l$ and $u$ are often functions of the normal impulse ($\pm\mu N$), so the projection step should recompute bounds whenever $N$ changes.
+When those dynamic bounds collapse ($l = u$), the row is a fixed variable:
+validation checks that the solution stays on the fixed bound, but the residual
+force is unrestricted by complementarity because the feasible interval has no
+remaining motion.
 
 ## 6. Nonsmooth Nonlinear Conjugate Gradient (NNCG) ✅ (Implemented)
 
@@ -388,13 +440,18 @@ dart::math::NncgSolver solver;
 dart::math::LcpOptions options = solver.getDefaultOptions();
 
 dart::math::NncgSolver::Parameters params;
-params.pgsIterations = 1;
+params.pgsIterations = 2; // Matches generated correctness and benchmark coverage.
 params.restartInterval = 10;
 params.restartThreshold = 1.0;
 options.customOptions = &params;
 
 solver.solve(problem, x, options);
 ```
+
+Focused `BM_LcpNncgPgsIterationsSweep` rows compare 1, 2, and 5 PGS
+preconditioner iterations on identical standard, boxed, and friction-index
+benchmark fixtures with restart interval 10 and threshold 1.0. These rows are
+CPU solver rows even when emitted by a CUDA-enabled build.
 
 ### Properties
 
@@ -458,6 +515,11 @@ options.customOptions = &params;
 solver.solve(problem, x, options);
 ```
 
+Focused `BM_LcpSubspaceMinimizationPgsIterationsSweep` rows compare 1, 3, and
+5 PGS active-set-estimation iterations on identical standard, boxed, and
+friction-index benchmark fixtures with active-set tolerance 0.0. These rows are
+CPU solver rows even when emitted by a CUDA-enabled build.
+
 ### Properties
 
 - **Time**: $O(n)$ for PGS + $O(|\mathcal{A}|^3)$ for subspace
@@ -498,6 +560,27 @@ while not converged:
 
 The partition sets are $\mathcal{L} = \{ i \mid x_i = l_i \}$, $\mathcal{U} = \{ i \mid x_i = u_i \}$, $\mathcal{A} = \text{others}$.
 
+### DART-exported accelerated variants
+
+`dart::math::ApgdSolver` and `dart::math::TgsSolver` are also projection-family
+solvers in DART 7 and participate in the shared LCP solver manifest, generated
+correctness grid, and apples-to-apples benchmark registration.
+
+- **APGD**: applies Nesterov-style extrapolation before a projected
+  Gauss-Seidel sweep. Its parameters include adaptive restart controls so a bad
+  momentum direction can be discarded. Focused `BM_LcpApgdRestartSweep` rows
+  compare adaptive restart every iteration, adaptive restart every 5
+  iterations, and no restart on identical standard, boxed, and friction-index
+  benchmark fixtures; these rows are CPU solver rows even when emitted by a
+  CUDA-enabled build.
+- **TGS**: provides a Temporal Gauss-Seidel labelled boxed-LCP sweep. In a full
+  simulation, TGS stability usually comes from substepping; the standalone DART
+  LCP solver captures the boxed/findex Gauss-Seidel solve under the common
+  `LcpSolver` interface. Focused `BM_LcpTgsIterationBudgetSweep` rows compare
+  10-, 50-, and 100-iteration caps on identical standard, boxed, and
+  friction-index benchmark fixtures; these rows are CPU solver rows even when
+  emitted by a CUDA-enabled build.
+
 ## 8. Red-Black Gauss-Seidel ✅ (Implemented)
 
 ### Description
@@ -533,6 +616,16 @@ solver.solve(problem, x, options);
 ```
 
 > Note: DART uses an even/odd index partition as the red/black sets.
+
+DART 7 benchmark evidence includes
+`BM_LcpRedBlackGaussSeidelRelaxationSweep` rows for standard 48-row, boxed
+24-row, and friction-index 8-contact fixtures at relaxation 0.5, 1.0, and 1.3.
+Focused default, SIMD-enabled, and CUDA-enabled build-tree runs all reported
+`contract_ok=1` with `red_black_color_count=2` and the expected red/black row
+counts. These rows expose the two-color partition and relaxation behavior; they
+are not evidence for solver-internal threaded Red-Black execution. The
+CUDA-enabled rows are CPU solver rows in a CUDA-enabled build, not CUDA LCP
+kernel execution.
 
 ### Use Cases
 
@@ -646,7 +739,7 @@ Use only when $x \geq 0$; also ensure $Ax - b \geq 0$ when $x = 0$.
 
 ### Phase 3 (Advanced)
 
-7. **NNCG** - Better convergence for large systems
+7. ✅ **NNCG** - Better convergence for large systems
 8. ✅ **PGS-SM** - Hybrid approach
 
 ## When to Use Projection Methods
