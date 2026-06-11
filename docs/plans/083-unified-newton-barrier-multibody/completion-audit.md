@@ -56,8 +56,8 @@ moves entirely into durable plan sidecars.
   paper-scale scenes still need long-horizon visual captures and nonblank/motion
   evidence.
 - ABD remains an internal primitive/oracle plus reduced point-triangle
-  micro-solve packet, not a runtime affine solver or a replacement for the
-  rigid IPC correctness oracle.
+  micro-solve packet with residual/convergence counters, not a runtime affine
+  solver or a replacement for the rigid IPC correctness oracle.
 
 ## Maintainer Decision Required
 

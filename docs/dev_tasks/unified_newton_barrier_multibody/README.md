@@ -270,9 +270,10 @@ storage, or backend resources as public API.
   variant names such as rigid IPC, deformable IPC, and ABD remain internal
   provenance until shared behavior is proven.
 - The first `abd-alg-affine-body` micro-packet is primitive/oracle evidence and
-  now includes a reduced point-triangle solved-state diagnostic row. Broader ABD
-  packets still need runtime residuals, scene assets, and comparison baselines
-  before any paper-scale ABD row moves.
+  now includes a reduced point-triangle solved-state diagnostic row with
+  residual/convergence counters. Broader ABD packets still need scene-level
+  runtime residuals, scene assets, and comparison baselines before any
+  paper-scale ABD row moves.
 
 ## Immediate Next Steps
 
@@ -293,8 +294,8 @@ storage, or backend resources as public API.
    that PLAN-083 still has planned CPU/GPU/scene rows and cannot honestly be
    called complete yet.
 5. Use the reduced affine point-triangle micro-solve only as internal
-   solved-state evidence; broader ABD CPU packets still require runtime
-   residuals, scene assets, and comparison baselines.
+   solved-state evidence; broader ABD CPU packets still require scene-level
+   runtime residuals, scene assets, and comparison baselines.
 6. Promote only the smallest proven shared contract, with cross-variant tests
    showing identical behavior; keep variant-specific terms in their owner plans.
 7. Keep paper-scale runtime stepping and non-PSD GPU claims out of scope until

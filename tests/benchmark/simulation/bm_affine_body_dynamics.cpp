@@ -101,6 +101,33 @@ void consumeMicroSolve(sxdetail::AffinePointTriangleMicroSolveResult& result)
 }
 
 //==============================================================================
+void recordMicroSolveCounters(
+    benchmark::State& state,
+    const sxdetail::AffinePointTriangleMicroSolveResult& result,
+    const sxdetail::AffinePointTriangleMicroSolveOptions& options)
+{
+  state.counters["row_abd_alg_affine_body"] = 1.0;
+  state.counters["paper_scale"] = 0.0;
+  state.counters["affine_dynamic_body_count"] = 1.0;
+  state.counters["static_triangle_body_count"] = 1.0;
+  state.counters["point_triangle_pair_count"] = 1.0;
+  state.counters["valid_solve"] = result.valid ? 1.0 : 0.0;
+  state.counters["converged"] = result.converged ? 1.0 : 0.0;
+  state.counters["barrier_active"] = result.barrierActive ? 1.0 : 0.0;
+  state.counters["solver_iterations"] = static_cast<double>(result.iterations);
+  state.counters["initial_objective"] = result.initialValue;
+  state.counters["final_objective"] = result.finalValue;
+  state.counters["objective_decrease"]
+      = result.initialValue - result.finalValue;
+  state.counters["initial_gradient_norm"] = result.initialGradientNorm;
+  state.counters["final_gradient_norm"] = result.finalGradientNorm;
+  state.counters["initial_squared_distance"] = result.initialSquaredDistance;
+  state.counters["final_squared_distance"] = result.finalSquaredDistance;
+  state.counters["squared_activation_distance"]
+      = options.barrier.squaredActivationDistance;
+}
+
+//==============================================================================
 void consumeRigidReduced(sxdetail::RigidIpcReducedBarrierResult& result)
 {
   benchmark::DoNotOptimize(result.value);
@@ -214,6 +241,7 @@ static void BM_AffineBodyPointTriangleMicroSolve(benchmark::State& state)
   options.maxStepNorm = 0.2;
 
   sxdetail::AffinePointTriangleMicroSolveResult result;
+  sxdetail::AffinePointTriangleMicroSolveResult lastResult;
   for (auto _ : state) {
     result = sxdetail::affinePointTriangleMicroSolve(
         initialPointBody,
@@ -224,7 +252,10 @@ static void BM_AffineBodyPointTriangleMicroSolve(benchmark::State& state)
         triangleB,
         triangleC,
         options);
+    lastResult = result;
     consumeMicroSolve(result);
   }
+
+  recordMicroSolveCounters(state, lastResult, options);
 }
 BENCHMARK(BM_AffineBodyPointTriangleMicroSolve);

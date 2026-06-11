@@ -214,8 +214,9 @@ The same branch adds a reduced affine point-triangle solved-state diagnostic
 under `detail/affine_body_dynamics`: a private micro-solve combines inertial,
 barrier, and orthogonality terms for one dynamic affine body against a static
 triangle and adds a benchmark packet row. This is internal solved-state
-evidence for `abd-alg-affine-body`, not an ABD runtime solver, scene corpus row,
-or paper-scale ABD comparison.
+evidence for `abd-alg-affine-body`; the packet checker now validates the
+micro-solve residual/convergence counters. It is not an ABD runtime solver,
+scene corpus row, or paper-scale ABD comparison.
 
 The same branch now adds the sparse equality change-of-variable contract in
 `detail/newton_barrier/change_of_variable.hpp`, with focused primitive tests for
@@ -375,10 +376,11 @@ planned CPU/GPU/scene rows in durable sidecars.
   each checker until more variants prove identical semantics.
 - `bm_affine_body_dynamics` currently contains the first ABD benchmark packet:
   affine point-triangle barrier mapping, matched rigid IPC point-triangle oracle
-  row, and orthogonality energy.
+  row, orthogonality energy, and the reduced point-triangle micro-solve
+  residual counters.
 - `scripts/check_abd_comparison_packet.py` is the reproducible packet checker
-  for those rows; it deliberately does not validate paper-scale ABD scene
-  timings yet.
+  for those rows; it validates micro-solve convergence counters but
+  deliberately does not validate paper-scale ABD scene timings yet.
 - The current packet is enough to proceed to Phase 3 shared-contract scouting;
   it does not require a two-body solved-state micro-solve first.
 - Do not expose `detail/newton_barrier` through public headers or dartpy
