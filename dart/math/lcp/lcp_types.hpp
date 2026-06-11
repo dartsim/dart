@@ -291,11 +291,11 @@ struct DART_API LcpProblem
   /// numerically canonicalized problems without open-coding the convention.
   bool isStandardLcp(double tolerance = 0.0) const
   {
-    const Eigen::Index n = size();
-    if (lo.size() != n || hi.size() != n || findex.size() != n) {
+    if (!hasConsistentDimensions()) {
       return false;
     }
 
+    const Eigen::Index n = size();
     const double tol = tolerance > 0.0 ? tolerance : 0.0;
     for (Eigen::Index i = 0; i < n; ++i) {
       if (!std::isfinite(lo[i]) || std::abs(lo[i]) > tol) {
@@ -319,8 +319,7 @@ struct DART_API LcpProblem
   /// friction rows whose bounds depend on another row's solution.
   bool isBoxedLcp() const
   {
-    const Eigen::Index n = size();
-    if (lo.size() != n || hi.size() != n || findex.size() != n) {
+    if (!hasConsistentDimensions() || !hasValidBounds()) {
       return false;
     }
 
@@ -330,11 +329,11 @@ struct DART_API LcpProblem
   /// Returns true if any row uses friction-index coupling.
   bool hasFrictionIndex() const
   {
-    const Eigen::Index n = size();
-    if (lo.size() != n || hi.size() != n || findex.size() != n) {
+    if (!hasConsistentDimensions() || !hasValidBounds()) {
       return false;
     }
 
+    const Eigen::Index n = size();
     bool hasCoupling = false;
     for (Eigen::Index i = 0; i < n; ++i) {
       const int ref = findex[i];
@@ -343,6 +342,9 @@ struct DART_API LcpProblem
       }
 
       if (ref >= n || ref == i) {
+        return false;
+      }
+      if (!std::isfinite(hi[i])) {
         return false;
       }
 
@@ -373,6 +375,32 @@ struct DART_API LcpProblem
     return LcpProblemType::Invalid;
   }
 
+private:
+  /// Returns true when the matrix, bound, and findex storage match b.size().
+  bool hasConsistentDimensions() const
+  {
+    const Eigen::Index n = size();
+    return A.rows() == n && A.cols() == n && lo.size() == n && hi.size() == n
+           && findex.size() == n;
+  }
+
+  /// Returns true when fixed bounds are not NaN and finite ranges are ordered.
+  bool hasValidBounds() const
+  {
+    const Eigen::Index n = size();
+    for (Eigen::Index i = 0; i < n; ++i) {
+      if (std::isnan(lo[i]) || std::isnan(hi[i])) {
+        return false;
+      }
+      if (std::isfinite(lo[i]) && std::isfinite(hi[i]) && lo[i] > hi[i]) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+public:
   Eigen::MatrixXd A;
   Eigen::VectorXd b;
   Eigen::VectorXd lo;

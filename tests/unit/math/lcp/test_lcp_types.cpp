@@ -202,6 +202,39 @@ TEST(LcpTypesTest, StandardClassificationRejectsInvalidVectorDimensions)
   EXPECT_EQ(problem.getType(), LcpProblemType::Invalid);
 }
 
+TEST(LcpTypesTest, ClassificationRejectsInvalidMatrixDimensions)
+{
+  const LcpProblem problem(
+      Eigen::MatrixXd::Identity(1, 1), Eigen::Vector2d(0.5, 0.25));
+
+  EXPECT_FALSE(problem.isStandardLcp());
+  EXPECT_FALSE(problem.isBoxedLcp());
+  EXPECT_FALSE(problem.hasFrictionIndex());
+  EXPECT_EQ(problem.getType(), LcpProblemType::Invalid);
+}
+
+TEST(LcpTypesTest, BoxedClassificationRejectsInvalidBounds)
+{
+  const LcpProblem reversedBoundsProblem(
+      Eigen::Matrix2d::Identity(),
+      Eigen::Vector2d(0.5, 0.25),
+      Eigen::Vector2d(1.0, 0.0),
+      Eigen::Vector2d(0.0, 1.0));
+
+  EXPECT_FALSE(reversedBoundsProblem.isBoxedLcp());
+  EXPECT_EQ(reversedBoundsProblem.getType(), LcpProblemType::Invalid);
+
+  Eigen::Vector2d hi(1.0, std::numeric_limits<double>::quiet_NaN());
+  const LcpProblem nanBoundsProblem(
+      Eigen::Matrix2d::Identity(),
+      Eigen::Vector2d(0.5, 0.25),
+      Eigen::Vector2d::Zero(),
+      hi);
+
+  EXPECT_FALSE(nanBoundsProblem.isBoxedLcp());
+  EXPECT_EQ(nanBoundsProblem.getType(), LcpProblemType::Invalid);
+}
+
 TEST(LcpTypesTest, FrictionIndexClassificationRejectsInvalidBoundsDimensions)
 {
   const LcpProblem problem(

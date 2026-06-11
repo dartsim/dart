@@ -121,6 +121,16 @@ def test_lcp_problem_rejects_findex_with_invalid_bound_dimensions() -> None:
     assert not dart.DantzigSolver().supports_problem(problem)
 
 
+def test_lcp_problem_rejects_invalid_matrix_dimensions() -> None:
+    problem = dart.LcpProblem(np.eye(1), np.array([1.0, 2.0]))
+
+    assert problem.get_type() == dart.LcpProblemType.INVALID
+    assert not problem.is_standard_lcp()
+    assert not problem.is_boxed_lcp()
+    assert not problem.has_friction_index()
+    assert not dart.DantzigSolver().supports_problem(problem)
+
+
 @pytest.mark.parametrize(
     "findex",
     (
