@@ -90,9 +90,25 @@ public:
   }
 
   /// Returns true when this solver natively supports the problem form.
+  ///
+  /// The no-tolerance overload uses the solver's default absolute tolerance so
+  /// capability checks match the tolerance-aware standard-form detection used
+  /// by the standard-only solver implementations.
   bool supportsProblem(const LcpProblem& problem) const
   {
-    switch (problem.getType()) {
+    return supportsProblem(problem, mDefaultOptions.absoluteTolerance);
+  }
+
+  /// Returns true when this solver natively supports the problem form.
+  ///
+  /// \param[in] problem LCP problem to classify.
+  /// \param[in] standardTolerance Lower-bound tolerance for recognizing
+  /// near-canonical standard LCP storage, passed through to
+  /// LcpProblem::getType.
+  bool supportsProblem(
+      const LcpProblem& problem, double standardTolerance) const
+  {
+    switch (problem.getType(standardTolerance)) {
       case LcpProblemType::Standard:
         return supportsStandardLcp();
       case LcpProblemType::FrictionIndex:

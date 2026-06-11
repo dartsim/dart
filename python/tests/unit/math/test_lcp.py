@@ -193,6 +193,25 @@ def test_lcp_solver_capabilities_classify_problem_forms(solver_type: type) -> No
     assert solver.supports_problem(findex) is supports_findex
 
 
+def test_lcp_solver_supports_problem_uses_default_standard_tolerance() -> None:
+    A = np.eye(2)
+    near_standard = dart.LcpProblem(
+        A,
+        np.array([1.0, 2.0]),
+        np.array([1e-9, -1e-9]),
+        np.array([np.inf, np.inf]),
+    )
+
+    assert near_standard.get_type() == dart.LcpProblemType.BOXED
+    assert near_standard.get_type(1e-8) == dart.LcpProblemType.STANDARD
+
+    solver = dart.LemkeSolver()
+    assert not solver.supports_boxed_lcp()
+    assert solver.supports_problem(near_standard)
+    assert not solver.supports_problem(near_standard, standard_tolerance=0.0)
+    assert solver.supports_problem(near_standard, standard_tolerance=1e-8)
+
+
 def test_lcp_solver_rejects_wrong_initial_guess_size() -> None:
     problem = dart.LcpProblem(np.eye(2), np.array([1.0, 2.0]))
     solver = dart.DantzigSolver()

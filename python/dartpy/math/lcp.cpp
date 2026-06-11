@@ -240,7 +240,18 @@ void defLcp(nb::module_& m)
       .def("supports_standard_lcp", &LcpSolver::supportsStandardLcp)
       .def("supports_boxed_lcp", &LcpSolver::supportsBoxedLcp)
       .def("supports_friction_index", &LcpSolver::supportsFrictionIndex)
-      .def("supports_problem", &LcpSolver::supportsProblem, nb::arg("problem"))
+      .def(
+          "supports_problem",
+          [](const LcpSolver& self,
+             const LcpProblem& problem,
+             const std::optional<double>& standardTolerance) {
+            if (standardTolerance.has_value()) {
+              return self.supportsProblem(problem, *standardTolerance);
+            }
+            return self.supportsProblem(problem);
+          },
+          nb::arg("problem"),
+          nb::arg("standard_tolerance") = nb::none())
       .def_prop_rw(
           "default_options",
           [](const LcpSolver& self) { return self.getDefaultOptions(); },

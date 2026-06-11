@@ -197,6 +197,33 @@ TEST_F(AllSolversSmokeTest, SolverCapabilityPredicatesClassifyProblemForms)
   }
 }
 
+TEST_F(
+    AllSolversSmokeTest,
+    SolverCapabilityPredicatesUseDefaultToleranceForNearStandardForm)
+{
+  Eigen::Matrix2d A = Eigen::Matrix2d::Identity();
+  Eigen::Vector2d b(1.0, 2.0);
+  Eigen::Vector2d lo(1e-9, -1e-9);
+  Eigen::Vector2d hi
+      = Eigen::Vector2d::Constant(std::numeric_limits<double>::infinity());
+  const LcpProblem problem(A, b, lo, hi);
+
+  EXPECT_EQ(problem.getType(), LcpProblemType::Boxed);
+  EXPECT_EQ(problem.getType(1e-8), LcpProblemType::Standard);
+
+  for (const auto& solverCase : kLcpSolverManifest) {
+    const auto solver = solverCase.create();
+    ASSERT_NE(solver, nullptr) << solverCase.name;
+    EXPECT_TRUE(solver->supportsProblem(problem))
+        << solverCase.name
+        << " should use its default tolerance for near-standard bounds";
+    EXPECT_EQ(solver->supportsProblem(problem, 0.0), solverCase.supportsBoxed)
+        << solverCase.name
+        << " should still allow exact classification when requested";
+    EXPECT_TRUE(solver->supportsProblem(problem, 1e-8)) << solverCase.name;
+  }
+}
+
 TEST_F(AllSolversSmokeTest, DocumentedSolverAvailabilityMatchesManifest)
 {
   const auto documentedNames = readDocumentedSolverManifestNames();
