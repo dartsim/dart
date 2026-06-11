@@ -605,11 +605,12 @@ pixi run py-demo-capture -- --scene rigid_ipc_stack_packet --frames 24 \
 ```
 
 For scenes that expose `SceneSetup.info["capture_metrics"]`,
-`py-demo-capture` also writes `scene_metrics.jsonl` and copies the latest
-scene-owned physics/runtime metrics into `manifest.json`. The step diagnostics
-and contact-scale budget rows use that path for profiling, memory, contact, and
-frame-budget evidence, while the stack packet uses it for clearance, drift,
-wall time, and benchmark metadata.
+`py-demo-capture` also writes `scene_metrics.jsonl` and summarizes the full
+scene-owned physics/runtime stream in `manifest.json`: first and latest events,
+per-key presence counts, and numeric ranges for top-level metrics. The step
+diagnostics and contact-scale budget rows use that path for profiling, memory,
+contact, and frame-budget evidence, while the stack packet uses it for
+clearance, drift, wall time, and benchmark metadata.
 
 When forward rigid contact looks correct but a differentiable optimization is
 stuck, jump to **`diff_drone_liftoff`** in the **Differentiable** shelf. It uses

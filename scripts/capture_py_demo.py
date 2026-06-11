@@ -328,7 +328,10 @@ def _read_scene_metrics_summary(path: pathlib.Path) -> dict[str, object] | None:
         return None
 
     event_count = 0
+    first: dict[str, object] | None = None
     latest: dict[str, object] | None = None
+    metric_key_counts: dict[str, int] = {}
+    numeric_ranges: dict[str, dict[str, float]] = {}
     with path.open(encoding="utf-8") as stream:
         for line_number, line in enumerate(stream, start=1):
             text = line.strip()
@@ -343,11 +346,32 @@ def _read_scene_metrics_summary(path: pathlib.Path) -> dict[str, object] | None:
             if payload.get("event") != "scene_capture_metrics":
                 continue
             event_count += 1
+            if first is None:
+                first = payload
             latest = payload
+            metrics = payload.get("metrics")
+            if isinstance(metrics, dict):
+                for key, value in metrics.items():
+                    if not isinstance(key, str):
+                        continue
+                    metric_key_counts[key] = metric_key_counts.get(key, 0) + 1
+                    if isinstance(value, bool) or not isinstance(value, int | float):
+                        continue
+                    range_entry = numeric_ranges.setdefault(
+                        key, {"max": float(value), "min": float(value)}
+                    )
+                    range_entry["max"] = max(range_entry["max"], float(value))
+                    range_entry["min"] = min(range_entry["min"], float(value))
 
     if latest is None:
         return None
-    return {"event_count": event_count, "latest": latest}
+    return {
+        "event_count": event_count,
+        "first": first,
+        "latest": latest,
+        "metric_key_counts": dict(sorted(metric_key_counts.items())),
+        "numeric_ranges": dict(sorted(numeric_ranges.items())),
+    }
 
 
 def _ffmpeg_path() -> str | None:

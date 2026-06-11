@@ -190,7 +190,11 @@ def test_visual_capture_manifest_records_image_evidence(
                         {
                             "event": "scene_capture_metrics",
                             "frame": 1,
-                            "metrics": {"step_ms": 1.2, "status": "settling"},
+                            "metrics": {
+                                "contact_count": 0,
+                                "status": "settling",
+                                "step_ms": 1.2,
+                            },
                             "scene": "rigid_body",
                             "source": "py-demo-scene",
                         },
@@ -247,12 +251,32 @@ def test_visual_capture_manifest_records_image_evidence(
     assert len(list((output / "png_frames").glob("frame_*.png"))) == 2
     assert manifest["scene_metrics"] == {
         "event_count": 2,
+        "first": {
+            "event": "scene_capture_metrics",
+            "frame": 1,
+            "metrics": {
+                "contact_count": 0,
+                "status": "settling",
+                "step_ms": 1.2,
+            },
+            "scene": "rigid_body",
+            "source": "py-demo-scene",
+        },
         "latest": {
             "event": "scene_capture_metrics",
             "frame": 3,
             "metrics": {"status": "standing", "step_ms": 2.4},
             "scene": "rigid_body",
             "source": "py-demo-scene",
+        },
+        "metric_key_counts": {
+            "contact_count": 1,
+            "status": 2,
+            "step_ms": 2,
+        },
+        "numeric_ranges": {
+            "contact_count": {"max": 0.0, "min": 0.0},
+            "step_ms": {"max": 2.4, "min": 1.2},
         },
     }
     evidence = manifest["visual_evidence"]

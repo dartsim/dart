@@ -26,10 +26,11 @@
       reported `636 passed, 9 skipped` with the manifest schema guard.
 - [x] Capture-metrics hardening: Python scenes can expose
       `SceneSetup.info["capture_metrics"]`; `py-demo-capture` records the
-      per-frame `scene_metrics.jsonl` sidecar and mirrors the latest
-      scene-owned physics/runtime metrics into `manifest.json`. The focused
-      capture/runner guard reported `25 passed`; the runtime-row guard reported
-      `2 passed` after adding metrics for `rigid_step_diagnostics` and
+      per-frame `scene_metrics.jsonl` sidecar and summarizes scene-owned
+      physics/runtime metrics into `manifest.json` as first/latest events,
+      per-key presence counts, and numeric ranges. The focused capture/runner
+      guard reported `25 passed`; the runtime-row guard reported `2 passed`
+      after adding metrics for `rigid_step_diagnostics` and
       `rigid_contact_scale_budget`, and short real captures for both rows wrote
       eight scene-metrics events apiece.
 - [x] Material-response slice: `rigid_restitution_ladder` shows matched

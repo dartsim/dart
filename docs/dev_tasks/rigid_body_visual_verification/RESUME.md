@@ -745,9 +745,10 @@ plus 23 PNG frames, and a 24-step probe ended capture-first with min clearance
 Fresh scene-metrics capture hardening on 2026-06-11: `py-demo-capture` now
 passes a runner-local metrics log path to `py-demos`; scenes that expose
 `SceneSetup.info["capture_metrics"]` write per-frame `scene_metrics.jsonl`
-events during the actual viewer loop, and the capture manifest mirrors the
-latest event. `rigid_ipc_stack_packet` exports its clearance, contact-count,
-drift, height-error, speed, wall-time, frame-budget, solver, capture-first, and
+events during the actual viewer loop, and the capture manifest summarizes the
+stream with first/latest events, per-key presence counts, and top-level numeric
+ranges. `rigid_ipc_stack_packet` exports its clearance, contact-count, drift,
+height-error, speed, wall-time, frame-budget, solver, capture-first, and
 `bm_rigid_ipc_solver` benchmark fields through that hook. The capture/runner
 unit guard reported `25 passed`, the stack-focused guard reported `3 passed`,
 and the real docked stack capture wrote 24 scene-metrics events with frame 24

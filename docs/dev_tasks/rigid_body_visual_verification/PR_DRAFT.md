@@ -60,7 +60,9 @@
 - Adds scene-owned capture metrics to `py-demo-capture` manifests via
   `SceneSetup.info["capture_metrics"]`, including step-diagnostics,
   contact-scale budget, and stack-packet physics/runtime fields in
-  `scene_metrics.jsonl` and `manifest.json`.
+  `scene_metrics.jsonl` and `manifest.json`. The manifest summarizes the full
+  event stream with first/latest events, per-key presence counts, and top-level
+  numeric ranges so mid-capture metric dropouts are visible.
 - Adds drift tests that keep the registry, PLAN-103 sidecar, README quick table,
   and capture commands synchronized.
 - Keeps heavy IPC stacks, arm/gripper manipulation, arbitrary-point/contact

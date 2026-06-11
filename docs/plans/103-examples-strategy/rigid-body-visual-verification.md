@@ -165,10 +165,11 @@ same-scene per-step throughput tracking before promoting any heavier IPC stack
 into the live workflow.
 The capture helper also stores scene-owned metrics for rows and packets that
 expose `SceneSetup.info["capture_metrics"]`; `rigid_step_diagnostics` and
-`rigid_contact_scale_budget` mirror their latest profiling, memory, contact,
-and budget metrics into `manifest.json`, while `rigid_ipc_stack_packet` mirrors
+`rigid_contact_scale_budget` summarize their profiling, memory, contact, and
+budget metrics into `manifest.json` as first/latest events, per-key presence
+counts, and top-level numeric ranges, while `rigid_ipc_stack_packet` mirrors
 clearance, contact, drift, height, wall-time, frame-budget, and benchmark
-values.
+values through the same schema.
 
 ## Regenerating Visual Evidence
 
