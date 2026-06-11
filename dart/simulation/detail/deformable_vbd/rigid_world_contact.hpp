@@ -298,7 +298,8 @@ inline void reserveAvbdRigidWorldContactSnapshot(
     std::size_t distanceSpringCapacity = 0)
 {
   snapshot.entities.reserve(bodyCapacity);
-  if (bodyCapacity > snapshot.entityBodyIndices.bucket_count()) {
+  if (bodyCapacity > detail::kAvbdRigidSmallRowStackCapacity
+      && bodyCapacity > snapshot.entityBodyIndices.bucket_count()) {
     snapshot.entityBodyIndices.reserve(bodyCapacity);
   }
   snapshot.states.reserve(bodyCapacity);

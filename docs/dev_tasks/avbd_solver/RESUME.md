@@ -2,6 +2,13 @@
 
 ## Last Session Summary
 
+Latest local follow-up: small AVBD rigid world-contact snapshots no longer
+reserve the endpoint entity-index hash map while the body count is within the
+small-row linear-scan capacity. Focused `test_avbd_rigid_block` snapshot-index
+validation passed, and a selected local Motor benchmark smoke moved from the
+earlier about 9.3 us mean to about 8.0 us mean CPU time under host load around 7. This is only no-contact source-row overhead evidence; it does not close any
+source-row CPU-win, GPU, or paper-number gate.
+
 Latest local follow-up: C++ and dartpy public articulated facade coverage now
 verifies that `World::clear()` / `World.clear()` invalidates existing
 articulated link/joint handles, drops the public point-joint facades, and resets
