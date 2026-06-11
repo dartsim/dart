@@ -520,7 +520,9 @@ dvbd::AvbdScalarRowDescriptor makeVariationalCompliantLoopRowDescriptor(
   descriptor.key.axis = axis;
   descriptor.kind = dvbd::AvbdScalarRowKind::FiniteStiffness;
   descriptor.startStiffness = config.startStiffness;
-  descriptor.materialStiffness = config.maxStiffness;
+  descriptor.materialStiffness = role == dvbd::AvbdScalarRowRole::JointLinear
+                                     ? config.linearMaterialStiffness
+                                     : config.angularMaterialStiffness;
   descriptor.maxStiffness = config.maxStiffness;
   return descriptor;
 }

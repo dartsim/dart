@@ -2455,6 +2455,107 @@ TEST(
   EXPECT_LT(ramped.maxYaw, 0.7 * capped.maxYaw);
 }
 
+TEST(
+    VariationalIntegration,
+    AvbdCompliantPublicPointJointConfigUsesPerRoleMaterialStiffness)
+{
+  struct Result
+  {
+    double maxTranslation = 0.0;
+    double maxYaw = 0.0;
+  };
+
+  const auto rollout = [](double linearMaterialStiffness,
+                          double angularMaterialStiffness,
+                          bool driveLinear,
+                          bool driveAngular) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+    world.setTimeStep(0.002);
+
+    auto robot = world.addMultibody("floater");
+    auto base = robot.addLink("base");
+    sx::JointSpec spec;
+    spec.name = "float";
+    spec.type = sx::JointType::Floating;
+    auto body = robot.addLink("body", base, spec);
+    body.setMass(2.0);
+    body.setInertia(Eigen::Vector3d(0.2, 0.2, 0.3).asDiagonal());
+
+    sx::Joint joint = world.addArticulatedFixedJoint("hold", body);
+    joint.setAvbdStartStiffness(10.0);
+    joint.setAvbdLinearStiffness(linearMaterialStiffness);
+    joint.setAvbdAngularStiffness(angularMaterialStiffness);
+
+    auto& registry = dart::simulation::detail::registryOf(world);
+    const entt::entity jointEntity
+        = sx::detail::toRegistryEntity(joint.getEntity());
+
+    world.enterSimulationMode();
+
+    const auto* config
+        = registry.try_get<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
+    EXPECT_NE(config, nullptr);
+    if (config != nullptr) {
+      EXPECT_DOUBLE_EQ(
+          config->linearMaterialStiffness, linearMaterialStiffness);
+      EXPECT_DOUBLE_EQ(
+          config->angularMaterialStiffness, angularMaterialStiffness);
+      EXPECT_TRUE(std::isinf(config->maxStiffness));
+    }
+
+    Result result;
+    for (int k = 0; k < 80; ++k) {
+      if (driveLinear) {
+        body.applyForce(10.0 * Eigen::Vector3d::UnitX());
+      }
+      if (driveAngular) {
+        body.applyForce(
+            2.0 * Eigen::Vector3d::UnitY(), 0.5 * Eigen::Vector3d::UnitX());
+        body.applyForce(
+            -2.0 * Eigen::Vector3d::UnitY(), -0.5 * Eigen::Vector3d::UnitX());
+      }
+
+      world.step();
+      const Eigen::Isometry3d transform = body.getWorldTransform();
+      result.maxTranslation = std::max(
+          result.maxTranslation, std::abs(transform.translation().x()));
+      result.maxYaw = std::max(
+          result.maxYaw,
+          std::abs(
+              std::atan2(transform.linear()(1, 0), transform.linear()(0, 0))));
+    }
+    return result;
+  };
+
+  const Result softLinear = rollout(
+      /*linearMaterialStiffness=*/10.0,
+      /*angularMaterialStiffness=*/1000.0,
+      /*driveLinear=*/true,
+      /*driveAngular=*/false);
+  const Result stiffLinear = rollout(
+      /*linearMaterialStiffness=*/1000.0,
+      /*angularMaterialStiffness=*/1000.0,
+      /*driveLinear=*/true,
+      /*driveAngular=*/false);
+  EXPECT_GT(softLinear.maxTranslation, 1e-2);
+  EXPECT_LT(stiffLinear.maxTranslation, 0.7 * softLinear.maxTranslation);
+
+  const Result softAngular = rollout(
+      /*linearMaterialStiffness=*/1000.0,
+      /*angularMaterialStiffness=*/10.0,
+      /*driveLinear=*/false,
+      /*driveAngular=*/true);
+  const Result stiffAngular = rollout(
+      /*linearMaterialStiffness=*/1000.0,
+      /*angularMaterialStiffness=*/1000.0,
+      /*driveLinear=*/false,
+      /*driveAngular=*/true);
+  EXPECT_GT(softAngular.maxYaw, 1e-3);
+  EXPECT_LT(stiffAngular.maxYaw, 0.7 * softAngular.maxYaw);
+}
+
 // Topology joints are the multibody tree itself, not external AVBD point-joint
 // rows. Even if a private config is attached accidentally, the articulated
 // bridge must not duplicate the tree joint as a rigid closure.
