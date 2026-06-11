@@ -36,6 +36,8 @@
 #include <dart/simulation/multibody/multibody.hpp>
 #include <dart/simulation/world.hpp>
 
+#include <dart/common/memory_manager.hpp>
+
 #include <Eigen/Eigenvalues>
 #include <gtest/gtest.h>
 
@@ -51,6 +53,7 @@ namespace vbd = dart::simulation::detail::deformable_vbd;
 namespace {
 
 using Vec3 = Eigen::Vector3d;
+namespace common = dart::common;
 namespace sx = dart::simulation;
 
 //==============================================================================
@@ -777,6 +780,59 @@ TEST(AvbdRigidBlock, RigidRowDriverReducesDistanceSpringStretch)
 }
 
 //==============================================================================
+TEST(AvbdRigidBlock, LargeDistanceSpringRowsUseProvidedScratchAllocator)
+{
+  constexpr std::size_t kRowCount
+      = vbd::detail::kAvbdRigidSmallRowStackCapacity + 1u;
+
+  std::vector<vbd::AvbdRigidBodyState> states(2);
+  states[1].position = 2.0 * Vec3::UnitX();
+  const vbd::AvbdContactEndpointId endpointA{
+      5, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Body, 0)};
+  const vbd::AvbdContactEndpointId endpointB{
+      7, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Body, 0)};
+
+  std::vector<vbd::AvbdRigidBodyPointPairDistanceSpringRow> springs;
+  springs.reserve(kRowCount);
+  for (std::size_t row = 0u; row < kRowCount; ++row) {
+    vbd::AvbdRigidBodyPointPairDistanceSpringRow spring;
+    spring.bodyA = 0;
+    spring.bodyB = 1;
+    spring.endpointA = endpointA;
+    spring.endpointB = endpointB;
+    spring.rowIndex = static_cast<std::uint32_t>(row);
+    spring.row.restLength = 1.0;
+    spring.row.materialStiffness = 20.0;
+    spring.startStiffness = 8.0;
+    spring.maxStiffness = 20.0;
+    springs.push_back(spring);
+  }
+
+  common::MemoryManager memoryManager;
+  auto& allocator = memoryManager.getFreeAllocator();
+  auto& freeList = memoryManager.getFreeListAllocator();
+  vbd::AvbdScalarRowInventory springInventory(allocator);
+  springInventory.reserve(kRowCount);
+  using DistanceSpringAllocator
+      = common::StlAllocator<vbd::AvbdRigidBodyPointPairDistanceSpringRow>;
+  std::vector<
+      vbd::AvbdRigidBodyPointPairDistanceSpringRow,
+      DistanceSpringAllocator>
+      springRows(DistanceSpringAllocator{allocator});
+  springRows.reserve(kRowCount);
+  vbd::AvbdRigidDistanceSpringRowScratch scratch(allocator);
+
+  const auto allocationsBefore = freeList.getAllocationCount();
+  vbd::buildAvbdRigidDistanceSpringRows(
+      states, springs, springInventory, springRows, scratch);
+
+  EXPECT_GT(freeList.getAllocationCount(), allocationsBefore)
+      << "large rigid AVBD distance-spring staging should borrow the "
+         "provided scratch allocator";
+  EXPECT_EQ(springRows.size(), kRowCount);
+}
+
+//==============================================================================
 TEST(AvbdRigidBlock, RigidRowDriverAppliesFrictionPair)
 {
   std::vector<vbd::AvbdRigidBodyState> states(2);
@@ -1476,6 +1532,73 @@ TEST(AvbdRigidBlock, RigidLinearMotorBuilderCreatesBoundedRows)
       1e-12);
   EXPECT_DOUBLE_EQ(linearMotorRows[0].row.bounds.lower, -6.0);
   EXPECT_DOUBLE_EQ(linearMotorRows[0].row.bounds.upper, 6.0);
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, LargeRigidMotorRowsUseProvidedScratchAllocator)
+{
+  constexpr std::size_t kRowCount
+      = vbd::detail::kAvbdRigidSmallRowStackCapacity + 1u;
+
+  std::vector<vbd::AvbdRigidBodyState> states(2);
+  states[1].position = 2.0 * Vec3::UnitX();
+  const vbd::AvbdContactEndpointId endpointA{
+      5, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Body, 0)};
+  const vbd::AvbdContactEndpointId endpointB{
+      7, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Body, 0)};
+
+  std::vector<vbd::AvbdRigidLinearMotor> linearMotors;
+  linearMotors.reserve(kRowCount);
+  for (std::size_t row = 0u; row < kRowCount; ++row) {
+    linearMotors.push_back(
+        vbd::makeAvbdRigidLinearMotor(
+            /*bodyA=*/0,
+            /*bodyB=*/1,
+            endpointA,
+            endpointB,
+            Vec3::Zero(),
+            Vec3::Zero(),
+            Vec3::UnitX(),
+            /*targetSpeed=*/0.25,
+            /*maxForce=*/6.0,
+            /*startStiffness=*/50.0,
+            /*maxStiffness=*/400.0,
+            static_cast<std::uint32_t>(row)));
+  }
+
+  common::MemoryManager memoryManager;
+  auto& allocator = memoryManager.getFreeAllocator();
+  auto& freeList = memoryManager.getFreeListAllocator();
+  vbd::AvbdScalarRowInventory motorInventory(allocator);
+  motorInventory.reserve(kRowCount);
+  using PointPairAllocator
+      = common::StlAllocator<vbd::AvbdRigidBodyPointPairRow>;
+  using AngularPairAllocator
+      = common::StlAllocator<vbd::AvbdRigidBodyAngularPairRow>;
+  std::vector<vbd::AvbdRigidBodyPointPairRow, PointPairAllocator>
+      linearMotorRows(PointPairAllocator{allocator});
+  std::vector<vbd::AvbdRigidBodyAngularPairRow, AngularPairAllocator>
+      angularMotorRows(AngularPairAllocator{allocator});
+  linearMotorRows.reserve(kRowCount);
+  angularMotorRows.reserve(kRowCount);
+  vbd::AvbdRigidMotorRowScratch scratch(allocator);
+
+  const auto allocationsBefore = freeList.getAllocationCount();
+  vbd::buildAvbdRigidMotorRows(
+      states,
+      linearMotors,
+      std::span<const vbd::AvbdRigidAngularMotor>(),
+      motorInventory,
+      linearMotorRows,
+      angularMotorRows,
+      /*timeStep=*/0.2,
+      scratch);
+
+  EXPECT_GT(freeList.getAllocationCount(), allocationsBefore)
+      << "large rigid AVBD motor-row staging should borrow the provided "
+         "scratch allocator";
+  EXPECT_EQ(linearMotorRows.size(), kRowCount);
+  EXPECT_TRUE(angularMotorRows.empty());
 }
 
 //==============================================================================

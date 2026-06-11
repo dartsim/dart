@@ -201,6 +201,10 @@ class AvbdScalarRowInventory
 public:
   using RecordAllocator = ::dart::common::StlAllocator<AvbdScalarRowRecord>;
   using RecordVector = std::vector<AvbdScalarRowRecord, RecordAllocator>;
+  using DescriptorAllocator
+      = ::dart::common::StlAllocator<AvbdScalarRowDescriptor>;
+  using DescriptorVector
+      = std::vector<AvbdScalarRowDescriptor, DescriptorAllocator>;
 
   //==============================================================================
   AvbdScalarRowInventory() = default;
@@ -208,7 +212,8 @@ public:
   //==============================================================================
   explicit AvbdScalarRowInventory(::dart::common::MemoryAllocator& allocator)
     : mRecords(RecordAllocator{allocator}),
-      mPreviousRecords(RecordAllocator{allocator})
+      mPreviousRecords(RecordAllocator{allocator}),
+      mDescriptorScratch(DescriptorAllocator{allocator})
   {
   }
 
@@ -288,6 +293,7 @@ public:
   {
     if (descriptorCount == 0u) {
       mRecords.clear();
+      mDescriptorScratch.clear();
       return;
     }
 
@@ -311,12 +317,12 @@ public:
       }
     }
 
-    std::vector<AvbdScalarRowDescriptor> descriptors;
-    descriptors.reserve(descriptorCount);
+    mDescriptorScratch.clear();
+    mDescriptorScratch.reserve(descriptorCount);
     for (std::size_t i = 0; i < descriptorCount; ++i) {
-      descriptors.push_back(descriptorAt(i));
+      mDescriptorScratch.push_back(descriptorAt(i));
     }
-    syncActiveRows(descriptors, options);
+    syncActiveRows(mDescriptorScratch, options);
   }
 
   //==============================================================================
@@ -324,6 +330,7 @@ public:
   {
     mRecords.reserve(capacity);
     mPreviousRecords.reserve(capacity);
+    mDescriptorScratch.reserve(capacity);
   }
 
   //==============================================================================
@@ -342,6 +349,7 @@ public:
   void clear() noexcept
   {
     mRecords.clear();
+    mDescriptorScratch.clear();
   }
 
   //==============================================================================
@@ -413,6 +421,7 @@ private:
 
   RecordVector mRecords;
   RecordVector mPreviousRecords;
+  DescriptorVector mDescriptorScratch;
 };
 
 } // namespace dart::simulation::detail::deformable_vbd

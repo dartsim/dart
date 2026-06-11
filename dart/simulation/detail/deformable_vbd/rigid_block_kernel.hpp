@@ -2051,6 +2051,57 @@ struct AvbdRigidAngularMotorRowScratch
   std::vector<AvbdScalarRowDescriptor, DescriptorAllocator> descriptors;
 };
 
+struct AvbdRigidMotorRowScratch
+{
+  using LinearMotorPointerAllocator
+      = ::dart::common::StlAllocator<const AvbdRigidLinearMotor*>;
+  using AngularMotorPointerAllocator
+      = ::dart::common::StlAllocator<const AvbdRigidAngularMotor*>;
+
+  AvbdRigidMotorRowScratch() = default;
+
+  explicit AvbdRigidMotorRowScratch(::dart::common::MemoryAllocator& allocator)
+    : activeLinearRows(LinearMotorPointerAllocator{allocator}),
+      activeAngularRows(AngularMotorPointerAllocator{allocator})
+  {
+  }
+
+  void clear()
+  {
+    activeLinearRows.clear();
+    activeAngularRows.clear();
+  }
+
+  std::vector<const AvbdRigidLinearMotor*, LinearMotorPointerAllocator>
+      activeLinearRows;
+  std::vector<const AvbdRigidAngularMotor*, AngularMotorPointerAllocator>
+      activeAngularRows;
+};
+
+struct AvbdRigidDistanceSpringRowScratch
+{
+  using DistanceSpringPointerAllocator = ::dart::common::StlAllocator<
+      const AvbdRigidBodyPointPairDistanceSpringRow*>;
+
+  AvbdRigidDistanceSpringRowScratch() = default;
+
+  explicit AvbdRigidDistanceSpringRowScratch(
+      ::dart::common::MemoryAllocator& allocator)
+    : activeRows(DistanceSpringPointerAllocator{allocator})
+  {
+  }
+
+  void clear()
+  {
+    activeRows.clear();
+  }
+
+  std::vector<
+      const AvbdRigidBodyPointPairDistanceSpringRow*,
+      DistanceSpringPointerAllocator>
+      activeRows;
+};
+
 //==============================================================================
 template <typename NormalRowVector, typename FrictionRowVector>
 inline void buildAvbdRigidContactManifoldRows(
@@ -2531,6 +2582,7 @@ inline void buildAvbdRigidMotorRows(
     LinearMotorRowVector& linearMotorRows,
     AngularMotorRowVector& angularMotorRows,
     double timeStep,
+    AvbdRigidMotorRowScratch& scratch,
     const AvbdRowWarmStartOptions& warmStartOptions = {})
 {
   const auto appendMotorRows = [&](const auto& activeLinearRows,
@@ -2650,9 +2702,11 @@ inline void buildAvbdRigidMotorRows(
     return;
   }
 
-  std::vector<const AvbdRigidLinearMotor*> activeLinearRows;
+  auto& activeLinearRows = scratch.activeLinearRows;
+  activeLinearRows.clear();
   activeLinearRows.reserve(linearMotors.size());
-  std::vector<const AvbdRigidAngularMotor*> activeAngularRows;
+  auto& activeAngularRows = scratch.activeAngularRows;
+  activeAngularRows.clear();
   activeAngularRows.reserve(angularMotors.size());
   for (const AvbdRigidLinearMotor& motor : linearMotors) {
     if (!detail::isValidAvbdRigidLinearMotor(motor, states.size(), timeStep)) {
@@ -2722,6 +2776,31 @@ inline void buildAvbdRigidMotorRows(
 }
 
 //==============================================================================
+template <typename LinearMotorRowVector, typename AngularMotorRowVector>
+inline void buildAvbdRigidMotorRows(
+    std::span<const AvbdRigidBodyState> states,
+    std::span<const AvbdRigidLinearMotor> linearMotors,
+    std::span<const AvbdRigidAngularMotor> angularMotors,
+    AvbdScalarRowInventory& motorInventory,
+    LinearMotorRowVector& linearMotorRows,
+    AngularMotorRowVector& angularMotorRows,
+    double timeStep,
+    const AvbdRowWarmStartOptions& warmStartOptions = {})
+{
+  AvbdRigidMotorRowScratch scratch;
+  buildAvbdRigidMotorRows(
+      states,
+      linearMotors,
+      angularMotors,
+      motorInventory,
+      linearMotorRows,
+      angularMotorRows,
+      timeStep,
+      scratch,
+      warmStartOptions);
+}
+
+//==============================================================================
 template <typename LinearRowVector, typename AngularRowVector>
 inline void buildAvbdRigidPointJointConstraintRows(
     std::span<const AvbdRigidBodyState> states,
@@ -2782,6 +2861,7 @@ inline void buildAvbdRigidDistanceSpringRows(
     std::span<const AvbdRigidBodyPointPairDistanceSpringRow> springs,
     AvbdScalarRowInventory& springInventory,
     SpringRowVector& springRows,
+    AvbdRigidDistanceSpringRowScratch& scratch,
     const AvbdRowWarmStartOptions& warmStartOptions = {})
 {
   const auto appendSpringRows = [&](const auto& activeRows,
@@ -2836,7 +2916,8 @@ inline void buildAvbdRigidDistanceSpringRows(
     return;
   }
 
-  std::vector<const AvbdRigidBodyPointPairDistanceSpringRow*> activeRows;
+  auto& activeRows = scratch.activeRows;
+  activeRows.clear();
   activeRows.reserve(springs.size());
   for (const AvbdRigidBodyPointPairDistanceSpringRow& spring : springs) {
     if (!detail::isValidAvbdRigidDistanceSpring(spring, states.size())) {
@@ -2871,6 +2952,20 @@ inline void buildAvbdRigidDistanceSpringRows(
       },
       warmStartOptions);
   appendSpringRows(activeRows, activeRows.size());
+}
+
+//==============================================================================
+template <typename SpringRowVector>
+inline void buildAvbdRigidDistanceSpringRows(
+    std::span<const AvbdRigidBodyState> states,
+    std::span<const AvbdRigidBodyPointPairDistanceSpringRow> springs,
+    AvbdScalarRowInventory& springInventory,
+    SpringRowVector& springRows,
+    const AvbdRowWarmStartOptions& warmStartOptions = {})
+{
+  AvbdRigidDistanceSpringRowScratch scratch;
+  buildAvbdRigidDistanceSpringRows(
+      states, springs, springInventory, springRows, scratch, warmStartOptions);
 }
 
 //==============================================================================

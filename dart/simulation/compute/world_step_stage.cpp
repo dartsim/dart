@@ -9904,7 +9904,8 @@ struct RigidBodyContactStage::AvbdScratch
       frictionInventory(allocator),
       jointLinearInventory(allocator),
       jointAngularInventory(allocator),
-      motorInventory(allocator)
+      motorInventory(allocator),
+      distanceSpringInventory(allocator)
   {
   }
 

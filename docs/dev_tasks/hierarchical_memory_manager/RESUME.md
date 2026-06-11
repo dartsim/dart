@@ -7,6 +7,14 @@ active HMM Phase 4/5 continuation is on
 `pr/hmm-phase45-follow-up-clean`, based on `origin/main` after PR #2956
 landed.
 
+The latest continuation closes a rigid AVBD row-staging allocator gap without
+adding production scenes. `AvbdScalarRowInventory` now keeps generated
+descriptor lists in allocator-backed reusable scratch, large rigid AVBD motor
+and distance-spring builders can use caller-provided active-row scratch, and
+`RigidBodyContactStage::AvbdScratch` constructs distance-spring inventory from
+the World allocator. Focused large-row builder tests plus the existing rigid
+AVBD allocator and baked World no-heap gates pass for this slice.
+
 The latest post-merge pipeline/scratch slices add allocator-aware construction
 for `BatchedRigidBodyIntegrationStage` and allocator-aware
 `WorldStepPipeline` overflow storage. Custom batched stages can now borrow a

@@ -855,15 +855,22 @@ Follow-up progress after PR #2956:
   the provided allocator and released with the pipeline.
 - The next nested route covers `RigidBodyContactStage`'s sequential-impulse
   constraint vector. A focused compact contact prepare verifies the vector's
-  first reserve increases the World free-list allocation count. AVBD contact
-  scratch internals remain separate follow-up work because they own a broader
-  bundle of snapshots, row scratch, and warm-start inventories.
+  first reserve increases the World free-list allocation count. The AVBD
+  contact scratch bundle is covered by the follow-up bullets below.
 - The AVBD contact scratch follow-up routes that broader bundle's stage-owned
   private contact snapshot vectors, row-counter scratch, solve scratch vectors,
   warm-start inventories, and point-joint input vector through the borrowed
   allocator. A focused fixed-joint prepare verifies those first reserves
   increase an isolated provided free-list allocation count and release when the
   custom stage is destroyed.
+- The large-row AVBD contact follow-up now routes generated scalar-row
+  descriptors, motor active-row pointer lists, and distance-spring active-row
+  pointer lists through allocator-backed reusable scratch instead of local
+  default-heap vectors. `RigidBodyContactStage::AvbdScratch` also constructs
+  distance-spring row inventory with the World allocator. Focused large-row
+  builder tests verify the provided scratch allocator is used, and the existing
+  rigid AVBD plus baked World no-heap gates still pass without adding new
+  production scenes.
 - The rigid IPC follow-up routes the stage's top-level runtime-body,
   solver-body, surface, dynamics-term, projected-Newton result,
   kinematic-trace, writeback-order, and resting-contact scratch vectors through
