@@ -1193,7 +1193,7 @@ struct AvbdRigidAngularMotorRowScratch
 
 //==============================================================================
 inline void buildAvbdRigidContactManifoldRows(
-    const std::vector<AvbdRigidBodyState>& states,
+    std::span<const AvbdRigidBodyState> states,
     std::span<const AvbdRigidContactManifoldPoint> contacts,
     AvbdScalarRowInventory& normalInventory,
     AvbdScalarRowInventory& frictionInventory,
@@ -1336,7 +1336,7 @@ inline void buildAvbdRigidContactManifoldRows(
 
 //==============================================================================
 inline void buildAvbdRigidContactManifoldRows(
-    const std::vector<AvbdRigidBodyState>& states,
+    std::span<const AvbdRigidBodyState> states,
     std::span<const AvbdRigidContactManifoldPoint> contacts,
     AvbdScalarRowInventory& normalInventory,
     AvbdScalarRowInventory& frictionInventory,
@@ -1358,7 +1358,7 @@ inline void buildAvbdRigidContactManifoldRows(
 
 //==============================================================================
 inline void buildAvbdRigidPointJointRows(
-    const std::vector<AvbdRigidBodyState>& states,
+    std::span<const AvbdRigidBodyState> states,
     std::span<const AvbdRigidPointJoint> joints,
     AvbdScalarRowInventory& linearInventory,
     std::vector<AvbdRigidBodyPointPairRow>& linearRows,
@@ -1424,7 +1424,7 @@ inline void buildAvbdRigidPointJointRows(
 
 //==============================================================================
 inline void buildAvbdRigidPointJointRows(
-    const std::vector<AvbdRigidBodyState>& states,
+    std::span<const AvbdRigidBodyState> states,
     std::span<const AvbdRigidPointJoint> joints,
     AvbdScalarRowInventory& linearInventory,
     std::vector<AvbdRigidBodyPointPairRow>& linearRows,
@@ -1437,7 +1437,7 @@ inline void buildAvbdRigidPointJointRows(
 
 //==============================================================================
 inline void buildAvbdRigidPointJointAngularRows(
-    const std::vector<AvbdRigidBodyState>& states,
+    std::span<const AvbdRigidBodyState> states,
     std::span<const AvbdRigidPointJoint> joints,
     AvbdScalarRowInventory& angularInventory,
     std::vector<AvbdRigidBodyAngularPairRow>& angularRows,
@@ -1503,7 +1503,7 @@ inline void buildAvbdRigidPointJointAngularRows(
 
 //==============================================================================
 inline void buildAvbdRigidPointJointAngularRows(
-    const std::vector<AvbdRigidBodyState>& states,
+    std::span<const AvbdRigidBodyState> states,
     std::span<const AvbdRigidPointJoint> joints,
     AvbdScalarRowInventory& angularInventory,
     std::vector<AvbdRigidBodyAngularPairRow>& angularRows,
@@ -1516,7 +1516,7 @@ inline void buildAvbdRigidPointJointAngularRows(
 
 //==============================================================================
 inline void buildAvbdRigidAngularMotorRows(
-    const std::vector<AvbdRigidBodyState>& states,
+    std::span<const AvbdRigidBodyState> states,
     std::span<const AvbdRigidAngularMotor> motors,
     AvbdScalarRowInventory& motorInventory,
     std::vector<AvbdRigidBodyAngularPairRow>& motorRows,
@@ -1575,7 +1575,7 @@ inline void buildAvbdRigidAngularMotorRows(
 
 //==============================================================================
 inline void buildAvbdRigidAngularMotorRows(
-    const std::vector<AvbdRigidBodyState>& states,
+    std::span<const AvbdRigidBodyState> states,
     std::span<const AvbdRigidAngularMotor> motors,
     AvbdScalarRowInventory& motorInventory,
     std::vector<AvbdRigidBodyAngularPairRow>& motorRows,
@@ -1595,7 +1595,7 @@ inline void buildAvbdRigidAngularMotorRows(
 
 //==============================================================================
 inline void buildAvbdRigidPointJointConstraintRows(
-    const std::vector<AvbdRigidBodyState>& states,
+    std::span<const AvbdRigidBodyState> states,
     std::span<const AvbdRigidPointJoint> joints,
     AvbdScalarRowInventory& linearInventory,
     AvbdScalarRowInventory& angularInventory,
@@ -1623,7 +1623,7 @@ inline void buildAvbdRigidPointJointConstraintRows(
 
 //==============================================================================
 inline void buildAvbdRigidPointJointConstraintRows(
-    const std::vector<AvbdRigidBodyState>& states,
+    std::span<const AvbdRigidBodyState> states,
     std::span<const AvbdRigidPointJoint> joints,
     AvbdScalarRowInventory& linearInventory,
     AvbdScalarRowInventory& angularInventory,
@@ -1647,11 +1647,11 @@ inline void buildAvbdRigidPointJointConstraintRows(
 
 //==============================================================================
 inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
-    std::vector<AvbdRigidBodyState>& states,
-    const std::vector<double>& masses,
-    const std::vector<Eigen::Matrix3d>& bodyInertias,
-    const std::vector<std::uint8_t>& fixed,
-    const std::vector<AvbdRigidBodyState>& inertialTargets,
+    std::span<AvbdRigidBodyState> states,
+    std::span<const double> masses,
+    std::span<const Eigen::Matrix3d> bodyInertias,
+    std::span<const std::uint8_t> fixed,
+    std::span<const AvbdRigidBodyState> inertialTargets,
     double timeStep,
     std::vector<AvbdRigidBodyPointAttachmentRow>& attachmentRows,
     std::vector<AvbdRigidBodyPointPairRow>& pointPairRows,

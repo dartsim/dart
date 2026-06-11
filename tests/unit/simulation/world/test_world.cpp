@@ -2815,7 +2815,7 @@ TEST(World, RigidBodyContactScratchPayloadUsesWorldAllocator)
          "impulse constraints from the World free allocator";
 }
 
-TEST(World, RigidBodyContactAvbdPointJointScratchUsesProvidedAllocator)
+TEST(World, RigidBodyContactAvbdSnapshotScratchUsesProvidedAllocator)
 {
   namespace common = dart::common;
   namespace sx = dart::simulation;
@@ -2833,9 +2833,10 @@ TEST(World, RigidBodyContactAvbdPointJointScratchUsesProvidedAllocator)
 
     stage.prepare(world);
 
-    EXPECT_GT(freeList.getAllocationCount(), allocationsAfterStage)
+    EXPECT_GE(freeList.getAllocationCount(), allocationsAfterStage + 9u)
         << "allocator-aware rigid AVBD contact scratch should reserve "
-           "point-joint inputs from the provided free allocator";
+           "snapshot, row-counter, and point-joint buffers from the "
+           "provided free allocator";
   }
 
   EXPECT_EQ(freeList.getAllocationCount(), allocationsBeforeStage);
