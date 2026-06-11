@@ -2,11 +2,12 @@
 
 ## Last Session Summary
 
-Latest local follow-up: `test_boxed_lcp_contact` now uses a source-local MSVC
-optimization guard after target-level `/Od` alone still hit C1001 in MSVC
-19.44. This keeps the AVBD contact regressions compiled and running on Windows.
-This is CI portability only; it does not close any AVBD solver, CPU-win, GPU, or
-paper-number gate.
+Latest local follow-up: the AVBD-only contact regressions in
+`test_boxed_lcp_contact` are excluded on MSVC after both target-level `/Od` and
+a source-local optimization guard still hit C1001 in MSVC 19.44. The ordinary
+BoxedLcp contact tests remain active on Windows, and the AVBD regressions remain
+active on Linux/macOS. This is CI portability only; it does not close any AVBD
+solver, CPU-win, GPU, or paper-number gate.
 
 Latest local follow-up: the IPC bake allocation regression now compares the
 unsupported plane scene against the same IPC contact-query-only setup with
