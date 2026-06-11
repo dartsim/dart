@@ -72,8 +72,18 @@
 
 ## Testing
 
+- Latest post-merge validation on pushed branch `cd7600f8cda`:
+  - merged latest `origin/main` into
+    `feature/rigid-body-gui-visual-verification`;
+  - resolved the `python/tests/integration/test_demos_cycle.py` conflict by
+    keeping both the rigid workflow test block and the new AVBD demo test block;
+  - `pixi run test-py -- python/tests/integration/test_demos_cycle.py -k "world_rigid_visual_verification_scenes_are_ordered or rigid_visual_verification_sidecar_matches_registry_order or rigid_kinematic_normal_push_exposes_normal_pusher_caveat or avbd_empty_baseline_demo_steps_empty_world or avbd_demo2d_fracture_scene_breaks_and_resets_source_joints or avbd_fixed_joint_contact_demo_exercises_contact_path"`
+    - `942 passed, 9 skipped`; the Pixi task forwarded this as a full Python
+      suite run after rebuilding the updated native bindings.
+  - `pixi run lint`
+    - passed
 - `pixi run test-py`
-  - `648 passed, 9 skipped`; includes the capture manifest evidence guard for
+  - `942 passed, 9 skipped`; includes the capture manifest evidence guard for
     requested dimensions, converted frame count, screenshot stats, first
     UI-ready-frame stats, the shared replay timeline metadata guard, and the
     stack-packet replay-state contract.

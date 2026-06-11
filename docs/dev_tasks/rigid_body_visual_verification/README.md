@@ -291,6 +291,13 @@
 - [x] Review packet draft: the local PR body draft lives in
       [`PR_DRAFT.md`](PR_DRAFT.md) and follows the repository pull-request
       template for a `main`/DART 7.0 review.
+- [x] Post-push main merge/readiness refresh: merged latest `origin/main` into
+      `feature/rigid-body-gui-visual-verification` as `cd7600f8cda`, resolved
+      the `python/tests/integration/test_demos_cycle.py` conflict by keeping
+      both the rigid workflow block and the new AVBD demo block, pushed the
+      branch to origin, and refreshed validation. The conflict-resolution
+      `pixi run test-py` command ran the full Python suite and reported
+      `942 passed, 9 skipped`; `pixi run lint` also passed.
 
 ## Goal
 

@@ -214,7 +214,16 @@ endpoint-closure verifier, not a distance-closure or rigid-closure family sweep.
 ## Current Branch
 
 `feature/rigid-body-gui-visual-verification` - local work in progress. The
-previous loop-closure follow-up added the scene, registry row, panel
+branch has been pushed to origin through merge commit `cd7600f8cda`, which
+merged latest `origin/main` into the feature branch before push. The only manual
+merge conflict was `python/tests/integration/test_demos_cycle.py`; the resolved
+file keeps both the local rigid visual-verification tests and the new AVBD demo
+tests from `origin/main`. Post-merge validation passed: the
+conflict-resolution `pixi run test-py` command ran the full Python suite and
+reported `942 passed, 9 skipped`, and `pixi run lint` passed before the merge
+commit was created and pushed.
+
+The previous loop-closure follow-up added the scene, registry row, panel
 coverage, behavior coverage, replay-control restore checks, quickstart docs,
 workflow docs, changelog entry, and dev-task evidence. The focused
 category/order/behavior/replay/panel command reported `5 passed`, and the
