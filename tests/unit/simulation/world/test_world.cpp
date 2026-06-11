@@ -2975,10 +2975,10 @@ TEST(World, DeformableDynamicsStageScratchPayloadUsesProvidedAllocator)
 
     stage.prepare(world);
 
-    EXPECT_GE(freeList.getAllocationCount(), allocationsAfterStage + 12u)
+    EXPECT_GE(freeList.getAllocationCount(), allocationsAfterStage + 15u)
         << "allocator-aware deformable stage scratch should reserve obstacle, "
-           "surface-snapshot, and nested snapshot payload vectors from the "
-           "provided free allocator";
+           "surface-snapshot, nested snapshot payload, and projected-Newton "
+           "assembly vectors from the provided free allocator";
   }
 
   EXPECT_EQ(freeList.getAllocationCount(), allocationsBeforeStage);

@@ -1622,6 +1622,24 @@ struct ProjectedNewtonMatrixFreeBlock3
   Eigen::Matrix3d block = Eigen::Matrix3d::Zero();
 };
 
+using ProjectedNewtonIntVector = std::vector<int, common::StlAllocator<int>>;
+using ProjectedNewtonTripletVector = std::vector<
+    Eigen::Triplet<double>,
+    common::StlAllocator<Eigen::Triplet<double>>>;
+using ProjectedNewtonScalarVector
+    = std::vector<double, common::StlAllocator<double>>;
+using ProjectedNewtonEdgeNodeVector = std::vector<
+    std::array<std::size_t, 2>,
+    common::StlAllocator<std::array<std::size_t, 2>>>;
+using ProjectedNewtonTetNodeVector = std::vector<
+    std::array<std::size_t, 4>,
+    common::StlAllocator<std::array<std::size_t, 4>>>;
+using ProjectedNewtonMatrixFreeBlockVector = std::vector<
+    ProjectedNewtonMatrixFreeBlock3,
+    common::StlAllocator<ProjectedNewtonMatrixFreeBlock3>>;
+using ProjectedNewtonMatrix3Vector
+    = std::vector<Eigen::Matrix3d, common::StlAllocator<Eigen::Matrix3d>>;
+
 //==============================================================================
 struct DeformableContactSolverScratch
 {
@@ -1630,7 +1648,26 @@ struct DeformableContactSolverScratch
   explicit DeformableContactSolverScratch(common::MemoryAllocator& allocator)
     : candidates(allocator),
       barrierCandidates(allocator),
-      sweepScratch(allocator)
+      sweepScratch(allocator),
+      newtonPatternOuter(common::StlAllocator<int>{allocator}),
+      newtonPatternInner(common::StlAllocator<int>{allocator}),
+      projectedNewtonTriplets(
+          common::StlAllocator<Eigen::Triplet<double>>{allocator}),
+      projectedNewtonEdgeBlocks(common::StlAllocator<double>{allocator}),
+      projectedNewtonEdgeBlockNodes(
+          common::StlAllocator<std::array<std::size_t, 2>>{allocator}),
+      projectedNewtonTetBlocks(common::StlAllocator<double>{allocator}),
+      projectedNewtonTetBlockNodes(
+          common::StlAllocator<std::array<std::size_t, 4>>{allocator}),
+      projectedNewtonBarrierBlocks(common::StlAllocator<double>{allocator}),
+      projectedNewtonBarrierBlockNodes(
+          common::StlAllocator<std::array<std::size_t, 4>>{allocator}),
+      projectedNewtonMatrixFreeBlocks(
+          common::StlAllocator<ProjectedNewtonMatrixFreeBlock3>{allocator}),
+      projectedNewtonMatrixFreeDiagonalBlocks(
+          common::StlAllocator<Eigen::Matrix3d>{allocator}),
+      projectedNewtonMatrixFreeInverseDiagonalBlocks(
+          common::StlAllocator<Eigen::Matrix3d>{allocator})
   {
   }
 
@@ -1656,8 +1693,8 @@ struct DeformableContactSolverScratch
   // only the numeric factorization repeats. Behavior-preserving: a structure
   // mismatch (or a failed factorization) re-runs analyzePattern.
   Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> newtonSolver;
-  std::vector<int> newtonPatternOuter;
-  std::vector<int> newtonPatternInner;
+  ProjectedNewtonIntVector newtonPatternOuter;
+  ProjectedNewtonIntVector newtonPatternInner;
   bool newtonPatternValid = false;
 
   // Cached per-tetrahedron FEM rest shapes (inverse rest edge matrix + rest
@@ -1669,16 +1706,16 @@ struct DeformableContactSolverScratch
   Eigen::VectorXd projectedNewtonRhs;
   Eigen::VectorXd projectedNewtonSolution;
   Eigen::SparseMatrix<double> projectedNewtonHessian;
-  std::vector<Eigen::Triplet<double>> projectedNewtonTriplets;
-  std::vector<double> projectedNewtonEdgeBlocks;
-  std::vector<std::array<std::size_t, 2>> projectedNewtonEdgeBlockNodes;
-  std::vector<double> projectedNewtonTetBlocks;
-  std::vector<std::array<std::size_t, 4>> projectedNewtonTetBlockNodes;
-  std::vector<double> projectedNewtonBarrierBlocks;
-  std::vector<std::array<std::size_t, 4>> projectedNewtonBarrierBlockNodes;
-  std::vector<ProjectedNewtonMatrixFreeBlock3> projectedNewtonMatrixFreeBlocks;
-  std::vector<Eigen::Matrix3d> projectedNewtonMatrixFreeDiagonalBlocks;
-  std::vector<Eigen::Matrix3d> projectedNewtonMatrixFreeInverseDiagonalBlocks;
+  ProjectedNewtonTripletVector projectedNewtonTriplets;
+  ProjectedNewtonScalarVector projectedNewtonEdgeBlocks;
+  ProjectedNewtonEdgeNodeVector projectedNewtonEdgeBlockNodes;
+  ProjectedNewtonScalarVector projectedNewtonTetBlocks;
+  ProjectedNewtonTetNodeVector projectedNewtonTetBlockNodes;
+  ProjectedNewtonScalarVector projectedNewtonBarrierBlocks;
+  ProjectedNewtonTetNodeVector projectedNewtonBarrierBlockNodes;
+  ProjectedNewtonMatrixFreeBlockVector projectedNewtonMatrixFreeBlocks;
+  ProjectedNewtonMatrix3Vector projectedNewtonMatrixFreeDiagonalBlocks;
+  ProjectedNewtonMatrix3Vector projectedNewtonMatrixFreeInverseDiagonalBlocks;
   Eigen::VectorXd projectedNewtonMatrixFreeResidual;
   Eigen::VectorXd projectedNewtonMatrixFreePreconditionedResidual;
   Eigen::VectorXd projectedNewtonMatrixFreeDirection;
@@ -1693,9 +1730,9 @@ struct DeformableContactSolverScratch
 struct ProjectedNewtonMatrixFreeHessian
 {
   ProjectedNewtonMatrixFreeHessian(
-      std::vector<ProjectedNewtonMatrixFreeBlock3>& blockStorage,
-      std::vector<Eigen::Matrix3d>& diagonalStorage,
-      std::vector<Eigen::Matrix3d>& inverseDiagonalStorage)
+      ProjectedNewtonMatrixFreeBlockVector& blockStorage,
+      ProjectedNewtonMatrix3Vector& diagonalStorage,
+      ProjectedNewtonMatrix3Vector& inverseDiagonalStorage)
     : blocks(blockStorage),
       diagonalBlocks(diagonalStorage),
       inverseDiagonalBlocks(inverseDiagonalStorage)
@@ -1760,9 +1797,9 @@ struct ProjectedNewtonMatrixFreeHessian
   }
 
   std::size_t nodeCount = 0;
-  std::vector<ProjectedNewtonMatrixFreeBlock3>& blocks;
-  std::vector<Eigen::Matrix3d>& diagonalBlocks;
-  std::vector<Eigen::Matrix3d>& inverseDiagonalBlocks;
+  ProjectedNewtonMatrixFreeBlockVector& blocks;
+  ProjectedNewtonMatrix3Vector& diagonalBlocks;
+  ProjectedNewtonMatrix3Vector& inverseDiagonalBlocks;
 };
 
 //==============================================================================
@@ -6712,8 +6749,7 @@ bool computeProjectedNewtonDirection(
            * (contactBarrier->candidates->pointTriangleCandidates.size()
               + contactBarrier->candidates->edgeEdgeCandidates.size());
   }
-  std::vector<Eigen::Triplet<double>>& triplets
-      = solverCache.projectedNewtonTriplets;
+  auto& triplets = solverCache.projectedNewtonTriplets;
   triplets.clear();
   ProjectedNewtonMatrixFreeHessian matrixFreeHessian(
       solverCache.projectedNewtonMatrixFreeBlocks,
@@ -6788,9 +6824,8 @@ bool computeProjectedNewtonDirection(
   // inline per-block projection.
   constexpr double minLength = 1e-12;
   constexpr std::size_t kEdgeBlockEntries = 36; // 6x6
-  std::vector<double>& edgeBlocks = solverCache.projectedNewtonEdgeBlocks;
-  std::vector<std::array<std::size_t, 2>>& edgeBlockNodes
-      = solverCache.projectedNewtonEdgeBlockNodes;
+  auto& edgeBlocks = solverCache.projectedNewtonEdgeBlocks;
+  auto& edgeBlockNodes = solverCache.projectedNewtonEdgeBlockNodes;
   edgeBlocks.clear();
   edgeBlockNodes.clear();
   edgeBlocks.reserve(kEdgeBlockEntries * model.edges.size());
@@ -6841,9 +6876,8 @@ bool computeProjectedNewtonDirection(
     const auto& rests = *femElasticity->restShapes;
     const std::size_t tetCount = std::min(tets.size(), rests.size());
     constexpr std::size_t kTetBlockEntries = 144; // 12x12
-    std::vector<double>& tetBlocks = solverCache.projectedNewtonTetBlocks;
-    std::vector<std::array<std::size_t, 4>>& tetBlockNodes
-        = solverCache.projectedNewtonTetBlockNodes;
+    auto& tetBlocks = solverCache.projectedNewtonTetBlocks;
+    auto& tetBlockNodes = solverCache.projectedNewtonTetBlockNodes;
     tetBlocks.clear();
     tetBlockNodes.clear();
     tetBlocks.reserve(kTetBlockEntries * tetCount);
@@ -6889,10 +6923,8 @@ bool computeProjectedNewtonDirection(
     const double sqAct = contactBarrier->squaredActivationDistance;
     const double kappa = contactBarrier->stiffness;
     constexpr std::size_t kBarrierBlockEntries = 144; // 12x12
-    std::vector<double>& barrierBlocks
-        = solverCache.projectedNewtonBarrierBlocks;
-    std::vector<std::array<std::size_t, 4>>& barrierBlockNodes
-        = solverCache.projectedNewtonBarrierBlockNodes;
+    auto& barrierBlocks = solverCache.projectedNewtonBarrierBlocks;
+    auto& barrierBlockNodes = solverCache.projectedNewtonBarrierBlockNodes;
     barrierBlocks.clear();
     barrierBlockNodes.clear();
     const auto collect12 = [&](const dc::Matrix12d& blockHessian,

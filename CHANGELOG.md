@@ -636,7 +636,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     per-node vectors each step. Default projected-Newton deformable solves now
     reuse per-body RHS, sparse Hessian assembly, PSD block batch, sparse
     pattern, and solution scratch for covered mass-spring and static rigid
-    surface-CCD steps, and FEM rest-shape caches are primed for covered
+    surface-CCD steps. The sparse-pattern, triplet assembly, PSD block batch,
+    and matrix-free block/diagonal scratch vectors can now borrow the World free
+    allocator when the solver scratch component is created, and FEM rest-shape
+    caches are primed for covered
     one-tetrahedron FEM projected-Newton steps. Self-contact barrier scratch is
     sized from bake-primed candidates for covered two-triangle
     projected-Newton self-contact steps. AVBD ground contact/friction rows and

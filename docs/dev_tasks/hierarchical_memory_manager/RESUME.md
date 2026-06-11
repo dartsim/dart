@@ -37,6 +37,14 @@ the step loop. The current branch moves Chebyshev history vectors into
 enabled VBD surface bodies, and adds an active 5x9 two-layer VBD Chebyshev
 self-contact gate.
 
+The latest allocator-root slice routes default deformable projected-Newton
+assembly scratch through `DeformableContactSolverScratch`'s borrowed World free
+allocator: sparse pattern arrays, triplet assembly, PSD edge/tet/barrier block
+batches, and matrix-free block/diagonal storage now use allocator-aware vectors.
+The existing deformable stage allocator test now expects those projected-Newton
+vectors to reserve from the provided allocator, and the existing baked
+World-base/global-heap deformable gates still pass without adding new scenes.
+
 The next follow-up slice adds a focused `WorldRegistry` rebuild-boundary gate
 for contact-heavy solver-owned ECS storage. It reuses the existing compliant
 variational contact slider setup, verifies baked contact scratch and registry
