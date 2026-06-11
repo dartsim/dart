@@ -49,11 +49,11 @@
       "smoke_command": "pixi run py-demos -- --scene plan083_lying_flat --headless --frames 4",
       "long_horizon_visual_command": "pixi run py-demo-capture -- --scene plan083_lying_flat --frames 240 --width 1280 --height 720",
       "visual_evidence_artifact": ".benchmark_results/plan083/visual/lying_flat/manifest.json",
-      "benchmark_command": "pixi run bm bm_plan083_cpu_scene_corpus -- --benchmark_filter=lying_flat",
+      "benchmark_command": "pixi run bm-plan083-cpu-lying-flat-packet",
       "benchmark_profile_artifact": ".benchmark_results/plan083/cpu_scene_corpus/lying_flat.json",
-      "expected_invariant": "Mixed rigid, deformable, rod, cloth, and articulated bodies remain finite and intersection-free at the paper timestep.",
-      "limitation_status": "Launchable placeholder only; waiting for runtime mixed-domain stepping and paper-scale assets.",
-      "notes_or_gap": "Placeholder py-demo records commands but does not claim reproduction."
+      "expected_invariant": "Reduced deformable cloth patch and static obstacle proxies stay finite while stepping through the deformable IPC World path.",
+      "limitation_status": "Reduced deformable-cloth/static-obstacle smoke packet only; rigid rings, deformable tori, rods, articulated ragdoll, cloth self-contact, and paper-scale mixed coupling remain planned.",
+      "notes_or_gap": "The py-demo now runs a reduced lying-flat scene through World::step, and bm-plan083-cpu-lying-flat-packet validates the reduced benchmark packet. Full paper body/node/contact counts and mixed rigid/deformable/rod/ragdoll coupling remain planned."
     },
     {
       "row_id": "unb-fig-02",
@@ -241,7 +241,7 @@
       "benchmark_profile_artifact": ".benchmark_results/plan083/cpu_scene_corpus/timing_breakdown.json",
       "expected_invariant": "Reduced CPU packet reports finite wall-time, body, contact, friction, articulation, solver-iteration, and equality-residual counters across the runnable reduced corpus rows.",
       "limitation_status": "Reduced aggregate wall-time packet only; paper gradient, Hessian, contact-pair, CCD, linear-solve, CPU/GPU parity, and paper-scale scene timing breakdowns remain planned.",
-      "notes_or_gap": "bm-plan083-cpu-timing-breakdown-packet aggregates the reduced hanging-bridge, pulley, umbrella, nunchaku, terrain vehicle, ragdoll, windmill, candy, and precession runtime rows without claiming the paper Fig. 24 subphase breakdown."
+      "notes_or_gap": "bm-plan083-cpu-timing-breakdown-packet aggregates the reduced lying-flat, hanging-bridge, pulley, umbrella, nunchaku, terrain vehicle, ragdoll, windmill, candy, and precession runtime rows without claiming the paper Fig. 24 subphase breakdown."
     },
     {
       "row_id": "unb-fig-25",
@@ -276,8 +276,8 @@
       "benchmark_command": "pixi run bm-plan083-cpu-table2-packet",
       "benchmark_profile_artifact": ".benchmark_results/plan083/cpu_scene_corpus/table_2.json",
       "expected_invariant": "Reduced Table 2 packet reports finite body, dynamic-body, contact, friction, articulation, solver-iteration, residual, and timing counters for runnable reduced rows.",
-      "limitation_status": "Reduced setup/statistics packet only; lying-flat, paper body/node/contact counts, paper timesteps, and paper timing rows remain planned.",
-      "notes_or_gap": "bm-plan083-cpu-table2-packet covers reduced hanging bridge, pulley, umbrella, terrain vehicle, ragdoll, windmill, candy, and precession rows through World::step; the missing lying-flat mixed scene stays explicit."
+      "limitation_status": "Reduced setup/statistics packet only; paper body/node/contact counts, paper timesteps, and paper timing rows remain planned.",
+      "notes_or_gap": "bm-plan083-cpu-table2-packet covers reduced lying flat, hanging bridge, pulley, umbrella, terrain vehicle, ragdoll, windmill, candy, and precession rows through World::step."
     },
     {
       "row_id": "abd-vs-rigid-wreck",

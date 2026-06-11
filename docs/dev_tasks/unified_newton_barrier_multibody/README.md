@@ -182,6 +182,9 @@
       paper-scale reproduction.
   - [x] Add the first reduced hanging-bridge CPU scene packet benchmark and
         writer for the runtime smoke path.
+  - [x] Add a reduced lying-flat deformable-cloth/static-obstacle CPU scene
+        packet and runtime status panel while keeping paper-scale mixed
+        coupling future work.
   - [x] Add a reduced pulley hinged-wheel CPU scene packet and runtime status
         panel while keeping force comparison and rope/rod coupling future work.
   - [x] Add a reduced umbrella hinged-rib CPU scene packet and runtime status
@@ -227,8 +230,8 @@ storage, or backend resources as public API.
 - No public API changes.
 - No dartpy binding changes.
 - No paper-scale runtime scene reproduction or fixture asset migration beyond
-  the reduced hanging-bridge, pulley, umbrella, terrain vehicle, ragdoll,
-  nunchaku, windmill, Candy, and precession smoke scenes, the reduced
+  the reduced lying-flat, hanging-bridge, pulley, umbrella, terrain vehicle,
+  ragdoll, nunchaku, windmill, Candy, and precession smoke scenes, the reduced
   timing-breakdown and Table 2 packets, launchable planned py-demo placeholders,
   and checked corpus manifest.
 - No rigid curved-trajectory CCD move.
@@ -471,6 +474,7 @@ Runtime-wiring branch-local evidence:
 - `LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe pixi run py-demos -- --scene plan083_hanging_bridge --headless --frames 4 --width 320 --height 240`
 - `LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe pixi run py-demo-capture -- --scene plan083_hanging_bridge --frames 4 --width 320 --height 240 --output-dir /tmp/dart_plan083_hanging_bridge_capture`
 - `pixi run bm-plan083-cpu-hanging-bridge-packet`
+- `pixi run bm-plan083-cpu-lying-flat-packet`
 - `pixi run bm-plan083-cpu-pulley-packet`
 - `pixi run bm-plan083-cpu-umbrella-packet`
 - `pixi run bm-plan083-cpu-candy-packet`

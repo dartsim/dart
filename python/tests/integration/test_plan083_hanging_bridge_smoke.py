@@ -184,6 +184,42 @@ def test_candy_demo_steps_deformable_ipc_world() -> None:
     assert min(point[2] for point in final_positions) > 0.0
 
 
+def test_lying_flat_demo_steps_deformable_ipc_world() -> None:
+    _sx()
+    from examples.demos.scenes.plan083_unified_newton_barrier import PLAN083_SCENES
+
+    scene = next(scene for scene in PLAN083_SCENES if scene.id == "plan083_lying_flat")
+    setup = scene.build()
+    sx_world = setup.info["sx_world"]
+    cloth = setup.info["cloth"]
+
+    assert setup.info["runtime_smoke_scene"] is True
+    assert setup.info["deformable_solver"] == "ipc"
+    assert sx_world.num_deformable_bodies == 1
+    assert sx_world.num_rigid_bodies == 4
+    assert cloth.node_count == 24
+    assert cloth.surface_triangle_count == 30
+    assert setup.info["plan083_benchmark_command"] == (
+        "pixi run bm-plan083-cpu-lying-flat-packet"
+    )
+    assert setup.pre_step is not None
+
+    initial_time = sx_world.time
+    for _ in range(24):
+        setup.pre_step()
+
+    final_positions = [
+        np.asarray(cloth.node_position(index), dtype=float).reshape(3)
+        for index in range(cloth.node_count)
+    ]
+    diagnostics = sx_world.last_deformable_solver_diagnostics
+    assert all(np.all(np.isfinite(point)) for point in final_positions)
+    assert sx_world.time > initial_time
+    assert diagnostics.body_count == 1
+    assert diagnostics.node_count == cloth.node_count
+    assert min(point[2] for point in final_positions) > 0.0
+
+
 def test_terrain_vehicle_demo_steps_rigid_ipc_world() -> None:
     sx = _sx()
     from examples.demos.scenes.plan083_unified_newton_barrier import PLAN083_SCENES

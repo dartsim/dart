@@ -34,6 +34,7 @@ DEFAULT_SCENE = "hanging_bridge"
 NUNCHAKU_SCALING_SIZES = (20, 40, 60, 80, 100)
 TIMING_BREAKDOWN_SCENES = (
     "hanging_bridge",
+    "lying_flat",
     "pulley_system",
     "umbrella",
     "nunchaku_single",
@@ -44,6 +45,7 @@ TIMING_BREAKDOWN_SCENES = (
     "precession",
 )
 TABLE2_REDUCED_SCENES = (
+    "lying_flat",
     "hanging_bridge",
     "pulley_system",
     "umbrella",
@@ -56,6 +58,7 @@ TABLE2_REDUCED_SCENES = (
 SCENE_IDS = {
     "candy": "plan083_candy",
     "hanging_bridge": "plan083_hanging_bridge",
+    "lying_flat": "plan083_lying_flat",
     "nunchaku_single": "plan083_nunchaku",
     "pulley_system": "plan083_pulley_system",
     "precession": "plan083_precession",
@@ -69,6 +72,7 @@ SCENE_IDS = {
 SCENE_ROW_IDS = {
     "candy": "unb-fig-22",
     "hanging_bridge": "unb-fig-02",
+    "lying_flat": "unb-fig-01",
     "nunchaku_single": "unb-fig-13",
     "pulley_system": "unb-fig-03",
     "precession": "unb-fig-23",
@@ -82,6 +86,7 @@ SCENE_ROW_IDS = {
 SCENE_ROWS = {
     "candy": "BM_Plan083CpuScene_candy_reduced_world_step",
     "hanging_bridge": "BM_Plan083CpuScene_hanging_bridge_reduced_world_step",
+    "lying_flat": "BM_Plan083CpuScene_lying_flat_reduced_world_step",
     "nunchaku_single": "BM_Plan083CpuScene_nunchaku_single_reduced_world_step",
     "nunchaku_scaling": "BM_Plan083CpuScene_nunchaku_scaling_reduced_world_step",
     "pulley_system": "BM_Plan083CpuScene_pulley_system_reduced_world_step",
@@ -98,6 +103,9 @@ TABLE2_REDUCED_ROWS = {scene: SCENE_ROWS[scene] for scene in TABLE2_REDUCED_SCEN
 SCENE_BENCHMARK_OUTPUTS = {
     "candy": Path(".benchmark_results/plan083/cpu_scene_corpus/candy_benchmark.json"),
     "hanging_bridge": DEFAULT_BENCHMARK_OUTPUT,
+    "lying_flat": Path(
+        ".benchmark_results/plan083/cpu_scene_corpus/lying_flat_benchmark.json"
+    ),
     "nunchaku_single": Path(
         ".benchmark_results/plan083/cpu_scene_corpus/nunchaku_single_benchmark.json"
     ),
@@ -132,6 +140,7 @@ SCENE_BENCHMARK_OUTPUTS = {
 SCENE_PACKET_OUTPUTS = {
     "candy": Path(".benchmark_results/plan083/cpu_scene_corpus/candy.json"),
     "hanging_bridge": DEFAULT_PACKET_OUTPUT,
+    "lying_flat": Path(".benchmark_results/plan083/cpu_scene_corpus/lying_flat.json"),
     "nunchaku_single": Path(
         ".benchmark_results/plan083/cpu_scene_corpus/nunchaku_single.json"
     ),
@@ -359,6 +368,8 @@ def make_packet(
             f"reduced {scene_label} reported {failed_steps:g} failed steps"
         )
 
+    if scene == "lying_flat":
+        return _make_lying_flat_packet(row, rows, timing_ns=timing_ns)
     if scene == "candy":
         return _make_candy_packet(row, rows, timing_ns=timing_ns)
 
@@ -434,6 +445,83 @@ def make_packet(
             max_equality_residual=max_equality_residual,
         )
     raise Plan083CpuScenePacketError(f"unsupported scene: {scene}")
+
+
+def _make_lying_flat_packet(
+    row: Mapping[str, Any],
+    rows: list[Any],
+    *,
+    timing_ns: float,
+) -> dict[str, Any]:
+    rigid_obstacle_count = int(_finite_number(row, "rigid_obstacle_count"))
+    deformable_body_count = int(_finite_number(row, "deformable_body_count"))
+    deformable_node_count = int(_finite_number(row, "deformable_node_count"))
+    deformable_edge_count = int(_finite_number(row, "deformable_edge_count"))
+    surface_triangle_count = int(_finite_number(row, "surface_triangle_count"))
+    if rigid_obstacle_count < 4:
+        raise Plan083CpuScenePacketError(
+            f"expected at least 4 reduced lying-flat obstacles, got {rigid_obstacle_count}"
+        )
+    if deformable_body_count != 1:
+        raise Plan083CpuScenePacketError(
+            f"expected 1 deformable cloth body, got {deformable_body_count}"
+        )
+    if deformable_node_count != 24:
+        raise Plan083CpuScenePacketError(
+            f"expected 24 deformable nodes, got {deformable_node_count}"
+        )
+    if deformable_edge_count < 68:
+        raise Plan083CpuScenePacketError(
+            "expected structural and shear spring edges for reduced lying-flat cloth"
+        )
+    if surface_triangle_count != 30:
+        raise Plan083CpuScenePacketError(
+            f"expected 30 cloth surface triangles, got {surface_triangle_count}"
+        )
+
+    min_cloth_height = _finite_number(row, "min_cloth_height_m")
+    cloth_span_x = _finite_number(row, "cloth_span_x_m")
+    cloth_span_y = _finite_number(row, "cloth_span_y_m")
+    if min_cloth_height <= 0.0:
+        raise Plan083CpuScenePacketError(
+            f"reduced lying-flat cloth penetrated below z=0: {min_cloth_height:.3g}"
+        )
+    if cloth_span_x <= 0.0 or cloth_span_y <= 0.0:
+        raise Plan083CpuScenePacketError(
+            "reduced lying-flat cloth span is not positive"
+        )
+
+    return {
+        "plan083_cpu_scene_packet": {
+            "row_id": "unb-fig-01",
+            "scene_id": "plan083_lying_flat",
+            "benchmark_row": _packet_row_name(row),
+            "paper_scale": False,
+            "runtime_path": "deformable IPC World::step",
+            "step_count": 1,
+            "wall_time_ns": timing_ns,
+            "rigid_obstacle_count": rigid_obstacle_count,
+            "deformable_body_count": deformable_body_count,
+            "deformable_node_count": deformable_node_count,
+            "deformable_edge_count": deformable_edge_count,
+            "surface_triangle_count": surface_triangle_count,
+            "solver_iterations": int(_finite_number(row, "solver_iterations")),
+            "active_contact_count": int(_finite_number(row, "active_contact_count")),
+            "friction_dissipation": _finite_number(row, "friction_dissipation"),
+            "min_active_contact_distance_m": _finite_number(
+                row, "min_active_contact_distance_m"
+            ),
+            "min_cloth_height_m": min_cloth_height,
+            "cloth_span_x_m": cloth_span_x,
+            "cloth_span_y_m": cloth_span_y,
+            "limitation_status": (
+                "Reduced deformable-cloth/static-obstacle smoke packet only; "
+                "rigid rings, deformable tori, rods, articulated ragdoll, "
+                "cloth self-contact, and paper-scale mixed coupling remain planned."
+            ),
+        },
+        "benchmarks": rows,
+    }
 
 
 def _make_candy_packet(
@@ -949,7 +1037,7 @@ def _make_timing_breakdown_packet(
             raise Plan083CpuScenePacketError(
                 f"reduced timing scene {scene} reported {failed_steps:g} failed steps"
             )
-        if scene == "candy":
+        if scene in {"candy", "lying_flat"}:
             final_residual = 0.0
             body_count = int(_finite_number(row, "rigid_obstacle_count")) + int(
                 _finite_number(row, "deformable_body_count")
@@ -1092,7 +1180,7 @@ def _make_table2_packet(
             raise Plan083CpuScenePacketError(
                 f"reduced Table 2 scene {scene} reported {failed_steps:g} failed steps"
             )
-        if scene == "candy":
+        if scene in {"candy", "lying_flat"}:
             final_residual = 0.0
             body_count = int(_finite_number(row, "rigid_obstacle_count")) + int(
                 _finite_number(row, "deformable_body_count")
@@ -1153,9 +1241,7 @@ def _make_table2_packet(
             "runtime_path": "World::step reduced Table 2 rows",
             "scene_count": len(samples),
             "covered_paper_rows": [sample["row_id"] for sample in samples],
-            "missing_paper_rows": [
-                "unb-fig-01",
-            ],
+            "missing_paper_rows": [],
             "total_wall_time_ns": total_wall_time_ns,
             "total_body_count": total_bodies,
             "total_dynamic_body_count": total_dynamic_bodies,
@@ -1164,9 +1250,9 @@ def _make_table2_packet(
             "max_final_equality_residual_norm": max_residual,
             "max_equality_residual": max_equality_residual,
             "limitation_status": (
-                "Reduced Table 2 setup/statistics packet only; lying-flat, "
-                "paper body/node/contact counts, paper timesteps, and paper "
-                "timing rows remain planned."
+                "Reduced Table 2 setup/statistics packet only; paper "
+                "body/node/contact counts, paper timesteps, and paper timing "
+                "rows remain planned."
             ),
             "samples": samples,
         },

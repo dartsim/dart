@@ -74,6 +74,12 @@ const Eigen::Vector3d kPulleyLoadHalfExtents(0.055, 0.055, 0.055);
 const Eigen::Vector3d kUmbrellaMastHalfExtents(0.04, 0.04, 0.28);
 const Eigen::Vector3d kUmbrellaHubHalfExtents(0.05, 0.05, 0.04);
 const Eigen::Vector3d kUmbrellaRibHalfExtents(0.18, 0.025, 0.025);
+const Eigen::Vector3d kLyingFlatGroundHalfExtents(0.28, 0.18, 0.012);
+const Eigen::Vector3d kLyingFlatRodHalfExtents(0.14, 0.015, 0.015);
+constexpr double kLyingFlatRingRadius = 0.028;
+constexpr std::size_t kLyingFlatGridColumns = 6;
+constexpr std::size_t kLyingFlatGridRows = 4;
+constexpr double kLyingFlatGridSpacing = 0.055;
 const Eigen::Vector3d kCandyShellHalfExtents(0.24, 0.16, 0.025);
 constexpr std::size_t kCandyGridColumns = 5;
 constexpr std::size_t kCandyGridRows = 5;
@@ -493,6 +499,130 @@ struct UmbrellaFixture
   std::optional<sx::RigidBody> leftRib;
   std::optional<sx::RigidBody> rightRib;
   std::vector<BodySnapshot> snapshots;
+};
+
+struct LyingFlatFixture
+{
+  LyingFlatFixture()
+  {
+    world.setTimeStep(0.004);
+    world.setGravity(Eigen::Vector3d(0.0, 0.0, -1.0));
+
+    addObstacle(
+        "plan083_lying_flat_ground",
+        Eigen::Vector3d(0.0, 0.0, kLyingFlatGroundHalfExtents.z()),
+        sx::CollisionShape::makeBox(kLyingFlatGroundHalfExtents));
+    addObstacle(
+        "plan083_lying_flat_reduced_rod",
+        Eigen::Vector3d(0.0, 0.055, 0.044),
+        sx::CollisionShape::makeBox(kLyingFlatRodHalfExtents));
+    addObstacle(
+        "plan083_lying_flat_left_ring",
+        Eigen::Vector3d(-0.09, -0.045, 0.042),
+        sx::CollisionShape::makeSphere(kLyingFlatRingRadius));
+    addObstacle(
+        "plan083_lying_flat_right_ring",
+        Eigen::Vector3d(0.09, -0.045, 0.042),
+        sx::CollisionShape::makeSphere(kLyingFlatRingRadius));
+
+    sx::DeformableBodyOptions clothOptions;
+    const double halfWidth = 0.5 * kLyingFlatGridSpacing
+                             * static_cast<double>(kLyingFlatGridColumns - 1u);
+    const double halfDepth = 0.5 * kLyingFlatGridSpacing
+                             * static_cast<double>(kLyingFlatGridRows - 1u);
+    for (std::size_t row = 0; row < kLyingFlatGridRows; ++row) {
+      for (std::size_t col = 0; col < kLyingFlatGridColumns; ++col) {
+        const double x
+            = kLyingFlatGridSpacing * static_cast<double>(col) - halfWidth;
+        const double y
+            = kLyingFlatGridSpacing * static_cast<double>(row) - halfDepth;
+        const double stagger = (col + row) % 2u == 0u ? 0.0 : 0.003;
+        const double lateral
+            = col < kLyingFlatGridColumns / 2u ? 0.025 : -0.025;
+        clothOptions.positions.emplace_back(x, y, 0.078 + stagger);
+        clothOptions.velocities.emplace_back(lateral, 0.0, -0.02);
+        clothOptions.masses.push_back(0.02);
+      }
+    }
+    clothOptions.edges = makeGridEdges(
+        kLyingFlatGridColumns, kLyingFlatGridRows, clothOptions.positions);
+    clothOptions.surfaceTriangles
+        = makeGridSurfaceTriangles(kLyingFlatGridColumns, kLyingFlatGridRows);
+    clothOptions.edgeStiffness = 80.0;
+    clothOptions.damping = 1.4;
+    clothOptions.material.frictionCoefficient = 0.35;
+
+    initialPositions = clothOptions.positions;
+    initialVelocities = clothOptions.velocities;
+    cloth.emplace(world.addDeformableBody(
+        "plan083_lying_flat_deformable_cloth", clothOptions));
+
+    world.enterSimulationMode();
+  }
+
+  sx::RigidBody addObstacle(
+      const std::string& name,
+      const Eigen::Vector3d& position,
+      const sx::CollisionShape& shape)
+  {
+    sx::RigidBodyOptions options;
+    options.isStatic = true;
+    options.position = position;
+    sx::RigidBody body = world.addRigidBody(name, options);
+    body.setCollisionShape(shape);
+    body.setDeformableSurfaceCcdObstacle(true);
+    body.setDeformableObstacleBarrierOnly(true);
+    obstacles.push_back(body);
+    return body;
+  }
+
+  void reset()
+  {
+    world.setTime(0.0);
+    for (std::size_t node = 0; node < initialPositions.size(); ++node) {
+      cloth->setPosition(node, initialPositions[node]);
+      cloth->setVelocity(node, initialVelocities[node]);
+    }
+  }
+
+  double minClothHeight() const
+  {
+    double minHeight = std::numeric_limits<double>::infinity();
+    for (std::size_t node = 0; node < cloth->getNodeCount(); ++node) {
+      minHeight = std::min(minHeight, cloth->getPosition(node).z());
+    }
+    return minHeight;
+  }
+
+  double clothSpanX() const
+  {
+    double minX = std::numeric_limits<double>::infinity();
+    double maxX = -std::numeric_limits<double>::infinity();
+    for (std::size_t node = 0; node < cloth->getNodeCount(); ++node) {
+      const double x = cloth->getPosition(node).x();
+      minX = std::min(minX, x);
+      maxX = std::max(maxX, x);
+    }
+    return maxX - minX;
+  }
+
+  double clothSpanY() const
+  {
+    double minY = std::numeric_limits<double>::infinity();
+    double maxY = -std::numeric_limits<double>::infinity();
+    for (std::size_t node = 0; node < cloth->getNodeCount(); ++node) {
+      const double y = cloth->getPosition(node).y();
+      minY = std::min(minY, y);
+      maxY = std::max(maxY, y);
+    }
+    return maxY - minY;
+  }
+
+  sx::World world;
+  std::vector<sx::RigidBody> obstacles;
+  std::optional<sx::DeformableBody> cloth;
+  std::vector<Eigen::Vector3d> initialPositions;
+  std::vector<Eigen::Vector3d> initialVelocities;
 };
 
 struct CandyFixture
@@ -1133,6 +1263,61 @@ static void BM_Plan083CpuScene_umbrella_reduced_world_step(
       = fixture.hub->getAngularVelocity().y();
 }
 BENCHMARK(BM_Plan083CpuScene_umbrella_reduced_world_step)
+    ->Unit(benchmark::kMillisecond);
+
+//==============================================================================
+static void BM_Plan083CpuScene_lying_flat_reduced_world_step(
+    benchmark::State& state)
+{
+  LyingFlatFixture fixture;
+  sx::compute::SequentialExecutor executor;
+
+  std::size_t failedSteps = 0;
+  sx::DeformableSolverDiagnostics lastDiagnostics;
+  for (auto _ : state) {
+    state.PauseTiming();
+    fixture.reset();
+    state.ResumeTiming();
+
+    fixture.world.step(executor);
+    lastDiagnostics = fixture.world.getLastDeformableSolverDiagnostics();
+    if (lastDiagnostics.bodyCount != 1u || lastDiagnostics.nodeCount == 0u
+        || !std::isfinite(fixture.minClothHeight())) {
+      ++failedSteps;
+    }
+    double firstNodeHeight = fixture.cloth->getPosition(0).z();
+    double lastNodeHeight
+        = fixture.cloth->getPosition(fixture.cloth->getNodeCount() - 1u).z();
+    benchmark::DoNotOptimize(firstNodeHeight);
+    benchmark::DoNotOptimize(lastNodeHeight);
+    benchmark::ClobberMemory();
+  }
+
+  state.counters["row_unb_fig_01"] = 1.0;
+  state.counters["paper_scale"] = 0.0;
+  state.counters["rigid_obstacle_count"]
+      = static_cast<double>(fixture.obstacles.size());
+  state.counters["deformable_body_count"]
+      = static_cast<double>(lastDiagnostics.bodyCount);
+  state.counters["deformable_node_count"]
+      = static_cast<double>(lastDiagnostics.nodeCount);
+  state.counters["deformable_edge_count"]
+      = static_cast<double>(lastDiagnostics.edgeCount);
+  state.counters["surface_triangle_count"]
+      = static_cast<double>(fixture.cloth->getSurfaceTriangleCount());
+  state.counters["solver_iterations"]
+      = static_cast<double>(lastDiagnostics.solverIterations);
+  state.counters["active_contact_count"]
+      = static_cast<double>(lastDiagnostics.convergedActiveContactCount);
+  state.counters["friction_dissipation"] = lastDiagnostics.frictionDissipation;
+  state.counters["min_active_contact_distance_m"]
+      = lastDiagnostics.minActiveContactDistance;
+  state.counters["min_cloth_height_m"] = fixture.minClothHeight();
+  state.counters["cloth_span_x_m"] = fixture.clothSpanX();
+  state.counters["cloth_span_y_m"] = fixture.clothSpanY();
+  state.counters["failed_steps"] = static_cast<double>(failedSteps);
+}
+BENCHMARK(BM_Plan083CpuScene_lying_flat_reduced_world_step)
     ->Unit(benchmark::kMillisecond);
 
 //==============================================================================
