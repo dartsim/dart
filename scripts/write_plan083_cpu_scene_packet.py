@@ -115,6 +115,24 @@ ABD_COMPARISON_SCENES = {
         "paper_gap": "11k-triangle Bullet comparison asset and accepted Bullet/reference baseline command remain planned.",
         "reference_gap": "Deck Bullet timings are not reproduced; this packet records only reduced CPU ABD runtime-step evidence.",
     },
+    "abd_complex_geometry": {
+        "row_id": "abd-complex-geometry",
+        "scene_id": "plan083_abd_complex_geometry",
+        "pair_count": 29,
+        "paper_body_count": 29,
+        "paper_triangle_count": 1_200_000,
+        "paper_gap": "1.2M-triangle complex-geometry assets, contact-force visualization, and paper-scale reproduction remain planned.",
+        "reference_gap": "Deck 2.8 s/step timing is not reproduced; this packet records only reduced CPU ABD runtime-step evidence.",
+    },
+    "abd_fem_coupling": {
+        "row_id": "abd-fem-coupling",
+        "scene_id": "plan083_abd_fem_coupling",
+        "pair_count": 27,
+        "paper_body_count": 27,
+        "paper_triangle_count": 1_100_000,
+        "paper_gap": "1.1M-triangle FEM-coupling assets, true affine/FEM mixed contact, and paper-scale reproduction remain planned.",
+        "reference_gap": "Deck 16.4 s/step timing is not reproduced; this packet records only reduced side-by-side ABD/FEM runtime evidence.",
+    },
 }
 SCENE_IDS = {
     "abd_chain_8": "plan083_abd_chain_8",
@@ -124,6 +142,8 @@ SCENE_IDS = {
     "abd_bullet_small": "plan083_abd_bullet_small",
     "abd_bullet_medium": "plan083_abd_bullet_medium",
     "abd_bullet_large": "plan083_abd_bullet_large",
+    "abd_complex_geometry": "plan083_abd_complex_geometry",
+    "abd_fem_coupling": "plan083_abd_fem_coupling",
     "abd_house_of_cards": "plan083_abd_house_of_cards",
     "abd_wrecking_ball": "plan083_abd_wrecking_ball",
     "candy": "plan083_candy",
@@ -147,6 +167,8 @@ SCENE_ROW_IDS = {
     "abd_bullet_small": "abd-bullet-small",
     "abd_bullet_medium": "abd-bullet-medium",
     "abd_bullet_large": "abd-bullet-large",
+    "abd_complex_geometry": "abd-complex-geometry",
+    "abd_fem_coupling": "abd-fem-coupling",
     "abd_house_of_cards": "abd-vs-rigid-cards",
     "abd_wrecking_ball": "abd-vs-rigid-wreck",
     "candy": "unb-fig-22",
@@ -170,6 +192,8 @@ SCENE_ROWS = {
     "abd_bullet_small": "BM_Plan083CpuScene_abd_bullet_small_reduced_pair_runtime_step",
     "abd_bullet_medium": "BM_Plan083CpuScene_abd_bullet_medium_reduced_pair_runtime_step",
     "abd_bullet_large": "BM_Plan083CpuScene_abd_bullet_large_reduced_pair_runtime_step",
+    "abd_complex_geometry": "BM_Plan083CpuScene_abd_complex_geometry_reduced_pair_runtime_step",
+    "abd_fem_coupling": "BM_Plan083CpuScene_abd_fem_coupling_reduced_side_by_side_step",
     "abd_house_of_cards": "BM_Plan083CpuScene_abd_house_of_cards_reduced_runtime_step",
     "abd_wrecking_ball": "BM_Plan083CpuScene_abd_wrecking_ball_reduced_pair_runtime_step",
     "candy": "BM_Plan083CpuScene_candy_reduced_world_step",
@@ -209,6 +233,12 @@ SCENE_BENCHMARK_OUTPUTS = {
     ),
     "abd_bullet_large": Path(
         ".benchmark_results/plan083/cpu_scene_corpus/abd_bullet_large_benchmark.json"
+    ),
+    "abd_complex_geometry": Path(
+        ".benchmark_results/plan083/cpu_scene_corpus/abd_complex_geometry_benchmark.json"
+    ),
+    "abd_fem_coupling": Path(
+        ".benchmark_results/plan083/cpu_scene_corpus/abd_fem_coupling_benchmark.json"
     ),
     "abd_house_of_cards": Path(
         ".benchmark_results/plan083/cpu_scene_corpus/abd_house_of_cards_benchmark.json"
@@ -269,6 +299,12 @@ SCENE_PACKET_OUTPUTS = {
     ),
     "abd_bullet_large": Path(
         ".benchmark_results/plan083/cpu_scene_corpus/abd_bullet_large.json"
+    ),
+    "abd_complex_geometry": Path(
+        ".benchmark_results/plan083/cpu_scene_corpus/abd_complex_geometry.json"
+    ),
+    "abd_fem_coupling": Path(
+        ".benchmark_results/plan083/cpu_scene_corpus/abd_fem_coupling.json"
     ),
     "abd_house_of_cards": Path(
         ".benchmark_results/plan083/cpu_scene_corpus/abd_house_of_cards.json"
@@ -516,6 +552,8 @@ def make_packet(
         return _make_abd_wrecking_ball_packet(row, rows, timing_ns=timing_ns)
     if scene in ABD_CHAIN_SCENES:
         return _make_abd_chain_packet(scene, row, rows, timing_ns=timing_ns)
+    if scene == "abd_fem_coupling":
+        return _make_abd_fem_coupling_packet(row, rows, timing_ns=timing_ns)
     if scene in ABD_COMPARISON_SCENES:
         return _make_abd_comparison_packet(scene, row, rows, timing_ns=timing_ns)
 
@@ -1222,6 +1260,81 @@ def _make_abd_comparison_packet(
         },
         "benchmarks": rows,
     }
+
+
+def _make_abd_fem_coupling_packet(
+    row: Mapping[str, Any],
+    rows: list[Any],
+    *,
+    timing_ns: float,
+) -> dict[str, Any]:
+    packet = _make_abd_comparison_packet(
+        "abd_fem_coupling", row, rows, timing_ns=timing_ns
+    )
+    packet_row = packet["plan083_cpu_scene_packet"]
+
+    deformable_body_count = int(_finite_number(row, "deformable_body_count"))
+    deformable_node_count = int(_finite_number(row, "deformable_node_count"))
+    deformable_edge_count = int(_finite_number(row, "deformable_edge_count"))
+    surface_triangle_count = int(_finite_number(row, "surface_triangle_count"))
+    deformable_solver_iterations = int(
+        _finite_number(row, "deformable_solver_iterations")
+    )
+    min_cloth_height = _finite_number(row, "min_cloth_height_m")
+    coupled_contact_measured = _finite_number(
+        row, "affine_fem_coupled_contact_measured"
+    )
+
+    if deformable_body_count != 1:
+        raise Plan083CpuScenePacketError(
+            f"expected 1 reduced FEM body, got {deformable_body_count}"
+        )
+    if deformable_node_count != 24:
+        raise Plan083CpuScenePacketError(
+            f"expected 24 reduced FEM nodes, got {deformable_node_count}"
+        )
+    if deformable_edge_count < 68:
+        raise Plan083CpuScenePacketError(
+            "expected structural and shear spring edges for reduced FEM cloth"
+        )
+    if surface_triangle_count != 30:
+        raise Plan083CpuScenePacketError(
+            f"expected 30 reduced FEM surface triangles, got {surface_triangle_count}"
+        )
+    if deformable_solver_iterations < 0:
+        raise Plan083CpuScenePacketError(
+            "reduced FEM sidecar reported invalid solver iterations"
+        )
+    if min_cloth_height <= 0.0:
+        raise Plan083CpuScenePacketError(
+            f"reduced FEM cloth penetrated below z=0: {min_cloth_height:.3g}"
+        )
+    if coupled_contact_measured != 0.0:
+        raise Plan083CpuScenePacketError(
+            "reduced ABD/FEM packet must not claim coupled affine/FEM contact"
+        )
+
+    packet_row.update(
+        {
+            "runtime_path": (
+                "detail affine point-triangle runtime step plus deformable IPC "
+                "World::step"
+            ),
+            "deformable_body_count": deformable_body_count,
+            "deformable_node_count": deformable_node_count,
+            "deformable_edge_count": deformable_edge_count,
+            "surface_triangle_count": surface_triangle_count,
+            "deformable_solver_iterations": deformable_solver_iterations,
+            "min_cloth_height_m": min_cloth_height,
+            "affine_fem_coupled_contact_measured": False,
+            "limitation_status": (
+                "Reduced side-by-side affine runtime-step plus deformable IPC "
+                "smoke packet only; true affine/FEM mixed contact, "
+                "1.1M-triangle assets, and paper-scale reproduction remain planned."
+            ),
+        }
+    )
+    return packet
 
 
 def _make_hanging_bridge_packet(

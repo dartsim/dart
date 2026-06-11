@@ -110,6 +110,8 @@ constexpr std::size_t kAbdReducedGearsPairCount = 28;
 constexpr std::size_t kAbdReducedBulletSmallPairCount = 16;
 constexpr std::size_t kAbdReducedBulletMediumPairCount = 48;
 constexpr std::size_t kAbdReducedBulletLargePairCount = 96;
+constexpr std::size_t kAbdReducedComplexGeometryPairCount = 29;
+constexpr std::size_t kAbdReducedFemCouplingPairCount = 27;
 const std::array<Eigen::Vector3d, 4> kTerrainWheelOffsets{{
     Eigen::Vector3d(-0.16, -0.14, -0.10),
     Eigen::Vector3d(-0.16, 0.14, -0.10),
@@ -2176,6 +2178,151 @@ static void BM_Plan083CpuScene_abd_bullet_large_reduced_pair_runtime_step(
       11'000.0);
 }
 BENCHMARK(BM_Plan083CpuScene_abd_bullet_large_reduced_pair_runtime_step)
+    ->Unit(benchmark::kMillisecond);
+
+static void BM_Plan083CpuScene_abd_complex_geometry_reduced_pair_runtime_step(
+    benchmark::State& state)
+{
+  runAbdComparisonReducedPairRuntimeStep(
+      state,
+      kAbdReducedComplexGeometryPairCount,
+      "row_abd_complex_geometry",
+      29.0,
+      1'200'000.0);
+}
+BENCHMARK(BM_Plan083CpuScene_abd_complex_geometry_reduced_pair_runtime_step)
+    ->Unit(benchmark::kMillisecond);
+
+//==============================================================================
+static void BM_Plan083CpuScene_abd_fem_coupling_reduced_side_by_side_step(
+    benchmark::State& state)
+{
+  AbdChainNetFixture affineFixture(kAbdReducedFemCouplingPairCount);
+  LyingFlatFixture deformableFixture;
+  sx::compute::SequentialExecutor executor;
+
+  std::vector<sxdetail::AffinePointTrianglePairRuntimeStepResult> lastResults;
+  sx::DeformableSolverDiagnostics lastDiagnostics;
+  std::size_t failedDeformableSteps = 0;
+
+  for (auto _ : state) {
+    state.PauseTiming();
+    deformableFixture.reset();
+    state.ResumeTiming();
+
+    lastResults = affineFixture.stepAll();
+    deformableFixture.world.step(executor);
+    lastDiagnostics
+        = deformableFixture.world.getLastDeformableSolverDiagnostics();
+    if (lastDiagnostics.bodyCount != 1u || lastDiagnostics.nodeCount == 0u
+        || !std::isfinite(deformableFixture.minClothHeight())) {
+      ++failedDeformableSteps;
+    }
+    for (const auto& result : lastResults) {
+      benchmark::DoNotOptimize(result.solve.pointState.translation.data());
+      benchmark::DoNotOptimize(result.solve.triangleState.translation.data());
+      benchmark::DoNotOptimize(result.solve.pointState.linearMap.data());
+      benchmark::DoNotOptimize(result.solve.triangleState.linearMap.data());
+    }
+    benchmark::DoNotOptimize(deformableFixture.cloth->getPosition(0).data());
+    benchmark::ClobberMemory();
+  }
+
+  std::size_t convergedSolveCount = 0;
+  std::size_t barrierActiveCount = 0;
+  std::size_t validStepCount = 0;
+  std::size_t failedStepCount = failedDeformableSteps;
+  std::size_t solverIterations = 0;
+  double totalObjectiveDecrease = 0.0;
+  double maxFinalGradientNorm = 0.0;
+  double minTargetSquaredDistance = std::numeric_limits<double>::infinity();
+  double minFinalSquaredDistance = std::numeric_limits<double>::infinity();
+  double maxLinearSpeed = 0.0;
+  double maxAffineVelocityNorm = 0.0;
+  double maxDisplacementNorm = 0.0;
+
+  for (std::size_t index = 0; index < lastResults.size(); ++index) {
+    const auto& result = lastResults[index];
+    const auto& pair = affineFixture.pairs[index];
+    if (result.valid) {
+      ++validStepCount;
+    }
+    if (result.converged) {
+      ++convergedSolveCount;
+    }
+    if (result.solve.barrierActive) {
+      ++barrierActiveCount;
+    }
+    if (!result.valid || !result.converged || !result.solve.barrierActive) {
+      ++failedStepCount;
+    }
+    solverIterations += static_cast<std::size_t>(result.solve.iterations);
+    totalObjectiveDecrease
+        += result.solve.initialValue - result.solve.finalValue;
+    maxFinalGradientNorm
+        = std::max(maxFinalGradientNorm, result.solve.finalGradientNorm);
+    maxLinearSpeed = std::max(maxLinearSpeed, result.maxLinearSpeed);
+    maxAffineVelocityNorm
+        = std::max(maxAffineVelocityNorm, result.maxAffineVelocityNorm);
+    maxDisplacementNorm = std::max(
+        maxDisplacementNorm,
+        std::max(
+            result.pointDisplacementNorm, result.triangleDisplacementNorm));
+    const auto targetBarrier = sxdetail::affinePointTriangleBarrier(
+        result.pointInertialTarget,
+        pair.point,
+        result.triangleInertialTarget,
+        pair.triangleA,
+        pair.triangleB,
+        pair.triangleC,
+        affineFixture.options.solve.barrier);
+    minTargetSquaredDistance = std::min(
+        minTargetSquaredDistance, targetBarrier.primitive.squaredDistance);
+    minFinalSquaredDistance
+        = std::min(minFinalSquaredDistance, result.solve.finalSquaredDistance);
+  }
+
+  state.counters["row_abd_fem_coupling"] = 1.0;
+  state.counters["paper_scale"] = 0.0;
+  state.counters["affine_body_count"]
+      = static_cast<double>(2u * kAbdReducedFemCouplingPairCount);
+  state.counters["dynamic_pair_count"]
+      = static_cast<double>(kAbdReducedFemCouplingPairCount);
+  state.counters["reduced_pair_count"]
+      = static_cast<double>(kAbdReducedFemCouplingPairCount);
+  state.counters["paper_body_count"] = 27.0;
+  state.counters["paper_triangle_count"] = 1'100'000.0;
+  state.counters["reference_baseline_measured"] = 0.0;
+  state.counters["valid_step_count"] = static_cast<double>(validStepCount);
+  state.counters["failed_steps"] = static_cast<double>(failedStepCount);
+  state.counters["converged_solve_count"]
+      = static_cast<double>(convergedSolveCount);
+  state.counters["barrier_active_count"]
+      = static_cast<double>(barrierActiveCount);
+  state.counters["solver_iterations"] = static_cast<double>(solverIterations);
+  state.counters["total_objective_decrease"] = totalObjectiveDecrease;
+  state.counters["max_final_gradient_norm"] = maxFinalGradientNorm;
+  state.counters["min_target_squared_distance"] = minTargetSquaredDistance;
+  state.counters["min_final_squared_distance"] = minFinalSquaredDistance;
+  state.counters["squared_activation_distance"]
+      = affineFixture.options.solve.barrier.squaredActivationDistance;
+  state.counters["max_linear_speed_m_s"] = maxLinearSpeed;
+  state.counters["max_affine_velocity_norm"] = maxAffineVelocityNorm;
+  state.counters["max_displacement_norm_m"] = maxDisplacementNorm;
+  state.counters["deformable_body_count"]
+      = static_cast<double>(lastDiagnostics.bodyCount);
+  state.counters["deformable_node_count"]
+      = static_cast<double>(lastDiagnostics.nodeCount);
+  state.counters["deformable_edge_count"]
+      = static_cast<double>(lastDiagnostics.edgeCount);
+  state.counters["surface_triangle_count"]
+      = static_cast<double>(deformableFixture.cloth->getSurfaceTriangleCount());
+  state.counters["deformable_solver_iterations"]
+      = static_cast<double>(lastDiagnostics.solverIterations);
+  state.counters["min_cloth_height_m"] = deformableFixture.minClothHeight();
+  state.counters["affine_fem_coupled_contact_measured"] = 0.0;
+}
+BENCHMARK(BM_Plan083CpuScene_abd_fem_coupling_reduced_side_by_side_step)
     ->Unit(benchmark::kMillisecond);
 
 //==============================================================================

@@ -155,8 +155,8 @@ packet tests, `pixi run lint`, `pixi run build`, and
 Implementation-roadmap Phases 3-8 landed together in PR #2960. The Phase 8
 audit at
 `docs/plans/083-unified-newton-barrier-multibody/completion-audit.md` records
-that PLAN-083 is not complete because planned manifest rows and explicit
-CPU/GPU scene-packet limitations remain. The audit intentionally blocks retiring
+that PLAN-083 is not complete because reduced in-progress manifest rows and
+explicit CPU/GPU scene-packet limitations remain. The audit intentionally blocks retiring
 `docs/dev_tasks/unified_newton_barrier_multibody/` until a maintainer decides
 whether the remaining work stays active there or moves fully into durable plan
 sidecars.
@@ -242,6 +242,14 @@ point-triangle pair runtime steps. These packets are not card-stack,
 wrecking-ball, or chain-net asset imports, rigid IPC timing comparisons,
 paper-scale ABD solvers, GPU packets, or completion claims.
 
+The remaining ABD manifest-packet follow-up is branch-local on
+`simx/plan083-abd-remaining-packets`: reduced complex-geometry and
+side-by-side ABD/FEM packets now cover the last planned manifest rows with
+generated affine pair runtime steps plus a deformable IPC smoke sidecar for the
+FEM row. These packets move the rows only to in-progress; they do not claim
+paper-scale complex geometry, true affine/FEM mixed contact, accepted reference
+timings, or completion.
+
 ## Last Session Summary
 
 Current slice: the one-branch runtime wiring follow-up has five checkpoint
@@ -249,7 +257,10 @@ commits, and the follow-on CPU corpus evidence branch adds reduced
 hanging-bridge, lying-flat, pulley, terrain vehicle, ragdoll, nunchaku,
 nunchaku scaling, umbrella, windmill, Candy, precession, timing-breakdown,
 Table 2 packets, the reduced affine point-triangle micro-solve diagnostic, and
-the sparse equality change-of-variable contract tests.
+the sparse equality change-of-variable contract tests. The current follow-up
+adds reduced ABD complex-geometry and side-by-side ABD/FEM packets so the
+remaining manifest rows become classified as in-progress without claiming
+paper-scale completion.
 The final docs pass should preserve that this is runtime smoke/correctness
 evidence, not paper-scale completion.
 
