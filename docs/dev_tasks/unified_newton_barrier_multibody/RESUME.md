@@ -207,12 +207,19 @@ range validation, 60-ragdoll scale, terrain navigation, angular-velocity sweep
 validation, Bullet/reference comparison, Fig. 24 subphase timing, full Table 2
 reproduction, coupled-contact scaling evidence, or a completion claim.
 
+The same branch now adds the sparse equality change-of-variable contract in
+`detail/newton_barrier/change_of_variable.hpp`, with focused primitive tests for
+rank detection, residual satisfaction, sparse free-coordinate basis structure,
+and KKT solve equivalence. This moves `unb-alg-change-var` to `in-progress` but
+does not claim runtime sparse assembly or pulley/sliding scene reproduction.
+
 ## Last Session Summary
 
 Current slice: the one-branch runtime wiring follow-up has five checkpoint
 commits, and the follow-on CPU corpus evidence branch adds reduced
 hanging-bridge, terrain vehicle, ragdoll, nunchaku, nunchaku scaling,
-windmill, precession, timing-breakdown, and Table 2 packets.
+windmill, precession, timing-breakdown, Table 2 packets, and the sparse
+equality change-of-variable contract tests.
 The final docs pass should preserve that this is runtime smoke/correctness
 evidence, not paper-scale completion.
 

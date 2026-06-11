@@ -197,6 +197,9 @@
         reduced corpus rows while keeping paper subphase timing future work.
   - [x] Add a reduced Table 2 setup/statistics CPU packet for runnable reduced
         rows while keeping missing mixed/constraint/ABD rows future work.
+  - [x] Add a sparse equality change-of-variable internal contract with rank,
+        residual, sparse free-coordinate basis, and KKT solve-equivalence tests
+        while keeping runtime sparse assembly future work.
   - [ ] Add paper-scale CPU packets only after the corresponding scene assets,
         mixed-domain stepping, and comparison baselines exist.
 
