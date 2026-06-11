@@ -334,6 +334,35 @@ public:
   /// again.
   void resetBreakage();
 
+  /// Set the AVBD point-joint row starting stiffness.
+  ///
+  /// This applies to public rigid-body/articulated point-joint facades that
+  /// extract into AVBD rows. Values must be finite and non-negative.
+  void setAvbdStartStiffness(double stiffness);
+
+  /// Get the AVBD point-joint row starting stiffness.
+  [[nodiscard]] double getAvbdStartStiffness() const;
+
+  /// Set the AVBD linear point-joint material stiffness.
+  ///
+  /// A finite value makes the point-joint linear rows finite-stiffness rows
+  /// that ramp up to this material stiffness and do not carry persistent duals.
+  /// Infinity keeps the default hard-constraint row behavior.
+  void setAvbdLinearStiffness(double stiffness);
+
+  /// Get the AVBD linear point-joint material stiffness.
+  [[nodiscard]] double getAvbdLinearStiffness() const;
+
+  /// Set the AVBD angular point-joint material stiffness.
+  ///
+  /// A finite value makes the point-joint angular rows finite-stiffness rows
+  /// that ramp up to this material stiffness and do not carry persistent duals.
+  /// Infinity keeps the default hard-constraint row behavior.
+  void setAvbdAngularStiffness(double stiffness);
+
+  /// Get the AVBD angular point-joint material stiffness.
+  [[nodiscard]] double getAvbdAngularStiffness() const;
+
   /// Get the parent link
   ///
   /// @return Parent Link handle

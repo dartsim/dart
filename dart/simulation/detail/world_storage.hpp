@@ -39,6 +39,7 @@
 #include <dart/common/stl_allocator.hpp>
 
 #include <optional>
+#include <set>
 #include <utility>
 #include <vector>
 
@@ -57,6 +58,7 @@ struct WorldStorage
   using DifferentiableParameter = std::pair<entt::entity, PhysicalParameter>;
   using DifferentiableParameterAllocator
       = dart::common::StlAllocator<DifferentiableParameter>;
+  using CollisionPairKey = std::pair<entt::entity, entt::entity>;
 
   explicit WorldStorage(dart::common::MemoryAllocator& allocator);
 
@@ -76,6 +78,11 @@ struct WorldStorage
   /// differentiable support is compiled (`DART_HAS_DIFF`); always empty
   /// otherwise.
   std::optional<StepDerivatives> stepDerivatives;
+
+  /// Persistent pair-level collision-query exclusions, stored with canonical
+  /// endpoint ordering. This scene-level filter is applied after broad-phase
+  /// candidate generation and before narrow-phase contact generation.
+  std::set<CollisionPairKey> ignoredCollisionPairs;
 };
 
 } // namespace dart::simulation::detail

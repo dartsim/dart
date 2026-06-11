@@ -344,6 +344,32 @@ public:
   dart::simulation::compute::KinematicsStage defaultStage;
 };
 
+class CountingGraphExecutor final
+  : public dart::simulation::compute::ComputeExecutor
+{
+public:
+  void execute(const dart::simulation::compute::ComputeGraph& graph) override
+  {
+    ++executionCount;
+    delegate.execute(graph);
+  }
+
+  [[nodiscard]] dart::simulation::compute::ComputeExecutionProfile
+  executeProfiled(const dart::simulation::compute::ComputeGraph& graph) override
+  {
+    ++executionCount;
+    return delegate.executeProfiled(graph);
+  }
+
+  [[nodiscard]] std::size_t getWorkerCount() const override
+  {
+    return delegate.getWorkerCount();
+  }
+
+  int executionCount{0};
+  dart::simulation::compute::SequentialExecutor delegate;
+};
+
 class NoOpWorldStage final : public dart::simulation::compute::WorldStepStage
 {
 public:
@@ -8802,6 +8828,188 @@ TEST(World, CollisionQueryCanFilterBodyTypePairs)
   }
 }
 
+// Test that persistent per-pair collision filters remove only the requested
+// pairs and accept both rigid-body and multibody-link frame handles.
+TEST(World, CollisionQueryCanIgnoreSpecificPairs)
+{
+  namespace sx = dart::simulation;
+
+  const auto hasContactBetween = [](const std::vector<sx::Contact>& contacts,
+                                    std::string_view first,
+                                    std::string_view second) {
+    for (const auto& contact : contacts) {
+      const auto nameA = contact.bodyA.getName();
+      const auto nameB = contact.bodyB.getName();
+      if ((nameA == first && nameB == second)
+          || (nameA == second && nameB == first)) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  {
+    sx::World world;
+
+    auto bodyA = world.addRigidBody("rigid_a");
+    bodyA.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+    sx::RigidBodyOptions bodyBOptions;
+    bodyBOptions.position = Eigen::Vector3d(0.4, 0.0, 0.0);
+    auto bodyB = world.addRigidBody("rigid_b", bodyBOptions);
+    bodyB.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+    sx::RigidBodyOptions bodyCOptions;
+    bodyCOptions.position = Eigen::Vector3d(0.8, 0.0, 0.0);
+    auto bodyC = world.addRigidBody("rigid_c", bodyCOptions);
+    bodyC.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+    ASSERT_TRUE(hasContactBetween(world.collide(), "rigid_a", "rigid_b"));
+    EXPECT_EQ(world.getIgnoredCollisionPairCount(), 0u);
+
+    world.setCollisionPairIgnored(bodyA, bodyB);
+    EXPECT_TRUE(world.isCollisionPairIgnored(bodyB, bodyA));
+    EXPECT_EQ(world.getIgnoredCollisionPairCount(), 1u);
+
+    const auto filteredContacts = world.collide();
+    EXPECT_FALSE(hasContactBetween(filteredContacts, "rigid_a", "rigid_b"));
+    EXPECT_TRUE(
+        hasContactBetween(filteredContacts, "rigid_a", "rigid_c")
+        || hasContactBetween(filteredContacts, "rigid_b", "rigid_c"));
+
+    world.setCollisionPairIgnored(bodyB, bodyA, false);
+    EXPECT_FALSE(world.isCollisionPairIgnored(bodyA, bodyB));
+    EXPECT_EQ(world.getIgnoredCollisionPairCount(), 0u);
+    EXPECT_TRUE(hasContactBetween(world.collide(), "rigid_a", "rigid_b"));
+
+    world.setCollisionPairIgnored(bodyA, bodyB);
+    world.clearIgnoredCollisionPairs();
+    EXPECT_EQ(world.getIgnoredCollisionPairCount(), 0u);
+    EXPECT_TRUE(hasContactBetween(world.collide(), "rigid_a", "rigid_b"));
+
+    EXPECT_THROW(
+        world.setCollisionPairIgnored(bodyA, bodyA),
+        sx::InvalidArgumentException);
+
+    sx::World otherWorld;
+    auto foreignBody = otherWorld.addRigidBody("foreign");
+    EXPECT_THROW(
+        world.setCollisionPairIgnored(bodyA, foreignBody),
+        sx::InvalidArgumentException);
+  }
+
+  {
+    sx::World world;
+
+    auto robot = world.addMultibody("robot");
+    auto link = robot.addLink("link");
+    link.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+    sx::RigidBodyOptions bodyOptions;
+    bodyOptions.position = Eigen::Vector3d(0.4, 0.0, 0.0);
+    auto body = world.addRigidBody("rigid", bodyOptions);
+    body.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+    world.enterSimulationMode();
+    ASSERT_TRUE(hasContactBetween(world.collide(), "link", "rigid"));
+
+    world.setCollisionPairIgnored(link, body);
+    EXPECT_TRUE(world.isCollisionPairIgnored(body, link));
+    EXPECT_TRUE(world.collide().empty());
+  }
+}
+
+// Public rigid-body joints act like source AVBD forces for collision discovery:
+// live constrained body pairs do not generate contact manifolds, and broken
+// joints make the pair collidable again.
+TEST(World, CollisionQuerySkipsLiveRigidBodyJointPairs)
+{
+  namespace sx = dart::simulation;
+
+  const auto hasContactBetween = [](const std::vector<sx::Contact>& contacts,
+                                    std::string_view first,
+                                    std::string_view second) {
+    for (const auto& contact : contacts) {
+      const auto nameA = contact.bodyA.getName();
+      const auto nameB = contact.bodyB.getName();
+      if ((nameA == first && nameB == second)
+          || (nameA == second && nameB == first)) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  sx::World world;
+
+  auto bodyA = world.addRigidBody("rigid_a");
+  bodyA.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  sx::RigidBodyOptions bodyBOptions;
+  bodyBOptions.position = Eigen::Vector3d(0.4, 0.0, 0.0);
+  auto bodyB = world.addRigidBody("rigid_b", bodyBOptions);
+  bodyB.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  sx::RigidBodyOptions bodyCOptions;
+  bodyCOptions.position = Eigen::Vector3d(0.8, 0.0, 0.0);
+  auto bodyC = world.addRigidBody("rigid_c", bodyCOptions);
+  bodyC.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  ASSERT_TRUE(hasContactBetween(world.collide(), "rigid_a", "rigid_b"));
+
+  auto joint = world.addRigidBodyFixedJoint("locked", bodyA, bodyB);
+  EXPECT_FALSE(world.isCollisionPairIgnored(bodyA, bodyB));
+  EXPECT_EQ(world.getIgnoredCollisionPairCount(), 0u);
+  const auto filteredContacts = world.collide();
+  EXPECT_FALSE(hasContactBetween(filteredContacts, "rigid_a", "rigid_b"));
+  ASSERT_TRUE(
+      hasContactBetween(filteredContacts, "rigid_a", "rigid_c")
+      || hasContactBetween(filteredContacts, "rigid_b", "rigid_c"));
+
+  auto& registry = sx::detail::registryOf(world);
+  auto& jointComponent = registry.get<sx::comps::Joint>(
+      sx::detail::toRegistryEntity(joint.getEntity()));
+  jointComponent.broken = true;
+  EXPECT_TRUE(joint.isBroken());
+  EXPECT_TRUE(hasContactBetween(world.collide(), "rigid_a", "rigid_b"));
+
+  joint.resetBreakage();
+  EXPECT_FALSE(joint.isBroken());
+  EXPECT_FALSE(hasContactBetween(world.collide(), "rigid_a", "rigid_b"));
+
+  {
+    sx::World allocationWorld;
+
+    auto allocationBodyA = allocationWorld.addRigidBody("allocation_rigid_a");
+    allocationBodyA.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+    sx::RigidBodyOptions allocationBodyBOptions;
+    allocationBodyBOptions.position = Eigen::Vector3d(0.4, 0.0, 0.0);
+    auto allocationBodyB = allocationWorld.addRigidBody(
+        "allocation_rigid_b", allocationBodyBOptions);
+    allocationBodyB.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+    auto allocationJoint = allocationWorld.addRigidBodyFixedJoint(
+        "allocation_locked", allocationBodyA, allocationBodyB);
+    EXPECT_FALSE(allocationJoint.isBroken());
+
+    ASSERT_TRUE(allocationWorld.collide().empty());
+
+    // The live-joint pair set is query-local state, but it must reuse cache
+    // storage after warmup so AVBD contact discovery does not allocate each
+    // step when filtering candidate pairs.
+    ScopedHeapAllocationCounter heapCounter;
+    for (int i = 0; i < 4; ++i) {
+      EXPECT_TRUE(allocationWorld.collide().empty());
+    }
+    heapCounter.stop();
+    EXPECT_EQ(heapCounter.allocationCount(), 0u)
+        << "global heap bytes allocated during warmed contact queries: "
+        << heapCounter.allocationBytes();
+    EXPECT_EQ(heapCounter.allocationBytes(), 0u);
+  }
+}
+
 // Test that a multibody link with a collision shape rests on a static ground
 // via the articulated contact response (a fixed-base prismatic "leg" drops
 // under gravity and stops where its sphere meets the ground).
@@ -9574,6 +9782,3763 @@ TEST(World, RigidBodyContactResolvesApproachingVelocity)
     EXPECT_NEAR(bodyA.getLinearVelocity().x(), -1.0, 1e-9);
     EXPECT_NEAR(bodyB.getLinearVelocity().x(), 1.0, 1e-9);
   }
+}
+
+// Test that opt-in AVBD rigid contact projection handles a live
+// dynamic/dynamic contact in the contact stage itself. The stage writes
+// separating velocities for the following position stage instead of directly
+// moving poses like the sequential fallback.
+TEST(World, RigidBodyContactStageAvbdProjectsDynamicDynamicContactVelocity)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.05);
+
+  sx::RigidBodyOptions optionsA;
+  optionsA.mass = 1.0;
+  optionsA.position = Eigen::Vector3d(-0.45, 0.0, 0.0);
+  auto bodyA = world.addRigidBody("avbd_contact_a", optionsA);
+  bodyA.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  sx::RigidBodyOptions optionsB;
+  optionsB.mass = 1.0;
+  optionsB.position = Eigen::Vector3d(0.45, 0.0, 0.0);
+  auto bodyB = world.addRigidBody("avbd_contact_b", optionsB);
+  bodyB.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  auto& registry = sx::detail::registryOf(world);
+  const auto configureAvbdContact = [&](const sx::RigidBody& body) {
+    auto& config = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+        sx::detail::toRegistryEntity(body.getEntity()));
+    config.startStiffness = 200.0;
+    config.maxStiffness = 200.0;
+  };
+  configureAvbdContact(bodyA);
+  configureAvbdContact(bodyB);
+
+  const Eigen::Vector3d initialPositionA = bodyA.getTranslation();
+  const Eigen::Vector3d initialPositionB = bodyB.getTranslation();
+  ASSERT_FALSE(world.collide().empty());
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidBodyContactStage contactStage(/*iterations=*/8);
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(contactStage);
+  world.step(executor, pipeline);
+
+  EXPECT_TRUE(bodyA.getTranslation().isApprox(initialPositionA, 1e-12));
+  EXPECT_TRUE(bodyB.getTranslation().isApprox(initialPositionB, 1e-12));
+  EXPECT_LT(bodyA.getLinearVelocity().x(), -1e-9);
+  EXPECT_GT(bodyB.getLinearVelocity().x(), 1e-9);
+  EXPECT_GT(
+      (bodyB.getLinearVelocity() - bodyA.getLinearVelocity())
+          .dot(Eigen::Vector3d::UnitX()),
+      1e-6);
+}
+
+// Test that default World::step() reaches dynamic/dynamic AVBD contact-stage
+// projection and feeds the projected velocities to the position stage.
+TEST(World, RigidBodyContactStageAvbdDynamicDynamicRunsThroughDefaultWorldStep)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.05);
+
+  sx::RigidBodyOptions optionsA;
+  optionsA.mass = 1.0;
+  optionsA.position = Eigen::Vector3d(-0.45, 0.0, 0.0);
+  auto bodyA = world.addRigidBody("avbd_default_dynamic_a", optionsA);
+  bodyA.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  sx::RigidBodyOptions optionsB;
+  optionsB.mass = 1.0;
+  optionsB.position = Eigen::Vector3d(0.45, 0.0, 0.0);
+  auto bodyB = world.addRigidBody("avbd_default_dynamic_b", optionsB);
+  bodyB.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  auto& registry = sx::detail::registryOf(world);
+  const auto configureAvbdContact = [&](const sx::RigidBody& body) {
+    auto& config = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+        sx::detail::toRegistryEntity(body.getEntity()));
+    config.startStiffness = 200.0;
+    config.maxStiffness = 200.0;
+  };
+  configureAvbdContact(bodyA);
+  configureAvbdContact(bodyB);
+
+  const Eigen::Vector3d initialPositionA = bodyA.getTranslation();
+  const Eigen::Vector3d initialPositionB = bodyB.getTranslation();
+  ASSERT_FALSE(world.collide().empty());
+
+  world.step();
+
+  EXPECT_LT(bodyA.getTranslation().x(), initialPositionA.x() - 1e-9);
+  EXPECT_GT(bodyB.getTranslation().x(), initialPositionB.x() + 1e-9);
+  EXPECT_TRUE(bodyA.getTranslation().tail<2>().isApprox(
+      initialPositionA.tail<2>(), 1e-12));
+  EXPECT_TRUE(bodyB.getTranslation().tail<2>().isApprox(
+      initialPositionB.tail<2>(), 1e-12));
+  EXPECT_LT(bodyA.getLinearVelocity().x(), -1e-9);
+  EXPECT_GT(bodyB.getLinearVelocity().x(), 1e-9);
+  EXPECT_GT(
+      (bodyB.getLinearVelocity() - bodyA.getLinearVelocity())
+          .dot(Eigen::Vector3d::UnitX()),
+      1e-6);
+}
+
+// Test that a dynamic/dynamic contact can opt into the contact-stage AVBD path
+// when only one dynamic endpoint carries the private config.
+TEST(World, RigidBodyContactStageAvbdProjectsDynamicPairWithSingleConfig)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.05);
+
+  sx::RigidBodyOptions optionsA;
+  optionsA.mass = 1.0;
+  optionsA.position = Eigen::Vector3d(-0.45, 0.0, 0.0);
+  auto bodyA = world.addRigidBody("avbd_single_config_a", optionsA);
+  bodyA.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  sx::RigidBodyOptions optionsB;
+  optionsB.mass = 1.0;
+  optionsB.position = Eigen::Vector3d(0.45, 0.0, 0.0);
+  auto bodyB = world.addRigidBody("avbd_single_config_b", optionsB);
+  bodyB.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  auto& registry = sx::detail::registryOf(world);
+  auto& config = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+      sx::detail::toRegistryEntity(bodyA.getEntity()));
+  config.startStiffness = 200.0;
+  config.maxStiffness = 200.0;
+
+  const Eigen::Vector3d initialPositionA = bodyA.getTranslation();
+  const Eigen::Vector3d initialPositionB = bodyB.getTranslation();
+  ASSERT_FALSE(world.collide().empty());
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidBodyContactStage contactStage(/*iterations=*/8);
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(contactStage);
+  world.step(executor, pipeline);
+
+  EXPECT_TRUE(bodyA.getTranslation().isApprox(initialPositionA, 1e-12));
+  EXPECT_TRUE(bodyB.getTranslation().isApprox(initialPositionB, 1e-12));
+  EXPECT_LT(bodyA.getLinearVelocity().x(), -1e-9);
+  EXPECT_GT(bodyB.getLinearVelocity().x(), 1e-9);
+  EXPECT_GT(
+      (bodyB.getLinearVelocity() - bodyA.getLinearVelocity())
+          .dot(Eigen::Vector3d::UnitX()),
+      1e-6);
+}
+
+// Test that default World::step() also reaches dynamic/dynamic AVBD projection
+// when only one dynamic endpoint carries the private config.
+TEST(
+    World,
+    RigidBodyContactStageAvbdDynamicPairWithSingleConfigRunsThroughDefaultWorldStep)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.05);
+
+  sx::RigidBodyOptions optionsA;
+  optionsA.mass = 1.0;
+  optionsA.position = Eigen::Vector3d(-0.45, 0.0, 0.0);
+  auto bodyA = world.addRigidBody("avbd_default_single_config_a", optionsA);
+  bodyA.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  sx::RigidBodyOptions optionsB;
+  optionsB.mass = 1.0;
+  optionsB.position = Eigen::Vector3d(0.45, 0.0, 0.0);
+  auto bodyB = world.addRigidBody("avbd_default_single_config_b", optionsB);
+  bodyB.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  auto& registry = sx::detail::registryOf(world);
+  auto& config = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+      sx::detail::toRegistryEntity(bodyA.getEntity()));
+  config.startStiffness = 200.0;
+  config.maxStiffness = 200.0;
+
+  const Eigen::Vector3d initialPositionA = bodyA.getTranslation();
+  const Eigen::Vector3d initialPositionB = bodyB.getTranslation();
+  ASSERT_FALSE(world.collide().empty());
+
+  world.step();
+
+  EXPECT_LT(bodyA.getTranslation().x(), initialPositionA.x() - 1e-9);
+  EXPECT_GT(bodyB.getTranslation().x(), initialPositionB.x() + 1e-9);
+  EXPECT_TRUE(bodyA.getTranslation().tail<2>().isApprox(
+      initialPositionA.tail<2>(), 1e-12));
+  EXPECT_TRUE(bodyB.getTranslation().tail<2>().isApprox(
+      initialPositionB.tail<2>(), 1e-12));
+  EXPECT_LT(bodyA.getLinearVelocity().x(), -1e-9);
+  EXPECT_GT(bodyB.getLinearVelocity().x(), 1e-9);
+  EXPECT_GT(
+      (bodyB.getLinearVelocity() - bodyA.getLinearVelocity())
+          .dot(Eigen::Vector3d::UnitX()),
+      1e-6);
+}
+
+// Test that the private AVBD contact-stage opt-in also activates for a
+// static/dynamic contact when only the dynamic body carries the private config.
+TEST(World, RigidBodyContactStageAvbdProjectsStaticDynamicContactVelocity)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.05);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.25);
+  auto ground = world.addRigidBody("avbd_contact_ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(2.0, 2.0, 0.25)));
+
+  sx::RigidBodyOptions sphereOptions;
+  sphereOptions.mass = 1.0;
+  sphereOptions.position = Eigen::Vector3d(0.0, 0.0, 0.4);
+  auto sphere = world.addRigidBody("avbd_contact_sphere", sphereOptions);
+  sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  auto& registry = sx::detail::registryOf(world);
+  auto& config = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+      sx::detail::toRegistryEntity(sphere.getEntity()));
+  config.startStiffness = 200.0;
+  config.maxStiffness = 200.0;
+
+  const Eigen::Vector3d initialGroundPosition = ground.getTranslation();
+  const Eigen::Vector3d initialSpherePosition = sphere.getTranslation();
+  ASSERT_FALSE(world.collide().empty());
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidBodyContactStage contactStage(/*iterations=*/8);
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(contactStage);
+  world.step(executor, pipeline);
+
+  EXPECT_TRUE(ground.getTranslation().isApprox(initialGroundPosition, 1e-12));
+  EXPECT_TRUE(sphere.getTranslation().isApprox(initialSpherePosition, 1e-12));
+  EXPECT_TRUE(ground.getLinearVelocity().isApprox(Eigen::Vector3d::Zero()));
+  EXPECT_GT(sphere.getLinearVelocity().z(), 1e-9);
+}
+
+// Test that AVBD contact-stage velocity projection feeds the following rigid
+// body position stage instead of requiring direct pose writeback.
+TEST(World, RigidBodyContactStageAvbdFeedsRigidBodyPositionStage)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.05);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.25);
+  auto ground = world.addRigidBody("avbd_position_ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(2.0, 2.0, 0.25)));
+
+  sx::RigidBodyOptions sphereOptions;
+  sphereOptions.mass = 1.0;
+  sphereOptions.position = Eigen::Vector3d(0.0, 0.0, 0.4);
+  auto sphere = world.addRigidBody("avbd_position_sphere", sphereOptions);
+  sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  auto& registry = sx::detail::registryOf(world);
+  auto& config = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+      sx::detail::toRegistryEntity(sphere.getEntity()));
+  config.startStiffness = 200.0;
+  config.maxStiffness = 200.0;
+
+  const Eigen::Vector3d initialGroundPosition = ground.getTranslation();
+  const Eigen::Vector3d initialSpherePosition = sphere.getTranslation();
+  ASSERT_FALSE(world.collide().empty());
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidBodyContactStage contactStage(/*iterations=*/8);
+  sx::compute::RigidBodyPositionStage positionStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(contactStage).addStage(positionStage);
+  world.step(executor, pipeline);
+
+  EXPECT_TRUE(ground.getTranslation().isApprox(initialGroundPosition, 1e-12));
+  EXPECT_GT(sphere.getTranslation().z(), initialSpherePosition.z() + 1e-9);
+  EXPECT_TRUE(sphere.getTranslation().head<2>().isApprox(
+      initialSpherePosition.head<2>(), 1e-12));
+  EXPECT_TRUE(ground.getLinearVelocity().isApprox(Eigen::Vector3d::Zero()));
+  EXPECT_GT(sphere.getLinearVelocity().z(), 1e-9);
+}
+
+// Test that the built-in World::step() schedule reaches the same AVBD
+// contact-stage velocity projection before the rigid body position stage.
+TEST(World, RigidBodyContactStageAvbdRunsThroughDefaultWorldStep)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.05);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.25);
+  auto ground = world.addRigidBody("avbd_default_ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(2.0, 2.0, 0.25)));
+
+  sx::RigidBodyOptions sphereOptions;
+  sphereOptions.mass = 1.0;
+  sphereOptions.position = Eigen::Vector3d(0.0, 0.0, 0.4);
+  auto sphere = world.addRigidBody("avbd_default_sphere", sphereOptions);
+  sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  auto& registry = sx::detail::registryOf(world);
+  auto& config = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+      sx::detail::toRegistryEntity(sphere.getEntity()));
+  config.startStiffness = 200.0;
+  config.maxStiffness = 200.0;
+
+  const Eigen::Vector3d initialGroundPosition = ground.getTranslation();
+  const Eigen::Vector3d initialSpherePosition = sphere.getTranslation();
+  ASSERT_FALSE(world.collide().empty());
+
+  world.step();
+
+  EXPECT_TRUE(ground.getTranslation().isApprox(initialGroundPosition, 1e-12));
+  EXPECT_GT(sphere.getTranslation().z(), initialSpherePosition.z() + 1e-9);
+  EXPECT_TRUE(sphere.getTranslation().head<2>().isApprox(
+      initialSpherePosition.head<2>(), 1e-12));
+  EXPECT_TRUE(ground.getLinearVelocity().isApprox(Eigen::Vector3d::Zero()));
+  EXPECT_GT(sphere.getLinearVelocity().z(), 1e-9);
+}
+
+// Test that static/dynamic AVBD contact-stage activation is keyed by either
+// contact endpoint, including the static endpoint.
+TEST(World, RigidBodyContactStageAvbdProjectsStaticOwnedContactConfig)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.05);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.25);
+  auto ground = world.addRigidBody("avbd_static_owned_ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(2.0, 2.0, 0.25)));
+
+  sx::RigidBodyOptions sphereOptions;
+  sphereOptions.mass = 1.0;
+  sphereOptions.position = Eigen::Vector3d(0.0, 0.0, 0.4);
+  auto sphere = world.addRigidBody("avbd_static_owned_sphere", sphereOptions);
+  sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  auto& registry = sx::detail::registryOf(world);
+  auto& config = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+      sx::detail::toRegistryEntity(ground.getEntity()));
+  config.startStiffness = 200.0;
+  config.maxStiffness = 200.0;
+
+  const Eigen::Vector3d initialGroundPosition = ground.getTranslation();
+  const Eigen::Vector3d initialSpherePosition = sphere.getTranslation();
+  ASSERT_FALSE(world.collide().empty());
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidBodyContactStage contactStage(/*iterations=*/8);
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(contactStage);
+  world.step(executor, pipeline);
+
+  EXPECT_TRUE(ground.getTranslation().isApprox(initialGroundPosition, 1e-12));
+  EXPECT_TRUE(sphere.getTranslation().isApprox(initialSpherePosition, 1e-12));
+  EXPECT_TRUE(ground.getLinearVelocity().isApprox(Eigen::Vector3d::Zero()));
+  EXPECT_GT(sphere.getLinearVelocity().z(), 1e-9);
+}
+
+// Test that the built-in World::step() schedule reaches static-owned
+// static/dynamic AVBD contact-stage activation.
+TEST(World, RigidBodyContactStageAvbdStaticOwnedRunsThroughDefaultWorldStep)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.05);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.25);
+  auto ground
+      = world.addRigidBody("avbd_default_static_owned_ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(2.0, 2.0, 0.25)));
+
+  sx::RigidBodyOptions sphereOptions;
+  sphereOptions.mass = 1.0;
+  sphereOptions.position = Eigen::Vector3d(0.0, 0.0, 0.4);
+  auto sphere
+      = world.addRigidBody("avbd_default_static_owned_sphere", sphereOptions);
+  sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  auto& registry = sx::detail::registryOf(world);
+  auto& config = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+      sx::detail::toRegistryEntity(ground.getEntity()));
+  config.startStiffness = 200.0;
+  config.maxStiffness = 200.0;
+
+  const Eigen::Vector3d initialGroundPosition = ground.getTranslation();
+  const Eigen::Vector3d initialSpherePosition = sphere.getTranslation();
+  ASSERT_FALSE(world.collide().empty());
+
+  world.step();
+
+  EXPECT_TRUE(ground.getTranslation().isApprox(initialGroundPosition, 1e-12));
+  EXPECT_GT(sphere.getTranslation().z(), initialSpherePosition.z() + 1e-9);
+  EXPECT_TRUE(sphere.getTranslation().head<2>().isApprox(
+      initialSpherePosition.head<2>(), 1e-12));
+  EXPECT_TRUE(ground.getLinearVelocity().isApprox(Eigen::Vector3d::Zero()));
+  EXPECT_GT(sphere.getLinearVelocity().z(), 1e-9);
+}
+
+// Test that static-body stored velocities do not behave like moving obstacles
+// in the static-owned AVBD contact-stage path.
+TEST(World, RigidBodyContactStageAvbdIgnoresStoredStaticVelocity)
+{
+  namespace sx = dart::simulation;
+
+  struct ContactStageOutcome
+  {
+    Eigen::Vector3d linearVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d angularVelocity = Eigen::Vector3d::Zero();
+  };
+
+  const auto runContactStage = [](const bool storeStaticVelocity) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.05);
+
+    sx::RigidBodyOptions obstacleOptions;
+    obstacleOptions.isStatic = true;
+    obstacleOptions.position = Eigen::Vector3d::Zero();
+    auto obstacle
+        = world.addRigidBody("avbd_static_velocity_obstacle", obstacleOptions);
+    obstacle.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+    sx::RigidBodyOptions dynamicOptions;
+    dynamicOptions.mass = 1.0;
+    dynamicOptions.position = Eigen::Vector3d(0.9, 0.0, 0.0);
+    auto dynamic
+        = world.addRigidBody("avbd_static_velocity_dynamic", dynamicOptions);
+    dynamic.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+    auto& registry = sx::detail::registryOf(world);
+    auto& config = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+        sx::detail::toRegistryEntity(obstacle.getEntity()));
+    config.startStiffness = 200.0;
+    config.maxStiffness = 200.0;
+
+    const Eigen::Vector3d initialObstaclePosition = obstacle.getTranslation();
+    const Eigen::Vector3d initialDynamicPosition = dynamic.getTranslation();
+    const auto contacts = world.collide();
+    EXPECT_FALSE(contacts.empty());
+    if (contacts.empty()) {
+      return ContactStageOutcome{};
+    }
+
+    constexpr double staticSpeed = 5.0;
+    if (storeStaticVelocity) {
+      const auto& contact = contacts.front();
+      if (contact.bodyA.getEntity() == obstacle.getEntity()) {
+        obstacle.setLinearVelocity(staticSpeed * contact.normal);
+      } else {
+        EXPECT_EQ(contact.bodyB.getEntity(), obstacle.getEntity());
+        obstacle.setLinearVelocity(-staticSpeed * contact.normal);
+      }
+    }
+
+    sx::compute::SequentialExecutor executor;
+    sx::compute::RigidBodyContactStage contactStage(/*iterations=*/8);
+    sx::compute::WorldStepPipeline pipeline;
+    pipeline.addStage(contactStage);
+    world.step(executor, pipeline);
+
+    EXPECT_TRUE(
+        obstacle.getTranslation().isApprox(initialObstaclePosition, 1e-12));
+    EXPECT_TRUE(
+        dynamic.getTranslation().isApprox(initialDynamicPosition, 1e-12));
+    EXPECT_NEAR(
+        obstacle.getLinearVelocity().norm(),
+        storeStaticVelocity ? staticSpeed : 0.0,
+        1e-12);
+
+    return ContactStageOutcome{
+        dynamic.getLinearVelocity(), dynamic.getAngularVelocity()};
+  };
+
+  const ContactStageOutcome baseline = runContactStage(false);
+  const ContactStageOutcome movingStatic = runContactStage(true);
+
+  EXPECT_GT(baseline.linearVelocity.x(), 1e-9);
+  EXPECT_TRUE(
+      movingStatic.linearVelocity.isApprox(baseline.linearVelocity, 1e-12));
+  EXPECT_TRUE(
+      movingStatic.angularVelocity.isApprox(baseline.angularVelocity, 1e-12));
+}
+
+// Test that kinematic bodies are fixed endpoints in the AVBD contact-stage path
+// and their prescribed velocity does not perturb contact projection.
+TEST(World, RigidBodyContactStageAvbdTreatsKinematicBodyAsStaticObstacle)
+{
+  namespace sx = dart::simulation;
+
+  struct ContactStageOutcome
+  {
+    Eigen::Vector3d obstaclePosition = Eigen::Vector3d::Zero();
+    Eigen::Vector3d obstacleLinearVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d dynamicLinearVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d dynamicAngularVelocity = Eigen::Vector3d::Zero();
+  };
+
+  const auto runContactStage = [](const bool prescribeKinematicVelocity) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.05);
+
+    sx::RigidBodyOptions obstacleOptions;
+    obstacleOptions.position = Eigen::Vector3d::Zero();
+    auto obstacle
+        = world.addRigidBody("avbd_kinematic_obstacle", obstacleOptions);
+    obstacle.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+    obstacle.setKinematic(true);
+    EXPECT_TRUE(obstacle.isKinematic());
+    EXPECT_FALSE(obstacle.isStatic());
+
+    sx::RigidBodyOptions dynamicOptions;
+    dynamicOptions.mass = 1.0;
+    dynamicOptions.position = Eigen::Vector3d(0.9, 0.0, 0.0);
+    auto dynamic = world.addRigidBody("avbd_kinematic_dynamic", dynamicOptions);
+    dynamic.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+    auto& registry = sx::detail::registryOf(world);
+    auto& config = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+        sx::detail::toRegistryEntity(obstacle.getEntity()));
+    config.startStiffness = 200.0;
+    config.maxStiffness = 200.0;
+
+    const Eigen::Vector3d initialObstaclePosition = obstacle.getTranslation();
+    const Eigen::Vector3d initialDynamicPosition = dynamic.getTranslation();
+    const auto contacts = world.collide();
+    EXPECT_FALSE(contacts.empty());
+    if (contacts.empty()) {
+      return ContactStageOutcome{};
+    }
+
+    constexpr double kinematicSpeed = 5.0;
+    if (prescribeKinematicVelocity) {
+      const auto& contact = contacts.front();
+      if (contact.bodyA.getEntity() == obstacle.getEntity()) {
+        obstacle.setLinearVelocity(kinematicSpeed * contact.normal);
+      } else {
+        EXPECT_EQ(contact.bodyB.getEntity(), obstacle.getEntity());
+        obstacle.setLinearVelocity(-kinematicSpeed * contact.normal);
+      }
+    }
+
+    sx::compute::SequentialExecutor executor;
+    sx::compute::RigidBodyContactStage contactStage(/*iterations=*/8);
+    sx::compute::WorldStepPipeline pipeline;
+    pipeline.addStage(contactStage);
+    world.step(executor, pipeline);
+
+    EXPECT_TRUE(obstacle.isKinematic());
+    EXPECT_FALSE(obstacle.isStatic());
+    EXPECT_TRUE(
+        obstacle.getTranslation().isApprox(initialObstaclePosition, 1e-12));
+    EXPECT_TRUE(
+        dynamic.getTranslation().isApprox(initialDynamicPosition, 1e-12));
+    EXPECT_NEAR(
+        obstacle.getLinearVelocity().norm(),
+        prescribeKinematicVelocity ? kinematicSpeed : 0.0,
+        1e-12);
+
+    return ContactStageOutcome{
+        obstacle.getTranslation(),
+        obstacle.getLinearVelocity(),
+        dynamic.getLinearVelocity(),
+        dynamic.getAngularVelocity()};
+  };
+
+  const ContactStageOutcome baseline = runContactStage(false);
+  const ContactStageOutcome movingKinematic = runContactStage(true);
+
+  EXPECT_GT(baseline.dynamicLinearVelocity.x(), 1e-9);
+  EXPECT_TRUE(movingKinematic.obstaclePosition.isApprox(
+      baseline.obstaclePosition, 1e-12));
+  EXPECT_TRUE(movingKinematic.dynamicLinearVelocity.isApprox(
+      baseline.dynamicLinearVelocity, 1e-12));
+  EXPECT_TRUE(movingKinematic.dynamicAngularVelocity.isApprox(
+      baseline.dynamicAngularVelocity, 1e-12));
+}
+
+// Test that the built-in World::step() path also treats kinematic AVBD contact
+// endpoints as fixed/prescribed and feeds the projected dynamic velocity to the
+// rigid body position stage.
+TEST(World, RigidBodyContactStageAvbdKinematicRunsThroughDefaultWorldStep)
+{
+  namespace sx = dart::simulation;
+
+  struct StepOutcome
+  {
+    Eigen::Vector3d obstaclePosition = Eigen::Vector3d::Zero();
+    Eigen::Vector3d obstacleLinearVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d dynamicPosition = Eigen::Vector3d::Zero();
+    Eigen::Vector3d dynamicLinearVelocity = Eigen::Vector3d::Zero();
+  };
+
+  const auto runDefaultStep = [](const bool prescribeKinematicVelocity) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.05);
+
+    sx::RigidBodyOptions obstacleOptions;
+    obstacleOptions.position = Eigen::Vector3d::Zero();
+    auto obstacle = world.addRigidBody(
+        "avbd_default_kinematic_obstacle", obstacleOptions);
+    obstacle.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+    obstacle.setKinematic(true);
+    EXPECT_TRUE(obstacle.isKinematic());
+    EXPECT_FALSE(obstacle.isStatic());
+
+    sx::RigidBodyOptions dynamicOptions;
+    dynamicOptions.mass = 1.0;
+    dynamicOptions.position = Eigen::Vector3d(0.9, 0.0, 0.0);
+    auto dynamic
+        = world.addRigidBody("avbd_default_kinematic_dynamic", dynamicOptions);
+    dynamic.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+    auto& registry = sx::detail::registryOf(world);
+    auto& config = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+        sx::detail::toRegistryEntity(obstacle.getEntity()));
+    config.startStiffness = 200.0;
+    config.maxStiffness = 200.0;
+
+    const Eigen::Vector3d initialObstaclePosition = obstacle.getTranslation();
+    const Eigen::Vector3d initialDynamicPosition = dynamic.getTranslation();
+    const auto contacts = world.collide();
+    EXPECT_FALSE(contacts.empty());
+    if (contacts.empty()) {
+      return StepOutcome{};
+    }
+
+    constexpr double kinematicSpeed = 5.0;
+    if (prescribeKinematicVelocity) {
+      const auto& contact = contacts.front();
+      if (contact.bodyA.getEntity() == obstacle.getEntity()) {
+        obstacle.setLinearVelocity(kinematicSpeed * contact.normal);
+      } else {
+        EXPECT_EQ(contact.bodyB.getEntity(), obstacle.getEntity());
+        obstacle.setLinearVelocity(-kinematicSpeed * contact.normal);
+      }
+    }
+
+    world.step();
+
+    EXPECT_TRUE(obstacle.isKinematic());
+    EXPECT_FALSE(obstacle.isStatic());
+    EXPECT_TRUE(
+        obstacle.getTranslation().isApprox(initialObstaclePosition, 1e-12));
+    EXPECT_GT((dynamic.getTranslation() - initialDynamicPosition).norm(), 1e-9);
+    EXPECT_NEAR(
+        obstacle.getLinearVelocity().norm(),
+        prescribeKinematicVelocity ? kinematicSpeed : 0.0,
+        1e-12);
+
+    return StepOutcome{
+        obstacle.getTranslation(),
+        obstacle.getLinearVelocity(),
+        dynamic.getTranslation(),
+        dynamic.getLinearVelocity()};
+  };
+
+  const StepOutcome baseline = runDefaultStep(false);
+  const StepOutcome movingKinematic = runDefaultStep(true);
+
+  EXPECT_TRUE(movingKinematic.obstaclePosition.isApprox(
+      baseline.obstaclePosition, 1e-12));
+  EXPECT_TRUE(movingKinematic.dynamicPosition.isApprox(
+      baseline.dynamicPosition, 1e-12));
+  EXPECT_TRUE(movingKinematic.dynamicLinearVelocity.isApprox(
+      baseline.dynamicLinearVelocity, 1e-12));
+}
+
+// Test that a disabled peer config does not veto contact-stage AVBD activation
+// when the other contact endpoint carries an enabled private config.
+TEST(World, RigidBodyContactStageAvbdProjectsEnabledPeerWithDisabledConfig)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.05);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.25);
+  auto ground = world.addRigidBody("avbd_disabled_peer_ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(2.0, 2.0, 0.25)));
+
+  sx::RigidBodyOptions sphereOptions;
+  sphereOptions.mass = 1.0;
+  sphereOptions.position = Eigen::Vector3d(0.0, 0.0, 0.4);
+  auto sphere = world.addRigidBody("avbd_disabled_peer_sphere", sphereOptions);
+  sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  auto& registry = sx::detail::registryOf(world);
+  auto& groundConfig = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+      sx::detail::toRegistryEntity(ground.getEntity()));
+  groundConfig.enabled = false;
+  groundConfig.startStiffness = 10000.0;
+  groundConfig.maxStiffness = 10000.0;
+
+  auto& sphereConfig = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+      sx::detail::toRegistryEntity(sphere.getEntity()));
+  sphereConfig.startStiffness = 200.0;
+  sphereConfig.maxStiffness = 200.0;
+
+  const Eigen::Vector3d initialGroundPosition = ground.getTranslation();
+  const Eigen::Vector3d initialSpherePosition = sphere.getTranslation();
+  ASSERT_FALSE(world.collide().empty());
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidBodyContactStage contactStage(/*iterations=*/8);
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(contactStage);
+  world.step(executor, pipeline);
+
+  EXPECT_TRUE(ground.getTranslation().isApprox(initialGroundPosition, 1e-12));
+  EXPECT_TRUE(sphere.getTranslation().isApprox(initialSpherePosition, 1e-12));
+  EXPECT_TRUE(ground.getLinearVelocity().isApprox(Eigen::Vector3d::Zero()));
+  EXPECT_GT(sphere.getLinearVelocity().z(), 1e-9);
+}
+
+// Test that the built-in World::step() schedule also ignores a disabled peer
+// config when the other endpoint enables AVBD contact-stage projection.
+TEST(
+    World,
+    RigidBodyContactStageAvbdEnabledPeerWithDisabledConfigRunsThroughDefaultWorldStep)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.05);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.25);
+  auto ground
+      = world.addRigidBody("avbd_default_disabled_peer_ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(2.0, 2.0, 0.25)));
+
+  sx::RigidBodyOptions sphereOptions;
+  sphereOptions.mass = 1.0;
+  sphereOptions.position = Eigen::Vector3d(0.0, 0.0, 0.4);
+  auto sphere
+      = world.addRigidBody("avbd_default_disabled_peer_sphere", sphereOptions);
+  sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  auto& registry = sx::detail::registryOf(world);
+  auto& groundConfig = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+      sx::detail::toRegistryEntity(ground.getEntity()));
+  groundConfig.enabled = false;
+  groundConfig.startStiffness = 10000.0;
+  groundConfig.maxStiffness = 10000.0;
+
+  auto& sphereConfig = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+      sx::detail::toRegistryEntity(sphere.getEntity()));
+  sphereConfig.startStiffness = 200.0;
+  sphereConfig.maxStiffness = 200.0;
+
+  const Eigen::Vector3d initialGroundPosition = ground.getTranslation();
+  const Eigen::Vector3d initialSpherePosition = sphere.getTranslation();
+  ASSERT_FALSE(world.collide().empty());
+
+  world.step();
+
+  EXPECT_TRUE(ground.getTranslation().isApprox(initialGroundPosition, 1e-12));
+  EXPECT_GT(sphere.getTranslation().z(), initialSpherePosition.z() + 1e-9);
+  EXPECT_TRUE(sphere.getTranslation().head<2>().isApprox(
+      initialSpherePosition.head<2>(), 1e-12));
+  EXPECT_TRUE(ground.getLinearVelocity().isApprox(Eigen::Vector3d::Zero()));
+  EXPECT_GT(sphere.getLinearVelocity().z(), 1e-9);
+}
+
+// Test that the AVBD contact-stage path handles a live configured contact set
+// with multiple static/dynamic contacts, not only a single manifold.
+TEST(World, RigidBodyContactStageAvbdProjectsMultipleConfiguredContacts)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.05);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.25);
+  auto ground = world.addRigidBody("avbd_multi_ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(4.0, 2.0, 0.25)));
+
+  sx::RigidBodyOptions leftOptions;
+  leftOptions.mass = 1.0;
+  leftOptions.position = Eigen::Vector3d(-0.75, 0.0, 0.3);
+  auto left = world.addRigidBody("avbd_multi_left", leftOptions);
+  left.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  sx::RigidBodyOptions rightOptions;
+  rightOptions.mass = 1.0;
+  rightOptions.position = Eigen::Vector3d(0.75, 0.0, 0.3);
+  auto right = world.addRigidBody("avbd_multi_right", rightOptions);
+  right.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  auto& registry = sx::detail::registryOf(world);
+  const auto configureAvbdContact = [&](const sx::RigidBody& body) {
+    auto& config = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+        sx::detail::toRegistryEntity(body.getEntity()));
+    config.startStiffness = 200.0;
+    config.maxStiffness = 200.0;
+  };
+  configureAvbdContact(left);
+  configureAvbdContact(right);
+
+  const Eigen::Vector3d initialGroundPosition = ground.getTranslation();
+  const Eigen::Vector3d initialLeftPosition = left.getTranslation();
+  const Eigen::Vector3d initialRightPosition = right.getTranslation();
+  ASSERT_GE(world.collide().size(), 2u);
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidBodyContactStage contactStage(/*iterations=*/8);
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(contactStage);
+  world.step(executor, pipeline);
+
+  EXPECT_TRUE(ground.getTranslation().isApprox(initialGroundPosition, 1e-12));
+  EXPECT_TRUE(left.getTranslation().isApprox(initialLeftPosition, 1e-12));
+  EXPECT_TRUE(right.getTranslation().isApprox(initialRightPosition, 1e-12));
+  EXPECT_TRUE(ground.getLinearVelocity().isApprox(Eigen::Vector3d::Zero()));
+  EXPECT_GT(left.getLinearVelocity().z(), 1e-9);
+  EXPECT_GT(right.getLinearVelocity().z(), 1e-9);
+}
+
+// Test that multiple configured contacts also feed through the built-in
+// World::step() schedule and following rigid body position stage.
+TEST(
+    World,
+    RigidBodyContactStageAvbdMultipleConfiguredContactsRunThroughDefaultWorldStep)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.05);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.25);
+  auto ground = world.addRigidBody("avbd_default_multi_ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(4.0, 2.0, 0.25)));
+
+  sx::RigidBodyOptions leftOptions;
+  leftOptions.mass = 1.0;
+  leftOptions.position = Eigen::Vector3d(-0.75, 0.0, 0.3);
+  auto left = world.addRigidBody("avbd_default_multi_left", leftOptions);
+  left.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  sx::RigidBodyOptions rightOptions;
+  rightOptions.mass = 1.0;
+  rightOptions.position = Eigen::Vector3d(0.75, 0.0, 0.3);
+  auto right = world.addRigidBody("avbd_default_multi_right", rightOptions);
+  right.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  auto& registry = sx::detail::registryOf(world);
+  const auto configureAvbdContact = [&](const sx::RigidBody& body) {
+    auto& config = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+        sx::detail::toRegistryEntity(body.getEntity()));
+    config.startStiffness = 200.0;
+    config.maxStiffness = 200.0;
+  };
+  configureAvbdContact(left);
+  configureAvbdContact(right);
+
+  const Eigen::Vector3d initialGroundPosition = ground.getTranslation();
+  const Eigen::Vector3d initialLeftPosition = left.getTranslation();
+  const Eigen::Vector3d initialRightPosition = right.getTranslation();
+  ASSERT_GE(world.collide().size(), 2u);
+
+  world.step();
+
+  EXPECT_TRUE(ground.getTranslation().isApprox(initialGroundPosition, 1e-12));
+  EXPECT_GT(left.getTranslation().z(), initialLeftPosition.z() + 1e-9);
+  EXPECT_GT(right.getTranslation().z(), initialRightPosition.z() + 1e-9);
+  EXPECT_TRUE(left.getTranslation().head<2>().isApprox(
+      initialLeftPosition.head<2>(), 1e-12));
+  EXPECT_TRUE(right.getTranslation().head<2>().isApprox(
+      initialRightPosition.head<2>(), 1e-12));
+  EXPECT_TRUE(ground.getLinearVelocity().isApprox(Eigen::Vector3d::Zero()));
+  EXPECT_GT(left.getLinearVelocity().z(), 1e-9);
+  EXPECT_GT(right.getLinearVelocity().z(), 1e-9);
+}
+
+// Test that AVBD contact-stage activation is all-or-nothing for a live contact
+// set. If any active contact lacks the private opt-in config, the configured
+// contacts fall back with the rest of the set instead of being partially
+// projected through AVBD while other contacts use sequential impulses.
+TEST(World, RigidBodyContactStageAvbdFallsBackForUnconfiguredContactSet)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.05);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.25);
+  auto ground = world.addRigidBody("avbd_mixed_ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(4.0, 2.0, 0.25)));
+
+  sx::RigidBodyOptions configuredOptions;
+  configuredOptions.mass = 1.0;
+  configuredOptions.position = Eigen::Vector3d(-0.75, 0.0, 0.3);
+  configuredOptions.linearVelocity = Eigen::Vector3d(0.0, 0.0, -1.0);
+  auto configured
+      = world.addRigidBody("avbd_mixed_configured", configuredOptions);
+  configured.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  sx::RigidBodyOptions ordinaryOptions;
+  ordinaryOptions.mass = 1.0;
+  ordinaryOptions.position = Eigen::Vector3d(0.75, 0.0, 0.3);
+  ordinaryOptions.linearVelocity = Eigen::Vector3d(0.0, 0.0, -1.0);
+  auto ordinary = world.addRigidBody("avbd_mixed_ordinary", ordinaryOptions);
+  ordinary.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  auto& registry = sx::detail::registryOf(world);
+  auto& config = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+      sx::detail::toRegistryEntity(configured.getEntity()));
+  config.startStiffness = 200.0;
+  config.maxStiffness = 200.0;
+
+  const Eigen::Vector3d initialGroundPosition = ground.getTranslation();
+  const Eigen::Vector3d initialConfiguredPosition = configured.getTranslation();
+  const Eigen::Vector3d initialOrdinaryPosition = ordinary.getTranslation();
+  ASSERT_GE(world.collide().size(), 2u);
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidBodyContactStage contactStage(/*iterations=*/8);
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(contactStage);
+  world.step(executor, pipeline);
+
+  EXPECT_TRUE(ground.getTranslation().isApprox(initialGroundPosition, 1e-12));
+  EXPECT_TRUE(
+      configured.getTranslation().isApprox(initialConfiguredPosition, 1e-12));
+  EXPECT_TRUE(
+      ordinary.getTranslation().isApprox(initialOrdinaryPosition, 1e-12));
+  EXPECT_NEAR(configured.getLinearVelocity().z(), 0.0, 1e-9);
+  EXPECT_NEAR(ordinary.getLinearVelocity().z(), 0.0, 1e-9);
+}
+
+// Test that the built-in World::step() schedule preserves the same
+// all-or-nothing AVBD contact-stage fallback for mixed configured and
+// unconfigured live contact sets.
+TEST(
+    World, RigidBodyContactStageAvbdMixedConfigFallsBackThroughDefaultWorldStep)
+{
+  namespace sx = dart::simulation;
+
+  struct StepOutcome
+  {
+    Eigen::Vector3d groundPosition = Eigen::Vector3d::Zero();
+    Eigen::Vector3d configuredPosition = Eigen::Vector3d::Zero();
+    Eigen::Vector3d configuredLinearVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d ordinaryPosition = Eigen::Vector3d::Zero();
+    Eigen::Vector3d ordinaryLinearVelocity = Eigen::Vector3d::Zero();
+  };
+
+  const auto runDefaultStep = [](const bool configureOneEndpoint) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.05);
+
+    sx::RigidBodyOptions groundOptions;
+    groundOptions.isStatic = true;
+    groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.25);
+    auto ground
+        = world.addRigidBody("avbd_default_mixed_ground", groundOptions);
+    ground.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(4.0, 2.0, 0.25)));
+
+    sx::RigidBodyOptions configuredOptions;
+    configuredOptions.mass = 1.0;
+    configuredOptions.position = Eigen::Vector3d(-0.75, 0.0, 0.3);
+    configuredOptions.linearVelocity = Eigen::Vector3d(0.0, 0.0, -1.0);
+    auto configured = world.addRigidBody(
+        "avbd_default_mixed_configured", configuredOptions);
+    configured.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+    sx::RigidBodyOptions ordinaryOptions;
+    ordinaryOptions.mass = 1.0;
+    ordinaryOptions.position = Eigen::Vector3d(0.75, 0.0, 0.3);
+    ordinaryOptions.linearVelocity = Eigen::Vector3d(0.0, 0.0, -1.0);
+    auto ordinary
+        = world.addRigidBody("avbd_default_mixed_ordinary", ordinaryOptions);
+    ordinary.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+    if (configureOneEndpoint) {
+      auto& registry = sx::detail::registryOf(world);
+      auto& config = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+          sx::detail::toRegistryEntity(configured.getEntity()));
+      config.startStiffness = 200.0;
+      config.maxStiffness = 200.0;
+    }
+
+    EXPECT_GE(world.collide().size(), 2u);
+
+    world.step();
+
+    return StepOutcome{
+        ground.getTranslation(),
+        configured.getTranslation(),
+        configured.getLinearVelocity(),
+        ordinary.getTranslation(),
+        ordinary.getLinearVelocity()};
+  };
+
+  const StepOutcome unconfigured = runDefaultStep(false);
+  const StepOutcome mixed = runDefaultStep(true);
+
+  EXPECT_TRUE(
+      mixed.groundPosition.isApprox(unconfigured.groundPosition, 1e-12));
+  EXPECT_TRUE(mixed.configuredPosition.isApprox(
+      unconfigured.configuredPosition, 1e-12));
+  EXPECT_TRUE(
+      mixed.ordinaryPosition.isApprox(unconfigured.ordinaryPosition, 1e-12));
+  EXPECT_TRUE(mixed.configuredLinearVelocity.isApprox(
+      unconfigured.configuredLinearVelocity, 1e-12));
+  EXPECT_TRUE(mixed.ordinaryLinearVelocity.isApprox(
+      unconfigured.ordinaryLinearVelocity, 1e-12));
+  EXPECT_NEAR(mixed.configuredLinearVelocity.z(), 0.0, 1e-9);
+  EXPECT_NEAR(mixed.ordinaryLinearVelocity.z(), 0.0, 1e-9);
+}
+
+// Test that an explicitly disabled private contact config opts out of the AVBD
+// contact-stage path and falls back to the ordinary rigid contact response.
+TEST(World, RigidBodyContactStageAvbdDisabledConfigFallsBack)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.05);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.25);
+  auto ground = world.addRigidBody("avbd_disabled_ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(2.0, 2.0, 0.25)));
+
+  sx::RigidBodyOptions sphereOptions;
+  sphereOptions.mass = 1.0;
+  sphereOptions.position = Eigen::Vector3d(0.0, 0.0, 0.3);
+  sphereOptions.linearVelocity = Eigen::Vector3d(0.0, 0.0, -1.0);
+  auto sphere = world.addRigidBody("avbd_disabled_sphere", sphereOptions);
+  sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  auto& registry = sx::detail::registryOf(world);
+  auto& config = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+      sx::detail::toRegistryEntity(sphere.getEntity()));
+  config.enabled = false;
+  config.startStiffness = 10000.0;
+  config.maxStiffness = 10000.0;
+
+  const Eigen::Vector3d initialGroundPosition = ground.getTranslation();
+  const Eigen::Vector3d initialSpherePosition = sphere.getTranslation();
+  ASSERT_FALSE(world.collide().empty());
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidBodyContactStage contactStage(/*iterations=*/8);
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(contactStage);
+  world.step(executor, pipeline);
+
+  EXPECT_TRUE(ground.getTranslation().isApprox(initialGroundPosition, 1e-12));
+  EXPECT_TRUE(sphere.getTranslation().isApprox(initialSpherePosition, 1e-12));
+  EXPECT_TRUE(ground.getLinearVelocity().isApprox(Eigen::Vector3d::Zero()));
+  EXPECT_NEAR(sphere.getLinearVelocity().z(), 0.0, 1e-9);
+}
+
+// Test that the built-in World::step() schedule preserves disabled-config
+// fallback instead of activating the AVBD contact-stage projection.
+TEST(
+    World,
+    RigidBodyContactStageAvbdDisabledConfigFallsBackThroughDefaultWorldStep)
+{
+  namespace sx = dart::simulation;
+
+  struct StepOutcome
+  {
+    Eigen::Vector3d groundPosition = Eigen::Vector3d::Zero();
+    Eigen::Vector3d spherePosition = Eigen::Vector3d::Zero();
+    Eigen::Vector3d sphereLinearVelocity = Eigen::Vector3d::Zero();
+  };
+
+  const auto runDefaultStep = [](const bool addDisabledConfig) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.05);
+
+    sx::RigidBodyOptions groundOptions;
+    groundOptions.isStatic = true;
+    groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.25);
+    auto ground
+        = world.addRigidBody("avbd_default_disabled_ground", groundOptions);
+    ground.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(2.0, 2.0, 0.25)));
+
+    sx::RigidBodyOptions sphereOptions;
+    sphereOptions.mass = 1.0;
+    sphereOptions.position = Eigen::Vector3d(0.0, 0.0, 0.3);
+    sphereOptions.linearVelocity = Eigen::Vector3d(0.0, 0.0, -1.0);
+    auto sphere
+        = world.addRigidBody("avbd_default_disabled_sphere", sphereOptions);
+    sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+    if (addDisabledConfig) {
+      auto& registry = sx::detail::registryOf(world);
+      auto& config = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+          sx::detail::toRegistryEntity(sphere.getEntity()));
+      config.enabled = false;
+      config.startStiffness = 10000.0;
+      config.maxStiffness = 10000.0;
+    }
+
+    EXPECT_FALSE(world.collide().empty());
+
+    world.step();
+
+    return StepOutcome{
+        ground.getTranslation(),
+        sphere.getTranslation(),
+        sphere.getLinearVelocity()};
+  };
+
+  const StepOutcome unconfigured = runDefaultStep(false);
+  const StepOutcome disabled = runDefaultStep(true);
+
+  EXPECT_TRUE(
+      disabled.groundPosition.isApprox(unconfigured.groundPosition, 1e-12));
+  EXPECT_TRUE(
+      disabled.spherePosition.isApprox(unconfigured.spherePosition, 1e-12));
+  EXPECT_TRUE(disabled.sphereLinearVelocity.isApprox(
+      unconfigured.sphereLinearVelocity, 1e-12));
+  EXPECT_NEAR(disabled.sphereLinearVelocity.z(), 0.0, 1e-9);
+}
+
+// Test that the live AVBD contact-stage path uses warm-started normal rows to
+// bound Coulomb friction rows in the following frame.
+TEST(World, RigidBodyContactStageAvbdWarmStartedFrictionReducesSlide)
+{
+  namespace sx = dart::simulation;
+
+  struct ContactStageOutcome
+  {
+    Eigen::Vector3d linearVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d angularVelocity = Eigen::Vector3d::Zero();
+  };
+
+  const auto runContactStage = [](const double sphereFriction) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.05);
+
+    sx::RigidBodyOptions groundOptions;
+    groundOptions.isStatic = true;
+    groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.25);
+    auto ground = world.addRigidBody("avbd_friction_ground", groundOptions);
+    ground.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(2.0, 2.0, 0.25)));
+    ground.setFriction(1.0);
+
+    sx::RigidBodyOptions sphereOptions;
+    sphereOptions.mass = 1.0;
+    sphereOptions.position = Eigen::Vector3d(0.0, 0.0, 0.3);
+    sphereOptions.linearVelocity = Eigen::Vector3d(1.0, 0.0, 0.0);
+    auto sphere = world.addRigidBody("avbd_friction_sphere", sphereOptions);
+    sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+    sphere.setFriction(sphereFriction);
+
+    auto& registry = sx::detail::registryOf(world);
+    auto& config = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+        sx::detail::toRegistryEntity(sphere.getEntity()));
+    config.startStiffness = 10000.0;
+    config.maxStiffness = 10000.0;
+    config.alpha = 0.5;
+    config.gamma = 1.0;
+
+    const Eigen::Vector3d initialGroundPosition = ground.getTranslation();
+    const Eigen::Vector3d initialSpherePosition = sphere.getTranslation();
+    EXPECT_FALSE(world.collide().empty());
+
+    sx::compute::SequentialExecutor executor;
+    sx::compute::RigidBodyContactStage contactStage(/*iterations=*/12);
+    sx::compute::WorldStepPipeline pipeline;
+    pipeline.addStage(contactStage);
+    world.step(executor, pipeline);
+    world.step(executor, pipeline);
+
+    EXPECT_TRUE(ground.getTranslation().isApprox(initialGroundPosition, 1e-12));
+    EXPECT_TRUE(sphere.getTranslation().isApprox(initialSpherePosition, 1e-12));
+    EXPECT_TRUE(ground.getLinearVelocity().isApprox(Eigen::Vector3d::Zero()));
+
+    return ContactStageOutcome{
+        sphere.getLinearVelocity(), sphere.getAngularVelocity()};
+  };
+
+  const ContactStageOutcome frictionless = runContactStage(0.0);
+  const ContactStageOutcome frictional = runContactStage(1.0);
+  const double radius = 0.5;
+  const double frictionlessContactSlip
+      = frictionless.linearVelocity.x()
+        - radius * frictionless.angularVelocity.y();
+  const double frictionalContactSlip
+      = frictional.linearVelocity.x() - radius * frictional.angularVelocity.y();
+
+  EXPECT_GT(frictionless.linearVelocity.z(), 1e-9);
+  EXPECT_GT(frictional.linearVelocity.z(), 1e-9);
+  EXPECT_LT(std::abs(frictionalContactSlip), std::abs(frictionlessContactSlip));
+  EXPECT_GT(frictional.linearVelocity.x(), -1e-9);
+  EXPECT_GT(frictional.angularVelocity.y(), 1e-9);
+}
+
+// Test that static-owned contact configs also feed warm-started AVBD friction
+// rows in the contact-stage path.
+TEST(World, RigidBodyContactStageAvbdWarmStartedStaticOwnedFrictionReducesSlide)
+{
+  namespace sx = dart::simulation;
+
+  struct ContactStageOutcome
+  {
+    Eigen::Vector3d linearVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d angularVelocity = Eigen::Vector3d::Zero();
+  };
+
+  const auto runContactStage = [](const double sphereFriction) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.05);
+
+    sx::RigidBodyOptions obstacleOptions;
+    obstacleOptions.isStatic = true;
+    obstacleOptions.position = Eigen::Vector3d::Zero();
+    auto obstacle
+        = world.addRigidBody("avbd_static_friction_obstacle", obstacleOptions);
+    obstacle.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+    obstacle.setFriction(1.0);
+
+    sx::RigidBodyOptions sphereOptions;
+    sphereOptions.mass = 1.0;
+    sphereOptions.position = Eigen::Vector3d(0.9, 0.0, 0.0);
+    sphereOptions.linearVelocity = Eigen::Vector3d(0.0, 1.0, 0.0);
+    auto sphere
+        = world.addRigidBody("avbd_static_friction_sphere", sphereOptions);
+    sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+    sphere.setFriction(sphereFriction);
+
+    auto& registry = sx::detail::registryOf(world);
+    auto& config = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+        sx::detail::toRegistryEntity(obstacle.getEntity()));
+    config.startStiffness = 10000.0;
+    config.maxStiffness = 10000.0;
+    config.alpha = 0.5;
+    config.gamma = 1.0;
+
+    const Eigen::Vector3d initialObstaclePosition = obstacle.getTranslation();
+    const Eigen::Vector3d initialSpherePosition = sphere.getTranslation();
+    EXPECT_FALSE(world.collide().empty());
+
+    sx::compute::SequentialExecutor executor;
+    sx::compute::RigidBodyContactStage contactStage(/*iterations=*/12);
+    sx::compute::WorldStepPipeline pipeline;
+    pipeline.addStage(contactStage);
+    world.step(executor, pipeline);
+    world.step(executor, pipeline);
+
+    EXPECT_TRUE(
+        obstacle.getTranslation().isApprox(initialObstaclePosition, 1e-12));
+    EXPECT_TRUE(sphere.getTranslation().isApprox(initialSpherePosition, 1e-12));
+    EXPECT_TRUE(obstacle.getLinearVelocity().isApprox(Eigen::Vector3d::Zero()));
+
+    return ContactStageOutcome{
+        sphere.getLinearVelocity(), sphere.getAngularVelocity()};
+  };
+
+  const ContactStageOutcome frictionless = runContactStage(0.0);
+  const ContactStageOutcome frictional = runContactStage(1.0);
+  const double radius = 0.5;
+  const double frictionlessContactSlip
+      = frictionless.linearVelocity.y()
+        - radius * frictionless.angularVelocity.z();
+  const double frictionalContactSlip
+      = frictional.linearVelocity.y() - radius * frictional.angularVelocity.z();
+
+  EXPECT_GT(frictionless.linearVelocity.x(), 1e-9);
+  EXPECT_GT(frictional.linearVelocity.x(), 1e-9);
+  EXPECT_LT(std::abs(frictionalContactSlip), std::abs(frictionlessContactSlip));
+  EXPECT_GT(frictional.linearVelocity.y(), -1e-9);
+  EXPECT_GT(frictional.angularVelocity.z(), 1e-9);
+}
+
+// Test that the built-in World::step() schedule also reaches the warm-started
+// static/dynamic contact-stage friction path.
+TEST(
+    World,
+    RigidBodyContactStageAvbdWarmStartedFrictionRunsThroughDefaultWorldStep)
+{
+  namespace sx = dart::simulation;
+
+  struct StepOutcome
+  {
+    Eigen::Vector3d linearVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d angularVelocity = Eigen::Vector3d::Zero();
+  };
+
+  const auto runDefaultStep = [](const double sphereFriction) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.05);
+
+    sx::RigidBodyOptions obstacleOptions;
+    obstacleOptions.isStatic = true;
+    obstacleOptions.position = Eigen::Vector3d::Zero();
+    auto obstacle
+        = world.addRigidBody("avbd_default_friction_obstacle", obstacleOptions);
+    obstacle.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+    obstacle.setFriction(1.0);
+
+    sx::RigidBodyOptions sphereOptions;
+    sphereOptions.mass = 1.0;
+    sphereOptions.position = Eigen::Vector3d(0.9, 0.0, 0.0);
+    sphereOptions.linearVelocity = Eigen::Vector3d(0.0, 1.0, 0.0);
+    auto sphere
+        = world.addRigidBody("avbd_default_friction_sphere", sphereOptions);
+    sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+    sphere.setFriction(sphereFriction);
+
+    auto& registry = sx::detail::registryOf(world);
+    auto& config = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+        sx::detail::toRegistryEntity(sphere.getEntity()));
+    config.startStiffness = 10000.0;
+    config.maxStiffness = 10000.0;
+    config.alpha = 0.95;
+    config.gamma = 1.0;
+
+    const Eigen::Vector3d initialObstaclePosition = obstacle.getTranslation();
+    EXPECT_FALSE(world.collide().empty());
+
+    world.step();
+    EXPECT_FALSE(world.collide().empty());
+    world.step();
+
+    EXPECT_TRUE(
+        obstacle.getTranslation().isApprox(initialObstaclePosition, 1e-12));
+    EXPECT_TRUE(obstacle.getLinearVelocity().isApprox(Eigen::Vector3d::Zero()));
+
+    return StepOutcome{sphere.getLinearVelocity(), sphere.getAngularVelocity()};
+  };
+
+  const StepOutcome frictionless = runDefaultStep(0.0);
+  const StepOutcome frictional = runDefaultStep(1.0);
+  const double radius = 0.5;
+  const double frictionlessContactSlip
+      = frictionless.linearVelocity.y()
+        - radius * frictionless.angularVelocity.z();
+  const double frictionalContactSlip
+      = frictional.linearVelocity.y() - radius * frictional.angularVelocity.z();
+
+  EXPECT_GT(frictionless.linearVelocity.x(), 1e-9);
+  EXPECT_GT(frictional.linearVelocity.x(), 1e-9);
+  EXPECT_LT(std::abs(frictionalContactSlip), std::abs(frictionlessContactSlip));
+  EXPECT_GT(frictional.linearVelocity.y(), -1e-9);
+  EXPECT_GT(frictional.angularVelocity.z(), 1e-9);
+}
+
+// Test that the built-in World::step() schedule also reaches static-owned
+// warm-started AVBD friction rows.
+TEST(
+    World,
+    RigidBodyContactStageAvbdWarmStartedStaticOwnedFrictionRunsThroughDefaultWorldStep)
+{
+  namespace sx = dart::simulation;
+
+  struct StepOutcome
+  {
+    Eigen::Vector3d linearVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d angularVelocity = Eigen::Vector3d::Zero();
+  };
+
+  const auto runDefaultStep = [](const double sphereFriction) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.05);
+
+    sx::RigidBodyOptions obstacleOptions;
+    obstacleOptions.isStatic = true;
+    obstacleOptions.position = Eigen::Vector3d::Zero();
+    auto obstacle = world.addRigidBody(
+        "avbd_default_static_friction_obstacle", obstacleOptions);
+    obstacle.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+    obstacle.setFriction(1.0);
+
+    sx::RigidBodyOptions sphereOptions;
+    sphereOptions.mass = 1.0;
+    sphereOptions.position = Eigen::Vector3d(0.9, 0.0, 0.0);
+    sphereOptions.linearVelocity = Eigen::Vector3d(0.0, 1.0, 0.0);
+    auto sphere = world.addRigidBody(
+        "avbd_default_static_friction_sphere", sphereOptions);
+    sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+    sphere.setFriction(sphereFriction);
+
+    auto& registry = sx::detail::registryOf(world);
+    auto& config = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+        sx::detail::toRegistryEntity(obstacle.getEntity()));
+    config.startStiffness = 10000.0;
+    config.maxStiffness = 10000.0;
+    config.alpha = 0.95;
+    config.gamma = 1.0;
+
+    const Eigen::Vector3d initialObstaclePosition = obstacle.getTranslation();
+    EXPECT_FALSE(world.collide().empty());
+
+    world.step();
+    EXPECT_FALSE(world.collide().empty());
+    world.step();
+
+    EXPECT_TRUE(
+        obstacle.getTranslation().isApprox(initialObstaclePosition, 1e-12));
+    EXPECT_TRUE(obstacle.getLinearVelocity().isApprox(Eigen::Vector3d::Zero()));
+
+    return StepOutcome{sphere.getLinearVelocity(), sphere.getAngularVelocity()};
+  };
+
+  const StepOutcome frictionless = runDefaultStep(0.0);
+  const StepOutcome frictional = runDefaultStep(1.0);
+  const double radius = 0.5;
+  const double frictionlessContactSlip
+      = frictionless.linearVelocity.y()
+        - radius * frictionless.angularVelocity.z();
+  const double frictionalContactSlip
+      = frictional.linearVelocity.y() - radius * frictional.angularVelocity.z();
+
+  EXPECT_GT(frictionless.linearVelocity.x(), 1e-9);
+  EXPECT_GT(frictional.linearVelocity.x(), 1e-9);
+  EXPECT_LT(std::abs(frictionalContactSlip), std::abs(frictionlessContactSlip));
+  EXPECT_GT(frictional.linearVelocity.y(), -1e-9);
+  EXPECT_GT(frictional.angularVelocity.z(), 1e-9);
+}
+
+// Test that kinematic-owned contact configs also feed warm-started AVBD
+// friction rows without treating the prescribed kinematic velocity as contact
+// slip input.
+TEST(
+    World,
+    RigidBodyContactStageAvbdWarmStartedKinematicOwnedFrictionReducesSlide)
+{
+  namespace sx = dart::simulation;
+
+  struct ContactStageOutcome
+  {
+    Eigen::Vector3d dynamicLinearVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d dynamicAngularVelocity = Eigen::Vector3d::Zero();
+  };
+
+  const auto runContactStage = [](const double sphereFriction,
+                                  const bool prescribeKinematicVelocity) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.05);
+
+    sx::RigidBodyOptions obstacleOptions;
+    obstacleOptions.position = Eigen::Vector3d::Zero();
+    auto obstacle = world.addRigidBody(
+        "avbd_kinematic_friction_obstacle", obstacleOptions);
+    obstacle.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+    obstacle.setFriction(1.0);
+    obstacle.setKinematic(true);
+    EXPECT_TRUE(obstacle.isKinematic());
+    EXPECT_FALSE(obstacle.isStatic());
+
+    sx::RigidBodyOptions sphereOptions;
+    sphereOptions.mass = 1.0;
+    sphereOptions.position = Eigen::Vector3d(0.9, 0.0, 0.0);
+    sphereOptions.linearVelocity = Eigen::Vector3d(0.0, 1.0, 0.0);
+    auto sphere
+        = world.addRigidBody("avbd_kinematic_friction_sphere", sphereOptions);
+    sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+    sphere.setFriction(sphereFriction);
+
+    auto& registry = sx::detail::registryOf(world);
+    auto& config = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+        sx::detail::toRegistryEntity(obstacle.getEntity()));
+    config.startStiffness = 10000.0;
+    config.maxStiffness = 10000.0;
+    config.alpha = 0.5;
+    config.gamma = 1.0;
+
+    const Eigen::Vector3d initialObstaclePosition = obstacle.getTranslation();
+    const Eigen::Vector3d initialSpherePosition = sphere.getTranslation();
+    EXPECT_FALSE(world.collide().empty());
+
+    constexpr double kinematicSpeed = 5.0;
+    if (prescribeKinematicVelocity) {
+      obstacle.setLinearVelocity(Eigen::Vector3d(0.0, -kinematicSpeed, 0.0));
+    }
+
+    sx::compute::SequentialExecutor executor;
+    sx::compute::RigidBodyContactStage contactStage(/*iterations=*/12);
+    sx::compute::WorldStepPipeline pipeline;
+    pipeline.addStage(contactStage);
+    world.step(executor, pipeline);
+    world.step(executor, pipeline);
+
+    EXPECT_TRUE(obstacle.isKinematic());
+    EXPECT_FALSE(obstacle.isStatic());
+    EXPECT_TRUE(
+        obstacle.getTranslation().isApprox(initialObstaclePosition, 1e-12));
+    EXPECT_TRUE(sphere.getTranslation().isApprox(initialSpherePosition, 1e-12));
+    EXPECT_TRUE(obstacle.getLinearVelocity().isApprox(
+        prescribeKinematicVelocity ? Eigen::Vector3d(0.0, -kinematicSpeed, 0.0)
+                                   : Eigen::Vector3d::Zero(),
+        1e-12));
+
+    return ContactStageOutcome{
+        sphere.getLinearVelocity(), sphere.getAngularVelocity()};
+  };
+
+  const ContactStageOutcome frictionless = runContactStage(0.0, true);
+  const ContactStageOutcome frictional = runContactStage(1.0, true);
+  const ContactStageOutcome stationaryFrictional = runContactStage(1.0, false);
+  const double radius = 0.5;
+  const double frictionlessContactSlip
+      = frictionless.dynamicLinearVelocity.y()
+        - radius * frictionless.dynamicAngularVelocity.z();
+  const double frictionalContactSlip
+      = frictional.dynamicLinearVelocity.y()
+        - radius * frictional.dynamicAngularVelocity.z();
+
+  EXPECT_GT(frictionless.dynamicLinearVelocity.x(), 1e-9);
+  EXPECT_GT(frictional.dynamicLinearVelocity.x(), 1e-9);
+  EXPECT_LT(std::abs(frictionalContactSlip), std::abs(frictionlessContactSlip));
+  EXPECT_GT(frictional.dynamicLinearVelocity.y(), -1e-9);
+  EXPECT_GT(frictional.dynamicAngularVelocity.z(), 1e-9);
+  EXPECT_TRUE(frictional.dynamicLinearVelocity.isApprox(
+      stationaryFrictional.dynamicLinearVelocity, 1e-12));
+  EXPECT_TRUE(frictional.dynamicAngularVelocity.isApprox(
+      stationaryFrictional.dynamicAngularVelocity, 1e-12));
+}
+
+// Test that the built-in World::step() schedule also reaches kinematic-owned
+// warm-started AVBD friction rows without using the prescribed kinematic
+// velocity as tangential slip.
+TEST(
+    World,
+    RigidBodyContactStageAvbdWarmStartedKinematicOwnedFrictionRunsThroughDefaultWorldStep)
+{
+  namespace sx = dart::simulation;
+
+  struct StepOutcome
+  {
+    Eigen::Vector3d dynamicLinearVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d dynamicAngularVelocity = Eigen::Vector3d::Zero();
+  };
+
+  const auto runDefaultStep = [](const double sphereFriction,
+                                 const bool prescribeKinematicVelocity) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.05);
+
+    sx::RigidBodyOptions obstacleOptions;
+    obstacleOptions.position = Eigen::Vector3d::Zero();
+    auto obstacle = world.addRigidBody(
+        "avbd_default_kinematic_friction_obstacle", obstacleOptions);
+    obstacle.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+    obstacle.setFriction(1.0);
+    obstacle.setKinematic(true);
+    EXPECT_TRUE(obstacle.isKinematic());
+    EXPECT_FALSE(obstacle.isStatic());
+
+    sx::RigidBodyOptions sphereOptions;
+    sphereOptions.mass = 1.0;
+    sphereOptions.position = Eigen::Vector3d(0.9, 0.0, 0.0);
+    sphereOptions.linearVelocity = Eigen::Vector3d(0.0, 1.0, 0.0);
+    auto sphere = world.addRigidBody(
+        "avbd_default_kinematic_friction_sphere", sphereOptions);
+    sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+    sphere.setFriction(sphereFriction);
+
+    auto& registry = sx::detail::registryOf(world);
+    auto& config = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+        sx::detail::toRegistryEntity(obstacle.getEntity()));
+    config.startStiffness = 10000.0;
+    config.maxStiffness = 10000.0;
+    config.alpha = 0.95;
+    config.gamma = 1.0;
+
+    const Eigen::Vector3d initialObstaclePosition = obstacle.getTranslation();
+    EXPECT_FALSE(world.collide().empty());
+
+    constexpr double kinematicSpeed = 5.0;
+    if (prescribeKinematicVelocity) {
+      obstacle.setLinearVelocity(Eigen::Vector3d(0.0, -kinematicSpeed, 0.0));
+    }
+
+    world.step();
+    EXPECT_FALSE(world.collide().empty());
+    world.step();
+
+    EXPECT_TRUE(obstacle.isKinematic());
+    EXPECT_FALSE(obstacle.isStatic());
+    EXPECT_TRUE(
+        obstacle.getTranslation().isApprox(initialObstaclePosition, 1e-12));
+    EXPECT_TRUE(obstacle.getLinearVelocity().isApprox(
+        prescribeKinematicVelocity ? Eigen::Vector3d(0.0, -kinematicSpeed, 0.0)
+                                   : Eigen::Vector3d::Zero(),
+        1e-12));
+
+    return StepOutcome{sphere.getLinearVelocity(), sphere.getAngularVelocity()};
+  };
+
+  const StepOutcome frictionless = runDefaultStep(0.0, true);
+  const StepOutcome frictional = runDefaultStep(1.0, true);
+  const StepOutcome stationaryFrictional = runDefaultStep(1.0, false);
+  const double radius = 0.5;
+  const double frictionlessContactSlip
+      = frictionless.dynamicLinearVelocity.y()
+        - radius * frictionless.dynamicAngularVelocity.z();
+  const double frictionalContactSlip
+      = frictional.dynamicLinearVelocity.y()
+        - radius * frictional.dynamicAngularVelocity.z();
+
+  EXPECT_GT(frictionless.dynamicLinearVelocity.x(), 1e-9);
+  EXPECT_GT(frictional.dynamicLinearVelocity.x(), 1e-9);
+  EXPECT_LT(std::abs(frictionalContactSlip), std::abs(frictionlessContactSlip));
+  EXPECT_GT(frictional.dynamicLinearVelocity.y(), -1e-9);
+  EXPECT_GT(frictional.dynamicAngularVelocity.z(), 1e-9);
+  EXPECT_TRUE(frictional.dynamicLinearVelocity.isApprox(
+      stationaryFrictional.dynamicLinearVelocity, 1e-12));
+  EXPECT_TRUE(frictional.dynamicAngularVelocity.isApprox(
+      stationaryFrictional.dynamicAngularVelocity, 1e-12));
+}
+
+// Test that an explicitly disabled peer config does not veto warm-started AVBD
+// friction rows when the other contact endpoint carries an enabled config.
+TEST(
+    World,
+    RigidBodyContactStageAvbdWarmStartedEnabledPeerWithDisabledConfigFrictionReducesSlide)
+{
+  namespace sx = dart::simulation;
+
+  struct ContactStageOutcome
+  {
+    Eigen::Vector3d linearVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d angularVelocity = Eigen::Vector3d::Zero();
+  };
+
+  const auto runContactStage = [](const double sphereFriction) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.05);
+
+    sx::RigidBodyOptions groundOptions;
+    groundOptions.isStatic = true;
+    groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.25);
+    auto ground = world.addRigidBody(
+        "avbd_disabled_peer_friction_ground", groundOptions);
+    ground.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(2.0, 2.0, 0.25)));
+    ground.setFriction(1.0);
+
+    sx::RigidBodyOptions sphereOptions;
+    sphereOptions.mass = 1.0;
+    sphereOptions.position = Eigen::Vector3d(0.0, 0.0, 0.3);
+    sphereOptions.linearVelocity = Eigen::Vector3d(1.0, 0.0, 0.0);
+    auto sphere = world.addRigidBody(
+        "avbd_disabled_peer_friction_sphere", sphereOptions);
+    sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+    sphere.setFriction(sphereFriction);
+
+    auto& registry = sx::detail::registryOf(world);
+    auto& groundConfig = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+        sx::detail::toRegistryEntity(ground.getEntity()));
+    groundConfig.enabled = false;
+    groundConfig.startStiffness = 10000.0;
+    groundConfig.maxStiffness = 10000.0;
+
+    auto& sphereConfig = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+        sx::detail::toRegistryEntity(sphere.getEntity()));
+    sphereConfig.startStiffness = 10000.0;
+    sphereConfig.maxStiffness = 10000.0;
+    sphereConfig.alpha = 0.5;
+    sphereConfig.gamma = 1.0;
+
+    const Eigen::Vector3d initialGroundPosition = ground.getTranslation();
+    const Eigen::Vector3d initialSpherePosition = sphere.getTranslation();
+    EXPECT_FALSE(world.collide().empty());
+
+    sx::compute::SequentialExecutor executor;
+    sx::compute::RigidBodyContactStage contactStage(/*iterations=*/12);
+    sx::compute::WorldStepPipeline pipeline;
+    pipeline.addStage(contactStage);
+    world.step(executor, pipeline);
+    world.step(executor, pipeline);
+
+    EXPECT_TRUE(ground.getTranslation().isApprox(initialGroundPosition, 1e-12));
+    EXPECT_TRUE(sphere.getTranslation().isApprox(initialSpherePosition, 1e-12));
+    EXPECT_TRUE(ground.getLinearVelocity().isApprox(Eigen::Vector3d::Zero()));
+
+    return ContactStageOutcome{
+        sphere.getLinearVelocity(), sphere.getAngularVelocity()};
+  };
+
+  const ContactStageOutcome frictionless = runContactStage(0.0);
+  const ContactStageOutcome frictional = runContactStage(1.0);
+  const double radius = 0.5;
+  const double frictionlessContactSlip
+      = frictionless.linearVelocity.x()
+        - radius * frictionless.angularVelocity.y();
+  const double frictionalContactSlip
+      = frictional.linearVelocity.x() - radius * frictional.angularVelocity.y();
+
+  EXPECT_GT(frictionless.linearVelocity.z(), 1e-9);
+  EXPECT_GT(frictional.linearVelocity.z(), 1e-9);
+  EXPECT_LT(std::abs(frictionalContactSlip), std::abs(frictionlessContactSlip));
+  EXPECT_GT(frictional.linearVelocity.x(), -1e-9);
+  EXPECT_GT(frictional.angularVelocity.y(), 1e-9);
+}
+
+// Test that the built-in World::step() schedule also ignores disabled peer
+// configs for warm-started AVBD friction rows.
+TEST(
+    World,
+    RigidBodyContactStageAvbdWarmStartedEnabledPeerWithDisabledConfigFrictionRunsThroughDefaultWorldStep)
+{
+  namespace sx = dart::simulation;
+
+  struct StepOutcome
+  {
+    Eigen::Vector3d linearVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d angularVelocity = Eigen::Vector3d::Zero();
+  };
+
+  const auto runDefaultStep = [](const double sphereFriction) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.05);
+
+    sx::RigidBodyOptions obstacleOptions;
+    obstacleOptions.isStatic = true;
+    obstacleOptions.position = Eigen::Vector3d::Zero();
+    auto obstacle = world.addRigidBody(
+        "avbd_default_disabled_peer_friction_obstacle", obstacleOptions);
+    obstacle.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+    obstacle.setFriction(1.0);
+
+    sx::RigidBodyOptions sphereOptions;
+    sphereOptions.mass = 1.0;
+    sphereOptions.position = Eigen::Vector3d(0.9, 0.0, 0.0);
+    sphereOptions.linearVelocity = Eigen::Vector3d(0.0, 1.0, 0.0);
+    auto sphere = world.addRigidBody(
+        "avbd_default_disabled_peer_friction_sphere", sphereOptions);
+    sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+    sphere.setFriction(sphereFriction);
+
+    auto& registry = sx::detail::registryOf(world);
+    auto& obstacleConfig = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+        sx::detail::toRegistryEntity(obstacle.getEntity()));
+    obstacleConfig.enabled = false;
+    obstacleConfig.startStiffness = 10000.0;
+    obstacleConfig.maxStiffness = 10000.0;
+
+    auto& sphereConfig = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+        sx::detail::toRegistryEntity(sphere.getEntity()));
+    sphereConfig.startStiffness = 10000.0;
+    sphereConfig.maxStiffness = 10000.0;
+    sphereConfig.alpha = 0.95;
+    sphereConfig.gamma = 1.0;
+
+    const Eigen::Vector3d initialObstaclePosition = obstacle.getTranslation();
+    EXPECT_FALSE(world.collide().empty());
+
+    world.step();
+    EXPECT_FALSE(world.collide().empty());
+    world.step();
+
+    EXPECT_TRUE(
+        obstacle.getTranslation().isApprox(initialObstaclePosition, 1e-12));
+    EXPECT_TRUE(obstacle.getLinearVelocity().isApprox(Eigen::Vector3d::Zero()));
+
+    return StepOutcome{sphere.getLinearVelocity(), sphere.getAngularVelocity()};
+  };
+
+  const StepOutcome frictionless = runDefaultStep(0.0);
+  const StepOutcome frictional = runDefaultStep(1.0);
+  const double radius = 0.5;
+  const double frictionlessContactSlip
+      = frictionless.linearVelocity.y()
+        - radius * frictionless.angularVelocity.z();
+  const double frictionalContactSlip
+      = frictional.linearVelocity.y() - radius * frictional.angularVelocity.z();
+
+  EXPECT_GT(frictionless.linearVelocity.x(), 1e-9);
+  EXPECT_GT(frictional.linearVelocity.x(), 1e-9);
+  EXPECT_LT(std::abs(frictionalContactSlip), std::abs(frictionlessContactSlip));
+  EXPECT_GT(frictional.linearVelocity.y(), -1e-9);
+  EXPECT_GT(frictional.angularVelocity.z(), 1e-9);
+}
+
+// Test that simultaneous configured static/dynamic contacts all feed
+// warm-started AVBD friction rows, not only the first live contact.
+TEST(
+    World,
+    RigidBodyContactStageAvbdWarmStartedMultipleConfiguredContactsFrictionReducesSlide)
+{
+  namespace sx = dart::simulation;
+
+  struct BodyOutcome
+  {
+    Eigen::Vector3d linearVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d angularVelocity = Eigen::Vector3d::Zero();
+  };
+
+  struct ContactStageOutcome
+  {
+    BodyOutcome left;
+    BodyOutcome right;
+  };
+
+  const auto runContactStage = [](const double sphereFriction) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.05);
+
+    sx::RigidBodyOptions leftObstacleOptions;
+    leftObstacleOptions.isStatic = true;
+    leftObstacleOptions.position = Eigen::Vector3d(-1.0, 0.0, 0.0);
+    auto leftObstacle = world.addRigidBody(
+        "avbd_multi_friction_left_obstacle", leftObstacleOptions);
+    leftObstacle.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+    leftObstacle.setFriction(1.0);
+
+    sx::RigidBodyOptions rightObstacleOptions;
+    rightObstacleOptions.isStatic = true;
+    rightObstacleOptions.position = Eigen::Vector3d(1.0, 0.0, 0.0);
+    auto rightObstacle = world.addRigidBody(
+        "avbd_multi_friction_right_obstacle", rightObstacleOptions);
+    rightObstacle.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+    rightObstacle.setFriction(1.0);
+
+    sx::RigidBodyOptions leftSphereOptions;
+    leftSphereOptions.mass = 1.0;
+    leftSphereOptions.position = Eigen::Vector3d(-0.1, 0.0, 0.0);
+    leftSphereOptions.linearVelocity = Eigen::Vector3d(0.0, 1.0, 0.0);
+    auto leftSphere = world.addRigidBody(
+        "avbd_multi_friction_left_sphere", leftSphereOptions);
+    leftSphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+    leftSphere.setFriction(sphereFriction);
+
+    sx::RigidBodyOptions rightSphereOptions;
+    rightSphereOptions.mass = 1.0;
+    rightSphereOptions.position = Eigen::Vector3d(1.9, 0.0, 0.0);
+    rightSphereOptions.linearVelocity = Eigen::Vector3d(0.0, 1.0, 0.0);
+    auto rightSphere = world.addRigidBody(
+        "avbd_multi_friction_right_sphere", rightSphereOptions);
+    rightSphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+    rightSphere.setFriction(sphereFriction);
+
+    auto& registry = sx::detail::registryOf(world);
+    const auto configureAvbdContact = [&](const sx::RigidBody& body) {
+      auto& config = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+          sx::detail::toRegistryEntity(body.getEntity()));
+      config.startStiffness = 10000.0;
+      config.maxStiffness = 10000.0;
+      config.alpha = 0.5;
+      config.gamma = 1.0;
+    };
+    configureAvbdContact(leftSphere);
+    configureAvbdContact(rightSphere);
+
+    const Eigen::Vector3d initialLeftObstaclePosition
+        = leftObstacle.getTranslation();
+    const Eigen::Vector3d initialRightObstaclePosition
+        = rightObstacle.getTranslation();
+    const Eigen::Vector3d initialLeftSpherePosition
+        = leftSphere.getTranslation();
+    const Eigen::Vector3d initialRightSpherePosition
+        = rightSphere.getTranslation();
+    EXPECT_GE(world.collide().size(), 2u);
+
+    sx::compute::SequentialExecutor executor;
+    sx::compute::RigidBodyContactStage contactStage(/*iterations=*/12);
+    sx::compute::WorldStepPipeline pipeline;
+    pipeline.addStage(contactStage);
+    world.step(executor, pipeline);
+    world.step(executor, pipeline);
+
+    EXPECT_TRUE(leftObstacle.getTranslation().isApprox(
+        initialLeftObstaclePosition, 1e-12));
+    EXPECT_TRUE(rightObstacle.getTranslation().isApprox(
+        initialRightObstaclePosition, 1e-12));
+    EXPECT_TRUE(
+        leftSphere.getTranslation().isApprox(initialLeftSpherePosition, 1e-12));
+    EXPECT_TRUE(rightSphere.getTranslation().isApprox(
+        initialRightSpherePosition, 1e-12));
+    EXPECT_TRUE(
+        leftObstacle.getLinearVelocity().isApprox(Eigen::Vector3d::Zero()));
+    EXPECT_TRUE(
+        rightObstacle.getLinearVelocity().isApprox(Eigen::Vector3d::Zero()));
+
+    return ContactStageOutcome{
+        BodyOutcome{
+            leftSphere.getLinearVelocity(), leftSphere.getAngularVelocity()},
+        BodyOutcome{
+            rightSphere.getLinearVelocity(), rightSphere.getAngularVelocity()}};
+  };
+
+  const ContactStageOutcome frictionless = runContactStage(0.0);
+  const ContactStageOutcome frictional = runContactStage(1.0);
+  const double radius = 0.5;
+  const auto contactSlip = [radius](const BodyOutcome& outcome) {
+    return outcome.linearVelocity.y() - radius * outcome.angularVelocity.z();
+  };
+
+  EXPECT_GT(frictionless.left.linearVelocity.x(), 1e-9);
+  EXPECT_GT(frictionless.right.linearVelocity.x(), 1e-9);
+  EXPECT_GT(frictional.left.linearVelocity.x(), 1e-9);
+  EXPECT_GT(frictional.right.linearVelocity.x(), 1e-9);
+  EXPECT_LT(
+      std::abs(contactSlip(frictional.left)),
+      std::abs(contactSlip(frictionless.left)));
+  EXPECT_LT(
+      std::abs(contactSlip(frictional.right)),
+      std::abs(contactSlip(frictionless.right)));
+  EXPECT_GT(frictional.left.linearVelocity.y(), -1e-9);
+  EXPECT_GT(frictional.right.linearVelocity.y(), -1e-9);
+  EXPECT_GT(frictional.left.angularVelocity.z(), 1e-9);
+  EXPECT_GT(frictional.right.angularVelocity.z(), 1e-9);
+}
+
+// Test that the built-in World::step() schedule reaches warm-started AVBD
+// friction rows for multiple configured contacts in one live contact set.
+TEST(
+    World,
+    RigidBodyContactStageAvbdWarmStartedMultipleConfiguredContactsFrictionRunsThroughDefaultWorldStep)
+{
+  namespace sx = dart::simulation;
+
+  struct BodyOutcome
+  {
+    Eigen::Vector3d linearVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d angularVelocity = Eigen::Vector3d::Zero();
+  };
+
+  struct StepOutcome
+  {
+    BodyOutcome left;
+    BodyOutcome right;
+  };
+
+  const auto runDefaultStep = [](const double sphereFriction) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.05);
+
+    sx::RigidBodyOptions leftObstacleOptions;
+    leftObstacleOptions.isStatic = true;
+    leftObstacleOptions.position = Eigen::Vector3d(-1.0, 0.0, 0.0);
+    auto leftObstacle = world.addRigidBody(
+        "avbd_default_multi_friction_left_obstacle", leftObstacleOptions);
+    leftObstacle.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+    leftObstacle.setFriction(1.0);
+
+    sx::RigidBodyOptions rightObstacleOptions;
+    rightObstacleOptions.isStatic = true;
+    rightObstacleOptions.position = Eigen::Vector3d(1.0, 0.0, 0.0);
+    auto rightObstacle = world.addRigidBody(
+        "avbd_default_multi_friction_right_obstacle", rightObstacleOptions);
+    rightObstacle.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+    rightObstacle.setFriction(1.0);
+
+    sx::RigidBodyOptions leftSphereOptions;
+    leftSphereOptions.mass = 1.0;
+    leftSphereOptions.position = Eigen::Vector3d(-0.1, 0.0, 0.0);
+    leftSphereOptions.linearVelocity = Eigen::Vector3d(0.0, 1.0, 0.0);
+    auto leftSphere = world.addRigidBody(
+        "avbd_default_multi_friction_left_sphere", leftSphereOptions);
+    leftSphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+    leftSphere.setFriction(sphereFriction);
+
+    sx::RigidBodyOptions rightSphereOptions;
+    rightSphereOptions.mass = 1.0;
+    rightSphereOptions.position = Eigen::Vector3d(1.9, 0.0, 0.0);
+    rightSphereOptions.linearVelocity = Eigen::Vector3d(0.0, 1.0, 0.0);
+    auto rightSphere = world.addRigidBody(
+        "avbd_default_multi_friction_right_sphere", rightSphereOptions);
+    rightSphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+    rightSphere.setFriction(sphereFriction);
+
+    auto& registry = sx::detail::registryOf(world);
+    const auto configureAvbdContact = [&](const sx::RigidBody& body) {
+      auto& config = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+          sx::detail::toRegistryEntity(body.getEntity()));
+      config.startStiffness = 10000.0;
+      config.maxStiffness = 10000.0;
+      config.alpha = 0.5;
+      config.gamma = 1.0;
+    };
+    configureAvbdContact(leftSphere);
+    configureAvbdContact(rightSphere);
+
+    const Eigen::Vector3d initialLeftObstaclePosition
+        = leftObstacle.getTranslation();
+    const Eigen::Vector3d initialRightObstaclePosition
+        = rightObstacle.getTranslation();
+    EXPECT_GE(world.collide().size(), 2u);
+
+    world.step();
+    EXPECT_GE(world.collide().size(), 2u);
+    world.step();
+
+    EXPECT_TRUE(leftObstacle.getTranslation().isApprox(
+        initialLeftObstaclePosition, 1e-12));
+    EXPECT_TRUE(rightObstacle.getTranslation().isApprox(
+        initialRightObstaclePosition, 1e-12));
+    EXPECT_TRUE(
+        leftObstacle.getLinearVelocity().isApprox(Eigen::Vector3d::Zero()));
+    EXPECT_TRUE(
+        rightObstacle.getLinearVelocity().isApprox(Eigen::Vector3d::Zero()));
+
+    return StepOutcome{
+        BodyOutcome{
+            leftSphere.getLinearVelocity(), leftSphere.getAngularVelocity()},
+        BodyOutcome{
+            rightSphere.getLinearVelocity(), rightSphere.getAngularVelocity()}};
+  };
+
+  const StepOutcome frictionless = runDefaultStep(0.0);
+  const StepOutcome frictional = runDefaultStep(1.0);
+  const double radius = 0.5;
+  const auto contactSlip = [radius](const BodyOutcome& outcome) {
+    return outcome.linearVelocity.y() - radius * outcome.angularVelocity.z();
+  };
+
+  EXPECT_GT(frictionless.left.linearVelocity.x(), 1e-9);
+  EXPECT_GT(frictionless.right.linearVelocity.x(), 1e-9);
+  EXPECT_GT(frictional.left.linearVelocity.x(), 1e-9);
+  EXPECT_GT(frictional.right.linearVelocity.x(), 1e-9);
+  EXPECT_LT(
+      std::abs(contactSlip(frictional.left)),
+      std::abs(contactSlip(frictionless.left)));
+  EXPECT_LT(
+      std::abs(contactSlip(frictional.right)),
+      std::abs(contactSlip(frictionless.right)));
+  EXPECT_GT(frictional.left.linearVelocity.y(), -1e-9);
+  EXPECT_GT(frictional.right.linearVelocity.y(), -1e-9);
+  EXPECT_GT(frictional.left.angularVelocity.z(), 1e-9);
+  EXPECT_GT(frictional.right.angularVelocity.z(), 1e-9);
+}
+
+// Test that warm-started AVBD friction rows act on live box-box contact
+// manifolds, not only sphere-like single-point contacts.
+TEST(World, RigidBodyContactStageAvbdWarmStartedBoxManifoldFrictionReducesSlide)
+{
+  namespace sx = dart::simulation;
+
+  struct ContactStageOutcome
+  {
+    Eigen::Vector3d linearVelocity = Eigen::Vector3d::Zero();
+  };
+
+  const auto runContactStage = [](const double boxFriction) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.05);
+
+    sx::RigidBodyOptions groundOptions;
+    groundOptions.isStatic = true;
+    groundOptions.position = Eigen::Vector3d::Zero();
+    auto ground = world.addRigidBody(
+        "avbd_box_manifold_friction_ground", groundOptions);
+    ground.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(2.0, 2.0, 0.5)));
+    ground.setFriction(1.0);
+
+    sx::RigidBodyOptions boxOptions;
+    boxOptions.mass = 1.0;
+    boxOptions.position = Eigen::Vector3d(0.8, 0.0, 0.0);
+    boxOptions.linearVelocity = Eigen::Vector3d(0.0, 1.0, 0.0);
+    auto box = world.addRigidBody("avbd_box_manifold_friction_box", boxOptions);
+    box.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.5)));
+    box.setFriction(boxFriction);
+
+    auto& registry = sx::detail::registryOf(world);
+    auto& config = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+        sx::detail::toRegistryEntity(box.getEntity()));
+    config.startStiffness = 10000.0;
+    config.maxStiffness = 10000.0;
+    config.alpha = 0.5;
+    config.gamma = 1.0;
+
+    const Eigen::Vector3d initialGroundPosition = ground.getTranslation();
+    const Eigen::Vector3d initialBoxPosition = box.getTranslation();
+    EXPECT_GE(world.collide().size(), 4u);
+
+    sx::compute::SequentialExecutor executor;
+    sx::compute::RigidBodyContactStage contactStage(/*iterations=*/12);
+    sx::compute::WorldStepPipeline pipeline;
+    pipeline.addStage(contactStage);
+    world.step(executor, pipeline);
+    world.step(executor, pipeline);
+
+    EXPECT_TRUE(ground.getTranslation().isApprox(initialGroundPosition, 1e-12));
+    EXPECT_TRUE(box.getTranslation().isApprox(initialBoxPosition, 1e-12));
+    EXPECT_TRUE(ground.getLinearVelocity().isApprox(Eigen::Vector3d::Zero()));
+
+    return ContactStageOutcome{box.getLinearVelocity()};
+  };
+
+  const ContactStageOutcome frictionless = runContactStage(0.0);
+  const ContactStageOutcome frictional = runContactStage(1.0);
+
+  EXPECT_GT(frictionless.linearVelocity.y(), 1e-9);
+  EXPECT_LT(
+      std::abs(frictional.linearVelocity.y()),
+      std::abs(frictionless.linearVelocity.y()));
+  EXPECT_GT(frictional.linearVelocity.y(), -1e-9);
+}
+
+// Test that the built-in World::step() schedule also reaches warm-started AVBD
+// friction rows for a live box-box contact manifold.
+TEST(
+    World,
+    RigidBodyContactStageAvbdWarmStartedBoxManifoldFrictionRunsThroughDefaultWorldStep)
+{
+  namespace sx = dart::simulation;
+
+  struct StepOutcome
+  {
+    Eigen::Vector3d linearVelocity = Eigen::Vector3d::Zero();
+  };
+
+  const auto runDefaultStep = [](const double boxFriction) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.02);
+
+    sx::RigidBodyOptions groundOptions;
+    groundOptions.isStatic = true;
+    groundOptions.position = Eigen::Vector3d::Zero();
+    auto ground = world.addRigidBody(
+        "avbd_default_box_manifold_friction_ground", groundOptions);
+    ground.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(2.0, 2.0, 0.5)));
+    ground.setFriction(1.0);
+
+    sx::RigidBodyOptions boxOptions;
+    boxOptions.mass = 1.0;
+    boxOptions.position = Eigen::Vector3d(0.8, 0.0, 0.0);
+    boxOptions.linearVelocity = Eigen::Vector3d(0.0, 1.0, 0.0);
+    auto box = world.addRigidBody(
+        "avbd_default_box_manifold_friction_box", boxOptions);
+    box.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.5)));
+    box.setFriction(boxFriction);
+
+    auto& registry = sx::detail::registryOf(world);
+    auto& config = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+        sx::detail::toRegistryEntity(box.getEntity()));
+    config.startStiffness = 10000.0;
+    config.maxStiffness = 10000.0;
+    config.alpha = 0.95;
+    config.gamma = 1.0;
+
+    const Eigen::Vector3d initialGroundPosition = ground.getTranslation();
+    EXPECT_GE(world.collide().size(), 4u);
+
+    world.step();
+    EXPECT_GE(world.collide().size(), 4u);
+    world.step();
+
+    EXPECT_TRUE(ground.getTranslation().isApprox(initialGroundPosition, 1e-12));
+    EXPECT_TRUE(ground.getLinearVelocity().isApprox(Eigen::Vector3d::Zero()));
+
+    return StepOutcome{box.getLinearVelocity()};
+  };
+
+  const StepOutcome frictionless = runDefaultStep(0.0);
+  const StepOutcome frictional = runDefaultStep(1.0);
+
+  EXPECT_GT(frictionless.linearVelocity.y(), 1e-9);
+  EXPECT_LT(
+      std::abs(frictional.linearVelocity.y()),
+      std::abs(frictionless.linearVelocity.y()));
+  EXPECT_GT(frictional.linearVelocity.y(), -1e-9);
+}
+
+// Test that warm-started AVBD friction rows also act on live dynamic/dynamic
+// box-box contact manifolds with multiple narrow-phase contact points.
+TEST(
+    World,
+    RigidBodyContactStageAvbdWarmStartedDynamicBoxManifoldFrictionReducesSlip)
+{
+  namespace sx = dart::simulation;
+
+  struct ContactStageOutcome
+  {
+    Eigen::Vector3d leftLinearVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d leftAngularVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d rightLinearVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d rightAngularVelocity = Eigen::Vector3d::Zero();
+  };
+
+  const auto runContactStage = [](const double boxFriction) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.05);
+
+    sx::RigidBodyOptions leftOptions;
+    leftOptions.mass = 1.0;
+    leftOptions.position = Eigen::Vector3d::Zero();
+    auto leftBox = world.addRigidBody(
+        "avbd_dynamic_box_manifold_friction_left", leftOptions);
+    leftBox.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.5)));
+    leftBox.setFriction(boxFriction);
+
+    sx::RigidBodyOptions rightOptions;
+    rightOptions.mass = 1.0;
+    rightOptions.position = Eigen::Vector3d(0.4, 0.0, 0.0);
+    rightOptions.linearVelocity = Eigen::Vector3d(0.0, 1.0, 0.0);
+    auto rightBox = world.addRigidBody(
+        "avbd_dynamic_box_manifold_friction_right", rightOptions);
+    rightBox.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.5)));
+    rightBox.setFriction(boxFriction);
+
+    auto& registry = sx::detail::registryOf(world);
+    const auto configureAvbdContact = [&](const sx::RigidBody& body) {
+      auto& config = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+          sx::detail::toRegistryEntity(body.getEntity()));
+      config.startStiffness = 10000.0;
+      config.maxStiffness = 10000.0;
+      config.alpha = 0.5;
+      config.gamma = 1.0;
+    };
+    configureAvbdContact(leftBox);
+    configureAvbdContact(rightBox);
+
+    const Eigen::Vector3d initialLeftPosition = leftBox.getTranslation();
+    const Eigen::Vector3d initialRightPosition = rightBox.getTranslation();
+    EXPECT_GE(world.collide().size(), 4u);
+
+    sx::compute::SequentialExecutor executor;
+    sx::compute::RigidBodyContactStage contactStage(/*iterations=*/12);
+    sx::compute::WorldStepPipeline pipeline;
+    pipeline.addStage(contactStage);
+    world.step(executor, pipeline);
+    world.step(executor, pipeline);
+
+    EXPECT_TRUE(leftBox.getTranslation().isApprox(initialLeftPosition, 1e-12));
+    EXPECT_TRUE(
+        rightBox.getTranslation().isApprox(initialRightPosition, 1e-12));
+
+    return ContactStageOutcome{
+        leftBox.getLinearVelocity(),
+        leftBox.getAngularVelocity(),
+        rightBox.getLinearVelocity(),
+        rightBox.getAngularVelocity()};
+  };
+
+  const ContactStageOutcome frictionless = runContactStage(0.0);
+  const ContactStageOutcome frictional = runContactStage(1.0);
+  constexpr double boxHalfExtent = 0.25;
+  const auto contactSlip = [boxHalfExtent](const ContactStageOutcome& outcome) {
+    const Eigen::Vector3d leftArm(boxHalfExtent, 0.0, 0.0);
+    const Eigen::Vector3d rightArm(-boxHalfExtent, 0.0, 0.0);
+    const Eigen::Vector3d leftContactVelocity
+        = outcome.leftLinearVelocity
+          + outcome.leftAngularVelocity.cross(leftArm);
+    const Eigen::Vector3d rightContactVelocity
+        = outcome.rightLinearVelocity
+          + outcome.rightAngularVelocity.cross(rightArm);
+    return rightContactVelocity.y() - leftContactVelocity.y();
+  };
+  const auto separatingVelocity = [](const ContactStageOutcome& outcome) {
+    return outcome.rightLinearVelocity.x() - outcome.leftLinearVelocity.x();
+  };
+
+  EXPECT_GT(separatingVelocity(frictionless), 1e-9);
+  EXPECT_GT(separatingVelocity(frictional), 1e-9);
+  EXPECT_GT(std::abs(contactSlip(frictionless)), 1e-9);
+  EXPECT_LT(
+      std::abs(contactSlip(frictional)), std::abs(contactSlip(frictionless)));
+}
+
+// Test that the built-in World::step() schedule also reaches warm-started AVBD
+// friction rows for live dynamic/dynamic box-box contact manifolds.
+TEST(
+    World,
+    RigidBodyContactStageAvbdWarmStartedDynamicBoxManifoldFrictionRunsThroughDefaultWorldStep)
+{
+  namespace sx = dart::simulation;
+
+  struct StepOutcome
+  {
+    Eigen::Vector3d leftLinearVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d leftAngularVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d rightLinearVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d rightAngularVelocity = Eigen::Vector3d::Zero();
+  };
+
+  const auto runDefaultStep = [](const double boxFriction) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.02);
+
+    sx::RigidBodyOptions leftOptions;
+    leftOptions.mass = 1.0;
+    leftOptions.position = Eigen::Vector3d::Zero();
+    auto leftBox = world.addRigidBody(
+        "avbd_default_dynamic_box_manifold_friction_left", leftOptions);
+    leftBox.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.5)));
+    leftBox.setFriction(boxFriction);
+
+    sx::RigidBodyOptions rightOptions;
+    rightOptions.mass = 1.0;
+    rightOptions.position = Eigen::Vector3d(0.2, 0.0, 0.0);
+    rightOptions.linearVelocity = Eigen::Vector3d(0.0, 1.0, 0.0);
+    auto rightBox = world.addRigidBody(
+        "avbd_default_dynamic_box_manifold_friction_right", rightOptions);
+    rightBox.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.5)));
+    rightBox.setFriction(boxFriction);
+
+    auto& registry = sx::detail::registryOf(world);
+    const auto configureAvbdContact = [&](const sx::RigidBody& body) {
+      auto& config = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+          sx::detail::toRegistryEntity(body.getEntity()));
+      config.startStiffness = 10000.0;
+      config.maxStiffness = 10000.0;
+      config.alpha = 0.95;
+      config.gamma = 1.0;
+    };
+    configureAvbdContact(leftBox);
+    configureAvbdContact(rightBox);
+    leftBox.setForce(Eigen::Vector3d(25.0, 0.0, 0.0));
+    rightBox.setForce(Eigen::Vector3d(-25.0, 0.0, 0.0));
+
+    EXPECT_GE(world.collide().size(), 4u);
+
+    world.step();
+    EXPECT_GE(world.collide().size(), 4u);
+    world.step();
+
+    return StepOutcome{
+        leftBox.getLinearVelocity(),
+        leftBox.getAngularVelocity(),
+        rightBox.getLinearVelocity(),
+        rightBox.getAngularVelocity()};
+  };
+
+  const StepOutcome frictionless = runDefaultStep(0.0);
+  const StepOutcome frictional = runDefaultStep(1.0);
+
+  constexpr double boxHalfExtent = 0.25;
+  const auto contactSlip = [boxHalfExtent](const StepOutcome& outcome) {
+    const Eigen::Vector3d leftArm(boxHalfExtent, 0.0, 0.0);
+    const Eigen::Vector3d rightArm(-boxHalfExtent, 0.0, 0.0);
+    const Eigen::Vector3d leftContactVelocity
+        = outcome.leftLinearVelocity
+          + outcome.leftAngularVelocity.cross(leftArm);
+    const Eigen::Vector3d rightContactVelocity
+        = outcome.rightLinearVelocity
+          + outcome.rightAngularVelocity.cross(rightArm);
+    return rightContactVelocity.y() - leftContactVelocity.y();
+  };
+  const auto separatingVelocity = [](const StepOutcome& outcome) {
+    return outcome.rightLinearVelocity.x() - outcome.leftLinearVelocity.x();
+  };
+
+  EXPECT_GT(separatingVelocity(frictionless), 1e-9);
+  EXPECT_GT(separatingVelocity(frictional), 1e-9);
+  EXPECT_GT(std::abs(contactSlip(frictionless)), 1e-9);
+  EXPECT_LT(
+      std::abs(contactSlip(frictional)), std::abs(contactSlip(frictionless)));
+}
+
+// Test that warm-started AVBD contact-stage friction also acts on a stacked
+// contact set containing both static/dynamic and dynamic/dynamic box manifolds.
+TEST(
+    World,
+    RigidBodyContactStageAvbdWarmStartedStackedBoxManifoldFrictionReducesSlip)
+{
+  namespace sx = dart::simulation;
+
+  struct ContactStageOutcome
+  {
+    Eigen::Vector3d lowerLinearVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d lowerAngularVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d upperLinearVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d upperAngularVelocity = Eigen::Vector3d::Zero();
+  };
+
+  const auto runContactStage = [](const double friction) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.05);
+
+    constexpr double halfExtent = 0.5;
+    const Eigen::Vector3d boxHalfExtents
+        = Eigen::Vector3d::Constant(halfExtent);
+
+    sx::RigidBodyOptions groundOptions;
+    groundOptions.isStatic = true;
+    groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+    auto ground = world.addRigidBody(
+        "avbd_stacked_box_manifold_friction_ground", groundOptions);
+    ground.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(2.0, 2.0, halfExtent)));
+    ground.setFriction(friction);
+
+    sx::RigidBodyOptions lowerOptions;
+    lowerOptions.mass = 1.0;
+    lowerOptions.position = Eigen::Vector3d(0.02, 0.0, 0.45);
+    auto lower = world.addRigidBody(
+        "avbd_stacked_box_manifold_friction_lower", lowerOptions);
+    lower.setCollisionShape(sx::CollisionShape::makeBox(boxHalfExtents));
+    lower.setFriction(friction);
+
+    sx::RigidBodyOptions upperOptions;
+    upperOptions.mass = 1.0;
+    upperOptions.position = Eigen::Vector3d(0.04, 0.0, 1.35);
+    upperOptions.linearVelocity = Eigen::Vector3d(1.0, 0.0, 0.0);
+    auto upper = world.addRigidBody(
+        "avbd_stacked_box_manifold_friction_upper", upperOptions);
+    upper.setCollisionShape(sx::CollisionShape::makeBox(boxHalfExtents));
+    upper.setFriction(friction);
+
+    auto& registry = sx::detail::registryOf(world);
+    const auto configureAvbdContact = [&](const sx::RigidBody& body) {
+      auto& config = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+          sx::detail::toRegistryEntity(body.getEntity()));
+      config.startStiffness = 10000.0;
+      config.maxStiffness = 10000.0;
+      config.alpha = 0.5;
+      config.gamma = 1.0;
+    };
+    configureAvbdContact(lower);
+    configureAvbdContact(upper);
+
+    const Eigen::Vector3d initialGroundPosition = ground.getTranslation();
+    const Eigen::Vector3d initialLowerPosition = lower.getTranslation();
+    const Eigen::Vector3d initialUpperPosition = upper.getTranslation();
+    EXPECT_GE(world.collide().size(), 8u);
+
+    sx::compute::SequentialExecutor executor;
+    sx::compute::RigidBodyContactStage contactStage(/*iterations=*/12);
+    sx::compute::WorldStepPipeline pipeline;
+    pipeline.addStage(contactStage);
+    world.step(executor, pipeline);
+    world.step(executor, pipeline);
+
+    EXPECT_TRUE(ground.getTranslation().isApprox(initialGroundPosition, 1e-12));
+    EXPECT_TRUE(lower.getTranslation().isApprox(initialLowerPosition, 1e-12));
+    EXPECT_TRUE(upper.getTranslation().isApprox(initialUpperPosition, 1e-12));
+    EXPECT_TRUE(ground.getLinearVelocity().isApprox(Eigen::Vector3d::Zero()));
+
+    return ContactStageOutcome{
+        lower.getLinearVelocity(),
+        lower.getAngularVelocity(),
+        upper.getLinearVelocity(),
+        upper.getAngularVelocity()};
+  };
+
+  const ContactStageOutcome frictionless = runContactStage(0.0);
+  const ContactStageOutcome frictional = runContactStage(1.0);
+
+  constexpr double halfExtent = 0.5;
+  const auto upperLowerSlip = [halfExtent](const ContactStageOutcome& outcome) {
+    const Eigen::Vector3d lowerArm(0.0, 0.0, halfExtent);
+    const Eigen::Vector3d upperArm(0.0, 0.0, -halfExtent);
+    const Eigen::Vector3d lowerContactVelocity
+        = outcome.lowerLinearVelocity
+          + outcome.lowerAngularVelocity.cross(lowerArm);
+    const Eigen::Vector3d upperContactVelocity
+        = outcome.upperLinearVelocity
+          + outcome.upperAngularVelocity.cross(upperArm);
+    return upperContactVelocity.x() - lowerContactVelocity.x();
+  };
+
+  EXPECT_GT(std::abs(upperLowerSlip(frictionless)), 1e-9);
+  EXPECT_LT(
+      std::abs(upperLowerSlip(frictional)),
+      std::abs(upperLowerSlip(frictionless)));
+  EXPECT_LT(frictional.upperLinearVelocity.x(), 1.0 - 1e-9);
+}
+
+// Test a wider stacked contact set with two independent dynamic/dynamic
+// box-box manifolds sharing one supported lower dynamic body.
+TEST(
+    World,
+    RigidBodyContactStageAvbdWarmStartedMultiTopStackedBoxManifoldFrictionReducesSlip)
+{
+  namespace sx = dart::simulation;
+
+  struct ContactStageOutcome
+  {
+    Eigen::Vector3d lowerLinearVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d lowerAngularVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d leftUpperLinearVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d leftUpperAngularVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d rightUpperLinearVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d rightUpperAngularVelocity = Eigen::Vector3d::Zero();
+  };
+
+  const auto runContactStage = [](const double friction) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.05);
+
+    constexpr double lowerHalfZ = 0.5;
+    constexpr double upperHalfZ = 0.35;
+    constexpr double upperXOffset = 0.45;
+
+    sx::RigidBodyOptions groundOptions;
+    groundOptions.isStatic = true;
+    groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+    auto ground = world.addRigidBody(
+        "avbd_multi_top_stack_friction_ground", groundOptions);
+    ground.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(2.5, 2.0, lowerHalfZ)));
+    ground.setFriction(friction);
+
+    sx::RigidBodyOptions lowerOptions;
+    lowerOptions.mass = 2.0;
+    lowerOptions.position = Eigen::Vector3d(0.0, 0.0, 0.45);
+    auto lower = world.addRigidBody(
+        "avbd_multi_top_stack_friction_lower", lowerOptions);
+    lower.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(1.2, 0.7, lowerHalfZ)));
+    lower.setFriction(friction);
+
+    const auto addUpper
+        = [&](std::string_view name, const double x, const double yVelocity) {
+            sx::RigidBodyOptions upperOptions;
+            upperOptions.mass = 1.0;
+            upperOptions.position = Eigen::Vector3d(x, 0.0, 1.25);
+            upperOptions.linearVelocity = Eigen::Vector3d(0.0, yVelocity, 0.0);
+            auto upper = world.addRigidBody(name, upperOptions);
+            upper.setCollisionShape(
+                sx::CollisionShape::makeBox(
+                    Eigen::Vector3d(upperHalfZ, upperHalfZ, upperHalfZ)));
+            upper.setFriction(friction);
+            return upper;
+          };
+    auto leftUpper = addUpper(
+        "avbd_multi_top_stack_friction_left_upper", -upperXOffset, 1.0);
+    auto rightUpper = addUpper(
+        "avbd_multi_top_stack_friction_right_upper", upperXOffset, -1.0);
+
+    auto& registry = sx::detail::registryOf(world);
+    const auto configureAvbdContact = [&](const sx::RigidBody& body) {
+      auto& config = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+          sx::detail::toRegistryEntity(body.getEntity()));
+      config.startStiffness = 10000.0;
+      config.maxStiffness = 10000.0;
+      config.alpha = 0.5;
+      config.gamma = 1.0;
+    };
+    configureAvbdContact(lower);
+    configureAvbdContact(leftUpper);
+    configureAvbdContact(rightUpper);
+
+    const Eigen::Vector3d initialGroundPosition = ground.getTranslation();
+    const Eigen::Vector3d initialLowerPosition = lower.getTranslation();
+    const Eigen::Vector3d initialLeftPosition = leftUpper.getTranslation();
+    const Eigen::Vector3d initialRightPosition = rightUpper.getTranslation();
+    EXPECT_GE(world.collide().size(), 12u);
+
+    sx::compute::SequentialExecutor executor;
+    sx::compute::RigidBodyContactStage contactStage(/*iterations=*/16);
+    sx::compute::WorldStepPipeline pipeline;
+    pipeline.addStage(contactStage);
+    world.step(executor, pipeline);
+    world.step(executor, pipeline);
+
+    EXPECT_TRUE(ground.getTranslation().isApprox(initialGroundPosition, 1e-12));
+    EXPECT_TRUE(lower.getTranslation().isApprox(initialLowerPosition, 1e-12));
+    EXPECT_TRUE(
+        leftUpper.getTranslation().isApprox(initialLeftPosition, 1e-12));
+    EXPECT_TRUE(
+        rightUpper.getTranslation().isApprox(initialRightPosition, 1e-12));
+    EXPECT_TRUE(ground.getLinearVelocity().isApprox(Eigen::Vector3d::Zero()));
+
+    return ContactStageOutcome{
+        lower.getLinearVelocity(),
+        lower.getAngularVelocity(),
+        leftUpper.getLinearVelocity(),
+        leftUpper.getAngularVelocity(),
+        rightUpper.getLinearVelocity(),
+        rightUpper.getAngularVelocity()};
+  };
+
+  const ContactStageOutcome frictionless = runContactStage(0.0);
+  const ContactStageOutcome frictional = runContactStage(1.0);
+
+  const auto upperLowerSlip = [](const ContactStageOutcome& outcome,
+                                 const double xOffset,
+                                 const Eigen::Vector3d& upperLinearVelocity,
+                                 const Eigen::Vector3d& upperAngularVelocity) {
+    constexpr double lowerHalfZ = 0.5;
+    constexpr double upperHalfZ = 0.35;
+    const Eigen::Vector3d lowerArm(xOffset, 0.0, lowerHalfZ);
+    const Eigen::Vector3d upperArm(0.0, 0.0, -upperHalfZ);
+    const Eigen::Vector3d lowerContactVelocity
+        = outcome.lowerLinearVelocity
+          + outcome.lowerAngularVelocity.cross(lowerArm);
+    const Eigen::Vector3d upperContactVelocity
+        = upperLinearVelocity + upperAngularVelocity.cross(upperArm);
+    return upperContactVelocity.y() - lowerContactVelocity.y();
+  };
+
+  constexpr double upperXOffset = 0.45;
+  const double frictionlessLeftSlip = upperLowerSlip(
+      frictionless,
+      -upperXOffset,
+      frictionless.leftUpperLinearVelocity,
+      frictionless.leftUpperAngularVelocity);
+  const double frictionlessRightSlip = upperLowerSlip(
+      frictionless,
+      upperXOffset,
+      frictionless.rightUpperLinearVelocity,
+      frictionless.rightUpperAngularVelocity);
+  const double frictionalLeftSlip = upperLowerSlip(
+      frictional,
+      -upperXOffset,
+      frictional.leftUpperLinearVelocity,
+      frictional.leftUpperAngularVelocity);
+  const double frictionalRightSlip = upperLowerSlip(
+      frictional,
+      upperXOffset,
+      frictional.rightUpperLinearVelocity,
+      frictional.rightUpperAngularVelocity);
+
+  EXPECT_GT(std::abs(frictionlessLeftSlip), 1e-9);
+  EXPECT_GT(std::abs(frictionlessRightSlip), 1e-9);
+  EXPECT_LT(std::abs(frictionalLeftSlip), std::abs(frictionlessLeftSlip));
+  EXPECT_LT(std::abs(frictionalRightSlip), std::abs(frictionlessRightSlip));
+  EXPECT_LT(frictional.leftUpperLinearVelocity.y(), 1.0 - 1e-9);
+  EXPECT_GT(frictional.rightUpperLinearVelocity.y(), -1.0 + 1e-9);
+}
+
+// Test a wider pile-style contact set with two lower dynamic supports and one
+// top dynamic body spanning both supports.
+TEST(
+    World,
+    RigidBodyContactStageAvbdWarmStartedBoxPileManifoldFrictionReducesSlip)
+{
+  namespace sx = dart::simulation;
+
+  struct ContactStageOutcome
+  {
+    Eigen::Vector3d leftLowerLinearVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d leftLowerAngularVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d rightLowerLinearVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d rightLowerAngularVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d topLinearVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d topAngularVelocity = Eigen::Vector3d::Zero();
+  };
+
+  const auto runContactStage = [](const double friction) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.05);
+
+    constexpr double lowerHalfZ = 0.4;
+    constexpr double topHalfZ = 0.35;
+    constexpr double lowerXOffset = 0.45;
+
+    sx::RigidBodyOptions groundOptions;
+    groundOptions.isStatic = true;
+    groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+    auto ground = world.addRigidBody(
+        "avbd_box_pile_stage_friction_ground", groundOptions);
+    ground.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(2.5, 2.0, 0.5)));
+    ground.setFriction(friction);
+
+    const auto addLower = [&](std::string_view name, const double x) {
+      sx::RigidBodyOptions lowerOptions;
+      lowerOptions.mass = 1.0;
+      lowerOptions.position = Eigen::Vector3d(x, 0.0, 0.38);
+      auto lower = world.addRigidBody(name, lowerOptions);
+      lower.setCollisionShape(
+          sx::CollisionShape::makeBox(Eigen::Vector3d(0.4, 0.4, lowerHalfZ)));
+      lower.setFriction(friction);
+      return lower;
+    };
+    auto leftLower
+        = addLower("avbd_box_pile_stage_friction_left_lower", -lowerXOffset);
+    auto rightLower
+        = addLower("avbd_box_pile_stage_friction_right_lower", lowerXOffset);
+
+    sx::RigidBodyOptions topOptions;
+    topOptions.mass = 1.0;
+    topOptions.position = Eigen::Vector3d(0.0, 0.0, 1.10);
+    topOptions.linearVelocity = Eigen::Vector3d(0.0, 1.0, 0.0);
+    auto top
+        = world.addRigidBody("avbd_box_pile_stage_friction_top", topOptions);
+    top.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(0.7, 0.4, topHalfZ)));
+    top.setFriction(friction);
+
+    auto& registry = sx::detail::registryOf(world);
+    const auto configureAvbdContact = [&](const sx::RigidBody& body) {
+      auto& config = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+          sx::detail::toRegistryEntity(body.getEntity()));
+      config.startStiffness = 10000.0;
+      config.maxStiffness = 10000.0;
+      config.alpha = 0.5;
+      config.gamma = 1.0;
+    };
+    configureAvbdContact(leftLower);
+    configureAvbdContact(rightLower);
+    configureAvbdContact(top);
+
+    const Eigen::Vector3d initialGroundPosition = ground.getTranslation();
+    const Eigen::Vector3d initialLeftPosition = leftLower.getTranslation();
+    const Eigen::Vector3d initialRightPosition = rightLower.getTranslation();
+    const Eigen::Vector3d initialTopPosition = top.getTranslation();
+    EXPECT_GE(world.collide().size(), 12u);
+
+    sx::compute::SequentialExecutor executor;
+    sx::compute::RigidBodyContactStage contactStage(/*iterations=*/20);
+    sx::compute::WorldStepPipeline pipeline;
+    pipeline.addStage(contactStage);
+    world.step(executor, pipeline);
+    world.step(executor, pipeline);
+
+    EXPECT_TRUE(ground.getTranslation().isApprox(initialGroundPosition, 1e-12));
+    EXPECT_TRUE(
+        leftLower.getTranslation().isApprox(initialLeftPosition, 1e-12));
+    EXPECT_TRUE(
+        rightLower.getTranslation().isApprox(initialRightPosition, 1e-12));
+    EXPECT_TRUE(top.getTranslation().isApprox(initialTopPosition, 1e-12));
+    EXPECT_TRUE(ground.getLinearVelocity().isApprox(Eigen::Vector3d::Zero()));
+
+    return ContactStageOutcome{
+        leftLower.getLinearVelocity(),
+        leftLower.getAngularVelocity(),
+        rightLower.getLinearVelocity(),
+        rightLower.getAngularVelocity(),
+        top.getLinearVelocity(),
+        top.getAngularVelocity()};
+  };
+
+  const ContactStageOutcome frictionless = runContactStage(0.0);
+  const ContactStageOutcome frictional = runContactStage(1.0);
+
+  const auto upperLowerSlip = [](const ContactStageOutcome& outcome,
+                                 const double lowerXOffset,
+                                 const Eigen::Vector3d& lowerLinearVelocity,
+                                 const Eigen::Vector3d& lowerAngularVelocity) {
+    constexpr double lowerHalfZ = 0.4;
+    constexpr double topHalfZ = 0.35;
+    const Eigen::Vector3d lowerArm(0.0, 0.0, lowerHalfZ);
+    const Eigen::Vector3d topArm(lowerXOffset, 0.0, -topHalfZ);
+    const Eigen::Vector3d lowerContactVelocity
+        = lowerLinearVelocity + lowerAngularVelocity.cross(lowerArm);
+    const Eigen::Vector3d topContactVelocity
+        = outcome.topLinearVelocity + outcome.topAngularVelocity.cross(topArm);
+    return topContactVelocity.y() - lowerContactVelocity.y();
+  };
+
+  constexpr double lowerXOffset = 0.45;
+  const double frictionlessLeftSlip = upperLowerSlip(
+      frictionless,
+      -lowerXOffset,
+      frictionless.leftLowerLinearVelocity,
+      frictionless.leftLowerAngularVelocity);
+  const double frictionlessRightSlip = upperLowerSlip(
+      frictionless,
+      lowerXOffset,
+      frictionless.rightLowerLinearVelocity,
+      frictionless.rightLowerAngularVelocity);
+  const double frictionalLeftSlip = upperLowerSlip(
+      frictional,
+      -lowerXOffset,
+      frictional.leftLowerLinearVelocity,
+      frictional.leftLowerAngularVelocity);
+  const double frictionalRightSlip = upperLowerSlip(
+      frictional,
+      lowerXOffset,
+      frictional.rightLowerLinearVelocity,
+      frictional.rightLowerAngularVelocity);
+
+  EXPECT_GT(std::abs(frictionlessLeftSlip), 1e-9);
+  EXPECT_GT(std::abs(frictionlessRightSlip), 1e-9);
+  EXPECT_LT(std::abs(frictionalLeftSlip), std::abs(frictionlessLeftSlip));
+  EXPECT_LT(std::abs(frictionalRightSlip), std::abs(frictionlessRightSlip));
+  EXPECT_LT(frictional.topLinearVelocity.y(), 1.0 - 1e-9);
+}
+
+// Test a wider multi-top pile with two lower dynamic supports and two
+// independent upper dynamic bodies.
+TEST(
+    World,
+    RigidBodyContactStageAvbdWarmStartedMultiTopBoxPileManifoldFrictionReducesSlip)
+{
+  namespace sx = dart::simulation;
+
+  struct ContactStageOutcome
+  {
+    Eigen::Vector3d leftLowerLinearVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d leftLowerAngularVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d rightLowerLinearVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d rightLowerAngularVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d leftUpperLinearVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d leftUpperAngularVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d rightUpperLinearVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d rightUpperAngularVelocity = Eigen::Vector3d::Zero();
+  };
+
+  const auto runContactStage = [](const double friction) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.05);
+
+    constexpr double lowerXOffset = 0.55;
+    constexpr double lowerHalfZ = 0.4;
+    constexpr double upperHalfZ = 0.35;
+
+    sx::RigidBodyOptions groundOptions;
+    groundOptions.isStatic = true;
+    groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+    auto ground = world.addRigidBody(
+        "avbd_multi_top_box_pile_stage_friction_ground", groundOptions);
+    ground.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(3.0, 2.0, 0.5)));
+    ground.setFriction(friction);
+
+    const auto addLower = [&](std::string_view name, const double x) {
+      sx::RigidBodyOptions lowerOptions;
+      lowerOptions.mass = 1.0;
+      lowerOptions.position = Eigen::Vector3d(x, 0.0, 0.38);
+      auto lower = world.addRigidBody(name, lowerOptions);
+      lower.setCollisionShape(
+          sx::CollisionShape::makeBox(Eigen::Vector3d(0.45, 0.45, lowerHalfZ)));
+      lower.setFriction(friction);
+      return lower;
+    };
+    auto leftLower = addLower(
+        "avbd_multi_top_box_pile_stage_friction_left_lower", -lowerXOffset);
+    auto rightLower = addLower(
+        "avbd_multi_top_box_pile_stage_friction_right_lower", lowerXOffset);
+
+    const auto addUpper = [&](std::string_view name,
+                              const double x,
+                              const double yVelocity) {
+      sx::RigidBodyOptions upperOptions;
+      upperOptions.mass = 1.0;
+      upperOptions.position = Eigen::Vector3d(x, 0.0, 1.10);
+      upperOptions.linearVelocity = Eigen::Vector3d(0.0, yVelocity, 0.0);
+      auto upper = world.addRigidBody(name, upperOptions);
+      upper.setCollisionShape(
+          sx::CollisionShape::makeBox(Eigen::Vector3d(0.35, 0.35, upperHalfZ)));
+      upper.setFriction(friction);
+      return upper;
+    };
+    auto leftUpper = addUpper(
+        "avbd_multi_top_box_pile_stage_friction_left_upper",
+        -lowerXOffset,
+        1.0);
+    auto rightUpper = addUpper(
+        "avbd_multi_top_box_pile_stage_friction_right_upper",
+        lowerXOffset,
+        -1.0);
+
+    auto& registry = sx::detail::registryOf(world);
+    const auto configureAvbdContact = [&](const sx::RigidBody& body) {
+      auto& config = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+          sx::detail::toRegistryEntity(body.getEntity()));
+      config.startStiffness = 10000.0;
+      config.maxStiffness = 10000.0;
+      config.alpha = 0.5;
+      config.gamma = 1.0;
+    };
+    configureAvbdContact(leftLower);
+    configureAvbdContact(rightLower);
+    configureAvbdContact(leftUpper);
+    configureAvbdContact(rightUpper);
+
+    const Eigen::Vector3d initialGroundPosition = ground.getTranslation();
+    const Eigen::Vector3d initialLeftLowerPosition = leftLower.getTranslation();
+    const Eigen::Vector3d initialRightLowerPosition
+        = rightLower.getTranslation();
+    const Eigen::Vector3d initialLeftUpperPosition = leftUpper.getTranslation();
+    const Eigen::Vector3d initialRightUpperPosition
+        = rightUpper.getTranslation();
+    EXPECT_GE(world.collide().size(), 12u);
+
+    sx::compute::SequentialExecutor executor;
+    sx::compute::RigidBodyContactStage contactStage(/*iterations=*/20);
+    sx::compute::WorldStepPipeline pipeline;
+    pipeline.addStage(contactStage);
+    world.step(executor, pipeline);
+    world.step(executor, pipeline);
+
+    EXPECT_TRUE(ground.getTranslation().isApprox(initialGroundPosition, 1e-12));
+    EXPECT_TRUE(
+        leftLower.getTranslation().isApprox(initialLeftLowerPosition, 1e-12));
+    EXPECT_TRUE(
+        rightLower.getTranslation().isApprox(initialRightLowerPosition, 1e-12));
+    EXPECT_TRUE(
+        leftUpper.getTranslation().isApprox(initialLeftUpperPosition, 1e-12));
+    EXPECT_TRUE(
+        rightUpper.getTranslation().isApprox(initialRightUpperPosition, 1e-12));
+    EXPECT_TRUE(ground.getLinearVelocity().isApprox(Eigen::Vector3d::Zero()));
+
+    return ContactStageOutcome{
+        leftLower.getLinearVelocity(),
+        leftLower.getAngularVelocity(),
+        rightLower.getLinearVelocity(),
+        rightLower.getAngularVelocity(),
+        leftUpper.getLinearVelocity(),
+        leftUpper.getAngularVelocity(),
+        rightUpper.getLinearVelocity(),
+        rightUpper.getAngularVelocity()};
+  };
+
+  const ContactStageOutcome frictionless = runContactStage(0.0);
+  const ContactStageOutcome frictional = runContactStage(1.0);
+
+  const auto upperLowerSlip = [](const Eigen::Vector3d& lowerLinearVelocity,
+                                 const Eigen::Vector3d& lowerAngularVelocity,
+                                 const Eigen::Vector3d& upperLinearVelocity,
+                                 const Eigen::Vector3d& upperAngularVelocity) {
+    constexpr double lowerHalfZ = 0.4;
+    constexpr double upperHalfZ = 0.35;
+    const Eigen::Vector3d lowerArm(0.0, 0.0, lowerHalfZ);
+    const Eigen::Vector3d upperArm(0.0, 0.0, -upperHalfZ);
+    const Eigen::Vector3d lowerContactVelocity
+        = lowerLinearVelocity + lowerAngularVelocity.cross(lowerArm);
+    const Eigen::Vector3d upperContactVelocity
+        = upperLinearVelocity + upperAngularVelocity.cross(upperArm);
+    return upperContactVelocity.y() - lowerContactVelocity.y();
+  };
+
+  const double frictionlessLeftSlip = upperLowerSlip(
+      frictionless.leftLowerLinearVelocity,
+      frictionless.leftLowerAngularVelocity,
+      frictionless.leftUpperLinearVelocity,
+      frictionless.leftUpperAngularVelocity);
+  const double frictionlessRightSlip = upperLowerSlip(
+      frictionless.rightLowerLinearVelocity,
+      frictionless.rightLowerAngularVelocity,
+      frictionless.rightUpperLinearVelocity,
+      frictionless.rightUpperAngularVelocity);
+  const double frictionalLeftSlip = upperLowerSlip(
+      frictional.leftLowerLinearVelocity,
+      frictional.leftLowerAngularVelocity,
+      frictional.leftUpperLinearVelocity,
+      frictional.leftUpperAngularVelocity);
+  const double frictionalRightSlip = upperLowerSlip(
+      frictional.rightLowerLinearVelocity,
+      frictional.rightLowerAngularVelocity,
+      frictional.rightUpperLinearVelocity,
+      frictional.rightUpperAngularVelocity);
+
+  EXPECT_GT(std::abs(frictionlessLeftSlip), 1e-9);
+  EXPECT_GT(std::abs(frictionlessRightSlip), 1e-9);
+  EXPECT_LT(std::abs(frictionalLeftSlip), std::abs(frictionlessLeftSlip));
+  EXPECT_LT(std::abs(frictionalRightSlip), std::abs(frictionlessRightSlip));
+  EXPECT_LT(frictional.leftUpperLinearVelocity.y(), 1.0 - 1e-9);
+  EXPECT_GT(frictional.rightUpperLinearVelocity.y(), -1.0 + 1e-9);
+}
+
+// Test that the built-in World::step() schedule also reaches warm-started AVBD
+// friction rows for the wider box-pile contact set.
+TEST(
+    World,
+    RigidBodyContactStageAvbdWarmStartedBoxPileManifoldFrictionRunsThroughDefaultWorldStep)
+{
+  namespace sx = dart::simulation;
+
+  struct StepOutcome
+  {
+    Eigen::Vector3d leftLowerLinearVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d leftLowerAngularVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d rightLowerLinearVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d rightLowerAngularVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d topLinearVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d topAngularVelocity = Eigen::Vector3d::Zero();
+  };
+
+  const auto runDefaultStep = [](const double friction) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.02);
+
+    constexpr double lowerHalfZ = 0.4;
+    constexpr double topHalfZ = 0.35;
+    constexpr double lowerXOffset = 0.45;
+
+    sx::RigidBodyOptions groundOptions;
+    groundOptions.isStatic = true;
+    groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+    auto ground = world.addRigidBody(
+        "avbd_default_box_pile_friction_ground", groundOptions);
+    ground.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(2.5, 2.0, 0.5)));
+    ground.setFriction(friction);
+
+    const auto addLower = [&](std::string_view name, const double x) {
+      sx::RigidBodyOptions lowerOptions;
+      lowerOptions.mass = 1.0;
+      lowerOptions.position = Eigen::Vector3d(x, 0.0, 0.38);
+      auto lower = world.addRigidBody(name, lowerOptions);
+      lower.setCollisionShape(
+          sx::CollisionShape::makeBox(Eigen::Vector3d(0.4, 0.4, lowerHalfZ)));
+      lower.setFriction(friction);
+      return lower;
+    };
+    auto leftLower
+        = addLower("avbd_default_box_pile_friction_left_lower", -lowerXOffset);
+    auto rightLower
+        = addLower("avbd_default_box_pile_friction_right_lower", lowerXOffset);
+
+    sx::RigidBodyOptions topOptions;
+    topOptions.mass = 1.0;
+    topOptions.position = Eigen::Vector3d(0.0, 0.0, 1.10);
+    topOptions.linearVelocity = Eigen::Vector3d(0.0, 1.0, 0.0);
+    auto top
+        = world.addRigidBody("avbd_default_box_pile_friction_top", topOptions);
+    top.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(0.7, 0.4, topHalfZ)));
+    top.setFriction(friction);
+
+    auto& registry = sx::detail::registryOf(world);
+    const auto configureAvbdContact = [&](const sx::RigidBody& body) {
+      auto& config = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+          sx::detail::toRegistryEntity(body.getEntity()));
+      config.startStiffness = 10000.0;
+      config.maxStiffness = 10000.0;
+      config.alpha = 0.95;
+      config.gamma = 1.0;
+    };
+    configureAvbdContact(leftLower);
+    configureAvbdContact(rightLower);
+    configureAvbdContact(top);
+
+    leftLower.setForce(Eigen::Vector3d(0.0, 0.0, -20.0));
+    rightLower.setForce(Eigen::Vector3d(0.0, 0.0, -20.0));
+    top.setForce(Eigen::Vector3d(0.0, 0.0, -30.0));
+
+    EXPECT_GE(world.collide().size(), 12u);
+
+    world.step();
+    EXPECT_GE(world.collide().size(), 12u);
+    world.step();
+
+    EXPECT_TRUE(ground.getLinearVelocity().isApprox(Eigen::Vector3d::Zero()));
+
+    return StepOutcome{
+        leftLower.getLinearVelocity(),
+        leftLower.getAngularVelocity(),
+        rightLower.getLinearVelocity(),
+        rightLower.getAngularVelocity(),
+        top.getLinearVelocity(),
+        top.getAngularVelocity()};
+  };
+
+  const StepOutcome frictionless = runDefaultStep(0.0);
+  const StepOutcome frictional = runDefaultStep(1.0);
+
+  const auto upperLowerSlip = [](const StepOutcome& outcome,
+                                 const double lowerXOffset,
+                                 const Eigen::Vector3d& lowerLinearVelocity,
+                                 const Eigen::Vector3d& lowerAngularVelocity) {
+    constexpr double lowerHalfZ = 0.4;
+    constexpr double topHalfZ = 0.35;
+    const Eigen::Vector3d lowerArm(0.0, 0.0, lowerHalfZ);
+    const Eigen::Vector3d topArm(lowerXOffset, 0.0, -topHalfZ);
+    const Eigen::Vector3d lowerContactVelocity
+        = lowerLinearVelocity + lowerAngularVelocity.cross(lowerArm);
+    const Eigen::Vector3d topContactVelocity
+        = outcome.topLinearVelocity + outcome.topAngularVelocity.cross(topArm);
+    return topContactVelocity.y() - lowerContactVelocity.y();
+  };
+
+  constexpr double lowerXOffset = 0.45;
+  const double frictionlessLeftSlip = upperLowerSlip(
+      frictionless,
+      -lowerXOffset,
+      frictionless.leftLowerLinearVelocity,
+      frictionless.leftLowerAngularVelocity);
+  const double frictionlessRightSlip = upperLowerSlip(
+      frictionless,
+      lowerXOffset,
+      frictionless.rightLowerLinearVelocity,
+      frictionless.rightLowerAngularVelocity);
+  const double frictionalLeftSlip = upperLowerSlip(
+      frictional,
+      -lowerXOffset,
+      frictional.leftLowerLinearVelocity,
+      frictional.leftLowerAngularVelocity);
+  const double frictionalRightSlip = upperLowerSlip(
+      frictional,
+      lowerXOffset,
+      frictional.rightLowerLinearVelocity,
+      frictional.rightLowerAngularVelocity);
+
+  EXPECT_GT(std::abs(frictionlessLeftSlip), 1e-9);
+  EXPECT_GT(std::abs(frictionlessRightSlip), 1e-9);
+  EXPECT_LT(std::abs(frictionalLeftSlip), std::abs(frictionlessLeftSlip));
+  EXPECT_LT(std::abs(frictionalRightSlip), std::abs(frictionlessRightSlip));
+  EXPECT_LT(frictional.topLinearVelocity.y(), 1.0 - 1e-9);
+}
+
+// Test that the built-in World::step() schedule also reaches warm-started AVBD
+// friction rows for the two-lower/two-upper box-pile contact topology.
+TEST(
+    World,
+    RigidBodyContactStageAvbdWarmStartedMultiTopBoxPileManifoldFrictionRunsThroughDefaultWorldStep)
+{
+  namespace sx = dart::simulation;
+
+  struct StepOutcome
+  {
+    Eigen::Vector3d leftLowerLinearVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d leftLowerAngularVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d rightLowerLinearVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d rightLowerAngularVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d leftUpperLinearVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d leftUpperAngularVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d rightUpperLinearVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d rightUpperAngularVelocity = Eigen::Vector3d::Zero();
+  };
+
+  const auto runDefaultStep = [](const double friction) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.02);
+
+    constexpr double lowerXOffset = 0.55;
+    constexpr double lowerHalfZ = 0.4;
+    constexpr double upperHalfZ = 0.35;
+
+    sx::RigidBodyOptions groundOptions;
+    groundOptions.isStatic = true;
+    groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+    auto ground = world.addRigidBody(
+        "avbd_default_multi_top_box_pile_friction_ground", groundOptions);
+    ground.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(3.0, 2.0, 0.5)));
+    ground.setFriction(friction);
+
+    const auto addLower = [&](std::string_view name, const double x) {
+      sx::RigidBodyOptions lowerOptions;
+      lowerOptions.mass = 1.0;
+      lowerOptions.position = Eigen::Vector3d(x, 0.0, 0.38);
+      auto lower = world.addRigidBody(name, lowerOptions);
+      lower.setCollisionShape(
+          sx::CollisionShape::makeBox(Eigen::Vector3d(0.45, 0.45, lowerHalfZ)));
+      lower.setFriction(friction);
+      return lower;
+    };
+    auto leftLower = addLower(
+        "avbd_default_multi_top_box_pile_friction_left_lower", -lowerXOffset);
+    auto rightLower = addLower(
+        "avbd_default_multi_top_box_pile_friction_right_lower", lowerXOffset);
+
+    const auto addUpper = [&](std::string_view name,
+                              const double x,
+                              const double yVelocity) {
+      sx::RigidBodyOptions upperOptions;
+      upperOptions.mass = 1.0;
+      upperOptions.position = Eigen::Vector3d(x, 0.0, 1.10);
+      upperOptions.linearVelocity = Eigen::Vector3d(0.0, yVelocity, 0.0);
+      auto upper = world.addRigidBody(name, upperOptions);
+      upper.setCollisionShape(
+          sx::CollisionShape::makeBox(Eigen::Vector3d(0.35, 0.35, upperHalfZ)));
+      upper.setFriction(friction);
+      return upper;
+    };
+    auto leftUpper = addUpper(
+        "avbd_default_multi_top_box_pile_friction_left_upper",
+        -lowerXOffset,
+        1.0);
+    auto rightUpper = addUpper(
+        "avbd_default_multi_top_box_pile_friction_right_upper",
+        lowerXOffset,
+        -1.0);
+
+    auto& registry = sx::detail::registryOf(world);
+    const auto configureAvbdContact = [&](const sx::RigidBody& body) {
+      auto& config = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+          sx::detail::toRegistryEntity(body.getEntity()));
+      config.startStiffness = 10000.0;
+      config.maxStiffness = 10000.0;
+      config.alpha = 0.95;
+      config.gamma = 1.0;
+    };
+    configureAvbdContact(leftLower);
+    configureAvbdContact(rightLower);
+    configureAvbdContact(leftUpper);
+    configureAvbdContact(rightUpper);
+
+    leftLower.setForce(Eigen::Vector3d(0.0, 0.0, -20.0));
+    rightLower.setForce(Eigen::Vector3d(0.0, 0.0, -20.0));
+    leftUpper.setForce(Eigen::Vector3d(0.0, 0.0, -20.0));
+    rightUpper.setForce(Eigen::Vector3d(0.0, 0.0, -20.0));
+
+    EXPECT_GE(world.collide().size(), 12u);
+
+    world.step();
+    EXPECT_GE(world.collide().size(), 12u);
+    world.step();
+
+    EXPECT_TRUE(ground.getLinearVelocity().isApprox(Eigen::Vector3d::Zero()));
+
+    return StepOutcome{
+        leftLower.getLinearVelocity(),
+        leftLower.getAngularVelocity(),
+        rightLower.getLinearVelocity(),
+        rightLower.getAngularVelocity(),
+        leftUpper.getLinearVelocity(),
+        leftUpper.getAngularVelocity(),
+        rightUpper.getLinearVelocity(),
+        rightUpper.getAngularVelocity()};
+  };
+
+  const StepOutcome frictionless = runDefaultStep(0.0);
+  const StepOutcome frictional = runDefaultStep(1.0);
+
+  const auto upperLowerSlip = [](const Eigen::Vector3d& lowerLinearVelocity,
+                                 const Eigen::Vector3d& lowerAngularVelocity,
+                                 const Eigen::Vector3d& upperLinearVelocity,
+                                 const Eigen::Vector3d& upperAngularVelocity) {
+    constexpr double lowerHalfZ = 0.4;
+    constexpr double upperHalfZ = 0.35;
+    const Eigen::Vector3d lowerArm(0.0, 0.0, lowerHalfZ);
+    const Eigen::Vector3d upperArm(0.0, 0.0, -upperHalfZ);
+    const Eigen::Vector3d lowerContactVelocity
+        = lowerLinearVelocity + lowerAngularVelocity.cross(lowerArm);
+    const Eigen::Vector3d upperContactVelocity
+        = upperLinearVelocity + upperAngularVelocity.cross(upperArm);
+    return upperContactVelocity.y() - lowerContactVelocity.y();
+  };
+
+  const double frictionlessLeftSlip = upperLowerSlip(
+      frictionless.leftLowerLinearVelocity,
+      frictionless.leftLowerAngularVelocity,
+      frictionless.leftUpperLinearVelocity,
+      frictionless.leftUpperAngularVelocity);
+  const double frictionlessRightSlip = upperLowerSlip(
+      frictionless.rightLowerLinearVelocity,
+      frictionless.rightLowerAngularVelocity,
+      frictionless.rightUpperLinearVelocity,
+      frictionless.rightUpperAngularVelocity);
+  const double frictionalLeftSlip = upperLowerSlip(
+      frictional.leftLowerLinearVelocity,
+      frictional.leftLowerAngularVelocity,
+      frictional.leftUpperLinearVelocity,
+      frictional.leftUpperAngularVelocity);
+  const double frictionalRightSlip = upperLowerSlip(
+      frictional.rightLowerLinearVelocity,
+      frictional.rightLowerAngularVelocity,
+      frictional.rightUpperLinearVelocity,
+      frictional.rightUpperAngularVelocity);
+
+  EXPECT_GT(std::abs(frictionlessLeftSlip), 1e-9);
+  EXPECT_GT(std::abs(frictionlessRightSlip), 1e-9);
+  EXPECT_LT(std::abs(frictionalLeftSlip), std::abs(frictionlessLeftSlip));
+  EXPECT_LT(std::abs(frictionalRightSlip), std::abs(frictionlessRightSlip));
+  EXPECT_LT(frictional.leftUpperLinearVelocity.y(), 1.0 - 1e-9);
+  EXPECT_GT(frictional.rightUpperLinearVelocity.y(), -1.0 + 1e-9);
+}
+
+// Test that the built-in World::step() schedule also reaches warm-started AVBD
+// friction rows for a multi-top stacked box-manifold contact set.
+TEST(
+    World,
+    RigidBodyContactStageAvbdWarmStartedMultiTopStackedBoxManifoldFrictionRunsThroughDefaultWorldStep)
+{
+  namespace sx = dart::simulation;
+
+  struct StepOutcome
+  {
+    Eigen::Vector3d lowerLinearVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d lowerAngularVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d leftUpperLinearVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d leftUpperAngularVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d rightUpperLinearVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d rightUpperAngularVelocity = Eigen::Vector3d::Zero();
+  };
+
+  const auto runDefaultStep = [](const double friction) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.02);
+
+    constexpr double lowerHalfZ = 0.5;
+    constexpr double upperHalfZ = 0.35;
+    constexpr double upperXOffset = 0.45;
+
+    sx::RigidBodyOptions groundOptions;
+    groundOptions.isStatic = true;
+    groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+    auto ground = world.addRigidBody(
+        "avbd_default_multi_top_stack_friction_ground", groundOptions);
+    ground.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(2.5, 2.0, lowerHalfZ)));
+    ground.setFriction(friction);
+
+    sx::RigidBodyOptions lowerOptions;
+    lowerOptions.mass = 2.0;
+    lowerOptions.position = Eigen::Vector3d(0.0, 0.0, 0.45);
+    auto lower = world.addRigidBody(
+        "avbd_default_multi_top_stack_friction_lower", lowerOptions);
+    lower.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(1.2, 0.7, lowerHalfZ)));
+    lower.setFriction(friction);
+
+    const auto addUpper
+        = [&](std::string_view name, const double x, const double yVelocity) {
+            sx::RigidBodyOptions upperOptions;
+            upperOptions.mass = 1.0;
+            upperOptions.position = Eigen::Vector3d(x, 0.0, 1.25);
+            upperOptions.linearVelocity = Eigen::Vector3d(0.0, yVelocity, 0.0);
+            auto upper = world.addRigidBody(name, upperOptions);
+            upper.setCollisionShape(
+                sx::CollisionShape::makeBox(
+                    Eigen::Vector3d(upperHalfZ, upperHalfZ, upperHalfZ)));
+            upper.setFriction(friction);
+            return upper;
+          };
+    auto leftUpper = addUpper(
+        "avbd_default_multi_top_stack_friction_left_upper", -upperXOffset, 1.0);
+    auto rightUpper = addUpper(
+        "avbd_default_multi_top_stack_friction_right_upper",
+        upperXOffset,
+        -1.0);
+
+    auto& registry = sx::detail::registryOf(world);
+    const auto configureAvbdContact = [&](const sx::RigidBody& body) {
+      auto& config = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+          sx::detail::toRegistryEntity(body.getEntity()));
+      config.startStiffness = 10000.0;
+      config.maxStiffness = 10000.0;
+      config.alpha = 0.95;
+      config.gamma = 1.0;
+    };
+    configureAvbdContact(lower);
+    configureAvbdContact(leftUpper);
+    configureAvbdContact(rightUpper);
+
+    lower.setForce(Eigen::Vector3d(0.0, 0.0, -40.0));
+    leftUpper.setForce(Eigen::Vector3d(0.0, 0.0, -20.0));
+    rightUpper.setForce(Eigen::Vector3d(0.0, 0.0, -20.0));
+
+    EXPECT_GE(world.collide().size(), 12u);
+
+    world.step();
+    EXPECT_GE(world.collide().size(), 12u);
+    world.step();
+
+    EXPECT_TRUE(ground.getLinearVelocity().isApprox(Eigen::Vector3d::Zero()));
+
+    return StepOutcome{
+        lower.getLinearVelocity(),
+        lower.getAngularVelocity(),
+        leftUpper.getLinearVelocity(),
+        leftUpper.getAngularVelocity(),
+        rightUpper.getLinearVelocity(),
+        rightUpper.getAngularVelocity()};
+  };
+
+  const StepOutcome frictionless = runDefaultStep(0.0);
+  const StepOutcome frictional = runDefaultStep(1.0);
+
+  const auto upperLowerSlip = [](const StepOutcome& outcome,
+                                 const double xOffset,
+                                 const Eigen::Vector3d& upperLinearVelocity,
+                                 const Eigen::Vector3d& upperAngularVelocity) {
+    constexpr double lowerHalfZ = 0.5;
+    constexpr double upperHalfZ = 0.35;
+    const Eigen::Vector3d lowerArm(xOffset, 0.0, lowerHalfZ);
+    const Eigen::Vector3d upperArm(0.0, 0.0, -upperHalfZ);
+    const Eigen::Vector3d lowerContactVelocity
+        = outcome.lowerLinearVelocity
+          + outcome.lowerAngularVelocity.cross(lowerArm);
+    const Eigen::Vector3d upperContactVelocity
+        = upperLinearVelocity + upperAngularVelocity.cross(upperArm);
+    return upperContactVelocity.y() - lowerContactVelocity.y();
+  };
+
+  constexpr double upperXOffset = 0.45;
+  const double frictionlessLeftSlip = upperLowerSlip(
+      frictionless,
+      -upperXOffset,
+      frictionless.leftUpperLinearVelocity,
+      frictionless.leftUpperAngularVelocity);
+  const double frictionlessRightSlip = upperLowerSlip(
+      frictionless,
+      upperXOffset,
+      frictionless.rightUpperLinearVelocity,
+      frictionless.rightUpperAngularVelocity);
+  const double frictionalLeftSlip = upperLowerSlip(
+      frictional,
+      -upperXOffset,
+      frictional.leftUpperLinearVelocity,
+      frictional.leftUpperAngularVelocity);
+  const double frictionalRightSlip = upperLowerSlip(
+      frictional,
+      upperXOffset,
+      frictional.rightUpperLinearVelocity,
+      frictional.rightUpperAngularVelocity);
+
+  EXPECT_GT(std::abs(frictionlessLeftSlip), 1e-9);
+  EXPECT_GT(std::abs(frictionlessRightSlip), 1e-9);
+  EXPECT_LT(std::abs(frictionalLeftSlip), std::abs(frictionlessLeftSlip));
+  EXPECT_LT(std::abs(frictionalRightSlip), std::abs(frictionlessRightSlip));
+  EXPECT_LT(frictional.leftUpperLinearVelocity.y(), 1.0 - 1e-9);
+  EXPECT_GT(frictional.rightUpperLinearVelocity.y(), -1.0 + 1e-9);
+}
+
+// Test that the built-in World::step() schedule reaches warm-started AVBD
+// friction rows for a stacked static/dynamic plus dynamic/dynamic box-manifold
+// contact set.
+TEST(
+    World,
+    RigidBodyContactStageAvbdWarmStartedStackedBoxManifoldFrictionRunsThroughDefaultWorldStep)
+{
+  namespace sx = dart::simulation;
+
+  struct StepOutcome
+  {
+    Eigen::Vector3d lowerLinearVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d lowerAngularVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d upperLinearVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d upperAngularVelocity = Eigen::Vector3d::Zero();
+  };
+
+  const auto runDefaultStep = [](const double friction) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.02);
+
+    constexpr double halfExtent = 0.5;
+    const Eigen::Vector3d boxHalfExtents
+        = Eigen::Vector3d::Constant(halfExtent);
+
+    sx::RigidBodyOptions groundOptions;
+    groundOptions.isStatic = true;
+    groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+    auto ground = world.addRigidBody(
+        "avbd_default_stacked_box_manifold_friction_ground", groundOptions);
+    ground.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(2.0, 2.0, halfExtent)));
+    ground.setFriction(friction);
+
+    sx::RigidBodyOptions lowerOptions;
+    lowerOptions.mass = 1.0;
+    lowerOptions.position = Eigen::Vector3d(0.02, 0.0, 0.45);
+    auto lower = world.addRigidBody(
+        "avbd_default_stacked_box_manifold_friction_lower", lowerOptions);
+    lower.setCollisionShape(sx::CollisionShape::makeBox(boxHalfExtents));
+    lower.setFriction(friction);
+
+    sx::RigidBodyOptions upperOptions;
+    upperOptions.mass = 1.0;
+    upperOptions.position = Eigen::Vector3d(0.04, 0.0, 1.35);
+    upperOptions.linearVelocity = Eigen::Vector3d(1.0, 0.0, 0.0);
+    auto upper = world.addRigidBody(
+        "avbd_default_stacked_box_manifold_friction_upper", upperOptions);
+    upper.setCollisionShape(sx::CollisionShape::makeBox(boxHalfExtents));
+    upper.setFriction(friction);
+
+    auto& registry = sx::detail::registryOf(world);
+    const auto configureAvbdContact = [&](const sx::RigidBody& body) {
+      auto& config = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+          sx::detail::toRegistryEntity(body.getEntity()));
+      config.startStiffness = 10000.0;
+      config.maxStiffness = 10000.0;
+      config.alpha = 0.95;
+      config.gamma = 1.0;
+    };
+    configureAvbdContact(lower);
+    configureAvbdContact(upper);
+
+    lower.setForce(Eigen::Vector3d(0.0, 0.0, -25.0));
+    upper.setForce(Eigen::Vector3d(0.0, 0.0, -25.0));
+
+    EXPECT_GE(world.collide().size(), 8u);
+
+    world.step();
+    EXPECT_GE(world.collide().size(), 8u);
+    world.step();
+
+    EXPECT_TRUE(ground.getLinearVelocity().isApprox(Eigen::Vector3d::Zero()));
+
+    return StepOutcome{
+        lower.getLinearVelocity(),
+        lower.getAngularVelocity(),
+        upper.getLinearVelocity(),
+        upper.getAngularVelocity()};
+  };
+
+  const StepOutcome frictionless = runDefaultStep(0.0);
+  const StepOutcome frictional = runDefaultStep(1.0);
+
+  constexpr double halfExtent = 0.5;
+  const auto upperLowerSlip = [halfExtent](const StepOutcome& outcome) {
+    const Eigen::Vector3d lowerArm(0.0, 0.0, halfExtent);
+    const Eigen::Vector3d upperArm(0.0, 0.0, -halfExtent);
+    const Eigen::Vector3d lowerContactVelocity
+        = outcome.lowerLinearVelocity
+          + outcome.lowerAngularVelocity.cross(lowerArm);
+    const Eigen::Vector3d upperContactVelocity
+        = outcome.upperLinearVelocity
+          + outcome.upperAngularVelocity.cross(upperArm);
+    return upperContactVelocity.x() - lowerContactVelocity.x();
+  };
+
+  EXPECT_GT(std::abs(upperLowerSlip(frictionless)), 1e-9);
+  EXPECT_LT(
+      std::abs(upperLowerSlip(frictional)),
+      std::abs(upperLowerSlip(frictionless)));
+  EXPECT_LT(frictional.upperLinearVelocity.x(), 1.0 - 1e-9);
+}
+
+// Test that warm-started AVBD contact-stage friction also acts on live
+// dynamic/dynamic contacts by reducing relative tangential slip.
+TEST(World, RigidBodyContactStageAvbdWarmStartedDynamicFrictionReducesSlip)
+{
+  namespace sx = dart::simulation;
+
+  struct ContactStageOutcome
+  {
+    Eigen::Vector3d bottomLinearVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d bottomAngularVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d topLinearVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d topAngularVelocity = Eigen::Vector3d::Zero();
+  };
+
+  const auto runContactStage = [](const double friction) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.05);
+
+    constexpr double radius = 0.5;
+    sx::RigidBodyOptions bottomOptions;
+    bottomOptions.mass = 1.0;
+    bottomOptions.position = Eigen::Vector3d(0.0, 0.0, -0.45);
+    auto bottom
+        = world.addRigidBody("avbd_dynamic_friction_bottom", bottomOptions);
+    bottom.setCollisionShape(sx::CollisionShape::makeSphere(radius));
+    bottom.setFriction(friction);
+
+    sx::RigidBodyOptions topOptions;
+    topOptions.mass = 1.0;
+    topOptions.position = Eigen::Vector3d(0.0, 0.0, 0.45);
+    topOptions.linearVelocity = Eigen::Vector3d(1.0, 0.0, 0.0);
+    auto top = world.addRigidBody("avbd_dynamic_friction_top", topOptions);
+    top.setCollisionShape(sx::CollisionShape::makeSphere(radius));
+    top.setFriction(friction);
+
+    auto& registry = sx::detail::registryOf(world);
+    const auto configureAvbdContact = [&](const sx::RigidBody& body) {
+      auto& config = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+          sx::detail::toRegistryEntity(body.getEntity()));
+      config.startStiffness = 10000.0;
+      config.maxStiffness = 10000.0;
+      config.alpha = 0.5;
+      config.gamma = 1.0;
+    };
+    configureAvbdContact(bottom);
+    configureAvbdContact(top);
+
+    const Eigen::Vector3d initialBottomPosition = bottom.getTranslation();
+    const Eigen::Vector3d initialTopPosition = top.getTranslation();
+    EXPECT_FALSE(world.collide().empty());
+
+    sx::compute::SequentialExecutor executor;
+    sx::compute::RigidBodyContactStage contactStage(/*iterations=*/12);
+    sx::compute::WorldStepPipeline pipeline;
+    pipeline.addStage(contactStage);
+    world.step(executor, pipeline);
+    world.step(executor, pipeline);
+
+    EXPECT_TRUE(bottom.getTranslation().isApprox(initialBottomPosition, 1e-12));
+    EXPECT_TRUE(top.getTranslation().isApprox(initialTopPosition, 1e-12));
+
+    return ContactStageOutcome{
+        bottom.getLinearVelocity(),
+        bottom.getAngularVelocity(),
+        top.getLinearVelocity(),
+        top.getAngularVelocity()};
+  };
+
+  const ContactStageOutcome frictionless = runContactStage(0.0);
+  const ContactStageOutcome frictional = runContactStage(1.0);
+
+  constexpr double radius = 0.5;
+  const auto contactSlip = [radius](const ContactStageOutcome& outcome) {
+    const Eigen::Vector3d bottomArm(0.0, 0.0, radius);
+    const Eigen::Vector3d topArm(0.0, 0.0, -radius);
+    const Eigen::Vector3d bottomContactVelocity
+        = outcome.bottomLinearVelocity
+          + outcome.bottomAngularVelocity.cross(bottomArm);
+    const Eigen::Vector3d topContactVelocity
+        = outcome.topLinearVelocity + outcome.topAngularVelocity.cross(topArm);
+    return topContactVelocity.x() - bottomContactVelocity.x();
+  };
+
+  EXPECT_GT(
+      frictionless.topLinearVelocity.z()
+          - frictionless.bottomLinearVelocity.z(),
+      1e-9);
+  EXPECT_GT(
+      frictional.topLinearVelocity.z() - frictional.bottomLinearVelocity.z(),
+      1e-9);
+  EXPECT_LT(
+      std::abs(contactSlip(frictional)), std::abs(contactSlip(frictionless)));
+  EXPECT_GT(frictional.bottomLinearVelocity.x(), 1e-9);
+  EXPECT_LT(frictional.topLinearVelocity.x(), 1.0 - 1e-9);
+}
+
+// Test that the built-in World::step() schedule also reaches the warm-started
+// dynamic/dynamic contact-stage friction path.
+TEST(
+    World,
+    RigidBodyContactStageAvbdWarmStartedDynamicFrictionRunsThroughDefaultWorldStep)
+{
+  namespace sx = dart::simulation;
+
+  struct StepOutcome
+  {
+    Eigen::Vector3d bottomLinearVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d bottomAngularVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d topLinearVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d topAngularVelocity = Eigen::Vector3d::Zero();
+  };
+
+  const auto runDefaultStep = [](const double friction) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.05);
+
+    constexpr double radius = 0.5;
+    sx::RigidBodyOptions bottomOptions;
+    bottomOptions.mass = 1.0;
+    bottomOptions.position = Eigen::Vector3d(0.0, 0.0, -0.45);
+    auto bottom = world.addRigidBody(
+        "avbd_default_dynamic_friction_bottom", bottomOptions);
+    bottom.setCollisionShape(sx::CollisionShape::makeSphere(radius));
+    bottom.setFriction(friction);
+
+    sx::RigidBodyOptions topOptions;
+    topOptions.mass = 1.0;
+    topOptions.position = Eigen::Vector3d(0.0, 0.0, 0.45);
+    topOptions.linearVelocity = Eigen::Vector3d(1.0, 0.0, 0.0);
+    auto top
+        = world.addRigidBody("avbd_default_dynamic_friction_top", topOptions);
+    top.setCollisionShape(sx::CollisionShape::makeSphere(radius));
+    top.setFriction(friction);
+
+    auto& registry = sx::detail::registryOf(world);
+    const auto configureAvbdContact = [&](const sx::RigidBody& body) {
+      auto& config = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+          sx::detail::toRegistryEntity(body.getEntity()));
+      config.startStiffness = 10000.0;
+      config.maxStiffness = 10000.0;
+      config.alpha = 0.95;
+      config.gamma = 1.0;
+    };
+    configureAvbdContact(bottom);
+    configureAvbdContact(top);
+
+    EXPECT_FALSE(world.collide().empty());
+
+    world.step();
+    EXPECT_FALSE(world.collide().empty());
+    world.step();
+
+    return StepOutcome{
+        bottom.getLinearVelocity(),
+        bottom.getAngularVelocity(),
+        top.getLinearVelocity(),
+        top.getAngularVelocity()};
+  };
+
+  const StepOutcome frictionless = runDefaultStep(0.0);
+  const StepOutcome frictional = runDefaultStep(1.0);
+
+  constexpr double radius = 0.5;
+  const auto contactSlip = [radius](const StepOutcome& outcome) {
+    const Eigen::Vector3d bottomArm(0.0, 0.0, radius);
+    const Eigen::Vector3d topArm(0.0, 0.0, -radius);
+    const Eigen::Vector3d bottomContactVelocity
+        = outcome.bottomLinearVelocity
+          + outcome.bottomAngularVelocity.cross(bottomArm);
+    const Eigen::Vector3d topContactVelocity
+        = outcome.topLinearVelocity + outcome.topAngularVelocity.cross(topArm);
+    return topContactVelocity.x() - bottomContactVelocity.x();
+  };
+
+  EXPECT_GT(
+      frictionless.topLinearVelocity.z()
+          - frictionless.bottomLinearVelocity.z(),
+      1e-9);
+  EXPECT_GT(
+      frictional.topLinearVelocity.z() - frictional.bottomLinearVelocity.z(),
+      1e-9);
+  EXPECT_LT(
+      std::abs(contactSlip(frictional)), std::abs(contactSlip(frictionless)));
+  EXPECT_GT(frictional.bottomLinearVelocity.x(), 1e-9);
+  EXPECT_LT(frictional.topLinearVelocity.x(), 1.0 - 1e-9);
 }
 
 // Test that static rigid bodies can retain stored velocities without behaving
@@ -11348,6 +15313,198 @@ TEST(World, RigidIpcKinematicTurntableCarriesRestingBox)
   EXPECT_LE(failCount, 3);
 }
 
+TEST(World, RigidBodyPointJointsExposeAvbdFiniteStiffness)
+{
+  namespace sx = dart::simulation;
+
+  sx::RigidBodyOptions parentOptions;
+  parentOptions.isStatic = true;
+  sx::RigidBodyOptions childOptions;
+  childOptions.position = Eigen::Vector3d::UnitX();
+  sx::World world;
+  auto parent = world.addRigidBody("parent", parentOptions);
+  auto child = world.addRigidBody("child", childOptions);
+  auto joint = world.addRigidBodyFixedJoint("fixed", parent, child);
+
+  EXPECT_GT(joint.getAvbdStartStiffness(), 0.0);
+  EXPECT_TRUE(std::isinf(joint.getAvbdLinearStiffness()));
+  EXPECT_TRUE(std::isinf(joint.getAvbdAngularStiffness()));
+
+  joint.setAvbdStartStiffness(1.0);
+  joint.setAvbdLinearStiffness(1000.0);
+  joint.setAvbdAngularStiffness(100.0);
+
+  EXPECT_DOUBLE_EQ(joint.getAvbdStartStiffness(), 1.0);
+  EXPECT_DOUBLE_EQ(joint.getAvbdLinearStiffness(), 1000.0);
+  EXPECT_DOUBLE_EQ(joint.getAvbdAngularStiffness(), 100.0);
+
+  EXPECT_THROW(joint.setAvbdStartStiffness(-1.0), sx::InvalidArgumentException);
+  EXPECT_THROW(
+      joint.setAvbdLinearStiffness(std::numeric_limits<double>::quiet_NaN()),
+      sx::InvalidArgumentException);
+  EXPECT_THROW(
+      joint.setAvbdAngularStiffness(-1.0), sx::InvalidArgumentException);
+}
+
+TEST(World, ArticulatedPointJointsExposeAvbdFiniteStiffness)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  world.setMultibodyOptions({"variational integrator"});
+
+  auto robot = world.addMultibody("robot");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "floating";
+  spec.type = sx::JointType::Floating;
+  spec.transformFromParent.translation() = Eigen::Vector3d::UnitX();
+  auto child = robot.addLink("child", base, spec);
+
+  auto fixed = world.addArticulatedFixedJoint("fixed", base, child);
+  auto hinge = world.addArticulatedRevoluteJoint(
+      "hinge", base, child, Eigen::Vector3d::UnitY());
+  auto slider = world.addArticulatedPrismaticJoint(
+      "slider", base, child, Eigen::Vector3d::UnitX());
+  auto socket = world.addArticulatedSphericalJoint("socket", base, child);
+  auto worldFixed = world.addArticulatedFixedJoint("world_fixed", child);
+
+  const auto expectDefaultHardJoint = [](const sx::Joint& joint) {
+    EXPECT_TRUE(std::isinf(joint.getAvbdStartStiffness()));
+    EXPECT_TRUE(std::isinf(joint.getAvbdLinearStiffness()));
+    EXPECT_TRUE(std::isinf(joint.getAvbdAngularStiffness()));
+  };
+  expectDefaultHardJoint(fixed);
+  expectDefaultHardJoint(hinge);
+  expectDefaultHardJoint(slider);
+  expectDefaultHardJoint(socket);
+  expectDefaultHardJoint(worldFixed);
+
+  const auto expectFiniteStiffnessSetters = [](sx::Joint& joint) {
+    joint.setAvbdStartStiffness(2.0);
+    joint.setAvbdLinearStiffness(200.0);
+    joint.setAvbdAngularStiffness(300.0);
+
+    EXPECT_DOUBLE_EQ(joint.getAvbdStartStiffness(), 2.0);
+    EXPECT_DOUBLE_EQ(joint.getAvbdLinearStiffness(), 200.0);
+    EXPECT_DOUBLE_EQ(joint.getAvbdAngularStiffness(), 300.0);
+  };
+  expectFiniteStiffnessSetters(fixed);
+  expectFiniteStiffnessSetters(hinge);
+  expectFiniteStiffnessSetters(slider);
+  expectFiniteStiffnessSetters(socket);
+  expectFiniteStiffnessSetters(worldFixed);
+
+  EXPECT_THROW(
+      fixed.setAvbdStartStiffness(std::numeric_limits<double>::infinity()),
+      sx::InvalidArgumentException);
+  EXPECT_THROW(
+      hinge.setAvbdLinearStiffness(std::numeric_limits<double>::quiet_NaN()),
+      sx::InvalidArgumentException);
+  EXPECT_THROW(
+      slider.setAvbdAngularStiffness(-1.0), sx::InvalidArgumentException);
+}
+
+TEST(World, ArticulatedPointJointsGenerateUniqueFacadeNames)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  world.setMultibodyOptions({"variational integrator"});
+
+  auto robot = world.addMultibody("robot");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "floating";
+  spec.type = sx::JointType::Floating;
+  spec.transformFromParent.translation() = Eigen::Vector3d::UnitX();
+  auto child = robot.addLink("child", base, spec);
+
+  auto explicitJoint = world.addArticulatedFixedJoint("joint_001", base, child);
+  auto generatedFixed = world.addArticulatedFixedJoint("", base, child);
+  auto generatedWorldHinge
+      = world.addArticulatedRevoluteJoint("", child, Eigen::Vector3d::UnitY());
+  auto generatedSlider = world.addArticulatedPrismaticJoint(
+      "", base, child, Eigen::Vector3d::UnitX());
+
+  EXPECT_EQ(explicitJoint.getName(), "joint_001");
+  EXPECT_EQ(generatedFixed.getName(), "joint_002");
+  EXPECT_EQ(generatedWorldHinge.getName(), "joint_003");
+  EXPECT_EQ(generatedSlider.getName(), "joint_004");
+  EXPECT_EQ(world.getArticulatedJointCount(), 4u);
+
+  std::map<std::string, sx::JointType> jointsByName;
+  for (const auto& joint : world.getArticulatedJoints()) {
+    jointsByName.emplace(std::string(joint.getName()), joint.getType());
+  }
+  ASSERT_EQ(jointsByName.size(), 4u);
+  ASSERT_EQ(jointsByName.count("joint_001"), 1u);
+  ASSERT_EQ(jointsByName.count("joint_002"), 1u);
+  ASSERT_EQ(jointsByName.count("joint_003"), 1u);
+  ASSERT_EQ(jointsByName.count("joint_004"), 1u);
+  EXPECT_EQ(jointsByName.at("joint_001"), sx::JointType::Fixed);
+  EXPECT_EQ(jointsByName.at("joint_002"), sx::JointType::Fixed);
+  EXPECT_EQ(jointsByName.at("joint_003"), sx::JointType::Revolute);
+  EXPECT_EQ(jointsByName.at("joint_004"), sx::JointType::Prismatic);
+
+  auto foundFixed = world.getArticulatedJoint("joint_002");
+  ASSERT_TRUE(foundFixed.has_value());
+  EXPECT_EQ(foundFixed->getChildLink().getName(), "child");
+  EXPECT_TRUE(world.hasArticulatedJoint("joint_003"));
+  EXPECT_FALSE(world.getArticulatedJoint("joint_005").has_value());
+  EXPECT_THROW(
+      world.addArticulatedSphericalJoint("joint_004", base, child),
+      sx::InvalidArgumentException);
+}
+
+TEST(World, ArticulatedPointJointsRejectInvalidEndpointOwnership)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  world.setMultibodyOptions({"variational integrator"});
+
+  auto robot = world.addMultibody("robot");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "floating";
+  spec.type = sx::JointType::Floating;
+  spec.transformFromParent.translation() = Eigen::Vector3d::UnitX();
+  auto child = robot.addLink("child", base, spec);
+
+  auto otherRobot = world.addMultibody("other");
+  auto otherBase = otherRobot.addLink("base");
+  sx::JointSpec otherSpec;
+  otherSpec.name = "other_floating";
+  otherSpec.type = sx::JointType::Floating;
+  otherSpec.transformFromParent.translation() = 2.0 * Eigen::Vector3d::UnitX();
+  auto otherChild = otherRobot.addLink("child", otherBase, otherSpec);
+
+  sx::World foreignWorld;
+  foreignWorld.setMultibodyOptions({"variational integrator"});
+  auto foreignRobot = foreignWorld.addMultibody("foreign");
+  auto foreignBase = foreignRobot.addLink("base");
+
+  EXPECT_THROW(
+      world.addArticulatedFixedJoint("same_link", base, base),
+      sx::InvalidArgumentException);
+  EXPECT_THROW(
+      world.addArticulatedRevoluteJoint(
+          "cross_multibody", base, otherChild, Eigen::Vector3d::UnitZ()),
+      sx::InvalidArgumentException);
+  EXPECT_THROW(
+      world.addArticulatedPrismaticJoint(
+          "cross_world", base, foreignBase, Eigen::Vector3d::UnitX()),
+      sx::InvalidArgumentException);
+  EXPECT_THROW(
+      world.addArticulatedSphericalJoint("world_cross_world", foreignBase),
+      sx::InvalidArgumentException);
+
+  auto valid = world.addArticulatedFixedJoint("valid", base, child);
+  EXPECT_EQ(valid.getParentLink().getName(), "base");
+  EXPECT_EQ(valid.getChildLink().getName(), "child");
+}
+
 // Test that public fixed joints feed the IPC rigid-body solver through private
 // point and orientation equality rows instead of exposing solver-internal
 // contracts.
@@ -11637,6 +15794,59 @@ TEST(World, StepPreservesKinematicRigidBodyWithDefaultSolver)
   EXPECT_TRUE(body.getQuaternion().isApprox(initialOrientation));
   EXPECT_TRUE(body.getLinearVelocity().isApprox(linearVelocity));
   EXPECT_TRUE(body.getAngularVelocity().isApprox(angularVelocity));
+}
+
+TEST(World, RigidBodyVelocityStageSkipsPrescribedBodyForces)
+{
+  namespace sx = dart::simulation;
+  namespace compute = dart::simulation::compute;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -4.0));
+  world.setTimeStep(0.25);
+
+  sx::RigidBodyOptions staticOptions;
+  staticOptions.isStatic = true;
+  staticOptions.position = Eigen::Vector3d(1.0, 2.0, 3.0);
+  staticOptions.linearVelocity = Eigen::Vector3d(2.0, -1.0, 0.5);
+  staticOptions.angularVelocity = Eigen::Vector3d(0.4, 0.1, -0.2);
+  auto staticBody = world.addRigidBody("static_body", staticOptions);
+  staticBody.setForce(Eigen::Vector3d(10.0, 20.0, -30.0));
+  staticBody.setTorque(Eigen::Vector3d(1.0, -2.0, 3.0));
+
+  sx::RigidBodyOptions kinematicOptions;
+  kinematicOptions.position = Eigen::Vector3d(-2.0, 0.5, 4.0);
+  kinematicOptions.linearVelocity = Eigen::Vector3d(-0.5, 1.0, 0.25);
+  kinematicOptions.angularVelocity = Eigen::Vector3d(0.2, -0.1, 0.3);
+  auto kinematicBody = world.addRigidBody("kinematic_body", kinematicOptions);
+  kinematicBody.setKinematic(true);
+  kinematicBody.setForce(Eigen::Vector3d(-3.0, 4.0, 5.0));
+  kinematicBody.setTorque(Eigen::Vector3d(-0.25, 0.5, 0.75));
+
+  sx::RigidBodyOptions dynamicOptions;
+  dynamicOptions.mass = 2.0;
+  dynamicOptions.position = Eigen::Vector3d::Zero();
+  dynamicOptions.linearVelocity = Eigen::Vector3d::Zero();
+  auto dynamicBody = world.addRigidBody("dynamic_body", dynamicOptions);
+  dynamicBody.setForce(Eigen::Vector3d(0.0, 0.0, 8.0));
+
+  world.enterSimulationMode();
+
+  compute::SequentialExecutor executor;
+  compute::RigidBodyVelocityStage stage;
+  stage.prepare(world);
+  stage.execute(world, executor);
+
+  EXPECT_TRUE(
+      staticBody.getLinearVelocity().isApprox(staticOptions.linearVelocity));
+  EXPECT_TRUE(
+      staticBody.getAngularVelocity().isApprox(staticOptions.angularVelocity));
+  EXPECT_TRUE(kinematicBody.getLinearVelocity().isApprox(
+      kinematicOptions.linearVelocity));
+  EXPECT_TRUE(kinematicBody.getAngularVelocity().isApprox(
+      kinematicOptions.angularVelocity));
+  EXPECT_TRUE(
+      dynamicBody.getLinearVelocity().isApprox(Eigen::Vector3d::Zero()));
 }
 
 // Test that rigid-body frame ancestry is represented in the integration graph
@@ -12352,6 +16562,50 @@ TEST(World, StepRebuildsCachedKinematicsAfterFrameReparenting)
 
   EXPECT_TRUE(
       child.getTransform().isApprox(updatedParentTransform * childOffset));
+}
+
+TEST(World, StepSkipsCleanKinematicsGraph)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  auto parent = world.addFreeFrame("parent");
+
+  Eigen::Isometry3d childOffset = Eigen::Isometry3d::Identity();
+  childOffset.translate(Eigen::Vector3d(0.0, 1.0, 0.0));
+  auto child = world.addFixedFrame("child", parent, childOffset);
+
+  world.enterSimulationMode();
+
+  CountingGraphExecutor executor;
+  world.step(2, executor);
+
+  EXPECT_EQ(executor.executionCount, 0);
+  EXPECT_DOUBLE_EQ(world.getTime(), 2.0 * world.getTimeStep());
+  EXPECT_EQ(world.getFrame(), 2u);
+
+  world.step();
+
+  EXPECT_EQ(executor.executionCount, 0);
+  EXPECT_DOUBLE_EQ(world.getTime(), 3.0 * world.getTimeStep());
+  EXPECT_EQ(world.getFrame(), 3u);
+  const auto cleanStepDiagnostics = world.getMemoryDiagnostics();
+  EXPECT_EQ(cleanStepDiagnostics.frameScratchResetCount, 3u);
+  EXPECT_EQ(cleanStepDiagnostics.frameScratchUsedBytes, 0u);
+  EXPECT_EQ(cleanStepDiagnostics.frameScratchOverflowCount, 0u);
+  EXPECT_EQ(cleanStepDiagnostics.frameScratchOverflowBytes, 0u);
+
+  Eigen::Isometry3d updatedParentTransform = Eigen::Isometry3d::Identity();
+  updatedParentTransform.translate(Eigen::Vector3d(2.0, 0.0, 0.0));
+  parent.setLocalTransform(updatedParentTransform);
+
+  world.step(executor);
+
+  EXPECT_EQ(executor.executionCount, 1);
+  EXPECT_TRUE(
+      child.getTransform().isApprox(updatedParentTransform * childOffset));
+  EXPECT_DOUBLE_EQ(world.getTime(), 4.0 * world.getTimeStep());
+  EXPECT_EQ(world.getFrame(), 4u);
 }
 
 // Test that custom-stage step overloads keep the same default dynamics baseline

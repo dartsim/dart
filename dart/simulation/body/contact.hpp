@@ -61,7 +61,9 @@ struct Contact
   double depth = 0.0;
   std::size_t shapeIndexA = UnknownShapeIndex;
   std::size_t shapeIndexB = UnknownShapeIndex;
+  /// Shape-local contact point for shapeIndexA when the shape index is known.
   Eigen::Vector3d localPointA = Eigen::Vector3d::Zero();
+  /// Shape-local contact point for shapeIndexB when the shape index is known.
   Eigen::Vector3d localPointB = Eigen::Vector3d::Zero();
 };
 

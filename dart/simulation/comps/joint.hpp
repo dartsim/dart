@@ -37,6 +37,7 @@
 #include <Eigen/Dense>
 #include <entt/entt.hpp>
 
+#include <limits>
 #include <string>
 
 namespace dart::simulation::comps {
@@ -225,6 +226,23 @@ struct Joint
 
   /// Whether the joint has been broken by an AVBD break-force threshold.
   bool broken = false;
+
+  /// Whether AVBD point-joint stiffness fields were materialized or loaded.
+  /// Legacy binaries derive start/max defaults from endpoint AVBD config on
+  /// first use.
+  bool hasAvbdStiffnessState = false;
+
+  /// AVBD point-joint row starting stiffness.
+  double avbdStartStiffness = 1.0;
+
+  /// AVBD linear point-joint material stiffness. Infinity keeps hard rows.
+  double avbdLinearStiffness = std::numeric_limits<double>::infinity();
+
+  /// AVBD angular point-joint material stiffness. Infinity keeps hard rows.
+  double avbdAngularStiffness = std::numeric_limits<double>::infinity();
+
+  /// AVBD point-joint maximum ramp stiffness.
+  double avbdMaxStiffness = std::numeric_limits<double>::infinity();
 
   JointLimits limits;
 

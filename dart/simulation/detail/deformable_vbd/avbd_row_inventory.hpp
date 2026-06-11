@@ -34,6 +34,8 @@
 
 #include <dart/simulation/detail/deformable_vbd/avbd_constraint.hpp>
 
+#include <Eigen/Core>
+
 #include <algorithm>
 #include <limits>
 #include <span>
@@ -60,6 +62,7 @@ enum class AvbdScalarRowRole : std::uint8_t
   FrictionTangent,
   JointLinear,
   JointAngular,
+  RigidDistanceSpring,
   Motor,
   Fracture,
 };
@@ -135,6 +138,7 @@ struct AvbdScalarRowRecord
 {
   AvbdScalarRowDescriptor descriptor;
   AvbdScalarRowState state;
+  Eigen::Vector3d direction = Eigen::Vector3d::Zero();
 };
 
 //==============================================================================
@@ -197,6 +201,30 @@ public:
       std::span<const AvbdScalarRowDescriptor> descriptors,
       const AvbdRowWarmStartOptions& options)
   {
+    if (descriptors.empty()) {
+      mRecords.clear();
+      return;
+    }
+
+    if (mRecords.size() == descriptors.size()) {
+      bool sameOrder = true;
+      for (std::size_t i = 0; i < descriptors.size(); ++i) {
+        if (!(mRecords[i].descriptor.key == descriptors[i].key)) {
+          sameOrder = false;
+          break;
+        }
+      }
+
+      if (sameOrder) {
+        for (std::size_t i = 0; i < descriptors.size(); ++i) {
+          const AvbdScalarRowState state = warmStartAvbdScalarRowState(
+              mRecords[i].state, descriptors[i], options);
+          mRecords[i] = AvbdScalarRowRecord{descriptors[i], state};
+        }
+        return;
+      }
+    }
+
     mPreviousRecords.clear();
     mPreviousRecords.insert(
         mPreviousRecords.end(), mRecords.begin(), mRecords.end());
@@ -221,6 +249,61 @@ public:
   }
 
   //==============================================================================
+  template <typename DescriptorAt>
+  void syncActiveRowsByIndex(
+      std::size_t descriptorCount,
+      DescriptorAt descriptorAt,
+      const AvbdRowWarmStartOptions& options)
+  {
+    syncActiveRowsByIndex(
+        descriptorCount,
+        [&](std::size_t index) { return descriptorAt(index).key; },
+        descriptorAt,
+        options);
+  }
+
+  //==============================================================================
+  template <typename KeyAt, typename DescriptorAt>
+  void syncActiveRowsByIndex(
+      std::size_t descriptorCount,
+      KeyAt keyAt,
+      DescriptorAt descriptorAt,
+      const AvbdRowWarmStartOptions& options)
+  {
+    if (descriptorCount == 0u) {
+      mRecords.clear();
+      return;
+    }
+
+    if (mRecords.size() == descriptorCount) {
+      bool sameOrder = true;
+      for (std::size_t i = 0; i < descriptorCount; ++i) {
+        if (!(mRecords[i].descriptor.key == keyAt(i))) {
+          sameOrder = false;
+          break;
+        }
+      }
+
+      if (sameOrder) {
+        for (std::size_t i = 0; i < descriptorCount; ++i) {
+          const AvbdScalarRowDescriptor descriptor = descriptorAt(i);
+          const AvbdScalarRowState state = warmStartAvbdScalarRowState(
+              mRecords[i].state, descriptor, options);
+          mRecords[i] = AvbdScalarRowRecord{descriptor, state};
+        }
+        return;
+      }
+    }
+
+    std::vector<AvbdScalarRowDescriptor> descriptors;
+    descriptors.reserve(descriptorCount);
+    for (std::size_t i = 0; i < descriptorCount; ++i) {
+      descriptors.push_back(descriptorAt(i));
+    }
+    syncActiveRows(descriptors, options);
+  }
+
+  //==============================================================================
   void reserve(std::size_t capacity)
   {
     mRecords.reserve(capacity);
@@ -237,6 +320,12 @@ public:
   [[nodiscard]] bool empty() const noexcept
   {
     return mRecords.empty();
+  }
+
+  //==============================================================================
+  void clear() noexcept
+  {
+    mRecords.clear();
   }
 
   //==============================================================================

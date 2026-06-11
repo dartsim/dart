@@ -2,6 +2,27 @@
 
 ## Last Session Summary
 
+Latest local follow-up: Linux Release CI now runs the ASAN build with
+`DART_PARALLEL_JOBS=4` after the hosted runner killed the ASAN compilation with
+exit 137 while rebuilding the full test target set. This is CI resource
+calibration only; it does not close any AVBD solver, CPU-win, GPU, or
+paper-number gate.
+
+Latest local follow-up: the AVBD-only contact regressions in
+`test_boxed_lcp_contact` are excluded on MSVC after both target-level `/Od` and
+a source-local optimization guard still hit C1001 in MSVC 19.44. The ordinary
+BoxedLcp contact tests remain active on Windows, and the AVBD regressions remain
+active on Linux/macOS. This is CI portability only; it does not close any AVBD
+solver, CPU-win, GPU, or paper-number gate.
+
+Latest local follow-up: `test_boxed_lcp_contact` now avoids a repeated MSVC
+19.44 internal compiler error in the primitive endpoint-row helper by using an
+explicit `PrimitiveRowKey` struct instead of a nested
+`std::pair<AvbdContactEndpointId, AvbdContactEndpointId>` alias in that
+section. The focused Linux target rebuild and full `test_boxed_lcp_contact`
+binary passed locally. This is CI portability only; it does not close any AVBD
+solver, CPU-win, GPU, or paper-number gate.
+
 Latest local follow-up: point-pair and angular constraint caches now use exact
 component equality for repeated local anchors and target orientations instead
 of zero-tolerance approximate comparisons. This keeps the block-solver cache-hit

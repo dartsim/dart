@@ -66,6 +66,7 @@
 #include "dart/simulation/io/binary_io.hpp"
 #include "dart/simulation/io/serializer.hpp"
 #include "dart/simulation/multibody/joint.hpp"
+#include "dart/simulation/multibody/link.hpp"
 #include "dart/simulation/multibody/multibody.hpp"
 #include "dart/simulation/world_options.hpp"
 
@@ -85,6 +86,7 @@
 #include <limits>
 #include <map>
 #include <memory>
+#include <optional>
 #include <ostream>
 #include <set>
 #include <span>
@@ -211,6 +213,7 @@ struct World::CollisionQueryCache
   {
     clearObjectsAndResultsPreservingSpecs();
     specs.clear();
+    liveRigidBodyJointPairs.clear();
   }
 
   ncol::CollisionWorld collisionWorld;
@@ -219,6 +222,7 @@ struct World::CollisionQueryCache
   std::vector<std::size_t> entryByObjectId;
   std::vector<ShapeEntrySpec> specs;
   ncol::BroadPhaseSnapshot candidatePairs;
+  std::vector<detail::WorldStorage::CollisionPairKey> liveRigidBodyJointPairs;
   std::vector<Contact> contacts;
   ncol::CollisionResult pairResult;
 };
@@ -239,6 +243,11 @@ struct World::ReplayState
     Eigen::VectorXd armature;
     Eigen::VectorXd coulombFriction;
     double breakForce = 0.0;
+    bool hasAvbdStiffnessState = true;
+    double avbdStartStiffness = 1.0;
+    double avbdLinearStiffness = std::numeric_limits<double>::infinity();
+    double avbdAngularStiffness = std::numeric_limits<double>::infinity();
+    double avbdMaxStiffness = std::numeric_limits<double>::infinity();
     comps::JointLimits limits;
     Eigen::Vector3d axis = Eigen::Vector3d::UnitZ();
     Eigen::Vector3d axis2 = Eigen::Vector3d::UnitX();
@@ -323,6 +332,8 @@ struct World::ReplayState
     double rigidIpcAdaptiveBarrierStiffnessLowerBound = 1.0;
     MultibodyIntegrationMethod multibodyIntegrationMethod{
         MultibodyIntegrationMethod::SemiImplicit};
+    std::size_t variationalIntegratorMaxIterations = 100;
+    double variationalIntegratorTolerance = 1e-10;
     std::optional<StepDerivatives> stepDerivatives;
     std::vector<std::pair<entt::entity, PhysicalParameter>>
         differentiableParameters;
@@ -387,6 +398,11 @@ bool sameReplayJointLayout(const comps::Joint& joint, const JointLayout& layout)
          && sameReplayVector(joint.armature, layout.armature)
          && sameReplayVector(joint.coulombFriction, layout.coulombFriction)
          && joint.breakForce == layout.breakForce
+         && joint.hasAvbdStiffnessState == layout.hasAvbdStiffnessState
+         && joint.avbdStartStiffness == layout.avbdStartStiffness
+         && joint.avbdLinearStiffness == layout.avbdLinearStiffness
+         && joint.avbdAngularStiffness == layout.avbdAngularStiffness
+         && joint.avbdMaxStiffness == layout.avbdMaxStiffness
          && sameReplayJointLimits(joint.limits, layout.limits)
          && joint.axis.isApprox(layout.axis, 0.0)
          && joint.axis2.isApprox(layout.axis2, 0.0)
@@ -1071,10 +1087,53 @@ bool hasMultibodyStructures(const World& world)
 }
 
 //==============================================================================
-bool hasRigidBodyStructures(const World& world)
+bool hasAdvanceableRigidBodyStructures(const World& world)
 {
-  const auto view = detail::registryOf(world).view<comps::RigidBodyTag>();
-  return view.begin() != view.end();
+  const auto& registry = detail::registryOf(world);
+  const auto view = registry.view<comps::RigidBodyTag>();
+  for (const auto entity : view) {
+    if (!registry.all_of<comps::StaticBodyTag>(entity)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+//==============================================================================
+bool hasDirtyFrameCaches(const World& world)
+{
+  const auto view = detail::registryOf(world).view<comps::FrameCache>();
+  for (const auto entity : view) {
+    if (view.get<comps::FrameCache>(entity).needTransformUpdate) {
+      return true;
+    }
+  }
+  return false;
+}
+
+//==============================================================================
+bool canSkipDefaultStepPipelineWhenFramesClean(
+    const World& world,
+    bool hasAdvanceableRigidBodies,
+    bool hasMultibodyStructure,
+    bool hasDeformableBodies)
+{
+  if (hasAdvanceableRigidBodies || hasMultibodyStructure
+      || hasDeformableBodies) {
+    return false;
+  }
+
+  const auto& registry = detail::registryOf(world);
+  const auto loopClosureView = registry.view<comps::LoopClosure>();
+  if (loopClosureView.begin() != loopClosureView.end()) {
+    return false;
+  }
+  const auto jointView = registry.view<comps::Joint>();
+  if (jointView.begin() != jointView.end()) {
+    return false;
+  }
+
+  return true;
 }
 
 //==============================================================================
@@ -1085,9 +1144,45 @@ bool hasDeformableBodies(const World& world)
 }
 
 //==============================================================================
+entt::entity findOwningMultibodyStructure(
+    const detail::WorldRegistry& registry, entt::entity linkEntity)
+{
+  if (linkEntity == entt::null || !registry.all_of<comps::Link>(linkEntity)) {
+    return entt::null;
+  }
+
+  const auto structures = registry.view<comps::MultibodyStructure>();
+  for (const entt::entity structureEntity : structures) {
+    const auto& structure
+        = structures.get<comps::MultibodyStructure>(structureEntity);
+    if (std::find(structure.links.begin(), structure.links.end(), linkEntity)
+        != structure.links.end()) {
+      return structureEntity;
+    }
+  }
+
+  return entt::null;
+}
+
+//==============================================================================
 bool isRigidBodyJointType(comps::JointType type)
 {
   return type == comps::JointType::Fixed || type == comps::JointType::Revolute
+         || type == comps::JointType::Prismatic
+         || type == comps::JointType::Spherical;
+}
+
+//==============================================================================
+bool rigidBodyJointUsesAxis(comps::JointType type)
+{
+  return type == comps::JointType::Revolute
+         || type == comps::JointType::Prismatic;
+}
+
+//==============================================================================
+bool articulatedPointJointUsesAxis(comps::JointType type)
+{
+  return type == comps::JointType::Revolute
          || type == comps::JointType::Prismatic;
 }
 
@@ -1101,9 +1196,10 @@ comps::JointType toRigidBodyComponentJointType(JointType type)
       return comps::JointType::Revolute;
     case JointType::Prismatic:
       return comps::JointType::Prismatic;
+    case JointType::Spherical:
+      return comps::JointType::Spherical;
     case JointType::Screw:
     case JointType::Universal:
-    case JointType::Spherical:
     case JointType::Planar:
     case JointType::Floating:
     case JointType::Custom:
@@ -1112,8 +1208,35 @@ comps::JointType toRigidBodyComponentJointType(JointType type)
 
   DART_SIMULATION_THROW_T(
       InvalidArgumentException,
-      "Rigid-body joints currently support only fixed, revolute, and "
-      "prismatic joint types");
+      "Rigid-body joints currently support only fixed, revolute, prismatic, "
+      "and spherical joint types");
+  return comps::JointType::Custom;
+}
+
+//==============================================================================
+comps::JointType toArticulatedPointJointComponentJointType(JointType type)
+{
+  switch (type) {
+    case JointType::Fixed:
+      return comps::JointType::Fixed;
+    case JointType::Revolute:
+      return comps::JointType::Revolute;
+    case JointType::Prismatic:
+      return comps::JointType::Prismatic;
+    case JointType::Spherical:
+      return comps::JointType::Spherical;
+    case JointType::Screw:
+    case JointType::Universal:
+    case JointType::Planar:
+    case JointType::Floating:
+    case JointType::Custom:
+      break;
+  }
+
+  DART_SIMULATION_THROW_T(
+      InvalidArgumentException,
+      "Articulated point joints currently support only fixed, revolute, "
+      "prismatic, and spherical joint types");
   return comps::JointType::Custom;
 }
 
@@ -1142,6 +1265,43 @@ bool isRigidBodyFixedJoint(const Registry& registry, const comps::Joint& joint)
 }
 
 //==============================================================================
+template <typename Registry>
+bool isArticulatedPointJoint(
+    const Registry& registry,
+    entt::entity jointEntity,
+    const comps::Joint& joint)
+{
+  if (!isRigidBodyJointType(joint.type) || joint.childLink == entt::null
+      || joint.parentLink == joint.childLink) {
+    return false;
+  }
+
+  if (joint.parentLink != entt::null
+      && !registry.template all_of<comps::Link>(joint.parentLink)) {
+    return false;
+  }
+  if (!registry.template all_of<comps::Link>(joint.childLink)) {
+    return false;
+  }
+
+  const auto* childLink
+      = registry.template try_get<comps::Link>(joint.childLink);
+  if (childLink != nullptr && childLink->parentJoint == jointEntity) {
+    return false;
+  }
+
+  const entt::entity structureB
+      = findOwningMultibodyStructure(registry, joint.childLink);
+  if (joint.parentLink == entt::null) {
+    return structureB != entt::null;
+  }
+
+  const entt::entity structureA
+      = findOwningMultibodyStructure(registry, joint.parentLink);
+  return structureA != entt::null && structureA == structureB;
+}
+
+//==============================================================================
 bool hasRigidBodyJoints(const World& world)
 {
   const auto& registry = detail::registryOf(world);
@@ -1150,6 +1310,36 @@ bool hasRigidBodyJoints(const World& world)
     (void)entity;
     const auto& joint = view.get<comps::Joint>(entity);
     if (isRigidBodyJoint(registry, joint)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+//==============================================================================
+bool hasRigidBodyDistanceSprings(const World& world)
+{
+  const auto& registry = detail::registryOf(world);
+  const auto view
+      = registry
+            .view<detail::deformable_vbd::AvbdRigidWorldDistanceSpringConfig>();
+  return view.begin() != view.end();
+}
+
+//==============================================================================
+bool hasRigidBodyAvbdPairConstraints(const World& world)
+{
+  return hasRigidBodyJoints(world) || hasRigidBodyDistanceSprings(world);
+}
+
+//==============================================================================
+bool hasArticulatedPointJoints(const World& world)
+{
+  const auto& registry = detail::registryOf(world);
+  const auto view = registry.view<comps::Joint>();
+  for (const entt::entity entity : view) {
+    const auto& joint = view.get<comps::Joint>(entity);
+    if (isArticulatedPointJoint(registry, entity, joint)) {
       return true;
     }
   }
@@ -1181,11 +1371,16 @@ bool hasRigidBodyJointsUnsupportedByIpc(const World& world)
 void validateRigidBodyJointPipelineSupport(
     const World& world, RigidBodySolver solver)
 {
-  if (!hasRigidBodyJoints(world)) {
+  if (!hasRigidBodyAvbdPairConstraints(world)) {
     return;
   }
 
   if (solver == RigidBodySolver::Ipc) {
+    DART_SIMULATION_THROW_T_IF(
+        hasRigidBodyDistanceSprings(world),
+        InvalidOperationException,
+        "Rigid-body distance springs are not supported by the IPC rigid-body "
+        "solver");
     DART_SIMULATION_THROW_T_IF(
         hasRigidBodyJointsUnsupportedByIpc(world),
         InvalidOperationException,
@@ -1202,8 +1397,23 @@ void validateRigidBodyJointPipelineSupport(
   DART_SIMULATION_THROW_T_IF(
       hasMultibodyStructures(world),
       InvalidOperationException,
-      "Rigid-body joints are not supported in worlds with multibody "
+      "Rigid-body AVBD pair constraints are not supported in worlds with "
+      "multibody "
       "structures");
+}
+
+//==============================================================================
+void validateArticulatedPointJointPipelineSupport(
+    const World& world, bool variationalSelected)
+{
+  if (!hasArticulatedPointJoints(world) || variationalSelected) {
+    return;
+  }
+
+  DART_SIMULATION_THROW_T(
+      InvalidOperationException,
+      "Articulated point joints require the variational multibody "
+      "integration family before stepping");
 }
 
 //==============================================================================
@@ -1529,6 +1739,66 @@ entt::entity resolveLoopClosureFrame(
       fieldName);
 
   return detail::toRegistryEntity(frame.getEntity());
+}
+
+//==============================================================================
+detail::WorldStorage::CollisionPairKey makeCollisionPairKey(
+    entt::entity first, entt::entity second)
+{
+  if (static_cast<std::uint32_t>(second) < static_cast<std::uint32_t>(first)) {
+    std::swap(first, second);
+  }
+  return {first, second};
+}
+
+//==============================================================================
+template <typename Registry>
+void collectLivePublicRigidBodyJointPairsInto(
+    const Registry& registry,
+    std::vector<detail::WorldStorage::CollisionPairKey>& pairs)
+{
+  pairs.clear();
+
+  const auto joints = registry.template view<comps::Joint>();
+  for (const entt::entity entity : joints) {
+    const auto& joint = joints.template get<comps::Joint>(entity);
+    if (joint.broken || !isRigidBodyJoint(registry, joint)) {
+      continue;
+    }
+
+    pairs.push_back(makeCollisionPairKey(joint.parentLink, joint.childLink));
+  }
+
+  std::sort(pairs.begin(), pairs.end());
+  pairs.erase(std::unique(pairs.begin(), pairs.end()), pairs.end());
+}
+
+//==============================================================================
+entt::entity resolveCollisionPairFrame(
+    const World& world, const Frame& frame, std::string_view fieldName)
+{
+  DART_SIMULATION_THROW_T_IF(
+      frame.isWorld() || !frame.isValid(),
+      InvalidArgumentException,
+      "Collision pair {} frame is invalid or has been destroyed",
+      fieldName);
+
+  DART_SIMULATION_THROW_T_IF(
+      frame.getWorld() != &world,
+      InvalidArgumentException,
+      "Collision pair {} frame belongs to a different world",
+      fieldName);
+
+  const entt::entity entity = detail::toRegistryEntity(frame.getEntity());
+  const auto& registry = detail::registryOf(world);
+  DART_SIMULATION_THROW_T_IF(
+      !registry.all_of<comps::RigidBodyTag>(entity)
+          && !registry.all_of<comps::Link>(entity),
+      InvalidArgumentException,
+      "Collision pair {} frame must be a rigid body or multibody link",
+      fieldName);
+
+  return entity;
 }
 
 //==============================================================================
@@ -2285,6 +2555,10 @@ Eigen::Isometry3d toIsometry(
 struct World::StepPipelineCache
 {
   WorldStepPipelineStages stages;
+  bool hasAdvanceableRigidBodies = false;
+  bool hasMultibodyStructure = false;
+  bool hasDeformableBodies = false;
+  bool canSkipDefaultPipelineWhenFramesClean = true;
 };
 
 World::World()
@@ -2399,7 +2673,6 @@ WorldMemoryDiagnostics World::getMemoryDiagnostics() const
   return diagnostics;
 }
 
-//==============================================================================
 void World::clear()
 {
   // Recreate the opaque storage at the rebuild boundary so registry/component
@@ -2412,6 +2685,8 @@ void World::clear()
   m_gravity = Eigen::Vector3d(0.0, 0.0, -9.81);
   m_rigidBodySolver = RigidBodySolver::SequentialImpulse;
   m_multibodyIntegrationMethod = MultibodyIntegrationMethod::SemiImplicit;
+  m_variationalIntegratorMaxIterations = 100;
+  m_variationalIntegratorTolerance = 1e-10;
   m_timeStep = 0.001;
   m_differentiable = false;
   m_contactSolverMethod = ContactSolverMethod::SequentialImpulse;
@@ -2516,7 +2791,8 @@ void World::reserveRegistryStorageForSimulation()
       comps::VariationalContactDualState,
       compute::MultibodyVariationalState,
       compute::MultibodyVariationalScratch,
-      detail::deformable_vbd::AvbdRigidWorldPointJointConfig>(registry);
+      detail::deformable_vbd::AvbdRigidWorldPointJointConfig,
+      detail::deformable_vbd::AvbdRigidWorldDistanceSpringConfig>(registry);
 
   reserveExistingRegistryStorages(registry);
 
@@ -2554,6 +2830,13 @@ void World::reserveRegistryStorageForSimulation()
     registry.storage<detail::deformable_vbd::AvbdRigidWorldPointJointConfig>()
         .reserve(jointCount);
   }
+  const auto springCount = existingComponentStorageSize<
+      detail::deformable_vbd::AvbdRigidWorldDistanceSpringConfig>(registry);
+  if (springCount > 0u) {
+    registry
+        .storage<detail::deformable_vbd::AvbdRigidWorldDistanceSpringConfig>()
+        .reserve(springCount);
+  }
 
   reserveExistingRegistryStorages(registry);
 }
@@ -2562,13 +2845,23 @@ void World::reserveRegistryStorageForSimulation()
 void World::prepareStepPipelineCacheForCurrentConfiguration()
 {
   reserveRegistryStorageForSimulation();
-  m_stepPipelineCache->stages.prepare(
+  auto& cache = *m_stepPipelineCache;
+  cache.hasAdvanceableRigidBodies = hasAdvanceableRigidBodyStructures(*this);
+  cache.hasMultibodyStructure = hasMultibodyStructures(*this);
+  cache.hasDeformableBodies = hasDeformableBodies(*this);
+  cache.canSkipDefaultPipelineWhenFramesClean
+      = canSkipDefaultStepPipelineWhenFramesClean(
+          *this,
+          cache.hasAdvanceableRigidBodies,
+          cache.hasMultibodyStructure,
+          cache.hasDeformableBodies);
+  cache.stages.prepare(
       *this,
       m_rigidBodySolver,
       m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational,
-      hasRigidBodyStructures(*this),
-      hasMultibodyStructures(*this),
-      hasDeformableBodies(*this));
+      cache.hasAdvanceableRigidBodies,
+      cache.hasMultibodyStructure,
+      cache.hasDeformableBodies);
 }
 
 //==============================================================================
@@ -2719,10 +3012,10 @@ Multibody World::addMultibody(std::string_view name)
 {
   ensureDesignMode();
   DART_SIMULATION_THROW_T_IF(
-      hasRigidBodyJoints(*this),
+      hasRigidBodyAvbdPairConstraints(*this),
       InvalidOperationException,
       "Multibody structures are not supported in worlds with rigid-body "
-      "joints");
+      "AVBD pair constraints");
 
   std::string candidateName;
   if (name.empty()) {
@@ -2771,6 +3064,421 @@ bool World::hasMultibody(std::string_view name) const
 std::size_t World::getMultibodyCount() const
 {
   return countEntities<comps::MultibodyTag>(m_storage->registry);
+}
+
+//==============================================================================
+Joint World::addArticulatedFixedJoint(
+    std::string_view name, const Link& parent, const Link& child)
+{
+  return addArticulatedJoint(
+      name, &parent, child, JointType::Fixed, Eigen::Vector3d::UnitZ());
+}
+
+//==============================================================================
+Joint World::addArticulatedFixedJoint(
+    std::string_view name,
+    const Link& parent,
+    const Link& child,
+    const Eigen::Vector3d& parentAnchor,
+    const Eigen::Vector3d& childAnchor)
+{
+  return addArticulatedJoint(
+      name,
+      &parent,
+      child,
+      JointType::Fixed,
+      Eigen::Vector3d::UnitZ(),
+      parentAnchor,
+      childAnchor);
+}
+
+//==============================================================================
+Joint World::addArticulatedFixedJoint(std::string_view name, const Link& child)
+{
+  return addArticulatedJoint(
+      name, nullptr, child, JointType::Fixed, Eigen::Vector3d::UnitZ());
+}
+
+//==============================================================================
+Joint World::addArticulatedFixedJoint(
+    std::string_view name,
+    const Link& child,
+    const Eigen::Vector3d& worldAnchor,
+    const Eigen::Vector3d& childAnchor)
+{
+  return addArticulatedJoint(
+      name,
+      nullptr,
+      child,
+      JointType::Fixed,
+      Eigen::Vector3d::UnitZ(),
+      worldAnchor,
+      childAnchor);
+}
+
+//==============================================================================
+Joint World::addArticulatedRevoluteJoint(
+    std::string_view name,
+    const Link& parent,
+    const Link& child,
+    const Eigen::Vector3d& axis)
+{
+  return addArticulatedJoint(name, &parent, child, JointType::Revolute, axis);
+}
+
+//==============================================================================
+Joint World::addArticulatedRevoluteJoint(
+    std::string_view name,
+    const Link& parent,
+    const Link& child,
+    const Eigen::Vector3d& axis,
+    const Eigen::Vector3d& parentAnchor,
+    const Eigen::Vector3d& childAnchor)
+{
+  return addArticulatedJoint(
+      name,
+      &parent,
+      child,
+      JointType::Revolute,
+      axis,
+      parentAnchor,
+      childAnchor);
+}
+
+//==============================================================================
+Joint World::addArticulatedRevoluteJoint(
+    std::string_view name, const Link& child, const Eigen::Vector3d& axis)
+{
+  return addArticulatedJoint(name, nullptr, child, JointType::Revolute, axis);
+}
+
+//==============================================================================
+Joint World::addArticulatedRevoluteJoint(
+    std::string_view name,
+    const Link& child,
+    const Eigen::Vector3d& axis,
+    const Eigen::Vector3d& worldAnchor,
+    const Eigen::Vector3d& childAnchor)
+{
+  return addArticulatedJoint(
+      name,
+      nullptr,
+      child,
+      JointType::Revolute,
+      axis,
+      worldAnchor,
+      childAnchor);
+}
+
+//==============================================================================
+Joint World::addArticulatedPrismaticJoint(
+    std::string_view name,
+    const Link& parent,
+    const Link& child,
+    const Eigen::Vector3d& axis)
+{
+  return addArticulatedJoint(name, &parent, child, JointType::Prismatic, axis);
+}
+
+//==============================================================================
+Joint World::addArticulatedPrismaticJoint(
+    std::string_view name,
+    const Link& parent,
+    const Link& child,
+    const Eigen::Vector3d& axis,
+    const Eigen::Vector3d& parentAnchor,
+    const Eigen::Vector3d& childAnchor)
+{
+  return addArticulatedJoint(
+      name,
+      &parent,
+      child,
+      JointType::Prismatic,
+      axis,
+      parentAnchor,
+      childAnchor);
+}
+
+//==============================================================================
+Joint World::addArticulatedPrismaticJoint(
+    std::string_view name, const Link& child, const Eigen::Vector3d& axis)
+{
+  return addArticulatedJoint(name, nullptr, child, JointType::Prismatic, axis);
+}
+
+//==============================================================================
+Joint World::addArticulatedPrismaticJoint(
+    std::string_view name,
+    const Link& child,
+    const Eigen::Vector3d& axis,
+    const Eigen::Vector3d& worldAnchor,
+    const Eigen::Vector3d& childAnchor)
+{
+  return addArticulatedJoint(
+      name,
+      nullptr,
+      child,
+      JointType::Prismatic,
+      axis,
+      worldAnchor,
+      childAnchor);
+}
+
+//==============================================================================
+Joint World::addArticulatedSphericalJoint(
+    std::string_view name, const Link& parent, const Link& child)
+{
+  return addArticulatedJoint(
+      name, &parent, child, JointType::Spherical, Eigen::Vector3d::UnitZ());
+}
+
+//==============================================================================
+Joint World::addArticulatedSphericalJoint(
+    std::string_view name,
+    const Link& parent,
+    const Link& child,
+    const Eigen::Vector3d& parentAnchor,
+    const Eigen::Vector3d& childAnchor)
+{
+  return addArticulatedJoint(
+      name,
+      &parent,
+      child,
+      JointType::Spherical,
+      Eigen::Vector3d::UnitZ(),
+      parentAnchor,
+      childAnchor);
+}
+
+//==============================================================================
+Joint World::addArticulatedSphericalJoint(
+    std::string_view name, const Link& child)
+{
+  return addArticulatedJoint(
+      name, nullptr, child, JointType::Spherical, Eigen::Vector3d::UnitZ());
+}
+
+//==============================================================================
+Joint World::addArticulatedSphericalJoint(
+    std::string_view name,
+    const Link& child,
+    const Eigen::Vector3d& worldAnchor,
+    const Eigen::Vector3d& childAnchor)
+{
+  return addArticulatedJoint(
+      name,
+      nullptr,
+      child,
+      JointType::Spherical,
+      Eigen::Vector3d::UnitZ(),
+      worldAnchor,
+      childAnchor);
+}
+
+//==============================================================================
+Joint World::addArticulatedJoint(
+    std::string_view name,
+    const Link* parent,
+    const Link& child,
+    JointType type,
+    const Eigen::Vector3d& axis,
+    std::optional<Eigen::Vector3d> parentAnchor,
+    std::optional<Eigen::Vector3d> childAnchor)
+{
+  ensureDesignMode();
+
+  const comps::JointType componentType
+      = toArticulatedPointJointComponentJointType(type);
+  DART_SIMULATION_THROW_T_IF(
+      articulatedPointJointUsesAxis(componentType)
+          && (!axis.allFinite() || axis.squaredNorm() <= 0.0),
+      InvalidArgumentException,
+      "Articulated point-joint axis must be finite and non-zero");
+  DART_SIMULATION_THROW_T_IF(
+      parent != nullptr && !parent->isValid(),
+      InvalidArgumentException,
+      "Articulated point-joint parent link is invalid or has been destroyed");
+  DART_SIMULATION_THROW_T_IF(
+      !child.isValid(),
+      InvalidArgumentException,
+      "Articulated point-joint child link is invalid or has been destroyed");
+  DART_SIMULATION_THROW_T_IF(
+      (parent != nullptr && parent->getWorld() != this)
+          || child.getWorld() != this,
+      InvalidArgumentException,
+      "Articulated point-joint links must belong to this World");
+  DART_SIMULATION_THROW_T_IF(
+      parent != nullptr && parent->getEntity() == child.getEntity(),
+      InvalidArgumentException,
+      "Articulated point-joint parent and child links must be distinct");
+  DART_SIMULATION_THROW_T_IF(
+      parentAnchor.has_value() != childAnchor.has_value(),
+      InvalidArgumentException,
+      "Articulated point-joint anchors must be provided for both endpoints");
+  DART_SIMULATION_THROW_T_IF(
+      parentAnchor.has_value()
+          && (!parentAnchor->allFinite() || !childAnchor->allFinite()),
+      InvalidArgumentException,
+      "Articulated point-joint anchors must be finite");
+
+  const entt::entity parentEntity
+      = parent == nullptr ? entt::null
+                          : detail::toRegistryEntity(parent->getEntity());
+  const entt::entity childEntity = detail::toRegistryEntity(child.getEntity());
+  const entt::entity parentStructure
+      = parentEntity == entt::null
+            ? entt::null
+            : findOwningMultibodyStructure(m_storage->registry, parentEntity);
+  const entt::entity childStructure
+      = findOwningMultibodyStructure(m_storage->registry, childEntity);
+  DART_SIMULATION_THROW_T_IF(
+      childStructure == entt::null,
+      InvalidArgumentException,
+      "Articulated point-joint child link must belong to a multibody");
+  DART_SIMULATION_THROW_T_IF(
+      parentEntity != entt::null
+          && (parentStructure == entt::null
+              || parentStructure != childStructure),
+      InvalidArgumentException,
+      "Articulated point-joint links must belong to the same multibody");
+
+  std::string actualName;
+  if (name.empty()) {
+    do {
+      actualName = std::format("joint_{:03d}", ++m_jointCounter);
+    } while (hasEntityWithName<comps::Joint>(m_storage->registry, actualName));
+  } else {
+    actualName = std::string(name);
+    DART_SIMULATION_THROW_T_IF(
+        hasEntityWithName<comps::Joint>(m_storage->registry, actualName),
+        InvalidArgumentException,
+        "Joint '{}' already exists",
+        actualName);
+  }
+
+  const entt::entity jointEntity = m_storage->registry.create();
+  m_storage->registry.emplace<comps::Name>(jointEntity, actualName);
+
+  auto& joint = m_storage->registry.emplace<comps::Joint>(jointEntity);
+  joint.type = componentType;
+  joint.name = std::move(actualName);
+  joint.parentLink = parentEntity;
+  joint.childLink = childEntity;
+  joint.hasAvbdStiffnessState = false;
+  if (articulatedPointJointUsesAxis(componentType)) {
+    joint.axis = axis.normalized();
+  }
+
+  const Eigen::Index dof = static_cast<Eigen::Index>(joint.getDOF());
+  joint.position = Eigen::VectorXd::Zero(dof);
+  joint.velocity = Eigen::VectorXd::Zero(dof);
+  joint.acceleration = Eigen::VectorXd::Zero(dof);
+  joint.torque = Eigen::VectorXd::Zero(dof);
+  joint.springStiffness = Eigen::VectorXd::Zero(dof);
+  joint.dampingCoefficient = Eigen::VectorXd::Zero(dof);
+  joint.restPosition = Eigen::VectorXd::Zero(dof);
+  joint.armature = Eigen::VectorXd::Zero(dof);
+  joint.coulombFriction = Eigen::VectorXd::Zero(dof);
+  joint.commandVelocity = Eigen::VectorXd::Zero(dof);
+
+  const double infinity = std::numeric_limits<double>::infinity();
+  joint.limits.lower = Eigen::VectorXd::Constant(dof, -infinity);
+  joint.limits.upper = Eigen::VectorXd::Constant(dof, infinity);
+  joint.limits.velocityLower = Eigen::VectorXd::Constant(dof, -infinity);
+  joint.limits.velocityUpper = Eigen::VectorXd::Constant(dof, infinity);
+  joint.limits.effortLower = Eigen::VectorXd::Constant(dof, -infinity);
+  joint.limits.effortUpper = Eigen::VectorXd::Constant(dof, infinity);
+
+  if (parentAnchor.has_value()) {
+    Eigen::Matrix3d parentRotation = Eigen::Matrix3d::Identity();
+    if (parent != nullptr) {
+      parentRotation = parent->getWorldTransform().linear();
+    }
+    const Eigen::Matrix3d childRotation = child.getWorldTransform().linear();
+    DART_SIMULATION_THROW_T_IF(
+        !parentRotation.allFinite() || !childRotation.allFinite(),
+        InvalidArgumentException,
+        "Articulated point-joint endpoint transforms must be finite");
+
+    Eigen::Quaterniond parentOrientation(parentRotation);
+    Eigen::Quaterniond childOrientation(childRotation);
+    DART_SIMULATION_THROW_T_IF(
+        !parentOrientation.coeffs().allFinite()
+            || !childOrientation.coeffs().allFinite()
+            || parentOrientation.norm() == 0.0
+            || childOrientation.norm() == 0.0,
+        InvalidArgumentException,
+        "Articulated point-joint endpoint orientations must be finite");
+    parentOrientation.normalize();
+    childOrientation.normalize();
+
+    joint.hasRigidBodyFixedJointAnchors = true;
+    joint.rigidBodyFixedJointLocalAnchorParent = *parentAnchor;
+    joint.rigidBodyFixedJointLocalAnchorChild = *childAnchor;
+    joint.rigidBodyFixedJointTargetRelativeOrientation
+        = parentOrientation.conjugate() * childOrientation;
+    joint.rigidBodyFixedJointTargetRelativeOrientation.normalize();
+  }
+
+  return Joint(detail::fromRegistryEntity(jointEntity), this);
+}
+
+//==============================================================================
+std::optional<Joint> World::getArticulatedJoint(std::string_view name)
+{
+  auto view = m_storage->registry.view<comps::Joint, comps::Name>();
+  for (auto entity : view) {
+    const auto& joint = view.get<comps::Joint>(entity);
+    const auto& info = view.get<comps::Name>(entity);
+    if (info.name == name
+        && isArticulatedPointJoint(m_storage->registry, entity, joint)) {
+      return Joint(detail::fromRegistryEntity(entity), this);
+    }
+  }
+  return std::nullopt;
+}
+
+//==============================================================================
+bool World::hasArticulatedJoint(std::string_view name) const
+{
+  const auto view = m_storage->registry.view<comps::Joint, comps::Name>();
+  for (auto entity : view) {
+    const auto& joint = view.get<comps::Joint>(entity);
+    const auto& info = view.get<comps::Name>(entity);
+    if (info.name == name
+        && isArticulatedPointJoint(m_storage->registry, entity, joint)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+//==============================================================================
+std::size_t World::getArticulatedJointCount() const
+{
+  std::size_t count = 0;
+  const auto view = m_storage->registry.view<comps::Joint>();
+  for (auto entity : view) {
+    const auto& joint = view.get<comps::Joint>(entity);
+    if (isArticulatedPointJoint(m_storage->registry, entity, joint)) {
+      ++count;
+    }
+  }
+  return count;
+}
+
+//==============================================================================
+std::vector<Joint> World::getArticulatedJoints()
+{
+  std::vector<Joint> joints;
+  const auto view = m_storage->registry.view<comps::Joint>();
+  for (auto entity : view) {
+    const auto& joint = view.get<comps::Joint>(entity);
+    if (isArticulatedPointJoint(m_storage->registry, entity, joint)) {
+      joints.emplace_back(detail::fromRegistryEntity(entity), this);
+    }
+  }
+  return joints;
 }
 
 //==============================================================================
@@ -2927,21 +3635,198 @@ Joint World::addRigidBodyPrismaticJoint(
 }
 
 //==============================================================================
+Joint World::addRigidBodySphericalJoint(
+    std::string_view name, const RigidBody& parent, const RigidBody& child)
+{
+  return addRigidBodyJoint(
+      name, parent, child, JointType::Spherical, Eigen::Vector3d::UnitZ());
+}
+
+//==============================================================================
+Joint World::addRigidBodySphericalJoint(
+    std::string_view name,
+    const RigidBody& parent,
+    const RigidBody& child,
+    const Eigen::Vector3d& parentAnchor,
+    const Eigen::Vector3d& childAnchor)
+{
+  return addRigidBodyJoint(
+      name,
+      parent,
+      child,
+      JointType::Spherical,
+      Eigen::Vector3d::UnitZ(),
+      parentAnchor,
+      childAnchor);
+}
+
+//==============================================================================
+void World::addRigidBodyDistanceSpring(
+    std::string_view name,
+    const RigidBody& parent,
+    const RigidBody& child,
+    double restLength,
+    double stiffness)
+{
+  addRigidBodyDistanceSpringImpl(
+      name, parent, child, restLength, stiffness, std::nullopt, std::nullopt);
+}
+
+//==============================================================================
+void World::addRigidBodyDistanceSpring(
+    std::string_view name,
+    const RigidBody& parent,
+    const RigidBody& child,
+    double restLength,
+    double stiffness,
+    const Eigen::Vector3d& parentAnchor,
+    const Eigen::Vector3d& childAnchor)
+{
+  addRigidBodyDistanceSpringImpl(
+      name,
+      parent,
+      child,
+      restLength,
+      stiffness,
+      std::optional<Eigen::Vector3d>{parentAnchor},
+      std::optional<Eigen::Vector3d>{childAnchor});
+}
+
+//==============================================================================
+void World::addRigidBodyDistanceSpringImpl(
+    std::string_view name,
+    const RigidBody& parent,
+    const RigidBody& child,
+    double restLength,
+    double stiffness,
+    std::optional<Eigen::Vector3d> parentAnchor,
+    std::optional<Eigen::Vector3d> childAnchor)
+{
+  ensureDesignMode();
+
+  DART_SIMULATION_THROW_T_IF(
+      !std::isfinite(restLength) || restLength < 0.0,
+      InvalidArgumentException,
+      "Rigid-body distance spring rest length must be finite and non-negative");
+  DART_SIMULATION_THROW_T_IF(
+      !std::isfinite(stiffness) || stiffness <= 0.0,
+      InvalidArgumentException,
+      "Rigid-body distance spring stiffness must be finite and positive");
+  DART_SIMULATION_THROW_T_IF(
+      parentAnchor.has_value() != childAnchor.has_value(),
+      InvalidArgumentException,
+      "Rigid-body distance spring anchors must provide both endpoints");
+  DART_SIMULATION_THROW_T_IF(
+      parentAnchor.has_value()
+          && (!parentAnchor->allFinite() || !childAnchor->allFinite()),
+      InvalidArgumentException,
+      "Rigid-body distance spring anchors must be finite");
+  DART_SIMULATION_THROW_T_IF(
+      !parent.isValid(),
+      InvalidArgumentException,
+      "Distance spring parent rigid body is invalid or has been destroyed");
+  DART_SIMULATION_THROW_T_IF(
+      !child.isValid(),
+      InvalidArgumentException,
+      "Distance spring child rigid body is invalid or has been destroyed");
+  DART_SIMULATION_THROW_T_IF(
+      parent.getWorld() != this || child.getWorld() != this,
+      InvalidArgumentException,
+      "Distance spring rigid bodies must belong to this World");
+  DART_SIMULATION_THROW_T_IF(
+      parent.getEntity() == child.getEntity(),
+      InvalidArgumentException,
+      "Distance spring parent and child rigid bodies must be distinct");
+
+  const entt::entity parentEntity
+      = detail::toRegistryEntity(parent.getEntity());
+  const entt::entity childEntity = detail::toRegistryEntity(child.getEntity());
+  const bool parentIsRigidBody = m_storage->registry.all_of<
+      comps::RigidBodyTag,
+      comps::Transform,
+      comps::MassProperties>(parentEntity);
+  const bool childIsRigidBody = m_storage->registry.all_of<
+      comps::RigidBodyTag,
+      comps::Transform,
+      comps::MassProperties>(childEntity);
+  DART_SIMULATION_THROW_T_IF(
+      !parentIsRigidBody || !childIsRigidBody,
+      InvalidArgumentException,
+      "Distance spring endpoints must be valid rigid bodies");
+  DART_SIMULATION_THROW_T_IF(
+      m_rigidBodySolver == RigidBodySolver::Ipc,
+      InvalidOperationException,
+      "Rigid-body distance springs are not supported by the IPC rigid-body "
+      "solver");
+  DART_SIMULATION_THROW_T_IF(
+      hasMultibodyStructures(*this),
+      InvalidOperationException,
+      "Rigid-body distance springs are not supported in worlds with multibody "
+      "structures");
+
+  std::string actualName;
+  if (name.empty()) {
+    do {
+      actualName
+          = std::format("rigid_distance_spring_{:03d}", ++m_jointCounter);
+    } while (hasEntityWithName<
+             detail::deformable_vbd::AvbdRigidWorldDistanceSpringConfig>(
+        m_storage->registry, actualName));
+  } else {
+    actualName = std::string(name);
+    DART_SIMULATION_THROW_T_IF(
+        hasEntityWithName<
+            detail::deformable_vbd::AvbdRigidWorldDistanceSpringConfig>(
+            m_storage->registry, actualName),
+        InvalidArgumentException,
+        "Rigid-body distance spring '{}' already exists",
+        actualName);
+  }
+
+  const entt::entity springEntity = m_storage->registry.create();
+  m_storage->registry.emplace<comps::Name>(springEntity, actualName);
+  auto& config = m_storage->registry.emplace<
+      detail::deformable_vbd::AvbdRigidWorldDistanceSpringConfig>(springEntity);
+  config.enabled = true;
+  config.bodyA = parentEntity;
+  config.bodyB = childEntity;
+  if (parentAnchor.has_value()) {
+    config.localAnchorA = *parentAnchor;
+    config.localAnchorB = *childAnchor;
+  }
+  config.restLength = restLength;
+  config.startStiffness = stiffness;
+  config.materialStiffness = stiffness;
+  config.maxStiffness = stiffness;
+}
+
+//==============================================================================
 Joint World::addRigidBodyJoint(
     std::string_view name,
     const RigidBody& parent,
     const RigidBody& child,
     JointType type,
-    const Eigen::Vector3d& axis)
+    const Eigen::Vector3d& axis,
+    std::optional<Eigen::Vector3d> parentAnchor,
+    std::optional<Eigen::Vector3d> childAnchor)
 {
   ensureDesignMode();
 
   const comps::JointType componentType = toRigidBodyComponentJointType(type);
   DART_SIMULATION_THROW_T_IF(
-      componentType != comps::JointType::Fixed
+      rigidBodyJointUsesAxis(componentType)
           && (!axis.allFinite() || axis.squaredNorm() <= 0.0),
       InvalidArgumentException,
       "Rigid-body joint axis must be finite and non-zero");
+  DART_SIMULATION_THROW_T_IF(
+      parentAnchor.has_value() != childAnchor.has_value(),
+      InvalidArgumentException,
+      "Rigid-body joint anchors must provide both endpoints");
+  DART_SIMULATION_THROW_T_IF(
+      parentAnchor.has_value()
+          && (!parentAnchor->allFinite() || !childAnchor->allFinite()),
+      InvalidArgumentException,
+      "Rigid-body joint anchors must be finite");
   DART_SIMULATION_THROW_T_IF(
       !parent.isValid(),
       InvalidArgumentException,
@@ -3009,8 +3894,33 @@ Joint World::addRigidBodyJoint(
   joint.name = std::move(actualName);
   joint.parentLink = parentEntity;
   joint.childLink = childEntity;
-  if (componentType != comps::JointType::Fixed) {
+  if (rigidBodyJointUsesAxis(componentType)) {
     joint.axis = axis.normalized();
+  }
+
+  if (parentAnchor.has_value()) {
+    const auto& parentTransform
+        = m_storage->registry.get<comps::Transform>(parentEntity);
+    const auto& childTransform
+        = m_storage->registry.get<comps::Transform>(childEntity);
+    Eigen::Quaterniond parentOrientation = parentTransform.orientation;
+    Eigen::Quaterniond childOrientation = childTransform.orientation;
+    DART_SIMULATION_THROW_T_IF(
+        !parentOrientation.coeffs().allFinite()
+            || !childOrientation.coeffs().allFinite()
+            || parentOrientation.norm() == 0.0
+            || childOrientation.norm() == 0.0,
+        InvalidArgumentException,
+        "Rigid-body joint endpoint orientations must be finite");
+    parentOrientation.normalize();
+    childOrientation.normalize();
+
+    joint.hasRigidBodyFixedJointAnchors = true;
+    joint.rigidBodyFixedJointLocalAnchorParent = *parentAnchor;
+    joint.rigidBodyFixedJointLocalAnchorChild = *childAnchor;
+    joint.rigidBodyFixedJointTargetRelativeOrientation
+        = parentOrientation.conjugate() * childOrientation;
+    joint.rigidBodyFixedJointTargetRelativeOrientation.normalize();
   }
 
   const Eigen::Index dof = static_cast<Eigen::Index>(joint.getDOF());
@@ -3034,6 +3944,9 @@ Joint World::addRigidBodyJoint(
   joint.limits.effortUpper = Eigen::VectorXd::Constant(dof, infinity);
 
   const comps::RigidAvbdContactConfig defaultAvbdConfig;
+  joint.hasAvbdStiffnessState = true;
+  joint.avbdStartStiffness = defaultAvbdConfig.startStiffness;
+  joint.avbdMaxStiffness = defaultAvbdConfig.maxStiffness;
   if (!detail::deformable_vbd::configureAvbdRigidWorldPointJointFromCurrentPose(
           m_storage->registry,
           jointEntity,
@@ -3320,6 +4233,9 @@ void World::enterSimulationMode()
 
   validateLoopClosureKinematicsPolicySupport(*this);
   validateRigidBodyJointPipelineSupport(*this, m_rigidBodySolver);
+  validateArticulatedPointJointPipelineSupport(
+      *this,
+      m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational);
   m_simulationMode = true;
 
   // Initial bake so that cached transforms are up-to-date.
@@ -3724,6 +4640,16 @@ void World::refreshMemoryDiagnostics()
 //==============================================================================
 void World::step()
 {
+#if DART_BUILD_PROFILE
+  if (!m_stepProfilingEnabled && tryStepCleanNoWorkDefaultPipeline()) {
+    return;
+  }
+#else
+  if (tryStepCleanNoWorkDefaultPipeline()) {
+    return;
+  }
+#endif
+
   compute::SequentialExecutor executor;
   step(executor);
 }
@@ -3762,10 +4688,11 @@ void World::step(std::size_t count)
 void World::setMultibodyOptions(const MultibodyOptions& options)
 {
   const std::string& family = options.integrationFamily;
+  MultibodyIntegrationMethod method = MultibodyIntegrationMethod::SemiImplicit;
   if (family == "semi-implicit" || family == "semi-implicit Euler") {
-    m_multibodyIntegrationMethod = MultibodyIntegrationMethod::SemiImplicit;
+    method = MultibodyIntegrationMethod::SemiImplicit;
   } else if (family == "variational integrator" || family == "variational") {
-    m_multibodyIntegrationMethod = MultibodyIntegrationMethod::Variational;
+    method = MultibodyIntegrationMethod::Variational;
   } else {
     DART_SIMULATION_THROW_T(
         InvalidArgumentException,
@@ -3773,6 +4700,24 @@ void World::setMultibodyOptions(const MultibodyOptions& options)
         "names are 'semi-implicit' and 'variational integrator'",
         family);
   }
+  DART_SIMULATION_THROW_T_IF(
+      options.variationalMaxIterations == 0,
+      InvalidArgumentException,
+      "MultibodyOptions.variationalMaxIterations must be positive");
+  DART_SIMULATION_THROW_T_IF(
+      options.variationalMaxIterations
+          > static_cast<std::size_t>(std::numeric_limits<int>::max()),
+      InvalidArgumentException,
+      "MultibodyOptions.variationalMaxIterations must fit in int");
+  DART_SIMULATION_THROW_T_IF(
+      !std::isfinite(options.variationalTolerance)
+          || options.variationalTolerance <= 0.0,
+      InvalidArgumentException,
+      "MultibodyOptions.variationalTolerance must be positive and finite");
+
+  m_multibodyIntegrationMethod = method;
+  m_variationalIntegratorMaxIterations = options.variationalMaxIterations;
+  m_variationalIntegratorTolerance = options.variationalTolerance;
 
   if (m_simulationMode) {
     prepareStepPipelineCacheForCurrentConfiguration();
@@ -3787,23 +4732,62 @@ MultibodyOptions World::getMultibodyOptions() const
       = m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational
             ? "variational integrator"
             : "semi-implicit";
+  options.variationalMaxIterations = m_variationalIntegratorMaxIterations;
+  options.variationalTolerance = m_variationalIntegratorTolerance;
   return options;
+}
+
+//==============================================================================
+bool World::tryStepCleanNoWorkDefaultPipeline()
+{
+  if (!m_simulationMode) {
+    enterSimulationMode();
+  }
+
+  if (m_differentiable
+#if DART_BUILD_PROFILE
+      || m_stepProfilingEnabled
+#endif
+      || !m_stepPipelineCache->canSkipDefaultPipelineWhenFramesClean
+      || hasDirtyFrameCaches(*this)) {
+    return false;
+  }
+
+  m_memoryManager.getFrameAllocator().reset();
+  ++m_memoryDiagnostics.frameScratchResetCount;
+  m_memoryDiagnostics.frameScratchUsedBytes = 0;
+  m_memoryDiagnostics.frameScratchOverflowCount = 0;
+  m_memoryDiagnostics.frameScratchOverflowBytes = 0;
+  m_lastDeformableSolverDiagnostics = {};
+  m_time += m_timeStep;
+  ++m_frame;
+  if (m_replay && m_replay->recordingEnabled) {
+    recordReplayFrame();
+  }
+  return true;
 }
 
 //==============================================================================
 void World::step(compute::ComputeExecutor& executor)
 {
+#if DART_BUILD_PROFILE
+  StepProfileTimer profileTimer(m_stepProfilingEnabled);
+#endif
+
+  if (tryStepCleanNoWorkDefaultPipeline()) {
+#if DART_BUILD_PROFILE
+    profileTimer.finish(m_lastStepProfile);
+#endif
+    return;
+  }
+
   auto& stages = m_stepPipelineCache->stages;
   compute::WorldStepPipeline& pipeline = stages.buildDefault(
       m_rigidBodySolver,
       m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational,
-      hasRigidBodyStructures(*this),
-      hasMultibodyStructures(*this),
-      hasDeformableBodies(*this));
-
-#if DART_BUILD_PROFILE
-  StepProfileTimer profileTimer(m_stepProfilingEnabled);
-#endif
+      m_stepPipelineCache->hasAdvanceableRigidBodies,
+      m_stepPipelineCache->hasMultibodyStructure,
+      m_stepPipelineCache->hasDeformableBodies);
 
   stepPipelineOnce(executor, pipeline);
   m_lastDeformableSolverDiagnostics = makeDeformableSolverDiagnostics(
@@ -3818,18 +4802,29 @@ void World::step(compute::ComputeExecutor& executor)
 void World::step(std::size_t count, compute::ComputeExecutor& executor)
 {
   auto& stages = m_stepPipelineCache->stages;
-  compute::WorldStepPipeline& pipeline = stages.buildDefault(
-      m_rigidBodySolver,
-      m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational,
-      hasRigidBodyStructures(*this),
-      hasMultibodyStructures(*this),
-      hasDeformableBodies(*this));
+  compute::WorldStepPipeline* pipeline = nullptr;
   for (std::size_t i = 0; i < count; ++i) {
 #if DART_BUILD_PROFILE
     StepProfileTimer profileTimer(m_stepProfilingEnabled);
 #endif
 
-    stepPipelineOnce(executor, pipeline);
+    if (tryStepCleanNoWorkDefaultPipeline()) {
+#if DART_BUILD_PROFILE
+      profileTimer.finish(m_lastStepProfile);
+#endif
+      continue;
+    }
+
+    if (pipeline == nullptr) {
+      pipeline = &stages.buildDefault(
+          m_rigidBodySolver,
+          m_multibodyIntegrationMethod
+              == MultibodyIntegrationMethod::Variational,
+          m_stepPipelineCache->hasAdvanceableRigidBodies,
+          m_stepPipelineCache->hasMultibodyStructure,
+          m_stepPipelineCache->hasDeformableBodies);
+    }
+    stepPipelineOnce(executor, *pipeline);
     m_lastDeformableSolverDiagnostics = makeDeformableSolverDiagnostics(
         stages.deformableDynamics.getLastStats());
     recordReplayFrame();
@@ -3847,7 +4842,7 @@ void World::step(
   compute::WorldStepPipeline& pipeline = stages.buildWithFinalStage(
       m_rigidBodySolver,
       m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational,
-      hasRigidBodyStructures(*this),
+      hasAdvanceableRigidBodyStructures(*this),
       hasMultibodyStructures(*this),
       hasDeformableBodies(*this),
       stage);
@@ -3876,7 +4871,7 @@ void World::step(
   compute::WorldStepPipeline& pipeline = stages.buildWithFinalStage(
       m_rigidBodySolver,
       m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational,
-      hasRigidBodyStructures(*this),
+      hasAdvanceableRigidBodyStructures(*this),
       hasMultibodyStructures(*this),
       hasDeformableBodies(*this),
       stage);
@@ -3920,6 +4915,9 @@ void World::stepPipelineOnce(
       *this,
       m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational);
   validateRigidBodyJointPipelineSupport(*this, m_rigidBodySolver);
+  validateArticulatedPointJointPipelineSupport(
+      *this,
+      m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational);
 
   if (!m_simulationMode) {
     enterSimulationMode();
@@ -4446,6 +5444,9 @@ void World::restoreReplayFrame(std::size_t index)
   m_rigidIpcAdaptiveBarrierStiffnessLowerBound
       = replayFrame.rigidIpcAdaptiveBarrierStiffnessLowerBound;
   m_multibodyIntegrationMethod = replayFrame.multibodyIntegrationMethod;
+  m_variationalIntegratorMaxIterations
+      = replayFrame.variationalIntegratorMaxIterations;
+  m_variationalIntegratorTolerance = replayFrame.variationalIntegratorTolerance;
   m_storage->stepDerivatives = replayFrame.stepDerivatives;
   m_storage->differentiableParameters.assign(
       replayFrame.differentiableParameters.begin(),
@@ -4491,6 +5492,9 @@ void World::recordReplayFrame()
   replayFrame.rigidIpcAdaptiveBarrierStiffnessLowerBound
       = m_rigidIpcAdaptiveBarrierStiffnessLowerBound;
   replayFrame.multibodyIntegrationMethod = m_multibodyIntegrationMethod;
+  replayFrame.variationalIntegratorMaxIterations
+      = m_variationalIntegratorMaxIterations;
+  replayFrame.variationalIntegratorTolerance = m_variationalIntegratorTolerance;
   replayFrame.stepDerivatives = m_storage->stepDerivatives;
   replayFrame.differentiableParameters.assign(
       m_storage->differentiableParameters.begin(),
@@ -4526,6 +5530,11 @@ void World::recordReplayFrame()
                 joint.armature,
                 joint.coulombFriction,
                 joint.breakForce,
+                joint.hasAvbdStiffnessState,
+                joint.avbdStartStiffness,
+                joint.avbdLinearStiffness,
+                joint.avbdAngularStiffness,
+                joint.avbdMaxStiffness,
                 joint.limits,
                 joint.axis,
                 joint.axis2,
@@ -4639,6 +5648,56 @@ std::vector<Contact> World::collide()
 }
 
 //==============================================================================
+void World::setCollisionPairIgnored(
+    const Frame& first, const Frame& second, bool ignored)
+{
+  const entt::entity firstEntity
+      = resolveCollisionPairFrame(*this, first, "first");
+  const entt::entity secondEntity
+      = resolveCollisionPairFrame(*this, second, "second");
+  DART_SIMULATION_THROW_T_IF(
+      firstEntity == secondEntity,
+      InvalidArgumentException,
+      "Collision pair frames must be distinct");
+
+  const auto key = makeCollisionPairKey(firstEntity, secondEntity);
+  if (ignored) {
+    m_storage->ignoredCollisionPairs.insert(key);
+  } else {
+    m_storage->ignoredCollisionPairs.erase(key);
+  }
+}
+
+//==============================================================================
+bool World::isCollisionPairIgnored(
+    const Frame& first, const Frame& second) const
+{
+  const entt::entity firstEntity
+      = resolveCollisionPairFrame(*this, first, "first");
+  const entt::entity secondEntity
+      = resolveCollisionPairFrame(*this, second, "second");
+  DART_SIMULATION_THROW_T_IF(
+      firstEntity == secondEntity,
+      InvalidArgumentException,
+      "Collision pair frames must be distinct");
+
+  return m_storage->ignoredCollisionPairs.contains(
+      makeCollisionPairKey(firstEntity, secondEntity));
+}
+
+//==============================================================================
+void World::clearIgnoredCollisionPairs()
+{
+  m_storage->ignoredCollisionPairs.clear();
+}
+
+//==============================================================================
+std::size_t World::getIgnoredCollisionPairCount() const noexcept
+{
+  return m_storage->ignoredCollisionPairs.size();
+}
+
+//==============================================================================
 std::vector<Contact> World::collide(const CollisionQueryOptions& options)
 {
   return queryContacts(options);
@@ -4710,6 +5769,17 @@ const std::vector<Contact>& World::queryContacts(
     return false;
   };
 
+  if (options.includeRigidBodyPairs) {
+    collectLivePublicRigidBodyJointPairsInto(
+        m_storage->registry, cache.liveRigidBodyJointPairs);
+  } else {
+    cache.liveRigidBodyJointPairs.clear();
+  }
+  const bool hasIgnoredCollisionPairs
+      = !m_storage->ignoredCollisionPairs.empty();
+  const bool hasLiveRigidBodyJointPairs
+      = !cache.liveRigidBodyJointPairs.empty();
+
   const auto addSpecs = [&](entt::entity entity,
                             entt::entity multibody,
                             bool isLink,
@@ -4733,6 +5803,22 @@ const std::vector<Contact>& World::queryContacts(
                                 const CollisionQueryCache::ObjectEntry& b) {
     if (a.entity == b.entity) {
       return false;
+    }
+    const bool rigidBodyPair = !a.isLink && !b.isLink;
+    if (hasIgnoredCollisionPairs
+        || (rigidBodyPair && hasLiveRigidBodyJointPairs)) {
+      const auto pairKey = makeCollisionPairKey(a.entity, b.entity);
+      if (hasIgnoredCollisionPairs
+          && m_storage->ignoredCollisionPairs.contains(pairKey)) {
+        return false;
+      }
+      if (rigidBodyPair && hasLiveRigidBodyJointPairs
+          && std::binary_search(
+              cache.liveRigidBodyJointPairs.begin(),
+              cache.liveRigidBodyJointPairs.end(),
+              pairKey)) {
+        return false;
+      }
     }
 
     if (a.isLink && b.isLink) {
@@ -4820,8 +5906,8 @@ const std::vector<Contact>& World::queryContacts(
   }
 
   // Broad-phase-pruned narrow-phase queries. Each candidate pair's bodies are
-  // known here, so the contacts map back to the right experimental bodies
-  // without relying on the result carrying object identity.
+  // known here, so the contacts map back to the right simulation bodies without
+  // relying on the result carrying object identity.
   const auto option = ncol::CollisionOption::fullContacts();
   cache.collisionWorld.buildBroadPhaseSnapshot(cache.candidatePairs);
   auto& contacts = cache.contacts;
@@ -4906,6 +5992,23 @@ void World::saveBinary(std::ostream& output) const
             ? 1u
             : 0u;
   io::writePOD(output, multibodyIntegrationMethod);
+
+  std::vector<detail::WorldStorage::CollisionPairKey> savedIgnoredPairs;
+  savedIgnoredPairs.reserve(m_storage->ignoredCollisionPairs.size());
+  for (const auto& pair : m_storage->ignoredCollisionPairs) {
+    if (entityMap.contains(pair.first) && entityMap.contains(pair.second)) {
+      savedIgnoredPairs.push_back(pair);
+    }
+  }
+
+  io::writePOD(output, savedIgnoredPairs.size());
+  for (const auto& [first, second] : savedIgnoredPairs) {
+    io::writePOD(output, static_cast<std::uint32_t>(entityMap.at(first)));
+    io::writePOD(output, static_cast<std::uint32_t>(entityMap.at(second)));
+  }
+
+  io::writePOD(output, m_variationalIntegratorMaxIterations);
+  io::writePOD(output, m_variationalIntegratorTolerance);
 }
 
 //==============================================================================
@@ -4985,6 +6088,45 @@ void World::loadBinary(std::istream& input)
               InvalidArgumentException,
               "Serialized World multibody integration method value is invalid");
       }
+    }
+
+    if (formatVersion >= 16 && input.peek() != std::char_traits<char>::eof()) {
+      std::size_t ignoredPairCount = 0;
+      io::readPOD(input, ignoredPairCount);
+      for (std::size_t i = 0; i < ignoredPairCount; ++i) {
+        std::uint32_t serializedFirst = 0;
+        std::uint32_t serializedSecond = 0;
+        io::readPOD(input, serializedFirst);
+        io::readPOD(input, serializedSecond);
+        const auto first
+            = entityMap.at(static_cast<entt::entity>(serializedFirst));
+        const auto second
+            = entityMap.at(static_cast<entt::entity>(serializedSecond));
+        m_storage->ignoredCollisionPairs.insert(
+            makeCollisionPairKey(first, second));
+      }
+    }
+
+    if (formatVersion >= 18 && input.peek() != std::char_traits<char>::eof()) {
+      std::size_t variationalMaxIterations = 0;
+      double variationalTolerance = 0.0;
+      io::readPOD(input, variationalMaxIterations);
+      io::readPOD(input, variationalTolerance);
+      DART_SIMULATION_THROW_T_IF(
+          variationalMaxIterations == 0,
+          InvalidArgumentException,
+          "Serialized World variational max-iteration budget is invalid");
+      DART_SIMULATION_THROW_T_IF(
+          variationalMaxIterations
+              > static_cast<std::size_t>(std::numeric_limits<int>::max()),
+          InvalidArgumentException,
+          "Serialized World variational max-iteration budget is too large");
+      DART_SIMULATION_THROW_T_IF(
+          !std::isfinite(variationalTolerance) || variationalTolerance <= 0.0,
+          InvalidArgumentException,
+          "Serialized World variational tolerance is invalid");
+      m_variationalIntegratorMaxIterations = variationalMaxIterations;
+      m_variationalIntegratorTolerance = variationalTolerance;
     }
   }
 

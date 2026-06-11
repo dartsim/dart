@@ -263,6 +263,145 @@ public:
   bool hasMultibody(std::string_view name) const;
   std::size_t getMultibodyCount() const;
 
+  /// Create a fixed non-topology constraint between two links in one
+  /// multibody.
+  ///
+  /// The current relative pose is captured when the World enters simulation
+  /// mode, after kinematics has been baked. During simulation steps the
+  /// variational articulated path projects the child endpoint back toward that
+  /// captured pose. This is design-mode only and requires the variational
+  /// multibody integration family before stepping.
+  Joint addArticulatedFixedJoint(
+      std::string_view name, const Link& parent, const Link& child);
+  Joint addArticulatedFixedJoint(
+      std::string_view name,
+      const Link& parent,
+      const Link& child,
+      const Eigen::Vector3d& parentAnchor,
+      const Eigen::Vector3d& childAnchor);
+
+  /// Create a fixed non-topology constraint between world and one link.
+  ///
+  /// The current world pose is captured when the World enters simulation mode.
+  /// During simulation steps the variational articulated path projects the link
+  /// endpoint back toward that captured world pose. This is design-mode only
+  /// and requires the variational multibody integration family before stepping.
+  Joint addArticulatedFixedJoint(std::string_view name, const Link& child);
+  Joint addArticulatedFixedJoint(
+      std::string_view name,
+      const Link& child,
+      const Eigen::Vector3d& worldAnchor,
+      const Eigen::Vector3d& childAnchor);
+
+  /// Create a revolute non-topology constraint between two links in one
+  /// multibody.
+  ///
+  /// The captured anchor is preserved while rotation around the parent-frame
+  /// `axis` remains free. This is design-mode only and requires the variational
+  /// multibody integration family before stepping.
+  Joint addArticulatedRevoluteJoint(
+      std::string_view name,
+      const Link& parent,
+      const Link& child,
+      const Eigen::Vector3d& axis = Eigen::Vector3d::UnitZ());
+  Joint addArticulatedRevoluteJoint(
+      std::string_view name,
+      const Link& parent,
+      const Link& child,
+      const Eigen::Vector3d& axis,
+      const Eigen::Vector3d& parentAnchor,
+      const Eigen::Vector3d& childAnchor);
+
+  /// Create a revolute non-topology constraint between world and one link.
+  ///
+  /// The captured anchor is preserved while rotation around the world-frame
+  /// `axis` remains free. This is design-mode only and requires the
+  /// variational multibody integration family before stepping.
+  Joint addArticulatedRevoluteJoint(
+      std::string_view name,
+      const Link& child,
+      const Eigen::Vector3d& axis = Eigen::Vector3d::UnitZ());
+  Joint addArticulatedRevoluteJoint(
+      std::string_view name,
+      const Link& child,
+      const Eigen::Vector3d& axis,
+      const Eigen::Vector3d& worldAnchor,
+      const Eigen::Vector3d& childAnchor);
+
+  /// Create a prismatic non-topology constraint between two links in one
+  /// multibody.
+  ///
+  /// The captured anchor is preserved while translation along the parent-frame
+  /// `axis` remains free. This is design-mode only and requires the variational
+  /// multibody integration family before stepping.
+  Joint addArticulatedPrismaticJoint(
+      std::string_view name,
+      const Link& parent,
+      const Link& child,
+      const Eigen::Vector3d& axis = Eigen::Vector3d::UnitZ());
+  Joint addArticulatedPrismaticJoint(
+      std::string_view name,
+      const Link& parent,
+      const Link& child,
+      const Eigen::Vector3d& axis,
+      const Eigen::Vector3d& parentAnchor,
+      const Eigen::Vector3d& childAnchor);
+
+  /// Create a prismatic non-topology constraint between world and one link.
+  ///
+  /// The captured anchor is preserved while translation along the world-frame
+  /// `axis` remains free. This is design-mode only and requires the
+  /// variational multibody integration family before stepping.
+  Joint addArticulatedPrismaticJoint(
+      std::string_view name,
+      const Link& child,
+      const Eigen::Vector3d& axis = Eigen::Vector3d::UnitZ());
+  Joint addArticulatedPrismaticJoint(
+      std::string_view name,
+      const Link& child,
+      const Eigen::Vector3d& axis,
+      const Eigen::Vector3d& worldAnchor,
+      const Eigen::Vector3d& childAnchor);
+
+  /// Create a spherical non-topology point constraint between two links in one
+  /// multibody.
+  ///
+  /// The captured anchor is preserved while relative orientation remains free.
+  /// This is design-mode only and requires the variational multibody
+  /// integration family before stepping.
+  Joint addArticulatedSphericalJoint(
+      std::string_view name, const Link& parent, const Link& child);
+  Joint addArticulatedSphericalJoint(
+      std::string_view name,
+      const Link& parent,
+      const Link& child,
+      const Eigen::Vector3d& parentAnchor,
+      const Eigen::Vector3d& childAnchor);
+
+  /// Create a spherical non-topology point constraint between world and one
+  /// link.
+  ///
+  /// The captured anchor is preserved while relative orientation remains free.
+  /// This is design-mode only and requires the variational multibody
+  /// integration family before stepping.
+  Joint addArticulatedSphericalJoint(std::string_view name, const Link& child);
+  Joint addArticulatedSphericalJoint(
+      std::string_view name,
+      const Link& child,
+      const Eigen::Vector3d& worldAnchor,
+      const Eigen::Vector3d& childAnchor);
+
+  /// Get a supported non-topology articulated point joint by name.
+  ///
+  /// This returns fixed, revolute, prismatic, and spherical link-link or
+  /// world-link joints created through the articulated World facade. It does
+  /// not return tree
+  /// topology joints; use Multibody::getJoint() for parent joints.
+  std::optional<Joint> getArticulatedJoint(std::string_view name);
+  bool hasArticulatedJoint(std::string_view name) const;
+  std::size_t getArticulatedJointCount() const;
+  std::vector<Joint> getArticulatedJoints();
+
   //--------------------------------------------------------------------------
   // Loop-closure management
   //--------------------------------------------------------------------------
@@ -316,10 +455,44 @@ public:
       const RigidBody& parent,
       const RigidBody& child,
       const Eigen::Vector3d& axis = Eigen::Vector3d::UnitZ());
+  /// Create a spherical point constraint between two free rigid bodies.
+  ///
+  /// The current anchor is captured when the joint is created. During
+  /// simulation steps the experimental rigid-body constraint path projects the
+  /// child anchor back toward the parent anchor while leaving relative
+  /// orientation free. This is design-mode only.
+  Joint addRigidBodySphericalJoint(
+      std::string_view name, const RigidBody& parent, const RigidBody& child);
+  Joint addRigidBodySphericalJoint(
+      std::string_view name,
+      const RigidBody& parent,
+      const RigidBody& child,
+      const Eigen::Vector3d& parentAnchor,
+      const Eigen::Vector3d& childAnchor);
+  /// Create a finite-stiffness radial spring between two free rigid bodies.
+  ///
+  /// The spring connects each body's origin by default. The overload with
+  /// anchors accepts body-local anchor points. This experimental AVBD path is
+  /// design-mode only and is projected by the rigid-body contact stage.
+  void addRigidBodyDistanceSpring(
+      std::string_view name,
+      const RigidBody& parent,
+      const RigidBody& child,
+      double restLength,
+      double stiffness);
+  void addRigidBodyDistanceSpring(
+      std::string_view name,
+      const RigidBody& parent,
+      const RigidBody& child,
+      double restLength,
+      double stiffness,
+      const Eigen::Vector3d& parentAnchor,
+      const Eigen::Vector3d& childAnchor);
   /// Get any supported public joint between free rigid bodies by name.
   ///
-  /// This returns fixed, revolute, and prismatic rigid-body joints. It does not
-  /// return multibody joints; use Multibody::getJoint() for articulated links.
+  /// This returns fixed, revolute, prismatic, and spherical rigid-body joints.
+  /// It does not return multibody joints; use Multibody::getJoint() for
+  /// articulated links.
   std::optional<Joint> getRigidBodyJoint(std::string_view name);
   bool hasRigidBodyJoint(std::string_view name) const;
   std::size_t getRigidBodyJointCount() const;
@@ -688,6 +861,27 @@ public:
   // Collision queries
   //--------------------------------------------------------------------------
 
+  /// Add or remove a persistent collision-query exclusion between two collision
+  /// bodies.
+  ///
+  /// Endpoints must be valid rigid-body or multibody-link frame handles owned
+  /// by this World. The filter is order-independent and is applied by
+  /// `collide()` and the built-in contact stages before narrow-phase contact
+  /// generation.
+  void setCollisionPairIgnored(
+      const Frame& first, const Frame& second, bool ignored = true);
+
+  /// Return whether a persistent collision-query exclusion exists between two
+  /// rigid-body or multibody-link frame handles.
+  [[nodiscard]] bool isCollisionPairIgnored(
+      const Frame& first, const Frame& second) const;
+
+  /// Clear all persistent collision-query exclusions.
+  void clearIgnoredCollisionPairs();
+
+  /// Return the number of persistent collision-query exclusions.
+  [[nodiscard]] std::size_t getIgnoredCollisionPairCount() const noexcept;
+
   /// Run a collision query over all bodies that have a collision shape.
   ///
   /// This is a query, not a solver: it reports contact points (position,
@@ -760,7 +954,25 @@ private:
       const RigidBody& parent,
       const RigidBody& child,
       JointType type,
-      const Eigen::Vector3d& axis);
+      const Eigen::Vector3d& axis,
+      std::optional<Eigen::Vector3d> parentAnchor = std::nullopt,
+      std::optional<Eigen::Vector3d> childAnchor = std::nullopt);
+  void addRigidBodyDistanceSpringImpl(
+      std::string_view name,
+      const RigidBody& parent,
+      const RigidBody& child,
+      double restLength,
+      double stiffness,
+      std::optional<Eigen::Vector3d> parentAnchor,
+      std::optional<Eigen::Vector3d> childAnchor);
+  Joint addArticulatedJoint(
+      std::string_view name,
+      const Link* parent,
+      const Link& child,
+      JointType type,
+      const Eigen::Vector3d& axis,
+      std::optional<Eigen::Vector3d> parentAnchor = std::nullopt,
+      std::optional<Eigen::Vector3d> childAnchor = std::nullopt);
 
   void ensureDesignMode() const;
   [[nodiscard]] const std::vector<Contact>& queryContacts(
@@ -770,6 +982,7 @@ private:
   void reserveRegistryStorageForSimulation();
   void prepareStepPipelineCacheForCurrentConfiguration();
   void resetCountersFromRegistry();
+  bool tryStepCleanNoWorkDefaultPipeline();
   void stepPipelineOnce(
       compute::ComputeExecutor& executor, compute::WorldStepPipeline& pipeline);
   void recordReplayFrame();
@@ -824,6 +1037,8 @@ private:
   };
   MultibodyIntegrationMethod m_multibodyIntegrationMethod{
       MultibodyIntegrationMethod::SemiImplicit};
+  std::size_t m_variationalIntegratorMaxIterations{100};
+  double m_variationalIntegratorTolerance{1e-10};
   std::size_t m_frame{0};
 
   std::size_t m_freeFrameCounter{0};
