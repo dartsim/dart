@@ -920,6 +920,46 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     )
 
 
+def test_lcp_physics_updates_live_metrics_headlessly() -> None:
+    _require_simulation_symbols("World", "ContactSolverMethod")
+
+    setup = lcp_physics.build()
+    assert setup.pre_step is not None
+
+    snapshot = setup.info["live_metrics_snapshot"]
+    assert callable(snapshot)
+    before = snapshot()
+    assert set(before) == {"Sequential impulse", "Boxed LCP"}
+    assert all(row["step_samples"] == 0 for row in before.values())
+    assert all(row["contact_samples"] == 0 for row in before.values())
+
+    step_count = 5
+    for _ in range(step_count):
+        setup.pre_step()
+
+    nonnegative_metrics = {
+        "step_ms",
+        "contacts",
+        "sliding_speed",
+        "billiard_momentum_error",
+        "billiard_energy_error",
+        "stack_lateral_drift",
+        "card_spread",
+        "card_height_loss",
+    }
+    finite_metrics = nonnegative_metrics | {"ramp_slide"}
+    after = snapshot()
+    assert set(after) == {"Sequential impulse", "Boxed LCP"}
+    for row in after.values():
+        assert row["step_samples"] == step_count
+        assert row["contact_samples"] == step_count
+        for metric in finite_metrics:
+            assert np.isfinite(row[metric]), metric
+        for metric in nonnegative_metrics:
+            assert row[metric] >= 0.0, metric
+        assert row["sliding_speed"] > 0.0
+
+
 def test_robot_puppet_world_scenes_expose_pose_panels() -> None:
     _require_simulation_symbols("World", "add_skeleton", "ReadOptions")
 

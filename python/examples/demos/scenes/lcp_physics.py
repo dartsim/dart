@@ -801,6 +801,27 @@ def _last(history: deque[float]) -> float:
     return history[-1] if history else 0.0
 
 
+def _metrics_snapshot(
+    cases: list[_ComparisonCase],
+) -> dict[str, dict[str, float | int]]:
+    return {
+        case.label: {
+            "step_samples": len(case.step_ms_history),
+            "contact_samples": len(case.contact_history),
+            "step_ms": _last(case.step_ms_history),
+            "contacts": _last(case.contact_history),
+            "sliding_speed": _last(case.slide_speed_history),
+            "ramp_slide": _last(case.ramp_slide_history),
+            "billiard_momentum_error": _last(case.momentum_error_history),
+            "billiard_energy_error": _last(case.energy_error_history),
+            "stack_lateral_drift": _last(case.stack_drift_history),
+            "card_spread": _last(case.card_spread_history),
+            "card_height_loss": _last(case.card_height_loss_history),
+        }
+        for case in cases
+    }
+
+
 def _write_table_cell(builder: object, value: str) -> None:
     if builder.table_next_column():
         builder.text(value)
@@ -1160,6 +1181,9 @@ def build() -> SceneSetup:
             elapsed_ms = float(time.perf_counter_ns() - started) / 1.0e6
             _update_metrics(case, elapsed_ms)
 
+    def live_metrics_snapshot() -> dict[str, dict[str, float | int]]:
+        return _metrics_snapshot(state["cases"])
+
     def renderable_provider() -> list[Any]:
         renderables: list[Any] = []
         for case in state["cases"]:
@@ -1379,6 +1403,7 @@ def build() -> SceneSetup:
                 "thin_card_pile",
             ],
             "live_packet_rows": _copy_rows(_LIVE_PACKET_ROWS),
+            "live_metrics_snapshot": live_metrics_snapshot,
             "benchmark_packet_rows": _copy_rows(_BENCHMARK_PACKET_ROWS),
             "solver_rows": _copy_rows(_SOLVER_SUPPORT_ROWS),
             "standalone_solver_rows": [dict(row) for row in standalone_solver_rows],
