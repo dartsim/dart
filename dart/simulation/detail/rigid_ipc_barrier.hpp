@@ -109,6 +109,12 @@ enum class RigidIpcBarrierPrimitive
   FaceVertex,
 };
 
+enum class RigidIpcArticulationConstraintType
+{
+  PointConnection,
+  HingeAxis,
+};
+
 struct RigidIpcBarrierSurface
 {
   using VertexAllocator = dart::common::StlAllocator<Eigen::Vector3d>;
@@ -191,6 +197,28 @@ struct RigidIpcFrictionConstraint
   double laggedNormalForce = 0.0;
 };
 
+struct RigidIpcArticulationConstraintInput
+{
+  bool active = true;
+  RigidIpcArticulationConstraintType type
+      = RigidIpcArticulationConstraintType::PointConnection;
+  std::size_t bodyA = 0;
+  std::size_t bodyB = 0;
+  Eigen::Vector3d localPointA = Eigen::Vector3d::Zero();
+  Eigen::Vector3d localPointB = Eigen::Vector3d::Zero();
+  Eigen::Vector3d localAxisA = Eigen::Vector3d::UnitZ();
+  Eigen::Vector3d localAxisB = Eigen::Vector3d::UnitZ();
+};
+
+struct RigidIpcArticulationConstraint
+{
+  RigidIpcArticulationConstraintType type
+      = RigidIpcArticulationConstraintType::PointConnection;
+  std::size_t bodyA = 0;
+  std::size_t bodyB = 0;
+  Eigen::Vector3d residual = Eigen::Vector3d::Zero();
+};
+
 struct RigidIpcBarrierAssembly
 {
   static constexpr std::size_t npos = std::numeric_limits<std::size_t>::max();
@@ -200,18 +228,23 @@ struct RigidIpcBarrierAssembly
       = dart::common::StlAllocator<RigidIpcBarrierConstraint>;
   using FrictionConstraintAllocator
       = dart::common::StlAllocator<RigidIpcFrictionConstraint>;
+  using ArticulationConstraintAllocator
+      = dart::common::StlAllocator<RigidIpcArticulationConstraint>;
   using BodyDofOffsetVector = std::vector<std::size_t, BodyDofOffsetAllocator>;
   using ConstraintVector
       = std::vector<RigidIpcBarrierConstraint, ConstraintAllocator>;
   using FrictionConstraintVector
       = std::vector<RigidIpcFrictionConstraint, FrictionConstraintAllocator>;
+  using ArticulationConstraintVector = std::
+      vector<RigidIpcArticulationConstraint, ArticulationConstraintAllocator>;
 
   RigidIpcBarrierAssembly() = default;
 
   explicit RigidIpcBarrierAssembly(dart::common::MemoryAllocator& allocator)
     : bodyDofOffsets(BodyDofOffsetAllocator{allocator}),
       activeConstraints(ConstraintAllocator{allocator}),
-      activeFrictionConstraints(FrictionConstraintAllocator{allocator})
+      activeFrictionConstraints(FrictionConstraintAllocator{allocator}),
+      activeArticulationConstraints(ArticulationConstraintAllocator{allocator})
   {
   }
 
@@ -227,6 +260,8 @@ struct RigidIpcBarrierAssembly
     value = other.value;
     gradient = other.gradient;
     hessian = other.hessian;
+    equalityResidual = other.equalityResidual;
+    equalityJacobian = other.equalityJacobian;
     bodyDofOffsets.assign(
         other.bodyDofOffsets.begin(), other.bodyDofOffsets.end());
     activeConstraints.assign(
@@ -234,6 +269,9 @@ struct RigidIpcBarrierAssembly
     activeFrictionConstraints.assign(
         other.activeFrictionConstraints.begin(),
         other.activeFrictionConstraints.end());
+    activeArticulationConstraints.assign(
+        other.activeArticulationConstraints.begin(),
+        other.activeArticulationConstraints.end());
     activeDynamicsTerms = other.activeDynamicsTerms;
     return *this;
   }
@@ -247,6 +285,8 @@ struct RigidIpcBarrierAssembly
     value = other.value;
     gradient = std::move(other.gradient);
     hessian = std::move(other.hessian);
+    equalityResidual = std::move(other.equalityResidual);
+    equalityJacobian = std::move(other.equalityJacobian);
     bodyDofOffsets.assign(
         other.bodyDofOffsets.begin(), other.bodyDofOffsets.end());
     activeConstraints.assign(
@@ -254,6 +294,9 @@ struct RigidIpcBarrierAssembly
     activeFrictionConstraints.assign(
         other.activeFrictionConstraints.begin(),
         other.activeFrictionConstraints.end());
+    activeArticulationConstraints.assign(
+        other.activeArticulationConstraints.begin(),
+        other.activeArticulationConstraints.end());
     activeDynamicsTerms = other.activeDynamicsTerms;
     return *this;
   }
@@ -261,9 +304,12 @@ struct RigidIpcBarrierAssembly
   double value = 0.0;
   Eigen::VectorXd gradient;
   Eigen::SparseMatrix<double> hessian;
+  Eigen::VectorXd equalityResidual;
+  Eigen::SparseMatrix<double> equalityJacobian;
   BodyDofOffsetVector bodyDofOffsets;
   ConstraintVector activeConstraints;
   FrictionConstraintVector activeFrictionConstraints;
+  ArticulationConstraintVector activeArticulationConstraints;
   std::size_t activeDynamicsTerms = 0;
 };
 
@@ -421,12 +467,15 @@ struct RigidIpcProjectedNewtonSolveOptions
 {
   using DynamicsTermAllocator
       = dart::common::StlAllocator<RigidIpcBodyDynamicsTerm>;
+  using ArticulationConstraintInputAllocator
+      = dart::common::StlAllocator<RigidIpcArticulationConstraintInput>;
 
   RigidIpcProjectedNewtonSolveOptions() = default;
 
   explicit RigidIpcProjectedNewtonSolveOptions(
       dart::common::MemoryAllocator& allocator)
-    : dynamicsTerms(DynamicsTermAllocator{allocator})
+    : dynamicsTerms(DynamicsTermAllocator{allocator}),
+      articulationConstraints(ArticulationConstraintInputAllocator{allocator})
   {
   }
 
@@ -436,9 +485,14 @@ struct RigidIpcProjectedNewtonSolveOptions
   RigidIpcProjectedNewtonOptions newton;
   RigidIpcAdaptiveStiffnessOptions adaptiveStiffness;
   std::vector<RigidIpcBodyDynamicsTerm, DynamicsTermAllocator> dynamicsTerms;
+  std::vector<
+      RigidIpcArticulationConstraintInput,
+      ArticulationConstraintInputAllocator>
+      articulationConstraints;
   std::size_t maxIterations = 16;
   std::size_t frictionIterations = 1;
   double stepTolerance = 1e-10;
+  double equalityTolerance = 1e-10;
   double frictionConvergenceTolerance = 0.0;
   bool useLineSearch = true;
 };
@@ -458,6 +512,7 @@ struct RigidIpcProjectedNewtonSolveStats
   std::size_t lineSearchZeroStepCount = 0;
   std::size_t sufficientDecreaseChecks = 0;
   std::size_t sufficientDecreaseBacktracks = 0;
+  std::size_t activeArticulationConstraints = 0;
   std::size_t activeFrictionConstraints = 0;
   std::size_t frictionIterations = 0;
   std::size_t barrierStiffnessIncreases = 0;
@@ -465,6 +520,8 @@ struct RigidIpcProjectedNewtonSolveStats
   double finalValue = 0.0;
   double initialGradientNorm = 0.0;
   double finalGradientNorm = 0.0;
+  double initialEqualityResidualNorm = 0.0;
+  double finalEqualityResidualNorm = 0.0;
   double finalMomentumBalance = 0.0;
   double lastStepNorm = 0.0;
   double barrierStiffness = 0.0;
@@ -798,6 +855,20 @@ assembleRigidIpcObjectiveSystem(
     std::span<const RigidIpcBarrierSurface> surfaces,
     std::span<const RigidIpcBarrierSurface> laggedSurfaces,
     std::span<const RigidIpcBodyDynamicsTerm> dynamicsTerms,
+    const RigidIpcBarrierOptions& barrierOptions,
+    const RigidIpcFrictionOptions& frictionOptions);
+
+/// Assemble rigid IPC barrier, lagged friction, per-body dynamics, and
+/// articulation equality rows. Articulation rows are stored in
+/// `equalityResidual`/`equalityJacobian` and enforced by the projected-Newton
+/// solve's KKT step.
+[[nodiscard]] DART_SIMULATION_API RigidIpcBarrierAssembly
+assembleRigidIpcObjectiveSystem(
+    std::span<const RigidIpcBarrierSurface> surfaces,
+    std::span<const RigidIpcBarrierSurface> laggedSurfaces,
+    std::span<const RigidIpcBodyDynamicsTerm> dynamicsTerms,
+    std::span<const RigidIpcArticulationConstraintInput>
+        articulationConstraints,
     const RigidIpcBarrierOptions& barrierOptions,
     const RigidIpcFrictionOptions& frictionOptions);
 

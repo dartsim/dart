@@ -464,6 +464,13 @@ enum class RigidIpcSolveStatus
   FactorizationFailed,
 };
 
+/// Time-integration rule used by the opt-in rigid IPC stage.
+enum class RigidIpcTimeIntegration
+{
+  SemiImplicit,
+  Bdf2,
+};
+
 /// Summary of the most recent opt-in rigid IPC solver execution.
 struct RigidIpcSolverStats
 {
@@ -474,7 +481,15 @@ struct RigidIpcSolverStats
   std::size_t skippedUnsupportedShapeCount = 0;
   std::size_t activeConstraints = 0;
   std::size_t activeFrictionConstraints = 0;
+  std::size_t activeArticulationConstraints = 0;
   std::size_t activeDynamicsTerms = 0;
+  std::size_t bdf2RestartedDynamicsTerms = 0;
+  std::size_t bdf2SecondOrderDynamicsTerms = 0;
+  std::size_t mixedDomainSurfaceCount = 0;
+  std::size_t mixedDomainDeformableSurfaceCount = 0;
+  std::size_t mixedDomainCandidateCount = 0;
+  std::size_t mixedDomainActiveBarrierCount = 0;
+  double mixedDomainBarrierValue = 0.0;
   std::size_t solverIterations = 0;
   std::size_t frictionIterations = 0;
   std::size_t acceptedSteps = 0;
@@ -483,6 +498,8 @@ struct RigidIpcSolverStats
   double finalValue = 0.0;
   double initialGradientNorm = 0.0;
   double finalGradientNorm = 0.0;
+  double initialEqualityResidualNorm = 0.0;
+  double finalEqualityResidualNorm = 0.0;
   double finalMomentumBalance = 0.0;
   double lastStepNorm = 0.0;
   double barrierStiffness = 0.0;
@@ -532,6 +549,12 @@ struct RigidIpcContactStageOptions
   /// Absolute momentum-balance tolerance for stopping lagged friction passes.
   /// Zero requires the configured number of friction passes.
   double frictionConvergenceTolerance = 0.0;
+
+  /// Inertial target rule for dynamic rigid bodies. The default preserves the
+  /// existing semi-implicit Euler target; BDF-2 is opt-in and restarts as a
+  /// first-order step until each body has one accepted previous pose.
+  RigidIpcTimeIntegration timeIntegration
+      = RigidIpcTimeIntegration::SemiImplicit;
 };
 
 /// Opt-in rigid IPC world-step stage for free rigid bodies.

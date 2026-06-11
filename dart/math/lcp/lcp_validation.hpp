@@ -261,7 +261,9 @@ inline double complementarityInfinityNorm(
                           && (!hasUpper || xi < hi[i] - tol);
 
     if (fixed) {
-      violation = std::max(violation, std::abs(wi));
+      // A collapsed interval has no feasible motion, so its normal cone admits
+      // any gradient value once the variable is at the fixed bound.
+      continue;
     } else if (atLo) {
       violation = std::max(violation, std::max(0.0, -wi));
     } else if (atHi) {
@@ -325,12 +327,9 @@ inline bool validateSolution(
                           && (!hasUpper || xi < hi[i] - tol);
 
     if (fixed) {
-      if (std::abs(wi) > tol) {
-        if (message) {
-          *message = "Solution validation failed: fixed variable residual";
-        }
-        return false;
-      }
+      // A collapsed interval has no feasible motion, so its normal cone admits
+      // any gradient value once the variable is at the fixed bound.
+      continue;
     } else if (atLo) {
       if (wi < -tol) {
         if (message) {

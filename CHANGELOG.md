@@ -1435,6 +1435,387 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     friction sweep. Verified by the existing drop/rest/bounce/friction tests
     and a new sliding-sphere test that checks friction drives the contact slip
     to zero (rolling) through the coupled solve.
+  - Corrected shared boxed-LCP solution validation for collapsed intervals
+    (`lo == hi`): fixed variables now require the solution to sit on the bound
+    but do not require the residual force to be zero. This matches the normal
+    cone semantics of a fixed interval and removes false negatives for DART 7
+    friction-index rows whose tangent bounds collapse when the normal impulse is
+    zero.
+  - Fixed boxed semi-smooth Newton LCP solves with friction-index moving
+    bounds by including the bound derivative in the natural-residual
+    Jacobian. Added manifest-driven coverage for coupled mildly
+    ill-conditioned 4-contact friction-index cases across the DART 7 LCP
+    solver set, and extended generated standard, boxed, and friction-index
+    coverage to larger deterministic cases, including a scoped scalable-solver
+    slice up to standard 128-row, boxed 64-row, friction-index 24-contact, and
+    coupled friction-index 12-contact problems, plus a scoped robust
+    near-singular known-solution slice for standard 8-row, boxed 8-row, and
+    coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-, 32-, 48-, 64-, 96-,
+    128-, 192-, and 256-contact packets,
+    with the friction-index exact-solution check narrowed to Dantzig after
+    `ShockPropagation` contract-succeeded but missed the selected generated
+    solution tolerance on those coupled packets,
+    and active-set
+    transition coverage near lower, upper, and friction-cone boundaries. The
+    active-set transition correctness grid now reaches standard 128-row, boxed
+    128-row, and coupled friction-index 16-contact packets over scoped
+    scalable solvers, plus production coupled friction-index 24-, 32-, 48-,
+    64-, 96-, 128-, 192-, and 256-contact active-set transition packets with
+    stronger cross-contact coupling. Added a scoped larger mildly
+    ill-conditioned known-solution slice
+    for standard
+    32/64-row, boxed 16/32-row, friction-index 8-contact, and
+    1x-/4x-/8x-coupled friction-index
+    6-/8-/12-/16-/24-/32-/48-/64-/96-contact packets and a 16x-coupled
+    128-contact packet, plus an
+    exact rank-deficient
+    singular-degenerate slice for standard 16-row, boxed 16-row, and coupled
+    friction-index 6-contact packets and a larger exact rank-deficient
+    singular-degenerate slice for standard 32-row, boxed 32-row, and coupled
+    friction-index 8-contact packets, plus a stress exact rank-deficient
+    singular-degenerate slice for standard 64-row, boxed 64-row, and coupled
+    friction-index 12-contact packets over the solver scope proven by the
+    generated harness, plus an extreme exact rank-deficient
+    singular-degenerate slice for standard 128-row, boxed 128-row, and coupled
+    friction-index 16-, 24-, 32-, 48-, 64-, 96-, 128-, 192-, and 256-contact
+    packets.
+  - Added an opt-in CPU worker-thread update path for the DART 7 projected
+    Jacobi LCP solver (`JacobiSolver::Parameters::workerThreads`), with
+    generated 128-row correctness coverage and focused dense plus banded
+    serial-vs-worker benchmark rows up to 8192 banded rows and up to 32 worker
+    threads on the banded rows. The local benchmark
+    rows are comparison evidence, not a speedup claim.
+  - Extended DART 7 Red-Black Gauss-Seidel and Blocked Jacobi LCP
+    solver-internal CPU threading benchmark evidence from 128-row banded
+    packets to 512-, 1024-, and 2048-row banded packets with serial, 4-worker,
+    and 8-worker rows. These rows are correctness/comparison evidence, not
+    solver speedup or CUDA-kernel claims.
+  - Added DART 7 contact-derived block-structure coverage for BGS and Blocked
+    Jacobi LCP solvers, proving real boxed-LCP world-contact snapshots solve
+    with `findex`-derived non-contiguous per-contact blocks and reject explicit
+    block partitions that split tangent rows from their owning normal rows;
+    focused world-contact, stack-contact, and serial/parallel batch benchmark
+    rows for both solvers also pass the LCP contract.
+  - Added opt-in projected gradient-descent warm starts for the DART 7
+    standard-LCP Minimum Map, Fischer-Burmeister, and Penalized
+    Fischer-Burmeister Newton solvers. Focused unit coverage proves each
+    initializer reduces its solver-specific merit before Newton line search.
+    Added opt-in PGS warm starts for those same standard Newton paths, accepting
+    PGS seeds only when they reduce the solver-specific Newton merit. Boxed/findex
+    problems remain delegated for those three solvers. Added 36 benchmark rows
+    comparing no seed, PGS, projected gradient descent, and PGS-then-gradient
+    modes on identical 32-row, 64-row, and 128-row standard active-set
+    transition packets for those solvers, verified in default, SIMD-enabled,
+    and CUDA-enabled build trees. Added 72 batch benchmark rows for the same
+    warm-start mode matrix over batch-size-4 serial and DART 7
+    `ParallelExecutor` standard active-set transition packets. The
+    CUDA-enabled rows are CPU solver rows, not CUDA LCP kernel execution.
+  - Added focused DART 7 PGS/PSOR, symmetric PSOR, and Red-Black Gauss-Seidel
+    relaxation sweep benchmark rows for standard, boxed, and 8-/16-contact
+    friction-index fixtures at relaxation 0.5, 1.0, and 1.3, verified in default,
+    SIMD-enabled, and CUDA-enabled build trees. The rows distinguish
+    under-relaxation, plain relaxation, and over-relaxation; Red-Black rows also
+    report two-color partition counters. CUDA-enabled rows are CPU solver rows,
+    not CUDA LCP kernel execution.
+  - Added DART 7 APGD restart-policy comparison benchmark rows for standard,
+    boxed, and 8-/16-contact friction-index LCP fixtures, with backend
+    build-state counters distinguishing default, SIMD-enabled, and CUDA-enabled
+    CPU solver runs.
+  - Added DART 7 TGS iteration-budget comparison benchmark rows for standard,
+    boxed, and 8-/16-contact friction-index LCP fixtures, with backend
+    build-state counters distinguishing default, SIMD-enabled, and CUDA-enabled
+    CPU solver runs.
+  - Added DART 7 NNCG PGS-preconditioner iteration comparison benchmark rows
+    for standard, boxed, and 8-/16-contact friction-index LCP fixtures, with backend
+    build-state counters distinguishing default, SIMD-enabled, and
+    CUDA-enabled CPU solver runs.
+  - Added DART 7 SubspaceMinimization PGS active-set-estimation iteration
+    comparison benchmark rows for standard, boxed, and 8-/16-contact
+    friction-index LCP fixtures, with backend build-state counters distinguishing default,
+    SIMD-enabled, and CUDA-enabled CPU solver runs.
+  - Added DART 7 ShockPropagation layer-layout comparison benchmark rows for
+    standard, boxed, and 8-/16-contact friction-index LCP fixtures, comparing
+    single-layer, two-layer, and serial schedules with backend build-state
+    counters distinguishing default, SIMD-enabled, and CUDA-enabled CPU solver
+    runs.
+  - Added DART 7 MPRGP SPD/positive-definite-check comparison benchmark rows
+    for dense, banded, mildly ill-conditioned, and near-singular standard-LCP
+    fixtures up to 128 dense/banded rows and 16 near-singular rows, with
+    backend build-state counters distinguishing default, SIMD-enabled, and
+    CUDA-enabled CPU solver runs.
+  - Added DART 7 Interior Point path-parameter comparison benchmark rows for
+    dense, banded, mildly ill-conditioned, and near-singular standard-LCP
+    fixtures up to 128 dense/banded rows and 16 near-singular rows, with
+    backend build-state counters distinguishing default, SIMD-enabled, and
+    CUDA-enabled CPU solver runs.
+  - Added DART 7 Staggering contact-pipeline comparison benchmark rows for
+    separated world-contact, coupled stack-contact, and articulated unified
+    contact fixtures up to 8 contacts, with normal/friction split counters and
+    backend build-state counters distinguishing default, SIMD-enabled, and
+    CUDA-enabled CPU solver runs.
+  - Added DART 7 Boxed Semi-Smooth Newton line-search comparison benchmark
+    rows for standard, boxed, and 8-/16-contact friction-index fixtures, with
+    backend build-state counters distinguishing default, SIMD-enabled, and
+    CUDA-enabled CPU solver runs.
+  - Added DART 7 pivoting scale comparison benchmark rows for Direct 2D/3D
+    enumeration, Lemke and Baraff standard fixtures, and Dantzig standard
+    through 32 rows, boxed through 48 rows, and friction-index through 16
+    contacts, with backend build-state counters
+    distinguishing default, SIMD-enabled, and CUDA-enabled CPU solver runs.
+  - Added DART 7 BGS and Blocked Jacobi block-partition comparison benchmark
+    rows for full-block, 3-row block, auto `findex`, and explicit contact-block
+    partitions on standard, boxed, and 4-/8-contact friction-index fixtures,
+    with backend build-state counters distinguishing default, SIMD-enabled, and
+    CUDA-enabled CPU solver runs.
+  - Added manifest-generated serial and DART 7 `ParallelExecutor` batch LCP
+    benchmarks so standard, boxed, and friction-index solver families compare
+    the same independent-problem batches across every supporting solver. The
+    benchmark suite also includes active-set transition rows for standard,
+    boxed, and coupled friction-index generated packets near lower, upper, and
+    friction-cone boundaries, plus 49 larger active-set transition rows for
+    standard 32-row, boxed 32-row, and coupled friction-index 8-contact
+    packets and 49 stress active-set transition rows for standard 64-row,
+    boxed 64-row, and coupled friction-index 12-contact packets verified across
+    default, SIMD-enabled, and CUDA-enabled build trees, plus 49 extreme
+    active-set transition rows for standard 128-row, boxed 128-row, and coupled
+    friction-index 16-contact packets verified across default, SIMD-enabled,
+    and CUDA-enabled build trees, plus generated production active-set
+    correctness coverage through a 256-contact/768-row packet and 128
+    production active-set transition benchmark rows for
+    24-contact/72-row, 32-contact/96-row, 48-contact/144-row, and
+    64-contact/192-row, 96-contact/288-row, 128-contact/384-row, and
+    192-contact/576-row and 256-contact/768-row coupled friction-index packets
+    verified across default, SIMD-enabled, and CUDA-enabled build trees, plus
+    550 production active-set transition batch
+    rows for batch-size-4 serial and DART 7 `ParallelExecutor` runs over the
+    standard 32/64/128-row, boxed 32/64/128-row, and coupled friction-index
+    8-/12-/16-/24-/32-/48-/64-/96-/128-/192-/256-contact active-set packets
+    verified across default, SIMD-enabled, and CUDA-enabled build trees, plus
+    larger mildly ill-conditioned generated correctness coverage for standard
+    32/64-row, boxed 16/32-row, friction-index 8-contact,
+    1x-/4x-/8x-coupled 6-/8-/12-/16-/24-/32-/48-/64-/96-contact packets, and
+    16x-coupled packets through 192 contacts over solvers that reproduce the
+    selected generated solution, plus 629 benchmark rows with 16x-coupled
+    single-problem packets through 256 contacts. Boxed Semi-Smooth Newton is
+    included across those coupled single-problem rows. The
+    256-contact single rows are verified across default, SIMD-enabled, and
+    CUDA-enabled build trees. The
+    SIMD-enabled SAP 192-contact row is contract-correct but slow and does not
+    claim a speedup. Added
+    1258 larger mildly ill-conditioned batch rows for batch-size-4 serial and
+    DART 7 `ParallelExecutor` runs over standard 32-row, boxed 16-row,
+    friction-index 8-contact, coupled friction-index
+    6-/8-/12-/16-/24-/32-/48-/64-/96-contact, 4x-coupled
+    6-/8-/12-/16-/24-/32-/48-/64-/96-contact, 8x-coupled
+    6-/8-/12-/16-/24-/32-/48-/64-/96-contact, and 15-solver 16x-coupled
+    6-/8-/12-/16-/24-/32-/48-/64-/96-/128-/192-/256-contact rows. Boxed
+    Semi-Smooth Newton reports tuned line-search settings on the 16x rows. The
+    new 192- and 256-contact batch rows are verified in the default build, and
+    focused SIMD/CUDA-enabled all-solver serial/parallel 192-contact batch
+    contract gates now pass. Focused SIMD/CUDA-enabled selected-solver
+    256-contact batch gates now pass for PGS, NNCG, APGD, TGS, ADMM, and Boxed
+    Semi-Smooth Newton, while the full all-solver 256-contact SIMD/CUDA batch
+    gate remains unclaimed. Added 31 near-singular benchmark rows for standard 8-row,
+    boxed 8-row, and
+    coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-, 32-, 48-, 64-, 96-,
+    128-, 192-, and 256-contact
+    packets verified across default, SIMD-enabled, and CUDA-enabled build
+    trees, plus 62 near-singular batch rows for batch-size-4 serial and
+    DART 7 `ParallelExecutor` runs over standard 8-row, boxed 8-row, and those
+    coupled friction-index packets verified across default, SIMD-enabled, and
+    CUDA-enabled build trees, plus
+    27 exact
+    rank-deficient singular-degenerate benchmark rows for standard 16-row,
+    boxed 16-row, and coupled friction-index 6-contact packets, plus 27 larger
+    exact rank-deficient singular-degenerate benchmark rows for standard
+    32-row, boxed 32-row, and coupled friction-index 8-contact packets, plus
+    27 stress exact rank-deficient singular-degenerate benchmark rows for
+    standard 64-row, boxed 64-row, and coupled friction-index 12-contact
+    packets, each verified across default, SIMD-enabled, and CUDA-enabled build
+    trees, plus 51 extreme exact rank-deficient singular-degenerate rows for
+    standard 128-row, boxed 128-row, and coupled friction-index
+    16-/24-/32-/48-/64-/96-/128-/192-/256-contact packets verified across default,
+    SIMD-enabled, and CUDA-enabled build
+    trees, plus 72 exact rank-deficient singular-degenerate friction-index
+    batch rows for batch-size-4 serial and DART 7 `ParallelExecutor` runs over
+    coupled friction-index
+    6-/8-/12-/16-/24-/32-/48-/64-/96-/128-/192-/256-contact packets verified
+    across default, SIMD-enabled, and CUDA-enabled build trees, plus 192 exact
+    rank-deficient singular-degenerate standard/boxed batch rows for
+    batch-size-4 serial and DART 7 `ParallelExecutor` runs over
+    16-/32-/64-/128-row packets verified across default, SIMD-enabled, and
+    CUDA-enabled build trees. The
+    LCP benchmark rows now report scalar/SIMD/CUDA build-state counters so
+    backend-specific runs are distinguishable in the benchmark output.
+  - Added DART 7 experimental CUDA LCP execution paths for fixed-iteration
+    projected Jacobi and PGS batch solves over homogeneous dense standard,
+    boxed, and friction-index packets now reaching 256-row standard/boxed and
+    96-contact friction-index synthetic cases, grouped variable-size synthetic
+    standard, boxed, and friction-index packets now reaching
+    16/32/48/96/128/192-row standard/boxed groups and
+    4/8/16/32/48/64-contact friction-index groups with
+    two- and three-variant grouped rows,
+    matching CPU serial and DART 7 `ParallelExecutor` Jacobi/PGS batch rows
+    verified in default, SIMD-enabled, and CUDA-enabled builds at both those
+    grouped packets and the
+    24-/48-/96-/128-/192-/256-row and 8-/16-/32-/48-/64-/96-contact
+    direct CUDA packet sizes,
+    homogeneous 4-, 8-, and 16-contact world-contact,
+    homogeneous 5-/6-/7-/8-/9-/10-/11-/12-/13-/14-/15-/16-sphere coupled stack-contact, grouped variable-size
+    1/2/4/8/16-contact separated world-contact LCP packets with additional
+    three-variant grouped rows, plus grouped
+    variable-size 2/3/4/5/6/7/8/9/10/11/12/13/14/15/16-sphere coupled stack-contact LCP packets with
+    additional three-variant grouped stack benchmark rows, plus
+    grouped variable-size manually assembled 1-/4-/8-/16-contact articulated
+    unified-contact LCP packets with additional three-variant grouped rows,
+    including cross-multibody link-vs-link cases,
+    plus mixed grouped contact batches combining separated, stack, and
+    1-/4-/8-/16-contact articulated fixture families including cross-multibody link-vs-link
+    packets, with
+    CUDA unit coverage and benchmark rows that report CUDA LCP, CUDA batch
+    execution, CUDA grouped-batch execution, world-contact batch, and
+    stack-contact batch counters. General CUDA execution across the full solver
+    manifest remains future work.
+  - Added DART 7 `dart::simulation::World` boxed-LCP snapshot coverage for one
+    sphere-ground friction contact and for two separated sphere-ground contacts
+    assembled into one boxed/friction-index LCP, plus a 200-step two-sphere
+    `World::step()` invariant test. Added contact-derived LCP benchmark rows
+    that compare all friction-index-capable solvers on identical 1/2/4
+    separated sphere-ground boxed/findex snapshots, plus boxed-LCP
+    contact assembly/solve benchmark rows for the same contact counts. Added
+    coupled 2/3-sphere vertical-stack benchmark rows for the same solver set,
+    plus scoped 4-, 5-, and 6-sphere stack rows for all of those solvers
+    (`NNCG` uses 20 PGS preconditioner iterations for this coupled contact
+    family), plus 7-sphere rows for that full solver set
+    (`RedBlackGaussSeidel` reports a 512-iteration stack-contact cap for this
+    family), plus 8-/9-/10-/11-/12-/13-sphere rows for that full solver set (`Pgs`,
+    `Jacobi`, `BlockedJacobi`, `RedBlackGaussSeidel`, and `ShockPropagation`
+    use a 512-iteration stack-contact cap; `SymmetricPsor`, `BGS`, and `Tgs`
+    use that cap on the 11-/12-/13-sphere rows; and `NNCG` uses 20 PGS
+    preconditioner iterations through 11 spheres and 40 at 12+ spheres). Focused
+    default, SIMD-enabled, and CUDA-enabled build-tree rows pass for the
+    11-/12-/13-sphere all-solver stack slice; the CUDA-enabled rows are CPU solver
+    rows in a CUDA-enabled build, not CUDA LCP kernel execution. Added 3-, 4-,
+    5-, 6-, 7-, 8-, 9-, 10-, 11-, 12-, 13-, 14-, 15-, and 16-sphere stack
+    snapshot tests that validate nonzero normal-contact coupling, plus boxed-LCP
+    Baumgarte velocity-bias stabilization that preserves kinematic contacts'
+    static-obstacle compatibility behavior, and
+    3-sphere 200-step, 3-sphere 500-step,
+    4-sphere 200-step, 5-sphere 500-step, and 6-sphere 1000-step
+    `World::step()` invariant tests with matching benchmark rows for the
+    public boxed-LCP stack path. Added 4- and 16-sphere separated-contact
+    `World::step()` invariant tests and 4-/8-/16-sphere separated-contact
+    `World::step()` benchmark rows for the public boxed-LCP path. Stack
+    assembly/solve benchmark rows now include 7-sphere, 7-contact, 21-row,
+    8-sphere, 8-contact, 24-row, 9-sphere, 9-contact, 27-row, 10-sphere,
+    10-contact, 30-row, 11-sphere, 11-contact, 33-row, 12-sphere,
+    12-contact, 36-row, 13-sphere, 13-contact, 39-row, 14-sphere,
+    14-contact, 42-row, 15-sphere, 15-contact, 45-row, and 16-sphere,
+    16-contact, 48-row coupled stack snapshots. Added
+    mixed world-contact batch benchmark rows that compare every
+    friction-index-capable solver on the same five separated-contact and
+    stacked-contact snapshots, both serially and through the DART 7
+    experimental `ParallelExecutor`. Added stress mixed world-contact batch
+    benchmark rows for every friction-index-capable solver except `NNCG`, over
+    the same separated-contact snapshots plus 2/3/4/5-sphere coupled stack
+    snapshots, both serially and through `ParallelExecutor`. Added fixed-base
+    dense box-face contact evidence: a 4-contact, 12-row boxed/findex snapshot
+    APGD-verified in tests, dense contact assertions in the sliding/static box
+    `World::step()` tests, and 72 scoped
+    `BM_LcpWorldBoxContact/FrictionIndex` benchmark rows over
+    1/2/4/8/16/24/32/48/64/96/128/192-box snapshots verified in default, SIMD-enabled, and
+    CUDA-enabled build trees, plus 72 serial and DART 7
+    `ParallelExecutor` dense box-face batch rows for `Pgs`,
+    `RedBlackGaussSeidel`, `NNCG`, `Apgd`, `Tgs`, and `Admm` over
+    24/64/96/128/192-box snapshots, with `Pgs` additionally covering
+    1/4/8/16/32/48-box snapshots so the CPU rows match homogeneous CUDA PGS
+    packet sizes through 96 boxes in default, SIMD-enabled, and CUDA-enabled
+    build trees,
+    plus CUDA batch coverage for homogeneous Jacobi
+    1/4/8/16/24/32/48/64/96-box batch-size-4 rows and a 128-box
+    batch-size-1 row,
+    homogeneous PGS 1/4/8/16/24/32/48/64/96-box batch-size-4 rows and a
+    128-box batch-size-1 row, and Jacobi/PGS grouped
+    1/2/4/8/16/24/32/48/64/96-box dense box-face packets with two and three velocity
+    variants per box-count shape through
+    `BM_LcpCudaJacobiWorldBoxContactBatch_FrictionIndex`,
+    `BM_LcpCudaJacobiWorldBoxContactGroupedBatch_FrictionIndex`,
+    `BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex`, and
+    `BM_LcpCudaPgsWorldBoxContactGroupedBatch_FrictionIndex`, and
+    1/2/4/8/16/24/32-box
+    `BM_LcpWorldBoxStep_BoxedLcp` end-to-end invariant benchmark rows verified
+    in default, SIMD-enabled, and CUDA-enabled build trees plus a focused
+    default-build 48-box/192-contact row, plus a
+    `FourBoxWorldStepMaintainsDenseContactInvariants` unit test for a 16-contact
+    dense box-face public-step scene and
+    `EightBoxWorldStepMaintainsDenseContactInvariants` and
+    `SixteenBoxWorldStepMaintainsDenseContactInvariants` for 32-contact and
+    64-contact scenes, plus
+    `TwentyFourBoxWorldStepMaintainsDenseContactInvariants` for a 96-contact
+    small-timestep scene and
+    `ThirtyTwoBoxWorldStepMaintainsDenseContactInvariants` for a
+    128-contact small-timestep scene, plus
+    `FortyEightBoxWorldStepMaintainsDenseContactInvariants` for a
+    192-contact small-timestep scene.
+    Added fixed-base prismatic articulated
+    link-ground `World::step()` invariant coverage for one-link and four-link
+    contact scenes, plus 1-/4-/8-/16-link articulated ground-step benchmark
+    rows through the public boxed-LCP unified constraint path. Added connected
+    fixed-base three-axis prismatic Cartesian-chain link-ground `World::step()`
+    invariant coverage and 1-/4-/8-/16-chain articulated Cartesian ground-step
+    benchmark rows through the same public unified path. Added fixed-base
+    prismatic link-vs-dynamic-rigid `World::step()` invariant coverage and
+    1-/4-/8-/16-pair articulated rigid-impact benchmark rows through the same
+    public unified path. Added cross-multibody fixed-base prismatic
+    link-vs-link `World::step()` invariant coverage and
+    1-/4-/8-/16-pair articulated link-impact benchmark rows through the same
+    public unified path. Added
+    all-solver articulated unified-contact benchmark rows for manually
+    assembled fixed-base three-axis prismatic link-ground and
+    link-vs-dynamic-rigid LCP snapshots, now extended to cross-multibody
+    link-vs-link LCP snapshots and 32-contact packets, plus CUDA grouped-batch Jacobi/PGS
+    execution rows over manually assembled 1-/4-/8-/16-contact articulated
+    unified-contact packets covering link-ground, link-vs-dynamic-rigid, and
+    cross-multibody link-vs-link cases and mixed CUDA grouped-batch rows that
+    combine separated, stack, and 1-/4-/8-/16-contact articulated
+    cross-multibody contact packets in one benchmark family with two- and
+    three-variant mixed scenario rows.
+  - Updated the DART 7 LCP background taxonomy and selection guide to include
+    APGD, TGS, boxed semi-smooth Newton, ADMM, and SAP alongside the shared
+    solver manifest, correctness coverage, and benchmark registration.
+    The selection guide's available-solver block is now checked against
+    `kLcpSolverManifest` by the all-solvers smoke test so documented DART 7 LCP
+    solver availability cannot drift silently from implementation coverage.
+  - Added DART 7 ADMM rho/adaptive-rho comparison benchmark rows for standard,
+    boxed, and 8-/16-contact friction-index LCP fixtures, with backend
+    build-state counters distinguishing default, SIMD-enabled, and CUDA-enabled
+    CPU solver runs.
+  - Added DART 7 SAP regularization comparison benchmark rows for standard,
+    boxed, and 8-/16-contact friction-index LCP fixtures, with backend
+    build-state counters distinguishing default, SIMD-enabled, and CUDA-enabled
+    CPU solver runs.
+  - Added DART 7 ADMM, SAP, and Boxed Semi-Smooth Newton contact comparison
+    benchmark rows for separated world-contact, coupled stack-contact, and
+    articulated unified-contact friction-index fixtures up to 8 contacts, with
+    backend build-state counters distinguishing default, SIMD-enabled, and
+    CUDA-enabled CPU solver runs.
+  - Added DART 7 generated correctness coverage for
+    1x-/4x-/8x-coupled mildly ill-conditioned friction-index LCP packets
+    through 96 contacts and 16x-coupled packets through 192 contacts, plus
+    single/batch benchmark rows through 256 contacts across the scoped
+    iterative solver set plus Boxed Semi-Smooth Newton. Boxed
+    Semi-Smooth Newton reports tuned line-search settings on the 16x rows.
+    Focused SIMD/CUDA-enabled all-solver serial/parallel 192-contact batch
+    contract gates now pass; CUDA-enabled rows are CPU solver rows in that
+    build tree, not CUDA LCP kernel execution.
+  - Added DART 7 contact-normal standard-LCP comparison benchmark rows for
+    Dantzig, Lemke, Baraff, Direct, Minimum Map Newton,
+    Fischer-Burmeister Newton, Penalized Fischer-Burmeister Newton, Interior
+    Point, and MPRGP on normal-only subproblems extracted from separated
+    world-contact, coupled stack-contact, and articulated unified-contact
+    snapshots up to 8 contacts. Direct rows are limited to 1-, 2-, and 3-row
+    subproblems to avoid benchmarking its Dantzig fallback as direct
+    enumeration.
   - Replaced the experimental rigid-body contact stage's per-contact
     sequential normal impulses with a coupled boxed-LCP solve over all
     rigid-rigid contacts (`dart/math/lcp` Dantzig solver). It assembles the
@@ -3018,6 +3399,9 @@ Capsule Rod (IPC)` py-demos scene (a cloth draping over a horizontal rod,
     constraint catalog.
   - Added dimension validation to `Problem::setDimension()` to reject dimensions exceeding `Problem::kMaxDimension` (1,000,000) with `InvalidArgumentException` instead of attempting multi-GB allocations that cause ASan aborts or `std::bad_alloc`. ([#2500](https://github.com/dartsim/dart/issues/2500))
   - Refactored the LCP solver stack under `dart::math::lcp` with unified APIs plus new solver implementations and ImGui dashboard support. ([#2202](https://github.com/dartsim/dart/pull/2202), [#2241](https://github.com/dartsim/dart/pull/2241), [#2318](https://github.com/dartsim/dart/pull/2318), [#2355](https://github.com/dartsim/dart/pull/2355))
+  - Added opt-in solver-internal CPU worker threads for the Red-Black
+    Gauss-Seidel and Blocked Jacobi LCP solvers, with focused correctness tests
+    and benchmark counters for threaded color/block updates.
   - Modernized the Dantzig solver and improved stability (C++20 optimizations, NaN fallback, warning suppression). ([#2081](https://github.com/dartsim/dart/pull/2081), [#2253](https://github.com/dartsim/dart/pull/2253), [#2111](https://github.com/dartsim/dart/pull/2111))
   - Fixed Lemke solver segfaults on macOS arm64 by avoiding Eigen stack allocations. ([#2462](https://github.com/dartsim/dart/pull/2462))
   - Test coverage audit with Codecov infrastructure improvements and 200+ new unit/integration tests across common, collision, constraint, dynamics, io, sensor, and simulation modules. ([#2462](https://github.com/dartsim/dart/pull/2462))

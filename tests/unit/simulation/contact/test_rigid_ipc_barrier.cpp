@@ -317,6 +317,8 @@ expdetail::RigidIpcBarrierAssembly makeAssembly(
   expdetail::RigidIpcBarrierAssembly assembly;
   assembly.gradient = gradient;
   assembly.hessian = hessian.sparseView();
+  assembly.equalityResidual.resize(0);
+  assembly.equalityJacobian.resize(0, gradient.size());
   return assembly;
 }
 

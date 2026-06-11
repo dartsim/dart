@@ -43,6 +43,7 @@ public:
   struct Parameters
   {
     double epsilonForDivision{1e-9};
+    int workerThreads{1};
   };
 
   RedBlackGaussSeidelSolver();

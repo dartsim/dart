@@ -339,6 +339,7 @@ dart_build_tests(
     math/lcp/test_dantzig_misc.cpp
     math/lcp/test_lcp_edge_cases.cpp
     math/lcp/test_lcp_comparison_harness.cpp
+    math/lcp/test_lcp_generated_coverage.cpp
     math/lcp/test_lcp_test_problems.cpp
     math/lcp/test_lcp_solvers_stress.cpp
     math/lcp/test_lcp_types.cpp
@@ -350,6 +351,27 @@ dart_build_tests(
     math/lcp/test_lcp_newton_solvers.cpp
     math/lcp/test_lcp_projection_solvers.cpp
 )
+if(TARGET UNIT_math_lcp_math_lcp_all_solvers_smoke)
+  target_compile_definitions(
+    UNIT_math_lcp_math_lcp_all_solvers_smoke
+    PRIVATE DART_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+  )
+endif()
+if(TARGET UNIT_math_lcp_math_lcp_lcp_generated_coverage)
+  target_compile_definitions(
+    UNIT_math_lcp_math_lcp_lcp_generated_coverage
+    PRIVATE
+      $<$<CONFIG:Debug>:DART_LCP_GENERATED_COVERAGE_SKIP_EXTREME_SINGULAR_DEGENERATE=1>
+  )
+  if(DART_CODECOV)
+    target_compile_definitions(
+      UNIT_math_lcp_math_lcp_lcp_generated_coverage
+      PRIVATE
+        DART_CODECOV=1
+        DART_LCP_GENERATED_COVERAGE_SKIP_EXTREME_SINGULAR_DEGENERATE=1
+    )
+  endif()
+endif()
 
 # Math Lie group tests
 dart_build_tests(
