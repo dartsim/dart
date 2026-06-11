@@ -196,7 +196,7 @@ struct HangingBridgeFixture
   {
     world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
     world.setTimeStep(0.005);
-    world.setGravity(Eigen::Vector3d::Zero());
+    world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
 
     sx::RigidBodyOptions leftPostOptions;
     leftPostOptions.isStatic = true;
