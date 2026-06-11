@@ -659,7 +659,11 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     loaded/default-constructed configs before baked contact scratch is built.
     Variational two-step state history vectors now also borrow the World free
     allocator after bake/lazy creation, including allocator-aware save/load
-    deserialization of the SE(3) transform and 6D momentum lists.
+    deserialization of the SE(3) transform and 6D momentum lists. Finite
+    stiffness AVBD point-joint compliant-loop rows now live in baked
+    allocator-backed variational scratch as well, so the World-stage path reuses
+    row descriptors, scalar-row inventories, and hook constraint storage without
+    copying that hook state into default-heap vectors on same-shape steps.
     World registry rebuild gates now also cover the existing compact and
     production mixed default-deformable direct-sparse, matrix-free, FEM, and
     contact-family storage paths across `World::clear()` and rebuild.

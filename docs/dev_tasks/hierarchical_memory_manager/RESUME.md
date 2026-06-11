@@ -119,6 +119,14 @@ World-stage creation construct them from the World free allocator, loaded or
 pre-existing state is rebound without losing history, and binary state
 serialization accepts allocator-aware transform/momentum vectors.
 
+The current continuation routes finite-stiffness AVBD point-joint
+compliant-loop scratch through the same World allocator root. The private
+variational scratch component now owns allocator-backed compliant constraints,
+axis-row vectors, descriptor staging lists, and scalar-row inventories;
+`enterSimulationMode()` pre-sizes/synchronizes that storage for baked point-joint
+shapes; and the compliant contact hook reads the baked scratch directly instead
+of copying constraints into a default-heap vector.
+
 The next follow-up slice adds a focused `WorldRegistry` rebuild-boundary gate
 for contact-heavy solver-owned ECS storage. It reuses the existing compliant
 variational contact slider setup, verifies baked contact scratch and registry

@@ -741,6 +741,18 @@ struct VariationalCompliantLoopConstraint
     double stiffness = 0.0;
   };
 
+  using AxisRowAllocator = dart::common::StlAllocator<AxisRow>;
+  using AxisRowVector = std::vector<AxisRow, AxisRowAllocator>;
+
+  VariationalCompliantLoopConstraint() = default;
+
+  explicit VariationalCompliantLoopConstraint(
+      dart::common::MemoryAllocator& allocator)
+    : linearRows(AxisRowAllocator{allocator}),
+      angularRows(AxisRowAllocator{allocator})
+  {
+  }
+
   int linkA = -1; ///< -1 => pointA is a world anchor.
   Eigen::Vector3d pointA = Eigen::Vector3d::Zero();
   int linkB = -1; ///< -1 => pointB is a world anchor.
@@ -752,21 +764,60 @@ struct VariationalCompliantLoopConstraint
   Eigen::Matrix3d angularAxes = Eigen::Matrix3d::Identity();
   std::uint8_t linearAxisMask = dvbd::kAvbdRigidJointAllAxesMask;
   std::uint8_t angularAxisMask = dvbd::kAvbdRigidJointAllAxesMask;
-  std::vector<AxisRow> linearRows;
-  std::vector<AxisRow> angularRows;
+  AxisRowVector linearRows;
+  AxisRowVector angularRows;
 };
 
 struct VariationalCompliantLoopScratch
 {
+  using ConstraintAllocator
+      = dart::common::StlAllocator<VariationalCompliantLoopConstraint>;
+  using ConstraintVector
+      = std::vector<VariationalCompliantLoopConstraint, ConstraintAllocator>;
+  using DescriptorAllocator
+      = dart::common::StlAllocator<dvbd::AvbdScalarRowDescriptor>;
+  using DescriptorVector
+      = std::vector<dvbd::AvbdScalarRowDescriptor, DescriptorAllocator>;
+
+  explicit VariationalCompliantLoopScratch(
+      dart::common::MemoryAllocator& allocator)
+    : memoryAllocator(&allocator),
+      constraints(ConstraintAllocator{allocator}),
+      linearInventory(allocator),
+      angularInventory(allocator),
+      linearDescriptors(DescriptorAllocator{allocator}),
+      angularDescriptors(DescriptorAllocator{allocator})
+  {
+  }
+
   void clear()
   {
+    constraints.clear();
+    linearDescriptors.clear();
+    angularDescriptors.clear();
     linearInventory.records().clear();
     angularInventory.records().clear();
   }
 
+  dart::common::MemoryAllocator* memoryAllocator = nullptr;
+  ConstraintVector constraints;
   dvbd::AvbdScalarRowInventory linearInventory;
   dvbd::AvbdScalarRowInventory angularInventory;
+  DescriptorVector linearDescriptors;
+  DescriptorVector angularDescriptors;
 };
+
+VariationalCompliantLoopScratch& getOrCreateVariationalCompliantLoopScratch(
+    detail::WorldRegistry& registry,
+    entt::entity entity,
+    dart::common::MemoryAllocator& allocator)
+{
+  if (auto* scratch
+      = registry.try_get<VariationalCompliantLoopScratch>(entity)) {
+    return *scratch;
+  }
+  return registry.emplace<VariationalCompliantLoopScratch>(entity, allocator);
+}
 
 dvbd::AvbdScalarRowDescriptor makeVariationalCompliantLoopRowDescriptor(
     dvbd::AvbdScalarRowRole role,
@@ -797,8 +848,7 @@ void appendAvbdRigidWorldArticulatedPointJointConstraints(
     const detail::WorldRegistry& registry,
     entt::entity structureEntity,
     std::vector<VariationalLoopConstraint>& constraints,
-    std::vector<VariationalCompliantLoopConstraint>* compliantConstraints
-    = nullptr)
+    VariationalCompliantLoopScratch* compliantScratch = nullptr)
 {
   const auto& structure
       = registry.get<comps::MultibodyStructure>(structureEntity);
@@ -841,7 +891,7 @@ void appendAvbdRigidWorldArticulatedPointJointConstraints(
       continue;
     }
     if (!hard
-        && (compliantConstraints == nullptr || !compliantStiffness.has_value()
+        && (compliantScratch == nullptr || !compliantStiffness.has_value()
             || joint.type != comps::JointType::Fixed)) {
       continue;
     }
@@ -912,27 +962,28 @@ void appendAvbdRigidWorldArticulatedPointJointConstraints(
     const Eigen::Matrix3d axisFrame = worldRotationA;
 
     if (!hard) {
-      VariationalCompliantLoopConstraint constraint;
-      constraint.linkA = linkIndexA;
-      constraint.pointA = config.localAnchorA;
-      constraint.linkB = linkIndexB;
-      constraint.pointB = config.localAnchorB;
-      constraint.rigid = angularRows > 0u;
-      constraint.rotationA = dvbd::normalizeAvbdRigidOrientation(
-                                 config.targetRelativeOrientation)
-                                 .toRotationMatrix();
-      constraint.rotationB = Eigen::Matrix3d::Identity();
-      constraint.linearAxes = axisFrame * config.linearAxes;
-      constraint.angularAxes = axisFrame * config.angularAxes;
-      constraint.linearAxisMask = config.linearAxisMask;
-      constraint.angularAxisMask = config.angularAxisMask;
-      constraint.linearRows.reserve(linearRows);
+      VariationalCompliantLoopConstraint compliantConstraint{
+          *compliantScratch->memoryAllocator};
+      compliantConstraint.linkA = linkIndexA;
+      compliantConstraint.pointA = config.localAnchorA;
+      compliantConstraint.linkB = linkIndexB;
+      compliantConstraint.pointB = config.localAnchorB;
+      compliantConstraint.rigid = angularRows > 0u;
+      compliantConstraint.rotationA = dvbd::normalizeAvbdRigidOrientation(
+                                          config.targetRelativeOrientation)
+                                          .toRotationMatrix();
+      compliantConstraint.rotationB = Eigen::Matrix3d::Identity();
+      compliantConstraint.linearAxes = axisFrame * config.linearAxes;
+      compliantConstraint.angularAxes = axisFrame * config.angularAxes;
+      compliantConstraint.linearAxisMask = config.linearAxisMask;
+      compliantConstraint.angularAxisMask = config.angularAxisMask;
+      compliantConstraint.linearRows.reserve(linearRows);
       for (std::uint8_t axis = 0; axis < 3u; ++axis) {
         if (!dvbd::detail::avbdRigidJointAxisEnabled(
                 config.linearAxisMask, axis)) {
           continue;
         }
-        constraint.linearRows.push_back(
+        compliantConstraint.linearRows.push_back(
             VariationalCompliantLoopConstraint::AxisRow{
                 axis,
                 makeVariationalCompliantLoopRowDescriptor(
@@ -943,13 +994,13 @@ void appendAvbdRigidWorldArticulatedPointJointConstraints(
                     axis),
                 *compliantStiffness});
       }
-      constraint.angularRows.reserve(angularRows);
+      compliantConstraint.angularRows.reserve(angularRows);
       for (std::uint8_t axis = 0; axis < 3u; ++axis) {
         if (!dvbd::detail::avbdRigidJointAxisEnabled(
                 config.angularAxisMask, axis)) {
           continue;
         }
-        constraint.angularRows.push_back(
+        compliantConstraint.angularRows.push_back(
             VariationalCompliantLoopConstraint::AxisRow{
                 axis,
                 makeVariationalCompliantLoopRowDescriptor(
@@ -960,7 +1011,7 @@ void appendAvbdRigidWorldArticulatedPointJointConstraints(
                     axis),
                 *compliantStiffness});
       }
-      compliantConstraints->push_back(constraint);
+      compliantScratch->constraints.push_back(std::move(compliantConstraint));
       continue;
     }
 
@@ -1052,12 +1103,14 @@ void markBrokenAvbdVariationalLoopConstraints(
 constexpr double kVariationalCompliantLoopStiffnessGrowthBeta = 1000.0;
 
 void syncVariationalCompliantLoopConstraintRows(
-    std::vector<VariationalCompliantLoopConstraint>& constraints,
     VariationalCompliantLoopScratch& scratch)
 {
-  std::vector<dvbd::AvbdScalarRowDescriptor> linearDescriptors;
-  std::vector<dvbd::AvbdScalarRowDescriptor> angularDescriptors;
-  for (const VariationalCompliantLoopConstraint& constraint : constraints) {
+  auto& linearDescriptors = scratch.linearDescriptors;
+  auto& angularDescriptors = scratch.angularDescriptors;
+  linearDescriptors.clear();
+  angularDescriptors.clear();
+  for (const VariationalCompliantLoopConstraint& constraint :
+       scratch.constraints) {
     for (const auto& row : constraint.linearRows) {
       linearDescriptors.push_back(row.descriptor);
     }
@@ -1072,7 +1125,7 @@ void syncVariationalCompliantLoopConstraintRows(
 
   std::size_t linearCursor = 0;
   std::size_t angularCursor = 0;
-  for (VariationalCompliantLoopConstraint& constraint : constraints) {
+  for (VariationalCompliantLoopConstraint& constraint : scratch.constraints) {
     for (auto& row : constraint.linearRows) {
       if (linearCursor >= scratch.linearInventory.size()) {
         return;
@@ -1091,9 +1144,9 @@ void syncVariationalCompliantLoopConstraintRows(
 void updateVariationalCompliantLoopConstraintRows(
     const detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
-    const std::vector<VariationalCompliantLoopConstraint>& constraints,
     VariationalCompliantLoopScratch& scratch)
 {
+  const auto& constraints = scratch.constraints;
   if (constraints.empty()) {
     scratch.clear();
     return;
@@ -2340,13 +2393,13 @@ Eigen::VectorXd variationalWorldTorque(
 }
 
 VariationalContactHook makeVariationalCompliantLoopConstraintHook(
-    std::vector<VariationalCompliantLoopConstraint> constraints)
+    const VariationalCompliantLoopScratch* scratch)
 {
-  if (constraints.empty()) {
+  if (scratch == nullptr || scratch->constraints.empty()) {
     return {};
   }
 
-  return [constraints = std::move(constraints)](
+  return [scratch](
              const VariationalContactContext& context) -> Eigen::VectorXd {
     Eigen::VectorXd generalizedForce
         = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(context.dofCount));
@@ -2376,7 +2429,8 @@ VariationalContactHook makeVariationalCompliantLoopConstraintHook(
       return context.linkWorldTransforms[index].linear() * offset;
     };
 
-    for (const VariationalCompliantLoopConstraint& constraint : constraints) {
+    for (const VariationalCompliantLoopConstraint& constraint :
+         scratch->constraints) {
       const Eigen::Vector3d pointA
           = worldPoint(constraint.linkA, constraint.pointA);
       const Eigen::Vector3d pointB
@@ -3764,6 +3818,13 @@ void reserveMultibodyVariationalRegistryStorage(
   auto& scratchStorage = registry.storage<MultibodyVariationalScratch>();
   stateStorage.reserve(multibodyCount);
   scratchStorage.reserve(multibodyCount);
+  auto pointJointConfigs
+      = registry.view<comps::Joint, dvbd::AvbdRigidWorldPointJointConfig>();
+  const bool hasPointJointConfigs
+      = pointJointConfigs.begin() != pointJointConfigs.end();
+  if (hasPointJointConfigs) {
+    registry.storage<VariationalCompliantLoopScratch>().reserve(multibodyCount);
+  }
 
   if (multibodyCount == 0u) {
     return;
@@ -3793,8 +3854,21 @@ void reserveMultibodyVariationalRegistryStorage(
         scratch.constraints.push_back(binding.constraint);
       }
     }
+    VariationalCompliantLoopScratch* compliantScratch = nullptr;
+    if (hasPointJointConfigs) {
+      compliantScratch = &getOrCreateVariationalCompliantLoopScratch(
+          registry, entity, allocator);
+      compliantScratch->constraints.clear();
+    }
     appendAvbdRigidWorldArticulatedPointJointConstraints(
-        registry, entity, scratch.constraints);
+        registry, entity, scratch.constraints, compliantScratch);
+    if (compliantScratch != nullptr) {
+      if (!compliantScratch->constraints.empty()) {
+        syncVariationalCompliantLoopConstraintRows(*compliantScratch);
+      } else {
+        compliantScratch->clear();
+      }
+    }
     const Eigen::Index projectionRows = constraintRowCount(scratch.constraints);
     scratch.constraints.clear();
 
@@ -3894,6 +3968,10 @@ void MultibodyVariationalIntegrationStage::execute(
   // multibody they constrain. World::step validates the dynamics policy first,
   // so by here every binding is Ignored or Supported (never Unsupported).
   auto closures = registry.view<comps::LoopClosure>();
+  auto pointJointConfigs
+      = registry.view<comps::Joint, dvbd::AvbdRigidWorldPointJointConfig>();
+  const bool hasPointJointConfigs
+      = pointJointConfigs.begin() != pointJointConfigs.end();
 
   auto view = registry.view<comps::MultibodyStructure>();
   for (auto entity : view) {
@@ -3905,7 +3983,6 @@ void MultibodyVariationalIntegrationStage::execute(
               : registry.emplace<MultibodyVariationalState>(
                     entity, makeMultibodyVariationalState(worldFreeAllocator));
     ensureMultibodyVariationalStateAllocator(state, worldFreeAllocator);
-    std::vector<VariationalCompliantLoopConstraint> compliantConstraints;
     auto& scratch
         = registry.get_or_emplace<MultibodyVariationalScratch>(entity);
     auto& constraints = scratch.constraints;
@@ -3917,15 +3994,19 @@ void MultibodyVariationalIntegrationStage::execute(
         constraints.push_back(binding.constraint);
       }
     }
-    appendAvbdRigidWorldArticulatedPointJointConstraints(
-        registry, entity, constraints, &compliantConstraints);
-    VariationalCompliantLoopScratch* compliantScratch
-        = registry.try_get<VariationalCompliantLoopScratch>(entity);
-    if (!compliantConstraints.empty()) {
+    VariationalCompliantLoopScratch* compliantScratch = nullptr;
+    if (hasPointJointConfigs) {
+      compliantScratch = &getOrCreateVariationalCompliantLoopScratch(
+          registry, entity, worldFreeAllocator);
+      compliantScratch->constraints.clear();
+    } else {
       compliantScratch
-          = &registry.get_or_emplace<VariationalCompliantLoopScratch>(entity);
-      syncVariationalCompliantLoopConstraintRows(
-          compliantConstraints, *compliantScratch);
+          = registry.try_get<VariationalCompliantLoopScratch>(entity);
+    }
+    appendAvbdRigidWorldArticulatedPointJointConstraints(
+        registry, entity, constraints, compliantScratch);
+    if (compliantScratch != nullptr && !compliantScratch->constraints.empty()) {
+      syncVariationalCompliantLoopConstraintRows(*compliantScratch);
     } else if (compliantScratch != nullptr) {
       compliantScratch->clear();
     }
@@ -3977,7 +4058,7 @@ void MultibodyVariationalIntegrationStage::execute(
     }
     contactHook = combineVariationalContactHooks(
         std::move(contactHook),
-        makeVariationalCompliantLoopConstraintHook(compliantConstraints));
+        makeVariationalCompliantLoopConstraintHook(compliantScratch));
     integrateMultibodyVariationalImpl(
         registry,
         structure,
@@ -3998,9 +4079,9 @@ void MultibodyVariationalIntegrationStage::execute(
         &scratch.inverseDynamics,
         &scratch.projection,
         &scratch.anderson);
-    if (compliantScratch != nullptr && !compliantConstraints.empty()) {
+    if (compliantScratch != nullptr && !compliantScratch->constraints.empty()) {
       updateVariationalCompliantLoopConstraintRows(
-          registry, structure, compliantConstraints, *compliantScratch);
+          registry, structure, *compliantScratch);
     }
 
     // C3 outer loop: after the converged step, advance the AL duals on the

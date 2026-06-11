@@ -597,9 +597,10 @@ Current Phase 4 scratch-reuse coverage shipped by this PR includes:
   solve reuse, island remapping, link impulse application, normal-only
   fallback, tangent accumulators, multibody staging vectors, and same-shape
   fallback friction sweeps.
-- Variational multibody scratch for baked loop-closure and hard AVBD
-  point-joint constraints, compliant/augmented-Lagrangian ground contact, and
-  the scalar single-prismatic compliant-contact fast path.
+- Variational multibody scratch for baked loop-closure, hard AVBD point-joint,
+  finite-stiffness AVBD point-joint compliant-loop constraints,
+  compliant/augmented-Lagrangian ground contact, and the scalar
+  single-prismatic compliant-contact fast path.
 - Default projected-Newton deformable scratch for obstacle lists, static and
   moving rigid surface snapshots, surface-contact candidates, boundary masks,
   friction buffers, sparse/matrix-free solver storage, FEM blocks, static
@@ -747,6 +748,13 @@ Follow-up progress after PR #2956:
   the World free allocator, loaded/pre-existing state is rebound without losing
   history, and binary state serialization now handles allocator-aware SE(3)
   transform and 6D momentum lists.
+- Finite-stiffness AVBD point-joint compliant-loop scratch now follows the same
+  variational multibody route. The private World-stage component constructs its
+  compliant constraint list, axis-row vectors, row-descriptor staging lists, and
+  scalar-row inventories from the World free allocator; `enterSimulationMode()`
+  pre-sizes and synchronizes the row inventories for baked point-joint shapes;
+  and the compliant contact hook reads that baked scratch directly instead of
+  copying constraints into a default-heap vector.
 - The semi-implicit one-slider multibody path now has the same clear/rebuild
   proof for baked private multibody dynamics storage. The gate covers the
   all-storage capacity map created by `reserveMultibodyDynamicsRegistryStorage`
@@ -934,8 +942,9 @@ Remaining Phase 4/5 follow-up items for the next PR:
   multi-island, mixed-stress, and contact-family gates.
 - Continue production `WorldRegistry` bake/build sizing guidance beyond the
   current compliant-contact allocator-aware config/dual-state/history
-  clear/rebuild gate, especially for differently shaped solver-owned ECS
-  storages and rebuild boundaries.
+  clear/rebuild gate and the newly allocator-backed point-joint loop-scratch
+  bake route, especially for differently shaped solver-owned ECS storages and
+  rebuild boundaries.
 - Re-run allocator comparative evidence when allocator, STL, or frame policy
   changes; keep the current foonathan/memory and standard-baseline evidence
   green instead of adding allocator-policy work to this PR.
