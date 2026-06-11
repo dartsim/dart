@@ -132,6 +132,27 @@ def test_lcp_problem_rejects_invalid_matrix_dimensions() -> None:
 
 
 @pytest.mark.parametrize(
+    ("lo", "hi"),
+    (
+        (np.array([0.0, np.inf]), np.ones(2)),
+        (np.zeros(2), np.array([1.0, -np.inf])),
+    ),
+)
+def test_lcp_problem_rejects_invalid_infinite_bound_direction(
+    lo: np.ndarray, hi: np.ndarray
+) -> None:
+    problem = dart.LcpProblem(np.eye(2), np.array([1.0, 2.0]), lo, hi)
+
+    assert problem.get_type() == dart.LcpProblemType.INVALID
+    assert not problem.is_boxed_lcp()
+    assert not dart.DantzigSolver().supports_problem(problem)
+
+    result, _ = dart.DantzigSolver().solve(problem)
+
+    assert result.status == dart.LcpSolverStatus.INVALID_PROBLEM
+
+
+@pytest.mark.parametrize(
     "findex",
     (
         np.array([-1, 2], dtype=np.int32),

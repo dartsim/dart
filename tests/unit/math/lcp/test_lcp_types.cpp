@@ -254,6 +254,28 @@ TEST(LcpTypesTest, BoxedClassificationRejectsInvalidBounds)
 
   EXPECT_FALSE(nanBoundsProblem.isBoxedLcp());
   EXPECT_EQ(nanBoundsProblem.getType(), LcpProblemType::Invalid);
+
+  Eigen::Vector2d loWithPositiveInfinity;
+  loWithPositiveInfinity << 0.0, std::numeric_limits<double>::infinity();
+  const LcpProblem positiveInfiniteLowerProblem(
+      Eigen::Matrix2d::Identity(),
+      Eigen::Vector2d(0.5, 0.25),
+      loWithPositiveInfinity,
+      Eigen::Vector2d::Constant(std::numeric_limits<double>::infinity()));
+
+  EXPECT_FALSE(positiveInfiniteLowerProblem.isBoxedLcp());
+  EXPECT_EQ(positiveInfiniteLowerProblem.getType(), LcpProblemType::Invalid);
+
+  Eigen::Vector2d hiWithNegativeInfinity;
+  hiWithNegativeInfinity << 1.0, -std::numeric_limits<double>::infinity();
+  const LcpProblem negativeInfiniteUpperProblem(
+      Eigen::Matrix2d::Identity(),
+      Eigen::Vector2d(0.5, 0.25),
+      Eigen::Vector2d::Zero(),
+      hiWithNegativeInfinity);
+
+  EXPECT_FALSE(negativeInfiniteUpperProblem.isBoxedLcp());
+  EXPECT_EQ(negativeInfiniteUpperProblem.getType(), LcpProblemType::Invalid);
 }
 
 TEST(LcpTypesTest, FrictionIndexClassificationRejectsInvalidBoundsDimensions)

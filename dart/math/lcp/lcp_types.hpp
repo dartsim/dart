@@ -400,6 +400,10 @@ private:
       if (std::isnan(lo[i]) || std::isnan(hi[i])) {
         return false;
       }
+      if (lo[i] == std::numeric_limits<double>::infinity()
+          || hi[i] == -std::numeric_limits<double>::infinity()) {
+        return false;
+      }
       if (std::isfinite(lo[i]) && std::isfinite(hi[i]) && lo[i] > hi[i]) {
         return false;
       }

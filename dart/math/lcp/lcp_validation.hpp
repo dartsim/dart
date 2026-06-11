@@ -127,6 +127,14 @@ inline bool validateProblem(
       return false;
     }
 
+    if (lo[i] == std::numeric_limits<double>::infinity()
+        || hi[i] == -std::numeric_limits<double>::infinity()) {
+      if (message) {
+        *message = "Bounds have invalid infinity direction";
+      }
+      return false;
+    }
+
     if (ref >= 0 && !std::isfinite(hi[i])) {
       if (message) {
         *message = "Friction coefficient (hi) must be finite";
