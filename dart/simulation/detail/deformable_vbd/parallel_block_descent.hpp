@@ -38,6 +38,7 @@
 
 #include <algorithm>
 #include <barrier>
+#include <span>
 #include <thread>
 #include <vector>
 
@@ -188,7 +189,7 @@ inline BlockDescentStats parallelBlockDescentDeformable(
     const BlockDescentOptions& options,
     unsigned int threadCount,
     const std::vector<Eigen::Vector3d>* stepStartPositions = nullptr,
-    const std::vector<ContactPlane>* contactPlanes = nullptr,
+    std::span<const ContactPlane> contactPlanes = {},
     double contactFriction = 0.0,
     const SelfContactAdjacency* selfContact = nullptr,
     std::vector<Eigen::Vector3d>* chebyshevTwoStepsBackScratch = nullptr,
@@ -256,8 +257,8 @@ inline BlockDescentStats parallelBlockDescentDeformable(
         addSelfContactTerms(block, vertex, *selfContact, positions);
       }
     }
-    if (contactPlanes != nullptr && vertex < contactPlanes->size()) {
-      const ContactPlane& plane = (*contactPlanes)[vertex];
+    if (!contactPlanes.empty() && vertex < contactPlanes.size()) {
+      const ContactPlane& plane = contactPlanes[vertex];
       addHalfSpacePenaltyContact(block, positions[vertex], plane);
       if (contactFriction > 0.0 && stepStartPositions != nullptr) {
         addHalfSpaceFriction(

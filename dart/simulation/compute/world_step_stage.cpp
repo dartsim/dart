@@ -1118,6 +1118,11 @@ struct DeformableVbdScratch
 
   using ContactFeatureIdVector
       = std::vector<std::uint64_t, common::StlAllocator<std::uint64_t>>;
+  using ContactPlaneAllocator = common::StlAllocator<dvbd::ContactPlane>;
+  using ContactPlaneVector
+      = std::vector<dvbd::ContactPlane, ContactPlaneAllocator>;
+  using ByteVector
+      = std::vector<std::uint8_t, common::StlAllocator<std::uint8_t>>;
   using AvbdDescriptorVector = std::vector<
       dvbd::AvbdScalarRowDescriptor,
       common::StlAllocator<dvbd::AvbdScalarRowDescriptor>>;
@@ -1130,7 +1135,8 @@ struct DeformableVbdScratch
   DeformableVbdScratch() = default;
 
   explicit DeformableVbdScratch(common::MemoryAllocator& allocator)
-    : contactObjectIds(common::StlAllocator<std::uint64_t>{allocator}),
+    : contactPlanes(common::StlAllocator<dvbd::ContactPlane>{allocator}),
+      contactObjectIds(common::StlAllocator<std::uint64_t>{allocator}),
       contactFeatureIds(common::StlAllocator<std::uint64_t>{allocator}),
       avbdContactDescriptors(
           common::StlAllocator<dvbd::AvbdScalarRowDescriptor>{allocator}),
@@ -1161,6 +1167,7 @@ struct DeformableVbdScratch
       avbdTetDescriptors(
           common::StlAllocator<dvbd::AvbdScalarRowDescriptor>{allocator}),
       avbdTetInventory(allocator),
+      avbdSolveFixed(common::StlAllocator<std::uint8_t>{allocator}),
       selfContactCandidates(allocator),
       selfContactSweepScratch(allocator)
   {
@@ -1174,7 +1181,7 @@ struct DeformableVbdScratch
   // Per-vertex static ground-contact planes, rebuilt each step from the barrier
   // set at the warm-start position (lagged); a zero stiffness marks "no ground
   // under this vertex".
-  std::vector<dvbd::ContactPlane> contactPlanes;
+  ContactPlaneVector contactPlanes;
   // Stable static-contact feature IDs parallel to `contactPlanes`, used by the
   // AVBD row inventory so a vertex contact against ground, sphere, or box
   // features warm-starts only against the same static feature.
@@ -1205,7 +1212,7 @@ struct DeformableVbdScratch
   AvbdDescriptorVector avbdTetDescriptors;
   dvbd::AvbdScalarRowInventory avbdTetInventory;
   std::vector<dvbd::AvbdTetMaterialFiniteStiffnessRow> avbdTetRows;
-  std::vector<std::uint8_t> avbdSolveFixed;
+  ByteVector avbdSolveFixed;
   // Self-contact candidate set + per-vertex incident lists, rebuilt each step
   // (lagged) from the body's swept start-to-warm-start surface motion.
   dc::ContactCandidateSet selfContactCandidates;
@@ -5773,7 +5780,7 @@ void runVbdDeformableSolve(
   // plane and fall freely. One plane per vertex keeps the driver contract
   // unchanged; a vertex pressed into ground and an obstacle at once resolves to
   // the nearer constraint and recovers over steps.
-  const std::vector<dvbd::ContactPlane>* contactPlanes = nullptr;
+  std::span<const dvbd::ContactPlane> contactPlanes;
   bool hasActiveContactPlanes = false;
   const bool anyStaticContact
       = !barriers.empty() || !sphereObstacles.empty() || !boxObstacles.empty();
@@ -5874,7 +5881,7 @@ void runVbdDeformableSolve(
         hasActiveContactPlanes = true;
       }
     }
-    contactPlanes = &vbdScratch.contactPlanes;
+    contactPlanes = vbdScratch.contactPlanes;
   }
 
   const dvbd::LameParameters lame
@@ -5972,7 +5979,7 @@ void runVbdDeformableSolve(
         && options.rayleighDamping <= 0.0;
   const bool canUseAvbdTetMaterialRows
       = config.useAvbdFiniteStiffnessRows && !config.useAvbdContactNormalRows
-        && !config.useAvbdAttachmentRows && contactPlanes == nullptr
+        && !config.useAvbdAttachmentRows && contactPlanes.empty()
         && vbdScratch.springs.empty() && !vbdScratch.tets.empty()
         && !hasUnsupportedAvbdFrictionSource && config.workerThreads <= 1
         && !options.useChebyshev && options.rayleighDamping <= 0.0;
@@ -6067,9 +6074,9 @@ void runVbdDeformableSolve(
     }
 
     vbdScratch.avbdContactDescriptors.clear();
-    if (config.useAvbdContactNormalRows && contactPlanes != nullptr) {
+    if (config.useAvbdContactNormalRows && !contactPlanes.empty()) {
       for (std::size_t i = 0; i < nodeCount; ++i) {
-        const dvbd::ContactPlane& plane = (*contactPlanes)[i];
+        const dvbd::ContactPlane& plane = contactPlanes[i];
         if (plane.stiffness <= 0.0) {
           continue;
         }
@@ -6089,7 +6096,8 @@ void runVbdDeformableSolve(
       }
     }
 
-    vbdScratch.avbdSolveFixed = scratch.activeFixed;
+    vbdScratch.avbdSolveFixed.assign(
+        scratch.activeFixed.begin(), scratch.activeFixed.end());
     vbdScratch.avbdAttachmentDescriptors.clear();
     if (config.useAvbdAttachmentRows) {
       for (std::size_t i = 0; i < nodeCount; ++i) {
@@ -6246,7 +6254,7 @@ void runVbdDeformableSolve(
          vbdScratch.avbdContactInventory.records()) {
       const auto vertex
           = static_cast<std::uint32_t>(record.descriptor.key.featureA);
-      const dvbd::ContactPlane& plane = (*contactPlanes)[vertex];
+      const dvbd::ContactPlane& plane = contactPlanes[vertex];
       vbdScratch.avbdContactRows.push_back(
           dvbd::AvbdHalfSpaceContactRow{
               vertex,
@@ -6316,7 +6324,7 @@ void runVbdDeformableSolve(
 
       const auto vertex
           = static_cast<std::uint32_t>(firstRecord.descriptor.key.featureA);
-      const dvbd::ContactPlane& plane = (*contactPlanes)[vertex];
+      const dvbd::ContactPlane& plane = contactPlanes[vertex];
       const dc::Matrix3x2d basis
           = dc::detail::fallbackBasisFromNormal(plane.normal);
       const Eigen::Vector2d projected
@@ -6341,7 +6349,7 @@ void runVbdDeformableSolve(
       const auto vertex
           = static_cast<std::uint32_t>(record.descriptor.key.featureA);
       const std::uint8_t axisId = record.descriptor.key.axis;
-      const dvbd::ContactPlane& plane = (*contactPlanes)[vertex];
+      const dvbd::ContactPlane& plane = contactPlanes[vertex];
       const dc::Matrix3x2d basis
           = dc::detail::fallbackBasisFromNormal(plane.normal);
       const Eigen::Vector3d axis = basis.col(axisId < 2 ? axisId : 0);

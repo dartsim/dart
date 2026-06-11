@@ -46,6 +46,7 @@
 
 #include <algorithm>
 #include <array>
+#include <span>
 #include <utility>
 #include <vector>
 
@@ -463,10 +464,11 @@ inline BlockDescentStats blockDescentMassSpringAvbdFiniteStiffness(
 /// switch between static and dynamic Coulomb modes. Full contact-manifold
 /// friction persistence, broader self-contact friction envelopes, tetrahedral
 /// row mixing, and parallel dual scheduling remain later slices.
+template <typename FixedMask>
 inline BlockDescentStats blockDescentMassSpringAvbdRows(
     std::vector<Eigen::Vector3d>& positions,
     const std::vector<double>& masses,
-    const std::vector<std::uint8_t>& fixed,
+    const FixedMask& fixed,
     const std::vector<Eigen::Vector3d>& inertialTargets,
     const std::vector<SpringElement>& springs,
     double fallbackSpringStiffness,
@@ -1382,7 +1384,7 @@ inline BlockDescentStats blockDescentDeformable(
     const VertexColoring& coloring,
     const BlockDescentOptions& options,
     const std::vector<Eigen::Vector3d>* stepStartPositions = nullptr,
-    const std::vector<ContactPlane>* contactPlanes = nullptr,
+    std::span<const ContactPlane> contactPlanes = {},
     double contactFriction = 0.0,
     const SelfContactAdjacency* selfContact = nullptr,
     std::vector<Eigen::Vector3d>* chebyshevTwoStepsBackScratch = nullptr,
@@ -1431,8 +1433,8 @@ inline BlockDescentStats blockDescentDeformable(
         addSelfContactTerms(block, vertex, *selfContact, positions);
       }
     }
-    if (contactPlanes != nullptr && vertex < contactPlanes->size()) {
-      const ContactPlane& plane = (*contactPlanes)[vertex];
+    if (!contactPlanes.empty() && vertex < contactPlanes.size()) {
+      const ContactPlane& plane = contactPlanes[vertex];
       addHalfSpacePenaltyContact(block, positions[vertex], plane);
       if (contactFriction > 0.0 && stepStartPositions != nullptr) {
         addHalfSpaceFriction(

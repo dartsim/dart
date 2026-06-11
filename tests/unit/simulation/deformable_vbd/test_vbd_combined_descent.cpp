@@ -546,7 +546,7 @@ TEST(VbdCombinedDescent, RayleighDampingIgnoresSelfContactBarrierStiffness)
         coloring,
         options,
         &stepStart,
-        nullptr,
+        {},
         0.0,
         &selfContact);
     return positions;
