@@ -278,6 +278,14 @@ def test_family_grouping():
         == module.FAMILY_LCP
     )
     assert (
+        module.family_of("BM_LcpWorldBilliardsStep_BoxedLcp/4/1")
+        == module.FAMILY_LCP
+    )
+    assert (
+        module.family_of("BM_LcpWorldStackStep_BoxedLcp/4/200")
+        == module.FAMILY_LCP
+    )
+    assert (
         module.family_of("BM_LcpWorldCardPileStep_BoxedLcp/4/200")
         == module.FAMILY_LCP
     )
