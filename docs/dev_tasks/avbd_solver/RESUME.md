@@ -2,7 +2,7 @@
 
 ## Last Session Summary
 
-Latest local follow-up: after merging `origin/main` at `0dc865abdb6`, the
+Latest local follow-up: after merging `origin/main` at `906a6c0241fe`, the
 narrow `RigidBodyContactStage::prepare()` source-row cleanup still builds and
 focused AVBD source-row tests plus `pixi run test-unit` pass. The cleanup avoids
 the collision-shape capacity scan when the contact query is already skipped, and
@@ -14,6 +14,19 @@ about 9.34 us to 8.83 us, `BM_AvbdDemo2dSpringStep_median` from about 5.04 us to
 37.1 us; post-merge reruns under host load average around 20 were noisy enough
 to treat as smoke only. This remains no-contact/source-row overhead evidence
 and does not close any source CPU-win, GPU, or paper-number gate.
+
+Latest local follow-up: C++ and dartpy public articulated AVBD stiffness
+persistence coverage now exercises fixed, revolute, prismatic, and spherical
+public articulated facades for both same-multibody link pairs and world-link
+endpoints. The C++ serialization test and
+`test_simulation_world_articulated_avbd_stiffness_roundtrip_from_python` set
+finite start/linear/angular AVBD stiffness, save/load the world, mutate the
+restored stiffness values, and verify they remain visible after entering
+simulation mode. A focused variational-integration test now also verifies
+restored stiffness for those endpoint/type combinations feeds the private
+point-joint configs rebuilt at simulation entry. This is narrow public facade
+serialization/extraction coverage; it does not close broader articulated
+lifecycle, source-corpus CPU-win, GPU, or paper-number gates.
 
 Latest local follow-up: CUDA boxed-LCP PGS dense world-contact tests now keep
 the largest 128-box fixture as a cheap shape gate while bounding the default
@@ -1701,13 +1714,12 @@ complete.
 Current reality (2026-06-11): this checkout is
 `avbd/source-row-perf-slice`, a local branch from `main` for a narrow
 contact-stage prepare overhead cleanup, now being merged forward to
-`origin/main` at `0dc865abdb6` after #2973 and #2974 landed. PR #2975
-(`avbd/articulated-stiffness-roundtrip`) remains the separate open
-stiffness-roundtrip PR and should not be grown with unrelated source-row
-performance work. The older checkpoint branch description below is historical
-context for the raw 33-hour checkpoint and should not be treated as the current
-checkout without re-verifying `git status --short --branch` and the open PR
-heads.
+`origin/main` at `906a6c0241fe` after #2975 landed. The landed #2975 branch was
+scoped to articulated stiffness round-trip coverage; source-row performance work
+continues here instead of growing that merged branch. The older checkpoint and
+split-stack branch descriptions below are historical context and should not be
+treated as the current checkout without re-verifying `git status --short
+--branch` and the open PR heads.
 
 `feature/avbd-articulated-masked-rows` - staged local slice based on cached
 `origin/main` at `dbac6c63e9f`, including the scalar-row foundation,
@@ -2167,10 +2179,11 @@ parity claim.
 
 Current newest local follow-up: finish verifying the narrow
 `RigidBodyContactStage::prepare()` overhead cleanup from
-`avbd/source-row-perf-slice` after the latest `origin/main` merge. The branch
-currently has local benchmark smoke showing improved Motor/Spring/Spring Ratio
-source rows, but this does not close any source CPU-win, GPU, or paper-number
-gate. The earlier SSH fetch path failed in this environment with
+`avbd/source-row-perf-slice` after the latest `origin/main` merge that includes
+#2975. The branch currently has local benchmark smoke showing improved
+Motor/Spring/Spring Ratio source rows, but this does not close any source
+CPU-win, GPU, or paper-number gate. The earlier SSH fetch path failed in this
+environment with
 `ssh: connect to host github.com port 22: Network is unreachable`, so keep using
 HTTPS when a fresh main refresh is needed here. The pre-merge backup stashes
 remain present and should not be dropped without maintainer approval. The

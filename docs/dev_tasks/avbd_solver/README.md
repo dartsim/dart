@@ -9,7 +9,7 @@ Corpus matrix:
 
 ## Current Status
 
-- Latest local follow-up: after merging `origin/main` at `0dc865abdb6`, the
+- Latest local follow-up: after merging `origin/main` at `906a6c0241fe`, the
   narrow `RigidBodyContactStage::prepare()` source-row cleanup still builds and
   focused AVBD source-row tests plus `pixi run test-unit` pass. The cleanup
   avoids the collision-shape capacity scan when the contact query is already
@@ -22,6 +22,17 @@ Corpus matrix:
   post-merge reruns under host load average around 20 were noisy enough to
   treat as smoke only. This remains no-contact/source-row overhead evidence and
   does not close any source CPU-win, GPU, or paper-number gate.
+- Latest local follow-up: C++ and dartpy public articulated AVBD stiffness
+  persistence coverage now exercises fixed, revolute, prismatic, and spherical
+  public articulated facades for both same-multibody link pairs and world-link
+  endpoints. The C++ serialization test and dartpy unit test set finite
+  start/linear/angular AVBD stiffness, save/load the world, mutate the restored
+  stiffness values, and verify they remain visible after entering simulation
+  mode. A focused variational-integration test now also verifies restored
+  stiffness for those endpoint/type combinations feeds the private point-joint
+  configs rebuilt at simulation entry. This is narrow public facade
+  serialization/extraction coverage; it does not close broader articulated
+  lifecycle, source-corpus CPU-win, GPU, or paper-number gates.
 - Latest local follow-up: CUDA boxed-LCP PGS dense world-contact tests now keep
   the largest 128-box fixture as a cheap shape gate while bounding the default
   runtime-contract CUDA sweeps to smaller dense packets. #2973's CUDA failure
