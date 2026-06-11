@@ -9471,9 +9471,9 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
 
   const auto projectAvbdRigidPointJoints = [&]() {
     const bool hasPointJointConfigs
-        = dvbd::hasAvbdRigidWorldPointJointConfigs(registry);
+        = dvbd::mayHaveAvbdRigidWorldPointJointConfigs(registry);
     const bool hasDistanceSpringConfigs
-        = dvbd::hasAvbdRigidWorldDistanceSpringConfigs(registry);
+        = dvbd::mayHaveAvbdRigidWorldDistanceSpringConfigs(registry);
     if (!hasPointJointConfigs && !hasDistanceSpringConfigs) {
       return false;
     }
@@ -9599,7 +9599,7 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
         contactOptions);
     std::size_t appendedJoints = 0u;
     std::size_t appendedDistanceSprings = 0u;
-    if (dvbd::hasAvbdRigidWorldPointJointConfigs(registry)) {
+    if (dvbd::mayHaveAvbdRigidWorldPointJointConfigs(registry)) {
       dvbd::extractAvbdRigidWorldPointJointInputsInto(
           registry, scratch.pointJoints, /*includeWorldAnchors=*/false);
       if (!scratch.pointJoints.empty()) {
@@ -9612,7 +9612,7 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
     } else {
       scratch.pointJoints.clear();
     }
-    if (dvbd::hasAvbdRigidWorldDistanceSpringConfigs(registry)) {
+    if (dvbd::mayHaveAvbdRigidWorldDistanceSpringConfigs(registry)) {
       dvbd::extractAvbdRigidWorldDistanceSpringInputsInto(
           registry, scratch.distanceSprings, /*includeWorldAnchors=*/false);
       if (!scratch.distanceSprings.empty()) {

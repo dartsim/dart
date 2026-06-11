@@ -2841,6 +2841,17 @@ inline bool hasAvbdRigidWorldPointJointConfigs(
 }
 
 //==============================================================================
+inline bool mayHaveAvbdRigidWorldPointJointConfigs(
+    const ::dart::simulation::detail::WorldRegistry& registry)
+{
+  const auto* jointStorage = registry.storage<comps::Joint>();
+  const auto* configStorage
+      = registry.storage<AvbdRigidWorldPointJointConfig>();
+  return jointStorage != nullptr && configStorage != nullptr
+         && jointStorage->size() != 0u && configStorage->size() != 0u;
+}
+
+//==============================================================================
 inline void extractAvbdRigidWorldDistanceSpringInputsInto(
     const ::dart::simulation::detail::WorldRegistry& registry,
     std::vector<AvbdRigidWorldDistanceSpringInput>& inputs,
@@ -2914,6 +2925,15 @@ inline bool hasAvbdRigidWorldDistanceSpringConfigs(
 {
   const auto view = registry.view<AvbdRigidWorldDistanceSpringConfig>();
   return view.begin() != view.end();
+}
+
+//==============================================================================
+inline bool mayHaveAvbdRigidWorldDistanceSpringConfigs(
+    const ::dart::simulation::detail::WorldRegistry& registry)
+{
+  const auto* configStorage
+      = registry.storage<AvbdRigidWorldDistanceSpringConfig>();
+  return configStorage != nullptr && configStorage->size() != 0u;
 }
 
 //==============================================================================

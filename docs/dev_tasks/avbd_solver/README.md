@@ -9,6 +9,17 @@ Corpus matrix:
 
 ## Current Status
 
+- Latest local follow-up: `RigidBodyContactStage::execute()` now uses
+  storage-level AVBD point-joint and distance-spring prechecks before running
+  the exact extraction views. This avoids scanning the same AVBD config sets
+  twice in joint/spring source rows while still returning early without scratch
+  allocation in worlds that have no private pair-constraint storage. Focused
+  rigid AVBD contact-stage, distance-spring, and dartpy world tests pass. A
+  selected same-filter benchmark toggle under high host load moved median CPU
+  time lower for 2D Motor, Joint Grid, Rope, Heavy Rope, Hanging Rope, Spring,
+  Spring Ratio, 3D Rope, and 3D Heavy Rope, while 3D Spring and Spring Ratio
+  were slightly slower in the noisy smoke. This remains source-row overhead
+  evidence only and does not close any CPU-win, GPU, or paper-number gate.
 - Latest local follow-up: after merging `origin/main` at `906a6c0241fe`, the
   narrow `RigidBodyContactStage::prepare()` source-row cleanup still builds and
   focused AVBD source-row tests plus `pixi run test-unit` pass. The cleanup
