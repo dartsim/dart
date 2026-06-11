@@ -1055,3 +1055,189 @@ TEST(AffineBodyDynamics, PointTriangleMicroSolveReducesImplicitObjective)
             .value;
   EXPECT_LT(finalOrthogonality, targetOrthogonality);
 }
+
+//==============================================================================
+TEST(AffineBodyDynamics, PointTriangleRuntimeStepUpdatesVelocityAndState)
+{
+  detail::AffineBodyState initialPointBody;
+  initialPointBody.translation = {0.0, 0.0, 0.08};
+  initialPointBody.linearMap
+      = Eigen::AngleAxisd(0.08, Eigen::Vector3d::UnitX()).toRotationMatrix();
+  initialPointBody.linearVelocity = {0.05, -0.02, -2.0};
+  initialPointBody.affineVelocity(0, 1) = 0.7;
+  initialPointBody.affineVelocity(1, 2) = -0.5;
+  initialPointBody.mass = 2.0;
+
+  detail::AffineBodyState triangleBody;
+  triangleBody.dynamic = false;
+
+  const Eigen::Vector3d point(0.2, 0.15, 0.0);
+  const Eigen::Vector3d triangleA(0.0, 0.0, 0.0);
+  const Eigen::Vector3d triangleB(1.0, 0.0, 0.0);
+  const Eigen::Vector3d triangleC(0.0, 1.0, 0.0);
+
+  detail::AffinePointTriangleRuntimeStepOptions options;
+  options.solve = makeAffineMicroSolveOptions();
+  options.timeStep = 0.03;
+  options.gravity = Eigen::Vector3d(0.0, 0.0, -9.81);
+
+  const auto result = detail::affinePointTriangleRuntimeStep(
+      initialPointBody,
+      point,
+      triangleBody,
+      triangleA,
+      triangleB,
+      triangleC,
+      options);
+
+  ASSERT_TRUE(result.valid);
+  EXPECT_TRUE(result.converged);
+  EXPECT_TRUE(result.solve.valid);
+  EXPECT_TRUE(result.solve.barrierActive);
+  EXPECT_LT(result.solve.finalValue, result.solve.initialValue);
+
+  const double targetSquaredDistance = pointTriangleSquaredDistance(
+      result.inertialTarget,
+      point,
+      triangleBody,
+      triangleA,
+      triangleB,
+      triangleC,
+      options.solve.barrier);
+  EXPECT_GT(result.solve.finalSquaredDistance, targetSquaredDistance);
+
+  const Eigen::Vector3d targetVelocity
+      = (result.inertialTarget.translation - initialPointBody.translation)
+        / options.timeStep;
+  EXPECT_GT(result.solve.state.linearVelocity.z(), targetVelocity.z());
+  EXPECT_GT(result.displacementNorm, 0.0);
+  EXPECT_GT(result.linearSpeed, 0.0);
+  EXPECT_GT(result.affineVelocityNorm, 0.0);
+  EXPECT_DOUBLE_EQ(result.solve.state.mass, initialPointBody.mass);
+}
+
+//==============================================================================
+TEST(AffineBodyDynamics, PointTrianglePairRuntimeStepMovesBothBodies)
+{
+  detail::AffineBodyState initialPointBody;
+  initialPointBody.translation = {0.02, 0.02, 0.09};
+  initialPointBody.linearMap
+      = Eigen::AngleAxisd(0.05, Eigen::Vector3d::UnitY()).toRotationMatrix();
+  initialPointBody.linearVelocity = {0.04, 0.0, -1.8};
+  initialPointBody.affineVelocity(0, 1) = 0.35;
+  initialPointBody.affineVelocity(1, 2) = -0.25;
+
+  detail::AffineBodyState initialTriangleBody;
+  initialTriangleBody.translation = {0.0, 0.0, 0.0};
+  initialTriangleBody.linearMap
+      = Eigen::AngleAxisd(-0.04, Eigen::Vector3d::UnitX()).toRotationMatrix();
+  initialTriangleBody.linearVelocity = {-0.02, 0.0, 0.25};
+  initialTriangleBody.affineVelocity(0, 2) = -0.2;
+  initialTriangleBody.affineVelocity(2, 1) = 0.15;
+
+  const Eigen::Vector3d point(0.0, 0.0, 0.0);
+  const Eigen::Vector3d triangleA(-0.55, -0.45, 0.0);
+  const Eigen::Vector3d triangleB(0.55, -0.45, 0.0);
+  const Eigen::Vector3d triangleC(-0.55, 0.55, 0.0);
+
+  detail::AffinePointTriangleRuntimeStepOptions options;
+  options.solve = makeAffineMicroSolveOptions();
+  options.solve.gradientTolerance = 1e-6;
+  options.solve.maxIterations = 48;
+  options.solve.maxLineSearchIterations = 24;
+  options.solve.maxStepNorm = 0.2;
+  options.timeStep = 0.03;
+  options.gravity = Eigen::Vector3d(0.0, 0.0, -9.81);
+
+  const auto result = detail::affinePointTrianglePairRuntimeStep(
+      initialPointBody,
+      point,
+      initialTriangleBody,
+      triangleA,
+      triangleB,
+      triangleC,
+      options);
+
+  ASSERT_TRUE(result.valid);
+  EXPECT_TRUE(result.converged);
+  EXPECT_TRUE(result.solve.valid);
+  EXPECT_TRUE(result.solve.barrierActive);
+  EXPECT_LT(result.solve.finalValue, result.solve.initialValue);
+
+  const double targetSquaredDistance = pointTriangleSquaredDistance(
+      result.pointInertialTarget,
+      point,
+      result.triangleInertialTarget,
+      triangleA,
+      triangleB,
+      triangleC,
+      options.solve.barrier);
+  EXPECT_GT(result.solve.finalSquaredDistance, targetSquaredDistance);
+
+  EXPECT_GT(result.pointDisplacementNorm, 0.0);
+  EXPECT_GT(result.triangleDisplacementNorm, 0.0);
+  EXPECT_GT(result.maxLinearSpeed, 0.0);
+  EXPECT_GT(result.maxAffineVelocityNorm, 0.0);
+  EXPECT_NE(
+      result.solve.pointState.linearVelocity.z(),
+      result.pointInertialTarget.linearVelocity.z());
+  EXPECT_NE(
+      result.solve.triangleState.linearVelocity.z(),
+      result.triangleInertialTarget.linearVelocity.z());
+}
+
+//==============================================================================
+TEST(AffineBodyDynamics, PointTrianglePairRuntimeStepKeepsStaticTriangleFixed)
+{
+  detail::AffineBodyState initialPointBody;
+  initialPointBody.translation = {0.02, 0.02, 0.09};
+  initialPointBody.linearVelocity = {0.04, 0.0, -1.8};
+  initialPointBody.affineVelocity(0, 1) = 0.35;
+  initialPointBody.affineVelocity(1, 2) = -0.25;
+
+  detail::AffineBodyState initialTriangleBody;
+  initialTriangleBody.translation = {0.0, 0.0, 0.0};
+  initialTriangleBody.linearMap
+      = Eigen::AngleAxisd(-0.04, Eigen::Vector3d::UnitX()).toRotationMatrix();
+  initialTriangleBody.linearVelocity = {-0.02, 0.0, 0.25};
+  initialTriangleBody.affineVelocity(0, 2) = -0.2;
+  initialTriangleBody.affineVelocity(2, 1) = 0.15;
+  initialTriangleBody.dynamic = false;
+
+  const Eigen::Vector3d point(0.0, 0.0, 0.0);
+  const Eigen::Vector3d triangleA(-0.55, -0.45, 0.0);
+  const Eigen::Vector3d triangleB(0.55, -0.45, 0.0);
+  const Eigen::Vector3d triangleC(-0.55, 0.55, 0.0);
+
+  detail::AffinePointTriangleRuntimeStepOptions options;
+  options.solve = makeAffineMicroSolveOptions();
+  options.solve.gradientTolerance = 1e-6;
+  options.solve.maxIterations = 48;
+  options.solve.maxLineSearchIterations = 24;
+  options.solve.maxStepNorm = 0.2;
+  options.timeStep = 0.03;
+  options.gravity = Eigen::Vector3d(0.0, 0.0, -9.81);
+
+  const auto result = detail::affinePointTrianglePairRuntimeStep(
+      initialPointBody,
+      point,
+      initialTriangleBody,
+      triangleA,
+      triangleB,
+      triangleC,
+      options);
+
+  ASSERT_TRUE(result.valid);
+  EXPECT_TRUE(result.converged);
+  EXPECT_TRUE(result.solve.barrierActive);
+  EXPECT_GT(result.pointDisplacementNorm, 0.0);
+  EXPECT_DOUBLE_EQ(result.triangleDisplacementNorm, 0.0);
+  EXPECT_TRUE(result.solve.triangleState.translation.isApprox(
+      initialTriangleBody.translation));
+  EXPECT_TRUE(result.solve.triangleState.linearMap.isApprox(
+      initialTriangleBody.linearMap));
+  EXPECT_TRUE(result.solve.triangleState.linearVelocity.isApprox(
+      initialTriangleBody.linearVelocity));
+  EXPECT_TRUE(result.solve.triangleState.affineVelocity.isApprox(
+      initialTriangleBody.affineVelocity));
+}

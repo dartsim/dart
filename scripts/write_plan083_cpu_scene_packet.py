@@ -55,7 +55,35 @@ TABLE2_REDUCED_SCENES = (
     "candy",
     "precession",
 )
+ABD_CHAIN_SCENES = {
+    "abd_chain_8": {
+        "row_id": "abd-chain-8",
+        "scene_id": "plan083_abd_chain_8",
+        "pair_count": 8,
+        "label": "8x8 chain net",
+        "paper_gap": "63k-triangle chain-net assets, rigid IPC comparison timing, and paper-scale reproduction remain planned.",
+    },
+    "abd_chain_16": {
+        "row_id": "abd-chain-16",
+        "scene_id": "plan083_abd_chain_16",
+        "pair_count": 16,
+        "label": "16x16 chain net",
+        "paper_gap": "445k-triangle chain-net assets, rigid IPC comparison timing, and paper-scale reproduction remain planned.",
+    },
+    "abd_chain_96": {
+        "row_id": "abd-chain-96",
+        "scene_id": "plan083_abd_chain_96",
+        "pair_count": 96,
+        "label": "96x96 chain net",
+        "paper_gap": "12M-triangle chain-net assets, stress-machine policy, GPU packet, and paper-scale reproduction remain planned.",
+    },
+}
 SCENE_IDS = {
+    "abd_chain_8": "plan083_abd_chain_8",
+    "abd_chain_16": "plan083_abd_chain_16",
+    "abd_chain_96": "plan083_abd_chain_96",
+    "abd_house_of_cards": "plan083_abd_house_of_cards",
+    "abd_wrecking_ball": "plan083_abd_wrecking_ball",
     "candy": "plan083_candy",
     "hanging_bridge": "plan083_hanging_bridge",
     "lying_flat": "plan083_lying_flat",
@@ -70,6 +98,11 @@ SCENE_IDS = {
     "windmill": "plan083_windmill",
 }
 SCENE_ROW_IDS = {
+    "abd_chain_8": "abd-chain-8",
+    "abd_chain_16": "abd-chain-16",
+    "abd_chain_96": "abd-chain-96",
+    "abd_house_of_cards": "abd-vs-rigid-cards",
+    "abd_wrecking_ball": "abd-vs-rigid-wreck",
     "candy": "unb-fig-22",
     "hanging_bridge": "unb-fig-02",
     "lying_flat": "unb-fig-01",
@@ -84,6 +117,11 @@ SCENE_ROW_IDS = {
     "windmill": "unb-fig-20",
 }
 SCENE_ROWS = {
+    "abd_chain_8": "BM_Plan083CpuScene_abd_chain_8_reduced_pair_runtime_step",
+    "abd_chain_16": "BM_Plan083CpuScene_abd_chain_16_reduced_pair_runtime_step",
+    "abd_chain_96": "BM_Plan083CpuScene_abd_chain_96_reduced_pair_runtime_step",
+    "abd_house_of_cards": "BM_Plan083CpuScene_abd_house_of_cards_reduced_runtime_step",
+    "abd_wrecking_ball": "BM_Plan083CpuScene_abd_wrecking_ball_reduced_pair_runtime_step",
     "candy": "BM_Plan083CpuScene_candy_reduced_world_step",
     "hanging_bridge": "BM_Plan083CpuScene_hanging_bridge_reduced_world_step",
     "lying_flat": "BM_Plan083CpuScene_lying_flat_reduced_world_step",
@@ -101,6 +139,21 @@ SCENE_ROWS = {
 TIMING_BREAKDOWN_ROWS = {scene: SCENE_ROWS[scene] for scene in TIMING_BREAKDOWN_SCENES}
 TABLE2_REDUCED_ROWS = {scene: SCENE_ROWS[scene] for scene in TABLE2_REDUCED_SCENES}
 SCENE_BENCHMARK_OUTPUTS = {
+    "abd_chain_8": Path(
+        ".benchmark_results/plan083/cpu_scene_corpus/abd_chain_8_benchmark.json"
+    ),
+    "abd_chain_16": Path(
+        ".benchmark_results/plan083/cpu_scene_corpus/abd_chain_16_benchmark.json"
+    ),
+    "abd_chain_96": Path(
+        ".benchmark_results/plan083/cpu_scene_corpus/abd_chain_96_benchmark.json"
+    ),
+    "abd_house_of_cards": Path(
+        ".benchmark_results/plan083/cpu_scene_corpus/abd_house_of_cards_benchmark.json"
+    ),
+    "abd_wrecking_ball": Path(
+        ".benchmark_results/plan083/cpu_scene_corpus/abd_wrecking_ball_benchmark.json"
+    ),
     "candy": Path(".benchmark_results/plan083/cpu_scene_corpus/candy_benchmark.json"),
     "hanging_bridge": DEFAULT_BENCHMARK_OUTPUT,
     "lying_flat": Path(
@@ -138,6 +191,19 @@ SCENE_BENCHMARK_OUTPUTS = {
     ),
 }
 SCENE_PACKET_OUTPUTS = {
+    "abd_chain_8": Path(".benchmark_results/plan083/cpu_scene_corpus/abd_chain_8.json"),
+    "abd_chain_16": Path(
+        ".benchmark_results/plan083/cpu_scene_corpus/abd_chain_16.json"
+    ),
+    "abd_chain_96": Path(
+        ".benchmark_results/plan083/cpu_scene_corpus/abd_chain_96.json"
+    ),
+    "abd_house_of_cards": Path(
+        ".benchmark_results/plan083/cpu_scene_corpus/abd_house_of_cards.json"
+    ),
+    "abd_wrecking_ball": Path(
+        ".benchmark_results/plan083/cpu_scene_corpus/abd_wrecking_ball.json"
+    ),
     "candy": Path(".benchmark_results/plan083/cpu_scene_corpus/candy.json"),
     "hanging_bridge": DEFAULT_PACKET_OUTPUT,
     "lying_flat": Path(".benchmark_results/plan083/cpu_scene_corpus/lying_flat.json"),
@@ -372,6 +438,12 @@ def make_packet(
         return _make_lying_flat_packet(row, rows, timing_ns=timing_ns)
     if scene == "candy":
         return _make_candy_packet(row, rows, timing_ns=timing_ns)
+    if scene == "abd_house_of_cards":
+        return _make_abd_house_of_cards_packet(row, rows, timing_ns=timing_ns)
+    if scene == "abd_wrecking_ball":
+        return _make_abd_wrecking_ball_packet(row, rows, timing_ns=timing_ns)
+    if scene in ABD_CHAIN_SCENES:
+        return _make_abd_chain_packet(scene, row, rows, timing_ns=timing_ns)
 
     final_residual = _finite_number(row, "final_equality_residual_norm")
     if final_residual > max_equality_residual:
@@ -593,6 +665,341 @@ def _make_candy_packet(
                 "Reduced deformable-cloth/static-shell smoke packet only; "
                 "affine body packing, twisted shell, and cloth self-contact "
                 "parity remain planned."
+            ),
+        },
+        "benchmarks": rows,
+    }
+
+
+def _make_abd_house_of_cards_packet(
+    row: Mapping[str, Any],
+    rows: list[Any],
+    *,
+    timing_ns: float,
+) -> dict[str, Any]:
+    affine_body_count = int(_finite_number(row, "affine_body_count"))
+    static_triangle_body_count = int(_finite_number(row, "static_triangle_body_count"))
+    point_triangle_pair_count = int(_finite_number(row, "point_triangle_pair_count"))
+    valid_step_count = int(_finite_number(row, "valid_step_count"))
+    failed_steps = _finite_number(row, "failed_steps")
+    converged_solve_count = int(_finite_number(row, "converged_solve_count"))
+    barrier_active_count = int(_finite_number(row, "barrier_active_count"))
+    solver_iterations = int(_finite_number(row, "solver_iterations"))
+    total_objective_decrease = _finite_number(row, "total_objective_decrease")
+    max_final_gradient_norm = _finite_number(row, "max_final_gradient_norm")
+    min_target_squared_distance = _finite_number(row, "min_target_squared_distance")
+    min_final_squared_distance = _finite_number(row, "min_final_squared_distance")
+    squared_activation_distance = _finite_number(row, "squared_activation_distance")
+    max_linear_speed = _finite_number(row, "max_linear_speed_m_s")
+    max_affine_velocity_norm = _finite_number(row, "max_affine_velocity_norm")
+    max_displacement_norm = _finite_number(row, "max_displacement_norm_m")
+
+    if affine_body_count < 4:
+        raise Plan083CpuScenePacketError(
+            f"expected at least 4 reduced ABD cards, got {affine_body_count}"
+        )
+    if static_triangle_body_count != 1:
+        raise Plan083CpuScenePacketError(
+            "expected one static triangle support for reduced ABD cards"
+        )
+    if point_triangle_pair_count != affine_body_count:
+        raise Plan083CpuScenePacketError(
+            "expected one point-triangle runtime solve per reduced ABD card"
+        )
+    if failed_steps != 0.0:
+        raise Plan083CpuScenePacketError(
+            f"reduced ABD cards reported {failed_steps:g} failed steps"
+        )
+    if valid_step_count != affine_body_count:
+        raise Plan083CpuScenePacketError(
+            f"expected {affine_body_count} valid ABD steps, got {valid_step_count}"
+        )
+    if converged_solve_count != affine_body_count:
+        raise Plan083CpuScenePacketError(
+            f"expected {affine_body_count} converged ABD solves, got {converged_solve_count}"
+        )
+    if barrier_active_count != affine_body_count:
+        raise Plan083CpuScenePacketError(
+            f"expected {affine_body_count} active ABD barrier rows, got {barrier_active_count}"
+        )
+    if solver_iterations <= 0:
+        raise Plan083CpuScenePacketError("reduced ABD cards need solver iterations")
+    if total_objective_decrease <= 0.0:
+        raise Plan083CpuScenePacketError(
+            "reduced ABD cards need positive objective decrease"
+        )
+    if max_final_gradient_norm > 1e-5:
+        raise Plan083CpuScenePacketError(
+            f"reduced ABD cards final gradient is too large: {max_final_gradient_norm:.3g}"
+        )
+    if min_final_squared_distance <= min_target_squared_distance:
+        raise Plan083CpuScenePacketError(
+            "reduced ABD cards must move farther from contact than the inertial target"
+        )
+    if min_final_squared_distance >= squared_activation_distance:
+        raise Plan083CpuScenePacketError(
+            "reduced ABD cards should remain inside the activation distance"
+        )
+    if max_linear_speed <= 0.0 or max_affine_velocity_norm <= 0.0:
+        raise Plan083CpuScenePacketError(
+            "reduced ABD cards need linear and affine velocity updates"
+        )
+    if max_displacement_norm <= 0.0:
+        raise Plan083CpuScenePacketError(
+            "reduced ABD cards need a nonzero runtime displacement"
+        )
+
+    return {
+        "plan083_cpu_scene_packet": {
+            "row_id": "abd-vs-rigid-cards",
+            "scene_id": "plan083_abd_house_of_cards",
+            "benchmark_row": _packet_row_name(row),
+            "paper_scale": False,
+            "runtime_path": "detail affine point-triangle runtime step",
+            "step_count": 1,
+            "wall_time_ns": timing_ns,
+            "affine_body_count": affine_body_count,
+            "static_triangle_body_count": static_triangle_body_count,
+            "point_triangle_pair_count": point_triangle_pair_count,
+            "valid_step_count": valid_step_count,
+            "converged_solve_count": converged_solve_count,
+            "barrier_active_count": barrier_active_count,
+            "solver_iterations": solver_iterations,
+            "total_objective_decrease": total_objective_decrease,
+            "max_final_gradient_norm": max_final_gradient_norm,
+            "min_target_squared_distance": min_target_squared_distance,
+            "min_final_squared_distance": min_final_squared_distance,
+            "squared_activation_distance": squared_activation_distance,
+            "max_linear_speed_m_s": max_linear_speed,
+            "max_affine_velocity_norm": max_affine_velocity_norm,
+            "max_displacement_norm_m": max_displacement_norm,
+            "limitation_status": (
+                "Reduced affine point-triangle runtime-step packet only; "
+                "card-stack assets, rigid IPC comparison timing, and paper-scale "
+                "house-of-cards reproduction remain planned."
+            ),
+        },
+        "benchmarks": rows,
+    }
+
+
+def _make_abd_wrecking_ball_packet(
+    row: Mapping[str, Any],
+    rows: list[Any],
+    *,
+    timing_ns: float,
+) -> dict[str, Any]:
+    affine_body_count = int(_finite_number(row, "affine_body_count"))
+    dynamic_pair_count = int(_finite_number(row, "dynamic_pair_count"))
+    valid_step_count = int(_finite_number(row, "valid_step_count"))
+    failed_steps = _finite_number(row, "failed_steps")
+    converged_solve_count = int(_finite_number(row, "converged_solve_count"))
+    barrier_active_count = int(_finite_number(row, "barrier_active_count"))
+    solver_iterations = int(_finite_number(row, "solver_iterations"))
+    total_objective_decrease = _finite_number(row, "total_objective_decrease")
+    max_final_gradient_norm = _finite_number(row, "max_final_gradient_norm")
+    min_target_squared_distance = _finite_number(row, "min_target_squared_distance")
+    min_final_squared_distance = _finite_number(row, "min_final_squared_distance")
+    squared_activation_distance = _finite_number(row, "squared_activation_distance")
+    max_linear_speed = _finite_number(row, "max_linear_speed_m_s")
+    max_affine_velocity_norm = _finite_number(row, "max_affine_velocity_norm")
+    max_displacement_norm = _finite_number(row, "max_displacement_norm_m")
+
+    if affine_body_count != 2:
+        raise Plan083CpuScenePacketError(
+            f"expected 2 reduced ABD wrecking-ball bodies, got {affine_body_count}"
+        )
+    if dynamic_pair_count != 1:
+        raise Plan083CpuScenePacketError(
+            "expected one dynamic point-triangle pair for reduced ABD wrecking ball"
+        )
+    if failed_steps != 0.0:
+        raise Plan083CpuScenePacketError(
+            f"reduced ABD wrecking ball reported {failed_steps:g} failed steps"
+        )
+    if valid_step_count != dynamic_pair_count:
+        raise Plan083CpuScenePacketError(
+            f"expected {dynamic_pair_count} valid ABD pair steps, got {valid_step_count}"
+        )
+    if converged_solve_count != dynamic_pair_count:
+        raise Plan083CpuScenePacketError(
+            f"expected {dynamic_pair_count} converged ABD pair solves, got {converged_solve_count}"
+        )
+    if barrier_active_count != dynamic_pair_count:
+        raise Plan083CpuScenePacketError(
+            f"expected {dynamic_pair_count} active ABD pair barriers, got {barrier_active_count}"
+        )
+    if solver_iterations <= 0:
+        raise Plan083CpuScenePacketError(
+            "reduced ABD wrecking ball needs solver iterations"
+        )
+    if total_objective_decrease <= 0.0:
+        raise Plan083CpuScenePacketError(
+            "reduced ABD wrecking ball needs positive objective decrease"
+        )
+    if max_final_gradient_norm > 1e-5:
+        raise Plan083CpuScenePacketError(
+            "reduced ABD wrecking ball final gradient is too large: "
+            f"{max_final_gradient_norm:.3g}"
+        )
+    if min_final_squared_distance <= min_target_squared_distance:
+        raise Plan083CpuScenePacketError(
+            "reduced ABD wrecking ball must move farther from contact than the inertial target"
+        )
+    if min_final_squared_distance >= squared_activation_distance:
+        raise Plan083CpuScenePacketError(
+            "reduced ABD wrecking ball should remain inside the activation distance"
+        )
+    if max_linear_speed <= 0.0 or max_affine_velocity_norm <= 0.0:
+        raise Plan083CpuScenePacketError(
+            "reduced ABD wrecking ball needs linear and affine velocity updates"
+        )
+    if max_displacement_norm <= 0.0:
+        raise Plan083CpuScenePacketError(
+            "reduced ABD wrecking ball needs a nonzero runtime displacement"
+        )
+
+    return {
+        "plan083_cpu_scene_packet": {
+            "row_id": "abd-vs-rigid-wreck",
+            "scene_id": "plan083_abd_wrecking_ball",
+            "benchmark_row": _packet_row_name(row),
+            "paper_scale": False,
+            "runtime_path": "detail affine point-triangle pair runtime step",
+            "step_count": 1,
+            "wall_time_ns": timing_ns,
+            "affine_body_count": affine_body_count,
+            "dynamic_pair_count": dynamic_pair_count,
+            "valid_step_count": valid_step_count,
+            "converged_solve_count": converged_solve_count,
+            "barrier_active_count": barrier_active_count,
+            "solver_iterations": solver_iterations,
+            "total_objective_decrease": total_objective_decrease,
+            "max_final_gradient_norm": max_final_gradient_norm,
+            "min_target_squared_distance": min_target_squared_distance,
+            "min_final_squared_distance": min_final_squared_distance,
+            "squared_activation_distance": squared_activation_distance,
+            "max_linear_speed_m_s": max_linear_speed,
+            "max_affine_velocity_norm": max_affine_velocity_norm,
+            "max_displacement_norm_m": max_displacement_norm,
+            "limitation_status": (
+                "Reduced two-body affine point-triangle runtime-step packet only; "
+                "14k-triangle wrecking-ball assets, rigid IPC comparison timing, "
+                "and paper-scale reproduction remain planned."
+            ),
+        },
+        "benchmarks": rows,
+    }
+
+
+def _make_abd_chain_packet(
+    scene: str,
+    row: Mapping[str, Any],
+    rows: list[Any],
+    *,
+    timing_ns: float,
+) -> dict[str, Any]:
+    config = ABD_CHAIN_SCENES[scene]
+    expected_pair_count = int(config["pair_count"])
+    affine_body_count = int(_finite_number(row, "affine_body_count"))
+    dynamic_pair_count = int(_finite_number(row, "dynamic_pair_count"))
+    valid_step_count = int(_finite_number(row, "valid_step_count"))
+    failed_steps = _finite_number(row, "failed_steps")
+    converged_solve_count = int(_finite_number(row, "converged_solve_count"))
+    barrier_active_count = int(_finite_number(row, "barrier_active_count"))
+    solver_iterations = int(_finite_number(row, "solver_iterations"))
+    total_objective_decrease = _finite_number(row, "total_objective_decrease")
+    max_final_gradient_norm = _finite_number(row, "max_final_gradient_norm")
+    min_target_squared_distance = _finite_number(row, "min_target_squared_distance")
+    min_final_squared_distance = _finite_number(row, "min_final_squared_distance")
+    squared_activation_distance = _finite_number(row, "squared_activation_distance")
+    max_linear_speed = _finite_number(row, "max_linear_speed_m_s")
+    max_affine_velocity_norm = _finite_number(row, "max_affine_velocity_norm")
+    max_displacement_norm = _finite_number(row, "max_displacement_norm_m")
+
+    expected_affine_body_count = 2 * expected_pair_count
+    if affine_body_count != expected_affine_body_count:
+        raise Plan083CpuScenePacketError(
+            f"expected {expected_affine_body_count} reduced ABD chain bodies, "
+            f"got {affine_body_count}"
+        )
+    if dynamic_pair_count != expected_pair_count:
+        raise Plan083CpuScenePacketError(
+            f"expected {expected_pair_count} dynamic ABD chain pairs, "
+            f"got {dynamic_pair_count}"
+        )
+    if failed_steps != 0.0:
+        raise Plan083CpuScenePacketError(
+            f"reduced ABD chain packet reported {failed_steps:g} failed steps"
+        )
+    if valid_step_count != expected_pair_count:
+        raise Plan083CpuScenePacketError(
+            f"expected {expected_pair_count} valid ABD chain steps, got {valid_step_count}"
+        )
+    if converged_solve_count != expected_pair_count:
+        raise Plan083CpuScenePacketError(
+            f"expected {expected_pair_count} converged ABD chain solves, "
+            f"got {converged_solve_count}"
+        )
+    if barrier_active_count != expected_pair_count:
+        raise Plan083CpuScenePacketError(
+            f"expected {expected_pair_count} active ABD chain barriers, "
+            f"got {barrier_active_count}"
+        )
+    if solver_iterations <= 0:
+        raise Plan083CpuScenePacketError("reduced ABD chain needs solver iterations")
+    if total_objective_decrease <= 0.0:
+        raise Plan083CpuScenePacketError(
+            "reduced ABD chain needs positive objective decrease"
+        )
+    if max_final_gradient_norm > 1e-5:
+        raise Plan083CpuScenePacketError(
+            "reduced ABD chain final gradient is too large: "
+            f"{max_final_gradient_norm:.3g}"
+        )
+    if min_final_squared_distance <= min_target_squared_distance:
+        raise Plan083CpuScenePacketError(
+            "reduced ABD chain must move farther from contact than the inertial target"
+        )
+    if min_final_squared_distance >= squared_activation_distance:
+        raise Plan083CpuScenePacketError(
+            "reduced ABD chain should remain inside the activation distance"
+        )
+    if max_linear_speed <= 0.0 or max_affine_velocity_norm <= 0.0:
+        raise Plan083CpuScenePacketError(
+            "reduced ABD chain needs linear and affine velocity updates"
+        )
+    if max_displacement_norm <= 0.0:
+        raise Plan083CpuScenePacketError(
+            "reduced ABD chain needs a nonzero runtime displacement"
+        )
+
+    return {
+        "plan083_cpu_scene_packet": {
+            "row_id": config["row_id"],
+            "scene_id": config["scene_id"],
+            "benchmark_row": _packet_row_name(row),
+            "paper_scale": False,
+            "runtime_path": "detail affine point-triangle pair runtime step",
+            "step_count": 1,
+            "wall_time_ns": timing_ns,
+            "affine_body_count": affine_body_count,
+            "dynamic_pair_count": dynamic_pair_count,
+            "valid_step_count": valid_step_count,
+            "converged_solve_count": converged_solve_count,
+            "barrier_active_count": barrier_active_count,
+            "solver_iterations": solver_iterations,
+            "total_objective_decrease": total_objective_decrease,
+            "max_final_gradient_norm": max_final_gradient_norm,
+            "min_target_squared_distance": min_target_squared_distance,
+            "min_final_squared_distance": min_final_squared_distance,
+            "squared_activation_distance": squared_activation_distance,
+            "max_linear_speed_m_s": max_linear_speed,
+            "max_affine_velocity_norm": max_affine_velocity_norm,
+            "max_displacement_norm_m": max_displacement_norm,
+            "limitation_status": (
+                f"Reduced {expected_pair_count}-pair affine chain-net "
+                f"runtime-step packet only; {config['paper_gap']}"
             ),
         },
         "benchmarks": rows,
@@ -1589,6 +1996,12 @@ def main(argv: list[str]) -> int:
             "PLAN-083 CPU scene packet OK: "
             f"{row['scene_id']} deformable_bodies={row['deformable_body_count']} "
             f"nodes={row['deformable_node_count']} "
+            f"time={row['wall_time_ns']:.3g} ns"
+        )
+    elif "affine_body_count" in row:
+        print(
+            "PLAN-083 CPU scene packet OK: "
+            f"{row['scene_id']} affine_bodies={row['affine_body_count']} "
             f"time={row['wall_time_ns']:.3g} ns"
         )
     else:
