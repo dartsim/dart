@@ -1394,6 +1394,42 @@ def test_rigid_visual_verification_capture_commands_match_workflow() -> None:
     )
 
 
+def test_rigid_visual_related_evidence_capture_commands_are_documented() -> None:
+    root = pathlib.Path(__file__).resolve().parents[3]
+    sidecar = (
+        root
+        / "docs"
+        / "plans"
+        / "103-examples-strategy"
+        / "rigid-body-visual-verification.md"
+    )
+    readme = root / "python" / "examples" / "demos" / "README.md"
+    expected_specs = [
+        ("rigid_ipc_tunnel", 24, 960, 540, True),
+        ("diff_drone_liftoff", 96, 960, 540, True),
+        ("avbd_rigid_fixed_joint_contact", 72, 960, 540, True),
+        ("avbd_rigid_breakable_joint", 72, 960, 540, True),
+        ("avbd_rigid_spherical_breakable_joint", 72, 960, 540, True),
+        ("avbd_rigid_revolute_motor", 72, 960, 540, True),
+        ("avbd_rigid_prismatic_motor", 72, 960, 540, True),
+    ]
+
+    related_scene_ids = [
+        target_scene_id
+        for _source_scene_id, target_scene_id, _shelf, _label, _scope in (
+            _read_rigid_visual_related_evidence_rows()
+        )
+    ]
+    assert [scene_id for scene_id, *_rest in expected_specs] == related_scene_ids
+
+    marker = "Capture every non-numbered related-evidence route with the docked UI visible:"
+    sidecar_specs = _read_capture_command_specs(sidecar, marker)
+    readme_specs = _read_capture_command_specs(readme, marker)
+
+    assert sidecar_specs == expected_specs
+    assert readme_specs == expected_specs
+
+
 def test_rigid_contact_inspector_reports_contact_manifolds() -> None:
     import numpy as np
 

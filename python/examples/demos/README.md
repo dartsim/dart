@@ -644,6 +644,25 @@ pixi run py-demo-capture -- --scene diff_drone_liftoff --frames 96 \
     --width 960 --height 540 --show-ui
 ```
 
+Capture every non-numbered related-evidence route with the docked UI visible:
+
+```bash
+pixi run py-demo-capture -- --scene rigid_ipc_tunnel --frames 24 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene diff_drone_liftoff --frames 96 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene avbd_rigid_fixed_joint_contact --frames 72 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene avbd_rigid_breakable_joint --frames 72 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene avbd_rigid_spherical_breakable_joint \
+    --frames 72 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene avbd_rigid_revolute_motor --frames 72 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene avbd_rigid_prismatic_motor --frames 72 \
+    --width 960 --height 540 --show-ui
+```
+
 The lower-level viewer still accepts `--screenshot` and `--out` directly when
 you need raw PPM output. Inspect the generated PNG or MP4 before calling a
 visual change done.

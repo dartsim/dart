@@ -753,7 +753,11 @@ scenes. The PLAN-103 sidecar owns the route table, tests verify those scene ids
 remain registered outside the numbered workflow, and `Find row` now indexes
 related shelf names, scene ids, labels, and scope notes so searches such as
 `rigid_ipc_tunnel`, `contact gradient`, `avbd fixed contact`,
-`avbd spherical`, and `avbd prismatic` route to the numbered source row.
+`avbd spherical`, and `avbd prismatic` route to the numbered source row. When
+the match comes only from related evidence, the search result labels the target
+scene and the tooltip explains the related shelf. The sidecar and Python demo
+README also document docked `py-demo-capture --show-ui` commands for every
+related target, with drift coverage tying those commands to the route table.
 
 Fresh capture-first IPC stack packet on 2026-06-11: `rigid_ipc_stack_packet`
 was added to the non-numbered Rigid IPC shelf, outside the 35-row World Rigid

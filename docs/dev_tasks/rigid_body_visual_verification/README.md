@@ -184,7 +184,12 @@
       scene ids, shelf names, labels, and scope notes, so searches such as
       `rigid_ipc_tunnel`, `contact gradient`, `avbd fixed contact`,
       `avbd spherical`, and `avbd prismatic` route to the numbered row that
-      owns the non-numbered shelf link.
+      owns the non-numbered shelf link. Related-only search results now label
+      the matched target scene and explain the related shelf in the tooltip.
+- [x] Related-evidence capture drift check: the PLAN-103 sidecar and Python
+      demo README now document docked `py-demo-capture --show-ui` commands for
+      every non-numbered related-evidence target, and integration coverage keeps
+      those commands synchronized with the route table.
 - [x] Capture-first IPC stack packet: `rigid_ipc_stack_packet` lives in the
       non-numbered Rigid IPC shelf with frame-budget, wall-time, clearance,
       contact-count, drift, height-error, speed, and `bm_rigid_ipc_solver`

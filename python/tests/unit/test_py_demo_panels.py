@@ -1407,6 +1407,47 @@ def test_rigid_workflow_panel_filters_rows_by_row_id_and_requests_scene_switch()
     assert context.scene_switch_requests == ["rigid_solver_compare"]
 
 
+def test_rigid_workflow_panel_labels_related_evidence_search_matches() -> None:
+    scene = PythonDemoScene(
+        id="rigid_solver_compare",
+        title="Test rigid_solver_compare",
+        category="World Rigid Body",
+        summary="Workflow related-search test.",
+        build=lambda: SceneSetup(),
+    )
+    _pre_step, _force_drag, panels, _provider = _make_world_factory(scene)()
+    assert panels is not None
+    workflow_panel = [panel for panel in panels if panel.title == "Rigid Workflow"][0]
+    context = _FakePanelContext()
+    target_label = (
+        "28/35 Motor limits - rigid_joint_motor_limits "
+        "(related: avbd_rigid_prismatic_motor)"
+        "##rigid_workflow_find_rigid_joint_motor_limits"
+    )
+    builder = _ScriptedPanelBuilder(
+        text_input_values={"Find row": "avbd prismatic"},
+        selected_items={target_label},
+    )
+
+    workflow_panel.build(builder, context)
+
+    assert (
+        "selectable:"
+        "28/35 Motor limits - rigid_joint_motor_limits "
+        "(related: avbd_rigid_prismatic_motor)"
+        "##rigid_workflow_find_rigid_joint_motor_limits:False"
+    ) in builder.events
+    assert any(
+        event.startswith(
+            "tooltip:Do joint motors and limits clamp commands? "
+            "Related evidence match: AVBD Rigid Constraints (sx) / "
+            "avbd_rigid_prismatic_motor:"
+        )
+        for event in builder.events
+    )
+    assert context.scene_switch_requests == ["rigid_joint_motor_limits"]
+
+
 def test_rigid_workflow_panel_skips_non_numbered_world_rows() -> None:
     scene = PythonDemoScene(
         id="articulated",

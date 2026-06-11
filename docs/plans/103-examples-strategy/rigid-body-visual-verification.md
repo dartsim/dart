@@ -154,6 +154,18 @@ non-numbered shelf only through this table. These scenes remain outside the
 | `rigid_joint_motor_limits`     | `avbd_rigid_revolute_motor`            | AVBD Rigid Constraints (sx) | Related shelf: AVBD Rigid Constraints (sx) / avbd_rigid_revolute_motor - free-rigid hinge motor                  | AVBD free-rigid revolute velocity motor; not a World multibody motor/limit comparison.         |
 | `rigid_joint_motor_limits`     | `avbd_rigid_prismatic_motor`           | AVBD Rigid Constraints (sx) | Related shelf: AVBD Rigid Constraints (sx) / avbd_rigid_prismatic_motor - free-rigid slider motor                | AVBD free-rigid prismatic velocity motor; not a World multibody motor/limit comparison.        |
 
+Capture every non-numbered related-evidence route with the docked UI visible:
+
+```bash
+pixi run py-demo-capture -- --scene rigid_ipc_tunnel --frames 24 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene diff_drone_liftoff --frames 96 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene avbd_rigid_fixed_joint_contact --frames 72 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene avbd_rigid_breakable_joint --frames 72 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene avbd_rigid_spherical_breakable_joint --frames 72 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene avbd_rigid_revolute_motor --frames 72 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene avbd_rigid_prismatic_motor --frames 72 --width 960 --height 540 --show-ui
+```
+
 ## Capture-First Rigid IPC Packets
 
 These packets are registered in non-numbered shelves only. They give users a
@@ -520,12 +532,16 @@ Evidence recorded for this slice:
   AVBD revolute/prismatic motor rows, while tests keep those targets
   registered, non-numbered, and in their own shelves.
 - Latest related-evidence search follow-up:
-  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_prioritizes_user_intent_over_scope_caveats python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_related_evidence_targets python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_related_evidence_routes_to_other_shelves python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_related_evidence_routes_are_valid -q`
-  reported `4 passed`. `Find row` now indexes related shelf names, scene ids,
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_prioritizes_user_intent_over_scope_caveats python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_related_evidence_targets python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_labels_related_evidence_search_matches python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_related_evidence_routes_to_other_shelves python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_related_evidence_routes_are_valid python/tests/integration/test_demos_cycle.py::test_rigid_visual_related_evidence_capture_commands_are_documented -q`
+  reported `6 passed`. `Find row` now indexes related shelf names, scene ids,
   labels, and scope notes only after core row fields fail to match, so
   `rigid_ipc_tunnel`, `contact gradient`, `avbd fixed contact`,
   `avbd spherical`, and `avbd prismatic` route to their numbered source rows
   without demoting broad intent searches such as `contact` or `solver`.
+  Related-only search results label the matched target scene and their tooltips
+  explain the related shelf. The sidecar and README also document docked capture
+  commands for every non-numbered related target, and tests keep those commands
+  synchronized with the route table.
 - Latest capture-first IPC stack packet follow-up:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_registry_has_scenes python/tests/integration/test_demos_cycle.py::test_world_scenes_use_solver_focused_categories python/tests/integration/test_demos_cycle.py::test_world_rigid_visual_verification_scenes_are_ordered python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_viewer_titles_are_numbered python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_related_evidence_routes_are_valid python/tests/integration/test_demos_cycle.py::test_rigid_visual_capture_first_ipc_packets_are_documented python/tests/integration/test_demos_cycle.py::test_rigid_ipc_stack_packet_reports_capture_first_metrics python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels python/tests/unit/test_py_demo_panels.py::test_rigid_ipc_stack_packet_panel_exposes_capture_first_signals -q`
   reported `12 passed`. The docked `rigid_ipc_stack_packet` capture produced a

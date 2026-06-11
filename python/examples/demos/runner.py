@@ -1493,7 +1493,9 @@ def _workflow_search_row_id_text(guide: RigidWorkflowGuide) -> str:
     return f"row {guide.index} row {guide.index:02d} {row_id} {unpadded_row_id}"
 
 
-def _workflow_search_score(guide: RigidWorkflowGuide, tokens: tuple[str, ...]) -> int:
+def _workflow_core_search_score(
+    guide: RigidWorkflowGuide, tokens: tuple[str, ...]
+) -> int:
     positive_fields = (
         (1000, _workflow_search_row_id_text(guide)),
         (900, guide.scene_id),
@@ -1510,17 +1512,30 @@ def _workflow_search_score(guide: RigidWorkflowGuide, tokens: tuple[str, ...]) -
         if all(token in lowered for token in tokens):
             positive_score += weight
 
+    return positive_score
+
+
+def _workflow_related_evidence_matches(
+    guide: RigidWorkflowGuide, tokens: tuple[str, ...]
+) -> tuple[RigidWorkflowRelatedEvidence, ...]:
+    if not tokens:
+        return ()
+
+    matches: list[RigidWorkflowRelatedEvidence] = []
+    for entry in _RIGID_WORKFLOW_RELATED_EVIDENCE.get(guide.scene_id, ()):
+        text = " ".join((entry.scene_id, entry.shelf, entry.label, entry.reason))
+        if all(token in text.lower() for token in tokens):
+            matches.append(entry)
+    return tuple(matches)
+
+
+def _workflow_search_score(guide: RigidWorkflowGuide, tokens: tuple[str, ...]) -> int:
+    positive_score = _workflow_core_search_score(guide, tokens)
     if positive_score > 0:
         return positive_score
 
-    related_evidence_text = " ".join(
-        " ".join((entry.scene_id, entry.shelf, entry.label, entry.reason))
-        for entry in _RIGID_WORKFLOW_RELATED_EVIDENCE.get(guide.scene_id, ())
-    )
-    if related_evidence_text:
-        lowered = related_evidence_text.lower()
-        if all(token in lowered for token in tokens):
-            return 500
+    if _workflow_related_evidence_matches(guide, tokens):
+        return 500
 
     scope = guide.scope.lower()
     if all(token in scope for token in tokens):
@@ -1554,13 +1569,22 @@ def _workflow_search_rows(
     if changed:
         query = str(next_query)
 
+    tokens = tuple(token for token in query.strip().lower().split() if token)
     matches = _workflow_matching_guides(query)
     for match in matches:
         selected = match.scene_id == guide.scene_id
+        related_matches = ()
+        if _workflow_core_search_score(match, tokens) <= 0:
+            related_matches = _workflow_related_evidence_matches(match, tokens)
         label = (
             f"{match.index:02d}/{match.count:02d} {match.label} - "
             f"{match.scene_id}"
         )
+        if related_matches:
+            related_scene_ids = ", ".join(
+                entry.scene_id for entry in related_matches[:2]
+            )
+            label = f"{label} (related: {related_scene_ids})"
         if builder.selectable(
             f"{label}##rigid_workflow_find_{match.scene_id}", selected
         ):
@@ -1568,7 +1592,14 @@ def _workflow_search_rows(
                 _request_workflow_replay(context, match.scene_id)
             else:
                 _request_workflow_scene(context, match.scene_id)
-        builder.item_tooltip(match.question)
+        tooltip = match.question
+        if related_matches:
+            related_notes = "; ".join(
+                f"{entry.shelf} / {entry.scene_id}: {entry.reason}"
+                for entry in related_matches[:2]
+            )
+            tooltip = f"{tooltip} Related evidence match: {related_notes}"
+        builder.item_tooltip(tooltip)
 
     if query.strip() and not matches:
         builder.text("No matching workflow rows")
