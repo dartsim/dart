@@ -140,8 +140,8 @@ public method values such as `ContactSolverMethod.BOXED_LCP`.
 coverage, which lets py-demos separate direct apples-to-apples rows from
 boxed/findex paths that are solved through fallback delegation. The optional
 standard tolerance mirrors C++ `LcpProblem::getType(tol)` for near-canonical
-standard forms; invalid dimensions or non-finite problem data report no native
-support.
+standard forms; invalid dimensions, non-finite problem data, invalid bound
+directions, or invalid `findex` references report no native support.
 
 ### Binding Conventions
 
