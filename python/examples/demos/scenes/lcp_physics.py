@@ -101,7 +101,7 @@ _BENCHMARK_PACKET_ROWS: tuple[dict[str, str], ...] = (
         "packet": "world_billiards",
         "surface": "boxed contact",
         "benchmark_filter": "BM_LcpWorldBilliardsStep_BoxedLcp",
-        "coverage": "billiards momentum and energy invariants",
+        "coverage": "billiards symmetry, momentum, and energy invariants",
     },
     {
         "packet": "world_stack",
