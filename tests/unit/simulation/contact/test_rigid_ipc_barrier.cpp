@@ -32,6 +32,8 @@
 #include <dart/simulation/detail/deformable_contact/barrier_kernel.hpp>
 #include <dart/simulation/detail/rigid_ipc_barrier.hpp>
 
+#include <dart/common/free_list_allocator.hpp>
+#include <dart/common/memory_allocator_debugger.hpp>
 #include <dart/common/memory_manager.hpp>
 
 #include <Eigen/Eigenvalues>
@@ -1707,31 +1709,35 @@ TEST(RigidIpcBarrier, ProjectedNewtonSolveScratchUsesProvidedAllocator)
 {
   namespace common = dart::common;
 
-  common::MemoryManager memoryManager;
-  auto& freeList = memoryManager.getFreeListAllocator();
-  const auto allocationsBeforeSolve = freeList.getAllocationCount();
+  common::MemoryAllocatorDebugger<common::FreeListAllocator> allocator;
 
   {
-    expdetail::RigidIpcBarrierSurface surface;
-    surface.dynamic = false;
-    const std::array<expdetail::RigidIpcBarrierSurface, 1> surfaces{surface};
+    expdetail::RigidIpcBarrierSurface surfaceA = makeTriangleSurface(0.0);
+    surfaceA.dynamic = false;
+    expdetail::RigidIpcBarrierSurface surfaceB = makeTriangleSurface(0.25);
+    surfaceB.dynamic = false;
+    const std::array<expdetail::RigidIpcBarrierSurface, 2> surfaces{
+        surfaceA, surfaceB};
 
     expdetail::RigidIpcProjectedNewtonSolveOptions options;
-    expdetail::RigidIpcProjectedNewtonSolveResult result(
-        memoryManager.getFreeAllocator());
-    expdetail::RigidIpcProjectedNewtonSolveScratch scratch(
-        memoryManager.getFreeAllocator());
+    options.barrier.squaredActivationDistance = 1.0;
+    options.maxIterations = 0;
+    expdetail::RigidIpcProjectedNewtonSolveResult result(allocator);
+    expdetail::RigidIpcProjectedNewtonSolveScratch scratch(allocator);
 
     expdetail::solveRigidIpcProjectedNewtonBarrierSystem(
         surfaces, options, result, scratch);
 
-    EXPECT_GE(freeList.getAllocationCount(), allocationsBeforeSolve + 6u)
+    EXPECT_GT(allocator.getAllocationCount(), 0u)
         << "allocator-aware rigid IPC projected-Newton scratch should reserve "
-           "surface work vectors and result assembly vectors from the "
-           "provided free allocator";
+           "surface work vectors, repeated assembly scratch, and result "
+           "assembly vectors from the provided free allocator";
+    EXPECT_GT(allocator.getPeakAllocatedSize(), allocator.getAllocatedSize())
+        << "solve-internal assembly scratch should borrow the provided "
+           "allocator transiently and release before returning";
   }
 
-  EXPECT_EQ(freeList.getAllocationCount(), allocationsBeforeSolve);
+  EXPECT_TRUE(allocator.isEmpty());
 }
 
 //==============================================================================

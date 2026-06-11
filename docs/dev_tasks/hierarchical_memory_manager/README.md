@@ -789,8 +789,11 @@ Follow-up progress after PR #2956:
   that nested solver scratch; a focused detail-solver test verifies those
   reserves use and release the provided free allocator. The same detail-solver
   path now constructs projected-Newton result assembly body-offset, active
-  constraint, and active friction-constraint vectors with that allocator and
-  preserves the destination allocator across repeated result assignments. After
+  constraint, and active friction-constraint vectors with that allocator,
+  preserves the destination allocator across repeated result assignments, and
+  routes solve-internal barrier-assembly plus line-search surface-pair,
+  sweep-item, candidate-pair, and triplet scratch through the same borrowed
+  allocator. After
   the post-#2956 main merge added rigid/deformable mixed-domain candidate
   diagnostics, the same stage scratch now reuses allocator-backed BDF2 history,
   articulation-input, mixed-domain surface payload, candidate, edge, and AABB
@@ -799,11 +802,11 @@ Follow-up progress after PR #2956:
 - The deformable stage scratch follow-up routes the stage-owned static-ground
   barrier, sphere/box/capsule obstacle, deformable surface-snapshot, static
   rigid surface-CCD snapshot, and moving rigid surface-CCD snapshot vectors
-  through the borrowed World free allocator. The next follow-up in the same
-  line routes each snapshot's nested position, topology, contact-mask, and edge
-  payload vectors through that allocator as well. A focused custom-stage test
-  covers those top-level and nested payload vectors against an isolated provided
-  free allocator and verifies release when the stage is destroyed.
+  through the borrowed World free allocator. Each snapshot's nested position,
+  topology, contact-mask, and edge payload vectors now use that allocator as
+  well. A focused custom-stage test covers those top-level and nested payload
+  vectors against an isolated provided free allocator and verifies release when
+  the stage is destroyed.
 - Deformable self-contact and inter-body surface-contact candidate storage now
   has allocator-aware `ContactCandidateSet` and sweep scratch constructors.
   The World-stage `DeformableContactSolverScratch` and `DeformableVbdScratch`

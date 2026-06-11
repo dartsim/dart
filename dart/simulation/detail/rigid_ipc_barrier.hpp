@@ -563,6 +563,7 @@ struct RigidIpcProjectedNewtonSolveScratch
   explicit RigidIpcProjectedNewtonSolveScratch(
       dart::common::MemoryAllocator& allocator);
 
+  dart::common::MemoryAllocator* memoryAllocator = nullptr;
   std::vector<RigidIpcBarrierSurface, SurfaceAllocator> laggedSurfaces;
   std::vector<RigidIpcBarrierSurface, SurfaceAllocator> lineSearchStartSurfaces;
   std::vector<RigidIpcBarrierSurface, SurfaceAllocator> candidateSurfaces;
