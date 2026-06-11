@@ -195,6 +195,8 @@
         work.
   - [x] Add a reduced timing-breakdown CPU packet that aggregates runnable
         reduced corpus rows while keeping paper subphase timing future work.
+  - [x] Add a reduced Table 2 setup/statistics CPU packet for runnable reduced
+        rows while keeping missing mixed/constraint/ABD rows future work.
   - [ ] Add paper-scale CPU packets only after the corresponding scene assets,
         mixed-domain stepping, and comparison baselines exist.
 
@@ -212,8 +214,8 @@ storage, or backend resources as public API.
 - No dartpy binding changes.
 - No paper-scale runtime scene reproduction or fixture asset migration beyond
   the reduced hanging-bridge, terrain vehicle, ragdoll, nunchaku, windmill, and
-  precession smoke scenes, the reduced timing-breakdown packet, launchable
-  planned py-demo placeholders, and checked corpus manifest.
+  precession smoke scenes, the reduced timing-breakdown and Table 2 packets,
+  launchable planned py-demo placeholders, and checked corpus manifest.
 - No rigid curved-trajectory CCD move.
 - No sparse Newton loop merge.
 - No rigid IPC default behavior change.

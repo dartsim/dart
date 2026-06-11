@@ -204,6 +204,20 @@ def _timing_breakdown_packet(**overrides):
     return {"benchmarks": rows}
 
 
+def _table2_packet(**overrides):
+    rows = [
+        _benchmark_packet()["benchmarks"][0],
+        _terrain_vehicle_packet()["benchmarks"][0],
+        _ragdoll_packet()["benchmarks"][0],
+        _windmill_packet()["benchmarks"][0],
+        _precession_packet()["benchmarks"][0],
+    ]
+    if "row_index" in overrides:
+        row_index = overrides.pop("row_index")
+        rows[row_index].update(overrides)
+    return {"benchmarks": rows}
+
+
 def test_plan083_cpu_scene_packet_accepts_reduced_hanging_bridge() -> None:
     module = _load_module()
 
@@ -365,6 +379,38 @@ def test_plan083_cpu_scene_packet_accepts_reduced_timing_breakdown() -> None:
     assert "linear_solve" in row["missing_paper_timing_fields"]
 
 
+def test_plan083_cpu_scene_packet_accepts_reduced_table2() -> None:
+    module = _load_module()
+
+    packet = module.make_packet(
+        _table2_packet(),
+        max_equality_residual=1e-8,
+        scene="table_2",
+    )
+
+    row = packet["plan083_cpu_scene_packet"]
+    assert row["row_id"] == "unb-table-02"
+    assert row["scene_id"] == "plan083_reduced_table_2"
+    assert row["paper_scale"] is False
+    assert row["scene_count"] == 5
+    assert row["covered_paper_rows"] == [
+        "unb-fig-02",
+        "unb-fig-10",
+        "unb-fig-11",
+        "unb-fig-20",
+        "unb-fig-23",
+    ]
+    assert row["missing_paper_rows"] == [
+        "unb-fig-01",
+        "unb-fig-03",
+        "unb-fig-04",
+        "unb-fig-22",
+    ]
+    assert row["total_body_count"] == 25
+    assert row["total_dynamic_body_count"] == 19
+    assert row["total_wall_time_ns"] == 24.0e6
+
+
 def test_plan083_cpu_scene_packet_rejects_failed_bridge_step() -> None:
     module = _load_module()
 
@@ -480,4 +526,17 @@ def test_plan083_cpu_scene_packet_rejects_timing_breakdown_without_scene() -> No
             packet,
             max_equality_residual=1e-8,
             scene="timing_breakdown",
+        )
+
+
+def test_plan083_cpu_scene_packet_rejects_table2_without_scene() -> None:
+    module = _load_module()
+    packet = _table2_packet()
+    packet["benchmarks"] = packet["benchmarks"][:-1]
+
+    with pytest.raises(module.Plan083CpuScenePacketError, match="missing median"):
+        module.make_packet(
+            packet,
+            max_equality_residual=1e-8,
+            scene="table_2",
         )

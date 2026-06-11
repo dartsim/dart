@@ -40,11 +40,19 @@ TIMING_BREAKDOWN_SCENES = (
     "windmill",
     "precession",
 )
+TABLE2_REDUCED_SCENES = (
+    "hanging_bridge",
+    "terrain_vehicle",
+    "ragdoll_reduced",
+    "windmill",
+    "precession",
+)
 SCENE_IDS = {
     "hanging_bridge": "plan083_hanging_bridge",
     "nunchaku_single": "plan083_nunchaku",
     "precession": "plan083_precession",
     "ragdoll_reduced": "plan083_ragdolls",
+    "table_2": "plan083_reduced_table_2",
     "terrain_vehicle": "plan083_terrain_vehicle",
     "timing_breakdown": "plan083_reduced_timing_breakdown",
     "windmill": "plan083_windmill",
@@ -54,6 +62,7 @@ SCENE_ROW_IDS = {
     "nunchaku_single": "unb-fig-13",
     "precession": "unb-fig-23",
     "ragdoll_reduced": "unb-fig-11",
+    "table_2": "unb-table-02",
     "terrain_vehicle": "unb-fig-10",
     "timing_breakdown": "unb-fig-24",
     "windmill": "unb-fig-20",
@@ -64,11 +73,13 @@ SCENE_ROWS = {
     "nunchaku_scaling": "BM_Plan083CpuScene_nunchaku_scaling_reduced_world_step",
     "precession": "BM_Plan083CpuScene_precession_reduced_world_step",
     "ragdoll_reduced": "BM_Plan083CpuScene_ragdoll_reduced_world_step",
+    "table_2": "BM_Plan083CpuScene_reduced_table_2",
     "terrain_vehicle": "BM_Plan083CpuScene_terrain_vehicle_reduced_world_step",
     "timing_breakdown": "BM_Plan083CpuScene_reduced_timing_breakdown",
     "windmill": "BM_Plan083CpuScene_windmill_reduced_world_step",
 }
 TIMING_BREAKDOWN_ROWS = {scene: SCENE_ROWS[scene] for scene in TIMING_BREAKDOWN_SCENES}
+TABLE2_REDUCED_ROWS = {scene: SCENE_ROWS[scene] for scene in TABLE2_REDUCED_SCENES}
 SCENE_BENCHMARK_OUTPUTS = {
     "hanging_bridge": DEFAULT_BENCHMARK_OUTPUT,
     "nunchaku_single": Path(
@@ -82,6 +93,9 @@ SCENE_BENCHMARK_OUTPUTS = {
     ),
     "ragdoll_reduced": Path(
         ".benchmark_results/plan083/cpu_scene_corpus/ragdolls_benchmark.json"
+    ),
+    "table_2": Path(
+        ".benchmark_results/plan083/cpu_scene_corpus/table_2_benchmark.json"
     ),
     "terrain_vehicle": Path(
         ".benchmark_results/plan083/cpu_scene_corpus/terrain_vehicle_benchmark.json"
@@ -105,6 +119,7 @@ SCENE_PACKET_OUTPUTS = {
     "ragdoll_reduced": Path(
         ".benchmark_results/plan083/cpu_scene_corpus/ragdolls.json"
     ),
+    "table_2": Path(".benchmark_results/plan083/cpu_scene_corpus/table_2.json"),
     "terrain_vehicle": Path(
         ".benchmark_results/plan083/cpu_scene_corpus/terrain_vehicle.json"
     ),
@@ -181,6 +196,9 @@ def run_benchmark(args: argparse.Namespace) -> None:
     benchmark_filter = f"^{benchmark_row}$"
     if args.scene == "timing_breakdown":
         rows = "|".join(TIMING_BREAKDOWN_ROWS.values())
+        benchmark_filter = f"^({rows})$"
+    if args.scene == "table_2":
+        rows = "|".join(TABLE2_REDUCED_ROWS.values())
         benchmark_filter = f"^({rows})$"
     if args.scene == "nunchaku_scaling":
         benchmark_filter = f"^{benchmark_row}/"
@@ -291,6 +309,12 @@ def make_packet(
         )
     if scene == "timing_breakdown":
         return _make_timing_breakdown_packet(
+            typed_rows,
+            rows,
+            max_equality_residual=max_equality_residual,
+        )
+    if scene == "table_2":
+        return _make_table2_packet(
             typed_rows,
             rows,
             max_equality_residual=max_equality_residual,
@@ -738,6 +762,132 @@ def _make_timing_breakdown_packet(
                 "Reduced aggregate wall-time packet only; paper gradient, "
                 "Hessian, contact-pair, CCD, linear-solve, CPU/GPU parity, "
                 "and paper-scale scene timing breakdowns remain planned."
+            ),
+            "samples": samples,
+        },
+        "benchmarks": rows,
+    }
+
+
+def _make_table2_packet(
+    typed_rows: list[Mapping[str, Any]],
+    rows: list[Any],
+    *,
+    max_equality_residual: float,
+) -> dict[str, Any]:
+    expected_to_scene = {
+        row_name: scene for scene, row_name in TABLE2_REDUCED_ROWS.items()
+    }
+    found: dict[str, Mapping[str, Any]] = {}
+    errors: list[str] = []
+
+    for row in typed_rows:
+        name = benchmark_row_name(row)
+        if not name:
+            errors.append("benchmark row is missing a name")
+            continue
+        canonical = _packet_row_name(row)
+        if canonical not in expected_to_scene:
+            errors.append(f"unexpected benchmark row: {name}")
+            continue
+        if row.get("aggregate_name") == "median":
+            found[canonical] = row
+        errors.extend(benchmark_timing_field_errors(row, name))
+
+    for row_name in TABLE2_REDUCED_ROWS.values():
+        if row_name not in found:
+            errors.append(f"missing median benchmark row: {row_name}")
+
+    if errors:
+        raise Plan083CpuScenePacketError("\n".join(errors))
+
+    samples = []
+    total_wall_time_ns = 0.0
+    total_bodies = 0
+    total_dynamic_bodies = 0
+    max_active_constraints = 0
+    max_solver_iterations = 0
+    max_residual = 0.0
+
+    for scene in TABLE2_REDUCED_SCENES:
+        row_name = TABLE2_REDUCED_ROWS[scene]
+        row = found[row_name]
+        timing_ns = benchmark_timing_ns(row)
+        if not math.isfinite(timing_ns) or timing_ns <= 0.0:
+            raise Plan083CpuScenePacketError(
+                f"{benchmark_row_name(row)} timing is not positive"
+            )
+        failed_steps = _finite_number(row, "failed_steps")
+        if failed_steps != 0.0:
+            raise Plan083CpuScenePacketError(
+                f"reduced Table 2 scene {scene} reported {failed_steps:g} failed steps"
+            )
+        final_residual = _finite_number(row, "final_equality_residual_norm")
+        if final_residual > max_equality_residual:
+            raise Plan083CpuScenePacketError(
+                f"reduced Table 2 scene {scene} equality residual "
+                f"{final_residual:.3g} exceeds {max_equality_residual:.3g}"
+            )
+
+        body_count = int(_finite_number(row, "body_count"))
+        dynamic_body_count = int(_finite_number(row, "dynamic_body_count"))
+        active_constraints = int(_optional_finite_number(row, "active_constraints"))
+        active_friction_constraints = int(
+            _optional_finite_number(row, "active_friction_constraints")
+        )
+        active_articulation_constraints = int(
+            _optional_finite_number(row, "active_articulation_constraints")
+        )
+        solver_iterations = int(_finite_number(row, "solver_iterations"))
+
+        total_wall_time_ns += timing_ns
+        total_bodies += body_count
+        total_dynamic_bodies += dynamic_body_count
+        max_active_constraints = max(max_active_constraints, active_constraints)
+        max_solver_iterations = max(max_solver_iterations, solver_iterations)
+        max_residual = max(max_residual, final_residual)
+        samples.append(
+            {
+                "row_id": SCENE_ROW_IDS[scene],
+                "scene_id": SCENE_IDS[scene],
+                "benchmark_row": _packet_row_name(row),
+                "paper_scale": False,
+                "wall_time_ns": timing_ns,
+                "body_count": body_count,
+                "dynamic_body_count": dynamic_body_count,
+                "active_constraints": active_constraints,
+                "active_friction_constraints": active_friction_constraints,
+                "active_articulation_constraints": active_articulation_constraints,
+                "solver_iterations": solver_iterations,
+                "final_equality_residual_norm": final_residual,
+            }
+        )
+
+    return {
+        "plan083_cpu_scene_packet": {
+            "row_id": "unb-table-02",
+            "scene_id": SCENE_IDS["table_2"],
+            "paper_scale": False,
+            "runtime_path": "rigid IPC World::step reduced Table 2 rows",
+            "scene_count": len(samples),
+            "covered_paper_rows": [sample["row_id"] for sample in samples],
+            "missing_paper_rows": [
+                "unb-fig-01",
+                "unb-fig-03",
+                "unb-fig-04",
+                "unb-fig-22",
+            ],
+            "total_wall_time_ns": total_wall_time_ns,
+            "total_body_count": total_bodies,
+            "total_dynamic_body_count": total_dynamic_bodies,
+            "max_active_constraints": max_active_constraints,
+            "max_solver_iterations": max_solver_iterations,
+            "max_final_equality_residual_norm": max_residual,
+            "max_equality_residual": max_equality_residual,
+            "limitation_status": (
+                "Reduced Table 2 setup/statistics packet only; lying-flat, "
+                "pulley, umbrella, candy, paper body/node/contact counts, "
+                "paper timesteps, and paper timing rows remain planned."
             ),
             "samples": samples,
         },
