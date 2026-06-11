@@ -15,6 +15,36 @@ point-joint configs rebuilt at simulation entry. This is narrow public facade
 serialization/extraction coverage; it does not close broader articulated
 lifecycle, source-corpus CPU-win, GPU, or paper-number gates.
 
+Latest local follow-up: CUDA boxed-LCP PGS dense world-contact tests now keep
+the largest 128-box fixture as a cheap shape gate while bounding the default
+runtime-contract CUDA sweeps to smaller dense packets. #2973's CUDA failure
+timed out in the pre-existing `test_lcp_jacobi_batch_cuda` dense PGS suite;
+`main` passed the same binary but only with about 1099 seconds of runtime. This
+is CI-runtime calibration only; it does not close any AVBD solver, CPU-win,
+GPU, or paper-number gate.
+
+Latest local follow-up: the large BoxedLcp dense/articulated scaling packets in
+`test_boxed_lcp_contact` are now opt-in behind
+`DART_BOXED_LCP_CONTACT_ENABLE_EXPENSIVE_SCALING_TESTS`, while representative
+default coverage still includes dense-contact shape smoke and small/mid-size
+articulated public-step cases. This keeps routine CI from spending minutes in
+the dense fallback path while preserving the larger packets for dedicated
+evidence/performance runs. `pixi run lint`, focused CTest, and the dartpy world
+test passed locally. This is CI-runtime calibration only; it does not close any
+AVBD solver, CPU-win, GPU, or paper-number gate.
+
+Latest local follow-up: dartpy public articulated fixed, spherical, cardinal
+one-DOF motor, and non-cardinal one-DOF motor break/reset coverage now rechecks
+endpoint shape, joint type, DOF count, and motor axis after reset re-engages the
+rows for same-multibody, world-link, and movable-pair cases; the non-cardinal
+direct cases now also recheck that shape while broken rows are being skipped
+before reset. Broken-state binary round-trip tests now also recheck the
+restored facade shape after reset re-engages same-multibody/world-link fixed,
+spherical, and one-DOF rows. The focused selected pytest filters passed. This
+is only a narrow public facade lifecycle assertion slice; it does not close
+broader articulated fracture, motor lifecycle, source-corpus, CPU-win, GPU, or
+paper-number gates.
+
 Latest local follow-up: small AVBD rigid world-contact snapshots no longer
 reserve the endpoint entity-index hash map while the body count is within the
 small-row linear-scan capacity. Focused `test_avbd_rigid_block` snapshot-index
@@ -1669,11 +1699,12 @@ complete.
 ## Current Branch
 
 Current reality (2026-06-11): this checkout is
-`avbd/articulated-stiffness-roundtrip`, clean after local commits based on
-`origin/main` at `28e8e821b42` unless `git status --short --branch` says
-otherwise. The branch has no PR yet and should not be pushed or converted into a
-PR without explicit maintainer approval. The earlier split-stack notes below are
-historical context from PRs #2967/#2968 and the raw checkpoint branch.
+`avbd/articulated-stiffness-roundtrip` for PR #2975, with `origin/main` at
+`37cb7371db6` (#2973) merged locally to resolve the PR conflict. Keep this
+branch scoped to articulated stiffness round-trip coverage; source-row
+performance work belongs on `avbd/source-row-perf-slice`. The earlier
+split-stack notes below are historical context from PRs #2967/#2968 and the raw
+checkpoint branch.
 
 Current reality (2026-06-10): the active split stack is PR #2967
 (`avbd/tests-benchmarks`, base `main`) plus PR #2968 (`avbd/python-demos`, base
@@ -2138,9 +2169,9 @@ parity claim.
 
 ## Immediate Next Step
 
-The local branch and cached `origin/main` are both at `f1fa9f386f9` after the
-requested latest-main merge was refreshed through HTTPS and applied as a
-fast-forward. The earlier SSH fetch path failed in this environment with
+Finish the PR #2975 latest-main merge by running the focused stiffness
+round-trip tests plus `pixi run lint`, then push the normal merge commit and
+monitor CI. The earlier SSH fetch path failed in this environment with
 `ssh: connect to host github.com port 22: Network is unreachable`, so keep using
 HTTPS when a fresh main refresh is needed here. The pre-merge backup stashes
 remain present and should not be dropped without maintainer approval. The
