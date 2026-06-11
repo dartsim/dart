@@ -281,7 +281,7 @@ storage, or backend resources as public API.
 1. Use merged PRs #2960, #2961, #2970, and #2971 as the baseline for remaining
    work; do not reopen the old phase-scoped stack.
 2. Continue Phase 6 CPU corpus evidence on
-   `feature/newton-barrier-abd-comparison-packets` by adding reduced ABD
+   `simx/plan083-phase-6-abd-comparison-packets` by adding reduced ABD
    gears/Bullet comparison packets only where runtime evidence exists; do not
    mark paper-scale rows complete without paper-scale scene assets and
    comparison evidence. The reduced packets may move only row-specific runtime

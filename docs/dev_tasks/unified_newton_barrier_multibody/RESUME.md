@@ -326,7 +326,7 @@ follow-up is reviewer-sized; do not split each planned ABD row into a micro-PR.
 
 ## Immediate Next Step
 
-Continue `feature/newton-barrier-abd-comparison-packets` with reduced CPU
+Continue `simx/plan083-phase-6-abd-comparison-packets` with reduced CPU
 corpus packets only where runtime evidence exists. The current entry points are
 the reduced ABD gears packet for `abd-gears` and the reduced Bullet comparison
 packets for `abd-bullet-small`, `abd-bullet-medium`, and `abd-bullet-large`;
