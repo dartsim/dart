@@ -18,6 +18,8 @@
 #include <dart/simulation/export.hpp>
 #include <dart/simulation/fwd.hpp>
 
+#include <dart/common/memory_allocator.hpp>
+
 #include <Eigen/Cholesky>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -620,7 +622,10 @@ bindVariationalLoopClosure(
 /// Reserve variational-stage registry storage and per-multibody scratch for the
 /// current baked multibody/contact shape.
 DART_SIMULATION_API void reserveMultibodyVariationalRegistryStorage(
-    detail::WorldRegistry& registry, std::size_t multibodyCount);
+    detail::WorldRegistry& registry,
+    std::size_t multibodyCount,
+    dart::common::MemoryAllocator& allocator
+    = dart::common::MemoryAllocator::GetDefault());
 
 /// Variational-integrator multibody stage (a peer of
 /// `MultibodyForwardDynamicsStage`, selected by the `variational integrator`

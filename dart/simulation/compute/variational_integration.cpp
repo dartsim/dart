@@ -47,6 +47,29 @@ namespace {
 namespace dm = detail::variational;
 namespace dvbd = detail::deformable_vbd;
 
+comps::VariationalContactDualState makeVariationalContactDualState(
+    dart::common::MemoryAllocator& allocator)
+{
+  using DualState = comps::VariationalContactDualState;
+  return DualState{
+      DualState::DualVector{dart::common::StlAllocator<double>{allocator}}, 0u};
+}
+
+void ensureVariationalContactDualStateAllocator(
+    comps::VariationalContactDualState& dualState,
+    dart::common::MemoryAllocator& allocator)
+{
+  using DualState = comps::VariationalContactDualState;
+  const dart::common::StlAllocator<double> targetAllocator{allocator};
+  if (dualState.duals.get_allocator() == targetAllocator) {
+    return;
+  }
+
+  DualState::DualVector duals{targetAllocator};
+  duals.assign(dualState.duals.begin(), dualState.duals.end());
+  dualState.duals = std::move(duals);
+}
+
 // The shared 6D spatial-algebra primitives (skew/adjoint/spatialInertia) and
 // the Vector6/Matrix6/Subspace aliases live in
 // detail/multibody_spatial_algebra.hpp, shared with
@@ -3674,7 +3697,9 @@ VariationalLoopClosureBinding bindVariationalLoopClosure(
 
 //==============================================================================
 void reserveMultibodyVariationalRegistryStorage(
-    detail::WorldRegistry& registry, std::size_t multibodyCount)
+    detail::WorldRegistry& registry,
+    std::size_t multibodyCount,
+    dart::common::MemoryAllocator& allocator)
 {
   auto& stateStorage = registry.storage<MultibodyVariationalState>();
   auto& scratchStorage = registry.storage<MultibodyVariationalScratch>();
@@ -3746,7 +3771,9 @@ void reserveMultibodyVariationalRegistryStorage(
     }
 
     auto& dualState
-        = registry.get_or_emplace<comps::VariationalContactDualState>(entity);
+        = registry.get_or_emplace<comps::VariationalContactDualState>(
+            entity, makeVariationalContactDualState(allocator));
+    ensureVariationalContactDualStateAllocator(dualState, allocator);
     if (dualState.duals.size() != scratch.groundContact.points.size()) {
       dualState.duals.assign(scratch.groundContact.points.size(), 0.0);
       dualState.stepsSinceDualUpdate = 0;
@@ -3786,7 +3813,8 @@ void MultibodyVariationalIntegrationStage::prepare(World& world)
     static_cast<void>(entity);
     ++multibodyCount;
   }
-  reserveMultibodyVariationalRegistryStorage(registry, multibodyCount);
+  reserveMultibodyVariationalRegistryStorage(
+      registry, multibodyCount, world.getMemoryManager().getFreeAllocator());
 }
 
 //==============================================================================
@@ -3860,7 +3888,11 @@ void MultibodyVariationalIntegrationStage::execute(
           dualUpdateCadence = contactConfig->dualUpdateCadence;
           auto& dualState
               = registry.get_or_emplace<comps::VariationalContactDualState>(
-                  entity);
+                  entity,
+                  makeVariationalContactDualState(
+                      world.getMemoryManager().getFreeAllocator()));
+          ensureVariationalContactDualStateAllocator(
+              dualState, world.getMemoryManager().getFreeAllocator());
           if (dualState.duals.size() != contact.points.size()) {
             dualState.duals.assign(contact.points.size(), 0.0);
             dualState.stepsSinceDualUpdate = 0;

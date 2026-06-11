@@ -42,7 +42,9 @@
 #include <dart/simulation/comps/frame_types.hpp>
 #include <dart/simulation/comps/joint.hpp>
 #include <dart/simulation/comps/link.hpp>
+#include <dart/simulation/comps/multibody.hpp>
 #include <dart/simulation/comps/rigid_body.hpp>
+#include <dart/simulation/comps/variational_contact.hpp>
 #include <dart/simulation/comps/variational_contact_dual_state.hpp>
 #include <dart/simulation/compute/compute_executor.hpp>
 #include <dart/simulation/compute/compute_graph.hpp>
@@ -4177,7 +4179,8 @@ void expectCompliantVariationalContactScratchBaked(
 }
 
 void expectVariationalContactDualStateBaked(
-    const dart::simulation::detail::WorldRegistry& registry)
+    const dart::simulation::detail::WorldRegistry& registry,
+    const dart::common::StlAllocator<double>* expectedAllocator = nullptr)
 {
   namespace sx = dart::simulation;
 
@@ -4190,6 +4193,9 @@ void expectVariationalContactDualStateBaked(
         dualState.duals.size(), kCompliantVariationalContactPointsPerRobot);
     EXPECT_GE(
         dualState.duals.capacity(), kCompliantVariationalContactPointsPerRobot);
+    if (expectedAllocator != nullptr) {
+      EXPECT_EQ(dualState.duals.get_allocator(), *expectedAllocator);
+    }
     ++dualStateCount;
   }
   EXPECT_EQ(dualStateCount, kCompliantVariationalContactRobotCount);
@@ -4233,6 +4239,7 @@ void expectVariationalLoopClosureScratchBaked(
 
 TEST(World, EnterSimulationModeReservesContactHeavyVariationalDualState)
 {
+  namespace common = dart::common;
   namespace sx = dart::simulation;
 
   CountingMemoryAllocator allocator;
@@ -4241,17 +4248,31 @@ TEST(World, EnterSimulationModeReservesContactHeavyVariationalDualState)
   options.multibodyOptions.integrationFamily = "variational integrator";
   sx::World world(options);
   configureVariationalContactDualStateSliderScene(world);
+  auto& registry = sx::detail::registryOf(world);
+  for (auto entity : registry.view<
+                     sx::comps::MultibodyStructure,
+                     sx::comps::VariationalContact>()) {
+    registry.emplace<sx::comps::VariationalContactDualState>(entity);
+  }
+  auto& worldFreeList = world.getMemoryManager().getFreeListAllocator();
+  const auto worldAllocationsBeforeBake = worldFreeList.getAllocationCount();
+  const common::StlAllocator<double> expectedDualAllocator{
+      world.getMemoryManager().getFreeAllocator()};
 
   world.enterSimulationMode();
 
-  const auto& registry = sx::detail::registryOf(world);
   const auto capacities = registryStorageCapacities(registry);
   const auto dualStorageId
       = entt::type_hash<sx::comps::VariationalContactDualState>::value();
   ASSERT_TRUE(capacities.contains(dualStorageId));
   EXPECT_GE(
       capacities.at(dualStorageId), kCompliantVariationalContactRobotCount);
-  expectVariationalContactDualStateBaked(registry);
+  expectVariationalContactDualStateBaked(registry, &expectedDualAllocator);
+  EXPECT_GE(
+      worldFreeList.getAllocationCount(),
+      worldAllocationsBeforeBake + kCompliantVariationalContactRobotCount)
+      << "baked variational contact dual vectors should reserve from the "
+         "World free allocator";
 
   const auto allocationsAfterBake = allocator.allocationCount;
   const auto deallocationsAfterBake = allocator.deallocationCount;
@@ -4279,6 +4300,8 @@ TEST(World, VariationalContactDualStateRegistryStorageRebuildsAfterClear)
   options.baseAllocator = &allocator;
   options.multibodyOptions.integrationFamily = "variational integrator";
   sx::World world(options);
+  const common::StlAllocator<double> expectedDualAllocator{
+      world.getMemoryManager().getFreeAllocator()};
 
   const auto bakeAndCheckStableSteps = [&]() {
     configureVariationalContactDualStateSliderScene(world);
@@ -4293,7 +4316,7 @@ TEST(World, VariationalContactDualStateRegistryStorageRebuildsAfterClear)
     if (dualCapacity != capacities.end()) {
       EXPECT_GE(dualCapacity->second, kCompliantVariationalContactRobotCount);
     }
-    expectVariationalContactDualStateBaked(registry);
+    expectVariationalContactDualStateBaked(registry, &expectedDualAllocator);
 
     const auto allocationsAfterBake = allocator.allocationCount;
     const auto deallocationsAfterBake = allocator.deallocationCount;
@@ -4304,7 +4327,7 @@ TEST(World, VariationalContactDualStateRegistryStorageRebuildsAfterClear)
     for (int i = 0; i < 3; ++i) {
       world.step();
       expectRegistryStorageCapacitiesUnchanged(capacities, registry);
-      expectVariationalContactDualStateBaked(registry);
+      expectVariationalContactDualStateBaked(registry, &expectedDualAllocator);
     }
 
     EXPECT_EQ(allocator.allocationCount, allocationsAfterBake);

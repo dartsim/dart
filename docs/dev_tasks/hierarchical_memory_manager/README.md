@@ -731,7 +731,12 @@ Follow-up progress after PR #2956:
   bakes six sliders with four persistent contact duals each, verifies
   same-shape steps keep dual vector capacity and ECS storage capacity stable
   without World-base allocator growth, clears the registry to zero capacity,
-  and rebuilds the same dual-state shape.
+  and rebuilds the same dual-state shape. The dual vector payload now borrows
+  the World free allocator when baked through `enterSimulationMode()` or first
+  created by the variational World stage, pre-existing/default-constructed
+  dual-state components are rebound to that allocator before sizing, and the
+  existing binary state serialization path accepts allocator-aware trivial
+  vectors.
 - The semi-implicit one-slider multibody path now has the same clear/rebuild
   proof for baked private multibody dynamics storage. The gate covers the
   all-storage capacity map created by `reserveMultibodyDynamicsRegistryStorage`
@@ -918,8 +923,9 @@ Remaining Phase 4/5 follow-up items for the next PR:
   unified-assembly shapes that are not covered by the current stacked,
   multi-island, mixed-stress, and contact-family gates.
 - Continue production `WorldRegistry` bake/build sizing guidance beyond the
-  current compliant-contact clear/rebuild gate, especially for differently
-  shaped solver-owned ECS storages and rebuild boundaries.
+  current compliant-contact allocator-aware dual-state clear/rebuild gate,
+  especially for differently shaped solver-owned ECS storages and rebuild
+  boundaries.
 - Re-run allocator comparative evidence when allocator, STL, or frame policy
   changes; keep the current foonathan/memory and standard-baseline evidence
   green instead of adding allocator-policy work to this PR.

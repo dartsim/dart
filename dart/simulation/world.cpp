@@ -2942,7 +2942,7 @@ void World::reserveRegistryStorageForSimulation()
   if (m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational
       && multibodyCount > 0u) {
     compute::reserveMultibodyVariationalRegistryStorage(
-        registry, multibodyCount);
+        registry, multibodyCount, m_memoryManager.getFreeAllocator());
   }
 
   const auto jointCount = existingComponentStorageSize<comps::Joint>(registry);

@@ -94,6 +94,16 @@ those allocator-backed buffers through spans or allocator-agnostic vector
 templates, keeping standalone one-shot callers on ordinary vectors while
 allowing baked World-stage steps to stay under the World allocator root.
 
+The latest variational contact slice routes `VariationalContactDualState`
+persistent dual vectors through the World free allocator. The variational bake
+helper now receives the World allocator root, both bake-time and lazy
+World-stage creation initialize the component with allocator-backed dual
+storage, pre-existing/default-constructed dual-state components are rebound to
+that allocator before sizing, and the automatic binary state serializer handles
+allocator-aware trivial vectors without breaking the component's aggregate
+state-component contract. Focused world reservation/rebuild tests and
+variational contact save/load/contact tests pass.
+
 The next follow-up slice adds a focused `WorldRegistry` rebuild-boundary gate
 for contact-heavy solver-owned ECS storage. It reuses the existing compliant
 variational contact slider setup, verifies baked contact scratch and registry

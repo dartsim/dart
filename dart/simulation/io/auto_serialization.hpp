@@ -66,6 +66,19 @@ template <typename T>
 inline constexpr bool IsVector3iList
     = std::same_as<T, std::vector<Eigen::Vector3i>>;
 
+template <typename T>
+struct IsEntityVectorHelper : std::false_type
+{
+};
+template <typename Allocator>
+struct IsEntityVectorHelper<std::vector<entt::entity, Allocator>>
+  : std::true_type
+{
+};
+
+template <typename T>
+inline constexpr bool IsEntityList = IsEntityVectorHelper<T>::value;
+
 inline void writeVector3i(std::ostream& out, const Eigen::Vector3i& vec)
 {
   writePOD(out, vec.x());
@@ -133,8 +146,8 @@ template <typename T>
 struct IsTrivialVectorHelper : std::false_type
 {
 };
-template <typename U>
-struct IsTrivialVectorHelper<std::vector<U>>
+template <typename U, typename Allocator>
+struct IsTrivialVectorHelper<std::vector<U, Allocator>>
   : std::bool_constant<std::is_trivially_copyable_v<U>>
 {
 };
@@ -144,8 +157,9 @@ inline constexpr bool IsTrivialList
     = IsTrivialVectorHelper<T>::value
       && !IsVector3dList<T> && !IsVector3iList<T>;
 
-template <typename U>
-inline void writeTrivialList(std::ostream& out, const std::vector<U>& values)
+template <typename U, typename Allocator>
+inline void writeTrivialList(
+    std::ostream& out, const std::vector<U, Allocator>& values)
 {
   const std::size_t count = values.size();
   writePOD(out, count);
@@ -154,8 +168,8 @@ inline void writeTrivialList(std::ostream& out, const std::vector<U>& values)
   }
 }
 
-template <typename U>
-inline void readTrivialList(std::istream& in, std::vector<U>& values)
+template <typename U, typename Allocator>
+inline void readTrivialList(std::istream& in, std::vector<U, Allocator>& values)
 {
   std::size_t count = 0;
   readPOD(in, count);
@@ -308,7 +322,7 @@ void autoSerialize(
                 ? static_cast<std::uint32_t>(entityMap.at(field))
                 : static_cast<std::uint32_t>(entt::null);
       writePOD(out, mappedId);
-    } else if constexpr (std::same_as<FieldType, std::vector<entt::entity>>) {
+    } else if constexpr (detail::IsEntityList<FieldType>) {
       // Vector of entities - always remap each
       std::size_t count = field.size();
       writePOD(out, count);
@@ -383,7 +397,7 @@ void autoDeserialize(std::istream& in, T& component)
       std::uint32_t entityId;
       readPOD(in, entityId);
       field = static_cast<entt::entity>(entityId);
-    } else if constexpr (std::same_as<FieldType, std::vector<entt::entity>>) {
+    } else if constexpr (detail::IsEntityList<FieldType>) {
       // Read vector of entities
       std::size_t count;
       readPOD(in, count);

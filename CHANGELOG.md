@@ -650,6 +650,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     stage now also keeps its tree topology, link-index map, and child-list
     storage in baked scratch across same-shape steps, preserving same-shape
     link-index map nodes instead of repopulating them in the step loop.
+    Contact-heavy variational dual-state vectors now also borrow the World
+    free allocator when baked or first created by the World stage; pre-existing
+    dual-state components are rebound before sizing, and binary state
+    serialization handles allocator-aware trivial vectors.
     World registry rebuild gates now also cover the existing compact and
     production mixed default-deformable direct-sparse, matrix-free, FEM, and
     contact-family storage paths across `World::clear()` and rebuild.
