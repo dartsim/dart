@@ -32,7 +32,26 @@ SOLVER_TYPES = (
     dart.BoxedSemiSmoothNewtonSolver,
 )
 
-BOXED_AND_FINDEX_SOLVERS = {
+BOXED_SOLVERS = {
+    dart.DantzigSolver,
+    dart.PgsSolver,
+    dart.SymmetricPsorSolver,
+    dart.JacobiSolver,
+    dart.RedBlackGaussSeidelSolver,
+    dart.BlockedJacobiSolver,
+    dart.BgsSolver,
+    dart.NncgSolver,
+    dart.SubspaceMinimizationSolver,
+    dart.ApgdSolver,
+    dart.TgsSolver,
+    dart.ShockPropagationSolver,
+    dart.StaggeringSolver,
+    dart.AdmmSolver,
+    dart.SapSolver,
+    dart.BoxedSemiSmoothNewtonSolver,
+}
+
+FINDEX_SOLVERS = {
     dart.DantzigSolver,
     dart.PgsSolver,
     dart.SymmetricPsorSolver,
@@ -93,7 +112,8 @@ def test_all_lcp_solvers_are_available_from_dartpy_math(solver_type: type) -> No
     options.max_iterations = 1000
 
     solver = solver_type()
-    supports_boxed = solver_type in BOXED_AND_FINDEX_SOLVERS
+    supports_boxed = solver_type in BOXED_SOLVERS
+    supports_findex = solver_type in FINDEX_SOLVERS
 
     result, solution = solver.solve(problem, options=options)
 
@@ -101,7 +121,7 @@ def test_all_lcp_solvers_are_available_from_dartpy_math(solver_type: type) -> No
     assert solver.get_category()
     assert solver.supports_standard_lcp()
     assert solver.supports_boxed_lcp() is supports_boxed
-    assert solver.supports_friction_index() is supports_boxed
+    assert solver.supports_friction_index() is supports_findex
     assert solver.supports_problem(problem)
     assert result.status in (
         dart.LcpSolverStatus.SUCCESS,
@@ -125,11 +145,12 @@ def test_lcp_solver_capabilities_classify_problem_forms(solver_type: type) -> No
     )
 
     solver = solver_type()
-    supports_boxed = solver_type in BOXED_AND_FINDEX_SOLVERS
+    supports_boxed = solver_type in BOXED_SOLVERS
+    supports_findex = solver_type in FINDEX_SOLVERS
 
     assert solver.supports_problem(standard)
     assert solver.supports_problem(boxed) is supports_boxed
-    assert solver.supports_problem(findex) is supports_boxed
+    assert solver.supports_problem(findex) is supports_findex
 
 
 def test_lcp_solver_rejects_wrong_initial_guess_size() -> None:
