@@ -639,8 +639,8 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     surface-CCD steps. The sparse-pattern, triplet assembly, PSD block batch,
     and matrix-free block/diagonal scratch vectors can now borrow the World free
     allocator when the solver scratch component is created, and FEM rest-shape
-    caches are primed for covered
-    one-tetrahedron FEM projected-Newton steps. Self-contact barrier scratch is
+    caches now use that allocator-backed component for covered one-tetrahedron
+    FEM projected-Newton steps. Self-contact barrier scratch is
     sized from bake-primed candidates for covered two-triangle
     projected-Newton self-contact steps. AVBD ground contact/friction rows and
     self-contact normal/friction rows, including a rectangular self-contact

@@ -1639,6 +1639,8 @@ using ProjectedNewtonMatrixFreeBlockVector = std::vector<
     common::StlAllocator<ProjectedNewtonMatrixFreeBlock3>>;
 using ProjectedNewtonMatrix3Vector
     = std::vector<Eigen::Matrix3d, common::StlAllocator<Eigen::Matrix3d>>;
+using ProjectedNewtonFemRestShapeVector
+    = std::vector<fem::TetRestShape, common::StlAllocator<fem::TetRestShape>>;
 
 //==============================================================================
 struct DeformableContactSolverScratch
@@ -1651,6 +1653,7 @@ struct DeformableContactSolverScratch
       sweepScratch(allocator),
       newtonPatternOuter(common::StlAllocator<int>{allocator}),
       newtonPatternInner(common::StlAllocator<int>{allocator}),
+      femRestShapes(common::StlAllocator<fem::TetRestShape>{allocator}),
       projectedNewtonTriplets(
           common::StlAllocator<Eigen::Triplet<double>>{allocator}),
       projectedNewtonEdgeBlocks(common::StlAllocator<double>{allocator}),
@@ -1701,7 +1704,7 @@ struct DeformableContactSolverScratch
   // volume). The rest configuration never changes, so these are computed once
   // (when the cached count first matches the body's tetrahedron count) and
   // reused every step instead of re-inverting each tet's rest edges per step.
-  std::vector<fem::TetRestShape> femRestShapes;
+  ProjectedNewtonFemRestShapeVector femRestShapes;
 
   Eigen::VectorXd projectedNewtonRhs;
   Eigen::VectorXd projectedNewtonSolution;
@@ -4483,7 +4486,7 @@ std::size_t accumulateContactDistanceDiagnostics(
 struct FemElasticityInputs
 {
   const std::vector<comps::DeformableTetrahedron>* tetrahedra = nullptr;
-  const std::vector<fem::TetRestShape>* restShapes = nullptr;
+  std::span<const fem::TetRestShape> restShapes;
   fem::LameParameters lame;
   // Selects the isotropic material: false (default) is the inversion-robust
   // stable neo-Hookean kernel; true is fixed-corotational (the IPC paper's
@@ -4531,11 +4534,11 @@ double addFemElasticityEnergy(
     const FemElasticityInputs& inputs,
     std::vector<Eigen::Vector3d>* gradient)
 {
-  if (inputs.tetrahedra == nullptr || inputs.restShapes == nullptr) {
+  if (inputs.tetrahedra == nullptr || inputs.restShapes.empty()) {
     return 0.0;
   }
   const auto& tets = *inputs.tetrahedra;
-  const auto& rests = *inputs.restShapes;
+  const auto rests = inputs.restShapes;
   const std::size_t count = std::min(tets.size(), rests.size());
   double energy = 0.0;
   for (std::size_t t = 0; t < count; ++t) {
@@ -6871,9 +6874,9 @@ bool computeProjectedNewtonDirection(
   // barrier blocks. Null femElasticity (the default mass-spring path) skips
   // this entirely, so spring bodies assemble exactly as before.
   if (femElasticity != nullptr && femElasticity->tetrahedra != nullptr
-      && femElasticity->restShapes != nullptr) {
+      && !femElasticity->restShapes.empty()) {
     const auto& tets = *femElasticity->tetrahedra;
-    const auto& rests = *femElasticity->restShapes;
+    const auto rests = femElasticity->restShapes;
     const std::size_t tetCount = std::min(tets.size(), rests.size());
     constexpr std::size_t kTetBlockEntries = 144; // 12x12
     auto& tetBlocks = solverCache.projectedNewtonTetBlocks;
@@ -7420,7 +7423,9 @@ void advanceDeformableBody(
       && topology.restPositions.size() == nodeCount) {
     syncFemRestShapeScratch(nodeCount, topology, material, contactScratch);
     femElasticity.tetrahedra = &topology.tetrahedra;
-    femElasticity.restShapes = &contactScratch.femRestShapes;
+    femElasticity.restShapes = std::span<const fem::TetRestShape>(
+        contactScratch.femRestShapes.data(),
+        contactScratch.femRestShapes.size());
     femElasticity.lame
         = fem::lameParameters(material.youngsModulus, material.poissonRatio);
     femElasticity.fixedCorotational = material.useFixedCorotationalElasticity;

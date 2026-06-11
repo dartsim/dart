@@ -41,9 +41,11 @@ The latest allocator-root slice routes default deformable projected-Newton
 assembly scratch through `DeformableContactSolverScratch`'s borrowed World free
 allocator: sparse pattern arrays, triplet assembly, PSD edge/tet/barrier block
 batches, and matrix-free block/diagonal storage now use allocator-aware vectors.
-The existing deformable stage allocator test now expects those projected-Newton
+The FEM rest-shape cache now uses the same allocator-backed scratch component.
+The existing deformable stage allocator test now expects projected-Newton
 vectors to reserve from the provided allocator, and the existing baked
-World-base/global-heap deformable gates still pass without adding new scenes.
+World-base/global-heap deformable gates plus FEM activity checks still pass
+without adding new scenes.
 
 The next follow-up slice adds a focused `WorldRegistry` rebuild-boundary gate
 for contact-heavy solver-owned ECS storage. It reuses the existing compliant
