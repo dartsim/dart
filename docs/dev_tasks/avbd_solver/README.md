@@ -19,12 +19,12 @@ Corpus matrix:
   to count them. Earlier same-branch benchmark smoke under lower host load moved
   `BM_AvbdDemo2dMotorStep_median` from about 9.34 us to 8.83 us,
   `BM_AvbdDemo2dSpringStep_median` from about 5.04 us to 4.28 us, and
-  `BM_AvbdDemo2dSpringRatioStep_median` from about 45.3 us to 37.1 us. A later
-  exact toggle under host load kept the zero-contact-reserve variant after it
-  improved the second after-run medians for 2D Spring/Spring Ratio and 3D
-  Ground/Spring/Spring Ratio while leaving Motor in the noise. This remains
-  no-contact/source-row overhead evidence and does not close any source CPU-win,
-  GPU, or paper-number gate.
+  `BM_AvbdDemo2dSpringRatioStep_median` from about 45.3 us to 37.1 us. Coverage
+  CI then caught that the no-query cleanup still needed contact-scene AVBD
+  scratch reservations, so the kept variant reserves contact scratch from the
+  collision-shape capacity estimate without restoring the duplicate
+  `queryContacts()` call. This remains no-contact/source-row overhead evidence
+  and does not close any source CPU-win, GPU, or paper-number gate.
 - Latest local follow-up: C++ and dartpy public articulated AVBD stiffness
   persistence coverage now exercises fixed, revolute, prismatic, and spherical
   public articulated facades for both same-multibody link pairs and world-link
