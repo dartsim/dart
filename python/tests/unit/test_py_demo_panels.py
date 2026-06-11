@@ -768,6 +768,14 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "friction_index_contact": 16,
         "moderate_scale_standard": 24,
     }
+    expected_problem_types = {
+        "standard_spd": "Standard",
+        "ill_conditioned_standard": "Standard",
+        "near_singular_standard": "Standard",
+        "boxed_active_bounds": "Boxed",
+        "friction_index_contact": "FrictionIndex",
+        "moderate_scale_standard": "Standard",
+    }
     problem_rows = info["standalone_problem_rows"]
     problem_summary_rows = info["standalone_problem_summary_rows"]
     problem_summary_by_case = {row["case"]: row for row in problem_summary_rows}
@@ -783,6 +791,10 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     for case_name, expected_count in expected_problem_counts.items():
         summary_row = problem_summary_by_case[case_name]
         assert summary_row["solver_count"] == expected_count
+        assert summary_row["problem_type"] == expected_problem_types[case_name]
+        assert {
+            row["problem_type"] for row in problem_rows if row["case"] == case_name
+        } == {expected_problem_types[case_name]}
         assert summary_row["native_solver_count"] == expected_native_problem_counts[
             case_name
         ]

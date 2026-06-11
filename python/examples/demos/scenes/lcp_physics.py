@@ -1001,6 +1001,7 @@ def _run_standalone_problem_suite() -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for problem_case in _STANDALONE_PROBLEM_CASES:
         problem, expected = problem_case.make_problem()
+        problem_type = dart.lcp_problem_type_to_string(problem.get_type())
         for support_row in _SOLVER_SUPPORT_ROWS:
             solver_type = getattr(dart, _SOLVER_CLASS_NAMES[support_row["name"]])
             solver = solver_type()
@@ -1015,6 +1016,7 @@ def _run_standalone_problem_suite() -> list[dict[str, Any]]:
                     "case": problem_case.name,
                     "label": problem_case.label,
                     "surface": problem_case.surface,
+                    "problem_type": problem_type,
                     "challenge": problem_case.challenge,
                     "solver": support_row["name"],
                     "family": support_row["family"],
@@ -1054,6 +1056,7 @@ def _summarize_standalone_problem_suite(
                 "case": problem_case.name,
                 "label": problem_case.label,
                 "surface": problem_case.surface,
+                "problem_type": case_rows[0]["problem_type"] if case_rows else "",
                 "challenge": problem_case.challenge,
                 "solver_count": len(case_rows),
                 "native_solver_count": len(native_rows),
@@ -1254,11 +1257,12 @@ def build() -> SceneSetup:
         if builder.collapsing_header("Representative solver suite", default_open=False):
             if builder.begin_table(
                 "lcp_representative_solver_suite",
-                ["Problem", "Native", "Delegated", "Fastest native"],
+                ["Problem", "Type", "Native", "Delegated", "Fastest native"],
             ):
                 for row in standalone_problem_summary_rows:
                     builder.table_next_row()
                     _write_table_cell(builder, row["label"])
+                    _write_table_cell(builder, row["problem_type"])
                     _write_table_cell(
                         builder,
                         f"{row['native_contract_ok_count']}/{row['native_solver_count']}",
