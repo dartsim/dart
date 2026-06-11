@@ -29,6 +29,8 @@
         curvature term needed to match PLAN-082 rigid IPC.
   - [x] Add the first ABD benchmark packet shape with a matched rigid IPC
         point-triangle oracle row and orthogonality-energy row.
+  - [x] Add a reduced affine point-triangle solved-state micro-solve diagnostic
+        and benchmark row without claiming an ABD runtime solver.
   - [x] Add reduced friction equivalence rows through affine tangent stencils
         for point-point, point-edge, edge-edge, and point-triangle primitives.
   - [x] Promote the first packet into the PLAN-083 manifest as an in-progress
@@ -256,9 +258,9 @@ storage, or backend resources as public API.
   variant names such as rigid IPC, deformable IPC, and ABD remain internal
   provenance until shared behavior is proven.
 - The first `abd-alg-affine-body` micro-packet is primitive/oracle evidence and
-  does not need a two-body affine contact micro-solve before Phase 3. Add a
-  solved-state micro-solve only when the next broader ABD packet needs runtime
-  residuals rather than primitive, friction, or orthogonality rows.
+  now includes a reduced point-triangle solved-state diagnostic row. Broader ABD
+  packets still need runtime residuals, scene assets, and comparison baselines
+  before any paper-scale ABD row moves.
 
 ## Immediate Next Steps
 
@@ -275,9 +277,9 @@ storage, or backend resources as public API.
    `docs/dev_tasks/unified_newton_barrier_multibody/`: the Phase 8 audit found
    that PLAN-083 still has planned CPU/GPU/scene rows and cannot honestly be
    called complete yet.
-5. Keep the two-body affine contact micro-solve deferred until the
-   `abd-alg-affine-body` row expands beyond the primitive/oracle micro-packet
-   and needs a solved-state residual or runtime stepping diagnostic.
+5. Use the reduced affine point-triangle micro-solve only as internal
+   solved-state evidence; broader ABD CPU packets still require runtime
+   residuals, scene assets, and comparison baselines.
 6. Promote only the smallest proven shared contract, with cross-variant tests
    showing identical behavior; keep variant-specific terms in their owner plans.
 7. Keep paper-scale runtime stepping and non-PSD GPU claims out of scope until

@@ -207,6 +207,13 @@ range validation, 60-ragdoll scale, terrain navigation, angular-velocity sweep
 validation, Bullet/reference comparison, Fig. 24 subphase timing, full Table 2
 reproduction, coupled-contact scaling evidence, or a completion claim.
 
+The same branch adds a reduced affine point-triangle solved-state diagnostic
+under `detail/affine_body_dynamics`: a private micro-solve combines inertial,
+barrier, and orthogonality terms for one dynamic affine body against a static
+triangle and adds a benchmark packet row. This is internal solved-state
+evidence for `abd-alg-affine-body`, not an ABD runtime solver, scene corpus row,
+or paper-scale ABD comparison.
+
 The same branch now adds the sparse equality change-of-variable contract in
 `detail/newton_barrier/change_of_variable.hpp`, with focused primitive tests for
 rank detection, residual satisfaction, sparse free-coordinate basis structure,
@@ -219,8 +226,9 @@ claim paper-scale pulley/sliding scene reproduction.
 Current slice: the one-branch runtime wiring follow-up has five checkpoint
 commits, and the follow-on CPU corpus evidence branch adds reduced
 hanging-bridge, terrain vehicle, ragdoll, nunchaku, nunchaku scaling,
-windmill, precession, timing-breakdown, Table 2 packets, and the sparse
-equality change-of-variable contract tests.
+windmill, precession, timing-breakdown, Table 2 packets, the reduced affine
+point-triangle micro-solve diagnostic, and the sparse equality
+change-of-variable contract tests.
 The final docs pass should preserve that this is runtime smoke/correctness
 evidence, not paper-scale completion.
 
@@ -234,7 +242,8 @@ four shared primitive barrier chain-rule rows, orthogonality energy, rigid
 gradient/Hessian equivalence, affine primitive-family friction equivalence rows
 through the shared tangent-displacement friction kernel,
 `test_affine_body_dynamics`, and the first `bm_affine_body_dynamics` benchmark
-packet.
+packet. The active follow-up extends that packet with a reduced solved-state
+point-triangle micro-solve diagnostic without promoting an ABD runtime solver.
 
 The first Phase 3 contract slice was merged as PR #2936. It added a shared
 fixed-size PSD projection helper, routed rigid IPC and ABD Hessian projection

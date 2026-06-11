@@ -291,10 +291,11 @@ its own line so status updates remain git-history friendly.
   `feature/newton-barrier-corpus-evidence` branch adds reduced hanging-bridge,
   terrain vehicle, ragdoll, nunchaku, nunchaku scaling, windmill, and
   precession CPU packets plus reduced timing-breakdown and Table 2 packets
-  plus the sparse equality change-of-variable rigid IPC path without claiming
-  paper-scale parity. The completion audit still records PLAN-083 as incomplete
-  while planned manifest, CPU corpus, and non-PSD GPU parity rows remain, so
-  dev-task retirement needs maintainer direction before deletion.
+  plus a reduced affine point-triangle micro-solve diagnostic and the sparse
+  equality change-of-variable rigid IPC path without claiming paper-scale
+  parity. The completion audit still records PLAN-083 as incomplete while
+  planned manifest, CPU corpus, and non-PSD GPU parity rows remain, so dev-task
+  retirement needs maintainer direction before deletion.
 - Gate: Unified Newton-barrier progress is not complete until every cited
   paper/deck figure, unit test, benchmark table, and comparison scene is mapped
   to DART-owned tests, py-demos examples, benchmark/profiling packets, CPU and

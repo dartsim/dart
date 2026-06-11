@@ -37,6 +37,7 @@
 #include <dart/simulation/detail/rigid_ipc_barrier.hpp>
 
 #include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <benchmark/benchmark.h>
 
 namespace sxdetail = dart::simulation::detail;
@@ -86,6 +87,16 @@ void consumeOrthogonality(sxdetail::AffineOrthogonalityEnergyResult& result)
   benchmark::DoNotOptimize(result.value);
   benchmark::DoNotOptimize(result.gradient);
   benchmark::DoNotOptimize(result.hessian);
+  benchmark::ClobberMemory();
+}
+
+//==============================================================================
+void consumeMicroSolve(sxdetail::AffinePointTriangleMicroSolveResult& result)
+{
+  benchmark::DoNotOptimize(result.finalValue);
+  benchmark::DoNotOptimize(result.finalGradientNorm);
+  benchmark::DoNotOptimize(result.finalSquaredDistance);
+  benchmark::DoNotOptimize(result.state.translation);
   benchmark::ClobberMemory();
 }
 
@@ -169,3 +180,51 @@ static void BM_AffineBodyOrthogonalityEnergy(benchmark::State& state)
   }
 }
 BENCHMARK(BM_AffineBodyOrthogonalityEnergy);
+
+//==============================================================================
+static void BM_AffineBodyPointTriangleMicroSolve(benchmark::State& state)
+{
+  sxdetail::AffineBodyState initialPointBody
+      = makeAffineBody(Eigen::Vector3d(0.0, 0.0, 0.08));
+  initialPointBody.linearMap
+      = Eigen::AngleAxisd(0.08, Eigen::Vector3d::UnitX()).toRotationMatrix();
+
+  sxdetail::AffineBodyState inertialTarget = initialPointBody;
+  inertialTarget.translation = Eigen::Vector3d(0.0, 0.0, 0.02);
+  inertialTarget.linearMap(0, 1) += 0.04;
+  inertialTarget.linearMap(1, 2) -= 0.03;
+
+  sxdetail::AffineBodyState triangleBody;
+  triangleBody.dynamic = false;
+
+  const Eigen::Vector3d point(0.2, 0.15, 0.0);
+  const Eigen::Vector3d triangleA(0.0, 0.0, 0.0);
+  const Eigen::Vector3d triangleB(1.0, 0.0, 0.0);
+  const Eigen::Vector3d triangleC(0.0, 1.0, 0.0);
+
+  sxdetail::AffinePointTriangleMicroSolveOptions options;
+  options.barrier = activeAffineBarrierOptions();
+  options.barrier.squaredActivationDistance = 0.25;
+  options.barrier.stiffness = 0.04;
+  options.inertialWeight = 1.0;
+  options.orthogonalityStiffness = 0.5;
+  options.gradientTolerance = 1e-8;
+  options.maxIterations = 32;
+  options.maxLineSearchIterations = 24;
+  options.maxStepNorm = 0.2;
+
+  sxdetail::AffinePointTriangleMicroSolveResult result;
+  for (auto _ : state) {
+    result = sxdetail::affinePointTriangleMicroSolve(
+        initialPointBody,
+        inertialTarget,
+        point,
+        triangleBody,
+        triangleA,
+        triangleB,
+        triangleC,
+        options);
+    consumeMicroSolve(result);
+  }
+}
+BENCHMARK(BM_AffineBodyPointTriangleMicroSolve);

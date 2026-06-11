@@ -52,8 +52,9 @@ moves entirely into durable plan sidecars.
   terrain vehicle, ragdoll, nunchaku, windmill, and precession scenes have local
   headless smoke/capture evidence, but the remaining paper-scale scenes still
   need long-horizon visual captures and nonblank/motion evidence.
-- ABD remains an internal primitive/oracle micro-packet, not a runtime affine
-  solver or a replacement for the rigid IPC correctness oracle.
+- ABD remains an internal primitive/oracle plus reduced point-triangle
+  micro-solve packet, not a runtime affine solver or a replacement for the
+  rigid IPC correctness oracle.
 
 ## Maintainer Decision Required
 

@@ -17,6 +17,7 @@ from benchmark_packet_utils import (
 
 EXPECTED_BENCHMARKS = {
     "BM_AffineBodyPointTriangleBarrier",
+    "BM_AffineBodyPointTriangleMicroSolve",
     "BM_AffineBodyRigidIpcPointTriangleOracle",
     "BM_AffineBodyOrthogonalityEnergy",
 }
