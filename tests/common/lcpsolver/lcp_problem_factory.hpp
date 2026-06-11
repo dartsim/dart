@@ -317,6 +317,28 @@ public:
         ProblemDifficulty::IllConditioned};
   }
 
+  static FactoryProblem nearSingular4d()
+  {
+    Eigen::Matrix4d A;
+    A << 0.0010, 0.0001, 0.0000, 0.0000, 0.0001, 1.0000, 0.0200,
+        0.0000, 0.0000, 0.0200, 2.0000, 0.0200, 0.0000, 0.0000, 0.0200,
+        4.0000;
+    Eigen::Vector4d xStar(0.25, 0.20, 0.30, 0.15);
+    Eigen::Vector4d b = A * xStar;
+
+    return FactoryProblem{
+        "near_singular_4d",
+        dart::math::LcpProblem(
+            A,
+            b,
+            Eigen::Vector4d::Zero(),
+            Eigen::Vector4d::Constant(kInf),
+            Eigen::Vector4i::Constant(-1)),
+        xStar,
+        ProblemCategory::Standard,
+        ProblemDifficulty::NearSingular};
+  }
+
   static FactoryProblem randomStandard(int n, unsigned seed)
   {
     Eigen::MatrixXd A = makeSpdMatrix(n, seed, 1.0);
@@ -358,7 +380,7 @@ public:
 
   static std::vector<FactoryProblem> getStressProblems()
   {
-    return {illConditioned8d(), massRatio12d()};
+    return {illConditioned8d(), massRatio12d(), nearSingular4d()};
   }
 
   static std::vector<FactoryProblem> getWellConditionedProblems()

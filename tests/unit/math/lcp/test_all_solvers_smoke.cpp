@@ -265,6 +265,36 @@ TEST_F(AllSolversSmokeTest, Standard2dDoesNotCrash)
   }
 }
 
+TEST_F(AllSolversSmokeTest, NearSingularStandardProblemProducesExpectedIterates)
+{
+  const auto problem = LcpProblemFactory::nearSingular4d();
+  ASSERT_TRUE(problem.expectedSolution.has_value());
+  EXPECT_EQ(problem.difficulty, ProblemDifficulty::NearSingular);
+  EXPECT_EQ(problem.problem.getType(), LcpProblemType::Standard);
+
+  for (const auto& solverCase : kLcpSolverManifest) {
+    const auto solver = solverCase.create();
+    ASSERT_NE(solver, nullptr) << solverCase.name;
+    ASSERT_TRUE(solver->supportsProblem(problem.problem)) << solverCase.name;
+
+    Eigen::VectorXd x;
+    LcpOptions options = LcpOptions::highAccuracy();
+    options.validateSolution = false;
+    auto result = solver->solve(problem.problem, x, options);
+
+    EXPECT_TRUE(
+        result.status == LcpSolverStatus::Success
+        || result.status == LcpSolverStatus::MaxIterations)
+        << solverCase.name
+        << " failed on near-singular standard problem: " << result.message;
+    EXPECT_TRUE(x.allFinite())
+        << solverCase.name << " produced non-finite values";
+    ASSERT_EQ(x.size(), problem.expectedSolution->size()) << solverCase.name;
+    EXPECT_LE((x - *problem.expectedSolution).lpNorm<Eigen::Infinity>(), 2e-4)
+        << solverCase.name << " should stay comparable on " << problem.name;
+  }
+}
+
 TEST_F(AllSolversSmokeTest, BoxedProblemHandledCorrectly)
 {
   auto problem = LcpProblemFactory::boxed2dActiveUpper();
