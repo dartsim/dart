@@ -144,19 +144,23 @@ The in-viewer `Rigid Workflow` panel may route a numbered rigid row to a
 non-numbered shelf only through this table. These scenes remain outside the
 35-row World Rigid Body sequence.
 
-| Source row                     | Related scene                          | Shelf                       | Panel label                                                                                                      | Scope note                                                                                     |
-| ------------------------------ | -------------------------------------- | --------------------------- | ---------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `rigid_solver_compare`         | `rigid_ipc_tunnel`                     | Rigid IPC                   | Related shelf: Rigid IPC / rigid_ipc_tunnel - focused no-tunneling view                                          | Focused IPC capability scene; not a broad solver comparison or general proof.                  |
-| `rigid_contact_solver_compare` | `diff_drone_liftoff`                   | Differentiable              | Related shelf: Differentiable / diff_drone_liftoff - contact-gradient route                                      | Analytic vs complementarity-aware clamping-contact optimization; not a solver row.             |
-| `contact`                      | `avbd_rigid_fixed_joint_contact`       | AVBD Rigid Constraints (sx) | Related shelf: AVBD Rigid Constraints (sx) / avbd_rigid_fixed_joint_contact - fixed-joint contact route          | Variational fixed-joint/contact capability scene; not a World contact-policy comparison.       |
-| `rigid_joint_breakage`         | `avbd_rigid_breakable_joint`           | AVBD Rigid Constraints (sx) | Related shelf: AVBD Rigid Constraints (sx) / avbd_rigid_breakable_joint - free-rigid fixed break/reset           | Dedicated free-rigid fixed break/reset row; not sequential-impulse or IPC parity evidence.     |
-| `rigid_joint_breakage`         | `avbd_rigid_spherical_breakable_joint` | AVBD Rigid Constraints (sx) | Related shelf: AVBD Rigid Constraints (sx) / avbd_rigid_spherical_breakable_joint - spherical anchor break/reset | Dedicated free-rigid spherical anchor break/reset row; orientation remains intentionally free. |
-| `rigid_joint_motor_limits`     | `avbd_rigid_revolute_motor`            | AVBD Rigid Constraints (sx) | Related shelf: AVBD Rigid Constraints (sx) / avbd_rigid_revolute_motor - free-rigid hinge motor                  | AVBD free-rigid revolute velocity motor; not a World multibody motor/limit comparison.         |
-| `rigid_joint_motor_limits`     | `avbd_rigid_prismatic_motor`           | AVBD Rigid Constraints (sx) | Related shelf: AVBD Rigid Constraints (sx) / avbd_rigid_prismatic_motor - free-rigid slider motor                | AVBD free-rigid prismatic velocity motor; not a World multibody motor/limit comparison.        |
+| Source row                       | Related scene                          | Shelf                       | Panel label                                                                                                      | Scope note                                                                                                               |
+| -------------------------------- | -------------------------------------- | --------------------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `rigid_free_flight`              | `floating_base`                        | World Rigid Body            | Related shelf: World Rigid Body / floating_base - broader floating-joint row                                     | Broader floating-joint SE(3) drift/spin example; use the numbered row for baseline rigid-body initial-state diagnostics. |
+| `rigid_multibody_dynamics_terms` | `articulated`                          | World Rigid Body            | Related shelf: World Rigid Body / articulated - broader two-link arm row                                         | Broader two-link arm example; use the numbered row for mass, inverse-dynamics, and impulse-response diagnostics.         |
+| `rigid_solver_compare`           | `rigid_ipc_tunnel`                     | Rigid IPC                   | Related shelf: Rigid IPC / rigid_ipc_tunnel - focused no-tunneling view                                          | Focused IPC capability scene; not a broad solver comparison or general proof.                                            |
+| `rigid_contact_solver_compare`   | `diff_drone_liftoff`                   | Differentiable              | Related shelf: Differentiable / diff_drone_liftoff - contact-gradient route                                      | Analytic vs complementarity-aware clamping-contact optimization; not a solver row.                                       |
+| `contact`                        | `avbd_rigid_fixed_joint_contact`       | AVBD Rigid Constraints (sx) | Related shelf: AVBD Rigid Constraints (sx) / avbd_rigid_fixed_joint_contact - fixed-joint contact route          | Variational fixed-joint/contact capability scene; not a World contact-policy comparison.                                 |
+| `rigid_joint_breakage`           | `avbd_rigid_breakable_joint`           | AVBD Rigid Constraints (sx) | Related shelf: AVBD Rigid Constraints (sx) / avbd_rigid_breakable_joint - free-rigid fixed break/reset           | Dedicated free-rigid fixed break/reset row; not sequential-impulse or IPC parity evidence.                               |
+| `rigid_joint_breakage`           | `avbd_rigid_spherical_breakable_joint` | AVBD Rigid Constraints (sx) | Related shelf: AVBD Rigid Constraints (sx) / avbd_rigid_spherical_breakable_joint - spherical anchor break/reset | Dedicated free-rigid spherical anchor break/reset row; orientation remains intentionally free.                           |
+| `rigid_joint_motor_limits`       | `avbd_rigid_revolute_motor`            | AVBD Rigid Constraints (sx) | Related shelf: AVBD Rigid Constraints (sx) / avbd_rigid_revolute_motor - free-rigid hinge motor                  | AVBD free-rigid revolute velocity motor; not a World multibody motor/limit comparison.                                   |
+| `rigid_joint_motor_limits`       | `avbd_rigid_prismatic_motor`           | AVBD Rigid Constraints (sx) | Related shelf: AVBD Rigid Constraints (sx) / avbd_rigid_prismatic_motor - free-rigid slider motor                | AVBD free-rigid prismatic velocity motor; not a World multibody motor/limit comparison.                                  |
 
 Capture every non-numbered related-evidence route with the docked UI visible:
 
 ```bash
+pixi run py-demo-capture -- --scene floating_base --frames 72 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene articulated --frames 72 --width 960 --height 540 --show-ui
 pixi run py-demo-capture -- --scene rigid_ipc_tunnel --frames 24 --width 960 --height 540 --show-ui
 pixi run py-demo-capture -- --scene diff_drone_liftoff --frames 96 --width 960 --height 540 --show-ui
 pixi run py-demo-capture -- --scene avbd_rigid_fixed_joint_contact --frames 72 --width 960 --height 540 --show-ui
@@ -524,20 +528,22 @@ Evidence recorded for this slice:
 - Latest related-evidence route follow-up:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_related_evidence_routes_to_other_shelves python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_route_rows_request_scene_switches python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_related_evidence_routes_are_valid python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_guidance_matches_sidecar python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_viewer_titles_are_numbered python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
   reported `7 passed`. The runner-owned `Rigid Workflow` panel now exposes
-  `Related shelf` routes from `rigid_solver_compare` to
-  `rigid_ipc_tunnel`, from `rigid_contact_solver_compare` to
-  `diff_drone_liftoff`, from `contact` to
+  `Related shelf` routes from `rigid_free_flight` to `floating_base`, from
+  `rigid_multibody_dynamics_terms` to `articulated`, from
+  `rigid_solver_compare` to `rigid_ipc_tunnel`, from
+  `rigid_contact_solver_compare` to `diff_drone_liftoff`, from `contact` to
   `avbd_rigid_fixed_joint_contact`, from `rigid_joint_breakage` to the AVBD
   fixed/spherical break/reset rows, and from `rigid_joint_motor_limits` to the
   AVBD revolute/prismatic motor rows, while tests keep those targets
-  registered, non-numbered, and in their own shelves.
+  registered and non-numbered.
 - Latest related-evidence search follow-up:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_prioritizes_user_intent_over_scope_caveats python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_related_evidence_targets python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_labels_related_evidence_search_matches python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_related_evidence_routes_to_other_shelves python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_related_evidence_routes_are_valid python/tests/integration/test_demos_cycle.py::test_rigid_visual_related_evidence_capture_commands_are_documented -q`
   reported `6 passed`. `Find row` now indexes related shelf names, scene ids,
   labels, and scope notes only after core row fields fail to match, so
-  `rigid_ipc_tunnel`, `contact gradient`, `avbd fixed contact`,
-  `avbd spherical`, and `avbd prismatic` route to their numbered source rows
-  without demoting broad intent searches such as `contact` or `solver`.
+  `floating_base`, `two-link arm`, `rigid_ipc_tunnel`, `contact gradient`,
+  `avbd fixed contact`, `avbd spherical`, and `avbd prismatic` route to their
+  numbered source rows without demoting broad intent searches such as
+  `contact` or `solver`.
   Related-only search results label the matched target scene and their tooltips
   explain the related shelf. The sidecar and README also document docked capture
   commands for every non-numbered related target, and tests keep those commands
@@ -623,7 +629,9 @@ Evidence recorded for this slice:
   evidence before any live-workflow claim.
 - Keep related-evidence routes in the runner and this sidecar synchronized.
   They remain labelled as related shelf links rather than numbered workflow
-  rows.
+  rows, so non-numbered scenes such as `floating_base`, `articulated`,
+  `rigid_ipc_tunnel`, and `diff_drone_liftoff` do not look like new rigid
+  workflow rows.
 - Keep new rigid visual rows in this packet, `python/examples/demos/README.md`,
   and the ordered demo registry in sync.
 - Keep motor/limit wording on the World multibody joint actuator path until

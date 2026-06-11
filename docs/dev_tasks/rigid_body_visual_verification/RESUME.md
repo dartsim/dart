@@ -743,21 +743,26 @@ focused replay timeline and solver-comparison guard reported `5 passed`, and
 
 Fresh related-evidence routing on 2026-06-11: the runner-owned `Rigid Workflow`
 panel now keeps non-numbered shelves visible without changing the 35-row order.
-Row 15/35 `rigid_solver_compare` links to `rigid_ipc_tunnel` as a focused IPC
-no-tunneling view, and row 17/35 `rigid_contact_solver_compare` links to
-`diff_drone_liftoff` as a differentiable contact-gradient route. The same route
-table also links row 18/35 `contact` to `avbd_rigid_fixed_joint_contact`, row
-26/35 `rigid_joint_breakage` to the AVBD fixed/spherical break-reset scenes,
-and row 28/35 `rigid_joint_motor_limits` to the AVBD revolute/prismatic motor
-scenes. The PLAN-103 sidecar owns the route table, tests verify those scene ids
-remain registered outside the numbered workflow, and `Find row` now indexes
-related shelf names, scene ids, labels, and scope notes so searches such as
-`rigid_ipc_tunnel`, `contact gradient`, `avbd fixed contact`,
-`avbd spherical`, and `avbd prismatic` route to the numbered source row. When
-the match comes only from related evidence, the search result labels the target
-scene and the tooltip explains the related shelf. The sidecar and Python demo
-README also document docked `py-demo-capture --show-ui` commands for every
-related target, with drift coverage tying those commands to the route table.
+Row 3/35 `rigid_free_flight` links to `floating_base` as a broader
+floating-joint drift/spin example, row 31/35
+`rigid_multibody_dynamics_terms` links to `articulated` as a broader two-link
+arm example, row 15/35 `rigid_solver_compare` links to `rigid_ipc_tunnel` as a
+focused IPC no-tunneling view, and row 17/35
+`rigid_contact_solver_compare` links to `diff_drone_liftoff` as a
+differentiable contact-gradient route. The same route table also links row
+18/35 `contact` to `avbd_rigid_fixed_joint_contact`, row 26/35
+`rigid_joint_breakage` to the AVBD fixed/spherical break-reset scenes, and row
+28/35 `rigid_joint_motor_limits` to the AVBD revolute/prismatic motor scenes.
+The PLAN-103 sidecar owns the route table, tests verify those scene ids remain
+registered outside the numbered workflow, and `Find row` now indexes related
+shelf names, scene ids, labels, and scope notes so searches such as
+`floating_base`, `two-link arm`, `rigid_ipc_tunnel`, `contact gradient`,
+`avbd fixed contact`, `avbd spherical`, and `avbd prismatic` route to the
+numbered source row. When the match comes only from related evidence, the
+search result labels the target scene and the tooltip explains the related
+shelf. The sidecar and Python demo README also document docked
+`py-demo-capture --show-ui` commands for every related target, with drift
+coverage tying those commands to the route table.
 
 Fresh capture-first IPC stack packet on 2026-06-11: `rigid_ipc_stack_packet`
 was added to the non-numbered Rigid IPC shelf, outside the 35-row World Rigid

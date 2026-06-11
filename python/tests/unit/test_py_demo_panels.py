@@ -1172,6 +1172,41 @@ def test_rigid_workflow_panel_route_rows_request_scene_switches() -> None:
 
 
 def test_rigid_workflow_panel_related_evidence_routes_to_other_shelves() -> None:
+    free_flight_scene = PythonDemoScene(
+        id="rigid_free_flight",
+        title="Test rigid_free_flight",
+        category="World Rigid Body",
+        summary="Related floating-base route test.",
+        build=lambda: SceneSetup(),
+    )
+    _pre_step, _force_drag, panels, _provider = _make_world_factory(
+        free_flight_scene
+    )()
+    assert panels is not None
+    workflow_panel = [panel for panel in panels if panel.title == "Rigid Workflow"][0]
+    context = _FakePanelContext()
+    floating_label = (
+        "Related shelf: World Rigid Body / floating_base - "
+        "broader floating-joint row"
+        "##rigid_workflow_related_floating_base"
+    )
+    floating_builder = _ScriptedPanelBuilder(selected_items={floating_label})
+
+    workflow_panel.build(floating_builder, context)
+
+    assert (
+        "selectable:Related shelf: World Rigid Body / floating_base - "
+        "broader floating-joint row"
+        "##rigid_workflow_related_floating_base:False"
+    ) in floating_builder.events
+    assert any(
+        event.startswith(
+            "tooltip:Open floating_base from the World Rigid Body shelf."
+        )
+        for event in floating_builder.events
+    )
+    assert context.scene_switch_requests == ["floating_base"]
+
     solver_scene = PythonDemoScene(
         id="rigid_solver_compare",
         title="Test rigid_solver_compare",
@@ -1358,6 +1393,12 @@ def test_rigid_workflow_search_finds_related_evidence_targets() -> None:
     assert [
         guide.scene_id for guide in _workflow_matching_guides("rigid_ipc_tunnel")
     ][:1] == ["rigid_solver_compare"]
+    assert [
+        guide.scene_id for guide in _workflow_matching_guides("floating_base")
+    ][:1] == ["rigid_free_flight"]
+    assert [
+        guide.scene_id for guide in _workflow_matching_guides("two-link arm")
+    ][:1] == ["rigid_multibody_dynamics_terms"]
     assert [
         guide.scene_id for guide in _workflow_matching_guides("contact gradient")
     ][:1] == ["rigid_contact_solver_compare"]

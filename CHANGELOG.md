@@ -190,15 +190,16 @@
     while `rigid_contact_solver_compare` plots pose divergence and marks
     coupled-contact or depth frames.
   - Added related-evidence routes to the runner-owned `Rigid Workflow` panel so
-    `rigid_solver_compare` can jump to the non-numbered Rigid IPC
-    no-tunneling scene and `rigid_contact_solver_compare` can jump to the
-    differentiable contact-gradient scene. The `contact`,
-    `rigid_joint_breakage`, and `rigid_joint_motor_limits` rows now also jump
-    to their AVBD-specific rigid constraint variants without changing the
-    35-row rigid workflow order, and the `Find row` filter indexes those
-    related shelf targets without demoting broad row-intent searches. Related
-    search results label the target scene, and the docs now include docked
-    capture commands for every related route.
+    `rigid_free_flight` and `rigid_multibody_dynamics_terms` can jump to the
+    broader `floating_base` and `articulated` World rows, `rigid_solver_compare`
+    can jump to the non-numbered Rigid IPC no-tunneling scene, and
+    `rigid_contact_solver_compare` can jump to the differentiable
+    contact-gradient scene. The `contact`, `rigid_joint_breakage`, and
+    `rigid_joint_motor_limits` rows now also jump to their AVBD-specific rigid
+    constraint variants without changing the 35-row rigid workflow order, and
+    the `Find row` filter indexes those related shelf targets without demoting
+    broad row-intent searches. Related search results label the target scene,
+    and the docs now include docked capture commands for every related route.
   - Added `rigid_ipc_stack_packet` to the non-numbered Rigid IPC shelf as a
     capture-first four-box stack stress scene with frame-budget, wall-time,
     clearance, contact-count, drift, height-error, speed, and benchmark-owner

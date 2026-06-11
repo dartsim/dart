@@ -483,6 +483,28 @@ _RIGID_VISUAL_WORKFLOW_BADGES = {
 _RIGID_WORKFLOW_RELATED_EVIDENCE: Mapping[
     str, tuple[RigidWorkflowRelatedEvidence, ...]
 ] = {
+    "rigid_free_flight": (
+        RigidWorkflowRelatedEvidence(
+            label="World Rigid Body / floating_base - broader floating-joint row",
+            scene_id="floating_base",
+            shelf="World Rigid Body",
+            reason=(
+                "Broader floating-joint SE(3) drift/spin example; use the "
+                "numbered row for baseline rigid-body initial-state diagnostics."
+            ),
+        ),
+    ),
+    "rigid_multibody_dynamics_terms": (
+        RigidWorkflowRelatedEvidence(
+            label="World Rigid Body / articulated - broader two-link arm row",
+            scene_id="articulated",
+            shelf="World Rigid Body",
+            reason=(
+                "Broader two-link arm example; use the numbered row for "
+                "mass, inverse-dynamics, and impulse-response diagnostics."
+            ),
+        ),
+    ),
     "rigid_solver_compare": (
         RigidWorkflowRelatedEvidence(
             label="Rigid IPC / rigid_ipc_tunnel - focused no-tunneling view",

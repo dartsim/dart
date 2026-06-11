@@ -51,12 +51,13 @@
   piloted by `rigid_solver_compare` and `rigid_contact_solver_compare` with
   divergence values plus marker frames while scrubbing saved states.
 - Adds related-evidence links from numbered rigid workflow rows to
-  non-numbered shelves for focused IPC no-tunneling, differentiable
-  contact-gradient debugging, and AVBD-specific rigid constraint variants. The
-  `Find row` filter indexes those related shelf labels and scene ids, so users
-  can search for the target evidence and land on the numbered source row; the
-  search result labels the matched related scene and the docs provide docked
-  capture commands for every related target.
+  non-numbered shelves for broader World `floating_base`/`articulated`
+  examples, focused IPC no-tunneling, differentiable contact-gradient
+  debugging, and AVBD-specific rigid constraint variants. The `Find row` filter
+  indexes those related shelf labels and scene ids, so users can search for the
+  target evidence and land on the numbered source row; the search result labels
+  the matched related scene and the docs provide docked capture commands for
+  every related target.
 - Adds a non-numbered `rigid_ipc_stack_packet` Rigid IPC shelf scene for
   capture-first heavier stack evidence with frame-budget, wall-time,
   clearance, contact-count, drift, height-error, speed, and benchmark-owner

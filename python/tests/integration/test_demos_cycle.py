@@ -1038,6 +1038,26 @@ def test_rigid_visual_workflow_related_evidence_routes_are_valid() -> None:
 
     assert related_rows == [
         (
+            "rigid_free_flight",
+            "floating_base",
+            "World Rigid Body",
+            "Related shelf: World Rigid Body / floating_base - broader floating-joint row",
+            (
+                "Broader floating-joint SE(3) drift/spin example; use the "
+                "numbered row for baseline rigid-body initial-state diagnostics."
+            ),
+        ),
+        (
+            "rigid_multibody_dynamics_terms",
+            "articulated",
+            "World Rigid Body",
+            "Related shelf: World Rigid Body / articulated - broader two-link arm row",
+            (
+                "Broader two-link arm example; use the numbered row for mass, "
+                "inverse-dynamics, and impulse-response diagnostics."
+            ),
+        ),
+        (
             "rigid_solver_compare",
             "rigid_ipc_tunnel",
             "Rigid IPC",
@@ -1405,6 +1425,8 @@ def test_rigid_visual_related_evidence_capture_commands_are_documented() -> None
     )
     readme = root / "python" / "examples" / "demos" / "README.md"
     expected_specs = [
+        ("floating_base", 72, 960, 540, True),
+        ("articulated", 72, 960, 540, True),
         ("rigid_ipc_tunnel", 24, 960, 540, True),
         ("diff_drone_liftoff", 96, 960, 540, True),
         ("avbd_rigid_fixed_joint_contact", 72, 960, 540, True),

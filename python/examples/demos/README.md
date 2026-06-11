@@ -179,6 +179,12 @@ numbered World Rigid Body workflow because it is an IPC-only capability scene,
 not a broad side-by-side solver row. In the viewer, the `Rigid Solver Compare`
 row exposes it as a `Related shelf` route.
 
+The older **`floating_base`** and **`articulated`** rows stay in the broader
+**World Rigid Body** catalog outside the numbered verifier block. In the
+viewer, `Rigid Free Flight` routes to `floating_base` for the floating-joint
+SE(3) drift/spin example, and `Rigid Multibody Dynamics Terms` routes to
+`articulated` for the compact two-link arm example.
+
 For AVBD-specific rigid constraint variants, use the **AVBD Rigid Constraints
 (sx)** shelf. In the viewer, the `Contact`, `Rigid Joint Breakage`, and `Rigid
 Joint Motor Limits` rows expose `Related shelf` routes to
@@ -647,6 +653,10 @@ pixi run py-demo-capture -- --scene diff_drone_liftoff --frames 96 \
 Capture every non-numbered related-evidence route with the docked UI visible:
 
 ```bash
+pixi run py-demo-capture -- --scene floating_base --frames 72 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene articulated --frames 72 \
+    --width 960 --height 540 --show-ui
 pixi run py-demo-capture -- --scene rigid_ipc_tunnel --frames 24 \
     --width 960 --height 540 --show-ui
 pixi run py-demo-capture -- --scene diff_drone_liftoff --frames 96 \
