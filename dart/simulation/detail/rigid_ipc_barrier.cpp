@@ -31,6 +31,7 @@
 
 #include <dart/simulation/detail/deformable_contact/candidate_set.hpp>
 #include <dart/simulation/detail/newton_barrier/articulation_constraint.hpp>
+#include <dart/simulation/detail/newton_barrier/change_of_variable.hpp>
 #include <dart/simulation/detail/newton_barrier/friction_kernel.hpp>
 #include <dart/simulation/detail/newton_barrier/projected_newton.hpp>
 #include <dart/simulation/detail/newton_barrier/psd_projection.hpp>
@@ -38,7 +39,6 @@
 #include <dart/simulation/detail/rigid_ipc_barrier.hpp>
 
 #include <Eigen/Cholesky>
-#include <Eigen/QR>
 
 #include <algorithm>
 #include <array>
@@ -1097,32 +1097,19 @@ RigidIpcProjectedNewtonStep computeRigidIpcProjectedNewtonStepImpl(
 
   Eigen::VectorXd rawStep;
   if (hasEqualityRows) {
-    const Eigen::MatrixXd denseJacobian(assembly.equalityJacobian);
-    if (!denseJacobian.allFinite()) {
+    const auto changeOfVariable = newton_barrier::makeEqualityChangeOfVariable(
+        assembly.equalityJacobian, assembly.equalityResidual);
+    if (!changeOfVariable.valid) {
       result.status = RigidIpcProjectedNewtonStatus::FactorizationFailed;
       return result;
     }
 
-    Eigen::MatrixXd kkt
-        = Eigen::MatrixXd::Zero(dofs + equalityRows, dofs + equalityRows);
-    kkt.topLeftCorner(dofs, dofs) = denseHessian;
-    kkt.topRightCorner(dofs, equalityRows) = denseJacobian.transpose();
-    kkt.bottomLeftCorner(equalityRows, dofs) = denseJacobian;
-
-    Eigen::VectorXd rhs = Eigen::VectorXd::Zero(dofs + equalityRows);
-    rhs.head(dofs) = -assembly.gradient;
-    rhs.tail(equalityRows) = -assembly.equalityResidual;
-    if (!kkt.allFinite() || !rhs.allFinite()) {
+    rawStep = newton_barrier::solveEqualityConstrainedQuadraticReduced(
+        denseHessian, assembly.gradient, changeOfVariable);
+    if (!rawStep.allFinite()) {
       result.status = RigidIpcProjectedNewtonStatus::FactorizationFailed;
       return result;
     }
-
-    Eigen::CompleteOrthogonalDecomposition<Eigen::MatrixXd> solver(kkt);
-    if (solver.info() != Eigen::Success) {
-      result.status = RigidIpcProjectedNewtonStatus::FactorizationFailed;
-      return result;
-    }
-    rawStep = solver.solve(rhs).head(dofs);
   } else {
     Eigen::LDLT<Eigen::MatrixXd> solver(denseHessian);
     if (solver.info() != Eigen::Success || !solver.isPositive()) {

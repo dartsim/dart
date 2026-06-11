@@ -29,6 +29,8 @@
         curvature term needed to match PLAN-082 rigid IPC.
   - [x] Add the first ABD benchmark packet shape with a matched rigid IPC
         point-triangle oracle row and orthogonality-energy row.
+  - [x] Add a reduced affine point-triangle solved-state micro-solve diagnostic
+        and benchmark row without claiming an ABD runtime solver.
   - [x] Add reduced friction equivalence rows through affine tangent stencils
         for point-point, point-edge, edge-edge, and point-triangle primitives.
   - [x] Promote the first packet into the PLAN-083 manifest as an in-progress
@@ -176,6 +178,44 @@
         rigid IPC contact solve.
   - [x] Add a reduced hanging-bridge py-demo smoke scene that steps through
         `World::step` and supports headless capture.
+- [ ] CPU corpus evidence follow-up: add reduced scene packets without claiming
+      paper-scale reproduction.
+  - [x] Add the first reduced hanging-bridge CPU scene packet benchmark and
+        writer for the runtime smoke path.
+  - [x] Add a reduced lying-flat deformable-cloth/static-obstacle CPU scene
+        packet and runtime status panel while keeping paper-scale mixed
+        coupling future work.
+  - [x] Add a reduced pulley hinged-wheel CPU scene packet and runtime status
+        panel while keeping force comparison and rope/rod coupling future work.
+  - [x] Add a reduced umbrella hinged-rib CPU scene packet and runtime status
+        panel while keeping cloth, sliding, and paper-scale rod coupling future
+        work.
+  - [x] Add a reduced nunchaku hinge CPU scene packet and runtime status panel
+        for the public revolute-joint path.
+  - [x] Add a reduced terrain vehicle CPU scene packet and runtime status panel
+        for chassis/passive wheel hinges over flat terrain.
+  - [x] Add a reduced windmill hinge/contact CPU scene packet and runtime
+        status panel while keeping Bullet/reference comparison future work.
+  - [x] Add a reduced Candy deformable-cloth/static-shell CPU scene packet and
+        runtime status panel while keeping affine packing, twisted shell, and
+        self-contact parity future work.
+  - [x] Add a reduced precession wheel CPU scene packet and runtime status
+        panel while keeping angular-velocity sweeps future work.
+  - [x] Add a reduced ragdoll CPU scene packet and runtime status panel while
+        keeping cone-twist joints and 60-ragdoll scale future work.
+  - [x] Add a reduced nunchaku scaling CPU packet for sizes 20, 40, 60, 80,
+        and 100 while keeping cone-twist and coupled contact scaling future
+        work.
+  - [x] Add a reduced timing-breakdown CPU packet that aggregates runnable
+        reduced corpus rows while keeping paper subphase timing future work.
+  - [x] Add a reduced Table 2 setup/statistics CPU packet for runnable reduced
+        rows while keeping missing mixed/ABD rows future work.
+  - [x] Add a sparse equality change-of-variable internal contract with rank,
+        residual, sparse free-coordinate basis, and KKT solve-equivalence tests
+        and route the rigid IPC equality step through it while keeping
+        paper-scale pulley/sliding scenes future work.
+  - [ ] Add paper-scale CPU packets only after the corresponding scene assets,
+        mixed-domain stepping, and comparison baselines exist.
 
 ## Goal
 
@@ -190,8 +230,10 @@ storage, or backend resources as public API.
 - No public API changes.
 - No dartpy binding changes.
 - No paper-scale runtime scene reproduction or fixture asset migration beyond
-  the reduced hanging-bridge smoke scene, launchable planned py-demo
-  placeholders, and checked corpus manifest.
+  the reduced lying-flat, hanging-bridge, pulley, umbrella, terrain vehicle,
+  ragdoll, nunchaku, windmill, Candy, and precession smoke scenes, the reduced
+  timing-breakdown and Table 2 packets, launchable planned py-demo placeholders,
+  and checked corpus manifest.
 - No rigid curved-trajectory CCD move.
 - No sparse Newton loop merge.
 - No rigid IPC default behavior change.
@@ -228,27 +270,35 @@ storage, or backend resources as public API.
   variant names such as rigid IPC, deformable IPC, and ABD remain internal
   provenance until shared behavior is proven.
 - The first `abd-alg-affine-body` micro-packet is primitive/oracle evidence and
-  does not need a two-body affine contact micro-solve before Phase 3. Add a
-  solved-state micro-solve only when the next broader ABD packet needs runtime
-  residuals rather than primitive, friction, or orthogonality rows.
+  now includes a reduced point-triangle solved-state diagnostic row with
+  residual/convergence counters. Broader ABD packets still need scene-level
+  runtime residuals, scene assets, and comparison baselines before any
+  paper-scale ABD row moves.
 
 ## Immediate Next Steps
 
 1. Use merged PR #2960 and follow-up PR #2961 as the baseline for remaining
    work; do not reopen the old phase-scoped stack.
-2. Finish resolving, validating, and managing
+2. Finish validating and managing
    `feature/newton-barrier-runtime-wiring` as one runtime-wiring PR targeting
    `main`; do not split the small runtime slices into separate PRs.
-3. Get maintainer direction before retiring
+3. Continue corpus evidence on `feature/newton-barrier-corpus-evidence` by
+   adding reduced packets only where runtime evidence exists; do not mark
+   paper-scale rows complete without paper-scale scene assets and comparison
+   evidence.
+   The reduced packets may move only row-specific runtime smoke evidence;
+   analytical force comparison, paper-scale rope/rod coupling, affine packing,
+   twisted shell, and self-contact parity remain planned.
+4. Get maintainer direction before retiring
    `docs/dev_tasks/unified_newton_barrier_multibody/`: the Phase 8 audit found
    that PLAN-083 still has planned CPU/GPU/scene rows and cannot honestly be
    called complete yet.
-4. Keep the two-body affine contact micro-solve deferred until the
-   `abd-alg-affine-body` row expands beyond the primitive/oracle micro-packet
-   and needs a solved-state residual or runtime stepping diagnostic.
-5. Promote only the smallest proven shared contract, with cross-variant tests
+5. Use the reduced affine point-triangle micro-solve only as internal
+   solved-state evidence; broader ABD CPU packets still require scene-level
+   runtime residuals, scene assets, and comparison baselines.
+6. Promote only the smallest proven shared contract, with cross-variant tests
    showing identical behavior; keep variant-specific terms in their owner plans.
-6. Keep paper-scale runtime stepping and non-PSD GPU claims out of scope until
+7. Keep paper-scale runtime stepping and non-PSD GPU claims out of scope until
    the row-specific CPU corpus packets and Phase 7 GPU parity evidence exist.
 
 ## Validation Gates For Current Slices
@@ -424,6 +474,14 @@ Runtime-wiring branch-local evidence:
 - `ctest --test-dir build/default/cpp/Release -R 'test_world|test_rigid_ipc_barrier' --output-on-failure`
 - `LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe pixi run py-demos -- --scene plan083_hanging_bridge --headless --frames 4 --width 320 --height 240`
 - `LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe pixi run py-demo-capture -- --scene plan083_hanging_bridge --frames 4 --width 320 --height 240 --output-dir /tmp/dart_plan083_hanging_bridge_capture`
+- `pixi run bm-plan083-cpu-hanging-bridge-packet`
+- `pixi run bm-plan083-cpu-lying-flat-packet`
+- `pixi run bm-plan083-cpu-pulley-packet`
+- `pixi run bm-plan083-cpu-umbrella-packet`
+- `pixi run bm-plan083-cpu-candy-packet`
+- `pixi run bm-plan083-cpu-nunchaku-packet`
+- `pixi run bm-plan083-cpu-nunchaku-scaling-packet`
+- `pixi run bm-plan083-cpu-ragdoll-packet`
 - `pixi run python scripts/check_plan083_cpu_scene_corpus.py`
 - `pixi run python scripts/check_plan083_completion_audit.py`
 
