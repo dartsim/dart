@@ -1100,7 +1100,7 @@ std::vector<GeneratedCase> makeStressSingularDegenerateCases()
       makeSingularDegenerateFrictionIndexCase(12)};
 }
 
-#ifndef DART_CODECOV
+#ifndef DART_LCP_GENERATED_COVERAGE_SKIP_EXTREME_SINGULAR_DEGENERATE
 std::vector<GeneratedCase> makeExtremeSingularDegenerateCases()
 {
   return {
@@ -1707,9 +1707,10 @@ TEST(
   }
 }
 
-// Code coverage instrumentation makes this largest rank-deficient slice exceed
-// the CI per-test timeout. Normal CI still runs it without DART_CODECOV.
-#ifndef DART_CODECOV
+// Code coverage instrumentation and Debug assertions make this largest
+// rank-deficient slice exceed the CI per-test timeout. Optimized CI still runs
+// it without DART_LCP_GENERATED_COVERAGE_SKIP_EXTREME_SINGULAR_DEGENERATE.
+#ifndef DART_LCP_GENERATED_COVERAGE_SKIP_EXTREME_SINGULAR_DEGENERATE
 //==============================================================================
 TEST(
     LcpGeneratedCoverage,

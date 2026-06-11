@@ -357,11 +357,20 @@ if(TARGET UNIT_math_lcp_math_lcp_all_solvers_smoke)
     PRIVATE DART_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
   )
 endif()
-if(DART_CODECOV AND TARGET UNIT_math_lcp_math_lcp_lcp_generated_coverage)
+if(TARGET UNIT_math_lcp_math_lcp_lcp_generated_coverage)
   target_compile_definitions(
     UNIT_math_lcp_math_lcp_lcp_generated_coverage
-    PRIVATE DART_CODECOV=1
+    PRIVATE
+      $<$<CONFIG:Debug>:DART_LCP_GENERATED_COVERAGE_SKIP_EXTREME_SINGULAR_DEGENERATE=1>
   )
+  if(DART_CODECOV)
+    target_compile_definitions(
+      UNIT_math_lcp_math_lcp_lcp_generated_coverage
+      PRIVATE
+        DART_CODECOV=1
+        DART_LCP_GENERATED_COVERAGE_SKIP_EXTREME_SINGULAR_DEGENERATE=1
+    )
+  endif()
 endif()
 
 # Math Lie group tests
