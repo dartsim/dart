@@ -319,22 +319,21 @@ build/CTest entries.
 
 ## Current Branch
 
-`simx/plan083-gpu-contact-candidate-packet` - continues private GPU parity
-evidence after the reduced ABD comparison packet branch. This branch adds a
-private point-triangle contact-stencil filter, CUDA unit test, benchmark smoke,
-and packet writer for preassembled stencils only. Keep the packet row
-`in-progress`: broad-phase construction, edge-edge candidates, runtime scene
-candidate filtering, and the speedup gate remain future evidence.
+`simx/plan083-gpu-ccd-line-search-packet` - continues private GPU parity
+evidence after the contact-candidate packet branch. This branch adds a private
+endpoint-linear point-triangle CCD/line-search packet, CUDA unit test, benchmark
+smoke, and packet writer for static-triangle fixtures only. Keep the packet row
+`in-progress`: edge-edge CCD, rigid curved trajectories, runtime candidate
+sets, and scene-level line-search feasibility remain future evidence.
 
 ## Immediate Next Step
 
-Finish and review `simx/plan083-gpu-contact-candidate-packet`, then continue
-the remaining private GPU rows in roadmap order: CCD/line search,
-barrier/friction local kernels, assembly/linear solve, and scene-level parity.
-Leave the dev-task folder active because PLAN-083 acceptance criteria are still
-unmet; if the task later moves out of this folder, get maintainer direction
-before deleting it and keep the remaining planned CPU/GPU/scene rows in durable
-sidecars.
+Finish and review `simx/plan083-gpu-ccd-line-search-packet`, then continue the
+remaining private GPU rows in roadmap order: barrier/friction local kernels,
+assembly/linear solve, and scene-level parity. Leave the dev-task folder active
+because PLAN-083 acceptance criteria are still unmet; if the task later moves
+out of this folder, get maintainer direction before deleting it and keep the
+remaining planned CPU/GPU/scene rows in durable sidecars.
 
 ## Context That Would Be Lost
 

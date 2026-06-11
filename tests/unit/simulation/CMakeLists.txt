@@ -192,6 +192,12 @@ if(DART_SIMULATION_BUILD_TESTS)
       LIBRARY ${PROJECT_NAME}-simulation-cuda
       LABEL simulation-cuda
     )
+    dart_add_simulation_test(
+      test_ccd_line_search_cuda
+      ${CMAKE_CURRENT_SOURCE_DIR}/cuda/test_ccd_line_search_cuda.cpp
+      LIBRARY ${PROJECT_NAME}-simulation-cuda
+      LABEL simulation-cuda
+    )
     set_tests_properties(test_lcp_jacobi_batch_cuda PROPERTIES TIMEOUT 3600)
   endif()
 

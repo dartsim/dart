@@ -281,8 +281,8 @@ its own line so status updates remain git-history friendly.
 - Dimension: Algorithm extensibility
 - Next step: Continue the active
   [`../dev_tasks/unified_newton_barrier_multibody/`](../dev_tasks/unified_newton_barrier_multibody/)
-  private GPU contact-candidate follow-up on
-  `simx/plan083-gpu-contact-candidate-packet`. PR #2960 landed
+  private GPU CCD/line-search follow-up on
+  `simx/plan083-gpu-ccd-line-search-packet`. PR #2960 landed
   implementation-roadmap Phases 3-8; PR #2961 measured the private GPU PSD
   projection packet, added the Fig. 17 barrier-force diagnostic, and aligned
   articulation-only figure rows with landed private diagnostics; PR #2970
@@ -296,12 +296,16 @@ its own line so status updates remain git-history friendly.
   `abd-vs-rigid-cards`, `abd-vs-rigid-wreck`, `abd-chain-8`, `abd-chain-16`,
   and `abd-chain-96`; PR #2976 adds reduced ABD gears/Bullet comparison
   packets without claiming gear assets, Bullet/reference baselines, GPU parity,
-  or paper-scale parity. The current follow-up adds a private point-triangle
+  or paper-scale parity. PR #2978 adds a private point-triangle
   contact-stencil filter packet with exact CPU/GPU parity for preassembled
   stencils, while keeping broad-phase, edge-edge, runtime scene filtering, and
-  speedup as future evidence. The completion audit still records PLAN-083 as
-  incomplete while planned manifest and non-PSD GPU parity rows remain, so
-  dev-task retirement needs maintainer direction before deletion.
+  speedup as future evidence. The current follow-up adds endpoint-linear
+  point-triangle CCD/line-search parity for static-triangle fixtures, while
+  keeping edge-edge CCD, rigid curved trajectories, runtime candidate sets, and
+  scene-level line-search feasibility as future evidence. The completion audit
+  still records PLAN-083 as incomplete while planned manifest and non-PSD GPU
+  parity rows remain, so dev-task retirement needs maintainer direction before
+  deletion.
 - Gate: Unified Newton-barrier progress is not complete until every cited
   paper/deck figure, unit test, benchmark table, and comparison scene is mapped
   to DART-owned tests, py-demos examples, benchmark/profiling packets, CPU and

@@ -164,6 +164,10 @@
         CPU/GPU parity for preassembled stencils; keep the row in-progress
         because broad-phase construction, edge-edge candidates, runtime scene
         filtering, and speedup remain unproven.
+  - [x] Add a private endpoint-linear point-triangle CCD/line-search packet
+        with exact CPU/GPU step-bound parity; keep the row in-progress because
+        edge-edge CCD, rigid curved trajectories, runtime candidate sets, and
+        scene-level line-search feasibility remain unproven.
 - [ ] Implementation-roadmap Phase 8: complete the PLAN-083 audit and retire
       temporary task state.
   - [x] Add a checked completion audit sidecar that records the current
@@ -284,11 +288,12 @@ storage, or backend resources as public API.
 
 1. Use merged PRs #2960, #2961, #2970, and #2971 as the baseline for remaining
    work; do not reopen the old phase-scoped stack.
-2. Continue private GPU contact-candidate evidence on
-   `simx/plan083-gpu-contact-candidate-packet` by keeping the landed packet
-   limited to preassembled point-triangle stencils. Do not mark the row
-   measured until broad-phase construction, edge-edge candidates, runtime scene
-   candidate filtering, and the speedup gate have concrete evidence.
+2. Continue private GPU CCD/line-search evidence on
+   `simx/plan083-gpu-ccd-line-search-packet` by keeping the landed packet
+   limited to endpoint-linear point-triangle static-triangle fixtures. Do not
+   mark the row measured until edge-edge CCD, rigid curved trajectories,
+   runtime candidate sets, and scene-level line-search feasibility have
+   concrete evidence.
 3. Use the reduced ABD runtime-step and GPU contact-stencil packets only as
    internal runtime evidence;
    broader ABD CPU packets still require scene-level runtime residuals, scene
@@ -342,6 +347,13 @@ Phase 7 contact-candidate packet evidence:
 - `pixi run -e cuda build-cuda`
 - `pixi run -e cuda test-cuda`
 - `pixi run -e cuda bm-plan083-gpu-contact-candidates-packet`
+
+Phase 7 CCD/line-search packet evidence:
+
+- `pixi run python -m pytest tests/test_plan083_gpu_ccd_line_search_packet.py`
+- `pixi run -e cuda build-cuda`
+- `pixi run -e cuda test-cuda`
+- `pixi run -e cuda bm-plan083-gpu-ccd-line-search-packet`
 
 Phase 1 local evidence:
 

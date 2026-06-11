@@ -16,9 +16,9 @@
   "summary": {
     "row_count": 6,
     "status_counts": {
-      "in-progress": 1,
+      "in-progress": 2,
       "measured": 1,
-      "planned": 4
+      "planned": 3
     }
   },
   "rows": [
@@ -58,9 +58,9 @@
       "row_id": "ccd-line-search",
       "roadmap_item": "CCD and line-search kernels",
       "owner": "PLAN-083 + PLAN-082",
-      "status": "planned",
+      "status": "in-progress",
       "cpu_evidence_command": "pixi run bm --target bm_ipc_continuous_collision_step --build-type Release -- --benchmark_report_aggregates_only=true --benchmark_out=.benchmark_results/plan083/gpu/ccd_line_search_cpu.json --benchmark_out_format=json",
-      "gpu_evidence_command": "not-ready: no private PLAN-083 GPU CCD or line-search kernel has landed",
+      "gpu_evidence_command": "pixi run -e cuda bm-plan083-gpu-ccd-line-search-packet",
       "parity_evidence_artifact": ".benchmark_results/plan083/gpu/ccd_line_search_parity.json",
       "benchmark_profile_artifact": ".benchmark_results/plan083/gpu/ccd_line_search_benchmark.json",
       "same_scene_policy": "Use identical conservative CCD fixtures, step directions, and feasibility margins on CPU and GPU.",
@@ -68,8 +68,24 @@
       "timing_policy": "Report setup, transfer, CCD kernel, line-search kernel, readback, and CPU baseline timing separately.",
       "speedup_policy": "Require >=1.25x over the DART CPU CCD/line-search path before recording a go claim.",
       "public_api_policy": "No public CUDA or backend exposure; private evidence stays under scripts, benchmarks, and detail/compute owners.",
-      "limitation_status": "Waiting for a GPU conservative-CCD row and a line-search feasibility row that share the CPU contract.",
-      "notes_or_gap": "The current Phase 5 point-pair CCD reduction is CPU-only and intentionally remains the oracle."
+      "limitation_status": "Private endpoint-linear point-triangle CCD line-search parity packet exists, but it covers static-triangle fixtures only and does not yet cover edge-edge CCD, rigid curved trajectories, runtime scene candidate sets, or scene-level line-search feasibility.",
+      "notes_or_gap": "The packet measured exact CPU/GPU step-bound parity for 65536 endpoint-linear point-triangle pairs on 2026-06-11 with 4.8497584310214625x speedup, but the row remains in-progress until the broader CCD and runtime line-search surface has evidence.",
+      "same_scene_cpu_gpu": true,
+      "pair_count": 65536,
+      "hit_count": 49152,
+      "min_step_bound": 0.4999995,
+      "max_result_abs_error": 0.0,
+      "result_abs_error_tolerance": 1e-8,
+      "speedup": 4.8497584310214625,
+      "min_speedup": 1.25,
+      "timing_ns": {
+        "setup": 507081.0,
+        "host_to_device": 1447688.0,
+        "kernel": 422670.0,
+        "solve": 0.0,
+        "device_to_host": 254885.0,
+        "readback": 0.0
+      }
     },
     {
       "row_id": "barrier-friction-local-kernels",

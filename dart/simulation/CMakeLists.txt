@@ -88,6 +88,8 @@ if(DART_ENABLE_EXPERIMENTAL_CUDA)
   add_library(
     ${cuda_target_name}
     STATIC
+    compute/cuda/ccd_line_search_cuda.cpp
+    compute/cuda/ccd_line_search_cuda.cu
     compute/cuda/cuda_runtime.cpp
     compute/cuda/contact_candidate_filter_cuda.cpp
     compute/cuda/contact_candidate_filter_cuda.cu
