@@ -111,9 +111,12 @@ standalone LCP binding on a shared standard smoke problem for every solver, so
 the panel can show status, iteration count, and solution error without going
 through a contact `World`. The representative problem table lists every solver
 on each packet and separates native support from delegated fallback solves, with
-the fastest native solve highlighted for quick triage. The benchmark packet map
-includes the native `world_card_pile` packet for high-aspect-ratio card-pile
-contact scaling. Authoritative performance runs remain owned by
+the fastest native solve highlighted for quick triage. Its standard-LCP packet
+set includes well-conditioned, ill-conditioned, near-singular, and moderate
+scale cases so conditioning and size changes are visible without changing the
+solver roster. The benchmark packet map includes the native `world_card_pile`
+packet for high-aspect-ratio card-pile contact scaling. Authoritative
+performance runs remain owned by
 `tests/common/lcpsolver`, `tests/unit/math/lcp`, and `tests/benchmark/lcpsolver`.
 Run the benchmark smoke with:
 

@@ -849,6 +849,20 @@ def _make_ill_conditioned_standard_case() -> tuple[dart.LcpProblem, np.ndarray]:
     return dart.LcpProblem(A, A @ expected), expected
 
 
+def _make_near_singular_standard_case() -> tuple[dart.LcpProblem, np.ndarray]:
+    A = np.array(
+        [
+            [0.0010, 0.0001, 0.0000, 0.0000],
+            [0.0001, 1.0000, 0.0200, 0.0000],
+            [0.0000, 0.0200, 2.0000, 0.0200],
+            [0.0000, 0.0000, 0.0200, 4.0000],
+        ],
+        dtype=float,
+    )
+    expected = np.array([0.25, 0.20, 0.30, 0.15], dtype=float)
+    return dart.LcpProblem(A, A @ expected), expected
+
+
 def _make_boxed_active_bounds_case() -> tuple[dart.LcpProblem, np.ndarray]:
     A = np.array(
         [
@@ -910,6 +924,15 @@ _STANDALONE_PROBLEM_CASES: tuple[_StandaloneProblemCase, ...] = (
         support_key="standard",
         challenge="large mass-ratio style conditioning",
         make_problem=_make_ill_conditioned_standard_case,
+        tolerance=2e-4,
+    ),
+    _StandaloneProblemCase(
+        name="near_singular_standard",
+        label="Near-singular standard",
+        surface="standard",
+        support_key="standard",
+        challenge="weakly constrained mode with regularization pressure",
+        make_problem=_make_near_singular_standard_case,
         tolerance=2e-4,
     ),
     _StandaloneProblemCase(

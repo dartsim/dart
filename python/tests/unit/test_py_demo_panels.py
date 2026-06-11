@@ -755,6 +755,7 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     expected_problem_counts = {
         "standard_spd": 24,
         "ill_conditioned_standard": 24,
+        "near_singular_standard": 24,
         "boxed_active_bounds": 24,
         "friction_index_contact": 24,
         "moderate_scale_standard": 24,
@@ -762,6 +763,7 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     expected_native_problem_counts = {
         "standard_spd": 24,
         "ill_conditioned_standard": 24,
+        "near_singular_standard": 24,
         "boxed_active_bounds": 16,
         "friction_index_contact": 16,
         "moderate_scale_standard": 24,
@@ -820,6 +822,8 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     }
     assert {row["packet"] for row in info["benchmark_packet_rows"]} >= {
         "active_set_transition",
+        "singular_degenerate",
+        "near_singular",
         "world_stack",
         "world_card_pile",
         "batch_scale",
