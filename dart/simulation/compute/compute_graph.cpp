@@ -65,11 +65,13 @@ ComputeGraph::ComputeGraph()
 ComputeGraph::ComputeGraph(dart::common::MemoryAllocator& allocator)
   : m_allocator(&allocator),
     m_nodes(ComputeNodePtrAllocator{allocator}),
+    m_edges(EdgeAllocator{allocator}),
     m_nodesByName(
         0,
         std::hash<std::string>{},
         std::equal_to<std::string>{},
-        NodeNameLookupAllocator{allocator})
+        NodeNameLookupAllocator{allocator}),
+    m_topologicalOrderCache(TopologicalOrderAllocator{allocator})
 {
 }
 
@@ -179,23 +181,25 @@ std::vector<ComputeNode*> ComputeGraph::getNodes() const
 //==============================================================================
 std::vector<ComputeNode*> ComputeGraph::getTopologicalOrder() const
 {
-  return getTopologicalOrderView();
+  const auto order = getTopologicalOrderView();
+  return std::vector<ComputeNode*>{order.begin(), order.end()};
 }
 
 //==============================================================================
-const std::vector<ComputeNode*>& ComputeGraph::getTopologicalOrderView() const
+std::span<ComputeNode* const> ComputeGraph::getTopologicalOrderView() const
 {
   if (!m_topologicalOrderCacheValid) {
     m_topologicalOrderCache = buildTopologicalOrder(true);
     m_topologicalOrderCacheValid = true;
   }
-  return m_topologicalOrderCache;
+  return std::span<ComputeNode* const>{
+      m_topologicalOrderCache.data(), m_topologicalOrderCache.size()};
 }
 
 //==============================================================================
 std::vector<std::vector<ComputeNode*>> ComputeGraph::getParallelLevels() const
 {
-  const auto& order = getTopologicalOrderView();
+  const auto order = getTopologicalOrderView();
   if (order.empty()) {
     return {};
   }
@@ -399,7 +403,7 @@ bool ComputeGraph::wouldCreateCycle(
 }
 
 //==============================================================================
-std::vector<ComputeNode*> ComputeGraph::buildTopologicalOrder(
+ComputeGraph::TopologicalOrderVector ComputeGraph::buildTopologicalOrder(
     bool throwOnCycle) const
 {
   std::vector<ComputeNode*> nodes = getNodes();
@@ -421,7 +425,7 @@ std::vector<ComputeNode*> ComputeGraph::buildTopologicalOrder(
             InvalidOperationException,
             "Compute graph contains an edge with nodes outside the graph");
       }
-      return {};
+      return TopologicalOrderVector(TopologicalOrderAllocator{*m_allocator});
     }
     dependents[indexByNode.at(edge.from)].push_back(indexByNode.at(edge.to));
     ++indegree[indexByNode.at(edge.to)];
@@ -438,7 +442,7 @@ std::vector<ComputeNode*> ComputeGraph::buildTopologicalOrder(
     }
   }
 
-  std::vector<ComputeNode*> order;
+  TopologicalOrderVector order(TopologicalOrderAllocator{*m_allocator});
   order.reserve(count);
   while (!ready.empty()) {
     const auto i = ready.top();

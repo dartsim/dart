@@ -149,12 +149,30 @@ TEST(SimulationComputeGraph, AllocatorAwareGraphUsesProvidedAllocator)
 
   {
     compute::ComputeGraph graph(memoryManager.getFreeAllocator());
-    auto& node = graph.addNode("allocator_node", []() {});
+    auto& start = graph.addNode("allocator_start", []() {});
+    auto& end = graph.addNode("allocator_end", []() {});
+    const auto allocationsAfterNodes = freeList.getAllocationCount();
 
-    EXPECT_EQ(graph.getNode("allocator_node"), &node);
+    graph.addDependency(start, end);
+    EXPECT_GT(freeList.getAllocationCount(), allocationsAfterNodes)
+        << "allocator-aware ComputeGraph should allocate edge storage from "
+           "the provided allocator";
+
+    const auto allocationsAfterEdges = freeList.getAllocationCount();
+    const auto order = graph.getTopologicalOrderView();
+    ASSERT_EQ(order.size(), 2u);
+    EXPECT_EQ(order[0], &start);
+    EXPECT_EQ(order[1], &end);
+    EXPECT_GT(freeList.getAllocationCount(), allocationsAfterEdges)
+        << "allocator-aware ComputeGraph should allocate topological-order "
+           "cache storage from the provided allocator";
+
+    EXPECT_EQ(graph.getNode("allocator_start"), &start);
+    EXPECT_EQ(graph.getNode("allocator_end"), &end);
     EXPECT_GT(freeList.getAllocationCount(), allocationsBeforeGraph)
-        << "allocator-aware ComputeGraph should allocate owned node storage "
-           "from the provided allocator";
+        << "allocator-aware ComputeGraph should allocate owned node, name "
+           "lookup, edge, and topological-order storage from the provided "
+           "allocator";
   }
 
   EXPECT_EQ(freeList.getAllocationCount(), allocationsBeforeGraph);
@@ -265,7 +283,7 @@ TEST(SimulationComputeGraph, CachedTopologicalOrderInvalidatesAfterMutations)
   auto& a = graph.addNode("a", []() {});
   auto& b = graph.addNode("b", []() {});
 
-  const auto& initialOrder = graph.getTopologicalOrderView();
+  const auto initialOrder = graph.getTopologicalOrderView();
   ASSERT_EQ(initialOrder.size(), 2u);
   EXPECT_EQ(initialOrder[0], &a);
   EXPECT_EQ(initialOrder[1], &b);
@@ -274,7 +292,7 @@ TEST(SimulationComputeGraph, CachedTopologicalOrderInvalidatesAfterMutations)
   EXPECT_EQ(graph.getTopologicalOrderView().data(), cachedStorage);
 
   graph.addDependency(b, a);
-  const auto& reordered = graph.getTopologicalOrderView();
+  const auto reordered = graph.getTopologicalOrderView();
   ASSERT_EQ(reordered.size(), 2u);
   EXPECT_EQ(reordered[0], &b);
   EXPECT_EQ(reordered[1], &a);

@@ -796,9 +796,10 @@ Follow-up progress after PR #2956:
   routes owned `ComputeNode` objects plus the node-name lookup table through
   the supplied allocator. A focused compute-graph test verifies node storage
   uses the provided World free allocator and releases it on graph destruction.
-  `ComputeGraph`'s API-exposed edge and topological-order vectors remain a
-  separate follow-up because their public accessors currently return concrete
-  `std::vector` references.
+  A follow-up routes the dependency-edge vector and topological-order cache
+  through the same allocator, and changes the read-only edge/order accessors to
+  span views so those allocator-backed containers stay private while existing
+  range-iteration call sites remain source-compatible.
 
 Remaining Phase 4/5 follow-up items for the next PR:
 

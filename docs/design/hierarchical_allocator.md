@@ -93,12 +93,14 @@ projected-Newton result assembly vectors.
 static-obstacle, deformable-surface snapshot, static rigid surface-CCD snapshot,
 and moving rigid surface-CCD snapshot vectors through the same World free
 allocator, including each snapshot's position, topology, contact-mask, and edge
-payload vectors. `WorldKinematicsGraph` also uses the World free allocator for its
-frame-entity-to-node cache and for `ComputeGraph`'s owned node objects and
-name-lookup table when constructed by the built-in kinematics stage. Other
-nested `std::vector`/Eigen payload capacity inside stage scratch objects,
-including `ComputeGraph`'s API-exposed edge and topological-order vectors, is
-still governed by the same-shape world-base and global heap no-growth gates.
+payload vectors. `WorldKinematicsGraph` also uses the World free allocator for
+its frame-entity-to-node cache and for `ComputeGraph`'s owned node objects,
+name-lookup table, dependency-edge storage, and topological-order cache when
+constructed by the built-in kinematics stage. The public read-only
+`ComputeGraph` accessors expose spans instead of concrete vector references so
+the graph can keep those allocator-backed containers private. Other nested
+`std::vector`/Eigen payload capacity inside stage scratch objects is still
+governed by the same-shape world-base and global heap no-growth gates.
 
 `World::clear()` recreates `WorldStorage` and the built-in step-pipeline cache
 with the same world free allocator, drops the lazy collision query cache, and

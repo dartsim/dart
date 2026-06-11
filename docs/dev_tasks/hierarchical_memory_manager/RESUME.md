@@ -181,9 +181,10 @@ table through the supplied allocator. `WorldKinematicsGraph` now passes its
 allocator into `ComputeGraph`, so the built-in kinematics cache owns those
 graph allocations under the World hierarchy. A focused compute-graph test
 verifies provided-allocator node storage and release on destruction.
-`ComputeGraph`'s edge vector and topological-order cache still use default
-`std::vector` storage because public accessors expose concrete vector
-references; that API-sensitive route remains separate follow-up work.
+A follow-up routes `ComputeGraph`'s edge vector and topological-order cache
+through the same allocator. The read-only edge/order accessors now return span
+views instead of concrete vector references, keeping those allocator-backed
+containers private while preserving the internal range-iteration call sites.
 
 The current rigid IPC scratch slice adds an allocator-aware
 `RigidIpcContactStage::Scratch` constructor for the top-level runtime-body,
@@ -737,7 +738,8 @@ Continue with evidence-first HMM follow-up work on `origin/main`: built-in
 stage-owned scratch/cache object roots are now allocator-aware, and the
 rigid-body velocity force-batch payload plus rigid-body contact
 sequential-impulse constraint vector, plus the `WorldKinematicsGraph`
-entity-node cache, `ComputeGraph` owned node/name lookup storage, rigid IPC
+entity-node cache, `ComputeGraph` owned node/name lookup/edge/order storage,
+rigid IPC
 top-level scratch vectors, rigid IPC solver option/result vectors, and rigid IPC
 projected-Newton solve scratch vectors,
 rigid IPC nested surface vertex/triangle payload vectors, rigid IPC
@@ -749,9 +751,7 @@ point-joint input vectors are the first nested stage payloads routed through
 world-owned
 allocator-backed storage. The next slice should probe existing no-growth/no-heap
 gates or stage-local heap counters for another concrete nested payload path
-before changing broader scratch layouts; the clearest remaining candidate is an
-API-compatible plan for `ComputeGraph`'s exposed edge/topological-order vector
-storage. Do not add new production scenes unless
+before changing broader scratch layouts. Do not add new production scenes unless
 profiling or a failing no-growth/no-heap gate shows a real gap not covered by
 the current shipped scenes.
 
