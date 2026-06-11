@@ -279,23 +279,26 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Algorithm extensibility
-- Next step: Land the active
+- Next step: Continue the active
   [`../dev_tasks/unified_newton_barrier_multibody/`](../dev_tasks/unified_newton_barrier_multibody/)
-  runtime-wiring branch as one PR after merging current `main`. PR #2960 landed
-  implementation-roadmap Phases 3-8, and follow-up PR #2961 measured the
-  private GPU PSD projection packet, added the Fig. 17 barrier-force
-  diagnostic, and aligned articulation-only figure rows with landed private
-  diagnostics. The active branch `feature/newton-barrier-runtime-wiring` wires
-  landed point/fixed and hinge constraints into rigid IPC `World::step`, adds
-  opt-in BDF-2 stepping, routes deformable surfaces as fixed mixed-domain
-  contact obstacles, and runs a reduced hanging-bridge py-demo through
-  `World::step` plus headless capture. The follow-on
-  `feature/newton-barrier-corpus-evidence` branch adds reduced hanging-bridge,
-  lying-flat, pulley, umbrella, terrain vehicle, ragdoll, nunchaku, nunchaku
-  scaling, windmill, Candy, and precession CPU packets plus reduced
-  timing-breakdown and Table 2 packets plus a reduced affine point-triangle
-  micro-solve diagnostic and the sparse equality change-of-variable rigid IPC
-  path without claiming paper-scale parity. The completion audit still records PLAN-083 as incomplete while
+  Phase 6 CPU corpus follow-up on
+  `simx/plan083-phase6-abd-runtime-evidence`. PR #2960 landed
+  implementation-roadmap Phases 3-8; PR #2961 measured the private GPU PSD
+  projection packet, added the Fig. 17 barrier-force diagnostic, and aligned
+  articulation-only figure rows with landed private diagnostics; PR #2970
+  landed runtime wiring for point/fixed and hinge constraints, opt-in BDF-2,
+  deformable fixed obstacles, and the reduced hanging-bridge py-demo; PR #2971
+  landed reduced CPU packets for lying-flat, hanging-bridge, pulley, umbrella,
+  terrain vehicle, ragdoll, nunchaku, nunchaku scaling, windmill, Candy,
+  precession, reduced timing-breakdown, reduced Table 2, the sparse equality
+  change-of-variable rigid IPC path, and the reduced affine point-triangle
+  micro-solve diagnostic. The current follow-up adds reduced ABD runtime-step
+  evidence for `abd-vs-rigid-cards` and reduced two-body ABD pair runtime-step
+  evidence for `abd-vs-rigid-wreck`, plus reduced ABD chain-net runtime-step
+  packets for `abd-chain-8`, `abd-chain-16`, and `abd-chain-96`, without
+  claiming card-stack, wrecking-ball, or chain-net assets, rigid IPC comparison
+  timing, GPU parity, or paper-scale parity. The completion audit still records
+  PLAN-083 as incomplete while
   planned manifest, CPU corpus, and non-PSD GPU parity rows remain, so dev-task
   retirement needs maintainer direction before deletion.
 - Gate: Unified Newton-barrier progress is not complete until every cited
