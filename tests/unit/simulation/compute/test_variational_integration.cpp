@@ -3874,7 +3874,7 @@ TEST(
 
   const Eigen::Vector3d sliderAxis = Eigen::Vector3d::UnitX();
   const Eigen::Vector3d hingeAxis = Eigen::Vector3d::UnitY();
-  const std::array<ExpectedJoint, 4> expected{{
+  const std::array<ExpectedJoint, 8> expected{{
       {
           "serialized_stiff_fixed",
           sx::JointType::Fixed,
@@ -3887,24 +3887,12 @@ TEST(
           Eigen::Vector3d::Zero(),
       },
       {
-          "serialized_stiff_slider",
-          sx::JointType::Prismatic,
+          "serialized_stiff_hinge",
+          sx::JointType::Revolute,
           1u,
           4.0,
           345.0,
           678.0,
-          dvbd::avbdRigidJointAllButAxisMask(2u),
-          dvbd::kAvbdRigidJointAllAxesMask,
-          sliderAxis,
-          true,
-      },
-      {
-          "serialized_stiff_world_hinge",
-          sx::JointType::Revolute,
-          1u,
-          5.0,
-          456.0,
-          789.0,
           dvbd::kAvbdRigidJointAllAxesMask,
           dvbd::avbdRigidJointAllButAxisMask(2u),
           hingeAxis,
@@ -3912,7 +3900,19 @@ TEST(
           true,
       },
       {
-          "serialized_stiff_world_socket",
+          "serialized_stiff_slider",
+          sx::JointType::Prismatic,
+          1u,
+          5.0,
+          456.0,
+          789.0,
+          dvbd::avbdRigidJointAllButAxisMask(2u),
+          dvbd::kAvbdRigidJointAllAxesMask,
+          sliderAxis,
+          true,
+      },
+      {
+          "serialized_stiff_socket",
           sx::JointType::Spherical,
           3u,
           6.0,
@@ -3922,15 +3922,69 @@ TEST(
           0u,
           Eigen::Vector3d::Zero(),
       },
+      {
+          "serialized_stiff_world_fixed",
+          sx::JointType::Fixed,
+          0u,
+          7.0,
+          678.0,
+          901.0,
+          dvbd::kAvbdRigidJointAllAxesMask,
+          dvbd::kAvbdRigidJointAllAxesMask,
+          Eigen::Vector3d::Zero(),
+      },
+      {
+          "serialized_stiff_world_hinge",
+          sx::JointType::Revolute,
+          1u,
+          8.0,
+          789.0,
+          1012.0,
+          dvbd::kAvbdRigidJointAllAxesMask,
+          dvbd::avbdRigidJointAllButAxisMask(2u),
+          hingeAxis,
+          false,
+          true,
+      },
+      {
+          "serialized_stiff_world_slider",
+          sx::JointType::Prismatic,
+          1u,
+          9.0,
+          890.0,
+          1123.0,
+          dvbd::avbdRigidJointAllButAxisMask(2u),
+          dvbd::kAvbdRigidJointAllAxesMask,
+          sliderAxis,
+          true,
+      },
+      {
+          "serialized_stiff_world_socket",
+          sx::JointType::Spherical,
+          3u,
+          10.0,
+          901.0,
+          1234.0,
+          dvbd::kAvbdRigidJointAllAxesMask,
+          0u,
+          Eigen::Vector3d::Zero(),
+      },
   }};
 
   std::array<sx::Joint, expected.size()> joints{
       world.addArticulatedFixedJoint(expected[0].name, pair.parent, pair.child),
-      world.addArticulatedPrismaticJoint(
-          expected[1].name, pair.parent, pair.child, sliderAxis),
       world.addArticulatedRevoluteJoint(
-          expected[2].name, pair.parent, hingeAxis),
-      world.addArticulatedSphericalJoint(expected[3].name, pair.child),
+          expected[1].name, pair.parent, pair.child, hingeAxis),
+      world.addArticulatedPrismaticJoint(
+          expected[2].name, pair.parent, pair.child, sliderAxis),
+      world.addArticulatedSphericalJoint(
+          expected[3].name, pair.parent, pair.child),
+      world.addArticulatedFixedJoint(expected[4].name, pair.parent),
+      world.addArticulatedRevoluteJoint(
+          expected[5].name, pair.parent, hingeAxis),
+      world.addArticulatedPrismaticJoint(
+          expected[6].name, pair.child, sliderAxis),
+      world.addArticulatedSphericalJoint(expected[7].name, pair.child),
   };
 
   for (std::size_t i = 0; i < expected.size(); ++i) {

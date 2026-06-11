@@ -1292,52 +1292,78 @@ def test_simulation_world_articulated_avbd_stiffness_roundtrip_from_python(
     )
     arm = world.add_multibody("serialized_articulated_stiffness_arm")
     base = arm.add_link("base")
-    fixed_body = arm.add_link(
-        "fixed_body",
-        parent=base,
-        joint=sx.JointSpec(name="fixed_float", type=sx.JointType.FLOATING),
-    )
-    slider_body = arm.add_link(
-        "slider_body",
-        parent=base,
-        joint=sx.JointSpec(name="slider_float", type=sx.JointType.FLOATING),
-    )
-    hinge_body = arm.add_link(
-        "hinge_body",
-        parent=base,
-        joint=sx.JointSpec(name="hinge_float", type=sx.JointType.FLOATING),
-    )
-    socket_body = arm.add_link(
-        "socket_body",
-        parent=base,
-        joint=sx.JointSpec(name="socket_float", type=sx.JointType.FLOATING),
-    )
+
+    def add_body(name: str):
+        return arm.add_link(
+            name,
+            parent=base,
+            joint=sx.JointSpec(
+                name=f"{name}_float", type=sx.JointType.FLOATING
+            ),
+        )
+
+    fixed_body = add_body("fixed_body")
+    hinge_body = add_body("hinge_body")
+    slider_body = add_body("slider_body")
+    socket_body = add_body("socket_body")
+    world_fixed_body = add_body("world_fixed_body")
+    world_hinge_body = add_body("world_hinge_body")
+    world_slider_body = add_body("world_slider_body")
+    world_socket_body = add_body("world_socket_body")
 
     fixed = world.add_articulated_fixed_joint("stiff_fixed", base, fixed_body)
     fixed.avbd_start_stiffness = 3.0
     fixed.avbd_linear_stiffness = 234.0
     fixed.avbd_angular_stiffness = 567.0
 
+    hinge = world.add_articulated_revolute_joint(
+        "stiff_hinge", base, hinge_body, axis=(0.0, 1.0, 0.0)
+    )
+    hinge.avbd_start_stiffness = 4.0
+    hinge.avbd_linear_stiffness = 345.0
+    hinge.avbd_angular_stiffness = 678.0
+
     slider = world.add_articulated_prismatic_joint(
         "stiff_slider", base, slider_body, axis=(1.0, 0.0, 0.0)
     )
-    slider.avbd_start_stiffness = 4.0
-    slider.avbd_linear_stiffness = 345.0
-    slider.avbd_angular_stiffness = 678.0
-
-    hinge = world.add_articulated_revolute_joint(
-        "stiff_world_hinge", hinge_body, axis=(0.0, 1.0, 0.0)
-    )
-    hinge.avbd_start_stiffness = 5.0
-    hinge.avbd_linear_stiffness = 456.0
-    hinge.avbd_angular_stiffness = 789.0
+    slider.avbd_start_stiffness = 5.0
+    slider.avbd_linear_stiffness = 456.0
+    slider.avbd_angular_stiffness = 789.0
 
     socket = world.add_articulated_spherical_joint(
-        "stiff_world_socket", socket_body
+        "stiff_socket", base, socket_body
     )
     socket.avbd_start_stiffness = 6.0
     socket.avbd_linear_stiffness = 567.0
     socket.avbd_angular_stiffness = 890.0
+
+    world_fixed = world.add_articulated_fixed_joint(
+        "stiff_world_fixed", world_fixed_body
+    )
+    world_fixed.avbd_start_stiffness = 7.0
+    world_fixed.avbd_linear_stiffness = 678.0
+    world_fixed.avbd_angular_stiffness = 901.0
+
+    world_hinge = world.add_articulated_revolute_joint(
+        "stiff_world_hinge", world_hinge_body, axis=(0.0, 1.0, 0.0)
+    )
+    world_hinge.avbd_start_stiffness = 8.0
+    world_hinge.avbd_linear_stiffness = 789.0
+    world_hinge.avbd_angular_stiffness = 1012.0
+
+    world_slider = world.add_articulated_prismatic_joint(
+        "stiff_world_slider", world_slider_body, axis=(1.0, 0.0, 0.0)
+    )
+    world_slider.avbd_start_stiffness = 9.0
+    world_slider.avbd_linear_stiffness = 890.0
+    world_slider.avbd_angular_stiffness = 1123.0
+
+    world_socket = world.add_articulated_spherical_joint(
+        "stiff_world_socket", world_socket_body
+    )
+    world_socket.avbd_start_stiffness = 10.0
+    world_socket.avbd_linear_stiffness = 901.0
+    world_socket.avbd_angular_stiffness = 1234.0
 
     binary_path = tmp_path / "articulated_avbd_stiffness.bin"
     world.save_binary(binary_path)
@@ -1346,9 +1372,19 @@ def test_simulation_world_articulated_avbd_stiffness_roundtrip_from_python(
     restored_world.load_binary(binary_path)
     expected = {
         "stiff_fixed": (sx.JointType.FIXED, 0, 3.0, 234.0, 567.0),
-        "stiff_slider": (sx.JointType.PRISMATIC, 1, 4.0, 345.0, 678.0),
-        "stiff_world_hinge": (sx.JointType.REVOLUTE, 1, 5.0, 456.0, 789.0),
-        "stiff_world_socket": (sx.JointType.SPHERICAL, 3, 6.0, 567.0, 890.0),
+        "stiff_hinge": (sx.JointType.REVOLUTE, 1, 4.0, 345.0, 678.0),
+        "stiff_slider": (sx.JointType.PRISMATIC, 1, 5.0, 456.0, 789.0),
+        "stiff_socket": (sx.JointType.SPHERICAL, 3, 6.0, 567.0, 890.0),
+        "stiff_world_fixed": (sx.JointType.FIXED, 0, 7.0, 678.0, 901.0),
+        "stiff_world_hinge": (sx.JointType.REVOLUTE, 1, 8.0, 789.0, 1012.0),
+        "stiff_world_slider": (
+            sx.JointType.PRISMATIC,
+            1,
+            9.0,
+            890.0,
+            1123.0,
+        ),
+        "stiff_world_socket": (sx.JointType.SPHERICAL, 3, 10.0, 901.0, 1234.0),
     }
     for name, (joint_type, num_dofs, start, linear, angular) in expected.items():
         restored = restored_world.get_articulated_joint(name)
@@ -1361,9 +1397,13 @@ def test_simulation_world_articulated_avbd_stiffness_roundtrip_from_python(
 
     restored_updates = {
         "stiff_fixed": (432.0, 765.0),
-        "stiff_slider": (543.0, 876.0),
-        "stiff_world_hinge": (654.0, 987.0),
-        "stiff_world_socket": (765.0, 1098.0),
+        "stiff_hinge": (543.0, 876.0),
+        "stiff_slider": (654.0, 987.0),
+        "stiff_socket": (765.0, 1098.0),
+        "stiff_world_fixed": (876.0, 1209.0),
+        "stiff_world_hinge": (987.0, 1320.0),
+        "stiff_world_slider": (1098.0, 1431.0),
+        "stiff_world_socket": (1209.0, 1542.0),
     }
     for name, (linear, angular) in restored_updates.items():
         restored = restored_world.get_articulated_joint(name)
