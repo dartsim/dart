@@ -21,9 +21,9 @@
   "summary": {
     "row_count": 26,
     "status_counts": {
-      "in-progress": 15,
+      "in-progress": 16,
       "not-applicable": 1,
-      "planned": 10
+      "planned": 9
     },
     "target_type_counts": {
       "benchmark-manifest": 1,
@@ -49,11 +49,11 @@
       "smoke_command": "pixi run py-demos -- --scene plan083_lying_flat --headless --frames 4",
       "long_horizon_visual_command": "pixi run py-demo-capture -- --scene plan083_lying_flat --frames 240 --width 1280 --height 720",
       "visual_evidence_artifact": ".benchmark_results/plan083/visual/lying_flat/manifest.json",
-      "benchmark_command": "pixi run bm bm_plan083_cpu_scene_corpus -- --benchmark_filter=lying_flat",
+      "benchmark_command": "pixi run bm-plan083-cpu-lying-flat-packet",
       "benchmark_profile_artifact": ".benchmark_results/plan083/cpu_scene_corpus/lying_flat.json",
-      "expected_invariant": "Mixed rigid, deformable, rod, cloth, and articulated bodies remain finite and intersection-free at the paper timestep.",
-      "limitation_status": "Launchable placeholder only; waiting for runtime mixed-domain stepping and paper-scale assets.",
-      "notes_or_gap": "Placeholder py-demo records commands but does not claim reproduction."
+      "expected_invariant": "Reduced deformable cloth patch and static obstacle proxies stay finite while stepping through the deformable IPC World path.",
+      "limitation_status": "Reduced deformable-cloth/static-obstacle smoke packet only; rigid rings, deformable tori, rods, articulated ragdoll, cloth self-contact, and paper-scale mixed coupling remain planned.",
+      "notes_or_gap": "The py-demo now runs a reduced lying-flat scene through World::step, and bm-plan083-cpu-lying-flat-packet validates the reduced benchmark packet. Full paper body/node/contact counts and mixed rigid/deformable/rod/ragdoll coupling remain planned."
     },
     {
       "row_id": "unb-fig-02",
@@ -68,11 +68,11 @@
       "smoke_command": "pixi run py-demos -- --scene plan083_hanging_bridge --headless --frames 4",
       "long_horizon_visual_command": "pixi run py-demo-capture -- --scene plan083_hanging_bridge --frames 240 --width 1280 --height 720",
       "visual_evidence_artifact": ".benchmark_results/plan083/visual/hanging_bridge/manifest.json",
-      "benchmark_command": "pixi run bm bm_plan083_cpu_scene_corpus -- --benchmark_filter=hanging_bridge",
+      "benchmark_command": "pixi run bm-plan083-cpu-hanging-bridge-packet",
       "benchmark_profile_artifact": ".benchmark_results/plan083/cpu_scene_corpus/hanging_bridge.json",
       "expected_invariant": "Reduced bridge boards, point connections, and traveler stay finite while stepping through the rigid IPC World path.",
-      "limitation_status": "Reduced runtime smoke only; waiting for rod, rigid, and codimensional paper-scale coupling.",
-      "notes_or_gap": "The py-demo now runs a reduced hanging-bridge scene through World::step; full paper body/node/contact counts remain planned."
+      "limitation_status": "Reduced runtime smoke and CPU packet only; waiting for rod, rigid, and codimensional paper-scale coupling.",
+      "notes_or_gap": "The py-demo now runs a reduced hanging-bridge scene through World::step, and bm-plan083-cpu-hanging-bridge-packet validates the reduced benchmark packet. Full paper body/node/contact counts remain planned."
     },
     {
       "row_id": "unb-fig-03",
@@ -87,11 +87,11 @@
       "smoke_command": "pixi run py-demos -- --scene plan083_pulley_system --headless --frames 4",
       "long_horizon_visual_command": "pixi run py-demo-capture -- --scene plan083_pulley_system --frames 240 --width 1280 --height 720",
       "visual_evidence_artifact": ".benchmark_results/plan083/visual/pulley_system/manifest.json",
-      "benchmark_command": "pixi run bm bm_plan083_cpu_scene_corpus -- --benchmark_filter=pulley_system",
+      "benchmark_command": "pixi run bm-plan083-cpu-pulley-packet",
       "benchmark_profile_artifact": ".benchmark_results/plan083/cpu_scene_corpus/pulley_system.json",
       "expected_invariant": "Pulley constraints satisfy residual tolerances and force-vs-mass comparison rows.",
-      "limitation_status": "Launchable placeholder only; waiting for sparse equality-constraint runtime solve.",
-      "notes_or_gap": "Force comparison remains planned until the runtime packet exists."
+      "limitation_status": "Reduced hinged-wheel and point-connection smoke packet only; analytical force comparison and paper-scale rope/rod coupling remain planned.",
+      "notes_or_gap": "The py-demo now runs a reduced pulley scene through World::step, and bm-plan083-cpu-pulley-packet validates the reduced benchmark packet. Analytical force-vs-mass comparison remains planned."
     },
     {
       "row_id": "unb-fig-04",
@@ -106,11 +106,11 @@
       "smoke_command": "pixi run py-demos -- --scene plan083_umbrella --headless --frames 4",
       "long_horizon_visual_command": "pixi run py-demo-capture -- --scene plan083_umbrella --frames 240 --width 1280 --height 720",
       "visual_evidence_artifact": ".benchmark_results/plan083/visual/umbrella/manifest.json",
-      "benchmark_command": "pixi run bm bm_plan083_cpu_scene_corpus -- --benchmark_filter=umbrella",
+      "benchmark_command": "pixi run bm-plan083-cpu-umbrella-packet",
       "benchmark_profile_artifact": ".benchmark_results/plan083/cpu_scene_corpus/umbrella.json",
-      "expected_invariant": "Umbrella cloth, rod skeleton, hinge, sliding, and point-connection rows stay finite.",
-      "limitation_status": "Launchable placeholder only; waiting for cloth/rod coupling and runtime sliding constraints.",
-      "notes_or_gap": "Visual evidence command is explicit; no paper-scale capture is claimed."
+      "expected_invariant": "Reduced umbrella rod skeleton, hinge, and point-connected ribs stay finite while stepping through the rigid IPC World path.",
+      "limitation_status": "Reduced hinged-rib smoke packet only; cloth shrinking, wrinkling, sliding constraints, and paper-scale rod coupling remain planned.",
+      "notes_or_gap": "The py-demo now runs a reduced umbrella scene through World::step, and bm-plan083-cpu-umbrella-packet validates the reduced benchmark packet. Cloth and sliding-constraint reproduction remain planned."
     },
     {
       "row_id": "unb-fig-10",
@@ -125,11 +125,11 @@
       "smoke_command": "pixi run py-demos -- --scene plan083_terrain_vehicle --headless --frames 4",
       "long_horizon_visual_command": "pixi run py-demo-capture -- --scene plan083_terrain_vehicle --frames 240 --width 1280 --height 720",
       "visual_evidence_artifact": ".benchmark_results/plan083/visual/terrain_vehicle/manifest.json",
-      "benchmark_command": "pixi run bm bm_plan083_cpu_scene_corpus -- --benchmark_filter=terrain_vehicle",
+      "benchmark_command": "pixi run bm-plan083-cpu-terrain-vehicle-packet",
       "benchmark_profile_artifact": ".benchmark_results/plan083/cpu_scene_corpus/terrain_vehicle.json",
-      "expected_invariant": "Vehicle hinges, passive wheels, and frictional terrain contact remain stable at paper parameters.",
-      "limitation_status": "Launchable placeholder only; waiting for articulated rigid IPC scene assembly.",
-      "notes_or_gap": "Counts and terrain assets remain planned."
+      "expected_invariant": "Reduced vehicle chassis, passive wheel hinges, and flat terrain contact stay finite and non-penetrating through the rigid IPC World path.",
+      "limitation_status": "Reduced chassis/passive-wheel terrain smoke and CPU packet only; terrain mesh, navigation controls, and Table 2 timing remain planned.",
+      "notes_or_gap": "The py-demo now runs a reduced terrain vehicle scene through World::step, and bm-plan083-cpu-terrain-vehicle-packet validates the reduced benchmark packet. Full 10-body/34k-node paper reproduction remains planned."
     },
     {
       "row_id": "unb-fig-11",
@@ -144,11 +144,11 @@
       "smoke_command": "pixi run py-demos -- --scene plan083_ragdolls --headless --frames 4",
       "long_horizon_visual_command": "pixi run py-demo-capture -- --scene plan083_ragdolls --frames 240 --width 1280 --height 720",
       "visual_evidence_artifact": ".benchmark_results/plan083/visual/ragdolls/manifest.json",
-      "benchmark_command": "pixi run bm bm_plan083_cpu_scene_corpus -- --benchmark_filter=ragdolls",
+      "benchmark_command": "pixi run bm-plan083-cpu-ragdoll-packet",
       "benchmark_profile_artifact": ".benchmark_results/plan083/cpu_scene_corpus/ragdolls.json",
-      "expected_invariant": "Ragdoll cone-twist limits and contact constraints remain satisfied without interpenetration.",
-      "limitation_status": "Launchable placeholder only; waiting for runtime cone-twist constraints and corpus assets.",
-      "notes_or_gap": "Paper 60-ragdoll scale remains a benchmark follow-up."
+      "expected_invariant": "Reduced six-body ragdoll chain, revolute articulation rows, and flat-ground contact stay finite and non-penetrating through the rigid IPC World path.",
+      "limitation_status": "Reduced six-body revolute-chain smoke and CPU packet only; cone-twist joints, 60-ragdoll scale, and Table 2 timing remain planned.",
+      "notes_or_gap": "The py-demo now runs a reduced ragdoll scene through World::step, and bm-plan083-cpu-ragdoll-packet validates the reduced benchmark packet. Paper 60-ragdoll cone-twist scale remains planned."
     },
     {
       "row_id": "unb-fig-13",
@@ -163,11 +163,11 @@
       "smoke_command": "pixi run py-demos -- --scene plan083_nunchaku --headless --frames 4",
       "long_horizon_visual_command": "pixi run py-demo-capture -- --scene plan083_nunchaku --frames 240 --width 1280 --height 720",
       "visual_evidence_artifact": ".benchmark_results/plan083/visual/nunchaku/manifest.json",
-      "benchmark_command": "pixi run bm bm_plan083_cpu_scene_corpus -- --benchmark_filter=nunchaku_single",
+      "benchmark_command": "pixi run bm-plan083-cpu-nunchaku-packet",
       "benchmark_profile_artifact": ".benchmark_results/plan083/cpu_scene_corpus/nunchaku_single.json",
-      "expected_invariant": "Cone-twist bending and twisting ranges stay within configured bounds.",
-      "limitation_status": "Launchable placeholder only; waiting for runtime cone-twist solve.",
-      "notes_or_gap": "Shares the placeholder scene with the scalability row."
+      "expected_invariant": "Reduced single-hinge nunchaku handle stays finite while stepping through the rigid IPC World path.",
+      "limitation_status": "Reduced single-hinge runtime smoke and CPU packet only; waiting for cone-twist ranges and N-by-N scaling.",
+      "notes_or_gap": "The py-demo now runs a reduced nunchaku hinge scene through World::step, and bm-plan083-cpu-nunchaku-packet validates the reduced benchmark packet. Full cone-twist and scaling evidence remain planned."
     },
     {
       "row_id": "unb-fig-20",
@@ -182,11 +182,11 @@
       "smoke_command": "pixi run py-demos -- --scene plan083_windmill --headless --frames 4",
       "long_horizon_visual_command": "pixi run py-demo-capture -- --scene plan083_windmill --frames 240 --width 1280 --height 720",
       "visual_evidence_artifact": ".benchmark_results/plan083/visual/windmill/manifest.json",
-      "benchmark_command": "pixi run bm bm_plan083_cpu_scene_corpus -- --benchmark_filter=windmill",
+      "benchmark_command": "pixi run bm-plan083-cpu-windmill-packet",
       "benchmark_profile_artifact": ".benchmark_results/plan083/cpu_scene_corpus/windmill.json",
-      "expected_invariant": "Windmill hinge/contact scene remains non-intersecting and records a Bullet/reference comparison.",
-      "limitation_status": "Launchable placeholder only; waiting for accepted Bullet/reference baseline packet.",
-      "notes_or_gap": "Comparison cannot land without a maintained baseline command."
+      "expected_invariant": "Reduced windmill hinge and falling-striker contact scene stays finite, non-penetrating, and constrained while stepping through the rigid IPC World path.",
+      "limitation_status": "Reduced hinge/contact smoke and CPU packet only; waiting for accepted Bullet/reference baseline packet, cube piles, and paper-scale timing.",
+      "notes_or_gap": "The py-demo now runs a reduced windmill hinge/contact scene through World::step, and bm-plan083-cpu-windmill-packet validates the reduced benchmark packet. Bullet/reference comparison cannot land without a maintained baseline command."
     },
     {
       "row_id": "unb-fig-22",
@@ -201,11 +201,11 @@
       "smoke_command": "pixi run py-demos -- --scene plan083_candy --headless --frames 4",
       "long_horizon_visual_command": "pixi run py-demo-capture -- --scene plan083_candy --frames 240 --width 1280 --height 720",
       "visual_evidence_artifact": ".benchmark_results/plan083/visual/candy/manifest.json",
-      "benchmark_command": "pixi run bm bm_plan083_cpu_scene_corpus -- --benchmark_filter=candy",
+      "benchmark_command": "pixi run bm-plan083-cpu-candy-packet",
       "benchmark_profile_artifact": ".benchmark_results/plan083/cpu_scene_corpus/candy.json",
-      "expected_invariant": "Affine, deformable, shell, cloth self-contact, and friction rows remain finite.",
-      "limitation_status": "Launchable placeholder only; waiting for ABD runtime stepping and cloth self-contact parity.",
-      "notes_or_gap": "ABD primitive/oracle rows exist, but the full scene does not."
+      "expected_invariant": "Reduced deformable cloth patch and static shell obstacle stay finite while stepping through the deformable IPC World path.",
+      "limitation_status": "Reduced deformable-cloth/static-shell smoke packet only; affine body packing, twisted shell, and cloth self-contact parity remain planned.",
+      "notes_or_gap": "The py-demo now runs a reduced candy scene through World::step, and bm-plan083-cpu-candy-packet validates the reduced benchmark packet. ABD primitive/oracle rows exist, but affine packing and paper-scale cloth self-contact remain planned."
     },
     {
       "row_id": "unb-fig-23",
@@ -220,28 +220,28 @@
       "smoke_command": "pixi run py-demos -- --scene plan083_precession --headless --frames 4",
       "long_horizon_visual_command": "pixi run py-demo-capture -- --scene plan083_precession --frames 240 --width 1280 --height 720",
       "visual_evidence_artifact": ".benchmark_results/plan083/visual/precession/manifest.json",
-      "benchmark_command": "pixi run bm bm_plan083_cpu_scene_corpus -- --benchmark_filter=precession",
+      "benchmark_command": "pixi run bm-plan083-cpu-precession-packet",
       "benchmark_profile_artifact": ".benchmark_results/plan083/cpu_scene_corpus/precession.json",
-      "expected_invariant": "Rolling unicycle precession rows stay stable across angular-velocity sweeps.",
-      "limitation_status": "Launchable placeholder only; waiting for rolling-contact runtime scene.",
-      "notes_or_gap": "Paper angular-velocity sweep remains planned."
+      "expected_invariant": "Reduced rolling-wheel contact scene stays finite, non-penetrating, and spinning while stepping through the rigid IPC World path.",
+      "limitation_status": "Reduced rolling-wheel smoke and CPU packet only; angular-velocity sweep, rolling-contact model, and Table 2 timing remain planned.",
+      "notes_or_gap": "The py-demo now runs a reduced precession wheel scene through World::step, and bm-plan083-cpu-precession-packet validates the reduced benchmark packet. Paper angular-velocity sweep remains planned."
     },
     {
       "row_id": "unb-fig-24",
       "source_ref": "Fig. 24",
       "dart_target_type": "benchmark-report",
       "priority": "P2",
-      "status": "planned",
+      "status": "in-progress",
       "py_demo_category": "not-required",
       "py_demo_scene_ids": [],
       "smoke_command": "not-required",
       "long_horizon_visual_command": "not-required",
       "visual_evidence_artifact": "not-required",
-      "benchmark_command": "pixi run bm bm_plan083_cpu_scene_corpus -- --benchmark_filter=timing_breakdown",
+      "benchmark_command": "pixi run bm-plan083-cpu-timing-breakdown-packet",
       "benchmark_profile_artifact": ".benchmark_results/plan083/cpu_scene_corpus/timing_breakdown.json",
-      "expected_invariant": "CPU packet reports gradient, Hessian, contact pairs, CCD, and linear-solve timing for every real-world row.",
-      "limitation_status": "Waiting for stable runtime scene packet shape.",
-      "notes_or_gap": "Benchmark-only row; no py-demo placeholder is needed."
+      "expected_invariant": "Reduced CPU packet reports finite wall-time, body, contact, friction, articulation, solver-iteration, and equality-residual counters across the runnable reduced corpus rows.",
+      "limitation_status": "Reduced aggregate wall-time packet only; paper gradient, Hessian, contact-pair, CCD, linear-solve, CPU/GPU parity, and paper-scale scene timing breakdowns remain planned.",
+      "notes_or_gap": "bm-plan083-cpu-timing-breakdown-packet aggregates the reduced lying-flat, hanging-bridge, pulley, umbrella, nunchaku, terrain vehicle, ragdoll, windmill, candy, and precession runtime rows without claiming the paper Fig. 24 subphase breakdown."
     },
     {
       "row_id": "unb-fig-25",
@@ -256,11 +256,11 @@
       "smoke_command": "pixi run py-demos -- --scene plan083_nunchaku --headless --frames 4",
       "long_horizon_visual_command": "pixi run py-demo-capture -- --scene plan083_nunchaku --frames 240 --width 1280 --height 720",
       "visual_evidence_artifact": ".benchmark_results/plan083/visual/nunchaku/manifest.json",
-      "benchmark_command": "pixi run bm bm_plan083_cpu_scene_corpus -- --benchmark_filter=nunchaku_scaling",
+      "benchmark_command": "pixi run bm-plan083-cpu-nunchaku-scaling-packet",
       "benchmark_profile_artifact": ".benchmark_results/plan083/cpu_scene_corpus/nunchaku_scaling.json",
       "expected_invariant": "N-by-N nunchaku timing grows linearly for N = 20, 40, 60, 80, 100 at matched tolerances.",
-      "limitation_status": "Launchable placeholder only; waiting for sparse constraint solve and scaling benchmark.",
-      "notes_or_gap": "Shares the single-scene placeholder with Fig. 13."
+      "limitation_status": "Reduced independent-hinge scaling packet only; cone-twist ranges, coupled N-by-N contact, and paper-scale linear-growth claims remain planned.",
+      "notes_or_gap": "Shares the reduced nunchaku scene with Fig. 13; bm-plan083-cpu-nunchaku-scaling-packet validates sizes N = 20, 40, 60, 80, 100 through rigid IPC World::step without claiming paper-scale cone-twist scaling."
     },
     {
       "row_id": "unb-table-02",
@@ -273,11 +273,11 @@
       "smoke_command": "not-required",
       "long_horizon_visual_command": "not-required",
       "visual_evidence_artifact": "not-required",
-      "benchmark_command": "pixi run bm bm_plan083_cpu_scene_corpus -- --benchmark_filter=table_2",
+      "benchmark_command": "pixi run bm-plan083-cpu-table2-packet",
       "benchmark_profile_artifact": ".benchmark_results/plan083/cpu_scene_corpus/table_2.json",
-      "expected_invariant": "Bridge, pulley, terrain, umbrella, ragdolls, precession, lying-flat, windmill, and candy rows report body/node/contact/iteration/timing fields.",
-      "limitation_status": "CPU scene-corpus sidecar exists; measured scene packets remain planned.",
-      "notes_or_gap": "This sidecar is the first explicit Table 2 DART packet map."
+      "expected_invariant": "Reduced Table 2 packet reports finite body, dynamic-body, contact, friction, articulation, solver-iteration, residual, and timing counters for runnable reduced rows.",
+      "limitation_status": "Reduced setup/statistics packet only; paper body/node/contact counts, paper timesteps, and paper timing rows remain planned.",
+      "notes_or_gap": "bm-plan083-cpu-table2-packet covers reduced lying flat, hanging bridge, pulley, umbrella, terrain vehicle, ragdoll, windmill, candy, and precession rows through World::step."
     },
     {
       "row_id": "abd-vs-rigid-wreck",

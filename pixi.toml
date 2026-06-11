@@ -267,6 +267,10 @@ lint-plan083-gpu-parity-packet = { cmd = [
   "python",
   "scripts/check_plan083_gpu_parity_packet.py",
 ] }
+lint-plan083-cpu-scene-corpus = { cmd = [
+  "python",
+  "scripts/check_plan083_cpu_scene_corpus.py",
+] }
 lint-plan083-completion-audit = { cmd = [
   "python",
   "scripts/check_plan083_completion_audit.py",
@@ -297,6 +301,7 @@ lint = { depends-on = [
   "lint-no-gpu-runtime-dependencies",
   "lint-phase5-cuda-benchmark-contract",
   "lint-phase5-cuda-workflow",
+  "lint-plan083-cpu-scene-corpus",
   "lint-plan083-gpu-parity-packet",
   "lint-plan083-completion-audit",
   "sync-ai-commands",
@@ -358,6 +363,10 @@ check-phase5-cuda-workflow = { cmd = [
 check-plan083-gpu-parity-packet = { cmd = [
   "python",
   "scripts/check_plan083_gpu_parity_packet.py",
+] }
+check-plan083-cpu-scene-corpus = { cmd = [
+  "python",
+  "scripts/check_plan083_cpu_scene_corpus.py",
 ] }
 check-plan083-completion-audit = { cmd = [
   "python",
@@ -1451,6 +1460,45 @@ bm-abd-comparison-packet = { cmd = "python scripts/check_abd_comparison_packet.p
 ] }
 bm-phase5-cuda-packet = { cmd = "python scripts/write_phase5_cuda_packet.py" }
 bm-phase5-gpu-packet-check = { cmd = "python scripts/check_phase5_gpu_packet.py" }
+bm-plan083-cpu-candy-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene candy", depends-on = [
+  "config",
+] }
+bm-plan083-cpu-hanging-bridge-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py", depends-on = [
+  "config",
+] }
+bm-plan083-cpu-lying-flat-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene lying_flat", depends-on = [
+  "config",
+] }
+bm-plan083-cpu-nunchaku-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene nunchaku_single", depends-on = [
+  "config",
+] }
+bm-plan083-cpu-nunchaku-scaling-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene nunchaku_scaling", depends-on = [
+  "config",
+] }
+bm-plan083-cpu-pulley-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene pulley_system", depends-on = [
+  "config",
+] }
+bm-plan083-cpu-precession-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene precession", depends-on = [
+  "config",
+] }
+bm-plan083-cpu-ragdoll-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene ragdoll_reduced", depends-on = [
+  "config",
+] }
+bm-plan083-cpu-table2-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene table_2", depends-on = [
+  "config",
+] }
+bm-plan083-cpu-terrain-vehicle-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene terrain_vehicle", depends-on = [
+  "config",
+] }
+bm-plan083-cpu-timing-breakdown-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene timing_breakdown", depends-on = [
+  "config",
+] }
+bm-plan083-cpu-umbrella-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene umbrella", depends-on = [
+  "config",
+] }
+bm-plan083-cpu-windmill-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene windmill", depends-on = [
+  "config",
+] }
 bm-plan083-gpu-parity-packet-check = { cmd = "python scripts/check_plan083_gpu_parity_packet.py" }
 bm-plan083-gpu-psd-packet = { cmd = "python scripts/write_plan083_gpu_psd_packet.py", depends-on = [
   { task = "build-cuda", args = [

@@ -193,13 +193,48 @@ This branch intentionally keeps paper-scale mixed-domain scenes, sparse
 equality-constraint solving, complete CPU benchmark packets, and GPU parity
 speed claims as remaining PLAN-083 work.
 
+The CPU corpus evidence follow-up is branch-local on
+`feature/newton-barrier-corpus-evidence`: the first packets cover only the
+reduced lying-flat, hanging-bridge, pulley, umbrella, terrain vehicle, ragdoll,
+nunchaku, windmill, Candy, and precession runtime smoke paths plus reduced
+nunchaku scaling, timing-breakdown, and Table 2 setup/statistics packets with
+`bm_plan083_cpu_scene_corpus` and
+`scripts/write_plan083_cpu_scene_packet.py`. They validate finite reduced-scene
+runtime stepping plus fixed/revolute equality residuals, reduced
+hinge/contact/terrain/ragdoll/rolling/deformable diagnostics, and aggregate
+wall-time counters, but they are not paper-scale rod/codimensional coupling,
+lying-flat rigid-ring/deformable-torus/rod/ragdoll coupling, umbrella
+cloth/sliding reproduction, affine packing, twisted shell, self-contact parity,
+cone-twist range validation, 60-ragdoll scale, terrain navigation,
+angular-velocity sweep validation, analytical pulley force comparison,
+Bullet/reference comparison, Fig. 24 subphase timing, full Table 2 reproduction,
+coupled-contact scaling evidence, or a completion claim.
+
+The same branch adds a reduced affine point-triangle solved-state diagnostic
+under `detail/affine_body_dynamics`: a private micro-solve combines inertial,
+barrier, and orthogonality terms for one dynamic affine body against a static
+triangle and adds a benchmark packet row. This is internal solved-state
+evidence for `abd-alg-affine-body`; the packet checker now validates the
+micro-solve residual/convergence counters. It is not an ABD runtime solver,
+scene corpus row, or paper-scale ABD comparison.
+
+The same branch now adds the sparse equality change-of-variable contract in
+`detail/newton_barrier/change_of_variable.hpp`, with focused primitive tests for
+rank detection, residual satisfaction, sparse free-coordinate basis structure,
+and KKT solve equivalence, and routes the rigid IPC equality step through that
+private contract. This moves `unb-alg-change-var` to `in-progress` but does not
+claim paper-scale pulley/sliding scene reproduction.
+
 ## Last Session Summary
 
 Current slice: the one-branch runtime wiring follow-up has five checkpoint
-commits. It wires point-connection/fixed joints, hinge-axis joints, opt-in
-BDF-2 stepping, deformable surface obstacles, and the first reduced
-hanging-bridge py-demo into runtime paths. The final docs pass should preserve
-that this is runtime smoke/correctness evidence, not paper-scale completion.
+commits, and the follow-on CPU corpus evidence branch adds reduced
+hanging-bridge, lying-flat, pulley, terrain vehicle, ragdoll, nunchaku,
+nunchaku scaling, umbrella, windmill, Candy, precession, timing-breakdown,
+Table 2 packets, the reduced affine point-triangle micro-solve diagnostic, and
+the sparse equality change-of-variable contract tests.
+The final docs pass should preserve that this is runtime smoke/correctness
+evidence, not paper-scale completion.
 
 PLAN-083 was created for the unified Newton-barrier multibody solver family,
 covering the supplied unified Newton barrier paper, the ABD deck, existing
@@ -211,7 +246,8 @@ four shared primitive barrier chain-rule rows, orthogonality energy, rigid
 gradient/Hessian equivalence, affine primitive-family friction equivalence rows
 through the shared tangent-displacement friction kernel,
 `test_affine_body_dynamics`, and the first `bm_affine_body_dynamics` benchmark
-packet.
+packet. The active follow-up extends that packet with a reduced solved-state
+point-triangle micro-solve diagnostic without promoting an ABD runtime solver.
 
 The first Phase 3 contract slice was merged as PR #2936. It added a shared
 fixed-size PSD projection helper, routed rigid IPC and ABD Hessian projection
@@ -272,14 +308,20 @@ build/CTest entries.
 body. Keep all remaining cleanup for this branch in the same PR; do not split
 the already small runtime slices into separate PRs.
 
+`feature/newton-barrier-corpus-evidence` - starts the next CPU corpus evidence
+slice from the runtime-wiring head. Keep it separate from PR #2970 until the
+runtime-wiring PR lands or needs a CI-only rerun.
+
 ## Immediate Next Step
 
-Resolve the `main` merge for PR #2970, rerun the required validation gates, push
-`feature/newton-barrier-runtime-wiring`, and keep managing that single PR
-through review/CI. Leave the dev-task folder active because PLAN-083 acceptance
-criteria are still unmet; if the task later moves out of this folder, get
-maintainer direction before deleting it and keep the remaining planned
-CPU/GPU/scene rows in durable sidecars.
+Keep managing PR #2970 through hosted CI; the latest local conflict check says
+it merges cleanly with `main`, so the current blocker is CI state rather than a
+file conflict. While #2970 waits on hosted CI, continue
+`feature/newton-barrier-corpus-evidence` with reduced CPU corpus packets only
+where runtime evidence exists. Leave the dev-task folder active because
+PLAN-083 acceptance criteria are still unmet; if the task later moves out of
+this folder, get maintainer direction before deleting it and keep the remaining
+planned CPU/GPU/scene rows in durable sidecars.
 
 ## Context That Would Be Lost
 
@@ -334,10 +376,11 @@ CPU/GPU/scene rows in durable sidecars.
   each checker until more variants prove identical semantics.
 - `bm_affine_body_dynamics` currently contains the first ABD benchmark packet:
   affine point-triangle barrier mapping, matched rigid IPC point-triangle oracle
-  row, and orthogonality energy.
+  row, orthogonality energy, and the reduced point-triangle micro-solve
+  residual counters.
 - `scripts/check_abd_comparison_packet.py` is the reproducible packet checker
-  for those rows; it deliberately does not validate paper-scale ABD scene
-  timings yet.
+  for those rows; it validates micro-solve convergence counters but
+  deliberately does not validate paper-scale ABD scene timings yet.
 - The current packet is enough to proceed to Phase 3 shared-contract scouting;
   it does not require a two-body solved-state micro-solve first.
 - Do not expose `detail/newton_barrier` through public headers or dartpy
