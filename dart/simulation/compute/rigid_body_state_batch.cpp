@@ -97,7 +97,7 @@ std::vector<std::string> rigidBodyNames(const World& world)
 void integrateAngularVelocitiesFromTorque(
     RigidBodyStateBatch& state,
     const RigidBodyModelBatch& model,
-    const std::vector<double>& torque,
+    std::span<const double> torque,
     double timeStep)
 {
   const auto bodies = state.worldCount * state.bodyCount;
@@ -502,8 +502,8 @@ void applyRigidBodyStateBatch(
 //==============================================================================
 void integrateRigidBodyStateBatchLinear(
     RigidBodyStateBatch& state,
-    const std::vector<double>& force,
-    const std::vector<double>& inverseMass,
+    std::span<const double> force,
+    std::span<const double> inverseMass,
     double timeStep)
 {
   const auto bodies = state.worldCount * state.bodyCount;
@@ -562,7 +562,7 @@ RigidBodyModelBatch extractRigidBodyModelBatch(const World& world)
 void integrateRigidBodyStateBatchLinear(
     RigidBodyStateBatch& state,
     const RigidBodyModelBatch& model,
-    const std::vector<double>& force,
+    std::span<const double> force,
     double timeStep)
 {
   DART_SIMULATION_THROW_T_IF(
@@ -582,7 +582,7 @@ void integrateRigidBodyStateBatchLinear(
 void integrateRigidBodyStateBatch(
     RigidBodyStateBatch& state,
     const RigidBodyModelBatch& model,
-    const std::vector<double>& force,
+    std::span<const double> force,
     double timeStep)
 {
   const auto bodies = state.worldCount * state.bodyCount;
@@ -607,8 +607,8 @@ void integrateRigidBodyStateBatch(
 void integrateRigidBodyStateBatch(
     RigidBodyStateBatch& state,
     const RigidBodyModelBatch& model,
-    const std::vector<double>& force,
-    const std::vector<double>& torque,
+    std::span<const double> force,
+    std::span<const double> torque,
     double timeStep)
 {
   const auto bodies = state.worldCount * state.bodyCount;

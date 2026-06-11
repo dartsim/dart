@@ -344,6 +344,8 @@ class DART_SIMULATION_API BatchedRigidBodyIntegrationStage final
 {
 public:
   BatchedRigidBodyIntegrationStage();
+  explicit BatchedRigidBodyIntegrationStage(
+      common::MemoryManager* memoryManager);
   ~BatchedRigidBodyIntegrationStage() override;
 
   [[nodiscard]] std::string_view getName() const noexcept override;
@@ -352,7 +354,18 @@ public:
 
 private:
   struct Scratch;
-  std::unique_ptr<Scratch> m_scratch;
+  struct ScratchDeleter
+  {
+    common::MemoryManager* memoryManager = nullptr;
+    void operator()(Scratch* scratch) const noexcept;
+  };
+
+  using ScratchPtr = std::unique_ptr<Scratch, ScratchDeleter>;
+
+  static Scratch* createScratch(common::MemoryManager* memoryManager);
+
+  common::MemoryManager* m_memoryManager = nullptr;
+  ScratchPtr m_scratch;
 };
 
 /// Updates free rigid-body velocities from the assembled transient force buffer

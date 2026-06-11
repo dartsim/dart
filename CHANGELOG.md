@@ -564,6 +564,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     has the same rebuild-boundary guard for its baked private dynamics storage.
   - Reused legacy graph-backed `RigidBodyIntegrationStage` scratch for rigid-body
     entity lists and dependency nodes instead of allocating per execute.
+    `BatchedRigidBodyIntegrationStage` now also accepts a `MemoryManager` and
+    routes its force and frame-order scratch vectors through the provided
+    allocator root for custom allocator-aware stage use.
   - Extended experimental `World` base-allocator no-growth coverage to baked
     rigid-body resting contact, non-cross articulated resting contact, and
     same-DOF cross-articulated link-contact scenes after contact prewarm.

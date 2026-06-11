@@ -7,6 +7,13 @@ active HMM Phase 4/5 continuation is on
 `pr/hmm-phase45-follow-up-clean`, based on `origin/main` after PR #2956
 landed.
 
+The latest post-merge batched SoA rigid integration slice adds allocator-aware
+construction for `BatchedRigidBodyIntegrationStage`. Custom batched stages can
+now borrow a `MemoryManager`, route force-batch and parent-before-child
+frame-order scratch vectors through the provided free allocator, and release
+those reserves when the stage is destroyed. This uses the existing
+frame-coupled body fixture rather than adding a new scene.
+
 The latest post-merge unified boxed-LCP slice routes the stage-owned rigid
 contact problem, unified problem row/block containers, nested multibody block
 row storage, and unified solve scratch traversal/fallback/tangent vectors

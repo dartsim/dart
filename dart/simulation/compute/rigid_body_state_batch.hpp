@@ -34,6 +34,7 @@
 
 #include <dart/simulation/export.hpp>
 
+#include <span>
 #include <vector>
 
 #include <cstddef>
@@ -126,8 +127,8 @@ DART_SIMULATION_API void applyRigidBodyStateBatch(
 /// Model/State split. Throws on size mismatch.
 DART_SIMULATION_API void integrateRigidBodyStateBatchLinear(
     RigidBodyStateBatch& state,
-    const std::vector<double>& force,
-    const std::vector<double>& inverseMass,
+    std::span<const double> force,
+    std::span<const double> inverseMass,
     double timeStep);
 
 /// Extract immutable model parameters (per-body inverse mass) from a single
@@ -143,7 +144,7 @@ extractRigidBodyModelBatch(const World& world);
 DART_SIMULATION_API void integrateRigidBodyStateBatchLinear(
     RigidBodyStateBatch& state,
     const RigidBodyModelBatch& model,
-    const std::vector<double>& force,
+    std::span<const double> force,
     double timeStep);
 
 /// Integrate a state batch one full semi-implicit Euler kinematic step in
@@ -154,7 +155,7 @@ DART_SIMULATION_API void integrateRigidBodyStateBatchLinear(
 DART_SIMULATION_API void integrateRigidBodyStateBatch(
     RigidBodyStateBatch& state,
     const RigidBodyModelBatch& model,
-    const std::vector<double>& force,
+    std::span<const double> force,
     double timeStep);
 
 /// Integrate a state batch one full semi-implicit Euler dynamic step in place,
@@ -170,8 +171,8 @@ DART_SIMULATION_API void integrateRigidBodyStateBatch(
 DART_SIMULATION_API void integrateRigidBodyStateBatch(
     RigidBodyStateBatch& state,
     const RigidBodyModelBatch& model,
-    const std::vector<double>& force,
-    const std::vector<double>& torque,
+    std::span<const double> force,
+    std::span<const double> torque,
     double timeStep);
 
 /// Roll out a state batch over a control sequence on the SoA arrays, with no

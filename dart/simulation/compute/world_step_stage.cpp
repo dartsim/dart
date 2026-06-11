@@ -1584,7 +1584,7 @@ void copyRigidBodyStateBatch(
 //==============================================================================
 void restorePrescribedRigidBodyState(
     const detail::WorldRegistry& registry,
-    const std::vector<entt::entity>& entities,
+    std::span<const entt::entity> entities,
     const RigidBodyStateBatch& source,
     RigidBodyStateBatch& target)
 {
@@ -9719,12 +9719,22 @@ struct RigidBodyVelocityStage::Scratch
 //==============================================================================
 struct BatchedRigidBodyIntegrationStage::Scratch
 {
-  RigidBodyForceBatch forces;
+  Scratch() = default;
+
+  explicit Scratch(common::MemoryAllocator& allocator)
+    : forces(allocator),
+      frameUpdateOrder(common::StlAllocator<entt::entity>{allocator}),
+      visitState(common::StlAllocator<int>{allocator})
+  {
+  }
+
+  AllocatorAwareRigidBodyForceBatch forces;
   RigidBodyStateBatch state;
   RigidBodyStateBatch initialState;
   RigidBodyModelBatch model;
-  std::vector<entt::entity> frameUpdateOrder;
-  std::vector<int> visitState;
+  std::vector<entt::entity, common::StlAllocator<entt::entity>>
+      frameUpdateOrder;
+  std::vector<int, common::StlAllocator<int>> visitState;
 };
 
 //==============================================================================
@@ -11567,12 +11577,39 @@ void reserveDeformableDynamicsRegistryStorage(
 
 //==============================================================================
 BatchedRigidBodyIntegrationStage::BatchedRigidBodyIntegrationStage()
-  : m_scratch(std::make_unique<Scratch>())
+  : BatchedRigidBodyIntegrationStage(nullptr)
+{
+}
+
+//==============================================================================
+BatchedRigidBodyIntegrationStage::BatchedRigidBodyIntegrationStage(
+    common::MemoryManager* memoryManager)
+  : m_memoryManager(memoryManager),
+    m_scratch(createScratch(memoryManager), ScratchDeleter{memoryManager})
 {
 }
 
 //==============================================================================
 BatchedRigidBodyIntegrationStage::~BatchedRigidBodyIntegrationStage() = default;
+
+//==============================================================================
+void BatchedRigidBodyIntegrationStage::ScratchDeleter::operator()(
+    Scratch* scratch) const noexcept
+{
+  destroyStageOwnedScratch(memoryManager, scratch);
+}
+
+//==============================================================================
+BatchedRigidBodyIntegrationStage::Scratch*
+BatchedRigidBodyIntegrationStage::createScratch(
+    common::MemoryManager* memoryManager)
+{
+  if (memoryManager != nullptr) {
+    return constructStageOwnedScratch<Scratch>(
+        memoryManager, memoryManager->getFreeAllocator());
+  }
+  return constructStageOwnedScratch<Scratch>(nullptr);
+}
 
 //==============================================================================
 std::string_view BatchedRigidBodyIntegrationStage::getName() const noexcept
@@ -11598,7 +11635,8 @@ void BatchedRigidBodyIntegrationStage::execute(
 {
   auto& registry = dart::simulation::detail::registryOf(world);
   if (m_scratch == nullptr) {
-    m_scratch = std::make_unique<Scratch>();
+    m_scratch = ScratchPtr(
+        createScratch(m_memoryManager), ScratchDeleter{m_memoryManager});
   }
 
   auto& scratch = *m_scratch;

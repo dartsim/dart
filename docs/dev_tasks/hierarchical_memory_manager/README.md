@@ -202,6 +202,9 @@
       now reuses stage-owned force, state, model, initial-state, and
       parent-before-child frame-order scratch, and runs its single SoA kernel
       directly instead of rebuilding a one-node compute graph every execute.
+      Custom batched SoA stages can now borrow a `MemoryManager` so their
+      force and frame-order scratch vectors reserve from the World allocator
+      root.
       The default rigid-body velocity/contact stages and semi-implicit
       multibody velocity/contact path now reuse baked scratch for the covered
       rigid and articulated resting-contact scenes. The
@@ -774,6 +777,11 @@ Follow-up progress after PR #2956:
   `ComputeGraph` uses the same allocator root for owned graph storage. A
   focused parent/child custom-stage test verifies the persistent scratch vector
   reserves use and release the provided free allocator.
+- The batched SoA `BatchedRigidBodyIntegrationStage` can now borrow a
+  `MemoryManager` for custom stage use. Its force-batch entity/force/torque
+  vectors and parent-before-child frame-order/visit-state vectors reserve from
+  the provided free allocator while the existing same-shape heap guard still
+  covers the prewarmed frame-coupled path.
 - The next nested route covers `RigidBodyContactStage`'s sequential-impulse
   constraint vector. A focused compact contact prepare verifies the vector's
   first reserve increases the World free-list allocation count. AVBD contact
