@@ -291,7 +291,7 @@ struct DART_API LcpProblem
   /// numerically canonicalized problems without open-coding the convention.
   bool isStandardLcp(double tolerance = 0.0) const
   {
-    if (!hasConsistentDimensions()) {
+    if (!hasConsistentDimensions() || !hasFiniteMatrixAndVector()) {
       return false;
     }
 
@@ -319,7 +319,8 @@ struct DART_API LcpProblem
   /// friction rows whose bounds depend on another row's solution.
   bool isBoxedLcp() const
   {
-    if (!hasConsistentDimensions() || !hasValidBounds()) {
+    if (!hasConsistentDimensions() || !hasFiniteMatrixAndVector()
+        || !hasValidBounds()) {
       return false;
     }
 
@@ -329,7 +330,8 @@ struct DART_API LcpProblem
   /// Returns true if any row uses friction-index coupling.
   bool hasFrictionIndex() const
   {
-    if (!hasConsistentDimensions() || !hasValidBounds()) {
+    if (!hasConsistentDimensions() || !hasFiniteMatrixAndVector()
+        || !hasValidBounds()) {
       return false;
     }
 
@@ -382,6 +384,12 @@ private:
     const Eigen::Index n = size();
     return A.rows() == n && A.cols() == n && lo.size() == n && hi.size() == n
            && findex.size() == n;
+  }
+
+  /// Returns true when the dense problem data is finite.
+  bool hasFiniteMatrixAndVector() const
+  {
+    return A.allFinite() && b.allFinite();
   }
 
   /// Returns true when fixed bounds are not NaN and finite ranges are ordered.

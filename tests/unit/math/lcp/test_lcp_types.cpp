@@ -213,6 +213,27 @@ TEST(LcpTypesTest, ClassificationRejectsInvalidMatrixDimensions)
   EXPECT_EQ(problem.getType(), LcpProblemType::Invalid);
 }
 
+TEST(LcpTypesTest, ClassificationRejectsNonFiniteMatrixAndVectorData)
+{
+  Eigen::Matrix2d A = Eigen::Matrix2d::Identity();
+  A(0, 1) = std::numeric_limits<double>::quiet_NaN();
+
+  const LcpProblem nanMatrixProblem(A, Eigen::Vector2d(0.5, 0.25));
+
+  EXPECT_FALSE(nanMatrixProblem.isStandardLcp());
+  EXPECT_FALSE(nanMatrixProblem.isBoxedLcp());
+  EXPECT_FALSE(nanMatrixProblem.hasFrictionIndex());
+  EXPECT_EQ(nanMatrixProblem.getType(), LcpProblemType::Invalid);
+
+  Eigen::Vector2d b(0.5, std::numeric_limits<double>::infinity());
+  const LcpProblem infVectorProblem(Eigen::Matrix2d::Identity(), b);
+
+  EXPECT_FALSE(infVectorProblem.isStandardLcp());
+  EXPECT_FALSE(infVectorProblem.isBoxedLcp());
+  EXPECT_FALSE(infVectorProblem.hasFrictionIndex());
+  EXPECT_EQ(infVectorProblem.getType(), LcpProblemType::Invalid);
+}
+
 TEST(LcpTypesTest, BoxedClassificationRejectsInvalidBounds)
 {
   const LcpProblem reversedBoundsProblem(

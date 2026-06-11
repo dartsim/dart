@@ -235,6 +235,12 @@ def test_lcp_solver_rejects_non_finite_problem_data() -> None:
     A[0, 1] = np.nan
     problem = dart.LcpProblem(A, np.array([1.0, 2.0]))
 
+    assert problem.get_type() == dart.LcpProblemType.INVALID
+    assert not problem.is_standard_lcp()
+    assert not problem.is_boxed_lcp()
+    assert not problem.has_friction_index()
+    assert not dart.DantzigSolver().supports_problem(problem)
+
     result, _ = dart.DantzigSolver().solve(problem)
 
     assert result.status == dart.LcpSolverStatus.INVALID_PROBLEM
