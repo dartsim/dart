@@ -9,7 +9,10 @@ and
 `test_simulation_world_articulated_avbd_stiffness_roundtrip_from_python` set
 finite start/linear/angular AVBD stiffness, save/load the world, mutate the
 restored stiffness values, and verify they remain visible after entering
-simulation mode. This is a narrow public facade serialization guard; it does not
+simulation mode. A focused variational-integration test now also verifies
+restored fixed, prismatic, world-revolute, and world-spherical public facade
+stiffness feeds the private point-joint configs rebuilt at simulation entry.
+This is narrow public facade serialization/extraction coverage; it does not
 close broader articulated lifecycle, source-corpus CPU-win, GPU, or paper-number
 gates.
 
@@ -1665,6 +1668,13 @@ motor/fracture/facade lifecycle coverage, or paper/reference benchmark packet is
 complete.
 
 ## Current Branch
+
+Current reality (2026-06-11): this checkout is
+`avbd/articulated-stiffness-roundtrip`, clean after local commits based on
+`origin/main` at `28e8e821b42` unless `git status --short --branch` says
+otherwise. The branch has no PR yet and should not be pushed or converted into a
+PR without explicit maintainer approval. The earlier split-stack notes below are
+historical context from PRs #2967/#2968 and the raw checkpoint branch.
 
 Current reality (2026-06-10): the active split stack is PR #2967
 (`avbd/tests-benchmarks`, base `main`) plus PR #2968 (`avbd/python-demos`, base

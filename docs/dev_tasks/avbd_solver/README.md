@@ -14,8 +14,11 @@ Corpus matrix:
   world-link revolute and spherical public articulated facades. The C++
   serialization test and dartpy unit test set finite start/linear/angular AVBD
   stiffness, save/load the world, mutate the restored stiffness values, and
-  verify they remain visible after entering simulation mode. This is a narrow
-  public facade serialization guard; it does not close broader articulated
+  verify they remain visible after entering simulation mode. A focused
+  variational-integration test now also verifies restored fixed, prismatic,
+  world-revolute, and world-spherical public facade stiffness feeds the private
+  point-joint configs rebuilt at simulation entry. This is narrow public facade
+  serialization/extraction coverage; it does not close broader articulated
   lifecycle, source-corpus CPU-win, GPU, or paper-number gates.
 - Latest local follow-up: small AVBD rigid world-contact snapshots no longer
   reserve the endpoint entity-index hash map while the body count is within the
