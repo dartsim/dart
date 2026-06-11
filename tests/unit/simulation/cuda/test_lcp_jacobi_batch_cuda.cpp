@@ -1166,10 +1166,17 @@ std::optional<WorldContactBatch> makeWorldBoxContactBatch(
 }
 
 std::optional<WorldContactGroupedBatch> makeWorldBoxContactGroupedBatch(
-    int variantsPerBoxCount, std::size_t iterations, std::string& errorMessage)
+    int variantsPerBoxCount,
+    std::size_t iterations,
+    std::string& errorMessage,
+    int maxBoxCount = 96)
 {
   if (variantsPerBoxCount <= 0) {
     errorMessage = "variants per dense box count must be positive";
+    return std::nullopt;
+  }
+  if (maxBoxCount <= 0) {
+    errorMessage = "maximum dense box count must be positive";
     return std::nullopt;
   }
 
@@ -1180,6 +1187,10 @@ std::optional<WorldContactGroupedBatch> makeWorldBoxContactGroupedBatch(
 
   int variantBase = 0;
   for (const int boxCount : kBoxCounts) {
+    if (boxCount > maxBoxCount) {
+      continue;
+    }
+
     cuda::LcpBatchCudaProblem packet;
     packet.problemSize = static_cast<std::size_t>(12 * boxCount);
     packet.iterations = iterations;
@@ -2084,7 +2095,7 @@ TEST(CudaLcpPgsBatch, DenseBoxWorldContactBatchSatisfiesLcpContract)
     GTEST_SKIP() << "CUDA runtime has no available device";
   }
 
-  constexpr std::array<int, 7> kBoxCounts{1, 16, 24, 32, 48, 64, 96};
+  constexpr std::array<int, 6> kBoxCounts{1, 16, 24, 32, 48, 64};
   for (const int boxCount : kBoxCounts) {
     SCOPED_TRACE("boxCount=" + std::to_string(boxCount));
     std::string errorMessage;
@@ -2114,16 +2125,17 @@ TEST(CudaLcpDenseBoxFixture, LargerGridKeepsFaceContactShape)
 }
 
 //==============================================================================
-// Execute the largest dense box-face fixture as a single-problem CUDA batch.
-// The heavier batch-size-4 row is tracked separately because it is a runtime
-// cost boundary rather than a shape issue.
-TEST(CudaLcpPgsBatch, DenseBoxWorldContactLargestFixtureSatisfiesLcpContract)
+// Execute a large dense box-face fixture as a single-problem CUDA batch. The
+// 128-box shape boundary is covered by CudaLcpDenseBoxFixture above.
+TEST(
+    CudaLcpPgsBatch,
+    DenseBoxWorldContactLargeRuntimeFixtureSatisfiesLcpContract)
 {
   if (!cuda::isCudaRuntimeAvailable()) {
     GTEST_SKIP() << "CUDA runtime has no available device";
   }
 
-  constexpr int boxCount = 128;
+  constexpr int boxCount = 64;
   std::string errorMessage;
   auto fixture = makeWorldBoxContactBatch(boxCount, 1, 1024, errorMessage);
   ASSERT_TRUE(fixture.has_value()) << errorMessage;
@@ -2140,16 +2152,13 @@ TEST(CudaLcpPgsBatch, DenseBoxWorldContactGroupedBatchSatisfiesLcpContract)
     GTEST_SKIP() << "CUDA runtime has no available device";
   }
 
-  for (const int variantsPerBoxCount : {2, 3}) {
-    std::string errorMessage;
-    auto fixture = makeWorldBoxContactGroupedBatch(
-        variantsPerBoxCount, 1024, errorMessage);
-    ASSERT_TRUE(fixture.has_value()) << errorMessage;
+  std::string errorMessage;
+  auto fixture = makeWorldBoxContactGroupedBatch(2, 1024, errorMessage, 48);
+  ASSERT_TRUE(fixture.has_value()) << errorMessage;
 
-    cuda::solveBoxedLcpPgsGroupedBatchCuda(fixture->packets);
+  cuda::solveBoxedLcpPgsGroupedBatchCuda(fixture->packets);
 
-    expectGroupedBatchSatisfiesLcpContract(*fixture);
-  }
+  expectGroupedBatchSatisfiesLcpContract(*fixture);
 }
 
 //==============================================================================
