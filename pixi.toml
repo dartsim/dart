@@ -1462,6 +1462,9 @@ bm-phase5-gpu-packet-check = { cmd = "python scripts/check_phase5_gpu_packet.py"
 bm-plan083-cpu-hanging-bridge-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py", depends-on = [
   "config",
 ] }
+bm-plan083-cpu-nunchaku-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene nunchaku_single", depends-on = [
+  "config",
+] }
 bm-plan083-gpu-parity-packet-check = { cmd = "python scripts/check_plan083_gpu_parity_packet.py" }
 bm-plan083-gpu-psd-packet = { cmd = "python scripts/write_plan083_gpu_psd_packet.py", depends-on = [
   { task = "build-cuda", args = [

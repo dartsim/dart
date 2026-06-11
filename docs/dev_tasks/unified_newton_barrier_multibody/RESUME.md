@@ -194,12 +194,13 @@ equality-constraint solving, complete CPU benchmark packets, and GPU parity
 speed claims as remaining PLAN-083 work.
 
 The CPU corpus evidence follow-up is branch-local on
-`feature/newton-barrier-corpus-evidence`: the first packet covers only the
-reduced hanging-bridge runtime smoke path with
+`feature/newton-barrier-corpus-evidence`: the first packets cover only the
+reduced hanging-bridge and nunchaku runtime smoke paths with
 `bm_plan083_cpu_scene_corpus` and
-`scripts/write_plan083_cpu_scene_packet.py`. It validates finite reduced-scene
-runtime stepping and fixed-joint equality residuals, but it is not paper-scale
-rod/codimensional coupling, Table 2 reproduction, or a completion claim.
+`scripts/write_plan083_cpu_scene_packet.py`. They validate finite reduced-scene
+runtime stepping plus fixed/revolute equality residuals, but they are not
+paper-scale rod/codimensional coupling, cone-twist range validation, Table 2
+reproduction, scaling evidence, or a completion claim.
 
 ## Last Session Summary
 

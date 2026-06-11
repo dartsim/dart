@@ -15,6 +15,7 @@ _BRIDGE_BOARD_HALF_EXTENTS = np.array([0.10, 0.16, 0.025])
 _BRIDGE_POST_HALF_EXTENTS = np.array([0.05, 0.2, 0.08])
 _BRIDGE_TRAVELER_HALF_EXTENTS = np.array([0.07, 0.07, 0.07])
 _BRIDGE_BOARD_X = np.linspace(-0.45, 0.45, 4)
+_NUNCHAKU_HANDLE_HALF_EXTENTS = np.array([0.18, 0.035, 0.035])
 
 
 @dataclass(frozen=True)
@@ -218,9 +219,119 @@ def _build_hanging_bridge_runtime(target: Plan083SceneTarget) -> SceneSetup:
     )
 
 
+def _build_nunchaku_runtime(target: Plan083SceneTarget) -> SceneSetup:
+    world = dart.World(
+        time_step=0.005,
+        gravity=(0.0, 0.0, 0.0),
+        rigid_body_solver=dart.RigidBodySolver.IPC,
+    )
+
+    anchor = world.add_rigid_body(
+        "plan083_nunchaku_anchor_handle", position=(0.0, 0.0, 0.75)
+    )
+    anchor.is_static = True
+    anchor.set_collision_shape(
+        dart.CollisionShape.box(
+            _NUNCHAKU_HANDLE_HALF_EXTENTS,
+            _translation(-float(_NUNCHAKU_HANDLE_HALF_EXTENTS[0]), 0.0, 0.0),
+        )
+    )
+
+    swinging = world.add_rigid_body(
+        "plan083_nunchaku_swing_handle",
+        position=(0.0, 0.0, 0.75),
+        angular_velocity=(0.0, 0.0, 1.5),
+    )
+    swinging.mass = 0.2
+    swinging.is_kinematic = True
+    swinging.set_collision_shape(
+        dart.CollisionShape.box(
+            _NUNCHAKU_HANDLE_HALF_EXTENTS,
+            _translation(float(_NUNCHAKU_HANDLE_HALF_EXTENTS[0]), 0.0, 0.0),
+        )
+    )
+    world.add_rigid_body_revolute_joint(
+        "plan083_nunchaku_hinge",
+        anchor,
+        swinging,
+        axis=(0.0, 0.0, 1.0),
+    )
+
+    world.enter_simulation_mode()
+
+    bridge = WorldRenderBridge(world, name="plan083_nunchaku_runtime")
+    bridge.add_rigid_body_visual(
+        anchor,
+        dart.BoxShape(_full(_NUNCHAKU_HANDLE_HALF_EXTENTS)),
+        (0.38, 0.33, 0.29),
+        name="plan083_nunchaku_anchor_visual",
+        local_transform=_translation(-float(_NUNCHAKU_HANDLE_HALF_EXTENTS[0]), 0.0, 0.0),
+    )
+    bridge.add_rigid_body_visual(
+        swinging,
+        dart.BoxShape(_full(_NUNCHAKU_HANDLE_HALF_EXTENTS)),
+        (0.88, 0.56, 0.20),
+        name="plan083_nunchaku_swing_visual",
+        local_transform=_translation(float(_NUNCHAKU_HANDLE_HALF_EXTENTS[0]), 0.0, 0.0),
+    )
+    bridge.sync()
+
+    tip_radius_history: deque[float] = deque(maxlen=120)
+    angular_velocity_history: deque[float] = deque(maxlen=120)
+
+    def build_panel(builder: object, context: object) -> None:
+        transform = np.asarray(swinging.transform, dtype=float).reshape(4, 4)
+        local_tip = np.array([2.0 * _NUNCHAKU_HANDLE_HALF_EXTENTS[0], 0.0, 0.0, 1.0])
+        tip = transform @ local_tip
+        anchor_position = np.asarray(anchor.translation, dtype=float).reshape(3)
+        tip_radius = float(np.linalg.norm(tip[:3] - anchor_position))
+        angular_velocity = float(np.asarray(swinging.angular_velocity, dtype=float)[2])
+        tip_radius_history.append(tip_radius)
+        angular_velocity_history.append(angular_velocity)
+
+        builder.text("status: reduced runtime smoke scene")
+        builder.text("solver: rigid IPC World.step")
+        builder.text(f"row: {', '.join(target.row_ids)}")
+        builder.text(f"rigid bodies: {world.num_rigid_bodies}")
+        builder.text(f"revolute joints: {world.num_rigid_body_joints}")
+        builder.text(f"world time: {world.time:.3f} s")
+        builder.text(f"swinging tip radius: {tip_radius:.3f} m")
+        builder.text(f"free-axis angular velocity: {angular_velocity:.3f} rad/s")
+        builder.text(f"benchmark: {target.benchmark_command}")
+        builder.text(f"limitation: {target.limitation}")
+        builder.separator()
+        bridge.build_control_panel(builder, context)
+        if tip_radius_history:
+            builder.separator()
+            builder.plot_lines("Swinging tip radius", list(tip_radius_history))
+            builder.plot_lines(
+                "Free-axis angular velocity", list(angular_velocity_history)
+            )
+
+    info = _target_info(target)
+    info.update(
+        {
+            "sx_world": world,
+            "runtime_smoke_scene": True,
+            "rigid_body_solver": "ipc",
+            "anchor": anchor,
+            "swinging": swinging,
+        }
+    )
+    return SceneSetup(
+        world=bridge.render_world,
+        pre_step=bridge.pre_step,
+        force_drag=bridge.force_drag,
+        panels=[ScenePanel(target.title, build_panel)],
+        info=info,
+    )
+
+
 def _scene(target: Plan083SceneTarget) -> PythonDemoScene:
     if target.scene_id == "plan083_hanging_bridge":
         build = lambda target=target: _build_hanging_bridge_runtime(target)
+    elif target.scene_id == "plan083_nunchaku":
+        build = lambda target=target: _build_nunchaku_runtime(target)
     else:
         build = lambda target=target: _build_placeholder(target)
 
@@ -311,12 +422,12 @@ PLAN083_SCENE_TARGETS: tuple[Plan083SceneTarget, ...] = (
         title="PLAN-083 Nunchaku",
         row_ids=("unb-fig-13", "unb-fig-25"),
         category="PLAN-083 Constraints Corpus",
-        summary="Planned cone-twist range demo plus scalability packet seed.",
-        target="Paper Fig. 13 and Fig. 25 nunchaku constraints/scaling rows.",
+        summary="Reduced hinge nunchaku smoke scene running through World::step.",
+        target="Paper Fig. 13 and Fig. 25 nunchaku rows; reduced to a single rigid hinge for runtime smoke evidence.",
         smoke_command="pixi run py-demos -- --scene plan083_nunchaku --headless --frames 4",
         visual_command="pixi run py-demo-capture -- --scene plan083_nunchaku --frames 240 --width 1280 --height 720",
-        benchmark_command="pixi run bm bm_plan083_cpu_scene_corpus -- --benchmark_filter=nunchaku",
-        limitation="Waiting for sparse constraint solve and N-by-N scaling packet.",
+        benchmark_command="pixi run bm-plan083-cpu-nunchaku-packet",
+        limitation="Reduced single-hinge runtime smoke and CPU packet only; cone-twist ranges and N-by-N scaling remain planned.",
     ),
     Plan083SceneTarget(
         scene_id="plan083_windmill",

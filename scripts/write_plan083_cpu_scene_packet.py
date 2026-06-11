@@ -30,7 +30,23 @@ DEFAULT_PACKET_OUTPUT = Path(
     ".benchmark_results/plan083/cpu_scene_corpus/hanging_bridge.json"
 )
 
-HANGING_BRIDGE_ROW = "BM_Plan083CpuScene_hanging_bridge_reduced_world_step"
+DEFAULT_SCENE = "hanging_bridge"
+SCENE_ROWS = {
+    "hanging_bridge": "BM_Plan083CpuScene_hanging_bridge_reduced_world_step",
+    "nunchaku_single": "BM_Plan083CpuScene_nunchaku_single_reduced_world_step",
+}
+SCENE_BENCHMARK_OUTPUTS = {
+    "hanging_bridge": DEFAULT_BENCHMARK_OUTPUT,
+    "nunchaku_single": Path(
+        ".benchmark_results/plan083/cpu_scene_corpus/nunchaku_single_benchmark.json"
+    ),
+}
+SCENE_PACKET_OUTPUTS = {
+    "hanging_bridge": DEFAULT_PACKET_OUTPUT,
+    "nunchaku_single": Path(
+        ".benchmark_results/plan083/cpu_scene_corpus/nunchaku_single.json"
+    ),
+}
 DEFAULT_MAX_EQUALITY_RESIDUAL = 1e-8
 
 
@@ -41,15 +57,21 @@ class Plan083CpuScenePacketError(RuntimeError):
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
+        "--scene",
+        choices=sorted(SCENE_ROWS),
+        default=DEFAULT_SCENE,
+        help="Reduced CPU scene packet to run and validate.",
+    )
+    parser.add_argument(
         "--benchmark-json",
         type=Path,
-        default=DEFAULT_BENCHMARK_OUTPUT,
+        default=None,
         help="Google Benchmark JSON path.",
     )
     parser.add_argument(
         "--output",
         type=Path,
-        default=DEFAULT_PACKET_OUTPUT,
+        default=None,
         help="Validated packet output path.",
     )
     parser.add_argument(
@@ -79,11 +101,17 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         action="store_true",
         help="Validate an existing Google Benchmark JSON file.",
     )
-    return parser.parse_args(argv)
+    args = parser.parse_args(argv)
+    if args.benchmark_json is None:
+        args.benchmark_json = SCENE_BENCHMARK_OUTPUTS[args.scene]
+    if args.output is None:
+        args.output = SCENE_PACKET_OUTPUTS[args.scene]
+    return args
 
 
 def run_benchmark(args: argparse.Namespace) -> None:
     args.benchmark_json.parent.mkdir(parents=True, exist_ok=True)
+    benchmark_row = SCENE_ROWS[args.scene]
     command = [
         sys.executable,
         "scripts/run_cpp_benchmark.py",
@@ -92,7 +120,7 @@ def run_benchmark(args: argparse.Namespace) -> None:
         "--build-type",
         args.build_type,
         "--",
-        f"--benchmark_filter=^{HANGING_BRIDGE_ROW}$",
+        f"--benchmark_filter=^{benchmark_row}$",
         f"--benchmark_min_time={args.benchmark_min_time}",
         f"--benchmark_repetitions={args.benchmark_repetitions}",
         "--benchmark_report_aggregates_only=true",
@@ -134,7 +162,9 @@ def _packet_row_name(row: Mapping[str, Any]) -> str:
     return name
 
 
-def _representative_row(rows: list[Mapping[str, Any]]) -> Mapping[str, Any]:
+def _representative_row(
+    rows: list[Mapping[str, Any]], expected_row: str
+) -> Mapping[str, Any]:
     found: Mapping[str, Any] | None = None
     errors: list[str] = []
 
@@ -144,7 +174,7 @@ def _representative_row(rows: list[Mapping[str, Any]]) -> Mapping[str, Any]:
             errors.append("benchmark row is missing a name")
             continue
         canonical = _packet_row_name(row)
-        if canonical != HANGING_BRIDGE_ROW:
+        if canonical != expected_row:
             errors.append(f"unexpected benchmark row: {name}")
             continue
         if row.get("aggregate_name") == "median":
@@ -152,7 +182,7 @@ def _representative_row(rows: list[Mapping[str, Any]]) -> Mapping[str, Any]:
         errors.extend(benchmark_timing_field_errors(row, name))
 
     if found is None:
-        errors.append(f"missing median benchmark row: {HANGING_BRIDGE_ROW}")
+        errors.append(f"missing median benchmark row: {expected_row}")
 
     if errors:
         raise Plan083CpuScenePacketError("\n".join(errors))
@@ -163,7 +193,11 @@ def make_packet(
     benchmark_data: dict[str, Any],
     *,
     max_equality_residual: float,
+    scene: str = DEFAULT_SCENE,
 ) -> dict[str, Any]:
+    if scene not in SCENE_ROWS:
+        raise Plan083CpuScenePacketError(f"unsupported scene: {scene}")
+
     rows = benchmark_data.get("benchmarks")
     if not isinstance(rows, list) or not rows:
         raise Plan083CpuScenePacketError("benchmark JSON has no benchmark rows")
@@ -171,24 +205,52 @@ def make_packet(
     if len(typed_rows) != len(rows):
         raise Plan083CpuScenePacketError("benchmark JSON has non-object rows")
 
-    row = _representative_row(typed_rows)
+    row = _representative_row(typed_rows, SCENE_ROWS[scene])
     timing_ns = benchmark_timing_ns(row)
     if not math.isfinite(timing_ns) or timing_ns <= 0.0:
         raise Plan083CpuScenePacketError("benchmark timing is not positive")
 
+    scene_label = scene.replace("_", " ")
     failed_steps = _finite_number(row, "failed_steps")
     if failed_steps != 0.0:
         raise Plan083CpuScenePacketError(
-            f"reduced hanging bridge reported {failed_steps:g} failed steps"
+            f"reduced {scene_label} reported {failed_steps:g} failed steps"
         )
 
     final_residual = _finite_number(row, "final_equality_residual_norm")
     if final_residual > max_equality_residual:
         raise Plan083CpuScenePacketError(
-            "reduced hanging bridge equality residual "
+            f"reduced {scene_label} equality residual "
             f"{final_residual:.3g} exceeds {max_equality_residual:.3g}"
         )
 
+    if scene == "hanging_bridge":
+        return _make_hanging_bridge_packet(
+            row,
+            rows,
+            timing_ns=timing_ns,
+            final_residual=final_residual,
+            max_equality_residual=max_equality_residual,
+        )
+    if scene == "nunchaku_single":
+        return _make_nunchaku_packet(
+            row,
+            rows,
+            timing_ns=timing_ns,
+            final_residual=final_residual,
+            max_equality_residual=max_equality_residual,
+        )
+    raise Plan083CpuScenePacketError(f"unsupported scene: {scene}")
+
+
+def _make_hanging_bridge_packet(
+    row: Mapping[str, Any],
+    rows: list[Any],
+    *,
+    timing_ns: float,
+    final_residual: float,
+    max_equality_residual: float,
+) -> dict[str, Any]:
     body_count = int(_finite_number(row, "body_count"))
     dynamic_body_count = int(_finite_number(row, "dynamic_body_count"))
     fixed_joint_count = int(_finite_number(row, "fixed_joint_count"))
@@ -236,6 +298,69 @@ def make_packet(
     }
 
 
+def _make_nunchaku_packet(
+    row: Mapping[str, Any],
+    rows: list[Any],
+    *,
+    timing_ns: float,
+    final_residual: float,
+    max_equality_residual: float,
+) -> dict[str, Any]:
+    body_count = int(_finite_number(row, "body_count"))
+    dynamic_body_count = int(_finite_number(row, "dynamic_body_count"))
+    revolute_joint_count = int(_finite_number(row, "revolute_joint_count"))
+    active_articulation_constraints = int(
+        _finite_number(row, "active_articulation_constraints")
+    )
+    if body_count != 2:
+        raise Plan083CpuScenePacketError(f"expected 2 rigid bodies, got {body_count}")
+    if dynamic_body_count != 1:
+        raise Plan083CpuScenePacketError(
+            f"expected 1 dynamic rigid body, got {dynamic_body_count}"
+        )
+    if revolute_joint_count != 1:
+        raise Plan083CpuScenePacketError(
+            f"expected 1 revolute joint, got {revolute_joint_count}"
+        )
+    if active_articulation_constraints < 2:
+        raise Plan083CpuScenePacketError(
+            "expected revolute-joint articulation rows for the reduced nunchaku"
+        )
+
+    tip_radius = _finite_number(row, "swinging_tip_radius_m")
+    if tip_radius <= 0.0:
+        raise Plan083CpuScenePacketError("nunchaku swinging tip radius is not positive")
+
+    free_axis_velocity = _finite_number(row, "free_axis_angular_velocity_rad_s")
+    if abs(free_axis_velocity) <= 1e-9:
+        raise Plan083CpuScenePacketError("nunchaku free-axis angular velocity was lost")
+
+    return {
+        "plan083_cpu_scene_packet": {
+            "row_id": "unb-fig-13",
+            "scene_id": "plan083_nunchaku",
+            "benchmark_row": _packet_row_name(row),
+            "paper_scale": False,
+            "runtime_path": "rigid IPC World::step",
+            "step_count": 1,
+            "wall_time_ns": timing_ns,
+            "body_count": body_count,
+            "dynamic_body_count": dynamic_body_count,
+            "revolute_joint_count": revolute_joint_count,
+            "active_articulation_constraints": active_articulation_constraints,
+            "final_equality_residual_norm": final_residual,
+            "max_equality_residual": max_equality_residual,
+            "swinging_tip_radius_m": tip_radius,
+            "free_axis_angular_velocity_rad_s": free_axis_velocity,
+            "limitation_status": (
+                "Reduced single-hinge runtime smoke packet only; cone-twist "
+                "ranges, sparse N-by-N scaling, and Fig. 25 remain planned."
+            ),
+        },
+        "benchmarks": rows,
+    }
+
+
 def write_packet(path: Path, packet: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(packet, indent=2) + "\n", encoding="utf-8")
@@ -249,6 +374,7 @@ def main(argv: list[str]) -> int:
         packet = make_packet(
             _load_json(args.benchmark_json),
             max_equality_residual=args.max_equality_residual,
+            scene=args.scene,
         )
     except Plan083CpuScenePacketError as exc:
         raise SystemExit(str(exc)) from exc

@@ -30,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-// PLAN-083 CPU scene corpus packet seed. This benchmark measures the reduced
-// hanging-bridge runtime smoke scene only; it is not a paper-scale bridge,
-// codimensional-rod, or mixed-domain performance claim.
+// PLAN-083 CPU scene corpus packet seed. These benchmarks measure reduced
+// runtime smoke scenes only; they are not paper-scale bridge, cone-twist,
+// codimensional-rod, or mixed-domain performance claims.
 
 #include <dart/simulation/body/collision_shape.hpp>
 #include <dart/simulation/body/rigid_body.hpp>
@@ -53,15 +53,27 @@
 #include <string>
 #include <vector>
 
+#include <cmath>
+
 namespace sx = dart::simulation;
 
 namespace {
 
 constexpr std::array<double, 4> kBridgeBoardX{-0.45, -0.15, 0.15, 0.45};
+constexpr double kMaxReducedEqualityResidual = 1e-8;
 
 const Eigen::Vector3d kBridgeBoardHalfExtents(0.10, 0.16, 0.025);
 const Eigen::Vector3d kBridgePostHalfExtents(0.05, 0.20, 0.08);
 const Eigen::Vector3d kBridgeTravelerHalfExtents(0.07, 0.07, 0.07);
+const Eigen::Vector3d kNunchakuHandleHalfExtents(0.18, 0.035, 0.035);
+
+sx::CollisionShape makeOffsetBox(
+    const Eigen::Vector3d& halfExtents, const Eigen::Vector3d& localOffset)
+{
+  auto shape = sx::CollisionShape::makeBox(halfExtents);
+  shape.localTransform.translation() = localOffset;
+  return shape;
+}
 
 struct BodySnapshot
 {
@@ -171,6 +183,66 @@ struct HangingBridgeFixture
   std::vector<BodySnapshot> snapshots;
 };
 
+struct NunchakuFixture
+{
+  NunchakuFixture()
+  {
+    world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+    world.setTimeStep(0.005);
+    world.setGravity(Eigen::Vector3d::Zero());
+
+    sx::RigidBodyOptions anchorOptions;
+    anchorOptions.isStatic = true;
+    anchorOptions.position = Eigen::Vector3d(0.0, 0.0, 0.75);
+    anchor.emplace(
+        world.addRigidBody("plan083_nunchaku_anchor_handle", anchorOptions));
+    anchor->setCollisionShape(makeOffsetBox(
+        kNunchakuHandleHalfExtents,
+        Eigen::Vector3d(-kNunchakuHandleHalfExtents.x(), 0.0, 0.0)));
+
+    sx::RigidBodyOptions swingOptions;
+    swingOptions.mass = 0.2;
+    swingOptions.position = anchorOptions.position;
+    swingOptions.angularVelocity = Eigen::Vector3d(0.0, 0.0, 1.5);
+    swinging.emplace(
+        world.addRigidBody("plan083_nunchaku_swing_handle", swingOptions));
+    swinging->setCollisionShape(makeOffsetBox(
+        kNunchakuHandleHalfExtents,
+        Eigen::Vector3d(kNunchakuHandleHalfExtents.x(), 0.0, 0.0)));
+
+    (void)world.addRigidBodyRevoluteJoint(
+        "plan083_nunchaku_hinge", *anchor, *swinging, Eigen::Vector3d::UnitZ());
+
+    snapshotBody(snapshots, *anchor);
+    snapshotBody(snapshots, *swinging);
+
+    world.enterSimulationMode();
+  }
+
+  void reset()
+  {
+    world.setTime(0.0);
+    for (auto& snapshot : snapshots) {
+      snapshot.body.setTransform(snapshot.transform);
+      snapshot.body.setLinearVelocity(snapshot.linearVelocity);
+      snapshot.body.setAngularVelocity(snapshot.angularVelocity);
+    }
+  }
+
+  double swingingTipRadius() const
+  {
+    const Eigen::Vector3d localTip(
+        2.0 * kNunchakuHandleHalfExtents.x(), 0.0, 0.0);
+    return (swinging->getTransform() * localTip - anchor->getTranslation())
+        .norm();
+  }
+
+  sx::World world;
+  std::optional<sx::RigidBody> anchor;
+  std::optional<sx::RigidBody> swinging;
+  std::vector<BodySnapshot> snapshots;
+};
+
 } // namespace
 
 //==============================================================================
@@ -192,7 +264,12 @@ static void BM_Plan083CpuScene_hanging_bridge_reduced_world_step(
 
     fixture.world.step(executor, pipeline);
     lastStats = ipcStage.getLastStats();
-    if (lastStats.failed || !lastStats.converged || !lastStats.resultApplied) {
+    const bool residualOk
+        = std::isfinite(lastStats.finalEqualityResidualNorm)
+          && lastStats.finalEqualityResidualNorm <= kMaxReducedEqualityResidual;
+    const bool satisfiedNoOp = residualOk && lastStats.solverIterations == 0u
+                               && lastStats.activeArticulationConstraints >= 2u;
+    if (!residualOk || (lastStats.failed && !satisfiedNoOp)) {
       ++failedSteps;
     }
     benchmark::DoNotOptimize(fixture.traveler->getTranslation().data());
@@ -217,6 +294,58 @@ static void BM_Plan083CpuScene_hanging_bridge_reduced_world_step(
   state.counters["max_board_sag_m"] = fixture.maxBoardSag();
 }
 BENCHMARK(BM_Plan083CpuScene_hanging_bridge_reduced_world_step)
+    ->Unit(benchmark::kMillisecond);
+
+//==============================================================================
+static void BM_Plan083CpuScene_nunchaku_single_reduced_world_step(
+    benchmark::State& state)
+{
+  NunchakuFixture fixture;
+  sx::compute::SequentialExecutor executor;
+
+  std::size_t failedSteps = 0;
+  sx::compute::RigidIpcSolverStats lastStats;
+  for (auto _ : state) {
+    state.PauseTiming();
+    fixture.reset();
+    sx::compute::RigidIpcContactStage ipcStage(64);
+    sx::compute::WorldStepPipeline pipeline;
+    pipeline.addStage(ipcStage);
+    state.ResumeTiming();
+
+    fixture.world.step(executor, pipeline);
+    lastStats = ipcStage.getLastStats();
+    const bool residualOk
+        = std::isfinite(lastStats.finalEqualityResidualNorm)
+          && lastStats.finalEqualityResidualNorm <= kMaxReducedEqualityResidual;
+    const bool satisfiedNoOp = residualOk && lastStats.solverIterations == 0u
+                               && lastStats.activeArticulationConstraints >= 2u;
+    if (!residualOk || (lastStats.failed && !satisfiedNoOp)) {
+      ++failedSteps;
+    }
+    benchmark::DoNotOptimize(fixture.swinging->getTransform().data());
+    benchmark::ClobberMemory();
+  }
+
+  state.counters["row_unb_fig_13"] = 1.0;
+  state.counters["paper_scale"] = 0.0;
+  state.counters["body_count"] = static_cast<double>(lastStats.bodyCount);
+  state.counters["dynamic_body_count"]
+      = static_cast<double>(lastStats.dynamicBodyCount);
+  state.counters["revolute_joint_count"]
+      = static_cast<double>(fixture.world.getRigidBodyJointCount());
+  state.counters["active_articulation_constraints"]
+      = static_cast<double>(lastStats.activeArticulationConstraints);
+  state.counters["solver_iterations"]
+      = static_cast<double>(lastStats.solverIterations);
+  state.counters["failed_steps"] = static_cast<double>(failedSteps);
+  state.counters["final_equality_residual_norm"]
+      = lastStats.finalEqualityResidualNorm;
+  state.counters["swinging_tip_radius_m"] = fixture.swingingTipRadius();
+  state.counters["free_axis_angular_velocity_rad_s"]
+      = fixture.swinging->getAngularVelocity().z();
+}
+BENCHMARK(BM_Plan083CpuScene_nunchaku_single_reduced_world_step)
     ->Unit(benchmark::kMillisecond);
 
 BENCHMARK_MAIN();

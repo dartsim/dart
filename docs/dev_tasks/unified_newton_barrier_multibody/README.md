@@ -180,6 +180,8 @@
       paper-scale reproduction.
   - [x] Add the first reduced hanging-bridge CPU scene packet benchmark and
         writer for the runtime smoke path.
+  - [x] Add a reduced nunchaku hinge CPU scene packet and runtime status panel
+        for the public revolute-joint path.
   - [ ] Add paper-scale CPU packets only after the corresponding scene assets,
         mixed-domain stepping, and comparison baselines exist.
 
@@ -434,6 +436,8 @@ Runtime-wiring branch-local evidence:
 - `ctest --test-dir build/default/cpp/Release -R 'test_world|test_rigid_ipc_barrier' --output-on-failure`
 - `LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe pixi run py-demos -- --scene plan083_hanging_bridge --headless --frames 4 --width 320 --height 240`
 - `LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe pixi run py-demo-capture -- --scene plan083_hanging_bridge --frames 4 --width 320 --height 240 --output-dir /tmp/dart_plan083_hanging_bridge_capture`
+- `pixi run bm-plan083-cpu-hanging-bridge-packet`
+- `pixi run bm-plan083-cpu-nunchaku-packet`
 - `pixi run python scripts/check_plan083_cpu_scene_corpus.py`
 - `pixi run python scripts/check_plan083_completion_audit.py`
 

@@ -1,4 +1,4 @@
-"""Runtime smoke for the unified Newton-barrier hanging-bridge py-demo."""
+"""Runtime smoke for unified Newton-barrier py-demos."""
 
 from __future__ import annotations
 
@@ -55,3 +55,29 @@ def test_hanging_bridge_demo_steps_rigid_ipc_world() -> None:
     assert final[2] < initial[2] - 0.03
     for board in boards:
         assert np.all(np.isfinite(np.asarray(board.translation, dtype=float)))
+
+
+def test_nunchaku_demo_steps_rigid_ipc_world() -> None:
+    sx = _sx()
+    from examples.demos.scenes.plan083_unified_newton_barrier import PLAN083_SCENES
+
+    scene = next(scene for scene in PLAN083_SCENES if scene.id == "plan083_nunchaku")
+    setup = scene.build()
+    sx_world = setup.info["sx_world"]
+    swinging = setup.info["swinging"]
+
+    assert setup.info["runtime_smoke_scene"] is True
+    assert sx_world.rigid_body_solver == sx.RigidBodySolver.IPC
+    assert sx_world.num_rigid_body_joints == 1
+    assert setup.info["plan083_benchmark_command"] == (
+        "pixi run bm-plan083-cpu-nunchaku-packet"
+    )
+    assert setup.pre_step is not None
+
+    initial = np.asarray(swinging.transform, dtype=float).reshape(4, 4).copy()
+    for _ in range(24):
+        setup.pre_step()
+
+    final = np.asarray(swinging.transform, dtype=float).reshape(4, 4)
+    assert np.all(np.isfinite(final))
+    assert not np.allclose(final[:3, :3], initial[:3, :3])
