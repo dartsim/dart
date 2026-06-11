@@ -17,6 +17,8 @@ Staggering is implemented as `dart::math::StaggeringSolver`.
 Blocked Jacobi is implemented as `dart::math::BlockedJacobiSolver`.
 MPRGP is implemented as `dart::math::MprgpSolver`.
 Shock propagation is implemented as `dart::math::ShockPropagationSolver`.
+ADMM is implemented as `dart::math::AdmmSolver`.
+SAP is implemented as `dart::math::SapSolver`.
 
 ## 1. Interior Point Method ✅ (Implemented)
 
@@ -85,6 +87,19 @@ auto result = solver.solve(problem, x, options);
 
 > Note: DART's implementation targets standard LCPs and delegates boxed or
 > friction-indexed problems to the boxed-capable pivoting solver.
+
+DART 7 benchmark evidence includes `BM_LcpInteriorPointPathSweep`, which
+compares centering parameter $\sigma=0.1/0.3$ and step scales 0.75/0.99 over
+well-conditioned dense SPD, banded SPD, mildly ill-conditioned SPD, and
+near-singular SPD standard-LCP fixtures. Focused default, SIMD-enabled, and
+CUDA-enabled build-tree runs reported 9 rows with `contract_ok=1`; the
+CUDA-enabled rows are CPU solver rows in a CUDA-enabled build, not CUDA LCP
+kernel execution.
+`BM_LcpContactNormalStandardSweep` adds contact-derived standard-LCP evidence
+for Interior Point by extracting only the normal rows from DART 7 separated
+sphere-ground, coupled vertical-stack, and articulated unified-contact
+snapshots. This does not claim native boxed or friction-index support for the
+standard-only Interior Point solver.
 
 ### Properties
 
@@ -180,6 +195,17 @@ solver.solve(problem, x, options);
 > Note: DART partitions variables by `findex` (normal indices are `findex < 0`,
 > friction indices are `findex >= 0`) and alternates normal and friction sub-solves.
 
+DART 7 benchmark evidence includes `BM_LcpStaggeringContactPipelineSweep`,
+which exercises the normal/friction split on DART-owned contact-pipeline
+fixtures rather than only synthetic math packets. The rows cover separated
+sphere-ground contacts, coupled vertical sphere stacks, and articulated unified
+contacts for ground, rigid-impact, and cross-link-impact cases. Focused default,
+SIMD-enabled, and CUDA-enabled build-tree runs reported 9 rows with
+`contract_ok=1`, normal-row counters `1/2/3/4/5`, friction-row counters
+`2/4/6/8/10`, coupled-contact flags, and backend build-state counters. The
+CUDA-enabled rows are CPU Staggering solver rows in a CUDA-enabled build, not
+CUDA LCP kernel execution.
+
 ### Properties
 
 - **Time**: Depends on sub-solvers
@@ -262,6 +288,13 @@ solver.solve(problem, x, options);
 > Note: Layers must cover all blocks. If `layers` is empty, DART uses a single
 > layer containing all blocks (equivalent to an ordered block sweep).
 
+DART 7 benchmark evidence includes `BM_LcpShockPropagationLayerSweep`, which
+compares single-layer, two-layer, and serial layer schedules over standard
+48-row, boxed 24-row, and friction-index 8-contact fixtures using 3-row
+blocks. Focused default, SIMD-enabled, and CUDA-enabled build-tree runs reported
+9 rows with `contract_ok=1`; the CUDA-enabled rows are CPU solver rows in a
+CUDA-enabled build, not CUDA LCP kernel execution.
+
 **Properties**:
 
 - Domain: Velocity-based BLCP
@@ -329,6 +362,94 @@ auto result = solver.solve(problem, x, options);
 > definite matrices and delegates boxed or friction-indexed problems to the
 > boxed-capable pivoting solver.
 
+DART 7 benchmark evidence includes `BM_LcpMprgpSpdCheckSweep`, which compares
+well-conditioned dense SPD, banded SPD, mildly ill-conditioned SPD, and
+near-singular SPD standard-LCP fixtures while toggling the positive-definite
+factorization check. Focused default, SIMD-enabled, and CUDA-enabled build-tree
+runs reported 9 rows with `contract_ok=1`; the CUDA-enabled rows are CPU solver
+rows in a CUDA-enabled build, not CUDA LCP kernel execution.
+`BM_LcpContactNormalStandardSweep` adds contact-derived standard-LCP evidence
+for MPRGP by extracting only the normal rows from DART 7 separated
+sphere-ground, coupled vertical-stack, and articulated unified-contact
+snapshots. This remains standard normal-contact evidence; boxed or
+friction-index contact paths still delegate to boxed-capable solvers.
+
+### 3.3 ADMM ✅
+
+**Description**: Alternating Direction Method of Multipliers solver for boxed
+LCPs. DART's implementation alternates between a proximal linear solve, a box
+projection, and a dual update:
+
+$$x = (A + (\rho+\mu)I)^{-1}(\rho z - y + b)$$
+$$z = \Pi_{[l,u]}(x + y/\rho)$$
+$$y = y + \rho(x-z)$$
+
+For friction-index rows, the projection uses effective bounds coupled to the
+current normal impulse.
+Focused `BM_LcpAdmmRhoSweep` rows compare fixed and adaptive $\rho$ settings
+on identical standard, boxed, and friction-index benchmark fixtures; these rows
+are CPU solver rows even when emitted by a CUDA-enabled build. Additional
+`BM_LcpContactSolverComparisonSweep/Admm/*` rows reuse DART 7 separated
+sphere-ground, coupled vertical-stack, and articulated unified-contact
+friction-index fixtures so ADMM contact evidence is tracked independently from
+the synthetic $\rho$ sweep. ADMM also has solver-specific generated evidence on
+16x-coupled mildly ill-conditioned friction-index packets at 16 and 24 contacts;
+the focused correctness slice and `BM_LcpMildIllConditioned/ExtremeCoupled*`
+rows keep that claim separate from broader all-solver conditioning coverage.
+
+```cpp
+#include <dart/math/lcp/other/AdmmSolver.hpp>
+
+dart::math::AdmmSolver solver;
+dart::math::LcpOptions options = solver.getDefaultOptions();
+options.maxIterations = 200;
+solver.solve(problem, x, options);
+```
+
+**Use Cases**:
+
+- Boxed/contact-style problems where operator-splitting robustness is useful
+- Approximate solves with adaptive residual balancing
+- Benchmark comparisons against projection and pivoting methods
+
+### 3.4 SAP ✅
+
+**Description**: Semi-Analytic Primal inspired regularized solve for boxed
+LCPs. DART's implementation minimizes a regularized quadratic objective with
+Armijo backtracking:
+
+$$L(x) = \frac{1}{2}x^T A x - b^T x + \text{regularization}(x,l,u)$$
+
+The regularization makes the method useful for compliant-contact-inspired
+experiments, but it also means strict LCP complementarity is approximate by
+design.
+Focused `BM_LcpSapRegularizationSweep` rows compare regularization values
+`1e-6`, `1e-5`, and `1e-4` on identical standard, boxed, and friction-index
+benchmark fixtures; these rows are CPU solver rows even when emitted by a
+CUDA-enabled build. Additional `BM_LcpContactSolverComparisonSweep/Sap/*` rows
+reuse DART 7 separated sphere-ground, coupled vertical-stack, and articulated
+unified-contact friction-index fixtures so SAP contact evidence is tracked
+independently from the synthetic regularization sweep. SAP also has
+solver-specific generated evidence on 16x-coupled mildly ill-conditioned
+friction-index packets at 16 and 24 contacts; the focused correctness slice and
+`BM_LcpMildIllConditioned/ExtremeCoupled*` rows keep that claim separate from
+broader all-solver conditioning coverage.
+
+```cpp
+#include <dart/math/lcp/other/SapSolver.hpp>
+
+dart::math::SapSolver solver;
+dart::math::LcpOptions options = solver.getDefaultOptions();
+options.maxIterations = 50;
+solver.solve(problem, x, options);
+```
+
+**Use Cases**:
+
+- Regularized contact-style solves
+- DART 7 compliant-contact experiments
+- Approximate benchmark baselines where exact complementarity is not required
+
 ## 4. Blocked Jacobi ✅ (Implemented)
 
 ### Description
@@ -365,6 +486,16 @@ auto result = solver.solve(problem, x, options);
 > DART uses `DirectSolver` for standard blocks up to 3 variables and falls back
 > to `DantzigSolver` for boxed or larger blocks.
 
+DART 7 benchmark evidence includes `BM_LcpBlockPartitionSweep`, which compares
+Blocked Jacobi and BGS on standard, boxed, and friction-index fixtures with
+full-block, 3-row block, auto `findex` contact-block, and explicit
+contact-block partitions. Focused default, SIMD-enabled, and CUDA-enabled
+build-tree runs reported 12 rows with `contract_ok=1`, block counts `1/4`,
+block sizes `3/12`, friction-index `contact_count=4`, observed solver
+iterations `1/4/5/6/10`, and backend build-state counters. The CUDA-enabled
+rows are CPU Blocked Jacobi/BGS solver rows in a CUDA-enabled build, not CUDA
+LCP kernel execution.
+
 ### Properties
 
 - **Parallelization**: Fully parallel (all blocks independent)
@@ -379,6 +510,8 @@ auto result = solver.solve(problem, x, options);
 | Staggering ✅        | Variable    | Depends          | Medium     | No              |
 | Shock-Propagation ✅ | Linear      | $O(n)$           | Medium     | Limited         |
 | MPRGP ✅             | Monotone    | $O(n^2)$         | High       | No              |
+| ADMM ✅              | Variable    | Linear solve     | Medium     | No              |
+| SAP ✅               | Regularized | Newton solve     | Medium     | No              |
 | Blocked Jacobi ✅    | Linear      | $O(n \cdot b^3)$ | Medium     | Yes             |
 
 ## Implementation Priority
@@ -390,6 +523,8 @@ auto result = solver.solve(problem, x, options);
 - **Blocked Jacobi**: Parallel block updates with per-block LCP solves
 - **MPRGP**: Bound-constrained QP solver for standard SPD LCPs
 - **Shock-Propagation**: Layered block solve for gravity-dominated contact
+- **ADMM**: Operator-splitting solver for boxed LCPs
+- **SAP**: Regularized SAP-inspired boxed LCP solver
 
 ### Low Priority (Specialized Use Cases)
 

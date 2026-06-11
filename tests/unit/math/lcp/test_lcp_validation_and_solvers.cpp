@@ -743,12 +743,6 @@ TEST(LcpValidationCoverage, ValidateSolutionDetectsComplementarityViolations)
   w << 0.0, 0.0;
   EXPECT_FALSE(detail::validateSolution(x, w, lo, hi, 1e-6, &message));
 
-  lo << 0.3, 0.5;
-  hi << 0.3, 0.5;
-  x << 0.3, 0.5;
-  w << 1.0, 0.0;
-  EXPECT_FALSE(detail::validateSolution(x, w, lo, hi, 1e-6, &message));
-
   lo << 0.0, 0.0;
   hi << 1.0, 1.0;
   x << 0.0, 1.0;
@@ -852,7 +846,7 @@ TEST(LcpValidationCoverage, ValidateSolutionFixedAndComplementarityCases)
   hi << 0.2;
   x << 0.2;
   w << 0.1;
-  EXPECT_FALSE(detail::validateSolution(x, w, lo, hi, 1e-6, &message));
+  EXPECT_TRUE(detail::validateSolution(x, w, lo, hi, 1e-6, &message));
 
   lo << 0.0;
   hi << 1.0;
@@ -2676,6 +2670,9 @@ TEST(LcpValidationCoverage, ValidateSolutionAcceptsFixedAndInteriorCases)
   std::string message;
   EXPECT_TRUE(detail::validateSolution(x, w, lo, hi, 1e-8, &message));
 
+  w << 1.0, 0.0, 0.0;
+  EXPECT_TRUE(detail::validateSolution(x, w, lo, hi, 1e-8, &message));
+
   const double comp = detail::complementarityInfinityNorm(x, w, lo, hi, 1e-8);
   EXPECT_NEAR(comp, 0.0, 1e-12);
 }
@@ -3572,9 +3569,9 @@ TEST(BoxedSemiSmoothNewtonSolverCoverage, FailureAndValidationBranches)
   Eigen::VectorXd xFixed = Eigen::VectorXd::Zero(1);
   const auto validationResult
       = solver.solve(fixedProblem, xFixed, validationOptions);
-  EXPECT_EQ(validationResult.status, LcpSolverStatus::NumericalError);
+  EXPECT_EQ(validationResult.status, LcpSolverStatus::Success);
   EXPECT_TRUE(validationResult.validated);
-  EXPECT_FALSE(validationResult.message.empty());
+  EXPECT_TRUE(validationResult.message.empty());
   EXPECT_NEAR(xFixed[0], 0.0, 1e-12);
 }
 
@@ -3741,7 +3738,7 @@ TEST(AdmmSolverCoverage, DefaultCustomZeroRhsAndEdgeCases)
   EXPECT_EQ(xEmpty.size(), 0);
 }
 
-TEST(AdmmSolverCoverage, ValidatesFixedBoundResidualAfterConvergence)
+TEST(AdmmSolverCoverage, ValidatesFixedBoundSolutionAfterConvergence)
 {
   AdmmSolver solver;
   AdmmSolver::Parameters params;
@@ -3756,9 +3753,9 @@ TEST(AdmmSolverCoverage, ValidatesFixedBoundResidualAfterConvergence)
   auto problem = makeFixedZeroBoundProblem();
   Eigen::VectorXd x = Eigen::VectorXd::Zero(1);
   const auto result = solver.solve(problem, x, options);
-  EXPECT_EQ(result.status, LcpSolverStatus::NumericalError);
+  EXPECT_EQ(result.status, LcpSolverStatus::Success);
   EXPECT_TRUE(result.validated);
-  EXPECT_FALSE(result.message.empty());
+  EXPECT_TRUE(result.message.empty());
   EXPECT_NEAR(x[0], 0.0, 1e-12);
 }
 

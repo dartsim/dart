@@ -70,9 +70,9 @@
       "visual_evidence_artifact": ".benchmark_results/plan083/visual/hanging_bridge/manifest.json",
       "benchmark_command": "pixi run bm bm_plan083_cpu_scene_corpus -- --benchmark_filter=hanging_bridge",
       "benchmark_profile_artifact": ".benchmark_results/plan083/cpu_scene_corpus/hanging_bridge.json",
-      "expected_invariant": "Bridge rods, boards, point connections, and coupling stay finite with deterministic restart.",
-      "limitation_status": "Launchable placeholder only; waiting for rod, rigid, and codimensional runtime coupling.",
-      "notes_or_gap": "The Phase 3/5 internal contracts exist, but scene-level stepping is not wired yet."
+      "expected_invariant": "Reduced bridge boards, point connections, and traveler stay finite while stepping through the rigid IPC World path.",
+      "limitation_status": "Reduced runtime smoke only; waiting for rod, rigid, and codimensional paper-scale coupling.",
+      "notes_or_gap": "The py-demo now runs a reduced hanging-bridge scene through World::step; full paper body/node/contact counts remain planned."
     },
     {
       "row_id": "unb-fig-03",

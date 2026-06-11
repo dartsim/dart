@@ -4,6 +4,7 @@
 
 # Add formatting for common headers
 dart_format_add(
+  lcp_solver_manifest.hpp
   lcp_test_problems.hpp
   lcp_test_fixtures.hpp
   lcp_test_harness.hpp
