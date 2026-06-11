@@ -2833,10 +2833,10 @@ TEST(World, RigidBodyContactAvbdStageScratchUsesProvidedAllocator)
 
     stage.prepare(world);
 
-    EXPECT_GE(freeList.getAllocationCount(), allocationsAfterStage + 18u)
+    EXPECT_GE(freeList.getAllocationCount(), allocationsAfterStage + 24u)
         << "allocator-aware rigid AVBD contact scratch should reserve "
-           "snapshot, row-counter, solve, and point-joint buffers from "
-           "the provided free allocator";
+           "snapshot, row-counter, solve, warm-start inventory, and "
+           "point-joint buffers from the provided free allocator";
   }
 
   EXPECT_EQ(freeList.getAllocationCount(), allocationsBeforeStage);

@@ -34,6 +34,9 @@
 
 #include <dart/simulation/detail/deformable_vbd/avbd_constraint.hpp>
 
+#include <dart/common/memory_allocator.hpp>
+#include <dart/common/stl_allocator.hpp>
+
 #include <algorithm>
 #include <limits>
 #include <span>
@@ -192,6 +195,19 @@ inline AvbdScalarRowState warmStartAvbdScalarRowState(
 class AvbdScalarRowInventory
 {
 public:
+  using RecordAllocator = ::dart::common::StlAllocator<AvbdScalarRowRecord>;
+  using RecordVector = std::vector<AvbdScalarRowRecord, RecordAllocator>;
+
+  //==============================================================================
+  AvbdScalarRowInventory() = default;
+
+  //==============================================================================
+  explicit AvbdScalarRowInventory(::dart::common::MemoryAllocator& allocator)
+    : mRecords(RecordAllocator{allocator}),
+      mPreviousRecords(RecordAllocator{allocator})
+  {
+  }
+
   //==============================================================================
   void syncActiveRows(
       std::span<const AvbdScalarRowDescriptor> descriptors,
@@ -253,13 +269,13 @@ public:
   }
 
   //==============================================================================
-  [[nodiscard]] std::vector<AvbdScalarRowRecord>& records() noexcept
+  [[nodiscard]] RecordVector& records() noexcept
   {
     return mRecords;
   }
 
   //==============================================================================
-  [[nodiscard]] const std::vector<AvbdScalarRowRecord>& records() const noexcept
+  [[nodiscard]] const RecordVector& records() const noexcept
   {
     return mRecords;
   }
@@ -306,8 +322,8 @@ private:
     return nullptr;
   }
 
-  std::vector<AvbdScalarRowRecord> mRecords;
-  std::vector<AvbdScalarRowRecord> mPreviousRecords;
+  RecordVector mRecords;
+  RecordVector mPreviousRecords;
 };
 
 } // namespace dart::simulation::detail::deformable_vbd
