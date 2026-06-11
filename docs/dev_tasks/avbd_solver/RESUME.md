@@ -2,6 +2,16 @@
 
 ## Last Session Summary
 
+Latest local follow-up: the large BoxedLcp dense/articulated scaling packets in
+`test_boxed_lcp_contact` are now opt-in behind
+`DART_BOXED_LCP_CONTACT_ENABLE_EXPENSIVE_SCALING_TESTS`, while representative
+default coverage still includes dense-contact shape smoke and small/mid-size
+articulated public-step cases. This keeps routine CI from spending minutes in
+the dense fallback path while preserving the larger packets for dedicated
+evidence/performance runs. `pixi run lint`, focused CTest, and the dartpy world
+test passed locally. This is CI-runtime calibration only; it does not close any
+AVBD solver, CPU-win, GPU, or paper-number gate.
+
 Latest local follow-up: dartpy public articulated fixed, spherical, cardinal
 one-DOF motor, and non-cardinal one-DOF motor break/reset coverage now rechecks
 endpoint shape, joint type, DOF count, and motor axis after reset re-engages the
