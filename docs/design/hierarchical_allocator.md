@@ -87,7 +87,8 @@ rigid IPC
 contact stage similarly routes its top-level runtime, solver, surface,
 writeback, resting-contact, dynamics-term, projected-Newton result, and solver
 scratch vectors through the World free allocator when the stage constructs the
-solver scratch, including nested rigid IPC surface vertex/triangle payloads.
+solver scratch, including nested rigid IPC surface vertex/triangle payloads and
+projected-Newton result assembly vectors.
 `DeformableDynamicsStage` routes its stage-owned ground-barrier,
 static-obstacle, deformable-surface snapshot, static rigid surface-CCD snapshot,
 and moving rigid surface-CCD snapshot vectors through the same World free

@@ -199,7 +199,12 @@ borrow the same root. A follow-up routes nested rigid IPC surface vertex and
 triangle payload vectors through the same allocator by constructing runtime,
 solver, result, and solver-scratch surfaces with allocator-aware payload
 storage; the focused custom-stage test now covers those payload reserves and
-release against the provided free-list live allocation count.
+release against the provided free-list live allocation count. The next rigid
+IPC detail-solver slice makes `RigidIpcBarrierAssembly` allocator-aware for its
+body-offset, active-constraint, and active-friction-constraint vectors, has
+allocator-backed solve results construct that assembly from the provided root,
+and keeps result assignments capacity-preserving so repeated solves do not
+silently switch those vectors back to the default heap.
 
 The current deformable stage scratch slice adds allocator-aware construction
 for `DeformableDynamicsStage::Scratch` top-level barrier and snapshot vectors:
@@ -735,7 +740,8 @@ sequential-impulse constraint vector, plus the `WorldKinematicsGraph`
 entity-node cache, `ComputeGraph` owned node/name lookup storage, rigid IPC
 top-level scratch vectors, rigid IPC solver option/result vectors, and rigid IPC
 projected-Newton solve scratch vectors,
-rigid IPC nested surface vertex/triangle payload vectors,
+rigid IPC nested surface vertex/triangle payload vectors, rigid IPC
+projected-Newton result assembly vectors,
 deformable stage top-level barrier/snapshot vectors plus nested
 `SurfaceContactSnapshot` payload vectors, and the rigid AVBD contact snapshot,
 row-counter scratch, solve scratch vectors, warm-start inventories, and

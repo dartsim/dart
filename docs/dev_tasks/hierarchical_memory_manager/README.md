@@ -775,7 +775,10 @@ Follow-up progress after PR #2956:
   The projected-Newton solve scratch now also has allocator-aware construction
   for its surface work vectors, and the stage passes the same allocator into
   that nested solver scratch; a focused detail-solver test verifies those
-  reserves use and release the provided free allocator.
+  reserves use and release the provided free allocator. The same detail-solver
+  path now constructs projected-Newton result assembly body-offset, active
+  constraint, and active friction-constraint vectors with that allocator and
+  preserves the destination allocator across repeated result assignments.
 - The deformable stage scratch follow-up routes the stage-owned static-ground
   barrier, sphere/box/capsule obstacle, deformable surface-snapshot, static
   rigid surface-CCD snapshot, and moving rigid surface-CCD snapshot vectors

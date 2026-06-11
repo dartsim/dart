@@ -1715,16 +1715,18 @@ TEST(RigidIpcBarrier, ProjectedNewtonSolveScratchUsesProvidedAllocator)
     const std::array<expdetail::RigidIpcBarrierSurface, 1> surfaces{surface};
 
     expdetail::RigidIpcProjectedNewtonSolveOptions options;
-    expdetail::RigidIpcProjectedNewtonSolveResult result;
+    expdetail::RigidIpcProjectedNewtonSolveResult result(
+        memoryManager.getFreeAllocator());
     expdetail::RigidIpcProjectedNewtonSolveScratch scratch(
         memoryManager.getFreeAllocator());
 
     expdetail::solveRigidIpcProjectedNewtonBarrierSystem(
         surfaces, options, result, scratch);
 
-    EXPECT_GT(freeList.getAllocationCount(), allocationsBeforeSolve)
+    EXPECT_GE(freeList.getAllocationCount(), allocationsBeforeSolve + 6u)
         << "allocator-aware rigid IPC projected-Newton scratch should reserve "
-           "surface work vectors from the provided free allocator";
+           "surface work vectors and result assembly vectors from the "
+           "provided free allocator";
   }
 
   EXPECT_EQ(freeList.getAllocationCount(), allocationsBeforeSolve);

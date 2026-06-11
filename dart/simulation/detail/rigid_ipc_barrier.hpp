@@ -45,6 +45,7 @@
 #include <array>
 #include <limits>
 #include <span>
+#include <utility>
 #include <vector>
 
 namespace dart::simulation::detail {
@@ -194,12 +195,75 @@ struct RigidIpcBarrierAssembly
 {
   static constexpr std::size_t npos = std::numeric_limits<std::size_t>::max();
 
+  using BodyDofOffsetAllocator = dart::common::StlAllocator<std::size_t>;
+  using ConstraintAllocator
+      = dart::common::StlAllocator<RigidIpcBarrierConstraint>;
+  using FrictionConstraintAllocator
+      = dart::common::StlAllocator<RigidIpcFrictionConstraint>;
+  using BodyDofOffsetVector = std::vector<std::size_t, BodyDofOffsetAllocator>;
+  using ConstraintVector
+      = std::vector<RigidIpcBarrierConstraint, ConstraintAllocator>;
+  using FrictionConstraintVector
+      = std::vector<RigidIpcFrictionConstraint, FrictionConstraintAllocator>;
+
+  RigidIpcBarrierAssembly() = default;
+
+  explicit RigidIpcBarrierAssembly(dart::common::MemoryAllocator& allocator)
+    : bodyDofOffsets(BodyDofOffsetAllocator{allocator}),
+      activeConstraints(ConstraintAllocator{allocator}),
+      activeFrictionConstraints(FrictionConstraintAllocator{allocator})
+  {
+  }
+
+  RigidIpcBarrierAssembly(const RigidIpcBarrierAssembly&) = default;
+  RigidIpcBarrierAssembly(RigidIpcBarrierAssembly&&) noexcept = default;
+
+  RigidIpcBarrierAssembly& operator=(const RigidIpcBarrierAssembly& other)
+  {
+    if (this == &other) {
+      return *this;
+    }
+
+    value = other.value;
+    gradient = other.gradient;
+    hessian = other.hessian;
+    bodyDofOffsets.assign(
+        other.bodyDofOffsets.begin(), other.bodyDofOffsets.end());
+    activeConstraints.assign(
+        other.activeConstraints.begin(), other.activeConstraints.end());
+    activeFrictionConstraints.assign(
+        other.activeFrictionConstraints.begin(),
+        other.activeFrictionConstraints.end());
+    activeDynamicsTerms = other.activeDynamicsTerms;
+    return *this;
+  }
+
+  RigidIpcBarrierAssembly& operator=(RigidIpcBarrierAssembly&& other)
+  {
+    if (this == &other) {
+      return *this;
+    }
+
+    value = other.value;
+    gradient = std::move(other.gradient);
+    hessian = std::move(other.hessian);
+    bodyDofOffsets.assign(
+        other.bodyDofOffsets.begin(), other.bodyDofOffsets.end());
+    activeConstraints.assign(
+        other.activeConstraints.begin(), other.activeConstraints.end());
+    activeFrictionConstraints.assign(
+        other.activeFrictionConstraints.begin(),
+        other.activeFrictionConstraints.end());
+    activeDynamicsTerms = other.activeDynamicsTerms;
+    return *this;
+  }
+
   double value = 0.0;
   Eigen::VectorXd gradient;
   Eigen::SparseMatrix<double> hessian;
-  std::vector<std::size_t> bodyDofOffsets;
-  std::vector<RigidIpcBarrierConstraint> activeConstraints;
-  std::vector<RigidIpcFrictionConstraint> activeFrictionConstraints;
+  BodyDofOffsetVector bodyDofOffsets;
+  ConstraintVector activeConstraints;
+  FrictionConstraintVector activeFrictionConstraints;
   std::size_t activeDynamicsTerms = 0;
 };
 
@@ -414,7 +478,7 @@ struct RigidIpcProjectedNewtonSolveResult
 
   explicit RigidIpcProjectedNewtonSolveResult(
       dart::common::MemoryAllocator& allocator)
-    : surfaces(SurfaceAllocator{allocator})
+    : surfaces(SurfaceAllocator{allocator}), assembly(allocator)
   {
   }
 
