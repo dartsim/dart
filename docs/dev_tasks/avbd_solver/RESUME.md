@@ -2,6 +2,13 @@
 
 ## Last Session Summary
 
+Latest local follow-up: dartpy public articulated fixed and spherical
+break/reset coverage now rechecks endpoint shape, joint type, and DOF count
+after reset re-engages the rows for same-multibody, world-link, and movable-pair
+cases. The focused selected pytest filter passed. This is only a narrow public
+facade lifecycle assertion slice; it does not close broader articulated
+fracture, motor lifecycle, source-corpus, CPU-win, GPU, or paper-number gates.
+
 Latest local follow-up: small AVBD rigid world-contact snapshots no longer
 reserve the endpoint entity-index hash map while the body count is within the
 small-row linear-scan capacity. Focused `test_avbd_rigid_block` snapshot-index

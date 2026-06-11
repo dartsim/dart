@@ -4743,6 +4743,10 @@ def test_simulation_world_articulated_fixed_breakage_reset_reengages_from_python
     same_world.step()
 
     assert not same_hold.is_broken
+    assert same_hold.type == sx.JointType.FIXED
+    assert same_hold.num_dofs == 0
+    assert same_hold.parent_link == same_base
+    assert same_hold.child_link == same_body
     assert (
         np.linalg.norm(
             np.asarray(same_body.translation, dtype=float) - captured_translation
@@ -4841,6 +4845,11 @@ def test_simulation_world_articulated_fixed_breakage_reset_reengages_from_python
     world_anchor_world.step()
 
     assert not world_hold.is_broken
+    assert world_hold.type == sx.JointType.FIXED
+    assert world_hold.num_dofs == 0
+    assert world_hold.child_link == world_anchor_body
+    with pytest.raises(Exception, match="parent endpoint"):
+        _ = world_hold.parent_link
     assert (
         np.linalg.norm(
             np.asarray(world_anchor_body.translation, dtype=float)
@@ -4944,6 +4953,10 @@ def test_simulation_world_articulated_fixed_pair_breakage_reset_from_python():
     world.step()
 
     assert not hold.is_broken
+    assert hold.type == sx.JointType.FIXED
+    assert hold.num_dofs == 0
+    assert hold.parent_link == parent
+    assert hold.child_link == child
     assert anchor_residual() < 1e-6
     assert relative_rotation_error() < 1e-6
 
@@ -5015,6 +5028,10 @@ def test_simulation_world_articulated_spherical_pair_breakage_reset_reengages_fr
     same_world.step()
 
     assert not same_socket.is_broken
+    assert same_socket.type == sx.JointType.SPHERICAL
+    assert same_socket.num_dofs == 3
+    assert same_socket.parent_link == same_base
+    assert same_socket.child_link == same_body
     assert (
         np.linalg.norm(
             np.asarray(same_body.translation, dtype=float)
@@ -5133,6 +5150,11 @@ def test_simulation_world_articulated_spherical_breakage_steps_from_python():
         + np.asarray(world_anchor_body.rotation, dtype=float) @ child_anchor
     )
     assert not world_socket.is_broken
+    assert world_socket.type == sx.JointType.SPHERICAL
+    assert world_socket.num_dofs == 3
+    assert world_socket.child_link == world_anchor_body
+    with pytest.raises(Exception, match="parent endpoint"):
+        _ = world_socket.parent_link
     assert np.linalg.norm(reset_anchor_position - world_anchor) < 1e-6
     assert (
         np.linalg.norm(
