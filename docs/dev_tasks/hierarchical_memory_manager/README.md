@@ -586,7 +586,7 @@ Current Phase 4 scratch-reuse coverage shipped by this PR includes:
   scratch for force/state/model/initial-state/frame-order buffers.
 - Rigid IPC stage scratch for accepted/rejected writeback, resting-contact
   no-op detection, projected-Newton surface buffers, barrier assembly, line
-  search, and lagged-friction passes.
+  search, equality change-of-variable indices, and lagged-friction passes.
 - Unified/boxed-LCP scratch for in-place rigid and multibody assembly, Dantzig
   solve reuse, island remapping, link impulse application, normal-only
   fallback, tangent accumulators, and same-shape fallback friction sweeps.
@@ -792,7 +792,8 @@ Follow-up progress after PR #2956:
   constraint, and active friction-constraint vectors with that allocator,
   preserves the destination allocator across repeated result assignments, and
   routes solve-internal barrier-assembly plus line-search surface-pair,
-  sweep-item, candidate-pair, triplet, and articulation equality-row scratch
+  sweep-item, candidate-pair, triplet, articulation equality-row, and equality
+  change-of-variable index scratch
   through the same borrowed allocator. After
   the post-#2956 main merge added rigid/deformable mixed-domain candidate
   diagnostics, the same stage scratch now reuses allocator-backed BDF2 history,

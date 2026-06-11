@@ -602,9 +602,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     solve-local surface buffers across line-search and sufficient-decrease
     backtracking candidates, and its repeated solve-internal barrier assembly
     and line-search calls reuse allocator-backed surface-pair, sweep-item,
-    candidate-pair, triplet, and articulation equality-row scratch, including
-    the lagged-friction barrier pass. The rigid IPC contact stage now uses the
-    caller-owned
+    candidate-pair, triplet, articulation equality-row, and equality
+    change-of-variable index scratch, including the lagged-friction barrier
+    pass. The rigid IPC contact stage now uses the caller-owned
     projected-Newton solve overload so per-solve surface candidate buffers
     persist in stage scratch across steps. Mixed rigid/deformable IPC
     surface preparation now also routes BDF2 history, articulation input,

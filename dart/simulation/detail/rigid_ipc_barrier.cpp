@@ -1131,7 +1131,8 @@ void recordLineSearchCandidate(
 RigidIpcProjectedNewtonStep computeRigidIpcProjectedNewtonStepImpl(
     const RigidIpcBarrierAssembly& assembly,
     const RigidIpcLineSearchResult* lineSearch,
-    const RigidIpcProjectedNewtonOptions& options)
+    const RigidIpcProjectedNewtonOptions& options,
+    dart::common::MemoryAllocator* allocator = nullptr)
 {
   assert(assembly.hessian.rows() == assembly.gradient.size());
   assert(assembly.hessian.cols() == assembly.gradient.size());
@@ -1180,8 +1181,12 @@ RigidIpcProjectedNewtonStep computeRigidIpcProjectedNewtonStepImpl(
 
   Eigen::VectorXd rawStep;
   if (hasEqualityRows) {
+    dart::common::MemoryAllocator& changeOfVariableAllocator
+        = allocator ? *allocator : dart::common::MemoryAllocator::GetDefault();
     const auto changeOfVariable = newton_barrier::makeEqualityChangeOfVariable(
-        assembly.equalityJacobian, assembly.equalityResidual);
+        assembly.equalityJacobian,
+        assembly.equalityResidual,
+        changeOfVariableAllocator);
     if (!changeOfVariable.valid) {
       result.status = RigidIpcProjectedNewtonStatus::FactorizationFailed;
       return result;
@@ -2851,8 +2856,8 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
                 result.stats.initialGradientNorm);
       }
 
-      RigidIpcProjectedNewtonStep step
-          = computeRigidIpcProjectedNewtonStep(result.assembly, newtonOptions);
+      RigidIpcProjectedNewtonStep step = computeRigidIpcProjectedNewtonStepImpl(
+          result.assembly, nullptr, newtonOptions, scratch.memoryAllocator);
       result.lastStep = step;
 
       if (step.status == RigidIpcProjectedNewtonStatus::NoDofs) {
@@ -2915,8 +2920,11 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
           result.failed = true;
           return;
         }
-        step = computeRigidIpcProjectedNewtonStep(
-            result.assembly, result.lineSearch, newtonOptions);
+        step = computeRigidIpcProjectedNewtonStepImpl(
+            result.assembly,
+            &result.lineSearch,
+            newtonOptions,
+            scratch.memoryAllocator);
         result.lastStep = step;
         if (step.lineSearchBlocked) {
           if (adaptive.enabled && iteration < options.maxIterations
