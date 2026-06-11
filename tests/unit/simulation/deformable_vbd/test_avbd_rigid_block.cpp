@@ -3909,6 +3909,34 @@ TEST(AvbdRigidBlock, RigidWorldAppendRowsUseLinearBodyIndexForSmallSnapshots)
 }
 
 //==============================================================================
+TEST(AvbdRigidBlock, RigidWorldContactSnapshotReserveKeepsSmallBodyIndexLinear)
+{
+  vbd::AvbdRigidWorldContactSnapshot snapshot;
+  const std::size_t initialBucketCount
+      = snapshot.entityBodyIndices.bucket_count();
+
+  vbd::reserveAvbdRigidWorldContactSnapshot(
+      snapshot,
+      vbd::detail::kAvbdRigidSmallRowStackCapacity,
+      /*contactCapacity=*/0,
+      /*jointCapacity=*/1,
+      /*motorCapacity=*/1);
+
+  EXPECT_EQ(snapshot.entityBodyIndices.bucket_count(), initialBucketCount);
+  EXPECT_TRUE(snapshot.entityBodyIndices.empty());
+
+  vbd::reserveAvbdRigidWorldContactSnapshot(
+      snapshot,
+      vbd::detail::kAvbdRigidSmallRowStackCapacity + 1u,
+      /*contactCapacity=*/0,
+      /*jointCapacity=*/1,
+      /*motorCapacity=*/1);
+
+  EXPECT_GT(snapshot.entityBodyIndices.bucket_count(), initialBucketCount);
+  EXPECT_TRUE(snapshot.entityBodyIndices.empty());
+}
+
+//==============================================================================
 TEST(AvbdRigidBlock, RigidWorldAppendRowsUseReservedBodyIndexMapImmediately)
 {
   sx::World world;

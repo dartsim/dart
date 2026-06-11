@@ -9442,7 +9442,10 @@ void RigidBodyContactStage::prepare(World& world)
             : std::numeric_limits<std::size_t>::max();
   constraints.reserve(contactConstraintCapacity);
 
-  const auto& contacts = world.queryContacts(CollisionQueryOptions{});
+  const bool skipContactQuery = shouldSkipRigidBodyContactQuery(registry);
+  const std::size_t contactCount
+      = skipContactQuery ? 0u
+                         : world.queryContacts(CollisionQueryOptions{}).size();
 
   if (m_avbdScratch == nullptr) {
     m_avbdScratch = std::make_unique<AvbdScratch>();
@@ -9456,9 +9459,9 @@ void RigidBodyContactStage::prepare(World& world)
     ++distanceSpringCapacity;
   }
   const std::size_t bodyCapacity
-      = 2u * (contacts.size() + jointCapacity + distanceSpringCapacity);
+      = 2u * (contactCount + jointCapacity + distanceSpringCapacity);
   m_avbdScratch->reserve(
-      bodyCapacity, contacts.size(), jointCapacity, distanceSpringCapacity);
+      bodyCapacity, contactCount, jointCapacity, distanceSpringCapacity);
 }
 
 //==============================================================================
