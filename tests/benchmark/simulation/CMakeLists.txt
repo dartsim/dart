@@ -133,6 +133,12 @@ if(DART_SIMULATION_BUILD_BENCHMARKS)
       LABEL "simulation-cuda"
     )
     dart_add_simulation_benchmark(
+      bm_plan083_gpu_contact_candidates
+      ${CMAKE_CURRENT_SOURCE_DIR}/bm_plan083_gpu_contact_candidates.cpp
+      LIBRARY ${PROJECT_NAME}-simulation-cuda
+      LABEL "simulation-cuda"
+    )
+    dart_add_simulation_benchmark(
       bm_vbd_cuda
       ${CMAKE_CURRENT_SOURCE_DIR}/bm_vbd_cuda.cpp
       LIBRARY ${PROJECT_NAME}-simulation-cuda

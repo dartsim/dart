@@ -89,6 +89,8 @@ if(DART_ENABLE_EXPERIMENTAL_CUDA)
     ${cuda_target_name}
     STATIC
     compute/cuda/cuda_runtime.cpp
+    compute/cuda/contact_candidate_filter_cuda.cpp
+    compute/cuda/contact_candidate_filter_cuda.cu
     compute/cuda/lcp_jacobi_batch_cuda.cpp
     compute/cuda/lcp_jacobi_batch_cuda.cu
     compute/cuda/rigid_body_state_batch_cuda.cpp

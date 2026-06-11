@@ -160,6 +160,10 @@
   - [x] Add the measured private PSD projection packet generator and benchmark
         row; keep it scoped to local-kernel evidence, not scene-level GPU
         parity.
+  - [x] Add a private point-triangle contact-stencil filter packet with exact
+        CPU/GPU parity for preassembled stencils; keep the row in-progress
+        because broad-phase construction, edge-edge candidates, runtime scene
+        filtering, and speedup remain unproven.
 - [ ] Implementation-roadmap Phase 8: complete the PLAN-083 audit and retire
       temporary task state.
   - [x] Add a checked completion audit sidecar that records the current
@@ -280,15 +284,13 @@ storage, or backend resources as public API.
 
 1. Use merged PRs #2960, #2961, #2970, and #2971 as the baseline for remaining
    work; do not reopen the old phase-scoped stack.
-2. Continue Phase 6 CPU corpus evidence on
-   `simx/plan083-phase-6-abd-comparison-packets` by adding reduced ABD
-   gears/Bullet comparison packets only where runtime evidence exists; do not
-   mark paper-scale rows complete without paper-scale scene assets and
-   comparison evidence. The reduced packets may move only row-specific runtime
-   smoke evidence; analytical force comparison, paper-scale rope/rod coupling,
-   affine packing, twisted shell, self-contact parity, accepted Bullet
-   baselines, and GPU parity remain planned.
-3. Use the reduced ABD runtime-step packets only as internal runtime evidence;
+2. Continue private GPU contact-candidate evidence on
+   `simx/plan083-gpu-contact-candidate-packet` by keeping the landed packet
+   limited to preassembled point-triangle stencils. Do not mark the row
+   measured until broad-phase construction, edge-edge candidates, runtime scene
+   candidate filtering, and the speedup gate have concrete evidence.
+3. Use the reduced ABD runtime-step and GPU contact-stencil packets only as
+   internal runtime evidence;
    broader ABD CPU packets still require scene-level runtime residuals, scene
    assets, and comparison baselines.
 4. Get maintainer direction before retiring
@@ -318,6 +320,7 @@ GPU-backed path:
 
 ```bash
 pixi run -e cuda test-cuda
+pixi run -e cuda bm-plan083-gpu-contact-candidates-packet
 ```
 
 Phase 8 local evidence:
@@ -332,6 +335,13 @@ Phase 7 PSD packet evidence:
 - `pixi run python -m pytest tests/test_plan083_gpu_psd_packet.py`
 - `pixi run -e cuda build-cuda`
 - `pixi run -e cuda bm-plan083-gpu-psd-packet`
+
+Phase 7 contact-candidate packet evidence:
+
+- `pixi run python -m pytest tests/test_plan083_gpu_contact_candidate_packet.py`
+- `pixi run -e cuda build-cuda`
+- `pixi run -e cuda test-cuda`
+- `pixi run -e cuda bm-plan083-gpu-contact-candidates-packet`
 
 Phase 1 local evidence:
 

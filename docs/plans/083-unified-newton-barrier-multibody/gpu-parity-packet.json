@@ -16,8 +16,9 @@
   "summary": {
     "row_count": 6,
     "status_counts": {
+      "in-progress": 1,
       "measured": 1,
-      "planned": 5
+      "planned": 4
     }
   },
   "rows": [
@@ -25,9 +26,9 @@
       "row_id": "contact-stencils-candidate-filtering",
       "roadmap_item": "contact stencils and candidate filtering",
       "owner": "PLAN-083 + PLAN-030",
-      "status": "planned",
+      "status": "in-progress",
       "cpu_evidence_command": "pixi run bm --target bm_ipc_candidate_set --build-type Release -- --benchmark_report_aggregates_only=true --benchmark_out=.benchmark_results/plan083/gpu/contact_candidates_cpu.json --benchmark_out_format=json",
-      "gpu_evidence_command": "not-ready: no private PLAN-083 GPU contact-stencil or candidate-filtering kernel has landed",
+      "gpu_evidence_command": "pixi run -e cuda bm-plan083-gpu-contact-candidates-packet",
       "parity_evidence_artifact": ".benchmark_results/plan083/gpu/contact_candidates_parity.json",
       "benchmark_profile_artifact": ".benchmark_results/plan083/gpu/contact_candidates_benchmark.json",
       "same_scene_policy": "Use identical DART-owned candidate fixtures and sort keys on CPU and GPU; compare candidate ids, primitive ids, and conservative activation distances.",
@@ -35,8 +36,23 @@
       "timing_policy": "Report setup, host_to_device, kernel, device_to_host, readback, and CPU baseline timing.",
       "speedup_policy": "Require >=1.25x over the DART CPU candidate path before recording a go claim.",
       "public_api_policy": "No public CUDA or backend exposure; private evidence stays under scripts, benchmarks, and detail/compute owners.",
-      "limitation_status": "Waiting for host/device-portable contact stencil and candidate-filtering kernels after the CPU scene packet shape stabilizes.",
-      "notes_or_gap": "The Phase 5 mixed-domain candidate contract is CPU-only; this row records the GPU evidence shape without claiming a kernel."
+      "limitation_status": "Private point-triangle contact-stencil filter parity packet exists, but it covers preassembled stencils only and does not yet cover broad-phase construction, edge-edge candidates, runtime scene candidate filtering, or the speedup gate.",
+      "notes_or_gap": "The packet measured exact squared-distance and accepted-count parity for 65536 stencils on 2026-06-11, but speedup was 0.563x against the CPU benchmark row, so this remains in-progress rather than measured.",
+      "same_scene_cpu_gpu": true,
+      "stencil_count": 65536,
+      "accepted_count": 49152,
+      "max_result_abs_error": 0.0,
+      "result_abs_error_tolerance": 1e-10,
+      "speedup": 0.5633208114255578,
+      "min_speedup": 1.25,
+      "timing_ns": {
+        "setup": 418764.0,
+        "host_to_device": 1373170.0,
+        "kernel": 418276.0,
+        "solve": 0.0,
+        "device_to_host": 165409.0,
+        "readback": 0.0
+      }
     },
     {
       "row_id": "ccd-line-search",

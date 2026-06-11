@@ -319,23 +319,22 @@ build/CTest entries.
 
 ## Current Branch
 
-`simx/plan083-phase-6-abd-comparison-packets` - continues Phase 6 CPU corpus
-evidence after merged PRs #2970, #2971, and #2974. Keep reduced ABD comparison
-packet work and docs on this branch until the current Phase 6 follow-up is
-reviewer-sized; do not split each planned ABD row into a micro-PR.
+`simx/plan083-gpu-contact-candidate-packet` - continues private GPU parity
+evidence after the reduced ABD comparison packet branch. This branch adds a
+private point-triangle contact-stencil filter, CUDA unit test, benchmark smoke,
+and packet writer for preassembled stencils only. Keep the packet row
+`in-progress`: broad-phase construction, edge-edge candidates, runtime scene
+candidate filtering, and the speedup gate remain future evidence.
 
 ## Immediate Next Step
 
-Continue `simx/plan083-phase-6-abd-comparison-packets` with reduced CPU
-corpus packets only where runtime evidence exists. The current entry points are
-the reduced ABD gears packet for `abd-gears` and the reduced Bullet comparison
-packets for `abd-bullet-small`, `abd-bullet-medium`, and `abd-bullet-large`;
-keep those rows explicitly `in-progress` and limited to internal runtime-step
-evidence until gear assets, accepted Bullet/reference baselines, GPU parity, and
-paper-scale scene reproduction exist. Leave the dev-task folder active because
-PLAN-083 acceptance criteria are still unmet; if the task later moves out of
-this folder, get maintainer direction before deleting it and keep the remaining
-planned CPU/GPU/scene rows in durable sidecars.
+Finish and review `simx/plan083-gpu-contact-candidate-packet`, then continue
+the remaining private GPU rows in roadmap order: CCD/line search,
+barrier/friction local kernels, assembly/linear solve, and scene-level parity.
+Leave the dev-task folder active because PLAN-083 acceptance criteria are still
+unmet; if the task later moves out of this folder, get maintainer direction
+before deleting it and keep the remaining planned CPU/GPU/scene rows in durable
+sidecars.
 
 ## Context That Would Be Lost
 
