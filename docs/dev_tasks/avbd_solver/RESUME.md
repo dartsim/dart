@@ -2,6 +2,14 @@
 
 ## Last Session Summary
 
+Latest local follow-up: CUDA boxed-LCP PGS dense world-contact tests now keep
+the largest 128-box fixture as a cheap shape gate while bounding the default
+runtime-contract CUDA sweeps to smaller dense packets. #2973's CUDA failure
+timed out in the pre-existing `test_lcp_jacobi_batch_cuda` dense PGS suite;
+`main` passed the same binary but only with about 1099 seconds of runtime. This
+is CI-runtime calibration only; it does not close any AVBD solver, CPU-win,
+GPU, or paper-number gate.
+
 Latest local follow-up: the large BoxedLcp dense/articulated scaling packets in
 `test_boxed_lcp_contact` are now opt-in behind
 `DART_BOXED_LCP_CONTACT_ENABLE_EXPENSIVE_SCALING_TESTS`, while representative
