@@ -53,7 +53,7 @@ def _connector_transform(start: np.ndarray, end: np.ndarray) -> np.ndarray:
     return transform
 
 
-def build() -> SceneSetup:
+def build_breakable_joint_scene(panel_title: str = "AVBD Breakable Joint") -> SceneSetup:
     world = sx.World(time_step=0.004, gravity=(0.0, 0.0, -9.81))
 
     ground = world.add_rigid_body("avbd_breakable_joint_ground")
@@ -139,7 +139,33 @@ def build() -> SceneSetup:
     speed_history: deque[float] = deque(maxlen=160)
     broken_history: deque[float] = deque(maxlen=160)
 
+    def reset_breakage_lifecycle() -> None:
+        breakable_joint.reset_breakage()
+        base.transform = _translation(_BASE_POS)
+        base.linear_velocity = (0.0, 0.0, 0.0)
+        base.angular_velocity = (0.0, 0.0, 0.0)
+        base.clear_force()
+        base.clear_torque()
+        payload.transform = _translation(payload_position + _PAYLOAD_PRESTRAIN)
+        payload.linear_velocity = (0.65, 0.0, -0.35)
+        payload.angular_velocity = (0.0, 0.0, 0.0)
+        payload.clear_force()
+        payload.clear_torque()
+        world.time = 0.0
+        try:
+            world.clear_replay_recording()
+        except Exception:  # noqa: BLE001
+            pass
+        offset_history.clear()
+        speed_history.clear()
+        broken_history.clear()
+        world.update_kinematics()
+        replay_sync()
+
     def build_panel(builder: object, context: object) -> None:
+        if builder.button("Reset breakage lifecycle"):
+            reset_breakage_lifecycle()
+
         base_pos = np.asarray(base.translation, dtype=float).reshape(3)
         payload_pos = np.asarray(payload.translation, dtype=float).reshape(3)
         offset_error = float(np.linalg.norm((payload_pos - base_pos) - _CAPTURED_OFFSET))
@@ -166,7 +192,7 @@ def build() -> SceneSetup:
         world=bridge.render_world,
         pre_step=pre_step,
         force_drag=bridge.force_drag,
-        panels=[ScenePanel("AVBD Breakable Joint", build_panel)],
+        panels=[ScenePanel(panel_title, build_panel)],
         info={
             "sx_world": world,
             "joint": breakable_joint,
@@ -176,9 +202,14 @@ def build() -> SceneSetup:
             "connector": connector,
             "replay_sync": replay_sync,
             "replay_live_step_is_stateless": True,
+            "reset_breakage_lifecycle": reset_breakage_lifecycle,
             "break_force": _BREAK_FORCE,
         },
     )
+
+
+def build() -> SceneSetup:
+    return build_breakable_joint_scene()
 
 
 SCENE = PythonDemoScene(

@@ -9,6 +9,7 @@ from examples.demos.runner import (
     DEFAULT_INITIAL_SCENE_ID,
     DEFAULT_SCENE_BUILD_TIMEOUT_MS,
     PythonDemoScene,
+    RIGID_VISUAL_WORKFLOW_GUIDES,
     ScenePanel,
     SceneSetup,
     _attach_replay_controls,
@@ -52,11 +53,43 @@ from examples.demos.scenes import (
     planned,
     replay_scrubber,
     rigid_body,
+    rigid_body_modes,
+    rigid_collision_casts,
+    rigid_collision_query_options,
+    rigid_contact_inspector,
+    rigid_contact_manipulation,
+    rigid_contact_scale_budget,
+    rigid_contact_solver_compare,
+    rigid_executor_equivalence,
+    rigid_external_loads,
     rigid_fixed_joint,
+    rigid_frame_hierarchy,
+    rigid_friction_threshold,
+    rigid_free_flight,
     rigid_ipc,
     rigid_ipc_incline,
+    rigid_ipc_stack_packet,
+    rigid_joint_breakage,
+    rigid_joint_motor_limits,
+    rigid_joint_passive_parameters,
+    rigid_kinematic_driver,
+    rigid_link_center_of_mass,
+    rigid_link_jacobian,
+    rigid_link_point_loads,
+    rigid_limited_joints,
+    rigid_loop_closure,
+    rigid_material_mixing,
+    rigid_multibody_dynamics_terms,
+    rigid_multibody_solver_family,
+    rigid_restitution_ladder,
+    rigid_screw_joint_pitch,
     rigid_ipc_pile,
     rigid_ipc_tunnel,
+    rigid_solver_compare,
+    rigid_spin_roll_coupling,
+    rigid_stack_stability,
+    rigid_step_diagnostics,
+    rigid_timestep_sensitivity,
     robot_puppets,
     variational_chain,
     variational_tumbler,
@@ -212,6 +245,183 @@ def test_shared_replay_panel_scrubs_and_replays_saved_world_states() -> None:
     assert replay_world.steps == 3
     assert replay_world.frame == 3
     assert sync_calls["count"] >= 3
+
+
+def test_shared_replay_panel_uses_default_timeline_without_metadata() -> None:
+    replay_world = _FakeReplayWorld()
+
+    def live_pre_step() -> None:
+        replay_world.step()
+
+    scene = PythonDemoScene(
+        id="default_timeline",
+        title="Default Timeline",
+        category="Tests",
+        summary="Uses the generic replay timeline.",
+        build=lambda: SceneSetup(
+            world=object(),
+            pre_step=live_pre_step,
+            info={
+                "sx_world": replay_world,
+                "replay_live_step_is_stateless": True,
+            },
+        ),
+    )
+    setup = _attach_replay_controls(scene, scene.build())
+    setup.pre_step()
+    setup.pre_step()
+
+    builder = _FakePanelBuilder()
+    setup.panels[-1].build(builder, _FakePanelContext())
+
+    timeline = builder.timelines[-1]
+    assert timeline["label"] == "Saved states##py_demo_replay_timeline"
+    assert timeline["value_track"] == []
+    assert len(timeline["marker_track"]) == replay_world.replay_frame_count
+    assert any(float(value) > 0.0 for value in timeline["marker_track"])
+    assert len(timeline["cursor_track"]) == replay_world.replay_frame_count
+    assert timeline["value_track_label"] == "Saved states"
+
+
+def test_shared_replay_panel_uses_scene_replay_timeline_metadata() -> None:
+    replay_world = _FakeReplayWorld()
+    controller_state = {"signal": 0.0}
+
+    def live_pre_step() -> None:
+        controller_state["signal"] += 1.0
+        replay_world.step()
+
+    def capture_state() -> dict[str, float]:
+        return dict(controller_state)
+
+    def restore_state(snapshot: dict[str, float]) -> None:
+        controller_state["signal"] = float(snapshot["signal"])
+
+    scene = PythonDemoScene(
+        id="diagnostic_timeline",
+        title="Diagnostic Timeline",
+        category="Tests",
+        summary="Provides a guided replay diagnostic.",
+        build=lambda: SceneSetup(
+            world=object(),
+            pre_step=live_pre_step,
+            info={
+                "sx_world": replay_world,
+                "replay_capture_state": capture_state,
+                "replay_restore_state": restore_state,
+                "replay_timeline": {
+                    "signal_label": "Synthetic signal",
+                    "signal": lambda snapshot: snapshot["signal"],
+                    "markers": lambda snapshot: snapshot["signal"] >= 2.0,
+                },
+            },
+        ),
+    )
+    setup = _attach_replay_controls(scene, scene.build())
+    for _ in range(3):
+        setup.pre_step()
+
+    builder = _FakePanelBuilder()
+    setup.panels[-1].build(builder, _FakePanelContext())
+
+    timeline = builder.timelines[-1]
+    assert timeline["label"] == "Saved states##py_demo_replay_timeline"
+    assert timeline["value_track"] == [0.0, 1.0, 2.0, 3.0]
+    assert timeline["marker_track"] == [0.0, 0.0, 1.0, 1.0]
+    assert timeline["cursor_track"] == [0.0, 0.0, 0.0, 1.0]
+    assert timeline["value_track_label"] == "Synthetic signal"
+
+
+def test_shared_replay_panel_keeps_frame_marks_for_signal_only_metadata() -> None:
+    replay_world = _FakeReplayWorld()
+    controller_state = {"signal": 0.0}
+
+    def live_pre_step() -> None:
+        controller_state["signal"] += 1.0
+        replay_world.step()
+
+    def capture_state() -> dict[str, float]:
+        return dict(controller_state)
+
+    def restore_state(snapshot: dict[str, float]) -> None:
+        controller_state["signal"] = float(snapshot["signal"])
+
+    scene = PythonDemoScene(
+        id="signal_only_timeline",
+        title="Signal Only Timeline",
+        category="Tests",
+        summary="Provides a signal without custom markers.",
+        build=lambda: SceneSetup(
+            world=object(),
+            pre_step=live_pre_step,
+            info={
+                "sx_world": replay_world,
+                "replay_capture_state": capture_state,
+                "replay_restore_state": restore_state,
+                "replay_timeline": {
+                    "signal_label": "Signal only",
+                    "signal": lambda snapshot: snapshot["signal"],
+                },
+            },
+        ),
+    )
+    setup = _attach_replay_controls(scene, scene.build())
+    setup.pre_step()
+    setup.pre_step()
+
+    builder = _FakePanelBuilder()
+    setup.panels[-1].build(builder, _FakePanelContext())
+
+    timeline = builder.timelines[-1]
+    assert timeline["value_track"] == [0.0, 1.0, 2.0]
+    assert len(timeline["marker_track"]) == replay_world.replay_frame_count
+    assert any(float(value) > 0.0 for value in timeline["marker_track"])
+    assert timeline["value_track_label"] == "Signal only"
+
+
+def test_shared_replay_panel_ignores_malformed_timeline_metadata() -> None:
+    replay_world = _FakeReplayWorld()
+
+    def live_pre_step() -> None:
+        replay_world.step()
+
+    def capture_state() -> dict[str, float]:
+        return {}
+
+    def restore_state(_snapshot: dict[str, float]) -> None:
+        pass
+
+    scene = PythonDemoScene(
+        id="malformed_timeline",
+        title="Malformed Timeline",
+        category="Tests",
+        summary="Falls back when timeline metadata is invalid.",
+        build=lambda: SceneSetup(
+            world=object(),
+            pre_step=live_pre_step,
+            info={
+                "sx_world": replay_world,
+                "replay_capture_state": capture_state,
+                "replay_restore_state": restore_state,
+                "replay_timeline": {
+                    "signal_label": "Broken signal",
+                    "signal": lambda snapshot: snapshot["missing"],
+                },
+            },
+        ),
+    )
+    setup = _attach_replay_controls(scene, scene.build())
+    setup.pre_step()
+    setup.pre_step()
+
+    builder = _FakePanelBuilder()
+    setup.panels[-1].build(builder, _FakePanelContext())
+
+    timeline = builder.timelines[-1]
+    assert timeline["value_track"] == []
+    assert len(timeline["marker_track"]) == replay_world.replay_frame_count
+    assert any(float(value) > 0.0 for value in timeline["marker_track"])
+    assert timeline["value_track_label"] == "Saved states"
 
 
 def test_shared_replay_panel_restores_scene_replay_state() -> None:
@@ -403,11 +613,11 @@ def test_validate_scene_accepts_hyphenated_scene_id_alias() -> None:
     _validate_scene("rigid-ipc-slide", [scene])
 
 
-def test_default_py_demos_launch_uses_replay_timeline_without_reordering() -> None:
-    assert DEFAULT_INITIAL_SCENE_ID == "replay_scrubber"
+def test_default_py_demos_launch_uses_rigid_body_front_door() -> None:
+    assert DEFAULT_INITIAL_SCENE_ID == "rigid_body"
     assert _default_initial_scene_args([], None, {}) == [
         "--scene",
-        "replay_scrubber",
+        "rigid_body",
     ]
 
     assert (
@@ -536,12 +746,20 @@ class _FakePanelContext:
     def __init__(self) -> None:
         self.paused = False
         self.single_step_requests = 0
+        self.scene_switch_requests: list[str] = []
+        self.scene_replay_requests: list[str] = []
 
     def set_paused(self, paused: bool) -> None:
         self.paused = bool(paused)
 
     def request_single_step(self) -> None:
         self.single_step_requests += 1
+
+    def request_scene_switch(self, scene_id: str) -> None:
+        self.scene_switch_requests.append(scene_id)
+
+    def request_scene_replay(self, scene_id: str) -> None:
+        self.scene_replay_requests.append(scene_id)
 
 
 class _FakeRigidBody:
@@ -576,6 +794,7 @@ class _FakeRigidBody:
 class _FakePanelBuilder:
     def __init__(self) -> None:
         self.events: list[str] = []
+        self.timelines: list[dict[str, object]] = []
 
     def text(self, value: str) -> None:
         self.events.append(f"text:{value}")
@@ -597,6 +816,15 @@ class _FakePanelBuilder:
         cursor_track: list[float] | tuple[float, ...] = (),
         value_track_label: str = "Values",
     ) -> tuple[bool, float]:
+        self.timelines.append(
+            {
+                "cursor_track": list(cursor_track),
+                "label": label,
+                "marker_track": list(marker_track),
+                "value_track": list(value_track),
+                "value_track_label": value_track_label,
+            }
+        )
         self.events.append(
             f"timeline:{label}:{minimum}:{maximum}:"
             f"{len(value_track)}:{len(marker_track)}:{len(cursor_track)}:"
@@ -608,6 +836,10 @@ class _FakePanelBuilder:
         self.events.append(f"checkbox:{label}")
         return False, value
 
+    def text_input(self, label: str, value: str) -> tuple[bool, str]:
+        self.events.append(f"text_input:{label}:{value}")
+        return False, value
+
     def select(
         self, label: str, selected_index: int, choices: list[str]
     ) -> tuple[bool, int]:
@@ -616,6 +848,10 @@ class _FakePanelBuilder:
 
     def button(self, label: str) -> bool:
         self.events.append(f"button:{label}")
+        return False
+
+    def selectable(self, label: str, selected: bool = False) -> bool:
+        self.events.append(f"selectable:{label}:{selected}")
         return False
 
     def same_line(self) -> None:
@@ -654,23 +890,47 @@ class _ScriptedPanelBuilder(_FakePanelBuilder):
         self,
         *,
         clicked_buttons: set[str] | None = None,
+        selected_items: set[str] | None = None,
         checkbox_values: dict[str, bool] | None = None,
+        text_input_values: dict[str, str] | None = None,
+        select_values: dict[str, int] | None = None,
         timeline_values: dict[str, float] | None = None,
     ) -> None:
         super().__init__()
         self.clicked_buttons = clicked_buttons or set()
+        self.selected_items = selected_items or set()
         self.checkbox_values = checkbox_values or {}
+        self.text_input_values = text_input_values or {}
+        self.select_values = select_values or {}
         self.timeline_values = timeline_values or {}
 
     def button(self, label: str) -> bool:
         self.events.append(f"button:{label}")
         return label in self.clicked_buttons
 
+    def selectable(self, label: str, selected: bool = False) -> bool:
+        self.events.append(f"selectable:{label}:{selected}")
+        return label in self.selected_items
+
     def checkbox(self, label: str, value: bool) -> tuple[bool, bool]:
         self.events.append(f"checkbox:{label}")
         if label in self.checkbox_values:
             return True, self.checkbox_values[label]
         return False, value
+
+    def text_input(self, label: str, value: str) -> tuple[bool, str]:
+        self.events.append(f"text_input:{label}:{value}")
+        if label in self.text_input_values:
+            return True, self.text_input_values[label]
+        return False, value
+
+    def select(
+        self, label: str, selected_index: int, choices: list[str]
+    ) -> tuple[bool, int]:
+        self.events.append(f"select:{label}:{selected_index}:{','.join(choices)}")
+        if label in self.select_values:
+            return True, self.select_values[label]
+        return False, selected_index
 
     def timeline(
         self,
@@ -683,6 +943,15 @@ class _ScriptedPanelBuilder(_FakePanelBuilder):
         cursor_track: list[float] | tuple[float, ...] = (),
         value_track_label: str = "Values",
     ) -> tuple[bool, float]:
+        self.timelines.append(
+            {
+                "cursor_track": list(cursor_track),
+                "label": label,
+                "marker_track": list(marker_track),
+                "value_track": list(value_track),
+                "value_track_label": value_track_label,
+            }
+        )
         self.events.append(
             f"timeline:{label}:{minimum}:{maximum}:"
             f"{len(value_track)}:{len(marker_track)}:{len(cursor_track)}:"
@@ -699,18 +968,80 @@ def test_high_value_world_scenes_expose_custom_panels() -> None:
     cases = [
         (articulated, "Articulated"),
         (floating_base, "Floating Base"),
-        (contact, "Contact"),
+        (contact, "Rigid Link Contact"),
         (rigid_body, "Rigid Bodies"),
+        (rigid_body_modes, "Rigid Body Modes"),
+        (rigid_free_flight, "Rigid Free Flight"),
+        (rigid_frame_hierarchy, "Rigid Frame Hierarchy"),
+        (rigid_external_loads, "Rigid External Loads"),
+        (rigid_link_point_loads, "Rigid Link Point Loads"),
+        (rigid_timestep_sensitivity, "Rigid Time Step Sensitivity"),
+        (rigid_step_diagnostics, "Rigid Step Diagnostics"),
+        (rigid_contact_scale_budget, "Rigid Contact Scale Budget"),
+        (rigid_restitution_ladder, "Rigid Restitution Ladder"),
+        (rigid_material_mixing, "Rigid Material Mixing"),
+        (rigid_contact_inspector, "Rigid Contact Inspector"),
+        (rigid_collision_query_options, "Rigid Collision Query Options"),
+        (rigid_collision_casts, "Rigid Collision Casts"),
+        (rigid_contact_manipulation, "Rigid Contact Manipulation"),
+        (rigid_kinematic_driver, "Rigid Kinematic Driver"),
+        (rigid_contact_solver_compare, "Rigid Contact Solver Compare"),
+        (rigid_solver_compare, "Rigid Solver Compare"),
+        (rigid_executor_equivalence, "Rigid Executor Equivalence"),
+        (rigid_friction_threshold, "Rigid Friction Threshold"),
+        (rigid_spin_roll_coupling, "Rigid Spin/Roll Coupling"),
+        (rigid_stack_stability, "Rigid Stack Stability"),
         (rigid_ipc, "Rigid IPC Contact"),
         (rigid_ipc_incline, "Rigid IPC Incline"),
         (rigid_ipc_pile, "Rigid IPC Pile"),
         (rigid_ipc_tunnel, "Rigid IPC Tunnel"),
+        (rigid_ipc_stack_packet, "Rigid IPC Stack Packet"),
         (atlas_simbicon, "Atlas SIMBICON"),
         (variational_chain, "Variational Chain"),
         (variational_tumbler, "Variational Tumbler"),
     ]
     if hasattr(sx.World(), "add_rigid_body_fixed_joint"):
         cases.insert(4, (rigid_fixed_joint, "Rigid Fixed Joint"))
+        cases.insert(5, (rigid_joint_breakage, "Rigid Joint Breakage"))
+    if hasattr(sx.World(), "add_rigid_body_revolute_joint") and hasattr(
+        sx.World(), "add_rigid_body_prismatic_joint"
+    ):
+        cases.insert(6, (rigid_limited_joints, "Rigid One-DOF Joints"))
+    if hasattr(sx, "ActuatorType") and hasattr(sx, "JointSpec"):
+        cases.insert(7, (rigid_joint_motor_limits, "Rigid Joint Motors & Limits"))
+        cases.insert(
+            8,
+            (
+                rigid_joint_passive_parameters,
+                "Rigid Joint Passive Parameters",
+            ),
+        )
+    if hasattr(sx, "JointType") and hasattr(sx, "JointSpec"):
+        cases.insert(9, (rigid_screw_joint_pitch, "Rigid Screw Joint Pitch"))
+        cases.insert(
+            10,
+            (
+                rigid_multibody_dynamics_terms,
+                "Rigid Multibody Dynamics Terms",
+            ),
+        )
+        cases.insert(
+            11,
+            (
+                rigid_link_center_of_mass,
+                "Rigid Link Center of Mass",
+            ),
+        )
+        cases.insert(12, (rigid_link_jacobian, "Rigid Link Jacobian"))
+    if hasattr(sx, "LoopClosureSpec") and hasattr(sx, "ClosureDynamicsPolicy"):
+        cases.insert(
+            13,
+            (
+                rigid_multibody_solver_family,
+                "Rigid Multibody Solver Family",
+            ),
+        )
+        cases.insert(14, (rigid_loop_closure, "Rigid Loop Closure"))
 
     for scene_module, expected_title in cases:
         setup = scene_module.build()
@@ -725,6 +1056,337 @@ def test_high_value_world_scenes_expose_custom_panels() -> None:
         assert "text:External force" in builder.events
         assert any(event.startswith("text:drag target: ") for event in builder.events)
         assert "checkbox:Enable external force" in builder.events
+
+
+def test_rigid_ipc_stack_packet_panel_exposes_capture_first_signals() -> None:
+    _require_simulation_symbols("RigidBodySolver")
+
+    setup = rigid_ipc_stack_packet.build()
+    controller = setup.info["rigid_ipc_stack_packet_controller"]
+    setup.pre_step()
+
+    builder = _ScriptedPanelBuilder()
+    setup.panels[0].build(builder, _FakePanelContext())
+
+    assert setup.info["rigid_ipc_stack_packet_capture_first"] is True
+    assert setup.info["rigid_ipc_stack_packet_benchmark"] == "bm_rigid_ipc_solver"
+    assert "text:capture-first rigid IPC stack" in builder.events
+    assert "text:not a numbered World Rigid Body workflow row" in builder.events
+    assert "text:benchmark owner: bm_rigid_ipc_solver" in builder.events
+    assert any(event.startswith("plot:Step wall ms:") for event in builder.events)
+    assert any(event.startswith("plot:Min clearance:") for event in builder.events)
+    assert any(event.startswith("plot:Contact count:") for event in builder.events)
+    assert controller._last_metrics
+
+
+def test_rigid_workflow_panel_renders_guidance_for_numbered_rows() -> None:
+    def build_guidance_events(scene_id: str) -> list[str]:
+        scene = PythonDemoScene(
+            id=scene_id,
+            title=f"Test {scene_id}",
+            category="World Rigid Body",
+            summary="Workflow guidance test.",
+            build=lambda: SceneSetup(),
+        )
+        _pre_step, _force_drag, panels, _provider = _make_world_factory(scene)()
+        assert panels is not None
+        workflow_panels = [panel for panel in panels if panel.title == "Rigid Workflow"]
+        assert len(workflow_panels) == 1
+        builder = _FakePanelBuilder()
+        workflow_panels[0].build(builder, _FakePanelContext())
+        return builder.events
+
+    cases = (
+        ("rigid_body", "Previous: start", "Next: 02/34 Body modes"),
+        (
+            "rigid_solver_compare",
+            "Previous: 14/34 Collision casts",
+            "Next: 16/34 Executor equivalence",
+        ),
+        ("rigid_loop_closure", "Previous: 33/34 Multibody solver", "Next: done"),
+    )
+
+    for scene_id, previous_text, next_text in cases:
+        guide = RIGID_VISUAL_WORKFLOW_GUIDES[scene_id]
+        events = build_guidance_events(scene_id)
+
+        assert f"text:{guide.index:02d}/{guide.count:02d} {guide.label}" in events
+        assert "text:Question" in events
+        assert f"text:{guide.question}" in events
+        assert "text:Try first" in events
+        assert f"text:{guide.try_first}" in events
+        assert "text:Look for" in events
+        for signal in guide.inspect:
+            assert f"text:{signal}" in events
+        assert f"text:{guide.healthy_signal}" in events
+        assert "text:Do not infer" in events
+        assert f"text:{guide.scope}" in events
+        assert "text:Route" in events
+        if guide.previous_scene_id is None:
+            assert f"text:{previous_text}" in events
+        else:
+            assert (
+                f"selectable:{previous_text}##rigid_workflow_previous:False"
+                in events
+            )
+        if guide.next_scene_id is None:
+            assert f"text:{next_text}" in events
+        else:
+            assert f"selectable:{next_text}##rigid_workflow_next:False" in events
+        assert (
+            "selectable:"
+            f"Restart row: {guide.index:02d}/{guide.count:02d} {guide.label}"
+            "##rigid_workflow_restart:False"
+        ) in events
+        assert any(event.startswith("select:Jump to row:") for event in events)
+        assert "text_input:Find row:" in events
+
+
+def test_rigid_workflow_panel_route_rows_request_scene_switches() -> None:
+    scene = PythonDemoScene(
+        id="rigid_solver_compare",
+        title="Test rigid_solver_compare",
+        category="World Rigid Body",
+        summary="Workflow route test.",
+        build=lambda: SceneSetup(),
+    )
+    _pre_step, _force_drag, panels, _provider = _make_world_factory(scene)()
+    assert panels is not None
+    workflow_panel = [panel for panel in panels if panel.title == "Rigid Workflow"][0]
+    context = _FakePanelContext()
+
+    previous_label = "Previous: 14/34 Collision casts##rigid_workflow_previous"
+    next_label = "Next: 16/34 Executor equivalence##rigid_workflow_next"
+    replay_label = "Restart row: 15/34 Solver family##rigid_workflow_restart"
+    workflow_panel.build(
+        _ScriptedPanelBuilder(selected_items={previous_label}),
+        context,
+    )
+    workflow_panel.build(
+        _ScriptedPanelBuilder(selected_items={next_label}),
+        context,
+    )
+    workflow_panel.build(
+        _ScriptedPanelBuilder(selected_items={replay_label}),
+        context,
+    )
+
+    assert context.scene_switch_requests == [
+        "rigid_collision_casts",
+        "rigid_executor_equivalence",
+    ]
+    assert context.scene_replay_requests == ["rigid_solver_compare"]
+
+
+def test_rigid_workflow_panel_related_evidence_routes_to_other_shelves() -> None:
+    solver_scene = PythonDemoScene(
+        id="rigid_solver_compare",
+        title="Test rigid_solver_compare",
+        category="World Rigid Body",
+        summary="Related evidence route test.",
+        build=lambda: SceneSetup(),
+    )
+    _pre_step, _force_drag, panels, _provider = _make_world_factory(solver_scene)()
+    assert panels is not None
+    workflow_panel = [panel for panel in panels if panel.title == "Rigid Workflow"][0]
+    context = _FakePanelContext()
+    tunnel_label = (
+        "Related shelf: focused IPC no-tunneling view"
+        "##rigid_workflow_related_rigid_ipc_tunnel"
+    )
+    tunnel_builder = _ScriptedPanelBuilder(selected_items={tunnel_label})
+
+    workflow_panel.build(tunnel_builder, context)
+
+    assert "text:Related evidence" in tunnel_builder.events
+    assert (
+        "selectable:Related shelf: focused IPC no-tunneling view"
+        "##rigid_workflow_related_rigid_ipc_tunnel:False"
+    ) in tunnel_builder.events
+    assert any(
+        event.startswith(
+            "tooltip:Open rigid_ipc_tunnel from the Rigid IPC shelf."
+        )
+        for event in tunnel_builder.events
+    )
+    assert context.scene_switch_requests == ["rigid_ipc_tunnel"]
+
+    contact_policy_scene = PythonDemoScene(
+        id="rigid_contact_solver_compare",
+        title="Test rigid_contact_solver_compare",
+        category="World Rigid Body",
+        summary="Related differentiable route test.",
+        build=lambda: SceneSetup(),
+    )
+    _pre_step, _force_drag, panels, _provider = _make_world_factory(
+        contact_policy_scene
+    )()
+    assert panels is not None
+    workflow_panel = [panel for panel in panels if panel.title == "Rigid Workflow"][0]
+    context = _FakePanelContext()
+    diff_label = (
+        "Related shelf: differentiable contact-gradient route"
+        "##rigid_workflow_related_diff_drone_liftoff"
+    )
+    diff_builder = _ScriptedPanelBuilder(selected_items={diff_label})
+
+    workflow_panel.build(diff_builder, context)
+
+    assert (
+        "selectable:Related shelf: differentiable contact-gradient route"
+        "##rigid_workflow_related_diff_drone_liftoff:False"
+    ) in diff_builder.events
+    assert any(
+        event.startswith(
+            "tooltip:Open diff_drone_liftoff from the Differentiable shelf."
+        )
+        for event in diff_builder.events
+    )
+    assert context.scene_switch_requests == ["diff_drone_liftoff"]
+
+
+def test_rigid_workflow_panel_jump_selector_requests_scene_switch() -> None:
+    scene = PythonDemoScene(
+        id="rigid_solver_compare",
+        title="Test rigid_solver_compare",
+        category="World Rigid Body",
+        summary="Workflow jump test.",
+        build=lambda: SceneSetup(),
+    )
+    _pre_step, _force_drag, panels, _provider = _make_world_factory(scene)()
+    assert panels is not None
+    workflow_panel = [panel for panel in panels if panel.title == "Rigid Workflow"][0]
+    context = _FakePanelContext()
+
+    workflow_panel.build(
+        _ScriptedPanelBuilder(select_values={"Jump to row": 7}),
+        context,
+    )
+
+    assert context.scene_switch_requests == ["rigid_step_diagnostics"]
+
+
+def test_rigid_workflow_panel_filters_rows_by_question_and_requests_scene_switch() -> None:
+    scene = PythonDemoScene(
+        id="rigid_solver_compare",
+        title="Test rigid_solver_compare",
+        category="World Rigid Body",
+        summary="Workflow search test.",
+        build=lambda: SceneSetup(),
+    )
+    _pre_step, _force_drag, panels, _provider = _make_world_factory(scene)()
+    assert panels is not None
+    workflow_panel = [panel for panel in panels if panel.title == "Rigid Workflow"][0]
+    context = _FakePanelContext()
+    target_label = (
+        "19/34 Friction threshold - rigid_friction_threshold"
+        "##rigid_workflow_find_rigid_friction_threshold"
+    )
+    builder = _ScriptedPanelBuilder(
+        text_input_values={"Find row": "stick/slip"},
+        selected_items={target_label},
+    )
+
+    workflow_panel.build(builder, context)
+
+    assert (
+        "selectable:"
+        "19/34 Friction threshold - rigid_friction_threshold"
+        "##rigid_workflow_find_rigid_friction_threshold:False"
+    ) in builder.events
+    assert "tooltip:Where is the inclined-ramp stick/slip boundary?" in builder.events
+    assert context.scene_switch_requests == ["rigid_friction_threshold"]
+
+
+def test_rigid_workflow_panel_filters_rows_by_row_id_and_requests_scene_switch() -> None:
+    scene = PythonDemoScene(
+        id="rigid_contact_inspector",
+        title="Test rigid_contact_inspector",
+        category="World Rigid Body",
+        summary="Workflow row-id search test.",
+        build=lambda: SceneSetup(),
+    )
+    _pre_step, _force_drag, panels, _provider = _make_world_factory(scene)()
+    assert panels is not None
+    workflow_panel = [panel for panel in panels if panel.title == "Rigid Workflow"][0]
+    context = _FakePanelContext()
+    target_label = (
+        "15/34 Solver family - rigid_solver_compare"
+        "##rigid_workflow_find_rigid_solver_compare"
+    )
+    builder = _ScriptedPanelBuilder(
+        text_input_values={"Find row": "15/34"},
+        selected_items={target_label},
+    )
+
+    workflow_panel.build(builder, context)
+
+    assert (
+        "selectable:"
+        "15/34 Solver family - rigid_solver_compare"
+        "##rigid_workflow_find_rigid_solver_compare:False"
+    ) in builder.events
+    assert (
+        f"tooltip:{RIGID_VISUAL_WORKFLOW_GUIDES['rigid_solver_compare'].question}"
+        in builder.events
+    )
+    assert context.scene_switch_requests == ["rigid_solver_compare"]
+
+
+def test_rigid_workflow_panel_skips_non_numbered_world_rows() -> None:
+    scene = PythonDemoScene(
+        id="articulated",
+        title="Articulated",
+        category="World Rigid Body",
+        summary="Not part of the numbered rigid verifier.",
+        build=lambda: SceneSetup(),
+    )
+
+    _pre_step, _force_drag, panels, _provider = _make_world_factory(scene)()
+
+    assert panels is None
+
+
+def test_rigid_body_panel_resets_baseline_scene() -> None:
+    _require_simulation_symbols("World")
+    setup = rigid_body.build()
+    controller = setup.info["rigid_body_controller"]
+
+    for _ in range(20):
+        assert setup.pre_step is not None
+        setup.pre_step()
+
+    assert controller.world.time > 0.0
+    builder = _ScriptedPanelBuilder(clicked_buttons={"Reset baseline scene"})
+    setup.panels[0].build(builder, object())
+
+    assert "button:Reset baseline scene" in builder.events
+    assert controller.world.time == pytest.approx(0.0)
+    assert len(controller._speed_history) == 1
+
+
+def test_rigid_joint_breakage_panel_resets_lifecycle() -> None:
+    _require_simulation_symbols("World")
+
+    setup = rigid_joint_breakage.build()
+    joint = setup.info["joint"]
+    payload = setup.info["payload"]
+    initial_payload = np.asarray(payload.translation, dtype=float).reshape(3)
+    for _ in range(45):
+        assert setup.pre_step is not None
+        setup.pre_step()
+
+    assert joint.is_broken
+
+    builder = _ScriptedPanelBuilder(
+        clicked_buttons={"Reset breakage lifecycle"},
+    )
+    setup.panels[0].build(builder, object())
+
+    assert "button:Reset breakage lifecycle" in builder.events
+    assert not joint.is_broken
+    reset_payload = np.asarray(payload.translation, dtype=float).reshape(3)
+    assert reset_payload.tolist() == pytest.approx(initial_payload.tolist())
 
 
 def test_robot_puppet_world_scenes_expose_pose_panels() -> None:
@@ -839,6 +1501,15 @@ def test_diff_drone_scene_exposes_replay_panel() -> None:
     assert "slider:Playback stride:1.0:8.0" in builder.events
     assert "button:Reset replay" in builder.events
     assert any(event.startswith("plot:Aware height:") for event in builder.events)
+    assert any(event.startswith("plot:Aware thrust:") for event in builder.events)
+    assert any(event.startswith("plot:Aware loss:") for event in builder.events)
+    assert any(
+        event.startswith("plot:Aware thrust gradient:") for event in builder.events
+    )
+    assert any(event.startswith("plot:Analytic loss:") for event in builder.events)
+    assert setup.info["gradient_modes"] == ["ANALYTIC", "COMPLEMENTARITY_AWARE"]
+    assert setup.info["aware_history_count"] >= 1
+    assert setup.info["naive_history_count"] >= 1
 
 
 def test_diff_trajectory_scenes_expose_replay_panels() -> None:

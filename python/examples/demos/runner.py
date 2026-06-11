@@ -29,6 +29,8 @@ from __future__ import annotations
 import argparse
 import contextlib
 import copy
+import json
+import math
 import os
 import signal
 import sys
@@ -40,12 +42,15 @@ from typing import Any, Callable, Iterable, Mapping
 # Frames-per-scene defaults match the C++ host so cycle behavior is identical.
 CYCLE_FRAMES_PER_SCENE = 4
 SINGLE_SCENE_DEFAULT_FRAMES = 60
-DEFAULT_INITIAL_SCENE_ID = "replay_scrubber"
+DEFAULT_INITIAL_SCENE_ID = "rigid_body"
 SCENE_BUILD_TIMEOUT_ENV = "DART_PY_DEMO_SCENE_BUILD_TIMEOUT_MS"
 DEMO_SCENE_STARTUP_TIMEOUT_ENV = "DART_DEMO_SCENE_STARTUP_TIMEOUT_MS"
 DEFAULT_SCENE_BUILD_TIMEOUT_MS = 5000.0
 DEFAULT_REPLAY_MAX_FRAMES = 900
+REPLAY_TIMELINE_INFO_KEY = "replay_timeline"
 REPLAY_WORLD_INFO_KEYS = ("sx_world", "physics_world")
+CAPTURE_METRICS_INFO_KEY = "capture_metrics"
+CAPTURE_METRICS_EVENT_NAME = "scene_capture_metrics"
 _REPLAY_RATE_LABELS = (
     "1 frame/tick",
     "2 frames/tick",
@@ -53,6 +58,444 @@ _REPLAY_RATE_LABELS = (
     "8 frames/tick",
 )
 _REPLAY_RATE_STEPS = (1, 2, 4, 8)
+RIGID_VISUAL_WORKFLOW_CATEGORY = "World Rigid Body"
+RIGID_VISUAL_WORKFLOW_LABELS = (
+    ("rigid_body", "Baseline"),
+    ("rigid_body_modes", "Body modes"),
+    ("rigid_free_flight", "Free flight"),
+    ("rigid_frame_hierarchy", "Frame hierarchy"),
+    ("rigid_external_loads", "Loads"),
+    ("rigid_link_point_loads", "Point loads"),
+    ("rigid_timestep_sensitivity", "Time step"),
+    ("rigid_step_diagnostics", "Step diagnostics"),
+    ("rigid_contact_scale_budget", "Contact budget"),
+    ("rigid_restitution_ladder", "Restitution"),
+    ("rigid_material_mixing", "Material mixing"),
+    ("rigid_contact_inspector", "Contact inspector"),
+    ("rigid_collision_query_options", "Query filters"),
+    ("rigid_collision_casts", "Collision casts"),
+    ("rigid_solver_compare", "Solver family"),
+    ("rigid_executor_equivalence", "Executor equivalence"),
+    ("rigid_contact_solver_compare", "Contact policy"),
+    ("contact", "Link contact"),
+    ("rigid_friction_threshold", "Friction threshold"),
+    ("rigid_spin_roll_coupling", "Spin/roll coupling"),
+    ("rigid_stack_stability", "Stack stability"),
+    ("rigid_contact_manipulation", "Manipulation"),
+    ("rigid_kinematic_driver", "Kinematic driver"),
+    ("rigid_fixed_joint", "Fixed joint"),
+    ("rigid_joint_breakage", "Breakage lifecycle"),
+    ("rigid_limited_joints", "One-DOF joints"),
+    ("rigid_joint_motor_limits", "Motor limits"),
+    ("rigid_joint_passive_parameters", "Passive joints"),
+    ("rigid_screw_joint_pitch", "Screw pitch"),
+    ("rigid_multibody_dynamics_terms", "Dynamics terms"),
+    ("rigid_link_center_of_mass", "COM offset"),
+    ("rigid_link_jacobian", "Link Jacobian"),
+    ("rigid_multibody_solver_family", "Multibody solver"),
+    ("rigid_loop_closure", "Loop closure"),
+)
+
+
+@dataclass(frozen=True)
+class RigidWorkflowGuide:
+    scene_id: str
+    index: int
+    count: int
+    label: str
+    question: str
+    try_first: str
+    inspect: tuple[str, ...]
+    healthy_signal: str
+    scope: str
+    previous_scene_id: str | None
+    next_scene_id: str | None
+
+
+@dataclass(frozen=True)
+class RigidWorkflowRelatedEvidence:
+    label: str
+    scene_id: str
+    shelf: str
+    reason: str
+
+
+_RIGID_VISUAL_WORKFLOW_GUIDE_TEXT: Mapping[
+    str, tuple[str, tuple[str, ...], str]
+] = {
+    "rigid_body": (
+        "What is the baseline DART 7 World rigid-body path?",
+        ("Solver/material controls", "Contacts, energy, step timing"),
+        "Baseline front door; focused edge cases stay in the specialized verifier rows.",
+    ),
+    "rigid_body_modes": (
+        "Which body mode should I choose?",
+        ("Dynamic vs static vs kinematic lanes", "Static drift and path error"),
+        "Contact-free mode semantics row; contact-driven prescribed motion is routed later.",
+    ),
+    "rigid_free_flight": (
+        "Do initial velocity, gravity, and spin evolve?",
+        ("Path error and momentum residual", "Energy drift and spin ratios"),
+        "No-contact initial-state row; not a load, restitution, contact, or solver row.",
+    ),
+    "rigid_frame_hierarchy": (
+        "Where is a sensor/tool frame on a moving body?",
+        ("Local-to-world transform residual", "Relative transform and parent frame"),
+        "Kinematics/frame row only; not a force, contact, sensor model, or solver-family claim.",
+    ),
+    "rigid_external_loads": (
+        "How do external loads move and spin bodies?",
+        ("Mass-scaled acceleration", "Torque response and static drift"),
+        "Contact-free zero-gravity accumulator row; not a point-force or impulse verifier.",
+    ),
+    "rigid_link_point_loads": (
+        "Do point forces create lever-arm torque?",
+        ("Centered vs off-center force lanes", "World/local frame semantics"),
+        "Contact-free one-shot Link.apply_force row; not persistent rigid-body accumulator behavior.",
+    ),
+    "rigid_timestep_sensitivity": (
+        "How does time-step size change free fall/contact?",
+        ("Fine/medium/coarse error trend", "Contact timing and clearance"),
+        "Parameter-sensitivity row; not a solver correctness proof or exact contact threshold.",
+    ),
+    "rigid_step_diagnostics": (
+        "Where does a World step spend time and memory?",
+        ("Top profile stage and backend status", "Scratch memory and ECS counters"),
+        "Profiling may be compiled out; memory/contact diagnostics remain visible.",
+    ),
+    "rigid_contact_scale_budget": (
+        "How much contact fits in my frame budget?",
+        ("One/four/nine-box contact scaling", "Per-contact cost and budget status"),
+        "Bounded live-GUI budget row; not a benchmark suite or heavy IPC stress packet.",
+    ),
+    "rigid_restitution_ladder": (
+        "How does restitution change bounce height?",
+        ("Low/medium/high rebound trend", "Velocity, contact, and energy trend"),
+        "Relative rebound diagnostic only; energy plots are not exact conservation claims.",
+    ),
+    "rigid_material_mixing": (
+        "Which material owns bounce or friction response?",
+        ("Swapped body/surface ownership", "Max restitution and sqrt friction"),
+        "Pair-rule ownership row only; not an IPC restitution claim or incline stick/slip proof.",
+    ),
+    "rigid_contact_inspector": (
+        "Which contact pairs and manifold fields exist?",
+        ("Selected pair, point, normal, depth", "Local points and shape indices"),
+        "Query-focused row; not a solver-family benchmark or all-pairs native sandbox.",
+    ),
+    "rigid_collision_query_options": (
+        "Which body-kind pairs does a query include?",
+        ("Rigid/link include toggles", "Baseline, active, and filtered contacts"),
+        "Body-kind query-filter row only; not a shape-family manifold inspector.",
+    ),
+    "rigid_collision_casts": (
+        "Where do rays and swept probes hit?",
+        (
+            "Nearest/all ray hit fractions",
+            "Sphere/capsule time of impact",
+        ),
+        "Public collision-cast query row; not a contact-solver, no-tunneling, or CCD time-step guarantee.",
+    ),
+    "rigid_solver_compare": (
+        "How do the rigid method families differ visually?",
+        ("Sequential impulse vs IPC lanes", "Wall clearance and divergence"),
+        "Generic thin-wall comparison; not the sole no-tunneling proof.",
+    ),
+    "rigid_executor_equivalence": (
+        "Does a parallel executor preserve the same physics?",
+        ("Pose and velocity divergence", "Contact-count delta and timing"),
+        "Same-solver executor-equivalence row; not a solver-family comparison.",
+    ),
+    "rigid_contact_solver_compare": (
+        "What changes when contact solver policy changes?",
+        ("Sequential impulse vs boxed-LCP policy", "Depth, clearance, divergence"),
+        "Contact-policy row only; it does not compare IPC against sequential impulse.",
+    ),
+    "contact": (
+        "Do articulated links contact like rigid bodies?",
+        ("Drop, slide, and pusher link lanes", "Link/rigid contact counts and travel"),
+        "Multibody-link contact row only; not a contact-impulse or compliance inspector.",
+    ),
+    "rigid_friction_threshold": (
+        "Where is the inclined-ramp stick/slip boundary?",
+        ("Below/controlled/above threshold lanes", "Down-slope drift and speed"),
+        "Near-threshold behavior is tunable visual evidence, not an exact proof point.",
+    ),
+    "rigid_spin_roll_coupling": (
+        "How does contact friction couple sliding and spin?",
+        ("Slip speed and roll ratio", "Spin change and energy"),
+        "Spin/rolling visual diagnostic only; no public rolling-resistance or torsional-friction parameter claim.",
+    ),
+    "rigid_stack_stability": (
+        "Does a top-heavy mass-ratio stack stay ordered?",
+        ("Top-block drift and clearance", "Sequential impulse vs IPC divergence"),
+        "Compact two-box stack only; taller IPC stacks remain benchmark/capture-first.",
+    ),
+    "rigid_contact_manipulation": (
+        "Can a rigid pusher move an object through contact?",
+        ("Target travel and pusher gap", "Contact evidence and goal error"),
+        "Task-like pusher row only; not a full arm/gripper manipulation controller.",
+    ),
+    "rigid_kinematic_driver": (
+        "Does prescribed motion carry objects by contact?",
+        ("IPC grip vs zero-friction slip", "Driver/box travel and speed ratio"),
+        "Tangential kinematic-driver row only; normal pushing remains out of scope.",
+    ),
+    "rigid_fixed_joint": (
+        "Does a fixed joint preserve its captured pose?",
+        ("Offset and orientation error", "Payload residual speed"),
+        "Fixed-pose row only; no motor, limit, or break-force claims.",
+    ),
+    "rigid_joint_breakage": (
+        "What happens when a fixed joint breaks?",
+        ("Broken/intact state and connector color", "Payload release and reset"),
+        "AVBD-pinned breakage row; no user-editable threshold, sequential-impulse, or IPC break-force parity claim.",
+    ),
+    "rigid_limited_joints": (
+        "Do one-DOF joints keep only their free axis?",
+        ("Locked-direction errors", "Hinge yaw and slider travel"),
+        "Revolute/prismatic constraint row only; public motor/limit behavior is out of scope.",
+    ),
+    "rigid_joint_motor_limits": (
+        "Do joint motors and limits clamp commands?",
+        ("Velocity and position limit behavior", "Effort cap acceleration gap"),
+        "Multibody joint-actuator row; rigid-body joint motor behavior is not claimed.",
+    ),
+    "rigid_joint_passive_parameters": (
+        "Do passive joint parameters shape motion?",
+        ("Spring/damping/stiction lanes", "Energy and expected acceleration"),
+        "Contact-free passive-parameter row; no motor, limit, or contact-load claims.",
+    ),
+    "rigid_screw_joint_pitch": (
+        "Does screw pitch couple rotation and translation?",
+        ("Travel-per-radian ratio", "Effective mass and acceleration"),
+        "Contact-free screw-pitch row; no contact, motor, limit, or loop-closure claims.",
+    ),
+    "rigid_multibody_dynamics_terms": (
+        "What do generalized dynamics terms mean?",
+        ("Mass and inverse-mass terms", "Inverse dynamics and impulse residuals"),
+        "Contact-free joint-space dynamics row; not a Cartesian point-force or COM-Jacobian claim.",
+    ),
+    "rigid_link_center_of_mass": (
+        "How does a link center-of-mass offset change inertia and gravity torque?",
+        ("Centered vs mirrored COM offsets", "Gravity torque and mass matrix"),
+        "Link inertial-offset row only; not arbitrary-point Jacobians, contact, IK, or operational-space control.",
+    ),
+    "rigid_link_jacobian": (
+        "What does a link Jacobian map?",
+        ("J qdot vs finite difference", "J.T wrench power consistency"),
+        "Link-origin kinematic/wrench map only; not arbitrary point, COM, contact, IK, or OSC.",
+    ),
+    "rigid_multibody_solver_family": (
+        "Which multibody integration family supports solves?",
+        ("Residual-only vs solved lanes", "Residual ratio and tip error"),
+        "Solver-family routing row; closure family selection remains in the next row.",
+    ),
+    "rigid_loop_closure": (
+        "Which loop-closure family should I use?",
+        ("POINT, DISTANCE, and RIGID families", "Residual-only vs solved behavior"),
+        "Public-family comparison row; not a compliance, breakage, or distance-family solver sweep.",
+    ),
+}
+
+_RIGID_VISUAL_WORKFLOW_CHECKLIST_TEXT: Mapping[str, tuple[str, str]] = {
+    "rigid_body": (
+        "Try solver/material controls, then reset the baseline.",
+        "Healthy: contacts settle while energy, speed, and step timing remain bounded.",
+    ),
+    "rigid_body_modes": (
+        "Change gravity, force, and kinematic speed with the same solver.",
+        "Healthy: dynamic moves, static stays put, kinematic follows its path.",
+    ),
+    "rigid_free_flight": (
+        "Adjust launch, gravity, spin speed, and inertia ratio.",
+        "Healthy: drift/arc references stay close and contact count remains zero.",
+    ),
+    "rigid_frame_hierarchy": (
+        "Move the body yaw/path and local sensor offset.",
+        "Healthy: world and relative transform residuals stay near zero.",
+    ),
+    "rigid_external_loads": (
+        "Change force, torque, mass ratio, and inertia ratio.",
+        "Healthy: acceleration scales with mass, torque response scales with inertia.",
+    ),
+    "rigid_link_point_loads": (
+        "Move the point offset and compare centered/off-center lanes.",
+        "Healthy: centered force translates; off-center force also yaws.",
+    ),
+    "rigid_timestep_sensitivity": (
+        "Change base time step and gravity scale across matched lanes.",
+        "Healthy: coarse error is larger while lane times remain comparable.",
+    ),
+    "rigid_step_diagnostics": (
+        "Switch solver/executor and reset while watching stage summaries.",
+        "Healthy: profile, ECS, contact, and scratch counters stay finite.",
+    ),
+    "rigid_contact_scale_budget": (
+        "Set the frame budget and compare one, four, and nine-box lanes.",
+        "Healthy: denser lanes cost more and the budget status changes predictably.",
+    ),
+    "rigid_restitution_ladder": (
+        "Move launch height and restitution scale before changing solver.",
+        "Healthy: higher restitution rebounds higher than lower restitution.",
+    ),
+    "rigid_material_mixing": (
+        "Change low/high restitution and friction for swapped ownership lanes.",
+        "Healthy: swapped lanes share max restitution and sqrt friction effects.",
+    ),
+    "rigid_contact_inspector": (
+        "Pick a shape pair and penetration depth.",
+        "Healthy: selected contacts expose finite point, normal, depth, and indices.",
+    ),
+    "rigid_collision_query_options": (
+        "Toggle one body-kind include flag at a time.",
+        "Healthy: filtered lanes disappear while enabled lanes keep baseline contacts.",
+    ),
+    "rigid_collision_casts": (
+        "Sweep ray offset, all-hit, sphere radius, and capsule controls.",
+        "Healthy: hit fractions, time of impact, and cast margins update consistently.",
+    ),
+    "rigid_solver_compare": (
+        "Change launch speed/friction, then compare SI and IPC lanes.",
+        "Healthy: wall clearance and divergence make solver-family differences visible.",
+    ),
+    "rigid_executor_equivalence": (
+        "Hold the physics solver fixed and compare executor timing.",
+        "Healthy: pose, velocity, and contact-count deltas stay small.",
+    ),
+    "rigid_contact_solver_compare": (
+        "Change launch speed, friction, restitution, and initial tilt.",
+        "Healthy: contact-policy divergence appears without changing solver family.",
+    ),
+    "contact": (
+        "Tune friction/restitution, then compare drop, slide, and pusher lanes.",
+        "Healthy: link contacts rebound, brake sliding, and move the target.",
+    ),
+    "rigid_friction_threshold": (
+        "Move ramp angle and controlled friction around the threshold.",
+        "Healthy: below/above lanes separate into slip and stick trends.",
+    ),
+    "rigid_spin_roll_coupling": (
+        "Change contact friction, launch speed, and backspin ratio.",
+        "Healthy: slip-to-roll and backspin lanes change spin and travel distinctly.",
+    ),
+    "rigid_stack_stability": (
+        "Increase top mass ratio and friction, then compare SI and IPC.",
+        "Healthy: top drift, clearance, and divergence expose stack stability.",
+    ),
+    "rigid_contact_manipulation": (
+        "Adjust pusher speed, friction, and pusher mass.",
+        "Healthy: target travel grows while gap/contact evidence stays coherent.",
+    ),
+    "rigid_kinematic_driver": (
+        "Change driver speed and grip friction.",
+        "Healthy: IPC grip carries the box; zero-friction and SI caveat lanes separate.",
+    ),
+    "rigid_fixed_joint": (
+        "Use perturb, then reset the captured fixed-pose verifier.",
+        "Healthy: offset/orientation errors return toward the captured pose.",
+    ),
+    "rigid_joint_breakage": (
+        "Let the AVBD break-force lifecycle run, then reset breakage.",
+        "Healthy: broken state, connector color, and payload release agree.",
+    ),
+    "rigid_limited_joints": (
+        "Use perturb, then compare hinge yaw and slider travel.",
+        "Healthy: free axes move while locked-direction errors stay bounded.",
+    ),
+    "rigid_joint_motor_limits": (
+        "Change speed command, limits, requested force, and effort cap.",
+        "Healthy: speed, stops, and acceleration clamp at the displayed limits.",
+    ),
+    "rigid_joint_passive_parameters": (
+        "Change spring/rest, damping, Coulomb friction, and armature.",
+        "Healthy: energy, stiction/slip, and acceleration follow the parameter change.",
+    ),
+    "rigid_screw_joint_pitch": (
+        "Change pitch scale, gravity scale, mass, and axial inertia.",
+        "Healthy: axial travel tracks pitch sign and acceleration scales with mass.",
+    ),
+    "rigid_multibody_dynamics_terms": (
+        "Change target acceleration, impulse, distal mass, and gravity.",
+        "Healthy: mass, inverse dynamics, and impulse residuals stay consistent.",
+    ),
+    "rigid_link_center_of_mass": (
+        "Move the COM offset, mass, gravity, and high-inertia multiplier.",
+        "Healthy: centered COM stays still; mirrored COM offsets accelerate in opposite directions.",
+    ),
+    "rigid_link_jacobian": (
+        "Change motion speed, elbow phase, and wrench controls.",
+        "Healthy: J qdot matches finite difference and J.T wrench matches power.",
+    ),
+    "rigid_multibody_solver_family": (
+        "Change gravity scale while comparing residual-only and solved lanes.",
+        "Healthy: variational solved lanes reduce closure residuals.",
+    ),
+    "rigid_loop_closure": (
+        "Change gravity scale and compare POINT, DISTANCE, and RIGID families.",
+        "Healthy: each closure family reduces its matching residual in solved lanes.",
+    ),
+}
+
+
+def _make_rigid_workflow_guides() -> dict[str, RigidWorkflowGuide]:
+    scene_ids = [scene_id for scene_id, _label in RIGID_VISUAL_WORKFLOW_LABELS]
+    count = len(scene_ids)
+    guides: dict[str, RigidWorkflowGuide] = {}
+    for index, (scene_id, label) in enumerate(
+        RIGID_VISUAL_WORKFLOW_LABELS, start=1
+    ):
+        question, inspect, scope = _RIGID_VISUAL_WORKFLOW_GUIDE_TEXT[scene_id]
+        try_first, healthy_signal = _RIGID_VISUAL_WORKFLOW_CHECKLIST_TEXT[scene_id]
+        guides[scene_id] = RigidWorkflowGuide(
+            scene_id=scene_id,
+            index=index,
+            count=count,
+            label=label,
+            question=question,
+            try_first=try_first,
+            inspect=inspect,
+            healthy_signal=healthy_signal,
+            scope=scope,
+            previous_scene_id=scene_ids[index - 2] if index > 1 else None,
+            next_scene_id=scene_ids[index] if index < count else None,
+        )
+    return guides
+
+
+RIGID_VISUAL_WORKFLOW_GUIDES = _make_rigid_workflow_guides()
+_RIGID_VISUAL_WORKFLOW_BADGES = {
+    scene_id: (index, label)
+    for index, (scene_id, label) in enumerate(
+        RIGID_VISUAL_WORKFLOW_LABELS, start=1
+    )
+}
+_RIGID_WORKFLOW_RELATED_EVIDENCE: Mapping[
+    str, tuple[RigidWorkflowRelatedEvidence, ...]
+] = {
+    "rigid_solver_compare": (
+        RigidWorkflowRelatedEvidence(
+            label="focused IPC no-tunneling view",
+            scene_id="rigid_ipc_tunnel",
+            shelf="Rigid IPC",
+            reason=(
+                "Focused IPC capability scene; not a broad solver comparison "
+                "or general proof."
+            ),
+        ),
+    ),
+    "rigid_contact_solver_compare": (
+        RigidWorkflowRelatedEvidence(
+            label="differentiable contact-gradient route",
+            scene_id="diff_drone_liftoff",
+            shelf="Differentiable",
+            reason=(
+                "Analytic vs complementarity-aware clamping-contact "
+                "optimization; not a solver row."
+            ),
+        ),
+    ),
+}
 
 
 @dataclass
@@ -108,7 +551,9 @@ class SceneSetup:
     rendering. When omitted, the runner also checks whether ``world`` provides a
     ``renderable_provider`` method.
 
-    ``info`` carries scene-specific metadata for tests and panels.
+    ``info`` carries scene-specific metadata for tests and panels. Scenes may
+    expose ``info["capture_metrics"]`` as a zero-argument callable returning a
+    JSON-like mapping for ``py-demo-capture`` manifests.
     """
 
     world: Any | None = None
@@ -254,6 +699,84 @@ def _cursor_series(frame_count: int, frame: int) -> list[float]:
     return values
 
 
+def _finite_float(value: Any) -> float | None:
+    try:
+        converted = float(value)
+    except (TypeError, ValueError):
+        return None
+    if not math.isfinite(converted):
+        return None
+    return converted
+
+
+def _timeline_source_values(
+    source: Any,
+    *,
+    frame_count: int,
+    scene_states: list[Any],
+    marker: bool,
+) -> list[float]:
+    sample_count = _timeline_sample_count(frame_count)
+    if sample_count <= 0 or source is None:
+        return []
+
+    raw_values: list[Any]
+    if callable(source):
+        raw_values = []
+        for sample in range(sample_count):
+            frame = _frame_for_timeline_sample(sample, sample_count, frame_count)
+            snapshot = scene_states[frame] if frame < len(scene_states) else None
+            try:
+                raw_values.append(source(snapshot))
+            except Exception:  # noqa: BLE001
+                raw_values.append(None)
+    else:
+        if isinstance(source, str | bytes):
+            return []
+        try:
+            source_values = list(source)
+        except TypeError:
+            return []
+        if not source_values:
+            return []
+        raw_values = []
+        source_count = len(source_values)
+        for sample in range(sample_count):
+            if source_count == sample_count:
+                source_index = sample
+            elif source_count >= frame_count:
+                source_index = _frame_for_timeline_sample(
+                    sample, sample_count, frame_count
+                )
+            else:
+                source_index = _frame_for_timeline_sample(
+                    sample, sample_count, source_count
+                )
+            raw_values.append(source_values[max(0, min(source_index, source_count - 1))])
+
+    values: list[float] = []
+    valid_count = 0
+    for raw in raw_values:
+        value = _finite_float(raw)
+        if value is not None:
+            valid_count += 1
+        if marker:
+            values.append(1.0 if value is not None and abs(value) > 0.0 else 0.0)
+        else:
+            values.append(value if value is not None else 0.0)
+    if valid_count == 0:
+        return []
+    return values
+
+
+def _timeline_label(metadata: Mapping[str, Any] | None) -> str:
+    if metadata is None:
+        return "Saved states"
+    label = metadata.get("signal_label", metadata.get("label", "Saved states"))
+    label_text = str(label).strip()
+    return label_text or "Saved states"
+
+
 class _ReplayController:
     """Shared replay recorder/scrubber for py-demos DART 7 worlds."""
 
@@ -263,6 +786,7 @@ class _ReplayController:
         sync: Callable[[], None] | None,
         capture_state: Callable[[], Any] | None = None,
         restore_state: Callable[[Any], None] | None = None,
+        timeline_metadata: Mapping[str, Any] | None = None,
         *,
         max_frames: int = DEFAULT_REPLAY_MAX_FRAMES,
     ) -> None:
@@ -270,6 +794,11 @@ class _ReplayController:
         self._sync = sync or (lambda: None)
         self._capture_state = capture_state
         self._restore_state = restore_state
+        self._timeline_metadata = (
+            dict(timeline_metadata)
+            if isinstance(timeline_metadata, Mapping)
+            else None
+        )
         self._scene_states: list[Any] = []
         self._max_frames = max(1, int(max_frames))
         self.save_replay = True
@@ -482,6 +1011,31 @@ class _ReplayController:
         self.status = "recording" if self.save_replay else "live"
         self._resume_viewer(context)
 
+    def _timeline_tracks(self, count: int) -> tuple[list[float], list[float], str]:
+        metadata = self._timeline_metadata
+        if metadata is None:
+            return [], _frame_mark_series(count), "Saved states"
+
+        signal = metadata.get("signal", metadata.get("value"))
+        markers = metadata.get("markers", metadata.get("marker"))
+        value_track = _timeline_source_values(
+            signal,
+            frame_count=count,
+            scene_states=self._scene_states,
+            marker=False,
+        )
+        marker_track = _timeline_source_values(
+            markers,
+            frame_count=count,
+            scene_states=self._scene_states,
+            marker=True,
+        )
+        if not value_track and not marker_track:
+            return [], _frame_mark_series(count), "Saved states"
+        if value_track and not marker_track:
+            marker_track = _frame_mark_series(count)
+        return value_track, marker_track, _timeline_label(metadata)
+
     def build_panel(self, builder: Any, context: Any) -> None:
         count = self.frame_count
         current = max(0, min(self.selected_frame, max(0, count - 1)))
@@ -571,16 +1125,17 @@ class _ReplayController:
             )
 
         current = max(0, min(self.selected_frame, count - 1))
+        value_track, marker_track, value_track_label = self._timeline_tracks(count)
         selected = float(current)
         changed, selected = builder.timeline(
             "Saved states##py_demo_replay_timeline",
             selected,
             0.0,
             float(max(0, count - 1)),
-            value_track=[],
-            marker_track=_frame_mark_series(count),
+            value_track=value_track,
+            marker_track=marker_track,
             cursor_track=_cursor_series(count, current),
-            value_track_label="Saved states",
+            value_track_label=value_track_label,
         )
         if changed:
             self.playing = False
@@ -619,6 +1174,7 @@ def _attach_replay_controls(scene: PythonDemoScene, setup: SceneSetup) -> SceneS
         sync,
         capture_state=capture_state,
         restore_state=restore_state,
+        timeline_metadata=setup.info.get(REPLAY_TIMELINE_INFO_KEY),
     )
     live_pre_step = setup.pre_step
 
@@ -631,6 +1187,89 @@ def _attach_replay_controls(scene: PythonDemoScene, setup: SceneSetup) -> SceneS
     setup.info["replay_controller"] = controller
     setup.info["replay_panel_title"] = controller.panel.title
     setup.info["replay_scene_id"] = scene.id
+    return setup
+
+
+def _capture_metrics_json_value(value: Any) -> Any:
+    if value is None or isinstance(value, bool | int | str):
+        return value
+    if isinstance(value, float):
+        return value if math.isfinite(value) else None
+    if hasattr(value, "item"):
+        try:
+            return _capture_metrics_json_value(value.item())
+        except Exception:  # noqa: BLE001
+            pass
+    if hasattr(value, "tolist"):
+        try:
+            return _capture_metrics_json_value(value.tolist())
+        except Exception:  # noqa: BLE001
+            pass
+    if isinstance(value, Mapping):
+        return {
+            str(key): _capture_metrics_json_value(item)
+            for key, item in value.items()
+        }
+    if isinstance(value, list | tuple):
+        return [_capture_metrics_json_value(item) for item in value]
+    return str(value)
+
+
+def _capture_metrics_mapping(value: Any) -> dict[str, Any]:
+    json_value = _capture_metrics_json_value(value)
+    if isinstance(json_value, dict):
+        return json_value
+    return {"value": json_value}
+
+
+def _append_capture_metrics_event(
+    event_log_path: str,
+    scene_id: str,
+    frame: int,
+    metrics: Mapping[str, Any],
+) -> None:
+    parent = os.path.dirname(os.path.abspath(event_log_path))
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+    payload = {
+        "event": CAPTURE_METRICS_EVENT_NAME,
+        "frame": int(frame),
+        "metrics": dict(metrics),
+        "scene": scene_id,
+        "source": "py-demo-scene",
+    }
+    with open(event_log_path, "a", encoding="utf-8") as stream:
+        stream.write(json.dumps(payload, sort_keys=True) + "\n")
+
+
+def _attach_capture_metrics_recording(
+    scene: PythonDemoScene,
+    setup: SceneSetup,
+    event_log_path: str,
+) -> SceneSetup:
+    if not event_log_path or setup.pre_step is None:
+        return setup
+    capture_metrics = setup.info.get(CAPTURE_METRICS_INFO_KEY)
+    if not callable(capture_metrics):
+        return setup
+
+    original_pre_step = setup.pre_step
+    frame = 0
+
+    def metrics_pre_step() -> None:
+        nonlocal frame
+        original_pre_step()
+        frame += 1
+        try:
+            metrics = _capture_metrics_mapping(capture_metrics())
+        except Exception as exc:  # noqa: BLE001
+            metrics = {
+                "error": str(exc),
+                "status": "capture-metrics-failed",
+            }
+        _append_capture_metrics_event(event_log_path, scene.id, frame, metrics)
+
+    setup.pre_step = metrics_pre_step
     return setup
 
 
@@ -663,6 +1302,225 @@ def _print_catalog(scenes: list[PythonDemoScene]) -> None:
             print(f"\n[{entry.category}]")
             last_category = entry.category
         print(f"  {entry.id:<28s} {entry.title} — {entry.summary}")
+
+
+def _viewer_catalog_title(scene: PythonDemoScene) -> str:
+    """Return the display title used by the interactive Demos navigator."""
+
+    if scene.category != RIGID_VISUAL_WORKFLOW_CATEGORY:
+        return scene.title
+    badge = _RIGID_VISUAL_WORKFLOW_BADGES.get(scene.id)
+    if badge is None:
+        return scene.title
+    index, label = badge
+    count = len(RIGID_VISUAL_WORKFLOW_LABELS)
+    return f"{index:02d}/{count:02d} {label}: {scene.title}"
+
+
+def _workflow_route_text(prefix: str, scene_id: str | None) -> str:
+    if scene_id is None:
+        endpoint = "start" if prefix == "Previous" else "done"
+        return f"{prefix}: {endpoint}"
+    guide = RIGID_VISUAL_WORKFLOW_GUIDES[scene_id]
+    return f"{prefix}: {guide.index:02d}/{guide.count:02d} {guide.label}"
+
+
+def _request_workflow_scene(context: Any, scene_id: str) -> None:
+    request_scene_switch = getattr(context, "request_scene_switch", None)
+    if callable(request_scene_switch):
+        request_scene_switch(scene_id)
+
+
+def _request_workflow_replay(context: Any, scene_id: str) -> None:
+    request_scene_replay = getattr(context, "request_scene_replay", None)
+    if callable(request_scene_replay):
+        request_scene_replay(scene_id)
+    else:
+        _request_workflow_scene(context, scene_id)
+
+
+def _workflow_route_row(
+    builder: Any,
+    context: Any,
+    prefix: str,
+    scene_id: str | None,
+) -> None:
+    label = _workflow_route_text(prefix, scene_id)
+    if scene_id is None:
+        builder.text(label)
+        return
+
+    if builder.selectable(f"{label}##rigid_workflow_{prefix.lower()}", False):
+        _request_workflow_scene(context, scene_id)
+    builder.item_tooltip(f"Open {label.lower()}.")
+
+
+def _workflow_replay_row(
+    builder: Any,
+    context: Any,
+    guide: RigidWorkflowGuide,
+) -> None:
+    label = f"Restart row: {guide.index:02d}/{guide.count:02d} {guide.label}"
+    if builder.selectable(f"{label}##rigid_workflow_restart", False):
+        _request_workflow_replay(context, guide.scene_id)
+    builder.item_tooltip("Reload this workflow row and clear replay playback.")
+
+
+def _workflow_related_evidence_rows(
+    builder: Any,
+    context: Any,
+    guide: RigidWorkflowGuide,
+) -> None:
+    entries = _RIGID_WORKFLOW_RELATED_EVIDENCE.get(guide.scene_id, ())
+    if not entries:
+        return
+
+    builder.text("Related evidence")
+    for entry in entries:
+        label = f"Related shelf: {entry.label}"
+        if builder.selectable(
+            f"{label}##rigid_workflow_related_{entry.scene_id}",
+            False,
+        ):
+            _request_workflow_scene(context, entry.scene_id)
+        builder.item_tooltip(
+            f"Open {entry.scene_id} from the {entry.shelf} shelf. {entry.reason}"
+        )
+
+
+def _workflow_jump_choices() -> tuple[str, ...]:
+    count = len(RIGID_VISUAL_WORKFLOW_LABELS)
+    return tuple(
+        f"{index:02d}/{count:02d} {label}"
+        for index, (_scene_id, label) in enumerate(
+            RIGID_VISUAL_WORKFLOW_LABELS, start=1
+        )
+    )
+
+
+def _workflow_jump_row(builder: Any, context: Any, guide: RigidWorkflowGuide) -> None:
+    changed, next_index = builder.select(
+        "Jump to row",
+        guide.index - 1,
+        _workflow_jump_choices(),
+    )
+    if changed and 0 <= int(next_index) < len(RIGID_VISUAL_WORKFLOW_LABELS):
+        next_scene_id = RIGID_VISUAL_WORKFLOW_LABELS[int(next_index)][0]
+        if next_scene_id != guide.scene_id:
+            _request_workflow_scene(context, next_scene_id)
+
+
+def _workflow_search_text(guide: RigidWorkflowGuide) -> str:
+    row_id = f"{guide.index:02d}/{guide.count:02d}"
+    unpadded_row_id = f"{guide.index}/{guide.count}"
+    return " ".join(
+        (
+            f"row {guide.index}",
+            f"row {guide.index:02d}",
+            row_id,
+            unpadded_row_id,
+            guide.scene_id,
+            guide.label,
+            guide.question,
+            guide.try_first,
+            " ".join(guide.inspect),
+            guide.healthy_signal,
+            guide.scope,
+        )
+    ).lower()
+
+
+def _workflow_matching_guides(query: str) -> tuple[RigidWorkflowGuide, ...]:
+    tokens = tuple(token for token in query.strip().lower().split() if token)
+    if not tokens:
+        return ()
+
+    matches: list[RigidWorkflowGuide] = []
+    for scene_id, _label in RIGID_VISUAL_WORKFLOW_LABELS:
+        candidate = RIGID_VISUAL_WORKFLOW_GUIDES[scene_id]
+        search_text = _workflow_search_text(candidate)
+        if all(token in search_text for token in tokens):
+            matches.append(candidate)
+    return tuple(matches[:6])
+
+
+def _workflow_search_rows(
+    builder: Any,
+    context: Any,
+    guide: RigidWorkflowGuide,
+    query: str,
+) -> str:
+    changed, next_query = builder.text_input("Find row", query)
+    if changed:
+        query = str(next_query)
+
+    matches = _workflow_matching_guides(query)
+    for match in matches:
+        selected = match.scene_id == guide.scene_id
+        label = (
+            f"{match.index:02d}/{match.count:02d} {match.label} - "
+            f"{match.scene_id}"
+        )
+        if builder.selectable(
+            f"{label}##rigid_workflow_find_{match.scene_id}", selected
+        ):
+            if selected:
+                _request_workflow_replay(context, match.scene_id)
+            else:
+                _request_workflow_scene(context, match.scene_id)
+        builder.item_tooltip(match.question)
+
+    if query.strip() and not matches:
+        builder.text("No matching workflow rows")
+
+    return query
+
+
+def _make_rigid_workflow_panel(scene: PythonDemoScene) -> ScenePanel | None:
+    if scene.category != RIGID_VISUAL_WORKFLOW_CATEGORY:
+        return None
+    guide = RIGID_VISUAL_WORKFLOW_GUIDES.get(scene.id)
+    if guide is None:
+        return None
+
+    search_query = ""
+
+    def build(builder: Any, _context: Any) -> None:
+        nonlocal search_query
+
+        builder.text(f"{guide.index:02d}/{guide.count:02d} {guide.label}")
+        builder.text(scene.title)
+        builder.separator()
+        builder.text("Question")
+        builder.text(guide.question)
+        builder.separator()
+        builder.text("Try first")
+        builder.text(guide.try_first)
+        builder.separator()
+        builder.text("Look for")
+        for signal in guide.inspect:
+            builder.text(signal)
+        builder.text(guide.healthy_signal)
+        builder.separator()
+        builder.text("Do not infer")
+        builder.text(guide.scope)
+        builder.separator()
+        builder.text("Route")
+        _workflow_replay_row(builder, _context, guide)
+        _workflow_route_row(builder, _context, "Previous", guide.previous_scene_id)
+        _workflow_route_row(builder, _context, "Next", guide.next_scene_id)
+        _workflow_related_evidence_rows(builder, _context, guide)
+        _workflow_jump_row(builder, _context, guide)
+        search_query = _workflow_search_rows(
+            builder, _context, guide, search_query
+        )
+
+    return ScenePanel(
+        "Rigid Workflow",
+        build,
+        dock_side="right",
+        initial_size=(340.0, 360.0),
+    )
 
 
 def _canonical_scene_id(scene_id: str) -> str:
@@ -747,7 +1605,9 @@ def _bounded_scene_build(scene_id: str):
 
 
 def _make_world_factory(
-    scene: PythonDemoScene, gpu_panel: ScenePanel | None = None
+    scene: PythonDemoScene,
+    gpu_panel: ScenePanel | None = None,
+    capture_metrics_event_log: str = "",
 ) -> Callable[[], Any]:
     """Wrap scene.build() so dart.gui.run_demos can call it as a factory.
 
@@ -759,6 +1619,9 @@ def _make_world_factory(
         with _bounded_scene_build(scene.id):
             setup = scene.build()
         setup = _attach_replay_controls(scene, setup)
+        setup = _attach_capture_metrics_recording(
+            scene, setup, capture_metrics_event_log
+        )
         pre_step = setup.pre_step
         if pre_step is not None:
             original_pre_step = pre_step
@@ -776,6 +1639,9 @@ def _make_world_factory(
         renderable_provider = setup.renderable_provider
         if renderable_provider is None and setup.world is not None:
             renderable_provider = getattr(setup.world, "renderable_provider", None)
+        workflow_panel = _make_rigid_workflow_panel(scene)
+        if workflow_panel is not None:
+            panels.insert(0, workflow_panel)
         return (
             pre_step,
             setup.force_drag,
@@ -812,6 +1678,26 @@ def _strip_gpu_flags(argv: list[str]) -> list[str]:
     """
 
     return [arg for arg in argv if arg not in {"--gpu", "--no-gpu"}]
+
+
+def _strip_runner_local_flags(argv: list[str]) -> list[str]:
+    """Drop runner-local flags before forwarding argv to the C++ viewer."""
+
+    stripped: list[str] = []
+    skip_next = False
+    for arg in argv:
+        if skip_next:
+            skip_next = False
+            continue
+        if arg in {"--gpu", "--no-gpu"}:
+            continue
+        if arg == "--capture-metrics-event-log":
+            skip_next = True
+            continue
+        if arg.startswith("--capture-metrics-event-log="):
+            continue
+        stripped.append(arg)
+    return stripped
 
 
 def _default_initial_scene_args(
@@ -914,6 +1800,7 @@ def run(argv: Iterable[str], scenes: list[PythonDemoScene]) -> int:
     # otherwise run on CPU. DART_PY_DEMOS_GPU overrides the default.
     parser.add_argument("--gpu", dest="gpu", action="store_true", default=None)
     parser.add_argument("--no-gpu", dest="gpu", action="store_false")
+    parser.add_argument("--capture-metrics-event-log", default="")
     known, _passthrough = parser.parse_known_args(argv)
 
     if known.list:
@@ -948,18 +1835,22 @@ def run(argv: Iterable[str], scenes: list[PythonDemoScene]) -> int:
     catalog = [
         (
             scene.id,
-            scene.title,
+            _viewer_catalog_title(scene),
             scene.category,
             scene.summary,
-            _make_world_factory(scene, gpu_panel),
+            _make_world_factory(
+                scene,
+                gpu_panel,
+                capture_metrics_event_log=known.capture_metrics_event_log,
+            ),
         )
         for scene in scenes
     ]
 
-    # The viewer's argument parser does not know the runner-local GPU flags.
+    # The viewer's argument parser does not know the runner-local flags.
     full_argv = [
         "py-demos",
         *default_initial_scene_args,
-        *_strip_gpu_flags(argv),
+        *_strip_runner_local_flags(argv),
     ]
     return int(dart.gui.run_demos(catalog, full_argv))

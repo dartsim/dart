@@ -50,6 +50,188 @@
     balance, operational-space control, collision sandbox, and
     mobile-manipulation follow-ups stay visible without keeping legacy scene
     implementations.
+  - Added `rigid_solver_compare` to Python `py-demos`, showing sequential
+    impulse and rigid IPC side by side on the same sliding box / thin-wall
+    rigid-body scene with executor selection, clearance, speed, divergence, and
+    step-profile diagnostics for visual debugging.
+  - Added `rigid_executor_equivalence` to Python `py-demos`, showing matched
+    rigid-body Worlds stepped by sequential and parallel executors with one
+    shared physics solver, pose/velocity divergence, contact-count delta, and
+    step-profile diagnostics.
+  - Added `rigid_contact_solver_compare` to Python `py-demos`, comparing the
+    default sequential-impulse contact policy and opt-in boxed-LCP contact
+    policy on a tilted multi-contact rigid plank with contact-count, depth,
+    clearance, speed, energy, divergence, and step-profile diagnostics.
+  - Upgraded the Python `py-demos` `contact` scene into the numbered rigid
+    visual-verification workflow as `Rigid Link Contact`, showing multibody
+    links dropping, friction-sliding, and pushing a rigid target with link
+    contact counts, rebound, slide travel, target travel, and replayed controls.
+  - Added `rigid_restitution_ladder` to Python `py-demos`, showing matched
+    low/medium/high restitution bounce lanes with solver/executor controls,
+    rebound height, vertical velocity, contact, energy-trend, and step-profile
+    diagnostics.
+  - Added `rigid_material_mixing` to Python `py-demos`, showing swapped
+    body/surface material ownership lanes for rigid contact pair rules:
+    `max(restitution)` and geometric-mean friction.
+  - Added `rigid_friction_threshold` to Python `py-demos`, a three-lane rigid
+    IPC ramp that shows below-threshold sliding, user-controlled friction near
+    the threshold, and above-threshold sticking with down-slope drift and speed
+    diagnostics.
+  - Added `rigid_spin_roll_coupling` to Python `py-demos`, a sequential-impulse
+    contact-friction row that visualizes matched rolling, slip-to-roll spin-up,
+    backspin scrub, and low-friction slip with contact slip, roll ratio, spin
+    change, travel, energy, contact count, and step-timing diagnostics.
+  - Added `rigid_stack_stability` to Python `py-demos`, comparing sequential
+    impulse and rigid IPC on a compact top-heavy stack with mass-ratio, drift,
+    clearance, speed, and step-profile diagnostics.
+  - Added `rigid_contact_inspector` to Python `py-demos`, exposing raw
+    `World.collide()` contact pairs, points, normals, depths, local points,
+    shape indices, and selected-pair histories for rigid-body visual debugging
+    across sphere/box, box/ground, capsule/sphere, cylinder/sphere,
+    mesh/sphere, and compound/sphere lanes.
+  - Added `rigid_collision_query_options` to Python `py-demos`, exposing
+    `World.collide(options)` body-kind filtering across rigid/rigid,
+    rigid/link, same-multibody link/link, and cross-multibody link/link lanes
+    with baseline, active, filtered contact, public contact-body kind/cast, and
+    shape-index diagnostics.
+  - Added `rigid_collision_casts` to Python `py-demos`, exposing public
+    collision raycast, swept-sphere, and swept-capsule cast queries with
+    nearest/all-hit controls, hit fractions, time-of-impact, cast margins,
+    hit point/normal, and history diagnostics.
+  - Added Python unit coverage for public capsule collision casts through
+    `CollisionGroup.capsule_cast()` and `capsule_cast_result()` hit/miss
+    behavior.
+  - Added `rigid_body_modes` to Python `py-demos`, showing dynamic, static,
+    and kinematic rigid-body mode semantics in a contact-free World with shared
+    solver, executor, gravity, force, prescribed-path, drift, and path-error
+    diagnostics.
+  - Added `rigid_free_flight` to Python `py-demos`, showing contact-free
+    zero-gravity drift, gravity-arc trajectory and momentum diagnostics,
+    low/high-inertia spin response, energy drift, contact count, and
+    step-profile timing.
+  - Added `rigid_frame_hierarchy` to Python `py-demos`, showing a body-fixed
+    sensor/tool frame on a moving rigid body with local/world transform,
+    relative-transform, parent-frame, orientation, and step-timing residuals.
+  - Added `rigid_external_loads` to Python `py-demos`, showing persistent
+    force/torque accumulators, mass-scaled acceleration, inertia-scaled angular
+    response, pulse clearing, and static-body load caveats for rigid bodies.
+  - Added `rigid_link_point_loads` to Python `py-demos`, showing one-shot
+    `Link.apply_force()` point-load behavior on floating rigid links with
+    centered translation, off-center lever-arm yaw acceleration, double-call
+    accumulation, pulse clearing, and world/local frame diagnostics.
+  - Added `rigid_timestep_sensitivity` to Python `py-demos`, showing matched
+    fine/medium/coarse World time-step lanes with gravity scaling, free-fall
+    error, contact timing, clearance, coarse/fine error ratio, and step-profile
+    diagnostics.
+  - Added `rigid_step_diagnostics` to Python `py-demos`, showing single-body,
+    contact-pair, and small-stack Worlds under one selected solver/executor
+    with step-profile stage/domain, backend-neutral acceleration/backend-active
+    status, ECS counter, contact-count, and frame-scratch memory diagnostics.
+  - Added `rigid_contact_scale_budget` to Python `py-demos`, showing one-,
+    four-, and nine-box contact workloads under one selected solver/executor with
+    frame budget, friction, wall-time, per-contact, scratch, ECS counter,
+    dense/single ratio, and budget-status diagnostics.
+  - Added `rigid_contact_manipulation` to Python `py-demos`, comparing
+    sequential impulse and rigid IPC on a table-push task with executor,
+    pusher-speed, friction, pusher-mass, target-travel, gap,
+    contact/proximity, drift, goal-error, divergence, and step-profile
+    diagnostics.
+  - Added `rigid_kinematic_driver` to Python `py-demos`, showing IPC
+    prescribed-motion rigid supports carrying a box through friction, a
+    zero-friction slip baseline, and the current sequential-impulse
+    static-like caveat with driver-travel, box-travel, slip, speed-ratio,
+    support-gap, and step-profile diagnostics.
+  - Made `rigid_body` the Python `py-demos` default launch scene and moved the
+    curated rigid-body visual-verification workflow to the front of the World
+    Rigid Body category, so first-run and cycle behavior match the documented
+    DART 7 rigid-body debugging path.
+  - Upgraded the `rigid_body` front door with solver/material controls, an
+    explicit reset path, force-drag, contact, energy, height, speed, step-timing,
+    and replay-control diagnostics.
+  - Added `rigid_joint_breakage` to Python `py-demos`, an AVBD-pinned fixed
+    joint break-force row that shows broken state, connector color, offset
+    error, payload speed, and an explicit reset lifecycle without claiming
+    sequential-impulse or IPC breakage parity.
+  - Prefixed the interactive Python `py-demos` Demos navigator titles for the
+    34-row World Rigid Body visual-verification workflow with their position
+    and role while keeping `--list` scene titles and ids stable for scripts.
+  - Added `rigid_link_center_of_mass` to Python `py-demos`, a contact-free
+    World multibody row that keeps visual geometry fixed while moving
+    `Link.center_of_mass` to show centered, mirrored, and high-inertia gravity
+    torque response with COM markers, mass-matrix, acceleration, energy, and
+    step-timing diagnostics.
+  - Added an in-viewer `Rigid Workflow` guide panel to every numbered World
+    Rigid Body row so users can see the maintained question, try-first
+    checklist, primary signals to inspect, scope note, and selectable
+    previous/next route, restart command, direct row selector, and searchable
+    row-id/question/checklist/signal filter without leaving `py-demos`.
+    The Python GUI lifecycle bindings now also expose scene-switch and replay
+    requests so those route controls are covered by direct dartpy tests.
+  - Made `py-demo-capture` default to the same `rigid_body` front door as
+    `py-demos`, so first-run visual captures open the rigid-body verification
+    workflow unless a scene is selected explicitly.
+  - Added machine-checkable visual evidence to `py-demo-capture` manifests,
+    recording requested dimensions, converted frame count, and screenshot/first
+    UI-ready-frame image statistics for nonblank docked captures.
+  - Added scene-owned capture metrics to `py-demo-capture` manifests for
+    Python demos that expose `SceneSetup.info["capture_metrics"]`, with a
+    per-frame `scene_metrics.jsonl` sidecar and latest metrics summary in the
+    manifest. The step-diagnostics, contact-scale budget, and rigid IPC stack
+    packet rows use it to make capture artifacts carry scene-owned
+    physics/runtime evidence.
+  - Added opt-in `replay_timeline` metadata for the shared Python `py-demos`
+    `Replay` panel. Scenes can now feed the saved-state scrubber a diagnostic
+    signal and event markers without adding another panel; `rigid_solver_compare`
+    uses it to plot position divergence and mark near-wall frames during replay,
+    while `rigid_contact_solver_compare` plots pose divergence and marks
+    coupled-contact or depth frames.
+  - Added related-evidence routes to the runner-owned `Rigid Workflow` panel so
+    `rigid_solver_compare` can jump to the non-numbered Rigid IPC
+    no-tunneling scene and `rigid_contact_solver_compare` can jump to the
+    differentiable contact-gradient scene without changing the 34-row rigid
+    workflow order.
+  - Added `rigid_ipc_stack_packet` to the non-numbered Rigid IPC shelf as a
+    capture-first four-box stack stress scene with frame-budget, wall-time,
+    clearance, contact-count, drift, height-error, speed, and benchmark-owner
+    diagnostics that are also exported through the capture-metrics manifest
+    path.
+  - Upgraded the Python `py-demos` rigid fixed-joint and one-DOF joint scenes
+    into visual constraint verifiers with perturb/reset controls and bounded
+    fixed, revolute, and prismatic joint-error histories.
+  - Added `rigid_joint_motor_limits` to Python `py-demos`, showing World
+    multibody velocity motors, position stops, and effort caps for rigid links
+    with command/limit controls, speed tracking, limit-error, and acceleration
+    diagnostics.
+  - Added `rigid_joint_passive_parameters` to Python `py-demos`, showing
+    contact-free World multibody spring/rest, damping, Coulomb friction, and
+    armature behavior for rigid links with acceleration and energy diagnostics.
+  - Added `rigid_screw_joint_pitch` to Python `py-demos`, showing World
+    multibody screw-pitch coupling with zero, fine, coarse, and reverse pitch
+    lanes plus gravity, mass, axial-inertia, pitch-ratio, effective-mass, and
+    acceleration diagnostics.
+  - Added `rigid_multibody_dynamics_terms` to Python `py-demos`, showing
+    contact-free fixed-base multibody mass matrices, inverse mass matrices,
+    inverse dynamics, and joint-space impulse responses with coupling,
+    conditioning, residual, torque, and response diagnostics.
+  - Added `rigid_link_jacobian` to Python `py-demos`, showing a contact-free
+    two-link multibody's link-origin `get_world_jacobian(link) @ qdot`
+    velocity mapping, finite-difference velocity check, and
+    `get_world_jacobian(link).T @ wrench` power consistency.
+  - Added `rigid_multibody_solver_family` to Python `py-demos`, showing
+    semi-implicit residual-only, variational residual-only, and variational
+    solved loop-closure lanes with residual, tip-error, solve-ratio, and
+    step-timing diagnostics.
+  - Updated `rigid_loop_closure` in Python `py-demos` to compare POINT,
+    DISTANCE, and RIGID loop-closure families with residual-only versus solved
+    lanes, gravity-scale controls, closure residuals, tip/distance/orientation
+    diagnostics, and residual-ratio histories.
+  - Updated the differentiable `diff_drone_liftoff` Python `py-demos` scene so
+    rigid-contact users can inspect contact-gradient mode behavior with thrust,
+    loss, thrust-gradient, analytic-loss, and height histories while the rigid
+    workflow routes gradient-stall debugging to the Differentiable shelf instead
+    of duplicating the scene.
+  - Added replay-control snapshots and focused wall-response coverage for the
+    Python `py-demos` rigid solver-comparison workflow.
   - Added runtime rendering-backend (graphics API) selection through
     `dart::gui::RunOptions::renderBackend`, the `--render-backend` flag, and the
     `DART_FILAMENT_BACKEND` environment variable (`default`/`opengl`/`vulkan`

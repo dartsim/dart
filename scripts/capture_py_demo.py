@@ -37,6 +37,65 @@ def ppm_has_nonzero_pixels(path: pathlib.Path) -> bool:
     return any(channel != 0 for channel in pixels)
 
 
+def ppm_image_evidence(path: pathlib.Path) -> dict[str, object]:
+    width, height, pixels = read_ppm(path)
+    pixel_count = width * height
+    nonzero_pixels = 0
+    nonzero_channels = 0
+    unique_colors: set[int] = set()
+    channel_total = 0.0
+    channel_square_total = 0.0
+    luminance_total = 0.0
+    luminance_square_total = 0.0
+
+    for offset in range(0, len(pixels), 3):
+        red = pixels[offset]
+        green = pixels[offset + 1]
+        blue = pixels[offset + 2]
+        if red or green or blue:
+            nonzero_pixels += 1
+        nonzero_channels += int(red != 0) + int(green != 0) + int(blue != 0)
+        unique_colors.add((red << 16) | (green << 8) | blue)
+        channel_total += red + green + blue
+        channel_square_total += red * red + green * green + blue * blue
+        luminance = 0.2126 * red + 0.7152 * green + 0.0722 * blue
+        luminance_total += luminance
+        luminance_square_total += luminance * luminance
+
+    channel_count = pixel_count * 3
+    if channel_count:
+        channel_mean = channel_total / channel_count
+        channel_variance = max(
+            0.0, channel_square_total / channel_count - channel_mean * channel_mean
+        )
+    else:
+        channel_mean = 0.0
+        channel_variance = 0.0
+    if pixel_count:
+        luminance_mean = luminance_total / pixel_count
+        luminance_variance = max(
+            0.0,
+            luminance_square_total / pixel_count - luminance_mean * luminance_mean,
+        )
+    else:
+        luminance_mean = 0.0
+        luminance_variance = 0.0
+
+    return {
+        "width": width,
+        "height": height,
+        "pixel_count": pixel_count,
+        "nonzero_pixels": nonzero_pixels,
+        "nonzero_channels": nonzero_channels,
+        "unique_rgb_count": len(unique_colors),
+        "rgb_channel_mean": round(channel_mean, 3),
+        "rgb_channel_variance": round(channel_variance, 3),
+        "mean_luminance": round(luminance_mean, 3),
+        "luminance_variance": round(luminance_variance, 3),
+        "docked_workspace": _has_docked_workspace_regions(width, height, pixels),
+    }
+
+
 def _mean_luminance(
     pixels: bytes,
     width: int,
@@ -75,8 +134,7 @@ def _scaled_bounds(
     )
 
 
-def ppm_has_docked_workspace_regions(path: pathlib.Path) -> bool:
-    width, height, pixels = read_ppm(path)
+def _has_docked_workspace_regions(width: int, height: int, pixels: bytes) -> bool:
     if width < 32 or height < 32:
         return False
 
@@ -99,6 +157,11 @@ def ppm_has_docked_workspace_regions(path: pathlib.Path) -> bool:
         and center > left + 25.0
         and center > right + 25.0
     )
+
+
+def ppm_has_docked_workspace_regions(path: pathlib.Path) -> bool:
+    width, height, pixels = read_ppm(path)
+    return _has_docked_workspace_regions(width, height, pixels)
 
 
 def _prepare_frame_sequence(
@@ -171,6 +234,16 @@ def convert_ppm_to_png(ppm: pathlib.Path, png: pathlib.Path) -> None:
 
 def _repo_root() -> pathlib.Path:
     return pathlib.Path(__file__).resolve().parents[1]
+
+
+def _apply_stable_linux_render_env() -> None:
+    if not sys.platform.startswith("linux"):
+        return
+    os.environ.setdefault("LIBGL_ALWAYS_SOFTWARE", "1")
+    os.environ.setdefault("MESA_LOADER_DRIVER_OVERRIDE", "llvmpipe")
+    egl_vendor = pathlib.Path("/usr/share/glvnd/egl_vendor.d/50_mesa.json")
+    if egl_vendor.is_file():
+        os.environ.setdefault("__EGL_VENDOR_LIBRARY_FILENAMES", str(egl_vendor))
 
 
 def _default_output_dir(scene: str) -> pathlib.Path:
@@ -250,6 +323,33 @@ def _append_event(
         stream.write(json.dumps(payload, sort_keys=True) + "\n")
 
 
+def _read_scene_metrics_summary(path: pathlib.Path) -> dict[str, object] | None:
+    if not path.is_file():
+        return None
+
+    event_count = 0
+    latest: dict[str, object] | None = None
+    with path.open(encoding="utf-8") as stream:
+        for line_number, line in enumerate(stream, start=1):
+            text = line.strip()
+            if not text:
+                continue
+            try:
+                payload = json.loads(text)
+            except json.JSONDecodeError as exc:
+                raise ValueError(f"{path}:{line_number} is not valid JSON") from exc
+            if not isinstance(payload, dict):
+                continue
+            if payload.get("event") != "scene_capture_metrics":
+                continue
+            event_count += 1
+            latest = payload
+
+    if latest is None:
+        return None
+    return {"event_count": event_count, "latest": latest}
+
+
 def _ffmpeg_path() -> str | None:
     found = shutil.which("ffmpeg")
     if found is not None:
@@ -285,6 +385,11 @@ def build_demo_args(
         demo_args.append("--show-ui")
     if args.backend:
         demo_args.extend(["--backend", args.backend])
+    capture_metrics_event_log = getattr(args, "capture_metrics_event_log", None)
+    if capture_metrics_event_log:
+        demo_args.extend(
+            ["--capture-metrics-event-log", str(capture_metrics_event_log)]
+        )
     switch_scene = getattr(args, "switch_scene", "")
     if switch_scene:
         demo_args.extend(
@@ -374,7 +479,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Capture a Python demo through the real Filament viewer."
     )
-    parser.add_argument("--scene", default="articulated")
+    parser.add_argument("--scene", default="rigid_body")
     parser.add_argument("--frames", type=int, default=24)
     parser.add_argument("--width", type=int, default=640)
     parser.add_argument("--height", type=int, default=360)
@@ -433,6 +538,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 
 
 def main(argv: list[str] | None = None) -> int:
+    _apply_stable_linux_render_env()
     args = parse_args(sys.argv[1:] if argv is None else argv)
     if args.frames < 1:
         raise SystemExit("--frames must be positive")
@@ -469,18 +575,36 @@ def main(argv: list[str] | None = None) -> int:
     png_frames_dir = output_dir / "png_frames"
     manifest = output_dir / "manifest.json"
     events = output_dir / "events.jsonl"
+    scene_metrics_events = output_dir / "scene_metrics.jsonl"
     for path in (frames_dir, png_frames_dir):
         if path.exists():
             shutil.rmtree(path)
-    for path in (screenshot_ppm, screenshot_png, manifest, events):
+    for path in (
+        screenshot_ppm,
+        screenshot_png,
+        manifest,
+        events,
+        scene_metrics_events,
+    ):
         if path.exists():
             path.unlink()
 
     needs_event_log = bool(args.switch_scene or has_force_drag)
     if needs_event_log:
         args.event_log = events
+    args.capture_metrics_event_log = scene_metrics_events
     start_time = time.monotonic()
     demo_args = build_demo_args(args, screenshot_ppm, frames_dir)
+    capture_metadata: dict[str, object] = {
+        "converted_frames": 0,
+        "requested_frames": args.frames,
+        "width": args.width,
+        "height": args.height,
+    }
+    visual_evidence: dict[str, object] = {
+        "first_frame": None,
+        "screenshot": None,
+    }
     manifest_payload: dict[str, object] = {
         "schema_version": 1,
         "scene": args.scene,
@@ -508,10 +632,14 @@ def main(argv: list[str] | None = None) -> int:
         "artifacts": {
             "events": str(events) if needs_event_log else None,
             "frames": str(png_frames_dir),
+            "scene_metrics_events": None,
             "screenshot": str(screenshot_png),
         },
+        "capture": capture_metadata,
+        "scene_metrics": None,
         "show_ui": args.show_ui,
         "ui_ready": None,
+        "visual_evidence": visual_evidence,
     }
     _write_json(manifest, manifest_payload)
     rc = _run_demo(demo_args)
@@ -537,6 +665,17 @@ def main(argv: list[str] | None = None) -> int:
             raise SystemExit(f"{ppm} contains only zero-valued pixels")
         convert_ppm_to_png(ppm, png_frames_dir / f"{ppm.stem}.png")
         converted_frames += 1
+    capture_metadata["converted_frames"] = converted_frames
+    visual_evidence["screenshot"] = ppm_image_evidence(screenshot_ppm)
+    visual_evidence["first_frame"] = (
+        ppm_image_evidence(frame_paths[0]) if frame_paths else None
+    )
+    manifest_payload["scene_metrics"] = _read_scene_metrics_summary(
+        scene_metrics_events
+    )
+    manifest_payload["artifacts"]["scene_metrics_events"] = (
+        str(scene_metrics_events) if scene_metrics_events.is_file() else None
+    )
     manifest_payload["ui_ready"] = {
         "dropped_warmup_frames": dropped_warmup_frames,
         "required": require_docked_ui,

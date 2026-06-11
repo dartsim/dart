@@ -130,6 +130,10 @@ def _optimize_drone(diff: Any, mode: Any) -> dict[str, Any]:
     loss = float("inf")
     final_z = _REST_Z
     final_heights: list[float] = []
+    thrust_history: list[float] = []
+    loss_history: list[float] = []
+    final_z_history: list[float] = []
+    thrust_grad_history: list[float] = []
 
     for _ in range(_MAX_ITERS):
         # Fresh world each iteration so the rollout starts from the same state.
@@ -160,6 +164,10 @@ def _optimize_drone(diff: Any, mode: Any) -> dict[str, Any]:
         # The single decision variable (shared thrust) is the sum over steps of
         # the z-force control gradient column.
         thrust_grad = float(np.sum(control_grads[:, _THRUST_COLUMN]))
+        thrust_history.append(float(thrust))
+        loss_history.append(float(loss))
+        final_z_history.append(float(final_z))
+        thrust_grad_history.append(float(thrust_grad))
         thrust -= _LEARNING_RATE * thrust_grad
         if thrust < 0.0:
             thrust = 0.0  # physical thrust is non-negative.
@@ -171,6 +179,10 @@ def _optimize_drone(diff: Any, mode: Any) -> dict[str, Any]:
         "final_z": final_z,
         "loss": loss,
         "heights": final_heights,
+        "thrust_history": thrust_history,
+        "loss_history": loss_history,
+        "final_z_history": final_z_history,
+        "thrust_grad_history": thrust_grad_history,
     }
 
 
@@ -190,7 +202,10 @@ def _make_marker(
     return frame
 
 
-def build() -> SceneSetup:
+def build(
+    panel_title: str = "Diff Drone Lift-Off",
+    mode_text: str = "mode: complementarity-aware replay",
+) -> SceneSetup:
     diff = getattr(sx, "diff", None)
     has_rollout = diff is not None and hasattr(diff, "rollout")
 
@@ -221,8 +236,21 @@ def build() -> SceneSetup:
             "final_z": _REST_Z,
             "loss": 0.0,
             "heights": [_REST_Z],
+            "thrust_history": [0.0],
+            "loss_history": [0.0],
+            "final_z_history": [_REST_Z],
+            "thrust_grad_history": [0.0],
         }
-        naive = {"thrust": 0.0, "final_z": _REST_Z, "loss": 0.0, "heights": [_REST_Z]}
+        naive = {
+            "thrust": 0.0,
+            "final_z": _REST_Z,
+            "loss": 0.0,
+            "heights": [_REST_Z],
+            "thrust_history": [0.0],
+            "loss_history": [0.0],
+            "final_z_history": [_REST_Z],
+            "thrust_grad_history": [0.0],
+        }
 
     aware_heights = aware.get("heights") or [_REST_Z]
     naive_z = float(naive.get("final_z", _REST_Z))
@@ -282,6 +310,21 @@ def build() -> SceneSetup:
     playhead = {"i": 0}
     playback = {"stride": 1}
     height_plot = _sample_plot_values([float(value) for value in aware_heights])
+    aware_loss_plot = _sample_plot_values(
+        [float(value) for value in aware.get("loss_history", [aware.get("loss", 0.0)])]
+    )
+    aware_thrust_plot = _sample_plot_values(
+        [
+            float(value)
+            for value in aware.get("thrust_history", [aware.get("thrust", 0.0)])
+        ]
+    )
+    aware_grad_plot = _sample_plot_values(
+        [float(value) for value in aware.get("thrust_grad_history", [0.0])]
+    )
+    naive_loss_plot = _sample_plot_values(
+        [float(value) for value in naive.get("loss_history", [naive.get("loss", 0.0)])]
+    )
 
     def pre_step() -> None:
         if not aware_heights:
@@ -295,7 +338,7 @@ def build() -> SceneSetup:
         del context
         current_index = playhead["i"] if aware_heights else 0
         current_z = float(aware_heights[current_index]) if aware_heights else _REST_Z
-        builder.text("mode: complementarity-aware replay")
+        builder.text(mode_text)
         builder.text(f"optimized: {'yes' if optimized else 'fallback'}")
         builder.text(
             f"frame: {current_index + 1}/{len(aware_heights)} | z={current_z:.3f} m"
@@ -320,20 +363,27 @@ def build() -> SceneSetup:
             f"loss={float(aware.get('loss', 0.0)):.4f}"
         )
         builder.plot_lines("Aware height", height_plot)
+        builder.plot_lines("Aware thrust", aware_thrust_plot)
+        builder.plot_lines("Aware loss", aware_loss_plot)
+        builder.plot_lines("Aware thrust gradient", aware_grad_plot)
+        builder.plot_lines("Analytic loss", naive_loss_plot)
 
     return SceneSetup(
         world=render_world,
         pre_step=pre_step,
-        panels=[ScenePanel("Diff Drone Lift-Off", build_panel)],
+        panels=[ScenePanel(panel_title, build_panel)],
         info={
             "optimized": optimized,
             "steps": len(aware_heights),
             "note": note,
+            "gradient_modes": ["ANALYTIC", "COMPLEMENTARITY_AWARE"],
             "target_z": _TARGET_Z,
             "naive_thrust": float(naive.get("thrust", 0.0)),
             "naive_height": naive_z,
             "aware_thrust": float(aware.get("thrust", 0.0)),
             "aware_height": float(aware.get("final_z", _REST_Z)),
+            "aware_history_count": len(aware_thrust_plot),
+            "naive_history_count": len(naive_loss_plot),
         },
     )
 

@@ -7,9 +7,10 @@ Filament viewer. This is the Python-first World demo surface from PLAN-103; C++
 ## Run
 
 ```bash
-pixi run py-demos                                # default: open replay timeline
+pixi run py-demos                                # default: open rigid_body
+pixi run py-demos -- --scene rigid_solver_compare # compare SI vs IPC visually
 pixi run py-demos -- --scene replay_scrubber     # open the replay timeline
-pixi run py-demos -- --scene articulated         # select a scene by id
+pixi run py-demos -- --scene articulated         # select any scene by id
 pixi run py-demos -- --cycle-scenes --frames 4   # cycle through every scene
 pixi run py-demos -- --list                      # print the scene catalog
 ```
@@ -18,7 +19,7 @@ Or directly (without pixi), from the repo root:
 
 ```bash
 PYTHONPATH=build/default/cpp/Release/python:python \
-    .pixi/envs/default/bin/python -m examples.demos --scene articulated --frames 5
+    .pixi/envs/default/bin/python -m examples.demos --scene rigid_body --frames 5
 ```
 
 ## CLI
@@ -27,7 +28,7 @@ The runner mirrors C++ `dart-demos` to keep the cross-language UX consistent:
 
 | Flag                | Meaning                                                    |
 | ------------------- | ---------------------------------------------------------- |
-| `--scene <id>`      | Select the initial scene (default: replay timeline)        |
+| `--scene <id>`      | Select the initial scene (default: `rigid_body`)           |
 | `--cycle-scenes`    | Advance through every scene for `--frames` frames and exit |
 | `--frames N`        | Per-scene step budget (default 60 single, 4 cycle)         |
 | `--screenshot PATH` | Write the final rendered frame as a binary PPM image       |
@@ -45,17 +46,19 @@ pixels and is not evidence for layout, camera, lighting, or material quality.
 Capture one frame:
 
 ```bash
-pixi run py-demo-capture -- --scene articulated --frames 2 \
+pixi run py-demo-capture -- --scene rigid_body --frames 2 \
     --width 640 --height 360
 ```
 
 The helper writes a PPM, converts it to PNG, rejects blank captures, and prints
-the artifact paths. With `--show-ui`, it also rejects screenshots that do not
-show the docked workspace and drops early warm-up frames before ImGui is visible
-from the converted frame sequence. Capture the docked ImGui workspace:
+the artifact paths. On Linux it defaults to the same software Mesa settings used
+by GUI tests, so captures stay useful on dev hosts where the desktop GL driver
+is unavailable. With `--show-ui`, it also rejects screenshots that do not show
+the docked workspace and drops early warm-up frames before ImGui is visible from
+the converted frame sequence. Capture the docked ImGui workspace:
 
 ```bash
-pixi run py-demo-capture -- --scene articulated --show-ui --frames 2 \
+pixi run py-demo-capture -- --scene rigid_solver_compare --show-ui --frames 2 \
     --width 1280 --height 720
 ```
 
@@ -68,6 +71,12 @@ capture is active, the `Simulation` panel also exposes a timeline scrubber over
 the recorded PPM sequence with first/previous/play/next/last controls and the
 selected frame path.
 
+The first 34 **World Rigid Body** entries in the interactive `Demos` navigator
+are prefixed with their workflow position and role, such as
+`01/34 Baseline: World Rigid Body` or
+`15/34 Solver family: Rigid Solver Compare`. `--list` keeps the stable scene
+titles and ids for scripts.
+
 World-backed scenes also get a bottom `Replay` panel. `Save replay` is enabled
 by default and records bounded DART 7 World state snapshots while the
 scene runs. Use the replay transport or scrubber to pause the live simulation,
@@ -77,12 +86,536 @@ live controller state outside the `World` can provide small replay-state
 capture/restore callbacks; the shared panel stores those mutable controller
 snapshots beside the World frames instead of storing static scene assets.
 
-Capture a short frame sequence and request MP4 encoding when `ffmpeg` is
-available:
+## Rigid body visual verification workflow
+
+The rigid-body rows are ordered as a short debugging path instead of a flat
+feature list. Start with **`rigid_body`** for default World rigid dynamics,
+use **`rigid_body_modes`** when dynamic/static/kinematic mode semantics need a
+first check, use **`rigid_free_flight`** when contact-free initial velocity,
+gravity, spin, inertia, momentum, or energy diagnostics need inspection, use
+**`rigid_frame_hierarchy`** when body-fixed sensor/tool frames, local transforms,
+world transforms, or relative transforms need inspection, use
+**`rigid_external_loads`** when force and torque accumulator response needs
+inspection, use **`rigid_link_point_loads`** when off-center force application
+and world/local frame semantics need inspection, use
+**`rigid_timestep_sensitivity`** when `World.time_step` or gravity tuning
+changes integration error, contact timing, clearance, or step cost, use
+**`rigid_step_diagnostics`** when per-stage step profiling, ECS counters, or
+frame-scratch memory need inspection across scene complexity, use
+**`rigid_contact_scale_budget`** when contact-count scaling, per-contact cost,
+scratch usage, or a user frame budget needs inspection, use
+**`rigid_restitution_ladder`** when material bounce response needs inspection,
+use **`rigid_material_mixing`** when body/surface material ownership or pair
+mixing rules need inspection, then use **`rigid_contact_inspector`** when raw
+contact pairs need inspection, use **`rigid_collision_query_options`** when
+`World.collide(options)` body-kind filtering needs inspection, use
+**`rigid_collision_casts`** when raycast or swept-sphere hit queries need
+inspection, including swept-capsule link/tool proxies, use
+**`contact`** when multibody links need to drop, slide, or push through solver
+contact, and continue through the focused verifier scenes below when a solver,
+executor, or contact behavior needs inspection. **World Rigid Body**
+here means World-facade rigid debugging: solver-family rows compare sequential
+impulse and IPC, executor-equivalence rows hold the selected physics solver
+constant across executors, and focused threshold or stability rows may pin one
+solver or contact policy when that is the user question. The older **Rigid IPC**
+category remains a solver-specific capability shelf for one-off IPC contact
+cases such as edge-drops, piles, no-tunneling, and capture-first stack packets.
+
+In the interactive viewer, every numbered **World Rigid Body** row also gets a
+compact `Rigid Workflow` panel. It mirrors the maintained PLAN-103 question for
+the current row as a small checklist: what to try first, what to look for, and
+what not to infer from that row. The panel also has selectable previous/next
+numbered rows, a restart command, a direct row selector, and a text filter over
+row ids/questions/signals that request in-viewer scene switches, so caveats
+such as IPC-only guarantees, query-only diagnostics, and benchmark-first stress
+cases stay visible while users move through the workflow.
+
+| Scene id                         | User question                                      | Primary controls                                      | Visual diagnostics                                      |
+| -------------------------------- | -------------------------------------------------- | ----------------------------------------------------- | ------------------------------------------------------- |
+| `rigid_body`                     | What is the baseline World rigid-body path?        | Solver, materials, replay, force drag, reset          | Speed, height, energy, contacts, step timing            |
+| `rigid_body_modes`               | Which body mode should I choose?                   | Solver, executor, gravity, force, kinematic speed     | Dynamic fall, static drift, kinematic path error        |
+| `rigid_free_flight`              | Do initial velocity, gravity, and spin evolve?     | Executor, launch speed/angle, gravity, spin/inertia   | Path error, momentum residual, energy drift, spin ratio |
+| `rigid_frame_hierarchy`          | Where is a sensor/tool frame on a moving body?     | Executor, body yaw/path, local offset/yaw             | Parent frame, world pose, relative/world residuals      |
+| `rigid_external_loads`           | How do external loads move and spin bodies?        | Force/torque magnitude, mass/inertia ratio, executor  | Acceleration, angular speed, pulse clear, static drift  |
+| `rigid_link_point_loads`         | Do point forces create lever-arm torque?           | Force, point offset, body yaw, executor               | Translation, yaw acceleration, pulse clear, frame split |
+| `rigid_timestep_sensitivity`     | How does time step size change a drop?             | Solver, executor, base time step, gravity scale       | Free-fall error, contact timing, clearance, step time   |
+| `rigid_step_diagnostics`         | Where does a World step spend time and memory?     | Solver, executor, reset                               | Stage/domain/backend status, ECS, scratch, contacts     |
+| `rigid_contact_scale_budget`     | How much contact fits in my frame budget?          | Solver, executor, frame budget, friction              | Contact count, wall ms, per-contact cost, scratch       |
+| `rigid_restitution_ladder`       | How does restitution change bounce height?         | Solver, executor, launch height, restitution scale    | Height, vertical speed, contact, energy trend           |
+| `rigid_material_mixing`          | Which material owns bounce or friction response?   | Impact/tangent speed, low/high e and mu, executor     | Effective max restitution, sqrt friction, swap deltas   |
+| `rigid_contact_inspector`        | Which contact pairs and manifold fields exist?     | Shape pair, penetration                               | Contact count, point, normal, depth, shape indices      |
+| `rigid_collision_query_options`  | Which body-kind pairs does a query include?        | Rigid/link/same-multibody query toggles               | Active/filtered contacts, body kinds/casts, shape ids   |
+| `rigid_collision_casts`          | Where do rays and swept probes hit?                | Ray offset, all-hit, sphere/capsule sweep controls    | Ray fractions, TOI, hit point/normal, cast margins      |
+| `rigid_solver_compare`           | What changes between sequential impulse and IPC?   | Executor, launch speed, friction, restitution         | Speed, wall clearance, solver divergence, step time     |
+| `rigid_executor_equivalence`     | Does parallel execution preserve the same physics? | Physics solver, launch speed, friction, restitution   | Pose/velocity divergence, contact count, step time      |
+| `rigid_contact_solver_compare`   | What changes when contact solver policy changes?   | Executor, launch speed, friction, restitution, tilt   | Contact count, depth, clearance, speed, divergence      |
+| `contact`                        | Do articulated links contact like rigid bodies?    | Executor, friction, restitution, drop/slide/push      | Link contacts, rebound, slide travel, target travel     |
+| `rigid_friction_threshold`       | Where is the stick/slip boundary?                  | Executor, ramp angle, controlled friction             | Down-slope drift, speed, clearance                      |
+| `rigid_spin_roll_coupling`       | Does friction couple sliding and spin?             | Executor, friction, speed, backspin                   | Slip speed, roll ratio, spin change, energy             |
+| `rigid_stack_stability`          | Does a top-heavy stack jitter or collapse?         | Executor, top mass ratio, friction                    | Max speed, top drift, clearance, height error           |
+| `rigid_contact_manipulation`     | Can a pusher move an object through contact?       | Executor, pusher speed, friction, pusher mass         | Target travel, pusher gap, contact/proximity            |
+| `rigid_kinematic_driver`         | Does prescribed motion carry objects by contact?   | Driver speed, grip friction, executor                 | Driver travel, box travel, slip, speed ratio            |
+| `rigid_fixed_joint`              | Does a fixed joint preserve its captured pose?     | Perturbation, reset                                   | Relative offset/orientation error, payload speed        |
+| `rigid_joint_breakage`           | What happens when a fixed joint breaks?            | Fixed AVBD break-force diagnostics                    | Broken state, connector color, offset error, reset      |
+| `rigid_limited_joints`           | Do one-DOF joints keep only their free axis?       | Perturbation, reset                                   | Hinge radius/z error, slider xy error, free motion      |
+| `rigid_joint_motor_limits`       | Do joint motors and limits clamp commands?         | Speed command, velocity/position/effort limits        | Motor speed, limit error, acceleration gap              |
+| `rigid_joint_passive_parameters` | Do passive joint parameters shape motion?          | Executor, spring/rest, damping, friction, armature    | Energy decay, stiction/slip, armature acceleration      |
+| `rigid_screw_joint_pitch`        | Does screw pitch couple rotation and translation?  | Pitch, gravity, mass, axial inertia, executor         | Angle, axial travel, pitch ratio, acceleration error    |
+| `rigid_multibody_dynamics_terms` | What do generalized dynamics terms mean?           | Executor, target acceleration, impulse, mass, gravity | Mass matrix, inverse dynamics, impulse response         |
+| `rigid_link_center_of_mass`      | How do COM offsets change gravity torque?          | COM offset, gravity, mass, inertia, executor          | Gravity torque, mass matrix, acceleration, COM marker   |
+| `rigid_link_jacobian`            | What does a link Jacobian map?                     | Motion speed, elbow phase, wrench force/angle/moment  | Link twist, finite-difference error, `J.T` torque power |
+| `rigid_multibody_solver_family`  | Which multibody solver family supports solves?     | Executor, gravity scale, reset                        | Residual-only vs solved closure residuals               |
+| `rigid_loop_closure`             | Which loop-closure family should I use?            | Executor, gravity scale, reset                        | Point, distance, rigid residuals and solved ratios      |
+
+For the focused IPC no-tunneling capability view, use
+**`rigid_ipc_tunnel`** from the **Rigid IPC** shelf. It is kept outside the
+numbered World Rigid Body workflow because it is an IPC-only capability scene,
+not a broad side-by-side solver row. In the viewer, the `Rigid Solver Compare`
+row exposes it as a `Related shelf` route.
+
+## Rigid body baseline
+
+The **`rigid_body`** scene is the default front door for DART 7 rigid-body
+`World` dynamics. It keeps the first run simple: falling spheres and a box,
+static ground, live replay, viewport force drag, solver/material controls, an
+explicit reset path, and a compact panel for baseline speed, height, energy,
+contact, and step-timing state. Use the focused rows below when a material,
+contact-query, solver, executor, friction, stacking, manipulation, body-mode,
+kinematic, external-load, point-load, time-step, or joint behavior needs deeper
+inspection.
+
+The **`rigid_body_modes`** scene compares the three public rigid-body modes in
+one contact-free World. The dynamic lane integrates gravity and force, the
+static lane keeps its transform fixed while still reporting the applied load,
+and the kinematic lane follows a prescribed path while exposing the mode flag
+and path error. Use `rigid_kinematic_driver` later in the workflow when the
+question is contact-driven prescribed motion.
+
+## Rigid free flight
+
+The **`rigid_free_flight`** scene keeps contacts out of the question while
+showing initial rigid-body state evolution directly. Separate no-contact lanes
+show zero-gravity linear drift, a gravity arc against analytic trajectory and
+momentum references, and low/high-inertia spin bars with the same angular
+velocity. The panel exposes executor, launch speed, launch angle, gravity
+scale, spin speed, inertia ratio, position error, momentum residual, energy
+drift, spin momentum/energy ratios, contact count, and step timing.
+
+## Rigid frame hierarchy
+
+The **`rigid_frame_hierarchy`** scene keeps contacts and forces out of the
+question while making rigid frame composition visible. A kinematic rigid body
+moves on a simple path with a body-fixed sensor/tool frame attached by a local
+offset and yaw. The panel exposes executor, body yaw speed, path radius, local
+offset, local yaw, parent-frame name, body and sensor world pose, world-transform
+residual, relative-transform residual, orientation error, and step timing.
+
+## Rigid external loads
+
+The **`rigid_external_loads`** scene keeps contacts and gravity out of the
+question so users can inspect external rigid-body load semantics directly.
+Matched lanes show persistent `apply_force()` response on light and heavy
+bodies, a one-step force pulse that is explicitly cleared, persistent
+`apply_torque()` response on low- and high-inertia bodies, and a static body
+that retains force/torque accumulators while remaining fixed. The panel exposes
+force magnitude, torque magnitude, mass ratio, inertia ratio, executor choice,
+speed, acceleration versus expected acceleration, angular response, static
+drift, and step timing.
+
+## Rigid link point loads
+
+The **`rigid_link_point_loads`** scene covers the public one-shot
+`Link.apply_force(force, point, force_in_world_frame, point_in_world_frame)`
+path for floating rigid links. It complements `rigid_external_loads` by showing
+that centered forces translate without spin, world-space off-center point
+forces add lever-arm torque, two force applications before one `World.step()`
+accumulate, a one-shot point force is consumed by the next step, and yawed
+links respond differently to world-frame and local-frame forces. The panel
+exposes force magnitude,
+point offset, yaw angle, executor choice, translation acceleration versus
+expected acceleration, yaw acceleration versus expected yaw acceleration,
+displacement, and step timing.
+
+## Rigid time-step sensitivity
+
+The **`rigid_timestep_sensitivity`** scene makes time-step and gravity tuning
+visible without changing the displayed simulation-time advance per frame.
+Three matched Worlds drop identical spheres with fine, medium, and coarse
+integration steps while using substeps so all lanes reach the same displayed
+time. The panel exposes solver, executor, base time step, gravity scale,
+free-fall error against the analytic no-contact reference, clearance, first
+contact time, contact count, coarse/fine error ratio, and step-profile timing.
+It is a convergence and parameter-sensitivity diagnostic, not a solver
+correctness proof or exact contact-threshold claim.
+
+## Rigid step diagnostics
+
+The **`rigid_step_diagnostics`** scene makes `World.last_step_profile` and
+`World.memory_diagnostics` visible in the GUI. Three side-by-side Worlds run a
+single free body, an active contact pair, and a small stack under the same
+selected solver and executor so users can inspect how scene complexity changes
+wall time, stage totals, top stage, worker count, ECS entity/component counts,
+contact count, frame-scratch peak usage, and overflow/reset counters. The top
+stage also reports its domain, backend-neutral acceleration mask, and whether
+any accelerated backend stage was active, so users can separate executor choice
+from actual accelerator use. If step profiling is compiled out, the row still
+reports memory and contact diagnostics and marks profile timing as unavailable.
+
+## Rigid contact scale budget
+
+The **`rigid_contact_scale_budget`** scene keeps performance inspection on the
+same live-GUI surface as the rest of the workflow. Three matched Worlds run one-,
+four-, and nine-box contact workloads under one selected solver, executor, frame
+budget, and friction value. The panel reports contact-point count, bodies,
+contacts per body, wall time, per-contact cost, top profile stage, frame-scratch
+peak usage, ECS counters, worker count, dense/single wall-time ratio, and whether
+each lane is within the selected budget. It is a bounded frame-budget diagnostic,
+not a benchmark suite or heavy IPC stress packet.
+
+## Rigid restitution ladder
+
+The **`rigid_restitution_ladder`** scene makes the public restitution material
+parameter visible without mixing it into a broader contact scenario. Three
+matched lanes drop identical rigid spheres onto separate ground pads with
+low, medium, and high restitution. The panel exposes solver, executor, launch
+height, and restitution scale, then plots height, vertical velocity, contact
+count, rebound height, and mechanical-energy trends as diagnostics rather than
+exact conservation claims.
+
+## Rigid material mixing
+
+The **`rigid_material_mixing`** scene shows what happens when the rigid body and
+its contact surface disagree on material values. Two swapped bounce lanes show
+that sequential-impulse rigid contact uses the larger restitution value, while
+two swapped flat sliding lanes show that friction uses the geometric mean of
+the body and surface coefficients. The panel computes the expected pair values
+from public `RigidBody.restitution` and `RigidBody.friction` properties, plots
+rebound and tangential speed loss, and treats the swapped lanes as an ownership
+check rather than a duplicate restitution ladder or incline threshold proof.
+
+## Rigid contact inspector
+
+The **`rigid_contact_inspector`** scene is the contact-observability row for
+the rigid workflow. It keeps static targets and kinematic probes in stable
+overlap so `World.collide()` can be inspected directly across representative
+public shape families: sphere/box, box/ground, plane/sphere, capsule/sphere,
+cylinder/sphere, mesh/sphere, and compound/sphere. The panel shows selected
+pair count, total contact count, representative point, normal, depth, local
+points, and shape indices, including the compound-child index path, while a
+marker highlights the selected contact point in the scene.
+
+## Rigid collision query options
+
+The **`rigid_collision_query_options`** scene makes the public
+`World.collide(options)` body-kind filters visible. Four matched sphere-overlap
+lanes cover rigid/rigid, rigid/link, same-multibody link/link, and
+cross-multibody link/link contacts. The panel toggles each
+`CollisionQueryOptions` include flag, shows baseline versus active contact
+counts, marks filtered lanes explicitly, and keeps shape-index diagnostics
+available without turning the row into a solver comparison.
+
+## Rigid collision casts
+
+The **`rigid_collision_casts`** scene turns public collision cast queries into a
+visual debugging row before users compare solver behavior. It shows
+`CollisionGroup.raycast_result()` with nearest-hit versus all-hit behavior and
+`CollisionGroup.sphere_cast_result()` plus
+`CollisionGroup.capsule_cast_result()` time-of-impact queries. The panel
+exposes ray lateral offset, all-hit mode, sphere radius, capsule radius, capsule
+offset, and capsule cylinder height, then reports target names, hit fractions,
+first hit point/normal, time of impact, cast margins, and histories without
+claiming contact-solver or CCD time-step behavior. The capsule lane is for
+elongated swept-volume debugging, such as robot links, tools, and character
+controller proxies that a ray or sphere can under-explain.
+
+## Rigid body solver comparison
+
+The **`rigid_solver_compare`** scene is the first rigid-body visual-debug bench
+that runs two matched DART 7 Worlds side by side: sequential impulse on the left
+and rigid IPC on the right. It keeps the scene intentionally small, a sliding
+box approaching a thin wall, so users can inspect solver-family differences,
+clearance, speed, position divergence, and per-step profile timing without
+waiting on heavier stack scenes. The panel also exposes the executor choice
+(`Sequential` or `Parallel (2 workers)`) so execution changes are
+framed as performance/equivalence checks rather than as different physics.
+
+## Rigid executor equivalence
+
+The **`rigid_executor_equivalence`** scene answers the executor question
+directly: two matched DART 7 Worlds run the same rigid-body tray with one shared
+physics solver, while the left world steps with the sequential executor and the
+right world steps with a parallel executor. The panel keeps the physics solver,
+friction, restitution, and launch speed explicit, then plots pose divergence,
+velocity divergence, contact-count delta, and per-executor step time so users
+can tell executor performance changes apart from physics changes.
+
+## Rigid contact solver comparison
+
+The **`rigid_contact_solver_compare`** scene separates the contact-solver policy
+axis from the broader rigid-body solver family. Both lanes use the same
+sequential-impulse rigid-body pipeline and the same tilted plank falling into
+four-corner ground contact; the left lane keeps the default sequential-impulse
+contact policy, while the right lane opts into boxed LCP contacts. The panel
+keeps executor, launch speed, friction, restitution, and initial tilt explicit,
+then plots contact count, penetration depth, analytic corner clearance, speed,
+kinetic energy, pose divergence, and per-step timing.
+
+## Rigid link contact
+
+The **`contact`** scene is the articulated-link contact row in the numbered
+rigid workflow. It keeps the stable scene id but now shows three multibody-link
+lanes: a prismatic link dropping and rebounding on ground, a link sliding until
+friction brakes it, and a prismatic pusher link transferring motion to a rigid
+target. The panel exposes executor, ground friction, restitution, drop height,
+slide speed, and push speed, then plots link contact counts, rebound, slide
+travel, target travel, and step timing. It is a public multibody-link contact
+verifier, not a contact-impulse, compliance, or solver-internal force row.
+
+## Rigid friction threshold
+
+The **`rigid_friction_threshold`** scene turns the inclined-ramp friction law
+into a three-lane visual verifier. The upper lane uses friction below
+`tan(angle)` and should slide, the lower lane uses friction above that threshold
+and should stick, and the middle lane is user-controlled. The panel keeps the
+threshold calculation visible, resets the run when the controlled friction or
+ramp angle changes, and plots down-slope drift and speed so users can debug
+stick/slip behavior without relying on exact-at-threshold claims.
+
+## Rigid spin/roll coupling
+
+The **`rigid_spin_roll_coupling`** scene shows the rotational side of contact
+friction after the stick/slip threshold row: matched rolling, no-spin sliding,
+backspin scrub, and a low-friction slip baseline move on the same surface. The
+panel exposes contact friction, launch speed, and backspin ratio, then plots
+contact slip, roll ratio, travel, kinetic energy, contact count, and step timing.
+It is a sequential-impulse visual diagnostic for linear/angular coupling, not a
+rolling-resistance or torsional-friction parameter surface.
+
+## Rigid stack stability
+
+The **`rigid_stack_stability`** scene is a compact resting-contact stress test:
+sequential impulse and rigid IPC solve the same two-block top-heavy stack side
+by side. The stack is intentionally small so it remains usable in the live GUI
+while still showing the mass-ratio failure mode users care about: residual
+jitter, lateral drift, clearance/overlap, and per-step solve cost. The panel
+lets users tune the top mass ratio and friction, reset the stack, and compare
+max speed, top-block drift, minimum analytic clearance, and solver divergence.
+
+## Rigid contact manipulation
+
+The **`rigid_contact_manipulation`** scene turns the rigid workflow from
+isolated micro-cases into a small task-like push. Sequential impulse and rigid
+IPC solve matched table scenes side by side: a heavier moving pusher block
+drives a lighter target box toward a goal strip. The panel exposes pusher launch
+speed, table friction, pusher mass, and executor choice, then plots target
+travel, pusher-target gap, contact/proximity evidence, target speed, lateral
+drift, solver divergence, and per-step timing.
+
+## Rigid kinematic driver
+
+The **`rigid_kinematic_driver`** scene verifies the public prescribed-motion
+rigid-body path. Three lanes make the expected behavior and caveat visible: IPC
+with grip friction carries a box on a moving kinematic support, IPC with zero
+friction lets the support slip under the box, and the sequential-impulse lane
+shows the current static-like caveat for kinematic bodies. The panel exposes
+driver speed, grip friction, executor choice, driver travel, box travel, slip,
+speed ratio, support gap, and step timing.
+
+## Rigid joint constraints
+
+The **`rigid_fixed_joint`** scene is a focused fixed-constraint verifier. Its
+panel can deliberately perturb the child body away from the captured relative
+transform, then plots relative offset error, orientation error, and residual
+payload speed as the constraint projects the payload back to the fixed pose.
+
+The **`rigid_joint_breakage`** scene is the next fixed-joint lifecycle row. It
+is explicitly AVBD-pinned: a very weak fixed joint starts intact, crosses a
+fixed break-force threshold, turns the connector red when `is_broken` becomes
+true, and exposes `reset_breakage()` behavior without claiming
+sequential-impulse or IPC parity. The panel also has a `Reset breakage lifecycle`
+button that clears the broken flag, restores the captured body poses, clears
+loads, and restarts the row timing.
+
+The **`rigid_limited_joints`** scene verifies the public revolute and prismatic
+rigid-body joint rows without making motor or limit claims. The hinge lane
+tracks locked anchor radius and z error while its free z-axis spin continues;
+the slider lane tracks locked lateral error while its z-axis travel remains
+free. Both lanes expose perturb/reset controls so the bounded errors are
+visible in the same live GUI workflow as the contact scenes.
+
+The **`rigid_joint_motor_limits`** scene covers the public World multibody joint
+actuator path for rigid links. It keeps three compact lanes visible at once: a
+prismatic velocity motor whose commanded speed is clamped by a velocity limit,
+a gravity-driven revolute link settling at a position stop, and capped versus
+reference force sliders showing the acceleration gap created by an effort
+limit. The panel exposes the command and limit values directly, then plots
+motor speed, position-limit error, and force-response histories.
+
+The **`rigid_joint_passive_parameters`** scene covers the public passive
+multibody joint parameters for rigid links without contacts or gravity. Matched
+prismatic lanes show a spring-only oscillator, the same spring with damping,
+Coulomb stiction versus slip under held efforts, and direct versus
+armature-loaded drive. The panel exposes spring stiffness, rest position,
+damping, Coulomb friction, drive force, armature, acceleration-versus-expected
+diagnostics, energy histories, and step timing.
+
+The **`rigid_screw_joint_pitch`** scene shows the public screw-joint pitch
+semantics: pitch is axial translation per radian of rotation. Zero, fine,
+coarse, and reverse-pitch lanes run under gravity so users can see rotation
+sign, axial travel, travel-per-radian ratio, effective mass, and
+expected-versus-actual acceleration from mass and axial inertia.
+
+The **`rigid_multibody_dynamics_terms`** scene makes the public generalized
+dynamics accessors visible before the solver-family and loop-closure rows. A
+single hinge, a coupled two-link arm, and a heavy-distal two-link arm show
+`mass_matrix`, `inverse_mass_matrix`, `compute_inverse_dynamics()`, and
+`compute_impulse_response()` under one contact-free World. The panel keeps the
+diagnostics compact: matrix shape and conditioning, one off-diagonal coupling
+term, inverse-dynamics residual, joint-space impulse residual, torque norm, and
+response norm.
+
+The **`rigid_link_center_of_mass`** scene keeps the link visual geometry fixed
+while moving `Link.center_of_mass` in the link frame. Centered, +X, -X, and
+high-inertia lanes show when gravity torque is zero, why mirrored COM offsets
+accelerate in opposite directions, and how the same offset produces a smaller
+acceleration when the link inertia is larger. Yellow markers show the actual
+center of mass, and the panel reports gravity torque, mass matrix, hinge
+acceleration, expected acceleration, COM position, energy, and step timing.
+
+The **`rigid_link_jacobian`** scene makes link-origin Jacobians concrete before
+users move from generalized dynamics terms into solver-family routing. A
+contact-free two-link arm shows `get_world_jacobian(link) @ qdot` as the
+end-link origin twist, compares it against a finite-difference velocity, and
+uses `get_world_jacobian(link).T @ wrench` to show joint torque power
+consistency. It is intentionally scoped to the link origin: it does not claim
+arbitrary point, COM, contact, IK, or operational-space controller behavior.
+
+The **`rigid_multibody_solver_family`** scene makes the World multibody
+integration-family choice visible before users enter the loop-closure family
+row. It compares semi-implicit residual-only closure diagnostics, variational
+residual-only diagnostics, and variational dynamic closure solving on the same
+three-link chain. The panel exposes executor and gravity controls, residual
+norms, tip error, tip height, joint speed, step timing, and the residual solve
+ratio so users can see why solved loop closures are routed to the variational
+path.
+
+The **`rigid_loop_closure`** scene compares public POINT, DISTANCE, and RIGID
+loop-closure families under the variational rigid multibody path. Each family
+has residual-only and solved lanes: POINT locks the endpoint position,
+DISTANCE holds only the tether length to an anchor, and RIGID welds the full
+endpoint pose. The panel plots residual ratios and reports tip error,
+distance error, orientation residual, tip height, and joint speed so users can
+choose the narrowest closure family that matches the model.
+
+Capture the focused rigid verifier scenes with the docked UI visible:
 
 ```bash
-pixi run py-demo-capture -- --scene articulated --frames 24 \
-    --width 640 --height 360 --video
+pixi run py-demo-capture -- --scene rigid_body --frames 24 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_body_modes --frames 72 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_free_flight --frames 96 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_frame_hierarchy --frames 72 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_external_loads --frames 72 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_link_point_loads --frames 72 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_timestep_sensitivity --frames 96 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_step_diagnostics --frames 72 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_contact_scale_budget --frames 72 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_restitution_ladder --frames 96 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_material_mixing --frames 72 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_contact_inspector --frames 24 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_collision_query_options --frames 24 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_collision_casts --frames 48 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_solver_compare --frames 24 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_executor_equivalence --frames 24 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_contact_solver_compare --frames 72 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene contact --frames 72 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_friction_threshold --frames 24 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_spin_roll_coupling --frames 96 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_stack_stability --frames 24 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_contact_manipulation --frames 72 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_kinematic_driver --frames 72 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_fixed_joint --frames 24 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_joint_breakage --frames 48 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_limited_joints --frames 24 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_joint_motor_limits --frames 72 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_joint_passive_parameters --frames 120 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_screw_joint_pitch --frames 96 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_multibody_dynamics_terms --frames 96 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_link_center_of_mass --frames 72 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_link_jacobian --frames 96 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_multibody_solver_family --frames 72 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_loop_closure --frames 72 \
+    --width 960 --height 540 --show-ui
+```
+
+Capture the related Rigid IPC no-tunneling view when that focused capability is
+the target:
+
+```bash
+pixi run py-demo-capture -- --scene rigid_ipc_tunnel --frames 24 \
+    --width 960 --height 540 --show-ui
+```
+
+Capture the heavier Rigid IPC stack packet when the question is what happens
+beyond the live workflow budget. The scene stays in the **Rigid IPC** shelf,
+outside the numbered workflow, and its panel shows min clearance, contact
+count, top drift, height error, max speed, wall time, and the
+`bm_rigid_ipc_solver` benchmark pointer:
+
+```bash
+pixi run py-demo-capture -- --scene rigid_ipc_stack_packet --frames 24 \
+    --width 960 --height 540 --show-ui
+```
+
+For scenes that expose `SceneSetup.info["capture_metrics"]`,
+`py-demo-capture` also writes `scene_metrics.jsonl` and copies the latest
+scene-owned physics/runtime metrics into `manifest.json`. The step diagnostics
+and contact-scale budget rows use that path for profiling, memory, contact, and
+frame-budget evidence, while the stack packet uses it for clearance, drift,
+wall time, and benchmark metadata.
+
+When forward rigid contact looks correct but a differentiable optimization is
+stuck, jump to **`diff_drone_liftoff`** in the **Differentiable** shelf. It uses
+the same rigid `World` contact-gradient modes to show `ANALYTIC` stalling at a
+clamping contact while `COMPLEMENTARITY_AWARE` escapes, with thrust, loss,
+gradient, and height histories. In the viewer, the `Rigid Contact Solver
+Compare` row exposes it as a `Related shelf` route:
+
+```bash
+pixi run py-demo-capture -- --scene diff_drone_liftoff --frames 96 \
+    --width 960 --height 540 --show-ui
 ```
 
 The lower-level viewer still accepts `--screenshot` and `--out` directly when
@@ -200,7 +733,9 @@ timeline cache.
 1. Create `scenes/<name>.py` defining a module-level `SCENE` of type
    `PythonDemoScene` whose `build()` returns a `SceneSetup` (a `world` plus an
    optional custom `pre_step`, `step(n)`, `force_drag`, scene panels, and
-   `info` dict).
+   `info` dict). A scene that wants capture manifests to include scene-owned
+   physics evidence may put a zero-argument metrics callable in
+   `info["capture_metrics"]`.
 2. Import it in `registry.py` and append it to the ordered list in
    `make_demo_scenes()`, placed within its category group.
 
@@ -224,5 +759,6 @@ return SceneSetup(
 ```
 
 The callback receives DART's `PanelBuilder` abstraction, not ImGui. Use the
-builder for text, buttons, checkboxes, sliders, selects, plots, and tables; use
-`context` only as a read-only viewer-state snapshot.
+builder for text, buttons, checkboxes, sliders, selects, plots, and tables. Use
+`context` for viewer state and lifecycle requests such as pause, single-step,
+or switching to another demo scene.

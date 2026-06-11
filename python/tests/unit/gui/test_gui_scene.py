@@ -43,6 +43,10 @@ def test_gui_stub_surface_is_backend_hidden():
 
     gui_stub_text = gui_stub.read_text()
     assert "experimental" not in gui_stub_text
+    assert "def request_scene_switch(self, scene_id: str) -> None" in gui_stub_text
+    assert "def request_scene_replay(self, scene_id: str) -> None" in gui_stub_text
+    assert "def request_scene_switch(state: ViewerLifecycleState" in gui_stub_text
+    assert "def request_scene_replay(state: ViewerLifecycleState" in gui_stub_text
     assert "automodule:: dartpy.gui" in gui_docs.read_text()
     assert "dartpy.gui.experimental" not in gui_docs.read_text()
     assert "dartpy.gui" in rtd_conf.read_text()
@@ -694,6 +698,18 @@ def test_gui_camera_and_run_helpers():
     assert lifecycle.rendered_frames == 1
     assert lifecycle.skipped_frames == 0
     assert dart.gui.should_stop_after_frame(options, lifecycle)
+    dart.gui.request_scene_switch(lifecycle, "rigid_solver_compare")
+    assert lifecycle.scene_switch_requested is True
+    assert lifecycle.requested_scene == "rigid_solver_compare"
+    assert lifecycle.scene_activation_pending_scene == "rigid_solver_compare"
+    assert lifecycle.scene_activation_status == "Starting demo 'rigid_solver_compare'..."
+    lifecycle.paused = True
+    lifecycle.step_once = True
+    dart.gui.request_scene_replay(lifecycle, "rigid_body")
+    assert lifecycle.requested_scene == "rigid_body"
+    assert lifecycle.scene_activation_pending_scene == "rigid_body"
+    assert lifecycle.paused is False
+    assert lifecycle.step_once is False
 
     window_only = dart.gui.RunOptions()
     window_only.gui_scale = 10.0

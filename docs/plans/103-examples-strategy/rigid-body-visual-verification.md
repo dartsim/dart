@@ -1,0 +1,596 @@
+# PLAN-103 Sidecar: Rigid-Body Visual Verification
+
+This packet owns the curated rigid-body `py-demos` visual-verification workflow
+for PLAN-103. It records which scenes answer which user debugging questions,
+how to regenerate visual evidence, and which automated tests keep the workflow
+from drifting.
+
+## Scope
+
+The workflow covers DART 7 `World` rigid dynamics as an interactive Python
+examples surface. It is a user-facing debugging path, not a replacement for
+solver correctness tests, IPC fixture manifests, or benchmark packets.
+
+In scope:
+
+- side-by-side method-family comparison where the user naturally asks how
+  sequential impulses differ from rigid IPC;
+- focused material-response rows where the user needs to see a parameter trend
+  without turning it into a solver-family comparison;
+- raw contact-observability rows where the user needs contact pairs, points,
+  normals, depths, local points, shape indices, and body-kind query filtering
+  before comparing solvers;
+- focused IPC scenes where the user question is a threshold or guarantee;
+- capture commands that exercise the same docked Filament + ImGui workspace as
+  the interactive viewer;
+- focused pytest coverage for scene ordering, panels, and representative
+  physical invariants.
+
+Out of scope:
+
+- new C++ `dart-demos` scenes while PLAN-103 keeps C++ examples frozen;
+- claiming exact analytic thresholds for near-discontinuous contact behavior;
+- live-GUI-heavy IPC stacks that are better handled as benchmark or
+  capture-first packets until runtime improves;
+- direct rigid-body impulse, sleep/deactivation/island-state, and
+  loop-closure compliance rows until public dartpy exposes those surfaces.
+
+Current public API audit: `RigidBody` exposes force/torque accumulators plus
+linear and angular momentum, `Link.apply_force()` exposes one-shot point-load
+semantics, and `Multibody.compute_impulse_response()` exposes joint-space
+impulse response. There is still no public direct rigid-body impulse surface,
+no public sleep/wake or island activation surface, and no public loop-closure
+compliance surface, so those candidate GUI rows remain deferred.
+
+## Curated Workflow
+
+In the interactive `py-demos` viewer, the first 34 **World Rigid Body** rows
+use navigator titles with their workflow position and role, for example
+`01/34 Baseline: World Rigid Body` and
+`15/34 Solver family: Rigid Solver Compare`. The CLI `--list` output keeps the
+stable scene titles and ids for scripts. These rows also receive a runner-owned
+`Rigid Workflow` panel with the row's maintained user question, what to try
+first, the main signals to inspect, the known scope/limitation, and the
+previous/next numbered route, restart command, direct row selector, and
+question/signal text filter as scene-switch rows.
+
+| Order | Scene id                         | User question                                                            | Solver(s)                        | Controls and diagnostics                                                                                                                                                                                                                                | Capture command                                                                                                      | Automated evidence                                                                                                                                                                                             | Known limitation                                                                                           |
+| ----- | -------------------------------- | ------------------------------------------------------------------------ | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| 1     | `rigid_body`                     | What is the baseline DART 7 World rigid-body path?                       | Selectable rigid solver          | Solver, friction, restitution, reset, force drag, max speed, min height, kinetic energy, contact count, step profile timing, and replay snapshots for baseline controls.                                                                                | `pixi run py-demo-capture -- --scene rigid_body --frames 24 --width 960 --height 540 --show-ui`                      | `test_rigid_body_baseline_reports_restartable_first_run_diagnostics`, replay-control snapshot coverage, workflow ordering, panel/category coverage, and visual smoke capture.                                  | Baseline front door; focused edge cases stay in the specialized verifier rows.                             |
+| 2     | `rigid_body_modes`               | Which body mode should I choose?                                         | Selectable rigid solver          | Solver, executor, gravity scale, force magnitude, kinematic speed, dynamic height/x, static drift, kinematic path error, mode flags, force norm, and step timing.                                                                                       | `pixi run py-demo-capture -- --scene rigid_body_modes --frames 72 --width 960 --height 540 --show-ui`                | `test_rigid_body_modes_compare_dynamic_static_kinematic_semantics`, replay-control snapshot coverage, workflow ordering, panel/category coverage, and visual smoke capture.                                    | Contact-free mode semantics row; contact-driven prescribed motion is routed later.                         |
+| 3     | `rigid_free_flight`              | Do initial velocity, gravity, and spin evolve?                           | Sequential impulse               | Executor, launch speed, launch angle, gravity scale, spin speed, spin inertia ratio, path error, momentum residual, energy drift, spin ratios, contact count, and step timing.                                                                          | `pixi run py-demo-capture -- --scene rigid_free_flight --frames 96 --width 960 --height 540 --show-ui`               | `test_rigid_free_flight_preserves_initial_state_diagnostics`, replay-control snapshot coverage, workflow ordering, panel/category coverage, and visual smoke capture.                                          | No-contact initial-state row; not a load, restitution, contact, or solver row.                             |
+| 4     | `rigid_frame_hierarchy`          | Where is a sensor/tool frame on a moving body?                           | World frame hierarchy            | Executor, body yaw speed, path radius, local offset/yaw, parent name, body/sensor world pose, world-transform residual, relative-transform residual, orientation error, and step timing.                                                                | `pixi run py-demo-capture -- --scene rigid_frame_hierarchy --frames 72 --width 960 --height 540 --show-ui`           | `test_rigid_frame_hierarchy_tracks_body_fixed_frame`, replay-control snapshot coverage, workflow ordering, panel/category coverage, and visual smoke capture.                                                  | Kinematics/frame row only; not a force, contact, sensor model, or solver-family claim.                     |
+| 5     | `rigid_external_loads`           | How do external loads move and spin bodies?                              | Sequential impulse               | Executor, force magnitude, torque magnitude, heavy mass ratio, high inertia ratio, speed, acceleration versus expected, angular response, static drift, and step profile timing.                                                                        | `pixi run py-demo-capture -- --scene rigid_external_loads --frames 72 --width 960 --height 540 --show-ui`            | `test_rigid_external_loads_scale_force_and_torque_response`, replay-control snapshot coverage, workflow ordering, panel/category coverage, and visual smoke capture.                                           | Contact-free zero-gravity accumulator row; not a point-force or impulse verifier.                          |
+| 6     | `rigid_link_point_loads`         | Do point forces create lever-arm torque?                                 | Sequential impulse               | Executor, force magnitude, point offset, yawed frame angle, centered/world-point/pulse/double/world-frame/local-frame lanes, acceleration versus expected, yaw acceleration, displacement, and step timing.                                             | `pixi run py-demo-capture -- --scene rigid_link_point_loads --frames 72 --width 960 --height 540 --show-ui`          | `test_rigid_link_point_loads_show_lever_arm_and_frame_semantics`, replay-control snapshot coverage, workflow ordering, panel/category coverage, and visual smoke capture.                                      | Contact-free one-shot Link.apply_force row; not persistent rigid-body accumulator behavior.                |
+| 7     | `rigid_timestep_sensitivity`     | How does time-step size change free fall/contact?                        | Selectable rigid solver          | Solver, executor, base time step, gravity scale, matched fine/medium/coarse lanes, free-fall error, contact timing, clearance, error ratio, and step-profile timing.                                                                                    | `pixi run py-demo-capture -- --scene rigid_timestep_sensitivity --frames 96 --width 960 --height 540 --show-ui`      | `test_rigid_timestep_sensitivity_orders_freefall_error_by_step_size`, replay-control snapshot coverage, workflow ordering, panel/category coverage, and visual smoke capture.                                  | Parameter-sensitivity row; not a solver correctness proof or exact contact threshold.                      |
+| 8     | `rigid_step_diagnostics`         | Where does a World step spend time and memory?                           | Selectable rigid solver          | Solver, executor, single/contact/stack lanes, profile stage count, wall/stage time, top stage domain/acceleration/backend status, worker count, ECS counters, contact count, frame-scratch usage, and overflow/reset counters.                          | `pixi run py-demo-capture -- --scene rigid_step_diagnostics --frames 72 --width 960 --height 540 --show-ui`          | `test_rigid_step_diagnostics_reports_profile_and_memory_counters`, replay-control snapshot coverage, workflow ordering, panel/category coverage, and visual smoke capture.                                     | Profiling may be compiled out; memory/contact diagnostics remain visible.                                  |
+| 9     | `rigid_contact_scale_budget`     | How much contact fits in my frame budget?                                | Selectable rigid solver          | Solver, executor, frame budget, contact friction, one/four/nine-box contact workloads, wall time, per-contact cost, contact-point count, frame-scratch peak, entity/component counts, and dense/single ratio.                                           | `pixi run py-demo-capture -- --scene rigid_contact_scale_budget --frames 72 --width 960 --height 540 --show-ui`      | `test_rigid_contact_scale_budget_orders_contact_loads`, replay-control snapshot coverage, workflow ordering, panel/category coverage, and visual smoke capture.                                                | Bounded live-GUI budget row; not a benchmark suite or heavy IPC stress packet.                             |
+| 10    | `rigid_restitution_ladder`       | How does restitution change bounce height?                               | Selectable rigid solver          | Solver, executor, launch height, restitution scale, height, vertical velocity, contact count, rebound height, energy trend, and step profile timing.                                                                                                    | `pixi run py-demo-capture -- --scene rigid_restitution_ladder --frames 96 --width 960 --height 540 --show-ui`        | `test_rigid_restitution_ladder_orders_rebound_height`, replay-control snapshot coverage, workflow ordering, panel/category coverage, and visual smoke capture.                                                 | Relative rebound diagnostic only; energy plots are not exact conservation claims.                          |
+| 11    | `rigid_material_mixing`          | Which material owns bounce or friction response?                         | Sequential impulse               | Executor, impact speed, tangential speed, low/high restitution, low/high friction, swapped body/surface lanes, expected max restitution, geometric-mean friction, rebound, speed loss, and step timing.                                                 | `pixi run py-demo-capture -- --scene rigid_material_mixing --frames 72 --width 960 --height 540 --show-ui`           | `test_rigid_material_mixing_applies_pair_rules`, replay-control snapshot coverage, workflow ordering, panel/category coverage, and visual smoke capture.                                                       | Pair-rule ownership row only; not an IPC restitution claim or incline stick/slip proof.                    |
+| 12    | `rigid_contact_inspector`        | Which contact pairs and manifold fields exist?                           | Collision query                  | Shape pair, penetration, sphere/box, box/ground, plane/sphere, capsule/sphere, cylinder/sphere, mesh/sphere, compound/sphere, selected/total contacts, point, normal, depth, local points, shape indices.                                               | `pixi run py-demo-capture -- --scene rigid_contact_inspector --frames 24 --width 960 --height 540 --show-ui`         | `test_rigid_contact_inspector_reports_contact_manifolds`, workflow ordering, panel/category coverage, and visual smoke capture.                                                                                | Query-focused row; not a solver-family benchmark or all-pairs native sandbox.                              |
+| 13    | `rigid_collision_query_options`  | Which body-kind pairs does a query include?                              | Collision query options          | Rigid/rigid, rigid/link, same-multibody link/link, cross-multibody link/link lanes; include toggles, baseline/active/filtered contacts, lane status, public `CollisionBody` kind/cast diagnostics, and shape indices.                                   | `pixi run py-demo-capture -- --scene rigid_collision_query_options --frames 24 --width 960 --height 540 --show-ui`   | `test_rigid_collision_query_options_filter_body_kinds`, replay-control snapshot coverage, workflow ordering, panel/category coverage, and visual smoke capture.                                                | Body-kind query-filter row only; not a shape-family manifold inspector.                                    |
+| 14    | `rigid_collision_casts`          | Where do rays and swept probes hit?                                      | Collision cast queries           | Ray lateral offset, all-hit toggle, swept-sphere radius, swept-capsule offset/radius/height, nearest/all ray targets, ray fractions, sphere/capsule time of impact, cast margins, first hit point/normal, and hit-count histories.                      | `pixi run py-demo-capture -- --scene rigid_collision_casts --frames 48 --width 960 --height 540 --show-ui`           | `test_rigid_collision_casts_report_nearest_all_and_swept_hits`, `test_continuous_capsule_cast_result`, replay-control snapshot coverage, workflow ordering, panel/category coverage, and visual smoke capture. | Public collision-cast query row; not a contact-solver, no-tunneling, or CCD time-step guarantee.           |
+| 15    | `rigid_solver_compare`           | How do the rigid method families differ visually?                        | Sequential impulse and IPC       | Executor, launch speed, friction, restitution, speed, wall clearance, position divergence, and step profile timing.                                                                                                                                     | `pixi run py-demo-capture -- --scene rigid_solver_compare --frames 24 --width 960 --height 540 --show-ui`            | `test_rigid_solver_compare_records_wall_response`, replay-control snapshot coverage, registry/category ordering, panel coverage, and visual smoke capture.                                                     | Generic thin-wall comparison; not the sole no-tunneling proof.                                             |
+| 16    | `rigid_executor_equivalence`     | Does a parallel executor preserve the same physics?                      | Same solver in both worlds       | Physics solver, launch speed, friction, restitution, pose divergence, velocity divergence, contact-count delta, and step timing.                                                                                                                        | `pixi run py-demo-capture -- --scene rigid_executor_equivalence --frames 24 --width 960 --height 540 --show-ui`      | `test_rigid_executor_equivalence_keeps_parallel_rollout_matched`, panel/category coverage, and visual smoke capture inspected.                                                                                 | Same-solver executor-equivalence row; not a solver-family comparison.                                      |
+| 17    | `rigid_contact_solver_compare`   | What changes when contact solver policy changes?                         | Contact solver policies          | Executor, launch speed, friction, restitution, initial tilt, contact count, penetration depth, analytic corner clearance, speed, energy, divergence, and step profile timing.                                                                           | `pixi run py-demo-capture -- --scene rigid_contact_solver_compare --frames 72 --width 960 --height 540 --show-ui`    | `test_rigid_contact_solver_compare_records_coupled_contact_policy`, replay-control snapshot coverage, workflow ordering, panel/category coverage, and visual smoke capture.                                    | Contact-policy row only; it does not compare IPC against sequential impulse.                               |
+| 18    | `contact`                        | Do articulated links contact like rigid bodies?                          | World multibody link contact     | Executor, ground friction, ground restitution, drop height, slide speed, push speed, link drop/slide/pusher lanes, link/rigid contact counts, rebound, slide travel, target travel, and step timing.                                                    | `pixi run py-demo-capture -- --scene contact --frames 72 --width 960 --height 540 --show-ui`                         | `test_rigid_link_contact_exercises_multibody_contact_response`, replay-control snapshot coverage, workflow ordering, panel/category coverage, and visual smoke capture.                                        | Multibody-link contact row only; not a contact-impulse or compliance inspector.                            |
+| 19    | `rigid_friction_threshold`       | Where is the inclined-ramp stick/slip boundary?                          | IPC                              | Executor, ramp angle, controlled friction, threshold, lane drift, lane speed, clearance, step profile timing, and diagnostic plots.                                                                                                                     | `pixi run py-demo-capture -- --scene rigid_friction_threshold --frames 24 --width 960 --height 540 --show-ui`        | `test_rigid_friction_threshold_separates_stick_and_slip_lanes`, panel/category coverage, and visual smoke capture inspected.                                                                                   | Near-threshold behavior is tunable visual evidence, not an exact proof point.                              |
+| 20    | `rigid_spin_roll_coupling`       | How does contact friction couple sliding and spin?                       | Sequential impulse               | Executor, contact friction, launch speed, backspin ratio, matched rolling/sliding/backspin/low-friction lanes, contact slip, roll ratio, spin change, travel, energy, contact count, and step timing.                                                   | `pixi run py-demo-capture -- --scene rigid_spin_roll_coupling --frames 96 --width 960 --height 540 --show-ui`        | `test_rigid_spin_roll_coupling_converts_slip_to_roll`, replay-control snapshot coverage, workflow ordering, panel/category coverage, and visual smoke capture.                                                 | Spin/rolling visual diagnostic only; no public rolling-resistance or torsional-friction parameter claim.   |
+| 21    | `rigid_stack_stability`          | Does a top-heavy mass-ratio stack stay ordered?                          | Sequential impulse and IPC       | Executor, top mass ratio, friction, max speed, top drift, analytic clearance/overlap, height error, divergence, and step profile.                                                                                                                       | `pixi run py-demo-capture -- --scene rigid_stack_stability --frames 24 --width 960 --height 540 --show-ui`           | `test_rigid_stack_stability_keeps_ipc_stack_ordered`, workflow ordering, panel/category coverage, and visual smoke capture inspected.                                                                          | Compact two-box stack only; taller IPC stacks remain benchmark/capture-first.                              |
+| 22    | `rigid_contact_manipulation`     | Can a rigid pusher move an object through contact?                       | Sequential impulse and IPC       | Executor, pusher launch speed, table friction, pusher mass, target travel, pusher-target gap, contact/proximity, lateral drift, goal error, travel divergence, and step profile timing.                                                                 | `pixi run py-demo-capture -- --scene rigid_contact_manipulation --frames 72 --width 960 --height 540 --show-ui`      | `test_rigid_contact_manipulation_pushes_target_toward_goal`, replay-control snapshot coverage, workflow ordering, panel/category coverage, and visual smoke capture.                                           | Task-like pusher row only; not a full arm/gripper manipulation controller.                                 |
+| 23    | `rigid_kinematic_driver`         | Does prescribed motion carry objects by contact?                         | IPC plus SI caveat               | Driver speed, grip friction, executor, IPC grip/slip lanes, sequential-impulse caveat lane, driver travel, box travel, slip, speed ratio, support gap, and step timing.                                                                                 | `pixi run py-demo-capture -- --scene rigid_kinematic_driver --frames 72 --width 960 --height 540 --show-ui`          | `test_rigid_kinematic_driver_carries_box_with_ipc`, replay-control snapshot coverage, workflow ordering, panel/category coverage, and visual smoke capture.                                                    | Tangential kinematic-driver row only; normal pushing remains out of scope.                                 |
+| 24    | `rigid_fixed_joint`              | Does a fixed joint preserve its captured pose?                           | Sequential rigid joints          | Perturb/reset controls, relative offset error, relative orientation error, payload speed, angular speed, and histories.                                                                                                                                 | `pixi run py-demo-capture -- --scene rigid_fixed_joint --frames 24 --width 960 --height 540 --show-ui`               | `test_rigid_fixed_joint_verifier_restores_captured_transform`, workflow ordering, panel/category coverage, and visual smoke capture.                                                                           | Fixed-pose row only; no motor, limit, or break-force claims.                                               |
+| 25    | `rigid_joint_breakage`           | What happens when a fixed joint breaks?                                  | AVBD rigid joints                | Fixed AVBD break-force threshold diagnostics, broken/intact state, connector color, captured-offset error, payload speed, broken-state history, and resettable breakage lifecycle.                                                                      | `pixi run py-demo-capture -- --scene rigid_joint_breakage --frames 48 --width 960 --height 540 --show-ui`            | `test_rigid_joint_breakage_marks_and_resets_breakage`, workflow ordering, panel/category coverage, and visual smoke capture.                                                                                   | AVBD-pinned breakage row; no user-editable threshold, sequential-impulse, or IPC break-force parity claim. |
+| 26    | `rigid_limited_joints`           | Do one-DOF joints keep only their free axis?                             | Sequential rigid joints          | Perturb/reset controls, hinge radius/z error, hinge yaw, slider orthogonal error, slider travel, and histories.                                                                                                                                         | `pixi run py-demo-capture -- --scene rigid_limited_joints --frames 24 --width 960 --height 540 --show-ui`            | `test_rigid_one_dof_joint_verifier_preserves_locked_directions`, workflow ordering, panel/category coverage, and visual smoke capture.                                                                         | Revolute/prismatic constraint row only; public motor/limit behavior is out of scope.                       |
+| 27    | `rigid_joint_motor_limits`       | Do joint motors and limits clamp commands?                               | World multibody joints           | Speed command, velocity limit, position stop, requested force, effort cap, motor speed, limit overshoot, acceleration gap, and histories.                                                                                                               | `pixi run py-demo-capture -- --scene rigid_joint_motor_limits --frames 72 --width 960 --height 540 --show-ui`        | `test_rigid_joint_motor_limits_clamp_commands_and_effort`, replay-control snapshot coverage, workflow ordering, panel/category coverage, and visual smoke capture.                                             | Multibody joint-actuator row; rigid-body joint motor behavior is not claimed.                              |
+| 28    | `rigid_joint_passive_parameters` | Do passive joint parameters shape motion?                                | World multibody joints           | Executor, spring stiffness, rest position, damping, Coulomb friction, drive force, armature, acceleration versus expected, energy histories, stiction/slip status, and step timing.                                                                     | `pixi run py-demo-capture -- --scene rigid_joint_passive_parameters --frames 120 --width 960 --height 540 --show-ui` | `test_rigid_joint_passive_parameters_order_passive_response`, replay-control snapshot coverage, workflow ordering, panel/category coverage, and visual smoke capture.                                          | Contact-free passive-parameter row; no motor, limit, or contact-load claims.                               |
+| 29    | `rigid_screw_joint_pitch`        | Does screw pitch couple rotation and translation?                        | World multibody joints           | Executor, pitch scale, gravity scale, moving mass, axial inertia, zero/fine/coarse/reverse pitch lanes, angle, axial travel, pitch ratio, effective mass, and expected-versus-actual acceleration.                                                      | `pixi run py-demo-capture -- --scene rigid_screw_joint_pitch --frames 96 --width 960 --height 540 --show-ui`         | `test_rigid_screw_joint_pitch_couples_rotation_and_translation`, replay-control snapshot coverage, workflow ordering, panel/category coverage, and visual smoke capture.                                       | Contact-free screw-pitch row; no contact, motor, limit, or loop-closure claims.                            |
+| 30    | `rigid_multibody_dynamics_terms` | What do generalized dynamics terms mean?                                 | World multibody dynamics         | Executor, target acceleration, joint impulse, distal mass scale, gravity scale, single-hinge/coupled/heavy lanes, mass matrix diagonal/coupling/conditioning, inverse-dynamics residual, impulse residual, torque norm, response norm, and step timing. | `pixi run py-demo-capture -- --scene rigid_multibody_dynamics_terms --frames 96 --width 960 --height 540 --show-ui`  | `test_rigid_multibody_dynamics_terms_expose_generalized_terms`, replay-control snapshot coverage, workflow ordering, panel/category coverage, and visual smoke capture.                                        | Contact-free joint-space dynamics row; not a Cartesian point-force or COM-Jacobian claim.                  |
+| 31    | `rigid_link_center_of_mass`      | How does a link center-of-mass offset change inertia and gravity torque? | World multibody inertial offsets | Executor, COM offset, gravity scale, link mass, high-inertia multiplier, centered/+X/-X/high-inertia lanes, gravity torque, mass matrix, hinge acceleration, expected acceleration, COM marker position, energy, and step timing.                       | `pixi run py-demo-capture -- --scene rigid_link_center_of_mass --frames 72 --width 960 --height 540 --show-ui`       | `test_rigid_link_center_of_mass_offsets_gravity_torque`, replay-control snapshot coverage, workflow ordering, panel/category coverage, and visual smoke capture.                                               | Link inertial-offset row only; not arbitrary-point Jacobians, contact, IK, or operational-space control.   |
+| 32    | `rigid_link_jacobian`            | What does a link Jacobian map?                                           | World multibody kinematics       | Motion speed, elbow phase, wrench force, wrench angle, wrench moment, link-origin world/body Jacobian gap, `J qdot` twist, finite-difference velocity error, `J.T wrench` torque, and power error.                                                      | `pixi run py-demo-capture -- --scene rigid_link_jacobian --frames 96 --width 960 --height 540 --show-ui`             | `test_rigid_link_jacobian_maps_link_origin_twist_and_wrench`, replay-control snapshot coverage, workflow ordering, panel/category coverage, and visual smoke capture.                                          | Link-origin kinematic/wrench map only; not arbitrary point, COM, contact, IK, or OSC.                      |
+| 33    | `rigid_multibody_solver_family`  | Which multibody integration family supports solves?                      | Multibody solver families        | Executor, gravity scale, semi-implicit residual-only, variational residual-only, variational solved lanes, closure residual, tip error, tip height, joint speed, residual solve ratio, and step timing.                                                 | `pixi run py-demo-capture -- --scene rigid_multibody_solver_family --frames 72 --width 960 --height 540 --show-ui`   | `test_rigid_multibody_solver_family_routes_solved_closures`, replay-control snapshot coverage, workflow ordering, panel/category coverage, and visual smoke capture.                                           | Solver-family routing row; closure family selection remains in the next row.                               |
+| 34    | `rigid_loop_closure`             | Which loop-closure family should I use?                                  | Variational rigid multibody      | Executor, gravity scale, POINT/DISTANCE/RIGID family lanes, residual-only versus solved policies, closure residual, tip error, distance error, orientation residual, residual ratio, joint speed, and step timing.                                      | `pixi run py-demo-capture -- --scene rigid_loop_closure --frames 72 --width 960 --height 540 --show-ui`              | `test_rigid_loop_closure_compares_closure_families`, replay-control snapshot coverage, workflow ordering, panel/category coverage, and visual smoke capture.                                                   | Public-family comparison row; not a compliance, breakage, or distance-family solver sweep.                 |
+
+## No-Tunneling Decision
+
+Do not add a second thin-wall catalog row in this slice. The current user path
+is:
+
+1. `rigid_contact_inspector` for raw contact-pair observability;
+2. `rigid_collision_query_options` for `World.collide(options)` body-kind
+   filtering;
+3. `rigid_collision_casts` for public raycast, swept-sphere, and swept-capsule
+   hit queries;
+4. `rigid_solver_compare` for broad method-family differences on a wall scene;
+5. the Rigid IPC shelf's `rigid_ipc_tunnel` scene for the focused IPC
+   no-tunneling capability check;
+6. `rigid_friction_threshold`, `rigid_spin_roll_coupling`, and
+   `rigid_stack_stability` for the next common contact failure modes.
+
+Revisit this only if a future high-speed preset or regression asks a distinct
+user question that neither `rigid_solver_compare` nor `rigid_ipc_tunnel`
+answers.
+
+`rigid_ipc_tunnel` remains an existing Rigid IPC capability scene rather than a
+numbered World Rigid Body workflow row. Capture it directly when the user wants
+the focused IPC no-tunneling view:
+
+```bash
+pixi run py-demo-capture -- --scene rigid_ipc_tunnel --frames 24 --width 960 --height 540 --show-ui
+```
+
+## Differentiable Contact-Gradient Route
+
+Do not add a duplicate numbered rigid row for contact-gradient modes in this
+slice. The existing `diff_drone_liftoff` scene already answers the next user
+question after forward contact debugging: "why does my contact optimization
+stall even though the collision response looks right?" It uses a rigid `World`
+with boxed-LCP contact and shows `ContactGradientMode.ANALYTIC` stalling at the
+clamping saddle while `ContactGradientMode.COMPLEMENTARITY_AWARE` escapes. Keep
+it in the Differentiable shelf so the mode distinction is explicit, but route
+rigid users there from the workflow docs.
+
+```bash
+pixi run py-demo-capture -- --scene diff_drone_liftoff --frames 96 --width 960 --height 540 --show-ui
+```
+
+## Related Evidence Routes
+
+The in-viewer `Rigid Workflow` panel may route a numbered rigid row to a
+non-numbered shelf only through this table. These scenes remain outside the
+34-row World Rigid Body sequence.
+
+| Source row                     | Related scene        | Shelf          | Panel label                                          | Scope note                                                                         |
+| ------------------------------ | -------------------- | -------------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `rigid_solver_compare`         | `rigid_ipc_tunnel`   | Rigid IPC      | Related shelf: focused IPC no-tunneling view         | Focused IPC capability scene; not a broad solver comparison or general proof.      |
+| `rigid_contact_solver_compare` | `diff_drone_liftoff` | Differentiable | Related shelf: differentiable contact-gradient route | Analytic vs complementarity-aware clamping-contact optimization; not a solver row. |
+
+## Capture-First Rigid IPC Packets
+
+These packets are registered in non-numbered shelves only. They give users a
+GUI/capture route for stress cases that currently exceed the default live
+workflow budget, and they point to benchmark evidence instead of making
+solver-performance parity claims.
+
+| Scene id                 | User question                                                                             | Signals                                                                                                                                          | Capture command                                                                                           | Scope note                                                                                          |
+| ------------------------ | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `rigid_ipc_stack_packet` | Can a four-box IPC stack stay separated, ordered, and finite beyond the live demo budget? | Friction, box count, frame-budget threshold, min clearance, contact count, top drift, height error, max speed, wall time, and benchmark pointer. | pixi run py-demo-capture -- --scene rigid_ipc_stack_packet --frames 24 --width 960 --height 540 --show-ui | Capture-first stress packet; not a numbered workflow row and not a solver-performance parity claim. |
+
+The matching benchmark owner remains `bm_rigid_ipc_solver`; use its
+`BM_RigidWorldStep_SequentialImpulse` and `BM_RigidWorldStep_Ipc` rows for
+same-scene per-step throughput tracking before promoting any heavier IPC stack
+into the live workflow.
+The capture helper also stores scene-owned metrics for rows and packets that
+expose `SceneSetup.info["capture_metrics"]`; `rigid_step_diagnostics` and
+`rigid_contact_scale_budget` mirror their latest profiling, memory, contact,
+and budget metrics into `manifest.json`, while `rigid_ipc_stack_packet` mirrors
+clearance, contact, drift, height, wall-time, frame-budget, and benchmark
+values.
+
+## Regenerating Visual Evidence
+
+Run the capture commands in the workflow table from the repository root. The
+helper prints the output directory, writes PNG frames, rejects blank captures,
+and applies Linux software-Mesa defaults so the same command works on headless
+dev hosts. Visual artifacts are intentionally not checked in.
+
+For a quick curated refresh:
+
+```bash
+pixi run py-demo-capture -- --scene rigid_body --frames 24 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_body_modes --frames 72 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_free_flight --frames 96 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_frame_hierarchy --frames 72 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_external_loads --frames 72 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_link_point_loads --frames 72 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_timestep_sensitivity --frames 96 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_step_diagnostics --frames 72 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_contact_scale_budget --frames 72 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_restitution_ladder --frames 96 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_material_mixing --frames 72 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_contact_inspector --frames 24 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_collision_query_options --frames 24 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_collision_casts --frames 48 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_solver_compare --frames 24 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_executor_equivalence --frames 24 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_contact_solver_compare --frames 72 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene contact --frames 72 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_friction_threshold --frames 24 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_spin_roll_coupling --frames 96 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_stack_stability --frames 24 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_contact_manipulation --frames 72 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_kinematic_driver --frames 72 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_fixed_joint --frames 24 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_joint_breakage --frames 48 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_limited_joints --frames 24 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_joint_motor_limits --frames 72 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_joint_passive_parameters --frames 120 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_screw_joint_pitch --frames 96 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_multibody_dynamics_terms --frames 96 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_link_center_of_mass --frames 72 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_link_jacobian --frames 96 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_multibody_solver_family --frames 72 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_loop_closure --frames 72 --width 960 --height 540 --show-ui
+```
+
+## Validation Snapshot
+
+Evidence recorded for this slice:
+
+- Latest scene-metrics capture hardening follow-up:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/unit/test_capture_py_demo.py python/tests/unit/test_py_demo_gpu_toggle.py -q`
+  reported `25 passed`, and
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_visual_capture_first_ipc_packets_are_documented python/tests/integration/test_demos_cycle.py::test_rigid_ipc_stack_packet_reports_capture_first_metrics python/tests/unit/test_py_demo_panels.py::test_rigid_ipc_stack_packet_panel_exposes_capture_first_signals -q`
+  reported `3 passed`. The real docked
+  `pixi run py-demo-capture -- --scene rigid_ipc_stack_packet --frames 24 --width 960 --height 540 --show-ui`
+  run wrote `scene_metrics.jsonl` with 24 scene-owned metrics events and
+  mirrored frame 24 into `manifest.json`: `status=capture-first`, min clearance
+  `0.000267` m, top drift `0.000360` m, height error `-0.010816` m,
+  max speed `0.0493` m/s, last-step wall time `626.778` ms, frame budget
+  `33.3` ms, benchmark owner `bm_rigid_ipc_solver`, and `world_time=0.100` s.
+  The same capture wrote a nonblank 960x540 screenshot, 23 PNG frames, one
+  dropped UI warmup frame, docked-workspace detection, 3790 unique screenshot
+  colors, and RGB variance `3394.733`. After `pixi run lint`, rerunning the
+  capture/runner unit files reported `25 passed`, rerunning the 12-test
+  registry/docs/panel guard reported `12 passed`, and `git diff --check` was
+  clean.
+- Latest runtime-row capture-metrics follow-up:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_step_diagnostics_reports_profile_and_memory_counters python/tests/integration/test_demos_cycle.py::test_rigid_contact_scale_budget_orders_contact_loads -q`
+  reported `2 passed`. `rigid_step_diagnostics` now exposes solver/executor,
+  step size, world time, and per-lane profiling/memory/contact metrics through
+  `SceneSetup.info["capture_metrics"]`; `rigid_contact_scale_budget` exports
+  the same capture path plus frame budget, friction, dense/single wall-time
+  ratio, and one/four/nine-box contact budget lane metrics. Short real
+  `py-demo-capture --show-ui` smoke runs for both rows wrote eight
+  scene-metrics events each, mirrored the expected lane sets
+  (`single/contact/stack` and `single/medium/dense`) into `manifest.json`, and
+  produced nonblank docked screenshots with 2186 and 2120 unique screenshot
+  colors.
+- Latest capture-evidence hardening follow-up: `py-demo-capture` manifests now
+  record requested width/height/frames, converted frame count, and screenshot
+  plus first UI-ready-frame evidence: dimensions, nonzero pixels, unique RGB
+  count, RGB/luminance variance, and docked-workspace detection.
+  `pixi run test-py` reported `636 passed, 9 skipped`, including the helper
+  stats guard and deterministic capture-manifest schema guard.
+- Latest link-contact follow-up:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_world_scenes_use_solver_focused_categories python/tests/integration/test_demos_cycle.py::test_world_rigid_visual_verification_scenes_are_ordered python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_viewer_titles_are_numbered python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_guidance_matches_sidecar python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow python/tests/integration/test_demos_cycle.py::test_rigid_contact_solver_compare_records_coupled_contact_policy python/tests/integration/test_demos_cycle.py::test_rigid_link_contact_exercises_multibody_contact_response python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_renders_guidance_for_numbered_rows python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_route_rows_request_scene_switches python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_jump_selector_requests_scene_switch python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_filters_rows_by_question_and_requests_scene_switch python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_filters_rows_by_row_id_and_requests_scene_switch python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_skips_non_numbered_world_rows -q`
+  reported `18 passed`. It promotes the stable `contact` scene id into row
+  18/34 as `Rigid Link Contact`, verifies multibody-link drop, slide, and pusher
+  contact response plus replay controls, and keeps the registry, sidecar,
+  README, capture commands, viewer-title numbering, workflow guidance, route
+  controls, and panel coverage synchronized. The docked visual capture
+  `pixi run py-demo-capture -- --scene contact --frames 72 --width 960 --height 540 --show-ui`
+  wrote a nonblank 960x540 screenshot plus 71 PNG frames.
+- Previous full Python sweep evidence: `pixi run test-py` reported
+  `617 passed, 9 skipped` after the joint-breakage lifecycle follow-up.
+- Current curation guard:
+  `PYTHONPATH=build/default/cpp/Release/python:python pixi run pytest python/tests/integration/test_demos_cycle.py::test_world_rigid_visual_verification_scenes_are_ordered python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow python/tests/unit/test_capture_py_demo.py::test_visual_capture_default_scene_matches_py_demos_front_door -q`
+  reported `5 passed`. The guard keeps the sidecar rows unique, consecutive,
+  backed by registered scene ids, aligned with the front-of-catalog
+  `World Rigid Body` registry block, mirrored by the Python demo README quick
+  workflow table, backed by matching sidecar table / sidecar refresh / README
+  capture specs (`--scene`, `--frames`, `--width 960`, `--height 540`, and
+  `--show-ui`), aligned with the `py-demo-capture` default front door, and
+  separate from the `Rigid IPC` `rigid_ipc_tunnel` capability shelf.
+- Latest Demos navigator title follow-up:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_runner_list_prints_catalog python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_viewer_titles_are_numbered python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
+  reported `4 passed`. It keeps the interactive viewer catalog titles
+  prefixed with `01/34 ...` through `34/34 ...` for the curated World Rigid
+  Body workflow while preserving stable `py-demos --list` scene ids and titles
+  for scripts. The short docked capture command for `rigid_body` wrote a
+  nonblank 960x540 screenshot plus 7 PNG frames, `pixi run test-py` reported
+  `616 passed, 9 skipped`, `pixi run lint` passed, bounded
+  `pixi run build` reported `ninja: no work to do`, and `git diff --check` was
+  clean.
+- Latest navigator-count drift follow-up:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_viewer_titles_are_numbered python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
+  reported `4 passed`. It checks the viewer-title count against
+  `RIGID_VISUAL_WORKFLOW_LABELS` and scans the durable sidecar plus Python demo
+  README for stale two-digit navigator fractions, so examples such as
+  `15/34 Solver family: Rigid Solver Compare` stay aligned with the current
+  34-row workflow.
+- Latest API-gap audit follow-up: public dartpy currently exposes
+  `RigidBody.apply_force()`, `RigidBody.apply_torque()`, rigid-body
+  linear/angular momentum accessors, `Link.apply_force(..., point, ...)`, and
+  `Multibody.compute_impulse_response()`, but no public direct rigid-body
+  impulse surface, sleep/wake or island activation surface, or loop-closure
+  compliance surface. The drift guard
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_deferred_api_gaps_are_documented python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
+  reported `4 passed`. This keeps those deferrals explicit and points future
+  API additions back to this workflow.
+- Latest joint-breakage follow-up:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_world_scenes_use_solver_focused_categories python/tests/integration/test_demos_cycle.py::test_world_rigid_visual_verification_scenes_are_ordered python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_viewer_titles_are_numbered python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow python/tests/integration/test_demos_cycle.py::test_rigid_joint_breakage_marks_and_resets_breakage python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels -q`
+  reported `8 passed`. It keeps `rigid_joint_breakage` ordered after the
+  fixed-joint row, verifies the AVBD break-force threshold, broken state,
+  connector/panel coverage, payload release, and `reset_breakage()` lifecycle,
+  and preserves sidecar/README order, capture-command drift, category, and
+  numbered viewer-title coverage. The docked visual smoke command for
+  `rigid_joint_breakage` wrote a nonblank 960x540 screenshot plus 47 PNG frames
+  with final contacts at 0.
+- Latest collision-casts follow-up:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run pytest python/tests/integration/test_demos_cycle.py::test_rigid_collision_casts_report_nearest_all_and_swept_hits python/tests/integration/test_demos_cycle.py::test_world_rigid_visual_verification_scenes_are_ordered python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels -q`
+  reported `7 passed`. It keeps the cast row ordered after
+  `World.collide(options)` query filtering and before solver comparison,
+  verifies nearest versus all ray hits, hit fractions, point/normal reporting,
+  swept-sphere time of impact, swept-capsule hit/miss behavior, finite capsule
+  hit point/normal reporting, miss behavior from ray offset, sphere radius, and
+  capsule offset, replay controls, sidecar/README order, capture-command drift,
+  category, and panel coverage.
+  `pixi run py-demo-capture -- --scene rigid_collision_casts --frames 48 --width 960 --height 540 --show-ui`
+  wrote a nonblank 960x540 screenshot plus 47 PNG frames with final contacts at
+  0 after the capsule-lane hardening.
+- Latest frame-hierarchy follow-up:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_world_scenes_use_solver_focused_categories python/tests/integration/test_demos_cycle.py::test_world_rigid_visual_verification_scenes_are_ordered python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_viewer_titles_are_numbered python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow python/tests/integration/test_demos_cycle.py::test_rigid_frame_hierarchy_tracks_body_fixed_frame python/tests/integration/test_demos_cycle.py::test_rigid_joint_breakage_marks_and_resets_breakage python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels python/tests/unit/test_py_demo_panels.py::test_rigid_joint_breakage_panel_resets_lifecycle -q`
+  reported `12 passed` before and after lint. It keeps the workflow ordered as
+  it stood then with `rigid_frame_hierarchy` after free flight and before external
+  loads, verifies fixed-frame parent identity, local-to-world and relative
+  transform residuals, replay-control snapshots, breakage panel reset behavior,
+  sidecar/README order, capture-command drift, category, and numbered
+  viewer-title coverage. The docked visual smoke command for
+  `rigid_frame_hierarchy` wrote a nonblank 960x540 screenshot plus 71 PNG frames
+  with final contacts at 0. `pixi run lint` passed; bounded `pixi run build`
+  reported `ninja: no work to do`; and `git diff --check` was clean.
+- Latest baseline-hardening follow-up:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_body_baseline_reports_restartable_first_run_diagnostics python/tests/integration/test_demos_cycle.py::test_rigid_body_modes_compare_dynamic_static_kinematic_semantics python/tests/integration/test_demos_cycle.py::test_rigid_frame_hierarchy_tracks_body_fixed_frame python/tests/integration/test_demos_cycle.py::test_rigid_joint_breakage_marks_and_resets_breakage python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/integration/test_demos_cycle.py::test_world_scenes_use_solver_focused_categories python/tests/integration/test_demos_cycle.py::test_world_rigid_visual_verification_scenes_are_ordered python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_viewer_titles_are_numbered python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels python/tests/unit/test_py_demo_panels.py::test_rigid_body_panel_resets_baseline_scene python/tests/unit/test_py_demo_panels.py::test_rigid_joint_breakage_panel_resets_lifecycle -q`
+  reported `15 passed`. It upgrades the default `rigid_body` first-run scene with
+  selectable solver/material controls, explicit reset, force drag, contact,
+  energy, height, speed, step-timing, and replay-control diagnostics while keeping
+  focused edge cases in later rows. The docked visual smoke command for
+  `rigid_body` wrote a nonblank 960x540 screenshot plus 23 PNG frames with final
+  contacts at 0. `pixi run lint` passed and bounded `pixi run build` reported
+  `ninja: no work to do`.
+- Latest contact-inspector follow-up:
+  `pixi run pytest python/tests/integration/test_demos_cycle.py::test_rigid_contact_inspector_reports_contact_manifolds python/tests/integration/test_demos_cycle.py::test_world_rigid_visual_verification_scenes_are_ordered python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels -q`
+  reported `4 passed`. It covers sphere/box, box/ground, plane/sphere,
+  capsule/sphere, cylinder/sphere, mesh/sphere, and compound/sphere lanes,
+  including finite unit normals, depths, local points, public plane-shape
+  coverage, and compound shape-index reporting.
+- Latest step-diagnostics follow-up:
+  `PYTHONPATH=build/default/cpp/Release/python:python pixi run pytest python/tests/integration/test_demos_cycle.py::test_rigid_step_diagnostics_reports_profile_and_memory_counters python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels -q`
+  reported `2 passed`. It keeps the row's profile, memory, contact, panel, and
+  backend-neutral acceleration-status fields visible without claiming an
+  accelerated rigid backend is active.
+- Latest contact-scale budget follow-up:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run pytest python/tests/integration/test_demos_cycle.py::test_rigid_contact_scale_budget_orders_contact_loads python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/integration/test_demos_cycle.py::test_world_scenes_use_solver_focused_categories python/tests/integration/test_demos_cycle.py::test_world_rigid_visual_verification_scenes_are_ordered python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels -q`
+  reported `8 passed`. It keeps the row ordered after step diagnostics and
+  before restitution, verifies the one/four/nine-box contact workloads increase
+  body, entity, component, and contact-point counts, and preserves replay
+  controls, sidecar/README order, capture-command drift, category, and panel
+  coverage.
+- Latest screw-joint pitch follow-up:
+  `PYTHONPATH=build/default/cpp/Release/python:python pixi run pytest python/tests/integration/test_demos_cycle.py::test_rigid_screw_joint_pitch_couples_rotation_and_translation python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/integration/test_demos_cycle.py::test_world_scenes_use_solver_focused_categories python/tests/integration/test_demos_cycle.py::test_world_rigid_visual_verification_scenes_are_ordered python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels -q`
+  reported `8 passed`. It keeps the screw-pitch row ordered after passive
+  joint parameters, verifies pitch-as-translation-per-radian coupling, checks
+  expected acceleration against mass and axial inertia, and preserves replay
+  controls, sidecar/README order, capture-command drift, category, and panel
+  coverage.
+- Latest multibody dynamics-terms follow-up:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run pytest python/tests/integration/test_demos_cycle.py::test_rigid_multibody_dynamics_terms_expose_generalized_terms python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/integration/test_demos_cycle.py::test_world_scenes_use_solver_focused_categories python/tests/integration/test_demos_cycle.py::test_world_rigid_visual_verification_scenes_are_ordered python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels -q`
+  reported `8 passed`. It keeps the generalized dynamics row ordered after
+  screw-joint pitch and before multibody solver-family routing, verifies
+  fixed-base joint-space mass/inverse-mass consistency, inverse-dynamics
+  residuals, joint-space impulse-response residuals, off-diagonal coupling,
+  heavy-distal torque/response trends, replay controls, sidecar/README order,
+  capture-command drift, category, and panel coverage.
+- Latest link center-of-mass follow-up:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_link_center_of_mass_offsets_gravity_torque python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/integration/test_demos_cycle.py::test_world_scenes_use_solver_focused_categories python/tests/integration/test_demos_cycle.py::test_world_rigid_visual_verification_scenes_are_ordered python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_viewer_titles_are_numbered python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_guidance_matches_sidecar python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_renders_guidance_for_numbered_rows python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_route_rows_request_scene_switches python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_jump_selector_requests_scene_switch python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_filters_rows_by_question_and_requests_scene_switch python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_filters_rows_by_row_id_and_requests_scene_switch python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_skips_non_numbered_world_rows -q`
+  reported `17 passed`. It inserts `rigid_link_center_of_mass` after
+  generalized dynamics terms and before link-origin Jacobians, verifies
+  centered, mirrored, and high-inertia COM offsets against public
+  `Link.center_of_mass`, mass-matrix, gravity-force, acceleration-sign, and
+  replay-control behavior, and preserves sidecar/README order, capture-command
+  drift, category, numbered title, workflow-guide, and panel coverage.
+  `pixi run py-demo-capture -- --scene rigid_link_center_of_mass --frames 72 --width 960 --height 540 --show-ui`
+  wrote a nonblank 960x540 screenshot plus 71 PNG frames with final contacts at 0.
+- Latest link-Jacobian follow-up:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run pytest python/tests/integration/test_demos_cycle.py::test_rigid_link_jacobian_maps_link_origin_twist_and_wrench python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/integration/test_demos_cycle.py::test_world_scenes_use_solver_focused_categories python/tests/integration/test_demos_cycle.py::test_world_rigid_visual_verification_scenes_are_ordered python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels -q`
+  reported `8 passed`. It keeps the link-origin Jacobian row ordered after
+  generalized dynamics terms and before multibody solver-family routing,
+  verifies `get_world_jacobian(link) @ qdot` against finite-difference
+  link-origin velocity, verifies `get_world_jacobian(link).T @ wrench` power
+  consistency, replay controls, sidecar/README order, capture-command drift,
+  category, and panel coverage.
+- Latest loop-closure family follow-up:
+  `PYTHONPATH=build/default/cpp/Release/python:python pixi run pytest python/tests/integration/test_demos_cycle.py::test_rigid_loop_closure_compares_closure_families python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/integration/test_demos_cycle.py::test_world_scenes_use_solver_focused_categories python/tests/integration/test_demos_cycle.py::test_world_rigid_visual_verification_scenes_are_ordered python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels -q`
+  reported `8 passed`. It keeps one loop-closure workflow row but expands the
+  row from POINT-only endpoint closure into POINT, DISTANCE, and RIGID public
+  families crossed with residual-only and solved policies.
+- Latest body-mode follow-up:
+  `PYTHONPATH=build/default/cpp/Release/python:python pixi run pytest python/tests/integration/test_demos_cycle.py::test_rigid_body_modes_compare_dynamic_static_kinematic_semantics python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/integration/test_demos_cycle.py::test_world_scenes_use_solver_focused_categories python/tests/integration/test_demos_cycle.py::test_world_rigid_visual_verification_scenes_are_ordered python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels -q`
+  reported `8 passed`. It keeps the new early workflow row ordered after
+  `rigid_body`, verifies dynamic integration under gravity/force, static no
+  drift, kinematic prescribed-path tracking, replay controls, sidecar/README
+  order, capture-command drift, category, and panel coverage.
+- Latest multibody solver-family follow-up:
+  `PYTHONPATH=build/default/cpp/Release/python:python pixi run pytest python/tests/integration/test_demos_cycle.py::test_rigid_multibody_solver_family_routes_solved_closures python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/integration/test_demos_cycle.py::test_world_scenes_use_solver_focused_categories python/tests/integration/test_demos_cycle.py::test_world_rigid_visual_verification_scenes_are_ordered python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels -q`
+  reported `8 passed`. It keeps the solver-family row ordered before the
+  closure-family row, verifies semi-implicit and variational residual-only
+  closure diagnostics, variational dynamic closure solving, residual solve
+  ratio, replay controls, sidecar/README order, capture-command drift,
+  category, and panel coverage.
+- Latest spin/roll coupling follow-up:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_world_scenes_use_solver_focused_categories python/tests/integration/test_demos_cycle.py::test_world_rigid_visual_verification_scenes_are_ordered python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_viewer_titles_are_numbered python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow python/tests/integration/test_demos_cycle.py::test_rigid_spin_roll_coupling_converts_slip_to_roll python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels -q`
+  reported `10 passed`. It keeps the sequential-impulse spin/roll row ordered
+  after `rigid_friction_threshold` and before stack stability, verifies matched
+  rolling, slip-to-roll spin-up, backspin scrub, the low-friction slip baseline,
+  replay controls, sidecar/README order, capture-command drift, category, and
+  panel coverage. The docked visual smoke command wrote a nonblank 960x540
+  `rigid_spin_roll_coupling` screenshot plus 95 PNG frames with final contacts
+  at 0.
+- Latest in-viewer workflow-guide follow-up:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_world_scenes_use_solver_focused_categories python/tests/integration/test_demos_cycle.py::test_world_rigid_visual_verification_scenes_are_ordered python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_viewer_titles_are_numbered python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_guidance_matches_sidecar python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow python/tests/integration/test_demos_cycle.py::test_rigid_spin_roll_coupling_converts_slip_to_roll python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_renders_guidance_for_numbered_rows python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_skips_non_numbered_world_rows -q`
+  reported `13 passed` before and after lint. It keeps the runner-owned
+  `Rigid Workflow` guide synchronized with the PLAN-103 user questions,
+  verifies previous/next route labels for first, middle, and final numbered
+  rows, and confirms non-numbered World Rigid Body rows do not receive the
+  guide panel. Docked visual smoke commands for `rigid_body`,
+  `rigid_solver_compare`, and `rigid_loop_closure` each wrote nonblank 960x540
+  screenshots plus 7 PNG frames with final contacts at 0. `pixi run lint`
+  passed, and bounded `pixi run build` reported `ninja: no work to do`.
+- Latest checklist/contact-body hardening follow-up:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_world_scenes_use_solver_focused_categories python/tests/integration/test_demos_cycle.py::test_world_rigid_visual_verification_scenes_are_ordered python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_viewer_titles_are_numbered python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_guidance_matches_sidecar python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow python/tests/integration/test_demos_cycle.py::test_rigid_collision_query_options_filter_body_kinds python/tests/integration/test_demos_cycle.py::test_rigid_spin_roll_coupling_converts_slip_to_roll python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_renders_guidance_for_numbered_rows python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_skips_non_numbered_world_rows -q`
+  reported `14 passed` after lint. It turns the shared workflow panel into a
+  per-row checklist with `Question`, `Try first`, `Look for`, and
+  `Do not infer`, while keeping scope text synchronized with this sidecar. It
+  also verifies `rigid_collision_query_options` exposes public
+  `Contact.body_a/body_b` `CollisionBody` kind, validity, and cast results for
+  rigid/rigid, rigid/link, same-multibody link/link, and cross-multibody
+  link/link lanes. Docked visual smoke commands for `rigid_body`,
+  `rigid_solver_compare`, `rigid_loop_closure`, and
+  `rigid_collision_query_options` wrote nonblank 960x540 screenshots; the first
+  three produced 7 PNG frames each and the collision-query row produced 23 PNG
+  frames, all with final contacts at 0.
+- Latest workflow-route navigation follow-up:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_renders_guidance_for_numbered_rows python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_route_rows_request_scene_switches python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_jump_selector_requests_scene_switch python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_skips_non_numbered_world_rows python/tests/unit/gui/test_gui_scene.py::test_gui_stub_surface_is_backend_hidden python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_guidance_matches_sidecar python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
+  reported `9 passed`. It exposes `PanelContext.request_scene_switch(scene_id)`
+  to Python scene panels and turns the `Rigid Workflow` previous/next route text
+  plus the direct row selector into in-viewer scene-switch controls.
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/unit/gui/test_gui_scene.py::test_gui_stub_surface_is_backend_hidden python/tests/unit/gui/test_gui_scene.py::test_gui_camera_and_run_helpers -q`
+  reported `2 passed` after rebuilding dartpy; it directly verifies the public
+  `request_scene_switch()` and `request_scene_replay()` lifecycle bindings and
+  their requested-scene/pending-scene status fields.
+- Latest workflow-search/restart follow-up:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_renders_guidance_for_numbered_rows python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_route_rows_request_scene_switches python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_jump_selector_requests_scene_switch python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_filters_rows_by_question_and_requests_scene_switch python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_filters_rows_by_row_id_and_requests_scene_switch python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_skips_non_numbered_world_rows python/tests/unit/gui/test_gui_scene.py::test_gui_stub_surface_is_backend_hidden -q`
+  reported `7 passed`. It adds a `PanelContext.request_scene_replay(scene_id)`
+  binding for panel authors, a `Rigid Workflow` restart command for the current
+  row, and a text filter that matches workflow row ids, questions, checklist
+  text, and inspect signals before requesting an in-viewer scene switch. The
+  filter includes explicit `NN/MM` row-id tokens so searches such as `15/34`
+  select the intended workflow row.
+- Latest stack-stability verification hardening follow-up:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_stack_stability_keeps_ipc_stack_ordered python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels -q`
+  reported `3 passed`. It keeps strict stability thresholds on the IPC lane
+  while verifying both stack lanes expose finite height, height error,
+  clearance, drift, speed, step time, populated per-lane histories, and finite
+  top-x solver divergence. The docked visual smoke command for
+  `rigid_stack_stability` wrote a nonblank 960x540 screenshot plus 23 PNG
+  frames with final contacts at 0.
+- Latest guided-replay timeline follow-up:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_shared_replay_panel_uses_default_timeline_without_metadata python/tests/unit/test_py_demo_panels.py::test_shared_replay_panel_uses_scene_replay_timeline_metadata python/tests/unit/test_py_demo_panels.py::test_shared_replay_panel_keeps_frame_marks_for_signal_only_metadata python/tests/unit/test_py_demo_panels.py::test_shared_replay_panel_ignores_malformed_timeline_metadata python/tests/integration/test_demos_cycle.py::test_rigid_solver_compare_records_wall_response -q`
+  reported `5 passed`. The shared bottom `Replay` panel now accepts optional
+  `replay_timeline` metadata for a saved-state value track and marker track.
+  `rigid_solver_compare` pilots it by plotting position divergence and marking
+  near-wall frames during replay scrubbing while keeping long-form guidance in
+  the `Rigid Workflow` panel. The post-lint full Python sweep,
+  `pixi run test-py`, reported `640 passed, 9 skipped`.
+- Latest contact-policy replay timeline follow-up:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_contact_solver_compare_records_coupled_contact_policy python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/unit/test_py_demo_panels.py::test_shared_replay_panel_uses_scene_replay_timeline_metadata python/tests/unit/test_py_demo_panels.py::test_shared_replay_panel_keeps_frame_marks_for_signal_only_metadata -q`
+  reported `5 passed`. `rigid_contact_solver_compare` now feeds the shared
+  replay timeline a pose-divergence value track plus marker frames for
+  coupled-contact counts or positive depth so saved-state scrubbing can jump to
+  the frames where contact-policy differences are visible.
+- Latest related-evidence route follow-up:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_related_evidence_routes_to_other_shelves python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_route_rows_request_scene_switches python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_related_evidence_routes_are_valid python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_guidance_matches_sidecar python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_viewer_titles_are_numbered python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
+  reported `7 passed`. The runner-owned `Rigid Workflow` panel now exposes
+  `Related shelf` routes from `rigid_solver_compare` to
+  `rigid_ipc_tunnel` and from `rigid_contact_solver_compare` to
+  `diff_drone_liftoff`, while tests keep those targets registered,
+  non-numbered, and in their own shelves.
+- Latest capture-first IPC stack packet follow-up:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_registry_has_scenes python/tests/integration/test_demos_cycle.py::test_world_scenes_use_solver_focused_categories python/tests/integration/test_demos_cycle.py::test_world_rigid_visual_verification_scenes_are_ordered python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_viewer_titles_are_numbered python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_related_evidence_routes_are_valid python/tests/integration/test_demos_cycle.py::test_rigid_visual_capture_first_ipc_packets_are_documented python/tests/integration/test_demos_cycle.py::test_rigid_ipc_stack_packet_reports_capture_first_metrics python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels python/tests/unit/test_py_demo_panels.py::test_rigid_ipc_stack_packet_panel_exposes_capture_first_signals -q`
+  reported `12 passed`. The docked `rigid_ipc_stack_packet` capture produced a
+  nonblank 960x540 screenshot plus 23 PNG frames, dropped one warmup frame, and
+  kept docked UI detected with 3762 unique screenshot colors and RGB variance
+  `3394.279`. A 24-step probe ended capture-first with min clearance
+  `0.000267` m, top drift `0.000360` m, max speed `0.0493` m/s, last-step wall
+  time `805.087` ms, and max observed wall time `3508.939` ms, confirming why
+  this packet remains outside the live numbered workflow.
+- Focused behavior tests across the packet cover the ordered rigid workflow:
+  default front door, body modes, free flight, external and point loads,
+  time-step sensitivity, step diagnostics, contact-scale frame-budget
+  diagnostics, restitution, material mixing, contact query options, collision
+  casts, solver and executor comparison, contact-solver policy, friction
+  threshold, spin/roll coupling, stack stability, pusher manipulation,
+  kinematic driver behavior, fixed-joint preservation, AVBD-pinned joint
+  breakage and reset lifecycle, one-DOF joints, joint motor/limit clamping,
+  passive joint parameters, screw-joint pitch coupling, generalized multibody
+  dynamics terms, link-origin Jacobian mapping, multibody solver-family routing,
+  loop-closure family comparison, replay-control snapshots, category ordering,
+  and panel coverage. The
+  differentiable contact-gradient route is covered by the `diff_drone_liftoff`
+  panel test, which now checks height, thrust, loss, thrust-gradient,
+  analytic-loss histories, and the public gradient-mode labels.
+- Visual evidence: every numbered workflow row has a recorded nonblank
+  960x540 `py-demo-capture --show-ui` run. The most recent follow-ups wrote a
+  nonblank `rigid_joint_breakage` screenshot plus 47 PNG frames with final
+  contacts at 0, a nonblank `rigid_collision_casts` screenshot plus 47 PNG
+  frames with final contacts at 0, docked UI detected, 4286 unique colors, and
+  RGB variance `[2507.382, 2770.902, 2914.942]`, a
+  nonblank `rigid_contact_scale_budget` screenshot plus 71 PNG frames with
+  controller contact points at 4, 16, and 36 for the one-, four-, and nine-box
+  lanes and dense/single wall ratio `6.016` (RGB variance
+  `[2502.671, 2667.095, 2860.303]`, 2151 unique colors), a nonblank
+  `rigid_spin_roll_coupling` screenshot plus 95 PNG frames with final contacts
+  at 0, a
+  nonblank 960x540 `rigid_link_jacobian` screenshot plus 95 PNG frames with
+  final contacts at 0 (RGB variance `[2483.852, 2653.334, 2866.583]`, 2721
+  unique colors), a nonblank `rigid_multibody_dynamics_terms` screenshot plus 95 PNG
+  frames with final contacts at 0 (RGB variance
+  `[2496.525, 2663.351, 2868.943]`, 2869 unique colors), a nonblank
+  `rigid_multibody_solver_family` screenshot plus 71 PNG frames with final
+  contacts at 0 (RGB variance `[2505.408, 2673.722, 2866.646]`, 3407 unique
+  colors), a nonblank `rigid_body_modes` screenshot plus 71 frames, a nonblank
+  `rigid_loop_closure` screenshot plus 71 frames, a nonblank
+  `rigid_screw_joint_pitch` screenshot
+  plus 95 frames, a nonblank `rigid_contact_inspector` screenshot plus 23
+  frames, a nonblank `rigid_material_mixing` screenshot plus 71 frames, and a
+  nonblank
+  `rigid_joint_passive_parameters` screenshot plus 119 frames.
+- Local quality gates: `pixi run lint` passed after the spin/roll coupling
+  follow-up, the focused category/order/viewer-title/docs-count/sidecar/README/
+  capture-command/spin-roll/replay/panel guard reported `10 passed` before and
+  after lint, bounded `pixi run build` passed with `DART safe jobs: 3` and
+  `ninja: no work to do`, and `git diff --check` was clean after the evidence
+  update.
+- Local count-drift gate: the focused navigator-count guard reported
+  `4 passed`, and `pixi run lint` passed after adding the guard.
+- CUDA evidence: `pixi run -e cuda test-all` passed all 7 groups on a host with
+  an NVIDIA RTX 4080 Laptop GPU before later Python demo replay, scene, focused
+  test, and docs follow-ups. Re-run CUDA validation before merging if a later
+  slice touches CUDA-facing code.
+
+## Follow-Ups
+
+- Add a no-tunneling-specific regression or side-by-side row only if the
+  existing IPC scene family is not enough to cover the next user question.
+- Keep fuller articulated arm/gripper manipulation deferred for now. A fresh
+  public-API probe found that rigid-body joints are not supported by the IPC
+  rigid-body solver, multibody link contacts do not expose material/friction
+  controls, and the behaviorally useful scripted IPC two-jaw pinch settings run
+  at hundreds of milliseconds per step. Revisit only after the public API can
+  express a stable, interactive gripper without overclaiming IK, actuator
+  dynamics, or link-material behavior.
+- Keep taller or heavier rigid IPC stacks benchmark/capture-first before making
+  them part of the default live GUI path. The first four-box stack packet is in
+  the Rigid IPC shelf; future larger packets still need benchmark/capture
+  evidence before any live-workflow claim.
+- Keep related-evidence routes in the runner and this sidecar synchronized.
+  They remain labelled as related shelf links rather than numbered workflow
+  rows.
+- Keep new rigid visual rows in this packet, `python/examples/demos/README.md`,
+  and the ordered demo registry in sync.
+- Keep motor/limit wording on the World multibody joint actuator path until
+  rigid-body joint motors have equally stable public behavior.
+- Add future point-force or impulse rows only if the public API supports a
+  distinct, bounded visual question that the accumulator row does not answer.
+- Add a separate `rigid_energy_momentum` row only if it answers a distinct user
+  question beyond the free-flight diagnostics, without duplicating the
+  time-step, load, restitution, or solver-comparison rows.
+- Add additional loop-closure rows only for distinct behavior beyond public
+  POINT/DISTANCE/RIGID family selection, such as compliance or breakage.
+- Keep `rigid_joint_breakage` AVBD-pinned and scoped to break-force,
+  broken-state, and reset lifecycle; do not imply sequential-impulse or IPC
+  parity.
+- Keep `rigid_multibody_dynamics_terms` scoped to joint-space generalized
+  dynamics, `rigid_link_center_of_mass` scoped to public `Link.center_of_mass`
+  inertial offsets and gravity torque, and `rigid_link_jacobian` scoped to
+  link-origin world-Jacobian velocity and wrench-transpose mapping. Do not fold
+  arbitrary point-force, COM-Jacobian, contact-Jacobian, IK, or
+  operational-space controller claims into those rows.
+- Keep `rigid_material_mixing` scoped to DART 7 World pair-material ownership:
+  effective restitution is `max(e_a, e_b)`, effective friction is
+  `sqrt(mu_a * mu_b)`, swapped mixed pairs are the signal, and the row should
+  not grow into an IPC restitution claim or a duplicate stick/slip threshold.
+- Keep differentiable contact-gradient mode UX routed to the existing
+  `diff_drone_liftoff` scene unless users need a distinct rigid workflow row
+  with additional public controls such as pre-contact surrogate mode.

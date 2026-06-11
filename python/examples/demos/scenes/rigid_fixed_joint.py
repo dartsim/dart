@@ -1,8 +1,10 @@
-"""Rigid-body fixed-joint scene for the World facade."""
+"""Rigid-body fixed-joint verifier for the DART 7 World facade."""
 
 from __future__ import annotations
 
+import math
 from collections import deque
+from typing import Any
 
 import numpy as np
 
@@ -12,93 +14,278 @@ import dartpy as sx
 from .._world_bridge import WorldRenderBridge
 from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
+_TIME_STEP = 0.005
+_HISTORY = 180
+_BASE_POSITION = np.array([0.0, 0.0, 1.0])
 _PAYLOAD_OFFSET = np.array([0.85, 0.0, 0.0])
 _BASE_HALF = np.array([0.16, 0.16, 0.16])
 _PAYLOAD_HALF = np.array([0.22, 0.14, 0.14])
 
 
-def _translation(x: float, y: float, z: float) -> np.ndarray:
+def _translation(position: np.ndarray | tuple[float, float, float]) -> np.ndarray:
     transform = np.eye(4)
-    transform[:3, 3] = (x, y, z)
+    transform[:3, 3] = np.asarray(position, dtype=float)
     return transform
 
 
-def build() -> SceneSetup:
-    world = sx.World(time_step=0.005, gravity=(0.0, 0.0, -9.81))
+def _rotation_z(angle: float) -> np.ndarray:
+    transform = np.eye(4)
+    c = math.cos(angle)
+    s = math.sin(angle)
+    transform[0, 0] = c
+    transform[0, 1] = -s
+    transform[1, 0] = s
+    transform[1, 1] = c
+    return transform
 
-    base = world.add_rigid_body("fixed_joint_base", position=(0.0, 0.0, 1.0))
-    base.is_static = True
 
-    payload = world.add_rigid_body(
-        "fixed_joint_payload", position=tuple(base.translation + _PAYLOAD_OFFSET)
-    )
-    payload.mass = 1.0
-    payload.angular_velocity = (0.0, 0.0, 1.2)
+def _angle_between(reference: np.ndarray, current: np.ndarray) -> float:
+    delta = np.asarray(reference, dtype=float).T @ np.asarray(current, dtype=float)
+    cosine = float(np.clip((np.trace(delta) - 1.0) * 0.5, -1.0, 1.0))
+    return float(math.acos(cosine))
 
-    fixed_joint = world.add_rigid_body_fixed_joint(
-        "fixed_joint_base_to_payload", base, payload
-    )
-    world.enter_simulation_mode()
 
-    bridge = WorldRenderBridge(world, name="rigid_fixed_joint_render")
-    bridge.add_rigid_body_visual(
-        base,
-        dart.BoxShape(2.0 * _BASE_HALF),
-        (0.32, 0.34, 0.38),
-        name="fixed_joint_base_visual",
-    )
-    bridge.add_rigid_body_visual(
-        payload,
-        dart.BoxShape(2.0 * _PAYLOAD_HALF),
-        (0.88, 0.42, 0.18),
-        name="fixed_joint_payload_visual",
-    )
+class _RigidFixedJointVerifier:
+    def __init__(self) -> None:
+        self.perturbation = 0.18
+        self.world = sx.World(time_step=_TIME_STEP, gravity=(0.0, 0.0, -9.81))
 
-    connector = dart.SimpleFrame(
-        dart.gui.world_render_frame(),
-        "fixed_joint_connector_visual",
-        _translation(0.5 * _PAYLOAD_OFFSET[0], 0.0, 1.0),
-    )
-    connector.set_shape(dart.BoxShape(np.array([_PAYLOAD_OFFSET[0], 0.035, 0.035])))
-    connector.create_visual_aspect().set_color([0.78, 0.78, 0.72])
-    bridge.render_world.add_simple_frame(connector)
-    bridge.sync()
+        self.base = self.world.add_rigid_body(
+            "fixed_joint_base", position=tuple(_BASE_POSITION)
+        )
+        self.base.is_static = True
 
-    error_history: deque[float] = deque(maxlen=120)
-    speed_history: deque[float] = deque(maxlen=120)
+        self.payload = self.world.add_rigid_body(
+            "fixed_joint_payload", position=tuple(_BASE_POSITION + _PAYLOAD_OFFSET)
+        )
+        self.payload.mass = 1.0
+        self.payload.angular_velocity = (0.0, 0.0, 1.2)
 
-    def build_panel(builder: object, context: object) -> None:
-        base_position = np.asarray(base.translation, dtype=float).reshape(3)
-        payload_position = np.asarray(payload.translation, dtype=float).reshape(3)
-        error = float(np.linalg.norm((payload_position - base_position) - _PAYLOAD_OFFSET))
-        speed = float(np.linalg.norm(np.asarray(payload.linear_velocity, dtype=float)))
-        error_history.append(error)
-        speed_history.append(speed)
-        found_joint = world.get_rigid_body_fixed_joint(fixed_joint.name) or fixed_joint
+        self.fixed_joint = self.world.add_rigid_body_fixed_joint(
+            "fixed_joint_base_to_payload", self.base, self.payload
+        )
+        self._captured_relative_transform = self._relative_transform()
+        self.world.enter_simulation_mode()
 
-        builder.text("joint: fixed")
+        self.bridge = WorldRenderBridge(self.world, name="rigid_fixed_joint_render")
+        self.bridge.add_rigid_body_visual(
+            self.base,
+            dart.BoxShape(2.0 * _BASE_HALF),
+            (0.32, 0.34, 0.38),
+            name="fixed_joint_base_visual",
+        )
+        self.bridge.add_rigid_body_visual(
+            self.payload,
+            dart.BoxShape(2.0 * _PAYLOAD_HALF),
+            (0.88, 0.42, 0.18),
+            name="fixed_joint_payload_visual",
+        )
+
+        connector = dart.SimpleFrame(
+            dart.gui.world_render_frame(),
+            "fixed_joint_connector_visual",
+            _translation(_BASE_POSITION + 0.5 * _PAYLOAD_OFFSET),
+        )
+        connector.set_shape(dart.BoxShape(np.array([_PAYLOAD_OFFSET[0], 0.035, 0.035])))
+        connector.create_visual_aspect().set_color([0.78, 0.78, 0.72])
+        self.bridge.render_world.add_simple_frame(connector)
+
+        self._translation_error_history: deque[float] = deque(maxlen=_HISTORY)
+        self._orientation_error_history: deque[float] = deque(maxlen=_HISTORY)
+        self._speed_history: deque[float] = deque(maxlen=_HISTORY)
+        self._angular_speed_history: deque[float] = deque(maxlen=_HISTORY)
+        self._last_metrics: dict[str, float | str] = {}
+        self.reset(clear_replay=True)
+
+    def _relative_transform(self) -> np.ndarray:
+        base_transform = np.asarray(self.base.transform, dtype=float)
+        payload_transform = np.asarray(self.payload.transform, dtype=float)
+        return np.linalg.inv(base_transform) @ payload_transform
+
+    def _target_payload_transform(self) -> np.ndarray:
+        return np.asarray(self.base.transform, dtype=float) @ self._captured_relative_transform
+
+    def _reset_body_state(self) -> None:
+        self.base.transform = _translation(_BASE_POSITION)
+        self.payload.transform = self._target_payload_transform()
+        self.base.linear_velocity = (0.0, 0.0, 0.0)
+        self.base.angular_velocity = (0.0, 0.0, 0.0)
+        self.payload.linear_velocity = (0.0, 0.0, 0.0)
+        self.payload.angular_velocity = (0.0, 0.0, 1.2)
+        self.base.clear_force()
+        self.base.clear_torque()
+        self.payload.clear_force()
+        self.payload.clear_torque()
+
+    def reset(self, *, clear_replay: bool = False) -> None:
+        self._reset_body_state()
+        self.world.time = 0.0
+        if clear_replay:
+            try:
+                self.world.clear_replay_recording()
+            except Exception:  # noqa: BLE001
+                pass
+        self.world.update_kinematics()
+        for history in (
+            self._translation_error_history,
+            self._orientation_error_history,
+            self._speed_history,
+            self._angular_speed_history,
+        ):
+            history.clear()
+        self._last_metrics.clear()
+        self._record_metrics()
+        self._sync()
+
+    def perturb(self) -> None:
+        scale = max(0.0, min(0.35, float(self.perturbation)))
+        target = self._target_payload_transform()
+        perturbed = _rotation_z(2.0 * scale) @ target
+        perturbed[:3, 3] = target[:3, 3] + np.array(
+            [scale, -0.65 * scale, 0.45 * scale]
+        )
+        self.payload.transform = perturbed
+        self.payload.linear_velocity = (1.0 * scale, -0.6 * scale, 0.4 * scale)
+        self.payload.angular_velocity = (0.2 * scale, -0.1 * scale, 2.4 * scale)
+        self.payload.clear_force()
+        self.payload.clear_torque()
+        self.world.update_kinematics()
+        self._record_metrics()
+        self._sync()
+
+    def _record_metrics(self) -> None:
+        relative = self._relative_transform()
+        reference = self._captured_relative_transform
+        translation_error = float(
+            np.linalg.norm(relative[:3, 3] - reference[:3, 3])
+        )
+        orientation_error = _angle_between(reference[:3, :3], relative[:3, :3])
+        speed = float(np.linalg.norm(np.asarray(self.payload.linear_velocity, dtype=float)))
+        angular_speed = float(
+            np.linalg.norm(np.asarray(self.payload.angular_velocity, dtype=float))
+        )
+        self._last_metrics = {
+            "translation_error": translation_error,
+            "orientation_error": orientation_error,
+            "payload_speed": speed,
+            "payload_angular_speed": angular_speed,
+            "world_time": float(self.world.time),
+            "joint_name": str(self.fixed_joint.name),
+        }
+        self._translation_error_history.append(translation_error)
+        self._orientation_error_history.append(orientation_error)
+        self._speed_history.append(speed)
+        self._angular_speed_history.append(angular_speed)
+
+    def _sync(self) -> None:
+        self.bridge.sync()
+
+    def pre_step(self) -> None:
+        self.world.step()
+        self._record_metrics()
+        self._sync()
+
+    def capture_replay_state(self) -> dict[str, Any]:
+        return {
+            "controls": {
+                "perturbation": float(self.perturbation),
+            },
+            "translation_error_history": list(self._translation_error_history),
+            "orientation_error_history": list(self._orientation_error_history),
+            "speed_history": list(self._speed_history),
+            "angular_speed_history": list(self._angular_speed_history),
+            "last_metrics": dict(self._last_metrics),
+        }
+
+    def restore_replay_state(self, state: dict[str, Any]) -> None:
+        controls = state.get("controls", {})
+        self.perturbation = float(controls.get("perturbation", self.perturbation))
+        self._restore_history(
+            self._translation_error_history,
+            state.get("translation_error_history", []),
+        )
+        self._restore_history(
+            self._orientation_error_history,
+            state.get("orientation_error_history", []),
+        )
+        self._restore_history(self._speed_history, state.get("speed_history", []))
+        self._restore_history(
+            self._angular_speed_history,
+            state.get("angular_speed_history", []),
+        )
+        self._last_metrics = {
+            str(key): float(value) if isinstance(value, (int, float)) else str(value)
+            for key, value in state.get("last_metrics", {}).items()
+        }
+        self._sync()
+
+    def _restore_history(self, history: deque[float], values: Any) -> None:
+        history.clear()
+        history.extend(float(value) for value in values)
+
+    def build_panel(self, builder: Any, context: Any) -> None:
+        changed, perturbation = builder.slider(
+            "Perturbation", float(self.perturbation), 0.0, 0.35
+        )
+        if changed:
+            self.perturbation = float(perturbation)
+        if builder.button("Perturb payload"):
+            self.perturb()
+        builder.same_line()
+        if builder.button("Reset fixed joint"):
+            self.reset(clear_replay=True)
+
+        metrics = self._last_metrics or {}
+        found_joint = self.world.get_rigid_body_fixed_joint(
+            self.fixed_joint.name
+        ) or self.fixed_joint
+        builder.separator()
+        builder.text("constraint: fixed relative transform")
         builder.text(f"name: {found_joint.name}")
-        builder.text(f"fixed joints: {world.num_rigid_body_fixed_joints}")
+        builder.text(f"fixed joints: {self.world.num_rigid_body_fixed_joints}")
         builder.text(f"parent: {found_joint.parent_rigid_body.name}")
         builder.text(f"child: {found_joint.child_rigid_body.name}")
-        builder.text(f"world time: {world.time:.3f} s")
-        builder.text(f"offset error: {error:.4f} m")
-        builder.text(f"payload speed: {speed:.3f} m/s")
-        builder.plot_lines("Offset error", list(error_history))
-        builder.plot_lines("Payload speed", list(speed_history))
+        builder.text(f"world time: {float(metrics.get('world_time', 0.0)):.3f} s")
+        builder.text(
+            "relative offset error: "
+            f"{float(metrics.get('translation_error', 0.0)):.6f} m"
+        )
+        builder.text(
+            "relative orientation error: "
+            f"{float(metrics.get('orientation_error', 0.0)):.6f} rad"
+        )
+        builder.text(
+            f"payload speed: {float(metrics.get('payload_speed', 0.0)):.4f} m/s"
+        )
+        builder.text(
+            "payload angular speed: "
+            f"{float(metrics.get('payload_angular_speed', 0.0)):.4f} rad/s"
+        )
+        builder.plot_lines("Offset error", list(self._translation_error_history))
+        builder.plot_lines("Orientation error", list(self._orientation_error_history))
+        builder.plot_lines("Payload speed", list(self._speed_history))
+        builder.plot_lines("Payload angular speed", list(self._angular_speed_history))
         builder.separator()
-        bridge.build_control_panel(builder, context)
+        self.bridge.build_control_panel(builder, context)
 
+
+def build() -> SceneSetup:
+    verifier = _RigidFixedJointVerifier()
     return SceneSetup(
-        world=bridge.render_world,
-        pre_step=bridge.pre_step,
-        force_drag=bridge.force_drag,
-        panels=[ScenePanel("Rigid Fixed Joint", build_panel)],
+        world=verifier.bridge.render_world,
+        pre_step=verifier.pre_step,
+        force_drag=verifier.bridge.force_drag,
+        renderable_provider=verifier.bridge.renderable_provider,
+        panels=[ScenePanel("Rigid Fixed Joint", verifier.build_panel)],
         info={
-            "sx_world": world,
-            "joint": fixed_joint,
-            "base": base,
-            "payload": payload,
+            "sx_world": verifier.world,
+            "joint": verifier.fixed_joint,
+            "base": verifier.base,
+            "payload": verifier.payload,
+            "rigid_fixed_joint_controller": verifier,
+            "replay_capture_state": verifier.capture_replay_state,
+            "replay_restore_state": verifier.restore_replay_state,
+            "replay_sync": verifier._sync,
         },
     )
 
@@ -107,6 +294,6 @@ SCENE = PythonDemoScene(
     id="rigid_fixed_joint",
     title="Rigid Fixed Joint",
     category="World Rigid Body",
-    summary="A fixed joint holds a free rigid body at a captured offset.",
+    summary="Verifies that a fixed joint preserves the captured relative transform.",
     build=build,
 )

@@ -262,5 +262,50 @@ def test_continuous_sphere_cast():
     assert np.isfinite(hit.m_normal).all()
 
 
+def test_continuous_capsule_cast_result():
+    cd = dart.DartCollisionDetector()
+
+    simple_frame = dart.SimpleFrame()
+    simple_frame.set_name("continuous_capsule_cast_target")
+    sphere = dart.SphereShape(0.5)
+    simple_frame.set_shape(sphere)
+    simple_frame.set_translation([0, 0, 3])
+
+    group = cd.create_collision_group()
+    group.add_shape_frame(simple_frame)
+
+    capsule_start = np.eye(4)
+    capsule_end = np.eye(4)
+    capsule_start[:3, 3] = [0, 0, 0]
+    capsule_end[:3, 3] = [0, 0, 6]
+
+    miss_start = np.eye(4)
+    miss_end = np.eye(4)
+    miss_start[:3, 3] = [3, 0, 0]
+    miss_end[:3, 3] = [3, 0, 6]
+
+    option = dart.ContinuousCollisionOption()
+    assert group.capsule_cast(capsule_start, capsule_end, 0.2, 0.6, option)
+    assert not group.capsule_cast(miss_start, miss_end, 0.2, 0.6, option)
+
+    result = group.capsule_cast_result(capsule_start, capsule_end, 0.2, 0.6, option)
+
+    assert result.has_hit()
+    assert len(result.m_hits) == 1
+    hit = result.m_hits[0]
+    assert (
+        hit.m_collision_object.get_shape_frame().get_name()
+        == "continuous_capsule_cast_target"
+    )
+    assert 0.0 < hit.m_time_of_impact < 1.0
+    assert np.isfinite(hit.m_point).all()
+    assert np.isfinite(hit.m_normal).all()
+    assert np.linalg.norm(hit.m_normal) > 0.0
+
+    miss = group.capsule_cast_result(miss_start, miss_end, 0.2, 0.6, option)
+    assert not miss.has_hit()
+    assert len(miss.m_hits) == 0
+
+
 if __name__ == "__main__":
     pytest.main()
