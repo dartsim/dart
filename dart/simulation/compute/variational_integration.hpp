@@ -226,6 +226,19 @@ struct VariationalContactPoint
 /// roadmap's `k <= 1e4 mg` envelope).
 struct VariationalGroundContact
 {
+  using PointAllocator = dart::common::StlAllocator<VariationalContactPoint>;
+  using PointVector = std::vector<VariationalContactPoint, PointAllocator>;
+
+  VariationalGroundContact()
+    : VariationalGroundContact(dart::common::MemoryAllocator::GetDefault())
+  {
+  }
+
+  explicit VariationalGroundContact(dart::common::MemoryAllocator& allocator)
+    : points(PointAllocator{allocator})
+  {
+  }
+
   Eigen::Vector3d planeNormal
       = Eigen::Vector3d::UnitZ(); ///< unit normal, out of the ground
   Eigen::Vector3d planePoint
@@ -239,7 +252,7 @@ struct VariationalGroundContact
                                    ///< >= 0); dissipates the contact transient
                                    ///< (needed for clean AL settling). Honored
                                    ///< by VariationalGroundContactSolver.
-  std::vector<VariationalContactPoint> points; ///< body-fixed contact points
+  PointVector points;              ///< body-fixed contact points
 };
 
 /// **EXPERIMENTAL (PLAN-082 Phase C, rung C2).** Build an in-loop
@@ -270,12 +283,22 @@ makeVariationalGroundContactHook(VariationalGroundContact contact);
 class DART_SIMULATION_API VariationalGroundContactSolver
 {
 public:
+  using DualAllocator = dart::common::StlAllocator<double>;
+  using DualVector = std::vector<double, DualAllocator>;
+
   explicit VariationalGroundContactSolver(VariationalGroundContact contact);
+  VariationalGroundContactSolver(
+      VariationalGroundContact contact,
+      dart::common::MemoryAllocator& allocator);
 
   /// In-loop contact hook reading the current duals (constant across the step's
   /// RIQN iterates, so the AL force is smooth for the root-find). The returned
   /// hook reads this solver's live duals, so build it once and reuse it.
   [[nodiscard]] VariationalContactHook hook() const;
+
+  void setAllocator(dart::common::MemoryAllocator& allocator);
+  [[nodiscard]] const dart::common::MemoryAllocator& getAllocator()
+      const noexcept;
 
   /// Evaluate the current contact force into caller-owned storage. The output
   /// is resized to the context DOF count and overwritten.
@@ -289,7 +312,7 @@ public:
   void updateDuals(const std::vector<Eigen::Isometry3d>& linkWorldTransforms);
 
   /// The current per-contact-point duals (the accumulated AL contact forces).
-  [[nodiscard]] const std::vector<double>& duals() const
+  [[nodiscard]] const DualVector& duals() const
   {
     return mDuals;
   }
@@ -303,8 +326,9 @@ public:
   void resetContact(const VariationalGroundContact& contact);
 
 private:
+  dart::common::MemoryAllocator* m_allocator = nullptr;
   VariationalGroundContact mContact;
-  std::vector<double> mDuals; ///< per contact point, >= 0
+  DualVector mDuals; ///< per contact point, >= 0
 };
 
 /// Reusable storage for variational contact-force evaluation.

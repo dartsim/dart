@@ -219,6 +219,12 @@ from the same root. The variational bake/stage path sets it to the World free
 allocator before reservation, and the existing loop-closure clear/rebuild gate
 asserts the allocator alongside the tree scratch without adding a new scene.
 
+The following contact-scratch continuation routes baked variational ground
+contact points and the augmented-Lagrangian solver's private dual vector through
+the same World free allocator. The existing compliant-contact and contact-heavy
+World gates now assert those allocator bindings on the baked scratch/solver
+objects rather than relying only on capacity and no-growth counters.
+
 The latest rebuild-boundary slice reuses the existing mixed default-deformable
 storage scenes as compact, production, contact-family production, and
 complementary contact-family production gates for direct-sparse self-contact,

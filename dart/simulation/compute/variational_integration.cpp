@@ -2763,6 +2763,19 @@ VariationalContactHook makeVariationalGroundContactHook(
 
 namespace {
 
+void ensureVariationalGroundContactAllocator(
+    VariationalGroundContact& contact, dart::common::MemoryAllocator& allocator)
+{
+  const VariationalGroundContact::PointAllocator targetAllocator{allocator};
+  if (contact.points.get_allocator() == targetAllocator) {
+    return;
+  }
+
+  VariationalGroundContact::PointVector points{targetAllocator};
+  points.assign(contact.points.begin(), contact.points.end());
+  contact.points = std::move(points);
+}
+
 // Validate + normalize a ground-contact config (shared by the AL solver).
 void normalizeGroundContact(VariationalGroundContact& contact)
 {
@@ -2794,9 +2807,11 @@ void normalizeGroundContact(VariationalGroundContact& contact)
 
 void configureGroundContactScratch(
     const comps::VariationalContact& config,
-    MultibodyVariationalScratch& scratch)
+    MultibodyVariationalScratch& scratch,
+    dart::common::MemoryAllocator& allocator)
 {
   auto& contact = scratch.groundContact;
+  ensureVariationalGroundContactAllocator(contact, allocator);
   contact.planeNormal = config.planeNormal;
   contact.planePoint = config.planePoint;
   contact.stiffness = config.stiffness;
@@ -2883,6 +2898,17 @@ bool groundContactPointForceInto(
 //==============================================================================
 VariationalGroundContactSolver::VariationalGroundContactSolver(
     VariationalGroundContact contact)
+  : VariationalGroundContactSolver(
+        std::move(contact), dart::common::MemoryAllocator::GetDefault())
+{
+}
+
+//==============================================================================
+VariationalGroundContactSolver::VariationalGroundContactSolver(
+    VariationalGroundContact contact, dart::common::MemoryAllocator& allocator)
+  : m_allocator(&allocator),
+    mContact(allocator),
+    mDuals(DualAllocator{allocator})
 {
   resetContact(contact);
 }
@@ -2895,6 +2921,29 @@ VariationalContactHook VariationalGroundContactSolver::hook() const
     computeForceInto(context, generalizedForce);
     return generalizedForce;
   };
+}
+
+//==============================================================================
+void VariationalGroundContactSolver::setAllocator(
+    dart::common::MemoryAllocator& allocator)
+{
+  if (m_allocator == &allocator) {
+    return;
+  }
+
+  ensureVariationalGroundContactAllocator(mContact, allocator);
+  DualVector duals{DualAllocator{allocator}};
+  duals.assign(mDuals.begin(), mDuals.end());
+  mDuals = std::move(duals);
+  m_allocator = &allocator;
+}
+
+//==============================================================================
+const dart::common::MemoryAllocator&
+VariationalGroundContactSolver::getAllocator() const noexcept
+{
+  return m_allocator != nullptr ? *m_allocator
+                                : dart::common::MemoryAllocator::GetDefault();
 }
 
 //==============================================================================
@@ -4026,7 +4075,7 @@ void reserveMultibodyVariationalRegistryStorage(
     }
     ensureVariationalContactAllocator(*contactConfig, allocator);
 
-    configureGroundContactScratch(*contactConfig, scratch);
+    configureGroundContactScratch(*contactConfig, scratch, allocator);
     if (scratch.groundContact.stiffness <= 0.0
         || scratch.groundContact.points.empty()) {
       continue;
@@ -4040,8 +4089,9 @@ void reserveMultibodyVariationalRegistryStorage(
       continue;
     }
     if (!scratch.groundContactSolver.has_value()) {
-      scratch.groundContactSolver.emplace(scratch.groundContact);
+      scratch.groundContactSolver.emplace(scratch.groundContact, allocator);
     } else {
+      scratch.groundContactSolver->setAllocator(allocator);
       scratch.groundContactSolver->resetContact(scratch.groundContact);
     }
 
@@ -4162,7 +4212,8 @@ void MultibodyVariationalIntegrationStage::execute(
     VariationalContactHook contactHook;
     if (contactConfig != nullptr) {
       ensureVariationalContactAllocator(*contactConfig, worldFreeAllocator);
-      configureGroundContactScratch(*contactConfig, scratch);
+      configureGroundContactScratch(
+          *contactConfig, scratch, worldFreeAllocator);
       const auto& contact = scratch.groundContact;
       if (contact.stiffness > 0.0 && !contact.points.empty()) {
         normalizeGroundContact(scratch.groundContact);
@@ -4172,8 +4223,9 @@ void MultibodyVariationalIntegrationStage::execute(
           // duals. The solver must outlive the integrate call and the later
           // dual update, so it is also held in `alSolver` here.
           if (!scratch.groundContactSolver.has_value()) {
-            scratch.groundContactSolver.emplace(contact);
+            scratch.groundContactSolver.emplace(contact, worldFreeAllocator);
           } else {
+            scratch.groundContactSolver->setAllocator(worldFreeAllocator);
             scratch.groundContactSolver->resetContact(contact);
           }
           VariationalGroundContactSolver& solver = *scratch.groundContactSolver;

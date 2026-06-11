@@ -654,6 +654,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     per-link child lists, and link-index map from the World free allocator;
     its nested inverse-dynamics scratch pimpl and dynamics-tree vectors now
     borrow the same allocator when baked or first used by the World stage.
+    Baked variational ground-contact point scratch and augmented-Lagrangian
+    solver dual scratch now also keep their reusable vectors on the World free
+    allocator.
     Contact-heavy variational dual-state vectors now also borrow the World
     free allocator when baked or first created by the World stage; pre-existing
     dual-state components are rebound before sizing, and binary state

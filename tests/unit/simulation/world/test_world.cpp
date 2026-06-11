@@ -4147,7 +4147,8 @@ void configureVariationalContactDualStateSliderScene(
 }
 
 void expectCompliantVariationalContactScratchBaked(
-    const dart::simulation::detail::WorldRegistry& registry)
+    const dart::simulation::detail::WorldRegistry& registry,
+    dart::common::MemoryAllocator* expectedAllocator = nullptr)
 {
   namespace sx = dart::simulation;
 
@@ -4156,6 +4157,12 @@ void expectCompliantVariationalContactScratchBaked(
        registry.view<sx::compute::MultibodyVariationalScratch>()) {
     const auto& scratch
         = registry.get<sx::compute::MultibodyVariationalScratch>(entity);
+    if (expectedAllocator != nullptr) {
+      const sx::compute::VariationalGroundContact::PointAllocator
+          expectedPointAllocator{*expectedAllocator};
+      EXPECT_EQ(
+          scratch.groundContact.points.get_allocator(), expectedPointAllocator);
+    }
     EXPECT_EQ(
         scratch.groundContact.points.size(),
         kCompliantVariationalContactPointsPerRobot);
@@ -4178,7 +4185,8 @@ void expectCompliantVariationalContactScratchBaked(
 }
 
 void expectVariationalContactGroundSolverBaked(
-    const dart::simulation::detail::WorldRegistry& registry)
+    const dart::simulation::detail::WorldRegistry& registry,
+    dart::common::MemoryAllocator* expectedAllocator = nullptr)
 {
   namespace sx = dart::simulation;
 
@@ -4188,6 +4196,15 @@ void expectVariationalContactGroundSolverBaked(
     const auto& scratch
         = registry.get<sx::compute::MultibodyVariationalScratch>(entity);
     ASSERT_TRUE(scratch.groundContactSolver.has_value());
+    if (expectedAllocator != nullptr) {
+      EXPECT_EQ(
+          &scratch.groundContactSolver->getAllocator(), expectedAllocator);
+      const sx::compute::VariationalGroundContactSolver::DualAllocator
+          expectedDualAllocator{*expectedAllocator};
+      EXPECT_EQ(
+          scratch.groundContactSolver->duals().get_allocator(),
+          expectedDualAllocator);
+    }
     EXPECT_EQ(
         scratch.groundContactSolver->duals().size(),
         kCompliantVariationalContactPointsPerRobot);
@@ -4376,7 +4393,7 @@ TEST(World, EnterSimulationModeReservesContactHeavyVariationalDualState)
   expectVariationalContactConfigUsesAllocator(registry, worldFreeAllocator);
   expectVariationalStateUsesAllocator(registry, worldFreeAllocator);
   expectVariationalContactDualStateBaked(registry, &expectedDualAllocator);
-  expectVariationalContactGroundSolverBaked(registry);
+  expectVariationalContactGroundSolverBaked(registry, &worldFreeAllocator);
   EXPECT_GE(
       worldFreeList.getAllocationCount(),
       worldAllocationsBeforeBake + kCompliantVariationalContactRobotCount)
@@ -4494,7 +4511,8 @@ TEST(World, EnterSimulationModeReservesCompliantVariationalContactScratch)
   const auto& registry = sx::detail::registryOf(world);
   const auto capacities = registryStorageCapacities(registry);
 
-  expectCompliantVariationalContactScratchBaked(registry);
+  expectCompliantVariationalContactScratchBaked(
+      registry, &world.getMemoryManager().getFreeAllocator());
 
   const auto allocationsAfterBake = allocator.allocationCount;
   const auto deallocationsAfterBake = allocator.deallocationCount;
@@ -4700,7 +4718,8 @@ TEST(World, ContactHeavyRegistryStorageRebuildsAfterClear)
       EXPECT_GE(
           scratchCapacity->second, kCompliantVariationalContactRobotCount);
     }
-    expectCompliantVariationalContactScratchBaked(registry);
+    expectCompliantVariationalContactScratchBaked(
+        registry, &world.getMemoryManager().getFreeAllocator());
 
     const auto allocationsAfterBake = allocator.allocationCount;
     const auto deallocationsAfterBake = allocator.deallocationCount;
