@@ -711,7 +711,7 @@ assembleRigidIpcObjectiveSystem(
 /// Assemble rigid IPC barrier, lagged friction, per-body dynamics, and
 /// articulation equality rows. Articulation rows are stored in
 /// `equalityResidual`/`equalityJacobian` and enforced by the projected-Newton
-/// solve's KKT step.
+/// solve's private equality change-of-variable step.
 [[nodiscard]] DART_SIMULATION_API RigidIpcBarrierAssembly
 assembleRigidIpcObjectiveSystem(
     std::span<const RigidIpcBarrierSurface> surfaces,

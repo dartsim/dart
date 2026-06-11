@@ -280,6 +280,22 @@ detail::RigidIpcFrictionOptions makeRigidFrictionOptions(
 }
 
 //==============================================================================
+detail::AffinePointTriangleMicroSolveOptions makeAffineMicroSolveOptions()
+{
+  detail::AffinePointTriangleMicroSolveOptions options;
+  options.barrier.squaredActivationDistance = 0.25;
+  options.barrier.stiffness = 0.04;
+  options.barrier.projectHessianToPsd = true;
+  options.inertialWeight = 1.0;
+  options.orthogonalityStiffness = 0.5;
+  options.gradientTolerance = 1e-8;
+  options.maxIterations = 32;
+  options.maxLineSearchIterations = 24;
+  options.maxStepNorm = 0.2;
+  return options;
+}
+
+//==============================================================================
 void expectRigidFrictionOracleMatches(
     const detail::AffinePrimitiveFrictionResult& affine,
     const detail::RigidIpcReducedFrictionResult& rigid)
@@ -301,6 +317,27 @@ void expectRigidFrictionOracleMatches(
       = tangentBasis.transpose() * affine.hessian * tangentBasis
         + rigidRotationCurvatureCorrectionAtIdentity(affine.gradient);
   expectMatrixNear(correctedAffineHessian, rigid.hessian, 5e-3);
+}
+
+//==============================================================================
+double pointTriangleSquaredDistance(
+    const detail::AffineBodyState& pointBody,
+    const Eigen::Vector3d& point,
+    const detail::AffineBodyState& triangleBody,
+    const Eigen::Vector3d& triangleA,
+    const Eigen::Vector3d& triangleB,
+    const Eigen::Vector3d& triangleC,
+    const detail::AffineBarrierOptions& options)
+{
+  return detail::affinePointTriangleBarrier(
+             pointBody,
+             point,
+             triangleBody,
+             triangleA,
+             triangleB,
+             triangleC,
+             options)
+      .primitive.squaredDistance;
 }
 
 } // namespace
@@ -953,4 +990,68 @@ TEST(AffineBodyDynamics, RigidTangentDerivativesMatchRigidIpcOracle)
       = tangentBasis.transpose() * affine.hessian * tangentBasis
         + rigidRotationCurvatureCorrectionAtIdentity(affine.gradient);
   expectMatrixNear(correctedAffineHessian, rigid.hessian, 5e-3);
+}
+
+//==============================================================================
+TEST(AffineBodyDynamics, PointTriangleMicroSolveReducesImplicitObjective)
+{
+  detail::AffineBodyState initialPointBody;
+  initialPointBody.translation = {0.0, 0.0, 0.08};
+  initialPointBody.linearMap
+      = Eigen::AngleAxisd(0.08, Eigen::Vector3d::UnitX()).toRotationMatrix();
+  initialPointBody.mass = 3.0;
+  initialPointBody.linearVelocity = {0.1, -0.2, 0.3};
+
+  detail::AffineBodyState inertialTarget = initialPointBody;
+  inertialTarget.translation = {0.0, 0.0, 0.02};
+  inertialTarget.linearMap(0, 1) += 0.04;
+  inertialTarget.linearMap(1, 2) -= 0.03;
+
+  detail::AffineBodyState triangleBody;
+  triangleBody.dynamic = false;
+
+  const Eigen::Vector3d point(0.2, 0.15, 0.0);
+  const Eigen::Vector3d triangleA(0.0, 0.0, 0.0);
+  const Eigen::Vector3d triangleB(1.0, 0.0, 0.0);
+  const Eigen::Vector3d triangleC(0.0, 1.0, 0.0);
+  const auto options = makeAffineMicroSolveOptions();
+
+  const double targetSquaredDistance = pointTriangleSquaredDistance(
+      inertialTarget,
+      point,
+      triangleBody,
+      triangleA,
+      triangleB,
+      triangleC,
+      options.barrier);
+  const double targetOrthogonality
+      = detail::affineOrthogonalityEnergy(
+            inertialTarget, options.orthogonalityStiffness)
+            .value;
+
+  const auto result = detail::affinePointTriangleMicroSolve(
+      initialPointBody,
+      inertialTarget,
+      point,
+      triangleBody,
+      triangleA,
+      triangleB,
+      triangleC,
+      options);
+
+  EXPECT_TRUE(result.valid);
+  EXPECT_TRUE(result.converged);
+  EXPECT_GT(result.iterations, 0);
+  EXPECT_TRUE(result.barrierActive);
+  EXPECT_LT(result.finalValue, result.initialValue);
+  EXPECT_LT(result.finalGradientNorm, result.initialGradientNorm);
+  EXPECT_GT(result.finalSquaredDistance, targetSquaredDistance);
+  EXPECT_DOUBLE_EQ(result.state.mass, initialPointBody.mass);
+  EXPECT_EQ(result.state.linearVelocity, initialPointBody.linearVelocity);
+
+  const double finalOrthogonality
+      = detail::affineOrthogonalityEnergy(
+            result.state, options.orthogonalityStiffness)
+            .value;
+  EXPECT_LT(finalOrthogonality, targetOrthogonality);
 }
