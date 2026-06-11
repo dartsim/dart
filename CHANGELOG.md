@@ -658,9 +658,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     solver dual scratch now also keep their reusable vectors on the World free
     allocator, and contact-evaluation transform/Jacobian scratch vectors borrow
     that allocator before baked contact-force evaluation. Variational
-    loop-closure step, linear-solve, projection, and Anderson scratch vectors
-    now use the same World allocator for baked stage storage, and the AL contact
-    dual-update post-transform list follows that allocator as well.
+    loop-closure constraint staging, step, linear-solve, projection, and
+    Anderson scratch vectors now use the same World allocator for baked stage
+    storage, and the AL contact dual-update post-transform list follows that
+    allocator as well.
     Contact-heavy variational dual-state vectors now also borrow the World
     free allocator when baked or first created by the World stage; pre-existing
     dual-state components are rebound before sizing, and binary state

@@ -61,6 +61,13 @@ void rebindVectorAllocator(
   values = std::move(rebound);
 }
 
+template <typename ConstraintVector>
+std::span<const VariationalLoopConstraint> variationalLoopConstraintSpan(
+    const ConstraintVector& constraints)
+{
+  return {constraints.data(), constraints.size()};
+}
+
 MultibodyVariationalState makeMultibodyVariationalState(
     dart::common::MemoryAllocator& allocator)
 {
@@ -722,7 +729,7 @@ double clampVariationalProjectionRowForce(
 
 template <typename BoundsVector>
 void variationalLoopConstraintRowBoundsInto(
-    const std::vector<VariationalLoopConstraint>& constraints,
+    std::span<const VariationalLoopConstraint> constraints,
     double timeStep,
     BoundsVector& bounds)
 {
@@ -897,10 +904,11 @@ dvbd::AvbdScalarRowDescriptor makeVariationalCompliantLoopRowDescriptor(
   return descriptor;
 }
 
+template <typename ConstraintVector>
 void appendAvbdRigidWorldArticulatedPointJointConstraints(
     const detail::WorldRegistry& registry,
     entt::entity structureEntity,
-    std::vector<VariationalLoopConstraint>& constraints,
+    ConstraintVector& constraints,
     VariationalCompliantLoopScratch* compliantScratch = nullptr)
 {
   const auto& structure
@@ -1129,7 +1137,7 @@ void appendAvbdRigidWorldArticulatedPointJointConstraints(
 
 void markBrokenAvbdVariationalLoopConstraints(
     detail::WorldRegistry& registry,
-    const std::vector<VariationalLoopConstraint>& constraints,
+    std::span<const VariationalLoopConstraint> constraints,
     const Eigen::VectorXd& lambda)
 {
   Eigen::Index row = 0;
@@ -1401,7 +1409,7 @@ std::optional<VariationalSolveReport> tryIntegrateSinglePrismaticVariational(
     const Eigen::Vector3d& gravity,
     double timeStep,
     MultibodyVariationalState& state,
-    const std::vector<VariationalLoopConstraint>& constraints,
+    std::span<const VariationalLoopConstraint> constraints,
     const VariationalContactHook& contactHook,
     const VariationalGroundContact* groundContact,
     std::span<const double> groundContactDuals)
@@ -1970,7 +1978,7 @@ void resizeBodyJacobianScratch(
 }
 
 Eigen::Index constraintRowCount(
-    const std::vector<VariationalLoopConstraint>& constraints)
+    std::span<const VariationalLoopConstraint> constraints)
 {
   Eigen::Index rows = 0;
   for (const auto& constraint : constraints) {
@@ -2111,7 +2119,7 @@ void constraintResidualAndJacobianInto(
     const comps::MultibodyStructure& structure,
     const VarTree& tree,
     const JacobianVector& jacobians,
-    const std::vector<VariationalLoopConstraint>& constraints,
+    std::span<const VariationalLoopConstraint> constraints,
     VariationalConstraintProjectionScratch& scratch,
     double timeStep = 0.0,
     Eigen::Index storageRows = -1,
@@ -2903,6 +2911,15 @@ void ensureVariationalPostContactTransformsAllocator(
   rebindVectorAllocator(scratch.postContactTransforms, targetAllocator);
 }
 
+void ensureVariationalConstraintsAllocator(
+    MultibodyVariationalScratch& scratch,
+    dart::common::MemoryAllocator& allocator)
+{
+  const MultibodyVariationalScratch::ConstraintAllocator targetAllocator{
+      allocator};
+  rebindVectorAllocator(scratch.constraints, targetAllocator);
+}
+
 // Validate + normalize a ground-contact config (shared by the AL solver).
 void normalizeGroundContact(VariationalGroundContact& contact)
 {
@@ -3234,7 +3251,7 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
     MultibodyVariationalState& state,
     int maxIterations,
     double tolerance,
-    const std::vector<VariationalLoopConstraint>& constraints,
+    std::span<const VariationalLoopConstraint> constraints,
     std::size_t andersonDepth,
     const VariationalContactHook& contactHook,
     const VariationalGroundContact* fastGroundContact,
@@ -3948,7 +3965,7 @@ VariationalSolveReport integrateMultibodyVariational(
       state,
       maxIterations,
       tolerance,
-      constraints,
+      variationalLoopConstraintSpan(constraints),
       andersonDepth,
       contactHook,
       nullptr,
@@ -4026,7 +4043,11 @@ VariationalConstraintLinearization computeVariationalConstraintLinearization(
   VariationalConstraintProjectionScratch scratch;
   bodyJacobiansInto(tree, scratch.jacobians);
   constraintResidualAndJacobianInto(
-      structure, tree, scratch.jacobians, constraints, scratch);
+      structure,
+      tree,
+      scratch.jacobians,
+      variationalLoopConstraintSpan(constraints),
+      scratch);
   result.residual = std::move(scratch.residual);
   result.jacobian = std::move(scratch.jacobian);
   return result;
@@ -4161,6 +4182,7 @@ void reserveMultibodyVariationalRegistryStorage(
     ensureVariationalProjectionScratchAllocator(scratch.projection, allocator);
     ensureVariationalAndersonScratchAllocator(scratch.anderson, allocator);
     ensureVariationalPostContactTransformsAllocator(scratch, allocator);
+    ensureVariationalConstraintsAllocator(scratch, allocator);
     scratch.postContactTransforms.resize(structure.links.size());
     scratch.constraints.clear();
     for (auto closureEntity : closures) {
@@ -4185,8 +4207,8 @@ void reserveMultibodyVariationalRegistryStorage(
         compliantScratch->clear();
       }
     }
-    const Eigen::Index loopProjectionRows
-        = constraintRowCount(scratch.constraints);
+    const Eigen::Index loopProjectionRows = constraintRowCount(
+        variationalLoopConstraintSpan(scratch.constraints));
     scratch.constraints.clear();
 
     const VarTree& tree
@@ -4320,6 +4342,7 @@ void MultibodyVariationalIntegrationStage::execute(
         scratch.anderson, worldFreeAllocator);
     ensureVariationalPostContactTransformsAllocator(
         scratch, worldFreeAllocator);
+    ensureVariationalConstraintsAllocator(scratch, worldFreeAllocator);
     auto& constraints = scratch.constraints;
     constraints.clear();
     for (auto closureEntity : closures) {
@@ -4408,7 +4431,7 @@ void MultibodyVariationalIntegrationStage::execute(
         state,
         static_cast<int>(m_maxIterations),
         m_tolerance,
-        constraints,
+        variationalLoopConstraintSpan(constraints),
         5,
         contactHook,
         groundContact,

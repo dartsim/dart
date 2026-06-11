@@ -4409,6 +4409,10 @@ void expectVariationalLoopClosureScratchBaked(
       EXPECT_EQ(
           scratch.anderson.iterateDeltas.get_allocator(),
           expectedAndersonVectorAllocator);
+      const sx::compute::MultibodyVariationalScratch::ConstraintAllocator
+          expectedConstraintAllocator{*expectedAllocator};
+      EXPECT_EQ(
+          scratch.constraints.get_allocator(), expectedConstraintAllocator);
     }
     EXPECT_EQ(scratch.tree.linkCount(), kLinkCount);
     EXPECT_EQ(scratch.tree.dofCount(), kDofCount);

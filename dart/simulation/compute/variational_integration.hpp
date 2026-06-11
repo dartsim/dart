@@ -576,8 +576,12 @@ struct MultibodyVariationalScratch
       = dart::common::StlAllocator<Eigen::Isometry3d>;
   using PostContactTransformVector
       = std::vector<Eigen::Isometry3d, PostContactTransformAllocator>;
+  using ConstraintAllocator
+      = dart::common::StlAllocator<VariationalLoopConstraint>;
+  using ConstraintVector
+      = std::vector<VariationalLoopConstraint, ConstraintAllocator>;
 
-  std::vector<VariationalLoopConstraint> constraints;
+  ConstraintVector constraints;
   VariationalGroundContact groundContact;
   std::optional<VariationalGroundContactSolver> groundContactSolver;
   MultibodyVariationalTreeScratch tree;
