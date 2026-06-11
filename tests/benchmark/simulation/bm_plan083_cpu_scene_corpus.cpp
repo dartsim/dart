@@ -69,6 +69,9 @@ const Eigen::Vector3d kBridgeTravelerHalfExtents(0.07, 0.07, 0.07);
 const Eigen::Vector3d kPulleySupportHalfExtents(0.08, 0.04, 0.08);
 constexpr double kPulleyWheelRadius = 0.10;
 const Eigen::Vector3d kPulleyLoadHalfExtents(0.055, 0.055, 0.055);
+const Eigen::Vector3d kUmbrellaMastHalfExtents(0.04, 0.04, 0.28);
+const Eigen::Vector3d kUmbrellaHubHalfExtents(0.05, 0.05, 0.04);
+const Eigen::Vector3d kUmbrellaRibHalfExtents(0.18, 0.025, 0.025);
 const Eigen::Vector3d kNunchakuHandleHalfExtents(0.18, 0.035, 0.035);
 const Eigen::Vector3d kWindmillHubHalfExtents(0.05, 0.05, 0.05);
 const Eigen::Vector3d kWindmillBladeHalfExtents(0.045, 0.22, 0.025);
@@ -353,6 +356,85 @@ struct PulleyFixture
   std::optional<sx::RigidBody> wheel;
   std::optional<sx::RigidBody> leftLoad;
   std::optional<sx::RigidBody> rightLoad;
+  std::vector<BodySnapshot> snapshots;
+};
+
+struct UmbrellaFixture
+{
+  UmbrellaFixture()
+  {
+    world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+    world.setTimeStep(0.005);
+    world.setGravity(Eigen::Vector3d::Zero());
+
+    sx::RigidBodyOptions mastOptions;
+    mastOptions.isStatic = true;
+    mastOptions.position = Eigen::Vector3d(0.0, 0.0, 0.48);
+    mast.emplace(world.addRigidBody("plan083_umbrella_mast", mastOptions));
+    mast->setCollisionShape(
+        sx::CollisionShape::makeBox(kUmbrellaMastHalfExtents));
+
+    sx::RigidBodyOptions hubOptions;
+    hubOptions.mass = 0.12;
+    hubOptions.position = Eigen::Vector3d(0.0, 0.0, 0.78);
+    hubOptions.angularVelocity = Eigen::Vector3d(0.0, 0.9, 0.0);
+    hub.emplace(world.addRigidBody("plan083_umbrella_hinged_hub", hubOptions));
+    hub->setCollisionShape(
+        sx::CollisionShape::makeBox(kUmbrellaHubHalfExtents));
+
+    sx::RigidBodyOptions leftRibOptions;
+    leftRibOptions.mass = 0.08;
+    leftRibOptions.position = Eigen::Vector3d(-0.18, 0.0, 0.74);
+    leftRibOptions.angularVelocity = hubOptions.angularVelocity;
+    leftRib.emplace(
+        world.addRigidBody("plan083_umbrella_left_rib", leftRibOptions));
+    leftRib->setCollisionShape(
+        sx::CollisionShape::makeBox(kUmbrellaRibHalfExtents));
+
+    sx::RigidBodyOptions rightRibOptions;
+    rightRibOptions.mass = 0.08;
+    rightRibOptions.position = Eigen::Vector3d(0.18, 0.0, 0.74);
+    rightRibOptions.angularVelocity = hubOptions.angularVelocity;
+    rightRib.emplace(
+        world.addRigidBody("plan083_umbrella_right_rib", rightRibOptions));
+    rightRib->setCollisionShape(
+        sx::CollisionShape::makeBox(kUmbrellaRibHalfExtents));
+
+    (void)world.addRigidBodyRevoluteJoint(
+        "plan083_umbrella_canopy_hinge", *mast, *hub, Eigen::Vector3d::UnitY());
+    (void)world.addRigidBodyFixedJoint(
+        "plan083_umbrella_left_rib_point_connection", *hub, *leftRib);
+    (void)world.addRigidBodyFixedJoint(
+        "plan083_umbrella_right_rib_point_connection", *hub, *rightRib);
+
+    snapshotBody(snapshots, *mast);
+    snapshotBody(snapshots, *hub);
+    snapshotBody(snapshots, *leftRib);
+    snapshotBody(snapshots, *rightRib);
+
+    world.enterSimulationMode();
+  }
+
+  void reset()
+  {
+    world.setTime(0.0);
+    for (auto& snapshot : snapshots) {
+      snapshot.body.setTransform(snapshot.transform);
+      snapshot.body.setLinearVelocity(snapshot.linearVelocity);
+      snapshot.body.setAngularVelocity(snapshot.angularVelocity);
+    }
+  }
+
+  double canopySpan() const
+  {
+    return (rightRib->getTranslation() - leftRib->getTranslation()).norm();
+  }
+
+  sx::World world;
+  std::optional<sx::RigidBody> mast;
+  std::optional<sx::RigidBody> hub;
+  std::optional<sx::RigidBody> leftRib;
+  std::optional<sx::RigidBody> rightRib;
   std::vector<BodySnapshot> snapshots;
 };
 
@@ -853,6 +935,60 @@ static void BM_Plan083CpuScene_pulley_system_reduced_world_step(
   state.counters["wheel_spin_rad_s"] = fixture.wheel->getAngularVelocity().y();
 }
 BENCHMARK(BM_Plan083CpuScene_pulley_system_reduced_world_step)
+    ->Unit(benchmark::kMillisecond);
+
+//==============================================================================
+static void BM_Plan083CpuScene_umbrella_reduced_world_step(
+    benchmark::State& state)
+{
+  UmbrellaFixture fixture;
+  sx::compute::SequentialExecutor executor;
+
+  std::size_t failedSteps = 0;
+  sx::compute::RigidIpcSolverStats lastStats;
+  for (auto _ : state) {
+    state.PauseTiming();
+    fixture.reset();
+    sx::compute::RigidIpcContactStage ipcStage(64);
+    sx::compute::WorldStepPipeline pipeline;
+    pipeline.addStage(ipcStage);
+    state.ResumeTiming();
+
+    fixture.world.step(executor, pipeline);
+    lastStats = ipcStage.getLastStats();
+    const bool residualOk
+        = std::isfinite(lastStats.finalEqualityResidualNorm)
+          && lastStats.finalEqualityResidualNorm <= kMaxReducedEqualityResidual;
+    const bool satisfiedNoOp = residualOk && lastStats.solverIterations == 0u
+                               && lastStats.activeArticulationConstraints >= 8u;
+    if (!residualOk || (lastStats.failed && !satisfiedNoOp)) {
+      ++failedSteps;
+    }
+    benchmark::DoNotOptimize(fixture.hub->getTransform().data());
+    benchmark::DoNotOptimize(fixture.leftRib->getTranslation().data());
+    benchmark::DoNotOptimize(fixture.rightRib->getTranslation().data());
+    benchmark::ClobberMemory();
+  }
+
+  state.counters["row_unb_fig_04"] = 1.0;
+  state.counters["paper_scale"] = 0.0;
+  state.counters["body_count"] = static_cast<double>(lastStats.bodyCount);
+  state.counters["dynamic_body_count"]
+      = static_cast<double>(lastStats.dynamicBodyCount);
+  state.counters["fixed_joint_count"] = 2.0;
+  state.counters["revolute_joint_count"] = 1.0;
+  state.counters["active_articulation_constraints"]
+      = static_cast<double>(lastStats.activeArticulationConstraints);
+  state.counters["solver_iterations"]
+      = static_cast<double>(lastStats.solverIterations);
+  state.counters["failed_steps"] = static_cast<double>(failedSteps);
+  state.counters["final_equality_residual_norm"]
+      = lastStats.finalEqualityResidualNorm;
+  state.counters["canopy_span_m"] = fixture.canopySpan();
+  state.counters["hinge_angular_velocity_rad_s"]
+      = fixture.hub->getAngularVelocity().y();
+}
+BENCHMARK(BM_Plan083CpuScene_umbrella_reduced_world_step)
     ->Unit(benchmark::kMillisecond);
 
 //==============================================================================

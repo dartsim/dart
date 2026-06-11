@@ -195,17 +195,17 @@ speed claims as remaining PLAN-083 work.
 
 The CPU corpus evidence follow-up is branch-local on
 `feature/newton-barrier-corpus-evidence`: the first packets cover only the
-reduced hanging-bridge, pulley, terrain vehicle, ragdoll, nunchaku, windmill,
-and precession runtime smoke paths plus reduced nunchaku scaling,
+reduced hanging-bridge, pulley, umbrella, terrain vehicle, ragdoll, nunchaku,
+windmill, and precession runtime smoke paths plus reduced nunchaku scaling,
 timing-breakdown, and Table 2 setup/statistics packets with
 `bm_plan083_cpu_scene_corpus` and
 `scripts/write_plan083_cpu_scene_packet.py`. They validate finite reduced-scene
 runtime stepping plus fixed/revolute equality residuals, reduced
 hinge/contact/terrain/ragdoll/rolling diagnostics, and aggregate wall-time
-counters, but they are not paper-scale rod/codimensional coupling, cone-twist
-range validation, 60-ragdoll scale, terrain navigation, angular-velocity sweep
-validation, analytical pulley force comparison, Bullet/reference comparison,
-Fig. 24 subphase timing, full Table 2
+counters, but they are not paper-scale rod/codimensional coupling, umbrella
+cloth/sliding reproduction, cone-twist range validation, 60-ragdoll scale,
+terrain navigation, angular-velocity sweep validation, analytical pulley force
+comparison, Bullet/reference comparison, Fig. 24 subphase timing, full Table 2
 reproduction, coupled-contact scaling evidence, or a completion claim.
 
 The same branch adds a reduced affine point-triangle solved-state diagnostic
@@ -227,8 +227,8 @@ claim paper-scale pulley/sliding scene reproduction.
 Current slice: the one-branch runtime wiring follow-up has five checkpoint
 commits, and the follow-on CPU corpus evidence branch adds reduced
 hanging-bridge, pulley, terrain vehicle, ragdoll, nunchaku, nunchaku scaling,
-windmill, precession, timing-breakdown, Table 2 packets, the reduced affine
-point-triangle micro-solve diagnostic, and the sparse equality
+umbrella, windmill, precession, timing-breakdown, Table 2 packets, the reduced
+affine point-triangle micro-solve diagnostic, and the sparse equality
 change-of-variable contract tests.
 The final docs pass should preserve that this is runtime smoke/correctness
 evidence, not paper-scale completion.

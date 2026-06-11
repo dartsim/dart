@@ -890,6 +890,29 @@ def test_plan083_windmill_exposes_runtime_status_panel() -> None:
     assert any(event.startswith("text:blade tip radius: ") for event in builder.events)
 
 
+def test_plan083_umbrella_exposes_runtime_status_panel() -> None:
+    scene = next(
+        scene
+        for scene in plan083_unified_newton_barrier.PLAN083_SCENES
+        if scene.id == "plan083_umbrella"
+    )
+    setup = scene.build()
+    builder = _FakePanelBuilder()
+
+    assert [panel.title for panel in setup.panels] == ["PLAN-083 Umbrella"]
+    assert setup.info["runtime_smoke_scene"] is True
+    assert setup.info["rigid_body_solver"] == "ipc"
+
+    setup.panels[0].build(builder, object())
+
+    assert "text:status: reduced runtime smoke scene" in builder.events
+    assert "text:solver: rigid IPC World.step" in builder.events
+    assert "text:revolute joints: 1" in builder.events
+    assert "text:point connections: 2" in builder.events
+    assert "text:benchmark: pixi run bm-plan083-cpu-umbrella-packet" in builder.events
+    assert any(event.startswith("text:canopy span: ") for event in builder.events)
+
+
 def test_plan083_terrain_vehicle_exposes_runtime_status_panel() -> None:
     scene = next(
         scene

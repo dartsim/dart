@@ -1486,6 +1486,9 @@ bm-plan083-cpu-terrain-vehicle-packet = { cmd = "python scripts/write_plan083_cp
 bm-plan083-cpu-timing-breakdown-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene timing_breakdown", depends-on = [
   "config",
 ] }
+bm-plan083-cpu-umbrella-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene umbrella", depends-on = [
+  "config",
+] }
 bm-plan083-cpu-windmill-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene windmill", depends-on = [
   "config",
 ] }

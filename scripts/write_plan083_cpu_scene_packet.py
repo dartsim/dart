@@ -35,6 +35,7 @@ NUNCHAKU_SCALING_SIZES = (20, 40, 60, 80, 100)
 TIMING_BREAKDOWN_SCENES = (
     "hanging_bridge",
     "pulley_system",
+    "umbrella",
     "nunchaku_single",
     "terrain_vehicle",
     "ragdoll_reduced",
@@ -44,6 +45,7 @@ TIMING_BREAKDOWN_SCENES = (
 TABLE2_REDUCED_SCENES = (
     "hanging_bridge",
     "pulley_system",
+    "umbrella",
     "terrain_vehicle",
     "ragdoll_reduced",
     "windmill",
@@ -58,6 +60,7 @@ SCENE_IDS = {
     "table_2": "plan083_reduced_table_2",
     "terrain_vehicle": "plan083_terrain_vehicle",
     "timing_breakdown": "plan083_reduced_timing_breakdown",
+    "umbrella": "plan083_umbrella",
     "windmill": "plan083_windmill",
 }
 SCENE_ROW_IDS = {
@@ -69,6 +72,7 @@ SCENE_ROW_IDS = {
     "table_2": "unb-table-02",
     "terrain_vehicle": "unb-fig-10",
     "timing_breakdown": "unb-fig-24",
+    "umbrella": "unb-fig-04",
     "windmill": "unb-fig-20",
 }
 SCENE_ROWS = {
@@ -81,6 +85,7 @@ SCENE_ROWS = {
     "table_2": "BM_Plan083CpuScene_reduced_table_2",
     "terrain_vehicle": "BM_Plan083CpuScene_terrain_vehicle_reduced_world_step",
     "timing_breakdown": "BM_Plan083CpuScene_reduced_timing_breakdown",
+    "umbrella": "BM_Plan083CpuScene_umbrella_reduced_world_step",
     "windmill": "BM_Plan083CpuScene_windmill_reduced_world_step",
 }
 TIMING_BREAKDOWN_ROWS = {scene: SCENE_ROWS[scene] for scene in TIMING_BREAKDOWN_SCENES}
@@ -111,6 +116,9 @@ SCENE_BENCHMARK_OUTPUTS = {
     "timing_breakdown": Path(
         ".benchmark_results/plan083/cpu_scene_corpus/timing_breakdown_benchmark.json"
     ),
+    "umbrella": Path(
+        ".benchmark_results/plan083/cpu_scene_corpus/umbrella_benchmark.json"
+    ),
     "windmill": Path(
         ".benchmark_results/plan083/cpu_scene_corpus/windmill_benchmark.json"
     ),
@@ -137,6 +145,7 @@ SCENE_PACKET_OUTPUTS = {
     "timing_breakdown": Path(
         ".benchmark_results/plan083/cpu_scene_corpus/timing_breakdown.json"
     ),
+    "umbrella": Path(".benchmark_results/plan083/cpu_scene_corpus/umbrella.json"),
     "windmill": Path(".benchmark_results/plan083/cpu_scene_corpus/windmill.json"),
 }
 DEFAULT_MAX_EQUALITY_RESIDUAL = 1e-8
@@ -374,6 +383,14 @@ def make_packet(
             final_residual=final_residual,
             max_equality_residual=max_equality_residual,
         )
+    if scene == "umbrella":
+        return _make_umbrella_packet(
+            row,
+            rows,
+            timing_ns=timing_ns,
+            final_residual=final_residual,
+            max_equality_residual=max_equality_residual,
+        )
     if scene == "precession":
         return _make_precession_packet(
             row,
@@ -590,6 +607,74 @@ def _make_pulley_packet(
                 "Reduced hinged-wheel and point-connection smoke packet only; "
                 "analytical force comparison, rope/rod coupling, and paper-scale "
                 "timing remain planned."
+            ),
+        },
+        "benchmarks": rows,
+    }
+
+
+def _make_umbrella_packet(
+    row: Mapping[str, Any],
+    rows: list[Any],
+    *,
+    timing_ns: float,
+    final_residual: float,
+    max_equality_residual: float,
+) -> dict[str, Any]:
+    body_count = int(_finite_number(row, "body_count"))
+    dynamic_body_count = int(_finite_number(row, "dynamic_body_count"))
+    fixed_joint_count = int(_finite_number(row, "fixed_joint_count"))
+    revolute_joint_count = int(_finite_number(row, "revolute_joint_count"))
+    active_articulation_constraints = int(
+        _finite_number(row, "active_articulation_constraints")
+    )
+    if body_count != 4:
+        raise Plan083CpuScenePacketError(f"expected 4 rigid bodies, got {body_count}")
+    if dynamic_body_count != 3:
+        raise Plan083CpuScenePacketError(
+            f"expected 3 dynamic rigid bodies, got {dynamic_body_count}"
+        )
+    if fixed_joint_count != 2:
+        raise Plan083CpuScenePacketError(
+            f"expected 2 point-connected ribs, got {fixed_joint_count}"
+        )
+    if revolute_joint_count != 1:
+        raise Plan083CpuScenePacketError(
+            f"expected 1 umbrella hinge, got {revolute_joint_count}"
+        )
+    if active_articulation_constraints < 8:
+        raise Plan083CpuScenePacketError(
+            "expected umbrella hinge and rib articulation rows"
+        )
+
+    canopy_span = _finite_number(row, "canopy_span_m")
+    if canopy_span <= 0.0:
+        raise Plan083CpuScenePacketError("umbrella canopy span is not positive")
+
+    return {
+        "plan083_cpu_scene_packet": {
+            "row_id": "unb-fig-04",
+            "scene_id": "plan083_umbrella",
+            "benchmark_row": _packet_row_name(row),
+            "paper_scale": False,
+            "runtime_path": "rigid IPC World::step",
+            "step_count": 1,
+            "wall_time_ns": timing_ns,
+            "body_count": body_count,
+            "dynamic_body_count": dynamic_body_count,
+            "fixed_joint_count": fixed_joint_count,
+            "revolute_joint_count": revolute_joint_count,
+            "active_articulation_constraints": active_articulation_constraints,
+            "final_equality_residual_norm": final_residual,
+            "max_equality_residual": max_equality_residual,
+            "canopy_span_m": canopy_span,
+            "hinge_angular_velocity_rad_s": _finite_number(
+                row, "hinge_angular_velocity_rad_s"
+            ),
+            "limitation_status": (
+                "Reduced hinged-rib smoke packet only; cloth shrinking, "
+                "wrinkling, sliding constraints, and paper-scale rod coupling "
+                "remain planned."
             ),
         },
         "benchmarks": rows,
@@ -961,7 +1046,6 @@ def _make_table2_packet(
             "covered_paper_rows": [sample["row_id"] for sample in samples],
             "missing_paper_rows": [
                 "unb-fig-01",
-                "unb-fig-04",
                 "unb-fig-22",
             ],
             "total_wall_time_ns": total_wall_time_ns,
@@ -973,8 +1057,8 @@ def _make_table2_packet(
             "max_equality_residual": max_equality_residual,
             "limitation_status": (
                 "Reduced Table 2 setup/statistics packet only; lying-flat, "
-                "umbrella, candy, paper body/node/contact counts, paper timesteps, "
-                "and paper timing rows remain planned."
+                "candy, paper body/node/contact counts, paper timesteps, and "
+                "paper timing rows remain planned."
             ),
             "samples": samples,
         },

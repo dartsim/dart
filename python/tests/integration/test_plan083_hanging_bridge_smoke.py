@@ -114,6 +114,40 @@ def test_windmill_demo_steps_rigid_ipc_world() -> None:
     assert final_striker[2] < initial_striker[2]
 
 
+def test_umbrella_demo_steps_rigid_ipc_world() -> None:
+    sx = _sx()
+    from examples.demos.scenes.plan083_unified_newton_barrier import PLAN083_SCENES
+
+    scene = next(scene for scene in PLAN083_SCENES if scene.id == "plan083_umbrella")
+    setup = scene.build()
+    sx_world = setup.info["sx_world"]
+    hub = setup.info["hub"]
+    ribs = setup.info["ribs"]
+
+    assert setup.info["runtime_smoke_scene"] is True
+    assert sx_world.rigid_body_solver == sx.RigidBodySolver.IPC
+    assert sx_world.num_rigid_body_joints == 3
+    assert sx_world.num_rigid_body_fixed_joints == 2
+    assert setup.info["plan083_benchmark_command"] == (
+        "pixi run bm-plan083-cpu-umbrella-packet"
+    )
+    assert setup.pre_step is not None
+
+    initial_time = sx_world.time
+    for _ in range(24):
+        setup.pre_step()
+
+    final_hub = np.asarray(hub.transform, dtype=float).reshape(4, 4)
+    final_ribs = [
+        np.asarray(rib.translation, dtype=float).reshape(3) for rib in ribs
+    ]
+    final_span = float(np.linalg.norm(final_ribs[1] - final_ribs[0]))
+    assert np.all(np.isfinite(final_hub))
+    assert all(np.all(np.isfinite(rib)) for rib in final_ribs)
+    assert sx_world.time > initial_time
+    assert final_span > 0.0
+
+
 def test_terrain_vehicle_demo_steps_rigid_ipc_world() -> None:
     sx = _sx()
     from examples.demos.scenes.plan083_unified_newton_barrier import PLAN083_SCENES

@@ -18,6 +18,9 @@ _BRIDGE_BOARD_X = np.linspace(-0.45, 0.45, 4)
 _PULLEY_SUPPORT_HALF_EXTENTS = np.array([0.08, 0.04, 0.08])
 _PULLEY_WHEEL_RADIUS = 0.10
 _PULLEY_LOAD_HALF_EXTENTS = np.array([0.055, 0.055, 0.055])
+_UMBRELLA_MAST_HALF_EXTENTS = np.array([0.04, 0.04, 0.28])
+_UMBRELLA_HUB_HALF_EXTENTS = np.array([0.05, 0.05, 0.04])
+_UMBRELLA_RIB_HALF_EXTENTS = np.array([0.18, 0.025, 0.025])
 _NUNCHAKU_HANDLE_HALF_EXTENTS = np.array([0.18, 0.035, 0.035])
 _TERRAIN_HALF_EXTENTS = np.array([0.70, 0.45, 0.025])
 _TERRAIN_CHASSIS_HALF_EXTENTS = np.array([0.22, 0.12, 0.04])
@@ -482,6 +485,136 @@ def _build_pulley_runtime(target: Plan083SceneTarget) -> SceneSetup:
             "support": support,
             "wheel": wheel,
             "loads": (left_load, right_load),
+        }
+    )
+    return SceneSetup(
+        world=bridge.render_world,
+        pre_step=bridge.pre_step,
+        force_drag=bridge.force_drag,
+        panels=[ScenePanel(target.title, build_panel)],
+        info=info,
+    )
+
+
+def _build_umbrella_runtime(target: Plan083SceneTarget) -> SceneSetup:
+    world = dart.World(
+        time_step=0.005,
+        gravity=(0.0, 0.0, 0.0),
+        rigid_body_solver=dart.RigidBodySolver.IPC,
+    )
+
+    mast = world.add_rigid_body("plan083_umbrella_mast", position=(0.0, 0.0, 0.48))
+    mast.is_static = True
+    mast.set_collision_shape(dart.CollisionShape.box(_UMBRELLA_MAST_HALF_EXTENTS))
+
+    hub = world.add_rigid_body(
+        "plan083_umbrella_hinged_hub",
+        position=(0.0, 0.0, 0.78),
+        angular_velocity=(0.0, 0.9, 0.0),
+    )
+    hub.mass = 0.12
+    hub.set_collision_shape(dart.CollisionShape.box(_UMBRELLA_HUB_HALF_EXTENTS))
+
+    left_rib = world.add_rigid_body(
+        "plan083_umbrella_left_rib",
+        position=(-0.18, 0.0, 0.74),
+        angular_velocity=(0.0, 0.9, 0.0),
+    )
+    left_rib.mass = 0.08
+    left_rib.set_collision_shape(dart.CollisionShape.box(_UMBRELLA_RIB_HALF_EXTENTS))
+
+    right_rib = world.add_rigid_body(
+        "plan083_umbrella_right_rib",
+        position=(0.18, 0.0, 0.74),
+        angular_velocity=(0.0, 0.9, 0.0),
+    )
+    right_rib.mass = 0.08
+    right_rib.set_collision_shape(dart.CollisionShape.box(_UMBRELLA_RIB_HALF_EXTENTS))
+
+    world.add_rigid_body_revolute_joint(
+        "plan083_umbrella_canopy_hinge",
+        mast,
+        hub,
+        axis=(0.0, 1.0, 0.0),
+    )
+    world.add_rigid_body_fixed_joint(
+        "plan083_umbrella_left_rib_point_connection",
+        hub,
+        left_rib,
+    )
+    world.add_rigid_body_fixed_joint(
+        "plan083_umbrella_right_rib_point_connection",
+        hub,
+        right_rib,
+    )
+
+    world.enter_simulation_mode()
+
+    bridge = WorldRenderBridge(world, name="plan083_umbrella_runtime")
+    bridge.add_rigid_body_visual(
+        mast,
+        dart.BoxShape(_full(_UMBRELLA_MAST_HALF_EXTENTS)),
+        (0.34, 0.35, 0.38),
+        name="plan083_umbrella_mast_visual",
+    )
+    bridge.add_rigid_body_visual(
+        hub,
+        dart.BoxShape(_full(_UMBRELLA_HUB_HALF_EXTENTS)),
+        (0.18, 0.48, 0.72),
+        name="plan083_umbrella_hub_visual",
+    )
+    bridge.add_rigid_body_visual(
+        left_rib,
+        dart.BoxShape(_full(_UMBRELLA_RIB_HALF_EXTENTS)),
+        (0.76, 0.42, 0.22),
+        name="plan083_umbrella_left_rib_visual",
+    )
+    bridge.add_rigid_body_visual(
+        right_rib,
+        dart.BoxShape(_full(_UMBRELLA_RIB_HALF_EXTENTS)),
+        (0.76, 0.42, 0.22),
+        name="plan083_umbrella_right_rib_visual",
+    )
+    bridge.sync()
+
+    span_history: deque[float] = deque(maxlen=120)
+    hinge_velocity_history: deque[float] = deque(maxlen=120)
+
+    def build_panel(builder: object, context: object) -> None:
+        left_position = np.asarray(left_rib.translation, dtype=float).reshape(3)
+        right_position = np.asarray(right_rib.translation, dtype=float).reshape(3)
+        span = float(np.linalg.norm(right_position - left_position))
+        hinge_velocity = float(np.asarray(hub.angular_velocity, dtype=float)[1])
+        span_history.append(span)
+        hinge_velocity_history.append(hinge_velocity)
+
+        builder.text("status: reduced runtime smoke scene")
+        builder.text("solver: rigid IPC World.step")
+        builder.text(f"row: {', '.join(target.row_ids)}")
+        builder.text(f"rigid bodies: {world.num_rigid_bodies}")
+        builder.text("revolute joints: 1")
+        builder.text(f"point connections: {world.num_rigid_body_fixed_joints}")
+        builder.text(f"world time: {world.time:.3f} s")
+        builder.text(f"canopy span: {span:.3f} m")
+        builder.text(f"hinge velocity: {hinge_velocity:.3f} rad/s")
+        builder.text(f"benchmark: {target.benchmark_command}")
+        builder.text(f"limitation: {target.limitation}")
+        builder.separator()
+        bridge.build_control_panel(builder, context)
+        if span_history:
+            builder.separator()
+            builder.plot_lines("Canopy span", list(span_history))
+            builder.plot_lines("Hinge velocity", list(hinge_velocity_history))
+
+    info = _target_info(target)
+    info.update(
+        {
+            "sx_world": world,
+            "runtime_smoke_scene": True,
+            "rigid_body_solver": "ipc",
+            "mast": mast,
+            "hub": hub,
+            "ribs": (left_rib, right_rib),
         }
     )
     return SceneSetup(
@@ -960,6 +1093,8 @@ def _scene(target: Plan083SceneTarget) -> PythonDemoScene:
         build = lambda target=target: _build_hanging_bridge_runtime(target)
     elif target.scene_id == "plan083_pulley_system":
         build = lambda target=target: _build_pulley_runtime(target)
+    elif target.scene_id == "plan083_umbrella":
+        build = lambda target=target: _build_umbrella_runtime(target)
     elif target.scene_id == "plan083_nunchaku":
         build = lambda target=target: _build_nunchaku_runtime(target)
     elif target.scene_id == "plan083_precession":
@@ -1024,12 +1159,12 @@ PLAN083_SCENE_TARGETS: tuple[Plan083SceneTarget, ...] = (
         title="PLAN-083 Umbrella",
         row_ids=("unb-fig-04",),
         category="PLAN-083 Mixed Corpus",
-        summary="Planned umbrella cloth/rod/hinge/sliding mixed scene.",
-        target="Paper Fig. 4 umbrella visual-evidence scene.",
+        summary="Reduced umbrella rod-skeleton smoke scene running through World::step.",
+        target="Paper Fig. 4 umbrella scene; reduced to a hinged mast, hub, and point-connected ribs for runtime smoke evidence.",
         smoke_command="pixi run py-demos -- --scene plan083_umbrella --headless --frames 4",
         visual_command="pixi run py-demo-capture -- --scene plan083_umbrella --frames 240 --width 1280 --height 720",
-        benchmark_command="pixi run bm bm_plan083_cpu_scene_corpus -- --benchmark_filter=umbrella",
-        limitation="Waiting for cloth/rod coupling and runtime sliding constraints.",
+        benchmark_command="pixi run bm-plan083-cpu-umbrella-packet",
+        limitation="Reduced hinged-rib smoke packet only; cloth shrinking, wrinkling, sliding constraints, and paper-scale rod coupling remain planned.",
     ),
     Plan083SceneTarget(
         scene_id="plan083_terrain_vehicle",

@@ -106,11 +106,11 @@
       "smoke_command": "pixi run py-demos -- --scene plan083_umbrella --headless --frames 4",
       "long_horizon_visual_command": "pixi run py-demo-capture -- --scene plan083_umbrella --frames 240 --width 1280 --height 720",
       "visual_evidence_artifact": ".benchmark_results/plan083/visual/umbrella/manifest.json",
-      "benchmark_command": "pixi run bm bm_plan083_cpu_scene_corpus -- --benchmark_filter=umbrella",
+      "benchmark_command": "pixi run bm-plan083-cpu-umbrella-packet",
       "benchmark_profile_artifact": ".benchmark_results/plan083/cpu_scene_corpus/umbrella.json",
-      "expected_invariant": "Umbrella cloth, rod skeleton, hinge, sliding, and point-connection rows stay finite.",
-      "limitation_status": "Launchable placeholder only; waiting for cloth/rod coupling and runtime sliding constraints.",
-      "notes_or_gap": "Visual evidence command is explicit; no paper-scale capture is claimed."
+      "expected_invariant": "Reduced umbrella rod skeleton, hinge, and point-connected ribs stay finite while stepping through the rigid IPC World path.",
+      "limitation_status": "Reduced hinged-rib smoke packet only; cloth shrinking, wrinkling, sliding constraints, and paper-scale rod coupling remain planned.",
+      "notes_or_gap": "The py-demo now runs a reduced umbrella scene through World::step, and bm-plan083-cpu-umbrella-packet validates the reduced benchmark packet. Cloth and sliding-constraint reproduction remain planned."
     },
     {
       "row_id": "unb-fig-10",
@@ -276,8 +276,8 @@
       "benchmark_command": "pixi run bm-plan083-cpu-table2-packet",
       "benchmark_profile_artifact": ".benchmark_results/plan083/cpu_scene_corpus/table_2.json",
       "expected_invariant": "Reduced Table 2 packet reports finite body, dynamic-body, contact, friction, articulation, solver-iteration, residual, and timing counters for runnable reduced rows.",
-      "limitation_status": "Reduced setup/statistics packet only; lying-flat, pulley, umbrella, candy, paper body/node/contact counts, paper timesteps, and paper timing rows remain planned.",
-      "notes_or_gap": "bm-plan083-cpu-table2-packet covers reduced hanging bridge, terrain vehicle, ragdoll, windmill, and precession rows through rigid IPC World::step; missing mixed/constraint/ABD scenes stay explicit."
+      "limitation_status": "Reduced setup/statistics packet only; lying-flat, candy, paper body/node/contact counts, paper timesteps, and paper timing rows remain planned.",
+      "notes_or_gap": "bm-plan083-cpu-table2-packet covers reduced hanging bridge, pulley, umbrella, terrain vehicle, ragdoll, windmill, and precession rows through rigid IPC World::step; missing mixed/ABD scenes stay explicit."
     },
     {
       "row_id": "abd-vs-rigid-wreck",
