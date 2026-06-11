@@ -54,6 +54,7 @@
 #include <dart/simulation/compute/world_batch.hpp>
 #include <dart/simulation/compute/world_step_stage.hpp>
 #include <dart/simulation/constraint/loop_closure_spec.hpp>
+#include <dart/simulation/detail/deformable_vbd/rigid_world_contact.hpp>
 #include <dart/simulation/detail/entity_conversion.hpp>
 #include <dart/simulation/detail/world_registry_access.hpp>
 #include <dart/simulation/detail/world_storage.hpp>
@@ -69,6 +70,7 @@
 #include <Eigen/Geometry>
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <array>
 #include <atomic>
 
@@ -3101,7 +3103,7 @@ TEST(World, EnterSimulationModeReservesRegistryStorageForMultibodySteps)
   auto carriage = robot.addLink("carriage", base, spec);
   carriage.setMass(3.0);
 
-  world.setTimeStep(0.01);
+  world.setTimeStep(0.001);
   world.enterSimulationMode();
 
   const auto& registry = sx::detail::registryOf(world);
@@ -10050,6 +10052,163 @@ TEST(World, RigidIpcContactStageAdvancesSphereBodyFromRuntimeDynamics)
   EXPECT_NEAR(body.getLinearVelocity().x(), 1.2, 1e-8);
 }
 
+// Test that the opt-in BDF-2 rigid IPC path builds its inertial target from
+// per-body runtime history while preserving the default first-order restart on
+// the first accepted step.
+TEST(World, RigidIpcContactStageBdf2FallingBoxEnergyStaysFinite)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  world.setTimeStep(0.01);
+
+  sx::RigidBodyOptions options;
+  options.position = Eigen::Vector3d(0.0, 0.0, 1.0);
+  options.mass = 1.0;
+  auto box = world.addRigidBody("bdf2_box", options);
+  box.setCollisionShape(sx::CollisionShape::makeBox({0.1, 0.1, 0.1}));
+
+  const auto mechanicalEnergy = [&]() {
+    const double kinetic
+        = 0.5 * box.getMass() * box.getLinearVelocity().squaredNorm();
+    const double potential
+        = -box.getMass() * world.getGravity().dot(box.getTranslation());
+    return kinetic + potential;
+  };
+  const double initialHeight = box.getTranslation().z();
+  const double initialEnergy = mechanicalEnergy();
+
+  sx::compute::RigidIpcContactStageOptions stageOptions;
+  stageOptions.maxIterations = 16;
+  stageOptions.timeIntegration = sx::compute::RigidIpcTimeIntegration::Bdf2;
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage(stageOptions);
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+
+  world.step(executor, pipeline);
+  const double firstStepHeight = box.getTranslation().z();
+  {
+    const auto& stats = ipcStage.getLastStats();
+    EXPECT_EQ(stats.activeDynamicsTerms, 1u);
+    EXPECT_EQ(stats.bdf2RestartedDynamicsTerms, 1u);
+    EXPECT_EQ(stats.bdf2SecondOrderDynamicsTerms, 0u);
+    EXPECT_TRUE(stats.converged);
+    EXPECT_TRUE(stats.resultApplied);
+  }
+
+  world.step(executor, pipeline);
+  const double finalHeight = box.getTranslation().z();
+  {
+    const auto& stats = ipcStage.getLastStats();
+    EXPECT_EQ(stats.activeDynamicsTerms, 1u);
+    EXPECT_EQ(stats.bdf2RestartedDynamicsTerms, 0u);
+    EXPECT_EQ(stats.bdf2SecondOrderDynamicsTerms, 1u);
+    EXPECT_TRUE(stats.converged);
+    EXPECT_TRUE(stats.resultApplied);
+  }
+
+  const double finalEnergy = mechanicalEnergy();
+  const double expectedBdf2Velocity
+      = (3.0 * finalHeight - 4.0 * firstStepHeight + initialHeight)
+        / (2.0 * world.getTimeStep());
+  const double backwardDifferenceVelocity
+      = (finalHeight - firstStepHeight) / world.getTimeStep();
+  EXPECT_TRUE(std::isfinite(finalEnergy));
+  EXPECT_GT(finalEnergy, 0.99 * initialEnergy);
+  EXPECT_LT(finalEnergy, 1.01 * initialEnergy);
+  EXPECT_LT(finalHeight, initialHeight);
+  EXPECT_LT(box.getLinearVelocity().z(), 0.0);
+  EXPECT_NEAR(box.getLinearVelocity().z(), expectedBdf2Velocity, 1e-10);
+  EXPECT_GT(
+      std::abs(box.getLinearVelocity().z() - backwardDifferenceVelocity), 1e-6);
+}
+
+TEST(World, RigidIpcContactStageUsesDeformableSurfaceObstacle)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.02);
+
+  sx::DeformableBodyOptions sheetOptions;
+  sheetOptions.positions
+      = {Eigen::Vector3d(-0.5, -0.5, 0.0),
+         Eigen::Vector3d(0.5, -0.5, 0.0),
+         Eigen::Vector3d(-0.5, 0.5, 0.0),
+         Eigen::Vector3d(0.5, 0.5, 0.0)};
+  sheetOptions.masses = {1.0, 1.0, 1.0, 1.0};
+  sheetOptions.fixedNodes = {0, 1, 2, 3};
+  sheetOptions.surfaceTriangles
+      = {sx::DeformableSurfaceTriangle{0, 1, 2},
+         sx::DeformableSurfaceTriangle{1, 3, 2}};
+  sheetOptions.material.frictionCoefficient = 0.0;
+  auto sheet = world.addDeformableBody("deformable_surface", sheetOptions);
+
+  sx::RigidBodyOptions boxOptions;
+  boxOptions.mass = 1.0;
+  boxOptions.position = Eigen::Vector3d(0.0, 0.0, 0.055);
+  boxOptions.linearVelocity = Eigen::Vector3d(0.0, 0.0, -1.0);
+  auto box = world.addRigidBody("falling_box", boxOptions);
+  box.setCollisionShape(sx::CollisionShape::makeBox({0.05, 0.05, 0.05}));
+
+  sx::compute::RigidIpcContactStageOptions stageOptions;
+  stageOptions.maxIterations = 64;
+  stageOptions.activationDistance = 0.02;
+  stageOptions.frictionIterations = 0;
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage(stageOptions);
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+  world.step(executor, pipeline);
+
+  const auto& stats = ipcStage.getLastStats();
+  EXPECT_EQ(stats.bodyCount, 1u);
+  EXPECT_EQ(stats.dynamicBodyCount, 1u);
+  EXPECT_EQ(stats.surfaceCount, 2u);
+  EXPECT_EQ(stats.mixedDomainDeformableSurfaceCount, 1u);
+  EXPECT_GE(stats.mixedDomainSurfaceCount, 2u);
+  EXPECT_GT(stats.mixedDomainCandidateCount, 0u);
+  EXPECT_GT(stats.mixedDomainActiveBarrierCount, 0u);
+  EXPECT_GT(stats.activeConstraints, 0u);
+  EXPECT_TRUE(stats.resultApplied);
+  EXPECT_FALSE(stats.failed);
+
+  const double boxBottom = box.getTranslation().z() - 0.05;
+  EXPECT_GT(boxBottom, -1e-6);
+  for (std::size_t node = 0; node < sheet.getNodeCount(); ++node) {
+    EXPECT_TRUE(sheet.getPosition(node).allFinite());
+    EXPECT_NEAR(sheet.getPosition(node).z(), 0.0, 1e-12);
+  }
+  const double kineticEnergy
+      = 0.5 * box.getMass() * box.getLinearVelocity().squaredNorm();
+  EXPECT_TRUE(std::isfinite(kineticEnergy));
+}
+
+TEST(World, RigidIpcContactStageMetadataDeclaresMixedDomainReads)
+{
+  namespace sx = dart::simulation;
+
+  sx::compute::RigidIpcContactStage ipcStage;
+  const auto metadata = ipcStage.getMetadata();
+
+  const auto hasRead = [&metadata](const std::string_view resource) {
+    return std::any_of(
+        metadata.resources.begin(),
+        metadata.resources.end(),
+        [resource](const sx::compute::ComputeResourceAccess& access) {
+          return access.resource == resource
+                 && access.mode == sx::compute::ComputeAccessMode::Read;
+        });
+  };
+
+  EXPECT_TRUE(hasRead("deformable_body.state"));
+  EXPECT_TRUE(hasRead("deformable_body.model"));
+  EXPECT_TRUE(hasRead("deformable_body.topology"));
+  EXPECT_TRUE(hasRead("rigid_body.joint"));
+}
+
 // Test that the opt-in rigid IPC stage assembles active barrier constraints
 // from runtime mesh surfaces and pushes a dynamic body away from a static one.
 // Body-body generalization of the freeze fix: a stack of two free boxes on
@@ -11189,9 +11348,112 @@ TEST(World, RigidIpcKinematicTurntableCarriesRestingBox)
   EXPECT_LE(failCount, 3);
 }
 
-// Test that public fixed joints reject the IPC rigid-body solver instead of
-// accepting a joint that the IPC pipeline will not project.
-TEST(World, RigidBodyFixedJointsRejectIpcSolver)
+// Test that public fixed joints feed the IPC rigid-body solver through private
+// point and orientation equality rows instead of exposing solver-internal
+// contracts.
+TEST(World, RigidIpcContactStageProjectsFixedJointPose)
+{
+  namespace sx = dart::simulation;
+
+  sx::RigidBodyOptions parentOptions;
+  parentOptions.isStatic = true;
+  sx::RigidBodyOptions childOptions;
+  childOptions.position = Eigen::Vector3d::UnitX();
+  childOptions.mass = 1.0;
+
+  sx::World world;
+  world.setTimeStep(0.01);
+  world.setGravity(-9.81 * Eigen::Vector3d::UnitY());
+  auto parent = world.addRigidBody("parent", parentOptions);
+  parent.setCollisionShape(sx::CollisionShape::makeBox({0.1, 0.1, 0.1}));
+  auto child = world.addRigidBody("child", childOptions);
+  child.setCollisionShape(sx::CollisionShape::makeBox({0.1, 0.1, 0.1}));
+  child.setAngularVelocity(Eigen::Vector3d(0.0, 0.25, 0.0));
+  child.setTorque(Eigen::Vector3d(0.0, 1.0, 0.0));
+  (void)world.addRigidBodyFixedJoint("fixed", parent, child);
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage(16);
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+  world.step(executor, pipeline);
+
+  const auto& stats = ipcStage.getLastStats();
+  EXPECT_EQ(stats.activeArticulationConstraints, 3u);
+  EXPECT_TRUE(stats.converged);
+  EXPECT_FALSE(stats.failed);
+  EXPECT_TRUE(stats.resultApplied);
+  EXPECT_LT(stats.finalEqualityResidualNorm, 1e-8);
+
+  // The fixed joint captured the child's initial pose. Gravity and torque are
+  // balanced by the equality rows, so the child cannot translate or rotate away
+  // from the parent-side pose.
+  EXPECT_TRUE(child.getTranslation().isApprox(Eigen::Vector3d::UnitX(), 1e-10));
+  EXPECT_LT(child.getLinearVelocity().norm(), 1e-10);
+  EXPECT_LT(
+      (child.getTransform().linear() - Eigen::Matrix3d::Identity()).norm(),
+      1e-10);
+  EXPECT_LT(child.getAngularVelocity().norm(), 1e-10);
+}
+
+// Test that public revolute joints feed the IPC rigid-body solver through
+// private point and hinge-axis equality rows, preserving the hinge axis while
+// letting gravity swing the body around the captured pivot.
+TEST(World, RigidIpcContactStageProjectsRevoluteJointHingeAxis)
+{
+  namespace sx = dart::simulation;
+  namespace dvbd = sx::detail::deformable_vbd;
+
+  sx::RigidBodyOptions parentOptions;
+  parentOptions.isStatic = true;
+  sx::RigidBodyOptions childOptions;
+  childOptions.position = Eigen::Vector3d::UnitX();
+  childOptions.mass = 1.0;
+
+  sx::World world;
+  world.setTimeStep(0.001);
+  world.setGravity(-9.81 * Eigen::Vector3d::UnitY());
+  auto parent = world.addRigidBody("parent", parentOptions);
+  parent.setCollisionShape(sx::CollisionShape::makeBox({0.1, 0.1, 0.1}));
+  auto child = world.addRigidBody("child", childOptions);
+  child.setCollisionShape(sx::CollisionShape::makeBox({0.1, 0.1, 0.1}));
+  auto joint = world.addRigidBodyRevoluteJoint(
+      "hinge", parent, child, Eigen::Vector3d::UnitZ());
+
+  auto& registry = sx::detail::registryOf(world);
+  auto& config = registry.get<dvbd::AvbdRigidWorldPointJointConfig>(
+      sx::detail::toRegistryEntity(joint.getEntity()));
+  config.localAnchorA = Eigen::Vector3d::Zero();
+  config.localAnchorB = -Eigen::Vector3d::UnitX();
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage(64);
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+  world.step(executor, pipeline);
+
+  const auto& stats = ipcStage.getLastStats();
+  EXPECT_EQ(stats.activeArticulationConstraints, 2u);
+  EXPECT_EQ(stats.activeDynamicsTerms, 1u);
+  EXPECT_GT(stats.acceptedSteps, 0u);
+  EXPECT_TRUE(stats.converged);
+  EXPECT_FALSE(stats.failed);
+  EXPECT_TRUE(stats.resultApplied);
+  EXPECT_LT(stats.finalEqualityResidualNorm, 1e-8);
+
+  const Eigen::Vector3d pivot
+      = child.getTransform() * (-Eigen::Vector3d::UnitX());
+  EXPECT_LT(pivot.norm(), 1e-8);
+
+  const Eigen::Vector3d childAxis
+      = child.getTransform().linear() * Eigen::Vector3d::UnitZ();
+  EXPECT_LT(childAxis.cross(Eigen::Vector3d::UnitZ()).norm(), 1e-8);
+  EXPECT_LT(child.getTranslation().y(), -1e-9);
+  EXPECT_LT(child.getAngularVelocity().z(), -1e-7);
+}
+
+// Test that unsupported rigid-body joint types still reject the IPC solver.
+TEST(World, RigidBodyPrismaticJointsRejectIpcSolver)
 {
   namespace sx = dart::simulation;
 
@@ -11205,20 +11467,54 @@ TEST(World, RigidBodyFixedJointsRejectIpcSolver)
   auto solverFirstParent = solverFirst.addRigidBody("parent", parentOptions);
   auto solverFirstChild = solverFirst.addRigidBody("child", childOptions);
   EXPECT_THROW(
-      solverFirst.addRigidBodyFixedJoint(
-          "fixed", solverFirstParent, solverFirstChild),
+      solverFirst.addRigidBodyPrismaticJoint(
+          "slide",
+          solverFirstParent,
+          solverFirstChild,
+          Eigen::Vector3d::UnitX()),
       sx::InvalidOperationException);
-
-  const auto solverFirstJoints
-      = dart::simulation::detail::registryOf(solverFirst)
-            .view<sx::comps::Joint>();
-  EXPECT_EQ(solverFirstJoints.begin(), solverFirstJoints.end());
 
   sx::World jointFirst;
   auto jointFirstParent = jointFirst.addRigidBody("parent", parentOptions);
   auto jointFirstChild = jointFirst.addRigidBody("child", childOptions);
-  (void)jointFirst.addRigidBodyFixedJoint(
+  (void)jointFirst.addRigidBodyPrismaticJoint(
+      "slide", jointFirstParent, jointFirstChild, Eigen::Vector3d::UnitX());
+
+  EXPECT_THROW(
+      jointFirst.setRigidBodySolver(sx::RigidBodySolver::Ipc),
+      sx::InvalidOperationException);
+  EXPECT_EQ(
+      jointFirst.getRigidBodySolver(), sx::RigidBodySolver::SequentialImpulse);
+}
+
+// Test that breakable rigid-body joints reject the IPC solver instead of being
+// silently skipped by the private equality-row projection path.
+TEST(World, RigidBodyBreakableJointsRejectIpcSolver)
+{
+  namespace sx = dart::simulation;
+
+  sx::RigidBodyOptions parentOptions;
+  parentOptions.isStatic = true;
+  sx::RigidBodyOptions childOptions;
+  childOptions.position = Eigen::Vector3d::UnitX();
+
+  sx::World solverFirst;
+  solverFirst.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+  auto solverFirstParent = solverFirst.addRigidBody("parent", parentOptions);
+  auto solverFirstChild = solverFirst.addRigidBody("child", childOptions);
+  auto solverFirstJoint = solverFirst.addRigidBodyFixedJoint(
+      "fixed", solverFirstParent, solverFirstChild);
+  solverFirstJoint.setBreakForce(10.0);
+
+  EXPECT_THROW(
+      solverFirst.enterSimulationMode(), sx::InvalidOperationException);
+
+  sx::World jointFirst;
+  auto jointFirstParent = jointFirst.addRigidBody("parent", parentOptions);
+  auto jointFirstChild = jointFirst.addRigidBody("child", childOptions);
+  auto jointFirstJoint = jointFirst.addRigidBodyFixedJoint(
       "fixed", jointFirstParent, jointFirstChild);
+  jointFirstJoint.setBreakForce(10.0);
 
   EXPECT_THROW(
       jointFirst.setRigidBodySolver(sx::RigidBodySolver::Ipc),
