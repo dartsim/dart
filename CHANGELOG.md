@@ -611,7 +611,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     guard. Deformable self-contact and inter-body surface-CCD preparation now
     also keeps per-body surface topology/contact-mask storage plus edge,
     sweep-item, and sweep-link buffers in the World allocator-backed solver
-    scratch.
+    scratch. VBD/AVBD deformable scratch now also constructs AVBD scalar-row
+    inventories, descriptor metadata, static-contact feature IDs, and friction
+    warm-start lookup buffers from the World allocator while preserving the
+    existing solver row vector contracts.
     The variational multibody stage now reuses baked inverse-dynamics scratch
     for its initial-guess bias query instead of calling the public
     return-by-value helper on same-shape steps. It also reuses baked dense

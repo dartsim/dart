@@ -11,7 +11,11 @@ The latest post-merge deformable slice routes
 `DeformableContactSolverScratch`'s per-body surface topology/contact-mask
 storage and inter-body surface-CCD edge, sweep-item, and sweep-link buffers
 through the World free allocator. This extends the earlier contact-candidate and
-projected-Newton scratch routing without adding another production scene.
+projected-Newton scratch routing without adding another production scene. A
+second narrow deformable slice routes `DeformableVbdScratch` AVBD scalar-row
+inventories, descriptor metadata vectors, static-contact feature IDs, and
+friction warm-start lookup buffers through the same World free allocator while
+leaving solver row arrays on their existing kernel-facing vector contracts.
 
 The previous post-merge slice covers the rigid IPC mixed-domain path that arrived
 from `origin/main`: mixed rigid/deformable surface preparation now keeps

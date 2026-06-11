@@ -809,6 +809,12 @@ Follow-up progress after PR #2956:
   and sweep-link buffers primed during bake. Focused contact-candidate tests
   verify provided allocator reserve/release, and existing World-base/global-heap
   baked-step guards still pass without adding a new production scene.
+- `DeformableVbdScratch` now also constructs AVBD scalar-row inventories,
+  descriptor metadata vectors, static-contact feature ID buffers, and friction
+  warm-start lookup vectors from the World free allocator. The solve row arrays
+  still use the existing vector types because the row kernels consume those
+  public scratch contracts directly; moving them needs a separate kernel
+  signature pass.
 - Default deformable projected-Newton assembly scratch now borrows that same
   World free allocator for sparse-pattern arrays, triplet assembly, PSD
   edge/tet/barrier block batches, and matrix-free block/diagonal storage. The
