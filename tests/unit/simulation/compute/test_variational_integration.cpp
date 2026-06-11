@@ -3897,6 +3897,200 @@ TEST(
   EXPECT_FALSE(restoredJoint->isBroken());
 }
 
+// PLAN-104 AVBD articulated bridge: finite AVBD stiffness set through public
+// articulated facades must survive design-mode binary save/load and feed the
+// private point-joint row configs rebuilt at simulation entry.
+TEST(
+    VariationalIntegration,
+    AvbdPublicArticulatedStiffnessSurvivesSaveLoadIntoPrivateConfigs)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+
+  FloatingLinkPair pair = addFloatingLinkPair(world);
+
+  struct ExpectedJoint
+  {
+    std::string name;
+    sx::JointType type;
+    std::size_t dofs;
+    double startStiffness;
+    double linearStiffness;
+    double angularStiffness;
+    std::uint8_t linearAxisMask;
+    std::uint8_t angularAxisMask;
+    Eigen::Vector3d freeAxis;
+    bool hasFreeLinearAxis = false;
+    bool hasFreeAngularAxis = false;
+  };
+
+  const Eigen::Vector3d sliderAxis = Eigen::Vector3d::UnitX();
+  const Eigen::Vector3d hingeAxis = Eigen::Vector3d::UnitY();
+  const std::array<ExpectedJoint, 8> expected{{
+      {
+          "serialized_stiff_fixed",
+          sx::JointType::Fixed,
+          0u,
+          3.0,
+          234.0,
+          567.0,
+          dvbd::kAvbdRigidJointAllAxesMask,
+          dvbd::kAvbdRigidJointAllAxesMask,
+          Eigen::Vector3d::Zero(),
+      },
+      {
+          "serialized_stiff_hinge",
+          sx::JointType::Revolute,
+          1u,
+          4.0,
+          345.0,
+          678.0,
+          dvbd::kAvbdRigidJointAllAxesMask,
+          dvbd::avbdRigidJointAllButAxisMask(2u),
+          hingeAxis,
+          false,
+          true,
+      },
+      {
+          "serialized_stiff_slider",
+          sx::JointType::Prismatic,
+          1u,
+          5.0,
+          456.0,
+          789.0,
+          dvbd::avbdRigidJointAllButAxisMask(2u),
+          dvbd::kAvbdRigidJointAllAxesMask,
+          sliderAxis,
+          true,
+      },
+      {
+          "serialized_stiff_socket",
+          sx::JointType::Spherical,
+          3u,
+          6.0,
+          567.0,
+          890.0,
+          dvbd::kAvbdRigidJointAllAxesMask,
+          0u,
+          Eigen::Vector3d::Zero(),
+      },
+      {
+          "serialized_stiff_world_fixed",
+          sx::JointType::Fixed,
+          0u,
+          7.0,
+          678.0,
+          901.0,
+          dvbd::kAvbdRigidJointAllAxesMask,
+          dvbd::kAvbdRigidJointAllAxesMask,
+          Eigen::Vector3d::Zero(),
+      },
+      {
+          "serialized_stiff_world_hinge",
+          sx::JointType::Revolute,
+          1u,
+          8.0,
+          789.0,
+          1012.0,
+          dvbd::kAvbdRigidJointAllAxesMask,
+          dvbd::avbdRigidJointAllButAxisMask(2u),
+          hingeAxis,
+          false,
+          true,
+      },
+      {
+          "serialized_stiff_world_slider",
+          sx::JointType::Prismatic,
+          1u,
+          9.0,
+          890.0,
+          1123.0,
+          dvbd::avbdRigidJointAllButAxisMask(2u),
+          dvbd::kAvbdRigidJointAllAxesMask,
+          sliderAxis,
+          true,
+      },
+      {
+          "serialized_stiff_world_socket",
+          sx::JointType::Spherical,
+          3u,
+          10.0,
+          901.0,
+          1234.0,
+          dvbd::kAvbdRigidJointAllAxesMask,
+          0u,
+          Eigen::Vector3d::Zero(),
+      },
+  }};
+
+  std::array<sx::Joint, expected.size()> joints{
+      world.addArticulatedFixedJoint(expected[0].name, pair.parent, pair.child),
+      world.addArticulatedRevoluteJoint(
+          expected[1].name, pair.parent, pair.child, hingeAxis),
+      world.addArticulatedPrismaticJoint(
+          expected[2].name, pair.parent, pair.child, sliderAxis),
+      world.addArticulatedSphericalJoint(
+          expected[3].name, pair.parent, pair.child),
+      world.addArticulatedFixedJoint(expected[4].name, pair.parent),
+      world.addArticulatedRevoluteJoint(
+          expected[5].name, pair.parent, hingeAxis),
+      world.addArticulatedPrismaticJoint(
+          expected[6].name, pair.child, sliderAxis),
+      world.addArticulatedSphericalJoint(expected[7].name, pair.child),
+  };
+
+  for (std::size_t i = 0; i < expected.size(); ++i) {
+    joints[i].setAvbdStartStiffness(expected[i].startStiffness);
+    joints[i].setAvbdLinearStiffness(expected[i].linearStiffness);
+    joints[i].setAvbdAngularStiffness(expected[i].angularStiffness);
+  }
+
+  std::stringstream data;
+  world.saveBinary(data);
+
+  sx::World restored;
+  restored.loadBinary(data);
+  restored.setMultibodyOptions({.integrationFamily = "variational integrator"});
+
+  auto& registry = dart::simulation::detail::registryOf(restored);
+  for (const ExpectedJoint& joint : expected) {
+    SCOPED_TRACE(joint.name);
+    auto restoredJoint = restored.getArticulatedJoint(joint.name);
+    ASSERT_TRUE(restoredJoint.has_value());
+    EXPECT_EQ(restoredJoint->getType(), joint.type);
+    EXPECT_EQ(restoredJoint->getDOFCount(), joint.dofs);
+    EXPECT_FALSE(registry.all_of<dvbd::AvbdRigidWorldPointJointConfig>(
+        sx::detail::toRegistryEntity(restoredJoint->getEntity())));
+  }
+
+  restored.enterSimulationMode();
+
+  for (const ExpectedJoint& joint : expected) {
+    SCOPED_TRACE(joint.name);
+    auto restoredJoint = restored.getArticulatedJoint(joint.name);
+    ASSERT_TRUE(restoredJoint.has_value());
+    const entt::entity jointEntity
+        = sx::detail::toRegistryEntity(restoredJoint->getEntity());
+    ASSERT_TRUE(
+        registry.all_of<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity));
+    const auto& config
+        = registry.get<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
+    EXPECT_EQ(config.linearAxisMask, joint.linearAxisMask);
+    EXPECT_EQ(config.angularAxisMask, joint.angularAxisMask);
+    EXPECT_DOUBLE_EQ(config.startStiffness, joint.startStiffness);
+    EXPECT_DOUBLE_EQ(config.linearMaterialStiffness, joint.linearStiffness);
+    EXPECT_DOUBLE_EQ(config.angularMaterialStiffness, joint.angularStiffness);
+    EXPECT_TRUE(std::isinf(config.maxStiffness));
+    if (joint.hasFreeLinearAxis) {
+      EXPECT_NEAR(config.linearAxes.col(2).dot(joint.freeAxis), 1.0, 1e-12);
+    }
+    if (joint.hasFreeAngularAxis) {
+      EXPECT_NEAR(config.angularAxes.col(2).dot(joint.freeAxis), 1.0, 1e-12);
+    }
+  }
+}
+
 // PLAN-104 AVBD articulated bridge: public spherical point joints create
 // linear-only AVBD rows for multibody endpoints, preserving the captured anchor
 // while leaving relative orientation free.
