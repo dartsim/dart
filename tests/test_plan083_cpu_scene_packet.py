@@ -196,6 +196,35 @@ def _abd_wrecking_ball_packet(**overrides):
     return {"benchmarks": [row]}
 
 
+def _abd_chain_packet(scene: str, pair_count: int, **overrides):
+    row_name = f"BM_Plan083CpuScene_{scene}_reduced_pair_runtime_step"
+    row = {
+        "name": f"{row_name}_median",
+        "run_name": row_name,
+        "aggregate_name": "median",
+        "real_time": 6.0,
+        "cpu_time": 6.0,
+        "time_unit": "ms",
+        "affine_body_count": 2 * pair_count,
+        "dynamic_pair_count": pair_count,
+        "valid_step_count": pair_count,
+        "failed_steps": 0,
+        "converged_solve_count": pair_count,
+        "barrier_active_count": pair_count,
+        "solver_iterations": 18 * pair_count,
+        "total_objective_decrease": 0.04 * pair_count,
+        "max_final_gradient_norm": 1e-8,
+        "min_target_squared_distance": 1e-4,
+        "min_final_squared_distance": 2e-3,
+        "squared_activation_distance": 0.25,
+        "max_linear_speed_m_s": 0.6,
+        "max_affine_velocity_norm": 0.9,
+        "max_displacement_norm_m": 0.02,
+    }
+    row.update(overrides)
+    return {"benchmarks": [row]}
+
+
 def _lying_flat_packet(**overrides):
     row = {
         "name": "BM_Plan083CpuScene_lying_flat_reduced_world_step_median",
@@ -525,6 +554,40 @@ def test_plan083_cpu_scene_packet_accepts_reduced_abd_wrecking_ball() -> None:
     assert row["wall_time_ns"] == 5.0e6
 
 
+@pytest.mark.parametrize(
+    ("scene", "row_id", "scene_id", "pair_count"),
+    [
+        ("abd_chain_8", "abd-chain-8", "plan083_abd_chain_8", 8),
+        ("abd_chain_16", "abd-chain-16", "plan083_abd_chain_16", 16),
+        ("abd_chain_96", "abd-chain-96", "plan083_abd_chain_96", 96),
+    ],
+)
+def test_plan083_cpu_scene_packet_accepts_reduced_abd_chain(
+    scene: str,
+    row_id: str,
+    scene_id: str,
+    pair_count: int,
+) -> None:
+    module = _load_module()
+
+    packet = module.make_packet(
+        _abd_chain_packet(scene, pair_count),
+        max_equality_residual=1e-8,
+        scene=scene,
+    )
+
+    row = packet["plan083_cpu_scene_packet"]
+    assert row["row_id"] == row_id
+    assert row["scene_id"] == scene_id
+    assert row["paper_scale"] is False
+    assert row["runtime_path"] == "detail affine point-triangle pair runtime step"
+    assert row["affine_body_count"] == 2 * pair_count
+    assert row["dynamic_pair_count"] == pair_count
+    assert row["converged_solve_count"] == pair_count
+    assert row["barrier_active_count"] == pair_count
+    assert row["wall_time_ns"] == 6.0e6
+
+
 def test_plan083_cpu_scene_packet_accepts_reduced_lying_flat() -> None:
     module = _load_module()
 
@@ -809,6 +872,17 @@ def test_plan083_cpu_scene_packet_rejects_abd_wreck_without_pair() -> None:
             _abd_wrecking_ball_packet(dynamic_pair_count=0),
             max_equality_residual=1e-8,
             scene="abd_wrecking_ball",
+        )
+
+
+def test_plan083_cpu_scene_packet_rejects_abd_chain_wrong_pair_count() -> None:
+    module = _load_module()
+
+    with pytest.raises(module.Plan083CpuScenePacketError, match="dynamic"):
+        module.make_packet(
+            _abd_chain_packet("abd_chain_16", 16, dynamic_pair_count=15),
+            max_equality_residual=1e-8,
+            scene="abd_chain_16",
         )
 
 

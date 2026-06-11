@@ -234,8 +234,11 @@ point-triangle pair runtime-step helper for dynamic affine/affine contact. The
 reduced house-of-cards packet row for `abd-vs-rigid-cards` and the reduced
 wrecking-ball packet row for `abd-vs-rigid-wreck` validate convergence,
 active-barrier, objective-decrease, contact-distance, and velocity-update
-counters. These packets are not card-stack or wrecking-ball asset imports,
-rigid IPC timing comparisons, paper-scale ABD solvers, or completion claims.
+counters. The same branch adds reduced chain-net packets for `abd-chain-8`,
+`abd-chain-16`, and `abd-chain-96` using generated dynamic affine
+point-triangle pair runtime steps. These packets are not card-stack,
+wrecking-ball, or chain-net asset imports, rigid IPC timing comparisons,
+paper-scale ABD solvers, GPU packets, or completion claims.
 
 ## Last Session Summary
 
@@ -326,13 +329,14 @@ follow-up is reviewer-sized; do not split each planned ABD row into a micro-PR.
 Continue `simx/plan083-phase6-abd-runtime-evidence` with reduced CPU corpus
 packets only where runtime evidence exists. The current entry points are the
 reduced ABD house-of-cards packet for `abd-vs-rigid-cards` and the reduced ABD
-wrecking-ball pair packet for `abd-vs-rigid-wreck`; keep those rows explicitly
-`in-progress` and limited to internal runtime-step evidence until card-stack and
-wrecking-ball assets, rigid IPC comparison timing, and paper-scale scene
-reproduction exist. Leave the dev-task folder active because PLAN-083
-acceptance criteria are still unmet; if the task later moves out of this folder,
-get maintainer direction before deleting it and keep the remaining planned
-CPU/GPU/scene rows in durable sidecars.
+wrecking-ball pair packet for `abd-vs-rigid-wreck`, plus reduced chain-net
+packets for `abd-chain-8`, `abd-chain-16`, and `abd-chain-96`; keep those rows
+explicitly `in-progress` and limited to internal runtime-step evidence until
+card-stack, wrecking-ball, and chain-net assets, rigid IPC comparison timing,
+GPU parity, and paper-scale scene reproduction exist. Leave the dev-task folder
+active because PLAN-083 acceptance criteria are still unmet; if the task later
+moves out of this folder, get maintainer direction before deleting it and keep
+the remaining planned CPU/GPU/scene rows in durable sidecars.
 
 ## Context That Would Be Lost
 

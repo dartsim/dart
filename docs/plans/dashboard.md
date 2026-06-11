@@ -294,8 +294,11 @@ its own line so status updates remain git-history friendly.
   change-of-variable rigid IPC path, and the reduced affine point-triangle
   micro-solve diagnostic. The current follow-up adds reduced ABD runtime-step
   evidence for `abd-vs-rigid-cards` and reduced two-body ABD pair runtime-step
-  evidence for `abd-vs-rigid-wreck` without claiming card-stack or
-  wrecking-ball assets, rigid IPC comparison timing, or paper-scale parity. The completion audit still records PLAN-083 as incomplete while
+  evidence for `abd-vs-rigid-wreck`, plus reduced ABD chain-net runtime-step
+  packets for `abd-chain-8`, `abd-chain-16`, and `abd-chain-96`, without
+  claiming card-stack, wrecking-ball, or chain-net assets, rigid IPC comparison
+  timing, GPU parity, or paper-scale parity. The completion audit still records
+  PLAN-083 as incomplete while
   planned manifest, CPU corpus, and non-PSD GPU parity rows remain, so dev-task
   retirement needs maintainer direction before deletion.
 - Gate: Unified Newton-barrier progress is not complete until every cited

@@ -271,9 +271,10 @@ storage, or backend resources as public API.
   provenance until shared behavior is proven.
 - The first `abd-alg-affine-body` micro-packet is primitive/oracle evidence and
   now includes a reduced point-triangle solved-state diagnostic row with
-  residual/convergence counters. Broader ABD packets still need scene-level
-  runtime residuals, scene assets, and comparison baselines before any
-  paper-scale ABD row moves.
+  residual/convergence counters plus reduced runtime-step packets for the
+  cards, wrecking-ball, and chain-net ABD rows. Broader ABD packets still need
+  scene-level runtime residuals, scene assets, and comparison baselines before
+  any paper-scale ABD row moves.
 
 ## Immediate Next Steps
 
@@ -285,7 +286,8 @@ storage, or backend resources as public API.
    paper-scale scene assets and comparison evidence.
    The reduced packets may move only row-specific runtime smoke evidence;
    analytical force comparison, paper-scale rope/rod coupling, affine packing,
-   twisted shell, and self-contact parity remain planned.
+   twisted shell, self-contact parity, and ABD comparison baselines remain
+   planned.
 3. Use the reduced ABD runtime-step packets only as internal runtime evidence;
    broader ABD CPU packets still require scene-level runtime residuals, scene
    assets, and comparison baselines.

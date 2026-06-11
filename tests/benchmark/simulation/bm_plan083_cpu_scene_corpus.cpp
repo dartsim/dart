@@ -103,6 +103,9 @@ const Eigen::Vector3d kRagdollLegHalfExtents(0.035, 0.04, 0.16);
 constexpr double kRagdollHeadRadius = 0.055;
 constexpr std::size_t kAbdReducedWreckingBallPairCount = 1;
 constexpr std::size_t kAbdReducedCardCount = 8;
+constexpr std::size_t kAbdReducedChain8PairCount = 8;
+constexpr std::size_t kAbdReducedChain16PairCount = 16;
+constexpr std::size_t kAbdReducedChain96PairCount = 96;
 const std::array<Eigen::Vector3d, 4> kTerrainWheelOffsets{{
     Eigen::Vector3d(-0.16, -0.14, -0.10),
     Eigen::Vector3d(-0.16, 0.14, -0.10),
@@ -1233,6 +1236,92 @@ struct AbdWreckingBallFixture
   Eigen::Vector3d triangleC = Eigen::Vector3d::Zero();
 };
 
+struct AbdChainNetPair
+{
+  sxdetail::AffineBodyState pointBody;
+  sxdetail::AffineBodyState triangleBody;
+  Eigen::Vector3d point = Eigen::Vector3d::Zero();
+  Eigen::Vector3d triangleA = Eigen::Vector3d::Zero();
+  Eigen::Vector3d triangleB = Eigen::Vector3d::Zero();
+  Eigen::Vector3d triangleC = Eigen::Vector3d::Zero();
+};
+
+struct AbdChainNetFixture
+{
+  explicit AbdChainNetFixture(const std::size_t pairCount)
+  {
+    options.solve.barrier.squaredActivationDistance = 0.25;
+    options.solve.barrier.stiffness = 0.045;
+    options.solve.barrier.projectHessianToPsd = true;
+    options.solve.inertialWeight = 1.0;
+    options.solve.orthogonalityStiffness = 0.45;
+    options.solve.gradientTolerance = 1e-5;
+    options.solve.maxIterations = 72;
+    options.solve.maxLineSearchIterations = 32;
+    options.solve.maxStepNorm = 0.18;
+    options.timeStep = 0.02;
+    options.gravity = Eigen::Vector3d(0.0, 0.0, -9.81);
+
+    pairs.reserve(pairCount);
+    for (std::size_t index = 0; index < pairCount; ++index) {
+      const double col = static_cast<double>(index % 8u);
+      const double row = static_cast<double>(index / 8u);
+      const double phase = static_cast<double>(index % 5u);
+      const Eigen::Vector3d anchor(
+          -0.28 + 0.08 * col, -0.18 + 0.045 * row, 0.0);
+
+      AbdChainNetPair pair;
+      pair.pointBody.translation = anchor + Eigen::Vector3d(0.0, 0.0, 0.10);
+      pair.pointBody.linearMap
+          = Eigen::AngleAxisd(0.035 + 0.004 * phase, Eigen::Vector3d::UnitY())
+                .toRotationMatrix();
+      pair.pointBody.linearVelocity
+          = Eigen::Vector3d(0.02 + 0.004 * col, 0.0, -1.75 - 0.03 * phase);
+      pair.pointBody.affineVelocity(0, 1) = 0.18 + 0.01 * phase;
+      pair.pointBody.affineVelocity(1, 2) = -0.16 - 0.005 * col;
+      pair.pointBody.mass = 0.12;
+
+      pair.triangleBody.translation = anchor + Eigen::Vector3d(0.015, 0.0, 0.0);
+      pair.triangleBody.linearMap
+          = Eigen::AngleAxisd(-0.025 - 0.002 * phase, Eigen::Vector3d::UnitX())
+                .toRotationMatrix();
+      pair.triangleBody.linearVelocity
+          = Eigen::Vector3d(-0.02, 0.0, 0.12 + 0.01 * phase);
+      pair.triangleBody.affineVelocity(0, 2) = -0.12;
+      pair.triangleBody.affineVelocity(2, 1) = 0.08 + 0.002 * col;
+      pair.triangleBody.mass = 0.18;
+
+      pair.point = Eigen::Vector3d::Zero();
+      pair.triangleA = Eigen::Vector3d(-0.045, -0.035, 0.0);
+      pair.triangleB = Eigen::Vector3d(0.055, -0.035, 0.0);
+      pair.triangleC = Eigen::Vector3d(-0.045, 0.055, 0.0);
+      pairs.push_back(pair);
+    }
+  }
+
+  std::vector<sxdetail::AffinePointTrianglePairRuntimeStepResult> stepAll()
+      const
+  {
+    std::vector<sxdetail::AffinePointTrianglePairRuntimeStepResult> results;
+    results.reserve(pairs.size());
+    for (const auto& pair : pairs) {
+      results.push_back(
+          sxdetail::affinePointTrianglePairRuntimeStep(
+              pair.pointBody,
+              pair.point,
+              pair.triangleBody,
+              pair.triangleA,
+              pair.triangleB,
+              pair.triangleC,
+              options));
+    }
+    return results;
+  }
+
+  sxdetail::AffinePointTriangleRuntimeStepOptions options;
+  std::vector<AbdChainNetPair> pairs;
+};
+
 } // namespace
 
 //==============================================================================
@@ -1898,6 +1987,129 @@ static void BM_Plan083CpuScene_abd_wrecking_ball_reduced_pair_runtime_step(
       = std::max(result.pointDisplacementNorm, result.triangleDisplacementNorm);
 }
 BENCHMARK(BM_Plan083CpuScene_abd_wrecking_ball_reduced_pair_runtime_step)
+    ->Unit(benchmark::kMillisecond);
+
+//==============================================================================
+static void runAbdChainNetReducedPairRuntimeStep(
+    benchmark::State& state,
+    const std::size_t pairCount,
+    const char* rowCounterName)
+{
+  AbdChainNetFixture fixture(pairCount);
+
+  std::vector<sxdetail::AffinePointTrianglePairRuntimeStepResult> lastResults;
+  for (auto _ : state) {
+    lastResults = fixture.stepAll();
+    for (const auto& result : lastResults) {
+      benchmark::DoNotOptimize(result.solve.pointState.translation.data());
+      benchmark::DoNotOptimize(result.solve.triangleState.translation.data());
+      benchmark::DoNotOptimize(result.solve.pointState.linearMap.data());
+      benchmark::DoNotOptimize(result.solve.triangleState.linearMap.data());
+    }
+    benchmark::ClobberMemory();
+  }
+
+  std::size_t convergedSolveCount = 0;
+  std::size_t barrierActiveCount = 0;
+  std::size_t validStepCount = 0;
+  std::size_t failedStepCount = 0;
+  std::size_t solverIterations = 0;
+  double totalObjectiveDecrease = 0.0;
+  double maxFinalGradientNorm = 0.0;
+  double minTargetSquaredDistance = std::numeric_limits<double>::infinity();
+  double minFinalSquaredDistance = std::numeric_limits<double>::infinity();
+  double maxLinearSpeed = 0.0;
+  double maxAffineVelocityNorm = 0.0;
+  double maxDisplacementNorm = 0.0;
+
+  for (std::size_t index = 0; index < lastResults.size(); ++index) {
+    const auto& result = lastResults[index];
+    const auto& pair = fixture.pairs[index];
+    if (result.valid) {
+      ++validStepCount;
+    }
+    if (result.converged) {
+      ++convergedSolveCount;
+    }
+    if (result.solve.barrierActive) {
+      ++barrierActiveCount;
+    }
+    if (!result.valid || !result.converged || !result.solve.barrierActive) {
+      ++failedStepCount;
+    }
+    solverIterations += static_cast<std::size_t>(result.solve.iterations);
+    totalObjectiveDecrease
+        += result.solve.initialValue - result.solve.finalValue;
+    maxFinalGradientNorm
+        = std::max(maxFinalGradientNorm, result.solve.finalGradientNorm);
+    maxLinearSpeed = std::max(maxLinearSpeed, result.maxLinearSpeed);
+    maxAffineVelocityNorm
+        = std::max(maxAffineVelocityNorm, result.maxAffineVelocityNorm);
+    maxDisplacementNorm = std::max(
+        maxDisplacementNorm,
+        std::max(
+            result.pointDisplacementNorm, result.triangleDisplacementNorm));
+    const auto targetBarrier = sxdetail::affinePointTriangleBarrier(
+        result.pointInertialTarget,
+        pair.point,
+        result.triangleInertialTarget,
+        pair.triangleA,
+        pair.triangleB,
+        pair.triangleC,
+        fixture.options.solve.barrier);
+    minTargetSquaredDistance = std::min(
+        minTargetSquaredDistance, targetBarrier.primitive.squaredDistance);
+    minFinalSquaredDistance
+        = std::min(minFinalSquaredDistance, result.solve.finalSquaredDistance);
+  }
+
+  state.counters[rowCounterName] = 1.0;
+  state.counters["paper_scale"] = 0.0;
+  state.counters["affine_body_count"] = static_cast<double>(2u * pairCount);
+  state.counters["dynamic_pair_count"] = static_cast<double>(pairCount);
+  state.counters["valid_step_count"] = static_cast<double>(validStepCount);
+  state.counters["failed_steps"] = static_cast<double>(failedStepCount);
+  state.counters["converged_solve_count"]
+      = static_cast<double>(convergedSolveCount);
+  state.counters["barrier_active_count"]
+      = static_cast<double>(barrierActiveCount);
+  state.counters["solver_iterations"] = static_cast<double>(solverIterations);
+  state.counters["total_objective_decrease"] = totalObjectiveDecrease;
+  state.counters["max_final_gradient_norm"] = maxFinalGradientNorm;
+  state.counters["min_target_squared_distance"] = minTargetSquaredDistance;
+  state.counters["min_final_squared_distance"] = minFinalSquaredDistance;
+  state.counters["squared_activation_distance"]
+      = fixture.options.solve.barrier.squaredActivationDistance;
+  state.counters["max_linear_speed_m_s"] = maxLinearSpeed;
+  state.counters["max_affine_velocity_norm"] = maxAffineVelocityNorm;
+  state.counters["max_displacement_norm_m"] = maxDisplacementNorm;
+}
+
+static void BM_Plan083CpuScene_abd_chain_8_reduced_pair_runtime_step(
+    benchmark::State& state)
+{
+  runAbdChainNetReducedPairRuntimeStep(
+      state, kAbdReducedChain8PairCount, "row_abd_chain_8");
+}
+BENCHMARK(BM_Plan083CpuScene_abd_chain_8_reduced_pair_runtime_step)
+    ->Unit(benchmark::kMillisecond);
+
+static void BM_Plan083CpuScene_abd_chain_16_reduced_pair_runtime_step(
+    benchmark::State& state)
+{
+  runAbdChainNetReducedPairRuntimeStep(
+      state, kAbdReducedChain16PairCount, "row_abd_chain_16");
+}
+BENCHMARK(BM_Plan083CpuScene_abd_chain_16_reduced_pair_runtime_step)
+    ->Unit(benchmark::kMillisecond);
+
+static void BM_Plan083CpuScene_abd_chain_96_reduced_pair_runtime_step(
+    benchmark::State& state)
+{
+  runAbdChainNetReducedPairRuntimeStep(
+      state, kAbdReducedChain96PairCount, "row_abd_chain_96");
+}
+BENCHMARK(BM_Plan083CpuScene_abd_chain_96_reduced_pair_runtime_step)
     ->Unit(benchmark::kMillisecond);
 
 //==============================================================================
