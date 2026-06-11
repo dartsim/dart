@@ -9429,6 +9429,7 @@ void RigidBodyContactStage::prepare(World& world)
 
   const auto& registry = dart::simulation::detail::registryOf(world);
   const bool skipContactQuery = shouldSkipRigidBodyContactQuery(registry);
+  std::size_t contactCapacity = 0u;
   if (!skipContactQuery) {
     std::size_t collisionShapeCount = 0;
     const auto geometryView = registry.view<comps::CollisionGeometry>();
@@ -9442,6 +9443,7 @@ void RigidBodyContactStage::prepare(World& world)
                                      / kContactConstraintCapacityPerShape
               ? collisionShapeCount * kContactConstraintCapacityPerShape
               : std::numeric_limits<std::size_t>::max();
+    contactCapacity = contactConstraintCapacity;
     constraints.reserve(contactConstraintCapacity);
   }
 
@@ -9455,13 +9457,18 @@ void RigidBodyContactStage::prepare(World& world)
       = registry.storage<dvbd::AvbdRigidWorldDistanceSpringConfig>();
   const std::size_t distanceSpringCapacity
       = distanceSpringStorage != nullptr ? distanceSpringStorage->size() : 0u;
-  const std::size_t bodyCapacity
-      = 2u * (jointCapacity + distanceSpringCapacity);
+  const std::size_t maxSize = std::numeric_limits<std::size_t>::max();
+  const std::size_t rowEndpointCapacity
+      = contactCapacity <= maxSize - jointCapacity
+                && contactCapacity + jointCapacity
+                       <= maxSize - distanceSpringCapacity
+            ? contactCapacity + jointCapacity + distanceSpringCapacity
+            : maxSize;
+  const std::size_t bodyCapacity = rowEndpointCapacity <= maxSize / 2u
+                                       ? 2u * rowEndpointCapacity
+                                       : maxSize;
   m_avbdScratch->reserve(
-      bodyCapacity,
-      /*contactCapacity=*/0u,
-      jointCapacity,
-      distanceSpringCapacity);
+      bodyCapacity, contactCapacity, jointCapacity, distanceSpringCapacity);
 }
 
 //==============================================================================
