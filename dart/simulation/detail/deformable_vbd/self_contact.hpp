@@ -310,7 +310,7 @@ inline contact::Matrix2x12d avbdSelfContactFrictionProjection(
 //==============================================================================
 inline contact::Vector12d avbdSelfContactFrictionDisplacement(
     const AvbdSelfContactFrictionRow& row,
-    const std::vector<Eigen::Vector3d>& positions)
+    std::span<const Eigen::Vector3d> positions)
 {
   contact::Vector12d displacement = contact::Vector12d::Zero();
   for (std::uint8_t i = 0; i < 4; ++i) {
@@ -328,7 +328,7 @@ inline contact::Vector12d avbdSelfContactFrictionDisplacement(
 //==============================================================================
 inline double avbdSelfContactFrictionConstraintValue(
     const AvbdSelfContactFrictionRow& row,
-    const std::vector<Eigen::Vector3d>& positions)
+    std::span<const Eigen::Vector3d> positions)
 {
   const std::uint8_t axis = row.axis < 2u ? row.axis : 0u;
   const contact::Matrix2x12d projection
@@ -341,7 +341,7 @@ inline double avbdSelfContactFrictionConstraintValue(
 inline Eigen::Vector2d avbdSelfContactFrictionConstraintValues(
     const AvbdSelfContactFrictionRow& first,
     const AvbdSelfContactFrictionRow& second,
-    const std::vector<Eigen::Vector3d>& positions,
+    std::span<const Eigen::Vector3d> positions,
     double alpha)
 {
   return Eigen::Vector2d(
@@ -445,7 +445,7 @@ inline bool avbdSelfContactFrictionPreviousDualInsideCone(
 inline Eigen::Vector2d avbdSelfContactFrictionTangentPairForce(
     const AvbdSelfContactFrictionRow& first,
     const AvbdSelfContactFrictionRow& second,
-    const std::vector<Eigen::Vector3d>& positions,
+    std::span<const Eigen::Vector3d> positions,
     const AvbdSelfContactFrictionOptions& options,
     bool* clamped = nullptr)
 {
@@ -494,7 +494,7 @@ inline Eigen::Vector2d avbdSelfContactFrictionTangentPairForce(
 //==============================================================================
 inline contact::PrimitiveBarrierResult evaluateAvbdSelfContactPrimitive(
     const AvbdSelfContactNormalRow& row,
-    const std::vector<Eigen::Vector3d>& positions)
+    std::span<const Eigen::Vector3d> positions)
 {
   if (!(row.squaredActivationDistance > 0.0)) {
     return {};
@@ -549,7 +549,7 @@ inline double avbdSelfContactNormalConstraintValue(
 //==============================================================================
 inline double avbdSelfContactNormalConstraintValue(
     const AvbdSelfContactNormalRow& row,
-    const std::vector<Eigen::Vector3d>& positions)
+    std::span<const Eigen::Vector3d> positions)
 {
   return avbdSelfContactNormalConstraintValue(
       evaluateAvbdSelfContactPrimitive(row, positions));
@@ -581,7 +581,7 @@ inline Eigen::Vector3d avbdSelfContactLocalNormal(
 /// primitive is active, matching the other hard AVBD normal rows.
 inline double addAvbdSelfContactNormal(
     VertexBlock& block,
-    const std::vector<Eigen::Vector3d>& positions,
+    std::span<const Eigen::Vector3d> positions,
     const AvbdSelfContactNormalRow& row,
     std::uint8_t localVertex,
     double alpha)
@@ -613,7 +613,7 @@ inline double addAvbdSelfContactNormal(
 //==============================================================================
 inline AvbdScalarRowState updateAvbdSelfContactNormalRow(
     AvbdScalarRowState state,
-    const std::vector<Eigen::Vector3d>& positions,
+    std::span<const Eigen::Vector3d> positions,
     const AvbdSelfContactNormalRow& row,
     const AvbdSelfContactNormalOptions& options)
 {
@@ -638,7 +638,7 @@ inline AvbdScalarRowState updateAvbdSelfContactNormalRow(
 /// primitive pair.
 inline double addAvbdSelfContactFrictionTangent(
     VertexBlock& block,
-    const std::vector<Eigen::Vector3d>& positions,
+    std::span<const Eigen::Vector3d> positions,
     const AvbdSelfContactFrictionRow& row,
     std::uint8_t localVertex,
     double alpha)
@@ -669,7 +669,7 @@ inline double addAvbdSelfContactFrictionTangent(
 /// circular Coulomb bound opposite the current slip.
 inline Eigen::Vector2d addAvbdSelfContactFrictionTangentPair(
     VertexBlock& block,
-    const std::vector<Eigen::Vector3d>& positions,
+    std::span<const Eigen::Vector3d> positions,
     const AvbdSelfContactFrictionRow& first,
     const AvbdSelfContactFrictionRow& second,
     std::uint8_t localVertex,
@@ -692,7 +692,7 @@ inline Eigen::Vector2d addAvbdSelfContactFrictionTangentPair(
 //==============================================================================
 inline AvbdScalarRowState updateAvbdSelfContactFrictionTangentRow(
     AvbdScalarRowState state,
-    const std::vector<Eigen::Vector3d>& positions,
+    std::span<const Eigen::Vector3d> positions,
     const AvbdSelfContactFrictionRow& row,
     const AvbdSelfContactFrictionOptions& options)
 {
@@ -708,7 +708,7 @@ inline AvbdScalarRowState updateAvbdSelfContactFrictionTangentRow(
 inline void updateAvbdSelfContactFrictionTangentPair(
     AvbdSelfContactFrictionRow& first,
     AvbdSelfContactFrictionRow& second,
-    const std::vector<Eigen::Vector3d>& positions,
+    std::span<const Eigen::Vector3d> positions,
     const AvbdSelfContactFrictionOptions& options)
 {
   bool clamped = false;
@@ -742,7 +742,7 @@ inline void addSelfContactTerms(
     VertexBlock& block,
     std::uint32_t vertex,
     const SelfContactAdjacency& selfContact,
-    const std::vector<Eigen::Vector3d>& positions)
+    std::span<const Eigen::Vector3d> positions)
 {
   if (!selfContact.active() || vertex >= selfContact.incident.size()) {
     return;

@@ -33,6 +33,8 @@
 
 #include <dart/simulation/comps/component_category.hpp>
 
+#include <dart/common/stl_allocator.hpp>
+
 #include <Eigen/Core>
 
 #include <limits>
@@ -246,17 +248,41 @@ struct DeformableVbdConfig
 /// the live node state after loading or model edits.
 struct DeformableSolverScratch
 {
-  std::vector<Eigen::Vector3d> inertialTargets;
-  std::vector<Eigen::Vector3d> next;
-  std::vector<Eigen::Vector3d> gradient;
-  std::vector<Eigen::Vector3d> direction;
-  std::vector<Eigen::Vector3d> candidate;
-  std::vector<Eigen::Vector3d> previousStepPositions;
-  std::vector<Eigen::Vector3d> externalAccelerations;
-  std::vector<std::uint8_t> activeFixed;
-  std::vector<std::uint8_t> activeDirichlet;
-  std::vector<std::uint8_t> countedDirichlet;
-  std::vector<std::uint8_t> countedNeumann;
+  using Vector3Vector = std::
+      vector<Eigen::Vector3d, dart::common::StlAllocator<Eigen::Vector3d>>;
+  using MaskVector
+      = std::vector<std::uint8_t, dart::common::StlAllocator<std::uint8_t>>;
+
+  DeformableSolverScratch() = default;
+
+  explicit DeformableSolverScratch(dart::common::MemoryAllocator& allocator)
+    : inertialTargets(dart::common::StlAllocator<Eigen::Vector3d>{allocator}),
+      next(dart::common::StlAllocator<Eigen::Vector3d>{allocator}),
+      gradient(dart::common::StlAllocator<Eigen::Vector3d>{allocator}),
+      direction(dart::common::StlAllocator<Eigen::Vector3d>{allocator}),
+      candidate(dart::common::StlAllocator<Eigen::Vector3d>{allocator}),
+      previousStepPositions(
+          dart::common::StlAllocator<Eigen::Vector3d>{allocator}),
+      externalAccelerations(
+          dart::common::StlAllocator<Eigen::Vector3d>{allocator}),
+      activeFixed(dart::common::StlAllocator<std::uint8_t>{allocator}),
+      activeDirichlet(dart::common::StlAllocator<std::uint8_t>{allocator}),
+      countedDirichlet(dart::common::StlAllocator<std::uint8_t>{allocator}),
+      countedNeumann(dart::common::StlAllocator<std::uint8_t>{allocator})
+  {
+  }
+
+  Vector3Vector inertialTargets;
+  Vector3Vector next;
+  Vector3Vector gradient;
+  Vector3Vector direction;
+  Vector3Vector candidate;
+  Vector3Vector previousStepPositions;
+  Vector3Vector externalAccelerations;
+  MaskVector activeFixed;
+  MaskVector activeDirichlet;
+  MaskVector countedDirichlet;
+  MaskVector countedNeumann;
 };
 
 void registerDeformableBodySerializers(

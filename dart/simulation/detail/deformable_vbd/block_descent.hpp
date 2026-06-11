@@ -510,6 +510,7 @@ inline BlockDescentStats blockDescentMassSpringAvbdFiniteStiffness(
 /// friction persistence, broader self-contact friction envelopes, tetrahedral
 /// row mixing, and parallel dual scheduling remain later slices.
 template <
+    typename PositionVector,
     typename FixedMask,
     typename ContactRows = std::vector<AvbdHalfSpaceContactRow>,
     typename AttachmentRows = std::vector<AvbdPointAttachmentRow>,
@@ -518,10 +519,10 @@ template <
     typename SelfContactRows = std::vector<AvbdSelfContactNormalRow>,
     typename SelfContactFrictionRows = std::vector<AvbdSelfContactFrictionRow>>
 inline BlockDescentStats blockDescentMassSpringAvbdRows(
-    std::vector<Eigen::Vector3d>& positions,
+    PositionVector& positions,
     const std::vector<double>& masses,
     const FixedMask& fixed,
-    const std::vector<Eigen::Vector3d>& inertialTargets,
+    std::span<const Eigen::Vector3d> inertialTargets,
     std::span<const SpringElement> springs,
     double fallbackSpringStiffness,
     double timeStep,
@@ -1081,14 +1082,16 @@ inline BlockDescentStats blockDescentTetMesh(
 /// row path as the mass-spring envelope; when they are absent, the existing
 /// lagged VBD self-contact penalty remains available.
 template <
+    typename PositionVector,
+    typename FixedMask,
     typename TetRows = std::vector<AvbdTetMaterialFiniteStiffnessRow>,
     typename SelfContactRows = std::vector<AvbdSelfContactNormalRow>,
     typename SelfContactFrictionRows = std::vector<AvbdSelfContactFrictionRow>>
 inline BlockDescentStats blockDescentTetMeshAvbdFiniteStiffness(
-    std::vector<Eigen::Vector3d>& positions,
+    PositionVector& positions,
     const std::vector<double>& masses,
-    const std::vector<std::uint8_t>& fixed,
-    const std::vector<Eigen::Vector3d>& inertialTargets,
+    const FixedMask& fixed,
+    std::span<const Eigen::Vector3d> inertialTargets,
     std::span<const TetMeshElement> tets,
     double mu,
     double lambda,
@@ -1381,9 +1384,9 @@ namespace detail {
 /// Stable Neo-Hookean tetrahedra.
 inline VertexBlock assembleDeformableVertexBlock(
     std::uint32_t vertex,
-    const std::vector<Eigen::Vector3d>& positions,
+    std::span<const Eigen::Vector3d> positions,
     const std::vector<double>& masses,
-    const std::vector<Eigen::Vector3d>& inertialTargets,
+    std::span<const Eigen::Vector3d> inertialTargets,
     std::span<const SpringElement> springs,
     const SpringAdjacency& springAdjacency,
     double springStiffness,
@@ -1469,13 +1472,15 @@ inline VertexBlock assembleDeformableVertexBlock(
 /// requires `stepStartPositions` (the positions x^t at the start of the step)
 /// and is a no-op when that is null or the coefficient is zero.
 template <
+    typename PositionVector,
+    typename FixedMask,
     typename ChebyshevTwoStepsBackVector = std::vector<Eigen::Vector3d>,
     typename ChebyshevBeforeSweepVector = std::vector<Eigen::Vector3d>>
 inline BlockDescentStats blockDescentDeformable(
-    std::vector<Eigen::Vector3d>& positions,
+    PositionVector& positions,
     const std::vector<double>& masses,
-    const std::vector<std::uint8_t>& fixed,
-    const std::vector<Eigen::Vector3d>& inertialTargets,
+    const FixedMask& fixed,
+    std::span<const Eigen::Vector3d> inertialTargets,
     std::span<const SpringElement> springs,
     double springStiffness,
     const SpringAdjacency& springAdjacency,

@@ -635,7 +635,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     element lists now also use the World allocator through span-based read-only
     topology inputs, and cached VBD coloring plus spring/tetrahedron/self-contact
     incident adjacency now preserve
-    caller-provided allocators for their nested vectors.
+    caller-provided allocators for their nested vectors. Default deformable
+    solver scratch now also constructs inertial targets, iterate, gradient,
+    direction, candidate, previous-step, external-acceleration, and
+    fixed/boundary/count-mask storage from the World allocator.
     The variational multibody stage now reuses baked inverse-dynamics scratch
     for its initial-guess bias query instead of calling the public
     return-by-value helper on same-shape steps. It also reuses baked dense

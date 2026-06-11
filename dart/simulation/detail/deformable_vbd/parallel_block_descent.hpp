@@ -173,13 +173,15 @@ inline BlockDescentStats parallelBlockDescentMassSpring(
 /// falls back to the serial driver because the lagged VT/EE contact stencils
 /// are not part of the cached spring/tet coloring.
 template <
+    typename PositionVector,
+    typename FixedMask,
     typename ChebyshevTwoStepsBackVector = std::vector<Eigen::Vector3d>,
     typename ChebyshevBeforeSweepVector = std::vector<Eigen::Vector3d>>
 inline BlockDescentStats parallelBlockDescentDeformable(
-    std::vector<Eigen::Vector3d>& positions,
+    PositionVector& positions,
     const std::vector<double>& masses,
-    const std::vector<std::uint8_t>& fixed,
-    const std::vector<Eigen::Vector3d>& inertialTargets,
+    const FixedMask& fixed,
+    std::span<const Eigen::Vector3d> inertialTargets,
     std::span<const SpringElement> springs,
     double springStiffness,
     const SpringAdjacency& springAdjacency,

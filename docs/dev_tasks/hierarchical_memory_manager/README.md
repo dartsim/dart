@@ -341,7 +341,10 @@
       rather than square-grid assumptions, and the same irregular mesh now
       covers the matrix-free projected-Newton path. The matrix-free path also
       reuses solver-owned Hessian block plus CG vector scratch instead of
-      allocating local solve temporaries.
+      allocating local solve temporaries. Per-body deformable solver vectors
+      for inertial targets, trial/gradient/direction/candidate state,
+      previous-step positions, external accelerations, and fixed/boundary
+      masks now construct from the World free allocator.
       AVBD ground contact/friction rows and
       self-contact normal/friction rows now reuse row-inventory and
       self-contact adjacency storage, including previous friction warm-start
@@ -858,6 +861,13 @@ Follow-up progress after PR #2956:
   incident-adjacency builders now preserve caller-provided allocators for their
   nested vectors, so World-owned VBD topology scratch no longer falls back to
   default heap storage for those cached structures.
+- `DeformableSolverScratch` now constructs inertial targets, iterate, gradient,
+  direction, candidate, previous-step, external-acceleration, and active
+  fixed/Dirichlet/Neumann mask buffers from the World free allocator. The
+  default projected-Newton and VBD/AVBD driver contracts accept those
+  allocator-backed vectors through spans or allocator-agnostic vector templates,
+  so baked World-stage steps no longer fall back to default heap storage for
+  those per-body solver buffers.
 - Default deformable projected-Newton assembly scratch now borrows that same
   World free allocator for sparse-pattern arrays, triplet assembly, PSD
   edge/tet/barrier block batches, and matrix-free block/diagonal storage. The

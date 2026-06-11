@@ -3098,10 +3098,12 @@ TEST(World, DeformableDynamicsStageScratchPayloadUsesProvidedAllocator)
 
     stage.prepare(world);
 
-    EXPECT_GT(worldFreeList.getAllocationCount(), worldAllocationsBeforePrepare)
+    EXPECT_GE(
+        worldFreeList.getAllocationCount(), worldAllocationsBeforePrepare + 11u)
         << "World-owned deformable contact scratch should reserve per-body "
-           "surface topology, inter-body CCD sweep, and projected-Newton "
-           "assembly vectors from the World free allocator";
+           "solver vectors, fixed/boundary masks, surface topology, "
+           "inter-body CCD sweep, and projected-Newton assembly vectors from "
+           "the World free allocator";
     EXPECT_GE(freeList.getAllocationCount(), allocationsAfterStage + 15u)
         << "allocator-aware deformable stage scratch should reserve obstacle, "
            "surface-snapshot, and nested snapshot payload vectors from the "

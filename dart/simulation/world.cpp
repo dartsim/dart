@@ -2022,11 +2022,12 @@ void reserveExistingRegistryStorages(detail::WorldRegistry& registry)
 }
 
 //==============================================================================
-template <typename Component, typename EntityRange>
-void reserveAndPrimeDefaultComponentStorage(
+template <typename Component, typename EntityRange, typename... Args>
+void reserveAndPrimeComponentStorage(
     detail::WorldRegistry& registry,
     EntityRange&& entities,
-    std::size_t capacity)
+    std::size_t capacity,
+    Args&&... args)
 {
   auto& storage = registry.template storage<Component>();
   storage.reserve(capacity);
@@ -2036,9 +2037,20 @@ void reserveAndPrimeDefaultComponentStorage(
       continue;
     }
 
-    registry.template emplace<Component>(entity);
+    registry.template emplace<Component>(entity, std::forward<Args>(args)...);
     registry.template remove<Component>(entity);
   }
+}
+
+//==============================================================================
+template <typename Component, typename EntityRange>
+void reserveAndPrimeDefaultComponentStorage(
+    detail::WorldRegistry& registry,
+    EntityRange&& entities,
+    std::size_t capacity)
+{
+  reserveAndPrimeComponentStorage<Component>(
+      registry, std::forward<EntityRange>(entities), capacity);
 }
 
 //==============================================================================
@@ -2912,8 +2924,11 @@ void World::reserveRegistryStorageForSimulation()
       = existingComponentStorageSize<comps::DeformableBodyTag>(registry);
   if (deformableBodyCount > 0u) {
     auto deformableBodies = registry.view<comps::DeformableBodyTag>();
-    reserveAndPrimeDefaultComponentStorage<comps::DeformableSolverScratch>(
-        registry, deformableBodies, deformableBodyCount);
+    reserveAndPrimeComponentStorage<comps::DeformableSolverScratch>(
+        registry,
+        deformableBodies,
+        deformableBodyCount,
+        m_memoryManager.getFreeAllocator());
     compute::reserveDeformableDynamicsRegistryStorage(
         registry, deformableBodyCount, m_memoryManager.getFreeAllocator());
   }

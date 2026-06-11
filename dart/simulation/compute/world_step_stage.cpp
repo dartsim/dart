@@ -3751,8 +3751,8 @@ double adaptiveBarrierStiffness(
 
 //==============================================================================
 bool satisfiesStaticGroundBarrier(
-    const std::vector<Eigen::Vector3d>& positions,
-    const std::vector<std::uint8_t>& fixed,
+    std::span<const Eigen::Vector3d> positions,
+    std::span<const std::uint8_t> fixed,
     std::span<const StaticGroundBarrier> barriers)
 {
   if (barriers.empty()) {
@@ -3771,8 +3771,8 @@ bool satisfiesStaticGroundBarrier(
 
 //==============================================================================
 void makeInitialPositionsFeasible(
-    std::vector<Eigen::Vector3d>& positions,
-    const std::vector<std::uint8_t>& fixed,
+    std::span<Eigen::Vector3d> positions,
+    std::span<const std::uint8_t> fixed,
     std::span<const StaticGroundBarrier> barriers,
     DeformableSolverStats* stats)
 {
@@ -3797,10 +3797,10 @@ void makeInitialPositionsFeasible(
 
 //==============================================================================
 double addStaticGroundBarrierEnergy(
-    const std::vector<Eigen::Vector3d>& positions,
-    const std::vector<std::uint8_t>& fixed,
+    std::span<const Eigen::Vector3d> positions,
+    std::span<const std::uint8_t> fixed,
     std::span<const StaticGroundBarrier> barriers,
-    std::vector<Eigen::Vector3d>* gradient,
+    comps::DeformableSolverScratch::Vector3Vector* gradient,
     double barrierStiffness = kDefaultBarrierStiffness)
 {
   if (barriers.empty()) {
@@ -3856,10 +3856,10 @@ double addStaticGroundBarrierEnergy(
 // barrier-inclusive energy keeps nodes outside because the clamped-log energy
 // diverges as the distance approaches zero.
 double addSphereObstacleBarrierEnergy(
-    const std::vector<Eigen::Vector3d>& positions,
-    const std::vector<std::uint8_t>& fixed,
+    std::span<const Eigen::Vector3d> positions,
+    std::span<const std::uint8_t> fixed,
     std::span<const SphereObstacleBarrier> obstacles,
-    std::vector<Eigen::Vector3d>* gradient,
+    comps::DeformableSolverScratch::Vector3Vector* gradient,
     double barrierStiffness = kDefaultBarrierStiffness)
 {
   if (obstacles.empty()) {
@@ -3975,10 +3975,10 @@ double capsuleObstacleSurfaceDistance(
 // out of the activation band of a capsule obstacle, along the outward radial
 // normal. The capsule analogue of addBoxObstacleBarrierEnergy.
 double addCapsuleObstacleBarrierEnergy(
-    const std::vector<Eigen::Vector3d>& positions,
-    const std::vector<std::uint8_t>& fixed,
+    std::span<const Eigen::Vector3d> positions,
+    std::span<const std::uint8_t> fixed,
     std::span<const CapsuleObstacleBarrier> obstacles,
-    std::vector<Eigen::Vector3d>* gradient,
+    comps::DeformableSolverScratch::Vector3Vector* gradient,
     double barrierStiffness = kDefaultBarrierStiffness)
 {
   if (obstacles.empty()) {
@@ -4029,10 +4029,10 @@ double addCapsuleObstacleBarrierEnergy(
 // out of the activation band of an oriented box obstacle, along the outward
 // surface normal. The box analogue of addSphereObstacleBarrierEnergy.
 double addBoxObstacleBarrierEnergy(
-    const std::vector<Eigen::Vector3d>& positions,
-    const std::vector<std::uint8_t>& fixed,
+    std::span<const Eigen::Vector3d> positions,
+    std::span<const std::uint8_t> fixed,
     std::span<const BoxObstacleBarrier> obstacles,
-    std::vector<Eigen::Vector3d>* gradient,
+    comps::DeformableSolverScratch::Vector3Vector* gradient,
     double barrierStiffness = kDefaultBarrierStiffness)
 {
   if (obstacles.empty()) {
@@ -4093,8 +4093,8 @@ double staticGroundFrictionVelocityThreshold()
 // activation band, zero otherwise. Friction lags this across the inner line
 // search (standard IPC), so it is evaluated once per outer iteration.
 void computeStaticGroundNormalForces(
-    const std::vector<Eigen::Vector3d>& positions,
-    const std::vector<std::uint8_t>& fixed,
+    std::span<const Eigen::Vector3d> positions,
+    std::span<const std::uint8_t> fixed,
     std::span<const StaticGroundBarrier> barriers,
     auto& normalForce,
     auto& normalDirection)
@@ -4145,8 +4145,8 @@ void computeStaticGroundNormalForces(
 // surface CCD), so tangential sliding is unconstrained and friction is
 // effective.
 void addCapsuleObstacleNormalForces(
-    const std::vector<Eigen::Vector3d>& positions,
-    const std::vector<std::uint8_t>& fixed,
+    std::span<const Eigen::Vector3d> positions,
+    std::span<const std::uint8_t> fixed,
     std::span<const CapsuleObstacleBarrier> obstacles,
     auto& normalForce,
     auto& normalDirection)
@@ -4188,8 +4188,8 @@ void addCapsuleObstacleNormalForces(
 // into the friction normal-force arrays (dominant contact per node wins). Used
 // for friction against barrier-only sphere obstacles.
 void addSphereObstacleNormalForces(
-    const std::vector<Eigen::Vector3d>& positions,
-    const std::vector<std::uint8_t>& fixed,
+    std::span<const Eigen::Vector3d> positions,
+    std::span<const std::uint8_t> fixed,
     std::span<const SphereObstacleBarrier> obstacles,
     auto& normalForce,
     auto& normalDirection)
@@ -4231,8 +4231,8 @@ void addSphereObstacleNormalForces(
 // into the friction normal-force arrays (dominant contact per node wins). Used
 // for friction against barrier-only box obstacles.
 void addBoxObstacleNormalForces(
-    const std::vector<Eigen::Vector3d>& positions,
-    const std::vector<std::uint8_t>& fixed,
+    std::span<const Eigen::Vector3d> positions,
+    std::span<const std::uint8_t> fixed,
     std::span<const BoxObstacleBarrier> obstacles,
     auto& normalForce,
     auto& normalDirection)
@@ -4277,7 +4277,7 @@ struct GroundFrictionInputs
 {
   double coefficient = 0.0; // mu
   double epsilon = 0.0;     // epsv * timeStep (mollifier displacement radius)
-  const std::vector<Eigen::Vector3d>* stepStartPositions = nullptr;
+  std::span<const Eigen::Vector3d> stepStartPositions;
   std::span<const double> laggedNormalForce;
   // Per-node geometric ground normal at the lagged contact (unit, upward). When
   // empty the tangent plane defaults to xy (flat ground), preserving the legacy
@@ -4317,18 +4317,18 @@ double frictionF1(double y, double epsilon)
 // saturates at mu * normalForce (kinetic) and ramps smoothly to zero at rest,
 // so there is no division by zero.
 double addGroundFrictionEnergy(
-    const std::vector<Eigen::Vector3d>& positions,
-    const std::vector<std::uint8_t>& fixed,
+    std::span<const Eigen::Vector3d> positions,
+    std::span<const std::uint8_t> fixed,
     const GroundFrictionInputs& friction,
-    std::vector<Eigen::Vector3d>* gradient)
+    comps::DeformableSolverScratch::Vector3Vector* gradient)
 {
   if (friction.coefficient <= 0.0 || friction.epsilon <= 0.0
-      || friction.stepStartPositions == nullptr
+      || friction.stepStartPositions.empty()
       || friction.laggedNormalForce.empty()) {
     return 0.0;
   }
 
-  const auto& start = *friction.stepStartPositions;
+  const auto start = friction.stepStartPositions;
   const auto normalForce = friction.laggedNormalForce;
   const auto normalDirection = friction.laggedNormalDirection;
   double energy = 0.0;
@@ -4388,11 +4388,11 @@ struct SelfContactBarrierInputs
 // produces smooth repulsive contact forces; the CCD limiters remain the hard
 // no-penetration guarantee.
 double addSelfContactBarrierEnergy(
-    const std::vector<Eigen::Vector3d>& positions,
-    const std::vector<std::uint8_t>& fixed,
+    std::span<const Eigen::Vector3d> positions,
+    std::span<const std::uint8_t> fixed,
     const SelfContactBarrierInputs& inputs,
     std::size_t* activeContacts,
-    std::vector<Eigen::Vector3d>* gradient)
+    comps::DeformableSolverScratch::Vector3Vector* gradient)
 {
   if (inputs.candidates == nullptr || inputs.triangles.empty()
       || inputs.stiffness <= 0.0 || !(inputs.squaredActivationDistance > 0.0)) {
@@ -4465,7 +4465,7 @@ struct SelfContactFrictionInputs
 {
   double coefficient = 0.0; // mu
   double epsilon = 0.0;     // epsv * timeStep
-  const std::vector<Eigen::Vector3d>* stepStartPositions = nullptr;
+  std::span<const Eigen::Vector3d> stepStartPositions;
   std::span<const SelfContactFrictionContact> contacts;
 };
 
@@ -4477,7 +4477,7 @@ struct SelfContactFrictionInputs
 // downstream friction energy/gradient/Hessian are generic over the four-node
 // stencil, so both contact types share them.
 void buildSelfContactFrictionContacts(
-    const std::vector<Eigen::Vector3d>& positions,
+    std::span<const Eigen::Vector3d> positions,
     const SelfContactBarrierInputs& barrier,
     auto& contacts)
 {
@@ -4539,17 +4539,17 @@ void buildSelfContactFrictionContacts(
 // lagged friction Hessian is a later increment, like the ground-friction path's
 // first cut; the line search on this energy still ensures descent.
 double addSelfContactFrictionEnergy(
-    const std::vector<Eigen::Vector3d>& positions,
-    const std::vector<std::uint8_t>& fixed,
+    std::span<const Eigen::Vector3d> positions,
+    std::span<const std::uint8_t> fixed,
     const SelfContactFrictionInputs& friction,
-    std::vector<Eigen::Vector3d>* gradient)
+    comps::DeformableSolverScratch::Vector3Vector* gradient)
 {
   if (friction.coefficient <= 0.0 || friction.epsilon <= 0.0
-      || friction.stepStartPositions == nullptr || friction.contacts.empty()) {
+      || friction.stepStartPositions.empty() || friction.contacts.empty()) {
     return 0.0;
   }
 
-  const auto& start = *friction.stepStartPositions;
+  const auto start = friction.stepStartPositions;
   double energy = 0.0;
   for (const auto& contact : friction.contacts) {
     if (contact.normalForce <= 0.0) {
@@ -4591,9 +4591,9 @@ double addSelfContactFrictionEnergy(
 // the friction energy uses: u_T = (I - n n^T)(x - x_start) for ground contact
 // and projection * (stacked four-node displacement) for self-contact.
 void accumulateFrictionDiagnostics(
-    const std::vector<Eigen::Vector3d>& positions,
-    const std::vector<Eigen::Vector3d>& stepStart,
-    const std::vector<std::uint8_t>& fixed,
+    std::span<const Eigen::Vector3d> positions,
+    std::span<const Eigen::Vector3d> stepStart,
+    std::span<const std::uint8_t> fixed,
     const double frictionCoefficient,
     const double epsilon,
     const auto& groundNormalForce,
@@ -4653,7 +4653,7 @@ void accumulateFrictionDiagnostics(
 // when the set is empty). Read once after the outer loop, not on the
 // line-search hot path.
 std::size_t accumulateContactDistanceDiagnostics(
-    const std::vector<Eigen::Vector3d>& positions,
+    std::span<const Eigen::Vector3d> positions,
     const SelfContactBarrierInputs& barrier,
     double& outMinDistance)
 {
@@ -4727,7 +4727,7 @@ struct FemElasticityInputs
 // identical.
 inline fem::TetElementResult evaluateFemTetElement(
     const FemElasticityInputs& inputs,
-    const std::vector<Eigen::Vector3d>& positions,
+    std::span<const Eigen::Vector3d> positions,
     const comps::DeformableTetrahedron& tet,
     const fem::TetRestShape& rest,
     const bool computeHessian)
@@ -4756,10 +4756,10 @@ inline fem::TetElementResult evaluateFemTetElement(
 // tetrahedron, scattering each element's 12-vector force gradient into its four
 // nodes (fixed nodes receive no gradient, like the spring term).
 double addFemElasticityEnergy(
-    const std::vector<Eigen::Vector3d>& positions,
-    const std::vector<std::uint8_t>& fixed,
+    std::span<const Eigen::Vector3d> positions,
+    std::span<const std::uint8_t> fixed,
     const FemElasticityInputs& inputs,
-    std::vector<Eigen::Vector3d>* gradient)
+    comps::DeformableSolverScratch::Vector3Vector* gradient)
 {
   if (inputs.tetrahedra == nullptr || inputs.restShapes.empty()) {
     return 0.0;
@@ -4792,15 +4792,15 @@ double addFemElasticityEnergy(
 double evaluateDeformableObjective(
     const comps::DeformableNodeState& state,
     const comps::DeformableSpringModel& model,
-    const std::vector<Eigen::Vector3d>& positions,
-    const std::vector<Eigen::Vector3d>& inertialTargets,
-    const std::vector<std::uint8_t>& fixed,
+    std::span<const Eigen::Vector3d> positions,
+    std::span<const Eigen::Vector3d> inertialTargets,
+    std::span<const std::uint8_t> fixed,
     std::span<const StaticGroundBarrier> barriers,
     std::span<const SphereObstacleBarrier> sphereObstacles,
     std::span<const BoxObstacleBarrier> boxObstacles,
     std::span<const CapsuleObstacleBarrier> capsuleObstacles,
     double timeStep,
-    std::vector<Eigen::Vector3d>* gradient,
+    comps::DeformableSolverScratch::Vector3Vector* gradient,
     const SelfContactBarrierInputs* contactBarrier = nullptr,
     std::size_t* barrierActiveContacts = nullptr,
     const GroundFrictionInputs* groundFriction = nullptr,
@@ -4881,8 +4881,8 @@ double evaluateDeformableObjective(
 
 //==============================================================================
 double gradientNormSquared(
-    const std::vector<Eigen::Vector3d>& gradient,
-    const std::vector<std::uint8_t>& fixed)
+    std::span<const Eigen::Vector3d> gradient,
+    std::span<const std::uint8_t> fixed)
 {
   double normSquared = 0.0;
   for (std::size_t i = 0; i < gradient.size(); ++i) {
@@ -4895,12 +4895,12 @@ double gradientNormSquared(
 
 //==============================================================================
 double buildLineSearchCandidate(
-    const std::vector<Eigen::Vector3d>& current,
-    const std::vector<Eigen::Vector3d>& direction,
-    const std::vector<Eigen::Vector3d>& gradient,
-    const std::vector<std::uint8_t>& fixed,
+    std::span<const Eigen::Vector3d> current,
+    std::span<const Eigen::Vector3d> direction,
+    std::span<const Eigen::Vector3d> gradient,
+    std::span<const std::uint8_t> fixed,
     double step,
-    std::vector<Eigen::Vector3d>& candidate)
+    comps::DeformableSolverScratch::Vector3Vector& candidate)
 {
   double directionalDerivative = 0.0;
   for (std::size_t i = 0; i < current.size(); ++i) {
@@ -4915,14 +4915,14 @@ double buildLineSearchCandidate(
 
 //==============================================================================
 bool applySurfaceContactCcdLimit(
-    const std::vector<Eigen::Vector3d>& current,
-    const std::vector<Eigen::Vector3d>& direction,
-    const std::vector<Eigen::Vector3d>& gradient,
-    const std::vector<std::uint8_t>& fixed,
+    std::span<const Eigen::Vector3d> current,
+    std::span<const Eigen::Vector3d> direction,
+    std::span<const Eigen::Vector3d> gradient,
+    std::span<const std::uint8_t> fixed,
     DeformableContactSolverScratch& contactScratch,
     DeformableSolverStats& stats,
     double& step,
-    std::vector<Eigen::Vector3d>& candidate,
+    comps::DeformableSolverScratch::Vector3Vector& candidate,
     double& directionalDerivative)
 {
   if (contactScratch.surfaceTriangles.empty()) {
@@ -4983,14 +4983,14 @@ bool applySurfaceContactCcdLimit(
 bool applyInterBodySurfaceContactCcdLimit(
     entt::entity entity,
     std::span<const SurfaceContactSnapshot> surfaceSnapshots,
-    const std::vector<Eigen::Vector3d>& current,
-    const std::vector<Eigen::Vector3d>& direction,
-    const std::vector<Eigen::Vector3d>& gradient,
-    const std::vector<std::uint8_t>& fixed,
+    std::span<const Eigen::Vector3d> current,
+    std::span<const Eigen::Vector3d> direction,
+    std::span<const Eigen::Vector3d> gradient,
+    std::span<const std::uint8_t> fixed,
     DeformableContactSolverScratch& contactScratch,
     DeformableSolverStats& stats,
     double& step,
-    std::vector<Eigen::Vector3d>& candidate,
+    comps::DeformableSolverScratch::Vector3Vector& candidate,
     double& directionalDerivative)
 {
   if (contactScratch.surfaceTriangles.empty()) {
@@ -5081,8 +5081,8 @@ bool applyInterBodySurfaceContactCcdLimit(
 // displacement. VBD uses this after its block solve so fast same-body surface
 // crossings keep the same no-tunneling limit as the default line-search path.
 bool applySurfaceContactCcdCandidateLimit(
-    const std::vector<Eigen::Vector3d>& current,
-    const std::vector<std::uint8_t>& fixed,
+    std::span<const Eigen::Vector3d> current,
+    std::span<const std::uint8_t> fixed,
     DeformableContactSolverScratch& contactScratch,
     DeformableSolverStats& stats,
     comps::DeformableSolverScratch& scratch)
@@ -5117,7 +5117,7 @@ bool applySurfaceContactCcdCandidateLimit(
     return true;
   }
 
-  scratch.next = current;
+  scratch.next.assign(current.begin(), current.end());
   return false;
 }
 
@@ -5129,8 +5129,8 @@ bool applySurfaceContactCcdCandidateLimit(
 bool applyInterBodySurfaceContactCcdCandidateLimit(
     entt::entity entity,
     std::span<const SurfaceContactSnapshot> surfaceSnapshots,
-    const std::vector<Eigen::Vector3d>& current,
-    const std::vector<std::uint8_t>& fixed,
+    std::span<const Eigen::Vector3d> current,
+    std::span<const std::uint8_t> fixed,
     DeformableContactSolverScratch& contactScratch,
     DeformableSolverStats& stats,
     comps::DeformableSolverScratch& scratch)
@@ -5167,21 +5167,21 @@ bool applyInterBodySurfaceContactCcdCandidateLimit(
     return true;
   }
 
-  scratch.next = current;
+  scratch.next.assign(current.begin(), current.end());
   return false;
 }
 
 //==============================================================================
 bool applyStaticRigidSurfaceCcdLimit(
     std::span<const SurfaceContactSnapshot> rigidSurfaceSnapshots,
-    const std::vector<Eigen::Vector3d>& current,
-    const std::vector<Eigen::Vector3d>& direction,
-    const std::vector<Eigen::Vector3d>& gradient,
-    const std::vector<std::uint8_t>& fixed,
+    std::span<const Eigen::Vector3d> current,
+    std::span<const Eigen::Vector3d> direction,
+    std::span<const Eigen::Vector3d> gradient,
+    std::span<const std::uint8_t> fixed,
     DeformableContactSolverScratch& contactScratch,
     DeformableSolverStats& stats,
     double& step,
-    std::vector<Eigen::Vector3d>& candidate,
+    comps::DeformableSolverScratch::Vector3Vector& candidate,
     double& directionalDerivative)
 {
   if (rigidSurfaceSnapshots.empty()) {
@@ -5266,8 +5266,8 @@ bool applyStaticRigidSurfaceCcdLimit(
 // gradients.
 bool applyStaticRigidSurfaceCcdCandidateLimit(
     std::span<const SurfaceContactSnapshot> rigidSurfaceSnapshots,
-    const std::vector<Eigen::Vector3d>& current,
-    const std::vector<std::uint8_t>& fixed,
+    std::span<const Eigen::Vector3d> current,
+    std::span<const std::uint8_t> fixed,
     DeformableContactSolverScratch& contactScratch,
     DeformableSolverStats& stats,
     comps::DeformableSolverScratch& scratch)
@@ -5303,7 +5303,7 @@ bool applyStaticRigidSurfaceCcdCandidateLimit(
     return true;
   }
 
-  scratch.next = current;
+  scratch.next.assign(current.begin(), current.end());
   return false;
 }
 
@@ -5315,14 +5315,14 @@ bool applyStaticRigidSurfaceCcdCandidateLimit(
 // obstacle's swept corridor.
 bool applyMovingRigidSurfaceCcdLimit(
     std::span<const SurfaceContactSnapshot> movingRigidSurfaceSnapshots,
-    const std::vector<Eigen::Vector3d>& current,
-    const std::vector<Eigen::Vector3d>& direction,
-    const std::vector<Eigen::Vector3d>& gradient,
-    const std::vector<std::uint8_t>& fixed,
+    std::span<const Eigen::Vector3d> current,
+    std::span<const Eigen::Vector3d> direction,
+    std::span<const Eigen::Vector3d> gradient,
+    std::span<const std::uint8_t> fixed,
     DeformableContactSolverScratch& contactScratch,
     DeformableSolverStats& stats,
     double& step,
-    std::vector<Eigen::Vector3d>& candidate,
+    comps::DeformableSolverScratch::Vector3Vector& candidate,
     double& directionalDerivative)
 {
   if (movingRigidSurfaceSnapshots.empty()) {
@@ -5402,14 +5402,14 @@ bool applyMovingRigidSurfaceCcdLimit(
 
 //==============================================================================
 bool applyStaticGroundBarrierCcdLimit(
-    const std::vector<Eigen::Vector3d>& current,
-    const std::vector<Eigen::Vector3d>& direction,
-    const std::vector<Eigen::Vector3d>& gradient,
-    const std::vector<std::uint8_t>& fixed,
+    std::span<const Eigen::Vector3d> current,
+    std::span<const Eigen::Vector3d> direction,
+    std::span<const Eigen::Vector3d> gradient,
+    std::span<const std::uint8_t> fixed,
     std::span<const StaticGroundBarrier> barriers,
     DeformableSolverStats& stats,
     double& step,
-    std::vector<Eigen::Vector3d>& candidate,
+    comps::DeformableSolverScratch::Vector3Vector& candidate,
     double& directionalDerivative)
 {
   if (barriers.empty()) {
@@ -5654,9 +5654,10 @@ void prepareDeformableBoundaryConditions(
 {
   const auto nodeCount = state.positions.size();
   reserveDeformableSolverScratch(state, scratch);
-  scratch.previousStepPositions = state.positions;
+  scratch.previousStepPositions.assign(
+      state.positions.begin(), state.positions.end());
   scratch.externalAccelerations.assign(nodeCount, Eigen::Vector3d::Zero());
-  scratch.activeFixed = state.fixed;
+  scratch.activeFixed.assign(state.fixed.begin(), state.fixed.end());
   scratch.activeDirichlet.assign(nodeCount, 0u);
 
   if (boundaryConditions == nullptr) {
@@ -6914,8 +6915,8 @@ void runVbdDeformableSolve(
 bool computeProjectedNewtonDirection(
     const comps::DeformableNodeState& state,
     const comps::DeformableSpringModel& model,
-    const std::vector<Eigen::Vector3d>& positions,
-    const std::vector<std::uint8_t>& fixed,
+    std::span<const Eigen::Vector3d> positions,
+    std::span<const std::uint8_t> fixed,
     std::span<const StaticGroundBarrier> barriers,
     std::span<const SphereObstacleBarrier> sphereObstacles,
     std::span<const BoxObstacleBarrier> boxObstacles,
@@ -6925,8 +6926,8 @@ bool computeProjectedNewtonDirection(
     const SelfContactFrictionInputs* selfContactFriction,
     const FemElasticityInputs* femElasticity,
     const double timeStep,
-    const std::vector<Eigen::Vector3d>& gradient,
-    std::vector<Eigen::Vector3d>& direction,
+    std::span<const Eigen::Vector3d> gradient,
+    comps::DeformableSolverScratch::Vector3Vector& direction,
     DeformableContactSolverScratch& solverCache,
     DeformableSolverStats& stats,
     double barrierStiffness = kDefaultBarrierStiffness,
@@ -7351,9 +7352,9 @@ bool computeProjectedNewtonDirection(
   // ground n = +z, P = diag(1, 1, 0) and this reduces to the xy 2x2 block.
   if (groundFriction != nullptr && groundFriction->coefficient > 0.0
       && groundFriction->epsilon > 0.0
-      && groundFriction->stepStartPositions != nullptr
+      && !groundFriction->stepStartPositions.empty()
       && !groundFriction->laggedNormalForce.empty()) {
-    const auto& start = *groundFriction->stepStartPositions;
+    const auto start = groundFriction->stepStartPositions;
     const auto normalForce = groundFriction->laggedNormalForce;
     const auto normalDirection = groundFriction->laggedNormalDirection;
     const double epsilon = groundFriction->epsilon;
@@ -7395,9 +7396,9 @@ bool computeProjectedNewtonDirection(
   // construction.
   if (selfContactFriction != nullptr && selfContactFriction->coefficient > 0.0
       && selfContactFriction->epsilon > 0.0
-      && selfContactFriction->stepStartPositions != nullptr
+      && !selfContactFriction->stepStartPositions.empty()
       && !selfContactFriction->contacts.empty()) {
-    const auto& start = *selfContactFriction->stepStartPositions;
+    const auto start = selfContactFriction->stepStartPositions;
     const double epsilon = selfContactFriction->epsilon;
     for (const auto& contact : selfContactFriction->contacts) {
       if (contact.normalForce <= 0.0) {
@@ -7695,13 +7696,14 @@ void advanceDeformableBody(
   scratch.direction.resize(nodeCount);
   scratch.candidate.resize(nodeCount);
   if (scratch.activeFixed.size() != nodeCount) {
-    scratch.activeFixed = state.fixed;
+    scratch.activeFixed.assign(state.fixed.begin(), state.fixed.end());
   }
   if (scratch.externalAccelerations.size() != nodeCount) {
     scratch.externalAccelerations.assign(nodeCount, Eigen::Vector3d::Zero());
   }
   if (scratch.previousStepPositions.size() != nodeCount) {
-    scratch.previousStepPositions = state.positions;
+    scratch.previousStepPositions.assign(
+        state.positions.begin(), state.positions.end());
   }
 
   const double dampingScale = 1.0 / (1.0 + model.damping * timeStep);
@@ -7883,7 +7885,7 @@ void advanceDeformableBody(
             groundFrictionNormalDirection);
         groundFriction.coefficient = frictionCoefficient;
         groundFriction.epsilon = frictionEpsilon;
-        groundFriction.stepStartPositions = &scratch.previousStepPositions;
+        groundFriction.stepStartPositions = scratch.previousStepPositions;
         groundFriction.laggedNormalForce = std::span<const double>(
             groundFrictionNormalForce.data(), groundFrictionNormalForce.size());
         groundFriction.laggedNormalDirection = std::span<const Eigen::Vector3d>(
@@ -7900,7 +7902,7 @@ void advanceDeformableBody(
             scratch.next, contactBarrier, selfContactFrictionContacts);
         selfContactFriction.coefficient = frictionCoefficient;
         selfContactFriction.epsilon = frictionEpsilon;
-        selfContactFriction.stepStartPositions = &scratch.previousStepPositions;
+        selfContactFriction.stepStartPositions = scratch.previousStepPositions;
         selfContactFriction.contacts
             = std::span<const SelfContactFrictionContact>(
                 selfContactFrictionContacts.data(),
@@ -8188,7 +8190,7 @@ void advanceDeformableBody(
         terminalGroundFriction.coefficient = frictionCoefficient;
         terminalGroundFriction.epsilon = frictionEpsilon;
         terminalGroundFriction.stepStartPositions
-            = &scratch.previousStepPositions;
+            = scratch.previousStepPositions;
         terminalGroundFriction.laggedNormalForce = std::span<const double>(
             groundFrictionNormalForce.data(), groundFrictionNormalForce.size());
         terminalGroundFriction.laggedNormalDirection
@@ -8203,7 +8205,7 @@ void advanceDeformableBody(
         terminalSelfContactFriction.coefficient = frictionCoefficient;
         terminalSelfContactFriction.epsilon = frictionEpsilon;
         terminalSelfContactFriction.stepStartPositions
-            = &scratch.previousStepPositions;
+            = scratch.previousStepPositions;
         terminalSelfContactFriction.contacts
             = std::span<const SelfContactFrictionContact>(
                 selfContactFrictionContacts.data(),
@@ -11264,12 +11266,14 @@ void DeformableDynamicsStage::prepare(World& world)
     const auto& state = view.get<comps::DeformableNodeState>(entity);
     const auto& topology = view.get<comps::DeformableMeshTopology>(entity);
     auto& solverScratch
-        = registry.get_or_emplace<comps::DeformableSolverScratch>(entity);
+        = registry.get_or_emplace<comps::DeformableSolverScratch>(
+            entity, worldFreeAllocator);
     reserveDeformableSolverScratch(state, solverScratch);
-    solverScratch.previousStepPositions = state.positions;
+    solverScratch.previousStepPositions.assign(
+        state.positions.begin(), state.positions.end());
     solverScratch.externalAccelerations.assign(
         state.positions.size(), Eigen::Vector3d::Zero());
-    solverScratch.activeFixed = state.fixed;
+    solverScratch.activeFixed.assign(state.fixed.begin(), state.fixed.end());
     solverScratch.activeDirichlet.assign(state.positions.size(), 0u);
 
     auto& contactScratch
@@ -11489,8 +11493,8 @@ void DeformableDynamicsStage::execute(
 
   for (const auto entity : view) {
     auto& state = view.get<comps::DeformableNodeState>(entity);
-    auto& scratch
-        = registry.get_or_emplace<comps::DeformableSolverScratch>(entity);
+    auto& scratch = registry.get_or_emplace<comps::DeformableSolverScratch>(
+        entity, worldFreeAllocator);
     const auto* boundaryConditions
         = registry.try_get<comps::DeformableBoundaryConditions>(entity);
     ++m_lastStats.bodyCount;
@@ -11516,8 +11520,8 @@ void DeformableDynamicsStage::execute(
     const auto& model = view.get<comps::DeformableSpringModel>(entity);
     const auto& topology = view.get<comps::DeformableMeshTopology>(entity);
     const auto& material = view.get<comps::DeformableMaterial>(entity);
-    auto& scratch
-        = registry.get_or_emplace<comps::DeformableSolverScratch>(entity);
+    auto& scratch = registry.get_or_emplace<comps::DeformableSolverScratch>(
+        entity, worldFreeAllocator);
     auto& contactScratch
         = registry.get_or_emplace<DeformableContactSolverScratch>(
             entity, worldFreeAllocator);

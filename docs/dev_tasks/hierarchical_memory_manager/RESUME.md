@@ -85,6 +85,15 @@ test now expects projected-Newton vectors to reserve from the provided
 allocator, and the existing baked World-base/global-heap deformable gates plus
 FEM/friction activity checks still pass without adding new scenes.
 
+The current deformable solver scratch slice routes `DeformableSolverScratch`
+vectors through the World free allocator: inertial targets, iterate, gradient,
+direction, candidate, previous-step, external-acceleration, and active
+fixed/Dirichlet/Neumann mask storage now preserve the allocator supplied when
+the scratch component is constructed. The VBD/AVBD helper contracts now accept
+those allocator-backed buffers through spans or allocator-agnostic vector
+templates, keeping standalone one-shot callers on ordinary vectors while
+allowing baked World-stage steps to stay under the World allocator root.
+
 The next follow-up slice adds a focused `WorldRegistry` rebuild-boundary gate
 for contact-heavy solver-owned ECS storage. It reuses the existing compliant
 variational contact slider setup, verifies baked contact scratch and registry
