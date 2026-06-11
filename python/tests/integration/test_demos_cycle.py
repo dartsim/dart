@@ -1991,8 +1991,13 @@ def test_rigid_collision_query_options_filter_body_kinds() -> None:
         "cross_links",
     }
     assert metrics["baseline_contact_count"] == 4
+    assert metrics["option_contact_count"] == 4
     assert metrics["active_contact_count"] == 4
     assert metrics["filtered_contact_count"] == 0
+    assert metrics["option_filtered_contact_count"] == 0
+    assert metrics["ignored_contact_count"] == 0
+    assert metrics["ignored_pair_count"] == 0
+    assert metrics["ignored_pair_key"] == "none"
     expected_body_kinds = {
         "rigid_rigid": ("rigid", "rigid"),
         "rigid_link": ("rigid", "link"),
@@ -2002,7 +2007,10 @@ def test_rigid_collision_query_options_filter_body_kinds() -> None:
     for lane in controller.lanes:
         lane_metrics = metrics["lanes"][lane.key]
         assert lane_metrics["baseline_count"] == 1
+        assert lane_metrics["option_count"] == 1
         assert lane_metrics["active_count"] == 1
+        assert lane_metrics["option_filtered"] is False
+        assert lane_metrics["pair_ignored"] is False
         assert lane_metrics["first_depth"] == pytest.approx(0.06, abs=1.0e-12)
         assert tuple(lane_metrics["first_shape_indices"]) == (0, 0)
         assert sorted(lane_metrics["first_body_kinds"]) == sorted(
@@ -2022,15 +2030,21 @@ def test_rigid_collision_query_options_filter_body_kinds() -> None:
     controller._record_metrics()
     lanes = controller._last_metrics["lanes"]
     assert lanes["rigid_rigid"]["filtered"] is True
+    assert lanes["rigid_rigid"]["option_filtered"] is True
+    assert lanes["rigid_rigid"]["pair_ignored"] is False
     assert lanes["rigid_link"]["active_count"] == 1
     assert lanes["same_links"]["active_count"] == 1
     assert lanes["cross_links"]["active_count"] == 1
+    assert controller._last_metrics["option_filtered_contact_count"] == 1
+    assert controller._last_metrics["ignored_contact_count"] == 0
 
     controller._apply_preset("all")
     controller.include_rigid_body_link_pairs = False
     controller._record_metrics()
     lanes = controller._last_metrics["lanes"]
     assert lanes["rigid_link"]["filtered"] is True
+    assert lanes["rigid_link"]["option_filtered"] is True
+    assert lanes["rigid_link"]["pair_ignored"] is False
     assert lanes["rigid_rigid"]["active_count"] == 1
     assert lanes["same_links"]["active_count"] == 1
     assert lanes["cross_links"]["active_count"] == 1
@@ -2041,6 +2055,8 @@ def test_rigid_collision_query_options_filter_body_kinds() -> None:
     lanes = controller._last_metrics["lanes"]
     assert lanes["same_links"]["filtered"] is True
     assert lanes["cross_links"]["filtered"] is True
+    assert lanes["same_links"]["option_filtered"] is True
+    assert lanes["cross_links"]["option_filtered"] is True
     assert lanes["rigid_rigid"]["active_count"] == 1
     assert lanes["rigid_link"]["active_count"] == 1
 
@@ -2049,9 +2065,39 @@ def test_rigid_collision_query_options_filter_body_kinds() -> None:
     controller._record_metrics()
     lanes = controller._last_metrics["lanes"]
     assert lanes["same_links"]["filtered"] is True
+    assert lanes["same_links"]["option_filtered"] is True
     assert lanes["cross_links"]["active_count"] == 1
     assert lanes["rigid_rigid"]["active_count"] == 1
     assert lanes["rigid_link"]["active_count"] == 1
+
+    controller._apply_preset("ignore_rigid_link")
+    metrics = controller._last_metrics
+    lanes = metrics["lanes"]
+    assert metrics["baseline_contact_count"] == 4
+    assert metrics["option_contact_count"] == 4
+    assert metrics["active_contact_count"] == 3
+    assert metrics["option_filtered_contact_count"] == 0
+    assert metrics["ignored_contact_count"] == 1
+    assert metrics["ignored_pair_count"] == 1
+    assert metrics["ignored_pair_key"] == "rigid_link"
+    assert lanes["rigid_link"]["filtered"] is True
+    assert lanes["rigid_link"]["option_filtered"] is False
+    assert lanes["rigid_link"]["pair_ignored"] is True
+    assert lanes["rigid_link"]["option_count"] == 1
+    assert lanes["rigid_link"]["active_count"] == 0
+    assert lanes["rigid_rigid"]["active_count"] == 1
+    assert lanes["same_links"]["active_count"] == 1
+    assert lanes["cross_links"]["active_count"] == 1
+    assert controller.world.is_collision_pair_ignored(
+        controller.lanes[1].body_a, controller.lanes[1].body_b
+    )
+
+    snapshot = setup.info["replay_capture_state"]()
+    controller._apply_preset("clear_ignore")
+    setup.info["replay_restore_state"](snapshot)
+    assert controller.ignored_pair_key == "rigid_link"
+    assert controller.world.num_ignored_collision_pairs == 1
+    assert controller._ignored_count_history[-1] == pytest.approx(1.0)
 
 
 def test_rigid_collision_casts_report_nearest_all_and_swept_hits() -> None:

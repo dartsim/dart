@@ -186,8 +186,8 @@ _RIGID_VISUAL_WORKFLOW_GUIDE_TEXT: Mapping[
     ),
     "rigid_collision_query_options": (
         "Which body-kind pairs does a query include?",
-        ("Rigid/link include toggles", "Baseline, active, and filtered contacts"),
-        "Body-kind query-filter row only; not a shape-family manifold inspector.",
+        ("Query toggles and ignored-pair selector", "Baseline, active, filtered, and ignored contacts"),
+        "Query-filter and persistent ignored-pair row only; not a shape-family manifold inspector.",
     ),
     "rigid_collision_casts": (
         "Where do rays and swept probes hit?",
@@ -354,8 +354,8 @@ _RIGID_VISUAL_WORKFLOW_CHECKLIST_TEXT: Mapping[str, tuple[str, str]] = {
         "Healthy: selected contacts expose finite point, normal, depth, and indices.",
     ),
     "rigid_collision_query_options": (
-        "Toggle one body-kind include flag at a time.",
-        "Healthy: filtered lanes disappear while enabled lanes keep baseline contacts.",
+        "Toggle one include flag or select one ignored pair at a time.",
+        "Healthy: option-filtered and pair-ignored lanes separate cleanly.",
     ),
     "rigid_collision_casts": (
         "Sweep ray offset, all-hit, sphere radius, and capsule controls.",

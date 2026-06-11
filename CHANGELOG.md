@@ -92,8 +92,8 @@
   - Added `rigid_collision_query_options` to Python `py-demos`, exposing
     `World.collide(options)` body-kind filtering across rigid/rigid,
     rigid/link, same-multibody link/link, and cross-multibody link/link lanes
-    with baseline, active, filtered contact, public contact-body kind/cast, and
-    shape-index diagnostics.
+    with baseline, option-filtered, pair-ignored, and active contact counts,
+    public contact-body kind/cast, ignored-pair, and shape-index diagnostics.
   - Added `rigid_collision_casts` to Python `py-demos`, exposing public
     collision raycast, swept-sphere, and swept-capsule cast queries with
     nearest/all-hit controls, hit fractions, time-of-impact, cast margins,

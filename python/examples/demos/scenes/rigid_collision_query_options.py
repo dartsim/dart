@@ -63,6 +63,7 @@ class _RigidCollisionQueryOptions:
         self.include_rigid_body_link_pairs = True
         self.include_link_pairs = True
         self.include_same_multibody_link_pairs = True
+        self.ignored_pair_key = "none"
 
         self.world = sx.World(time_step=_TIME_STEP, gravity=(0.0, 0.0, 0.0))
         self.world.step_profiling_enabled = True
@@ -90,6 +91,7 @@ class _RigidCollisionQueryOptions:
 
         self._active_count_history: deque[float] = deque(maxlen=_HISTORY)
         self._filtered_count_history: deque[float] = deque(maxlen=_HISTORY)
+        self._ignored_count_history: deque[float] = deque(maxlen=_HISTORY)
         self._last_metrics: dict[str, Any] = {}
         self._record_metrics()
         self._sync()
@@ -256,6 +258,34 @@ class _RigidCollisionQueryOptions:
             include_link_pairs=self.include_link_pairs,
         )
 
+    def _ignored_pair_choices(self) -> tuple[str, ...]:
+        return ("None",) + tuple(lane.label for lane in self.lanes)
+
+    def _ignored_pair_index(self) -> int:
+        if self.ignored_pair_key == "none":
+            return 0
+        for index, lane in enumerate(self.lanes, start=1):
+            if lane.key == self.ignored_pair_key:
+                return index
+        return 0
+
+    def _set_ignored_pair_from_index(self, index: int) -> None:
+        if index <= 0:
+            self.ignored_pair_key = "none"
+        else:
+            lanes = self.lanes
+            self.ignored_pair_key = lanes[min(index - 1, len(lanes) - 1)].key
+        self._record_metrics()
+
+    def _sync_ignored_pairs(self) -> None:
+        self.world.clear_ignored_collision_pairs()
+        if self.ignored_pair_key == "none":
+            return
+        for lane in self.lanes:
+            if lane.key == self.ignored_pair_key:
+                self.world.set_collision_pair_ignored(lane.body_a, lane.body_b)
+                return
+
     def _lane_sort_key(self, contact: Any) -> int:
         names = frozenset((contact.body_a.name, contact.body_b.name))
         for index, lane in enumerate(self.lanes):
@@ -304,13 +334,18 @@ class _RigidCollisionQueryOptions:
         ]
 
     def _record_metrics(self) -> None:
+        self.world.clear_ignored_collision_pairs()
         baseline = self._contacts(all_pairs=True)
+        option_filtered = self._contacts()
+        self._sync_ignored_pairs()
         active = self._contacts()
         baseline_by_lane = self._contacts_by_lane(baseline)
+        option_by_lane = self._contacts_by_lane(option_filtered)
         active_by_lane = self._contacts_by_lane(active)
         lane_metrics: dict[str, dict[str, Any]] = {}
         for lane in self.lanes:
             active_contacts = active_by_lane[lane.key]
+            option_contacts = option_by_lane[lane.key]
             baseline_contacts = baseline_by_lane[lane.key]
             first = active_contacts[0] if active_contacts else None
             body_metrics = self._contact_body_metrics(first)
@@ -321,8 +356,13 @@ class _RigidCollisionQueryOptions:
                 "kind": lane.kind,
                 "option_key": lane.option_key,
                 "baseline_count": len(baseline_contacts),
+                "option_count": len(option_contacts),
                 "active_count": len(active_contacts),
                 "filtered": len(baseline_contacts) > 0 and not active_contacts,
+                "option_filtered": (
+                    len(baseline_contacts) > 0 and not option_contacts
+                ),
+                "pair_ignored": len(option_contacts) > 0 and not active_contacts,
                 "first_depth": float(first.depth) if first is not None else 0.0,
                 "first_point": (
                     np.asarray(first.point, dtype=float) if first is not None else np.zeros(3)
@@ -345,14 +385,23 @@ class _RigidCollisionQueryOptions:
         baseline_count = sum(
             int(metrics["baseline_count"]) for metrics in lane_metrics.values()
         )
+        option_count = sum(
+            int(metrics["option_count"]) for metrics in lane_metrics.values()
+        )
         self._last_metrics = {
             "baseline_contact_count": baseline_count,
+            "option_contact_count": option_count,
             "active_contact_count": active_count,
             "filtered_contact_count": baseline_count - active_count,
+            "option_filtered_contact_count": baseline_count - option_count,
+            "ignored_contact_count": option_count - active_count,
+            "ignored_pair_key": self.ignored_pair_key,
+            "ignored_pair_count": self.world.num_ignored_collision_pairs,
             "lanes": lane_metrics,
         }
         self._active_count_history.append(float(active_count))
         self._filtered_count_history.append(float(baseline_count - active_count))
+        self._ignored_count_history.append(float(option_count - active_count))
         self._update_markers()
 
     def _update_markers(self) -> None:
@@ -387,9 +436,11 @@ class _RigidCollisionQueryOptions:
                 "include_same_multibody_link_pairs": bool(
                     self.include_same_multibody_link_pairs
                 ),
+                "ignored_pair_key": self.ignored_pair_key,
             },
             "active_count_history": list(self._active_count_history),
             "filtered_count_history": list(self._filtered_count_history),
+            "ignored_count_history": list(self._ignored_count_history),
             "last_metrics": self._serialize_metrics(self._last_metrics),
         }
 
@@ -413,6 +464,7 @@ class _RigidCollisionQueryOptions:
                 self.include_same_multibody_link_pairs,
             )
         )
+        self.ignored_pair_key = str(controls.get("ignored_pair_key", self.ignored_pair_key))
         self._active_count_history.clear()
         self._active_count_history.extend(
             float(value) for value in state.get("active_count_history", [])
@@ -421,9 +473,15 @@ class _RigidCollisionQueryOptions:
         self._filtered_count_history.extend(
             float(value) for value in state.get("filtered_count_history", [])
         )
+        self._ignored_count_history.clear()
+        self._ignored_count_history.extend(
+            float(value) for value in state.get("ignored_count_history", [])
+        )
         self._last_metrics = self._deserialize_metrics(state.get("last_metrics", {}))
         if not self._last_metrics:
             self._record_metrics()
+        else:
+            self._sync_ignored_pairs()
         self._sync()
 
     def _serialize_metrics(self, metrics: dict[str, Any]) -> dict[str, Any]:
@@ -493,6 +551,14 @@ class _RigidCollisionQueryOptions:
             self.include_rigid_body_link_pairs = True
             self.include_link_pairs = True
             self.include_same_multibody_link_pairs = False
+        elif preset == "clear_ignore":
+            self.ignored_pair_key = "none"
+        elif preset == "ignore_rigid_link":
+            self.include_rigid_body_pairs = True
+            self.include_rigid_body_link_pairs = True
+            self.include_link_pairs = True
+            self.include_same_multibody_link_pairs = True
+            self.ignored_pair_key = "rigid_link"
         self._record_metrics()
 
     def _checkbox(self, builder: Any, label: str, attr: str) -> bool:
@@ -515,6 +581,11 @@ class _RigidCollisionQueryOptions:
             "Same-multibody link pairs",
             "include_same_multibody_link_pairs",
         )
+        changed_ignore, ignored_index = builder.select(
+            "Ignored pair",
+            self._ignored_pair_index(),
+            self._ignored_pair_choices(),
+        )
 
         if builder.button("All query pairs"):
             self._apply_preset("all")
@@ -524,6 +595,12 @@ class _RigidCollisionQueryOptions:
             self._apply_preset("link_only")
         elif builder.button("No same-multibody"):
             self._apply_preset("no_same")
+        elif builder.button("Ignore rigid/link pair"):
+            self._apply_preset("ignore_rigid_link")
+        elif builder.button("Clear ignored pair"):
+            self._apply_preset("clear_ignore")
+        elif changed_ignore:
+            self._set_ignored_pair_from_index(int(ignored_index))
         elif changed:
             self._record_metrics()
 
@@ -537,10 +614,22 @@ class _RigidCollisionQueryOptions:
             f"contacts: {int(metrics['active_contact_count'])} active / "
             f"{int(metrics['baseline_contact_count'])} baseline"
         )
-        builder.text(f"filtered contacts: {int(metrics['filtered_contact_count'])}")
+        builder.text(
+            f"option-filtered: {int(metrics['option_filtered_contact_count'])} | "
+            f"pair-ignored: {int(metrics['ignored_contact_count'])}"
+        )
+        builder.text(
+            f"ignored pairs: {int(metrics['ignored_pair_count'])} "
+            f"({metrics['ignored_pair_key']})"
+        )
         for lane in self.lanes:
             lane_metrics = metrics["lanes"][lane.key]
-            status = "active" if int(lane_metrics["active_count"]) else "filtered"
+            if int(lane_metrics["active_count"]) > 0:
+                status = "active"
+            elif bool(lane_metrics["pair_ignored"]):
+                status = "pair ignored"
+            else:
+                status = "option filtered"
             shape_a, shape_b = lane_metrics["first_shape_indices"]
             builder.text(
                 f"{lane.label}: {status} "
@@ -564,9 +653,13 @@ class _RigidCollisionQueryOptions:
                 builder.text(f"  contact bodies: {lane_metrics['first_body_pair']}")
                 builder.text(f"  casts: {cast_summary}")
             else:
-                builder.text(f"  option: {lane.option_key}")
+                builder.text(
+                    f"  option: {lane.option_key} | "
+                    f"option contacts: {int(lane_metrics['option_count'])}"
+                )
         builder.plot_lines("Active contacts", list(self._active_count_history))
         builder.plot_lines("Filtered contacts", list(self._filtered_count_history))
+        builder.plot_lines("Pair-ignored contacts", list(self._ignored_count_history))
         builder.separator()
         self.bridge.build_control_panel(builder, context)
 
@@ -594,8 +687,8 @@ SCENE = PythonDemoScene(
     title="Rigid Collision Query Options",
     category="World Rigid Body",
     summary=(
-        "Shows how World.collide options include or filter rigid-body, link, "
-        "and same-multibody contact pairs."
+        "Shows how World.collide options and ignored pairs include or filter "
+        "rigid-body, link, and same-multibody contact pairs."
     ),
     build=build,
 )

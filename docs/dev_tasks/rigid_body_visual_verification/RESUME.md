@@ -71,8 +71,15 @@ The collision-query-options slice, `rigid_collision_query_options`, is
 implemented and visually captured. It keeps four stable sphere overlap lanes
 visible for direct `World.collide(options)` inspection: rigid/rigid,
 rigid/link, same-multibody link/link, and cross-multibody link/link. Its panel
-toggles the public include flags, reports baseline versus active contacts,
-marks filtered lanes, and records replay snapshots for the query controls.
+toggles the public include flags, selects a persistent ignored pair, reports
+baseline, option-filtered, pair-ignored, and active contacts, marks filtered
+lanes, and records replay snapshots for the query controls.
+
+The current collision ignored-pair follow-up extends that same row instead of
+adding a new verifier row. It separates body-kind option filtering from
+persistent pair ignores, records the ignored-pair selector in replay snapshots,
+and the docked capture wrote a nonblank 960x540 screenshot, 23 PNG frames, one
+dropped UI warmup frame, and docked workspace evidence.
 
 The collision-casts slice, `rigid_collision_casts`, is implemented and visually
 captured. It uses public `CollisionGroup.raycast_result()` and
@@ -429,10 +436,10 @@ and continue only with a distinct rigid-body feature gap from a fresh audit.
   contact packets before claiming solver-family differences. Broaden the
   existing contact-inspector row for public shape-family coverage instead of
   adding a duplicate collision-sandbox catalog row.
-- Collision query options should remain a body-kind filtering diagnostic for
+- Collision query options should remain a query-filtering diagnostic for
   `World.collide(options)`: rigid/rigid, rigid/link, same-multibody link/link,
-  and cross-multibody link/link. It should not duplicate the shape-family
-  manifold inspector or become a solver benchmark.
+  cross-multibody link/link, and persistent ignored pairs. It should not
+  duplicate the shape-family manifold inspector or become a solver benchmark.
 - Kinematic driver visuals should stay scoped to tangential prescribed motion
   under IPC: moving supports/conveyors, slip, and the sequential-impulse
   static-like caveat. Normal prescribed contact now belongs in

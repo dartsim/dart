@@ -108,7 +108,7 @@ scratch usage, or a user frame budget needs inspection, use
 use **`rigid_material_mixing`** when body/surface material ownership or pair
 mixing rules need inspection, then use **`rigid_contact_inspector`** when raw
 contact pairs need inspection, use **`rigid_collision_query_options`** when
-`World.collide(options)` body-kind filtering needs inspection, use
+`World.collide(options)` body-kind filtering or ignored pairs need inspection, use
 **`rigid_collision_casts`** when raycast or swept-sphere hit queries need
 inspection, including swept-capsule link/tool proxies, use
 **`rigid_solver_compare`**, **`rigid_executor_equivalence`**, and
@@ -149,7 +149,7 @@ infer.
 | `rigid_restitution_ladder`       | How does restitution change bounce height?         | Solver, executor, launch height, restitution scale    | Height, vertical speed, contact, energy trend           |
 | `rigid_material_mixing`          | Which material owns bounce or friction response?   | Impact/tangent speed, low/high e and mu, executor     | Effective max restitution, sqrt friction, swap deltas   |
 | `rigid_contact_inspector`        | Which contact pairs and manifold fields exist?     | Shape pair, penetration                               | Contact count, point, normal, depth, shape indices      |
-| `rigid_collision_query_options`  | Which body-kind pairs does a query include?        | Rigid/link/same-multibody query toggles               | Active/filtered contacts, body kinds/casts, shape ids   |
+| `rigid_collision_query_options`  | Which body-kind pairs does a query include?        | Query toggles, ignored-pair selector                  | Active/ignored contacts, body kinds/casts, shape ids    |
 | `rigid_collision_casts`          | Where do rays and swept probes hit?                | Ray offset, all-hit, sphere/capsule sweep controls    | Ray fractions, TOI, hit point/normal, cast margins      |
 | `rigid_solver_compare`           | What changes between sequential impulse and IPC?   | Executor, launch speed, friction, restitution         | Speed, wall clearance, solver divergence, step time     |
 | `rigid_executor_equivalence`     | Does parallel execution preserve the same physics? | Physics solver, launch speed, friction, restitution   | Pose/velocity divergence, contact count, step time      |
@@ -328,12 +328,13 @@ marker highlights the selected contact point in the scene.
 ## Rigid collision query options
 
 The **`rigid_collision_query_options`** scene makes the public
-`World.collide(options)` body-kind filters visible. Four matched sphere-overlap
-lanes cover rigid/rigid, rigid/link, same-multibody link/link, and
-cross-multibody link/link contacts. The panel toggles each
-`CollisionQueryOptions` include flag, shows baseline versus active contact
-counts, marks filtered lanes explicitly, and keeps shape-index diagnostics
-available without turning the row into a solver comparison.
+`World.collide(options)` body-kind filters and persistent ignored-pair table
+visible. Four matched sphere-overlap lanes cover rigid/rigid, rigid/link,
+same-multibody link/link, and cross-multibody link/link contacts. The panel
+toggles each `CollisionQueryOptions` include flag, selects one ignored pair,
+shows baseline, option-filtered, pair-ignored, and active contact counts, marks
+filtered lanes explicitly, and keeps shape-index diagnostics available without
+turning the row into a solver comparison.
 
 ## Rigid collision casts
 

@@ -56,8 +56,12 @@
 - [x] Collision-query-options slice: `rigid_collision_query_options` exposes
       `World.collide(options)` body-kind filters across rigid/rigid,
       rigid/link, same-multibody link/link, and cross-multibody link/link
-      lanes, including public `Contact.body_a/body_b` `CollisionBody` kind and
-      cast diagnostics.
+      lanes plus persistent ignored-pair diagnostics, including public
+      `Contact.body_a/body_b` `CollisionBody` kind and cast diagnostics.
+- [x] Collision ignored-pair follow-up: the same query-options row now
+      separates unignored baseline contacts, option-filtered contacts,
+      pair-ignored contacts, and final active contacts, with replayed
+      ignored-pair controls and a docked nonblank capture.
 - [x] Collision-casts slice: `rigid_collision_casts` exposes public
       `CollisionGroup.raycast_result()` nearest/all-hit behavior and
       `CollisionGroup.sphere_cast_result()` /
@@ -351,8 +355,8 @@ physics-method comparison.
   contact inspector is a query-level diagnostic, so it should not make solver
   equivalence or performance claims.
 - Keep collision-query option filtering next to the contact inspector. It is a
-  public `World.collide(options)` body-kind diagnostic, not a duplicate
-  shape-family contact sandbox.
+  public `World.collide(options)` body-kind and ignored-pair diagnostic, not a
+  duplicate shape-family contact sandbox.
 - Keep collision casts next to query filtering and before solver comparison.
   `rigid_collision_casts` is a public query diagnostic for ray hits, swept
   sphere probes, and elongated swept-capsule link/tool proxies. The row should
