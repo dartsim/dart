@@ -74,6 +74,7 @@ from examples.demos.scenes import (
     rigid_joint_motor_limits,
     rigid_joint_passive_parameters,
     rigid_kinematic_driver,
+    rigid_kinematic_normal_push,
     rigid_link_center_of_mass,
     rigid_link_jacobian,
     rigid_link_point_loads,
@@ -986,6 +987,7 @@ def test_high_value_world_scenes_expose_custom_panels() -> None:
         (rigid_collision_casts, "Rigid Collision Casts"),
         (rigid_contact_manipulation, "Rigid Contact Manipulation"),
         (rigid_kinematic_driver, "Rigid Kinematic Driver"),
+        (rigid_kinematic_normal_push, "Rigid Kinematic Normal Push"),
         (rigid_contact_solver_compare, "Rigid Contact Solver Compare"),
         (rigid_solver_compare, "Rigid Solver Compare"),
         (rigid_executor_equivalence, "Rigid Executor Equivalence"),
@@ -1098,13 +1100,13 @@ def test_rigid_workflow_panel_renders_guidance_for_numbered_rows() -> None:
         return builder.events
 
     cases = (
-        ("rigid_body", "Previous: start", "Next: 02/34 Body modes"),
+        ("rigid_body", "Previous: start", "Next: 02/35 Body modes"),
         (
             "rigid_solver_compare",
-            "Previous: 14/34 Collision casts",
-            "Next: 16/34 Executor equivalence",
+            "Previous: 14/35 Collision casts",
+            "Next: 16/35 Executor equivalence",
         ),
-        ("rigid_loop_closure", "Previous: 33/34 Multibody solver", "Next: done"),
+        ("rigid_loop_closure", "Previous: 34/35 Multibody solver", "Next: done"),
     )
 
     for scene_id, previous_text, next_text in cases:
@@ -1156,9 +1158,9 @@ def test_rigid_workflow_panel_route_rows_request_scene_switches() -> None:
     workflow_panel = [panel for panel in panels if panel.title == "Rigid Workflow"][0]
     context = _FakePanelContext()
 
-    previous_label = "Previous: 14/34 Collision casts##rigid_workflow_previous"
-    next_label = "Next: 16/34 Executor equivalence##rigid_workflow_next"
-    replay_label = "Restart row: 15/34 Solver family##rigid_workflow_restart"
+    previous_label = "Previous: 14/35 Collision casts##rigid_workflow_previous"
+    next_label = "Next: 16/35 Executor equivalence##rigid_workflow_next"
+    replay_label = "Restart row: 15/35 Solver family##rigid_workflow_restart"
     workflow_panel.build(
         _ScriptedPanelBuilder(selected_items={previous_label}),
         context,
@@ -1283,7 +1285,7 @@ def test_rigid_workflow_panel_filters_rows_by_question_and_requests_scene_switch
     workflow_panel = [panel for panel in panels if panel.title == "Rigid Workflow"][0]
     context = _FakePanelContext()
     target_label = (
-        "19/34 Friction threshold - rigid_friction_threshold"
+        "19/35 Friction threshold - rigid_friction_threshold"
         "##rigid_workflow_find_rigid_friction_threshold"
     )
     builder = _ScriptedPanelBuilder(
@@ -1295,7 +1297,7 @@ def test_rigid_workflow_panel_filters_rows_by_question_and_requests_scene_switch
 
     assert (
         "selectable:"
-        "19/34 Friction threshold - rigid_friction_threshold"
+        "19/35 Friction threshold - rigid_friction_threshold"
         "##rigid_workflow_find_rigid_friction_threshold:False"
     ) in builder.events
     assert "tooltip:Where is the inclined-ramp stick/slip boundary?" in builder.events
@@ -1339,11 +1341,11 @@ def test_rigid_workflow_panel_filters_rows_by_row_id_and_requests_scene_switch()
     workflow_panel = [panel for panel in panels if panel.title == "Rigid Workflow"][0]
     context = _FakePanelContext()
     target_label = (
-        "15/34 Solver family - rigid_solver_compare"
+        "15/35 Solver family - rigid_solver_compare"
         "##rigid_workflow_find_rigid_solver_compare"
     )
     builder = _ScriptedPanelBuilder(
-        text_input_values={"Find row": "15/34"},
+        text_input_values={"Find row": "15/35"},
         selected_items={target_label},
     )
 
@@ -1351,7 +1353,7 @@ def test_rigid_workflow_panel_filters_rows_by_row_id_and_requests_scene_switch()
 
     assert (
         "selectable:"
-        "15/34 Solver family - rigid_solver_compare"
+        "15/35 Solver family - rigid_solver_compare"
         "##rigid_workflow_find_rigid_solver_compare:False"
     ) in builder.events
     assert (

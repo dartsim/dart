@@ -107,6 +107,11 @@
 - [x] Kinematic-driver slice: `rigid_kinematic_driver` shows IPC prescribed
       tangential motion carrying a box through friction, a zero-friction slip
       baseline, and the current sequential-impulse static-like caveat.
+- [x] Kinematic normal-push caveat slice:
+      `rigid_kinematic_normal_push` shows explicit normal prescribed motion
+      with IPC normal/heavy penetration-caveat lanes and a sequential-impulse
+      push lane, with push speed, target mass, gap, depth, contact count,
+      target travel, and capture metrics.
 - [x] Front-door alignment: `rigid_body` is the default Python `py-demos`
       launch scene and the first visible row in the curated World rigid-body
       workflow.
@@ -165,7 +170,7 @@
 - [x] Related-evidence route follow-up: the runner-owned `Rigid Workflow` panel
       now links `rigid_solver_compare` to the non-numbered Rigid IPC
       no-tunneling view and `rigid_contact_solver_compare` to the
-      differentiable contact-gradient route without changing the 34-row order.
+      differentiable contact-gradient route without changing the 35-row order.
 - [x] Workflow-search UX follow-up: the `Rigid Workflow` panel's `Find row`
       filter now ranks row ids, scene ids, labels, questions, and positive
       signals ahead of scope caveats, so searches such as `contact` and
@@ -201,6 +206,8 @@
       with the docked ImGui workspace.
 - [x] Visual smoke: `rigid_kinematic_driver` capture writes nonblank PNGs with
       the docked ImGui workspace.
+- [x] Visual smoke: `rigid_kinematic_normal_push` capture writes nonblank PNGs
+      with the docked ImGui workspace and 72 scene-metrics events.
 - [x] Visual smoke: `rigid_contact_inspector` capture writes nonblank PNGs with
       the docked ImGui workspace.
 - [x] Visual smoke: `rigid_collision_query_options` capture writes nonblank
@@ -333,7 +340,10 @@ physics-method comparison.
   and operational-space control remain separate questions.
 - Keep kinematic-driver wording on tangential prescribed motion. The public API
   documents IPC support for moving supports/conveyors and the sequential
-  impulse static-like caveat; normal kinematic pushing remains out of scope.
+  impulse static-like caveat. Normal prescribed motion now lives in
+  `rigid_kinematic_normal_push` as a caveat verifier: SI pushes the target while
+  IPC exposes penetration, so do not claim robust IPC normal kinematic
+  manipulation.
 - Heavy rigid IPC scenes remain capture/benchmark-first until runtime
   performance is suitable for the default live GUI experience. The first
   four-box stack packet is registered in the Rigid IPC shelf; future taller
@@ -391,7 +401,8 @@ physics-method comparison.
 - Keep body-mode semantics as an early contact-free row. `rigid_body_modes`
   answers whether a body is dynamic, static, or kinematic; deeper force
   accumulator behavior stays in `rigid_external_loads`, and contact-driven
-  prescribed motion stays in `rigid_kinematic_driver`.
+  prescribed motion stays in `rigid_kinematic_driver` for tangential support
+  and `rigid_kinematic_normal_push` for the normal-push caveat.
 - Keep free flight as the no-contact initial-state row. It can show analytic
   drift/arc references, momentum residuals, energy drift, and inertia-scaled
   spin diagnostics, but it should not claim contact, load, restitution, or

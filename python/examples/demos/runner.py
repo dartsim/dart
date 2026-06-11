@@ -83,6 +83,7 @@ RIGID_VISUAL_WORKFLOW_LABELS = (
     ("rigid_stack_stability", "Stack stability"),
     ("rigid_contact_manipulation", "Manipulation"),
     ("rigid_kinematic_driver", "Kinematic driver"),
+    ("rigid_kinematic_normal_push", "Normal push"),
     ("rigid_fixed_joint", "Fixed joint"),
     ("rigid_joint_breakage", "Breakage lifecycle"),
     ("rigid_limited_joints", "One-DOF joints"),
@@ -239,7 +240,12 @@ _RIGID_VISUAL_WORKFLOW_GUIDE_TEXT: Mapping[
     "rigid_kinematic_driver": (
         "Does prescribed motion carry objects by contact?",
         ("IPC grip vs zero-friction slip", "Driver/box travel and speed ratio"),
-        "Tangential kinematic-driver row only; normal pushing remains out of scope.",
+        "Tangential kinematic-driver row only; normal pushing is routed to the next row.",
+    ),
+    "rigid_kinematic_normal_push": (
+        "Can prescribed normal motion push a target?",
+        ("IPC penetration caveat vs SI push", "Gap, depth, contact count, and target travel"),
+        "Normal kinematic-pusher caveat row only; IPC exposes penetration rather than a robust manipulation path.",
     ),
     "rigid_fixed_joint": (
         "Does a fixed joint preserve its captured pose?",
@@ -390,6 +396,10 @@ _RIGID_VISUAL_WORKFLOW_CHECKLIST_TEXT: Mapping[str, tuple[str, str]] = {
     "rigid_kinematic_driver": (
         "Change driver speed and grip friction.",
         "Healthy: IPC grip carries the box; zero-friction and SI caveat lanes separate.",
+    ),
+    "rigid_kinematic_normal_push": (
+        "Change push speed and target mass.",
+        "Healthy: SI pushes the target while IPC depth exposes the current caveat.",
     ),
     "rigid_fixed_joint": (
         "Use perturb, then reset the captured fixed-pose verifier.",

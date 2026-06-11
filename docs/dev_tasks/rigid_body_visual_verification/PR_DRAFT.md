@@ -2,7 +2,7 @@
 
 ## Summary
 
-- Curates the Python `py-demos` front door around a 34-row World rigid-body
+- Curates the Python `py-demos` front door around a 35-row World rigid-body
   visual-verification workflow.
 - Adds focused rigid-body GUI scenes, panels, replay-state coverage, capture
   commands, and drift checks for solver, executor, contact, material, joint,
@@ -26,7 +26,7 @@
   step-timing, force-drag, and replay-control diagnostics.
 - Moves the curated World rigid-body verifier block to the front of the Python
   demo registry and documents the row order in `python/examples/demos/README.md`.
-- Prefixes the interactive `Demos` navigator titles for the 34-row World Rigid
+- Prefixes the interactive `Demos` navigator titles for the 35-row World Rigid
   Body workflow with their position and role while keeping `py-demos --list`
   titles and ids stable for scripts.
 - Adds a runner-owned `Rigid Workflow` panel to numbered rigid rows with the
@@ -39,8 +39,8 @@
   - restitution, material mixing, contact inspection, collision query options,
     collision casts with swept-capsule queries, solver comparison, executor equivalence,
     contact-solver policy, multibody-link contact, friction threshold,
-    spin/roll coupling, stack stability, contact manipulation, and kinematic
-    drivers;
+    spin/roll coupling, stack stability, contact manipulation, kinematic
+    drivers, and normal-push caveat behavior;
   - fixed-joint preservation, AVBD-pinned break-force lifecycle, one-DOF
     joints, motor/limit behavior, passive joint parameters, screw-joint pitch,
     generalized multibody dynamics terms, link center-of-mass offsets,
@@ -105,6 +105,10 @@
     `626.778` ms, final contacts 0
 - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_link_center_of_mass_offsets_gravity_torque python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/integration/test_demos_cycle.py::test_world_scenes_use_solver_focused_categories python/tests/integration/test_demos_cycle.py::test_world_rigid_visual_verification_scenes_are_ordered python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_viewer_titles_are_numbered python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_guidance_matches_sidecar python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_renders_guidance_for_numbered_rows python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_route_rows_request_scene_switches python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_jump_selector_requests_scene_switch python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_filters_rows_by_question_and_requests_scene_switch python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_filters_rows_by_row_id_and_requests_scene_switch python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_skips_non_numbered_world_rows -q`
   - `17 passed`
+- `pixi run py-demo-capture -- --scene rigid_kinematic_normal_push --frames 72 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_normal_push_72`
+  - nonblank 960x540 screenshot, 71 PNG frames, 72 scene-metrics events,
+    frame 72 IPC normal/heavy `status=ipc penetration caveat` with about
+    0.125 m depth and SI `status=pushed` with about 0.123 m target travel
 - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_world_scenes_use_solver_focused_categories python/tests/integration/test_demos_cycle.py::test_world_rigid_visual_verification_scenes_are_ordered python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_viewer_titles_are_numbered python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_guidance_matches_sidecar python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow python/tests/integration/test_demos_cycle.py::test_rigid_contact_solver_compare_records_coupled_contact_policy python/tests/integration/test_demos_cycle.py::test_rigid_link_contact_exercises_multibody_contact_response python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_renders_guidance_for_numbered_rows python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_route_rows_request_scene_switches python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_jump_selector_requests_scene_switch python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_filters_rows_by_question_and_requests_scene_switch python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_filters_rows_by_row_id_and_requests_scene_switch python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_skips_non_numbered_world_rows -q`
   - `18 passed`
 - `pixi run py-demo-capture -- --scene contact --frames 72 --width 960 --height 540 --show-ui`

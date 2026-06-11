@@ -780,6 +780,7 @@ def test_world_scenes_use_solver_focused_categories() -> None:
             "rigid_multibody_solver_family",
             "rigid_loop_closure",
             "rigid_kinematic_driver",
+            "rigid_kinematic_normal_push",
             "rigid_link_center_of_mass",
         },
         "AVBD Rigid Constraints (sx)": {
@@ -888,6 +889,7 @@ def test_world_rigid_visual_verification_scenes_are_ordered() -> None:
         "rigid_stack_stability",
         "rigid_contact_manipulation",
         "rigid_kinematic_driver",
+        "rigid_kinematic_normal_push",
         "rigid_fixed_joint",
         "rigid_joint_breakage",
         "rigid_limited_joints",
@@ -2125,6 +2127,58 @@ def test_rigid_kinematic_driver_carries_box_with_ipc() -> None:
         assert np.isfinite(float(metrics[case.key]["step_ms"]))
 
 
+def test_rigid_kinematic_normal_push_exposes_normal_pusher_caveat() -> None:
+    import numpy as np
+
+    from examples.demos.scenes.rigid_kinematic_normal_push import build
+
+    setup = build()
+    controller = setup.info["rigid_kinematic_normal_push_controller"]
+    for _ in range(96):
+        assert setup.pre_step is not None
+        setup.pre_step()
+
+    metrics = controller._last_metrics
+    assert {case.key for case in controller.cases} == {
+        "ipc_normal",
+        "ipc_heavy",
+        "si_caveat",
+    }
+
+    ipc = metrics["ipc_normal"]
+    heavy = metrics["ipc_heavy"]
+    si = metrics["si_caveat"]
+
+    assert float(ipc["driver_travel"]) > 0.15
+    assert abs(float(ipc["target_travel"])) < 0.020
+    assert float(ipc["max_depth"]) > 0.10
+    assert float(ipc["contact_count"]) > 0.0
+    assert ipc["status"] == "ipc penetration caveat"
+
+    assert float(heavy["target_mass"]) > float(ipc["target_mass"])
+    assert abs(float(heavy["target_travel"])) < 0.020
+    assert float(heavy["max_depth"]) > 0.10
+    assert heavy["status"] == "ipc penetration caveat"
+
+    assert float(si["driver_travel"]) > 0.15
+    assert float(si["target_travel"]) > 0.12
+    assert abs(float(si["analytic_gap"])) < 0.010
+    assert float(si["contact_count"]) > 0.0
+    assert si["status"] == "pushed"
+    assert float(si["target_travel"]) > float(ipc["target_travel"]) + 0.10
+
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["row"] == "rigid_kinematic_normal_push"
+    assert set(capture_metrics["lanes"]) == set(metrics)
+    assert capture_metrics["lanes"]["ipc_normal"]["status"] == (
+        "ipc penetration caveat"
+    )
+    assert np.isfinite(float(capture_metrics["lanes"]["si_caveat"]["step_ms"]))
+    assert controller._target_history["ipc_normal"]
+    assert controller._target_history["si_caveat"]
+    assert controller._depth_history["ipc_normal"]
+
+
 def test_rigid_contact_solver_compare_records_coupled_contact_policy() -> None:
     import numpy as np
 
@@ -2262,6 +2316,9 @@ def test_rigid_verifier_replay_snapshots_restore_controls() -> None:
         build as passive_joint_build,
     )
     from examples.demos.scenes.rigid_kinematic_driver import build as kinematic_build
+    from examples.demos.scenes.rigid_kinematic_normal_push import (
+        build as normal_push_build,
+    )
     from examples.demos.scenes.rigid_link_point_loads import (
         build as point_loads_build,
     )
@@ -2693,6 +2750,22 @@ def test_rigid_verifier_replay_snapshots_restore_controls() -> None:
         else:
             assert case.platform.friction == pytest.approx(0.56)
             assert case.box.friction == pytest.approx(0.56)
+
+    normal_push = normal_push_build().info["rigid_kinematic_normal_push_controller"]
+    normal_push.executor_index = len(normal_push._executors) - 1
+    normal_push.push_speed = 0.52
+    normal_push.target_mass = 2.30
+    normal_push_state = normal_push.capture_replay_state()
+    normal_push.executor_index = 0
+    normal_push.push_speed = 0.18
+    normal_push.target_mass = 0.40
+    normal_push.restore_replay_state(normal_push_state)
+    assert normal_push.executor_index == len(normal_push._executors) - 1
+    assert normal_push.push_speed == pytest.approx(0.52)
+    assert normal_push.target_mass == pytest.approx(2.30)
+    for case in normal_push.cases:
+        expected_mass = 2.30 * case.target_mass_scale
+        assert case.target.mass == pytest.approx(expected_mass)
 
     executor = executor_build().info["rigid_executor_equivalence_controller"]
     executor.solver_index = 1

@@ -92,8 +92,15 @@ not a full articulated arm or gripper controller.
 The kinematic-driver slice, `rigid_kinematic_driver`, is implemented and
 visually captured. It shows IPC prescribed tangential motion carrying a box on a
 kinematic support through friction, a zero-friction IPC slip baseline, and the
-current sequential-impulse static-like caveat. The row keeps normal kinematic
-pushing out of scope, matching the public API limitation.
+current sequential-impulse static-like caveat.
+
+The normal prescribed-motion follow-up, `rigid_kinematic_normal_push`, is
+implemented as a caveat verifier after `rigid_kinematic_driver`. It drives an
+explicit normal kinematic paddle into a target and records IPC normal/heavy
+penetration-caveat lanes next to a sequential-impulse push lane, with push
+speed, target mass, driver travel, target travel, analytic gap, penetration
+depth, contact count, speed ratio, step timing, capture metrics, and replayed
+controls. Do not claim robust IPC normal kinematic manipulation from this row.
 
 The constraints slice is implemented and visually captured. `rigid_fixed_joint`
 now has perturb/reset controls and plots relative offset, relative orientation,
@@ -138,10 +145,10 @@ launch scene and moved the curated rigid visual-verification block to the front
 of the global catalog and `World Rigid Body` category. The replay timeline
 remains explicitly selectable as `replay_scrubber`.
 
-The Demos navigator follow-up now prefixes the first 34 interactive
+The Demos navigator follow-up now prefixes the first 35 interactive
 **World Rigid Body** viewer titles with workflow position and role, such as
-`01/34 Baseline: World Rigid Body` and
-`15/34 Solver family: Rigid Solver Compare`, while preserving stable
+`01/35 Baseline: World Rigid Body` and
+`15/35 Solver family: Rigid Solver Compare`, while preserving stable
 `py-demos --list` scene ids and titles for scripts. This turns the existing
 curated order into an in-app breadcrumb instead of relying only on the README
 and PLAN-103 sidecar.
@@ -419,7 +426,10 @@ and continue only with a distinct rigid-body feature gap from a fresh audit.
   manifold inspector or become a solver benchmark.
 - Kinematic driver visuals should stay scoped to tangential prescribed motion
   under IPC: moving supports/conveyors, slip, and the sequential-impulse
-  static-like caveat. Do not claim robust normal kinematic pushing.
+  static-like caveat. Normal prescribed contact now belongs in
+  `rigid_kinematic_normal_push`, which intentionally exposes the IPC
+  penetration caveat next to an SI push lane instead of claiming robust IPC
+  normal manipulation.
 - The app front door should stay aligned with the curated rigid workflow:
   default `py-demos` launch opens `rigid_body`, while `replay_scrubber` remains
   an explicit scene for replay-specific debugging.
@@ -616,7 +626,7 @@ skipped`; `pixi run lint` passed; and bounded `pixi run build` passed with
   update.
 - Fresh navigator-count drift validation on 2026-06-11: the focused
   viewer-title/docs-count/sidecar/README guard reported `4 passed` after fixing
-  stale navigator-count examples to `15/34`; `pixi run lint` passed after adding
+  stale navigator-count examples to `15/35`; `pixi run lint` passed after adding
   the guard.
 - Fresh frame-hierarchy validation on 2026-06-11: the focused
   category/order/viewer-title/docs-count/sidecar/README/capture-command/frame
@@ -639,7 +649,7 @@ skipped`; `pixi run lint` passed; and bounded `pixi run build` passed with
   passed; bounded `pixi run build` reported `ninja: no work to do`; and
   `git diff --check` was clean after the evidence update.
 - Fresh in-viewer workflow-guide follow-up on 2026-06-11: a specialized UX
-  audit found that the 34-row learning path was still mostly documented outside
+  audit found that the 35-row learning path was still mostly documented outside
   the app. The runner now injects a compact `Rigid Workflow` panel for numbered
   World Rigid Body rows, sourced from the PLAN-103 user questions, with inspect
   signals and previous/next route guidance. The focused
@@ -671,7 +681,7 @@ skipped`; `pixi run lint` passed; and bounded `pixi run build` passed with
   now also expose `request_scene_replay(scene_id)`, and the shared
   `Rigid Workflow` panel renders a restart command plus a text filter over row
   ids, questions, checklist text, and inspect signals. The filter now includes
-  explicit `NN/MM` row-id tokens such as `15/34` so documented row-id search
+  explicit `NN/MM` row-id tokens such as `15/35` so documented row-id search
   switches to the intended workflow row. The focused panel/stub guard reported
   `7 passed`.
 - Fresh collision-casts capsule hardening on 2026-06-11:
@@ -688,7 +698,7 @@ skipped`; `pixi run lint` passed; and bounded `pixi run build` passed with
   `3 passed`, and the docked visual capture produced a nonblank 960x540
   screenshot plus 23 PNG frames.
 
-The latest follow-up promotes the stable `contact` scene id into row 18/34 as
+The latest follow-up promotes the stable `contact` scene id into row 18/35 as
 `Rigid Link Contact`, directly after contact-solver policy and before the
 friction-threshold row. It now shows multibody links dropping, friction-sliding,
 and pushing a rigid target through the public World contact path, with executor,
@@ -723,15 +733,15 @@ focused replay timeline and solver-comparison guard reported `5 passed`, and
 `pixi run test-py` reported `640 passed, 9 skipped` on the post-lint tree.
 
 Fresh related-evidence routing on 2026-06-11: the runner-owned `Rigid Workflow`
-panel now keeps non-numbered shelves visible without changing the 34-row order.
-Row 15/34 `rigid_solver_compare` links to `rigid_ipc_tunnel` as a focused IPC
-no-tunneling view, and row 17/34 `rigid_contact_solver_compare` links to
+panel now keeps non-numbered shelves visible without changing the 35-row order.
+Row 15/35 `rigid_solver_compare` links to `rigid_ipc_tunnel` as a focused IPC
+no-tunneling view, and row 17/35 `rigid_contact_solver_compare` links to
 `diff_drone_liftoff` as a differentiable contact-gradient route. The PLAN-103
 sidecar owns the route table, and tests verify those scene ids remain registered
 outside the numbered workflow.
 
 Fresh capture-first IPC stack packet on 2026-06-11: `rigid_ipc_stack_packet`
-was added to the non-numbered Rigid IPC shelf, outside the 34-row World Rigid
+was added to the non-numbered Rigid IPC shelf, outside the 35-row World Rigid
 Body workflow, to answer what happens when a four-box IPC stack leaves the live
 demo budget. Its panel reports frame-budget status, wall time, min clearance,
 contact count, top drift, height error, max speed, and the
@@ -781,6 +791,15 @@ caveats, so `contact` and `solver` searches surface the intended workflow rows.
 Related-shelf links now include the target shelf and scene id in the visible
 row label.
 
+Fresh kinematic normal-push caveat follow-up on 2026-06-11:
+`rigid_kinematic_normal_push` is row 24/35 after the tangential kinematic-driver
+row. The focused order/guidance/docs/replay/panel/normal-push guard reported
+`17 passed`. The standard docked capture wrote a nonblank 960x540 screenshot,
+71 PNG frames, and 72 scene-metrics events; frame 72 ended with IPC normal and
+heavy lanes at `status=ipc penetration caveat` with about 0.125 m depth and
+near-zero target travel, while the sequential-impulse lane reached
+`status=pushed` with about 0.123 m target travel.
+
 ## How to Resume
 
 ```bash
@@ -820,6 +839,7 @@ PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dar
     python/tests/integration/test_demos_cycle.py::test_rigid_spin_roll_coupling_converts_slip_to_roll \
     python/tests/integration/test_demos_cycle.py::test_rigid_contact_manipulation_pushes_target_toward_goal \
     python/tests/integration/test_demos_cycle.py::test_rigid_kinematic_driver_carries_box_with_ipc \
+    python/tests/integration/test_demos_cycle.py::test_rigid_kinematic_normal_push_exposes_normal_pusher_caveat \
     python/tests/integration/test_demos_cycle.py::test_rigid_joint_breakage_marks_and_resets_breakage \
     python/tests/integration/test_demos_cycle.py::test_rigid_joint_motor_limits_clamp_commands_and_effort \
     python/tests/integration/test_demos_cycle.py::test_rigid_joint_passive_parameters_order_passive_response \
@@ -853,6 +873,7 @@ pixi run py-demo-capture -- --scene rigid_spin_roll_coupling --frames 96 --width
 pixi run py-demo-capture -- --scene rigid_stack_stability --frames 24 --width 960 --height 540 --show-ui
 pixi run py-demo-capture -- --scene rigid_contact_manipulation --frames 72 --width 960 --height 540 --show-ui
 pixi run py-demo-capture -- --scene rigid_kinematic_driver --frames 72 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_kinematic_normal_push --frames 72 --width 960 --height 540 --show-ui
 pixi run py-demo-capture -- --scene rigid_fixed_joint --frames 24 --width 960 --height 540 --show-ui
 pixi run py-demo-capture -- --scene rigid_joint_breakage --frames 48 --width 960 --height 540 --show-ui
 pixi run py-demo-capture -- --scene rigid_limited_joints --frames 24 --width 960 --height 540 --show-ui

@@ -71,10 +71,10 @@ capture is active, the `Simulation` panel also exposes a timeline scrubber over
 the recorded PPM sequence with first/previous/play/next/last controls and the
 selected frame path.
 
-The first 34 **World Rigid Body** entries in the interactive `Demos` navigator
+The first 35 **World Rigid Body** entries in the interactive `Demos` navigator
 are prefixed with their workflow position and role, such as
-`01/34 Baseline: World Rigid Body` or
-`15/34 Solver family: Rigid Solver Compare`. `--list` keeps the stable scene
+`01/35 Baseline: World Rigid Body` or
+`15/35 Solver family: Rigid Solver Compare`. `--list` keeps the stable scene
 titles and ids for scripts.
 
 World-backed scenes also get a bottom `Replay` panel. `Save replay` is enabled
@@ -160,6 +160,7 @@ infer.
 | `rigid_stack_stability`          | Does a top-heavy stack jitter or collapse?         | Executor, top mass ratio, friction                    | Max speed, top drift, clearance, height error           |
 | `rigid_contact_manipulation`     | Can a pusher move an object through contact?       | Executor, pusher speed, friction, pusher mass         | Target travel, pusher gap, contact/proximity            |
 | `rigid_kinematic_driver`         | Does prescribed motion carry objects by contact?   | Driver speed, grip friction, executor                 | Driver travel, box travel, slip, speed ratio            |
+| `rigid_kinematic_normal_push`    | Can prescribed normal motion push a target?        | Push speed, target mass, executor                     | Target travel, gap, depth, contact count                |
 | `rigid_fixed_joint`              | Does a fixed joint preserve its captured pose?     | Perturbation, reset                                   | Relative offset/orientation error, payload speed        |
 | `rigid_joint_breakage`           | What happens when a fixed joint breaks?            | Fixed AVBD break-force diagnostics                    | Broken state, connector color, offset error, reset      |
 | `rigid_limited_joints`           | Do one-DOF joints keep only their free axis?       | Perturbation, reset                                   | Hinge radius/z error, slider xy error, free motion      |
@@ -426,6 +427,14 @@ shows the current static-like caveat for kinematic bodies. The panel exposes
 driver speed, grip friction, executor choice, driver travel, box travel, slip,
 speed ratio, support gap, and step timing.
 
+The **`rigid_kinematic_normal_push`** scene keeps the next prescribed-motion
+question separate: what happens when a kinematic paddle moves normally into a
+target? It is a caveat verifier. Sequential impulse pushes the target forward,
+while IPC normal and heavier-target lanes expose the current penetration
+failure mode instead of silently promoting it as a supported manipulation path.
+The panel shows push speed, target mass, driver travel, target travel, analytic
+gap, penetration depth, contact count, speed ratio, and step timing.
+
 ## Rigid joint constraints
 
 The **`rigid_fixed_joint`** scene is a focused fixed-constraint verifier. Its
@@ -560,6 +569,8 @@ pixi run py-demo-capture -- --scene rigid_stack_stability --frames 24 \
 pixi run py-demo-capture -- --scene rigid_contact_manipulation --frames 72 \
     --width 960 --height 540 --show-ui
 pixi run py-demo-capture -- --scene rigid_kinematic_driver --frames 72 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_kinematic_normal_push --frames 72 \
     --width 960 --height 540 --show-ui
 pixi run py-demo-capture -- --scene rigid_fixed_joint --frames 24 \
     --width 960 --height 540 --show-ui

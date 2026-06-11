@@ -79,6 +79,7 @@ from .scenes.rigid_joint_passive_parameters import (
     SCENE as RIGID_JOINT_PASSIVE_PARAMETERS,
 )
 from .scenes.rigid_kinematic_driver import SCENE as RIGID_KINEMATIC_DRIVER
+from .scenes.rigid_kinematic_normal_push import SCENE as RIGID_KINEMATIC_NORMAL_PUSH
 from .scenes.rigid_link_center_of_mass import SCENE as RIGID_LINK_CENTER_OF_MASS
 from .scenes.rigid_link_jacobian import SCENE as RIGID_LINK_JACOBIAN
 from .scenes.rigid_link_point_loads import SCENE as RIGID_LINK_POINT_LOADS
@@ -159,6 +160,7 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         RIGID_STACK_STABILITY,
         RIGID_CONTACT_MANIPULATION,
         RIGID_KINEMATIC_DRIVER,
+        RIGID_KINEMATIC_NORMAL_PUSH,
         RIGID_FIXED_JOINT,
         RIGID_JOINT_BREAKAGE,
         RIGID_LIMITED_JOINTS,

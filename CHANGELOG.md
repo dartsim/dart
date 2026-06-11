@@ -141,6 +141,10 @@
     zero-friction slip baseline, and the current sequential-impulse
     static-like caveat with driver-travel, box-travel, slip, speed-ratio,
     support-gap, and step-profile diagnostics.
+  - Added `rigid_kinematic_normal_push` to Python `py-demos`, showing explicit
+    normal prescribed motion with IPC normal/heavy penetration-caveat lanes and
+    a sequential-impulse push lane, including target travel, analytic gap,
+    penetration depth, contact count, speed ratio, and capture metrics.
   - Made `rigid_body` the Python `py-demos` default launch scene and moved the
     curated rigid-body visual-verification workflow to the front of the World
     Rigid Body category, so first-run and cycle behavior match the documented
@@ -153,7 +157,7 @@
     error, payload speed, and an explicit reset lifecycle without claiming
     sequential-impulse or IPC breakage parity.
   - Prefixed the interactive Python `py-demos` Demos navigator titles for the
-    34-row World Rigid Body visual-verification workflow with their position
+    35-row World Rigid Body visual-verification workflow with their position
     and role while keeping `--list` scene titles and ids stable for scripts.
   - Added `rigid_link_center_of_mass` to Python `py-demos`, a contact-free
     World multibody row that keeps visual geometry fixed while moving
@@ -188,7 +192,7 @@
   - Added related-evidence routes to the runner-owned `Rigid Workflow` panel so
     `rigid_solver_compare` can jump to the non-numbered Rigid IPC
     no-tunneling scene and `rigid_contact_solver_compare` can jump to the
-    differentiable contact-gradient scene without changing the 34-row rigid
+    differentiable contact-gradient scene without changing the 35-row rigid
     workflow order.
   - Added `rigid_ipc_stack_packet` to the non-numbered Rigid IPC shelf as a
     capture-first four-box stack stress scene with frame-budget, wall-time,
