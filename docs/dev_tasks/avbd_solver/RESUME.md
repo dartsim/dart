@@ -2,6 +2,19 @@
 
 ## Last Session Summary
 
+Latest local follow-up: C++ and dartpy public articulated AVBD stiffness
+persistence coverage now exercises fixed, revolute, prismatic, and spherical
+public articulated facades for both same-multibody link pairs and world-link
+endpoints. The C++ serialization test and
+`test_simulation_world_articulated_avbd_stiffness_roundtrip_from_python` set
+finite start/linear/angular AVBD stiffness, save/load the world, mutate the
+restored stiffness values, and verify they remain visible after entering
+simulation mode. A focused variational-integration test now also verifies
+restored stiffness for those endpoint/type combinations feeds the private
+point-joint configs rebuilt at simulation entry. This is narrow public facade
+serialization/extraction coverage; it does not close broader articulated
+lifecycle, source-corpus CPU-win, GPU, or paper-number gates.
+
 Latest local follow-up: CUDA boxed-LCP PGS dense world-contact tests now keep
 the largest 128-box fixture as a cheap shape gate while bounding the default
 runtime-contract CUDA sweeps to smaller dense packets. #2973's CUDA failure
@@ -1685,6 +1698,14 @@ complete.
 
 ## Current Branch
 
+Current reality (2026-06-11): this checkout is
+`avbd/articulated-stiffness-roundtrip` for PR #2975, with `origin/main` at
+`37cb7371db6` (#2973) merged locally to resolve the PR conflict. Keep this
+branch scoped to articulated stiffness round-trip coverage; source-row
+performance work belongs on `avbd/source-row-perf-slice`. The earlier
+split-stack notes below are historical context from PRs #2967/#2968 and the raw
+checkpoint branch.
+
 Current reality (2026-06-10): the active split stack is PR #2967
 (`avbd/tests-benchmarks`, base `main`) plus PR #2968 (`avbd/python-demos`, base
 `avbd/tests-benchmarks`), and this checkout is `avbd/python-demos`. The older
@@ -2148,9 +2169,9 @@ parity claim.
 
 ## Immediate Next Step
 
-The local branch and cached `origin/main` are both at `f1fa9f386f9` after the
-requested latest-main merge was refreshed through HTTPS and applied as a
-fast-forward. The earlier SSH fetch path failed in this environment with
+Finish the PR #2975 latest-main merge by running the focused stiffness
+round-trip tests plus `pixi run lint`, then push the normal merge commit and
+monitor CI. The earlier SSH fetch path failed in this environment with
 `ssh: connect to host github.com port 22: Network is unreachable`, so keep using
 HTTPS when a fresh main refresh is needed here. The pre-merge backup stashes
 remain present and should not be dropped without maintainer approval. The
