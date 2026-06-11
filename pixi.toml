@@ -1468,6 +1468,9 @@ bm-plan083-cpu-nunchaku-packet = { cmd = "python scripts/write_plan083_cpu_scene
 bm-plan083-cpu-precession-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene precession", depends-on = [
   "config",
 ] }
+bm-plan083-cpu-ragdoll-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene ragdoll_reduced", depends-on = [
+  "config",
+] }
 bm-plan083-cpu-terrain-vehicle-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene terrain_vehicle", depends-on = [
   "config",
 ] }

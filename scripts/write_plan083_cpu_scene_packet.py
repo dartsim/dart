@@ -35,6 +35,7 @@ SCENE_ROWS = {
     "hanging_bridge": "BM_Plan083CpuScene_hanging_bridge_reduced_world_step",
     "nunchaku_single": "BM_Plan083CpuScene_nunchaku_single_reduced_world_step",
     "precession": "BM_Plan083CpuScene_precession_reduced_world_step",
+    "ragdoll_reduced": "BM_Plan083CpuScene_ragdoll_reduced_world_step",
     "terrain_vehicle": "BM_Plan083CpuScene_terrain_vehicle_reduced_world_step",
     "windmill": "BM_Plan083CpuScene_windmill_reduced_world_step",
 }
@@ -45,6 +46,9 @@ SCENE_BENCHMARK_OUTPUTS = {
     ),
     "precession": Path(
         ".benchmark_results/plan083/cpu_scene_corpus/precession_benchmark.json"
+    ),
+    "ragdoll_reduced": Path(
+        ".benchmark_results/plan083/cpu_scene_corpus/ragdolls_benchmark.json"
     ),
     "terrain_vehicle": Path(
         ".benchmark_results/plan083/cpu_scene_corpus/terrain_vehicle_benchmark.json"
@@ -59,6 +63,9 @@ SCENE_PACKET_OUTPUTS = {
         ".benchmark_results/plan083/cpu_scene_corpus/nunchaku_single.json"
     ),
     "precession": Path(".benchmark_results/plan083/cpu_scene_corpus/precession.json"),
+    "ragdoll_reduced": Path(
+        ".benchmark_results/plan083/cpu_scene_corpus/ragdolls.json"
+    ),
     "terrain_vehicle": Path(
         ".benchmark_results/plan083/cpu_scene_corpus/terrain_vehicle.json"
     ),
@@ -259,6 +266,14 @@ def make_packet(
         )
     if scene == "precession":
         return _make_precession_packet(
+            row,
+            rows,
+            timing_ns=timing_ns,
+            final_residual=final_residual,
+            max_equality_residual=max_equality_residual,
+        )
+    if scene == "ragdoll_reduced":
+        return _make_ragdoll_packet(
             row,
             rows,
             timing_ns=timing_ns,
@@ -605,6 +620,88 @@ def _make_precession_packet(
             "limitation_status": (
                 "Reduced rolling-wheel runtime smoke packet only; angular-velocity "
                 "sweep, rolling-contact model, and Table 2 timing remain planned."
+            ),
+        },
+        "benchmarks": rows,
+    }
+
+
+def _make_ragdoll_packet(
+    row: Mapping[str, Any],
+    rows: list[Any],
+    *,
+    timing_ns: float,
+    final_residual: float,
+    max_equality_residual: float,
+) -> dict[str, Any]:
+    body_count = int(_finite_number(row, "body_count"))
+    dynamic_body_count = int(_finite_number(row, "dynamic_body_count"))
+    ragdoll_body_count = int(_finite_number(row, "ragdoll_body_count"))
+    revolute_joint_count = int(_finite_number(row, "revolute_joint_count"))
+    active_constraints = int(_finite_number(row, "active_constraints"))
+    active_friction_constraints = int(
+        _finite_number(row, "active_friction_constraints")
+    )
+    active_articulation_constraints = int(
+        _finite_number(row, "active_articulation_constraints")
+    )
+    if body_count != 7:
+        raise Plan083CpuScenePacketError(f"expected 7 rigid bodies, got {body_count}")
+    if dynamic_body_count != 6:
+        raise Plan083CpuScenePacketError(
+            f"expected 6 dynamic rigid bodies, got {dynamic_body_count}"
+        )
+    if ragdoll_body_count != 6:
+        raise Plan083CpuScenePacketError(
+            f"expected 6 reduced ragdoll bodies, got {ragdoll_body_count}"
+        )
+    if revolute_joint_count != 5:
+        raise Plan083CpuScenePacketError(
+            f"expected 5 reduced ragdoll revolute joints, got {revolute_joint_count}"
+        )
+    if active_articulation_constraints < 10:
+        raise Plan083CpuScenePacketError(
+            "expected revolute-joint articulation rows for the reduced ragdoll"
+        )
+    if active_constraints <= 0:
+        raise Plan083CpuScenePacketError(
+            "expected active ground-contact rows for the reduced ragdoll"
+        )
+    if active_friction_constraints <= 0:
+        raise Plan083CpuScenePacketError(
+            "expected active ground-friction rows for the reduced ragdoll"
+        )
+
+    ground_clearance = _finite_number(row, "min_leg_ground_clearance_m")
+    if ground_clearance < -1e-5:
+        raise Plan083CpuScenePacketError(
+            "ragdoll legs penetrated the reduced ground smoke scene"
+        )
+
+    return {
+        "plan083_cpu_scene_packet": {
+            "row_id": "unb-fig-11",
+            "scene_id": "plan083_ragdolls",
+            "benchmark_row": _packet_row_name(row),
+            "paper_scale": False,
+            "runtime_path": "rigid IPC World::step",
+            "step_count": 1,
+            "wall_time_ns": timing_ns,
+            "body_count": body_count,
+            "dynamic_body_count": dynamic_body_count,
+            "ragdoll_body_count": ragdoll_body_count,
+            "revolute_joint_count": revolute_joint_count,
+            "active_constraints": active_constraints,
+            "active_friction_constraints": active_friction_constraints,
+            "active_articulation_constraints": active_articulation_constraints,
+            "solver_iterations": int(_finite_number(row, "solver_iterations")),
+            "final_equality_residual_norm": final_residual,
+            "max_equality_residual": max_equality_residual,
+            "torso_height_m": _finite_number(row, "torso_height_m"),
+            "min_leg_ground_clearance_m": ground_clearance,
+            "limitation_status": (
+                "Reduced six-body revolute-chain runtime smoke packet only; "
+                "cone-twist joints, 60-ragdoll scale, and Table 2 timing remain planned."
             ),
         },
         "benchmarks": rows,

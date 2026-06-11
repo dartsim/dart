@@ -76,11 +76,23 @@ constexpr double kTerrainWheelRadius = 0.06;
 const Eigen::Vector3d kPrecessionGroundHalfExtents(0.55, 0.45, 0.025);
 constexpr double kPrecessionWheelRadius = 0.16;
 constexpr double kPrecessionWheelHalfHeight = 0.035;
+const Eigen::Vector3d kRagdollGroundHalfExtents(0.42, 0.36, 0.025);
+const Eigen::Vector3d kRagdollTorsoHalfExtents(0.10, 0.07, 0.14);
+const Eigen::Vector3d kRagdollArmHalfExtents(0.12, 0.025, 0.035);
+const Eigen::Vector3d kRagdollLegHalfExtents(0.035, 0.04, 0.16);
+constexpr double kRagdollHeadRadius = 0.055;
 const std::array<Eigen::Vector3d, 4> kTerrainWheelOffsets{{
     Eigen::Vector3d(-0.16, -0.14, -0.10),
     Eigen::Vector3d(-0.16, 0.14, -0.10),
     Eigen::Vector3d(0.16, -0.14, -0.10),
     Eigen::Vector3d(0.16, 0.14, -0.10),
+}};
+const std::array<Eigen::Vector3d, 5> kRagdollPartPositions{{
+    Eigen::Vector3d(0.00, 0.0, 0.62),
+    Eigen::Vector3d(-0.19, 0.0, 0.45),
+    Eigen::Vector3d(0.19, 0.0, 0.45),
+    Eigen::Vector3d(-0.07, 0.0, 0.16),
+    Eigen::Vector3d(0.07, 0.0, 0.16),
 }};
 
 sx::CollisionShape makeOffsetBox(
@@ -476,6 +488,103 @@ struct PrecessionFixture
   std::vector<BodySnapshot> snapshots;
 };
 
+struct RagdollFixture
+{
+  RagdollFixture()
+  {
+    world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+    world.setTimeStep(0.005);
+    world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+
+    sx::RigidBodyOptions groundOptions;
+    groundOptions.isStatic = true;
+    groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.025);
+    ground.emplace(world.addRigidBody("plan083_ragdoll_ground", groundOptions));
+    ground->setFriction(0.8);
+    ground->setCollisionShape(
+        sx::CollisionShape::makeBox(kRagdollGroundHalfExtents));
+
+    sx::RigidBodyOptions torsoOptions;
+    torsoOptions.mass = 0.35;
+    torsoOptions.position = Eigen::Vector3d(0.0, 0.0, 0.42);
+    torsoOptions.linearVelocity = Eigen::Vector3d(0.04, 0.0, -0.04);
+    torsoOptions.angularVelocity = Eigen::Vector3d(0.0, 0.6, 0.25);
+    torso.emplace(world.addRigidBody("plan083_ragdoll_torso", torsoOptions));
+    torso->setFriction(0.7);
+    torso->setCollisionShape(
+        sx::CollisionShape::makeBox(kRagdollTorsoHalfExtents));
+
+    const std::array<std::string, 5> names{
+        "plan083_ragdoll_head",
+        "plan083_ragdoll_left_arm",
+        "plan083_ragdoll_right_arm",
+        "plan083_ragdoll_left_leg",
+        "plan083_ragdoll_right_leg",
+    };
+    parts.reserve(names.size());
+    for (std::size_t index = 0; index < names.size(); ++index) {
+      sx::RigidBodyOptions partOptions;
+      partOptions.mass = index == 0 ? 0.08 : 0.12;
+      partOptions.position = kRagdollPartPositions[index];
+      partOptions.linearVelocity = torsoOptions.linearVelocity;
+      partOptions.angularVelocity = torsoOptions.angularVelocity;
+      auto part = world.addRigidBody(names[index], partOptions);
+      part.setFriction(0.8);
+      if (index == 0) {
+        part.setCollisionShape(
+            sx::CollisionShape::makeSphere(kRagdollHeadRadius));
+      } else if (index <= 2) {
+        part.setCollisionShape(
+            sx::CollisionShape::makeBox(kRagdollArmHalfExtents));
+      } else {
+        part.setCollisionShape(
+            sx::CollisionShape::makeBox(kRagdollLegHalfExtents));
+      }
+      (void)world.addRigidBodyRevoluteJoint(
+          "plan083_ragdoll_joint_" + std::to_string(index),
+          *torso,
+          part,
+          index == 0 ? Eigen::Vector3d::UnitZ() : Eigen::Vector3d::UnitY());
+      parts.push_back(part);
+    }
+
+    snapshotBody(snapshots, *ground);
+    snapshotBody(snapshots, *torso);
+    for (const auto& part : parts) {
+      snapshotBody(snapshots, part);
+    }
+
+    world.enterSimulationMode();
+  }
+
+  void reset()
+  {
+    world.setTime(0.0);
+    for (auto& snapshot : snapshots) {
+      snapshot.body.setTransform(snapshot.transform);
+      snapshot.body.setLinearVelocity(snapshot.linearVelocity);
+      snapshot.body.setAngularVelocity(snapshot.angularVelocity);
+    }
+  }
+
+  double minLegGroundClearance() const
+  {
+    double clearance = std::numeric_limits<double>::infinity();
+    for (std::size_t index = 3; index < parts.size(); ++index) {
+      clearance = std::min(
+          clearance,
+          parts[index].getTranslation().z() - kRagdollLegHalfExtents.z());
+    }
+    return clearance;
+  }
+
+  sx::World world;
+  std::optional<sx::RigidBody> ground;
+  std::optional<sx::RigidBody> torso;
+  std::vector<sx::RigidBody> parts;
+  std::vector<BodySnapshot> snapshots;
+};
+
 } // namespace
 
 //==============================================================================
@@ -747,6 +856,66 @@ static void BM_Plan083CpuScene_precession_reduced_world_step(
       = fixture.wheel->getAngularVelocity().norm();
 }
 BENCHMARK(BM_Plan083CpuScene_precession_reduced_world_step)
+    ->Unit(benchmark::kMillisecond);
+
+//==============================================================================
+static void BM_Plan083CpuScene_ragdoll_reduced_world_step(
+    benchmark::State& state)
+{
+  RagdollFixture fixture;
+  sx::compute::SequentialExecutor executor;
+
+  std::size_t failedSteps = 0;
+  sx::compute::RigidIpcSolverStats lastStats;
+  for (auto _ : state) {
+    state.PauseTiming();
+    fixture.reset();
+    sx::compute::RigidIpcContactStage ipcStage(64);
+    sx::compute::WorldStepPipeline pipeline;
+    pipeline.addStage(ipcStage);
+    state.ResumeTiming();
+
+    fixture.world.step(executor, pipeline);
+    lastStats = ipcStage.getLastStats();
+    const bool residualOk
+        = std::isfinite(lastStats.finalEqualityResidualNorm)
+          && lastStats.finalEqualityResidualNorm <= kMaxReducedEqualityResidual;
+    const bool satisfiedNoOp = residualOk && lastStats.solverIterations == 0u
+                               && lastStats.activeArticulationConstraints >= 10u
+                               && lastStats.activeConstraints >= 1u;
+    if (!residualOk || (lastStats.failed && !satisfiedNoOp)) {
+      ++failedSteps;
+    }
+    benchmark::DoNotOptimize(fixture.torso->getTransform().data());
+    benchmark::DoNotOptimize(fixture.parts.front().getTransform().data());
+    benchmark::ClobberMemory();
+  }
+
+  state.counters["row_unb_fig_11"] = 1.0;
+  state.counters["paper_scale"] = 0.0;
+  state.counters["body_count"] = static_cast<double>(lastStats.bodyCount);
+  state.counters["dynamic_body_count"]
+      = static_cast<double>(lastStats.dynamicBodyCount);
+  state.counters["ragdoll_body_count"]
+      = static_cast<double>(1 + fixture.parts.size());
+  state.counters["revolute_joint_count"]
+      = static_cast<double>(fixture.world.getRigidBodyJointCount());
+  state.counters["active_constraints"]
+      = static_cast<double>(lastStats.activeConstraints);
+  state.counters["active_friction_constraints"]
+      = static_cast<double>(lastStats.activeFrictionConstraints);
+  state.counters["active_articulation_constraints"]
+      = static_cast<double>(lastStats.activeArticulationConstraints);
+  state.counters["solver_iterations"]
+      = static_cast<double>(lastStats.solverIterations);
+  state.counters["failed_steps"] = static_cast<double>(failedSteps);
+  state.counters["final_equality_residual_norm"]
+      = lastStats.finalEqualityResidualNorm;
+  state.counters["torso_height_m"] = fixture.torso->getTranslation().z();
+  state.counters["min_leg_ground_clearance_m"]
+      = fixture.minLegGroundClearance();
+}
+BENCHMARK(BM_Plan083CpuScene_ragdoll_reduced_world_step)
     ->Unit(benchmark::kMillisecond);
 
 BENCHMARK_MAIN();

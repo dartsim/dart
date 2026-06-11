@@ -345,7 +345,6 @@ def test_registered_world_scenes_receive_shared_replay_controls() -> None:
         "plan083_lying_flat",
         "plan083_pulley_system",
         "plan083_umbrella",
-        "plan083_ragdolls",
         "plan083_nunchaku",
         "plan083_windmill",
         "plan083_candy",
@@ -816,6 +815,7 @@ def test_plan083_cpu_corpus_placeholders_expose_status_panels() -> None:
         "plan083_hanging_bridge",
         "plan083_nunchaku",
         "plan083_precession",
+        "plan083_ragdolls",
         "plan083_terrain_vehicle",
         "plan083_windmill",
     }
@@ -942,6 +942,29 @@ def test_plan083_precession_exposes_runtime_status_panel() -> None:
         event.startswith("text:wheel ground clearance: ") for event in builder.events
     )
     assert any(event.startswith("text:spin rate: ") for event in builder.events)
+
+
+def test_plan083_ragdolls_exposes_runtime_status_panel() -> None:
+    scene = next(
+        scene
+        for scene in plan083_unified_newton_barrier.PLAN083_SCENES
+        if scene.id == "plan083_ragdolls"
+    )
+    setup = scene.build()
+    builder = _FakePanelBuilder()
+
+    assert [panel.title for panel in setup.panels] == ["PLAN-083 Ragdolls"]
+    assert setup.info["runtime_smoke_scene"] is True
+    assert setup.info["rigid_body_solver"] == "ipc"
+
+    setup.panels[0].build(builder, object())
+
+    assert "text:status: reduced runtime smoke scene" in builder.events
+    assert "text:solver: rigid IPC World.step" in builder.events
+    assert "text:reduced ragdoll bodies: 6" in builder.events
+    assert "text:revolute joints: 5" in builder.events
+    assert "text:benchmark: pixi run bm-plan083-cpu-ragdoll-packet" in builder.events
+    assert any(event.startswith("text:min leg clearance: ") for event in builder.events)
 
 
 def test_ipc_deformable_scene_exposes_diagnostics_panel() -> None:

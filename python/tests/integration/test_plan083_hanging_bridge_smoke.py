@@ -190,3 +190,35 @@ def test_precession_demo_steps_rigid_ipc_world() -> None:
     assert np.all(np.isfinite(final_transform))
     assert final_translation[0] > initial_translation[0]
     assert not np.allclose(final_transform[:3, :3], initial_transform[:3, :3])
+
+
+def test_ragdolls_demo_steps_rigid_ipc_world() -> None:
+    sx = _sx()
+    from examples.demos.scenes.plan083_unified_newton_barrier import PLAN083_SCENES
+
+    scene = next(scene for scene in PLAN083_SCENES if scene.id == "plan083_ragdolls")
+    setup = scene.build()
+    sx_world = setup.info["sx_world"]
+    torso = setup.info["torso"]
+    parts = setup.info["ragdoll_parts"]
+
+    assert setup.info["runtime_smoke_scene"] is True
+    assert sx_world.rigid_body_solver == sx.RigidBodySolver.IPC
+    assert sx_world.num_rigid_body_joints == 5
+    assert len(parts) == 5
+    assert setup.info["plan083_benchmark_command"] == (
+        "pixi run bm-plan083-cpu-ragdoll-packet"
+    )
+    assert setup.pre_step is not None
+
+    initial_time = sx_world.time
+    initial_torso = np.asarray(torso.translation, dtype=float).reshape(3).copy()
+    for _ in range(24):
+        setup.pre_step()
+
+    final_torso = np.asarray(torso.translation, dtype=float).reshape(3)
+    assert sx_world.time > initial_time
+    assert np.all(np.isfinite(final_torso))
+    assert final_torso[0] > initial_torso[0]
+    for part in parts:
+        assert np.all(np.isfinite(np.asarray(part.translation, dtype=float)))

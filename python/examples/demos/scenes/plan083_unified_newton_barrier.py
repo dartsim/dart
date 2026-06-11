@@ -22,11 +22,23 @@ _TERRAIN_WHEEL_RADIUS = 0.06
 _PRECESSION_GROUND_HALF_EXTENTS = np.array([0.55, 0.45, 0.025])
 _PRECESSION_WHEEL_RADIUS = 0.16
 _PRECESSION_WHEEL_HALF_HEIGHT = 0.035
+_RAGDOLL_GROUND_HALF_EXTENTS = np.array([0.42, 0.36, 0.025])
+_RAGDOLL_TORSO_HALF_EXTENTS = np.array([0.10, 0.07, 0.14])
+_RAGDOLL_ARM_HALF_EXTENTS = np.array([0.12, 0.025, 0.035])
+_RAGDOLL_LEG_HALF_EXTENTS = np.array([0.035, 0.04, 0.16])
+_RAGDOLL_HEAD_RADIUS = 0.055
 _TERRAIN_WHEEL_OFFSETS = (
     np.array([-0.16, -0.14, -0.10]),
     np.array([-0.16, 0.14, -0.10]),
     np.array([0.16, -0.14, -0.10]),
     np.array([0.16, 0.14, -0.10]),
+)
+_RAGDOLL_PARTS = (
+    ("head", np.array([0.00, 0.0, 0.62]), "sphere"),
+    ("left_arm", np.array([-0.19, 0.0, 0.45]), "arm"),
+    ("right_arm", np.array([0.19, 0.0, 0.45]), "arm"),
+    ("left_leg", np.array([-0.07, 0.0, 0.16]), "leg"),
+    ("right_leg", np.array([0.07, 0.0, 0.16]), "leg"),
 )
 _WINDMILL_HUB_HALF_EXTENTS = np.array([0.05, 0.05, 0.05])
 _WINDMILL_BLADE_HALF_EXTENTS = np.array([0.045, 0.22, 0.025])
@@ -678,6 +690,137 @@ def _build_precession_runtime(target: Plan083SceneTarget) -> SceneSetup:
     )
 
 
+def _build_ragdoll_runtime(target: Plan083SceneTarget) -> SceneSetup:
+    world = dart.World(
+        time_step=0.005,
+        gravity=(0.0, 0.0, -9.81),
+        rigid_body_solver=dart.RigidBodySolver.IPC,
+    )
+
+    ground = world.add_rigid_body("plan083_ragdoll_ground", position=(0.0, 0.0, -0.025))
+    ground.is_static = True
+    ground.friction = 0.8
+    ground.set_collision_shape(dart.CollisionShape.box(_RAGDOLL_GROUND_HALF_EXTENTS))
+
+    torso = world.add_rigid_body(
+        "plan083_ragdoll_torso",
+        position=(0.0, 0.0, 0.42),
+        linear_velocity=(0.04, 0.0, -0.04),
+        angular_velocity=(0.0, 0.6, 0.25),
+    )
+    torso.mass = 0.35
+    torso.is_kinematic = True
+    torso.friction = 0.7
+    torso.set_collision_shape(dart.CollisionShape.box(_RAGDOLL_TORSO_HALF_EXTENTS))
+
+    parts = []
+    for index, (name, position, shape_kind) in enumerate(_RAGDOLL_PARTS):
+        part = world.add_rigid_body(
+            f"plan083_ragdoll_{name}",
+            position=tuple(position),
+            linear_velocity=(0.04, 0.0, -0.04),
+            angular_velocity=(0.0, 0.6, 0.25),
+        )
+        part.mass = 0.08 if shape_kind == "sphere" else 0.12
+        part.is_kinematic = True
+        part.friction = 0.8
+        if shape_kind == "sphere":
+            part.set_collision_shape(dart.CollisionShape.sphere(_RAGDOLL_HEAD_RADIUS))
+        elif shape_kind == "arm":
+            part.set_collision_shape(dart.CollisionShape.box(_RAGDOLL_ARM_HALF_EXTENTS))
+        else:
+            part.set_collision_shape(dart.CollisionShape.box(_RAGDOLL_LEG_HALF_EXTENTS))
+        world.add_rigid_body_revolute_joint(
+            f"plan083_ragdoll_joint_{index}",
+            torso,
+            part,
+            axis=(0.0, 0.0, 1.0) if shape_kind == "sphere" else (0.0, 1.0, 0.0),
+        )
+        parts.append(part)
+
+    world.enter_simulation_mode()
+
+    bridge = WorldRenderBridge(world, name="plan083_ragdoll_runtime")
+    bridge.add_rigid_body_visual(
+        ground,
+        dart.BoxShape(_full(_RAGDOLL_GROUND_HALF_EXTENTS)),
+        (0.34, 0.43, 0.32),
+        name="plan083_ragdoll_ground_visual",
+    )
+    bridge.add_rigid_body_visual(
+        torso,
+        dart.BoxShape(_full(_RAGDOLL_TORSO_HALF_EXTENTS)),
+        (0.22, 0.42, 0.76),
+        name="plan083_ragdoll_torso_visual",
+    )
+    for part, (name, _, shape_kind) in zip(parts, _RAGDOLL_PARTS):
+        if shape_kind == "sphere":
+            shape = dart.SphereShape(_RAGDOLL_HEAD_RADIUS)
+        elif shape_kind == "arm":
+            shape = dart.BoxShape(_full(_RAGDOLL_ARM_HALF_EXTENTS))
+        else:
+            shape = dart.BoxShape(_full(_RAGDOLL_LEG_HALF_EXTENTS))
+        bridge.add_rigid_body_visual(
+            part,
+            shape,
+            (0.72, 0.44, 0.26) if shape_kind != "sphere" else (0.82, 0.64, 0.44),
+            name=f"plan083_ragdoll_{name}_visual",
+        )
+    bridge.sync()
+
+    torso_height_history: deque[float] = deque(maxlen=120)
+    leg_clearance_history: deque[float] = deque(maxlen=120)
+
+    def build_panel(builder: object, context: object) -> None:
+        torso_position = np.asarray(torso.translation, dtype=float).reshape(3)
+        leg_clearances = [
+            float(np.asarray(part.translation, dtype=float).reshape(3)[2])
+            - _RAGDOLL_LEG_HALF_EXTENTS[2]
+            for part, (_, _, shape_kind) in zip(parts, _RAGDOLL_PARTS)
+            if shape_kind == "leg"
+        ]
+        min_clearance = min(leg_clearances)
+        torso_height_history.append(float(torso_position[2]))
+        leg_clearance_history.append(min_clearance)
+
+        builder.text("status: reduced runtime smoke scene")
+        builder.text("solver: rigid IPC World.step")
+        builder.text(f"row: {', '.join(target.row_ids)}")
+        builder.text(f"rigid bodies: {world.num_rigid_bodies}")
+        builder.text(f"reduced ragdoll bodies: {1 + len(parts)}")
+        builder.text(f"revolute joints: {world.num_rigid_body_joints}")
+        builder.text(f"world time: {world.time:.3f} s")
+        builder.text(f"torso height: {torso_position[2]:.3f} m")
+        builder.text(f"min leg clearance: {min_clearance:.4f} m")
+        builder.text(f"benchmark: {target.benchmark_command}")
+        builder.text(f"limitation: {target.limitation}")
+        builder.separator()
+        bridge.build_control_panel(builder, context)
+        if torso_height_history:
+            builder.separator()
+            builder.plot_lines("Torso height", list(torso_height_history))
+            builder.plot_lines("Min leg clearance", list(leg_clearance_history))
+
+    info = _target_info(target)
+    info.update(
+        {
+            "sx_world": world,
+            "runtime_smoke_scene": True,
+            "rigid_body_solver": "ipc",
+            "ground": ground,
+            "torso": torso,
+            "ragdoll_parts": tuple(parts),
+        }
+    )
+    return SceneSetup(
+        world=bridge.render_world,
+        pre_step=bridge.pre_step,
+        force_drag=bridge.force_drag,
+        panels=[ScenePanel(target.title, build_panel)],
+        info=info,
+    )
+
+
 def _scene(target: Plan083SceneTarget) -> PythonDemoScene:
     if target.scene_id == "plan083_hanging_bridge":
         build = lambda target=target: _build_hanging_bridge_runtime(target)
@@ -685,6 +828,8 @@ def _scene(target: Plan083SceneTarget) -> PythonDemoScene:
         build = lambda target=target: _build_nunchaku_runtime(target)
     elif target.scene_id == "plan083_precession":
         build = lambda target=target: _build_precession_runtime(target)
+    elif target.scene_id == "plan083_ragdolls":
+        build = lambda target=target: _build_ragdoll_runtime(target)
     elif target.scene_id == "plan083_terrain_vehicle":
         build = lambda target=target: _build_terrain_vehicle_runtime(target)
     elif target.scene_id == "plan083_windmill":
@@ -767,12 +912,12 @@ PLAN083_SCENE_TARGETS: tuple[Plan083SceneTarget, ...] = (
         title="PLAN-083 Ragdolls",
         row_ids=("unb-fig-11",),
         category="PLAN-083 Robot Corpus",
-        summary="Planned many-ragdoll cone-twist stress scene.",
-        target="Paper Fig. 11 / Table 2 60-ragdoll benchmark scene.",
+        summary="Reduced six-body ragdoll smoke scene running through World::step.",
+        target="Paper Fig. 11 / Table 2 60-ragdoll benchmark scene; reduced to one revolute-chain ragdoll and flat ground contact for runtime smoke evidence.",
         smoke_command="pixi run py-demos -- --scene plan083_ragdolls --headless --frames 4",
         visual_command="pixi run py-demo-capture -- --scene plan083_ragdolls --frames 240 --width 1280 --height 720",
-        benchmark_command="pixi run bm bm_plan083_cpu_scene_corpus -- --benchmark_filter=ragdolls",
-        limitation="Waiting for runtime cone-twist constraints and corpus assets.",
+        benchmark_command="pixi run bm-plan083-cpu-ragdoll-packet",
+        limitation="Reduced six-body revolute-chain smoke and CPU packet only; cone-twist joints, 60-ragdoll scale, and Table 2 timing remain planned.",
     ),
     Plan083SceneTarget(
         scene_id="plan083_nunchaku",

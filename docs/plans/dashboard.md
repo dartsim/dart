@@ -289,8 +289,8 @@ its own line so status updates remain git-history friendly.
   contact obstacles, and runs a reduced hanging-bridge py-demo through
   `World::step` plus headless capture. The follow-on
   `feature/newton-barrier-corpus-evidence` branch adds reduced hanging-bridge,
-  terrain vehicle, nunchaku, windmill, and precession CPU packets without claiming
-  paper-scale parity. The completion audit still records PLAN-083 as incomplete
+  terrain vehicle, ragdoll, nunchaku, windmill, and precession CPU packets
+  without claiming paper-scale parity. The completion audit still records PLAN-083 as incomplete
   while planned manifest, CPU corpus, and non-PSD GPU parity rows remain, so
   dev-task retirement needs maintainer direction before deletion.
 - Gate: Unified Newton-barrier progress is not complete until every cited

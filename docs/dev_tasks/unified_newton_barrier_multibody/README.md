@@ -188,6 +188,8 @@
         status panel while keeping Bullet/reference comparison future work.
   - [x] Add a reduced precession wheel CPU scene packet and runtime status
         panel while keeping angular-velocity sweeps future work.
+  - [x] Add a reduced ragdoll CPU scene packet and runtime status panel while
+        keeping cone-twist joints and 60-ragdoll scale future work.
   - [ ] Add paper-scale CPU packets only after the corresponding scene assets,
         mixed-domain stepping, and comparison baselines exist.
 
@@ -204,7 +206,7 @@ storage, or backend resources as public API.
 - No public API changes.
 - No dartpy binding changes.
 - No paper-scale runtime scene reproduction or fixture asset migration beyond
-  the reduced hanging-bridge, terrain vehicle, nunchaku, windmill, and
+  the reduced hanging-bridge, terrain vehicle, ragdoll, nunchaku, windmill, and
   precession smoke scenes, launchable planned py-demo placeholders, and checked
   corpus manifest.
 - No rigid curved-trajectory CCD move.
@@ -445,6 +447,7 @@ Runtime-wiring branch-local evidence:
 - `LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe pixi run py-demo-capture -- --scene plan083_hanging_bridge --frames 4 --width 320 --height 240 --output-dir /tmp/dart_plan083_hanging_bridge_capture`
 - `pixi run bm-plan083-cpu-hanging-bridge-packet`
 - `pixi run bm-plan083-cpu-nunchaku-packet`
+- `pixi run bm-plan083-cpu-ragdoll-packet`
 - `pixi run python scripts/check_plan083_cpu_scene_corpus.py`
 - `pixi run python scripts/check_plan083_completion_audit.py`
 

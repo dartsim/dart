@@ -134,6 +134,31 @@ def _precession_packet(**overrides):
     return {"benchmarks": [row]}
 
 
+def _ragdoll_packet(**overrides):
+    row = {
+        "name": "BM_Plan083CpuScene_ragdoll_reduced_world_step_median",
+        "run_name": "BM_Plan083CpuScene_ragdoll_reduced_world_step",
+        "aggregate_name": "median",
+        "real_time": 7.0,
+        "cpu_time": 7.0,
+        "time_unit": "ms",
+        "body_count": 7,
+        "dynamic_body_count": 6,
+        "ragdoll_body_count": 6,
+        "revolute_joint_count": 5,
+        "active_constraints": 12,
+        "active_friction_constraints": 12,
+        "active_articulation_constraints": 10,
+        "solver_iterations": 3,
+        "failed_steps": 0,
+        "final_equality_residual_norm": 0.0,
+        "torso_height_m": 0.42,
+        "min_leg_ground_clearance_m": 0.0,
+    }
+    row.update(overrides)
+    return {"benchmarks": [row]}
+
+
 def test_plan083_cpu_scene_packet_accepts_reduced_hanging_bridge() -> None:
     module = _load_module()
 
@@ -234,6 +259,27 @@ def test_plan083_cpu_scene_packet_accepts_reduced_precession() -> None:
     assert row["wall_time_ns"] == 6.0e6
 
 
+def test_plan083_cpu_scene_packet_accepts_reduced_ragdoll() -> None:
+    module = _load_module()
+
+    packet = module.make_packet(
+        _ragdoll_packet(),
+        max_equality_residual=1e-8,
+        scene="ragdoll_reduced",
+    )
+
+    row = packet["plan083_cpu_scene_packet"]
+    assert row["row_id"] == "unb-fig-11"
+    assert row["scene_id"] == "plan083_ragdolls"
+    assert row["paper_scale"] is False
+    assert row["body_count"] == 7
+    assert row["dynamic_body_count"] == 6
+    assert row["ragdoll_body_count"] == 6
+    assert row["revolute_joint_count"] == 5
+    assert row["active_articulation_constraints"] == 10
+    assert row["wall_time_ns"] == 7.0e6
+
+
 def test_plan083_cpu_scene_packet_rejects_failed_bridge_step() -> None:
     module = _load_module()
 
@@ -312,4 +358,15 @@ def test_plan083_cpu_scene_packet_rejects_precession_without_spin() -> None:
             _precession_packet(spin_rate_rad_s=0.0),
             max_equality_residual=1e-8,
             scene="precession",
+        )
+
+
+def test_plan083_cpu_scene_packet_rejects_ragdoll_without_ground_contact() -> None:
+    module = _load_module()
+
+    with pytest.raises(module.Plan083CpuScenePacketError, match="ground-contact"):
+        module.make_packet(
+            _ragdoll_packet(active_constraints=0),
+            max_equality_residual=1e-8,
+            scene="ragdoll_reduced",
         )
