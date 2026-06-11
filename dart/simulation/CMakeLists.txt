@@ -97,6 +97,8 @@ if(DART_ENABLE_EXPERIMENTAL_CUDA)
     compute/cuda/contact_candidate_filter_cuda.cu
     compute/cuda/lcp_jacobi_batch_cuda.cpp
     compute/cuda/lcp_jacobi_batch_cuda.cu
+    compute/cuda/newton_assembly_solve_cuda.cpp
+    compute/cuda/newton_assembly_solve_cuda.cu
     compute/cuda/rigid_body_state_batch_cuda.cpp
     compute/cuda/rigid_body_state_batch_cuda.cu
     compute/cuda/deformable_psd_projection_cuda.cpp

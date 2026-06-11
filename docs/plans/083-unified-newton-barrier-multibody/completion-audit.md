@@ -18,7 +18,7 @@ moves entirely into durable plan sidecars.
 | ------------------------ | --------- | --------------------------------------------- |
 | `paper-deck-manifest.md` | 48        | `in-progress`: 45, `planned`: 3               |
 | `cpu-scene-corpus.json`  | 26        | `in-progress`: 25, `not-applicable`: 1        |
-| `gpu-parity-packet.json` | 6         | `in-progress`: 3, `measured`: 1, `planned`: 2 |
+| `gpu-parity-packet.json` | 6         | `in-progress`: 4, `measured`: 1, `planned`: 1 |
 
 ## Phase 8 Checklist
 
@@ -27,7 +27,7 @@ moves entirely into durable plan sidecars.
 | `paper-deck-manifest.md` has zero unclassified rows           | Pass         | Every manifest row has an explicit status. The current statuses are `planned` or `in-progress`; none are unclassified.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | Every non-planned row links to concrete evidence or rationale | Partial      | In-progress rows name branch-local artifacts, tests, packets, or limitations. Runtime wiring now covers point/hinge constraints, BDF-2, deformable surface obstacles, reduced lying-flat, hanging-bridge, pulley, umbrella, terrain vehicle, ragdoll, nunchaku, nunchaku scaling, windmill, Candy, precession, reduced timing-breakdown packets, reduced Table 2 setup/statistics packets, the sparse equality change-of-variable rigid IPC path, reduced ABD house-of-cards and wrecking-ball runtime-step packets, reduced ABD chain-net runtime-step packets, and reduced ABD gears/Bullet comparison runtime-step packets, but not paper-scale behavior or performance parity. |
 | CPU packets exist for performance rows                        | Partial      | `cpu-scene-corpus.json` records commands and artifact paths for every row, but many entries remain reduced packets or placeholders rather than paper-scale reproductions, accepted Bullet/reference comparisons, or GPU parity evidence.                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| GPU packets exist for GPU claims                              | Blocked      | `gpu-parity-packet.json` has a measured PSD projection packet plus in-progress point-triangle contact-stencil, endpoint-linear point-triangle CCD/line-search, and scalar barrier/friction local-kernel parity packets, but two rows remain `planned` and no scene-level GPU speed claim exists.                                                                                                                                                                                                                                                                                                                                                                                   |
+| GPU packets exist for GPU claims                              | Blocked      | `gpu-parity-packet.json` has a measured PSD projection packet plus in-progress point-triangle contact-stencil, endpoint-linear point-triangle CCD/line-search, scalar barrier/friction local-kernel, and reduced diagonal assembly/solve parity packets, but the scene-level row remains `planned` and no scene-level GPU speed claim exists.                                                                                                                                                                                                                                                                                                                                      |
 | Public headers and dartpy remain backend-neutral              | Pass         | Phase 8 validation keeps API-boundary gates in the local evidence set; no public CUDA/backend/solver-registry API is added by this audit.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | Durable docs own landed architecture                          | Partial      | Durable plan sidecars own the manifest, CPU corpus, GPU packet, and this audit. The temporary dev-task folder remains active because acceptance is unmet.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | Temporary dev-task folder retired                             | Blocked      | Retirement requires maintainer direction because material planned work remains.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
@@ -50,8 +50,9 @@ moves entirely into durable plan sidecars.
   numbers. Reduced ABD gears/Bullet packets now exist, but accepted
   Bullet/reference baselines and paper-scale assets remain unproven.
 - Private GPU packets do not yet prove same-scene CPU/GPU speedups for contact
-  candidates, full CCD/line search, local barrier/friction kernels, assembly,
-  linear solve, or scene-level workloads. The PSD projection local-kernel row is
+  candidates, full CCD/line search, full local barrier/friction kernels, full
+  sparse assembly/linear solve, or scene-level workloads. The PSD projection
+  local-kernel row is
   measured separately. The point-triangle contact-stencil filter packet is
   in-progress because parity exists for preassembled stencils but broad-phase,
   edge-edge, runtime scene filtering, and speedup remain unproven. The
@@ -62,7 +63,11 @@ moves entirely into durable plan sidecars.
   in-progress because parity exists for clamped-log barrier derivatives and
   smoothed friction norm/work only, but primitive distance gradients,
   tangent-basis construction, Hessian assembly, PSD coupling, runtime rows, and
-  speedup remain unproven.
+  speedup remain unproven. The reduced assembly/solve packet is in-progress
+  because parity exists for diagonal per-body row assembly and independent
+  regularized Newton steps only, but off-diagonal sparse blocks, equality
+  reduction, global factorization, runtime scene rows, and speedup remain
+  unproven.
 - Launchable py-demo placeholders exist, and the reduced lying-flat,
   hanging-bridge, pulley, umbrella, terrain vehicle, ragdoll, nunchaku,
   windmill, Candy, and precession scenes have local headless smoke/capture

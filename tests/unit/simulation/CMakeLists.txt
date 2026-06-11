@@ -187,6 +187,12 @@ if(DART_SIMULATION_BUILD_TESTS)
       LABEL simulation-cuda
     )
     dart_add_simulation_test(
+      test_newton_assembly_solve_cuda
+      ${CMAKE_CURRENT_SOURCE_DIR}/cuda/test_newton_assembly_solve_cuda.cpp
+      LIBRARY ${PROJECT_NAME}-simulation-cuda
+      LABEL simulation-cuda
+    )
+    dart_add_simulation_test(
       test_contact_candidate_filter_cuda
       ${CMAKE_CURRENT_SOURCE_DIR}/cuda/test_contact_candidate_filter_cuda.cpp
       LIBRARY ${PROJECT_NAME}-simulation-cuda

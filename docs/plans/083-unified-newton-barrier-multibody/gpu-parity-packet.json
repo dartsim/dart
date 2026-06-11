@@ -10,15 +10,15 @@
   "policy": {
     "row_gate": "Measured rows require same-scene CPU/GPU parity, explicit tolerance, setup/transfer/readback/kernel/solve timing, and speedup against the DART CPU path.",
     "public_api": "No public CUDA, stream, device, memory-pool, backend-task, solver-registry, or package-surface exposure is allowed by this packet.",
-    "ordering": "Promote private GPU evidence in the roadmap order: stencils/candidates, CCD/line search, local barrier/friction kernels and PSD projection, then assembly/linear solve after CPU packet shape is stable.",
+    "ordering": "Promote private GPU evidence in the roadmap order: stencils/candidates, CCD/line search, local barrier/friction kernels, PSD projection, assembly/linear solve, then scene-level parity only after the private packet rows are stable.",
     "limitation_policy": "Rows that cannot be measured yet stay planned or in-progress with a concrete blocker instead of a speed claim."
   },
   "summary": {
     "row_count": 6,
     "status_counts": {
-      "in-progress": 3,
+      "in-progress": 4,
       "measured": 1,
-      "planned": 2
+      "planned": 1
     }
   },
   "rows": [
@@ -159,9 +159,9 @@
       "row_id": "assembly-linear-solve",
       "roadmap_item": "assembly and linear-solve paths",
       "owner": "PLAN-083 + PLAN-030",
-      "status": "planned",
-      "cpu_evidence_command": "not-ready: CPU scene packet shape and sparse Newton assembly rows are not stable yet",
-      "gpu_evidence_command": "not-ready: no private PLAN-083 GPU assembly or linear-solve path has landed",
+      "status": "in-progress",
+      "cpu_evidence_command": "pixi run -e cuda bm-newton-assembly-solve-packet",
+      "gpu_evidence_command": "pixi run -e cuda bm-newton-assembly-solve-packet",
       "parity_evidence_artifact": ".benchmark_results/plan083/gpu/assembly_linear_solve_parity.json",
       "benchmark_profile_artifact": ".benchmark_results/plan083/gpu/assembly_linear_solve_benchmark.json",
       "same_scene_policy": "Use identical sparse matrices, right-hand sides, pivots, solver tolerances, and deterministic reduction order on CPU and GPU.",
@@ -169,8 +169,28 @@
       "timing_policy": "Report setup, transfer, assembly kernel, linear solve, readback, CPU assembly, and CPU solve timing separately.",
       "speedup_policy": "Require >=1.25x over the matched DART CPU sparse Newton packet before recording a go claim.",
       "public_api_policy": "No public CUDA or backend exposure; any residency or solver owner must stay behind private implementation boundaries.",
-      "limitation_status": "Blocked until CPU scene packets and sparse Newton assembly rows are stable enough to compare.",
-      "notes_or_gap": "The roadmap explicitly defers assembly and linear solve until after CPU packet shape is stable."
+      "limitation_status": "Private reduced diagonal assembly/solve parity packet exists, but it covers per-body diagonal row assembly plus independent regularized Newton steps only. Off-diagonal sparse blocks, equality reduction, global sparse factorization, runtime scene assembly, and the speedup gate remain future evidence.",
+      "notes_or_gap": "The packet measured max_result_abs_error=1.1102230246251565e-16 and residual_norm=3.0266928272275607e-15 for 65536 rows, 8192 bodies, and 49152 DOFs on 2026-06-11, but speedup was 0.2803845976991675x against the CPU assembly/solve row, so this remains in-progress rather than measured.",
+      "same_scene_cpu_gpu": true,
+      "row_count": 65536,
+      "body_count": 8192,
+      "dof_count": 49152,
+      "active_dof_count": 49152,
+      "max_result_abs_error": 1.1102230246251565e-16,
+      "result_abs_error_tolerance": 1e-10,
+      "residual_norm": 3.0266928272275607e-15,
+      "residual_norm_tolerance": 1e-8,
+      "step_norm": 10.69230682957083,
+      "speedup": 0.2803845976991675,
+      "min_speedup": 1.25,
+      "timing_ns": {
+        "setup": 3127319.0,
+        "host_to_device": 2644187.0,
+        "kernel": 384885.0,
+        "solve": 27199.0,
+        "device_to_host": 904255.0,
+        "readback": 0.0
+      }
     },
     {
       "row_id": "scene-parity-speedup",

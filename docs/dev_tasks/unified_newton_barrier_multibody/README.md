@@ -172,6 +172,10 @@
         CPU/GPU local-output parity; keep the row in-progress because primitive
         distance gradients, tangent-basis construction, Hessian assembly, PSD
         coupling, runtime contact rows, and speedup remain unproven.
+  - [x] Add a private reduced diagonal assembly/solve packet with exact
+        CPU/GPU step parity; keep the row in-progress because off-diagonal
+        sparse blocks, equality reduction, global factorization, runtime scene
+        rows, and speedup remain unproven.
 - [ ] Implementation-roadmap Phase 8: complete the PLAN-083 audit and retire
       temporary task state.
   - [x] Add a checked completion audit sidecar that records the current
@@ -292,12 +296,12 @@ storage, or backend resources as public API.
 
 1. Use merged PRs #2960, #2961, #2970, and #2971 as the baseline for remaining
    work; do not reopen the old phase-scoped stack.
-2. Continue private GPU barrier/friction evidence on
-   `simx/plan083-gpu-barrier-friction-packet` by keeping the landed packet
-   limited to scalar clamped-log barrier derivatives and smoothed friction
-   norm/work. Do not mark the row measured until primitive distance gradients,
-   tangent-basis construction, Hessian assembly, PSD coupling, runtime contact
-   rows, and speedup have concrete evidence.
+2. Continue private GPU scene-level parity only after
+   `simx/plan083-gpu-assembly-solve-packet` lands. Keep the landed
+   assembly/solve packet limited to reduced diagonal row assembly and
+   independent regularized Newton steps; do not mark the row measured until
+   off-diagonal sparse blocks, equality reduction, global factorization,
+   runtime scene rows, and speedup have concrete evidence.
 3. Use the reduced ABD runtime-step and GPU contact-stencil packets only as
    internal runtime evidence;
    broader ABD CPU packets still require scene-level runtime residuals, scene
@@ -365,6 +369,13 @@ Phase 7 barrier/friction local-kernel packet evidence:
 - `pixi run -e cuda build-cuda`
 - `pixi run -e cuda test-cuda`
 - `pixi run -e cuda bm-plan083-gpu-barrier-friction-packet`
+
+Phase 7 reduced assembly/solve packet evidence:
+
+- `pixi run python -m pytest tests/test_newton_assembly_solve_packet.py`
+- `pixi run -e cuda build-cuda`
+- `pixi run -e cuda test-cuda`
+- `pixi run -e cuda bm-newton-assembly-solve-packet`
 
 Phase 1 local evidence:
 

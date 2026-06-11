@@ -281,8 +281,8 @@ its own line so status updates remain git-history friendly.
 - Dimension: Algorithm extensibility
 - Next step: Continue the active
   [`../dev_tasks/unified_newton_barrier_multibody/`](../dev_tasks/unified_newton_barrier_multibody/)
-  private GPU barrier/friction follow-up on
-  `simx/plan083-gpu-barrier-friction-packet`. PR #2960 landed
+  private GPU assembly/solve follow-up on
+  `simx/plan083-gpu-assembly-solve-packet`. PR #2960 landed
   implementation-roadmap Phases 3-8; PR #2961 measured the private GPU PSD
   projection packet, added the Fig. 17 barrier-force diagnostic, and aligned
   articulation-only figure rows with landed private diagnostics; PR #2970
@@ -305,10 +305,12 @@ its own line so status updates remain git-history friendly.
   scene-level line-search feasibility as future evidence. The current follow-up
   adds scalar barrier/friction local-kernel parity, while keeping primitive
   gradients, tangent-basis construction, Hessian assembly, PSD coupling,
-  runtime contact rows, and speedup as future evidence. The completion audit
-  still records PLAN-083 as incomplete while planned manifest and non-PSD GPU
-  parity rows remain, so dev-task retirement needs maintainer direction before
-  deletion.
+  runtime contact rows, and speedup as future evidence. The current follow-up
+  adds reduced diagonal assembly/solve parity, while keeping off-diagonal sparse blocks,
+  equality reduction, global factorization, runtime scene rows, and speedup as
+  future evidence. The completion audit still records PLAN-083 as incomplete
+  while planned manifest and scene-level GPU parity rows remain, so dev-task
+  retirement needs maintainer direction before deletion.
 - Gate: Unified Newton-barrier progress is not complete until every cited
   paper/deck figure, unit test, benchmark table, and comparison scene is mapped
   to DART-owned tests, py-demos examples, benchmark/profiling packets, CPU and

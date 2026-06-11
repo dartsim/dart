@@ -167,8 +167,9 @@ The follow-up PSD projection packet slice adds
 `pixi run -e cuda bm-plan083-gpu-psd-packet` measured the 4096-block 12x12 PSD
 row with max error `2.4868995751603507e-14` and `4.451557656446166x` speedup
 over the CPU reference. This moves only the local PSD projection row to
-`measured`; contact candidates, CCD/line search, barrier/friction kernels,
-assembly/solve, and scene-level GPU speedups remain planned.
+`measured`; contact candidates, CCD/line search, barrier/friction kernels, and
+assembly/solve now have in-progress private packets, while scene-level GPU
+speedups remain planned.
 
 The follow-up barrier-force diagnostic slice adds
 `NewtonBarrierPrimitives.BarrierForceCurveCapturesKappaSensitivity`, which
@@ -319,22 +320,22 @@ build/CTest entries.
 
 ## Current Branch
 
-`simx/plan083-gpu-barrier-friction-packet` - continues private GPU parity
-evidence after the CCD/line-search packet branch. This branch adds a private
-scalar barrier/friction local-kernel packet, CUDA unit test, benchmark smoke,
-and packet writer for clamped-log scalar barrier derivatives plus smoothed
-friction norm/work only. Keep the packet row `in-progress`: primitive distance
-gradients, tangent-basis construction, Hessian assembly, PSD coupling, runtime
-contact rows, and speedup remain future evidence.
+`simx/plan083-gpu-assembly-solve-packet` - continues private GPU parity
+evidence after the barrier/friction packet branch. This branch adds a private
+reduced diagonal assembly/solve packet, CUDA unit test, benchmark smoke, and
+packet writer for per-body diagonal row assembly plus independent regularized
+Newton steps only. Keep the packet row `in-progress`: off-diagonal sparse
+blocks, equality reduction, global factorization, runtime scene rows, and
+speedup remain future evidence.
 
 ## Immediate Next Step
 
-Finish and review `simx/plan083-gpu-barrier-friction-packet`, then continue the
-remaining private GPU rows in roadmap order: assembly/linear solve and
-scene-level parity. Leave the dev-task folder active because PLAN-083
-acceptance criteria are still unmet; if the task later moves out of this
-folder, get maintainer direction before deleting it and keep the remaining
-planned CPU/GPU/scene rows in durable sidecars.
+Finish and review `simx/plan083-gpu-assembly-solve-packet`, then continue the
+remaining private GPU row in roadmap order: scene-level parity/speedup. Leave
+the dev-task folder active because PLAN-083 acceptance criteria are still unmet;
+if the task later moves out of this folder, get maintainer direction before
+deleting it and keep the remaining planned CPU/GPU/scene rows in durable
+sidecars.
 
 ## Context That Would Be Lost
 
