@@ -784,7 +784,12 @@ Follow-up progress after PR #2956:
   reserves use and release the provided free allocator. The same detail-solver
   path now constructs projected-Newton result assembly body-offset, active
   constraint, and active friction-constraint vectors with that allocator and
-  preserves the destination allocator across repeated result assignments.
+  preserves the destination allocator across repeated result assignments. After
+  the post-#2956 main merge added rigid/deformable mixed-domain candidate
+  diagnostics, the same stage scratch now reuses allocator-backed BDF2 history,
+  articulation-input, mixed-domain surface payload, candidate, edge, and AABB
+  scratch; the focused custom-stage prepare gate covers a mixed
+  rigid/deformable surface shape with zero global-heap allocation.
 - The deformable stage scratch follow-up routes the stage-owned static-ground
   barrier, sphere/box/capsule obstacle, deformable surface-snapshot, static
   rigid surface-CCD snapshot, and moving rigid surface-CCD snapshot vectors

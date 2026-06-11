@@ -7,6 +7,15 @@ active HMM Phase 4/5 continuation is on
 `pr/hmm-phase45-follow-up-clean`, based on `origin/main` after PR #2956
 landed.
 
+The latest post-merge slice covers the rigid IPC mixed-domain path that arrived
+from `origin/main`: mixed rigid/deformable surface preparation now keeps
+allocator-backed BDF2 history, articulation input, mixed-domain surface payload,
+candidate, edge, and AABB scratch under the stage's borrowed World free
+allocator. The existing rigid IPC custom-stage allocator test now prepares a
+mixed rigid/deformable surface shape under the global heap counter and verifies
+zero global heap allocation while the relevant reserves grow from the provided
+free-list allocator.
+
 Latest allocator-policy work kept the free-list persistent registry policy
 unchanged and narrowed frame-backed STL bake storage instead: `FrameStlAllocator`
 now sends scalar arrays through the dense 32-byte frame fast path and reserves

@@ -604,7 +604,11 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     and line-search calls reuse surface-pair/triplet scratch, including the
     lagged-friction barrier pass. The rigid IPC contact stage now uses the
     caller-owned projected-Newton solve overload so per-solve surface candidate
-    buffers persist in stage scratch across steps.
+    buffers persist in stage scratch across steps. Mixed rigid/deformable IPC
+    surface preparation now also routes BDF2 history, articulation input,
+    mixed-domain surface payload, candidate, edge, and AABB scratch through the
+    stage's World allocator and has a focused global-heap no-allocation prepare
+    guard.
     The variational multibody stage now reuses baked inverse-dynamics scratch
     for its initial-guess bias query instead of calling the public
     return-by-value helper on same-shape steps. It also reuses baked dense

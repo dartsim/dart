@@ -8763,7 +8763,7 @@ void applyRigidIpcBdf2DynamicsTerms(
 
 //==============================================================================
 template <typename RuntimeBodyVector>
-void collectRigidIpcRuntimeBodies(
+std::size_t collectRigidIpcRuntimeBodies(
     const World& world,
     RigidIpcSolverStats& stats,
     RuntimeBodyVector& bodies,
@@ -8846,7 +8846,7 @@ void collectRigidIpcRuntimeBodies(
     }
     ++outputCount;
   }
-  bodies.resize(outputCount);
+  return outputCount;
 }
 
 //==============================================================================
@@ -8858,13 +8858,17 @@ bool appendRigidIpcDeformableSurface(
     double frictionCoefficient,
     RigidIpcSolverStats& stats,
     RuntimeBodyVector& bodies,
+    std::size_t& outputCount,
     common::MemoryAllocator* payloadAllocator)
 {
   if (state.positions.empty() || topology.surfaceTriangles.empty()) {
     return false;
   }
 
-  std::vector<Eigen::Vector3i> triangles;
+  using TriangleAllocator = common::StlAllocator<Eigen::Vector3i>;
+  std::vector<Eigen::Vector3i, TriangleAllocator> triangles{
+      payloadAllocator != nullptr ? TriangleAllocator{*payloadAllocator}
+                                  : TriangleAllocator{}};
   triangles.reserve(topology.surfaceTriangles.size());
   for (const auto& triangle : topology.surfaceTriangles) {
     if (triangle.nodeA >= state.positions.size()
@@ -8891,13 +8895,15 @@ bool appendRigidIpcDeformableSurface(
     return false;
   }
 
-  appendRigidIpcRuntimeBody(bodies, payloadAllocator);
-  RigidIpcRuntimeBody& body = bodies.back();
+  if (outputCount == bodies.size()) {
+    appendRigidIpcRuntimeBody(bodies, payloadAllocator);
+  }
+  RigidIpcRuntimeBody& body = bodies[outputCount];
   resetRigidIpcRuntimeBodyPreservingSurface(body);
   body.entity = entity;
   body.hasSupportedSurface = true;
   body.surfaceIndex = stats.surfaceCount;
-  body.surface.body = bodies.size() - 1u;
+  body.surface.body = outputCount;
   body.surface.pose = sxdetail::RigidIpcPose{};
   body.surface.vertices.assign(state.positions.begin(), state.positions.end());
   body.surface.triangles.assign(triangles.begin(), triangles.end());
@@ -8908,6 +8914,7 @@ bool appendRigidIpcDeformableSurface(
                                          : 0.0;
   ++stats.surfaceCount;
   ++stats.mixedDomainDeformableSurfaceCount;
+  ++outputCount;
   return true;
 }
 
@@ -8917,6 +8924,7 @@ void appendRigidIpcDeformableSurfaces(
     const World& world,
     RigidIpcSolverStats& stats,
     RuntimeBodyVector& bodies,
+    std::size_t& outputCount,
     common::MemoryAllocator* payloadAllocator)
 {
   const auto& registry = dart::simulation::detail::registryOf(world);
@@ -8937,21 +8945,23 @@ void appendRigidIpcDeformableSurfaces(
         material.frictionCoefficient,
         stats,
         bodies,
+        outputCount,
         payloadAllocator);
   }
+  bodies.resize(outputCount);
 }
 
 //==============================================================================
-std::vector<Eigen::Vector3d> rigidIpcSurfaceWorldVertices(
+void assignRigidIpcSurfaceWorldVertices(
     const sxdetail::RigidIpcBarrierSurface& surface,
-    const sxdetail::RigidIpcPose& pose)
+    const sxdetail::RigidIpcPose& pose,
+    auto& vertices)
 {
-  std::vector<Eigen::Vector3d> vertices;
+  vertices.clear();
   vertices.reserve(surface.vertices.size());
   for (const Eigen::Vector3d& vertex : surface.vertices) {
     vertices.push_back(sxdetail::transformRigidIpcPoint(vertex, pose));
   }
-  return vertices;
 }
 
 //==============================================================================
@@ -8961,7 +8971,8 @@ void collectRigidIpcMixedDomainCandidateStats(
     const RuntimeBodyVector& bodies,
     const double activationDistance,
     RigidIpcSolverStats& stats,
-    MixedDomainSurfaceVector& surfaces)
+    MixedDomainSurfaceVector& surfaces,
+    common::MemoryAllocator* payloadAllocator)
 {
   if (stats.mixedDomainDeformableSurfaceCount == 0u) {
     stats.mixedDomainSurfaceCount = 0u;
@@ -8971,8 +8982,8 @@ void collectRigidIpcMixedDomainCandidateStats(
     return;
   }
 
-  surfaces.clear();
   surfaces.reserve(bodies.size());
+  std::size_t outputCount = 0u;
   for (std::size_t i = 0; i < bodies.size(); ++i) {
     const RigidIpcRuntimeBody& body = bodies[i];
     if (!body.hasSupportedSurface) {
@@ -8982,23 +8993,36 @@ void collectRigidIpcMixedDomainCandidateStats(
     const bool deformableSurface
         = body.entity != entt::null
           && registry.all_of<comps::DeformableBodyTag>(body.entity);
-    nb::MixedDomainSurface surface;
+    if (outputCount == surfaces.size()) {
+      if (payloadAllocator != nullptr) {
+        surfaces.emplace_back(*payloadAllocator);
+      } else {
+        surfaces.emplace_back();
+      }
+    }
+    nb::MixedDomainSurface& surface = surfaces[outputCount];
+    surface.startVertices.clear();
+    surface.endVertices.clear();
+    surface.edges.clear();
+    surface.triangles.clear();
     surface.domain = deformableSurface ? nb::MixedDomainType::Deformable
                                        : nb::MixedDomainType::Rigid;
     surface.domainInstance = i;
     surface.active = true;
     surface.dynamic = body.surface.dynamic;
     surface.frictionCoefficient = body.surface.frictionCoefficient;
-    surface.startVertices = rigidIpcSurfaceWorldVertices(
+    assignRigidIpcSurfaceWorldVertices(
         body.surface,
         body.surface.kinematic ? body.surface.kinematicStartPose
-                               : body.surface.pose);
-    surface.endVertices
-        = rigidIpcSurfaceWorldVertices(body.surface, body.surface.pose);
+                               : body.surface.pose,
+        surface.startVertices);
+    assignRigidIpcSurfaceWorldVertices(
+        body.surface, body.surface.pose, surface.endVertices);
     surface.triangles.assign(
         body.surface.triangles.begin(), body.surface.triangles.end());
-    surfaces.push_back(std::move(surface));
+    ++outputCount;
   }
+  surfaces.resize(outputCount);
 
   nb::MixedDomainCandidateOptions options;
   options.activationDistance = activationDistance;
@@ -9006,7 +9030,8 @@ void collectRigidIpcMixedDomainCandidateStats(
   const std::span<const nb::MixedDomainSurface> surfaceSpan{
       surfaces.data(), surfaces.size()};
   const nb::MixedDomainCandidateSet candidateSet
-      = nb::buildMixedDomainContactCandidates(surfaceSpan, options);
+      = nb::buildMixedDomainContactCandidates(
+          surfaceSpan, options, payloadAllocator);
   const nb::MixedDomainBarrierDiagnostics diagnostics
       = nb::evaluateMixedDomainBarrierDiagnostics(
           surfaceSpan, candidateSet, activationDistance);
@@ -10338,35 +10363,54 @@ void RigidIpcContactStage::prepare(World& world)
   auto& registry = dart::simulation::detail::registryOf(world);
   auto bodyView = registry.view<comps::RigidBodyTag>();
   const auto bodyCount = bodyView.size();
+  auto deformableView = registry.view<comps::DeformableBodyTag>();
+  const auto mixedDomainSurfaceCount = bodyCount + deformableView.size();
   auto kinematicView = registry.view<comps::KinematicBodyTag>();
   const auto kinematicCount = kinematicView.size();
 
-  m_scratch->runtimeBodies.reserve(bodyCount);
-  m_scratch->solverBodies.reserve(bodyCount);
-  m_scratch->surfaces.reserve(bodyCount);
-  m_scratch->dynamicsTerms.reserve(bodyCount);
-  m_scratch->solveDynamicsTerms.reserve(bodyCount);
+  m_scratch->runtimeBodies.reserve(mixedDomainSurfaceCount);
+  m_scratch->solverBodies.reserve(mixedDomainSurfaceCount);
+  m_scratch->surfaces.reserve(mixedDomainSurfaceCount);
+  m_scratch->dynamicsTerms.reserve(mixedDomainSurfaceCount);
+  m_scratch->solveDynamicsTerms.reserve(mixedDomainSurfaceCount);
   m_scratch->articulationConstraints.reserve(bodyCount);
+  m_scratch->bdf2Histories.reserve(bodyCount);
+  m_scratch->mixedDomainSurfaces.reserve(mixedDomainSurfaceCount);
   m_scratch->tracedEntities.reserve(kinematicCount);
   m_scratch->blockedEntities.reserve(kinematicCount);
-  m_scratch->writebackEntities.reserve(bodyCount);
-  m_scratch->orderedEntities.reserve(bodyCount);
-  m_scratch->visitState.reserve(bodyCount);
-  m_scratch->contactPowerSum.reserve(bodyCount);
-  m_scratch->sawNonStationaryContactBody.reserve(bodyCount);
-  m_scratch->stationaryContactBody.reserve(bodyCount);
-  m_scratch->solveResult.surfaces.reserve(bodyCount);
-  m_scratch->solveScratch.laggedSurfaces.reserve(bodyCount);
-  m_scratch->solveScratch.lineSearchStartSurfaces.reserve(bodyCount);
-  m_scratch->solveScratch.candidateSurfaces.reserve(bodyCount);
-  m_scratch->solveScratch.acceptedSurfaces.reserve(bodyCount);
-  m_scratch->solveScratch.bestDecreasingSurfaces.reserve(bodyCount);
+  m_scratch->writebackEntities.reserve(mixedDomainSurfaceCount);
+  m_scratch->orderedEntities.reserve(mixedDomainSurfaceCount);
+  m_scratch->visitState.reserve(mixedDomainSurfaceCount);
+  m_scratch->contactPowerSum.reserve(mixedDomainSurfaceCount);
+  m_scratch->sawNonStationaryContactBody.reserve(mixedDomainSurfaceCount);
+  m_scratch->stationaryContactBody.reserve(mixedDomainSurfaceCount);
+  m_scratch->solveResult.surfaces.reserve(mixedDomainSurfaceCount);
+  m_scratch->solveScratch.laggedSurfaces.reserve(mixedDomainSurfaceCount);
+  m_scratch->solveScratch.lineSearchStartSurfaces.reserve(
+      mixedDomainSurfaceCount);
+  m_scratch->solveScratch.candidateSurfaces.reserve(mixedDomainSurfaceCount);
+  m_scratch->solveScratch.acceptedSurfaces.reserve(mixedDomainSurfaceCount);
+  m_scratch->solveScratch.bestDecreasingSurfaces.reserve(
+      mixedDomainSurfaceCount);
 
   RigidIpcSolverStats warmupStats;
-  collectRigidIpcRuntimeBodies(
+  std::size_t warmupBodyCount = collectRigidIpcRuntimeBodies(
       world,
       warmupStats,
       m_scratch->runtimeBodies,
+      m_scratch->payloadAllocator);
+  appendRigidIpcDeformableSurfaces(
+      world,
+      warmupStats,
+      m_scratch->runtimeBodies,
+      warmupBodyCount,
+      m_scratch->payloadAllocator);
+  collectRigidIpcMixedDomainCandidateStats(
+      registry,
+      m_scratch->runtimeBodies,
+      m_options.activationDistance,
+      warmupStats,
+      m_scratch->mixedDomainSurfaces,
       m_scratch->payloadAllocator);
   prepareRigidIpcSolverScratch(
       m_scratch->runtimeBodies,
@@ -10383,16 +10427,21 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
   auto& scratch = *m_scratch;
   clearKinematicBodyStepTraces(world, scratch.tracedEntities);
 
-  collectRigidIpcRuntimeBodies(
+  std::size_t runtimeBodyCount = collectRigidIpcRuntimeBodies(
       world, m_lastStats, scratch.runtimeBodies, scratch.payloadAllocator);
   appendRigidIpcDeformableSurfaces(
-      world, m_lastStats, scratch.runtimeBodies, scratch.payloadAllocator);
+      world,
+      m_lastStats,
+      scratch.runtimeBodies,
+      runtimeBodyCount,
+      scratch.payloadAllocator);
   collectRigidIpcMixedDomainCandidateStats(
       dart::simulation::detail::registryOf(world),
       scratch.runtimeBodies,
       m_options.activationDistance,
       m_lastStats,
-      scratch.mixedDomainSurfaces);
+      scratch.mixedDomainSurfaces,
+      scratch.payloadAllocator);
   if (m_options.timeIntegration == RigidIpcTimeIntegration::Bdf2) {
     applyRigidIpcBdf2DynamicsTerms(
         world, scratch.bdf2Histories, scratch.runtimeBodies, m_lastStats);

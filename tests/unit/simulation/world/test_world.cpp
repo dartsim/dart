@@ -2890,28 +2890,49 @@ TEST(World, RigidIpcContactStageScratchPayloadUsesProvidedAllocator)
   namespace sx = dart::simulation;
 
   sx::World world;
+  sx::DeformableBodyOptions sheetOptions;
+  sheetOptions.positions
+      = {Eigen::Vector3d(-0.5, -0.5, 0.0),
+         Eigen::Vector3d(0.5, -0.5, 0.0),
+         Eigen::Vector3d(-0.5, 0.5, 0.0),
+         Eigen::Vector3d(0.5, 0.5, 0.0)};
+  sheetOptions.masses = {1.0, 1.0, 1.0, 1.0};
+  sheetOptions.fixedNodes = {0, 1, 2, 3};
+  sheetOptions.surfaceTriangles
+      = {sx::DeformableSurfaceTriangle{0, 1, 2},
+         sx::DeformableSurfaceTriangle{1, 3, 2}};
+  (void)world.addDeformableBody("ipc_allocator_sheet", sheetOptions);
+
   sx::RigidBodyOptions options;
   options.mass = 2.0;
-  options.position = Eigen::Vector3d(0.0, 0.0, 0.5);
+  options.position = Eigen::Vector3d(0.0, 0.0, 0.055);
   auto body = world.addRigidBody("ipc_allocator_body", options);
   body.setCollisionShape(
-      sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.5)));
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.05, 0.05, 0.05)));
 
   common::MemoryManager memoryManager;
   auto& freeList = memoryManager.getFreeListAllocator();
   const auto allocationsBeforeStage = freeList.getAllocationCount();
 
   {
-    sx::compute::RigidIpcContactStage stage(1, &memoryManager);
+    sx::compute::RigidIpcContactStageOptions stageOptions;
+    stageOptions.maxIterations = 1;
+    stageOptions.activationDistance = 0.02;
+    sx::compute::RigidIpcContactStage stage(stageOptions, &memoryManager);
     const auto allocationsAfterStage = freeList.getAllocationCount();
 
+    ScopedHeapAllocationCounter heapCounter;
     stage.prepare(world);
+    heapCounter.stop();
 
-    EXPECT_GE(freeList.getAllocationCount(), allocationsAfterStage + 21u)
+    EXPECT_EQ(heapCounter.allocationCount(), 0u)
+        << "allocator-aware rigid IPC prepare should not allocate from the "
+           "global heap when preparing mixed rigid/deformable surface scratch";
+    EXPECT_GE(freeList.getAllocationCount(), allocationsAfterStage + 30u)
         << "allocator-aware rigid IPC scratch should reserve top-level "
-           "runtime, solver, surface, dynamics, result, writeback, and "
-           "nested surface mesh payload vectors from the provided free "
-           "allocator";
+           "runtime, solver, mixed-domain surface/candidate, dynamics, "
+           "result, writeback, and nested surface mesh payload vectors from "
+           "the provided free allocator";
   }
 
   EXPECT_EQ(freeList.getAllocationCount(), allocationsBeforeStage);
