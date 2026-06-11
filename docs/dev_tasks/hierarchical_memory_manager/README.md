@@ -870,6 +870,10 @@ Follow-up progress after PR #2956:
 - The unified constraint stage now constructs its private multibody entity,
   link-contact bucket, required-block marker, staged-contact, dynamics-scratch
   pointer, and staged-velocity vectors with the borrowed World free allocator.
+  The follow-up also routes the stage-owned rigid contact problem, unified row
+  owner/rigid-constraint/multibody-block containers, nested multibody block row
+  storage, and boxed-LCP solve scratch traversal/fallback/tangent vectors
+  through the same allocator root.
   A focused stacked boxed-LCP prepare test verifies those stage-owned reserves
   use and release a provided free-list allocator.
 

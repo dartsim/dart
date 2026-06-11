@@ -39,6 +39,8 @@
 
 #include <dart/math/lcp/pivoting/dantzig_solver.hpp>
 
+#include <dart/common/stl_allocator.hpp>
+
 #include <Eigen/Core>
 #include <entt/entity/entity.hpp>
 
@@ -99,11 +101,20 @@ struct UnifiedMultibodyContact
 /// enter the matrix nor make it singular.
 struct UnifiedMultibodyBlock
 {
+  using RowAllocator = common::StlAllocator<MultibodyLinkContactRow>;
+
+  UnifiedMultibodyBlock() = default;
+
+  explicit UnifiedMultibodyBlock(common::MemoryAllocator& allocator)
+    : rows(RowAllocator{allocator})
+  {
+  }
+
   entt::entity multibody = entt::null;
   /// Global row index of this block's first row.
   Eigen::Index blockBase = 0;
   /// Compacted active rows, in their original (stable) order.
-  std::vector<MultibodyLinkContactRow> rows;
+  std::vector<MultibodyLinkContactRow, RowAllocator> rows;
   /// Joint-space inverse mass `M_k^-1`, the operator link impulses act through.
   Eigen::MatrixXd inverseMass;
 };
@@ -121,19 +132,48 @@ struct UnifiedConstraintProblem
 {
   static constexpr int kRowsPerContact = 3;
 
+  using RowOwnerAllocator = common::StlAllocator<UnifiedRowOwner>;
+  using RigidConstraintAllocator
+      = common::StlAllocator<RigidBodyContactConstraint>;
+  using MultibodyBlockAllocator = common::StlAllocator<UnifiedMultibodyBlock>;
+
+  UnifiedConstraintProblem() = default;
+
+  explicit UnifiedConstraintProblem(common::MemoryAllocator& allocator)
+    : memoryAllocator(&allocator),
+      rowOwners(RowOwnerAllocator{allocator}),
+      rigidConstraints(RigidConstraintAllocator{allocator}),
+      multibodyBlocks(MultibodyBlockAllocator{allocator})
+  {
+  }
+
+  void resizeMultibodyBlocks(std::size_t count)
+  {
+    while (multibodyBlocks.size() < count) {
+      if (memoryAllocator != nullptr) {
+        multibodyBlocks.emplace_back(*memoryAllocator);
+      } else {
+        multibodyBlocks.emplace_back();
+      }
+    }
+    multibodyBlocks.resize(count);
+  }
+
+  common::MemoryAllocator* memoryAllocator = nullptr;
   Eigen::MatrixXd delassus;
   Eigen::VectorXd rhs;
   Eigen::VectorXd lo;
   Eigen::VectorXd hi;
   Eigen::VectorXi findex;
-  std::vector<UnifiedRowOwner> rowOwners;
+  std::vector<UnifiedRowOwner, RowOwnerAllocator> rowOwners;
   /// Verbatim copy of the rigid problem's accepted constraints (post
   /// effective-mass filter, same order), retained for impulse application and
   /// the rigid positional projection.
-  std::vector<RigidBodyContactConstraint> rigidConstraints;
+  std::vector<RigidBodyContactConstraint, RigidConstraintAllocator>
+      rigidConstraints;
   /// Per-multibody compacted link blocks, retained for impulse application and
   /// the generalized fallback.
-  std::vector<UnifiedMultibodyBlock> multibodyBlocks;
+  std::vector<UnifiedMultibodyBlock, MultibodyBlockAllocator> multibodyBlocks;
 };
 
 /// Assemble the unified contact-space boxed-LCP from an already-assembled rigid
@@ -194,6 +234,28 @@ struct UnifiedConstraintSolution
 /// after `solveUnifiedConstraintProblemInto()` or fallback normal solve.
 struct DART_SIMULATION_API UnifiedConstraintSolveScratch
 {
+  using IndexAllocator = common::StlAllocator<Eigen::Index>;
+  using CharAllocator = common::StlAllocator<char>;
+  using DoubleAllocator = common::StlAllocator<double>;
+  using SizeAllocator = common::StlAllocator<std::size_t>;
+
+  UnifiedConstraintSolveScratch() = default;
+
+  explicit UnifiedConstraintSolveScratch(common::MemoryAllocator& allocator)
+    : islandRows(IndexAllocator{allocator}),
+      islandOffsets(IndexAllocator{allocator}),
+      visitedRows(CharAllocator{allocator}),
+      rowStack(IndexAllocator{allocator}),
+      localIndex(IndexAllocator{allocator}),
+      normalRows(IndexAllocator{allocator}),
+      rigidTangent1(DoubleAllocator{allocator}),
+      rigidTangent2(DoubleAllocator{allocator}),
+      linkTangentOffsets(SizeAllocator{allocator}),
+      linkTangent1(DoubleAllocator{allocator}),
+      linkTangent2(DoubleAllocator{allocator})
+  {
+  }
+
   math::DantzigSolver solver;
   math::DantzigSolver::Scratch dantzig;
   Eigen::VectorXd lambda;
@@ -201,11 +263,11 @@ struct DART_SIMULATION_API UnifiedConstraintSolveScratch
   Eigen::VectorXd generalizedImpulse;
   Eigen::VectorXd velocityDelta;
 
-  std::vector<Eigen::Index> islandRows;
-  std::vector<Eigen::Index> islandOffsets;
-  std::vector<char> visitedRows;
-  std::vector<Eigen::Index> rowStack;
-  std::vector<Eigen::Index> localIndex;
+  std::vector<Eigen::Index, IndexAllocator> islandRows;
+  std::vector<Eigen::Index, IndexAllocator> islandOffsets;
+  std::vector<char, CharAllocator> visitedRows;
+  std::vector<Eigen::Index, IndexAllocator> rowStack;
+  std::vector<Eigen::Index, IndexAllocator> localIndex;
 
   Eigen::MatrixXd islandDelassus;
   Eigen::VectorXd islandRhs;
@@ -213,7 +275,7 @@ struct DART_SIMULATION_API UnifiedConstraintSolveScratch
   Eigen::VectorXd islandHi;
   Eigen::VectorXi islandFindex;
 
-  std::vector<Eigen::Index> normalRows;
+  std::vector<Eigen::Index, IndexAllocator> normalRows;
   Eigen::MatrixXd normalA;
   Eigen::VectorXd normalB;
   Eigen::VectorXd normalLo;
@@ -221,11 +283,11 @@ struct DART_SIMULATION_API UnifiedConstraintSolveScratch
   Eigen::VectorXi normalFindex;
   Eigen::VectorXd normalLambda;
 
-  std::vector<double> rigidTangent1;
-  std::vector<double> rigidTangent2;
-  std::vector<std::size_t> linkTangentOffsets;
-  std::vector<double> linkTangent1;
-  std::vector<double> linkTangent2;
+  std::vector<double, DoubleAllocator> rigidTangent1;
+  std::vector<double, DoubleAllocator> rigidTangent2;
+  std::vector<std::size_t, SizeAllocator> linkTangentOffsets;
+  std::vector<double, DoubleAllocator> linkTangent1;
+  std::vector<double, DoubleAllocator> linkTangent2;
 
   void clear() noexcept;
 };

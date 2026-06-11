@@ -2887,12 +2887,15 @@ struct UnifiedConstraintStage::Scratch
 
   explicit Scratch(common::MemoryAllocator& allocator)
     : memoryAllocator(&allocator),
+      rigidProblem(allocator),
       multibodyEntities(EntityAllocator{allocator}),
       contactsByMultibody(LinkContactBucketAllocator{allocator}),
       requiredMultibody(RequiredMultibodyAllocator{allocator}),
       multibodyContacts(UnifiedContactAllocator{allocator}),
       multibodyScratch(ScratchPointerAllocator{allocator}),
-      multibodyVelocities(VelocityAllocator{allocator})
+      multibodyVelocities(VelocityAllocator{allocator}),
+      problem(allocator),
+      solveScratch(allocator)
   {
   }
 

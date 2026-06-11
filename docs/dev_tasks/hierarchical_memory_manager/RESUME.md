@@ -7,6 +7,16 @@ active HMM Phase 4/5 continuation is on
 `pr/hmm-phase45-follow-up-clean`, based on `origin/main` after PR #2956
 landed.
 
+The latest post-merge unified boxed-LCP slice routes the stage-owned rigid
+contact problem, unified problem row/block containers, nested multibody block
+row storage, and unified solve scratch traversal/fallback/tangent vectors
+through the borrowed World free allocator. Focused allocator-contract tests now
+verify those containers reserve from and release back to the provided
+`MemoryManager` root, while existing unified same-shape and World boxed-LCP
+no-growth/no-heap gates still pass. Local verification for this slice: focused
+`test_unified_constraint`/`test_world` build and filters, `pixi run lint`,
+`pixi run build`, `pixi run test-unit`, and `git diff --check`.
+
 The latest post-merge deformable slice routes
 `DeformableContactSolverScratch`'s per-body surface topology/contact-mask
 storage and inter-body surface-CCD edge, sweep-item, and sweep-link buffers
@@ -794,6 +804,7 @@ without explicit maintainer approval.
 
 Continue with evidence-first HMM follow-up work on `origin/main`: built-in
 stage-owned scratch/cache object roots are now allocator-aware, and the
+unified boxed-LCP rigid/problem/solve scratch containers,
 rigid-body velocity force-batch payload plus rigid-body contact
 sequential-impulse constraint vector, the legacy rigid-body integration
 entity/dependency-node scratch vectors, plus the `WorldKinematicsGraph`

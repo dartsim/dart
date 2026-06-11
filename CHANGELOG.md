@@ -598,7 +598,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     build the local row remap once per solve instead of once per island, and
     successful unified link impulse application can reuse the same solve scratch
     for generalized-impulse and velocity-delta buffers. The unified constraint
-    stage's multibody staging vectors now borrow the stage allocator as well.
+    stage's multibody staging vectors now borrow the stage allocator as well,
+    and its rigid problem, unified problem row/block storage, and boxed-LCP
+    solve scratch vectors now route through the same allocator root.
     Rigid IPC accepted/rejected writeback now reuses stage-owned entity-order
     scratch instead of allocating local traversal vectors, and the
     resting-contact no-op predicate reuses stage-owned per-body contact-power
