@@ -35,6 +35,7 @@
 #include <limits>
 #include <new>
 #include <optional>
+#include <type_traits>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -1940,15 +1941,16 @@ void applyExactNewtonStepInto(
   }
 }
 
+template <typename JacobianVector>
 void resizeBodyJacobianScratch(
-    std::vector<Eigen::MatrixXd>& jacobians,
+    JacobianVector& jacobians,
     const std::size_t linkCount,
     const Eigen::Index dof)
 {
   if (jacobians.size() != linkCount) {
     jacobians.resize(linkCount);
   }
-  for (Eigen::MatrixXd& jacobian : jacobians) {
+  for (auto& jacobian : jacobians) {
     jacobian.setZero(6, dof);
   }
 }
@@ -1999,8 +2001,8 @@ void reserveConstraintProjectionScratch(
   scratch.projectionLambda.resize(rows);
 }
 
-void bodyJacobiansInto(
-    const VarTree& tree, std::vector<Eigen::MatrixXd>& jacobians)
+template <typename JacobianVector>
+void bodyJacobiansInto(const VarTree& tree, JacobianVector& jacobians)
 {
   const auto dof = static_cast<Eigen::Index>(tree.dofCount);
   resizeBodyJacobianScratch(jacobians, tree.links.size(), dof);
@@ -2019,10 +2021,11 @@ void bodyJacobiansInto(
   }
 }
 
+template <typename TransformVector, typename JacobianVector>
 void bodyJacobiansInto(
     const VarTree& tree,
-    const std::vector<Eigen::Isometry3d>& relativeTransforms,
-    std::vector<Eigen::MatrixXd>& jacobians)
+    const TransformVector& relativeTransforms,
+    JacobianVector& jacobians)
 {
   const auto dof = static_cast<Eigen::Index>(tree.dofCount);
   resizeBodyJacobianScratch(jacobians, tree.links.size(), dof);
@@ -2310,11 +2313,17 @@ void evaluateContactForceInto(
       tree, scratch.trialRelativeTransforms, scratch.trialJacobians);
 
   const VariationalContactContext context{
-      scratch.trialWorldTransforms,
-      scratch.trialJacobians,
+      std::span<const Eigen::Isometry3d>{
+          scratch.trialWorldTransforms.data(),
+          scratch.trialWorldTransforms.size()},
+      std::span<const Eigen::MatrixXd>{
+          scratch.trialJacobians.data(), scratch.trialJacobians.size()},
       tree.dofCount,
-      scratch.previousWorldTransforms,
-      scratch.previousJacobians,
+      std::span<const Eigen::Isometry3d>{
+          scratch.previousWorldTransforms.data(),
+          scratch.previousWorldTransforms.size()},
+      std::span<const Eigen::MatrixXd>{
+          scratch.previousJacobians.data(), scratch.previousJacobians.size()},
       previousVelocity,
       timeStep};
   contactForce.setZero(static_cast<Eigen::Index>(tree.dofCount));
@@ -2774,6 +2783,38 @@ void ensureVariationalGroundContactAllocator(
   VariationalGroundContact::PointVector points{targetAllocator};
   points.assign(contact.points.begin(), contact.points.end());
   contact.points = std::move(points);
+}
+
+void ensureVariationalContactEvaluationScratchAllocator(
+    VariationalContactEvaluationScratch& scratch,
+    dart::common::MemoryAllocator& allocator)
+{
+  const VariationalContactEvaluationScratch::TransformAllocator
+      targetTransformAllocator{allocator};
+  const auto rebindTransforms = [&](auto& transforms) {
+    if (transforms.get_allocator() == targetTransformAllocator) {
+      return;
+    }
+    std::decay_t<decltype(transforms)> rebound{targetTransformAllocator};
+    rebound.assign(transforms.begin(), transforms.end());
+    transforms = std::move(rebound);
+  };
+  rebindTransforms(scratch.previousWorldTransforms);
+  rebindTransforms(scratch.trialRelativeTransforms);
+  rebindTransforms(scratch.trialWorldTransforms);
+
+  const VariationalContactEvaluationScratch::JacobianAllocator
+      targetJacobianAllocator{allocator};
+  const auto rebindJacobians = [&](auto& jacobians) {
+    if (jacobians.get_allocator() == targetJacobianAllocator) {
+      return;
+    }
+    std::decay_t<decltype(jacobians)> rebound{targetJacobianAllocator};
+    rebound.assign(jacobians.begin(), jacobians.end());
+    jacobians = std::move(rebound);
+  };
+  rebindJacobians(scratch.previousJacobians);
+  rebindJacobians(scratch.trialJacobians);
 }
 
 // Validate + normalize a ground-contact config (shared by the AL solver).
@@ -4026,6 +4067,8 @@ void reserveMultibodyVariationalRegistryStorage(
         = registry.get_or_emplace<MultibodyVariationalScratch>(entity);
     scratch.tree.setAllocator(allocator);
     scratch.inverseDynamics.setAllocator(allocator);
+    ensureVariationalContactEvaluationScratchAllocator(
+        scratch.contactEvaluation, allocator);
     scratch.postContactTransforms.resize(structure.links.size());
     scratch.constraints.clear();
     for (auto closureEntity : closures) {
@@ -4174,6 +4217,8 @@ void MultibodyVariationalIntegrationStage::execute(
         = registry.get_or_emplace<MultibodyVariationalScratch>(entity);
     scratch.tree.setAllocator(worldFreeAllocator);
     scratch.inverseDynamics.setAllocator(worldFreeAllocator);
+    ensureVariationalContactEvaluationScratchAllocator(
+        scratch.contactEvaluation, worldFreeAllocator);
     auto& constraints = scratch.constraints;
     constraints.clear();
     for (auto closureEntity : closures) {

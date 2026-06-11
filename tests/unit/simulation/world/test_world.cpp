@@ -4162,6 +4162,25 @@ void expectCompliantVariationalContactScratchBaked(
           expectedPointAllocator{*expectedAllocator};
       EXPECT_EQ(
           scratch.groundContact.points.get_allocator(), expectedPointAllocator);
+      const sx::compute::VariationalContactEvaluationScratch::TransformAllocator
+          expectedTransformAllocator{*expectedAllocator};
+      EXPECT_EQ(
+          scratch.contactEvaluation.previousWorldTransforms.get_allocator(),
+          expectedTransformAllocator);
+      EXPECT_EQ(
+          scratch.contactEvaluation.trialRelativeTransforms.get_allocator(),
+          expectedTransformAllocator);
+      EXPECT_EQ(
+          scratch.contactEvaluation.trialWorldTransforms.get_allocator(),
+          expectedTransformAllocator);
+      const sx::compute::VariationalContactEvaluationScratch::JacobianAllocator
+          expectedJacobianAllocator{*expectedAllocator};
+      EXPECT_EQ(
+          scratch.contactEvaluation.previousJacobians.get_allocator(),
+          expectedJacobianAllocator);
+      EXPECT_EQ(
+          scratch.contactEvaluation.trialJacobians.get_allocator(),
+          expectedJacobianAllocator);
     }
     EXPECT_EQ(
         scratch.groundContact.points.size(),

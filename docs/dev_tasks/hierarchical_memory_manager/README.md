@@ -700,7 +700,8 @@ Follow-up progress after PR #2956:
   pimpl and dynamics-tree vector payloads through that allocator for baked
   variational stages. Baked variational ground-contact point scratch and
   augmented-Lagrangian solver dual scratch now also allocate their reusable
-  vector storage from the World free allocator.
+  vector storage from the World free allocator, as do contact-evaluation
+  transform/Jacobian scratch vectors for the same baked contact scenes.
   Velocity-actuator projection now follows the same baked projection path:
   bake-time sizing counts actuator target rows, the projection loop writes those
   rows directly into the reusable residual/Jacobian, and per-joint projection

@@ -656,7 +656,8 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     borrow the same allocator when baked or first used by the World stage.
     Baked variational ground-contact point scratch and augmented-Lagrangian
     solver dual scratch now also keep their reusable vectors on the World free
-    allocator.
+    allocator, and contact-evaluation transform/Jacobian scratch vectors borrow
+    that allocator before baked contact-force evaluation.
     Contact-heavy variational dual-state vectors now also borrow the World
     free allocator when baked or first created by the World stage; pre-existing
     dual-state components are rebound before sizing, and binary state

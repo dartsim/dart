@@ -162,22 +162,22 @@ struct VariationalContactContext
 {
   /// Per-link world transform at the trial configuration (link construction
   /// order, parent-before-child).
-  const std::vector<Eigen::Isometry3d>& linkWorldTransforms;
+  std::span<const Eigen::Isometry3d> linkWorldTransforms;
   /// Per-link body-frame spatial Jacobian (`6 x dofCount`, `[angular; linear]`)
   /// at the trial configuration.
-  const std::vector<Eigen::MatrixXd>& linkBodyJacobians;
+  std::span<const Eigen::MatrixXd> linkBodyJacobians;
   /// Movable generalized-coordinate count (the `Q_c` the hook returns has this
   /// length).
   std::size_t dofCount;
   /// Per-link world transform at the *previous* configuration `q^k` (the start
   /// of the step), same link order. Lagged contact laws (friction) use it for
   /// the contact-point position (normal magnitude) at the step start.
-  const std::vector<Eigen::Isometry3d>& previousLinkWorldTransforms;
+  std::span<const Eigen::Isometry3d> previousLinkWorldTransforms;
   /// Per-link body-frame spatial Jacobian at `q^k`. With `previousVelocity` it
   /// gives the lagged contact-point sliding velocity that fixes the friction
   /// direction over the step (so friction stays constant across RIQN iterates,
   /// hence smooth for the root-find -- the roadmap's "lagged friction").
-  const std::vector<Eigen::MatrixXd>& previousLinkBodyJacobians;
+  std::span<const Eigen::MatrixXd> previousLinkBodyJacobians;
   /// Generalized velocity at `q^k` (lagged).
   const Eigen::VectorXd& previousVelocity;
   /// The integration time step (s).
@@ -334,11 +334,32 @@ private:
 /// Reusable storage for variational contact-force evaluation.
 struct VariationalContactEvaluationScratch
 {
-  std::vector<Eigen::Isometry3d> previousWorldTransforms;
-  std::vector<Eigen::Isometry3d> trialRelativeTransforms;
-  std::vector<Eigen::Isometry3d> trialWorldTransforms;
-  std::vector<Eigen::MatrixXd> previousJacobians;
-  std::vector<Eigen::MatrixXd> trialJacobians;
+  using TransformAllocator = dart::common::StlAllocator<Eigen::Isometry3d>;
+  using TransformVector = std::vector<Eigen::Isometry3d, TransformAllocator>;
+  using JacobianAllocator = dart::common::StlAllocator<Eigen::MatrixXd>;
+  using JacobianVector = std::vector<Eigen::MatrixXd, JacobianAllocator>;
+
+  VariationalContactEvaluationScratch()
+    : VariationalContactEvaluationScratch(
+          dart::common::MemoryAllocator::GetDefault())
+  {
+  }
+
+  explicit VariationalContactEvaluationScratch(
+      dart::common::MemoryAllocator& allocator)
+    : previousWorldTransforms(TransformAllocator{allocator}),
+      trialRelativeTransforms(TransformAllocator{allocator}),
+      trialWorldTransforms(TransformAllocator{allocator}),
+      previousJacobians(JacobianAllocator{allocator}),
+      trialJacobians(JacobianAllocator{allocator})
+  {
+  }
+
+  TransformVector previousWorldTransforms;
+  TransformVector trialRelativeTransforms;
+  TransformVector trialWorldTransforms;
+  JacobianVector previousJacobians;
+  JacobianVector trialJacobians;
   Eigen::VectorXd contactForce;
   Eigen::VectorXd forcing;
 };

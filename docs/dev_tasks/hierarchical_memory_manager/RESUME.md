@@ -225,6 +225,11 @@ the same World free allocator. The existing compliant-contact and contact-heavy
 World gates now assert those allocator bindings on the baked scratch/solver
 objects rather than relying only on capacity and no-growth counters.
 
+The next contact-evaluation scratch continuation keeps the same existing gate
+surface and routes the transform/Jacobian vectors used to evaluate variational
+ground contact forces through the World free allocator before bake-time sizing
+or same-shape lazy reserve.
+
 The latest rebuild-boundary slice reuses the existing mixed default-deformable
 storage scenes as compact, production, contact-family production, and
 complementary contact-family production gates for direct-sparse self-contact,
