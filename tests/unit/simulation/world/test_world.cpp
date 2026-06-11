@@ -5315,14 +5315,14 @@ TEST(World, IpcBakeDoesNotPrewarmRigidBodyContactQuery)
 {
   namespace sx = dart::simulation;
 
-  const auto sequentialImpulseUnsupportedGeometry
+  const auto ipcSupportedGeometry
       = countGlobalHeapAllocationsDuringSimulationBake(
-          "sequential impulse contact-query-only plane geometry",
-          [](sx::World& world) {
-            auto body = world.addRigidBody("kinematic_plane");
+          "IPC contact-query-only box geometry", [](sx::World& world) {
+            world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+            auto body = world.addRigidBody("kinematic_box");
             body.setKinematic(true);
             body.setCollisionShape(
-                sx::CollisionShape::makePlane(Eigen::Vector3d::UnitZ(), 0.0));
+                sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.5)));
             body.setLinearVelocity(Eigen::Vector3d(1.0, 0.0, 0.0));
           });
   const auto ipcUnsupportedGeometry
@@ -5337,16 +5337,16 @@ TEST(World, IpcBakeDoesNotPrewarmRigidBodyContactQuery)
           });
 
   // The unsupported (contact-query-only) plane geometry must not PREWARM the
-  // rigid-body contact query during the IPC bake. Compare against the same
-  // unsupported plane scene under the non-IPC solver so component-layout
-  // storage is counted on both sides and only extra IPC prewarm work can fail
-  // this guard.
+  // rigid-body contact query during the IPC bake. Compare against the same IPC
+  // setup with supported collision geometry so ordinary collision component
+  // storage is counted on both sides and only unsupported-geometry prewarm work
+  // can fail this guard.
   EXPECT_LE(
       ipcUnsupportedGeometry.allocationCount,
-      sequentialImpulseUnsupportedGeometry.allocationCount);
+      ipcSupportedGeometry.allocationCount);
   EXPECT_LE(
       ipcUnsupportedGeometry.allocationBytes,
-      sequentialImpulseUnsupportedGeometry.allocationBytes);
+      ipcSupportedGeometry.allocationBytes);
 }
 
 TEST(World, RigidIpcContactStagePrepareReusesSupportedDynamicSurfaceBuffers)
@@ -15455,6 +15455,48 @@ TEST(World, ArticulatedPointJointsGenerateUniqueFacadeNames)
   EXPECT_THROW(
       world.addArticulatedSphericalJoint("joint_004", base, child),
       sx::InvalidArgumentException);
+}
+
+TEST(World, ClearResetsArticulatedPointJointGeneratedNames)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  world.setMultibodyOptions({"variational integrator"});
+
+  auto robot = world.addMultibody("robot");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "floating";
+  spec.type = sx::JointType::Floating;
+  auto child = robot.addLink("child", base, spec);
+
+  auto firstGenerated = world.addArticulatedFixedJoint("", base, child);
+  EXPECT_EQ(firstGenerated.getName(), "joint_001");
+  EXPECT_EQ(world.getArticulatedJointCount(), 1u);
+  EXPECT_TRUE(base.isValid());
+  EXPECT_TRUE(child.isValid());
+  EXPECT_TRUE(firstGenerated.isValid());
+
+  world.clear();
+  EXPECT_EQ(world.getArticulatedJointCount(), 0u);
+  EXPECT_FALSE(world.hasArticulatedJoint("joint_001"));
+  EXPECT_FALSE(base.isValid());
+  EXPECT_FALSE(child.isValid());
+  EXPECT_FALSE(firstGenerated.isValid());
+
+  auto rebuiltRobot = world.addMultibody("rebuilt_robot");
+  auto rebuiltBase = rebuiltRobot.addLink("base");
+  sx::JointSpec rebuiltSpec;
+  rebuiltSpec.name = "floating";
+  rebuiltSpec.type = sx::JointType::Floating;
+  auto rebuiltChild = rebuiltRobot.addLink("child", rebuiltBase, rebuiltSpec);
+
+  auto regenerated = world.addArticulatedRevoluteJoint(
+      "", rebuiltChild, Eigen::Vector3d::UnitZ());
+  EXPECT_EQ(regenerated.getName(), "joint_001");
+  EXPECT_EQ(regenerated.getType(), sx::JointType::Revolute);
+  EXPECT_EQ(world.getArticulatedJointCount(), 1u);
 }
 
 TEST(World, ArticulatedPointJointsRejectInvalidEndpointOwnership)

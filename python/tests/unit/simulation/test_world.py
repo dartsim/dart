@@ -31,6 +31,47 @@ def _translation_transform(x: float, y: float, z: float):
     )
 
 
+def _floating_link_world(sx, name: str):
+    world = sx.World(time_step=0.005, gravity=(0.0, 0.0, 0.0))
+    world.multibody_options = sx.MultibodyOptions(
+        integration_family="variational integrator"
+    )
+    arm = world.add_multibody(name)
+    base = arm.add_link("base")
+    body = arm.add_link(
+        "body",
+        parent=base,
+        joint=sx.JointSpec(name="floating", type=sx.JointType.FLOATING),
+    )
+    body.mass = 2.0
+    body.inertia = ((0.2, 0.0, 0.0), (0.0, 0.2, 0.0), (0.0, 0.0, 0.3))
+    return world, base, body
+
+
+def _floating_link_pair_world(sx, name: str):
+    world = sx.World(time_step=0.005, gravity=(0.0, 0.0, 0.0))
+    world.multibody_options = sx.MultibodyOptions(
+        integration_family="variational integrator"
+    )
+    arm = world.add_multibody(name)
+    base = arm.add_link("base")
+    parent = arm.add_link(
+        "parent",
+        parent=base,
+        joint=sx.JointSpec(name="parent_float", type=sx.JointType.FLOATING),
+    )
+    parent.mass = 2.0
+    parent.inertia = ((0.2, 0.0, 0.0), (0.0, 0.25, 0.0), (0.0, 0.0, 0.3))
+    child = arm.add_link(
+        "child",
+        parent=base,
+        joint=sx.JointSpec(name="child_float", type=sx.JointType.FLOATING),
+    )
+    child.mass = 1.5
+    child.inertia = ((0.15, 0.0, 0.0), (0.0, 0.2, 0.0), (0.0, 0.0, 0.25))
+    return world, parent, child
+
+
 def test_simulation_world_module_is_separate_from_legacy_simulation():
     sx = _simulation()
 
@@ -138,10 +179,20 @@ def test_simulation_api_exposes_python_names_only():
             "getMultibody",
             "hasMultibody",
             "getMultibodyCount",
+            "addArticulatedFixedJoint",
+            "addArticulatedRevoluteJoint",
+            "addArticulatedPrismaticJoint",
+            "addArticulatedSphericalJoint",
+            "getArticulatedJoint",
+            "hasArticulatedJoint",
+            "getArticulatedJoints",
+            "getArticulatedJointCount",
             "addRigidBody",
             "addRigidBodyFixedJoint",
             "addRigidBodyRevoluteJoint",
             "addRigidBodyPrismaticJoint",
+            "addRigidBodySphericalJoint",
+            "addRigidBodyDistanceSpring",
             "getRigidBodyJoint",
             "hasRigidBodyJoint",
             "getRigidBodyJoints",
@@ -162,6 +213,8 @@ def test_simulation_api_exposes_python_names_only():
             "get_rigid_body_count",
             "updateKinematics",
             "enterSimulationMode",
+            "saveBinary",
+            "loadBinary",
         ),
         sx.LoopClosure: (
             "get_name",
@@ -293,8 +346,18 @@ def test_simulation_stub_tracks_public_runtime_symbols():
         "shape_index_a",
         "local_point_a",
         "has_multibody",
+        "add_articulated_fixed_joint",
+        "add_articulated_revolute_joint",
+        "add_articulated_prismatic_joint",
+        "add_articulated_spherical_joint",
+        "get_articulated_joint",
+        "get_articulated_joints",
+        "has_articulated_joint",
+        "num_articulated_joints",
         "add_rigid_body_revolute_joint",
         "add_rigid_body_prismatic_joint",
+        "add_rigid_body_spherical_joint",
+        "add_rigid_body_distance_spring",
         "get_rigid_body_joint",
         "get_rigid_body_joints",
         "has_rigid_body_fixed_joint",
@@ -329,6 +392,15 @@ def test_simulation_stub_tracks_public_runtime_symbols():
         "def addRigidBodyFixedJoint(",
         "def addRigidBodyRevoluteJoint(",
         "def addRigidBodyPrismaticJoint(",
+        "def addRigidBodySphericalJoint(",
+        "def addArticulatedFixedJoint(",
+        "def addArticulatedRevoluteJoint(",
+        "def addArticulatedPrismaticJoint(",
+        "def addArticulatedSphericalJoint(",
+        "def getArticulatedJoint(",
+        "def hasArticulatedJoint(",
+        "def getArticulatedJoints(",
+        "def getArticulatedJointCount(",
         "def getRigidBodyJoint(",
         "def hasRigidBodyJoint(",
         "def getRigidBodyJoints(",
@@ -497,6 +569,92 @@ def test_simulation_world_smoke():
     assert world.num_rigid_bodies == 0
 
 
+def test_simulation_world_clear_invalidates_articulated_joint_handles_from_python():
+    sx = _simulation()
+
+    world = sx.World(time_step=0.005, gravity=(0.0, 0.0, 0.0))
+    world.multibody_options = sx.MultibodyOptions(
+        integration_family="variational integrator"
+    )
+
+    arm = world.add_multibody("clear_arm")
+    base = arm.add_link("base")
+    body = arm.add_link(
+        "body",
+        parent=base,
+        joint=sx.JointSpec(name="floating", type=sx.JointType.FLOATING),
+    )
+    hinge = world.add_articulated_revolute_joint(
+        "clear_hinge", body, axis=(0.0, 0.0, 1.0)
+    )
+    hinge.actuator_type = sx.ActuatorType.VELOCITY
+    hinge_speed = 0.4
+    hinge.command_velocity = [hinge_speed]
+    hinge.set_effort_limits([-1000.0], [1000.0])
+
+    world.enter_simulation_mode()
+    world.step()
+    assert world.frame == 1
+    assert world.time == pytest.approx(world.time_step)
+    assert world.num_articulated_joints == 1
+    assert world.has_articulated_joint("clear_hinge")
+    assert world.get_articulated_joint("clear_hinge").child_link == body
+
+    rotation = np.asarray(body.rotation, dtype=float)
+    assert math.atan2(rotation[1, 0], rotation[0, 0]) == pytest.approx(
+        hinge_speed * world.time_step, abs=1e-6
+    )
+
+    world.clear()
+
+    assert not world.is_simulation_mode
+    assert not arm.is_valid
+    assert not base.is_valid
+    assert not body.is_valid
+    assert not hinge.is_valid
+    assert world.frame == 0
+    assert world.time == pytest.approx(0.0)
+    assert world.time_step == pytest.approx(0.001)
+    assert world.num_multibodies == 0
+    assert world.num_articulated_joints == 0
+    assert not world.has_articulated_joint("clear_hinge")
+    assert world.get_articulated_joint("clear_hinge") is None
+    assert len(world.get_articulated_joints()) == 0
+
+    world.gravity = (0.0, 0.0, 0.0)
+    world.time_step = 0.005
+    world.multibody_options = sx.MultibodyOptions(
+        integration_family="variational integrator"
+    )
+    rebuilt_arm = world.add_multibody("rebuilt_clear_arm")
+    rebuilt_base = rebuilt_arm.add_link("base")
+    rebuilt_body = rebuilt_arm.add_link(
+        "body",
+        parent=rebuilt_base,
+        joint=sx.JointSpec(name="floating", type=sx.JointType.FLOATING),
+    )
+    slider = world.add_articulated_prismatic_joint(
+        "clear_slider", rebuilt_body, axis=(1.0, 0.0, 0.0)
+    )
+    slider.actuator_type = sx.ActuatorType.VELOCITY
+    slider_speed = 0.3
+    slider.command_velocity = [slider_speed]
+    slider.set_effort_limits([-1000.0], [1000.0])
+
+    assert slider.is_valid
+    assert world.num_articulated_joints == 1
+    assert world.has_articulated_joint("clear_slider")
+    assert world.get_articulated_joint("clear_slider").child_link == rebuilt_body
+
+    world.enter_simulation_mode()
+    world.step()
+
+    position = np.asarray(rebuilt_body.translation, dtype=float).reshape(3)
+    assert position[0] == pytest.approx(slider_speed * world.time_step, abs=1e-6)
+    assert position[1] == pytest.approx(0.0, abs=1e-6)
+    assert position[2] == pytest.approx(0.0, abs=1e-6)
+
+
 def test_simulation_world_rigid_body_fixed_joint_projects_captured_pose():
     sx = _simulation()
 
@@ -515,10 +673,29 @@ def test_simulation_world_rigid_body_fixed_joint_projects_captured_pose():
     assert joint.break_force == pytest.approx(12.5)
     joint.reset_breakage()
     assert not joint.is_broken
+    default_avbd_start_stiffness = joint.avbd_start_stiffness
+    assert default_avbd_start_stiffness > 0.0
+    assert math.isinf(joint.avbd_linear_stiffness)
+    assert math.isinf(joint.avbd_angular_stiffness)
+    joint.avbd_start_stiffness = 1.0
+    joint.avbd_linear_stiffness = 1000.0
+    joint.avbd_angular_stiffness = 100.0
+    assert joint.avbd_start_stiffness == pytest.approx(1.0)
+    assert joint.avbd_linear_stiffness == pytest.approx(1000.0)
+    assert joint.avbd_angular_stiffness == pytest.approx(100.0)
     with pytest.raises(Exception, match="finite and non-negative"):
         joint.break_force = -1.0
     with pytest.raises(Exception, match="finite and non-negative"):
         joint.break_force = math.inf
+    with pytest.raises(Exception, match="finite and non-negative"):
+        joint.avbd_start_stiffness = -1.0
+    with pytest.raises(Exception, match="non-negative or infinity"):
+        joint.avbd_linear_stiffness = math.nan
+    with pytest.raises(Exception, match="non-negative or infinity"):
+        joint.avbd_angular_stiffness = -1.0
+    joint.avbd_start_stiffness = default_avbd_start_stiffness
+    joint.avbd_linear_stiffness = math.inf
+    joint.avbd_angular_stiffness = math.inf
     assert joint.parent_rigid_body.name == "base"
     assert joint.child_rigid_body.name == "link"
     assert world.has_rigid_body_fixed_joint("base_to_link")
@@ -598,6 +775,137 @@ def test_simulation_world_rigid_body_one_dof_joints_project_supported_axes():
     assert float(slider.translation[2]) == pytest.approx(1.5, abs=0.05)
 
 
+def test_simulation_world_rigid_body_prismatic_velocity_motor_steps_from_python():
+    sx = _simulation()
+
+    world = sx.World(time_step=0.01, gravity=(0.0, 0.0, 0.0))
+    base = world.add_rigid_body("base")
+    base.is_static = True
+    slider = world.add_rigid_body("slider", position=(0.0, 0.0, 1.0))
+    joint = world.add_rigid_body_prismatic_joint(
+        "base_to_slider", base, slider, axis=(0.0, 0.0, 1.0)
+    )
+    joint.actuator_type = sx.ActuatorType.VELOCITY
+    joint.command_velocity = [0.8]
+    joint.set_effort_limits([-1000.0], [1000.0])
+
+    world.enter_simulation_mode()
+    start_z = float(slider.translation[2])
+    for _ in range(4):
+        world.step()
+
+    assert float(slider.translation[2]) > start_z + 0.015
+    assert float(slider.linear_velocity[2]) == pytest.approx(0.8, abs=0.25)
+
+    joint.command_velocity = [-0.5]
+    for _ in range(4):
+        world.step()
+
+    assert float(slider.linear_velocity[2]) == pytest.approx(-0.5, abs=0.25)
+
+
+def test_simulation_world_rigid_body_spherical_joint_projects_anchor_only():
+    sx = _simulation()
+
+    world = sx.World(time_step=0.005, gravity=(0.0, 0.0, 0.0))
+    base = world.add_rigid_body("base")
+    base.is_static = True
+    link = world.add_rigid_body("link", position=(1.0, 0.0, 0.0))
+
+    joint = world.add_rigid_body_spherical_joint("base_to_link_socket", base, link)
+    assert joint.type == sx.JointType.SPHERICAL
+    assert joint.num_dofs == 3
+    assert world.has_rigid_body_joint("base_to_link_socket")
+    assert not world.has_rigid_body_fixed_joint("base_to_link_socket")
+    assert world.num_rigid_body_joints == 1
+    assert world.num_rigid_body_fixed_joints == 0
+    assert world.get_rigid_body_joint("base_to_link_socket").type == (
+        sx.JointType.SPHERICAL
+    )
+
+    drifted_socket = np.eye(4)
+    angle = 0.35
+    drifted_socket[:3, :3] = [
+        [math.cos(angle), -math.sin(angle), 0.0],
+        [math.sin(angle), math.cos(angle), 0.0],
+        [0.0, 0.0, 1.0],
+    ]
+    drifted_socket[:3, 3] = (1.25, 0.25, 0.0)
+    link.transform = drifted_socket
+
+    world.enter_simulation_mode()
+    world.step()
+
+    assert float(link.translation[0]) == pytest.approx(1.0, abs=0.05)
+    assert float(link.translation[1]) == pytest.approx(0.0, abs=0.05)
+    rotation = np.asarray(link.rotation, dtype=float)
+    yaw = math.atan2(rotation[1, 0], rotation[0, 0])
+    assert yaw == pytest.approx(angle, abs=0.02)
+
+    anchored_world = sx.World(time_step=0.005, gravity=(0.0, 0.0, 0.0))
+    anchored_base = anchored_world.add_rigid_body("base")
+    anchored_base.is_static = True
+    anchored_link = anchored_world.add_rigid_body("link", position=(1.0, 0.0, 0.0))
+    anchored_world.add_rigid_body_spherical_joint(
+        "endpoint_socket",
+        anchored_base,
+        anchored_link,
+        parent_anchor=(0.5, 0.0, 0.0),
+        child_anchor=(-0.5, 0.0, 0.0),
+    )
+    drifted_endpoint = np.eye(4)
+    drifted_endpoint[:3, 3] = (1.25, 0.25, 0.0)
+    anchored_link.transform = drifted_endpoint
+
+    anchored_world.enter_simulation_mode()
+    anchored_world.step()
+
+    base_endpoint = np.asarray(anchored_base.translation, dtype=float).reshape(
+        3
+    ) + np.asarray(anchored_base.rotation, dtype=float) @ np.array([0.5, 0.0, 0.0])
+    child_endpoint = np.asarray(anchored_link.translation, dtype=float).reshape(
+        3
+    ) + np.asarray(anchored_link.rotation, dtype=float) @ np.array([-0.5, 0.0, 0.0])
+    assert np.linalg.norm(base_endpoint - child_endpoint) < 0.08
+
+
+def test_simulation_world_rigid_body_distance_spring_reduces_stretch():
+    sx = _simulation()
+
+    world = sx.World(time_step=0.005, gravity=(0.0, 0.0, 0.0))
+    base = world.add_rigid_body("base")
+    base.is_static = True
+    link = world.add_rigid_body("link", position=(2.0, 0.0, 0.0))
+
+    with pytest.raises(Exception, match="rest length"):
+        world.add_rigid_body_distance_spring("bad_rest", base, link, -1.0, 100.0)
+    with pytest.raises(Exception, match="stiffness"):
+        world.add_rigid_body_distance_spring("bad_stiffness", base, link, 1.0, 0.0)
+
+    assert (
+        world.add_rigid_body_distance_spring("radial_spring", base, link, 1.0, 200.0)
+        is None
+    )
+    with pytest.raises(Exception, match="already exists"):
+        world.add_rigid_body_distance_spring("radial_spring", base, link, 1.0, 200.0)
+
+    initial_distance = np.linalg.norm(
+        np.asarray(link.translation, dtype=float)
+        - np.asarray(base.translation, dtype=float)
+    )
+    world.enter_simulation_mode()
+    world.step()
+    projected_distance = np.linalg.norm(
+        np.asarray(link.translation, dtype=float)
+        - np.asarray(base.translation, dtype=float)
+    )
+
+    assert projected_distance < initial_distance
+    assert float(link.linear_velocity[0]) < 0.0
+    with pytest.raises(Exception, match="simulation mode"):
+        world.add_rigid_body_distance_spring("late", base, link, 1.0, 200.0)
+
+
 def test_simulation_world_rigid_body_fixed_joint_list_keeps_world_alive():
     sx = _simulation()
 
@@ -615,6 +923,4223 @@ def test_simulation_world_rigid_body_fixed_joint_list_keeps_world_alive():
     assert fixed_joints[0].name == "base_to_link"
     assert fixed_joints[0].parent_rigid_body.name == "base"
     assert fixed_joints[0].child_rigid_body.name == "link"
+
+
+def test_simulation_world_articulated_joint_list_keeps_world_alive():
+    sx = _simulation()
+
+    def build_joints_from_temporary_world():
+        world = sx.World()
+        world.multibody_options = sx.MultibodyOptions(
+            integration_family="variational integrator"
+        )
+        arm = world.add_multibody("arm")
+        base = arm.add_link("base")
+        body = arm.add_link(
+            "body",
+            parent=base,
+            joint=sx.JointSpec(name="floating", type=sx.JointType.FLOATING),
+        )
+        world.add_articulated_fixed_joint("base_hold", base, body)
+        world.add_articulated_revolute_joint(
+            "world_hinge", body, axis=(0.0, 1.0, 0.0)
+        )
+        return world.get_articulated_joints()
+
+    joints = build_joints_from_temporary_world()
+    gc.collect()
+
+    joints_by_name = {joint.name: joint for joint in joints}
+    assert set(joints_by_name) == {"base_hold", "world_hinge"}
+    assert joints_by_name["base_hold"].parent_link.name == "base"
+    assert joints_by_name["base_hold"].child_link.name == "body"
+    with pytest.raises(Exception, match="parent endpoint"):
+        _ = joints_by_name["world_hinge"].parent_link
+    assert joints_by_name["world_hinge"].child_link.name == "body"
+
+
+def test_simulation_world_articulated_point_joint_facade_exposes_link_endpoints():
+    sx = _simulation()
+
+    world = sx.World(time_step=0.005, gravity=(0.0, 0.0, 0.0))
+    world.multibody_options = sx.MultibodyOptions(
+        integration_family="variational integrator"
+    )
+    arm = world.add_multibody("arm")
+    base = arm.add_link("base")
+    body = arm.add_link(
+        "body",
+        parent=base,
+        joint=sx.JointSpec(name="floating", type=sx.JointType.FLOATING),
+    )
+
+    fixed = world.add_articulated_fixed_joint("base_hold", base, body)
+    assert fixed.type == sx.JointType.FIXED
+    assert fixed.num_dofs == 0
+    assert fixed.parent_link == base
+    assert fixed.child_link == body
+    assert math.isinf(fixed.avbd_start_stiffness)
+    assert math.isinf(fixed.avbd_linear_stiffness)
+    assert math.isinf(fixed.avbd_angular_stiffness)
+    fixed.avbd_start_stiffness = 2.0
+    fixed.avbd_linear_stiffness = 200.0
+    fixed.avbd_angular_stiffness = 300.0
+    assert fixed.avbd_start_stiffness == pytest.approx(2.0)
+    assert fixed.avbd_linear_stiffness == pytest.approx(200.0)
+    assert fixed.avbd_angular_stiffness == pytest.approx(300.0)
+    assert world.has_articulated_joint("base_hold")
+    assert world.get_articulated_joint("base_hold").child_link == body
+    assert world.get_articulated_joint("missing") is None
+    assert world.get_rigid_body_joint("base_hold") is None
+
+    hinge = world.add_articulated_revolute_joint(
+        "base_hinge", base, body, axis=(0.0, 0.0, 2.0)
+    )
+    assert hinge.type == sx.JointType.REVOLUTE
+    assert hinge.num_dofs == 1
+    assert np.asarray(hinge.axis, dtype=float)[2] == pytest.approx(1.0)
+    assert math.isinf(hinge.avbd_start_stiffness)
+    hinge.avbd_start_stiffness = 3.0
+    hinge.avbd_linear_stiffness = 400.0
+    hinge.avbd_angular_stiffness = 500.0
+    assert hinge.avbd_start_stiffness == pytest.approx(3.0)
+    assert hinge.avbd_linear_stiffness == pytest.approx(400.0)
+    assert hinge.avbd_angular_stiffness == pytest.approx(500.0)
+
+    slider = world.add_articulated_prismatic_joint(
+        "base_slider", base, body, axis=(1.0, 0.0, 0.0)
+    )
+    assert slider.type == sx.JointType.PRISMATIC
+    assert slider.num_dofs == 1
+    assert math.isinf(slider.avbd_start_stiffness)
+    slider.avbd_start_stiffness = 4.0
+    slider.avbd_linear_stiffness = 600.0
+    slider.avbd_angular_stiffness = 700.0
+    assert slider.avbd_start_stiffness == pytest.approx(4.0)
+    assert slider.avbd_linear_stiffness == pytest.approx(600.0)
+    assert slider.avbd_angular_stiffness == pytest.approx(700.0)
+
+    socket = world.add_articulated_spherical_joint("base_socket", base, body)
+    assert socket.type == sx.JointType.SPHERICAL
+    assert socket.num_dofs == 3
+    assert math.isinf(socket.avbd_start_stiffness)
+    socket.avbd_start_stiffness = 5.0
+    socket.avbd_linear_stiffness = 800.0
+    socket.avbd_angular_stiffness = 900.0
+    assert socket.avbd_start_stiffness == pytest.approx(5.0)
+    assert socket.avbd_linear_stiffness == pytest.approx(800.0)
+    assert socket.avbd_angular_stiffness == pytest.approx(900.0)
+
+    offset_socket = world.add_articulated_spherical_joint(
+        "offset_socket",
+        base,
+        body,
+        parent_anchor=(0.2, 0.0, 0.0),
+        child_anchor=(-0.1, 0.0, 0.0),
+    )
+    assert offset_socket.type == sx.JointType.SPHERICAL
+    assert offset_socket.num_dofs == 3
+
+    offset_hinge = world.add_articulated_revolute_joint(
+        "offset_hinge",
+        base,
+        body,
+        axis=(0.0, 0.0, 2.0),
+        parent_anchor=(0.2, 0.0, 0.0),
+        child_anchor=(-0.1, 0.0, 0.0),
+    )
+    assert offset_hinge.type == sx.JointType.REVOLUTE
+
+    offset_slider = world.add_articulated_prismatic_joint(
+        "offset_slider",
+        base,
+        body,
+        axis=(1.0, 0.0, 0.0),
+        parent_anchor=(0.2, 0.0, 0.0),
+        child_anchor=(-0.1, 0.0, 0.0),
+    )
+    assert offset_slider.type == sx.JointType.PRISMATIC
+
+    world_hold = world.add_articulated_fixed_joint("world_hold", body)
+    assert world_hold.type == sx.JointType.FIXED
+    assert world_hold.child_link == body
+    assert math.isinf(world_hold.avbd_start_stiffness)
+    world_hold.avbd_start_stiffness = 6.0
+    world_hold.avbd_linear_stiffness = 1000.0
+    world_hold.avbd_angular_stiffness = 1100.0
+    assert world_hold.avbd_start_stiffness == pytest.approx(6.0)
+    assert world_hold.avbd_linear_stiffness == pytest.approx(1000.0)
+    assert world_hold.avbd_angular_stiffness == pytest.approx(1100.0)
+    with pytest.raises(Exception, match="parent endpoint"):
+        _ = world_hold.parent_link
+
+    world_offset = world.add_articulated_fixed_joint(
+        "world_offset",
+        body,
+        world_anchor=(0.2, 0.0, 0.0),
+        child_anchor=(-0.1, 0.0, 0.0),
+    )
+    assert world_offset.type == sx.JointType.FIXED
+
+    world_hinge = world.add_articulated_revolute_joint(
+        "world_hinge", body, axis=(0.0, 0.0, 2.0)
+    )
+    assert world_hinge.type == sx.JointType.REVOLUTE
+    assert world_hinge.num_dofs == 1
+    assert np.asarray(world_hinge.axis, dtype=float)[2] == pytest.approx(1.0)
+
+    world_slider = world.add_articulated_prismatic_joint(
+        "world_slider", body, axis=(0.0, 1.0, 0.0)
+    )
+    assert world_slider.type == sx.JointType.PRISMATIC
+    assert world_slider.num_dofs == 1
+
+    world_offset_hinge = world.add_articulated_revolute_joint(
+        "world_offset_hinge",
+        body,
+        axis=(0.0, 0.0, 2.0),
+        world_anchor=(0.2, 0.0, 0.0),
+        child_anchor=(-0.1, 0.0, 0.0),
+    )
+    assert world_offset_hinge.type == sx.JointType.REVOLUTE
+
+    world_offset_slider = world.add_articulated_prismatic_joint(
+        "world_offset_slider",
+        body,
+        axis=(0.0, 1.0, 0.0),
+        world_anchor=(0.2, 0.0, 0.0),
+        child_anchor=(-0.1, 0.0, 0.0),
+    )
+    assert world_offset_slider.type == sx.JointType.PRISMATIC
+
+    world_socket = world.add_articulated_spherical_joint("world_socket", body)
+    assert world_socket.type == sx.JointType.SPHERICAL
+    assert world_socket.num_dofs == 3
+    with pytest.raises(Exception, match="parent endpoint"):
+        _ = world_socket.parent_link
+
+    world_offset_socket = world.add_articulated_spherical_joint(
+        "world_offset_socket",
+        body,
+        world_anchor=(0.2, 0.0, 0.0),
+        child_anchor=(-0.1, 0.0, 0.0),
+    )
+    assert world_offset_socket.type == sx.JointType.SPHERICAL
+    assert world_offset_socket.num_dofs == 3
+
+    assert world.num_articulated_joints == 15
+    assert len(world.get_articulated_joints()) == 15
+
+    other_arm = world.add_multibody("other_arm")
+    other_base = other_arm.add_link("other_base")
+    other_body = other_arm.add_link(
+        "other_body",
+        parent=other_base,
+        joint=sx.JointSpec(name="other_floating", type=sx.JointType.FLOATING),
+    )
+    foreign_world = sx.World()
+    foreign_world.multibody_options = sx.MultibodyOptions(
+        integration_family="variational integrator"
+    )
+    foreign_arm = foreign_world.add_multibody("foreign_arm")
+    foreign_base = foreign_arm.add_link("foreign_base")
+
+    with pytest.raises(Exception, match="already exists"):
+        world.add_articulated_fixed_joint("base_hold", base, body)
+    with pytest.raises(Exception, match="distinct"):
+        world.add_articulated_fixed_joint("same_link", base, base)
+    with pytest.raises(Exception, match="same multibody"):
+        world.add_articulated_revolute_joint(
+            "cross_multibody", base, other_body, axis=(0.0, 0.0, 1.0)
+        )
+    with pytest.raises(Exception, match="this World"):
+        world.add_articulated_prismatic_joint(
+            "cross_world", base, foreign_base, axis=(1.0, 0.0, 0.0)
+        )
+    with pytest.raises(Exception, match="this World"):
+        world.add_articulated_spherical_joint("world_cross_world", foreign_base)
+    with pytest.raises(Exception, match="finite and non-zero"):
+        world.add_articulated_revolute_joint(
+            "bad_axis", base, body, axis=(0.0, 0.0, 0.0)
+        )
+    with pytest.raises(Exception, match="both endpoints"):
+        world.add_articulated_fixed_joint(
+            "missing_anchor",
+            base,
+            body,
+            parent_anchor=(0.0, 0.0, 0.0),
+        )
+    with pytest.raises(Exception, match="anchors must be finite"):
+        world.add_articulated_fixed_joint(
+            "bad_anchor",
+            base,
+            body,
+            parent_anchor=(math.nan, 0.0, 0.0),
+            child_anchor=(0.0, 0.0, 0.0),
+        )
+    with pytest.raises(Exception, match="finite and non-negative"):
+        fixed.avbd_start_stiffness = math.inf
+    with pytest.raises(Exception, match="non-negative or infinity"):
+        hinge.avbd_linear_stiffness = math.nan
+    with pytest.raises(Exception, match="non-negative or infinity"):
+        slider.avbd_angular_stiffness = -1.0
+
+    world.enter_simulation_mode()
+    with pytest.raises(Exception, match="simulation mode"):
+        world.add_articulated_fixed_joint("late_joint", base, body)
+
+
+def test_simulation_world_articulated_point_joints_generate_unique_names():
+    sx = _simulation()
+
+    world = sx.World()
+    world.multibody_options = sx.MultibodyOptions(
+        integration_family="variational integrator"
+    )
+    arm = world.add_multibody("generated_joint_arm")
+    base = arm.add_link("base")
+    body = arm.add_link(
+        "body",
+        parent=base,
+        joint=sx.JointSpec(name="floating", type=sx.JointType.FLOATING),
+    )
+
+    explicit_joint = world.add_articulated_fixed_joint("joint_001", base, body)
+    generated_fixed = world.add_articulated_fixed_joint("", base, body)
+    generated_world_hinge = world.add_articulated_revolute_joint(
+        "", body, axis=(0.0, 1.0, 0.0)
+    )
+    generated_slider = world.add_articulated_prismatic_joint(
+        "", base, body, axis=(1.0, 0.0, 0.0)
+    )
+
+    assert explicit_joint.name == "joint_001"
+    assert generated_fixed.name == "joint_002"
+    assert generated_world_hinge.name == "joint_003"
+    assert generated_slider.name == "joint_004"
+    assert world.num_articulated_joints == 4
+
+    joints_by_name = {
+        joint.name: joint.type for joint in world.get_articulated_joints()
+    }
+    assert joints_by_name == {
+        "joint_001": sx.JointType.FIXED,
+        "joint_002": sx.JointType.FIXED,
+        "joint_003": sx.JointType.REVOLUTE,
+        "joint_004": sx.JointType.PRISMATIC,
+    }
+    assert world.get_articulated_joint("joint_002").child_link == body
+    assert world.has_articulated_joint("joint_003")
+    assert world.get_articulated_joint("joint_005") is None
+    with pytest.raises(Exception, match="already exists"):
+        world.add_articulated_spherical_joint("joint_004", base, body)
+
+
+def test_simulation_world_articulated_generated_names_resume_after_binary_roundtrip(
+    tmp_path: Path,
+):
+    sx = _simulation()
+
+    world = sx.World()
+    world.multibody_options = sx.MultibodyOptions(
+        integration_family="variational integrator"
+    )
+    arm = world.add_multibody("serialized_generated_joint_arm")
+    base = arm.add_link("base")
+    body = arm.add_link(
+        "body",
+        parent=base,
+        joint=sx.JointSpec(name="tree", type=sx.JointType.FLOATING),
+    )
+
+    explicit_joint = world.add_articulated_fixed_joint("joint_001", base, body)
+    generated_joint = world.add_articulated_revolute_joint(
+        "", body, axis=(0.0, 1.0, 0.0)
+    )
+    assert explicit_joint.name == "joint_001"
+    assert generated_joint.name == "joint_002"
+
+    binary_path = tmp_path / "articulated_generated_names.bin"
+    world.save_binary(binary_path)
+
+    restored_world = sx.World()
+    restored_world.load_binary(binary_path)
+    restored_arm = restored_world.get_multibody("serialized_generated_joint_arm")
+    assert restored_arm is not None
+    restored_base = restored_arm.get_link("base")
+    restored_body = restored_arm.get_link("body")
+    assert restored_base is not None
+    assert restored_body is not None
+    assert restored_world.has_articulated_joint("joint_001")
+    assert restored_world.has_articulated_joint("joint_002")
+    assert restored_world.num_articulated_joints == 2
+
+    generated_after_load = restored_world.add_articulated_prismatic_joint(
+        "", restored_base, restored_body, axis=(1.0, 0.0, 0.0)
+    )
+    assert generated_after_load.name == "joint_004"
+    assert restored_world.num_articulated_joints == 3
+
+
+def test_simulation_world_clear_resets_articulated_generated_names():
+    sx = _simulation()
+
+    world = sx.World()
+    world.multibody_options = sx.MultibodyOptions(
+        integration_family="variational integrator"
+    )
+    arm = world.add_multibody("clear_generated_joint_arm")
+    base = arm.add_link("base")
+    body = arm.add_link(
+        "body",
+        parent=base,
+        joint=sx.JointSpec(name="floating", type=sx.JointType.FLOATING),
+    )
+
+    first_generated = world.add_articulated_fixed_joint("", base, body)
+    assert first_generated.name == "joint_001"
+    assert world.num_articulated_joints == 1
+    assert base.is_valid
+    assert body.is_valid
+    assert first_generated.is_valid
+
+    world.clear()
+    assert world.num_articulated_joints == 0
+    assert not world.has_articulated_joint("joint_001")
+    assert not base.is_valid
+    assert not body.is_valid
+    assert not first_generated.is_valid
+
+    rebuilt = world.add_multibody("clear_generated_joint_rebuilt")
+    rebuilt_base = rebuilt.add_link("base")
+    rebuilt_body = rebuilt.add_link(
+        "body",
+        parent=rebuilt_base,
+        joint=sx.JointSpec(name="floating", type=sx.JointType.FLOATING),
+    )
+
+    regenerated = world.add_articulated_revolute_joint(
+        "", rebuilt_body, axis=(0.0, 0.0, 1.0)
+    )
+    assert regenerated.name == "joint_001"
+    assert regenerated.type == sx.JointType.REVOLUTE
+    assert world.num_articulated_joints == 1
+
+
+def test_simulation_world_articulated_motor_breakage_steps_from_python():
+    sx = _simulation()
+
+    hinge_world, hinge_base, hinge_body = _floating_link_world(
+        sx, "python_breakable_hinge"
+    )
+    hinge_body.parent_joint.position = [0.1, -0.2, 0.15, 0.0, 0.0, 0.0]
+    hinge_child_anchor = np.array([-0.15, 0.05, 0.0])
+    hinge_parent_anchor = (
+        np.asarray(hinge_body.translation, dtype=float)
+        + np.asarray(hinge_body.rotation, dtype=float) @ hinge_child_anchor
+    )
+    hinge = hinge_world.add_articulated_revolute_joint(
+        "breakable_hinge",
+        hinge_base,
+        hinge_body,
+        axis=(0.0, 0.0, 1.0),
+        parent_anchor=hinge_parent_anchor.tolist(),
+        child_anchor=hinge_child_anchor.tolist(),
+    )
+    assert hinge.type == sx.JointType.REVOLUTE
+    assert hinge.num_dofs == 1
+    assert hinge.parent_link == hinge_base
+    assert hinge.child_link == hinge_body
+    assert np.asarray(hinge.axis, dtype=float).tolist() == pytest.approx(
+        [0.0, 0.0, 1.0]
+    )
+    hinge.actuator_type = sx.ActuatorType.VELOCITY
+    target_speed = 0.4
+    hinge.command_velocity = [target_speed]
+    hinge.set_effort_limits([-1000.0], [1000.0])
+    hinge.break_force = 1e-18
+
+    hinge_world.enter_simulation_mode()
+    hinge_world.step()
+
+    assert hinge.is_broken
+    rotation = np.asarray(hinge_body.rotation, dtype=float)
+    yaw = math.atan2(rotation[1, 0], rotation[0, 0])
+    assert yaw == pytest.approx(target_speed * hinge_world.time_step, abs=1e-6)
+
+    max_anchor_residual = 0.0
+    for _ in range(20):
+        hinge_body.apply_force((0.0, 4.0, 0.0))
+        hinge_world.step()
+        anchor_position = (
+            np.asarray(hinge_body.translation, dtype=float)
+            + np.asarray(hinge_body.rotation, dtype=float) @ hinge_child_anchor
+        )
+        max_anchor_residual = max(
+            max_anchor_residual,
+            float(np.linalg.norm(anchor_position - hinge_parent_anchor)),
+        )
+    assert max_anchor_residual > 1e-4
+
+    slider_world, _, slider_body = _floating_link_world(
+        sx, "python_world_breakable_slider"
+    )
+    slider_body.parent_joint.position = [0.2, -0.15, 0.05, 0.0, 0.0, 0.0]
+    slider_axis = np.array([1.0, 0.0, 0.0])
+    slider_child_anchor = np.array([0.0, 0.2, 0.1])
+    slider_world_anchor = (
+        np.asarray(slider_body.translation, dtype=float)
+        + np.asarray(slider_body.rotation, dtype=float) @ slider_child_anchor
+    )
+    slider = slider_world.add_articulated_prismatic_joint(
+        "world_breakable_slider",
+        slider_body,
+        axis=slider_axis,
+        world_anchor=slider_world_anchor.tolist(),
+        child_anchor=slider_child_anchor.tolist(),
+    )
+    assert slider.type == sx.JointType.PRISMATIC
+    assert slider.num_dofs == 1
+    assert slider.child_link == slider_body
+    with pytest.raises(Exception, match="parent endpoint"):
+        _ = slider.parent_link
+    assert np.asarray(slider.axis, dtype=float).tolist() == pytest.approx(
+        slider_axis.tolist()
+    )
+    slider.actuator_type = sx.ActuatorType.VELOCITY
+    target_speed = 0.3
+    slider.command_velocity = [target_speed]
+    slider.set_effort_limits([-1000.0], [1000.0])
+    slider.break_force = 1e-18
+
+    slider_world.enter_simulation_mode()
+    slider_world.step()
+
+    assert slider.is_broken
+    anchor_position = (
+        np.asarray(slider_body.translation, dtype=float)
+        + np.asarray(slider_body.rotation, dtype=float) @ slider_child_anchor
+    )
+    anchor_delta = anchor_position - slider_world_anchor
+    assert float(anchor_delta.dot(slider_axis)) == pytest.approx(
+        target_speed * slider_world.time_step, abs=1e-6
+    )
+    orthogonal_delta = anchor_delta - anchor_delta.dot(slider_axis) * slider_axis
+    assert np.linalg.norm(orthogonal_delta) < 1e-6
+
+    max_orthogonal_drift = 0.0
+    for _ in range(20):
+        slider_body.apply_force((0.0, 4.0, 0.0))
+        slider_world.step()
+        anchor_position = (
+            np.asarray(slider_body.translation, dtype=float)
+            + np.asarray(slider_body.rotation, dtype=float) @ slider_child_anchor
+        )
+        anchor_delta = anchor_position - slider_world_anchor
+        orthogonal = anchor_delta - anchor_delta.dot(slider_axis) * slider_axis
+        max_orthogonal_drift = max(
+            max_orthogonal_drift, float(np.linalg.norm(orthogonal))
+        )
+    assert max_orthogonal_drift > 1e-4
+
+
+def test_simulation_world_articulated_motor_breakage_reset_reengages_from_python():
+    sx = _simulation()
+
+    hinge_world, hinge_base, hinge_body = _floating_link_world(
+        sx, "python_resettable_breakable_hinge"
+    )
+    hinge_body.parent_joint.position = [0.1, -0.2, 0.15, 0.0, 0.0, 0.0]
+    hinge_child_anchor = np.array([-0.15, 0.05, 0.0])
+    hinge_parent_anchor = (
+        np.asarray(hinge_body.translation, dtype=float)
+        + np.asarray(hinge_body.rotation, dtype=float) @ hinge_child_anchor
+    )
+    hinge = hinge_world.add_articulated_revolute_joint(
+        "resettable_hinge",
+        hinge_base,
+        hinge_body,
+        axis=(0.0, 0.0, 1.0),
+        parent_anchor=hinge_parent_anchor.tolist(),
+        child_anchor=hinge_child_anchor.tolist(),
+    )
+    assert hinge.type == sx.JointType.REVOLUTE
+    assert hinge.num_dofs == 1
+    assert hinge.parent_link == hinge_base
+    assert hinge.child_link == hinge_body
+    assert np.asarray(hinge.axis, dtype=float).tolist() == pytest.approx(
+        [0.0, 0.0, 1.0]
+    )
+    hinge.actuator_type = sx.ActuatorType.VELOCITY
+    hinge_speed = 0.4
+    hinge.command_velocity = [hinge_speed]
+    hinge.set_effort_limits([-1000.0], [1000.0])
+    hinge.break_force = 1e-18
+
+    hinge_world.enter_simulation_mode()
+    hinge_world.step()
+
+    assert hinge.is_broken
+    hinge_yaw = math.atan2(
+        np.asarray(hinge_body.rotation, dtype=float)[1, 0],
+        np.asarray(hinge_body.rotation, dtype=float)[0, 0],
+    )
+    assert hinge_yaw == pytest.approx(hinge_speed * hinge_world.time_step, abs=1e-6)
+
+    max_hinge_anchor_residual = 0.0
+    for _ in range(20):
+        hinge_body.apply_force((0.0, 4.0, 0.0))
+        hinge_world.step()
+        hinge_anchor_position = (
+            np.asarray(hinge_body.translation, dtype=float)
+            + np.asarray(hinge_body.rotation, dtype=float) @ hinge_child_anchor
+        )
+        max_hinge_anchor_residual = max(
+            max_hinge_anchor_residual,
+            float(np.linalg.norm(hinge_anchor_position - hinge_parent_anchor)),
+        )
+    assert max_hinge_anchor_residual > 1e-4
+    hinge_pre_reset_yaw = math.atan2(
+        np.asarray(hinge_body.rotation, dtype=float)[1, 0],
+        np.asarray(hinge_body.rotation, dtype=float)[0, 0],
+    )
+
+    hinge_body.parent_joint.velocity = [0.0] * 6
+    hinge.break_force = 1.0e12
+    hinge.reset_breakage()
+    assert not hinge.is_broken
+
+    hinge_world.step()
+
+    assert not hinge.is_broken
+    assert hinge.parent_link == hinge_base
+    assert hinge.child_link == hinge_body
+    assert np.asarray(hinge.axis, dtype=float).tolist() == pytest.approx(
+        [0.0, 0.0, 1.0]
+    )
+    hinge_reset_anchor_position = (
+        np.asarray(hinge_body.translation, dtype=float)
+        + np.asarray(hinge_body.rotation, dtype=float) @ hinge_child_anchor
+    )
+    assert np.linalg.norm(hinge_reset_anchor_position - hinge_parent_anchor) < 1e-6
+    assert (
+        np.linalg.norm(
+            np.asarray(hinge_body.rotation, dtype=float) @ np.array([0.0, 0.0, 1.0])
+            - np.array([0.0, 0.0, 1.0])
+        )
+        < 1e-6
+    )
+    hinge_reset_yaw = math.atan2(
+        np.asarray(hinge_body.rotation, dtype=float)[1, 0],
+        np.asarray(hinge_body.rotation, dtype=float)[0, 0],
+    )
+    assert hinge_reset_yaw > hinge_pre_reset_yaw
+
+    slider_world, _, slider_body = _floating_link_world(
+        sx, "python_resettable_world_breakable_slider"
+    )
+    slider_body.parent_joint.position = [0.2, -0.15, 0.05, 0.0, 0.0, 0.0]
+    slider_axis = np.array([1.0, 0.0, 0.0])
+    slider_child_anchor = np.array([0.0, 0.2, 0.1])
+    slider_world_anchor = (
+        np.asarray(slider_body.translation, dtype=float)
+        + np.asarray(slider_body.rotation, dtype=float) @ slider_child_anchor
+    )
+    slider = slider_world.add_articulated_prismatic_joint(
+        "resettable_world_slider",
+        slider_body,
+        axis=slider_axis,
+        world_anchor=slider_world_anchor.tolist(),
+        child_anchor=slider_child_anchor.tolist(),
+    )
+    assert slider.type == sx.JointType.PRISMATIC
+    assert slider.num_dofs == 1
+    assert slider.child_link == slider_body
+    with pytest.raises(Exception, match="parent endpoint"):
+        _ = slider.parent_link
+    assert np.asarray(slider.axis, dtype=float).tolist() == pytest.approx(
+        slider_axis.tolist()
+    )
+    slider.actuator_type = sx.ActuatorType.VELOCITY
+    slider_speed = 0.3
+    slider.command_velocity = [slider_speed]
+    slider.set_effort_limits([-1000.0], [1000.0])
+    slider.break_force = 1e-18
+
+    slider_world.enter_simulation_mode()
+    slider_world.step()
+
+    assert slider.is_broken
+    slider_anchor_position = (
+        np.asarray(slider_body.translation, dtype=float)
+        + np.asarray(slider_body.rotation, dtype=float) @ slider_child_anchor
+    )
+    slider_anchor_delta = slider_anchor_position - slider_world_anchor
+    assert float(slider_anchor_delta.dot(slider_axis)) == pytest.approx(
+        slider_speed * slider_world.time_step, abs=1e-6
+    )
+    slider_orthogonal_delta = (
+        slider_anchor_delta - slider_anchor_delta.dot(slider_axis) * slider_axis
+    )
+    assert np.linalg.norm(slider_orthogonal_delta) < 1e-6
+
+    max_slider_orthogonal_drift = 0.0
+    for _ in range(20):
+        slider_body.apply_force((0.0, 4.0, 0.0))
+        slider_world.step()
+        slider_anchor_position = (
+            np.asarray(slider_body.translation, dtype=float)
+            + np.asarray(slider_body.rotation, dtype=float) @ slider_child_anchor
+        )
+        slider_force_delta = slider_anchor_position - slider_world_anchor
+        slider_force_orthogonal = (
+            slider_force_delta - slider_force_delta.dot(slider_axis) * slider_axis
+        )
+        max_slider_orthogonal_drift = max(
+            max_slider_orthogonal_drift,
+            float(np.linalg.norm(slider_force_orthogonal)),
+        )
+    assert max_slider_orthogonal_drift > 1e-4
+
+    slider_body.parent_joint.velocity = [0.0] * 6
+    slider.break_force = 1.0e12
+    slider.reset_breakage()
+    assert not slider.is_broken
+
+    slider_world.step()
+
+    assert not slider.is_broken
+    assert slider.child_link == slider_body
+    with pytest.raises(Exception, match="parent endpoint"):
+        _ = slider.parent_link
+    assert np.asarray(slider.axis, dtype=float).tolist() == pytest.approx(
+        slider_axis.tolist()
+    )
+    slider_reset_anchor_position = (
+        np.asarray(slider_body.translation, dtype=float)
+        + np.asarray(slider_body.rotation, dtype=float) @ slider_child_anchor
+    )
+    slider_reset_delta = slider_reset_anchor_position - slider_world_anchor
+    slider_reset_orthogonal = (
+        slider_reset_delta - slider_reset_delta.dot(slider_axis) * slider_axis
+    )
+    assert np.linalg.norm(slider_reset_orthogonal) < 1e-6
+    assert (
+        np.linalg.norm(
+            np.asarray(slider_body.rotation, dtype=float) - np.eye(3)
+        )
+        < 1e-6
+    )
+    assert float(slider_reset_delta.dot(slider_axis)) > float(
+        slider_anchor_delta.dot(slider_axis)
+    )
+
+
+def test_simulation_world_articulated_complementary_motor_breakage_reset_from_python():
+    sx = _simulation()
+
+    slider_world, slider_base, slider_body = _floating_link_world(
+        sx, "python_resettable_same_breakable_slider"
+    )
+    slider_body.parent_joint.position = [0.05, -0.1, 0.0, 0.0, 0.0, 0.0]
+    slider_axis = np.array([1.0, 0.0, 0.0])
+    slider_child_anchor = np.array([0.0, 0.2, 0.1])
+    slider_parent_anchor = (
+        np.asarray(slider_body.translation, dtype=float)
+        + np.asarray(slider_body.rotation, dtype=float) @ slider_child_anchor
+    )
+    slider = slider_world.add_articulated_prismatic_joint(
+        "resettable_same_slider",
+        slider_base,
+        slider_body,
+        axis=slider_axis,
+        parent_anchor=slider_parent_anchor.tolist(),
+        child_anchor=slider_child_anchor.tolist(),
+    )
+    assert slider.type == sx.JointType.PRISMATIC
+    assert slider.num_dofs == 1
+    assert slider.parent_link == slider_base
+    assert slider.child_link == slider_body
+    assert np.asarray(slider.axis, dtype=float).tolist() == pytest.approx(
+        slider_axis.tolist()
+    )
+    slider.actuator_type = sx.ActuatorType.VELOCITY
+    slider_speed = 0.3
+    slider.command_velocity = [slider_speed]
+    slider.set_effort_limits([-1000.0], [1000.0])
+    slider.break_force = 1e-18
+
+    slider_world.enter_simulation_mode()
+    slider_world.step()
+
+    assert slider.is_broken
+    slider_anchor_position = (
+        np.asarray(slider_body.translation, dtype=float)
+        + np.asarray(slider_body.rotation, dtype=float) @ slider_child_anchor
+    )
+    slider_anchor_delta = slider_anchor_position - slider_parent_anchor
+    assert float(slider_anchor_delta.dot(slider_axis)) == pytest.approx(
+        slider_speed * slider_world.time_step, abs=1e-6
+    )
+
+    max_orthogonal_drift = 0.0
+    for _ in range(20):
+        slider_body.apply_force((0.0, 4.0, 0.0))
+        slider_world.step()
+        anchor_position = (
+            np.asarray(slider_body.translation, dtype=float)
+            + np.asarray(slider_body.rotation, dtype=float) @ slider_child_anchor
+        )
+        anchor_delta = anchor_position - slider_parent_anchor
+        orthogonal = anchor_delta - anchor_delta.dot(slider_axis) * slider_axis
+        max_orthogonal_drift = max(
+            max_orthogonal_drift, float(np.linalg.norm(orthogonal))
+        )
+    assert max_orthogonal_drift > 1e-4
+
+    slider_body.parent_joint.velocity = [0.0] * 6
+    slider.break_force = 1.0e12
+    slider.reset_breakage()
+
+    assert not slider.is_broken
+
+    slider_world.step()
+
+    assert not slider.is_broken
+    assert slider.parent_link == slider_base
+    assert slider.child_link == slider_body
+    assert np.asarray(slider.axis, dtype=float).tolist() == pytest.approx(
+        slider_axis.tolist()
+    )
+    slider_reset_anchor_position = (
+        np.asarray(slider_body.translation, dtype=float)
+        + np.asarray(slider_body.rotation, dtype=float) @ slider_child_anchor
+    )
+    slider_reset_delta = slider_reset_anchor_position - slider_parent_anchor
+    slider_reset_orthogonal = (
+        slider_reset_delta - slider_reset_delta.dot(slider_axis) * slider_axis
+    )
+    assert np.linalg.norm(slider_reset_orthogonal) < 1e-6
+    assert (
+        np.linalg.norm(
+            np.asarray(slider_body.rotation, dtype=float) - np.eye(3)
+        )
+        < 1e-6
+    )
+    assert float(slider_reset_delta.dot(slider_axis)) > float(
+        slider_anchor_delta.dot(slider_axis)
+    )
+
+    hinge_world, _, hinge_body = _floating_link_world(
+        sx, "python_resettable_world_breakable_hinge"
+    )
+    hinge_body.parent_joint.position = [0.15, -0.05, 0.0, 0.0, 0.0, 0.0]
+    hinge_child_anchor = np.array([0.2, 0.1, 0.0])
+    hinge_world_anchor = (
+        np.asarray(hinge_body.translation, dtype=float)
+        + np.asarray(hinge_body.rotation, dtype=float) @ hinge_child_anchor
+    )
+    hinge = hinge_world.add_articulated_revolute_joint(
+        "resettable_world_hinge",
+        hinge_body,
+        axis=(0.0, 0.0, 1.0),
+        world_anchor=hinge_world_anchor.tolist(),
+        child_anchor=hinge_child_anchor.tolist(),
+    )
+    assert hinge.type == sx.JointType.REVOLUTE
+    assert hinge.num_dofs == 1
+    assert hinge.child_link == hinge_body
+    with pytest.raises(Exception, match="parent endpoint"):
+        _ = hinge.parent_link
+    assert np.asarray(hinge.axis, dtype=float).tolist() == pytest.approx(
+        [0.0, 0.0, 1.0]
+    )
+    hinge.actuator_type = sx.ActuatorType.VELOCITY
+    hinge_speed = 0.4
+    hinge.command_velocity = [hinge_speed]
+    hinge.set_effort_limits([-1000.0], [1000.0])
+    hinge.break_force = 1e-18
+
+    hinge_world.enter_simulation_mode()
+    hinge_world.step()
+
+    assert hinge.is_broken
+    hinge_yaw = math.atan2(
+        np.asarray(hinge_body.rotation, dtype=float)[1, 0],
+        np.asarray(hinge_body.rotation, dtype=float)[0, 0],
+    )
+    assert hinge_yaw == pytest.approx(hinge_speed * hinge_world.time_step, abs=1e-6)
+
+    max_anchor_residual = 0.0
+    for _ in range(20):
+        hinge_body.apply_force((0.0, 4.0, 0.0))
+        hinge_world.step()
+        anchor_position = (
+            np.asarray(hinge_body.translation, dtype=float)
+            + np.asarray(hinge_body.rotation, dtype=float) @ hinge_child_anchor
+        )
+        max_anchor_residual = max(
+            max_anchor_residual,
+            float(np.linalg.norm(anchor_position - hinge_world_anchor)),
+        )
+    assert max_anchor_residual > 1e-4
+
+    hinge_body.parent_joint.velocity = [0.0] * 6
+    hinge.break_force = 1.0e12
+    hinge.reset_breakage()
+
+    assert not hinge.is_broken
+
+    hinge_world.step()
+
+    assert not hinge.is_broken
+    assert hinge.child_link == hinge_body
+    with pytest.raises(Exception, match="parent endpoint"):
+        _ = hinge.parent_link
+    assert np.asarray(hinge.axis, dtype=float).tolist() == pytest.approx(
+        [0.0, 0.0, 1.0]
+    )
+    hinge_reset_anchor_position = (
+        np.asarray(hinge_body.translation, dtype=float)
+        + np.asarray(hinge_body.rotation, dtype=float) @ hinge_child_anchor
+    )
+    assert np.linalg.norm(hinge_reset_anchor_position - hinge_world_anchor) < 1e-6
+    assert (
+        np.linalg.norm(
+            np.asarray(hinge_body.rotation, dtype=float) @ np.array([0.0, 0.0, 1.0])
+            - np.array([0.0, 0.0, 1.0])
+        )
+        < 1e-6
+    )
+    hinge_reset_yaw = math.atan2(
+        np.asarray(hinge_body.rotation, dtype=float)[1, 0],
+        np.asarray(hinge_body.rotation, dtype=float)[0, 0],
+    )
+    assert hinge_reset_yaw > hinge_yaw
+
+
+def test_simulation_world_articulated_non_cardinal_prismatic_reset_from_python():
+    sx = _simulation()
+
+    world, _, body = _floating_link_world(
+        sx, "python_non_cardinal_world_breakable_slider"
+    )
+    body.parent_joint.position = [0.2, -0.15, 0.05, 0.0, 0.0, 0.0]
+
+    slider_axis = np.array([1.0, 2.0, 0.5], dtype=float)
+    slider_axis /= np.linalg.norm(slider_axis)
+    child_anchor = np.array([0.0, 0.2, 0.1])
+    world_anchor = (
+        np.asarray(body.translation, dtype=float)
+        + np.asarray(body.rotation, dtype=float) @ child_anchor
+    )
+    slider = world.add_articulated_prismatic_joint(
+        "non_cardinal_world_slider",
+        body,
+        axis=slider_axis.tolist(),
+        world_anchor=world_anchor.tolist(),
+        child_anchor=child_anchor.tolist(),
+    )
+    assert slider.type == sx.JointType.PRISMATIC
+    assert slider.num_dofs == 1
+    assert slider.child_link == body
+    with pytest.raises(Exception, match="parent endpoint"):
+        _ = slider.parent_link
+    assert np.asarray(slider.axis, dtype=float).tolist() == pytest.approx(
+        slider_axis.tolist()
+    )
+    slider.actuator_type = sx.ActuatorType.VELOCITY
+    target_speed = 0.3
+    slider.command_velocity = [target_speed]
+    slider.set_effort_limits([-1000.0], [1000.0])
+    slider.break_force = 1e-18
+
+    def anchor_delta() -> np.ndarray:
+        return (
+            np.asarray(body.translation, dtype=float)
+            + np.asarray(body.rotation, dtype=float) @ child_anchor
+            - world_anchor
+        )
+
+    def orthogonal_anchor_residual() -> float:
+        delta = anchor_delta()
+        return float(np.linalg.norm(delta - float(delta @ slider_axis) * slider_axis))
+
+    world.enter_simulation_mode()
+    world.step()
+
+    assert slider.is_broken
+    first_axis_position = float(anchor_delta() @ slider_axis)
+    assert first_axis_position == pytest.approx(
+        target_speed * world.time_step, abs=1e-6
+    )
+    assert orthogonal_anchor_residual() < 1e-6
+    assert np.linalg.norm(np.asarray(body.rotation, dtype=float) - np.eye(3)) < 1e-6
+
+    lateral_force = np.array([0.0, 1.0, 0.0], dtype=float)
+    lateral_force -= float(lateral_force @ slider_axis) * slider_axis
+    lateral_force /= np.linalg.norm(lateral_force)
+
+    max_broken_orthogonal_residual = 0.0
+    for _ in range(20):
+        body.apply_force((4.0 * lateral_force).tolist())
+        world.step()
+        max_broken_orthogonal_residual = max(
+            max_broken_orthogonal_residual, orthogonal_anchor_residual()
+        )
+    assert max_broken_orthogonal_residual > 1e-4
+
+    body.parent_joint.velocity = [0.0] * 6
+    slider.command_velocity = [-target_speed]
+    slider.break_force = 1.0e12
+    slider.reset_breakage()
+
+    assert not slider.is_broken
+    axis_position_before_reset = float(anchor_delta() @ slider_axis)
+
+    for _ in range(6):
+        world.step()
+
+    assert not slider.is_broken
+    assert slider.child_link == body
+    with pytest.raises(Exception, match="parent endpoint"):
+        _ = slider.parent_link
+    assert np.asarray(slider.axis, dtype=float).tolist() == pytest.approx(
+        slider_axis.tolist()
+    )
+    assert orthogonal_anchor_residual() < 1e-6
+    assert np.linalg.norm(np.asarray(body.rotation, dtype=float) - np.eye(3)) < 1e-6
+    assert float(anchor_delta() @ slider_axis) < axis_position_before_reset - 1e-3
+
+
+def test_simulation_world_articulated_non_cardinal_revolute_reset_from_python():
+    sx = _simulation()
+
+    world, _, body = _floating_link_world(
+        sx, "python_non_cardinal_world_breakable_hinge"
+    )
+    body.parent_joint.position = [0.1, -0.2, 0.15, 0.0, 0.0, 0.0]
+
+    hinge_axis = np.array([1.0, 2.0, 0.5], dtype=float)
+    hinge_axis /= np.linalg.norm(hinge_axis)
+    child_anchor = np.array([-0.15, 0.05, 0.02])
+    world_anchor = (
+        np.asarray(body.translation, dtype=float)
+        + np.asarray(body.rotation, dtype=float) @ child_anchor
+    )
+    hinge = world.add_articulated_revolute_joint(
+        "non_cardinal_world_hinge",
+        body,
+        axis=hinge_axis.tolist(),
+        world_anchor=world_anchor.tolist(),
+        child_anchor=child_anchor.tolist(),
+    )
+    assert hinge.type == sx.JointType.REVOLUTE
+    assert hinge.num_dofs == 1
+    assert hinge.child_link == body
+    with pytest.raises(Exception, match="parent endpoint"):
+        _ = hinge.parent_link
+    assert np.asarray(hinge.axis, dtype=float).tolist() == pytest.approx(
+        hinge_axis.tolist()
+    )
+    hinge.actuator_type = sx.ActuatorType.VELOCITY
+    target_speed = 0.4
+    hinge.command_velocity = [target_speed]
+    hinge.set_effort_limits([-1000.0], [1000.0])
+    hinge.break_force = 1e-18
+
+    def anchor_residual() -> float:
+        anchor_position = (
+            np.asarray(body.translation, dtype=float)
+            + np.asarray(body.rotation, dtype=float) @ child_anchor
+        )
+        return float(np.linalg.norm(anchor_position - world_anchor))
+
+    def signed_axis_angle() -> float:
+        rotation = np.asarray(body.rotation, dtype=float)
+        skew_axis = np.array(
+            [
+                rotation[2, 1] - rotation[1, 2],
+                rotation[0, 2] - rotation[2, 0],
+                rotation[1, 0] - rotation[0, 1],
+            ]
+        )
+        sin_term = 0.5 * float(hinge_axis @ skew_axis)
+        cos_term = 0.5 * (float(np.trace(rotation)) - 1.0)
+        return math.atan2(sin_term, cos_term)
+
+    def axis_tilt() -> float:
+        rotation = np.asarray(body.rotation, dtype=float)
+        return float(np.linalg.norm(rotation @ hinge_axis - hinge_axis))
+
+    world.enter_simulation_mode()
+    world.step()
+
+    assert hinge.is_broken
+    first_axis_angle = signed_axis_angle()
+    assert first_axis_angle == pytest.approx(target_speed * world.time_step, abs=1e-6)
+    assert anchor_residual() < 1e-6
+    assert axis_tilt() < 1e-6
+
+    lateral_force = np.array([0.0, 1.0, 0.0], dtype=float)
+    lateral_force -= float(lateral_force @ hinge_axis) * hinge_axis
+    lateral_force /= np.linalg.norm(lateral_force)
+    off_axis_force_point = child_anchor + np.array([0.3, 0.0, 0.0])
+
+    max_broken_anchor_residual = 0.0
+    for _ in range(20):
+        body.apply_force((4.0 * lateral_force).tolist(), off_axis_force_point.tolist())
+        world.step()
+        max_broken_anchor_residual = max(
+            max_broken_anchor_residual, anchor_residual()
+        )
+    assert max_broken_anchor_residual > 1e-4
+
+    body.parent_joint.velocity = [0.0] * 6
+    hinge.command_velocity = [-target_speed]
+    hinge.break_force = 1.0e12
+    hinge.reset_breakage()
+
+    assert not hinge.is_broken
+    axis_angle_before_reset = signed_axis_angle()
+
+    for _ in range(6):
+        world.step()
+
+    assert not hinge.is_broken
+    assert hinge.child_link == body
+    with pytest.raises(Exception, match="parent endpoint"):
+        _ = hinge.parent_link
+    assert np.asarray(hinge.axis, dtype=float).tolist() == pytest.approx(
+        hinge_axis.tolist()
+    )
+    assert anchor_residual() < 1e-6
+    assert axis_tilt() < 1e-6
+    assert signed_axis_angle() < axis_angle_before_reset - 1e-3
+
+
+def test_simulation_world_articulated_non_cardinal_pair_motors_reset_from_python():
+    sx = _simulation()
+
+    slider_world, slider_parent, slider_child = _floating_link_pair_world(
+        sx, "python_non_cardinal_pair_breakable_slider"
+    )
+    slider_child.parent_joint.position = [0.3, 0.0, 0.0, 0.0, 0.0, 0.0]
+
+    slider_axis = np.array([1.0, 2.0, 0.5], dtype=float)
+    slider_axis /= np.linalg.norm(slider_axis)
+    parent_anchor = np.array([0.2, 0.1, 0.0])
+    child_anchor = np.array([-0.1, 0.1, 0.0])
+    slider = slider_world.add_articulated_prismatic_joint(
+        "non_cardinal_pair_slider",
+        slider_parent,
+        slider_child,
+        axis=slider_axis.tolist(),
+        parent_anchor=parent_anchor.tolist(),
+        child_anchor=child_anchor.tolist(),
+    )
+    assert slider.type == sx.JointType.PRISMATIC
+    assert slider.num_dofs == 1
+    assert slider.parent_link == slider_parent
+    assert slider.child_link == slider_child
+    assert np.asarray(slider.axis, dtype=float).tolist() == pytest.approx(
+        slider_axis.tolist()
+    )
+    slider.actuator_type = sx.ActuatorType.VELOCITY
+    slider_speed = 0.3
+    slider.command_velocity = [slider_speed]
+    slider.set_effort_limits([-1000.0], [1000.0])
+    slider.break_force = 1e-18
+
+    def slider_anchor_delta() -> np.ndarray:
+        parent_anchor_world = (
+            np.asarray(slider_parent.translation, dtype=float)
+            + np.asarray(slider_parent.rotation, dtype=float) @ parent_anchor
+        )
+        child_anchor_world = (
+            np.asarray(slider_child.translation, dtype=float)
+            + np.asarray(slider_child.rotation, dtype=float) @ child_anchor
+        )
+        return child_anchor_world - parent_anchor_world
+
+    def slider_orthogonal_residual() -> float:
+        delta = slider_anchor_delta()
+        return float(np.linalg.norm(delta - float(delta @ slider_axis) * slider_axis))
+
+    def slider_relative_rotation_error() -> float:
+        relative_rotation = (
+            np.asarray(slider_parent.rotation, dtype=float).T
+            @ np.asarray(slider_child.rotation, dtype=float)
+        )
+        return float(np.linalg.norm(relative_rotation - np.eye(3)))
+
+    slider_world.enter_simulation_mode()
+    slider_world.step()
+
+    assert slider.is_broken
+    slider_first_delta = slider_anchor_delta()
+    assert float(slider_first_delta @ slider_axis) == pytest.approx(
+        slider_speed * slider_world.time_step, abs=1e-6
+    )
+    assert slider_orthogonal_residual() < 1e-6
+    assert slider_relative_rotation_error() < 1e-6
+
+    lateral_force = np.array([0.0, 1.0, 0.0], dtype=float)
+    lateral_force -= float(lateral_force @ slider_axis) * slider_axis
+    lateral_force /= np.linalg.norm(lateral_force)
+
+    max_slider_broken_orthogonal_residual = 0.0
+    for _ in range(20):
+        slider_parent.apply_force((-4.0 * lateral_force).tolist(), parent_anchor.tolist())
+        slider_child.apply_force((4.0 * lateral_force).tolist(), child_anchor.tolist())
+        slider_world.step()
+        max_slider_broken_orthogonal_residual = max(
+            max_slider_broken_orthogonal_residual, slider_orthogonal_residual()
+        )
+    assert max_slider_broken_orthogonal_residual > 1e-4
+
+    slider_parent.parent_joint.velocity = [0.0] * 6
+    slider_child.parent_joint.velocity = [0.0] * 6
+    slider.command_velocity = [-slider_speed]
+    slider.break_force = 1.0e12
+    slider.reset_breakage()
+
+    assert not slider.is_broken
+    slider_axis_position_before_reset = float(slider_anchor_delta() @ slider_axis)
+
+    for _ in range(6):
+        slider_world.step()
+
+    assert not slider.is_broken
+    assert slider.parent_link == slider_parent
+    assert slider.child_link == slider_child
+    assert np.asarray(slider.axis, dtype=float).tolist() == pytest.approx(
+        slider_axis.tolist()
+    )
+    slider_reset_orthogonal_residual = slider_orthogonal_residual()
+    assert (
+        slider_reset_orthogonal_residual
+        < max_slider_broken_orthogonal_residual * 0.05
+    )
+    assert slider_reset_orthogonal_residual < 1e-3
+    assert slider_relative_rotation_error() < 1e-6
+    assert (
+        float(slider_anchor_delta() @ slider_axis)
+        < slider_axis_position_before_reset - 1e-3
+    )
+
+    hinge_world, hinge_parent, hinge_child = _floating_link_pair_world(
+        sx, "python_non_cardinal_pair_breakable_hinge"
+    )
+    hinge_child.parent_joint.position = [0.3, 0.0, 0.0, 0.0, 0.0, 0.0]
+
+    hinge_axis = np.array([1.0, 2.0, 0.5], dtype=float)
+    hinge_axis /= np.linalg.norm(hinge_axis)
+    hinge = hinge_world.add_articulated_revolute_joint(
+        "non_cardinal_pair_hinge",
+        hinge_parent,
+        hinge_child,
+        axis=hinge_axis.tolist(),
+        parent_anchor=parent_anchor.tolist(),
+        child_anchor=child_anchor.tolist(),
+    )
+    assert hinge.type == sx.JointType.REVOLUTE
+    assert hinge.num_dofs == 1
+    assert hinge.parent_link == hinge_parent
+    assert hinge.child_link == hinge_child
+    assert np.asarray(hinge.axis, dtype=float).tolist() == pytest.approx(
+        hinge_axis.tolist()
+    )
+    hinge.actuator_type = sx.ActuatorType.VELOCITY
+    hinge_speed = 0.4
+    hinge.command_velocity = [hinge_speed]
+    hinge.set_effort_limits([-1000.0], [1000.0])
+    hinge.break_force = 1e-18
+
+    def hinge_anchor_residual() -> float:
+        parent_anchor_world = (
+            np.asarray(hinge_parent.translation, dtype=float)
+            + np.asarray(hinge_parent.rotation, dtype=float) @ parent_anchor
+        )
+        child_anchor_world = (
+            np.asarray(hinge_child.translation, dtype=float)
+            + np.asarray(hinge_child.rotation, dtype=float) @ child_anchor
+        )
+        return float(np.linalg.norm(child_anchor_world - parent_anchor_world))
+
+    def hinge_relative_rotation() -> np.ndarray:
+        return (
+            np.asarray(hinge_parent.rotation, dtype=float).T
+            @ np.asarray(hinge_child.rotation, dtype=float)
+        )
+
+    def hinge_signed_axis_angle() -> float:
+        rotation = hinge_relative_rotation()
+        skew_axis = np.array(
+            [
+                rotation[2, 1] - rotation[1, 2],
+                rotation[0, 2] - rotation[2, 0],
+                rotation[1, 0] - rotation[0, 1],
+            ]
+        )
+        sin_term = 0.5 * float(hinge_axis @ skew_axis)
+        cos_term = 0.5 * (float(np.trace(rotation)) - 1.0)
+        return math.atan2(sin_term, cos_term)
+
+    def hinge_axis_tilt() -> float:
+        return float(
+            np.linalg.norm(
+                np.asarray(hinge_parent.rotation, dtype=float) @ hinge_axis
+                - np.asarray(hinge_child.rotation, dtype=float) @ hinge_axis
+            )
+        )
+
+    hinge_world.enter_simulation_mode()
+    hinge_world.step()
+
+    assert hinge.is_broken
+    first_hinge_axis_angle = hinge_signed_axis_angle()
+    assert first_hinge_axis_angle == pytest.approx(
+        hinge_speed * hinge_world.time_step, abs=1e-6
+    )
+    assert hinge_anchor_residual() < 1e-6
+    assert hinge_axis_tilt() < 1e-6
+
+    hinge_lateral_force = np.array([0.0, 1.0, 0.0], dtype=float)
+    hinge_lateral_force -= float(hinge_lateral_force @ hinge_axis) * hinge_axis
+    hinge_lateral_force /= np.linalg.norm(hinge_lateral_force)
+    parent_force_point = parent_anchor + np.array([0.3, 0.0, 0.0])
+    child_force_point = child_anchor - np.array([0.3, 0.0, 0.0])
+
+    max_hinge_broken_anchor_residual = 0.0
+    max_hinge_broken_axis_tilt = 0.0
+    for _ in range(20):
+        hinge_parent.apply_force(
+            (-4.0 * hinge_lateral_force).tolist(), parent_force_point.tolist()
+        )
+        hinge_child.apply_force(
+            (4.0 * hinge_lateral_force).tolist(), child_force_point.tolist()
+        )
+        hinge_world.step()
+        max_hinge_broken_anchor_residual = max(
+            max_hinge_broken_anchor_residual, hinge_anchor_residual()
+        )
+        max_hinge_broken_axis_tilt = max(
+            max_hinge_broken_axis_tilt, hinge_axis_tilt()
+        )
+    assert max_hinge_broken_anchor_residual > 1e-4
+    assert max_hinge_broken_axis_tilt > 1e-4
+
+    hinge_parent.parent_joint.velocity = [0.0] * 6
+    hinge_child.parent_joint.velocity = [0.0] * 6
+    hinge.command_velocity = [-hinge_speed]
+    hinge.break_force = 1.0e12
+    hinge.reset_breakage()
+
+    assert not hinge.is_broken
+    hinge_axis_angle_before_reset = hinge_signed_axis_angle()
+
+    for _ in range(6):
+        hinge_world.step()
+
+    assert not hinge.is_broken
+    assert hinge.parent_link == hinge_parent
+    assert hinge.child_link == hinge_child
+    assert np.asarray(hinge.axis, dtype=float).tolist() == pytest.approx(
+        hinge_axis.tolist()
+    )
+    assert hinge_anchor_residual() < 1e-6
+    assert hinge_axis_tilt() < max_hinge_broken_axis_tilt * 0.01
+    assert hinge_axis_tilt() < 1e-3
+    assert hinge_signed_axis_angle() < hinge_axis_angle_before_reset - 1e-3
+
+
+def test_simulation_world_articulated_non_cardinal_off_origin_tiny_effort_motors_from_python():
+    sx = _simulation()
+
+    slider_world, _, slider_body = _floating_link_world(
+        sx, "python_non_cardinal_world_tiny_slider"
+    )
+    slider_body.parent_joint.position = [0.2, -0.15, 0.05, 0.0, 0.0, 0.0]
+
+    slider_axis = np.array([1.0, 2.0, 0.5], dtype=float)
+    slider_axis /= np.linalg.norm(slider_axis)
+    slider_child_anchor = np.array([0.1, 0.2, -0.1])
+    slider_world_anchor = (
+        np.asarray(slider_body.translation, dtype=float)
+        + np.asarray(slider_body.rotation, dtype=float) @ slider_child_anchor
+    )
+    slider = slider_world.add_articulated_prismatic_joint(
+        "non_cardinal_world_tiny_slider",
+        slider_body,
+        axis=slider_axis.tolist(),
+        world_anchor=slider_world_anchor.tolist(),
+        child_anchor=slider_child_anchor.tolist(),
+    )
+    assert slider.type == sx.JointType.PRISMATIC
+    assert slider.num_dofs == 1
+    assert slider.child_link == slider_body
+    with pytest.raises(Exception, match="parent endpoint"):
+        _ = slider.parent_link
+    assert np.asarray(slider.axis, dtype=float).tolist() == pytest.approx(
+        slider_axis.tolist()
+    )
+    slider.actuator_type = sx.ActuatorType.VELOCITY
+    slider_speed = 0.3
+    slider.command_velocity = [slider_speed]
+    slider.set_effort_limits([-1e-9], [1e-9])
+    assert slider.effort_lower_limits.tolist() == pytest.approx([-1e-9])
+    assert slider.effort_upper_limits.tolist() == pytest.approx([1e-9])
+
+    def slider_anchor_delta() -> np.ndarray:
+        return (
+            np.asarray(slider_body.translation, dtype=float)
+            + np.asarray(slider_body.rotation, dtype=float) @ slider_child_anchor
+            - slider_world_anchor
+        )
+
+    def slider_orthogonal_residual() -> float:
+        delta = slider_anchor_delta()
+        return float(np.linalg.norm(delta - float(delta @ slider_axis) * slider_axis))
+
+    slider_world.enter_simulation_mode()
+
+    max_slider_orthogonal_residual = 0.0
+    max_slider_rotation_error = 0.0
+    steps = 20
+    for _ in range(steps):
+        slider_world.step()
+        max_slider_orthogonal_residual = max(
+            max_slider_orthogonal_residual, slider_orthogonal_residual()
+        )
+        max_slider_rotation_error = max(
+            max_slider_rotation_error,
+            float(np.linalg.norm(np.asarray(slider_body.rotation, dtype=float) - np.eye(3))),
+        )
+
+    assert not slider.is_broken
+    assert max_slider_orthogonal_residual < 1e-6
+    assert max_slider_rotation_error < 1e-6
+    assert abs(float(slider_anchor_delta() @ slider_axis)) < (
+        0.01 * slider_speed * slider_world.time_step * steps
+    )
+
+    world_hinge_world, _, world_hinge_body = _floating_link_world(
+        sx, "python_non_cardinal_world_tiny_hinge"
+    )
+    world_hinge_body.parent_joint.position = [0.1, -0.2, 0.15, 0.0, 0.0, 0.0]
+
+    world_hinge_axis = np.array([1.0, 2.0, 0.5], dtype=float)
+    world_hinge_axis /= np.linalg.norm(world_hinge_axis)
+    world_hinge_child_anchor = np.array([0.2, 0.1, 0.0])
+    world_hinge_anchor = (
+        np.asarray(world_hinge_body.translation, dtype=float)
+        + np.asarray(world_hinge_body.rotation, dtype=float) @ world_hinge_child_anchor
+    )
+    world_hinge = world_hinge_world.add_articulated_revolute_joint(
+        "non_cardinal_world_tiny_hinge",
+        world_hinge_body,
+        axis=world_hinge_axis.tolist(),
+        world_anchor=world_hinge_anchor.tolist(),
+        child_anchor=world_hinge_child_anchor.tolist(),
+    )
+    assert world_hinge.type == sx.JointType.REVOLUTE
+    assert world_hinge.num_dofs == 1
+    assert world_hinge.child_link == world_hinge_body
+    with pytest.raises(Exception, match="parent endpoint"):
+        _ = world_hinge.parent_link
+    assert np.asarray(world_hinge.axis, dtype=float).tolist() == pytest.approx(
+        world_hinge_axis.tolist()
+    )
+    world_hinge.actuator_type = sx.ActuatorType.VELOCITY
+    world_hinge_speed = 0.4
+    world_hinge.command_velocity = [world_hinge_speed]
+    world_hinge.set_effort_limits([-1e-9], [1e-9])
+    assert world_hinge.effort_lower_limits.tolist() == pytest.approx([-1e-9])
+    assert world_hinge.effort_upper_limits.tolist() == pytest.approx([1e-9])
+
+    def world_hinge_anchor_residual() -> float:
+        anchor_position = (
+            np.asarray(world_hinge_body.translation, dtype=float)
+            + np.asarray(world_hinge_body.rotation, dtype=float)
+            @ world_hinge_child_anchor
+        )
+        return float(np.linalg.norm(anchor_position - world_hinge_anchor))
+
+    def world_hinge_signed_axis_angle() -> float:
+        rotation = np.asarray(world_hinge_body.rotation, dtype=float)
+        skew_axis = np.array(
+            [
+                rotation[2, 1] - rotation[1, 2],
+                rotation[0, 2] - rotation[2, 0],
+                rotation[1, 0] - rotation[0, 1],
+            ]
+        )
+        sin_term = 0.5 * float(world_hinge_axis @ skew_axis)
+        cos_term = 0.5 * (float(np.trace(rotation)) - 1.0)
+        return math.atan2(sin_term, cos_term)
+
+    def world_hinge_axis_tilt() -> float:
+        return float(
+            np.linalg.norm(
+                np.asarray(world_hinge_body.rotation, dtype=float) @ world_hinge_axis
+                - world_hinge_axis
+            )
+        )
+
+    world_hinge_world.enter_simulation_mode()
+
+    max_world_hinge_anchor_residual = 0.0
+    max_world_hinge_axis_tilt = 0.0
+    for _ in range(steps):
+        world_hinge_world.step()
+        max_world_hinge_anchor_residual = max(
+            max_world_hinge_anchor_residual, world_hinge_anchor_residual()
+        )
+        max_world_hinge_axis_tilt = max(
+            max_world_hinge_axis_tilt, world_hinge_axis_tilt()
+        )
+
+    assert not world_hinge.is_broken
+    assert max_world_hinge_anchor_residual < 1e-6
+    assert max_world_hinge_axis_tilt < 1e-3
+    assert abs(world_hinge_signed_axis_angle()) < (
+        0.01 * world_hinge_speed * world_hinge_world.time_step * steps
+    )
+
+    pair_slider_world, pair_slider_parent, pair_slider_child = (
+        _floating_link_pair_world(sx, "python_non_cardinal_pair_tiny_slider")
+    )
+    pair_slider_parent_anchor = np.array([0.2, 0.1, 0.0])
+    pair_slider_child_anchor = np.array([-0.1, 0.1, 0.0])
+    pair_slider_child.parent_joint.position = (
+        pair_slider_parent_anchor - pair_slider_child_anchor
+    ).tolist() + [0.0, 0.0, 0.0]
+
+    pair_slider_axis = np.array([1.0, 2.0, 0.5], dtype=float)
+    pair_slider_axis /= np.linalg.norm(pair_slider_axis)
+    pair_slider = pair_slider_world.add_articulated_prismatic_joint(
+        "non_cardinal_pair_tiny_slider",
+        pair_slider_parent,
+        pair_slider_child,
+        axis=pair_slider_axis.tolist(),
+        parent_anchor=pair_slider_parent_anchor.tolist(),
+        child_anchor=pair_slider_child_anchor.tolist(),
+    )
+    assert pair_slider.type == sx.JointType.PRISMATIC
+    assert pair_slider.num_dofs == 1
+    assert pair_slider.parent_link == pair_slider_parent
+    assert pair_slider.child_link == pair_slider_child
+    assert np.asarray(pair_slider.axis, dtype=float).tolist() == pytest.approx(
+        pair_slider_axis.tolist()
+    )
+    pair_slider.actuator_type = sx.ActuatorType.VELOCITY
+    pair_slider_speed = 0.3
+    pair_slider.command_velocity = [pair_slider_speed]
+    pair_slider.set_effort_limits([-1e-9], [1e-9])
+    assert pair_slider.effort_lower_limits.tolist() == pytest.approx([-1e-9])
+    assert pair_slider.effort_upper_limits.tolist() == pytest.approx([1e-9])
+
+    def pair_slider_anchor_delta() -> np.ndarray:
+        parent_anchor_world = (
+            np.asarray(pair_slider_parent.translation, dtype=float)
+            + np.asarray(pair_slider_parent.rotation, dtype=float)
+            @ pair_slider_parent_anchor
+        )
+        child_anchor_world = (
+            np.asarray(pair_slider_child.translation, dtype=float)
+            + np.asarray(pair_slider_child.rotation, dtype=float)
+            @ pair_slider_child_anchor
+        )
+        return child_anchor_world - parent_anchor_world
+
+    def pair_slider_orthogonal_residual() -> float:
+        delta = pair_slider_anchor_delta()
+        return float(
+            np.linalg.norm(delta - float(delta @ pair_slider_axis) * pair_slider_axis)
+        )
+
+    def pair_slider_relative_rotation_error() -> float:
+        relative_rotation = (
+            np.asarray(pair_slider_parent.rotation, dtype=float).T
+            @ np.asarray(pair_slider_child.rotation, dtype=float)
+        )
+        return float(np.linalg.norm(relative_rotation - np.eye(3)))
+
+    pair_slider_world.enter_simulation_mode()
+
+    max_pair_slider_orthogonal_residual = 0.0
+    max_pair_slider_rotation_error = 0.0
+    for _ in range(steps):
+        pair_slider_world.step()
+        max_pair_slider_orthogonal_residual = max(
+            max_pair_slider_orthogonal_residual,
+            pair_slider_orthogonal_residual(),
+        )
+        max_pair_slider_rotation_error = max(
+            max_pair_slider_rotation_error,
+            pair_slider_relative_rotation_error(),
+        )
+
+    assert not pair_slider.is_broken
+    assert max_pair_slider_orthogonal_residual < 1e-6
+    assert max_pair_slider_rotation_error < 1e-6
+    assert abs(float(pair_slider_anchor_delta() @ pair_slider_axis)) < (
+        0.01 * pair_slider_speed * pair_slider_world.time_step * steps
+    )
+
+    hinge_world, hinge_parent, hinge_child = _floating_link_pair_world(
+        sx, "python_non_cardinal_pair_tiny_hinge"
+    )
+    hinge_parent_anchor = np.array([0.2, 0.0, 0.0])
+    hinge_child_anchor = np.array([-0.1, 0.0, 0.0])
+    hinge_child.parent_joint.position = (
+        hinge_parent_anchor - hinge_child_anchor
+    ).tolist() + [0.0, 0.0, 0.0]
+
+    hinge_axis = np.array([1.0, 2.0, 0.5], dtype=float)
+    hinge_axis /= np.linalg.norm(hinge_axis)
+    hinge = hinge_world.add_articulated_revolute_joint(
+        "non_cardinal_pair_tiny_hinge",
+        hinge_parent,
+        hinge_child,
+        axis=hinge_axis.tolist(),
+        parent_anchor=hinge_parent_anchor.tolist(),
+        child_anchor=hinge_child_anchor.tolist(),
+    )
+    assert hinge.type == sx.JointType.REVOLUTE
+    assert hinge.num_dofs == 1
+    assert hinge.parent_link == hinge_parent
+    assert hinge.child_link == hinge_child
+    assert np.asarray(hinge.axis, dtype=float).tolist() == pytest.approx(
+        hinge_axis.tolist()
+    )
+    hinge.actuator_type = sx.ActuatorType.VELOCITY
+    hinge_speed = 0.4
+    hinge.command_velocity = [hinge_speed]
+    hinge.set_effort_limits([-1e-9], [1e-9])
+    assert hinge.effort_lower_limits.tolist() == pytest.approx([-1e-9])
+    assert hinge.effort_upper_limits.tolist() == pytest.approx([1e-9])
+
+    def hinge_anchor_residual() -> float:
+        parent_anchor_world = (
+            np.asarray(hinge_parent.translation, dtype=float)
+            + np.asarray(hinge_parent.rotation, dtype=float) @ hinge_parent_anchor
+        )
+        child_anchor_world = (
+            np.asarray(hinge_child.translation, dtype=float)
+            + np.asarray(hinge_child.rotation, dtype=float) @ hinge_child_anchor
+        )
+        return float(np.linalg.norm(child_anchor_world - parent_anchor_world))
+
+    def hinge_relative_rotation() -> np.ndarray:
+        return (
+            np.asarray(hinge_parent.rotation, dtype=float).T
+            @ np.asarray(hinge_child.rotation, dtype=float)
+        )
+
+    def hinge_signed_axis_angle() -> float:
+        rotation = hinge_relative_rotation()
+        skew_axis = np.array(
+            [
+                rotation[2, 1] - rotation[1, 2],
+                rotation[0, 2] - rotation[2, 0],
+                rotation[1, 0] - rotation[0, 1],
+            ]
+        )
+        sin_term = 0.5 * float(hinge_axis @ skew_axis)
+        cos_term = 0.5 * (float(np.trace(rotation)) - 1.0)
+        return math.atan2(sin_term, cos_term)
+
+    def hinge_axis_tilt() -> float:
+        return float(
+            np.linalg.norm(
+                np.asarray(hinge_parent.rotation, dtype=float) @ hinge_axis
+                - np.asarray(hinge_child.rotation, dtype=float) @ hinge_axis
+            )
+        )
+
+    hinge_world.enter_simulation_mode()
+
+    max_hinge_anchor_residual = 0.0
+    max_hinge_axis_tilt = 0.0
+    for _ in range(steps):
+        hinge_world.step()
+        max_hinge_anchor_residual = max(
+            max_hinge_anchor_residual, hinge_anchor_residual()
+        )
+        max_hinge_axis_tilt = max(max_hinge_axis_tilt, hinge_axis_tilt())
+
+    assert not hinge.is_broken
+    assert max_hinge_anchor_residual < 1e-6
+    assert max_hinge_axis_tilt < 1e-3
+    assert abs(hinge_signed_axis_angle()) < (
+        0.01 * hinge_speed * hinge_world.time_step * steps
+    )
+
+
+def test_simulation_world_articulated_binary_roundtrip_from_python(tmp_path: Path):
+    sx = _simulation()
+
+    pair_world, pair_parent, pair_child = _floating_link_pair_world(
+        sx, "python_serialized_pair_slider"
+    )
+    pair_parent_anchor = np.array([0.2, 0.1, 0.0])
+    pair_child_anchor = np.array([-0.1, 0.1, 0.0])
+    pair_child.parent_joint.position = (
+        pair_parent_anchor - pair_child_anchor
+    ).tolist() + [0.0, 0.0, 0.0]
+
+    pair_axis = np.array([1.0, 2.0, 0.5], dtype=float)
+    pair_axis /= np.linalg.norm(pair_axis)
+    pair_slider = pair_world.add_articulated_prismatic_joint(
+        "serialized_pair_slider",
+        pair_parent,
+        pair_child,
+        axis=pair_axis.tolist(),
+        parent_anchor=pair_parent_anchor.tolist(),
+        child_anchor=pair_child_anchor.tolist(),
+    )
+    pair_slider.actuator_type = sx.ActuatorType.VELOCITY
+    pair_speed = 0.3
+    pair_slider.command_velocity = [pair_speed]
+    pair_slider.set_effort_limits([-1000.0], [1000.0])
+    pair_slider.break_force = 1e-18
+
+    pair_world.enter_simulation_mode()
+    pair_world.step()
+    assert pair_slider.is_broken
+
+    pair_path = tmp_path / "articulated_pair_slider.bin"
+    pair_world.save_binary(pair_path)
+
+    restored_pair_world = sx.World()
+    restored_pair_world.load_binary(pair_path)
+    restored_pair_world.multibody_options = sx.MultibodyOptions(
+        integration_family="variational integrator"
+    )
+    restored_pair_arm = restored_pair_world.get_multibody(
+        "python_serialized_pair_slider"
+    )
+    assert restored_pair_arm is not None
+    restored_pair_parent = restored_pair_arm.get_link("parent")
+    restored_pair_child = restored_pair_arm.get_link("child")
+    restored_pair_slider = restored_pair_world.get_articulated_joint(
+        "serialized_pair_slider"
+    )
+    assert restored_pair_parent is not None
+    assert restored_pair_child is not None
+    assert restored_pair_slider is not None
+    assert restored_pair_slider.is_broken
+    assert restored_pair_slider.type == sx.JointType.PRISMATIC
+    assert restored_pair_slider.num_dofs == 1
+    assert restored_pair_slider.parent_link == restored_pair_parent
+    assert restored_pair_slider.child_link == restored_pair_child
+    assert np.asarray(restored_pair_slider.axis, dtype=float).tolist() == pytest.approx(
+        pair_axis.tolist()
+    )
+    assert restored_pair_slider.actuator_type == sx.ActuatorType.VELOCITY
+    assert restored_pair_slider.command_velocity.tolist() == pytest.approx(
+        [pair_speed]
+    )
+    assert restored_pair_slider.effort_lower_limits.tolist() == pytest.approx(
+        [-1000.0]
+    )
+    assert restored_pair_slider.effort_upper_limits.tolist() == pytest.approx(
+        [1000.0]
+    )
+
+    def pair_anchor_delta() -> np.ndarray:
+        parent_anchor_world = (
+            np.asarray(restored_pair_parent.translation, dtype=float)
+            + np.asarray(restored_pair_parent.rotation, dtype=float)
+            @ pair_parent_anchor
+        )
+        child_anchor_world = (
+            np.asarray(restored_pair_child.translation, dtype=float)
+            + np.asarray(restored_pair_child.rotation, dtype=float) @ pair_child_anchor
+        )
+        return child_anchor_world - parent_anchor_world
+
+    def pair_orthogonal_residual() -> float:
+        delta = pair_anchor_delta()
+        return float(np.linalg.norm(delta - float(delta @ pair_axis) * pair_axis))
+
+    def pair_relative_rotation_error() -> float:
+        relative_rotation = (
+            np.asarray(restored_pair_parent.rotation, dtype=float).T
+            @ np.asarray(restored_pair_child.rotation, dtype=float)
+        )
+        return float(np.linalg.norm(relative_rotation - np.eye(3)))
+
+    pair_lateral_force = np.array([0.0, 1.0, 0.0], dtype=float)
+    pair_lateral_force -= float(pair_lateral_force @ pair_axis) * pair_axis
+    pair_lateral_force /= np.linalg.norm(pair_lateral_force)
+
+    max_pair_broken_orthogonal_residual = 0.0
+    for _ in range(20):
+        restored_pair_parent.apply_force(
+            (-4.0 * pair_lateral_force).tolist(),
+            pair_parent_anchor.tolist(),
+        )
+        restored_pair_child.apply_force(
+            (4.0 * pair_lateral_force).tolist(),
+            pair_child_anchor.tolist(),
+        )
+        restored_pair_world.step()
+        max_pair_broken_orthogonal_residual = max(
+            max_pair_broken_orthogonal_residual,
+            pair_orthogonal_residual(),
+        )
+    assert max_pair_broken_orthogonal_residual > 1e-4
+
+    restored_pair_parent.parent_joint.velocity = [0.0] * 6
+    restored_pair_child.parent_joint.velocity = [0.0] * 6
+    restored_pair_slider.command_velocity = [-pair_speed]
+    restored_pair_slider.break_force = 1.0e12
+    restored_pair_slider.reset_breakage()
+    pair_axis_position_before_reset = float(pair_anchor_delta() @ pair_axis)
+
+    for _ in range(8):
+        restored_pair_world.step()
+
+    assert not restored_pair_slider.is_broken
+    assert (
+        pair_orthogonal_residual()
+        < max_pair_broken_orthogonal_residual * 0.05
+    )
+    assert pair_orthogonal_residual() < 1e-3
+    assert pair_relative_rotation_error() < 1e-6
+    assert (
+        float(pair_anchor_delta() @ pair_axis)
+        < pair_axis_position_before_reset - 1e-3
+    )
+
+    hinge_world, _, hinge_body = _floating_link_world(
+        sx, "python_serialized_world_hinge"
+    )
+    hinge_body.parent_joint.position = [0.15, -0.05, 0.0, 0.0, 0.0, 0.0]
+    hinge_axis = np.array([1.0, 2.0, 3.0], dtype=float)
+    hinge_axis /= np.linalg.norm(hinge_axis)
+    hinge_child_anchor = np.array([0.2, 0.1, 0.0])
+    hinge_world_anchor = (
+        np.asarray(hinge_body.translation, dtype=float)
+        + np.asarray(hinge_body.rotation, dtype=float) @ hinge_child_anchor
+    )
+    hinge = hinge_world.add_articulated_revolute_joint(
+        "serialized_world_hinge",
+        hinge_body,
+        axis=hinge_axis.tolist(),
+        world_anchor=hinge_world_anchor.tolist(),
+        child_anchor=hinge_child_anchor.tolist(),
+    )
+    hinge.actuator_type = sx.ActuatorType.VELOCITY
+    hinge_speed = 0.4
+    hinge.command_velocity = [hinge_speed]
+    hinge.set_effort_limits([-1000.0], [1000.0])
+    hinge.break_force = 1e-18
+
+    hinge_world.enter_simulation_mode()
+    hinge_world.step()
+    assert hinge.is_broken
+
+    hinge_path = tmp_path / "articulated_world_hinge.bin"
+    hinge_world.save_binary(hinge_path)
+
+    restored_hinge_world = sx.World()
+    restored_hinge_world.load_binary(hinge_path)
+    restored_hinge_world.multibody_options = sx.MultibodyOptions(
+        integration_family="variational integrator"
+    )
+    restored_hinge_arm = restored_hinge_world.get_multibody(
+        "python_serialized_world_hinge"
+    )
+    assert restored_hinge_arm is not None
+    restored_hinge_body = restored_hinge_arm.get_link("body")
+    restored_hinge = restored_hinge_world.get_articulated_joint(
+        "serialized_world_hinge"
+    )
+    assert restored_hinge_body is not None
+    assert restored_hinge is not None
+    assert restored_hinge.is_broken
+    assert restored_hinge.type == sx.JointType.REVOLUTE
+    assert restored_hinge.num_dofs == 1
+    assert restored_hinge.child_link == restored_hinge_body
+    with pytest.raises(Exception, match="parent endpoint"):
+        _ = restored_hinge.parent_link
+    assert np.asarray(restored_hinge.axis, dtype=float).tolist() == pytest.approx(
+        hinge_axis.tolist()
+    )
+    assert restored_hinge.actuator_type == sx.ActuatorType.VELOCITY
+    assert restored_hinge.command_velocity.tolist() == pytest.approx([hinge_speed])
+    assert restored_hinge.effort_lower_limits.tolist() == pytest.approx([-1000.0])
+    assert restored_hinge.effort_upper_limits.tolist() == pytest.approx([1000.0])
+
+    def hinge_anchor_residual() -> float:
+        anchor_position = (
+            np.asarray(restored_hinge_body.translation, dtype=float)
+            + np.asarray(restored_hinge_body.rotation, dtype=float)
+            @ hinge_child_anchor
+        )
+        return float(np.linalg.norm(anchor_position - hinge_world_anchor))
+
+    def hinge_signed_axis_angle() -> float:
+        rotation = np.asarray(restored_hinge_body.rotation, dtype=float)
+        skew_axis = np.array(
+            [
+                rotation[2, 1] - rotation[1, 2],
+                rotation[0, 2] - rotation[2, 0],
+                rotation[1, 0] - rotation[0, 1],
+            ]
+        )
+        sin_term = 0.5 * float(hinge_axis @ skew_axis)
+        cos_term = 0.5 * (float(np.trace(rotation)) - 1.0)
+        return math.atan2(sin_term, cos_term)
+
+    def hinge_axis_tilt() -> float:
+        return float(
+            np.linalg.norm(
+                np.asarray(restored_hinge_body.rotation, dtype=float) @ hinge_axis
+                - hinge_axis
+            )
+        )
+
+    hinge_lateral_force = np.array([0.0, 1.0, 0.0], dtype=float)
+    hinge_lateral_force -= float(hinge_lateral_force @ hinge_axis) * hinge_axis
+    hinge_lateral_force /= np.linalg.norm(hinge_lateral_force)
+    hinge_force_point = hinge_child_anchor + np.array([0.4, 0.0, 0.0])
+
+    max_hinge_broken_anchor_residual = 0.0
+    max_hinge_broken_axis_tilt = 0.0
+    for _ in range(20):
+        restored_hinge_body.apply_force(
+            (4.0 * hinge_lateral_force).tolist(),
+            hinge_force_point.tolist(),
+        )
+        restored_hinge_world.step()
+        max_hinge_broken_anchor_residual = max(
+            max_hinge_broken_anchor_residual,
+            hinge_anchor_residual(),
+        )
+        max_hinge_broken_axis_tilt = max(
+            max_hinge_broken_axis_tilt,
+            hinge_axis_tilt(),
+        )
+    assert max_hinge_broken_anchor_residual > 1e-4
+    assert max_hinge_broken_axis_tilt > 1e-4
+
+    restored_hinge_body.parent_joint.velocity = [0.0] * 6
+    restored_hinge.command_velocity = [-hinge_speed]
+    restored_hinge.break_force = 1.0e12
+    restored_hinge.reset_breakage()
+    hinge_angle_before_reset = hinge_signed_axis_angle()
+
+    for _ in range(8):
+        restored_hinge_world.step()
+
+    assert not restored_hinge.is_broken
+    assert hinge_anchor_residual() < max_hinge_broken_anchor_residual * 0.05
+    assert hinge_anchor_residual() < 1e-3
+    assert hinge_axis_tilt() < max_hinge_broken_axis_tilt * 0.05
+    assert hinge_axis_tilt() < 1e-3
+    assert hinge_signed_axis_angle() < hinge_angle_before_reset - 1e-3
+
+
+def test_simulation_world_articulated_binary_roundtrip_from_python_completes_one_dof_endpoint_types(
+    tmp_path: Path,
+):
+    sx = _simulation()
+
+    pair_hinge_world, pair_hinge_parent, pair_hinge_child = _floating_link_pair_world(
+        sx, "python_serialized_pair_hinge_broken"
+    )
+    pair_hinge_parent_anchor = np.array([0.2, 0.1, 0.0])
+    pair_hinge_child_anchor = np.array([-0.1, 0.1, 0.0])
+    pair_hinge_child.parent_joint.position = (
+        pair_hinge_parent_anchor - pair_hinge_child_anchor
+    ).tolist() + [0.0, 0.0, 0.0]
+    pair_hinge_axis = np.array([1.0, 2.0, 0.5], dtype=float)
+    pair_hinge_axis /= np.linalg.norm(pair_hinge_axis)
+    pair_hinge = pair_hinge_world.add_articulated_revolute_joint(
+        "serialized_pair_hinge_broken",
+        pair_hinge_parent,
+        pair_hinge_child,
+        axis=pair_hinge_axis.tolist(),
+        parent_anchor=pair_hinge_parent_anchor.tolist(),
+        child_anchor=pair_hinge_child_anchor.tolist(),
+    )
+    pair_hinge.actuator_type = sx.ActuatorType.VELOCITY
+    pair_hinge_speed = 0.35
+    pair_hinge.command_velocity = [pair_hinge_speed]
+    pair_hinge.set_effort_limits([-1000.0], [1000.0])
+    pair_hinge.break_force = 1e-18
+
+    pair_hinge_world.enter_simulation_mode()
+    pair_hinge_world.step()
+    assert pair_hinge.is_broken
+
+    pair_hinge_path = tmp_path / "articulated_pair_hinge_broken.bin"
+    pair_hinge_world.save_binary(pair_hinge_path)
+
+    restored_pair_hinge_world = sx.World()
+    restored_pair_hinge_world.load_binary(pair_hinge_path)
+    restored_pair_hinge_world.multibody_options = sx.MultibodyOptions(
+        integration_family="variational integrator"
+    )
+    restored_pair_hinge_arm = restored_pair_hinge_world.get_multibody(
+        "python_serialized_pair_hinge_broken"
+    )
+    assert restored_pair_hinge_arm is not None
+    restored_pair_hinge_parent = restored_pair_hinge_arm.get_link("parent")
+    restored_pair_hinge_child = restored_pair_hinge_arm.get_link("child")
+    restored_pair_hinge = restored_pair_hinge_world.get_articulated_joint(
+        "serialized_pair_hinge_broken"
+    )
+    assert restored_pair_hinge_parent is not None
+    assert restored_pair_hinge_child is not None
+    assert restored_pair_hinge is not None
+    assert restored_pair_hinge.is_broken
+    assert restored_pair_hinge.type == sx.JointType.REVOLUTE
+    assert restored_pair_hinge.num_dofs == 1
+    assert restored_pair_hinge.parent_link == restored_pair_hinge_parent
+    assert restored_pair_hinge.child_link == restored_pair_hinge_child
+    assert np.asarray(restored_pair_hinge.axis, dtype=float).tolist() == pytest.approx(
+        pair_hinge_axis.tolist()
+    )
+    assert restored_pair_hinge.actuator_type == sx.ActuatorType.VELOCITY
+    assert restored_pair_hinge.command_velocity.tolist() == pytest.approx(
+        [pair_hinge_speed]
+    )
+    assert restored_pair_hinge.effort_lower_limits.tolist() == pytest.approx(
+        [-1000.0]
+    )
+    assert restored_pair_hinge.effort_upper_limits.tolist() == pytest.approx(
+        [1000.0]
+    )
+
+    def pair_hinge_anchor_residual() -> float:
+        parent_anchor_world = (
+            np.asarray(restored_pair_hinge_parent.translation, dtype=float)
+            + np.asarray(restored_pair_hinge_parent.rotation, dtype=float)
+            @ pair_hinge_parent_anchor
+        )
+        child_anchor_world = (
+            np.asarray(restored_pair_hinge_child.translation, dtype=float)
+            + np.asarray(restored_pair_hinge_child.rotation, dtype=float)
+            @ pair_hinge_child_anchor
+        )
+        return float(np.linalg.norm(child_anchor_world - parent_anchor_world))
+
+    def pair_hinge_relative_rotation() -> np.ndarray:
+        return (
+            np.asarray(restored_pair_hinge_parent.rotation, dtype=float).T
+            @ np.asarray(restored_pair_hinge_child.rotation, dtype=float)
+        )
+
+    def pair_hinge_signed_axis_angle() -> float:
+        rotation = pair_hinge_relative_rotation()
+        skew_axis = np.array(
+            [
+                rotation[2, 1] - rotation[1, 2],
+                rotation[0, 2] - rotation[2, 0],
+                rotation[1, 0] - rotation[0, 1],
+            ]
+        )
+        sin_term = 0.5 * float(pair_hinge_axis @ skew_axis)
+        cos_term = 0.5 * (float(np.trace(rotation)) - 1.0)
+        return math.atan2(sin_term, cos_term)
+
+    def pair_hinge_axis_tilt() -> float:
+        return float(
+            np.linalg.norm(
+                np.asarray(restored_pair_hinge_parent.rotation, dtype=float)
+                @ pair_hinge_axis
+                - np.asarray(restored_pair_hinge_child.rotation, dtype=float)
+                @ pair_hinge_axis
+            )
+        )
+
+    pair_hinge_lateral_force = np.array([0.0, 1.0, 0.0], dtype=float)
+    pair_hinge_lateral_force -= (
+        float(pair_hinge_lateral_force @ pair_hinge_axis) * pair_hinge_axis
+    )
+    pair_hinge_lateral_force /= np.linalg.norm(pair_hinge_lateral_force)
+    pair_hinge_parent_force_point = pair_hinge_parent_anchor + np.array(
+        [0.4, 0.0, 0.0]
+    )
+    pair_hinge_child_force_point = pair_hinge_child_anchor - np.array(
+        [0.4, 0.0, 0.0]
+    )
+
+    max_pair_hinge_broken_anchor_residual = 0.0
+    max_pair_hinge_broken_axis_tilt = 0.0
+    for _ in range(20):
+        restored_pair_hinge_parent.apply_force(
+            (-4.0 * pair_hinge_lateral_force).tolist(),
+            pair_hinge_parent_force_point.tolist(),
+        )
+        restored_pair_hinge_child.apply_force(
+            (4.0 * pair_hinge_lateral_force).tolist(),
+            pair_hinge_child_force_point.tolist(),
+        )
+        restored_pair_hinge_world.step()
+        max_pair_hinge_broken_anchor_residual = max(
+            max_pair_hinge_broken_anchor_residual,
+            pair_hinge_anchor_residual(),
+        )
+        max_pair_hinge_broken_axis_tilt = max(
+            max_pair_hinge_broken_axis_tilt,
+            pair_hinge_axis_tilt(),
+        )
+    assert max_pair_hinge_broken_anchor_residual > 1e-4
+    assert max_pair_hinge_broken_axis_tilt > 1e-4
+
+    restored_pair_hinge_parent.parent_joint.velocity = [0.0] * 6
+    restored_pair_hinge_child.parent_joint.velocity = [0.0] * 6
+    restored_pair_hinge.command_velocity = [-pair_hinge_speed]
+    restored_pair_hinge.break_force = 1.0e12
+    restored_pair_hinge.reset_breakage()
+    pair_hinge_angle_before_reset = pair_hinge_signed_axis_angle()
+
+    for _ in range(8):
+        restored_pair_hinge_world.step()
+
+    assert not restored_pair_hinge.is_broken
+    assert (
+        pair_hinge_anchor_residual()
+        < max_pair_hinge_broken_anchor_residual * 0.05
+    )
+    assert pair_hinge_anchor_residual() < 1e-3
+    assert pair_hinge_axis_tilt() < max_pair_hinge_broken_axis_tilt * 0.05
+    assert pair_hinge_axis_tilt() < 1e-3
+    assert (
+        pair_hinge_signed_axis_angle()
+        < pair_hinge_angle_before_reset - 1e-3
+    )
+
+    world_slider_world, _, world_slider_body = _floating_link_world(
+        sx, "python_serialized_world_slider_broken"
+    )
+    world_slider_body.parent_joint.position = [
+        0.15,
+        -0.05,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+    ]
+    world_slider_axis = np.array([1.0, 2.0, 0.5], dtype=float)
+    world_slider_axis /= np.linalg.norm(world_slider_axis)
+    world_slider_child_anchor = np.array([0.2, 0.1, 0.0])
+    world_slider_anchor = (
+        np.asarray(world_slider_body.translation, dtype=float)
+        + np.asarray(world_slider_body.rotation, dtype=float)
+        @ world_slider_child_anchor
+    )
+    world_slider = world_slider_world.add_articulated_prismatic_joint(
+        "serialized_world_slider_broken",
+        world_slider_body,
+        axis=world_slider_axis.tolist(),
+        world_anchor=world_slider_anchor.tolist(),
+        child_anchor=world_slider_child_anchor.tolist(),
+    )
+    world_slider.actuator_type = sx.ActuatorType.VELOCITY
+    world_slider_speed = 0.3
+    world_slider.command_velocity = [world_slider_speed]
+    world_slider.set_effort_limits([-1000.0], [1000.0])
+    world_slider.break_force = 1e-18
+
+    world_slider_world.enter_simulation_mode()
+    world_slider_world.step()
+    assert world_slider.is_broken
+
+    world_slider_path = tmp_path / "articulated_world_slider_broken.bin"
+    world_slider_world.save_binary(world_slider_path)
+
+    restored_world_slider_world = sx.World()
+    restored_world_slider_world.load_binary(world_slider_path)
+    restored_world_slider_world.multibody_options = sx.MultibodyOptions(
+        integration_family="variational integrator"
+    )
+    restored_world_slider_arm = restored_world_slider_world.get_multibody(
+        "python_serialized_world_slider_broken"
+    )
+    assert restored_world_slider_arm is not None
+    restored_world_slider_body = restored_world_slider_arm.get_link("body")
+    restored_world_slider = restored_world_slider_world.get_articulated_joint(
+        "serialized_world_slider_broken"
+    )
+    assert restored_world_slider_body is not None
+    assert restored_world_slider is not None
+    assert restored_world_slider.is_broken
+    assert restored_world_slider.type == sx.JointType.PRISMATIC
+    assert restored_world_slider.num_dofs == 1
+    assert restored_world_slider.child_link == restored_world_slider_body
+    with pytest.raises(Exception, match="parent endpoint"):
+        _ = restored_world_slider.parent_link
+    assert np.asarray(restored_world_slider.axis, dtype=float).tolist() == pytest.approx(
+        world_slider_axis.tolist()
+    )
+    assert restored_world_slider.actuator_type == sx.ActuatorType.VELOCITY
+    assert restored_world_slider.command_velocity.tolist() == pytest.approx(
+        [world_slider_speed]
+    )
+    assert restored_world_slider.effort_lower_limits.tolist() == pytest.approx(
+        [-1000.0]
+    )
+    assert restored_world_slider.effort_upper_limits.tolist() == pytest.approx(
+        [1000.0]
+    )
+
+    captured_world_slider_rotation = np.asarray(
+        restored_world_slider_body.rotation, dtype=float
+    ).copy()
+
+    def world_slider_anchor_delta() -> np.ndarray:
+        child_anchor_world = (
+            np.asarray(restored_world_slider_body.translation, dtype=float)
+            + np.asarray(restored_world_slider_body.rotation, dtype=float)
+            @ world_slider_child_anchor
+        )
+        return child_anchor_world - world_slider_anchor
+
+    def world_slider_orthogonal_residual() -> float:
+        delta = world_slider_anchor_delta()
+        return float(
+            np.linalg.norm(
+                delta - float(delta @ world_slider_axis) * world_slider_axis
+            )
+        )
+
+    def world_slider_rotation_error() -> float:
+        return float(
+            np.linalg.norm(
+                np.asarray(restored_world_slider_body.rotation, dtype=float)
+                - captured_world_slider_rotation
+            )
+        )
+
+    world_slider_lateral_force = np.array([0.0, 1.0, 0.0], dtype=float)
+    world_slider_lateral_force -= (
+        float(world_slider_lateral_force @ world_slider_axis) * world_slider_axis
+    )
+    world_slider_lateral_force /= np.linalg.norm(world_slider_lateral_force)
+    world_slider_force_point = world_slider_child_anchor + np.array([0.4, 0.0, 0.0])
+
+    max_world_slider_broken_orthogonal_residual = 0.0
+    max_world_slider_broken_rotation_error = 0.0
+    for _ in range(20):
+        restored_world_slider_body.apply_force(
+            (4.0 * world_slider_lateral_force).tolist(),
+            world_slider_force_point.tolist(),
+        )
+        restored_world_slider_world.step()
+        max_world_slider_broken_orthogonal_residual = max(
+            max_world_slider_broken_orthogonal_residual,
+            world_slider_orthogonal_residual(),
+        )
+        max_world_slider_broken_rotation_error = max(
+            max_world_slider_broken_rotation_error,
+            world_slider_rotation_error(),
+        )
+    assert max_world_slider_broken_orthogonal_residual > 1e-4
+    assert max_world_slider_broken_rotation_error > 1e-4
+
+    restored_world_slider_body.parent_joint.velocity = [0.0] * 6
+    restored_world_slider.command_velocity = [-world_slider_speed]
+    restored_world_slider.break_force = 1.0e12
+    restored_world_slider.reset_breakage()
+    world_slider_axis_position_before_reset = float(
+        world_slider_anchor_delta() @ world_slider_axis
+    )
+
+    for _ in range(8):
+        restored_world_slider_world.step()
+
+    assert not restored_world_slider.is_broken
+    assert (
+        world_slider_orthogonal_residual()
+        < max_world_slider_broken_orthogonal_residual * 0.05
+    )
+    assert world_slider_orthogonal_residual() < 1e-3
+    assert (
+        world_slider_rotation_error()
+        < max_world_slider_broken_rotation_error * 0.05
+    )
+    assert world_slider_rotation_error() < 1e-3
+    assert (
+        float(world_slider_anchor_delta() @ world_slider_axis)
+        < world_slider_axis_position_before_reset - 1e-3
+    )
+
+
+def test_simulation_world_articulated_fixed_spherical_binary_roundtrip_from_python(
+    tmp_path: Path,
+):
+    sx = _simulation()
+
+    fixed_world, fixed_parent, fixed_child = _floating_link_pair_world(
+        sx, "python_serialized_pair_fixed"
+    )
+    fixed_parent_anchor = np.array([0.15, 0.05, 0.0])
+    fixed_child_anchor = np.array([-0.15, 0.05, 0.0])
+    fixed_child.parent_joint.position = (
+        fixed_parent_anchor - fixed_child_anchor
+    ).tolist() + [0.0, 0.0, 0.0]
+    fixed_hold = fixed_world.add_articulated_fixed_joint(
+        "serialized_pair_fixed",
+        fixed_parent,
+        fixed_child,
+        parent_anchor=fixed_parent_anchor.tolist(),
+        child_anchor=fixed_child_anchor.tolist(),
+    )
+    fixed_hold.break_force = 1e-18
+    captured_fixed_relative_rotation = (
+        np.asarray(fixed_parent.rotation, dtype=float).T
+        @ np.asarray(fixed_child.rotation, dtype=float)
+    )
+
+    fixed_world.enter_simulation_mode()
+    fixed_parent.apply_force(
+        (0.0, -4.0, 0.0),
+        (fixed_parent_anchor + np.array([0.4, 0.0, 0.0])).tolist(),
+    )
+    fixed_child.apply_force(
+        (0.0, 4.0, 0.0),
+        (fixed_child_anchor - np.array([0.4, 0.0, 0.0])).tolist(),
+    )
+    fixed_world.step()
+    assert fixed_hold.is_broken
+
+    fixed_path = tmp_path / "articulated_pair_fixed.bin"
+    fixed_world.save_binary(fixed_path)
+
+    restored_fixed_world = sx.World()
+    restored_fixed_world.load_binary(fixed_path)
+    restored_fixed_world.multibody_options = sx.MultibodyOptions(
+        integration_family="variational integrator"
+    )
+    restored_fixed_arm = restored_fixed_world.get_multibody(
+        "python_serialized_pair_fixed"
+    )
+    assert restored_fixed_arm is not None
+    restored_fixed_parent = restored_fixed_arm.get_link("parent")
+    restored_fixed_child = restored_fixed_arm.get_link("child")
+    restored_fixed_hold = restored_fixed_world.get_articulated_joint(
+        "serialized_pair_fixed"
+    )
+    assert restored_fixed_parent is not None
+    assert restored_fixed_child is not None
+    assert restored_fixed_hold is not None
+    assert restored_fixed_hold.is_broken
+    assert restored_fixed_hold.type == sx.JointType.FIXED
+    assert restored_fixed_hold.num_dofs == 0
+    assert restored_fixed_hold.parent_link == restored_fixed_parent
+    assert restored_fixed_hold.child_link == restored_fixed_child
+
+    def fixed_anchor_residual() -> float:
+        parent_anchor_world = (
+            np.asarray(restored_fixed_parent.translation, dtype=float)
+            + np.asarray(restored_fixed_parent.rotation, dtype=float)
+            @ fixed_parent_anchor
+        )
+        child_anchor_world = (
+            np.asarray(restored_fixed_child.translation, dtype=float)
+            + np.asarray(restored_fixed_child.rotation, dtype=float)
+            @ fixed_child_anchor
+        )
+        return float(np.linalg.norm(parent_anchor_world - child_anchor_world))
+
+    def fixed_relative_rotation_error() -> float:
+        relative_rotation = (
+            np.asarray(restored_fixed_parent.rotation, dtype=float).T
+            @ np.asarray(restored_fixed_child.rotation, dtype=float)
+        )
+        return float(
+            np.linalg.norm(relative_rotation - captured_fixed_relative_rotation)
+        )
+
+    max_fixed_broken_anchor_residual = 0.0
+    max_fixed_broken_relative_rotation_error = 0.0
+    fixed_parent_force_point = fixed_parent_anchor + np.array([0.4, 0.0, 0.0])
+    fixed_child_force_point = fixed_child_anchor - np.array([0.4, 0.0, 0.0])
+    for _ in range(20):
+        restored_fixed_parent.apply_force(
+            (0.0, -4.0, 0.0),
+            fixed_parent_force_point.tolist(),
+        )
+        restored_fixed_child.apply_force(
+            (0.0, 4.0, 0.0),
+            fixed_child_force_point.tolist(),
+        )
+        restored_fixed_world.step()
+        max_fixed_broken_anchor_residual = max(
+            max_fixed_broken_anchor_residual,
+            fixed_anchor_residual(),
+        )
+        max_fixed_broken_relative_rotation_error = max(
+            max_fixed_broken_relative_rotation_error,
+            fixed_relative_rotation_error(),
+        )
+    assert max_fixed_broken_anchor_residual > 1e-4
+    assert max_fixed_broken_relative_rotation_error > 1e-4
+
+    restored_fixed_parent.parent_joint.velocity = [0.0] * 6
+    restored_fixed_child.parent_joint.velocity = [0.0] * 6
+    restored_fixed_hold.break_force = 1.0e12
+    restored_fixed_hold.reset_breakage()
+
+    for _ in range(8):
+        restored_fixed_world.step()
+
+    assert not restored_fixed_hold.is_broken
+    assert fixed_anchor_residual() < max_fixed_broken_anchor_residual * 0.05
+    assert fixed_anchor_residual() < 1e-3
+    assert (
+        fixed_relative_rotation_error()
+        < max_fixed_broken_relative_rotation_error * 0.05
+    )
+    assert fixed_relative_rotation_error() < 1e-3
+
+    socket_world, _, socket_body = _floating_link_world(
+        sx, "python_serialized_world_socket"
+    )
+    socket_body.parent_joint.position = [0.3, -0.2, 0.1, 0.0, 0.0, 0.25]
+    socket_child_anchor = np.array([0.2, 0.1, 0.0])
+    captured_socket_rotation = np.asarray(socket_body.rotation, dtype=float).copy()
+    socket_world_anchor = (
+        np.asarray(socket_body.translation, dtype=float)
+        + captured_socket_rotation @ socket_child_anchor
+    )
+    socket = socket_world.add_articulated_spherical_joint(
+        "serialized_world_socket",
+        socket_body,
+        world_anchor=socket_world_anchor.tolist(),
+        child_anchor=socket_child_anchor.tolist(),
+    )
+    socket.break_force = 1e-18
+
+    socket_world.enter_simulation_mode()
+    socket_body.apply_force(
+        (0.0, 4.0, 0.0),
+        (socket_child_anchor + np.array([0.4, 0.0, 0.0])).tolist(),
+    )
+    socket_world.step()
+    assert socket.is_broken
+
+    socket_path = tmp_path / "articulated_world_socket.bin"
+    socket_world.save_binary(socket_path)
+
+    restored_socket_world = sx.World()
+    restored_socket_world.load_binary(socket_path)
+    restored_socket_world.multibody_options = sx.MultibodyOptions(
+        integration_family="variational integrator"
+    )
+    restored_socket_arm = restored_socket_world.get_multibody(
+        "python_serialized_world_socket"
+    )
+    assert restored_socket_arm is not None
+    restored_socket_body = restored_socket_arm.get_link("body")
+    restored_socket = restored_socket_world.get_articulated_joint(
+        "serialized_world_socket"
+    )
+    assert restored_socket_body is not None
+    assert restored_socket is not None
+    assert restored_socket.is_broken
+    assert restored_socket.type == sx.JointType.SPHERICAL
+    assert restored_socket.num_dofs == 3
+    assert restored_socket.child_link == restored_socket_body
+    with pytest.raises(Exception, match="parent endpoint"):
+        _ = restored_socket.parent_link
+
+    def socket_anchor_residual() -> float:
+        socket_anchor_world = (
+            np.asarray(restored_socket_body.translation, dtype=float)
+            + np.asarray(restored_socket_body.rotation, dtype=float)
+            @ socket_child_anchor
+        )
+        return float(np.linalg.norm(socket_anchor_world - socket_world_anchor))
+
+    def socket_rotation_error() -> float:
+        return float(
+            np.linalg.norm(
+                np.asarray(restored_socket_body.rotation, dtype=float)
+                - captured_socket_rotation
+            )
+        )
+
+    max_socket_broken_anchor_residual = 0.0
+    max_socket_broken_rotation_error = 0.0
+    socket_force_point = socket_child_anchor + np.array([0.4, 0.0, 0.0])
+    for _ in range(20):
+        restored_socket_body.apply_force(
+            (0.0, 4.0, 0.0),
+            socket_force_point.tolist(),
+        )
+        restored_socket_world.step()
+        max_socket_broken_anchor_residual = max(
+            max_socket_broken_anchor_residual,
+            socket_anchor_residual(),
+        )
+        max_socket_broken_rotation_error = max(
+            max_socket_broken_rotation_error,
+            socket_rotation_error(),
+        )
+    assert max_socket_broken_anchor_residual > 1e-4
+    assert max_socket_broken_rotation_error > 1e-4
+
+    restored_socket_body.parent_joint.velocity = [0.0] * 6
+    restored_socket.break_force = 1.0e12
+    restored_socket.reset_breakage()
+
+    for _ in range(8):
+        restored_socket_world.step()
+
+    assert not restored_socket.is_broken
+    assert socket_anchor_residual() < max_socket_broken_anchor_residual * 0.05
+    assert socket_anchor_residual() < 1e-3
+    assert socket_rotation_error() > max_socket_broken_rotation_error * 0.5
+
+
+def test_simulation_world_articulated_fixed_spherical_binary_roundtrip_from_python_completes_endpoint_types(
+    tmp_path: Path,
+):
+    sx = _simulation()
+
+    fixed_world, _, fixed_body = _floating_link_world(
+        sx, "python_serialized_world_fixed"
+    )
+    fixed_body.parent_joint.position = [0.25, -0.15, 0.1, 0.0, 0.0, 0.3]
+    fixed_child_anchor = np.array([0.2, 0.1, 0.0])
+    captured_fixed_rotation = np.asarray(fixed_body.rotation, dtype=float).copy()
+    fixed_world_anchor = (
+        np.asarray(fixed_body.translation, dtype=float)
+        + captured_fixed_rotation @ fixed_child_anchor
+    )
+    fixed_hold = fixed_world.add_articulated_fixed_joint(
+        "serialized_world_fixed",
+        fixed_body,
+        world_anchor=fixed_world_anchor.tolist(),
+        child_anchor=fixed_child_anchor.tolist(),
+    )
+    fixed_hold.break_force = 1e-18
+
+    fixed_world.enter_simulation_mode()
+    fixed_body.apply_force(
+        (0.0, 4.0, 0.0),
+        (fixed_child_anchor + np.array([0.4, 0.0, 0.0])).tolist(),
+    )
+    fixed_world.step()
+    assert fixed_hold.is_broken
+
+    fixed_path = tmp_path / "articulated_world_fixed.bin"
+    fixed_world.save_binary(fixed_path)
+
+    restored_fixed_world = sx.World()
+    restored_fixed_world.load_binary(fixed_path)
+    restored_fixed_world.multibody_options = sx.MultibodyOptions(
+        integration_family="variational integrator"
+    )
+    restored_fixed_arm = restored_fixed_world.get_multibody(
+        "python_serialized_world_fixed"
+    )
+    assert restored_fixed_arm is not None
+    restored_fixed_body = restored_fixed_arm.get_link("body")
+    restored_fixed_hold = restored_fixed_world.get_articulated_joint(
+        "serialized_world_fixed"
+    )
+    assert restored_fixed_body is not None
+    assert restored_fixed_hold is not None
+    assert restored_fixed_hold.is_broken
+    assert restored_fixed_hold.type == sx.JointType.FIXED
+    assert restored_fixed_hold.num_dofs == 0
+    assert restored_fixed_hold.child_link == restored_fixed_body
+    with pytest.raises(Exception, match="parent endpoint"):
+        _ = restored_fixed_hold.parent_link
+
+    def fixed_anchor_residual() -> float:
+        anchor_world = (
+            np.asarray(restored_fixed_body.translation, dtype=float)
+            + np.asarray(restored_fixed_body.rotation, dtype=float)
+            @ fixed_child_anchor
+        )
+        return float(np.linalg.norm(anchor_world - fixed_world_anchor))
+
+    def fixed_rotation_error() -> float:
+        return float(
+            np.linalg.norm(
+                np.asarray(restored_fixed_body.rotation, dtype=float)
+                - captured_fixed_rotation
+            )
+        )
+
+    max_fixed_broken_anchor_residual = 0.0
+    max_fixed_broken_rotation_error = 0.0
+    fixed_force_point = fixed_child_anchor + np.array([0.4, 0.0, 0.0])
+    for _ in range(20):
+        restored_fixed_body.apply_force(
+            (0.0, 4.0, 0.0),
+            fixed_force_point.tolist(),
+        )
+        restored_fixed_world.step()
+        max_fixed_broken_anchor_residual = max(
+            max_fixed_broken_anchor_residual,
+            fixed_anchor_residual(),
+        )
+        max_fixed_broken_rotation_error = max(
+            max_fixed_broken_rotation_error,
+            fixed_rotation_error(),
+        )
+    assert max_fixed_broken_anchor_residual > 1e-4
+    assert max_fixed_broken_rotation_error > 1e-4
+
+    restored_fixed_body.parent_joint.velocity = [0.0] * 6
+    restored_fixed_hold.break_force = 1.0e12
+    restored_fixed_hold.reset_breakage()
+
+    for _ in range(8):
+        restored_fixed_world.step()
+
+    assert not restored_fixed_hold.is_broken
+    assert fixed_anchor_residual() < max_fixed_broken_anchor_residual * 0.05
+    assert fixed_anchor_residual() < 1e-3
+    assert fixed_rotation_error() < max_fixed_broken_rotation_error * 0.05
+    assert fixed_rotation_error() < 1e-3
+
+    socket_world, socket_parent, socket_child = _floating_link_pair_world(
+        sx, "python_serialized_pair_socket"
+    )
+    socket_parent_anchor = np.array([0.15, 0.05, 0.0])
+    socket_child_anchor = np.array([-0.15, 0.05, 0.0])
+    socket_child.parent_joint.position = (
+        socket_parent_anchor - socket_child_anchor
+    ).tolist() + [0.0, 0.0, 0.0]
+    captured_socket_relative_rotation = (
+        np.asarray(socket_parent.rotation, dtype=float).T
+        @ np.asarray(socket_child.rotation, dtype=float)
+    )
+    socket = socket_world.add_articulated_spherical_joint(
+        "serialized_pair_socket",
+        socket_parent,
+        socket_child,
+        parent_anchor=socket_parent_anchor.tolist(),
+        child_anchor=socket_child_anchor.tolist(),
+    )
+    socket.break_force = 1e-18
+
+    socket_world.enter_simulation_mode()
+    socket_parent.apply_force(
+        (0.0, -4.0, 0.0),
+        (socket_parent_anchor + np.array([0.4, 0.0, 0.0])).tolist(),
+    )
+    socket_child.apply_force(
+        (0.0, 4.0, 0.0),
+        (socket_child_anchor - np.array([0.4, 0.0, 0.0])).tolist(),
+    )
+    socket_world.step()
+    assert socket.is_broken
+
+    socket_path = tmp_path / "articulated_pair_socket.bin"
+    socket_world.save_binary(socket_path)
+
+    restored_socket_world = sx.World()
+    restored_socket_world.load_binary(socket_path)
+    restored_socket_world.multibody_options = sx.MultibodyOptions(
+        integration_family="variational integrator"
+    )
+    restored_socket_arm = restored_socket_world.get_multibody(
+        "python_serialized_pair_socket"
+    )
+    assert restored_socket_arm is not None
+    restored_socket_parent = restored_socket_arm.get_link("parent")
+    restored_socket_child = restored_socket_arm.get_link("child")
+    restored_socket = restored_socket_world.get_articulated_joint(
+        "serialized_pair_socket"
+    )
+    assert restored_socket_parent is not None
+    assert restored_socket_child is not None
+    assert restored_socket is not None
+    assert restored_socket.is_broken
+    assert restored_socket.type == sx.JointType.SPHERICAL
+    assert restored_socket.num_dofs == 3
+    assert restored_socket.parent_link == restored_socket_parent
+    assert restored_socket.child_link == restored_socket_child
+
+    def socket_anchor_residual() -> float:
+        parent_anchor_world = (
+            np.asarray(restored_socket_parent.translation, dtype=float)
+            + np.asarray(restored_socket_parent.rotation, dtype=float)
+            @ socket_parent_anchor
+        )
+        child_anchor_world = (
+            np.asarray(restored_socket_child.translation, dtype=float)
+            + np.asarray(restored_socket_child.rotation, dtype=float)
+            @ socket_child_anchor
+        )
+        return float(np.linalg.norm(parent_anchor_world - child_anchor_world))
+
+    def socket_relative_rotation_error() -> float:
+        relative_rotation = (
+            np.asarray(restored_socket_parent.rotation, dtype=float).T
+            @ np.asarray(restored_socket_child.rotation, dtype=float)
+        )
+        return float(
+            np.linalg.norm(relative_rotation - captured_socket_relative_rotation)
+        )
+
+    max_socket_broken_anchor_residual = 0.0
+    max_socket_broken_relative_rotation_error = 0.0
+    socket_parent_force_point = socket_parent_anchor + np.array([0.4, 0.0, 0.0])
+    socket_child_force_point = socket_child_anchor - np.array([0.4, 0.0, 0.0])
+    for _ in range(20):
+        restored_socket_parent.apply_force(
+            (0.0, -4.0, 0.0),
+            socket_parent_force_point.tolist(),
+        )
+        restored_socket_child.apply_force(
+            (0.0, 4.0, 0.0),
+            socket_child_force_point.tolist(),
+        )
+        restored_socket_world.step()
+        max_socket_broken_anchor_residual = max(
+            max_socket_broken_anchor_residual,
+            socket_anchor_residual(),
+        )
+        max_socket_broken_relative_rotation_error = max(
+            max_socket_broken_relative_rotation_error,
+            socket_relative_rotation_error(),
+        )
+    assert max_socket_broken_anchor_residual > 1e-4
+    assert max_socket_broken_relative_rotation_error > 1e-4
+
+    restored_socket_parent.parent_joint.velocity = [0.0] * 6
+    restored_socket_child.parent_joint.velocity = [0.0] * 6
+    restored_socket.break_force = 1.0e12
+    restored_socket.reset_breakage()
+
+    for _ in range(8):
+        restored_socket_world.step()
+
+    assert not restored_socket.is_broken
+    assert socket_anchor_residual() < max_socket_broken_anchor_residual * 0.05
+    assert socket_anchor_residual() < 1e-3
+    assert (
+        socket_relative_rotation_error()
+        > max_socket_broken_relative_rotation_error * 0.5
+    )
+
+
+def test_simulation_world_articulated_design_binary_rebuild_from_python(
+    tmp_path: Path,
+):
+    sx = _simulation()
+
+    fixed_world, fixed_parent, fixed_child = _floating_link_pair_world(
+        sx, "python_serialized_design_pair_fixed"
+    )
+    fixed_parent_anchor = np.array([0.2, 0.1, 0.0])
+    fixed_child_anchor = np.array([-0.1, 0.1, 0.0])
+    fixed_child.parent_joint.position = (
+        fixed_parent_anchor - fixed_child_anchor
+    ).tolist() + [0.0, 0.0, 0.0]
+    fixed_world.add_articulated_fixed_joint(
+        "serialized_design_pair_fixed",
+        fixed_parent,
+        fixed_child,
+        parent_anchor=fixed_parent_anchor.tolist(),
+        child_anchor=fixed_child_anchor.tolist(),
+    )
+
+    fixed_path = tmp_path / "articulated_design_pair_fixed.bin"
+    fixed_world.save_binary(fixed_path)
+
+    restored_fixed_world = sx.World()
+    restored_fixed_world.load_binary(fixed_path)
+    restored_fixed_world.multibody_options = sx.MultibodyOptions(
+        integration_family="variational integrator"
+    )
+    assert not restored_fixed_world.is_simulation_mode
+    restored_fixed_arm = restored_fixed_world.get_multibody(
+        "python_serialized_design_pair_fixed"
+    )
+    assert restored_fixed_arm is not None
+    restored_fixed_parent = restored_fixed_arm.get_link("parent")
+    restored_fixed_child = restored_fixed_arm.get_link("child")
+    restored_fixed_hold = restored_fixed_world.get_articulated_joint(
+        "serialized_design_pair_fixed"
+    )
+    assert restored_fixed_parent is not None
+    assert restored_fixed_child is not None
+    assert restored_fixed_hold is not None
+    assert not restored_fixed_hold.is_broken
+    assert restored_fixed_hold.type == sx.JointType.FIXED
+    assert restored_fixed_hold.num_dofs == 0
+    assert restored_fixed_hold.parent_link == restored_fixed_parent
+    assert restored_fixed_hold.child_link == restored_fixed_child
+
+    restored_fixed_world.enter_simulation_mode()
+    captured_fixed_relative_rotation = (
+        np.asarray(restored_fixed_parent.rotation, dtype=float).T
+        @ np.asarray(restored_fixed_child.rotation, dtype=float)
+    )
+
+    def fixed_anchor_residual() -> float:
+        parent_anchor_world = (
+            np.asarray(restored_fixed_parent.translation, dtype=float)
+            + np.asarray(restored_fixed_parent.rotation, dtype=float)
+            @ fixed_parent_anchor
+        )
+        child_anchor_world = (
+            np.asarray(restored_fixed_child.translation, dtype=float)
+            + np.asarray(restored_fixed_child.rotation, dtype=float)
+            @ fixed_child_anchor
+        )
+        return float(np.linalg.norm(parent_anchor_world - child_anchor_world))
+
+    def fixed_relative_rotation_error() -> float:
+        relative_rotation = (
+            np.asarray(restored_fixed_parent.rotation, dtype=float).T
+            @ np.asarray(restored_fixed_child.rotation, dtype=float)
+        )
+        return float(
+            np.linalg.norm(relative_rotation - captured_fixed_relative_rotation)
+        )
+
+    max_fixed_anchor_residual = 0.0
+    max_fixed_relative_rotation_error = 0.0
+    fixed_parent_force_point = fixed_parent_anchor + np.array([0.4, 0.0, 0.0])
+    fixed_child_force_point = fixed_child_anchor - np.array([0.4, 0.0, 0.0])
+    for _ in range(30):
+        restored_fixed_parent.apply_force(
+            (0.0, -4.0, 0.0),
+            fixed_parent_force_point.tolist(),
+        )
+        restored_fixed_child.apply_force(
+            (0.0, 4.0, 0.0),
+            fixed_child_force_point.tolist(),
+        )
+        restored_fixed_world.step()
+        max_fixed_anchor_residual = max(
+            max_fixed_anchor_residual,
+            fixed_anchor_residual(),
+        )
+        max_fixed_relative_rotation_error = max(
+            max_fixed_relative_rotation_error,
+            fixed_relative_rotation_error(),
+        )
+
+    assert not restored_fixed_hold.is_broken
+    assert max_fixed_anchor_residual < 1e-5
+    assert max_fixed_relative_rotation_error < 1e-5
+
+    slider_world, slider_parent, slider_child = _floating_link_pair_world(
+        sx, "python_serialized_design_pair_slider"
+    )
+    slider_parent_anchor = np.array([0.2, 0.1, 0.0])
+    slider_child_anchor = np.array([-0.1, 0.1, 0.0])
+    slider_child.parent_joint.position = (
+        slider_parent_anchor - slider_child_anchor
+    ).tolist() + [0.0, 0.0, 0.0]
+    slider_axis = np.array([1.0, 2.0, 0.5], dtype=float)
+    slider_axis /= np.linalg.norm(slider_axis)
+    slider = slider_world.add_articulated_prismatic_joint(
+        "serialized_design_pair_slider",
+        slider_parent,
+        slider_child,
+        axis=slider_axis.tolist(),
+        parent_anchor=slider_parent_anchor.tolist(),
+        child_anchor=slider_child_anchor.tolist(),
+    )
+    slider.actuator_type = sx.ActuatorType.VELOCITY
+    slider_speed = 0.3
+    slider.command_velocity = [slider_speed]
+    slider.set_effort_limits([-1000.0], [1000.0])
+
+    slider_path = tmp_path / "articulated_design_pair_slider.bin"
+    slider_world.save_binary(slider_path)
+
+    restored_slider_world = sx.World()
+    restored_slider_world.load_binary(slider_path)
+    restored_slider_world.multibody_options = sx.MultibodyOptions(
+        integration_family="variational integrator"
+    )
+    assert not restored_slider_world.is_simulation_mode
+    restored_slider_arm = restored_slider_world.get_multibody(
+        "python_serialized_design_pair_slider"
+    )
+    assert restored_slider_arm is not None
+    restored_slider_parent = restored_slider_arm.get_link("parent")
+    restored_slider_child = restored_slider_arm.get_link("child")
+    restored_slider = restored_slider_world.get_articulated_joint(
+        "serialized_design_pair_slider"
+    )
+    assert restored_slider_parent is not None
+    assert restored_slider_child is not None
+    assert restored_slider is not None
+    assert not restored_slider.is_broken
+    assert restored_slider.type == sx.JointType.PRISMATIC
+    assert restored_slider.num_dofs == 1
+    assert restored_slider.parent_link == restored_slider_parent
+    assert restored_slider.child_link == restored_slider_child
+    assert np.asarray(restored_slider.axis, dtype=float).tolist() == pytest.approx(
+        slider_axis.tolist()
+    )
+    assert restored_slider.actuator_type == sx.ActuatorType.VELOCITY
+    assert restored_slider.command_velocity.tolist() == pytest.approx([slider_speed])
+    assert restored_slider.effort_lower_limits.tolist() == pytest.approx([-1000.0])
+    assert restored_slider.effort_upper_limits.tolist() == pytest.approx([1000.0])
+
+    restored_slider_world.enter_simulation_mode()
+    captured_slider_relative_rotation = (
+        np.asarray(restored_slider_parent.rotation, dtype=float).T
+        @ np.asarray(restored_slider_child.rotation, dtype=float)
+    )
+
+    def slider_anchor_delta() -> np.ndarray:
+        parent_anchor_world = (
+            np.asarray(restored_slider_parent.translation, dtype=float)
+            + np.asarray(restored_slider_parent.rotation, dtype=float)
+            @ slider_parent_anchor
+        )
+        child_anchor_world = (
+            np.asarray(restored_slider_child.translation, dtype=float)
+            + np.asarray(restored_slider_child.rotation, dtype=float)
+            @ slider_child_anchor
+        )
+        return child_anchor_world - parent_anchor_world
+
+    def slider_orthogonal_residual() -> float:
+        delta = slider_anchor_delta()
+        return float(
+            np.linalg.norm(delta - float(delta @ slider_axis) * slider_axis)
+        )
+
+    def slider_relative_rotation_error() -> float:
+        relative_rotation = (
+            np.asarray(restored_slider_parent.rotation, dtype=float).T
+            @ np.asarray(restored_slider_child.rotation, dtype=float)
+        )
+        return float(
+            np.linalg.norm(relative_rotation - captured_slider_relative_rotation)
+        )
+
+    slider_axis_position_before = float(slider_anchor_delta() @ slider_axis)
+    max_slider_orthogonal_residual = 0.0
+    max_slider_relative_rotation_error = 0.0
+    for _ in range(12):
+        restored_slider_world.step()
+        max_slider_orthogonal_residual = max(
+            max_slider_orthogonal_residual,
+            slider_orthogonal_residual(),
+        )
+        max_slider_relative_rotation_error = max(
+            max_slider_relative_rotation_error,
+            slider_relative_rotation_error(),
+        )
+
+    assert not restored_slider.is_broken
+    assert max_slider_orthogonal_residual < 1e-3
+    assert max_slider_relative_rotation_error < 1e-6
+    assert (
+        float(slider_anchor_delta() @ slider_axis)
+        > slider_axis_position_before + 1e-3
+    )
+
+    hinge_world, hinge_parent, hinge_child = _floating_link_pair_world(
+        sx, "python_serialized_design_pair_hinge"
+    )
+    hinge_parent_anchor = np.array([0.2, 0.1, 0.0])
+    hinge_child_anchor = np.array([-0.1, 0.1, 0.0])
+    hinge_child.parent_joint.position = (
+        hinge_parent_anchor - hinge_child_anchor
+    ).tolist() + [0.0, 0.0, 0.0]
+    hinge_axis = np.array([1.0, 2.0, 0.5], dtype=float)
+    hinge_axis /= np.linalg.norm(hinge_axis)
+    hinge = hinge_world.add_articulated_revolute_joint(
+        "serialized_design_pair_hinge",
+        hinge_parent,
+        hinge_child,
+        axis=hinge_axis.tolist(),
+        parent_anchor=hinge_parent_anchor.tolist(),
+        child_anchor=hinge_child_anchor.tolist(),
+    )
+    hinge.actuator_type = sx.ActuatorType.VELOCITY
+    hinge_speed = 0.4
+    hinge.command_velocity = [hinge_speed]
+    hinge.set_effort_limits([-1000.0], [1000.0])
+
+    hinge_path = tmp_path / "articulated_design_pair_hinge.bin"
+    hinge_world.save_binary(hinge_path)
+
+    restored_hinge_world = sx.World()
+    restored_hinge_world.load_binary(hinge_path)
+    restored_hinge_world.multibody_options = sx.MultibodyOptions(
+        integration_family="variational integrator"
+    )
+    assert not restored_hinge_world.is_simulation_mode
+    restored_hinge_arm = restored_hinge_world.get_multibody(
+        "python_serialized_design_pair_hinge"
+    )
+    assert restored_hinge_arm is not None
+    restored_hinge_parent = restored_hinge_arm.get_link("parent")
+    restored_hinge_child = restored_hinge_arm.get_link("child")
+    restored_hinge = restored_hinge_world.get_articulated_joint(
+        "serialized_design_pair_hinge"
+    )
+    assert restored_hinge_parent is not None
+    assert restored_hinge_child is not None
+    assert restored_hinge is not None
+    assert not restored_hinge.is_broken
+    assert restored_hinge.type == sx.JointType.REVOLUTE
+    assert restored_hinge.num_dofs == 1
+    assert restored_hinge.parent_link == restored_hinge_parent
+    assert restored_hinge.child_link == restored_hinge_child
+    assert np.asarray(restored_hinge.axis, dtype=float).tolist() == pytest.approx(
+        hinge_axis.tolist()
+    )
+    assert restored_hinge.actuator_type == sx.ActuatorType.VELOCITY
+    assert restored_hinge.command_velocity.tolist() == pytest.approx([hinge_speed])
+    assert restored_hinge.effort_lower_limits.tolist() == pytest.approx([-1000.0])
+    assert restored_hinge.effort_upper_limits.tolist() == pytest.approx([1000.0])
+
+    restored_hinge_world.enter_simulation_mode()
+
+    def hinge_anchor_residual() -> float:
+        parent_anchor_world = (
+            np.asarray(restored_hinge_parent.translation, dtype=float)
+            + np.asarray(restored_hinge_parent.rotation, dtype=float)
+            @ hinge_parent_anchor
+        )
+        child_anchor_world = (
+            np.asarray(restored_hinge_child.translation, dtype=float)
+            + np.asarray(restored_hinge_child.rotation, dtype=float)
+            @ hinge_child_anchor
+        )
+        return float(np.linalg.norm(child_anchor_world - parent_anchor_world))
+
+    def hinge_relative_rotation() -> np.ndarray:
+        return (
+            np.asarray(restored_hinge_parent.rotation, dtype=float).T
+            @ np.asarray(restored_hinge_child.rotation, dtype=float)
+        )
+
+    def hinge_signed_axis_angle() -> float:
+        rotation = hinge_relative_rotation()
+        skew_axis = np.array(
+            [
+                rotation[2, 1] - rotation[1, 2],
+                rotation[0, 2] - rotation[2, 0],
+                rotation[1, 0] - rotation[0, 1],
+            ]
+        )
+        sin_term = 0.5 * float(hinge_axis @ skew_axis)
+        cos_term = 0.5 * (float(np.trace(rotation)) - 1.0)
+        return math.atan2(sin_term, cos_term)
+
+    def hinge_axis_tilt() -> float:
+        return float(
+            np.linalg.norm(
+                np.asarray(restored_hinge_parent.rotation, dtype=float) @ hinge_axis
+                - np.asarray(restored_hinge_child.rotation, dtype=float) @ hinge_axis
+            )
+        )
+
+    hinge_angle_before = hinge_signed_axis_angle()
+    max_hinge_anchor_residual = 0.0
+    max_hinge_axis_tilt = 0.0
+    for _ in range(12):
+        restored_hinge_world.step()
+        max_hinge_anchor_residual = max(
+            max_hinge_anchor_residual,
+            hinge_anchor_residual(),
+        )
+        max_hinge_axis_tilt = max(max_hinge_axis_tilt, hinge_axis_tilt())
+
+    assert not restored_hinge.is_broken
+    assert max_hinge_anchor_residual < 1e-6
+    assert max_hinge_axis_tilt < 1e-3
+    assert hinge_signed_axis_angle() > hinge_angle_before + 1e-3
+
+    world_slider_world, _, world_slider_body = _floating_link_world(
+        sx, "python_serialized_design_world_slider"
+    )
+    world_slider_body.parent_joint.position = [
+        0.15,
+        -0.05,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+    ]
+    world_slider_axis = np.array([1.0, 2.0, 0.5], dtype=float)
+    world_slider_axis /= np.linalg.norm(world_slider_axis)
+    world_slider_child_anchor = np.array([0.2, 0.1, 0.0])
+    world_slider_anchor = (
+        np.asarray(world_slider_body.translation, dtype=float)
+        + np.asarray(world_slider_body.rotation, dtype=float)
+        @ world_slider_child_anchor
+    )
+    world_slider = world_slider_world.add_articulated_prismatic_joint(
+        "serialized_design_world_slider",
+        world_slider_body,
+        axis=world_slider_axis.tolist(),
+        world_anchor=world_slider_anchor.tolist(),
+        child_anchor=world_slider_child_anchor.tolist(),
+    )
+    world_slider.actuator_type = sx.ActuatorType.VELOCITY
+    world_slider_speed = 0.3
+    world_slider.command_velocity = [world_slider_speed]
+    world_slider.set_effort_limits([-1000.0], [1000.0])
+
+    world_slider_path = tmp_path / "articulated_design_world_slider.bin"
+    world_slider_world.save_binary(world_slider_path)
+
+    restored_world_slider_world = sx.World()
+    restored_world_slider_world.load_binary(world_slider_path)
+    restored_world_slider_world.multibody_options = sx.MultibodyOptions(
+        integration_family="variational integrator"
+    )
+    assert not restored_world_slider_world.is_simulation_mode
+    restored_world_slider_arm = restored_world_slider_world.get_multibody(
+        "python_serialized_design_world_slider"
+    )
+    assert restored_world_slider_arm is not None
+    restored_world_slider_body = restored_world_slider_arm.get_link("body")
+    restored_world_slider = restored_world_slider_world.get_articulated_joint(
+        "serialized_design_world_slider"
+    )
+    assert restored_world_slider_body is not None
+    assert restored_world_slider is not None
+    assert not restored_world_slider.is_broken
+    assert restored_world_slider.type == sx.JointType.PRISMATIC
+    assert restored_world_slider.num_dofs == 1
+    assert restored_world_slider.child_link == restored_world_slider_body
+    with pytest.raises(Exception, match="parent endpoint"):
+        _ = restored_world_slider.parent_link
+    assert np.asarray(restored_world_slider.axis, dtype=float).tolist() == pytest.approx(
+        world_slider_axis.tolist()
+    )
+    assert restored_world_slider.actuator_type == sx.ActuatorType.VELOCITY
+    assert restored_world_slider.command_velocity.tolist() == pytest.approx(
+        [world_slider_speed]
+    )
+    assert restored_world_slider.effort_lower_limits.tolist() == pytest.approx(
+        [-1000.0]
+    )
+    assert restored_world_slider.effort_upper_limits.tolist() == pytest.approx(
+        [1000.0]
+    )
+
+    restored_world_slider_world.enter_simulation_mode()
+    captured_world_slider_rotation = np.asarray(
+        restored_world_slider_body.rotation, dtype=float
+    ).copy()
+
+    def world_slider_anchor_delta() -> np.ndarray:
+        child_anchor_world = (
+            np.asarray(restored_world_slider_body.translation, dtype=float)
+            + np.asarray(restored_world_slider_body.rotation, dtype=float)
+            @ world_slider_child_anchor
+        )
+        return child_anchor_world - world_slider_anchor
+
+    def world_slider_orthogonal_residual() -> float:
+        delta = world_slider_anchor_delta()
+        return float(
+            np.linalg.norm(
+                delta - float(delta @ world_slider_axis) * world_slider_axis
+            )
+        )
+
+    def world_slider_rotation_error() -> float:
+        return float(
+            np.linalg.norm(
+                np.asarray(restored_world_slider_body.rotation, dtype=float)
+                - captured_world_slider_rotation
+            )
+        )
+
+    world_slider_axis_position_before = float(
+        world_slider_anchor_delta() @ world_slider_axis
+    )
+    max_world_slider_orthogonal_residual = 0.0
+    max_world_slider_rotation_error = 0.0
+    for _ in range(12):
+        restored_world_slider_world.step()
+        max_world_slider_orthogonal_residual = max(
+            max_world_slider_orthogonal_residual,
+            world_slider_orthogonal_residual(),
+        )
+        max_world_slider_rotation_error = max(
+            max_world_slider_rotation_error,
+            world_slider_rotation_error(),
+        )
+
+    assert not restored_world_slider.is_broken
+    assert max_world_slider_orthogonal_residual < 1e-3
+    assert max_world_slider_rotation_error < 1e-6
+    assert (
+        float(world_slider_anchor_delta() @ world_slider_axis)
+        > world_slider_axis_position_before + 1e-3
+    )
+
+    world_hinge_world, _, world_hinge_body = _floating_link_world(
+        sx, "python_serialized_design_world_hinge"
+    )
+    world_hinge_body.parent_joint.position = [
+        0.15,
+        -0.05,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+    ]
+    world_hinge_axis = np.array([1.0, 2.0, 3.0], dtype=float)
+    world_hinge_axis /= np.linalg.norm(world_hinge_axis)
+    world_hinge_child_anchor = np.array([0.2, 0.1, 0.0])
+    world_hinge_anchor = (
+        np.asarray(world_hinge_body.translation, dtype=float)
+        + np.asarray(world_hinge_body.rotation, dtype=float)
+        @ world_hinge_child_anchor
+    )
+    world_hinge = world_hinge_world.add_articulated_revolute_joint(
+        "serialized_design_world_hinge",
+        world_hinge_body,
+        axis=world_hinge_axis.tolist(),
+        world_anchor=world_hinge_anchor.tolist(),
+        child_anchor=world_hinge_child_anchor.tolist(),
+    )
+    world_hinge.actuator_type = sx.ActuatorType.VELOCITY
+    world_hinge_speed = 0.4
+    world_hinge.command_velocity = [world_hinge_speed]
+    world_hinge.set_effort_limits([-1000.0], [1000.0])
+
+    world_hinge_path = tmp_path / "articulated_design_world_hinge.bin"
+    world_hinge_world.save_binary(world_hinge_path)
+
+    restored_world_hinge_world = sx.World()
+    restored_world_hinge_world.load_binary(world_hinge_path)
+    restored_world_hinge_world.multibody_options = sx.MultibodyOptions(
+        integration_family="variational integrator"
+    )
+    assert not restored_world_hinge_world.is_simulation_mode
+    restored_world_hinge_arm = restored_world_hinge_world.get_multibody(
+        "python_serialized_design_world_hinge"
+    )
+    assert restored_world_hinge_arm is not None
+    restored_world_hinge_body = restored_world_hinge_arm.get_link("body")
+    restored_world_hinge = restored_world_hinge_world.get_articulated_joint(
+        "serialized_design_world_hinge"
+    )
+    assert restored_world_hinge_body is not None
+    assert restored_world_hinge is not None
+    assert not restored_world_hinge.is_broken
+    assert restored_world_hinge.type == sx.JointType.REVOLUTE
+    assert restored_world_hinge.num_dofs == 1
+    assert restored_world_hinge.child_link == restored_world_hinge_body
+    with pytest.raises(Exception, match="parent endpoint"):
+        _ = restored_world_hinge.parent_link
+    assert np.asarray(restored_world_hinge.axis, dtype=float).tolist() == pytest.approx(
+        world_hinge_axis.tolist()
+    )
+    assert restored_world_hinge.actuator_type == sx.ActuatorType.VELOCITY
+    assert restored_world_hinge.command_velocity.tolist() == pytest.approx(
+        [world_hinge_speed]
+    )
+    assert restored_world_hinge.effort_lower_limits.tolist() == pytest.approx(
+        [-1000.0]
+    )
+    assert restored_world_hinge.effort_upper_limits.tolist() == pytest.approx(
+        [1000.0]
+    )
+
+    restored_world_hinge_world.enter_simulation_mode()
+
+    def world_hinge_anchor_residual() -> float:
+        child_anchor_world = (
+            np.asarray(restored_world_hinge_body.translation, dtype=float)
+            + np.asarray(restored_world_hinge_body.rotation, dtype=float)
+            @ world_hinge_child_anchor
+        )
+        return float(np.linalg.norm(child_anchor_world - world_hinge_anchor))
+
+    def world_hinge_signed_axis_angle() -> float:
+        rotation = np.asarray(restored_world_hinge_body.rotation, dtype=float)
+        skew_axis = np.array(
+            [
+                rotation[2, 1] - rotation[1, 2],
+                rotation[0, 2] - rotation[2, 0],
+                rotation[1, 0] - rotation[0, 1],
+            ]
+        )
+        sin_term = 0.5 * float(world_hinge_axis @ skew_axis)
+        cos_term = 0.5 * (float(np.trace(rotation)) - 1.0)
+        return math.atan2(sin_term, cos_term)
+
+    def world_hinge_axis_tilt() -> float:
+        return float(
+            np.linalg.norm(
+                np.asarray(restored_world_hinge_body.rotation, dtype=float)
+                @ world_hinge_axis
+                - world_hinge_axis
+            )
+        )
+
+    world_hinge_angle_before = world_hinge_signed_axis_angle()
+    max_world_hinge_anchor_residual = 0.0
+    max_world_hinge_axis_tilt = 0.0
+    for _ in range(12):
+        restored_world_hinge_world.step()
+        max_world_hinge_anchor_residual = max(
+            max_world_hinge_anchor_residual,
+            world_hinge_anchor_residual(),
+        )
+        max_world_hinge_axis_tilt = max(
+            max_world_hinge_axis_tilt,
+            world_hinge_axis_tilt(),
+        )
+
+    assert not restored_world_hinge.is_broken
+    assert max_world_hinge_anchor_residual < 1e-6
+    assert max_world_hinge_axis_tilt < 1e-3
+    assert world_hinge_signed_axis_angle() > world_hinge_angle_before + 1e-3
+
+    socket_world, _, socket_body = _floating_link_world(
+        sx, "python_serialized_design_world_socket"
+    )
+    socket_body.parent_joint.position = [0.3, -0.2, 0.1, 0.0, 0.0, 0.25]
+    socket_child_anchor = np.array([0.2, 0.1, 0.0])
+    socket_world_anchor = (
+        np.asarray(socket_body.translation, dtype=float)
+        + np.asarray(socket_body.rotation, dtype=float) @ socket_child_anchor
+    )
+    socket_world.add_articulated_spherical_joint(
+        "serialized_design_world_socket",
+        socket_body,
+        world_anchor=socket_world_anchor.tolist(),
+        child_anchor=socket_child_anchor.tolist(),
+    )
+
+    socket_path = tmp_path / "articulated_design_world_socket.bin"
+    socket_world.save_binary(socket_path)
+
+    restored_socket_world = sx.World()
+    restored_socket_world.load_binary(socket_path)
+    restored_socket_world.multibody_options = sx.MultibodyOptions(
+        integration_family="variational integrator"
+    )
+    assert not restored_socket_world.is_simulation_mode
+    restored_socket_arm = restored_socket_world.get_multibody(
+        "python_serialized_design_world_socket"
+    )
+    assert restored_socket_arm is not None
+    restored_socket_body = restored_socket_arm.get_link("body")
+    restored_socket = restored_socket_world.get_articulated_joint(
+        "serialized_design_world_socket"
+    )
+    assert restored_socket_body is not None
+    assert restored_socket is not None
+    assert not restored_socket.is_broken
+    assert restored_socket.type == sx.JointType.SPHERICAL
+    assert restored_socket.num_dofs == 3
+    assert restored_socket.child_link == restored_socket_body
+    with pytest.raises(Exception, match="parent endpoint"):
+        _ = restored_socket.parent_link
+
+    restored_socket_world.enter_simulation_mode()
+    captured_socket_rotation = np.asarray(
+        restored_socket_body.rotation, dtype=float
+    ).copy()
+
+    def socket_anchor_residual() -> float:
+        socket_anchor_world = (
+            np.asarray(restored_socket_body.translation, dtype=float)
+            + np.asarray(restored_socket_body.rotation, dtype=float)
+            @ socket_child_anchor
+        )
+        return float(np.linalg.norm(socket_anchor_world - socket_world_anchor))
+
+    def socket_rotation_error() -> float:
+        return float(
+            np.linalg.norm(
+                np.asarray(restored_socket_body.rotation, dtype=float)
+                - captured_socket_rotation
+            )
+        )
+
+    max_socket_anchor_residual = 0.0
+    max_socket_rotation_error = 0.0
+    socket_force_point = socket_child_anchor + np.array([0.4, 0.0, 0.0])
+    for _ in range(40):
+        restored_socket_body.apply_force(
+            (0.0, 4.0, 0.0),
+            socket_force_point.tolist(),
+        )
+        restored_socket_world.step()
+        max_socket_anchor_residual = max(
+            max_socket_anchor_residual,
+            socket_anchor_residual(),
+        )
+        max_socket_rotation_error = max(
+            max_socket_rotation_error,
+            socket_rotation_error(),
+        )
+
+    assert not restored_socket.is_broken
+    assert max_socket_anchor_residual < 1e-5
+    assert max_socket_rotation_error > 1e-4
+
+
+def test_simulation_world_articulated_design_binary_rebuild_from_python_completes_fixed_spherical_endpoint_types(
+    tmp_path: Path,
+):
+    sx = _simulation()
+
+    fixed_world, _, fixed_body = _floating_link_world(
+        sx, "python_serialized_design_world_fixed"
+    )
+    fixed_body.parent_joint.position = [0.25, -0.15, 0.1, 0.0, 0.0, 0.3]
+    fixed_child_anchor = np.array([0.2, 0.1, 0.0])
+    fixed_rotation = np.asarray(fixed_body.rotation, dtype=float).copy()
+    fixed_world_anchor = (
+        np.asarray(fixed_body.translation, dtype=float)
+        + fixed_rotation @ fixed_child_anchor
+    )
+    fixed_world.add_articulated_fixed_joint(
+        "serialized_design_world_fixed",
+        fixed_body,
+        world_anchor=fixed_world_anchor.tolist(),
+        child_anchor=fixed_child_anchor.tolist(),
+    )
+
+    fixed_path = tmp_path / "articulated_design_world_fixed.bin"
+    fixed_world.save_binary(fixed_path)
+
+    restored_fixed_world = sx.World()
+    restored_fixed_world.load_binary(fixed_path)
+    restored_fixed_world.multibody_options = sx.MultibodyOptions(
+        integration_family="variational integrator"
+    )
+    assert not restored_fixed_world.is_simulation_mode
+    restored_fixed_arm = restored_fixed_world.get_multibody(
+        "python_serialized_design_world_fixed"
+    )
+    assert restored_fixed_arm is not None
+    restored_fixed_body = restored_fixed_arm.get_link("body")
+    restored_fixed_hold = restored_fixed_world.get_articulated_joint(
+        "serialized_design_world_fixed"
+    )
+    assert restored_fixed_body is not None
+    assert restored_fixed_hold is not None
+    assert not restored_fixed_hold.is_broken
+    assert restored_fixed_hold.type == sx.JointType.FIXED
+    assert restored_fixed_hold.num_dofs == 0
+    assert restored_fixed_hold.child_link == restored_fixed_body
+    with pytest.raises(Exception, match="parent endpoint"):
+        _ = restored_fixed_hold.parent_link
+
+    restored_fixed_world.enter_simulation_mode()
+
+    def fixed_anchor_residual() -> float:
+        anchor_world = (
+            np.asarray(restored_fixed_body.translation, dtype=float)
+            + np.asarray(restored_fixed_body.rotation, dtype=float)
+            @ fixed_child_anchor
+        )
+        return float(np.linalg.norm(anchor_world - fixed_world_anchor))
+
+    def fixed_rotation_error() -> float:
+        return float(
+            np.linalg.norm(
+                np.asarray(restored_fixed_body.rotation, dtype=float)
+                - fixed_rotation
+            )
+        )
+
+    max_fixed_anchor_residual = 0.0
+    max_fixed_rotation_error = 0.0
+    fixed_force_point = fixed_child_anchor + np.array([0.4, 0.0, 0.0])
+    for _ in range(30):
+        restored_fixed_body.apply_force(
+            (0.0, 4.0, 0.0),
+            fixed_force_point.tolist(),
+        )
+        restored_fixed_world.step()
+        max_fixed_anchor_residual = max(
+            max_fixed_anchor_residual,
+            fixed_anchor_residual(),
+        )
+        max_fixed_rotation_error = max(
+            max_fixed_rotation_error,
+            fixed_rotation_error(),
+        )
+
+    assert not restored_fixed_hold.is_broken
+    assert max_fixed_anchor_residual < 1e-5
+    assert max_fixed_rotation_error < 1e-5
+
+    socket_world, socket_parent, socket_child = _floating_link_pair_world(
+        sx, "python_serialized_design_pair_socket"
+    )
+    socket_parent_anchor = np.array([0.15, 0.05, 0.0])
+    socket_child_anchor = np.array([-0.15, 0.05, 0.0])
+    socket_child.parent_joint.position = (
+        socket_parent_anchor - socket_child_anchor
+    ).tolist() + [0.0, 0.0, 0.0]
+    captured_socket_relative_rotation = (
+        np.asarray(socket_parent.rotation, dtype=float).T
+        @ np.asarray(socket_child.rotation, dtype=float)
+    )
+    socket_world.add_articulated_spherical_joint(
+        "serialized_design_pair_socket",
+        socket_parent,
+        socket_child,
+        parent_anchor=socket_parent_anchor.tolist(),
+        child_anchor=socket_child_anchor.tolist(),
+    )
+
+    socket_path = tmp_path / "articulated_design_pair_socket.bin"
+    socket_world.save_binary(socket_path)
+
+    restored_socket_world = sx.World()
+    restored_socket_world.load_binary(socket_path)
+    restored_socket_world.multibody_options = sx.MultibodyOptions(
+        integration_family="variational integrator"
+    )
+    assert not restored_socket_world.is_simulation_mode
+    restored_socket_arm = restored_socket_world.get_multibody(
+        "python_serialized_design_pair_socket"
+    )
+    assert restored_socket_arm is not None
+    restored_socket_parent = restored_socket_arm.get_link("parent")
+    restored_socket_child = restored_socket_arm.get_link("child")
+    restored_socket = restored_socket_world.get_articulated_joint(
+        "serialized_design_pair_socket"
+    )
+    assert restored_socket_parent is not None
+    assert restored_socket_child is not None
+    assert restored_socket is not None
+    assert not restored_socket.is_broken
+    assert restored_socket.type == sx.JointType.SPHERICAL
+    assert restored_socket.num_dofs == 3
+    assert restored_socket.parent_link == restored_socket_parent
+    assert restored_socket.child_link == restored_socket_child
+
+    restored_socket_world.enter_simulation_mode()
+
+    def socket_anchor_residual() -> float:
+        parent_anchor_world = (
+            np.asarray(restored_socket_parent.translation, dtype=float)
+            + np.asarray(restored_socket_parent.rotation, dtype=float)
+            @ socket_parent_anchor
+        )
+        child_anchor_world = (
+            np.asarray(restored_socket_child.translation, dtype=float)
+            + np.asarray(restored_socket_child.rotation, dtype=float)
+            @ socket_child_anchor
+        )
+        return float(np.linalg.norm(parent_anchor_world - child_anchor_world))
+
+    def socket_relative_rotation_error() -> float:
+        relative_rotation = (
+            np.asarray(restored_socket_parent.rotation, dtype=float).T
+            @ np.asarray(restored_socket_child.rotation, dtype=float)
+        )
+        return float(
+            np.linalg.norm(relative_rotation - captured_socket_relative_rotation)
+        )
+
+    max_socket_anchor_residual = 0.0
+    max_socket_relative_rotation_error = 0.0
+    socket_parent_force_point = socket_parent_anchor + np.array([0.4, 0.0, 0.0])
+    socket_child_force_point = socket_child_anchor - np.array([0.4, 0.0, 0.0])
+    for _ in range(30):
+        restored_socket_parent.apply_force(
+            (0.0, -4.0, 0.0),
+            socket_parent_force_point.tolist(),
+        )
+        restored_socket_child.apply_force(
+            (0.0, 4.0, 0.0),
+            socket_child_force_point.tolist(),
+        )
+        restored_socket_world.step()
+        max_socket_anchor_residual = max(
+            max_socket_anchor_residual,
+            socket_anchor_residual(),
+        )
+        max_socket_relative_rotation_error = max(
+            max_socket_relative_rotation_error,
+            socket_relative_rotation_error(),
+        )
+
+    assert not restored_socket.is_broken
+    assert max_socket_anchor_residual < 1e-3
+    assert max_socket_relative_rotation_error > 1e-4
+
+
+def test_simulation_world_articulated_pair_motor_breakage_reset_from_python():
+    sx = _simulation()
+
+    world, parent, child = _floating_link_pair_world(
+        sx, "python_resettable_pair_breakable_slider"
+    )
+    child.parent_joint.position = [0.3, 0.0, 0.0, 0.0, 0.0, 0.0]
+
+    slider_axis = np.array([1.0, 0.0, 0.0])
+    parent_anchor = np.array([0.2, 0.1, 0.0])
+    child_anchor = np.array([-0.1, 0.1, 0.0])
+    slider = world.add_articulated_prismatic_joint(
+        "resettable_pair_slider",
+        parent,
+        child,
+        axis=slider_axis,
+        parent_anchor=parent_anchor.tolist(),
+        child_anchor=child_anchor.tolist(),
+    )
+    assert slider.type == sx.JointType.PRISMATIC
+    assert slider.num_dofs == 1
+    assert slider.parent_link == parent
+    assert slider.child_link == child
+    assert np.asarray(slider.axis, dtype=float).tolist() == pytest.approx(
+        slider_axis.tolist()
+    )
+    slider.actuator_type = sx.ActuatorType.VELOCITY
+    slider_speed = 0.3
+    slider.command_velocity = [slider_speed]
+    slider.set_effort_limits([-1000.0], [1000.0])
+    slider.break_force = 1e-18
+
+    def anchor_delta() -> np.ndarray:
+        parent_anchor_world = (
+            np.asarray(parent.translation, dtype=float)
+            + np.asarray(parent.rotation, dtype=float) @ parent_anchor
+        )
+        child_anchor_world = (
+            np.asarray(child.translation, dtype=float)
+            + np.asarray(child.rotation, dtype=float) @ child_anchor
+        )
+        return child_anchor_world - parent_anchor_world
+
+    def orthogonal_anchor_residual() -> float:
+        delta = anchor_delta()
+        orthogonal = delta - delta.dot(slider_axis) * slider_axis
+        return float(np.linalg.norm(orthogonal))
+
+    def relative_rotation_error() -> float:
+        relative_rotation = (
+            np.asarray(parent.rotation, dtype=float).T
+            @ np.asarray(child.rotation, dtype=float)
+        )
+        return float(np.linalg.norm(relative_rotation - np.eye(3)))
+
+    world.enter_simulation_mode()
+    world.step()
+
+    assert slider.is_broken
+    first_step_delta = anchor_delta()
+    assert float(first_step_delta.dot(slider_axis)) == pytest.approx(
+        slider_speed * world.time_step, abs=1e-6
+    )
+    assert orthogonal_anchor_residual() < 1e-6
+    assert relative_rotation_error() < 1e-6
+
+    max_broken_orthogonal_residual = 0.0
+    for _ in range(20):
+        parent.apply_force((0.0, -4.0, 0.0), parent_anchor.tolist())
+        child.apply_force((0.0, 4.0, 0.0), child_anchor.tolist())
+        world.step()
+        max_broken_orthogonal_residual = max(
+            max_broken_orthogonal_residual, orthogonal_anchor_residual()
+        )
+    assert max_broken_orthogonal_residual > 1e-4
+
+    parent.parent_joint.velocity = [0.0] * 6
+    child.parent_joint.velocity = [0.0] * 6
+    slider.break_force = 1.0e12
+    slider.reset_breakage()
+
+    assert not slider.is_broken
+
+    world.step()
+
+    assert not slider.is_broken
+    reset_orthogonal_residual = orthogonal_anchor_residual()
+    assert reset_orthogonal_residual < max_broken_orthogonal_residual * 0.05
+    assert reset_orthogonal_residual < 1e-3
+    assert relative_rotation_error() < 1e-6
+    assert float(anchor_delta().dot(slider_axis)) > float(
+        first_step_delta.dot(slider_axis)
+    )
+
+
+def test_simulation_world_articulated_pair_revolute_breakage_reset_from_python():
+    sx = _simulation()
+
+    world, parent, child = _floating_link_pair_world(
+        sx, "python_resettable_pair_breakable_hinge"
+    )
+    child.parent_joint.position = [0.3, 0.0, 0.0, 0.0, 0.0, 0.0]
+
+    hinge_axis = np.array([0.0, 0.0, 1.0])
+    parent_anchor = np.array([0.2, 0.1, 0.0])
+    child_anchor = np.array([-0.1, 0.1, 0.0])
+    hinge = world.add_articulated_revolute_joint(
+        "resettable_pair_hinge",
+        parent,
+        child,
+        axis=hinge_axis,
+        parent_anchor=parent_anchor.tolist(),
+        child_anchor=child_anchor.tolist(),
+    )
+    assert hinge.type == sx.JointType.REVOLUTE
+    assert hinge.num_dofs == 1
+    assert hinge.parent_link == parent
+    assert hinge.child_link == child
+    assert np.asarray(hinge.axis, dtype=float).tolist() == pytest.approx(
+        hinge_axis.tolist()
+    )
+    hinge.actuator_type = sx.ActuatorType.VELOCITY
+    hinge_speed = 0.4
+    hinge.command_velocity = [hinge_speed]
+    hinge.set_effort_limits([-1000.0], [1000.0])
+    hinge.break_force = 1e-18
+
+    def anchor_residual() -> float:
+        parent_anchor_world = (
+            np.asarray(parent.translation, dtype=float)
+            + np.asarray(parent.rotation, dtype=float) @ parent_anchor
+        )
+        child_anchor_world = (
+            np.asarray(child.translation, dtype=float)
+            + np.asarray(child.rotation, dtype=float) @ child_anchor
+        )
+        return float(
+            np.linalg.norm(
+                child_anchor_world - parent_anchor_world
+            )
+        )
+
+    def axis_tilt() -> float:
+        return float(
+            np.linalg.norm(
+                np.asarray(parent.rotation, dtype=float) @ hinge_axis
+                - np.asarray(child.rotation, dtype=float) @ hinge_axis
+            )
+        )
+
+    def relative_yaw() -> float:
+        relative_rotation = (
+            np.asarray(parent.rotation, dtype=float).T
+            @ np.asarray(child.rotation, dtype=float)
+        )
+        return math.atan2(relative_rotation[1, 0], relative_rotation[0, 0])
+
+    world.enter_simulation_mode()
+    world.step()
+
+    assert hinge.is_broken
+    first_step_yaw = relative_yaw()
+    assert first_step_yaw == pytest.approx(hinge_speed * world.time_step, abs=1e-6)
+    assert anchor_residual() < 1e-6
+    assert axis_tilt() < 1e-6
+
+    max_broken_anchor_residual = 0.0
+    for _ in range(20):
+        parent.apply_force(
+            (0.0, -4.0, 0.0),
+            (parent_anchor + np.array([0.3, 0.0, 0.0])).tolist(),
+        )
+        child.apply_force(
+            (0.0, 4.0, 0.0),
+            (child_anchor - np.array([0.3, 0.0, 0.0])).tolist(),
+        )
+        world.step()
+        max_broken_anchor_residual = max(
+            max_broken_anchor_residual, anchor_residual()
+        )
+    assert max_broken_anchor_residual > 1e-4
+
+    parent.parent_joint.velocity = [0.0] * 6
+    child.parent_joint.velocity = [0.0] * 6
+    hinge.break_force = 1.0e12
+    hinge.reset_breakage()
+
+    assert not hinge.is_broken
+
+    world.step()
+
+    assert not hinge.is_broken
+    assert anchor_residual() < 1e-6
+    assert axis_tilt() < 1e-6
+    assert relative_yaw() > first_step_yaw
+
+
+def test_simulation_world_articulated_fixed_breakage_reset_reengages_from_python():
+    sx = _simulation()
+
+    same_world, same_base, same_body = _floating_link_world(
+        sx, "python_resettable_breakable_fixed"
+    )
+    same_body.parent_joint.position = [0.1, -0.2, 0.15, 0.0, 0.0, 0.2]
+    same_child_anchor = np.array([-0.15, 0.05, 0.0])
+    same_parent_anchor = (
+        np.asarray(same_body.translation, dtype=float)
+        + np.asarray(same_body.rotation, dtype=float) @ same_child_anchor
+    )
+    same_hold = same_world.add_articulated_fixed_joint(
+        "resettable_hold",
+        same_base,
+        same_body,
+        parent_anchor=same_parent_anchor.tolist(),
+        child_anchor=same_child_anchor.tolist(),
+    )
+    assert same_hold.type == sx.JointType.FIXED
+    assert same_hold.num_dofs == 0
+    assert same_hold.parent_link == same_base
+    assert same_hold.child_link == same_body
+    same_hold.break_force = 1e-18
+    same_off_center_point = (same_child_anchor + np.array([0.4, 0.0, 0.0])).tolist()
+
+    same_world.enter_simulation_mode()
+    captured_translation = np.asarray(same_body.translation, dtype=float).copy()
+    captured_rotation = np.asarray(same_body.rotation, dtype=float).copy()
+
+    same_body.apply_force((0.0, 4.0, 0.0), same_off_center_point)
+    same_world.step()
+
+    assert same_hold.is_broken
+
+    max_broken_translation_error = 0.0
+    max_broken_anchor_residual = 0.0
+    for _ in range(20):
+        same_body.apply_force((0.0, 4.0, 0.0), same_off_center_point)
+        same_world.step()
+        anchor_position = (
+            np.asarray(same_body.translation, dtype=float)
+            + np.asarray(same_body.rotation, dtype=float) @ same_child_anchor
+        )
+        max_broken_translation_error = max(
+            max_broken_translation_error,
+            float(
+                np.linalg.norm(
+                    np.asarray(same_body.translation, dtype=float)
+                    - captured_translation
+                )
+            ),
+        )
+        max_broken_anchor_residual = max(
+            max_broken_anchor_residual,
+            float(np.linalg.norm(anchor_position - same_parent_anchor)),
+        )
+    assert max_broken_translation_error > 1e-4
+    assert max_broken_anchor_residual > 1e-4
+
+    same_body.parent_joint.velocity = [0.0] * 6
+    same_hold.break_force = 1.0e12
+    same_hold.reset_breakage()
+
+    assert not same_hold.is_broken
+
+    same_world.step()
+
+    assert not same_hold.is_broken
+    assert (
+        np.linalg.norm(
+            np.asarray(same_body.translation, dtype=float) - captured_translation
+        )
+        < 1e-6
+    )
+    assert (
+        np.linalg.norm(np.asarray(same_body.rotation, dtype=float) - captured_rotation)
+        < 1e-6
+    )
+    assert (
+        np.linalg.norm(
+            np.asarray(same_body.translation, dtype=float)
+            + np.asarray(same_body.rotation, dtype=float) @ same_child_anchor
+            - same_parent_anchor
+        )
+        < 1e-6
+    )
+
+    world_anchor_world, _, world_anchor_body = _floating_link_world(
+        sx, "python_resettable_world_breakable_fixed"
+    )
+    world_anchor_body.parent_joint.position = [0.3, -0.2, 0.1, 0.0, 0.0, 0.25]
+    world_child_anchor = np.array([0.2, 0.1, 0.0])
+    captured_world_rotation = np.asarray(world_anchor_body.rotation, dtype=float).copy()
+    world_anchor = (
+        np.asarray(world_anchor_body.translation, dtype=float)
+        + captured_world_rotation @ world_child_anchor
+    )
+    world_hold = world_anchor_world.add_articulated_fixed_joint(
+        "resettable_world_hold",
+        world_anchor_body,
+        world_anchor=world_anchor.tolist(),
+        child_anchor=world_child_anchor.tolist(),
+    )
+    assert world_hold.type == sx.JointType.FIXED
+    assert world_hold.num_dofs == 0
+    assert world_hold.child_link == world_anchor_body
+    with pytest.raises(Exception, match="parent endpoint"):
+        _ = world_hold.parent_link
+    world_hold.break_force = 1e-18
+    off_center_point = (world_child_anchor + np.array([0.4, 0.0, 0.0])).tolist()
+
+    world_anchor_world.enter_simulation_mode()
+    captured_world_translation = np.asarray(
+        world_anchor_body.translation, dtype=float
+    ).copy()
+
+    world_anchor_body.apply_force((0.0, 4.0, 0.0), off_center_point)
+    world_anchor_world.step()
+
+    assert world_hold.is_broken
+
+    max_broken_world_translation_error = 0.0
+    max_broken_world_rotation_error = 0.0
+    max_broken_world_anchor_residual = 0.0
+    for _ in range(20):
+        world_anchor_body.apply_force((0.0, 4.0, 0.0), off_center_point)
+        world_anchor_world.step()
+        anchor_position = (
+            np.asarray(world_anchor_body.translation, dtype=float)
+            + np.asarray(world_anchor_body.rotation, dtype=float) @ world_child_anchor
+        )
+        max_broken_world_translation_error = max(
+            max_broken_world_translation_error,
+            float(
+                np.linalg.norm(
+                    np.asarray(world_anchor_body.translation, dtype=float)
+                    - captured_world_translation
+                )
+            ),
+        )
+        max_broken_world_rotation_error = max(
+            max_broken_world_rotation_error,
+            float(
+                np.linalg.norm(
+                    np.asarray(world_anchor_body.rotation, dtype=float)
+                    - captured_world_rotation
+                )
+            ),
+        )
+        max_broken_world_anchor_residual = max(
+            max_broken_world_anchor_residual,
+            float(np.linalg.norm(anchor_position - world_anchor)),
+        )
+    assert max_broken_world_translation_error > 1e-4
+    assert max_broken_world_rotation_error > 1e-4
+    assert max_broken_world_anchor_residual > 1e-4
+
+    world_anchor_body.parent_joint.velocity = [0.0] * 6
+    world_hold.break_force = 1.0e12
+    world_hold.reset_breakage()
+
+    assert not world_hold.is_broken
+
+    world_anchor_world.step()
+
+    assert not world_hold.is_broken
+    assert (
+        np.linalg.norm(
+            np.asarray(world_anchor_body.translation, dtype=float)
+            - captured_world_translation
+        )
+        < 1e-6
+    )
+    assert (
+        np.linalg.norm(
+            np.asarray(world_anchor_body.translation, dtype=float)
+            + np.asarray(world_anchor_body.rotation, dtype=float) @ world_child_anchor
+            - world_anchor
+        )
+        < 1e-6
+    )
+    assert (
+        np.linalg.norm(
+            np.asarray(world_anchor_body.rotation, dtype=float)
+            - captured_world_rotation
+        )
+        < 1e-6
+    )
+
+
+def test_simulation_world_articulated_fixed_pair_breakage_reset_from_python():
+    sx = _simulation()
+
+    world, parent, child = _floating_link_pair_world(
+        sx, "python_resettable_pair_breakable_fixed"
+    )
+    child.parent_joint.position = [0.3, 0.0, 0.0, 0.0, 0.0, 0.0]
+
+    parent_anchor = np.array([0.15, 0.05, 0.0])
+    child_anchor = np.array([-0.15, 0.05, 0.0])
+    hold = world.add_articulated_fixed_joint(
+        "resettable_pair_hold",
+        parent,
+        child,
+        parent_anchor=parent_anchor.tolist(),
+        child_anchor=child_anchor.tolist(),
+    )
+    assert hold.type == sx.JointType.FIXED
+    assert hold.num_dofs == 0
+    assert hold.parent_link == parent
+    assert hold.child_link == child
+    hold.break_force = 1e-18
+    parent_force_point = (parent_anchor + np.array([0.4, 0.0, 0.0])).tolist()
+    child_force_point = (child_anchor - np.array([0.4, 0.0, 0.0])).tolist()
+
+    world.enter_simulation_mode()
+    captured_parent_rotation = np.asarray(parent.rotation, dtype=float).copy()
+    captured_child_rotation = np.asarray(child.rotation, dtype=float).copy()
+    captured_relative_rotation = captured_parent_rotation.T @ captured_child_rotation
+
+    parent.apply_force((0.0, -4.0, 0.0), parent_force_point)
+    child.apply_force((0.0, 4.0, 0.0), child_force_point)
+    world.step()
+
+    assert hold.is_broken
+
+    def anchor_residual() -> float:
+        parent_anchor_world = (
+            np.asarray(parent.translation, dtype=float)
+            + np.asarray(parent.rotation, dtype=float) @ parent_anchor
+        )
+        child_anchor_world = (
+            np.asarray(child.translation, dtype=float)
+            + np.asarray(child.rotation, dtype=float) @ child_anchor
+        )
+        return float(np.linalg.norm(parent_anchor_world - child_anchor_world))
+
+    def relative_rotation_error() -> float:
+        relative_rotation = (
+            np.asarray(parent.rotation, dtype=float).T
+            @ np.asarray(child.rotation, dtype=float)
+        )
+        return float(np.linalg.norm(relative_rotation - captured_relative_rotation))
+
+    max_broken_anchor_residual = 0.0
+    max_broken_relative_rotation_error = 0.0
+    for _ in range(20):
+        parent.apply_force((0.0, -4.0, 0.0), parent_force_point)
+        child.apply_force((0.0, 4.0, 0.0), child_force_point)
+        world.step()
+        max_broken_anchor_residual = max(
+            max_broken_anchor_residual, anchor_residual()
+        )
+        max_broken_relative_rotation_error = max(
+            max_broken_relative_rotation_error, relative_rotation_error()
+        )
+    assert max_broken_anchor_residual > 1e-4
+    assert max_broken_relative_rotation_error > 1e-4
+
+    parent.parent_joint.velocity = [0.0] * 6
+    child.parent_joint.velocity = [0.0] * 6
+    hold.break_force = 1.0e12
+    hold.reset_breakage()
+
+    assert not hold.is_broken
+
+    world.step()
+
+    assert not hold.is_broken
+    assert anchor_residual() < 1e-6
+    assert relative_rotation_error() < 1e-6
+
+
+def test_simulation_world_articulated_spherical_pair_breakage_reset_reengages_from_python():
+    sx = _simulation()
+
+    same_world, same_base, same_body = _floating_link_world(
+        sx, "python_resettable_breakable_socket"
+    )
+    same_body.parent_joint.position = [0.1, -0.2, 0.15, 0.0, 0.0, 0.2]
+    child_anchor = np.array([-0.15, 0.05, 0.0])
+    parent_anchor = (
+        np.asarray(same_body.translation, dtype=float)
+        + np.asarray(same_body.rotation, dtype=float) @ child_anchor
+    )
+    same_socket = same_world.add_articulated_spherical_joint(
+        "resettable_socket",
+        same_base,
+        same_body,
+        parent_anchor=parent_anchor.tolist(),
+        child_anchor=child_anchor.tolist(),
+    )
+    assert same_socket.type == sx.JointType.SPHERICAL
+    assert same_socket.num_dofs == 3
+    assert same_socket.parent_link == same_base
+    assert same_socket.child_link == same_body
+    same_socket.break_force = 1e-18
+    off_center_point = (child_anchor + np.array([0.4, 0.0, 0.0])).tolist()
+
+    same_world.enter_simulation_mode()
+    captured_rotation = np.asarray(same_body.rotation, dtype=float).copy()
+
+    same_body.apply_force((0.0, 4.0, 0.0), off_center_point)
+    same_world.step()
+
+    assert same_socket.is_broken
+
+    max_broken_translation_error = 0.0
+    max_broken_rotation_error = 0.0
+    for _ in range(20):
+        same_body.apply_force((0.0, 4.0, 0.0), off_center_point)
+        same_world.step()
+        anchor_position = (
+            np.asarray(same_body.translation, dtype=float)
+            + np.asarray(same_body.rotation, dtype=float) @ child_anchor
+        )
+        max_broken_translation_error = max(
+            max_broken_translation_error,
+            float(np.linalg.norm(anchor_position - parent_anchor)),
+        )
+        max_broken_rotation_error = max(
+            max_broken_rotation_error,
+            float(
+                np.linalg.norm(
+                    np.asarray(same_body.rotation, dtype=float) - captured_rotation
+                )
+            ),
+        )
+    assert max_broken_translation_error > 1e-4
+    assert max_broken_rotation_error > 1e-4
+
+    same_body.parent_joint.velocity = [0.0] * 6
+    same_socket.break_force = 1.0e12
+    same_socket.reset_breakage()
+
+    assert not same_socket.is_broken
+
+    same_world.step()
+
+    assert not same_socket.is_broken
+    assert (
+        np.linalg.norm(
+            np.asarray(same_body.translation, dtype=float)
+            + np.asarray(same_body.rotation, dtype=float) @ child_anchor
+            - parent_anchor
+        )
+        < 1e-6
+    )
+    assert (
+        np.linalg.norm(np.asarray(same_body.rotation, dtype=float) - captured_rotation)
+        > 1e-4
+    )
+
+
+def test_simulation_world_articulated_spherical_breakage_steps_from_python():
+    sx = _simulation()
+
+    same_world, same_base, same_body = _floating_link_world(
+        sx, "python_breakable_socket"
+    )
+    same_socket = same_world.add_articulated_spherical_joint(
+        "breakable_socket", same_base, same_body
+    )
+    assert same_socket.type == sx.JointType.SPHERICAL
+    assert same_socket.num_dofs == 3
+    assert same_socket.parent_link == same_base
+    assert same_socket.child_link == same_body
+    same_socket.break_force = 1e-18
+
+    same_world.enter_simulation_mode()
+    captured_position = np.asarray(same_body.translation, dtype=float).copy()
+    same_body.apply_force((0.0, 4.0, 0.0))
+    same_world.step()
+
+    assert same_socket.is_broken
+
+    max_broken_translation_error = 0.0
+    for _ in range(20):
+        same_body.apply_force((0.0, 4.0, 0.0))
+        same_world.step()
+        max_broken_translation_error = max(
+            max_broken_translation_error,
+            float(
+                np.linalg.norm(
+                    np.asarray(same_body.translation, dtype=float) - captured_position
+                )
+            ),
+        )
+    assert max_broken_translation_error > 1e-4
+
+    world_anchor_world, _, world_anchor_body = _floating_link_world(
+        sx, "python_world_breakable_socket"
+    )
+    world_anchor_body.parent_joint.position = [0.3, -0.2, 0.1, 0.0, 0.0, 0.25]
+    child_anchor = np.array([0.2, 0.1, 0.0])
+    captured_rotation = np.asarray(world_anchor_body.rotation, dtype=float).copy()
+    world_anchor = (
+        np.asarray(world_anchor_body.translation, dtype=float)
+        + captured_rotation @ child_anchor
+    )
+    world_socket = world_anchor_world.add_articulated_spherical_joint(
+        "world_breakable_socket",
+        world_anchor_body,
+        world_anchor=world_anchor.tolist(),
+        child_anchor=child_anchor.tolist(),
+    )
+    assert world_socket.type == sx.JointType.SPHERICAL
+    assert world_socket.num_dofs == 3
+    assert world_socket.child_link == world_anchor_body
+    with pytest.raises(Exception, match="parent endpoint"):
+        _ = world_socket.parent_link
+    world_socket.break_force = 1e-18
+    off_center_point = (child_anchor + np.array([0.4, 0.0, 0.0])).tolist()
+
+    world_anchor_world.enter_simulation_mode()
+    world_anchor_body.apply_force((0.0, 4.0, 0.0), off_center_point)
+    world_anchor_world.step()
+
+    assert world_socket.is_broken
+
+    max_broken_anchor_residual = 0.0
+    max_broken_rotation_error = 0.0
+    for _ in range(20):
+        world_anchor_body.apply_force((0.0, 4.0, 0.0), off_center_point)
+        world_anchor_world.step()
+        anchor_position = (
+            np.asarray(world_anchor_body.translation, dtype=float)
+            + np.asarray(world_anchor_body.rotation, dtype=float) @ child_anchor
+        )
+        max_broken_anchor_residual = max(
+            max_broken_anchor_residual,
+            float(np.linalg.norm(anchor_position - world_anchor)),
+        )
+        max_broken_rotation_error = max(
+            max_broken_rotation_error,
+            float(
+                np.linalg.norm(
+                    np.asarray(world_anchor_body.rotation, dtype=float)
+                    - captured_rotation
+                )
+            ),
+        )
+    assert max_broken_anchor_residual > 1e-4
+    assert max_broken_rotation_error > 1e-4
+
+    world_anchor_body.parent_joint.velocity = [0.0] * 6
+    world_socket.break_force = 1.0e12
+    world_socket.reset_breakage()
+
+    assert not world_socket.is_broken
+
+    world_anchor_world.step()
+
+    reset_anchor_position = (
+        np.asarray(world_anchor_body.translation, dtype=float)
+        + np.asarray(world_anchor_body.rotation, dtype=float) @ child_anchor
+    )
+    assert not world_socket.is_broken
+    assert np.linalg.norm(reset_anchor_position - world_anchor) < 1e-6
+    assert (
+        np.linalg.norm(
+            np.asarray(world_anchor_body.rotation, dtype=float) - captured_rotation
+        )
+        > 1e-4
+    )
 
 
 def test_simulation_multibody_link_joint_common_path():
@@ -1187,11 +5712,15 @@ def test_simulation_multibody_options_selector():
     configured = sx.World(
         rigid_body_solver=sx.RigidBodySolver.IPC,
         multibody_options=sx.MultibodyOptions(
-            integration_family="variational integrator"
+            integration_family="variational integrator",
+            variational_max_iterations=200,
+            variational_tolerance=1.0e-9,
         ),
     )
     assert configured.rigid_body_solver == sx.RigidBodySolver.IPC
     assert configured.multibody_options.integration_family == "variational integrator"
+    assert configured.multibody_options.variational_max_iterations == 200
+    assert configured.multibody_options.variational_tolerance == pytest.approx(1.0e-9)
 
     policy_configured = sx.World(
         contact_solver_method=sx.ContactSolverMethod.BOXED_LCP,
@@ -1214,14 +5743,31 @@ def test_simulation_multibody_options_selector():
     # Multibody solver config is a value object; selection is by documented
     # method-family name only.
     assert world.multibody_options.integration_family == "semi-implicit"
+    assert world.multibody_options.variational_max_iterations == 100
+    assert world.multibody_options.variational_tolerance == pytest.approx(1.0e-10)
     world.multibody_options = sx.MultibodyOptions(
-        integration_family="variational integrator"
+        integration_family="variational integrator",
+        variational_max_iterations=120,
+        variational_tolerance=2.0e-9,
     )
     assert world.multibody_options.integration_family == "variational integrator"
+    assert world.multibody_options.variational_max_iterations == 120
+    assert world.multibody_options.variational_tolerance == pytest.approx(2.0e-9)
     with pytest.raises(Exception):
         world.multibody_options = sx.MultibodyOptions(integration_family="nonsense")
     # A rejected assignment leaves the previous valid selection in place.
     assert world.multibody_options.integration_family == "variational integrator"
+    assert world.multibody_options.variational_max_iterations == 120
+    with pytest.raises(Exception):
+        world.multibody_options = sx.MultibodyOptions(
+            integration_family="variational integrator",
+            variational_max_iterations=0,
+        )
+    with pytest.raises(Exception):
+        world.multibody_options = sx.MultibodyOptions(
+            integration_family="variational integrator",
+            variational_tolerance=0.0,
+        )
 
     # The variational integrator runs on the default step() path.
     arm = world.add_multibody("pendulum")
@@ -2759,6 +7305,67 @@ def test_simulation_collision_query_can_filter_body_type_pairs():
     options = sx.CollisionQueryOptions(include_link_pairs=False)
     assert len(world.collide(options)) == 0
     assert "include_link_pairs=False" in repr(options)
+
+
+def test_simulation_collision_query_can_ignore_specific_pairs():
+    sx = _simulation()
+
+    def has_contact_between(contacts, first: str, second: str) -> bool:
+        return any(
+            {contact.body_a.name, contact.body_b.name} == {first, second}
+            for contact in contacts
+        )
+
+    world = sx.World()
+    body_a = world.add_rigid_body("rigid_a")
+    body_a.set_collision_shape(sx.CollisionShape.sphere(0.5))
+    body_b = world.add_rigid_body("rigid_b", position=(0.4, 0.0, 0.0))
+    body_b.set_collision_shape(sx.CollisionShape.sphere(0.5))
+    body_c = world.add_rigid_body("rigid_c", position=(0.8, 0.0, 0.0))
+    body_c.set_collision_shape(sx.CollisionShape.sphere(0.5))
+
+    assert has_contact_between(world.collide(), "rigid_a", "rigid_b")
+    assert world.num_ignored_collision_pairs == 0
+
+    world.set_collision_pair_ignored(body_a, body_b)
+    assert world.is_collision_pair_ignored(body_b, body_a)
+    assert world.num_ignored_collision_pairs == 1
+
+    filtered_contacts = world.collide()
+    assert not has_contact_between(filtered_contacts, "rigid_a", "rigid_b")
+    assert has_contact_between(
+        filtered_contacts, "rigid_a", "rigid_c"
+    ) or has_contact_between(filtered_contacts, "rigid_b", "rigid_c")
+
+    world.set_collision_pair_ignored(body_b, body_a, False)
+    assert not world.is_collision_pair_ignored(body_a, body_b)
+    assert world.num_ignored_collision_pairs == 0
+    assert has_contact_between(world.collide(), "rigid_a", "rigid_b")
+
+    world.set_collision_pair_ignored(body_a, body_b)
+    world.clear_ignored_collision_pairs()
+    assert world.num_ignored_collision_pairs == 0
+    assert has_contact_between(world.collide(), "rigid_a", "rigid_b")
+
+    other_world = sx.World()
+    foreign_body = other_world.add_rigid_body("foreign")
+    with pytest.raises(Exception, match="same frame|distinct"):
+        world.set_collision_pair_ignored(body_a, body_a)
+    with pytest.raises(Exception, match="different world"):
+        world.set_collision_pair_ignored(body_a, foreign_body)
+
+    link_world = sx.World()
+    robot = link_world.add_multibody("robot")
+    link = robot.add_link("link")
+    link.set_collision_shape(sx.CollisionShape.sphere(0.5))
+    body = link_world.add_rigid_body("rigid", position=(0.4, 0.0, 0.0))
+    body.set_collision_shape(sx.CollisionShape.sphere(0.5))
+
+    link_world.enter_simulation_mode()
+    assert has_contact_between(link_world.collide(), "link", "rigid")
+    link_world.set_collision_pair_ignored(link, body)
+    assert link_world.is_collision_pair_ignored(body, link)
+    assert len(link_world.collide()) == 0
 
 
 def test_simulation_contact_stops_approaching_bodies():
