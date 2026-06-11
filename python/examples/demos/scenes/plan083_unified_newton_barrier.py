@@ -176,7 +176,7 @@ def _build_hanging_bridge_runtime(target: Plan083SceneTarget) -> SceneSetup:
     traveler = world.add_rigid_body(
         "plan083_bridge_traveler",
         position=(-0.60, 0.0, 0.82),
-        linear_velocity=(0.35, 0.0, -0.05),
+        linear_velocity=(0.35, 0.0, -0.35),
     )
     traveler.mass = 0.12
     traveler.friction = 0.4

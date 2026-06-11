@@ -342,10 +342,6 @@ def test_registered_world_scenes_receive_shared_replay_controls() -> None:
         "planned_operational_space_control",
         "planned_collision_sandbox",
         "planned_mobile_manipulation",
-        "plan083_pulley_system",
-        "plan083_umbrella",
-        "plan083_nunchaku",
-        "plan083_windmill",
         "plan083_abd_complex_geometry",
         "plan083_abd_fem_coupling",
         "diff_throw_to_target",
@@ -810,11 +806,15 @@ def test_plan083_cpu_corpus_placeholders_expose_status_panels() -> None:
         assert any(event.startswith("text:limitation: ") for event in builder.events)
 
     assert runtime_scene_ids == {
+        "plan083_candy",
         "plan083_hanging_bridge",
+        "plan083_lying_flat",
         "plan083_nunchaku",
         "plan083_precession",
+        "plan083_pulley_system",
         "plan083_ragdolls",
         "plan083_terrain_vehicle",
+        "plan083_umbrella",
         "plan083_windmill",
     }
 
