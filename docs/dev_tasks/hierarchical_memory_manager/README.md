@@ -599,7 +599,7 @@ Current Phase 4 scratch-reuse coverage shipped by this PR includes:
   obstacle friction, self-contact, and inter-body surface CCD.
 - AVBD scratch for ground contact/friction rows, self-contact adjacency and
   warm-start lookup, rigid AVBD contact snapshot/row-counter setup, contact
-  projection rows, inertial targets, and no-contact fixed-joint rows.
+  projection solve rows, inertial targets, and no-contact fixed-joint rows.
 
 Current Phase 5 no-growth/no-heap gates shipped by this PR include:
 
@@ -759,13 +759,12 @@ Follow-up progress after PR #2956:
   first reserve increases the World free-list allocation count. AVBD contact
   scratch internals remain separate follow-up work because they own a broader
   bundle of snapshots, row scratch, and warm-start inventories.
-- The AVBD contact scratch follow-up starts that broader bundle by routing the
-  stage-owned private contact snapshot vectors, row-counter scratch, and
-  point-joint input vector through the borrowed allocator. A focused
+- The AVBD contact scratch follow-up routes that broader bundle's stage-owned
+  private contact snapshot vectors, row-counter scratch, solve scratch vectors,
+  and point-joint input vector through the borrowed allocator. A focused
   fixed-joint prepare verifies those first reserves increase an isolated
   provided free-list allocation count and release when the custom stage is
-  destroyed. AVBD solve scratch and warm-start inventories remain separate
-  follow-up work.
+  destroyed. AVBD warm-start inventories remain separate follow-up work.
 - The rigid IPC follow-up routes the stage's top-level runtime-body,
   solver-body, surface, kinematic-trace, writeback-order, and resting-contact
   scratch vectors through the borrowed World free allocator. A focused IPC

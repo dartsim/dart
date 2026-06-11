@@ -8966,7 +8966,8 @@ struct RigidBodyContactStage::AvbdScratch
   explicit AvbdScratch(common::MemoryAllocator& allocator)
     : snapshot(allocator),
       pointJoints(PointJointAllocator{allocator}),
-      buildScratch(allocator)
+      buildScratch(allocator),
+      solveScratch(allocator)
   {
   }
 

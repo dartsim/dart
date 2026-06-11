@@ -209,19 +209,52 @@ struct AvbdRigidWorldContactBuildScratch
 
 struct AvbdRigidWorldContactSolveScratch
 {
+  using PointPairAllocator
+      = ::dart::common::StlAllocator<AvbdRigidBodyPointPairRow>;
+  using FrictionPairAllocator
+      = ::dart::common::StlAllocator<AvbdRigidBodyPointPairFrictionRows>;
+  using AngularPairAllocator
+      = ::dart::common::StlAllocator<AvbdRigidBodyAngularPairRow>;
+  using AttachmentAllocator
+      = ::dart::common::StlAllocator<AvbdRigidBodyPointAttachmentRow>;
+  using BodyStateAllocator = ::dart::common::StlAllocator<AvbdRigidBodyState>;
+
+  AvbdRigidWorldContactSolveScratch() = default;
+
+  explicit AvbdRigidWorldContactSolveScratch(
+      ::dart::common::MemoryAllocator& allocator)
+    : contactRows(allocator),
+      jointLinearRowsScratch(allocator),
+      jointAngularRowsScratch(allocator),
+      motorRowsScratch(allocator),
+      normalRows(PointPairAllocator{allocator}),
+      frictionRows(FrictionPairAllocator{allocator}),
+      jointLinearRows(PointPairAllocator{allocator}),
+      jointAngularRows(AngularPairAllocator{allocator}),
+      motorRows(AngularPairAllocator{allocator}),
+      pointPairRows(PointPairAllocator{allocator}),
+      angularRows(AngularPairAllocator{allocator}),
+      attachmentRows(AttachmentAllocator{allocator}),
+      inertialTargets(BodyStateAllocator{allocator})
+  {
+  }
+
   AvbdRigidContactManifoldRowScratch contactRows;
   AvbdRigidPointJointRowScratch jointLinearRowsScratch;
   AvbdRigidPointJointRowScratch jointAngularRowsScratch;
   AvbdRigidAngularMotorRowScratch motorRowsScratch;
-  std::vector<AvbdRigidBodyPointPairRow> normalRows;
-  std::vector<AvbdRigidBodyPointPairFrictionRows> frictionRows;
-  std::vector<AvbdRigidBodyPointPairRow> jointLinearRows;
-  std::vector<AvbdRigidBodyAngularPairRow> jointAngularRows;
-  std::vector<AvbdRigidBodyAngularPairRow> motorRows;
-  std::vector<AvbdRigidBodyPointPairRow> pointPairRows;
-  std::vector<AvbdRigidBodyAngularPairRow> angularRows;
-  std::vector<AvbdRigidBodyPointAttachmentRow> attachmentRows;
-  std::vector<AvbdRigidBodyState> inertialTargets;
+  std::vector<AvbdRigidBodyPointPairRow, PointPairAllocator> normalRows;
+  std::vector<AvbdRigidBodyPointPairFrictionRows, FrictionPairAllocator>
+      frictionRows;
+  std::vector<AvbdRigidBodyPointPairRow, PointPairAllocator> jointLinearRows;
+  std::vector<AvbdRigidBodyAngularPairRow, AngularPairAllocator>
+      jointAngularRows;
+  std::vector<AvbdRigidBodyAngularPairRow, AngularPairAllocator> motorRows;
+  std::vector<AvbdRigidBodyPointPairRow, PointPairAllocator> pointPairRows;
+  std::vector<AvbdRigidBodyAngularPairRow, AngularPairAllocator> angularRows;
+  std::vector<AvbdRigidBodyPointAttachmentRow, AttachmentAllocator>
+      attachmentRows;
+  std::vector<AvbdRigidBodyState, BodyStateAllocator> inertialTargets;
 };
 
 inline void clearAvbdRigidWorldContactSnapshot(

@@ -80,9 +80,9 @@ helpers to pre-size private ECS scratch for the current shape. Repeated
 same-shape steps should not materialize new registry storages or grow existing
 storage capacity. The rigid-body velocity stage's force-batch payload vectors,
 the rigid-body contact stage's sequential-impulse constraint vector, and the
-contact stage's private AVBD contact snapshot, row-counter scratch, and
-point-joint input vector also borrow the World free allocator when the built-in
-pipeline constructs those stages. The rigid IPC
+contact stage's private AVBD contact snapshot, row-counter scratch, solve
+scratch, and point-joint input vector also borrow the World free allocator when
+the built-in pipeline constructs those stages. The rigid IPC
 contact stage similarly routes its top-level runtime, solver, surface,
 writeback, and resting-contact scratch vectors through the World free allocator,
 and its projected-Newton solve scratch vectors borrow the same allocator when
