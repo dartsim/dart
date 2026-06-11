@@ -742,6 +742,11 @@ Follow-up progress after PR #2956:
   `Multibody::setGroundContact()`/`addGroundContactPoint()` construction uses
   the World free allocator, and the variational World stage rebinds
   loaded/pre-existing contact configs before building baked contact scratch.
+- `MultibodyVariationalState` two-step history now uses allocator-aware
+  transform and momentum vectors. Bake-time and lazy World-stage creation use
+  the World free allocator, loaded/pre-existing state is rebound without losing
+  history, and binary state serialization now handles allocator-aware SE(3)
+  transform and 6D momentum lists.
 - The semi-implicit one-slider multibody path now has the same clear/rebuild
   proof for baked private multibody dynamics storage. The gate covers the
   all-storage capacity map created by `reserveMultibodyDynamicsRegistryStorage`
@@ -928,9 +933,9 @@ Remaining Phase 4/5 follow-up items for the next PR:
   unified-assembly shapes that are not covered by the current stacked,
   multi-island, mixed-stress, and contact-family gates.
 - Continue production `WorldRegistry` bake/build sizing guidance beyond the
-  current compliant-contact allocator-aware config/dual-state clear/rebuild
-  gate, especially for differently shaped solver-owned ECS storages and rebuild
-  boundaries.
+  current compliant-contact allocator-aware config/dual-state/history
+  clear/rebuild gate, especially for differently shaped solver-owned ECS
+  storages and rebuild boundaries.
 - Re-run allocator comparative evidence when allocator, STL, or frame policy
   changes; keep the current foonathan/memory and standard-baseline evidence
   green instead of adding allocator-policy work to this PR.

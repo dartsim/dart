@@ -19,6 +19,7 @@
 #include <dart/simulation/fwd.hpp>
 
 #include <dart/common/memory_allocator.hpp>
+#include <dart/common/stl_allocator.hpp>
 
 #include <Eigen/Cholesky>
 #include <Eigen/Core>
@@ -67,6 +68,12 @@ struct MultibodyVariationalState
 {
   DART_SIMULATION_STATE_COMPONENT(MultibodyVariationalState);
 
+  using DeltaTransformVector = std::
+      vector<Eigen::Isometry3d, dart::common::StlAllocator<Eigen::Isometry3d>>;
+  using MomentumVector = std::vector<
+      Eigen::Matrix<double, 6, 1>,
+      dart::common::StlAllocator<Eigen::Matrix<double, 6, 1>>>;
+
   /// Whether `previousDeltaTransform`/`previousMomentum` have been seeded from
   /// a consistent prior step. The first integration bootstraps them from the
   /// current generalized velocity.
@@ -74,10 +81,10 @@ struct MultibodyVariationalState
 
   /// Per-link relative configuration displacement dT from the previous step
   /// (the SE(3) transform whose log gives the previous average velocity).
-  std::vector<Eigen::Isometry3d> previousDeltaTransform;
+  DeltaTransformVector previousDeltaTransform;
 
   /// Per-link discrete spatial momentum from the previous step (link frame).
-  std::vector<Eigen::Matrix<double, 6, 1>> previousMomentum;
+  MomentumVector previousMomentum;
 };
 
 /// Diagnostics from one RIQN (recursive impulse-based quasi-Newton) solve.

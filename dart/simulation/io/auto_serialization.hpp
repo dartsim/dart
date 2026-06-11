@@ -85,6 +85,32 @@ template <typename T>
 inline constexpr bool IsVector3iList = IsVector3iListHelper<T>::value;
 
 template <typename T>
+struct IsIsometry3dListHelper : std::false_type
+{
+};
+template <typename Allocator>
+struct IsIsometry3dListHelper<std::vector<Eigen::Isometry3d, Allocator>>
+  : std::true_type
+{
+};
+
+template <typename T>
+inline constexpr bool IsIsometry3dList = IsIsometry3dListHelper<T>::value;
+
+template <typename T>
+struct IsVector6ListHelper : std::false_type
+{
+};
+template <typename Allocator>
+struct IsVector6ListHelper<std::vector<Eigen::Matrix<double, 6, 1>, Allocator>>
+  : std::true_type
+{
+};
+
+template <typename T>
+inline constexpr bool IsVector6List = IsVector6ListHelper<T>::value;
+
+template <typename T>
 struct IsEntityVectorHelper : std::false_type
 {
 };
@@ -161,6 +187,56 @@ inline void readVector3iList(
   }
 }
 
+template <typename Allocator>
+inline void writeIsometry3dList(
+    std::ostream& out, const std::vector<Eigen::Isometry3d, Allocator>& values)
+{
+  writePOD(out, values.size());
+  for (const Eigen::Isometry3d& transform : values) {
+    writeIsometry3d(out, transform);
+  }
+}
+
+template <typename Allocator>
+inline void readIsometry3dList(
+    std::istream& in, std::vector<Eigen::Isometry3d, Allocator>& values)
+{
+  std::size_t count = 0;
+  readPOD(in, count);
+  values.resize(count);
+  for (Eigen::Isometry3d& transform : values) {
+    readIsometry3d(in, transform);
+  }
+}
+
+template <typename Allocator>
+inline void writeVector6List(
+    std::ostream& out,
+    const std::vector<Eigen::Matrix<double, 6, 1>, Allocator>& values)
+{
+  writePOD(out, values.size());
+  for (const Eigen::Matrix<double, 6, 1>& vector6 : values) {
+    for (int i = 0; i < 6; ++i) {
+      writePOD(out, vector6[i]);
+    }
+  }
+}
+
+template <typename Allocator>
+inline void readVector6List(
+    std::istream& in,
+    std::vector<Eigen::Matrix<double, 6, 1>, Allocator>& values)
+{
+  std::size_t count = 0;
+  readPOD(in, count);
+  values.resize(count);
+  for (Eigen::Matrix<double, 6, 1>& vector6 : values) {
+    for (int i = 0; i < 6; ++i) {
+      readPOD(in, vector6[i]);
+    }
+  }
+}
+
 // A list of trivially-copyable elements (e.g. std::vector<std::size_t>),
 // serialized as a count followed by the raw POD elements. Excludes the Eigen
 // vector lists above, which keep their own dedicated packed layout.
@@ -176,8 +252,8 @@ struct IsTrivialVectorHelper<std::vector<U, Allocator>>
 
 template <typename T>
 inline constexpr bool IsTrivialList
-    = IsTrivialVectorHelper<T>::value
-      && !IsVector3dList<T> && !IsVector3iList<T>;
+    = IsTrivialVectorHelper<T>::value && !IsVector3dList<T>
+      && !IsVector3iList<T> && !IsIsometry3dList<T> && !IsVector6List<T>;
 
 template <typename U, typename Allocator>
 inline void writeTrivialList(
@@ -384,20 +460,10 @@ void autoSerialize(
       for (int i = 0; i < 6; ++i) {
         writePOD(out, field[i]);
       }
-    } else if constexpr (
-        std::same_as<FieldType, std::vector<Eigen::Isometry3d>>) {
-      writePOD(out, field.size());
-      for (const auto& transform : field) {
-        writeIsometry3d(out, transform);
-      }
-    } else if constexpr (
-        std::same_as<FieldType, std::vector<Eigen::Matrix<double, 6, 1>>>) {
-      writePOD(out, field.size());
-      for (const auto& vector6 : field) {
-        for (int i = 0; i < 6; ++i) {
-          writePOD(out, vector6[i]);
-        }
-      }
+    } else if constexpr (detail::IsIsometry3dList<FieldType>) {
+      detail::writeIsometry3dList(out, field);
+    } else if constexpr (detail::IsVector6List<FieldType>) {
+      detail::writeVector6List(out, field);
     } else if constexpr (detail::TriviallyCopyable<FieldType>) {
       writePOD(out, field);
     } else {
@@ -466,24 +532,10 @@ void autoDeserialize(std::istream& in, T& component)
       for (int i = 0; i < 6; ++i) {
         readPOD(in, field[i]);
       }
-    } else if constexpr (
-        std::same_as<FieldType, std::vector<Eigen::Isometry3d>>) {
-      std::size_t count = 0;
-      readPOD(in, count);
-      field.resize(count);
-      for (auto& transform : field) {
-        readIsometry3d(in, transform);
-      }
-    } else if constexpr (
-        std::same_as<FieldType, std::vector<Eigen::Matrix<double, 6, 1>>>) {
-      std::size_t count = 0;
-      readPOD(in, count);
-      field.resize(count);
-      for (auto& vector6 : field) {
-        for (int i = 0; i < 6; ++i) {
-          readPOD(in, vector6[i]);
-        }
-      }
+    } else if constexpr (detail::IsIsometry3dList<FieldType>) {
+      detail::readIsometry3dList(in, field);
+    } else if constexpr (detail::IsVector6List<FieldType>) {
+      detail::readVector6List(in, field);
     } else if constexpr (detail::TriviallyCopyable<FieldType>) {
       readPOD(in, field);
     } else {

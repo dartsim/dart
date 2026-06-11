@@ -4234,6 +4234,37 @@ void expectVariationalContactConfigUsesAllocator(
   EXPECT_EQ(contactCount, kCompliantVariationalContactRobotCount);
 }
 
+void expectVariationalStateUsesAllocator(
+    const dart::simulation::detail::WorldRegistry& registry,
+    dart::common::MemoryAllocator& allocator)
+{
+  namespace common = dart::common;
+  namespace sx = dart::simulation;
+
+  using Vector6 = Eigen::Matrix<double, 6, 1>;
+  const common::StlAllocator<Eigen::Isometry3d> expectedTransformAllocator{
+      allocator};
+  const common::StlAllocator<Vector6> expectedMomentumAllocator{allocator};
+
+  std::size_t stateCount = 0;
+  for (const auto entity : registry.view<
+                           sx::comps::MultibodyStructure,
+                           sx::compute::MultibodyVariationalState>()) {
+    const auto& structure = registry.get<sx::comps::MultibodyStructure>(entity);
+    const auto& state
+        = registry.get<sx::compute::MultibodyVariationalState>(entity);
+    EXPECT_GE(state.previousDeltaTransform.capacity(), structure.links.size());
+    EXPECT_GE(state.previousMomentum.capacity(), structure.links.size());
+    EXPECT_EQ(
+        state.previousDeltaTransform.get_allocator(),
+        expectedTransformAllocator);
+    EXPECT_EQ(
+        state.previousMomentum.get_allocator(), expectedMomentumAllocator);
+    ++stateCount;
+  }
+  EXPECT_EQ(stateCount, kCompliantVariationalContactRobotCount);
+}
+
 void expectVariationalLoopClosureScratchBaked(
     const dart::simulation::detail::WorldRegistry& registry)
 {
@@ -4299,6 +4330,10 @@ TEST(World, EnterSimulationModeReservesContactHeavyVariationalDualState)
                      sx::comps::MultibodyStructure,
                      sx::comps::VariationalContact>()) {
     registry.emplace<sx::comps::VariationalContactDualState>(entity);
+    auto& state
+        = registry.emplace<sx::compute::MultibodyVariationalState>(entity);
+    state.previousDeltaTransform.push_back(Eigen::Isometry3d::Identity());
+    state.previousMomentum.push_back(Eigen::Matrix<double, 6, 1>::Zero());
   }
   auto& worldFreeList = world.getMemoryManager().getFreeListAllocator();
   const auto worldAllocationsBeforeBake = worldFreeList.getAllocationCount();
@@ -4313,6 +4348,7 @@ TEST(World, EnterSimulationModeReservesContactHeavyVariationalDualState)
   EXPECT_GE(
       capacities.at(dualStorageId), kCompliantVariationalContactRobotCount);
   expectVariationalContactConfigUsesAllocator(registry, worldFreeAllocator);
+  expectVariationalStateUsesAllocator(registry, worldFreeAllocator);
   expectVariationalContactDualStateBaked(registry, &expectedDualAllocator);
   EXPECT_GE(
       worldFreeList.getAllocationCount(),
@@ -4355,6 +4391,8 @@ TEST(World, VariationalContactDualStateRegistryStorageRebuildsAfterClear)
 
     const auto& registry = sx::detail::registryOf(world);
     expectVariationalContactConfigUsesAllocator(
+        registry, world.getMemoryManager().getFreeAllocator());
+    expectVariationalStateUsesAllocator(
         registry, world.getMemoryManager().getFreeAllocator());
     const auto capacities = registryStorageCapacities(registry);
     const auto dualStorageId

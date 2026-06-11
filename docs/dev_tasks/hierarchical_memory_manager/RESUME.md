@@ -112,6 +112,13 @@ loaded/pre-existing configs before baking solver scratch. The existing
 contact-heavy variational gate now checks both config vectors and dual vectors
 use the World allocator after bake.
 
+The latest continuation extends that allocator ownership to
+`MultibodyVariationalState`: its SE(3) previous-transform history and 6D
+previous-momentum history now use allocator-aware vectors, bake-time and lazy
+World-stage creation construct them from the World free allocator, loaded or
+pre-existing state is rebound without losing history, and binary state
+serialization accepts allocator-aware transform/momentum vectors.
+
 The next follow-up slice adds a focused `WorldRegistry` rebuild-boundary gate
 for contact-heavy solver-owned ECS storage. It reuses the existing compliant
 variational contact slider setup, verifies baked contact scratch and registry

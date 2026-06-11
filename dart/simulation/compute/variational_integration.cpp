@@ -47,6 +47,43 @@ namespace {
 namespace dm = detail::variational;
 namespace dvbd = detail::deformable_vbd;
 
+MultibodyVariationalState makeMultibodyVariationalState(
+    dart::common::MemoryAllocator& allocator)
+{
+  using State = MultibodyVariationalState;
+  return State{
+      false,
+      State::DeltaTransformVector{
+          dart::common::StlAllocator<Eigen::Isometry3d>{allocator}},
+      State::MomentumVector{
+          dart::common::StlAllocator<Eigen::Matrix<double, 6, 1>>{allocator}}};
+}
+
+void ensureMultibodyVariationalStateAllocator(
+    MultibodyVariationalState& state, dart::common::MemoryAllocator& allocator)
+{
+  using State = MultibodyVariationalState;
+  const dart::common::StlAllocator<Eigen::Isometry3d> targetTransformAllocator{
+      allocator};
+  if (state.previousDeltaTransform.get_allocator()
+      != targetTransformAllocator) {
+    State::DeltaTransformVector transforms{targetTransformAllocator};
+    transforms.assign(
+        state.previousDeltaTransform.begin(),
+        state.previousDeltaTransform.end());
+    state.previousDeltaTransform = std::move(transforms);
+  }
+
+  const dart::common::StlAllocator<Eigen::Matrix<double, 6, 1>>
+      targetMomentumAllocator{allocator};
+  if (state.previousMomentum.get_allocator() != targetMomentumAllocator) {
+    State::MomentumVector momentum{targetMomentumAllocator};
+    momentum.assign(
+        state.previousMomentum.begin(), state.previousMomentum.end());
+    state.previousMomentum = std::move(momentum);
+  }
+}
+
 comps::VariationalContactDualState makeVariationalContactDualState(
     dart::common::MemoryAllocator& allocator)
 {
@@ -3736,7 +3773,12 @@ void reserveMultibodyVariationalRegistryStorage(
   auto closures = registry.view<comps::LoopClosure>();
   for (auto entity : view) {
     const auto& structure = view.get<comps::MultibodyStructure>(entity);
-    auto& state = registry.get_or_emplace<MultibodyVariationalState>(entity);
+    auto* existingState = registry.try_get<MultibodyVariationalState>(entity);
+    auto& state = existingState != nullptr
+                      ? *existingState
+                      : registry.emplace<MultibodyVariationalState>(
+                            entity, makeMultibodyVariationalState(allocator));
+    ensureMultibodyVariationalStateAllocator(state, allocator);
     state.previousDeltaTransform.reserve(structure.links.size());
     state.previousMomentum.reserve(structure.links.size());
 
@@ -3846,6 +3888,7 @@ void MultibodyVariationalIntegrationStage::execute(
   auto& registry = dart::simulation::detail::registryOf(world);
   const Eigen::Vector3d gravity = world.getGravity();
   const double timeStep = world.getTimeStep();
+  auto& worldFreeAllocator = world.getMemoryManager().getFreeAllocator();
 
   // Gather enabled loop closures that request dynamic solving, grouped by the
   // multibody they constrain. World::step validates the dynamics policy first,
@@ -3855,7 +3898,13 @@ void MultibodyVariationalIntegrationStage::execute(
   auto view = registry.view<comps::MultibodyStructure>();
   for (auto entity : view) {
     const auto& structure = view.get<comps::MultibodyStructure>(entity);
-    auto& state = registry.get_or_emplace<MultibodyVariationalState>(entity);
+    auto* existingState = registry.try_get<MultibodyVariationalState>(entity);
+    auto& state
+        = existingState != nullptr
+              ? *existingState
+              : registry.emplace<MultibodyVariationalState>(
+                    entity, makeMultibodyVariationalState(worldFreeAllocator));
+    ensureMultibodyVariationalStateAllocator(state, worldFreeAllocator);
     std::vector<VariationalCompliantLoopConstraint> compliantConstraints;
     auto& scratch
         = registry.get_or_emplace<MultibodyVariationalScratch>(entity);
@@ -3891,8 +3940,7 @@ void MultibodyVariationalIntegrationStage::execute(
     std::size_t dualUpdateCadence = 0;
     VariationalContactHook contactHook;
     if (contactConfig != nullptr) {
-      ensureVariationalContactAllocator(
-          *contactConfig, world.getMemoryManager().getFreeAllocator());
+      ensureVariationalContactAllocator(*contactConfig, worldFreeAllocator);
       configureGroundContactScratch(*contactConfig, scratch);
       const auto& contact = scratch.groundContact;
       if (contact.stiffness > 0.0 && !contact.points.empty()) {
