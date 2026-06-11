@@ -40,6 +40,7 @@
 #include <dart/simulation/comps/multibody.hpp>
 #include <dart/simulation/comps/name.hpp>
 #include <dart/simulation/constraint/loop_closure_spec.hpp>
+#include <dart/simulation/detail/deformable_vbd/rigid_world_contact.hpp>
 #include <dart/simulation/detail/entity_conversion.hpp>
 #include <dart/simulation/detail/world_registry_access.hpp>
 #include <dart/simulation/frame/fixed_frame.hpp>
@@ -2117,6 +2118,63 @@ TEST(Serialization, ArticulatedJointAvbdStiffnessRoundTripsDesignMode)
   EXPECT_DOUBLE_EQ(restoredJoint->getAvbdStartStiffness(), 3.0);
   EXPECT_DOUBLE_EQ(restoredJoint->getAvbdLinearStiffness(), 432.0);
   EXPECT_DOUBLE_EQ(restoredJoint->getAvbdAngularStiffness(), 765.0);
+}
+
+TEST(Serialization, AvbdPointJointConfigSerializerRoundTripsAllFields)
+{
+  namespace sx = dart::simulation;
+  namespace dvbd = dart::simulation::detail::deformable_vbd;
+
+  const auto* serializer = sx::io::SerializerRegistry::instance().getSerializer(
+      "dart::simulation::detail::deformable_vbd::"
+      "AvbdRigidWorldPointJointConfig");
+  ASSERT_NE(serializer, nullptr);
+
+  sx::detail::WorldRegistry registry1;
+  const entt::entity entity1 = registry1.create();
+  auto& config
+      = registry1.emplace<dvbd::AvbdRigidWorldPointJointConfig>(entity1);
+  config.enabled = false;
+  config.localAnchorA = Eigen::Vector3d(1.0, -2.0, 3.0);
+  config.localAnchorB = Eigen::Vector3d(-4.0, 5.0, -6.0);
+  config.targetRelativeOrientation
+      = Eigen::Quaterniond(Eigen::AngleAxisd(0.25, Eigen::Vector3d::UnitY()));
+  config.linearAxes << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0;
+  config.angularAxes << -1.0, -2.0, -3.0, -4.0, -5.0, -6.0, -7.0, -8.0, -9.0;
+  config.linearAxisMask = 0b101u;
+  config.angularAxisMask = 0b011u;
+  config.startStiffness = 12.0;
+  config.linearMaterialStiffness = 34.0;
+  config.angularMaterialStiffness = 56.0;
+  config.maxStiffness = 78.0;
+
+  sx::io::EntityMap entityMap;
+  entityMap.emplace(entity1, entity1);
+  std::stringstream stream;
+  serializer->save(stream, entity1, registry1, entityMap);
+
+  sx::detail::WorldRegistry registry2;
+  const entt::entity entity2 = registry2.create();
+  serializer->load(stream, entity2, registry2);
+
+  ASSERT_TRUE(registry2.all_of<dvbd::AvbdRigidWorldPointJointConfig>(entity2));
+  const auto& restored
+      = registry2.get<dvbd::AvbdRigidWorldPointJointConfig>(entity2);
+  EXPECT_FALSE(restored.enabled);
+  EXPECT_TRUE(restored.localAnchorA.isApprox(config.localAnchorA));
+  EXPECT_TRUE(restored.localAnchorB.isApprox(config.localAnchorB));
+  EXPECT_TRUE(restored.targetRelativeOrientation.coeffs().isApprox(
+      config.targetRelativeOrientation.coeffs()));
+  EXPECT_TRUE(restored.linearAxes.isApprox(config.linearAxes));
+  EXPECT_TRUE(restored.angularAxes.isApprox(config.angularAxes));
+  EXPECT_EQ(restored.linearAxisMask, config.linearAxisMask);
+  EXPECT_EQ(restored.angularAxisMask, config.angularAxisMask);
+  EXPECT_DOUBLE_EQ(restored.startStiffness, config.startStiffness);
+  EXPECT_DOUBLE_EQ(
+      restored.linearMaterialStiffness, config.linearMaterialStiffness);
+  EXPECT_DOUBLE_EQ(
+      restored.angularMaterialStiffness, config.angularMaterialStiffness);
+  EXPECT_DOUBLE_EQ(restored.maxStiffness, config.maxStiffness);
 }
 
 // Test auto-generated names are preserved
