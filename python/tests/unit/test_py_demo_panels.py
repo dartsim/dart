@@ -886,6 +886,9 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         if row["case"] == "friction_index_contact" and not row["native_supported"]
     } == {name for name, manifest_row in solver_by_name.items() if not manifest_row["findex"]}
     assert "BM_LCP_COMPARE_SMOKE" in info["benchmark_command"]
+    benchmark_by_packet = {
+        row["packet"]: row for row in info["benchmark_packet_rows"]
+    }
     assert {row["packet"] for row in info["live_packet_rows"]} == {
         "Sliding friction",
         "Static-friction ramp",
@@ -901,8 +904,16 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "world_card_pile",
         "batch_scale",
     }
+    assert all(row["benchmark_filter"] for row in benchmark_by_packet.values())
+    assert benchmark_by_packet["world_card_pile"]["benchmark_filter"] == (
+        "BM_LcpWorldCardPileStep_BoxedLcp"
+    )
     builder = _FakePanelBuilder()
     setup.panels[0].build(builder, object())
+    assert (
+        "table:lcp_benchmark_packets:Packet,Surface,Benchmark filter,Coverage"
+        in builder.events
+    )
     assert (
         "table:lcp_solver_profile:Solver,Native surfaces,OK,Total us,Worst error"
         in builder.events

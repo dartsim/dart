@@ -64,46 +64,55 @@ _BENCHMARK_PACKET_ROWS: tuple[dict[str, str], ...] = (
     {
         "packet": "standard_spd_smoke",
         "surface": "standard LCP",
+        "benchmark_filter": "BM_LcpCompare/Standard",
         "coverage": "small SPD contract smoke",
     },
     {
         "packet": "active_set_transition",
         "surface": "boxed/findex",
+        "benchmark_filter": "BM_LcpActiveSetTransition|BM_LcpNewtonWarmStart",
         "coverage": "bound changes and warm-start behavior",
     },
     {
         "packet": "singular_degenerate",
         "surface": "standard/boxed/findex",
+        "benchmark_filter": "BM_LcpSingularDegenerate",
         "coverage": "rank-deficient and degenerate complementarity",
     },
     {
         "packet": "near_singular",
         "surface": "standard/boxed",
+        "benchmark_filter": "BM_LcpNearSingular",
         "coverage": "conditioning and regularization pressure",
     },
     {
         "packet": "batch_scale",
         "surface": "standard/boxed/findex",
+        "benchmark_filter": "BM_LcpBatch|BM_LcpGroupedBatch",
         "coverage": "parallel scalability and grouped batches",
     },
     {
         "packet": "world_contact",
         "surface": "findex contact",
+        "benchmark_filter": "BM_LcpWorldContact|BM_LcpWorldBoxContact",
         "coverage": "assembled contact packets from simulation worlds",
     },
     {
         "packet": "world_stack",
         "surface": "findex contact",
+        "benchmark_filter": "BM_LcpWorldStack",
         "coverage": "mass-ratio stack contact scaling",
     },
     {
         "packet": "world_card_pile",
         "surface": "findex contact",
+        "benchmark_filter": "BM_LcpWorldCardPileStep_BoxedLcp",
         "coverage": "thin high-aspect-ratio stacked contact scaling",
     },
     {
         "packet": "articulated_contact",
         "surface": "findex contact",
+        "benchmark_filter": "BM_LcpWorldArticulated|BM_LcpArticulatedUnifiedContact",
         "coverage": "robot-link contact assembly and solve cost",
     },
 )
@@ -1280,12 +1289,14 @@ def build() -> SceneSetup:
 
         if builder.collapsing_header("Benchmark packets", default_open=False):
             if builder.begin_table(
-                "lcp_benchmark_packets", ["Packet", "Surface", "Coverage"]
+                "lcp_benchmark_packets",
+                ["Packet", "Surface", "Benchmark filter", "Coverage"],
             ):
                 for row in _BENCHMARK_PACKET_ROWS:
                     builder.table_next_row()
                     _write_table_cell(builder, row["packet"])
                     _write_table_cell(builder, row["surface"])
+                    _write_table_cell(builder, row["benchmark_filter"])
                     _write_table_cell(builder, row["coverage"])
                 builder.end_table()
 

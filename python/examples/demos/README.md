@@ -117,8 +117,9 @@ pass counts, worst error, and total demo-measured solve time are visible in one
 apples-to-apples matrix. Its standard-LCP packet set includes well-conditioned,
 ill-conditioned, near-singular, and moderate scale cases so conditioning and
 size changes are visible without changing the solver roster. The benchmark
-packet map includes the native `world_card_pile` packet for high-aspect-ratio
-card-pile contact scaling. Authoritative performance runs remain owned by
+packet map includes per-packet benchmark filters, including the native
+`world_card_pile` packet for high-aspect-ratio card-pile contact scaling.
+Authoritative performance runs remain owned by
 `tests/common/lcpsolver`, `tests/unit/math/lcp`, and `tests/benchmark/lcpsolver`.
 Run the benchmark smoke with:
 
