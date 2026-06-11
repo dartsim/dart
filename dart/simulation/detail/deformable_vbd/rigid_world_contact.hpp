@@ -1529,9 +1529,10 @@ inline AvbdRigidWorldContactStepResult runAvbdRigidWorldContactStep(
 }
 
 //==============================================================================
+template <typename InputVector>
 inline void extractAvbdRigidWorldPointJointInputs(
     const ::dart::simulation::detail::WorldRegistry& registry,
-    std::vector<AvbdRigidWorldPointJointInput>& inputs)
+    InputVector& inputs)
 {
   const auto view
       = registry.view<comps::Joint, AvbdRigidWorldPointJointConfig>();

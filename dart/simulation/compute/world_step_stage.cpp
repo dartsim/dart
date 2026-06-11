@@ -8958,6 +8958,16 @@ void RigidBodyPositionStage::execute(
 //==============================================================================
 struct RigidBodyContactStage::AvbdScratch
 {
+  using PointJointAllocator
+      = common::StlAllocator<dvbd::AvbdRigidWorldPointJointInput>;
+
+  AvbdScratch() = default;
+
+  explicit AvbdScratch(common::MemoryAllocator& allocator)
+    : pointJoints(PointJointAllocator{allocator})
+  {
+  }
+
   void clear()
   {
     dvbd::clearAvbdRigidWorldContactSnapshot(snapshot);
@@ -8993,7 +9003,8 @@ struct RigidBodyContactStage::AvbdScratch
   }
 
   dvbd::AvbdRigidWorldContactSnapshot snapshot;
-  std::vector<dvbd::AvbdRigidWorldPointJointInput> pointJoints;
+  std::vector<dvbd::AvbdRigidWorldPointJointInput, PointJointAllocator>
+      pointJoints;
   dvbd::AvbdRigidWorldContactBuildScratch buildScratch;
   dvbd::AvbdRigidWorldContactSolveScratch solveScratch;
   dvbd::AvbdScalarRowInventory normalInventory;
@@ -9056,8 +9067,7 @@ RigidBodyContactStage::RigidBodyContactStage(
   : m_iterations(std::max<std::size_t>(1, iterations)),
     m_memoryManager(memoryManager),
     m_avbdScratch(
-        constructStageOwnedScratch<AvbdScratch>(memoryManager),
-        AvbdScratchDeleter{memoryManager}),
+        createAvbdScratch(memoryManager), AvbdScratchDeleter{memoryManager}),
     m_contactScratch(
         createContactScratch(memoryManager),
         ContactScratchDeleter{memoryManager})
@@ -9079,6 +9089,17 @@ void RigidBodyContactStage::ContactScratchDeleter::operator()(
     ContactScratch* scratch) const noexcept
 {
   destroyStageOwnedScratch(memoryManager, scratch);
+}
+
+//==============================================================================
+RigidBodyContactStage::AvbdScratch* RigidBodyContactStage::createAvbdScratch(
+    common::MemoryManager* memoryManager)
+{
+  if (memoryManager != nullptr) {
+    return constructStageOwnedScratch<AvbdScratch>(
+        memoryManager, memoryManager->getFreeAllocator());
+  }
+  return constructStageOwnedScratch<AvbdScratch>(nullptr);
 }
 
 //==============================================================================
@@ -9122,7 +9143,7 @@ void RigidBodyContactStage::prepare(World& world)
 
   if (m_avbdScratch == nullptr) {
     m_avbdScratch = AvbdScratchPtr(
-        constructStageOwnedScratch<AvbdScratch>(m_memoryManager),
+        createAvbdScratch(m_memoryManager),
         AvbdScratchDeleter{m_memoryManager});
   }
   auto& registry = dart::simulation::detail::registryOf(world);
@@ -9142,7 +9163,7 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
   const auto projectAvbdRigidPointJoints = [&]() {
     if (m_avbdScratch == nullptr) {
       m_avbdScratch = AvbdScratchPtr(
-          constructStageOwnedScratch<AvbdScratch>(m_memoryManager),
+          createAvbdScratch(m_memoryManager),
           AvbdScratchDeleter{m_memoryManager});
     }
     auto& scratch = *m_avbdScratch;
@@ -9210,7 +9231,7 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
   if (const auto avbdConfig = rigidAvbdContactStageConfig(registry, contacts)) {
     if (m_avbdScratch == nullptr) {
       m_avbdScratch = AvbdScratchPtr(
-          constructStageOwnedScratch<AvbdScratch>(m_memoryManager),
+          createAvbdScratch(m_memoryManager),
           AvbdScratchDeleter{m_memoryManager});
     }
     auto& scratch = *m_avbdScratch;

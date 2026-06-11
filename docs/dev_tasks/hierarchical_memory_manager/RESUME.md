@@ -211,6 +211,14 @@ snapshot's position, topology, contact-mask, and edge payload vectors now route
 through the World free allocator as well. The focused custom-stage test now
 requires enough free-list live allocations to cover those nested payload vectors.
 
+The current rigid AVBD contact scratch slice adds allocator-aware construction
+for `RigidBodyContactStage::AvbdScratch` and routes the private point-joint
+input vector through the borrowed allocator. The focused custom-stage test uses
+the existing compact fixed-joint AVBD setup, verifies first reserve growth
+against an isolated provided `MemoryManager`, and verifies release at stage
+destruction. The AVBD contact snapshot, row-build scratch, solve scratch, and
+warm-start inventories remain default-vector follow-up work.
+
 The current allocator-correctness slice closes a debug-accounting gap in
 `MemoryAllocatorDebugger`: aligned allocations now keep their requested
 alignment in the live allocation record, and mismatched aligned deallocation
@@ -723,16 +731,17 @@ rigid-body velocity force-batch payload plus rigid-body contact
 sequential-impulse constraint vector, plus the `WorldKinematicsGraph`
 entity-node cache, `ComputeGraph` owned node/name lookup storage, rigid IPC
 top-level scratch vectors, and rigid IPC projected-Newton solve scratch vectors,
-and deformable stage top-level barrier/snapshot vectors plus nested
-`SurfaceContactSnapshot` payload vectors are the first nested stage payloads
-routed through world-owned allocator-backed storage. The next slice should
-probe existing no-growth/no-heap gates or stage-local heap counters for another
-concrete nested payload path before changing broader scratch layouts; likely
-candidates are solver option/result vectors in rigid IPC, AVBD contact scratch
-internals with focused evidence, or an API-compatible plan for `ComputeGraph`'s
-exposed edge/topological-order vector storage. Do not add new production scenes
-unless profiling or a failing no-growth/no-heap gate shows a real gap not
-covered by the current shipped scenes.
+deformable stage top-level barrier/snapshot vectors plus nested
+`SurfaceContactSnapshot` payload vectors, and the rigid AVBD point-joint input
+vector are the first nested stage payloads routed through world-owned
+allocator-backed storage. The next slice should probe existing no-growth/no-heap
+gates or stage-local heap counters for another concrete nested payload path
+before changing broader scratch layouts; likely candidates are the remaining
+AVBD contact snapshot/row scratch/inventory internals, solver option/result
+vectors in rigid IPC, or an API-compatible plan for `ComputeGraph`'s exposed
+edge/topological-order vector storage. Do not add new production scenes unless
+profiling or a failing no-growth/no-heap gate shows a real gap not covered by
+the current shipped scenes.
 
 Keep the allocator performance gate green. The latest allocator slices keep
 `FrameStlAllocator` blocks cache-line aligned without per-block cache coloring,

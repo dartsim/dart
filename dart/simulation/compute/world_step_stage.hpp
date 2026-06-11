@@ -431,6 +431,7 @@ private:
   using ContactScratchPtr
       = std::unique_ptr<ContactScratch, ContactScratchDeleter>;
 
+  static AvbdScratch* createAvbdScratch(common::MemoryManager* memoryManager);
   static ContactScratch* createContactScratch(
       common::MemoryManager* memoryManager);
 

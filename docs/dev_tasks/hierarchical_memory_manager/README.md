@@ -759,6 +759,12 @@ Follow-up progress after PR #2956:
   first reserve increases the World free-list allocation count. AVBD contact
   scratch internals remain separate follow-up work because they own a broader
   bundle of snapshots, row scratch, and warm-start inventories.
+- The AVBD contact scratch follow-up starts that broader bundle by routing the
+  stage-owned private point-joint input vector through the borrowed allocator.
+  A focused fixed-joint prepare verifies the vector's first reserve increases
+  an isolated provided free-list allocation count and releases when the custom
+  stage is destroyed. The AVBD contact snapshot, row-build scratch, solve
+  scratch, and warm-start inventories remain separate follow-up work.
 - The rigid IPC follow-up routes the stage's top-level runtime-body,
   solver-body, surface, kinematic-trace, writeback-order, and resting-contact
   scratch vectors through the borrowed World free allocator. A focused IPC
