@@ -281,13 +281,13 @@ storage, or backend resources as public API.
 1. Use merged PRs #2960, #2961, #2970, and #2971 as the baseline for remaining
    work; do not reopen the old phase-scoped stack.
 2. Continue Phase 6 CPU corpus evidence on
-   `simx/plan083-phase6-abd-runtime-evidence` by adding reduced packets only
-   where runtime evidence exists; do not mark paper-scale rows complete without
-   paper-scale scene assets and comparison evidence.
-   The reduced packets may move only row-specific runtime smoke evidence;
-   analytical force comparison, paper-scale rope/rod coupling, affine packing,
-   twisted shell, self-contact parity, and ABD comparison baselines remain
-   planned.
+   `feature/newton-barrier-abd-comparison-packets` by adding reduced ABD
+   gears/Bullet comparison packets only where runtime evidence exists; do not
+   mark paper-scale rows complete without paper-scale scene assets and
+   comparison evidence. The reduced packets may move only row-specific runtime
+   smoke evidence; analytical force comparison, paper-scale rope/rod coupling,
+   affine packing, twisted shell, self-contact parity, accepted Bullet
+   baselines, and GPU parity remain planned.
 3. Use the reduced ABD runtime-step packets only as internal runtime evidence;
    broader ABD CPU packets still require scene-level runtime residuals, scene
    assets, and comparison baselines.

@@ -326,17 +326,16 @@ follow-up is reviewer-sized; do not split each planned ABD row into a micro-PR.
 
 ## Immediate Next Step
 
-Continue `simx/plan083-phase6-abd-runtime-evidence` with reduced CPU corpus
-packets only where runtime evidence exists. The current entry points are the
-reduced ABD house-of-cards packet for `abd-vs-rigid-cards` and the reduced ABD
-wrecking-ball pair packet for `abd-vs-rigid-wreck`, plus reduced chain-net
-packets for `abd-chain-8`, `abd-chain-16`, and `abd-chain-96`; keep those rows
-explicitly `in-progress` and limited to internal runtime-step evidence until
-card-stack, wrecking-ball, and chain-net assets, rigid IPC comparison timing,
-GPU parity, and paper-scale scene reproduction exist. Leave the dev-task folder
-active because PLAN-083 acceptance criteria are still unmet; if the task later
-moves out of this folder, get maintainer direction before deleting it and keep
-the remaining planned CPU/GPU/scene rows in durable sidecars.
+Continue `feature/newton-barrier-abd-comparison-packets` with reduced CPU
+corpus packets only where runtime evidence exists. The current entry points are
+the reduced ABD gears packet for `abd-gears` and the reduced Bullet comparison
+packets for `abd-bullet-small`, `abd-bullet-medium`, and `abd-bullet-large`;
+keep those rows explicitly `in-progress` and limited to internal runtime-step
+evidence until gear assets, accepted Bullet/reference baselines, GPU parity, and
+paper-scale scene reproduction exist. Leave the dev-task folder active because
+PLAN-083 acceptance criteria are still unmet; if the task later moves out of
+this folder, get maintainer direction before deleting it and keep the remaining
+planned CPU/GPU/scene rows in durable sidecars.
 
 ## Context That Would Be Lost
 
