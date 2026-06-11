@@ -47,6 +47,7 @@
 #include <dart/simulation/compute/compute_executor.hpp>
 #include <dart/simulation/compute/compute_graph.hpp>
 #include <dart/simulation/compute/detail/deformable_avbd_replay_state.hpp>
+#include <dart/simulation/compute/multibody_dynamics.hpp>
 #include <dart/simulation/compute/parallel_executor.hpp>
 #include <dart/simulation/compute/rigid_body_state_batch.hpp>
 #include <dart/simulation/compute/sequential_executor.hpp>
@@ -2881,6 +2882,35 @@ TEST(World, RigidBodyContactScratchPayloadUsesWorldAllocator)
   EXPECT_GT(freeList.getAllocationCount(), allocationsBeforePrepare)
       << "allocator-aware rigid contact scratch should reserve sequential "
          "impulse constraints from the World free allocator";
+}
+
+TEST(World, UnifiedConstraintStageScratchUsesProvidedAllocator)
+{
+  namespace common = dart::common;
+  namespace sx = dart::simulation;
+
+  sx::WorldOptions options;
+  options.contactSolverMethod = sx::ContactSolverMethod::BoxedLcp;
+  sx::World world(options);
+  configureCrossMultibodyStackedFallbackScene(world);
+  ASSERT_FALSE(world.collide().empty());
+
+  common::MemoryManager memoryManager;
+  auto& freeList = memoryManager.getFreeListAllocator();
+  const auto allocationsBeforeStage = freeList.getAllocationCount();
+
+  {
+    sx::compute::UnifiedConstraintStage stage(8, &memoryManager);
+    const auto allocationsAfterStage = freeList.getAllocationCount();
+
+    stage.prepare(world);
+
+    EXPECT_GT(freeList.getAllocationCount(), allocationsAfterStage)
+        << "allocator-aware unified constraint scratch should reserve "
+           "multibody staging vectors from the provided free allocator";
+  }
+
+  EXPECT_EQ(freeList.getAllocationCount(), allocationsBeforeStage);
 }
 
 TEST(World, RigidBodyContactAvbdStageScratchUsesProvidedAllocator)

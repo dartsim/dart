@@ -49,6 +49,7 @@
 #include "dart/simulation/world.hpp"
 
 #include <dart/common/memory_manager.hpp>
+#include <dart/common/stl_allocator.hpp>
 
 #include <Eigen/Cholesky>
 #include <Eigen/Geometry>
@@ -1731,11 +1732,12 @@ void enforceMultibodyVelocityLimits(
 }
 
 //==============================================================================
+template <typename LinkContactVector>
 void collectMultibodyLinkContactsInto(
     detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     const std::vector<Contact>& contacts,
-    std::vector<LinkContact>& linkContacts)
+    LinkContactVector& linkContacts)
 {
   const auto isRigidBody = [&](entt::entity entity) {
     return registry.all_of<comps::RigidBodyTag>(entity);
@@ -2770,13 +2772,66 @@ void reserveMultibodyDynamicsRegistryStorage(
 //==============================================================================
 struct UnifiedConstraintStage::Scratch
 {
+  using EntityAllocator = common::StlAllocator<entt::entity>;
+  using LinkContactAllocator = common::StlAllocator<LinkContact>;
+  using RequiredMultibodyAllocator = common::StlAllocator<char>;
+  using UnifiedContactAllocator = common::StlAllocator<UnifiedMultibodyContact>;
+  using ScratchPointerAllocator
+      = common::StlAllocator<MultibodyDynamicsScratch*>;
+  using VelocityAllocator = common::StlAllocator<Eigen::VectorXd>;
+
+  struct LinkContactBucket
+  {
+    using ContactVector = std::vector<LinkContact, LinkContactAllocator>;
+
+    LinkContactBucket() = default;
+
+    explicit LinkContactBucket(common::MemoryAllocator& allocator)
+      : contacts(LinkContactAllocator{allocator})
+    {
+    }
+
+    ContactVector contacts;
+  };
+
+  using LinkContactBucketAllocator = common::StlAllocator<LinkContactBucket>;
+
+  Scratch() = default;
+
+  explicit Scratch(common::MemoryAllocator& allocator)
+    : memoryAllocator(&allocator),
+      multibodyEntities(EntityAllocator{allocator}),
+      contactsByMultibody(LinkContactBucketAllocator{allocator}),
+      requiredMultibody(RequiredMultibodyAllocator{allocator}),
+      multibodyContacts(UnifiedContactAllocator{allocator}),
+      multibodyScratch(ScratchPointerAllocator{allocator}),
+      multibodyVelocities(VelocityAllocator{allocator})
+  {
+  }
+
+  void resizeContactBuckets(std::size_t count)
+  {
+    while (contactsByMultibody.size() < count) {
+      if (memoryAllocator != nullptr) {
+        contactsByMultibody.emplace_back(*memoryAllocator);
+      } else {
+        contactsByMultibody.emplace_back();
+      }
+    }
+    contactsByMultibody.resize(count);
+  }
+
+  common::MemoryAllocator* memoryAllocator = nullptr;
   RigidBodyContactProblem rigidProblem;
-  std::vector<entt::entity> multibodyEntities;
-  std::vector<std::vector<LinkContact>> contactsByMultibody;
-  std::vector<char> requiredMultibody;
-  std::vector<UnifiedMultibodyContact> multibodyContacts;
-  std::vector<MultibodyDynamicsScratch*> multibodyScratch;
-  std::vector<Eigen::VectorXd> multibodyVelocities;
+  std::vector<entt::entity, EntityAllocator> multibodyEntities;
+  std::vector<LinkContactBucket, LinkContactBucketAllocator>
+      contactsByMultibody;
+  std::vector<char, RequiredMultibodyAllocator> requiredMultibody;
+  std::vector<UnifiedMultibodyContact, UnifiedContactAllocator>
+      multibodyContacts;
+  std::vector<MultibodyDynamicsScratch*, ScratchPointerAllocator>
+      multibodyScratch;
+  std::vector<Eigen::VectorXd, VelocityAllocator> multibodyVelocities;
   UnifiedConstraintProblem problem;
   UnifiedConstraintSolveScratch solveScratch;
 };
@@ -2803,7 +2858,7 @@ bool UnifiedConstraintStage::assembleProblemIntoScratch(
     scratch.multibodyEntities.push_back(entity);
   }
 
-  scratch.contactsByMultibody.resize(scratch.multibodyEntities.size());
+  scratch.resizeContactBuckets(scratch.multibodyEntities.size());
   scratch.requiredMultibody.assign(scratch.multibodyEntities.size(), 0);
 
   const auto findMultibodyIndex = [&](entt::entity multibody) {
@@ -2820,7 +2875,7 @@ bool UnifiedConstraintStage::assembleProblemIntoScratch(
   for (std::size_t k = 0; k < scratch.multibodyEntities.size(); ++k) {
     const auto entity = scratch.multibodyEntities[k];
     const auto& structure = view.get<comps::MultibodyStructure>(entity);
-    auto& linkContacts = scratch.contactsByMultibody[k];
+    auto& linkContacts = scratch.contactsByMultibody[k].contacts;
     collectMultibodyLinkContactsInto(
         registry, structure, contacts, linkContacts);
     if (!linkContacts.empty()) {
@@ -2828,7 +2883,7 @@ bool UnifiedConstraintStage::assembleProblemIntoScratch(
     }
   }
   for (const auto& linkContacts : scratch.contactsByMultibody) {
-    for (const auto& contact : linkContacts) {
+    for (const auto& contact : linkContacts.contacts) {
       if (contact.otherMultibody != entt::null) {
         const auto otherIndex = findMultibodyIndex(contact.otherMultibody);
         if (otherIndex < scratch.requiredMultibody.size()) {
@@ -2841,7 +2896,7 @@ bool UnifiedConstraintStage::assembleProblemIntoScratch(
   std::size_t stagedBlockCount = 0;
   for (std::size_t k = 0; k < scratch.multibodyEntities.size(); ++k) {
     const auto entity = scratch.multibodyEntities[k];
-    const auto& linkContacts = scratch.contactsByMultibody[k];
+    const auto& linkContacts = scratch.contactsByMultibody[k].contacts;
     if (linkContacts.empty() && scratch.requiredMultibody[k] == 0) {
       continue;
     }
@@ -2921,7 +2976,10 @@ UnifiedConstraintStage::UnifiedConstraintStage(
   : m_frictionIterations(std::max<std::size_t>(1, frictionIterations)),
     m_memoryManager(memoryManager),
     m_scratch(
-        constructStageOwnedScratch<Scratch>(memoryManager),
+        memoryManager != nullptr
+            ? constructStageOwnedScratch<Scratch>(
+                  memoryManager, memoryManager->getFreeAllocator())
+            : constructStageOwnedScratch<Scratch>(nullptr),
         ScratchDeleter{memoryManager})
 {
 }

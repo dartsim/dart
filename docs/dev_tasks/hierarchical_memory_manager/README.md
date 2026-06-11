@@ -589,7 +589,8 @@ Current Phase 4 scratch-reuse coverage shipped by this PR includes:
   search, equality change-of-variable indices, and lagged-friction passes.
 - Unified/boxed-LCP scratch for in-place rigid and multibody assembly, Dantzig
   solve reuse, island remapping, link impulse application, normal-only
-  fallback, tangent accumulators, and same-shape fallback friction sweeps.
+  fallback, tangent accumulators, multibody staging vectors, and same-shape
+  fallback friction sweeps.
 - Variational multibody scratch for baked loop-closure and hard AVBD
   point-joint constraints, compliant/augmented-Lagrangian ground contact, and
   the scalar single-prismatic compliant-contact fast path.
@@ -860,6 +861,11 @@ Follow-up progress after PR #2956:
   sites remain source-compatible. A focused compute-graph test verifies node,
   lookup, edge, and order storage use the provided World free allocator and
   release it on graph destruction.
+- The unified constraint stage now constructs its private multibody entity,
+  link-contact bucket, required-block marker, staged-contact, dynamics-scratch
+  pointer, and staged-velocity vectors with the borrowed World free allocator.
+  A focused stacked boxed-LCP prepare test verifies those stage-owned reserves
+  use and release a provided free-list allocator.
 
 Remaining Phase 4/5 follow-up items for the next PR:
 

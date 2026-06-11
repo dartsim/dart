@@ -594,7 +594,8 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     contact set. Unified island solves now reserve island traversal scratch and
     build the local row remap once per solve instead of once per island, and
     successful unified link impulse application can reuse the same solve scratch
-    for generalized-impulse and velocity-delta buffers.
+    for generalized-impulse and velocity-delta buffers. The unified constraint
+    stage's multibody staging vectors now borrow the stage allocator as well.
     Rigid IPC accepted/rejected writeback now reuses stage-owned entity-order
     scratch instead of allocating local traversal vectors, and the
     resting-contact no-op predicate reuses stage-owned per-body contact-power
