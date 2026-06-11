@@ -728,6 +728,35 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     summary = info["solver_manifest_summary"]
     solver_rows = info["solver_rows"]
     solver_by_name = {row["name"]: row for row in solver_rows}
+    expected_solver_names = {
+        solver.get_name()
+        for solver in (
+            dart.DantzigSolver(),
+            dart.LemkeSolver(),
+            dart.BaraffSolver(),
+            dart.DirectSolver(),
+            dart.PgsSolver(),
+            dart.SymmetricPsorSolver(),
+            dart.JacobiSolver(),
+            dart.RedBlackGaussSeidelSolver(),
+            dart.BlockedJacobiSolver(),
+            dart.BgsSolver(),
+            dart.NncgSolver(),
+            dart.SubspaceMinimizationSolver(),
+            dart.ApgdSolver(),
+            dart.TgsSolver(),
+            dart.MinimumMapNewtonSolver(),
+            dart.FischerBurmeisterNewtonSolver(),
+            dart.PenalizedFischerBurmeisterNewtonSolver(),
+            dart.InteriorPointSolver(),
+            dart.MprgpSolver(),
+            dart.ShockPropagationSolver(),
+            dart.StaggeringSolver(),
+            dart.AdmmSolver(),
+            dart.SapSolver(),
+            dart.BoxedSemiSmoothNewtonSolver(),
+        )
+    }
 
     assert summary == {
         "solver_count": 24,
@@ -736,12 +765,16 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "findex_count": 16,
     }
     assert len(solver_rows) == summary["solver_count"]
+    assert len(solver_by_name) == len(solver_rows)
+    assert set(solver_by_name) == expected_solver_names
     assert solver_by_name["Dantzig"]["boxed"] is True
     assert solver_by_name["BoxedSemiSmoothNewton"]["findex"] is True
     assert solver_by_name["MPRGP"]["boxed"] is False
     assert info["standalone_lcp_solvers_exposed_in_dartpy"] is True
     assert len(info["standalone_solver_rows"]) == summary["solver_count"]
     smoke_by_name = {row["name"]: row for row in info["standalone_solver_rows"]}
+    assert len(smoke_by_name) == len(info["standalone_solver_rows"])
+    assert set(smoke_by_name) == expected_solver_names
     for name, manifest_row in solver_by_name.items():
         smoke_row = smoke_by_name[name]
         assert smoke_row["native_standard"] is manifest_row["standard"]
