@@ -161,7 +161,9 @@ namespace ncol = dart::collision::native;
 
 namespace compute {
 void reserveDeformableDynamicsRegistryStorage(
-    detail::WorldRegistry& registry, std::size_t deformableBodyCount);
+    detail::WorldRegistry& registry,
+    std::size_t deformableBodyCount,
+    common::MemoryAllocator& allocator);
 void reserveMultibodyDynamicsRegistryStorage(
     detail::WorldRegistry& registry, std::size_t multibodyCount);
 } // namespace compute
@@ -2606,7 +2608,7 @@ void World::reserveRegistryStorageForSimulation()
     reserveAndPrimeDefaultComponentStorage<comps::DeformableSolverScratch>(
         registry, deformableBodies, deformableBodyCount);
     compute::reserveDeformableDynamicsRegistryStorage(
-        registry, deformableBodyCount);
+        registry, deformableBodyCount, m_memoryManager.getFreeAllocator());
   }
 
   const auto multibodyCount

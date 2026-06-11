@@ -35,6 +35,8 @@
 #include <dart/simulation/body/deformable_body_options.hpp>
 #include <dart/simulation/detail/deformable_contact/primitive_distance.hpp>
 
+#include <dart/common/stl_allocator.hpp>
+
 #include <Eigen/Core>
 
 #include <algorithm>
@@ -120,9 +122,24 @@ struct ContactCandidateStats
 
 struct ContactCandidateSet
 {
-  std::vector<SurfaceEdge> surfaceEdges;
-  std::vector<PointTriangleCandidate> pointTriangleCandidates;
-  std::vector<EdgeEdgeCandidate> edgeEdgeCandidates;
+  using SurfaceEdgeAllocator = ::dart::common::StlAllocator<SurfaceEdge>;
+  using PointTriangleAllocator
+      = ::dart::common::StlAllocator<PointTriangleCandidate>;
+  using EdgeEdgeAllocator = ::dart::common::StlAllocator<EdgeEdgeCandidate>;
+
+  ContactCandidateSet() = default;
+
+  explicit ContactCandidateSet(::dart::common::MemoryAllocator& allocator)
+    : surfaceEdges(SurfaceEdgeAllocator{allocator}),
+      pointTriangleCandidates(PointTriangleAllocator{allocator}),
+      edgeEdgeCandidates(EdgeEdgeAllocator{allocator})
+  {
+  }
+
+  std::vector<SurfaceEdge, SurfaceEdgeAllocator> surfaceEdges;
+  std::vector<PointTriangleCandidate, PointTriangleAllocator>
+      pointTriangleCandidates;
+  std::vector<EdgeEdgeCandidate, EdgeEdgeAllocator> edgeEdgeCandidates;
   ContactCandidateStats stats;
 };
 
@@ -157,12 +174,26 @@ struct SweepItem
 
 struct ContactCandidateSweepScratch
 {
-  std::vector<SweepItem> pointItems;
-  std::vector<SweepItem> triangleItems;
-  std::vector<SweepItem> edgeItems;
+  using SweepItemAllocator = ::dart::common::StlAllocator<SweepItem>;
+  using SweepLinkAllocator = ::dart::common::StlAllocator<std::size_t>;
+
+  ContactCandidateSweepScratch() = default;
+
+  explicit ContactCandidateSweepScratch(
+      ::dart::common::MemoryAllocator& allocator)
+    : pointItems(SweepItemAllocator{allocator}),
+      triangleItems(SweepItemAllocator{allocator}),
+      edgeItems(SweepItemAllocator{allocator}),
+      sweepLinks(SweepLinkAllocator{allocator})
+  {
+  }
+
+  std::vector<SweepItem, SweepItemAllocator> pointItems;
+  std::vector<SweepItem, SweepItemAllocator> triangleItems;
+  std::vector<SweepItem, SweepItemAllocator> edgeItems;
   // Reusable next-index live list for the cross-set sweep-and-prune traversal
   // (sized to the right-hand-side item count per call).
-  std::vector<std::size_t> sweepLinks;
+  std::vector<std::size_t, SweepLinkAllocator> sweepLinks;
 };
 
 //==============================================================================
@@ -311,12 +342,12 @@ inline void sortSweepItems(std::span<SweepItem> items)
 // rescanned for every lhs. The visited (lhs, rhs) sequence is identical to a
 // naive nested scan -- only the skipped non-overlapping work differs.
 // `linkScratch` is reusable next-index storage; it is resized to the rhs count.
-template <typename Visitor>
+template <typename Visitor, typename LinkScratch>
 void visitSweepPairs(
     std::span<SweepItem> lhsItems,
     std::span<SweepItem> rhsItems,
     Visitor&& visitor,
-    std::vector<std::size_t>& linkScratch)
+    LinkScratch& linkScratch)
 {
   sortSweepItems(lhsItems);
   sortSweepItems(rhsItems);
@@ -408,7 +439,9 @@ inline bool edgesAreAdjacent(const SurfaceEdge& a, const SurfaceEdge& b)
 }
 
 //==============================================================================
-inline void sortAndDedupe(std::vector<PointTriangleCandidate>& candidates)
+template <typename Allocator>
+inline void sortAndDedupe(
+    std::vector<PointTriangleCandidate, Allocator>& candidates)
 {
   std::sort(candidates.begin(), candidates.end());
   candidates.erase(
@@ -423,7 +456,8 @@ inline void sortAndDedupe(std::vector<PointTriangleCandidate>& candidates)
 }
 
 //==============================================================================
-inline void sortAndDedupe(std::vector<EdgeEdgeCandidate>& candidates)
+template <typename Allocator>
+inline void sortAndDedupe(std::vector<EdgeEdgeCandidate, Allocator>& candidates)
 {
   std::sort(candidates.begin(), candidates.end());
   candidates.erase(

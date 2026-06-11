@@ -628,8 +628,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     buffers are now stage/entity scratch-backed too, and VBD
     topology/static-contact scratch is primed during `enterSimulationMode()`, so
     baked surface-snapshot steps and first-baked-step active VBD static rigid
-    surface-CCD point crossing do not allocate from the global heap. Scripted
-    deformable boundary processing now
+    surface-CCD point crossing do not allocate from the global heap. Reusable
+    self-contact and inter-body surface-contact candidate/sweep buffers can now
+    borrow the World free allocator when solver scratch components are created.
+    Scripted deformable boundary processing now
     reuses per-body Dirichlet/Neumann count masks instead of allocating local
     per-node vectors each step. Default projected-Newton deformable solves now
     reuse per-body RHS, sparse Hessian assembly, PSD block batch, sparse

@@ -240,6 +240,14 @@ destruction. A follow-up in the same slice constructs new
 snapshot's position, topology, contact-mask, and edge payload vectors now route
 through the World free allocator as well. The focused custom-stage test now
 requires enough free-list live allocations to cover those nested payload vectors.
+The latest follow-up makes deformable `ContactCandidateSet` and
+`ContactCandidateSweepScratch` allocator-aware, and constructs the World-stage
+`DeformableContactSolverScratch` / `DeformableVbdScratch` candidate buffers
+from the World free allocator when those ECS scratch components are created.
+This covers existing self-contact and inter-body surface-contact candidate and
+sweep buffers without adding another scene; focused contact-candidate
+reserve/release coverage and the existing baked World-base/global-heap guards
+passed locally.
 
 The current rigid AVBD contact scratch slice adds allocator-aware construction
 for `RigidBodyContactStage::AvbdScratch` and routes the private contact

@@ -1053,6 +1053,13 @@ struct DeformableVbdScratch
     Row row;
   };
 
+  DeformableVbdScratch() = default;
+
+  explicit DeformableVbdScratch(common::MemoryAllocator& allocator)
+    : selfContactCandidates(allocator), selfContactSweepScratch(allocator)
+  {
+  }
+
   std::vector<dvbd::SpringElement> springs;
   std::vector<dvbd::TetMeshElement> tets;
   dvbd::VertexColoring coloring;
@@ -1618,6 +1625,15 @@ struct ProjectedNewtonMatrixFreeBlock3
 //==============================================================================
 struct DeformableContactSolverScratch
 {
+  DeformableContactSolverScratch() = default;
+
+  explicit DeformableContactSolverScratch(common::MemoryAllocator& allocator)
+    : candidates(allocator),
+      barrierCandidates(allocator),
+      sweepScratch(allocator)
+  {
+  }
+
   std::vector<DeformableSurfaceTriangle> surfaceTriangles;
   std::vector<std::uint8_t> surfaceContactPointMask;
   dc::ContactCandidateSet candidates;
@@ -10256,6 +10272,7 @@ void DeformableDynamicsStage::prepare(World& world)
   }
 
   auto& registry = dart::simulation::detail::registryOf(world);
+  auto& worldFreeAllocator = world.getMemoryManager().getFreeAllocator();
   auto view = registry.view<
       comps::DeformableBodyTag,
       comps::DeformableNodeState,
@@ -10274,7 +10291,8 @@ void DeformableDynamicsStage::prepare(World& world)
     solverScratch.activeDirichlet.assign(state.positions.size(), 0u);
 
     auto& contactScratch
-        = registry.get_or_emplace<DeformableContactSolverScratch>(entity);
+        = registry.get_or_emplace<DeformableContactSolverScratch>(
+            entity, worldFreeAllocator);
     syncSurfaceContactTopology(
         topology.surfaceTriangles,
         state.positions.size(),
@@ -10292,7 +10310,8 @@ void DeformableDynamicsStage::prepare(World& world)
       syncFemRestShapeScratch(
           state.positions.size(), topology, *material, contactScratch);
     }
-    (void)registry.get_or_emplace<DeformableVbdScratch>(entity);
+    (void)registry.get_or_emplace<DeformableVbdScratch>(
+        entity, worldFreeAllocator);
   }
 
   auto& scratch = *m_scratch;
@@ -10332,7 +10351,8 @@ void DeformableDynamicsStage::prepare(World& world)
     const auto& state = view.get<comps::DeformableNodeState>(entity);
     const auto& topology = view.get<comps::DeformableMeshTopology>(entity);
     auto& contactScratch
-        = registry.get_or_emplace<DeformableContactSolverScratch>(entity);
+        = registry.get_or_emplace<DeformableContactSolverScratch>(
+            entity, worldFreeAllocator);
     primeInterBodySurfaceContactScratch(
         entity,
         state,
@@ -10345,7 +10365,8 @@ void DeformableDynamicsStage::prepare(World& world)
     if (vbdConfig != nullptr && vbdConfig->enabled && model != nullptr
         && scratch.capsuleObstacles.empty()
         && movingRigidSurfaceSnapshots.empty()) {
-      auto& vbdScratch = registry.get_or_emplace<DeformableVbdScratch>(entity);
+      auto& vbdScratch = registry.get_or_emplace<DeformableVbdScratch>(
+          entity, worldFreeAllocator);
       syncVbdTopologyScratch(
           state.positions.size(), *model, topology, vbdScratch);
       if (vbdConfig->useChebyshev) {
@@ -10440,6 +10461,7 @@ void DeformableDynamicsStage::execute(
   }
 
   auto& registry = dart::simulation::detail::registryOf(world);
+  auto& worldFreeAllocator = world.getMemoryManager().getFreeAllocator();
   auto view = registry.view<
       comps::DeformableBodyTag,
       comps::DeformableNodeState,
@@ -10515,8 +10537,10 @@ void DeformableDynamicsStage::execute(
     auto& scratch
         = registry.get_or_emplace<comps::DeformableSolverScratch>(entity);
     auto& contactScratch
-        = registry.get_or_emplace<DeformableContactSolverScratch>(entity);
-    auto& vbdScratch = registry.get_or_emplace<DeformableVbdScratch>(entity);
+        = registry.get_or_emplace<DeformableContactSolverScratch>(
+            entity, worldFreeAllocator);
+    auto& vbdScratch = registry.get_or_emplace<DeformableVbdScratch>(
+        entity, worldFreeAllocator);
     const auto* vbdConfig
         = registry.try_get<comps::DeformableVbdConfig>(entity);
     advanceDeformableBody(
@@ -10551,7 +10575,9 @@ const DeformableSolverStats& DeformableDynamicsStage::getLastStats()
 
 //==============================================================================
 void reserveDeformableDynamicsRegistryStorage(
-    detail::WorldRegistry& registry, std::size_t deformableBodyCount)
+    detail::WorldRegistry& registry,
+    std::size_t deformableBodyCount,
+    common::MemoryAllocator& allocator)
 {
   auto& contactScratchStorage
       = registry.storage<DeformableContactSolverScratch>();
@@ -10566,11 +10592,11 @@ void reserveDeformableDynamicsRegistryStorage(
   auto view = registry.view<comps::DeformableBodyTag>();
   for (auto entity : view) {
     if (!registry.all_of<DeformableContactSolverScratch>(entity)) {
-      registry.emplace<DeformableContactSolverScratch>(entity);
+      registry.emplace<DeformableContactSolverScratch>(entity, allocator);
       registry.remove<DeformableContactSolverScratch>(entity);
     }
     if (!registry.all_of<DeformableVbdScratch>(entity)) {
-      registry.emplace<DeformableVbdScratch>(entity);
+      registry.emplace<DeformableVbdScratch>(entity, allocator);
       registry.remove<DeformableVbdScratch>(entity);
     }
   }

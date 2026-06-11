@@ -793,6 +793,14 @@ Follow-up progress after PR #2956:
   payload vectors through that allocator as well. A focused custom-stage test
   covers those top-level and nested payload vectors against an isolated provided
   free allocator and verifies release when the stage is destroyed.
+- Deformable self-contact and inter-body surface-contact candidate storage now
+  has allocator-aware `ContactCandidateSet` and sweep scratch constructors.
+  The World-stage `DeformableContactSolverScratch` and `DeformableVbdScratch`
+  components build those candidate/sweep buffers from the World free allocator
+  when the component is first created, while standalone reusable builders keep
+  default construction for one-shot callers. Focused contact-candidate tests
+  verify provided allocator reserve/release, and existing World-base/global-heap
+  baked-step guards still pass without adding a new production scene.
 - The kinematics cache follow-up routes `WorldKinematicsGraph`'s entity-node
   lookup vector through the World free allocator when the graph is constructed
   by the built-in kinematics stage. A focused stack-constructed graph test
