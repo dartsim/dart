@@ -189,6 +189,8 @@ def _build_hanging_bridge_runtime(target: Plan083SceneTarget) -> SceneSetup:
         builder.text(f"traveler x: {traveler_position[0]:.3f} m")
         builder.text(f"traveler height: {traveler_position[2]:.3f} m")
         builder.text(f"max board sag: {board_sag_history[-1]:.4f} m")
+        builder.text(f"benchmark: {target.benchmark_command}")
+        builder.text(f"limitation: {target.limitation}")
         builder.separator()
         bridge.build_control_panel(builder, context)
         if traveler_height_history:
@@ -253,8 +255,8 @@ PLAN083_SCENE_TARGETS: tuple[Plan083SceneTarget, ...] = (
         target="Paper Fig. 2 / Table 2 hanging bridge scene; reduced to rigid boards, point connections, and a traveler for runtime smoke evidence.",
         smoke_command="pixi run py-demos -- --scene plan083_hanging_bridge --headless --frames 4",
         visual_command="pixi run py-demo-capture -- --scene plan083_hanging_bridge --frames 240 --width 1280 --height 720",
-        benchmark_command="pixi run bm bm_plan083_cpu_scene_corpus -- --benchmark_filter=hanging_bridge",
-        limitation="Reduced runtime smoke only; waiting for rod, rigid, and codimensional paper-scale coupling.",
+        benchmark_command="pixi run bm-plan083-cpu-hanging-bridge-packet",
+        limitation="Reduced runtime smoke and CPU packet only; waiting for rod, rigid, and codimensional paper-scale coupling.",
     ),
     Plan083SceneTarget(
         scene_id="plan083_pulley_system",

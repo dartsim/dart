@@ -835,6 +835,10 @@ def test_plan083_hanging_bridge_exposes_runtime_status_panel() -> None:
     assert "text:status: runtime smoke scene" in builder.events
     assert "text:solver: rigid IPC World.step" in builder.events
     assert "text:point connections: 4" in builder.events
+    assert (
+        "text:benchmark: pixi run bm-plan083-cpu-hanging-bridge-packet"
+        in builder.events
+    )
     assert any(event.startswith("text:world time: ") for event in builder.events)
 
 
