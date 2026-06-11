@@ -6,11 +6,11 @@ Latest local follow-up: dartpy public articulated AVBD stiffness persistence
 coverage now has
 `test_simulation_world_articulated_avbd_stiffness_roundtrip_from_python`. It
 sets finite start/linear/angular AVBD stiffness on link-link fixed and
-world-link revolute public articulated facades, saves/loads the world, mutates
-the restored stiffness values, and verifies they remain visible after entering
-simulation mode. This is a narrow Python public facade serialization guard; it
-does not close broader articulated lifecycle, source-corpus CPU-win, GPU, or
-paper-number gates.
+prismatic plus world-link revolute and spherical public articulated facades,
+saves/loads the world, mutates the restored stiffness values, and verifies they
+remain visible after entering simulation mode. This is a narrow Python public
+facade serialization guard; it does not close broader articulated lifecycle,
+source-corpus CPU-win, GPU, or paper-number gates.
 
 Latest local follow-up: small AVBD rigid world-contact snapshots no longer
 reserve the endpoint entity-index hash map while the body count is within the
