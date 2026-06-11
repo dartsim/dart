@@ -201,3 +201,18 @@ TEST(LcpTypesTest, StandardClassificationRejectsInvalidVectorDimensions)
   EXPECT_FALSE(problem.hasFrictionIndex());
   EXPECT_EQ(problem.getType(), LcpProblemType::Invalid);
 }
+
+TEST(LcpTypesTest, FrictionIndexClassificationRejectsInvalidBoundsDimensions)
+{
+  const LcpProblem problem(
+      Eigen::Matrix2d::Identity(),
+      Eigen::Vector2d(0.5, 0.25),
+      Eigen::VectorXd::Zero(1),
+      Eigen::Vector2d::Ones(),
+      Eigen::Vector2i(-1, 0));
+
+  EXPECT_FALSE(problem.isStandardLcp());
+  EXPECT_FALSE(problem.isBoxedLcp());
+  EXPECT_FALSE(problem.hasFrictionIndex());
+  EXPECT_EQ(problem.getType(), LcpProblemType::Invalid);
+}

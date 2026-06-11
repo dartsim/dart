@@ -330,7 +330,8 @@ struct DART_API LcpProblem
   /// Returns true if any row uses friction-index coupling.
   bool hasFrictionIndex() const
   {
-    if (findex.size() != size()) {
+    const Eigen::Index n = size();
+    if (lo.size() != n || hi.size() != n || findex.size() != n) {
       return false;
     }
 
