@@ -347,7 +347,6 @@ def test_registered_world_scenes_receive_shared_replay_controls() -> None:
         "plan083_umbrella",
         "plan083_nunchaku",
         "plan083_windmill",
-        "plan083_candy",
         "plan083_abd_complex_geometry",
         "plan083_abd_fem_coupling",
         "diff_throw_to_target",
@@ -911,6 +910,31 @@ def test_plan083_umbrella_exposes_runtime_status_panel() -> None:
     assert "text:point connections: 2" in builder.events
     assert "text:benchmark: pixi run bm-plan083-cpu-umbrella-packet" in builder.events
     assert any(event.startswith("text:canopy span: ") for event in builder.events)
+
+
+def test_plan083_candy_exposes_runtime_status_panel() -> None:
+    _require_simulation_symbols("DeformableBodyOptions", "World")
+    scene = next(
+        scene
+        for scene in plan083_unified_newton_barrier.PLAN083_SCENES
+        if scene.id == "plan083_candy"
+    )
+    setup = scene.build()
+    builder = _FakePanelBuilder()
+
+    assert [panel.title for panel in setup.panels] == ["PLAN-083 Candy"]
+    assert setup.info["runtime_smoke_scene"] is True
+    assert setup.info["deformable_solver"] == "ipc"
+
+    setup.panels[0].build(builder, object())
+
+    assert "text:status: reduced runtime smoke scene" in builder.events
+    assert "text:solver: deformable IPC World.step" in builder.events
+    assert "text:deformable bodies: 1" in builder.events
+    assert "text:nodes: 25" in builder.events
+    assert "text:surface triangles: 32" in builder.events
+    assert "text:benchmark: pixi run bm-plan083-cpu-candy-packet" in builder.events
+    assert any(event.startswith("text:mean cloth height: ") for event in builder.events)
 
 
 def test_plan083_terrain_vehicle_exposes_runtime_status_panel() -> None:

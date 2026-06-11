@@ -1459,6 +1459,9 @@ bm-abd-comparison-packet = { cmd = "python scripts/check_abd_comparison_packet.p
 ] }
 bm-phase5-cuda-packet = { cmd = "python scripts/write_phase5_cuda_packet.py" }
 bm-phase5-gpu-packet-check = { cmd = "python scripts/check_phase5_gpu_packet.py" }
+bm-plan083-cpu-candy-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene candy", depends-on = [
+  "config",
+] }
 bm-plan083-cpu-hanging-bridge-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py", depends-on = [
   "config",
 ] }

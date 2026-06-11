@@ -193,6 +193,9 @@
         for chassis/passive wheel hinges over flat terrain.
   - [x] Add a reduced windmill hinge/contact CPU scene packet and runtime
         status panel while keeping Bullet/reference comparison future work.
+  - [x] Add a reduced Candy deformable-cloth/static-shell CPU scene packet and
+        runtime status panel while keeping affine packing, twisted shell, and
+        self-contact parity future work.
   - [x] Add a reduced precession wheel CPU scene packet and runtime status
         panel while keeping angular-velocity sweeps future work.
   - [x] Add a reduced ragdoll CPU scene packet and runtime status panel while
@@ -225,9 +228,9 @@ storage, or backend resources as public API.
 - No dartpy binding changes.
 - No paper-scale runtime scene reproduction or fixture asset migration beyond
   the reduced hanging-bridge, pulley, umbrella, terrain vehicle, ragdoll,
-  nunchaku, windmill, and precession smoke scenes, the reduced timing-breakdown
-  and Table 2 packets, launchable planned py-demo placeholders, and checked
-  corpus manifest.
+  nunchaku, windmill, Candy, and precession smoke scenes, the reduced
+  timing-breakdown and Table 2 packets, launchable planned py-demo placeholders,
+  and checked corpus manifest.
 - No rigid curved-trajectory CCD move.
 - No sparse Newton loop merge.
 - No rigid IPC default behavior change.
@@ -279,9 +282,9 @@ storage, or backend resources as public API.
    adding reduced packets only where runtime evidence exists; do not mark
    paper-scale rows complete without paper-scale scene assets and comparison
    evidence.
-   The reduced pulley packet may move only the hinged-wheel/point-connection
-   smoke evidence; analytical force comparison and paper-scale rope/rod coupling
-   remain planned.
+   The reduced packets may move only row-specific runtime smoke evidence;
+   analytical force comparison, paper-scale rope/rod coupling, affine packing,
+   twisted shell, and self-contact parity remain planned.
 4. Get maintainer direction before retiring
    `docs/dev_tasks/unified_newton_barrier_multibody/`: the Phase 8 audit found
    that PLAN-083 still has planned CPU/GPU/scene rows and cannot honestly be
@@ -470,6 +473,7 @@ Runtime-wiring branch-local evidence:
 - `pixi run bm-plan083-cpu-hanging-bridge-packet`
 - `pixi run bm-plan083-cpu-pulley-packet`
 - `pixi run bm-plan083-cpu-umbrella-packet`
+- `pixi run bm-plan083-cpu-candy-packet`
 - `pixi run bm-plan083-cpu-nunchaku-packet`
 - `pixi run bm-plan083-cpu-nunchaku-scaling-packet`
 - `pixi run bm-plan083-cpu-ragdoll-packet`

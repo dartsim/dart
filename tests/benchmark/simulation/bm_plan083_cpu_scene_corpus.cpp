@@ -35,6 +35,8 @@
 // codimensional-rod, or mixed-domain performance claims.
 
 #include <dart/simulation/body/collision_shape.hpp>
+#include <dart/simulation/body/deformable_body.hpp>
+#include <dart/simulation/body/deformable_body_options.hpp>
 #include <dart/simulation/body/rigid_body.hpp>
 #include <dart/simulation/body/rigid_body_options.hpp>
 #include <dart/simulation/compute/sequential_executor.hpp>
@@ -72,6 +74,10 @@ const Eigen::Vector3d kPulleyLoadHalfExtents(0.055, 0.055, 0.055);
 const Eigen::Vector3d kUmbrellaMastHalfExtents(0.04, 0.04, 0.28);
 const Eigen::Vector3d kUmbrellaHubHalfExtents(0.05, 0.05, 0.04);
 const Eigen::Vector3d kUmbrellaRibHalfExtents(0.18, 0.025, 0.025);
+const Eigen::Vector3d kCandyShellHalfExtents(0.24, 0.16, 0.025);
+constexpr std::size_t kCandyGridColumns = 5;
+constexpr std::size_t kCandyGridRows = 5;
+constexpr double kCandyGridSpacing = 0.055;
 const Eigen::Vector3d kNunchakuHandleHalfExtents(0.18, 0.035, 0.035);
 const Eigen::Vector3d kWindmillHubHalfExtents(0.05, 0.05, 0.05);
 const Eigen::Vector3d kWindmillBladeHalfExtents(0.045, 0.22, 0.025);
@@ -107,6 +113,57 @@ sx::CollisionShape makeOffsetBox(
   auto shape = sx::CollisionShape::makeBox(halfExtents);
   shape.localTransform.translation() = localOffset;
   return shape;
+}
+
+std::size_t gridIndex(
+    const std::size_t columns, const std::size_t col, const std::size_t row)
+{
+  return row * columns + col;
+}
+
+std::vector<sx::DeformableEdge> makeGridEdges(
+    const std::size_t columns,
+    const std::size_t rows,
+    const std::vector<Eigen::Vector3d>& positions)
+{
+  std::vector<sx::DeformableEdge> edges;
+  const auto add = [&](const std::size_t a, const std::size_t b) {
+    edges.push_back({a, b, (positions[a] - positions[b]).norm()});
+  };
+
+  for (std::size_t row = 0; row < rows; ++row) {
+    for (std::size_t col = 0; col < columns; ++col) {
+      const std::size_t here = gridIndex(columns, col, row);
+      if (col + 1 < columns) {
+        add(here, gridIndex(columns, col + 1, row));
+      }
+      if (row + 1 < rows) {
+        add(here, gridIndex(columns, col, row + 1));
+      }
+      if (col + 1 < columns && row + 1 < rows) {
+        add(here, gridIndex(columns, col + 1, row + 1));
+        add(gridIndex(columns, col + 1, row), gridIndex(columns, col, row + 1));
+      }
+    }
+  }
+  return edges;
+}
+
+std::vector<sx::DeformableSurfaceTriangle> makeGridSurfaceTriangles(
+    const std::size_t columns, const std::size_t rows)
+{
+  std::vector<sx::DeformableSurfaceTriangle> triangles;
+  for (std::size_t row = 0; row + 1 < rows; ++row) {
+    for (std::size_t col = 0; col + 1 < columns; ++col) {
+      const std::size_t a = gridIndex(columns, col, row);
+      const std::size_t b = gridIndex(columns, col + 1, row);
+      const std::size_t c = gridIndex(columns, col, row + 1);
+      const std::size_t d = gridIndex(columns, col + 1, row + 1);
+      triangles.push_back({a, b, c});
+      triangles.push_back({b, d, c});
+    }
+  }
+  return triangles;
 }
 
 struct BodySnapshot
@@ -436,6 +493,93 @@ struct UmbrellaFixture
   std::optional<sx::RigidBody> leftRib;
   std::optional<sx::RigidBody> rightRib;
   std::vector<BodySnapshot> snapshots;
+};
+
+struct CandyFixture
+{
+  CandyFixture()
+  {
+    world.setTimeStep(0.004);
+    world.setGravity(Eigen::Vector3d(0.0, 0.0, -1.5));
+
+    sx::RigidBodyOptions shellOptions;
+    shellOptions.isStatic = true;
+    shellOptions.position = Eigen::Vector3d(0.0, 0.0, 0.025);
+    shell.emplace(
+        world.addRigidBody("plan083_candy_reduced_shell", shellOptions));
+    shell->setCollisionShape(
+        sx::CollisionShape::makeBox(kCandyShellHalfExtents));
+    shell->setDeformableSurfaceCcdObstacle(true);
+    shell->setDeformableObstacleBarrierOnly(true);
+
+    sx::DeformableBodyOptions clothOptions;
+    const double halfWidth
+        = 0.5 * kCandyGridSpacing * static_cast<double>(kCandyGridColumns - 1u);
+    const double halfDepth
+        = 0.5 * kCandyGridSpacing * static_cast<double>(kCandyGridRows - 1u);
+    for (std::size_t row = 0; row < kCandyGridRows; ++row) {
+      for (std::size_t col = 0; col < kCandyGridColumns; ++col) {
+        const double x
+            = kCandyGridSpacing * static_cast<double>(col) - halfWidth;
+        const double y
+            = kCandyGridSpacing * static_cast<double>(row) - halfDepth;
+        const double lateral = row % 2u == 0u ? -0.08 : 0.08;
+        clothOptions.positions.emplace_back(x, y, 0.075);
+        clothOptions.velocities.emplace_back(lateral, 0.0, -0.05);
+        clothOptions.masses.push_back(0.025);
+      }
+    }
+    clothOptions.edges = makeGridEdges(
+        kCandyGridColumns, kCandyGridRows, clothOptions.positions);
+    clothOptions.surfaceTriangles
+        = makeGridSurfaceTriangles(kCandyGridColumns, kCandyGridRows);
+    clothOptions.edgeStiffness = 90.0;
+    clothOptions.damping = 1.2;
+    clothOptions.material.frictionCoefficient = 0.45;
+
+    initialPositions = clothOptions.positions;
+    initialVelocities = clothOptions.velocities;
+    cloth.emplace(world.addDeformableBody(
+        "plan083_candy_deformable_cloth", clothOptions));
+
+    world.enterSimulationMode();
+  }
+
+  void reset()
+  {
+    world.setTime(0.0);
+    for (std::size_t node = 0; node < initialPositions.size(); ++node) {
+      cloth->setPosition(node, initialPositions[node]);
+      cloth->setVelocity(node, initialVelocities[node]);
+    }
+  }
+
+  double minClothHeight() const
+  {
+    double minHeight = std::numeric_limits<double>::infinity();
+    for (std::size_t node = 0; node < cloth->getNodeCount(); ++node) {
+      minHeight = std::min(minHeight, cloth->getPosition(node).z());
+    }
+    return minHeight;
+  }
+
+  double clothSpanX() const
+  {
+    double minX = std::numeric_limits<double>::infinity();
+    double maxX = -std::numeric_limits<double>::infinity();
+    for (std::size_t node = 0; node < cloth->getNodeCount(); ++node) {
+      const double x = cloth->getPosition(node).x();
+      minX = std::min(minX, x);
+      maxX = std::max(maxX, x);
+    }
+    return maxX - minX;
+  }
+
+  sx::World world;
+  std::optional<sx::RigidBody> shell;
+  std::optional<sx::DeformableBody> cloth;
+  std::vector<Eigen::Vector3d> initialPositions;
+  std::vector<Eigen::Vector3d> initialVelocities;
 };
 
 struct NunchakuScalingFixture
@@ -989,6 +1133,58 @@ static void BM_Plan083CpuScene_umbrella_reduced_world_step(
       = fixture.hub->getAngularVelocity().y();
 }
 BENCHMARK(BM_Plan083CpuScene_umbrella_reduced_world_step)
+    ->Unit(benchmark::kMillisecond);
+
+//==============================================================================
+static void BM_Plan083CpuScene_candy_reduced_world_step(benchmark::State& state)
+{
+  CandyFixture fixture;
+  sx::compute::SequentialExecutor executor;
+
+  std::size_t failedSteps = 0;
+  sx::DeformableSolverDiagnostics lastDiagnostics;
+  for (auto _ : state) {
+    state.PauseTiming();
+    fixture.reset();
+    state.ResumeTiming();
+
+    fixture.world.step(executor);
+    lastDiagnostics = fixture.world.getLastDeformableSolverDiagnostics();
+    if (lastDiagnostics.bodyCount != 1u || lastDiagnostics.nodeCount == 0u
+        || !std::isfinite(fixture.minClothHeight())) {
+      ++failedSteps;
+    }
+    double firstNodeHeight = fixture.cloth->getPosition(0).z();
+    double lastNodeHeight
+        = fixture.cloth->getPosition(fixture.cloth->getNodeCount() - 1u).z();
+    benchmark::DoNotOptimize(firstNodeHeight);
+    benchmark::DoNotOptimize(lastNodeHeight);
+    benchmark::ClobberMemory();
+  }
+
+  state.counters["row_unb_fig_22"] = 1.0;
+  state.counters["paper_scale"] = 0.0;
+  state.counters["rigid_obstacle_count"] = 1.0;
+  state.counters["deformable_body_count"]
+      = static_cast<double>(lastDiagnostics.bodyCount);
+  state.counters["deformable_node_count"]
+      = static_cast<double>(lastDiagnostics.nodeCount);
+  state.counters["deformable_edge_count"]
+      = static_cast<double>(lastDiagnostics.edgeCount);
+  state.counters["surface_triangle_count"]
+      = static_cast<double>(fixture.cloth->getSurfaceTriangleCount());
+  state.counters["solver_iterations"]
+      = static_cast<double>(lastDiagnostics.solverIterations);
+  state.counters["active_contact_count"]
+      = static_cast<double>(lastDiagnostics.convergedActiveContactCount);
+  state.counters["friction_dissipation"] = lastDiagnostics.frictionDissipation;
+  state.counters["min_active_contact_distance_m"]
+      = lastDiagnostics.minActiveContactDistance;
+  state.counters["min_cloth_height_m"] = fixture.minClothHeight();
+  state.counters["cloth_span_x_m"] = fixture.clothSpanX();
+  state.counters["failed_steps"] = static_cast<double>(failedSteps);
+}
+BENCHMARK(BM_Plan083CpuScene_candy_reduced_world_step)
     ->Unit(benchmark::kMillisecond);
 
 //==============================================================================

@@ -8,6 +8,7 @@ from dataclasses import dataclass
 import dartpy as dart
 import numpy as np
 
+from .._ipc_deformable_bridge import IpcDeformableBridge, build_grid_options
 from .._world_bridge import WorldRenderBridge
 from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
@@ -21,6 +22,10 @@ _PULLEY_LOAD_HALF_EXTENTS = np.array([0.055, 0.055, 0.055])
 _UMBRELLA_MAST_HALF_EXTENTS = np.array([0.04, 0.04, 0.28])
 _UMBRELLA_HUB_HALF_EXTENTS = np.array([0.05, 0.05, 0.04])
 _UMBRELLA_RIB_HALF_EXTENTS = np.array([0.18, 0.025, 0.025])
+_CANDY_SHELL_HALF_EXTENTS = np.array([0.24, 0.16, 0.025])
+_CANDY_GRID_COLUMNS = 5
+_CANDY_GRID_ROWS = 5
+_CANDY_GRID_SPACING = 0.055
 _NUNCHAKU_HANDLE_HALF_EXTENTS = np.array([0.18, 0.035, 0.035])
 _TERRAIN_HALF_EXTENTS = np.array([0.70, 0.45, 0.025])
 _TERRAIN_CHASSIS_HALF_EXTENTS = np.array([0.22, 0.12, 0.04])
@@ -626,6 +631,102 @@ def _build_umbrella_runtime(target: Plan083SceneTarget) -> SceneSetup:
     )
 
 
+def _build_candy_runtime(target: Plan083SceneTarget) -> SceneSetup:
+    columns = _CANDY_GRID_COLUMNS
+    rows = _CANDY_GRID_ROWS
+    spacing = _CANDY_GRID_SPACING
+    half_width = 0.5 * spacing * (columns - 1)
+    half_depth = 0.5 * spacing * (rows - 1)
+
+    def position(col: int, row: int) -> tuple[float, float, float]:
+        return (spacing * col - half_width, spacing * row - half_depth, 0.075)
+
+    def velocity(col: int, row: int) -> tuple[float, float, float]:
+        lateral = 0.08 if row % 2 else -0.08
+        return (lateral, 0.0, -0.05)
+
+    options = build_grid_options(
+        columns,
+        rows,
+        position_fn=position,
+        velocity_fn=velocity,
+        mass=0.025,
+        edge_stiffness=90.0,
+        damping=1.2,
+    )
+    material = options.material
+    material.friction_coefficient = 0.45
+    options.material = material
+
+    world = dart.World(time_step=0.004, gravity=(0.0, 0.0, -1.5))
+    shell = world.add_rigid_body("plan083_candy_reduced_shell", position=(0.0, 0.0, 0.025))
+    shell.is_static = True
+    shell.set_collision_shape(dart.CollisionShape.box(_CANDY_SHELL_HALF_EXTENTS))
+    shell.is_deformable_surface_ccd_obstacle = True
+    shell.is_deformable_obstacle_barrier_only = True
+    cloth = world.add_deformable_body("plan083_candy_deformable_cloth", options)
+    world.enter_simulation_mode()
+
+    bridge = IpcDeformableBridge(world, name="plan083_candy_runtime")
+    bridge.add_rigid_box_visual(
+        (0.0, 0.0, 0.025),
+        tuple(_full(_CANDY_SHELL_HALF_EXTENTS)),
+        (0.55, 0.38, 0.68),
+        name="plan083_candy_shell_visual",
+    )
+    bridge.add_deformable_visual(cloth, name="plan083_candy_cloth")
+
+    height_history: deque[float] = deque(maxlen=120)
+    contact_history: deque[float] = deque(maxlen=120)
+
+    def build_panel(builder: object, context: object) -> None:
+        positions = [
+            np.asarray(cloth.node_position(index), dtype=float).reshape(3)
+            for index in range(cloth.node_count)
+        ]
+        mean_height = float(np.mean([point[2] for point in positions]))
+        diagnostics = world.last_deformable_solver_diagnostics
+        active_contacts = float(diagnostics.converged_active_contact_count)
+        height_history.append(mean_height)
+        contact_history.append(active_contacts)
+
+        builder.text("status: reduced runtime smoke scene")
+        builder.text("solver: deformable IPC World.step")
+        builder.text(f"row: {', '.join(target.row_ids)}")
+        builder.text(f"deformable bodies: {world.num_deformable_bodies}")
+        builder.text(f"nodes: {cloth.node_count}")
+        builder.text(f"surface triangles: {cloth.surface_triangle_count}")
+        builder.text(f"world time: {world.time:.3f} s")
+        builder.text(f"mean cloth height: {mean_height:.3f} m")
+        builder.text(f"active contacts: {active_contacts:.0f}")
+        builder.text(f"benchmark: {target.benchmark_command}")
+        builder.text(f"limitation: {target.limitation}")
+        builder.separator()
+        bridge.build_diagnostics_panel(builder, context)
+        if height_history:
+            builder.separator()
+            builder.plot_lines("Mean cloth height", list(height_history))
+            builder.plot_lines("Active contacts", list(contact_history))
+
+    info = _target_info(target)
+    info.update(
+        {
+            "sx_world": world,
+            "runtime_smoke_scene": True,
+            "deformable_solver": "ipc",
+            "cloth": cloth,
+            "shell": shell,
+        }
+    )
+
+    return SceneSetup(
+        world=bridge.render_world,
+        pre_step=bridge.pre_step,
+        panels=[ScenePanel(target.title, build_panel)],
+        info=info,
+    )
+
+
 def _build_windmill_runtime(target: Plan083SceneTarget) -> SceneSetup:
     world = dart.World(
         time_step=0.005,
@@ -1105,6 +1206,8 @@ def _scene(target: Plan083SceneTarget) -> PythonDemoScene:
         build = lambda target=target: _build_terrain_vehicle_runtime(target)
     elif target.scene_id == "plan083_windmill":
         build = lambda target=target: _build_windmill_runtime(target)
+    elif target.scene_id == "plan083_candy":
+        build = lambda target=target: _build_candy_runtime(target)
     else:
         build = lambda target=target: _build_placeholder(target)
 
@@ -1219,12 +1322,12 @@ PLAN083_SCENE_TARGETS: tuple[Plan083SceneTarget, ...] = (
         title="PLAN-083 Candy",
         row_ids=("unb-fig-22",),
         category="PLAN-083 Mixed Corpus",
-        summary="Planned affine/deformable/cloth coupling scene.",
-        target="Paper Fig. 22 / Table 2 candy mixed-domain scene.",
+        summary="Reduced deformable candy smoke scene running through World::step.",
+        target="Paper Fig. 22 / Table 2 candy mixed-domain scene; reduced to a deformable cloth patch settling against a static shell obstacle for runtime smoke evidence.",
         smoke_command="pixi run py-demos -- --scene plan083_candy --headless --frames 4",
         visual_command="pixi run py-demo-capture -- --scene plan083_candy --frames 240 --width 1280 --height 720",
-        benchmark_command="pixi run bm bm_plan083_cpu_scene_corpus -- --benchmark_filter=candy",
-        limitation="Waiting for ABD runtime stepping and cloth self-contact parity.",
+        benchmark_command="pixi run bm-plan083-cpu-candy-packet",
+        limitation="Reduced deformable-cloth/static-shell smoke packet only; affine body packing, twisted shell, and cloth self-contact parity remain planned.",
     ),
     Plan083SceneTarget(
         scene_id="plan083_precession",

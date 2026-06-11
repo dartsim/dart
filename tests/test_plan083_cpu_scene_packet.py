@@ -114,6 +114,31 @@ def _umbrella_packet(**overrides):
     return {"benchmarks": [row]}
 
 
+def _candy_packet(**overrides):
+    row = {
+        "name": "BM_Plan083CpuScene_candy_reduced_world_step_median",
+        "run_name": "BM_Plan083CpuScene_candy_reduced_world_step",
+        "aggregate_name": "median",
+        "real_time": 10.0,
+        "cpu_time": 10.0,
+        "time_unit": "ms",
+        "rigid_obstacle_count": 1,
+        "deformable_body_count": 1,
+        "deformable_node_count": 25,
+        "deformable_edge_count": 72,
+        "surface_triangle_count": 32,
+        "solver_iterations": 6,
+        "active_contact_count": 0,
+        "friction_dissipation": 1e-6,
+        "min_active_contact_distance_m": 0.0,
+        "min_cloth_height_m": 0.06,
+        "cloth_span_x_m": 0.22,
+        "failed_steps": 0,
+    }
+    row.update(overrides)
+    return {"benchmarks": [row]}
+
+
 def _nunchaku_scaling_packet(**overrides):
     rows = []
     for size in (20, 40, 60, 80, 100):
@@ -247,6 +272,7 @@ def _timing_breakdown_packet(**overrides):
         _terrain_vehicle_packet()["benchmarks"][0],
         _ragdoll_packet()["benchmarks"][0],
         _windmill_packet()["benchmarks"][0],
+        _candy_packet()["benchmarks"][0],
         _precession_packet()["benchmarks"][0],
     ]
     if "row_index" in overrides:
@@ -263,6 +289,7 @@ def _table2_packet(**overrides):
         _terrain_vehicle_packet()["benchmarks"][0],
         _ragdoll_packet()["benchmarks"][0],
         _windmill_packet()["benchmarks"][0],
+        _candy_packet()["benchmarks"][0],
         _precession_packet()["benchmarks"][0],
     ]
     if "row_index" in overrides:
@@ -350,6 +377,26 @@ def test_plan083_cpu_scene_packet_accepts_reduced_umbrella() -> None:
     assert row["revolute_joint_count"] == 1
     assert row["active_articulation_constraints"] == 8
     assert row["wall_time_ns"] == 9.0e6
+
+
+def test_plan083_cpu_scene_packet_accepts_reduced_candy() -> None:
+    module = _load_module()
+
+    packet = module.make_packet(
+        _candy_packet(),
+        max_equality_residual=1e-8,
+        scene="candy",
+    )
+
+    row = packet["plan083_cpu_scene_packet"]
+    assert row["row_id"] == "unb-fig-22"
+    assert row["scene_id"] == "plan083_candy"
+    assert row["paper_scale"] is False
+    assert row["rigid_obstacle_count"] == 1
+    assert row["deformable_body_count"] == 1
+    assert row["deformable_node_count"] == 25
+    assert row["surface_triangle_count"] == 32
+    assert row["wall_time_ns"] == 10.0e6
 
 
 def test_plan083_cpu_scene_packet_accepts_reduced_nunchaku_scaling() -> None:
@@ -466,10 +513,10 @@ def test_plan083_cpu_scene_packet_accepts_reduced_timing_breakdown() -> None:
     assert row["row_id"] == "unb-fig-24"
     assert row["scene_id"] == "plan083_reduced_timing_breakdown"
     assert row["paper_scale"] is False
-    assert row["scene_count"] == 8
-    assert row["total_body_count"] == 35
-    assert row["total_dynamic_body_count"] == 26
-    assert row["total_wall_time_ns"] == 44.0e6
+    assert row["scene_count"] == 9
+    assert row["total_body_count"] == 37
+    assert row["total_dynamic_body_count"] == 27
+    assert row["total_wall_time_ns"] == 54.0e6
     assert row["available_timing_fields"] == ["wall_time_ns"]
     assert "linear_solve" in row["missing_paper_timing_fields"]
 
@@ -487,7 +534,7 @@ def test_plan083_cpu_scene_packet_accepts_reduced_table2() -> None:
     assert row["row_id"] == "unb-table-02"
     assert row["scene_id"] == "plan083_reduced_table_2"
     assert row["paper_scale"] is False
-    assert row["scene_count"] == 7
+    assert row["scene_count"] == 8
     assert row["covered_paper_rows"] == [
         "unb-fig-02",
         "unb-fig-03",
@@ -495,15 +542,15 @@ def test_plan083_cpu_scene_packet_accepts_reduced_table2() -> None:
         "unb-fig-10",
         "unb-fig-11",
         "unb-fig-20",
+        "unb-fig-22",
         "unb-fig-23",
     ]
     assert row["missing_paper_rows"] == [
         "unb-fig-01",
-        "unb-fig-22",
     ]
-    assert row["total_body_count"] == 33
-    assert row["total_dynamic_body_count"] == 25
-    assert row["total_wall_time_ns"] == 41.0e6
+    assert row["total_body_count"] == 35
+    assert row["total_dynamic_body_count"] == 26
+    assert row["total_wall_time_ns"] == 51.0e6
 
 
 def test_plan083_cpu_scene_packet_rejects_failed_bridge_step() -> None:
@@ -573,6 +620,17 @@ def test_plan083_cpu_scene_packet_rejects_umbrella_without_hinge() -> None:
             _umbrella_packet(revolute_joint_count=0),
             max_equality_residual=1e-8,
             scene="umbrella",
+        )
+
+
+def test_plan083_cpu_scene_packet_rejects_candy_penetration() -> None:
+    module = _load_module()
+
+    with pytest.raises(module.Plan083CpuScenePacketError, match="penetrated"):
+        module.make_packet(
+            _candy_packet(min_cloth_height_m=-1e-3),
+            max_equality_residual=1e-8,
+            scene="candy",
         )
 
 
