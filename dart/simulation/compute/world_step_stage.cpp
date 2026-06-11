@@ -9427,22 +9427,23 @@ void RigidBodyContactStage::prepare(World& world)
   auto& constraints = m_contactScratch->constraints;
   constraints.clear();
 
-  std::size_t collisionShapeCount = 0;
   const auto& registry = dart::simulation::detail::registryOf(world);
-  const auto geometryView = registry.view<comps::CollisionGeometry>();
-  for (const entt::entity entity : geometryView) {
-    collisionShapeCount
-        += geometryView.get<comps::CollisionGeometry>(entity).shapes.size();
-  }
-  constexpr std::size_t kContactConstraintCapacityPerShape = 4u;
-  const std::size_t contactConstraintCapacity
-      = collisionShapeCount <= std::numeric_limits<std::size_t>::max()
-                                   / kContactConstraintCapacityPerShape
-            ? collisionShapeCount * kContactConstraintCapacityPerShape
-            : std::numeric_limits<std::size_t>::max();
-  constraints.reserve(contactConstraintCapacity);
-
   const bool skipContactQuery = shouldSkipRigidBodyContactQuery(registry);
+  if (!skipContactQuery) {
+    std::size_t collisionShapeCount = 0;
+    const auto geometryView = registry.view<comps::CollisionGeometry>();
+    for (const entt::entity entity : geometryView) {
+      collisionShapeCount
+          += geometryView.get<comps::CollisionGeometry>(entity).shapes.size();
+    }
+    constexpr std::size_t kContactConstraintCapacityPerShape = 4u;
+    const std::size_t contactConstraintCapacity
+        = collisionShapeCount <= std::numeric_limits<std::size_t>::max()
+                                     / kContactConstraintCapacityPerShape
+              ? collisionShapeCount * kContactConstraintCapacityPerShape
+              : std::numeric_limits<std::size_t>::max();
+    constraints.reserve(contactConstraintCapacity);
+  }
   const std::size_t contactCount
       = skipContactQuery ? 0u
                          : world.queryContacts(CollisionQueryOptions{}).size();
@@ -9453,11 +9454,10 @@ void RigidBodyContactStage::prepare(World& world)
   const std::size_t jointCapacity
       = registry.view<comps::Joint, dvbd::AvbdRigidWorldPointJointConfig>()
             .size_hint();
-  std::size_t distanceSpringCapacity = 0u;
-  for ([[maybe_unused]] const entt::entity entity :
-       registry.view<dvbd::AvbdRigidWorldDistanceSpringConfig>()) {
-    ++distanceSpringCapacity;
-  }
+  const auto* distanceSpringStorage
+      = registry.storage<dvbd::AvbdRigidWorldDistanceSpringConfig>();
+  const std::size_t distanceSpringCapacity
+      = distanceSpringStorage != nullptr ? distanceSpringStorage->size() : 0u;
   const std::size_t bodyCapacity
       = 2u * (contactCount + jointCapacity + distanceSpringCapacity);
   m_avbdScratch->reserve(

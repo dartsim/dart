@@ -2,6 +2,16 @@
 
 ## Last Session Summary
 
+Latest local follow-up: `RigidBodyContactStage::prepare()` now avoids the
+collision-shape capacity scan when the contact query is already skipped, and
+uses the distance-spring storage size for AVBD scratch reserve capacity instead
+of iterating spring configs just to count them. Local benchmark smoke moved
+`BM_AvbdDemo2dMotorStep_median` from about 9.34 us to 8.83 us,
+`BM_AvbdDemo2dSpringStep_median` from about 5.04 us to 4.28 us, and
+`BM_AvbdDemo2dSpringRatioStep_median` from about 45.3 us to 37.1 us on this
+host. This is only no-contact/source-row overhead evidence; it does not close
+any source CPU-win, GPU, or paper-number gate.
+
 Latest local follow-up: small AVBD rigid world-contact snapshots no longer
 reserve the endpoint entity-index hash map while the body count is within the
 small-row linear-scan capacity. Focused `test_avbd_rigid_block` snapshot-index
@@ -1655,12 +1665,15 @@ complete.
 
 ## Current Branch
 
-Current reality (2026-06-10): the active split stack is PR #2967
-(`avbd/tests-benchmarks`, base `main`) plus PR #2968 (`avbd/python-demos`, base
-`avbd/tests-benchmarks`), and this checkout is `avbd/python-demos`. The older
-checkpoint branch description below is historical context for the raw
-33-hour checkpoint and should not be treated as the current checkout without
-re-verifying `git status --short --branch` and the open PR heads.
+Current reality (2026-06-11): this checkout is
+`avbd/source-row-perf-slice`, a local branch from `main` for a narrow
+contact-stage prepare overhead cleanup. The active PR branches are separate:
+PR #2973 (`avbd/articulated-reset-endpoint-shape`) and PR #2975
+(`avbd/articulated-stiffness-roundtrip`) are draft/open and should not be
+grown with unrelated source-row performance work. The older checkpoint branch
+description below is historical context for the raw 33-hour checkpoint and
+should not be treated as the current checkout without re-verifying
+`git status --short --branch` and the open PR heads.
 
 `feature/avbd-articulated-masked-rows` - staged local slice based on cached
 `origin/main` at `dbac6c63e9f`, including the scalar-row foundation,
@@ -2118,17 +2131,21 @@ parity claim.
 
 ## Immediate Next Step
 
-The local branch and cached `origin/main` are both at `f1fa9f386f9` after the
-requested latest-main merge was refreshed through HTTPS and applied as a
-fast-forward. The earlier SSH fetch path failed in this environment with
-`ssh: connect to host github.com port 22: Network is unreachable`, so keep using
-HTTPS when a fresh main refresh is needed here. The pre-merge backup stashes
-remain present and should not be dropped without maintainer approval. The
-project `.gitignore` intentionally ignores scratch JSON dumps in the PLAN-104
-evidence folder while allowing curated `avbd-*-packet.json` fixtures referenced
-by plan docs and packet-writer tests to be checked in.
+Current newest local follow-up: verify and land the narrow
+`RigidBodyContactStage::prepare()` overhead cleanup from
+`avbd/source-row-perf-slice` if the local lint/build/test/benchmark evidence
+remains clean. The branch currently has local benchmark smoke showing improved
+Motor/Spring/Spring Ratio source rows, but this does not close any source
+CPU-win, GPU, or paper-number gate. The earlier SSH fetch path failed in this
+environment with `ssh: connect to host github.com port 22: Network is
+unreachable`, so keep using HTTPS when a fresh main refresh is needed here. The
+pre-merge backup stashes remain present and should not be dropped without
+maintainer approval. The project `.gitignore` intentionally ignores scratch JSON
+dumps in the PLAN-104 evidence folder while allowing curated
+`avbd-*-packet.json` fixtures referenced by plan docs and packet-writer tests to
+be checked in.
 
-The current newest local follow-up adds dartpy articulated joint-list lifetime
+The previous local follow-up adds dartpy articulated joint-list lifetime
 coverage, proving link-link and world-link public facade handles returned from a
 temporary World list keep endpoint access valid after garbage collection. The
 previous local follow-up added C++ and dartpy serialization coverage

@@ -9,6 +9,15 @@ Corpus matrix:
 
 ## Current Status
 
+- Latest local follow-up: `RigidBodyContactStage::prepare()` now avoids the
+  collision-shape capacity scan when the contact query is already skipped, and
+  uses the distance-spring storage size for AVBD scratch reserve capacity
+  instead of iterating the spring configs just to count them. On this host, the
+  selected local benchmark smoke moved `BM_AvbdDemo2dMotorStep_median` from
+  about 9.34 us to 8.83 us, `BM_AvbdDemo2dSpringStep_median` from about
+  5.04 us to 4.28 us, and `BM_AvbdDemo2dSpringRatioStep_median` from about
+  45.3 us to 37.1 us. This is only no-contact/source-row overhead evidence; it
+  does not close any source CPU-win, GPU, or paper-number gate.
 - Latest local follow-up: small AVBD rigid world-contact snapshots no longer
   reserve the endpoint entity-index hash map while the body count is within the
   small-row linear-scan capacity. Focused snapshot-index tests passed, and a
