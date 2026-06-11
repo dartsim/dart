@@ -234,7 +234,8 @@ The latest variational loop-closure scratch continuation keeps using the
 existing loop-closure gate and routes the baked step spatial-velocity list,
 articulated linear-solve vector lists, projection Jacobian/row-index lists, and
 Anderson history lists through the World free allocator before bake-time sizing
-or same-shape lazy reserve.
+or same-shape lazy reserve. The current AL contact follow-up also routes the
+post-step transform list used for dual updates through that allocator.
 
 The latest rebuild-boundary slice reuses the existing mixed default-deformable
 storage scenes as compact, production, contact-family production, and

@@ -705,7 +705,8 @@ Follow-up progress after PR #2956:
   Existing variational loop-closure baked storage now also routes the step
   spatial-velocity list, articulated linear-solve vector lists, projection
   Jacobian/row-index lists, and Anderson history lists through the same World
-  allocator root.
+  allocator root. The AL contact dual-update post-transform list now borrows
+  that allocator too.
   Velocity-actuator projection now follows the same baked projection path:
   bake-time sizing counts actuator target rows, the projection loop writes those
   rows directly into the reusable residual/Jacobian, and per-joint projection

@@ -2894,6 +2894,15 @@ void ensureVariationalAndersonScratchAllocator(
   rebindVectorAllocator(scratch.iterateDeltas, targetAllocator);
 }
 
+void ensureVariationalPostContactTransformsAllocator(
+    MultibodyVariationalScratch& scratch,
+    dart::common::MemoryAllocator& allocator)
+{
+  const MultibodyVariationalScratch::PostContactTransformAllocator
+      targetAllocator{allocator};
+  rebindVectorAllocator(scratch.postContactTransforms, targetAllocator);
+}
+
 // Validate + normalize a ground-contact config (shared by the AL solver).
 void normalizeGroundContact(VariationalGroundContact& contact)
 {
@@ -3109,7 +3118,7 @@ void VariationalGroundContactSolver::resetContact(
 
 //==============================================================================
 void VariationalGroundContactSolver::updateDuals(
-    const std::vector<Eigen::Isometry3d>& linkWorldTransforms)
+    std::span<const Eigen::Isometry3d> linkWorldTransforms)
 {
   for (std::size_t i = 0; i < mContact.points.size(); ++i) {
     const VariationalContactPoint& point = mContact.points[i];
@@ -4151,6 +4160,7 @@ void reserveMultibodyVariationalRegistryStorage(
         scratch.linearSolve, allocator);
     ensureVariationalProjectionScratchAllocator(scratch.projection, allocator);
     ensureVariationalAndersonScratchAllocator(scratch.anderson, allocator);
+    ensureVariationalPostContactTransformsAllocator(scratch, allocator);
     scratch.postContactTransforms.resize(structure.links.size());
     scratch.constraints.clear();
     for (auto closureEntity : closures) {
@@ -4308,6 +4318,8 @@ void MultibodyVariationalIntegrationStage::execute(
         scratch.projection, worldFreeAllocator);
     ensureVariationalAndersonScratchAllocator(
         scratch.anderson, worldFreeAllocator);
+    ensureVariationalPostContactTransformsAllocator(
+        scratch, worldFreeAllocator);
     auto& constraints = scratch.constraints;
     constraints.clear();
     for (auto closureEntity : closures) {
@@ -4429,7 +4441,9 @@ void MultibodyVariationalIntegrationStage::execute(
         for (std::size_t i = 0; i < postTree.links.size(); ++i) {
           postTransforms[i] = postTree.links[i].worldTransform;
         }
-        alSolver->updateDuals(postTransforms);
+        alSolver->updateDuals(
+            std::span<const Eigen::Isometry3d>{
+                postTransforms.data(), postTransforms.size()});
         const auto& solverDuals = alSolver->duals();
         dualState.duals.assign(solverDuals.begin(), solverDuals.end());
       }

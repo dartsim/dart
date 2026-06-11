@@ -4223,6 +4223,12 @@ void expectVariationalContactGroundSolverBaked(
       EXPECT_EQ(
           scratch.groundContactSolver->duals().get_allocator(),
           expectedDualAllocator);
+      const sx::compute::MultibodyVariationalScratch::
+          PostContactTransformAllocator expectedTransformAllocator{
+              *expectedAllocator};
+      EXPECT_EQ(
+          scratch.postContactTransforms.get_allocator(),
+          expectedTransformAllocator);
     }
     EXPECT_EQ(
         scratch.groundContactSolver->duals().size(),

@@ -309,7 +309,7 @@ public:
   /// Advance the duals after a converged step, from the per-link world
   /// transforms at the converged configuration (same link order as the
   /// context).
-  void updateDuals(const std::vector<Eigen::Isometry3d>& linkWorldTransforms);
+  void updateDuals(std::span<const Eigen::Isometry3d> linkWorldTransforms);
 
   /// The current per-contact-point duals (the accumulated AL contact forces).
   [[nodiscard]] const DualVector& duals() const
@@ -572,6 +572,11 @@ struct MultibodyVariationalScratch
 {
   DART_SIMULATION_CACHE_COMPONENT(MultibodyVariationalScratch);
 
+  using PostContactTransformAllocator
+      = dart::common::StlAllocator<Eigen::Isometry3d>;
+  using PostContactTransformVector
+      = std::vector<Eigen::Isometry3d, PostContactTransformAllocator>;
+
   std::vector<VariationalLoopConstraint> constraints;
   VariationalGroundContact groundContact;
   std::optional<VariationalGroundContactSolver> groundContactSolver;
@@ -582,7 +587,7 @@ struct MultibodyVariationalScratch
   MultibodyInverseDynamicsScratch inverseDynamics;
   VariationalConstraintProjectionScratch projection;
   VariationalAndersonScratch anderson;
-  std::vector<Eigen::Isometry3d> postContactTransforms;
+  PostContactTransformVector postContactTransforms;
 };
 
 /// **EXPERIMENTAL (PLAN-082 Phase C -- link-vs-link).** A sphere-sphere contact
