@@ -931,6 +931,24 @@ def _make_mass_ratio_boxed_case() -> tuple[dart.LcpProblem, np.ndarray]:
     return dart.LcpProblem(A, A @ expected - w, lo, hi), expected
 
 
+def _make_singular_degenerate_boxed_case() -> tuple[dart.LcpProblem, np.ndarray]:
+    A = np.array(
+        [
+            [2.0, 2.0, 0.0, 0.0],
+            [2.0, 2.0, 0.0, 0.0],
+            [0.0, 0.0, 1.2, 0.15],
+            [0.0, 0.0, 0.15, 1.0],
+        ],
+        dtype=float,
+    )
+    lo = np.array([0.0, -0.20, -0.50, -0.40])
+    hi = np.array([0.0, 1.00, 0.80, 0.60])
+    expected = np.array([0.0, 1.0, 0.25, -0.10])
+    w = np.array([0.20, -0.15, 0.0, 0.0])
+
+    return dart.LcpProblem(A, A @ expected - w, lo, hi), expected
+
+
 def _make_friction_index_contact_case() -> tuple[dart.LcpProblem, np.ndarray]:
     A = np.array(
         [
@@ -1004,6 +1022,15 @@ _STANDALONE_PROBLEM_CASES: tuple[_StandaloneProblemCase, ...] = (
         challenge="large mass-ratio conditioning with active bounds",
         make_problem=_make_mass_ratio_boxed_case,
         tolerance=5e-4,
+    ),
+    _StandaloneProblemCase(
+        name="singular_degenerate_boxed",
+        label="Singular degenerate boxed",
+        surface="boxed",
+        support_key="boxed",
+        challenge="rank-deficient complementarity with opposing active bounds",
+        make_problem=_make_singular_degenerate_boxed_case,
+        tolerance=2e-4,
     ),
     _StandaloneProblemCase(
         name="friction_index_contact",
