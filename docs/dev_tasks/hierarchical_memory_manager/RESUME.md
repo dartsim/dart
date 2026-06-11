@@ -185,6 +185,16 @@ verifies provided-allocator node storage and release on destruction.
 `std::vector` storage because public accessors expose concrete vector
 references; that API-sensitive route remains separate follow-up work.
 
+The current rigid IPC scratch slice adds an allocator-aware
+`RigidIpcContactStage::Scratch` constructor for the top-level runtime-body,
+solver-body, surface, kinematic-trace, writeback-order, and resting-contact
+scratch vectors. Built-in stages already pass the World `MemoryManager`, so
+those reserves now grow from the World free allocator; the focused custom-stage
+test verifies reserve growth and release against the provided free-list live
+allocation count. Solver option/result vectors and nested surface mesh payloads
+remain default-vector follow-up work because they cross the detail solver API
+boundary.
+
 The current allocator-correctness slice closes a debug-accounting gap in
 `MemoryAllocatorDebugger`: aligned allocations now keep their requested
 alignment in the live allocation record, and mismatched aligned deallocation
@@ -695,16 +705,16 @@ Continue with evidence-first HMM follow-up work on `origin/main`: built-in
 stage-owned scratch/cache object roots are now allocator-aware, and the
 rigid-body velocity force-batch payload plus rigid-body contact
 sequential-impulse constraint vector, plus the `WorldKinematicsGraph`
-entity-node cache and `ComputeGraph` owned node/name lookup storage, are the
-first nested stage payloads routed through world-owned allocator-backed
-storage. The next slice should probe existing no-growth/no-heap gates or
-stage-local heap counters for another concrete nested payload path before
-changing broader scratch layouts; likely candidates are rigid IPC top-level
-scratch vectors, deformable stage obstacle/snapshot vectors, or an
-API-compatible plan for `ComputeGraph`'s exposed edge/topological-order vector
-storage. Do not add new production scenes unless profiling or a failing
-no-growth/no-heap gate shows a real gap not covered by the current shipped
-scenes.
+entity-node cache, `ComputeGraph` owned node/name lookup storage, and rigid IPC
+top-level scratch vectors, are the first nested stage payloads routed through
+world-owned allocator-backed storage. The next slice should probe existing
+no-growth/no-heap gates or stage-local heap counters for another concrete
+nested payload path before changing broader scratch layouts; likely candidates
+are deformable stage obstacle/snapshot vectors, solver option/result vectors in
+rigid IPC, or an API-compatible plan for `ComputeGraph`'s exposed
+edge/topological-order vector storage. Do not add new production scenes unless
+profiling or a failing no-growth/no-heap gate shows a real gap not covered by
+the current shipped scenes.
 
 Keep the allocator performance gate green. The latest allocator slices keep
 `FrameStlAllocator` blocks cache-line aligned without per-block cache coloring,

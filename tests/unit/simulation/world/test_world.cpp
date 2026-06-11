@@ -2815,6 +2815,38 @@ TEST(World, RigidBodyContactScratchPayloadUsesWorldAllocator)
          "impulse constraints from the World free allocator";
 }
 
+TEST(World, RigidIpcContactStageScratchPayloadUsesProvidedAllocator)
+{
+  namespace common = dart::common;
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  sx::RigidBodyOptions options;
+  options.mass = 2.0;
+  options.position = Eigen::Vector3d(0.0, 0.0, 0.5);
+  auto body = world.addRigidBody("ipc_allocator_body", options);
+  body.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.5)));
+
+  common::MemoryManager memoryManager;
+  auto& freeList = memoryManager.getFreeListAllocator();
+  const auto allocationsBeforeStage = freeList.getAllocationCount();
+
+  {
+    sx::compute::RigidIpcContactStage stage(1, &memoryManager);
+    const auto allocationsAfterStage = freeList.getAllocationCount();
+
+    stage.prepare(world);
+
+    EXPECT_GT(freeList.getAllocationCount(), allocationsAfterStage)
+        << "allocator-aware rigid IPC scratch should reserve top-level "
+           "runtime, solver, surface, and writeback vectors from the "
+           "provided free allocator";
+  }
+
+  EXPECT_EQ(freeList.getAllocationCount(), allocationsBeforeStage);
+}
+
 TEST(World, WorldKinematicsGraphEntityNodesUseWorldAllocator)
 {
   namespace sx = dart::simulation;

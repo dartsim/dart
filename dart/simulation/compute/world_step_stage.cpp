@@ -157,19 +157,46 @@ struct RigidIpcRuntimeBody
 
 struct RigidIpcContactStage::Scratch
 {
-  std::vector<RigidIpcRuntimeBody> runtimeBodies;
-  std::vector<RigidIpcRuntimeBody> solverBodies;
-  std::vector<sxdetail::RigidIpcBarrierSurface> surfaces;
+  Scratch() = default;
+
+  explicit Scratch(common::MemoryAllocator& allocator)
+    : runtimeBodies(common::StlAllocator<RigidIpcRuntimeBody>{allocator}),
+      solverBodies(common::StlAllocator<RigidIpcRuntimeBody>{allocator}),
+      surfaces(
+          common::StlAllocator<sxdetail::RigidIpcBarrierSurface>{allocator}),
+      tracedEntities(common::StlAllocator<entt::entity>{allocator}),
+      blockedEntities(common::StlAllocator<entt::entity>{allocator}),
+      writebackEntities(common::StlAllocator<entt::entity>{allocator}),
+      orderedEntities(common::StlAllocator<entt::entity>{allocator}),
+      visitState(common::StlAllocator<int>{allocator}),
+      contactPowerSum(common::StlAllocator<double>{allocator}),
+      sawNonStationaryContactBody(
+          common::StlAllocator<std::uint8_t>{allocator}),
+      stationaryContactBody(common::StlAllocator<std::uint8_t>{allocator})
+  {
+  }
+
+  std::vector<RigidIpcRuntimeBody, common::StlAllocator<RigidIpcRuntimeBody>>
+      runtimeBodies;
+  std::vector<RigidIpcRuntimeBody, common::StlAllocator<RigidIpcRuntimeBody>>
+      solverBodies;
+  std::vector<
+      sxdetail::RigidIpcBarrierSurface,
+      common::StlAllocator<sxdetail::RigidIpcBarrierSurface>>
+      surfaces;
   std::vector<sxdetail::RigidIpcBodyDynamicsTerm> dynamicsTerms;
   std::vector<sxdetail::RigidIpcBodyDynamicsTerm> solveDynamicsTerms;
-  std::vector<entt::entity> tracedEntities;
-  std::vector<entt::entity> blockedEntities;
-  std::vector<entt::entity> writebackEntities;
-  std::vector<entt::entity> orderedEntities;
-  std::vector<int> visitState;
-  std::vector<double> contactPowerSum;
-  std::vector<std::uint8_t> sawNonStationaryContactBody;
-  std::vector<std::uint8_t> stationaryContactBody;
+  std::vector<entt::entity, common::StlAllocator<entt::entity>> tracedEntities;
+  std::vector<entt::entity, common::StlAllocator<entt::entity>> blockedEntities;
+  std::vector<entt::entity, common::StlAllocator<entt::entity>>
+      writebackEntities;
+  std::vector<entt::entity, common::StlAllocator<entt::entity>> orderedEntities;
+  std::vector<int, common::StlAllocator<int>> visitState;
+  std::vector<double, common::StlAllocator<double>> contactPowerSum;
+  std::vector<std::uint8_t, common::StlAllocator<std::uint8_t>>
+      sawNonStationaryContactBody;
+  std::vector<std::uint8_t, common::StlAllocator<std::uint8_t>>
+      stationaryContactBody;
   sxdetail::RigidIpcProjectedNewtonSolveResult solveResult;
   sxdetail::RigidIpcProjectedNewtonSolveScratch solveScratch;
 };
@@ -302,15 +329,15 @@ Eigen::Isometry3d computeFrameWorldTransform(
 }
 
 //==============================================================================
-bool containsEntity(
-    const std::vector<entt::entity>& entities, entt::entity entity)
+template <typename EntityVector>
+bool containsEntity(const EntityVector& entities, entt::entity entity)
 {
   return std::find(entities.begin(), entities.end(), entity) != entities.end();
 }
 
 //==============================================================================
-std::size_t findEntityIndex(
-    const std::vector<entt::entity>& entities, entt::entity entity)
+template <typename EntityVector>
+std::size_t findEntityIndex(const EntityVector& entities, entt::entity entity)
 {
   for (std::size_t i = 0; i < entities.size(); ++i) {
     if (entities[i] == entity) {
@@ -325,7 +352,7 @@ std::size_t findEntityIndex(
 entt::entity findNearestRigidBodyAncestor(
     const detail::WorldRegistry& registry,
     entt::entity entity,
-    const std::vector<entt::entity>& rigidBodyEntities)
+    const auto& rigidBodyEntities)
 {
   while (entity != entt::null) {
     if (containsEntity(rigidBodyEntities, entity)) {
@@ -346,8 +373,7 @@ entt::entity findNearestRigidBodyAncestor(
 
 //==============================================================================
 bool hasRigidBodyFrameDependency(
-    const detail::WorldRegistry& registry,
-    const std::vector<entt::entity>& rigidBodyEntities)
+    const detail::WorldRegistry& registry, const auto& rigidBodyEntities)
 {
   for (const auto entity : rigidBodyEntities) {
     const auto& frameState = registry.get<comps::FrameState>(entity);
@@ -364,9 +390,9 @@ bool hasRigidBodyFrameDependency(
 //==============================================================================
 void appendRigidBodyParentBeforeChild(
     const detail::WorldRegistry& registry,
-    const std::vector<entt::entity>& rigidBodyEntities,
-    std::vector<int>& visitState,
-    std::vector<entt::entity>& ordered,
+    const auto& rigidBodyEntities,
+    auto& visitState,
+    auto& ordered,
     std::size_t index)
 {
   if (visitState[index] == 2) {
@@ -403,9 +429,9 @@ void appendRigidBodyParentBeforeChild(
 //==============================================================================
 void orderRigidBodiesParentBeforeChild(
     const detail::WorldRegistry& registry,
-    const std::vector<entt::entity>& rigidBodyEntities,
-    std::vector<entt::entity>& ordered,
-    std::vector<int>& visitState)
+    const auto& rigidBodyEntities,
+    auto& ordered,
+    auto& visitState)
 {
   ordered.clear();
   ordered.reserve(rigidBodyEntities.size());
@@ -7961,11 +7987,16 @@ void copyRigidIpcRuntimeBodyPreservingSurfaceCapacity(
 }
 
 //==============================================================================
+template <
+    typename RuntimeBodyVector,
+    typename SolverBodyVector,
+    typename SurfaceVector,
+    typename DynamicsTermVector>
 void prepareRigidIpcSolverScratch(
-    const std::vector<RigidIpcRuntimeBody>& runtimeBodies,
-    std::vector<RigidIpcRuntimeBody>& solverBodies,
-    std::vector<sxdetail::RigidIpcBarrierSurface>& surfaces,
-    std::vector<sxdetail::RigidIpcBodyDynamicsTerm>& dynamicsTerms)
+    const RuntimeBodyVector& runtimeBodies,
+    SolverBodyVector& solverBodies,
+    SurfaceVector& surfaces,
+    DynamicsTermVector& dynamicsTerms)
 {
   std::size_t solverCount = 0u;
   for (const auto& body : runtimeBodies) {
@@ -8294,10 +8325,9 @@ sxdetail::RigidIpcBodyDynamicsTerm makeRuntimeRigidIpcDynamicsTerm(
 }
 
 //==============================================================================
+template <typename RuntimeBodyVector>
 void collectRigidIpcRuntimeBodies(
-    const World& world,
-    RigidIpcSolverStats& stats,
-    std::vector<RigidIpcRuntimeBody>& bodies)
+    const World& world, RigidIpcSolverStats& stats, RuntimeBodyVector& bodies)
 {
   const auto& registry = dart::simulation::detail::registryOf(world);
   auto view = registry.view<
@@ -8380,8 +8410,9 @@ void collectRigidIpcRuntimeBodies(
 }
 
 //==============================================================================
+template <typename RuntimeBodyVector>
 std::size_t findRuntimeBodyIndex(
-    const std::vector<RigidIpcRuntimeBody>& bodies, const entt::entity entity)
+    const RuntimeBodyVector& bodies, const entt::entity entity)
 {
   for (std::size_t i = 0; i < bodies.size(); ++i) {
     if (bodies[i].entity == entity) {
@@ -8392,8 +8423,8 @@ std::size_t findRuntimeBodyIndex(
 }
 
 //==============================================================================
-void clearKinematicBodyStepTraces(
-    World& world, std::vector<entt::entity>& tracedEntities)
+template <typename EntityVector>
+void clearKinematicBodyStepTraces(World& world, EntityVector& tracedEntities)
 {
   auto& registry = dart::simulation::detail::registryOf(world);
   auto view = registry.view<comps::KinematicBodyStepTrace>();
@@ -8470,11 +8501,11 @@ void applyKinematicRuntimeBody(World& world, const RigidIpcRuntimeBody& body)
 //==============================================================================
 void applyRigidIpcRuntimeResult(
     World& world,
-    const std::vector<RigidIpcRuntimeBody>& bodies,
+    const auto& bodies,
     const sxdetail::RigidIpcProjectedNewtonSolveResult& result,
-    std::vector<entt::entity>& writebackEntities,
-    std::vector<entt::entity>& orderedEntities,
-    std::vector<int>& visitState)
+    auto& writebackEntities,
+    auto& orderedEntities,
+    auto& visitState)
 {
   auto& registry = dart::simulation::detail::registryOf(world);
   writebackEntities.clear();
@@ -8508,11 +8539,11 @@ void applyRigidIpcRuntimeResult(
 //==============================================================================
 void applyRigidIpcKinematicRuntimeBodies(
     World& world,
-    const std::vector<RigidIpcRuntimeBody>& bodies,
-    const std::vector<entt::entity>& blockedKinematicEntities,
-    std::vector<entt::entity>& writebackEntities,
-    std::vector<entt::entity>& orderedEntities,
-    std::vector<int>& visitState)
+    const auto& bodies,
+    const auto& blockedKinematicEntities,
+    auto& writebackEntities,
+    auto& orderedEntities,
+    auto& visitState)
 {
   auto& registry = dart::simulation::detail::registryOf(world);
   writebackEntities.clear();
@@ -8541,9 +8572,9 @@ void applyRigidIpcKinematicRuntimeBodies(
 
 //==============================================================================
 void blockRejectedRigidIpcKinematicBody(
-    const std::vector<RigidIpcRuntimeBody>& solverBodies,
+    const auto& solverBodies,
     const std::size_t solverBodyIndex,
-    std::vector<entt::entity>& blockedEntities)
+    auto& blockedEntities)
 {
   if (solverBodyIndex >= solverBodies.size()
       || !solverBodies[solverBodyIndex].kinematic) {
@@ -8559,9 +8590,9 @@ void blockRejectedRigidIpcKinematicBody(
 
 //==============================================================================
 void blockedKinematicEntitiesAfterRejectedRigidIpcSolve(
-    const std::vector<RigidIpcRuntimeBody>& solverBodies,
+    const auto& solverBodies,
     const sxdetail::RigidIpcProjectedNewtonSolveResult& result,
-    std::vector<entt::entity>& blockedEntities)
+    auto& blockedEntities)
 {
   blockedEntities.clear();
   const auto blockBodyPair = [&](const std::size_t bodyA,
@@ -8584,13 +8615,13 @@ void blockedKinematicEntitiesAfterRejectedRigidIpcSolve(
 //==============================================================================
 void applyRigidIpcKinematicRuntimeBodiesAfterRejectedSolve(
     World& world,
-    const std::vector<RigidIpcRuntimeBody>& runtimeBodies,
-    const std::vector<RigidIpcRuntimeBody>& solverBodies,
+    const auto& runtimeBodies,
+    const auto& solverBodies,
     const sxdetail::RigidIpcProjectedNewtonSolveResult& result,
-    std::vector<entt::entity>& blockedEntities,
-    std::vector<entt::entity>& writebackEntities,
-    std::vector<entt::entity>& orderedEntities,
-    std::vector<int>& visitState)
+    auto& blockedEntities,
+    auto& writebackEntities,
+    auto& orderedEntities,
+    auto& visitState)
 {
   // Rejected dynamic solve results are discarded, but kinematic bodies that did
   // not participate in active IPC rows or the limiting CCD pair still have an
@@ -8610,11 +8641,11 @@ void applyRigidIpcKinematicRuntimeBodiesAfterRejectedSolve(
 
 //==============================================================================
 bool canApplyRestingContactNoOp(
-    const std::vector<RigidIpcRuntimeBody>& bodies,
+    const auto& bodies,
     const sxdetail::RigidIpcProjectedNewtonSolveResult& result,
-    std::vector<double>& contactPowerSum,
-    std::vector<std::uint8_t>& sawNonStationaryContactBody,
-    std::vector<std::uint8_t>& stationaryContactBody)
+    auto& contactPowerSum,
+    auto& sawNonStationaryContactBody,
+    auto& stationaryContactBody)
 {
   if (!result.failed
       || result.status
@@ -9438,7 +9469,10 @@ RigidIpcContactStage::RigidIpcContactStage(
   : m_options(sanitizeRigidIpcContactStageOptions(options)),
     m_memoryManager(memoryManager),
     m_scratch(
-        constructStageOwnedScratch<Scratch>(memoryManager),
+        memoryManager != nullptr
+            ? constructStageOwnedScratch<Scratch>(
+                  memoryManager, memoryManager->getFreeAllocator())
+            : constructStageOwnedScratch<Scratch>(nullptr),
         ScratchDeleter{memoryManager})
 {
 }
