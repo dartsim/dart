@@ -1901,6 +1901,8 @@ def test_simulation_world_articulated_non_cardinal_prismatic_reset_from_python()
         world.step()
 
     assert not slider.is_broken
+    assert slider.type == sx.JointType.PRISMATIC
+    assert slider.num_dofs == 1
     assert slider.child_link == body
     with pytest.raises(Exception, match="parent endpoint"):
         _ = slider.parent_link
@@ -2007,6 +2009,8 @@ def test_simulation_world_articulated_non_cardinal_revolute_reset_from_python():
         world.step()
 
     assert not hinge.is_broken
+    assert hinge.type == sx.JointType.REVOLUTE
+    assert hinge.num_dofs == 1
     assert hinge.child_link == body
     with pytest.raises(Exception, match="parent endpoint"):
         _ = hinge.parent_link
@@ -2111,6 +2115,8 @@ def test_simulation_world_articulated_non_cardinal_pair_motors_reset_from_python
         slider_world.step()
 
     assert not slider.is_broken
+    assert slider.type == sx.JointType.PRISMATIC
+    assert slider.num_dofs == 1
     assert slider.parent_link == slider_parent
     assert slider.child_link == slider_child
     assert np.asarray(slider.axis, dtype=float).tolist() == pytest.approx(
@@ -2243,6 +2249,8 @@ def test_simulation_world_articulated_non_cardinal_pair_motors_reset_from_python
         hinge_world.step()
 
     assert not hinge.is_broken
+    assert hinge.type == sx.JointType.REVOLUTE
+    assert hinge.num_dofs == 1
     assert hinge.parent_link == hinge_parent
     assert hinge.child_link == hinge_child
     assert np.asarray(hinge.axis, dtype=float).tolist() == pytest.approx(
