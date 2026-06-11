@@ -4563,6 +4563,13 @@ def test_simulation_world_articulated_pair_motor_breakage_reset_from_python():
     world.step()
 
     assert not slider.is_broken
+    assert slider.type == sx.JointType.PRISMATIC
+    assert slider.num_dofs == 1
+    assert slider.parent_link == parent
+    assert slider.child_link == child
+    assert np.asarray(slider.axis, dtype=float).tolist() == pytest.approx(
+        slider_axis.tolist()
+    )
     reset_orthogonal_residual = orthogonal_anchor_residual()
     assert reset_orthogonal_residual < max_broken_orthogonal_residual * 0.05
     assert reset_orthogonal_residual < 1e-3
@@ -4669,6 +4676,13 @@ def test_simulation_world_articulated_pair_revolute_breakage_reset_from_python()
     world.step()
 
     assert not hinge.is_broken
+    assert hinge.type == sx.JointType.REVOLUTE
+    assert hinge.num_dofs == 1
+    assert hinge.parent_link == parent
+    assert hinge.child_link == child
+    assert np.asarray(hinge.axis, dtype=float).tolist() == pytest.approx(
+        hinge_axis.tolist()
+    )
     assert anchor_residual() < 1e-6
     assert axis_tilt() < 1e-6
     assert relative_yaw() > first_step_yaw
