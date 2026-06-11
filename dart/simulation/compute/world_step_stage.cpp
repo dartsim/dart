@@ -230,8 +230,16 @@ struct RigidBodyNode
 
 struct RigidBodyIntegrationStage::Scratch
 {
-  std::vector<entt::entity> entities;
-  std::vector<RigidBodyNode> nodes;
+  Scratch() = default;
+
+  explicit Scratch(common::MemoryAllocator& allocator)
+    : entities(common::StlAllocator<entt::entity>{allocator}),
+      nodes(common::StlAllocator<RigidBodyNode>{allocator})
+  {
+  }
+
+  std::vector<entt::entity, common::StlAllocator<entt::entity>> entities;
+  std::vector<RigidBodyNode, common::StlAllocator<RigidBodyNode>> nodes;
 };
 
 namespace {
@@ -465,8 +473,7 @@ void orderRigidBodiesParentBeforeChild(
 }
 
 //==============================================================================
-ComputeNode* findRigidBodyNode(
-    const std::vector<RigidBodyNode>& nodes, entt::entity entity)
+ComputeNode* findRigidBodyNode(const auto& nodes, entt::entity entity)
 {
   const auto it = std::find_if(
       nodes.begin(), nodes.end(), [entity](const RigidBodyNode& entry) {
@@ -880,13 +887,46 @@ void KinematicsStage::execute(World& world, ComputeExecutor& executor)
 
 //==============================================================================
 RigidBodyIntegrationStage::RigidBodyIntegrationStage(std::size_t batchSize)
+  : RigidBodyIntegrationStage(batchSize, nullptr)
+{
+}
+
+//==============================================================================
+RigidBodyIntegrationStage::RigidBodyIntegrationStage(
+    common::MemoryManager* memoryManager)
+  : RigidBodyIntegrationStage(64, memoryManager)
+{
+}
+
+//==============================================================================
+RigidBodyIntegrationStage::RigidBodyIntegrationStage(
+    std::size_t batchSize, common::MemoryManager* memoryManager)
   : m_batchSize(std::max<std::size_t>(1, batchSize)),
-    m_scratch(std::make_unique<Scratch>())
+    m_memoryManager(memoryManager),
+    m_scratch(createScratch(memoryManager), ScratchDeleter{memoryManager})
 {
 }
 
 //==============================================================================
 RigidBodyIntegrationStage::~RigidBodyIntegrationStage() = default;
+
+//==============================================================================
+void RigidBodyIntegrationStage::ScratchDeleter::operator()(
+    Scratch* scratch) const noexcept
+{
+  destroyStageOwnedScratch(memoryManager, scratch);
+}
+
+//==============================================================================
+RigidBodyIntegrationStage::Scratch* RigidBodyIntegrationStage::createScratch(
+    common::MemoryManager* memoryManager)
+{
+  if (memoryManager != nullptr) {
+    return constructStageOwnedScratch<Scratch>(
+        memoryManager, memoryManager->getFreeAllocator());
+  }
+  return constructStageOwnedScratch<Scratch>(nullptr);
+}
 
 //==============================================================================
 std::string_view RigidBodyIntegrationStage::getName() const noexcept
@@ -920,7 +960,8 @@ void RigidBodyIntegrationStage::execute(World& world, ComputeExecutor& executor)
       comps::FrameCache>();
 
   if (m_scratch == nullptr) {
-    m_scratch = std::make_unique<Scratch>();
+    m_scratch = ScratchPtr(
+        createScratch(m_memoryManager), ScratchDeleter{m_memoryManager});
   }
   auto& entities = m_scratch->entities;
   entities.clear();
@@ -929,7 +970,9 @@ void RigidBodyIntegrationStage::execute(World& world, ComputeExecutor& executor)
     entities.push_back(entity);
   }
 
-  ComputeGraph graph;
+  auto graph = m_memoryManager != nullptr
+                   ? ComputeGraph(m_memoryManager->getFreeAllocator())
+                   : ComputeGraph();
   const auto gravity = world.getGravity();
   const auto timeStep = world.getTimeStep();
   if (hasRigidBodyFrameDependency(registry, entities)) {

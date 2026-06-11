@@ -755,6 +755,12 @@ Follow-up progress after PR #2956:
   uses the World free allocator; a focused heap-counter test verifies first
   `prepare()` does not allocate from the global heap. Other nested stage
   scratch payloads remain evidence-first follow-up work.
+- The legacy graph-backed `RigidBodyIntegrationStage` can now borrow a
+  `MemoryManager` as well. Its stage-owned rigid-body entity and dependency-node
+  scratch vectors reserve from the provided free allocator, and its transient
+  `ComputeGraph` uses the same allocator root for owned graph storage. A
+  focused parent/child custom-stage test verifies the persistent scratch vector
+  reserves use and release the provided free allocator.
 - The next nested route covers `RigidBodyContactStage`'s sequential-impulse
   constraint vector. A focused compact contact prepare verifies the vector's
   first reserve increases the World free-list allocation count. AVBD contact

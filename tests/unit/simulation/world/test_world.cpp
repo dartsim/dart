@@ -2781,6 +2781,47 @@ TEST(World, RigidBodyVelocityScratchPayloadUsesWorldAllocator)
   EXPECT_EQ(heapCounter.allocationBytes(), 0u);
 }
 
+TEST(World, RigidBodyIntegrationStageScratchUsesProvidedAllocator)
+{
+  namespace common = dart::common;
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  sx::RigidBodyOptions parentOptions;
+  parentOptions.position = Eigen::Vector3d(1.0, 0.0, 0.0);
+  parentOptions.linearVelocity = Eigen::Vector3d(0.25, 0.0, 0.0);
+  auto parent
+      = world.addRigidBody("integration_allocator_parent", parentOptions);
+
+  sx::RigidBodyOptions childOptions;
+  childOptions.position = Eigen::Vector3d(2.0, 0.0, 0.0);
+  childOptions.linearVelocity = Eigen::Vector3d(0.5, 0.0, 0.0);
+  auto child = world.addRigidBody("integration_allocator_child", childOptions);
+  child.setParentFrame(parent);
+
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.01);
+  world.enterSimulationMode();
+
+  common::MemoryManager memoryManager;
+  auto& freeList = memoryManager.getFreeListAllocator();
+  const auto allocationsBeforeStage = freeList.getAllocationCount();
+
+  {
+    sx::compute::SequentialExecutor executor;
+    sx::compute::RigidBodyIntegrationStage stage(1, &memoryManager);
+    const auto allocationsAfterStage = freeList.getAllocationCount();
+
+    stage.execute(world, executor);
+
+    EXPECT_GE(freeList.getAllocationCount(), allocationsAfterStage + 2u)
+        << "allocator-aware rigid integration scratch should reserve entity "
+           "and dependency-node vectors from the provided free allocator";
+  }
+
+  EXPECT_EQ(freeList.getAllocationCount(), allocationsBeforeStage);
+}
+
 TEST(World, RigidBodyContactScratchPayloadUsesWorldAllocator)
 {
   namespace sx = dart::simulation;

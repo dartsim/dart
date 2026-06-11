@@ -737,7 +737,8 @@ without explicit maintainer approval.
 Continue with evidence-first HMM follow-up work on `origin/main`: built-in
 stage-owned scratch/cache object roots are now allocator-aware, and the
 rigid-body velocity force-batch payload plus rigid-body contact
-sequential-impulse constraint vector, plus the `WorldKinematicsGraph`
+sequential-impulse constraint vector, the legacy rigid-body integration
+entity/dependency-node scratch vectors, plus the `WorldKinematicsGraph`
 entity-node cache, `ComputeGraph` owned node/name lookup/edge/order storage,
 rigid IPC
 top-level scratch vectors, rigid IPC solver option/result vectors, and rigid IPC
