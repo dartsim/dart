@@ -101,6 +101,7 @@ const Eigen::Vector3d kRagdollTorsoHalfExtents(0.10, 0.07, 0.14);
 const Eigen::Vector3d kRagdollArmHalfExtents(0.12, 0.025, 0.035);
 const Eigen::Vector3d kRagdollLegHalfExtents(0.035, 0.04, 0.16);
 constexpr double kRagdollHeadRadius = 0.055;
+constexpr std::size_t kAbdReducedWreckingBallPairCount = 1;
 constexpr std::size_t kAbdReducedCardCount = 8;
 const std::array<Eigen::Vector3d, 4> kTerrainWheelOffsets{{
     Eigen::Vector3d(-0.16, -0.14, -0.10),
@@ -1173,6 +1174,65 @@ struct AbdHouseOfCardsFixture
   std::vector<sxdetail::AffineBodyState> initialCards;
 };
 
+struct AbdWreckingBallFixture
+{
+  AbdWreckingBallFixture()
+  {
+    options.solve.barrier.squaredActivationDistance = 0.25;
+    options.solve.barrier.stiffness = 0.05;
+    options.solve.barrier.projectHessianToPsd = true;
+    options.solve.inertialWeight = 1.0;
+    options.solve.orthogonalityStiffness = 0.5;
+    options.solve.gradientTolerance = 1e-5;
+    options.solve.maxIterations = 72;
+    options.solve.maxLineSearchIterations = 32;
+    options.solve.maxStepNorm = 0.18;
+    options.timeStep = 0.025;
+    options.gravity = Eigen::Vector3d(0.0, 0.0, -9.81);
+
+    pointBody.translation = Eigen::Vector3d(0.0, 0.0, 0.10);
+    pointBody.linearMap
+        = Eigen::AngleAxisd(0.06, Eigen::Vector3d::UnitY()).toRotationMatrix();
+    pointBody.linearVelocity = Eigen::Vector3d(0.18, 0.0, -2.2);
+    pointBody.affineVelocity(0, 1) = 0.25;
+    pointBody.affineVelocity(1, 2) = -0.2;
+    pointBody.mass = 0.2;
+
+    triangleBody.translation = Eigen::Vector3d(0.02, -0.01, 0.0);
+    triangleBody.linearMap
+        = Eigen::AngleAxisd(-0.03, Eigen::Vector3d::UnitX()).toRotationMatrix();
+    triangleBody.linearVelocity = Eigen::Vector3d(-0.08, 0.0, 0.15);
+    triangleBody.affineVelocity(0, 2) = -0.18;
+    triangleBody.affineVelocity(2, 1) = 0.12;
+    triangleBody.mass = 0.8;
+
+    point = Eigen::Vector3d(0.0, 0.0, 0.0);
+    triangleA = Eigen::Vector3d(-0.55, -0.45, 0.0);
+    triangleB = Eigen::Vector3d(0.55, -0.45, 0.0);
+    triangleC = Eigen::Vector3d(-0.55, 0.55, 0.0);
+  }
+
+  sxdetail::AffinePointTrianglePairRuntimeStepResult step() const
+  {
+    return sxdetail::affinePointTrianglePairRuntimeStep(
+        pointBody,
+        point,
+        triangleBody,
+        triangleA,
+        triangleB,
+        triangleC,
+        options);
+  }
+
+  sxdetail::AffinePointTriangleRuntimeStepOptions options;
+  sxdetail::AffineBodyState pointBody;
+  sxdetail::AffineBodyState triangleBody;
+  Eigen::Vector3d point = Eigen::Vector3d::Zero();
+  Eigen::Vector3d triangleA = Eigen::Vector3d::Zero();
+  Eigen::Vector3d triangleB = Eigen::Vector3d::Zero();
+  Eigen::Vector3d triangleC = Eigen::Vector3d::Zero();
+};
+
 } // namespace
 
 //==============================================================================
@@ -1782,6 +1842,62 @@ static void BM_Plan083CpuScene_ragdoll_reduced_world_step(
       = fixture.minLegGroundClearance();
 }
 BENCHMARK(BM_Plan083CpuScene_ragdoll_reduced_world_step)
+    ->Unit(benchmark::kMillisecond);
+
+//==============================================================================
+static void BM_Plan083CpuScene_abd_wrecking_ball_reduced_pair_runtime_step(
+    benchmark::State& state)
+{
+  AbdWreckingBallFixture fixture;
+
+  sxdetail::AffinePointTrianglePairRuntimeStepResult result;
+  for (auto _ : state) {
+    result = fixture.step();
+    benchmark::DoNotOptimize(result.solve.pointState.translation.data());
+    benchmark::DoNotOptimize(result.solve.triangleState.translation.data());
+    benchmark::DoNotOptimize(result.solve.pointState.linearMap.data());
+    benchmark::DoNotOptimize(result.solve.triangleState.linearMap.data());
+    benchmark::ClobberMemory();
+  }
+
+  const bool stepFailed
+      = !result.valid || !result.converged || !result.solve.barrierActive;
+  const auto targetBarrier = sxdetail::affinePointTriangleBarrier(
+      result.pointInertialTarget,
+      fixture.point,
+      result.triangleInertialTarget,
+      fixture.triangleA,
+      fixture.triangleB,
+      fixture.triangleC,
+      fixture.options.solve.barrier);
+
+  state.counters["row_abd_vs_rigid_wreck"] = 1.0;
+  state.counters["paper_scale"] = 0.0;
+  state.counters["affine_body_count"] = 2.0;
+  state.counters["dynamic_pair_count"]
+      = static_cast<double>(kAbdReducedWreckingBallPairCount);
+  state.counters["valid_step_count"] = result.valid ? 1.0 : 0.0;
+  state.counters["failed_steps"] = stepFailed ? 1.0 : 0.0;
+  state.counters["converged_solve_count"] = result.converged ? 1.0 : 0.0;
+  state.counters["barrier_active_count"]
+      = result.solve.barrierActive ? 1.0 : 0.0;
+  state.counters["solver_iterations"]
+      = static_cast<double>(result.solve.iterations);
+  state.counters["total_objective_decrease"]
+      = result.solve.initialValue - result.solve.finalValue;
+  state.counters["max_final_gradient_norm"] = result.solve.finalGradientNorm;
+  state.counters["min_target_squared_distance"]
+      = targetBarrier.primitive.squaredDistance;
+  state.counters["min_final_squared_distance"]
+      = result.solve.finalSquaredDistance;
+  state.counters["squared_activation_distance"]
+      = fixture.options.solve.barrier.squaredActivationDistance;
+  state.counters["max_linear_speed_m_s"] = result.maxLinearSpeed;
+  state.counters["max_affine_velocity_norm"] = result.maxAffineVelocityNorm;
+  state.counters["max_displacement_norm_m"]
+      = std::max(result.pointDisplacementNorm, result.triangleDisplacementNorm);
+}
+BENCHMARK(BM_Plan083CpuScene_abd_wrecking_ball_reduced_pair_runtime_step)
     ->Unit(benchmark::kMillisecond);
 
 //==============================================================================

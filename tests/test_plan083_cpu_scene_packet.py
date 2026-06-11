@@ -168,6 +168,34 @@ def _abd_house_cards_packet(**overrides):
     return {"benchmarks": [row]}
 
 
+def _abd_wrecking_ball_packet(**overrides):
+    row = {
+        "name": "BM_Plan083CpuScene_abd_wrecking_ball_reduced_pair_runtime_step_median",
+        "run_name": "BM_Plan083CpuScene_abd_wrecking_ball_reduced_pair_runtime_step",
+        "aggregate_name": "median",
+        "real_time": 5.0,
+        "cpu_time": 5.0,
+        "time_unit": "ms",
+        "affine_body_count": 2,
+        "dynamic_pair_count": 1,
+        "valid_step_count": 1,
+        "failed_steps": 0,
+        "converged_solve_count": 1,
+        "barrier_active_count": 1,
+        "solver_iterations": 18,
+        "total_objective_decrease": 0.04,
+        "max_final_gradient_norm": 1e-8,
+        "min_target_squared_distance": 1e-4,
+        "min_final_squared_distance": 2e-3,
+        "squared_activation_distance": 0.25,
+        "max_linear_speed_m_s": 0.6,
+        "max_affine_velocity_norm": 0.9,
+        "max_displacement_norm_m": 0.02,
+    }
+    row.update(overrides)
+    return {"benchmarks": [row]}
+
+
 def _lying_flat_packet(**overrides):
     row = {
         "name": "BM_Plan083CpuScene_lying_flat_reduced_world_step_median",
@@ -476,6 +504,27 @@ def test_plan083_cpu_scene_packet_accepts_reduced_abd_house_cards() -> None:
     assert row["wall_time_ns"] == 7.0e6
 
 
+def test_plan083_cpu_scene_packet_accepts_reduced_abd_wrecking_ball() -> None:
+    module = _load_module()
+
+    packet = module.make_packet(
+        _abd_wrecking_ball_packet(),
+        max_equality_residual=1e-8,
+        scene="abd_wrecking_ball",
+    )
+
+    row = packet["plan083_cpu_scene_packet"]
+    assert row["row_id"] == "abd-vs-rigid-wreck"
+    assert row["scene_id"] == "plan083_abd_wrecking_ball"
+    assert row["paper_scale"] is False
+    assert row["runtime_path"] == "detail affine point-triangle pair runtime step"
+    assert row["affine_body_count"] == 2
+    assert row["dynamic_pair_count"] == 1
+    assert row["converged_solve_count"] == 1
+    assert row["barrier_active_count"] == 1
+    assert row["wall_time_ns"] == 5.0e6
+
+
 def test_plan083_cpu_scene_packet_accepts_reduced_lying_flat() -> None:
     module = _load_module()
 
@@ -749,6 +798,17 @@ def test_plan083_cpu_scene_packet_rejects_abd_cards_with_large_gradient() -> Non
             _abd_house_cards_packet(max_final_gradient_norm=1.1e-5),
             max_equality_residual=1e-8,
             scene="abd_house_of_cards",
+        )
+
+
+def test_plan083_cpu_scene_packet_rejects_abd_wreck_without_pair() -> None:
+    module = _load_module()
+
+    with pytest.raises(module.Plan083CpuScenePacketError, match="dynamic"):
+        module.make_packet(
+            _abd_wrecking_ball_packet(dynamic_pair_count=0),
+            max_equality_residual=1e-8,
+            scene="abd_wrecking_ball",
         )
 
 

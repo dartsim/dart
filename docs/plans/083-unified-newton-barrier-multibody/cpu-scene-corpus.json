@@ -21,9 +21,9 @@
   "summary": {
     "row_count": 26,
     "status_counts": {
-      "in-progress": 17,
+      "in-progress": 18,
       "not-applicable": 1,
-      "planned": 8
+      "planned": 7
     },
     "target_type_counts": {
       "benchmark-manifest": 1,
@@ -284,17 +284,17 @@
       "source_ref": "ABD Wrecking Ball",
       "dart_target_type": "comparison-benchmark",
       "priority": "P2",
-      "status": "planned",
+      "status": "in-progress",
       "py_demo_category": "not-required",
       "py_demo_scene_ids": [],
       "smoke_command": "not-required",
       "long_horizon_visual_command": "not-required",
       "visual_evidence_artifact": "not-required",
-      "benchmark_command": "pixi run bm bm_plan083_cpu_scene_corpus -- --benchmark_filter=abd_wrecking_ball",
+      "benchmark_command": "pixi run bm-plan083-cpu-abd-wrecking-ball-packet",
       "benchmark_profile_artifact": ".benchmark_results/plan083/cpu_scene_corpus/abd_wrecking_ball.json",
-      "expected_invariant": "Wrecking-ball rigid comparison reports matched accuracy against rigid IPC and ABD packet rows.",
-      "limitation_status": "Waiting for ABD runtime stepping and 14k-triangle asset policy.",
-      "notes_or_gap": "No launchable scene until ABD runtime path exists."
+      "expected_invariant": "Reduced ABD wrecking-ball packet reports a valid two-body affine point-triangle runtime step, convergence, active barrier, objective decrease, and velocity updates.",
+      "limitation_status": "Reduced two-body affine point-triangle runtime-step packet only; 14k-triangle wrecking-ball assets, rigid IPC comparison timing, and paper-scale reproduction remain planned.",
+      "notes_or_gap": "bm-plan083-cpu-abd-wrecking-ball-packet exercises the internal ABD pair runtime-step helper for one reduced dynamic point-triangle impact; it is not the paper-scale wrecking-ball asset or rigid IPC comparison row yet."
     },
     {
       "row_id": "abd-vs-rigid-cards",

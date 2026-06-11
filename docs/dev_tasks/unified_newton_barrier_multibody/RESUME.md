@@ -229,11 +229,13 @@ The ABD runtime-evidence follow-up is branch-local on
 `simx/plan083-phase6-abd-runtime-evidence`: the private ABD point-triangle
 micro-solve now has a reduced runtime-step helper that builds an inertial target
 from timestep, velocity, and gravity, then updates affine linear/affine
-velocities from the solved state. The branch adds a reduced house-of-cards
-packet row for `abd-vs-rigid-cards` with convergence, active-barrier,
-objective-decrease, contact-distance, and velocity-update counters. It is not a
-card-stack asset import, rigid IPC timing comparison, paper-scale ABD solver, or
-completion claim.
+velocities from the solved state. The branch also adds a two-body affine
+point-triangle pair runtime-step helper for dynamic affine/affine contact. The
+reduced house-of-cards packet row for `abd-vs-rigid-cards` and the reduced
+wrecking-ball packet row for `abd-vs-rigid-wreck` validate convergence,
+active-barrier, objective-decrease, contact-distance, and velocity-update
+counters. These packets are not card-stack or wrecking-ball asset imports,
+rigid IPC timing comparisons, paper-scale ABD solvers, or completion claims.
 
 ## Last Session Summary
 
@@ -315,21 +317,22 @@ build/CTest entries.
 ## Current Branch
 
 `simx/plan083-phase6-abd-runtime-evidence` - continues Phase 6 CPU corpus
-evidence after merged PRs #2970 and #2971. Keep reduced ABD runtime-step packet
-work and docs on this branch until the current Phase 6 follow-up is
-reviewer-sized; do not split each planned ABD row into a micro-PR.
+evidence after merged PRs #2970 and #2971. Keep reduced ABD runtime-step and
+pair runtime-step packet work and docs on this branch until the current Phase 6
+follow-up is reviewer-sized; do not split each planned ABD row into a micro-PR.
 
 ## Immediate Next Step
 
 Continue `simx/plan083-phase6-abd-runtime-evidence` with reduced CPU corpus
-packets only where runtime evidence exists. The current entry point is the
-reduced ABD house-of-cards packet for `abd-vs-rigid-cards`; keep the row
-explicitly `in-progress` and limited to internal runtime-step evidence until
-card-stack assets, rigid IPC comparison timing, and paper-scale scene
+packets only where runtime evidence exists. The current entry points are the
+reduced ABD house-of-cards packet for `abd-vs-rigid-cards` and the reduced ABD
+wrecking-ball pair packet for `abd-vs-rigid-wreck`; keep those rows explicitly
+`in-progress` and limited to internal runtime-step evidence until card-stack and
+wrecking-ball assets, rigid IPC comparison timing, and paper-scale scene
 reproduction exist. Leave the dev-task folder active because PLAN-083
-acceptance criteria are still unmet; if the task later moves out of this
-folder, get maintainer direction before deleting it and keep the remaining
-planned CPU/GPU/scene rows in durable sidecars.
+acceptance criteria are still unmet; if the task later moves out of this folder,
+get maintainer direction before deleting it and keep the remaining planned
+CPU/GPU/scene rows in durable sidecars.
 
 ## Context That Would Be Lost
 

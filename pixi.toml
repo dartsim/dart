@@ -1463,6 +1463,9 @@ bm-phase5-gpu-packet-check = { cmd = "python scripts/check_phase5_gpu_packet.py"
 bm-plan083-cpu-abd-cards-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene abd_house_of_cards", depends-on = [
   "config",
 ] }
+bm-plan083-cpu-abd-wrecking-ball-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene abd_wrecking_ball", depends-on = [
+  "config",
+] }
 bm-plan083-cpu-candy-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene candy", depends-on = [
   "config",
 ] }

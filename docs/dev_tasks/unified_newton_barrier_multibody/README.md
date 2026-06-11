@@ -237,7 +237,7 @@ storage, or backend resources as public API.
 - No rigid curved-trajectory CCD move.
 - No sparse Newton loop merge.
 - No rigid IPC default behavior change.
-- No ABD runtime stage.
+- No public or `World`-integrated ABD runtime stage.
 - No GPU speedup claim.
 
 ## Key Decisions
@@ -286,7 +286,7 @@ storage, or backend resources as public API.
    The reduced packets may move only row-specific runtime smoke evidence;
    analytical force comparison, paper-scale rope/rod coupling, affine packing,
    twisted shell, and self-contact parity remain planned.
-3. Use the reduced ABD runtime-step packet only as internal runtime evidence;
+3. Use the reduced ABD runtime-step packets only as internal runtime evidence;
    broader ABD CPU packets still require scene-level runtime residuals, scene
    assets, and comparison baselines.
 4. Get maintainer direction before retiring
