@@ -2195,7 +2195,10 @@ struct WorldBilliardsStepCheck
   double maxMomentumError{0.0};
   double maxEnergyError{0.0};
   double minTargetSpeed{std::numeric_limits<double>::infinity()};
+  double maxTargetSpeed{0.0};
+  double targetSpeedSpread{0.0};
   double maxCueSpeed{0.0};
+  double maxOffAxisSpeed{0.0};
   std::size_t contactCount{0};
 };
 
@@ -2220,9 +2223,15 @@ WorldBilliardsStepCheck CheckWorldBilliardsStepInvariants(
         check.maxMomentumError, std::abs(momentumX - kBilliardsInitialSpeed));
     check.maxEnergyError = std::max(
         check.maxEnergyError, std::abs(energy - kBilliardsInitialEnergy));
-    check.minTargetSpeed
-        = std::min(check.minTargetSpeed, targetVelocity.norm());
+    const double targetSpeed = targetVelocity.norm();
+    check.minTargetSpeed = std::min(check.minTargetSpeed, targetSpeed);
+    check.maxTargetSpeed = std::max(check.maxTargetSpeed, targetSpeed);
     check.maxCueSpeed = std::max(check.maxCueSpeed, cueVelocity.norm());
+    check.maxOffAxisSpeed = std::max(
+        check.maxOffAxisSpeed,
+        std::max(
+            std::max(std::abs(cueVelocity.y()), std::abs(targetVelocity.y())),
+            std::max(std::abs(cueVelocity.z()), std::abs(targetVelocity.z()))));
     check.ok = check.ok && cue->getTranslation().allFinite()
                && target->getTranslation().allFinite()
                && cueVelocity.allFinite() && targetVelocity.allFinite()
@@ -2235,6 +2244,9 @@ WorldBilliardsStepCheck CheckWorldBilliardsStepInvariants(
                && std::abs(targetVelocity.z()) < 1e-10;
   }
 
+  check.targetSpeedSpread = check.maxTargetSpeed - check.minTargetSpeed;
+  check.ok = check.ok && check.targetSpeedSpread < 1e-10
+             && check.maxOffAxisSpeed < 1e-10;
   check.contactCount = world.collide().size();
   return check;
 }
@@ -10059,7 +10071,10 @@ static void BM_LcpWorldBilliardsStep_BoxedLcp(benchmark::State& state)
   state.counters["max_momentum_error"] = check.maxMomentumError;
   state.counters["max_energy_error"] = check.maxEnergyError;
   state.counters["min_target_speed"] = check.minTargetSpeed;
+  state.counters["max_target_speed"] = check.maxTargetSpeed;
+  state.counters["target_speed_spread"] = check.targetSpeedSpread;
   state.counters["max_cue_speed"] = check.maxCueSpeed;
+  state.counters["max_off_axis_speed"] = check.maxOffAxisSpeed;
   state.counters["invariant_ok"] = check.ok ? 1.0 : 0.0;
   AddBackendBuildCounters(state);
   state.SetItemsProcessed(state.iterations() * stepCount * pairCount);
