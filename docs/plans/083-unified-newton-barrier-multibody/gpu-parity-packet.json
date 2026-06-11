@@ -16,9 +16,8 @@
   "summary": {
     "row_count": 6,
     "status_counts": {
-      "in-progress": 4,
-      "measured": 1,
-      "planned": 1
+      "in-progress": 5,
+      "measured": 1
     }
   },
   "rows": [
@@ -196,9 +195,9 @@
       "row_id": "scene-parity-speedup",
       "roadmap_item": "same-scene CPU/GPU result parity and speedup",
       "owner": "PLAN-083 + PLAN-030",
-      "status": "planned",
-      "cpu_evidence_command": "not-ready: CPU scene-corpus placeholders are launchable but not runtime paper-scene reproductions",
-      "gpu_evidence_command": "not-ready: private PLAN-083 GPU same-scene packet depends on the staged rows above",
+      "status": "in-progress",
+      "cpu_evidence_command": "pixi run -e cuda bm-plan083-gpu-scene-parity-packet",
+      "gpu_evidence_command": "pixi run -e cuda bm-plan083-gpu-scene-parity-packet",
       "parity_evidence_artifact": ".benchmark_results/plan083/gpu/scene_parity_speedup.json",
       "benchmark_profile_artifact": ".benchmark_results/plan083/gpu/scene_parity_profile.json",
       "same_scene_policy": "Use the same DART scene id, timestep, material parameters, contact geometry, initial state, and acceptance invariant for CPU and GPU.",
@@ -206,8 +205,20 @@
       "timing_policy": "Report setup, transfer, candidate/CCD/local-kernel/assembly/solve subphase timings, readback, and full CPU step timing.",
       "speedup_policy": "Require speedup over DART CPU at matched accuracy; if the paper source lacks a GPU number, compare only against DART CPU and record that limitation.",
       "public_api_policy": "No public CUDA or backend exposure; scene evidence stays private/manual until a separate public promotion gate exists.",
-      "limitation_status": "Waiting for runtime CPU scene reproduction plus the private staged GPU rows above.",
-      "notes_or_gap": "This is the final Phase 7 go/no-go row and intentionally cannot pass from placeholder py-demos alone."
+      "limitation_status": "Reduced state-batch scene parity packet exists, but it covers DART scene state extraction plus private rigid-body state-batch CUDA rollout only. It does not run a GPU World::step path, contact candidate construction, CCD, barrier/friction assembly, sparse equality reduction, or global Newton solve.",
+      "notes_or_gap": "The reduced hanging-bridge state-batch packet measured max_result_abs_error=1.1102230246251565e-16 and speedup=18.792052761946252x for 4096 replicated scenes, 7 bodies per scene, and 64 steps on 2026-06-11. Because it bypasses the GPU contact/constraint/Newton solver path, this row remains in-progress rather than measured.",
+      "same_scene_cpu_gpu": true,
+      "scene_id": "plan083_hanging_bridge_reduced_state_batch",
+      "state_path": "private rigid-body state-batch CUDA rollout",
+      "world_count": 4096,
+      "scene_body_count": 7,
+      "body_count": 7,
+      "step_count": 64,
+      "time_step": 0.005,
+      "max_result_abs_error": 1.1102230246251565e-16,
+      "result_abs_error_tolerance": 1e-9,
+      "speedup": 18.792052761946252,
+      "min_speedup": 1.25
     }
   ]
 }

@@ -60,8 +60,9 @@ the staged kernels and scene packets are measured.
 Phase 8 tracks the current completion audit in
 [`completion-audit.md`](completion-audit.md), validated by
 `scripts/check_plan083_completion_audit.py`. The audit records that PLAN-083 is
-not complete while planned CPU/GPU/scene rows remain, and it blocks temporary
-dev-task retirement pending maintainer direction.
+not complete while planned manifest rows and in-progress CPU/GPU/scene
+limitations remain, and it blocks temporary dev-task retirement pending
+maintainer direction.
 
 ## Cross-Plan Classification Policy
 

@@ -155,8 +155,8 @@ packet tests, `pixi run lint`, `pixi run build`, and
 Implementation-roadmap Phases 3-8 landed together in PR #2960. The Phase 8
 audit at
 `docs/plans/083-unified-newton-barrier-multibody/completion-audit.md` records
-that PLAN-083 is not complete because planned manifest, CPU scene corpus, and
-GPU parity packet rows remain. The audit intentionally blocks retiring
+that PLAN-083 is not complete because planned manifest rows and explicit
+CPU/GPU scene-packet limitations remain. The audit intentionally blocks retiring
 `docs/dev_tasks/unified_newton_barrier_multibody/` until a maintainer decides
 whether the remaining work stays active there or moves fully into durable plan
 sidecars.
@@ -167,9 +167,10 @@ The follow-up PSD projection packet slice adds
 `pixi run -e cuda bm-plan083-gpu-psd-packet` measured the 4096-block 12x12 PSD
 row with max error `2.4868995751603507e-14` and `4.451557656446166x` speedup
 over the CPU reference. This moves only the local PSD projection row to
-`measured`; contact candidates, CCD/line search, barrier/friction kernels, and
-assembly/solve now have in-progress private packets, while scene-level GPU
-speedups remain planned.
+`measured`; contact candidates, CCD/line search, barrier/friction kernels,
+assembly/solve, and reduced scene state-batch rollout now have in-progress
+private packets, while full scene-level GPU `World::step` speedups remain
+unproven.
 
 The follow-up barrier-force diagnostic slice adds
 `NewtonBarrierPrimitives.BarrierForceCurveCapturesKappaSensitivity`, which
@@ -320,22 +321,21 @@ build/CTest entries.
 
 ## Current Branch
 
-`simx/plan083-gpu-assembly-solve-packet` - continues private GPU parity
-evidence after the barrier/friction packet branch. This branch adds a private
-reduced diagonal assembly/solve packet, CUDA unit test, benchmark smoke, and
-packet writer for per-body diagonal row assembly plus independent regularized
-Newton steps only. Keep the packet row `in-progress`: off-diagonal sparse
-blocks, equality reduction, global factorization, runtime scene rows, and
-speedup remain future evidence.
+`simx/plan083-gpu-scene-parity-packet` - continues private GPU parity evidence
+after the assembly/solve packet branch. This branch adds a reduced
+hanging-bridge scene state-batch packet through DART scene extraction plus the
+private rigid-body state-batch CUDA rollout. Keep the packet row
+`in-progress`: GPU `World::step`, contact candidate construction, CCD,
+barrier/friction assembly, sparse equality reduction, and global Newton solving
+remain future evidence.
 
 ## Immediate Next Step
 
-Finish and review `simx/plan083-gpu-assembly-solve-packet`, then continue the
-remaining private GPU row in roadmap order: scene-level parity/speedup. Leave
-the dev-task folder active because PLAN-083 acceptance criteria are still unmet;
-if the task later moves out of this folder, get maintainer direction before
-deleting it and keep the remaining planned CPU/GPU/scene rows in durable
-sidecars.
+Finish and review `simx/plan083-gpu-scene-parity-packet`, then keep the
+dev-task folder active because PLAN-083 acceptance criteria are still unmet. If
+the task later moves out of this folder, get maintainer direction before
+deleting it and keep the remaining planned manifest plus in-progress
+CPU/GPU/scene limitations in durable sidecars.
 
 ## Context That Would Be Lost
 

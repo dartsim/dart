@@ -138,12 +138,16 @@ def validate_audit(
         errors.append(
             "audit must block CPU packet completion while CPU rows remain planned"
         )
+    incomplete_gpu_count = gpu_counts.get("planned", 0) + gpu_counts.get(
+        "in-progress",
+        0,
+    )
     if (
-        gpu_counts.get("planned", 0) > 0
+        incomplete_gpu_count > 0
         and _table_status(audit_text, "GPU packets exist for GPU claims") != "Blocked"
     ):
         errors.append(
-            "audit must block GPU packet completion while GPU rows remain planned"
+            "audit must block GPU packet completion while GPU rows remain incomplete"
         )
 
     errors.extend(

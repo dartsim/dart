@@ -707,6 +707,7 @@ CMAKE_BUILD_DIR=${BUILD_DIR} python scripts/cmake_build.py \
   --target bm_plan083_gpu_ccd_line_search \
   --target bm_plan083_gpu_barrier_friction \
   --target bm_newton_assembly_solve_cuda \
+  --target bm_plan083_gpu_scene_parity \
   --target bm_vbd_cuda
 """,
 ], depends-on = [
@@ -1178,6 +1179,9 @@ python scripts/run_benchmark_smoke.py "${BUILD_DIR}/bin/bm_plan083_gpu_barrier_f
 python scripts/run_benchmark_smoke.py "${BUILD_DIR}/bin/bm_newton_assembly_solve_cuda" \
   --benchmark_filter='BM_NewtonAssemblySolve(Cpu|Cuda)/4096(/real_time)?$' \
   --benchmark_min_time=0.001s
+python scripts/run_benchmark_smoke.py "${BUILD_DIR}/bin/bm_plan083_gpu_scene_parity" \
+  --benchmark_filter='BM_Plan083SceneParity(Cpu|Cuda)/1024/16(/real_time)?$' \
+  --benchmark_min_time=0.001s
 python scripts/run_benchmark_smoke.py "${BUILD_DIR}/bin/bm_vbd_cuda" \
   --benchmark_filter='BM_Vbd(Cpu|Cuda)Step/32$' \
   --benchmark_min_time=0.001s
@@ -1568,6 +1572,11 @@ bm-plan083-gpu-barrier-friction-packet = { cmd = "python scripts/write_plan083_g
   ] },
 ] }
 bm-newton-assembly-solve-packet = { cmd = "python scripts/write_newton_assembly_solve_packet.py", depends-on = [
+  { task = "build-cuda", args = [
+    "Release",
+  ] },
+] }
+bm-plan083-gpu-scene-parity-packet = { cmd = "python scripts/write_plan083_gpu_scene_parity_packet.py", depends-on = [
   { task = "build-cuda", args = [
     "Release",
   ] },
