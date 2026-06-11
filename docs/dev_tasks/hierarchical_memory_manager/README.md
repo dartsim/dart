@@ -804,9 +804,10 @@ Follow-up progress after PR #2956:
 - Default deformable projected-Newton assembly scratch now borrows that same
   World free allocator for sparse-pattern arrays, triplet assembly, PSD
   edge/tet/barrier block batches, and matrix-free block/diagonal storage. The
-  FEM rest-shape cache now uses the same allocator-backed scratch component.
-  The existing deformable stage allocator test now expects projected-Newton
-  vectors to reserve from the provided allocator, and the existing baked
+  FEM rest-shape cache and lagged friction normal/contact arrays now use the
+  same allocator-backed scratch component. The existing deformable stage
+  allocator test now expects projected-Newton vectors to reserve from the
+  provided allocator, and existing friction behavior plus baked
   World-base/global-heap gates still pass without adding scene coverage to this
   follow-up.
 - The kinematics cache follow-up routes `WorldKinematicsGraph`'s entity-node
@@ -830,9 +831,9 @@ Remaining Phase 4/5 follow-up items for the next PR:
 - Continue projected-Newton deformable scratch reuse only where profiling or a
   no-growth gate exposes a real allocation path, especially solver-private
   storage that still cannot borrow the World allocator directly
-  (`Eigen::SparseMatrix`/`VectorXd` internals and friction normal/contact
-  arrays), and differently shaped frictional self-contact, static-obstacle, or
-  inter-body CCD mixes not represented by the current gates.
+  (`Eigen::SparseMatrix`/`VectorXd` internals), and differently shaped
+  frictional self-contact, static-obstacle, or inter-body CCD mixes not
+  represented by the current gates.
 - Add any remaining default-solver deformable storage/no-heap gates for
   solver-private paths not exercised by the current direct-sparse,
   matrix-free, FEM, obstacle, surface-CCD, and compact/production

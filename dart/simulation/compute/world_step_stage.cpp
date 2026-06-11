@@ -1641,6 +1641,11 @@ using ProjectedNewtonMatrix3Vector
     = std::vector<Eigen::Matrix3d, common::StlAllocator<Eigen::Matrix3d>>;
 using ProjectedNewtonFemRestShapeVector
     = std::vector<fem::TetRestShape, common::StlAllocator<fem::TetRestShape>>;
+using ProjectedNewtonVector3Vector
+    = std::vector<Eigen::Vector3d, common::StlAllocator<Eigen::Vector3d>>;
+using ProjectedNewtonFrictionContactVector = std::vector<
+    SelfContactFrictionContact,
+    common::StlAllocator<SelfContactFrictionContact>>;
 
 //==============================================================================
 struct DeformableContactSolverScratch
@@ -1670,7 +1675,12 @@ struct DeformableContactSolverScratch
       projectedNewtonMatrixFreeDiagonalBlocks(
           common::StlAllocator<Eigen::Matrix3d>{allocator}),
       projectedNewtonMatrixFreeInverseDiagonalBlocks(
-          common::StlAllocator<Eigen::Matrix3d>{allocator})
+          common::StlAllocator<Eigen::Matrix3d>{allocator}),
+      groundFrictionNormalForce(common::StlAllocator<double>{allocator}),
+      groundFrictionNormalDirection(
+          common::StlAllocator<Eigen::Vector3d>{allocator}),
+      selfContactFrictionContacts(
+          common::StlAllocator<SelfContactFrictionContact>{allocator})
   {
   }
 
@@ -1724,9 +1734,9 @@ struct DeformableContactSolverScratch
   Eigen::VectorXd projectedNewtonMatrixFreeDirection;
   Eigen::VectorXd projectedNewtonMatrixFreeHessianDirection;
 
-  std::vector<double> groundFrictionNormalForce;
-  std::vector<Eigen::Vector3d> groundFrictionNormalDirection;
-  std::vector<SelfContactFrictionContact> selfContactFrictionContacts;
+  ProjectedNewtonScalarVector groundFrictionNormalForce;
+  ProjectedNewtonVector3Vector groundFrictionNormalDirection;
+  ProjectedNewtonFrictionContactVector selfContactFrictionContacts;
 };
 
 //==============================================================================
@@ -3868,8 +3878,8 @@ void computeStaticGroundNormalForces(
     const std::vector<Eigen::Vector3d>& positions,
     const std::vector<std::uint8_t>& fixed,
     std::span<const StaticGroundBarrier> barriers,
-    std::vector<double>& normalForce,
-    std::vector<Eigen::Vector3d>& normalDirection)
+    auto& normalForce,
+    auto& normalDirection)
 {
   normalForce.assign(positions.size(), 0.0);
   normalDirection.assign(positions.size(), Eigen::Vector3d::UnitZ());
@@ -3920,8 +3930,8 @@ void addCapsuleObstacleNormalForces(
     const std::vector<Eigen::Vector3d>& positions,
     const std::vector<std::uint8_t>& fixed,
     std::span<const CapsuleObstacleBarrier> obstacles,
-    std::vector<double>& normalForce,
-    std::vector<Eigen::Vector3d>& normalDirection)
+    auto& normalForce,
+    auto& normalDirection)
 {
   if (obstacles.empty()) {
     return;
@@ -3963,8 +3973,8 @@ void addSphereObstacleNormalForces(
     const std::vector<Eigen::Vector3d>& positions,
     const std::vector<std::uint8_t>& fixed,
     std::span<const SphereObstacleBarrier> obstacles,
-    std::vector<double>& normalForce,
-    std::vector<Eigen::Vector3d>& normalDirection)
+    auto& normalForce,
+    auto& normalDirection)
 {
   if (obstacles.empty()) {
     return;
@@ -4006,8 +4016,8 @@ void addBoxObstacleNormalForces(
     const std::vector<Eigen::Vector3d>& positions,
     const std::vector<std::uint8_t>& fixed,
     std::span<const BoxObstacleBarrier> obstacles,
-    std::vector<double>& normalForce,
-    std::vector<Eigen::Vector3d>& normalDirection)
+    auto& normalForce,
+    auto& normalDirection)
 {
   if (obstacles.empty()) {
     return;
@@ -4050,11 +4060,11 @@ struct GroundFrictionInputs
   double coefficient = 0.0; // mu
   double epsilon = 0.0;     // epsv * timeStep (mollifier displacement radius)
   const std::vector<Eigen::Vector3d>* stepStartPositions = nullptr;
-  const std::vector<double>* laggedNormalForce = nullptr;
+  std::span<const double> laggedNormalForce;
   // Per-node geometric ground normal at the lagged contact (unit, upward). When
-  // null the tangent plane defaults to xy (flat ground), preserving the legacy
+  // empty the tangent plane defaults to xy (flat ground), preserving the legacy
   // behavior exactly.
-  const std::vector<Eigen::Vector3d>* laggedNormalDirection = nullptr;
+  std::span<const Eigen::Vector3d> laggedNormalDirection;
 };
 
 //==============================================================================
@@ -4096,20 +4106,20 @@ double addGroundFrictionEnergy(
 {
   if (friction.coefficient <= 0.0 || friction.epsilon <= 0.0
       || friction.stepStartPositions == nullptr
-      || friction.laggedNormalForce == nullptr) {
+      || friction.laggedNormalForce.empty()) {
     return 0.0;
   }
 
   const auto& start = *friction.stepStartPositions;
-  const auto& normalForce = *friction.laggedNormalForce;
-  const auto* normalDirection = friction.laggedNormalDirection;
+  const auto normalForce = friction.laggedNormalForce;
+  const auto normalDirection = friction.laggedNormalDirection;
   double energy = 0.0;
   for (std::size_t i = 0; i < positions.size(); ++i) {
     if (fixed[i] != 0u || normalForce[i] <= 0.0) {
       continue;
     }
-    const Eigen::Vector3d n = (normalDirection != nullptr)
-                                  ? (*normalDirection)[i]
+    const Eigen::Vector3d n = (i < normalDirection.size())
+                                  ? normalDirection[i]
                                   : Eigen::Vector3d::UnitZ();
     const Eigen::Vector3d u = positions[i] - start[i];
     const Eigen::Vector3d tangent = u - n.dot(u) * n;
@@ -4238,7 +4248,7 @@ struct SelfContactFrictionInputs
   double coefficient = 0.0; // mu
   double epsilon = 0.0;     // epsv * timeStep
   const std::vector<Eigen::Vector3d>* stepStartPositions = nullptr;
-  const std::vector<SelfContactFrictionContact>* contacts = nullptr;
+  std::span<const SelfContactFrictionContact> contacts;
 };
 
 // Assemble the lagged self-contact friction set from the active point-triangle
@@ -4251,7 +4261,7 @@ struct SelfContactFrictionInputs
 void buildSelfContactFrictionContacts(
     const std::vector<Eigen::Vector3d>& positions,
     const SelfContactBarrierInputs& barrier,
-    std::vector<SelfContactFrictionContact>& contacts)
+    auto& contacts)
 {
   contacts.clear();
   if (barrier.candidates == nullptr || barrier.triangles == nullptr
@@ -4317,14 +4327,13 @@ double addSelfContactFrictionEnergy(
     std::vector<Eigen::Vector3d>* gradient)
 {
   if (friction.coefficient <= 0.0 || friction.epsilon <= 0.0
-      || friction.stepStartPositions == nullptr
-      || friction.contacts == nullptr) {
+      || friction.stepStartPositions == nullptr || friction.contacts.empty()) {
     return 0.0;
   }
 
   const auto& start = *friction.stepStartPositions;
   double energy = 0.0;
-  for (const auto& contact : *friction.contacts) {
+  for (const auto& contact : friction.contacts) {
     if (contact.normalForce <= 0.0) {
       continue;
     }
@@ -4369,9 +4378,9 @@ void accumulateFrictionDiagnostics(
     const std::vector<std::uint8_t>& fixed,
     const double frictionCoefficient,
     const double epsilon,
-    const std::vector<double>& groundNormalForce,
-    const std::vector<Eigen::Vector3d>& groundNormalDirection,
-    const std::vector<SelfContactFrictionContact>& selfContacts,
+    const auto& groundNormalForce,
+    const auto& groundNormalDirection,
+    const auto& selfContacts,
     double& dissipation,
     std::size_t& activeContacts)
 {
@@ -7124,17 +7133,17 @@ bool computeProjectedNewtonDirection(
   if (groundFriction != nullptr && groundFriction->coefficient > 0.0
       && groundFriction->epsilon > 0.0
       && groundFriction->stepStartPositions != nullptr
-      && groundFriction->laggedNormalForce != nullptr) {
+      && !groundFriction->laggedNormalForce.empty()) {
     const auto& start = *groundFriction->stepStartPositions;
-    const auto& normalForce = *groundFriction->laggedNormalForce;
-    const auto* normalDirection = groundFriction->laggedNormalDirection;
+    const auto normalForce = groundFriction->laggedNormalForce;
+    const auto normalDirection = groundFriction->laggedNormalDirection;
     const double epsilon = groundFriction->epsilon;
     for (std::size_t i = 0; i < nodeCount; ++i) {
       if (!isFree(i) || normalForce[i] <= 0.0) {
         continue;
       }
-      const Eigen::Vector3d n = (normalDirection != nullptr)
-                                    ? (*normalDirection)[i]
+      const Eigen::Vector3d n = (i < normalDirection.size())
+                                    ? normalDirection[i]
                                     : Eigen::Vector3d::UnitZ();
       const Eigen::Matrix3d projector
           = Eigen::Matrix3d::Identity() - n * n.transpose();
@@ -7168,10 +7177,10 @@ bool computeProjectedNewtonDirection(
   if (selfContactFriction != nullptr && selfContactFriction->coefficient > 0.0
       && selfContactFriction->epsilon > 0.0
       && selfContactFriction->stepStartPositions != nullptr
-      && selfContactFriction->contacts != nullptr) {
+      && !selfContactFriction->contacts.empty()) {
     const auto& start = *selfContactFriction->stepStartPositions;
     const double epsilon = selfContactFriction->epsilon;
-    for (const auto& contact : *selfContactFriction->contacts) {
+    for (const auto& contact : selfContactFriction->contacts) {
       if (contact.normalForce <= 0.0) {
         continue;
       }
@@ -7656,8 +7665,11 @@ void advanceDeformableBody(
         groundFriction.coefficient = frictionCoefficient;
         groundFriction.epsilon = frictionEpsilon;
         groundFriction.stepStartPositions = &scratch.previousStepPositions;
-        groundFriction.laggedNormalForce = &groundFrictionNormalForce;
-        groundFriction.laggedNormalDirection = &groundFrictionNormalDirection;
+        groundFriction.laggedNormalForce = std::span<const double>(
+            groundFrictionNormalForce.data(), groundFrictionNormalForce.size());
+        groundFriction.laggedNormalDirection = std::span<const Eigen::Vector3d>(
+            groundFrictionNormalDirection.data(),
+            groundFrictionNormalDirection.size());
       }
 
       // Lagged smoothed self-contact friction over the active point-triangle
@@ -7670,7 +7682,10 @@ void advanceDeformableBody(
         selfContactFriction.coefficient = frictionCoefficient;
         selfContactFriction.epsilon = frictionEpsilon;
         selfContactFriction.stepStartPositions = &scratch.previousStepPositions;
-        selfContactFriction.contacts = &selfContactFrictionContacts;
+        selfContactFriction.contacts
+            = std::span<const SelfContactFrictionContact>(
+                selfContactFrictionContacts.data(),
+                selfContactFrictionContacts.size());
       }
 
       const double energy = evaluateDeformableObjective(
@@ -7955,9 +7970,12 @@ void advanceDeformableBody(
         terminalGroundFriction.epsilon = frictionEpsilon;
         terminalGroundFriction.stepStartPositions
             = &scratch.previousStepPositions;
-        terminalGroundFriction.laggedNormalForce = &groundFrictionNormalForce;
+        terminalGroundFriction.laggedNormalForce = std::span<const double>(
+            groundFrictionNormalForce.data(), groundFrictionNormalForce.size());
         terminalGroundFriction.laggedNormalDirection
-            = &groundFrictionNormalDirection;
+            = std::span<const Eigen::Vector3d>(
+                groundFrictionNormalDirection.data(),
+                groundFrictionNormalDirection.size());
       }
       SelfContactFrictionInputs terminalSelfContactFriction;
       if (frictionCoefficient > 0.0 && terminalBarrier.candidates != nullptr) {
@@ -7967,7 +7985,10 @@ void advanceDeformableBody(
         terminalSelfContactFriction.epsilon = frictionEpsilon;
         terminalSelfContactFriction.stepStartPositions
             = &scratch.previousStepPositions;
-        terminalSelfContactFriction.contacts = &selfContactFrictionContacts;
+        terminalSelfContactFriction.contacts
+            = std::span<const SelfContactFrictionContact>(
+                selfContactFrictionContacts.data(),
+                selfContactFrictionContacts.size());
       }
       const double terminalEnergy = evaluateDeformableObjective(
           state,
