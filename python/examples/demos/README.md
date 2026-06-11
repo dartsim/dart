@@ -89,6 +89,38 @@ The lower-level viewer still accepts `--screenshot` and `--out` directly when
 you need raw PPM output. Inspect the generated PNG or MP4 before calling a
 visual change done.
 
+## LCP Physics
+
+The **`lcp_physics`** scene is the Python demo baseline for DART 7 contact LCP
+work. It runs two matched `World` instances side by side: the default
+sequential-impulse contact path and the boxed-LCP contact path. Both worlds run
+the same representative packets:
+
+| Packet                | Shows                                      | Metric surfaced in the panel               |
+| --------------------- | ------------------------------------------ | ------------------------------------------ |
+| Sliding friction      | Tangential Coulomb response on a flat slab | Sliding speed and contacts                 |
+| Static-friction ramp  | Hold/slip behavior near the friction limit | Ramp-parallel slide                        |
+| Billiard collision    | Symmetric contact impulse transfer         | Momentum and kinetic-energy error          |
+| High-mass-ratio stack | Contact stability under large mass ratios  | Stack lateral drift and per-step wall time |
+| Thin card pile        | Thin high-aspect-ratio stacked contacts    | Card spread and height loss                |
+
+This scene compares the DART 7 public contact methods. The panel also surfaces
+the 24-solver standalone LCP manifest, solver support matrix, and benchmark
+packet map used for apples-to-apples solver work. It runs the flat `dartpy`
+standalone LCP binding on a shared standard smoke problem for every solver, so
+the panel can show status, iteration count, and solution error without going
+through a contact `World`. The representative problem table lists every solver
+on each packet and separates native support from delegated fallback solves, with
+the fastest native solve highlighted for quick triage. The benchmark packet map
+includes the native `world_card_pile` packet for high-aspect-ratio card-pile
+contact scaling. Authoritative performance runs remain owned by
+`tests/common/lcpsolver`, `tests/unit/math/lcp`, and `tests/benchmark/lcpsolver`.
+Run the benchmark smoke with:
+
+```bash
+pixi run bm lcp_compare -- --benchmark_filter=BM_LCP_COMPARE_SMOKE
+```
+
 ## AVBD Rigid Constraints (sx)
 
 The dedicated **`AVBD Rigid Constraints (sx)`** category groups the first

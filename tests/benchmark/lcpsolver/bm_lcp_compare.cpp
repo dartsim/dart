@@ -1949,6 +1949,93 @@ std::unique_ptr<sx::World> MakeWorldBoxStepBenchmarkWorld(
   return world;
 }
 
+Eigen::Vector3d MakeCardPileHalfExtents()
+{
+  return Eigen::Vector3d(0.30, 0.18, 0.012);
+}
+
+Eigen::Vector2d MakeCardPileInitialOffset(int index)
+{
+  static constexpr std::array<double, 7> kOffsetX{
+      0.000, 0.018, -0.014, 0.010, -0.020, 0.012, -0.006};
+  static constexpr std::array<double, 7> kOffsetY{
+      0.000, -0.010, 0.014, 0.020, -0.016, 0.006, -0.020};
+  const auto wrappedIndex
+      = static_cast<std::size_t>(index % static_cast<int>(kOffsetX.size()));
+  const double repeatOffset
+      = 0.002 * static_cast<double>(index / static_cast<int>(kOffsetX.size()));
+  return Eigen::Vector2d(
+      kOffsetX[wrappedIndex] + repeatOffset, kOffsetY[wrappedIndex]);
+}
+
+double MakeCardPileInitialYaw(int index)
+{
+  static constexpr std::array<double, 7> kYaws{
+      -0.08, 0.04, 0.10, -0.05, 0.07, -0.11, 0.03};
+  return kYaws[static_cast<std::size_t>(
+      index % static_cast<int>(kYaws.size()))];
+}
+
+Eigen::Vector3d MakeCardPileInitialPosition(int index)
+{
+  const Eigen::Vector3d halfExtents = MakeCardPileHalfExtents();
+  const Eigen::Vector2d offset = MakeCardPileInitialOffset(index);
+  return Eigen::Vector3d(
+      offset.x(),
+      offset.y(),
+      halfExtents.z() + static_cast<double>(index) * 2.0 * halfExtents.z());
+}
+
+std::unique_ptr<sx::World> MakeWorldCardPileStepBenchmarkWorld(
+    int cardCount, std::string& errorMessage)
+{
+  if (cardCount < 2) {
+    errorMessage = "card count must be at least two for a contact pile";
+    return nullptr;
+  }
+
+  constexpr double kFriction = 0.9;
+  sx::WorldOptions options;
+  options.timeStep = cardCount >= 8 ? 0.001 : 0.002;
+  options.gravity = Eigen::Vector3d(0.0, 0.0, -9.81);
+  options.contactSolverMethod = sx::ContactSolverMethod::BoxedLcp;
+  auto world = std::make_unique<sx::World>(options);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.05);
+  auto ground = world->addRigidBody("card_pile_ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(2.0, 2.0, 0.05)));
+  ground.setFriction(kFriction);
+
+  const Eigen::Vector3d halfExtents = MakeCardPileHalfExtents();
+  for (const int i : std::views::iota(0, cardCount)) {
+    sx::RigidBodyOptions cardOptions;
+    cardOptions.position = MakeCardPileInitialPosition(i);
+    cardOptions.orientation = Eigen::Quaterniond(
+        Eigen::AngleAxisd(MakeCardPileInitialYaw(i), Eigen::Vector3d::UnitZ()));
+    cardOptions.linearVelocity = i == cardCount - 1
+                                     ? Eigen::Vector3d(0.16, -0.03, -0.02)
+                                     : Eigen::Vector3d(0.0, 0.0, -0.01);
+    auto card = world->addRigidBody("card_" + std::to_string(i), cardOptions);
+    card.setCollisionShape(sx::CollisionShape::makeBox(halfExtents));
+    card.setFriction(kFriction);
+    card.setMass(0.08);
+    card.setInertia(Eigen::Vector3d(0.003, 0.006, 0.008).asDiagonal());
+  }
+
+  const std::vector<sx::Contact> contacts = world->collide();
+  if (contacts.size() < static_cast<std::size_t>(cardCount)) {
+    errorMessage = "World::collide returned " + std::to_string(contacts.size())
+                   + " card-pile contacts, expected at least "
+                   + std::to_string(cardCount);
+    return nullptr;
+  }
+
+  return world;
+}
+
 struct WorldSeparatedStepCheck
 {
   bool ok{true};
@@ -2037,6 +2124,55 @@ WorldBoxStepCheck CheckWorldBoxStepInvariants(sx::World& world, int boxCount)
                && finalTangentialSpeed < initialTangentialSpeed;
   }
 
+  return check;
+}
+
+struct WorldCardPileStepCheck
+{
+  bool ok{true};
+  double maxSpread{0.0};
+  double maxHeightLoss{0.0};
+  double maxVerticalSpeed{0.0};
+  double maxAngularSpeed{0.0};
+  std::size_t contactCount{0};
+};
+
+WorldCardPileStepCheck CheckWorldCardPileStepInvariants(
+    sx::World& world, int cardCount)
+{
+  WorldCardPileStepCheck check;
+  const double initialTopZ = MakeCardPileInitialPosition(cardCount - 1).z();
+  double currentTopZ = -std::numeric_limits<double>::infinity();
+
+  for (const int i : std::views::iota(0, cardCount)) {
+    auto card = world.getRigidBody("card_" + std::to_string(i));
+    if (!card.has_value()) {
+      check.ok = false;
+      return check;
+    }
+
+    const Eigen::Vector3d initialPosition = MakeCardPileInitialPosition(i);
+    const Eigen::Vector3d position = card->getTranslation();
+    const Eigen::Vector3d linearVelocity = card->getLinearVelocity();
+    const Eigen::Vector3d angularVelocity = card->getAngularVelocity();
+    const double spread
+        = (position.head<2>() - initialPosition.head<2>()).norm();
+    check.maxSpread = std::max(check.maxSpread, spread);
+    check.maxVerticalSpeed
+        = std::max(check.maxVerticalSpeed, std::abs(linearVelocity.z()));
+    check.maxAngularSpeed
+        = std::max(check.maxAngularSpeed, angularVelocity.norm());
+    currentTopZ = std::max(currentTopZ, position.z());
+    check.ok = check.ok && position.allFinite() && linearVelocity.allFinite()
+               && angularVelocity.allFinite() && position.z() > -0.05
+               && spread < 1.0 && std::abs(linearVelocity.z()) < 3.0
+               && angularVelocity.norm() < 40.0;
+  }
+
+  check.maxHeightLoss = std::max(0.0, initialTopZ - currentTopZ);
+  check.contactCount = world.collide().size();
+  check.ok = check.ok && check.maxHeightLoss < 0.5
+             && check.contactCount >= static_cast<std::size_t>(cardCount);
   return check;
 }
 
@@ -9776,6 +9912,49 @@ static void BM_LcpWorldBoxStep_BoxedLcp(benchmark::State& state)
   state.SetLabel("BoxedLcpContact/WorldBoxStep");
 }
 
+static void BM_LcpWorldCardPileStep_BoxedLcp(benchmark::State& state)
+{
+  const int cardCount = static_cast<int>(state.range(0));
+  const int stepCount = static_cast<int>(state.range(1));
+  std::string errorMessage;
+
+  WorldCardPileStepCheck check;
+  for (auto _ : state) {
+    auto world = MakeWorldCardPileStepBenchmarkWorld(cardCount, errorMessage);
+    if (world == nullptr) {
+      state.SkipWithError(errorMessage.c_str());
+      return;
+    }
+    world->enterSimulationMode();
+    world->step(stepCount);
+    check = CheckWorldCardPileStepInvariants(*world, cardCount);
+    benchmark::DoNotOptimize(check.ok);
+  }
+
+  auto world = MakeWorldCardPileStepBenchmarkWorld(cardCount, errorMessage);
+  if (world == nullptr) {
+    state.SkipWithError(errorMessage.c_str());
+    return;
+  }
+  world->enterSimulationMode();
+  world->step(stepCount);
+  check = CheckWorldCardPileStepInvariants(*world, cardCount);
+
+  state.counters["card_count"] = static_cast<double>(cardCount);
+  state.counters["step_count"] = static_cast<double>(stepCount);
+  state.counters["body_count"] = static_cast<double>(cardCount);
+  state.counters["contact_count"] = static_cast<double>(check.contactCount);
+  state.counters["thin_card_pile"] = 1.0;
+  state.counters["max_card_spread"] = check.maxSpread;
+  state.counters["max_height_loss"] = check.maxHeightLoss;
+  state.counters["max_vertical_speed"] = check.maxVerticalSpeed;
+  state.counters["max_angular_speed"] = check.maxAngularSpeed;
+  state.counters["invariant_ok"] = check.ok ? 1.0 : 0.0;
+  AddBackendBuildCounters(state);
+  state.SetItemsProcessed(state.iterations() * stepCount * cardCount);
+  state.SetLabel("BoxedLcpContact/WorldCardPileStep");
+}
+
 static void BM_LcpWorldArticulatedGroundStep_BoxedLcp(benchmark::State& state)
 {
   const int linkCount = static_cast<int>(state.range(0));
@@ -13322,6 +13501,10 @@ BENCHMARK(BM_LcpWorldBoxStep_BoxedLcp)
     ->Args({144, 75})
     ->Args({192, 1})
     ->Args({256, 1});
+BENCHMARK(BM_LcpWorldCardPileStep_BoxedLcp)
+    ->Args({4, 200})
+    ->Args({7, 200})
+    ->Args({12, 200});
 BENCHMARK(BM_LcpWorldArticulatedGroundStep_BoxedLcp)
     ->Args({1, 200})
     ->Args({4, 200})

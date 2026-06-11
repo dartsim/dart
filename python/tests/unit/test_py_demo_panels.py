@@ -48,6 +48,7 @@ from examples.demos.scenes import (
     ipc_deformable_scripted_dirichlet,
     ipc_deformable_seg_strand,
     ipc_deformable_trampoline,
+    lcp_physics,
     plan083_unified_newton_barrier,
     planned,
     replay_scrubber,
@@ -347,6 +348,7 @@ def test_registered_world_scenes_receive_shared_replay_controls() -> None:
         "diff_throw_to_target",
         "diff_cartpole_trajopt",
         "diff_drone_liftoff",
+        "lcp_physics",
     }
     replay_attached: set[str] = set()
     replay_opt_out: set[str] = set()
@@ -690,6 +692,7 @@ def test_high_value_world_scenes_expose_custom_panels() -> None:
         (articulated, "Articulated"),
         (floating_base, "Floating Base"),
         (contact, "Contact"),
+        (lcp_physics, "LCP Physics"),
         (rigid_body, "Rigid Bodies"),
         (rigid_ipc, "Rigid IPC Contact"),
         (rigid_ipc_incline, "Rigid IPC Incline"),
@@ -715,6 +718,112 @@ def test_high_value_world_scenes_expose_custom_panels() -> None:
         assert "text:External force" in builder.events
         assert any(event.startswith("text:drag target: ") for event in builder.events)
         assert "checkbox:Enable external force" in builder.events
+
+
+def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
+    _require_simulation_symbols("World", "ContactSolverMethod")
+
+    setup = lcp_physics.build()
+    info = setup.info
+    summary = info["solver_manifest_summary"]
+    solver_rows = info["solver_rows"]
+    solver_by_name = {row["name"]: row for row in solver_rows}
+
+    assert summary == {
+        "solver_count": 24,
+        "standard_count": 24,
+        "boxed_count": 16,
+        "findex_count": 16,
+    }
+    assert len(solver_rows) == summary["solver_count"]
+    assert solver_by_name["Dantzig"]["boxed"] is True
+    assert solver_by_name["BoxedSemiSmoothNewton"]["findex"] is True
+    assert solver_by_name["MPRGP"]["boxed"] is False
+    assert info["standalone_lcp_solvers_exposed_in_dartpy"] is True
+    assert len(info["standalone_solver_rows"]) == summary["solver_count"]
+    smoke_by_name = {row["name"]: row for row in info["standalone_solver_rows"]}
+    for name, manifest_row in solver_by_name.items():
+        smoke_row = smoke_by_name[name]
+        assert smoke_row["native_standard"] is manifest_row["standard"]
+        assert smoke_row["native_boxed"] is manifest_row["boxed"]
+        assert smoke_row["native_findex"] is manifest_row["findex"]
+    assert max(row["solution_error"] for row in info["standalone_solver_rows"]) < 1e-4
+    assert {row["status"] for row in info["standalone_solver_rows"]} <= {
+        "Success",
+        "MaxIterations",
+    }
+    expected_problem_counts = {
+        "standard_spd": 24,
+        "ill_conditioned_standard": 24,
+        "boxed_active_bounds": 24,
+        "friction_index_contact": 24,
+        "moderate_scale_standard": 24,
+    }
+    expected_native_problem_counts = {
+        "standard_spd": 24,
+        "ill_conditioned_standard": 24,
+        "boxed_active_bounds": 16,
+        "friction_index_contact": 16,
+        "moderate_scale_standard": 24,
+    }
+    problem_rows = info["standalone_problem_rows"]
+    problem_summary_rows = info["standalone_problem_summary_rows"]
+    problem_summary_by_case = {row["case"]: row for row in problem_summary_rows}
+    assert len(problem_rows) == sum(expected_problem_counts.values())
+    assert set(problem_summary_by_case) == set(expected_problem_counts)
+    assert {row["surface"] for row in problem_summary_rows} == {
+        "standard",
+        "boxed",
+        "findex",
+    }
+    assert all(row["contract_ok"] for row in problem_rows)
+    assert {row["status"] for row in problem_rows} <= {"Success", "MaxIterations"}
+    for case_name, expected_count in expected_problem_counts.items():
+        summary_row = problem_summary_by_case[case_name]
+        assert summary_row["solver_count"] == expected_count
+        assert summary_row["native_solver_count"] == expected_native_problem_counts[
+            case_name
+        ]
+        assert (
+            summary_row["delegated_solver_count"]
+            == expected_count - expected_native_problem_counts[case_name]
+        )
+        assert summary_row["contract_ok_count"] == expected_count
+        assert summary_row["native_contract_ok_count"] == expected_native_problem_counts[
+            case_name
+        ]
+        assert summary_row["delegated_contract_ok_count"] == (
+            expected_count - expected_native_problem_counts[case_name]
+        )
+        assert summary_row["max_solution_error"] <= 2e-4
+        assert summary_row["fastest_solver"] in solver_by_name
+        assert summary_row["fastest_elapsed_us"] >= 0.0
+        assert summary_row["fastest_native_solver"] in solver_by_name
+        assert summary_row["fastest_native_elapsed_us"] >= 0.0
+    assert {
+        row["solver"]
+        for row in problem_rows
+        if row["case"] == "boxed_active_bounds" and not row["native_supported"]
+    } == {name for name, manifest_row in solver_by_name.items() if not manifest_row["boxed"]}
+    assert {
+        row["solver"]
+        for row in problem_rows
+        if row["case"] == "friction_index_contact" and not row["native_supported"]
+    } == {name for name, manifest_row in solver_by_name.items() if not manifest_row["findex"]}
+    assert "BM_LCP_COMPARE_SMOKE" in info["benchmark_command"]
+    assert {row["packet"] for row in info["live_packet_rows"]} == {
+        "Sliding friction",
+        "Static-friction ramp",
+        "Billiard collision",
+        "High-mass-ratio stack",
+        "Thin card pile",
+    }
+    assert {row["packet"] for row in info["benchmark_packet_rows"]} >= {
+        "active_set_transition",
+        "world_stack",
+        "world_card_pile",
+        "batch_scale",
+    }
 
 
 def test_robot_puppet_world_scenes_expose_pose_panels() -> None:
@@ -797,7 +906,10 @@ def test_plan083_cpu_corpus_placeholders_expose_status_panels() -> None:
 
         assert "text:status: planned PLAN-083 CPU corpus scene" in builder.events
         assert any(event.startswith("text:rows: ") for event in builder.events)
-        assert any(event.startswith("text:smoke: pixi run py-demos") for event in builder.events)
+        assert any(
+            event.startswith("text:smoke: pixi run py-demos")
+            for event in builder.events
+        )
         assert any(
             event.startswith("text:visual: pixi run py-demo-capture")
             for event in builder.events
@@ -863,7 +975,9 @@ def test_plan083_nunchaku_exposes_runtime_status_panel() -> None:
     assert "text:solver: rigid IPC World.step" in builder.events
     assert "text:revolute joints: 1" in builder.events
     assert "text:benchmark: pixi run bm-plan083-cpu-nunchaku-packet" in builder.events
-    assert any(event.startswith("text:swinging tip radius: ") for event in builder.events)
+    assert any(
+        event.startswith("text:swinging tip radius: ") for event in builder.events
+    )
 
 
 def test_plan083_windmill_exposes_runtime_status_panel() -> None:
@@ -958,10 +1072,7 @@ def test_plan083_lying_flat_exposes_runtime_status_panel() -> None:
     assert "text:deformable bodies: 1" in builder.events
     assert "text:nodes: 24" in builder.events
     assert "text:surface triangles: 30" in builder.events
-    assert (
-        "text:benchmark: pixi run bm-plan083-cpu-lying-flat-packet"
-        in builder.events
-    )
+    assert "text:benchmark: pixi run bm-plan083-cpu-lying-flat-packet" in builder.events
     assert any(event.startswith("text:mean cloth height: ") for event in builder.events)
 
 
