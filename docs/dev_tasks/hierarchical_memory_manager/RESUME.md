@@ -198,6 +198,16 @@ work vectors borrow the same root. Solver option/result vectors and nested
 surface mesh payloads remain default-vector follow-up work because they cross
 the detail solver API boundary.
 
+The current deformable stage scratch slice adds allocator-aware construction
+for `DeformableDynamicsStage::Scratch` top-level barrier and snapshot vectors:
+static-ground barriers, sphere/box/capsule static-obstacle barriers,
+deformable surface snapshots, static rigid surface-CCD snapshots, and moving
+rigid surface-CCD snapshots. The focused custom-stage test builds a compact
+scene that touches each vector family against an isolated provided
+`MemoryManager`, verifies reserve growth, and verifies release at stage
+destruction. Nested payload vectors inside each `SurfaceContactSnapshot`
+remain default-vector follow-up work.
+
 The current allocator-correctness slice closes a debug-accounting gap in
 `MemoryAllocatorDebugger`: aligned allocations now keep their requested
 alignment in the live allocation record, and mismatched aligned deallocation
@@ -710,15 +720,15 @@ rigid-body velocity force-batch payload plus rigid-body contact
 sequential-impulse constraint vector, plus the `WorldKinematicsGraph`
 entity-node cache, `ComputeGraph` owned node/name lookup storage, rigid IPC
 top-level scratch vectors, and rigid IPC projected-Newton solve scratch vectors,
-are the first nested stage payloads routed through world-owned
-allocator-backed storage. The next slice should probe existing no-growth/no-heap
-gates or stage-local heap counters for another concrete nested payload path
-before changing broader scratch layouts; likely candidates are deformable stage
-obstacle/snapshot vectors, solver option/result vectors in rigid IPC, or an
-API-compatible plan for `ComputeGraph`'s exposed edge/topological-order vector
-storage. Do not add new production scenes unless profiling or a failing
-no-growth/no-heap gate shows a real gap not covered by the current shipped
-scenes.
+and deformable stage top-level barrier/snapshot vectors are the first nested
+stage payloads routed through world-owned allocator-backed storage. The next
+slice should probe existing no-growth/no-heap gates or stage-local heap
+counters for another concrete nested payload path before changing broader
+scratch layouts; likely candidates are nested `SurfaceContactSnapshot` payload
+vectors, solver option/result vectors in rigid IPC, or an API-compatible plan
+for `ComputeGraph`'s exposed edge/topological-order vector storage. Do not add
+new production scenes unless profiling or a failing no-growth/no-heap gate shows
+a real gap not covered by the current shipped scenes.
 
 Keep the allocator performance gate green. The latest allocator slices keep
 `FrameStlAllocator` blocks cache-line aligned without per-block cache coloring,

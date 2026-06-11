@@ -2847,6 +2847,73 @@ TEST(World, RigidIpcContactStageScratchPayloadUsesProvidedAllocator)
   EXPECT_EQ(freeList.getAllocationCount(), allocationsBeforeStage);
 }
 
+TEST(World, DeformableDynamicsStageScratchPayloadUsesProvidedAllocator)
+{
+  namespace common = dart::common;
+  namespace sx = dart::simulation;
+
+  sx::World world;
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.25);
+  auto ground
+      = world.addRigidBody("deformable_allocator_ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(1.0, 1.0, 0.25)));
+  ground.setDeformableGroundBarrier(true);
+
+  const auto addObstacle = [&](std::string_view name,
+                               const Eigen::Vector3d& position,
+                               const sx::CollisionShape& shape) {
+    sx::RigidBodyOptions options;
+    options.isStatic = true;
+    options.position = position;
+    auto obstacle = world.addRigidBody(name, options);
+    obstacle.setCollisionShape(shape);
+    obstacle.setDeformableSurfaceCcdObstacle(true);
+  };
+  addObstacle(
+      "deformable_allocator_sphere_obstacle",
+      Eigen::Vector3d(2.0, 0.0, 0.0),
+      sx::CollisionShape::makeSphere(0.25));
+  addObstacle(
+      "deformable_allocator_box_obstacle",
+      Eigen::Vector3d(-2.0, 0.0, 0.0),
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.25, 0.25, 0.25)));
+  addObstacle(
+      "deformable_allocator_capsule_obstacle",
+      Eigen::Vector3d(0.0, 2.0, 0.0),
+      sx::CollisionShape::makeCapsule(0.1, 0.25));
+
+  sx::DeformableBodyOptions deformable;
+  deformable.positions
+      = {Eigen::Vector3d(0.0, 0.0, 0.2),
+         Eigen::Vector3d(0.4, 0.0, 0.2),
+         Eigen::Vector3d(0.0, 0.4, 0.2)};
+  deformable.masses = {1.0, 1.0, 1.0};
+  deformable.surfaceTriangles = {sx::DeformableSurfaceTriangle{0, 1, 2}};
+  deformable.edgeStiffness = 0.0;
+  world.addDeformableBody("deformable_allocator_surface", deformable);
+
+  common::MemoryManager memoryManager;
+  auto& freeList = memoryManager.getFreeListAllocator();
+  const auto allocationsBeforeStage = freeList.getAllocationCount();
+
+  {
+    sx::compute::DeformableDynamicsStage stage(&memoryManager);
+    const auto allocationsAfterStage = freeList.getAllocationCount();
+
+    stage.prepare(world);
+
+    EXPECT_GT(freeList.getAllocationCount(), allocationsAfterStage)
+        << "allocator-aware deformable stage scratch should reserve obstacle "
+           "and surface-snapshot vectors from the provided free allocator";
+  }
+
+  EXPECT_EQ(freeList.getAllocationCount(), allocationsBeforeStage);
+}
+
 TEST(World, WorldKinematicsGraphEntityNodesUseWorldAllocator)
 {
   namespace sx = dart::simulation;

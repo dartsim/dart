@@ -86,7 +86,11 @@ solver, surface, writeback, and resting-contact scratch vectors through the
 World free allocator, and its projected-Newton solve scratch vectors borrow the
 same allocator when the stage constructs the solver scratch. Solver
 option/result vectors and nested surface mesh payloads remain separate.
-`WorldKinematicsGraph` also uses the World free allocator for its
+`DeformableDynamicsStage` routes its stage-owned ground-barrier,
+static-obstacle, deformable-surface snapshot, static rigid surface-CCD snapshot,
+and moving rigid surface-CCD snapshot vectors through the same World free
+allocator; nested snapshot payload vectors remain separate. `WorldKinematicsGraph`
+also uses the World free allocator for its
 frame-entity-to-node cache and for `ComputeGraph`'s owned node objects and
 name-lookup table when constructed by the built-in kinematics stage. Other
 nested `std::vector`/Eigen payload capacity inside stage scratch objects,

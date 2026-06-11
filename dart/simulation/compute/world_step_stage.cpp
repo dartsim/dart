@@ -1764,7 +1764,7 @@ struct SurfaceContactSnapshot
 
 //==============================================================================
 SurfaceContactSnapshot& nextSurfaceContactSnapshot(
-    std::vector<SurfaceContactSnapshot>& snapshots, std::size_t& count)
+    auto& snapshots, std::size_t& count)
 {
   if (count == snapshots.size()) {
     snapshots.emplace_back();
@@ -1774,7 +1774,7 @@ SurfaceContactSnapshot& nextSurfaceContactSnapshot(
 
 //==============================================================================
 std::span<const SurfaceContactSnapshot> activeSurfaceContactSnapshots(
-    const std::vector<SurfaceContactSnapshot>& snapshots, std::size_t count)
+    const auto& snapshots, std::size_t count)
 {
   return std::span<const SurfaceContactSnapshot>(snapshots.data(), count);
 }
@@ -2294,7 +2294,7 @@ bool hasCurrentKinematicStepTrace(const World& world, const entt::entity entity)
 void collectStaticRigidSurfaceCcdObstaclesInto(
     const World& world,
     DeformableSolverStats& stats,
-    std::vector<SurfaceContactSnapshot>& snapshots,
+    auto& snapshots,
     std::size_t& snapshotCount)
 {
   ++stats.staticRigidSurfaceCcdSnapshotBuilds;
@@ -2470,7 +2470,7 @@ void collectMovingRigidSurfaceCcdObstaclesInto(
     const World& world,
     const double timeStep,
     DeformableSolverStats& stats,
-    std::vector<SurfaceContactSnapshot>& snapshots,
+    auto& snapshots,
     std::size_t& snapshotCount,
     const bool primeKinematicWithoutCurrentTrace = false)
 {
@@ -2676,8 +2676,7 @@ std::optional<StaticGroundContact> boxContactAt(
 }
 
 //==============================================================================
-void collectStaticGroundBarriersInto(
-    const World& world, std::vector<StaticGroundBarrier>& barriers)
+void collectStaticGroundBarriersInto(const World& world, auto& barriers)
 {
   barriers.clear();
 
@@ -2748,8 +2747,7 @@ void collectStaticGroundBarriersInto(
 // tessellation). Boxes opted in as surface-CCD obstacles are skipped here --
 // their barrier force is a later increment -- and the surface CCD limiter
 // remains the conservative no-penetration gate.
-void collectSphereObstacleBarriersInto(
-    const World& world, std::vector<SphereObstacleBarrier>& obstacles)
+void collectSphereObstacleBarriersInto(const World& world, auto& obstacles)
 {
   obstacles.clear();
 
@@ -2782,8 +2780,7 @@ void collectSphereObstacleBarriersInto(
 }
 
 //==============================================================================
-void collectBoxObstacleBarriersInto(
-    const World& world, std::vector<BoxObstacleBarrier>& obstacles)
+void collectBoxObstacleBarriersInto(const World& world, auto& obstacles)
 {
   obstacles.clear();
 
@@ -2822,8 +2819,7 @@ void collectBoxObstacleBarriersInto(
 }
 
 //==============================================================================
-void collectCapsuleObstacleBarriersInto(
-    const World& world, std::vector<CapsuleObstacleBarrier>& obstacles)
+void collectCapsuleObstacleBarriersInto(const World& world, auto& obstacles)
 {
   obstacles.clear();
 
@@ -2874,7 +2870,7 @@ void collectCapsuleObstacleBarriersInto(
 // height query but also carries the normal for friction's tangent basis.
 std::optional<StaticGroundContact> staticGroundContactAt(
     const Eigen::Vector3d& position,
-    const std::vector<StaticGroundBarrier>& barriers)
+    std::span<const StaticGroundBarrier> barriers)
 {
   std::optional<StaticGroundContact> best;
   for (const auto& barrier : barriers) {
@@ -2920,7 +2916,7 @@ std::optional<StaticGroundContact> staticGroundContactAt(
 //==============================================================================
 std::optional<double> staticGroundTopAt(
     const Eigen::Vector3d& position,
-    const std::vector<StaticGroundBarrier>& barriers)
+    std::span<const StaticGroundBarrier> barriers)
 {
   const auto contact = staticGroundContactAt(position, barriers);
   if (!contact.has_value()) {
@@ -3165,7 +3161,7 @@ std::optional<TimeInterval> staticGroundBarrierFootprintInterval(
 //==============================================================================
 std::optional<double> staticGroundClearanceAt(
     const Eigen::Vector3d& position,
-    const std::vector<StaticGroundBarrier>& barriers,
+    std::span<const StaticGroundBarrier> barriers,
     DeformableSolverStats& stats)
 {
   ++stats.staticGroundBarrierCcdSampleChecks;
@@ -3188,7 +3184,7 @@ bool isStaticGroundBarrierCcdHit(
     const Eigen::Vector3d& start,
     const Eigen::Vector3d& end,
     double t,
-    const std::vector<StaticGroundBarrier>& barriers,
+    std::span<const StaticGroundBarrier> barriers,
     DeformableSolverStats& stats)
 {
   const auto clearance = staticGroundClearanceAt(
@@ -3201,7 +3197,7 @@ bool isStaticGroundBarrierCcdHit(
 std::optional<double> verticalStaticGroundBarrierStepBound(
     const Eigen::Vector3d& start,
     const Eigen::Vector3d& end,
-    const std::vector<StaticGroundBarrier>& barriers,
+    std::span<const StaticGroundBarrier> barriers,
     DeformableSolverStats& stats)
 {
   const auto startClearance = staticGroundClearanceAt(start, barriers, stats);
@@ -3230,7 +3226,7 @@ std::optional<double> firstStaticGroundBarrierHitInInterval(
     const Eigen::Vector3d& start,
     const Eigen::Vector3d& end,
     const TimeInterval& interval,
-    const std::vector<StaticGroundBarrier>& barriers,
+    std::span<const StaticGroundBarrier> barriers,
     DeformableSolverStats& stats)
 {
   const double tolerance = staticGroundBarrierCcdClearanceTolerance();
@@ -3289,7 +3285,7 @@ std::optional<double> firstStaticGroundBarrierHitInInterval(
 std::optional<double> continuousStaticGroundBarrierStepBound(
     const Eigen::Vector3d& start,
     const Eigen::Vector3d& end,
-    const std::vector<StaticGroundBarrier>& barriers,
+    std::span<const StaticGroundBarrier> barriers,
     DeformableSolverStats& stats)
 {
   if (isStaticGroundBarrierCcdHit(start, end, 0.0, barriers, stats)) {
@@ -3318,7 +3314,7 @@ std::optional<double> continuousStaticGroundBarrierStepBound(
 std::optional<double> staticGroundBarrierStepBound(
     const Eigen::Vector3d& start,
     const Eigen::Vector3d& end,
-    const std::vector<StaticGroundBarrier>& barriers,
+    std::span<const StaticGroundBarrier> barriers,
     DeformableSolverStats& stats)
 {
   constexpr double planarTolerance = 1e-14;
@@ -3369,7 +3365,7 @@ double adaptiveBarrierStiffness(
 bool satisfiesStaticGroundBarrier(
     const std::vector<Eigen::Vector3d>& positions,
     const std::vector<std::uint8_t>& fixed,
-    const std::vector<StaticGroundBarrier>& barriers)
+    std::span<const StaticGroundBarrier> barriers)
 {
   if (barriers.empty()) {
     return true;
@@ -3389,7 +3385,7 @@ bool satisfiesStaticGroundBarrier(
 void makeInitialPositionsFeasible(
     std::vector<Eigen::Vector3d>& positions,
     const std::vector<std::uint8_t>& fixed,
-    const std::vector<StaticGroundBarrier>& barriers,
+    std::span<const StaticGroundBarrier> barriers,
     DeformableSolverStats* stats)
 {
   if (barriers.empty()) {
@@ -3415,7 +3411,7 @@ void makeInitialPositionsFeasible(
 double addStaticGroundBarrierEnergy(
     const std::vector<Eigen::Vector3d>& positions,
     const std::vector<std::uint8_t>& fixed,
-    const std::vector<StaticGroundBarrier>& barriers,
+    std::span<const StaticGroundBarrier> barriers,
     std::vector<Eigen::Vector3d>* gradient,
     double barrierStiffness = kDefaultBarrierStiffness)
 {
@@ -3474,7 +3470,7 @@ double addStaticGroundBarrierEnergy(
 double addSphereObstacleBarrierEnergy(
     const std::vector<Eigen::Vector3d>& positions,
     const std::vector<std::uint8_t>& fixed,
-    const std::vector<SphereObstacleBarrier>& obstacles,
+    std::span<const SphereObstacleBarrier> obstacles,
     std::vector<Eigen::Vector3d>* gradient,
     double barrierStiffness = kDefaultBarrierStiffness)
 {
@@ -3593,7 +3589,7 @@ double capsuleObstacleSurfaceDistance(
 double addCapsuleObstacleBarrierEnergy(
     const std::vector<Eigen::Vector3d>& positions,
     const std::vector<std::uint8_t>& fixed,
-    const std::vector<CapsuleObstacleBarrier>& obstacles,
+    std::span<const CapsuleObstacleBarrier> obstacles,
     std::vector<Eigen::Vector3d>* gradient,
     double barrierStiffness = kDefaultBarrierStiffness)
 {
@@ -3647,7 +3643,7 @@ double addCapsuleObstacleBarrierEnergy(
 double addBoxObstacleBarrierEnergy(
     const std::vector<Eigen::Vector3d>& positions,
     const std::vector<std::uint8_t>& fixed,
-    const std::vector<BoxObstacleBarrier>& obstacles,
+    std::span<const BoxObstacleBarrier> obstacles,
     std::vector<Eigen::Vector3d>* gradient,
     double barrierStiffness = kDefaultBarrierStiffness)
 {
@@ -3711,7 +3707,7 @@ double staticGroundFrictionVelocityThreshold()
 void computeStaticGroundNormalForces(
     const std::vector<Eigen::Vector3d>& positions,
     const std::vector<std::uint8_t>& fixed,
-    const std::vector<StaticGroundBarrier>& barriers,
+    std::span<const StaticGroundBarrier> barriers,
     std::vector<double>& normalForce,
     std::vector<Eigen::Vector3d>& normalDirection)
 {
@@ -3763,7 +3759,7 @@ void computeStaticGroundNormalForces(
 void addCapsuleObstacleNormalForces(
     const std::vector<Eigen::Vector3d>& positions,
     const std::vector<std::uint8_t>& fixed,
-    const std::vector<CapsuleObstacleBarrier>& obstacles,
+    std::span<const CapsuleObstacleBarrier> obstacles,
     std::vector<double>& normalForce,
     std::vector<Eigen::Vector3d>& normalDirection)
 {
@@ -3806,7 +3802,7 @@ void addCapsuleObstacleNormalForces(
 void addSphereObstacleNormalForces(
     const std::vector<Eigen::Vector3d>& positions,
     const std::vector<std::uint8_t>& fixed,
-    const std::vector<SphereObstacleBarrier>& obstacles,
+    std::span<const SphereObstacleBarrier> obstacles,
     std::vector<double>& normalForce,
     std::vector<Eigen::Vector3d>& normalDirection)
 {
@@ -3849,7 +3845,7 @@ void addSphereObstacleNormalForces(
 void addBoxObstacleNormalForces(
     const std::vector<Eigen::Vector3d>& positions,
     const std::vector<std::uint8_t>& fixed,
-    const std::vector<BoxObstacleBarrier>& obstacles,
+    std::span<const BoxObstacleBarrier> obstacles,
     std::vector<double>& normalForce,
     std::vector<Eigen::Vector3d>& normalDirection)
 {
@@ -4412,10 +4408,10 @@ double evaluateDeformableObjective(
     const std::vector<Eigen::Vector3d>& positions,
     const std::vector<Eigen::Vector3d>& inertialTargets,
     const std::vector<std::uint8_t>& fixed,
-    const std::vector<StaticGroundBarrier>& barriers,
-    const std::vector<SphereObstacleBarrier>& sphereObstacles,
-    const std::vector<BoxObstacleBarrier>& boxObstacles,
-    const std::vector<CapsuleObstacleBarrier>& capsuleObstacles,
+    std::span<const StaticGroundBarrier> barriers,
+    std::span<const SphereObstacleBarrier> sphereObstacles,
+    std::span<const BoxObstacleBarrier> boxObstacles,
+    std::span<const CapsuleObstacleBarrier> capsuleObstacles,
     double timeStep,
     std::vector<Eigen::Vector3d>* gradient,
     const SelfContactBarrierInputs* contactBarrier = nullptr,
@@ -5023,7 +5019,7 @@ bool applyStaticGroundBarrierCcdLimit(
     const std::vector<Eigen::Vector3d>& direction,
     const std::vector<Eigen::Vector3d>& gradient,
     const std::vector<std::uint8_t>& fixed,
-    const std::vector<StaticGroundBarrier>& barriers,
+    std::span<const StaticGroundBarrier> barriers,
     DeformableSolverStats& stats,
     double& step,
     std::vector<Eigen::Vector3d>& candidate,
@@ -5403,9 +5399,9 @@ void syncVbdTopologyScratch(
 //==============================================================================
 void primeVbdStaticContactScratch(
     std::size_t nodeCount,
-    const std::vector<StaticGroundBarrier>& barriers,
-    const std::vector<SphereObstacleBarrier>& sphereObstacles,
-    const std::vector<BoxObstacleBarrier>& boxObstacles,
+    std::span<const StaticGroundBarrier> barriers,
+    std::span<const SphereObstacleBarrier> sphereObstacles,
+    std::span<const BoxObstacleBarrier> boxObstacles,
     const comps::DeformableVbdConfig& config,
     DeformableVbdScratch& vbdScratch)
 {
@@ -5444,9 +5440,9 @@ void runVbdDeformableSolve(
     double youngsModulus,
     double poissonRatio,
     bool useFixedCorotationalTets,
-    const std::vector<StaticGroundBarrier>& barriers,
-    const std::vector<SphereObstacleBarrier>& sphereObstacles,
-    const std::vector<BoxObstacleBarrier>& boxObstacles,
+    std::span<const StaticGroundBarrier> barriers,
+    std::span<const SphereObstacleBarrier> sphereObstacles,
+    std::span<const BoxObstacleBarrier> boxObstacles,
     const std::vector<DeformableSurfaceTriangle>& surfaceTriangles,
     std::span<const std::uint8_t> surfaceContactPointMask,
     double frictionCoeff,
@@ -6532,10 +6528,10 @@ bool computeProjectedNewtonDirection(
     const comps::DeformableSpringModel& model,
     const std::vector<Eigen::Vector3d>& positions,
     const std::vector<std::uint8_t>& fixed,
-    const std::vector<StaticGroundBarrier>& barriers,
-    const std::vector<SphereObstacleBarrier>& sphereObstacles,
-    const std::vector<BoxObstacleBarrier>& boxObstacles,
-    const std::vector<CapsuleObstacleBarrier>& capsuleObstacles,
+    std::span<const StaticGroundBarrier> barriers,
+    std::span<const SphereObstacleBarrier> sphereObstacles,
+    std::span<const BoxObstacleBarrier> boxObstacles,
+    std::span<const CapsuleObstacleBarrier> capsuleObstacles,
     const SelfContactBarrierInputs* contactBarrier,
     const GroundFrictionInputs* groundFriction,
     const SelfContactFrictionInputs* selfContactFriction,
@@ -7246,10 +7242,10 @@ void advanceDeformableBody(
     std::span<const SurfaceContactSnapshot> movingRigidSurfaceSnapshots,
     const Eigen::Vector3d& gravity,
     double timeStep,
-    const std::vector<StaticGroundBarrier>& barriers,
-    const std::vector<SphereObstacleBarrier>& sphereObstacles,
-    const std::vector<BoxObstacleBarrier>& boxObstacles,
-    const std::vector<CapsuleObstacleBarrier>& capsuleObstacles,
+    std::span<const StaticGroundBarrier> barriers,
+    std::span<const SphereObstacleBarrier> sphereObstacles,
+    std::span<const BoxObstacleBarrier> boxObstacles,
+    std::span<const CapsuleObstacleBarrier> capsuleObstacles,
     const comps::DeformableMaterial& material,
     DeformableSolverStats& stats)
 {
@@ -8730,13 +8726,44 @@ bool canApplyRestingContactNoOp(
 //==============================================================================
 struct DeformableDynamicsStage::Scratch
 {
-  std::vector<StaticGroundBarrier> barriers;
-  std::vector<SphereObstacleBarrier> sphereObstacles;
-  std::vector<BoxObstacleBarrier> boxObstacles;
-  std::vector<CapsuleObstacleBarrier> capsuleObstacles;
-  std::vector<SurfaceContactSnapshot> surfaceSnapshots;
-  std::vector<SurfaceContactSnapshot> rigidSurfaceSnapshots;
-  std::vector<SurfaceContactSnapshot> movingRigidSurfaceSnapshots;
+  Scratch() = default;
+
+  explicit Scratch(common::MemoryAllocator& allocator)
+    : barriers(common::StlAllocator<StaticGroundBarrier>{allocator}),
+      sphereObstacles(common::StlAllocator<SphereObstacleBarrier>{allocator}),
+      boxObstacles(common::StlAllocator<BoxObstacleBarrier>{allocator}),
+      capsuleObstacles(common::StlAllocator<CapsuleObstacleBarrier>{allocator}),
+      surfaceSnapshots(common::StlAllocator<SurfaceContactSnapshot>{allocator}),
+      rigidSurfaceSnapshots(
+          common::StlAllocator<SurfaceContactSnapshot>{allocator}),
+      movingRigidSurfaceSnapshots(
+          common::StlAllocator<SurfaceContactSnapshot>{allocator})
+  {
+  }
+
+  std::vector<StaticGroundBarrier, common::StlAllocator<StaticGroundBarrier>>
+      barriers;
+  std::
+      vector<SphereObstacleBarrier, common::StlAllocator<SphereObstacleBarrier>>
+          sphereObstacles;
+  std::vector<BoxObstacleBarrier, common::StlAllocator<BoxObstacleBarrier>>
+      boxObstacles;
+  std::vector<
+      CapsuleObstacleBarrier,
+      common::StlAllocator<CapsuleObstacleBarrier>>
+      capsuleObstacles;
+  std::vector<
+      SurfaceContactSnapshot,
+      common::StlAllocator<SurfaceContactSnapshot>>
+      surfaceSnapshots;
+  std::vector<
+      SurfaceContactSnapshot,
+      common::StlAllocator<SurfaceContactSnapshot>>
+      rigidSurfaceSnapshots;
+  std::vector<
+      SurfaceContactSnapshot,
+      common::StlAllocator<SurfaceContactSnapshot>>
+      movingRigidSurfaceSnapshots;
   std::size_t surfaceSnapshotCount = 0;
   std::size_t rigidSurfaceSnapshotCount = 0;
   std::size_t movingRigidSurfaceSnapshotCount = 0;
@@ -9851,7 +9878,10 @@ DeformableDynamicsStage::DeformableDynamicsStage(
     common::MemoryManager* memoryManager)
   : m_memoryManager(memoryManager),
     m_scratch(
-        constructStageOwnedScratch<Scratch>(memoryManager),
+        memoryManager != nullptr
+            ? constructStageOwnedScratch<Scratch>(
+                  memoryManager, memoryManager->getFreeAllocator())
+            : constructStageOwnedScratch<Scratch>(nullptr),
         ScratchDeleter{memoryManager})
 {
 }
@@ -9929,7 +9959,7 @@ void primeSurfaceContactCandidateScratch(
 //==============================================================================
 void collectDeformableSurfaceSnapshotsInto(
     const sxdetail::WorldRegistry& registry,
-    std::vector<SurfaceContactSnapshot>& snapshots,
+    auto& snapshots,
     std::size_t& snapshotCount)
 {
   auto view = registry.view<
@@ -10033,7 +10063,10 @@ void DeformableDynamicsStage::prepare(World& world)
 {
   if (m_scratch == nullptr) {
     m_scratch = std::unique_ptr<Scratch, ScratchDeleter>(
-        constructStageOwnedScratch<Scratch>(m_memoryManager),
+        m_memoryManager != nullptr
+            ? constructStageOwnedScratch<Scratch>(
+                  m_memoryManager, m_memoryManager->getFreeAllocator())
+            : constructStageOwnedScratch<Scratch>(nullptr),
         ScratchDeleter{m_memoryManager});
   }
 
@@ -10209,7 +10242,10 @@ void DeformableDynamicsStage::execute(
 
   if (m_scratch == nullptr) {
     m_scratch = std::unique_ptr<Scratch, ScratchDeleter>(
-        constructStageOwnedScratch<Scratch>(m_memoryManager),
+        m_memoryManager != nullptr
+            ? constructStageOwnedScratch<Scratch>(
+                  m_memoryManager, m_memoryManager->getFreeAllocator())
+            : constructStageOwnedScratch<Scratch>(nullptr),
         ScratchDeleter{m_memoryManager});
   }
 

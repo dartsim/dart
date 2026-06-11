@@ -770,6 +770,13 @@ Follow-up progress after PR #2956:
   use and release the provided free allocator. Solver option/result vectors and
   nested surface mesh payloads remain separate follow-up work because they cross
   the detail solver API boundary.
+- The deformable stage scratch follow-up routes the stage-owned static-ground
+  barrier, sphere/box/capsule obstacle, deformable surface-snapshot, static
+  rigid surface-CCD snapshot, and moving rigid surface-CCD snapshot vectors
+  through the borrowed World free allocator. A focused custom-stage test covers
+  all of those top-level vectors against an isolated provided free allocator and
+  verifies release when the stage is destroyed. Nested snapshot payload vectors
+  still use their existing storage and remain follow-up work.
 - The kinematics cache follow-up routes `WorldKinematicsGraph`'s entity-node
   lookup vector through the World free allocator when the graph is constructed
   by the built-in kinematics stage. A focused stack-constructed graph test
