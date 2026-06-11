@@ -13,15 +13,18 @@ Corpus matrix:
   narrow `RigidBodyContactStage::prepare()` source-row cleanup still builds and
   focused AVBD source-row tests plus `pixi run test-unit` pass. The cleanup
   avoids the collision-shape capacity scan when the contact query is already
-  skipped, and uses the distance-spring storage size for AVBD scratch reserve
-  capacity instead of iterating the spring configs just to count them. Earlier
-  same-branch benchmark smoke under lower host load moved
+  skipped, avoids running a prepare-time contact query that `execute()` repeats
+  only to size AVBD contact scratch, and uses the distance-spring storage size
+  for AVBD scratch reserve capacity instead of iterating the spring configs just
+  to count them. Earlier same-branch benchmark smoke under lower host load moved
   `BM_AvbdDemo2dMotorStep_median` from about 9.34 us to 8.83 us,
   `BM_AvbdDemo2dSpringStep_median` from about 5.04 us to 4.28 us, and
-  `BM_AvbdDemo2dSpringRatioStep_median` from about 45.3 us to 37.1 us;
-  post-merge reruns under host load average around 20 were noisy enough to
-  treat as smoke only. This remains no-contact/source-row overhead evidence and
-  does not close any source CPU-win, GPU, or paper-number gate.
+  `BM_AvbdDemo2dSpringRatioStep_median` from about 45.3 us to 37.1 us. A later
+  exact toggle under host load kept the zero-contact-reserve variant after it
+  improved the second after-run medians for 2D Spring/Spring Ratio and 3D
+  Ground/Spring/Spring Ratio while leaving Motor in the noise. This remains
+  no-contact/source-row overhead evidence and does not close any source CPU-win,
+  GPU, or paper-number gate.
 - Latest local follow-up: C++ and dartpy public articulated AVBD stiffness
   persistence coverage now exercises fixed, revolute, prismatic, and spherical
   public articulated facades for both same-multibody link pairs and world-link
