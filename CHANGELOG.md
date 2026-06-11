@@ -192,8 +192,10 @@
   - Added related-evidence routes to the runner-owned `Rigid Workflow` panel so
     `rigid_solver_compare` can jump to the non-numbered Rigid IPC
     no-tunneling scene and `rigid_contact_solver_compare` can jump to the
-    differentiable contact-gradient scene without changing the 35-row rigid
-    workflow order.
+    differentiable contact-gradient scene. The `contact`,
+    `rigid_joint_breakage`, and `rigid_joint_motor_limits` rows now also jump
+    to their AVBD-specific rigid constraint variants without changing the
+    35-row rigid workflow order.
   - Added `rigid_ipc_stack_packet` to the non-numbered Rigid IPC shelf as a
     capture-first four-box stack stress scene with frame-budget, wall-time,
     clearance, contact-count, drift, height-error, speed, and benchmark-owner

@@ -505,6 +505,73 @@ _RIGID_WORKFLOW_RELATED_EVIDENCE: Mapping[
             ),
         ),
     ),
+    "contact": (
+        RigidWorkflowRelatedEvidence(
+            label=(
+                "AVBD Rigid Constraints (sx) / avbd_rigid_fixed_joint_contact "
+                "- fixed-joint contact route"
+            ),
+            scene_id="avbd_rigid_fixed_joint_contact",
+            shelf="AVBD Rigid Constraints (sx)",
+            reason=(
+                "Variational fixed-joint/contact capability scene; not a "
+                "World contact-policy comparison."
+            ),
+        ),
+    ),
+    "rigid_joint_breakage": (
+        RigidWorkflowRelatedEvidence(
+            label=(
+                "AVBD Rigid Constraints (sx) / avbd_rigid_breakable_joint "
+                "- free-rigid fixed break/reset"
+            ),
+            scene_id="avbd_rigid_breakable_joint",
+            shelf="AVBD Rigid Constraints (sx)",
+            reason=(
+                "Dedicated free-rigid fixed break/reset row; not sequential-"
+                "impulse or IPC parity evidence."
+            ),
+        ),
+        RigidWorkflowRelatedEvidence(
+            label=(
+                "AVBD Rigid Constraints (sx) / "
+                "avbd_rigid_spherical_breakable_joint "
+                "- spherical anchor break/reset"
+            ),
+            scene_id="avbd_rigid_spherical_breakable_joint",
+            shelf="AVBD Rigid Constraints (sx)",
+            reason=(
+                "Dedicated free-rigid spherical anchor break/reset row; "
+                "orientation remains intentionally free."
+            ),
+        ),
+    ),
+    "rigid_joint_motor_limits": (
+        RigidWorkflowRelatedEvidence(
+            label=(
+                "AVBD Rigid Constraints (sx) / avbd_rigid_revolute_motor "
+                "- free-rigid hinge motor"
+            ),
+            scene_id="avbd_rigid_revolute_motor",
+            shelf="AVBD Rigid Constraints (sx)",
+            reason=(
+                "AVBD free-rigid revolute velocity motor; not a World "
+                "multibody motor/limit comparison."
+            ),
+        ),
+        RigidWorkflowRelatedEvidence(
+            label=(
+                "AVBD Rigid Constraints (sx) / avbd_rigid_prismatic_motor "
+                "- free-rigid slider motor"
+            ),
+            scene_id="avbd_rigid_prismatic_motor",
+            shelf="AVBD Rigid Constraints (sx)",
+            reason=(
+                "AVBD free-rigid prismatic velocity motor; not a World "
+                "multibody motor/limit comparison."
+            ),
+        ),
+    ),
 }
 
 

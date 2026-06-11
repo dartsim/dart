@@ -179,6 +179,15 @@ numbered World Rigid Body workflow because it is an IPC-only capability scene,
 not a broad side-by-side solver row. In the viewer, the `Rigid Solver Compare`
 row exposes it as a `Related shelf` route.
 
+For AVBD-specific rigid constraint variants, use the **AVBD Rigid Constraints
+(sx)** shelf. In the viewer, the `Contact`, `Rigid Joint Breakage`, and `Rigid
+Joint Motor Limits` rows expose `Related shelf` routes to
+**`avbd_rigid_fixed_joint_contact`**, **`avbd_rigid_breakable_joint`**,
+**`avbd_rigid_spherical_breakable_joint`**, **`avbd_rigid_revolute_motor`**,
+and **`avbd_rigid_prismatic_motor`**. These remain outside the numbered World
+Rigid Body workflow because they are AVBD capability rows, not broad World
+solver comparisons.
+
 ## Rigid body baseline
 
 The **`rigid_body`** scene is the default front door for DART 7 rigid-body

@@ -1240,6 +1240,42 @@ def test_rigid_workflow_panel_related_evidence_routes_to_other_shelves() -> None
     )
     assert context.scene_switch_requests == ["diff_drone_liftoff"]
 
+    motor_scene = PythonDemoScene(
+        id="rigid_joint_motor_limits",
+        title="Test rigid_joint_motor_limits",
+        category="World Rigid Body",
+        summary="Related AVBD motor route test.",
+        build=lambda: SceneSetup(),
+    )
+    _pre_step, _force_drag, panels, _provider = _make_world_factory(motor_scene)()
+    assert panels is not None
+    workflow_panel = [panel for panel in panels if panel.title == "Rigid Workflow"][0]
+    context = _FakePanelContext()
+    revolute_label = (
+        "Related shelf: AVBD Rigid Constraints (sx) / "
+        "avbd_rigid_revolute_motor - free-rigid hinge motor"
+        "##rigid_workflow_related_avbd_rigid_revolute_motor"
+    )
+    prismatic_label = (
+        "Related shelf: AVBD Rigid Constraints (sx) / "
+        "avbd_rigid_prismatic_motor - free-rigid slider motor"
+        "##rigid_workflow_related_avbd_rigid_prismatic_motor"
+    )
+    motor_builder = _ScriptedPanelBuilder(selected_items={prismatic_label})
+
+    workflow_panel.build(motor_builder, context)
+
+    assert f"selectable:{revolute_label}:False" in motor_builder.events
+    assert f"selectable:{prismatic_label}:False" in motor_builder.events
+    assert any(
+        event.startswith(
+            "tooltip:Open avbd_rigid_prismatic_motor from the "
+            "AVBD Rigid Constraints (sx) shelf."
+        )
+        for event in motor_builder.events
+    )
+    assert context.scene_switch_requests == ["avbd_rigid_prismatic_motor"]
+
 
 def test_rigid_workflow_panel_jump_selector_requests_scene_switch() -> None:
     scene = PythonDemoScene(

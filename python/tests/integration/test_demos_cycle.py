@@ -1054,16 +1054,92 @@ def test_rigid_visual_workflow_related_evidence_routes_are_valid() -> None:
             ),
             "Analytic vs complementarity-aware clamping-contact optimization; not a solver row.",
         ),
+        (
+            "contact",
+            "avbd_rigid_fixed_joint_contact",
+            "AVBD Rigid Constraints (sx)",
+            (
+                "Related shelf: AVBD Rigid Constraints (sx) / "
+                "avbd_rigid_fixed_joint_contact - fixed-joint contact route"
+            ),
+            (
+                "Variational fixed-joint/contact capability scene; not a "
+                "World contact-policy comparison."
+            ),
+        ),
+        (
+            "rigid_joint_breakage",
+            "avbd_rigid_breakable_joint",
+            "AVBD Rigid Constraints (sx)",
+            (
+                "Related shelf: AVBD Rigid Constraints (sx) / "
+                "avbd_rigid_breakable_joint - free-rigid fixed break/reset"
+            ),
+            (
+                "Dedicated free-rigid fixed break/reset row; not sequential-"
+                "impulse or IPC parity evidence."
+            ),
+        ),
+        (
+            "rigid_joint_breakage",
+            "avbd_rigid_spherical_breakable_joint",
+            "AVBD Rigid Constraints (sx)",
+            (
+                "Related shelf: AVBD Rigid Constraints (sx) / "
+                "avbd_rigid_spherical_breakable_joint - spherical anchor break/reset"
+            ),
+            (
+                "Dedicated free-rigid spherical anchor break/reset row; "
+                "orientation remains intentionally free."
+            ),
+        ),
+        (
+            "rigid_joint_motor_limits",
+            "avbd_rigid_revolute_motor",
+            "AVBD Rigid Constraints (sx)",
+            (
+                "Related shelf: AVBD Rigid Constraints (sx) / "
+                "avbd_rigid_revolute_motor - free-rigid hinge motor"
+            ),
+            (
+                "AVBD free-rigid revolute velocity motor; not a World "
+                "multibody motor/limit comparison."
+            ),
+        ),
+        (
+            "rigid_joint_motor_limits",
+            "avbd_rigid_prismatic_motor",
+            "AVBD Rigid Constraints (sx)",
+            (
+                "Related shelf: AVBD Rigid Constraints (sx) / "
+                "avbd_rigid_prismatic_motor - free-rigid slider motor"
+            ),
+            (
+                "AVBD free-rigid prismatic velocity motor; not a World "
+                "multibody motor/limit comparison."
+            ),
+        ),
     ]
     assert set(_RIGID_WORKFLOW_RELATED_EVIDENCE) == {
         source_scene_id
         for source_scene_id, _target_scene_id, _shelf, _label, _scope in related_rows
     }
+    assert [
+        (source_scene_id, entry.scene_id)
+        for source_scene_id, entries in _RIGID_WORKFLOW_RELATED_EVIDENCE.items()
+        for entry in entries
+    ] == [
+        (source_scene_id, target_scene_id)
+        for source_scene_id, target_scene_id, _shelf, _label, _scope in related_rows
+    ]
     for source_scene_id, target_scene_id, shelf, label, scope in related_rows:
         assert source_scene_id in RIGID_VISUAL_WORKFLOW_GUIDES
         entries = _RIGID_WORKFLOW_RELATED_EVIDENCE[source_scene_id]
-        assert len(entries) == 1
-        entry = entries[0]
+        matching_entries = [
+            entry for entry in entries if entry.scene_id == target_scene_id
+        ]
+        assert len(matching_entries) == 1
+        entry = matching_entries[0]
         assert entry.scene_id == target_scene_id
         assert entry.scene_id in by_id
         assert entry.scene_id not in RIGID_VISUAL_WORKFLOW_GUIDES
