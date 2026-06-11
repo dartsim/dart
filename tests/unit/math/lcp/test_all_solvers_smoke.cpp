@@ -169,6 +169,31 @@ TEST_F(AllSolversSmokeTest, ManifestMatchesConstructedSolverMetadata)
     ASSERT_NE(solver, nullptr) << solverCase.name;
     EXPECT_EQ(solver->getName(), std::string(solverCase.name))
         << solverCase.name;
+    EXPECT_TRUE(solver->supportsStandardLcp()) << solverCase.name;
+    EXPECT_EQ(solver->supportsBoxedLcp(), solverCase.supportsBoxed)
+        << solverCase.name;
+    EXPECT_EQ(solver->supportsFrictionIndex(), solverCase.supportsFrictionIndex)
+        << solverCase.name;
+  }
+}
+
+TEST_F(AllSolversSmokeTest, SolverCapabilityPredicatesClassifyProblemForms)
+{
+  const auto standard = LcpProblemFactory::standard2dSpd();
+  const auto boxed = LcpProblemFactory::boxed2dActiveUpper();
+  const auto friction = LcpProblemFactory::singleContactFriction();
+
+  for (const auto& solverCase : kLcpSolverManifest) {
+    const auto solver = solverCase.create();
+    ASSERT_NE(solver, nullptr) << solverCase.name;
+    EXPECT_EQ(solver->supportsProblem(standard.problem), true)
+        << solverCase.name;
+    EXPECT_EQ(solver->supportsProblem(boxed.problem), solverCase.supportsBoxed)
+        << solverCase.name;
+    EXPECT_EQ(
+        solver->supportsProblem(friction.problem),
+        solverCase.supportsFrictionIndex)
+        << solverCase.name;
   }
 }
 
@@ -243,6 +268,9 @@ TEST_F(AllSolversSmokeTest, Standard2dDoesNotCrash)
 TEST_F(AllSolversSmokeTest, BoxedProblemHandledCorrectly)
 {
   auto problem = LcpProblemFactory::boxed2dActiveUpper();
+  EXPECT_FALSE(problem.problem.isStandardLcp());
+  EXPECT_TRUE(problem.problem.isBoxedLcp());
+  EXPECT_FALSE(problem.problem.hasFrictionIndex());
 
   for (const auto& solverCase : kLcpSolverManifest) {
     const auto solver = solverCase.create();
@@ -273,17 +301,26 @@ TEST_F(AllSolversSmokeTest, BoxedProblemHandledCorrectly)
 TEST_F(AllSolversSmokeTest, FrictionProblemDoesNotCrash)
 {
   auto problem = LcpProblemFactory::singleContactFriction();
+  EXPECT_FALSE(problem.problem.isStandardLcp());
+  EXPECT_FALSE(problem.problem.isBoxedLcp());
+  EXPECT_TRUE(problem.problem.hasFrictionIndex());
 
   for (const auto& solverCase : kLcpSolverManifest) {
-    if (!solverCase.supportsFrictionIndex) {
-      continue;
-    }
-
     const auto solver = solverCase.create();
     Eigen::VectorXd x;
     LcpOptions options = solver->getDefaultOptions();
     options.maxIterations = 1000;
     auto result = solver->solve(problem.problem, x, options);
+
+    if (!solverCase.supportsFrictionIndex) {
+      EXPECT_TRUE(result.succeeded())
+          << solverCase.name
+          << " should delegate friction-index problems through Dantzig: "
+          << result.message;
+      expectWithinEffectiveBounds(
+          std::string(solverCase.name), problem.problem, x);
+      continue;
+    }
 
     // Smoke test: just verify no crash and finite output
     // Some iterative solvers may not converge on friction problems

@@ -135,11 +135,7 @@ LcpResult BaraffSolver::solve(
   const double compTol = (options.complementarityTolerance > 0)
                              ? options.complementarityTolerance
                              : mDefaultOptions.complementarityTolerance;
-  const bool standardBounds
-      = (lo.array().abs().maxCoeff() <= absTol)
-        && (hi.array() == std::numeric_limits<double>::infinity()).all()
-        && (findex.array() < 0).all();
-  if (!standardBounds) {
+  if (!problem.isStandardLcp(absTol)) {
     DantzigSolver fallback;
     return fallback.solve(problem, x, options);
   }

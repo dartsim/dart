@@ -89,6 +89,20 @@ inline bool validateProblem(
     return false;
   }
 
+  if (!A.allFinite()) {
+    if (message) {
+      *message = "Matrix contains non-finite values";
+    }
+    return false;
+  }
+
+  if (!b.allFinite()) {
+    if (message) {
+      *message = "Vector b contains non-finite values";
+    }
+    return false;
+  }
+
   const Eigen::Index n = b.size();
   for (Eigen::Index i = 0; i < n; ++i) {
     const int ref = findex[i];

@@ -67,6 +67,46 @@ public:
   /// @return Category name (e.g., "Pivoting", "Projection", "Newton")
   virtual std::string getCategory() const = 0;
 
+  /// Returns true when this solver natively supports standard LCPs.
+  ///
+  /// The native capability methods describe the algorithm family implemented by
+  /// this solver. Some solvers may still solve other problem forms by
+  /// delegating to a boxed-LCP fallback.
+  virtual bool supportsStandardLcp() const
+  {
+    return true;
+  }
+
+  /// Returns true when this solver natively supports boxed LCP bounds.
+  virtual bool supportsBoxedLcp() const
+  {
+    return false;
+  }
+
+  /// Returns true when this solver natively supports friction-index coupling.
+  virtual bool supportsFrictionIndex() const
+  {
+    return false;
+  }
+
+  /// Returns true when this solver natively supports the problem form.
+  bool supportsProblem(const LcpProblem& problem) const
+  {
+    if (problem.isStandardLcp()) {
+      return supportsStandardLcp();
+    }
+
+    if (problem.hasFrictionIndex()) {
+      return supportsFrictionIndex();
+    }
+
+    if (problem.isBoxedLcp()) {
+      return supportsBoxedLcp();
+    }
+
+    return false;
+  }
+
   /// Get default options for this solver
   ///
   /// @return Default LcpOptions

@@ -48,17 +48,6 @@ namespace {
 
 constexpr int kMaxDimension = 3;
 
-bool isStandardLcp(
-    const Eigen::VectorXd& lo,
-    const Eigen::VectorXd& hi,
-    const Eigen::VectorXi& findex,
-    double absTol)
-{
-  return (lo.array().abs().maxCoeff() <= absTol)
-         && (hi.array() == std::numeric_limits<double>::infinity()).all()
-         && (findex.array() < 0).all();
-}
-
 } // namespace
 
 //==============================================================================
@@ -108,7 +97,7 @@ LcpResult DirectSolver::solve(
                              ? options.complementarityTolerance
                              : mDefaultOptions.complementarityTolerance;
 
-  if (!isStandardLcp(lo, hi, findex, absTol)) {
+  if (!problem.isStandardLcp(absTol)) {
     DantzigSolver fallback;
     return fallback.solve(problem, x, options);
   }

@@ -267,11 +267,7 @@ LcpResult FischerBurmeisterNewtonSolver::solve(
   const double absTol = (options.absoluteTolerance > 0.0)
                             ? options.absoluteTolerance
                             : mDefaultOptions.absoluteTolerance;
-  const bool standardBounds
-      = (lo.array().abs().maxCoeff() <= absTol)
-        && (hi.array() == std::numeric_limits<double>::infinity()).all()
-        && (findex.array() < 0).all();
-  if (!standardBounds) {
+  if (!problem.isStandardLcp(absTol)) {
     DantzigSolver fallback;
     return fallback.solve(problem, x, options);
   }

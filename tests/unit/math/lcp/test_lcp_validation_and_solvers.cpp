@@ -486,6 +486,36 @@ TEST(LcpValidationCoverage, DetectsBoundsDimensionMismatch)
   EXPECT_FALSE(message.empty());
 }
 
+TEST(LcpValidationCoverage, DetectsNonFiniteMatrixEntries)
+{
+  Eigen::MatrixXd A = Eigen::MatrixXd::Identity(2, 2);
+  A(0, 1) = std::numeric_limits<double>::quiet_NaN();
+  Eigen::VectorXd b = Eigen::VectorXd::Zero(2);
+  Eigen::VectorXd lo = Eigen::VectorXd::Zero(2);
+  Eigen::VectorXd hi = Eigen::VectorXd::Ones(2);
+  Eigen::VectorXi findex = Eigen::VectorXi::Constant(2, -1);
+  LcpProblem problem(A, b, lo, hi, findex);
+
+  std::string message;
+  EXPECT_FALSE(detail::validateProblem(problem, &message));
+  EXPECT_NE(message.find("Matrix"), std::string::npos);
+}
+
+TEST(LcpValidationCoverage, DetectsNonFiniteRhsEntries)
+{
+  Eigen::MatrixXd A = Eigen::MatrixXd::Identity(2, 2);
+  Eigen::VectorXd b = Eigen::VectorXd::Zero(2);
+  b[1] = std::numeric_limits<double>::infinity();
+  Eigen::VectorXd lo = Eigen::VectorXd::Zero(2);
+  Eigen::VectorXd hi = Eigen::VectorXd::Ones(2);
+  Eigen::VectorXi findex = Eigen::VectorXi::Constant(2, -1);
+  LcpProblem problem(A, b, lo, hi, findex);
+
+  std::string message;
+  EXPECT_FALSE(detail::validateProblem(problem, &message));
+  EXPECT_NE(message.find("Vector b"), std::string::npos);
+}
+
 TEST(LcpValidationCoverage, DetectsFindexDimensionMismatch)
 {
   Eigen::MatrixXd A = Eigen::MatrixXd::Identity(3, 3);
@@ -1468,6 +1498,44 @@ TEST(MprgpSolverCoverage, SolvesShiftedProblem)
   EXPECT_TRUE(x.array().isFinite().all());
 }
 
+TEST(MprgpSolverCoverage, StalledDirectionReportsFiniteResult)
+{
+  constexpr int n = 12;
+  Eigen::MatrixXd A = Eigen::MatrixXd::Identity(n, n) * 2.0;
+  for (int i = 0; i + 1 < n; ++i) {
+    A(i, i + 1) = 0.08;
+    A(i + 1, i) = 0.08;
+  }
+  for (int i = 0; i + 2 < n; ++i) {
+    A(i, i + 2) = 0.025;
+    A(i + 2, i) = 0.025;
+  }
+
+  Eigen::VectorXd target(n);
+  for (int i = 0; i < n; ++i) {
+    target[i]
+        = 0.15
+          + (0.50 - 0.15) * static_cast<double>(i) / static_cast<double>(n - 1);
+  }
+
+  LcpProblem problem(A, A * target);
+  MprgpSolver solver;
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(n);
+
+  LcpOptions options = LcpOptions::highAccuracy();
+  options.maxIterations = 1000;
+  const auto result = solver.solve(problem, x, options);
+
+  EXPECT_TRUE(
+      result.status == LcpSolverStatus::Success
+      || result.status == LcpSolverStatus::MaxIterations)
+      << result.message;
+  EXPECT_TRUE(std::isfinite(result.residual));
+  EXPECT_TRUE(std::isfinite(result.complementarity));
+  EXPECT_TRUE(x.array().isFinite().all());
+  EXPECT_LT((x - target).lpNorm<Eigen::Infinity>(), 1e-6);
+}
+
 TEST(MprgpSolverCoverage, RejectsInvalidDivisionEpsilon)
 {
   MprgpSolver solver;
@@ -2244,7 +2312,7 @@ TEST(MprgpSolverCoverage, FallsBackForIndefiniteProblem)
   EXPECT_TRUE(x.array().isFinite().all());
 }
 
-TEST(MprgpSolverCoverage, ReportsProjectedGradientFailure)
+TEST(MprgpSolverCoverage, ReportsProjectedGradientStallWithFiniteMetrics)
 {
   MprgpSolver solver;
   Eigen::MatrixXd A = Eigen::MatrixXd::Identity(2, 2);
@@ -2263,7 +2331,9 @@ TEST(MprgpSolverCoverage, ReportsProjectedGradientFailure)
   options.customOptions = &params;
   options.maxIterations = 5;
   const auto result = solver.solve(problem, x, options);
-  EXPECT_EQ(result.status, LcpSolverStatus::Failed);
+  EXPECT_EQ(result.status, LcpSolverStatus::MaxIterations);
+  EXPECT_TRUE(std::isfinite(result.residual));
+  EXPECT_TRUE(std::isfinite(result.complementarity));
   EXPECT_FALSE(result.message.empty());
 }
 

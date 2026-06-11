@@ -45,6 +45,8 @@
 #include <string>
 #include <vector>
 
+#include <cmath>
+
 namespace dart::math {
 namespace {
 
@@ -60,17 +62,6 @@ double matrixInfinityNorm(const Eigen::MatrixXd& A)
 double vectorInfinityNorm(const Eigen::VectorXd& v)
 {
   return v.size() > 0 ? v.cwiseAbs().maxCoeff() : 0.0;
-}
-
-bool isStandardLcp(
-    const Eigen::VectorXd& lo,
-    const Eigen::VectorXd& hi,
-    const Eigen::VectorXi& findex,
-    double absTol)
-{
-  return (lo.array().abs().maxCoeff() <= absTol)
-         && (hi.array() == std::numeric_limits<double>::infinity()).all()
-         && (findex.array() < 0).all();
 }
 
 bool isSymmetric(const Eigen::MatrixXd& A, double tol)
@@ -140,7 +131,7 @@ LcpResult MprgpSolver::solve(
   const double absTol = (options.absoluteTolerance > 0.0)
                             ? options.absoluteTolerance
                             : mDefaultOptions.absoluteTolerance;
-  if (!isStandardLcp(lo, hi, findex, absTol)) {
+  if (!problem.isStandardLcp(absTol)) {
     DantzigSolver fallback;
     return fallback.solve(problem, x, options);
   }
@@ -241,6 +232,44 @@ LcpResult MprgpSolver::solve(
   std::vector<int> activePrev(n, 0);
   bool resetDirection = true;
 
+  auto finishStalledIteration = [&](const std::string& message) -> LcpResult {
+    if (!updateMetrics()) {
+      return result;
+    }
+
+    result.iterations = iterationsUsed;
+    result.residual = residual;
+    result.complementarity = complementarity;
+
+    if (residual <= tol && complementarity <= compTol) {
+      result.status = LcpSolverStatus::Success;
+    } else if (
+        std::isfinite(residual) && std::isfinite(complementarity)
+        && x.allFinite()) {
+      result.status = LcpSolverStatus::MaxIterations;
+      result.message = message;
+    } else {
+      result.status = LcpSolverStatus::NumericalError;
+      result.message = message;
+    }
+
+    if (options.validateSolution && result.status == LcpSolverStatus::Success) {
+      const double validationTol = std::max(tol, compTol);
+      std::string validationMessage;
+      const bool valid = detail::validateSolution(
+          x, w, loEff, hiEff, validationTol, &validationMessage);
+      result.validated = true;
+      if (!valid) {
+        result.status = LcpSolverStatus::NumericalError;
+        result.message = validationMessage.empty()
+                             ? "Solution validation failed"
+                             : validationMessage;
+      }
+    }
+
+    return result;
+  };
+
   for (const auto iter : std::views::iota(0, maxIterations)) {
     if (converged) {
       break;
@@ -262,9 +291,8 @@ LcpResult MprgpSolver::solve(
     }
 
     if (pg.cwiseAbs().maxCoeff() <= params->epsilonForDivision) {
-      result.status = LcpSolverStatus::Failed;
-      result.message = "Projected gradient vanished before convergence";
-      return result;
+      return finishStalledIteration(
+          "Projected gradient vanished before convergence");
     }
 
     const bool activeChanged = (active != activePrev);
@@ -292,9 +320,8 @@ LcpResult MprgpSolver::solve(
       Ap = A * p;
       denom = p.dot(Ap);
       if (!std::isfinite(denom) || denom <= params->epsilonForDivision) {
-        result.status = LcpSolverStatus::NumericalError;
-        result.message = "MPRGP direction is not positive definite";
-        return result;
+        return finishStalledIteration(
+            "MPRGP direction is not positive definite");
       }
     }
 

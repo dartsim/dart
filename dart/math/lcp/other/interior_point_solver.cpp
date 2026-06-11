@@ -116,9 +116,6 @@ LcpResult InteriorPointSolver::solve(
 
   const auto& A = problem.A;
   const auto& b = problem.b;
-  const auto& lo = problem.lo;
-  const auto& hi = problem.hi;
-  const auto& findex = problem.findex;
 
   std::string problemMessage;
   if (!detail::validateProblem(problem, &problemMessage)) {
@@ -147,11 +144,7 @@ LcpResult InteriorPointSolver::solve(
   const double compTolOpt = (options.complementarityTolerance > 0.0)
                                 ? options.complementarityTolerance
                                 : mDefaultOptions.complementarityTolerance;
-  const bool standardBounds
-      = (lo.array().abs().maxCoeff() <= absTol)
-        && (hi.array() == std::numeric_limits<double>::infinity()).all()
-        && (findex.array() < 0).all();
-  if (!standardBounds) {
+  if (!problem.isStandardLcp(absTol)) {
     DantzigSolver fallback;
     return fallback.solve(problem, x, options);
   }

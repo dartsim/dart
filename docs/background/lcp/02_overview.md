@@ -42,10 +42,24 @@ This section tracks which LCP solvers are currently implemented in DART (`dart/m
 
 ### Unified API: `LcpProblem` + `LcpSolver`
 
-- `LcpProblem` bundles boxed LCP data `(A, b, lo, hi, findex)` so solvers share
-  one interface and handle friction index coupling consistently.
+- `LcpProblem` bundles standard, boxed, and friction-index LCP data so solvers
+  share one interface and handle contact friction coupling consistently. Use
+  `LcpProblem(A, b)` for standard non-negative LCPs,
+  `LcpProblem(A, b, lo, hi)` for boxed LCPs, and the five-argument constructor
+  when friction rows reference normal rows through `findex`.
+- `LcpProblem::isStandardLcp(tol)` owns the standard-form classification
+  (`lo = 0`, `hi = +inf`, `findex < 0`),
+  `LcpProblem::isBoxedLcp()` identifies explicit-bound problems without
+  findex coupling, and `LcpProblem::hasFrictionIndex()` exposes contact-style
+  bound coupling.
 - All solvers implement
   `LcpSolver::solve(const LcpProblem&, Eigen::VectorXd&, const LcpOptions&)`.
+- `LcpSolver::supportsStandardLcp()`, `supportsBoxedLcp()`,
+  `supportsFrictionIndex()`, and `supportsProblem(problem)` expose each
+  solver's native problem-form support for DART 7 research comparisons. These
+  are capability predicates, not dispatch guarantees: several standard-only
+  algorithms still delegate boxed/findex problems to Dantzig so the unified
+  `solve()` path remains usable.
 - `constraint::ConstraintSolver` now builds an `LcpProblem` and calls
   `math::DantzigSolver` (primary) with an optional `math::PgsSolver` fallback.
 - Solvers validate basic invariants (e.g., `lo <= hi`, `findex` in range, no

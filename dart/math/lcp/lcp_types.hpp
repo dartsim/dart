@@ -39,6 +39,9 @@
 
 #include <limits>
 #include <string>
+#include <utility>
+
+#include <cmath>
 
 namespace dart {
 namespace math {
@@ -192,6 +195,39 @@ struct DART_API LcpOptions
 /// friction index mapping.
 struct DART_API LcpProblem
 {
+  /// Construct a standard LCP: w = Ax - b, x >= 0, w >= 0, x'w = 0.
+  ///
+  /// This is the DART 7 convenience path for solvers that operate on the
+  /// standard non-negative complementarity form. Internally it is represented
+  /// as a boxed problem with lo = 0, hi = +inf, and findex = -1.
+  LcpProblem(Eigen::MatrixXd A_, Eigen::VectorXd b_)
+    : A(std::move(A_)), b(std::move(b_))
+  {
+    const Eigen::Index n = b.size();
+    lo = Eigen::VectorXd::Zero(n);
+    hi = Eigen::VectorXd::Constant(n, std::numeric_limits<double>::infinity());
+    findex = Eigen::VectorXi::Constant(n, -1);
+  }
+
+  /// Construct a boxed LCP without friction-index coupling.
+  ///
+  /// The lower and upper bounds are supplied explicitly, while findex is set to
+  /// -1 for every row.
+  LcpProblem(
+      Eigen::MatrixXd A_,
+      Eigen::VectorXd b_,
+      Eigen::VectorXd lo_,
+      Eigen::VectorXd hi_)
+    : A(std::move(A_)), b(std::move(b_)), lo(std::move(lo_)), hi(std::move(hi_))
+  {
+    findex = Eigen::VectorXi::Constant(b.size(), -1);
+  }
+
+  /// Construct a boxed LCP with optional friction-index coupling.
+  ///
+  /// This preserves the full ODE-compatible representation used by contact
+  /// solvers: findex[i] < 0 means row i has fixed bounds; findex[i] >= 0 means
+  /// row i has effective bounds scaled by the referenced normal row.
   LcpProblem(
       Eigen::MatrixXd A_,
       Eigen::VectorXd b_,
@@ -205,6 +241,71 @@ struct DART_API LcpProblem
       findex(std::move(findex_))
   {
     // Empty
+  }
+
+  /// Returns the problem dimension.
+  Eigen::Index size() const
+  {
+    return b.size();
+  }
+
+  /// Returns true when no rows are present.
+  bool empty() const
+  {
+    return size() == 0;
+  }
+
+  /// Returns true when bounds and friction indices match the standard LCP form.
+  ///
+  /// Standard LCP solvers expect lo = 0, hi = +inf, and findex < 0. The
+  /// tolerance is applied to the lower-bound zero check so callers can classify
+  /// numerically canonicalized problems without open-coding the convention.
+  bool isStandardLcp(double tolerance = 0.0) const
+  {
+    const Eigen::Index n = size();
+    if (lo.size() != n || hi.size() != n || findex.size() != n) {
+      return false;
+    }
+
+    const double tol = tolerance > 0.0 ? tolerance : 0.0;
+    for (Eigen::Index i = 0; i < n; ++i) {
+      if (!std::isfinite(lo[i]) || std::abs(lo[i]) > tol) {
+        return false;
+      }
+      if (hi[i] != std::numeric_limits<double>::infinity()) {
+        return false;
+      }
+      if (findex[i] >= 0) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /// Returns true when the problem has explicit bounds and no findex coupling.
+  ///
+  /// This includes standard LCPs, which are represented as the canonical boxed
+  /// form lo = 0 and hi = +inf. Use hasFrictionIndex() to distinguish contact
+  /// friction rows whose bounds depend on another row's solution.
+  bool isBoxedLcp() const
+  {
+    const Eigen::Index n = size();
+    if (lo.size() != n || hi.size() != n || findex.size() != n) {
+      return false;
+    }
+
+    return (findex.array() < 0).all();
+  }
+
+  /// Returns true if any row uses friction-index coupling.
+  bool hasFrictionIndex() const
+  {
+    if (findex.size() != size()) {
+      return false;
+    }
+
+    return (findex.array() >= 0).any();
   }
 
   Eigen::MatrixXd A;

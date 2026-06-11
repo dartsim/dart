@@ -334,11 +334,7 @@ LcpResult LemkeSolver::solve(
   const double absTol = (options.absoluteTolerance > 0)
                             ? options.absoluteTolerance
                             : mDefaultOptions.absoluteTolerance;
-  const bool standardBounds
-      = (lo.array().abs().maxCoeff() <= absTol)
-        && (hi.array() == std::numeric_limits<double>::infinity()).all()
-        && (findex.array() < 0).all();
-  if (!standardBounds) {
+  if (!problem.isStandardLcp(absTol)) {
     // Lemke is implemented for standard LCP only, but callers may still route
     // boxed/findex problems through this solver. Delegate to the boxed-capable
     // pivoting implementation to provide consistent behavior across solvers.
