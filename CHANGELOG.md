@@ -608,7 +608,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     surface preparation now also routes BDF2 history, articulation input,
     mixed-domain surface payload, candidate, edge, and AABB scratch through the
     stage's World allocator and has a focused global-heap no-allocation prepare
-    guard.
+    guard. Deformable self-contact and inter-body surface-CCD preparation now
+    also keeps per-body surface topology/contact-mask storage plus edge,
+    sweep-item, and sweep-link buffers in the World allocator-backed solver
+    scratch.
     The variational multibody stage now reuses baked inverse-dynamics scratch
     for its initial-guess bias query instead of calling the public
     return-by-value helper on same-shape steps. It also reuses baked dense

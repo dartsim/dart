@@ -1711,12 +1711,42 @@ using ProjectedNewtonFrictionContactVector = std::vector<
 //==============================================================================
 struct DeformableContactSolverScratch
 {
+  using SurfaceTriangleVector = std::vector<
+      DeformableSurfaceTriangle,
+      common::StlAllocator<DeformableSurfaceTriangle>>;
+  using SurfaceContactPointMaskVector
+      = std::vector<std::uint8_t, common::StlAllocator<std::uint8_t>>;
+  using SurfaceEdgeVector
+      = std::vector<dc::SurfaceEdge, common::StlAllocator<dc::SurfaceEdge>>;
+  using SweepItemVector = std::vector<
+      dc::detail::SweepItem,
+      common::StlAllocator<dc::detail::SweepItem>>;
+  using SweepLinkVector
+      = std::vector<std::size_t, common::StlAllocator<std::size_t>>;
+
   DeformableContactSolverScratch() = default;
 
   explicit DeformableContactSolverScratch(common::MemoryAllocator& allocator)
-    : candidates(allocator),
+    : surfaceTriangles(
+          common::StlAllocator<DeformableSurfaceTriangle>{allocator}),
+      surfaceContactPointMask(common::StlAllocator<std::uint8_t>{allocator}),
+      candidates(allocator),
       barrierCandidates(allocator),
       sweepScratch(allocator),
+      interBodyCurrentEdges(common::StlAllocator<dc::SurfaceEdge>{allocator}),
+      interBodyCurrentPointItems(
+          common::StlAllocator<dc::detail::SweepItem>{allocator}),
+      interBodyObstaclePointItems(
+          common::StlAllocator<dc::detail::SweepItem>{allocator}),
+      interBodyCurrentTriangleItems(
+          common::StlAllocator<dc::detail::SweepItem>{allocator}),
+      interBodyObstacleTriangleItems(
+          common::StlAllocator<dc::detail::SweepItem>{allocator}),
+      interBodyCurrentEdgeItems(
+          common::StlAllocator<dc::detail::SweepItem>{allocator}),
+      interBodyObstacleEdgeItems(
+          common::StlAllocator<dc::detail::SweepItem>{allocator}),
+      interBodySweepLinks(common::StlAllocator<std::size_t>{allocator}),
       newtonPatternOuter(common::StlAllocator<int>{allocator}),
       newtonPatternInner(common::StlAllocator<int>{allocator}),
       femRestShapes(common::StlAllocator<fem::TetRestShape>{allocator}),
@@ -1745,21 +1775,21 @@ struct DeformableContactSolverScratch
   {
   }
 
-  std::vector<DeformableSurfaceTriangle> surfaceTriangles;
-  std::vector<std::uint8_t> surfaceContactPointMask;
+  SurfaceTriangleVector surfaceTriangles;
+  SurfaceContactPointMaskVector surfaceContactPointMask;
   dc::ContactCandidateSet candidates;
   // Self-contact barrier active set, assembled once per outer solver iteration
   // at the current positions (within the barrier activation distance d_hat).
   dc::ContactCandidateSet barrierCandidates;
   dc::detail::ContactCandidateSweepScratch sweepScratch;
-  std::vector<dc::SurfaceEdge> interBodyCurrentEdges;
-  std::vector<dc::detail::SweepItem> interBodyCurrentPointItems;
-  std::vector<dc::detail::SweepItem> interBodyObstaclePointItems;
-  std::vector<dc::detail::SweepItem> interBodyCurrentTriangleItems;
-  std::vector<dc::detail::SweepItem> interBodyObstacleTriangleItems;
-  std::vector<dc::detail::SweepItem> interBodyCurrentEdgeItems;
-  std::vector<dc::detail::SweepItem> interBodyObstacleEdgeItems;
-  std::vector<std::size_t> interBodySweepLinks;
+  SurfaceEdgeVector interBodyCurrentEdges;
+  SweepItemVector interBodyCurrentPointItems;
+  SweepItemVector interBodyObstaclePointItems;
+  SweepItemVector interBodyCurrentTriangleItems;
+  SweepItemVector interBodyObstacleTriangleItems;
+  SweepItemVector interBodyCurrentEdgeItems;
+  SweepItemVector interBodyObstacleEdgeItems;
+  SweepLinkVector interBodySweepLinks;
 
   // Persistent projected-Newton sparse Cholesky. The fill-reducing symbolic
   // factorization is reused across iterations and steps whenever the assembled
@@ -2151,7 +2181,7 @@ void buildPointSweepItems(
     std::span<const Eigen::Vector3d> positionsEnd,
     std::span<const std::uint8_t> pointMask,
     double margin,
-    std::vector<dc::detail::SweepItem>& items)
+    auto& items)
 {
   items.clear();
   items.reserve(positionsStart.size());
@@ -2173,7 +2203,7 @@ void buildTriangleSweepItems(
     std::span<const Eigen::Vector3d> positionsEnd,
     std::span<const DeformableSurfaceTriangle> triangles,
     double margin,
-    std::vector<dc::detail::SweepItem>& items)
+    auto& items)
 {
   items.clear();
   items.reserve(triangles.size());
@@ -2199,7 +2229,7 @@ void buildEdgeSweepItems(
     std::span<const Eigen::Vector3d> positionsEnd,
     std::span<const dc::SurfaceEdge> edges,
     double margin,
-    std::vector<dc::detail::SweepItem>& items)
+    auto& items)
 {
   items.clear();
   items.reserve(edges.size());
@@ -4219,7 +4249,7 @@ double selfContactBarrierStiffness()
 struct SelfContactBarrierInputs
 {
   const dc::ContactCandidateSet* candidates = nullptr;
-  const std::vector<DeformableSurfaceTriangle>* triangles = nullptr;
+  std::span<const DeformableSurfaceTriangle> triangles;
   double squaredActivationDistance = 0.0;
   double stiffness = 0.0;
 };
@@ -4237,13 +4267,13 @@ double addSelfContactBarrierEnergy(
     std::size_t* activeContacts,
     std::vector<Eigen::Vector3d>* gradient)
 {
-  if (inputs.candidates == nullptr || inputs.triangles == nullptr
+  if (inputs.candidates == nullptr || inputs.triangles.empty()
       || inputs.stiffness <= 0.0 || !(inputs.squaredActivationDistance > 0.0)) {
     return 0.0;
   }
 
   const auto& candidates = *inputs.candidates;
-  const auto& triangles = *inputs.triangles;
+  const auto triangles = inputs.triangles;
   double energy = 0.0;
 
   const auto scatter = [&](const dc::PrimitiveBarrierResult& result,
@@ -4325,14 +4355,14 @@ void buildSelfContactFrictionContacts(
     auto& contacts)
 {
   contacts.clear();
-  if (barrier.candidates == nullptr || barrier.triangles == nullptr
+  if (barrier.candidates == nullptr || barrier.triangles.empty()
       || barrier.stiffness <= 0.0
       || !(barrier.squaredActivationDistance > 0.0)) {
     return;
   }
 
   const auto& candidates = *barrier.candidates;
-  const auto& triangles = *barrier.triangles;
+  const auto triangles = barrier.triangles;
   for (const auto& candidate : candidates.pointTriangleCandidates) {
     const auto& triangle = triangles[candidate.triangle];
     const auto& p = positions[candidate.point];
@@ -4501,13 +4531,13 @@ std::size_t accumulateContactDistanceDiagnostics(
     double& outMinDistance)
 {
   outMinDistance = 0.0;
-  if (barrier.candidates == nullptr || barrier.triangles == nullptr
+  if (barrier.candidates == nullptr || barrier.triangles.empty()
       || !(barrier.squaredActivationDistance > 0.0)) {
     return 0;
   }
 
   const auto& candidates = *barrier.candidates;
-  const auto& triangles = *barrier.triangles;
+  const auto triangles = barrier.triangles;
   double minSquared = std::numeric_limits<double>::infinity();
   std::size_t activeContacts = 0;
 
@@ -5673,7 +5703,7 @@ void runVbdDeformableSolve(
     std::span<const StaticGroundBarrier> barriers,
     std::span<const SphereObstacleBarrier> sphereObstacles,
     std::span<const BoxObstacleBarrier> boxObstacles,
-    const std::vector<DeformableSurfaceTriangle>& surfaceTriangles,
+    std::span<const DeformableSurfaceTriangle> surfaceTriangles,
     std::span<const std::uint8_t> surfaceContactPointMask,
     double frictionCoeff,
     const comps::DeformableVbdConfig& config,
@@ -6989,10 +7019,10 @@ bool computeProjectedNewtonDirection(
   // blocks use. The CPU backend is bit-identical to the previous inline
   // per-block projection.
   if (contactBarrier != nullptr && contactBarrier->candidates != nullptr
-      && contactBarrier->triangles != nullptr && contactBarrier->stiffness > 0.0
+      && !contactBarrier->triangles.empty() && contactBarrier->stiffness > 0.0
       && contactBarrier->squaredActivationDistance > 0.0) {
     const auto& candidates = *contactBarrier->candidates;
-    const auto& triangles = *contactBarrier->triangles;
+    const auto triangles = contactBarrier->triangles;
     const double sqAct = contactBarrier->squaredActivationDistance;
     const double kappa = contactBarrier->stiffness;
     constexpr std::size_t kBarrierBlockEntries = 144; // 12x12
@@ -7686,7 +7716,7 @@ void advanceDeformableBody(
             contactScratch.surfaceContactPointMask);
         ++stats.selfContactBarrierCandidateBuilds;
         contactBarrier.candidates = &contactScratch.barrierCandidates;
-        contactBarrier.triangles = &contactScratch.surfaceTriangles;
+        contactBarrier.triangles = contactScratch.surfaceTriangles;
         contactBarrier.squaredActivationDistance = dHat * dHat;
         contactBarrier.stiffness = selfContactBarrierStiffness();
       }
@@ -7995,7 +8025,7 @@ void advanceDeformableBody(
             contactScratch.barrierCandidates,
             contactScratch.surfaceContactPointMask);
         terminalBarrier.candidates = &contactScratch.barrierCandidates;
-        terminalBarrier.triangles = &contactScratch.surfaceTriangles;
+        terminalBarrier.triangles = contactScratch.surfaceTriangles;
         terminalBarrier.squaredActivationDistance = dHat * dHat;
         terminalBarrier.stiffness = selfContactBarrierStiffness();
       }
@@ -8113,7 +8143,7 @@ void advanceDeformableBody(
       const double dHat = selfContactBarrierActivationDistance();
       SelfContactBarrierInputs diagnosticBarrier;
       diagnosticBarrier.candidates = &contactScratch.barrierCandidates;
-      diagnosticBarrier.triangles = &contactScratch.surfaceTriangles;
+      diagnosticBarrier.triangles = contactScratch.surfaceTriangles;
       diagnosticBarrier.squaredActivationDistance = dHat * dHat;
       diagnosticBarrier.stiffness = selfContactBarrierStiffness();
       double bodyMinContactDistance = 0.0;

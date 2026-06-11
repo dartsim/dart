@@ -803,7 +803,10 @@ Follow-up progress after PR #2956:
   The World-stage `DeformableContactSolverScratch` and `DeformableVbdScratch`
   components build those candidate/sweep buffers from the World free allocator
   when the component is first created, while standalone reusable builders keep
-  default construction for one-shot callers. Focused contact-candidate tests
+  default construction for one-shot callers. The same
+  `DeformableContactSolverScratch` route now covers the per-body surface
+  topology/contact-mask storage and inter-body surface-CCD edge, sweep-item,
+  and sweep-link buffers primed during bake. Focused contact-candidate tests
   verify provided allocator reserve/release, and existing World-base/global-heap
   baked-step guards still pass without adding a new production scene.
 - Default deformable projected-Newton assembly scratch now borrows that same

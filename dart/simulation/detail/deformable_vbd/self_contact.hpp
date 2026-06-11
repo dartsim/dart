@@ -44,6 +44,7 @@
 #include <algorithm>
 #include <array>
 #include <limits>
+#include <span>
 #include <vector>
 
 #include <cmath>
@@ -99,7 +100,7 @@ struct SelfContactAdjacency
   void rebuild(
       std::size_t vertexCount,
       const contact::ContactCandidateSet& candidates,
-      const std::vector<DeformableSurfaceTriangle>& triangles,
+      std::span<const DeformableSurfaceTriangle> triangles,
       double squaredActivationDistance,
       double stiffness)
   {

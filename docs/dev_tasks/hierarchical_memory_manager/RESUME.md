@@ -7,7 +7,13 @@ active HMM Phase 4/5 continuation is on
 `pr/hmm-phase45-follow-up-clean`, based on `origin/main` after PR #2956
 landed.
 
-The latest post-merge slice covers the rigid IPC mixed-domain path that arrived
+The latest post-merge deformable slice routes
+`DeformableContactSolverScratch`'s per-body surface topology/contact-mask
+storage and inter-body surface-CCD edge, sweep-item, and sweep-link buffers
+through the World free allocator. This extends the earlier contact-candidate and
+projected-Newton scratch routing without adding another production scene.
+
+The previous post-merge slice covers the rigid IPC mixed-domain path that arrived
 from `origin/main`: mixed rigid/deformable surface preparation now keeps
 allocator-backed BDF2 history, articulation input, mixed-domain surface payload,
 candidate, edge, and AABB scratch under the stage's borrowed World free
