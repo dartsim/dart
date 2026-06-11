@@ -118,6 +118,27 @@ skel.set_positions(np.array([0.1, 0.2, 0.3]))
 positions = skel.get_positions()  # Returns ndarray
 ```
 
+### Standalone LCP Bindings
+
+The DART 7 standalone LCP research surface is exposed through the flat `dartpy`
+namespace, matching the rest of the promoted Python API:
+`dart.LcpProblem`, `dart.LcpOptions`, `dart.LcpResult`,
+`dart.LcpSolverStatus`, and the concrete solver classes such as
+`dart.DantzigSolver`, `dart.PgsSolver`, and
+`dart.BoxedSemiSmoothNewtonSolver`. The implementation lives under the math
+binding module, but new user code should prefer the flat names instead of the
+deprecated `dart.math` module path.
+
+`LcpSolver.solve(problem, initial_guess=None, options=None)` returns
+`(result, solution)` so Python examples and tests can compare all solver
+outputs on the same problem without relying on in-place mutation. This is a
+standalone comparison API; DART 7 `World` contact behavior remains configured by
+public method values such as `ContactSolverMethod.BOXED_LCP`.
+`LcpSolver.supports_standard_lcp()`, `supports_boxed_lcp()`,
+`supports_friction_index()`, and `supports_problem(problem)` report native
+solver-family coverage, which lets py-demos separate direct apples-to-apples
+rows from boxed/findex paths that are solved through fallback delegation.
+
 ### Binding Conventions
 
 - Prefer shared numeric conversion helpers for Python inputs (sequences and NumPy) so bindings behave consistently across modules.

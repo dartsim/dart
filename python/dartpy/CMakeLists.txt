@@ -120,6 +120,7 @@ set(
   math/geometry.hpp
   math/random.hpp
   math/eigen_geometry.hpp
+  math/lcp.hpp
   math/trimesh.hpp
   dynamics/module.hpp
   dynamics/entity.hpp
@@ -196,6 +197,7 @@ set(
   math/geometry.cpp
   math/random.cpp
   math/eigen_geometry.cpp
+  math/lcp.cpp
   math/lie_groups.cpp
   math/tri_mesh.cpp
   dynamics/module.cpp
