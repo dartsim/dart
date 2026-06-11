@@ -901,10 +901,14 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "singular_degenerate",
         "near_singular",
         "world_stack",
+        "world_billiards",
         "world_card_pile",
         "batch_scale",
     }
     assert all(row["benchmark_filter"] for row in benchmark_by_packet.values())
+    assert benchmark_by_packet["world_billiards"]["benchmark_filter"] == (
+        "BM_LcpWorldBilliardsStep_BoxedLcp"
+    )
     assert benchmark_by_packet["world_card_pile"]["benchmark_filter"] == (
         "BM_LcpWorldCardPileStep_BoxedLcp"
     )

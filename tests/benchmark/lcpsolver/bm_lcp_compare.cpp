@@ -1949,6 +1949,68 @@ std::unique_ptr<sx::World> MakeWorldBoxStepBenchmarkWorld(
   return world;
 }
 
+constexpr double kBilliardsRadius = 0.14;
+constexpr double kBilliardsInitialSpeed = 1.0;
+constexpr double kBilliardsInitialEnergy
+    = 0.5 * kBilliardsInitialSpeed * kBilliardsInitialSpeed;
+
+Eigen::Vector3d MakeBilliardsCuePosition(int index)
+{
+  return Eigen::Vector3d(-0.135, 0.8 * static_cast<double>(index), 0.0);
+}
+
+Eigen::Vector3d MakeBilliardsTargetPosition(int index)
+{
+  return Eigen::Vector3d(0.135, 0.8 * static_cast<double>(index), 0.0);
+}
+
+std::unique_ptr<sx::World> MakeWorldBilliardsStepBenchmarkWorld(
+    int pairCount, std::string& errorMessage)
+{
+  if (pairCount <= 0) {
+    errorMessage = "billiards pair count must be positive";
+    return nullptr;
+  }
+
+  sx::WorldOptions options;
+  options.timeStep = 0.001;
+  options.gravity = Eigen::Vector3d::Zero();
+  options.contactSolverMethod = sx::ContactSolverMethod::BoxedLcp;
+  auto world = std::make_unique<sx::World>(options);
+
+  for (const int i : std::views::iota(0, pairCount)) {
+    sx::RigidBodyOptions cueOptions;
+    cueOptions.position = MakeBilliardsCuePosition(i);
+    cueOptions.linearVelocity
+        = Eigen::Vector3d(kBilliardsInitialSpeed, 0.0, 0.0);
+    auto cue
+        = world->addRigidBody("billiards_cue_" + std::to_string(i), cueOptions);
+    cue.setCollisionShape(sx::CollisionShape::makeSphere(kBilliardsRadius));
+    cue.setMass(1.0);
+    cue.setFriction(0.0);
+    cue.setRestitution(1.0);
+
+    sx::RigidBodyOptions targetOptions;
+    targetOptions.position = MakeBilliardsTargetPosition(i);
+    auto target = world->addRigidBody(
+        "billiards_target_" + std::to_string(i), targetOptions);
+    target.setCollisionShape(sx::CollisionShape::makeSphere(kBilliardsRadius));
+    target.setMass(1.0);
+    target.setFriction(0.0);
+    target.setRestitution(1.0);
+  }
+
+  const std::vector<sx::Contact> contacts = world->collide();
+  if (contacts.size() != static_cast<std::size_t>(pairCount)) {
+    errorMessage = "World::collide returned " + std::to_string(contacts.size())
+                   + " billiards contacts, expected "
+                   + std::to_string(pairCount);
+    return nullptr;
+  }
+
+  return world;
+}
+
 Eigen::Vector3d MakeCardPileHalfExtents()
 {
   return Eigen::Vector3d(0.30, 0.18, 0.012);
@@ -2124,6 +2186,56 @@ WorldBoxStepCheck CheckWorldBoxStepInvariants(sx::World& world, int boxCount)
                && finalTangentialSpeed < initialTangentialSpeed;
   }
 
+  return check;
+}
+
+struct WorldBilliardsStepCheck
+{
+  bool ok{true};
+  double maxMomentumError{0.0};
+  double maxEnergyError{0.0};
+  double minTargetSpeed{std::numeric_limits<double>::infinity()};
+  double maxCueSpeed{0.0};
+  std::size_t contactCount{0};
+};
+
+WorldBilliardsStepCheck CheckWorldBilliardsStepInvariants(
+    sx::World& world, int pairCount)
+{
+  WorldBilliardsStepCheck check;
+  for (const int i : std::views::iota(0, pairCount)) {
+    auto cue = world.getRigidBody("billiards_cue_" + std::to_string(i));
+    auto target = world.getRigidBody("billiards_target_" + std::to_string(i));
+    if (!cue.has_value() || !target.has_value()) {
+      check.ok = false;
+      return check;
+    }
+
+    const Eigen::Vector3d cueVelocity = cue->getLinearVelocity();
+    const Eigen::Vector3d targetVelocity = target->getLinearVelocity();
+    const double momentumX = cueVelocity.x() + targetVelocity.x();
+    const double energy
+        = 0.5 * (cueVelocity.squaredNorm() + targetVelocity.squaredNorm());
+    check.maxMomentumError = std::max(
+        check.maxMomentumError, std::abs(momentumX - kBilliardsInitialSpeed));
+    check.maxEnergyError = std::max(
+        check.maxEnergyError, std::abs(energy - kBilliardsInitialEnergy));
+    check.minTargetSpeed
+        = std::min(check.minTargetSpeed, targetVelocity.norm());
+    check.maxCueSpeed = std::max(check.maxCueSpeed, cueVelocity.norm());
+    check.ok = check.ok && cue->getTranslation().allFinite()
+               && target->getTranslation().allFinite()
+               && cueVelocity.allFinite() && targetVelocity.allFinite()
+               && check.maxMomentumError < 1e-8 && check.maxEnergyError < 1e-8
+               && targetVelocity.x() > 0.5 * kBilliardsInitialSpeed
+               && cueVelocity.x() < 0.5 * kBilliardsInitialSpeed
+               && std::abs(cueVelocity.y()) < 1e-10
+               && std::abs(targetVelocity.y()) < 1e-10
+               && std::abs(cueVelocity.z()) < 1e-10
+               && std::abs(targetVelocity.z()) < 1e-10;
+  }
+
+  check.contactCount = world.collide().size();
   return check;
 }
 
@@ -9912,6 +10024,48 @@ static void BM_LcpWorldBoxStep_BoxedLcp(benchmark::State& state)
   state.SetLabel("BoxedLcpContact/WorldBoxStep");
 }
 
+static void BM_LcpWorldBilliardsStep_BoxedLcp(benchmark::State& state)
+{
+  const int pairCount = static_cast<int>(state.range(0));
+  const int stepCount = static_cast<int>(state.range(1));
+  std::string errorMessage;
+
+  WorldBilliardsStepCheck check;
+  for (auto _ : state) {
+    auto world = MakeWorldBilliardsStepBenchmarkWorld(pairCount, errorMessage);
+    if (world == nullptr) {
+      state.SkipWithError(errorMessage.c_str());
+      return;
+    }
+    world->enterSimulationMode();
+    world->step(stepCount);
+    check = CheckWorldBilliardsStepInvariants(*world, pairCount);
+    benchmark::DoNotOptimize(check.ok);
+  }
+
+  auto world = MakeWorldBilliardsStepBenchmarkWorld(pairCount, errorMessage);
+  if (world == nullptr) {
+    state.SkipWithError(errorMessage.c_str());
+    return;
+  }
+  world->enterSimulationMode();
+  world->step(stepCount);
+  check = CheckWorldBilliardsStepInvariants(*world, pairCount);
+
+  state.counters["pair_count"] = static_cast<double>(pairCount);
+  state.counters["step_count"] = static_cast<double>(stepCount);
+  state.counters["body_count"] = static_cast<double>(2 * pairCount);
+  state.counters["contact_count"] = static_cast<double>(check.contactCount);
+  state.counters["max_momentum_error"] = check.maxMomentumError;
+  state.counters["max_energy_error"] = check.maxEnergyError;
+  state.counters["min_target_speed"] = check.minTargetSpeed;
+  state.counters["max_cue_speed"] = check.maxCueSpeed;
+  state.counters["invariant_ok"] = check.ok ? 1.0 : 0.0;
+  AddBackendBuildCounters(state);
+  state.SetItemsProcessed(state.iterations() * stepCount * pairCount);
+  state.SetLabel("BoxedLcpContact/WorldBilliardsStep");
+}
+
 static void BM_LcpWorldCardPileStep_BoxedLcp(benchmark::State& state)
 {
   const int cardCount = static_cast<int>(state.range(0));
@@ -13501,6 +13655,10 @@ BENCHMARK(BM_LcpWorldBoxStep_BoxedLcp)
     ->Args({144, 75})
     ->Args({192, 1})
     ->Args({256, 1});
+BENCHMARK(BM_LcpWorldBilliardsStep_BoxedLcp)
+    ->Args({1, 1})
+    ->Args({4, 1})
+    ->Args({8, 1});
 BENCHMARK(BM_LcpWorldCardPileStep_BoxedLcp)
     ->Args({4, 200})
     ->Args({7, 200})

@@ -61,6 +61,7 @@ def test_dashboard_surface_runner_dry_run_lists_bounded_specs(tmp_path):
     assert "BM_LcpCompare/FrictionIndex/.*/4$" in result.stdout
     assert "BM_LcpWorldContact/FrictionIndex/.*/4$" in result.stdout
     assert "BM_LcpWorldBoxContact/FrictionIndex/.*/4$" in result.stdout
+    assert "BM_LcpWorldBilliardsStep_BoxedLcp/(1|4|8)/1$" in result.stdout
     assert "BM_LcpWorldCardPileStep_BoxedLcp/(4|7|12)/200$" in result.stdout
     assert "dashboard_vbd_world.json" in result.stdout
     assert "BM_VbdWorldStep(Default|Vbd)/.*" in result.stdout
@@ -167,6 +168,7 @@ def test_dashboard_surface_runner_can_select_lcp_solver_surface(tmp_path):
     assert "--target lcp_compare" in result.stdout
     assert "dashboard_lcp_solvers.json" in result.stdout
     assert "BM_LcpCompare/Standard/(.*/12|Direct/3)$" in result.stdout
+    assert "BM_LcpWorldBilliardsStep_BoxedLcp/(1|4|8)/1$" in result.stdout
     assert "BM_LcpWorldCardPileStep_BoxedLcp/(4|7|12)/200$" in result.stdout
 
 

@@ -72,6 +72,7 @@ BENCHMARK_SPECS = [
             "BM_LcpCompare/FrictionIndex/.*/4$|"
             "BM_LcpWorldContact/FrictionIndex/.*/4$|"
             "BM_LcpWorldBoxContact/FrictionIndex/.*/4$|"
+            "BM_LcpWorldBilliardsStep_BoxedLcp/(1|4|8)/1$|"
             "BM_LcpWorldCardPileStep_BoxedLcp/(4|7|12)/200$"
         ),
         output_name="dashboard_lcp_solvers.json",
